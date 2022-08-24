@@ -1,0 +1,136 @@
+Mathematical Functions:
+-----------------------
+
+PI=3.14159..;
+radians				(float degrees)		**DONE** gmanmath
+degrees				(float radians)		**DONE** gmanmath
+sin, asin, cos, acos, tan	(float)			math lib
+atan				(float x,y)		**DONE** gmanmath
+pow				(float x,y)		math lib
+exp				(float)			math lib
+sqrt				(float)			math lib
+inversqrt			(float)			**DONE** gmanmath
+log				(float)			math lib
+log				(float x,base)		**DONE** gmanmath
+mod				(float a,b)		**DONE** gmanmath
+abs				(float)			math lib
+sign				(float)			**DONE** gmanmath
+min, max			(type a,b,...)
+clamp				(type a,min,max)	
+mix				(float x,y;float)	**DONE** gmanmath
+mix				(point x,y;float)	**DONE** gmanpoint
+mix				(vector x,y;float)	**DONE** gmanvector
+mix				(normal x,y;float)	**DONE** gmannormal
+floor, ceil			(float)			math lib
+round				(float)			**DONE** gmanmath
+step				(float min,value)	**DONE** gmanslapi
+smoothstep			(float min,max,value)	**DONE** gmanslapi
+filterstep			(float edge,s1;parameterlist)
+filterstep			(float edge,s1,s2;parameterlist)
+float  spline			(float value;float fvals[])	**DONE** gmanslapi
+color  spline			(float value;color cvals[])	**DONE** gmanslapi
+point  spline			(float value;point pvals[])	**DONE** gmanslapi
+vector spline			(float value;vector vvals[])	**DONE** gmanslapi
+Du, Dv, Deriv			(float) (float) (float;float)
+Du, Dv, Deriv			(color) (color) (color;float)
+Du, Dv, Deriv			(point) (point) (point;float)
+Du, Dv, Deriv			(vector) (vector) (vector;float)
+float  random			()
+color  random			()
+point  random			()
+flt|clr|pnt|vect  noise	        (float) (float u,v) (point) (point,float) 		**DONE** gmannoise
+flt|clr|pnt|vect  pnoise        (flt,flt) (flt,flt,flt,flt) (pnt,pnt) (pnt,flt,pnt,flt) **DONE** gmannoise
+flt|clr|pnt|vect  cellnoise     (float) (float,float) (point) (point,float) 		**DONE** gmannoise
+
+Geometric Functions:
+--------------------
+
+xcomp, ycomp, zcomp		(ptype)			**DONE** gmanvector
+setxcomp, setycomp, setzcomp	(ptype,float)		**DONE** gmanvector
+length				(vector)		**DONE** gmanvector
+normalize			(vector)		**DONE** gmanvector
+distance			(point p1,p2)		**DONE** gmanslapi
+ptlined				(point q,p1,p2)		**DONE** gmanslapi
+rotate				(point q,a,p1,p2)	**DONE** gmanslapi
+area				(point)
+faceforward			(vector n,i,[nref])	**DONE** gmanslapi
+reflect				(vector i,n)		**DONE** gmanslapi
+refract				(vector i,n;float)	**DONE** gmanslapi
+fresnel				(vector i,n;float e,kr,kt;[vector r,t]) **DONE** gmanslapi
+transform			(string;point) (string from,to;point) (matrix;point) (string;matrix;point)
+vtranstorm			(string;vector) (string from,to;vector) (matrix;vector) (string;matrix;vector)
+ntransform			(string;normal) (string from,to;normal) (matrix;normal) (string;matrix;normal)
+depth				(point)
+calculatenormal			(point)
+
+Color Functions:
+----------------
+
+comp				(color;float)		**DONE** gmancolor only for rgb
+setcomp				(color;float i,v)	**DONE** gmancolor only for rgb
+mix				(color 0,1;float)
+ctransform			(string;color) (string from,to;color) **DONE** gmancolor
+
+Matrix Functions:
+-----------------
+
+comp				(matrix;float r,c)	**DONE** gmanmatrix4
+setcomp				(matrix;float r,c,v)	**DONE** gmanmatrix4
+determinant			(matrix)		**DONE** gmanmatrix4
+translate			(matrix;vector)		**DONE** gmanmatrix4
+rotate				(matrix;float;vector)	**DONE** gmanmatrix4
+scale				(matrix;point)		**DONE** gmanmatrix4
+
+String Functions:
+-----------------
+
+concat				(string a,b,...)
+printf				(string pattern,1,2 .. n)
+format				(string pattern,1,2 .. n)
+match				(string pattern,subject)
+
+Shading and Lighting Functions:
+-------------------------------
+
+ambient				()
+diffuse				(normal)
+specular			(normal;vector;float)
+specularbrdf			(vector;normal;vector;float)
+phong				(normal;vector;float)
+trace				(point p,r)
+
+Texture Mapping Functions:
+--------------------------
+
+float texture			(string;[tc,][pl])
+color texture			(string;[tc,][pl])
+
+Environment maps:
+-----------------
+
+float environment		(string;tc[,pl])
+color environment		(string;tc[,pl])
+
+Shadow Depth Maps:
+-----------------
+
+shadow				(string;tc[,pl])
+
+Getting Information About Texture Maps:
+---------------------------------------
+
+textureinfo			(string tn,dn;type)
+
+Message Passing and Information Functions:
+------------------------------------------
+
+atmosphere			(string;type)
+displacement			(string;type)
+lightsource			(string;type)
+surface				(string;type)
+incident			(string;type)
+opposite			(string;type)
+attribute			(string;type)
+option				(string;type)
+rendererinfo			(string;type)
+shadername			() (string;type)

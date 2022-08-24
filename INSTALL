@@ -1,0 +1,13 @@
+GNU GMAN Installation
+
+Required Packages:
+	-- A C++ compiler that supports an STL, such as GCC 2.8.0 or above.
+	-- Libstdc++
+	-- Libjpeg-devel-6b
+	-- Libnetpb-1.0.0
+
+Installation on UNIX
+
+1.   Run the "./configure" script.
+2.   Run make.
+3.   Run make install.  This will install GNU GMAN in prefix dir

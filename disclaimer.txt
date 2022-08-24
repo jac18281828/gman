@@ -1,0 +1,9 @@
+Standard Discliamer
+
+This library supports an interface similar to the RenderMan interface
+defined by Pixar Animation Studios.   This library is not supported in
+any way by Pixar, or anyone else for that matter.   The library is
+distributed under the terms of the GNU Library General Public License,
+please see the file license.txt for more information.
+
+Viewer discretion is advised.

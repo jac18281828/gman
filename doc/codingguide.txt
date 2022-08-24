@@ -1,0 +1,67 @@
+GMAN Coding Guidelines, Jan 2001
+
+I'm probably the least of the proponents of coding standardization
+practices.   I believe it is my individuality as a coder that makes my
+code worthwhile, and better than other's code.  Moreover, I feel that
+people like to spend all their time planning, and never any time
+doing.  If I had done that in Feb 1999 GMAN would not even exist
+today.
+
+Having said this, here are the coding guidelines that we, the
+developers, have agreed upon.
+
+In short, if your going to submit code to the project, please read,
+understand, and follow these coding practices.
+
+As above, I usually disagree with coding standards, so I don't intend
+to become the GMAN coding police.   Nobody else should either.   If
+you submit code to the project, thanks for your efforts, we'll get
+things working and readable in due course.
+
+John Cairns
+
+1. No indentation standard.  I use Emacs C-mode/C++-mode, this
+   should be good enough for anyone.
+
+   Suggestion: Please indent your code in a manner that is readable
+   and consistent.
+
+2. All classes will inherit from the UniversalSuperClass to support
+   the (future) addition of memory management. 
+
+3. All source file names will be lower-case to support lame case
+   insensitive operating system.
+
+4. All symbol names will use 'bicapitialization' in naming, multiple
+   words are started with caps, with the exception of the first letter
+   of a method name.    For example, methodName, longMethodName,
+   SymbolName. Symbol names should avoid the use of punctuation
+   characters, _, etc.   Additional, flexibility in naming is afforded
+   for private member data, however readability should be a priority
+   in all code. 
+
+5. All global scope class and object names will begin with the prefix
+   abbreviation 'GMAN'.
+
+6. All system header files will be included before gman header files.
+   System header files use '< >' gman header files use '" "' for
+   inclusion.
+
+7. All implementation source code should be in the .cpp module with
+   the exception of 'template' code, and code for which it is
+   desirable that the compiler might inline or optimize by being in
+   the header.
+
+8. All types used throughout should follow the standard RenderMan API
+   type system.   For non-portable types not represented in the
+   RenderMan API, a new GMAN type should be created for portability.
+
+9. All source and header files must contain all of the following:
+   a. The standard GNU disclaimer.
+   b. The authors name(s).
+   c. The date the file was created.
+   d. A description of the files contents.
+
+10. All header files must be enclosed in an #ifdef/#endif pair to avoid
+    multiple inclusion.
+

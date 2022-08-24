@@ -1,0 +1,12 @@
+DATE		VERSION		DESCRIPTION
+Feb 13 2000     0.1.0           First major rewrite, and code restructure.
+	                        Improved object oriented model and design.
+Nov 15 1999     0.0005          Added GNU Autoconf/Automake support
+Oct 28 1999     0.0004          Added the gman.1 manual page.
+May 08 1999	0.0003		Added some more code, and improved the
+				zbuffer and base shaders.
+Apr 17 1999     0.0002          Added automake/autoconf and rip parse objects
+Apr 10 1999     0.0001          Added support for Points, Vectors, and 
+				Matricies and other base environment objects.
+Mar 01 1999	0.0000		Started this crazy project.
+

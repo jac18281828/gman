@@ -1,0 +1,184 @@
+% LaTex 2e
+% GMAN Manual
+% Author: John Cairns
+% DAte:   March 06, 1999
+%
+%
+
+
+\documentclass{book}	% maybe
+
+\title{GNU GMAN\\
+Photorealistic Rendering Tool}
+\author { John Cairns }
+\date   { March 06, 1999 }
+
+\def\gman{\bf GMAN \rm}
+\def\gmansl{\bf GMANSL \rm}
+\def\text#1{\bf\tt #1 \rm}
+\def\instruction#1#2#3{\bf #1 \hfil\rm #2 \hfill \hbox{#3}\\}
+
+\begin {document}
+
+\maketitle
+\eject
+\vfill
+\vbox{
+\hsize 3in
+\bf About the Author\rm\\
+John Cairns is a computer nerd somewhere in Boulder, CO.   He finds
+solace in knowing that there are other nerds out there who actually,
+read this stuff, and perhap even find this program useful.   At least,
+now he doesn't have to wait for Pixar to lower their prices.
+}
+
+\tableofcontents
+\chapter{Introduction}
+
+\begin{em}
+'What the hell am I doing?'
+\vskip .5 in
+\end{em}
+
+This is a fairly large program.  For my own personal benefit I still
+consider the project to be a small one.   In fact, I never would have
+'picked up the pen and began writing' if I thought this was a large
+project.   There are a couple of important ways I made the project seem
+smaller.  First, I borrowed the interface, file format, and shading
+language from a known, trusted, and established source, Pixar's
+RenderMan Specification\footnote{By the way, PhotoRealistic RenderMan, 
+and Pixar are trademarks of Pixar Animation Studios, Inc.   
+I am not affiliated with Pixar in any way, nor is this software.   
+I wrote all the code from scratch, based on literature, 
+and my experience as a programmer.}.
+This helped make the job of writing a shading system a little
+smaller, since I could minimize design time and focus on
+\em algorithmic beauty.\rm   I also owe a huge thanks to Mark and Alan
+Watt and their books \em 3D Computer Graphics,\rm and Advanced
+Animation and Rendering Techniques\rm without which, this project
+would have been untenable.
+
+\section{About GMAN}
+This library is intended to provide a high-quality rendering solution,
+i.e. support for\footnote{Thanks to Larry Gritz of Pixar <lg@pixar.com>
+for this list.}:
+
+\begin{enumerate}
+\item{High-end geometric types, such as trimmed curves, NURBS and
+      Catmull-Clark subdivision surfaces.}
+\item{Robust spatial and temporal antialiasing, 
+      including motion-blurred geometric deformations\footnote{Whoa!
+That's a mouthful.}
+\item{Programmable shading of surfaces, lights, and volumes.}
+\item{Displacement shading.}
+\item{The ability to use large numbers (e.g. hundreds or thousands)
+      of large textures without memory consumption growing appreciably.}
+\item{Fine control over quantization, filtering and reconstruction of
+      images.}
+\item{Variable quality in rendering algorithims, providing fine
+control over shading time versus shading quality.}
+\end{enumerate}
+
+These features are all required by the RenderMan standard, so choosing
+RenderMan as a starting point was a good idea.   
+
+\section {Free Software}
+
+This library is free software.  Meaning that the source code is freely
+avaiable.  \gman is distributed under the GNU General Public Library
+License, available as part of the \gman distribution, or from \text{
+http://www.fsf.org. }
+
+\section{Downloading}
+
+The current version of \gman is available at \text
+{ http://www.2ad.com/gman. }
+This Library is written in portable C and C++ and should be portable to
+most\footnote{A good, modern C++ compiler such as GCC 2.8.0, is
+required to compile \gman.}
+major platforms.
+
+\chapter{Library Design}
+\begin{em}
+'Enough nonsense lets get started!'
+\end{em}
+\section{Overview}
+
+GMAN supports three interfaces for it's scene description language, C,
+C++, and RIB.  The C interface is provided in the \text { ri.h }
+header file.  The C++ interface is provided through the \text{ ripp.h }
+header file, in the \text{ Ri } base class.  The C interface is
+built out of the C++ Interface by providing a C wrapper that
+instantiates a single instance of \text{ RiImpl, } the RenderMan
+implementation class.
+
+\subsection{Object Management}
+\gman stores all objects defined with a \text{ RiWorldBegin,
+RiWorldEnd } pair in an object database called an \text
+{ ObjectManager. }  The object manager base class is defined in \text
+{ riobjects.h. }  Three predefined object managers are provided by
+\gman in the default implementation, Linear, BSP, and Octree.  The
+\text{ ObjectManager } interface provides a generalized method for
+accessing all objects in a World, i.e., all objects to be projected
+into the output view by the shader.
+
+\subsection{Shaders}
+\gman also provides a generalized interface to shading algorithims.
+These shading algorithims, or Shaders for short, are implemented
+through an abstract base class, \text { Shader, } defined in \text
+{ rishader.h. }  Any class derived from a \text { Shader } object can
+be specified as the shader used in a particular GMAN rendering
+session.  This allows for extreme flexiblity in implementation, and
+reuse of \gman code, even where a different rendering algorithim is
+desired.  This also provides a mechanism where under the LGPL, shaders
+can be created in a client application that do not fall under the
+terms of the license, as they need not be added to the \gman library,
+they can be specified as part of the client application and integrated
+into \gman at runtime.
+
+\chapter{Shading Language Engine, \gmansl}
+\section{Introduction}
+
+The shading language engine is the core of the \gman shading
+process.  The engine has two key components the \gmansl virtual machine
+and the \gmansl compiler.  The \gmansl compiler parses the shading language
+statements and grammars and produces a \gmansl code listing suitable for
+loading and execution in the \gmansl virtual computer.
+
+\section{The \gmansl Computer}
+
+The \gmansl computer simulates a stack based computer specifically
+designed, for rendering applications.  It behaves like a fairly simple
+CISC machine.   It has a variable length stack, which allows operands
+to be pushed and poped.  \gmansl provides just enough instructions for
+the task at hand.
+
+\subsection{General Description of the \gmansl Computer}
+
+The \gmansl computer is a thirtytwo (32) bit computer.  In other words
+the fundamental word size is four (4) bytes.  All values stored on the
+\gmansl stack are four bytes long.  This is because the \gmansl
+computer is required to run efficiently on thirty-two (32) bit
+computers.  The \gmansl stack is 64k providing up to 16384 storage
+locations. 
+
+The \gmansl computer has 64k of random access storage accessible
+through a single sixteen (16) bit index register, indx.  Addresses
+must always be aligned on four (4) byte boundaries, as the low order 4
+bits of the index register are ignored.
+
+The \gmansl computer provides a 64k bank of storage shared with the
+host computer, in particular this storage can be used for accessing
+input and ouput storage for use with communicating with \gman.
+
+\subsection{The \gmansl Instruction Set}
+
+\instruction{ADD}{0x01}{The ADD instruction replaces the two
+thirty-two bit floating point values on the stack with the sum of
+these two values.}
+\instruction{SUB}{0x02}{The SUB instruction replaces the two
+thirty-two bit floating point values on the stack with the difference
+of the stack top and the previous stack element.}
+
+
+\end{document}

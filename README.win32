@@ -1,0 +1,26 @@
+The latest version of GMAN has been ported to win32.
+Building GMAN on Windows is fairly straight-forward:
+
+
+1. First download the libtiff, libjpeg, libpng, and zlib archives:
+   - GMAN expects you to have built these packages and placed them in
+     the same directory where the toplevel GMAN directory is, e.g.:
+     gman\
+     jpeg-6b\
+     tiff\
+     png\
+     zlib\
+
+     Note: the names used is the GMAN project file may differ
+	   from the name used in the distribution.
+
+2. Next open the devloper studio workspace
+    C:\>   cd gman\win32
+    C:\>   msdev gman.dsw
+
+3. Now build the software from the msdev GUI.
+   
+
+
+     
+     

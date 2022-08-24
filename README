@@ -1,0 +1,26 @@
+GNU RenderMan
+
+A Gnu-implementation of the RenderMan interface.
+
+bin/ -- The binaries and executables
+libgman/ -- Contains the GMAN library sources
+libgmanrib/ -- The rib library.
+libgmansl/  -- The gman shading language library.
+renderers/  -- GMAN loadable rendering modules.
+shaders/    -- GMAN loadable shading modules
+gmansl/ -- Contains the compiler for GMAN Shanding Language (GSL)
+gman/   -- Contains the source code for the GMAN command line utility.
+doc/ -- Contains the manual and documentation
+man/ -- Contains the UNIX manual pages
+win32/ -- Contains the MSVC project workspace for building Windows GMAN
+include/ -- Contains the GMAN header files
+tests/   -- Location of test programs
+lib/ -- Location of built libraries
+
+license.txt -- Contains information about use, modification, and distribution
+		of GMAN.
+README      -- Contains this list.
+INSTALL     -- Contians the instructions for installing GMAN on your system.
+NEWS	    -- Contains information pertinent to this release of GMAN.
+
+... Another fine product from the GNU project.

@@ -1,0 +1,51 @@
+
+To find out what should go in this file, see "Information For
+Maintainers of GNU Software" (maintain.texi), the section called
+"Recording Changes"
+
+AUTHORS / MAJOR CONTRIBUTORS
+============================
+
+Thanks to all who have added advice, support, patches, complaints, and
+code!   GMAN was litterally a product of your efforts.
+
+Ken Geis        <ken_geis@telocity.com>
+Major contributor, joined in Jun 2001.
+
+John Cairns	<john@2ad.com>
+The original author and maintainer of GMAN.   I started GMAN in Feb 1999.
+
+Andrew J. Bromage  <ajb@mail.alicorna.net>
+Contributor of the shading language parser.   
+
+Lionel Joseph Lacour <intuition01@online.fr>  (Retired)
+GMAN internals contributor. I joined this project on July 2000.
+
+
+OTHER CONTRIBUTORS
+==================
+
+Joseph de Condappa  <joseph.decondappa@caplin.com>
+Contributed some API's, joined in Feb 2001.
+
+Daniel Benson  <dacbenso@picard.math.uwaterloo.ca>
+Contributed some patches and bug fixes, joined in Jan 2001.
+
+Alex Sandro Queiroz e Silva <asandro@lcg.dc.ufc.br>
+Contributed some internals code, joined in Jan 2001.
+
+
+SPECIAL THANKS
+==============
+
+Richard Stallman for starting the GNU project and Free Software movement.
+Mostly for inspiring us to contribute to it.
+
+Everyone on the GMAN mailing list for advice and support.
+
+The authors of the netpbm library.
+
+MPEG.org.
+
+slashdot.org for keeping me informed.
+

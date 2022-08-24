@@ -1,0 +1,77 @@
+This is a bare-bones flex+bison lexer and parser for the RenderMan(R)
+shading language.  It's released under the MIT licence, so you should
+be able to do pretty much anything with it.
+
+The grammar supports all features up to Pixar's release 3.8, except for
+the following feature:
+
+	- light groups in the illuminance() statement
+
+This grammar will probably work with AT&T yacc, byacc and their
+derivatives.  I haven't tested them.  (If you have a patch, please send
+it to me.)  The scanner specification, however, will definitely not work
+with AT&T lex.  Lex is an extremely buggy piece of software.  Don't use
+it.  Flex is much better, and it's free.
+
+There are five shift-reduce conflicts in the parser  They are due to a
+problem with the following construct:
+
+	point "foo" some_point
+
+After parsing the "point" token, the parser can't tell whether this is
+a cast of the string "foo" to a point, or a transformation of some_point
+into the point space "foo", since it only looks one token ahead.  The
+problem would be fixed by looking two tokens ahead, but as luck would
+have it, the default resolution behaviour is to parse this as a space
+cast.  Since it doesn't make sense to cast a string to a point, this is
+the right behaviour.  Well, almost the right behaviour.  What you should
+get is a type error, but you get a syntax error instead.
+
+There are five shift-reduce conflicts here because the problem happens
+with `point', `vector', `normal', `color' and `matrix'.
+
+Oh, and the grammar will require considerable tweaking to make it
+suitable for a "real" compiler, but of course you knew that already.
+
+Happy shader hacking.
+
+Andrew J. Bromage
+8th January 2001
+
+--------
+
+And now, the legalese...
+
+	The RenderMan(R) Interface Procedures and RIB Protocol are:
+		Copyright 1988, 1989, Pixar.  All rights reserved.
+
+	The RenderMan(R) Shading Language is _not_ claimed under
+		copyright by Pixar.
+
+	RenderMan(R) is a registered trademark of Pixar.
+
+	This lexical analyser and parser for the RenderMan(R) Shading
+	Language are:
+		Copyright (c) 1999-2001 Andrew J. Bromage
+
+	Permission is hereby granted, free of charge, to any person obtaining
+	a copy of this software and associated documentation files (the
+	"Software"), to deal in the Software without restriction, including
+	without limitation the rights to use, copy, modify, merge, publish,
+	distribute, sublicense, and/or sell copies of the Software, and to
+	permit persons to whom the Software is furnished to do so, subject
+	to the following conditions:
+
+	The above copyright notice and this permission notice shall be included
+	in all copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+	KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+	WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+	NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+	LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+So there.
+
