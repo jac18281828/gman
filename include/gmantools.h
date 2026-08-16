@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+
 /*---------------------------------------------------------
   Copyright (C) Lionel Joseph Lacour 2001, 2002
   February 2001  First release

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: MIT */
+
 /*
  * This is part of the GNU GMAN Library, a FREE implementation of the
  * RenderMan Interface Specification.

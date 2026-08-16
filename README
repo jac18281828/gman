@@ -1,26 +1,58 @@
-GNU RenderMan
+GMAN — a RenderMan-compatible renderer
 
-A Gnu-implementation of the RenderMan interface.
+An implementation of the RenderMan interface. Started 1999, shelved 2002,
+revived 2026 on a CMake / C++23 build.
 
-bin/ -- The binaries and executables
-libgman/ -- Contains the GMAN library sources
-libgmanrib/ -- The rib library.
-libgmansl/  -- The gman shading language library.
-renderers/  -- GMAN loadable rendering modules.
-shaders/    -- GMAN loadable shading modules
-gmansl/ -- Contains the compiler for GMAN Shanding Language (GSL)
-gman/   -- Contains the source code for the GMAN command line utility.
-doc/ -- Contains the manual and documentation
-man/ -- Contains the UNIX manual pages
-win32/ -- Contains the MSVC project workspace for building Windows GMAN
-include/ -- Contains the GMAN header files
-tests/   -- Location of test programs
-lib/ -- Location of built libraries
+RenderMan is a registered trademark of Pixar. GMAN is not associated with or
+endorsed by Pixar; the name is used here only to say which interface GMAN
+implements.
 
-license.txt -- Contains information about use, modification, and distribution
-		of GMAN.
-README      -- Contains this list.
-INSTALL     -- Contians the instructions for installing GMAN on your system.
-NEWS	    -- Contains information pertinent to this release of GMAN.
+The tree
+--------
 
-... Another fine product from the GNU project.
+include/     GMAN header files, including ri.h
+libgman/     the core library: RIB parser, RI state machine, image writers
+libgmanrib/  GMANASCII, the RIB writer backend over the abstract RI interface
+renderers/   loadable rendering modules -- zbuffer, plus reyes, raytracer and
+             radiosity, which are non-functional and build OFF by default
+shaders/     loadable shading modules
+gmansl/      grammar and driver for a shading language compiler that was never
+             finished; kept as a record, built by nothing
+gman/        the gman command line utility
+tests/       the test suite and its RIB corpus
+doc/         the 1999 design document and the house coding guide
+
+Building
+--------
+
+Requires CMake 3.25 or newer, a C++23 compiler (clang 16+ or gcc 13+),
+libtiff, libpng and zlib. libjpeg is optional. POSIX only -- macOS and Linux.
+
+    cmake --preset dev
+    cmake --build build --parallel
+    ctest --test-dir build --output-on-failure
+
+See AGENTS.md for the full gate list and the house conventions.
+
+What works
+----------
+
+The front end. RIB parsing, the RI state machine, transform and matrix math,
+Perlin noise, the spline and shading-language support functions, and the TIFF,
+PNG, JPEG and PNM image writers.
+
+The back end does not yet render. Feeding gman a scene today fails in the RIB
+parameter list before any renderer runs; tests/baseline.cpp records exactly
+what happens and why.
+
+Files
+-----
+
+COPYING      GNU Lesser General Public License, version 2.1
+disclaimer.txt   standard disclaimer
+AGENTS.md    build commands, gate list and house conventions
+INSTALL      generic installation instructions
+NEWS         release notes
+ChangeLog    history through 2000
+TODO         what was outstanding when the project was shelved
+AUTHORS      contributors

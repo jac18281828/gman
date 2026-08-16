@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
  * Copyright (c) 2001, 2000, 1999  John Cairns

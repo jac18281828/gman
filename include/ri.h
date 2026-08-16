@@ -1,5 +1,6 @@
-/* This is part of the GNU GMAN Library, a FREE implementation of the
- * RenderMan Interface Specification.
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+
+/* This is part of GMAN, a RenderMan-compatible renderer.
  *
  * Copyright (c) 2001, 2000, 1999, John Cairns 
  *

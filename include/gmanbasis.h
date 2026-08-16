@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+
 /*----------------------------------------------------------
   Copyright (C) Lionel Joseph Lacour 2000, 2001
   2000/08/02  Fisrt release

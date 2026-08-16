@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later */
+
 /* LJL
  * complete rewrite from John code.
  */
