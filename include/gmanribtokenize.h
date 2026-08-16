@@ -191,7 +191,7 @@ class GMAN_EXPORT  GMANToken {
 
 
     RtToken getRtToken(RtVoid) const {
-      return (const RtToken)value.stringVal.c_str();
+      return (RtToken)value.stringVal.c_str();
     }
 
     operator RtToken() {

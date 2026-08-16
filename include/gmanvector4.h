@@ -87,6 +87,11 @@ public:
 
   ~GMANVector4(); // default destructor
 
+  /* Same as GMANVector: the destructor above deprecates the implicit copy
+   * constructor, which gcc rejects under -Werror=deprecated-copy. Copy
+   * assignment is user-provided below. */
+  GMANVector4(const GMANVector4 &) = default;
+
   // get and set w
   RtFloat getW(RtVoid) const { return w; };
   RtVoid setW(RtFloat wval) { w = wval; };

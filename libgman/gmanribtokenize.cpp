@@ -30,6 +30,8 @@
 
 #include <string>
 
+#include <climits>   /* INT_MAX -- not transitive via libstdc++ */
+
 #include <math.h>
 #include <stdio.h>
 #include <string.h>

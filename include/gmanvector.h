@@ -74,6 +74,13 @@ class GMAN_EXPORT  GMANVector
     //dtor
     ~GMANVector();
 
+    /* The user-declared destructor above deprecates the implicit copy
+     * constructor (C++11 [depr.impldec]); gcc rejects it under
+     * -Werror=deprecated-copy. It is memberwise on a plain RtVector, which is
+     * what the implicit one already did, so default it explicitly. Copy
+     * assignment is user-provided further down. */
+    GMANVector(const GMANVector &) = default;
+
 
     RtFloat    getX(RtVoid) const {
 	return vec[X];

@@ -29,6 +29,9 @@
 */
 
 /* Local Headers */
+#include <cstring>   /* strlen, strcpy, strcmp -- libstdc++ does not
+                      * pull these in transitively the way libc++ does */
+
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanlog.h"
 #include "gmanribparse.h" /* Declaration Header */

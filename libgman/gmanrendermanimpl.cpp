@@ -36,6 +36,7 @@
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
 
+#include <cstring>
 #include <string>
 
 /* Local Headers */

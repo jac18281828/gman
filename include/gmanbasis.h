@@ -53,6 +53,11 @@ public:
   GMANBasis(const GMANBasis &basis);
 
   ~GMANBasis();
+
+  /* The user-declared copy ctor and destructor above deprecate the implicit
+   * copy assignment, which gcc rejects under -Werror=deprecated-copy. The copy
+   * ctor is purely memberwise, so the defaulted assignment matches it. */
+  GMANBasis &operator=(const GMANBasis &) = default;
   
   GMANBasis (const GMANMatrix4 &ubss, 
 	     RtInt ustp, 

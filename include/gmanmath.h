@@ -78,7 +78,7 @@ inline GMAN_EXPORT RtFloat GMANInversesqrt(RtFloat x)
 	if(y - RI_EPSILON > 0.0) {
 		return (RtFloat)(1.0 / y);
 	} else {
-		return (const RtFloat)RI_INFINITY;
+		return (RtFloat)RI_INFINITY;
 	}
 }
 

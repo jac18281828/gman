@@ -30,6 +30,7 @@
 */
 
 /* system headers */
+#include <cstring>
 #include <iostream>
 
 /* gman headers */
