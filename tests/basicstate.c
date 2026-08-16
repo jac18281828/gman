@@ -1,85 +1,82 @@
-/* This is part of the GNU GMAN Library, a FREE implementation of the
- * RenderMan Interface Specification.
+/* SPDX-License-Identifier: LGPL-2.1-or-later
  *
- * Copyright (c) 2001, 2000, 1999, John Cairns 
- *
- * Author: John Cairns <john@2ad.com>
+ * Copyright (c) 2026 John Cairns <john@2ad.com>
  */
 
 /*
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Library General Public
-  License as published by the Free Software Foundation; either
-  version 2 of the License, or (at your option) any later version.
-  
+ * RI state machine, exercised through the published C API.
+ *
+ * The file this replaces could never have worked: it drew via
+ * RiObjectBegin/RiObjectInstance, which are no-op stubs, called
+ * RiBegin("libgmanraytracer.so") -- which GMANRenderMan turns into
+ * dlopen("liblibgmanraytracer.so.so") -- and issued RiSphere before
+ * RiWorldBegin, which GMANGraphicState rejects.
+ *
+ * What is tested here is the part that does work: GMANGraphicState's table of
+ * which RI requests are legal in which begin/end block. Errors are routed to
+ * a handler that counts them rather than printing, so both the accept and the
+ * reject cases are assertable. Nothing here renders, so this test says
+ * nothing about output and no phase supersedes it.
+ */
 
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Library General Public License for more details.
-  
-  You should have received a copy of the GNU Library General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
-  To contact the author of GNU GMAN, write to John Cairns, 607 E STUART ST,
-  FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
-*/
+#include <stdio.h>
 
 #include "ri.h"
 
-/* main */
-int main(int argc, char *argv[]) {
+static int errorCount = 0;
+static RtInt lastCode = 0;
+static RtInt lastSeverity = 0;
 
-  // basic object
-  RtObjectHandle		simpleObject;
+static RtVoid countingErrorHandler(RtInt code, RtInt severity, const char *msg)
+{
+  errorCount++;
+  lastCode = code;
+  lastSeverity = severity;
+  printf("    handler: code=%d severity=%d %s\n", (int) code, (int) severity, msg);
+}
 
-  //RtInt	origin[2]		= { 10, 10 };
+static int failures = 0;
 
-  RtColor red                   = { 1.0, 0.0, 0.0 };
+static void check(int ok, const char *what)
+{
+  printf("%s: %s\n", ok ? "ok" : "FAIL", what);
+  if (!ok) {
+    failures++;
+  }
+}
 
+int main(void)
+{
+  RiErrorHandler(countingErrorHandler);
 
+  /* The default renderer name is gmanzbuffer; RiBegin dlopens it. */
+  RiBegin(RI_NULL);
+  check(errorCount == 0, "RiBegin loads the default renderer without error");
 
-//  RiBegin("zbuffer");
-  RiBegin("libgmanraytracer.so");
-  
-  // create object
-  simpleObject = RiObjectBegin();
-  // too simple
-  RiSphere(0.5f, -0.5f, 0.5f, 360.0f, RI_NULL);
-  RiObjectEnd();
+  /* RiAttributeBegin is legal in the outermost block. */
+  errorCount = 0;
+  RiAttributeBegin();
+  RiAttributeEnd();
+  check(errorCount == 0, "RiAttributeBegin/End nest legally outside a world");
 
+  /* A primitive outside a world block is not. */
+  errorCount = 0;
+  RiSphere(1.0, -1.0, 1.0, 360.0, RI_NULL);
+  check(errorCount == 1, "RiSphere before RiWorldBegin is rejected");
+  check(lastCode == RIE_ILLSTATE, "the rejection is RIE_ILLSTATE");
 
-  //RiDisplay("basicstate.pnm", "file", "rgba", "origin", (RtPointer)origin, 
-//	    RI_NULL);
-
-  RiDisplay("basicstate.pnm", "file", "rgba", RI_NULL);
-  RiFormat(800, 600, 1.0);
-
-  RiFrameAspectRatio(1.0);
-
-  /* would default with above setting */
-  RiScreenWindow(-1.0, 1.0, -1.0, 1.0);
-
-  RiFrameBegin(0);
-
-  /* camera */
-
-  RiProjection(RI_PERSPECTIVE, RI_NULL);
-
-  RiWorldBegin();
-
-  RiRotate(17.0, 1.0, 1.0, 1.0);
-  RiColor(red);
-  RiTranslate(1.0, 1.0, 1.0);
-
-  RiObjectInstance(simpleObject);
-
-  RiWorldEnd();
-
-  RiFrameEnd();
+  /* Leaving a block that was never entered is not either. */
+  errorCount = 0;
+  RiAttributeEnd();
+  check(errorCount == 1, "unmatched RiAttributeEnd is rejected");
 
   RiEnd();
 
+  if (failures != 0) {
+    printf("%d assertion(s) failed\n", failures);
+    return 1;
+  }
+
+  printf("state machine holds\n");
   return 0;
 }

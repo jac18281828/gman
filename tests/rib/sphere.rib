@@ -1,0 +1,6 @@
+Display "sphere.tif" "file" "rgba"
+Format 640 480 1
+Projection "perspective" "fov" [45]
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd
