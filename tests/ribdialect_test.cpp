@@ -89,15 +89,46 @@ int main(int argc, char *argv[]) {
 
   // The corpus test. tests/rib/corpus/menger.rib is real third-party RIB
   // (Aqsis's own example set -- see tests/rib/README), not authored for
-  // this test. Revert step 1 (graceful unknown-request recovery) or step 7
-  // (array parameters, the unbracketed "fov" form Projection here uses) and
-  // this fails.
+  // this test. Revert step 4 (Procedural, which it uses) or step 7 (array
+  // parameters, the "fov" form Projection here uses) and this fails.
+  //
+  // It does NOT exercise step 1: every request menger.rib uses is one GMAN
+  // already recognized, so unknown-request recovery never fires. Step 1 is
+  // covered by the unknownrequest.rib fixture below. An earlier version of
+  // this comment claimed otherwise -- verified false by reverting step 1 and
+  // observing menger.rib still exit 0.
   {
     const std::string corpus = ribDir + "/corpus/menger.rib";
     Result r = run(gman, corpus, /*debug=*/false);
     check(r.exitStatus == 0, "corpus: menger.rib parses to completion, exit 0");
     check(r.output.find("ERROR") == std::string::npos,
 	  "corpus: no error reported");
+  }
+
+  // ReadArchive of a gzip'd child -- steps 5 and 6 composed, which no other
+  // fixture covers (readarchive_test.cpp uses plain files, gzip_test.cpp a
+  // gzip'd top-level file).
+  //
+  // bike.rib reads bikeData.rib.gz. openRibStream decompresses the archive
+  // whole before parsing begins, so reaching any token inside it exercises
+  // all of step 6; TransformBegin is the archive's first request and appears
+  // nowhere in bike.rib itself, which is what makes it evidence rather than
+  // coincidence.
+  //
+  // The run stops shortly after, at Surface "plastic" -- a shader GMAN has
+  // never shipped, a phase-3 gap unrelated to parsing (see tests/rib/README).
+  // So this fixture covers decompression plus the archive's opening requests,
+  // NOT its 5,216 Patch requests. Whoever lands the shader should revisit
+  // this assertion; until then, claiming more would be claiming coverage that
+  // does not exist.
+  {
+    const std::string bike = ribDir + "/corpus/bike.rib";
+    Result r = run(gman, bike, /*debug=*/true);
+    check(r.output.find("Keyword token: ReadArchive") != std::string::npos,
+	  "corpus: bike.rib reaches its ReadArchive");
+    check(r.output.find("Keyword token: TransformBegin") != std::string::npos,
+	  "corpus: the gzip'd archive decompresses and its requests reach the "
+	  "parser");
   }
 
   // Step 1: an unrecognized request -- Bxdf, a RIS-era request GMAN
@@ -113,6 +144,26 @@ int main(int argc, char *argv[]) {
 	  "unknown request: names the request in the warning");
     check(r.output.find("unrecognized requests skipped: Bxdf") != std::string::npos,
 	  "unknown request: reported once more in the end-of-parse summary");
+  }
+
+  // Malformed input, for the error paths. A parameter list that throws
+  // part-built used to strand both the strings already duplicated into the
+  // array and the keys/values the list had accumulated; both are now
+  // released as the stack unwinds.
+  //
+  // What this DOES assert: the fault is detected and named. What it does NOT
+  // assert: leak-freedom. gman runs here as a subprocess, so LeakSanitizer
+  // aborting it is indistinguishable from the non-zero exit this file is
+  // supposed to produce -- the exit-status check would pass either way. Two
+  // known leaks on this path survive and are recorded in SPEC.md S8; gating
+  // on LSan output has to wait until they are closed, or it would just
+  // encode them.
+  {
+    const std::string path = ribDir + "/malformed/stringarray.rib";
+    Result r = run(gman, path, /*debug=*/false);
+    check(r.exitStatus != 0, "malformed: a non-string in a string array fails");
+    check(r.output.find("Non-string in array") != std::string::npos,
+	  "malformed: the diagnostic names the fault");
   }
 
   if (failures != 0) {

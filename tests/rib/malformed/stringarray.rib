@@ -1,0 +1,12 @@
+# A string array with a non-string element. Exercises the error path in
+# TokenVector::toRtTokenArray, which must release the strings it has already
+# duplicated into the array before it throws. gman is expected to fail on
+# this file -- the point is that it fails without leaking, which the ASan +
+# LeakSanitizer CI leg turns into a hard failure.
+Display "malformed_out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Attribute "user" "string tags" ["a" "b" 3]
+Sphere 1 -1 1 360
+WorldEnd

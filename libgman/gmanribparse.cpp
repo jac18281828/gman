@@ -189,12 +189,23 @@ RtVoid  GMANRIBParse::parse(RtVoid) {
 
 RtVoid  GMANRIBParse::parseStream(RtVoid) {
 
+  /* A GMANError thrown out of a request handler -- malformed parameter list,
+   * bad token, unreadable archive -- unwinds past the end of the loop body,
+   * so releasing the pending parameters there would miss every error path.
+   * The guard runs on both. */
+  struct PendingParamGuard {
+    GMANRIBParse *parser;
+    ~PendingParamGuard() { parser->freePendingParams(); }
+  };
+
   while(true) {
     const GMANToken &tok = nextToken();
 
     if (tok.getType() == GMANToken::END_OF_FILE) {
       break;
     }
+
+    PendingParamGuard guard{this};
 
     switch(tok.getType()) {
     case GMANToken::STRING:
@@ -575,8 +586,8 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
     // Whatever this request's own RiXxxV call needed from its parameter
     // list, it took by the time control returns here -- either copied into
     // a GMANParameterList, or (most Ri*V bodies are still stubs) not at
-    // all.
-    freePendingParams();
+    // all. PendingParamGuard releases them as the iteration ends, by either
+    // path.
   }
 
 }
@@ -1946,10 +1957,24 @@ std::unique_ptr<std::istream> GMANRIBParse::openRibStream(const std::string &pat
     throw error;
   }
 
+  /* The whole archive is decompressed into memory, so a small file with a
+   * large expansion ratio would otherwise dictate how much this process
+   * allocates. The cap bounds that: RIB is text, and the largest fixture
+   * here (bikeData.rib.gz, ~5,300 lines) expands to well under a megabyte. */
+  const std::string::size_type maxDecompressed = 512u * 1024u * 1024u;
+
   std::string decompressed;
   char chunk[65536];
   int bytesRead = 0;
   while ((bytesRead = gzread(gz, chunk, sizeof(chunk))) > 0) {
+    if (decompressed.size() + static_cast<std::string::size_type>(bytesRead) >
+	maxDecompressed) {
+      gzclose(gz);
+      GMANError error(RIE_BADFILE, RIE_ERROR,
+		       ("GMANRIBParse: gzip archive \"" + path +
+			"\" exceeds the decompression limit").c_str());
+      throw error;
+    }
     decompressed.append(chunk, static_cast<std::string::size_type>(bytesRead));
   }
 
@@ -1975,6 +2000,11 @@ RtToken* GMANRIBParse::TokenVector::toRtTokenArray() {
   for (unsigned int i = 0; i < size(); i++) {
     const GMANToken &tok = (*this)[i];
     if (tok.getType() != GMANToken::STRING) {
+      /* Slots [0,i) already hold heap-duplicated strings; releasing only the
+       * pointer array would strand every one of them. */
+      for (unsigned int j = 0; j < i; j++) {
+	delete [] array[j];
+      }
       delete [] array;
       throw(GMANError(RIE_SYNTAX, RIE_ERROR, "Non-string in array."));
     }
