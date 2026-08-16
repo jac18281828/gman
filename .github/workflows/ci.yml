@@ -1,16 +1,12 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
-
 name: ci
-
 on:
   push:
     branches: ["**"]
   pull_request:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   build:
     name: ${{ matrix.os }} / ${{ matrix.compiler }}
@@ -27,21 +23,17 @@ jobs:
           - compiler: clang
             cc: clang
             cxx: clang++
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build \
             libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
-
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: brew install cmake libtiff libpng jpeg
-
       # On macOS gcc and g++ are Apple clang wearing a different name, so the
       # gcc leg has to name a real one for the matrix to mean anything.
       - name: Select a genuine gcc (macOS)
@@ -50,47 +42,37 @@ jobs:
           brew install gcc
           echo "CC=$(ls /opt/homebrew/bin/gcc-1* | tail -1)" >> "$GITHUB_ENV"
           echo "CXX=$(ls /opt/homebrew/bin/g++-1* | tail -1)" >> "$GITHUB_ENV"
-
       - name: Select compiler
         if: env.CXX == ''
         run: |
           echo "CC=${{ matrix.cc }}" >> "$GITHUB_ENV"
           echo "CXX=${{ matrix.cxx }}" >> "$GITHUB_ENV"
-
       - name: Configure
         run: cmake --preset dev
-
       - name: Build
         run: cmake --build build --parallel
-
       - name: Test
         run: ctest --test-dir build --output-on-failure
-
       # An observation, not a pass/fail. The assertions live in the baseline
       # ctest case above.
       - name: Runtime baseline
         run: ./build/gman tests/rib/sphere.rib || true
-
   sanitizers:
     name: ubuntu / clang / asan+ubsan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build \
             libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
-
       - name: Configure
         env:
           CC: clang
           CXX: clang++
         run: cmake --preset debug
-
       - name: Build
         run: cmake --build build-debug --parallel
-
       - name: Test
         run: ctest --test-dir build-debug --output-on-failure
