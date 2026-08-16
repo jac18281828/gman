@@ -116,7 +116,7 @@ static RtVoid print (RtInt code, RtInt severity, const char *msg)
 extern "C" {
 #endif
   // Standard Error Handler
-  RtVoid RiErrorIgnore( RtInt cd, RtInt sev, const char *msg)
+  RtVoid RiErrorIgnore( RtInt cd, RtInt /*sev*/, const char */*msg*/)
   {
     RiLastError=cd;
     return;

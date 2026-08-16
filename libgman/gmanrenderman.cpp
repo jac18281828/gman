@@ -104,11 +104,7 @@ RtVoid GMANRenderMan::RiBegin(RtToken name)
   // Load the renderer from a shared object by name
   std::string objectName = "lib";
   objectName += name;
-#ifdef WIN32
-  objectName += ".dll";
-#else
   objectName += ".so";
-#endif
   GMANLoadableRenderer* loadedRenderer =
       new GMANLoadableRenderer(objectName.c_str());
   renderer = loadedRenderer;
@@ -178,17 +174,10 @@ RtVoid GMANRenderMan::RiWorldBegin(RtVoid)
     
   } else {  // type == framebuffer
     // our frame buffer
-#ifdef WIN32
-    output = new GMANOutputWin32( getOptions().
-				  getDisplay().name.c_str(),
-				  ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				  ri.rymax-ri.rymin+1);
-#else
     output = new GMANOutputX11( getOptions().
 				getDisplay().name.c_str(),
 				ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
 				ri.rymax-ri.rymin+1);
-#endif
   }
 
 

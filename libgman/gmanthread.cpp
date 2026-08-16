@@ -26,9 +26,6 @@
   FT COLLINS, CO 80525, USA, or write via E-mail john@2ad.com.
 */
 
-#ifdef WIN32
-#include <windows.h>
-#endif
 
 /* System headers */
 #include <stdlib.h>
@@ -48,139 +45,6 @@
 
 // start routine for C thread functions
 
-#ifdef WIN32
-static unsigned long  __stdcall GMANThreadStart(void *arg);
-
-// default constructor
-GMANThread::GMANThread() : UniversalSuperClass() { 
-	// no initialization required
-};
-
-
-// default destructor 
-GMANThread::~GMANThread() { 
-	// this destructor does not join the
-	// thread the caller must do this
-};
-
-void GMANThread::start(void) {
-  thread=CreateThread(NULL, NULL, GMANThreadStart, (void*)this, 0, &threadId);
-};
-
-
-// stop the thread
-// return: exit code for the thread returned by
-// the 'run' method
-int GMANThread::stop(void) {
-	DWORD exitCd=0;
-	TerminateThread(thread, exitCd);
-
-	return exitCd;
-}
-
-  
-// suspend the running thread
-void GMANThread::suspend(void) {
-	SuspendThread(thread);
-}
-
-// resume the suspended thread
-void GMANThread::resume(void) {
-	ResumeThread(thread);
-}
-
-
-// set the priority to one of the predefined priorities
-void GMANThread::setPriority(Priority pri) {
-	HANDLE accessHdl;
-	OpenThreadToken (
-		thread,
-		THREAD_SET_INFORMATION,
-		false,
-		&accessHdl);
-	switch(pri) {
-	case PRIORITY_NORM:
-		SetThreadPriority(accessHdl, THREAD_PRIORITY_NORMAL);
-		break;
-	case PRIORITY_MIN:
-		SetThreadPriority(accessHdl, THREAD_PRIORITY_LOWEST);
-		break;
-	case PRIORITY_MAX:
-		SetThreadPriority(accessHdl, THREAD_PRIORITY_HIGHEST);
-		break;
-	}
-	CloseHandle(accessHdl);
-}
-
-// return the priority of the currently running thread
-GMANThread::Priority GMANThread::getPriority(void) {
-
-	HANDLE accessHdl;
-	OpenThreadToken (
-		thread,
-		THREAD_QUERY_INFORMATION,
-		false,
-		&accessHdl);
-
-	Priority rc = PRIORITY_NORM;
-	switch(GetThreadPriority(accessHdl)) {
-	case THREAD_PRIORITY_TIME_CRITICAL:
-	case THREAD_PRIORITY_HIGHEST:
-	case THREAD_PRIORITY_ABOVE_NORMAL:
-		rc=PRIORITY_MAX;
-		break;
-	case THREAD_PRIORITY_LOWEST: 
-	case THREAD_PRIORITY_BELOW_NORMAL:
-	case THREAD_PRIORITY_IDLE:
-		rc=PRIORITY_MIN;
-		break;
-	case THREAD_PRIORITY_NORMAL: 
-		rc=PRIORITY_NORM;
-		break;
-	}
-
-	CloseHandle(accessHdl);
-
-	return rc;
-}
-
-// wait for the thread to exit,
-// returns the exit code for the running thread
-int GMANThread::waitForExit(void) {
-	// syncronize with the thread
-	HANDLE accessHdl;
-	OpenThreadToken (
-		thread,
-		SYNCHRONIZE,
-		false,
-		&accessHdl);
-
-	DWORD rc = WaitForSingleObject(accessHdl, 0);
-	CloseHandle(accessHdl);
-
-	if(rc == WAIT_OBJECT_0) {
-		DWORD exitCd;
-		GetExitCodeThread(thread, &exitCd);
-		return exitCd;
-	} 
-
-    // huh, what happened
-	return EXIT_FAILURE;
-}
-
-DWORD __stdcall GMANThreadStart(void *arg) {
-
-    // in our instance, 
-    // arg is a pointer to an object of type GMAN Thread
-
-    GMANThread *threadInst = (GMANThread*)arg;
-
-    return threadInst->run();
-
-}
-
-
-#else
 static void *GMANThreadStart(void *arg);
 
 // default constructor
@@ -282,4 +146,3 @@ void *GMANThreadStart(void *arg) {
 
 }
 
-#endif

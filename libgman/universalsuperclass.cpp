@@ -26,9 +26,6 @@
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
 
-#ifdef WIN32
-#include <string.h>
-#endif
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -179,13 +176,4 @@ void UniversalSuperClass::setLogLevel(LogLevel lvl) {
     logLevel = lvl;
 }
 
-#ifdef WIN32
-bool UniversalSuperClass::operator <(const UniversalSuperClass &usc) const {
-  return (strncmp((const char*)this, (const char*)&usc, sizeof(UniversalSuperClass)) < 0);
-}
-
-bool UniversalSuperClass::operator ==(const UniversalSuperClass &usc) const {
-  return (strncmp((const char*)this, (const char*)&usc, sizeof(UniversalSuperClass)) == 0);
-}
-#endif
 

@@ -331,19 +331,4 @@ void GMANRIBTokenize::consumeWhitespace(std::ifstream &ribFile) const {
   return;
 }
 
-#ifdef WIN32
-  // windows does not provide this fn
-int GMANRIBTokenize::strcasecmp(const char *s1, const char *s2) {
-
-	while(*s1 && *s2) {
-		if(tolower(*s1)!=tolower(*s2)) {
-			return (*s1-*s2);
-		}
-		s1++;
-		s2++;
-	}
-	return 0;
-
-}
-#endif
 

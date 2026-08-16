@@ -27,9 +27,6 @@
 */
 
 /* System Headers */
-#ifdef WIN32
-#include <windows.h>
-#endif
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */

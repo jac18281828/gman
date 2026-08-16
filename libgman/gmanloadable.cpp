@@ -28,12 +28,8 @@
 /*
  * System Headers
  */
-#ifdef WIN32
-#include <windows.h>
-#else
 #ifdef HAVE_LIBDL
 #include <dlfcn.h>
-#endif
 #endif
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
@@ -48,50 +44,6 @@
 
 const char *GMANLoadable::getInfoFncName = "GMANGetLoadableInfo";
 
-#ifdef WIN32
-
-// default constructor
-GMANLoadable::GMANLoadable(const char *path) 
- : UniversalSuperClass(),
-		     object(NULL),
-		     objInfo(NULL)
-{ 
-    object = LoadLibrary(path);
-
-    if(object == NULL) {
-	std::string errorMsg("Unable to open shared object specified by: ");
-	    errorMsg.append(path);
-	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
-    }
-
-    LoadInfoFnc getInfo = (LoadInfoFnc) loadSymbol(getInfoFncName);
-
-    if(getInfo == NULL) {
-	std::string errorMsg("Loadable Info function not found: ");
-	errorMsg.append(getInfoFncName);
-	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
-    }
-    objInfo = getInfo();
-    if(objInfo == NULL) {
-	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "Loadable module missing info data."));
-    }
-
-    // output the info 
-    info("Loaded Module: %s", objInfo->name);
-    info("Author:        %s", objInfo->author);
-    info("Copyright:     %s", objInfo->copyright);
-    info("Description:   %s", objInfo->description);
-};
-// default destructor 
-GMANLoadable::~GMANLoadable() { 
-    if(object) FreeLibrary(object);
-};
-
-RtVoid *GMANLoadable::loadSymbol(const char *symName) {
-    return GetProcAddress(object, symName);
-}
-
-#else
 // default constructor
 GMANLoadable::GMANLoadable(const char *path) 
  : UniversalSuperClass(),
@@ -151,7 +103,6 @@ RtVoid *GMANLoadable::loadSymbol(const char *symName) {
   return NULL;
 #endif
 }
-#endif
 
 // get name of DSO
 const char *GMANLoadable::getName(RtVoid) const {

@@ -32,12 +32,8 @@
 
 
 /* Headers */
-#ifdef WIN32
-#include <windows.h>
-#else
 // this requires posix threads
 #include <pthread.h>
-#endif
 
 // STL
 #include <list>
@@ -57,12 +53,7 @@
 
 class GMAN_EXPORT  GMANThread : public UniversalSuperClass {
 private:
-#ifdef WIN32
-  HANDLE		thread;
-  DWORD			threadId;
-#else
   pthread_t		thread;
-#endif
 public:
 
   // public types

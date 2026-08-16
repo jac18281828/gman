@@ -37,37 +37,6 @@
  *
  */
 
-#ifdef WIN32
-
-// default constructor
-GMANMutex::GMANMutex() { 
-  InitializeCriticalSection(&mutex);
-};
-
-
-// default destructor 
-GMANMutex::~GMANMutex() { 
-  DeleteCriticalSection(&mutex);
-};
-
-
-void GMANMutex::lock(void) {
-  EnterCriticalSection(&mutex);
-}
-
-
-bool GMANMutex::tryLock(void) {
-  if(TryEnterCriticalSection(&mutex)) {
-    return true;
-  }
-  return false;
-}
-
-void GMANMutex::unlock(void) {
-  LeaveCriticalSection(&mutex);
-}
-
-#else
 
 // default constructor
 GMANMutex::GMANMutex() { 
@@ -96,4 +65,3 @@ void GMANMutex::unlock(void) {
   pthread_mutex_unlock(&mutex);
 };
 
-#endif

@@ -260,10 +260,6 @@ private:
 
   void consumeWhitespace(std::ifstream &ribFile) const;
 
-#ifdef WIN32
-  // windows does not provide this fn
-  int strcasecmp(const char *s1, const char *s2);
-#endif
 
 public:
 

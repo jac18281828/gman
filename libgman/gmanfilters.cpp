@@ -37,36 +37,36 @@
  */
 
 
-extern "C" RtFloat   RiGaussianFilter(RtFloat x, RtFloat y,
-				      RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiGaussianFilter(RtFloat /*x*/, RtFloat /*y*/,
+				      RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 {
   return 1.0;
 };
 
 
-extern "C" RtFloat   RiBoxFilter(RtFloat x, RtFloat y,
-				 RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiBoxFilter(RtFloat /*x*/, RtFloat /*y*/,
+				 RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 {
   return 1.0;
 };
 
 
-extern "C" RtFloat   RiTriangleFilter(RtFloat x, RtFloat y,
-				      RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiTriangleFilter(RtFloat /*x*/, RtFloat /*y*/,
+				      RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 {
   return 1.0;
 };
 
 
-extern "C" RtFloat   RiCatmullRomFilter(RtFloat x,RtFloat y,
-					RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiCatmullRomFilter(RtFloat /*x*/,RtFloat /*y*/,
+					RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 {
   return 1.0;
 };
 
 
-extern "C" RtFloat  RiSincFilter(RtFloat x, RtFloat y,
-				 RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat  RiSincFilter(RtFloat /*x*/, RtFloat /*y*/,
+				 RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 {
   return 1.0;
 };

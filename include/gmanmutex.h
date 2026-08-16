@@ -33,12 +33,8 @@
 
 /* Headers */
 
-#ifdef WIN32
-#include <windows.h>
-#else
 // this requires posix threads
 #include <pthread.h>
-#endif
 
 // STL
 #include <list>
@@ -59,11 +55,7 @@
 // since they are used in the logging code
 class GMAN_EXPORT  GMANMutex {
 private:
-#ifdef WIN32
-  CRITICAL_SECTION		mutex;
-#else
   pthread_mutex_t		mutex;
-#endif
 public:
 
   // create a new mutex instance

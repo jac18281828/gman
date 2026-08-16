@@ -32,9 +32,6 @@
 
 
 /* Headers */
-#ifdef WIN32
-#include <windows.h>
-#endif
 
 // STL
 #include <list>
@@ -51,11 +48,7 @@
 
 /* Global loadable object types */
 
-#ifdef WIN32
-typedef HINSTANCE GMANLoadableObjectHandle;
-#else
 typedef RtVoid *GMANLoadableObjectHandle;
-#endif
 
 
 typedef struct {

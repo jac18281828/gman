@@ -97,19 +97,6 @@ class GMAN_EXPORT  UniversalSuperClass {
     // set the current loging level to lvl
     void setLogLevel(LogLevel lvl);
 
-#ifdef WIN32
-	// just about all msvc templates require objects
-	// to provide operator less, even if it is not required,
-	// i.e. list, etc.
-	//
-	// provided here to silence the compiler.
-	//
-	// Bill Gates stop the madness!!!!
-  bool operator <(const UniversalSuperClass &usc) const;
-
-  // same here
-  bool operator ==(const UniversalSuperClass &usc) const;
-#endif
 
   private:
     // log a message to the logfile or terminal
