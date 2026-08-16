@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanface.h" /* Declaration Header */
 #include "gmansurface.h"
 #include "gmanvector.h"
@@ -39,8 +39,7 @@
  */
 
 // default constructor
-GMANFace::GMANFace(GMANVertex **verts, GMANSurface *p) : 
-  UniversalSuperClass(), color() { 
+GMANFace::GMANFace(GMANVertex **verts, GMANSurface *p) : color() { 
   parentSurf = p;
   area = 0.0f;
 

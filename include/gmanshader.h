@@ -35,7 +35,7 @@
 #include <string>
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanparameterlist.h"
 #include "gmandictionary.h"
 
@@ -64,7 +64,7 @@ struct GMANShaderParamInfo
  *
  */
 
-class GMAN_EXPORT  GMANShader : public UniversalSuperClass 
+class GMAN_EXPORT  GMANShader 
 {
 public:
 

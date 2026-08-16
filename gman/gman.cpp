@@ -34,6 +34,7 @@
 #include "ri.h"
 #include "gmanlog.h"
 #include "gmanerror.h"
+#include "gmanrendermanimpl.h"
 #include "gmanribparse.h"
 
 
@@ -50,12 +51,12 @@ int main(int argc, char *argv[]) {
   } else {
     try {
 	   // artificial log object for log settings
-      GMANRenderMan   renderMan;
+      GMANRenderManImpl   renderMan;
 
 	  GMANLog logObj;
       
       // info on by default
-      logObj.setLogLevel(UniversalSuperClass::LOGLVL_INFO);
+      logObj.setLogLevel(LOGLVL_INFO);
       // announce the copyright
       logObj.copyright();
 
@@ -67,25 +68,25 @@ int main(int argc, char *argv[]) {
 	    (argv[arg][0] == '-')) {
 	  switch(argv[arg][1]) {
 	      case 'd':
-		  logObj.setLogLevel(UniversalSuperClass::LOGLVL_DEBUG);
+		  logObj.setLogLevel(LOGLVL_DEBUG);
 		  break;
 	      case 'e':
-		  logObj.setLogLevel(UniversalSuperClass::LOGLVL_ERROR);
+		  logObj.setLogLevel(LOGLVL_ERROR);
 		  break;
 	      case 'h':
 		  usage(argv[0]);
 		  exit(EXIT_SUCCESS);
 	      case 'i':
-		  logObj.setLogLevel(UniversalSuperClass::LOGLVL_INFO);
+		  logObj.setLogLevel(LOGLVL_INFO);
 		  break;
 	      case 'l':
 		  writeLog=true;
 		  break;
 	      case 'q':
-		  logObj.setLogLevel(UniversalSuperClass::LOGLVL_DISASTER);
+		  logObj.setLogLevel(LOGLVL_DISASTER);
 		  break;
 	      case 'w':
-		  logObj.setLogLevel(UniversalSuperClass::LOGLVL_WARNING);
+		  logObj.setLogLevel(LOGLVL_WARNING);
 		  break;
 	  }
 	  arg++;
@@ -94,7 +95,7 @@ int main(int argc, char *argv[]) {
       for(int i=arg; i<argc; i++) {
 	  try {
 	      const char *ribFile = argv[i];
-	      logObj.info("Parsing %s", argv[i]);
+	      info("Parsing %s", argv[i]);
 	      
 	      if(writeLog) {
 		  char *fileName = new char[strlen(ribFile) + 4];

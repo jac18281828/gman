@@ -33,7 +33,7 @@
 
 /* Headers */
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmantypes.h"
 #include "gmanpoint.h"
 
@@ -46,7 +46,7 @@
  *
  */
 
-class GMAN_EXPORT  GMANVector : public UniversalSuperClass
+class GMAN_EXPORT  GMANVector
 {
   public:
     // public type

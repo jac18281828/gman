@@ -33,7 +33,7 @@
 
 /* Headers */
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "gmantypes.h"

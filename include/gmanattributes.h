@@ -29,7 +29,7 @@
 
 #include <string>
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 
 #include "gmanshader.h"
 #include "gmanlightsourceshader.h"
@@ -63,7 +63,7 @@ struct GMAN_EXPORT GMANGeometricApproximation {
   RtFloat value;
 };
 
-class GMAN_EXPORT GMANAttributes : public UniversalSuperClass
+class GMAN_EXPORT GMANAttributes
 {
 private:
   /* SHADING ATTRIBUTES */

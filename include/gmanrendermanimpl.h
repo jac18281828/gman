@@ -1,9 +1,11 @@
-/*----------------------------------------------------------
-  Copyright (C) Lionel Joseph Lacour 2000, 2001
-  February 2001 First release
-  ----------------------------------------------------------
-  ASCII output
-*/
+/* This is part of the GNU GMAN Library, a FREE implementation of the
+ * RenderMan Interface Specification.
+ *
+ * Copyright (c) 2001, 2000, 1999 John Cairns 
+ *
+ * Author: John Cairns <john@2ad.com>
+ */
+
 /*
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Library General Public
@@ -23,51 +25,103 @@
   To contact the author of GNU GMAN, write to John Cairns, 607 E STUART ST, 
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
-#ifndef __GMANASCII_H
-#define __GMANASCII_H 1
+ 
 
-#include <fstream>
+#ifndef __GMAN_RENDERMANIMPL_H
+#define __GMAN_RENDERMANIMPL_H 1
 
+
+/* Headers */
+
+// renderman interface
+#include "ri.h"
+// logging
+#include "gmanlog.h"
+
+// the frame buffer
+#include "gmanframebuffer.h"
+// the gman object manager
+#include "gmanobjectmanager.h"
+// the rendering system
+#include "gmanrenderer.h"
+// the viewing system
+#include "gmanviewingsystem.h"
+// the output object
+#include "gmanoutput.h"
+// the token dictionary
+#include "gmandictionary.h"
+// the graphic state manager
+#include "gmangraphicstate.h"
+// the abstract RI backend interface this implements
 #include "gmanrenderman.h"
 
-class GMAN_EXPORT GMANASCII : public GMANRenderMan
-{
- protected:
-  std::ofstream  out;
-  RtVoid  printArray (RtInt n, RtInt *p);
-  RtVoid  printArray (RtInt n, RtFloat *p);
-  RtVoid  printToken (RtToken t);
-  RtVoid  printCharP (const char *c);
-  RtVoid  printPL    (RtInt n, RtToken tokens[], RtPointer parms[],
-		      RtInt vertex=1, RtInt varying=1, RtInt uniform=1);
- public:
+
+
+/*
+ * RenderMan API RiRenderMan
+ *
+ * The Renderman object supporting the primary interface from the
+ * underlying rendering system to the RenderMan API
+ *
+ */
+
+// renderman is an instance of the graphics state machine
+class GMAN_EXPORT  GMANRenderManImpl : public GMANRenderMan,
+				       protected GMANGraphicState {
+private:
+  // the renderer that computes the lighting model and 
+  // simulates the environment
+  GMANRenderer *                        renderer;
+
+  // the object manager that stores the objects in the environment
+  GMANObjectManager *                   objectManager;
+
+  // world manager
+  GMANWorldManager *                    worldManager;
+
+  // Viewing system
+  GMANViewingSystem *                   viewingSystem;
+
+  GMANOutput *				output;
+public:
+  GMANRenderManImpl(); // default constructor  
+  ~GMANRenderManImpl(); // default destructor
+
+
+  /* Declare Shading Language variable */
   RtToken RiDeclare(const char *name, const char *declaration);
 
   /* RenderMan State machine */
-  RtVoid  RiBegin(RtToken name);  
-  RtVoid  RiEnd();
+  RtVoid	RiBegin(RtToken name);
+  RtVoid        RiEnd(RtVoid);
 
-  RtVoid  RiFrameBegin(RtInt frame);  
-  RtVoid  RiFrameEnd();
+  // begin single frame, number frame
+  RtVoid        RiFrameBegin(RtInt frame);
+  RtVoid        RiFrameEnd(RtVoid);
 
-  RtVoid  RiWorldBegin();  
-  RtVoid  RiWorldEnd();
+  // begin world (declaration of objects)
+  RtVoid	RiWorldBegin(RtVoid);
+  RtVoid        RiWorldEnd(RtVoid);
 
-  RtObjectHandle RiObjectBegin();
-  RtVoid  RiObjectEnd();  
+  // create a new object 
+  RtObjectHandle RiObjectBegin(RtVoid);
+
+  // commit the most recently created object
+  RtVoid RiObjectEnd(RtVoid);
+  
   RtVoid  RiObjectInstance(RtObjectHandle handle);
 
-  RtVoid  RiAttributeBegin();  
-  RtVoid  RiAttributeEnd();
+  RtVoid  RiAttributeBegin(RtVoid);
+  RtVoid  RiAttributeEnd(RtVoid);
 
-  RtVoid  RiTransformBegin(RtVoid);  
+  RtVoid  RiTransformBegin(RtVoid);
   RtVoid  RiTransformEnd(RtVoid);
 
   RtVoid  RiSolidBegin(RtToken operation);
-  RtVoid  RiSolidEnd(RtVoid);
-  
+  RtVoid  RiSolidEnd(RtVoid) ;
+
   RtVoid  RiMotionBeginV(RtInt n, RtFloat times[]);
-  RtVoid  RiMotionEnd(RtVoid);
+  RtVoid  RiMotionEnd(RtVoid) ;
 
 
   /* CAMERA OPTIONS */
@@ -104,7 +158,7 @@ class GMAN_EXPORT GMANASCII : public GMANRenderMan
 			       RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4);
   RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
   RtLightHandle RiAreaLightSourceV(RtToken name,
-				RtInt n, RtToken tokens[], RtPointer parms[]);
+				   RtInt n, RtToken tokens[], RtPointer parms[]);
   RtVoid  RiIlluminate(RtLightHandle light, RtBoolean onoff);
   RtVoid  RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
   RtVoid  RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
@@ -119,7 +173,8 @@ class GMAN_EXPORT GMANASCII : public GMANRenderMan
   RtVoid  RiDetail(RtBound);
   RtVoid  RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis);
   RtVoid  RiGeometricApproximation(RtToken type, RtFloat value);
-  RtVoid  RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep);
+  RtVoid  RiBasis(RtBasis ubasis, RtInt ustep, 
+		  RtBasis vbasis, RtInt vstep);
   RtVoid  RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[],
 		      RtFloat knot[], RtFloat min[], RtFloat max[], RtInt n[],
 		      RtFloat u[], RtFloat v[], RtFloat w[]);
@@ -154,8 +209,8 @@ class GMAN_EXPORT GMANASCII : public GMANRenderMan
   RtVoid  RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[],
 			    RtInt n, RtToken tokens[], RtPointer parms[]);
   RtVoid  RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[],
-				   RtInt verts[], RtInt n, RtToken tokens[], 
-				   RtPointer parms[]);
+				  RtInt verts[], RtInt n, RtToken tokens[], 
+				  RtPointer parms[]);
   RtVoid  RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]);
   RtVoid  RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
 		       RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[], 
@@ -206,6 +261,9 @@ class GMAN_EXPORT GMANASCII : public GMANRenderMan
   RtVoid  RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken twrap,
 			 RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
 			 RtInt n, RtToken tokens[], RtPointer parms[]);
+  /* ERROR HANDLER */
+  RtVoid  RiErrorHandler(RtErrorHandler handler);
+
   RtVoid  RiMakeBumpV(char *pic, char *tex, RtToken swrap, RtToken twrap,
 		      RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
 		      RtInt n, RtToken tokens[], RtPointer parms[]);
@@ -220,8 +278,8 @@ class GMAN_EXPORT GMANASCII : public GMANRenderMan
   RtVoid  RiMakeShadowV(char *pic, char *tex,
 			RtInt n, RtToken tokens[], RtPointer parms[]);
 
-  /* ERROR HANDLER */
-  RtVoid  RiErrorHandler (RtErrorHandler handler);
 };
 
+
 #endif
+

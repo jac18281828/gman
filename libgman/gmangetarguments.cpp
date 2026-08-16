@@ -35,12 +35,11 @@ RtVoid GMANGetArguments(va_list args, RtInt n, RtToken *token, RtPointer *parms)
 RtInt GMANCountArguments (va_list args)
 {
   RtToken t;
-  RtPointer p;
   int n=0;
   t=va_arg(args,RtToken);
   while (t!=RI_NULL) {
     n++;
-    p=va_arg(args,RtPointer);
+    (void) va_arg(args,RtPointer);
     t=va_arg(args,RtToken);
   }
   return n;

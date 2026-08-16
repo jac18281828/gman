@@ -30,7 +30,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanrenderer.h" /* Declaration Header */
 
 
@@ -40,7 +40,7 @@
  */
 
 // default constructor
-GMANRenderer::GMANRenderer() : UniversalSuperClass() { };
+GMANRenderer::GMANRenderer() { };
 
 
 // default destructor 

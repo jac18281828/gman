@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanworldmanager.h" /* Declaration Header */
 
 
@@ -38,7 +38,7 @@
  */
 
 // default constructor
-GMANWorldManager::GMANWorldManager() : UniversalSuperClass() { };
+GMANWorldManager::GMANWorldManager() { };
 
 
 // default destructor 

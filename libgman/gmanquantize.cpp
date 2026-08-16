@@ -30,7 +30,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanquantize.h" /* Declaration Header */
 
 
@@ -44,9 +44,7 @@ GMANQuantize::GMANQuantize(DisplayMode md,
 			   RtInt oneMap,
 			   RtInt mn,
 			   RtInt mx,
-			   RtFloat ditheramp) : 
-    UniversalSuperClass(),
-    mode(md),
+			   RtFloat ditheramp) : mode(md),
     one(oneMap),
     minVal(mn),
     maxVal(mx),

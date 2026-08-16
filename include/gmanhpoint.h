@@ -28,7 +28,7 @@
 #define __GMANHPOINT_H 1
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanpoint.h"
 
 

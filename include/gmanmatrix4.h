@@ -30,13 +30,13 @@
 #define __GMANMATRIX4_H 1
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanerror.h"
 
 class GMANVector;
 
-class GMAN_EXPORT  GMANMatrix4 : public UniversalSuperClass
+class GMAN_EXPORT  GMANMatrix4
 {
   private:
     RtMatrix mtrx;

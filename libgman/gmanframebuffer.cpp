@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanframebuffer.h" /* Declaration Header */
 
 

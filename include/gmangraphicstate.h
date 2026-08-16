@@ -41,13 +41,13 @@
 #include "gmanerror.h"
 
 
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 
 #include "gmanoptions.h"
 #include "gmanattributes.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT  GMANGraphicState : public UniversalSuperClass
+class GMAN_EXPORT  GMANGraphicState
 {
 public:
   // public types

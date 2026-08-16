@@ -44,7 +44,7 @@
 
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 
 #include "gmanframebuffer.h"
 #include "gmanworldmanager.h"
@@ -71,7 +71,7 @@
  *
  */
 
-class GMAN_EXPORT  GMANRenderer : public UniversalSuperClass
+class GMAN_EXPORT  GMANRenderer
 {
  protected:
   bool lightBeams (GMANPoint pos1, GMANVector axis1, RtFloat angle1,

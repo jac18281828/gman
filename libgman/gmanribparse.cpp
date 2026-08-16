@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanribparse.h" /* Declaration Header */
 
 /*
@@ -47,9 +47,7 @@ RtToken   *GMANRIBParse::KeywordTable=NULL;
 GMANRIBParse::GMANRIBParse(GMANRenderMan *renderman,
 			   const char *rib,
 			   RtToken name) 
- : 
-  UniversalSuperClass(), 
-  handlersRegistered(false),
+ : handlersRegistered(false),
   renderMan(renderman),
   ribFile(rib)
 { 

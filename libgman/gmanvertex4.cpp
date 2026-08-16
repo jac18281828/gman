@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanvertex4.h" /* Declaration Header */
 
 
@@ -38,7 +38,7 @@
  */
 
 // default constructor
-GMANVertex4::GMANVertex4() : UniversalSuperClass() { };
+GMANVertex4::GMANVertex4() { };
 
 
 // default destructor 

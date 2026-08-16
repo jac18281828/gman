@@ -31,12 +31,12 @@
 #include <string>
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmantypes.h"
 
 typedef GMANUInt GMANTokenId;
 
-class GMAN_EXPORT  GMANTokenEntry : public UniversalSuperClass
+class GMAN_EXPORT  GMANTokenEntry
 {
 	// public types
 public:
@@ -85,7 +85,7 @@ public:
 
 
 
-class GMAN_EXPORT GMANDictionary : public UniversalSuperClass
+class GMAN_EXPORT GMANDictionary
 {
 private:
 	std::vector<GMANTokenEntry> te;

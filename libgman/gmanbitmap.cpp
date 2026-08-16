@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanbitmap.h" /* Declaration Header */
 #include "gmancolor.h"
 #include "gmandefaults.h"
@@ -39,7 +39,7 @@
  */
 
 // default constructor
-GMANBitmap::GMANBitmap() : UniversalSuperClass(), background(DefaultBGColor) { 
+GMANBitmap::GMANBitmap() : background(DefaultBGColor) { 
   pixels = NULL;
   nPixels = 0;
   xres = 0;

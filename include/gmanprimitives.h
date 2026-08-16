@@ -33,7 +33,7 @@
 #include "gmanattributes.h"
 #include "gmantransform.h"
 #include "gmansegment.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanprimitive.h"
 

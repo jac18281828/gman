@@ -29,10 +29,10 @@
 #define __GMANCOLORSAMPLES_H
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmandefaults.h"
 
-class GMAN_EXPORT GMANColorSamples : public UniversalSuperClass
+class GMAN_EXPORT GMANColorSamples
 {
 private:
   int *counter;

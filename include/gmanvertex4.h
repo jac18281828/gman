@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 #include "gmanvector4.h"
 #include "gmansurface.h"
 #include "gmancolor.h"
@@ -52,7 +52,7 @@
  *
  */
 
-class GMAN_EXPORT  GMANVertex4 : public UniversalSuperClass {
+class GMAN_EXPORT  GMANVertex4 {
 private:
   GMANColor	color;
   GMANAlpha	alpha;

@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanbody.h" /* Declaration Header */
 #include "gmansurface.h"
 
@@ -39,8 +39,7 @@
  */
 
 // default constructor
-GMANBody::GMANBody(const GMANColor &ref, const GMANColor &emit) :
-  UniversalSuperClass() { 
+GMANBody::GMANBody(const GMANColor &ref, const GMANColor &emit) { 
   reflectance = ref;
   emittance = emit;
 

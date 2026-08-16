@@ -29,12 +29,12 @@
 #define __GMANBASIS_H 1
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanhpoint.h"
 
-class GMAN_EXPORT GMANBasis : public UniversalSuperClass
+class GMAN_EXPORT GMANBasis
 {
 private:
   GMANMatrix4 uBasis;

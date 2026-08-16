@@ -29,12 +29,12 @@
 
 #include <string>
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmandictionary.h"
 #include "gmanerror.h"
 
 
-class GMAN_EXPORT  GMANParameterList : public UniversalSuperClass
+class GMAN_EXPORT  GMANParameterList
 {
 private:
   RtInt *counter;

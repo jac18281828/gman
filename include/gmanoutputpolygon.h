@@ -42,8 +42,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmancolor.h"
 #include "gmanvertex.h"
@@ -54,7 +54,7 @@
  *
  */
 
-class GMAN_EXPORT  GMANOutVertex : public UniversalSuperClass // Output Vertex
+class GMAN_EXPORT  GMANOutVertex // Output Vertex
 { 
   private:
     GMANColor color;
@@ -80,7 +80,7 @@ class GMAN_EXPORT  GMANOutVertex : public UniversalSuperClass // Output Vertex
 };
 
 
-class GMAN_EXPORT  GMANOutputPolygon : public UniversalSuperClass {
+class GMAN_EXPORT  GMANOutputPolygon {
 private:
 
   std::vector<GMANOutVertex> vertexVec; // output array

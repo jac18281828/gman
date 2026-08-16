@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // standard types
 #include "gmantypes.h"
 // math helpers
@@ -57,7 +57,7 @@
  */
 
 template <class SampleType>
-class GMAN_EXPORT GMANColorBase : public UniversalSuperClass {
+class GMAN_EXPORT GMANColorBase {
 public:
   typedef	SampleType	ColorSampleType;
 protected:
@@ -67,12 +67,12 @@ protected:
   SampleType		b; // blue
   
 public:
-  GMANColorBase() : UniversalSuperClass() { }; // default constructor
+  GMANColorBase() { }; // default constructor
 
   // set each of the color values on construction
   GMANColorBase(SampleType rval, 
 		SampleType gval,
-		SampleType bval) : UniversalSuperClass() {
+		SampleType bval) {
     
     r = rval;
     g = gval;
@@ -80,7 +80,7 @@ public:
     
   };
 
-  GMANColorBase(SampleType sval) : UniversalSuperClass() {
+  GMANColorBase(SampleType sval) {
     r = g = b = sval;
   };
 

@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanpolygonclipper.h" /* Declaration Header */
 #include "gmanviewingsystem.h"
 
@@ -39,7 +39,7 @@
  */
 
 // default constructor
-GMANPolygonClipper::GMANPolygonClipper() : UniversalSuperClass() { 
+GMANPolygonClipper::GMANPolygonClipper() { 
   GMANVector4 vec;
 
   pclip = &(clipper[GMANFRONT]);

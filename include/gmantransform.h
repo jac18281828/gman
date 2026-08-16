@@ -30,9 +30,9 @@
 #include "ri.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 
-class GMAN_EXPORT  GMANMatrixStorage : public UniversalSuperClass
+class GMAN_EXPORT  GMANMatrixStorage
 {
 public:
   virtual ~GMANMatrixStorage();
@@ -73,7 +73,7 @@ public:
 };
 
 
-class GMAN_EXPORT GMANTransform : public UniversalSuperClass
+class GMAN_EXPORT GMANTransform
 {
 private:
   GMANMatrixStorage *storage;

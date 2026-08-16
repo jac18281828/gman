@@ -6,6 +6,8 @@
  * Author: John Cairns <john@2ad.com>
  */
 
+/* LJL - Feb 2001 - Modifications for libgmanrib */
+
 /*
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Library General Public
@@ -32,249 +34,226 @@
 
 
 /* Headers */
+#include <stack>
 
-// renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
-
-// the frame buffer
-#include "gmanframebuffer.h"
-// the gman object manager
-#include "gmanobjectmanager.h"
-// the rendering system
-#include "gmanrenderer.h"
-// the viewing system
-#include "gmanviewingsystem.h"
-// the output object
-#include "gmanoutput.h"
-// the token dictionary
 #include "gmandictionary.h"
-// the graphic state manager
-#include "gmangraphicstate.h"
+
+class GMAN_EXPORT GMANRenderMan
+{
+protected:
+  GMANDictionary dictionary;
 
 
+  RtInt colorNComps;
+  RtInt lastObjectHandle;
+  RtInt lastLightHandle;
 
-/*
- * RenderMan API RiRenderMan
- *
- * The Renderman object supporting the primary interface from the
- * underlying rendering system to the RenderMan API
- *
- */
+  struct Steps
+  {
+    RtInt uStep;
+    RtInt vStep;
+  };
+  std::stack<Steps> steps;
 
-// renderman is an instance of the graphics state machine
-class GMAN_EXPORT  GMANRenderMan : protected GMANGraphicState {
-private:
-  // the renderer that computes the lighting model and 
-  // simulates the environment
-  GMANRenderer *                        renderer;
-
-  // the object manager that stores the objects in the environment
-  GMANObjectManager *                   objectManager;
-
-  // world manager
-  GMANWorldManager *                    worldManager;
-
-  // Viewing system
-  GMANViewingSystem *                   viewingSystem;
-
-  // the token dictionary
-  GMANDictionary                        dictionary;
-
-  GMANOutput *				output;
 public:
-  GMANRenderMan(); // default constructor  
-  ~GMANRenderMan(); // default destructor
+  GMANRenderMan();
+  virtual ~GMANRenderMan();
+
+  RtVoid push();
+  RtVoid pop();
+
+  RtToken        Declare(const char *name, const char *declaration);
+  RtVoid         ColorSamples(RtInt n);
+  RtLightHandle  LightSource();
+  RtLightHandle  AreaLightSource();
+  RtVoid         Basis(RtInt u, RtInt v);
+  RtObjectHandle ObjectBegin();
 
 
   /* Declare Shading Language variable */
-  RtToken RiDeclare(const char *name, const char *declaration);
+  virtual RtToken RiDeclare(const char *name, const char *declaration)=0;
 
   /* RenderMan State machine */
-  RtVoid	RiBegin(RtToken name);
-  RtVoid        RiEnd(RtVoid);
+  virtual RtVoid  RiBegin(RtToken name)=0;
+  virtual RtVoid  RiEnd(RtVoid)=0;
 
-  // begin single frame, number frame
-  RtVoid        RiFrameBegin(RtInt frame);
-  RtVoid        RiFrameEnd(RtVoid);
+  /* begin single frame, number frame */
+  virtual RtVoid  RiFrameBegin(RtInt frame)=0;
+  virtual RtVoid  RiFrameEnd(RtVoid)=0;
 
-  // begin world (declaration of objects)
-  RtVoid	RiWorldBegin(RtVoid);
-  RtVoid        RiWorldEnd(RtVoid);
+  /* begin world (declaration of objects) */
+  virtual RtVoid  RiWorldBegin(RtVoid)=0;
+  virtual RtVoid  RiWorldEnd(RtVoid)=0;
 
-  // create a new object 
-  RtObjectHandle RiObjectBegin(RtVoid);
+  virtual RtObjectHandle RiObjectBegin(RtVoid)=0;
+  virtual RtVoid  RiObjectEnd(RtVoid)=0;
+  virtual RtVoid  RiObjectInstance(RtObjectHandle handle)=0;
 
-  // commit the most recently created object
-  RtVoid RiObjectEnd(RtVoid);
-  
-  RtVoid  RiObjectInstance(RtObjectHandle handle);
+  virtual RtVoid  RiAttributeBegin(RtVoid)=0;
+  virtual RtVoid  RiAttributeEnd(RtVoid)=0;
 
-  RtVoid  RiAttributeBegin(RtVoid);
-  RtVoid  RiAttributeEnd(RtVoid);
+  virtual RtVoid  RiTransformBegin(RtVoid)=0;
+  virtual RtVoid  RiTransformEnd(RtVoid)=0;
 
-  RtVoid  RiTransformBegin(RtVoid);
-  RtVoid  RiTransformEnd(RtVoid);
+  virtual RtVoid  RiSolidBegin(RtToken operation)=0;
+  virtual RtVoid  RiSolidEnd(RtVoid)=0;
 
-  RtVoid  RiSolidBegin(RtToken operation);
-  RtVoid  RiSolidEnd(RtVoid) ;
-
-  RtVoid  RiMotionBeginV(RtInt n, RtFloat times[]);
-  RtVoid  RiMotionEnd(RtVoid) ;
+  virtual RtVoid  RiMotionBeginV(RtInt n, RtFloat times[])=0;
+  virtual RtVoid  RiMotionEnd(RtVoid)=0;
 
 
   /* CAMERA OPTIONS */
-  RtVoid  RiFormat (RtInt xres, RtInt yres, RtFloat aspect);
-  RtVoid  RiFrameAspectRatio (RtFloat aspect);
-  RtVoid  RiScreenWindow (RtFloat left, RtFloat right, RtFloat bot, RtFloat top);
-  RtVoid  RiCropWindow (RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax);
-  RtVoid  RiProjectionV (RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiClipping(RtFloat hither, RtFloat yon);
-  RtVoid  RiDepthOfField (RtFloat fstop, RtFloat focallength, RtFloat focaldistance);
-  RtVoid  RiShutter(RtFloat min, RtFloat max);
+  virtual RtVoid  RiFormat (RtInt xres, RtInt yres, RtFloat aspect)=0;
+  virtual RtVoid  RiFrameAspectRatio (RtFloat aspect)=0;
+  virtual RtVoid  RiScreenWindow (RtFloat left, RtFloat right, RtFloat bot, RtFloat top)=0;
+  virtual RtVoid  RiCropWindow (RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax)=0;
+  virtual RtVoid  RiProjectionV (RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiClipping(RtFloat hither, RtFloat yon)=0;
+  virtual RtVoid  RiDepthOfField (RtFloat fstop, RtFloat focallength, RtFloat focaldistance)=0;
+  virtual RtVoid  RiShutter(RtFloat min, RtFloat max)=0;
 
   /* DISPLAY OPTIONS */
-  RtVoid  RiPixelVariance(RtFloat variation);
-  RtVoid  RiPixelSamples(RtFloat xsamples, RtFloat ysamples);
-  RtVoid  RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth);
-  RtVoid  RiExposure(RtFloat gain, RtFloat gamma);
-  RtVoid  RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl);
-  RtVoid  RiDisplayV(char *name, RtToken type, RtToken mode,
-		     RtInt n, RtToken tokens[], RtPointer parms[]);
+  virtual RtVoid  RiPixelVariance(RtFloat variation)=0;
+  virtual RtVoid  RiPixelSamples(RtFloat xsamples, RtFloat ysamples)=0;
+  virtual RtVoid  RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth)=0;
+  virtual RtVoid  RiExposure(RtFloat gain, RtFloat gamma)=0;
+  virtual RtVoid  RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl)=0;
+  virtual RtVoid  RiDisplayV(char *name, RtToken type, RtToken mode,
+			     RtInt n, RtToken tokens[], RtPointer parms[])=0;
 
   /* ADDITIONAL OPTIONS */
-  RtVoid  RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]);
-  RtVoid  RiRelativeDetail(RtFloat relativedetail);
-  RtVoid  RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
+  virtual RtVoid  RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[])=0;
+  virtual RtVoid  RiRelativeDetail(RtFloat relativedetail)=0;
+  virtual RtVoid  RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
 
 
   /* SHADING ATTRIBUTES */
-  RtVoid  RiColor(RtColor color);
-  RtVoid  RiOpacity(RtColor color);
-  RtVoid  RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2,
-			       RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4);
-  RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtLightHandle RiAreaLightSourceV(RtToken name,
-				   RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiIlluminate(RtLightHandle light, RtBoolean onoff);
-  RtVoid  RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiShadingRate(RtFloat size);
-  RtVoid  RiShadingInterpolation(RtToken type);
-  RtVoid  RiMatte(RtBoolean onoff);
+  virtual RtVoid  RiColor(RtColor color)=0;
+  virtual RtVoid  RiOpacity(RtColor color)=0;
+  virtual RtVoid  RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2,
+				       RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4)=0;
+  virtual RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtLightHandle RiAreaLightSourceV(RtToken name,
+					   RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiIlluminate(RtLightHandle light, RtBoolean onoff)=0;
+  virtual RtVoid  RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiShadingRate(RtFloat size)=0;
+  virtual RtVoid  RiShadingInterpolation(RtToken type)=0;
+  virtual RtVoid  RiMatte(RtBoolean onoff)=0;
 
   /* GEOMETRY ATTRIBUTES */
-  RtVoid  RiBound(RtBound);
-  RtVoid  RiDetail(RtBound);
-  RtVoid  RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis);
-  RtVoid  RiGeometricApproximation(RtToken type, RtFloat value);
-  RtVoid  RiBasis(RtBasis ubasis, RtInt ustep, 
-		  RtBasis vbasis, RtInt vstep);
-  RtVoid  RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[],
-		      RtFloat knot[], RtFloat min[], RtFloat max[], RtInt n[],
-		      RtFloat u[], RtFloat v[], RtFloat w[]);
-  RtVoid  RiOrientation(RtToken orientation);
-  RtVoid  RiReverseOrientation(RtVoid);
-  RtVoid  RiSides(RtInt sides);
-  RtVoid  RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
+  virtual RtVoid  RiBound(RtBound)=0;
+  virtual RtVoid  RiDetail(RtBound)=0;
+  virtual RtVoid  RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis)=0;
+  virtual RtVoid  RiGeometricApproximation(RtToken type, RtFloat value)=0;
+  virtual RtVoid  RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep)=0;
+  virtual RtVoid  RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[],
+			      RtFloat knot[], RtFloat min[], RtFloat max[], RtInt n[],
+			      RtFloat u[], RtFloat v[], RtFloat w[])=0;
+  virtual RtVoid  RiOrientation(RtToken orientation)=0;
+  virtual RtVoid  RiReverseOrientation(RtVoid)=0;
+  virtual RtVoid  RiSides(RtInt sides)=0;
+  virtual RtVoid  RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
 
   /* TRANSFORMATIONS */
-  RtVoid  RiIdentity(RtVoid);
-  RtVoid  RiTransform(RtMatrix transform);
-  RtVoid  RiConcatTransform(RtMatrix transform);
-  RtVoid  RiPerspective(RtFloat fov);
-  RtVoid  RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz);
-  RtVoid  RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz);
-  RtVoid  RiScale(RtFloat sx, RtFloat sy, RtFloat sz);
-  RtVoid  RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1,
-		 RtFloat dx2, RtFloat dy2, RtFloat dz2);
-  RtVoid  RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiCoordinateSystem(RtToken space);
-  RtVoid  RiCoordSysTransform(RtToken space);
+  virtual RtVoid  RiIdentity(RtVoid)=0;
+  virtual RtVoid  RiTransform(RtMatrix transform)=0;
+  virtual RtVoid  RiConcatTransform(RtMatrix transform)=0;
+  virtual RtVoid  RiPerspective(RtFloat fov)=0;
+  virtual RtVoid  RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz)=0;
+  virtual RtVoid  RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz)=0;
+  virtual RtVoid  RiScale(RtFloat sx, RtFloat sy, RtFloat sz)=0;
+  virtual RtVoid  RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1,
+			 RtFloat dx2, RtFloat dy2, RtFloat dz2)=0;
+  virtual RtVoid  RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiCoordinateSystem(RtToken space)=0;
+  virtual RtVoid  RiCoordSysTransform(RtToken space)=0;
+  virtual RtPoint *RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n,
+				     RtPoint points[])=0;
 
-  RtPoint *RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n,
-			     RtPoint points[]);
-
-  RtVoid  RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
+  virtual RtVoid  RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])=0;
 
   /* PRIMITIVES */
-  RtVoid  RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n,
-			    RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[],
-			    RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[],
-				  RtInt verts[], RtInt n, RtToken tokens[], 
-				  RtPointer parms[]);
-  RtVoid  RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
-		       RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[], 
-		       RtPointer parms[]);
-  RtVoid  RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
-		     RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
-		     RtFloat vmin, RtFloat vmax,
-		     RtInt n, RtToken tokens[], RtPointer parms[]);
+  virtual RtVoid  RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n,
+				    RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[],  RtInt n,
+				    RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[],
+					   RtInt verts[], RtInt n, RtToken tokens[], 
+					   RtPointer parms[])=0;
+  virtual RtVoid  RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
+			       RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[], 
+			       RtPointer parms[])=0;
+  virtual RtVoid  RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
+			     RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
+			     RtFloat vmin, RtFloat vmax,
+			     RtInt n, RtToken tokens[], RtPointer parms[])=0;
   
-  RtVoid  RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-		    RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiConeV(RtFloat height, RtFloat radius, RtFloat tmax,
-		  RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-		      RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax,
-			 RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-			RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax,
-		  RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiTorusV(RtFloat majrad,RtFloat minrad,RtFloat phimin,RtFloat phimax,
-		   RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]);
+  virtual RtVoid  RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+			    RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiConeV(RtFloat height, RtFloat radius, RtFloat tmax,
+			  RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+			      RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax,
+				 RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+				RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax,
+			  RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiTorusV(RtFloat majrad,RtFloat minrad,RtFloat phimin,RtFloat phimax,
+			   RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[])=0;
   
-  RtVoid  RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[],
-		    RtInt nflt, RtFloat flt[],
-		    RtInt nstr, RtToken str[], 
-		    RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiPointsV(RtInt npoints,
-		    RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiCurvesV(RtToken type, RtInt ncurves,
-		    RtInt nvertices[], RtToken wrap,
-		    RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[],
-			     RtInt verts[],
-			     RtInt ntags, RtToken tags[], RtInt numargs[],
-			     RtInt intargs[], RtFloat floatargs[],
-			     RtInt n, RtToken tokens[], RtPointer parms[]);
+  virtual RtVoid  RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[],
+			    RtInt nflt, RtFloat flt[],
+			    RtInt nstr, RtToken str[], 
+			    RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiPointsV(RtInt npoints,
+			    RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiCurvesV(RtToken type, RtInt ncurves,
+			    RtInt nvertices[], RtToken wrap,
+			    RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[],
+				     RtInt verts[],
+				     RtInt ntags, RtToken tags[], RtInt numargs[],
+				     RtInt intargs[], RtFloat floatargs[],
+				     RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  
 
+  virtual RtVoid  RiProcedural(RtPointer data, RtBound bound,
+			       RtVoid (*subdivfunc)(RtPointer, RtFloat),
+			       RtVoid (*freefunc)(RtPointer))=0;
+  virtual RtVoid  RiGeometryV(RtToken type, RtInt n, RtToken tokens[], 
+			      RtPointer parms[])=0;
 
-  RtVoid  RiProcedural(RtPointer data, RtBound bound,
-		       RtVoid (*subdivfunc)(RtPointer, RtFloat),
-		       RtVoid (*freefunc)(RtPointer));
-  RtVoid  RiGeometryV(RtToken type, RtInt n, RtToken tokens[], 
-		      RtPointer parms[]);
+  /* TEXTURE */
+  virtual RtVoid  RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken twrap,
+				 RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
+				 RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiMakeLatLongEnvironmentV(char *pic, char *tex, RtFilterFunc filterfunc,
+					    RtFloat swidth, RtFloat twidth,
+					    RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiMakeCubeFaceEnvironmentV(char *px, char *nx, char *py, char *ny,
+					     char *pz, char *nz, char *tex, RtFloat fov,
+					     RtFilterFunc filterfunc, RtFloat swidth, 
+					     RtFloat ywidth,
+					     RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiMakeBumpV(char *pic, char *tex, RtToken swrap, RtToken twrap,
+			      RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
+			      RtInt n, RtToken tokens[], RtPointer parms[])=0;
+  virtual RtVoid  RiMakeShadowV(char *pic, char *tex,
+				RtInt n, RtToken tokens[], RtPointer parms[])=0;
 
-  /* MISC */
-  RtVoid  RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken twrap,
-			 RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
-			 RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiMakeBumpV(char *pic, char *tex, RtToken swrap, RtToken twrap,
-		      RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
-		      RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiMakeLatLongEnvironmentV(char *pic, char *tex, RtFilterFunc filterfunc,
-				    RtFloat swidth, RtFloat twidth,
-				    RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiMakeCubeFaceEnvironmentV(char *px, char *nx, char *py, char *ny,
-				     char *pz, char *nz, char *tex, RtFloat fov,
-				     RtFilterFunc filterfunc, RtFloat swidth, 
-				     RtFloat ywidth,
-				     RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid  RiMakeShadowV(char *pic, char *tex,
-			RtInt n, RtToken tokens[], RtPointer parms[]);
-
+  /* ERROR HANDLER */
+  virtual RtVoid  RiErrorHandler (RtErrorHandler handler)=0;
 };
 
 

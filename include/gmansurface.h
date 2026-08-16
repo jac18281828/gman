@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // world feature characteristics
 #include "gmanface.h"
 #include "gmanvector.h"
@@ -61,7 +61,7 @@ class GMANBody;
  *
  */
 
-class GMAN_EXPORT  GMANSurface : public UniversalSuperClass {
+class GMAN_EXPORT  GMANSurface {
 protected:
   GMANPoint		center;
 

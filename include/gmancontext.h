@@ -29,11 +29,11 @@
 
 #include <list>
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanerror.h"
 #include "gmanrenderman.h"
 
-class GMAN_EXPORT GMANContext : public UniversalSuperClass
+class GMAN_EXPORT GMANContext
 {
 private:
   std::list<GMANRenderMan *> chl;

@@ -42,8 +42,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // Our parent class
 #include "gmanvector.h"
 #include "gmanhpoint.h"

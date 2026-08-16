@@ -34,7 +34,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanthread.h" /* Declaration Header */
 
 
@@ -48,7 +48,7 @@
 static void *GMANThreadStart(void *arg);
 
 // default constructor
-GMANThread::GMANThread() : UniversalSuperClass() { };
+GMANThread::GMANThread() { };
 
 
 // default destructor 
@@ -86,7 +86,7 @@ void GMANThread::setPriority(Priority pri) {
 	struct sched_param param;
 
 	/* safe to get existing scheduling param */
-	int ret = pthread_getschedparam (thread, &policy, &param);
+	[[maybe_unused]] int ret = pthread_getschedparam (thread, &policy, &param);
 
 
 	/* set the priority; others are unchanged */

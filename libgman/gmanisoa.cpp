@@ -31,7 +31,7 @@
 RtVoid GMANISO::set (RtToken name, int n, RtToken *tk, RtPointer *dt)
 {
   std::string a=name;
-  if (name=="searchpath") {
+  if (a=="searchpath") {
     for (int i=0;i<n;i++) {
       a=tk[i];
       if (a=="archive") {

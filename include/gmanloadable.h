@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // gman error object
 #include "gmanerror.h"
 
@@ -68,7 +68,7 @@ typedef struct {
  *
  */
 
-class GMAN_EXPORT  GMANLoadable : public UniversalSuperClass {
+class GMAN_EXPORT  GMANLoadable {
 public:
   // a required function for every loadable object.
   // The function returning the loadable object info struct

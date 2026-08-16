@@ -29,9 +29,9 @@
 
 #include <string>
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 
-class GMAN_EXPORT GMANISO : public UniversalSuperClass
+class GMAN_EXPORT GMANISO
 {
   /* searchpath */
   std::string archive;
@@ -46,7 +46,7 @@ public:
   const std::string &getProceduralPath() const { return procedural; }
 };
 
-class GMANISA : public UniversalSuperClass
+class GMANISA
 {
 private:
 public:

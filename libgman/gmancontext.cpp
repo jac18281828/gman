@@ -25,6 +25,7 @@
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
 #include "gmancontext.h"
+#include "gmanrendermanimpl.h"
 
 GMANContext::GMANContext()
 {
@@ -33,7 +34,7 @@ GMANContext::GMANContext()
 
 RtVoid  GMANContext::addContext()
 {
-  active=new GMANRenderMan;
+  active=new GMANRenderManImpl;
   chl.push_back(active);
 }
 

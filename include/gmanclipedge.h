@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 #include "gmanoutputpolygon.h"
 #include "gmanvector4.h"
 #include "gmanvertex4.h"
@@ -57,7 +57,7 @@ enum GMANPlane { GMANFRONT, GMANBACK, GMANLEFT, GMANRIGHT, GMANTOP,
  *
  */
 
-class GMAN_EXPORT GMANClipEdge : public UniversalSuperClass {
+class GMAN_EXPORT GMANClipEdge {
 private:
   GMANClipEdge *next;	// next clipper
   GMANVector4   normal;

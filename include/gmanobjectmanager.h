@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // the object type
 #include "gmanobject.h"
 // primitives
@@ -53,7 +53,7 @@
  *
  */
 
-class GMAN_EXPORT  GMANObjectManager : public UniversalSuperClass {
+class GMAN_EXPORT  GMANObjectManager {
 public:
   GMANObjectManager(); // default constructor
 

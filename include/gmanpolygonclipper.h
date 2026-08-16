@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 #include "gmanclipedge.h"
 
 
@@ -51,7 +51,7 @@
  *
  */
 
-class GMAN_EXPORT  GMANPolygonClipper : public UniversalSuperClass {
+class GMAN_EXPORT  GMANPolygonClipper {
 private:
 
   [[maybe_unused]] int nOutputVertices;

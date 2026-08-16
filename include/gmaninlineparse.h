@@ -32,11 +32,11 @@
 #include <string>
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmandictionary.h"
 #include "gmanerror.h"
 
-class GMAN_EXPORT  GMANInlineParse : public UniversalSuperClass
+class GMAN_EXPORT  GMANInlineParse
 {
 private:
   RtInt number_of_words;

@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // point type
 #include "gmanpoint.h"
 
@@ -52,7 +52,7 @@
  * A segment type made of two points
  */
 
-class GMAN_EXPORT  GMANSegment : public UniversalSuperClass {
+class GMAN_EXPORT  GMANSegment {
   GMANPoint	p1;
   GMANPoint     p2;
 public:

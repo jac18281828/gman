@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 
 #include "gmanpoint.h"
 #include "gmanvector.h"
@@ -55,7 +55,7 @@
  *
  */
 
-class GMAN_EXPORT  GMANVertex : public UniversalSuperClass {
+class GMAN_EXPORT  GMANVertex {
 private:
   GMANPoint		location;
 
@@ -75,9 +75,7 @@ public:
   GMANVertex(const GMANPoint &position, 
 	     GMANFaceList &/*fl*/,
 	     const GMANColor &/*col*/=DefaultBGColor,
-	     const GMANAlpha &alp=DefaultAlpha) : 
-    UniversalSuperClass(),
-    location(position),
+	     const GMANAlpha &alp=DefaultAlpha) : location(position),
     normal(0.0, 0.0, 0.0),
     alpha(alp),
     next(NULL),

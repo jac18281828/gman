@@ -35,7 +35,7 @@
 
 /* Global static data */
 
-static GMANLoadableObjectInfo info = {
+static GMANLoadableObjectInfo loadableInfo = {
   "Ray Traced Lighting Model",
   "John Cairns <john@2ad.com>",
   "Copyright (c) 2001, 2000, 1999 John Cairns, Licenced under the GNU Lesser Public License, http://www.gnu.org",
@@ -46,7 +46,7 @@ static GMANRaytraceRenderer	renderer;
 
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &info;
+  return &loadableInfo;
 }
 
 extern "C" GMAN_EXPORT GMANRenderer *GMANLoadRenderer(void) {

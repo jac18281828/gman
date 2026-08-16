@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // the ray type
 #include "gmansegment.h"
 #include "gmantypes.h"
@@ -61,7 +61,7 @@ class GMANSurface;
  *
  */
 
-class GMAN_EXPORT  GMANFace : public UniversalSuperClass {
+class GMAN_EXPORT  GMANFace {
 protected:
 
   RtFloat	area;

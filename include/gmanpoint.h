@@ -32,7 +32,7 @@
 
 /* Headers */
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanmatrix4.h"
 
 class GMANHPoint;
@@ -45,7 +45,7 @@ class GMANHPoint;
  *
  */
 
-class GMAN_EXPORT  GMANPoint : public UniversalSuperClass
+class GMAN_EXPORT  GMANPoint
 {
 public:
     // public type

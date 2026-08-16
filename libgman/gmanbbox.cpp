@@ -44,8 +44,7 @@ static RtBound	defaultBBox = {
 };
 
 
-GMANBBox::GMANBBox() : UniversalSuperClass()
-{
+GMANBBox::GMANBBox() {
   *this = defaultBBox;
 }
 

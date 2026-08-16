@@ -34,8 +34,7 @@
  *
  */
 
-GMANShader::GMANShader () : UniversalSuperClass() 
-{
+GMANShader::GMANShader () {
   renderer=NULL;
 };
 

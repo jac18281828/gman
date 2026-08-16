@@ -31,13 +31,13 @@
 #define __GMAN_GMANVIEWINGSYSTEM_H 1
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanface.h"
 #include "gmansegment.h"
 #include "gmanoptions.h"
 
-class GMAN_EXPORT  GMANViewingSystem : public UniversalSuperClass
+class GMAN_EXPORT  GMANViewingSystem
 {
   protected:
     RtInt xres;

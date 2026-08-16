@@ -68,7 +68,7 @@ const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &/*se*/)
   return black;
 }
 
-static GMANLoadableObjectInfo info = {
+static GMANLoadableObjectInfo loadableInfo = {
   "Matte surface shader",
   "Ken Geis <kgeis@alum.calberkeley.org>",
   "Copyright (c) 2001 Ken Geis, Licenced under the GNU Lesser Public License, http://www.gnu.org",
@@ -79,7 +79,7 @@ static GMANMatte shader;
 
 
 extern "C" GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &info;
+  return &loadableInfo;
 }
 
 extern "C" GMANShader *GMANLoadShader(void) {

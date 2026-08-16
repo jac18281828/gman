@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // the color object
 #include "gmancolor.h"
 
@@ -52,7 +52,7 @@
  *
  */
 
-class GMAN_EXPORT GMANBitmap : public UniversalSuperClass {
+class GMAN_EXPORT GMANBitmap {
 protected:
   GMANColor	*pixels;
   int            nPixels;

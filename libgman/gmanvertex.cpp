@@ -28,7 +28,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanvertex.h" /* Declaration Header */
 #include "gmanface.h"
 #include "gmandefaults.h"
@@ -40,8 +40,7 @@
  */
 
 // default constructor
-GMANVertex::GMANVertex() : UniversalSuperClass(),
-			   location(0.0, 0.0, 0.0),
+GMANVertex::GMANVertex() : location(0.0, 0.0, 0.0),
 			   normal(0.0, 0.0, 0.0),
 			   color(DefaultBGColor),
 			   next(NULL) { };

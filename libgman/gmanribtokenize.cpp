@@ -35,7 +35,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanribtokenize.h" /* Declaration Header */
 #include "gmanerror.h"
 /*
@@ -49,8 +49,7 @@ const     int   GMANRIBTokenize::bufSz = 1024;
  */
 
 // default constructor
-GMANRIBTokenize::GMANRIBTokenize() : UniversalSuperClass()
-{ 
+GMANRIBTokenize::GMANRIBTokenize() { 
   
 };
 

@@ -33,7 +33,7 @@
 #endif
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanloadable.h" /* Declaration Header */
 
 
@@ -46,8 +46,7 @@ const char *GMANLoadable::getInfoFncName = "GMANGetLoadableInfo";
 
 // default constructor
 GMANLoadable::GMANLoadable(const char *path) 
- : UniversalSuperClass(),
-		     object(NULL),
+ : object(NULL),
 		     objInfo(NULL)
 { 
 

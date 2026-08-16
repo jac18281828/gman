@@ -112,6 +112,7 @@ add_library(gman_core SHARED
   libgman/gmanquantize.cpp
   libgman/gmanrenderer.cpp
   libgman/gmanrenderman.cpp
+  libgman/gmanrendermanimpl.cpp
   libgman/gmanribparse.cpp
   libgman/gmanribtokenize.cpp
   libgman/gmansegment.cpp
@@ -133,8 +134,7 @@ add_library(gman_core SHARED
   libgman/gmanvsorthographic.cpp
   libgman/gmanvsperspective.cpp
   libgman/gmanwindowoutput.cpp
-  libgman/gmanworldmanager.cpp
-  libgman/universalsuperclass.cpp)
+  libgman/gmanworldmanager.cpp)
 
 # One export header for the whole project; GMAN_EXPORT replaces the MSVC-era
 # GMANDLL/NOTGMANDLL macro maze.
@@ -173,8 +173,7 @@ endif()
 # ---------------------------------------------------------------------------
 
 add_library(gman_rib SHARED
-  libgmanrib/gmanascii.cpp
-  libgmanrib/gmanrenderman.cpp)
+  libgmanrib/gmanascii.cpp)
 
 target_link_libraries(gman_rib PUBLIC gman_core)
 

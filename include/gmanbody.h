@@ -41,8 +41,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // color
 #include "gmancolor.h"
 
@@ -54,7 +54,7 @@
  *
  */
 
-class GMAN_EXPORT GMANBody : public UniversalSuperClass {
+class GMAN_EXPORT GMANBody {
   GMANColor	reflectance; // object reflectivity
   GMANColor     emittance;   // object emittivity
   GMANSurface   *surfaceRoot; // surfaces in body

@@ -29,11 +29,11 @@
 #define _GMANTOOLS_H
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanhpoint.h"
 
-class GMAN_EXPORT  GMANTools : public UniversalSuperClass
+class GMAN_EXPORT  GMANTools
 {
  public:
   /*----------------------------------------------------------

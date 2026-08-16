@@ -30,10 +30,10 @@
 
 
 #include "ri.h"
-#include "universalsuperclass.h"
+#include "gmanlog.h"
 
 
-class GMAN_EXPORT  GMANTrimCurve : public UniversalSuperClass
+class GMAN_EXPORT  GMANTrimCurve
 {
  private:
   int *counter;

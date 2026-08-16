@@ -31,7 +31,7 @@
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
-#include "universalsuperclass.h" /* Super class */
+#include "gmanlog.h"
 #include "gmanclipedge.h" /* Declaration Header */
 
 
@@ -41,7 +41,7 @@
  */
 
 // default constructor
-GMANClipEdge::GMANClipEdge() : UniversalSuperClass() { 
+GMANClipEdge::GMANClipEdge() { 
   first_flag=false;
 };
 

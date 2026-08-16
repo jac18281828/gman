@@ -40,8 +40,8 @@
 
 // the renderman interface
 #include "ri.h"
-// the universal super class declaration
-#include "universalsuperclass.h"
+// logging
+#include "gmanlog.h"
 // GMAN Renderman state machine
 #include "gmanrenderman.h"
 // GMAN RIB tokenizer
@@ -54,7 +54,7 @@
  *
  */
 
-class GMAN_EXPORT  GMANRIBParse : public UniversalSuperClass {
+class GMAN_EXPORT  GMANRIBParse {
 public: // types
 
   typedef RtBoolean (GMANRIBParse::*RIBHandler)(RtToken keyword, 

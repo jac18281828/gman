@@ -42,8 +42,7 @@ GMANOptions::OutputDefaults GMANOptions::outputDefaults = {
  *
  */
 
-GMANOptions::GMANOptions() : UniversalSuperClass(),
-			     imagerModule(NULL),
+GMANOptions::GMANOptions() : imagerModule(NULL),
 			     imager(NULL)
 { 
   // **** CAMERA OPTIONS ****

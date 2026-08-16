@@ -109,12 +109,14 @@ RtVoid GMANASCII::printArray (RtInt n, RtFloat *p)
 // *********************************************************************
 // ******* ******* ******* RIB OUTPUT FUNCTIONS  ******* ******* *******
 // *********************************************************************
-RtVoid GMANASCII::RiDeclare(const char *name, const char *declaration) 
+RtToken GMANASCII::RiDeclare(const char *name, const char *declaration) 
 {
   out <<"Declare ";
   printCharP(name);
   printCharP(declaration);
   out <<std::endl;
+
+  return name;
 }
 RtVoid GMANASCII::RiBegin(RtToken name)
 {
@@ -144,9 +146,11 @@ RtVoid GMANASCII::RiWorldEnd(RtVoid)
 {
   out <<"WorldEnd"<<std::endl;
 }
-RtVoid GMANASCII::RiObjectBegin(RtVoid)
+RtObjectHandle GMANASCII::RiObjectBegin(RtVoid)
 {
   out <<"ObjectBegin"<<std::endl;
+
+  return ObjectBegin();
 }
 RtVoid GMANASCII::RiObjectEnd(RtVoid)
 {
@@ -168,7 +172,7 @@ RtVoid  GMANASCII::RiTransformBegin(RtVoid)
 {
   out <<"TransformBegin"<<std::endl;
 }
-RtVoid  GMANASCII::RiTranformEnd(RtVoid)
+RtVoid  GMANASCII::RiTransformEnd(RtVoid)
 {
   out <<"TransformEnd"<<std::endl;
 }
@@ -344,16 +348,20 @@ RtVoid  GMANASCII::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFl
   out << s1 <<" "<< t1 <<" "<< s2 <<" "<< t2 <<" ";
   out << s3 <<" "<< t3 <<" "<< s4 <<" "<< t4 <<std::endl;
 }
-RtVoid GMANASCII::RiLightSourceV(RtToken /*name*/, RtInt n, RtToken tokens[], RtPointer parms[])
+RtLightHandle GMANASCII::RiLightSourceV(RtToken /*name*/, RtInt n, RtToken tokens[], RtPointer parms[])
 {
   out <<"LightSource ";
   printPL(n, tokens, parms);
+
+  return LightSource();
 }
-RtVoid GMANASCII::RiAreaLightSourceV(RtToken /*name*/,
-					RtInt n, RtToken tokens[], RtPointer parms[])
+RtLightHandle GMANASCII::RiAreaLightSourceV(RtToken /*name*/,
+					    RtInt n, RtToken tokens[], RtPointer parms[])
 {
   out <<"AreaLightSource ";
   printPL(n, tokens, parms);
+
+  return AreaLightSource();
 }
 RtVoid  GMANASCII::RiIlluminate(RtLightHandle light, RtBoolean onoff)
 {
@@ -985,6 +993,37 @@ RtVoid  GMANASCII::RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken t
   }
 
   out <<"MakeTexture ";
+  printCharP(pic);
+  printCharP(tex);
+  printToken(swrap);
+  printToken(twrap);
+  out << ff <<" "<< swidth <<" "<< twidth <<" ";
+  printPL(n, tokens, parms);
+}
+
+// Declared in gmanascii.h since 2001 and never defined, which is why linking
+// libgmanrib was never attempted. Mirrors RiMakeTextureV.
+RtVoid  GMANASCII::RiMakeBumpV(char *pic, char *tex, RtToken swrap, RtToken twrap,
+			       RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
+			       RtInt n, RtToken tokens[], RtPointer parms[])
+{
+  std::string ff;
+  if (filterfunc==RiGaussianFilter)
+    ff="gaussian";
+  else if (filterfunc==RiBoxFilter)
+    ff="box";
+  else if (filterfunc==RiTriangleFilter)
+    ff="triangle";
+  else if (filterfunc==RiCatmullRomFilter)
+    ff="catmull-rom";
+  else if (filterfunc==RiSincFilter)
+    ff="sinc";
+  else {
+    GMANError error(RIE_CONSISTENCY, RIE_WARNING, "Unknown filter function");
+    throw error;
+  }
+
+  out <<"MakeBump ";
   printCharP(pic);
   printCharP(tex);
   printToken(swrap);
