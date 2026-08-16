@@ -56,7 +56,7 @@
  *
  */
 
-class NOTGMANDLL GMANRadiosityRenderer : public GMANRenderer {
+class GMAN_EXPORT GMANRadiosityRenderer : public GMANRenderer {
 private:
 
 

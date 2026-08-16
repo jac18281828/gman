@@ -60,7 +60,7 @@ typedef vector<GMANPoint> PointVector;
  *
  */
 
-class GMANDLL  GMANPolygon {
+class GMAN_EXPORT  GMANPolygon {
   PointVector	points;
 public:
   GMANPolygon(); // default constructor

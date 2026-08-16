@@ -53,7 +53,7 @@
  *
  */
 
-class GMANDLL  GMANWorldManager : public UniversalSuperClass {
+class GMAN_EXPORT  GMANWorldManager : public UniversalSuperClass {
 public:
   GMANWorldManager(); // default constructor
 

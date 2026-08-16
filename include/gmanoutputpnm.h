@@ -50,7 +50,7 @@
  *
  */
 
-class GMANDLL  GMANOutputPNM : public GMANOutput {
+class GMAN_EXPORT  GMANOutputPNM : public GMANOutput {
 public:
   // default constructor
   GMANOutputPNM(const char *path, int width, int height); 

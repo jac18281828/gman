@@ -61,7 +61,7 @@ class GMANSurface;
  *
  */
 
-class GMANDLL  GMANFace : public UniversalSuperClass {
+class GMAN_EXPORT  GMANFace : public UniversalSuperClass {
 protected:
 
   RtFloat	area;

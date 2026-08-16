@@ -34,7 +34,7 @@
 #include "gmanerror.h"
 
 
-class GMANDLL  GMANParameterList : public UniversalSuperClass
+class GMAN_EXPORT  GMANParameterList : public UniversalSuperClass
 {
 private:
   RtInt *counter;

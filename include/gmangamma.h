@@ -37,7 +37,7 @@
 #include "gmantypes.h"
 
 // gamma correction class
-class GMANDLL  GMANGammaCorrect {
+class GMAN_EXPORT  GMANGammaCorrect {
 public:
 
   static const RtFloat DEFAULT_GAMMA;

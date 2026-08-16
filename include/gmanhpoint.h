@@ -32,7 +32,7 @@
 #include "gmanpoint.h"
 
 
-class GMANDLL  GMANHPoint : public GMANPoint
+class GMAN_EXPORT  GMANHPoint : public GMANPoint
 {
 protected:
   RtFloat w;

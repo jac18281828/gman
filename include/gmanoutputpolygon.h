@@ -57,7 +57,7 @@ using std::vector;
  *
  */
 
-class GMANDLL  GMANOutVertex : public UniversalSuperClass // Output Vertex
+class GMAN_EXPORT  GMANOutVertex : public UniversalSuperClass // Output Vertex
 { 
   private:
     GMANColor color;
@@ -83,7 +83,7 @@ class GMANDLL  GMANOutVertex : public UniversalSuperClass // Output Vertex
 };
 
 
-class GMANDLL  GMANOutputPolygon : public UniversalSuperClass {
+class GMAN_EXPORT  GMANOutputPolygon : public UniversalSuperClass {
 private:
 
   vector<GMANOutVertex> vertexVec; // output array

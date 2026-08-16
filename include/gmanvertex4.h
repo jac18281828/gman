@@ -52,7 +52,7 @@
  *
  */
 
-class GMANDLL  GMANVertex4 : public UniversalSuperClass {
+class GMAN_EXPORT  GMANVertex4 : public UniversalSuperClass {
 private:
   GMANColor	color;
   GMANAlpha	alpha;

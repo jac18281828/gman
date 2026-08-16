@@ -34,7 +34,7 @@
 #include "gmanpoint.h"
 #include "gmanhpoint.h"
 
-class GMANDLL GMANBasis : public UniversalSuperClass
+class GMAN_EXPORT GMANBasis : public UniversalSuperClass
 {
 private:
   GMANMatrix4 uBasis;

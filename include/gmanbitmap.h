@@ -52,7 +52,7 @@
  *
  */
 
-class GMANDLL GMANBitmap : public UniversalSuperClass {
+class GMAN_EXPORT GMANBitmap : public UniversalSuperClass {
 protected:
   GMANColor	*pixels;
   int            nPixels;

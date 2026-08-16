@@ -31,7 +31,7 @@
 #include "ri.h"
 #include "universalsuperclass.h"
 
-class GMANDLL GMANISO : public UniversalSuperClass
+class GMAN_EXPORT GMANISO : public UniversalSuperClass
 {
   /* searchpath */
   string archive;

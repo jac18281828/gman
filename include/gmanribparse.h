@@ -57,7 +57,7 @@ using std::map;
  *
  */
 
-class GMANDLL  GMANRIBParse : public UniversalSuperClass {
+class GMAN_EXPORT  GMANRIBParse : public UniversalSuperClass {
 public: // types
 
   typedef RtBoolean (GMANRIBParse::*RIBHandler)(RtToken keyword, 

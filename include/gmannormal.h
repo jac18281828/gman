@@ -39,7 +39,7 @@
 #include "gmantypes.h"
 
 
-class GMANDLL  GMANNormal : public GMANVector
+class GMAN_EXPORT  GMANNormal : public GMANVector
 {
 public:
   GMANNormal();

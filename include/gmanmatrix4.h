@@ -36,7 +36,7 @@
 
 class GMANVector;
 
-class GMANDLL  GMANMatrix4 : public UniversalSuperClass
+class GMAN_EXPORT  GMANMatrix4 : public UniversalSuperClass
 {
   private:
     RtMatrix mtrx;

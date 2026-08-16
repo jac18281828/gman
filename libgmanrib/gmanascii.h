@@ -33,7 +33,7 @@ using std::ofstream;
 
 #include "gmanrenderman.h"
 
-class GMANDLL GMANASCII : public GMANRenderMan
+class GMAN_EXPORT GMANASCII : public GMANRenderMan
 {
  protected:
   ofstream  out;

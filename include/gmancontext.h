@@ -33,7 +33,7 @@
 #include "gmanerror.h"
 #include "gmanrenderman.h"
 
-class GMANDLL GMANContext : public UniversalSuperClass
+class GMAN_EXPORT GMANContext : public UniversalSuperClass
 {
 private:
   list<GMANRenderMan *> chl;

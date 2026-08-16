@@ -64,7 +64,7 @@
  */
 
 // renderman is an instance of the graphics state machine
-class GMANDLL  GMANRenderMan : protected GMANGraphicState {
+class GMAN_EXPORT  GMANRenderMan : protected GMANGraphicState {
 private:
   // the renderer that computes the lighting model and 
   // simulates the environment

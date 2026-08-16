@@ -61,7 +61,7 @@ class GMANBody;
  *
  */
 
-class GMANDLL  GMANSurface : public UniversalSuperClass {
+class GMAN_EXPORT  GMANSurface : public UniversalSuperClass {
 protected:
   GMANPoint		center;
 

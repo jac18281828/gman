@@ -49,7 +49,7 @@
  *
  */
 
-class GMANDLL  GMANLog : public UniversalSuperClass {
+class GMAN_EXPORT  GMANLog : public UniversalSuperClass {
 public:
   GMANLog(); // default constructor
 

@@ -44,26 +44,26 @@
 #include "gmanbbox.h"
 #include "gmanlightsourcemgr.h"
 
-class GMANDLL GMANRenderer;
+class GMAN_EXPORT GMANRenderer;
 
-struct GMANDLL GMANTextureCoordinates {
+struct GMAN_EXPORT GMANTextureCoordinates {
   RtFloat s1, t1, s2, t2;
   RtFloat s3, t3, s4, t4;
 };
 
-struct GMANDLL GMANDetailRange {
+struct GMAN_EXPORT GMANDetailRange {
   RtFloat minVisible;
   RtFloat lowerTransition;
   RtFloat upperTransition;
   RtFloat maxVisible;
 };
 
-struct GMANDLL GMANGeometricApproximation {
+struct GMAN_EXPORT GMANGeometricApproximation {
   RtToken type;
   RtFloat value;
 };
 
-class GMANDLL GMANAttributes : public UniversalSuperClass
+class GMAN_EXPORT GMANAttributes : public UniversalSuperClass
 {
 private:
   /* SHADING ATTRIBUTES */

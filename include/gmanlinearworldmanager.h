@@ -53,7 +53,7 @@
  *
  */
 
-class GMANDLL GMANLinearWorldManager : public GMANWorldManager {
+class GMAN_EXPORT GMANLinearWorldManager : public GMANWorldManager {
 public:
   // public types
   typedef GMANPrimitive*	ObjectPtr;

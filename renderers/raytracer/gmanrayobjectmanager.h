@@ -51,7 +51,7 @@
  *
  */
 
-class NOTGMANDLL GMANRayObjectManager : public GMANObjectManager {
+class GMAN_EXPORT GMANRayObjectManager : public GMANObjectManager {
 public:
   GMANRayObjectManager(); // default constructor
 

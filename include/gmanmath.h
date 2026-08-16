@@ -43,7 +43,7 @@ const double DEGTORAD = PI/180.0;
 #define GMANMIN(x,y) (x<y?x:y)
 
 #if 0
-inline GMANDLL  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
+inline GMAN_EXPORT  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
 {
   if(value < min) return min;
   if(value > max) return max;
@@ -52,24 +52,24 @@ inline GMANDLL  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
 #endif
 
 // Trigonometric functions - asandro
-inline GMANDLL  RtFloat GMANRadians(RtFloat degrees)
+inline GMAN_EXPORT  RtFloat GMANRadians(RtFloat degrees)
 {
 	return (RtFloat)(degrees * DEGTORAD);
 }
 
-inline GMANDLL  RtFloat GMANDegrees(RtFloat radians)
+inline GMAN_EXPORT  RtFloat GMANDegrees(RtFloat radians)
 {
 	return (RtFloat)(radians / DEGTORAD);
 }
 
-inline GMANDLL  RtFloat GMANAtan(RtFloat y, RtFloat x)
+inline GMAN_EXPORT  RtFloat GMANAtan(RtFloat y, RtFloat x)
 {
 	return (RtFloat)atan2(y, x);
 }
 
 
 // Square root & logarithmic - asandro
-inline GMANDLL const RtFloat GMANInversesqrt(RtFloat x)
+inline GMAN_EXPORT const RtFloat GMANInversesqrt(RtFloat x)
 {
 	RtFloat y = (RtFloat)sqrt(x);
 	// avoid division by zero
@@ -80,19 +80,19 @@ inline GMANDLL const RtFloat GMANInversesqrt(RtFloat x)
 	}
 }
 
-inline GMANDLL RtFloat GMANLogFn(RtFloat x, RtFloat base)
+inline GMAN_EXPORT RtFloat GMANLogFn(RtFloat x, RtFloat base)
 {
 	return (RtFloat)(log(x) / log(base));
 }
 
 // Module functions - asandro
-inline GMANDLL RtFloat GMANMod(RtFloat a, RtFloat b)
+inline GMAN_EXPORT RtFloat GMANMod(RtFloat a, RtFloat b)
 {
   if (a<0) return b-(RtFloat)fmod(-a,b);
   else return (RtFloat)fmod(a,b);
 }
 
-inline GMANDLL RtFloat GMANSign(RtFloat x)
+inline GMAN_EXPORT RtFloat GMANSign(RtFloat x)
 {
 	return (RtFloat)(x < 0.0 ? -1.0 : x > 0.0 ? 1.0 : 0.0);
 }

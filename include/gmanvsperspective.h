@@ -30,7 +30,7 @@
 #include "gmanviewingsystem.h"
 #include "gmanmatrix4.h"
 
-class GMANDLL  GMANVSPerspective : public GMANViewingSystem
+class GMAN_EXPORT  GMANVSPerspective : public GMANViewingSystem
 {
 private:
   GMANMatrix4 mtrx;

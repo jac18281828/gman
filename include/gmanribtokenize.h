@@ -54,7 +54,7 @@ using std::ifstream;
   /*
    * Token return type populated by tokenizer.
    */
-class GMANDLL  GMANToken : public UniversalSuperClass {
+class GMAN_EXPORT  GMANToken : public UniversalSuperClass {
  public:
 	 // public types
 	 
@@ -231,7 +231,7 @@ class GMANDLL  GMANToken : public UniversalSuperClass {
  *
  */
 
-class GMANDLL  GMANRIBTokenize : public UniversalSuperClass {
+class GMAN_EXPORT  GMANRIBTokenize : public UniversalSuperClass {
 public:
 
   static const int bufSz;

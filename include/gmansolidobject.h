@@ -54,7 +54,7 @@
  *
  */
 
-class GMANDLL  GMANSolidObject : public GMANObject {
+class GMAN_EXPORT  GMANSolidObject : public GMANObject {
 public:
   GMANSolidObject(); // default constructor
 

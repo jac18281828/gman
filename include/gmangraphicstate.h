@@ -51,7 +51,7 @@ using std::vector;
 #include "gmanattributes.h"
 #include "gmantransform.h"
 
-class GMANDLL  GMANGraphicState : public UniversalSuperClass
+class GMAN_EXPORT  GMANGraphicState : public UniversalSuperClass
 {
 public:
   // public types

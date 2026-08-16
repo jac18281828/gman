@@ -35,7 +35,7 @@
 #include "gmandictionary.h"
 #include "gmanerror.h"
 
-class NOTGMANDLL GMANInlineParse
+class GMAN_EXPORT GMANInlineParse
 {
 private:
   RtInt number_of_words;

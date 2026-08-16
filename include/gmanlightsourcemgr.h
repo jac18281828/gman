@@ -56,7 +56,7 @@ using std::list;
  *
  */
 
-class GMANDLL  GMANLightSourceMgr : public UniversalSuperClass {
+class GMAN_EXPORT  GMANLightSourceMgr : public UniversalSuperClass {
 public:
   GMANLightSourceMgr(); // default constructor
 
@@ -68,7 +68,7 @@ public:
  * A class for light lists storage
  */
 
-class GMANDLL GMANLightList
+class GMAN_EXPORT GMANLightList
 {
 private:
   list<RtLightHandle> ll;

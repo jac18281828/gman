@@ -33,7 +33,7 @@
 #include "universalsuperclass.h"
 
 
-class GMANDLL  GMANTrimCurve : public UniversalSuperClass
+class GMAN_EXPORT  GMANTrimCurve : public UniversalSuperClass
 {
  private:
   int *counter;

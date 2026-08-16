@@ -46,11 +46,11 @@ using namespace std;
 
 // appropriate declarations for various dlls
 
-#ifndef GMANDLL
+#ifndef GMAN_EXPORT
 #ifdef  GMAN_DLL
-#define GMANDLL __declspec(dllexport)
+#define GMAN_EXPORT __declspec(dllexport)
 #else
-#define GMANDLL __declspec(dllimport)
+#define GMAN_EXPORT __declspec(dllimport)
 #endif
 #endif
 
@@ -59,23 +59,23 @@ using namespace std;
 //
 // these dlls must have separate linkage
 
-#ifndef NOTGMANDLL
+#ifndef GMAN_EXPORT
 #ifdef  NOTGMAN_DLL
-#define NOTGMANDLL __declspec(dllexport)
+#define GMAN_EXPORT __declspec(dllexport)
 #else
-#define NOTGMANDLL __declspec(dllimport)
+#define GMAN_EXPORT __declspec(dllimport)
 #endif
 #endif
 
 // not win32
 #else
 
-#ifndef GMANDLL
-#define GMANDLL
+#ifndef GMAN_EXPORT
+#define GMAN_EXPORT
 #endif
 
-#ifndef NOTGMANDLL
-#define NOTGMANDLL
+#ifndef GMAN_EXPORT
+#define GMAN_EXPORT
 #endif
 
 #endif
@@ -239,36 +239,36 @@ extern RtInt		RiLastError;
 extern "C" {
 #endif
 
-extern GMANDLL RtFloat		RiGaussianFilter(RtFloat x, RtFloat y,
+extern GMAN_EXPORT RtFloat		RiGaussianFilter(RtFloat x, RtFloat y,
 						 RtFloat xwidth, RtFloat ywidth);
 
-extern GMANDLL RtFloat		RiBoxFilter(RtFloat x, RtFloat y,
+extern GMAN_EXPORT RtFloat		RiBoxFilter(RtFloat x, RtFloat y,
 				    RtFloat xwidth, RtFloat ywidth);
 
-extern GMANDLL RtFloat		RiTriangleFilter(RtFloat x, RtFloat y,
+extern GMAN_EXPORT RtFloat		RiTriangleFilter(RtFloat x, RtFloat y,
 					 RtFloat xwidth, RtFloat ywidth);
 
-extern GMANDLL RtFloat		RiCatmullRomFilter(RtFloat x,RtFloat y,
+extern GMAN_EXPORT RtFloat		RiCatmullRomFilter(RtFloat x,RtFloat y,
 					   RtFloat xwidth, RtFloat ywidth);
 
-extern GMANDLL RtFloat		RiSincFilter(RtFloat x, RtFloat y,
+extern GMAN_EXPORT RtFloat		RiSincFilter(RtFloat x, RtFloat y,
 				     RtFloat xwidth, RtFloat ywdith);
 
-extern GMANDLL RtVoid		RiErrorIgnore(RtInt code, RtInt severity, const char *msg);
-extern GMANDLL RtVoid		RiErrorPrint(RtInt code,  RtInt severity, const char *msg);
-extern GMANDLL RtVoid		RiErrorAbort(RtInt code, RtInt  severity, const char *msg);
+extern GMAN_EXPORT RtVoid		RiErrorIgnore(RtInt code, RtInt severity, const char *msg);
+extern GMAN_EXPORT RtVoid		RiErrorPrint(RtInt code,  RtInt severity, const char *msg);
+extern GMAN_EXPORT RtVoid		RiErrorAbort(RtInt code, RtInt  severity, const char *msg);
 
-extern GMANDLL RtVoid           RiProcDelayedReadArchive (RtPointer data, RtFloat detail);
-extern GMANDLL RtVoid           RiProcRunProgram (RtPointer data, RtFloat detail);
-extern GMANDLL RtVoid           RiProcDynamicLoad (RtPointer data, RtFloat detail);
+extern GMAN_EXPORT RtVoid           RiProcDelayedReadArchive (RtPointer data, RtFloat detail);
+extern GMAN_EXPORT RtVoid           RiProcRunProgram (RtPointer data, RtFloat detail);
+extern GMAN_EXPORT RtVoid           RiProcDynamicLoad (RtPointer data, RtFloat detail);
 
-extern GMANDLL RtContextHandle  RiGetContext (RtVoid);
-extern GMANDLL RtVoid           RiContext (RtContextHandle);
+extern GMAN_EXPORT RtContextHandle  RiGetContext (RtVoid);
+extern GMAN_EXPORT RtVoid           RiContext (RtContextHandle);
 
-extern GMANDLL RtToken		RiDeclare(char *name, char *declaration);
+extern GMAN_EXPORT RtToken		RiDeclare(char *name, char *declaration);
 
 /* Graphics State Machine Control (Push/Pop Stack) */
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiBegin(RtToken name),
         RiEnd(RtVoid),
         RiFrameBegin(RtInt frame),
@@ -277,7 +277,7 @@ extern GMANDLL RtVoid
         RiWorldEnd(RtVoid);
 
 /* Camera Options */
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiFormat(RtInt xres, RtInt yres, RtFloat aspect),
         RiFrameAspectRatio(RtFloat aspect),
         RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top),
@@ -289,7 +289,7 @@ extern GMANDLL RtVoid
         RiShutter(RtFloat min, RtFloat max);
 
 /* Display Options */
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiPixelVariance(RtFloat variation),
         RiPixelSamples(RtFloat xsamples, RtFloat ysamples),
         RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth),
@@ -303,7 +303,7 @@ extern GMANDLL RtVoid
 
 /* Settings for Hidden Surface removal -- If renderer uses it */
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiHider(RtToken type, ...),
         RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]),
         RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]),
@@ -311,7 +311,7 @@ extern GMANDLL RtVoid
         RiOption(RtToken name, ...),
         RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiAttributeBegin(RtVoid),
         RiAttributeEnd(RtVoid),
         RiColor(RtColor color),
@@ -319,7 +319,7 @@ extern GMANDLL RtVoid
         RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2,
 			     RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4);
 
-extern GMANDLL RtLightHandle
+extern GMAN_EXPORT RtLightHandle
         RiLightSource(RtToken name, ...),
         RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]),
         RiAreaLightSource(RtToken name, ...),
@@ -327,7 +327,7 @@ extern GMANDLL RtLightHandle
 			   RtInt n, RtToken tokens[], RtPointer parms[]);
 
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiIllumnate(RtLightHandle light, RtBoolean onoff),
         RiSurface(RtToken name, ...),
         RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]),
@@ -341,7 +341,7 @@ extern GMANDLL RtVoid
         RiShadingInterpolation(RtToken type),
         RiMatte(RtBoolean onoff);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiBound(RtBound),
         RiDetail(RtBound),
         RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis),
@@ -350,7 +350,7 @@ extern GMANDLL RtVoid
         RiReverseOrientation(RtVoid),
         RiSides(RtInt sides);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiIdentity(RtVoid),
         RiTransform(RtMatrix transform),
         RiConcatTransform(RtMatrix transform),
@@ -368,19 +368,19 @@ extern GMANDLL RtVoid
         RiCoordSysTransform(RtToken space);
 
 /* Spatial transformation of a list of points */
-extern GMANDLL RtPoint *
+extern GMAN_EXPORT RtPoint *
          RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n,
 			   RtPoint points[]);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiTransformBegin(RtVoid),
         RiTranformEnd(RtVoid);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiAttribute(RtToken name, ...),
         RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiPolygon(RtInt nverts, ...),
         RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]),
         RiGeneralPolygon(RtInt nloops, RtInt nverts[], ...),
@@ -417,7 +417,7 @@ extern GMANDLL RtVoid
 		    RtFloat u[], RtFloat v[], RtFloat w[]);
 
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...),
         RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
 		  RtInt n, RtToken tokens[], RtPointer parms[]),
@@ -442,7 +442,7 @@ extern GMANDLL RtVoid
 		 RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]);
 
 
-extern GMANDLL RtVoid 
+extern GMAN_EXPORT RtVoid 
         RiBlobby(RtInt nleaf, RtInt ncode, RtInt code[],
 		 RtInt nflt, RtFloat flt[],
 		 RtInt nstr, RtToken str[], ...),
@@ -450,7 +450,7 @@ extern GMANDLL RtVoid
 		  RtInt nflt, RtFloat flt[],
 		  RtInt nstr, RtToken str[], 
 		  RtInt n, RtToken tokens[], RtPointer parms[]);
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiPoints(RtInt npoints, ...),
         RiPointsV(RtInt npoints,
 		  RtInt n, RtToken tokens[], RtPointer parms[]),
@@ -460,7 +460,7 @@ extern GMANDLL RtVoid
 		  RtInt nvertices[], RtToken wrap,
 		  RtInt n, RtToken tokens[], RtPointer parms[]);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[],
 			  RtInt verts[],
 			  RtInt ntags, RtToken tags[], RtInt numargs[],
@@ -471,7 +471,7 @@ extern GMANDLL RtVoid
 			   RtInt intargs[], RtFloat floatargs[],
 			   RtInt n, RtToken tokens[], RtPointer parms[]);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiProcedural(RtPointer data, RtBound bound,
 		     RtVoid (*subdivfunc)(RtPointer, RtFloat),
 		     RtVoid (*freefunc)(RtPointer)),
@@ -479,20 +479,20 @@ extern GMANDLL RtVoid
         RiGeometryV(RtToken type, RtInt n, RtToken tokens[], 
 		    RtPointer parms[]);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiSolidBegin(RtToken operation),
         RiSolidEnd(RtVoid) ;
 
-extern GMANDLL RtObjectHandle 
+extern GMAN_EXPORT RtObjectHandle 
         RiObjectBegin(RtVoid);
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiObjectEnd(RtVoid),
         RiObjectInstance(RtObjectHandle handle),
         RiMotionBegin(RtInt n, ...),
         RiMotionBeginV(RtInt n, RtFloat times[]),
         RiMotionEnd(RtVoid) ;
 
-extern GMANDLL RtVoid 
+extern GMAN_EXPORT RtVoid 
         RiMakeTexture(char *pic, char *tex, 
 		      RtToken swrap, RtToken twrap,
 		      RtFilterFunc filterfunc, 
@@ -523,13 +523,13 @@ extern GMANDLL RtVoid
         RiMakeShadowV(char *pic, char *tex,
 		      RtInt n, RtToken tokens[], RtPointer parms[]);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiArchiveRecord(RtToken type, char *format, ...),
         RiReadArchive(RtToken name, RtArchiveCallback callback, ...),
         RiReadArchiveV(RtToken name, RtArchiveCallback callback,
 		       RtInt n, RtToken tokens[], RtPointer parms[]);
 
-extern GMANDLL RtVoid
+extern GMAN_EXPORT RtVoid
         RiErrorHandler(RtErrorHandler handler);
 #ifdef __cplusplus
 }

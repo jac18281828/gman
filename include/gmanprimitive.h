@@ -58,7 +58,7 @@
  *
  */
 
-class GMANDLL  GMANPrimitive : public UniversalSuperClass {
+class GMAN_EXPORT  GMANPrimitive : public UniversalSuperClass {
 protected:
   GMANBBox		bbox;
 

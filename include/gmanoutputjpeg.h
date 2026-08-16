@@ -51,7 +51,7 @@
  *
  */
 
-class GMANDLL GMANOutputJPEG : public GMANOutput {
+class GMAN_EXPORT GMANOutputJPEG : public GMANOutput {
 private:
   int		quality;
 public:

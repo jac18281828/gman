@@ -45,7 +45,7 @@ class GMANHPoint;
  *
  */
 
-class GMANDLL  GMANPoint : public UniversalSuperClass
+class GMAN_EXPORT  GMANPoint : public UniversalSuperClass
 {
 public:
     // public type

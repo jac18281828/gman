@@ -51,7 +51,7 @@
  *
  */
 
-class GMANDLL  GMANPolygonClipper : public UniversalSuperClass {
+class GMAN_EXPORT  GMANPolygonClipper : public UniversalSuperClass {
 private:
 
   int nOutputVertices;

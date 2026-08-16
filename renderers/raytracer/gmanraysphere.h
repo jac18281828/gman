@@ -29,7 +29,7 @@
 
 #include "gmanrayinterface.h"
 
-class NOTGMANDLL GMANRaySphere : public GMANRayInterface, public GMANSphere
+class GMAN_EXPORT GMANRaySphere : public GMANRayInterface, public GMANSphere
 {
 public:
   GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,

@@ -52,7 +52,7 @@
  * A segment type made of two points
  */
 
-class GMANDLL  GMANSegment : public UniversalSuperClass {
+class GMAN_EXPORT  GMANSegment : public UniversalSuperClass {
   GMANPoint	p1;
   GMANPoint     p2;
 public:

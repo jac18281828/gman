@@ -36,7 +36,7 @@ using std::string;
 
 #include "ri.h"
 
-class NOTGMANDLL GMANError
+class GMAN_EXPORT GMANError
 {
 private:
   RtInt code;

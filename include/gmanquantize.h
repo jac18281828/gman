@@ -53,7 +53,7 @@
  * 
  */
 
-class GMANDLL  GMANQuantize : public UniversalSuperClass {
+class GMAN_EXPORT  GMANQuantize : public UniversalSuperClass {
   public:
     // public types
     typedef enum { 

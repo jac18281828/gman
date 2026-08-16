@@ -40,7 +40,7 @@ using std::vector;
 
 typedef GMANUInt GMANTokenId;
 
-class GMANDLL  GMANTokenEntry : public UniversalSuperClass
+class GMAN_EXPORT  GMANTokenEntry : public UniversalSuperClass
 {
 	// public types
 public:
@@ -89,7 +89,7 @@ public:
 
 
 
-class GMANDLL GMANDictionary : public UniversalSuperClass
+class GMAN_EXPORT GMANDictionary : public UniversalSuperClass
 {
 private:
 	vector<GMANTokenEntry> te;

@@ -52,7 +52,7 @@
 // GMANGuard and GMANMutex don't inherit from UniversalSuperClass
 // since they are used in the logging code
 
-class GMANDLL  GMANGuard {
+class GMAN_EXPORT  GMANGuard {
 private:
 
     // the mutex to guard

@@ -57,7 +57,7 @@
 
 // GMANGuard and GMANMutex don't inherit from UniversalSuperClass
 // since they are used in the logging code
-class GMANDLL  GMANMutex {
+class GMAN_EXPORT  GMANMutex {
 private:
 #ifdef WIN32
   CRITICAL_SECTION		mutex;

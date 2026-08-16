@@ -64,7 +64,7 @@ struct GMANShaderParamInfo
  *
  */
 
-class GMANDLL  GMANShader : public UniversalSuperClass 
+class GMAN_EXPORT  GMANShader : public UniversalSuperClass 
 {
 public:
   

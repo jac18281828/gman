@@ -57,7 +57,7 @@
  *
  */
 
-class GMANDLL  GMANObject : public GMANPrimitive {
+class GMAN_EXPORT  GMANObject : public GMANPrimitive {
 private:
 
   GMANBody *bodyRoot;	// body's

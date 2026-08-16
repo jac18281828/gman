@@ -32,7 +32,7 @@
 #include "gmanpoint.h"
 #include "universalsuperclass.h"
 
-class GMANDLL  GMANMatrixStorage : public UniversalSuperClass
+class GMAN_EXPORT  GMANMatrixStorage : public UniversalSuperClass
 {
 public:
   virtual ~GMANMatrixStorage();
@@ -41,7 +41,7 @@ public:
   virtual RtInt getSamplesQuantity()=0;
 };
 
-class GMANDLL GMANOneMatrix : public GMANMatrixStorage
+class GMAN_EXPORT GMANOneMatrix : public GMANMatrixStorage
 {
 private:
   GMANMatrix4 mx;
@@ -52,7 +52,7 @@ public:
   RtInt getSamplesQuantity();
 };
 
-class GMANDLL GMANMovingMatrix : public GMANMatrixStorage
+class GMAN_EXPORT GMANMovingMatrix : public GMANMatrixStorage
 {
 private:
   RtInt nbTimes;
@@ -73,7 +73,7 @@ public:
 };
 
 
-class GMANDLL GMANTransform : public UniversalSuperClass
+class GMAN_EXPORT GMANTransform : public UniversalSuperClass
 {
 private:
   GMANMatrixStorage *storage;

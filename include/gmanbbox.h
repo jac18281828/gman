@@ -44,7 +44,7 @@
  *
  */
 
-class GMANDLL GMANBBox : public UniversalSuperClass 
+class GMAN_EXPORT GMANBBox : public UniversalSuperClass 
 {
  private:
   RtBound		box;

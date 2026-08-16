@@ -37,7 +37,7 @@
 #include "gmansegment.h"
 #include "gmanoptions.h"
 
-class GMANDLL  GMANViewingSystem : public UniversalSuperClass
+class GMAN_EXPORT  GMANViewingSystem : public UniversalSuperClass
 {
   protected:
     RtInt xres;

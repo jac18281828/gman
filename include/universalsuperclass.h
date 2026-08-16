@@ -42,7 +42,7 @@
  *
  */
 
-class GMANDLL  UniversalSuperClass {
+class GMAN_EXPORT  UniversalSuperClass {
 
   public:
     // public types

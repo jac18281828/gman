@@ -64,7 +64,7 @@
  *
  */
 
-class NOTGMANDLL GMANZBufferRenderer : public GMANRenderer {
+class GMAN_EXPORT GMANZBufferRenderer : public GMANRenderer {
 private:
 
   // private types

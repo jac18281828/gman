@@ -55,7 +55,7 @@
  *
  */
 
-class GMANDLL  GMANThread : public UniversalSuperClass {
+class GMAN_EXPORT  GMANThread : public UniversalSuperClass {
 private:
 #ifdef WIN32
   HANDLE		thread;

@@ -53,7 +53,7 @@
  *
  */
 
-class GMANDLL  GMANWindowOutput : public GMANOutput {
+class GMAN_EXPORT  GMANWindowOutput : public GMANOutput {
 public:
   GMANWindowOutput(); // default constructor
 

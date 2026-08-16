@@ -46,7 +46,7 @@
  *
  */
 
-class GMANDLL  GMANVector : public UniversalSuperClass
+class GMAN_EXPORT  GMANVector : public UniversalSuperClass
 {
   public:
     // public type

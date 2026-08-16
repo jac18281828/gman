@@ -57,7 +57,7 @@
  */
 
 template <class SampleType>
-class GMANDLL GMANColorBase : public UniversalSuperClass {
+class GMAN_EXPORT GMANColorBase : public UniversalSuperClass {
 public:
   typedef	SampleType	ColorSampleType;
 protected:
@@ -170,7 +170,7 @@ public:
 
 // combine two colors
 template <class ColorObj, class AlphaObj>
-struct GMANDLL GMANCombineBase {
+struct GMAN_EXPORT GMANCombineBase {
   ColorObj operator()(const ColorObj &c1, 
 		      const ColorObj &c2, 
 		      const AlphaObj &a) 
@@ -187,7 +187,7 @@ struct GMANDLL GMANCombineBase {
 };
 
 // default color type
-class GMANDLL GMANColor : public GMANColorBase<GMANColorSample> {
+class GMAN_EXPORT GMANColor : public GMANColorBase<GMANColorSample> {
 public:
   GMANColor() : GMANColorBase<GMANColorSample>() { }; // default constructor
 
@@ -214,7 +214,7 @@ public:
 };
 
 // default alpha type
-class GMANDLL GMANAlpha : public GMANColorBase<GMANColorSample> {
+class GMAN_EXPORT GMANAlpha : public GMANColorBase<GMANColorSample> {
 public:
   GMANAlpha() : GMANColorBase<GMANColorSample>() { }; // default constructor
 
@@ -245,7 +245,7 @@ typedef GMANCombineBase<GMANColor, GMANAlpha>  GMANCombine;
 typedef GMANCombineBase<GMANAlpha, GMANAlpha>  GMANAlphaCombine;
 
 // 24 bit rgb color object
-class GMANDLL GMANColorRGB : public GMANColorBase<GMANByte> {
+class GMAN_EXPORT GMANColorRGB : public GMANColorBase<GMANByte> {
 private:
   /*
    * Weighting factors representing the sensitivity of the
@@ -282,22 +282,22 @@ public:
  * Color space conversions. 
  */
 
-GMANDLL RtVoid GMANConvertRGBtoHSV (RtFloat *c);
-GMANDLL RtVoid GMANConvertHSVtoRGB (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertRGBtoHSV (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertHSVtoRGB (RtFloat *c);
 
-GMANDLL RtVoid GMANConvertRGBtoHSL (RtFloat *c);
-GMANDLL RtVoid GMANConvertHSLtoRGB (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertRGBtoHSL (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertHSLtoRGB (RtFloat *c);
 
-GMANDLL RtVoid GMANConvertRGBtoXYZ (RtFloat *c);
-GMANDLL RtVoid GMANConvertXYZtoRGB (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertRGBtoXYZ (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertXYZtoRGB (RtFloat *c);
 
-GMANDLL RtVoid GMANConvertRGBtoXYY (RtFloat *c);
-GMANDLL RtVoid GMANConvertXYYtoRGB (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertRGBtoXYY (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertXYYtoRGB (RtFloat *c);
 
-GMANDLL RtVoid GMANConvertRGBtoYIQ (RtFloat *c);
-GMANDLL RtVoid GMANConvertYIQtoRGB (RtFloat *c);
-GMANDLL RtVoid GMANConvertRGBtoYUV (RtFloat *c);
-GMANDLL RtVoid GMANConvertYUVtoRGB (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertRGBtoYIQ (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertYIQtoRGB (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertRGBtoYUV (RtFloat *c);
+GMAN_EXPORT RtVoid GMANConvertYUVtoRGB (RtFloat *c);
 
 #endif
 

@@ -51,7 +51,7 @@
  *
  */
 
-class GMANDLL  GMANPatchPolyObjectManager : public GMANObjectManager {
+class GMAN_EXPORT  GMANPatchPolyObjectManager : public GMANObjectManager {
 public:
   GMANPatchPolyObjectManager(); // default constructor
 

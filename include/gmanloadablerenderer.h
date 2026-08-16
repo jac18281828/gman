@@ -53,7 +53,7 @@
  *
  */
 
-class GMANDLL  GMANLoadableRenderer : public GMANRenderer, GMANLoadable {
+class GMAN_EXPORT  GMANLoadableRenderer : public GMANRenderer, GMANLoadable {
   
   public:
     // public types

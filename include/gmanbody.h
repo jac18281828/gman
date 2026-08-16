@@ -54,7 +54,7 @@
  *
  */
 
-class GMANDLL GMANBody : public UniversalSuperClass {
+class GMAN_EXPORT GMANBody : public UniversalSuperClass {
   GMANColor	reflectance; // object reflectivity
   GMANColor     emittance;   // object emittivity
   GMANSurface   *surfaceRoot; // surfaces in body

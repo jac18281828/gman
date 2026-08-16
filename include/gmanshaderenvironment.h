@@ -37,7 +37,7 @@
 #include "gmanvector.h"
 #include "gmannormal.h"
 
-struct GMANDLL GMANSurfaceEnv
+struct GMAN_EXPORT GMANSurfaceEnv
 {
   GMANColor		Cs;	// surface color
   GMANColor		Os;	// surface opacity
@@ -68,7 +68,7 @@ struct GMANDLL GMANSurfaceEnv
   GMANColor		Oi;     // incident ray opacity
 };
 
-struct GMANDLL GMANLightEnv
+struct GMAN_EXPORT GMANLightEnv
 {
   GMANPoint		P;	// surface position
   GMANVector		dPdu;	// derivative of surface position along u.
@@ -96,7 +96,7 @@ struct GMANDLL GMANLightEnv
   GMANColor             Ol;     // Outgoing light ray opacity
 };
 
-struct GMANDLL GMANVolumeEnv
+struct GMAN_EXPORT GMANVolumeEnv
 {
   GMANPoint		P;	// surface position
 
@@ -111,7 +111,7 @@ struct GMANDLL GMANVolumeEnv
   RtFloat               dtime;  // amount of time covered by this shading sample
 };
 
-struct GMANDLL GMANDisplacementEnv
+struct GMAN_EXPORT GMANDisplacementEnv
 {
   GMANPoint		P;	// surface position
   GMANVector		dPdu;	// derivative of surface position along u.
@@ -136,7 +136,7 @@ struct GMANDLL GMANDisplacementEnv
   GMANVector            dPdtime;
 };
 
-struct GMANDLL GMANImagerEnv
+struct GMAN_EXPORT GMANImagerEnv
 {
   GMANPoint		P;	// Pixel raster position
   

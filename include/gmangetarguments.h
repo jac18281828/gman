@@ -33,9 +33,9 @@
 #include <stdarg.h>
 #include "ri.h"
 
-extern GMANDLL  RtVoid GMANGetArguments (va_list args, RtInt n, RtToken *tokens, RtPointer *parms);
+extern GMAN_EXPORT  RtVoid GMANGetArguments (va_list args, RtInt n, RtToken *tokens, RtPointer *parms);
 
-extern GMANDLL  RtInt GMANCountArguments (va_list args);
+extern GMAN_EXPORT  RtInt GMANCountArguments (va_list args);
 
 #endif
 

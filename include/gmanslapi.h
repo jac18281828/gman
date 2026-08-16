@@ -55,30 +55,30 @@
 
 // min takes a list of two or more arguments and return the argument with
 // minimun value, on a component-by-components basis
-GMANColor  GMANDLL GMANMin(GMANColor  a, GMANColor  b ...);
-GMANPoint  GMANDLL GMANMin(GMANPoint  a, GMANPoint  b ...);
-GMANVector GMANDLL GMANMin(GMANVector a, GMANVector b ...);
+GMANColor  GMAN_EXPORT GMANMin(GMANColor  a, GMANColor  b ...);
+GMANPoint  GMAN_EXPORT GMANMin(GMANPoint  a, GMANPoint  b ...);
+GMANVector GMAN_EXPORT GMANMin(GMANVector a, GMANVector b ...);
 
 // max takes a list of two or more arguments and return the argument with
 // maximun value, on a component-by-components basis
-GMANColor  GMANDLL GMANMax(GMANColor  a, GMANColor  b ...);
-GMANPoint  GMANDLL GMANMax(GMANPoint  a, GMANPoint  b ...);
-GMANVector GMANDLL GMANMax(GMANVector a, GMANVector b ...);
+GMANColor  GMAN_EXPORT GMANMax(GMANColor  a, GMANColor  b ...);
+GMANPoint  GMAN_EXPORT GMANMax(GMANPoint  a, GMANPoint  b ...);
+GMANVector GMAN_EXPORT GMANMax(GMANVector a, GMANVector b ...);
 
 // clamp returns min if a is less than min, max if a is greater than max;
 // otherwise it returns a, on a component-by-components basis
-GMANDLL GMANColor  GMANClamp(GMANColor  a, GMANColor  min, GMANColor  max);
-GMANDLL GMANPoint  GMANClamp(GMANPoint  a, GMANPoint  min, GMANPoint  max);
-GMANDLL GMANVector GAMNClamp(GMANVector a, GMANVector min, GMANVector max);
+GMAN_EXPORT GMANColor  GMANClamp(GMANColor  a, GMANColor  min, GMANColor  max);
+GMAN_EXPORT GMANPoint  GMANClamp(GMANPoint  a, GMANPoint  min, GMANPoint  max);
+GMAN_EXPORT GMANVector GAMNClamp(GMANVector a, GMANVector min, GMANVector max);
 
 // mix returns a*(1-alpha) + b*alpha, that is, it performs a linear
 // blend between values a and b, on a component-by-components basis
-GMANDLL GMANColor  GMANMix(GMANColor  a, GMANColor  b, RtFloat alpha);
-GMANDLL GMANPoint  GMANMix(GMANPoint  a, GMANPoint  b, RtFloat alpha);
-GMANDLL GMANVector GMANMix(GMANVector a, GMANVector b, RtFloat alpha);
+GMAN_EXPORT GMANColor  GMANMix(GMANColor  a, GMANColor  b, RtFloat alpha);
+GMAN_EXPORT GMANPoint  GMANMix(GMANPoint  a, GMANPoint  b, RtFloat alpha);
+GMAN_EXPORT GMANVector GMANMix(GMANVector a, GMANVector b, RtFloat alpha);
 
 // step returns 0 if value is less than min, otherwise if returns 1
-inline GMANDLL RtFloat GMANStep(RtFloat min, RtFloat value)
+inline GMAN_EXPORT RtFloat GMANStep(RtFloat min, RtFloat value)
 {
 	return value < min ? 0.0 : 1.0;
 }
@@ -86,10 +86,10 @@ inline GMANDLL RtFloat GMANStep(RtFloat min, RtFloat value)
 // smoothstep returns 0 if value is less than min, 1 if value is greater than
 // or equal to max, and performs a smooth Hermite interpolation between 0 and 1
 // in the interval min to max
-GMANDLL RtFloat GMANSmoothStep(RtFloat min, RtFloat max, RtFloat value);
+GMAN_EXPORT RtFloat GMANSmoothStep(RtFloat min, RtFloat max, RtFloat value);
 
 // filterstep provides an analytically antialiased step function
-GMANDLL RtFloat GMANFilterStep(RtFloat edge, RtFloat s1 ...);
+GMAN_EXPORT RtFloat GMANFilterStep(RtFloat edge, RtFloat s1 ...);
 
 // the spline familly fits a spline to the control points given
 // LJL - spline functions added - February 2001
@@ -201,17 +201,17 @@ T GMANLinearSpline(RtFloat value, RtInt nvals, T fvals[])
 }
 
 
-GMANDLL RtFloat    distance (const GMANPoint &p1, const GMANPoint &p2);
-GMANDLL RtFloat    ptlined (const GMANPoint &p0, const GMANPoint &p1, const GMANPoint &q);
-GMANDLL GMANPoint  rotate (const GMANPoint &q, RtFloat angle,
+GMAN_EXPORT RtFloat    distance (const GMANPoint &p1, const GMANPoint &p2);
+GMAN_EXPORT RtFloat    ptlined (const GMANPoint &p0, const GMANPoint &p1, const GMANPoint &q);
+GMAN_EXPORT GMANPoint  rotate (const GMANPoint &q, RtFloat angle,
 					   const GMANPoint &p1, const GMANPoint &p2);
-GMANDLL GMANVector faceforward (const GMANVector &n, const GMANVector &i,
+GMAN_EXPORT GMANVector faceforward (const GMANVector &n, const GMANVector &i,
 			const GMANVector &nr);
-GMANDLL GMANVector reflect (const GMANVector &i, const GMANVector &n);
-GMANDLL GMANVector refract (const GMANVector &i, const GMANVector &n, RtFloat eta);
-GMANDLL RtVoid     fresnel (const GMANVector &i, const GMANVector &n, RtFloat eta,
+GMAN_EXPORT GMANVector reflect (const GMANVector &i, const GMANVector &n);
+GMAN_EXPORT GMANVector refract (const GMANVector &i, const GMANVector &n, RtFloat eta);
+GMAN_EXPORT RtVoid     fresnel (const GMANVector &i, const GMANVector &n, RtFloat eta,
 		    RtFloat &kr, RtFloat &kt);
-GMANDLL RtVoid     fresnel (const GMANVector &i, const GMANVector &n, RtFloat eta,
+GMAN_EXPORT RtVoid     fresnel (const GMANVector &i, const GMANVector &n, RtFloat eta,
 		    RtFloat &kr, RtFloat &kt,
 		    GMANVector &r, GMANVector &t);
 

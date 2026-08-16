@@ -55,7 +55,7 @@
  *
  */
 
-class GMANDLL  GMANVertex : public UniversalSuperClass {
+class GMAN_EXPORT  GMANVertex : public UniversalSuperClass {
 private:
   GMANPoint		location;
 

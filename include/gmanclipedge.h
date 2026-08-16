@@ -57,7 +57,7 @@ enum GMANPlane { GMANFRONT, GMANBACK, GMANLEFT, GMANRIGHT, GMANTOP,
  *
  */
 
-class GMANDLL GMANClipEdge : public UniversalSuperClass {
+class GMAN_EXPORT GMANClipEdge : public UniversalSuperClass {
 private:
   GMANClipEdge *next;	// next clipper
   GMANVector4   normal;

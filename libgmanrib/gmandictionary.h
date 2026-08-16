@@ -39,7 +39,7 @@ using std::vector;
 
 typedef GMANUInt GMANTokenId;
 
-class GMANDLL  GMANTokenEntry 
+class GMAN_EXPORT  GMANTokenEntry 
 {
 public:
  enum TokenClass { CONSTANT, UNIFORM, VARYING, VERTEX };

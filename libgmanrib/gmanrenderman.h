@@ -42,7 +42,7 @@ using std::stack;
 #include "ri.h"
 #include "gmandictionary.h"
 
-class NOTGMANDLL GMANRenderMan
+class GMAN_EXPORT GMANRenderMan
 {
 protected:
   GMANDictionary dictionary;

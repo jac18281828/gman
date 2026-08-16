@@ -38,7 +38,7 @@
 #define CN    2048
 #define CMASK 0x7ff
 
-class GMANDLL  GMANNoise
+class GMAN_EXPORT  GMANNoise
 {
 private:
   RtInt  *prn;

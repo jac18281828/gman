@@ -45,11 +45,11 @@ static GMANLoadableObjectInfo info = {
 static GMANRaytraceRenderer	renderer;
 
 
-extern "C" NOTGMANDLL GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
+extern "C" GMAN_EXPORT GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
   return &info;
 }
 
-extern "C" NOTGMANDLL GMANRenderer *GMANLoadRenderer(void) {
+extern "C" GMAN_EXPORT GMANRenderer *GMANLoadRenderer(void) {
   return &renderer;
 }
 

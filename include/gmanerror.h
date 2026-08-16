@@ -37,7 +37,7 @@ using std::string;
 #include "ri.h"
 
 
-class GMANDLL  GMANError
+class GMAN_EXPORT  GMANError
 {
 private:
   RtInt code;
@@ -57,9 +57,9 @@ public:
   const char *getMessage (RtVoid) const{ return message.c_str(); }
 };
 
-extern RtVoid GMANDLL  GMANHandleError (GMANError &);
+extern RtVoid GMAN_EXPORT  GMANHandleError (GMANError &);
 
-extern RtErrorHandler GMANDLL  GMANErrorHandler;
+extern RtErrorHandler GMAN_EXPORT  GMANErrorHandler;
 
 #endif
 

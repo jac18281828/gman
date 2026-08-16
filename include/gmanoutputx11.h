@@ -51,7 +51,7 @@
  *
  */
 
-class GMANDLL  GMANOutputX11 : public GMANWindowOutput {
+class GMAN_EXPORT  GMANOutputX11 : public GMANWindowOutput {
 public:
   GMANOutputX11(const char *name, int width, int height); // default constructor
 

@@ -62,7 +62,7 @@
  *
  */
 
-class NOTGMANDLL GMANRaytraceRenderer : public GMANRenderer {
+class GMAN_EXPORT GMANRaytraceRenderer : public GMANRenderer {
 private:
   GMANRayObjectManager		objectManager;
   

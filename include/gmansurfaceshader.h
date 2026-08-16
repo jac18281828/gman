@@ -59,7 +59,7 @@
  *
  */
 
-class GMANDLL  GMANSurfaceShader : public GMANShader
+class GMAN_EXPORT  GMANSurfaceShader : public GMANShader
 {
  protected:
   typedef RtVoid (*illuminanceFunc) (GMANVector L, GMANColor Cl, GMANColor Ol); 

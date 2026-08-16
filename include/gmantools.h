@@ -33,7 +33,7 @@
 #include "gmanpoint.h"
 #include "gmanhpoint.h"
 
-class GMANDLL  GMANTools : public UniversalSuperClass
+class GMAN_EXPORT  GMANTools : public UniversalSuperClass
 {
  public:
   /*----------------------------------------------------------

@@ -75,7 +75,7 @@ typedef struct {
  *
  */
 
-class GMANDLL  GMANLoadable : public UniversalSuperClass {
+class GMAN_EXPORT  GMANLoadable : public UniversalSuperClass {
 public:
   // a required function for every loadable object.
   // The function returning the loadable object info struct

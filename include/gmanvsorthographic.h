@@ -30,7 +30,7 @@
 #include "gmanviewingsystem.h"
 #include "gmanmatrix4.h"
 
-class GMANDLL  GMANVSOrthographic : public GMANViewingSystem
+class GMAN_EXPORT  GMANVSOrthographic : public GMANViewingSystem
 {
   private:
     GMANMatrix4 mtrx;

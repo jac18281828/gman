@@ -51,7 +51,7 @@
  *
  */
 
-class GMANDLL  GMANOutputTIFF : public GMANOutput {
+class GMAN_EXPORT  GMANOutputTIFF : public GMANOutput {
   public:
 
     // public types

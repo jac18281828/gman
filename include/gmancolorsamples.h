@@ -32,7 +32,7 @@
 #include "universalsuperclass.h"
 #include "gmandefaults.h"
 
-class GMANDLL GMANColorSamples : public UniversalSuperClass
+class GMAN_EXPORT GMANColorSamples : public UniversalSuperClass
 {
 private:
   int *counter;

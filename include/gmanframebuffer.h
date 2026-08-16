@@ -45,7 +45,7 @@
 #include "gmanbitmap.h"
 
 // the filter object forward declaration
-class GMANDLL GMANFilter;
+class GMAN_EXPORT GMANFilter;
 
 /*
  * RenderMan API GMANFrameBuffer
@@ -55,7 +55,7 @@ class GMANDLL GMANFilter;
  */
 
 // support anti-aliasing
-class GMANDLL  GMANFrameBuffer : public GMANBitmap {
+class GMAN_EXPORT  GMANFrameBuffer : public GMANBitmap {
 private:
   int		filterWidth;
   int		filterHeight;

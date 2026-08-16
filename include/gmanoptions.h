@@ -59,7 +59,7 @@ class GMANRenderer;
  *
  */
 
-class GMANDLL  GMANOptions : public UniversalSuperClass {
+class GMAN_EXPORT  GMANOptions : public UniversalSuperClass {
   public:
     // public types
     

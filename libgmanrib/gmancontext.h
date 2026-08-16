@@ -36,7 +36,7 @@ using std::list;
 #include "gmanerror.h"
 #include "gmanrenderman.h"
 
-class GMANDLL  GMANContext
+class GMAN_EXPORT  GMANContext
 {
 private:
   list<GMANRenderMan *> chl;

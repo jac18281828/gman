@@ -59,7 +59,7 @@ using std::string;
  *
  */
 
-class GMANDLL  GMANOutput : public GMANFrameBuffer {
+class GMAN_EXPORT  GMANOutput : public GMANFrameBuffer {
   public:
 
     // public types

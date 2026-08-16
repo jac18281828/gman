@@ -85,7 +85,7 @@
  * Your mileage may vary.
  * John
  */
-class NOTGMANDLL GMANReyesRenderer : public GMANRenderer {
+class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
   private:
 
   RtInt height;

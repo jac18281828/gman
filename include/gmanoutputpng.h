@@ -51,7 +51,7 @@
  *
  */
 
-class GMANDLL  GMANOutputPNG : public GMANOutput {
+class GMAN_EXPORT  GMANOutputPNG : public GMANOutput {
 public:
   GMANOutputPNG(const char *path, int width, int height); // default constructor
 

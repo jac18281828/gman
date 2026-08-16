@@ -27,18 +27,14 @@
 */
 
 /* system headers */
+#include <cstdio>
 
-/* Util headers */
-#ifdef HAVE_LIBPNM
-extern "C" {
-#include <ppm.h>
-}
-#endif
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanoutput.h" /* Super class */
 #include "gmanoutputpnm.h" /* Declaration Header */
 #include "gmancolor.h"
+#include "gmanerror.h"
 
 /*
  * RenderMan API GMANOutputPNM
@@ -53,57 +49,42 @@ GMANOutputPNM::GMANOutputPNM(const char *path, int width, int height)
 // default destructor 
 GMANOutputPNM::~GMANOutputPNM() { };
 
-RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode mode, 
+// Writes a binary P6 portable pixmap directly. This driver used to depend on
+// netpbm and its whole body was compiled out when libpnm was absent, which it
+// always was, so PNM output never produced a file.
+RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/,
 			   RtFloat gain, 
 			   RtFloat gamma) {
-#ifdef HAVE_LIBPNM
-
-  debug("Have PNM");
-
-  pixel* pixrow;
-  pixel* pp;
-
-  int argc = 0;
-  char *argv[1] = { "gman" };
 
   gammaCorrect.setExposure(gain, gamma);
 
-  ppm_init(&argc, argv);
-  FILE *ppmFile = fopen(outputName.c_str(), "w");
-  if(ppmFile) {
-
-    ppm_writeppminit(ppmFile, xres, yres, PPM_MAXMAXVAL, 0);
-    pixrow = ppm_allocrow(xres);
-
-
-    for(int row=0; row<yres; row++) {
-      int col;
-      for(col=0, pp=pixrow; col<xres; col++, pp++) {
-	GMANColorRGB color;
-	color = getPixel(col, row);
-
-	gammaCorrect.correct(color);
-	
-	//
-	// get pixels in inverted order with respect
-	// to y, i.e., flip the image on output hoizontally,
-	// positive y values go UP
-
-
-	// reduce if required
-	if(quantizer) 
-	    quantizer->doColor(color);
-	
-	// default, (no reduction) is 24bit
-	
-	// write r, g, and b
-	PPM_ASSIGN(*pp, color.getRed(), color.getGreen(), color.getBlue());
-      }
-      ppm_writeppmrow(ppmFile, pixrow, xres, PPM_MAXMAXVAL, 0);
-
-    }
-    pm_close(ppmFile);
+  FILE *ppmFile = std::fopen(outputName.c_str(), "wb");
+  if(!ppmFile) {
+    std::string errorMsg("Unable to open output file: ");
+    errorMsg.append(outputName);
+    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
   }
-#endif
-}
 
+  std::fprintf(ppmFile, "P6\n%d %d\n255\n", xres, yres);
+
+  for(int row=0; row<yres; row++) {
+    for(int col=0; col<xres; col++) {
+      GMANColorRGB color;
+      color = getPixel(col, row);
+
+      gammaCorrect.correct(color);
+
+      if(quantizer) 
+	quantizer->doColor(color);
+
+      const unsigned char rgb[3] = {
+	static_cast<unsigned char>(color.getRed()),
+	static_cast<unsigned char>(color.getGreen()),
+	static_cast<unsigned char>(color.getBlue())
+      };
+      std::fwrite(rgb, 1, sizeof(rgb), ppmFile);
+    }
+  }
+
+  std::fclose(ppmFile);
+}
