@@ -1,0 +1,40 @@
+# macOS metadata
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Build trees
+build/
+build-*/
+CMakeUserPresets.json
+
+# Compiled output
+*.o
+*.lo
+*.a
+*.la
+*.so
+*.so.*
+*.dylib
+*.bundle
+*.d
+
+# Rendered output the baseline run drops in the working directory
+/sphere.tif
+
+# Autotools strays
+Makefile
+Makefile.in
+autom4te.cache/
+.deps/
+.libs/
+config.log
+config.status
+configure
+aclocal.m4
+libtool
+stamp-h*
+
+# Working documents, not a commit artifact
+prompts/
