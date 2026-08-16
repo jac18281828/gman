@@ -64,9 +64,6 @@
 */
 
 #include <list>
-#if HAVE_STD_NAMESPACE
-using std::list;
-#endif
 
 #include "gmantransform.h"
 
@@ -243,7 +240,7 @@ RtVoid GMANTransform::concat(GMANTransform &t)
     t1=dynamic_cast<GMANMovingMatrix *> (storage);
     t2=dynamic_cast<GMANMovingMatrix *> (t.storage);
 
-    list<RtFloat> tm;
+    std::list<RtFloat> tm;
     int i;
     for(i=0;i<a;i++)
       tm.push_back(t1->getTime(i));
@@ -252,7 +249,7 @@ RtVoid GMANTransform::concat(GMANTransform &t)
 
     GMANMovingMatrix *mm;
     RtFloat *tmp = new RtFloat[tm.size()];
-    list<RtFloat>::iterator it;
+    std::list<RtFloat>::iterator it;
     for(it=tm.begin(),i=0;it!=tm.end();it++,i++) {
       tmp[i]=*it;
     }

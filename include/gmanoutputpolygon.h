@@ -39,9 +39,6 @@
 
 // STL
 #include <vector>
-#if HAVE_STD_NAMESPACE
-using std::vector;
-#endif
 
 // the renderman interface
 #include "ri.h"
@@ -86,7 +83,7 @@ class GMAN_EXPORT  GMANOutVertex : public UniversalSuperClass // Output Vertex
 class GMAN_EXPORT  GMANOutputPolygon : public UniversalSuperClass {
 private:
 
-  vector<GMANOutVertex> vertexVec; // output array
+  std::vector<GMANOutVertex> vertexVec; // output array
 
   
 public:

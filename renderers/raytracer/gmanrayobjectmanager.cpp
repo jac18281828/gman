@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -56,20 +56,20 @@ GMANPrimitive * GMANRayObjectManager::getRSPolygon (RtInt nverts,
 							  GMANOptions *opt,
 							  GMANAttributes *attr,
 							  GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSGeneralPolygon (RtInt nloops, 
 								 RtInt nverts[], 
 								 GMANParameterList pl,
 								 GMANOptions *opt,
 								 GMANAttributes *attr,
 								 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSPointsPolygon (RtInt npolys, 
 								RtInt nverts[], 
 								RtInt verts[],
@@ -77,10 +77,10 @@ GMANPrimitive * GMANRayObjectManager::getRSPointsPolygon (RtInt npolys,
 								GMANOptions *opt,
 								GMANAttributes *attr,
 								GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSPointsGeneralPolygons (RtInt npolys, 
 									RtInt nloops[],
 									RtInt nverts[], 
@@ -89,7 +89,7 @@ GMANPrimitive * GMANRayObjectManager::getRSPointsGeneralPolygons (RtInt npolys,
 									GMANOptions *opt,
 									GMANAttributes *attr,
 									GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
 
@@ -98,10 +98,10 @@ GMANPrimitive * GMANRayObjectManager::getRSPatch (RtToken type,
 							GMANOptions *opt,
 							GMANAttributes *attr,
 							GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSPatchMesh (RtToken type, 
 							    RtInt nu, 
 							    RtToken uwrap,
@@ -111,10 +111,10 @@ GMANPrimitive * GMANRayObjectManager::getRSPatchMesh (RtToken type,
 							    GMANOptions *opt,
 							    GMANAttributes *attr,
 							    GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 }; 
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSNuPatch (RtInt nu,
 							  RtInt uorder,
 							  RtFloat uknot[],
@@ -129,10 +129,10 @@ GMANPrimitive * GMANRayObjectManager::getRSNuPatch (RtInt nu,
 							  GMANOptions *opt,
 							  GMANAttributes *attr,
 							  GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSSphere (RtFloat radius,
 							 RtFloat zmin,
 							 RtFloat zmax,
@@ -141,10 +141,10 @@ GMANPrimitive * GMANRayObjectManager::getRSSphere (RtFloat radius,
 							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSCone (RtFloat height,
 						       RtFloat radius,
 						       RtFloat tmax,
@@ -152,10 +152,10 @@ GMANPrimitive * GMANRayObjectManager::getRSCone (RtFloat height,
 						       GMANOptions *opt,
 						       GMANAttributes *attr,
 						       GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSCylinder (RtFloat radius,
 							   RtFloat zmin,
 							   RtFloat zmax,
@@ -164,10 +164,10 @@ GMANPrimitive * GMANRayObjectManager::getRSCylinder (RtFloat radius,
 							   GMANOptions *opt,
 							   GMANAttributes *attr,
 							   GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSHyperboloid (RtPoint point1,
 							      RtPoint point2,
 							      RtFloat tmax,
@@ -175,10 +175,10 @@ GMANPrimitive * GMANRayObjectManager::getRSHyperboloid (RtPoint point1,
 							      GMANOptions *opt,
 							      GMANAttributes *attr,
 							      GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSParaboloid (RtFloat rmax,
 							     RtFloat zmin,
 							     RtFloat zmax,
@@ -187,10 +187,10 @@ GMANPrimitive * GMANRayObjectManager::getRSParaboloid (RtFloat rmax,
 							     GMANOptions *opt,
 							     GMANAttributes *attr,
 							     GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSDisk (RtFloat height,
 						       RtFloat radius,
 						       RtFloat tmax,
@@ -198,20 +198,20 @@ GMANPrimitive * GMANRayObjectManager::getRSDisk (RtFloat height,
 						       GMANOptions *opt,
 						       GMANAttributes *attr,
 						       GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSTorus (RtFloat majrad,RtFloat minrad,RtFloat phimin,RtFloat phimax,
 							RtFloat tmax,
 							GMANParameterList pl,
 							GMANOptions *opt,
 							GMANAttributes *attr,
 							GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSBlobby (RtInt nleaf,
 							 RtInt ncode,
 							 RtInt code[],
@@ -223,19 +223,19 @@ GMANPrimitive * GMANRayObjectManager::getRSBlobby (RtInt nleaf,
 							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSPoints (RtInt npoints,
 							 GMANParameterList pl,
 							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSCurves (RtToken type,
 							 RtInt ncurves, 
 							 RtInt nvertices[],
@@ -244,10 +244,10 @@ GMANPrimitive * GMANRayObjectManager::getRSCurves (RtToken type,
 							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANRayObjectManager::getRSSubdivisionMesh (RtToken mask,
 								  RtInt nf,
 								  RtInt nverts[],
@@ -261,7 +261,7 @@ GMANPrimitive * GMANRayObjectManager::getRSSubdivisionMesh (RtToken mask,
 								  GMANOptions *opt,
 								  GMANAttributes *attr,
 								  GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
 

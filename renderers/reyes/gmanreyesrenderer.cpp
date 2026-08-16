@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -49,7 +49,7 @@ void GMANReyesRenderer::render(GMANFrameBuffer *frameBuffer,
 			       GMANViewingSystem *viewingSys,
 			       const GMANOptions       &options,
 			       const GMANAttributes    &attributes)
-    throw (GMANError) {
+ {
 
   width = frameBuffer->getWidth();
   height = frameBuffer->getHeight();
@@ -77,25 +77,25 @@ void GMANReyesRenderer::render(GMANFrameBuffer *frameBuffer,
 			outPoly.reset();
 			for (int i = 0; i < face->getNumVerts(); i++) {
 			    const GMANVertex *fv = face->getVertex(i);
-			    
+
 			    GMANPoint p = fv->getLocation();
 
 			    GMANVertex4 v;
 			    GMANVector4 coords(p.getX(), 
 					       p.getY(), 
 					       p.getZ(), 1.0);
-			    
+
 			    v.set(coords, fv->getColor(), fv->getAlpha());
 			    outPoly.addVertex(v);
 			}
 			(void)clipper.clip(face, 
 					   outPoly, 
 					   viewingSys);
-	    
+
 			//render the face into frameBuffer
 			// using the reyes alg.
 			reyes(outPoly, frameBuffer);
-			
+
 			face = face->getNext();
 		    }
 		}
@@ -109,13 +109,13 @@ void GMANReyesRenderer::render(GMANFrameBuffer *frameBuffer,
     debug("REYES portion done.");
 
     debug("Beginning ray casting portion.");
-    
+
     // We have applied a local illumination model to 'hopefully'
     // most of the image ... now we want to raytrace the image in
     // screen space
     for(int xs=0; xs < width; xs++) {
 	for(int ys=0; ys < height; ys++) {
-	    
+
 	    // should we cast a ray ?
 	    if(checkSpec(xs, ys) ||  // yes if specular
 	       checkTrans(xs, ys)) { // yes if transparancy
@@ -129,19 +129,19 @@ void GMANReyesRenderer::render(GMANFrameBuffer *frameBuffer,
 // scan the polygon with reyes :)
 void GMANReyesRenderer::reyes(GMANOutputPolygon &out,
 			      GMANFrameBuffer    *frameBuffer) 
-    throw (GMANError) {
-    
+ {
+
 }
 
-    
+
 // trace a ray from screen x and screen y
 void GMANReyesRenderer::traceRay(RtInt xs, 
 				 RtInt ys,
 				 GMANFrameBuffer    *frameBuffer,
 				 GMANViewingSystem  *viewingSystem) 
-    throw (GMANError) {
+ {
 
-    
+
 
 }
 

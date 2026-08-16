@@ -35,9 +35,6 @@
 
 /* Headers */
 #include <stack>
-#if HAVE_STD_NAMESPACE
-using std::stack;
-#endif
 
 #include "ri.h"
 #include "gmandictionary.h"
@@ -57,7 +54,7 @@ protected:
     RtInt uStep;
     RtInt vStep;
   };
-  stack<Steps> steps;
+  std::stack<Steps> steps;
 
 public:
   GMANRenderMan();

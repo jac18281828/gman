@@ -31,10 +31,6 @@
 */
 
 #include <iostream>
-#if HAVE_STD_NAMESPACE
-using std::cout;
-using std::endl;
-#endif
 
 #include "gmanerror.h"
 
@@ -44,8 +40,8 @@ RtInt RiLastError;
 
 static RtVoid print (RtInt code, RtInt severity, const char *msg)
 {
-  string cd;
-  string sev;
+  std::string cd;
+  std::string sev;
 
   switch(code) {
   case RIE_NOERROR: cd= "RIE_NOERROR ";
@@ -113,7 +109,7 @@ static RtVoid print (RtInt code, RtInt severity, const char *msg)
   case RIE_SEVERE: sev="SEVERE: ";
     break;
   }
-  cout << sev << cd << "-- " << msg  << endl;
+  std::cout << sev << cd << "-- " << msg  << std::endl;
 }
 
 #ifdef __cplusplus
@@ -152,14 +148,14 @@ GMANError::GMANError (RtInt cd, RtInt sev, const char *msg)
 {
   code=cd;
   severity=sev;
-  message=string(msg);
+  message=std::string(msg);
 }
 
 RtVoid GMANError::set (RtInt cd, RtInt sev, const char *msg)
 {
   code=cd;
   severity=sev;
-  message=string(msg);
+  message=std::string(msg);
 }
 
 RtVoid GMANHandleError (GMANError &r)

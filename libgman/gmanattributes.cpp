@@ -9,13 +9,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -26,7 +26,7 @@
 
 #include "gmanattributes.h"
 
-GMANAttributes::GMANAttributes() throw (GMANError) :
+GMANAttributes::GMANAttributes() :
   areaLightModule(NULL),
   areaLight(NULL),
   surfaceModule(NULL),
@@ -39,7 +39,7 @@ GMANAttributes::GMANAttributes() throw (GMANError) :
   exterior(NULL),
   displacementModule(NULL),
   displacement(NULL)
-  
+
 { // Shading attributes
   for(int i=0; i<NCOMPS; i++) {
     color[i]=1.0;
@@ -112,11 +112,11 @@ RtVoid GMANAttributes::setIlluminate (RtLightHandle lh, RtBoolean onoff)
     lightList.off(lh);  
 }
 
-RtVoid GMANAttributes::setSurface (const string & name, GMANParameterList &pl,
-				   GMANRenderer &rd) throw(GMANError)
+RtVoid GMANAttributes::setSurface (const std::string & name, GMANParameterList &pl,
+				   GMANRenderer &rd)
 {
   if(surfaceModule) delete(surfaceModule);
-  string objectName = "lib";
+  std::string objectName = "lib";
   objectName += name;
   objectName += ".so";
   surfaceModule = new GMANLoadableShader(objectName.c_str());
@@ -125,13 +125,13 @@ RtVoid GMANAttributes::setSurface (const string & name, GMANParameterList &pl,
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified surface shader is not a surface shader."));
   }
-  
+
   surface->set(pl);
   surface->set(rd);
 }
 
-RtVoid GMANAttributes::setDisplacement (const string & name, GMANParameterList &pl,
-					GMANRenderer &rd) throw(GMANError)
+RtVoid GMANAttributes::setDisplacement (const std::string & name, GMANParameterList &pl,
+					GMANRenderer &rd)
 {
   if(displacementModule) delete(displacementModule);
   displacementModule = new GMANLoadableShader(name.c_str());
@@ -140,13 +140,13 @@ RtVoid GMANAttributes::setDisplacement (const string & name, GMANParameterList &
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified displacement shader is not a displacement shader."));
   }
-  
+
   displacement->set(pl);
   displacement->set(rd);
 }
 
-RtVoid GMANAttributes::setAtmosphere (const string & name, GMANParameterList &pl,
-				      GMANRenderer &rd) throw(GMANError)
+RtVoid GMANAttributes::setAtmosphere (const std::string & name, GMANParameterList &pl,
+				      GMANRenderer &rd)
 {
   if(atmosphereModule) delete(atmosphereModule);
   atmosphereModule = new GMANLoadableShader(name.c_str());
@@ -155,13 +155,13 @@ RtVoid GMANAttributes::setAtmosphere (const string & name, GMANParameterList &pl
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified atmosphere shader is not a volume shader."));
   }
-  
+
   atmosphere->set(pl);
   atmosphere->set(rd);
 }
 
-RtVoid GMANAttributes::setInterior (const string & name, GMANParameterList &pl,
-				    GMANRenderer &rd) throw(GMANError)
+RtVoid GMANAttributes::setInterior (const std::string & name, GMANParameterList &pl,
+				    GMANRenderer &rd)
 {
   if(interiorModule) delete(interiorModule);
   interiorModule = new GMANLoadableShader(name.c_str());
@@ -170,13 +170,13 @@ RtVoid GMANAttributes::setInterior (const string & name, GMANParameterList &pl,
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified interior shader is not a volume shader."));
   }
-  
+
   interior->set(pl);
   interior->set(rd);
 }
 
-RtVoid GMANAttributes::setExterior (const string & name, GMANParameterList &pl,
-				    GMANRenderer &rd) throw(GMANError)
+RtVoid GMANAttributes::setExterior (const std::string & name, GMANParameterList &pl,
+				    GMANRenderer &rd)
 {
   if(exteriorModule) delete(exteriorModule);
   exteriorModule = new GMANLoadableShader(name.c_str());
@@ -185,7 +185,7 @@ RtVoid GMANAttributes::setExterior (const string & name, GMANParameterList &pl,
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified exterior shader is not a volume shader."));
   }
-  
+
   exterior->set(pl);
   exterior->set(rd);
 }

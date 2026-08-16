@@ -40,9 +40,6 @@
 #include <map>
 #include <stack>
 #include <string>
-#if HAVE_STD_NAMESPACE
-using std::list;
-#endif
 
 // the renderman interface
 #include "ri.h"
@@ -71,7 +68,7 @@ public:
 class GMAN_EXPORT GMANLightList
 {
 private:
-  list<RtLightHandle> ll;
+  std::list<RtLightHandle> ll;
 public:
   RtVoid  on  (RtLightHandle h);
   RtVoid  off (RtLightHandle h);

@@ -58,7 +58,7 @@ public:
   // public types
   typedef GMANPrimitive*	ObjectPtr;
 
-  typedef list<ObjectPtr>	ObjectList;
+  typedef std::list<ObjectPtr>	ObjectList;
 
 private:
   ObjectList			objects;

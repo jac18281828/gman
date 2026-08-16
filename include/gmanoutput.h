@@ -35,9 +35,6 @@
 
 // STL
 #include <string>
-#if HAVE_STD_NAMESPACE
-using std::string;
-#endif
 
 // the renderman interface
 #include "ri.h"
@@ -72,7 +69,7 @@ class GMAN_EXPORT  GMANOutput : public GMANFrameBuffer {
 	Z=GMANQuantize::Z } DisplayMode;
     
   protected:
-    string	outputName;
+    std::string	outputName;
 
     GMANQuantize	*quantizer;
 

@@ -54,8 +54,8 @@ GMANLightSourceMgr::~GMANLightSourceMgr() { };
 
 RtVoid GMANLightList::on (RtLightHandle h)
 {
-  list<RtLightHandle>::iterator first=ll.begin();
-  list<RtLightHandle>::iterator last=ll.end();
+  std::list<RtLightHandle>::iterator first=ll.begin();
+  std::list<RtLightHandle>::iterator last=ll.end();
   for (;first!=last;first++) {
     if (*first==h) return;
   }
@@ -64,8 +64,8 @@ RtVoid GMANLightList::on (RtLightHandle h)
 
 RtVoid GMANLightList::off (RtLightHandle h)
 {
-  list<RtLightHandle>::iterator first=ll.begin();
-  list<RtLightHandle>::iterator last=ll.end();
+  std::list<RtLightHandle>::iterator first=ll.begin();
+  std::list<RtLightHandle>::iterator last=ll.end();
   for (;first!=last;first++) {
     if (*first==h) {
       ll.erase(first);

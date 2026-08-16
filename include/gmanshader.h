@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -25,7 +25,7 @@
   To contact the author of GNU GMAN, write to John Cairns, 607 E STUART ST, 
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
- 
+
 
 #ifndef __GMAN_GMANSHADER_H
 #define __GMAN_GMANSHADER_H 1
@@ -67,12 +67,12 @@ struct GMANShaderParamInfo
 class GMAN_EXPORT  GMANShader : public UniversalSuperClass 
 {
 public:
-  
+
   // public types
-  
+
   // enumerated shader types
   typedef enum { DISPLACEMENT, VOLUME, IMAGER, LIGHTSOURCE, SURFACE } ShaderType;
-  
+
   
 protected:
   GMANParameterList pl;
@@ -81,11 +81,11 @@ protected:
 public:
   GMANShader ();
   virtual ~GMANShader ();
-  
+
   virtual RtVoid set (GMANParameterList &p);
   virtual RtVoid set (GMANRenderer &p);
-  
-  virtual ShaderType getType(RtVoid) const throw(GMANError) = 0;
+
+  virtual ShaderType getType(RtVoid) const = 0;
 };
 
 

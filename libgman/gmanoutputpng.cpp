@@ -34,6 +34,7 @@
 #ifdef HAVE_LIBPNG
 extern "C" {
 #include <png.h>
+#include <zlib.h>
 }
 #endif
 
@@ -69,7 +70,7 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
     // open jpeg output file for writing
     FILE *pngFile = fopen(outputName.c_str(), "w");
     if(pngFile == NULL) {
-	string errorMsg("Unable to open output file: ");
+	std::string errorMsg("Unable to open output file: ");
 	errorMsg.append(outputName);
 	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
     }
@@ -101,7 +102,7 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
     
     // set the error handler
 #ifdef PNG_SETJMP_SUPPORTED
-    if(setjmp(png_ptr->jmpbuf)) {
+    if(setjmp(png_jmpbuf(png_ptr))) {
 	// jump here on error
 	fclose(pngFile);
 	png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
@@ -146,14 +147,14 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
 
     // write useful comments
     png_text text_ptr[3];
-    text_ptr[0].key = "Title";
-    text_ptr[0].text = "GMAN Generated Image";
+    text_ptr[0].key = const_cast<png_charp>("Title");
+    text_ptr[0].text = const_cast<png_charp>("GMAN Generated Image");
     text_ptr[0].compression = PNG_TEXT_COMPRESSION_NONE;
-    text_ptr[1].key = "Copyright";
-    text_ptr[1].text = "Copyright (c) 2002 John Cairns";
+    text_ptr[1].key = const_cast<png_charp>("Copyright");
+    text_ptr[1].text = const_cast<png_charp>("Copyright (c) 2002 John Cairns");
     text_ptr[1].compression = PNG_TEXT_COMPRESSION_NONE;
-    text_ptr[2].key = "Author";
-    text_ptr[2].text = "John Cairns <john@2ad.com> ";
+    text_ptr[2].key = const_cast<png_charp>("Author");
+    text_ptr[2].text = const_cast<png_charp>("John Cairns <john@2ad.com> ");
     text_ptr[2].compression = PNG_TEXT_COMPRESSION_NONE;
     png_set_text(png_ptr, info_ptr, text_ptr, 2);
     png_write_info(png_ptr, info_ptr);

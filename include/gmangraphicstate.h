@@ -35,10 +35,6 @@
 #include <iostream>
 #include <stack>
 #include <vector>
-#if HAVE_STD_NAMESPACE
-using std::stack;
-using std::vector;
-#endif
 
 #include "ri.h"
 
@@ -55,9 +51,9 @@ class GMAN_EXPORT  GMANGraphicState : public UniversalSuperClass
 {
 public:
   // public types
-  typedef stack<GMANOptions>	    OptionsStack;
-  typedef stack<GMANAttributes>     AttributesStack;
-  typedef stack<GMANTransform>	    TransformStack;
+  typedef std::stack<GMANOptions>	    OptionsStack;
+  typedef std::stack<GMANAttributes>     AttributesStack;
+  typedef std::stack<GMANTransform>	    TransformStack;
 
 
   /* Begin-End Blocks */
@@ -167,7 +163,7 @@ protected:
   static CommandIdentity cmdMakeShadow;
 
 private:
-  stack<CurrentState> nest;
+  std::stack<CurrentState> nest;
     
   CurrentState block;
 
@@ -181,7 +177,7 @@ private:
 
   /* Motion stuff */
   RtInt nbSamples;
-  vector<RtFloat> samples;
+  std::vector<RtFloat> samples;
   RtInt motionIndex;
   GMANMovingMatrix mm;
   

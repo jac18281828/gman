@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -40,12 +40,12 @@
 const char *		GMANLoadableShader::LoadShaderFncName = "GMANLoadShader";
 
 // default constructor
-GMANLoadableShader::GMANLoadableShader(const char *path) throw(GMANError) 
+GMANLoadableShader::GMANLoadableShader(const char *path) 
   : GMANShader(),  GMANLoadable(path), shader(NULL) { 
-  
+
   LoadShaderFnc loadShader = 
     (LoadShaderFnc)loadSymbol(LoadShaderFncName);
-  
+
   if(loadShader == NULL) {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Loadable module missing shader."));
   }
@@ -62,7 +62,7 @@ GMANLoadableShader::GMANLoadableShader(const char *path) throw(GMANError)
 GMANLoadableShader::~GMANLoadableShader() { };
 
 GMANShader::ShaderType GMANLoadableShader::getType(RtVoid) const 
-  throw(GMANError)
+
 {
   if(!shader) {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "No shader available."));

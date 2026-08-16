@@ -116,8 +116,8 @@ RtVoid GMANRenderMan::pop()
 RtToken GMANRenderMan::Declare(const char *name, const char *declaration) 
 {
   GMANInlineParse ip;
-  string a(name);
-  string b(declaration);
+  std::string a(name);
+  std::string b(declaration);
 
   b+=" ";
   b+=a;

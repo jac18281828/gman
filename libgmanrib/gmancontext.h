@@ -28,9 +28,6 @@
 #define __GMANCONTEXT_H 1
 
 #include <list>
-#if HAVE_STD_NAMESPACE
-using std::list;
-#endif
 
 #include "ri.h"
 #include "gmanerror.h"
@@ -39,7 +36,7 @@ using std::list;
 class GMAN_EXPORT  GMANContext
 {
 private:
-  list<GMANRenderMan *> chl;
+  std::list<GMANRenderMan *> chl;
   GMANRenderMan *active;
 public:
   GMANContext();

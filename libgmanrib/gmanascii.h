@@ -27,16 +27,13 @@
 #define __GMANASCII_H 1
 
 #include <fstream>
-#if HAVE_STD_NAMESPACE
-using std::ofstream;
-#endif
 
 #include "gmanrenderman.h"
 
 class GMAN_EXPORT GMANASCII : public GMANRenderMan
 {
  protected:
-  ofstream  out;
+  std::ofstream  out;
   RtVoid  printArray (RtInt n, RtInt *p);
   RtVoid  printArray (RtInt n, RtFloat *p);
   RtVoid  printToken (RtToken t);

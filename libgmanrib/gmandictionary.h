@@ -29,10 +29,6 @@
 
 #include <vector>
 #include <string>
-#if HAVE_STD_NAMESPACE
-using std::string;
-using std::vector;
-#endif
 
 #include "ri.h"
 #include "gmantypes.h"
@@ -46,16 +42,16 @@ public:
  enum TokenType { FLOAT, POINT, VECTOR, NORMAL, COLOR, STRING, MATRIX, HPOINT, INTEGER };
 
 private:
-  string     name;
+  std::string     name;
   TokenClass tclass:4;
   TokenType  ttype:6;
   bool       in_line:1;
   RtInt      quantity;
 
 public:
-  GMANTokenEntry (string n, TokenClass tc, TokenType tt, RtInt qnt=1, bool inln=false);
+  GMANTokenEntry (std::string n, TokenClass tc, TokenType tt, RtInt qnt=1, bool inln=false);
 
-  const string getName () { return name; }
+  const std::string getName () { return name; }
   TokenClass   getClass () { return tclass; }
   TokenType    getType () { return ttype; }
   RtInt        getQuantity () { return quantity; }
@@ -70,12 +66,12 @@ public:
 class GMANDictionary
 {
 private:
-  vector<GMANTokenEntry> te;
+  std::vector<GMANTokenEntry> te;
 public:
   GMANDictionary();
 
-  GMANTokenId addToken (string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt=1, bool inln=false);
-  GMANTokenId getTokenId (string n);
+  GMANTokenId addToken (std::string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt=1, bool inln=false);
+  GMANTokenId getTokenId (std::string n);
 #ifdef PRE
   RtVoid        isValid     (GMANTokenId id);
 #endif

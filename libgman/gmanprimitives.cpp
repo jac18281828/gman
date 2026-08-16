@@ -70,9 +70,9 @@ GMANBlobby::GMANBlobby(RtInt nlf, RtInt ncd, RtInt cd[],
   for(i=0;i<nf;i++)
     floats[i]=f[i];
   nstrings=ns;
-  strings=new string[ns];
+  strings=new std::string[ns];
   for(i=0;i<ns;i++)
-    strings[i]=string(s[i]);
+    strings[i]=std::string(s[i]);
 }
 GMANBlobby::GMANBlobby(GMANBlobby const &b) : GMANPrimDatStorage(b)
 {

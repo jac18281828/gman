@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -47,7 +47,7 @@ RtToken   *GMANRIBParse::KeywordTable=NULL;
 GMANRIBParse::GMANRIBParse(GMANRenderMan *renderman,
 			   const char *rib,
 			   RtToken name) 
-  throw(GMANError) : 
+ : 
   UniversalSuperClass(), 
   handlersRegistered(false),
   renderMan(renderman),
@@ -73,7 +73,7 @@ RtBoolean	GMANRIBParse::addHandler(RtToken	keyword,
 
     tokenHandlerMap.insert(TokenHandlerMap::value_type(keyword,
 						       handler));
-    
+
     return RI_TRUE;
   }
   return RI_FALSE;
@@ -90,18 +90,18 @@ RtVoid	GMANRIBParse::addDefaultHandlers(RtVoid) {
 #endif
 }
 
-RtVoid  GMANRIBParse::parse(RtVoid) throw(GMANError) {
+RtVoid  GMANRIBParse::parse(RtVoid) {
 
   // add all handlers
   if(!handlersRegistered) {
     addHandlers();
-    
+
     // add default handlers
     addDefaultHandlers();
-    
+
     handlersRegistered=true;
   }
-  
+
   while(true) {
     const GMANToken &tok = nextToken();
 
@@ -400,7 +400,7 @@ RtVoid  GMANRIBParse::parse(RtVoid) throw(GMANError) {
 
 RtFloat GMANRIBParse::nextFloat () {
   const GMANToken &tok = nextToken();
-  
+
   float real;
 
   if (tok.getType() == GMANToken::REAL) {
@@ -417,7 +417,7 @@ RtFloat GMANRIBParse::nextFloat () {
 
 RtInt GMANRIBParse::nextInt () {
   const GMANToken &tok = nextToken();
-  
+
   if (tok.getType() != GMANToken::LONGINT) {
     GMANError error(RIE_BADFILE,RIE_ERROR,"Expecting int token");
     throw(error);
@@ -428,19 +428,19 @@ RtInt GMANRIBParse::nextInt () {
 
 char* GMANRIBParse::copyStringToken() {
   const GMANToken &tok = nextToken();
-  
+
   if (tok.getType() != GMANToken::STRING) {
     GMANError error(RIE_BADFILE,RIE_ERROR,"Expecting string token");
     throw(error);
   }
 
-  const char *string = tok.getString().c_str();
-  char *retval = new char[strlen(string) + 1];
-  strcpy(retval, string);
+  const char *std::string = tok.getString().c_str();
+  char *retval = new char[strlen(std::string) + 1];
+  strcpy(retval, std::string);
   return retval;
 }
 
-RtVoid  GMANRIBParse::parseOption(RtVoid) throw(GMANError) {
+RtVoid  GMANRIBParse::parseOption(RtVoid) {
   char *name = copyStringToken();
 
   RtInt n = 0;
@@ -452,10 +452,10 @@ RtVoid  GMANRIBParse::parseOption(RtVoid) throw(GMANError) {
   renderMan->RiOptionV(name, n, tokens, parms);
 
   delete name;
-  
+
 }
 
-RtVoid  GMANRIBParse::parseDisplay(RtVoid) throw(GMANError) {
+RtVoid  GMANRIBParse::parseDisplay(RtVoid) {
   char *name = copyStringToken();
   char *type = copyStringToken();
   char *mode = copyStringToken();
@@ -471,10 +471,10 @@ RtVoid  GMANRIBParse::parseDisplay(RtVoid) throw(GMANError) {
   delete name;
   delete type;
   delete mode;
-  
+
 }
 
-RtVoid  GMANRIBParse::parseFormat(RtVoid) throw(GMANError) {
+RtVoid  GMANRIBParse::parseFormat(RtVoid) {
   RtInt xresolution = nextInt();
   RtInt yresolution = nextInt();
   RtFloat pixelaspectratio = nextFloat();
@@ -482,7 +482,7 @@ RtVoid  GMANRIBParse::parseFormat(RtVoid) throw(GMANError) {
   renderMan->RiFormat(xresolution, yresolution, pixelaspectratio);
 }
 
-RtVoid GMANRIBParse::parseProjection(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseProjection(RtVoid) {
   char *name = copyStringToken();
 
   RtInt n = 0;
@@ -496,7 +496,7 @@ RtVoid GMANRIBParse::parseProjection(RtVoid) throw(GMANError) {
   delete name;
 }
 
-RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) {
   char *type = copyStringToken();
   RtFloat value = nextFloat();
 
@@ -505,8 +505,8 @@ RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) throw(GMANError) {
   delete type;
 }
 
-RtVoid GMANRIBParse::parseShadingInterpolation(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseShadingInterpolation(RtVoid) {
+
   RtToken type = copyStringToken();
 
   renderMan->RiShadingInterpolation(type);
@@ -514,15 +514,15 @@ RtVoid GMANRIBParse::parseShadingInterpolation(RtVoid) throw(GMANError) {
   delete type;
 }
 
-RtVoid GMANRIBParse::parseShadingRate(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseShadingRate(RtVoid) {
+
   RtFloat size = nextFloat();
 
   renderMan->RiShadingRate(size);
 }
 
-RtVoid GMANRIBParse::parseOrientation(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseOrientation(RtVoid) {
+
   RtToken orientation = copyStringToken();
 
   renderMan->RiOrientation(orientation);
@@ -530,41 +530,41 @@ RtVoid GMANRIBParse::parseOrientation(RtVoid) throw(GMANError) {
   delete orientation;
 }
 
-RtVoid GMANRIBParse::parsePixelSamples(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parsePixelSamples(RtVoid) {
 
   RtFloat xsamples = nextFloat();
   RtFloat ysamples = nextFloat();
-  
+
   renderMan->RiPixelSamples(xsamples, ysamples);
 }
 
-RtVoid GMANRIBParse::parseExposure(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseExposure(RtVoid) {
+
   RtFloat gain = nextFloat();
   RtFloat gamma = nextFloat();
-  
+
   renderMan->RiExposure(gain, gamma);
 }
 
-RtVoid GMANRIBParse::parseDepthOfField(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseDepthOfField(RtVoid) {
+
   RtFloat fstop = nextFloat();
   RtFloat focallength = nextFloat();
   RtFloat focaldistance = nextFloat();
-  
+
   renderMan->RiDepthOfField(fstop, focallength, focaldistance);
 }
 
-RtVoid GMANRIBParse::parseShutter(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseShutter(RtVoid) {
+
   RtFloat min = nextFloat();
   RtFloat max = nextFloat();
-  
+
   renderMan->RiShutter(min, max);
 }
 
-RtVoid GMANRIBParse::parseHider(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseHider(RtVoid) {
+
   char *type = copyStringToken();
 
   RtInt n = 0;
@@ -576,36 +576,36 @@ RtVoid GMANRIBParse::parseHider(RtVoid) throw(GMANError) {
   renderMan->RiHiderV(type, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parseCropWindow(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseCropWindow(RtVoid) {
+
   RtFloat xmin = nextFloat();
   RtFloat xmax = nextFloat();
   RtFloat ymin = nextFloat();
   RtFloat ymax = nextFloat();
-  
+
   renderMan->RiCropWindow(xmin, xmax, ymin, ymax);
 }
 
-RtVoid GMANRIBParse::parseScreenWindow(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseScreenWindow(RtVoid) {
+
   RtFloat left = nextFloat();
   RtFloat right = nextFloat();
   RtFloat bottom = nextFloat();
   RtFloat top = nextFloat();
-  
+
   renderMan->RiScreenWindow(left, right, bottom, top);
 }
 
-RtVoid GMANRIBParse::parseClipping(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseClipping(RtVoid) {
+
   RtFloat nearDist = nextFloat();
   RtFloat farDist = nextFloat();
-  
+
   renderMan->RiClipping(nearDist, farDist);
 }
 
-RtVoid GMANRIBParse::parseDeclare(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseDeclare(RtVoid) {
+
   RtToken name = copyStringToken();
   RtToken declaration = copyStringToken();
 
@@ -615,8 +615,8 @@ RtVoid GMANRIBParse::parseDeclare(RtVoid) throw(GMANError) {
   delete declaration;
 }
 
-RtVoid GMANRIBParse::parseAttribute(RtVoid) throw(GMANError) {
-  
+RtVoid GMANRIBParse::parseAttribute(RtVoid) {
+
   RtToken name = copyStringToken();
 
   RtInt n = 0;
@@ -630,7 +630,7 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) throw(GMANError) {
   delete name;
 }
 
-RtVoid GMANRIBParse::parseColor(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseColor(RtVoid) {
   int number = 3;
   //FIXME: Should actually get number from options
   //renderMan->getGraphicsState().getOptions().getColorSamples().getNumber();
@@ -650,7 +650,7 @@ RtVoid GMANRIBParse::parseColor(RtVoid) throw(GMANError) {
   if(color) delete[]color;
 }
 
-RtVoid GMANRIBParse::parseOpacity(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseOpacity(RtVoid) {
   int number = 3;
   //FIXME: Should actually get number from options
   //renderMan->getGraphicsState().getOptions().getColorSamples().getNumber();
@@ -670,7 +670,7 @@ RtVoid GMANRIBParse::parseOpacity(RtVoid) throw(GMANError) {
   if(color) delete [] color;
 }
 
-RtVoid GMANRIBParse::parseLightSource(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseLightSource(RtVoid) {
   char *shadername = copyStringToken();
   int sequence = nextInt();
 
@@ -688,7 +688,7 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) throw(GMANError) {
   delete shadername;
 }
 
-RtVoid GMANRIBParse::parseSurface(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseSurface(RtVoid) {
   RtToken shadername = copyStringToken();
 
   RtInt n = 0;
@@ -703,7 +703,7 @@ RtVoid GMANRIBParse::parseSurface(RtVoid) throw(GMANError) {
   delete shadername;
 }
 
-RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) {
 
   char* name = copyStringToken();
 
@@ -712,7 +712,7 @@ RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) throw(GMANError) {
   delete name;
 }
 
-RtVoid GMANRIBParse::parseTransform(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseTransform(RtVoid) {
   GMANRIBParse::TokenVector tokenVector = parseArray();
   // FIXME: Use the array
 
@@ -721,7 +721,7 @@ RtVoid GMANRIBParse::parseTransform(RtVoid) throw(GMANError) {
   renderMan->RiTransform(transform);
 }
 
-RtVoid GMANRIBParse::parseConcatTransform(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseConcatTransform(RtVoid) {
   GMANRIBParse::TokenVector tokenVector = parseArray();
   // FIXME: Use the array
 
@@ -730,7 +730,7 @@ RtVoid GMANRIBParse::parseConcatTransform(RtVoid) throw(GMANError) {
   renderMan->RiConcatTransform(transform);
 }
 
-RtVoid GMANRIBParse::parseTranslate(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseTranslate(RtVoid) {
   RtFloat dx = nextFloat();
   RtFloat dy = nextFloat();
   RtFloat dz = nextFloat();
@@ -738,7 +738,7 @@ RtVoid GMANRIBParse::parseTranslate(RtVoid) throw(GMANError) {
   renderMan->RiTranslate(dx, dy, dz);
 }
 
-RtVoid GMANRIBParse::parseRotate(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseRotate(RtVoid) {
   RtFloat angle = nextFloat();
   RtFloat dx = nextFloat();
   RtFloat dy = nextFloat();
@@ -747,7 +747,7 @@ RtVoid GMANRIBParse::parseRotate(RtVoid) throw(GMANError) {
   renderMan->RiRotate(angle, dx, dy, dz);
 }
 
-RtVoid GMANRIBParse::parseScale(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseScale(RtVoid) {
   RtFloat sx = nextFloat();
   RtFloat sy = nextFloat();
   RtFloat sz = nextFloat();
@@ -755,7 +755,7 @@ RtVoid GMANRIBParse::parseScale(RtVoid) throw(GMANError) {
   renderMan->RiScale(sx, sy, sz);
 }
 
-RtVoid GMANRIBParse::parseSphere(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseSphere(RtVoid) {
   RtFloat radius = nextFloat();
   RtFloat zmin = nextFloat();
   RtFloat zmax = nextFloat();
@@ -770,7 +770,7 @@ RtVoid GMANRIBParse::parseSphere(RtVoid) throw(GMANError) {
   renderMan->RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parseCone(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseCone(RtVoid) {
   RtFloat height = nextFloat();
   RtFloat radius = nextFloat();
   RtFloat thetamax = nextFloat();
@@ -784,7 +784,7 @@ RtVoid GMANRIBParse::parseCone(RtVoid) throw(GMANError) {
   renderMan->RiConeV(height, radius, thetamax, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parseCylinder(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseCylinder(RtVoid) {
   RtFloat radius = nextFloat();
   RtFloat zmin = nextFloat();
   RtFloat zmax = nextFloat();
@@ -799,13 +799,13 @@ RtVoid GMANRIBParse::parseCylinder(RtVoid) throw(GMANError) {
   renderMan->RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parseSides(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseSides(RtVoid) {
   RtInt sides = nextInt();
 
   renderMan->RiSides(sides);
 }
 
-RtVoid GMANRIBParse::parseHyperboloid(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseHyperboloid(RtVoid) {
   RtPoint point1, point2;
   point1[0] = nextFloat();
   point1[1] = nextFloat();
@@ -825,7 +825,7 @@ RtVoid GMANRIBParse::parseHyperboloid(RtVoid) throw(GMANError) {
   renderMan->RiHyperboloidV(point1, point2, thetamax, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parseParaboloid(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
   RtFloat rmax = nextFloat();
   RtFloat zmin = nextFloat();
   RtFloat zmax = nextFloat();
@@ -840,7 +840,7 @@ RtVoid GMANRIBParse::parseParaboloid(RtVoid) throw(GMANError) {
   renderMan->RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parseTorus(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseTorus(RtVoid) {
   RtFloat majorradius = nextFloat();
   RtFloat minorradius = nextFloat();
   RtFloat phimin = nextFloat();
@@ -857,7 +857,7 @@ RtVoid GMANRIBParse::parseTorus(RtVoid) throw(GMANError) {
 		      n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parseDisk(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseDisk(RtVoid) {
   RtFloat height = nextFloat();
   RtFloat radius = nextFloat();
   RtFloat thetamax = nextFloat();
@@ -871,7 +871,7 @@ RtVoid GMANRIBParse::parseDisk(RtVoid) throw(GMANError) {
   renderMan->RiDiskV(height, radius, thetamax, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parsePolygon(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parsePolygon(RtVoid) {
 
   RtInt n = 0;
   RtToken* tokens;
@@ -889,7 +889,7 @@ RtVoid GMANRIBParse::parsePolygon(RtVoid) throw(GMANError) {
   renderMan->RiPolygonV(nverts, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parsePoints(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parsePoints(RtVoid) {
 
   RtInt n = 0;
   RtToken* tokens;
@@ -907,7 +907,7 @@ RtVoid GMANRIBParse::parsePoints(RtVoid) throw(GMANError) {
   renderMan->RiPointsV(npoints, n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
 
   // FIXME!!!
   GMANRIBParse::TokenVector tokenVector = parseArray();
@@ -927,7 +927,7 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) throw(GMANError) {
 			       n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
 
   // FIXME!!!
   GMANRIBParse::TokenVector tokenVector = parseArray();
@@ -946,7 +946,7 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) throw(GMANError) {
 				      n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parsePatch(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
   char *type = copyStringToken();
 
@@ -961,7 +961,7 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) throw(GMANError) {
   delete type;
 }
 
-RtVoid GMANRIBParse::parseNuPatch(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
 
   RtInt nu = nextInt();
   RtInt uorder = nextInt();
@@ -973,7 +973,7 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) throw(GMANError) {
   tokenVector = parseArray(); // FIXME
   RtFloat vmin = nextFloat();
   RtFloat vmax = nextFloat();
-  
+
   RtInt n = 0;
   RtToken* tokens;
   RtPointer* parms;
@@ -985,7 +985,7 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) throw(GMANError) {
 			n, tokens, parms);
 }
 
-RtVoid GMANRIBParse::parsePatchMesh(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
 
   char *type = copyStringToken();
   RtInt nu = nextInt();
@@ -1006,7 +1006,7 @@ RtVoid GMANRIBParse::parsePatchMesh(RtVoid) throw(GMANError) {
   delete vwrap;
 }
 
-RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) {
   RtFloat s1 = nextFloat();
   RtFloat t1 = nextFloat();
   RtFloat s2 = nextFloat();
@@ -1019,7 +1019,7 @@ RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) throw(GMANError) {
   renderMan->RiTextureCoordinates(s1, t1, s2, t2, s3, t3, s4, t4);
 }
 
-RtVoid GMANRIBParse::parseReadArchive(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
 
   char* name = copyStringToken();
 
@@ -1028,7 +1028,7 @@ RtVoid GMANRIBParse::parseReadArchive(RtVoid) throw(GMANError) {
   delete name;
 }
 
-RtVoid GMANRIBParse::parseMotionBegin(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseMotionBegin(RtVoid) {
   GMANRIBParse::TokenVector tokenVector = parseArray();
 
   int n = tokenVector.size();
@@ -1039,11 +1039,11 @@ RtVoid GMANRIBParse::parseMotionBegin(RtVoid) throw(GMANError) {
   delete times;
 }
 
-RtVoid GMANRIBParse::parseMotionEnd(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseMotionEnd(RtVoid) {
   renderMan->RiMotionEnd();
 }
 
-RtVoid GMANRIBParse::parseObjectBegin(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseObjectBegin(RtVoid) {
 
   int sequence = nextInt();
 
@@ -1051,11 +1051,11 @@ RtVoid GMANRIBParse::parseObjectBegin(RtVoid) throw(GMANError) {
   objectHandleMap[sequence] = handle;
 }
 
-RtVoid GMANRIBParse::parseObjectEnd(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseObjectEnd(RtVoid) {
   renderMan->RiObjectEnd();
 }
 
-RtVoid GMANRIBParse::parseObjectInstance(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseObjectInstance(RtVoid) {
 
   int sequence = nextInt();
 
@@ -1064,7 +1064,7 @@ RtVoid GMANRIBParse::parseObjectInstance(RtVoid) throw(GMANError) {
   renderMan->RiObjectInstance(handle);
 }
 
-RtVoid GMANRIBParse::parseBasis(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseBasis(RtVoid) {
 
   char* uname = copyStringToken();
   int ustep = nextInt();
@@ -1079,7 +1079,7 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) throw(GMANError) {
   delete vname;
 }
 
-RtVoid GMANRIBParse::parseAtmosphere(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
 
   char* name = copyStringToken();
 
@@ -1095,7 +1095,7 @@ RtVoid GMANRIBParse::parseAtmosphere(RtVoid) throw(GMANError) {
   delete name;
 }
 
-RtVoid GMANRIBParse::parseDisplacement(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
 
   char* name = copyStringToken();
 
@@ -1111,7 +1111,7 @@ RtVoid GMANRIBParse::parseDisplacement(RtVoid) throw(GMANError) {
   delete name;
 }
 
-RtVoid GMANRIBParse::parseImager(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseImager(RtVoid) {
 
   char* name = copyStringToken();
 
@@ -1127,7 +1127,7 @@ RtVoid GMANRIBParse::parseImager(RtVoid) throw(GMANError) {
   delete name;
 }
 
-RtVoid GMANRIBParse::parseIlluminate(RtVoid) throw(GMANError) {
+RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
 
   int sequence = nextInt();
   int onoff = nextInt();
@@ -1137,9 +1137,9 @@ RtVoid GMANRIBParse::parseIlluminate(RtVoid) throw(GMANError) {
 }
 
 
-GMANRIBParse::TokenVector GMANRIBParse::parseArray(RtVoid) throw(GMANError) {
+GMANRIBParse::TokenVector GMANRIBParse::parseArray(RtVoid) {
   GMANToken tok = nextToken(); // '['
-  
+
   TokenVector tokens;
 
   while (true) {
@@ -1154,10 +1154,10 @@ GMANRIBParse::TokenVector GMANRIBParse::parseArray(RtVoid) throw(GMANError) {
 }
 
 RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
-					RtPointer* &parms) throw(GMANError) {
-  typedef map<RtToken, RtPointer> ParamMap;
+					RtPointer* &parms) {
+  typedef std::map<RtToken, RtPointer> ParamMap;
   ParamMap paramMap;
-  
+
   while (true) {
     const GMANToken &tok = peekToken();
     if (tok.getType() != GMANToken::STRING) {
@@ -1186,7 +1186,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
       paramMap[key] = (RtPointer) value;
     }
   }
-    
+
   n = paramMap.size();
   tokens = new RtToken[n];
   parms = new RtPointer[n];
@@ -1206,7 +1206,7 @@ const GMANToken &GMANRIBParse::nextToken() {
     currentToken = lookAheadToken;
     lookAheadToken = GMANToken();
   }
-  
+
   return currentToken;
 }
 

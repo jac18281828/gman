@@ -30,9 +30,6 @@
 
 #include <iostream>
 #include <string>
-#if HAVE_STD_NAMESPACE
-using std::string;
-#endif
 
 #include "ri.h"
 
@@ -50,7 +47,7 @@ public:
   RtVoid set (RtInt cd, RtInt sev, const char *msg);
   RtVoid setCode (RtInt cd) { code = cd; }
   RtVoid setSeverity (RtInt sev) { severity = sev; }
-  RtVoid setMessage (const char *msg) { message = string(msg); }
+  RtVoid setMessage (const char *msg) { message = std::string(msg); }
 
   RtInt  getCode (RtVoid) const { return code; }
   RtInt  getSeverity (RtVoid) const { return severity; }

@@ -37,9 +37,6 @@
 // STL
 #include <string>
 #include <fstream>
-#if HAVE_STD_NAMESPACE
-using std::ifstream;
-#endif
 
 // the renderman interface
 #include "ri.h"
@@ -139,7 +136,7 @@ class GMAN_EXPORT  GMANToken : public UniversalSuperClass {
     TokenType		type;
 
     struct TokVals {
-      string	stringVal;
+      std::string	stringVal;
       RtFloat	real;
       long	longint;
     } value;
@@ -164,7 +161,7 @@ class GMAN_EXPORT  GMANToken : public UniversalSuperClass {
 
 
     // string ctor
-    GMANToken(const string &str) { 
+    GMANToken(const std::string &str) { 
       type = STRING; 
       value.stringVal = str; 
     };
@@ -199,11 +196,11 @@ class GMAN_EXPORT  GMANToken : public UniversalSuperClass {
       return getRtToken();
     }
 
-    const string &getString(RtVoid) const {
+    const std::string &getString(RtVoid) const {
       return value.stringVal;
     }
 
-    operator	string() {
+    operator	std::string() {
       return getString();
     }
 
@@ -238,7 +235,7 @@ public:
 
 private:
 
-  string  		buffer;
+  std::string  		buffer;
 
   /* private methods */
   bool isKeyToken(char c) const {
@@ -255,13 +252,13 @@ private:
     return (isdigit(c) || (c == '.') || (c == '-') || c == '+' || c == 'e');
   };
 
-  const GMANToken parseKeyword(ifstream &ribFile);
+  const GMANToken parseKeyword(std::ifstream &ribFile);
 
-  const GMANToken parseString(ifstream &ribFile);
+  const GMANToken parseString(std::ifstream &ribFile);
 
-  const GMANToken parseNum(ifstream &ribFile);
+  const GMANToken parseNum(std::ifstream &ribFile);
 
-  const void consumeWhitespace(ifstream &ribFile) const;
+  const void consumeWhitespace(std::ifstream &ribFile) const;
 
 #ifdef WIN32
   // windows does not provide this fn
@@ -274,7 +271,7 @@ public:
 
   ~GMANRIBTokenize(); // default destructor
 
-  const GMANToken	getNext(ifstream &ribFile);
+  const GMANToken	getNext(std::ifstream &ribFile);
 };
 
 

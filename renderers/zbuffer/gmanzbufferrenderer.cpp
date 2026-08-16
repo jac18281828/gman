@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -68,16 +68,16 @@ bool GMANZBufferRenderer::initZBuffer(void) {
   if((width > 0) && (height>0)) {
 
     if(zbuffer) delete []zbuffer;
-    
+
     zbuffer = new RtFloat[width*height];
-    
+
     if(zbuffer) {
       for(int x=0; x<width; x++) {
 	for(int y=0; y<height; y++) {
 	  setZBuffer(x, y, RI_INFINITY);
 	}
       }
-      
+
       if(edge_list) delete []edge_list;
       edge_list = new EdgeInfo[height];
       if(edge_list == NULL) 
@@ -93,8 +93,8 @@ bool GMANZBufferRenderer::initZBuffer(void) {
 // render each clipped output polygon
 void GMANZBufferRenderer::render(GMANOutputPolygon &out, 
 				 GMANFrameBuffer *frameBuffer)
-  throw (GMANError) {
-  
+ {
+
   getVertexInfo(out);
   scanEdges();
   drawEdgeList(frameBuffer);
@@ -177,7 +177,7 @@ void GMANZBufferRenderer::scanEdges(void) {
 
 
   for(i=0; i<num_vert; i++) {
-    
+
     // get edge pointers
     sv = &(v_info[i]);
     ev = &(v_info[(i+1)%num_vert]);
@@ -229,11 +229,11 @@ void GMANZBufferRenderer::scanEdges(void) {
 	if(edge->first == false) {
 	  scan = &(edge->isect[0]);
 	  edge->first = true;
-	  
+
 	} else {
 	  scan = &(edge->isect[1]);
 	}
-	
+
 	// insert edge intersection info
 	scan->x = ix;
 	scan->z = iz;
@@ -244,7 +244,7 @@ void GMANZBufferRenderer::scanEdges(void) {
       ix += dx;
       iz += dz;
       ic += dc;
-      
+
       edge++; // go to next edge list element
     }
 
@@ -263,7 +263,7 @@ void GMANZBufferRenderer::drawEdgeList(GMANFrameBuffer *frameBuffer) {
 
   GMANColor	dc;	// color delta
   GMANColor	ic;	// pixel color
-  
+
   EdgeInfo	*edge;	// edge info
   ScanInfo	*ss;    // scan line start info
   ScanInfo	*se;    // scan line end info
@@ -271,59 +271,59 @@ void GMANZBufferRenderer::drawEdgeList(GMANFrameBuffer *frameBuffer) {
 
   edge = &(edge_list[ymin]);
   for(y = ymin; y<=ymax; y++) {
-    
+
     ss = &(edge->isect[0]);
     se = &(edge->isect[1]);
-    
+
     if(ss->x > se->x) {
       sw = ss; ss = se; se = sw;
     }
-    
+
       // get scan line x coord
     sx = (int) ss->x;
     ex = (int) se->x;
-    
+
     if(sx < ex) {
-      
+
       iz = ss->z;
       ic = ss->color;
-      
+
       // Determine inverse slopes
       x_dist = se->x - ss->x;
-      
+
       
       dz = (se->z - iz) / x_dist;
-      
+
       dc.setRed((se->color.getRed() -
 		 ss->color.getRed()) / (GMANColorSample) x_dist);
-      
+
       dc.setGreen((se->color.getGreen() -
 		   ss->color.getGreen()) / (GMANColorSample) x_dist);
-      
+
       dc.setBlue((se->color.getBlue() -
 		  ss->color.getBlue()) / (GMANColorSample) x_dist);
-      
+
       
       // Gouraud shade scan line
       for(x=sx; x <= ex; x++) {
-	  
+
 	if (x >= 0 && x < width) { // FIXME: poly should already be clipped?
-    
+
 	  // test zbuffer
 	  if(iz < getZBuffer(x, y)) {
 	    // it's closer
 	    // set new z buffer depth
 	    setZBuffer(x, y, iz);
-	    
+
 	    frameBuffer->setPixel(x, y, ic);
 	  }
 
 	}
-	
+
 	// update pixel info
 	iz += dz;
 	ic += dc;
-	
+
       }
     }
 
@@ -336,7 +336,7 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
 				   GMANViewingSystem  *viewingSys,
 				   const GMANOptions       &options,
 				   const GMANAttributes    &attributes)
-    throw (GMANError) {
+ {
 
   GMANFace	*face;
   GMANSurface   *surf;
@@ -349,7 +349,7 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
   initZBuffer();
 
   debug("GMANZBufferRenderer::render");
-  
+
   // render each object 
   GMANPrimitive* primitive = worldManager.getFirst();
   while(primitive) {
@@ -373,11 +373,11 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
 		v.set(coords, fv->getColor(), fv->getAlpha());
 		outPoly.addVertex(v);
 	      }
-	      
+
 	      //render the face into frameBuffer
 	      render(outPoly, frameBuffer);
 	    }
-	    
+
 	    face = face->getNext();
   	  }
 	surf = surf->getNext();

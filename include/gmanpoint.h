@@ -95,7 +95,7 @@ protected:
     bool operator==(const GMANPoint &v) const;
     bool operator!=(const GMANPoint &v) const;
 
-	bool GMANPoint::operator<(const GMANPoint &p) const;
+	bool operator<(const GMANPoint &p) const;
 
 	// geometric addition of two points
 	GMANPoint &operator +=(const GMANPoint &p) {

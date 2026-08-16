@@ -58,8 +58,8 @@ GMANRenderMan & GMANContext::current()
 }
 RtVoid GMANContext::switchTo(RtContextHandle ch)
 {
-  list<GMANRenderMan *>::iterator first=chl.begin();
-  list<GMANRenderMan *>::iterator last=chl.end();
+  std::list<GMANRenderMan *>::iterator first=chl.begin();
+  std::list<GMANRenderMan *>::iterator last=chl.end();
   GMANRenderMan *r=(GMANRenderMan *)ch;
   for (;first!=last;first++) {
     if (*first==r) { 
@@ -72,8 +72,8 @@ RtVoid GMANContext::switchTo(RtContextHandle ch)
 }
 RtVoid GMANContext::removeCurrent(RtVoid)
 {
-  list<GMANRenderMan *>::iterator first=chl.begin();
-  list<GMANRenderMan *>::iterator last=chl.end();
+  std::list<GMANRenderMan *>::iterator first=chl.begin();
+  std::list<GMANRenderMan *>::iterator last=chl.end();
   for (;first!=last;first++) {
     if (*first==active) {
       delete *first;

@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -52,22 +52,22 @@ const char *GMANLoadable::getInfoFncName = "GMANGetLoadableInfo";
 
 // default constructor
 GMANLoadable::GMANLoadable(const char *path) 
-  throw(GMANError) : UniversalSuperClass(),
+ : UniversalSuperClass(),
 		     object(NULL),
 		     objInfo(NULL)
 { 
     object = LoadLibrary(path);
-    
+
     if(object == NULL) {
-	string errorMsg("Unable to open shared object specified by: ");
+	std::string errorMsg("Unable to open shared object specified by: ");
 	    errorMsg.append(path);
 	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
     }
-    
+
     LoadInfoFnc getInfo = (LoadInfoFnc) loadSymbol(getInfoFncName);
 
     if(getInfo == NULL) {
-	string errorMsg("Loadable Info function not found: ");
+	std::string errorMsg("Loadable Info function not found: ");
 	errorMsg.append(getInfoFncName);
 	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
     }
@@ -94,7 +94,7 @@ RtVoid *GMANLoadable::loadSymbol(const char *symName) {
 #else
 // default constructor
 GMANLoadable::GMANLoadable(const char *path) 
-  throw(GMANError) : UniversalSuperClass(),
+ : UniversalSuperClass(),
 		     object(NULL),
 		     objInfo(NULL)
 { 
@@ -103,21 +103,21 @@ GMANLoadable::GMANLoadable(const char *path)
   // call dlopen to load the specified path
 
   object = dlopen(path, RTLD_LAZY);
-  
+
   if(object == NULL) {
-    string errorMsg("Unable to open shared object specified by: ");
+    std::string errorMsg("Unable to open shared object specified by: ");
     errorMsg.append(path);
     errorMsg.append(": ");
     errorMsg.append(dlerror());
 
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
   }
-  
+
   LoadInfoFnc getInfo = (LoadInfoFnc) loadSymbol(getInfoFncName);
 
   if(getInfo == NULL) {
-    string errorMsg("Loadable Info function not found: ");
-    
+    std::string errorMsg("Loadable Info function not found: ");
+
     errorMsg.append(getInfoFncName);
     errorMsg.append(": ");
     errorMsg.append(dlerror());

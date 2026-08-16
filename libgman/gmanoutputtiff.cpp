@@ -65,7 +65,7 @@ RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode mode,
 
     file = TIFFOpen(outputName.c_str(), "w");
     if (file == NULL) {
-	string errorMsg("Unable to open output file: ");
+	std::string errorMsg("Unable to open output file: ");
 	errorMsg.append(outputName);
 	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
     }

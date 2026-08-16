@@ -81,8 +81,8 @@ GMANRenderMan::~GMANRenderMan()
 RtToken GMANRenderMan::RiDeclare(const char *name, const char *declaration) 
 {
   GMANInlineParse ip;
-  string a(name);
-  string b(declaration);
+  std::string a(name);
+  std::string b(declaration);
 
   b+=" ";
   b+=a;
@@ -104,7 +104,7 @@ RtVoid GMANRenderMan::RiBegin(RtToken name)
   
   //
   // Load the renderer from a shared object by name
-  string objectName = "lib";
+  std::string objectName = "lib";
   objectName += name;
 #ifdef WIN32
   objectName += ".dll";
@@ -150,7 +150,7 @@ RtVoid GMANRenderMan::RiWorldBegin(RtVoid)
 
   if(getOptions().getDisplay().type == "file") {
     size_t startExt = getOptions().getDisplay().name.rfind(".");
-    string ext;
+    std::string ext;
     if(startExt != string::npos) {
       ext = getOptions().getDisplay().name.substr(startExt+1);
     }

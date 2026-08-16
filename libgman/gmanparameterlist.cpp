@@ -45,7 +45,7 @@ RtVoid GMANParameterList::destroy ()
   for(int i=0;i<number;i++) {
     switch (dic->getType(id[i])) {
     case GMANTokenEntry::STRING:
-      delete [] (string *)datas[i];
+      delete [] (std::string *)datas[i];
       break;
     case GMANTokenEntry::INTEGER:
       delete [] (RtInt *)datas[i];
@@ -86,7 +86,7 @@ GMANParameterList::GMANParameterList (GMANDictionary &di,
   index=0;
   for (i=0; i<n; i++) { // convert token to id
     try {
-      id[index]= di.getTokenId (string(tk[i]));
+      id[index]= di.getTokenId (std::string(tk[i]));
     } catch (GMANError &r) {
       GMANHandleError (r);
       continue;
@@ -95,8 +95,8 @@ GMANParameterList::GMANParameterList (GMANDictionary &di,
     size =di.allocSize(id[index], vertex, varying, uniform);
     switch (di.getType(id[index])) {
     case GMANTokenEntry::STRING:
-      datas[index]=(RtPointer)new string[size];
-      copy_string(size,(char **)dt[i],(string *)datas[index]);
+      datas[index]=(RtPointer)new std::string[size];
+      copy_string(size,(char **)dt[i],(std::string *)datas[index]);
       break;
     case GMANTokenEntry::INTEGER:
       datas[index]=(RtPointer)new RtInt[size];
@@ -161,10 +161,10 @@ RtVoid GMANParameterList::copy_integer(RtInt n, RtInt *source, RtInt *dest)
     source++;
   }
 }
-RtVoid GMANParameterList::copy_string(RtInt n, char **source, string *dest)
+RtVoid GMANParameterList::copy_string(RtInt n, char **source, std::string *dest)
 {
   for(int i=0;i<n;i++) {
-    *dest=string(*source);
+    *dest=std::string(*source);
     dest++;
     source++;
   }

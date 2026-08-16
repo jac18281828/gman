@@ -29,10 +29,6 @@
 
 #include <vector>
 #include <string>
-#if HAVE_STD_NAMESPACE
-using std::string;
-using std::vector;
-#endif
 
 #include "ri.h"
 #include "universalsuperclass.h"
@@ -48,7 +44,7 @@ public:
 	typedef enum { FLOAT, POINT, VECTOR, NORMAL, COLOR, STRING, MATRIX, HPOINT, INTEGER }  TokenType;
 
 private:
-  string     name;
+  std::string     name;
   TokenClass tclass:4;
   TokenType  ttype:6;
   RtBoolean  in_line;
@@ -76,7 +72,7 @@ public:
 				(quantity == ent.quantity));
 	}
 
-  const string &getName(void) const     { return name;     }
+  const std::string &getName(void) const     { return name;     }
   TokenClass   getClass(void) const   { return tclass;   }
   TokenType    getType(void)  const   { return ttype;    }
   RtInt        getQuantity(void) const { return quantity; }
@@ -92,13 +88,13 @@ public:
 class GMAN_EXPORT GMANDictionary : public UniversalSuperClass
 {
 private:
-	vector<GMANTokenEntry> te;
+	std::vector<GMANTokenEntry> te;
 
 public:
   GMANDictionary();
 
-  GMANTokenId addToken (string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt=1, bool inln=false);
-  GMANTokenId getTokenId (string n);
+  GMANTokenId addToken (std::string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt=1, bool inln=false);
+  GMANTokenId getTokenId (std::string n);
 #ifdef PRE
   RtVoid      isValid     (GMANTokenId id);
 #endif

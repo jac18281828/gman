@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -25,7 +25,7 @@
   To contact the author of GNU GMAN, write to John Cairns, 607 E STUART ST, 
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
- 
+
 
 #ifndef __GMAN_GMANZBUFFERRENDERER_H
 #define __GMAN_GMANZBUFFERRENDERER_H 1
@@ -76,13 +76,13 @@ private:
 
   struct VertexInfo	  // vertex information
   {
-    
+
     Point	screen;   // screen coord
     GMANPoint   posn;     // scaled position
     GMANColor   color;    // vertex color
 
   };
-  
+
   struct ScanInfo	  // a scan line intersection
   {
     RtFloat	x;	  //  x coord
@@ -93,7 +93,7 @@ private:
   struct EdgeInfo
   {
     bool first;		  // first intersection
-    
+
     ScanInfo  isect[2];   // scan line intersection array
   };
 
@@ -101,7 +101,7 @@ private:
   RtFloat	*zbuffer; // the depth buffer.
 
   // private methods
-  
+
   int ymin;   // minimum y-axis coordinate
   int ymax;   // maximum y-axis coordinate
 
@@ -109,7 +109,7 @@ private:
   int height; // display height
 
   int num_vert; // number of verticies
-  
+
   EdgeInfo	*edge_list;
 
   VertexInfo	v_info[8];
@@ -119,7 +119,7 @@ private:
 
 
   GMANPatchPolyObjectManager		objectManager;
-  
+
   GMANLinearWorldManager		worldManager;
 
 
@@ -132,7 +132,7 @@ private:
   bool initZBuffer(void);
 
   RtVoid setZBuffer(RtInt x, RtInt y, RtFloat val);
-  
+
   RtFloat getZBuffer(RtInt x, RtInt y) const;
 
   // populate vertex info array
@@ -144,8 +144,8 @@ private:
 
   // render each outpolygon
   void render(GMANOutputPolygon &out,
-	      GMANFrameBuffer *frameBuffer) throw (GMANError);
-  
+	      GMANFrameBuffer *frameBuffer);
+
 public:
   GMANZBufferRenderer(int w, 
 		      int h);
@@ -157,13 +157,13 @@ public:
   RtVoid illuminance(RtInt i,
 		     GMANPoint const &p,
 		     GMANVector const &axis,
-		     RtFloat angle) throw (GMANError) {}
+		     RtFloat angle) {}
   RtVoid illuminate(RtInt i,
 		    GMANPoint const &p,
 		    GMANVector const &axis,
-		    RtFloat angle) throw (GMANError) {}
+		    RtFloat angle) {}
   RtVoid solar(RtInt i, GMANVector const &axis,
-	       RtFloat angle) throw (GMANError) {}
+	       RtFloat angle) {}
 
 
 
@@ -181,7 +181,7 @@ public:
   virtual RtVoid render(GMANFrameBuffer *frameBuffer,
 			GMANViewingSystem *viewingSys,
 			const GMANOptions       &options,
-			const GMANAttributes    &attributes) throw (GMANError);
+			const GMANAttributes    &attributes);
 
 
   void setHeight(int h) {

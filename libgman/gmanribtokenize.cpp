@@ -27,9 +27,6 @@
 */
 
 #include <string>
-#if HAVE_STD_NAMESPACE
-using std::string;
-#endif
 
 #include <math.h>
 #include <stdio.h>
@@ -64,7 +61,7 @@ GMANRIBTokenize::~GMANRIBTokenize() {
 
 
 const GMANToken
-GMANRIBTokenize::getNext(ifstream &ribFile) {
+GMANRIBTokenize::getNext(std::ifstream &ribFile) {
   char c;
 
   consumeWhitespace(ribFile);
@@ -100,7 +97,7 @@ GMANRIBTokenize::getNext(ifstream &ribFile) {
 }
 
 const GMANToken 
-GMANRIBTokenize::parseKeyword(ifstream &ribFile) {
+GMANRIBTokenize::parseKeyword(std::ifstream &ribFile) {
   char c;
   
   buffer = "";
@@ -260,7 +257,7 @@ GMANRIBTokenize::parseKeyword(ifstream &ribFile) {
 };
 
 const GMANToken
-GMANRIBTokenize::parseString(ifstream &ribFile) {
+GMANRIBTokenize::parseString(std::ifstream &ribFile) {
   char c;
   
   buffer = "";
@@ -283,7 +280,7 @@ GMANRIBTokenize::parseString(ifstream &ribFile) {
 };
 
 const GMANToken
-GMANRIBTokenize::parseNum(ifstream &ribFile) {
+GMANRIBTokenize::parseNum(std::ifstream &ribFile) {
   char c;
   
   buffer = "";
@@ -315,7 +312,7 @@ GMANRIBTokenize::parseNum(ifstream &ribFile) {
   return GMANToken(GMANToken::UNKNOWN);
 };
 
-const void GMANRIBTokenize::consumeWhitespace(ifstream &ribFile) const {
+const void GMANRIBTokenize::consumeWhitespace(std::ifstream &ribFile) const {
   char c;
 
   while (! ribFile.eof()) {

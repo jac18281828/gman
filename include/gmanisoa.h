@@ -34,16 +34,16 @@
 class GMAN_EXPORT GMANISO : public UniversalSuperClass
 {
   /* searchpath */
-  string archive;
-  string texture;
-  string shader;
-  string procedural;
+  std::string archive;
+  std::string texture;
+  std::string shader;
+  std::string procedural;
 public:
   RtVoid set (RtToken name, int n, RtToken *tk, RtPointer *dt);
-  const string &getArchivePath() const { return archive; }
-  const string &getTexturePath() const { return texture; }
-  const string &getShaderPath() const { return shader; }
-  const string &getProceduralPath() const { return procedural; }
+  const std::string &getArchivePath() const { return archive; }
+  const std::string &getTexturePath() const { return texture; }
+  const std::string &getShaderPath() const { return shader; }
+  const std::string &getProceduralPath() const { return procedural; }
 };
 
 class GMANISA : public UniversalSuperClass

@@ -63,8 +63,8 @@ protected:
   typedef RtVoid (*illuminateFunc) (GMANVector L);
   typedef RtVoid (*solarFunc) (GMANVector L);
 
-  vector <illuminateFunc> istmt;
-  vector <solarFunc> solstmt;
+  std::vector <illuminateFunc> istmt;
+  std::vector <solarFunc> solstmt;
 
 public:
   GMANLightSourceShader(); // default constructor

@@ -29,10 +29,6 @@
 
 /* system headers */
 #include <iostream>
-#if HAVE_STD_NAMESPACE
-using std::cerr;
-using std::endl;
-#endif
 
 /* gman headers */
 #include "ri.h"
@@ -135,14 +131,14 @@ int main(int argc, char *argv[]) {
 /* Are you freaking kidding? */
 RtVoid usage(char *myname) {
   
-  cerr << myname << ": -[hdiweql] files ..." << endl;
-  cerr << "\tParse RIB input files." << endl << endl;
-  cerr << "\t-h - print this help message." << endl;
-  cerr << "\t-d - set logging to: debug output." << endl;
-  cerr << "\t-i - set logging to: information output." << endl;
-  cerr << "\t-w - set logging to: warning output." << endl;
-  cerr << "\t-e - set logging to: error output." << endl;
-  cerr << "\t-q - set logging to: quiet, only report disasters." << endl;
-  cerr << "\t-l - enable a log based on the filename of the rib." << endl;
+  std::cerr << myname << ": -[hdiweql] files ..." << std::endl;
+  std::cerr << "\tParse RIB input files." << std::endl << std::endl;
+  std::cerr << "\t-h - print this help message." << std::endl;
+  std::cerr << "\t-d - set logging to: debug output." << std::endl;
+  std::cerr << "\t-i - set logging to: information output." << std::endl;
+  std::cerr << "\t-w - set logging to: warning output." << std::endl;
+  std::cerr << "\t-e - set logging to: error output." << std::endl;
+  std::cerr << "\t-q - set logging to: quiet, only report disasters." << std::endl;
+  std::cerr << "\t-l - enable a log based on the filename of the rib." << std::endl;
 
 }

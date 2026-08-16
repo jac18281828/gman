@@ -23,11 +23,8 @@
   To contact the author of GNU GMAN, write to John Cairns, 607 E STUART ST, 
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
+#include <cstdint>
 #include <iostream>
-#if HAVE_STD_NAMESPACE
-using std::endl;
-using std::ios;
-#endif
 
 #include "gmanascii.h"
 #include "gmanerror.h"
@@ -47,9 +44,9 @@ RtVoid GMANASCII::printPL(RtInt n, RtToken tokens[], RtPointer parms[],
 
   RtInt i,j;
   for (i=0; i<n ; i++) {
-    out << "\"" << string(tokens[i])<< "\" ";
+    out << "\"" << std::string(tokens[i])<< "\" ";
     out << "[ ";
-    id=dictionary.getTokenId(string(tokens[i]));
+    id=dictionary.getTokenId(std::string(tokens[i]));
     tt=dictionary.getType(id);
     
     for (j=0; j<(dictionary.allocSize(id, vertex, varying, uniform)); j++ ) {
@@ -66,7 +63,7 @@ RtVoid GMANASCII::printPL(RtInt n, RtToken tokens[], RtPointer parms[],
 	break;
       case GMANTokenEntry::STRING:
 	cp=static_cast<char **> (parms[i]);
-	out <<"\""<< string(cp[j]) <<"\" ";
+	out <<"\""<< std::string(cp[j]) <<"\" ";
 	break;
       case GMANTokenEntry::INTEGER:
 	nt=static_cast<RtInt *> (parms[i]);
@@ -76,16 +73,16 @@ RtVoid GMANASCII::printPL(RtInt n, RtToken tokens[], RtPointer parms[],
     }
     out << "] ";
   }
-  out << endl;
+  out << std::endl;
 }
 
 RtVoid GMANASCII::printToken(RtToken t)
 {
-  out << "\"" << string(t) << "\" ";
+  out << "\"" << std::string(t) << "\" ";
 }
 RtVoid GMANASCII::printCharP(const char *c)
 {
-  out << "\"" << string(c) << "\" ";
+  out << "\"" << std::string(c) << "\" ";
 }
 
 RtVoid GMANASCII::printArray (RtInt n, RtInt *p)
@@ -117,7 +114,7 @@ RtVoid GMANASCII::RiDeclare(const char *name, const char *declaration)
   out <<"Declare ";
   printCharP(name);
   printCharP(declaration);
-  out <<endl;
+  out <<std::endl;
 }
 RtVoid GMANASCII::RiBegin(RtToken name)
 {
@@ -133,67 +130,67 @@ RtVoid GMANASCII::RiEnd(RtVoid)
 }
 RtVoid GMANASCII::RiFrameBegin(RtInt frame)
 {
-  out <<"FrameBegin "<< frame <<endl;
+  out <<"FrameBegin "<< frame <<std::endl;
 }
 RtVoid GMANASCII::RiFrameEnd(RtVoid)
 {
-  out <<"FrameEnd"<<endl;
+  out <<"FrameEnd"<<std::endl;
 }
 RtVoid GMANASCII::RiWorldBegin(RtVoid)
 {
-  out <<"WorldBegin"<<endl;
+  out <<"WorldBegin"<<std::endl;
 }
 RtVoid GMANASCII::RiWorldEnd(RtVoid)
 {
-  out <<"WorldEnd"<<endl;
+  out <<"WorldEnd"<<std::endl;
 }
 RtVoid GMANASCII::RiObjectBegin(RtVoid)
 {
-  out <<"ObjectBegin"<<endl;
+  out <<"ObjectBegin"<<std::endl;
 }
 RtVoid GMANASCII::RiObjectEnd(RtVoid)
 {
-  out <<"ObjectEnd" <<endl;
+  out <<"ObjectEnd" <<std::endl;
 }
 RtVoid  GMANASCII::RiObjectInstance(RtObjectHandle handle)
 {
-  out <<"ObjectInstance "<< (RtInt) handle <<endl;
+  out <<"ObjectInstance "<< static_cast<RtInt>(reinterpret_cast<std::uintptr_t>(handle)) <<std::endl;
 }
 RtVoid  GMANASCII::RiAttributeBegin(RtVoid)
 {
-  out <<"AttributeBegin"<<endl;
+  out <<"AttributeBegin"<<std::endl;
 }
 RtVoid  GMANASCII::RiAttributeEnd(RtVoid)
 {
-  out <<"AttributeEnd"<<endl;
+  out <<"AttributeEnd"<<std::endl;
 }
 RtVoid  GMANASCII::RiTransformBegin(RtVoid)
 {
-  out <<"TransformBegin"<<endl;
+  out <<"TransformBegin"<<std::endl;
 }
 RtVoid  GMANASCII::RiTranformEnd(RtVoid)
 {
-  out <<"TransformEnd"<<endl;
+  out <<"TransformEnd"<<std::endl;
 }
 RtVoid  GMANASCII::RiSolidBegin(RtToken operation)
 {
   out <<"SolidBegin ";
   printToken(operation);
-  out << endl;
+  out << std::endl;
 }
 RtVoid  GMANASCII::RiSolidEnd(RtVoid)
 {
-  out <<"SolidEnd"<<endl;
+  out <<"SolidEnd"<<std::endl;
 }
 RtVoid  GMANASCII::RiMotionBeginV(RtInt n, RtFloat times[])
 {
   out <<"MotionBegin ";
   printArray(n,times);
-  out << endl;
+  out << std::endl;
 }
 RtVoid  GMANASCII::RiMotionEnd(RtVoid)
 {
-  out <<"MotionEnd"<<endl; 
+  out <<"MotionEnd"<<std::endl; 
 }
 
 
@@ -204,19 +201,19 @@ RtVoid  GMANASCII::RiMotionEnd(RtVoid)
 // **************************************************************
 RtVoid  GMANASCII::RiFormat (RtInt xres, RtInt yres, RtFloat aspect)
 {
-  out <<"Format "<< xres <<" "<< yres <<" "<< aspect <<endl;
+  out <<"Format "<< xres <<" "<< yres <<" "<< aspect <<std::endl;
 }
 RtVoid  GMANASCII::RiFrameAspectRatio (RtFloat aspect)
 {
-  out <<"FrameAspectRatio "<< aspect <<endl; 
+  out <<"FrameAspectRatio "<< aspect <<std::endl; 
 }
 RtVoid  GMANASCII::RiScreenWindow (RtFloat left, RtFloat right, RtFloat bottom, RtFloat top)
 {
-  out <<"ScreenWindow "<< left <<" "<< right <<" "<< bottom <<" "<< top <<endl;
+  out <<"ScreenWindow "<< left <<" "<< right <<" "<< bottom <<" "<< top <<std::endl;
 }
 RtVoid  GMANASCII::RiCropWindow (RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax)
 {
-  out <<"CropWindow "<< xmin <<" "<< xmax <<" "<< ymin <<" "<< ymax <<endl; 
+  out <<"CropWindow "<< xmin <<" "<< xmax <<" "<< ymin <<" "<< ymax <<std::endl; 
 }
 RtVoid  GMANASCII::RiProjectionV (RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
@@ -226,15 +223,15 @@ RtVoid  GMANASCII::RiProjectionV (RtToken name, RtInt n, RtToken tokens[], RtPoi
 }
 RtVoid  GMANASCII::RiClipping(RtFloat hither, RtFloat yon)
 {
-  out <<"Clipping "<< hither <<" "<< yon <<endl;
+  out <<"Clipping "<< hither <<" "<< yon <<std::endl;
 }
 RtVoid  GMANASCII::RiDepthOfField (RtFloat fstop, RtFloat focallength, RtFloat focaldistance)
 {
-  out <<"DepthOfField "<< fstop <<" "<< focallength <<" "<< focaldistance <<endl;
+  out <<"DepthOfField "<< fstop <<" "<< focallength <<" "<< focaldistance <<std::endl;
 }
 RtVoid  GMANASCII::RiShutter(RtFloat min, RtFloat max)
 {
-  out <<"Shutter "<< min <<" "<< max <<" "<<endl;
+  out <<"Shutter "<< min <<" "<< max <<" "<<std::endl;
 }
 
 
@@ -245,11 +242,11 @@ RtVoid  GMANASCII::RiShutter(RtFloat min, RtFloat max)
 // ***************************************************************
 RtVoid  GMANASCII::RiPixelVariance(RtFloat variation)
 {
-  out <<"PixelVariance "<< variation <<endl;
+  out <<"PixelVariance "<< variation <<std::endl;
 }
 RtVoid  GMANASCII::RiPixelSamples(RtFloat xsamples, RtFloat ysamples)
 {
-  out <<"PixelSamples "<< xsamples <<" "<< ysamples <<endl;
+  out <<"PixelSamples "<< xsamples <<" "<< ysamples <<std::endl;
 }
 RtVoid  GMANASCII::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth)
 {
@@ -264,11 +261,11 @@ RtVoid  GMANASCII::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloa
     out << "sinc ";
   else if (filterfunc==RiGaussianFilter)
     out << "gaussian ";
-  out << xwidth << " " << ywidth << endl;
+  out << xwidth << " " << ywidth << std::endl;
 }
 RtVoid  GMANASCII::RiExposure(RtFloat gain, RtFloat gamma)
 {
-  out <<"Exposure "<< gain <<" "<< gamma <<endl;
+  out <<"Exposure "<< gain <<" "<< gamma <<std::endl;
 }
 RtVoid  GMANASCII::RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
@@ -280,7 +277,7 @@ RtVoid  GMANASCII::RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtF
 {
   out <<"Quantize ";
   printToken(type);
-  out << one <<" "<< min <<" "<< max <<" "<< ampl <<endl;
+  out << one <<" "<< min <<" "<< max <<" "<< ampl <<std::endl;
 }
 RtVoid  GMANASCII::RiDisplayV(char *name, RtToken type, RtToken mode,
 			      RtInt n, RtToken tokens[], RtPointer parms[])
@@ -309,11 +306,11 @@ RtVoid  GMANASCII::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[])
   out <<"ColorSamples ";
   printArray(n*3,nRGB);
   printArray(n*3,RGBn);
-  out <<endl;
+  out <<std::endl;
 }
 RtVoid  GMANASCII::RiRelativeDetail(RtFloat relativedetail)
 {
-  out <<"RelativeDetail "<< relativedetail <<endl;
+  out <<"RelativeDetail "<< relativedetail <<std::endl;
 }
 RtVoid  GMANASCII::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
@@ -332,20 +329,20 @@ RtVoid  GMANASCII::RiColor(RtColor color)
 {
   out <<"Color ";
   printArray(colorNComps,color);
-  out <<endl;  
+  out <<std::endl;  
 }
 RtVoid  GMANASCII::RiOpacity(RtColor color)
 {
   out <<"Opacity ";
   printArray(colorNComps,color);
-  out <<endl;
+  out <<std::endl;
 }
 RtVoid  GMANASCII::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2,
 					RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4)
 {
   out <<"TextureCoordinates ";
   out << s1 <<" "<< t1 <<" "<< s2 <<" "<< t2 <<" ";
-  out << s3 <<" "<< t3 <<" "<< s4 <<" "<< t4 <<endl;
+  out << s3 <<" "<< t3 <<" "<< s4 <<" "<< t4 <<std::endl;
 }
 RtVoid GMANASCII::RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
@@ -361,11 +358,11 @@ RtVoid GMANASCII::RiAreaLightSourceV(RtToken name,
 RtVoid  GMANASCII::RiIlluminate(RtLightHandle light, RtBoolean onoff)
 {
   out <<"Illuminate ";
-  out <<(RtInt) light <<" ";
+  out <<static_cast<RtInt>(reinterpret_cast<std::uintptr_t>(light)) <<" ";
   if (onoff==RI_TRUE)
-    out << "1" <<endl;
+    out << "1" <<std::endl;
   else
-    out << "0" <<endl;
+    out << "0" <<std::endl;
 }
 RtVoid  GMANASCII::RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
@@ -393,21 +390,21 @@ RtVoid  GMANASCII::RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointe
 }
 RtVoid  GMANASCII::RiShadingRate(RtFloat size)
 {
-  out <<"ShadingRate "<< size <<endl;
+  out <<"ShadingRate "<< size <<std::endl;
 }
 RtVoid  GMANASCII::RiShadingInterpolation(RtToken type)
 {
   out <<"ShadingInterpolation ";
   printToken(type);
-  out << endl;
+  out << std::endl;
 }
 RtVoid  GMANASCII::RiMatte(RtBoolean onoff)
 {
   out <<"Matte ";
   if (onoff==RI_TRUE)
-    out << "1" <<endl;
+    out << "1" <<std::endl;
   else
-    out << "0" <<endl;
+    out << "0" <<std::endl;
 }
 
 
@@ -420,23 +417,23 @@ RtVoid  GMANASCII::RiBound(RtBound b)
 {
   out <<"Bound ";
   printArray(6,b);
-  out << endl;
+  out << std::endl;
 }
 RtVoid  GMANASCII::RiDetail(RtBound d)
 {
   out <<"Detail ";
   printArray(6,d);
-  out << endl;
+  out << std::endl;
 }
 RtVoid  GMANASCII::RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis)
 {
-  out <<"DetailRange "<< minvis <<" "<< lowtran <<" "<< uptran <<" "<< maxvis <<endl;
+  out <<"DetailRange "<< minvis <<" "<< lowtran <<" "<< uptran <<" "<< maxvis <<std::endl;
 }
 RtVoid  GMANASCII::RiGeometricApproximation(RtToken type, RtFloat value)
 {
   out <<"GeometricApproximation ";
   printToken(type);
-  out << value << endl;
+  out << value << std::endl;
 }
 RtVoid  GMANASCII::RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep)
 {
@@ -452,7 +449,7 @@ RtVoid  GMANASCII::RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vs
     out << vbasis[i/4][i%4] << " ";
   }
   out << "] ";
-  out << vstep <<endl;
+  out << vstep <<std::endl;
 }
 RtVoid  GMANASCII::RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[],
 			       RtFloat knot[], RtFloat min[], RtFloat max[], RtInt n[],
@@ -485,15 +482,15 @@ RtVoid  GMANASCII::RiOrientation(RtToken o)
 {
   out <<"Orientation ";
   printToken(o);
-  out << endl;
+  out << std::endl;
 }
 RtVoid  GMANASCII::RiReverseOrientation(RtVoid)
 {
-  out <<"ReverseOrientation"<<endl;
+  out <<"ReverseOrientation"<<std::endl;
 }
 RtVoid  GMANASCII::RiSides(RtInt sides)
 {
-  out <<"Sides "<< sides <<endl;
+  out <<"Sides "<< sides <<std::endl;
 }
 RtVoid  GMANASCII::RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
@@ -510,7 +507,7 @@ RtVoid  GMANASCII::RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPo
 // ***************************************************************
 RtVoid  GMANASCII::RiIdentity(RtVoid)
 {
-  out <<"Identity"<<endl;
+  out <<"Identity"<<std::endl;
 }
 RtVoid  GMANASCII::RiTransform(RtMatrix transform)
 {
@@ -518,7 +515,7 @@ RtVoid  GMANASCII::RiTransform(RtMatrix transform)
   for (RtInt i=0; i<16; i++) {
     out << transform[i/4][i%4] << " ";
   }
-  out << "]" << endl;
+  out << "]" << std::endl;
 }
 RtVoid  GMANASCII::RiConcatTransform(RtMatrix transform)
 {
@@ -526,30 +523,30 @@ RtVoid  GMANASCII::RiConcatTransform(RtMatrix transform)
   for (RtInt i=0; i<16; i++) {
     out << transform[i/4][i%4] << " ";
   }
-  out << "]" << endl;
+  out << "]" << std::endl;
 }
 RtVoid  GMANASCII::RiPerspective(RtFloat fov)
 {
-  out <<"Perspective "<< fov <<endl;
+  out <<"Perspective "<< fov <<std::endl;
 }
 RtVoid  GMANASCII::RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz)
 {
-  out <<"Translate "<< dx <<" "<< dy <<" "<< dz <<" "<<endl;
+  out <<"Translate "<< dx <<" "<< dy <<" "<< dz <<" "<<std::endl;
 }
 RtVoid  GMANASCII::RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz)
 {
-  out <<"Rotate "<< angle <<" "<< dx <<" "<< dy <<" "<< dz <<" "<<endl;
+  out <<"Rotate "<< angle <<" "<< dx <<" "<< dy <<" "<< dz <<" "<<std::endl;
 }
 RtVoid  GMANASCII::RiScale(RtFloat sx, RtFloat sy, RtFloat sz)
 {
-  out <<"Scale "<< sx <<" "<< sy <<" "<< sz <<" "<<endl;
+  out <<"Scale "<< sx <<" "<< sy <<" "<< sz <<" "<<std::endl;
 }
 RtVoid  GMANASCII::RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1,
 			  RtFloat dx2, RtFloat dy2, RtFloat dz2)
 {
   out <<"Skew " << angle << " ";
   out << dx1 <<" "<< dy1 <<" "<< dz1 <<" ";
-  out << dx2 <<" "<< dy2 <<" "<< dz2 <<endl;
+  out << dx2 <<" "<< dy2 <<" "<< dz2 <<std::endl;
 }
 RtVoid  GMANASCII::RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
@@ -561,13 +558,13 @@ RtVoid  GMANASCII::RiCoordinateSystem(RtToken space)
 {
   out <<"CoordinateSystem ";
   printToken(space);
-  out << endl;
+  out << std::endl;
 }
 RtVoid  GMANASCII::RiCoordSysTransform(RtToken space)
 {
   out <<"CoordSysTransform ";
   printToken(space);
-  out << endl;
+  out << std::endl;
 }
 RtPoint *GMANASCII::RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n,
 				      RtPoint points[])
@@ -911,7 +908,7 @@ RtVoid  GMANASCII::RiProcedural(RtPointer data, RtBound bound,
 				RtVoid (*subdivfunc)(RtPointer, RtFloat),
 				RtVoid (*freefunc)(RtPointer))
 {
-  string sf;
+  std::string sf;
   RtInt a;
   if (subdivfunc==RiProcDelayedReadArchive) {
     sf="DelayedReadArchive";
@@ -930,26 +927,26 @@ RtVoid  GMANASCII::RiProcedural(RtPointer data, RtBound bound,
   out <<"Procedural ";
   switch (a) {
   case 1:
-    out << sf <<" [ "<< string(&((char *) data)[0]) <<" ] [ "; 
+    out << sf <<" [ "<< std::string(&((char *) data)[0]) <<" ] [ "; 
     for (RtInt i=0; i<6 ; i++)
       out << bound[i] <<" ";
-    out << "]" << endl;
+    out << "]" << std::endl;
     break;
   case 2:
     out << sf <<" [ ";
-    out << string(&((char *) data)[0]) <<" ";
-    out << string(&((char *) data)[1]) <<" ] [ ";
+    out << std::string(&((char *) data)[0]) <<" ";
+    out << std::string(&((char *) data)[1]) <<" ] [ ";
     for (RtInt i=0; i<6 ; i++)
       out << bound[i] <<" ";
-    out << "]" << endl;
+    out << "]" << std::endl;
     break;
   case 3:
     out << sf <<" [ ";
-    out << string(&((char *) data)[0]) <<" ";
-    out << string(&((char *) data)[1]) <<" ] [ ";
+    out << std::string(&((char *) data)[0]) <<" ";
+    out << std::string(&((char *) data)[1]) <<" ] [ ";
     for (RtInt i=0; i<6 ; i++)
       out << bound[i] <<" ";
-    out << "]" << endl;
+    out << "]" << std::endl;
     break;
   }
 }
@@ -971,7 +968,7 @@ RtVoid  GMANASCII::RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken t
 				  RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
 				  RtInt n, RtToken tokens[], RtPointer parms[])
 {
-  string ff;
+  std::string ff;
   if (filterfunc==RiGaussianFilter)
     ff="gaussian";
   else if (filterfunc==RiBoxFilter)
@@ -999,7 +996,7 @@ RtVoid  GMANASCII::RiMakeLatLongEnvironmentV(char *pic, char *tex, RtFilterFunc 
 					     RtFloat swidth, RtFloat twidth,
 					     RtInt n, RtToken tokens[], RtPointer parms[])
 {
-  string ff;
+  std::string ff;
   if (filterfunc==RiGaussianFilter)
     ff="gaussian";
   else if (filterfunc==RiBoxFilter)
@@ -1027,7 +1024,7 @@ RtVoid  GMANASCII::RiMakeCubeFaceEnvironmentV(char *px, char *nx, char *py, char
 					      RtFloat twidth,
 					      RtInt n, RtToken tokens[], RtPointer parms[])
 {
-  string ff;
+  std::string ff;
   if (filterfunc==RiGaussianFilter)
     ff="gaussian";
   else if (filterfunc==RiBoxFilter)
@@ -1070,12 +1067,12 @@ RtVoid  GMANASCII::RiMakeShadowV(char *pic, char *tex,
 // *************************************************************
 RtVoid GMANASCII::RiErrorHandler(RtErrorHandler handler)
 {
-  string ch;
+  std::string ch;
   if (handler==RiErrorIgnore) ch="\"ignore\"";
   else if (handler==RiErrorPrint) ch="\"print\"";
   else if (handler==RiErrorAbort) ch="\"abort\"";
   else {
     throw GMANError(RIE_CONSISTENCY,RIE_WARNING,"Unknown Error handler");
   }
-  out <<"ErrorHandler "<< ch <<endl;
+  out <<"ErrorHandler "<< ch <<std::endl;
 }

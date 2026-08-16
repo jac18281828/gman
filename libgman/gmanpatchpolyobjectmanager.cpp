@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -55,20 +55,20 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
 							  GMANOptions *opt,
 							  GMANAttributes *attr,
 							  GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops, 
 								 RtInt nverts[], 
 								 GMANParameterList pl,
 								 GMANOptions *opt,
 								 GMANAttributes *attr,
 								 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys, 
 								RtInt nverts[], 
 								RtInt verts[],
@@ -76,10 +76,10 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys,
 								GMANOptions *opt,
 								GMANAttributes *attr,
 								GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt npolys, 
 									RtInt nloops[],
 									RtInt nverts[], 
@@ -88,7 +88,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt np
 									GMANOptions *opt,
 									GMANAttributes *attr,
 									GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
 
@@ -97,10 +97,10 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
 							GMANOptions *opt,
 							GMANAttributes *attr,
 							GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type, 
 							    RtInt nu, 
 							    RtToken uwrap,
@@ -110,10 +110,10 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
 							    GMANOptions *opt,
 							    GMANAttributes *attr,
 							    GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 }; 
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt nu,
 							  RtInt uorder,
 							  RtFloat uknot[],
@@ -128,10 +128,10 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt nu,
 							  GMANOptions *opt,
 							  GMANAttributes *attr,
 							  GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,
 							 RtFloat zmin,
 							 RtFloat zmax,
@@ -140,7 +140,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,
 							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
-  throw(GMANError) {
+ {
   GMANSphere sphere(radius, zmin, zmax, tmax, pl);
   return createParametric(&sphere, t);
 };
@@ -152,11 +152,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCone (RtFloat height,
 						       GMANOptions *opt,
 						       GMANAttributes *attr,
 						       GMANTransform *t)
-  throw(GMANError) {
+ {
   GMANCone cone(height, radius, tmax, pl);
   return createParametric(&cone, t);
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
 							   RtFloat zmin,
 							   RtFloat zmax,
@@ -165,7 +165,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
 							   GMANOptions *opt,
 							   GMANAttributes *attr,
 							   GMANTransform *t)
-  throw(GMANError) {
+ {
   GMANCylinder cylinder(radius, zmin, zmax, tmax, pl);
   return createParametric(&cylinder, t);
 };
@@ -177,11 +177,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSHyperboloid (RtPoint point1,
 							      GMANOptions *opt,
 							      GMANAttributes *attr,
 							      GMANTransform *t)
-  throw(GMANError) {
+ {
   GMANHyperboloid hyperboloid(point1, point2, tmax, pl);
   return createParametric(&hyperboloid, t);
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
 							     RtFloat zmin,
 							     RtFloat zmax,
@@ -190,11 +190,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
 							     GMANOptions *opt,
 							     GMANAttributes *attr,
 							     GMANTransform *t)
-  throw(GMANError) {
+ {
   GMANParaboloid paraboloid(rmax, zmin, zmax, tmax, pl);
   return createParametric(&paraboloid, t);
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat height,
 						       RtFloat radius,
 						       RtFloat tmax,
@@ -202,10 +202,10 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat height,
 						       GMANOptions *opt,
 						       GMANAttributes *attr,
 						       GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
 							RtFloat minrad,
 							RtFloat phimin,
@@ -215,11 +215,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
 							GMANOptions *opt,
 							GMANAttributes *attr,
 							GMANTransform *t)
-  throw(GMANError) {
+ {
   GMANTorus torus(majrad, minrad, phimin, phimax, tmax, pl);
   return createParametric(&torus, t);
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSBlobby (RtInt nleaf,
 							 RtInt ncode,
 							 RtInt code[],
@@ -231,19 +231,19 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSBlobby (RtInt nleaf,
 							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPoints (RtInt npoints,
 							 GMANParameterList pl,
 							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSCurves (RtToken type,
 							 RtInt ncurves, 
 							 RtInt nvertices[],
@@ -252,10 +252,10 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCurves (RtToken type,
 							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
-  
+
 GMANPrimitive * GMANPatchPolyObjectManager::getRSSubdivisionMesh (RtToken mask,
 								  RtInt nf,
 								  RtInt nverts[],
@@ -269,7 +269,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSubdivisionMesh (RtToken mask,
 								  GMANOptions *opt,
 								  GMANAttributes *attr,
 								  GMANTransform *t)
-  throw(GMANError) {
+ {
   return create();
 };
 

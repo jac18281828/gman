@@ -80,7 +80,7 @@ protected:
   RtInt nfloat;
   RtFloat *floats;
   RtInt nstrings;
-  string *strings;
+  std::string *strings;
   
 public:
   GMANBlobby(RtInt nlf, RtInt ncd, RtInt cd[],

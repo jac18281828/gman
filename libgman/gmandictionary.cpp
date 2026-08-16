@@ -25,14 +25,14 @@
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
 #ifdef DEBUG
-#include <iostream.h>
-#include <iomanip.h>
+#include <iostream>
+#include <iomanip>
 #endif
 #include "gmandictionary.h"
 #include "gmaninlineparse.h"
 #include "gmanerror.h"
 
-GMANTokenEntry::GMANTokenEntry(string n, TokenClass tc, TokenType tt, RtInt qnt, bool inln) 
+GMANTokenEntry::GMANTokenEntry(std::string n, TokenClass tc, TokenType tt, RtInt qnt, bool inln) 
 {  
   name = n;
   tclass = tc;
@@ -65,35 +65,35 @@ const GMANTokenEntry &GMANTokenEntry::operator=(const GMANTokenEntry &ent) {
 #ifdef DEBUG
 RtVoid GMANTokenEntry::printClassType ( RtVoid )
 {
-  cout << setw(9);
+  std::cout << std::setw(9);
   switch (tclass) {
-  case GMANTokenEntry::CONSTANT: cout << "CONSTANT";
+  case GMANTokenEntry::CONSTANT: std::cout << "CONSTANT";
     break;
-  case GMANTokenEntry::UNIFORM: cout << "UNIFORM";
+  case GMANTokenEntry::UNIFORM: std::cout << "UNIFORM";
     break;
-  case GMANTokenEntry::VARYING: cout << "VARYING";
+  case GMANTokenEntry::VARYING: std::cout << "VARYING";
     break;
-  case GMANTokenEntry::VERTEX: cout << "VERTEX";
+  case GMANTokenEntry::VERTEX: std::cout << "VERTEX";
   }
-  cout << setw(8);
+  std::cout << std::setw(8);
   switch (ttype) {
-  case GMANTokenEntry::HPOINT: cout << "HPOINT";
+  case GMANTokenEntry::HPOINT: std::cout << "HPOINT";
     break;
-  case GMANTokenEntry::MATRIX: cout << "MATRIX";
+  case GMANTokenEntry::MATRIX: std::cout << "MATRIX";
     break;
-  case GMANTokenEntry::NORMAL: cout << "NORMAL";
+  case GMANTokenEntry::NORMAL: std::cout << "NORMAL";
     break;
-  case GMANTokenEntry::VECTOR: cout << "VECTOR";
+  case GMANTokenEntry::VECTOR: std::cout << "VECTOR";
     break;
-  case GMANTokenEntry::FLOAT: cout << "FLOAT";
+  case GMANTokenEntry::FLOAT: std::cout << "FLOAT";
     break;
-  case GMANTokenEntry::INTEGER: cout << "INTEGER";
+  case GMANTokenEntry::INTEGER: std::cout << "INTEGER";
     break;
-  case GMANTokenEntry::STRING: cout << "STRING";
+  case GMANTokenEntry::STRING: std::cout << "STRING";
     break;
-  case GMANTokenEntry::POINT: cout << "POINT";
+  case GMANTokenEntry::POINT: std::cout << "POINT";
     break;
-  case GMANTokenEntry::COLOR: cout << "COLOR";
+  case GMANTokenEntry::COLOR: std::cout << "COLOR";
   }
 }
 #endif 
@@ -151,10 +151,10 @@ GMANDictionary::GMANDictionary()
 
 
 // If the token already exists, addToken return the corresponding id 
-GMANTokenId GMANDictionary::addToken (string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt, bool inln)
+GMANTokenId GMANDictionary::addToken (std::string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt, bool inln)
 {
-  vector<GMANTokenEntry>::iterator first=te.begin();
-  vector<GMANTokenEntry>::iterator last=te.end();
+  std::vector<GMANTokenEntry>::iterator first=te.begin();
+  std::vector<GMANTokenEntry>::iterator last=te.end();
   GMANTokenId i;
 
   GMANTokenEntry tmp(n,tc,tt,qnt,inln);
@@ -180,7 +180,7 @@ GMANTokenId GMANDictionary::addToken (string n, GMANTokenEntry::TokenClass tc, G
 //   getClass (24)-> UNIFORM
 //   getTokenId ("item")-> an error is thrown 
 //   (except if item was previously defined with RiDeclare)
-GMANTokenId GMANDictionary::getTokenId (string n)
+GMANTokenId GMANDictionary::getTokenId (std::string n)
 {
   GMANInlineParse ip;
   GMANError error(RIE_BADTOKEN, RIE_ERROR,"GMANDictionary: TOKEN_NOT_FOUND");
@@ -190,8 +190,8 @@ GMANTokenId GMANDictionary::getTokenId (string n)
   if (ip.isInline()==true) {
     j=addToken (ip.getIdentifier(), ip.getClass(), ip.getType(), ip.getQuantity(), true);
   } else {
-    vector<GMANTokenEntry>::iterator first=te.begin();
-    vector<GMANTokenEntry>::iterator last=te.end();
+    std::vector<GMANTokenEntry>::iterator first=te.begin();
+    std::vector<GMANTokenEntry>::iterator last=te.end();
 
     for(i=1;first!=last;first++,i++)
       {
@@ -218,7 +218,7 @@ GMANTokenEntry::TokenClass GMANDictionary::getClass (GMANTokenId id)
 #ifdef PRE
   is_valid (id);
 #endif
-  vector<GMANTokenEntry>::iterator first=te.begin();
+  std::vector<GMANTokenEntry>::iterator first=te.begin();
   return ((first+id-1)->getClass());
 }
 GMANTokenEntry::TokenType GMANDictionary::getType (GMANTokenId id)
@@ -226,13 +226,13 @@ GMANTokenEntry::TokenType GMANDictionary::getType (GMANTokenId id)
 #ifdef PRE
   is_valid (id);
 #endif
-  vector<GMANTokenEntry>::iterator first=te.begin();
+  std::vector<GMANTokenEntry>::iterator first=te.begin();
   return ((first+id-1)->getType());
 }
 int GMANDictionary::allocSize (GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform)
 {
   int size;
-  vector<GMANTokenEntry>::iterator first=te.begin();
+  std::vector<GMANTokenEntry>::iterator first=te.begin();
   first+=id-1;
   size= getTypeSize(first->getType());
   switch (first->getClass()) {
@@ -272,35 +272,35 @@ int GMANDictionary::getQuantity (GMANTokenId id)
 #ifdef PRE
   is_valid (id);
 #endif
-  vector<GMANTokenEntry>::iterator first=te.begin();
+  std::vector<GMANTokenEntry>::iterator first=te.begin();
   return ((first+id-1)->getQuantity());
 }
 #ifdef DEBUG
 RtVoid GMANDictionary::stats (RtVoid)
 {
-  vector<GMANTokenEntry>::iterator first=te.begin();
-  vector<GMANTokenEntry>::iterator last=te.end();
+  std::vector<GMANTokenEntry>::iterator first=te.begin();
+  std::vector<GMANTokenEntry>::iterator last=te.end();
   GMANTokenId i;
 
-  cout << endl;
-  cout << "GMANDictionary   Number of entries: " << te.size() << endl;
-  cout << "------------------------------------------------------" << endl;
-  cout << "NAME                  CLASS    TYPE   [SIZE] IS_INLINE" << endl;                 
-  cout << "------------------------------------------------------" << endl;
+  std::cout << std::endl;
+  std::cout << "GMANDictionary   Number of entries: " << te.size() << std::endl;
+  std::cout << "------------------------------------------------------" << std::endl;
+  std::cout << "NAME                  CLASS    TYPE   [SIZE] IS_INLINE" << std::endl;                 
+  std::cout << "------------------------------------------------------" << std::endl;
 
   for(i=1;first!=last;first++,i++)
     {
-      cout << setw(20) << setfill (' ');
-      cout << setiosflags(ios::left) << (first->getName()).c_str() << "  ";
+      std::cout << std::setw(20) << std::setfill (' ');
+      std::cout << setiosflags(ios::left) << (first->getName()).c_str() << "  ";
       first->printClassType (); 
-      cout << "[" << get_quantity(i) << "]  ";
+      std::cout << "[" << get_quantity(i) << "]  ";
       if ((first->isInline())==true) { 
-	cout << " inline";
+	std::cout << " inline";
       }
-      cout << endl;
+      std::cout << std::endl;
     }
-  cout << "------------------------------------------------------" << endl;
-  cout << endl;
+  std::cout << "------------------------------------------------------" << std::endl;
+  std::cout << std::endl;
 }
 #endif
 /**--------CLASS GMANDictionary END--------**/

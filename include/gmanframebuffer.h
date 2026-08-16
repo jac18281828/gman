@@ -79,7 +79,7 @@ public:
   };
   
   // get a supersampled pixel from the frame buffer
-  GMANColor GMANFrameBuffer::getSuperSampledPixel(int x, int y);
+  GMANColor getSuperSampledPixel(int x, int y);
 
   // get the width of the filter in pixels
   

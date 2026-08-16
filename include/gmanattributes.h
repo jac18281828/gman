@@ -9,13 +9,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -69,10 +69,10 @@ private:
   /* SHADING ATTRIBUTES */
   RtColor                color;
   RtColor                opacity;
-  
+
   GMANTextureCoordinates     textureCoordinates;
   GMANLightList          lightList;
-  
+
   GMANLoadableShader     *areaLightModule;
   GMANLightSourceShader  *areaLight;
 
@@ -84,13 +84,13 @@ private:
 
   GMANLoadableShader     *interiorModule;
   GMANVolumeShader       *interior;
-  
+
   GMANLoadableShader     *exteriorModule;
   GMANVolumeShader       *exterior;
-  
+
   GMANLoadableShader     *displacementModule;
   GMANDisplacementShader *displacement;
-  
+
   RtFloat                shadingRate;
   RtToken                shadingInterpolation;
   bool                   matte;
@@ -109,7 +109,7 @@ private:
 
 
 public:
-  GMANAttributes() throw(GMANError);
+  GMANAttributes();
   ~GMANAttributes();
 
 
@@ -126,24 +126,24 @@ public:
   RtVoid setIlluminate (RtLightHandle lh, RtBoolean onoff);
 
   /* SHADERS */
-  RtVoid setSurface (const string & name, GMANParameterList &pl,
-		     GMANRenderer &rd) throw(GMANError);
+  RtVoid setSurface (const std::string & name, GMANParameterList &pl,
+		     GMANRenderer &rd);
   const GMANSurfaceShader *getSurface(RtFloat time) const {return surface;};
 
-  RtVoid setAtmosphere (const string & name, GMANParameterList &pl,
-			GMANRenderer &rd) throw(GMANError);
+  RtVoid setAtmosphere (const std::string & name, GMANParameterList &pl,
+			GMANRenderer &rd);
   const GMANVolumeShader *getAtmosphere(RtFloat time) const {return atmosphere;};
 
-  RtVoid setInterior (const string & name, GMANParameterList &pl,
-		      GMANRenderer &rd) throw(GMANError);
+  RtVoid setInterior (const std::string & name, GMANParameterList &pl,
+		      GMANRenderer &rd);
   const GMANVolumeShader  *getInterior(RtFloat time) const {return interior;};
 
-  RtVoid setExterior (const string & name, GMANParameterList &pl,
-		      GMANRenderer &rd) throw(GMANError);
+  RtVoid setExterior (const std::string & name, GMANParameterList &pl,
+		      GMANRenderer &rd);
   const GMANVolumeShader *getExterior(RtFloat time) const {return exterior;};
 
-  RtVoid setDisplacement (const string & name, GMANParameterList &pl,
-			  GMANRenderer &rd) throw(GMANError);
+  RtVoid setDisplacement (const std::string & name, GMANParameterList &pl,
+			  GMANRenderer &rd);
   const GMANDisplacementShader *getDisplacement(RtFloat time) const {return displacement;};
 
 

@@ -199,7 +199,7 @@ RtVoid  GMANOptions::setCropWindow(RtFloat xmin,
     cropWindow.ymax = GMANClamp<RtFloat>(ymax,0.0,1.0);
 }
 
-RtVoid  GMANOptions::setProjection (string n, GMANParameterList &p)
+RtVoid  GMANOptions::setProjection (std::string n, GMANParameterList &p)
 {
     projection.name=n;
     projection.pl=p;
@@ -250,7 +250,7 @@ RtVoid  GMANOptions::setExposure (RtFloat gn, RtFloat gmm)
     exposure.gamma=gmm;
 }
 
-RtVoid  GMANOptions::setImager (string name,
+RtVoid  GMANOptions::setImager (std::string name,
 				GMANParameterList &pl, 
 				GMANRenderer &rd)
 {
@@ -282,7 +282,7 @@ RtVoid  GMANOptions::setDepthQuantize (RtInt o, RtInt mn, RtInt mx, RtFloat da)
     depthQuantize.ditheramplitude=da;
 }
 
-RtVoid  GMANOptions::setDisplay (string nm, string tp, string md, GMANParameterList &p)
+RtVoid  GMANOptions::setDisplay (std::string nm, std::string tp, std::string md, GMANParameterList &p)
 {
     display.name=nm;
     display.type=tp;
@@ -292,7 +292,7 @@ RtVoid  GMANOptions::setDisplay (string nm, string tp, string md, GMANParameterL
 
 
 // ******* ******* ADDITIONAL OPTIONS ******* *******
-RtVoid  GMANOptions::setHider (string nm, GMANParameterList &p)
+RtVoid  GMANOptions::setHider (std::string nm, GMANParameterList &p)
 {
     hider.type=nm;
     hider.pl=p;

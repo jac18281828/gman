@@ -11,13 +11,13 @@
   modify it under the terms of the GNU Library General Public
   License as published by the Free Software Foundation; either
   version 2 of the License, or (at your option) any later version.
-  
+
 
   This library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
   Library General Public License for more details.
-  
+
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
@@ -105,7 +105,7 @@ class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
 
     // the patch poly manager
     GMANPatchPolyObjectManager		objectManager;
-    
+
     // the world manager (octree for use by ray tracing)
     GMANOctreeWorldManager		worldManager;
 
@@ -113,14 +113,14 @@ class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
 
     // scan the polygon with reyes :)
     void reyes(GMANOutputPolygon &out,
-	       GMANFrameBuffer    *frameBuffer) throw (GMANError);
+	       GMANFrameBuffer    *frameBuffer);
 
-    
+
     // trace a ray from screen x and screen y
     void traceRay(RtInt xs, 
 		  RtInt ys,
 		  GMANFrameBuffer    *frameBuffer,
-		  GMANViewingSystem  *viewingSystem) throw (GMANError);
+		  GMANViewingSystem  *viewingSystem);
 
   // return true if the specified point is specular
   bool checkSpec(RtInt xs, RtInt ys);
@@ -128,22 +128,22 @@ class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
   bool checkTrans(RtInt xs, RtInt ys);
   public:
     GMANReyesRenderer(); // default constructor
-    
+
     ~GMANReyesRenderer(); // default destructor
-    
+
     RtVoid illuminance(RtInt i,
 		       GMANPoint const &p,
 		       GMANVector const &axis,
-		       RtFloat angle) throw (GMANError) {}
-    
+		       RtFloat angle) {}
+
     RtVoid illuminate(RtInt i,
 		      GMANPoint const &p,
 		      GMANVector const &axis,
-		      RtFloat angle) throw (GMANError) {}
-    
+		      RtFloat angle) {}
+
     RtVoid solar(RtInt i, GMANVector const &axis,
-		 RtFloat angle) throw (GMANError) {}
-    
+		 RtFloat angle) {}
+
     /*
      * Apply the reyes micropolygon model using viewingSystem
      * to generate a frameBuffer output.
@@ -151,8 +151,8 @@ class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
     virtual void render(GMANFrameBuffer *frameBuffer,
 			GMANViewingSystem *viewingSys,
 			const GMANOptions       &options,
-			const GMANAttributes    &attributes) throw (GMANError);
-    
+			const GMANAttributes    &attributes);
+
     
     int getHeight(void) {
 	return height;
@@ -165,10 +165,10 @@ class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
     inline RtFloat getDepth(int x, int y) const {
 	return zBuffer[y*width + x];
     }
-    
+
     // return its world manager
     virtual GMANWorldManager *getWorldManager(void);
-    
+
     // return its object manager
     virtual GMANObjectManager *getObjectManager(void);
 };

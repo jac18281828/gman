@@ -40,34 +40,34 @@ class GMAN_EXPORT  GMANInlineParse : public UniversalSuperClass
 {
 private:
   RtInt number_of_words;
-  string word[7];
+  std::string word[7];
 
   bool inline_def;
   GMANTokenEntry::TokenClass tc;
   GMANTokenEntry::TokenType tt;
   RtInt size;
-  string identifier;
+  std::string identifier;
 
 
-  bool is_class (string str);
-  bool is_type (string str);
-  bool is_int (string str);
+  bool is_class (std::string str);
+  bool is_type (std::string str);
+  bool is_int (std::string str);
 
-  GMANTokenEntry::TokenClass get_class (string str);
-  GMANTokenEntry::TokenType get_type (string str);
-  RtInt get_size (string str);
+  GMANTokenEntry::TokenClass get_class (std::string str);
+  GMANTokenEntry::TokenType get_type (std::string str);
+  RtInt get_size (std::string str);
 
   RtVoid check_syntax ();
-  RtVoid lc(string &);
+  RtVoid lc(std::string &);
 
 public:
-  RtVoid       parse (string str);
+  RtVoid       parse (std::string str);
 
   bool       isInline() { return inline_def; }
   GMANTokenEntry::TokenClass getClass() { return tc; }
   GMANTokenEntry::TokenType  getType() { return tt; }
   RtInt      getQuantity() { return size; }
-  string     getIdentifier() { return identifier; }
+  std::string     getIdentifier() { return identifier; }
 };
 
 #endif

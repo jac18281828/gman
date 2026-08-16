@@ -30,7 +30,7 @@
 /* system headers */
 #include <stdlib.h>
 #include <stdio.h>
-#include <iostream.h>
+#include <iostream>
 #include <cstring>
 
 /* gman headers */
@@ -64,15 +64,15 @@ int main(int argc, char *argv[]) {
     
     for(int i=1; i<argc; i++) {
       
-      cout << "Compiling... " << argv[i];
+      std::cout << "Compiling... " << argv[i];
       
       if(compile(argv[i])) {
-	cout << "ok.";
+	std::cout << "ok.";
       } else {
-	cout << "failed.";
+	std::cout << "failed.";
 	rc = EXIT_FAILURE;
       }
-      cout << endl;
+      std::cout << std::endl;
     }
   }
   
@@ -81,8 +81,8 @@ int main(int argc, char *argv[]) {
 
 RtVoid usage(char *myname) {
   
-  cerr << myname << ": files ..." << endl;
-  cerr << "\tCompile shading language modules." << endl;
+  std::cerr << myname << ": files ..." << std::endl;
+  std::cerr << "\tCompile shading language modules." << std::endl;
 
 }
 

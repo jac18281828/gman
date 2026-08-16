@@ -98,7 +98,7 @@ RtVoid GMANInlineParse::check_syntax ()
   }
 }
 
-RtVoid GMANInlineParse::parse (string str)
+RtVoid GMANInlineParse::parse (std::string str)
 {
   GMANError error( RIE_SYNTAX, RIE_ERROR, "GMANInlineParse: BAD_SYNTAX" );
   RtInt j;
@@ -162,7 +162,7 @@ RtVoid GMANInlineParse::parse (string str)
   check_syntax ();
 }
 
-bool GMANInlineParse::is_class (string str)
+bool GMANInlineParse::is_class (std::string str)
 {
   if ((str=="constant") ||
       (str=="uniform") ||
@@ -172,7 +172,7 @@ bool GMANInlineParse::is_class (string str)
   return false;
 }
 
-bool GMANInlineParse::is_type (string str)
+bool GMANInlineParse::is_type (std::string str)
 {
   if ((str=="float") ||
       (str=="point") ||
@@ -188,7 +188,7 @@ bool GMANInlineParse::is_type (string str)
 }
 
 // check if this int is >0 too
-bool GMANInlineParse::is_int (string str)
+bool GMANInlineParse::is_int (std::string str)
 {
   int i,j;
   i=sscanf(str.c_str(),"%d",&j);
@@ -196,7 +196,7 @@ bool GMANInlineParse::is_int (string str)
   return true;
 }
 
-GMANTokenEntry::TokenClass GMANInlineParse::get_class (string str)
+GMANTokenEntry::TokenClass GMANInlineParse::get_class (std::string str)
 {
   if (str=="constant") return GMANTokenEntry::CONSTANT;
   if (str=="uniform") return GMANTokenEntry::UNIFORM;
@@ -207,7 +207,7 @@ GMANTokenEntry::TokenClass GMANInlineParse::get_class (string str)
 
 }
 
-GMANTokenEntry::TokenType GMANInlineParse::get_type (string str)
+GMANTokenEntry::TokenType GMANInlineParse::get_type (std::string str)
 {
   if (str=="float") return GMANTokenEntry::FLOAT;
   if (str=="point") return GMANTokenEntry::POINT;
@@ -221,14 +221,14 @@ GMANTokenEntry::TokenType GMANInlineParse::get_type (string str)
 	  return GMANTokenEntry::INTEGER;
 }
 
-int  GMANInlineParse::get_size (string str)
+int  GMANInlineParse::get_size (std::string str)
 {
   int i;
   sscanf(str.c_str(),"%d",&i);
   return i;
 }
 
-RtVoid GMANInlineParse::lc(string &str)
+RtVoid GMANInlineParse::lc(std::string &str)
 {
   for(unsigned int i=0;i<str.length();i++) {
     str[i]=tolower(str[i]);

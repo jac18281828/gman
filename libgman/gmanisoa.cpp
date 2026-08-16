@@ -25,15 +25,12 @@
 */
 
 #include <string>
-#if HAVE_STD_NAMESPACE
-using std::string;
-#endif
 
 #include "gmanisoa.h"
 
 RtVoid GMANISO::set (RtToken name, int n, RtToken *tk, RtPointer *dt)
 {
-  string a=name;
+  std::string a=name;
   if (name=="searchpath") {
     for (int i=0;i<n;i++) {
       a=tk[i];

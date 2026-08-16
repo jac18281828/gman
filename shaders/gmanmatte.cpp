@@ -27,10 +27,6 @@
 */
 
 #include <iostream>
-#if HAVE_STD_NAMESPACE
-using std::cerr;
-using std::endl;
-#endif
 
 #include "gmanloadable.h"
 #include "gmansurfaceshader.h"
@@ -53,20 +49,20 @@ RtVoid GMANMatte::illuminance (RtInt i, GMANVector L,
 			       GMANColor Cl, GMANColor Ol)
 {
   // FIXME
-  cerr << "GMANMatte::illuminance" << endl;
+  std::cerr << "GMANMatte::illuminance" << std::endl;
 }
 
 const GMANColor &GMANMatte::computeCi(GMANSurfaceEnv &se)
 {
   // FIXME
-  cerr << "computeCi" << endl;
+  std::cerr << "computeCi" << std::endl;
   return GMANColor();
 }
 
 const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &se)
 {
   // FIXME
-  cerr << "computeOi" << endl;
+  std::cerr << "computeOi" << std::endl;
   return GMANColor();
 }
 

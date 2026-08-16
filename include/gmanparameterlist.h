@@ -46,7 +46,7 @@ private:
 
   RtVoid copy_float(RtInt number, RtFloat *source, RtFloat *dest);
   RtVoid copy_integer(RtInt number, RtInt *source, RtInt *dest);
-  RtVoid copy_string(RtInt number, char **source, string *dest);
+  RtVoid copy_string(RtInt number, char **source, std::string *dest);
   RtVoid copy (GMANParameterList const &pl);
   RtVoid destroy ();
 public:

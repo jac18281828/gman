@@ -84,7 +84,7 @@ class GMAN_EXPORT  GMANOptions : public UniversalSuperClass {
     };
     
     struct ProjectionStruct {
-	string name;
+	std::string name;
 	GMANParameterList pl;
     };
     
@@ -128,14 +128,14 @@ class GMAN_EXPORT  GMANOptions : public UniversalSuperClass {
     };
     
     struct DisplayStruct {
-	string name;
-	string type;
-	string mode;
+	std::string name;
+	std::string type;
+	std::string mode;
 	GMANParameterList pl;
     };
     
     struct HiderStruct {
-	string type;
+	std::string type;
 	GMANParameterList pl;
     };
     
@@ -210,7 +210,7 @@ class GMAN_EXPORT  GMANOptions : public UniversalSuperClass {
 
     const CropWindowStruct &getCropWindow (RtVoid) const {return cropWindow;};
 
-    RtVoid setProjection (string n, GMANParameterList &p);
+    RtVoid setProjection (std::string n, GMANParameterList &p);
     
     const ProjectionStruct &getProjection (RtFloat time=0.0) const {
 	return projection;
@@ -247,7 +247,7 @@ class GMAN_EXPORT  GMANOptions : public UniversalSuperClass {
     RtVoid setExposure (RtFloat gn, RtFloat gmm);
     const ExposureStruct &getExposure (RtVoid) const {return exposure;};
 
-    RtVoid setImager (string nm, GMANParameterList &p, GMANRenderer &rd);
+    RtVoid setImager (std::string nm, GMANParameterList &p, GMANRenderer &rd);
     const GMANImagerShader *getImager(RtVoid) const {return imager;};
 
     RtVoid setColorQuantize (RtInt one, RtInt min, RtInt max, RtFloat da);
@@ -262,13 +262,13 @@ class GMAN_EXPORT  GMANOptions : public UniversalSuperClass {
 	return depthQuantize;
     };
 
-    RtVoid setDisplay (string nm, string tp, string md, GMANParameterList &p);
+    RtVoid setDisplay (std::string nm, std::string tp, std::string md, GMANParameterList &p);
     
     const DisplayStruct &getDisplay (RtVoid) const {return display;};
 
 
     /******* ADDITIONAL OPTIONS *******/
-    RtVoid setHider (string nm, GMANParameterList &p);
+    RtVoid setHider (std::string nm, GMANParameterList &p);
     const HiderStruct &getHider (RtVoid) const {return hider;};
     
     RtVoid setColorSamples (RtInt nb, RtFloat *nr, RtFloat *rn);

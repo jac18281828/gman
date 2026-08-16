@@ -36,7 +36,7 @@
 class GMAN_EXPORT GMANContext : public UniversalSuperClass
 {
 private:
-  list<GMANRenderMan *> chl;
+  std::list<GMANRenderMan *> chl;
   GMANRenderMan *active;
 public:
   GMANContext();

@@ -35,9 +35,6 @@
 
 // STL
 #include <vector>
-#if HAVE_STD_NAMESPACE
-using std::vector;
-#endif
 
 // the renderman interface
 #include "ri.h"
@@ -51,7 +48,7 @@ using std::vector;
 #include "gmansegment.h"
 
 // types
-typedef vector<GMANPoint> PointVector;
+typedef std::vector<GMANPoint> PointVector;
 
 /*
  * RenderMan API GMANPolygon
