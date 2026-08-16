@@ -121,7 +121,7 @@ typedef float		RtFloat;		/* Real */
 
 #define NCOMPS 3
 
-typedef char		*RtToken;	/* a token value string */
+typedef const char	*RtToken;	/* a token value string */
 typedef RtFloat		RtColor[NCOMPS];	/* RenderMan uses RGB */
 typedef RtFloat		RtPoint[3];		/* Three dimensional
 						 * spatial coordinate */
