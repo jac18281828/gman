@@ -306,9 +306,13 @@ GMANGraphicState::GMANGraphicState() : mm(1,tr_times)
   currentMC=0;
   motionError=false;
 
-  optionsStack.push(*(new GMANOptions));
-  attributesStack.push(*(new GMANAttributes));
-  transformStack.push(*(new GMANTransform));
+  /* These stacks hold values, not pointers, so push() copies its argument and
+   * the *(new X) originals were leaked immediately -- 1332 bytes per context,
+   * which LeakSanitizer reports on the first RiBegin. Construct temporaries
+   * instead; the stack contents are identical. */
+  optionsStack.push(GMANOptions());
+  attributesStack.push(GMANAttributes());
+  transformStack.push(GMANTransform());
 }
 GMANOptions &GMANGraphicState::getOptions()
 {

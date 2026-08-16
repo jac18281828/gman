@@ -74,7 +74,13 @@ class GMAN_EXPORT  GMANLoadable {
 public:
   // a required function for every loadable object.
   // The function returning the loadable object info struct
-  typedef	const GMANLoadableObjectInfo*	(*LoadInfoFnc)(RtVoid);
+  /* Return type is non-const to match what every loader actually defines --
+   * the renderer and shader loaders all declare
+   * "GMANLoadableObjectInfo *GMANGetLoadableInfo(void)". Declaring it const
+   * here made the call through this pointer an incompatible function type,
+   * which UBSan reports as undefined behavior. objInfo below is const, so the
+   * result still converts on assignment; the plugin ABI is unchanged. */
+  typedef	GMANLoadableObjectInfo*	(*LoadInfoFnc)(RtVoid);
 
   static        const char *		getInfoFncName;
 

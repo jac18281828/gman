@@ -454,7 +454,7 @@ RtVoid  GMANRIBParse::parseOption(RtVoid) {
 
   renderMan->RiOptionV(name, n, tokens, parms);
 
-  delete name;
+  delete [] name;
 
 }
 
@@ -471,9 +471,9 @@ RtVoid  GMANRIBParse::parseDisplay(RtVoid) {
 
   renderMan->RiDisplayV(name, type, mode, n, tokens, parms);
 
-  delete name;
-  delete type;
-  delete mode;
+  delete [] name;
+  delete [] type;
+  delete [] mode;
 
 }
 
@@ -496,7 +496,7 @@ RtVoid GMANRIBParse::parseProjection(RtVoid) {
 
   renderMan->RiProjectionV(name, n, tokens, parms);
 
-  delete name;
+  delete [] name;
 }
 
 RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) {
@@ -505,7 +505,7 @@ RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) {
 
   renderMan->RiGeometricApproximation(type, value);
 
-  delete type;
+  delete [] type;
 }
 
 RtVoid GMANRIBParse::parseShadingInterpolation(RtVoid) {
@@ -514,7 +514,7 @@ RtVoid GMANRIBParse::parseShadingInterpolation(RtVoid) {
 
   renderMan->RiShadingInterpolation(type);
 
-  delete type;
+  delete [] type;
 }
 
 RtVoid GMANRIBParse::parseShadingRate(RtVoid) {
@@ -530,7 +530,7 @@ RtVoid GMANRIBParse::parseOrientation(RtVoid) {
 
   renderMan->RiOrientation(orientation);
 
-  delete orientation;
+  delete [] orientation;
 }
 
 RtVoid GMANRIBParse::parsePixelSamples(RtVoid) {
@@ -614,8 +614,8 @@ RtVoid GMANRIBParse::parseDeclare(RtVoid) {
 
   renderMan->RiDeclare(name, declaration);
 
-  delete name;
-  delete declaration;
+  delete [] name;
+  delete [] declaration;
 }
 
 RtVoid GMANRIBParse::parseAttribute(RtVoid) {
@@ -630,7 +630,7 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
   renderMan->RiAttributeV(name, n, tokens, parms);
 
-  delete name;
+  delete [] name;
 }
 
 RtVoid GMANRIBParse::parseColor(RtVoid) {
@@ -688,7 +688,7 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) {
 
   lightHandleMap[sequence] = handle;
 
-  delete shadername;
+  delete [] shadername;
 }
 
 RtVoid GMANRIBParse::parseSurface(RtVoid) {
@@ -703,7 +703,7 @@ RtVoid GMANRIBParse::parseSurface(RtVoid) {
   // FIXME: Implement some surface shaders
   renderMan->RiSurfaceV(shadername, n, tokens, parms);
 
-  delete shadername;
+  delete [] shadername;
 }
 
 RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) {
@@ -712,7 +712,7 @@ RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) {
 
   renderMan->RiCoordinateSystem(name);
 
-  delete name;
+  delete [] name;
 }
 
 RtVoid GMANRIBParse::parseTransform(RtVoid) {
@@ -961,7 +961,7 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
   renderMan->RiPatchV(type, n, tokens, parms);
 
-  delete type;
+  delete [] type;
 }
 
 RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
@@ -1004,9 +1004,9 @@ RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
 
   renderMan->RiPatchMeshV(type, nu, uwrap, nv, vwrap, n, tokens, parms);
 
-  delete type;
-  delete uwrap;
-  delete vwrap;
+  delete [] type;
+  delete [] uwrap;
+  delete [] vwrap;
 }
 
 RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) {
@@ -1028,7 +1028,7 @@ RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
 
   // FIXME: Read the archive file!
 
-  delete name;
+  delete [] name;
 }
 
 RtVoid GMANRIBParse::parseMotionBegin(RtVoid) {
@@ -1039,7 +1039,7 @@ RtVoid GMANRIBParse::parseMotionBegin(RtVoid) {
 
   renderMan->RiMotionBeginV(n, times);
 
-  delete times;
+  delete [] times;
 }
 
 RtVoid GMANRIBParse::parseMotionEnd(RtVoid) {
@@ -1078,8 +1078,8 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
 
   renderMan->RiBasis(RiBezierBasis, ustep, RiBezierBasis, vstep);
 
-  delete uname;
-  delete vname;
+  delete [] uname;
+  delete [] vname;
 }
 
 RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
@@ -1095,7 +1095,7 @@ RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
   // FIXME: implement some atmosphere shaders
   //  renderMan->RiAtmosphereV(name, n, tokens, parms);
 
-  delete name;
+  delete [] name;
 }
 
 RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
@@ -1111,7 +1111,7 @@ RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
   // FIXME: implement some displacement shaders
   //  renderMan->RiDisplacementV(name, n, tokens, parms);
 
-  delete name;
+  delete [] name;
 }
 
 RtVoid GMANRIBParse::parseImager(RtVoid) {
@@ -1127,7 +1127,7 @@ RtVoid GMANRIBParse::parseImager(RtVoid) {
   // FIXME: implement some imagers
   //renderMan->RiImagerV(name, n, tokens, parms);
 
-  delete name;
+  delete [] name;
 }
 
 RtVoid GMANRIBParse::parseIlluminate(RtVoid) {

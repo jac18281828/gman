@@ -104,13 +104,13 @@ GMANMovingMatrix::GMANMovingMatrix(GMANMovingMatrix const &mm)
 }
 GMANMovingMatrix::~GMANMovingMatrix()
 {
-  delete times;
+  delete [] times;          /* times is new RtFloat[nb] */
   delete [] storage;
 }
 GMANMovingMatrix const &GMANMovingMatrix::operator=(GMANMovingMatrix const &mm)
 {
   if (this!=&mm) {
-    delete times;
+    delete [] times;        /* times is new RtFloat[nb] */
     delete [] storage;
     copy(mm);
   }

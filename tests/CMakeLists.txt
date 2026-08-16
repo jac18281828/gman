@@ -26,6 +26,14 @@ set_tests_properties(baseline PROPERTIES
 add_executable(gman_basicstate basicstate.c)
 target_link_libraries(gman_basicstate PRIVATE gman_core)
 
+# A C program against a C++ library has to be linked by the C++ driver. With
+# the plain C driver clang omits the C++ runtimes, which is invisible in a
+# normal build (gman_core's DT_NEEDED covers libstdc++) but fatal under the
+# debug preset: -fsanitize=undefined includes the vptr check, whose runtime
+# lives only in the C++ ubsan library, so the link fails on
+# __ubsan_vptr_type_cache and __ubsan_handle_dynamic_type_cache_miss.
+set_target_properties(gman_basicstate PROPERTIES LINKER_LANGUAGE CXX)
+
 add_test(NAME basicstate
   COMMAND gman_basicstate
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
