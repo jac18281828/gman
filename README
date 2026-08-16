@@ -32,6 +32,10 @@ libtiff, libpng and zlib. libjpeg is optional. POSIX only -- macOS and Linux.
     cmake --build build --parallel
     ctest --test-dir build --output-on-failure
 
+To install into a prefix:
+
+    cmake --install build --prefix /usr/local
+
 See AGENTS.md for the full gate list and the house conventions.
 
 What works
@@ -51,7 +55,6 @@ Files
 COPYING      GNU Lesser General Public License, version 2.1
 disclaimer.txt   standard disclaimer
 AGENTS.md    build commands, gate list and house conventions
-INSTALL      generic installation instructions
 NEWS         release notes
 ChangeLog    history through 2000
 TODO         what was outstanding when the project was shelved

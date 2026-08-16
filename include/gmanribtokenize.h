@@ -137,10 +137,13 @@ class GMAN_EXPORT  GMANToken {
   private:
     TokenType		type;
 
+    /* real and longint were left indeterminate by every constructor that did
+     * not set them, so reading the wrong arm of this struct read garbage.
+     * gcc flags it under -Werror=maybe-uninitialized. */
     struct TokVals {
       std::string	stringVal;
-      RtFloat	real;
-      long	longint;
+      RtFloat	real{};
+      long	longint{};
     } value;
     
   public:

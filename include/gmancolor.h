@@ -64,10 +64,13 @@ public:
   typedef	SampleType	ColorSampleType;
 protected:
 
-  SampleType		r; // red
-  SampleType		g; // green
-  SampleType		b; // blue
-  
+  /* Value-initialized: the default constructor below left these indeterminate,
+   * so a default-constructed colour carried garbage and gcc flagged every use
+   * of one under -Werror=maybe-uninitialized. Black is the sane default. */
+  SampleType		r{}; // red
+  SampleType		g{}; // green
+  SampleType		b{}; // blue
+
 public:
   GMANColorBase() { }; // default constructor
 
