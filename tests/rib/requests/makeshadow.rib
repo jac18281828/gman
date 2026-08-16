@@ -1,0 +1,7 @@
+Display "out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+MakeShadow "in.tif" "out.shd"
+Sphere 1 -1 1 360
+WorldEnd

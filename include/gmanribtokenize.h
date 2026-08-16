@@ -39,6 +39,7 @@
 // STL
 #include <string>
 #include <fstream>
+#include <istream>
 
 // the renderman interface
 #include "ri.h"
@@ -132,6 +133,37 @@ class GMAN_EXPORT  GMANToken {
     RI_GEOMETRIC_APPROXIMATION,
     RI_READ_ARCHIVE,
 
+    /* A recognized-but-unimplemented request is a parse error. An
+     * unrecognized one is not: it comes back as this, carrying its own name,
+     * so the parser can warn once and skip it instead of aborting. */
+    RI_UNKNOWN_REQUEST,
+
+    /* RISpec 3.2 requests GMAN's original 66 never covered. Parsed and
+     * ignored -- see AGENTS.md's RIB support table. */
+    RI_CURVES,
+    RI_BLOBBY,
+    RI_SUBDIVISION_MESH,
+    RI_PROCEDURAL,
+    RI_SOLID_BEGIN,
+    RI_SOLID_END,
+    RI_DETAIL,
+    RI_DETAIL_RANGE,
+    RI_RELATIVE_DETAIL,
+    RI_SKEW,
+    RI_MATTE,
+    RI_TRIM_CURVE,
+    RI_ERROR_HANDLER,
+    RI_ARCHIVE_RECORD,
+    RI_MAKE_TEXTURE,
+    RI_MAKE_BUMP,
+    RI_MAKE_LAT_LONG_ENVIRONMENT,
+    RI_MAKE_CUBE_FACE_ENVIRONMENT,
+    RI_MAKE_SHADOW,
+    RI_IF_BEGIN,
+    RI_ELSE_IF,
+    RI_ELSE,
+    RI_IF_END,
+
  } TokenType;
 
   private:
@@ -157,7 +189,13 @@ class GMAN_EXPORT  GMANToken {
     GMANToken(TokenType t) {
       type = t;
     }
-    
+
+    // Token ctor carrying a name -- RI_UNKNOWN_REQUEST's request name
+    GMANToken(TokenType t, const std::string &name) {
+      type = t;
+      value.stringVal = name;
+    }
+
     // string ctor
     GMANToken(char *str) { 
       type = STRING; 
@@ -257,13 +295,13 @@ private:
     return (isdigit(c) || (c == '.') || (c == '-') || c == '+' || c == 'e');
   };
 
-  const GMANToken parseKeyword(std::ifstream &ribFile);
+  const GMANToken parseKeyword(std::istream &ribFile);
 
-  const GMANToken parseString(std::ifstream &ribFile);
+  const GMANToken parseString(std::istream &ribFile);
 
-  const GMANToken parseNum(std::ifstream &ribFile);
+  const GMANToken parseNum(std::istream &ribFile);
 
-  void consumeWhitespace(std::ifstream &ribFile) const;
+  void consumeWhitespace(std::istream &ribFile) const;
 
 
 public:
@@ -272,7 +310,9 @@ public:
 
   ~GMANRIBTokenize(); // default destructor
 
-  const GMANToken	getNext(std::ifstream &ribFile);
+  // ribFile is any character stream, not necessarily a file -- ReadArchive
+  // and gzip decompression both feed this from an in-memory stream.
+  const GMANToken	getNext(std::istream &ribFile);
 };
 
 

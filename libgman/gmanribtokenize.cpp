@@ -64,7 +64,7 @@ GMANRIBTokenize::~GMANRIBTokenize() {
 
 
 const GMANToken
-GMANRIBTokenize::getNext(std::ifstream &ribFile) {
+GMANRIBTokenize::getNext(std::istream &ribFile) {
   char c;
 
   consumeWhitespace(ribFile);
@@ -100,7 +100,7 @@ GMANRIBTokenize::getNext(std::ifstream &ribFile) {
 }
 
 const GMANToken 
-GMANRIBTokenize::parseKeyword(std::ifstream &ribFile) {
+GMANRIBTokenize::parseKeyword(std::istream &ribFile) {
   char c;
   
   buffer = "";
@@ -113,11 +113,10 @@ GMANRIBTokenize::parseKeyword(std::ifstream &ribFile) {
     buffer += c;
   }
   
-  int tokenLength = buffer.size();
-  char *tokenChars = new char[tokenLength + 1];
-  buffer.copy(tokenChars, tokenLength);
-  tokenChars[tokenLength] = 0;
-  
+  // buffer.c_str() is already a null-terminated view; no need to copy it
+  // onto the heap just to strcasecmp against it.
+  const char *tokenChars = buffer.c_str();
+
   if (! strcmp(tokenChars, "NaN")) {
     return GMANToken((float) sqrt(-1));
   } else if (! strcasecmp(tokenChars, "display")) {
@@ -250,17 +249,64 @@ GMANRIBTokenize::parseKeyword(std::ifstream &ribFile) {
     return GMANToken(GMANToken::RI_OPTION);
   } else if (! strcasecmp(tokenChars, "readArchive")) {
     return GMANToken(GMANToken::RI_READ_ARCHIVE);
+  } else if (! strcasecmp(tokenChars, "curves")) {
+    return GMANToken(GMANToken::RI_CURVES);
+  } else if (! strcasecmp(tokenChars, "blobby")) {
+    return GMANToken(GMANToken::RI_BLOBBY);
+  } else if (! strcasecmp(tokenChars, "subdivisionMesh")) {
+    return GMANToken(GMANToken::RI_SUBDIVISION_MESH);
+  } else if (! strcasecmp(tokenChars, "procedural")) {
+    return GMANToken(GMANToken::RI_PROCEDURAL);
+  } else if (! strcasecmp(tokenChars, "solidBegin")) {
+    return GMANToken(GMANToken::RI_SOLID_BEGIN);
+  } else if (! strcasecmp(tokenChars, "solidEnd")) {
+    return GMANToken(GMANToken::RI_SOLID_END);
+  } else if (! strcasecmp(tokenChars, "detail")) {
+    return GMANToken(GMANToken::RI_DETAIL);
+  } else if (! strcasecmp(tokenChars, "detailRange")) {
+    return GMANToken(GMANToken::RI_DETAIL_RANGE);
+  } else if (! strcasecmp(tokenChars, "relativeDetail")) {
+    return GMANToken(GMANToken::RI_RELATIVE_DETAIL);
+  } else if (! strcasecmp(tokenChars, "skew")) {
+    return GMANToken(GMANToken::RI_SKEW);
+  } else if (! strcasecmp(tokenChars, "matte")) {
+    return GMANToken(GMANToken::RI_MATTE);
+  } else if (! strcasecmp(tokenChars, "trimCurve")) {
+    return GMANToken(GMANToken::RI_TRIM_CURVE);
+  } else if (! strcasecmp(tokenChars, "errorHandler")) {
+    return GMANToken(GMANToken::RI_ERROR_HANDLER);
+  } else if (! strcasecmp(tokenChars, "archiveRecord")) {
+    return GMANToken(GMANToken::RI_ARCHIVE_RECORD);
+  } else if (! strcasecmp(tokenChars, "makeTexture")) {
+    return GMANToken(GMANToken::RI_MAKE_TEXTURE);
+  } else if (! strcasecmp(tokenChars, "makeBump")) {
+    return GMANToken(GMANToken::RI_MAKE_BUMP);
+  } else if (! strcasecmp(tokenChars, "makeLatLongEnvironment")) {
+    return GMANToken(GMANToken::RI_MAKE_LAT_LONG_ENVIRONMENT);
+  } else if (! strcasecmp(tokenChars, "makeCubeFaceEnvironment")) {
+    return GMANToken(GMANToken::RI_MAKE_CUBE_FACE_ENVIRONMENT);
+  } else if (! strcasecmp(tokenChars, "makeShadow")) {
+    return GMANToken(GMANToken::RI_MAKE_SHADOW);
+  } else if (! strcasecmp(tokenChars, "ifBegin")) {
+    return GMANToken(GMANToken::RI_IF_BEGIN);
+  } else if (! strcasecmp(tokenChars, "elseIf")) {
+    return GMANToken(GMANToken::RI_ELSE_IF);
+  } else if (! strcasecmp(tokenChars, "else")) {
+    return GMANToken(GMANToken::RI_ELSE);
+  } else if (! strcasecmp(tokenChars, "ifEnd")) {
+    return GMANToken(GMANToken::RI_IF_END);
   } else {
-    debug("Invalid keyword: '%s'", tokenChars);
-    GMANError error(RIE_BADFILE,RIE_WARNING,"Unknown keyword in ribfile");
-    throw(error);
+    // A request GMAN does not recognize is not a parse error -- production
+    // RIB from any real exporter routinely uses requests this front end
+    // has never heard of. The parser warns once and skips it; see
+    // GMANRIBParse::skipUnknownRequest.
+    debug("Unrecognized keyword: '%s'", tokenChars);
+    return GMANToken(GMANToken::RI_UNKNOWN_REQUEST, buffer);
   }
-  // windows requires a return even though its unreached
-  return GMANToken(GMANToken::UNKNOWN);
 };
 
 const GMANToken
-GMANRIBTokenize::parseString(std::ifstream &ribFile) {
+GMANRIBTokenize::parseString(std::istream &ribFile) {
   char c;
   
   buffer = "";
@@ -274,16 +320,11 @@ GMANRIBTokenize::parseString(std::ifstream &ribFile) {
     buffer += c;
   }
   
-  int tokenLength = buffer.size();
-  char *tokenChars = new char[tokenLength + 1];
-  buffer.copy(tokenChars, tokenLength);
-  tokenChars[tokenLength] = 0;
-
-  return GMANToken(tokenChars);
+  return GMANToken(buffer);
 };
 
 const GMANToken
-GMANRIBTokenize::parseNum(std::ifstream &ribFile) {
+GMANRIBTokenize::parseNum(std::istream &ribFile) {
   char c;
   
   buffer = "";
@@ -315,7 +356,7 @@ GMANRIBTokenize::parseNum(std::ifstream &ribFile) {
   return GMANToken(GMANToken::UNKNOWN);
 };
 
-void GMANRIBTokenize::consumeWhitespace(std::ifstream &ribFile) const {
+void GMANRIBTokenize::consumeWhitespace(std::istream &ribFile) const {
   char c;
 
   while (! ribFile.eof()) {

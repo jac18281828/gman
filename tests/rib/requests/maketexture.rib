@@ -1,0 +1,7 @@
+Display "out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+MakeTexture "in.tif" "out.tex" "periodic" "periodic" "box" 1 1
+Sphere 1 -1 1 360
+WorldEnd

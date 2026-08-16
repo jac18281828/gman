@@ -4,32 +4,33 @@
  */
 
 /*
- * The phase 0 runtime baseline.
+ * The phase 2 runtime baseline.
  *
- * Nothing in this repository had been compiled on a modern machine before
- * phase 0, so what GMAN does at runtime was an assumption. This test records
- * what it actually does, so that a later phase can tell a deliberate change
- * from a regression.
+ * Phase 0 recorded this test's original finding: given tests/rib/sphere.rib,
+ * gman exited 1, wrote no image, and reported
+ * "ERROR: RIE_CONSISTENCY -- GMANParameterList: TOKEN_NOT_FOUND" --
+ * GMANRIBParse::parseParameterList discarded bracketed array parameters
+ * outright, so "fov" [45] never reached the projection's parameter list.
  *
- * Observed, and asserted below: given tests/rib/sphere.rib, gman exits 1,
- * writes no image, and reports
+ * Phase 2's step 7 fixed that path (see gmanribparse.cpp's
+ * parseParameterList and the FIXMEs it superseded). Both "fov" [45] and the
+ * unbracketed "fov" 45 now reach the projection correctly, RiWorldBegin
+ * loads a renderer, and gman runs the sphere through the zbuffer renderer to
+ * completion. Asserted below: exit 0 and a real TIFF file.
  *
- *     ERROR: RIE_CONSISTENCY -- GMANParameterList: TOKEN_NOT_FOUND
+ * Phase 2 also fixed a second, unrelated bug this path exposed for the first
+ * time: GMANBody::~GMANBody() (libgman/gmanbody.cpp) reassigned its walk
+ * pointer to the surface it had just freed instead of to that surface's
+ * `next`, so any body with a surface use-after-freed on teardown. Nothing
+ * before phase 2 ever got far enough to construct and then destroy a real
+ * primitive to hit it.
  *
- * Why: GMANRIBParse::parseParameterList discards bracketed array parameters
- * outright -- the LEFT_BRACKET branch parses the array and drops it under a
- * FIXME. So "fov" [45] never reaches the projection's parameter list, and
- * RiWorldBegin's lookup of RI_FOV throws out of
- * GMANParameterList::getPointer, which throws rather than returning NULL as
- * its caller expects. The failure happens before any renderer runs, which is
- * why no file appears.
- *
- * The prediction this replaces was an entirely black 640x480 TIFF. That was
- * traced from source and never run; it is wrong.
- *
- * SUPERSEDED BY PHASE 1. Phase 1 owns the object-to-raster space chain and
- * inverts this test into a sphere silhouette assertion. Phase 3 replaces that
- * with a golden shaded image. Do not "fix" this test to expect success --
+ * The image is not yet correctly projected, lit or shaded -- the four
+ * severed links SPEC.md S2 describes (transform application, face normals,
+ * backface culling, the perspective matrix) are all still broken. Phase 1
+ * owns the object-to-raster space chain and inverts the second half of this
+ * test into a sphere silhouette assertion; phase 3 replaces that with a
+ * golden shaded image. Do not "fix" this test to expect a correct image --
  * replace it when the behavior it pins is deliberately changed.
  */
 
@@ -87,19 +88,21 @@ int main(int argc, char *argv[])
 
   std::printf("--- gman output ---\n%s-------------------\n", output.c_str());
 
-  check(exitStatus == 1, "gman exits 1");
-  check(output.find("GMANParameterList: TOKEN_NOT_FOUND") != std::string::npos,
-        "reports GMANParameterList: TOKEN_NOT_FOUND");
-  check(output.find("RIE_CONSISTENCY") != std::string::npos,
-        "the error is RIE_CONSISTENCY");
+  check(exitStatus == 0, "gman exits 0");
   check(output.find("Parsing") != std::string::npos,
         "the RIB was opened and parsing started");
+  check(output.find("TOKEN_NOT_FOUND") == std::string::npos,
+        "the array-parameter bug that pinned exit 1 does not recur");
 
-  // The failure is raised from RiWorldBegin, after the display driver has
-  // been selected but before any pixel is written.
+  // parseParameterList now reaches the projection's "fov" [45], WorldBegin
+  // loads the zbuffer renderer, and it runs the sphere through to a real
+  // TIFF.
   std::FILE *produced = std::fopen(image, "rb");
-  check(produced == nullptr, "no image file is produced");
+  check(produced != nullptr, "an image file is produced");
   if (produced != nullptr) {
+    std::fseek(produced, 0, SEEK_END);
+    long size = std::ftell(produced);
+    check(size > 0, "the image file is not empty");
     std::fclose(produced);
   }
 

@@ -1,0 +1,7 @@
+Display "out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Curves "linear" [2 2] "nonperiodic" "P" [0 0 0 1 0 0 0 1 0 1 1 0]
+Sphere 1 -1 1 360
+WorldEnd

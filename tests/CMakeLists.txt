@@ -37,3 +37,53 @@ set_target_properties(gman_basicstate PROPERTIES LINKER_LANGUAGE CXX)
 add_test(NAME basicstate
   COMMAND gman_basicstate
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+# Phase 2 -- RIB dialect coverage. Each spawns the real gman binary, which
+# dlopens its renderer by bare name, so each needs the same library path as
+# the baseline test above.
+set(GMAN_PHASE2_ENV
+  "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+add_executable(gman_ribdialect ribdialect_test.cpp)
+target_link_libraries(gman_ribdialect PRIVATE gman_core)
+
+set(GMAN_RIBDIALECT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribdialect-run")
+file(MAKE_DIRECTORY "${GMAN_RIBDIALECT_WORKDIR}")
+
+add_test(NAME ribdialect
+  COMMAND gman_ribdialect $<TARGET_FILE:gman>
+                          "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_RIBDIALECT_WORKDIR}")
+set_tests_properties(ribdialect PROPERTIES ENVIRONMENT "${GMAN_PHASE2_ENV}")
+
+add_executable(gman_readarchive readarchive_test.cpp)
+target_link_libraries(gman_readarchive PRIVATE gman_core)
+
+set(GMAN_READARCHIVE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/readarchive-run")
+file(MAKE_DIRECTORY "${GMAN_READARCHIVE_WORKDIR}")
+
+add_test(NAME readarchive
+  COMMAND gman_readarchive $<TARGET_FILE:gman>
+                           "${CMAKE_CURRENT_SOURCE_DIR}/rib/archive"
+  WORKING_DIRECTORY "${GMAN_READARCHIVE_WORKDIR}")
+set_tests_properties(readarchive PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  TIMEOUT 60)
+
+add_executable(gman_gzip gzip_test.cpp)
+target_link_libraries(gman_gzip PRIVATE gman_core)
+
+set(GMAN_GZIP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/gzip-run")
+file(MAKE_DIRECTORY "${GMAN_GZIP_WORKDIR}")
+
+add_test(NAME gzip
+  COMMAND gman_gzip $<TARGET_FILE:gman>
+                    "${CMAKE_CURRENT_SOURCE_DIR}/rib/gzip"
+                    "${GMAN_GZIP_WORKDIR}/scratch"
+  WORKING_DIRECTORY "${GMAN_GZIP_WORKDIR}")
+set_tests_properties(gzip PROPERTIES ENVIRONMENT "${GMAN_PHASE2_ENV}")
+
+add_executable(gman_facevarying facevarying_test.cpp)
+target_link_libraries(gman_facevarying PRIVATE gman_core)
+
+add_test(NAME facevarying COMMAND gman_facevarying)

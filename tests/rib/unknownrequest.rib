@@ -1,0 +1,7 @@
+Display "unknown_out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Bxdf "PxrDisney" "myBxdf" "float roughness" [0.5]
+Sphere 1 -1 1 360
+WorldEnd

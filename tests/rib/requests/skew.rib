@@ -1,0 +1,7 @@
+Display "out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Skew 30 1 0 0 0 1 0
+Sphere 1 -1 1 360
+WorldEnd

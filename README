@@ -41,13 +41,23 @@ See AGENTS.md for the full gate list and the house conventions.
 What works
 ----------
 
-The front end. RIB parsing, the RI state machine, transform and matrix math,
-Perlin noise, the spline and shading-language support functions, and the TIFF,
-PNG, JPEG and PNM image writers.
+The front end. RIB parsing now covers the full RISpec 3.2 request set plus
+the de-facto conventions real exporters rely on: array and inline-declared
+parameters (both bracketed and unbracketed forms), facevarying parameters,
+gzip'd RIB (`.rib.gz` or any file gzip'd regardless of name), ReadArchive
+with cycle detection, and graceful recovery from any request GMAN does not
+recognize -- warn once, skip it, keep parsing. See AGENTS.md's "RIB support"
+table for exactly which requests render, which parse and are ignored, and
+which are unrecognized. Also working: the RI state machine, transform and
+matrix math, Perlin noise, the spline and shading-language support
+functions, and the TIFF, PNG, JPEG and PNM image writers.
 
-The back end does not yet render. Feeding gman a scene today fails in the RIB
-parameter list before any renderer runs; tests/baseline.cpp records exactly
-what happens and why.
+The back end does not yet render correctly. gman parses a real scene and
+runs it through the zbuffer renderer to a written image file without
+aborting, but the image itself is not yet correctly projected, lit or
+shaded -- geometry sits at the origin, has no normals, and the perspective
+matrix is degenerate. `tests/baseline.cpp` records exactly what happens and
+why.
 
 Files
 -----

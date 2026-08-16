@@ -57,16 +57,96 @@ no file written
 ERROR: RIE_CONSISTENCY -- GMANParameterList: TOKEN_NOT_FOUND
 ```
 
-`GMANRIBParse::parseParameterList` discards bracketed array parameters — the
-`LEFT_BRACKET` branch parses the array and drops it under a FIXME. So
-`"fov" [45]` never reaches the projection's parameter list, and
-`RiWorldBegin`'s lookup of `RI_FOV` throws out of
-`GMANParameterList::getPointer`, which throws where its caller expects NULL.
-No renderer runs.
+`GMANRIBParse::parseParameterList` discarded bracketed array parameters — the
+`LEFT_BRACKET` branch parsed the array and dropped it under a FIXME. So
+`"fov" [45]` never reached the projection's parameter list, and
+`RiWorldBegin`'s lookup of `RI_FOV` threw out of
+`GMANParameterList::getPointer`, which threw where its caller expected NULL.
+No renderer ran.
 
-An earlier prediction that GMAN would write an entirely black 640×480 TIFF was
-traced from source and never run. It is wrong. `tests/baseline.cpp` pins what
-actually happens, and names phase 1 as the phase that supersedes it.
+**Fixed in phase 2.** `parseParameterList` now builds real arrays for both the
+bracketed and unbracketed forms:
+
+```
+$ ./build/gman tests/rib/sphere.rib
+exit status 0
+sphere.tif written
+```
+
+Phase 2 also found and fixed a second, unrelated bug this path exposed for
+the first time: `GMANBody::~GMANBody()` (`libgman/gmanbody.cpp`) reassigned
+its walk pointer to the surface it had just freed rather than to that
+surface's `next`, so any body with a surface use-after-freed on teardown.
+Nothing before phase 2 ever got far enough to construct and then destroy a
+real primitive to hit it — the fix landed here, one file outside phase 2's
+named scope, because without it the phase's own "exits 0" goal is
+unreachable for any RIB containing geometry.
+
+The image `sphere.tif` holds is not yet correctly projected, lit or shaded —
+the four severed links SPEC.md documents (transform application, face
+normals, backface culling, the perspective matrix) are all still broken.
+`tests/baseline.cpp` pins today's exit-0-and-a-real-file behavior and names
+phase 1 and phase 3 as the phases that make the image itself correct.
+
+## RIB support
+
+The honest answer to "what does GMAN support." Three buckets: requests that
+reach a renderer call that does real work, requests that are recognized and
+consumed but never render (a stub `RiXxxV` body, or phase 2's deliberate
+parse-and-ignore policy), and requests GMAN has never heard of.
+
+**Renders** (reaches `GMANObjectManager`/`GMANWorldManager` or otherwise
+changes state the renderer reads): `Sphere`, `Cone`, `Cylinder`,
+`Hyperboloid`, `Paraboloid`, `Torus`, `Polygon`, `Patch`; `Translate`,
+`Rotate`, `Scale`, `Transform`, `ConcatTransform`, `Identity`, `Color`,
+`Opacity`, `Sides`, `Orientation`, `ReverseOrientation`; `Display`, `Format`,
+`Projection`, `FrameAspectRatio`, `ScreenWindow`, `CropWindow`, `Clipping`,
+`DepthOfField`, `Shutter`, `PixelSamples`, `Exposure`, `Quantize`,
+`Basis`; `WorldBegin`/`End`, `FrameBegin`/`End`, `AttributeBegin`/`End`,
+`TransformBegin`/`End`, `SolidBegin`/`End`, `ObjectBegin`/`End`,
+`ObjectInstance`, `MotionBegin`/`End`, `Illuminate`, `Declare`.
+*Rendering here means the geometry or state reaches storage, not that the
+image comes out correctly* — see SPEC.md §2's four severed links (transform
+application, face normals, backface culling, the perspective matrix), all
+still open, all Phase 1/3.
+
+**Parses, never renders:**
+
+- *Stub `RiXxxV` bodies, pre-dating phase 2:* `GeneralPolygon`,
+  `PointsPolygons`, `PointsGeneralPolygons`, `PatchMesh`, `NuPatch`, `Disk`,
+  `Points`, `LightSource`, `AreaLightSource`, `Attribute`, `Deformation`,
+  `CoordSysTransform`, `TransformPoints`, `Option`, `Hider`, `Surface`,
+  `Atmosphere`, `Interior`, `Exterior`, `Displacement`, `Imager`,
+  `ShadingRate`, `ShadingInterpolation`, `GeometricApproximation`. All parse
+  correctly; none is wired to draw or shade (Phase 3, "All shading" per
+  SPEC.md §2).
+- *Phase 2's own parse-and-ignore additions* (settled decision, not a stub —
+  drawing these is explicitly Scope C / SPEC.md §4, not this phase):
+  `Curves`, `Blobby`, `SubdivisionMesh`, `Procedural`, `SolidBegin`/`End`
+  (both consumed; `RiSolidBegin`/`End` above already state-track the block,
+  the *shape* a solid represents is not evaluated), `Detail`, `DetailRange`,
+  `RelativeDetail`, `Skew`, `Matte`, `TrimCurve`, `ErrorHandler`,
+  `ArchiveRecord`, `MakeTexture`, `MakeBump`, `MakeLatLongEnvironment`,
+  `MakeCubeFaceEnvironment`, `MakeShadow`, `IfBegin`, `ElseIf`, `Else`,
+  `IfEnd`.
+- `ReadArchive` recurses the parser over the archive (relative to the
+  including file, then as given) with cycle detection and a depth cap; its
+  own content renders or not exactly like the top-level file's does.
+
+**Unrecognized:** anything else — RIS-era requests (`Bxdf`, `Integrator`,
+`Resource`, `ShaderLayer`; SPEC.md §4), vendor extensions, and any request a
+future RISpec revision adds. Warned once by name (not once per occurrence)
+and skipped; the full set skipped in a given file is reported once at the
+end of the parse. Never aborts the parse. See
+`libgman/gmanribtokenize.cpp`'s `parseKeyword` and
+`GMANRIBParse::skipUnknownRequest`.
+
+**Binary RIB and `.rib.gz`:** `.rib.gz` (or any RIB gzip'd regardless of its
+name — detected by magic bytes) decompresses transparently. Binary-encoded
+RIB (RISpec's own compact token encoding, distinct from gzip) is not
+implemented; GMAN never needed it for the corpus this phase tested against.
+GMAN never writes binary RIB, and never will (`libgmanrib/gmanascii.cpp`
+writes ASCII only).
 
 ## House conventions
 
