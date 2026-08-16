@@ -190,7 +190,9 @@ GMANGraphicState::CommandIdentity
 GMANGraphicState::cmdCoordSysTransform= { B|F|W|A|T|S, 0,0,0 };
 
 GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdTransformPoints= { B|F|W|A|T||S, 0,0,0 };
+// TODO(phase-1): T||S is a typo for T|S, so the whole expression collapses
+// to 1 (B alone). Preserved verbatim; phase 0 does not change behavior.
+GMANGraphicState::cmdTransformPoints= { 1, 0,0,0 };
 
 
 GMANGraphicState::CommandIdentity
@@ -317,6 +319,8 @@ GMANAttributes &GMANGraphicState::getAttributes()
 RtVoid GMANGraphicState::enterMode (CurrentState mode)
 {
   switch (mode) {
+  case B: // the outermost block is never entered or left explicitly
+    break;
   case F: // ** ENTER FRAME ** //
     allowed(B);
     if (frame==1) {
@@ -403,6 +407,8 @@ RtVoid GMANGraphicState::leaveMode (CurrentState mode)
 {
   CurrentState i=nest.top();
   switch (mode) {
+  case B: // the outermost block is never entered or left explicitly
+    break;
   case F: // ** LEAVE FRAME ** //
     if (frame==0) {
       error("RiFrameBegin not called");
@@ -533,7 +539,7 @@ RtVoid GMANGraphicState::overlap (CurrentState mode, CurrentState current)
     error("Blocks cannot overlap");
   }
 }
-RtVoid GMANGraphicState::error(char *message)
+RtVoid GMANGraphicState::error(const char *message)
 {
   GMANError error(RIE_NESTING,RIE_SEVERE,message);
   throw error;
@@ -598,7 +604,8 @@ RtVoid GMANGraphicState::buildTransform(GMANMatrix4 &m)
     mm.get(motionIndex)=m;
     motionIndex+=1;
     if (motionIndex==nbSamples) {
-      if (motionError=true) return;
+      // TODO(phase-1): almost certainly meant ==; control always returns here.
+      if ((motionError=true)) return;
       GMANTransform a(mm);
       transformStack.top().concat(a);
     }

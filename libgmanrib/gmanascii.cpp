@@ -118,7 +118,7 @@ RtVoid GMANASCII::RiDeclare(const char *name, const char *declaration)
 }
 RtVoid GMANASCII::RiBegin(RtToken name)
 {
-  out.open(name,ios::out);
+  out.open(name,std::ios::out);
   if (!out) {
     GMANError error(RIE_BADFILE,RIE_SEVERE,"Unable to open file");
     throw error;
@@ -344,12 +344,12 @@ RtVoid  GMANASCII::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFl
   out << s1 <<" "<< t1 <<" "<< s2 <<" "<< t2 <<" ";
   out << s3 <<" "<< t3 <<" "<< s4 <<" "<< t4 <<std::endl;
 }
-RtVoid GMANASCII::RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid GMANASCII::RiLightSourceV(RtToken /*name*/, RtInt n, RtToken tokens[], RtPointer parms[])
 {
   out <<"LightSource ";
   printPL(n, tokens, parms);
 }
-RtVoid GMANASCII::RiAreaLightSourceV(RtToken name,
+RtVoid GMANASCII::RiAreaLightSourceV(RtToken /*name*/,
 					RtInt n, RtToken tokens[], RtPointer parms[])
 {
   out <<"AreaLightSource ";
@@ -566,8 +566,8 @@ RtVoid  GMANASCII::RiCoordSysTransform(RtToken space)
   printToken(space);
   out << std::endl;
 }
-RtPoint *GMANASCII::RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n,
-				      RtPoint points[])
+RtPoint *GMANASCII::RiTransformPoints(RtToken /*fromspace*/, RtToken /*tospace*/, RtInt /*n*/,
+				      RtPoint /*points*/[])
 {
   GMANError error(RIE_CONSISTENCY, RIE_WARNING, "RiTransformPoints is a C api only call");
   throw error;
@@ -906,7 +906,7 @@ RtVoid  GMANASCII::RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[],
 }
 RtVoid  GMANASCII::RiProcedural(RtPointer data, RtBound bound,
 				RtVoid (*subdivfunc)(RtPointer, RtFloat),
-				RtVoid (*freefunc)(RtPointer))
+				RtVoid (*/*freefunc*/)(RtPointer))
 {
   std::string sf;
   RtInt a;

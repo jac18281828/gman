@@ -78,7 +78,7 @@ GMANOneMatrix::GMANOneMatrix(GMANMatrix4 &m)
 {
   mx=m; 
 }
-GMANMatrix4 GMANOneMatrix::interpolate(RtFloat tm)
+GMANMatrix4 GMANOneMatrix::interpolate(RtFloat /*tm*/)
 {
   return mx;
 }
@@ -259,7 +259,7 @@ RtVoid GMANTransform::concat(GMANTransform &t)
       mm->get(j)=t1->interpolate(tmp[j]);
       mm->get(j).concat(t2->interpolate(tmp[j]));
     }
-	if(tmp) delete(tmp);
+	if(tmp) delete[] tmp;
     delete storage;
     storage=mm;
   } 

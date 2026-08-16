@@ -45,30 +45,32 @@ public:
   const GMANColor &computeOi(GMANSurfaceEnv &se);
 };
 
-RtVoid GMANMatte::illuminance (RtInt i, GMANVector L,
-			       GMANColor Cl, GMANColor Ol)
+RtVoid GMANMatte::illuminance (RtInt /*i*/, GMANVector /*L*/,
+			       GMANColor /*Cl*/, GMANColor /*Ol*/)
 {
   // FIXME
   std::cerr << "GMANMatte::illuminance" << std::endl;
 }
 
-const GMANColor &GMANMatte::computeCi(GMANSurfaceEnv &se)
+const GMANColor &GMANMatte::computeCi(GMANSurfaceEnv &/*se*/)
 {
   // FIXME
   std::cerr << "computeCi" << std::endl;
-  return GMANColor();
+  static const GMANColor black;
+  return black;
 }
 
-const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &se)
+const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &/*se*/)
 {
   // FIXME
   std::cerr << "computeOi" << std::endl;
-  return GMANColor();
+  static const GMANColor black;
+  return black;
 }
 
 static GMANLoadableObjectInfo info = {
   "Matte surface shader",
-  "Ken Geis <kgeis@alum.calberkeley.org>"
+  "Ken Geis <kgeis@alum.calberkeley.org>",
   "Copyright (c) 2001 Ken Geis, Licenced under the GNU Lesser Public License, http://www.gnu.org",
   "A GMAN SurfaceShader for matte surfaces.",
 };

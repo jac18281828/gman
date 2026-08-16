@@ -191,7 +191,7 @@ private:
   RtVoid push(CurrentState st);
   RtVoid pop();
   RtVoid overlap(CurrentState mode, CurrentState  current);
-  RtVoid error(char *message);
+  RtVoid error(const char *message);
   RtVoid allowed(RtInt mode);
 public:
   GMANGraphicState();

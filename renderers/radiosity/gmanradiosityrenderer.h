@@ -69,27 +69,27 @@ public:
 
   ~GMANRadiosityRenderer(); // default destructor
 
-  RtVoid illuminance(RtInt i,
-		     GMANPoint const &p,
-		     GMANVector const &axis,
-		     RtFloat angle) {}
-  RtVoid illuminate(RtInt i,
-		    GMANPoint const &p,
-		    GMANVector const &axis,
-		    RtFloat angle) {}
-  RtVoid solar(RtInt i, GMANVector const &axis,
-	       RtFloat angle) {}
+  RtVoid illuminance(RtInt /*i*/,
+		     GMANPoint const &/*p*/,
+		     GMANVector const &/*axis*/,
+		     RtFloat /*angle*/) {}
+  RtVoid illuminate(RtInt /*i*/,
+		    GMANPoint const &/*p*/,
+		    GMANVector const &/*axis*/,
+		    RtFloat /*angle*/) {}
+  RtVoid solar(RtInt /*i*/, GMANVector const &/*axis*/,
+	       RtFloat /*angle*/) {}
 
   /*
    * Apply a radiosity model to the world environment and 
    * return the result in frameBuffer
    */
-  virtual void render(GMANFrameBuffer *frameBuffer,
-		      GMANViewingSystem *viewingSys,
-		      const GMANOptions       &options,
-		      const GMANAttributes    &attributes) { };
+  virtual void render(GMANFrameBuffer */*frameBuffer*/,
+		      GMANViewingSystem */*viewingSys*/,
+		      const GMANOptions       &/*options*/,
+		      const GMANAttributes    &/*attributes*/) { };
 
-    inline RtFloat getDepth(int x, int y)  const {
+    inline RtFloat getDepth(int /*x*/, int /*y*/)  const {
 	// implement me
 	return 0.0;
     }

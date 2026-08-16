@@ -322,7 +322,7 @@ GMANPoint GMANTools::hyperboloid (RtFloat u, RtFloat v,
   return vi;
 }
 GMANPoint GMANTools::paraboloid  (RtFloat u, RtFloat v,
-				  RtFloat rmax, RtFloat zmin, RtFloat zmax,
+				  RtFloat /*rmax*/, RtFloat zmin, RtFloat zmax,
 				  RtFloat theta)
 {
   RtFloat a=zmin+v*(zmax-zmin);

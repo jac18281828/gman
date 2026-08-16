@@ -131,7 +131,7 @@ GMANParameterList::~GMANParameterList()
   destroy();
 }
 
-const RtPointer GMANParameterList::getPointer(GMANTokenId tid) const
+RtPointer GMANParameterList::getPointer(GMANTokenId tid) const
 {
   int i;
   for(i=0;i<number;i++) {

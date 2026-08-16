@@ -40,7 +40,7 @@
 // default constructor
 
 GMANOutput::GMANOutput() :
-  GMANFrameBuffer(), outputName(), gammaCorrect(), quantizer(NULL) {
+  GMANFrameBuffer(), outputName(), quantizer(NULL), gammaCorrect() {
 }
 
 GMANOutput::GMANOutput(const char *name, 
@@ -50,8 +50,8 @@ GMANOutput::GMANOutput(const char *name,
 		  height,
 		  DefaultBGColor), 
   outputName(name), 
-  gammaCorrect(), 
-  quantizer(NULL)
+  quantizer(NULL), 
+  gammaCorrect()
 { 
 
 };
@@ -66,8 +66,8 @@ GMANOutput::GMANOutput(const char *name,
 		  height,
 		  background), 
   outputName(name), 
-  gammaCorrect(), 
-  quantizer(NULL)
+  quantizer(NULL), 
+  gammaCorrect()
 { 
 
 };

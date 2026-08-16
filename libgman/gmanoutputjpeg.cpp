@@ -54,7 +54,7 @@ GMANOutputJPEG::GMANOutputJPEG(const char *path, int width, int height) :
 // default destructor 
 GMANOutputJPEG::~GMANOutputJPEG() { };
 
-RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode mode, 
+RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, 
 			    RtFloat gain, 
 			    RtFloat gamma) {
 #ifdef HAVE_LIBJPEG
@@ -99,7 +99,7 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode mode,
 
       // copy frameBuffer to jpeg sample array
       for(int y=0; y<yres; y++) {
-	int colOff=0, rowOff=y;
+	int colOff=0;
 	for(int x=0; x<xres; x++) {
 	  GMANColorRGB color;
 

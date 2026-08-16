@@ -334,8 +334,8 @@ void GMANZBufferRenderer::drawEdgeList(GMANFrameBuffer *frameBuffer) {
 
 RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
 				   GMANViewingSystem  *viewingSys,
-				   const GMANOptions       &options,
-				   const GMANAttributes    &attributes)
+				   const GMANOptions       &/*options*/,
+				   const GMANAttributes    &/*attributes*/)
  {
 
   GMANFace	*face;

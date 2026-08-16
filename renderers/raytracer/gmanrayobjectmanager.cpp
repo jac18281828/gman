@@ -51,216 +51,216 @@ GMANPrimitive* GMANRayObjectManager::create(RtVoid) {
   return new GMANRayInterface();
 }
 
-GMANPrimitive * GMANRayObjectManager::getRSPolygon (RtInt nverts, 
-							  GMANParameterList pl,
-							  GMANOptions *opt,
-							  GMANAttributes *attr,
-							  GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSPolygon (RtInt /*nverts*/, 
+							  GMANParameterList /*pl*/,
+							  GMANOptions */*opt*/,
+							  GMANAttributes */*attr*/,
+							  GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSGeneralPolygon (RtInt nloops, 
-								 RtInt nverts[], 
-								 GMANParameterList pl,
-								 GMANOptions *opt,
-								 GMANAttributes *attr,
-								 GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSGeneralPolygon (RtInt /*nloops*/, 
+								 RtInt /*nverts*/[], 
+								 GMANParameterList /*pl*/,
+								 GMANOptions */*opt*/,
+								 GMANAttributes */*attr*/,
+								 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSPointsPolygon (RtInt npolys, 
-								RtInt nverts[], 
-								RtInt verts[],
-								GMANParameterList pl,
-								GMANOptions *opt,
-								GMANAttributes *attr,
-								GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSPointsPolygon (RtInt /*npolys*/, 
+								RtInt /*nverts*/[], 
+								RtInt /*verts*/[],
+								GMANParameterList /*pl*/,
+								GMANOptions */*opt*/,
+								GMANAttributes */*attr*/,
+								GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSPointsGeneralPolygons (RtInt npolys, 
-									RtInt nloops[],
-									RtInt nverts[], 
-									RtInt verts[],
-									GMANParameterList pl,
-									GMANOptions *opt,
-									GMANAttributes *attr,
-									GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSPointsGeneralPolygons (RtInt /*npolys*/, 
+									RtInt /*nloops*/[],
+									RtInt /*nverts*/[], 
+									RtInt /*verts*/[],
+									GMANParameterList /*pl*/,
+									GMANOptions */*opt*/,
+									GMANAttributes */*attr*/,
+									GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSPatch (RtToken type, 
-							GMANParameterList pl,
-							GMANOptions *opt,
-							GMANAttributes *attr,
-							GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSPatch (RtToken /*type*/, 
+							GMANParameterList /*pl*/,
+							GMANOptions */*opt*/,
+							GMANAttributes */*attr*/,
+							GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSPatchMesh (RtToken type, 
-							    RtInt nu, 
-							    RtToken uwrap,
-							    RtInt nv, 
-							    RtToken vwrap, 
-							    GMANParameterList pl,
-							    GMANOptions *opt,
-							    GMANAttributes *attr,
-							    GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSPatchMesh (RtToken /*type*/, 
+							    RtInt /*nu*/, 
+							    RtToken /*uwrap*/,
+							    RtInt /*nv*/, 
+							    RtToken /*vwrap*/, 
+							    GMANParameterList /*pl*/,
+							    GMANOptions */*opt*/,
+							    GMANAttributes */*attr*/,
+							    GMANTransform */*t*/)
  {
   return create();
 }; 
 
-GMANPrimitive * GMANRayObjectManager::getRSNuPatch (RtInt nu,
-							  RtInt uorder,
-							  RtFloat uknot[],
-							  RtFloat umin,
-							  RtFloat umax,
-							  RtInt nv,
-							  RtInt vorder,
-							  RtFloat vknot[],
-							  RtFloat vmin,
-							  RtFloat vmax,
-							  GMANParameterList pl,
-							  GMANOptions *opt,
-							  GMANAttributes *attr,
-							  GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSNuPatch (RtInt /*nu*/,
+							  RtInt /*uorder*/,
+							  RtFloat /*uknot*/[],
+							  RtFloat /*umin*/,
+							  RtFloat /*umax*/,
+							  RtInt /*nv*/,
+							  RtInt /*vorder*/,
+							  RtFloat /*vknot*/[],
+							  RtFloat /*vmin*/,
+							  RtFloat /*vmax*/,
+							  GMANParameterList /*pl*/,
+							  GMANOptions */*opt*/,
+							  GMANAttributes */*attr*/,
+							  GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSSphere (RtFloat radius,
-							 RtFloat zmin,
-							 RtFloat zmax,
-							 RtFloat tmax,
-							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
-							 GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSSphere (RtFloat /*radius*/,
+							 RtFloat /*zmin*/,
+							 RtFloat /*zmax*/,
+							 RtFloat /*tmax*/,
+							 GMANParameterList /*pl*/,
+							 GMANOptions */*opt*/,
+							 GMANAttributes */*attr*/,
+							 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSCone (RtFloat height,
-						       RtFloat radius,
-						       RtFloat tmax,
-						       GMANParameterList pl, 
-						       GMANOptions *opt,
-						       GMANAttributes *attr,
-						       GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSCone (RtFloat /*height*/,
+						       RtFloat /*radius*/,
+						       RtFloat /*tmax*/,
+						       GMANParameterList /*pl*/, 
+						       GMANOptions */*opt*/,
+						       GMANAttributes */*attr*/,
+						       GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSCylinder (RtFloat radius,
-							   RtFloat zmin,
-							   RtFloat zmax,
-							   RtFloat tmax,
-							   GMANParameterList pl,
-							   GMANOptions *opt,
-							   GMANAttributes *attr,
-							   GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSCylinder (RtFloat /*radius*/,
+							   RtFloat /*zmin*/,
+							   RtFloat /*zmax*/,
+							   RtFloat /*tmax*/,
+							   GMANParameterList /*pl*/,
+							   GMANOptions */*opt*/,
+							   GMANAttributes */*attr*/,
+							   GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSHyperboloid (RtPoint point1,
-							      RtPoint point2,
-							      RtFloat tmax,
-							      GMANParameterList pl,
-							      GMANOptions *opt,
-							      GMANAttributes *attr,
-							      GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSHyperboloid (RtPoint /*point1*/,
+							      RtPoint /*point2*/,
+							      RtFloat /*tmax*/,
+							      GMANParameterList /*pl*/,
+							      GMANOptions */*opt*/,
+							      GMANAttributes */*attr*/,
+							      GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSParaboloid (RtFloat rmax,
-							     RtFloat zmin,
-							     RtFloat zmax,
-							     RtFloat tmax,
-							     GMANParameterList pl,
-							     GMANOptions *opt,
-							     GMANAttributes *attr,
-							     GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSParaboloid (RtFloat /*rmax*/,
+							     RtFloat /*zmin*/,
+							     RtFloat /*zmax*/,
+							     RtFloat /*tmax*/,
+							     GMANParameterList /*pl*/,
+							     GMANOptions */*opt*/,
+							     GMANAttributes */*attr*/,
+							     GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSDisk (RtFloat height,
-						       RtFloat radius,
-						       RtFloat tmax,
-						       GMANParameterList pl,
-						       GMANOptions *opt,
-						       GMANAttributes *attr,
-						       GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSDisk (RtFloat /*height*/,
+						       RtFloat /*radius*/,
+						       RtFloat /*tmax*/,
+						       GMANParameterList /*pl*/,
+						       GMANOptions */*opt*/,
+						       GMANAttributes */*attr*/,
+						       GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSTorus (RtFloat majrad,RtFloat minrad,RtFloat phimin,RtFloat phimax,
-							RtFloat tmax,
-							GMANParameterList pl,
-							GMANOptions *opt,
-							GMANAttributes *attr,
-							GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSTorus (RtFloat /*majrad*/,RtFloat /*minrad*/,RtFloat /*phimin*/,RtFloat /*phimax*/,
+							RtFloat /*tmax*/,
+							GMANParameterList /*pl*/,
+							GMANOptions */*opt*/,
+							GMANAttributes */*attr*/,
+							GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSBlobby (RtInt nleaf,
-							 RtInt ncode,
-							 RtInt code[],
-							 RtInt nflt,
-							 RtFloat flt[],
-							 RtInt nstr,
-							 RtToken str[], 
-							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
-							 GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSBlobby (RtInt /*nleaf*/,
+							 RtInt /*ncode*/,
+							 RtInt /*code*/[],
+							 RtInt /*nflt*/,
+							 RtFloat /*flt*/[],
+							 RtInt /*nstr*/,
+							 RtToken /*str*/[], 
+							 GMANParameterList /*pl*/,
+							 GMANOptions */*opt*/,
+							 GMANAttributes */*attr*/,
+							 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSPoints (RtInt npoints,
-							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
-							 GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSPoints (RtInt /*npoints*/,
+							 GMANParameterList /*pl*/,
+							 GMANOptions */*opt*/,
+							 GMANAttributes */*attr*/,
+							 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSCurves (RtToken type,
-							 RtInt ncurves, 
-							 RtInt nvertices[],
-							 RtToken wrap,
-							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
-							 GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSCurves (RtToken /*type*/,
+							 RtInt /*ncurves*/, 
+							 RtInt /*nvertices*/[],
+							 RtToken /*wrap*/,
+							 GMANParameterList /*pl*/,
+							 GMANOptions */*opt*/,
+							 GMANAttributes */*attr*/,
+							 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANRayObjectManager::getRSSubdivisionMesh (RtToken mask,
-								  RtInt nf,
-								  RtInt nverts[],
-								  RtInt verts[],
-								  RtInt ntags,
-								  RtToken tags[],
-								  RtInt numargs[],
-								  RtInt intargs[],
-								  RtFloat floatargs[],
-								  GMANParameterList pl,
-								  GMANOptions *opt,
-								  GMANAttributes *attr,
-								  GMANTransform *t)
+GMANPrimitive * GMANRayObjectManager::getRSSubdivisionMesh (RtToken /*mask*/,
+								  RtInt /*nf*/,
+								  RtInt /*nverts*/[],
+								  RtInt /*verts*/[],
+								  RtInt /*ntags*/,
+								  RtToken /*tags*/[],
+								  RtInt /*numargs*/[],
+								  RtInt /*intargs*/[],
+								  RtFloat /*floatargs*/[],
+								  GMANParameterList /*pl*/,
+								  GMANOptions */*opt*/,
+								  GMANAttributes */*attr*/,
+								  GMANTransform */*t*/)
  {
   return create();
 };

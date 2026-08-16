@@ -54,7 +54,7 @@
 class GMAN_EXPORT  GMANPolygonClipper : public UniversalSuperClass {
 private:
 
-  int nOutputVertices;
+  [[maybe_unused]] int nOutputVertices;
   GMANClipEdge	clipper[6]; // clipper array
   GMANClipEdge *pclip;      // clipper list head pointer
 

@@ -50,7 +50,6 @@
 
 // linear world manager
 #include "gmanlinearworldmanager.h"
-#include "gmanbspworldmanager.h"
 // patch poly object manager
 #include "gmanobjectmanager.h"
 #include "gmanrayobjectmanager.h"
@@ -66,23 +65,23 @@ class GMAN_EXPORT GMANRaytraceRenderer : public GMANRenderer {
 private:
   GMANRayObjectManager		objectManager;
 
-  GMANBSPWorldManager		worldManager;
+  GMANLinearWorldManager		worldManager;
 
 public:
   GMANRaytraceRenderer(); // default constructor
 
   ~GMANRaytraceRenderer(); // default destructor
 
-  RtVoid illuminance(RtInt i,
-		     GMANPoint const &p,
-		     GMANVector const &axis,
-		     RtFloat angle) {}
-  RtVoid illuminate(RtInt i,
-		    GMANPoint const &p,
-		    GMANVector const &axis,
-		    RtFloat angle) {}
-  RtVoid solar(RtInt i, GMANVector const &axis,
-	       RtFloat angle) {}
+  RtVoid illuminance(RtInt /*i*/,
+		     GMANPoint const &/*p*/,
+		     GMANVector const &/*axis*/,
+		     RtFloat /*angle*/) {}
+  RtVoid illuminate(RtInt /*i*/,
+		    GMANPoint const &/*p*/,
+		    GMANVector const &/*axis*/,
+		    RtFloat /*angle*/) {}
+  RtVoid solar(RtInt /*i*/, GMANVector const &/*axis*/,
+	       RtFloat /*angle*/) {}
 
 
   /*
@@ -94,7 +93,7 @@ public:
 		      const GMANOptions       &options,
 		      const GMANAttributes    &attributes);
 
-    inline RtFloat getDepth(int x, int y)  const {
+    inline RtFloat getDepth(int /*x*/, int /*y*/)  const {
 	// implement me
 	return 0.0;
     }

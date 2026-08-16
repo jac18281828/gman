@@ -37,7 +37,7 @@
 
 static GMANLoadableObjectInfo info = {
   "Radiosity Lighting Model",
-  "John Cairns <john@2ad.com>"
+  "John Cairns <john@2ad.com>",
   "Copyright (c) 2001, 2000, 1999 John Cairns, Licenced under the GNU Lesser Public License, http://www.gnu.org",
   "A GMAN Renderer based on the radiosity lighting model simulation.",
 };

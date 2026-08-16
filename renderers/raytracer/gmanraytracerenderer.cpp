@@ -49,9 +49,9 @@ GMANRaytraceRenderer::~GMANRaytraceRenderer() { };
 
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer *frameBuffer,
-				  GMANViewingSystem *viewingSys,
-				  const GMANOptions       &options,
-				  const GMANAttributes    &attributes)
+				  GMANViewingSystem */*viewingSys*/,
+				  const GMANOptions       &/*options*/,
+				  const GMANAttributes    &/*attributes*/)
  {
 
   RtInt width, height;

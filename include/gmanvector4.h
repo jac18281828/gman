@@ -65,7 +65,7 @@ private:
   // cross product disabled for now
 
   // compute the cross product of this vector with another
-  GMANVector4 cross(const GMANVector &vec) { return *this; }; 
+  GMANVector4 cross(const GMANVector &/*vec*/) { return *this; }; 
 
 
 public:
@@ -207,7 +207,7 @@ public:
 
 
   // premultiply point by projective matrix
-  RtVoid projTransform(const GMANPoint &p, RtFloat (*ptm)[4]) {
+  RtVoid projTransform(const GMANPoint &p, const RtMatrix &ptm) {
     GMANVector v(p);
 
     projTransform(v, ptm);

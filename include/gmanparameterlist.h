@@ -58,7 +58,7 @@ public:
   GMANParameterList const &operator=(GMANParameterList const &pl);
   ~GMANParameterList ();
 
-  const RtPointer getPointer(GMANTokenId tid) const;
+  RtPointer getPointer(GMANTokenId tid) const;
 };
 
 #endif

@@ -73,8 +73,8 @@ public:
   GMANVertex();
 
   GMANVertex(const GMANPoint &position, 
-	     GMANFaceList &fl,
-	     const GMANColor &col=DefaultBGColor,
+	     GMANFaceList &/*fl*/,
+	     const GMANColor &/*col*/=DefaultBGColor,
 	     const GMANAlpha &alp=DefaultAlpha) : 
     UniversalSuperClass(),
     location(position),

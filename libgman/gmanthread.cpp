@@ -33,6 +33,8 @@
 /* System headers */
 #include <stdlib.h>
 
+#include <cstdint>
+
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
 #include "universalsuperclass.h" /* Super class */
@@ -265,7 +267,7 @@ int GMANThread::waitForExit(void) {
 
 	pthread_join(thread, (void**)&exitCd);
 
-	return (int)exitCd;
+	return static_cast<int>(reinterpret_cast<std::uintptr_t>(exitCd));
 
 }
 
@@ -276,7 +278,7 @@ void *GMANThreadStart(void *arg) {
 
     GMANThread *threadInst = (GMANThread*)arg;
 
-    return (void*)threadInst->run();
+    return reinterpret_cast<void *>(static_cast<std::uintptr_t>(threadInst->run()));
 
 }
 

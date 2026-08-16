@@ -92,7 +92,7 @@ public:
   }; // default destructor
 
   // test all faces for intersection and return one if it does
-  const GMANFace *intersects(const GMANRay &ray) {
+  const GMANFace *intersects(const GMANRay &/*ray*/) {
     GMANFace *faceEle = faceRoot;
     while(faceEle != NULL) {
       // FIXME test face for intersection

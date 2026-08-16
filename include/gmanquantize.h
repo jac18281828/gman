@@ -67,11 +67,11 @@ class GMAN_EXPORT  GMANQuantize : public UniversalSuperClass {
   private:
 
     // private data
-    DisplayMode mode;
-    RtInt	one;
-    RtInt	minVal;
-    RtInt	maxVal;
-    RtFloat     ditherAmplitude;
+    [[maybe_unused]] DisplayMode mode;
+    [[maybe_unused]] RtInt	one;
+    [[maybe_unused]] RtInt	minVal;
+    [[maybe_unused]] RtInt	maxVal;
+    [[maybe_unused]] RtFloat     ditherAmplitude;
     
 
 public:

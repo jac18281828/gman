@@ -80,7 +80,7 @@ public:
   ~GMANFace(); // default destructor
 
   // Test this face for intersection in a ray
-  bool intersects(const GMANRay	&ray) { 
+  bool intersects(const GMANRay	&/*ray*/) { 
     // fix me!
     return false; 
   };

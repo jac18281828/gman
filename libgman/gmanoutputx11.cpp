@@ -39,16 +39,16 @@
  */
 
 // default constructor
-GMANOutputX11::GMANOutputX11(const char *name, int width, int height) : 
+GMANOutputX11::GMANOutputX11(const char */*name*/, int /*width*/, int /*height*/) : 
   GMANWindowOutput() { };
 
 
 // default destructor 
 GMANOutputX11::~GMANOutputX11() { };
 
-RtVoid GMANOutputX11::save(GMANOutput::DisplayMode mode, 
-			   RtFloat gain, 
-			   RtFloat gamma) {
+RtVoid GMANOutputX11::save(GMANOutput::DisplayMode /*mode*/, 
+			   RtFloat /*gain*/, 
+			   RtFloat /*gamma*/) {
     debug("sorry framebuffer display is not currently supported");
 }
 

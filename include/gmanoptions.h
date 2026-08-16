@@ -212,7 +212,7 @@ class GMAN_EXPORT  GMANOptions : public UniversalSuperClass {
 
     RtVoid setProjection (std::string n, GMANParameterList &p);
     
-    const ProjectionStruct &getProjection (RtFloat time=0.0) const {
+    const ProjectionStruct &getProjection (RtFloat /*time*/=0.0) const {
 	return projection;
     };
 

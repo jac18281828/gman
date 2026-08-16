@@ -48,8 +48,8 @@
 #include "gmangamma.h"
 // polygon clipper
 #include "gmanpolygonclipper.h"
-// octree world manager
-#include "gmanoctreeworldmanager.h"
+// world manager
+#include "gmanlinearworldmanager.h"
 // patch poly object manager
 #include "gmanobjectmanager.h"
 #include "gmanpatchpolyobjectmanager.h"
@@ -107,7 +107,7 @@ class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
     GMANPatchPolyObjectManager		objectManager;
 
     // the world manager (octree for use by ray tracing)
-    GMANOctreeWorldManager		worldManager;
+    GMANLinearWorldManager		worldManager;
 
     // private methods
 
@@ -131,18 +131,18 @@ class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
 
     ~GMANReyesRenderer(); // default destructor
 
-    RtVoid illuminance(RtInt i,
-		       GMANPoint const &p,
-		       GMANVector const &axis,
-		       RtFloat angle) {}
+    RtVoid illuminance(RtInt /*i*/,
+		       GMANPoint const &/*p*/,
+		       GMANVector const &/*axis*/,
+		       RtFloat /*angle*/) {}
 
-    RtVoid illuminate(RtInt i,
-		      GMANPoint const &p,
-		      GMANVector const &axis,
-		      RtFloat angle) {}
+    RtVoid illuminate(RtInt /*i*/,
+		      GMANPoint const &/*p*/,
+		      GMANVector const &/*axis*/,
+		      RtFloat /*angle*/) {}
 
-    RtVoid solar(RtInt i, GMANVector const &axis,
-		 RtFloat angle) {}
+    RtVoid solar(RtInt /*i*/, GMANVector const &/*axis*/,
+		 RtFloat /*angle*/) {}
 
     /*
      * Apply the reyes micropolygon model using viewingSystem

@@ -69,6 +69,8 @@ class GMAN_EXPORT  GMANMatrix4 : public UniversalSuperClass
     GMANMatrix4 &operator+=(const GMANMatrix4 &m);
 
     GMANMatrix4 &operator=(const RtMatrix &m);
+	GMANMatrix4(const GMANMatrix4 &m) = default;
+
 	GMANMatrix4 &operator=(const GMANMatrix4 &m);
 
 	GMANMatrix4 &assign(const GMANMatrix4 &m);

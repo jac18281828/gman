@@ -40,6 +40,9 @@ option(GMAN_WITH_TIFF "Build the TIFF display driver" ON)
 option(GMAN_WITH_PNG "Build the PNG display driver" ON)
 option(GMAN_WITH_JPEG "Build the JPEG display driver" ${JPEG_FOUND})
 
+# All three are non-functional and kept for the design intent a later phase may
+# want. reyes and raytracer additionally do not link -- each has declared
+# virtuals with no definition -- so their options compile but do not complete.
 option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
 option(GMAN_BUILD_RAYTRACER "Build the (non-functional) ray tracer plugin" OFF)
 option(GMAN_BUILD_RADIOSITY "Build the (non-functional) radiosity plugin" OFF)
@@ -135,13 +138,15 @@ add_library(gman_core SHARED
 
 # One export header for the whole project; GMAN_EXPORT replaces the MSVC-era
 # GMANDLL/NOTGMANDLL macro maze.
+# Under include/ rather than directly in the binary dir: a bare "gman"
+# directory there would collide with the gman executable.
 generate_export_header(gman_core
   BASE_NAME GMAN
-  EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/gman/export.h")
+  EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/gman/export.h")
 
 target_include_directories(gman_core PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_BINARY_DIR}")
+  "${CMAKE_CURRENT_BINARY_DIR}/include")
 
 # HAVE_LIBDL is not an optional driver: it guards the whole body of
 # GMANLoadable's constructor and loadSymbol. Undefined, the plugin loader

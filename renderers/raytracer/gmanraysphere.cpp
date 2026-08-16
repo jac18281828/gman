@@ -46,6 +46,8 @@ bool GMANRaySphere::intersect(const GMANRay& ray, RtFloat &t ) const
   coef[1] = 2*direction.dot( deltaP);
   coef[2] = deltaP.dot( deltaP) - radius*radius;
   
+  // TODO(phase-1): the root solver is not written, so this always misses.
+  numRoots = 0;
   //   QuadraticRoots(coef, numRoots, roots);
   if (numRoots == 0) return false;
   

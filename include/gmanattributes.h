@@ -74,7 +74,7 @@ private:
   GMANLightList          lightList;
 
   GMANLoadableShader     *areaLightModule;
-  GMANLightSourceShader  *areaLight;
+  [[maybe_unused]] GMANLightSourceShader  *areaLight;
 
   GMANLoadableShader     *surfaceModule;
   GMANSurfaceShader      *surface;
@@ -128,23 +128,23 @@ public:
   /* SHADERS */
   RtVoid setSurface (const std::string & name, GMANParameterList &pl,
 		     GMANRenderer &rd);
-  const GMANSurfaceShader *getSurface(RtFloat time) const {return surface;};
+  const GMANSurfaceShader *getSurface(RtFloat /*time*/) const {return surface;};
 
   RtVoid setAtmosphere (const std::string & name, GMANParameterList &pl,
 			GMANRenderer &rd);
-  const GMANVolumeShader *getAtmosphere(RtFloat time) const {return atmosphere;};
+  const GMANVolumeShader *getAtmosphere(RtFloat /*time*/) const {return atmosphere;};
 
   RtVoid setInterior (const std::string & name, GMANParameterList &pl,
 		      GMANRenderer &rd);
-  const GMANVolumeShader  *getInterior(RtFloat time) const {return interior;};
+  const GMANVolumeShader  *getInterior(RtFloat /*time*/) const {return interior;};
 
   RtVoid setExterior (const std::string & name, GMANParameterList &pl,
 		      GMANRenderer &rd);
-  const GMANVolumeShader *getExterior(RtFloat time) const {return exterior;};
+  const GMANVolumeShader *getExterior(RtFloat /*time*/) const {return exterior;};
 
   RtVoid setDisplacement (const std::string & name, GMANParameterList &pl,
 			  GMANRenderer &rd);
-  const GMANDisplacementShader *getDisplacement(RtFloat time) const {return displacement;};
+  const GMANDisplacementShader *getDisplacement(RtFloat /*time*/) const {return displacement;};
 
 
 
@@ -152,17 +152,17 @@ public:
   RtFloat getShadingRate () const {return shadingRate;};
 
   RtVoid setShadingInterpolation (RtToken si);
-  RtToken const getShadingInterpolation () const {return shadingInterpolation;};
+  RtToken getShadingInterpolation () const {return shadingInterpolation;};
 
   RtVoid setMatte (RtBoolean on);
   bool getMatte () const {return matte;};
 
   /* GEOMETRY ATTRIBUTES */
   RtVoid setBound (RtBound b);
-  GMANBBox const getBound (RtFloat time) const {return bound;};
+  GMANBBox const getBound (RtFloat /*time*/) const {return bound;};
 
   RtVoid setDetail (RtBound d);
-  GMANBBox const getDetail (RtFloat time) const {return bound;};
+  GMANBBox const getDetail (RtFloat /*time*/) const {return bound;};
 
   RtVoid setDetailRange (RtFloat minv, RtFloat lt,  RtFloat up, RtFloat maxv);
   GMANDetailRange const getDetailRange () const {return detailRange;};
@@ -171,7 +171,7 @@ public:
   GMANGeometricApproximation const getGeometricApproximation () const {return geometricApproximation;};
 
   RtVoid setOrientation (RtToken o);
-  RtToken const getOrientation () const {return orientation;};
+  RtToken getOrientation () const {return orientation;};
 
   RtVoid toggleOrientation ();
 

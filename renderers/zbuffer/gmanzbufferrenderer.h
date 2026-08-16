@@ -154,16 +154,16 @@ public:
 
   ~GMANZBufferRenderer(); // default destructor
 
-  RtVoid illuminance(RtInt i,
-		     GMANPoint const &p,
-		     GMANVector const &axis,
-		     RtFloat angle) {}
-  RtVoid illuminate(RtInt i,
-		    GMANPoint const &p,
-		    GMANVector const &axis,
-		    RtFloat angle) {}
-  RtVoid solar(RtInt i, GMANVector const &axis,
-	       RtFloat angle) {}
+  RtVoid illuminance(RtInt /*i*/,
+		     GMANPoint const &/*p*/,
+		     GMANVector const &/*axis*/,
+		     RtFloat /*angle*/) {}
+  RtVoid illuminate(RtInt /*i*/,
+		    GMANPoint const &/*p*/,
+		    GMANVector const &/*axis*/,
+		    RtFloat /*angle*/) {}
+  RtVoid solar(RtInt /*i*/, GMANVector const &/*axis*/,
+	       RtFloat /*angle*/) {}
 
 
 

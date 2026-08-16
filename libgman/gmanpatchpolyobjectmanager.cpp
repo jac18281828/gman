@@ -50,84 +50,84 @@ GMANPrimitive* GMANPatchPolyObjectManager::create(RtVoid) {
   return new GMANObject();
 }
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts, 
-							  GMANParameterList pl,
-							  GMANOptions *opt,
-							  GMANAttributes *attr,
-							  GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt /*nverts*/, 
+							  GMANParameterList /*pl*/,
+							  GMANOptions */*opt*/,
+							  GMANAttributes */*attr*/,
+							  GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops, 
-								 RtInt nverts[], 
-								 GMANParameterList pl,
-								 GMANOptions *opt,
-								 GMANAttributes *attr,
-								 GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt /*nloops*/, 
+								 RtInt /*nverts*/[], 
+								 GMANParameterList /*pl*/,
+								 GMANOptions */*opt*/,
+								 GMANAttributes */*attr*/,
+								 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys, 
-								RtInt nverts[], 
-								RtInt verts[],
-								GMANParameterList pl,
-								GMANOptions *opt,
-								GMANAttributes *attr,
-								GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt /*npolys*/, 
+								RtInt /*nverts*/[], 
+								RtInt /*verts*/[],
+								GMANParameterList /*pl*/,
+								GMANOptions */*opt*/,
+								GMANAttributes */*attr*/,
+								GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt npolys, 
-									RtInt nloops[],
-									RtInt nverts[], 
-									RtInt verts[],
-									GMANParameterList pl,
-									GMANOptions *opt,
-									GMANAttributes *attr,
-									GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt /*npolys*/, 
+									RtInt /*nloops*/[],
+									RtInt /*nverts*/[], 
+									RtInt /*verts*/[],
+									GMANParameterList /*pl*/,
+									GMANOptions */*opt*/,
+									GMANAttributes */*attr*/,
+									GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type, 
-							GMANParameterList pl,
-							GMANOptions *opt,
-							GMANAttributes *attr,
-							GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken /*type*/, 
+							GMANParameterList /*pl*/,
+							GMANOptions */*opt*/,
+							GMANAttributes */*attr*/,
+							GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type, 
-							    RtInt nu, 
-							    RtToken uwrap,
-							    RtInt nv, 
-							    RtToken vwrap, 
-							    GMANParameterList pl,
-							    GMANOptions *opt,
-							    GMANAttributes *attr,
-							    GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken /*type*/, 
+							    RtInt /*nu*/, 
+							    RtToken /*uwrap*/,
+							    RtInt /*nv*/, 
+							    RtToken /*vwrap*/, 
+							    GMANParameterList /*pl*/,
+							    GMANOptions */*opt*/,
+							    GMANAttributes */*attr*/,
+							    GMANTransform */*t*/)
  {
   return create();
 }; 
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt nu,
-							  RtInt uorder,
-							  RtFloat uknot[],
-							  RtFloat umin,
-							  RtFloat umax,
-							  RtInt nv,
-							  RtInt vorder,
-							  RtFloat vknot[],
-							  RtFloat vmin,
-							  RtFloat vmax,
-							  GMANParameterList pl,
-							  GMANOptions *opt,
-							  GMANAttributes *attr,
-							  GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt /*nu*/,
+							  RtInt /*uorder*/,
+							  RtFloat /*uknot*/[],
+							  RtFloat /*umin*/,
+							  RtFloat /*umax*/,
+							  RtInt /*nv*/,
+							  RtInt /*vorder*/,
+							  RtFloat /*vknot*/[],
+							  RtFloat /*vmin*/,
+							  RtFloat /*vmax*/,
+							  GMANParameterList /*pl*/,
+							  GMANOptions */*opt*/,
+							  GMANAttributes */*attr*/,
+							  GMANTransform */*t*/)
  {
   return create();
 };
@@ -137,8 +137,8 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,
 							 RtFloat zmax,
 							 RtFloat tmax,
 							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
+							 GMANOptions */*opt*/,
+							 GMANAttributes */*attr*/,
 							 GMANTransform *t)
  {
   GMANSphere sphere(radius, zmin, zmax, tmax, pl);
@@ -149,8 +149,8 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCone (RtFloat height,
 						       RtFloat radius,
 						       RtFloat tmax,
 						       GMANParameterList pl, 
-						       GMANOptions *opt,
-						       GMANAttributes *attr,
+						       GMANOptions */*opt*/,
+						       GMANAttributes */*attr*/,
 						       GMANTransform *t)
  {
   GMANCone cone(height, radius, tmax, pl);
@@ -162,8 +162,8 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
 							   RtFloat zmax,
 							   RtFloat tmax,
 							   GMANParameterList pl,
-							   GMANOptions *opt,
-							   GMANAttributes *attr,
+							   GMANOptions */*opt*/,
+							   GMANAttributes */*attr*/,
 							   GMANTransform *t)
  {
   GMANCylinder cylinder(radius, zmin, zmax, tmax, pl);
@@ -174,8 +174,8 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSHyperboloid (RtPoint point1,
 							      RtPoint point2,
 							      RtFloat tmax,
 							      GMANParameterList pl,
-							      GMANOptions *opt,
-							      GMANAttributes *attr,
+							      GMANOptions */*opt*/,
+							      GMANAttributes */*attr*/,
 							      GMANTransform *t)
  {
   GMANHyperboloid hyperboloid(point1, point2, tmax, pl);
@@ -187,21 +187,21 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
 							     RtFloat zmax,
 							     RtFloat tmax,
 							     GMANParameterList pl,
-							     GMANOptions *opt,
-							     GMANAttributes *attr,
+							     GMANOptions */*opt*/,
+							     GMANAttributes */*attr*/,
 							     GMANTransform *t)
  {
   GMANParaboloid paraboloid(rmax, zmin, zmax, tmax, pl);
   return createParametric(&paraboloid, t);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat height,
-						       RtFloat radius,
-						       RtFloat tmax,
-						       GMANParameterList pl,
-						       GMANOptions *opt,
-						       GMANAttributes *attr,
-						       GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat /*height*/,
+						       RtFloat /*radius*/,
+						       RtFloat /*tmax*/,
+						       GMANParameterList /*pl*/,
+						       GMANOptions */*opt*/,
+						       GMANAttributes */*attr*/,
+						       GMANTransform */*t*/)
  {
   return create();
 };
@@ -212,63 +212,63 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
 							RtFloat phimax,
 							RtFloat tmax,
 							GMANParameterList pl,
-							GMANOptions *opt,
-							GMANAttributes *attr,
+							GMANOptions */*opt*/,
+							GMANAttributes */*attr*/,
 							GMANTransform *t)
  {
   GMANTorus torus(majrad, minrad, phimin, phimax, tmax, pl);
   return createParametric(&torus, t);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSBlobby (RtInt nleaf,
-							 RtInt ncode,
-							 RtInt code[],
-							 RtInt nflt,
-							 RtFloat flt[],
-							 RtInt nstr,
-							 RtToken str[], 
-							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
-							 GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSBlobby (RtInt /*nleaf*/,
+							 RtInt /*ncode*/,
+							 RtInt /*code*/[],
+							 RtInt /*nflt*/,
+							 RtFloat /*flt*/[],
+							 RtInt /*nstr*/,
+							 RtToken /*str*/[], 
+							 GMANParameterList /*pl*/,
+							 GMANOptions */*opt*/,
+							 GMANAttributes */*attr*/,
+							 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPoints (RtInt npoints,
-							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
-							 GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPoints (RtInt /*npoints*/,
+							 GMANParameterList /*pl*/,
+							 GMANOptions */*opt*/,
+							 GMANAttributes */*attr*/,
+							 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSCurves (RtToken type,
-							 RtInt ncurves, 
-							 RtInt nvertices[],
-							 RtToken wrap,
-							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
-							 GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSCurves (RtToken /*type*/,
+							 RtInt /*ncurves*/, 
+							 RtInt /*nvertices*/[],
+							 RtToken /*wrap*/,
+							 GMANParameterList /*pl*/,
+							 GMANOptions */*opt*/,
+							 GMANAttributes */*attr*/,
+							 GMANTransform */*t*/)
  {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSSubdivisionMesh (RtToken mask,
-								  RtInt nf,
-								  RtInt nverts[],
-								  RtInt verts[],
-								  RtInt ntags,
-								  RtToken tags[],
-								  RtInt numargs[],
-								  RtInt intargs[],
-								  RtFloat floatargs[],
-								  GMANParameterList pl,
-								  GMANOptions *opt,
-								  GMANAttributes *attr,
-								  GMANTransform *t)
+GMANPrimitive * GMANPatchPolyObjectManager::getRSSubdivisionMesh (RtToken /*mask*/,
+								  RtInt /*nf*/,
+								  RtInt /*nverts*/[],
+								  RtInt /*verts*/[],
+								  RtInt /*ntags*/,
+								  RtToken /*tags*/[],
+								  RtInt /*numargs*/[],
+								  RtInt /*intargs*/[],
+								  RtFloat /*floatargs*/[],
+								  GMANParameterList /*pl*/,
+								  GMANOptions */*opt*/,
+								  GMANAttributes */*attr*/,
+								  GMANTransform */*t*/)
  {
   return create();
 };
@@ -331,8 +331,8 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
   object->setVert(vertices[0]);
   object->setBody(body);
 
-  delete vertices;
-  delete faces;
+  delete[] vertices;
+  delete[] faces;
 
   return object;
 }

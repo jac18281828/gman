@@ -47,8 +47,8 @@ GMANReyesRenderer::~GMANReyesRenderer() {
 
 void GMANReyesRenderer::render(GMANFrameBuffer *frameBuffer,
 			       GMANViewingSystem *viewingSys,
-			       const GMANOptions       &options,
-			       const GMANAttributes    &attributes)
+			       const GMANOptions       &/*options*/,
+			       const GMANAttributes    &/*attributes*/)
  {
 
   width = frameBuffer->getWidth();
@@ -127,18 +127,18 @@ void GMANReyesRenderer::render(GMANFrameBuffer *frameBuffer,
 }
 
 // scan the polygon with reyes :)
-void GMANReyesRenderer::reyes(GMANOutputPolygon &out,
-			      GMANFrameBuffer    *frameBuffer) 
+void GMANReyesRenderer::reyes(GMANOutputPolygon &/*out*/,
+			      GMANFrameBuffer    */*frameBuffer*/) 
  {
 
 }
 
 
 // trace a ray from screen x and screen y
-void GMANReyesRenderer::traceRay(RtInt xs, 
-				 RtInt ys,
-				 GMANFrameBuffer    *frameBuffer,
-				 GMANViewingSystem  *viewingSystem) 
+void GMANReyesRenderer::traceRay(RtInt /*xs*/, 
+				 RtInt /*ys*/,
+				 GMANFrameBuffer    */*frameBuffer*/,
+				 GMANViewingSystem  */*viewingSystem*/) 
  {
 
 
@@ -146,10 +146,10 @@ void GMANReyesRenderer::traceRay(RtInt xs,
 }
 
 // return true if the specified point is specular
-bool GMANReyesRenderer::checkSpec(RtInt xs, RtInt ys) {
+bool GMANReyesRenderer::checkSpec(RtInt /*xs*/, RtInt /*ys*/) {
   return false; // for now we don't check
 }
   // return true if the specified point is transparent
-bool GMANReyesRenderer::checkTrans(RtInt xs, RtInt ys) {
+bool GMANReyesRenderer::checkTrans(RtInt /*xs*/, RtInt /*ys*/) {
   return false; // for now we don't check
 }

@@ -115,7 +115,7 @@ GMANPoint GMANCone::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANCone::getNormal (double u, double v)
+GMANVector GMANCone::getNormal (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }
@@ -191,7 +191,7 @@ GMANPoint GMANCylinder::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANCylinder::getNormal (double u, double v)
+GMANVector GMANCylinder::getNormal (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }
@@ -204,12 +204,12 @@ GMANVector GMANCylinder::getNormal (double u, double v)
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_DISK.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANDisk::getLocation (double u, double v)
+GMANPoint GMANDisk::getLocation (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }
 
-GMANVector GMANDisk::getNormal (double u, double v)
+GMANVector GMANDisk::getNormal (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }
@@ -270,12 +270,12 @@ GMANGeneralPolygon::~GMANGeneralPolygon()
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_HYPERBOLOID.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANHyperboloid::getLocation (double u, double v)
+GMANPoint GMANHyperboloid::getLocation (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }
 
-GMANVector GMANHyperboloid::getNormal (double u, double v)
+GMANVector GMANHyperboloid::getNormal (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }
@@ -383,7 +383,7 @@ GMANPoint GMANParaboloid::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANParaboloid::getNormal (double u, double v)
+GMANVector GMANParaboloid::getNormal (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }
@@ -613,7 +613,7 @@ GMANPoint GMANSphere::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANSphere::getNormal (double u, double v)
+GMANVector GMANSphere::getNormal (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }
@@ -774,7 +774,7 @@ GMANPoint GMANTorus::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANTorus::getNormal (double u, double v)
+GMANVector GMANTorus::getNormal (double /*u*/, double /*v*/)
 {
   throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
 }

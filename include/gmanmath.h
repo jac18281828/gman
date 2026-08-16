@@ -69,7 +69,7 @@ inline GMAN_EXPORT  RtFloat GMANAtan(RtFloat y, RtFloat x)
 
 
 // Square root & logarithmic - asandro
-inline GMAN_EXPORT const RtFloat GMANInversesqrt(RtFloat x)
+inline GMAN_EXPORT RtFloat GMANInversesqrt(RtFloat x)
 {
 	RtFloat y = (RtFloat)sqrt(x);
 	// avoid division by zero

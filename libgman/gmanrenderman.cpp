@@ -44,7 +44,6 @@
 #include "gmanrenderer.h"  
 #include "gmanloadablerenderer.h"
 
-#include "gmanbspworldmanager.h"
 #include "gmanlinearworldmanager.h"
 
 #include "gmanviewingsystem.h"
@@ -55,7 +54,6 @@
 #include "gmanoutputpng.h"
 #include "gmanoutputtiff.h"
 #include "gmanoutputx11.h"
-#include "gmanoutputwin32.h"
 #include "gmaninlineparse.h"
 #include "gmanvector.h"
 #include "gmanmath.h"
@@ -128,7 +126,7 @@ RtVoid GMANRenderMan::RiEnd(RtVoid)
     delete viewingSystem;
 }
 
-RtVoid GMANRenderMan::RiFrameBegin(RtInt frame)
+RtVoid GMANRenderMan::RiFrameBegin(RtInt /*frame*/)
 {
   enterMode(F);
 }
@@ -151,7 +149,7 @@ RtVoid GMANRenderMan::RiWorldBegin(RtVoid)
   if(getOptions().getDisplay().type == "file") {
     size_t startExt = getOptions().getDisplay().name.rfind(".");
     std::string ext;
-    if(startExt != string::npos) {
+    if(startExt != std::string::npos) {
       ext = getOptions().getDisplay().name.substr(startExt+1);
     }
     debug("Displaying to file with extension, %s.", ext.c_str());
@@ -204,7 +202,8 @@ RtVoid GMANRenderMan::RiWorldBegin(RtVoid)
   RtFloat* param = (RtFloat *) ps.pl.getPointer(fovTok);
   RtFloat fov=0.0;
   if (param) {
-    RtFloat fov = param[0];
+    // TODO(phase-1): this shadows the outer fov, so FOV is always 90.
+    [[maybe_unused]] RtFloat fov = param[0];
   }
   if (fov == 0.0) {
     warning("FOV not set, defaulting to 90.0.");
@@ -321,7 +320,7 @@ RtVoid GMANRenderMan::RiObjectEnd(RtVoid)
   //objectManagerStack.top().Commit();
 }
 
-RtVoid  GMANRenderMan::RiObjectInstance(RtObjectHandle handle)
+RtVoid  GMANRenderMan::RiObjectInstance(RtObjectHandle /*handle*/)
 {
   allowed(cmdObjectInstance);
 }
@@ -344,7 +343,7 @@ RtVoid  GMANRenderMan::RiTransformEnd(RtVoid)
   leaveMode(T);
 }
 
-RtVoid  GMANRenderMan::RiSolidBegin(RtToken operation)
+RtVoid  GMANRenderMan::RiSolidBegin(RtToken /*operation*/)
 {
   enterMode(S);
 }
@@ -480,7 +479,7 @@ RtVoid  GMANRenderMan::RiRelativeDetail(RtFloat relativedetail)
   allowed(cmdRelativeDetail);
   getOptions().setRelativeDetail(relativedetail);
 }
-RtVoid  GMANRenderMan::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiOptionV(RtToken /*name*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
 }
 
@@ -508,13 +507,13 @@ RtVoid  GMANRenderMan::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, 
   allowed(cmdTextureCoordinates);
   getAttributes().setTextureCoordinates(s1, t1, s2, t2, s3, t3, s4, t4);
 }
-RtLightHandle GMANRenderMan::RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
+RtLightHandle GMANRenderMan::RiLightSourceV(RtToken /*name*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdLightSource);
   return (RtLightHandle) 0;
 }
-RtLightHandle GMANRenderMan::RiAreaLightSourceV(RtToken name,
-						RtInt n, RtToken tokens[], RtPointer parms[])
+RtLightHandle GMANRenderMan::RiAreaLightSourceV(RtToken /*name*/,
+						RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdAreaLightSource);
   return (RtLightHandle) 0;
@@ -698,26 +697,26 @@ RtVoid  GMANRenderMan::RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat d
   m.skew (angle, a, b);
   buildTransform(m);
 }
-RtVoid  GMANRenderMan::RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiDeformationV(RtToken /*name*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {}
-RtVoid  GMANRenderMan::RiCoordinateSystem(RtToken space)
+RtVoid  GMANRenderMan::RiCoordinateSystem(RtToken /*space*/)
 {
   allowed(cmdCoordinateSystem);
 }
-RtVoid  GMANRenderMan::RiCoordSysTransform(RtToken space)
+RtVoid  GMANRenderMan::RiCoordSysTransform(RtToken /*space*/)
 {
   allowed(cmdCoordSysTransform);
 }
 
-RtPoint *GMANRenderMan::RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n,
-					  RtPoint points[])
+RtPoint *GMANRenderMan::RiTransformPoints(RtToken /*fromspace*/, RtToken /*tospace*/, RtInt /*n*/,
+					  RtPoint /*points*/[])
 {
   allowed(cmdTransformPoints);
   return (RtPoint *) 0;
 }
 
 // AttributeV
-RtVoid GMANRenderMan::RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid GMANRenderMan::RiAttributeV(RtToken /*name*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {}
 
 
@@ -743,19 +742,19 @@ RtVoid  GMANRenderMan::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPoi
   worldManager->add(prim);
   delete transform;
 }
-RtVoid  GMANRenderMan::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n,
-					 RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiGeneralPolygonV(RtInt /*nloops*/, RtInt /*nverts*/[], RtInt /*n*/,
+					 RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdGeneralPolygon);
 }
-RtVoid  GMANRenderMan::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[],  RtInt n,
-					 RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiPointsPolygonsV(RtInt /*npolys*/, RtInt /*nverts*/[], RtInt /*verts*/[],  RtInt /*n*/,
+					 RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdPointsPolygon);
 }
-RtVoid  GMANRenderMan::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[],
-						RtInt verts[], RtInt n, RtToken tokens[], 
-						RtPointer parms[])
+RtVoid  GMANRenderMan::RiPointsGeneralPolygonsV(RtInt /*npolys*/, RtInt /*nloops*/[], RtInt /*nverts*/[],
+						RtInt /*verts*/[], RtInt /*n*/, RtToken /*tokens*/[], 
+						RtPointer /*parms*/[])
 {
   allowed(cmdPointsGeneralPolygons);
 }
@@ -775,16 +774,16 @@ RtVoid  GMANRenderMan::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPoint
   worldManager->add(prim);
   delete transform;
 }
-RtVoid  GMANRenderMan::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
-				    RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[], 
-				    RtPointer parms[])
+RtVoid  GMANRenderMan::RiPatchMeshV(RtToken /*type*/, RtInt /*nu*/, RtToken /*uwrap*/,
+				    RtInt /*nv*/, RtToken /*vwrap*/, RtInt /*n*/, RtToken /*tokens*/[], 
+				    RtPointer /*parms*/[])
 {
   allowed(cmdPatchMesh);
 }
-RtVoid  GMANRenderMan::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
-				  RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
-				  RtFloat vmin, RtFloat vmax,
-				  RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiNuPatchV(RtInt /*nu*/, RtInt /*uorder*/, RtFloat /*uknot*/[], RtFloat /*umin*/,
+				  RtFloat /*umax*/, RtInt /*nv*/, RtInt /*vorder*/, RtFloat /*vknot*/[],
+				  RtFloat /*vmin*/, RtFloat /*vmax*/,
+				  RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdNuPatch);
 }
@@ -869,8 +868,8 @@ RtVoid  GMANRenderMan::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, R
   worldManager->add(prim);
   delete transform;
 }
-RtVoid  GMANRenderMan::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax,
-			       RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiDiskV(RtFloat /*height*/, RtFloat /*radius*/, RtFloat /*tmax*/,
+			       RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdDisk);
 }
@@ -892,41 +891,41 @@ RtVoid  GMANRenderMan::RiTorusV(RtFloat majrad,RtFloat minrad,RtFloat phimin,RtF
   delete transform;
 }
   
-RtVoid  GMANRenderMan::RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[],
-				 RtInt nflt, RtFloat flt[],
-				 RtInt nstr, RtToken str[], 
-				 RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiBlobbyV(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[],
+				 RtInt /*nflt*/, RtFloat /*flt*/[],
+				 RtInt /*nstr*/, RtToken /*str*/[], 
+				 RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdBlobby);
 }
-RtVoid  GMANRenderMan::RiPointsV(RtInt npoints,
-				 RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiPointsV(RtInt /*npoints*/,
+				 RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdPoints);
 }
-RtVoid  GMANRenderMan::RiCurvesV(RtToken type, RtInt ncurves,
-				 RtInt nvertices[], RtToken wrap,
-				 RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiCurvesV(RtToken /*type*/, RtInt /*ncurves*/,
+				 RtInt /*nvertices*/[], RtToken /*wrap*/,
+				 RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdCurves);
 }
-RtVoid  GMANRenderMan::RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[],
-					  RtInt verts[],
-					  RtInt ntags, RtToken tags[], RtInt numargs[],
-					  RtInt intargs[], RtFloat floatargs[],
-					  RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiSubdivisionMeshV(RtToken /*mask*/, RtInt /*nf*/, RtInt /*nverts*/[],
+					  RtInt /*verts*/[],
+					  RtInt /*ntags*/, RtToken /*tags*/[], RtInt /*numargs*/[],
+					  RtInt /*intargs*/[], RtFloat /*floatargs*/[],
+					  RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdSubdivisionMesh);
 }
 
-RtVoid  GMANRenderMan::RiProcedural(RtPointer data, RtBound bound,
-				    RtVoid (*subdivfunc)(RtPointer, RtFloat),
-				    RtVoid (*freefunc)(RtPointer))
+RtVoid  GMANRenderMan::RiProcedural(RtPointer /*data*/, RtBound /*bound*/,
+				    RtVoid (*/*subdivfunc*/)(RtPointer, RtFloat),
+				    RtVoid (*/*freefunc*/)(RtPointer))
 {
   allowed(cmdProcedural);
 }
-RtVoid  GMANRenderMan::RiGeometryV(RtToken type, RtInt n, RtToken tokens[], 
-				   RtPointer parms[])
+RtVoid  GMANRenderMan::RiGeometryV(RtToken /*type*/, RtInt /*n*/, RtToken /*tokens*/[], 
+				   RtPointer /*parms*/[])
 {
   allowed(cmdGeometry);
 }
@@ -934,34 +933,34 @@ RtVoid  GMANRenderMan::RiGeometryV(RtToken type, RtInt n, RtToken tokens[],
 // ****************************************************
 // ******* ******* ******* MISC ******* ******* *******
 // ****************************************************
-RtVoid  GMANRenderMan::RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken twrap,
-				      RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
-				      RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiMakeTextureV(char */*pic*/, char */*tex*/, RtToken /*swrap*/, RtToken /*twrap*/,
+				      RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, RtFloat /*twidth*/,
+				      RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdMakeTexture);
 }
-RtVoid  GMANRenderMan::RiMakeBumpV(char *pic, char *tex, RtToken swrap, RtToken twrap,
-				   RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
-				   RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiMakeBumpV(char */*pic*/, char */*tex*/, RtToken /*swrap*/, RtToken /*twrap*/,
+				   RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, RtFloat /*twidth*/,
+				   RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdMakeBump);
 }
-RtVoid  GMANRenderMan::RiMakeLatLongEnvironmentV(char *pic, char *tex, RtFilterFunc filterfunc,
-				  RtFloat swidth, RtFloat twidth,
-				  RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiMakeLatLongEnvironmentV(char */*pic*/, char */*tex*/, RtFilterFunc /*filterfunc*/,
+				  RtFloat /*swidth*/, RtFloat /*twidth*/,
+				  RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdMakeLatLongEnvironment);
 }
-RtVoid  GMANRenderMan::RiMakeCubeFaceEnvironmentV(char *px, char *nx, char *py, char *ny,
-				   char *pz, char *nz, char *tex, RtFloat fov,
-				   RtFilterFunc filterfunc, RtFloat swidth, 
-				   RtFloat ywidth,
-				   RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiMakeCubeFaceEnvironmentV(char */*px*/, char */*nx*/, char */*py*/, char */*ny*/,
+				   char */*pz*/, char */*nz*/, char */*tex*/, RtFloat /*fov*/,
+				   RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, 
+				   RtFloat /*ywidth*/,
+				   RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdMakeCubeFaceEnvironment);
 }
-RtVoid  GMANRenderMan::RiMakeShadowV(char *pic, char *tex,
-				     RtInt n, RtToken tokens[], RtPointer parms[])
+RtVoid  GMANRenderMan::RiMakeShadowV(char */*pic*/, char */*tex*/,
+				     RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdMakeShadow);
 }

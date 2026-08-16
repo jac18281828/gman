@@ -258,7 +258,7 @@ private:
 
   const GMANToken parseNum(std::ifstream &ribFile);
 
-  const void consumeWhitespace(std::ifstream &ribFile) const;
+  void consumeWhitespace(std::ifstream &ribFile) const;
 
 #ifdef WIN32
   // windows does not provide this fn

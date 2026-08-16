@@ -434,9 +434,9 @@ char* GMANRIBParse::copyStringToken() {
     throw(error);
   }
 
-  const char *std::string = tok.getString().c_str();
-  char *retval = new char[strlen(std::string) + 1];
-  strcpy(retval, std::string);
+  const char *str = tok.getString().c_str();
+  char *retval = new char[strlen(str) + 1];
+  strcpy(retval, str);
   return retval;
 }
 

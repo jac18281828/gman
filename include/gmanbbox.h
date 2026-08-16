@@ -52,6 +52,8 @@ class GMAN_EXPORT GMANBBox : public UniversalSuperClass
   GMANBBox ();
   GMANBBox (RtBound bb);
 
+  GMANBBox (const GMANBBox &bb) = default;
+
   GMANBBox &operator =(const GMANBBox &bb);
 
   GMANBBox &operator =(const RtBound bb);

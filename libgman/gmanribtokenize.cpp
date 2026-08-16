@@ -312,7 +312,7 @@ GMANRIBTokenize::parseNum(std::ifstream &ribFile) {
   return GMANToken(GMANToken::UNKNOWN);
 };
 
-const void GMANRIBTokenize::consumeWhitespace(std::ifstream &ribFile) const {
+void GMANRIBTokenize::consumeWhitespace(std::ifstream &ribFile) const {
   char c;
 
   while (! ribFile.eof()) {

@@ -38,6 +38,15 @@
 #include "gmanrenderman.h"
 #include "gmancontext.h"
 
+// Several RI requests end in an RtFloat before the ellipsis, and RtFloat is
+// subject to default argument promotion. Changing those signatures would
+// change the published RI C API, so the diagnostic is suppressed rather than
+// the interface bent around it. Every current ABI ignores va_start's second
+// argument, and C++26 drops it entirely.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic ignored "-Wvarargs"
+#endif
+
 /*
  * RenderMan C API General functions
  *
@@ -560,7 +569,7 @@ extern "C" RtVoid RiSurface (RtToken name, ...) {
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
     
-    RiSurface(name, n, tokens, parms);
+    RiSurfaceV(name, n, tokens, parms);
     if(tokens) delete []tokens;
     if(parms) delete []parms;
   } catch (GMANError &error) {
@@ -592,7 +601,7 @@ extern "C" RtVoid RiAtmosphere (RtToken name, ...) {
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiAtmosphere( name, n, tokens, parms);
+    RiAtmosphereV( name, n, tokens, parms);
     if(tokens) delete []tokens;
     if(parms) delete []parms;
 

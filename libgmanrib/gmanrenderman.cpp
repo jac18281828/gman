@@ -28,6 +28,8 @@
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
 
+#include <cstdint>
+
 #include <string>
 #include "ri.h"
 #include "gmanrenderman.h"
@@ -46,20 +48,20 @@ GMANRenderMan::~GMANRenderMan()
 }
 
 
-extern "C" RtFloat   RiGaussianFilter(RtFloat x, RtFloat y,
-				      RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiGaussianFilter(RtFloat /*x*/, RtFloat /*y*/,
+				      RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 { return 1.0; }
-extern "C" RtFloat   RiBoxFilter(RtFloat x, RtFloat y,
-				 RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiBoxFilter(RtFloat /*x*/, RtFloat /*y*/,
+				 RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 { return 1.0; }
-extern "C" RtFloat   RiTriangleFilter(RtFloat x, RtFloat y,
-				      RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiTriangleFilter(RtFloat /*x*/, RtFloat /*y*/,
+				      RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 { return 1.0; }
-extern "C" RtFloat   RiCatmullRomFilter(RtFloat x,RtFloat y,
-					RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiCatmullRomFilter(RtFloat /*x*/,RtFloat /*y*/,
+					RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 { return 1.0; }
-extern "C" RtFloat   RiSincFilter(RtFloat x, RtFloat y,
-				  RtFloat xwidth, RtFloat ywidth)
+extern "C" RtFloat   RiSincFilter(RtFloat /*x*/, RtFloat /*y*/,
+				  RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 { return 1.0; }
 
 RtBasis RiBezierBasis= { {-1,  3, -3,  1},
@@ -87,9 +89,9 @@ RtBasis RiPowerBasis = { {1, 0, 0, 0},
 			 {0, 0, 1, 0},
 			 {0, 0, 0, 1} };
 
-RtVoid RiProcDelayedReadArchive (RtPointer data, RtFloat detail) {}
-RtVoid RiProcRunProgram (RtPointer data, RtFloat detail) {}
-RtVoid RiProcDynamicLoad (RtPointer data, RtFloat detail) {}
+RtVoid RiProcDelayedReadArchive (RtPointer /*data*/, RtFloat /*detail*/) {}
+RtVoid RiProcRunProgram (RtPointer /*data*/, RtFloat /*detail*/) {}
+RtVoid RiProcDynamicLoad (RtPointer /*data*/, RtFloat /*detail*/) {}
 
 
 // *********************************************************************
@@ -131,7 +133,7 @@ RtObjectHandle GMANRenderMan::ObjectBegin(RtVoid)
   RtInt t=lastObjectHandle;
   lastObjectHandle+=1;
 
-  return (RtObjectHandle) t;
+  return reinterpret_cast<RtObjectHandle>(static_cast<std::uintptr_t>(t));
 }
 
 
@@ -155,13 +157,13 @@ RtLightHandle GMANRenderMan::LightSource()
 {
   RtInt t=lastLightHandle;
   lastLightHandle+=1;
-  return (RtLightHandle) t;
+  return reinterpret_cast<RtLightHandle>(static_cast<std::uintptr_t>(t));
 }
 RtLightHandle GMANRenderMan::AreaLightSource()
 {
   RtInt t=lastLightHandle;
   lastLightHandle+=1;
-  return (RtLightHandle) t;
+  return reinterpret_cast<RtLightHandle>(static_cast<std::uintptr_t>(t));
 }
 
 

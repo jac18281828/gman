@@ -55,7 +55,7 @@ GMANOutputTIFF::GMANOutputTIFF(const char *path, int width, int height) :
 GMANOutputTIFF::~GMANOutputTIFF() { };
 
 
-RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode mode, 
+RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/, 
 			    RtFloat gain, 
 			    RtFloat gamma) {
 #ifdef HAVE_LIBTIFF
@@ -73,8 +73,8 @@ RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode mode,
     const RtInt samplesperpixel=4;
 
     // setup the TIFF
-    TIFFSetField(file, TIFFTAG_IMAGEWIDTH, (uint32) xres);
-    TIFFSetField(file, TIFFTAG_IMAGELENGTH, (uint32) yres);
+    TIFFSetField(file, TIFFTAG_IMAGEWIDTH, (uint32_t) xres);
+    TIFFSetField(file, TIFFTAG_IMAGELENGTH, (uint32_t) yres);
     TIFFSetField(file, TIFFTAG_BITSPERSAMPLE, 8);
 	switch(compression) {
 	    case NONE:
