@@ -42,7 +42,7 @@ class GMAN_EXPORT  GMANTokenEntry
 {
 	// public types
 public:
-	typedef enum  { CONSTANT, UNIFORM, VARYING, VERTEX } TokenClass;
+	typedef enum  { CONSTANT, UNIFORM, VARYING, VERTEX, FACEVARYING } TokenClass;
 	typedef enum { FLOAT, POINT, VECTOR, NORMAL, COLOR, STRING, MATRIX, HPOINT, INTEGER }  TokenType;
 
 private:
@@ -102,7 +102,10 @@ public:
 #endif
   GMANTokenEntry::TokenClass  getClass    (GMANTokenId id);
   GMANTokenEntry::TokenType   getType     (GMANTokenId id);
-  RtInt       allocSize   (GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform);
+  // facevarying defaults to 1 -- only PointsPolygons/PointsGeneralPolygons
+  // meshes have a real facevarying count, and neither is wired to a
+  // renderer yet (Phase 2 scope).
+  RtInt       allocSize   (GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying=1);
   RtInt       getTypeSize (GMANTokenEntry::TokenType);
   RtInt       getQuantity (GMANTokenId id);
 #ifdef DEBUG

@@ -55,7 +55,8 @@ public:
   GMANParameterList ();
   GMANParameterList (GMANDictionary &di,
 		     RtInt n, RtToken *tk, RtPointer *dt,
-		     RtInt vertex=1, RtInt varying=1, RtInt uniform=1);
+		     RtInt vertex=1, RtInt varying=1, RtInt uniform=1,
+		     RtInt facevarying=1);
   GMANParameterList (GMANParameterList const &pl);
   GMANParameterList const &operator=(GMANParameterList const &pl);
   ~GMANParameterList ();

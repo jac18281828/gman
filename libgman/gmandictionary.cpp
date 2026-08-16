@@ -76,6 +76,8 @@ RtVoid GMANTokenEntry::printClassType ( RtVoid )
   case GMANTokenEntry::VARYING: std::cout << "VARYING";
     break;
   case GMANTokenEntry::VERTEX: std::cout << "VERTEX";
+    break;
+  case GMANTokenEntry::FACEVARYING: std::cout << "FACEVARYING";
   }
   std::cout << std::setw(8);
   switch (ttype) {
@@ -231,7 +233,7 @@ GMANTokenEntry::TokenType GMANDictionary::getType (GMANTokenId id)
   std::vector<GMANTokenEntry>::iterator first=te.begin();
   return ((first+id-1)->getType());
 }
-int GMANDictionary::allocSize (GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform)
+int GMANDictionary::allocSize (GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying)
 {
   int size;
   std::vector<GMANTokenEntry>::iterator first=te.begin();
@@ -243,6 +245,8 @@ int GMANDictionary::allocSize (GMANTokenId id, RtInt vertex, RtInt varying, RtIn
   case GMANTokenEntry::VARYING: size*= varying;
     break;
   case GMANTokenEntry::UNIFORM: size*= uniform;
+    break;
+  case GMANTokenEntry::FACEVARYING: size*= facevarying;
     break;
   case GMANTokenEntry::CONSTANT:
     break;

@@ -169,7 +169,8 @@ bool GMANInlineParse::is_class (std::string str)
   if ((str=="constant") ||
       (str=="uniform") ||
       (str=="varying") ||
-      (str=="vertex"))
+      (str=="vertex") ||
+      (str=="facevarying"))
     return true;
   return false;
 }
@@ -203,8 +204,9 @@ GMANTokenEntry::TokenClass GMANInlineParse::get_class (std::string str)
   if (str=="constant") return GMANTokenEntry::CONSTANT;
   if (str=="uniform") return GMANTokenEntry::UNIFORM;
   if (str=="varying") return GMANTokenEntry::VARYING;
-  
-  // if (str=="vertex") 
+  if (str=="facevarying") return GMANTokenEntry::FACEVARYING;
+
+  // if (str=="vertex")
 		return GMANTokenEntry::VERTEX;
 
 }

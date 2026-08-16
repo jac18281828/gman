@@ -74,7 +74,8 @@ GMANParameterList::GMANParameterList ()
 
 GMANParameterList::GMANParameterList (GMANDictionary &di,
 				      RtInt n, RtToken *tk, RtPointer *dt,
-				      RtInt vertex, RtInt varying, RtInt uniform)
+				      RtInt vertex, RtInt varying, RtInt uniform,
+				      RtInt facevarying)
 {
   int i,index;
   int size;
@@ -94,7 +95,7 @@ GMANParameterList::GMANParameterList (GMANDictionary &di,
       continue;
     }
 
-    size =di.allocSize(id[index], vertex, varying, uniform);
+    size =di.allocSize(id[index], vertex, varying, uniform, facevarying);
     switch (di.getType(id[index])) {
     case GMANTokenEntry::STRING:
       datas[index]=(RtPointer)new std::string[size];
