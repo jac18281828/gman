@@ -250,7 +250,8 @@ public:
 
 protected:
 
-  GMANObject* createParametric (GMANParametric* p, GMANTransform *t);
+  GMANObject* createParametric (GMANParametric* p, GMANTransform *t,
+				 GMANAttributes *attr);
 
 };
 

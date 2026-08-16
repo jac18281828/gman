@@ -41,9 +41,14 @@
  */
 
 // default constructor
-GMANFace::GMANFace(GMANVertex **verts, GMANSurface *p) : color() { 
+GMANFace::GMANFace(GMANVertex **verts, GMANSurface *p) : color() {
   parentSurf = p;
   area = 0.0f;
+
+  // RenderMan default: both sides visible until RiSides/RiOrientation say
+  // otherwise (matches GMANAttributes' own defaults).
+  sides = 2;
+  orientation = RI_OUTSIDE;
 
   next = NULL;
 

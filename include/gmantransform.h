@@ -32,6 +32,7 @@
 #include "ri.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "gmanvector4.h"
 #include "gmanlog.h"
 
 class GMAN_EXPORT  GMANMatrixStorage
@@ -93,6 +94,10 @@ public:
   bool isMoving();
 
   GMANPoint apply(const GMANPoint &p);
+  // Homogeneous overload: carries w through unnormalized, for callers
+  // (e.g. normal transforms) that need the raw matrix product rather
+  // than a perspective-divided point.
+  GMANVector4 apply(const GMANVector4 &p);
 };
 
 #endif

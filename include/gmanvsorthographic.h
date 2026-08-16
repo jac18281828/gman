@@ -37,8 +37,9 @@ class GMAN_EXPORT  GMANVSOrthographic : public GMANViewingSystem
   private:
     GMANMatrix4 mtrx;
   public:
-    GMANVSOrthographic(RtInt xres, RtInt yres, 
+    GMANVSOrthographic(RtInt xres, RtInt yres,
 		       const GMANOptions::ScreenWindowStruct &s,
+		       const GMANMatrix4 &worldToCamera,
 		       RtFloat nearDist, RtFloat farDist);
     ~GMANVSOrthographic() {}
     

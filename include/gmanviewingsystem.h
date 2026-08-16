@@ -38,6 +38,7 @@
 #include "gmanface.h"
 #include "gmansegment.h"
 #include "gmanoptions.h"
+#include "gmanmatrix4.h"
 
 class GMAN_EXPORT  GMANViewingSystem
 {
@@ -45,11 +46,24 @@ class GMAN_EXPORT  GMANViewingSystem
     RtInt xres;
     RtInt yres;
     GMANOptions::ScreenWindowStruct sw;
+
+    // The CTM at RiWorldBegin -- legal only after RiProjection and before
+    // any world-space geometry, so it is exactly the world-to-camera
+    // transform. cameraToWorld is its inverse, for rays cast from raster
+    // space back toward world space.
+    GMANMatrix4 worldToCamera;
+    GMANMatrix4 cameraToWorld;
   public:
-    GMANViewingSystem(RtInt xr, RtInt yr, 
-		      const GMANOptions::ScreenWindowStruct &s)
-	: xres(xr), yres(yr), sw(s) {}
+    GMANViewingSystem(RtInt xr, RtInt yr,
+		      const GMANOptions::ScreenWindowStruct &s,
+		      const GMANMatrix4 &w2c)
+	: xres(xr), yres(yr), sw(s), worldToCamera(w2c), cameraToWorld(w2c) {
+      cameraToWorld.invert();
+    }
     virtual ~GMANViewingSystem() {}
+
+    const GMANMatrix4 &getWorldToCamera(RtVoid) const { return worldToCamera; }
+    const GMANMatrix4 &getCameraToWorld(RtVoid) const { return cameraToWorld; }
     
     /* LJL February 2001 + project & ray */
     RtVoid screenToRaster(RtFloat &x, RtFloat &y);

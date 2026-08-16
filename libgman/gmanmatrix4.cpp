@@ -182,108 +182,132 @@ RtVoid GMANMatrix4::skew (RtFloat angle, GMANVector &a, GMANVector &b)
 }
 
 // RiProjection perspective and orthographic matrix.
+//
+// Consumed via GMANVector4::projTransform / GMANPoint::operator*=, which
+// both compute out[i] = row_i(M).(x,y,z) + M[i][3] -- the convention already
+// in use for the projection stage (see persp(), above, which the RiPerspective
+// transform command builds the same way). w is placed in row 3 so it carries
+// z directly (RenderMan's camera looks down +z), never identically zero.
 RtVoid GMANMatrix4::prjPersp (RtFloat fov, RtFloat nearDist, RtFloat farDist)
 {
-  RtFloat t=tan((fov/2)*DEGTORAD);
-  RtFloat q=1.0-nearDist/farDist;
+  RtFloat invT = 1.0/tan((fov/2)*DEGTORAD);
 
   identity();
-  mtrx[0][3]=t/q;
-  mtrx[1][3]=-nearDist*t/q;
-  mtrx[2][3]=t;
+  mtrx[0][0]=invT;
+  mtrx[1][1]=invT;
+  mtrx[2][2]=(farDist+nearDist)/(farDist-nearDist);
+  mtrx[2][3]=-2.0*farDist*nearDist/(farDist-nearDist);
+  mtrx[3][2]=1.0;
   mtrx[3][3]=0.0;
 }
 
 RtVoid GMANMatrix4::prjOrtho (RtFloat nearDist, RtFloat farDist)
 {
-    identity();
-    mtrx[0][3]=1.0/(farDist-nearDist);
-    mtrx[1][3]=-nearDist/(farDist-nearDist);
+  identity();
+  mtrx[2][2]=2.0/(farDist-nearDist);
+  mtrx[2][3]=-(farDist+nearDist)/(farDist-nearDist);
 }
-
-#if 0
-#define DET3(A,B,C,D,E,F,G,H,I) (+mtrx[A]*(mtrx[E]*mtrx[I]-mtrx[F]*mtrx[H]) \
-				 -mtrx[B]*(mtrx[D]*mtrx[I]-mtrx[F]*mtrx[G]) \
-				 +mtrx[C]*(mtrx[D]*mtrx[H]-mtrx[E]*mtrx[G]))
 
 RtFloat GMANMatrix4::determinant ()
 {
-  return (+mtrx[0]*DET3(5,6,7,9,10,11,13,14,15)
-	  -mtrx[1]*DET3(4,6,7,8,10,11,12,14,15)
-	  +mtrx[2]*DET3(4,5,7,8,9,11,12,13,15)
-	  -mtrx[3]*DET3(4,5,6,8,9,10,12,13,14));
+  RtFloat const (&m)[4][4] = mtrx;
+
+  RtFloat a0 = m[0][0]*m[1][1] - m[0][1]*m[1][0];
+  RtFloat a1 = m[0][0]*m[1][2] - m[0][2]*m[1][0];
+  RtFloat a2 = m[0][0]*m[1][3] - m[0][3]*m[1][0];
+  RtFloat a3 = m[0][1]*m[1][2] - m[0][2]*m[1][1];
+  RtFloat a4 = m[0][1]*m[1][3] - m[0][3]*m[1][1];
+  RtFloat a5 = m[0][2]*m[1][3] - m[0][3]*m[1][2];
+  RtFloat b0 = m[2][0]*m[3][1] - m[2][1]*m[3][0];
+  RtFloat b1 = m[2][0]*m[3][2] - m[2][2]*m[3][0];
+  RtFloat b2 = m[2][0]*m[3][3] - m[2][3]*m[3][0];
+  RtFloat b3 = m[2][1]*m[3][2] - m[2][2]*m[3][1];
+  RtFloat b4 = m[2][1]*m[3][3] - m[2][3]*m[3][1];
+  RtFloat b5 = m[2][2]*m[3][3] - m[2][3]*m[3][2];
+
+  return a0*b5 - a1*b4 + a2*b3 + a3*b2 - a4*b1 + a5*b0;
 }
 
-#undef DET3
-#define DET3(A,B,C,D,E,F,G,H,I) (+m.mtrx[A]*(m.mtrx[E]*m.mtrx[I]-m.mtrx[F]*m.mtrx[H]) \
-				 -m.mtrx[B]*(m.mtrx[D]*m.mtrx[I]-m.mtrx[F]*m.mtrx[G]) \
-				 +m.mtrx[C]*(m.mtrx[D]*m.mtrx[H]-m.mtrx[E]*m.mtrx[G]))
-
+// Adjugate / determinant, via the same 2x2-cofactor pairing determinant()
+// uses. Throws on a singular matrix.
 RtVoid GMANMatrix4::invert ()
 {
-  GMANMatrix4 m(*this);
-  RtFloat d=determinant();
-  if (d==0.0) {
+  RtFloat const (&m)[4][4] = mtrx;
+
+  RtFloat a0 = m[0][0]*m[1][1] - m[0][1]*m[1][0];
+  RtFloat a1 = m[0][0]*m[1][2] - m[0][2]*m[1][0];
+  RtFloat a2 = m[0][0]*m[1][3] - m[0][3]*m[1][0];
+  RtFloat a3 = m[0][1]*m[1][2] - m[0][2]*m[1][1];
+  RtFloat a4 = m[0][1]*m[1][3] - m[0][3]*m[1][1];
+  RtFloat a5 = m[0][2]*m[1][3] - m[0][3]*m[1][2];
+  RtFloat b0 = m[2][0]*m[3][1] - m[2][1]*m[3][0];
+  RtFloat b1 = m[2][0]*m[3][2] - m[2][2]*m[3][0];
+  RtFloat b2 = m[2][0]*m[3][3] - m[2][3]*m[3][0];
+  RtFloat b3 = m[2][1]*m[3][2] - m[2][2]*m[3][1];
+  RtFloat b4 = m[2][1]*m[3][3] - m[2][3]*m[3][1];
+  RtFloat b5 = m[2][2]*m[3][3] - m[2][3]*m[3][2];
+
+  RtFloat d = a0*b5 - a1*b4 + a2*b3 + a3*b2 - a4*b1 + a5*b0;
+  if (d == 0.0) {
     GMANError error(RIE_MATH, RIE_ERROR, "Cannot invert matrix");
     throw error;
   }
+  RtFloat id = 1.0/d;
 
-  d=1.0/d;
-  mtrx[0]=d*(+DET3(5,6,7,9,10,11,13,14,15));
-  mtrx[4]=d*(-DET3(4,6,7,8,10,11,12,14,15));
-  mtrx[8]=d*(+DET3(4,5,7,8,9,11,12,13,15));
-  mtrx[12]=d*(-DET3(4,5,6,8,9,10,12,13,14));
-  mtrx[1]=d*(-DET3(1,2,3,9,10,11,13,14,15));
-  mtrx[5]=d*(+DET3(0,2,3,8,10,11,12,14,15));
-  mtrx[9]=d*(-DET3(0,1,3,8,9,11,12,13,15));
-  mtrx[13]=d*(+DET3(0,1,2,8,9,10,12,13,14));
-  mtrx[2]=d*(+DET3(1,2,3,5,6,7,13,14,15));
-  mtrx[6]=d*(-DET3(0,2,3,4,6,7,12,14,15));
-  mtrx[10]=d*(+DET3(0,1,3,4,5,7,12,13,15));
-  mtrx[14]=d*(-DET3(0,1,2,4,5,6,12,13,14));
-  mtrx[3]=d*(-DET3(1,2,3,5,6,7,9,10,11));
-  mtrx[7]=d*(+DET3(0,2,3,4,6,7,8,10,11));
-  mtrx[11]=d*(-DET3(0,1,3,4,5,7,8,9,11));
-  mtrx[15]=d*(+DET3(0,1,2,4,5,6,8,9,10));
+  GMANMatrix4 inv;
+  inv.mtrx[0][0] = ( m[1][1]*b5 - m[1][2]*b4 + m[1][3]*b3) * id;
+  inv.mtrx[0][1] = (-m[0][1]*b5 + m[0][2]*b4 - m[0][3]*b3) * id;
+  inv.mtrx[0][2] = ( m[3][1]*a5 - m[3][2]*a4 + m[3][3]*a3) * id;
+  inv.mtrx[0][3] = (-m[2][1]*a5 + m[2][2]*a4 - m[2][3]*a3) * id;
+  inv.mtrx[1][0] = (-m[1][0]*b5 + m[1][2]*b2 - m[1][3]*b1) * id;
+  inv.mtrx[1][1] = ( m[0][0]*b5 - m[0][2]*b2 + m[0][3]*b1) * id;
+  inv.mtrx[1][2] = (-m[3][0]*a5 + m[3][2]*a2 - m[3][3]*a1) * id;
+  inv.mtrx[1][3] = ( m[2][0]*a5 - m[2][2]*a2 + m[2][3]*a1) * id;
+  inv.mtrx[2][0] = ( m[1][0]*b4 - m[1][1]*b2 + m[1][3]*b0) * id;
+  inv.mtrx[2][1] = (-m[0][0]*b4 + m[0][1]*b2 - m[0][3]*b0) * id;
+  inv.mtrx[2][2] = ( m[3][0]*a4 - m[3][1]*a2 + m[3][3]*a0) * id;
+  inv.mtrx[2][3] = (-m[2][0]*a4 + m[2][1]*a2 - m[2][3]*a0) * id;
+  inv.mtrx[3][0] = (-m[1][0]*b3 + m[1][1]*b1 - m[1][2]*b0) * id;
+  inv.mtrx[3][1] = ( m[0][0]*b3 - m[0][1]*b1 + m[0][2]*b0) * id;
+  inv.mtrx[3][2] = (-m[3][0]*a3 + m[3][1]*a1 - m[3][2]*a0) * id;
+  inv.mtrx[3][3] = ( m[2][0]*a3 - m[2][1]*a1 + m[2][2]*a0) * id;
+
+  *this = inv;
 }
 
+// Row-vector (p*M) transform of a non-homogeneous point: dest_j =
+// sum_i src_i*M[i][j] + M[3][j], matching trans()/rot()/scale()/concat(),
+// which store translation in row 3. Divides by the resulting w so a
+// (rare) projective matrix passed here still produces a valid point.
 RtVoid GMANMatrix4::p3m(RtInt nbpts, RtFloat *src, RtFloat *dest)
 {
-  RtFloat w,k,l,m;
-
   for (RtInt i=0;i<nbpts*3;i+=3) {
-    k=src[0+i]*mtrx[0]+src[1+i]*mtrx[1]+src[2+i]*mtrx[2]+mtrx[3];
-    l=src[0+i]*mtrx[4]+src[1+i]*mtrx[5]+src[2+i]*mtrx[6]+mtrx[7];
-    m=src[0+i]*mtrx[8]+src[1+i]*mtrx[9]+src[2+i]*mtrx[10]+mtrx[11];
-    w=src[0+i]*mtrx[12]+src[1+i]*mtrx[13]+src[2+i]*mtrx[14]+mtrx[15];
-    w=1.0/w;
-    dest[0+i]=k*w; dest[1+i]=l*w; dest[2+i]=m*w;
+    RtFloat x=src[0+i], y=src[1+i], z=src[2+i];
+    RtFloat rx = x*mtrx[0][0] + y*mtrx[1][0] + z*mtrx[2][0] + mtrx[3][0];
+    RtFloat ry = x*mtrx[0][1] + y*mtrx[1][1] + z*mtrx[2][1] + mtrx[3][1];
+    RtFloat rz = x*mtrx[0][2] + y*mtrx[1][2] + z*mtrx[2][2] + mtrx[3][2];
+    RtFloat rw = x*mtrx[0][3] + y*mtrx[1][3] + z*mtrx[2][3] + mtrx[3][3];
+    if (rw != 1.0 && rw != 0.0) {
+      RtFloat invw = 1.0/rw;
+      rx *= invw; ry *= invw; rz *= invw;
+    }
+    dest[0+i]=rx; dest[1+i]=ry; dest[2+i]=rz;
   }
 }
 
+// Homogeneous counterpart of p3m: carries w through unnormalized, for
+// callers (e.g. normal transforms) that need the raw row-vector product
+// rather than a perspective-divided point.
 RtVoid GMANMatrix4::p4m(RtInt nbpts, RtFloat *src, RtFloat *dest)
 {
-  RtFloat w,k,l,m;
-
   for (RtInt i=0;i<nbpts*4;i+=4) {
-    k=src[0+i]*mtrx[0]+src[1+i]*mtrx[1]+src[2+i]*mtrx[2]+src[3+i]*mtrx[3];
-    l=src[0+i]*mtrx[4]+src[1+i]*mtrx[5]+src[2+i]*mtrx[6]+src[3+i]*mtrx[7];
-    m=src[0+i]*mtrx[8]+src[1+i]*mtrx[9]+src[2+i]*mtrx[10]+src[3+i]*mtrx[11];
-    w=src[0+i]*mtrx[12]+src[1+i]*mtrx[13]+src[2+i]*mtrx[14]+src[3+i]*mtrx[15];
-    if (w!=1.0) {
-      w=1.0/w;
-      k*=w;
-      l*=w;
-      m*=w;
-    }
-    dest[0+i]=k;
-    dest[1+i]=l;
-    dest[2+i]=m;
-    dest[3+i]=1.0;
+    RtFloat x=src[0+i], y=src[1+i], z=src[2+i], w=src[3+i];
+    dest[0+i] = x*mtrx[0][0] + y*mtrx[1][0] + z*mtrx[2][0] + w*mtrx[3][0];
+    dest[1+i] = x*mtrx[0][1] + y*mtrx[1][1] + z*mtrx[2][1] + w*mtrx[3][1];
+    dest[2+i] = x*mtrx[0][2] + y*mtrx[1][2] + z*mtrx[2][2] + w*mtrx[3][2];
+    dest[3+i] = x*mtrx[0][3] + y*mtrx[1][3] + z*mtrx[2][3] + w*mtrx[3][3];
   }
 }
-
-#endif
 GMANMatrix4 GMANMatrix4::operator*(RtFloat f) const
 {
   GMANMatrix4 res(*this);

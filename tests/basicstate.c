@@ -70,6 +70,17 @@ int main(void)
   RiAttributeEnd();
   check(errorCount == 1, "unmatched RiAttributeEnd is rejected");
 
+  /* Phase 1: cmdTransformPoints' legal-block mask was written
+   * B|F|W|A|T||S -- the doubled "||" collapses the whole expression to 1
+   * (B alone), so RiTransformPoints was rejected everywhere except the
+   * outermost block, including here, inside RiFrameBegin/End (F is one
+   * of the masked-out blocks). */
+  errorCount = 0;
+  RiFrameBegin(1);
+  RiTransformPoints("world", "object", 0, NULL);
+  check(errorCount == 0, "RiTransformPoints is legal inside RiFrameBegin/End");
+  RiFrameEnd();
+
   RiEnd();
 
   if (failures != 0) {

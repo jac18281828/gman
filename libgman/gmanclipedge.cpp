@@ -84,6 +84,9 @@ GMANVertex4 GMANClipEdge::intersect(const GMANVertex4 &s,
   if(t > 1.0)
     t = 1.0;
 
+  // the clip-plane intersection point, in homogeneous clip space
+  p = s.getCoord() + r*t;
+
   // linearly interpolate vertex color
   GMANCombine colorCombine;
   color = colorCombine(s.getColor(), e.getColor(), e.getAlpha());
@@ -115,7 +118,7 @@ RtVoid GMANClipEdge::clip(const GMANVertex4 &current, GMANOutputPolygon &out) {
     if(start_inside ^ curr_inside)
       {
 	isect = intersect(start, current);
-	output(current, out);
+	output(isect, out);
       }
   }
   if(curr_inside)

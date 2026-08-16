@@ -27,17 +27,22 @@
 */
 
 #include "gmanvsorthographic.h"
+#include "gmanvector4.h"
 
-GMANVSOrthographic::GMANVSOrthographic(RtInt xr, RtInt yr, 
+GMANVSOrthographic::GMANVSOrthographic(RtInt xr, RtInt yr,
 				       const GMANOptions::ScreenWindowStruct &s,
+				       const GMANMatrix4 &worldToCamera,
 				       RtFloat nearDist, RtFloat farDist)
-  : GMANViewingSystem(xr,yr,s)
+  : GMANViewingSystem(xr,yr,s,worldToCamera)
 {
     mtrx.prjOrtho(nearDist,farDist);
 }
 GMANPoint GMANVSOrthographic::project(GMANPoint const &p)
 {
-  GMANPoint a(p*mtrx);
+  GMANVector4 clip;
+  clip.projTransform(p, mtrx.get());
+  GMANPoint a;
+  clip.perspective(a); // w==1 under ortho; a no-op divide
   RtFloat x=a.getX();
   RtFloat y=a.getY();
   screenToRaster(x,y);
@@ -49,28 +54,33 @@ GMANRay   GMANVSOrthographic::ray(RtFloat x, RtFloat y)
 {
   GMANRay r;
   rasterToScreen(x,y);
-  GMANPoint a(x,y,0);
-  GMANPoint b(x,y,1);
-  r.setP1(a);
-  r.setP2(b);
+
+  RtFloat srcOrigin[] = {x,y,0};
+  RtFloat srcThrough[] = {x,y,1};
+  RtFloat dstOrigin[3], dstThrough[3];
+  GMANMatrix4 c2w = getCameraToWorld();
+  c2w.p3m(1, srcOrigin, dstOrigin);
+  c2w.p3m(1, srcThrough, dstThrough);
+
+  r.setP1(GMANPoint(dstOrigin[0], dstOrigin[1], dstOrigin[2]));
+  r.setP2(GMANPoint(dstThrough[0], dstThrough[1], dstThrough[2]));
   return r;
 }
 
-/* 
- * return true if the object is visible from
- * this perspective
+/*
+ * return true if the face is visible from this perspective. See
+ * GMANVSPerspective::visible for the RiSides/RiOrientation rationale.
  */
 bool GMANVSOrthographic::visible(const GMANFace *face) {
+    if (face->getSides() != 1) {
+      return true;
+    }
 
-    // determine if the incident angle from the line of
-    // sight (z axis) 
-    //
-    // The general test for visibility is 
-    // N_los dot N_face > 0
-    // since the Normal to the line of sight is [0,0,1]
-    // we get [0,0,0].[Nfx, Nfy, Nfz] > 0 
-    // or
-    return (face->getNormal().getZ() > 0);
+    bool facingCamera = (face->getNormal().getZ() > 0);
+    if (face->getOrientation() == RI_INSIDE) {
+      facingCamera = !facingCamera;
+    }
+    return facingCamera;
 }
 
 

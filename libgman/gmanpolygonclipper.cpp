@@ -53,23 +53,30 @@ GMANPolygonClipper::GMANPolygonClipper() {
   clipper[GMANTOP].add(&(clipper[GMANBOTTOM]));
   clipper[GMANBOTTOM].add(NULL);
 
-  // set plane normals
-  vec = GMANVector4(0.0, 0.0, 1.0, 0.0);
+  // Set plane normals. GMANClipEdge::isInside tests normal.dot(v) >= 0
+  // against the vertex's raw (un-divided) homogeneous coordinate, so
+  // these are the six w-relative half-spaces of the canonical clip
+  // volume (-w<=x<=w, -w<=y<=w, -w<=z<=w under the GL-style z mapping
+  // GMANMatrix4::prjPersp/prjOrtho produce) -- each needs a w component
+  // of 1, not the 3-vector frustum direction alone, or the "plane" is
+  // really just the coordinate-space halved at 0, clipping away anything
+  // with that coordinate negative regardless of w.
+  vec = GMANVector4(0.0, 0.0, 1.0, 1.0);
   clipper[GMANFRONT].setNormal(vec.normalize());
 
-  vec = GMANVector4(0.0, 0.0, -1.0, 0.0);
+  vec = GMANVector4(0.0, 0.0, -1.0, 1.0);
   clipper[GMANBACK].setNormal(vec.normalize());
 
-  vec = GMANVector4(1.0, 0.0, 0.0, 0.0);
+  vec = GMANVector4(1.0, 0.0, 0.0, 1.0);
   clipper[GMANLEFT].setNormal(vec.normalize());
 
-  vec = GMANVector4(-1.0, 0.0, 0.0, 0.0);
+  vec = GMANVector4(-1.0, 0.0, 0.0, 1.0);
   clipper[GMANRIGHT].setNormal(vec.normalize());
 
-  vec = GMANVector4(0.0, -1.0, 0.0, 0.0);
+  vec = GMANVector4(0.0, -1.0, 0.0, 1.0);
   clipper[GMANTOP].setNormal(vec.normalize());
 
-  vec = GMANVector4(0.0, 1.0, 0.0, 0.0);
+  vec = GMANVector4(0.0, 1.0, 0.0, 1.0);
   clipper[GMANBOTTOM].setNormal(vec.normalize());
 
 };

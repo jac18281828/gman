@@ -92,6 +92,53 @@ normals, backface culling, the perspective matrix) are all still broken.
 `tests/baseline.cpp` pins today's exit-0-and-a-real-file behavior and names
 phase 1 and phase 3 as the phases that make the image itself correct.
 
+## Coordinate spaces
+
+Phase 1 connected the chain:
+
+```
+object --CTM--> world --worldToCamera--> camera --projection--> screen --> NDC --> raster
+```
+
+**Handedness: RenderMan's camera looks down +z, left-handed.** A point in
+front of the camera has positive camera-space z; `GMANMatrix4::prjPersp`
+places `w=z` on that assumption (row 3 of the projection matrix), and every
+sign choice downstream of it depends on it. Get this backwards and normals,
+backface culling and near-plane clipping all silently invert.
+
+**Matrix convention: row-vector, `p * M`.** `GMANMatrix4::trans`/`rot`/`scale`
+store translation in row 3, matching `GMANMatrix4::p3m`/`p4m` (the two
+functions `GMANTransform::apply` uses) and `GMANMatrix4::concat`. The
+projection stage (`prjPersp`/`prjOrtho`) uses a different, equally
+pre-existing layout — consumed via `GMANVector4::projTransform` and
+`GMANPoint::operator*=`, which read `out[i] = row_i(M).(x,y,z) + M[i][3]` —
+because that is the convention `GMANVector4::projTransform` already used
+and phase 1 does not relitigate it (see `libgman/gmanmatrix4.cpp`'s comments
+at `prjPersp`/`p3m` for the two formulas side by side). Do not mix them: a
+CTM fed through `projTransform`'s formula, or a projection matrix fed
+through `p3m`'s, silently produces a plausible-looking wrong image.
+
+**Where the CTM actually goes.** `RiWorldBegin` does not reset the CTM to
+identity — `GMANGraphicState::enterMode(W)` copies the current transform
+stack onto a new frame rather than replacing it. So the CTM captured at
+`RiWorldBegin` (snapshotted as `worldToCamera` and handed to the viewing
+system) is exactly the pre-`WorldBegin` camera setup, and a primitive's own
+CTM (`GMANGraphicState::getTransform()` at the point `RiSphereV` etc. call
+`createParametric`) already includes it: `t->apply()` at tessellation time
+carries object-space points directly to camera space in one matrix product,
+not two. `GMANViewingSystem::getCameraToWorld()` (the inverse) exists for
+casting rays back out of camera space, not for re-applying to a
+tessellated vertex.
+
+**Face normals are camera-space by construction, not by an explicit
+transform.** `GMANFace::calcNormal()` runs in `createParametric` *after*
+`t->apply()` has already moved the face's vertices to camera space, so the
+cross product of two (already-transformed) edge vectors is what the
+inverse-transpose trick exists to approximate for a pre-computed
+object-space normal — here there is no separate normal to transform.
+`GMANVSPerspective::visible()`/`GMANVSOrthographic::visible()` cull on that
+normal only when `RiSides 1`; `RiSides 2` (the default) always passes.
+
 ## RIB support
 
 The honest answer to "what does GMAN support." Three buckets: requests that

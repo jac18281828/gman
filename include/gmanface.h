@@ -69,7 +69,14 @@ protected:
   RtFloat	area;
   GMANSurface	*parentSurf;  // the parent surface
   GMANColor	color;    // the face color
-  GMANVector    normal;   // normal to the face
+  GMANVector    normal;   // normal to the face, in the space the
+                          // vertices were in when calcNormal() ran
+
+  // RiSides/RiOrientation active when this face was tessellated, so
+  // visible() can answer honestly without depending on renderer-global
+  // state that may differ per attribute block.
+  RtInt         sides;
+  RtToken       orientation;
 
   GMANVertex *verticies[GMAN_NFACE_VERTS]; // pointer array to vertexes
 
@@ -102,6 +109,12 @@ public:
   const GMANVector &getNormal(RtVoid) const { return normal; };
   // get nth vertex
   const GMANVertex *getVertex(int n) const { return verticies[n]; };
+
+  // RiSides/RiOrientation captured at tessellation time
+  RtVoid setSides(RtInt s) { sides = s; };
+  RtInt getSides(RtVoid) const { return sides; };
+  RtVoid setOrientation(RtToken o) { orientation = o; };
+  RtToken getOrientation(RtVoid) const { return orientation; };
 
   RtVoid calcArea(RtVoid);
   RtVoid calcNormal(RtVoid);

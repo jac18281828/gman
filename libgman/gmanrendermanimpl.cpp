@@ -37,6 +37,7 @@
 */
 
 #include <cstring>
+#include <memory>
 #include <string>
 
 /* Local Headers */
@@ -139,11 +140,21 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid)
 {
   enterMode(W);
 
+  // RiProjection is legal only before RiWorldBegin, so the CTM right here
+  // *is* the world-to-camera transform -- nothing after this point can
+  // still be camera setup. RenderMan's camera looks down +z (left-handed);
+  // GMANMatrix4::prjPersp relies on that to give w=z its sign.
+  GMANMatrix4 worldToCamera = getTransform().interpolate(0.0);
 
   // FIXME FIXME FIXME
   // this order is messed up!!!
   GMANOptions::RasterInfo ri = getOptions().getRasterInfo();
 
+  // Built locally and only handed to the `output` member once every
+  // fallible step below (including viewing-system construction, which can
+  // throw on a singular worldToCamera) has succeeded, so a GMANError
+  // unwinding through here can't leak the driver.
+  std::unique_ptr<GMANOutput> newOutput;
 
   if(getOptions().getDisplay().type == "file") {
     size_t startExt = getOptions().getDisplay().name.rfind(".");
@@ -152,35 +163,35 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid)
       ext = getOptions().getDisplay().name.substr(startExt+1);
     }
     debug("Displaying to file with extension, %s.", ext.c_str());
-    
+
     if((ext == "tif") || (ext == "tiff")) {
-      
-      output = new GMANOutputTIFF( getOptions().
+
+      newOutput.reset(new GMANOutputTIFF( getOptions().
 				   getDisplay().name.c_str(),
 				   ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				   ri.rymax-ri.rymin+1);
+				   ri.rymax-ri.rymin+1));
     } else if (ext == "png") {
-      
-      output = new GMANOutputPNG( getOptions().
+
+      newOutput.reset(new GMANOutputPNG( getOptions().
 				  getDisplay().name.c_str(),
 				  ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				  ri.rymax-ri.rymin+1);
-      
-      
+				  ri.rymax-ri.rymin+1));
+
+
     } else if (ext == "pnm") {
-      
-      output = new GMANOutputPNM( getOptions().
+
+      newOutput.reset(new GMANOutputPNM( getOptions().
 				  getDisplay().name.c_str(),
 				  ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				  ri.rymax-ri.rymin+1);
+				  ri.rymax-ri.rymin+1));
     }
-    
+
   } else {  // type == framebuffer
     // our frame buffer
-    output = new GMANOutputX11( getOptions().
+    newOutput.reset(new GMANOutputX11( getOptions().
 				getDisplay().name.c_str(),
 				ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				ri.rymax-ri.rymin+1);
+				ri.rymax-ri.rymin+1));
   }
 
 
@@ -194,8 +205,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid)
   RtFloat* param = (RtFloat *) ps.pl.getPointer(fovTok);
   RtFloat fov=0.0;
   if (param) {
-    // TODO(phase-1): this shadows the outer fov, so FOV is always 90.
-    [[maybe_unused]] RtFloat fov = param[0];
+    fov = param[0];
   }
   if (fov == 0.0) {
     warning("FOV not set, defaulting to 90.0.");
@@ -204,19 +214,23 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid)
   }
 
   if(ps.name == "orthographic") {
-    viewingSystem=new GMANVSOrthographic(ri.xres, 
-					 ri.yres, 
-					 sw, 
-					 cw.nearDist, 
+    viewingSystem=new GMANVSOrthographic(ri.xres,
+					 ri.yres,
+					 sw,
+					 worldToCamera,
+					 cw.nearDist,
 					 cw.farDist);
   } else {
-    viewingSystem=new GMANVSPerspective(ri.xres, 
-					ri.yres, 
-					sw, 
+    viewingSystem=new GMANVSPerspective(ri.xres,
+					ri.yres,
+					sw,
+					worldToCamera,
 					fov,
-					cw.nearDist, 
+					cw.nearDist,
 					cw.farDist);
   }
+
+  output = newOutput.release();
 }
 
 RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid)

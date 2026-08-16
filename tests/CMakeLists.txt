@@ -5,7 +5,7 @@
 # predicted to do. See tests/baseline.cpp for the finding and for which phase
 # supersedes it.
 add_executable(gman_baseline baseline.cpp)
-target_link_libraries(gman_baseline PRIVATE gman_core)
+target_link_libraries(gman_baseline PRIVATE gman_core TIFF::TIFF)
 
 # Run in a scratch directory so the image the RIB names would land there, and
 # so the assertion that none appears means something.
@@ -87,3 +87,41 @@ add_executable(gman_facevarying facevarying_test.cpp)
 target_link_libraries(gman_facevarying PRIVATE gman_core)
 
 add_test(NAME facevarying COMMAND gman_facevarying)
+
+# Phase 1 -- the object -> world -> camera -> screen -> NDC -> raster chain.
+add_executable(gman_matrix4 gmanmatrix4_test.cpp)
+target_link_libraries(gman_matrix4 PRIVATE gman_core)
+add_test(NAME matrix4 COMMAND gman_matrix4)
+
+add_executable(gman_spacechain spacechain_test.cpp)
+target_link_libraries(gman_spacechain PRIVATE gman_core)
+add_test(NAME spacechain COMMAND gman_spacechain)
+
+# The phase's actual gate: a real end-to-end render, read back and measured
+# against the hand-derived silhouette geometry.
+add_executable(gman_silhouette silhouette_test.cpp)
+target_link_libraries(gman_silhouette PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_SILHOUETTE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/silhouette-run")
+file(MAKE_DIRECTORY "${GMAN_SILHOUETTE_WORKDIR}")
+
+add_test(NAME silhouette
+  COMMAND gman_silhouette $<TARGET_FILE:gman>
+  WORKING_DIRECTORY "${GMAN_SILHOUETTE_WORKDIR}")
+set_tests_properties(silhouette PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Proof item 6 (secondary, visual): the same sphere at several RiTranslate
+# offsets.
+add_executable(gman_transforms transforms_test.cpp)
+target_link_libraries(gman_transforms PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_TRANSFORMS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/transforms-run")
+file(MAKE_DIRECTORY "${GMAN_TRANSFORMS_WORKDIR}")
+
+add_test(NAME transforms
+  COMMAND gman_transforms $<TARGET_FILE:gman>
+                          "${CMAKE_CURRENT_SOURCE_DIR}/rib/transforms.rib"
+  WORKING_DIRECTORY "${GMAN_TRANSFORMS_WORKDIR}")
+set_tests_properties(transforms PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

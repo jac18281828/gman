@@ -114,11 +114,20 @@ private:
 
   EdgeInfo	*edge_list;
 
-  VertexInfo	v_info[8];
+  // Sutherland-Hodgman clipping a convex n-gon (faces are always
+  // GMAN_NFACE_VERTS==4) against a convex region of k half-planes (the
+  // clipper's 6) produces at most n+k vertices -- 10 here. Sized well
+  // past that; getVertexInfo() still clamps defensively.
+  static const int kMaxClippedVerts = 16;
+  VertexInfo	v_info[kMaxClippedVerts];
 
   // a polygon clipper
   GMANPolygonClipper	clipper;
 
+  // the viewing system for the frame currently being rendered, needed by
+  // getVertexInfo() to map already-projected NDC coordinates to raster
+  // space via GMANViewingSystem::screenToRaster.
+  GMANViewingSystem	*viewingSys;
 
   GMANPatchPolyObjectManager		objectManager;
 
@@ -137,8 +146,14 @@ private:
 
   RtFloat getZBuffer(RtInt x, RtInt y) const;
 
-  // populate vertex info array
-  void getVertexInfo( GMANOutputPolygon & out );
+  // populate vertex info array. Returns false (and leaves num_vert/edge
+  // state untouched) if any vertex's raster position is non-finite or
+  // wildly out of frame -- near-zero-distance geometry (e.g. an
+  // unclipped point arbitrarily close to the near plane) can still
+  // produce a finite but enormous NDC coordinate after perspective
+  // divide, and scanEdges/drawEdgeList index into fixed-size arrays with
+  // it unchecked.
+  bool getVertexInfo( GMANOutputPolygon & out );
   // edge scanning alg
   void scanEdges(void);
   // draw each of the scanned edges

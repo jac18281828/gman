@@ -1,0 +1,29 @@
+## Phase 1, proof item 6: the same sphere at several RiTranslate offsets.
+## Camera setup matches tests/rib/sphere.rib and corpus/menger.rib's
+## convention (Translate 0 0 5 before WorldBegin). Three spheres, each in
+## its own AttributeBegin/End block so their transforms don't compound,
+## placed left, centre and right of the camera axis.
+##
+## Revert GMANTransform::apply to `return p;` (step 1) and every offset
+## below collapses onto the same untransformed geometry: all three spheres
+## render identically instead of at three distinct raster positions. See
+## tests/transforms_test.cpp, which renders this file and asserts three
+## separated silhouettes.
+Display "transforms.tif" "file" "rgba"
+Format 300 100 1
+Projection "perspective" "fov" [90]
+Translate 0 0 5
+WorldBegin
+	AttributeBegin
+		Translate -1.5 0 0
+		Sphere 0.5 -0.5 0.5 360
+	AttributeEnd
+	AttributeBegin
+		Translate 0 0 0
+		Sphere 0.5 -0.5 0.5 360
+	AttributeEnd
+	AttributeBegin
+		Translate 1.5 0 0
+		Sphere 0.5 -0.5 0.5 360
+	AttributeEnd
+WorldEnd

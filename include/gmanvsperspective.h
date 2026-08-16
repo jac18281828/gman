@@ -37,8 +37,9 @@ class GMAN_EXPORT  GMANVSPerspective : public GMANViewingSystem
 private:
   GMANMatrix4 mtrx;
 public:
-  GMANVSPerspective(RtInt xr, RtInt yr, 
+  GMANVSPerspective(RtInt xr, RtInt yr,
 		    const GMANOptions::ScreenWindowStruct &s,
+		    const GMANMatrix4 &worldToCamera,
 		    RtFloat fov, RtFloat nearDist, RtFloat farDist);
   ~GMANVSPerspective() {}
 

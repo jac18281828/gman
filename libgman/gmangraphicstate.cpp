@@ -192,9 +192,7 @@ GMANGraphicState::CommandIdentity
 GMANGraphicState::cmdCoordSysTransform= { B|F|W|A|T|S, 0,0,0 };
 
 GMANGraphicState::CommandIdentity
-// TODO(phase-1): T||S is a typo for T|S, so the whole expression collapses
-// to 1 (B alone). Preserved verbatim; phase 0 does not change behavior.
-GMANGraphicState::cmdTransformPoints= { 1, 0,0,0 };
+GMANGraphicState::cmdTransformPoints= { B|F|W|A|T|S, 0,0,0 };
 
 
 GMANGraphicState::CommandIdentity
@@ -610,8 +608,7 @@ RtVoid GMANGraphicState::buildTransform(GMANMatrix4 &m)
     mm.get(motionIndex)=m;
     motionIndex+=1;
     if (motionIndex==nbSamples) {
-      // TODO(phase-1): almost certainly meant ==; control always returns here.
-      if ((motionError=true)) return;
+      if (motionError==true) return;
       GMANTransform a(mm);
       transformStack.top().concat(a);
     }

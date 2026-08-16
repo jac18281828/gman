@@ -276,15 +276,10 @@ bool GMANTransform::isMoving()
 
 GMANPoint GMANTransform::apply(const GMANPoint &p)
 {
-#if 0
-  static bool warned1 = false, warned2 = false;
+  static bool warned1 = false;
   if (isMoving() && !warned1) {
     debug("GMANTransform::apply is not frame sensitive");
     warned1 = true;
-  }
-  if (!warned2) {
-    debug("GMANTransform::Refactor GMANTransform into homo / nonhomo");
-    warned2 = true;
   }
 
   GMANMatrix4 matrix = storage->interpolate(0.0);
@@ -292,7 +287,13 @@ GMANPoint GMANTransform::apply(const GMANPoint &p)
   RtFloat dest[3];
   matrix.p3m(1, src, dest);
   return GMANPoint(dest[0], dest[1], dest[2]);
-#else
-  return p;
-#endif
+}
+
+GMANVector4 GMANTransform::apply(const GMANVector4 &p)
+{
+  GMANMatrix4 matrix = storage->interpolate(0.0);
+  RtFloat src[] = { p.getX(), p.getY(), p.getZ(), p.getW() };
+  RtFloat dest[4];
+  matrix.p4m(1, src, dest);
+  return GMANVector4(dest[0], dest[1], dest[2], dest[3]);
 }

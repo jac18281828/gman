@@ -27,18 +27,23 @@
 */
 
 #include "gmanvsperspective.h"
+#include "gmanvector4.h"
 
-GMANVSPerspective::GMANVSPerspective(RtInt xr, RtInt yr, 
+GMANVSPerspective::GMANVSPerspective(RtInt xr, RtInt yr,
 				     const GMANOptions::ScreenWindowStruct &s,
+				     const GMANMatrix4 &worldToCamera,
 				     RtFloat fov, RtFloat nearDist, RtFloat farDist)
-  : GMANViewingSystem(xr,yr,s)
+  : GMANViewingSystem(xr,yr,s,worldToCamera)
 {
     mtrx.prjPersp(fov,nearDist,farDist);
 }
 
 GMANPoint GMANVSPerspective::project(GMANPoint const &p)
 {
-  GMANPoint a(p*mtrx);
+  GMANVector4 clip;
+  clip.projTransform(p, mtrx.get());
+  GMANPoint a;
+  clip.perspective(a);
   RtFloat x=a.getX();
   RtFloat y=a.getY();
   screenToRaster(x,y);
@@ -50,29 +55,42 @@ GMANRay   GMANVSPerspective::ray(RtFloat x, RtFloat y)
 {
   GMANRay r;
   rasterToScreen(x,y);
-  GMANPoint a(0,0,0);
-  GMANPoint b(x,y,1);
-  r.setP1(a);
-  r.setP2(b);
+
+  // camera-space origin and a point along the ray direction, carried into
+  // world space via the camera-to-world transform captured at RiWorldBegin.
+  RtFloat srcOrigin[] = {0,0,0};
+  RtFloat srcThrough[] = {x,y,1};
+  RtFloat dstOrigin[3], dstThrough[3];
+  GMANMatrix4 c2w = getCameraToWorld();
+  c2w.p3m(1, srcOrigin, dstOrigin);
+  c2w.p3m(1, srcThrough, dstThrough);
+
+  r.setP1(GMANPoint(dstOrigin[0], dstOrigin[1], dstOrigin[2]));
+  r.setP2(GMANPoint(dstThrough[0], dstThrough[1], dstThrough[2]));
   return r;
 }
 
 
-/* 
- * return true if the object is visible from
- * this perspective
+/*
+ * return true if the face is visible from this perspective.
+ *
+ * RiSides 2 (the RenderMan default) means both sides are visible: no
+ * culling. Only a single-sided face is culled, and then only by whether
+ * its normal -- already in camera space, since it was computed from
+ * already-transformed vertex positions at tessellation time -- faces the
+ * camera. RiOrientation "inside" inverts which winding counts as facing
+ * out.
  */
 bool GMANVSPerspective::visible(const GMANFace *face) {
+    if (face->getSides() != 1) {
+      return true;
+    }
 
-    // determine if the incident angle from the line of
-    // sight (z axis) 
-    //
-    // The general test for visibility is 
-    // N_los dot N_face > 0
-    // since the Normal to the line of sight is [0,0,1]
-    // we get [0,0,0].[Nfx, Nfy, Nfz] > 0 
-    // or
-    return (face->getNormal().getZ() > 0);
+    bool facingCamera = (face->getNormal().getZ() > 0);
+    if (face->getOrientation() == RI_INSIDE) {
+      facingCamera = !facingCamera;
+    }
+    return facingCamera;
 }
 
 const RtMatrix &GMANVSPerspective::getProjMatrix(RtVoid) const {

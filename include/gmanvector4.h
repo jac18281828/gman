@@ -102,17 +102,26 @@ public:
   };
 
   // mul/assign vector
+  //
+  // GMANVector(*this) *= GMANVector(v) built a temporary GMANVector slice,
+  // mutated *that*, and discarded it -- x,y,z of *this never actually
+  // changed, only w did (same shape of bug in every operator below that
+  // used it). Assign the components directly instead.
   GMANVector4 &operator*=(const GMANVector4 &v) {
-	  GMANVector(*this)*=GMANVector(v);
-	  w *= v.w;
+    setX(getX() * v.getX());
+    setY(getY() * v.getY());
+    setZ(getZ() * v.getZ());
+    w *= v.w;
 
     return *this;
   }
 
   // multiply vector by scaler
   GMANVector4 &operator*=(RtFloat s) {
-	  GMANVector(*this)*=GMANVector(s);
-	  w *= s;
+    setX(getX() * s);
+    setY(getY() * s);
+    setZ(getZ() * s);
+    w *= s;
     return *this;
   }
 
@@ -140,35 +149,39 @@ public:
   // turn off some methods
   // assign a scaler to each vector value
   GMANVector4 &operator=(RtFloat s) {
-	  GMANVector(*this) = s;
-	  w=s;
+    setX(s); setY(s); setZ(s);
+    w=s;
     return *this;
   };
 
   GMANVector4 &operator=(const GMANVector &v) {
-	  GMANVector(*this)=v;
-	  w=1.0;
-	  return *this;
+    setX(v.getX()); setY(v.getY()); setZ(v.getZ());
+    w=1.0;
+    return *this;
   }
 
   GMANVector4 &operator=(const GMANVector4 &v) {
-	  GMANVector(*this)=GMANVector(v);
-	  w=v.w;
-	  return *this;
+    setX(v.getX()); setY(v.getY()); setZ(v.getZ());
+    w=v.w;
+    return *this;
   }
 
 
   // subtract/assign vector
   GMANVector4 &operator-=(const GMANVector4 &v) {
-	  GMANVector(*this)-=GMANVector(v);
-	  w -= v.w;
+    setX(getX() - v.getX());
+    setY(getY() - v.getY());
+    setZ(getZ() - v.getZ());
+    w -= v.w;
     return *this;
   }
 
   // divide vector by scaler
   GMANVector4 &operator/=(RtFloat s) {
-	  GMANVector(*this)/=s;
-	  w/=s;
+    setX(getX() / s);
+    setY(getY() / s);
+    setZ(getZ() / s);
+    w/=s;
     return *this;
   }
   // multiply by a scaler

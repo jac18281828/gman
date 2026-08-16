@@ -140,11 +140,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,
 							 RtFloat tmax,
 							 GMANParameterList pl,
 							 GMANOptions */*opt*/,
-							 GMANAttributes */*attr*/,
+							 GMANAttributes *attr,
 							 GMANTransform *t)
  {
   GMANSphere sphere(radius, zmin, zmax, tmax, pl);
-  return createParametric(&sphere, t);
+  return createParametric(&sphere, t, attr);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSCone (RtFloat height,
@@ -152,11 +152,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCone (RtFloat height,
 						       RtFloat tmax,
 						       GMANParameterList pl, 
 						       GMANOptions */*opt*/,
-						       GMANAttributes */*attr*/,
+						       GMANAttributes *attr,
 						       GMANTransform *t)
  {
   GMANCone cone(height, radius, tmax, pl);
-  return createParametric(&cone, t);
+  return createParametric(&cone, t, attr);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
@@ -165,11 +165,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
 							   RtFloat tmax,
 							   GMANParameterList pl,
 							   GMANOptions */*opt*/,
-							   GMANAttributes */*attr*/,
+							   GMANAttributes *attr,
 							   GMANTransform *t)
  {
   GMANCylinder cylinder(radius, zmin, zmax, tmax, pl);
-  return createParametric(&cylinder, t);
+  return createParametric(&cylinder, t, attr);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSHyperboloid (RtPoint point1,
@@ -177,11 +177,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSHyperboloid (RtPoint point1,
 							      RtFloat tmax,
 							      GMANParameterList pl,
 							      GMANOptions */*opt*/,
-							      GMANAttributes */*attr*/,
+							      GMANAttributes *attr,
 							      GMANTransform *t)
  {
   GMANHyperboloid hyperboloid(point1, point2, tmax, pl);
-  return createParametric(&hyperboloid, t);
+  return createParametric(&hyperboloid, t, attr);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
@@ -190,11 +190,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
 							     RtFloat tmax,
 							     GMANParameterList pl,
 							     GMANOptions */*opt*/,
-							     GMANAttributes */*attr*/,
+							     GMANAttributes *attr,
 							     GMANTransform *t)
  {
   GMANParaboloid paraboloid(rmax, zmin, zmax, tmax, pl);
-  return createParametric(&paraboloid, t);
+  return createParametric(&paraboloid, t, attr);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat /*height*/,
@@ -215,11 +215,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
 							RtFloat tmax,
 							GMANParameterList pl,
 							GMANOptions */*opt*/,
-							GMANAttributes */*attr*/,
+							GMANAttributes *attr,
 							GMANTransform *t)
  {
   GMANTorus torus(majrad, minrad, phimin, phimax, tmax, pl);
-  return createParametric(&torus, t);
+  return createParametric(&torus, t, attr);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSBlobby (RtInt /*nleaf*/,
@@ -277,11 +277,14 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSubdivisionMesh (RtToken /*mask
 
 
 GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
-							  GMANTransform* t)
+							  GMANTransform* t,
+							  GMANAttributes* attr)
 {
 #define URES 16
 #define VRES 16
   int i, j;
+  RtInt sides = attr->getSides();
+  RtToken orientation = attr->getOrientation();
 
   GMANVertex** vertices = new GMANVertex*[(URES + 1) * (VRES + 1)];
   GMANFace** faces = new GMANFace*[URES * VRES];
@@ -315,6 +318,15 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
 	faceVertices[2] = vertices[(URES + 1) * (i + 1) + (j + 1)];
 	faceVertices[3] = vertices[(URES + 1) * (i + 1) + j];
 	faces[URES * i + j] = new GMANFace(faceVertices, surface);
+	// Geometric normal, computed from the already-transformed (camera
+	// space) vertices: cross(e1', e2') for e'=e*M is proportional to
+	// (e1 x e2) transformed by M's inverse transpose, so this needs no
+	// separate normal transform. RiSides/RiOrientation travel with the
+	// face so visible() can answer without depending on renderer-global
+	// state that may differ across attribute blocks.
+	faces[URES * i + j]->calcNormal();
+	faces[URES * i + j]->setSides(sides);
+	faces[URES * i + j]->setOrientation(orientation);
       }
     }
   }
