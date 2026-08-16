@@ -36,6 +36,19 @@ To install into a prefix:
 
     cmake --install build --prefix /usr/local
 
+Development container
+---------------------
+
+A devcontainer carrying the same toolchain CI uses -- both gcc and clang, the
+sanitizers, yamlfmt and commitlint -- lives in .devcontainer/. Open the repo in
+VS Code and choose "Reopen in Container", or run every gate at once with:
+
+    ./build.sh
+
+Worth preferring over a host build on macOS: Apple clang does not diagnose what
+gcc and libstdc++ do, and LeakSanitizer is unsupported there. Every phase of
+this project so far has had at least one defect only the Linux legs could see.
+
 See AGENTS.md for the full gate list and the house conventions.
 
 What works
