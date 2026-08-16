@@ -13,6 +13,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -60,9 +61,18 @@ int main(int argc, char *argv[]) {
   const std::string plainWork = scratch + "/plain";
   const std::string gzWork = scratch + "/compressed";
   const std::string misnamedWork = scratch + "/misnamed";
-  std::system(("mkdir -p \"" + plainWork + "\"").c_str());
-  std::system(("mkdir -p \"" + gzWork + "\"").c_str());
-  std::system(("mkdir -p \"" + misnamedWork + "\"").c_str());
+  /* Each source renders in its own directory so the three gzip_out.tif can be
+   * compared. A directory that failed to appear would silently run gman
+   * somewhere else, so the result is checked rather than discarded. */
+  for (const std::string &dir : {plainWork, gzWork, misnamedWork}) {
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);
+    if (ec) {
+      std::fprintf(stderr, "cannot create %s: %s\n", dir.c_str(),
+		   ec.message().c_str());
+      return 2;
+    }
+  }
 
   const int plainExit = runIn(gman, gzipDir + "/plain.rib", plainWork);
   const int gzExit = runIn(gman, gzipDir + "/plain_gz.rib.gz", gzWork);

@@ -44,9 +44,13 @@ Result runWithTimeout(const std::string &gman, const std::string &rib,
   pid_t pid = fork();
   if (pid == 0) {
     // child: silence gman's own output, this test only cares about the
-    // exit status
-    freopen("/dev/null", "w", stdout);
-    freopen("/dev/null", "w", stderr);
+    // exit status. If the redirect fails there is no way to report it from
+    // here without producing the noise it was meant to suppress, so fail the
+    // child instead -- 126 is distinct from the 127 exec-failure below.
+    if (freopen("/dev/null", "w", stdout) == nullptr ||
+	freopen("/dev/null", "w", stderr) == nullptr) {
+      _exit(126);
+    }
     execlp(gman.c_str(), gman.c_str(), rib.c_str(), (char *) nullptr);
     _exit(127); // exec failed
   }
