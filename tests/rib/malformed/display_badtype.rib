@@ -1,0 +1,7 @@
+# parseDisplay copies "name", then "type", then "mode" before it ever
+# releases any of them. A bad token in "type"'s place throws out of
+# copyStringToken() with "name" already on the heap and no parameter list
+# involved at all -- a leak shape stringarray.rib (which throws inside
+# parseParameterList) does not exercise. gman is expected to fail on this
+# file; the point is that it fails without leaking "name".
+Display "malformed_out.tif" 5 "rgba"

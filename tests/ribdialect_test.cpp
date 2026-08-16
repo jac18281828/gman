@@ -154,16 +154,51 @@ int main(int argc, char *argv[]) {
   // What this DOES assert: the fault is detected and named. What it does NOT
   // assert: leak-freedom. gman runs here as a subprocess, so LeakSanitizer
   // aborting it is indistinguishable from the non-zero exit this file is
-  // supposed to produce -- the exit-status check would pass either way. Two
-  // known leaks on this path survive and are recorded in SPEC.md S8; gating
-  // on LSan output has to wait until they are closed, or it would just
-  // encode them.
+  // supposed to produce either way -- the exit-status check would pass
+  // either way. This fixture also crosses WorldBegin, so it hits the other
+  // known leak on this path (GMANRenderManImpl::RiWorldBegin's output
+  // driver, SPEC.md S8, phase-1 territory, untouched here): asserting no
+  // LeakSanitizer output on this exact fixture would be a false claim.
+  // display_badtype.rib and hider.rib below never reach WorldBegin, so they
+  // carry that assertion instead.
   {
     const std::string path = ribDir + "/malformed/stringarray.rib";
     Result r = run(gman, path, /*debug=*/false);
     check(r.exitStatus != 0, "malformed: a non-string in a string array fails");
     check(r.output.find("Non-string in array") != std::string::npos,
 	  "malformed: the diagnostic names the fault");
+  }
+
+  // Same fault class, a different leak shape, and (unlike stringarray.rib
+  // above) never reaching WorldBegin -- so the "no LeakSanitizer output"
+  // check here is clean of the other known leak and actually gates the
+  // copyStringToken() fix. parseDisplay copies "name", then "type", then
+  // "mode" before releasing any of them, and no parseParameterList is
+  // involved: a bad token where "type" belongs throws out of
+  // copyStringToken() itself with "name" already on the heap. The check is
+  // a NOP on a build without -fsanitize=address (nothing ever prints that
+  // banner, so it trivially holds) and a hard failure under the debug
+  // preset or the CI sanitizer leg if this path leaks again.
+  {
+    const std::string path = ribDir + "/malformed/display_badtype.rib";
+    Result r = run(gman, path, /*debug=*/false);
+    check(r.exitStatus != 0, "malformed: a non-string Display type fails");
+    check(r.output.find("Expecting string token") != std::string::npos,
+	  "malformed: the diagnostic names the fault");
+    check(r.output.find("LeakSanitizer") == std::string::npos,
+	  "malformed: no LeakSanitizer report (display_badtype.rib)");
+  }
+
+  // Not malformed -- the point is the opposite. parseHider used to leak its
+  // copied "type" string unconditionally, on every successful Hider request,
+  // not only on an error path. This file is well-formed, never reaches
+  // WorldBegin, and gman is expected to exit 0.
+  {
+    const std::string path = ribDir + "/hider.rib";
+    Result r = run(gman, path, /*debug=*/false);
+    check(r.exitStatus == 0, "hider: a well-formed Hider request parses");
+    check(r.output.find("LeakSanitizer") == std::string::npos,
+	  "hider: no LeakSanitizer report (hider.rib)");
   }
 
   if (failures != 0) {

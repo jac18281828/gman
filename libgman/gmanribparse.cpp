@@ -620,7 +620,7 @@ RtInt GMANRIBParse::nextInt () {
   return tok.getLongInt();
 }
 
-char* GMANRIBParse::copyStringToken() {
+std::string GMANRIBParse::copyStringToken() {
   const GMANToken &tok = nextToken();
 
   if (tok.getType() != GMANToken::STRING) {
@@ -628,14 +628,11 @@ char* GMANRIBParse::copyStringToken() {
     throw(error);
   }
 
-  const char *str = tok.getString().c_str();
-  char *retval = new char[strlen(str) + 1];
-  strcpy(retval, str);
-  return retval;
+  return tok.getString();
 }
 
 RtVoid  GMANRIBParse::parseOption(RtVoid) {
-  char *name = copyStringToken();
+  std::string name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -643,16 +640,14 @@ RtVoid  GMANRIBParse::parseOption(RtVoid) {
 
   parseParameterList(n, tokens, parms);
 
-  renderMan->RiOptionV(name, n, tokens, parms);
-
-  delete [] name;
+  renderMan->RiOptionV(name.c_str(), n, tokens, parms);
 
 }
 
 RtVoid  GMANRIBParse::parseDisplay(RtVoid) {
-  char *name = copyStringToken();
-  char *type = copyStringToken();
-  char *mode = copyStringToken();
+  std::string name = copyStringToken();
+  std::string type = copyStringToken();
+  std::string mode = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -660,11 +655,10 @@ RtVoid  GMANRIBParse::parseDisplay(RtVoid) {
 
   parseParameterList(n, tokens, parms);
 
-  renderMan->RiDisplayV(name, type, mode, n, tokens, parms);
-
-  delete [] name;
-  delete [] type;
-  delete [] mode;
+  // RiDisplayV's name parameter is char* rather than const char* for
+  // historical reasons; it only reads through it.
+  renderMan->RiDisplayV(const_cast<char *>(name.c_str()), type.c_str(),
+			 mode.c_str(), n, tokens, parms);
 
 }
 
@@ -677,7 +671,7 @@ RtVoid  GMANRIBParse::parseFormat(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseProjection(RtVoid) {
-  char *name = copyStringToken();
+  std::string name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -685,27 +679,21 @@ RtVoid GMANRIBParse::parseProjection(RtVoid) {
 
   parseParameterList(n, tokens, parms);
 
-  renderMan->RiProjectionV(name, n, tokens, parms);
-
-  delete [] name;
+  renderMan->RiProjectionV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) {
-  char *type = copyStringToken();
+  std::string type = copyStringToken();
   RtFloat value = nextFloat();
 
-  renderMan->RiGeometricApproximation(type, value);
-
-  delete [] type;
+  renderMan->RiGeometricApproximation(type.c_str(), value);
 }
 
 RtVoid GMANRIBParse::parseShadingInterpolation(RtVoid) {
 
-  RtToken type = copyStringToken();
+  std::string type = copyStringToken();
 
-  renderMan->RiShadingInterpolation(type);
-
-  delete [] type;
+  renderMan->RiShadingInterpolation(type.c_str());
 }
 
 RtVoid GMANRIBParse::parseShadingRate(RtVoid) {
@@ -717,11 +705,9 @@ RtVoid GMANRIBParse::parseShadingRate(RtVoid) {
 
 RtVoid GMANRIBParse::parseOrientation(RtVoid) {
 
-  RtToken orientation = copyStringToken();
+  std::string orientation = copyStringToken();
 
-  renderMan->RiOrientation(orientation);
-
-  delete [] orientation;
+  renderMan->RiOrientation(orientation.c_str());
 }
 
 RtVoid GMANRIBParse::parsePixelSamples(RtVoid) {
@@ -759,7 +745,7 @@ RtVoid GMANRIBParse::parseShutter(RtVoid) {
 
 RtVoid GMANRIBParse::parseHider(RtVoid) {
 
-  char *type = copyStringToken();
+  std::string type = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -767,7 +753,7 @@ RtVoid GMANRIBParse::parseHider(RtVoid) {
 
   parseParameterList(n, tokens, parms);
 
-  renderMan->RiHiderV(type, n, tokens, parms);
+  renderMan->RiHiderV(type.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseCropWindow(RtVoid) {
@@ -800,18 +786,15 @@ RtVoid GMANRIBParse::parseClipping(RtVoid) {
 
 RtVoid GMANRIBParse::parseDeclare(RtVoid) {
 
-  RtToken name = copyStringToken();
-  RtToken declaration = copyStringToken();
+  std::string name = copyStringToken();
+  std::string declaration = copyStringToken();
 
-  renderMan->RiDeclare(name, declaration);
-
-  delete [] name;
-  delete [] declaration;
+  renderMan->RiDeclare(name.c_str(), declaration.c_str());
 }
 
 RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
-  RtToken name = copyStringToken();
+  std::string name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -819,9 +802,7 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
   parseParameterList(n, tokens, parms);
 
-  renderMan->RiAttributeV(name, n, tokens, parms);
-
-  delete [] name;
+  renderMan->RiAttributeV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseColor(RtVoid) {
@@ -883,7 +864,7 @@ RtVoid GMANRIBParse::parseOpacity(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseLightSource(RtVoid) {
-  char *shadername = copyStringToken();
+  std::string shadername = copyStringToken();
   int sequence = nextInt();
 
   RtInt n = 0;
@@ -893,15 +874,13 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) {
   parseParameterList(n, tokens, parms);
 
   RtLightHandle handle =
-    renderMan->RiLightSourceV(shadername, n, tokens, parms);
+    renderMan->RiLightSourceV(shadername.c_str(), n, tokens, parms);
 
   lightHandleMap[sequence] = handle;
-
-  delete [] shadername;
 }
 
 RtVoid GMANRIBParse::parseSurface(RtVoid) {
-  RtToken shadername = copyStringToken();
+  std::string shadername = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -910,18 +889,14 @@ RtVoid GMANRIBParse::parseSurface(RtVoid) {
   parseParameterList(n, tokens, parms);
 
   // FIXME: Implement some surface shaders
-  renderMan->RiSurfaceV(shadername, n, tokens, parms);
-
-  delete [] shadername;
+  renderMan->RiSurfaceV(shadername.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) {
 
-  char* name = copyStringToken();
+  std::string name = copyStringToken();
 
-  renderMan->RiCoordinateSystem(name);
-
-  delete [] name;
+  renderMan->RiCoordinateSystem(name.c_str());
 }
 
 RtVoid GMANRIBParse::parseTransform(RtVoid) {
@@ -1187,7 +1162,7 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
 
 RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
-  char *type = copyStringToken();
+  std::string type = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1195,9 +1170,7 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
   parseParameterList(n, tokens, parms);
 
-  renderMan->RiPatchV(type, n, tokens, parms);
-
-  delete [] type;
+  renderMan->RiPatchV(type.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
@@ -1235,11 +1208,11 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
 
 RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
 
-  char *type = copyStringToken();
+  std::string type = copyStringToken();
   RtInt nu = nextInt();
-  char *uwrap = copyStringToken();
+  std::string uwrap = copyStringToken();
   RtInt nv = nextInt();
-  char *vwrap = copyStringToken();
+  std::string vwrap = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1247,11 +1220,8 @@ RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
 
   parseParameterList(n, tokens, parms);
 
-  renderMan->RiPatchMeshV(type, nu, uwrap, nv, vwrap, n, tokens, parms);
-
-  delete [] type;
-  delete [] uwrap;
-  delete [] vwrap;
+  renderMan->RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(),
+			   n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) {
@@ -1269,9 +1239,7 @@ RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) {
 
 RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
 
-  char* name = copyStringToken();
-  std::string requested(name);
-  delete [] name;
+  std::string requested = copyStringToken();
 
   // Resolve relative to the including file first, then fall back to the
   // path as given (relative to the process's working directory). There is
@@ -1394,16 +1362,14 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
     }
     delete [] values;
   } else {
-    char *uname = copyStringToken();
+    std::string uname = copyStringToken();
     bool found = basisByName(uname, ubasis);
     if (! found) {
       std::string msg = std::string("GMANRIBParse: unknown basis \"") +
 	uname + "\"";
-      delete [] uname;
       GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
       throw error;
     }
-    delete [] uname;
   }
   RtInt ustep = nextInt();
 
@@ -1423,16 +1389,14 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
     }
     delete [] values;
   } else {
-    char *vname = copyStringToken();
+    std::string vname = copyStringToken();
     bool found = basisByName(vname, vbasis);
     if (! found) {
       std::string msg = std::string("GMANRIBParse: unknown basis \"") +
 	vname + "\"";
-      delete [] vname;
       GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
       throw error;
     }
-    delete [] vname;
   }
   RtInt vstep = nextInt();
 
@@ -1441,7 +1405,7 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
 
 RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
 
-  char* name = copyStringToken();
+  std::string name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1450,14 +1414,12 @@ RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
   parseParameterList(n, tokens, parms);
 
   // FIXME: implement some atmosphere shaders
-  //  renderMan->RiAtmosphereV(name, n, tokens, parms);
-
-  delete [] name;
+  //  renderMan->RiAtmosphereV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
 
-  char* name = copyStringToken();
+  std::string name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1466,14 +1428,12 @@ RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
   parseParameterList(n, tokens, parms);
 
   // FIXME: implement some displacement shaders
-  //  renderMan->RiDisplacementV(name, n, tokens, parms);
-
-  delete [] name;
+  //  renderMan->RiDisplacementV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseImager(RtVoid) {
 
-  char* name = copyStringToken();
+  std::string name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1482,9 +1442,7 @@ RtVoid GMANRIBParse::parseImager(RtVoid) {
   parseParameterList(n, tokens, parms);
 
   // FIXME: implement some imagers
-  //renderMan->RiImagerV(name, n, tokens, parms);
-
-  delete [] name;
+  //renderMan->RiImagerV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
@@ -1505,17 +1463,14 @@ RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
 
 RtVoid GMANRIBParse::parseCurves(RtVoid) {
   // Curves type ncurves[] wrap paramlist
-  char *type = copyStringToken();
+  (void) copyStringToken(); // type
   GMANRIBParse::TokenVector ncurves = parseArray();
-  char *wrap = copyStringToken();
+  (void) copyStringToken(); // wrap
 
   RtInt n = 0;
   RtToken *tokens;
   RtPointer *parms;
   parseParameterList(n, tokens, parms);
-
-  delete [] type;
-  delete [] wrap;
 }
 
 RtVoid GMANRIBParse::parseBlobby(RtVoid) {
@@ -1533,7 +1488,7 @@ RtVoid GMANRIBParse::parseBlobby(RtVoid) {
 
 RtVoid GMANRIBParse::parseSubdivisionMesh(RtVoid) {
   // SubdivisionMesh scheme nvertices[] vertices[] tags[] nargs[] intargs[] floatargs[] paramlist
-  char *scheme = copyStringToken();
+  (void) copyStringToken(); // scheme
   GMANRIBParse::TokenVector nvertices = parseArray();
   GMANRIBParse::TokenVector vertices = parseArray();
   GMANRIBParse::TokenVector tags = parseArray();
@@ -1545,23 +1500,18 @@ RtVoid GMANRIBParse::parseSubdivisionMesh(RtVoid) {
   RtToken *tokens;
   RtPointer *parms;
   parseParameterList(n, tokens, parms);
-
-  delete [] scheme;
 }
 
 RtVoid GMANRIBParse::parseProcedural(RtVoid) {
   // Procedural procname procargs[] bound[6] -- no trailing paramlist
-  char *procname = copyStringToken();
+  (void) copyStringToken(); // procname
   GMANRIBParse::TokenVector procargs = parseArray();
   GMANRIBParse::TokenVector bound = parseArray();
-
-  delete [] procname;
 }
 
 RtVoid GMANRIBParse::parseSolidBegin(RtVoid) {
   // SolidBegin "type"
-  char *type = copyStringToken();
-  delete [] type;
+  (void) copyStringToken(); // type
 }
 
 RtVoid GMANRIBParse::parseSolidEnd(RtVoid) {
@@ -1614,25 +1564,22 @@ RtVoid GMANRIBParse::parseTrimCurve(RtVoid) {
 
 RtVoid GMANRIBParse::parseErrorHandler(RtVoid) {
   // ErrorHandler "handler"
-  char *handler = copyStringToken();
-  delete [] handler;
+  (void) copyStringToken(); // handler
 }
 
 RtVoid GMANRIBParse::parseArchiveRecord(RtVoid) {
   // ArchiveRecord "type" "text"
-  char *type = copyStringToken();
-  char *text = copyStringToken();
-  delete [] type;
-  delete [] text;
+  (void) copyStringToken(); // type
+  (void) copyStringToken(); // text
 }
 
 RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
   // MakeTexture picture texture swrap twrap filter swidth twidth paramlist
-  char *picture = copyStringToken();
-  char *texture = copyStringToken();
-  char *swrap = copyStringToken();
-  char *twrap = copyStringToken();
-  char *filter = copyStringToken();
+  (void) copyStringToken(); // picture
+  (void) copyStringToken(); // texture
+  (void) copyStringToken(); // swrap
+  (void) copyStringToken(); // twrap
+  (void) copyStringToken(); // filter
   nextFloat();
   nextFloat();
 
@@ -1640,21 +1587,15 @@ RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
   RtToken *tokens;
   RtPointer *parms;
   parseParameterList(n, tokens, parms);
-
-  delete [] picture;
-  delete [] texture;
-  delete [] swrap;
-  delete [] twrap;
-  delete [] filter;
 }
 
 RtVoid GMANRIBParse::parseMakeBump(RtVoid) {
   // Same grammar as MakeTexture.
-  char *picture = copyStringToken();
-  char *texture = copyStringToken();
-  char *swrap = copyStringToken();
-  char *twrap = copyStringToken();
-  char *filter = copyStringToken();
+  (void) copyStringToken(); // picture
+  (void) copyStringToken(); // texture
+  (void) copyStringToken(); // swrap
+  (void) copyStringToken(); // twrap
+  (void) copyStringToken(); // filter
   nextFloat();
   nextFloat();
 
@@ -1662,19 +1603,13 @@ RtVoid GMANRIBParse::parseMakeBump(RtVoid) {
   RtToken *tokens;
   RtPointer *parms;
   parseParameterList(n, tokens, parms);
-
-  delete [] picture;
-  delete [] texture;
-  delete [] swrap;
-  delete [] twrap;
-  delete [] filter;
 }
 
 RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
   // MakeLatLongEnvironment picture texture filter swidth twidth paramlist
-  char *picture = copyStringToken();
-  char *texture = copyStringToken();
-  char *filter = copyStringToken();
+  (void) copyStringToken(); // picture
+  (void) copyStringToken(); // texture
+  (void) copyStringToken(); // filter
   nextFloat();
   nextFloat();
 
@@ -1682,23 +1617,19 @@ RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
   RtToken *tokens;
   RtPointer *parms;
   parseParameterList(n, tokens, parms);
-
-  delete [] picture;
-  delete [] texture;
-  delete [] filter;
 }
 
 RtVoid GMANRIBParse::parseMakeCubeFaceEnvironment(RtVoid) {
   // MakeCubeFaceEnvironment px nx py ny pz nz texture fov filter swidth twidth paramlist
-  char *px = copyStringToken();
-  char *nx = copyStringToken();
-  char *py = copyStringToken();
-  char *ny = copyStringToken();
-  char *pz = copyStringToken();
-  char *nz = copyStringToken();
-  char *texture = copyStringToken();
+  (void) copyStringToken(); // px
+  (void) copyStringToken(); // nx
+  (void) copyStringToken(); // py
+  (void) copyStringToken(); // ny
+  (void) copyStringToken(); // pz
+  (void) copyStringToken(); // nz
+  (void) copyStringToken(); // texture
   nextFloat(); // fov
-  char *filter = copyStringToken();
+  (void) copyStringToken(); // filter
   nextFloat();
   nextFloat();
 
@@ -1706,41 +1637,27 @@ RtVoid GMANRIBParse::parseMakeCubeFaceEnvironment(RtVoid) {
   RtToken *tokens;
   RtPointer *parms;
   parseParameterList(n, tokens, parms);
-
-  delete [] px;
-  delete [] nx;
-  delete [] py;
-  delete [] ny;
-  delete [] pz;
-  delete [] nz;
-  delete [] texture;
-  delete [] filter;
 }
 
 RtVoid GMANRIBParse::parseMakeShadow(RtVoid) {
   // MakeShadow picture texture paramlist
-  char *picture = copyStringToken();
-  char *texture = copyStringToken();
+  (void) copyStringToken(); // picture
+  (void) copyStringToken(); // texture
 
   RtInt n = 0;
   RtToken *tokens;
   RtPointer *parms;
   parseParameterList(n, tokens, parms);
-
-  delete [] picture;
-  delete [] texture;
 }
 
 RtVoid GMANRIBParse::parseIfBegin(RtVoid) {
   // IfBegin "expression"
-  char *expr = copyStringToken();
-  delete [] expr;
+  (void) copyStringToken(); // expression
 }
 
 RtVoid GMANRIBParse::parseElseIf(RtVoid) {
   // ElseIf "expression"
-  char *expr = copyStringToken();
-  delete [] expr;
+  (void) copyStringToken(); // expression
 }
 
 RtVoid GMANRIBParse::parseElse(RtVoid) {
@@ -1858,8 +1775,16 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
       paramMap[key] = (RtPointer) value;
       pendingParamValues.push_back({(RtPointer) value, false, 1});
     } else {
+      // This scalar string outlives the local, RAII-managed copyStringToken()
+      // result -- it is read back out of paramMap once the whole parameter
+      // list has been collected -- so it is duplicated onto the heap and
+      // registered with pendingParamValues the same way parseArray's string
+      // arrays are, rather than kept as a std::string here.
+      std::string str = copyStringToken();
+      char *dup = new char[str.size() + 1];
+      strcpy(dup, str.c_str());
       RtToken *value = new RtToken[1];
-      value[0] = copyStringToken();
+      value[0] = dup;
       paramMap[key] = (RtPointer) value;
       pendingParamValues.push_back({(RtPointer) value, true, 1});
     }

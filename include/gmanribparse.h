@@ -188,7 +188,13 @@ private:
   // Utility functions
   RtFloat nextFloat();
   RtInt nextInt();
-  char* copyStringToken();
+
+  // Reads the next STRING token and hands back an owning copy. A
+  // std::string's destructor runs on every unwind path -- including a
+  // parameter list, or a sibling copyStringToken() call, throwing before
+  // the caller reaches its own cleanup -- so nothing downstream of this
+  // call can leak the token by forgetting to release it.
+  std::string copyStringToken();
 
   TokenVector parseArray(RtVoid);
   RtVoid parseParameterList(RtInt &n, RtToken* &tokens,
