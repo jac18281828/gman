@@ -1,0 +1,7 @@
+Display "out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+PixelFilter "gaussian" 2 2
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

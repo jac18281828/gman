@@ -573,6 +573,10 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       debug("Keyword token: IfEnd (parse-only)");
       parseIfEnd();
       break;
+    case GMANToken::RI_PIXEL_FILTER:
+      debug("Keyword token: PixelFilter (parse-only)");
+      parsePixelFilter();
+      break;
     case GMANToken::RI_UNKNOWN_REQUEST:
       skipUnknownRequest(tok.getString());
       break;
@@ -1666,6 +1670,15 @@ RtVoid GMANRIBParse::parseElse(RtVoid) {
 
 RtVoid GMANRIBParse::parseIfEnd(RtVoid) {
   // IfEnd -- no arguments
+}
+
+RtVoid GMANRIBParse::parsePixelFilter(RtVoid) {
+  // PixelFilter filterfunc xwidth ywidth -- filterfunc names one of the
+  // built-in RtFilterFunc implementations; sampling is out of scope
+  // (SPEC.md S4), so the name is consumed and not resolved.
+  (void) copyStringToken(); // filterfunc
+  nextFloat(); // xwidth
+  nextFloat(); // ywidth
 }
 
 RtVoid GMANRIBParse::skipUnknownRequest(const std::string &name) {

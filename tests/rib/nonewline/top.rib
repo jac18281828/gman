@@ -1,0 +1,6 @@
+Display "nonewline_top.tif" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd
