@@ -32,9 +32,25 @@
  * tests/spacechain_test.cpp and tests/silhouette_test.cpp for the numeric
  * proof), so this is where a real, non-uniform image legitimately starts
  * appearing: this test now asserts the TIFF has more than one distinct
- * pixel value, not just that it exists and is non-empty. Do not "fix" this
- * test back to a uniform-image expectation -- replace it when phase 3's
- * shading changes what pixels this pins.
+ * pixel value, not just that it exists and is non-empty.
+ *
+ * Phase 3 makes that assertion mean something for the first time. Before
+ * this phase, "more than one distinct pixel value" was satisfied by
+ * GMANZBufferRenderer::getVertexInfo's GMANColor(drand48(), drand48(),
+ * drand48()) -- confetti, different on every run, that happened to
+ * exercise the same assertion for an unrelated reason (the silhouette
+ * differs from the background, not because any two of its own pixels are
+ * meaningfully related to each other). tests/rib/sphere.rib carries no
+ * RiLightSourceV, so a real shader renders it as a flat black silhouette
+ * against the background: still "more than one distinct value", but not
+ * yet a demonstration that a real shader ran, since a black sphere and a
+ * black bug both look black. What only a *real, deterministic* shader
+ * guarantees -- and confetti cannot -- is that rendering the same RIB
+ * twice produces the same image both times. That is the new assertion
+ * added below. (tests/lighting_test.cpp is where the shaded, lit case --
+ * tests/rib/lights.rib, with a real gradient and a specular highlight --
+ * gets its own golden-image comparison; this file stays intentionally
+ * about the light-free baseline scene phases 0-2 established.)
  */
 
 #include <sys/wait.h>
@@ -85,6 +101,26 @@ int distinctPixelValues(const char *path)
     }
   }
   return 1;
+}
+
+// Reads back a TIFF's raster verbatim, for the determinism check: two
+// renders of the same RIB must decode to the same pixels, not merely the
+// same file size or distinct-value count.
+bool readRaster(const char *path, std::vector<uint32_t> &raster)
+{
+  TIFF *tif = TIFFOpen(path, "r");
+  if (tif == nullptr) {
+    return false;
+  }
+  uint32_t width = 0, height = 0;
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+
+  raster.assign(width * height, 0);
+  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
+                                       ORIENTATION_TOPLEFT, 0);
+  TIFFClose(tif);
+  return ok && !raster.empty();
 }
 
 } // namespace
@@ -149,6 +185,27 @@ int main(int argc, char *argv[])
   check(distinct >= 0, "the produced TIFF can be read back");
   check(distinct > 1,
         "the image is not uniform -- the sphere silhouette is visible");
+
+  // Phase 3: rendering the same RIB twice produces the same image both
+  // times. Confetti (GMANColor(drand48(), drand48(), drand48()) per
+  // vertex, the pre-phase-3 placeholder this line replaces) could not
+  // have passed this -- two runs would differ practically always. A real
+  // shader, run on the same geometry and the same lights, cannot do
+  // anything else.
+  std::vector<uint32_t> firstRaster;
+  check(readRaster(image, firstRaster), "first render's TIFF decodes");
+
+  std::remove(image);
+  const int secondStatus = std::system(command.c_str());
+  const int secondExit = WIFEXITED(secondStatus) ? WEXITSTATUS(secondStatus) : -1;
+  check(secondExit == 0, "second render also exits 0");
+
+  std::vector<uint32_t> secondRaster;
+  check(readRaster(image, secondRaster), "second render's TIFF decodes");
+
+  check(firstRaster == secondRaster,
+        "two renders of the same RIB produce pixel-identical images -- "
+        "real shading is deterministic, confetti was not");
 
   if (failures != 0) {
     std::printf("%d assertion(s) failed\n", failures);

@@ -132,3 +132,18 @@ add_test(NAME transforms
   WORKING_DIRECTORY "${GMAN_TRANSFORMS_WORKDIR}")
 set_tests_properties(transforms PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Proof items 4-6: the N.L=0 terminator, RiSides 1 vs RiSides 2, and the
+# golden image (tests/rib/lights.rib against tests/rib/lights_golden.tif).
+add_executable(gman_lighting lighting_test.cpp)
+target_link_libraries(gman_lighting PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_LIGHTING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/lighting-run")
+file(MAKE_DIRECTORY "${GMAN_LIGHTING_WORKDIR}")
+
+add_test(NAME lighting
+  COMMAND gman_lighting $<TARGET_FILE:gman>
+                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_LIGHTING_WORKDIR}")
+set_tests_properties(lighting PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
