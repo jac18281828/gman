@@ -56,10 +56,10 @@ int main(int argc, char *argv[]) {
 	   // artificial log object for log settings
       // Static, not a plain local: renderMan owns the GMANDictionary a
       // shader's GMANParameterList::pl points into once a shader reads
-      // its own parameters, and a dlopen'd shader plugin's own
-      // static-storage-duration instance is destroyed after renderMan's
-      // only if renderMan is static too -- as a stack local it would be
-      // torn down first, leaving pl's dictionary pointer dangling
+      // its own parameters, so renderMan has to outlive every dlopen'd
+      // shader plugin's own static-storage-duration objects. As a stack
+      // local it does not -- it is torn down when main returns, while
+      // those run later, leaving pl's dictionary pointer dangling
       // (caught by AddressSanitizer as a stack-use-after-return).
       static GMANRenderManImpl   renderMan;
 
