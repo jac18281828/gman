@@ -55,21 +55,12 @@ int main(int argc, char *argv[]) {
     try {
 	   // artificial log object for log settings
       // Static, not a plain local: renderMan owns the GMANDictionary a
-      // shader's GMANParameterList::pl points into once RiSurface (or any
-      // shader) actually reads its own parameters, a path nothing
-      // exercised before Phase 3. A shader lives in a dlopen'd plugin
-      // with its own static-storage-duration instance (e.g. shaders/
-      // gmanmatte.cpp's `static GMANMatte shader`), constructed after
-      // renderMan (dlopen happens during RIB parsing, well after this
-      // line) and therefore destroyed *before* it under the standard
-      // reverse-of-construction-order rule -- but only if renderMan is
-      // itself static-duration too. As a plain stack local, renderMan is
-      // destroyed when main() returns, before any dlopen'd plugin's own
-      // static destructors run at process exit, leaving pl's dictionary
-      // pointer dangling: AddressSanitizer catches it as a
-      // stack-use-after-return inside GMANParameterList::destroy's
-      // GMANDictionary::getType call, reached from GMANShader's
-      // destructor tearing down its now-populated pl.
+      // shader's GMANParameterList::pl points into once a shader reads
+      // its own parameters, and a dlopen'd shader plugin's own
+      // static-storage-duration instance is destroyed after renderMan's
+      // only if renderMan is static too -- as a stack local it would be
+      // torn down first, leaving pl's dictionary pointer dangling
+      // (caught by AddressSanitizer as a stack-use-after-return).
       static GMANRenderManImpl   renderMan;
 
 	  GMANLog logObj;
