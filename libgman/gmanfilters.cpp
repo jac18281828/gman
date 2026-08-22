@@ -30,19 +30,24 @@
 
 #include <math.h>
 #include "ri.h"
+#include "gmanmath.h"
 
 
 
 /*
  * RenderMan C API Filter functions
  *
+ * Standard pixel-reconstruction filters, per the RISpec. None has a caller
+ * yet -- the renderer stays at 1 sample/pixel this phase -- but a filter
+ * that silently returns 1.0 for every (x,y) is a landmine for whoever wires
+ * up sampling next.
  */
 
 
-extern "C" RtFloat   RiGaussianFilter(RtFloat /*x*/, RtFloat /*y*/,
-				      RtFloat /*xwidth*/, RtFloat /*ywidth*/)
+extern "C" RtFloat   RiGaussianFilter(RtFloat x, RtFloat y,
+				      RtFloat xwidth, RtFloat ywidth)
 {
-  return 1.0;
+  return exp(-2.0 * (x*x/(xwidth*xwidth) + y*y/(ywidth*ywidth)));
 };
 
 
@@ -53,23 +58,45 @@ extern "C" RtFloat   RiBoxFilter(RtFloat /*x*/, RtFloat /*y*/,
 };
 
 
-extern "C" RtFloat   RiTriangleFilter(RtFloat /*x*/, RtFloat /*y*/,
-				      RtFloat /*xwidth*/, RtFloat /*ywidth*/)
+extern "C" RtFloat   RiTriangleFilter(RtFloat x, RtFloat y,
+				      RtFloat xwidth, RtFloat ywidth)
 {
-  return 1.0;
+  return (1.0 - fabs(x) / (xwidth / 2.0)) * (1.0 - fabs(y) / (ywidth / 2.0));
 };
 
 
-extern "C" RtFloat   RiCatmullRomFilter(RtFloat /*x*/,RtFloat /*y*/,
+static RtFloat catmullRom1D(RtFloat x)
+{
+  // Catmull-Rom cubic convolution kernel, a = -0.5 (the RISpec's choice).
+  RtFloat ax = fabs(x);
+  if (ax < 1.0) {
+    return (3.0*ax*ax*ax - 5.0*ax*ax + 2.0) / 2.0;
+  }
+  if (ax < 2.0) {
+    return (-ax*ax*ax + 5.0*ax*ax - 8.0*ax + 4.0) / 2.0;
+  }
+  return 0.0;
+}
+
+extern "C" RtFloat   RiCatmullRomFilter(RtFloat x,RtFloat y,
 					RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 {
-  return 1.0;
+  return catmullRom1D(x) * catmullRom1D(y);
 };
 
 
-extern "C" RtFloat  RiSincFilter(RtFloat /*x*/, RtFloat /*y*/,
+static RtFloat sinc1D(RtFloat x)
+{
+  if (fabs(x) < RI_EPSILON) {
+    return 1.0;
+  }
+  RtFloat px = (RtFloat)PI * x;
+  return sin(px) / px;
+}
+
+extern "C" RtFloat  RiSincFilter(RtFloat x, RtFloat y,
 				 RtFloat /*xwidth*/, RtFloat /*ywidth*/)
 {
-  return 1.0;
+  return sinc1D(x) * sinc1D(y);
 };
 
