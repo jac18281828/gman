@@ -171,3 +171,11 @@ add_test(NAME partialsphere
   WORKING_DIRECTORY "${GMAN_PARTIALSPHERE_WORKDIR}")
 set_tests_properties(partialsphere PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Review finding: GMANVertex::calcNormal has no call site anywhere in this
+# tree (setFaceList is never called), so the phase-3 implementation of it
+# never executes. Direct unit test of its arithmetic, independent of any
+# tessellator.
+add_executable(gman_vertexnormal vertexnormal_test.cpp)
+target_link_libraries(gman_vertexnormal PRIVATE gman_core)
+add_test(NAME vertexnormal COMMAND gman_vertexnormal)
