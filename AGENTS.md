@@ -35,6 +35,10 @@ cmake --preset dev && cmake --build build --parallel        # zero warnings, -We
 cmake --preset debug && cmake --build build-debug           # ASan + UBSan
 ctest --test-dir build --output-on-failure
 CXX=g++ cmake --preset dev -B build-gcc && cmake --build build-gcc
+valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
+  ./build/gman tests/rib/sphere.rib                         # uninitialized reads
+valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
+  ./build/gman tests/rib/corpus/menger.rib                  # ditto, parser path
 ./build/gman tests/rib/sphere.rib                           # the runtime baseline
 ```
 

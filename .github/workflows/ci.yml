@@ -76,3 +76,49 @@ jobs:
         run: cmake --build build-debug --parallel
       - name: Test
         run: ctest --test-dir build-debug --output-on-failure
+  valgrind:
+    # AddressSanitizer does not detect uninitialized reads; memcheck does.
+    # `dev`, not `debug`: ASan and valgrind cannot share one binary, and
+    # `dev` is RelWithDebInfo (-g), so memcheck's stack traces resolve.
+    name: ubuntu / gcc / valgrind
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build valgrind \
+            libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+      - name: Configure
+        env:
+          CC: gcc
+          CXX: g++
+        run: cmake --preset dev
+      - name: Build
+        run: cmake --build build --parallel
+      # Direct invocation, not ctest: gzip_test, readarchive_test and
+      # ribdialect_test each run gman as a child process -- std::system,
+      # execlp and popen respectively -- so valgrinding ctest traces the
+      # test driver, not the renderer. --error-exitcode
+      # is what makes this a gate -- without it memcheck reports and still
+      # exits 0. --track-origins finds the allocation site, not just the
+      # use site, which is the half of an uninitialized read that
+      # identifies the bug. Leaks are summarized, not gated: SPEC.md §8
+      # records leaks that are open by design (RiWorldBegin's output
+      # driver, copyStringToken's remaining sites); gating them fails the
+      # leg on a known, unrelated issue.
+      #
+      # sphere.rib is the only fixture that reaches the rasterizer --
+      # gmanzbufferrenderer.cpp is exactly the file this leg exists to
+      # guard. corpus/menger.rib is the widest parser path checked in:
+      # Procedural "DynamicLoad", the unbracketed parameter form, and
+      # (through it) the loadable-module dlopen path.
+      - name: Valgrind (memcheck)
+        run: |
+          for rib in tests/rib/sphere.rib tests/rib/corpus/menger.rib; do
+            echo "::group::valgrind $rib"
+            valgrind --error-exitcode=1 --track-origins=yes \
+              --leak-check=summary \
+              ./build/gman "$rib"
+            echo "::endgroup::"
+          done

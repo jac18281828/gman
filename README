@@ -40,8 +40,9 @@ Development container
 ---------------------
 
 A devcontainer carrying the same toolchain CI uses -- both gcc and clang, the
-sanitizers, yamlfmt and commitlint -- lives in .devcontainer/. Open the repo in
-VS Code and choose "Reopen in Container", or run every gate at once with:
+sanitizers, valgrind, yamlfmt and commitlint -- lives in .devcontainer/. Open
+the repo in VS Code and choose "Reopen in Container", or run every gate at
+once with:
 
     ./build.sh
 
