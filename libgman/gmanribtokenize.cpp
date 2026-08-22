@@ -104,8 +104,13 @@ GMANRIBTokenize::parseKeyword(std::istream &ribFile) {
   char c;
   
   buffer = "";
-  while (! ribFile.eof()) {
-    ribFile.get(c);
+  // Loop on get()'s own success, not a prior eof() check: reading the
+  // stream's last character does not set eofbit, only the *next* attempt
+  // does, and that attempt leaves c untouched on failure. Checking eof()
+  // before the read let a failed get() re-test the previous iteration's
+  // already-consumed character, duplicating the final character of any
+  // token that runs to end of input with no trailing delimiter.
+  while (ribFile.get(c)) {
     if (! isKeyToken(c)) {
       ribFile.putback(c);
       break;
@@ -295,6 +300,10 @@ GMANRIBTokenize::parseKeyword(std::istream &ribFile) {
     return GMANToken(GMANToken::RI_ELSE);
   } else if (! strcasecmp(tokenChars, "ifEnd")) {
     return GMANToken(GMANToken::RI_IF_END);
+  } else if (! strcasecmp(tokenChars, "pixelFilter")) {
+    return GMANToken(GMANToken::RI_PIXEL_FILTER);
+  } else if (! strcasecmp(tokenChars, "geometricApproximation")) {
+    return GMANToken(GMANToken::RI_GEOMETRIC_APPROXIMATION);
   } else {
     // A request GMAN does not recognize is not a parse error -- production
     // RIB from any real exporter routinely uses requests this front end
@@ -312,8 +321,9 @@ GMANRIBTokenize::parseString(std::istream &ribFile) {
   buffer = "";
   ribFile.get(c); // strip opening quote
 
-  while (! ribFile.eof()) {
-    ribFile.get(c);
+  // See parseKeyword: loop on get()'s success, not a prior eof() check, so
+  // an unterminated string at end of input can't replay its last character.
+  while (ribFile.get(c)) {
     if (c == '\"') {
       break;
     }
@@ -328,8 +338,9 @@ GMANRIBTokenize::parseNum(std::istream &ribFile) {
   char c;
   
   buffer = "";
-  while (! ribFile.eof()) {
-    ribFile.get(c);
+  // See parseKeyword: loop on get()'s success, not a prior eof() check, so
+  // a number that runs to end of input can't replay its last digit.
+  while (ribFile.get(c)) {
     if (! isNumToken(c)) {
       ribFile.putback(c);
       break;

@@ -183,6 +183,19 @@ that is not astronomically small** (`0.5`, not the `RI_EPSILON` default),
 e.g. `Clipping 0.5 50`. Not fixed at the source (`gmanmatrix4.cpp`/
 `gmanclipedge.cpp`); recorded as an open defect in `SPEC.md` §8.
 
+**Multiple `Display` requests.** GMAN renders through a single active
+display, not a real set. `RiDisplayV` (`gmanrendermanimpl.cpp`) honors
+RISpec's `+` name prefix at that limit: a name with no leading `+` replaces
+the active display; one with `+` adds to the set, and since GMAN cannot
+literally hold two, it keeps whichever of the current and incoming display
+can actually write output — the `"file"` type, since `"framebuffer"`
+(`gmanoutputx11.cpp`) is unimplemented. A scene that declares a file display
+and then, per convention, a `+`-prefixed framebuffer display
+(`tests/rib/corpus/menger.rib` does exactly this) writes its file instead of
+the framebuffer request silently discarding it. True multi-display
+rendering — writing more than one output in the same run — is not
+implemented.
+
 **Parses, never renders:**
 
 - *Stub `RiXxxV` bodies, pre-dating phase 2:* `GeneralPolygon`,
@@ -201,7 +214,9 @@ e.g. `Clipping 0.5 50`. Not fixed at the source (`gmanmatrix4.cpp`/
   `RelativeDetail`, `Skew`, `Matte`, `TrimCurve`, `ErrorHandler`,
   `ArchiveRecord`, `MakeTexture`, `MakeBump`, `MakeLatLongEnvironment`,
   `MakeCubeFaceEnvironment`, `MakeShadow`, `IfBegin`, `ElseIf`, `Else`,
-  `IfEnd`.
+  `IfEnd`, `PixelFilter` (phase 2's list missed this one outright — zero
+  hits in the tokenizer; `RiPixelFilter` is stored on `GMANOptions` and read
+  by nothing, sampling being out of scope, SPEC.md §4).
 - `ReadArchive` recurses the parser over the archive (relative to the
   including file, then as given) with cycle detection and a depth cap; its
   own content renders or not exactly like the top-level file's does.

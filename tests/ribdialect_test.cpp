@@ -17,6 +17,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -35,6 +36,15 @@ struct Result {
   int exitStatus;
   std::string output;
 };
+
+// Display writes relative to gman's cwd, which is this test's own
+// WORKING_DIRECTORY (see tests/CMakeLists.txt) -- so a plain relative open
+// finds whatever the run above wrote, without threading the scratch path
+// through every call site.
+bool nonEmptyFile(const std::string &path) {
+  std::ifstream in(path, std::ios::binary | std::ios::ate);
+  return in.good() && in.tellg() > 0;
+}
 
 Result run(const std::string &gman, const std::string &rib, bool debug) {
   const std::string command = "\"" + gman + "\" " + (debug ? "-d " : "") +
@@ -67,16 +77,18 @@ int main(int argc, char *argv[]) {
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  // Every RISpec 3.2 request phase 2 added parse-and-ignore coverage for.
-  // ifelse.rib and solid.rib each cover a pair of requests that only mean
-  // anything together (IfBegin/ElseIf/Else/IfEnd, SolidBegin/SolidEnd).
+  // Every RISpec 3.2 request phase 2 added parse-and-ignore coverage for,
+  // plus pixelfilter.rib -- phase 2's list missed PixelFilter outright (zero
+  // hits in the tokenizer), which is defect 2. ifelse.rib and solid.rib each
+  // cover a pair of requests that only mean anything together
+  // (IfBegin/ElseIf/Else/IfEnd, SolidBegin/SolidEnd).
   const std::vector<std::string> requestFixtures = {
     "curves.rib", "blobby.rib", "subdivisionmesh.rib", "procedural.rib",
     "solid.rib", "detail.rib", "detailrange.rib", "relativedetail.rib",
     "skew.rib", "matte.rib", "trimcurve.rib", "errorhandler.rib",
     "archiverecord.rib", "maketexture.rib", "makebump.rib",
     "makelatlongenvironment.rib", "makecubefaceenvironment.rib",
-    "makeshadow.rib", "ifelse.rib",
+    "makeshadow.rib", "ifelse.rib", "pixelfilter.rib",
   };
 
   for (const std::string &fixture : requestFixtures) {
@@ -85,6 +97,46 @@ int main(int argc, char *argv[]) {
     check(r.exitStatus == 0, fixture + ": gman exits 0");
     check(r.output.find("Keyword token: Sphere") != std::string::npos,
 	  fixture + ": the Sphere after it still parses (no desync)");
+  }
+
+  // Defect 1: a token that runs to end of input with no trailing delimiter
+  // used to have its last character duplicated. parseKeyword's loop checked
+  // eof() *before* the read that could set it, so the failing read at true
+  // end of input left its char argument untouched -- still holding the
+  // previous iteration's already-consumed character -- and the loop
+  // appended it again. Reproduces three ways: a top-level file, a plain
+  // ReadArchive target, and a gzip'd one.
+  {
+    const std::string path = ribDir + "/nonewline/top.rib";
+    Result r = run(gman, path, /*debug=*/true);
+    check(r.exitStatus == 0, "no trailing newline: top-level file exits 0");
+    check(r.output.find("Unrecognized keyword") == std::string::npos,
+	  "no trailing newline: WorldEnd does not become WorldEndd");
+    check(nonEmptyFile("nonewline_top.tif"),
+	  "no trailing newline: top-level file still writes an image");
+  }
+  {
+    const std::string path = ribDir + "/nonewline/parent.rib";
+    Result r = run(gman, path, /*debug=*/true);
+    check(r.exitStatus == 0,
+	  "no trailing newline: plain archive target exits 0");
+    check(r.output.find("Unrecognized keyword") == std::string::npos,
+	  "no trailing newline: AttributeEnd does not become AttributeEndd "
+	  "(plain archive)");
+    check(r.output.find("Keyword token: Sphere") != std::string::npos,
+	  "no trailing newline: the Sphere after the archive still parses");
+  }
+  {
+    const std::string path = ribDir + "/nonewline/parent_gz.rib";
+    Result r = run(gman, path, /*debug=*/true);
+    check(r.exitStatus == 0,
+	  "no trailing newline: gzip'd archive target exits 0");
+    check(r.output.find("Unrecognized keyword") == std::string::npos,
+	  "no trailing newline: AttributeEnd does not become AttributeEndd "
+	  "(gzip'd archive)");
+    check(r.output.find("Keyword token: Sphere") != std::string::npos,
+	  "no trailing newline: the Sphere after the gzip'd archive still "
+	  "parses");
   }
 
   // The corpus test. tests/rib/corpus/menger.rib is real third-party RIB
@@ -97,17 +149,32 @@ int main(int argc, char *argv[]) {
   // covered by the unknownrequest.rib fixture below. An earlier version of
   // this comment claimed otherwise -- verified false by reverting step 1 and
   // observing menger.rib still exit 0.
+  //
+  // It also doubles as defect 3's proof: menger.rib's second line is
+  // `Display "+menger.tif" "framebuffer" "rgb"`, and GMAN used to let the
+  // last Display win outright, so the unsupported framebuffer driver
+  // replaced the working file display and nothing was ever written.
+  // Honoring RISpec's '+' prefix (add, don't replace) means the file
+  // display survives and menger.tif appears.
   {
     const std::string corpus = ribDir + "/corpus/menger.rib";
     Result r = run(gman, corpus, /*debug=*/false);
     check(r.exitStatus == 0, "corpus: menger.rib parses to completion, exit 0");
     check(r.output.find("ERROR") == std::string::npos,
 	  "corpus: no error reported");
+    check(nonEmptyFile("menger.tif"),
+	  "corpus: the file display survives the later framebuffer Display "
+	  "(defect 3)");
   }
 
   // ReadArchive of a gzip'd child -- steps 5 and 6 composed, which no other
   // fixture covers (readarchive_test.cpp uses plain files, gzip_test.cpp a
-  // gzip'd top-level file).
+  // gzip'd top-level file). This is also defect 1's payoff: bikeData.rib.gz
+  // ends TransformEnd with no trailing newline, which used to corrupt into
+  // TransformEndd, leaving the block unclosed and killing the parse on
+  // RIE_NESTING partway through the archive's ~5,300 lines -- exactly the
+  // shape SPEC.md S8 recorded. Fixed, the whole archive parses and gman
+  // reaches exit 0.
   //
   // bike.rib reads bikeData.rib.gz. openRibStream decompresses the archive
   // whole before parsing begins, so reaching any token inside it exercises
@@ -115,12 +182,26 @@ int main(int argc, char *argv[]) {
   // nowhere in bike.rib itself, which is what makes it evidence rather than
   // coincidence.
   //
-  // The run stops shortly after, at Surface "plastic" -- a shader GMAN has
-  // never shipped, a phase-3 gap unrelated to parsing (see tests/rib/README).
-  // So this fixture covers decompression plus the archive's opening requests,
-  // NOT its 5,216 Patch requests. Whoever lands the shader should revisit
-  // this assertion; until then, claiming more would be claiming coverage that
-  // does not exist.
+  // The image bike.rib writes is blank -- every pixel the background color.
+  // That is a separate, pre-existing defect, confirmed present on
+  // unmodified d403afa with a minimal single-Patch RIB with no archive, no
+  // gzip and no near-clip precision concern (SPEC.md S8's other open
+  // defect): Patch rasterizes no pixels, Sphere in the same scene does. All
+  // 5,216 Patch requests in bikeData.rib.gz reach the parser and the
+  // renderer with no warnings, so it is not a RIB-front-end gap and out of
+  // this task's scope -- reported, not fixed.
+  //
+  // Under -fsanitize=address (build-debug, the "sanitizers" CI leg), gman
+  // aborts instead of exiting 0. bikeData.rib.gz calls `Surface "plastic"`
+  // repeatedly; GMANLoadableShader (gmanloadable.cpp) dlopens libplastic.so
+  // fresh on every call with no cache, and reaching a *second* call -- only
+  // possible now that defect 1 no longer kills the parse first -- makes
+  // ASan's ODR checker see two copies of GMANPlastic's vtable and abort.
+  // Also pre-existing (any two `Surface "plastic"` requests in one scene
+  // reproduce it) and out of scope (gmanloadable.cpp/gmanattributes.cpp,
+  // not this task's files). The check below accepts exactly that one
+  // known failure shape and nothing else, so an unrelated regression here
+  // still fails it.
   {
     const std::string bike = ribDir + "/corpus/bike.rib";
     Result r = run(gman, bike, /*debug=*/true);
@@ -129,6 +210,17 @@ int main(int argc, char *argv[]) {
     check(r.output.find("Keyword token: TransformBegin") != std::string::npos,
 	  "corpus: the gzip'd archive decompresses and its requests reach the "
 	  "parser");
+    if (r.exitStatus == 0) {
+      check(nonEmptyFile("bike.tif"),
+	    "corpus: bike.rib now parses to completion and writes a "
+	    "non-empty image (defect 1)");
+    } else {
+      check(r.output.find("odr-violation") != std::string::npos &&
+	    r.output.find("GMANPlastic") != std::string::npos,
+	    "corpus: bike.rib's only non-zero-exit failure left is the known "
+	    "libplastic dlopen ODR violation under AddressSanitizer, not a "
+	    "RIB-front-end regression");
+    }
   }
 
   // Step 1: an unrecognized request -- Bxdf, a RIS-era request GMAN

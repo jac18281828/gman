@@ -163,6 +163,7 @@ class GMAN_EXPORT  GMANToken {
     RI_ELSE_IF,
     RI_ELSE,
     RI_IF_END,
+    RI_PIXEL_FILTER,
 
  } TokenType;
 

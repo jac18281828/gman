@@ -301,6 +301,7 @@ private:
   RtVoid parseElseIf(RtVoid);
   RtVoid parseElse(RtVoid);
   RtVoid parseIfEnd(RtVoid);
+  RtVoid parsePixelFilter(RtVoid);
 //  RtVoid parse(RtVoid);
 
 protected:

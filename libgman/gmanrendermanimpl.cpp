@@ -462,8 +462,30 @@ RtVoid  GMANRenderManImpl::RiDisplayV(char *name, RtToken type, RtToken mode,
 				  RtInt n, RtToken tokens[], RtPointer parms[])
 {
   allowed(cmdDisplay);
+
+  // RISpec: a name with no leading '+' replaces the display set; one
+  // with a leading '+' adds to it. GMAN renders through a single active
+  // display (see AGENTS.md's RIB support table) rather than a real set,
+  // so "add" means "keep whichever of the two can actually write
+  // output" instead of accumulating displays.
+  std::string nm(name);
+  bool add = !nm.empty() && nm[0] == '+';
+  if (add) {
+    nm.erase(0, 1);
+  }
+
+  bool haveDisplay = !getOptions().getDisplay().type.empty();
+  bool replaces = !add || !haveDisplay;
+  bool upgrades = add && haveDisplay &&
+                  getOptions().getDisplay().type != "file" &&
+                  std::string(type) == "file";
+
+  if (!replaces && !upgrades) {
+    return; // keep the currently active display
+  }
+
   GMANParameterList p(dictionary, n, tokens, parms);
-  getOptions().setDisplay (name, type, mode, p);
+  getOptions().setDisplay (nm, type, mode, p);
 }
 
 // ******************************************************************
