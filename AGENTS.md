@@ -148,29 +148,33 @@ parse-and-ignore policy), and requests GMAN has never heard of.
 
 **Renders** (reaches `GMANObjectManager`/`GMANWorldManager` or otherwise
 changes state the renderer reads): `Sphere`, `Cone`, `Cylinder`,
-`Hyperboloid`, `Paraboloid`, `Torus`, `Polygon`, `Patch`; `Translate`,
-`Rotate`, `Scale`, `Transform`, `ConcatTransform`, `Identity`, `Color`,
-`Opacity`, `Sides`, `Orientation`, `ReverseOrientation`; `Display`, `Format`,
-`Projection`, `FrameAspectRatio`, `ScreenWindow`, `CropWindow`, `Clipping`,
-`DepthOfField`, `Shutter`, `PixelSamples`, `Exposure`, `Quantize`,
-`Basis`; `WorldBegin`/`End`, `FrameBegin`/`End`, `AttributeBegin`/`End`,
-`TransformBegin`/`End`, `SolidBegin`/`End`, `ObjectBegin`/`End`,
-`ObjectInstance`, `MotionBegin`/`End`, `Illuminate`, `Declare`.
-*Rendering here means the geometry or state reaches storage, not that the
-image comes out correctly* — see SPEC.md §2's four severed links (transform
-application, face normals, backface culling, the perspective matrix), all
-still open, all Phase 1/3.
+`Hyperboloid`, `Paraboloid`, `Torus`, `Disk`, `Polygon`, `Patch`;
+`Translate`, `Rotate`, `Scale`, `Transform`, `ConcatTransform`, `Identity`,
+`Color`, `Opacity`, `Sides`, `Orientation`, `ReverseOrientation`, `Surface`,
+`LightSource`, `Illuminate`; `Display`, `Format`, `Projection`,
+`FrameAspectRatio`, `ScreenWindow`, `CropWindow`, `Clipping`, `DepthOfField`,
+`Shutter`, `PixelSamples`, `Exposure`, `Quantize`, `Basis`; `WorldBegin`/
+`End`, `FrameBegin`/`End`, `AttributeBegin`/`End`, `TransformBegin`/`End`,
+`SolidBegin`/`End`, `ObjectBegin`/`End`, `ObjectInstance`, `MotionBegin`/
+`End`, `Declare`.
+*Rendering here means the geometry or state reaches storage, and — as of
+Phase 3, for the primitives and requests above — the image comes out
+correctly*: SPEC.md §2's four severed links (transform application, face
+normals, backface culling, the perspective matrix) are closed (Phase 1),
+and shading (normals, lights, executing shaders) is closed (Phase 3). See
+the "Shading" section above for what a shader can and cannot do yet
+(no texturing, no anti-aliasing).
 
 **Parses, never renders:**
 
 - *Stub `RiXxxV` bodies, pre-dating phase 2:* `GeneralPolygon`,
-  `PointsPolygons`, `PointsGeneralPolygons`, `PatchMesh`, `NuPatch`, `Disk`,
-  `Points`, `LightSource`, `AreaLightSource`, `Attribute`, `Deformation`,
-  `CoordSysTransform`, `TransformPoints`, `Option`, `Hider`, `Surface`,
+  `PointsPolygons`, `PointsGeneralPolygons`, `PatchMesh`, `NuPatch`,
+  `Points`, `AreaLightSource`, `Attribute`, `Deformation`,
+  `CoordSysTransform`, `TransformPoints`, `Option`, `Hider`,
   `Atmosphere`, `Interior`, `Exterior`, `Displacement`, `Imager`,
   `ShadingRate`, `ShadingInterpolation`, `GeometricApproximation`. All parse
-  correctly; none is wired to draw or shade (Phase 3, "All shading" per
-  SPEC.md §2).
+  correctly; none is wired to draw or shade. `AreaLightSource` stays a stub
+  deliberately — area lights are out of Phase 3's scope (SPEC.md §4).
 - *Phase 2's own parse-and-ignore additions* (settled decision, not a stub —
   drawing these is explicitly Scope C / SPEC.md §4, not this phase):
   `Curves`, `Blobby`, `SubdivisionMesh`, `Procedural`, `SolidBegin`/`End`
@@ -198,6 +202,67 @@ RIB (RISpec's own compact token encoding, distinct from gzip) is not
 implemented; GMAN never needed it for the corpus this phase tested against.
 GMAN never writes binary RIB, and never will (`libgmanrib/gmanascii.cpp`
 writes ASCII only).
+
+## Shading
+
+Phase 3 gives the plugin ABI a real caller. Everything below is camera
+space — see "Coordinate spaces" above; a shader that mixes spaces produces
+a plausible-looking wrong picture, not a crash.
+
+**`GMANSurfaceEnv` (`include/gmanshaderenvironment.h`)** is the interface a
+surface shader is written against, and the interface a future
+shading-language VM would target — a C++ shader and an SL-compiled one need
+the same inputs and the same builtins. Fields: `Cs`/`Os` (surface color and
+opacity, from `RiColor`/`RiOpacity`), `P` (surface position), `N`/`Ng`
+(shading and geometric normal — Phase 3 sets `Ng = N`, since without
+displacement the two never diverge for the primitives this phase covers),
+`I` (incident direction, surface point normalized — the eye sits at the
+camera-space origin), `u`/`v`/`s`/`t` (the tessellation parameters),
+`lights` (every `GMANLight*` active in the declaring attribute scope,
+resolved from `RiIlluminate`'s handle list). Methods: `noise`/`pnoise`/
+`cellnoise` (the float-returning overloads; see `TODO`'s **ORPHANED**
+entries for what is not wrapped), `reflect`/`refract`/`fresnel`/
+`faceforward`/`smoothstep`, `spline<T>(basis, value, n, fvals)` (`basis` one
+of `catmull-rom` (default), `bezier`, `bspline`, `hermite`, `linear`), and
+the illuminance-loop helpers `ambient()`/`diffuse(N)`/`specular(N,V,
+roughness)` that sum `lights`' contributions — the C++-shader equivalent of
+an RSL `illuminance()` loop.
+
+**Writing a shader.** Subclass `GMANSurfaceShader` (`gmansurfaceshader.h`),
+implement `computeCi`/`computeOi`, read your own parameters off the
+protected `GMANParameterList pl` your `GMANShader` base already carries
+(`gmanshaderparams.h`'s `getFloatParam`/`getColorParam` handle the "this
+parameter list may not carry this token" case — `GMANParameterList::
+getPointer` throws rather than returning null for an absent token, so a
+shader with optional parameters has to catch that, not just check for
+null). `shaders/gmanmatte.cpp`, `gmanplastic.cpp` and `gmanmetal.cpp` are
+the reference implementations. Export the two `extern "C"` symbols
+`GMANGetLoadableInfo` and `GMANLoadShader` (a `GMANShader*`); build it as a
+`MODULE` library via `gman_add_plugin` in `CMakeLists.txt`, named `lib
+<name>.so` — `RiSurface "<name>"` dlopens exactly that. `RiSurface` unset
+falls back to `matte`, per the RISpec's own default.
+
+**Lights.** `GMANLightSourceMgr` (`gmanlightsourcemgr.h`) owns every light
+`RiLightSourceV` declared, keyed by the `RtLightHandle` it returned, reached
+through the process-wide `gmanLightSourceMgr()` accessor (one render per
+process here, like `gman`'s own single `GMANRenderManImpl`; a library
+embedding gman to serve multiple renders in one process would need this
+revisited). Three built-in types, constructed directly by name in
+`RiLightSourceV` rather than as loadable plugins (the RISpec does not
+require a plugin ABI for light *shaders* the way it does for surface
+shaders, and three built-ins is simpler than a fourth loader path for this
+phase's scope):
+
+| Type | Parameters | Behavior |
+|---|---|---|
+| `ambientlight` | `intensity`, `lightcolor` | Constant `Cl`, no direction — `env.ambient()` sums these; an illuminance loop over `N.L` skips them. |
+| `distantlight` | `intensity`, `lightcolor`, `from`, `to` | Direction only (`to - from`, camera space at declaration time); `L` is the same everywhere. |
+| `pointlight` | `intensity`, `lightcolor`, `from` | Position (camera space at declaration time); `L = position - P`, inverse-square falloff baked into `Cl` by `GMANLight::sample` so a shader's own math stays a plain `N.L`. |
+
+A light is active in its declaring attribute scope the instant
+`RiLightSourceV` returns, per the RISpec — `RiLightSourceV` calls
+`GMANAttributes::setIlluminate(handle, RI_TRUE)` itself. `RiIlluminate` is
+for turning a light back off, or on again in a nested scope.
 
 ## House conventions
 
