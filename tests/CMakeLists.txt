@@ -153,3 +153,21 @@ add_test(NAME lighting
   WORKING_DIRECTORY "${GMAN_LIGHTING_WORKDIR}")
 set_tests_properties(lighting PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Review finding: no test rendered a genuinely asymmetric partial sphere's
+# image (transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere). This
+# is the missing end-to-end proof of GMANSphere::getLocation's zmin/zmax
+# fix, and of the Clipping workaround the near-clip precision defect
+# requires for this shape.
+add_executable(gman_partialsphere partialsphere_test.cpp)
+target_link_libraries(gman_partialsphere PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_PARTIALSPHERE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/partialsphere-run")
+file(MAKE_DIRECTORY "${GMAN_PARTIALSPHERE_WORKDIR}")
+
+add_test(NAME partialsphere
+  COMMAND gman_partialsphere $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_PARTIALSPHERE_WORKDIR}")
+set_tests_properties(partialsphere PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

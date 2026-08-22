@@ -1,0 +1,21 @@
+## Review finding: no existing test rendered a genuinely asymmetric partial
+## sphere's image. transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere
+## (zmin = -radius, zmax = radius) and proves nothing about the zmin/zmax
+## parameterization phase 3 fixed in GMANSphere::getLocation. This one --
+## zmin = -0.5, zmax = radius = 1 -- is the exact case the phase-3 prompt
+## named, and asymmetric: a cap is missing, a hemisphere is not.
+##
+## Explicit Clipping, not the RI_EPSILON-near default: this shape hits a
+## general near-clip precision defect (see AGENTS.md's "Near-clip precision
+## at the default Clipping"), same as a camera-facing Disk.
+Display "partial_sphere.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+	LightSource "ambientlight" 1 "intensity" [0.6]
+	Sides 1
+	Surface "matte" "Ka" [1] "Kd" [0]
+	Sphere 1 -0.5 1 360
+WorldEnd
