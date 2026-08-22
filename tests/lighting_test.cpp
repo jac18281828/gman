@@ -10,6 +10,13 @@
  * scene of the same geometry does not; tests/rib/lights.rib (the goal
  * scene) matches a checked-in golden image within a per-channel tolerance.
  *
+ * Review finding: testMetalKaResponse and testMetalSpecularHighlight --
+ * shaders/gmanmetal.cpp was built, installed and never rendered by any
+ * test. A metal surface has no diffuse term (unlike matte/plastic), so an
+ * ambient-only light must shade it perfectly flat and scale linearly with
+ * Ka, and a single directional light must produce a small, concentrated
+ * specular highlight rather than a diffuse-lit hemisphere.
+ *
  * Revert checks (verified by actually reverting, not asserted):
  *   - Revert step 2 (createParametric's vertex-normal wiring): every
  *     vertex keeps the default zero normal, N.L is zero everywhere, and
@@ -18,6 +25,15 @@
  *   - Revert step 6 (GMANZBufferRenderer::getVertexInfo back to drand48):
  *     testGoldenImage fails immediately -- confetti has no relationship to
  *     the checked-in reference.
+ *   - Break gmanmetal.cpp's Ka term (e.g. drop the `lit.scale(ka)` call):
+ *     testMetalKaResponse's brightness-ratio assertion fails -- both Ka
+ *     values would render identically instead of scaling.
+ *   - Break gmanmetal.cpp's Ks/specular term (e.g. drop the specular
+ *     summand): testMetalSpecularHighlight's "a lit pixel exists" check
+ *     fails -- the sphere renders solid black.
+ *   - Add a diffuse term to gmanmetal.cpp (e.g. `lit += se.diffuse(nf)`):
+ *     testMetalSpecularHighlight's lit-fraction assertion fails -- far
+ *     more than a tight specular highlight would light up.
  */
 
 #include <sys/wait.h>
@@ -353,6 +369,187 @@ void testGoldenImage(const std::string &gman, const std::string &ribDir) {
             " differed)");
 }
 
+// Silhouette pixels of a rendered sphere (non-background), and their mean
+// R-channel brightness -- shared by the two metal tests below, which both
+// need to isolate the sphere from the (white) background.
+struct SilhouetteStats {
+  bool found = false;
+  double meanR = 0.0;
+  double stddevR = 0.0;
+  int maxR = -1;
+  long litCount = 0;   // R above a low threshold
+  long totalCount = 0;
+};
+
+SilhouetteStats silhouetteStats(const Image &img, int litThreshold) {
+  SilhouetteStats stats;
+  if (!img.ok) {
+    return stats;
+  }
+  const uint32_t bg = img.at(0, 0);
+  std::vector<int> values;
+  for (uint32_t y = 0; y < img.height; ++y) {
+    for (uint32_t x = 0; x < img.width; ++x) {
+      uint32_t p = img.at(x, y);
+      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
+          std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+          std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8) {
+        int v = (int) TIFFGetR(p);
+        values.push_back(v);
+        stats.maxR = std::max(stats.maxR, v);
+        if (v > litThreshold) {
+          ++stats.litCount;
+        }
+      }
+    }
+  }
+  stats.totalCount = (long) values.size();
+  stats.found = !values.empty();
+  if (!stats.found) {
+    return stats;
+  }
+  double sum = 0.0;
+  for (int v : values) {
+    sum += v;
+  }
+  stats.meanR = sum / (double) values.size();
+  double sqSum = 0.0;
+  for (int v : values) {
+    double d = v - stats.meanR;
+    sqSum += d * d;
+  }
+  stats.stddevR = std::sqrt(sqSum / (double) values.size());
+  return stats;
+}
+
+// ---- metal shader, finding: never exercised by any test ----
+// A metal surface has no diffuse term (unlike matte/plastic): Ci is
+// Os*Cs*(Ka*ambient() + specularcolor*Ks*specular(Nf,Vf,roughness)).
+// Under an ambient-only light, that collapses to a direction-independent
+// constant -- a metal sphere shades perfectly flat, scaling linearly with
+// Ka. This is a real test of the shader's own arithmetic, not a
+// restatement of it: it renders through the full pipeline (RiSurface,
+// dlopen, GMANSurfaceEnv, the tessellator's per-vertex shading) and
+// checks the result against a value computed independently of
+// gmanmetal.cpp's own code.
+void testMetalKaResponse(const std::string &gman) {
+  auto renderKa = [&](double ka, const std::string &name) -> SilhouetteStats {
+    const std::string rib =
+        "Display \"" + name + ".tif\" \"file\" \"rgba\"\n"
+        "Format 100 100 1\n"
+        "Projection \"perspective\" \"fov\" [45]\n"
+        "Clipping 0.5 50\n"
+        "Translate 0 0 5\n"
+        "WorldBegin\n"
+        "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
+        "Surface \"metal\" \"Ka\" [" + std::to_string(ka) + "] \"Ks\" [0] "
+        "\"roughness\" [0.1]\n"
+        "Sphere 1 -1 1 360\n"
+        "WorldEnd\n";
+    writeFile(name + ".rib", rib);
+    check(runGman(gman, name + ".rib") == 0, name + ": scene renders");
+    return silhouetteStats(readTIFF(name + ".tif"), 0);
+  };
+
+  SilhouetteStats low = renderKa(0.3, "metal_ka_low");
+  SilhouetteStats high = renderKa(0.6, "metal_ka_high");
+
+  check(low.found && high.found,
+        "metal Ka: both ambient-only renders found a silhouette");
+  if (!low.found || !high.found) {
+    return;
+  }
+
+  // No diffuse or specular term is active here (Ks=0, no directional
+  // light), so an ambient-only metal sphere has no direction-dependent
+  // shading at all -- every silhouette pixel should read the same value.
+  check(low.stddevR < 4.0 && high.stddevR < 4.0,
+        "metal Ka: ambient-only shading is flat across the silhouette "
+        "(stddev " + std::to_string(low.stddevR) + ", " +
+        std::to_string(high.stddevR) + ")");
+
+  // Ci = Os*Cs*Ka*ambient() = Ka * 0.5 (intensity), independent of
+  // gmanmetal.cpp's own code -- computed here from the RISpec's own
+  // formula for a metal shader's ambient term.
+  double expectedLow = 0.3 * 0.5 * 255.0;
+  double expectedHigh = 0.6 * 0.5 * 255.0;
+  const double tol = 20.0;  // quantization + tessellation rounding
+  check(std::fabs(low.meanR - expectedLow) < tol,
+        "metal Ka=0.3: mean brightness matches Ka*ambient (expected ~" +
+        std::to_string(expectedLow) + ", got " + std::to_string(low.meanR) +
+        ")");
+  check(std::fabs(high.meanR - expectedHigh) < tol,
+        "metal Ka=0.6: mean brightness matches Ka*ambient (expected ~" +
+        std::to_string(expectedHigh) + ", got " +
+        std::to_string(high.meanR) + ")");
+  check(high.meanR > low.meanR * 1.5,
+        "metal Ka: doubling Ka roughly doubles brightness (Ka=0.3 -> " +
+        std::to_string(low.meanR) + ", Ka=0.6 -> " +
+        std::to_string(high.meanR) + ")");
+}
+
+// A metal sphere lit by one directional light, Ka=0: the whole picture
+// comes from the specular term alone. Unlike a diffuse-lit sphere (which
+// lights up across roughly the half facing the light), a specular
+// highlight is small and concentrated -- and a rougher surface spreads it
+// wider. Both properties would break if gmanmetal.cpp dropped Ks, ignored
+// roughness, or (wrongly) added a diffuse contribution.
+void testMetalSpecularHighlight(const std::string &gman) {
+  auto renderSpecular = [&](double roughness,
+                             const std::string &name) -> SilhouetteStats {
+    const std::string rib =
+        "Display \"" + name + ".tif\" \"file\" \"rgba\"\n"
+        "Format 200 200 1\n"
+        "Projection \"perspective\" \"fov\" [45]\n"
+        "Clipping 0.5 50\n"
+        "Translate 0 0 5\n"
+        "WorldBegin\n"
+        "LightSource \"distantlight\" 1 \"intensity\" [1] \"from\" [5 0 0] "
+        "\"to\" [0 0 0]\n"
+        "Surface \"metal\" \"Ka\" [0] \"Ks\" [1] \"roughness\" [" +
+        std::to_string(roughness) + "] \"specularcolor\" [1 1 1]\n"
+        "Sphere 1 -1 1 360\n"
+        "WorldEnd\n";
+    writeFile(name + ".rib", rib);
+    check(runGman(gman, name + ".rib") == 0, name + ": scene renders");
+    return silhouetteStats(readTIFF(name + ".tif"), 15);
+  };
+
+  SilhouetteStats tight = renderSpecular(0.05, "metal_spec_tight");
+  SilhouetteStats broad = renderSpecular(0.5, "metal_spec_broad");
+
+  check(tight.found && broad.found,
+        "metal specular: both directional-light renders found a "
+        "silhouette");
+  if (!tight.found || !broad.found) {
+    return;
+  }
+
+  check(tight.maxR > 150,
+        "metal specular: a strongly lit highlight exists (Ks and "
+        "specular() both contributed; brightest sample " +
+        std::to_string(tight.maxR) + "/255)");
+
+  // No diffuse term: a Lambertian half-sphere would light up roughly half
+  // the silhouette. A specular highlight, even a broad one, is a small
+  // fraction of it.
+  double tightFraction = (double) tight.litCount / (double) tight.totalCount;
+  double broadFraction = (double) broad.litCount / (double) broad.totalCount;
+  check(tightFraction < 0.25,
+        "metal specular: a tight highlight (roughness=0.05) covers well "
+        "under half the silhouette, not a diffuse-lit hemisphere (" +
+        std::to_string(tightFraction) + ")");
+
+  // Roughness response: a rougher surface (larger roughness -> smaller
+  // Blinn-Phong exponent) spreads the same highlight over more of the
+  // silhouette.
+  check(broadFraction > tightFraction,
+        "metal specular: roughness=0.5's highlight covers more of the "
+        "silhouette than roughness=0.05's (" +
+        std::to_string(broadFraction) + " vs " +
+        std::to_string(tightFraction) + ")");
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -366,6 +563,8 @@ int main(int argc, char *argv[]) {
   testTerminator(gman);
   testBackfaceCulling(gman);
   testGoldenImage(gman, ribDir);
+  testMetalKaResponse(gman);
+  testMetalSpecularHighlight(gman);
 
   if (failures != 0) {
     std::printf("%d assertion(s) failed\n", failures);
