@@ -30,10 +30,47 @@
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
 
+#include <cstdint>
+
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanlog.h"
 #include "gmanlightsourcemgr.h" /* Declaration Header */
+
+/*
+ * GMANLight
+ *
+ */
+
+RtVoid GMANLight::sample(const GMANPoint &p, GMANVector &l,
+			  GMANColor &lightCl) const
+{
+  switch (type) {
+  case GMAN_LIGHT_AMBIENT:
+    // No direction: illuminance loops (which need an L to dot against N)
+    // skip ambient lights entirely rather than calling this.
+    l = GMANVector(0.0, 0.0, 0.0);
+    lightCl = cl;
+    break;
+
+  case GMAN_LIGHT_DISTANT:
+    // direction is light -> scene; a surface receives light from the
+    // opposite way, per the RiSL solar()/illuminate() convention.
+    l = GMANVector(-direction.getX(), -direction.getY(), -direction.getZ());
+    lightCl = cl;
+    break;
+
+  case GMAN_LIGHT_POINT: {
+    l = GMANVector(position, p);
+    l = GMANVector(-l.getX(), -l.getY(), -l.getZ());  // p -> position
+    RtFloat dist2 = l.getX()*l.getX() + l.getY()*l.getY() + l.getZ()*l.getZ();
+    RtFloat falloff = (dist2 > RI_EPSILON) ? (1.0 / dist2) : 1.0;
+    lightCl = GMANColor(cl.getRed() * falloff, cl.getGreen() * falloff,
+			 cl.getBlue() * falloff);
+    break;
+  }
+  }
+}
 
 /*
  * RenderMan API GMANLightSourceMgr
@@ -41,11 +78,39 @@
  */
 
 // default constructor
-GMANLightSourceMgr::GMANLightSourceMgr() { };
+GMANLightSourceMgr::GMANLightSourceMgr() : nextHandle(1) { };
 
 
-// default destructor 
-GMANLightSourceMgr::~GMANLightSourceMgr() { };
+// default destructor
+GMANLightSourceMgr::~GMANLightSourceMgr() {
+  for (std::map<RtLightHandle, GMANLight *>::iterator it = lights.begin();
+       it != lights.end(); ++it) {
+    delete it->second;
+  }
+};
+
+RtLightHandle GMANLightSourceMgr::add(GMANLight *light) {
+  // RtLightHandle is RtPointer; go through uintptr_t rather than casting
+  // an int straight to a pointer (the same integer<->pointer-width
+  // mismatch class SPEC.md records for RiObjectInstance/RiIlluminate).
+  RtLightHandle h = (RtLightHandle)(std::uintptr_t) nextHandle;
+  lights[h] = light;
+  ++nextHandle;
+  return h;
+}
+
+const GMANLight *GMANLightSourceMgr::get(RtLightHandle h) const {
+  std::map<RtLightHandle, GMANLight *>::const_iterator it = lights.find(h);
+  if (it == lights.end()) {
+    return NULL;
+  }
+  return it->second;
+}
+
+GMANLightSourceMgr &gmanLightSourceMgr(RtVoid) {
+  static GMANLightSourceMgr mgr;
+  return mgr;
+}
 
 
 

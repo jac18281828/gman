@@ -32,6 +32,7 @@
 #include <string>
 #include "ri.h"
 #include "gmanlog.h"
+#include "gmancolor.h"
 
 #include "gmanshader.h"
 #include "gmanlightsourceshader.h"
@@ -118,6 +119,8 @@ public:
   /* SHADING ATTRIBUTES */
   RtVoid setColor (RtColor c);
   RtVoid setOpacity (RtColor o);
+  GMANColor getColor () const { return GMANColor(color[0], color[1], color[2]); };
+  GMANColor getOpacity () const { return GMANColor(opacity[0], opacity[1], opacity[2]); };
 
   RtVoid setTextureCoordinates (RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2,
 				RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4);
@@ -126,6 +129,7 @@ public:
   // RiLightSource
   // RtLightHandle setAreaLight (const string & name, GMANParameterList &pl);
   RtVoid setIlluminate (RtLightHandle lh, RtBoolean onoff);
+  const GMANLightList &getLightList () const { return lightList; };
 
   /* SHADERS */
   RtVoid setSurface (const std::string & name, GMANParameterList &pl,

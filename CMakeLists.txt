@@ -117,6 +117,7 @@ add_library(gman_core SHARED
   libgman/gmanribtokenize.cpp
   libgman/gmansegment.cpp
   libgman/gmanshader.cpp
+  libgman/gmanshaderenvironment.cpp
   libgman/gmanslapi.cpp
   libgman/gmansolidobject.cpp
   libgman/gmansurfaceshader.cpp
@@ -220,6 +221,12 @@ endif()
 gman_add_plugin(gman_matte shaders/gmanmatte.cpp)
 set_target_properties(gman_matte PROPERTIES OUTPUT_NAME "matte")
 
+gman_add_plugin(gman_plastic shaders/gmanplastic.cpp)
+set_target_properties(gman_plastic PROPERTIES OUTPUT_NAME "plastic")
+
+gman_add_plugin(gman_metal shaders/gmanmetal.cpp)
+set_target_properties(gman_metal PROPERTIES OUTPUT_NAME "metal")
+
 # ---------------------------------------------------------------------------
 # gman — the driver
 # ---------------------------------------------------------------------------
@@ -233,13 +240,13 @@ set_target_properties(gman gman_core gman_rib PROPERTIES
   BUILD_RPATH "${CMAKE_BINARY_DIR}"
   INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
 
-add_dependencies(gman gman_zbuffer gman_matte)
+add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal)
 
 # ---------------------------------------------------------------------------
 # Install
 # ---------------------------------------------------------------------------
 
-install(TARGETS gman gman_core gman_rib gman_zbuffer gman_matte
+install(TARGETS gman gman_core gman_rib gman_zbuffer gman_matte gman_plastic gman_metal
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"

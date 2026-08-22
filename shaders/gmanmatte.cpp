@@ -28,12 +28,22 @@
   FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
 
-#include <iostream>
-
 #include "gmanloadable.h"
 #include "gmansurfaceshader.h"
+#include "gmanshaderparams.h"
 
-
+/*
+ * surface matte(float Ka = 1, Kd = 1)
+ * {
+ *   normal Nf = faceforward(normalize(N), I);
+ *   Oi = Os;
+ *   Ci = Os * Cs * (Ka*ambient() + Kd*diffuse(Nf));
+ * }
+ *
+ * The RISpec's own default surface shader; also this renderer's fallback
+ * when RiSurface was never called (GMANAttributes::setSurface's fallback,
+ * step 6).
+ */
 class GMANMatte : public GMANSurfaceShader
 {
 public:
@@ -50,24 +60,36 @@ public:
 RtVoid GMANMatte::illuminance (RtInt /*i*/, GMANVector /*L*/,
 			       GMANColor /*Cl*/, GMANColor /*Ol*/)
 {
-  // FIXME
-  std::cerr << "GMANMatte::illuminance" << std::endl;
+  // Unused: computeCi below sums lights itself via env.ambient()/
+  // diffuse(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor &GMANMatte::computeCi(GMANSurfaceEnv &/*se*/)
+const GMANColor &GMANMatte::computeCi(GMANSurfaceEnv &se)
 {
-  // FIXME
-  std::cerr << "computeCi" << std::endl;
-  static const GMANColor black;
-  return black;
+  static GMANColor ci;
+
+  RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
+  RtFloat kd = gmanshaders::getFloatParam(pl, RI_KD, 1.0);
+
+  GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
+
+  GMANColor lit = se.ambient();
+  lit.scale(ka);
+  GMANColor diff = se.diffuse(nf);
+  diff.scale(kd);
+  lit += diff;
+
+  ci = GMANColor(se.Cs.getRed() * se.Os.getRed() * lit.getRed(),
+		 se.Cs.getGreen() * se.Os.getGreen() * lit.getGreen(),
+		 se.Cs.getBlue() * se.Os.getBlue() * lit.getBlue());
+  return ci;
 }
 
-const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &/*se*/)
+const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &se)
 {
-  // FIXME
-  std::cerr << "computeOi" << std::endl;
-  static const GMANColor black;
-  return black;
+  static GMANColor oi;
+  oi = se.Os;
+  return oi;
 }
 
 static GMANLoadableObjectInfo loadableInfo = {

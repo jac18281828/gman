@@ -513,10 +513,116 @@ RtVoid  GMANRenderManImpl::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat 
   allowed(cmdTextureCoordinates);
   getAttributes().setTextureCoordinates(s1, t1, s2, t2, s3, t3, s4, t4);
 }
-RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken /*name*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
+namespace {
+
+// GMANParameterList::getPointer throws GMANError(RIE_CONSISTENCY,
+// TOKEN_NOT_FOUND) for a token this parameter list simply doesn't carry --
+// it never returns NULL for "absent," only for a token nobody declared at
+// all (see SPEC.md's account of the same throw against RI_FOV). Every
+// light parameter here is optional, so probing for one is routine, not
+// exceptional; this is the one place that distinction has to be made by
+// hand.
+RtFloat *tryGetPointer(GMANDictionary &dictionary, GMANParameterList &pl,
+			RtToken token) {
+  try {
+    return (RtFloat *) pl.getPointer(dictionary.getTokenId(token));
+  } catch (GMANError &) {
+    return NULL;
+  }
+}
+
+// "intensity" (RtFloat) and "lightcolor" (RtColor), the two parameters the
+// three built-in light types share.
+RtVoid readCommonLightParams(GMANDictionary &dictionary,
+			      GMANParameterList &pl,
+			      RtFloat &intensity, GMANColor &color) {
+  RtFloat *ip = tryGetPointer(dictionary, pl, RI_INTENSITY);
+  if (ip) {
+    intensity = ip[0];
+  }
+  RtFloat *cp = tryGetPointer(dictionary, pl, RI_LIGHTCOLOR);
+  if (cp) {
+    color = GMANColor(cp[0], cp[1], cp[2]);
+  }
+}
+
+// "from"/"to" (RtPoint), read with the RISpec's own defaults: from
+// (0,0,0), to (0,0,1) -- a distantlight or pointlight with no explicit
+// position or direction still declares something sane.
+RtVoid readFromTo(GMANDictionary &dictionary, GMANParameterList &pl,
+		   GMANPoint &from, GMANPoint &to) {
+  RtFloat *fp = tryGetPointer(dictionary, pl, RI_FROM);
+  if (fp) {
+    from = GMANPoint(fp[0], fp[1], fp[2]);
+  }
+  RtFloat *tp = tryGetPointer(dictionary, pl, RI_TO);
+  if (tp) {
+    to = GMANPoint(tp[0], tp[1], tp[2]);
+  }
+}
+
+}  // namespace
+
+RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
 {
   allowed(cmdLightSource);
-  return (RtLightHandle) 0;
+  GMANParameterList paramList(dictionary, n, tokens, parms);
+
+  // Captured at declaration time, exactly the mechanism every primitive
+  // uses (RiSphereV et al, near :803): the light's position/direction
+  // travel through the CTM now in effect, landing in camera space to
+  // match every other quantity shading math touches. A light is a point
+  // or a direction, not a solid, so no inverse transpose is needed here --
+  // that correction is for surface normals only.
+  GMANTransform transform(getTransform());
+
+  std::string lightName(name);
+  RtFloat intensity = 1.0;
+  GMANColor color((RtFloat) 1.0, (RtFloat) 1.0, (RtFloat) 1.0);
+  readCommonLightParams(dictionary, paramList, intensity, color);
+  GMANColor cl(color.getRed() * intensity, color.getGreen() * intensity,
+	       color.getBlue() * intensity);
+
+  GMANLightType type;
+  GMANPoint position(0.0, 0.0, 0.0);
+  GMANVector direction(0.0, 0.0, 1.0);
+
+  if (lightName == "ambientlight") {
+    type = GMAN_LIGHT_AMBIENT;
+  } else if (lightName == "distantlight") {
+    type = GMAN_LIGHT_DISTANT;
+    GMANPoint from(0.0, 0.0, 0.0);
+    GMANPoint to(0.0, 0.0, 1.0);
+    readFromTo(dictionary, paramList, from, to);
+    GMANPoint camFrom = transform.apply(from);
+    GMANPoint camTo = transform.apply(to);
+    direction = GMANVector(camFrom, camTo);
+    direction.normalize();
+  } else if (lightName == "pointlight") {
+    type = GMAN_LIGHT_POINT;
+    GMANPoint from(0.0, 0.0, 0.0);
+    GMANPoint to(0.0, 0.0, 1.0);
+    readFromTo(dictionary, paramList, from, to);
+    position = transform.apply(from);
+  } else {
+    warning("Unknown light shader '%s'; ignoring RiLightSource.",
+	    lightName.c_str());
+    return (RtLightHandle) 0;
+  }
+
+  GMANLight *light = new GMANLight(type, cl, position, direction);
+  RtLightHandle handle = gmanLightSourceMgr().add(light);
+
+  // Per the RISpec: a light is active in the current graphics state the
+  // instant it is declared, as if RiIlluminate(handle, RI_TRUE) had just
+  // been called. Without this, GMANAttributes::lightList never carries
+  // the handle and no light this call creates ever reaches a shader --
+  // RiIlluminate only needs to be called explicitly to turn a light back
+  // on after RiIlluminate(handle, RI_FALSE) turned it off, or to bring an
+  // outer-scope light into a nested attribute block.
+  getAttributes().setIlluminate(handle, RI_TRUE);
+
+  return handle;
 }
 RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken /*name*/,
 						RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])

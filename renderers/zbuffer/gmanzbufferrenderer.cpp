@@ -177,10 +177,14 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
     if(vert->screen.y > ymax)
       ymax = vert->screen.y;
 
-    // get color
-    //    vert->color = out.getVertexColor(i);
-    vert->color =
-      GMANColor((float) drand48(), (float) drand48(), (float) drand48());
+    // Gouraud color: computeCi already ran once per tessellated vertex,
+    // in camera space, with the real inputs a shader needs (P, N, I, the
+    // active lights) -- createParametric (GMANPatchPolyObjectManager),
+    // not here. A clip-introduced vertex has no u,v of its own to shade
+    // with, which is why shading happens before clipping and this reads
+    // the already-shaded, already-linearly-interpolated result rather
+    // than calling computeCi per output vertex.
+    vert->color = out.getVertexColor(i);
 
   }
 

@@ -33,6 +33,23 @@
 #include "gmanobjectmanager.h" /* Super class */
 #include "gmanpatchpolyobjectmanager.h" /* Declaration Header */
 #include "gmanprimitives.h"
+#include "gmanshaderenvironment.h"
+#include "gmansurfaceshader.h"
+#include "gmanloadableshader.h"
+#include "gmanlightsourcemgr.h"
+
+namespace {
+
+// The RISpec's own default: a scene that never calls RiSurface still
+// shades, as matte. One instance, loaded on first use and reused --
+// dlopen once, not once per primitive.
+GMANSurfaceShader *defaultSurfaceShader() {
+  static GMANLoadableShader loader("libmatte.so");
+  static GMANSurfaceShader *shader = loader.getSurface();
+  return shader;
+}
+
+}  // namespace
 
 
 /*
@@ -298,6 +315,33 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
   GMANMatrix4 ctmInv = t->interpolate(0.0);
   ctmInv.invert();
 
+  // Shading setup, resolved once per primitive rather than once per
+  // vertex: the surface shader (falling back to matte, per the RISpec's
+  // own default, when RiSurface was never called) and the lights active
+  // in this attribute scope (RiIlluminate), handle-to-object resolved
+  // through the one light manager this render has. getSurface's const
+  // pointer just reflects that GMANAttributes doesn't want its shader
+  // pointer reseated through it; computeCi/computeOi are not logically
+  // const on the shader instance itself, which is why this casts rather
+  // than threading const through the shading call below.
+  const GMANSurfaceShader *constShader = attr->getSurface(0.0);
+  GMANSurfaceShader *shader = constShader
+      ? const_cast<GMANSurfaceShader *>(constShader)
+      : defaultSurfaceShader();
+
+  std::vector<const GMANLight *> activeLights;
+  const std::list<RtLightHandle> &handles = attr->getLightList().getHandles();
+  for (std::list<RtLightHandle>::const_iterator it = handles.begin();
+       it != handles.end(); ++it) {
+    const GMANLight *light = gmanLightSourceMgr().get(*it);
+    if (light) {
+      activeLights.push_back(light);
+    }
+  }
+
+  GMANColor surfaceCs = attr->getColor();
+  GMANColor surfaceOs = attr->getOpacity();
+
   GMANVertex** vertices = new GMANVertex*[(URES + 1) * (VRES + 1)];
   GMANFace** faces = new GMANFace*[URES * VRES];
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
@@ -332,24 +376,64 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
       vertex->setLocation(location);
       vertex->setNormal(normal);
 
-      if (i < URES && j < VRES) {
-	// Create a face
-	GMANVertex* faceVertices[4];
-	faceVertices[0] = vertices[(URES + 1) * i + j];
-	faceVertices[1] = vertices[(URES + 1) * i + (j + 1)];
-	faceVertices[2] = vertices[(URES + 1) * (i + 1) + (j + 1)];
-	faceVertices[3] = vertices[(URES + 1) * (i + 1) + j];
-	faces[URES * i + j] = new GMANFace(faceVertices, surface);
-	// Geometric normal, computed from the already-transformed (camera
-	// space) vertices: cross(e1', e2') for e'=e*M is proportional to
-	// (e1 x e2) transformed by M's inverse transpose, so this needs no
-	// separate normal transform. RiSides/RiOrientation travel with the
-	// face so visible() can answer without depending on renderer-global
-	// state that may differ across attribute blocks.
-	faces[URES * i + j]->calcNormal();
-	faces[URES * i + j]->setSides(sides);
-	faces[URES * i + j]->setOrientation(orientation);
-      }
+      // Shade this vertex now, in camera space, with every input the
+      // shader needs already at hand -- this is what "shade per vertex
+      // and let [Gouraud interpolation] interpolate" (SPEC.md) means in
+      // practice: a clip-introduced vertex has no u,v of its own to shade
+      // with, but it does get a color, because GMANClipEdge::intersect
+      // already interpolates GMANVertex::color across a clipped edge (the
+      // same machinery phase 1 wired up for the vertex alpha blend).
+      GMANSurfaceEnv env;
+      env.Cs = surfaceCs;
+      env.Os = surfaceOs;
+      env.P = location;
+      env.N = GMANNormal(normal.getX(), normal.getY(), normal.getZ());
+      env.Ng = env.N;  // no displacement this phase; the two never diverge
+      // Eye sits at the camera-space origin (GMANVSPerspective::ray), so
+      // the incident direction is just the normalized surface point.
+      env.I = GMANVector(location.getX(), location.getY(), location.getZ());
+      env.I.normalize();
+      env.E = GMANPoint(0.0, 0.0, 0.0);
+      env.u = (RtFloat) u;
+      env.v = (RtFloat) v;
+      env.s = (RtFloat) u;
+      env.t = (RtFloat) v;
+      env.lights = activeLights;
+
+      vertex->setColor(shader->computeCi(env));
+    }
+  }
+
+  // A second pass, now that every vertex in the grid has a finalized
+  // location: face(i,j) touches vertices (i,j+1) and (i+1,*), which are
+  // not visited yet when (i,j) is, so calcNormal() run in the same pass
+  // as vertex creation would cross-product against up to three
+  // still-default-constructed (0,0,0) vertices -- a real, if invisible,
+  // pre-existing bug. Invisible because nothing before this phase used
+  // the resulting near-zero, direction-free normal for anything: the
+  // renderer's own rasterization always reads vertex positions fresh at
+  // render time, long after this function returns, so geometry was never
+  // affected -- only RiSides 1 culling, which silently culled and kept
+  // faces close to at random. See phase-3-REPORT.md.
+  for (i = 0; i < URES; i++)
+  {
+    for (j = 0; j < VRES; j++)
+    {
+      GMANVertex* faceVertices[4];
+      faceVertices[0] = vertices[(URES + 1) * i + j];
+      faceVertices[1] = vertices[(URES + 1) * i + (j + 1)];
+      faceVertices[2] = vertices[(URES + 1) * (i + 1) + (j + 1)];
+      faceVertices[3] = vertices[(URES + 1) * (i + 1) + j];
+      faces[URES * i + j] = new GMANFace(faceVertices, surface);
+      // Geometric normal, computed from the already-transformed (camera
+      // space) vertices: cross(e1', e2') for e'=e*M is proportional to
+      // (e1 x e2) transformed by M's inverse transpose, so this needs no
+      // separate normal transform. RiSides/RiOrientation travel with the
+      // face so visible() can answer without depending on renderer-global
+      // state that may differ across attribute blocks.
+      faces[URES * i + j]->calcNormal();
+      faces[URES * i + j]->setSides(sides);
+      faces[URES * i + j]->setOrientation(orientation);
     }
   }
 

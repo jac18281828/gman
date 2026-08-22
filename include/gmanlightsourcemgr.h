@@ -47,23 +47,83 @@
 #include "ri.h"
 // logging
 #include "gmanlog.h"
+#include "gmancolor.h"
+#include "gmanpoint.h"
+#include "gmanvector.h"
+
+/*
+ * A built-in light: ambientlight, distantlight or pointlight. Position and
+ * direction are captured in camera space at RiLightSourceV time (the CTM
+ * then in effect), per AGENTS.md's "Coordinate spaces" -- shading happens
+ * entirely in camera space, so a light declared in any other space would
+ * make every N.L wrong.
+ */
+enum GMANLightType {
+  GMAN_LIGHT_AMBIENT,
+  GMAN_LIGHT_DISTANT,
+  GMAN_LIGHT_POINT
+};
+
+class GMAN_EXPORT GMANLight {
+private:
+  GMANLightType type;
+  GMANColor     cl;        // color * intensity, RiLightSourceV time
+  GMANPoint     position;  // camera space; pointlight only
+  GMANVector    direction; // camera space, light -> scene; distantlight only
+
+public:
+  GMANLight(GMANLightType t, const GMANColor &c,
+	    const GMANPoint &pos, const GMANVector &dir)
+    : type(t), cl(c), position(pos), direction(dir) {}
+
+  GMANLightType getType(RtVoid) const { return type; }
+
+  // The direction from a surface point toward this light and this
+  // light's contribution there. Ambient has no direction -- illuminance
+  // loops skip it, and a shader adds env.ambient() directly instead, per
+  // RiSL convention. Point lights get inverse-square falloff baked into
+  // Cl here so a shader's own math stays a plain N.L.
+  RtVoid sample(const GMANPoint &p, GMANVector &l, GMANColor &lightCl) const;
+};
 
 /*
  * RenderMan API GMANLightSourceMgr
  *
- * A Manager for multiple light source objects
- *
+ * Owns every light RiLightSourceV has declared, keyed by the handle it
+ * returned. GMANLightList (below, attribute-scoped) tracks which handles
+ * are currently switched on; this is where a handle resolves to the
+ * actual light.
  */
 
 class GMAN_EXPORT  GMANLightSourceMgr {
+private:
+  std::map<RtLightHandle, GMANLight *> lights;
+  // RtLightHandle is RtPointer (void*); a plain counter, cast to
+  // RtLightHandle at handout, is simpler than allocating an object per
+  // handle just to have a unique address.
+  RtInt nextHandle;
+
 public:
   GMANLightSourceMgr(); // default constructor
 
   ~GMANLightSourceMgr(); // default destructor
+
+  // Takes ownership of light; returns the handle RiLightSourceV hands back
+  // to the caller and RiIlluminate later toggles.
+  RtLightHandle add(GMANLight *light);
+
+  // NULL if h names no light this manager holds.
+  const GMANLight *get(RtLightHandle h) const;
 };
 
+// One light manager per render, like the object and world managers this
+// mirrors. A free function rather than a GMANRenderManImpl member so
+// createParametric (tessellation time, where a primitive's lit vertices
+// are shaded) does not need a light manager threaded through every
+// GMANObjectManager::getRS* signature to reach it.
+GMAN_EXPORT GMANLightSourceMgr &gmanLightSourceMgr(RtVoid);
 
-/* 
+/*
  * A class for light lists storage
  */
 
@@ -74,6 +134,8 @@ private:
 public:
   RtVoid  on  (RtLightHandle h);
   RtVoid  off (RtLightHandle h);
+
+  const std::list<RtLightHandle> &getHandles(RtVoid) const { return ll; }
 };
 
 #endif

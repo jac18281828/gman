@@ -33,12 +33,33 @@
 #ifndef _GMANSHADERENVIRONMENT_H
 #define _GMANSHADERENVIRONMENT_H 1
 
+#include <cmath>
+#include <vector>
+
 #include "ri.h"
 #include "gmancolor.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "gmannormal.h"
+#include "gmanlightsourcemgr.h"
+#include "gmanslapi.h"
 
+// Forward-declared, not included: gmannoise.h #defines N (and MASK) at
+// file scope with no #undef, which collides with GMANSurfaceEnv's own N
+// (the shading normal) the moment both are visible in one translation
+// unit. The noise family below is declared here and defined in
+// gmanshaderenvironment.cpp, the one file that can safely include
+// gmannoise.h.
+class GMANNoise;
+
+/*
+ * The interface a surface shader is written against -- and the interface
+ * a future shading-language VM would target, since a C++ shader and an
+ * SL-compiled one both need the same inputs and the same builtins. Every
+ * field is camera space (see AGENTS.md's "Coordinate spaces"); every
+ * shadeop below forwards to the SL runtime in gmannoise.cpp/gmanslapi.cpp,
+ * which existed, worked and had no caller before this phase.
+ */
 struct GMAN_EXPORT GMANSurfaceEnv
 {
   GMANColor		Cs;	// surface color
@@ -68,6 +89,130 @@ struct GMAN_EXPORT GMANSurfaceEnv
 
   GMANColor		Ci;     // incident ray color
   GMANColor		Oi;     // incident ray opacity
+
+  // Lights active in the attribute scope this surface was declared in
+  // (RiIlluminate), resolved from handle to light at shading time. Not
+  // owned: these point into gmanLightSourceMgr()'s storage.
+  std::vector<const GMANLight *> lights;
+
+  // ---- noise family (gmannoise.cpp), defined in
+  // gmanshaderenvironment.cpp ----
+  // A single generator shared by every GMANSurfaceEnv, matching real SL's
+  // noise() being a pure function of its argument, not of shader
+  // instance. gmannoise.cpp's periodic() is RSL's pnoise().
+  RtFloat noise (RtFloat v) const;
+  RtFloat noise (RtFloat u_, RtFloat v_) const;
+  RtFloat noise (const GMANPoint &p) const;
+  RtFloat noise (const GMANPoint &p, RtFloat t_) const;
+
+  RtFloat pnoise (RtFloat v, RtFloat pv) const;
+  RtFloat pnoise (const GMANPoint &p, const GMANPoint &pp) const;
+
+  RtFloat cellnoise (RtFloat v) const;
+  RtFloat cellnoise (const GMANPoint &p) const;
+
+  // ---- gmanslapi.cpp: already free functions, forwarded here so a
+  // shader reaches every builtin the same way, through env. Named
+  // GMANReflect/GMANRefract/GMANFresnel/GMANFaceForward in gmanslapi.cpp;
+  // gmanslapi.h previously declared unprefixed lowercase forms with no
+  // definition anywhere -- fixed alongside this, see gmanslapi.h. ----
+  GMANVector reflect (const GMANVector &i, const GMANVector &n) const {
+    return GMANReflect(i, n);
+  }
+  GMANVector refract (const GMANVector &i, const GMANVector &n,
+		       RtFloat eta) const {
+    return GMANRefract(i, n, eta);
+  }
+  RtVoid fresnel (const GMANVector &i, const GMANVector &n, RtFloat eta,
+		  RtFloat &kr, RtFloat &kt) const {
+    GMANFresnel(i, n, eta, kr, kt);
+  }
+  GMANVector faceforward (const GMANVector &n, const GMANVector &i,
+			   const GMANVector &nr) const {
+    return GMANFaceForward(n, i, nr);
+  }
+  RtFloat smoothstep (RtFloat min, RtFloat max, RtFloat value) const {
+    return GMANSmoothStep(min, max, value);
+  }
+
+  template <class T>
+  T spline (const std::string &basis, RtFloat value, RtInt nvals,
+	    T fvals[]) const {
+    if (basis == "bezier") return GMANBezierSpline<T>(value, nvals, fvals);
+    if (basis == "bspline") return GMANBsplineSpline<T>(value, nvals, fvals);
+    if (basis == "hermite") return GMANHermiteSpline<T>(value, nvals, fvals);
+    if (basis == "linear") return GMANLinearSpline<T>(value, nvals, fvals);
+    return GMANCatmullSpline<T>(value, nvals, fvals);  // "catmull-rom", default
+  }
+
+  // ---- illuminance loop, RiSL's own shape: ambient()/diffuse()/
+  // specular() sum every currently-active light's contribution at P, so a
+  // shader's own body stays the couple of lines matte/plastic/metal are
+  // in the RISpec. Blinn-Phong for specular(), the common approximation
+  // to the RISpec's own (more expensive) integral. ----
+  GMANColor ambient (RtVoid) const {
+    GMANColor sum;
+    for (std::size_t i = 0; i < lights.size(); ++i) {
+      if (lights[i]->getType() != GMAN_LIGHT_AMBIENT) {
+	continue;
+      }
+      GMANVector l;
+      GMANColor cl;
+      lights[i]->sample(P, l, cl);
+      sum += cl;
+    }
+    return sum;
+  }
+
+  GMANColor diffuse (const GMANVector &n) const {
+    GMANVector nn(n);
+    nn.normalize();
+    GMANColor sum;
+    for (std::size_t i = 0; i < lights.size(); ++i) {
+      if (lights[i]->getType() == GMAN_LIGHT_AMBIENT) {
+	continue;
+      }
+      GMANVector l;
+      GMANColor cl;
+      lights[i]->sample(P, l, cl);
+      l.normalize();
+      RtFloat nDotL = nn.dot(l);
+      if (nDotL > 0.0) {
+	cl.scale(nDotL);
+	sum += cl;
+      }
+    }
+    return sum;
+  }
+
+  GMANColor specular (const GMANVector &n, const GMANVector &v,
+		       RtFloat roughness) const {
+    GMANVector nn(n);
+    nn.normalize();
+    GMANVector vv(v);
+    vv.normalize();
+    GMANColor sum;
+    for (std::size_t i = 0; i < lights.size(); ++i) {
+      if (lights[i]->getType() == GMAN_LIGHT_AMBIENT) {
+	continue;
+      }
+      GMANVector l;
+      GMANColor cl;
+      lights[i]->sample(P, l, cl);
+      l.normalize();
+      GMANVector h(l.getX() + vv.getX(), l.getY() + vv.getY(),
+		   l.getZ() + vv.getZ());
+      h.normalize();
+      RtFloat nDotH = nn.dot(h);
+      if (nDotH > 0.0) {
+	RtFloat exponent = (roughness > RI_EPSILON) ? (1.0 / roughness)
+						     : (1.0 / RI_EPSILON);
+	cl.scale((RtFloat) pow(nDotH, exponent));
+	sum += cl;
+      }
+    }
+    return sum;
+  }
 };
 
 struct GMAN_EXPORT GMANLightEnv
