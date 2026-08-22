@@ -22,6 +22,7 @@
 #include <string>
 
 #include "gmanattributes.h"
+#include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanobject.h"
 #include "gmanoptions.h"
@@ -179,6 +180,20 @@ void testInverseTransposeUnderNonUniformScale() {
 
   GMANPrimitive *prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, &options,
                                          &attr, &transform);
+  // Nothing in this tree ever frees a tessellated primitive's face/vertex
+  // graph -- production code relies on process exit to reclaim it
+  // (GMANRenderManImpl::RiEnd leaves worldManager/objectManager
+  // deliberately unfreed) and LeakSanitizer does not flag that, because
+  // GMANWorldManager keeps every primitive it holds reachable up to exit.
+  // A local variable discarded at the end of this function would make the
+  // same allocation genuinely unreachable instead -- a real leak, not a
+  // benign one -- so this keeps prim reachable the same way production
+  // does, via a world manager, rather than reproducing this tree's
+  // "leak is fine, we're about to exit" assumption in a way that
+  // contradicts it.
+  static GMANLinearWorldManager worldMgr;
+  worldMgr.add(prim);
+
   GMANObject *object = dynamic_cast<GMANObject *>(prim);
   check(object != nullptr, "inverse-transpose: getRSSphere returns an object");
 

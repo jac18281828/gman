@@ -103,6 +103,12 @@ add_test(NAME spacechain COMMAND gman_spacechain)
 add_executable(gman_normals normals_test.cpp)
 target_link_libraries(gman_normals PRIVATE gman_core)
 add_test(NAME normals COMMAND gman_normals)
+# The inverse-transpose proof (item 3) tessellates a real sphere through
+# GMANPatchPolyObjectManager, which falls back to dlopen'ing "libmatte.so"
+# when no RiSurface is set -- the same bare-name lookup gman itself relies
+# on the build tree being on the runtime search path for.
+set_tests_properties(normals PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
 
 # The phase's actual gate: a real end-to-end render, read back and measured
 # against the hand-derived silhouette geometry.

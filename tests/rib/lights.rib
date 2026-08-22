@@ -1,6 +1,12 @@
 Display "lights.tif" "file" "rgba"
 Format 640 480 1
 Projection "perspective" "fov" [45]
+# Explicit, not the RI_EPSILON-near default: the near plane's offset term
+# in the projection matrix is astronomically small next to a scene-scale
+# z (~5), which RtFloat (32-bit) cannot represent -- z_clip and w_clip
+# become indistinguishable, and the back-plane clip test degenerates to
+# noise. See phase-3-REPORT.md.
+Clipping 0.5 50
 Translate 0 0 5
 WorldBegin
 LightSource "ambientlight" 1 "intensity" [0.1]
