@@ -62,18 +62,30 @@ GMANVertex::~GMANVertex() { };
 
 
 
-// calculate vertex normal
+// calculate vertex normal: the area-weighted average of the adjacent
+// faces' geometric normals, for polygonal input with no analytic normal.
+//
+// No primitive in this tree populates faceList -- setFaceList has no
+// caller anywhere -- so this fallback has no live call site today; the
+// quadrics createParametric tessellates all supply an analytic normal
+// from GMANParametric::getNormal instead (see createParametric). Written
+// and correct for whichever future polygon tessellator populates
+// adjacency, provided it also calls each face's calcArea() -- this
+// assumes a nonzero weight, same as GMANFace's own default-constructed
+// area of 0 assumes calcArea() runs before anything reads it. An empty or
+// absent list is not an error, just nothing to average, so the default
+// zero normal is left untouched.
 RtVoid GMANVertex::calcNormal() {
-  // compute average normal for all faces
-  // FIXME FIXME FIXME
-#if 0
-  for(FaceList::iterator face = flist->begin();
-      face != flist->end();
-      face++) {
-    normal += (*face)->GetNormal();
+  if (faceList == NULL || faceList->empty()) {
+    return;
   }
-  // normalize vector
-  normal.Normalize();
-#endif
 
+  GMANVector accum(0.0, 0.0, 0.0);
+  for (GMANFaceList::iterator face = faceList->begin();
+       face != faceList->end();
+       ++face) {
+    accum += (*face)->getNormal() * (*face)->getArea();
+  }
+  accum.normalize();
+  normal = accum;
 };

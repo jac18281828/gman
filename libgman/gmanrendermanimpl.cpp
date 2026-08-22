@@ -874,10 +874,21 @@ RtVoid  GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zma
   worldManager->add(prim);
   delete transform;
 }
-RtVoid  GMANRenderManImpl::RiDiskV(RtFloat /*height*/, RtFloat /*radius*/, RtFloat /*tmax*/,
-			       RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
+RtVoid  GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax,
+			       RtInt n, RtToken tokens[], RtPointer parms[])
 {
   allowed(cmdDisk);
+  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+
+  GMANTransform* transform = new GMANTransform((getTransform()));
+  GMANPrimitive* prim;
+
+  prim = objectManager->getRSDisk( height, radius, tmax, paramList,
+				   &(getOptions()),
+				   &(getAttributes()),
+				   transform);
+  worldManager->add(prim);
+  delete transform;
 }
 RtVoid  GMANRenderManImpl::RiTorusV(RtFloat majrad,RtFloat minrad,RtFloat phimin,RtFloat phimax,
 				RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[])

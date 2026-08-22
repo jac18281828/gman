@@ -97,6 +97,13 @@ add_executable(gman_spacechain spacechain_test.cpp)
 target_link_libraries(gman_spacechain PRIVATE gman_core)
 add_test(NAME spacechain COMMAND gman_spacechain)
 
+# Phase 3 -- analytic primitive normals: finite-difference agreement,
+# cross-primitive orientation consistency, inverse-transpose under a
+# non-uniform scale.
+add_executable(gman_normals normals_test.cpp)
+target_link_libraries(gman_normals PRIVATE gman_core)
+add_test(NAME normals COMMAND gman_normals)
+
 # The phase's actual gate: a real end-to-end render, read back and measured
 # against the hand-derived silhouette geometry.
 add_executable(gman_silhouette silhouette_test.cpp)

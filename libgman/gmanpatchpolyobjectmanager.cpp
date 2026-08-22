@@ -197,15 +197,16 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
   return createParametric(&paraboloid, t, attr);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat /*height*/,
-						       RtFloat /*radius*/,
-						       RtFloat /*tmax*/,
-						       GMANParameterList /*pl*/,
+GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat height,
+						       RtFloat radius,
+						       RtFloat tmax,
+						       GMANParameterList pl,
 						       GMANOptions */*opt*/,
-						       GMANAttributes */*attr*/,
-						       GMANTransform */*t*/)
+						       GMANAttributes *attr,
+						       GMANTransform *t)
  {
-  return create();
+  GMANDisk disk(height, radius, tmax, pl);
+  return createParametric(&disk, t, attr);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
@@ -286,6 +287,17 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
 
+  // The vertex shading normal is object-space (p->getNormal), unlike the
+  // face's geometric normal below, which gets to camera space for free as
+  // a side effect of crossing already-transformed edges. A plain normal
+  // does not get that gift: it needs the CTM's inverse transpose, computed
+  // once per primitive rather than once per vertex. Row-vector convention
+  // (p*M, translation in row 3) makes the inverse-transpose of M's linear
+  // part exactly Minv's own upper-left 3x3 block used as n*Minv -- see
+  // AGENTS.md's "Matrix convention" note and phase-3-REPORT.md.
+  GMANMatrix4 ctmInv = t->interpolate(0.0);
+  ctmInv.invert();
+
   GMANVertex** vertices = new GMANVertex*[(URES + 1) * (VRES + 1)];
   GMANFace** faces = new GMANFace*[URES * VRES];
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
@@ -305,10 +317,20 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
       double u = i / (double) URES;
       double v = j / (double) VRES;
       GMANPoint location = t->apply(p->getLocation(u, v));
-      //GMANVector normal = p->getNormal(u, v);
+      GMANVector objectNormal = p->getNormal(u, v);
+      GMANVector normal(ctmInv[0][0] * objectNormal.getX() +
+			 ctmInv[0][1] * objectNormal.getY() +
+			 ctmInv[0][2] * objectNormal.getZ(),
+			 ctmInv[1][0] * objectNormal.getX() +
+			 ctmInv[1][1] * objectNormal.getY() +
+			 ctmInv[1][2] * objectNormal.getZ(),
+			 ctmInv[2][0] * objectNormal.getX() +
+			 ctmInv[2][1] * objectNormal.getY() +
+			 ctmInv[2][2] * objectNormal.getZ());
+      normal.normalize();
       GMANVertex* vertex = vertices[(URES + 1) * i + j];
       vertex->setLocation(location);
-      //vertex->setNormal(normal);
+      vertex->setNormal(normal);
 
       if (i < URES && j < VRES) {
 	// Create a face

@@ -104,6 +104,8 @@ public:
   // get alpha
   const GMANAlpha &getAlpha(RtVoid) const { return alpha; };
 
+  // set the shading normal
+  RtVoid setNormal(const GMANVector &n) { normal = n; };
   // return the normal
   const GMANVector &getNormal(RtVoid) const { return normal; };
   // set next vertex

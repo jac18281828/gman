@@ -28,7 +28,26 @@
 
 #include <math.h>
 
+#include "gmanmath.h"
 #include "gmanprimitives.h"
+#include "gmanvector.h"
+
+namespace {
+
+// Every quadric here differentiates its own getLocation and returns
+// normalize(dP/du x dP/dv) -- the convention that makes the outward
+// direction agree across primitives (verified sphere, cylinder and torus
+// against their textbook closed forms; see phase-3-REPORT.md). A few
+// primitives hit a coordinate singularity at a pole (dP/du -> 0), where the
+// raw cross product degenerates to zero; guardTangent nudges the parameter
+// away from the singularity before differentiating so the limit, not a
+// division by zero, is what gets normalized.
+inline double guardTangent(double v, double eps = 1e-6)
+{
+  return (v < eps) ? eps : ((v > 1.0 - eps) ? 1.0 - eps : v);
+}
+
+}  // namespace
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_BLOBBY.CPP
@@ -117,9 +136,19 @@ GMANPoint GMANCone::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANCone::getNormal (double /*u*/, double /*v*/)
+GMANVector GMANCone::getNormal (double u, double /*v*/)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  // Closed form from the cone's implicit surface x^2+y^2 = g(z)^2, with
+  // g(z) = radius*(1 - z/height): gradient (2x, 2y, 2*g(z)*radius/height)
+  // simplifies, after dividing out g(z), to (cos theta, sin theta,
+  // radius/height) -- independent of the radial coordinate, so unlike the
+  // parametric cross product dP/du x dP/dv it stays well-defined at the
+  // apex (r=0), where du no longer moves the surface.
+  float theta = u * (thetamax / 360.0) * 2.0 * PI;
+
+  GMANVector n(cos(theta), sin(theta), radius / height);
+  n.normalize();
+  return n;
 }
 
 
@@ -193,9 +222,15 @@ GMANPoint GMANCylinder::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANCylinder::getNormal (double /*u*/, double /*v*/)
+GMANVector GMANCylinder::getNormal (double u, double /*v*/)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  // A cylinder wall's outward normal is radial from the axis and does not
+  // depend on z, so it is the same at every v: (cos theta, sin theta, 0).
+  float theta = u * (thetamax / 360.0) * 2.0 * PI;
+
+  GMANVector n(cos(theta), sin(theta), 0.0);
+  n.normalize();
+  return n;
 }
 
 
@@ -206,14 +241,26 @@ GMANVector GMANCylinder::getNormal (double /*u*/, double /*v*/)
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_DISK.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANDisk::getLocation (double /*u*/, double /*v*/)
+GMANPoint GMANDisk::getLocation (double u, double v)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  // A flat plate at z=height: u sweeps the angle, v sweeps the radius out
+  // from the center (v=0) to the rim (v=1), matching the theta convention
+  // every other quadric here uses.
+  float theta = u * (thetamax / 360.0) * 2.0 * PI;
+  float r = v * radius;
+  float x = r * cos(theta);
+  float y = r * sin(theta);
+
+  return GMANPoint(x, y, height);
 }
 
 GMANVector GMANDisk::getNormal (double /*u*/, double /*v*/)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  // dP/du x dP/dv for this parameterization is (0, 0, -r*radius*dtheta/du);
+  // the disk's normal is that direction's sign, constant everywhere since
+  // the surface is flat.
+  GMANVector n(0.0, 0.0, -1.0);
+  return n;
 }
 
 
@@ -272,14 +319,54 @@ GMANGeneralPolygon::~GMANGeneralPolygon()
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_HYPERBOLOID.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANHyperboloid::getLocation (double /*u*/, double /*v*/)
+// A hyperboloid is the surface swept by rotating the segment point1..point2
+// around the z axis. The segment's own point at parameter v need not lie in
+// the x=0 half-plane, so the sweep adds theta to that point's own azimuth
+// phi(v), not to a fixed 0: P(u,v) = ( r(v)*cos(phi(v)+theta),
+// r(v)*sin(phi(v)+theta), z(v) ), r(v)=dist to axis, phi(v)=atan2(y,x).
+GMANPoint GMANHyperboloid::getLocation (double u, double v)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  float xv = point1.getX() + v * (point2.getX() - point1.getX());
+  float yv = point1.getY() + v * (point2.getY() - point1.getY());
+  float zv = point1.getZ() + v * (point2.getZ() - point1.getZ());
+
+  float r = sqrt(xv * xv + yv * yv);
+  float phi = atan2(yv, xv);
+  float theta = u * (thetamax / 360.0) * 2.0 * PI;
+
+  return GMANPoint(r * cos(phi + theta), r * sin(phi + theta), zv);
 }
 
-GMANVector GMANHyperboloid::getNormal (double /*u*/, double /*v*/)
+GMANVector GMANHyperboloid::getNormal (double u, double v)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  float dx = point2.getX() - point1.getX();
+  float dy = point2.getY() - point1.getY();
+  float dz = point2.getZ() - point1.getZ();
+
+  float xv = point1.getX() + v * dx;
+  float yv = point1.getY() + v * dy;
+
+  float r = sqrt(xv * xv + yv * yv);
+  float phi = atan2(yv, xv);
+  // Guard against the segment crossing the axis (r=0), where phi and its
+  // derivative are undefined; a hyperboloid degenerate enough to do that
+  // mid-surface is a malformed scene, not a case worth failing hard on.
+  float rSafe = (r < (float) RI_EPSILON) ? (float) RI_EPSILON : r;
+
+  float rPrime = (xv * dx + yv * dy) / rSafe;
+  float phiPrime = (xv * dy - yv * dx) / (rSafe * rSafe);
+
+  float kt = thetamax / 360.0 * 2.0 * PI;
+  float angle = phi + u * kt;
+
+  GMANVector dPdu(-r * sin(angle) * kt, r * cos(angle) * kt, 0.0);
+  GMANVector dPdv(rPrime * cos(angle) - r * sin(angle) * phiPrime,
+		   rPrime * sin(angle) + r * cos(angle) * phiPrime,
+		   dz);
+
+  GMANVector n = dPdu.cross(dPdv);
+  n.normalize();
+  return n;
 }
 
 
@@ -385,9 +472,20 @@ GMANPoint GMANParaboloid::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANParaboloid::getNormal (double /*u*/, double /*v*/)
+GMANVector GMANParaboloid::getNormal (double u, double v)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  // dP/du x dP/dv reduces to (cos theta, sin theta, -f'(v)/(zmax-zmin)),
+  // where f(v)=rmax*sqrt(v/zmax) is getLocation's radial factor. f'(v)
+  // diverges as v -> 0 (the apex), but the *normalized* direction still has
+  // a well-defined limit there -- (0,0,-+1), the axis -- so guardTangent
+  // keeps the division finite rather than branching on the singularity.
+  double vg = guardTangent(v);
+  float theta = u * (thetamax / 360.0) * 2.0 * PI;
+  float fPrime = (float) (rmax / (2.0 * sqrt(zmax * vg)));
+
+  GMANVector n(cos(theta), sin(theta), -fPrime / (zmax - zmin));
+  n.normalize();
+  return n;
 }
 
 
@@ -599,25 +697,33 @@ GMANPointsPolygons::~GMANPointsPolygons()
 ///////////////////////////////////////////////////////////////////////////////
 GMANPoint GMANSphere::getLocation (double u, double v)
 {
-  static bool warned = false;
-  if (!warned) {
-    debug("FIXME: sphere parameterization zmin, zmax");
-    warned = true;
-  }
+  // zmin/zmax bound the sphere's latitude range: v=0 is the zmin cap,
+  // v=1 the zmax cap. A full sphere (zmin=-radius, zmax=radius) recovers
+  // the two poles; RiSphere 1 -0.5 1 360 (a partial sphere) is why this
+  // can't just be "phi = v*2*PI" -- that always swept a full latitude
+  // circle regardless of zmin/zmax.
+  float phimin = (float) asin(GMANClamp<double>(zmin / radius, -1.0, 1.0));
+  float phimax = (float) asin(GMANClamp<double>(zmax / radius, -1.0, 1.0));
+
   float theta = (u * (thetamax / 360.0) - 0.5) * PI * 2.0;
-  float phi = v * 2 * PI;
+  float phi = phimin + v * (phimax - phimin);
 
   float cosPhi = cos(phi);
   float x = radius * cosPhi * cos(theta);
   float y = radius * cosPhi * sin(theta);
   float z = radius * sin(phi);
-  
+
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANSphere::getNormal (double /*u*/, double /*v*/)
+GMANVector GMANSphere::getNormal (double u, double v)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  // A sphere is centered at its local origin, so the outward normal is
+  // simply the radial direction: normalize(P).
+  GMANPoint p = getLocation(u, v);
+  GMANVector n(p.getX(), p.getY(), p.getZ());
+  n.normalize();
+  return n;
 }
 
 
@@ -776,7 +882,16 @@ GMANPoint GMANTorus::getLocation (double u, double v)
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANTorus::getNormal (double /*u*/, double /*v*/)
+GMANVector GMANTorus::getNormal (double u, double v)
 {
-  throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
+  // The tube cross-section is itself a circle, so the outward normal only
+  // depends on phi (position around the tube) and theta (position around
+  // the major radius) -- not on majorradius/minorradius's magnitudes.
+  float theta = u * (thetamax / 360.0) * 2.0 * PI;
+  float phi = (phimin + (phimax - phimin) * v) / 360.0 * 2.0 * PI;
+  float cosPhi = cos(phi);
+
+  GMANVector n(cosPhi * cos(theta), cosPhi * sin(theta), sin(phi));
+  n.normalize();
+  return n;
 }
