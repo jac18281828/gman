@@ -80,13 +80,31 @@ GMANRay   GMANVSPerspective::ray(RtFloat x, RtFloat y)
  * already-transformed vertex positions at tessellation time -- faces the
  * camera. RiOrientation "inside" inverts which winding counts as facing
  * out.
+ *
+ * "Faces the camera" means the real per-face view vector -- eye to face,
+ * which varies across the frame under perspective -- not the z axis. The
+ * eye sits at the camera-space origin, so that vector is just the face's
+ * own (unnormalized) position; comparing against a fixed +z axis is the
+ * orthographic approximation GMANVSOrthographic::visible keeps
+ * deliberately. The two agree on-axis and diverge only near the
+ * silhouette.
  */
 bool GMANVSPerspective::visible(const GMANFace *face) {
     if (face->getSides() != 1) {
       return true;
     }
 
-    bool facingCamera = (face->getNormal().getZ() > 0);
+    // Centroid of the face's four vertices approximates the point on the
+    // face the view vector is measured to; camera-space, so no further
+    // transform is needed. GMANFace::getNumVerts isn't const-qualified,
+    // so this uses the same GMAN_NFACE_VERTS it always returns.
+    GMANVector toFace(0.0, 0.0, 0.0);
+    for (int i = 0; i < GMAN_NFACE_VERTS; ++i) {
+      toFace += GMANVector(face->getVertex(i)->getLocation());
+    }
+    toFace *= (1.0 / GMAN_NFACE_VERTS);
+
+    bool facingCamera = (face->getNormal().dot(toFace) > 0);
     if (face->getOrientation() == RI_INSIDE) {
       facingCamera = !facingCamera;
     }

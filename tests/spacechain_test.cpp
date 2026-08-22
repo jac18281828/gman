@@ -24,6 +24,13 @@
  *   - Revert GMANFace::calcNormal's call site in createParametric, or make
  *     GMANVSPerspective::visible() unconditional again: the backface test
  *     goes red for both winding orders (see the backface culling section).
+ *
+ * Phase 3, proof item 5 (the perspective culling term): a face near the
+ * silhouette, off-axis enough that the true eye-to-face view vector and
+ * the z axis disagree on sign. Revert GMANVSPerspective::visible to
+ * `getNormal().getZ() > 0` and testPerspectiveCullingNearSilhouette goes
+ * red -- the orthographic approximation culls a face the real view vector
+ * says is visible.
  */
 
 #include <cmath>
@@ -214,6 +221,62 @@ void testBackfaceCulling() {
         "backface: RiOrientation inside flips a culled face to visible");
 }
 
+// ---- Phase 3, proof item 5: the perspective culling term ----
+void testPerspectiveCullingNearSilhouette() {
+  GMANOptions::ScreenWindowStruct sw = squareWindow();
+  GMANMatrix4 identity;
+  GMANVSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
+
+  // A small quad centered at (5, 0, 0.01), spanned by e1=(0,0.02,0) and
+  // e2=(0.00002,0.02,0.02) -- both perpendicular to (1, 0, -0.001), so
+  // that plane's normal is almost pure +x with a hairline-negative z,
+  // exactly the shape of a silhouette point on a sphere translated well
+  // off to one side. calcNormal computes cross(v1-v0, v2-v0) = cross(e1,
+  // e2) = (0.0004, 0, -0.0000004): direction (1, 0, -0.001), confirmed
+  // below before this relies on it.
+  GMANPoint centroid(5.0, 0.0, 0.01);
+  GMANVertex q0, q1, q2, q3;
+  q0.setLocation(GMANPoint(centroid.getX() - 0.00001,
+                            centroid.getY() - 0.01,
+                            centroid.getZ() - 0.01));
+  q1.setLocation(GMANPoint(centroid.getX() - 0.00001,
+                            centroid.getY() + 0.01,
+                            centroid.getZ() - 0.01));
+  q2.setLocation(GMANPoint(centroid.getX() + 0.00001,
+                            centroid.getY() + 0.01,
+                            centroid.getZ() + 0.01));
+  q3.setLocation(GMANPoint(centroid.getX() + 0.00001,
+                            centroid.getY() - 0.01,
+                            centroid.getZ() + 0.01));
+  GMANVertex *verts[4] = {&q0, &q1, &q2, &q3};
+  GMANFace face(verts, nullptr);
+  face.calcNormal();
+
+  // Confirms the hand derivation above landed where intended before
+  // trusting the visible() result below: almost pure +x, tiny negative z.
+  check(face.getNormal().getX() > 0.99 &&
+        face.getNormal().getZ() < 0.0 &&
+        face.getNormal().getZ() > -0.01,
+        "perspective culling: hand-built near-silhouette quad's own "
+        "geometric normal is +x with a hairline-negative z");
+  face.setSides(1);
+  face.setOrientation(RI_OUTSIDE);
+
+  // Under the orthographic approximation (getZ() > 0), this face's
+  // hairline-negative z would cull it. Under the real per-face view
+  // vector (eye at the camera-space origin to the centroid, ~(5,0,0.01),
+  // almost pure +x) dotted with a normal that is almost pure +x, the
+  // result is strongly positive: visible. This is exactly the
+  // disagreement step 3 exists to fix.
+  check(!(face.getNormal().getZ() > 0.0),
+        "perspective culling: sanity check, the orthographic "
+        "approximation would have culled this face");
+  check(vs.visible(&face),
+        "perspective culling: the real per-face view vector keeps this "
+        "near-silhouette face visible where the orthographic "
+        "approximation would have culled it");
+}
+
 } // namespace
 
 int main() {
@@ -221,6 +284,7 @@ int main() {
   testBehindCameraClips();
   testClipperNearPlane();
   testBackfaceCulling();
+  testPerspectiveCullingNearSilhouette();
 
   if (failures != 0) {
     std::printf("%d assertion(s) failed\n", failures);
