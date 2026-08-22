@@ -125,8 +125,21 @@ void testOrientationConsistency() {
   GMANCone cone(2.0, 1.0, 360.0, pl);
   GMANTorus torus(2.0, 0.5, -180.0, 180.0, 360.0, pl);
 
+  // Hyperboloid and paraboloid are both surfaces of revolution around the
+  // z axis, same as cylinder and cone, so the same away-from-axis test
+  // applies. Disk is flat: it has no axis and no interior to be "away
+  // from," so it gets a different check below.
+  RtPoint hp1 = {1.0, 0.0, 0.0};
+  RtPoint hp2 = {0.5, 0.0, 2.0};
+  GMANHyperboloid hyperboloid(hp1, hp2, 360.0, pl);
+  GMANParaboloid paraboloid(1.0, 1.0, 2.0, 360.0, pl);
+  GMANDisk disk(0.5, 1.0, 360.0, pl);
+
   double us[] = {0.1, 0.4, 0.6, 0.9};
   double vs[] = {0.2, 0.4, 0.6, 0.8};
+
+  GMANVector diskNormal0;
+  bool haveDiskNormal0 = false;
 
   for (double u : us) {
     for (double v : vs) {
@@ -158,6 +171,30 @@ void testOrientationConsistency() {
                            p.getY() - tubeCenter.getY(), p.getZ());
       check(n.dot(fromTube) > 0.0,
             "torus: normal points away from the tube's own center circle");
+
+      p = hyperboloid.getLocation(u, v);
+      n = hyperboloid.getNormal(u, v);
+      GMANVector hyperboloidRadial(p.getX(), p.getY(), 0.0);
+      check(n.dot(hyperboloidRadial) > 0.0,
+            "hyperboloid: normal points away from the axis, not into it");
+
+      p = paraboloid.getLocation(u, v);
+      n = paraboloid.getNormal(u, v);
+      GMANVector paraboloidRadial(p.getX(), p.getY(), 0.0);
+      check(n.dot(paraboloidRadial) > 0.0,
+            "paraboloid: normal points away from the axis, not into it");
+
+      // Disk: a flat plate has exactly one outward direction, the same at
+      // every (u,v) -- there is no center or axis to point "away from,"
+      // so the physical check here is that every sampled normal is the
+      // same direction, not that it points away from something.
+      n = disk.getNormal(u, v);
+      if (!haveDiskNormal0) {
+        diskNormal0 = n;
+        haveDiskNormal0 = true;
+      }
+      check(n.dot(diskNormal0) > 0.0,
+            "disk: normal is the same outward direction at every (u,v)");
     }
   }
 }
