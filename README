@@ -74,6 +74,12 @@ machine, transform and matrix math, Perlin noise, the spline and
 shading-language support functions now reachable from a shader, and the
 TIFF, PNG, JPEG and PNM image writers.
 
+At the default `Clipping`, flat or narrow-z-range geometry (a camera-facing
+`Disk`, a partial `Sphere`) can render corrupted or blank from a near-clip
+precision defect -- pair such geometry with an explicit `Clipping <near>
+<far>`. See AGENTS.md's "RIB support" section, "Near-clip precision at the
+default `Clipping`."
+
 Out of scope for this project: the shading-language compiler (`gmansl/`
 stays unbuilt; shaders are C++ plugins), texturing, and anti-aliasing/
 multi-sample rendering (1 sample/pixel). `tests/baseline.cpp` and

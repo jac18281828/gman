@@ -165,6 +165,24 @@ and shading (normals, lights, executing shaders) is closed (Phase 3). See
 the "Shading" section above for what a shader can and cannot do yet
 (no texturing, no anti-aliasing).
 
+**Near-clip precision at the default `Clipping`.** `GMANMatrix4::prjPersp`'s
+near-plane offset term is `2*RI_EPSILON` (~2e-10) against a typical
+scene-scale z — a relative magnitude 32-bit `RtFloat` cannot represent, so
+`w_clip - z_clip` in the back-clip-plane test loses all meaningful
+precision and its *sign* becomes noise. This is a general defect in that
+test, not specific to any one primitive: it bites whichever geometry
+happens to place vertices at (or very near) the exact z where the
+cancellation occurs, which curved primitives usually dodge by having
+vertex z vary across the surface, and flat or narrow-z-range geometry
+usually does not. A camera-facing `Disk` hits it on every vertex and
+renders fully blank; a partial `Sphere` — the exact zmin/zmax case this
+phase fixed `GMANSphere::getLocation` for — can hit it too, rendering a
+corrupted image instead of a clean partial sphere. **Workaround: always
+pair such geometry with an explicit `Clipping <near> <far>` using a `near`
+that is not astronomically small** (`0.5`, not the `RI_EPSILON` default),
+e.g. `Clipping 0.5 50`. Not fixed at the source (`gmanmatrix4.cpp`/
+`gmanclipedge.cpp`); recorded as an open defect in `SPEC.md` §8.
+
 **Parses, never renders:**
 
 - *Stub `RiXxxV` bodies, pre-dating phase 2:* `GeneralPolygon`,
