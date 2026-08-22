@@ -85,7 +85,11 @@ bool GMANZBufferRenderer::initZBuffer(void) {
       }
 
       if(edge_list) delete []edge_list;
-      edge_list = new EdgeInfo[height];
+      // Value-initialized: buildEdgeList sets nisect over [ymin,ymax] and
+      // drawEdgeList reads no further, but zeroing here makes an
+      // indeterminate EdgeInfo unreachable by construction rather than by
+      // that argument holding.
+      edge_list = new EdgeInfo[height]();
       if(edge_list == NULL) 
 	return false;
 
@@ -214,7 +218,7 @@ void GMANZBufferRenderer::scanEdges(void) {
 
   // initialize edge list
   for(i=ymin; i<=ymax; i++)
-    edge_list[i].first = false;
+    edge_list[i].nisect = 0;
 
 
   for(i=0; i<num_vert; i++) {
@@ -266,12 +270,14 @@ void GMANZBufferRenderer::scanEdges(void) {
     for(j=sv->screen.y; j< ev->screen.y; j++) {
 
       if (j >= 0 && j < height) { // FIXME: Not necessary if polygon is clipped
-	// determine intersection info 
-	if(edge->first == false) {
-	  scan = &(edge->isect[0]);
-	  edge->first = true;
+	// determine intersection info
+	if(edge->nisect < 2) {
+	  scan = &(edge->isect[edge->nisect++]);
 
 	} else {
+	  // A third crossing cannot occur for the convex polygons the
+	  // clipper emits; overwrite isect[1] as this always did rather
+	  // than run off the end of the array.
 	  scan = &(edge->isect[1]);
 	}
 
@@ -312,6 +318,15 @@ void GMANZBufferRenderer::drawEdgeList(GMANFrameBuffer *frameBuffer) {
 
   edge = &(edge_list[ymin]);
   for(y = ymin; y<=ymax; y++) {
+
+    // Fewer than two intersections is no span. y == ymax always lands
+    // here, and reading its isect[] before this guard was the
+    // uninitialized read valgrind caught -- one per polygon, which is
+    // what made the rendered image nondeterministic.
+    if(edge->nisect < 2) {
+      edge++;
+      continue;
+    }
 
     ss = &(edge->isect[0]);
     se = &(edge->isect[1]);

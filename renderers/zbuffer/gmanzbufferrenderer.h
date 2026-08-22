@@ -94,7 +94,12 @@ private:
 
   struct EdgeInfo
   {
-    bool first;		  // first intersection
+    // How many of isect[] this scanline actually received, not merely
+    // whether it received any. Edges are scan-converted over a half-open
+    // y range, so the bottom scanline of every polygon -- y == ymax --
+    // gets none at all; drawEdgeList needs both entries to have a span,
+    // and read them unconditionally before this was a count.
+    int nisect;
 
     ScanInfo  isect[2];   // scan line intersection array
   };
