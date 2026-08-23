@@ -77,9 +77,11 @@ int main(int argc, char *argv[]) {
 
   // Every RISpec 3.2 request phase 2 added parse-and-ignore coverage for,
   // plus pixelfilter.rib -- phase 2's list missed PixelFilter outright (zero
-  // hits in the tokenizer), which is defect 2. ifelse.rib and solid.rib each
-  // cover a pair of requests that only mean anything together
-  // (IfBegin/ElseIf/Else/IfEnd, SolidBegin/SolidEnd).
+  // hits in the tokenizer), which is defect 2 -- and
+  // geometricapproximation.rib, whose keyword this commit also adds to the
+  // tokenizer. ifelse.rib and solid.rib each cover a pair of requests that
+  // only mean anything together (IfBegin/ElseIf/Else/IfEnd,
+  // SolidBegin/SolidEnd).
   const std::vector<std::string> requestFixtures = {
     "curves.rib", "blobby.rib", "subdivisionmesh.rib", "procedural.rib",
     "solid.rib", "detail.rib", "detailrange.rib", "relativedetail.rib",
@@ -87,6 +89,7 @@ int main(int argc, char *argv[]) {
     "archiverecord.rib", "maketexture.rib", "makebump.rib",
     "makelatlongenvironment.rib", "makecubefaceenvironment.rib",
     "makeshadow.rib", "ifelse.rib", "pixelfilter.rib",
+    "geometricapproximation.rib",
   };
 
   for (const std::string &fixture : requestFixtures) {
@@ -95,6 +98,12 @@ int main(int argc, char *argv[]) {
     check(r.exitStatus == 0, fixture + ": gman exits 0");
     check(r.output.find("Keyword token: Sphere") != std::string::npos,
 	  fixture + ": the Sphere after it still parses (no desync)");
+    // Exit 0 and a parsed Sphere are also what an *unrecognized* request
+    // produces, since the front end warns and skips those by design. Without
+    // this line, deleting a keyword from the tokenizer leaves the whole
+    // table green.
+    check(r.output.find("Unrecognized keyword") == std::string::npos,
+	  fixture + ": the tokenizer recognizes the request");
   }
 
   // Defect 1: a token that runs to end of input with no trailing delimiter

@@ -723,7 +723,11 @@ RtVoid  GMANRenderManImpl::RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloa
 RtVoid  GMANRenderManImpl::RiGeometricApproximation(RtToken type, RtFloat value)
 {
   allowed(cmdGeometricApproximation);
-  if (type!=RI_FLATNESS) {
+  // strcmp, not pointer equality: type is a token parsed out of the RIB and
+  // is never the RI_FLATNESS global itself, so the pointer test rejected
+  // every value including the only legal one. RiShadingInterpolation and
+  // RiOrientation just below compare the same kind of token with strcmp.
+  if (strcmp(type, RI_FLATNESS)) {
     GMANError error(RIE_UNIMPLEMENT,RIE_WARNING,"Unknown geometric approximation type");
     throw error;
   }
