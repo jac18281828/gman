@@ -97,6 +97,20 @@ std::vector<std::string> ciJobNames(const std::string &ciYaml) {
   return jobs;
 }
 
+// The whole Gates section, heading to the next `## ` heading: the fenced
+// block plus the prose around it that names the CI jobs.
+std::string gatesSection(const std::string &agentsMd) {
+  std::size_t start = agentsMd.find("## Gates");
+  if (start == std::string::npos) {
+    return "";
+  }
+  std::size_t end = agentsMd.find("\n## ", start + 1);
+  if (end == std::string::npos) {
+    end = agentsMd.size();
+  }
+  return agentsMd.substr(start, end - start);
+}
+
 // The Gates section's fenced shell block: the exact commands a developer
 // runs by hand.
 std::string gatesBlock(const std::string &agentsMd) {
@@ -135,9 +149,20 @@ int main(int argc, char **argv) {
 
   const std::vector<std::string> jobs = ciJobNames(ciYaml);
   check(jobs.size() >= 3, "ci.yml has at least the three known jobs");
+
+  // Backtick-delimited, and only within the Gates section -- not a bare
+  // substring search over the whole file. AGENTS.md is prose about a build
+  // system, so most job names a real workflow would use ("test", "build",
+  // "commits") already occur somewhere in it as ordinary English or as
+  // part of a longer command; a loose search reports those as named and
+  // exits 0 on a job nobody documented. The Gates section writes each job
+  // name in backticks, so requiring that exact form is what makes the
+  // check mean "documented here" rather than "these letters appear".
+  const std::string section = gatesSection(agentsMd);
+  check(!section.empty(), "AGENTS.md has a Gates section");
   for (const auto &job : jobs) {
-    check(agentsMd.find(job) != std::string::npos,
-          "ci.yml job \"" + job + "\" is named in AGENTS.md");
+    check(section.find("`" + job + "`") != std::string::npos,
+          "ci.yml job \"" + job + "\" is named in AGENTS.md's Gates section");
   }
 
   const std::string gates = gatesBlock(agentsMd);
