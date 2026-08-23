@@ -216,3 +216,18 @@ add_test(NAME attributescopy
   WORKING_DIRECTORY "${GMAN_ATTRIBUTESCOPY_WORKDIR}")
 set_tests_properties(attributescopy PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# UAT defect 2: the PNG output driver segfaulted -- a read-side libpng call
+# on a write struct, a mis-sized pixel buffer, and a loop that only ever
+# wrote column 0.
+add_executable(gman_pngdriver pngdriver_test.cpp)
+target_link_libraries(gman_pngdriver PRIVATE gman_core PNG::PNG TIFF::TIFF)
+
+set(GMAN_PNGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pngdriver-run")
+file(MAKE_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
+
+add_test(NAME pngdriver
+  COMMAND gman_pngdriver $<TARGET_FILE:gman>
+  WORKING_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
+set_tests_properties(pngdriver PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

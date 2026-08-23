@@ -176,16 +176,29 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
     if (mode != RGBA) {
 	// png_set_filler(png_ptr, 0, PNG_FILLER_BEFORE);
     }
-    
-    // Swap the location of alpha
-    png_set_swap_alpha(png_ptr);
+
+    // No png_set_swap_alpha here: that call tells libpng the row data
+    // supplied below is ARGB and asks it to move alpha to the end for
+    // RGBA storage. The loop below already packs R,G,B,A in that order
+    // to match PNG_COLOR_TYPE_RGB_ALPHA directly, so swapping rotated
+    // every channel by one position -- R became stored G, G became
+    // stored B, and the real alpha (always 255, opaque) overwrote R.
 
 #endif
 
-    png_read_update_info(png_ptr, info_ptr);
+    // png_read_update_info is a read-side call (its own doc: "MUST be
+    // called before png_read_update_info or png_start_read_image") --
+    // png_ptr here came from png_create_write_struct and was never set up
+    // for reading, so this corrupted internal state libpng only fills in
+    // for a read stream. png_write_info already populated info_ptr's
+    // rowbytes from the IHDR set above; no update call is needed on the
+    // write side.
     png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
     
-    png_byte *image_data = new png_byte[rowbytes*xres];
+    // One row of rowbytes per scanline -- yres of them, not xres. A square
+    // Format hid this: the two are equal there, so the buffer happened to
+    // be exactly right.
+    png_byte *image_data = new png_byte[rowbytes*yres];
     if(image_data) {
 	png_bytep *row_pointers = new png_bytep[yres];
 	if(row_pointers) {
@@ -232,8 +245,7 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
 		    // FIXME FIXME FIXME
 		    // FIX Alpha support
        
-		    src[colOff++] = 255; 
-		    break;
+		    src[colOff++] = 255;
 		}
 	    }
 	    // Write out entire image
