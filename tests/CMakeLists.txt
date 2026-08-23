@@ -179,3 +179,12 @@ set_tests_properties(partialsphere PROPERTIES
 add_executable(gman_vertexnormal vertexnormal_test.cpp)
 target_link_libraries(gman_vertexnormal PRIVATE gman_core)
 add_test(NAME vertexnormal COMMAND gman_vertexnormal)
+
+# AGENTS.md's Gates block against .github/workflows/ci.yml -- a docs
+# rewrite has no other fails-when-reverted mechanism. Reads the checked-in
+# source tree directly; no dependency on this test's own build output.
+add_executable(gman_docsconsistency docsconsistency_test.cpp)
+add_test(NAME docsconsistency
+  COMMAND gman_docsconsistency
+          "${CMAKE_SOURCE_DIR}/AGENTS.md"
+          "${CMAKE_SOURCE_DIR}/.github/workflows/ci.yml")

@@ -9,10 +9,8 @@ Written for phase 0's runtime baseline. Not third-party.
 Minimal, hand-written fixtures, one per RISpec 3.2 request phase 2 added
 parse-and-ignore coverage for (`ifelse.rib` covers the four conditional
 requests together; `solid.rib` covers `SolidBegin`/`SolidEnd` together --
-neither pair is meaningful RIB in isolation). Each is the request under test
-followed by a `Sphere`, so a handler that mis-counts its own parameters and
-desyncs the token stream is caught by the sphere failing to parse rather than
-by the request itself, which a request-in-isolation test would miss.
+neither pair is meaningful RIB in isolation). Each follows AGENTS.md's "RIB
+authoring" section, "The desync convention."
 
 ## corpus/
 

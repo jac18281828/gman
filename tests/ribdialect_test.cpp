@@ -7,10 +7,8 @@
  * Phase 2's RIB-dialect coverage: the corpus test, the per-request
  * parameter-consumption tests, and the unknown-request skip test.
  *
- * Each request test is deliberately "request under test, then a Sphere":
- * a handler that mis-counts its own arguments desyncs the token stream, and
- * that failure surfaces as the *following* request failing to parse, not the
- * request itself -- a request tested in isolation would miss it entirely.
+ * Each request test follows AGENTS.md's "RIB authoring" section, "The
+ * desync convention."
  */
 
 #include <sys/wait.h>
