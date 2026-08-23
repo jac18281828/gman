@@ -71,11 +71,14 @@ sites from an allocation whose owner threw before reaching its `delete`. A
 class that cannot be safely copied, and a function that returns before it
 frees, are exactly the shapes those two bugs took.
 
-`GMANParameterList::getPointer` throws rather than returning null for an
-absent token — this codebase's equivalent of `unwrap` on a value that may
-legitimately be missing. Code with an optional parameter must catch or
-check for absence explicitly (`gmanshaderparams.h`'s `getFloatParam`/
-`getColorParam` do this); do not assume presence.
+`GMANParameterList::getPointer` returns NULL for an absent token — an
+optional, not an `unwrap`. Code with an optional parameter must check the
+returned pointer before dereferencing it (`gmanshaderparams.h`'s
+`getFloatParam`/`getColorParam` do this); do not assume presence. It threw
+once, and that made every `Projection` without an explicit `"fov"` fail:
+`RiWorldBegin`'s own default-to-90 path was unreachable, because the lookup
+feeding it never returned. Absence is the routine case here, and a
+throw is the wrong shape for it.
 
 ## Dependencies and includes
 

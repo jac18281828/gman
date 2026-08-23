@@ -48,10 +48,13 @@ inline GMANDictionary &dictionary() {
   return d;
 }
 
-// GMANParameterList::getPointer throws GMANError(RIE_CONSISTENCY,
-// TOKEN_NOT_FOUND) for a token this parameter list doesn't carry -- every
-// shader parameter here is optional (RiSurface "matte" may pass none of
-// them), so probing for one is routine, not exceptional.
+// Every shader parameter here is optional (RiSurface "matte" may pass none
+// of them), so probing for one is routine, not exceptional.
+// GMANParameterList::getPointer returns NULL for a token this parameter
+// list doesn't carry. The try/catch is still load-bearing, for the other
+// call: GMANDictionary::getTokenId throws RIE_BADTOKEN for a name the
+// dictionary has never seen, which is what a shader asking for a parameter
+// nobody ever declared does.
 inline RtFloat *tryGetFloatParam(GMANParameterList &pl, RtToken token) {
   try {
     return (RtFloat *) pl.getPointer(dictionary().getTokenId(token));
