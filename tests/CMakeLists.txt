@@ -263,3 +263,19 @@ add_test(NAME cropwindow
   WORKING_DIRECTORY "${GMAN_CROPWINDOW_WORKDIR}")
 set_tests_properties(cropwindow PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# UAT defect 5: orthographic ignored RiScreenWindow and hard-clipped at
+# camera-space x=+-1 -- GMANPolygonClipper's fixed clip planes had no
+# screen-window dependence, which prjPersp's invT calibration needs but
+# prjOrtho has nothing equivalent to provide.
+add_executable(gman_orthowindow orthowindow_test.cpp)
+target_link_libraries(gman_orthowindow PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_ORTHOWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/orthowindow-run")
+file(MAKE_DIRECTORY "${GMAN_ORTHOWINDOW_WORKDIR}")
+
+add_test(NAME orthowindow
+  COMMAND gman_orthowindow $<TARGET_FILE:gman>
+  WORKING_DIRECTORY "${GMAN_ORTHOWINDOW_WORKDIR}")
+set_tests_properties(orthowindow PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

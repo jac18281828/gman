@@ -64,6 +64,13 @@ class GMAN_EXPORT  GMANViewingSystem
 
     const GMANMatrix4 &getWorldToCamera(RtVoid) const { return worldToCamera; }
     const GMANMatrix4 &getCameraToWorld(RtVoid) const { return cameraToWorld; }
+
+    // The screen window this viewing system was built with -- RiScreenWindow's
+    // default or explicit value. GMANPolygonClipper needs it to derive
+    // orthographic's clip planes (prjOrtho has no fov-equivalent natural
+    // bound the way prjPersp does; the screen window is the only bound
+    // there is).
+    const GMANOptions::ScreenWindowStruct &getScreenWindow(RtVoid) const { return sw; }
     
     /* LJL February 2001 + project & ray */
     RtVoid screenToRaster(RtFloat &x, RtFloat &y);
