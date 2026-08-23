@@ -231,3 +231,21 @@ add_test(NAME pngdriver
   WORKING_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
 set_tests_properties(pngdriver PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# UAT defect 3: .jpg/.jpeg had no Display extension dispatch branch, so
+# newOutput stayed null and RiWorldEnd dereferenced it unconditionally.
+# Guarded like the driver itself -- GMAN_WITH_JPEG can be off if libjpeg
+# was never found.
+if(GMAN_WITH_JPEG)
+  add_executable(gman_jpegdriver jpegdriver_test.cpp)
+  target_link_libraries(gman_jpegdriver PRIVATE gman_core JPEG::JPEG TIFF::TIFF)
+
+  set(GMAN_JPEGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/jpegdriver-run")
+  file(MAKE_DIRECTORY "${GMAN_JPEGDRIVER_WORKDIR}")
+
+  add_test(NAME jpegdriver
+    COMMAND gman_jpegdriver $<TARGET_FILE:gman>
+    WORKING_DIRECTORY "${GMAN_JPEGDRIVER_WORKDIR}")
+  set_tests_properties(jpegdriver PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+endif()

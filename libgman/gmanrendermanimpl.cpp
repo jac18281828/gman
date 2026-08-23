@@ -54,6 +54,7 @@
 #include "gmanvsorthographic.h"
 #include "gmanvsperspective.h"
 
+#include "gmanoutputjpeg.h"
 #include "gmanoutputpnm.h"
 #include "gmanoutputpng.h"
 #include "gmanoutputtiff.h"
@@ -184,6 +185,22 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid)
 				  getDisplay().name.c_str(),
 				  ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
 				  ri.rymax-ri.rymin+1));
+    } else if ((ext == "jpg") || (ext == "jpeg")) {
+
+      newOutput.reset(new GMANOutputJPEG( getOptions().
+				  getDisplay().name.c_str(),
+				  ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
+				  ri.rymax-ri.rymin+1));
+    } else {
+      // Every recognized extension above leaves newOutput set; falling
+      // through here means none matched. Diagnose it -- an unrecognized
+      // extension is the same defect this branch exists to close in its
+      // general form, not just for "jpg"/"jpeg": a null newOutput handed
+      // to `output` below gets dereferenced in RiWorldEnd with no
+      // diagnostic at all.
+      std::string errorMsg("Unrecognized Display file extension: ");
+      errorMsg.append(ext);
+      throw(GMANError(RIE_BADFILE, RIE_ERROR, errorMsg.c_str()));
     }
 
   } else {  // type == framebuffer
