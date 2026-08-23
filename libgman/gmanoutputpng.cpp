@@ -257,9 +257,14 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
     
     png_write_end(png_ptr, info_ptr);
 
-    // clean up write struct
-    png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-    fclose(pngFile); 
+    // clean up write struct. Passing info_ptr here (not NULL, as this
+    // used to) is what actually frees it -- png_create_info_struct and
+    // the png_set_text/tIME/gAMA/bKGD calls above all allocate through
+    // it, and passing NULL destroyed only png_ptr, leaking the rest.
+    // Unreachable before the segfault fix above (this line), so this
+    // leak was always here but never actually ran.
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    fclose(pngFile);
 
 #endif
 }
