@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
   // ReadArchive target, and a gzip'd one.
   {
     const std::string path = ribDir + "/nonewline/top.rib";
+    std::remove("nonewline_top.tif");
     Result r = run(gman, path, /*debug=*/true);
     check(r.exitStatus == 0, "no trailing newline: top-level file exits 0");
     check(r.output.find("Unrecognized keyword") == std::string::npos,
@@ -165,6 +166,7 @@ int main(int argc, char *argv[]) {
   // display survives and menger.tif appears.
   {
     const std::string corpus = ribDir + "/corpus/menger.rib";
+    std::remove("menger.tif");
     Result r = run(gman, corpus, /*debug=*/false);
     check(r.exitStatus == 0, "corpus: menger.rib parses to completion, exit 0");
     check(r.output.find("ERROR") == std::string::npos,
@@ -211,6 +213,7 @@ int main(int argc, char *argv[]) {
   // still fails it.
   {
     const std::string bike = ribDir + "/corpus/bike.rib";
+    std::remove("bike.tif");
     Result r = run(gman, bike, /*debug=*/true);
     check(r.output.find("Keyword token: ReadArchive") != std::string::npos,
 	  "corpus: bike.rib reaches its ReadArchive");
