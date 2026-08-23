@@ -29,17 +29,11 @@
 #include "gmanattributes.h"
 
 GMANAttributes::GMANAttributes() :
-  areaLightModule(NULL),
   areaLight(NULL),
-  surfaceModule(NULL),
   surface(NULL),
-  atmosphereModule(NULL),
   atmosphere(NULL),
-  interiorModule(NULL),
   interior(NULL),
-  exteriorModule(NULL),
   exterior(NULL),
-  displacementModule(NULL),
   displacement(NULL)
 
 { // Shading attributes
@@ -69,15 +63,10 @@ GMANAttributes::GMANAttributes() :
 */
 }
 
+// The six *Module members are shared_ptr now; each releases its reference
+// on its own, deleting the underlying GMANLoadableShader only when this is
+// the last GMANAttributes holding it.
 GMANAttributes::~GMANAttributes() {
-
-  if(areaLightModule) delete(areaLightModule);
-  if(surfaceModule)   delete(surfaceModule);
-  if(atmosphereModule) delete(atmosphereModule);
-  if(interiorModule)   delete(interiorModule);
-  if(exteriorModule)   delete(exteriorModule);
-  if(displacementModule) delete(displacementModule);
-
 }
 
 RtVoid GMANAttributes::setColor (RtColor c)
@@ -117,11 +106,10 @@ RtVoid GMANAttributes::setIlluminate (RtLightHandle lh, RtBoolean onoff)
 RtVoid GMANAttributes::setSurface (const std::string & name, GMANParameterList &pl,
 				   GMANRenderer &rd)
 {
-  if(surfaceModule) delete(surfaceModule);
   std::string objectName = "lib";
   objectName += name;
   objectName += ".so";
-  surfaceModule = new GMANLoadableShader(objectName.c_str());
+  surfaceModule = std::make_shared<GMANLoadableShader>(objectName.c_str());
   if(surfaceModule->getType() == GMANShader::SURFACE) {
     surface = surfaceModule->getSurface();
   } else {
@@ -135,8 +123,7 @@ RtVoid GMANAttributes::setSurface (const std::string & name, GMANParameterList &
 RtVoid GMANAttributes::setDisplacement (const std::string & name, GMANParameterList &pl,
 					GMANRenderer &rd)
 {
-  if(displacementModule) delete(displacementModule);
-  displacementModule = new GMANLoadableShader(name.c_str());
+  displacementModule = std::make_shared<GMANLoadableShader>(name.c_str());
   if(displacementModule->getType() == GMANShader::DISPLACEMENT) {
     displacement = displacementModule->getDisplacement();
   } else {
@@ -150,8 +137,7 @@ RtVoid GMANAttributes::setDisplacement (const std::string & name, GMANParameterL
 RtVoid GMANAttributes::setAtmosphere (const std::string & name, GMANParameterList &pl,
 				      GMANRenderer &rd)
 {
-  if(atmosphereModule) delete(atmosphereModule);
-  atmosphereModule = new GMANLoadableShader(name.c_str());
+  atmosphereModule = std::make_shared<GMANLoadableShader>(name.c_str());
   if(atmosphereModule->getType() == GMANShader::VOLUME) {
     atmosphere = atmosphereModule->getVolume();
   } else {
@@ -165,8 +151,7 @@ RtVoid GMANAttributes::setAtmosphere (const std::string & name, GMANParameterLis
 RtVoid GMANAttributes::setInterior (const std::string & name, GMANParameterList &pl,
 				    GMANRenderer &rd)
 {
-  if(interiorModule) delete(interiorModule);
-  interiorModule = new GMANLoadableShader(name.c_str());
+  interiorModule = std::make_shared<GMANLoadableShader>(name.c_str());
   if(interiorModule->getType() == GMANShader::VOLUME) {
     interior = interiorModule->getVolume();
   } else {
@@ -180,8 +165,7 @@ RtVoid GMANAttributes::setInterior (const std::string & name, GMANParameterList 
 RtVoid GMANAttributes::setExterior (const std::string & name, GMANParameterList &pl,
 				    GMANRenderer &rd)
 {
-  if(exteriorModule) delete(exteriorModule);
-  exteriorModule = new GMANLoadableShader(name.c_str());
+  exteriorModule = std::make_shared<GMANLoadableShader>(name.c_str());
   if(exteriorModule->getType() == GMANShader::VOLUME) {
     exterior = exteriorModule->getVolume();
   } else {

@@ -202,3 +202,17 @@ add_test(NAME fovdefault
   WORKING_DIRECTORY "${GMAN_FOVDEFAULT_WORKDIR}")
 set_tests_properties(fovdefault PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# UAT defect 1: Surface before AttributeBegin/FrameBegin double-freed a
+# dlopen'd shader module on the attributesStack copy both requests make.
+add_executable(gman_attributescopy attributescopy_test.cpp)
+target_link_libraries(gman_attributescopy PRIVATE gman_core)
+
+set(GMAN_ATTRIBUTESCOPY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/attributescopy-run")
+file(MAKE_DIRECTORY "${GMAN_ATTRIBUTESCOPY_WORKDIR}")
+
+add_test(NAME attributescopy
+  COMMAND gman_attributescopy $<TARGET_FILE:gman>
+  WORKING_DIRECTORY "${GMAN_ATTRIBUTESCOPY_WORKDIR}")
+set_tests_properties(attributescopy PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

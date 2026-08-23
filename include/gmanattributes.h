@@ -29,6 +29,7 @@
 #ifndef __GMANATTRIBUTES_H
 #define __GMANATTRIBUTES_H 1
 
+#include <memory>
 #include <string>
 #include "ri.h"
 #include "gmanlog.h"
@@ -76,22 +77,30 @@ private:
   GMANTextureCoordinates     textureCoordinates;
   GMANLightList          lightList;
 
-  GMANLoadableShader     *areaLightModule;
+  // Shared, not deep-copied: a loaded module is immutable once dlopen'd, and
+  // AttributeBegin/AttributeEnd (GMANGraphicState::attributesStack.push
+  // (attributesStack.top())) copies GMANAttributes on every block entry --
+  // deep-copying would re-dlopen on every block even when no shader
+  // changes inside it. A shared_ptr also makes the block's own semantics
+  // free: reassigning a block-local shared_ptr (RiSurface inside
+  // AttributeBegin) never touches the parent's copy, and AttributeEnd
+  // discards it along with the rest of the popped GMANAttributes.
+  std::shared_ptr<GMANLoadableShader>     areaLightModule;
   [[maybe_unused]] GMANLightSourceShader  *areaLight;
 
-  GMANLoadableShader     *surfaceModule;
+  std::shared_ptr<GMANLoadableShader>     surfaceModule;
   GMANSurfaceShader      *surface;
 
-  GMANLoadableShader     *atmosphereModule;
+  std::shared_ptr<GMANLoadableShader>     atmosphereModule;
   GMANVolumeShader       *atmosphere;
 
-  GMANLoadableShader     *interiorModule;
+  std::shared_ptr<GMANLoadableShader>     interiorModule;
   GMANVolumeShader       *interior;
 
-  GMANLoadableShader     *exteriorModule;
+  std::shared_ptr<GMANLoadableShader>     exteriorModule;
   GMANVolumeShader       *exterior;
 
-  GMANLoadableShader     *displacementModule;
+  std::shared_ptr<GMANLoadableShader>     displacementModule;
   GMANDisplacementShader *displacement;
 
   RtFloat                shadingRate;
