@@ -249,3 +249,17 @@ if(GMAN_WITH_JPEG)
   set_tests_properties(jpegdriver PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
 endif()
+
+# UAT defect 4: CropWindow truncated from the origin instead of cropping --
+# nothing offset rasterization by the crop rectangle's own origin.
+add_executable(gman_cropwindow cropwindow_test.cpp)
+target_link_libraries(gman_cropwindow PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_CROPWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/cropwindow-run")
+file(MAKE_DIRECTORY "${GMAN_CROPWINDOW_WORKDIR}")
+
+add_test(NAME cropwindow
+  COMMAND gman_cropwindow $<TARGET_FILE:gman>
+  WORKING_DIRECTORY "${GMAN_CROPWINDOW_WORKDIR}")
+set_tests_properties(cropwindow PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

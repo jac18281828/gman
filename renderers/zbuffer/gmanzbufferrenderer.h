@@ -115,6 +115,24 @@ private:
   int width;  // display width
   int height; // display height
 
+  // The frame buffer holds only the CropWindow rectangle, but
+  // GMANViewingSystem::screenToRaster (built from the full, uncropped
+  // Format) always returns a position in the *full* raster grid.
+  // getVertexInfo subtracts these -- the crop rectangle's own origin, from
+  // GMANOptions::RasterInfo -- to land in this buffer's local space; every
+  // downstream user of vert->screen/posn (scanEdges, drawEdgeList) already
+  // assumes that offset has been applied.
+  int rasterOriginX;
+  int rasterOriginY;
+
+  // The full (uncropped) Format's resolution, for getVertexInfo's
+  // numerical-stability margin below -- that margin has to stay a
+  // property of the frame's geometry, not of how large a CropWindow the
+  // caller happened to ask for, or the same scene's near-singular
+  // vertices pass in one crop and fail in another.
+  int fullResX;
+  int fullResY;
+
   int num_vert; // number of verticies
 
   EdgeInfo	*edge_list;

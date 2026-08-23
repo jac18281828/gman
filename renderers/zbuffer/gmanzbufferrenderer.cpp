@@ -46,13 +46,17 @@
 // default constructor
 GMANZBufferRenderer::GMANZBufferRenderer(int w,
 					 int h) :
-  GMANRenderer(), width(w), height(h) {
+  GMANRenderer(), width(w), height(h),
+  rasterOriginX(0), rasterOriginY(0),
+  fullResX(w), fullResY(h) {
   zbuffer=NULL;
   edge_list=NULL;
   viewingSys=NULL;
 };
 GMANZBufferRenderer::GMANZBufferRenderer() :
-  GMANRenderer(), width(0), height(0) {
+  GMANRenderer(), width(0), height(0),
+  rasterOriginX(0), rasterOriginY(0),
+  fullResX(0), fullResY(0) {
   zbuffer=NULL;
   edge_list=NULL;
   viewingSys=NULL;
@@ -140,7 +144,16 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
   // partially-offscreen polygon can land just outside the frame; one
   // this far outside cannot, so this margin discards the numerically
   // unstable case without clipping ordinary geometry short.
-  const RtFloat rasterMargin = (width > height ? width : height);
+  //
+  // Both terms here are sized from the full (uncropped) Format, not the
+  // local width/height: this is purely a numerical-sanity test, run
+  // before the crop origin is even subtracted below, so it accepts or
+  // rejects the same near-singular vertex identically no matter how
+  // tight a crop the caller asked for. Windowing to the crop rectangle
+  // itself is a separate concern, already handled per pixel further down
+  // (scanEdges/drawEdgeList's own x/y bounds checks) once the position
+  // below has been translated into this buffer's local grid.
+  const RtFloat rasterMargin = (fullResX > fullResY ? fullResX : fullResY);
 
   for(int i=0; i<num_vert; i++) {
 
@@ -155,10 +168,15 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
     RtFloat y = posn.getY();
     viewingSys->screenToRaster(x, y);
     if (!std::isfinite(x) || !std::isfinite(y) ||
-        x < -rasterMargin || x > width + rasterMargin ||
-        y < -rasterMargin || y > height + rasterMargin) {
+        x < -rasterMargin || x > fullResX + rasterMargin ||
+        y < -rasterMargin || y > fullResY + rasterMargin) {
       return false;
     }
+    // Shift from the full Format's raster grid into this (possibly
+    // cropped) buffer's local grid now that the sanity check above has
+    // run on the untranslated, full-frame position.
+    x -= rasterOriginX;
+    y -= rasterOriginY;
     vert->posn.setX(x);
     vert->posn.setY(y);
     vert->posn.setZ(posn.getZ());
@@ -410,7 +428,7 @@ void GMANZBufferRenderer::drawEdgeList(GMANFrameBuffer *frameBuffer) {
 
 RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
 				   GMANViewingSystem  *viewingSys,
-				   const GMANOptions       &/*options*/,
+				   const GMANOptions       &options,
 				   const GMANAttributes    &/*attributes*/)
  {
 
@@ -421,6 +439,16 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
 
   width = frameBuffer->getWidth();
   height = frameBuffer->getHeight();
+
+  // frameBuffer is sized to the CropWindow rectangle, not the full Format;
+  // screenToRaster below still returns positions in the full raster grid,
+  // so getVertexInfo needs this rectangle's own origin to land in this
+  // buffer's local space.
+  const GMANOptions::RasterInfo ri = options.getRasterInfo();
+  rasterOriginX = ri.rxmin;
+  rasterOriginY = ri.rymin;
+  fullResX = ri.xres;
+  fullResY = ri.yres;
 
   this->viewingSys = viewingSys;
 
