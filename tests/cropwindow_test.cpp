@@ -84,7 +84,14 @@ void check(bool ok, const std::string &what) {
   }
 }
 
-int runGman(const std::string &gman, const std::string &rib) {
+// `output` is removed before the run. Every content assertion below would
+// otherwise be satisfied by an image an earlier run left behind: a build
+// directory is reused across ctest invocations, and a reverted fix that
+// throws before opening the display leaves the previous good file in place.
+// tests/baseline.cpp removes its target for the same reason.
+int runGman(const std::string &gman, const std::string &rib,
+            const std::string &output) {
+  std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
@@ -199,7 +206,7 @@ int main(int argc, char *argv[]) {
   // ---- uncropped baseline ----
   std::snprintf(scene, sizeof scene, kSceneTemplate, "full.tif", "");
   writeFile("full.rib", scene);
-  check(runGman(gman, "full.rib") == 0, "uncropped scene renders");
+  check(runGman(gman, "full.rib", "full.tif") == 0, "uncropped scene renders");
   BBox full = findSilhouette("full.tif");
   check(full.found, "uncropped scene: a silhouette was found");
 
@@ -207,7 +214,7 @@ int main(int argc, char *argv[]) {
   std::snprintf(scene, sizeof scene, kSceneTemplate, "centre.tif",
                 "CropWindow 0.25 0.75 0.25 0.75\n");
   writeFile("centre.rib", scene);
-  check(runGman(gman, "centre.rib") == 0, "centre-crop scene renders");
+  check(runGman(gman, "centre.rib", "centre.tif") == 0, "centre-crop scene renders");
   BBox centre = findSilhouette("centre.tif");
   check(centre.found, "centre-crop scene: a silhouette was found");
 
@@ -215,7 +222,7 @@ int main(int argc, char *argv[]) {
   std::snprintf(scene, sizeof scene, kSceneTemplate, "bottomright.tif",
                 "CropWindow 0.5 1.0 0.5 1.0\n");
   writeFile("bottomright.rib", scene);
-  check(runGman(gman, "bottomright.rib") == 0, "bottom-right-crop scene renders");
+  check(runGman(gman, "bottomright.rib", "bottomright.tif") == 0, "bottom-right-crop scene renders");
   BBox br = findSilhouette("bottomright.tif");
   check(br.found, "bottom-right-crop scene: a silhouette was found");
 

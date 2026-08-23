@@ -48,7 +48,14 @@ void check(bool ok, const std::string &what) {
   }
 }
 
-int runGman(const std::string &gman, const std::string &rib) {
+// `output` is removed before the run. Every content assertion below would
+// otherwise be satisfied by an image an earlier run left behind: a build
+// directory is reused across ctest invocations, and a reverted fix that
+// throws before opening the display leaves the previous good file in place.
+// tests/baseline.cpp removes its target for the same reason.
+int runGman(const std::string &gman, const std::string &rib,
+            const std::string &output) {
+  std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
@@ -138,7 +145,7 @@ int main(int argc, char *argv[]) {
       "Sphere 1 -1 1 360\n"
       "WorldEnd\n";
   writeFile("nofov.rib", noFovRib);
-  check(runGman(gman, "nofov.rib") == 0, "no-fov perspective scene renders");
+  check(runGman(gman, "nofov.rib", "nofov.tif") == 0, "no-fov perspective scene renders");
 
   BBox noFov = findSilhouette("nofov.tif");
   check(noFov.found, "no-fov scene: a silhouette was found");
@@ -153,7 +160,7 @@ int main(int argc, char *argv[]) {
       "Sphere 1 -1 1 360\n"
       "WorldEnd\n";
   writeFile("fov90.rib", fov90Rib);
-  check(runGman(gman, "fov90.rib") == 0, "explicit fov=90 scene renders");
+  check(runGman(gman, "fov90.rib", "fov90.tif") == 0, "explicit fov=90 scene renders");
 
   BBox fov90 = findSilhouette("fov90.tif");
   check(fov90.found, "fov=90 scene: a silhouette was found");
@@ -182,7 +189,7 @@ int main(int argc, char *argv[]) {
       "Sphere 1 -1 1 360\n"
       "WorldEnd\n";
   writeFile("ortho_nofov.rib", orthoNoFovRib);
-  check(runGman(gman, "ortho_nofov.rib") == 0,
+  check(runGman(gman, "ortho_nofov.rib", "ortho_nofov.tif") == 0,
         "no-fov orthographic scene renders (fov unused but still looked up)");
 
   if (failures != 0) {

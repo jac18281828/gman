@@ -53,7 +53,14 @@ void check(bool ok, const std::string &what) {
   }
 }
 
-int runGman(const std::string &gman, const std::string &rib) {
+// `output` is removed before the run. Every content assertion below would
+// otherwise be satisfied by an image an earlier run left behind: a build
+// directory is reused across ctest invocations, and a reverted fix that
+// throws before opening the display leaves the previous good file in place.
+// tests/baseline.cpp removes its target for the same reason.
+int runGman(const std::string &gman, const std::string &rib,
+            const std::string &output) {
+  std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
@@ -176,12 +183,12 @@ int main(int argc, char *argv[]) {
   char scene[1024];
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.jpg");
   writeFile("jpegdriver.rib", scene);
-  check(runGman(gman, "jpegdriver.rib") == 0, "JPEG scene renders");
+  check(runGman(gman, "jpegdriver.rib", "jpegdriver.jpg") == 0, "JPEG scene renders");
   check(nonEmptyFile("jpegdriver.jpg"), "JPEG file is non-empty");
 
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.tif");
   writeFile("jpegdriver_tif.rib", scene);
-  check(runGman(gman, "jpegdriver_tif.rib") == 0, "equivalent TIFF scene renders");
+  check(runGman(gman, "jpegdriver_tif.rib", "jpegdriver.tif") == 0, "equivalent TIFF scene renders");
 
   Image jpg = readJPEG("jpegdriver.jpg");
   check(jpg.ok, "JPEG decodes as well-formed");
@@ -217,7 +224,7 @@ int main(int argc, char *argv[]) {
   // ---- a genuinely unknown extension must diagnose, not crash ----
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.bogus");
   writeFile("jpegdriver_bogus.rib", scene);
-  int bogusExit = runGman(gman, "jpegdriver_bogus.rib");
+  int bogusExit = runGman(gman, "jpegdriver_bogus.rib", "jpegdriver.bogus");
   check(bogusExit != 0 && bogusExit != -1,
         "an unrecognized Display extension fails cleanly (not a crash)");
   check(!fileExists("jpegdriver.bogus"),

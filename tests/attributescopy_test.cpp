@@ -50,7 +50,14 @@ void check(bool ok, const std::string &what) {
   }
 }
 
-int runGman(const std::string &gman, const std::string &rib) {
+// `output` is removed before the run. Every content assertion below would
+// otherwise be satisfied by an image an earlier run left behind: a build
+// directory is reused across ctest invocations, and a reverted fix that
+// throws before opening the display leaves the previous good file in place.
+// tests/baseline.cpp removes its target for the same reason.
+int runGman(const std::string &gman, const std::string &rib,
+            const std::string &output) {
+  std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
@@ -88,7 +95,7 @@ int main(int argc, char *argv[]) {
       "AttributeEnd\n"
       "WorldEnd\n";
   writeFile("attr.rib", attrRib);
-  check(runGman(gman, "attr.rib") == 0,
+  check(runGman(gman, "attr.rib", "attr.tif") == 0,
         "Surface before AttributeBegin runs to completion");
   check(nonEmptyFile("attr.tif"), "AttributeBegin scene wrote a TIFF");
 
@@ -107,7 +114,7 @@ int main(int argc, char *argv[]) {
       "WorldEnd\n"
       "FrameEnd\n";
   writeFile("frame.rib", frameRib);
-  check(runGman(gman, "frame.rib") == 0,
+  check(runGman(gman, "frame.rib", "frame.tif") == 0,
         "Surface before FrameBegin runs to completion");
   check(nonEmptyFile("frame.tif"), "FrameBegin scene wrote a TIFF");
 

@@ -71,7 +71,14 @@ void check(bool ok, const std::string &what) {
   }
 }
 
-int runGman(const std::string &gman, const std::string &rib) {
+// `output` is removed before the run. Every content assertion below would
+// otherwise be satisfied by an image an earlier run left behind: a build
+// directory is reused across ctest invocations, and a reverted fix that
+// throws before opening the display leaves the previous good file in place.
+// tests/baseline.cpp removes its target for the same reason.
+int runGman(const std::string &gman, const std::string &rib,
+            const std::string &output) {
+  std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
@@ -166,7 +173,7 @@ int main(int argc, char *argv[]) {
       "Sphere 1 -1 1 360\n"
       "WorldEnd\n";
   writeFile("repro.rib", repro);
-  check(runGman(gman, "repro.rib") == 0, "the reproduction scene renders");
+  check(runGman(gman, "repro.rib", "repro.tif") == 0, "the reproduction scene renders");
 
   BBox b = findSilhouette("repro.tif");
   check(b.found, "the reproduction scene: a silhouette was found");
@@ -198,7 +205,7 @@ int main(int argc, char *argv[]) {
       "Sphere 1 -1 1 360\n"
       "WorldEnd\n";
   writeFile("vanished.rib", vanished);
-  check(runGman(gman, "vanished.rib") == 0, "the off-centre scene renders");
+  check(runGman(gman, "vanished.rib", "vanished.tif") == 0, "the off-centre scene renders");
   BBox v = findSilhouette("vanished.tif");
   check(v.found,
         "a sphere beyond the pre-fix vanishing point still has a "
@@ -216,7 +223,7 @@ int main(int argc, char *argv[]) {
       "Sphere 1 -1 1 360\n"
       "WorldEnd\n";
   writeFile("unit.rib", unit);
-  check(runGman(gman, "unit.rib") == 0, "the default-window control scene renders");
+  check(runGman(gman, "unit.rib", "unit.tif") == 0, "the default-window control scene renders");
   BBox u = findSilhouette("unit.tif");
   // The same sphere (camera-space x in [-2.5,-0.5]) under the *default*
   // screen window (aspect-derived, here [-2,2]x[-1,1] for a 2:1 Format)
