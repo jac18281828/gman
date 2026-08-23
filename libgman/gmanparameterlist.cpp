@@ -134,16 +134,18 @@ GMANParameterList::~GMANParameterList()
   destroy();
 }
 
+// Absence of a token is the routine case: every caller asks "did the user
+// pass this optional parameter," not "is this parameter list well-formed."
+// Every call site in the tree (RiWorldBegin's fov lookup, and the shader/
+// light "tryGet" wrappers) already treats a missing token as NULL and either
+// falls back to a spec default or wraps this call in try/catch to force
+// that meaning by hand. Returning NULL directly makes that the only meaning
+// there is to get.
 RtPointer GMANParameterList::getPointer(GMANTokenId tid) const
 {
-  int i;
-  for(i=0;i<number;i++) {
+  for(int i=0;i<number;i++) {
     if (tid==id[i]) return datas[i];
   }
-  GMANError error(RIE_CONSISTENCY, RIE_ERROR, "GMANParameterList: TOKEN_NOT_FOUND");
-  throw error;
-
-  // win32 requires a return
   return NULL;
 }
 

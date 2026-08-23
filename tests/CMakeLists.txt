@@ -188,3 +188,17 @@ add_test(NAME docsconsistency
   COMMAND gman_docsconsistency
           "${CMAKE_SOURCE_DIR}/AGENTS.md"
           "${CMAKE_SOURCE_DIR}/.github/workflows/ci.yml")
+
+# UAT defect 0: a Projection with no explicit "fov" threw instead of
+# defaulting to 90 per RISpec 3.2.
+add_executable(gman_fovdefault fovdefault_test.cpp)
+target_link_libraries(gman_fovdefault PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_FOVDEFAULT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/fovdefault-run")
+file(MAKE_DIRECTORY "${GMAN_FOVDEFAULT_WORKDIR}")
+
+add_test(NAME fovdefault
+  COMMAND gman_fovdefault $<TARGET_FILE:gman>
+  WORKING_DIRECTORY "${GMAN_FOVDEFAULT_WORKDIR}")
+set_tests_properties(fovdefault PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

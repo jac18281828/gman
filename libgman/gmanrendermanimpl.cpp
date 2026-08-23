@@ -537,13 +537,12 @@ RtVoid  GMANRenderManImpl::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat 
 }
 namespace {
 
-// GMANParameterList::getPointer throws GMANError(RIE_CONSISTENCY,
-// TOKEN_NOT_FOUND) for a token this parameter list simply doesn't carry --
-// it never returns NULL for "absent," only for a token nobody declared at
-// all (see SPEC.md's account of the same throw against RI_FOV). Every
-// light parameter here is optional, so probing for one is routine, not
-// exceptional; this is the one place that distinction has to be made by
-// hand.
+// GMANParameterList::getPointer returns NULL for a token this parameter
+// list doesn't carry -- every light parameter here is optional, so probing
+// for one is routine. The try/catch is a defensive remnant of when
+// getPointer threw instead (see SPEC.md's account of the same defect
+// against RI_FOV); harmless to keep, since a token this dictionary never
+// declared at all would still throw out of getTokenId.
 RtFloat *tryGetPointer(GMANDictionary &dictionary, GMANParameterList &pl,
 			RtToken token) {
   try {
