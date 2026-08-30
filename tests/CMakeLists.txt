@@ -225,6 +225,21 @@ set_tests_properties(ribmalformed PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   TIMEOUT 60)
 
+# Expected failure, documented not fixed (SPEC.md Section 8): Patch
+# rasterizes no pixels. See tests/patchnorender_test.cpp.
+add_executable(gman_patchnorender patchnorender_test.cpp)
+target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_PATCHNORENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchnorender-run")
+file(MAKE_DIRECTORY "${GMAN_PATCHNORENDER_WORKDIR}")
+
+add_test(NAME patchnorender
+  COMMAND gman_patchnorender $<TARGET_FILE:gman>
+                             "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_PATCHNORENDER_WORKDIR}")
+set_tests_properties(patchnorender PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
 # Review finding: no test rendered a genuinely asymmetric partial sphere's
 # image (transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere). This
 # is the missing end-to-end proof of GMANSphere::getLocation's zmin/zmax
