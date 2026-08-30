@@ -50,11 +50,14 @@ RunResult runWithTimeout(const std::string &gman, const std::string &rib,
   }
   if (pid == 0) {
     // A failed redirect just leaves the child's own stdout/stderr in
-    // place -- noisier test output, not a reason to change course, so
-    // the result is deliberately discarded rather than left as an
-    // unchecked [[nodiscard]] warning under gcc.
-    (void)std::freopen("/dev/null", "w", stdout);
-    (void)std::freopen("/dev/null", "w", stderr);
+    // place -- noisier test output, not a reason to change course.
+    // gcc's freopen is warn_unused_result; a plain (void) cast does not
+    // silence it, so the result is captured and then deliberately
+    // unused rather than left as an ignored return value.
+    FILE *outRedirect = std::freopen("/dev/null", "w", stdout);
+    FILE *errRedirect = std::freopen("/dev/null", "w", stderr);
+    (void)outRedirect;
+    (void)errRedirect;
     execl(gman.c_str(), gman.c_str(), rib.c_str(), (char *)nullptr);
     _exit(127);
   }
