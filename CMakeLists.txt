@@ -259,3 +259,31 @@ install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
 if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
+
+# ---------------------------------------------------------------------------
+# Format check
+# ---------------------------------------------------------------------------
+
+# The tree carries no consistent style to enforce (doc/codingguide.txt never
+# set one, and 26 years of unstyled history is not this phase's to reformat
+# -- a whitespace commit across 200 files destroys git blame). Scoped to the
+# files this phase wrote to a single, deliberate style: tests/check.h and
+# tests/goldenimage.h (the shared harness) and the five RIB-scene test files
+# this phase added. Widen the list only as more of the tree is deliberately
+# touched and reformatted on its own commit, not folded into a behavior
+# change. Check only -- never reformats the tree.
+find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
+if(CLANG_FORMAT_EXECUTABLE)
+  add_custom_target(format-check
+    COMMAND "${CLANG_FORMAT_EXECUTABLE}" --dry-run --Werror
+      "${CMAKE_SOURCE_DIR}/tests/check.h"
+      "${CMAKE_SOURCE_DIR}/tests/goldenimage.h"
+      "${CMAKE_SOURCE_DIR}/tests/quadrics_test.cpp"
+      "${CMAKE_SOURCE_DIR}/tests/screenwindow_test.cpp"
+      "${CMAKE_SOURCE_DIR}/tests/clipping_test.cpp"
+      "${CMAKE_SOURCE_DIR}/tests/shaders_test.cpp"
+      "${CMAKE_SOURCE_DIR}/tests/ribmalformed_test.cpp"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Checking clang-format compliance of this phase's new test files"
+    VERBATIM)
+endif()

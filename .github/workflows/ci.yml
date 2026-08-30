@@ -23,17 +23,19 @@ jobs:
           - compiler: clang
             cc: clang
             cxx: clang++
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build \
+          sudo apt-get install -y cmake ninja-build ccache \
             libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install cmake libtiff libpng jpeg
+        run: brew install cmake libtiff libpng jpeg ccache
       # On macOS gcc and g++ are Apple clang wearing a different name, so the
       # gcc leg has to name a real one for the matrix to mean anything.
       - name: Select a genuine gcc (macOS)
@@ -47,8 +49,22 @@ jobs:
         run: |
           echo "CC=${{ matrix.cc }}" >> "$GITHUB_ENV"
           echo "CXX=${{ matrix.cxx }}" >> "$GITHUB_ENV"
+      # Keyed on the source files that actually drive recompilation, not on
+      # a lockfile this tree doesn't have -- a stale hit just costs a few
+      # rebuilt objects, not a wrong build, and restore-keys falls back to
+      # the most recent cache for the same os/compiler otherwise.
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ matrix.os }}-${{ matrix.compiler }}-${{ hashFiles('**/*.cpp', '**/*.h', '**/*.cc') }}
+          restore-keys: |
+            ccache-${{ matrix.os }}-${{ matrix.compiler }}-
       - name: Configure
-        run: cmake --preset dev
+        run: |
+          cmake --preset dev \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
         run: cmake --build build --parallel
       - name: Test
@@ -57,43 +73,90 @@ jobs:
       # ctest case above.
       - name: Runtime baseline
         run: ./build/gman tests/rib/sphere.rib || true
+      # Golden-image regression failures write a *_diff.tif beside the
+      # scene's own output (see tests/goldenimage.h); a red golden test
+      # with nothing to look at costs an hour every time it fires.
+      - name: Upload golden-image diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-diffs-${{ matrix.os }}-${{ matrix.compiler }}
+          path: build/tests/*-run/*_diff.tif
+          if-no-files-found: ignore
   sanitizers:
     name: ubuntu / clang / asan+ubsan
     runs-on: ubuntu-latest
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      # UBSan's default is print-and-continue, exit 0 -- the same failure
+      # class the valgrind leg was added to close. ASan already defaults to
+      # halt_on_error=1; set both explicitly so neither depends on a
+      # runtime default this tree does not control.
+      ASAN_OPTIONS: halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build \
+          sudo apt-get install -y cmake ninja-build ccache \
             libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-sanitizers-${{ hashFiles('**/*.cpp', '**/*.h', '**/*.cc') }}
+          restore-keys: |
+            ccache-sanitizers-
       - name: Configure
         env:
           CC: clang
           CXX: clang++
-        run: cmake --preset debug
+        run: |
+          cmake --preset debug \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
         run: cmake --build build-debug --parallel
       - name: Test
         run: ctest --test-dir build-debug --output-on-failure
+      - name: Upload golden-image diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-diffs-sanitizers
+          path: build-debug/tests/*-run/*_diff.tif
+          if-no-files-found: ignore
   valgrind:
     # AddressSanitizer does not detect uninitialized reads; memcheck does.
     # `dev`, not `debug`: ASan and valgrind cannot share one binary, and
     # `dev` is RelWithDebInfo (-g), so memcheck's stack traces resolve.
     name: ubuntu / gcc / valgrind
     runs-on: ubuntu-latest
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build valgrind \
+          sudo apt-get install -y cmake ninja-build valgrind ccache \
             libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-valgrind-${{ hashFiles('**/*.cpp', '**/*.h', '**/*.cc') }}
+          restore-keys: |
+            ccache-valgrind-
       - name: Configure
         env:
           CC: gcc
           CXX: g++
-        run: cmake --preset dev
+        run: |
+          cmake --preset dev \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
         run: cmake --build build --parallel
       # Direct invocation, not ctest: gzip_test, readarchive_test and
@@ -122,3 +185,21 @@ jobs:
               ./build/gman "$rib"
             echo "::endgroup::"
           done
+  format-check:
+    # Step 6: doc/codingguide.txt never set a formatting style and the
+    # existing tree carries none consistently, so this checks only the
+    # files this phase wrote to one deliberate style (.clang-format's own
+    # comment names the exact list) -- not a whole-tree gate.
+    name: clang-format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang-format \
+            libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+      - name: Configure
+        run: cmake --preset dev
+      - name: Format check
+        run: cmake --build build --target format-check
