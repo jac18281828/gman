@@ -1,0 +1,7 @@
+# A plain (non-array) string with no closing quote, running to EOF.
+# GMANRIBTokenize::parseString must terminate cleanly at end of input.
+Display "malformed_out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Attribute "user" "string tag" "unterminated

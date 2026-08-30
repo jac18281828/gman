@@ -1,0 +1,83 @@
+## Step 3: all seven RenderMan quadric primitives in one scene -- Sphere,
+## Cone, Cylinder, Hyperboloid, Paraboloid, Torus, Disk. Exercises each
+## primitive's own getLocation/getNormal parameterization end to end
+## (tessellation, shading, silhouette), not only the isolated
+## finite-difference proof tests/normals_test.cpp already covers.
+##
+## Explicit Clipping: Disk is a flat, camera-facing plate -- the shape that
+## hits the near-clip precision defect hardest at the RI_EPSILON default
+## (AGENTS.md, "Explicit Clipping where geometry is flat or narrow in z").
+## One Clipping for the whole scene since every primitive sits in the same
+## z range.
+Display "quadrics.tif" "file" "rgba"
+Format 1400 260 1
+Projection "perspective" "fov" [65]
+Clipping 1 40
+Translate 0 0 16
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [1.2] "lightcolor" [1 1 1]
+	"from" [10 5 0] "to" [0 0 0]
+Sides 1
+Surface "matte" "Ka" [0.2] "Kd" [0.9]
+
+AttributeBegin
+	Translate -9 0 0
+	Sphere 1 -1 1 360
+AttributeEnd
+
+## Cone, Cylinder, Hyperboloid and Paraboloid all extend along their own
+## local z axis by construction (see getLocation in gmanprimitives.cpp);
+## rotated here so the shared camera -- looking straight down world z --
+## sees each one in profile instead of end-on through its open aperture,
+## which would show only a thin silhouette ring, not the characteristic
+## shape.
+##
+## GMAN composes transforms in declaration order (CTM_new = CTM_old * new:
+## the earliest-declared transform is applied to the primitive first, not
+## last as in OpenGL's stack -- see phase-1-REPORT.md's "Matrix convention"
+## note). The pre-WorldBegin "Translate 0 0 16" above is therefore already
+## baked into every primitive's incoming CTM, so a plain "Rotate" here
+## would rotate *that* camera offset too, swinging the primitive off to the
+## side instead of spinning it in place (verified by direct construction
+## while authoring this fixture). Cancel it, rotate at the true origin,
+## then restore the depth and add this primitive's own x slot in one
+## Translate.
+AttributeBegin
+	Translate 0 0 -16
+	Rotate 90 0 1 0
+	Translate -6 0 16
+	Cone 1.5 1 360
+AttributeEnd
+
+AttributeBegin
+	Translate 0 0 -16
+	Rotate 90 0 1 0
+	Translate -3 0 16
+	Cylinder 1 -1 1 360
+AttributeEnd
+
+AttributeBegin
+	Translate 0 0 -16
+	Rotate 90 0 1 0
+	Translate 0 0 16
+	Hyperboloid 0.3 0 -1  0.9 0 1  360
+AttributeEnd
+
+AttributeBegin
+	Translate 0 0 -16
+	Rotate 90 0 1 0
+	Translate 3 0 16
+	Paraboloid 1 0 1.5 360
+AttributeEnd
+
+AttributeBegin
+	Translate 6 0 0
+	Torus 0.8 0.3 -180 180 360
+AttributeEnd
+
+AttributeBegin
+	Translate 9 0 0
+	Disk 0 1 360
+AttributeEnd
+WorldEnd

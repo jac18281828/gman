@@ -1,0 +1,35 @@
+## Step 3: the three shipped surface shaders -- matte, plastic, metal --
+## side by side under identical lighting, so a regression in one shader's
+## own math (dropping a term, wrong scale) shows up as a change confined
+## to its own sphere, not the whole frame. Spheres, not rotated primitives,
+## so no per-object transform-order care is needed (see quadrics.rib).
+Display "shaders.tif" "file" "rgba"
+Format 600 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 8
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.15]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 3 0] "to" [0 0 0]
+Sides 1
+
+AttributeBegin
+	Translate -2.6 0 0
+	Surface "matte" "Ka" [0.2] "Kd" [0.8]
+	Sphere 1 -1 1 360
+AttributeEnd
+
+AttributeBegin
+	Translate 0 0 0
+	Surface "plastic" "Ka" [0.2] "Kd" [0.7] "Ks" [0.6] "roughness" [0.08]
+		"specularcolor" [1 1 1]
+	Sphere 1 -1 1 360
+AttributeEnd
+
+AttributeBegin
+	Translate 2.6 0 0
+	Surface "metal" "Ka" [0.2] "Ks" [0.9] "roughness" [0.15]
+	Sphere 1 -1 1 360
+AttributeEnd
+WorldEnd

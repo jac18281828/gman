@@ -1,0 +1,28 @@
+## Step 3: geometry straddling both the near and the far clip plane in one
+## primitive. A cylinder parallel to the camera's z axis but offset in x
+## (so the camera, offset the other way, sees it in profile rather than
+## end-on through its open, uncapped aperture -- the same degenerate view
+## quadrics.rib's Cone/Cylinder/Hyperboloid/Paraboloid columns avoid, and
+## simpler to dodge here since it is the *camera*, not the primitive, that
+## needs to move off axis), far longer than the [near,far] range:
+## GMANPolygonClipper::clip must cut it cleanly at both ends, producing a
+## finite visible band rather than the whole tube, a degenerate sliver, or
+## a crash.
+##
+## Varying z along the cylinder's length (not a flat plate at one z) keeps
+## this clear of the near-clip precision defect (SPEC.md Section 8;
+## AGENTS.md's "Explicit Clipping" note) -- that defect needs vertices
+## clustered at a single z, which a cylinder spanning [-10,10] never has.
+Display "clipping.tif" "file" "rgba"
+Format 400 400 1
+Projection "perspective" "fov" [45]
+Clipping 2 6
+Translate -0.8 0 4
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 0 0] "to" [0 0 0]
+Sides 1
+Surface "matte" "Ka" [0.2] "Kd" [0.9]
+Cylinder 0.5 -10 10 360
+WorldEnd

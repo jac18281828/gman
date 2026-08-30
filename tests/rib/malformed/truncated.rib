@@ -1,0 +1,6 @@
+# A RIB stream cut off mid-keyword, no trailing newline. The tokenizer's
+# main read loops (parseKeyword/parseNum/parseString) must terminate
+# cleanly at end of input rather than looping or reading past the buffer.
+Display "malformed_out.tif" "file" "rgba"
+Format 16 16 1
+Projec

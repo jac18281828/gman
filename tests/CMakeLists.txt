@@ -154,6 +154,77 @@ add_test(NAME lighting
 set_tests_properties(lighting PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
 
+# Step 3/5: all seven quadric primitives in one scene, golden-image
+# regression via the shared harness (tests/goldenimage.h).
+add_executable(gman_quadrics quadrics_test.cpp)
+target_link_libraries(gman_quadrics PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_QUADRICS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quadrics-run")
+file(MAKE_DIRECTORY "${GMAN_QUADRICS_WORKDIR}")
+
+add_test(NAME quadrics
+  COMMAND gman_quadrics $<TARGET_FILE:gman>
+                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_QUADRICS_WORKDIR}")
+set_tests_properties(quadrics PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Step 3/5: RiScreenWindow + RiCropWindow together under perspective, plus
+# an unrecognized RiFrameAspectRatio proving the skip path does not desync.
+add_executable(gman_screenwindow screenwindow_test.cpp)
+target_link_libraries(gman_screenwindow PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_SCREENWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/screenwindow-run")
+file(MAKE_DIRECTORY "${GMAN_SCREENWINDOW_WORKDIR}")
+
+add_test(NAME screenwindow
+  COMMAND gman_screenwindow $<TARGET_FILE:gman>
+                            "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_SCREENWINDOW_WORKDIR}")
+set_tests_properties(screenwindow PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Step 3/5: a cylinder straddling both the near and the far clip plane.
+add_executable(gman_clipping clipping_test.cpp)
+target_link_libraries(gman_clipping PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_CLIPPING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/clipping-run")
+file(MAKE_DIRECTORY "${GMAN_CLIPPING_WORKDIR}")
+
+add_test(NAME clipping
+  COMMAND gman_clipping $<TARGET_FILE:gman>
+                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_CLIPPING_WORKDIR}")
+set_tests_properties(clipping PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Step 3/5: matte, plastic and metal side by side under identical lighting.
+add_executable(gman_shaders shaders_test.cpp)
+target_link_libraries(gman_shaders PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_SHADERS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shaders-run")
+file(MAKE_DIRECTORY "${GMAN_SHADERS_WORKDIR}")
+
+add_test(NAME shaders
+  COMMAND gman_shaders $<TARGET_FILE:gman>
+                       "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_SHADERS_WORKDIR}")
+set_tests_properties(shaders PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Step 4: RIB tokenizer robustness on malformed input -- an unterminated
+# string, an unbalanced bracket, a file truncated mid-keyword -- each
+# under its own hard timeout (see tests/ribmalformed_test.cpp).
+add_executable(gman_ribmalformed ribmalformed_test.cpp)
+target_link_libraries(gman_ribmalformed PRIVATE gman_core)
+
+add_test(NAME ribmalformed
+  COMMAND gman_ribmalformed $<TARGET_FILE:gman>
+                            "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
+set_tests_properties(ribmalformed PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  TIMEOUT 60)
+
 # Review finding: no test rendered a genuinely asymmetric partial sphere's
 # image (transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere). This
 # is the missing end-to-end proof of GMANSphere::getLocation's zmin/zmax

@@ -1,0 +1,28 @@
+## Step 3: RiScreenWindow, RiCropWindow and RiFrameAspectRatio together,
+## under perspective. RiScreenWindow and RiCropWindow already have their
+## own defect-regression fixtures (orthowindow.rib/cropwindow_test.cpp,
+## fixed by the UAT-defects pass); this scene is the combination none of
+## those isolated tests covers -- an asymmetric ScreenWindow shifting the
+## visible frustum off-centre, then CropWindow rendering only a sub-window
+## of that already-shifted result.
+##
+## RiFrameAspectRatio has no tokenizer entry at all (SPEC.md's "RIB
+## support" table, "Unrecognized" bucket) -- included here to prove it is
+## warned-and-skipped, not a parse-desync, and that ScreenWindow/CropWindow
+## right after it still parse correctly (AGENTS.md's "desync convention").
+Display "screenwindow.tif" "file" "rgba"
+Format 400 300 1
+FrameAspectRatio 1.5
+ScreenWindow -2 0.5 -0.75 0.75
+CropWindow 0.25 0.75 0.0 1.0
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 0 0] "to" [0 0 0]
+Sides 1
+Surface "matte" "Ka" [0.2] "Kd" [0.9]
+Sphere 1 -1 1 360
+WorldEnd
