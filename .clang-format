@@ -6,8 +6,8 @@
 # This config is for new and touched code going forward, not a mandate to
 # reformat 26 years of unstyled history (AGENTS.md: no cosmetic churn
 # riding along with a behavior change). `format-check` (CMakeLists.txt)
-# runs it over tests/**, the one part of the tree this phase actually
-# wrote to a single, consistent style; widen its file list only as more
+# runs it over the explicit file list this phase wrote to a single,
+# consistent style, not all of tests/**; widen that list only as more
 # of the tree is deliberately touched and reformatted on its own commit.
 Language: Cpp
 BasedOnStyle: Google

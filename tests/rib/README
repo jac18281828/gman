@@ -4,6 +4,69 @@
 
 Written for phase 0's runtime baseline. Not third-party.
 
+## quadrics.rib
+
+Phase 4, step 3. All seven RenderMan quadrics -- Sphere, Cone, Cylinder,
+Hyperboloid, Paraboloid, Torus, Disk -- in one scene, each exercising its own
+`getLocation`/`getNormal` parameterization end to end (tessellation, shading,
+silhouette), not only the isolated finite-difference proof
+`tests/normals_test.cpp` already covers. Not third-party.
+
+## screenwindow.rib
+
+Phase 4, step 3. `RiScreenWindow`, `RiCropWindow` and `RiFrameAspectRatio`
+together under perspective: an asymmetric `ScreenWindow` shifting the visible
+frustum off-centre, then `CropWindow` rendering only a sub-window of that
+already-shifted result -- the combination the UAT-defect regression fixtures
+(`orthowindow.rib`, `cropwindow_test.cpp`) test in isolation but not together.
+`FrameAspectRatio` has no tokenizer entry (SPEC.md's "RIB support" table,
+"Unrecognized" bucket); included here to prove it is warned-and-skipped, not a
+parse desync. Not third-party.
+
+## clipping.rib
+
+Phase 4, step 3. A cylinder parallel to the camera's z axis, far longer than
+the scene's `[near,far]` `Clipping` range, seen in profile: `GMANPolygonClipper`
+must cut it cleanly at both ends, producing a finite visible band rather than
+the whole tube, a degenerate sliver, or a crash. Not third-party.
+
+## shaders.rib
+
+Phase 4, step 3. The three shipped surface shaders -- matte, plastic, metal --
+side by side under identical lighting, so a regression confined to one
+shader's own math shows up as a change confined to its own sphere. Not
+third-party.
+
+## patch_norender.rib
+
+Phase 4, step 3/4. Expected failure, documented not fixed: `Patch` rasterizes
+no pixels, confirmed here on a minimal single-`Patch` scene with no archive,
+gzip, or near-clip precision concern -- see SPEC.md Section 8, "Found by
+running the corpus after phase 3 landed." Out of phase 4's scope (rendering
+behavior, not the RIB front end); a `Sphere` shares the scene as a control,
+proving the renderer itself works and the gap is `Patch`-specific. No golden
+minted -- a `Patch` that never rasterizes has nothing meaningful to regress
+against. Not third-party.
+
+## malformed/
+
+Hand-written fixtures for malformed RIB input. `gman` is expected to fail on
+every one of these; the point in each case is *how* it fails -- cleanly, with
+no leak and no hang, not with a crash or an infinite loop.
+
+| File | Exercises |
+|---|---|
+| `display_badtype.rib` | `parseDisplay` copies `"name"` before it validates `"type"` -- a bad token in `"type"`'s place must not leak the already-copied `"name"`. |
+| `stringarray.rib` | A string array with a non-string element, via `TokenVector::toRtTokenArray` -- must release the strings it already duplicated before throwing. |
+| `truncated.rib` | A RIB stream cut off mid-keyword, no trailing newline -- the tokenizer's main read loops must terminate cleanly at end of input rather than looping or reading past the buffer. |
+| `unbalanced_bracket.rib` | A bracketed array with no closing bracket -- `GMANRIBParse::parseArray` must stop at EOF rather than consuming the rest of the file looking for a `]` that never arrives. |
+| `unterminated_string.rib` | A plain (non-array) string with no closing quote, running to EOF -- `GMANRIBTokenize::parseString` must terminate cleanly at end of input. |
+
+Each is run under a hard wall-clock timeout (`tests/ribmalformed_test.cpp`),
+independent of ctest's own `TIMEOUT` property, since a tokenizer hang on
+malformed input is exactly the failure a test-level timeout alone might not
+catch cleanly.
+
 ## requests/
 
 Minimal, hand-written fixtures, one per RISpec 3.2 request with
