@@ -1,5 +1,7 @@
 GMAN — a RenderMan-compatible renderer
 
+[![ci](https://github.com/jac18281828/gman/actions/workflows/ci.yml/badge.svg)](https://github.com/jac18281828/gman/actions/workflows/ci.yml)
+
 An implementation of the RenderMan interface. Started 1999, shelved 2002,
 revived 2026 on a CMake / C++23 build.
 
@@ -31,6 +33,9 @@ libtiff, libpng and zlib. libjpeg is optional. POSIX only -- macOS and Linux.
     cmake --preset dev
     cmake --build build --parallel
     ctest --test-dir build --output-on-failure
+
+`AGENTS.md`'s Tests section covers the test layout, adding a new test, and
+golden-image regeneration; its Gates section is the full gate list CI runs.
 
 To install into a prefix:
 
@@ -82,7 +87,7 @@ default `Clipping`."
 
 Out of scope for this project: the shading-language compiler (`gmansl/`
 stays unbuilt; shaders are C++ plugins), texturing, and anti-aliasing/
-multi-sample rendering (1 sample/pixel). `tests/baseline.cpp` and
+multi-sample rendering (1 sample/pixel). `tests/baseline_test.cpp` and
 `tests/lighting_test.cpp` record what actually renders and how it is
 verified.
 

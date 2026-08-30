@@ -96,6 +96,34 @@ one caught only by human or adversarial review, never by CI. Unit tests
 hermetic: no network, no files outside the checked-in tree. Add or update
 tests for every behavior change.
 
+**Layout.** Every C++ test is its own `tests/<name>_test.cpp`, its own
+`gman_<name>` executable, and its own `add_test(NAME <name> ...)` in
+`tests/CMakeLists.txt`. `tests/basicstate.c` is the one exception — a
+genuine C translation unit exercising the `extern "C"` RI API the way a
+real client would, with its own `static void check(int, const char *)`
+matching that language's calling convention; leave it alone. Every other
+test includes `tests/check.h` for the shared `check()`/`checkSummary()`
+harness — write assertions with `check(condition, "message")`, and end
+`main` with `return checkSummary("<name> holds");` rather than hand-rolling
+the pass/fail counter or the summary line. A test that renders a scene and
+compares it against a checked-in golden includes `tests/goldenimage.h` and
+calls `checkGoldenImage(...)` instead of writing a second comparison path.
+
+**Adding a test.** Write `tests/<name>_test.cpp` (or reuse an existing one
+if the behavior belongs there — "one scene, one thing" is about RIB
+fixtures, not a rule that every fixture needs its own binary), register it
+in `tests/CMakeLists.txt` following an existing entry's shape, and add any
+new `tests/rib/*.rib` fixture per the RIB authoring section below.
+
+**Golden images.** Checked into the repo, never generated on demand — see
+`tests/goldenimage.h`'s own comment for the tolerance and its
+justification. Regenerating one is legitimate only when the pixels moved
+because of an intended, reviewed behavior change (a shading, clipping or
+projection fix), never to turn a red test green without understanding why
+it moved: render the scene with the fixed `gman`, inspect the failing
+test's own `*_diff.tif` one last time, then overwrite the checked-in
+golden and say so explicitly in the commit message.
+
 ## RIB authoring
 
 RIB fixtures and the renderer's own coordinate math are this project's
@@ -180,16 +208,35 @@ Not complete until every one is green.
 cmake --preset dev && cmake --build build --parallel
 cmake --preset debug && cmake --build build-debug
 ctest --test-dir build --output-on-failure
+ctest --test-dir build-debug --output-on-failure
 CXX=g++ cmake --preset dev -B build-gcc && cmake --build build-gcc
 valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
   ./build/gman tests/rib/sphere.rib
 valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
   ./build/gman tests/rib/corpus/menger.rib
+cmake --build build --target format-check
 ```
 
 Three CI workflows gate every push: `ci` (jobs `build`, `sanitizers`,
-`valgrind`), `commitlint`, and `Yamlfmt`. `tests/docsconsistency_test.cpp`
-keeps this block and `.github/workflows/ci.yml` from drifting apart.
+`valgrind`, `format-check`), `commitlint`, and `Yamlfmt`.
+`tests/docsconsistency_test.cpp` keeps this block and
+`.github/workflows/ci.yml` from drifting apart.
+
+`ASAN_OPTIONS=halt_on_error=1` and `UBSAN_OPTIONS=halt_on_error=1` on the
+`sanitizers` job: UBSan's own default is to print a diagnostic and keep
+running, exit 0 — the same failure class the `valgrind` job exists to
+close for uninitialized reads elsewhere. Set explicitly rather than
+trusted as a runtime default.
+
+`format-check` runs `clang-format --dry-run --Werror` over a fixed file
+list (`.clang-format`'s own comment names it) — the files one phase wrote
+to a single, deliberate style, not the whole tree. `doc/codingguide.txt`
+never set a formatting style and the existing tree carries none
+consistently; reformatting it wholesale is exactly the cosmetic-churn
+commit this file's own "no cosmetic churn riding along with a behavior
+change" rule forbids, and would destroy `git blame` across 200 files
+besides. Widen the list only by deliberately reformatting the files being
+added to it, on their own commit.
 
 If a gate is still red after a genuine fix attempt, stop and report the
 actual error rather than iterating on guesses.
