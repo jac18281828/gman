@@ -25,6 +25,7 @@
 #include <cstdio>
 #include <string>
 
+#include "check.h"
 #include "gmanface.h"
 #include "gmanpoint.h"
 #include "gmantypes.h"
@@ -32,15 +33,6 @@
 #include "gmanvertex.h"
 
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 void testAreaWeightedAverage() {
   // Face A: unit square in the z=0 plane -- normal (0,0,1), area 1.
@@ -121,10 +113,5 @@ int main() {
   testAreaWeightedAverage();
   testEmptyFaceListLeavesDefaultNormal();
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("vertex normal averaging holds\n");
-  return 0;
+  return checkSummary("vertex normal averaging holds");
 }

@@ -47,16 +47,9 @@
 #include <string>
 #include <vector>
 
+#include "check.h"
+
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 int runGman(const std::string &gman, const std::string &rib) {
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
@@ -210,10 +203,5 @@ int main(int argc, char *argv[]) {
   check(std::fabs(translated.centerY() - 100.0) <= tol,
         "RiTranslate 0.5 0 0 does not move the centre on y");
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("silhouette holds\n");
-  return 0;
+  return checkSummary("silhouette holds");
 }

@@ -48,16 +48,10 @@
 #include <string>
 #include <vector>
 
+#include "check.h"
+#include "goldenimage.h"
+
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 int runGman(const std::string &gman, const std::string &rib) {
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
@@ -322,51 +316,11 @@ void testGoldenImage(const std::string &gman, const std::string &ribDir) {
   const std::string rib = ribDir + "/lights.rib";
   check(runGman(gman, rib) == 0, "lights.rib renders");
 
-  Image actual = readTIFF("lights.tif");
-  check(actual.ok, "lights.rib: TIFF read back");
-  if (!actual.ok) {
-    return;
-  }
-
-  Image golden = readTIFF(ribDir + "/lights_golden.tif");
-  check(golden.ok, "golden image: TIFF read back");
-  if (!golden.ok) {
-    return;
-  }
-
-  check(actual.width == golden.width && actual.height == golden.height,
-        "golden image: dimensions match");
-  if (actual.width != golden.width || actual.height != golden.height) {
-    return;
-  }
-
-  // Per-channel tolerance, and a small allowance for how many pixels may
-  // exceed it: the 16x16 tessellation's faceted silhouette boundary can
-  // shift by a pixel between platforms/compilers at identical float
-  // precision, which is a tessellation-resolution artifact this project
-  // already accepts (silhouette_test.cpp's own 8% tolerance), not a
-  // shading regression.
-  const int channelTol = 24;
-  long mismatched = 0;
-  const long total = (long) actual.width * (long) actual.height;
-  for (uint32_t y = 0; y < actual.height; ++y) {
-    for (uint32_t x = 0; x < actual.width; ++x) {
-      uint32_t a = actual.at(x, y);
-      uint32_t g = golden.at(x, y);
-      if (std::abs(int(TIFFGetR(a)) - int(TIFFGetR(g))) > channelTol ||
-          std::abs(int(TIFFGetG(a)) - int(TIFFGetG(g))) > channelTol ||
-          std::abs(int(TIFFGetB(a)) - int(TIFFGetB(g))) > channelTol) {
-        ++mismatched;
-      }
-    }
-  }
-  double fraction = (double) mismatched / (double) total;
-  check(fraction < 0.01,
-        "golden image: fewer than 1% of pixels differ from "
-        "tests/rib/lights_golden.tif by more than " +
-            std::to_string(channelTol) + "/255 per channel (" +
-            std::to_string(mismatched) + "/" + std::to_string(total) +
-            " differed)");
+  // Per-channel tolerance 24/255, under 1% of pixels: see
+  // tests/goldenimage.h for why. On failure, lights_diff.tif (this test's
+  // own build-tree run directory) shows which pixels differed.
+  checkGoldenImage("lights.tif", ribDir + "/lights_golden.tif", 24, 0.01,
+                    "lights_diff.tif");
 }
 
 // Silhouette pixels of a rendered sphere (non-background), and their mean
@@ -566,10 +520,5 @@ int main(int argc, char *argv[]) {
   testMetalKaResponse(gman);
   testMetalSpecularHighlight(gman);
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("lighting holds\n");
-  return 0;
+  return checkSummary("lighting holds");
 }

@@ -73,22 +73,15 @@
 #include <string>
 #include <vector>
 
+#include "check.h"
+
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 // `output` is removed before the run. Every content assertion below would
 // otherwise be satisfied by an image an earlier run left behind: a build
 // directory is reused across ctest invocations, and a reverted fix that
 // throws before opening the display leaves the previous good file in place.
-// tests/baseline.cpp removes its target for the same reason.
+// tests/baseline_test.cpp removes its target for the same reason.
 int runGman(const std::string &gman, const std::string &rib,
             const std::string &output) {
   std::remove(output.c_str());
@@ -270,10 +263,5 @@ int main(int argc, char *argv[]) {
         "two crops of the same scene at different origins produce "
         "different images (these were byte-identical before the fix)");
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("cropwindow holds\n");
-  return 0;
+  return checkSummary("cropwindow holds");
 }

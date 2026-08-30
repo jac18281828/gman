@@ -21,6 +21,7 @@
 #include <cstdio>
 #include <string>
 
+#include "check.h"
 #include "gmanattributes.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
@@ -34,15 +35,6 @@
 #include "gmanvertex.h"
 
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 bool near(RtFloat a, RtFloat b, RtFloat tol) {
   return std::fabs(a - b) <= tol;
@@ -295,10 +287,5 @@ int main() {
   testOrientationConsistency();
   testInverseTransposeUnderNonUniformScale();
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("normals hold\n");
-  return 0;
+  return checkSummary("normals hold");
 }

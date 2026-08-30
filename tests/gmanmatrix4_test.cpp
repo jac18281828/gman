@@ -19,20 +19,12 @@
 #include <cstdio>
 #include <string>
 
+#include "check.h"
 #include "gmanmatrix4.h"
 #include "gmanvector4.h"
 #include "gmanpoint.h"
 
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 bool near(RtFloat a, RtFloat b, RtFloat tol = 1e-4) {
   return std::fabs(a - b) <= tol;
@@ -211,10 +203,5 @@ int main() {
   testP3mRowVectorConvention();
   testP4mCarriesW();
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("gmanmatrix4 holds\n");
-  return 0;
+  return checkSummary("gmanmatrix4 holds");
 }

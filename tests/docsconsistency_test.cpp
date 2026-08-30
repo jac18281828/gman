@@ -30,16 +30,9 @@
 #include <string>
 #include <vector>
 
+#include "check.h"
+
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 std::string readFile(const std::string &path) {
   std::ifstream in(path, std::ios::binary);
@@ -178,10 +171,5 @@ int main(int argc, char **argv) {
           "ci.yml still runs \"" + tool + "\"");
   }
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("AGENTS.md tracks ci.yml\n");
-  return 0;
+  return checkSummary("AGENTS.md tracks ci.yml");
 }

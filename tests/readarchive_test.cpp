@@ -23,16 +23,9 @@
 #include <string>
 #include <vector>
 
+#include "check.h"
+
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 struct Result {
   bool timedOut;
@@ -134,11 +127,5 @@ int main(int argc, char *argv[]) {
 	  "selfinclude.rib: the diagnostic names the archive cycle");
   }
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-
-  std::printf("ReadArchive holds\n");
-  return 0;
+  return checkSummary("ReadArchive holds");
 }

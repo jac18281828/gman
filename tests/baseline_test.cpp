@@ -62,17 +62,9 @@
 #include <string>
 #include <vector>
 
+#include "check.h"
+
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what)
-{
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 // Distinct pixel values in the produced image -- capped at 2, since this
 // only needs to distinguish "uniform" from "not uniform".
@@ -207,11 +199,5 @@ int main(int argc, char *argv[])
         "two renders of the same RIB produce pixel-identical images -- "
         "real shading is deterministic, confetti was not");
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-
-  std::printf("baseline holds\n");
-  return 0;
+  return checkSummary("baseline holds");
 }

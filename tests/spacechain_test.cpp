@@ -25,6 +25,9 @@
  *     GMANVSPerspective::visible() unconditional again: the backface test
  *     goes red for both winding orders (see the backface culling section).
  *
+ * Step 4: the clipper's other five planes (LEFT, RIGHT, TOP, BOTTOM, and
+ * BACK/far) -- testClipperNearPlane above only exercised FRONT/near.
+ *
  * Phase 3, proof item 5 (the perspective culling term): a face near the
  * silhouette, off-axis enough that the true eye-to-face view vector and
  * the z axis disagree on sign. Revert GMANVSPerspective::visible to
@@ -37,6 +40,7 @@
 #include <cstdio>
 #include <string>
 
+#include "check.h"
 #include "gmanmatrix4.h"
 #include "gmantransform.h"
 #include "gmanpoint.h"
@@ -48,15 +52,6 @@
 #include "gmanoptions.h"
 
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 bool near(RtFloat a, RtFloat b, RtFloat tol) {
   return std::fabs(a - b) <= tol;
@@ -171,6 +166,64 @@ void testClipperNearPlane() {
         "parameter and a current/isect output swap");
 }
 
+// ---- Step 4: the other five of the clipper's six planes ----
+// testClipperNearPlane above already covers FRONT. Under fov=90 (invT=1),
+// the frustum's side planes are exactly |x|<=z and |y|<=z; BACK is the far
+// plane, z=100. Each case here places two vertices outside a single plane
+// and two inside, at a z away from every other plane's own boundary, so
+// exactly one plane clips: a quad clipped this way always produces 4
+// output vertices (2 original + 2 new intersections), matching the near
+// plane test's own derivation.
+int clipQuad(const GMANPoint &p0, const GMANPoint &p1, const GMANPoint &p2,
+             const GMANPoint &p3, const GMANVSPerspective &vs) {
+  GMANVertex v0, v1, v2, v3;
+  v0.setLocation(p0);
+  v1.setLocation(p1);
+  v2.setLocation(p2);
+  v3.setLocation(p3);
+  GMANVertex *verts[4] = {&v0, &v1, &v2, &v3};
+  GMANFace quad(verts, nullptr);
+  GMANPolygonClipper clipper;
+  GMANOutputPolygon out;
+  return clipper.clip(&quad, out, &vs);
+}
+
+void testClipperOtherFivePlanes() {
+  GMANOptions::ScreenWindowStruct sw = squareWindow();
+  GMANMatrix4 identity;
+  GMANVSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
+
+  // LEFT: boundary at x=-z=-5. Two vertices at x=-6 (outside), two at
+  // x=-4 (inside).
+  int nLeft = clipQuad(GMANPoint(-6.0, -0.1, 5.0), GMANPoint(-4.0, -0.1, 5.0),
+                        GMANPoint(-4.0, 0.1, 5.0), GMANPoint(-6.0, 0.1, 5.0), vs);
+  check(nLeft == 4, "clip: a quad straddling the LEFT plane keeps 4 vertices");
+
+  // RIGHT: boundary at x=+z=5. Two at x=6 (outside), two at x=4 (inside).
+  int nRight = clipQuad(GMANPoint(6.0, -0.1, 5.0), GMANPoint(4.0, -0.1, 5.0),
+                         GMANPoint(4.0, 0.1, 5.0), GMANPoint(6.0, 0.1, 5.0), vs);
+  check(nRight == 4, "clip: a quad straddling the RIGHT plane keeps 4 vertices");
+
+  // TOP: boundary at y=+z=5. Two at y=6 (outside), two at y=4 (inside).
+  int nTop = clipQuad(GMANPoint(-0.1, 6.0, 5.0), GMANPoint(0.1, 6.0, 5.0),
+                       GMANPoint(0.1, 4.0, 5.0), GMANPoint(-0.1, 4.0, 5.0), vs);
+  check(nTop == 4, "clip: a quad straddling the TOP plane keeps 4 vertices");
+
+  // BOTTOM: boundary at y=-z=-5. Two at y=-6 (outside), two at y=-4
+  // (inside).
+  int nBottom = clipQuad(GMANPoint(-0.1, -6.0, 5.0), GMANPoint(0.1, -6.0, 5.0),
+                          GMANPoint(0.1, -4.0, 5.0), GMANPoint(-0.1, -4.0, 5.0),
+                          vs);
+  check(nBottom == 4,
+        "clip: a quad straddling the BOTTOM plane keeps 4 vertices");
+
+  // BACK (far): boundary at z=100. Two at z=110 (outside), two at z=90
+  // (inside). x,y stay near 0 so no side plane also clips.
+  int nBack = clipQuad(GMANPoint(-0.1, -0.1, 110.0), GMANPoint(0.1, -0.1, 110.0),
+                        GMANPoint(0.1, 0.1, 90.0), GMANPoint(-0.1, 0.1, 90.0), vs);
+  check(nBack == 4, "clip: a quad straddling the BACK (far) plane keeps 4 vertices");
+}
+
 // ---- proof item 5: backface culling gated on RiSides/RiOrientation ----
 void testBackfaceCulling() {
   GMANOptions::ScreenWindowStruct sw = squareWindow();
@@ -283,13 +336,9 @@ int main() {
   testFullChain();
   testBehindCameraClips();
   testClipperNearPlane();
+  testClipperOtherFivePlanes();
   testBackfaceCulling();
   testPerspectiveCullingNearSilhouette();
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("space chain holds\n");
-  return 0;
+  return checkSummary("space chain holds");
 }

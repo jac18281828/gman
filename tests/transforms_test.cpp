@@ -31,16 +31,9 @@
 #include <string>
 #include <vector>
 
+#include "check.h"
+
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 bool hasNonBackgroundPixel(const std::string &path, int xmin, int xmax,
                             int ymin, int ymax) {
@@ -110,10 +103,5 @@ int main(int argc, char *argv[]) {
   check(!hasNonBackgroundPixel(tif, 200, 300, y0, y1),
         "background stays background to the right of the right sphere");
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-  std::printf("transforms holds\n");
-  return 0;
+  return checkSummary("transforms holds");
 }

@@ -18,16 +18,9 @@
 #include <sstream>
 #include <string>
 
+#include "check.h"
+
 namespace {
-
-int failures = 0;
-
-void check(bool ok, const std::string &what) {
-  std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
-  if (!ok) {
-    ++failures;
-  }
-}
 
 int runIn(const std::string &gman, const std::string &rib,
 	 const std::string &workdir) {
@@ -93,11 +86,5 @@ int main(int argc, char *argv[]) {
   check(plainImage == misnamedImage,
 	"a gzip'd file misnamed .rib parses identically (magic-byte detection)");
 
-  if (failures != 0) {
-    std::printf("%d assertion(s) failed\n", failures);
-    return 1;
-  }
-
-  std::printf("gzip transparency holds\n");
-  return 0;
+  return checkSummary("gzip transparency holds");
 }

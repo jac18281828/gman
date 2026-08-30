@@ -2,9 +2,9 @@
 
 # The phase 0 runtime baseline. Asserts what gman actually does with a minimal
 # scene -- exit status, message and the absence of an image -- not what it was
-# predicted to do. See tests/baseline.cpp for the finding and for which phase
+# predicted to do. See tests/baseline_test.cpp for the finding and for which phase
 # supersedes it.
-add_executable(gman_baseline baseline.cpp)
+add_executable(gman_baseline baseline_test.cpp)
 target_link_libraries(gman_baseline PRIVATE gman_core TIFF::TIFF)
 
 # Run in a scratch directory so the image the RIB names would land there, and
