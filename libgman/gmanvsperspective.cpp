@@ -21,9 +21,6 @@
   You should have received a copy of the GNU Library General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
-  To contact the author of GNU GMAN, write to John Cairns, 607 E STUART ST, 
-  FT COLLINS, CO, 80525, USA, or write via E-mail john@2ad.com.
 */
 
 #include "gmanvsperspective.h"
