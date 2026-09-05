@@ -588,6 +588,22 @@ RtVoid GMANGraphicState::setTransform(GMANMatrix4 &m)
     transformStack.top()=b;
   }
 }
+namespace {
+
+// Folds a local transform ahead of the accumulated CTM: CTM_new = Local .
+// CTM_old (row-vector convention, p * M). RiWorldBegin does not reset the
+// CTM, so folding in CTM_old . Local instead would apply Local after
+// everything already accumulated rather than before it. GMANTransform's
+// copy assignment deep-copies storage, so the stack top ends up owning
+// exactly one live GMANMatrixStorage either way.
+void foldLocalAhead(GMANTransform &local,
+		     GMANGraphicState::TransformStack &transformStack) {
+  local.concat(transformStack.top());
+  transformStack.top() = local;
+}
+
+}  // namespace
+
 RtVoid GMANGraphicState::buildTransform(GMANMatrix4 &m)
 {
   if (motion==1) { // in motion
@@ -607,11 +623,11 @@ RtVoid GMANGraphicState::buildTransform(GMANMatrix4 &m)
     if (motionIndex==nbSamples) {
       if (motionError==true) return;
       GMANTransform a(mm);
-      transformStack.top().concat(a);
+      foldLocalAhead(a, transformStack);
     }
   } else { // not in motion
     GMANOneMatrix a(m);
     GMANTransform b(a);
-    transformStack.top().concat(b);
+    foldLocalAhead(b, transformStack);
   }
 }

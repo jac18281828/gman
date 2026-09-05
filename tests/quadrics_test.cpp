@@ -14,12 +14,13 @@
  * matches the checked-in golden within tolerance.
  *
  * The fixture's own comment records why Cone, Cylinder, Hyperboloid and
- * Paraboloid each need "cancel the inherited camera translate, rotate,
- * restore" rather than a plain Rotate: GMAN composes transforms in
- * declaration order, so a Rotate declared after the pre-WorldBegin camera
- * Translate also rotates that camera offset, swinging the primitive out of
- * frame. Confirmed by direct construction while authoring this fixture,
- * not asserted here -- this test only pins the corrected fixture's output.
+ * Paraboloid each declare their own x-offset before their Rotate: GMAN
+ * composes a local transform ahead of everything already accumulated
+ * (CTM_new = Local . CTM_old), so declaring the offset first rotates the
+ * point about the world origin and then places it, letting the
+ * pre-WorldBegin camera Translate carry it to camera space afterward.
+ * Confirmed by direct construction while authoring this fixture, not
+ * asserted here -- this test only pins the corrected fixture's output.
  */
 
 #include <tiffio.h>

@@ -1,0 +1,18 @@
+## An in-world Rotate must compose ahead of the transforms declared after it,
+## about the world origin -- not about the camera, and not after whatever the
+## CTM already carried from before WorldBegin (AGENTS.md, "Handedness and
+## matrix convention"). "Rotate 90 0 1 0" turns the world x axis onto -z;
+## composed correctly, the sphere -- translated to (1.5, 0, 0) by the
+## Translate declared after it -- ends up centred on the camera axis at
+## world (0, 0, -1.5), camera space (0, 0, 3.5). Reverting
+## GMANGraphicState::buildTransform to fold local transforms the other way
+## around instead orbits the sphere off-screen (see tests/rotate_test.cpp).
+Display "rotate.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Translate 0 0 5
+WorldBegin
+Rotate 90 0 1 0
+Translate 1.5 0 0
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

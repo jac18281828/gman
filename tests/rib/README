@@ -48,6 +48,12 @@ proving the renderer itself works and the gap is `Patch`-specific. No golden
 minted -- a `Patch` that never rasterizes has nothing meaningful to regress
 against. Not third-party.
 
+## rotate.rib
+
+An in-world `Rotate` must compose ahead of the transforms declared after it,
+about the world origin, not the camera (`AGENTS.md`, "Handedness and matrix
+convention"; `tests/rotate_test.cpp`). Not third-party.
+
 ## malformed/
 
 Hand-written fixtures for malformed RIB input. `gman` is expected to fail on

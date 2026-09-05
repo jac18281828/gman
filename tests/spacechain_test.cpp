@@ -74,17 +74,20 @@ void testFullChain() {
 
   GMANVSPerspective vs(100, 100, sw, worldToCamera, 90.0, 1.0, 100.0);
 
-  // The primitive's own CTM: worldToCamera as it stood at RiWorldBegin,
-  // concatenated with "Translate 1 0 0" declared inside the world block --
+  // The primitive's own CTM: "Translate 1 0 0" declared inside the world
+  // block, composed ahead of worldToCamera as it stood at RiWorldBegin --
   // exactly how GMANGraphicState::buildTransform builds a primitive's
-  // transform, since RiWorldBegin doesn't reset the CTM (it snapshots it).
+  // transform (CTM_new = Local . CTM_old), since RiWorldBegin doesn't reset
+  // the CTM (it snapshots it) and a local transform applies to the point
+  // before everything already accumulated, not after.
   GMANMatrix4 localTranslate;
   localTranslate.trans(1.0, 0.0, 0.0);
   GMANOneMatrix w2cStorage(worldToCamera);
   GMANTransform objectCTM(w2cStorage);
   GMANOneMatrix localStorage(localTranslate);
   GMANTransform localXform(localStorage);
-  objectCTM.concat(localXform);
+  localXform.concat(objectCTM);
+  objectCTM = localXform;
 
   // The sphere's own local origin -- object space, before any transform.
   GMANPoint objectSpace(0.0, 0.0, 0.0);

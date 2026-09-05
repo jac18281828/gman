@@ -124,6 +124,21 @@ add_test(NAME silhouette
 set_tests_properties(silhouette PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
 
+# An in-world Rotate must compose ahead of the transforms declared after it,
+# about the world origin, not the camera (GMANGraphicState::buildTransform).
+add_executable(gman_rotate rotate_test.cpp)
+target_link_libraries(gman_rotate PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_ROTATE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rotate-run")
+file(MAKE_DIRECTORY "${GMAN_ROTATE_WORKDIR}")
+
+add_test(NAME rotate
+  COMMAND gman_rotate $<TARGET_FILE:gman>
+                      "${CMAKE_CURRENT_SOURCE_DIR}/rib/rotate.rib"
+  WORKING_DIRECTORY "${GMAN_ROTATE_WORKDIR}")
+set_tests_properties(rotate PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
 # Proof item 6 (secondary, visual): the same sphere at several RiTranslate
 # offsets.
 add_executable(gman_transforms transforms_test.cpp)
