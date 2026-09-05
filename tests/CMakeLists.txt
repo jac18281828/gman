@@ -380,3 +380,19 @@ add_test(NAME orthowindow
   WORKING_DIRECTORY "${GMAN_ORTHOWINDOW_WORKDIR}")
 set_tests_properties(orthowindow PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Phase 5's actual gate: tests/rib/polygon.rib renders a convex pentagon
+# whose raster coverage and shaded colour both match an analytically
+# computed region and value.
+add_executable(gman_polygon polygon_test.cpp)
+target_link_libraries(gman_polygon PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_POLYGON_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygon-run")
+file(MAKE_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
+
+add_test(NAME polygon
+  COMMAND gman_polygon $<TARGET_FILE:gman>
+                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/polygon.rib"
+  WORKING_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
+set_tests_properties(polygon PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

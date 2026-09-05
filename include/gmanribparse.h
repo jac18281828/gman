@@ -122,7 +122,9 @@ private:
   struct PendingParamValue {
     RtPointer value;
     bool isStringArray;
-    unsigned int count; // element count, only meaningful when isStringArray
+    unsigned int count; // element count; parseArray populates it via
+                        // tokenVector.size() for float arrays too, not only
+                        // string arrays
   };
   std::vector<char *>			pendingParamKeys;
   std::vector<PendingParamValue>	pendingParamValues;

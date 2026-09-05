@@ -54,6 +54,16 @@ An in-world `Rotate` must compose ahead of the transforms declared after it,
 about the world origin, not the camera (`AGENTS.md`, "Handedness and matrix
 convention"; `tests/rotate_test.cpp`). Not third-party.
 
+## polygon.rib
+
+Phase 5. A single convex pentagon (five vertices, not four -- a 4-vertex
+fixture cannot distinguish `RiPolygonV`'s parameter-list sizing fix from
+the bug it fixes) under one ambient light, so the raster coverage and the
+shaded color both have an independently hand-computable value
+(`tests/polygon_test.cpp`). `Clipping 0.5 50` per SPEC.md Section 8: a
+camera-facing planar polygon is exactly the flat, narrow-in-z geometry the
+near-clip precision defect hits hardest. Not third-party.
+
 ## malformed/
 
 Hand-written fixtures for malformed RIB input. `gman` is expected to fail on

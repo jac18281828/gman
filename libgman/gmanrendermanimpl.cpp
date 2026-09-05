@@ -880,7 +880,9 @@ RtVoid GMANRenderManImpl::RiAttributeV(RtToken /*name*/, RtInt /*n*/, RtToken /*
 RtVoid  GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[])
 {
   allowed(cmdPolygon);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+  // "P" is sized by nverts, not a fixed 4x4 grid like a quadric: Polygon has
+  // no distinct varying count beyond its vertex count.
+  GMANParameterList paramList(dictionary, n, tokens, parms, nverts, nverts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;

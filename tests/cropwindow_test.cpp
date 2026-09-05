@@ -50,10 +50,10 @@
  * with repeated `+=`, confirmed unrelated to this defect by dumping every
  * face's projected vertex position for a cropped and uncropped render of
  * the same scene: every one matched, exactly, modulo the crop's integer
- * origin. A single flat, non-adjacent-facet primitive would sidestep it,
- * but RiPolygon cannot be driven through RIB (GMANRIBParse::parsePolygon
- * hardcodes nverts=0, a separate, pre-existing, out-of-scope defect) and
- * RiPatch renders no pixels at all (SPEC.md SS8's recorded defect).
+ * origin. A single flat, non-adjacent-facet primitive would sidestep it:
+ * Polygon now renders (phase-5-polygon-rasterization.md), but adopting it
+ * here is a separate, out-of-scope change from this test's own defect;
+ * RiPatch still renders no pixels at all (SPEC.md SS8's recorded defect).
  *
  * Revert check: reverting the getVertexInfo origin subtraction alone
  * reproduces the reported symptom exactly -- both sphere crops go back to

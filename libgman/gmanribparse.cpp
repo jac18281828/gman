@@ -1089,10 +1089,25 @@ RtVoid GMANRIBParse::parsePolygon(RtVoid) {
 
   parseParameterList(n, tokens, parms);
 
+  // "P" is a VERTEX/POINT array, 3 floats per vertex; nverts is derived from
+  // its element count. pendingParamValues records that count per value
+  // pointer in parse order, not sorted by key like tokens/parms, so "P"'s
+  // entry is found by matching parms[i] rather than by index. No "P" at all,
+  // or a count not a multiple of 3, is malformed: leave nverts at 0 and let
+  // RiPolygonV's own degenerate-input handling take it from there, the same
+  // soft failure this codebase gives other malformed input.
   int nverts = 0;
   for (int i = 0; i < n; i++) {
     if (! strcmp(tokens[i], "P")) {
-      // FIXME: Are arrays NULL terminated?  Can use that for length
+      for (const auto &pending : pendingParamValues) {
+	if (pending.value == parms[i]) {
+	  if (pending.count % 3 == 0) {
+	    nverts = pending.count / 3;
+	  }
+	  break;
+	}
+      }
+      break;
     }
   }
 
