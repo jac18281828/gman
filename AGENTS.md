@@ -141,7 +141,10 @@ plausible-looking wrong image (see `libgman/gmanmatrix4.cpp`'s comments at
 `prjPersp`/`p3m` for the two formulas side by side). `RiWorldBegin` does not
 reset the CTM to identity, so a primitive's own CTM already carries
 world-to-camera in one product, not two — do not re-apply the world-to-
-camera transform on top of it.
+camera transform on top of it. A locally declared transform composes ahead
+of everything already accumulated — `CTM_new = Local . CTM_old`
+(`GMANGraphicState::buildTransform`) — applying to the point before the
+world-to-camera transform, not after it.
 
 Object-space normals (what `getNormal(u,v)` returns on a primitive)
 transform by the inverse transpose of the CTM — `createParametric` builds
