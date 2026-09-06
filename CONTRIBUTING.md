@@ -1,8 +1,8 @@
 # Contributing to GMAN
 
-Contributions are welcome — a bug report, a fix, a scene that renders wrong,
-or a whole subsystem. There is plenty open: texturing, anti-aliasing, bicubic
-patches, and most of the RISpec beyond the quadrics.
+Contributions are welcome: a bug report, a fix, a scene that renders wrong or
+a whole subsystem. Plenty is open — texturing, anti-aliasing, bicubic patches
+and most of the RISpec beyond the quadrics.
 
 ## Pull requests
 
@@ -22,17 +22,17 @@ ctest --test-dir build --output-on-failure
 cmake --build build --target format-check
 ```
 
-Green on all three, and green in CI. CI also runs a sanitizer build, valgrind,
-and gcc alongside clang, so it catches things a local macOS build cannot. The
+Green on all three, and green in CI. CI also runs a sanitizer build, valgrind
+and gcc alongside clang, so it catches what a local macOS build cannot. The
 devcontainer in `.devcontainer/` carries the same toolchain if you want the
 whole set locally: `./build.sh`.
 
 ## Tests
 
-Add tests for behavior changes, and prove they are not vacuous — break the
-code on purpose, watch the test go red, put it back. A test that still passes
-when its target is broken covers nothing. Tests are hermetic: no network, no
-files outside the checked-in tree.
+Add tests for behavior changes, and prove each one fails when its target
+breaks: break the code on purpose, watch the test go red, put it back. A
+vacuous test covers nothing. Tests are hermetic: no network, no files outside
+the checked-in tree.
 
 Golden images are checked in. Regenerate one only when the pixels moved for a
 reason you can explain, never to turn a red test green.
@@ -54,7 +54,7 @@ in: lower-case filenames, `GMAN`-prefixed globals, `methodName` and
 Open an issue with a summary, the steps to reproduce, what you expected and
 what you got.
 
-For a rendering bug, **the `.rib` file is the reproduction** — a scene small
+For a rendering bug, **the `.rib` file is the reproduction**. A scene small
 enough to read beats a description of one. Attach the image you got and say
 what you expected instead. `tests/rib/` shows the house style for a minimal
 scene.
@@ -62,8 +62,8 @@ scene.
 ## Working with an AI agent
 
 `AGENTS.md` is the brief for AI agents working in this repo: the conventions
-at length, the coordinate-space rules, and the traps that are expensive to
-rediscover. Point your agent at it.
+at length, and the coordinate-space traps that are expensive to rediscover.
+Point your agent at it.
 
 ## License
 

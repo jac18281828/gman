@@ -1,7 +1,7 @@
 # AGENTS.md
 
 GMAN — a RenderMan-compatible renderer. This file briefs an AI agent working
-on this repo: the conventions, the traps, and the gates a change must pass.
+on this repo: the conventions, the traps and the gates a change must pass.
 Read it before changing anything. Humans contributing by hand want
 `CONTRIBUTING.md`, which covers the same ground more briefly.
 
