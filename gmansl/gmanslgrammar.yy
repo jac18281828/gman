@@ -1,8 +1,7 @@
 /* SPDX-License-Identifier: MIT */
 
 /*
- * This is part of the GNU GMAN Library, a FREE implementation of the
- * RenderMan Interface Specification.
+ * This is part of GMAN, a RenderMan-compatible renderer.
  *
  * Copyright (c) 2001, 2000, 1999, Andrew J. Bromage
  *
