@@ -192,18 +192,6 @@ int main(int argc, char *argv[]) {
   // 5,216 Patch requests in bikeData.rib.gz reach the parser and the
   // renderer with no warnings, so it is not a RIB-front-end gap and out of
   // this task's scope -- reported, not fixed.
-  //
-  // Under -fsanitize=address (build-debug, the "sanitizers" CI leg), gman
-  // aborts instead of exiting 0. bikeData.rib.gz calls `Surface "plastic"`
-  // repeatedly; GMANLoadableShader (gmanloadable.cpp) dlopens libplastic.so
-  // fresh on every call with no cache, and reaching a *second* call -- only
-  // possible now that defect 1 no longer kills the parse first -- makes
-  // ASan's ODR checker see two copies of GMANPlastic's vtable and abort.
-  // Also pre-existing (any two `Surface "plastic"` requests in one scene
-  // reproduce it) and out of scope (gmanloadable.cpp/gmanattributes.cpp,
-  // not this task's files). The check below accepts exactly that one
-  // known failure shape and nothing else, so an unrelated regression here
-  // still fails it.
   {
     const std::string bike = ribDir + "/corpus/bike.rib";
     std::remove("bike.tif");
@@ -213,17 +201,10 @@ int main(int argc, char *argv[]) {
     check(r.output.find("Keyword token: TransformBegin") != std::string::npos,
 	  "corpus: the gzip'd archive decompresses and its requests reach the "
 	  "parser");
-    if (r.exitStatus == 0) {
-      check(nonEmptyFile("bike.tif"),
-	    "corpus: bike.rib now parses to completion and writes a "
-	    "non-empty image (defect 1)");
-    } else {
-      check(r.output.find("odr-violation") != std::string::npos &&
-	    r.output.find("GMANPlastic") != std::string::npos,
-	    "corpus: bike.rib's only non-zero-exit failure left is the known "
-	    "libplastic dlopen ODR violation under AddressSanitizer, not a "
-	    "RIB-front-end regression");
-    }
+    check(r.exitStatus == 0, "corpus: bike.rib parses to completion, exit 0");
+    check(nonEmptyFile("bike.tif"),
+	  "corpus: bike.rib now parses to completion and writes a "
+	  "non-empty image (defect 1)");
   }
 
   // Step 1: an unrecognized request -- Bxdf, a RIS-era request GMAN

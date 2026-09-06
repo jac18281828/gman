@@ -13,24 +13,6 @@
  * another's output (e.g. metal picking up a diffuse term) shows up here
  * even if it does not move either isolated test's own assertions.
  *
- * Under a sanitizer build, gman aborts instead of exiting 0 -- found
- * while authoring this fixture, not previously recorded at this scope.
- * SPEC.md Section 8 already records that a *second* `Surface "plastic"`
- * request in one scene makes AddressSanitizer see two independently
- * dlopen'd copies of GMANPlastic's vtable and abort (GMANLoadableShader,
- * gmanloadable.cpp, dlopens fresh every call with no cache). Direct
- * construction while authoring this fixture shows the real trigger is
- * broader: *any two distinct* loadable shader plugins in one process --
- * matte+plastic and matte+metal alone (no repeated name, no plastic at
- * all in the second case) both reproduce it. Out of this phase's scope
- * (gmanloadable.cpp/gmanattributes.cpp) either way. The exact
- * AddressSanitizer diagnostic text is platform-dependent (observed
- * "global-buffer-overflow" reading a "vtable for GMAN<Shader>" global on
- * one platform, "odr-violation" -- the shape tests/ribdialect_test.cpp's
- * bike.rib block already accepts -- on another), so the check below
- * matches the invariant both share (an AddressSanitizer abort whose
- * fault is that vtable) rather than one exact message.
- *
  * Two checks beyond the render itself: three separate silhouettes (a
  * shader that throws or a shape that fails to tessellate drops this),
  * and a golden-image comparison via the shared harness.
@@ -69,13 +51,6 @@ Result runGman(const std::string &gman, const std::string &rib) {
   return result;
 }
 
-// The one accepted non-zero-exit shape: an AddressSanitizer abort whose
-// fault lands in a loadable shader's own vtable, not an unrelated crash.
-bool isKnownShaderVtableAbort(const std::string &output) {
-  return output.find("AddressSanitizer") != std::string::npos &&
-         output.find("vtable for GMAN") != std::string::npos;
-}
-
 int countSilhouetteRuns(const GmanImage &img, uint32_t y) {
   if (!img.ok) {
     return -1;
@@ -111,15 +86,7 @@ int main(int argc, char *argv[]) {
   const std::string rib = ribDir + "/shaders.rib";
   Result r = runGman(gman, rib);
 
-  if (r.exitStatus != 0) {
-    check(isKnownShaderVtableAbort(r.output),
-          "shaders.rib: the only non-zero-exit failure is the known "
-          "loadable-shader vtable collision under AddressSanitizer "
-          "(SPEC.md Section 8), not an unrelated regression");
-    return checkSummary("shaders holds (known sanitizer-only abort)");
-  }
-
-  check(true, "shaders.rib renders");
+  check(r.exitStatus == 0, "shaders.rib renders");
 
   GmanImage img = readGmanTIFF("shaders.tif");
   check(img.ok, "shaders.rib: TIFF read back");

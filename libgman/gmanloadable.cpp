@@ -30,6 +30,8 @@
 #ifdef HAVE_LIBDL
 #include <dlfcn.h>
 #endif
+#include <map>
+#include <string>
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanlog.h"
@@ -43,13 +45,40 @@
 
 const char *GMANLoadable::getInfoFncName = "GMANGetLoadableInfo";
 
+#ifdef HAVE_LIBDL
+namespace {
+
+// Handles are keyed by path and retained for the process lifetime: a
+// second GMANLoadable naming an already-open module reuses this entry
+// instead of dlopen'ing (and, at teardown, dlclose'ing) it again.
+struct GMANLoadableCacheEntry {
+  GMANLoadableObjectHandle object;
+  const GMANLoadableObjectInfo *objInfo;
+};
+
+std::map<std::string, GMANLoadableCacheEntry> &loadableCache() {
+  static std::map<std::string, GMANLoadableCacheEntry> cache;
+  return cache;
+}
+
+} // namespace
+#endif
+
 // default constructor
 GMANLoadable::GMANLoadable(const char *path) 
  : object(NULL),
 		     objInfo(NULL)
-{ 
+{
 
 #ifdef HAVE_LIBDL
+  auto &cache = loadableCache();
+  auto cached = cache.find(path);
+  if(cached != cache.end()) {
+    object = cached->second.object;
+    objInfo = cached->second.objInfo;
+    return;
+  }
+
   // call dlopen to load the specified path
 
   object = dlopen(path, RTLD_LAZY);
@@ -81,18 +110,17 @@ GMANLoadable::GMANLoadable(const char *path)
   if(objInfo == NULL) {
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "Loadable module missing info data."));
   }
+
+  cache[path] = { object, objInfo };
 #endif
 };
 
 
-// default destructor 
-GMANLoadable::~GMANLoadable() { 
-#ifdef HAVE_LIBDL
-  if(object) {
-    dlclose(object);
-  }
-#endif
-};
+// default destructor
+// Handles are never closed: the cache above retains them for the process
+// lifetime, since dlclose'ing one lets the dynamic linker remap another,
+// still-live module into the freed address range.
+GMANLoadable::~GMANLoadable() { };
 
 RtVoid *GMANLoadable::loadSymbol(const char *symName) {
 #ifdef HAVE_LIBDL
