@@ -38,7 +38,7 @@
 // set this with autoconf macros
 static const char *softwareVersion = "1.0.0 Alpha";
 
-/* log state, formerly the static members of UniversalSuperClass */
+/* log state */
 static GMANLogLevel logLevel = LOGLVL_INFO;
 static FILE *logFile = NULL;
 static bool  screenOutput = true;

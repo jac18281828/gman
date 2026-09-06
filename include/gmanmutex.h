@@ -48,8 +48,7 @@
  */
 
 
-// GMANGuard and GMANMutex don't inherit from UniversalSuperClass
-// since they are used in the logging code
+// Used by the logging code, so it cannot log itself.
 class GMAN_EXPORT  GMANMutex {
 private:
   pthread_mutex_t		mutex;

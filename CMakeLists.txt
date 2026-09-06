@@ -264,9 +264,9 @@ endif()
 # Format check
 # ---------------------------------------------------------------------------
 
-# The tree carries no consistent style to enforce (the 2001 coding guide never
-# set one, and 26 years of unstyled history is not this phase's to reformat
-# -- a whitespace commit across 200 files destroys git blame). Scoped to the
+# The tree carries no consistent style to enforce, and reformatting it is not
+# this target's job -- a whitespace commit across 200 files destroys git
+# blame. Scoped to the
 # files this phase wrote to a single, deliberate style: tests/check.h and
 # tests/goldenimage.h (the shared harness) and the six RIB-scene test files
 # this phase added. Widen the list only as more of the tree is deliberately

@@ -1,11 +1,10 @@
 ---
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# The 2001 coding guide never set a formatting style, and the
-# existing tree carries none consistently -- SPEC.md's own diagnosis.
-# This config is for new and touched code going forward, not a mandate to
-# reformat 26 years of unstyled history (AGENTS.md: no cosmetic churn
-# riding along with a behavior change). `format-check` (CMakeLists.txt)
+# The tree carries no consistent style. This config is for new and touched
+# code going forward, not a mandate to reformat the history behind it
+# (AGENTS.md: no cosmetic churn riding along with a behavior change).
+# `format-check` (CMakeLists.txt)
 # runs it over the explicit file list this phase wrote to a single,
 # consistent style, not all of tests/**; widen that list only as more
 # of the tree is deliberately touched and reformatted on its own commit.

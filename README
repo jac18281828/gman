@@ -2,8 +2,11 @@ GMAN — a RenderMan-compatible renderer
 
 [![ci](https://github.com/jac18281828/gman/actions/workflows/ci.yml/badge.svg)](https://github.com/jac18281828/gman/actions/workflows/ci.yml)
 
-An implementation of the RenderMan interface. Started 1999, shelved 2002,
-revived 2026 on a CMake / C++23 build.
+GMAN reads RenderMan Interface Bytestream (`.rib`) scene files and renders
+them to TIFF, PNG, JPEG or PNM. Quadrics and convex polygons, projected,
+clipped, z-buffered and shaded, with matte, plastic and metal surface shaders
+and ambient, distant and point lights. C++23, built with CMake, tested on
+macOS and Linux under both gcc and clang.
 
 RenderMan is a registered trademark of Pixar. GMAN is not associated with or
 endorsed by Pixar; the name is used here only to say which interface GMAN

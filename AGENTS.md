@@ -1,12 +1,9 @@
 # AGENTS.md
 
-GMAN — a RenderMan-compatible renderer. Read this before changing anything.
-This file is the coding standard. It supersedes `doc/codingguide.txt`
-(Jan 2001), which was removed in 2026: its first two rules had gone false —
-there is a `clang-format` gate now, and rule 2's `UniversalSuperClass` never
-arrived — and every rule still in force is restated below under House
-conventions. `CONTRIBUTING.md` covers how to get a change in; this file covers
-what the change has to look like.
+GMAN — a RenderMan-compatible renderer. This file briefs an AI agent working
+on this repo: the conventions, the traps, and the gates a change must pass.
+Read it before changing anything. Humans contributing by hand want
+`CONTRIBUTING.md`, which covers the same ground more briefly.
 
 ## Build
 
@@ -237,9 +234,8 @@ trusted as a runtime default.
 
 `format-check` runs `clang-format --dry-run --Werror` over a fixed file
 list (`.clang-format`'s own comment names it) — the files one phase wrote
-to a single, deliberate style, not the whole tree. The 2001 coding guide
-never set a formatting style — its first rule was "no indentation standard" —
-and the existing tree carries none consistently; reformatting it wholesale is exactly the cosmetic-churn
+to a single, deliberate style, not the whole tree. The tree carries no
+consistent style; reformatting it wholesale is exactly the cosmetic-churn
 commit this file's own "no cosmetic churn riding along with a behavior
 change" rule forbids, and would destroy `git blame` across 200 files
 besides. Widen the list only by deliberately reformatting the files being
@@ -259,9 +255,6 @@ is the operator's, on explicit approval — never the agent's.
 
 ## House conventions
 
-From the 2001 coding guide (John Cairns), removed in 2026 once this file
-carried everything still true. Still in force:
-
 - All source filenames lower-case.
 - Bicapitalized identifiers: `methodName`, `SymbolName`.
 - `GMAN` prefix on every global-scope class and object name.
@@ -270,8 +263,6 @@ carried everything still true. Still in force:
   system does not cover.
 - Header files guarded against multiple inclusion.
 
-**The retired rule.** The 2001 guide required every class to inherit
-`UniversalSuperClass` "to support the (future) addition of memory
-management". The memory management never arrived. What the class actually
-carried was logging, which now lives in `gmanlog.h` as free functions. Do
-not reintroduce a universal base class.
+**No universal base class.** Logging is free functions in `gmanlog.h`;
+call `debug("...")` unqualified. Do not introduce a base class every type
+inherits.
