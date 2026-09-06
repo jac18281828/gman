@@ -2,41 +2,53 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "configure (dev preset)",
+            "label": "configure (host)",
             "type": "shell",
             "command": "cmake --preset dev",
+            "detail": "Host-only: configures ${workspaceFolder}/build. Do not run this inside the devcontainer -- that directory is the same bind-mounted tree the host already configured at a different absolute path, and CMake refuses the mismatch.",
             "problemMatcher": [],
             "group": "build"
         },
         {
-            "label": "build",
+            "label": "build (host)",
             "type": "shell",
             "command": "cmake --build build --parallel",
-            "dependsOn": "configure (dev preset)",
+            "dependsOn": "configure (host)",
+            "detail": "Host-only -- see 'configure (host)'.",
             "problemMatcher": ["$gcc"],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            "group": "build"
         },
         {
-            "label": "test",
+            "label": "test (host)",
             "type": "shell",
             "command": "ctest --test-dir build --output-on-failure",
-            "dependsOn": "build",
+            "dependsOn": "build (host)",
+            "detail": "Host-only -- see 'configure (host)'.",
             "problemMatcher": [],
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            }
+            "group": "test"
         },
         {
             "label": "build (container)",
             "type": "shell",
             "command": "cmake --build /tmp/build-dev --parallel",
             "problemMatcher": ["$gcc"],
-            "detail": "Rebuilds the container-local tree devcontainer.json's postCreateCommand configures -- what (gdb) Launch gman debugs.",
-            "group": "build"
+            "detail": "Rebuilds the container-local tree devcontainer.json's postCreateCommand configures -- what (gdb) Launch gman debugs. Default build task inside the devcontainer.",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "test (container)",
+            "type": "shell",
+            "command": "ctest --test-dir /tmp/build-dev --output-on-failure",
+            "dependsOn": "build (container)",
+            "problemMatcher": [],
+            "detail": "Default test task inside the devcontainer.",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
         },
         {
             "label": "gates",
