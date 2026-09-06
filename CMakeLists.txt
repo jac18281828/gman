@@ -236,9 +236,20 @@ target_link_libraries(gman PRIVATE gman_core)
 
 # RiBegin dlopen's "lib<renderer>.so" by bare name, so the build tree itself
 # has to be on the runtime search path or no renderer ever loads.
+#
+# The install rpath is relative to the executable, not absolute: a release
+# tarball is extracted wherever the user puts it, and an rpath naming the
+# prefix it was configured with would send the loader somewhere that does not
+# exist on their machine. A prefix install still resolves, because the
+# relative path lands in the same libdir either way.
+if(APPLE)
+  set(GMAN_INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+else()
+  set(GMAN_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+endif()
 set_target_properties(gman gman_core gman_rib PROPERTIES
   BUILD_RPATH "${CMAKE_BINARY_DIR}"
-  INSTALL_RPATH "${CMAKE_INSTALL_FULL_LIBDIR}")
+  INSTALL_RPATH "${GMAN_INSTALL_RPATH}")
 
 add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal)
 

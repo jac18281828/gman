@@ -1,0 +1,108 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+name: release
+# A tag is the release trigger. Tags are bare versions -- 0.6.0, no v prefix
+# -- and land on main's release commit, per the checksmix workflow.
+on:
+  push:
+    tags: ["*"]
+permissions:
+  contents: write
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  # The release is created first and empty, so every matrix leg has something
+  # to upload into. Legs run with fail-fast off: one platform failing to build
+  # should cost that platform's tarball, not the whole release.
+  release:
+    name: create the release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # CHANGELOG.md carries every version back to 1999. The release body is
+      # this version's section alone -- from its own "X.Y.Z (date)" heading to
+      # the next one. An unmatched tag yields an empty body rather than the
+      # whole file.
+      - name: Extract this version's changelog section
+        run: |
+          awk -v ver="${{ github.ref_name }}" '
+            $0 ~ "^" ver " \\(" { inside = 1; next }
+            inside && /^[0-9]+(\.[0-9]+)* \(/ { exit }
+            inside { print }
+          ' CHANGELOG.md > release-body.md
+          if [ ! -s release-body.md ]; then
+            echo "::warning::no CHANGELOG.md section for ${{ github.ref_name }}"
+            echo "See CHANGELOG.md." > release-body.md
+          fi
+          cat release-body.md
+      - name: Create the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: GMAN ${{ github.ref_name }}
+          body_path: release-body.md
+          draft: false
+          prerelease: false
+          make_latest: true
+  binaries:
+    name: ${{ matrix.target }}
+    needs: release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+          - os: macos-latest
+            target: macos-arm64
+          - os: macos-13
+            target: macos-x86_64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build \
+            libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install cmake libtiff libpng jpeg
+      - name: Configure
+        run: cmake --preset release
+      - name: Build
+        run: cmake --build build-release --parallel
+      # A release ships a tested build or it does not ship. The suite is the
+      # same one CI runs on every push.
+      - name: Test
+        run: ctest --test-dir build-release --output-on-failure
+      - name: Stage the install tree
+        run: |
+          cmake --install build-release \
+            --prefix "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
+      # The staged gman must find its own plugins from wherever it is
+      # extracted -- that is what the relative INSTALL_RPATH buys, and a
+      # tarball that cannot render is not worth publishing.
+      - name: Verify the staged binary renders
+        run: |
+          cd "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
+          ./bin/gman "${{ github.workspace }}/tests/rib/sphere.rib"
+          test -s sphere.tif
+          rm -f sphere.tif
+      - name: Package
+        run: |
+          cd "${{ runner.temp }}/stage"
+          tar czf "gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" \
+            "gman-${{ github.ref_name }}-${{ matrix.target }}"
+          shasum -a 256 "gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" \
+            > "gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz.sha256"
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            ${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
+            ${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz.sha256
