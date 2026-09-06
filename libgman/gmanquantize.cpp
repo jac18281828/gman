@@ -55,21 +55,29 @@ GMANQuantize::GMANQuantize(DisplayMode md,
 GMANQuantize::~GMANQuantize() { };
 
 
-GMANColor &GMANQuantize::doColor(GMANColor &col) {
-    static bool warned = false;
-    if(!warned) {
+namespace {
+
+// Shared by both doColor overloads so "warn once per process" holds no
+// matter which overload a caller reaches first.
+bool quantizeWarned = false;
+
+void warnQuantizeUnimplemented() {
+    if (!quantizeWarned) {
 	error("Color quantization not currently implemented.");
-	warned = true;
+	quantizeWarned = true;
     }
+}
+
+} // namespace
+
+
+GMANColor &GMANQuantize::doColor(GMANColor &col) {
+    warnQuantizeUnimplemented();
     return col;
 }
 
 
 GMANColorRGB &GMANQuantize::doColor(GMANColorRGB &col) {
-    static bool warned = false;
-    if(!warned) {
-	error("Color quantization not currently implemented.");
-	warned = true;
-    }
+    warnQuantizeUnimplemented();
     return col;
 }
