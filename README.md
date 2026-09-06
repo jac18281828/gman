@@ -2,13 +2,10 @@
 
 [![ci](https://github.com/jac18281828/gman/actions/workflows/ci.yml/badge.svg)](https://github.com/jac18281828/gman/actions/workflows/ci.yml)
 
-GMAN is a shelved 2001 RenderMan renderer, revived and rewritten to build
-again. Point it at a `.rib` file and it renders an image — small enough to
-read the whole pipeline in one sitting, in C++23 and CMake.
-
-RenderMan is a registered trademark of Pixar. GMAN is not associated with or
-endorsed by Pixar; the name is used here only to say which interface GMAN
-implements.
+GMAN is a 1999 RenderMan renderer revived and rewritten to build
+again in 2026. Point it at an `.rib` file and it renders an image. GMAN is
+compact and easy to follow.  It is using C++17 and CMake but there are plenty of
+C modules as well.
 
 ## The tree
 
@@ -28,7 +25,7 @@ doc/         the 1999 design document
 
 ## Building
 
-Requires CMake 3.25 or newer, a C++23 compiler (clang 16+ or gcc 13+),
+Requires CMake 3.21 or newer, a C++17 compiler,
 libtiff, libpng and zlib. libjpeg is optional. POSIX only -- macOS and Linux.
 
 ```sh
@@ -56,12 +53,6 @@ once with:
 ```sh
 ./build.sh
 ```
-
-Worth preferring over a host build on macOS: Apple clang does not diagnose what
-gcc and libstdc++ do, and LeakSanitizer is unsupported there. Every phase of
-this project so far has had at least one defect only the Linux legs could see.
-
-See AGENTS.md for the full gate list and the house conventions.
 
 ## What works
 
@@ -91,11 +82,35 @@ precision defect -- pair such geometry with an explicit `Clipping <near>
 <far>`. See AGENTS.md's "RIB authoring" section, "Explicit `Clipping` where
 geometry is flat or narrow in z."
 
-Out of scope for this project: the shading-language compiler (`gmansl/`
-stays unbuilt; shaders are C++ plugins), texturing, and anti-aliasing/
-multi-sample rendering (1 sample/pixel). `tests/baseline_test.cpp` and
-`tests/lighting_test.cpp` record what actually renders and how it is
-verified.
+`tests/baseline_test.cpp` and `tests/lighting_test.cpp` record what actually
+renders and how it is verified.
+
+### Against the standard
+
+What the RenderMan standard asks of a renderer, and where GMAN stands on
+each:
+
+- **[ ] High-end geometry.** NURBS, trim curves and subdivision surfaces
+  parse and are ignored. `Patch` does not rasterize yet either.
+- **[ ] Antialiasing and motion blur.** One sample per pixel. `PixelSamples`
+  and `PixelFilter` are read from the RIB and five filter kernels are
+  written, but nothing calls them.
+- **[~] Programmable shading.** Pluggable, not programmable. Surface and
+  light shaders are C++ modules loaded at run time -- the right shape behind
+  the wrong front end. Volume shaders parse and do nothing.
+- **[ ] Displacement shading.** Wants micropolygons, which want REYES.
+- **[ ] Many large textures, flat memory.** No texturing. Surface points
+  already carry their `s,t`, so the input side is ready and the lookup is
+  not written.
+- **[~] Quantization, filtering, reconstruction.** Exposure and gamma are
+  honored. Quantization warns and passes the colour through untouched;
+  filtering is the same gap as antialiasing.
+- **[ ] Shading time against shading quality.** `ShadingRate` and the detail
+  controls are read from the RIB and never consulted.
+
+None finished, two begun. The standard is worth keeping as the target: a
+renderer is easy to begin and hard to finish, and the usual way it fails is
+that nobody settles what finished means.
 
 ## Files
 
