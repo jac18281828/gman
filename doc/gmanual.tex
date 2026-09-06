@@ -1,7 +1,7 @@
-% LaTex 2e
+% LaTeX 2e
 % GMAN Manual
 % Author: John Cairns
-% DAte:   March 06, 1999
+% Date:   March 06, 1999
 %
 %
 
@@ -27,7 +27,7 @@ Photorealistic Rendering Tool}
 \bf About the Author\rm\\
 John Cairns is a computer nerd somewhere in Boulder, CO.   He finds
 solace in knowing that there are other nerds out there who actually,
-read this stuff, and perhap even find this program useful.   At least,
+read this stuff, and perhaps even find this program useful.   At least,
 now he doesn't have to wait for Pixar to lower their prices.
 }
 
@@ -69,7 +69,7 @@ That's a mouthful.}}
       of large textures without memory consumption growing appreciably.}
 \item{Fine control over quantization, filtering and reconstruction of
       images.}
-\item{Variable quality in rendering algorithims, providing fine
+\item{Variable quality in rendering algorithms, providing fine
 control over shading time versus shading quality.}
 \end{enumerate}
 
@@ -83,7 +83,7 @@ walk toward it a piece at a time.
 \section {Free Software}
 
 This library is free software.  Meaning that the source code is freely
-avaiable.  \gman is distributed under the GNU Lesser General Public
+available.  \gman is distributed under the GNU Lesser General Public
 License, available as part of the \gman distribution, or from \text{
 https://www.gnu.org/licenses/. }
 
@@ -121,13 +121,13 @@ accessing all objects in a World, i.e., all objects to be projected
 into the output view by the shader.
 
 \subsection{Shaders}
-\gman also provides a generalized interface to shading algorithims.
-These shading algorithims, or Shaders for short, are implemented
+\gman also provides a generalized interface to shading algorithms.
+These shading algorithms, or Shaders for short, are implemented
 through an abstract base class, \text { GMANShader, } defined in \text
 { gmanshader.h. }  Any class derived from a \text { GMANShader } object can
 be specified as the shader used in a particular GMAN rendering
-session.  This allows for extreme flexiblity in implementation, and
-reuse of \gman code, even where a different rendering algorithim is
+session.  This allows for extreme flexibility in implementation, and
+reuse of \gman code, even where a different rendering algorithm is
 desired.  This also provides a mechanism where under the LGPL, shaders
 can be created in a client application that do not fall under the
 terms of the license, as they need not be added to the \gman library,
