@@ -381,9 +381,9 @@ set_tests_properties(cropwindow PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
 
 # UAT defect 5: orthographic ignored RiScreenWindow and hard-clipped at
-# camera-space x=+-1 -- GMANPolygonClipper's fixed clip planes had no
-# screen-window dependence, which prjPersp's invT calibration needs but
-# prjOrtho has nothing equivalent to provide.
+# camera-space x=+-1. GMANPolygonClipper::clip now rebuilds its side planes
+# from the screen window for both projections -- see the perspective
+# analogue of this defect in gmanpolygonclipper.cpp's own history.
 add_executable(gman_orthowindow orthowindow_test.cpp)
 target_link_libraries(gman_orthowindow PRIVATE gman_core TIFF::TIFF)
 

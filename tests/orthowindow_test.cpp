@@ -23,18 +23,22 @@
  * hard-clipped at camera-space x = +-1. GMANPolygonClipper's six planes
  * test x_clip against +-w_clip, the correct NDC test under prjPersp,
  * where invT (from fov) calibrates x_clip and w_clip=z_camera carries no
- * screen-window dependence at all -- RiScreenWindow is applied exactly
- * once, downstream, in GMANViewingSystem::screenToRaster. prjOrtho has no
+ * screen-window dependence at all -- at the time of this fix,
+ * RiScreenWindow was applied only once, downstream, in
+ * GMANViewingSystem::screenToRaster (a later fix made the perspective
+ * clip planes screen-window-dependent too; see gmanpolygonclipper.cpp and
+ * AGENTS.md's "Handedness and matrix convention"). prjOrtho had no
  * fov-equivalent natural bound to calibrate x_clip/y_clip against, and
  * left w_clip at a constant 1, so the same six planes degenerated into a
  * hardcoded -1 <= x_camera <= 1 box independent of ScreenWindow.
  *
- * Fixed in GMANPolygonClipper::clip: when the active viewing system's
- * projection matrix is orthographic (detected the same way prjPersp and
- * prjOrtho already differ -- mtrx[3][3]==0.0 only under prjPersp, where w
- * carries z), the four side planes are rebuilt from the screen window
- * (GMANViewingSystem::getScreenWindow, new) each call instead of the
- * fixed camera-space unit box. This was the only viable fix: scaling
+ * Fixed in GMANPolygonClipper::clip: the four side planes are rebuilt
+ * from the screen window (GMANViewingSystem::getScreenWindow, new) each
+ * call instead of the fixed camera-space unit box. At the time of this
+ * fix that rebuild ran only when the active viewing system's projection
+ * matrix was orthographic; a later fix made it unconditional, since
+ * prjPersp needed the same rebuild for the same reason. This was the
+ * only viable fix here: scaling
  * prjOrtho's x,y by the screen window instead (this prompt's other
  * suggested shape) double-applies it, since screenToRaster already scales
  * by the same screen window afterward -- confirmed by direct measurement
@@ -58,10 +62,10 @@
  * defect) but a bounding box, which is exactly what the settled decision
  * calls out as an acceptable content assertion.
  *
- * Revert check: reverting GMANPolygonClipper::clip's orthographic branch
- * (falling back to the fixed camera-space unit box for every projection)
- * makes every assertion below that depends on content beyond x_camera=-1
- * or y_camera=1.1 go red -- back to the reported hard clip.
+ * Revert check: reverting GMANPolygonClipper::clip's screen-window
+ * rebuild (falling back to the fixed camera-space unit box for every
+ * projection) makes every assertion below that depends on content beyond
+ * x_camera=-1 or y_camera=1.1 go red -- back to the reported hard clip.
  */
 
 #include <sys/wait.h>
