@@ -57,10 +57,10 @@ GMANPolygonClipper::GMANPolygonClipper() {
   // really just the coordinate-space halved at 0, clipping away anything
   // with that coordinate negative regardless of w.
   //
-  // LEFT/RIGHT/TOP/BOTTOM here are placeholders good only for prjPersp;
-  // clip() below rebuilds them from the screen window on every call when
-  // the active viewing system is orthographic. FRONT/BACK (z, near/far)
-  // are correct for both and clip() never touches them.
+  // LEFT/RIGHT/TOP/BOTTOM here are placeholders; clip() below rebuilds
+  // them from the screen window on every call, for both projections.
+  // FRONT/BACK (z, near/far) are correct for both and clip() never
+  // touches them.
   vec = GMANVector4(0.0, 0.0, 1.0, 1.0);
   clipper[GMANFRONT].setNormal(vec.normalize());
 
@@ -92,35 +92,20 @@ int GMANPolygonClipper::clip(GMANFace *face,
   const GMANVertex *vert;  // 3-D world space vertex
   GMANVertex4 hv;   // 4-D homogeneous coord vertex
 
-  // GMANMatrix4::prjPersp always sets mtrx[3][3]=0.0 so w carries z;
-  // prjOrtho leaves row 3 at GMANMatrix4::identity()'s default (w
-  // constant 1), never having a reason to touch it. That is the one bit
-  // distinguishing them here, and exactly the property that decides
-  // whether the fixed +-1 LEFT/RIGHT/TOP/BOTTOM planes below mean
-  // anything: under prjPersp they are invT's own calibration of the fov
-  // cone (the correct NDC test, unrelated to RiScreenWindow -- see
-  // GMANViewingSystem::screenToRaster, the one place both projections
-  // apply the screen window, once). prjOrtho has no fov-equivalent
-  // natural bound to calibrate against, so for an orthographic vs these
-  // four planes are rebuilt from the screen window directly instead --
-  // otherwise an orthographic camera clips at a hardcoded camera-space
-  // unit box regardless of what RiScreenWindow actually asked for.
-  if (vs->getProjMatrix()[3][3] != 0.0) {
-    const GMANOptions::ScreenWindowStruct &sw = vs->getScreenWindow();
-    clipper[GMANLEFT].setNormal(
-        GMANVector4(1.0, 0.0, 0.0, -sw.left).normalize());
-    clipper[GMANRIGHT].setNormal(
-        GMANVector4(-1.0, 0.0, 0.0, sw.right).normalize());
-    clipper[GMANTOP].setNormal(
-        GMANVector4(0.0, -1.0, 0.0, sw.top).normalize());
-    clipper[GMANBOTTOM].setNormal(
-        GMANVector4(0.0, 1.0, 0.0, -sw.bottom).normalize());
-  } else {
-    clipper[GMANLEFT].setNormal(GMANVector4(1.0, 0.0, 0.0, 1.0).normalize());
-    clipper[GMANRIGHT].setNormal(GMANVector4(-1.0, 0.0, 0.0, 1.0).normalize());
-    clipper[GMANTOP].setNormal(GMANVector4(0.0, -1.0, 0.0, 1.0).normalize());
-    clipper[GMANBOTTOM].setNormal(GMANVector4(0.0, 1.0, 0.0, 1.0).normalize());
-  }
+  // Both projections clip against RiScreenWindow: the same window
+  // GMANViewingSystem::screenToRaster maps to the raster, so the bound
+  // that discards geometry here and the bound that lays out pixels there
+  // agree by construction. A window wider than the canonical +-1 square
+  // must show more of the projected scene, not less.
+  const GMANOptions::ScreenWindowStruct &sw = vs->getScreenWindow();
+  clipper[GMANLEFT].setNormal(
+      GMANVector4(1.0, 0.0, 0.0, -sw.left).normalize());
+  clipper[GMANRIGHT].setNormal(
+      GMANVector4(-1.0, 0.0, 0.0, sw.right).normalize());
+  clipper[GMANTOP].setNormal(
+      GMANVector4(0.0, -1.0, 0.0, sw.top).normalize());
+  clipper[GMANBOTTOM].setNormal(
+      GMANVector4(0.0, 1.0, 0.0, -sw.bottom).normalize());
 
   int nVerts = face->getNumVerts();
   for(int i=0; i < nVerts; i++) {

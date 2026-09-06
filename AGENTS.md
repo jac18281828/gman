@@ -145,7 +145,10 @@ world-to-camera in one product, not two — do not re-apply the world-to-
 camera transform on top of it. A locally declared transform composes ahead
 of everything already accumulated — `CTM_new = Local . CTM_old`
 (`GMANGraphicState::buildTransform`) — applying to the point before the
-world-to-camera transform, not after it.
+world-to-camera transform, not after it. Both projections clip against
+`RiScreenWindow` (`GMANPolygonClipper::clip`), the same window
+`GMANViewingSystem::screenToRaster` maps to the raster — one window,
+applied in the two places that must agree.
 
 Object-space normals (what `getNormal(u,v)` returns on a primitive)
 transform by the inverse transpose of the CTM — `createParametric` builds
