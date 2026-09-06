@@ -5,6 +5,7 @@
             "name": "(gdb) Launch gman",
             "type": "cppdbg",
             "request": "launch",
+            "preLaunchTask": "build (container)",
             "program": "/tmp/build-dev/gman",
             "args": ["${input:ribFile}"],
             "cwd": "${workspaceFolder}",

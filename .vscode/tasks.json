@@ -31,6 +31,14 @@
             }
         },
         {
+            "label": "build (container)",
+            "type": "shell",
+            "command": "cmake --build /tmp/build-dev --parallel",
+            "problemMatcher": ["$gcc"],
+            "detail": "Rebuilds the container-local tree devcontainer.json's postCreateCommand configures -- what (gdb) Launch gman debugs.",
+            "group": "build"
+        },
+        {
             "label": "gates",
             "type": "shell",
             "command": "./build.sh",
