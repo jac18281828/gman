@@ -9,11 +9,10 @@
  * TIFF -- a double free at process exit. Both requests push
  * GMANGraphicState::attributesStack.push(attributesStack.top()), which
  * copies GMANAttributes. GMANAttributes owned six GMANLoadableShader*
- * members (a dlopen'd module, closed with dlclose in ~GMANLoadable) with
- * no copy constructor or assignment operator, so the compiler-generated
- * ones did a shallow pointer copy: the pushed copy and the original both
- * held the same GMANLoadableShader*, and both destructors dlclose'd the
- * same handle.
+ * members with no copy constructor or assignment operator, so the
+ * compiler-generated ones did a shallow pointer copy: the pushed copy and
+ * the original both held the same GMANLoadableShader*, and both
+ * destructors freed the same GMANLoadableShader object.
  *
  * The push itself is correct RenderMan semantics -- an attribute block
  * inherits its parent's attributes -- so the fix is GMANAttributes getting
