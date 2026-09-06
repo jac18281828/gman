@@ -2,7 +2,6 @@ GMAN 0.6.0
 ==========
 
 GMAN began in 1999, was shelved in 2002, and resumed development in 2026.
-This is the project's first tagged release since the revival.
 
 What renders
 ------------
@@ -14,10 +13,12 @@ What renders
 - Three light types: ambientlight, distantlight, pointlight.
 - TIFF, PNG, JPEG and PNM output.
 
-The RIB front end covers the full RISpec 3.2 request set, including array
-and inline-declared parameters, facevarying parameters, gzip'd RIB,
-ReadArchive with cycle detection, and graceful recovery from any request
-GMAN does not recognize.
+The RIB front end parses a subset of the RISpec 3.2 request set: the
+quadrics and Polygon above, RIB-driven camera and transform setup, lights
+and surface shaders, array and inline-declared parameters, facevarying
+parameters, gzip'd RIB, ReadArchive with cycle detection, and graceful
+recovery from any request GMAN does not recognize (warn once, skip, keep
+parsing). It does not cover the full request set.
 
 What does not render
 ---------------------
@@ -31,5 +32,8 @@ What does not render
 - Patch, PatchMesh, NuPatch, curves and points: parse but do not
   rasterize.
 
-See AGENTS.md's "RIB support" section and SPEC.md's defect ledger for the
-complete, current gap list.
+`libgman/gmanribtokenize.cpp`'s `parseKeyword` is ground truth for which
+requests the tokenizer recognizes at all; `libgman/gmanribparse.cpp`'s
+request switch is ground truth for which of those reach a renderer call.
+See AGENTS.md's "RIB authoring" section, "What the RIB front end actually
+supports," for how to read them.
