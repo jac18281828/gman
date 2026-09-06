@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2001 Ken Geis
  *
- * Author: Ken Geis <kgeis@alum.calberkeley.org>
+ * Author: Ken Geis
  */
 
 /*
@@ -89,7 +89,7 @@ const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &se)
 
 static GMANLoadableObjectInfo loadableInfo = {
   "Matte surface shader",
-  "Ken Geis <kgeis@alum.calberkeley.org>",
+  "Ken Geis",
   "Copyright (c) 2001 Ken Geis, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
   "A GMAN SurfaceShader for matte surfaces.",
 };
