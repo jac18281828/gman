@@ -1,15 +1,15 @@
 {
-  "version": 6,
+  "version": 3,
   "cmakeMinimumRequired": {
     "major": 3,
-    "minor": 25,
+    "minor": 21,
     "patch": 0
   },
   "configurePresets": [
     {
       "name": "dev",
       "displayName": "dev — warnings are errors",
-      "description": "The gate build. C++23, -Wall -Wextra -Werror.",
+      "description": "The gate build. C++17, -Wall -Wextra -Werror.",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",

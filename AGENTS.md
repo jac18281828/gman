@@ -7,7 +7,7 @@ Read it before changing anything. Humans contributing by hand want
 
 ## Build
 
-Requires CMake 3.25 or newer, a C++23 compiler (clang 16+ or gcc 13+),
+Requires CMake 3.21 or newer, a C++17 compiler,
 libtiff, libpng and zlib. libjpeg is optional. POSIX only: macOS and Linux.
 
 ```sh
