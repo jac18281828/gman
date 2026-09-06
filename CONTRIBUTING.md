@@ -39,13 +39,9 @@ reason you can explain, never to turn a red test green.
 
 ## Commits
 
-Conventional Commits, signed, wrapped at 80 columns:
-
-```
-fix(gman): compose local transforms ahead of the accumulated ctm
-```
-
-Lower-case, no trailing period. commitlint enforces it.
+[Conventional Commits](https://www.conventionalcommits.org), signed.
+`commitlint.config.js` holds the rules and CI runs them, so let it tell you
+rather than reading a list here.
 
 ## Style
 
