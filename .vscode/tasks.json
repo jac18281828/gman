@@ -31,6 +31,14 @@
             }
         },
         {
+            "label": "clean",
+            "type": "shell",
+            "command": "rm -rf build",
+            "detail": "Removes build/ entirely, including CMakeCache.txt -- needed when switching this checkout between host and container (CMake's cache pins an absolute source path) or to force a full reconfigure. cmake --build build --target clean only clears build artifacts, not the cache, so it won't fix a path mismatch.",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
             "label": "format-check",
             "type": "shell",
             "command": "cmake --build build --target format-check",
