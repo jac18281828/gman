@@ -29,9 +29,10 @@ whole set locally: `./build.sh`.
 
 ## Tests
 
-Add tests for behavior changes, and make sure they have teeth — break the code
-on purpose, watch the test go red, put it back. Tests are hermetic: no network,
-no files outside the checked-in tree.
+Add tests for behavior changes, and prove they are not vacuous — break the
+code on purpose, watch the test go red, put it back. A test that still passes
+when its target is broken covers nothing. Tests are hermetic: no network, no
+files outside the checked-in tree.
 
 Golden images are checked in. Regenerate one only when the pixels moved for a
 reason you can explain, never to turn a red test green.
