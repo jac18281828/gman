@@ -10,18 +10,19 @@
 	},
 	"workspaceFolder": "/workspaces/gman",
 	"remoteUser": "gman",
+	// No per-container "settings" override here: .vscode/settings.json is
+	// workspace-wide and VS Code applies it over a remote's own settings, so
+	// a divergent value here would be silently discarded in favor of the
+	// checked-in workspace one -- .vscode/settings.json and
+	// .vscode/launch.json already point at this container's build directory
+	// directly.
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"ms-vscode.cpptools",
 				"ms-vscode.cmake-tools",
 				"llvm-vs-code-extensions.vscode-clangd"
-			],
-			"settings": {
-				"cmake.configureOnOpen": false,
-				"C_Cpp.default.cppStandard": "c++23",
-				"C_Cpp.default.compileCommands": "/tmp/build-dev/compile_commands.json"
-			}
+			]
 		}
 	},
 
