@@ -73,7 +73,7 @@ protected:
   RtInt         sides;
   RtToken       orientation;
 
-  GMANVertex *verticies[GMAN_NFACE_VERTS]; // pointer array to vertexes
+  GMANVertex *vertices[GMAN_NFACE_VERTS]; // pointer array to vertexes
 
   GMANFace	*next;	  // next face pointer
   
@@ -103,7 +103,7 @@ public:
   // get normal
   const GMANVector &getNormal(RtVoid) const { return normal; };
   // get nth vertex
-  const GMANVertex *getVertex(int n) const { return verticies[n]; };
+  const GMANVertex *getVertex(int n) const { return vertices[n]; };
 
   // RiSides/RiOrientation captured at tessellation time
   RtVoid setSides(RtInt s) { sides = s; };

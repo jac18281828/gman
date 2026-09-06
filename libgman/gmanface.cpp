@@ -48,7 +48,7 @@ GMANFace::GMANFace(GMANVertex **verts, GMANSurface *p) : color() {
   next = NULL;
 
   for(int i=0; i<GMAN_NFACE_VERTS; i++) {
-    verticies[i] = verts[i];
+    vertices[i] = verts[i];
   };
 };
 
@@ -59,9 +59,9 @@ GMANFace::~GMANFace() { };
 RtVoid GMANFace::calcArea(RtVoid) {
   GMANVector result;
 
-  GMANVector va(verticies[0]->getLocation(), verticies[1]->getLocation());
-  GMANVector vb(verticies[0]->getLocation(), verticies[2]->getLocation());
-  GMANVector vc(verticies[3]->getLocation(), verticies[0]->getLocation());
+  GMANVector va(vertices[0]->getLocation(), vertices[1]->getLocation());
+  GMANVector vb(vertices[0]->getLocation(), vertices[2]->getLocation());
+  GMANVector vc(vertices[3]->getLocation(), vertices[0]->getLocation());
 
   result = va.cross(vb);
   area = result.magnitude() / 2.0;
@@ -73,8 +73,8 @@ RtVoid GMANFace::calcArea(RtVoid) {
 
 RtVoid GMANFace::calcNormal(RtVoid) 
 {
-  GMANVector va(verticies[0]->getLocation(), verticies[1]->getLocation());
-  GMANVector vb(verticies[0]->getLocation(), verticies[2]->getLocation());
+  GMANVector va(vertices[0]->getLocation(), vertices[1]->getLocation());
+  GMANVector vb(vertices[0]->getLocation(), vertices[2]->getLocation());
 
   normal = va.cross(vb);
 

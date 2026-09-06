@@ -127,11 +127,11 @@ public:
   /*
   RtVoid calcCenter(RtVoid) {
     // initialize center
-    GMANVector centerV = verticies[0]->getLocation();
+    GMANVector centerV = vertices[0]->getLocation();
 
     // find centroid
     for(int i=1; i<GMAN_NFACE_VERTS; i++) 
-      centerV += verticies[i]->getLocation();
+      centerV += vertices[i]->getLocation();
 
     centerV /= GMAN_NFACE_VERTS;
 

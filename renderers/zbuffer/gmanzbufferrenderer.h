@@ -128,7 +128,7 @@ private:
   int fullResX;
   int fullResY;
 
-  int num_vert; // number of verticies
+  int num_vert; // number of vertices
 
   EdgeInfo	*edge_list;
 

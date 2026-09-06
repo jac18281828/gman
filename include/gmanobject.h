@@ -59,7 +59,7 @@ private:
 
   GMANBody *bodyRoot;	// body's
 
-  GMANVertex *vertRoot; // verticies
+  GMANVertex *vertRoot; // vertices
 
   GMANObject *next;     // next instance
 

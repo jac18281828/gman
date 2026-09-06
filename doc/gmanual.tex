@@ -46,11 +46,7 @@ consider the project to be a small one.   In fact, I never would have
 project.   There are a couple of important ways I made the project seem
 smaller.  First, I borrowed the interface, file format, and shading
 language from a known, trusted, and established source, Pixar's
-RenderMan Specification\footnote{By the way, PhotoRealistic RenderMan, 
-and Pixar are trademarks of Pixar Animation Studios, Inc.   
-I am not affiliated with Pixar in any way, nor is this software.   
-I wrote all the code from scratch, based on literature, 
-and my experience as a programmer.}.
+RenderMan Specification.
 This helped make the job of writing a shading system a little
 smaller, since I could minimize design time and focus on
 \em algorithmic beauty.\rm   I also owe a huge thanks to Mark and Alan
@@ -87,16 +83,16 @@ RenderMan as a starting point was a good idea.
 This library is free software.  Meaning that the source code is freely
 avaiable.  \gman is distributed under the GNU Lesser General Public
 License, available as part of the \gman distribution, or from \text{
-http://www.fsf.org. }
+https://www.gnu.org/licenses/. }
 
 \section{Downloading}
 
 The current version of \gman is available at \text
-{ http://2ad.com/gman }
-This Library is written in portable C and C++ and should be portable to
-most\footnote{A good, modern C++ compiler such as GCC 2.8.0, is
-required to compile \gman.}
-major platforms.
+{ https://github.com/jac18281828/gman }
+This Library is written in C and C++ and builds on POSIX
+platforms\footnote{CMake 3.25 or newer and a C++23 compiler, clang 16 or
+gcc 13, are required to compile \gman.  macOS and Linux; the Windows
+port was dropped in 2026.}, macOS and Linux.
 
 \chapter{Library Design}
 \begin{em}
@@ -104,20 +100,20 @@ major platforms.
 \end{em}
 \section{Overview}
 
-GMAN supports three interfaces for it's scene description language, C,
+GMAN supports three interfaces for its scene description language, C,
 C++, and RIB.  The C interface is provided in the \text { ri.h }
-header file.  The C++ interface is provided through the \text{ ripp.h }
-header file, in the \text{ Ri } base class.  The C interface is
-built out of the C++ Interface by providing a C wrapper that
-instantiates a single instance of \text{ RiImpl, } the RenderMan
-implementation class.
+header file.  The C++ interface is provided through the \text{
+gmanrenderman.h } header file, in the \text{ GMANRenderMan } base
+class.  The C interface is built out of the C++ Interface by providing a
+C wrapper that instantiates a single instance of \text{
+GMANRenderManImpl, } the RenderMan implementation class.
 
 \subsection{Object Management}
 \gman stores all objects defined with a \text{ RiWorldBegin,
 RiWorldEnd } pair in an object database called an \text
 { ObjectManager. }  The object manager base class is defined in \text
-{ riobjects.h. }  Three predefined object managers are provided by
-\gman in the default implementation, Linear, BSP, and Octree.  The
+{ gmanobjectmanager.h. }  One is implemented, the linear world manager;
+the BSP and octree managers were designed and never written.  The
 \text{ ObjectManager } interface provides a generalized method for
 accessing all objects in a World, i.e., all objects to be projected
 into the output view by the shader.
@@ -125,8 +121,8 @@ into the output view by the shader.
 \subsection{Shaders}
 \gman also provides a generalized interface to shading algorithims.
 These shading algorithims, or Shaders for short, are implemented
-through an abstract base class, \text { Shader, } defined in \text
-{ rishader.h. }  Any class derived from a \text { Shader } object can
+through an abstract base class, \text { GMANShader, } defined in \text
+{ gmanshader.h. }  Any class derived from a \text { GMANShader } object can
 be specified as the shader used in a particular GMAN rendering
 session.  This allows for extreme flexiblity in implementation, and
 reuse of \gman code, even where a different rendering algorithim is
