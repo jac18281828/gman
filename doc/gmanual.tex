@@ -14,7 +14,6 @@ Photorealistic Rendering Tool}
 \date   { March 06, 1999 }
 
 \def\gman{\bf GMAN \rm}
-\def\gmansl{\bf GMANSL \rm}
 \def\text#1{\bf\tt #1 \rm}
 \def\instruction#1#2#3{\bf #1 \hfil\rm #2 \hfill \hbox{#3}\\}
 
@@ -55,16 +54,15 @@ Animation and Rendering Techniques\rm without which, this project
 would have been untenable.
 
 \section{About GMAN}
-This library is intended to provide a high-quality rendering solution,
-i.e. support for\footnote{Thanks to Larry Gritz of Pixar <lg@pixar.com>
-for this list.}:
+The RenderMan standard asks a great deal of a renderer\footnote{Thanks to
+Larry Gritz of Pixar for this list.}:
 
 \begin{enumerate}
 \item{High-end geometric types, such as trimmed curves, NURBS and
       Catmull-Clark subdivision surfaces.}
 \item{Robust spatial and temporal antialiasing, 
       including motion-blurred geometric deformations\footnote{Whoa!
-That's a mouthful.}
+That's a mouthful.}}
 \item{Programmable shading of surfaces, lights, and volumes.}
 \item{Displacement shading.}
 \item{The ability to use large numbers (e.g. hundreds or thousands)
@@ -75,8 +73,12 @@ That's a mouthful.}
 control over shading time versus shading quality.}
 \end{enumerate}
 
-These features are all required by the RenderMan standard, so choosing
-RenderMan as a starting point was a good idea.   
+That list is the target, not the inventory.  \gman renders the quadrics
+and convex polygons today, shaded by \text{ matte, plastic } and \text{
+metal, } lit by ambient, distant and point lights, and does none of the
+seven things above.  Choosing RenderMan as a starting point still looks
+like a good idea.  The standard says what finished would mean, and I can
+walk toward it a piece at a time.   
 
 \section {Free Software}
 
@@ -131,50 +133,5 @@ can be created in a client application that do not fall under the
 terms of the license, as they need not be added to the \gman library,
 they can be specified as part of the client application and integrated
 into \gman at runtime.
-
-\chapter{Shading Language Engine, \gmansl}
-\section{Introduction}
-
-The shading language engine is the core of the \gman shading
-process.  The engine has two key components the \gmansl virtual machine
-and the \gmansl compiler.  The \gmansl compiler parses the shading language
-statements and grammars and produces a \gmansl code listing suitable for
-loading and execution in the \gmansl virtual computer.
-
-\section{The \gmansl Computer}
-
-The \gmansl computer simulates a stack based computer specifically
-designed, for rendering applications.  It behaves like a fairly simple
-CISC machine.   It has a variable length stack, which allows operands
-to be pushed and poped.  \gmansl provides just enough instructions for
-the task at hand.
-
-\subsection{General Description of the \gmansl Computer}
-
-The \gmansl computer is a thirtytwo (32) bit computer.  In other words
-the fundamental word size is four (4) bytes.  All values stored on the
-\gmansl stack are four bytes long.  This is because the \gmansl
-computer is required to run efficiently on thirty-two (32) bit
-computers.  The \gmansl stack is 64k providing up to 16384 storage
-locations. 
-
-The \gmansl computer has 64k of random access storage accessible
-through a single sixteen (16) bit index register, indx.  Addresses
-must always be aligned on four (4) byte boundaries, as the low order 4
-bits of the index register are ignored.
-
-The \gmansl computer provides a 64k bank of storage shared with the
-host computer, in particular this storage can be used for accessing
-input and ouput storage for use with communicating with \gman.
-
-\subsection{The \gmansl Instruction Set}
-
-\instruction{ADD}{0x01}{The ADD instruction replaces the two
-thirty-two bit floating point values on the stack with the sum of
-these two values.}
-\instruction{SUB}{0x02}{The SUB instruction replaces the two
-thirty-two bit floating point values on the stack with the difference
-of the stack top and the previous stack element.}
-
 
 \end{document}
