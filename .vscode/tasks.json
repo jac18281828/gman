@@ -1,0 +1,42 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "configure (dev preset)",
+            "type": "shell",
+            "command": "cmake --preset dev",
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "cmake --build build --parallel",
+            "dependsOn": "configure (dev preset)",
+            "problemMatcher": ["$gcc"],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "test",
+            "type": "shell",
+            "command": "ctest --test-dir build --output-on-failure",
+            "dependsOn": "build",
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "gates",
+            "type": "shell",
+            "command": "./build.sh",
+            "problemMatcher": [],
+            "detail": "Builds the dev container and runs AGENTS.md's full gate list inside it -- the same command CI's checks are derived from.",
+            "group": "test"
+        }
+    ]
+}

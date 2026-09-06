@@ -1,0 +1,6 @@
+{
+    "editor.formatOnSave": true,
+    "cmake.configureOnOpen": false,
+    "C_Cpp.default.cppStandard": "c++23",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json"
+}

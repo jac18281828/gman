@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch gman",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/gman",
+            "args": ["${input:ribFile}"],
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/build" },
+                { "name": "DYLD_LIBRARY_PATH", "value": "${workspaceFolder}/build" }
+            ],
+            "MIMode": "gdb",
+            "preLaunchTask": "build",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "ribFile",
+            "type": "promptString",
+            "description": "Path to a .rib file to render",
+            "default": "tests/rib/sphere.rib"
+        }
+    ]
+}
