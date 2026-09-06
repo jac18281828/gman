@@ -227,6 +227,21 @@ add_test(NAME shaders
 set_tests_properties(shaders PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
 
+# The per-pixel quantize log spam defect: GMANQuantize::doColor must warn
+# at most once per process, not once per pixel.
+add_executable(gman_quantize quantize_test.cpp)
+target_link_libraries(gman_quantize PRIVATE gman_core)
+
+set(GMAN_QUANTIZE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quantize-run")
+file(MAKE_DIRECTORY "${GMAN_QUANTIZE_WORKDIR}")
+
+add_test(NAME quantize
+  COMMAND gman_quantize $<TARGET_FILE:gman>
+                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_QUANTIZE_WORKDIR}")
+set_tests_properties(quantize PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
 # Step 4: RIB tokenizer robustness on malformed input -- an unterminated
 # string, an unbalanced bracket, a file truncated mid-keyword -- each
 # under its own hard timeout (see tests/ribmalformed_test.cpp).

@@ -56,12 +56,20 @@ GMANQuantize::~GMANQuantize() { };
 
 
 GMANColor &GMANQuantize::doColor(GMANColor &col) {
-    error("Color quantization not currently implemented.");
+    static bool warned = false;
+    if(!warned) {
+	error("Color quantization not currently implemented.");
+	warned = true;
+    }
     return col;
 }
 
 
 GMANColorRGB &GMANQuantize::doColor(GMANColorRGB &col) {
-    error("Color quantization not currently implemented.");
+    static bool warned = false;
+    if(!warned) {
+	error("Color quantization not currently implemented.");
+	warned = true;
+    }
     return col;
 }
