@@ -264,7 +264,7 @@ endif()
 # Format check
 # ---------------------------------------------------------------------------
 
-# The tree carries no consistent style to enforce (doc/codingguide.txt never
+# The tree carries no consistent style to enforce (the 2001 coding guide never
 # set one, and 26 years of unstyled history is not this phase's to reformat
 # -- a whitespace commit across 200 files destroys git blame). Scoped to the
 # files this phase wrote to a single, deliberate style: tests/check.h and

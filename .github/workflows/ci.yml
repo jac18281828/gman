@@ -186,7 +186,7 @@ jobs:
             echo "::endgroup::"
           done
   format-check:
-    # Step 6: doc/codingguide.txt never set a formatting style and the
+    # Step 6: the 2001 coding guide never set a formatting style and the
     # existing tree carries none consistently, so this checks only the
     # files this phase wrote to one deliberate style (.clang-format's own
     # comment names the exact list) -- not a whole-tree gate.

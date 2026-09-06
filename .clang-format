@@ -1,7 +1,7 @@
 ---
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# doc/codingguide.txt (Jan 2001) never set a formatting style, and the
+# The 2001 coding guide never set a formatting style, and the
 # existing tree carries none consistently -- SPEC.md's own diagnosis.
 # This config is for new and touched code going forward, not a mandate to
 # reformat 26 years of unstyled history (AGENTS.md: no cosmetic churn

@@ -22,7 +22,7 @@ gmansl/      grammar and driver for a shading language compiler that was never
              finished; kept as a record, built by nothing
 gman/        the gman command line utility
 tests/       the test suite and its RIB corpus
-doc/         the 1999 design document and the house coding guide
+doc/         the 1999 design document
 
 Building
 --------

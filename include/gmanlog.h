@@ -37,7 +37,7 @@
  * GMAN logging
  *
  * These were members of UniversalSuperClass, which every class in the tree
- * inherited under doc/codingguide.txt rule 2, "to support the (future)
+ * inherited under the 2001 coding guide's rule 2, "to support the (future)
  * addition of memory management". The memory management never arrived, so the
  * base class is retired and the logging it actually carried lives here as
  * free functions. Call sites are unchanged: an unqualified debug("...") that
