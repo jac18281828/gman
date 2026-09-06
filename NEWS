@@ -1,5 +1,35 @@
-In release of GMAN:
+GMAN 0.6.0
+==========
 
-VERSION
-0.1.0		-- continued development, added objects required for the system.
-UNRELEASED	-- under development
+GMAN began in 1999, was shelved in 2002, and resumed development in 2026.
+This is the project's first tagged release since the revival.
+
+What renders
+------------
+
+- All seven RenderMan quadrics: Sphere, Cone, Cylinder, Hyperboloid,
+  Paraboloid, Torus, Disk.
+- Convex Polygon.
+- Three C++ surface shaders: matte, plastic, metal.
+- Three light types: ambientlight, distantlight, pointlight.
+- TIFF, PNG, JPEG and PNM output.
+
+The RIB front end covers the full RISpec 3.2 request set, including array
+and inline-declared parameters, facevarying parameters, gzip'd RIB,
+ReadArchive with cycle detection, and graceful recovery from any request
+GMAN does not recognize.
+
+What does not render
+---------------------
+
+- Texturing.
+- Antialiasing (one sample per pixel).
+- REYES and ray tracing (renderer plugins present, non-functional, built
+  OFF by default).
+- Subdivision surfaces.
+- The RenderMan shading-language compiler; shaders are C++ plugins.
+- Patch, PatchMesh, NuPatch, curves and points: parse but do not
+  rasterize.
+
+See AGENTS.md's "RIB support" section and SPEC.md's defect ledger for the
+complete, current gap list.
