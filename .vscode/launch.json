@@ -5,13 +5,13 @@
             "name": "(gdb) Launch gman",
             "type": "cppdbg",
             "request": "launch",
-            "preLaunchTask": "build (container)",
-            "program": "/tmp/build-dev/gman",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/build/gman",
             "args": ["${input:ribFile}"],
             "cwd": "${workspaceFolder}",
             "environment": [
-                { "name": "LD_LIBRARY_PATH", "value": "/tmp/build-dev" },
-                { "name": "DYLD_LIBRARY_PATH", "value": "/tmp/build-dev" }
+                { "name": "LD_LIBRARY_PATH", "value": "${workspaceFolder}/build" },
+                { "name": "DYLD_LIBRARY_PATH", "value": "${workspaceFolder}/build" }
             ],
             "MIMode": "gdb",
             "setupCommands": [

@@ -10,12 +10,6 @@
 	},
 	"workspaceFolder": "/workspaces/gman",
 	"remoteUser": "gman",
-	// No per-container "settings" override here: .vscode/settings.json is
-	// workspace-wide and VS Code applies it over a remote's own settings, so
-	// a divergent value here would be silently discarded in favor of the
-	// checked-in workspace one -- .vscode/settings.json and
-	// .vscode/launch.json already point at this container's build directory
-	// directly.
 	"customizations": {
 		"vscode": {
 			"extensions": [
@@ -28,9 +22,11 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
-	// Configures IntelliSense on container creation. Builds to a
-	// container-local directory, not ${workspaceFolder}/build -- that path is
-	// the *host's* build/ once bind-mounted, and this container's toolchain
-	// must not write object files there (see build.sh).
-	"postCreateCommand": "cmake -S . -B /tmp/build-dev -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS=\"-Wall -Wextra -Werror\" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && cmake --build /tmp/build-dev --parallel"
+	// Configures and builds on container creation, same as the host workflow
+	// in README's "Building" section. A checkout is expected to live on
+	// either the host or in the container, never both at once against the
+	// same build/ -- CMake's cache records an absolute source path, and
+	// reconfiguring the same checkout from the other side fails on that
+	// mismatch. Delete build/ first if you switch sides.
+	"postCreateCommand": "cmake --preset dev && cmake --build build --parallel"
 }
