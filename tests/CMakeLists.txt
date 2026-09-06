@@ -411,3 +411,19 @@ add_test(NAME polygon
   WORKING_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
 set_tests_properties(polygon PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+
+# Perspective clipping honours RiScreenWindow, not the canonical +-1 NDC
+# cube: tests/rib/wideframe.rib's rectangle spans a wide, non-square
+# frame's default aspect-derived window.
+add_executable(gman_wideframe wideframe_test.cpp)
+target_link_libraries(gman_wideframe PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_WIDEFRAME_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/wideframe-run")
+file(MAKE_DIRECTORY "${GMAN_WIDEFRAME_WORKDIR}")
+
+add_test(NAME wideframe
+  COMMAND gman_wideframe $<TARGET_FILE:gman>
+                         "${CMAKE_CURRENT_SOURCE_DIR}/rib/wideframe.rib"
+  WORKING_DIRECTORY "${GMAN_WIDEFRAME_WORKDIR}")
+set_tests_properties(wideframe PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")

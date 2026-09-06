@@ -1,0 +1,24 @@
+## The default screen window for a non-square Format is +-frameAspectRatio
+## in x, not the canonical +-1 NDC cube: GMANPolygonClipper::clip must
+## clip perspective geometry against that window, the same bound
+## GMANViewingSystem::screenToRaster maps to the raster. Format 800x200
+## (aspect 4, no RiScreenWindow) puts that window at [-4,4]x[-1,1]; one
+## flat, camera-facing rectangle spans world x=[-19.5,19.5] at z=5, so
+## camera-space x/z reaches ndc.x=+-3.9 -- inside the true window, hard
+## outside the old fixed +-1 cube. A render still clipping at +-1 shows
+## only a narrow centre band; the fix fills within 10px of both edges.
+Display "wideframe.tif" "file" "rgba"
+Format 800 200 1
+Projection "perspective" "fov" [90]
+# Explicit, not the RI_EPSILON-near default: SPEC.md Section 8's near-clip
+# precision defect corrupts geometry flat or narrow in z hardest, and this
+# rectangle's four vertices share one z.
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+Sides 2
+Color [0.8 0.4 0.2]
+Surface "matte" "Ka" [1.0]
+Polygon "P" [-19.5 -2 0  19.5 -2 0  19.5 2 0  -19.5 2 0]
+WorldEnd
