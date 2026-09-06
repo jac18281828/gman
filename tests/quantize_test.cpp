@@ -73,6 +73,11 @@ int countOccurrences(const std::string &haystack, const std::string &needle) {
 // (there is none today, but a future test added to this file could add
 // one) would make the "exactly once" assertion pass for the wrong reason.
 std::string callBothOverloadsInChild(const std::string &captureFile) {
+  // fork() copies the parent's block-buffered stdout; without a flush here
+  // the child's freopen() implicit flush-then-close later writes the
+  // inherited buffer back out to the real stdout, duplicating whatever this
+  // test already printed before the fork.
+  std::fflush(stdout);
   pid_t pid = fork();
   if (pid < 0) {
     return "";
