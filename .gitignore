@@ -23,6 +23,9 @@ CMakeUserPresets.json
 # Rendered output the baseline run drops in the working directory
 /sphere.tif
 
+# The demo scene's own output; samples/vase.png is the committed render
+/samples/vase.tif
+
 # Autotools strays
 Makefile
 Makefile.in

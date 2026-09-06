@@ -7,6 +7,12 @@ again in 2026. Point it at an `.rib` file and it renders an image. GMAN is
 compact and easy to follow.  It is using C++17 and CMake but there are plenty of
 C modules as well.
 
+![A robot drives into a table; the vase tips and its flowers eject](samples/vase.png)
+
+*GMAN is at it again!* — `samples/vase.rib`, rendered by `gman`. Quadrics and
+convex polygons, three surface shaders, three lights, no textures and one
+sample per pixel.
+
 ## The tree
 
 ```
@@ -19,6 +25,7 @@ shaders/     loadable shading modules
 gmansl/      grammar and driver for a shading language compiler that was never
              finished; kept as a record, built by nothing
 gman/        the gman command line utility
+samples/     demo scenes and their renders
 tests/       the test suite and its RIB corpus
 doc/         the 1999 design document
 ```
