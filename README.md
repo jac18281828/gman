@@ -1,20 +1,18 @@
-GMAN — a RenderMan-compatible renderer
+# GMAN — a RenderMan-compatible renderer
 
 [![ci](https://github.com/jac18281828/gman/actions/workflows/ci.yml/badge.svg)](https://github.com/jac18281828/gman/actions/workflows/ci.yml)
 
-GMAN reads RenderMan Interface Bytestream (`.rib`) scene files and renders
-them to TIFF, PNG, JPEG or PNM. It projects, clips, z-buffers and shades
-quadrics and convex polygons, with matte, plastic and metal surface shaders
-and ambient, distant and point lights. It is written in C++23, builds with
-CMake and is tested on macOS and Linux under both gcc and clang.
+GMAN is a shelved 2001 RenderMan renderer, revived and rewritten to build
+again. Point it at a `.rib` file and it renders an image — small enough to
+read the whole pipeline in one sitting, in C++23 and CMake.
 
 RenderMan is a registered trademark of Pixar. GMAN is not associated with or
 endorsed by Pixar; the name is used here only to say which interface GMAN
 implements.
 
-The tree
---------
+## The tree
 
+```
 include/     GMAN header files, including ri.h
 libgman/     the core library: RIB parser, RI state machine, image writers
 libgmanrib/  GMANASCII, the RIB writer backend over the abstract RI interface
@@ -26,33 +24,38 @@ gmansl/      grammar and driver for a shading language compiler that was never
 gman/        the gman command line utility
 tests/       the test suite and its RIB corpus
 doc/         the 1999 design document
+```
 
-Building
---------
+## Building
 
 Requires CMake 3.25 or newer, a C++23 compiler (clang 16+ or gcc 13+),
 libtiff, libpng and zlib. libjpeg is optional. POSIX only -- macOS and Linux.
 
-    cmake --preset dev
-    cmake --build build --parallel
-    ctest --test-dir build --output-on-failure
+```sh
+cmake --preset dev
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+```
 
 `AGENTS.md`'s Tests section covers the test layout, adding a new test, and
 golden-image regeneration; its Gates section is the full gate list CI runs.
 
 To install into a prefix:
 
-    cmake --install build --prefix /usr/local
+```sh
+cmake --install build --prefix /usr/local
+```
 
-Development container
----------------------
+## Development container
 
 A devcontainer carrying the same toolchain CI uses -- both gcc and clang, the
 sanitizers, valgrind, yamlfmt and commitlint -- lives in .devcontainer/. Open
 the repo in VS Code and choose "Reopen in Container", or run every gate at
 once with:
 
-    ./build.sh
+```sh
+./build.sh
+```
 
 Worth preferring over a host build on macOS: Apple clang does not diagnose what
 gcc and libstdc++ do, and LeakSanitizer is unsupported there. Every phase of
@@ -60,8 +63,7 @@ this project so far has had at least one defect only the Linux legs could see.
 
 See AGENTS.md for the full gate list and the house conventions.
 
-What works
-----------
+## What works
 
 The front end. RIB parsing covers a subset of the RISpec 3.2 request set
 plus the de-facto conventions real exporters rely on: array and
@@ -95,11 +97,12 @@ multi-sample rendering (1 sample/pixel). `tests/baseline_test.cpp` and
 `tests/lighting_test.cpp` record what actually renders and how it is
 verified.
 
-Files
------
+## Files
 
+```
 COPYING      GNU Lesser General Public License, version 2.1
 AGENTS.md    build commands, gate list and house conventions
 NEWS         release notes
 TODO         what was outstanding when the project was shelved
 AUTHORS      contributors
+```
