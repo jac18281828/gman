@@ -90,7 +90,7 @@ const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &se)
 static GMANLoadableObjectInfo loadableInfo = {
   "Matte surface shader",
   "Ken Geis <kgeis@alum.calberkeley.org>",
-  "Copyright (c) 2001 Ken Geis, Licenced under the GNU Lesser Public License, http://www.gnu.org",
+  "Copyright (c) 2001 Ken Geis, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
   "A GMAN SurfaceShader for matte surfaces.",
 };
 

@@ -196,7 +196,7 @@ RtFloat GMANTools::nurbsBlendFactor (RtInt i, RtInt degree, RtFloat u, RtFloat *
   }
   return a+b;
 }
-/* Be carefull! unlike other prims, u & v parameters range is
+/* Be careful! unlike other prims, u & v parameters range is
    not [0,1] but umin,umax and vmin,vmax (see RiSpec)
 */
 GMANPoint GMANTools::nurbs  (RtFloat u, RtFloat v,

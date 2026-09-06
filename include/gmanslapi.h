@@ -51,13 +51,13 @@
  */
 
 // min takes a list of two or more arguments and return the argument with
-// minimun value, on a component-by-components basis
+// minimum value, on a component-by-components basis
 GMANColor  GMAN_EXPORT GMANMin(GMANColor  a, GMANColor  b ...);
 GMANPoint  GMAN_EXPORT GMANMin(GMANPoint  a, GMANPoint  b ...);
 GMANVector GMAN_EXPORT GMANMin(GMANVector a, GMANVector b ...);
 
 // max takes a list of two or more arguments and return the argument with
-// maximun value, on a component-by-components basis
+// maximum value, on a component-by-components basis
 GMANColor  GMAN_EXPORT GMANMax(GMANColor  a, GMANColor  b ...);
 GMANPoint  GMAN_EXPORT GMANMax(GMANPoint  a, GMANPoint  b ...);
 GMANVector GMAN_EXPORT GMANMax(GMANVector a, GMANVector b ...);
@@ -88,7 +88,7 @@ GMAN_EXPORT RtFloat GMANSmoothStep(RtFloat min, RtFloat max, RtFloat value);
 // filterstep provides an analytically antialiased step function
 GMAN_EXPORT RtFloat GMANFilterStep(RtFloat edge, RtFloat s1 ...);
 
-// the spline familly fits a spline to the control points given
+// the spline family fits a spline to the control points given
 // LJL - spline functions added - February 2001
 //  #define RI_CATMULLROMSTEP              ((RtInt)1)
 //  RtBasis RiCatmullRomBasis = { {-1.0/2,  3.0/2, -3.0/2,  1.0/2},

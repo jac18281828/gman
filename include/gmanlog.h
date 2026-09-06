@@ -48,7 +48,7 @@
 typedef enum { LOGLVL_DEBUG=0,   // log every damn thing
 	       LOGLVL_INFO=1,    // log more than the user needs
 	       LOGLVL_WARNING=2, // log possible problems
-	       LOGLVL_ERROR=3,   // log errors that have occured
+	       LOGLVL_ERROR=3,   // log errors that have occurred
 	       LOGLVL_DISASTER=4 // only log critical failures
 } GMANLogLevel;
 

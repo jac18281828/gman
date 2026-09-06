@@ -2048,7 +2048,7 @@ extern "C" RtVoid RiErrorHandler (RtErrorHandler handler)
 /* Whew! */
 
 /* ... cheesh, glad to be finished typing this module ...
- * ... talk about repitition
+ * ... talk about repetition
  */
 
 

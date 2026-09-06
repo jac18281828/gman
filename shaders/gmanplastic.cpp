@@ -103,7 +103,7 @@ const GMANColor &GMANPlastic::computeOi(GMANSurfaceEnv &se)
 static GMANLoadableObjectInfo loadableInfo = {
   "Plastic surface shader",
   "John Cairns <john@2ad.com>",
-  "Copyright (c) 2026 John Cairns, Licenced under the GNU Lesser Public License, http://www.gnu.org",
+  "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
   "A GMAN SurfaceShader for plastic surfaces: diffuse base plus a "
   "specularcolor-tinted specular highlight.",
 };

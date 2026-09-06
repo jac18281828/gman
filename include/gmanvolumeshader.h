@@ -48,7 +48,7 @@
 /*
  * RenderMan API GMANVolumeShader
  *
- * The volume shader implimentation
+ * The volume shader implementation
  *
  */
 

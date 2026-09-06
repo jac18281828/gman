@@ -154,7 +154,7 @@ const char *GMANLoadable::getDescription(RtVoid) const {
 // get copyright of DSO
 const char *GMANLoadable::getCopyright(RtVoid) const {
   if((objInfo == NULL) || (objInfo->copyright == NULL))
-    return "Copyright (c) 2001, 2000, 1999 John Cairns, Licenced under the GNU Lesser Public License, http://www.gnu.org";
+    return "Copyright (c) 2001, 2000, 1999 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/";
   return objInfo->copyright;
 }
 

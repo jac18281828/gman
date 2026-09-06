@@ -115,7 +115,7 @@ void GMANReyesRenderer::render(GMANFrameBuffer *frameBuffer,
 
 	    // should we cast a ray ?
 	    if(checkSpec(xs, ys) ||  // yes if specular
-	       checkTrans(xs, ys)) { // yes if transparancy
+	       checkTrans(xs, ys)) { // yes if transparency
 		traceRay(xs, ys, frameBuffer, viewingSys);
 	    };
 	}

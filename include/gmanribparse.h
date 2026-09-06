@@ -160,7 +160,7 @@ public:
   virtual RtBoolean addHandler(RtToken keyword, RIBHandler handler);
 
   /*
-   * the decendant parser may provide the 'addHandlers' method
+   * the descendant parser may provide the 'addHandlers' method
    * this method registers all handlers provided by the parser
    * that have not already been registered
    */

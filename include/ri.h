@@ -51,7 +51,7 @@ typedef int		RtInt;			/* Integer */
 /*
  * By default RtFloats are the size of a float
  * setting this to double might consume excessive memory
- * for some applications, and it doesn't really acomplish
+ * for some applications, and it doesn't really accomplish
  * very much.  
  *
  * Yes, it would make the renderer a 'true-64bit' render,
@@ -203,7 +203,7 @@ extern GMAN_EXPORT RtFloat		RiCatmullRomFilter(RtFloat x,RtFloat y,
 					   RtFloat xwidth, RtFloat ywidth);
 
 extern GMAN_EXPORT RtFloat		RiSincFilter(RtFloat x, RtFloat y,
-				     RtFloat xwidth, RtFloat ywdith);
+				     RtFloat xwidth, RtFloat ywidth);
 
 extern GMAN_EXPORT RtVoid		RiErrorIgnore(RtInt code, RtInt severity, const char *msg);
 extern GMAN_EXPORT RtVoid		RiErrorPrint(RtInt code,  RtInt severity, const char *msg);

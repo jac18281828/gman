@@ -71,7 +71,7 @@ protected:
 public:
   GMANBitmap(); // default constructor
 
-  // construct a bitmap with the specifed width and height
+  // construct a bitmap with the specified width and height
   GMANBitmap(int width, int height, const GMANColor &background);
 
   virtual ~GMANBitmap(); // default destructor

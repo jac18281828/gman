@@ -83,7 +83,7 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
 			"PNG initialization failure."));
     }
     
-    // allocate the image imformation data 
+    // allocate the image information data 
     info_ptr = png_create_info_struct(png_ptr);
     if(info_ptr == NULL) {
 	// ouch!

@@ -145,7 +145,7 @@ class GMAN_EXPORT  GMANVector
     GMANVector &operator=(RtFloat f)
     { vec[X]=vec[Y]=vec[Z]=f; return *this; }
     
-    // asssign a GMANVector
+    // assign a GMANVector
     GMANVector &operator=(const GMANVector &v);
     
     GMANVector &operator+=(GMANVector const &v)

@@ -47,7 +47,7 @@
 
 /* Global Macros */
 
-// quad surface (four verticies)
+// quad surface (four vertices)
 #define GMAN_NFACE_VERTS 4
 
 // forward declaration of surface

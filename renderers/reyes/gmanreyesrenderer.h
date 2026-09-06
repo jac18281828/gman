@@ -61,7 +61,7 @@
  * similar to a zbuffer, with the major distinction that
  * polygons in the environment are 'diced' into tiny grids
  * called micropolygons.   The micropolygons are then 
- * stoicastically sampled to yield a color sample value 
+ * stochastically sampled to yield a color sample value 
  * that approximates reality.
  *
  * The REYES method has the advantage of being quite fast in
@@ -75,9 +75,9 @@
  * taking away performance.   Cest La Vie!
  *
  * A nice future addition would be to implement a radiosity solution
- * along with the raytracer to provide a compromise hibridized
+ * along with the raytracer to provide a compromise hybridized
  * local-ray-radiosity model.  Of course the performance for such
- * a hibrid would be very bad.
+ * a hybrid would be very bad.
  *
  * Your mileage may vary.
  * John

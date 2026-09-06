@@ -35,7 +35,7 @@
 static GMANLoadableObjectInfo loadableInfo = {
   "REYES with global illumination",
   "John Cairns <john@2ad.com> ",
-  "Copyright (c) 2002, 2001, 2000, 1999 John Cairns, Licenced under the GNU Lesser Public License, http://www.gnu.org",
+  "Copyright (c) 2002, 2001, 2000, 1999 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
   "A GMAN Renderer based on the reyes lighting model simulation.",
 };
 

@@ -103,7 +103,7 @@ RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/,
 	TIFFSetField(file, TIFFTAG_IMAGEDESCRIPTION, 
 		     "GMAN Generated TIFF Image.\n"
 		     "Copyright (c) 2002 John Cairns <john@2ad.com>\n"
-		     "Licenced under the terms of the GNU Lesser Public License.\n");
+		     "Licensed under the GNU Lesser General Public License v2.1 or later.\n");
    
 	tsize_t linebytes = samplesperpixel * xres;   // length in memory of one row of pixel in the image. 
 	unsigned char *buf = NULL;        // buffer used to store the row of pixel information for writing to file
