@@ -66,11 +66,10 @@ GMANDictionary &standardDictionary() {
 // the worst-case raw index offset() ever computes is n-step+3. Requiring
 // that below 2n gives n > 3-step, i.e. n >= 4-step; n >= step is still
 // needed so the axis has room for at least one sub-patch. Combined, the
-// periodic axis's true lower bound is n >= max(step, 4-step) -- step>=4
-// bases (none of RenderMan's standard bases; step is 1..3) are already
-// covered by n>=step alone, which is why this only bites at step==1
-// (b-spline, catmull-rom) and was vacuous against every fixture using
-// the default Bezier basis (step==3).
+// periodic axis's true lower bound is n >= max(step, 4-step) -- for
+// step>=4 (e.g. RI_POWERSTEP) 4-step<=0, so n>=step alone already covers
+// it; the max only bites at step==1 (b-spline, catmull-rom), where 4-step
+// exceeds step.
 bool validPeriodicBicubicMeshDim(RtInt n, RtInt step) {
   if (step < 1) {
     return false;
