@@ -19,7 +19,9 @@ add_test(NAME baseline
 
 # gman dlopens lib<renderer>.so by bare name out of the build tree.
 set_tests_properties(baseline PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # The RI state machine, through the C API. Replaces the shipped
 # tests/basicstate.c, which could not work as written.
@@ -37,6 +39,9 @@ set_target_properties(gman_basicstate PROPERTIES LINKER_LANGUAGE CXX)
 add_test(NAME basicstate
   COMMAND gman_basicstate
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(basicstate PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
 
 # Phase 2 -- RIB dialect coverage. Each spawns the real gman binary, which
 # dlopens its renderer by bare name, so each needs the same library path as
@@ -54,7 +59,10 @@ add_test(NAME ribdialect
   COMMAND gman_ribdialect $<TARGET_FILE:gman>
                           "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_RIBDIALECT_WORKDIR}")
-set_tests_properties(ribdialect PROPERTIES ENVIRONMENT "${GMAN_PHASE2_ENV}")
+set_tests_properties(ribdialect PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 60)
 
 add_executable(gman_readarchive readarchive_test.cpp)
 target_link_libraries(gman_readarchive PRIVATE gman_core)
@@ -68,6 +76,7 @@ add_test(NAME readarchive
   WORKING_DIRECTORY "${GMAN_READARCHIVE_WORKDIR}")
 set_tests_properties(readarchive PROPERTIES
   ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
   TIMEOUT 60)
 
 add_executable(gman_gzip gzip_test.cpp)
@@ -81,21 +90,33 @@ add_test(NAME gzip
                     "${CMAKE_CURRENT_SOURCE_DIR}/rib/gzip"
                     "${GMAN_GZIP_WORKDIR}/scratch"
   WORKING_DIRECTORY "${GMAN_GZIP_WORKDIR}")
-set_tests_properties(gzip PROPERTIES ENVIRONMENT "${GMAN_PHASE2_ENV}")
+set_tests_properties(gzip PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
 
 add_executable(gman_facevarying facevarying_test.cpp)
 target_link_libraries(gman_facevarying PRIVATE gman_core)
 
 add_test(NAME facevarying COMMAND gman_facevarying)
+set_tests_properties(facevarying PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
 
 # Phase 1 -- the object -> world -> camera -> screen -> NDC -> raster chain.
 add_executable(gman_matrix4 gmanmatrix4_test.cpp)
 target_link_libraries(gman_matrix4 PRIVATE gman_core)
 add_test(NAME matrix4 COMMAND gman_matrix4)
+set_tests_properties(matrix4 PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
 
 add_executable(gman_spacechain spacechain_test.cpp)
 target_link_libraries(gman_spacechain PRIVATE gman_core)
 add_test(NAME spacechain COMMAND gman_spacechain)
+set_tests_properties(spacechain PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
 
 # Phase 3 -- analytic primitive normals: finite-difference agreement,
 # cross-primitive orientation consistency, inverse-transpose under a
@@ -108,7 +129,9 @@ add_test(NAME normals COMMAND gman_normals)
 # when no RiSurface is set -- the same bare-name lookup gman itself relies
 # on the build tree being on the runtime search path for.
 set_tests_properties(normals PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
 
 # The phase's actual gate: a real end-to-end render, read back and measured
 # against the hand-derived silhouette geometry.
@@ -122,7 +145,9 @@ add_test(NAME silhouette
   COMMAND gman_silhouette $<TARGET_FILE:gman>
   WORKING_DIRECTORY "${GMAN_SILHOUETTE_WORKDIR}")
 set_tests_properties(silhouette PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # An in-world Rotate must compose ahead of the transforms declared after it,
 # about the world origin, not the camera (GMANGraphicState::buildTransform).
@@ -137,7 +162,9 @@ add_test(NAME rotate
                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/rotate.rib"
   WORKING_DIRECTORY "${GMAN_ROTATE_WORKDIR}")
 set_tests_properties(rotate PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Proof item 6 (secondary, visual): the same sphere at several RiTranslate
 # offsets.
@@ -152,7 +179,9 @@ add_test(NAME transforms
                           "${CMAKE_CURRENT_SOURCE_DIR}/rib/transforms.rib"
   WORKING_DIRECTORY "${GMAN_TRANSFORMS_WORKDIR}")
 set_tests_properties(transforms PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Proof items 4-6: the N.L=0 terminator, RiSides 1 vs RiSides 2, and the
 # golden image (tests/rib/lights.rib against tests/rib/lights_golden.tif).
@@ -167,7 +196,9 @@ add_test(NAME lighting
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_LIGHTING_WORKDIR}")
 set_tests_properties(lighting PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Step 3/5: all seven quadric primitives in one scene, golden-image
 # regression via the shared harness (tests/goldenimage.h).
@@ -182,7 +213,9 @@ add_test(NAME quadrics
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_QUADRICS_WORKDIR}")
 set_tests_properties(quadrics PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Step 3/5: RiScreenWindow + RiCropWindow together under perspective, plus
 # an unrecognized RiFrameAspectRatio proving the skip path does not desync.
@@ -197,7 +230,9 @@ add_test(NAME screenwindow
                             "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_SCREENWINDOW_WORKDIR}")
 set_tests_properties(screenwindow PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Step 3/5: a cylinder straddling both the near and the far clip plane.
 add_executable(gman_clipping clipping_test.cpp)
@@ -211,7 +246,9 @@ add_test(NAME clipping
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_CLIPPING_WORKDIR}")
 set_tests_properties(clipping PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Step 3/5: matte, plastic and metal side by side under identical lighting.
 add_executable(gman_shaders shaders_test.cpp)
@@ -225,7 +262,9 @@ add_test(NAME shaders
                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_SHADERS_WORKDIR}")
 set_tests_properties(shaders PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # The per-pixel quantize log spam defect: GMANQuantize::doColor must warn
 # at most once per process, not once per pixel.
@@ -240,7 +279,9 @@ add_test(NAME quantize
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_QUANTIZE_WORKDIR}")
 set_tests_properties(quantize PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Step 4: RIB tokenizer robustness on malformed input -- an unterminated
 # string, an unbalanced bracket, a file truncated mid-keyword -- each
@@ -253,6 +294,7 @@ add_test(NAME ribmalformed
                             "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
 set_tests_properties(ribmalformed PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
   TIMEOUT 60)
 
 # Bilinear and bicubic Patch rasterization (SPEC.md Section 8, phase 6).
@@ -268,7 +310,9 @@ add_test(NAME patchnorender
                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_PATCHNORENDER_WORKDIR}")
 set_tests_properties(patchnorender PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Review finding: no test rendered a genuinely asymmetric partial sphere's
 # image (transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere). This
@@ -286,7 +330,9 @@ add_test(NAME partialsphere
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_PARTIALSPHERE_WORKDIR}")
 set_tests_properties(partialsphere PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Review finding: GMANVertex::calcNormal has no call site anywhere in this
 # tree (setFaceList is never called), so the phase-3 implementation of it
@@ -295,6 +341,9 @@ set_tests_properties(partialsphere PROPERTIES
 add_executable(gman_vertexnormal vertexnormal_test.cpp)
 target_link_libraries(gman_vertexnormal PRIVATE gman_core)
 add_test(NAME vertexnormal COMMAND gman_vertexnormal)
+set_tests_properties(vertexnormal PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
 
 # AGENTS.md's Gates block against .github/workflows/ci.yml -- a docs
 # rewrite has no other fails-when-reverted mechanism. Reads the checked-in
@@ -303,7 +352,11 @@ add_executable(gman_docsconsistency docsconsistency_test.cpp)
 add_test(NAME docsconsistency
   COMMAND gman_docsconsistency
           "${CMAKE_SOURCE_DIR}/AGENTS.md"
-          "${CMAKE_SOURCE_DIR}/.github/workflows/ci.yml")
+          "${CMAKE_SOURCE_DIR}/.github/workflows/ci.yml"
+          "${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt")
+set_tests_properties(docsconsistency PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
 
 # UAT defect 0: a Projection with no explicit "fov" threw instead of
 # defaulting to 90 per RISpec 3.2.
@@ -317,7 +370,9 @@ add_test(NAME fovdefault
   COMMAND gman_fovdefault $<TARGET_FILE:gman>
   WORKING_DIRECTORY "${GMAN_FOVDEFAULT_WORKDIR}")
 set_tests_properties(fovdefault PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # UAT defect 1: Surface before AttributeBegin/FrameBegin double-freed a
 # dlopen'd shader module on the attributesStack copy both requests make.
@@ -331,7 +386,9 @@ add_test(NAME attributescopy
   COMMAND gman_attributescopy $<TARGET_FILE:gman>
   WORKING_DIRECTORY "${GMAN_ATTRIBUTESCOPY_WORKDIR}")
 set_tests_properties(attributescopy PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # UAT defect 2: the PNG output driver segfaulted -- a read-side libpng call
 # on a write struct, a mis-sized pixel buffer, and a loop that only ever
@@ -346,12 +403,15 @@ add_test(NAME pngdriver
   COMMAND gman_pngdriver $<TARGET_FILE:gman>
   WORKING_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
 set_tests_properties(pngdriver PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # UAT defect 3: .jpg/.jpeg had no Display extension dispatch branch, so
-# newOutput stayed null and RiWorldEnd dereferenced it unconditionally.
-# Guarded like the driver itself -- GMAN_WITH_JPEG can be off if libjpeg
-# was never found.
+# newOutput stayed null and RiWorldEnd dereferenced it unconditionally. The
+# binary needs libjpeg to link, so it stays guarded; the test itself
+# registers unconditionally so a build without libjpeg reports the gap as
+# Skipped rather than making the JPEG driver invisible to ctest.
 if(GMAN_WITH_JPEG)
   add_executable(gman_jpegdriver jpegdriver_test.cpp)
   target_link_libraries(gman_jpegdriver PRIVATE gman_core JPEG::JPEG TIFF::TIFF)
@@ -359,12 +419,20 @@ if(GMAN_WITH_JPEG)
   set(GMAN_JPEGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/jpegdriver-run")
   file(MAKE_DIRECTORY "${GMAN_JPEGDRIVER_WORKDIR}")
 
-  add_test(NAME jpegdriver
-    COMMAND gman_jpegdriver $<TARGET_FILE:gman>
-    WORKING_DIRECTORY "${GMAN_JPEGDRIVER_WORKDIR}")
-  set_tests_properties(jpegdriver PROPERTIES
-    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  set(GMAN_JPEGDRIVER_COMMAND gman_jpegdriver $<TARGET_FILE:gman>)
+else()
+  set(GMAN_JPEGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}")
+  set(GMAN_JPEGDRIVER_COMMAND sh -c "exit 77")
 endif()
+
+add_test(NAME jpegdriver
+  COMMAND ${GMAN_JPEGDRIVER_COMMAND}
+  WORKING_DIRECTORY "${GMAN_JPEGDRIVER_WORKDIR}")
+set_tests_properties(jpegdriver PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30
+  SKIP_RETURN_CODE 77)
 
 # UAT defect 4: CropWindow truncated from the origin instead of cropping --
 # nothing offset rasterization by the crop rectangle's own origin.
@@ -378,7 +446,9 @@ add_test(NAME cropwindow
   COMMAND gman_cropwindow $<TARGET_FILE:gman>
   WORKING_DIRECTORY "${GMAN_CROPWINDOW_WORKDIR}")
 set_tests_properties(cropwindow PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # UAT defect 5: orthographic ignored RiScreenWindow and hard-clipped at
 # camera-space x=+-1. GMANPolygonClipper::clip now rebuilds its side planes
@@ -394,7 +464,9 @@ add_test(NAME orthowindow
   COMMAND gman_orthowindow $<TARGET_FILE:gman>
   WORKING_DIRECTORY "${GMAN_ORTHOWINDOW_WORKDIR}")
 set_tests_properties(orthowindow PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Phase 5's actual gate: tests/rib/polygon.rib renders a convex pentagon
 # whose raster coverage and shaded colour both match an analytically
@@ -410,7 +482,9 @@ add_test(NAME polygon
                        "${CMAKE_CURRENT_SOURCE_DIR}/rib/polygon.rib"
   WORKING_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
 set_tests_properties(polygon PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # Perspective clipping honours RiScreenWindow, not the canonical +-1 NDC
 # cube: tests/rib/wideframe.rib's rectangle spans a wide, non-square
@@ -426,4 +500,6 @@ add_test(NAME wideframe
                          "${CMAKE_CURRENT_SOURCE_DIR}/rib/wideframe.rib"
   WORKING_DIRECTORY "${GMAN_WIDEFRAME_WORKDIR}")
 set_tests_properties(wideframe PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)

@@ -36,6 +36,12 @@
  * "ctest" line and a vocabulary rebuilt from what remains would no longer
  * expect "ctest" anywhere, so the deletion would pass silently. Checking a
  * fixed vocabulary for presence on both sides catches exactly that.
+ *
+ * A third input, tests/CMakeLists.txt, keeps the suite's own registration
+ * metadata honest: every add_test(NAME ...) must carry a set_tests_properties
+ * block with a LABELS of "unit" or "render" and a TIMEOUT greater than
+ * zero, so deleting either later fails this test instead of shipping
+ * silently.
  */
 
 #include <cctype>
@@ -142,11 +148,75 @@ std::string gatesBlock(const std::string &agentsMd) {
   return agentsMd.substr(fenceStart, fenceEnd - fenceStart);
 }
 
+// Every `add_test(NAME <name>` in tests/CMakeLists.txt, in file order.
+std::vector<std::string> addTestNames(const std::string &cmakeTxt) {
+  std::vector<std::string> names;
+  const std::string marker = "add_test(NAME";
+  std::size_t pos = 0;
+  while ((pos = cmakeTxt.find(marker, pos)) != std::string::npos) {
+    std::size_t start = pos + marker.size();
+    while (start < cmakeTxt.size() &&
+           std::isspace(static_cast<unsigned char>(cmakeTxt[start]))) {
+      ++start;
+    }
+    std::size_t end = start;
+    while (end < cmakeTxt.size() &&
+           !std::isspace(static_cast<unsigned char>(cmakeTxt[end])) &&
+           cmakeTxt[end] != ')') {
+      ++end;
+    }
+    names.push_back(cmakeTxt.substr(start, end - start));
+    pos = end;
+  }
+  return names;
+}
+
+// The set_tests_properties(<name> PROPERTIES ...) call for one test, body
+// included, or empty if there is none. Property values in this file never
+// contain a literal '(', so the call's own closing paren is unambiguous.
+std::string testPropertiesBlock(const std::string &cmakeTxt,
+                                 const std::string &name) {
+  const std::string marker = "set_tests_properties(" + name + " PROPERTIES";
+  std::size_t start = cmakeTxt.find(marker);
+  if (start == std::string::npos) {
+    return "";
+  }
+  std::size_t open = cmakeTxt.find('(', start);
+  std::size_t close = cmakeTxt.find(')', open);
+  if (close == std::string::npos) {
+    return "";
+  }
+  return cmakeTxt.substr(open, close - open + 1);
+}
+
+// The token immediately following a property name, e.g. "unit" out of
+// "LABELS unit\n  TIMEOUT 30".
+std::string propertyToken(const std::string &block,
+                           const std::string &property) {
+  std::size_t pos = block.find(property);
+  if (pos == std::string::npos) {
+    return "";
+  }
+  pos += property.size();
+  while (pos < block.size() &&
+         std::isspace(static_cast<unsigned char>(block[pos]))) {
+    ++pos;
+  }
+  std::size_t end = pos;
+  while (end < block.size() &&
+         !std::isspace(static_cast<unsigned char>(block[end])) &&
+         block[end] != ')') {
+    ++end;
+  }
+  return block.substr(pos, end - pos);
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
-  if (argc != 3) {
-    std::fprintf(stderr, "usage: %s <AGENTS.md> <ci.yml>\n", argv[0]);
+  if (argc != 4) {
+    std::fprintf(stderr, "usage: %s <AGENTS.md> <ci.yml> <tests/CMakeLists.txt>\n",
+                 argv[0]);
     return 2;
   }
 
@@ -184,6 +254,25 @@ int main(int argc, char **argv) {
           "Gates block still names \"" + tool + "\"");
     check(containsWord(ciYaml, tool),
           "ci.yml still runs \"" + tool + "\"");
+  }
+
+  const std::string testsCMakeLists = readFile(argv[3]);
+  check(!testsCMakeLists.empty(), "tests/CMakeLists.txt read");
+
+  const std::vector<std::string> testNames = addTestNames(testsCMakeLists);
+  check(testNames.size() >= 31,
+        "tests/CMakeLists.txt registers at least 31 tests");
+  for (const auto &name : testNames) {
+    const std::string block = testPropertiesBlock(testsCMakeLists, name);
+    check(!block.empty(), name + " has a set_tests_properties block");
+
+    const std::string labels = propertyToken(block, "LABELS");
+    check(labels == "unit" || labels == "render",
+          name + " LABELS is \"unit\" or \"render\"");
+
+    const std::string timeout = propertyToken(block, "TIMEOUT");
+    check(!timeout.empty() && std::stoi(timeout) > 0,
+          name + " TIMEOUT is greater than zero");
   }
 
   return checkSummary("AGENTS.md tracks ci.yml");

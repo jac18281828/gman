@@ -114,7 +114,21 @@ calls `checkGoldenImage(...)` instead of writing a second comparison path.
 if the behavior belongs there — "one scene, one thing" is about RIB
 fixtures, not a rule that every fixture needs its own binary), register it
 in `tests/CMakeLists.txt` following an existing entry's shape, and add any
-new `tests/rib/*.rib` fixture per the RIB authoring section below.
+new `tests/rib/*.rib` fixture per the RIB authoring section below. Give its
+`set_tests_properties` a `LABELS` of `unit` or `render` — `render` if its
+`COMMAND` names `$<TARGET_FILE:gman>`, `unit` otherwise — and a `TIMEOUT`
+measured from the `debug` preset (ASan+UBSan), floored at 30 seconds:
+`ctest`'s `TIMEOUT 0` means no timeout at all, so a measurement that rounds
+to 0 would silently ship a hang. `tests/docsconsistency_test.cpp` fails the
+build if either property is missing.
+
+**Pinning a known defect.** `WILL_FAIL TRUE` on a test's
+`set_tests_properties` marks a defect deliberately left unfixed: write the
+assertion for the behavior you actually want, not the broken one, so the
+test fails today and the property inverts that failure to a pass. Delete
+the `WILL_FAIL` line the moment the fix lands — CTest then fails loudly on
+an unexpected pass, so the fix cannot land silently under a property that
+still expects it to fail.
 
 **Golden images.** Checked into the repo, never generated on demand — see
 `tests/goldenimage.h`'s own comment for the tolerance and its
