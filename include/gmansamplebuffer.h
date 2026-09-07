@@ -33,7 +33,7 @@
 // the color object
 #include "gmancolor.h"
 
-class GMAN_EXPORT GMANFrameBuffer;
+class GMANFrameBuffer;
 
 /*
  * RenderMan API GMANSampleBuffer
