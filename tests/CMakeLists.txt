@@ -496,6 +496,23 @@ set_tests_properties(polygon PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# 0.7: the sample buffer and pixel filtering. testSupersamplingEdge is the
+# falsification proof (1x1 vs 4x4 PixelSamples on the same hard edge);
+# testPixelFilterDiffers needs RiPixelFilter's RIB wiring to be real.
+add_executable(gman_samplebuffer samplebuffer_test.cpp)
+target_link_libraries(gman_samplebuffer PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_SAMPLEBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/samplebuffer-run")
+file(MAKE_DIRECTORY "${GMAN_SAMPLEBUFFER_WORKDIR}")
+
+add_test(NAME samplebuffer
+  COMMAND gman_samplebuffer $<TARGET_FILE:gman>
+  WORKING_DIRECTORY "${GMAN_SAMPLEBUFFER_WORKDIR}")
+set_tests_properties(samplebuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
 # Perspective clipping honours RiScreenWindow, not the canonical +-1 NDC
 # cube: tests/rib/wideframe.rib's rectangle spans a wide, non-square
 # frame's default aspect-derived window.

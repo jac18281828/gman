@@ -205,9 +205,9 @@ void testTerminator(const std::string &gman) {
   // Terminator: along the horizontal scanline through the silhouette's
   // vertical centre, walk from its left edge (unlit -- Ka=0, so
   // diffuse's max(0, N.L) clamp makes that side read exactly zero, not
-  // just dark) to find where it first turns nonzero. Kd*(N.L) is
+  // just dark) to find where it turns, and stays, nonzero. Kd*(N.L) is
   // continuous through the terminator (a kink at zero, not a step), so
-  // this has to catch the first departure from exactly 0, not an
+  // this has to catch the sustained departure from exactly 0, not an
   // arbitrary brightness threshold partway up the ramp -- the sphere is
   // centred on-axis (Translate 0 0 5, no lateral offset), so N.L=0 -- the
   // y-z plane through the sphere's centre -- projects to the
@@ -229,10 +229,26 @@ void testTerminator(const std::string &gman) {
         "terminator: the silhouette's centre scanline actually crosses "
         "the silhouette");
 
+  // A pixel filter (Gaussian by default, PixelSamples on by default since
+  // 0.7) blends a covered edge pixel with the background for a pixel or
+  // two in from the true silhouette boundary -- coverage antialiasing,
+  // not a shading transition, and the unlit side here reads exactly 0 up
+  // to the real terminator. Requiring several consecutive nonzero columns
+  // tells the sustained N.L ramp apart from that one- or two-pixel
+  // coverage blip.
+  const uint32_t kSustainedLit = 3;
   int firstLitX = -1;
   if (enteredSilhouetteX >= 0) {
-    for (uint32_t x = (uint32_t) enteredSilhouetteX; x <= silXmax; ++x) {
-      if ((int) TIFFGetR(img.at(x, midY)) > 0) {
+    for (uint32_t x = (uint32_t) enteredSilhouetteX;
+         x + kSustainedLit <= img.width; ++x) {
+      bool allLit = true;
+      for (uint32_t k = 0; k < kSustainedLit; ++k) {
+        if ((int) TIFFGetR(img.at(x + k, midY)) <= 0) {
+          allLit = false;
+          break;
+        }
+      }
+      if (allLit) {
         firstLitX = (int) x;
         break;
       }
@@ -391,6 +407,56 @@ SilhouetteStats silhouetteStats(const Image &img, int litThreshold) {
   return stats;
 }
 
+// A pixel filter blends a covered silhouette pixel with the background for
+// roughly its own support's reach in from the true edge (the default
+// Gaussian, width 2, reaches about a pixel); that is coverage
+// antialiasing, not a shading difference, and it inflates the stddev a
+// flat-shading check relies on. Only count a pixel whose whole
+// (2*margin+1)^2 neighbourhood is non-background -- solidly inside the
+// silhouette, past any coverage blend.
+double interiorStddevR(const Image &img, uint32_t bg, int margin) {
+  auto differs = [&](uint32_t p) {
+    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
+           std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+           std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8;
+  };
+  std::vector<int> values;
+  for (int y = 0; y < (int) img.height; ++y) {
+    for (int x = 0; x < (int) img.width; ++x) {
+      if (!differs(img.at(x, y))) {
+        continue;
+      }
+      bool interior = true;
+      for (int dy = -margin; dy <= margin && interior; ++dy) {
+        for (int dx = -margin; dx <= margin && interior; ++dx) {
+          int nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= (int) img.width ||
+              ny >= (int) img.height || !differs(img.at(nx, ny))) {
+            interior = false;
+          }
+        }
+      }
+      if (interior) {
+        values.push_back((int) TIFFGetR(img.at(x, y)));
+      }
+    }
+  }
+  if (values.empty()) {
+    return 0.0;
+  }
+  double sum = 0.0;
+  for (int v : values) {
+    sum += v;
+  }
+  double mean = sum / (double) values.size();
+  double sqSum = 0.0;
+  for (int v : values) {
+    double d = v - mean;
+    sqSum += d * d;
+  }
+  return std::sqrt(sqSum / (double) values.size());
+}
+
 // ---- metal shader, finding: never exercised by any test ----
 // A metal surface has no diffuse term (unlike matte/plastic): Ci is
 // Os*Cs*(Ka*ambient() + specularcolor*Ks*specular(Nf,Vf,roughness)).
@@ -431,11 +497,16 @@ void testMetalKaResponse(const std::string &gman) {
 
   // No diffuse or specular term is active here (Ks=0, no directional
   // light), so an ambient-only metal sphere has no direction-dependent
-  // shading at all -- every silhouette pixel should read the same value.
-  check(low.stddevR < 4.0 && high.stddevR < 4.0,
-        "metal Ka: ambient-only shading is flat across the silhouette "
-        "(stddev " + std::to_string(low.stddevR) + ", " +
-        std::to_string(high.stddevR) + ")");
+  // shading at all -- every silhouette pixel should read the same value,
+  // away from the pixel filter's antialiased edge (interiorStddevR).
+  Image lowImg = readTIFF("metal_ka_low.tif");
+  Image highImg = readTIFF("metal_ka_high.tif");
+  double lowStddev = interiorStddevR(lowImg, lowImg.at(0, 0), 2);
+  double highStddev = interiorStddevR(highImg, highImg.at(0, 0), 2);
+  check(lowStddev < 4.0 && highStddev < 4.0,
+        "metal Ka: ambient-only shading is flat across the silhouette's "
+        "interior (stddev " + std::to_string(lowStddev) + ", " +
+        std::to_string(highStddev) + ")");
 
   // Ci = Os*Cs*Ka*ambient() = Ka * 0.5 (intensity), independent of
   // gmanmetal.cpp's own code -- computed here from the RISpec's own

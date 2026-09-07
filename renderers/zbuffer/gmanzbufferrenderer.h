@@ -33,6 +33,7 @@
 // STL
 #include <list>
 #include <map>
+#include <memory>
 #include <stack>
 #include <string>
 
@@ -51,6 +52,8 @@
 // patch poly object manager
 #include "gmanobjectmanager.h"
 #include "gmanpatchpolyobjectmanager.h"
+// per-sample colour/depth and pixel-filter resolve
+#include "gmansamplebuffer.h"
 
 
 
@@ -104,11 +107,25 @@ private:
 
   // private methods
 
-  int ymin;   // minimum y-axis coordinate
-  int ymax;   // maximum y-axis coordinate
+  int ymin;   // minimum y-axis coordinate, in samples
+  int ymax;   // maximum y-axis coordinate, in samples
 
-  int width;  // display width
-  int height; // display height
+  int width;  // display width, in pixels
+  int height; // display height, in pixels
+
+  // PixelSamples, and the sample-resolution grid they imply
+  // (width*xsamples, height*ysamples) -- getVertexInfo, scanEdges and
+  // drawEdgeList all rasterize at this resolution; zbuffer/getDepth below
+  // stay at pixel resolution regardless (see the settled decision on
+  // GMANRenderer::getDepth's contract).
+  int xsamples;
+  int ysamples;
+  int sampleWidth;
+  int sampleHeight;
+
+  // The real per-sample visibility test and colour store; resolved into
+  // frameBuffer, and into zbuffer below, at the end of render().
+  std::unique_ptr<GMANSampleBuffer> sampleBuffer;
 
   // The frame buffer holds only the CropWindow rectangle, but
   // GMANViewingSystem::screenToRaster (built from the full, uncropped
@@ -174,12 +191,12 @@ private:
   bool getVertexInfo( GMANOutputPolygon & out );
   // edge scanning alg
   void scanEdges(void);
-  // draw each of the scanned edges
-  void drawEdgeList(GMANFrameBuffer *frameBuffer);
+  // draw each of the scanned edges, sample-testing and storing into
+  // sampleBuffer
+  void drawEdgeList(void);
 
   // render each outpolygon
-  void render(GMANOutputPolygon &out,
-	      GMANFrameBuffer *frameBuffer);
+  void render(GMANOutputPolygon &out);
 
 public:
   GMANZBufferRenderer(int w, 

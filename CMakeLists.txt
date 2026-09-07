@@ -115,6 +115,7 @@ add_library(gman_core SHARED
   libgman/gmanrendermanimpl.cpp
   libgman/gmanribparse.cpp
   libgman/gmanribtokenize.cpp
+  libgman/gmansamplebuffer.cpp
   libgman/gmansegment.cpp
   libgman/gmanshader.cpp
   libgman/gmanshaderenvironment.cpp

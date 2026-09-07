@@ -100,9 +100,12 @@ each:
 - **[ ] High-end geometry.** NURBS, trim curves and subdivision surfaces
   parse and are ignored. `Patch` rasterizes, both `"bilinear"` and
   `"bicubic"`; `PatchMesh` and `NuPatch` still do not.
-- **[ ] Antialiasing and motion blur.** One sample per pixel. `PixelSamples`
-  and `PixelFilter` are read from the RIB and five filter kernels are
-  written, but nothing calls them.
+- **[~] Antialiasing and motion blur.** `PixelSamples` and `PixelFilter` are
+  wired end to end: the z-buffer renderer rasterizes into a per-sample
+  buffer (default 2x2) and resolves it through one of five filter kernels
+  (default Gaussian). Motion blur is still absent -- `Shutter` and
+  `DepthOfField` are read and unused, and want REYES's stochastic
+  sampling in time and across the lens.
 - **[~] Programmable shading.** Pluggable, not programmable. Surface and
   light shaders are C++ modules loaded at run time -- the right shape behind
   the wrong front end. Volume shaders parse and do nothing.
@@ -111,12 +114,12 @@ each:
   already carry their `s,t`, so the input side is ready and the lookup is
   not written.
 - **[~] Quantization, filtering, reconstruction.** Exposure and gamma are
-  honored. Quantization warns and passes the colour through untouched;
-  filtering is the same gap as antialiasing.
+  honored, and pixel reconstruction now runs (see Antialiasing above).
+  Quantization still warns and passes the colour through untouched.
 - **[ ] Shading time against shading quality.** `ShadingRate` and the detail
   controls are read from the RIB and never consulted.
 
-None finished, two begun. The standard is worth keeping as the target: a
+None finished, three begun. The standard is worth keeping as the target: a
 renderer is easy to begin and hard to finish, and the usual way it fails is
 that nobody settles what finished means.
 

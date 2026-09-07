@@ -86,6 +86,30 @@ bool basisByName(const std::string &name, RtBasis &basis) {
   return true;
 }
 
+// RiPixelFilter's five standard filters, looked up by RISpec name -- the
+// names GMANASCII::RiPixelFilter (libgmanrib/gmanascii.cpp) already writes
+// for the reverse direction.
+bool filterByName(const std::string &name, RtFilterFunc &filterfunc) {
+  std::string lower = name;
+  for (std::string::size_type i = 0; i < lower.size(); ++i) {
+    lower[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lower[i])));
+  }
+  if (lower == "box") {
+    filterfunc = RiBoxFilter;
+  } else if (lower == "triangle") {
+    filterfunc = RiTriangleFilter;
+  } else if (lower == "catmull-rom") {
+    filterfunc = RiCatmullRomFilter;
+  } else if (lower == "sinc") {
+    filterfunc = RiSincFilter;
+  } else if (lower == "gaussian") {
+    filterfunc = RiGaussianFilter;
+  } else {
+    return false;
+  }
+  return true;
+}
+
 } // namespace
 
 /*
@@ -1684,11 +1708,20 @@ RtVoid GMANRIBParse::parseIfEnd(RtVoid) {
 
 RtVoid GMANRIBParse::parsePixelFilter(RtVoid) {
   // PixelFilter filterfunc xwidth ywidth -- filterfunc names one of the
-  // built-in RtFilterFunc implementations; sampling is out of scope
-  // (SPEC.md S4), so the name is consumed and not resolved.
-  (void) copyStringToken(); // filterfunc
-  nextFloat(); // xwidth
-  nextFloat(); // ywidth
+  // built-in RtFilterFunc implementations.
+  std::string name = copyStringToken();
+  RtFloat xwidth = nextFloat();
+  RtFloat ywidth = nextFloat();
+
+  RtFilterFunc filterfunc;
+  if (! filterByName(name, filterfunc)) {
+    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") +
+      name + "\"";
+    GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
+    throw error;
+  }
+
+  renderMan->RiPixelFilter(filterfunc, xwidth, ywidth);
 }
 
 RtVoid GMANRIBParse::skipUnknownRequest(const std::string &name) {

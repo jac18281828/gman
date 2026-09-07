@@ -25,7 +25,8 @@ What does not render
 ---------------------
 
 - Texturing.
-- Antialiasing (one sample per pixel).
+- Motion blur and depth of field (`Shutter`, `DepthOfField`; want REYES's
+  stochastic sampling in time and across the lens).
 - REYES and ray tracing (renderer plugins present, non-functional, built
   OFF by default).
 - Subdivision surfaces.
