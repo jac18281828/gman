@@ -38,6 +38,8 @@
 
 namespace {
 
+// 1e-4 clears float's ~7 significant digits on an exp/sin chain with
+// room to spare, while still catching a wrong formula, not just rounding.
 bool near(RtFloat a, RtFloat b, RtFloat tol = 1e-4) {
   return std::fabs(a - b) <= tol;
 }
@@ -74,6 +76,21 @@ void testTriangleFilter() {
         "triangle: guard zeroes an on-axis point outside support "
         "(unguarded this evaluates to -0.5)");
 
+  // Support scales with xwidth/ywidth, not a fixed default of 2.0 --
+  // exercised at non-default, asymmetric widths so a guard that checks
+  // the wrong axis's half-width, or one hardcoded to +-1.0, cannot pass
+  // by coincidence at the width=2 cases above.
+  check(near(RiTriangleFilter(2.0, 0.0, 4.0, 2.0), 0.0),
+        "triangle: zero exactly at the x-boundary when xwidth != 2.0");
+  check(near(RiTriangleFilter(0.5, 1.5, 4.0, 2.0), 0.0),
+        "triangle: guard fires from y alone exceeding its narrower "
+        "half-width while x stays in support "
+        "(unguarded this evaluates to -0.375)");
+  check(near(RiTriangleFilter(1.5, 0.0, 8.0, 2.0), 0.625),
+        "triangle: in-support point survives a wide xwidth that a "
+        "hardcoded +-1.0 guard, or one checking ywidth instead of "
+        "xwidth, would wrongly zero");
+
   // Monotone decay from the centre out to the boundary.
   check(RiTriangleFilter(0.2, 0.0, 2.0, 2.0) >
             RiTriangleFilter(0.6, 0.0, 2.0, 2.0),
@@ -96,12 +113,20 @@ void testGaussianFilter() {
              RiGaussianFilter(0.7, -0.4, 2.0, 2.0)),
         "gaussian: symmetric in y");
 
-  // The repaired scaling: exp(-8*x^2/xwidth^2) at width 2, not the
-  // unrepaired exp(-2*x^2/xwidth^2). At x=1, width=2: exp(-8*0.25) =
-  // exp(-2) = 0.1353, versus the unrepaired exp(-0.5) = 0.6065.
-  check(near(RiGaussianFilter(1.0, 0.0, 2.0, 2.0), 0.1353, 1e-3),
+  // The scaled exponent, exp(-8*x^2/xwidth^2) at width 2: at x=1,
+  // width=2, exp(-8*0.25) = exp(-2) = 0.1353 (the unscaled form gives
+  // exp(-0.5) = 0.6065).
+  check(near(RiGaussianFilter(1.0, 0.0, 2.0, 2.0), 0.1353),
         "gaussian: edge sample matches the RISpec-scaled reference "
-        "(unrepaired this evaluates to 0.6065)");
+        "(unrescaled this evaluates to 0.6065)");
+
+  // Self-similar under a scaled width: exp(-2*((2*x/xwidth))^2) has the
+  // same value at (2x, 2*xwidth) as at (x, xwidth), checked away from
+  // the default width=2 so a rescale that only matches there cannot
+  // pass by coincidence.
+  check(near(RiGaussianFilter(2.0, 0.0, 4.0, 4.0), 0.1353),
+        "gaussian: doubling x and xwidth together reproduces the "
+        "width-2 edge value");
 
   // Monotone decay from the centre out.
   check(RiGaussianFilter(0.2, 0.0, 2.0, 2.0) >
@@ -163,7 +188,7 @@ void testSincFilter() {
 
   // Nonzero far outside any nominal width -- unwindowed, no guard, by
   // design. A windowed sinc would clamp this to 0; this one does not.
-  check(near(RiSincFilter(10.5, 0.0, 2.0, 2.0), 0.0303, 1e-3),
+  check(near(RiSincFilter(10.5, 0.0, 2.0, 2.0), 0.0303),
         "sinc: nonzero far outside width 2, unguarded by design");
 
   // Genuine negative side lobe between x=1 and x=2, not monotone.
