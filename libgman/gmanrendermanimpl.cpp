@@ -970,11 +970,71 @@ RtVoid  GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtP
   worldManager->add(prim);
   delete transform;
 }
-RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken /*type*/, RtInt /*nu*/, RtToken /*uwrap*/,
-				    RtInt /*nv*/, RtToken /*vwrap*/, RtInt /*n*/, RtToken /*tokens*/[], 
-				    RtPointer /*parms*/[])
+RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
+				    RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[],
+				    RtPointer parms[])
 {
   allowed(cmdPatchMesh);
+
+  bool uPeriodic = strcmp(uwrap, RI_PERIODIC) == 0;
+  bool vPeriodic = strcmp(vwrap, RI_PERIODIC) == 0;
+  bool bicubicType = strcmp(type, RI_BICUBIC) == 0;
+
+  // Bilinear's step is fixed at 1 by the RISpec; bicubic reads its step
+  // off the current basis, which RiBasis sets and getRSPatchMesh resolves
+  // the same way. nupatches/nvpatches mirror the sub-patch count that
+  // evaluator actually iterates over -- getRSPatchMesh rejects any nu/nv
+  // its own arithmetic cannot make sense of before a control point is
+  // ever read, so clamping a negative count to zero here only keeps this
+  // sizing arithmetic itself from going negative, never anyone else's.
+  RtInt uStep = 1, vStep = 1;
+  if (bicubicType) {
+    GMANBasis basis = getAttributes().getUVBasis();
+    uStep = basis.getUStep();
+    vStep = basis.getVStep();
+  }
+
+  RtInt nupatches = bicubicType
+      ? (uPeriodic ? nu / uStep : 1 + (nu - 4) / uStep)
+      : (uPeriodic ? nu : nu - 1);
+  RtInt nvpatches = bicubicType
+      ? (vPeriodic ? nv / vStep : 1 + (nv - 4) / vStep)
+      : (vPeriodic ? nv : nv - 1);
+  if (nupatches < 0) {
+    nupatches = 0;
+  }
+  if (nvpatches < 0) {
+    nvpatches = 0;
+  }
+
+  // Vertex count is nu*nv for both types; varying is per-axis corner
+  // count (patches+1 on a nonperiodic axis, patches on a periodic one,
+  // wrapping the last strip back to row/column 0), multiplied; uniform is
+  // the patch count outright. See the settled decision on sizing.
+  RtInt uVarying = uPeriodic ? nupatches : nupatches + 1;
+  RtInt vVarying = vPeriodic ? nvpatches : nvpatches + 1;
+
+  RtInt vertex = nu * nv;
+  if (vertex < 0) {
+    vertex = 0;
+  }
+  RtInt varying = uVarying * vVarying;
+  RtInt uniform = nupatches * nvpatches;
+
+  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, varying, uniform);
+
+  GMANTransform* transform = new GMANTransform((getTransform()));
+  GMANPrimitive* prim;
+
+  prim = objectManager->getRSPatchMesh( type,
+					nu, uwrap,
+					nv, vwrap,
+					paramList,
+					&(getOptions()),
+					&(getAttributes()),
+					transform);
+  worldManager->add(prim);
+  delete transform;
 }
 RtVoid  GMANRenderManImpl::RiNuPatchV(RtInt /*nu*/, RtInt /*uorder*/, RtFloat /*uknot*/[], RtFloat /*umin*/,
 				  RtFloat /*umax*/, RtInt /*nv*/, RtInt /*vorder*/, RtFloat /*vknot*/[],

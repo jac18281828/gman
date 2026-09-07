@@ -314,6 +314,25 @@ set_tests_properties(patchnorender PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# Bilinear and bicubic PatchMesh rasterization. See tests/patchmesh_test.cpp:
+# hand-computed control-grid points (bilinear and bicubic, periodic and
+# nonperiodic, mixed wrap) checked against GMANPatchMesh directly, plus
+# every tests/rib/patchmesh_*.rib fixture rendered and read back.
+add_executable(gman_patchmesh patchmesh_test.cpp)
+target_link_libraries(gman_patchmesh PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_PATCHMESH_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchmesh-run")
+file(MAKE_DIRECTORY "${GMAN_PATCHMESH_WORKDIR}")
+
+add_test(NAME patchmesh
+  COMMAND gman_patchmesh $<TARGET_FILE:gman>
+                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_PATCHMESH_WORKDIR}")
+set_tests_properties(patchmesh PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 60)
+
 # Review finding: no test rendered a genuinely asymmetric partial sphere's
 # image (transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere). This
 # is the missing end-to-end proof of GMANSphere::getLocation's zmin/zmax

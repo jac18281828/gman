@@ -1,0 +1,34 @@
+## Bicubic PatchMesh, nonperiodic on both axes: nu=7 nv=4 under the
+## default Bezier basis (RiBasis is never called), two sub-patches in u
+## sharing their middle column of control points, one sub-patch in v.
+## Control net evenly spaced and coplanar (z=0 throughout), so
+## GMANBasis::bicubicMesh must trace the same flat rectangle a bilinear
+## mesh would -- any curvature in the render would mean a sub-patch
+## boundary picked up the wrong control points. Same flat, unlit shading
+## as patchmesh_bilinear.rib.
+##
+## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+## desync convention."
+Display "patchmesh_bicubic.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Sides 2
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	Translate -1 0 0
+	PatchMesh "bicubic" 7 "nonperiodic" 4 "nonperiodic" "P" [
+		-0.6 -0.3 0  -0.4 -0.3 0  -0.2 -0.3 0  0.0 -0.3 0  0.2 -0.3 0  0.4 -0.3 0  0.6 -0.3 0
+		-0.6 -0.1 0  -0.4 -0.1 0  -0.2 -0.1 0  0.0 -0.1 0  0.2 -0.1 0  0.4 -0.1 0  0.6 -0.1 0
+		-0.6  0.1 0  -0.4  0.1 0  -0.2  0.1 0  0.0  0.1 0  0.2  0.1 0  0.4  0.1 0  0.6  0.1 0
+		-0.6  0.3 0  -0.4  0.3 0  -0.2  0.3 0  0.0  0.3 0  0.2  0.3 0  0.4  0.3 0  0.6  0.3 0
+	]
+AttributeEnd
+AttributeBegin
+	Translate 1 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

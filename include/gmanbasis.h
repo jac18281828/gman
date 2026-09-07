@@ -77,6 +77,9 @@ public:
 			  RtInt nu, bool uwrap,
 			  RtInt nv, bool vwrap,
 			  RtFloat *pts);
+
+  RtInt getUStep () const { return uStep; }
+  RtInt getVStep () const { return vStep; }
 };
 
 #endif

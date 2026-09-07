@@ -1,0 +1,30 @@
+## Bilinear PatchMesh, periodic on both axes: nu=4 nv=2, an outer diamond
+## ring (radius 0.4) and an inner diamond ring (radius 0.2), each wrapping
+## its last strip back to control point 0 -- the case createParametric
+## samples all the way to u=1.0 and v=1.0, where a mesh's wraparound
+## indexing is most likely to read out of bounds. Same flat, unlit shading
+## as patchmesh_bilinear.rib.
+##
+## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+## desync convention."
+Display "patchmesh_bilinear_periodic.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Sides 2
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	Translate -1 0 0
+	PatchMesh "bilinear" 4 "periodic" 2 "periodic" "P" [
+		 0.4  0.0 0    0.0  0.4 0   -0.4  0.0 0    0.0 -0.4 0
+		 0.2  0.0 0    0.0  0.2 0   -0.2  0.0 0    0.0 -0.2 0
+	]
+AttributeEnd
+AttributeBegin
+	Translate 1 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

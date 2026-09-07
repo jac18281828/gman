@@ -1,0 +1,33 @@
+## Syntactically well-formed, semantically invalid: nu=5 does not align to
+## the default Bezier basis's step of 3 ((5-4)%3=1), so no whole number of
+## bicubic sub-patches fits nu=5 control points. Not a tokenizer-level
+## malformation -- gman_ribmalformed.cpp's own header comment scopes that
+## file to malformed token streams, and this parses cleanly -- so this is
+## registered in tests/patchmesh_test.cpp instead, which asserts the
+## warn-and-create() fallback directly rather than just "does not crash".
+##
+## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+## desync convention."
+Display "patchmesh_baddim.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Sides 2
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	Translate -1 0 0
+	PatchMesh "bicubic" 5 "nonperiodic" 4 "nonperiodic" "P" [
+		-0.4 -0.3 0  -0.2 -0.3 0  0.0 -0.3 0  0.2 -0.3 0  0.4 -0.3 0
+		-0.4 -0.1 0  -0.2 -0.1 0  0.0 -0.1 0  0.2 -0.1 0  0.4 -0.1 0
+		-0.4  0.1 0  -0.2  0.1 0  0.0  0.1 0  0.2  0.1 0  0.4  0.1 0
+		-0.4  0.3 0  -0.2  0.3 0  0.0  0.3 0  0.2  0.3 0  0.4  0.3 0
+	]
+AttributeEnd
+AttributeBegin
+	Translate 1 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

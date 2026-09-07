@@ -58,6 +58,30 @@ GMANDictionary &standardDictionary() {
   return d;
 }
 
+// A bicubic axis's control points divide into nbupatch sub-patches of
+// `step` points each; GMANBasis::bicubicMesh computes that count as
+// nu/uStep (periodic) or 1+(nu-4)/uStep (nonperiodic), both truncating
+// integer division. Reject anything that formula would truncate: n%step
+// (periodic) or (n-4)%step (nonperiodic) must be exactly zero, matching
+// RISpec's own alignment rule for a PatchMesh's nu/nv, or a misaligned n
+// would silently drop trailing control points and render a smaller mesh
+// than the RIB asked for. n>=step (periodic) and n>=4 (nonperiodic) rule
+// out the remaining case truncation hides: a dimension too small for even
+// one sub-patch, which the same integer division can otherwise round up
+// to nbupatch>=1 and read past the n points that actually exist.
+bool validBicubicMeshDim(RtInt n, bool periodic, RtInt step) {
+  if (periodic) {
+    return step >= 1 && n >= step && n % step == 0;
+  }
+  return n >= 4 && (n - 4) % step == 0;
+}
+
+// A bilinear sub-patch is one 2x2 block of corners; either axis needs at
+// least two distinct control points to form one, wrapped or not.
+bool validBilinearMeshDim(RtInt n) {
+  return n >= 2;
+}
+
 // Per-primitive shading inputs that don't vary per vertex: the surface
 // shader (falling back to matte, per the RISpec's own default, when
 // RiSurface was never called), the lights active in this attribute scope
@@ -299,18 +323,46 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken /*type*/, 
-							    RtInt /*nu*/, 
-							    RtToken /*uwrap*/,
-							    RtInt /*nv*/, 
-							    RtToken /*vwrap*/, 
-							    GMANParameterList /*pl*/,
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
+							    RtInt nu,
+							    RtToken uwrap,
+							    RtInt nv,
+							    RtToken vwrap,
+							    GMANParameterList pl,
 							    GMANOptions */*opt*/,
-							    GMANAttributes */*attr*/,
-							    GMANTransform */*t*/)
+							    GMANAttributes *attr,
+							    GMANTransform *t)
  {
+  RtFloat *p = (RtFloat *)
+      pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (! p) {
+    return create();
+  }
+
+  if (strcmp(type, RI_BILINEAR) == 0) {
+    if (! validBilinearMeshDim(nu) || ! validBilinearMeshDim(nv)) {
+      warning("PatchMesh \"bilinear\": nu=%d nv=%d cannot form a patch; "
+	      "ignoring.", nu, nv);
+      return create();
+    }
+    GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, pl);
+    return createParametric(&mesh, t, attr);
+  }
+  if (strcmp(type, RI_BICUBIC) == 0) {
+    GMANBasis basis = attr->getUVBasis();
+    bool uPeriodic = strcmp(uwrap, RI_PERIODIC) == 0;
+    bool vPeriodic = strcmp(vwrap, RI_PERIODIC) == 0;
+    if (! validBicubicMeshDim(nu, uPeriodic, basis.getUStep()) ||
+	! validBicubicMeshDim(nv, vPeriodic, basis.getVStep())) {
+      warning("PatchMesh \"bicubic\": nu=%d nv=%d does not align to the "
+	      "current basis step; ignoring.", nu, nv);
+      return create();
+    }
+    GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, basis, pl);
+    return createParametric(&mesh, t, attr);
+  }
   return create();
-}; 
+};
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt /*nu*/,
 							  RtInt /*uorder*/,

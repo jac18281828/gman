@@ -25,6 +25,8 @@
 #ifndef  __GMANGMANPRIMITIVES_H
 #define  __GMANGMANPRIMITIVES_H 1
 
+#include <vector>
+
 #include "ri.h"
 #include "gmanparameterlist.h"
 #include "gmanoptions.h"
@@ -329,18 +331,44 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_PATCHMESH.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPatchMesh : public GMANPrimDatStorage
+class GMAN_EXPORT GMANPatchMesh : public GMANPrimDatStorage, public GMANParametric
 {
 protected:
   RtToken pt;
   RtInt nu;
-  RtToken uwrap;
+  bool uPeriodic;
   RtInt nv;
-  RtToken vwrap;
+  bool vPeriodic;
+  bool bicubic;
+  GMANBasis basis;
+
+  // nu*nv control points, u-fastest/v-major, sized at construction --
+  // unlike GMANPatch's single fixed-size patch, a mesh's point count is
+  // not known until then.
+  std::vector<RtFloat> cpts;
+
+  // Point (i,j) of the nu-by-nv grid, i in [0,nu), j in [0,nv) -- matches
+  // GMANBasis::offset's layout (pntSize*(i+nu*j)).
+  GMANPoint point (RtInt i, RtInt j) const;
+
+  // The bilinear sub-patch containing (u,v): its four corners and the
+  // local parameter within it. Shared by getLocation and getNormal so
+  // the two never disagree about which sub-patch a point falls in.
+  void bilinearPatch (double u, double v,
+		       GMANPoint &p00, GMANPoint &p10,
+		       GMANPoint &p01, GMANPoint &p11,
+		       RtFloat &newU, RtFloat &newV) const;
 
 public:
-  GMANPatchMesh(RtToken pat, RtInt u, RtToken uw, RtInt v, RtToken vw, 
-		GMANParameterList p);
+  // Bilinear: nu*nv control points, no basis.
+  GMANPatchMesh(RtToken pat, RtFloat *p, RtInt u, RtToken uw, RtInt v, RtToken vw,
+		GMANParameterList pl);
+  // Bicubic: nu*nv control points, blended with b.
+  GMANPatchMesh(RtToken pat, RtFloat *p, RtInt u, RtToken uw, RtInt v, RtToken vw,
+		GMANBasis const &b, GMANParameterList pl);
+
+  GMANPoint getLocation (double u, double v);
+  GMANVector getNormal (double u, double v);
 };
 
 

@@ -56,6 +56,61 @@ shading cannot tell them apart -- a transposed reading culls to nothing
 here instead. A trailing `Sphere` follows AGENTS.md's "RIB authoring"
 section, "The desync convention." Not third-party.
 
+## patchmesh_bilinear.rib
+
+`PatchMesh "bilinear"`, nonperiodic on both axes: nu=3 nv=2, two patches
+side by side sharing their middle column of control points -- the
+smallest grid that exercises sub-patch selection rather than degenerating
+to a single `Patch "bilinear"`. A trailing `Sphere` follows AGENTS.md's
+"RIB authoring" section, "The desync convention." Not third-party.
+
+## patchmesh_bilinear_periodic.rib
+
+`PatchMesh "bilinear"`, periodic on both axes: an outer and inner diamond
+ring of control points, each wrapping its last strip back to control
+point 0 -- the case `createParametric` samples all the way to u=1.0 and
+v=1.0, where a mesh's wraparound indexing is most likely to read out of
+bounds. A trailing `Sphere` follows the desync convention. Not
+third-party.
+
+## patchmesh_bicubic.rib
+
+`PatchMesh "bicubic"`, nonperiodic on both axes: nu=7 nv=4 under the
+default Bezier basis, two sub-patches in u sharing their middle column.
+Control points are evenly spaced and coplanar, so `GMANBasis::bicubicMesh`
+must trace the same flat rectangle a bilinear mesh would; any curvature in
+the render would mean a sub-patch boundary picked up the wrong control
+points. A trailing `Sphere` follows the desync convention. Not
+third-party.
+
+## patchmesh_bicubic_periodic.rib
+
+`PatchMesh "bicubic"`, periodic on both axes: nu=6 nv=3, three concentric
+hexagonal control rings, exercising `GMANBasis::offset`'s wraparound on
+both axes at once. A trailing `Sphere` follows the desync convention. Not
+third-party.
+
+## patchmesh_mixed_wrap.rib
+
+`PatchMesh "bicubic"` with `uwrap "periodic" vwrap "nonperiodic"`: a
+hexagonal tube, two periodic sub-patches around and one nonperiodic
+sub-patch along its length. `uwrap` and `vwrap` are independent tokens --
+the varying parameter count is (patches on the periodic axis) times
+(patches+1 on the nonperiodic axis), not one axis's rule applied to both;
+this is the only fixture that can tell that formula apart from a
+collapsed all-or-nothing one, via an explicit `"Cs"` sized to the count
+it implies. A trailing `Sphere` follows the desync convention. Not
+third-party.
+
+## malformed/patchmesh_baddim.rib
+
+Syntactically well-formed, semantically invalid: nu=5 does not align to
+the default Bezier basis's step of 3. Registered in
+`tests/patchmesh_test.cpp`, not `tests/ribmalformed_test.cpp` -- that file
+is scoped to tokenizer-level malformation and asserts only "does not
+crash," neither of which this is. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
 ## rotate.rib
 
 An in-world `Rotate` must compose ahead of the transforms declared after it,

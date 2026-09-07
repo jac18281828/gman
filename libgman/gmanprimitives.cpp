@@ -24,6 +24,8 @@
 
 #include <math.h>
 
+#include <cstring>
+
 #include "gmanmath.h"
 #include "gmanprimitives.h"
 #include "gmanvector.h"
@@ -592,14 +594,131 @@ GMANVector GMANPatch::getNormal (double u, double v)
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_PATCHMESH.CPP
 ///////////////////////////////////////////////////////////////////////////////////////////////
-GMANPatchMesh::GMANPatchMesh (RtToken pat, RtInt u, RtToken uw, RtInt v, RtToken vw,
-			      GMANParameterList p) : GMANPrimDatStorage(p)
+GMANPatchMesh::GMANPatchMesh (RtToken pat, RtFloat *p, RtInt u, RtToken uw, RtInt v, RtToken vw,
+			      GMANParameterList pl)
+  : GMANPrimDatStorage(pl), pt(pat), nu(u),
+    uPeriodic(strcmp(uw, RI_PERIODIC) == 0), nv(v),
+    vPeriodic(strcmp(vw, RI_PERIODIC) == 0), bicubic(false),
+    cpts(p, p + (std::size_t) u * v * 3)
 {
-  pt=pat;
-  nu=u;
-  uwrap=uw;
-  nv=v;
-  vwrap=vw;
+}
+
+GMANPatchMesh::GMANPatchMesh (RtToken pat, RtFloat *p, RtInt u, RtToken uw, RtInt v, RtToken vw,
+			      GMANBasis const &b, GMANParameterList pl)
+  : GMANPrimDatStorage(pl), pt(pat), nu(u),
+    uPeriodic(strcmp(uw, RI_PERIODIC) == 0), nv(v),
+    vPeriodic(strcmp(vw, RI_PERIODIC) == 0), bicubic(true), basis(b),
+    cpts(p, p + (std::size_t) u * v * 3)
+{
+}
+
+GMANPoint GMANPatchMesh::point (RtInt i, RtInt j) const
+{
+  const RtFloat *p = &cpts[3 * (i + nu * j)];
+  return GMANPoint(p[0], p[1], p[2]);
+}
+
+// Same sub-patch selection as GMANBasis::bicubicMesh (see its own comment):
+// clamp the raw sub-patch index into the valid range and let newU/newV
+// carry the overshoot, so u==1.0 lands on the trailing edge of the last
+// sub-patch rather than the leading edge of one that does not exist.
+void GMANPatchMesh::bilinearPatch (double u, double v,
+				   GMANPoint &p00, GMANPoint &p10,
+				   GMANPoint &p01, GMANPoint &p11,
+				   RtFloat &newU, RtFloat &newV) const
+{
+  RtInt nbupatch = uPeriodic ? nu : nu - 1;
+  RtInt nbvpatch = vPeriodic ? nv : nv - 1;
+
+  RtInt patchUStart = (RtInt) floor(u * nbupatch);
+  if (patchUStart < 0) {
+    patchUStart = 0;
+  } else if (patchUStart >= nbupatch) {
+    patchUStart = nbupatch - 1;
+  }
+  RtInt patchVStart = (RtInt) floor(v * nbvpatch);
+  if (patchVStart < 0) {
+    patchVStart = 0;
+  } else if (patchVStart >= nbvpatch) {
+    patchVStart = nbvpatch - 1;
+  }
+
+  newU = (RtFloat) (u * nbupatch - patchUStart);
+  newV = (RtFloat) (v * nbvpatch - patchVStart);
+
+  RtInt u1 = (patchUStart + 1 >= nu) ? patchUStart + 1 - nu : patchUStart + 1;
+  RtInt v1 = (patchVStart + 1 >= nv) ? patchVStart + 1 - nv : patchVStart + 1;
+
+  p00 = point(patchUStart, patchVStart);
+  p10 = point(u1, patchVStart);
+  p01 = point(patchUStart, v1);
+  p11 = point(u1, v1);
+}
+
+GMANPoint GMANPatchMesh::getLocation (double u, double v)
+{
+  if (bicubic) {
+    return basis.bicubicMesh((RtFloat) u, (RtFloat) v, nu, uPeriodic, nv, vPeriodic,
+			      cpts.data());
+  }
+
+  GMANPoint p00, p10, p01, p11;
+  RtFloat newU, newV;
+  bilinearPatch(u, v, p00, p10, p01, p11, newU, newV);
+
+  RtFloat w00 = (1 - newU) * (1 - newV);
+  RtFloat w10 = newU * (1 - newV);
+  RtFloat w01 = (1 - newU) * newV;
+  RtFloat w11 = newU * newV;
+
+  return GMANPoint(
+      w00 * p00.getX() + w10 * p10.getX() + w01 * p01.getX() + w11 * p11.getX(),
+      w00 * p00.getY() + w10 * p10.getY() + w01 * p01.getY() + w11 * p11.getY(),
+      w00 * p00.getZ() + w10 * p10.getZ() + w01 * p01.getZ() + w11 * p11.getZ());
+}
+
+GMANVector GMANPatchMesh::getNormal (double u, double v)
+{
+  if (bicubic) {
+    // Mirrors GMANPatch::getNormal's bicubic branch: normalize each
+    // central-differenced tangent before crossing, cancelling the (2h)
+    // step-size factor. Its own comment records why the fixed step still
+    // underflows at large coordinate magnitudes -- unfixed here for the
+    // same reason.
+    const RtFloat h = (RtFloat) 1.0e-4;
+    RtFloat *pts = cpts.data();
+    GMANPoint pu0 = basis.bicubicMesh((RtFloat)(u - h), (RtFloat) v,
+				       nu, uPeriodic, nv, vPeriodic, pts);
+    GMANPoint pu1 = basis.bicubicMesh((RtFloat)(u + h), (RtFloat) v,
+				       nu, uPeriodic, nv, vPeriodic, pts);
+    GMANPoint pv0 = basis.bicubicMesh((RtFloat) u, (RtFloat)(v - h),
+				       nu, uPeriodic, nv, vPeriodic, pts);
+    GMANPoint pv1 = basis.bicubicMesh((RtFloat) u, (RtFloat)(v + h),
+				       nu, uPeriodic, nv, vPeriodic, pts);
+    GMANVector dU(pu0, pu1);
+    GMANVector dV(pv0, pv1);
+    dU.normalize();
+    dV.normalize();
+    GMANVector n = dU.cross(dV);
+    n.normalize();
+    return n;
+  }
+
+  GMANPoint p00, p10, p01, p11;
+  RtFloat newU, newV;
+  bilinearPatch(u, v, p00, p10, p01, p11, newU, newV);
+
+  GMANVector eu0(p00, p10);
+  GMANVector eu1(p01, p11);
+  GMANVector dU = eu0 * (1 - newV) + eu1 * newV;
+
+  GMANVector ev0(p00, p01);
+  GMANVector ev1(p10, p11);
+  GMANVector dV = ev0 * (1 - newU) + ev1 * newU;
+
+  GMANVector n = dU.cross(dV);
+  n.normalize();
+  return n;
 }
 
 
