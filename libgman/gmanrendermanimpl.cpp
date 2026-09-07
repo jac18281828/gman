@@ -464,18 +464,17 @@ RtVoid  GMANRenderManImpl::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth
   // A non-positive width leaves every sample outside the resolve's
   // support box (GMANSampleBuffer::resolve), so weightSum never leaves
   // zero and the pixel silently keeps its default-constructed (black)
-  // value -- no error, no diagnostic. Floor to the same [1,xsamples-axis]
-  // reasoning RiPixelSamples already applies to sample counts: 1.0 is the
-  // narrowest width that still covers a pixel's own samples.
+  // value -- no error, no diagnostic. Reject only that: a sub-1.0 but
+  // positive width still has a (narrower) support box and is left alone.
   const RtFloat kMinFilterWidth = 1.0;
-  if (xwidth < kMinFilterWidth) {
-    warning("PixelFilter xwidth %.3f is non-positive or too narrow, "
-	    "clamping to %.1f.", xwidth, kMinFilterWidth);
+  if (xwidth <= 0.0) {
+    warning("PixelFilter xwidth %.3f is non-positive, clamping to %.1f.",
+	    xwidth, kMinFilterWidth);
     xwidth = kMinFilterWidth;
   }
-  if (ywidth < kMinFilterWidth) {
-    warning("PixelFilter ywidth %.3f is non-positive or too narrow, "
-	    "clamping to %.1f.", ywidth, kMinFilterWidth);
+  if (ywidth <= 0.0) {
+    warning("PixelFilter ywidth %.3f is non-positive, clamping to %.1f.",
+	    ywidth, kMinFilterWidth);
     ywidth = kMinFilterWidth;
   }
   getOptions().setPixelFilter(filterfunc, xwidth, ywidth);
