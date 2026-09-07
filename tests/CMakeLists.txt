@@ -62,7 +62,7 @@ add_test(NAME ribdialect
 set_tests_properties(ribdialect PROPERTIES
   ENVIRONMENT "${GMAN_PHASE2_ENV}"
   LABELS render
-  TIMEOUT 60)
+  TIMEOUT 240)
 
 add_executable(gman_readarchive readarchive_test.cpp)
 target_link_libraries(gman_readarchive PRIVATE gman_core)

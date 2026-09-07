@@ -119,8 +119,8 @@ new `tests/rib/*.rib` fixture per the RIB authoring section below. Give its
 `COMMAND` names `$<TARGET_FILE:gman>`, `unit` otherwise — and a `TIMEOUT`
 measured from the `debug` preset (ASan+UBSan), floored at 30 seconds:
 `ctest`'s `TIMEOUT 0` means no timeout at all, so a measurement that rounds
-to 0 would silently ship a hang. `tests/docsconsistency_test.cpp` fails the
-build if either property is missing.
+to 0 would silently ship a hang. `tests/docsconsistency_test.cpp` fails at
+`ctest` time if either property is missing.
 
 **Pinning a known defect.** `WILL_FAIL TRUE` on a test's
 `set_tests_properties` marks a defect deliberately left unfixed: write the

@@ -44,6 +44,7 @@
  * silently.
  */
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <fstream>
@@ -175,7 +176,7 @@ std::vector<std::string> addTestNames(const std::string &cmakeTxt) {
 // included, or empty if there is none. Property values in this file never
 // contain a literal '(', so the call's own closing paren is unambiguous.
 std::string testPropertiesBlock(const std::string &cmakeTxt,
-                                 const std::string &name) {
+                                const std::string &name) {
   const std::string marker = "set_tests_properties(" + name + " PROPERTIES";
   std::size_t start = cmakeTxt.find(marker);
   if (start == std::string::npos) {
@@ -192,7 +193,7 @@ std::string testPropertiesBlock(const std::string &cmakeTxt,
 // The token immediately following a property name, e.g. "unit" out of
 // "LABELS unit\n  TIMEOUT 30".
 std::string propertyToken(const std::string &block,
-                           const std::string &property) {
+                          const std::string &property) {
   std::size_t pos = block.find(property);
   if (pos == std::string::npos) {
     return "";
@@ -211,11 +212,23 @@ std::string propertyToken(const std::string &block,
   return block.substr(pos, end - pos);
 }
 
+// True for a non-empty run of decimal digits -- the shape a TIMEOUT value
+// must have before std::stoi is safe to call on it.
+bool isDecimal(const std::string &token) {
+  if (token.empty()) {
+    return false;
+  }
+  return std::all_of(token.begin(), token.end(), [](unsigned char c) {
+    return std::isdigit(c) != 0;
+  });
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
   if (argc != 4) {
-    std::fprintf(stderr, "usage: %s <AGENTS.md> <ci.yml> <tests/CMakeLists.txt>\n",
+    std::fprintf(stderr,
+                 "usage: %s <AGENTS.md> <ci.yml> <tests/CMakeLists.txt>\n",
                  argv[0]);
     return 2;
   }
@@ -271,9 +284,10 @@ int main(int argc, char **argv) {
           name + " LABELS is \"unit\" or \"render\"");
 
     const std::string timeout = propertyToken(block, "TIMEOUT");
-    check(!timeout.empty() && std::stoi(timeout) > 0,
+    check(isDecimal(timeout) && std::stoi(timeout) > 0,
           name + " TIMEOUT is greater than zero");
   }
 
-  return checkSummary("AGENTS.md tracks ci.yml");
+  return checkSummary(
+      "AGENTS.md tracks ci.yml, and every test carries LABELS and TIMEOUT");
 }
