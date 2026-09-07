@@ -983,10 +983,13 @@ RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
   // Bilinear's step is fixed at 1 by the RISpec; bicubic reads its step
   // off the current basis, which RiBasis sets and getRSPatchMesh resolves
   // the same way. nupatches/nvpatches mirror the sub-patch count that
-  // evaluator actually iterates over -- getRSPatchMesh rejects any nu/nv
-  // its own arithmetic cannot make sense of before a control point is
-  // ever read, so clamping a negative count to zero here only keeps this
-  // sizing arithmetic itself from going negative, never anyone else's.
+  // evaluator actually iterates over -- getRSPatchMesh rejects an nu/nv
+  // its own arithmetic cannot align to the current basis step, but that
+  // check is over nu/nv alone; it does not, and cannot from here, confirm
+  // the RIB-supplied "P" array below actually holds nu*nv points (the same
+  // unvalidated-length pattern RiPolygonV's nverts has). Clamping a
+  // negative count to zero here only keeps this sizing arithmetic itself
+  // from going negative, never anyone else's.
   RtInt uStep = 1, vStep = 1;
   if (bicubicType) {
     GMANBasis basis = getAttributes().getUVBasis();
