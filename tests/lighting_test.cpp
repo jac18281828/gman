@@ -410,11 +410,12 @@ SilhouetteStats silhouetteStats(const Image &img, int litThreshold) {
 // A pixel filter blends a covered silhouette pixel with the background for
 // roughly its own support's reach in from the true edge (the default
 // Gaussian, width 2, reaches about a pixel); that is coverage
-// antialiasing, not a shading difference, and it inflates the stddev a
-// flat-shading check relies on. Only count a pixel whose whole
-// (2*margin+1)^2 neighbourhood is non-background -- solidly inside the
-// silhouette, past any coverage blend.
-double interiorStddevR(const Image &img, uint32_t bg, int margin) {
+// antialiasing, not a shading difference, and it erodes any check that
+// measures the silhouette's mean, spread or lit-pixel count. Collect only
+// pixels whose whole (2*margin+1)^2 neighbourhood is non-background --
+// solidly inside the silhouette, past any coverage blend. Shared by every
+// check below that needs the same AA-safe interior pixel set.
+std::vector<int> interiorValues(const Image &img, uint32_t bg, int margin) {
   auto differs = [&](uint32_t p) {
     return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
            std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
@@ -441,6 +442,11 @@ double interiorStddevR(const Image &img, uint32_t bg, int margin) {
       }
     }
   }
+  return values;
+}
+
+double interiorStddevR(const Image &img, uint32_t bg, int margin) {
+  std::vector<int> values = interiorValues(img, bg, margin);
   if (values.empty()) {
     return 0.0;
   }
@@ -455,6 +461,33 @@ double interiorStddevR(const Image &img, uint32_t bg, int margin) {
     sqSum += d * d;
   }
   return std::sqrt(sqSum / (double) values.size());
+}
+
+double interiorMeanR(const Image &img, uint32_t bg, int margin) {
+  std::vector<int> values = interiorValues(img, bg, margin);
+  if (values.empty()) {
+    return 0.0;
+  }
+  double sum = 0.0;
+  for (int v : values) {
+    sum += v;
+  }
+  return sum / (double) values.size();
+}
+
+double interiorLitFraction(const Image &img, uint32_t bg, int margin,
+                            int litThreshold) {
+  std::vector<int> values = interiorValues(img, bg, margin);
+  if (values.empty()) {
+    return 0.0;
+  }
+  long lit = 0;
+  for (int v : values) {
+    if (v > litThreshold) {
+      ++lit;
+    }
+  }
+  return (double) lit / (double) values.size();
 }
 
 // ---- metal shader, finding: never exercised by any test ----
@@ -510,22 +543,33 @@ void testMetalKaResponse(const std::string &gman) {
 
   // Ci = Os*Cs*Ka*ambient() = Ka * 0.5 (intensity), independent of
   // gmanmetal.cpp's own code -- computed here from the RISpec's own
-  // formula for a metal shader's ambient term.
+  // formula for a metal shader's ambient term. Compare against the
+  // interior mean, not the whole silhouette's: the whole-silhouette mean
+  // includes AA-blended edge pixels pulled toward the (white) background,
+  // which erodes this check the same way it erodes interiorStddevR above.
+  // Erosion measured against base ccdeab7 (pre-branch, no AA): mean 38.0 /
+  // 76.0 against expected 38.25 / 76.5, 98.8%/97.5% of the 20.0 tolerance
+  // free. At this branch's tip before this fix, the whole-silhouette mean
+  // had eroded to 50.550201 / 86.345382, 38.5%/50.7% headroom. Restricted
+  // to the AA-safe interior it returns to 38.000000 / 76.000000 --
+  // 98.8%/97.5% headroom, matching the pre-branch baseline exactly.
+  double lowMeanR = interiorMeanR(lowImg, lowImg.at(0, 0), 2);
+  double highMeanR = interiorMeanR(highImg, highImg.at(0, 0), 2);
   double expectedLow = 0.3 * 0.5 * 255.0;
   double expectedHigh = 0.6 * 0.5 * 255.0;
   const double tol = 20.0;  // quantization + tessellation rounding
-  check(std::fabs(low.meanR - expectedLow) < tol,
+  check(std::fabs(lowMeanR - expectedLow) < tol,
         "metal Ka=0.3: mean brightness matches Ka*ambient (expected ~" +
-        std::to_string(expectedLow) + ", got " + std::to_string(low.meanR) +
+        std::to_string(expectedLow) + ", got " + std::to_string(lowMeanR) +
         ")");
-  check(std::fabs(high.meanR - expectedHigh) < tol,
+  check(std::fabs(highMeanR - expectedHigh) < tol,
         "metal Ka=0.6: mean brightness matches Ka*ambient (expected ~" +
         std::to_string(expectedHigh) + ", got " +
-        std::to_string(high.meanR) + ")");
-  check(high.meanR > low.meanR * 1.5,
+        std::to_string(highMeanR) + ")");
+  check(highMeanR > lowMeanR * 1.5,
         "metal Ka: doubling Ka roughly doubles brightness (Ka=0.3 -> " +
-        std::to_string(low.meanR) + ", Ka=0.6 -> " +
-        std::to_string(high.meanR) + ")");
+        std::to_string(lowMeanR) + ", Ka=0.6 -> " +
+        std::to_string(highMeanR) + ")");
 }
 
 // A metal sphere lit by one directional light, Ka=0: the whole picture
@@ -572,9 +616,21 @@ void testMetalSpecularHighlight(const std::string &gman) {
 
   // No diffuse term: a Lambertian half-sphere would light up roughly half
   // the silhouette. A specular highlight, even a broad one, is a small
-  // fraction of it.
-  double tightFraction = (double) tight.litCount / (double) tight.totalCount;
-  double broadFraction = (double) broad.litCount / (double) broad.totalCount;
+  // fraction of it. Count over the AA-safe interior, not the whole
+  // silhouette: near the (white) background, coverage blending pulls rim
+  // pixels above litThreshold regardless of shading, inflating both
+  // fractions -- same erosion interiorStddevR guards against above.
+  // Erosion measured against base ccdeab7 (pre-branch, no AA): tightFraction
+  // 0.186201. At this branch's tip before this fix (whole silhouette):
+  // 0.243669, 2.5% headroom under the 0.25 threshold, down from 25.5%
+  // pre-branch. Restricted to the interior it returns to 0.198390 -- 20.6%
+  // headroom, back in line with the pre-branch baseline.
+  Image tightImg = readTIFF("metal_spec_tight.tif");
+  Image broadImg = readTIFF("metal_spec_broad.tif");
+  double tightFraction =
+      interiorLitFraction(tightImg, tightImg.at(0, 0), 2, 15);
+  double broadFraction =
+      interiorLitFraction(broadImg, broadImg.at(0, 0), 2, 15);
   check(tightFraction < 0.25,
         "metal specular: a tight highlight (roughness=0.05) covers well "
         "under half the silhouette, not a diffuse-lit hemisphere (" +
