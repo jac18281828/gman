@@ -32,17 +32,27 @@
 /*
  * RenderMan C API Filter functions
  *
- * Standard pixel-reconstruction filters, per the RISpec. None has a caller
- * yet -- the renderer stays at 1 sample/pixel this phase -- but a filter
- * that silently returns 1.0 for every (x,y) is a landmine for whoever wires
- * up sampling next.
+ * Standard pixel-reconstruction filters, per the RISpec. Tested now
+ * (tests/filters_test.cpp), but still uncalled by any resolve: the one
+ * real reference is a dead one, GMANFrameBuffer's constructors defaulting
+ * `filter` to RiBoxFilter and getSuperSampledPixel calling it through
+ * that member -- and getSuperSampledPixel itself has no caller. A filter
+ * that silently returns 1.0 for every (x,y) is a landmine for whoever
+ * wires up sampling next.
+ *
+ * The test found and this file now repairs two defects: RiTriangleFilter
+ * returned nonzero weights outside its support, and RiGaussianFilter's
+ * exponent was four times too small.
  */
 
 
 extern "C" RtFloat   RiGaussianFilter(RtFloat x, RtFloat y,
 				      RtFloat xwidth, RtFloat ywidth)
 {
-  return exp(-2.0 * (x*x/(xwidth*xwidth) + y*y/(ywidth*ywidth)));
+  // RISpec reference scales the argument by 2/width before squaring.
+  RtFloat dx = 2.0 * x / xwidth;
+  RtFloat dy = 2.0 * y / ywidth;
+  return exp(-2.0 * (dx*dx + dy*dy));
 };
 
 
@@ -56,6 +66,9 @@ extern "C" RtFloat   RiBoxFilter(RtFloat /*x*/, RtFloat /*y*/,
 extern "C" RtFloat   RiTriangleFilter(RtFloat x, RtFloat y,
 				      RtFloat xwidth, RtFloat ywidth)
 {
+  if (fabs(x) > xwidth / 2.0 || fabs(y) > ywidth / 2.0) {
+    return 0.0;
+  }
   return (1.0 - fabs(x) / (xwidth / 2.0)) * (1.0 - fabs(y) / (ywidth / 2.0));
 };
 
