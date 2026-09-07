@@ -87,7 +87,8 @@ int main(int argc, char *argv[]) {
           "clipping.rib: a bounded, clipped silhouette is visible");
   }
 
-  checkGoldenImage("clipping.tif", ribDir + "/clipping_golden.tif", 24, 0.01,
+  checkGoldenImage("clipping.tif", ribDir + "/clipping_golden.tif",
+                   GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
                    "clipping_diff.tif");
 
   return checkSummary("clipping holds");

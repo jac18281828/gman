@@ -75,8 +75,9 @@ int main(int argc, char *argv[]) {
               std::to_string(img.width) + "x" + std::to_string(img.height));
   }
 
-  checkGoldenImage("screenwindow.tif", ribDir + "/screenwindow_golden.tif", 24,
-                   0.01, "screenwindow_diff.tif");
+  checkGoldenImage("screenwindow.tif", ribDir + "/screenwindow_golden.tif",
+                   GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+                   "screenwindow_diff.tif");
 
   return checkSummary("screenwindow holds");
 }

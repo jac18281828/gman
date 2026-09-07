@@ -347,10 +347,11 @@ void testGoldenImage(const std::string &gman, const std::string &ribDir) {
   const std::string rib = ribDir + "/lights.rib";
   check(runGman(gman, rib) == 0, "lights.rib renders");
 
-  // Per-channel tolerance 24/255, under 1% of pixels: see
-  // tests/goldenimage.h for why. On failure, lights_diff.tif (this test's
-  // own build-tree run directory) shows which pixels differed.
-  checkGoldenImage("lights.tif", ribDir + "/lights_golden.tif", 24, 0.01,
+  // Tolerance: see tests/goldenimage.h for the measured provenance. On
+  // failure, lights_diff.tif (this test's own build-tree run directory)
+  // shows which pixels differed.
+  checkGoldenImage("lights.tif", ribDir + "/lights_golden.tif",
+                    GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
                     "lights_diff.tif");
 }
 

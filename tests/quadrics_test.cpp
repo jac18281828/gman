@@ -109,7 +109,8 @@ int main(int argc, char *argv[]) {
               std::to_string(runs) + ")");
   }
 
-  checkGoldenImage("quadrics.tif", ribDir + "/quadrics_golden.tif", 24, 0.01,
+  checkGoldenImage("quadrics.tif", ribDir + "/quadrics_golden.tif",
+                   GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
                    "quadrics_diff.tif");
 
   return checkSummary("quadrics holds");

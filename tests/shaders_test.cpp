@@ -113,8 +113,8 @@ int main(int argc, char *argv[]) {
               std::to_string(runs) + ")");
   }
 
-  checkGoldenImage("shaders.tif", ribDir + "/shaders_golden.tif", 24, 0.01,
-                   "shaders_diff.tif");
+  checkGoldenImage("shaders.tif", ribDir + "/shaders_golden.tif",
+                   GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION, "shaders_diff.tif");
 
   return checkSummary("shaders holds");
 }

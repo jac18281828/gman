@@ -35,8 +35,9 @@
  * pixel between platforms at identical float precision -- a
  * tessellation-resolution artifact, not a shading regression;
  * silhouette_test.cpp already accepts an 8% geometric tolerance for the
- * same reason). 24/255 per channel, under 1% of pixels: the values Phase 3
- * picked for tests/rib/lights.rib, reused here as the tree-wide default.
+ * same reason). GOLDEN_CHANNEL_TOL and GOLDEN_MAX_FRACTION below carry the
+ * measured values in place of the untested guess Phase 3 made for
+ * tests/rib/lights.rib and every call site then reused tree-wide.
  *
  * Regenerating a golden is legitimate only when the change that moved the
  * pixels is itself an intended, reviewed behavior change (a shading,
@@ -54,6 +55,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -129,6 +131,25 @@ inline void writeGoldenDiffTIFF(const std::string &path,
   TIFFClose(tif);
 }
 
+// Measured 2026-09-07 against agent/golden-tolerance's instrumented push
+// (commit 3029ab7) on all five goldens, on the antialiased images the
+// sample-buffer/filtering work regenerated: ubuntu-latest and macos-latest,
+// each gcc and clang, plus the ubuntu/clang asan+ubsan debug leg. macOS
+// (both compilers) matched every golden pixel exactly. Ubuntu (all three
+// legs, identically) differed from lights_golden.tif and
+// clipping_golden.tif by one pixel at delta 1 -- RtFloat rounding -- and
+// from quadrics_golden.tif by up to six pixels reaching delta 57 -- a
+// tessellation-boundary shift -- 0.0016% of that scene's 364000 pixels at
+// worst. screenwindow and shaders matched exactly everywhere. Few pixels
+// differing a lot, not many differing slightly: GOLDEN_CHANNEL_TOL keeps
+// Phase 3's value, which already separates the two (every rounding delta
+// observed is 1; every boundary-shift delta above it clears 24).
+// GOLDEN_MAX_FRACTION tightens from Phase 3's untested 1% to comfortably
+// clear the measured 0.00055% (2/364000) worst case -- headroom for a
+// future compiler or runner change, not a number sized to a single defect.
+constexpr int GOLDEN_CHANNEL_TOL = 24;
+constexpr double GOLDEN_MAX_FRACTION = 0.001;
+
 // Reads actualPath and goldenPath, asserts matching dimensions and a
 // per-channel comparison within tolerance, and -- on failure -- writes
 // diffPath (in the current working directory, already the CMake test's own
@@ -169,8 +190,9 @@ inline void checkGoldenImage(const std::string &actualPath,
   }
   double fraction = (double)mismatched / (double)total;
   bool passed = fraction < maxFraction;
-  check(passed, "golden image: fewer than " +
-                    std::to_string((int)(maxFraction * 100)) +
+  char pct[32];
+  std::snprintf(pct, sizeof(pct), "%g", maxFraction * 100);
+  check(passed, "golden image: fewer than " + std::string(pct) +
                     "% of pixels differ from " + goldenPath + " by more than " +
                     std::to_string(channelTol) + "/255 per channel (" +
                     std::to_string(mismatched) + "/" + std::to_string(total) +
