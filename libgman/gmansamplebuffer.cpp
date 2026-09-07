@@ -22,9 +22,11 @@
  */
 
 #include <cmath>
+#include <cstddef>
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
+#include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanframebuffer.h"
 #include "gmansamplebuffer.h" /* Declaration Header */
@@ -34,22 +36,47 @@
  *
  */
 
+namespace {
+
+// RiPixelSamples clamps each axis to [1,16], but that bounds neither
+// dimension nor the frame's own resolution -- a 4096x2160 Format at
+// 16x16 samples/pixel is 2,264,924,160 samples, past INT_MAX for the
+// sample-space width*height multiply, and past any sane allocation at
+// sizeof(GMANColor)+sizeof(RtFloat) = 16 bytes/sample (33.8GB there).
+// 256Mi samples (4GB) is a generous ceiling for this renderer's scale --
+// well past any realistic Format/PixelSamples combination that isn't
+// already a mistake -- while still catching one.
+constexpr std::size_t kMaxSamples = std::size_t(1) << 28;
+
+} // namespace
+
 GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys,
                                    const GMANColor &background)
   : width(w), height(h), xsamples(xs), ysamples(ys),
     sampleWidth(w * xs), sampleHeight(h * ys) {
 
-  const int nSamples = sampleWidth * sampleHeight;
+  // size_t, not int: sampleWidth*sampleHeight overflows a signed int well
+  // within realistic Format/PixelSamples inputs (see kMaxSamples' comment
+  // above), and an overflowed, wrapped-negative count turned a too-large
+  // request into a too-small allocation that render() then wrote past.
+  const std::size_t nSamples =
+      (std::size_t) sampleWidth * (std::size_t) sampleHeight;
+  if (nSamples > kMaxSamples) {
+    throw(GMANError(RIE_LIMIT, RIE_SEVERE,
+                     "PixelSamples/Format requests more samples than this "
+                     "renderer will allocate; reduce Format's resolution "
+                     "or PixelSamples."));
+  }
   sampleColor = new GMANColor[nSamples];
   sampleDepth = new RtFloat[nSamples];
-  for (int i = 0; i < nSamples; i++) {
+  for (std::size_t i = 0; i < nSamples; i++) {
     sampleColor[i] = background;
     sampleDepth[i] = RI_INFINITY;
   }
 
-  const int nPixels = width * height;
+  const std::size_t nPixels = (std::size_t) width * (std::size_t) height;
   resolvedDepth = new RtFloat[nPixels];
-  for (int i = 0; i < nPixels; i++) {
+  for (std::size_t i = 0; i < nPixels; i++) {
     resolvedDepth[i] = RI_INFINITY;
   }
 }
