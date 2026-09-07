@@ -39,14 +39,21 @@ third-party.
 
 ## patch_norender.rib
 
-Phase 4, step 3/4. Expected failure, documented not fixed: `Patch` rasterizes
-no pixels, confirmed here on a minimal single-`Patch` scene with no archive,
-gzip, or near-clip precision concern -- see SPEC.md Section 8, "Found by
-running the corpus after phase 3 landed." Out of phase 4's scope (rendering
-behavior, not the RIB front end); a `Sphere` shares the scene as a control,
-proving the renderer itself works and the gap is `Patch`-specific. No golden
-minted -- a `Patch` that never rasterizes has nothing meaningful to regress
-against. Not third-party.
+Phase 6. A `"bilinear"` `Patch` beside a control `Sphere` under identical
+lighting and shading -- once SPEC.md Section 8's pinned defect (`Patch`
+rasterized no pixels), fixed when `getRSPatch` was wired to
+`createParametric`. The `Sphere` proves the renderer itself works and the
+pixels are the `Patch`'s own. No golden minted -- bilinear interpolation of
+a flat four-point patch has no shading detail worth pixel-regression
+protection. Not third-party.
+
+## patch_bicubic.rib
+
+Phase 6. A `"bicubic"` `Patch` alone, under `Sides 1` and a lit `"Kd"`: the
+point set is the same whether the sixteen-point control net is read in
+RISpec's u-fastest/v-major order or transposed, so `Sides 2` or `Ka`-only
+shading cannot tell them apart -- a transposed reading culls to nothing
+here instead. Not third-party.
 
 ## rotate.rib
 
@@ -111,7 +118,7 @@ hermetic (no network at test time).
 | File | Source | License | Notes |
 |---|---|---|---|
 | `menger.rib` | [aqsis/aqsis](https://github.com/aqsis/aqsis) `examples/procedurals/menger/menger.rib`, commit `d258e4ee5200ef29a512f2f4237b06fa3e4bb853` | GPL-2.0 (repo license; this file itself carries no separate header) | The corpus test (`tests/ribdialect_test.cpp`). Shader-free, so it is one of the few Aqsis examples that reaches `RiWorldEnd` without hitting a missing shader plugin. Exercises `Procedural "DynamicLoad"` and the unbracketed `"fov" 45` parameter form. |
-| `bike.rib`, `bikeData.rib.gz` | [aqsis/aqsis](https://github.com/aqsis/aqsis) `examples/features/archives/`, commit `a9ecc18a9ccbddb418b3ad3940c98a541e427461` (model courtesy of jrMan, www.jrman.org, per the file's own header) | GPL-2.0 (repo license) | Exercises `ReadArchive` of a gzip'd file in the same step, over ~5,300 lines of real `Patch`/`Basis`/`TransformBegin` content -- the two hardest step-6/step-7 paths together. Phase 3 ships a real `plastic` shader, closing the shading-infrastructure gap that used to stop this file at its first `Surface "plastic"` call. It used to die on `RIE_NESTING -- Blocks cannot overlap` further in -- `bikeData.rib.gz` ends `TransformEnd` with no trailing newline, which the tokenizer's end-of-input defect corrupted into `TransformEndd`, leaving that block unclosed (`tests/rib/nonewline/`'s defect). Fixed, `bike.rib` reaches exit 0 and writes a non-empty image, but every pixel is the background color -- a separate, pre-existing, and out-of-scope defect: `Patch` rasterizes no pixels at all, confirmed on a minimal single-`Patch` RIB with no archive or gzip involved. Used for the dedicated `ReadArchive`/gzip proof, not the corpus proof. |
+| `bike.rib`, `bikeData.rib.gz` | [aqsis/aqsis](https://github.com/aqsis/aqsis) `examples/features/archives/`, commit `a9ecc18a9ccbddb418b3ad3940c98a541e427461` (model courtesy of jrMan, www.jrman.org, per the file's own header) | GPL-2.0 (repo license) | Exercises `ReadArchive` of a gzip'd file in the same step, over ~5,300 lines of real `Patch`/`Basis`/`TransformBegin` content -- the two hardest step-6/step-7 paths together. Phase 3 ships a real `plastic` shader, closing the shading-infrastructure gap that used to stop this file at its first `Surface "plastic"` call. It used to die on `RIE_NESTING -- Blocks cannot overlap` further in -- `bikeData.rib.gz` ends `TransformEnd` with no trailing newline, which the tokenizer's end-of-input defect corrupted into `TransformEndd`, leaving that block unclosed (`tests/rib/nonewline/`'s defect). Fixed, `bike.rib` reaches exit 0 and writes a non-empty image; the image used to be blank (a separate, pre-existing defect -- `Patch` rasterized no pixels at all) until phase 6 wired `Patch` to `createParametric`, and now reads as a bicycle. Used for the dedicated `ReadArchive`/gzip proof, not the corpus proof. |
 
 Checked in as gzip'd/plain exactly as fetched; `bikeData.rib.gz` is not
 decompressed in-tree so the gzip-transparency test has a real gzip'd file to

@@ -199,14 +199,12 @@ int main(int argc, char *argv[]) {
   // nowhere in bike.rib itself, which is what makes it evidence rather than
   // coincidence.
   //
-  // The image bike.rib writes is blank -- every pixel the background color.
-  // That is a separate, pre-existing defect, confirmed present on
-  // unmodified d403afa with a minimal single-Patch RIB with no archive, no
-  // gzip and no near-clip precision concern (SPEC.md S8's other open
-  // defect): Patch rasterizes no pixels, Sphere in the same scene does. All
-  // 5,216 Patch requests in bikeData.rib.gz reach the parser and the
-  // renderer with no warnings, so it is not a RIB-front-end gap and out of
-  // this task's scope -- reported, not fixed.
+  // The image bike.rib writes used to be blank -- every pixel the
+  // background color, SPEC.md S8's other open defect: Patch rasterized no
+  // pixels while a Sphere in the same scene did. Phase 6 wired Patch
+  // (bilinear and bicubic) to createParametric; all 5,216 bicubic Patch
+  // requests in bikeData.rib.gz now reach a working evaluator, and the
+  // rendered image reads as a bicycle.
   {
     const std::string bike = ribDir + "/corpus/bike.rib";
     std::remove("bike.tif");

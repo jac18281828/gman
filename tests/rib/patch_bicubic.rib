@@ -1,0 +1,26 @@
+## Bicubic Patch, proving both the geometric winding (a transposed "P"
+## culls under Sides 1 -- the point set is identical either way, so this
+## is invisible under Sides 2 or Ka-only shading) and the per-vertex
+## analytic normal (a backward getNormal() darkens under a directional
+## light instead of disappearing). Control net in RISpec's bicubic order:
+## sixteen points as four rows of four, u varying within a row, v across
+## rows -- laid out here as row -> x, column -> y so the flat patch faces
+## the camera.
+Display "patch_bicubic.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1]
+LightSource "distantlight" 2 "intensity" [0.5] "lightcolor" [1 1 1]
+	"from" [0 0 -5] "to" [0 0 5]
+Sides 1
+Surface "matte" "Ka" [0.2] "Kd" [0.7]
+Patch "bicubic" "P" [
+	-0.5 -0.5 0        -0.5 -0.166667 0        -0.5 0.166667 0        -0.5 0.5 0
+	-0.166667 -0.5 0   -0.166667 -0.166667 0   -0.166667 0.166667 0   -0.166667 0.5 0
+	0.166667 -0.5 0    0.166667 -0.166667 0    0.166667 0.166667 0    0.166667 0.5 0
+	0.5 -0.5 0         0.5 -0.166667 0         0.5 0.166667 0         0.5 0.5 0
+]
+WorldEnd

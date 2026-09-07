@@ -98,7 +98,8 @@ What the RenderMan standard asks of a renderer, and where GMAN stands on
 each:
 
 - **[ ] High-end geometry.** NURBS, trim curves and subdivision surfaces
-  parse and are ignored. `Patch` does not rasterize yet either.
+  parse and are ignored. `Patch` rasterizes, both `"bilinear"` and
+  `"bicubic"`; `PatchMesh` and `NuPatch` still do not.
 - **[ ] Antialiasing and motion blur.** One sample per pixel. `PixelSamples`
   and `PixelFilter` are read from the RIB and five filter kernels are
   written, but nothing calls them.

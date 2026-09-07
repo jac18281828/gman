@@ -9,6 +9,7 @@ What renders
 - All seven RenderMan quadrics: Sphere, Cone, Cylinder, Hyperboloid,
   Paraboloid, Torus, Disk.
 - Convex Polygon.
+- Patch, both "bilinear" and "bicubic".
 - Three C++ surface shaders: matte, plastic, metal.
 - Three light types: ambientlight, distantlight, pointlight.
 - TIFF, PNG, JPEG and PNM output.
@@ -29,8 +30,7 @@ What does not render
   OFF by default).
 - Subdivision surfaces.
 - The RenderMan shading-language compiler; shaders are C++ plugins.
-- Patch, PatchMesh, NuPatch, curves and points: parse but do not
-  rasterize.
+- PatchMesh, NuPatch, curves and points: parse but do not rasterize.
 
 `libgman/gmanribtokenize.cpp`'s `parseKeyword` is ground truth for which
 requests the tokenizer recognizes at all; `libgman/gmanribparse.cpp`'s

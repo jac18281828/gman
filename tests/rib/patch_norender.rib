@@ -1,15 +1,11 @@
-## Expected failure, documented not fixed: Patch rasterizes no pixels.
-## SPEC.md Section 8 ("Found by running the corpus after phase 3 landed"):
-## confirmed on a minimal single-Patch RIB with no archive, gzip, or
-## near-clip precision concern -- a rendering-pipeline gap distinct from
-## the (fixed) RIB front-end defects that used to keep bikeData.rib.gz's
-## own ~5,300 Patch requests from ever reaching the parser at all. Out of
-## this phase's scope (Patch tessellation, not the RIB front end) --
-## reported, not fixed. No golden minted for this scene: a Patch that
-## never rasterizes has nothing meaningful to regress against.
+## Bilinear Patch, once the pinned defect from SPEC.md Section 8: Patch
+## rasterized no pixels. getRSPatch (phase 6) wires bilinear and bicubic
+## Patch to createParametric; this scene now renders. No golden minted --
+## bilinear interpolation of a flat four-point patch has no shading detail
+## worth pixel-regression protection.
 ##
 ## A Sphere shares the scene as a control: same lighting, same shader,
-## proving the renderer itself works and the gap is Patch-specific.
+## proving the renderer itself works and the Patch pixels are its own.
 Display "patch_norender.tif" "file" "rgba"
 Format 200 200 1
 Projection "perspective" "fov" [45]
