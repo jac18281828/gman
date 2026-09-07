@@ -35,19 +35,19 @@
  * sample per pixel is binary, wherever the edge falls); at 4x4 the pixel
  * the edge crosses gets a genuine intermediate value. Reverting the
  * resolve to take a single sample collapses the 4x4 case back to the 1x1
- * one -- verified by hand, see samplebuffer-REPORT.md, not asserted here
- * (there is no source knob this test can flip at run time to reproduce a
- * revert).
+ * one (there is no source knob this test can flip at run time to
+ * reproduce a revert).
  *
  * testPixelFilterDiffers needs RiPixelFilter's RIB wiring to be real: a
  * box and a Gaussian filter over the same 4x4 samples must resolve to
  * different pixels, or GMANOptions::getPixelFilter still has no real
  * caller.
  *
- * testSampleCountCeiling and testPixelFilterZeroWidthGuard each pin a
- * guard against a silent failure mode: a sample count past this
- * renderer's allocation ceiling, and a PixelFilter width that leaves the
- * resolve's support box empty.
+ * testSampleCountCeiling, testPixelFilterZeroWidthGuard and
+ * testPixelFilterSubOneWidthGuard each pin a guard against a silent
+ * failure mode: a sample count past this renderer's allocation ceiling,
+ * and a PixelFilter width (zero, or merely below 1.0) that can leave the
+ * resolve's support box empty for every sample at a pixel.
  */
 
 #include <sys/wait.h>
@@ -258,6 +258,37 @@ void testPixelFilterZeroWidthGuard(const std::string &gman) {
         "its default-constructed black");
 }
 
+// A sub-1.0 but positive PixelFilter width narrows the resolve's support
+// box (GMANSampleBuffer::resolve tests |dx| <= xwidth/2 per sample) below
+// what an even sample count can land inside: with 4x4 samples and a 0.2
+// width, no sample offset from the pixel centre falls within +/-0.1, so
+// weightSum stays 0 and the pixel falls back to its default-constructed
+// black regardless of the scene. The guard must floor the width before
+// it reaches resolve, not just reject non-positive widths.
+void testPixelFilterSubOneWidthGuard(const std::string &gman) {
+  writeFile("edge_filter_suboone.rib",
+            edgeRib("edge_filter_suboone.tif", "PixelFilter \"box\" 0.2 0.2\n",
+                    "PixelSamples 4 4\n"));
+  check(runGman(gman, "edge_filter_suboone.rib") == 0,
+        "sub-1.0-width filter scene renders");
+
+  Image img = readTIFF("edge_filter_suboone.tif");
+  check(img.ok, "sub-1.0-width filter scene: TIFF read back");
+  if (!img.ok) {
+    return;
+  }
+
+  const uint32_t y = img.height / 2;
+  int maxRed = 0;
+  for (uint32_t x = 0; x < img.width; ++x) {
+    maxRed = std::max(maxRed, (int) TIFFGetR(img.at(x, y)));
+  }
+  check(maxRed > 200,
+        "a sub-1.0-width PixelFilter still resolves the background "
+        "colour somewhere in frame, rather than every pixel falling "
+        "back to its default-constructed black");
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -271,6 +302,7 @@ int main(int argc, char *argv[]) {
   testPixelFilterDiffers(gman);
   testSampleCountCeiling(gman);
   testPixelFilterZeroWidthGuard(gman);
+  testPixelFilterSubOneWidthGuard(gman);
 
   return checkSummary("samplebuffer holds");
 }
