@@ -43,12 +43,18 @@
  * box and a Gaussian filter over the same 4x4 samples must resolve to
  * different pixels, or GMANOptions::getPixelFilter still has no real
  * caller.
+ *
+ * testSampleCountCeiling and testPixelFilterZeroWidthGuard each pin a
+ * guard against a silent failure mode: a sample count past this
+ * renderer's allocation ceiling, and a PixelFilter width that leaves the
+ * resolve's support box empty.
  */
 
 #include <sys/wait.h>
 
 #include <tiffio.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -206,6 +212,56 @@ void testPixelFilterDiffers(const std::string &gman) {
         "just parsed and discarded");
 }
 
+// A Format/PixelSamples combination whose sample count clears
+// GMANSampleBuffer's allocation ceiling: gman must diagnose and exit, not
+// crash trying to satisfy the request.
+void testSampleCountCeiling(const std::string &gman) {
+  writeFile("sample_ceiling.rib",
+            "Display \"sample_ceiling.tif\" \"file\" \"rgba\"\n"
+            "Format 4096 2160 1\n"
+            "PixelSamples 16 16\n"
+            "WorldBegin\n"
+            "WorldEnd\n");
+  const int status = runGman(gman, "sample_ceiling.rib");
+  // A shell-mediated child that dies to a signal (abort, segv) reports
+  // through system(3) as an ordinary exit with status 128+signum, not a
+  // WIFSIGNALED system() itself -- so status alone, not runGman's -1
+  // sentinel, is what tells a diagnosed EXIT_FAILURE (1) apart from a
+  // crash (>=128).
+  check(status > 0 && status < 128,
+        "a sample count past the renderer's ceiling exits with a "
+        "diagnostic (not a signal or abort)");
+}
+
+// A zero-width PixelFilter leaves the resolve's support box empty for
+// any pixel whose samples don't land exactly on its centre, so every
+// pixel is at risk of resolving to its default-constructed (black)
+// colour regardless of the scene's actual background. The guard must
+// keep that from happening.
+void testPixelFilterZeroWidthGuard(const std::string &gman) {
+  writeFile("edge_filter_zero.rib",
+            edgeRib("edge_filter_zero.tif", "PixelFilter \"box\" 0 0\n",
+                    "PixelSamples 4 4\n"));
+  check(runGman(gman, "edge_filter_zero.rib") == 0,
+        "zero-width filter scene renders");
+
+  Image img = readTIFF("edge_filter_zero.tif");
+  check(img.ok, "zero-width filter scene: TIFF read back");
+  if (!img.ok) {
+    return;
+  }
+
+  const uint32_t y = img.height / 2;
+  int maxRed = 0;
+  for (uint32_t x = 0; x < img.width; ++x) {
+    maxRed = std::max(maxRed, (int) TIFFGetR(img.at(x, y)));
+  }
+  check(maxRed > 200,
+        "a zero-width PixelFilter still resolves the background colour "
+        "somewhere in frame, rather than every pixel falling back to "
+        "its default-constructed black");
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -217,6 +273,8 @@ int main(int argc, char *argv[]) {
 
   testSupersamplingEdge(gman);
   testPixelFilterDiffers(gman);
+  testSampleCountCeiling(gman);
+  testPixelFilterZeroWidthGuard(gman);
 
   return checkSummary("samplebuffer holds");
 }
