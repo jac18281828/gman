@@ -49,11 +49,12 @@ protection. Not third-party.
 
 ## patch_bicubic.rib
 
-Phase 6. A `"bicubic"` `Patch` alone, under `Sides 1` and a lit `"Kd"`: the
+Phase 6. A `"bicubic"` `Patch`, under `Sides 1` and a lit `"Kd"`: the
 point set is the same whether the sixteen-point control net is read in
 RISpec's u-fastest/v-major order or transposed, so `Sides 2` or `Ka`-only
 shading cannot tell them apart -- a transposed reading culls to nothing
-here instead. Not third-party.
+here instead. A trailing `Sphere` follows AGENTS.md's "RIB authoring"
+section, "The desync convention." Not third-party.
 
 ## rotate.rib
 

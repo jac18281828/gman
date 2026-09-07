@@ -26,13 +26,13 @@
  * Patch beside a control Sphere under identical lighting and shading --
  * the Sphere proves the renderer itself works, so a Patch failure here is
  * Patch-specific. tests/rib/patch_bicubic.rib renders a bicubic Patch
- * alone, under Sides 1 and a lit "Kd", so a transposed control-point
- * reading (a real defect this shape has shipped with) culls to nothing
- * instead of rendering.
+ * beside its own trailing Sphere, under Sides 1 and a lit "Kd", so a
+ * transposed control-point reading (a real defect this shape has shipped
+ * with) culls to nothing instead of rendering.
  *
  * Reverting getRSPatch to its create()-only stub fails the two Patch
- * assertions below (the bilinear left half, the standalone bicubic
- * center) while the five other checks -- both exit-0s, both TIFF
+ * assertions below (the bilinear left half, the bicubic Patch's center
+ * region) while the five other checks -- both exit-0s, both TIFF
  * readbacks, and the Sphere control -- stay green, isolating the failure
  * to Patch rather than the renderer as a whole.
  */

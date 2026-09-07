@@ -46,13 +46,14 @@ GMANSurfaceShader *defaultSurfaceShader() {
   return shader;
 }
 
-// getRSPolygon's own dictionary to resolve "P" against. Its signature
-// carries no GMANDictionary, and every GMANDictionary registers the same
-// standard RI_* tokens in the same order (GMANDictionary::GMANDictionary),
-// so a second instance resolves "P" to the same GMANTokenId the request's
-// own parameter list was built against -- shaders/gmanshaderparams.h's
-// dictionary() is the same idiom, for the same reason.
-GMANDictionary &polygonDictionary() {
+// Shared by getRSPolygon and getRSPatch to resolve "P" against. Its
+// signature carries no GMANDictionary, and every GMANDictionary registers
+// the same standard RI_* tokens in the same order
+// (GMANDictionary::GMANDictionary), so a second instance resolves "P" to
+// the same GMANTokenId the request's own parameter list was built against
+// -- shaders/gmanshaderparams.h's dictionary() is the same idiom, for the
+// same reason.
+GMANDictionary &standardDictionary() {
   static GMANDictionary d;
   return d;
 }
@@ -164,7 +165,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
     return create();
   }
   RtFloat *p = (RtFloat *)
-      pl.getPointer(polygonDictionary().getTokenId(RI_P));
+      pl.getPointer(standardDictionary().getTokenId(RI_P));
   if (! p) {
     return create();
   }
@@ -281,7 +282,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
 							GMANTransform *t)
  {
   RtFloat *p = (RtFloat *)
-      pl.getPointer(polygonDictionary().getTokenId(RI_P));
+      pl.getPointer(standardDictionary().getTokenId(RI_P));
   if (! p) {
     return create();
   }
