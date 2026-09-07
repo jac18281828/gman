@@ -345,6 +345,16 @@ set_tests_properties(vertexnormal PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RISpec pixel-reconstruction filters (box, triangle, gaussian,
+# catmull-rom, sinc): a pure unit test on gmanfilters.cpp, no gman binary.
+# See tests/filters_test.cpp for which of the five were wrong and why.
+add_executable(gman_filters filters_test.cpp)
+target_link_libraries(gman_filters PRIVATE gman_core)
+add_test(NAME filters COMMAND gman_filters)
+set_tests_properties(filters PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # AGENTS.md's Gates block against .github/workflows/ci.yml -- a docs
 # rewrite has no other fails-when-reverted mechanism. Reads the checked-in
 # source tree directly; no dependency on this test's own build output.

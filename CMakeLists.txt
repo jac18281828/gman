@@ -296,6 +296,7 @@ if(CLANG_FORMAT_EXECUTABLE)
       "${CMAKE_SOURCE_DIR}/tests/ribmalformed_test.cpp"
       "${CMAKE_SOURCE_DIR}/tests/patchnorender_test.cpp"
       "${CMAKE_SOURCE_DIR}/tests/wideframe_test.cpp"
+      "${CMAKE_SOURCE_DIR}/tests/filters_test.cpp"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     COMMENT "Checking clang-format compliance of this phase's new test files"
     VERBATIM)
