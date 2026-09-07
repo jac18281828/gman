@@ -130,6 +130,12 @@ GMANPoint GMANBasis::bicubicW (RtFloat u, RtFloat v, RtFloat *pts)
 /*----------------------------------------------------------
  * Bicubic PatchMesh tools
  */
+// astart/bstart run over valid point indices [0,nu) and [0,nv); a and b
+// add up to a sub-patch's own 4x4 extent. A periodic axis's last sub-patch
+// starts at nu-uStep (or nv-vStep) and can reach i==nu exactly, the index
+// that closes the loop back onto point 0 -- wrapping only when i is
+// strictly greater than nu leaves that exact index unwrapped and one past
+// the valid range.
 RtInt GMANBasis::offset (RtInt astart, RtInt bstart, RtInt a, RtInt b,
 			 RtInt nu, RtInt nv,
 			 RtInt pntSize)
@@ -137,9 +143,9 @@ RtInt GMANBasis::offset (RtInt astart, RtInt bstart, RtInt a, RtInt b,
   RtInt i,j;
   i=astart+a;
   j=bstart+b;
-  if (i>nu)
+  if (i>=nu)
     i-=nu;
-  if (j>nv)
+  if (j>=nv)
     j-=nv;
   return pntSize*(i+nu*j);
 }
@@ -163,8 +169,27 @@ GMANPoint  GMANBasis::bicubicMesh  (RtFloat u, RtFloat v,
   }
 
   // find which patch to draw
+  //
+  // floor(u*nbupatch) reaches nbupatch itself at u==1.0 exactly, one past
+  // the last valid sub-patch (nbupatch-1) -- and getNormal's finite
+  // difference samples slightly beyond both ends of [0,1] besides. Clamp
+  // to the valid sub-patch range and let newU/newV carry the overshoot:
+  // at u==1.0 that puts newU at the trailing edge (1.0) of the last
+  // sub-patch rather than the leading edge of one that does not exist,
+  // and on a periodic axis it lands exactly on the sub-patch offset()
+  // wraps back onto index 0, closing the loop onto u==0.0.
   RtInt patchUStart=(RtInt) floor(u*nbupatch);
+  if (patchUStart < 0) {
+    patchUStart = 0;
+  } else if (patchUStart >= nbupatch) {
+    patchUStart = nbupatch - 1;
+  }
   RtInt patchVStart=(RtInt) floor(v*nbvpatch);
+  if (patchVStart < 0) {
+    patchVStart = 0;
+  } else if (patchVStart >= nbvpatch) {
+    patchVStart = nbvpatch - 1;
+  }
   RtFloat newU=u*nbupatch-patchUStart;
   RtFloat newV=v*nbvpatch-patchVStart;
   patchUStart*=uStep;
