@@ -295,12 +295,44 @@ void testInverseTransposeUnderNonUniformScale() {
                       "actually checked");
 }
 
+// ---- proof item 4: bicubic Patch's central-difference normal stays unit
+// length far from the origin ----
+void testBicubicPatchNormalUnitLengthFarFromOrigin() {
+  // bikeData.rib.gz's own patch 1633: a real control net translated about
+  // 7 units from the origin. GMANPatch::getNormal's fixed absolute step
+  // (h=1e-4) samples GMANBasis::bicubic at coordinates around -7.27; at
+  // that magnitude, 2h times the true derivative is smaller than a ulp of
+  // the coordinate, so both finite-difference samples come back
+  // bit-identical and the raw tangent is exactly (0,0,0) -- normalizing
+  // it after crossing cannot recover from that. Normalizing dU and dV
+  // before the cross product (this file's own bicubic fix) does not fix
+  // the cancellation itself, but this patch's own (u,v)=(0.5,0.5) does
+  // not hit it, so the normal comes back unit length regardless.
+  RtFloat p[48] = {
+      -7.277, -2.329, -0.005, -7.277, -2.329, -0.025, -7.272, -2.345, -0.041,
+      -7.268, -2.365, -0.041, -7.278, -2.329, -0.005, -7.278, -2.329, -0.025,
+      -7.274, -2.346, -0.041, -7.269, -2.365, -0.041, -7.284, -2.331, -0.005,
+      -7.284, -2.331, -0.025, -7.280, -2.347, -0.041, -7.275, -2.366, -0.041,
+      -7.282, -2.330, -0.005, -7.282, -2.330, -0.025, -7.278, -2.346, -0.041,
+      -7.273, -2.366, -0.041};
+  GMANParameterList pl;
+  GMANBasis basis;
+  GMANPatch patch((RtToken) "bicubic", p, basis, pl);
+
+  GMANVector n = patch.getNormal(0.5, 0.5);
+  RtFloat magnitude = n.magnitude();
+  check(near(magnitude, 1.0, 1e-3),
+        "bicubic Patch: getNormal is unit length far from the origin "
+        "(magnitude=" + std::to_string(magnitude) + ")");
+}
+
 }  // namespace
 
 int main() {
   testFiniteDifferences();
   testOrientationConsistency();
   testInverseTransposeUnderNonUniformScale();
+  testBicubicPatchNormalUnitLengthFarFromOrigin();
 
   return checkSummary("normals hold");
 }

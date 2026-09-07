@@ -551,9 +551,15 @@ GMANVector GMANPatch::getNormal (double u, double v)
     // normalize() then returns that tiny vector unchanged rather than a
     // unit normal, for geometry that is not actually degenerate.
     // Normalizing the tangents first cancels the step-size factor before
-    // the cross product, leaving only genuine degeneracy (a truly
-    // vanishing tangent, or tangents that are truly parallel) unable to
-    // normalize.
+    // the cross product. It does not fix the fixed step itself: at large
+    // coordinate magnitudes, 2h times the true derivative can be smaller
+    // than one ulp of the coordinate, so both finite-difference samples
+    // come back bit-identical and a tangent underflows to exactly zero
+    // regardless of normalization -- most of what survives this fix is
+    // that (a step-size limit, not fixed here), not genuine surface
+    // degeneracy. Either way, GMANVector::normalize on a zero-magnitude
+    // vector returns it unchanged rather than dividing by zero, so this
+    // never produces a NaN normal.
     dU.normalize();
     dV.normalize();
     GMANVector n = dU.cross(dV);
