@@ -255,8 +255,8 @@ set_tests_properties(ribmalformed PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   TIMEOUT 60)
 
-# Expected failure, documented not fixed (SPEC.md Section 8): Patch
-# rasterizes no pixels. See tests/patchnorender_test.cpp.
+# Bilinear and bicubic Patch rasterization (SPEC.md Section 8, phase 6).
+# See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
 target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)
 

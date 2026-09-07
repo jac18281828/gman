@@ -6,6 +6,13 @@
 ## sixteen points as four rows of four, u varying within a row, v across
 ## rows -- laid out here as row -> x, column -> y so the flat patch faces
 ## the camera.
+##
+## A trailing Sphere follows the Patch, per AGENTS.md's "desync
+## convention": RiPatchV's parameter-list sizing is exactly a
+## parameter-count change (4 vertex values for bilinear, 16 for bicubic),
+## and a handler that mis-counts its own parameters desyncs the token
+## stream in a way that surfaces as the *following* request failing to
+## parse, not the Patch request itself.
 Display "patch_bicubic.tif" "file" "rgba"
 Format 200 200 1
 Projection "perspective" "fov" [45]
@@ -23,4 +30,8 @@ Patch "bicubic" "P" [
 	0.166667 -0.5 0    0.166667 -0.166667 0    0.166667 0.166667 0    0.166667 0.5 0
 	0.5 -0.5 0         0.5 -0.166667 0         0.5 0.166667 0         0.5 0.5 0
 ]
+AttributeBegin
+	Translate 1.5 0 0
+	Sphere 0.3 -0.3 0.3 360
+AttributeEnd
 WorldEnd

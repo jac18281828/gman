@@ -30,7 +30,11 @@
  * reading (a real defect this shape has shipped with) culls to nothing
  * instead of rendering.
  *
- * Reverting getRSPatch to its create()-only stub fails every check below.
+ * Reverting getRSPatch to its create()-only stub fails the two Patch
+ * assertions below (the bilinear left half, the standalone bicubic
+ * center) while the five other checks -- both exit-0s, both TIFF
+ * readbacks, and the Sphere control -- stay green, isolating the failure
+ * to Patch rather than the renderer as a whole.
  */
 
 #include <tiffio.h>

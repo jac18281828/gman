@@ -208,6 +208,33 @@ void testP4mCarriesW() {
         "p4m: a direction (w=0) is unaffected by translation");
 }
 
+void testVector4TimesEqualsMatrixRowVector() {
+  // GMANVector4::operator*=(const GMANMatrix4&) once built a
+  // GMANVector(*this) temporary, multiplied that, and discarded it,
+  // leaving *this unchanged -- the same sliced-temporary bug shape
+  // gmanvector4.h documents as fixed for the sibling operator*= overloads.
+  // Every call site (GMANBasis::bicubic and its bicubicMesh siblings) was
+  // unreached before phase 6 wired Patch to it, so nothing caught it.
+  //
+  // Hand-computed against RiBezierBasis's own matrix, result[j] =
+  // sum_i vec[i]*m[i][j] (AGENTS.md's row-vector p*M convention, the same
+  // formula GMANMatrix4::p4m implements):
+  //   x: 0.125*-1 + 0.25*3  + 0.5*-3 + 1*1 = 0.125
+  //   y: 0.125*3  + 0.25*-6 + 0.5*3  + 1*0 = 0.375
+  //   z: 0.125*-3 + 0.25*3  + 0.5*0  + 1*0 = 0.375
+  //   w: 0.125*1  + 0.25*0  + 0.5*0  + 1*0 = 0.125
+  GMANMatrix4 bezier;
+  bezier.setBasis(RiBezierBasis);
+
+  GMANVector4 pa(0.125, 0.25, 0.5, 1.0);
+  pa *= bezier;
+
+  check(near(pa.getX(), 0.125) && near(pa.getY(), 0.375) &&
+        near(pa.getZ(), 0.375) && near(pa.getW(), 0.125),
+        "GMANVector4 *= GMANMatrix4 matches the hand-computed row-vector "
+        "product, not the pre-fix no-op");
+}
+
 } // namespace
 
 int main() {
@@ -217,6 +244,7 @@ int main() {
   testInvertConcat();
   testP3mRowVectorConvention();
   testP4mCarriesW();
+  testVector4TimesEqualsMatrixRowVector();
 
   return checkSummary("gmanmatrix4 holds");
 }
