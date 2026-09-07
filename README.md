@@ -41,7 +41,8 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-Binary releases ship for Linux x86_64, Linux arm64, and macOS arm64; other systems including Intel Macs can build from source with the commands above.
+Binary releases ship for Linux x86_64, Linux arm64, and macOS arm64;
+Intel Macs can build from source with the commands above.
 
 `AGENTS.md`'s Tests section covers the test layout, adding a new test, and
 golden-image regeneration; its Gates section is the full gate list CI runs.
