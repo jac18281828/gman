@@ -445,7 +445,7 @@ std::vector<int> interiorValues(const Image &img, uint32_t bg, int margin) {
   return values;
 }
 
-double interiorStddevR(const Image &img, uint32_t bg, int margin) {
+double computeInteriorStddevR(const Image &img, uint32_t bg, int margin) {
   std::vector<int> values = interiorValues(img, bg, margin);
   if (values.empty()) {
     return 0.0;
@@ -531,11 +531,11 @@ void testMetalKaResponse(const std::string &gman) {
   // No diffuse or specular term is active here (Ks=0, no directional
   // light), so an ambient-only metal sphere has no direction-dependent
   // shading at all -- every silhouette pixel should read the same value,
-  // away from the pixel filter's antialiased edge (interiorStddevR).
+  // away from the pixel filter's antialiased edge (computeInteriorStddevR).
   Image lowImg = readTIFF("metal_ka_low.tif");
   Image highImg = readTIFF("metal_ka_high.tif");
-  double lowStddev = interiorStddevR(lowImg, lowImg.at(0, 0), 2);
-  double highStddev = interiorStddevR(highImg, highImg.at(0, 0), 2);
+  double lowStddev = computeInteriorStddevR(lowImg, lowImg.at(0, 0), 2);
+  double highStddev = computeInteriorStddevR(highImg, highImg.at(0, 0), 2);
   check(lowStddev < 4.0 && highStddev < 4.0,
         "metal Ka: ambient-only shading is flat across the silhouette's "
         "interior (stddev " + std::to_string(lowStddev) + ", " +
@@ -547,7 +547,7 @@ void testMetalKaResponse(const std::string &gman) {
   // interior mean, not the whole silhouette's: antialiasing blends
   // silhouette-edge pixels toward the (white) background, so any
   // whole-silhouette statistic drifts as the filter widens, the same
-  // erosion interiorStddevR guards against above. Restricting to the
+  // erosion computeInteriorStddevR guards against above. Restricting to the
   // AA-safe interior keeps this measuring only fully-covered pixels.
   double lowMeanR = interiorMeanR(lowImg, lowImg.at(0, 0), 2);
   double highMeanR = interiorMeanR(highImg, highImg.at(0, 0), 2);
@@ -615,7 +615,7 @@ void testMetalSpecularHighlight(const std::string &gman) {
   // fraction of it. Count over the AA-safe interior, not the whole
   // silhouette: near the (white) background, coverage blending pulls rim
   // pixels above litThreshold regardless of shading, inflating both
-  // fractions as the filter widens -- the same erosion interiorStddevR
+  // fractions as the filter widens -- the same erosion computeInteriorStddevR
   // guards against above.
   Image tightImg = readTIFF("metal_spec_tight.tif");
   Image broadImg = readTIFF("metal_spec_broad.tif");

@@ -266,13 +266,13 @@ void testPixelFilterZeroWidthGuard(const std::string &gman) {
 // black regardless of the scene. The guard must floor the width before
 // it reaches resolve, not just reject non-positive widths.
 void testPixelFilterSubOneWidthGuard(const std::string &gman) {
-  writeFile("edge_filter_suboone.rib",
-            edgeRib("edge_filter_suboone.tif", "PixelFilter \"box\" 0.2 0.2\n",
+  writeFile("edge_filter_subone.rib",
+            edgeRib("edge_filter_subone.tif", "PixelFilter \"box\" 0.2 0.2\n",
                     "PixelSamples 4 4\n"));
-  check(runGman(gman, "edge_filter_suboone.rib") == 0,
+  check(runGman(gman, "edge_filter_subone.rib") == 0,
         "sub-1.0-width filter scene renders");
 
-  Image img = readTIFF("edge_filter_suboone.tif");
+  Image img = readTIFF("edge_filter_subone.tif");
   check(img.ok, "sub-1.0-width filter scene: TIFF read back");
   if (!img.ok) {
     return;

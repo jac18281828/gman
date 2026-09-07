@@ -463,14 +463,15 @@ RtVoid  GMANRenderManImpl::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth
 
   // The resolve's support box (GMANSampleBuffer::resolve) tests each
   // sample's offset from the pixel center against half the filter
-  // width. A width below 1.0 sample-space unit can place every legal
-  // sample offset outside that box -- e.g. with an even xsamples, no
-  // offset falls within a sub-1.0 xwidth's support -- so weightSum
-  // never leaves zero and the pixel silently keeps its
-  // default-constructed (black) value: no error, no diagnostic. A
-  // width of 1.0 is the narrowest that is guaranteed to cover at
-  // least one full pixel of sample offsets, so floor any width below
-  // it, not just non-positive ones.
+  // width. A width below 1/xsamples can place every legal sample
+  // offset outside that box, so weightSum never leaves zero and the
+  // pixel silently keeps its default-constructed (black) value: no
+  // error, no diagnostic. This only bites at even sample counts --
+  // odd counts always have a centre sample at offset 0, which is
+  // always in support. A width of 1.0 is the narrowest that is
+  // guaranteed to cover at least one full pixel of sample offsets
+  // regardless of sample count, so floor any width below it, not
+  // just non-positive ones.
   const RtFloat kMinFilterWidth = 1.0;
   if (xwidth < kMinFilterWidth) {
     warning("PixelFilter xwidth %.3f is non-positive or too narrow, "
