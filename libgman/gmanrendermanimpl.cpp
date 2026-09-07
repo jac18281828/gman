@@ -995,6 +995,15 @@ RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
     GMANBasis basis = getAttributes().getUVBasis();
     uStep = basis.getUStep();
     vStep = basis.getVStep();
+    // nupatches/nvpatches divide by uStep/vStep below; neither RiBasis nor
+    // the RIB parser rejects a zero (or negative) step, and getRSPatchMesh's
+    // own step<1 checks run after this division, too late to guard it.
+    if (uStep < 1 || vStep < 1) {
+      warning("PatchMesh \"bicubic\": basis step must be >= 1 (uStep=%d "
+	      "vStep=%d); ignoring.", uStep, vStep);
+      worldManager->add(objectManager->create());
+      return;
+    }
   }
 
   RtInt nupatches = bicubicType
