@@ -544,15 +544,11 @@ void testMetalKaResponse(const std::string &gman) {
   // Ci = Os*Cs*Ka*ambient() = Ka * 0.5 (intensity), independent of
   // gmanmetal.cpp's own code -- computed here from the RISpec's own
   // formula for a metal shader's ambient term. Compare against the
-  // interior mean, not the whole silhouette's: the whole-silhouette mean
-  // includes AA-blended edge pixels pulled toward the (white) background,
-  // which erodes this check the same way it erodes interiorStddevR above.
-  // Erosion measured against base ccdeab7 (pre-branch, no AA): mean 38.0 /
-  // 76.0 against expected 38.25 / 76.5, 98.8%/97.5% of the 20.0 tolerance
-  // free. At this branch's tip before this fix, the whole-silhouette mean
-  // had eroded to 50.550201 / 86.345382, 38.5%/50.7% headroom. Restricted
-  // to the AA-safe interior it returns to 38.000000 / 76.000000 --
-  // 98.8%/97.5% headroom, matching the pre-branch baseline exactly.
+  // interior mean, not the whole silhouette's: antialiasing blends
+  // silhouette-edge pixels toward the (white) background, so any
+  // whole-silhouette statistic drifts as the filter widens, the same
+  // erosion interiorStddevR guards against above. Restricting to the
+  // AA-safe interior keeps this measuring only fully-covered pixels.
   double lowMeanR = interiorMeanR(lowImg, lowImg.at(0, 0), 2);
   double highMeanR = interiorMeanR(highImg, highImg.at(0, 0), 2);
   double expectedLow = 0.3 * 0.5 * 255.0;
@@ -619,12 +615,8 @@ void testMetalSpecularHighlight(const std::string &gman) {
   // fraction of it. Count over the AA-safe interior, not the whole
   // silhouette: near the (white) background, coverage blending pulls rim
   // pixels above litThreshold regardless of shading, inflating both
-  // fractions -- same erosion interiorStddevR guards against above.
-  // Erosion measured against base ccdeab7 (pre-branch, no AA): tightFraction
-  // 0.186201. At this branch's tip before this fix (whole silhouette):
-  // 0.243669, 2.5% headroom under the 0.25 threshold, down from 25.5%
-  // pre-branch. Restricted to the interior it returns to 0.198390 -- 20.6%
-  // headroom, back in line with the pre-branch baseline.
+  // fractions as the filter widens -- the same erosion interiorStddevR
+  // guards against above.
   Image tightImg = readTIFF("metal_spec_tight.tif");
   Image broadImg = readTIFF("metal_spec_broad.tif");
   double tightFraction =

@@ -172,11 +172,7 @@ void testPixelFilterDiffers(const std::string &gman) {
   // (its shape: box vs Gaussian) varies. A fixture that also changes width
   // (as this used to, box at width 1 against Gaussian at width 2) can pass
   // from the width difference alone, without the filter function itself
-  // ever being consulted -- falsified by hand: with the resolve's weight
-  // forced to a constant 1.0 (RiPixelFilter's name-to-function selection
-  // effectively disabled), box-1-vs-gaussian-2 still passed every check
-  // including all 5 goldens; box-2-vs-gaussian-2 goes red under the same
-  // change, and green again once the kernel is restored.
+  // ever being consulted.
   writeFile("edge_filter_box.rib",
             edgeRib("edge_filter_box.tif", "PixelFilter \"box\" 2 2\n",
                     "PixelSamples 4 4\n"));
