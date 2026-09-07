@@ -912,7 +912,13 @@ RtVoid  GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt /*npolys*/, RtInt /*nl
 RtVoid  GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[])
 {
   allowed(cmdPatch);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+
+  // A bicubic patch carries sixteen vertex-class "P" values, not four;
+  // sizing this for every type as bilinear's four truncates "P" and reads
+  // past it. An unrecognized type gets the conservative floor and is
+  // rejected by getRSPatch's own fallback, never sized for sixteen.
+  RtInt vertex = (strcmp(type, RI_BICUBIC) == 0) ? 16 : 4;
+  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, 4);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;

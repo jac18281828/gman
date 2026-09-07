@@ -492,9 +492,77 @@ GMANVector GMANParaboloid::getNormal (double u, double v)
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_PATCH.CPP
 ///////////////////////////////////////////////////////////////////////////////////////////////
-GMANPatch::GMANPatch (RtToken pat, GMANParameterList p) : GMANPrimDatStorage(p)
+GMANPatch::GMANPatch (RtToken pat, RtFloat *p, GMANParameterList pl)
+  : GMANPrimDatStorage(pl), pt(pat), bicubic(false)
 {
-  pt=pat;
+  for (int i = 0; i < 4; i++) {
+    corner[i] = GMANPoint(p[3 * i], p[3 * i + 1], p[3 * i + 2]);
+  }
+}
+
+GMANPatch::GMANPatch (RtToken pat, RtFloat *p, GMANBasis const &b, GMANParameterList pl)
+  : GMANPrimDatStorage(pl), pt(pat), bicubic(true), basis(b)
+{
+  for (int i = 0; i < 48; i++) {
+    cpts[i] = p[i];
+  }
+  cpts[48] = 0.0;
+}
+
+GMANPoint GMANPatch::getLocation (double u, double v)
+{
+  if (bicubic) {
+    return basis.bicubic((RtFloat) u, (RtFloat) v, cpts);
+  }
+
+  RtFloat uu = (RtFloat) u;
+  RtFloat vv = (RtFloat) v;
+  RtFloat w00 = (1 - uu) * (1 - vv);
+  RtFloat w10 = uu * (1 - vv);
+  RtFloat w01 = (1 - uu) * vv;
+  RtFloat w11 = uu * vv;
+
+  return GMANPoint(
+      w00 * corner[0].getX() + w10 * corner[1].getX() +
+	  w01 * corner[2].getX() + w11 * corner[3].getX(),
+      w00 * corner[0].getY() + w10 * corner[1].getY() +
+	  w01 * corner[2].getY() + w11 * corner[3].getY(),
+      w00 * corner[0].getZ() + w10 * corner[1].getZ() +
+	  w01 * corner[2].getZ() + w11 * corner[3].getZ());
+}
+
+GMANVector GMANPatch::getNormal (double u, double v)
+{
+  if (bicubic) {
+    // GMANBasis::bicubic has no derivative of its own; central-difference
+    // it instead. The evaluator is a cubic polynomial in u and v, defined
+    // for any real argument, so sampling h past 0 or 1 needs no clamp.
+    const RtFloat h = (RtFloat) 1.0e-4;
+    GMANPoint pu0 = basis.bicubic((RtFloat)(u - h), (RtFloat) v, cpts);
+    GMANPoint pu1 = basis.bicubic((RtFloat)(u + h), (RtFloat) v, cpts);
+    GMANPoint pv0 = basis.bicubic((RtFloat) u, (RtFloat)(v - h), cpts);
+    GMANPoint pv1 = basis.bicubic((RtFloat) u, (RtFloat)(v + h), cpts);
+    GMANVector dU(pu0, pu1);
+    GMANVector dV(pv0, pv1);
+    GMANVector n = dU.cross(dV);
+    n.normalize();
+    return n;
+  }
+
+  RtFloat uu = (RtFloat) u;
+  RtFloat vv = (RtFloat) v;
+
+  GMANVector eu0(corner[0], corner[1]);  // P(1,0) - P(0,0)
+  GMANVector eu1(corner[2], corner[3]);  // P(1,1) - P(0,1)
+  GMANVector dU = eu0 * (1 - vv) + eu1 * vv;
+
+  GMANVector ev0(corner[0], corner[2]);  // P(0,1) - P(0,0)
+  GMANVector ev1(corner[1], corner[3]);  // P(1,1) - P(1,0)
+  GMANVector dV = ev0 * (1 - uu) + ev1 * uu;
+
+  GMANVector n = dU.cross(dV);
+  n.normalize();
+  return n;
 }
 
 

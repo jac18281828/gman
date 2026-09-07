@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstring>
+
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanobjectmanager.h" /* Super class */
@@ -272,12 +274,27 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt /*
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken /*type*/, 
-							GMANParameterList /*pl*/,
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
+							GMANParameterList pl,
 							GMANOptions */*opt*/,
-							GMANAttributes */*attr*/,
-							GMANTransform */*t*/)
+							GMANAttributes *attr,
+							GMANTransform *t)
  {
+  RtFloat *p = (RtFloat *)
+      pl.getPointer(polygonDictionary().getTokenId(RI_P));
+  if (! p) {
+    return create();
+  }
+
+  if (strcmp(type, RI_BILINEAR) == 0) {
+    GMANPatch patch(type, p, pl);
+    return createParametric(&patch, t, attr);
+  }
+  if (strcmp(type, RI_BICUBIC) == 0) {
+    GMANBasis basis = attr->getUVBasis();
+    GMANPatch patch(type, p, basis, pl);
+    return createParametric(&patch, t, attr);
+  }
   return create();
 };
 

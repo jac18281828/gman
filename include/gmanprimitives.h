@@ -29,6 +29,7 @@
 #include "gmanparameterlist.h"
 #include "gmanoptions.h"
 #include "gmanattributes.h"
+#include "gmanbasis.h"
 #include "gmantransform.h"
 #include "gmansegment.h"
 #include "gmanlog.h"
@@ -296,13 +297,28 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_PATCH.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPatch : public GMANPrimDatStorage
+class GMAN_EXPORT GMANPatch : public GMANPrimDatStorage, public GMANParametric
 {
 protected:
   RtToken pt;
+  bool bicubic;
+  GMANPoint corner[4];
+
+  // GMANBasis::bicubic reads one float past a 16-point, 3-float-per-point
+  // array (stride-12-by-row indexing built through a 4-float-per-point
+  // constructor); 49 rather than 48 absorbs that read without changing
+  // gmanbasis.cpp.
+  RtFloat cpts[49];
+  GMANBasis basis;
 
 public:
-  GMANPatch(RtToken, GMANParameterList p);
+  // Bilinear: four control points, RiSpec order P(0,0) P(1,0) P(0,1) P(1,1).
+  GMANPatch(RtToken pat, RtFloat *p, GMANParameterList pl);
+  // Bicubic: sixteen control points, u-fastest/v-major, blended with b.
+  GMANPatch(RtToken pat, RtFloat *p, GMANBasis const &b, GMANParameterList pl);
+
+  GMANPoint getLocation (double u, double v);
+  GMANVector getNormal (double u, double v);
 };
 
 
