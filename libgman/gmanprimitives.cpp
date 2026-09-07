@@ -544,6 +544,18 @@ GMANVector GMANPatch::getNormal (double u, double v)
     GMANPoint pv1 = basis.bicubic((RtFloat) u, (RtFloat)(v + h), cpts);
     GMANVector dU(pu0, pu1);
     GMANVector dV(pv0, pv1);
+
+    // dU and dV carry a (2h) factor from the finite difference; crossing
+    // them raw scales the result by (2h)^2 = 4e-8, well below RI_EPSILON
+    // for any surface whose true |dP/du x dP/dv| is under about 2.5e-3 --
+    // normalize() then returns that tiny vector unchanged rather than a
+    // unit normal, for geometry that is not actually degenerate.
+    // Normalizing the tangents first cancels the step-size factor before
+    // the cross product, leaving only genuine degeneracy (a truly
+    // vanishing tangent, or tangents that are truly parallel) unable to
+    // normalize.
+    dU.normalize();
+    dV.normalize();
     GMANVector n = dU.cross(dV);
     n.normalize();
     return n;
