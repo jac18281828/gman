@@ -111,6 +111,29 @@ is scoped to tokenizer-level malformation and asserts only "does not
 crash," neither of which this is. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
+## patchmesh_bspline_periodic.rib
+
+`PatchMesh "bicubic"` under a `Basis "b-spline" 1 "b-spline" 1` (step=1),
+periodic on u at nu=3 -- the tightened periodic floor
+`validPeriodicBicubicMeshDim` requires at step=1 (every other bicubic
+fixture here uses the default Bezier basis, step=3, where the old,
+looser bound was already tight enough to be safe). Regression guard: the
+fix must still accept and correctly render every periodic mesh a step=1
+basis can legally form at its minimum. A trailing `Sphere` follows the
+desync convention. Not third-party.
+
+## malformed/patchmesh_bspline_periodic_baddim.rib
+
+The step=1 counterpart to `malformed/patchmesh_baddim.rib`: nu=1
+periodic under a `Basis "b-spline" 1 "b-spline" 1`, one below
+`validPeriodicBicubicMeshDim`'s true floor at step=1. Against the
+unfixed validator (`n>=step` alone) this read one point past a 4-point
+`"P"` array -- `GMANBasis::offset`'s periodic wraparound is a single
+`i-=nu`, not a true modulo, and only stays in range for nu>=3 at
+step=1. Registered in `tests/patchmesh_test.cpp`, asserting the same
+warn-and-`create()` fallback as `patchmesh_baddim.rib`. A trailing
+`Sphere` follows the desync convention. Not third-party.
+
 ## rotate.rib
 
 An in-world `Rotate` must compose ahead of the transforms declared after it,

@@ -1,0 +1,38 @@
+## Reproduces the F1 review finding directly: a step=1 basis (b-spline)
+## whose periodic axis is below validPeriodicBicubicMeshDim's true safety
+## floor (see gmanpatchpolyobjectmanager.cpp). validBicubicMeshDim's
+## periodic branch used to accept any nu>=step, which at step=1 let nu=1
+## through -- GMANBasis::offset's periodic wraparound (a single `i-=nu`,
+## not a true modulo) only stays in [0,nu) for nu>=3 at step=1, so nu=1
+## read one point past the 4-point "P" array below (ASan
+## heap-buffer-overflow, confirmed against the unfixed validator). Every
+## fixture elsewhere in this suite uses the default Bezier basis
+## (step=3), where the bug was vacuous -- this is the only fixture that
+## exercises a step=1 basis's periodic floor at all.
+##
+## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+## desync convention."
+Display "patchmesh_bspline_periodic_baddim.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Sides 2
+Surface "matte" "Ka" [1] "Kd" [0]
+Basis "b-spline" 1 "b-spline" 1
+AttributeBegin
+	Translate -1 0 0
+	PatchMesh "bicubic" 1 "periodic" 4 "nonperiodic" "P" [
+		-0.3 -0.3 0
+		-0.3 -0.1 0
+		-0.3  0.1 0
+		-0.3  0.3 0
+	]
+AttributeEnd
+AttributeBegin
+	Translate 1 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

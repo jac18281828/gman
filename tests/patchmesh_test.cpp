@@ -186,6 +186,44 @@ void testBicubicPeriodicClosure() {
         "bicubic PatchMesh: a periodic u axis closes u=1.0 onto u=0.0");
 }
 
+// ---- white-box: bicubic, periodic closure at a step=1 basis's minimum n ----
+//
+// Every other bicubic fixture above uses the default Bezier basis
+// (step=3), where validBicubicMeshDim's periodic bound (n>=step) is
+// already tight enough: n=step=3 is also the true safety floor. A step=1
+// basis (b-spline here) is the case that bound got wrong -- it accepted
+// n down to 1, but GMANBasis::offset's periodic wraparound (a single
+// `i-=nu`, not a true modulo) only stays in range for n>=3 at step=1 (see
+// gmanpatchpolyobjectmanager.cpp's validPeriodicBicubicMeshDim). nu=3
+// periodic is exactly that floor: three sub-patches, each stepping by 1,
+// the last one starting at astart=nu-step=2 and reaching index 2+3=5,
+// which offset's single subtraction must land back at 5-3=2 -- in range
+// only because nu=3 clears the n>=3 floor. Below that floor this read out
+// of bounds (ASan heap-buffer-overflow, confirmed against the unfixed
+// validator's n=1/n=2). u=1.0 must still close onto u=0.0 exactly, the
+// same periodic identity testBicubicPeriodicClosure checks under Bezier.
+void testBicubicBSplinePeriodicClosureAtMinimum() {
+  GMANMatrix4 uMat, vMat;
+  uMat.setBasis(RiBSplineBasis);
+  vMat.setBasis(RiBSplineBasis);
+  GMANBasis basis(uMat, 1, vMat, 1);
+
+  // nu=3 periodic (the step=1 floor), nv=4 nonperiodic (one v sub-patch).
+  RtFloat p[36];
+  for (int i = 0; i < 36; ++i) {
+    p[i] = (RtFloat) i;
+  }
+  GMANParameterList pl;
+  GMANPatchMesh mesh((RtToken) "bicubic", p, 3, (RtToken) RI_PERIODIC,
+                      4, (RtToken) RI_NONPERIODIC, basis, pl);
+
+  GMANPoint atOne = mesh.getLocation(1.0, 0.4);
+  GMANPoint atZero = mesh.getLocation(0.0, 0.4);
+  check(pointsNear(atOne, atZero, 1e-2),
+        "bicubic PatchMesh, step=1 basis: a periodic u axis at nu=3 (the "
+        "step=1 safety floor) closes u=1.0 onto u=0.0");
+}
+
 // ---- white-box: mixed wrap, hand-computed corner ----
 //
 // nu=6 "periodic", nv=4 "nonperiodic" -- one periodic axis, one
@@ -278,6 +316,35 @@ void testInvalidDimensionFallback(const std::string &gman,
         "fallback to PatchMesh rather than the renderer as a whole");
 }
 
+// F1 regression test: the exact review repro (step=1 basis, periodic
+// nu=1) run through the actual RIB path. Against the unfixed validator
+// this read one point past a 4-point "P" array (ASan
+// heap-buffer-overflow); against the fix it must warn and fall back to
+// create() exactly like patchmesh_baddim.rib's nonperiodic case above.
+void testInvalidBSplinePeriodicDimensionFallback(const std::string &gman,
+                                                 const std::string &ribDir) {
+  const std::string rib =
+      ribDir + "/malformed/patchmesh_bspline_periodic_baddim.rib";
+  check(runGman(gman, rib) == 0,
+        "patchmesh_bspline_periodic_baddim.rib renders without crashing "
+        "(exit 0)");
+
+  GmanImage img = readGmanTIFF("patchmesh_bspline_periodic_baddim.tif");
+  check(img.ok, "patchmesh_bspline_periodic_baddim.rib: TIFF read back");
+  if (!img.ok) {
+    return;
+  }
+  const uint32_t mid = img.width / 2;
+  check(! regionHasContent(img, 0, mid, 0, img.height),
+        "patchmesh_bspline_periodic_baddim: nu=1 is below a step=1 "
+        "basis's periodic safety floor, so getRSPatchMesh warns and "
+        "falls back to create() -- nothing renders on the PatchMesh side");
+  check(regionHasContent(img, mid, img.width, 0, img.height),
+        "patchmesh_bspline_periodic_baddim: control Sphere still renders, "
+        "isolating the fallback to PatchMesh rather than the renderer as "
+        "a whole");
+}
+
 }  // namespace
 
 int main(int argc, char *argv[]) {
@@ -293,6 +360,7 @@ int main(int argc, char *argv[]) {
   testBicubicCornerHandComputed();
   testBicubicMultiPatchCornerHandComputed();
   testBicubicPeriodicClosure();
+  testBicubicBSplinePeriodicClosureAtMinimum();
   testMixedWrapCornerHandComputed();
 
   checkFixtureRenders(gman, ribDir, "patchmesh_bilinear");
@@ -300,7 +368,9 @@ int main(int argc, char *argv[]) {
   checkFixtureRenders(gman, ribDir, "patchmesh_bicubic");
   checkFixtureRenders(gman, ribDir, "patchmesh_bicubic_periodic");
   checkFixtureRenders(gman, ribDir, "patchmesh_mixed_wrap");
+  checkFixtureRenders(gman, ribDir, "patchmesh_bspline_periodic");
   testInvalidDimensionFallback(gman, ribDir);
+  testInvalidBSplinePeriodicDimensionFallback(gman, ribDir);
 
   return checkSummary("PatchMesh bilinear and bicubic both rasterize");
 }

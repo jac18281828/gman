@@ -1,0 +1,35 @@
+## Bicubic PatchMesh under a step=1 basis (b-spline), periodic on u at
+## nu=3 -- validPeriodicBicubicMeshDim's true safety floor for step=1
+## (gmanpatchpolyobjectmanager.cpp), one below the old (unsafe) floor of
+## nu=1. Regression guard for the F1 fix: three concentric triangular
+## control rings (radius 0.45, 0.35, 0.25, 0.15 across the four
+## nonperiodic v rows) wrapping u's last strip back to control point 0,
+## proving the tightened bound still accepts and correctly renders every
+## periodic mesh a step=1 basis can legally form at its minimum.
+##
+## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+## desync convention."
+Display "patchmesh_bspline_periodic.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Sides 2
+Surface "matte" "Ka" [1] "Kd" [0]
+Basis "b-spline" 1 "b-spline" 1
+AttributeBegin
+	Translate -1 0 0
+	PatchMesh "bicubic" 3 "periodic" 4 "nonperiodic" "P" [
+		 0.45     0.0     0  -0.225    0.3897  0  -0.225   -0.3897  0
+		 0.35     0.0     0  -0.175    0.3031  0  -0.175   -0.3031  0
+		 0.25     0.0     0  -0.125    0.2165  0  -0.125   -0.2165  0
+		 0.15     0.0     0  -0.075    0.1299  0  -0.075   -0.1299  0
+	]
+AttributeEnd
+AttributeBegin
+	Translate 1 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd
