@@ -176,9 +176,13 @@ jobs:
       # guard. corpus/menger.rib is the widest parser path checked in:
       # Procedural "DynamicLoad", the unbracketed parameter form, and
       # (through it) the loadable-module dlopen path.
+      # patchmesh_bicubic_periodic.rib exercises GMANBasis::offset's wrap
+      # arithmetic on both axes at once -- the path review found broken
+      # twice, with no PatchMesh fixture reaching this leg until now.
       - name: Valgrind (memcheck)
         run: |
-          for rib in tests/rib/sphere.rib tests/rib/corpus/menger.rib; do
+          for rib in tests/rib/sphere.rib tests/rib/corpus/menger.rib \
+                     tests/rib/patchmesh_bicubic_periodic.rib; do
             echo "::group::valgrind $rib"
             valgrind --error-exitcode=1 --track-origins=yes \
               --leak-check=summary \

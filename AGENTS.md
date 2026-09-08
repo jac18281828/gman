@@ -235,6 +235,8 @@ valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
   ./build/gman tests/rib/sphere.rib
 valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
   ./build/gman tests/rib/corpus/menger.rib
+valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
+  ./build/gman tests/rib/patchmesh_bicubic_periodic.rib
 cmake --build build --target format-check
 ```
 
