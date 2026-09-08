@@ -334,76 +334,29 @@ void checkFixtureRenders(const std::string &gman, const std::string &ribDir,
         name + ": control Sphere renders (right half)");
 }
 
-void testInvalidDimensionFallback(const std::string &gman,
-                                  const std::string &ribDir) {
-  const std::string rib = ribDir + "/malformed/patchmesh_baddim.rib";
+// The malformed-fixture mirror of checkFixtureRenders: a mesh dimension
+// (or basis step) getRSPatchMesh rejects must warn and fall back to
+// create() rather than crash, leaving the left half blank while the
+// control Sphere still renders on the right -- isolating the fallback to
+// PatchMesh rather than the renderer as a whole. `why` names the specific
+// dimension or step that trips the rejection.
+void checkFixtureFallsBack(const std::string &gman, const std::string &ribDir,
+                           const std::string &name, const std::string &why) {
+  const std::string rib = ribDir + "/malformed/" + name + ".rib";
   check(runGman(gman, rib) == 0,
-        "patchmesh_baddim.rib renders without crashing (exit 0)");
+        name + ".rib renders without crashing (exit 0)");
 
-  GmanImage img = readGmanTIFF("patchmesh_baddim.tif");
-  check(img.ok, "patchmesh_baddim.rib: TIFF read back");
+  GmanImage img = readGmanTIFF(name + ".tif");
+  check(img.ok, name + ".rib: TIFF read back");
   if (!img.ok) {
     return;
   }
   const uint32_t mid = img.width / 2;
   check(! regionHasContent(img, 0, mid, 0, img.height),
-        "patchmesh_baddim: nu=5 fails the Bezier step's alignment, so "
-        "getRSPatchMesh warns and falls back to create() -- nothing "
-        "renders on the PatchMesh side");
+        name + ": " + why + " -- nothing renders on the PatchMesh side");
   check(regionHasContent(img, mid, img.width, 0, img.height),
-        "patchmesh_baddim: control Sphere still renders, isolating the "
-        "fallback to PatchMesh rather than the renderer as a whole");
-}
-
-// A step=1 basis's periodic axis has a tighter safety floor than
-// n>=step alone; nu=1 falls below it and must warn and fall back to
-// create(), exactly like patchmesh_baddim.rib's nonperiodic case above.
-void testInvalidBSplinePeriodicDimensionFallback(const std::string &gman,
-                                                 const std::string &ribDir) {
-  const std::string rib =
-      ribDir + "/malformed/patchmesh_bspline_periodic_baddim.rib";
-  check(runGman(gman, rib) == 0,
-        "patchmesh_bspline_periodic_baddim.rib renders without crashing "
-        "(exit 0)");
-
-  GmanImage img = readGmanTIFF("patchmesh_bspline_periodic_baddim.tif");
-  check(img.ok, "patchmesh_bspline_periodic_baddim.rib: TIFF read back");
-  if (!img.ok) {
-    return;
-  }
-  const uint32_t mid = img.width / 2;
-  check(! regionHasContent(img, 0, mid, 0, img.height),
-        "patchmesh_bspline_periodic_baddim: nu=1 is below a step=1 "
-        "basis's periodic safety floor, so getRSPatchMesh warns and "
-        "falls back to create() -- nothing renders on the PatchMesh side");
-  check(regionHasContent(img, mid, img.width, 0, img.height),
-        "patchmesh_bspline_periodic_baddim: control Sphere still renders, "
-        "isolating the fallback to PatchMesh rather than the renderer as "
-        "a whole");
-}
-
-// A zero-step basis reaches RiPatchMeshV's nupatches/nvpatches division
-// before getRSPatchMesh's own validation runs; it must warn and fall back
-// to create() there, the same shape as the two fallbacks above.
-void testZeroStepBasisFallback(const std::string &gman,
-                               const std::string &ribDir) {
-  const std::string rib = ribDir + "/malformed/patchmesh_zero_step_basis.rib";
-  check(runGman(gman, rib) == 0,
-        "patchmesh_zero_step_basis.rib renders without crashing (exit 0)");
-
-  GmanImage img = readGmanTIFF("patchmesh_zero_step_basis.tif");
-  check(img.ok, "patchmesh_zero_step_basis.rib: TIFF read back");
-  if (!img.ok) {
-    return;
-  }
-  const uint32_t mid = img.width / 2;
-  check(! regionHasContent(img, 0, mid, 0, img.height),
-        "patchmesh_zero_step_basis: a zero basis step warns and falls "
-        "back to create() -- nothing renders on the PatchMesh side");
-  check(regionHasContent(img, mid, img.width, 0, img.height),
-        "patchmesh_zero_step_basis: control Sphere still renders, "
-        "isolating the fallback to PatchMesh rather than the renderer as "
-        "a whole");
+        name + ": control Sphere still renders, isolating the fallback "
+        "to PatchMesh rather than the renderer as a whole");
 }
 
 }  // namespace
@@ -431,9 +384,20 @@ int main(int argc, char *argv[]) {
   checkFixtureRenders(gman, ribDir, "patchmesh_bicubic_periodic");
   checkFixtureRenders(gman, ribDir, "patchmesh_mixed_wrap");
   checkFixtureRenders(gman, ribDir, "patchmesh_bspline_periodic");
-  testInvalidDimensionFallback(gman, ribDir);
-  testInvalidBSplinePeriodicDimensionFallback(gman, ribDir);
-  testZeroStepBasisFallback(gman, ribDir);
+  checkFixtureFallsBack(gman, ribDir, "patchmesh_baddim",
+                       "nu=5 fails the Bezier step's alignment, so "
+                       "getRSPatchMesh warns and falls back to create()");
+  // A step=1 basis's periodic axis has a tighter safety floor than
+  // n>=step alone; nu=1 falls below it.
+  checkFixtureFallsBack(gman, ribDir, "patchmesh_bspline_periodic_baddim",
+                       "nu=1 is below a step=1 basis's periodic safety "
+                       "floor, so getRSPatchMesh warns and falls back to "
+                       "create()");
+  // A zero-step basis reaches RiPatchMeshV's nupatches/nvpatches division
+  // before getRSPatchMesh's own validation runs.
+  checkFixtureFallsBack(gman, ribDir, "patchmesh_zero_step_basis",
+                       "a zero basis step warns and falls back to "
+                       "create()");
 
   return checkSummary("PatchMesh bilinear and bicubic both rasterize");
 }
