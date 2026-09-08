@@ -47,7 +47,10 @@
 #include <sys/wait.h>
 
 #include "check.h"
+#include "gmandictionary.h"
+#include "gmanobject.h"
 #include "gmanparameterlist.h"
+#include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
 #include "goldenimage.h"
 
@@ -248,6 +251,42 @@ void testMixedWrapCornerHandComputed() {
         "point(0,3) = (54,55,56)");
 }
 
+// ---- white-box: nonperiodic bicubic, zero basis step rejected ----
+//
+// validBicubicMeshDim's nonperiodic branch computes (n-4)%step; a zero
+// step divides by zero unless the branch guards it first, exactly as its
+// periodic sibling already does. RiPatchMeshV never reaches
+// getRSPatchMesh with such a step -- it checks uStep/vStep itself first
+// -- so this drives GMANPatchPolyObjectManager directly, the one path
+// this input can still reach.
+void testNonperiodicBicubicZeroStepRejected() {
+  RtFloat p[36];
+  for (int i = 0; i < 36; ++i) {
+    p[i] = (RtFloat) i;
+  }
+  GMANDictionary dictionary;
+  RtToken tokens[1] = {RI_P};
+  RtPointer parms[1] = {p};
+  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/12,
+                       /*varying=*/12, /*uniform=*/1);
+
+  GMANOptions options;
+  GMANAttributes attr;
+  attr.setUVBasis(RiBezierBasis, /*ustep=*/0, RiBezierBasis, /*vstep=*/3);
+  GMANTransform transform;
+  GMANPatchPolyObjectManager mgr;
+
+  GMANPrimitive *prim =
+      mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken) RI_NONPERIODIC, 3,
+                         (RtToken) RI_PERIODIC, pl, &options, &attr,
+                         &transform);
+  GMANObject *object = dynamic_cast<GMANObject *>(prim);
+  check(object != nullptr && object->getVert() == nullptr,
+        "bicubic PatchMesh, nonperiodic ustep=0: getRSPatchMesh rejects "
+        "the mesh instead of dividing by zero");
+  delete prim;
+}
+
 // ---- render-level: each fixture rasterizes, reverting getRSPatchMesh
 // falsifies every one of these ----
 
@@ -384,6 +423,7 @@ int main(int argc, char *argv[]) {
   testBicubicPeriodicClosure();
   testBicubicBSplinePeriodicClosureAtMinimum();
   testMixedWrapCornerHandComputed();
+  testNonperiodicBicubicZeroStepRejected();
 
   checkFixtureRenders(gman, ribDir, "patchmesh_bilinear");
   checkFixtureRenders(gman, ribDir, "patchmesh_bilinear_periodic");

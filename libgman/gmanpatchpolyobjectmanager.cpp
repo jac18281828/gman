@@ -94,6 +94,9 @@ bool validBicubicMeshDim(RtInt n, bool periodic, RtInt step) {
   if (periodic) {
     return validPeriodicBicubicMeshDim(n, step);
   }
+  if (step < 1) {
+    return false;
+  }
   return n >= 4 && (n - 4) % step == 0;
 }
 
