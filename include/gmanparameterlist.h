@@ -42,17 +42,30 @@ private:
   RtPointer *datas;
   GMANDictionary *dic;
 
-  RtVoid copy_float(RtInt number, RtFloat *source, RtFloat *dest);
-  RtVoid copy_integer(RtInt number, RtInt *source, RtInt *dest);
-  RtVoid copy_string(RtInt number, char **source, std::string *dest);
+  RtVoid copy_float(RtInt number, RtFloat *source, RtFloat *dest, RtInt supplied);
+  RtVoid copy_integer(RtInt number, RtInt *source, RtInt *dest, RtInt supplied);
+  RtVoid copy_string(RtInt number, char **source, std::string *dest, RtInt supplied);
   RtVoid copy (GMANParameterList const &pl);
   RtVoid destroy ();
 public:
   GMANParameterList ();
+
+  // suppliedCounts, when present, is index-aligned with tk/dt: element i is
+  // the length the caller actually supplied for dt[i], as opposed to
+  // vertex/varying/uniform/facevarying, which say how long it is supposed
+  // to be. A short supplied[i] clamps the copy and zero-fills the rest,
+  // once, with a warning naming the parameter and both lengths -- reading
+  // past dt[i]'s own allocation is the defect this parameter exists to
+  // close. NULL (the default) means the caller's arrays are trusted at
+  // their declared length, exactly as before this parameter existed: the
+  // RIB-parsed path, which does not control what a scene file supplies,
+  // passes real counts; a program calling the public RI API directly is
+  // trusted with its own memory, and the RISpec gives no way to describe
+  // an RtPointer's length regardless.
   GMANParameterList (GMANDictionary &di,
 		     RtInt n, RtToken *tk, RtPointer *dt,
 		     RtInt vertex=1, RtInt varying=1, RtInt uniform=1,
-		     RtInt facevarying=1);
+		     RtInt facevarying=1, const RtInt *suppliedCounts=NULL);
   GMANParameterList (GMANParameterList const &pl);
   GMANParameterList const &operator=(GMANParameterList const &pl);
   ~GMANParameterList ();

@@ -1,0 +1,30 @@
+# F6, the map-ordering trap from the task prompt's own settled decisions:
+# parseParameterList collects into a std::map<RtToken, ...>, which emits in
+# key order, not push order -- "st", "N", "P", "Cs" here (in that push
+# order) come back out as "P", "Cs", "N", "st" (verified against this
+# tree). A counts array built in push order would clamp the wrong
+# parameter; only "P" is short here (two points, not bilinear's four), so
+# a misaligned implementation would warn about the wrong name or the wrong
+# lengths, or clamp "N"/"Cs"/"st" despite each being fully supplied.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	Patch "bilinear" "st" [0 0  1 0  0 1  1 1]
+		"N" [0 0 1  0 0 1  0 0 1  0 0 1]
+		"P" [-1 -1 0  1 -1 0]
+		"Cs" [1 0 0  1 0 0  1 0 0  1 0 0]
+AttributeEnd
+AttributeBegin
+	Translate 2 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

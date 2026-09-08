@@ -71,7 +71,7 @@ GMANParameterList::GMANParameterList ()
 GMANParameterList::GMANParameterList (GMANDictionary &di,
 				      RtInt n, RtToken *tk, RtPointer *dt,
 				      RtInt vertex, RtInt varying, RtInt uniform,
-				      RtInt facevarying)
+				      RtInt facevarying, const RtInt *suppliedCounts)
 {
   int i,index;
   int size;
@@ -92,18 +92,23 @@ GMANParameterList::GMANParameterList (GMANDictionary &di,
     }
 
     size =di.allocSize(id[index], vertex, varying, uniform, facevarying);
+    RtInt supplied = suppliedCounts ? suppliedCounts[i] : size;
+    if (supplied < size) {
+      warning("Parameter \"%s\": declared length %d, supplied length %d; "
+	      "clamping and zero-filling the remainder.", tk[i], size, supplied);
+    }
     switch (di.getType(id[index])) {
     case GMANTokenEntry::STRING:
       datas[index]=(RtPointer)new std::string[size];
-      copy_string(size,(char **)dt[i],(std::string *)datas[index]);
+      copy_string(size,(char **)dt[i],(std::string *)datas[index],supplied);
       break;
     case GMANTokenEntry::INTEGER:
       datas[index]=(RtPointer)new RtInt[size];
-      copy_integer(size,(RtInt *)dt[i],(RtInt *)datas[index]);
+      copy_integer(size,(RtInt *)dt[i],(RtInt *)datas[index],supplied);
       break;
     default:
       datas[index]=(RtPointer) new RtFloat[size];
-      copy_float(size,(RtFloat *)dt[i],(RtFloat *)datas[index]);
+      copy_float(size,(RtFloat *)dt[i],(RtFloat *)datas[index],supplied);
       break;
     }
     index++;
@@ -146,29 +151,26 @@ RtPointer GMANParameterList::getPointer(GMANTokenId tid) const
 }
 
 
-RtVoid GMANParameterList::copy_float(RtInt n, RtFloat *source, RtFloat *dest)
+RtVoid GMANParameterList::copy_float(RtInt n, RtFloat *source, RtFloat *dest, RtInt supplied)
 {
-  for(int i=0;i<n;i++) {
-    *dest=*source;
-    dest++;
-    source++;
-  }
+  int count = supplied < n ? supplied : n;
+  int i;
+  for (i = 0; i < count; i++) dest[i] = source[i];
+  for (; i < n; i++)          dest[i] = 0.0;
 }
-RtVoid GMANParameterList::copy_integer(RtInt n, RtInt *source, RtInt *dest)
+RtVoid GMANParameterList::copy_integer(RtInt n, RtInt *source, RtInt *dest, RtInt supplied)
 {
-  for(int i=0;i<n;i++) {
-    *dest=*source;
-    dest++;
-    source++;
-  }
+  int count = supplied < n ? supplied : n;
+  int i;
+  for (i = 0; i < count; i++) dest[i] = source[i];
+  for (; i < n; i++)          dest[i] = 0;
 }
-RtVoid GMANParameterList::copy_string(RtInt n, char **source, std::string *dest)
+RtVoid GMANParameterList::copy_string(RtInt n, char **source, std::string *dest, RtInt supplied)
 {
-  for(int i=0;i<n;i++) {
-    *dest=std::string(*source);
-    dest++;
-    source++;
-  }
+  int count = supplied < n ? supplied : n;
+  int i;
+  for (i = 0; i < count; i++) dest[i] = std::string(source[i]);
+  for (; i < n; i++)          dest[i] = std::string();
 }
 
 

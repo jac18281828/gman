@@ -128,6 +128,7 @@ private:
   std::vector<PendingParamValue>	pendingParamValues;
   std::vector<RtToken *>		pendingTokenArrays;
   std::vector<RtPointer *>		pendingParmArrays;
+  std::vector<RtInt *>			pendingCountArrays;
 
   GMANRIBTokenize	tokenizer;
 
@@ -194,8 +195,13 @@ private:
   std::string copyStringToken();
 
   TokenVector parseArray(RtVoid);
+
+  // counts[i] is the element count actually supplied for parms[i], the
+  // same index space as tokens/parms -- index-aligned by construction
+  // inside parseParameterList itself, since paramMap's own order is by
+  // key, not push order.
   RtVoid parseParameterList(RtInt &n, RtToken* &tokens,
-			    RtPointer* &params);
+			    RtPointer* &params, RtInt* &counts);
 
   // the token-dispatch loop, run once for the top-level file and once more,
   // re-entrantly, for each nested ReadArchive

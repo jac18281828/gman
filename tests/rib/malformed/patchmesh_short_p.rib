@@ -1,0 +1,26 @@
+# F6, PatchMesh branch: review found this defect here first (see the task
+# prompt); "P" on a nu=3 nv=2 nonperiodic bilinear mesh carries six
+# vertex-class points (eighteen floats). This supplies three; gman is
+# expected to warn, clamp and keep going rather than read past "P"'s own
+# allocation.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	PatchMesh "bilinear" 3 "nonperiodic" 2 "nonperiodic" "P" [
+		-0.4 -0.2 0  0.0 -0.2 0  0.4 -0.2 0
+	]
+AttributeEnd
+AttributeBegin
+	Translate 2 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

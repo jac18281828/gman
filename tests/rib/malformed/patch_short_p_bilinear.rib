@@ -1,0 +1,25 @@
+# F6: a bilinear Patch's "P" carries four vertex-class points (twelve
+# floats); this supplies two. GMANParameterList sizes its destination from
+# the declared class and used to copy that many floats from the supplied
+# array regardless of its real length -- ASan a heap-buffer-overflow READ
+# in GMANParameterList::copy_float before the clamp. gman is expected to
+# warn, clamp, zero-fill and keep going.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	Patch "bilinear" "P" [-1 -1 0  1 -1 0]
+AttributeEnd
+AttributeBegin
+	Translate 2 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

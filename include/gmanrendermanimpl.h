@@ -212,6 +212,16 @@ public:
   RtVoid  RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
 		       RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[], 
 		       RtPointer parms[]);
+
+  // Beside the two RI-mandated overloads above, not reachable through them:
+  // the RIB-parsed path calls these directly, with its own supplied-length
+  // count per array, so a short "P" clamps instead of reading past its
+  // allocation. The public overloads forward NULL, trusting the caller.
+  RtVoid  RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[],
+		   const RtInt *counts);
+  RtVoid  RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
+		       RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[],
+		       RtPointer parms[], const RtInt *counts);
   RtVoid  RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
 		     RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
 		     RtFloat vmin, RtFloat vmax,

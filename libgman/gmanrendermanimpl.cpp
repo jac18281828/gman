@@ -950,6 +950,11 @@ RtVoid  GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt /*npolys*/, RtInt /*nl
 }
 RtVoid  GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[])
 {
+  RiPatchV(type, n, tokens, parms, NULL);
+}
+RtVoid  GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[],
+				    const RtInt *counts)
+{
   allowed(cmdPatch);
 
   // A bicubic patch carries sixteen vertex-class "P" values, not four;
@@ -957,7 +962,7 @@ RtVoid  GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtP
   // past it. An unrecognized type gets the conservative floor and is
   // rejected by getRSPatch's own fallback, never sized for sixteen.
   RtInt vertex = (strcmp(type, RI_BICUBIC) == 0) ? 16 : 4;
-  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, 4);
+  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, 4, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
@@ -973,6 +978,12 @@ RtVoid  GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtP
 RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
 				    RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[],
 				    RtPointer parms[])
+{
+  RiPatchMeshV(type, nu, uwrap, nv, vwrap, n, tokens, parms, NULL);
+}
+RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
+				    RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[],
+				    RtPointer parms[], const RtInt *counts)
 {
   allowed(cmdPatchMesh);
 
@@ -1033,7 +1044,8 @@ RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
   RtInt varying = uVarying * vVarying;
   RtInt uniform = nupatches * nvpatches;
 
-  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, varying, uniform);
+  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, varying, uniform,
+			       1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
