@@ -21,11 +21,12 @@
 /*
  * tests/rib/spotlight.rib: a spotlight on a flat disk's own axis, so
  * radius from the disk's centre maps directly to the cone's angle. Proves
- * three of the RISpec's own claims about GMAN_LIGHT_SPOT: a point inside
+ * four of the RISpec's own claims about GMAN_LIGHT_SPOT: a point inside
  * the cone is lit, a point past coneangle is not (exactly, not just
- * dimmer), and the boundary between them is a taper spanning several
- * pixels, not a single-pixel step -- the case a missing conedeltaangle
- * clamp gets wrong.
+ * dimmer), the boundary between them is a taper spanning several pixels,
+ * not a single-pixel step -- the case a missing conedeltaangle clamp gets
+ * wrong -- and beamdistribution itself attenuates an off-axis, untapered
+ * point relative to on-axis.
  *
  * Revert check (verified by actually reverting, not asserted): removing
  * the "spotlight" branch in GMANRenderManImpl::RiLightSourceV makes the
@@ -129,6 +130,22 @@ int main(int argc, char *argv[]) {
 
   const uint32_t silCentreX = (silXmin + silXmax) / 2;
 
+  // Geometry shared by the beam-isolation and taper checks below, mirroring
+  // tests/rib/spotlight.rib's own literals: the light's axial standoff
+  // from the disk (both share the "Translate 0 0 5" ahead of WorldBegin)
+  // and the cone's two angles. The silhouette's own edge is the disk's
+  // radius, at thetaMax = atan(diskRadius / standoff); pixelsPerRadian
+  // converts that measured span into an x-offset-per-radian for the two
+  // derivations that follow.
+  const double diskStandoff = 5.0;
+  const double diskRadius = 3.0;
+  const double coneAngle = 0.3;
+  const double coneDeltaAngle = 0.08;
+  const double thetaMax = std::atan(diskRadius / diskStandoff);
+  const double pixelsPerRadian = double(silXmax - silCentreX) / thetaMax;
+  const double taperStartX =
+    silCentreX + (coneAngle - coneDeltaAngle) * pixelsPerRadian;
+
   // ---- inside the cone: lit ----
   const int centreBrightness = redAt(img, silCentreX, midY);
   check(centreBrightness > 200,
@@ -149,6 +166,35 @@ int main(int argc, char *argv[]) {
         "sides (R=" + std::to_string(outsideNear) + "," +
         std::to_string(outsideFar) + ")");
 
+  // ---- the beam term: isolate beamdistribution from the taper and
+  // inverse-square ----
+  // A point on-axis (theta == 0) and a point off-axis but still short of
+  // "coneangle - conedeltaangle" -- the taper's own SmoothStep is exactly
+  // 1 throughout that span, so any brightness difference between the two
+  // comes from cos(theta)^beamdistribution and inverse-square, not the
+  // taper. The on-axis point is exposure-clamped to white over a plateau
+  // around the centre; walk past that plateau before sampling, so what is
+  // measured is the beam term's own decline, not the sensor's ceiling.
+  uint32_t plateauEdgeX = silCentreX;
+  while (plateauEdgeX < silXmax && redAt(img, plateauEdgeX, midY) >= 255) {
+    ++plateauEdgeX;
+  }
+  check(plateauEdgeX < silXmax,
+        "spotlight: the on-axis exposure plateau ends before the "
+        "silhouette's edge");
+  const uint32_t beamSampleX = plateauEdgeX + 4;
+  check(double(beamSampleX) < taperStartX,
+        "spotlight: the beam sample point stays short of the taper band "
+        "(x=" + std::to_string(beamSampleX) + ", taper starts at " +
+        std::to_string(taperStartX) + ")");
+  const int beamSampleBrightness = redAt(img, beamSampleX, midY);
+  const double beamRatio =
+    double(beamSampleBrightness) / double(centreBrightness);
+  check(beamRatio < 0.96,
+        "spotlight: beamdistribution attenuates an off-axis, untapered "
+        "point relative to on-axis (ratio=" + std::to_string(beamRatio) +
+        ")");
+
   // ---- the taper: a band, not a step ----
   // Walking outward from the centre, count consecutive samples strictly
   // between "unlit" and "fully lit" -- a hard cutoff with no
@@ -168,11 +214,20 @@ int main(int argc, char *argv[]) {
   };
   const int rightTaper = taperWidth(1);
   const int leftTaper = taperWidth(-1);
-  check(rightTaper >= 5 && leftTaper >= 5,
+
+  // A hard cutoff (conedeltaangle ignored) still blurs across a pixel or
+  // two of antialiasing, but that blur does not scale with
+  // conedeltaangle; a real taper spans coneDeltaAngle * pixelsPerRadian.
+  // Require most (70%) of that predicted span, not all of it -- the
+  // model above is a straight-line approximation of a perspective
+  // projection -- while still well clear of antialiasing-only blur.
+  const double expectedTaperPx = coneDeltaAngle * pixelsPerRadian;
+  const double minTaperPx = expectedTaperPx * 0.7;
+  check(rightTaper >= minTaperPx && leftTaper >= minTaperPx,
         "spotlight: the cone's edge tapers over several pixels on both "
         "sides, not a single-pixel step (right=" +
         std::to_string(rightTaper) + ", left=" + std::to_string(leftTaper) +
-        ")");
+        ", expected >= " + std::to_string(minTaperPx) + ")");
 
   return checkSummary("spotlight holds");
 }

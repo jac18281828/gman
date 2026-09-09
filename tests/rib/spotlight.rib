@@ -11,7 +11,7 @@ WorldBegin
 # cone near the centre, outside it toward the rim, with a tapered band at
 # "coneangle - conedeltaangle" in between.
 LightSource "spotlight" 1 "intensity" [30] "from" [0 0 0] "to" [0 0 1]
-	"coneangle" [0.3] "conedeltaangle" [0.08] "beamdistribution" [2]
+	"coneangle" [0.3] "conedeltaangle" [0.08] "beamdistribution" [6]
 ReverseOrientation
 Surface "matte" "Ka" [0] "Kd" [1]
 Disk 5 3 360

@@ -34,6 +34,26 @@
 #include "gmanlightsourcemgr.h" /* Declaration Header */
 #include "gmanslapi.h"
 
+namespace {
+
+// Direction from p toward a light at position (p -> position, in l) and
+// the squared distance between them; shared by point and spotlight, whose
+// falloff both start from inverse-square on that distance.
+RtFloat pointToLight(const GMANPoint &position, const GMANPoint &p,
+		      GMANVector &l) {
+  l = GMANVector(position, p);
+  l = GMANVector(-l.getX(), -l.getY(), -l.getZ());  // p -> position
+  return l.getX()*l.getX() + l.getY()*l.getY() + l.getZ()*l.getZ();
+}
+
+// cl scaled by a scalar falloff, applied uniformly across channels.
+GMANColor scaledColor(const GMANColor &cl, RtFloat falloff) {
+  return GMANColor(cl.getRed() * falloff, cl.getGreen() * falloff,
+		    cl.getBlue() * falloff);
+}
+
+} // namespace
+
 /*
  * GMANLight
  *
@@ -58,19 +78,14 @@ RtVoid GMANLight::sample(const GMANPoint &p, GMANVector &l,
     break;
 
   case GMAN_LIGHT_POINT: {
-    l = GMANVector(position, p);
-    l = GMANVector(-l.getX(), -l.getY(), -l.getZ());  // p -> position
-    RtFloat dist2 = l.getX()*l.getX() + l.getY()*l.getY() + l.getZ()*l.getZ();
+    RtFloat dist2 = pointToLight(position, p, l);
     RtFloat falloff = (dist2 > RI_EPSILON) ? (1.0 / dist2) : 1.0;
-    lightCl = GMANColor(cl.getRed() * falloff, cl.getGreen() * falloff,
-			 cl.getBlue() * falloff);
+    lightCl = scaledColor(cl, falloff);
     break;
   }
 
   case GMAN_LIGHT_SPOT: {
-    l = GMANVector(position, p);
-    l = GMANVector(-l.getX(), -l.getY(), -l.getZ());  // p -> position
-    RtFloat dist2 = l.getX()*l.getX() + l.getY()*l.getY() + l.getZ()*l.getZ();
+    RtFloat dist2 = pointToLight(position, p, l);
     RtFloat dist = std::sqrt(dist2);
 
     // Cosine of the angle between the cone's axis and the light -> p
@@ -80,15 +95,14 @@ RtVoid GMANLight::sample(const GMANPoint &p, GMANVector &l,
       ? -(l.getX()*direction.getX() + l.getY()*direction.getY() +
 	  l.getZ()*direction.getZ()) / dist
       : (RtFloat) 1.0;
-    RtFloat base = (cosAngle > 0.0) ? cosAngle : (RtFloat) 0.0;
+    RtFloat axisCos = (cosAngle > 0.0) ? cosAngle : (RtFloat) 0.0;
 
-    RtFloat atten = std::pow(base, beamDistribution);
+    RtFloat atten = std::pow(axisCos, beamDistribution);
     atten *= GMANSmoothStep(std::cos(coneAngle),
 			     std::cos(coneAngle - coneDeltaAngle), cosAngle);
 
     RtFloat falloff = (dist2 > RI_EPSILON) ? (atten / dist2) : atten;
-    lightCl = GMANColor(cl.getRed() * falloff, cl.getGreen() * falloff,
-			 cl.getBlue() * falloff);
+    lightCl = scaledColor(cl, falloff);
     break;
   }
   }

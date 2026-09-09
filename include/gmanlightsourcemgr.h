@@ -66,7 +66,7 @@ private:
   GMANColor     cl;        // color * intensity, RiLightSourceV time
   GMANPoint     position;  // camera space; pointlight and spotlight
   GMANVector    direction; // camera space, light -> scene; distantlight
-                            // and spotlight (the cone's axis)
+                           // and spotlight (the cone's axis)
   RtFloat       coneAngle;        // radians; spotlight only
   RtFloat       coneDeltaAngle;   // radians; spotlight only
   RtFloat       beamDistribution; // spotlight only
