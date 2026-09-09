@@ -203,7 +203,9 @@ set_tests_properties(lighting PROPERTIES
 # GMAN_LIGHT_SPOT: tests/rib/spotlight.rib puts the light on a disk's own
 # axis, so a point inside coneangle is lit, a point past it is not, and
 # the boundary between them tapers over conedeltaangle rather than
-# stepping.
+# stepping. tests/rib/spotlight_beam.rib is the same scene at a lower
+# intensity, isolating beamdistribution's own falloff from that taper and
+# from exposure saturation; gman_spotlight renders and checks both.
 add_executable(gman_spotlight spotlight_test.cpp)
 target_link_libraries(gman_spotlight PRIVATE gman_core TIFF::TIFF)
 

@@ -1,0 +1,20 @@
+Display "spotlight_beam.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+# Explicit, not the RI_EPSILON-near default -- see tests/rib/lights.rib's
+# own comment on this.
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+# Same axis-aligned geometry as tests/rib/spotlight.rib, but a lower
+# intensity: spotlight.rib's own 30 keeps its taper band away from the
+# sensor's ceiling, and at that intensity almost every taper-free,
+# off-axis point saturates too, leaving no room to measure
+# beamdistribution's falloff shape on its own. This intensity keeps the
+# whole taper-free zone (theta < coneangle - conedeltaangle) unsaturated.
+LightSource "spotlight" 1 "intensity" [20] "from" [0 0 0] "to" [0 0 1]
+	"coneangle" [0.3] "conedeltaangle" [0.08] "beamdistribution" [6]
+ReverseOrientation
+Surface "matte" "Ka" [0] "Kd" [1]
+Disk 5 3 360
+WorldEnd
