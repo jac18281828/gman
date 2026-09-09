@@ -23,7 +23,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <array>
 #include <cstring>
+#include <vector>
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
@@ -172,6 +174,152 @@ GMANColor shadeVertex(const GMANShadingContext &ctx, const GMANPoint &location,
   return ctx.shader->computeCi(env);
 }
 
+// Newell's method: the face normal as the sum of every edge's
+// contribution, rather than the cross product of two edges at one
+// arbitrarily chosen vertex. Correct for any simple planar polygon,
+// including one where vertices 0, 1 and 2 form a reflex corner -- there, a
+// three-vertex cross product points opposite the polygon's true face
+// normal, while summing over every edge cannot, since each edge
+// contributes in proportion to the area it bounds.
+GMANVector newellNormal(const std::vector<GMANPoint> &ring) {
+  GMANVector sum;
+  const std::size_t n = ring.size();
+  for (std::size_t i = 0; i < n; i++) {
+    const GMANPoint &cur = ring[i];
+    const GMANPoint &next = ring[(i + 1) % n];
+    sum.setX(sum.getX() +
+             (cur.getY() - next.getY()) * (cur.getZ() + next.getZ()));
+    sum.setY(sum.getY() +
+             (cur.getZ() - next.getZ()) * (cur.getX() + next.getX()));
+    sum.setZ(sum.getZ() +
+             (cur.getX() - next.getX()) * (cur.getY() + next.getY()));
+  }
+  return sum;
+}
+
+// A ring vertex's turning direction relative to the polygon's own normal:
+// positive is convex, negative reflex, zero for a collinear or duplicate
+// vertex. Testing against this normal, rather than against the ring's own
+// winding, keeps the result correct whichever way the ring winds --
+// normal already followed that winding when Newell's method built it.
+RtFloat turnOrientation(const GMANPoint &prev, const GMANPoint &cur,
+                         const GMANPoint &next, const GMANVector &normal) {
+  GMANVector e1(prev, cur);
+  GMANVector e2(cur, next);
+  return e1.cross(e2).dot(normal);
+}
+
+// True when p lies inside or on the boundary of coplanar triangle
+// (a, b, c): on the same side of every edge, judged by that edge's cross
+// product with the vector to p, dotted against the polygon's normal so
+// the test does not depend on which way the triangle happens to wind.
+bool pointInTriangle(const GMANPoint &a, const GMANPoint &b,
+                      const GMANPoint &c, const GMANPoint &p,
+                      const GMANVector &normal) {
+  RtFloat d0 = GMANVector(a, b).cross(GMANVector(a, p)).dot(normal);
+  RtFloat d1 = GMANVector(b, c).cross(GMANVector(b, p)).dot(normal);
+  RtFloat d2 = GMANVector(c, a).cross(GMANVector(c, p)).dot(normal);
+  bool hasNeg = d0 < 0.0 || d1 < 0.0 || d2 < 0.0;
+  bool hasPos = d0 > 0.0 || d1 > 0.0 || d2 > 0.0;
+  return !(hasNeg && hasPos);
+}
+
+// Ear clipping over a vertex ring: triangulates any simple planar polygon,
+// concave included, into exactly ring.size() - 2 triangles. GeneralPolygon
+// (a later task) bridges each hole into the outer loop and hands the
+// combined ring to this same function, so it takes points and a normal
+// rather than assuming any particular caller's vertex storage; the
+// returned triples index into that same ring.
+//
+// Only a reflex vertex can lie inside a convex ear's triangle -- a
+// standard property of simple polygons -- so each candidate's containment
+// test runs against the reflex set alone, not every remaining vertex.
+std::vector<std::array<RtInt, 3>> triangulateEarClipping(
+    const std::vector<GMANPoint> &ring, const GMANVector &normal) {
+  std::vector<std::array<RtInt, 3>> triangles;
+  const RtInt n = (RtInt) ring.size();
+  if (n < 3) {
+    return triangles;
+  }
+  triangles.reserve(n - 2);
+
+  std::vector<RtInt> remaining(n);
+  for (RtInt i = 0; i < n; i++) {
+    remaining[i] = i;
+  }
+
+  while (remaining.size() > 3) {
+    const RtInt m = (RtInt) remaining.size();
+
+    std::vector<RtInt> reflex;
+    std::vector<RtFloat> orient(m);
+    for (RtInt i = 0; i < m; i++) {
+      const RtInt iPrev = remaining[(i + m - 1) % m];
+      const RtInt iCur = remaining[i];
+      const RtInt iNext = remaining[(i + 1) % m];
+      orient[i] =
+          turnOrientation(ring[iPrev], ring[iCur], ring[iNext], normal);
+      if (orient[i] < -RI_EPSILON) {
+        reflex.push_back(iCur);
+      }
+    }
+
+    RtInt clipAt = -1;
+    RtInt fallbackAt = 0;
+    RtFloat fallbackOrient = orient[0];
+    for (RtInt i = 0; i < m; i++) {
+      if (orient[i] > fallbackOrient) {
+        fallbackOrient = orient[i];
+        fallbackAt = i;
+      }
+      if (orient[i] < -RI_EPSILON) {
+        continue;  // reflex: never an ear
+      }
+      const RtInt iPrev = remaining[(i + m - 1) % m];
+      const RtInt iCur = remaining[i];
+      const RtInt iNext = remaining[(i + 1) % m];
+
+      // A collinear or duplicate vertex (orient ~ 0) lies on its own
+      // prev-next segment; clipping it changes neither the polygon's
+      // shape nor its area, so it needs no containment test -- skipping
+      // that test is what keeps a run of such vertices from stalling the
+      // loop, since a zero-area "ear" can otherwise appear to contain its
+      // own neighbors.
+      bool degenerate = orient[i] <= RI_EPSILON;
+      bool containsReflex = false;
+      for (std::vector<RtInt>::const_iterator it = reflex.begin();
+           !degenerate && !containsReflex && it != reflex.end(); ++it) {
+        RtInt idx = *it;
+        if (idx == iPrev || idx == iCur || idx == iNext) {
+          continue;
+        }
+        containsReflex = pointInTriangle(ring[iPrev], ring[iCur],
+                                          ring[iNext], ring[idx], normal);
+      }
+      if (degenerate || !containsReflex) {
+        clipAt = i;
+        break;
+      }
+    }
+
+    // No true ear tested empty: only reachable from malformed
+    // (self-intersecting) input, since a simple polygon always has one.
+    // Clip the least-reflex candidate anyway -- degrade, do not hang.
+    if (clipAt < 0) {
+      clipAt = fallbackAt;
+    }
+
+    const RtInt iPrev = remaining[(clipAt + m - 1) % m];
+    const RtInt iCur = remaining[clipAt];
+    const RtInt iNext = remaining[(clipAt + 1) % m];
+    triangles.push_back({iPrev, iCur, iNext});
+    remaining.erase(remaining.begin() + clipAt);
+  }
+
+  triangles.push_back({remaining[0], remaining[1], remaining[2]});
+  return triangles;
+}
+
 }  // namespace
 
 
@@ -198,10 +346,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
 							  GMANAttributes *attr,
 							  GMANTransform *t)
  {
-  // A Polygon is required to be planar and simple, not necessarily convex;
-  // the fan triangulation below (from vertex 0) is correct only for convex
-  // input and silently wrong for concave input. Not fixed here -- see
-  // phase-5-polygon-rasterization.md's scope.
+  // A Polygon is required to be planar and simple, not necessarily convex.
+  // triangulateEarClipping below handles concave input correctly; a fan
+  // from vertex 0 would silently fill the wrong region the moment a
+  // reflex vertex's diagonal left the polygon (see triangulateEarClipping
+  // and newellNormal's own comments for why each is needed).
   //
   // nverts < 3 is degenerate input, and a "P" absent from this attribute
   // scope's parameter list is malformed RiPolygon/RiPolygonV input (public
@@ -231,11 +380,14 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
   // One geometric normal for the whole polygon: a Polygon is required to
   // be planar, so unlike a quadric's curved grid there is no per-vertex
   // object-space normal to source and no inverse transpose to compute.
-  // Same cross-product math as GMANFace::calcNormal, run once here so
-  // every vertex can be shaded with it before any face exists.
-  GMANVector edge1(location[0], location[1]);
-  GMANVector edge2(location[0], location[2]);
-  GMANVector normalVec = edge1.cross(edge2);
+  // Newell's method (see its own comment above) rather than three chosen
+  // vertices, run once here so every vertex can be shaded with it before
+  // any face exists and the triangulator below has a reference to
+  // classify ears against.
+  GMANVector normalVec = newellNormal(location);
+  if (normalVec.magnitude() < RI_EPSILON) {
+    return create();  // fully degenerate: no plane to shade or fill
+  }
   normalVec.normalize();
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
@@ -254,18 +406,21 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
 	shadeVertex(shading, location[i], normal, 0.0, 0.0, 0.0, 0.0));
   }
 
-  // Fan-triangulate from vertex 0 into GMANFace's fixed 4-vertex shape,
-  // the 4th slot duplicating the 3rd -- calcArea/calcNormal both read
-  // [0][1][2] or collapse cleanly when [2]==[3], the same idiom every
-  // quadric's pole face already uses for a degenerate triangle.
-  RtInt nfaces = nverts - 2;
+  // Ear-clip into GMANFace's fixed 4-vertex shape, the 4th slot
+  // duplicating the 3rd -- calcArea/calcNormal both read [0][1][2] or
+  // collapse cleanly when [2]==[3], the same idiom every quadric's pole
+  // face already uses for a degenerate triangle. A vertex count of
+  // nverts always yields nverts - 2 triangles, concave or not.
+  std::vector<std::array<RtInt, 3>> triangles =
+      triangulateEarClipping(location, normalVec);
+  RtInt nfaces = (RtInt) triangles.size();
   GMANFace **faces = new GMANFace*[nfaces];
   for (RtInt i = 0; i < nfaces; i++) {
     GMANVertex *faceVertices[4];
-    faceVertices[0] = vertices[0];
-    faceVertices[1] = vertices[i + 1];
-    faceVertices[2] = vertices[i + 2];
-    faceVertices[3] = vertices[i + 2];
+    faceVertices[0] = vertices[triangles[i][0]];
+    faceVertices[1] = vertices[triangles[i][1]];
+    faceVertices[2] = vertices[triangles[i][2]];
+    faceVertices[3] = vertices[triangles[i][2]];
     faces[i] = new GMANFace(faceVertices, surface);
     faces[i]->calcNormal();
     faces[i]->setSides(sides);

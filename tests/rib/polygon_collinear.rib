@@ -1,0 +1,20 @@
+Display "polygon_collinear.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [90]
+# Explicit, not the RI_EPSILON-near default: SPEC.md Section 8's near-clip
+# precision defect corrupts geometry flat or narrow in z hardest, and a
+# camera-facing planar polygon is exactly that shape.
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+Sides 2
+Color [0.8 0.4 0.2]
+Surface "matte" "Ka" [1.0]
+# polygon_concave.rib's L-shape with a vertex added at the midpoint of
+# the (1,-1)-(1,0) edge: three collinear points in a row, which form a
+# zero-area ear that a naive "is this a valid triangle" test rejects
+# forever. Renders identically to polygon_concave.rib if ear clipping
+# clips the collinear vertex instead of stalling on it.
+Polygon "P" [1 -1 0  1 -0.5 0  1 0 0  0 0 0  0 1 0  -1 1 0  -1 -1 0]
+WorldEnd

@@ -14,9 +14,9 @@ Surface "matte" "Ka" [1.0]
 # A convex, regular pentagon -- five vertices, not four, since a 4-vertex
 # fixture cannot distinguish RiPolygonV's parameter-list sizing fix from
 # the bug it fixes (the old hardcoded 4,4 is right for a quad by
-# coincidence). Fan triangulation from vertex 0 assumes convex input; this
-# fixture stays convex on purpose (see phase-5-polygon-rasterization.md's
-# scope -- concave polygons are out of scope).
+# coincidence). Convex on purpose, so this stays the triangulator's easy
+# case; polygon_concave.rib and its siblings cover concave, collinear and
+# reversed-winding input.
 Polygon "P" [0 1 0  -0.9510565 0.3090170 0  -0.5877853 -0.8090170 0
              0.5877853 -0.8090170 0  0.9510565 0.3090170 0]
 WorldEnd

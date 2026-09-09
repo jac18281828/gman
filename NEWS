@@ -8,7 +8,7 @@ What renders
 
 - All seven RenderMan quadrics: Sphere, Cone, Cylinder, Hyperboloid,
   Paraboloid, Torus, Disk.
-- Convex Polygon.
+- Polygon, convex or concave.
 - Patch and PatchMesh, both "bilinear" and "bicubic".
 - Three C++ surface shaders: matte, plastic, metal.
 - Four light types: ambientlight, distantlight, pointlight, spotlight.

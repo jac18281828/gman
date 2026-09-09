@@ -543,7 +543,7 @@ file(MAKE_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
 
 add_test(NAME polygon
   COMMAND gman_polygon $<TARGET_FILE:gman>
-                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/polygon.rib"
+                       "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
 set_tests_properties(polygon PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"

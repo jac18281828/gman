@@ -10,8 +10,8 @@ C modules as well.
 ![A robot drives into a table; the vase tips and its flowers eject](samples/vase.png)
 
 *GMAN is at it again!* — `samples/vase.rib`, rendered by `gman`. Quadrics and
-convex polygons, three surface shaders, three lights, no textures and one
-sample per pixel.
+polygons, three surface shaders, three lights, no textures and one sample
+per pixel.
 
 ## The tree
 
