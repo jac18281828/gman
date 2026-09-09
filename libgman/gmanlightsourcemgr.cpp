@@ -25,12 +25,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
 #include <cstdint>
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanlog.h"
 #include "gmanlightsourcemgr.h" /* Declaration Header */
+#include "gmanslapi.h"
 
 /*
  * GMANLight
@@ -60,6 +62,31 @@ RtVoid GMANLight::sample(const GMANPoint &p, GMANVector &l,
     l = GMANVector(-l.getX(), -l.getY(), -l.getZ());  // p -> position
     RtFloat dist2 = l.getX()*l.getX() + l.getY()*l.getY() + l.getZ()*l.getZ();
     RtFloat falloff = (dist2 > RI_EPSILON) ? (1.0 / dist2) : 1.0;
+    lightCl = GMANColor(cl.getRed() * falloff, cl.getGreen() * falloff,
+			 cl.getBlue() * falloff);
+    break;
+  }
+
+  case GMAN_LIGHT_SPOT: {
+    l = GMANVector(position, p);
+    l = GMANVector(-l.getX(), -l.getY(), -l.getZ());  // p -> position
+    RtFloat dist2 = l.getX()*l.getX() + l.getY()*l.getY() + l.getZ()*l.getZ();
+    RtFloat dist = std::sqrt(dist2);
+
+    // Cosine of the angle between the cone's axis and the light -> p
+    // direction; pow() below needs a nonnegative base to stay defined
+    // past 90 degrees for a non-integer beamDistribution.
+    RtFloat cosAngle = (dist > RI_EPSILON)
+      ? -(l.getX()*direction.getX() + l.getY()*direction.getY() +
+	  l.getZ()*direction.getZ()) / dist
+      : (RtFloat) 1.0;
+    RtFloat base = (cosAngle > 0.0) ? cosAngle : (RtFloat) 0.0;
+
+    RtFloat atten = std::pow(base, beamDistribution);
+    atten *= GMANSmoothStep(std::cos(coneAngle),
+			     std::cos(coneAngle - coneDeltaAngle), cosAngle);
+
+    RtFloat falloff = (dist2 > RI_EPSILON) ? (atten / dist2) : atten;
     lightCl = GMANColor(cl.getRed() * falloff, cl.getGreen() * falloff,
 			 cl.getBlue() * falloff);
     break;

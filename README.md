@@ -78,8 +78,9 @@ are ignored, and which are unrecognized straight from the source.
 
 The back end renders a real picture: object -> world -> camera -> screen ->
 NDC -> raster, analytic normals on every quadric, backface culling against
-the true per-face view vector, `ambientlight`/`distantlight`/`pointlight`,
-and `matte`/`plastic`/`metal` C++ surface shaders against a real
+the true per-face view vector,
+`ambientlight`/`distantlight`/`pointlight`/`spotlight`, and
+`matte`/`plastic`/`metal` C++ surface shaders against a real
 `GMANSurfaceEnv` -- Gouraud-shaded, lit, perspective-correct. See AGENTS.md's
 "RIB authoring" section, "Shader plugin authoring," for the shader-plugin
 contract. Also working: the RI state machine, transform and matrix math,

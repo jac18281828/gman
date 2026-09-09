@@ -633,6 +633,25 @@ RtVoid readFromTo(GMANDictionary &dictionary, GMANParameterList &pl,
   }
 }
 
+// "coneangle"/"conedeltaangle"/"beamdistribution" (RtFloat), all optional;
+// the caller passes in the RISpec defaults to fall back on.
+RtVoid readSpotConeParams(GMANDictionary &dictionary, GMANParameterList &pl,
+			   RtFloat &coneAngle, RtFloat &coneDeltaAngle,
+			   RtFloat &beamDistribution) {
+  RtFloat *cap = tryGetPointer(dictionary, pl, RI_CONEANGLE);
+  if (cap) {
+    coneAngle = cap[0];
+  }
+  RtFloat *cdap = tryGetPointer(dictionary, pl, RI_CONEDELTAANGLE);
+  if (cdap) {
+    coneDeltaAngle = cdap[0];
+  }
+  RtFloat *bdp = tryGetPointer(dictionary, pl, RI_BEAMDISTRIBUTION);
+  if (bdp) {
+    beamDistribution = bdp[0];
+  }
+}
+
 }  // namespace
 
 RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
@@ -658,6 +677,7 @@ RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken t
   GMANLightType type;
   GMANPoint position(0.0, 0.0, 0.0);
   GMANVector direction(0.0, 0.0, 1.0);
+  RtFloat coneAngle = 0.0, coneDeltaAngle = 0.0, beamDistribution = 0.0;
 
   if (lightName == "ambientlight") {
     type = GMAN_LIGHT_AMBIENT;
@@ -676,13 +696,33 @@ RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken t
     GMANPoint to(0.0, 0.0, 1.0);
     readFromTo(dictionary, paramList, from, to);
     position = transform.apply(from);
+  } else if (lightName == "spotlight") {
+    type = GMAN_LIGHT_SPOT;
+    GMANPoint from(0.0, 0.0, 0.0);
+    GMANPoint to(0.0, 0.0, 1.0);
+    readFromTo(dictionary, paramList, from, to);
+    position = transform.apply(from);
+    GMANPoint camTo = transform.apply(to);
+    direction = GMANVector(position, camTo);
+    direction.normalize();
+
+    // RISpec defaults: 30 degrees, 5 degrees and 2 -- radians throughout
+    // per the RISpec, not degrees: a scene's "coneangle" [30] means 30
+    // radians, not 30 degrees.
+    coneAngle = (RtFloat) 0.5235987756;
+    coneDeltaAngle = (RtFloat) 0.0872664626;
+    beamDistribution = (RtFloat) 2.0;
+    readSpotConeParams(dictionary, paramList, coneAngle, coneDeltaAngle,
+			beamDistribution);
   } else {
     warning("Unknown light shader '%s'; ignoring RiLightSource.",
 	    lightName.c_str());
     return (RtLightHandle) 0;
   }
 
-  GMANLight *light = new GMANLight(type, cl, position, direction);
+  GMANLight *light = new GMANLight(type, cl, position, direction,
+				    coneAngle, coneDeltaAngle,
+				    beamDistribution);
   RtLightHandle handle = gmanLightSourceMgr().add(light);
 
   // Per the RISpec: a light is active in the current graphics state the

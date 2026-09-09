@@ -47,37 +47,47 @@
 #include "gmanvector.h"
 
 /*
- * A built-in light: ambientlight, distantlight or pointlight. Position and
- * direction are captured in camera space at RiLightSourceV time (the CTM
- * then in effect), per AGENTS.md's "Coordinate spaces" -- shading happens
- * entirely in camera space, so a light declared in any other space would
- * make every N.L wrong.
+ * A built-in light: ambientlight, distantlight, pointlight or spotlight.
+ * Position and direction are captured in camera space at RiLightSourceV
+ * time (the CTM then in effect), per AGENTS.md's "Coordinate spaces" --
+ * shading happens entirely in camera space, so a light declared in any
+ * other space would make every N.L wrong.
  */
 enum GMANLightType {
   GMAN_LIGHT_AMBIENT,
   GMAN_LIGHT_DISTANT,
-  GMAN_LIGHT_POINT
+  GMAN_LIGHT_POINT,
+  GMAN_LIGHT_SPOT
 };
 
 class GMAN_EXPORT GMANLight {
 private:
   GMANLightType type;
   GMANColor     cl;        // color * intensity, RiLightSourceV time
-  GMANPoint     position;  // camera space; pointlight only
-  GMANVector    direction; // camera space, light -> scene; distantlight only
+  GMANPoint     position;  // camera space; pointlight and spotlight
+  GMANVector    direction; // camera space, light -> scene; distantlight
+                            // and spotlight (the cone's axis)
+  RtFloat       coneAngle;        // radians; spotlight only
+  RtFloat       coneDeltaAngle;   // radians; spotlight only
+  RtFloat       beamDistribution; // spotlight only
 
 public:
   GMANLight(GMANLightType t, const GMANColor &c,
-	    const GMANPoint &pos, const GMANVector &dir)
-    : type(t), cl(c), position(pos), direction(dir) {}
+	    const GMANPoint &pos, const GMANVector &dir,
+	    RtFloat cAngle = 0.0, RtFloat cDeltaAngle = 0.0,
+	    RtFloat beamDist = 0.0)
+    : type(t), cl(c), position(pos), direction(dir),
+      coneAngle(cAngle), coneDeltaAngle(cDeltaAngle),
+      beamDistribution(beamDist) {}
 
   GMANLightType getType(RtVoid) const { return type; }
 
   // The direction from a surface point toward this light and this
   // light's contribution there. Ambient has no direction -- illuminance
   // loops skip it, and a shader adds env.ambient() directly instead, per
-  // RiSL convention. Point lights get inverse-square falloff baked into
-  // Cl here so a shader's own math stays a plain N.L.
+  // RiSL convention. Point and spotlights get inverse-square falloff
+  // baked into Cl here, and spotlights their cone falloff too, so a
+  // shader's own math stays a plain N.L.
   RtVoid sample(const GMANPoint &p, GMANVector &l, GMANColor &lightCl) const;
 };
 

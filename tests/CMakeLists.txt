@@ -200,6 +200,25 @@ set_tests_properties(lighting PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# GMAN_LIGHT_SPOT: tests/rib/spotlight.rib puts the light on a disk's own
+# axis, so a point inside coneangle is lit, a point past it is not, and
+# the boundary between them tapers over conedeltaangle rather than
+# stepping.
+add_executable(gman_spotlight spotlight_test.cpp)
+target_link_libraries(gman_spotlight PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_SPOTLIGHT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/spotlight-run")
+file(MAKE_DIRECTORY "${GMAN_SPOTLIGHT_WORKDIR}")
+
+add_test(NAME spotlight
+  COMMAND gman_spotlight $<TARGET_FILE:gman>
+                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_SPOTLIGHT_WORKDIR}")
+set_tests_properties(spotlight PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
 # Step 3/5: all seven quadric primitives in one scene, golden-image
 # regression via the shared harness (tests/goldenimage.h).
 add_executable(gman_quadrics quadrics_test.cpp)
