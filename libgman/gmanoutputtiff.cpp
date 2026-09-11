@@ -52,9 +52,15 @@ GMANOutputTIFF::GMANOutputTIFF(const char *path, int width, int height) :
 GMANOutputTIFF::~GMANOutputTIFF() { };
 
 
-RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/, 
-			    RtFloat gain, 
+RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/,
+			    RtFloat gain,
 			    RtFloat gamma) {
+  // Unused without HAVE_LIBTIFF, whose absence leaves this whole body
+  // empty below -- the cast keeps a GMAN_WITH_TIFF=OFF build clean of
+  // -Wunused-parameter without renaming a parameter the #ifdef'd body
+  // still uses.
+  (RtVoid) gain;
+  (RtVoid) gamma;
 #ifdef HAVE_LIBTIFF
     gammaCorrect.setExposure(gain, gamma);
 
