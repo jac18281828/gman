@@ -106,6 +106,16 @@ struct GMAN_EXPORT GMANSurfaceEnv
   RtFloat cellnoise (RtFloat v) const;
   RtFloat cellnoise (const GMANPoint &p) const;
 
+  // ---- texture() (gmantexture.cpp), defined in
+  // gmanshaderenvironment.cpp ----
+  // Declared here and defined there for the same reason as the noise
+  // family above: this header is included by every translation unit that
+  // shades, and gmantexture.h's own decoder must not follow it in.
+  // Forwards to gmanTextureCache() with clamp wrapping -- RiMakeTexture's
+  // wrap modes are a cache argument, not a shadeop one, until a texture
+  // file exists to name which one it wants.
+  GMANColor texture (const std::string &name, RtFloat s, RtFloat t) const;
+
   // ---- gmanslapi.cpp: already free functions, forwarded here so a
   // shader reaches every builtin the same way, through env. Named
   // GMANReflect/GMANRefract/GMANFresnel/GMANFaceForward in gmanslapi.cpp;

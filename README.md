@@ -10,8 +10,7 @@ C modules as well.
 ![A robot drives into a table; the vase tips and its flowers eject](samples/vase.png)
 
 *GMAN is at it again!* — `samples/vase.rib`, rendered by `gman`. Quadrics and
-polygons, three surface shaders, three lights, no textures and one sample
-per pixel.
+polygons, three surface shaders, three lights and one sample per pixel.
 
 ## The tree
 
@@ -114,16 +113,18 @@ each:
   light shaders are C++ modules loaded at run time -- the right shape behind
   the wrong front end. Volume shaders parse and do nothing.
 - **[ ] Displacement shading.** Wants micropolygons, which want REYES.
-- **[ ] Many large textures, flat memory.** No texturing. Surface points
-  already carry their `s,t`, so the input side is ready and the lookup is
-  not written.
+- **[~] Many large textures, flat memory.** `texture()` reads a plain TIFF
+  by name through an in-memory cache (`gmanTextureCache()`), decoding each
+  name once and keeping it for the run. The Reyes paper's own requirement
+  is *many large* textures under *bounded* memory; this cache is
+  unbounded, so it stays `[~]` until a paging or tiled scheme lands.
 - **[~] Quantization, filtering, reconstruction.** Exposure and gamma are
   honored, and pixel reconstruction now runs (see Antialiasing above).
   Quantization still warns and passes the colour through untouched.
 - **[ ] Shading time against shading quality.** `ShadingRate` and the detail
   controls are read from the RIB and never consulted.
 
-None finished, three begun. The standard is worth keeping as the target: a
+None finished, four begun. The standard is worth keeping as the target: a
 renderer is easy to begin and hard to finish, and the usual way it fails is
 that nobody settles what finished means.
 

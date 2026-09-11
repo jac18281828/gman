@@ -70,6 +70,23 @@ inline GMANColor getColorParam(GMANParameterList &pl, RtToken token,
   return p ? GMANColor(p[0], p[1], p[2]) : def;
 }
 
+// GMANParameterList stores a STRING parameter as std::string[], not
+// RtFloat[] -- getPointer's void* still needs the caller's own cast, same
+// as tryGetFloatParam above, just to std::string rather than RtFloat.
+inline std::string *tryGetStringParam(GMANParameterList &pl, RtToken token) {
+  try {
+    return (std::string *) pl.getPointer(dictionary().getTokenId(token));
+  } catch (GMANError &) {
+    return NULL;
+  }
+}
+
+inline std::string getStringParam(GMANParameterList &pl, RtToken token,
+				    const std::string &def) {
+  std::string *p = tryGetStringParam(pl, token);
+  return p ? p[0] : def;
+}
+
 }  // namespace gmanshaders
 
 #endif

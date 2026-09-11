@@ -584,3 +584,21 @@ set_tests_properties(wideframe PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 30)
+
+# The texture cache (gmantexture.h) and the texture() shadeop: direct
+# sampler assertions plus tests/rib/texture.rib, a paintedplastic Patch
+# read back for its four quadrants' colours.
+add_executable(gman_texture texture_test.cpp)
+target_link_libraries(gman_texture PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_TEXTURE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texture-run")
+file(MAKE_DIRECTORY "${GMAN_TEXTURE_WORKDIR}")
+
+add_test(NAME texture
+  COMMAND gman_texture $<TARGET_FILE:gman>
+                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_TEXTURE_WORKDIR}")
+set_tests_properties(texture PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)

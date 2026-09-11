@@ -1,0 +1,27 @@
+Display "texture.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [90]
+# Explicit, not the RI_EPSILON-near default: SPEC.md Section 8's near-clip
+# precision defect corrupts geometry flat or narrow in z hardest, and a
+# camera-facing planar patch is exactly that shape.
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+Sides 2
+Color [1 1 1]
+Surface "paintedplastic" "Ka" [1.0] "Kd" [0.0] "Ks" [0.0]
+	"texturename" ["checker_texture.tif"]
+# Desync convention: a Surface that mis-counts its own "texturename"
+# parameter desyncs the token stream, and that failure surfaces as this
+# following request failing to parse -- pushed far outside the view
+# frustum so it never reaches the frame the quadrant assertions read.
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+# A screen-facing bilinear patch: RiPatchV routes through
+# createParametric, which sets s=u, t=v at every grid vertex -- the
+# flat, exactly-parameterized quad the quadrant assertions need.
+Patch "bilinear" "P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]
+WorldEnd

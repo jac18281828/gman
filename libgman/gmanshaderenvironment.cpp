@@ -31,6 +31,7 @@
 
 #include "gmanshaderenvironment.h"
 #include "gmannoise.h"
+#include "gmantexture.h"
 
 namespace {
 
@@ -77,4 +78,9 @@ RtFloat GMANSurfaceEnv::cellnoise(RtFloat v) const {
 
 RtFloat GMANSurfaceEnv::cellnoise(const GMANPoint &p) const {
   return noiseGenerator().cellnoise(p);
+}
+
+GMANColor GMANSurfaceEnv::texture(const std::string &name, RtFloat s,
+                                   RtFloat t) const {
+  return gmanTextureCache().sample(name, s, t, GMAN_TEXTURE_CLAMP);
 }
