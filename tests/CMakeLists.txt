@@ -133,6 +133,20 @@ set_tests_properties(normals PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Scale- and placement-invariance of GMANPatchPolyObjectManager::getRSPolygon's
+# ear-clipping classification: nine hand-built rings at six scales in two
+# placements, a randomized star-shaped stress, and degenerate input.
+add_executable(gman_triangulation triangulation_test.cpp)
+target_link_libraries(gman_triangulation PRIVATE gman_core)
+add_test(NAME triangulation COMMAND gman_triangulation)
+# getRSPolygon falls back to dlopen'ing "libmatte.so" when no RiSurface is
+# set, the same bare-name lookup gman itself relies on the build tree being
+# on the runtime search path for.
+set_tests_properties(triangulation PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # The phase's actual gate: a real end-to-end render, read back and measured
 # against the hand-derived silhouette geometry.
 add_executable(gman_silhouette silhouette_test.cpp)
