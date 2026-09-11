@@ -202,11 +202,27 @@ GMANVector newellNormal(const std::vector<GMANPoint> &ring) {
 // vertex. Testing against this normal, rather than against the ring's own
 // winding, keeps the result correct whichever way the ring winds --
 // normal already followed that winding when Newell's method built it.
+//
+// Dividing by |e1|*|e2| turns the raw cross-dot, an area, into the sine of
+// the turn angle: a dimensionless quantity in [-1, 1] regardless of the
+// polygon's scale, so a caller can compare it against a fixed tolerance
+// wherever the polygon sits. normal must already be unit length -- the
+// sine identity depends on it, and getRSPolygon normalizes before calling
+// this. A zero-length edge (a duplicate vertex) would divide to NaN, which
+// fails every comparison and leaves the vertex classified neither reflex
+// nor degenerate; returning 0 keeps it degenerate instead, the
+// classification triangulateEarClipping already clips without a
+// containment test.
 RtFloat turnOrientation(const GMANPoint &prev, const GMANPoint &cur,
                          const GMANPoint &next, const GMANVector &normal) {
   GMANVector e1(prev, cur);
   GMANVector e2(cur, next);
-  return e1.cross(e2).dot(normal);
+  RtFloat len1 = e1.magnitude();
+  RtFloat len2 = e2.magnitude();
+  if (len1 == (RtFloat) 0.0 || len2 == (RtFloat) 0.0) {
+    return (RtFloat) 0.0;
+  }
+  return e1.cross(e2).dot(normal) / (len1 * len2);
 }
 
 // True when p lies inside or on the boundary of coplanar triangle
@@ -223,6 +239,17 @@ bool pointInTriangle(const GMANPoint &a, const GMANPoint &b,
   bool hasPos = d0 > 0.0 || d1 > 0.0 || d2 > 0.0;
   return !(hasNeg && hasPos);
 }
+
+// turnOrientation now returns a dimensionless sine, so its threshold is a
+// pure number rather than an area: RI_EPSILON (a public interface constant
+// with other callers) no longer applies. float carries about seven decimal
+// digits, so a sine built from two cross products and a dot carries
+// absolute error near 1e-7; this sits an order above that noise and far
+// below any turn a real polygon intends -- 1e-6 radians is 0.00006
+// degrees. Shared by triangulateEarClipping's three orientation
+// comparisons and getRSPolygon's degeneracy guard below, which compares
+// the same kind of ratio: an area against the square of a length.
+const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
 
 // Ear clipping over a vertex ring: triangulates any simple planar polygon,
 // concave included, into exactly ring.size() - 2 triangles. GeneralPolygon
@@ -259,7 +286,7 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
       const RtInt iNext = remaining[(i + 1) % m];
       orient[i] =
           turnOrientation(ring[iPrev], ring[iCur], ring[iNext], normal);
-      if (orient[i] < -RI_EPSILON) {
+      if (orient[i] < -kTriangulationTolerance) {
         reflex.push_back(iCur);
       }
     }
@@ -272,7 +299,7 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
         fallbackOrient = orient[i];
         fallbackAt = i;
       }
-      if (orient[i] < -RI_EPSILON) {
+      if (orient[i] < -kTriangulationTolerance) {
         continue;  // reflex: never an ear
       }
       const RtInt iPrev = remaining[(i + m - 1) % m];
@@ -285,7 +312,7 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
       // that test is what keeps a run of such vertices from stalling the
       // loop, since a zero-area "ear" can otherwise appear to contain its
       // own neighbors.
-      bool degenerate = orient[i] <= RI_EPSILON;
+      bool degenerate = orient[i] <= kTriangulationTolerance;
       bool containsReflex = false;
       for (std::vector<RtInt>::const_iterator it = reflex.begin();
            !degenerate && !containsReflex && it != reflex.end(); ++it) {
@@ -384,11 +411,45 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
   // vertices, run once here so every vertex can be shaded with it before
   // any face exists and the triangulator below has a reference to
   // classify ears against.
-  GMANVector normalVec = newellNormal(location);
-  if (normalVec.magnitude() < RI_EPSILON) {
-    return create();  // fully degenerate: no plane to shade or fill
+  //
+  // Degeneracy is judged by a ratio, not an absolute area: twice the
+  // polygon's area (normalVec's own magnitude, before normalizing) against
+  // the square of the ring's largest bounding-box side. A polygon a
+  // million times longer than it is wide is degenerate at any scale, and
+  // this ratio reads the same wherever the polygon sits. A zero-extent
+  // ring -- every vertex identical -- is degenerate by definition; guard
+  // it directly rather than dividing by a zero-length side.
+  RtFloat minX = location[0].getX(), maxX = minX;
+  RtFloat minY = location[0].getY(), maxY = minY;
+  RtFloat minZ = location[0].getZ(), maxZ = minZ;
+  for (RtInt i = 1; i < nverts; i++) {
+    const GMANPoint &pt = location[i];
+    if (pt.getX() < minX) minX = pt.getX();
+    if (pt.getX() > maxX) maxX = pt.getX();
+    if (pt.getY() < minY) minY = pt.getY();
+    if (pt.getY() > maxY) maxY = pt.getY();
+    if (pt.getZ() < minZ) minZ = pt.getZ();
+    if (pt.getZ() > maxZ) maxZ = pt.getZ();
   }
-  normalVec.normalize();
+  RtFloat bboxSide = maxX - minX;
+  if (maxY - minY > bboxSide) bboxSide = maxY - minY;
+  if (maxZ - minZ > bboxSide) bboxSide = maxZ - minZ;
+
+  GMANVector normalVec = newellNormal(location);
+  RtFloat normalMagnitude = normalVec.magnitude();
+  if (bboxSide == (RtFloat) 0.0 ||
+      normalMagnitude < kTriangulationTolerance * bboxSide * bboxSide) {
+    return create();  // fully degenerate: no plane worth shading or filling
+  }
+  // Dividing by the magnitude already computed above, rather than calling
+  // GMANVector::normalize(), matters here: that method silently leaves a
+  // vector unchanged when its magnitude is below RI_EPSILON (1e-10), an
+  // absolute threshold a small-but-valid polygon's raw (pre-normalized)
+  // normal can fall under even though the ratio guard above has already
+  // judged it non-degenerate. turnOrientation's sine identity needs
+  // normal at true unit length regardless of the polygon's absolute
+  // scale, so this divides unconditionally.
+  normalVec /= normalMagnitude;
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
   GMANBody *body = new GMANBody(GMANColor(), GMANColor());
