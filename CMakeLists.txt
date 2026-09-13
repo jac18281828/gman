@@ -92,7 +92,6 @@ add_library(gman_core SHARED
   libgman/gmangamma.cpp
   libgman/gmangetarguments.cpp
   libgman/gmangraphicstate.cpp
-  libgman/gmanguard.cpp
   libgman/gmanhpoint.cpp
   libgman/gmanimagershader.cpp
   libgman/gmaninlineparse.cpp
@@ -105,7 +104,6 @@ add_library(gman_core SHARED
   libgman/gmanloadableshader.cpp
   libgman/gmanlog.cpp
   libgman/gmanmatrix4.cpp
-  libgman/gmanmutex.cpp
   libgman/gmannoise.cpp
   libgman/gmannormal.cpp
   libgman/gmanobject.cpp
@@ -139,7 +137,6 @@ add_library(gman_core SHARED
   libgman/gmansolidobject.cpp
   libgman/gmansurfaceshader.cpp
   libgman/gmantexture.cpp
-  libgman/gmanthread.cpp
   libgman/gmantoken.cpp
   libgman/gmantools.cpp
   libgman/gmantransform.cpp
