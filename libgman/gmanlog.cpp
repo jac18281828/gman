@@ -24,9 +24,7 @@
  */
 
 /* System Headers */
-#include <cstdarg>
 #include <cstdio>
-#include <cstring>
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
@@ -44,88 +42,48 @@ static FILE *logFile = NULL;
 static bool  screenOutput = true;
 static GMANMutex logMutex;
 
-// log a message of the specified level to the log
-static void logMessage(GMANLogLevel lvl, const char *msg, va_list args) {
+bool logEnabled(GMANLogLevel lvl) {
+  GMANGuard guard(logMutex);
+  return lvl >= logLevel;
+}
 
+void logWrite(GMANLogLevel lvl, std::string_view message) {
   GMANGuard guard(logMutex);
 
-  if(lvl >= logLevel) {
-    const char *dispMsg = "";
-
-    switch(lvl) {
-    case LOGLVL_DEBUG:
-      dispMsg = "GMAN DEBUG: ";
-      break;
-    case LOGLVL_INFO:
-      dispMsg = "GMAN INFO: ";
-      break;
-    case LOGLVL_WARNING:
-      dispMsg = "GMAN WARNING: ";
-      break;
-    case LOGLVL_ERROR:
-      dispMsg = "GMAN ERROR: ";
-      break;
-    case LOGLVL_DISASTER:
-      dispMsg = "GMAN DISASTER: ";
-      break;
-    }
-    bool hasEol = (msg[std::strlen(msg)] == '\n');
-    if(logFile) {
-      std::fprintf(logFile, "%s", dispMsg);
-      std::vfprintf(logFile, msg, args);
-      if(!hasEol) std::fprintf(logFile, "\n");
-    }
-    if(screenOutput) {
-      std::vprintf(msg, args);
-      if(!hasEol) std::printf("\n");
-    }
+  const char *dispMsg = "";
+  switch(lvl) {
+  case LOGLVL_DEBUG:
+    dispMsg = "GMAN DEBUG: ";
+    break;
+  case LOGLVL_INFO:
+    dispMsg = "GMAN INFO: ";
+    break;
+  case LOGLVL_WARNING:
+    dispMsg = "GMAN WARNING: ";
+    break;
+  case LOGLVL_ERROR:
+    dispMsg = "GMAN ERROR: ";
+    break;
+  case LOGLVL_DISASTER:
+    dispMsg = "GMAN DISASTER: ";
+    break;
   }
-}
-
-// log a debug message
-void debug(const char *msg, ...) {
-  va_list args;
-  va_start(args, msg);
-  logMessage(LOGLVL_DEBUG, msg, args);
-  va_end(args);
-}
-
-// log a info message
-void info(const char *msg, ...) {
-  va_list args;
-  va_start(args, msg);
-  logMessage(LOGLVL_INFO, msg, args);
-  va_end(args);
-}
-
-// log a warning message
-void warning(const char *msg, ...) {
-  va_list args;
-  va_start(args, msg);
-  logMessage(LOGLVL_WARNING, msg, args);
-  va_end(args);
-}
-
-// log an error message
-void error(const char *msg, ...) {
-  va_list args;
-  va_start(args, msg);
-  logMessage(LOGLVL_ERROR, msg, args);
-  va_end(args);
-}
-
-// log a complete disaster
-void disaster(const char *msg, ...) {
-  va_list args;
-  va_start(args, msg);
-  logMessage(LOGLVL_DISASTER, msg, args);
-  va_end(args);
+  bool hasEol = !message.empty() && message.back() == '\n';
+  if(logFile) {
+    std::fprintf(logFile, "%s", dispMsg);
+    std::fwrite(message.data(), 1, message.size(), logFile);
+    if(!hasEol) std::fputc('\n', logFile);
+  }
+  if(screenOutput) {
+    std::fwrite(message.data(), 1, message.size(), stdout);
+    if(!hasEol) std::fputc('\n', stdout);
+  }
 }
 
 // set an output file for logging
 void setLogFile(const char *path) {
   GMANGuard guard(logMutex);
-  info("Setting log: %s", path);
+  info("Setting log: {}", path);
 
   if(logFile != NULL) {
     std::fclose(logFile);
@@ -158,7 +116,7 @@ GMANLog::GMANLog() { };
 GMANLog::~GMANLog() { };
 
 RtVoid GMANLog::copyright(RtVoid) {
-    info("GMAN %s\n\n",
+    info("GMAN {}\n\n",
 	 "This library is free software; you can redistribute it and/or\n"
 	 "modify it under the terms of the GNU Lesser General Public\n"
 	 "License as published by the Free Software Foundation; either\n"

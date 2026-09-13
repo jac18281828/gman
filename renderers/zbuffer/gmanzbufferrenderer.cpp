@@ -130,7 +130,7 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
 
   num_vert = out.getNumVert();
   if (num_vert > kMaxClippedVerts) {
-    warning("Clipped polygon has %d vertices, more than the %d this "
+    warning("Clipped polygon has {} vertices, more than the {} this "
             "renderer expects from a quad; dropping the rest.",
             num_vert, kMaxClippedVerts);
     num_vert = kMaxClippedVerts;

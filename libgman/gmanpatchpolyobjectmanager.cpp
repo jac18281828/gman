@@ -974,7 +974,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
 
   if (strcmp(type, RI_BILINEAR) == 0) {
     if (! validBilinearMeshDim(nu) || ! validBilinearMeshDim(nv)) {
-      warning("PatchMesh \"bilinear\": nu=%d nv=%d cannot form a patch; "
+      warning("PatchMesh \"bilinear\": nu={} nv={} cannot form a patch; "
 	      "ignoring.", nu, nv);
       return create();
     }
@@ -987,7 +987,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
     bool vPeriodic = strcmp(vwrap, RI_PERIODIC) == 0;
     if (! validBicubicMeshDim(nu, uPeriodic, basis.getUStep()) ||
 	! validBicubicMeshDim(nv, vPeriodic, basis.getVStep())) {
-      warning("PatchMesh \"bicubic\": nu=%d nv=%d does not align to the "
+      warning("PatchMesh \"bicubic\": nu={} nv={} does not align to the "
 	      "current basis step; ignoring.", nu, nv);
       return create();
     }

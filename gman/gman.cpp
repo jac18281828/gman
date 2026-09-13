@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
       for(int i=arg; i<argc; i++) {
 	  try {
 	      const char *ribFile = argv[i];
-	      info("Parsing %s", argv[i]);
+	      info("Parsing {}", argv[i]);
 	      
 	      if(writeLog) {
 		  char *fileName = new char[strlen(ribFile) + 4];

@@ -159,7 +159,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid)
     if(startExt != std::string::npos) {
       ext = getOptions().getDisplay().name.substr(startExt+1);
     }
-    debug("Displaying to file with extension, %s.", ext.c_str());
+    debug("Displaying to file with extension, {}.", ext.c_str());
 
     if((ext == "tif") || (ext == "tiff")) {
 
@@ -309,7 +309,7 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid)
   
   // renderer must be copied to support depth
   if(dMode != GMANOutput::RGBA) {
-      warning("This display mode, %s, may "
+      warning("This display mode, {}, may "
 	      "not be fully supported at this time.",
 	      getOptions().getDisplay().mode.c_str());
   }
@@ -447,11 +447,11 @@ RtVoid  GMANRenderManImpl::RiPixelSamples(RtFloat xsamples, RtFloat ysamples)
   xsamples = GMANRound(xsamples);
   ysamples = GMANRound(ysamples);
   if (xsamples < 1.0 || xsamples > kMaxPixelSamples) {
-    warning("PixelSamples xsamples %.0f out of [1,%.0f], clamping.",
+    warning("PixelSamples xsamples {:.0f} out of [1,{:.0f}], clamping.",
 	    xsamples, kMaxPixelSamples);
   }
   if (ysamples < 1.0 || ysamples > kMaxPixelSamples) {
-    warning("PixelSamples ysamples %.0f out of [1,%.0f], clamping.",
+    warning("PixelSamples ysamples {:.0f} out of [1,{:.0f}], clamping.",
 	    ysamples, kMaxPixelSamples);
   }
   xsamples = GMANClamp<RtFloat>(xsamples, 1.0, kMaxPixelSamples);
@@ -475,13 +475,13 @@ RtVoid  GMANRenderManImpl::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth
   // just non-positive ones.
   const RtFloat kMinFilterWidth = 1.0;
   if (xwidth < kMinFilterWidth) {
-    warning("PixelFilter xwidth %.3f is non-positive or too narrow, "
-	    "clamping to %.1f.", xwidth, kMinFilterWidth);
+    warning("PixelFilter xwidth {:.3f} is non-positive or too narrow, "
+	    "clamping to {:.1f}.", xwidth, kMinFilterWidth);
     xwidth = kMinFilterWidth;
   }
   if (ywidth < kMinFilterWidth) {
-    warning("PixelFilter ywidth %.3f is non-positive or too narrow, "
-	    "clamping to %.1f.", ywidth, kMinFilterWidth);
+    warning("PixelFilter ywidth {:.3f} is non-positive or too narrow, "
+	    "clamping to {:.1f}.", ywidth, kMinFilterWidth);
     ywidth = kMinFilterWidth;
   }
   getOptions().setPixelFilter(filterfunc, xwidth, ywidth);
@@ -716,7 +716,7 @@ RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken t
     readSpotConeParams(dictionary, paramList, coneAngle, coneDeltaAngle,
 			beamDistribution);
   } else {
-    warning("Unknown light shader '%s'; ignoring RiLightSource.",
+    warning("Unknown light shader '{}'; ignoring RiLightSource.",
 	    lightName.c_str());
     return (RtLightHandle) 0;
   }
@@ -1102,8 +1102,8 @@ RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
     // the RIB parser rejects a zero (or negative) step, and getRSPatchMesh's
     // own step<1 checks run after this division, too late to guard it.
     if (uStep < 1 || vStep < 1) {
-      warning("PatchMesh \"bicubic\": basis step must be >= 1 (uStep=%d "
-	      "vStep=%d); ignoring.", uStep, vStep);
+      warning("PatchMesh \"bicubic\": basis step must be >= 1 (uStep={} "
+	      "vStep={}); ignoring.", uStep, vStep);
       worldManager->add(objectManager->create());
       return;
     }

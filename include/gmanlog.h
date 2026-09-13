@@ -29,6 +29,9 @@
 
 
 /* Headers */
+#include <format>
+#include <string_view>
+#include <utility>
 
 // the renderman interface
 #include "ri.h"
@@ -48,20 +51,51 @@ typedef enum { LOGLVL_DEBUG=0,   // log every damn thing
 	       LOGLVL_DISASTER=4 // only log critical failures
 } GMANLogLevel;
 
-// log a debug message
-GMAN_EXPORT void debug(const char *msg, ...);
+// true when lvl would produce output at the current log level
+GMAN_EXPORT bool logEnabled(GMANLogLevel lvl);
 
-// log a info message
-GMAN_EXPORT void info(const char *msg, ...);
+// write an already-formatted message at lvl to the log sink(s)
+GMAN_EXPORT void logWrite(GMANLogLevel lvl, std::string_view message);
+
+// log a debug message
+template <class... Args>
+void debug(std::format_string<Args...> fmt, Args &&...args) {
+  if (logEnabled(LOGLVL_DEBUG)) {
+    logWrite(LOGLVL_DEBUG, std::format(fmt, std::forward<Args>(args)...));
+  }
+}
+
+// log an info message
+template <class... Args>
+void info(std::format_string<Args...> fmt, Args &&...args) {
+  if (logEnabled(LOGLVL_INFO)) {
+    logWrite(LOGLVL_INFO, std::format(fmt, std::forward<Args>(args)...));
+  }
+}
 
 // log a warning message
-GMAN_EXPORT void warning(const char *msg, ...);
+template <class... Args>
+void warning(std::format_string<Args...> fmt, Args &&...args) {
+  if (logEnabled(LOGLVL_WARNING)) {
+    logWrite(LOGLVL_WARNING, std::format(fmt, std::forward<Args>(args)...));
+  }
+}
 
 // log an error message
-GMAN_EXPORT void error(const char *msg, ...);
+template <class... Args>
+void error(std::format_string<Args...> fmt, Args &&...args) {
+  if (logEnabled(LOGLVL_ERROR)) {
+    logWrite(LOGLVL_ERROR, std::format(fmt, std::forward<Args>(args)...));
+  }
+}
 
 // log a complete disaster
-GMAN_EXPORT void disaster(const char *msg, ...);
+template <class... Args>
+void disaster(std::format_string<Args...> fmt, Args &&...args) {
+  if (logEnabled(LOGLVL_DISASTER)) {
+    logWrite(LOGLVL_DISASTER, std::format(fmt, std::forward<Args>(args)...));
+  }
+}
 
 // set an output file for logging
 GMAN_EXPORT void setLogFile(const char *path);

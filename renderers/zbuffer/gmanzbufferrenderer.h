@@ -153,7 +153,7 @@ private:
   // GMAN_NFACE_VERTS==4) against a convex region of k half-planes (the
   // clipper's 6) produces at most n+k vertices -- 10 here. Sized well
   // past that; getVertexInfo() still clamps defensively.
-  static const int kMaxClippedVerts = 16;
+  static constexpr int kMaxClippedVerts = 16;
   VertexInfo	v_info[kMaxClippedVerts];
 
   // a polygon clipper

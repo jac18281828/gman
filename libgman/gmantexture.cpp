@@ -74,7 +74,7 @@ GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
 #ifdef HAVE_LIBTIFF
   TIFF *tif = TIFFOpen(name.c_str(), "r");
   if (tif == nullptr) {
-    warning("texture \"%s\": cannot open, using opaque black", name.c_str());
+    warning("texture \"{}\": cannot open, using opaque black", name.c_str());
     texels = blackTexel();
     return;
   }
@@ -93,7 +93,7 @@ GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
   TIFFClose(tif);
 
   if (!ok || w == 0 || h == 0) {
-    warning("texture \"%s\": cannot decode, using opaque black",
+    warning("texture \"{}\": cannot decode, using opaque black",
             name.c_str());
     texels = blackTexel();
     return;
@@ -108,7 +108,7 @@ GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
                                 (RtFloat) TIFFGetB(p) / (RtFloat) 255.0));
   }
 #else
-  warning("texture \"%s\": built without libtiff, using opaque black",
+  warning("texture \"{}\": built without libtiff, using opaque black",
           name.c_str());
   texels = blackTexel();
 #endif

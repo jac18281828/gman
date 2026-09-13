@@ -205,7 +205,7 @@ RtVoid  GMANRIBParse::parse(RtVoid) {
       }
       list += *it;
     }
-    warning("RIB: unrecognized requests skipped: %s", list.c_str());
+    warning("RIB: unrecognized requests skipped: {}", list.c_str());
   }
 }
 
@@ -231,13 +231,13 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
 
     switch(tok.getType()) {
     case GMANToken::STRING:
-      debug("String token: \"%s\"", tok.getString().c_str());
+      debug("String token: \"{}\"", tok.getString().c_str());
       break;
     case GMANToken::REAL:
-      debug("Real token: %f", tok.getReal());
+      debug("Real token: {:f}", tok.getReal());
       break;
     case GMANToken::LONGINT:
-      debug("Long token: %l", tok.getLongInt());
+      debug("Long token: {}", tok.getLongInt());
       break;
     case GMANToken::RI_VERSION:
       debug("Keyword token: Version");
@@ -607,7 +607,7 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       skipUnknownRequest(tok.getString());
       break;
     default:
-      debug("Unknown token type: %i", tok.getType());
+      debug("Unknown token type: {}", static_cast<int>(tok.getType()));
       GMANError error(RIE_BADFILE,RIE_WARNING,"Unknown token in ribfile");
       throw(error);
       break;
@@ -1814,7 +1814,7 @@ RtVoid GMANRIBParse::parsePixelFilter(RtVoid) {
 
 RtVoid GMANRIBParse::skipUnknownRequest(const std::string &name) {
   if (skippedRequests.insert(name).second) {
-    warning("RIB: skipping unrecognized request \"%s\"", name.c_str());
+    warning("RIB: skipping unrecognized request \"{}\"", name.c_str());
   }
 
   // Consume everything up to the next request we do recognize, balancing

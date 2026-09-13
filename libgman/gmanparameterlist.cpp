@@ -94,7 +94,7 @@ GMANParameterList::GMANParameterList (GMANDictionary &di,
     size =di.allocSize(id[index], vertex, varying, uniform, facevarying);
     RtInt supplied = suppliedCounts ? suppliedCounts[i] : size;
     if (supplied < size) {
-      warning("Parameter \"%s\": declared length %d, supplied length %d; "
+      warning("Parameter \"{}\": declared length {}, supplied length {}; "
 	      "clamping and zero-filling the remainder.", tk[i], size, supplied);
     }
     switch (di.getType(id[index])) {

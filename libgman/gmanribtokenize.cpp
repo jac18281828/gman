@@ -86,7 +86,7 @@ GMANRIBTokenize::getNext(std::istream &ribFile) {
     return parseString(ribFile);
   }
   else {
-    debug("Found character: '%c'", c);
+    debug("Found character: '{}'", c);
     GMANError error(RIE_BADFILE,RIE_WARNING,"Unknown character in ribfile");
     throw(error);
   }
@@ -306,7 +306,7 @@ GMANRIBTokenize::parseKeyword(std::istream &ribFile) {
     // RIB from any real exporter routinely uses requests this front end
     // has never heard of. The parser warns once and skips it; see
     // GMANRIBParse::skipUnknownRequest.
-    debug("Unrecognized keyword: '%s'", tokenChars);
+    debug("Unrecognized keyword: '{}'", tokenChars);
     return GMANToken(GMANToken::RI_UNKNOWN_REQUEST, buffer);
   }
 };
