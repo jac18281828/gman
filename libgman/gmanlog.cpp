@@ -25,12 +25,11 @@
 
 /* System Headers */
 #include <cstdio>
+#include <mutex>
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanlog.h" /* Declaration Header */
-#include "gmanmutex.h"
-#include "gmanguard.h"
 
 // FIXME FIXME FIXME
 // set this with autoconf macros
@@ -40,15 +39,15 @@ static const char *softwareVersion = "1.0.0 Alpha";
 static GMANLogLevel logLevel = LOGLVL_INFO;
 static FILE *logFile = NULL;
 static bool  screenOutput = true;
-static GMANMutex logMutex;
+static std::mutex logMutex;
 
 bool logEnabled(GMANLogLevel lvl) {
-  GMANGuard guard(logMutex);
+  std::lock_guard<std::mutex> guard(logMutex);
   return lvl >= logLevel;
 }
 
 void logWrite(GMANLogLevel lvl, std::string_view message) {
-  GMANGuard guard(logMutex);
+  std::lock_guard<std::mutex> guard(logMutex);
 
   const char *dispMsg = "";
   switch(lvl) {
@@ -73,32 +72,34 @@ void logWrite(GMANLogLevel lvl, std::string_view message) {
     std::fprintf(logFile, "%s", dispMsg);
     std::fwrite(message.data(), 1, message.size(), logFile);
     if(!hasEol) std::fputc('\n', logFile);
+    std::fflush(logFile);
   }
   if(screenOutput) {
     std::fwrite(message.data(), 1, message.size(), stdout);
     if(!hasEol) std::fputc('\n', stdout);
+    std::fflush(stdout);
   }
 }
 
 // set an output file for logging
 void setLogFile(const char *path) {
-  GMANGuard guard(logMutex);
-  info("Setting log: {}", path);
-
-  if(logFile != NULL) {
-    std::fclose(logFile);
+  {
+    std::lock_guard<std::mutex> guard(logMutex);
+    if(logFile != NULL) {
+      std::fclose(logFile);
+    }
+    logFile = std::fopen(path, "a");
   }
-
-  logFile = std::fopen(path, "a");
+  info("Setting log: {}", path);
 }
 
 void setScreenOutput(bool output) {
-  GMANGuard guard(logMutex);
+  std::lock_guard<std::mutex> guard(logMutex);
   screenOutput = output;
 }
 
 void setLogLevel(GMANLogLevel lvl) {
-  GMANGuard guard(logMutex);
+  std::lock_guard<std::mutex> guard(logMutex);
   logLevel = lvl;
 }
 

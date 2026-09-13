@@ -630,3 +630,19 @@ set_tests_properties(texture PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 30)
+
+# gmanlog's sink: setLogFile used to hold logMutex across a call to info(),
+# which deadlocked. Also proves one trailing newline, a suppressed level
+# never formatting, and eight concurrent writers landing 8000 whole lines.
+add_executable(gman_log log_test.cpp)
+target_link_libraries(gman_log PRIVATE gman_core)
+
+set(GMAN_LOG_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/log-run")
+file(MAKE_DIRECTORY "${GMAN_LOG_WORKDIR}")
+
+add_test(NAME log
+  COMMAND gman_log
+  WORKING_DIRECTORY "${GMAN_LOG_WORKDIR}")
+set_tests_properties(log PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
