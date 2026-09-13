@@ -39,6 +39,17 @@
 
 namespace {
 
+// The one tolerance shared by every classification below: a pure number,
+// not an area, since every comparison it guards is a ratio (a cross-dot
+// divided by the lengths that give it units) rather than a raw cross-dot.
+// RI_EPSILON (a public interface constant with other callers, and an
+// area rather than a ratio) does not apply. float carries about seven
+// decimal digits, so a ratio built from two cross products, a dot and a
+// division carries absolute error near 1e-7; this sits an order above
+// that noise and far below any turn or offset a real polygon intends --
+// 1e-6 radians is 0.00006 degrees.
+const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
+
 // The RISpec's own default: a scene that never calls RiSurface still
 // shades, as matte. One instance, loaded on first use and reused --
 // dlopen once, not once per primitive.
@@ -220,17 +231,6 @@ RtFloat boundingBoxExtent(const std::vector<GMANPoint> &ring) {
   if (maxZ - minZ > extent) extent = maxZ - minZ;
   return extent;
 }
-
-// The one tolerance shared by every classification below: a pure number,
-// not an area, since every comparison it guards is a ratio (a cross-dot
-// divided by the lengths that give it units) rather than a raw cross-dot.
-// RI_EPSILON (a public interface constant with other callers, and an
-// area rather than a ratio) does not apply. float carries about seven
-// decimal digits, so a ratio built from two cross products, a dot and a
-// division carries absolute error near 1e-7; this sits an order above
-// that noise and far below any turn or offset a real polygon intends --
-// 1e-6 radians is 0.00006 degrees.
-const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
 
 // The sine of the angle between a and b, judged against normal: a.cross(b)
 // is an area (units of length squared); dividing by |a|*|b| turns it into
