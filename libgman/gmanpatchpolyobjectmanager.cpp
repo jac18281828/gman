@@ -197,6 +197,30 @@ GMANVector newellNormal(const std::vector<GMANPoint> &ring) {
   return sum;
 }
 
+// The ring's largest bounding-box side, in whichever of x, y or z spans
+// it widest. getRSPolygon's degeneracy guard judges the polygon's area
+// against this extent rather than against an absolute constant, so a
+// sliver a million times longer than it is wide reads the same way at
+// any scale.
+RtFloat boundingBoxExtent(const std::vector<GMANPoint> &ring) {
+  RtFloat minX = ring[0].getX(), maxX = minX;
+  RtFloat minY = ring[0].getY(), maxY = minY;
+  RtFloat minZ = ring[0].getZ(), maxZ = minZ;
+  for (std::size_t i = 1; i < ring.size(); i++) {
+    const GMANPoint &pt = ring[i];
+    if (pt.getX() < minX) minX = pt.getX();
+    if (pt.getX() > maxX) maxX = pt.getX();
+    if (pt.getY() < minY) minY = pt.getY();
+    if (pt.getY() > maxY) maxY = pt.getY();
+    if (pt.getZ() < minZ) minZ = pt.getZ();
+    if (pt.getZ() > maxZ) maxZ = pt.getZ();
+  }
+  RtFloat extent = maxX - minX;
+  if (maxY - minY > extent) extent = maxY - minY;
+  if (maxZ - minZ > extent) extent = maxZ - minZ;
+  return extent;
+}
+
 // The one tolerance shared by every classification below: a pure number,
 // not an area, since every comparison it guards is a ratio (a cross-dot
 // divided by the lengths that give it units) rather than a raw cross-dot.
@@ -208,55 +232,48 @@ GMANVector newellNormal(const std::vector<GMANPoint> &ring) {
 // 1e-6 radians is 0.00006 degrees.
 const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
 
+// The sine of the angle between a and b, judged against normal: a.cross(b)
+// is an area (units of length squared); dividing by |a|*|b| turns it into
+// a dimensionless quantity in [-1, 1] regardless of either vector's own
+// scale, so a caller can compare it against a fixed tolerance wherever
+// the geometry sits. normal must already be unit length -- the sine
+// identity depends on it. A zero-length a or b would divide to NaN, which
+// fails every comparison; returning 0 reads instead as the angle a
+// vanishing vector cannot have a turn or a side of, which is what both
+// callers below already treat a zero-length input as.
+RtFloat dimensionlessCross(GMANVector a, GMANVector b,
+                            const GMANVector &normal) {
+  RtFloat lenA = a.magnitude();
+  RtFloat lenB = b.magnitude();
+  if (lenA == (RtFloat) 0.0 || lenB == (RtFloat) 0.0) {
+    return (RtFloat) 0.0;
+  }
+  return a.cross(b).dot(normal) / (lenA * lenB);
+}
+
 // A ring vertex's turning direction relative to the polygon's own normal:
 // positive is convex, negative reflex, zero for a collinear or duplicate
 // vertex. Testing against this normal, rather than against the ring's own
 // winding, keeps the result correct whichever way the ring winds --
 // normal already followed that winding when Newell's method built it.
-//
-// Dividing by |e1|*|e2| turns the raw cross-dot, an area, into the sine of
-// the turn angle: a dimensionless quantity in [-1, 1] regardless of the
-// polygon's scale, so a caller can compare it against a fixed tolerance
-// wherever the polygon sits. normal must already be unit length -- the
-// sine identity depends on it, and getRSPolygon normalizes before calling
-// this. A zero-length edge (a duplicate vertex) would divide to NaN, which
-// fails every comparison and leaves the vertex classified neither reflex
-// nor degenerate; returning 0 keeps it degenerate instead, the
-// classification triangulateEarClipping already clips without a
-// containment test.
 RtFloat turnOrientation(const GMANPoint &prev, const GMANPoint &cur,
                          const GMANPoint &next, const GMANVector &normal) {
-  GMANVector e1(prev, cur);
-  GMANVector e2(cur, next);
-  RtFloat len1 = e1.magnitude();
-  RtFloat len2 = e2.magnitude();
-  if (len1 == (RtFloat) 0.0 || len2 == (RtFloat) 0.0) {
-    return (RtFloat) 0.0;
-  }
-  return e1.cross(e2).dot(normal) / (len1 * len2);
+  return dimensionlessCross(GMANVector(prev, cur), GMANVector(cur, next),
+                             normal);
 }
 
 // The sine of the angle between one triangle edge and the vector from
-// that edge's start to p: dividing by |edge| * |edge-to-p| turns the raw
-// cross-dot, an area, into the same dimensionless quantity
-// turnOrientation returns, so a boundary case reads the same near-zero
-// value wherever the triangle sits, at any scale or rotation. p that
-// lands exactly on the line through the edge -- the common case for a
-// ring vertex bridged by a diagonal of its own polygon -- gives exactly
-// 0 in exact arithmetic; comparing that against literal 0 instead of a
-// tolerance band lets rounding alone decide which side p falls on. A
-// zero-length edge or a p coincident with the edge's start contributes
-// 0 (on the line), the same convention turnOrientation uses.
+// that edge's start to p, the same dimensionless quantity turnOrientation
+// returns, so a boundary case reads the same near-zero value wherever the
+// triangle sits, at any scale or rotation. p that lands exactly on the
+// line through the edge -- the common case for a ring vertex bridged by a
+// diagonal of its own polygon -- gives exactly 0 in exact arithmetic;
+// comparing that against literal 0 instead of a tolerance band lets
+// rounding alone decide which side p falls on.
 RtFloat sideOf(const GMANPoint &from, const GMANPoint &to,
                const GMANPoint &p, const GMANVector &normal) {
-  GMANVector edge(from, to);
-  GMANVector toPoint(from, p);
-  RtFloat edgeLen = edge.magnitude();
-  RtFloat pointLen = toPoint.magnitude();
-  if (edgeLen == (RtFloat) 0.0 || pointLen == (RtFloat) 0.0) {
-    return (RtFloat) 0.0;
-  }
-  return edge.cross(toPoint).dot(normal) / (edgeLen * pointLen);
+  return dimensionlessCross(GMANVector(from, to), GMANVector(from, p),
+                             normal);
 }
 
 // True when p lies inside or on the boundary of coplanar triangle
@@ -443,21 +460,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
   // this ratio reads the same wherever the polygon sits. A zero-extent
   // ring -- every vertex identical -- is degenerate by definition; guard
   // it directly rather than dividing by a zero-length side.
-  RtFloat minX = location[0].getX(), maxX = minX;
-  RtFloat minY = location[0].getY(), maxY = minY;
-  RtFloat minZ = location[0].getZ(), maxZ = minZ;
-  for (RtInt i = 1; i < nverts; i++) {
-    const GMANPoint &pt = location[i];
-    if (pt.getX() < minX) minX = pt.getX();
-    if (pt.getX() > maxX) maxX = pt.getX();
-    if (pt.getY() < minY) minY = pt.getY();
-    if (pt.getY() > maxY) maxY = pt.getY();
-    if (pt.getZ() < minZ) minZ = pt.getZ();
-    if (pt.getZ() > maxZ) maxZ = pt.getZ();
-  }
-  RtFloat bboxSide = maxX - minX;
-  if (maxY - minY > bboxSide) bboxSide = maxY - minY;
-  if (maxZ - minZ > bboxSide) bboxSide = maxZ - minZ;
+  RtFloat bboxSide = boundingBoxExtent(location);
 
   GMANVector normalVec = newellNormal(location);
   RtFloat normalMagnitude = normalVec.magnitude();

@@ -55,9 +55,17 @@
  *
  * Revert check (verified by actually reverting, not asserted): restoring
  * turnOrientation and getRSPolygon's degeneracy guard to their absolute-
- * RI_EPSILON comparisons turns the small-scale placements (1e-6, 1e-5) of
- * the concave rings red -- see the fix commit's own message for the
- * specific cases.
+ * RI_EPSILON comparisons turns every one of the nine rings' scale=1e-6
+ * placements red (the degeneracy guard fires and getRSPolygon returns the
+ * empty stub) and turns the scale=1e-5 placements of four rings red with
+ * a wrong (over-covering) triangulation instead: concave L, reversed
+ * winding; concave L starting at the reflex vertex; comb; and comb with
+ * inexactly-collinear wall vertices. Separately, restoring
+ * pointInTriangle's exact-zero boundary comparison turns concave L,
+ * reversed winding red at (scale=1e-6, axis-aligned) and
+ * (scale=1e+00, rotated) -- its reflex vertex sits exactly on a candidate
+ * ear's diagonal in exact arithmetic, and the exact-zero comparison lets
+ * rounding decide which side of it the vertex falls on.
  */
 
 #include <array>
@@ -515,6 +523,24 @@ void runDegenerateInput() {
         "all-identical input: getRSPolygon returns an object");
   check(object != nullptr && object->getBody() == nullptr,
         "all-identical input: the returned object is the empty stub");
+  delete prim;
+
+  // A sliver: a simple rectangle, four distinct corners, an aspect ratio
+  // of 1e8:1. Its area is genuinely non-zero and its Newell normal
+  // genuinely non-zero -- nothing here is exactly degenerate the way the
+  // all-collinear or all-identical cases above are -- so this is the
+  // guard's ratio doing the classifying, not the zero-extent short
+  // circuit. area / bboxSide^2 = height / width = 1e-8, two orders below
+  // kTriangulationTolerance; reverting the ratio to a bare absolute
+  // constant would not be caught by any other case in this file.
+  std::vector<GMANPoint> sliver = {
+      {0, 0, 0}, {1, 0, 0}, {1, 1e-8f, 0}, {0, 1e-8f, 0}};
+  prim = runGetRSPolygon(sliver);
+  object = dynamic_cast<GMANObject *>(prim);
+  check(object != nullptr, "sliver input: getRSPolygon returns an object");
+  check(object != nullptr && object->getBody() == nullptr,
+        "sliver input: the area-to-extent ratio guard classifies it "
+        "degenerate");
   delete prim;
 
   // An asymmetric bow-tie: self-intersecting, excluded by the RISpec's
