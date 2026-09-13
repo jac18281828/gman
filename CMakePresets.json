@@ -9,7 +9,7 @@
     {
       "name": "dev",
       "displayName": "dev — warnings are errors",
-      "description": "The gate build. C++17, -Wall -Wextra -Werror.",
+      "description": "The gate build. C++20, -Wall -Wextra -Werror.",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",

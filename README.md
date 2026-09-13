@@ -4,7 +4,7 @@
 
 GMAN is a 1999 RenderMan renderer revived and rewritten to build
 again in 2026. Point it at an `.rib` file and it renders an image. GMAN is
-compact and easy to follow.  It is using C++17 and CMake but there are plenty of
+compact and easy to follow.  It is using C++20 and CMake but there are plenty of
 C modules as well.
 
 ![A robot drives into a table; the vase tips and its flowers eject](samples/vase.png)
@@ -31,8 +31,9 @@ doc/         the 1999 design document
 
 ## Building
 
-Requires CMake 3.21 or newer, a C++17 compiler,
-libtiff, libpng and zlib. libjpeg is optional. POSIX only -- macOS and Linux.
+Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
+Clang 17 or newer), libtiff, libpng and zlib. libjpeg is optional. POSIX
+only -- macOS and Linux.
 
 ```sh
 cmake --preset dev

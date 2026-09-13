@@ -7,8 +7,9 @@ Read it before changing anything. Humans contributing by hand want
 
 ## Build
 
-Requires CMake 3.21 or newer, a C++17 compiler,
-libtiff, libpng and zlib. libjpeg is optional. POSIX only: macOS and Linux.
+Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
+Clang 17 or newer), libtiff, libpng and zlib. libjpeg is optional. POSIX
+only: macOS and Linux.
 
 ```sh
 cmake --preset dev && cmake --build build --parallel

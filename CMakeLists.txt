@@ -9,7 +9,7 @@ project(gman
   DESCRIPTION "GMAN — a RenderMan-compatible renderer"
   LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -20,6 +20,22 @@ endif()
 include(GenerateExportHeader)
 include(GNUInstallDirs)
 include(CTest)
+include(CheckCXXSourceCompiles)
+
+# A compiler that accepts -std=c++20 with an older standard library fails
+# deep in a template error instead of at configure time. Check both features
+# the baseline needs so that failure surfaces as one clear message.
+check_cxx_source_compiles("
+#include <format>
+#include <thread>
+int main() {
+  std::jthread t([] {});
+  return std::format(\"{}\", 1).size() != 1;
+}
+" GMAN_HAS_CXX20_FORMAT_JTHREAD)
+if(NOT GMAN_HAS_CXX20_FORMAT_JTHREAD)
+  message(FATAL_ERROR "C++20 with <format>: GCC 13 or Clang 17 or newer")
+endif()
 
 # Plugins are dlopen'd by bare "lib<name>.so", so the loader must find them
 # beside the executable in the build tree.
