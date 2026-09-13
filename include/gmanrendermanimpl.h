@@ -222,6 +222,9 @@ public:
   RtVoid  RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
 		       RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[],
 		       RtPointer parms[], const RtInt *counts);
+  RtVoid  RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n,
+			    RtToken tokens[], RtPointer parms[],
+			    const RtInt *counts);
   RtVoid  RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
 		     RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
 		     RtFloat vmin, RtFloat vmax,

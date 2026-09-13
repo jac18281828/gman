@@ -185,6 +185,8 @@ GMANRIBTokenize::parseKeyword(std::istream &ribFile) {
     return GMANToken(GMANToken::RI_TORUS);
   } else if (! strcasecmp(tokenChars, "polygon")) {
     return GMANToken(GMANToken::RI_POLYGON);
+  } else if (! strcasecmp(tokenChars, "generalPolygon")) {
+    return GMANToken(GMANToken::RI_GENERAL_POLYGON);
   } else if (! strcasecmp(tokenChars, "points")) {
     return GMANToken(GMANToken::RI_POINTS);
   } else if (! strcasecmp(tokenChars, "pointsPolygons")) {

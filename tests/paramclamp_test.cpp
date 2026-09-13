@@ -150,6 +150,12 @@ int main(int argc, char *argv[]) {
        "Parameter \"P\": declared length 18, supplied length 9"},
       {"patch_param_reorder.rib",
        "Parameter \"P\": declared length 12, supplied length 6"},
+      {"generalpolygon_short_p.rib",
+       "Parameter \"P\": declared length 24, supplied length 9"},
+      {"generalpolygon_negative_nverts.rib",
+       "GeneralPolygon: nverts[1] = -1 is negative; ignoring."},
+      {"generalpolygon_empty_nverts.rib",
+       "GeneralPolygon: nloops = 0 is invalid; ignoring."},
   };
 
   for (const Fixture &fixture : fixtures) {

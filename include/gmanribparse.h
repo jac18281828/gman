@@ -259,6 +259,7 @@ private:
   RtVoid parseTorus(RtVoid);
   RtVoid parseDisk(RtVoid);
   RtVoid parsePolygon(RtVoid);
+  RtVoid parseGeneralPolygon(RtVoid);
   RtVoid parsePoints(RtVoid);
   RtVoid parsePointsPolygons(RtVoid);
   RtVoid parsePointsGeneralPolygons(RtVoid);

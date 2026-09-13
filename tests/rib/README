@@ -134,6 +134,28 @@ step=1. Registered in `tests/patchmesh_test.cpp`, asserting the same
 warn-and-`create()` fallback as `patchmesh_baddim.rib`. A trailing
 `Sphere` follows the desync convention. Not third-party.
 
+## malformed/generalpolygon_short_p.rib
+
+`nverts` sums to more vertices than `"P"` holds -- `GeneralPolygon`'s own
+short-`"P"` case, `patchmesh_short_p.rib`'s counterpart. Registered in
+`tests/paramclamp_test.cpp`, asserting the same clamp-and-warn behaviour.
+A trailing `Sphere` follows the desync convention. Not third-party.
+
+## malformed/generalpolygon_negative_nverts.rib
+
+A negative `nverts` entry: `RiGeneralPolygonV` rejects it before sizing
+the parameter list, warns naming the request and the offending value, and
+adds the empty stub to the world instead of indexing `"P"` by a negative
+count. Registered in `tests/paramclamp_test.cpp`. A trailing `Sphere`
+follows the desync convention. Not third-party.
+
+## malformed/generalpolygon_empty_nverts.rib
+
+An empty `nverts` array -- `nloops` is its length, so this is `nloops = 0`.
+Registered in `tests/paramclamp_test.cpp`, asserting the same
+warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
 ## malformed/patchmesh_zero_step_basis.rib
 
 `Basis "b-spline" 0 "b-spline" 0` ahead of a bicubic `PatchMesh`:
@@ -186,7 +208,10 @@ parse-and-ignore coverage (`ifelse.rib` covers the four conditional requests
 together; `solid.rib` covers `SolidBegin`/`SolidEnd` together -- neither pair
 is meaningful RIB in isolation). Most were added by phase 2;
 `pixelfilter.rib` covers `PixelFilter`, the one request phase 2's own list
-missed. Each follows AGENTS.md's
+missed. `generalpolygon.rib` covers `GeneralPolygon`, a request with a
+variable-length `nverts` array ahead of its parameter list -- the same
+desync exposure a mis-counted parse anywhere else in the front end has.
+Each follows AGENTS.md's
 "RIB authoring" section, "The desync convention."
 
 ## nonewline/

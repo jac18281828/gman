@@ -447,6 +447,10 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       debug("Keyword token: Polygon");
       parsePolygon();
       break;
+    case GMANToken::RI_GENERAL_POLYGON:
+      debug("Keyword token: GeneralPolygon");
+      parseGeneralPolygon();
+      break;
     case GMANToken::RI_POINTS:
       debug("Keyword token: Points");
       parsePoints();
@@ -1152,6 +1156,41 @@ RtVoid GMANRIBParse::parsePolygon(RtVoid) {
   }
 
   renderMan->RiPolygonV(nverts, n, tokens, parms);
+}
+
+RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
+
+  GMANRIBParse::TokenVector nvertsVector = parseArray();
+  RtInt *nverts = nvertsVector.toRtIntArray();
+
+  RtInt n = 0;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
+
+  // parseParameterList throwing part-built must not strand nverts, the
+  // same shape as every other leak this codebase has already shipped
+  // (AGENTS.md, "Abstraction and error handling").
+  try {
+    parseParameterList(n, tokens, parms, counts);
+  } catch (...) {
+    delete [] nverts;
+    throw;
+  }
+
+  RtInt nloops = (RtInt) nvertsVector.size();
+
+  // Dispatch beside the RI-mandated RiGeneralPolygonV(5 args): a RIB file
+  // is not a trusted caller, so the array length parseParameterList
+  // already knows rides along outside that fixed signature. See
+  // gmanparameterlist.h.
+  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
+    impl->RiGeneralPolygonV(nloops, nverts, n, tokens, parms, counts);
+  } else {
+    renderMan->RiGeneralPolygonV(nloops, nverts, n, tokens, parms);
+  }
+
+  delete [] nverts;
 }
 
 RtVoid GMANRIBParse::parsePoints(RtVoid) {

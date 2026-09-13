@@ -89,7 +89,9 @@ int main(int argc, char *argv[]) {
   // geometricapproximation.rib, whose keyword this commit also adds to the
   // tokenizer. ifelse.rib and solid.rib each cover a pair of requests that
   // only mean anything together (IfBegin/ElseIf/Else/IfEnd,
-  // SolidBegin/SolidEnd).
+  // SolidBegin/SolidEnd). generalpolygon.rib is this task's own desync
+  // fixture: GeneralPolygon has a variable-length nverts array ahead of
+  // its parameter list, the same shape a mis-counted parse could desync.
   const std::vector<std::string> requestFixtures = {
     "curves.rib", "blobby.rib", "subdivisionmesh.rib", "procedural.rib",
     "solid.rib", "detail.rib", "detailrange.rib", "relativedetail.rib",
@@ -97,7 +99,7 @@ int main(int argc, char *argv[]) {
     "archiverecord.rib", "maketexture.rib", "makebump.rib",
     "makelatlongenvironment.rib", "makecubefaceenvironment.rib",
     "makeshadow.rib", "ifelse.rib", "pixelfilter.rib",
-    "geometricapproximation.rib",
+    "geometricapproximation.rib", "generalpolygon.rib",
   };
 
   for (const std::string &fixture : requestFixtures) {

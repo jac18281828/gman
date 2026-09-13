@@ -31,6 +31,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <climits>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -972,10 +973,61 @@ RtVoid  GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], R
   worldManager->add(prim);
   delete transform;
 }
-RtVoid  GMANRenderManImpl::RiGeneralPolygonV(RtInt /*nloops*/, RtInt /*nverts*/[], RtInt /*n*/,
-					 RtToken /*tokens*/[], RtPointer /*parms*/[])
+RtVoid  GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n,
+					 RtToken tokens[], RtPointer parms[])
+{
+  RiGeneralPolygonV(nloops, nverts, n, tokens, parms, NULL);
+}
+RtVoid  GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n,
+					 RtToken tokens[], RtPointer parms[],
+					 const RtInt *counts)
 {
   allowed(cmdGeneralPolygon);
+
+  if (nloops < 1) {
+    warning("GeneralPolygon: nloops = %d is invalid; ignoring.", nloops);
+    worldManager->add(objectManager->create());
+    return;
+  }
+
+  // Vertex, varying and facevarying are all the sum of nverts -- the
+  // RISpec's GeneralPolygon sizing, the same shape RiPolygonV uses with a
+  // single loop; uniform is 1, the whole polygon being one shading grid.
+  // Accumulated as long long so an individual nverts[i] near RtInt's own
+  // range cannot overflow the running sum before the guard below ever
+  // sees it.
+  long long total = 0;
+  for (RtInt i = 0; i < nloops; i++) {
+    if (nverts[i] < 0) {
+      warning("GeneralPolygon: nverts[%d] = %d is negative; ignoring.",
+	      i, nverts[i]);
+      worldManager->add(objectManager->create());
+      return;
+    }
+    total += nverts[i];
+  }
+  if (total > (long long) INT_MAX / 3) {
+    warning("GeneralPolygon: nverts sums to %lld, times 3 overflows RtInt; "
+	    "ignoring.", total);
+    worldManager->add(objectManager->create());
+    return;
+  }
+  RtInt vertex = (RtInt) total;
+
+  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex, 1,
+			       vertex, counts);
+
+  GMANTransform* transform = new GMANTransform((getTransform()));
+  GMANPrimitive* prim;
+
+  prim = objectManager->getRSGeneralPolygon( nloops,
+					      nverts,
+					      paramList,
+					      &(getOptions()),
+					      &(getAttributes()),
+					      transform);
+  worldManager->add(prim);
+  delete transform;
 }
 RtVoid  GMANRenderManImpl::RiPointsPolygonsV(RtInt /*npolys*/, RtInt /*nverts*/[], RtInt /*verts*/[],  RtInt /*n*/,
 					 RtToken /*tokens*/[], RtPointer /*parms*/[])
