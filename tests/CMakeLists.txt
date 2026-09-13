@@ -147,6 +147,20 @@ set_tests_properties(triangulation PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GeneralPolygon hole bridging: getRSGeneralPolygon merges each hole into
+# the outer loop by Eberly's method before handing the ring to the same
+# triangulateEarClipping loop 1 already uses. See tests/generalpolygon_test.cpp.
+add_executable(gman_generalpolygon generalpolygon_test.cpp)
+target_link_libraries(gman_generalpolygon PRIVATE gman_core)
+add_test(NAME generalpolygon COMMAND gman_generalpolygon)
+# getRSGeneralPolygon falls back to dlopen'ing "libmatte.so" when no
+# RiSurface is set, the same bare-name lookup gman itself relies on the
+# build tree being on the runtime search path for.
+set_tests_properties(generalpolygon PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # The phase's actual gate: a real end-to-end render, read back and measured
 # against the hand-derived silhouette geometry.
 add_executable(gman_silhouette silhouette_test.cpp)

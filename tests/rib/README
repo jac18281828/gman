@@ -182,6 +182,12 @@ shaded color both have an independently hand-computable value
 camera-facing planar polygon is exactly the flat, narrow-in-z geometry the
 near-clip precision defect hits hardest. Not third-party.
 
+## polygon_general_hole.rib
+
+Written for the `GeneralPolygon` hole-bridging task: a square with a square
+hole cut from its centre, `polygon_concave.rib`'s shape and camera. Not
+third-party.
+
 ## malformed/
 
 Hand-written fixtures for malformed RIB input. `gman` is expected to fail on

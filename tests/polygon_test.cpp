@@ -379,6 +379,15 @@ int main(int argc, char *argv[]) {
                    {{104, 96}},
                    {{110, 110}, {90, 90}, {90, 110}});
 
+  // polygon_general_hole.rib: a GeneralPolygon, a square with a square
+  // hole cut from its centre. World (0, 0) -> raster (100, 100) and world
+  // (0.2, -0.2) -> raster (104, 104) sit inside the hole; world (0.7, 0),
+  // (-0.7, 0.7) and (0, -0.7) -> raster (114, 100), (86, 86), (100, 114)
+  // sit inside the outer square but outside the hole.
+  checkFillPattern(gman, ribDir, "polygon_general_hole",
+                   {{100, 100}, {104, 104}},
+                   {{114, 100}, {86, 86}, {100, 114}});
+
   // n - 2 triangles, direct: convex, concave, reversed winding, a star
   // with four reflex vertices, a collinear vertex and a duplicate vertex.
   checkTriangleCount("convex pentagon",
