@@ -116,6 +116,7 @@ add_library(gman_core SHARED
   libgman/gmanoutputpolygon.cpp
   libgman/gmanoutputtiff.cpp
   libgman/gmanoutputx11.cpp
+  libgman/gmanparallel.cpp
   libgman/gmanparameterlist.cpp
   libgman/gmanpatchpolyobjectmanager.cpp
   libgman/gmanpoint.cpp

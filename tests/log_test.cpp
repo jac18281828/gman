@@ -53,7 +53,9 @@ std::string readFile(const std::string &path) {
 // setLogFile opens its target with "a", so a file left over from a
 // previous run of this binary in the same WORKING_DIRECTORY would carry
 // stale lines into a fresh count. Each test starts from no file at all.
-void removeIfExists(const std::string &path) { std::remove(path.c_str()); }
+void removeIfExists(const std::string &path) {
+  std::remove(path.c_str());
+}
 
 // A value whose formatter counts every format() call, to prove a message
 // below the current level is never formatted.
@@ -63,9 +65,10 @@ struct CountedValue {
   int value;
 };
 
-} // namespace
+}  // namespace
 
-template <> struct std::formatter<CountedValue> : std::formatter<int> {
+template <>
+struct std::formatter<CountedValue> : std::formatter<int> {
   auto format(const CountedValue &v, std::format_context &ctx) const {
     ++gFormatCalls;
     return std::formatter<int>::format(v.value, ctx);
@@ -112,8 +115,7 @@ void testBothOutputsSeeMessage() {
   const std::string screenContents = readFile("log_both.screen");
   check(logContents.find("both outputs see this line") != std::string::npos,
         "the log file sees the message");
-  check(screenContents.find("both outputs see this line") !=
-            std::string::npos,
+  check(screenContents.find("both outputs see this line") != std::string::npos,
         "stdout sees the message");
 }
 
@@ -180,7 +182,7 @@ void testConcurrentLinesStayWhole() {
     int worker = -1;
     int index = -1;
     if (std::sscanf(line.c_str(), "GMAN WARNING: worker %d line %d", &worker,
-                     &index) != 2) {
+                    &index) != 2) {
       ++malformed;
     }
   }
@@ -188,7 +190,7 @@ void testConcurrentLinesStayWhole() {
   check(malformed == 0, "every line is well-formed; none interleaved");
 }
 
-} // namespace
+}  // namespace
 
 int main() {
   testNoDeadlock();
@@ -197,6 +199,7 @@ int main() {
   testSuppressedLevelsNeverFormat();
   testConcurrentLinesStayWhole();
 
-  return checkSummary("gmanlog holds: no deadlock, both outputs, one "
-                       "newline, suppressed levels, concurrent writers");
+  return checkSummary(
+      "gmanlog holds: no deadlock, both outputs, one "
+      "newline, suppressed levels, concurrent writers");
 }

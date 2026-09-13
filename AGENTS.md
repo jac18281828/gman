@@ -82,6 +82,22 @@ once, and that made every `Projection` without an explicit `"fov"` fail:
 feeding it never returned. Absence is the routine case here, and a
 throw is the wrong shape for it.
 
+## Threading
+
+One seam: `gmanParallelFor` (`include/gmanparallel.h`) runs a body once
+per index, spread over a bounded set of workers, and returns only once
+every body has returned. A body owns its worker's slice of any per-worker
+state outright — no lock needed for that; anything else it reads must
+already be read-only for the call, logging the one sanctioned exception.
+Two files may name a thread primitive: `libgman/gmanparallel.cpp` owns
+thread creation, and `libgman/gmanlog.cpp` owns one private `std::mutex`
+because a worker calls `warning()`. No other source file, and no header,
+includes `<thread>`, `<stop_token>`, `<mutex>`, `<atomic>`,
+`<condition_variable>`, `<future>`, `<shared_mutex>` or `<pthread.h>`, or
+names `std::thread`, `std::jthread`, `std::stop_token`, `std::mutex`,
+`std::atomic` or `pthread_` — `tests/threadcontainment_test.cpp` enforces
+this on every build.
+
 ## Dependencies and includes
 
 Prefer the standard library. System headers `< >` before GMAN headers

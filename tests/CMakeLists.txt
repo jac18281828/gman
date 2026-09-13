@@ -646,3 +646,32 @@ add_test(NAME log
 set_tests_properties(log PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# gmanParallelFor's contract: exactly once per index, the serial path at
+# workers=1, worker indices and thread ownership, actual parallelism, and
+# an exception from one body stopping every worker before reaching the
+# calling thread.
+add_executable(gman_parallel parallel_test.cpp)
+target_link_libraries(gman_parallel PRIVATE gman_core)
+
+add_test(NAME parallel COMMAND gman_parallel)
+set_tests_properties(parallel PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# Threading lives behind one seam: no header, and no source file other
+# than gmanparallel.cpp/gmanlog.cpp, may include a threading header or
+# name a thread primitive.
+add_executable(gman_threadcontainment threadcontainment_test.cpp)
+add_test(NAME threadcontainment
+  COMMAND gman_threadcontainment
+          "${CMAKE_SOURCE_DIR}/include"
+          "${CMAKE_SOURCE_DIR}/libgman"
+          "${CMAKE_SOURCE_DIR}/libgmanrib"
+          "${CMAKE_SOURCE_DIR}/shaders"
+          "${CMAKE_SOURCE_DIR}/renderers"
+          "${CMAKE_SOURCE_DIR}/gman"
+          "${CMAKE_SOURCE_DIR}/gmansl")
+set_tests_properties(threadcontainment PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
