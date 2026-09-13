@@ -197,6 +197,17 @@ GMANVector newellNormal(const std::vector<GMANPoint> &ring) {
   return sum;
 }
 
+// The one tolerance shared by every classification below: a pure number,
+// not an area, since every comparison it guards is a ratio (a cross-dot
+// divided by the lengths that give it units) rather than a raw cross-dot.
+// RI_EPSILON (a public interface constant with other callers, and an
+// area rather than a ratio) does not apply. float carries about seven
+// decimal digits, so a ratio built from two cross products, a dot and a
+// division carries absolute error near 1e-7; this sits an order above
+// that noise and far below any turn or offset a real polygon intends --
+// 1e-6 radians is 0.00006 degrees.
+const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
+
 // A ring vertex's turning direction relative to the polygon's own normal:
 // positive is convex, negative reflex, zero for a collinear or duplicate
 // vertex. Testing against this normal, rather than against the ring's own
@@ -225,31 +236,44 @@ RtFloat turnOrientation(const GMANPoint &prev, const GMANPoint &cur,
   return e1.cross(e2).dot(normal) / (len1 * len2);
 }
 
+// The sine of the angle between one triangle edge and the vector from
+// that edge's start to p: dividing by |edge| * |edge-to-p| turns the raw
+// cross-dot, an area, into the same dimensionless quantity
+// turnOrientation returns, so a boundary case reads the same near-zero
+// value wherever the triangle sits, at any scale or rotation. p that
+// lands exactly on the line through the edge -- the common case for a
+// ring vertex bridged by a diagonal of its own polygon -- gives exactly
+// 0 in exact arithmetic; comparing that against literal 0 instead of a
+// tolerance band lets rounding alone decide which side p falls on. A
+// zero-length edge or a p coincident with the edge's start contributes
+// 0 (on the line), the same convention turnOrientation uses.
+RtFloat sideOf(const GMANPoint &from, const GMANPoint &to,
+               const GMANPoint &p, const GMANVector &normal) {
+  GMANVector edge(from, to);
+  GMANVector toPoint(from, p);
+  RtFloat edgeLen = edge.magnitude();
+  RtFloat pointLen = toPoint.magnitude();
+  if (edgeLen == (RtFloat) 0.0 || pointLen == (RtFloat) 0.0) {
+    return (RtFloat) 0.0;
+  }
+  return edge.cross(toPoint).dot(normal) / (edgeLen * pointLen);
+}
+
 // True when p lies inside or on the boundary of coplanar triangle
-// (a, b, c): on the same side of every edge, judged by that edge's cross
-// product with the vector to p, dotted against the polygon's normal so
-// the test does not depend on which way the triangle happens to wind.
+// (a, b, c): on the same side of every edge, judged by sideOf, so the
+// test does not depend on which way the triangle happens to wind.
 bool pointInTriangle(const GMANPoint &a, const GMANPoint &b,
                       const GMANPoint &c, const GMANPoint &p,
                       const GMANVector &normal) {
-  RtFloat d0 = GMANVector(a, b).cross(GMANVector(a, p)).dot(normal);
-  RtFloat d1 = GMANVector(b, c).cross(GMANVector(b, p)).dot(normal);
-  RtFloat d2 = GMANVector(c, a).cross(GMANVector(c, p)).dot(normal);
-  bool hasNeg = d0 < 0.0 || d1 < 0.0 || d2 < 0.0;
-  bool hasPos = d0 > 0.0 || d1 > 0.0 || d2 > 0.0;
+  RtFloat d0 = sideOf(a, b, p, normal);
+  RtFloat d1 = sideOf(b, c, p, normal);
+  RtFloat d2 = sideOf(c, a, p, normal);
+  bool hasNeg = d0 < -kTriangulationTolerance || d1 < -kTriangulationTolerance ||
+                d2 < -kTriangulationTolerance;
+  bool hasPos = d0 > kTriangulationTolerance || d1 > kTriangulationTolerance ||
+                d2 > kTriangulationTolerance;
   return !(hasNeg && hasPos);
 }
-
-// turnOrientation now returns a dimensionless sine, so its threshold is a
-// pure number rather than an area: RI_EPSILON (a public interface constant
-// with other callers) no longer applies. float carries about seven decimal
-// digits, so a sine built from two cross products and a dot carries
-// absolute error near 1e-7; this sits an order above that noise and far
-// below any turn a real polygon intends -- 1e-6 radians is 0.00006
-// degrees. Shared by triangulateEarClipping's three orientation
-// comparisons and getRSPolygon's degeneracy guard below, which compares
-// the same kind of ratio: an area against the square of a length.
-const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
 
 // Ear clipping over a vertex ring: triangulates any simple planar polygon,
 // concave included, into exactly ring.size() - 2 triangles. GeneralPolygon

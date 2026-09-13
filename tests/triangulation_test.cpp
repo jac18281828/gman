@@ -443,9 +443,10 @@ void runCaseTable() {
   // count, area, orientation, coverage all hold -- but at scale=1e6,
   // rotated, one of its eight inexactly-collinear wall vertices ties
   // between two equally valid candidate ears, so this specific placement
-  // picks a different (still correct) diagonal than the others. Per this
-  // task's own case-table note, a tie is dropped rather than the
-  // assertion weakened.
+  // picks a different (still correct) diagonal than the others. Verified
+  // independent of pointInTriangle's boundary tolerance: the same tie
+  // remains with sideOf's dimensionless comparison. Per this task's own
+  // case-table note, a tie is dropped rather than the assertion weakened.
   runRing("comb with inexactly-collinear wall vertices", combWithWallVertices(),
           false);
 }
