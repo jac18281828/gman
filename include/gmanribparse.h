@@ -124,7 +124,7 @@ private:
                         // tokenVector.size() for float arrays too, not only
                         // string arrays
   };
-  std::vector<char *>			pendingParamKeys;
+  std::vector<std::unique_ptr<char[]>>	pendingParamKeys;
   std::vector<PendingParamValue>	pendingParamValues;
   std::vector<RtToken *>		pendingTokenArrays;
   std::vector<RtPointer *>		pendingParmArrays;

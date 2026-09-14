@@ -1921,8 +1921,8 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
     // request that owns this parameter list has been dispatched.
     GMANToken keyToken = nextToken();
     const std::string &keyStr = keyToken.getString();
-    char *key = duplicateCString(keyStr).release();
-    pendingParamKeys.push_back(key);
+    pendingParamKeys.push_back(duplicateCString(keyStr));
+    char *key = pendingParamKeys.back().get();
 
     const GMANToken &lookAhead = peekToken();
     if (lookAhead.getType() == GMANToken::LEFT_BRACKET) {
@@ -1981,10 +1981,6 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
 }
 
 RtVoid GMANRIBParse::freePendingParams(RtVoid) {
-  for (std::vector<char *>::iterator it = pendingParamKeys.begin();
-       it != pendingParamKeys.end(); ++it) {
-    delete [] *it;
-  }
   pendingParamKeys.clear();
 
   for (std::vector<PendingParamValue>::iterator it = pendingParamValues.begin();
