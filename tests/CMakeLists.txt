@@ -95,6 +95,22 @@ set_tests_properties(gzip PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+add_executable(gman_logfilename logfilename_test.cpp)
+target_link_libraries(gman_logfilename PRIVATE gman_core)
+
+set(GMAN_LOGFILENAME_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/logfilename-run")
+file(MAKE_DIRECTORY "${GMAN_LOGFILENAME_WORKDIR}")
+
+add_test(NAME logfilename
+  COMMAND gman_logfilename $<TARGET_FILE:gman>
+                           "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
+                           "${GMAN_LOGFILENAME_WORKDIR}/scratch"
+  WORKING_DIRECTORY "${GMAN_LOGFILENAME_WORKDIR}")
+set_tests_properties(logfilename PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
 add_executable(gman_facevarying facevarying_test.cpp)
 target_link_libraries(gman_facevarying PRIVATE gman_core)
 

@@ -25,8 +25,9 @@
  */
 
 /* system headers */
-#include <cstring>
 #include <iostream>
+#include <string>
+#include <string_view>
 
 /* gman headers */
 #include "ri.h"
@@ -35,6 +36,19 @@
 #include "gmanrendermanimpl.h"
 #include "gmanribparse.h"
 
+namespace {
+
+// A path of four or more characters whose fourth-from-last character is
+// '.' has those four characters replaced with ".log"; every other path
+// has ".log" appended.
+std::string logFileNameFor(std::string_view ribPath) {
+  if (ribPath.size() >= 4 && ribPath[ribPath.size() - 4] == '.') {
+    return std::string(ribPath.substr(0, ribPath.size() - 4)) + ".log";
+  }
+  return std::string(ribPath) + ".log";
+}
+
+} // namespace
 
 /* function prototypes */
 
@@ -103,16 +117,8 @@ int main(int argc, char *argv[]) {
 	      info("Parsing {}", argv[i]);
 	      
 	      if(writeLog) {
-		  char *fileName = new char[strlen(ribFile) + 4];
-		  strcpy(fileName, ribFile);
-		  int dotPos = strlen(fileName)-4;
-		  if(fileName[dotPos] == '.') {
-		      strcpy(fileName + dotPos, ".log");
-		  } else {
-		      strcat(fileName, ".log");
-		  }
-		  logObj.setLogFile(fileName);
-		  delete []fileName;
+		  const std::string fileName = logFileNameFor(ribFile);
+		  logObj.setLogFile(fileName.c_str());
 	      }
 	      
 	      GMANRIBParse	parser(&renderMan,
