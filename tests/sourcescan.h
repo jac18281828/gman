@@ -48,6 +48,14 @@ inline std::string readFile(const std::filesystem::path &path) {
   return contents.str();
 }
 
+inline bool pathEndsWith(const std::filesystem::path &path,
+                          const std::string &suffix) {
+  const std::string generic = path.generic_string();
+  return generic.size() >= suffix.size() &&
+         generic.compare(generic.size() - suffix.size(), suffix.size(),
+                         suffix) == 0;
+}
+
 inline bool hasSourceExtension(const std::filesystem::path &path) {
   static const std::vector<std::string> kExtensions = {
       ".h", ".hpp", ".c", ".cpp", ".y", ".l", ".yy", ".ll"};

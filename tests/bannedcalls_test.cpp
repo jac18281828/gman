@@ -45,13 +45,6 @@ namespace {
 
 namespace fs = std::filesystem;
 
-bool pathEndsWith(const fs::path &path, const std::string &suffix) {
-  const std::string generic = path.generic_string();
-  return generic.size() >= suffix.size() &&
-         generic.compare(generic.size() - suffix.size(), suffix.size(),
-                         suffix) == 0;
-}
-
 bool isIdentChar(unsigned char c) {
   return std::isalnum(c) || c == '_';
 }
