@@ -27,24 +27,19 @@
 /* system headers */
 #include <stdlib.h>
 #include <stdio.h>
+#include <filesystem>
 #include <iostream>
-#include <cstring>
+#include <string>
 
 /* gman headers */
 #include "ri.h"
 #include "gmanerror.h"
 #include "gmansl.h"
 
-/* global macros */
-#ifndef PATH_MAX
-#define PATH_MAX 255
-#endif
-
-
 /* global variables */
 int      lineNumber;
 char    *slSourceFile;
-char    slBaseName [PATH_MAX];
+std::string slBaseName;
 FILE	*outHeaderFile=NULL,  *outSourceFile=NULL, *logFile=NULL;
 
 /* global function prototypes */
@@ -85,17 +80,12 @@ RtVoid usage(char *myname) {
 
 
 RtBoolean compile(char *shader) {
-  char headerName[PATH_MAX],
-    srcName[PATH_MAX],
-    slSourceName[PATH_MAX],
-    logFileName[PATH_MAX];
-
   extern FILE *yyin, *yyout;
-  
+
   // for now we assume the shader name passed is the name to
   // the source, it would be nicer if this involved some type
   // of path search...
-  
+
   yyin = fopen(shader, "r"); // open shader to parse
   if(yyin == NULL) {
     // if we can't open it, give up
@@ -103,44 +93,20 @@ RtBoolean compile(char *shader) {
   }
 
   slSourceFile = shader;
-  
-  // find the root name of the shader, assuming
-  // shader ends in .sl
-  
-  strcpy(shader, slSourceName);
-  
-  // find the . and terminate it
-  int i;
-  for(i=strlen(slSourceName);
-      i>0;
-      i--) {
-    if(slSourceName[i] == '.') {
-      slSourceName[i] = (char)0;
-      break;
-    }
-  }
-  
-  // now find the first '/'
-  for(;i>0; i--) {
-    if(slSourceName[i] == '/')
-      break;
-  }
 
-  // copy from i -> end into baseName
-  if(slSourceName[i]=='/') {
-    strcpy(slSourceName + i + 1, slBaseName);
-  } else {
-    strcpy(slSourceName, slBaseName);
-  }
-  
-  // the header name
-  sprintf(headerName, "%s.h", slSourceName);
-  // the source name
-  sprintf(srcName,   "%s.cpp", slSourceName);
-  // log file name
-  sprintf(logFileName, "%s.log", slSourceName);
-  
-  logFile = fopen(logFileName, "w");
+  // the source name is the shader path with its extension removed; the
+  // base name is that path's stem, with no directory and no extension.
+  const std::filesystem::path sourcePath =
+      std::filesystem::path(shader).replace_extension();
+  const std::string slSourceName = sourcePath.string();
+  slBaseName = sourcePath.stem().string();
+
+  // header, source and log names are the source name plus their suffix.
+  const std::string headerName = slSourceName + ".h";
+  const std::string srcName = slSourceName + ".cpp";
+  const std::string logFileName = slSourceName + ".log";
+
+  logFile = fopen(logFileName.c_str(), "w");
 
   if(logFile != NULL) {
   
@@ -178,15 +144,15 @@ void yyerror(char *s) {
 }
 
 
-FILE *initHeader(char *headerName) {
-  
+FILE *initHeader(const std::string &headerName) {
+
   /* open the header file, give it some comments and get it
    * generally ready to become a DSO shader.
    */
 
   yyerror("Opening shader output header.");
-  
-  FILE *headerFile = fopen(headerName, "w");
+
+  FILE *headerFile = fopen(headerName.c_str(), "w");
   if(headerFile) {
     fprintf(headerFile, 
 	    "/* SPDX-License-Identifier: LGPL-2.1-or-later\n"
@@ -221,21 +187,21 @@ FILE *initHeader(char *headerName) {
 	    " *\n"
 	    " * This class represents the %s shader.\n"
 	    " */\n\n",
-	    slBaseName,
-	    slBaseName, 
-	    slBaseName);
+	    slBaseName.c_str(),
+	    slBaseName.c_str(),
+	    slBaseName.c_str());
 
   }
   return headerFile;
 
 }
 
-FILE *initSource(char *headerName, char *srcName) {
+FILE *initSource(const std::string &headerName, const std::string &srcName) {
   yyerror("Opening shader output source.");
 
 }
 
 
-RtVoid build(char *srcName) {
+RtVoid build(const std::string &srcName) {
 
 }

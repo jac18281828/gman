@@ -29,6 +29,7 @@
 
 /* global headers */
 #include <stdio.h>
+#include <string>
 
 /* gman headers */
 #include "ri.h"
@@ -44,13 +45,13 @@ RtVoid usage(char *myname);
 RtBoolean compile(char *shader);
 
 // create a new header
-FILE *initHeader(char *headerName);
+FILE *initHeader(const std::string &headerName);
 // create a new source
-FILE *initSource(char *headerName, char *srcName);
+FILE *initSource(const std::string &headerName, const std::string &srcName);
 
 // build a shading language source
 // into a dynamic loadable module
-RtVoid build(char *srcName);
+RtVoid build(const std::string &srcName);
 
 void yyerror(char *s);
 
