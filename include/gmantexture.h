@@ -65,16 +65,15 @@ public:
   GMANColor sample(RtFloat s, RtFloat t, GMANTextureWrap swrap,
                     GMANTextureWrap twrap) const;
 
-private:
-  friend class GMANTextureCache; // reads swrap/twrap for its own sample()
-
-  RtInt width;
-  RtInt height;
-
   // Read from TIFFTAG_PIXAR_WRAPMODES at construction; an absent or
-  // unparseable tag leaves both clamp.
+  // unparseable tag leaves both clamp. GMANTextureCache reads these for
+  // its own sample().
   GMANTextureWrap swrap = GMAN_TEXTURE_CLAMP;
   GMANTextureWrap twrap = GMAN_TEXTURE_CLAMP;
+
+private:
+  RtInt width;
+  RtInt height;
 
   std::vector<GMANColor> texels; // row-major, texels[0] is the top-left
 
