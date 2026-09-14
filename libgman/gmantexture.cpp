@@ -27,6 +27,7 @@ extern "C" {
 }
 #endif
 
+#include <cctype>
 #include <cmath>
 
 #include "gmantexture.h"
@@ -68,6 +69,50 @@ RtInt wrapIndex(RtInt i, RtInt dim, GMANTextureWrap wrap, bool &valid) {
   }
 }
 
+#ifdef HAVE_LIBTIFF
+// Matches a wrap name case-insensitively, the way gmanribparse.cpp's
+// filterByName matches a pixel filter.
+bool wrapByName(const std::string &name, GMANTextureWrap &wrap) {
+  std::string lower = name;
+  for (std::string::size_type i = 0; i < lower.size(); ++i) {
+    lower[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lower[i])));
+  }
+  if (lower == "periodic") {
+    wrap = GMAN_TEXTURE_PERIODIC;
+    return true;
+  }
+  if (lower == "clamp") {
+    wrap = GMAN_TEXTURE_CLAMP;
+    return true;
+  }
+  if (lower == "black") {
+    wrap = GMAN_TEXTURE_BLACK;
+    return true;
+  }
+  return false;
+}
+
+// Parses TIFFTAG_PIXAR_WRAPMODES's "<swrap>,<twrap>" -- the form libtiff's
+// own texture tools write. False, leaving swrap/twrap untouched, unless
+// both halves name a known wrap mode.
+bool parseWrapModes(const char *tag, GMANTextureWrap &swrap,
+                     GMANTextureWrap &twrap) {
+  std::string joined(tag);
+  std::string::size_type comma = joined.find(',');
+  if (comma == std::string::npos) {
+    return false;
+  }
+  GMANTextureWrap s, t;
+  if (!wrapByName(joined.substr(0, comma), s) ||
+      !wrapByName(joined.substr(comma + 1), t)) {
+    return false;
+  }
+  swrap = s;
+  twrap = t;
+  return true;
+}
+#endif
+
 }  // namespace
 
 GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
@@ -77,6 +122,13 @@ GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
     warning("texture \"{}\": cannot open, using opaque black", name.c_str());
     texels = blackTexel();
     return;
+  }
+
+  char *wrapModes = nullptr;
+  if (TIFFGetField(tif, TIFFTAG_PIXAR_WRAPMODES, &wrapModes) &&
+      wrapModes != nullptr && !parseWrapModes(wrapModes, swrap, twrap)) {
+    warning("texture \"{}\": unrecognized wrap modes \"{}\", using clamp",
+            name.c_str(), wrapModes);
   }
 
   uint32_t w = 0, h = 0;
@@ -116,6 +168,11 @@ GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
 
 GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap wrap)
     const {
+  return sample(s, t, wrap, wrap);
+}
+
+GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap swrapArg,
+                               GMANTextureWrap twrapArg) const {
   // Texel centres sit at (i + 0.5) / dim; solving that for i turns (s, t)
   // into a coordinate where an integer means "exactly this texel's
   // centre" and a half-integer means "exactly between two centres" --
@@ -128,10 +185,10 @@ GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap wrap)
   RtFloat fy = y - (RtFloat) y0;
 
   bool xValid0, xValid1, yValid0, yValid1;
-  RtInt ix0 = wrapIndex(x0, width, wrap, xValid0);
-  RtInt ix1 = wrapIndex(x0 + 1, width, wrap, xValid1);
-  RtInt iy0 = wrapIndex(y0, height, wrap, yValid0);
-  RtInt iy1 = wrapIndex(y0 + 1, height, wrap, yValid1);
+  RtInt ix0 = wrapIndex(x0, width, swrapArg, xValid0);
+  RtInt ix1 = wrapIndex(x0 + 1, width, swrapArg, xValid1);
+  RtInt iy0 = wrapIndex(y0, height, twrapArg, yValid0);
+  RtInt iy1 = wrapIndex(y0 + 1, height, twrapArg, yValid1);
 
   const GMANColor black((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 0.0);
   GMANColor c00 = (xValid0 && yValid0) ? texel(ix0, iy0) : black;
@@ -160,6 +217,19 @@ GMANColor GMANTextureCache::sample(const std::string &name, RtFloat s,
     it = textures.emplace(name, GMANTexture(name)).first;
   }
   return it->second.sample(s, t, wrap);
+}
+
+GMANColor GMANTextureCache::sample(const std::string &name, RtFloat s,
+                                    RtFloat t) {
+  std::map<std::string, GMANTexture>::iterator it = textures.find(name);
+  if (it == textures.end()) {
+    it = textures.emplace(name, GMANTexture(name)).first;
+  }
+  return it->second.sample(s, t, it->second.swrap, it->second.twrap);
+}
+
+void GMANTextureCache::forget(const std::string &name) {
+  textures.erase(name);
 }
 
 GMANTextureCache &gmanTextureCache(RtVoid) {

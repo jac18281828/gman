@@ -82,5 +82,5 @@ RtFloat GMANSurfaceEnv::cellnoise(const GMANPoint &p) const {
 
 GMANColor GMANSurfaceEnv::texture(const std::string &name, RtFloat s,
                                    RtFloat t) const {
-  return gmanTextureCache().sample(name, s, t, GMAN_TEXTURE_CLAMP);
+  return gmanTextureCache().sample(name, s, t);
 }

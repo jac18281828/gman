@@ -32,8 +32,9 @@
 #include "gmancolor.h"
 
 // How a sample outside [0, 1] is resolved, per axis, independently for s
-// and t. RiMakeTexture will later choose this per file; the texture()
-// shadeop always asks for clamp.
+// and t. RiMakeTexture records this per file in TIFFTAG_PIXAR_WRAPMODES;
+// GMANTexture reads it back at construction, and GMANTextureCache::sample
+// applies it per axis.
 enum GMANTextureWrap {
   GMAN_TEXTURE_CLAMP,
   GMAN_TEXTURE_PERIODIC,
@@ -59,9 +60,22 @@ public:
   // both s and t identically outside [0, 1].
   GMANColor sample(RtFloat s, RtFloat t, GMANTextureWrap wrap) const;
 
+  // Per-axis form: wrap resolves s and t independently. The single-wrap
+  // overload above forwards here with the same mode on both axes.
+  GMANColor sample(RtFloat s, RtFloat t, GMANTextureWrap swrap,
+                    GMANTextureWrap twrap) const;
+
 private:
+  friend class GMANTextureCache; // reads swrap/twrap for its own sample()
+
   RtInt width;
   RtInt height;
+
+  // Read from TIFFTAG_PIXAR_WRAPMODES at construction; an absent or
+  // unparseable tag leaves both clamp.
+  GMANTextureWrap swrap = GMAN_TEXTURE_CLAMP;
+  GMANTextureWrap twrap = GMAN_TEXTURE_CLAMP;
+
   std::vector<GMANColor> texels; // row-major, texels[0] is the top-left
 
   GMANColor texel(RtInt x, RtInt y) const { return texels[y * width + x]; }
@@ -80,6 +94,12 @@ public:
   // same name, hit or miss, reads no file.
   GMANColor sample(const std::string &name, RtFloat s, RtFloat t,
                     GMANTextureWrap wrap);
+
+  // Samples with the texture's own recorded wrap modes.
+  GMANColor sample(const std::string &name, RtFloat s, RtFloat t);
+
+  // Drops name from the cache, so the next lookup reads the file again.
+  void forget(const std::string &name);
 
 private:
   std::map<std::string, GMANTexture> textures;

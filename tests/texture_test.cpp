@@ -75,6 +75,7 @@
 
 #include "check.h"
 #include "gmancolor.h"
+#include "gmanshaderenvironment.h"
 #include "gmantexture.h"
 
 namespace {
@@ -138,6 +139,34 @@ bool writeCheckerTexture(const std::string &path) {
   return ok;
 }
 
+// Same checker, with TIFFTAG_PIXAR_WRAPMODES set to "<swrap>,<twrap>" --
+// the tag RiMakeTexture writes and GMANTexture reads back.
+bool writeCheckerTextureWithWrap(const std::string &path,
+                                  const std::string &swrap,
+                                  const std::string &twrap) {
+  TIFF *tif = TIFFOpen(path.c_str(), "w");
+  if (tif == nullptr) {
+    return false;
+  }
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t) 2);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t) 2);
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
+  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 3);
+  TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
+  const std::string wrapModes = swrap + "," + twrap;
+  TIFFSetField(tif, TIFFTAG_PIXAR_WRAPMODES, wrapModes.c_str());
+
+  const unsigned char row0[6] = {255, 0, 0, 0, 255, 0};
+  const unsigned char row1[6] = {0, 0, 255, 255, 255, 255};
+  bool ok = TIFFWriteScanline(tif, (void *) row0, 0, 0) >= 0 &&
+            TIFFWriteScanline(tif, (void *) row1, 1, 0) >= 0;
+  TIFFClose(tif);
+  return ok;
+}
+
 // ---- direct cache assertions: tests/rib/texture.rib's own fixture is
 // the same checker, so these pin the sampler's contract independent of
 // the shading and rasterization the render assertion also exercises. ----
@@ -189,6 +218,48 @@ void testWrapModes(const std::string &name) {
              "black: s<0 returns black");
   checkColor(cache.sample(name, 1.5, 0.25, GMAN_TEXTURE_BLACK), kBlack,
              "black: s>1 returns black");
+}
+
+// The three-argument cache sample() reads a file's own recorded wrap
+// modes instead of taking one from the caller -- proved against a tag of
+// "periodic,black", asymmetric on purpose so an axis swap is visible.
+void testRecordedWrapModes(const std::string &pbName,
+                            const std::string &plainName,
+                            const std::string &mirrorClampName) {
+  check(writeCheckerTextureWithWrap(pbName, "periodic", "black"),
+        pbName + " writes with wrap tag \"periodic,black\"");
+  GMANTextureCache &cache = gmanTextureCache();
+
+  checkColor(cache.sample(pbName, 1.25, 0.25), kRed,
+             "periodic,black: s=1.25 wraps periodically to red");
+  checkColor(cache.sample(pbName, 0.25, 1.5), kBlack,
+             "periodic,black: t=1.5 is black outside the image");
+  checkColor(cache.sample(pbName, 0.25, 0.25), kRed,
+             "periodic,black: texel centre (0.25, 0.25) is red");
+  checkColor(cache.sample(pbName, 0.75, 0.25), kGreen,
+             "periodic,black: texel centre (0.75, 0.25) is green");
+  checkColor(cache.sample(pbName, 0.25, 0.75), kBlue,
+             "periodic,black: texel centre (0.25, 0.75) is blue");
+  checkColor(cache.sample(pbName, 0.75, 0.75), kWhite,
+             "periodic,black: texel centre (0.75, 0.75) is white");
+
+  check(writeCheckerTexture(plainName), plainName + " writes with no tag");
+  checkColor(cache.sample(plainName, 1.5, 0.25), kGreen,
+             "no tag: s=1.5 clamps to the right edge texel");
+
+  check(writeCheckerTextureWithWrap(mirrorClampName, "mirror", "clamp"),
+        mirrorClampName + " writes with wrap tag \"mirror,clamp\"");
+  checkColor(cache.sample(mirrorClampName, 1.5, 0.25), kGreen,
+             "unparseable tag: falls back to clamp on both axes");
+}
+
+// The shadeop: a default-constructed GMANSurfaceEnv's texture() reaches
+// the same three-argument cache sample(), so it also honors the file's
+// own recorded modes.
+void testShadeopUsesRecordedWrapModes(const std::string &pbName) {
+  GMANSurfaceEnv env;
+  checkColor(env.texture(pbName, 1.25, 0.25), kRed,
+             "texture() shadeop: s=1.25 wraps periodically to red");
 }
 
 void testMissingFile() {
@@ -319,6 +390,13 @@ int main(int argc, char *argv[]) {
   testWrapModes("checker_direct.tif");
   testMissingFile();
   testSecondLookupReadsNoFile("checker_reload.tif");
+
+  std::remove("checker_pb.tif");
+  std::remove("checker_plain.tif");
+  std::remove("checker_mirror_clamp.tif");
+  testRecordedWrapModes("checker_pb.tif", "checker_plain.tif",
+                         "checker_mirror_clamp.tif");
+  testShadeopUsesRecordedWrapModes("checker_pb.tif");
 
   testRenderedQuadrants(gman, ribDir);
 

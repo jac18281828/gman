@@ -111,9 +111,9 @@ struct GMAN_EXPORT GMANSurfaceEnv
   // Declared here and defined there for the same reason as the noise
   // family above: this header is included by every translation unit that
   // shades, and gmantexture.h's own decoder must not follow it in.
-  // Forwards to gmanTextureCache() with clamp wrapping -- RiMakeTexture's
-  // wrap modes are a cache argument, not a shadeop one, until a texture
-  // file exists to name which one it wants.
+  // Forwards to gmanTextureCache()'s three-argument sample, which applies
+  // the wrap modes RiMakeTexture recorded in the file -- clamp when the
+  // file carries none.
   GMANColor texture (const std::string &name, RtFloat s, RtFloat t) const;
 
   // ---- gmanslapi.cpp: already free functions, forwarded here so a
