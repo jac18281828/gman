@@ -99,7 +99,10 @@ int main(int argc, char *argv[]) {
 
     std::filesystem::remove(logPath, ec);
 
-    const int exitCode = runGmanLog(gman, ribPath, scratch);
+    // Relative: the runner already cd's into scratch, and an absolute
+    // ribPath would push every name past the 4-character branch this test
+    // means to exercise.
+    const int exitCode = runGmanLog(gman, c.name, scratch);
     check(exitCode == 0, std::string(c.name) + ": gman -l exits 0");
 
     check(std::filesystem::exists(logPath),
