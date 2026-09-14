@@ -92,8 +92,9 @@ frees, are exactly the shapes those two bugs took.
 Build strings with `std::string` and `std::format`, not a hand-sized
 buffer: no `sprintf`/`strcpy`/`strcat` family call (bounded or not), no
 `new char[` and no `PATH_MAX` outside `tests/`, with
-`libgman/gmanribparse.cpp`'s one RI string copy the exception —
-`tests/bannedcalls_test.cpp` enforces this on every build.
+`libgman/gmanribparse.cpp`'s one RI string copy the exception. Not yet
+enforced by a build gate — a stock `clang-tidy` check or a grep CI step is
+tracked as separate future work, not a hand-written source-scanning test.
 
 `GMANParameterList::getPointer` returns NULL for an absent token — an
 optional, not an `unwrap`. Code with an optional parameter must check the

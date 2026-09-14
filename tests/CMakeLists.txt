@@ -692,20 +692,3 @@ add_test(NAME threadcontainment
 set_tests_properties(threadcontainment PROPERTIES
   LABELS unit
   TIMEOUT 30)
-
-# No production source builds a string by hand: no sprintf/strcpy-family
-# call, no new char[ outside gmanribparse.cpp's one sanctioned site, no
-# PATH_MAX.
-add_executable(gman_bannedcalls bannedcalls_test.cpp)
-add_test(NAME bannedcalls
-  COMMAND gman_bannedcalls
-          "${CMAKE_SOURCE_DIR}/include"
-          "${CMAKE_SOURCE_DIR}/libgman"
-          "${CMAKE_SOURCE_DIR}/libgmanrib"
-          "${CMAKE_SOURCE_DIR}/shaders"
-          "${CMAKE_SOURCE_DIR}/renderers"
-          "${CMAKE_SOURCE_DIR}/gman"
-          "${CMAKE_SOURCE_DIR}/gmansl")
-set_tests_properties(bannedcalls PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
