@@ -114,11 +114,13 @@ bool filterByName(const std::string &name, RtFilterFunc &filterfunc) {
 }
 
 // Heap copy of s, including its null terminator. The RI API takes char*,
-// so a parsed string handed to it needs its own heap-owned copy; callers
-// release it with delete[].
-char *duplicateCString(const std::string &s) {
-  char *dup = new char[s.size() + 1];
-  std::memcpy(dup, s.c_str(), s.size() + 1);
+// so a parsed string handed to it needs its own heap-owned copy; the
+// unique_ptr's default deleter is delete[], matching the copy's allocation
+// exactly. A caller that needs a raw char* past this function's return
+// takes it with .release() and keeps releasing it with delete[] itself.
+std::unique_ptr<char[]> duplicateCString(const std::string &s) {
+  std::unique_ptr<char[]> dup(new char[s.size() + 1]);
+  std::memcpy(dup.get(), s.c_str(), s.size() + 1);
   return dup;
 }
 
@@ -1919,7 +1921,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
     // request that owns this parameter list has been dispatched.
     GMANToken keyToken = nextToken();
     const std::string &keyStr = keyToken.getString();
-    char *key = duplicateCString(keyStr);
+    char *key = duplicateCString(keyStr).release();
     pendingParamKeys.push_back(key);
 
     const GMANToken &lookAhead = peekToken();
@@ -1955,7 +1957,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
       // registered with pendingParamValues the same way parseArray's string
       // arrays are, rather than kept as a std::string here.
       const auto str = copyStringToken();
-      char *dup = duplicateCString(str);
+      char *dup = duplicateCString(str).release();
       RtToken *value = new RtToken[1];
       value[0] = dup;
       paramMap[key] = {(RtPointer) value, 1};
@@ -2115,7 +2117,7 @@ RtToken* GMANRIBParse::TokenVector::toRtTokenArray() {
       throw(GMANError(RIE_SYNTAX, RIE_ERROR, "Non-string in array."));
     }
     const std::string &s = tok.getString();
-    array[i] = duplicateCString(s);
+    array[i] = duplicateCString(s).release();
   }
 
   return array;
