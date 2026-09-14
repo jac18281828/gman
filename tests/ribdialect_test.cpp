@@ -240,40 +240,20 @@ int main(int argc, char *argv[]) {
   // Malformed input, for the error paths. A parameter list that throws
   // part-built used to strand both the strings already duplicated into the
   // array and the keys/values the list had accumulated; both are now
-  // released as the stack unwinds.
-  //
-  // What this DOES assert: the fault is detected and named. What it does NOT
-  // assert: leak-freedom. gman runs here as a subprocess, so LeakSanitizer
-  // aborting it is indistinguishable from the non-zero exit this file is
-  // supposed to produce either way -- the exit-status check would pass
-  // either way. This fixture also crosses WorldBegin, so it hits the other
-  // known leak on this path (GMANRenderManImpl::RiWorldBegin's output
-  // driver, SPEC.md S8, phase-1 territory, untouched here): asserting no
-  // LeakSanitizer output on this exact fixture would be a false claim.
-  // display_badtype.rib and hider.rib below never reach WorldBegin, so they
-  // carry that assertion instead.
+  // released as the stack unwinds. This fixture crosses WorldBegin;
+  // GMANRenderManImpl::RiWorldBegin builds its output driver into a local
+  // unique_ptr and only publishes it once every fallible step has
+  // succeeded (gmanrendermanimpl.cpp), so a GMANError unwinding through
+  // here does not leak it either -- the check below actually gates
+  // toRtTokenArray's own release-on-throw, not just a NOP.
   {
     const std::string path = ribDir + "/malformed/stringarray.rib";
     Result r = run(gman, path, /*debug=*/false);
     check(r.exitStatus != 0, "malformed: a non-string in a string array fails");
     check(r.output.find("Non-string in array") != std::string::npos,
 	  "malformed: the diagnostic names the fault");
-  }
-
-  // Same fault, same TokenVector::toRtTokenArray error path as
-  // stringarray.rib above, but through a Hider request in the Option
-  // block -- never reaching WorldBegin -- so this fixture carries none of
-  // the other known leak stringarray.rib's comment excludes and the
-  // "no LeakSanitizer report" check below actually gates
-  // toRtTokenArray's own release-on-throw.
-  {
-    const std::string path = ribDir + "/malformed/hider_badarray.rib";
-    Result r = run(gman, path, /*debug=*/false);
-    check(r.exitStatus != 0, "malformed: a non-string in a Hider array fails");
-    check(r.output.find("Non-string in array") != std::string::npos,
-	  "malformed: the diagnostic names the fault (Hider array)");
     check(r.output.find("LeakSanitizer") == std::string::npos,
-	  "malformed: no LeakSanitizer report (hider_badarray.rib)");
+	  "malformed: no LeakSanitizer report (stringarray.rib)");
   }
 
   // Same fault class, a different leak shape, and (unlike stringarray.rib

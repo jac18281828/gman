@@ -198,7 +198,6 @@ no leak and no hang, not with a crash or an infinite loop.
 |---|---|
 | `display_badtype.rib` | `parseDisplay` copies `"name"` before it validates `"type"` -- a bad token in `"type"`'s place must not leak the already-copied `"name"`. |
 | `stringarray.rib` | A string array with a non-string element, via `TokenVector::toRtTokenArray` -- must release the strings it already duplicated before throwing. |
-| `hider_badarray.rib` | The same fault, via `Hider`'s parameter list in the Option block -- unlike `stringarray.rib`, never reaches `WorldBegin`, so this one actually proves the release-on-throw leak-free rather than being masked by the separate `WorldBegin` output-driver leak. |
 | `truncated.rib` | A RIB stream cut off mid-keyword, no trailing newline -- the tokenizer's main read loops must terminate cleanly at end of input rather than looping or reading past the buffer. |
 | `unbalanced_bracket.rib` | A bracketed array with no closing bracket -- `GMANRIBParse::parseArray` must stop at EOF rather than consuming the rest of the file looking for a `]` that never arrives. |
 | `unterminated_string.rib` | A plain (non-array) string with no closing quote, running to EOF -- `GMANRIBTokenize::parseString` must terminate cleanly at end of input. |
