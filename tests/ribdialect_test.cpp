@@ -260,6 +260,22 @@ int main(int argc, char *argv[]) {
 	  "malformed: the diagnostic names the fault");
   }
 
+  // Same fault, same TokenVector::toRtTokenArray error path as
+  // stringarray.rib above, but through a Hider request in the Option
+  // block -- never reaching WorldBegin -- so this fixture carries none of
+  // the other known leak stringarray.rib's comment excludes and the
+  // "no LeakSanitizer report" check below actually gates
+  // toRtTokenArray's own release-on-throw.
+  {
+    const std::string path = ribDir + "/malformed/hider_badarray.rib";
+    Result r = run(gman, path, /*debug=*/false);
+    check(r.exitStatus != 0, "malformed: a non-string in a Hider array fails");
+    check(r.output.find("Non-string in array") != std::string::npos,
+	  "malformed: the diagnostic names the fault (Hider array)");
+    check(r.output.find("LeakSanitizer") == std::string::npos,
+	  "malformed: no LeakSanitizer report (hider_badarray.rib)");
+  }
+
   // Same fault class, a different leak shape, and (unlike stringarray.rib
   // above) never reaching WorldBegin -- so the "no LeakSanitizer output"
   // check here is clean of the other known leak and actually gates the

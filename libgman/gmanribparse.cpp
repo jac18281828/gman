@@ -2103,23 +2103,26 @@ std::unique_ptr<std::istream> GMANRIBParse::openRibStream(const std::string &pat
 }
 
 RtToken* GMANRIBParse::TokenVector::toRtTokenArray() {
-  RtToken* array = new RtToken[size()];
+  // Each duplicate is held by a unique_ptr while the array is still under
+  // construction, so a non-string element throws with every duplicate made
+  // so far released automatically. The raw RtToken array the RI API needs
+  // is built only once every element is confirmed a string; ownership
+  // passes into it via release(), one element at a time.
+  std::vector<std::unique_ptr<char[]>> owned;
+  owned.reserve(size());
 
   for (unsigned int i = 0; i < size(); i++) {
     const GMANToken &tok = (*this)[i];
     if (tok.getType() != GMANToken::STRING) {
-      /* Slots [0,i) already hold heap-duplicated strings; releasing only the
-       * pointer array would strand every one of them. */
-      for (unsigned int j = 0; j < i; j++) {
-	delete [] array[j];
-      }
-      delete [] array;
       throw(GMANError(RIE_SYNTAX, RIE_ERROR, "Non-string in array."));
     }
-    const std::string &s = tok.getString();
-    array[i] = duplicateCString(s).release();
+    owned.push_back(duplicateCString(tok.getString()));
   }
 
+  RtToken* array = new RtToken[size()];
+  for (unsigned int i = 0; i < size(); i++) {
+    array[i] = owned[i].release();
+  }
   return array;
 }
 
