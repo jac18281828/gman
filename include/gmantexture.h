@@ -101,6 +101,11 @@ public:
   void forget(const std::string &name);
 
 private:
+  // Loads and decodes name on first request; every later request for the
+  // same name, hit or miss, reads no file. Both sample overloads route
+  // through this.
+  GMANTexture &entry(const std::string &name);
+
   std::map<std::string, GMANTexture> textures;
 };
 

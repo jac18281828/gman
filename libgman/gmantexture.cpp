@@ -122,6 +122,66 @@ const char *wrapName(GMANTextureWrap wrap) {
     default:                    return "clamp";
   }
 }
+
+// Decodes an already-open TIFF's pixels the one way this file reads a
+// picture: width/height, then TIFFReadRGBAImageOriented into raster. False
+// on a failed read or a zero dimension. Shared by GMANTexture's
+// constructor and gmanMakeTexture; each keeps its own TIFFOpen/TIFFClose
+// and error text around the call.
+bool decodeRaster(TIFF *tif, uint32_t &w, uint32_t &h,
+                   std::vector<uint32_t> &raster) {
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
+  raster.assign((std::size_t) w * (std::size_t) h, 0);
+  int ok = TIFFReadRGBAImageOriented(tif, w, h, raster.data(),
+                                      ORIENTATION_TOPLEFT, 0);
+  return ok != 0 && w > 0 && h > 0;
+}
+
+// Writes raster (w*h pixels, packed per TIFFGetR/G/B) to name as a
+// single-level 8-bit RGB TIFF carrying sw/tw in TIFFTAG_PIXAR_WRAPMODES.
+// False, removing any partial file, if the file cannot be opened or a
+// scanline fails to write.
+bool writeTexture(const std::string &name, uint32_t w, uint32_t h,
+                   const std::vector<uint32_t> &raster, GMANTextureWrap sw,
+                   GMANTextureWrap tw) {
+  TIFF *dst = TIFFOpen(name.c_str(), "w");
+  if (dst == nullptr) {
+    return false;
+  }
+
+  TIFFSetField(dst, TIFFTAG_IMAGEWIDTH, w);
+  TIFFSetField(dst, TIFFTAG_IMAGELENGTH, h);
+  TIFFSetField(dst, TIFFTAG_BITSPERSAMPLE, 8);
+  TIFFSetField(dst, TIFFTAG_SAMPLESPERPIXEL, 3);
+  TIFFSetField(dst, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+  TIFFSetField(dst, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+  TIFFSetField(dst, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+  TIFFSetField(dst, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+  TIFFSetField(dst, TIFFTAG_ROWSPERSTRIP, 1);
+  const std::string wrapModes =
+      std::string(wrapName(sw)) + "," + wrapName(tw);
+  TIFFSetField(dst, TIFFTAG_PIXAR_WRAPMODES, wrapModes.c_str());
+  TIFFSetField(dst, TIFFTAG_PIXAR_TEXTUREFORMAT, "Plain Texture");
+
+  std::vector<unsigned char> row(w * 3);
+  bool writeOk = true;
+  for (uint32_t y = 0; y < h && writeOk; ++y) {
+    for (uint32_t x = 0; x < w; ++x) {
+      uint32_t p = raster[y * w + x];
+      row[x * 3 + 0] = TIFFGetR(p);
+      row[x * 3 + 1] = TIFFGetG(p);
+      row[x * 3 + 2] = TIFFGetB(p);
+    }
+    writeOk = TIFFWriteScanline(dst, row.data(), y, 0) >= 0;
+  }
+  TIFFClose(dst);
+
+  if (!writeOk) {
+    std::remove(name.c_str());
+  }
+  return writeOk;
+}
 #endif
 
 }  // namespace
@@ -143,19 +203,15 @@ GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
   }
 
   uint32_t w = 0, h = 0;
-  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
-  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
-
-  std::vector<uint32_t> raster(w * h);
+  std::vector<uint32_t> raster;
   // One path for every photometric layout libtiff knows -- greyscale,
   // palette, RGB, RGBA -- instead of a switch over TIFFTAG_PHOTOMETRIC.
   // ORIENTATION_TOPLEFT: row 0 comes back as the image's top row, which is
   // texture space's own convention -- t=0 is the top, with no flip.
-  int ok = TIFFReadRGBAImageOriented(tif, w, h, raster.data(),
-                                      ORIENTATION_TOPLEFT, 0);
+  bool ok = decodeRaster(tif, w, h, raster);
   TIFFClose(tif);
 
-  if (!ok || w == 0 || h == 0) {
+  if (!ok) {
     warning("texture \"{}\": cannot decode, using opaque black",
             name.c_str());
     texels = blackTexel();
@@ -182,8 +238,8 @@ GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap wrap)
   return sample(s, t, wrap, wrap);
 }
 
-GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap swrapArg,
-                               GMANTextureWrap twrapArg) const {
+GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap swrap,
+                               GMANTextureWrap twrap) const {
   // Texel centres sit at (i + 0.5) / dim; solving that for i turns (s, t)
   // into a coordinate where an integer means "exactly this texel's
   // centre" and a half-integer means "exactly between two centres" --
@@ -196,10 +252,10 @@ GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap swrapArg,
   RtFloat fy = y - (RtFloat) y0;
 
   bool xValid0, xValid1, yValid0, yValid1;
-  RtInt ix0 = wrapIndex(x0, width, swrapArg, xValid0);
-  RtInt ix1 = wrapIndex(x0 + 1, width, swrapArg, xValid1);
-  RtInt iy0 = wrapIndex(y0, height, twrapArg, yValid0);
-  RtInt iy1 = wrapIndex(y0 + 1, height, twrapArg, yValid1);
+  RtInt ix0 = wrapIndex(x0, width, swrap, xValid0);
+  RtInt ix1 = wrapIndex(x0 + 1, width, swrap, xValid1);
+  RtInt iy0 = wrapIndex(y0, height, twrap, yValid0);
+  RtInt iy1 = wrapIndex(y0 + 1, height, twrap, yValid1);
 
   const GMANColor black((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 0.0);
   GMANColor c00 = (xValid0 && yValid0) ? texel(ix0, iy0) : black;
@@ -221,22 +277,23 @@ GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap swrapArg,
           w11 * c11.getBlue());
 }
 
-GMANColor GMANTextureCache::sample(const std::string &name, RtFloat s,
-                                    RtFloat t, GMANTextureWrap wrap) {
+GMANTexture &GMANTextureCache::entry(const std::string &name) {
   std::map<std::string, GMANTexture>::iterator it = textures.find(name);
   if (it == textures.end()) {
     it = textures.emplace(name, GMANTexture(name)).first;
   }
-  return it->second.sample(s, t, wrap);
+  return it->second;
+}
+
+GMANColor GMANTextureCache::sample(const std::string &name, RtFloat s,
+                                    RtFloat t, GMANTextureWrap wrap) {
+  return entry(name).sample(s, t, wrap);
 }
 
 GMANColor GMANTextureCache::sample(const std::string &name, RtFloat s,
                                     RtFloat t) {
-  std::map<std::string, GMANTexture>::iterator it = textures.find(name);
-  if (it == textures.end()) {
-    it = textures.emplace(name, GMANTexture(name)).first;
-  }
-  return it->second.sample(s, t, it->second.swrap, it->second.twrap);
+  GMANTexture &tex = entry(name);
+  return tex.sample(s, t, tex.swrap, tex.twrap);
 }
 
 void GMANTextureCache::forget(const std::string &name) {
@@ -275,60 +332,21 @@ bool gmanMakeTexture(const char *picture, const char *texture,
   }
 
   uint32_t w = 0, h = 0;
-  TIFFGetField(src, TIFFTAG_IMAGEWIDTH, &w);
-  TIFFGetField(src, TIFFTAG_IMAGELENGTH, &h);
-
-  std::vector<uint32_t> raster(w * h);
+  std::vector<uint32_t> raster;
   // Same decode call GMANTexture's own constructor uses: a texture made
   // from a picture samples identically to that picture at every texel
   // centre.
-  int ok = TIFFReadRGBAImageOriented(src, w, h, raster.data(),
-                                      ORIENTATION_TOPLEFT, 0);
+  bool decoded = decodeRaster(src, w, h, raster);
   TIFFClose(src);
 
-  if (!ok || w == 0 || h == 0) {
+  if (!decoded) {
     warning("MakeTexture \"{}\": cannot decode picture \"{}\"",
             textureName.c_str(), pictureName.c_str());
     return false;
   }
 
-  TIFF *dst = TIFFOpen(textureName.c_str(), "w");
-  if (dst == nullptr) {
-    warning("MakeTexture \"{}\": cannot open for writing",
-            textureName.c_str());
-    return false;
-  }
-
-  TIFFSetField(dst, TIFFTAG_IMAGEWIDTH, w);
-  TIFFSetField(dst, TIFFTAG_IMAGELENGTH, h);
-  TIFFSetField(dst, TIFFTAG_BITSPERSAMPLE, 8);
-  TIFFSetField(dst, TIFFTAG_SAMPLESPERPIXEL, 3);
-  TIFFSetField(dst, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-  TIFFSetField(dst, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-  TIFFSetField(dst, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-  TIFFSetField(dst, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
-  TIFFSetField(dst, TIFFTAG_ROWSPERSTRIP, 1);
-  const std::string wrapModes =
-      std::string(wrapName(sw)) + "," + wrapName(tw);
-  TIFFSetField(dst, TIFFTAG_PIXAR_WRAPMODES, wrapModes.c_str());
-  TIFFSetField(dst, TIFFTAG_PIXAR_TEXTUREFORMAT, "Plain Texture");
-
-  std::vector<unsigned char> row(w * 3);
-  bool writeOk = true;
-  for (uint32_t y = 0; y < h && writeOk; ++y) {
-    for (uint32_t x = 0; x < w; ++x) {
-      uint32_t p = raster[y * w + x];
-      row[x * 3 + 0] = TIFFGetR(p);
-      row[x * 3 + 1] = TIFFGetG(p);
-      row[x * 3 + 2] = TIFFGetB(p);
-    }
-    writeOk = TIFFWriteScanline(dst, row.data(), y, 0) >= 0;
-  }
-  TIFFClose(dst);
-
-  if (!writeOk) {
+  if (!writeTexture(textureName, w, h, raster, sw, tw)) {
     warning("MakeTexture \"{}\": failed to write", textureName.c_str());
-    std::remove(textureName.c_str());
     return false;
   }
 

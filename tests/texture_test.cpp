@@ -19,11 +19,14 @@
  */
 
 /*
- * The texture cache (gmantexture.h) and the texture() shadeop it feeds,
- * proved two ways: directly, against the cache's own sampling contract,
- * and by rendering tests/rib/texture.rib -- a screen-facing Patch
- * "bilinear" with a paintedplastic surface -- and reading back the four
- * distinct colours its four quadrants should show.
+ * The texture cache (gmantexture.h), the texture() shadeop it feeds, and
+ * gmanMakeTexture (RiMakeTexture's implementation), proved three ways:
+ * directly, against the cache's own sampling contract and the writer's;
+ * by rendering tests/rib/texture.rib -- a screen-facing Patch "bilinear"
+ * with a paintedplastic surface -- and reading back the four distinct
+ * colours its four quadrants should show; and through
+ * tests/rib/maketexture_wrap.rib, which writes a texture with MakeTexture
+ * before rendering the same quadrants from it.
  *
  * The fixture's own texture is 2x2 and asymmetric on purpose (row 0, top:
  * red, green; row 1, bottom: blue, white) -- a checker survives a
@@ -70,6 +73,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -115,8 +119,13 @@ void checkColor(const GMANColor &got, const GMANColor &want,
 
 // Writes a 2x2 RGB TIFF, row 0 first -- ORIENTATION_TOPLEFT (set below)
 // then makes that row the image's top row on read-back, matching
-// gmanoutputtiff.cpp's own write order.
-bool writeCheckerTexture(const std::string &path) {
+// gmanoutputtiff.cpp's own write order. A non-empty swrap also sets
+// TIFFTAG_PIXAR_WRAPMODES to "<swrap>,<twrap>" -- the tag RiMakeTexture
+// writes and GMANTexture reads back; the default leaves a plain, untagged
+// checker.
+bool writeCheckerTexture(const std::string &path,
+                          const std::string &swrap = "",
+                          const std::string &twrap = "") {
   TIFF *tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
     return false;
@@ -129,36 +138,12 @@ bool writeCheckerTexture(const std::string &path) {
   TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
   TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
   TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
+  if (!swrap.empty()) {
+    const std::string wrapModes = swrap + "," + twrap;
+    TIFFSetField(tif, TIFFTAG_PIXAR_WRAPMODES, wrapModes.c_str());
+  }
 
   // Row 0 (top): red, green. Row 1 (bottom): blue, white.
-  const unsigned char row0[6] = {255, 0, 0, 0, 255, 0};
-  const unsigned char row1[6] = {0, 0, 255, 255, 255, 255};
-  bool ok = TIFFWriteScanline(tif, (void *) row0, 0, 0) >= 0 &&
-            TIFFWriteScanline(tif, (void *) row1, 1, 0) >= 0;
-  TIFFClose(tif);
-  return ok;
-}
-
-// Same checker, with TIFFTAG_PIXAR_WRAPMODES set to "<swrap>,<twrap>" --
-// the tag RiMakeTexture writes and GMANTexture reads back.
-bool writeCheckerTextureWithWrap(const std::string &path,
-                                  const std::string &swrap,
-                                  const std::string &twrap) {
-  TIFF *tif = TIFFOpen(path.c_str(), "w");
-  if (tif == nullptr) {
-    return false;
-  }
-  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t) 2);
-  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t) 2);
-  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
-  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 3);
-  TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
-  const std::string wrapModes = swrap + "," + twrap;
-  TIFFSetField(tif, TIFFTAG_PIXAR_WRAPMODES, wrapModes.c_str());
-
   const unsigned char row0[6] = {255, 0, 0, 0, 255, 0};
   const unsigned char row1[6] = {0, 0, 255, 255, 255, 255};
   bool ok = TIFFWriteScanline(tif, (void *) row0, 0, 0) >= 0 &&
@@ -226,7 +211,7 @@ void testWrapModes(const std::string &name) {
 void testRecordedWrapModes(const std::string &pbName,
                             const std::string &plainName,
                             const std::string &mirrorClampName) {
-  check(writeCheckerTextureWithWrap(pbName, "periodic", "black"),
+  check(writeCheckerTexture(pbName, "periodic", "black"),
         pbName + " writes with wrap tag \"periodic,black\"");
   GMANTextureCache &cache = gmanTextureCache();
 
@@ -247,7 +232,7 @@ void testRecordedWrapModes(const std::string &pbName,
   checkColor(cache.sample(plainName, 1.5, 0.25), kGreen,
              "no tag: s=1.5 clamps to the right edge texel");
 
-  check(writeCheckerTextureWithWrap(mirrorClampName, "mirror", "clamp"),
+  check(writeCheckerTexture(mirrorClampName, "mirror", "clamp"),
         mirrorClampName + " writes with wrap tag \"mirror,clamp\"");
   checkColor(cache.sample(mirrorClampName, 1.5, 0.25), kGreen,
              "unparseable tag: falls back to clamp on both axes");
@@ -393,12 +378,7 @@ std::string readAsciiTag(const std::string &path, ttag_t tag) {
 }
 
 bool fileExists(const std::string &path) {
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
-  if (tif == nullptr) {
-    return false;
-  }
-  TIFFClose(tif);
-  return true;
+  return std::filesystem::exists(path);
 }
 
 void testMakeTextureWriter(const std::string &picture,

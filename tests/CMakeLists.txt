@@ -613,9 +613,10 @@ set_tests_properties(wideframe PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# The texture cache (gmantexture.h) and the texture() shadeop: direct
-# sampler assertions plus tests/rib/texture.rib, a paintedplastic Patch
-# read back for its four quadrants' colours.
+# The texture cache (gmantexture.h), the texture() shadeop and
+# gmanMakeTexture: direct sampler and writer assertions, tests/rib/texture.rib
+# (a paintedplastic Patch read back for its four quadrants' colours) and
+# tests/rib/maketexture_wrap.rib (the same, through a MakeTexture request).
 add_executable(gman_texture texture_test.cpp)
 target_link_libraries(gman_texture PRIVATE gman_core TIFF::TIFF)
 
