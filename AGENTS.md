@@ -47,13 +47,13 @@ Keep a spelled-out type where `auto` would hide intent: a narrowing
 conversion, an `initializer_list`, or a literal whose type documents
 something a reader would otherwise have to trace.
 
-New code spells a const reference `T const &`, not `const T &`: `const`
-binds to its immediate left, so `T const &` reads uniformly as "reference
-to const T," the same rule that makes `T * const` a const pointer to `T`;
-`const T &` is the one case where a leading `const` is a special-cased
-exception to that reading. This binds new code only — the existing
-`const std::string &` signatures predate the rule and are not renamed to
-satisfy it.
+New code spells a const reference `T const &` and a const pointee
+`T const *`, not `const T &`/`const T *`: `const` binds to its
+immediate left, so `T const &` and `T const *` read uniformly as
+"reference to const T" and "pointer to const T" — the same rule
+that makes `T * const` a const pointer to `T`. This binds new code
+only — the existing `const std::string &` and `const char *`
+signatures predate the rule and are not renamed to satisfy it.
 
 ## Comments
 
