@@ -564,7 +564,7 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       parseArchiveRecord();
       break;
     case GMANToken::RI_MAKE_TEXTURE:
-      debug("Keyword token: MakeTexture (parse-only)");
+      debug("Keyword token: MakeTexture");
       parseMakeTexture();
       break;
     case GMANToken::RI_MAKE_BUMP:
@@ -1696,19 +1696,34 @@ RtVoid GMANRIBParse::parseArchiveRecord(RtVoid) {
 
 RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
   // MakeTexture picture texture swrap twrap filter swidth twidth paramlist
-  (void) copyStringToken(); // picture
-  (void) copyStringToken(); // texture
-  (void) copyStringToken(); // swrap
-  (void) copyStringToken(); // twrap
-  (void) copyStringToken(); // filter
-  nextFloat();
-  nextFloat();
+  std::string picture = copyStringToken();
+  std::string texture = copyStringToken();
+  std::string swrap = copyStringToken();
+  std::string twrap = copyStringToken();
+  std::string filterName = copyStringToken();
+  RtFloat swidth = nextFloat();
+  RtFloat twidth = nextFloat();
+
+  RtFilterFunc filterfunc;
+  if (! filterByName(filterName, filterfunc)) {
+    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") +
+      filterName + "\"";
+    GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
+    throw error;
+  }
 
   RtInt n = 0;
   RtToken *tokens;
   RtPointer *parms;
   RtInt *counts;
   parseParameterList(n, tokens, parms, counts);
+
+  // RiMakeTextureV's pic/tex parameters are char* rather than const
+  // char* for historical reasons; it only reads through them.
+  renderMan->RiMakeTextureV(const_cast<char *>(picture.c_str()),
+                             const_cast<char *>(texture.c_str()),
+                             swrap.c_str(), twrap.c_str(), filterfunc,
+                             swidth, twidth, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseMakeBump(RtVoid) {

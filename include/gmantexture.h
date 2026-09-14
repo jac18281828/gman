@@ -110,4 +110,15 @@ private:
 // shading runs per vertex, far from anything that would otherwise own it.
 GMAN_EXPORT GMANTextureCache &gmanTextureCache(RtVoid);
 
+// RiMakeTexture's implementation: decodes picture the way GMANTexture does
+// and writes texture as a single-level 8-bit RGB TIFF carrying swrap and
+// twrap in TIFFTAG_PIXAR_WRAPMODES. Never throws -- warns once, naming
+// texture and the cause, and leaves no file at texture, on a null or
+// empty name, an unknown wrap name, a picture that cannot be opened or
+// decoded, an output that cannot be opened or fully written, or a
+// GMAN_WITH_TIFF=OFF build. A successful write forgets texture from
+// gmanTextureCache(), so the next lookup reads what was just written.
+GMAN_EXPORT bool gmanMakeTexture(const char *picture, const char *texture,
+                                  const char *swrap, const char *twrap);
+
 #endif

@@ -114,11 +114,12 @@ each:
   light shaders are C++ modules loaded at run time -- the right shape behind
   the wrong front end. Volume shaders parse and do nothing.
 - **[ ] Displacement shading.** Wants micropolygons, which want REYES.
-- **[~] Many large textures, flat memory.** `texture()` reads a plain TIFF
-  by name through an in-memory cache (`gmanTextureCache()`), decoding each
-  name once and keeping it for the run. The Reyes paper's own requirement
-  is *many large* textures under *bounded* memory; this cache is
-  unbounded, so it stays `[~]` until a paging or tiled scheme lands.
+- **[~] Many large textures, flat memory.** `texture()` reads a TIFF by
+  name, honoring the wrap modes `MakeTexture` records in it, through the
+  in-memory cache (`gmanTextureCache()`), decoding each name once and
+  keeping it for the run. The Reyes paper's own requirement is *many
+  large* textures under *bounded* memory; this cache is unbounded, so it
+  stays `[~]` until a paging or tiled scheme lands.
 - **[~] Quantization, filtering, reconstruction.** Exposure and gamma are
   honored, and pixel reconstruction now runs (see Antialiasing above).
   Quantization still warns and passes the colour through untouched.

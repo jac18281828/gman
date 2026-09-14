@@ -58,6 +58,7 @@
 #include "gmaninlineparse.h"
 #include "gmanvector.h"
 #include "gmanmath.h"
+#include "gmantexture.h"
 
 /*
  * RenderMan API RiRenderMan
@@ -1316,11 +1317,12 @@ RtVoid  GMANRenderManImpl::RiGeometryV(RtToken /*type*/, RtInt /*n*/, RtToken /*
 // ****************************************************
 // ******* ******* ******* MISC ******* ******* *******
 // ****************************************************
-RtVoid  GMANRenderManImpl::RiMakeTextureV(char */*pic*/, char */*tex*/, RtToken /*swrap*/, RtToken /*twrap*/,
+RtVoid  GMANRenderManImpl::RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken twrap,
 				      RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, RtFloat /*twidth*/,
 				      RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdMakeTexture);
+  gmanMakeTexture(pic, tex, swrap, twrap);
 }
 RtVoid  GMANRenderManImpl::RiMakeBumpV(char */*pic*/, char */*tex*/, RtToken /*swrap*/, RtToken /*twrap*/,
 				   RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, RtFloat /*twidth*/,

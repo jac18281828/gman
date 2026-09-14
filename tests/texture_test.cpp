@@ -321,20 +321,9 @@ struct Quadrant {
   GMANColor expected; // texel colour * 0.3 (ambientlight intensity, Ka=1)
 };
 
-void testRenderedQuadrants(const std::string &gman,
-                            const std::string &ribDir) {
-  check(writeCheckerTexture("checker_texture.tif"),
-        "checker_texture.tif writes into the render's working directory");
-
-  const std::string rib = ribDir + "/texture.rib";
-  check(runGman(gman, rib) == 0, "texture.rib renders");
-
-  Image img = readTIFF("texture.tif");
-  check(img.ok, "texture.tif reads back");
-  if (!img.ok) {
-    return;
-  }
-
+// texture.rib and maketexture_wrap.rib share this checker, this camera and
+// this ambientlight, so both read back the same four quadrant colours.
+void checkQuadrants(const Image &img) {
   const RtFloat kAmbient = (RtFloat) 0.3;
   const Quadrant quadrants[4] = {
       {90, 110, "top-left (red)",
@@ -371,6 +360,136 @@ void testRenderedQuadrants(const std::string &gman,
   }
 }
 
+void testRenderedQuadrants(const std::string &gman,
+                            const std::string &ribDir) {
+  check(writeCheckerTexture("checker_texture.tif"),
+        "checker_texture.tif writes into the render's working directory");
+
+  const std::string rib = ribDir + "/texture.rib";
+  check(runGman(gman, rib) == 0, "texture.rib renders");
+
+  Image img = readTIFF("texture.tif");
+  check(img.ok, "texture.tif reads back");
+  if (!img.ok) {
+    return;
+  }
+  checkQuadrants(img);
+}
+
+// ---- the writer: gmanMakeTexture (commit 2) ----
+
+std::string readAsciiTag(const std::string &path, ttag_t tag) {
+  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  if (tif == nullptr) {
+    return std::string();
+  }
+  char *value = nullptr;
+  std::string result;
+  if (TIFFGetField(tif, tag, &value) && value != nullptr) {
+    result = value;
+  }
+  TIFFClose(tif);
+  return result;
+}
+
+bool fileExists(const std::string &path) {
+  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  if (tif == nullptr) {
+    return false;
+  }
+  TIFFClose(tif);
+  return true;
+}
+
+void testMakeTextureWriter(const std::string &picture,
+                            const std::string &texture) {
+  std::remove(texture.c_str());
+  check(gmanMakeTexture(picture.c_str(), texture.c_str(), "periodic",
+                         "black"),
+        "gmanMakeTexture(\"periodic\", \"black\") returns true");
+
+  check(readAsciiTag(texture, TIFFTAG_PIXAR_WRAPMODES) == "periodic,black",
+        texture + "'s TIFFTAG_PIXAR_WRAPMODES is \"periodic,black\"");
+  check(readAsciiTag(texture, TIFFTAG_PIXAR_TEXTUREFORMAT) ==
+            "Plain Texture",
+        texture + "'s TIFFTAG_PIXAR_TEXTUREFORMAT is \"Plain Texture\"");
+
+  GMANTextureCache &cache = gmanTextureCache();
+  checkColor(cache.sample(texture, 0.25, 0.25), kRed,
+             "made texture: texel centre (0.25, 0.25) is red");
+  checkColor(cache.sample(texture, 0.75, 0.25), kGreen,
+             "made texture: texel centre (0.75, 0.25) is green");
+  checkColor(cache.sample(texture, 0.25, 0.75), kBlue,
+             "made texture: texel centre (0.25, 0.75) is blue");
+  checkColor(cache.sample(texture, 0.75, 0.75), kWhite,
+             "made texture: texel centre (0.75, 0.75) is white");
+  checkColor(cache.sample(texture, 1.25, 0.25), kRed,
+             "made texture: s=1.25 wraps periodically to red");
+  checkColor(cache.sample(texture, 0.25, 1.5), kBlack,
+             "made texture: t=1.5 is black outside the image");
+}
+
+void testMakeTextureEviction(const std::string &picture,
+                              const std::string &texture) {
+  std::remove(texture.c_str());
+  GMANTextureCache &cache = gmanTextureCache();
+
+  check(gmanMakeTexture(picture.c_str(), texture.c_str(), "clamp", "clamp"),
+        "gmanMakeTexture(\"clamp\", \"clamp\") returns true");
+  checkColor(cache.sample(texture, 1.25, 0.25), kGreen,
+             "eviction: clamp holds the right edge texel (green)");
+
+  check(gmanMakeTexture(picture.c_str(), texture.c_str(), "periodic",
+                         "periodic"),
+        "gmanMakeTexture(\"periodic\", \"periodic\") returns true");
+  checkColor(cache.sample(texture, 1.25, 0.25), kRed,
+             "eviction: a second MakeTexture forgets the cached name, so "
+             "this reads periodic (red)");
+}
+
+void testMakeTextureFailures(const std::string &picture) {
+  const std::string badWrap = "made_bad_wrap.tex";
+  std::remove(badWrap.c_str());
+  check(! gmanMakeTexture(picture.c_str(), badWrap.c_str(), "mirror",
+                           "black"),
+        "gmanMakeTexture with an unknown wrap name returns false");
+  check(! fileExists(badWrap), badWrap + " is not written");
+
+  const std::string missingPictureTarget = "made_missing_picture.tex";
+  std::remove(missingPictureTarget.c_str());
+  check(! gmanMakeTexture("texture_test_missing_9f3ab2.tif",
+                           missingPictureTarget.c_str(), "clamp", "clamp"),
+        "gmanMakeTexture with a picture that does not exist returns false");
+  check(! fileExists(missingPictureTarget),
+        missingPictureTarget + " is not written");
+
+  check(! gmanMakeTexture(picture.c_str(), "", "clamp", "clamp"),
+        "gmanMakeTexture with an empty texture name returns false");
+}
+
+// ---- through RIB: MakeTexture followed by a render (commit 2) ----
+
+void testMadeTextureRenders(const std::string &gman,
+                             const std::string &ribDir) {
+  check(writeCheckerTexture("checker_texture.tif"),
+        "checker_texture.tif writes for maketexture_wrap.rib's MakeTexture");
+  std::remove("checker_made.tex");
+
+  const std::string rib = ribDir + "/maketexture_wrap.rib";
+  check(runGman(gman, rib) == 0, "maketexture_wrap.rib renders");
+
+  check(readAsciiTag("checker_made.tex", TIFFTAG_PIXAR_WRAPMODES) ==
+            "periodic,black",
+        "checker_made.tex's TIFFTAG_PIXAR_WRAPMODES is \"periodic,black\"");
+
+  Image img = readTIFF("maketexture_wrap.tif");
+  check(img.ok, "maketexture_wrap.tif reads back");
+  if (!img.ok) {
+    return;
+  }
+  checkQuadrants(img);
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -399,6 +518,12 @@ int main(int argc, char *argv[]) {
   testShadeopUsesRecordedWrapModes("checker_pb.tif");
 
   testRenderedQuadrants(gman, ribDir);
+
+  testMakeTextureWriter("checker_direct.tif", "made_pb.tex");
+  testMakeTextureEviction("checker_direct.tif", "made_evict.tex");
+  testMakeTextureFailures("checker_direct.tif");
+
+  testMadeTextureRenders(gman, ribDir);
 
   return checkSummary("texture holds");
 }

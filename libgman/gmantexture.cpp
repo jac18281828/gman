@@ -29,6 +29,7 @@ extern "C" {
 
 #include <cctype>
 #include <cmath>
+#include <cstdio>
 
 #include "gmantexture.h"
 #include "gmanlog.h"
@@ -110,6 +111,16 @@ bool parseWrapModes(const char *tag, GMANTextureWrap &swrap,
   swrap = s;
   twrap = t;
   return true;
+}
+
+// RISpec's wrap names, written lower-case -- the inverse of wrapByName.
+const char *wrapName(GMANTextureWrap wrap) {
+  switch (wrap) {
+    case GMAN_TEXTURE_PERIODIC: return "periodic";
+    case GMAN_TEXTURE_BLACK:    return "black";
+    case GMAN_TEXTURE_CLAMP:
+    default:                    return "clamp";
+  }
 }
 #endif
 
@@ -235,4 +246,100 @@ void GMANTextureCache::forget(const std::string &name) {
 GMANTextureCache &gmanTextureCache(RtVoid) {
   static GMANTextureCache cache;
   return cache;
+}
+
+bool gmanMakeTexture(const char *picture, const char *texture,
+                      const char *swrap, const char *twrap) {
+#ifdef HAVE_LIBTIFF
+  const std::string textureName = texture != nullptr ? texture : "";
+  if (textureName.empty()) {
+    warning("MakeTexture: empty texture name, nothing written");
+    return false;
+  }
+
+  GMANTextureWrap sw, tw;
+  if (!wrapByName(swrap != nullptr ? swrap : "", sw) ||
+      !wrapByName(twrap != nullptr ? twrap : "", tw)) {
+    warning("MakeTexture \"{}\": unknown wrap mode \"{}\",\"{}\"",
+            textureName.c_str(), swrap != nullptr ? swrap : "",
+            twrap != nullptr ? twrap : "");
+    return false;
+  }
+
+  const std::string pictureName = picture != nullptr ? picture : "";
+  TIFF *src = TIFFOpen(pictureName.c_str(), "r");
+  if (src == nullptr) {
+    warning("MakeTexture \"{}\": cannot open picture \"{}\"",
+            textureName.c_str(), pictureName.c_str());
+    return false;
+  }
+
+  uint32_t w = 0, h = 0;
+  TIFFGetField(src, TIFFTAG_IMAGEWIDTH, &w);
+  TIFFGetField(src, TIFFTAG_IMAGELENGTH, &h);
+
+  std::vector<uint32_t> raster(w * h);
+  // Same decode call GMANTexture's own constructor uses: a texture made
+  // from a picture samples identically to that picture at every texel
+  // centre.
+  int ok = TIFFReadRGBAImageOriented(src, w, h, raster.data(),
+                                      ORIENTATION_TOPLEFT, 0);
+  TIFFClose(src);
+
+  if (!ok || w == 0 || h == 0) {
+    warning("MakeTexture \"{}\": cannot decode picture \"{}\"",
+            textureName.c_str(), pictureName.c_str());
+    return false;
+  }
+
+  TIFF *dst = TIFFOpen(textureName.c_str(), "w");
+  if (dst == nullptr) {
+    warning("MakeTexture \"{}\": cannot open for writing",
+            textureName.c_str());
+    return false;
+  }
+
+  TIFFSetField(dst, TIFFTAG_IMAGEWIDTH, w);
+  TIFFSetField(dst, TIFFTAG_IMAGELENGTH, h);
+  TIFFSetField(dst, TIFFTAG_BITSPERSAMPLE, 8);
+  TIFFSetField(dst, TIFFTAG_SAMPLESPERPIXEL, 3);
+  TIFFSetField(dst, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+  TIFFSetField(dst, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+  TIFFSetField(dst, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+  TIFFSetField(dst, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+  TIFFSetField(dst, TIFFTAG_ROWSPERSTRIP, 1);
+  const std::string wrapModes =
+      std::string(wrapName(sw)) + "," + wrapName(tw);
+  TIFFSetField(dst, TIFFTAG_PIXAR_WRAPMODES, wrapModes.c_str());
+  TIFFSetField(dst, TIFFTAG_PIXAR_TEXTUREFORMAT, "Plain Texture");
+
+  std::vector<unsigned char> row(w * 3);
+  bool writeOk = true;
+  for (uint32_t y = 0; y < h && writeOk; ++y) {
+    for (uint32_t x = 0; x < w; ++x) {
+      uint32_t p = raster[y * w + x];
+      row[x * 3 + 0] = TIFFGetR(p);
+      row[x * 3 + 1] = TIFFGetG(p);
+      row[x * 3 + 2] = TIFFGetB(p);
+    }
+    writeOk = TIFFWriteScanline(dst, row.data(), y, 0) >= 0;
+  }
+  TIFFClose(dst);
+
+  if (!writeOk) {
+    warning("MakeTexture \"{}\": failed to write", textureName.c_str());
+    std::remove(textureName.c_str());
+    return false;
+  }
+
+  gmanTextureCache().forget(textureName);
+  return true;
+#else
+  (void) picture;
+  (void) swrap;
+  (void) twrap;
+  warning("MakeTexture \"{}\": built without libtiff, nothing written",
+          texture != nullptr ? texture : "");
+  return false;
+#endif
 }
