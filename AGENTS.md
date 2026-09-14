@@ -39,6 +39,22 @@ a behavior change. A port that changes results cannot be reviewed, because
 a port bug becomes indistinguishable from a logic change — a behavior
 change gets its own commit, named as such in the message.
 
+Prefer `const auto` for a local that is never reassigned, over spelling
+out its type: `const auto name = expr;` beats `Type name = expr;` when
+`expr`'s type is already evident — a function return, a constructor call
+— and repeating it only gives it a second place to drift out of sync.
+Keep a spelled-out type where `auto` would hide intent: a narrowing
+conversion, an `initializer_list`, or a literal whose type documents
+something a reader would otherwise have to trace.
+
+New code spells a const reference `T const &`, not `const T &`: `const`
+binds to its immediate left, so `T const &` reads uniformly as "reference
+to const T," the same rule that makes `T * const` a const pointer to `T`;
+`const T &` is the one case where a leading `const` is a special-cased
+exception to that reading. This binds new code only — the existing
+`const std::string &` signatures predate the rule and are not renamed to
+satisfy it.
+
 ## Comments
 
 No expository or "my way" comments. No comments about the change instead
