@@ -39,9 +39,9 @@
 namespace {
 
 int runGmanLog(const std::string &gman, const std::string &ribPath,
-	       const std::string &workdir) {
+               const std::string &workdir) {
   const std::string command = "cd \"" + workdir + "\" && \"" + gman +
-    "\" -l \"" + ribPath + "\" > run.log 2>&1";
+                              "\" -l \"" + ribPath + "\" > run.log 2>&1";
   const int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
@@ -53,13 +53,14 @@ std::string slurp(const std::string &path) {
   return ss.str();
 }
 
-} // namespace
+}  // namespace
 
 int main(int argc, char *argv[]) {
   if (argc < 4) {
-    std::fprintf(stderr,
-		 "usage: %s <gman-binary> <tests/rib/sphere.rib> <scratch dir>\n",
-		 argv[0]);
+    std::fprintf(
+        stderr,
+        "usage: %s <gman-binary> <tests/rib/sphere.rib> <scratch dir>\n",
+        argv[0]);
     return 2;
   }
 
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
   std::filesystem::create_directories(scratch, ec);
   if (ec) {
     std::fprintf(stderr, "cannot create %s: %s\n", scratch.c_str(),
-		 ec.message().c_str());
+                 ec.message().c_str());
     return 2;
   }
 
@@ -102,12 +103,14 @@ int main(int argc, char *argv[]) {
     check(exitCode == 0, std::string(c.name) + ": gman -l exits 0");
 
     check(std::filesystem::exists(logPath),
-	  std::string(c.name) + ": " + c.logName + " exists");
+          std::string(c.name) + ": " + c.logName + " exists");
 
     const std::string logContents = slurp(logPath);
-    check(logContents.find("Setting log:") != std::string::npos,
-	  std::string(c.name) + ": " + c.logName + " contains \"Setting log:\"");
+    check(
+        logContents.find("Setting log:") != std::string::npos,
+        std::string(c.name) + ": " + c.logName + " contains \"Setting log:\"");
   }
 
-  return checkSummary("gman -l names its log file correctly for every path length");
+  return checkSummary(
+      "gman -l names its log file correctly for every path length");
 }

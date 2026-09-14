@@ -89,6 +89,12 @@ sites from an allocation whose owner threw before reaching its `delete`. A
 class that cannot be safely copied, and a function that returns before it
 frees, are exactly the shapes those two bugs took.
 
+Build strings with `std::string` and `std::format`, not a hand-sized
+buffer: no `sprintf`/`strcpy`/`strcat` family call (bounded or not), no
+`new char[` and no `PATH_MAX` outside `tests/`, with
+`libgman/gmanribparse.cpp`'s one RI string copy the exception —
+`tests/bannedcalls_test.cpp` enforces this on every build.
+
 `GMANParameterList::getPointer` returns NULL for an absent token — an
 optional, not an `unwrap`. Code with an optional parameter must check the
 returned pointer before dereferencing it (`gmanshaderparams.h`'s

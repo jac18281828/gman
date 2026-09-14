@@ -56,8 +56,8 @@ inline bool hasSourceExtension(const std::filesystem::path &path) {
          kExtensions.end();
 }
 
-inline std::vector<std::filesystem::path>
-collectSourceFiles(const std::vector<std::string> &dirs) {
+inline std::vector<std::filesystem::path> collectSourceFiles(
+    const std::vector<std::string> &dirs) {
   namespace fs = std::filesystem;
   std::vector<fs::path> files;
   for (const auto &dir : dirs) {
