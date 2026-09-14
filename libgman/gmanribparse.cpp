@@ -25,8 +25,8 @@
 
 /* Local Headers */
 #include <cctype>    /* tolower */
-#include <cstring>   /* strlen, strcpy, strcmp, memcpy -- libstdc++ does not
-                      * pull these in transitively the way libc++ does */
+#include <cstring>   /* strcmp, memcpy -- libstdc++ does not pull these in
+                      * transitively the way libc++ does */
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -111,6 +111,15 @@ bool filterByName(const std::string &name, RtFilterFunc &filterfunc) {
     return false;
   }
   return true;
+}
+
+// Heap copy of s, including its null terminator. The RI API takes char*,
+// so a parsed string handed to it needs its own heap-owned copy; callers
+// release it with delete[].
+char *duplicateCString(const std::string &s) {
+  char *dup = new char[s.size() + 1];
+  std::memcpy(dup, s.c_str(), s.size() + 1);
+  return dup;
 }
 
 } // namespace
@@ -1910,8 +1919,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
     // request that owns this parameter list has been dispatched.
     GMANToken keyToken = nextToken();
     const std::string &keyStr = keyToken.getString();
-    char *key = new char[keyStr.size() + 1];
-    strcpy(key, keyStr.c_str());
+    char *key = duplicateCString(keyStr);
     pendingParamKeys.push_back(key);
 
     const GMANToken &lookAhead = peekToken();
@@ -1947,8 +1955,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
       // registered with pendingParamValues the same way parseArray's string
       // arrays are, rather than kept as a std::string here.
       const auto str = copyStringToken();
-      char *dup = new char[str.size() + 1];
-      strcpy(dup, str.c_str());
+      char *dup = duplicateCString(str);
       RtToken *value = new RtToken[1];
       value[0] = dup;
       paramMap[key] = {(RtPointer) value, 1};
@@ -2108,9 +2115,7 @@ RtToken* GMANRIBParse::TokenVector::toRtTokenArray() {
       throw(GMANError(RIE_SYNTAX, RIE_ERROR, "Non-string in array."));
     }
     const std::string &s = tok.getString();
-    char *dup = new char[s.size() + 1];
-    strcpy(dup, s.c_str());
-    array[i] = dup;
+    array[i] = duplicateCString(s);
   }
 
   return array;
