@@ -34,26 +34,17 @@
  * case that ever changes, but nothing in the tree uses them today.
  */
 
-#include <algorithm>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
 #include "check.h"
+#include "sourcescan.h"
 
 namespace {
 
 namespace fs = std::filesystem;
-
-std::string readFile(const fs::path &path) {
-  std::ifstream in(path, std::ios::binary);
-  std::ostringstream contents;
-  contents << in.rdbuf();
-  return contents.str();
-}
 
 bool pathEndsWith(const fs::path &path, const std::string &suffix) {
   const std::string generic = path.generic_string();
@@ -62,32 +53,9 @@ bool pathEndsWith(const fs::path &path, const std::string &suffix) {
                          suffix) == 0;
 }
 
-bool hasSourceExtension(const fs::path &path) {
-  static const std::vector<std::string> kExtensions = {
-      ".h", ".hpp", ".c", ".cpp", ".y", ".l", ".yy", ".ll"};
-  const std::string ext = path.extension().string();
-  return std::find(kExtensions.begin(), kExtensions.end(), ext) !=
-         kExtensions.end();
-}
-
 bool isHeader(const fs::path &path) {
   const std::string ext = path.extension().string();
   return ext == ".h" || ext == ".hpp";
-}
-
-std::vector<fs::path> collectSourceFiles(const std::vector<std::string> &dirs) {
-  std::vector<fs::path> files;
-  for (const auto &dir : dirs) {
-    if (!fs::exists(dir)) {
-      continue;
-    }
-    for (const auto &entry : fs::recursive_directory_iterator(dir)) {
-      if (entry.is_regular_file() && hasSourceExtension(entry.path())) {
-        files.push_back(entry.path());
-      }
-    }
-  }
-  return files;
 }
 
 // The threading list §1 confines to gmanparallel.cpp and (for <mutex> and
