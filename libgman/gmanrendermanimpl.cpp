@@ -985,7 +985,7 @@ RtVoid  GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt
   allowed(cmdGeneralPolygon);
 
   if (nloops < 1) {
-    warning("GeneralPolygon: nloops = %d is invalid; ignoring.", nloops);
+    warning("GeneralPolygon: nloops = {} is invalid; ignoring.", nloops);
     worldManager->add(objectManager->create());
     return;
   }
@@ -999,7 +999,7 @@ RtVoid  GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt
   long long total = 0;
   for (RtInt i = 0; i < nloops; i++) {
     if (nverts[i] < 0) {
-      warning("GeneralPolygon: nverts[%d] = %d is negative; ignoring.",
+      warning("GeneralPolygon: nverts[{}] = {} is negative; ignoring.",
 	      i, nverts[i]);
       worldManager->add(objectManager->create());
       return;
@@ -1007,7 +1007,7 @@ RtVoid  GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt
     total += nverts[i];
   }
   if (total > (long long) INT_MAX / 3) {
-    warning("GeneralPolygon: nverts sums to %lld, times 3 overflows RtInt; "
+    warning("GeneralPolygon: nverts sums to {}, times 3 overflows RtInt; "
 	    "ignoring.", total);
     worldManager->add(objectManager->create());
     return;
