@@ -98,8 +98,8 @@ bool wrapByName(const std::string &name, GMANTextureWrap &wrap) {
 // both halves name a known wrap mode.
 bool parseWrapModes(const char *tag, GMANTextureWrap &swrap,
                      GMANTextureWrap &twrap) {
-  std::string joined(tag);
-  std::string::size_type comma = joined.find(',');
+  const auto joined = std::string(tag);
+  const auto comma = joined.find(',');
   if (comma == std::string::npos) {
     return false;
   }
