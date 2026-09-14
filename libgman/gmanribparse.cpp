@@ -662,7 +662,7 @@ std::string GMANRIBParse::copyStringToken() {
 }
 
 RtVoid  GMANRIBParse::parseOption(RtVoid) {
-  std::string name = copyStringToken();
+  const auto name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -676,9 +676,9 @@ RtVoid  GMANRIBParse::parseOption(RtVoid) {
 }
 
 RtVoid  GMANRIBParse::parseDisplay(RtVoid) {
-  std::string name = copyStringToken();
-  std::string type = copyStringToken();
-  std::string mode = copyStringToken();
+  const auto name = copyStringToken();
+  const auto type = copyStringToken();
+  const auto mode = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -703,7 +703,7 @@ RtVoid  GMANRIBParse::parseFormat(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseProjection(RtVoid) {
-  std::string name = copyStringToken();
+  const auto name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -716,7 +716,7 @@ RtVoid GMANRIBParse::parseProjection(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) {
-  std::string type = copyStringToken();
+  const auto type = copyStringToken();
   RtFloat value = nextFloat();
 
   renderMan->RiGeometricApproximation(type.c_str(), value);
@@ -724,7 +724,7 @@ RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) {
 
 RtVoid GMANRIBParse::parseShadingInterpolation(RtVoid) {
 
-  std::string type = copyStringToken();
+  const auto type = copyStringToken();
 
   renderMan->RiShadingInterpolation(type.c_str());
 }
@@ -738,7 +738,7 @@ RtVoid GMANRIBParse::parseShadingRate(RtVoid) {
 
 RtVoid GMANRIBParse::parseOrientation(RtVoid) {
 
-  std::string orientation = copyStringToken();
+  const auto orientation = copyStringToken();
 
   renderMan->RiOrientation(orientation.c_str());
 }
@@ -778,7 +778,7 @@ RtVoid GMANRIBParse::parseShutter(RtVoid) {
 
 RtVoid GMANRIBParse::parseHider(RtVoid) {
 
-  std::string type = copyStringToken();
+  const auto type = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -820,15 +820,15 @@ RtVoid GMANRIBParse::parseClipping(RtVoid) {
 
 RtVoid GMANRIBParse::parseDeclare(RtVoid) {
 
-  std::string name = copyStringToken();
-  std::string declaration = copyStringToken();
+  const auto name = copyStringToken();
+  const auto declaration = copyStringToken();
 
   renderMan->RiDeclare(name.c_str(), declaration.c_str());
 }
 
 RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
-  std::string name = copyStringToken();
+  const auto name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -899,7 +899,7 @@ RtVoid GMANRIBParse::parseOpacity(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseLightSource(RtVoid) {
-  std::string shadername = copyStringToken();
+  const auto shadername = copyStringToken();
   int sequence = nextInt();
 
   RtInt n = 0;
@@ -916,7 +916,7 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseSurface(RtVoid) {
-  std::string shadername = copyStringToken();
+  const auto shadername = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -931,7 +931,7 @@ RtVoid GMANRIBParse::parseSurface(RtVoid) {
 
 RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) {
 
-  std::string name = copyStringToken();
+  const auto name = copyStringToken();
 
   renderMan->RiCoordinateSystem(name.c_str());
 }
@@ -1260,7 +1260,7 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
 
 RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
-  std::string type = copyStringToken();
+  const auto type = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1315,11 +1315,11 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
 
 RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
 
-  std::string type = copyStringToken();
+  const auto type = copyStringToken();
   RtInt nu = nextInt();
-  std::string uwrap = copyStringToken();
+  const auto uwrap = copyStringToken();
   RtInt nv = nextInt();
-  std::string vwrap = copyStringToken();
+  const auto vwrap = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1354,7 +1354,7 @@ RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) {
 
 RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
 
-  std::string requested = copyStringToken();
+  const auto requested = copyStringToken();
 
   // Resolve relative to the including file first, then fall back to the
   // path as given (relative to the process's working directory). There is
@@ -1477,7 +1477,7 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
     }
     delete [] values;
   } else {
-    std::string uname = copyStringToken();
+    const auto uname = copyStringToken();
     bool found = basisByName(uname, ubasis);
     if (! found) {
       std::string msg = std::string("GMANRIBParse: unknown basis \"") +
@@ -1504,7 +1504,7 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
     }
     delete [] values;
   } else {
-    std::string vname = copyStringToken();
+    const auto vname = copyStringToken();
     bool found = basisByName(vname, vbasis);
     if (! found) {
       std::string msg = std::string("GMANRIBParse: unknown basis \"") +
@@ -1520,7 +1520,7 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
 
 RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
 
-  std::string name = copyStringToken();
+  const auto name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1535,7 +1535,7 @@ RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
 
 RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
 
-  std::string name = copyStringToken();
+  const auto name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1550,7 +1550,7 @@ RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
 
 RtVoid GMANRIBParse::parseImager(RtVoid) {
 
-  std::string name = copyStringToken();
+  const auto name = copyStringToken();
 
   RtInt n = 0;
   RtToken* tokens;
@@ -1696,11 +1696,11 @@ RtVoid GMANRIBParse::parseArchiveRecord(RtVoid) {
 
 RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
   // MakeTexture picture texture swrap twrap filter swidth twidth paramlist
-  std::string picture = copyStringToken();
-  std::string texture = copyStringToken();
-  std::string swrap = copyStringToken();
-  std::string twrap = copyStringToken();
-  std::string filterName = copyStringToken();
+  const auto picture = copyStringToken();
+  const auto texture = copyStringToken();
+  const auto swrap = copyStringToken();
+  const auto twrap = copyStringToken();
+  const auto filterName = copyStringToken();
   RtFloat swidth = nextFloat();
   RtFloat twidth = nextFloat();
 
@@ -1812,7 +1812,7 @@ RtVoid GMANRIBParse::parseIfEnd(RtVoid) {
 RtVoid GMANRIBParse::parsePixelFilter(RtVoid) {
   // PixelFilter filterfunc xwidth ywidth -- filterfunc names one of the
   // built-in RtFilterFunc implementations.
-  std::string name = copyStringToken();
+  const auto name = copyStringToken();
   RtFloat xwidth = nextFloat();
   RtFloat ywidth = nextFloat();
 
@@ -1946,7 +1946,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
       // list has been collected -- so it is duplicated onto the heap and
       // registered with pendingParamValues the same way parseArray's string
       // arrays are, rather than kept as a std::string here.
-      std::string str = copyStringToken();
+      const auto str = copyStringToken();
       char *dup = new char[str.size() + 1];
       strcpy(dup, str.c_str());
       RtToken *value = new RtToken[1];
