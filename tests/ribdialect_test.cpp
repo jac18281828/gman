@@ -240,12 +240,18 @@ int main(int argc, char *argv[]) {
   // Malformed input, for the error paths. A parameter list that throws
   // part-built used to strand both the strings already duplicated into the
   // array and the keys/values the list had accumulated; both are now
-  // released as the stack unwinds. This fixture crosses WorldBegin;
-  // GMANRenderManImpl::RiWorldBegin builds its output driver into a local
-  // unique_ptr and only publishes it once every fallible step has
-  // succeeded (gmanrendermanimpl.cpp), so a GMANError unwinding through
-  // here does not leak it either -- the check below actually gates
-  // toRtTokenArray's own release-on-throw, not just a NOP.
+  // released as the stack unwinds. This fixture throws from Attribute,
+  // after WorldBegin has already returned successfully -- nothing unwinds
+  // through RiWorldBegin here, and RiWorldEnd (the only place that
+  // deletes the output driver) is never reached either, so the driver
+  // itself is never freed on this path. That does not make the check
+  // below meaningless: gman's static-local renderMan (gman.cpp) keeps the
+  // driver reachable, and LeakSanitizer never reports what is still
+  // reachable from static storage. The check is instead a genuine gate on
+  // toRtTokenArray's own release-on-throw: the strings it duplicates
+  // before the non-string element never reach renderMan at all, so a
+  // reverted fix would leave them unreachable and LeakSanitizer would
+  // report them.
   {
     const std::string path = ribDir + "/malformed/stringarray.rib";
     Result r = run(gman, path, /*debug=*/false);

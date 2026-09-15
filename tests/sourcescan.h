@@ -22,9 +22,9 @@
  */
 
 /*
- * The recursive source-file scan threadcontainment_test.cpp and
- * bannedcalls_test.cpp both need: read a file whole, and walk a set of
- * directories for files with a source extension.
+ * The recursive source-file scan threadcontainment_test.cpp needs: read
+ * a file whole, and walk a set of directories for files with a source
+ * extension.
  *
  * Bison/flex emit their grammar and lexer sources as .yy/.ll in this tree
  * (gmansl/gmanslgrammar.yy, gmansltokenize.ll); .y/.l are scanned too in
@@ -49,7 +49,7 @@ inline std::string readFile(const std::filesystem::path &path) {
 }
 
 inline bool pathEndsWith(const std::filesystem::path &path,
-                          const std::string &suffix) {
+                         const std::string &suffix) {
   const std::string generic = path.generic_string();
   return generic.size() >= suffix.size() &&
          generic.compare(generic.size() - suffix.size(), suffix.size(),
