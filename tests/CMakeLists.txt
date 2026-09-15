@@ -711,3 +711,19 @@ add_test(NAME threadcontainment
 set_tests_properties(threadcontainment PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# libtiff lives behind one seam: no header, and no source file other than
+# libgman/gmantiff.cpp, may name a libtiff symbol.
+add_executable(gman_tiffcontainment tiffcontainment_test.cpp)
+add_test(NAME tiffcontainment
+  COMMAND gman_tiffcontainment
+          "${CMAKE_SOURCE_DIR}/include"
+          "${CMAKE_SOURCE_DIR}/libgman"
+          "${CMAKE_SOURCE_DIR}/libgmanrib"
+          "${CMAKE_SOURCE_DIR}/shaders"
+          "${CMAKE_SOURCE_DIR}/renderers"
+          "${CMAKE_SOURCE_DIR}/gman"
+          "${CMAKE_SOURCE_DIR}/gmansl")
+set_tests_properties(tiffcontainment PROPERTIES
+  LABELS unit
+  TIMEOUT 30)

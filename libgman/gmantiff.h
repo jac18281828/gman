@@ -32,9 +32,9 @@
 
 #include "gmanoutputtiff.h"
 
-// libtiff's own handle, typedef struct tiff TIFF; in <tiffio.h>. Forward
-// declared by its tag name so a pointer to it needs no libtiff header;
-// only gmantiff.cpp ever includes one.
+// libtiff's own handle, typedef struct tiff TIFF, spelled by libtiff's
+// own I/O header. Forward declared by its tag name so a pointer to it
+// needs no libtiff header; only gmantiff.cpp ever includes one.
 struct tiff;
 
 /*

@@ -32,9 +32,9 @@
 #include "gmancolor.h"
 
 // How a sample outside [0, 1] is resolved, per axis, independently for s
-// and t. RiMakeTexture records this per file in TIFFTAG_PIXAR_WRAPMODES;
-// GMANTexture reads it back at construction, and GMANTextureCache::sample
-// applies it per axis.
+// and t. RiMakeTexture records this per file in libtiff's Pixar
+// wrap-modes tag; GMANTexture reads it back at construction, and
+// GMANTextureCache::sample applies it per axis.
 enum GMANTextureWrap {
   GMAN_TEXTURE_CLAMP,
   GMAN_TEXTURE_PERIODIC,
@@ -65,9 +65,9 @@ public:
   GMANColor sample(RtFloat s, RtFloat t, GMANTextureWrap swrap,
                     GMANTextureWrap twrap) const;
 
-  // Read from TIFFTAG_PIXAR_WRAPMODES at construction; an absent or
-  // unparseable tag leaves both clamp. GMANTextureCache reads these for
-  // its own sample().
+  // Read from libtiff's Pixar wrap-modes tag at construction; an absent
+  // or unparseable tag leaves both clamp. GMANTextureCache reads these
+  // for its own sample().
   GMANTextureWrap swrap = GMAN_TEXTURE_CLAMP;
   GMANTextureWrap twrap = GMAN_TEXTURE_CLAMP;
 
@@ -116,8 +116,8 @@ GMAN_EXPORT GMANTextureCache &gmanTextureCache(RtVoid);
 
 // RiMakeTexture's implementation: decodes picture the way GMANTexture does
 // and writes texture as a single-level 8-bit RGB TIFF carrying swrap and
-// twrap in TIFFTAG_PIXAR_WRAPMODES. Never throws -- warns once, naming
-// texture and the cause, and leaves no file at texture, on a null or
+// twrap in libtiff's Pixar wrap-modes tag. Never throws -- warns once,
+// naming texture and the cause, and leaves no file at texture, on a null or
 // empty name, an unknown wrap name, a picture that cannot be opened or
 // decoded, an output that cannot be opened or fully written, or a
 // GMAN_WITH_TIFF=OFF build. A successful write forgets texture from

@@ -88,9 +88,9 @@ bool wrapByName(const std::string &name, GMANTextureWrap &wrap) {
   return false;
 }
 
-// Parses TIFFTAG_PIXAR_WRAPMODES's "<swrap>,<twrap>" -- the form libtiff's
-// own texture tools write. False, leaving swrap/twrap untouched, unless
-// both halves name a known wrap mode.
+// Parses libtiff's Pixar wrap-modes tag's "<swrap>,<twrap>" -- the form
+// libtiff's own texture tools write. False, leaving swrap/twrap
+// untouched, unless both halves name a known wrap mode.
 bool parseWrapModes(const char *tag, GMANTextureWrap &swrap,
                      GMANTextureWrap &twrap) {
   const auto joined = std::string(tag);
