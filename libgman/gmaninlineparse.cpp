@@ -21,6 +21,8 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+#include <cstdlib>
+
 #include "gmaninlineparse.h"
 
 RtVoid GMANInlineParse::check_syntax ()
@@ -189,9 +191,9 @@ bool GMANInlineParse::is_type (std::string str)
 // check if this int is >0 too
 bool GMANInlineParse::is_int (std::string str)
 {
-  int i,j;
-  i=sscanf(str.c_str(),"%d",&j);
-  if ((i!=1) || (j<=0)) return false;
+  char *end;
+  const long j = strtol(str.c_str(), &end, 10);
+  if ((end==str.c_str()) || (j<=0)) return false;
   return true;
 }
 
@@ -223,9 +225,7 @@ GMANTokenEntry::TokenType GMANInlineParse::get_type (std::string str)
 
 int  GMANInlineParse::get_size (std::string str)
 {
-  int i;
-  sscanf(str.c_str(),"%d",&i);
-  return i;
+  return static_cast<int>(strtol(str.c_str(), nullptr, 10));
 }
 
 RtVoid GMANInlineParse::lc(std::string &str)
