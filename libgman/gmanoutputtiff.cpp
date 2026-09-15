@@ -22,18 +22,15 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
-#ifdef HAVE_LIBTIFF
-extern "C" {
-#include <tiff.h> 
-#include <tiffio.h> 
-}
-#endif
+#include <vector>
+
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanoutput.h" /* Super class */
 #include "gmanoutputtiff.h" /* Declaration Header */
 #include "gmanerror.h"
 #include "gmandefaults.h"
+#include "gmantiff.h"
 
 /*
  * RenderMan API GMANOutputTIFF
@@ -55,113 +52,74 @@ GMANOutputTIFF::~GMANOutputTIFF() { };
 RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/,
 			    RtFloat gain,
 			    RtFloat gamma) {
-  // Unused without HAVE_LIBTIFF, whose absence leaves this whole body
-  // empty below -- the cast keeps a GMAN_WITH_TIFF=OFF build clean of
-  // -Wunused-parameter without renaming a parameter the #ifdef'd body
-  // still uses.
-  (RtVoid) gain;
-  (RtVoid) gamma;
-#ifdef HAVE_LIBTIFF
-    gammaCorrect.setExposure(gain, gamma);
+  if (!GMANTIFFWriter::available()) {
+    return;
+  }
 
-    TIFF *file;
+  gammaCorrect.setExposure(gain, gamma);
 
-    file = TIFFOpen(outputName.c_str(), "w");
-    if (file == NULL) {
-	std::string errorMsg("Unable to open output file: ");
-	errorMsg.append(outputName);
-	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
-    }
+  const RtInt samplesperpixel = 4;  // RGBA
 
-    const RtInt samplesperpixel=4;
+  GMANTIFFWriter writer(outputName, (uint32_t) xres, (uint32_t) yres,
+                         (uint16_t) samplesperpixel, compression);
+  if (!writer.isOpen()) {
+    std::string errorMsg("Unable to open output file: ");
+    errorMsg.append(outputName);
+    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
+  }
 
-    // setup the TIFF
-    TIFFSetField(file, TIFFTAG_IMAGEWIDTH, (uint32_t) xres);
-    TIFFSetField(file, TIFFTAG_IMAGELENGTH, (uint32_t) yres);
-    TIFFSetField(file, TIFFTAG_BITSPERSAMPLE, 8);
-	switch(compression) {
-	    case NONE:
-		TIFFSetField(file, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
-		break;
-	    case PACKBITS:
-		TIFFSetField(file, TIFFTAG_COMPRESSION, COMPRESSION_PACKBITS);
-		break;
-	    case LZW:
-		TIFFSetField(file, TIFFTAG_COMPRESSION, COMPRESSION_LZW);
-		break;
-	    case CCITTRLE:
-		TIFFSetField(file, TIFFTAG_COMPRESSION, COMPRESSION_CCITTRLE);
-		break;
-	    case CCITTFAX3:
-		TIFFSetField(file, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX3);
-		break;
-	    case CCITTFAX4:
-		TIFFSetField(file, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX4);
-		break;
-	}
-     
-	TIFFSetField(file, TIFFTAG_SAMPLESPERPIXEL, samplesperpixel); // RGBA
+  writer.setImageDescription(
+      "GMAN Generated TIFF Image.\n"
+      "Copyright (c) 2002 John Cairns <john@2ad.com>\n"
+      "Licensed under the GNU Lesser General Public License v2.1 or later.\n");
 
-	TIFFSetField(file, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);  // set the origin of the image.
-	TIFFSetField(file, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB); 
-	TIFFSetField(file, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-	TIFFSetField(file, TIFFTAG_ROWSPERSTRIP, 1);
-	TIFFSetField(file, TIFFTAG_IMAGEDESCRIPTION, 
-		     "GMAN Generated TIFF Image.\n"
-		     "Copyright (c) 2002 John Cairns <john@2ad.com>\n"
-		     "Licensed under the GNU Lesser General Public License v2.1 or later.\n");
-   
-	tsize_t linebytes = samplesperpixel * xres;   // length in memory of one row of pixel in the image. 
-	unsigned char *buf = NULL;        // buffer used to store the row of pixel information for writing to file
-	//    Allocating memory to store the pixels of current row
-	if (TIFFScanlineSize(file)==linebytes)
-	    buf =(unsigned char *)_TIFFmalloc(linebytes);
-	else
-	    buf = (unsigned char *)_TIFFmalloc(TIFFScanlineSize(file));
-   
-	// We set the strip size of the file to be size of one row of pixels
-	TIFFSetField(file, TIFFTAG_ROWSPERSTRIP, TIFFDefaultStripSize(file, xres*samplesperpixel));
-   
-	// copy frameBuffer to jpeg sample array
-	for(int y=0; y<yres; y++) {
-	    int colOff=0, rowOff=y;
-	    for(int x=0; x<xres; x++) {
-		GMANColorRGB color;
-		color = getPixel(x,y);
-       
-		// color correct it
-		gammaCorrect.correct(color);
+  // length in memory of one row of pixels in the image
+  const std::size_t linebytes = (std::size_t) samplesperpixel * (std::size_t) xres;
+  std::vector<unsigned char> buf;
+  if (writer.scanlineSize() == linebytes) {
+    buf.assign(linebytes, 0);
+  } else {
+    buf.assign(writer.scanlineSize(), 0);
+  }
 
-		if(quantizer)
-		    quantizer->doColor(color);
-   
-		// default, (no reduction) is 32bit
-       
-		// write r, g, b, a byte
-		buf[colOff++] = color.getRed();
-		buf[colOff++] = color.getGreen();
-		buf[colOff++] = color.getBlue();
+  // We set the strip size of the file to be size of one row of pixels
+  writer.setRowsPerStrip(
+      writer.defaultStripSize((uint32_t) (xres * samplesperpixel)));
 
-		// FIXME FIXME FIXME
-		// FIX Alpha support
-       
-		buf[colOff++] = 255; 
-	    }
-	    // now write a scanline into the image
-	    if (TIFFWriteScanline(file, buf, rowOff, 0) < 0) {
-		// FIXME
-		// throw an error here
-		break;
-	    }
-	}
-   
-	// Finally we close the output file, and destroy the buffer 
-	(void) TIFFClose(file); 
-	if (buf)
-	    _TIFFfree(buf);
-   
-	// now isn't that just easy.
-#endif
+  // copy frameBuffer to jpeg sample array
+  for(int y=0; y<yres; y++) {
+      int colOff=0, rowOff=y;
+      for(int x=0; x<xres; x++) {
+	  GMANColorRGB color;
+	  color = getPixel(x,y);
+
+	  // color correct it
+	  gammaCorrect.correct(color);
+
+	  if(quantizer)
+	      quantizer->doColor(color);
+
+	  // default, (no reduction) is 32bit
+
+	  // write r, g, b, a byte
+	  buf[colOff++] = color.getRed();
+	  buf[colOff++] = color.getGreen();
+	  buf[colOff++] = color.getBlue();
+
+	  // FIXME FIXME FIXME
+	  // FIX Alpha support
+
+	  buf[colOff++] = 255;
+      }
+      // now write a scanline into the image
+      if (!writer.writeScanline(buf.data(), rowOff)) {
+	  // FIXME
+	  // throw an error here
+	  break;
+      }
+  }
+
+  // now isn't that just easy.
 }
 
 // get/set the TIFF compression type
