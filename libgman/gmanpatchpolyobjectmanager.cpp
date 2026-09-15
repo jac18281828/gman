@@ -855,6 +855,103 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
   }
 }
 
+// The tail shared by getRSPolygon, getRSGeneralPolygon and every face of
+// getRSPointsPolygon/getRSPointsGeneralPolygons: loops[0] is the outer
+// boundary, loops[1..] holes bridged into it, then triangulated and
+// shaded through buildPolygonObject. loopSlots (index-aligned with loops)
+// names each vertex's own entry in pointTexCoords -- flat "P" order for a
+// bare Polygon or GeneralPolygon, a face's own "verts" entries (indices
+// into the shared "P") for a Points* request.
+//
+// Degeneracy is judged by a ratio, not an absolute area: twice the outer
+// loop's area (normalVec's own magnitude, before normalizing) against the
+// square of its largest bounding-box side. A polygon a million times
+// longer than it is wide is degenerate at any scale, and this ratio reads
+// the same wherever the polygon sits. A zero-extent ring -- every vertex
+// identical -- is degenerate by definition; guarded directly rather than
+// dividing by a zero-length side.
+//
+// Returns false, leaving body and vertRoot untouched, for a degenerate or
+// under-three-point outer loop -- the caller skips the face rather than
+// treating it as fatal.
+bool buildFace(const std::vector<std::vector<GMANPoint>> &loops,
+               const std::vector<std::vector<RtInt>> &loopSlots,
+               const std::vector<GMANPolygonVertexTexCoord> &pointTexCoords,
+               RtInt sides, RtToken orientation,
+               const GMANShadingContext &shading, GMANBody *&body,
+               GMANVertex *&vertRoot) {
+  const std::vector<GMANPoint> &outer = loops[0];
+  if (outer.size() < 3) {
+    return false;
+  }
+  RtFloat outerBboxSide = boundingBoxExtent(outer);
+  GMANVector normalVec = newellNormal(outer);
+  RtFloat normalMagnitude = normalVec.magnitude();
+  if (outerBboxSide == (RtFloat) 0.0 ||
+      normalMagnitude <
+          kTriangulationTolerance * outerBboxSide * outerBboxSide) {
+    return false;  // fully degenerate: no plane worth shading or filling
+  }
+  // Dividing by the magnitude already computed above, rather than calling
+  // GMANVector::normalize(), matters here: that method silently leaves a
+  // vector unchanged when its magnitude is below RI_EPSILON (1e-10), an
+  // absolute threshold a small-but-valid polygon's raw (pre-normalized)
+  // normal can fall under even though the ratio guard above has already
+  // judged it non-degenerate. turnOrientation's sine identity needs
+  // normal at true unit length regardless of the polygon's absolute
+  // scale, so this divides unconditionally.
+  normalVec /= normalMagnitude;
+
+  std::vector<GMANPoint> vertexLocations;
+  std::vector<RtInt> vertexSlots;
+  std::vector<RtInt> ring;
+  bridgeHoles(loops, loopSlots, normalVec, outerBboxSide, vertexLocations,
+              vertexSlots, ring);
+
+  std::vector<GMANPolygonVertexTexCoord> texCoords(vertexLocations.size());
+  for (std::size_t i = 0; i < vertexSlots.size(); i++) {
+    texCoords[i] = pointTexCoords[vertexSlots[i]];
+  }
+
+  GMANObject *object = buildPolygonObject(vertexLocations, ring, normalVec,
+                                           sides, orientation, shading,
+                                           texCoords);
+  body = object->getBody();
+  vertRoot = object->getVert();
+  object->setBody(NULL);
+  object->setVert(NULL);
+  delete object;
+  return true;
+}
+
+// Appends one surviving face's body and vertex chain onto a mesh's own
+// running chains -- GMANObject's destructor already walks both
+// (getNext() on each), so one object can own every face's worth once
+// they are linked here (settled decision "One primitive, many bodies").
+// A face contributes more than one vertex, unlike GMANBody's single node,
+// so its own chain's tail has to be found by walking.
+void appendFace(GMANBody *faceBody, GMANVertex *faceVert,
+                 GMANBody *&bodyHead, GMANBody *&bodyTail,
+                 GMANVertex *&vertHead, GMANVertex *&vertTail) {
+  if (bodyTail) {
+    bodyTail->setNext(faceBody);
+  } else {
+    bodyHead = faceBody;
+  }
+  bodyTail = faceBody;
+
+  if (vertTail) {
+    vertTail->setNext(faceVert);
+  } else {
+    vertHead = faceVert;
+  }
+  GMANVertex *last = faceVert;
+  while (last->getNext()) {
+    last = last->getNext();
+  }
+  vertTail = last;
+}
+
 }  // namespace
 
 
@@ -904,57 +1001,32 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-
   GMANShadingContext shading = resolveShadingContext(attr);
 
   std::vector<GMANPoint> location(nverts);
+  std::vector<RtInt> slots(nverts);
   for (RtInt i = 0; i < nverts; i++) {
     location[i] = t->apply(GMANPoint(p[3 * i], p[3 * i + 1], p[3 * i + 2]));
+    slots[i] = i;
   }
 
-  // One geometric normal for the whole polygon: a Polygon is required to
-  // be planar, so unlike a quadric's curved grid there is no per-vertex
-  // object-space normal to source and no inverse transpose to compute.
-  // Newell's method (see its own comment above) rather than three chosen
-  // vertices, run once here so every vertex can be shaded with it before
-  // any face exists and the triangulator below has a reference to
-  // classify ears against.
-  //
-  // Degeneracy is judged by a ratio, not an absolute area: twice the
-  // polygon's area (normalVec's own magnitude, before normalizing) against
-  // the square of the ring's largest bounding-box side. A polygon a
-  // million times longer than it is wide is degenerate at any scale, and
-  // this ratio reads the same wherever the polygon sits. A zero-extent
-  // ring -- every vertex identical -- is degenerate by definition; guard
-  // it directly rather than dividing by a zero-length side.
-  RtFloat bboxSide = boundingBoxExtent(location);
-
-  GMANVector normalVec = newellNormal(location);
-  RtFloat normalMagnitude = normalVec.magnitude();
-  if (bboxSide == (RtFloat) 0.0 ||
-      normalMagnitude < kTriangulationTolerance * bboxSide * bboxSide) {
-    return create();  // fully degenerate: no plane worth shading or filling
-  }
-  // Dividing by the magnitude already computed above, rather than calling
-  // GMANVector::normalize(), matters here: that method silently leaves a
-  // vector unchanged when its magnitude is below RI_EPSILON (1e-10), an
-  // absolute threshold a small-but-valid polygon's raw (pre-normalized)
-  // normal can fall under even though the ratio guard above has already
-  // judged it non-degenerate. turnOrientation's sine identity needs
-  // normal at true unit length regardless of the polygon's absolute
-  // scale, so this divides unconditionally.
-  normalVec /= normalMagnitude;
-
-  std::vector<RtInt> ring(nverts);
-  for (RtInt i = 0; i < nverts; i++) {
-    ring[i] = i;
-  }
-
+  // A Polygon is a one-loop GeneralPolygon: buildFace's own comment covers
+  // the degeneracy guard, the bridging (a no-op with one loop and no
+  // holes) and the triangulation this shares with every other polygon
+  // face.
   std::vector<GMANPolygonVertexTexCoord> texCoords =
       resolvePolygonTextureCoordinates(pl, nverts, p);
 
-  return buildPolygonObject(location, ring, normalVec, sides, orientation,
-                             shading, texCoords);
+  GMANBody *body;
+  GMANVertex *vertRoot;
+  if (! buildFace({location}, {slots}, texCoords, sides, orientation,
+		  shading, body, vertRoot)) {
+    return create();
+  }
+  GMANObject *object = new GMANObject();
+  object->setBody(body);
+  object->setVert(vertRoot);
+  return object;
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
@@ -993,69 +1065,191 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
   }
 
   // Resolved once, over the whole flat "P" order every loop was unpacked
-  // from above -- bridgeHoles then reports which of these slots each
-  // committed vertex carries (see its own comment), since it commits holes
-  // in descending-rightmostU order, not this order.
-  std::vector<GMANPolygonVertexTexCoord> flatTexCoords =
+  // from above -- bridgeHoles (inside buildFace) then reports which of
+  // these slots each committed vertex carries, since it commits holes in
+  // descending-rightmostU order, not this order.
+  std::vector<GMANPolygonVertexTexCoord> pointTexCoords =
       resolvePolygonTextureCoordinates(pl, offset, p);
-
-  // Loop 0's degeneracy is judged exactly as getRSPolygon judges its one
-  // loop -- see that function's own comment for why the guard is a ratio
-  // against the ring's own extent rather than an absolute area.
-  const std::vector<GMANPoint> &outer = loops[0];
-  if (outer.size() < 3) {
-    return create();
-  }
-  RtFloat outerBboxSide = boundingBoxExtent(outer);
-  GMANVector normalVec = newellNormal(outer);
-  RtFloat normalMagnitude = normalVec.magnitude();
-  if (outerBboxSide == (RtFloat) 0.0 ||
-      normalMagnitude <
-	  kTriangulationTolerance * outerBboxSide * outerBboxSide) {
-    return create();  // fully degenerate: no plane worth shading or filling
-  }
-  normalVec /= normalMagnitude;
-
-  std::vector<GMANPoint> vertexLocations;
-  std::vector<RtInt> vertexSlots;
-  std::vector<RtInt> ring;
-  bridgeHoles(loops, loopSlots, normalVec, outerBboxSide, vertexLocations,
-	      vertexSlots, ring);
-
-  std::vector<GMANPolygonVertexTexCoord> texCoords(vertexLocations.size());
-  for (std::size_t i = 0; i < vertexSlots.size(); i++) {
-    texCoords[i] = flatTexCoords[vertexSlots[i]];
-  }
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
   GMANShadingContext shading = resolveShadingContext(attr);
 
-  return buildPolygonObject(vertexLocations, ring, normalVec, sides,
-			     orientation, shading, texCoords);
+  GMANBody *body;
+  GMANVertex *vertRoot;
+  if (! buildFace(loops, loopSlots, pointTexCoords, sides, orientation,
+		  shading, body, vertRoot)) {
+    return create();
+  }
+  GMANObject *object = new GMANObject();
+  object->setBody(body);
+  object->setVert(vertRoot);
+  return object;
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt /*npolys*/, 
-								RtInt /*nverts*/[], 
-								RtInt /*verts*/[],
-								GMANParameterList /*pl*/,
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys,
+								RtInt nverts[],
+								RtInt verts[],
+								GMANParameterList pl,
 								GMANOptions */*opt*/,
-								GMANAttributes */*attr*/,
-								GMANTransform */*t*/)
+								GMANAttributes *attr,
+								GMANTransform *t)
  {
-  return create();
+  // Direct, white-box caller guard, as getRSGeneralPolygon's own
+  // nloops < 1 guard is -- RiPointsPolygonsV rejects npolys < 0 before
+  // this ever runs, and npolys == 0 draws nothing either way.
+  if (npolys < 1) {
+    return create();
+  }
+  RtFloat *p = (RtFloat *)
+      pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (! p) {
+    return create();
+  }
+
+  RtInt totalVerts = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    totalVerts += nverts[i] > 0 ? nverts[i] : 0;
+  }
+  // 1 + max(verts): RiSpec's own vertex/varying count for this request --
+  // one "P"/"s"/"t"/"st" entry per point the mesh actually references.
+  RtInt pointCount = 0;
+  for (RtInt i = 0; i < totalVerts; i++) {
+    if (verts[i] + 1 > pointCount) {
+      pointCount = verts[i] + 1;
+    }
+  }
+
+  // Resolved once, over the shared "P" a point at a time -- not per face,
+  // and not in "verts" order -- so a point three faces share still reads
+  // the same "s"/"t"/"st" wherever it is referenced from.
+  std::vector<GMANPolygonVertexTexCoord> pointTexCoords =
+      resolvePolygonTextureCoordinates(pl, pointCount, p);
+
+  RtInt sides = attr->getSides();
+  RtToken orientation = attr->getOrientation();
+  GMANShadingContext shading = resolveShadingContext(attr);
+
+  // Faceted (settled decision "Faces"): every face gathers its own
+  // GMANVertex objects through "verts", one PointsPolygons face being a
+  // one-loop GeneralPolygon (buildFace). A degenerate face is skipped,
+  // not fatal; every surviving face's body and vertex chain joins one
+  // GMANObject (settled decision "One primitive, many bodies").
+  GMANBody *bodyHead = NULL, *bodyTail = NULL;
+  GMANVertex *vertHead = NULL, *vertTail = NULL;
+
+  RtInt offset = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    RtInt count = nverts[i] > 0 ? nverts[i] : 0;
+    std::vector<GMANPoint> loop(count);
+    std::vector<RtInt> slots(count);
+    for (RtInt j = 0; j < count; j++) {
+      RtInt pointIndex = verts[offset + j];
+      loop[j] = t->apply(GMANPoint(p[3 * pointIndex], p[3 * pointIndex + 1],
+				    p[3 * pointIndex + 2]));
+      slots[j] = pointIndex;
+    }
+    offset += count;
+
+    GMANBody *faceBody;
+    GMANVertex *faceVert;
+    if (buildFace({loop}, {slots}, pointTexCoords, sides, orientation,
+		  shading, faceBody, faceVert)) {
+      appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
+    }
+  }
+
+  if (! bodyHead) {
+    return create();  // no face survived: the whole mesh is the empty stub
+  }
+  GMANObject *object = new GMANObject();
+  object->setBody(bodyHead);
+  object->setVert(vertHead);
+  return object;
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt /*npolys*/, 
-									RtInt /*nloops*/[],
-									RtInt /*nverts*/[], 
-									RtInt /*verts*/[],
-									GMANParameterList /*pl*/,
+GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt npolys,
+									RtInt nloops[],
+									RtInt nverts[],
+									RtInt verts[],
+									GMANParameterList pl,
 									GMANOptions */*opt*/,
-									GMANAttributes */*attr*/,
-									GMANTransform */*t*/)
+									GMANAttributes *attr,
+									GMANTransform *t)
  {
-  return create();
+  if (npolys < 1) {
+    return create();
+  }
+  RtFloat *p = (RtFloat *)
+      pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (! p) {
+    return create();
+  }
+
+  RtInt sumNloops = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    sumNloops += nloops[i] > 0 ? nloops[i] : 0;
+  }
+  RtInt totalVerts = 0;
+  for (RtInt i = 0; i < sumNloops; i++) {
+    totalVerts += nverts[i] > 0 ? nverts[i] : 0;
+  }
+  RtInt pointCount = 0;
+  for (RtInt i = 0; i < totalVerts; i++) {
+    if (verts[i] + 1 > pointCount) {
+      pointCount = verts[i] + 1;
+    }
+  }
+
+  std::vector<GMANPolygonVertexTexCoord> pointTexCoords =
+      resolvePolygonTextureCoordinates(pl, pointCount, p);
+
+  RtInt sides = attr->getSides();
+  RtToken orientation = attr->getOrientation();
+  GMANShadingContext shading = resolveShadingContext(attr);
+
+  GMANBody *bodyHead = NULL, *bodyTail = NULL;
+  GMANVertex *vertHead = NULL, *vertTail = NULL;
+
+  RtInt loopOffset = 0, vertOffset = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    RtInt faceLoops = nloops[i] > 0 ? nloops[i] : 0;
+    if (faceLoops == 0) {
+      continue;  // no outer loop at all: degenerate, skip
+    }
+
+    std::vector<std::vector<GMANPoint>> loops(faceLoops);
+    std::vector<std::vector<RtInt>> loopSlots(faceLoops);
+    for (RtInt li = 0; li < faceLoops; li++) {
+      RtInt count = nverts[loopOffset + li] > 0 ? nverts[loopOffset + li] : 0;
+      loops[li].resize(count);
+      loopSlots[li].resize(count);
+      for (RtInt j = 0; j < count; j++) {
+	RtInt pointIndex = verts[vertOffset + j];
+	loops[li][j] = t->apply(GMANPoint(p[3 * pointIndex],
+					   p[3 * pointIndex + 1],
+					   p[3 * pointIndex + 2]));
+	loopSlots[li][j] = pointIndex;
+      }
+      vertOffset += count;
+    }
+    loopOffset += faceLoops;
+
+    GMANBody *faceBody;
+    GMANVertex *faceVert;
+    if (buildFace(loops, loopSlots, pointTexCoords, sides, orientation,
+		  shading, faceBody, faceVert)) {
+      appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
+    }
+  }
+
+  if (! bodyHead) {
+    return create();
+  }
+  GMANObject *object = new GMANObject();
+  object->setBody(bodyHead);
+  object->setVert(vertHead);
+  return object;
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,

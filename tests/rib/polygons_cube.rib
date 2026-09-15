@@ -1,0 +1,24 @@
+# pointspolygons_cube.rib's own twin: the same cube, the same six faces in
+# the same per-face vertex order, each issued as its own Polygon request
+# instead of one indexed PointsPolygons. See that file's own comment.
+Display "polygons_cube.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 0 0] "to" [0 0 0]
+Sides 2
+Surface "plastic" "Ka" [0.2] "Kd" [0.7] "Ks" [0.6] "roughness" [0.08]
+	"specularcolor" [1 1 1]
+Rotate 30 1 0 0
+Rotate 45 0 1 0
+Polygon "P" [-1 -1 -1  1 -1 -1  1 1 -1  -1 1 -1]
+Polygon "P" [-1 -1 1   1 -1 1   1 1 1   -1 1 1]
+Polygon "P" [-1 -1 -1  -1 1 -1  -1 1 1  -1 -1 1]
+Polygon "P" [1 -1 -1   1 1 -1   1 1 1   1 -1 1]
+Polygon "P" [-1 -1 -1  1 -1 -1  1 -1 1  -1 -1 1]
+Polygon "P" [-1 1 -1   1 1 -1   1 1 1   -1 1 1]
+WorldEnd
