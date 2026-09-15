@@ -53,8 +53,9 @@ const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
 
 // getRSPatchMesh's own corners: RiTextureCoordinates spans a single
 // parametric surface's unit square, and a PatchMesh's sub-patches already
-// share one such square end to end (see getRSPatchMesh's own comment on
-// why it does not resolve RiTextureCoordinates or "s"/"t"/"st" itself).
+// share one such square end to end. getRSPatchMesh passes this identity
+// mapping rather than resolving RiTextureCoordinates or "s"/"t"/"st" itself
+// -- see its own comment.
 const GMANTextureCoordinates kIdentityCorners = {0, 0, 1, 0, 0, 1, 1, 1};
 
 // The RISpec's own default: a scene that never calls RiSurface still
@@ -1082,6 +1083,12 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
   return create();
 };
 
+// Passes kIdentityCorners to createParametric rather than resolving
+// RiTextureCoordinates or "s"/"t"/"st": a PatchMesh calls createParametric
+// once for the whole mesh over [0, 1]^2, so per-sub-patch texture
+// coordinates would need a periodic-wrap-aware (nupatches+1) x
+// (nvpatches+1) grid of corners -- today's identity mapping stands until
+// that grid is worth the reading.
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
 							    RtInt nu,
 							    RtToken uwrap,
