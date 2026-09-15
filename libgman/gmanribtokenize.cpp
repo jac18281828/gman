@@ -351,9 +351,9 @@ GMANRIBTokenize::parseNum(std::istream &ribFile) {
   if (*endptr == '\0') {
     return GMANToken(longIntValue);
   } else {
-    float floatValue;
-    int consumed = sscanf(buffer.c_str(), "%f", &floatValue);
-    if (consumed == 1) {
+    char *floatEndPtr;
+    float floatValue = strtof(buffer.c_str(), &floatEndPtr);
+    if (floatEndPtr != buffer.c_str()) {
       return GMANToken(floatValue);
     } else {
       GMANError error(RIE_BADFILE,RIE_WARNING,"Unparseable number");
