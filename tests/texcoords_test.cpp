@@ -213,6 +213,123 @@ void testDiskTextureCoordinates(const std::string &gman,
   checkPixel(img, 100, 95, scaled(kWhite), "disk_texturecoordinates white");
 }
 
+// ---- Polygons (commit 3) ----
+
+// The square's object corners are (0,0), (1,0), (1,1), (0,1); placed by
+// Translate -1 1 0; Scale 2 -2 1 so world x = 2*object_x - 1, world y =
+// 1 - 2*object_y, filling texture.rib's own [-1,1]^2 footprint, mirrored
+// on y. With no "s"/"t"/"st" supplied, each vertex's s, t default to its
+// own object x, y (before the CTM): raster (80,80) is object (0,0), s,t=
+// (0,0), red; (120,80) is object (1,0), s,t=(1,0), green; (120,120) is
+// object (1,1), s,t=(1,1), white; (80,120) is object (0,1), s,t=(0,1),
+// blue (texture.rib's own raster = 20*x+100, 100-20*y).
+//
+// The polygon is two ear-clipped triangles sharing the (120,80)-(80,120)
+// diagonal (triangulateEarClipping clips vertex 0 -- (80,80), the first
+// convex ear in a convex ring -- first): T1 = ((80,120), (80,80),
+// (120,80)), a right triangle with the right angle at (80,80); T2 =
+// ((120,80), (120,120), (80,120)), right angle at (120,120). Reading a
+// pixel exactly at a corner sits on its own tip, half outside the
+// polygon; each case below instead reads a pixel offset from its own
+// corner along both of T1 or T2's legs, and derives the exact Gouraud
+// (barycentric) blend from the two other vertices sharing that triangle.
+//
+// (88,88): T1, 8 px along each leg from (80,80). weight(80,80) =
+// 1 - 8/40 - 8/40 = 0.6, weight(120,80) [green] = 8/40 = 0.2,
+// weight(80,120) [blue] = 8/40 = 0.2. Colour = 0.6*red + 0.2*green +
+// 0.2*blue = (0.18, 0.06, 0.06).
+// (110,86): T1, legs measured from (80,80): 30/40 toward (120,80)
+// [green], 6/40 toward (80,120) [blue]. weight(80,80) = 1 - 0.75 - 0.15 =
+// 0.10, weight(120,80) = 0.75, weight(80,120) = 0.15. Colour = 0.10*red +
+// 0.75*green + 0.15*blue = (0.03, 0.225, 0.045).
+// (86,110): T1, legs from (80,80): 6/40 toward green, 30/40 toward blue.
+// weight(80,80) = 0.10, weight(120,80) = 0.15, weight(80,120) = 0.75.
+// Colour = 0.10*red + 0.15*green + 0.75*blue = (0.03, 0.045, 0.225).
+// (112,112): T2, 8 px along each leg from (120,120) [white].
+// weight(120,120) = 0.6, weight(120,80) [green] = 8/40 = 0.2,
+// weight(80,120) [blue] = 8/40 = 0.2. Colour = 0.6*white + 0.2*green +
+// 0.2*blue = (0.18, 0.24, 0.24).
+//
+// Revert "polygons pass zero for u, v, s, t again": every vertex reads
+// s,t=(0,0) -- red -- so the whole polygon is flat red (0.3,0,0); every
+// pixel above differs from that by more than 3*kColorTol in some channel.
+//
+// Revert "polygon defaults read 'P' after the CTM": the placing
+// transform's y-flip sends each vertex's default to a different texel --
+// (80,80) [red] to camera-space (-1,1), clamping to (col 0, row 1) =
+// blue; (120,80) [green] to (1,1), clamping to (col 1, row 1) = white;
+// (120,120) [white] to (1,-1), clamping to (col 1, row 0) = green;
+// (80,120) [blue] to (-1,-1), clamping to (col 0, row 0) = red. Re-blending
+// each case above with these swapped vertex colours differs from the
+// correct colour by more than 3*kColorTol in some channel at every one
+// of the four pixels (largest: (110,86)'s blue channel, 0.255 vs 0.045).
+void testPolygonDefault(const std::string &gman, const std::string &ribDir) {
+  Image img = renderFixture(gman, ribDir, "polygon_default");
+  if (!img.ok) return;
+  checkPixel(img, 88, 88, {0.18, 0.06, 0.06}, "polygon_default red-leaning");
+  checkPixel(img, 110, 86, {0.03, 0.225, 0.045}, "polygon_default green-leaning");
+  checkPixel(img, 86, 110, {0.03, 0.045, 0.225}, "polygon_default blue-leaning");
+  checkPixel(img, 112, 112, {0.18, 0.24, 0.24}, "polygon_default white-leaning");
+}
+
+// Same square, placement and triangulation as polygon_default.rib. "st"
+// transposes each vertex's own default (x,y): (0,0) and (1,1) are
+// unchanged (on the diagonal), (1,0)->(0,1) [green corner reads blue's
+// own texel] and (0,1)->(1,0) [blue corner reads green's own texel] swap.
+//
+// (88,88) and (112,112) blend the (80,80) [still red] or (120,120)
+// [still white] corner with the (120,80) and (80,120) corners at equal
+// weight (0.2 each in both cases), so swapping those two changes nothing
+// there -- same colours as polygon_default.rib. (110,86) and (86,110)
+// weight them unequally (0.75/0.15), so the swap is visible: (110,86),
+// mostly (120,80) [now blue], reads (0.03, 0.045, 0.225); (86,110),
+// mostly (80,120) [now green], reads (0.03, 0.225, 0.045) -- exactly
+// trading polygon_default.rib's own two colours at these two pixels.
+//
+// Revert "'st' on polygons is ignored": every pixel reads its
+// polygon_default.rib colour instead -- (110,86) and (86,110) each
+// differ from this fixture's own expected colour by more than
+// 3*kColorTol in two channels (green and blue swap entirely).
+void testPolygonSt(const std::string &gman, const std::string &ribDir) {
+  Image img = renderFixture(gman, ribDir, "polygon_st");
+  if (!img.ok) return;
+  checkPixel(img, 88, 88, {0.18, 0.06, 0.06}, "polygon_st red-leaning");
+  checkPixel(img, 110, 86, {0.03, 0.045, 0.225}, "polygon_st blue-leaning (was green)");
+  checkPixel(img, 86, 110, {0.03, 0.225, 0.045}, "polygon_st green-leaning (was blue)");
+  checkPixel(img, 112, 112, {0.18, 0.24, 0.24}, "polygon_st white-leaning");
+}
+
+// An outer square (object (0,0)-(1,1), same placement as polygon_default)
+// with two square holes. The outer loop's first edge, object (0,0)->(1,0)
+// -> world (-1,-1)->(1,-1), runs along world +x -- bridgeHoles' own u
+// axis. Loop 1 (world x in [-0.5,-0.3], "P" indices 4..7) has rightmostU
+// = -0.3+1 = 0.7; loop 2 (world x in [0.3,0.5], "P" indices 8..11) has
+// rightmostU = 0.5+1 = 1.5 -- loop 1, listed first in "P", has the
+// smaller rightmostU, so bridgeHoles' descending sort commits loop 2
+// first and loop 1 second, reversing "P" order.
+//
+// The outer loop and loop 1 share "st" = (0.75, 0.75) (the white texel)
+// at every one of their own vertices, so every triangle touching loop 1's
+// own bridge -- whichever ear-clipping happens to cut -- blends between
+// vertices that all carry that same value: the region around loop 1 is
+// uniformly white. Sampled just outside loop 1's own square (still filled
+// -- the hole itself renders nothing), near its (0.25,0.45) "P" corner:
+// world (-0.55,-0.15), raster (89,103).
+//
+// Loop 2 carries a different "st" ((0.25,0.25), red) solely to make a
+// commit-order bug visible; nothing samples near loop 2's own hole.
+//
+// Revert "bridgeHoles assigns hole coordinates in input order instead of
+// original 'P' slot": since loop 2 commits before loop 1, an
+// implementation indexing by commit position instead of original slot
+// reads loop 2's own "st" (red) at loop 1's vertices -- this pixel would
+// read red, not white.
+void testGeneralPolygonSt(const std::string &gman, const std::string &ribDir) {
+  Image img = renderFixture(gman, ribDir, "generalpolygon_st");
+  if (!img.ok) return;
+  checkPixel(img, 89, 103, scaled(kWhite), "generalpolygon_st white");
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -231,6 +348,10 @@ int main(int argc, char *argv[]) {
   testPatchSt(gman, ribDir);
   testPatchSOverSt(gman, ribDir);
   testDiskTextureCoordinates(gman, ribDir);
+
+  testPolygonDefault(gman, ribDir);
+  testPolygonSt(gman, ribDir);
+  testGeneralPolygonSt(gman, ribDir);
 
   return checkSummary("texcoords holds");
 }

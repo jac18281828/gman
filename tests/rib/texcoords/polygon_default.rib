@@ -1,0 +1,28 @@
+Display "polygon_default.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [90]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+Sides 2
+Color [1 1 1]
+Surface "paintedplastic" "Ka" [1.0] "Kd" [0.0] "Ks" [0.0]
+	"texturename" ["checker_texture.tif"]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+# Placed so world x = 2*object_x - 1, world y = 1 - 2*object_y (Scale
+# composes ahead of Translate for the point, since a locally declared
+# transform folds in ahead of what is already accumulated -- AGENTS.md's
+# Matrix convention note): object (0,0)-(1,1) fills world (-1,-1)-(1,1),
+# the same footprint texture.rib's own Patch "bilinear" uses, mirrored on
+# y so an after-the-CTM default (reading camera-space x, y instead of
+# object-space) lands on the texture's opposite row -- a detectable
+# mismatch, not just a different number. "P"'s object-space x, y are what
+# s, t and u, v default to (before the CTM), unsupplied here.
+Translate -1 1 0
+Scale 2 -2 1
+Polygon "P" [0 0 0  1 0 0  1 1 0  0 1 0]
+WorldEnd

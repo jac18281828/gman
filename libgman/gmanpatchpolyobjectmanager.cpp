@@ -440,18 +440,60 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
   return triangles;
 }
 
+// A Polygon/GeneralPolygon vertex's u, v, s and t. u and v are its
+// object-space x, y unconditionally -- the RISpec gives a non-parametric
+// primitive's surface parameters as its own x, y, with no override -- and s,
+// t default to that same x, y and take the highest-precedence varying value
+// supplied instead: "st" first, then "s"/"t" each overriding only its own
+// component. RiTextureCoordinates does not apply to a polygon (RISpec 3.2);
+// getRSPolygon and getRSGeneralPolygon never resolve it.
+struct GMANPolygonVertexTexCoord {
+  RtFloat u, v, s, t;
+};
+
+// p is the vertex's own flat "P" array (3 floats per vertex, object space,
+// before the CTM); nverts is also "s"/"t"/"st"'s own declared length, so
+// index i reads the same vertex from every one of them.
+std::vector<GMANPolygonVertexTexCoord> resolvePolygonTextureCoordinates(
+    GMANParameterList &pl, RtInt nverts, const RtFloat *p) {
+  RtFloat *sArr = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_S));
+  RtFloat *tArr = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_T));
+  RtFloat *stArr = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_ST));
+
+  std::vector<GMANPolygonVertexTexCoord> coords(nverts);
+  for (RtInt i = 0; i < nverts; i++) {
+    RtFloat objX = p[3 * i];
+    RtFloat objY = p[3 * i + 1];
+    RtFloat s = objX;
+    RtFloat t = objY;
+    if (stArr) {
+      s = stArr[2 * i];
+      t = stArr[2 * i + 1];
+    }
+    if (sArr) {
+      s = sArr[i];
+    }
+    if (tArr) {
+      t = tArr[i];
+    }
+    coords[i] = {objX, objY, s, t};
+  }
+  return coords;
+}
+
 // The tail shared by getRSPolygon and getRSGeneralPolygon: one GMANVertex
 // per entry in vertexLocations, triangulated over ring (which may repeat an
 // entry at a bridge -- triangulateEarClipping's own comment already covers
 // the resulting duplicate position and zero-area corner), linked into a new
 // GMANObject. ring indexes vertexLocations rather than a face's own vertex
 // array, so the two ring slots a bridge duplicates share one GMANVertex and
-// one shaded colour instead of splitting the surface.
-GMANObject *buildPolygonObject(const std::vector<GMANPoint> &vertexLocations,
-                                const std::vector<RtInt> &ring,
-                                const GMANVector &normalVec, RtInt sides,
-                                RtToken orientation,
-                                const GMANShadingContext &shading) {
+// one shaded colour instead of splitting the surface. texCoords is
+// index-aligned with vertexLocations, not with ring.
+GMANObject *buildPolygonObject(
+    const std::vector<GMANPoint> &vertexLocations,
+    const std::vector<RtInt> &ring, const GMANVector &normalVec, RtInt sides,
+    RtToken orientation, const GMANShadingContext &shading,
+    const std::vector<GMANPolygonVertexTexCoord> &texCoords) {
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
   GMANBody *body = new GMANBody(GMANColor(), GMANColor());
@@ -465,9 +507,9 @@ GMANObject *buildPolygonObject(const std::vector<GMANPoint> &vertexLocations,
     vertices[i]->setLocation(vertexLocations[i]);
     vertices[i]->setNormal(normalVec);
 
-    // u/v/s/t have no meaning for a flat polygon; fixed rather than invented.
+    const GMANPolygonVertexTexCoord &tc = texCoords[i];
     vertices[i]->setColor(
-        shadeVertex(shading, vertexLocations[i], normal, 0.0, 0.0, 0.0, 0.0));
+        shadeVertex(shading, vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t));
   }
 
   std::vector<GMANPoint> ringPoints(ring.size());
@@ -548,13 +590,21 @@ bool inInteriorWedge(const GMANPoint &v, const GMANPoint &prev,
 // 0.9 ray tracer will want this in its own translation unit, and nothing
 // here depends on the object manager to make that move mechanical.
 //
-// loops[0] must already be checked non-degenerate by the caller. On
-// return, vertexPositions holds one entry per kept vertex of every kept
-// loop -- loops[0] first, then each successfully bridged hole -- and ring
-// is the merged boundary as indices into vertexPositions.
+// loopSlots mirrors loops' own shape, one flat "P"-order index per point --
+// plain provenance, not a texture coordinate, which is what keeps this
+// function free of GMANParameterList (see above). loops[0] must already be
+// checked non-degenerate by the caller. On return, vertexPositions holds one
+// entry per kept vertex of every kept loop -- loops[0] first, then each
+// successfully bridged hole, each still in its own loop's "P" order -- ring
+// is the merged boundary as indices into vertexPositions, and vertexSlots
+// (index-aligned with vertexPositions) carries each kept vertex's original
+// loopSlots entry, since bridging commits holes in descending-rightmostU
+// order, not input order.
 void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
+                  const std::vector<std::vector<RtInt>> &loopSlots,
                   const GMANVector &normalVec, RtFloat outerBboxSide,
                   std::vector<GMANPoint> &vertexPositions,
+                  std::vector<RtInt> &vertexSlots,
                   std::vector<RtInt> &ring) {
   const std::vector<GMANPoint> &outer = loops[0];
 
@@ -597,6 +647,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
   // Outer vertices keep ids 0..outer.size()-1, in "P" order -- the mapping
   // getRSPolygon's own vertex chain already relies on when nloops == 1.
   vertexPositions = outer;
+  vertexSlots = loopSlots[0];
   ring.resize(outer.size());
   for (std::size_t i = 0; i < outer.size(); i++) {
     ring[i] = (RtInt) i;
@@ -609,6 +660,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
   // failing the coverage property every kept vertex must satisfy.
   struct Hole {
     std::vector<GMANPoint> points;
+    std::vector<RtInt> slots;
     bool reversed;
     RtInt rightmostLocal;
     RtFloat rightmostU;
@@ -632,6 +684,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
     Hole hole;
     hole.loopIndex = (RtInt) loopIndex;
     hole.points = loop;
+    hole.slots = loopSlots[loopIndex];
     // A hole wound the same way as the outer loop would add its area
     // instead of removing it; reversing its traversal order below is what
     // turns the bridge into a cut.
@@ -775,6 +828,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
     }
     vertexPositions.insert(vertexPositions.end(), hole.points.begin(),
                             hole.points.end());
+    vertexSlots.insert(vertexSlots.end(), hole.slots.begin(), hole.slots.end());
     const RtInt mId = ids[hole.rightmostLocal];
 
     // The bridge: ring[targetSlot], then the hole starting at M (reversed
@@ -895,8 +949,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
     ring[i] = i;
   }
 
+  std::vector<GMANPolygonVertexTexCoord> texCoords =
+      resolvePolygonTextureCoordinates(pl, nverts, p);
+
   return buildPolygonObject(location, ring, normalVec, sides, orientation,
-                             shading);
+                             shading, texCoords);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
@@ -919,17 +976,27 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
   }
 
   std::vector<std::vector<GMANPoint>> loops(nloops);
+  std::vector<std::vector<RtInt>> loopSlots(nloops);
   RtInt offset = 0;
   for (RtInt i = 0; i < nloops; i++) {
     RtInt count = nverts[i] > 0 ? nverts[i] : 0;
     loops[i].resize(count);
+    loopSlots[i].resize(count);
     for (RtInt j = 0; j < count; j++) {
       loops[i][j] =
 	  t->apply(GMANPoint(p[3 * (offset + j)], p[3 * (offset + j) + 1],
 			      p[3 * (offset + j) + 2]));
+      loopSlots[i][j] = offset + j;
     }
     offset += count;
   }
+
+  // Resolved once, over the whole flat "P" order every loop was unpacked
+  // from above -- bridgeHoles then reports which of these slots each
+  // committed vertex carries (see its own comment), since it commits holes
+  // in descending-rightmostU order, not this order.
+  std::vector<GMANPolygonVertexTexCoord> flatTexCoords =
+      resolvePolygonTextureCoordinates(pl, offset, p);
 
   // Loop 0's degeneracy is judged exactly as getRSPolygon judges its one
   // loop -- see that function's own comment for why the guard is a ratio
@@ -949,15 +1016,22 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
   normalVec /= normalMagnitude;
 
   std::vector<GMANPoint> vertexLocations;
+  std::vector<RtInt> vertexSlots;
   std::vector<RtInt> ring;
-  bridgeHoles(loops, normalVec, outerBboxSide, vertexLocations, ring);
+  bridgeHoles(loops, loopSlots, normalVec, outerBboxSide, vertexLocations,
+	      vertexSlots, ring);
+
+  std::vector<GMANPolygonVertexTexCoord> texCoords(vertexLocations.size());
+  for (std::size_t i = 0; i < vertexSlots.size(); i++) {
+    texCoords[i] = flatTexCoords[vertexSlots[i]];
+  }
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
   GMANShadingContext shading = resolveShadingContext(attr);
 
   return buildPolygonObject(vertexLocations, ring, normalVec, sides,
-			     orientation, shading);
+			     orientation, shading, texCoords);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt /*npolys*/, 
