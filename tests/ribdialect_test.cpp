@@ -100,6 +100,7 @@ int main(int argc, char *argv[]) {
     "makelatlongenvironment.rib", "makecubefaceenvironment.rib",
     "makeshadow.rib", "ifelse.rib", "pixelfilter.rib",
     "geometricapproximation.rib", "generalpolygon.rib",
+    "pointspolygons.rib", "pointsgeneralpolygons.rib",
   };
 
   for (const std::string &fixture : requestFixtures) {

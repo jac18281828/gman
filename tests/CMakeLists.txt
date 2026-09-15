@@ -667,6 +667,26 @@ set_tests_properties(texcoords PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# PointsPolygons and PointsGeneralPolygons: every face is the equivalent
+# Polygon/GeneralPolygon, gathered through "verts" out of a shared "P".
+# Direct object-manager calls, twin-RIB renders compared pixel by pixel
+# (tests/goldenimage.h) and malformed request fixtures. See
+# tests/pointspolygons_test.cpp.
+add_executable(gman_pointspolygons pointspolygons_test.cpp)
+target_link_libraries(gman_pointspolygons PRIVATE gman_core)
+
+set(GMAN_POINTSPOLYGONS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pointspolygons-run")
+file(MAKE_DIRECTORY "${GMAN_POINTSPOLYGONS_WORKDIR}")
+
+add_test(NAME pointspolygons
+  COMMAND gman_pointspolygons $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_POINTSPOLYGONS_WORKDIR}")
+set_tests_properties(pointspolygons PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
 # gmanlog's sink: setLogFile used to hold logMutex across a call to info(),
 # which deadlocked. Also proves one trailing newline, a suppressed level
 # never formatting, and eight concurrent writers landing 8000 whole lines.

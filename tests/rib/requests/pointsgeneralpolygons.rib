@@ -1,0 +1,9 @@
+Display "out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+PointsGeneralPolygons [2] [4 4] [0 1 2 3  4 5 6 7]
+	"P" [-1 -1 0  1 -1 0  1 1 0  -1 1 0
+	     -0.4 -0.4 0  -0.4 0.4 0  0.4 0.4 0  0.4 -0.4 0]
+Sphere 1 -1 1 360
+WorldEnd

@@ -1030,16 +1030,175 @@ RtVoid  GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt
   worldManager->add(prim);
   delete transform;
 }
-RtVoid  GMANRenderManImpl::RiPointsPolygonsV(RtInt /*npolys*/, RtInt /*nverts*/[], RtInt /*verts*/[],  RtInt /*n*/,
-					 RtToken /*tokens*/[], RtPointer /*parms*/[])
+namespace {
+
+// Shared by RiPointsPolygonsV and RiPointsGeneralPolygonsV: nverts is the
+// flat per-loop vertex-count array -- length npolys for PointsPolygons,
+// which has no separate loop count, or the sum of nloops for
+// PointsGeneralPolygons -- and verts is the flat vertex-index array, whose
+// required length is nverts' own sum. Rejects a negative nverts or verts
+// entry and a vertex count or facevarying sum whose x3 overflows RtInt,
+// RiGeneralPolygonV's own overflow guard applied to both dimensions a
+// Points* request carries (vertex/varying and facevarying differ here,
+// where GeneralPolygon's do not). Accumulates every sum as long long, as
+// RiGeneralPolygonV does, so an individual entry near RtInt's own range
+// cannot overflow the running sum before the guard sees it.
+//
+// On success, returns true and sets facevarying (sum nverts) and vertex
+// (1 + max(verts), RiSpec's vertex/varying count for this request). On
+// failure, warns once naming the rule and value and returns false; the
+// caller adds objectManager->create() and returns.
+bool validatePointsIndices(const char *request, RtInt nvertsLen,
+			    const RtInt *nverts, const RtInt *verts,
+			    RtInt &facevarying, RtInt &vertex) {
+  long long total = 0;
+  for (RtInt i = 0; i < nvertsLen; i++) {
+    if (nverts[i] < 0) {
+      warning("{}: nverts[{}] = {} is negative; ignoring.", request, i,
+	      nverts[i]);
+      return false;
+    }
+    total += nverts[i];
+  }
+  if (total > (long long) INT_MAX / 3) {
+    warning("{}: nverts sums to {}, times 3 overflows RtInt; ignoring.",
+	    request, total);
+    return false;
+  }
+
+  long long maxVert = -1;
+  for (long long i = 0; i < total; i++) {
+    if (verts[i] < 0) {
+      warning("{}: verts[{}] = {} is negative; ignoring.", request, i,
+	      verts[i]);
+      return false;
+    }
+    if (verts[i] > maxVert) {
+      maxVert = verts[i];
+    }
+  }
+  long long vertexCount = maxVert + 1;
+  if (vertexCount * 3 > (long long) INT_MAX) {
+    warning("{}: vertex count {} (1 + max(verts)), times 3 overflows "
+	    "RtInt; ignoring.", request, vertexCount);
+    return false;
+  }
+
+  facevarying = (RtInt) total;
+  vertex = (RtInt) vertexCount;
+  return true;
+}
+
+}  // namespace
+
+RtVoid  GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[],  RtInt n,
+					 RtToken tokens[], RtPointer parms[])
+{
+  RiPointsPolygonsV(npolys, nverts, verts, n, tokens, parms, NULL);
+}
+RtVoid  GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n,
+					 RtToken tokens[], RtPointer parms[],
+					 const RtInt *counts)
 {
   allowed(cmdPointsPolygon);
+
+  if (npolys < 0) {
+    warning("PointsPolygons: npolys = {} is invalid; ignoring.", npolys);
+    worldManager->add(objectManager->create());
+    return;
+  }
+
+  RtInt facevarying = 0, vertex = 0;
+  if (! validatePointsIndices("PointsPolygons", npolys, nverts, verts,
+			      facevarying, vertex)) {
+    worldManager->add(objectManager->create());
+    return;
+  }
+
+  // RiSpec's PointsPolygons sizing: vertex and varying are 1 + max(verts),
+  // uniform is npolys (one shading value per face), facevarying is
+  // sum(nverts).
+  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex,
+			       npolys, facevarying, counts);
+
+  GMANTransform* transform = new GMANTransform((getTransform()));
+  GMANPrimitive* prim;
+
+  prim = objectManager->getRSPointsPolygon( npolys,
+					     nverts,
+					     verts,
+					     paramList,
+					     &(getOptions()),
+					     &(getAttributes()),
+					     transform);
+  worldManager->add(prim);
+  delete transform;
 }
-RtVoid  GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt /*npolys*/, RtInt /*nloops*/[], RtInt /*nverts*/[],
-						RtInt /*verts*/[], RtInt /*n*/, RtToken /*tokens*/[], 
-						RtPointer /*parms*/[])
+RtVoid  GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[],
+						RtInt verts[], RtInt n, RtToken tokens[],
+						RtPointer parms[])
+{
+  RiPointsGeneralPolygonsV(npolys, nloops, nverts, verts, n, tokens, parms,
+			   NULL);
+}
+RtVoid  GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[],
+						RtInt verts[], RtInt n, RtToken tokens[],
+						RtPointer parms[], const RtInt *counts)
 {
   allowed(cmdPointsGeneralPolygons);
+
+  if (npolys < 0) {
+    warning("PointsGeneralPolygons: npolys = {} is invalid; ignoring.",
+	    npolys);
+    worldManager->add(objectManager->create());
+    return;
+  }
+
+  // nloops[i] < 1 is rejected here, for the whole request, not skipped
+  // per face: unlike a degenerate face's own outer loop (a getRS*-level
+  // concern), a face with no loop array entry at all has no vertex count
+  // to read next, and desyncing that reading would corrupt every
+  // remaining face's own nverts/verts slice.
+  long long totalLoops = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    if (nloops[i] < 1) {
+      warning("PointsGeneralPolygons: nloops[{}] = {} is invalid; "
+	      "ignoring.", i, nloops[i]);
+      worldManager->add(objectManager->create());
+      return;
+    }
+    totalLoops += nloops[i];
+  }
+  if (totalLoops > (long long) INT_MAX) {
+    warning("PointsGeneralPolygons: nloops sums to {}, overflows RtInt; "
+	    "ignoring.", totalLoops);
+    worldManager->add(objectManager->create());
+    return;
+  }
+
+  RtInt facevarying = 0, vertex = 0;
+  if (! validatePointsIndices("PointsGeneralPolygons", (RtInt) totalLoops,
+			      nverts, verts, facevarying, vertex)) {
+    worldManager->add(objectManager->create());
+    return;
+  }
+
+  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex,
+			       npolys, facevarying, counts);
+
+  GMANTransform* transform = new GMANTransform((getTransform()));
+  GMANPrimitive* prim;
+
+  prim = objectManager->getRSPointsGeneralPolygons( npolys,
+						     nloops,
+						     nverts,
+						     verts,
+						     paramList,
+						     &(getOptions()),
+						     &(getAttributes()),
+						     transform);
+  worldManager->add(prim);
+  delete transform;
 }
 RtVoid  GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[])
 {
