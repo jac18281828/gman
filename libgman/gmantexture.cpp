@@ -21,18 +21,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifdef HAVE_LIBTIFF
-extern "C" {
-#include <tiffio.h>
-}
-#endif
-
+#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
 
 #include "gmantexture.h"
 #include "gmanlog.h"
+#include "gmantiff.h"
 
 namespace {
 
@@ -70,7 +66,6 @@ RtInt wrapIndex(RtInt i, RtInt dim, GMANTextureWrap wrap, bool &valid) {
   }
 }
 
-#ifdef HAVE_LIBTIFF
 // Matches a wrap name case-insensitively, the way gmanribparse.cpp's
 // filterByName matches a pixel filter.
 bool wrapByName(const std::string &name, GMANTextureWrap &wrap) {
@@ -123,93 +118,68 @@ const char *wrapName(GMANTextureWrap wrap) {
   }
 }
 
-// Decodes an already-open TIFF's pixels the one way this file reads a
-// picture: width/height, then TIFFReadRGBAImageOriented into raster. False
-// on a failed read or a zero dimension. Shared by GMANTexture's
-// constructor and gmanMakeTexture; each keeps its own TIFFOpen/TIFFClose
-// and error text around the call.
-bool decodeRaster(TIFF *tif, uint32_t &w, uint32_t &h,
-                   std::vector<uint32_t> &raster) {
-  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
-  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
-  raster.assign((std::size_t) w * (std::size_t) h, 0);
-  int ok = TIFFReadRGBAImageOriented(tif, w, h, raster.data(),
-                                      ORIENTATION_TOPLEFT, 0);
-  return ok != 0 && w > 0 && h > 0;
-}
-
-// Writes raster (w*h pixels, packed per TIFFGetR/G/B) to name as a
-// single-level 8-bit RGB TIFF carrying sw/tw in TIFFTAG_PIXAR_WRAPMODES.
-// False, removing any partial file, if the file cannot be opened or a
-// scanline fails to write.
+// Writes rgb (w*h pixels, three bytes each, top-left oriented) to name as
+// a single-level 8-bit RGB TIFF carrying sw/tw in the Pixar wrap-modes
+// tag. False, removing any partial file, if the file cannot be opened or
+// a scanline fails to write.
 bool writeTexture(const std::string &name, uint32_t w, uint32_t h,
-                   const std::vector<uint32_t> &raster, GMANTextureWrap sw,
+                   const std::vector<unsigned char> &rgb, GMANTextureWrap sw,
                    GMANTextureWrap tw) {
-  TIFF *dst = TIFFOpen(name.c_str(), "w");
-  if (dst == nullptr) {
+  GMANTIFFWriter writer(name, w, h, 3, GMANOutputTIFF::NONE);
+  if (!writer.isOpen()) {
     return false;
   }
 
-  TIFFSetField(dst, TIFFTAG_IMAGEWIDTH, w);
-  TIFFSetField(dst, TIFFTAG_IMAGELENGTH, h);
-  TIFFSetField(dst, TIFFTAG_BITSPERSAMPLE, 8);
-  TIFFSetField(dst, TIFFTAG_SAMPLESPERPIXEL, 3);
-  TIFFSetField(dst, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-  TIFFSetField(dst, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
-  TIFFSetField(dst, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-  TIFFSetField(dst, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
-  TIFFSetField(dst, TIFFTAG_ROWSPERSTRIP, 1);
+  writer.setRowsPerStrip(1);
   const std::string wrapModes =
       std::string(wrapName(sw)) + "," + wrapName(tw);
-  TIFFSetField(dst, TIFFTAG_PIXAR_WRAPMODES, wrapModes.c_str());
-  TIFFSetField(dst, TIFFTAG_PIXAR_TEXTUREFORMAT, "Plain Texture");
+  writer.setWrapModes(wrapModes);
+  writer.setTextureFormat("Plain Texture");
 
   std::vector<unsigned char> row(w * 3);
   bool writeOk = true;
   for (uint32_t y = 0; y < h && writeOk; ++y) {
-    for (uint32_t x = 0; x < w; ++x) {
-      uint32_t p = raster[y * w + x];
-      row[x * 3 + 0] = TIFFGetR(p);
-      row[x * 3 + 1] = TIFFGetG(p);
-      row[x * 3 + 2] = TIFFGetB(p);
-    }
-    writeOk = TIFFWriteScanline(dst, row.data(), y, 0) >= 0;
+    std::copy(rgb.begin() + (std::size_t) y * w * 3,
+              rgb.begin() + (std::size_t) (y + 1) * w * 3, row.begin());
+    writeOk = writer.writeScanline(row.data(), y);
   }
-  TIFFClose(dst);
 
   if (!writeOk) {
     std::remove(name.c_str());
   }
   return writeOk;
 }
-#endif
 
 }  // namespace
 
 GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
-#ifdef HAVE_LIBTIFF
-  TIFF *tif = TIFFOpen(name.c_str(), "r");
-  if (tif == nullptr) {
+  if (!GMANTIFFReader::available()) {
+    warning("texture \"{}\": built without libtiff, using opaque black",
+            name.c_str());
+    texels = blackTexel();
+    return;
+  }
+
+  GMANTIFFReader reader(name);
+  if (!reader.isOpen()) {
     warning("texture \"{}\": cannot open, using opaque black", name.c_str());
     texels = blackTexel();
     return;
   }
 
-  char *wrapModes = nullptr;
-  if (TIFFGetField(tif, TIFFTAG_PIXAR_WRAPMODES, &wrapModes) &&
-      wrapModes != nullptr && !parseWrapModes(wrapModes, swrap, twrap)) {
+  const auto wrapModes = reader.wrapModes();
+  if (wrapModes && !parseWrapModes(wrapModes->c_str(), swrap, twrap)) {
     warning("texture \"{}\": unrecognized wrap modes \"{}\", using clamp",
-            name.c_str(), wrapModes);
+            name.c_str(), wrapModes->c_str());
   }
 
   uint32_t w = 0, h = 0;
-  std::vector<uint32_t> raster;
+  std::vector<unsigned char> rgb;
   // One path for every photometric layout libtiff knows -- greyscale,
-  // palette, RGB, RGBA -- instead of a switch over TIFFTAG_PHOTOMETRIC.
-  // ORIENTATION_TOPLEFT: row 0 comes back as the image's top row, which is
+  // palette, RGB, RGBA -- instead of a switch over the photometric tag.
+  // Top-left oriented: row 0 comes back as the image's top row, which is
   // texture space's own convention -- t=0 is the top, with no flip.
-  bool ok = decodeRaster(tif, w, h, raster);
-  TIFFClose(tif);
+  bool ok = reader.decode(w, h, rgb);
 
   if (!ok) {
     warning("texture \"{}\": cannot decode, using opaque black",
@@ -221,16 +191,11 @@ GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
   width = (RtInt) w;
   height = (RtInt) h;
   texels.reserve((std::size_t) width * (std::size_t) height);
-  for (uint32_t p : raster) {
-    texels.push_back(GMANColor((RtFloat) TIFFGetR(p) / (RtFloat) 255.0,
-                                (RtFloat) TIFFGetG(p) / (RtFloat) 255.0,
-                                (RtFloat) TIFFGetB(p) / (RtFloat) 255.0));
+  for (std::size_t i = 0; i < rgb.size(); i += 3) {
+    texels.push_back(GMANColor((RtFloat) rgb[i + 0] / (RtFloat) 255.0,
+                                (RtFloat) rgb[i + 1] / (RtFloat) 255.0,
+                                (RtFloat) rgb[i + 2] / (RtFloat) 255.0));
   }
-#else
-  warning("texture \"{}\": built without libtiff, using opaque black",
-          name.c_str());
-  texels = blackTexel();
-#endif
 }
 
 GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap wrap)
@@ -307,7 +272,12 @@ GMANTextureCache &gmanTextureCache(RtVoid) {
 
 bool gmanMakeTexture(const char *picture, const char *texture,
                       const char *swrap, const char *twrap) {
-#ifdef HAVE_LIBTIFF
+  if (!GMANTIFFReader::available()) {
+    warning("MakeTexture \"{}\": built without libtiff, nothing written",
+            texture != nullptr ? texture : "");
+    return false;
+  }
+
   const std::string textureName = texture != nullptr ? texture : "";
   if (textureName.empty()) {
     warning("MakeTexture: empty texture name, nothing written");
@@ -324,20 +294,19 @@ bool gmanMakeTexture(const char *picture, const char *texture,
   }
 
   const std::string pictureName = picture != nullptr ? picture : "";
-  TIFF *src = TIFFOpen(pictureName.c_str(), "r");
-  if (src == nullptr) {
+  GMANTIFFReader reader(pictureName);
+  if (!reader.isOpen()) {
     warning("MakeTexture \"{}\": cannot open picture \"{}\"",
             textureName.c_str(), pictureName.c_str());
     return false;
   }
 
   uint32_t w = 0, h = 0;
-  std::vector<uint32_t> raster;
+  std::vector<unsigned char> rgb;
   // Same decode call GMANTexture's own constructor uses: a texture made
   // from a picture samples identically to that picture at every texel
   // centre.
-  bool decoded = decodeRaster(src, w, h, raster);
-  TIFFClose(src);
+  bool decoded = reader.decode(w, h, rgb);
 
   if (!decoded) {
     warning("MakeTexture \"{}\": cannot decode picture \"{}\"",
@@ -345,19 +314,11 @@ bool gmanMakeTexture(const char *picture, const char *texture,
     return false;
   }
 
-  if (!writeTexture(textureName, w, h, raster, sw, tw)) {
+  if (!writeTexture(textureName, w, h, rgb, sw, tw)) {
     warning("MakeTexture \"{}\": failed to write", textureName.c_str());
     return false;
   }
 
   gmanTextureCache().forget(textureName);
   return true;
-#else
-  (void) picture;
-  (void) swrap;
-  (void) twrap;
-  warning("MakeTexture \"{}\": built without libtiff, nothing written",
-          texture != nullptr ? texture : "");
-  return false;
-#endif
 }
