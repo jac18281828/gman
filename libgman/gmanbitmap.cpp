@@ -90,11 +90,13 @@ GMANBitmap &GMANBitmap::operator =(const GMANBitmap &amap) {
 
 RtVoid GMANBitmap::freeMemory(RtVoid) {
   if(pixels) delete []pixels;
+  pixels = NULL;
+  nPixels = 0;
 }
 
 RtVoid GMANBitmap::allocMemory(RtVoid) {
   int pixels_needed = xres*yres;
-  if(nPixels != pixels_needed) {
+  if((nPixels != pixels_needed) || !pixels) {
     nPixels = xres*yres;
     if(pixels) delete []pixels;
     pixels = new GMANColor[nPixels];
