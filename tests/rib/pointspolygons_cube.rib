@@ -1,0 +1,29 @@
+# A cube's 8 points shared once through "P", its 6 faces read out through
+# "verts" -- against polygons_cube.rib's own 6 separate Polygon requests
+# carrying the same points in the same per-face order. One PointsPolygons
+# request against six Polygon requests must render the same image,
+# textures included -- this pair carries the geometry half of that
+# equivalence (see pointspolygons_textured.rib for the texture half).
+#
+# Rotated so three faces (+x, +y, +z) are visible at once; the light stays
+# fixed in camera space while the cube rotates, so the three visible faces
+# each present a different angle to it and shade differently.
+Display "pointspolygons_cube.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 0 0] "to" [0 0 0]
+Sides 2
+Surface "plastic" "Ka" [0.2] "Kd" [0.7] "Ks" [0.6] "roughness" [0.08]
+	"specularcolor" [1 1 1]
+Rotate 30 1 0 0
+Rotate 45 0 1 0
+PointsPolygons [4 4 4 4 4 4]
+	[0 1 2 3  4 5 6 7  0 3 7 4  1 2 6 5  0 1 5 4  3 2 6 7]
+	"P" [-1 -1 -1  1 -1 -1  1 1 -1  -1 1 -1
+	     -1 -1 1   1 -1 1   1 1 1   -1 1 1]
+WorldEnd

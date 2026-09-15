@@ -673,7 +673,7 @@ set_tests_properties(texcoords PROPERTIES
 # (tests/goldenimage.h) and malformed request fixtures. See
 # tests/pointspolygons_test.cpp.
 add_executable(gman_pointspolygons pointspolygons_test.cpp)
-target_link_libraries(gman_pointspolygons PRIVATE gman_core)
+target_link_libraries(gman_pointspolygons PRIVATE gman_core TIFF::TIFF)
 
 set(GMAN_POINTSPOLYGONS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pointspolygons-run")
 file(MAKE_DIRECTORY "${GMAN_POINTSPOLYGONS_WORKDIR}")

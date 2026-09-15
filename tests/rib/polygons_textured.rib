@@ -1,0 +1,22 @@
+# pointspolygons_textured.rib's own twin: the same two faces, the same
+# per-vertex "st", each issued as its own Polygon request carrying its own
+# "P"/"st" directly instead of reading them through a shared, indexed "P".
+# See that file's own comment.
+Display "polygons_textured.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [90]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+Sides 2
+Color [1 1 1]
+Surface "paintedplastic" "Ka" [1.0] "Kd" [0.0] "Ks" [0.0]
+	"texturename" ["checker_texture.tif"]
+Translate -1 1 0
+Scale 1 -2 1
+Polygon "P" [0 0 0  1 0 0  1 1 0  0 1 0]
+	"st" [0 0  1 0  1 1  0 1]
+Polygon "P" [1 0 0  2 0 0  2 1 0  1 1 0]
+	"st" [1 0  0 0  0 1  1 1]
+WorldEnd
