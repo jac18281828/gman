@@ -225,6 +225,13 @@ public:
   RtVoid  RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n,
 			    RtToken tokens[], RtPointer parms[],
 			    const RtInt *counts);
+  RtVoid  RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[],
+			    RtInt n, RtToken tokens[], RtPointer parms[],
+			    const RtInt *counts);
+  RtVoid  RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
+				   RtInt nverts[], RtInt verts[], RtInt n,
+				   RtToken tokens[], RtPointer parms[],
+				   const RtInt *counts);
   RtVoid  RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
 		     RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
 		     RtFloat vmin, RtFloat vmax,
