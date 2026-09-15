@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Security plus high-signal defect checks; each fires on a real bug, not a
+# style preference. No modernize-*, readability-* or cppcoreguidelines-*:
+# their volume on this tree would bury the findings that are bugs.
+Checks: >
+  -*,
+  bugprone-unsafe-functions,
+  bugprone-use-after-move,
+  bugprone-dangling-handle,
+  bugprone-not-null-terminated-result,
+  cert-err34-c,
+  clang-analyzer-security.*,
+  clang-analyzer-core.*,
+  clang-analyzer-cplusplus.*,
+  clang-analyzer-unix.*
+# Every finding fails the job; that red is what the operator watches.
+WarningsAsErrors: '*'
+# Directory-name match only -- a static file cannot anchor to the checkout
+# root, so this is a local-invocation default, not the enforced filter: a
+# path search for "gman/" also matches this repo's own checkout directory
+# (named after the repo), which is why clang-tidy.yml passes
+# --header-filter/--exclude-header-filter built from $PWD instead of
+# relying on this file for the workflow's own run.
+HeaderFilterRegex: '(^|/)(include|libgman|libgmanrib|shaders|renderers|gman)/'
+ExcludeHeaderFilterRegex: '(^|/)(build|tests)/'
+CheckOptions:
+  # AGENTS.md bans the sprintf/strcpy/strcat family, bounded or not --
+  # snprintf and strncpy are bounded and still banned, because the ban is
+  # on a hand-sized buffer, not on an absent bound. gets is unreachable
+  # from a C++20 translation unit (removed in C++14) but named here so it
+  # carries this project's reason rather than the check's generic one.
+  # `^::name$` matches the call regardless of an std:: qualifier: the
+  # check resolves to the callee's underlying function before applying
+  # the regex, so std::sprintf and a bare sprintf match the same pattern.
+  bugprone-unsafe-functions.CustomFunctions: >-
+    ^::sprintf$,,build strings with std::string and std::format, not a
+    hand-sized buffer;
+    ^::vsprintf$,,build strings with std::string and std::format, not a
+    hand-sized buffer;
+    ^::snprintf$,,build strings with std::string and std::format, not a
+    hand-sized buffer;
+    ^::vsnprintf$,,build strings with std::string and std::format, not a
+    hand-sized buffer;
+    ^::strcpy$,,build strings with std::string and std::format, not a
+    hand-sized buffer;
+    ^::strncpy$,,build strings with std::string and std::format, not a
+    hand-sized buffer;
+    ^::strcat$,,build strings with std::string and std::format, not a
+    hand-sized buffer;
+    ^::strncat$,,build strings with std::string and std::format, not a
+    hand-sized buffer;
+    ^::gets$,,build strings with std::string and std::format, not a
+    hand-sized buffer

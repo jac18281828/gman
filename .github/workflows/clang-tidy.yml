@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+name: clang-tidy
+on:
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  clang-tidy:
+    # Pinned, not ubuntu-latest: the libstdc++ clang-tidy parses against
+    # must not move under this job.
+    name: ubuntu / clang-tidy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build ccache \
+            libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+      # Pinned so a regex verified against one clang-tidy version keeps
+      # matching on the next run -- CustomFunctions first appears in 20.
+      - name: Install clang-tidy
+        run: |
+          python3 -m venv .venv-tidy
+          .venv-tidy/bin/pip install clang-tidy==22.1.8
+          echo "$PWD/.venv-tidy/bin" >> "$GITHUB_PATH"
+      # Compile_commands.json and the generated gman/export.h are all
+      # clang-tidy needs; nothing here has to compile.
+      - name: Configure
+        env:
+          CC: clang
+          CXX: clang++
+        run: cmake --preset dev
+      # A regex typo in .clang-tidy's CustomFunctions would silently turn
+      # the ban off and leave the tree run below green. Check each of the
+      # 8 names individually instead of trusting clang-tidy's exit code
+      # (0 in exactly that failure case) or a bare count (unchanged by one
+      # name dropping out while another double-reports).
+      - name: Probe the banned-call regexes
+        run: |
+          set +e
+          out=$(clang-tidy .github/clang-tidy/banned_calls_probe.cpp \
+            -- -std=c++20)
+          set -e
+          echo "$out"
+          for fn in sprintf vsprintf snprintf vsnprintf strcpy strncpy \
+                    strcat strncat; do
+            grep -q "function '$fn'.*\[bugprone-unsafe-functions" <<< "$out" \
+              || { echo "no bugprone-unsafe-functions diagnostic for $fn"; exit 1; }
+          done
+      # Every production translation unit, run in parallel; any finding
+      # fails the job. tests/ is exempt (AGENTS.md) and gmansl/ builds no
+      # compile_commands.json entry to run against. compile_commands.json
+      # paths are absolute, so filtering must strip the checkout root
+      # first and anchor at ^ -- a bare directory-name search also matches
+      # this repo's own checkout directory (named after the repo, e.g.
+      # /home/runner/work/gman/gman/...), which would let every tests/
+      # entry through too.
+      - name: clang-tidy over the tree
+        run: |
+          set -o pipefail
+          root="$PWD/"
+          mapfile -t files < <(
+            jq -r --arg root "$root" \
+              '.[].file
+               | select(startswith($root))
+               | ltrimstr($root)
+               | select(test("^(libgman|libgmanrib|shaders|renderers|gman)/"))' \
+              build/compile_commands.json)
+          count="${#files[@]}"
+          echo "production translation units: $count"
+          test "$count" -gt 0 || {
+            echo "no production translation units matched the filter"
+            exit 1
+          }
+          printf '%s\n' "${files[@]}" | sed "s#^#$root#" |
+            xargs -P "$(nproc)" -I{} clang-tidy -p build \
+              --header-filter="^${root}(include|libgman|libgmanrib|shaders|renderers|gman)/" \
+              --exclude-header-filter="^${root}(build|tests)/" \
+              {}
