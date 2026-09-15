@@ -53,6 +53,8 @@ RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/,
 			    RtFloat gain,
 			    RtFloat gamma) {
   if (!GMANTIFFWriter::available()) {
+    warning("Display \"{}\": built without libtiff, nothing written",
+            outputName.c_str());
     return;
   }
 
