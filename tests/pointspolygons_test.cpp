@@ -665,6 +665,12 @@ void testMalformedFixtures(const std::string &gman,
   struct Fixture {
     const char *file;
     const char *expectedWarning;
+    // The five structural-check fixtures degrade: they warn, exit 0 and
+    // keep parsing the trailing Sphere. A non-integer array entry is a
+    // token-level syntax error instead (RIE_SYNTAX), fatal to the whole
+    // file, so the two leak-regression fixtures below override both.
+    int expectedExit = 0;
+    bool expectsSphere = true;
   };
   const Fixture fixtures[] = {
       {"pointspolygons_short_verts.rib",
@@ -679,6 +685,12 @@ void testMalformedFixtures(const std::string &gman,
        "PointsGeneralPolygons: nloops[0] = 0 is invalid; ignoring."},
       {"pointspolygons_short_p.rib",
        "Parameter \"P\": declared length 12, supplied length 9"},
+      {"pointspolygons_nonint_verts.rib",
+       "RIE_SYNTAX -- Non-integer in array.",
+       /*expectedExit=*/1, /*expectsSphere=*/false},
+      {"pointsgeneralpolygons_nonint_nverts.rib",
+       "RIE_SYNTAX -- Non-integer in array.",
+       /*expectedExit=*/1, /*expectsSphere=*/false},
   };
 
   for (const Fixture &fixture : fixtures) {
@@ -688,17 +700,20 @@ void testMalformedFixtures(const std::string &gman,
     check(!r.timedOut,
           std::string(fixture.file) + ": does not hang (10s bound)");
     check(!r.crashed, std::string(fixture.file) + ": does not crash");
-    check(r.exitStatus == 0,
-          std::string(fixture.file) + ": exits cleanly (degrade, don't "
-                                       "abort)");
+    check(r.exitStatus == fixture.expectedExit,
+          std::string(fixture.file) + ": exits " +
+              std::to_string(fixture.expectedExit));
     check(r.output.find(fixture.expectedWarning) != std::string::npos,
           std::string(fixture.file) +
               ": warns naming the rule and both values");
 
-    RunResult debugRun = runCapturingOutput(gman, rib, 10, /*debug=*/true);
-    check(debugRun.output.find("Keyword token: Sphere") != std::string::npos,
-          std::string(fixture.file) +
-              ": the Sphere after it still parses (no desync)");
+    if (fixture.expectsSphere) {
+      RunResult debugRun = runCapturingOutput(gman, rib, 10, /*debug=*/true);
+      check(debugRun.output.find("Keyword token: Sphere") !=
+                std::string::npos,
+            std::string(fixture.file) +
+                ": the Sphere after it still parses (no desync)");
+    }
   }
 }
 

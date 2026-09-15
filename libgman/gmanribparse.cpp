@@ -1225,27 +1225,23 @@ RtVoid GMANRIBParse::parsePoints(RtVoid) {
 
 RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
 
+  // Each array is unique_ptr-owned from the moment toRtIntArray returns it,
+  // so a throw from the next toRtIntArray call, from parseParameterList, or
+  // from the renderer call itself releases every array already built
+  // (AGENTS.md, "Abstraction and error handling"; the same idiom
+  // toRtTokenArray uses for its per-element ownership).
   GMANRIBParse::TokenVector nvertsVector = parseArray();
-  RtInt *nverts = nvertsVector.toRtIntArray();
+  std::unique_ptr<RtInt[]> nverts(nvertsVector.toRtIntArray());
 
   GMANRIBParse::TokenVector vertsVector = parseArray();
-  RtInt *verts = vertsVector.toRtIntArray();
+  std::unique_ptr<RtInt[]> verts(vertsVector.toRtIntArray());
 
   RtInt n = 0;
   RtToken* tokens;
   RtPointer* parms;
   RtInt* counts;
 
-  // parseParameterList throwing part-built must not strand nverts/verts,
-  // the same shape as parseGeneralPolygon's own try/catch (AGENTS.md,
-  // "Abstraction and error handling").
-  try {
-    parseParameterList(n, tokens, parms, counts);
-  } catch (...) {
-    delete [] nverts;
-    delete [] verts;
-    throw;
-  }
+  parseParameterList(n, tokens, parms, counts);
 
   RtInt npolys = (RtInt) nvertsVector.size();
 
@@ -1262,8 +1258,6 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
   if ((long long) vertsVector.size() != expectedVerts) {
     warning("PointsPolygons: verts length {} does not match nverts sum "
 	    "{}; ignoring.", vertsVector.size(), expectedVerts);
-    delete [] nverts;
-    delete [] verts;
     return;
   }
 
@@ -1272,46 +1266,41 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
   // already knows rides along outside that fixed signature. See
   // parseGeneralPolygon's own comment.
   if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
-    impl->RiPointsPolygonsV(npolys, nverts, verts, n, tokens, parms, counts);
+    impl->RiPointsPolygonsV(npolys, nverts.get(), verts.get(), n, tokens,
+			    parms, counts);
   } else {
-    renderMan->RiPointsPolygonsV(npolys, nverts, verts, n, tokens, parms);
+    renderMan->RiPointsPolygonsV(npolys, nverts.get(), verts.get(), n,
+				 tokens, parms);
   }
-
-  delete [] nverts;
-  delete [] verts;
 }
 
 RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
 
+  // See parsePointsPolygons: each array is unique_ptr-owned as soon as it
+  // is built, so a throw from a later toRtIntArray call, from
+  // parseParameterList, or from the renderer call releases every array
+  // already built.
   GMANRIBParse::TokenVector nloopsVector = parseArray();
-  RtInt *nloops = nloopsVector.toRtIntArray();
+  std::unique_ptr<RtInt[]> nloops(nloopsVector.toRtIntArray());
 
   GMANRIBParse::TokenVector nvertsVector = parseArray();
-  RtInt *nverts = nvertsVector.toRtIntArray();
+  std::unique_ptr<RtInt[]> nverts(nvertsVector.toRtIntArray());
 
   GMANRIBParse::TokenVector vertsVector = parseArray();
-  RtInt *verts = vertsVector.toRtIntArray();
+  std::unique_ptr<RtInt[]> verts(vertsVector.toRtIntArray());
 
   RtInt n = 0;
   RtToken* tokens;
   RtPointer* parms;
   RtInt* counts;
 
-  try {
-    parseParameterList(n, tokens, parms, counts);
-  } catch (...) {
-    delete [] nloops;
-    delete [] nverts;
-    delete [] verts;
-    throw;
-  }
+  parseParameterList(n, tokens, parms, counts);
 
   RtInt npolys = (RtInt) nloopsVector.size();
 
-  // See parsePointsPolygons: nverts' own required length is nloops' sum,
-  // and verts' own required length is nverts' sum -- two structural checks
-  // this request carries that PointsPolygons does not, since it has no
-  // separate loop count.
+  // nverts' own required length is nloops' sum, and verts' own required
+  // length is nverts' sum -- two structural checks this request carries
+  // that PointsPolygons does not, since it has no separate loop count.
   long long expectedNverts = 0;
   for (RtInt i = 0; i < npolys; i++) {
     expectedNverts += nloops[i];
@@ -1319,9 +1308,6 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
   if ((long long) nvertsVector.size() != expectedNverts) {
     warning("PointsGeneralPolygons: nverts length {} does not match "
 	    "nloops sum {}; ignoring.", nvertsVector.size(), expectedNverts);
-    delete [] nloops;
-    delete [] nverts;
-    delete [] verts;
     return;
   }
 
@@ -1332,23 +1318,16 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
   if ((long long) vertsVector.size() != expectedVerts) {
     warning("PointsGeneralPolygons: verts length {} does not match "
 	    "nverts sum {}; ignoring.", vertsVector.size(), expectedVerts);
-    delete [] nloops;
-    delete [] nverts;
-    delete [] verts;
     return;
   }
 
   if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
-    impl->RiPointsGeneralPolygonsV(npolys, nloops, nverts, verts, n, tokens,
-				   parms, counts);
+    impl->RiPointsGeneralPolygonsV(npolys, nloops.get(), nverts.get(),
+				   verts.get(), n, tokens, parms, counts);
   } else {
-    renderMan->RiPointsGeneralPolygonsV(npolys, nloops, nverts, verts, n,
-					tokens, parms);
+    renderMan->RiPointsGeneralPolygonsV(npolys, nloops.get(), nverts.get(),
+					verts.get(), n, tokens, parms);
   }
-
-  delete [] nloops;
-  delete [] nverts;
-  delete [] verts;
 }
 
 RtVoid GMANRIBParse::parsePatch(RtVoid) {

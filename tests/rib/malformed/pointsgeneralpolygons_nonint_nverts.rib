@@ -1,0 +1,23 @@
+# nloops [1] parses and allocates fine; nverts's entry, 4.5, is not an
+# integer, so TokenVector::toRtIntArray() throws while building the second
+# array. The already-built nloops array must not leak across that throw.
+# This is a genuine token-level syntax error (RIE_SYNTAX), not one of this
+# request's own softer structural checks, so it aborts the file: unlike the
+# other malformed fixtures here, the trailing Sphere is never reached.
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	PointsGeneralPolygons [1] [4.5] [0 1 2 3]
+		"P" [-1 -1 0  1 -1 0  1 1 0  -1 1 0]
+AttributeEnd
+AttributeBegin
+	Translate 2 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd
