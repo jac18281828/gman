@@ -51,6 +51,12 @@ namespace {
 // 1e-6 radians is 0.00006 degrees.
 const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
 
+// getRSPatchMesh's own corners: RiTextureCoordinates spans a single
+// parametric surface's unit square, and a PatchMesh's sub-patches already
+// share one such square end to end (see getRSPatchMesh's own comment on
+// why it does not resolve RiTextureCoordinates or "s"/"t"/"st" itself).
+const GMANTextureCoordinates kIdentityCorners = {0, 0, 1, 0, 0, 1, 1, 1};
+
 // The RISpec's own default: a scene that never calls RiSurface still
 // shades, as matte. One instance, loaded on first use and reused --
 // dlopen once, not once per primitive.
@@ -156,6 +162,51 @@ GMANShadingContext resolveShadingContext(GMANAttributes *attr) {
   ctx.Cs = attr->getColor();
   ctx.Os = attr->getOpacity();
   return ctx;
+}
+
+// A parametric surface's four corner texture coordinates (RISpec 3.2's
+// RiTextureCoordinates), resolved in precedence order, most specific last so
+// it wins: attr's corners (the RiTextureCoordinates default, s=u/t=v unless
+// the scene called it), then "st" (eight varying values, s/t per corner in
+// RISpec corner order: (0,0), (1,0), (0,1), (1,1)), then "s"/"t" (four
+// varying values each, overriding only their own component). Shared by every
+// quadric and getRSPatch; getRSPatchMesh does not call this (see its own
+// comment).
+GMANTextureCoordinates resolveParametricCorners(GMANParameterList &pl,
+                                                 GMANAttributes *attr) {
+  GMANTextureCoordinates corners = attr->getTextureCoordinates();
+
+  RtFloat *st = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_ST));
+  if (st) {
+    corners.s1 = st[0]; corners.t1 = st[1];
+    corners.s2 = st[2]; corners.t2 = st[3];
+    corners.s3 = st[4]; corners.t3 = st[5];
+    corners.s4 = st[6]; corners.t4 = st[7];
+  }
+  RtFloat *s = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_S));
+  if (s) {
+    corners.s1 = s[0];
+    corners.s2 = s[1];
+    corners.s3 = s[2];
+    corners.s4 = s[3];
+  }
+  RtFloat *tp = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_T));
+  if (tp) {
+    corners.t1 = tp[0];
+    corners.t2 = tp[1];
+    corners.t3 = tp[2];
+    corners.t4 = tp[3];
+  }
+  return corners;
+}
+
+// The bilinear interpolation RiTextureCoordinates' own corner rule spells
+// out: corner order (0,0), (1,0), (0,1), (1,1), the same order
+// GMANTextureCoordinates' s1..t4 already carry.
+RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10,
+                      RtFloat c01, RtFloat c11) {
+  return (RtFloat) ((1.0 - u) * (1.0 - v) * c00 + u * (1.0 - v) * c10 +
+                     (1.0 - u) * v * c01 + u * v * c11);
 }
 
 // Shades one vertex in camera space, with every input the shader needs
@@ -944,14 +995,15 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
     return create();
   }
 
+  GMANTextureCoordinates corners = resolveParametricCorners(pl, attr);
   if (strcmp(type, RI_BILINEAR) == 0) {
     GMANPatch patch(type, p, pl);
-    return createParametric(&patch, t, attr);
+    return createParametric(&patch, t, attr, corners);
   }
   if (strcmp(type, RI_BICUBIC) == 0) {
     GMANBasis basis = attr->getUVBasis();
     GMANPatch patch(type, p, basis, pl);
-    return createParametric(&patch, t, attr);
+    return createParametric(&patch, t, attr, corners);
   }
   return create();
 };
@@ -979,7 +1031,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
       return create();
     }
     GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, pl);
-    return createParametric(&mesh, t, attr);
+    return createParametric(&mesh, t, attr, kIdentityCorners);
   }
   if (strcmp(type, RI_BICUBIC) == 0) {
     GMANBasis basis = attr->getUVBasis();
@@ -992,7 +1044,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
       return create();
     }
     GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, basis, pl);
-    return createParametric(&mesh, t, attr);
+    return createParametric(&mesh, t, attr, kIdentityCorners);
   }
   return create();
 };
@@ -1025,7 +1077,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,
 							 GMANTransform *t)
  {
   GMANSphere sphere(radius, zmin, zmax, tmax, pl);
-  return createParametric(&sphere, t, attr);
+  return createParametric(&sphere, t, attr, resolveParametricCorners(pl, attr));
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSCone (RtFloat height,
@@ -1037,7 +1089,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCone (RtFloat height,
 						       GMANTransform *t)
  {
   GMANCone cone(height, radius, tmax, pl);
-  return createParametric(&cone, t, attr);
+  return createParametric(&cone, t, attr, resolveParametricCorners(pl, attr));
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
@@ -1050,7 +1102,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
 							   GMANTransform *t)
  {
   GMANCylinder cylinder(radius, zmin, zmax, tmax, pl);
-  return createParametric(&cylinder, t, attr);
+  return createParametric(&cylinder, t, attr, resolveParametricCorners(pl, attr));
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSHyperboloid (RtPoint point1,
@@ -1062,7 +1114,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSHyperboloid (RtPoint point1,
 							      GMANTransform *t)
  {
   GMANHyperboloid hyperboloid(point1, point2, tmax, pl);
-  return createParametric(&hyperboloid, t, attr);
+  return createParametric(&hyperboloid, t, attr, resolveParametricCorners(pl, attr));
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
@@ -1075,7 +1127,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
 							     GMANTransform *t)
  {
   GMANParaboloid paraboloid(rmax, zmin, zmax, tmax, pl);
-  return createParametric(&paraboloid, t, attr);
+  return createParametric(&paraboloid, t, attr, resolveParametricCorners(pl, attr));
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat height,
@@ -1087,7 +1139,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat height,
 						       GMANTransform *t)
  {
   GMANDisk disk(height, radius, tmax, pl);
-  return createParametric(&disk, t, attr);
+  return createParametric(&disk, t, attr, resolveParametricCorners(pl, attr));
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
@@ -1101,7 +1153,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
 							GMANTransform *t)
  {
   GMANTorus torus(majrad, minrad, phimin, phimax, tmax, pl);
-  return createParametric(&torus, t, attr);
+  return createParametric(&torus, t, attr, resolveParametricCorners(pl, attr));
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSBlobby (RtInt /*nleaf*/,
@@ -1160,7 +1212,8 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSubdivisionMesh (RtToken /*mask
 
 GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
 							  GMANTransform* t,
-							  GMANAttributes* attr)
+							  GMANAttributes* attr,
+							  const GMANTextureCoordinates &corners)
 {
 #define URES 16
 #define VRES 16
@@ -1217,9 +1270,12 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
       vertex->setNormal(normal);
 
       GMANNormal shadingNormal(normal.getX(), normal.getY(), normal.getZ());
+      RtFloat s = bilerpCorner(u, v, corners.s1, corners.s2, corners.s3,
+				corners.s4);
+      RtFloat texT = bilerpCorner(u, v, corners.t1, corners.t2, corners.t3,
+				   corners.t4);
       vertex->setColor(shadeVertex(shading, location, shadingNormal,
-				    (RtFloat) u, (RtFloat) v,
-				    (RtFloat) u, (RtFloat) v));
+				    (RtFloat) u, (RtFloat) v, s, texT));
     }
   }
 

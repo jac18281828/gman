@@ -42,6 +42,8 @@
 #include "gmanlog.h"
 // Our parent class
 #include "gmanobjectmanager.h"
+// GMANTextureCoordinates
+#include "gmanattributes.h"
 
 /*
  * RenderMan API GMANPatchPolyObjectManager
@@ -246,7 +248,8 @@ public:
 protected:
 
   GMANObject* createParametric (GMANParametric* p, GMANTransform *t,
-				 GMANAttributes *attr);
+				 GMANAttributes *attr,
+				 const GMANTextureCoordinates &corners);
 
 };
 

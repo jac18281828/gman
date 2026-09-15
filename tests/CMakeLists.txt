@@ -648,6 +648,25 @@ set_tests_properties(texture PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
+# (General)Polygon: RiTextureCoordinates and the "s"/"t"/"st" primvars, over
+# tests/rib/texcoords/*.rib -- each fixture copies tests/rib/texture.rib's
+# own frame and checker.
+add_executable(gman_texcoords texcoords_test.cpp)
+target_link_libraries(gman_texcoords PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_TEXCOORDS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texcoords-run")
+file(MAKE_DIRECTORY "${GMAN_TEXCOORDS_WORKDIR}")
+
+add_test(NAME texcoords
+  COMMAND gman_texcoords $<TARGET_FILE:gman>
+                         "${CMAKE_CURRENT_SOURCE_DIR}/rib/texcoords"
+  WORKING_DIRECTORY "${GMAN_TEXCOORDS_WORKDIR}")
+set_tests_properties(texcoords PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
 # gmanlog's sink: setLogFile used to hold logMutex across a call to info(),
 # which deadlocked. Also proves one trailing newline, a suppressed level
 # never formatting, and eight concurrent writers landing 8000 whole lines.

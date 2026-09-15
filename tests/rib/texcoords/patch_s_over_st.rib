@@ -1,0 +1,22 @@
+Display "patch_s_over_st.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [90]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+Sides 2
+Color [1 1 1]
+Surface "paintedplastic" "Ka" [1.0] "Kd" [0.0] "Ks" [0.0]
+	"texturename" ["checker_texture.tif"]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+# "st" transposes (as patch_st.rib's own), but "s" overrides its s
+# component per corner: s1=1, s2=0, s3=1, s4=0. t is untouched, staying
+# the transpose's own t1..t4 = 0, 1, 0, 1.
+Patch "bilinear" "P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]
+	"st" [0 0  0 1  1 0  1 1]
+	"s" [1 0  1 0]
+WorldEnd
