@@ -138,6 +138,7 @@ add_library(gman_core SHARED
   libgman/gmansolidobject.cpp
   libgman/gmansurfaceshader.cpp
   libgman/gmantexture.cpp
+  libgman/gmantiff.cpp
   libgman/gmantoken.cpp
   libgman/gmantools.cpp
   libgman/gmantransform.cpp
