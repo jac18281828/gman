@@ -35,6 +35,7 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <vector>
 
 // the renderman interface
 #include "ri.h"
@@ -51,8 +52,7 @@
 
 class GMAN_EXPORT GMANBitmap {
 protected:
-  GMANColor	*pixels;
-  int            nPixels;
+  std::vector<GMANColor> pixels;
 
   GMANColor background;
 
@@ -102,7 +102,7 @@ public:
   
   // get a specific row in the frame buffer
   virtual const GMANColor *getRow(int y) const {
-    return pixels + y*xres;
+    return pixels.data() + y*xres;
   }  
 
   // overwrite color value with the specified color

@@ -37,8 +37,6 @@
 
 // default constructor
 GMANBitmap::GMANBitmap() : background(DefaultBGColor) { 
-  pixels = NULL;
-  nPixels = 0;
   xres = 0;
   yres = 0;
 };
@@ -46,15 +44,11 @@ GMANBitmap::GMANBitmap() : background(DefaultBGColor) {
 
 // construct a bitmap with the specified width and height
 GMANBitmap::GMANBitmap(int width, int height, const GMANColor &bgcolor=DefaultBGColor) : background(bgcolor) {
-  pixels = NULL;
-  nPixels = 0;
   set(width, height, bgcolor);
 };
 
-// default destructor 
-GMANBitmap::~GMANBitmap() { 
-  freeMemory();
-};
+// default destructor
+GMANBitmap::~GMANBitmap() = default;
 
 RtVoid GMANBitmap::set(int width, int height, const GMANColor &bgcolor) {
   background = bgcolor;
@@ -72,7 +66,6 @@ GMANBitmap &GMANBitmap::operator =(const GMANBitmap &amap) {
   background = amap.background;
   // setup memory
   if((xres != amap.xres) && (yres != amap.yres)) {
-    freeMemory();
     xres = amap.xres;
     yres = amap.yres;
     allocMemory();
@@ -89,18 +82,13 @@ GMANBitmap &GMANBitmap::operator =(const GMANBitmap &amap) {
 };
 
 RtVoid GMANBitmap::freeMemory(RtVoid) {
-  if(pixels) delete []pixels;
-  pixels = NULL;
-  nPixels = 0;
+  pixels.clear();
+  pixels.shrink_to_fit();
 }
 
 RtVoid GMANBitmap::allocMemory(RtVoid) {
-  int pixels_needed = xres*yres;
-  if((nPixels != pixels_needed) || !pixels) {
-    nPixels = xres*yres;
-    if(pixels) delete []pixels;
-    pixels = new GMANColor[nPixels];
-  }
+  const int pixelsNeeded = xres * yres;
+  pixels.assign((std::size_t) pixelsNeeded, GMANColor());
 }
 
 RtVoid GMANBitmap::erase(RtVoid) {
