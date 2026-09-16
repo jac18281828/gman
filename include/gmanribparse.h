@@ -68,8 +68,8 @@ public: // types
   class TokenVector : public std::vector<GMANToken> {
   public:
     RtToken* toRtTokenArray();
-    RtInt* toRtIntArray();
-    RtFloat* toRtFloatArray();
+    std::vector<RtInt> toRtIntVector();
+    std::vector<RtFloat> toRtFloatVector();
   };
 
   /*
@@ -123,6 +123,11 @@ private:
     unsigned int count; // element count; parseArray populates it via
                         // tokenVector.size() for float arrays too, not only
                         // string arrays
+    // Owns value's buffer when !isStringArray: moving a vector preserves
+    // its buffer, so value keeps pointing at floatStorage's data once this
+    // struct is in pendingParamValues. Empty, and value unrelated to it,
+    // when isStringArray.
+    std::vector<RtFloat> floatStorage;
   };
   std::vector<std::unique_ptr<char[]>>	pendingParamKeys;
   std::vector<PendingParamValue>	pendingParamValues;
