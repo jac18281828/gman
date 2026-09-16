@@ -81,7 +81,7 @@ public:
   // one whose pixel count overflows int
   virtual RtVoid set(int width, int height, const GMANColor &bgcolor);
 
-  // copy operation
+  // copy operation -- takes the source's dimensions unconditionally
   GMANBitmap &operator=(const GMANBitmap &amap);
 
   // what is the value of a specific pixel

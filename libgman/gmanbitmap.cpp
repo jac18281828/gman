@@ -76,25 +76,7 @@ RtVoid GMANBitmap::set(int width, int height, const GMANColor &bgcolor) {
 }
 
 // copy operation
-GMANBitmap &GMANBitmap::operator =(const GMANBitmap &amap) {
-
-  background = amap.background;
-  // setup memory
-  if((xres != amap.xres) && (yres != amap.yres)) {
-    xres = amap.xres;
-    yres = amap.yres;
-    allocMemory();
-  };
-
-  // copy all pixels
-  for(int i=0; i<xres; i++) {
-    for(int j=0; j<yres; j++) {
-      setPixel(i,j, amap.getPixel(i,j));
-    }
-  }
-
-  return *this;  
-};
+GMANBitmap &GMANBitmap::operator =(const GMANBitmap &amap) = default;
 
 RtVoid GMANBitmap::freeMemory(RtVoid) {
   pixels.clear();
