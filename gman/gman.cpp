@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
 		  logObj.setLogFile(fileName.c_str());
 	      }
 	      
-	      GMANRIBParse	parser(&renderMan,
+	      GMANRIBParse	parser(renderMan,
 				       argv[i]);
 	      
 	      // just parse it...

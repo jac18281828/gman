@@ -89,7 +89,7 @@ public: // types
 private:
   bool			handlersRegistered;
 
-  GMANRenderMan		*renderMan;
+  GMANRenderMan		&renderMan;
 
   // the token stream currently being read -- the top-level RIB file or,
   // while inside ReadArchive, the archive. Gzip'd sources are transparently
@@ -149,7 +149,7 @@ public:
   /**
    * open the file rib, where name is the parameter to RiBegin
    */
-  GMANRIBParse(GMANRenderMan *renderman,
+  GMANRIBParse(GMANRenderMan &renderman,
 	       const char *rib,
 	       RtToken name="gmanzbuffer")
 ; // default constructor

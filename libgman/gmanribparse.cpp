@@ -143,7 +143,7 @@ const int GMANRIBParse::maxArchiveDepth = 64;
  */
 
 // default constructor
-GMANRIBParse::GMANRIBParse(GMANRenderMan *renderman,
+GMANRIBParse::GMANRIBParse(GMANRenderMan &renderman,
 			   const char *rib,
 			   RtToken name)
  : handlersRegistered(false),
@@ -153,14 +153,14 @@ GMANRIBParse::GMANRIBParse(GMANRenderMan *renderman,
   includeDirs.push_back(dirName(std::string(rib)));
   openArchives.push_back(canonicalOrSelf(std::string(rib)));
 
-  renderMan->RiBegin(name);
+  renderMan.RiBegin(name);
 
 };
 
 
 // default destructor
 GMANRIBParse::~GMANRIBParse() {
-  renderMan->RiEnd();
+  renderMan.RiEnd();
 };
 
 
@@ -289,7 +289,7 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       break;
     case GMANToken::RI_REVERSE_ORIENTATION:
       debug("Keyword token: ReverseOrientation");
-      renderMan->RiReverseOrientation();
+      renderMan.RiReverseOrientation();
       break;
     case GMANToken::RI_PIXEL_SAMPLES:
       debug("Keyword token: PixelSamples");
@@ -332,35 +332,35 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       parseAttribute();
       break;
     case GMANToken::RI_WORLD_BEGIN:
-      renderMan->RiWorldBegin();
+      renderMan.RiWorldBegin();
       break;
     case GMANToken::RI_WORLD_END:
       debug("Keyword token: WorldEnd");
-      renderMan->RiWorldEnd();
+      renderMan.RiWorldEnd();
       break;
     case GMANToken::RI_ATTRIBUTE_BEGIN:
       debug("Keyword token: AttributeBegin");
-      renderMan->RiAttributeBegin();
+      renderMan.RiAttributeBegin();
       break;
     case GMANToken::RI_ATTRIBUTE_END:
       debug("Keyword token: AttributeEnd");
-      renderMan->RiAttributeEnd();
+      renderMan.RiAttributeEnd();
       break;
     case GMANToken::RI_TRANSFORM_BEGIN:
       debug("Keyword token: TransformBegin");
-      renderMan->RiTransformBegin();
+      renderMan.RiTransformBegin();
       break;
     case GMANToken::RI_TRANSFORM_END:
       debug("Keyword token: TransformEnd");
-      renderMan->RiTransformEnd();
+      renderMan.RiTransformEnd();
       break;
     case GMANToken::RI_FRAME_BEGIN:
       debug("Keyword token: FrameBegin");
-      renderMan->RiFrameBegin(nextInt());
+      renderMan.RiFrameBegin(nextInt());
       break;
     case GMANToken::RI_FRAME_END:
       debug("Keyword token: FrameEnd");
-      renderMan->RiFrameEnd();
+      renderMan.RiFrameEnd();
       break;
     case GMANToken::RI_MOTION_BEGIN:
       debug("Keyword token: MotionBegin");
@@ -400,7 +400,7 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       break;
     case GMANToken::RI_IDENTITY:
       debug("Keyword token: Identity");
-      renderMan->RiIdentity();
+      renderMan.RiIdentity();
       break;
     case GMANToken::RI_TRANSFORM:
       debug("Keyword token: Transform");
@@ -682,7 +682,7 @@ RtVoid  GMANRIBParse::parseOption(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiOptionV(name.c_str(), n, tokens, parms);
+  renderMan.RiOptionV(name.c_str(), n, tokens, parms);
 
 }
 
@@ -700,7 +700,7 @@ RtVoid  GMANRIBParse::parseDisplay(RtVoid) {
 
   // RiDisplayV's name parameter is char* rather than const char* for
   // historical reasons; it only reads through it.
-  renderMan->RiDisplayV(const_cast<char *>(name.c_str()), type.c_str(),
+  renderMan.RiDisplayV(const_cast<char *>(name.c_str()), type.c_str(),
 			 mode.c_str(), n, tokens, parms);
 
 }
@@ -710,7 +710,7 @@ RtVoid  GMANRIBParse::parseFormat(RtVoid) {
   RtInt yresolution = nextInt();
   RtFloat pixelaspectratio = nextFloat();
 
-  renderMan->RiFormat(xresolution, yresolution, pixelaspectratio);
+  renderMan.RiFormat(xresolution, yresolution, pixelaspectratio);
 }
 
 RtVoid GMANRIBParse::parseProjection(RtVoid) {
@@ -723,35 +723,35 @@ RtVoid GMANRIBParse::parseProjection(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiProjectionV(name.c_str(), n, tokens, parms);
+  renderMan.RiProjectionV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseGeometricApproximation(RtVoid) {
   const auto type = copyStringToken();
   RtFloat value = nextFloat();
 
-  renderMan->RiGeometricApproximation(type.c_str(), value);
+  renderMan.RiGeometricApproximation(type.c_str(), value);
 }
 
 RtVoid GMANRIBParse::parseShadingInterpolation(RtVoid) {
 
   const auto type = copyStringToken();
 
-  renderMan->RiShadingInterpolation(type.c_str());
+  renderMan.RiShadingInterpolation(type.c_str());
 }
 
 RtVoid GMANRIBParse::parseShadingRate(RtVoid) {
 
   RtFloat size = nextFloat();
 
-  renderMan->RiShadingRate(size);
+  renderMan.RiShadingRate(size);
 }
 
 RtVoid GMANRIBParse::parseOrientation(RtVoid) {
 
   const auto orientation = copyStringToken();
 
-  renderMan->RiOrientation(orientation.c_str());
+  renderMan.RiOrientation(orientation.c_str());
 }
 
 RtVoid GMANRIBParse::parsePixelSamples(RtVoid) {
@@ -759,7 +759,7 @@ RtVoid GMANRIBParse::parsePixelSamples(RtVoid) {
   RtFloat xsamples = nextFloat();
   RtFloat ysamples = nextFloat();
 
-  renderMan->RiPixelSamples(xsamples, ysamples);
+  renderMan.RiPixelSamples(xsamples, ysamples);
 }
 
 RtVoid GMANRIBParse::parseExposure(RtVoid) {
@@ -767,7 +767,7 @@ RtVoid GMANRIBParse::parseExposure(RtVoid) {
   RtFloat gain = nextFloat();
   RtFloat gamma = nextFloat();
 
-  renderMan->RiExposure(gain, gamma);
+  renderMan.RiExposure(gain, gamma);
 }
 
 RtVoid GMANRIBParse::parseDepthOfField(RtVoid) {
@@ -776,7 +776,7 @@ RtVoid GMANRIBParse::parseDepthOfField(RtVoid) {
   RtFloat focallength = nextFloat();
   RtFloat focaldistance = nextFloat();
 
-  renderMan->RiDepthOfField(fstop, focallength, focaldistance);
+  renderMan.RiDepthOfField(fstop, focallength, focaldistance);
 }
 
 RtVoid GMANRIBParse::parseShutter(RtVoid) {
@@ -784,7 +784,7 @@ RtVoid GMANRIBParse::parseShutter(RtVoid) {
   RtFloat min = nextFloat();
   RtFloat max = nextFloat();
 
-  renderMan->RiShutter(min, max);
+  renderMan.RiShutter(min, max);
 }
 
 RtVoid GMANRIBParse::parseHider(RtVoid) {
@@ -798,7 +798,7 @@ RtVoid GMANRIBParse::parseHider(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiHiderV(type.c_str(), n, tokens, parms);
+  renderMan.RiHiderV(type.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseCropWindow(RtVoid) {
@@ -808,7 +808,7 @@ RtVoid GMANRIBParse::parseCropWindow(RtVoid) {
   RtFloat ymin = nextFloat();
   RtFloat ymax = nextFloat();
 
-  renderMan->RiCropWindow(xmin, xmax, ymin, ymax);
+  renderMan.RiCropWindow(xmin, xmax, ymin, ymax);
 }
 
 RtVoid GMANRIBParse::parseScreenWindow(RtVoid) {
@@ -818,7 +818,7 @@ RtVoid GMANRIBParse::parseScreenWindow(RtVoid) {
   RtFloat bottom = nextFloat();
   RtFloat top = nextFloat();
 
-  renderMan->RiScreenWindow(left, right, bottom, top);
+  renderMan.RiScreenWindow(left, right, bottom, top);
 }
 
 RtVoid GMANRIBParse::parseClipping(RtVoid) {
@@ -826,7 +826,7 @@ RtVoid GMANRIBParse::parseClipping(RtVoid) {
   RtFloat nearDist = nextFloat();
   RtFloat farDist = nextFloat();
 
-  renderMan->RiClipping(nearDist, farDist);
+  renderMan.RiClipping(nearDist, farDist);
 }
 
 RtVoid GMANRIBParse::parseDeclare(RtVoid) {
@@ -834,7 +834,7 @@ RtVoid GMANRIBParse::parseDeclare(RtVoid) {
   const auto name = copyStringToken();
   const auto declaration = copyStringToken();
 
-  renderMan->RiDeclare(name.c_str(), declaration.c_str());
+  renderMan.RiDeclare(name.c_str(), declaration.c_str());
 }
 
 RtVoid GMANRIBParse::parseAttribute(RtVoid) {
@@ -848,13 +848,13 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiAttributeV(name.c_str(), n, tokens, parms);
+  renderMan.RiAttributeV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseColor(RtVoid) {
   int number = 3;
   //FIXME: Should actually get number from options
-  //renderMan->getGraphicsState().getOptions().getColorSamples().getNumber();
+  //renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
 
   std::vector<RtFloat> color(number);
   const GMANToken &lookAhead = peekToken();
@@ -875,13 +875,13 @@ RtVoid GMANRIBParse::parseColor(RtVoid) {
     }
   }
 
-  renderMan->RiColor(color.data());
+  renderMan.RiColor(color.data());
 }
 
 RtVoid GMANRIBParse::parseOpacity(RtVoid) {
   int number = 3;
   //FIXME: Should actually get number from options
-  //renderMan->getGraphicsState().getOptions().getColorSamples().getNumber();
+  //renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
 
   std::vector<RtFloat> color(number);
   const GMANToken &lookAhead = peekToken();
@@ -902,7 +902,7 @@ RtVoid GMANRIBParse::parseOpacity(RtVoid) {
     }
   }
 
-  renderMan->RiOpacity(color.data());
+  renderMan.RiOpacity(color.data());
 }
 
 RtVoid GMANRIBParse::parseLightSource(RtVoid) {
@@ -917,7 +917,7 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) {
   parseParameterList(n, tokens, parms, counts);
 
   RtLightHandle handle =
-    renderMan->RiLightSourceV(shadername.c_str(), n, tokens, parms);
+    renderMan.RiLightSourceV(shadername.c_str(), n, tokens, parms);
 
   lightHandleMap[sequence] = handle;
 }
@@ -933,14 +933,14 @@ RtVoid GMANRIBParse::parseSurface(RtVoid) {
   parseParameterList(n, tokens, parms, counts);
 
   // FIXME: Implement some surface shaders
-  renderMan->RiSurfaceV(shadername.c_str(), n, tokens, parms);
+  renderMan.RiSurfaceV(shadername.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) {
 
   const auto name = copyStringToken();
 
-  renderMan->RiCoordinateSystem(name.c_str());
+  renderMan.RiCoordinateSystem(name.c_str());
 }
 
 RtVoid GMANRIBParse::parseTransform(RtVoid) {
@@ -959,7 +959,7 @@ RtVoid GMANRIBParse::parseTransform(RtVoid) {
     }
   }
 
-  renderMan->RiTransform(transform);
+  renderMan.RiTransform(transform);
 }
 
 RtVoid GMANRIBParse::parseConcatTransform(RtVoid) {
@@ -978,7 +978,7 @@ RtVoid GMANRIBParse::parseConcatTransform(RtVoid) {
     }
   }
 
-  renderMan->RiConcatTransform(transform);
+  renderMan.RiConcatTransform(transform);
 }
 
 RtVoid GMANRIBParse::parseTranslate(RtVoid) {
@@ -986,7 +986,7 @@ RtVoid GMANRIBParse::parseTranslate(RtVoid) {
   RtFloat dy = nextFloat();
   RtFloat dz = nextFloat();
 
-  renderMan->RiTranslate(dx, dy, dz);
+  renderMan.RiTranslate(dx, dy, dz);
 }
 
 RtVoid GMANRIBParse::parseRotate(RtVoid) {
@@ -995,7 +995,7 @@ RtVoid GMANRIBParse::parseRotate(RtVoid) {
   RtFloat dy = nextFloat();
   RtFloat dz = nextFloat();
 
-  renderMan->RiRotate(angle, dx, dy, dz);
+  renderMan.RiRotate(angle, dx, dy, dz);
 }
 
 RtVoid GMANRIBParse::parseScale(RtVoid) {
@@ -1003,7 +1003,7 @@ RtVoid GMANRIBParse::parseScale(RtVoid) {
   RtFloat sy = nextFloat();
   RtFloat sz = nextFloat();
 
-  renderMan->RiScale(sx, sy, sz);
+  renderMan.RiScale(sx, sy, sz);
 }
 
 RtVoid GMANRIBParse::parseSphere(RtVoid) {
@@ -1019,7 +1019,7 @@ RtVoid GMANRIBParse::parseSphere(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms);
+  renderMan.RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseCone(RtVoid) {
@@ -1034,7 +1034,7 @@ RtVoid GMANRIBParse::parseCone(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiConeV(height, radius, thetamax, n, tokens, parms);
+  renderMan.RiConeV(height, radius, thetamax, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseCylinder(RtVoid) {
@@ -1050,13 +1050,13 @@ RtVoid GMANRIBParse::parseCylinder(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms);
+  renderMan.RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseSides(RtVoid) {
   RtInt sides = nextInt();
 
-  renderMan->RiSides(sides);
+  renderMan.RiSides(sides);
 }
 
 RtVoid GMANRIBParse::parseHyperboloid(RtVoid) {
@@ -1077,7 +1077,7 @@ RtVoid GMANRIBParse::parseHyperboloid(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiHyperboloidV(point1, point2, thetamax, n, tokens, parms);
+  renderMan.RiHyperboloidV(point1, point2, thetamax, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
@@ -1093,7 +1093,7 @@ RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms);
+  renderMan.RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseTorus(RtVoid) {
@@ -1110,7 +1110,7 @@ RtVoid GMANRIBParse::parseTorus(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiTorusV(majorradius, minorradius, phimin, phimax, thetamax,
+  renderMan.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax,
 		      n, tokens, parms);
 }
 
@@ -1126,7 +1126,7 @@ RtVoid GMANRIBParse::parseDisk(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan->RiDiskV(height, radius, thetamax, n, tokens, parms);
+  renderMan.RiDiskV(height, radius, thetamax, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parsePolygon(RtVoid) {
@@ -1160,7 +1160,7 @@ RtVoid GMANRIBParse::parsePolygon(RtVoid) {
     }
   }
 
-  renderMan->RiPolygonV(nverts, n, tokens, parms);
+  renderMan.RiPolygonV(nverts, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
@@ -1181,10 +1181,10 @@ RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
   // is not a trusted caller, so the array length parseParameterList
   // already knows rides along outside that fixed signature. See
   // gmanparameterlist.h.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
+  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
     impl->RiGeneralPolygonV(nloops, nverts.data(), n, tokens, parms, counts);
   } else {
-    renderMan->RiGeneralPolygonV(nloops, nverts.data(), n, tokens, parms);
+    renderMan.RiGeneralPolygonV(nloops, nverts.data(), n, tokens, parms);
   }
 }
 
@@ -1204,7 +1204,7 @@ RtVoid GMANRIBParse::parsePoints(RtVoid) {
     }
   }
 
-  renderMan->RiPointsV(npoints, n, tokens, parms);
+  renderMan.RiPointsV(npoints, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
@@ -1244,11 +1244,11 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
   // is not a trusted caller, so the array length parseParameterList
   // already knows rides along outside that fixed signature. See
   // parseGeneralPolygon's own comment.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
+  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
     impl->RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n, tokens,
 			    parms, counts);
   } else {
-    renderMan->RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n,
+    renderMan.RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n,
 				 tokens, parms);
   }
 }
@@ -1296,11 +1296,11 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
     return;
   }
 
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
+  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
     impl->RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(),
 				   verts.data(), n, tokens, parms, counts);
   } else {
-    renderMan->RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(),
+    renderMan.RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(),
 					verts.data(), n, tokens, parms);
   }
 }
@@ -1319,10 +1319,10 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) {
   // Dispatch beside the RI-mandated RiPatchV(4 args): a RIB file is not a
   // trusted caller, so the array length parseParameterList already knows
   // rides along outside that fixed signature. See gmanparameterlist.h.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
+  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
     impl->RiPatchV(type.c_str(), n, tokens, parms, counts);
   } else {
-    renderMan->RiPatchV(type.c_str(), n, tokens, parms);
+    renderMan.RiPatchV(type.c_str(), n, tokens, parms);
   }
 }
 
@@ -1368,11 +1368,11 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
   // Dispatch beside the RI-mandated RiNuPatchV(13 args): a RIB file is not
   // a trusted caller, so the array length parseParameterList already
   // knows rides along outside that fixed signature. See parsePatch.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
+  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
     impl->RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder,
 		      vknot.data(), vmin, vmax, n, tokens, parms, counts);
   } else {
-    renderMan->RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder,
+    renderMan.RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder,
 			  vknot.data(), vmin, vmax, n, tokens, parms);
   }
 }
@@ -1394,11 +1394,11 @@ RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
 
   // See parsePatch: dispatch beside the RI-mandated RiPatchMeshV(7 args)
   // when the concrete impl is available, carrying the supplied counts.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
+  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
     impl->RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(),
 			n, tokens, parms, counts);
   } else {
-    renderMan->RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(),
+    renderMan.RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(),
 			     n, tokens, parms);
   }
 }
@@ -1413,7 +1413,7 @@ RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) {
   RtFloat s4 = nextFloat();
   RtFloat t4 = nextFloat();
 
-  renderMan->RiTextureCoordinates(s1, t1, s2, t2, s3, t3, s4, t4);
+  renderMan.RiTextureCoordinates(s1, t1, s2, t2, s3, t3, s4, t4);
 }
 
 RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
@@ -1490,23 +1490,23 @@ RtVoid GMANRIBParse::parseMotionBegin(RtVoid) {
   int n = tokenVector.size();
   std::vector<RtFloat> times = tokenVector.toRtFloatVector();
 
-  renderMan->RiMotionBeginV(n, times.data());
+  renderMan.RiMotionBeginV(n, times.data());
 }
 
 RtVoid GMANRIBParse::parseMotionEnd(RtVoid) {
-  renderMan->RiMotionEnd();
+  renderMan.RiMotionEnd();
 }
 
 RtVoid GMANRIBParse::parseObjectBegin(RtVoid) {
 
   int sequence = nextInt();
 
-  RtObjectHandle handle = renderMan->RiObjectBegin();
+  RtObjectHandle handle = renderMan.RiObjectBegin();
   objectHandleMap[sequence] = handle;
 }
 
 RtVoid GMANRIBParse::parseObjectEnd(RtVoid) {
-  renderMan->RiObjectEnd();
+  renderMan.RiObjectEnd();
 }
 
 RtVoid GMANRIBParse::parseObjectInstance(RtVoid) {
@@ -1515,7 +1515,7 @@ RtVoid GMANRIBParse::parseObjectInstance(RtVoid) {
 
   RtObjectHandle handle = objectHandleMap[sequence];
 
-  renderMan->RiObjectInstance(handle);
+  renderMan.RiObjectInstance(handle);
 }
 
 RtVoid GMANRIBParse::parseBasis(RtVoid) {
@@ -1575,7 +1575,7 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
   }
   RtInt vstep = nextInt();
 
-  renderMan->RiBasis(ubasis, ustep, vbasis, vstep);
+  renderMan.RiBasis(ubasis, ustep, vbasis, vstep);
 }
 
 RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
@@ -1590,7 +1590,7 @@ RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
   parseParameterList(n, tokens, parms, counts);
 
   // FIXME: implement some atmosphere shaders
-  //  renderMan->RiAtmosphereV(name.c_str(), n, tokens, parms);
+  //  renderMan.RiAtmosphereV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
@@ -1605,7 +1605,7 @@ RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
   parseParameterList(n, tokens, parms, counts);
 
   // FIXME: implement some displacement shaders
-  //  renderMan->RiDisplacementV(name.c_str(), n, tokens, parms);
+  //  renderMan.RiDisplacementV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseImager(RtVoid) {
@@ -1620,7 +1620,7 @@ RtVoid GMANRIBParse::parseImager(RtVoid) {
   parseParameterList(n, tokens, parms, counts);
 
   // FIXME: implement some imagers
-  //renderMan->RiImagerV(name.c_str(), n, tokens, parms);
+  //renderMan.RiImagerV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
@@ -1629,7 +1629,7 @@ RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
   int onoff = nextInt();
 
   RtLightHandle handle = lightHandleMap[sequence];
-  renderMan->RiIlluminate(handle, onoff==0?false:true);
+  renderMan.RiIlluminate(handle, onoff==0?false:true);
 }
 
 // **************************************************************
@@ -1780,7 +1780,7 @@ RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
 
   // RiMakeTextureV's pic/tex parameters are char* rather than const
   // char* for historical reasons; it only reads through them.
-  renderMan->RiMakeTextureV(const_cast<char *>(picture.c_str()),
+  renderMan.RiMakeTextureV(const_cast<char *>(picture.c_str()),
                              const_cast<char *>(texture.c_str()),
                              swrap.c_str(), twrap.c_str(), filterfunc,
                              swidth, twidth, n, tokens, parms);
@@ -1827,7 +1827,7 @@ RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
 
   // RiMakeLatLongEnvironmentV's pic/tex parameters are char* rather than
   // const char* for historical reasons; it only reads through them.
-  renderMan->RiMakeLatLongEnvironmentV(const_cast<char *>(picture.c_str()),
+  renderMan.RiMakeLatLongEnvironmentV(const_cast<char *>(picture.c_str()),
                                         const_cast<char *>(texture.c_str()),
                                         filterfunc, swidth, twidth, n, tokens,
                                         parms);
@@ -1899,7 +1899,7 @@ RtVoid GMANRIBParse::parsePixelFilter(RtVoid) {
     throw error;
   }
 
-  renderMan->RiPixelFilter(filterfunc, xwidth, ywidth);
+  renderMan.RiPixelFilter(filterfunc, xwidth, ywidth);
 }
 
 RtVoid GMANRIBParse::skipUnknownRequest(const std::string &name) {
