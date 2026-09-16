@@ -25,6 +25,7 @@
 #define __GMANTRANSFORM_HH 1
 
 #include <set>
+#include <vector>
 #include "ri.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
@@ -54,16 +55,11 @@ public:
 class GMAN_EXPORT GMANMovingMatrix : public GMANMatrixStorage
 {
 private:
-  RtInt nbTimes;
-  RtFloat *times;
-  GMANMatrix4 *storage;
+  std::vector<RtFloat> times;
+  std::vector<GMANMatrix4> storage;
 
-  RtVoid copy(GMANMovingMatrix const &mm);
 public:
-  GMANMovingMatrix(RtInt nb, RtFloat *tms);
-  GMANMovingMatrix(GMANMovingMatrix const &mm);
-  ~GMANMovingMatrix();
-  GMANMovingMatrix const &operator=(GMANMovingMatrix const &mm);
+  explicit GMANMovingMatrix(std::vector<RtFloat> tms);
 
   GMANMatrix4 interpolate(RtFloat tm);
   RtInt getSamplesQuantity();

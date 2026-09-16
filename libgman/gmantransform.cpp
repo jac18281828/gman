@@ -61,7 +61,8 @@
   Anyway, this is not a problem, since samples are not limited.
 */
 
-#include <list>
+#include <utility>
+#include <vector>
 
 #include "gmantransform.h"
 
@@ -86,41 +87,9 @@ RtInt GMANOneMatrix::getSamplesQuantity()
 }
 
 // MOVING MATRIX
-GMANMovingMatrix::GMANMovingMatrix(RtInt nb, RtFloat *tms)
+GMANMovingMatrix::GMANMovingMatrix(std::vector<RtFloat> tms)
+  : times(std::move(tms)), storage(times.size())
 {
-  nbTimes=nb;
-  times=new RtFloat[nb];
-  for(int i=0;i<nb;i++)
-    times[i]=tms[i];
-  storage=new GMANMatrix4[nb];
-}
-GMANMovingMatrix::GMANMovingMatrix(GMANMovingMatrix const &mm)
-{
-  copy(mm);
-}
-GMANMovingMatrix::~GMANMovingMatrix()
-{
-  delete [] times;          /* times is new RtFloat[nb] */
-  delete [] storage;
-}
-GMANMovingMatrix const &GMANMovingMatrix::operator=(GMANMovingMatrix const &mm)
-{
-  if (this!=&mm) {
-    delete [] times;        /* times is new RtFloat[nb] */
-    delete [] storage;
-    copy(mm);
-  }
-  return *this;
-}
-RtVoid GMANMovingMatrix::copy(GMANMovingMatrix const &mm)
-{
-  nbTimes=mm.nbTimes;
-  times=new RtFloat[nbTimes];
-  storage=new GMANMatrix4[nbTimes];  
-  for(int i=0;i<nbTimes;i++) {
-    times[i]=mm.times[i];
-    storage[i]=mm.storage[i];
-  }
 }
 GMANMatrix4 &GMANMovingMatrix::get(RtInt nb)
 {
@@ -130,10 +99,10 @@ GMANMatrix4 GMANMovingMatrix::interpolate(RtFloat time)
 {
   GMANMatrix4 temp,result;
   if (time<=times[0]) {return (storage[0]);}
-  if (time>=times[nbTimes-1]) {return (storage[nbTimes-1]);}
+  if (time>=times[times.size()-1]) {return (storage[times.size()-1]);}
 
-  int i;
-  for(i=1;i<nbTimes;i++) {
+  std::size_t i;
+  for(i=1;i<times.size();i++) {
     if (time<=times[i]) break;
   }
   RtFloat t1=times[i-1];
@@ -145,7 +114,7 @@ GMANMatrix4 GMANMovingMatrix::interpolate(RtFloat time)
 }
 RtInt GMANMovingMatrix::getSamplesQuantity()
 {
-  return nbTimes;
+  return (RtInt) times.size();
 }
 
 RtFloat GMANMovingMatrix::getTime(RtInt t)
@@ -221,7 +190,7 @@ RtVoid GMANTransform::concat(GMANTransform &t)
     GMANMovingMatrix *t1=dynamic_cast<GMANMovingMatrix *> (t.storage);
     GMANMovingMatrix *mm=new GMANMovingMatrix(*t1);
     m=interpolate(0);
-    for (RtInt i=0;i<b;i++) {
+    for (RtInt i=0;i<mm->getSamplesQuantity();i++) {
       mm->get(i) = m;
       mm->get(i).concat(t1->get(i));
     }
@@ -230,7 +199,7 @@ RtVoid GMANTransform::concat(GMANTransform &t)
   } else if (b==1 && a>1) { // =======
     GMANMovingMatrix *t1=dynamic_cast<GMANMovingMatrix *> (storage);
     m=t.storage->interpolate(0);
-    for (int i=0;i<a;i++) {
+    for (RtInt i=0;i<t1->getSamplesQuantity();i++) {
       t1->get(i).concat(m);
     }
   } else if (a>1 && b>1) {  // =======
@@ -238,29 +207,22 @@ RtVoid GMANTransform::concat(GMANTransform &t)
     t1=dynamic_cast<GMANMovingMatrix *> (storage);
     t2=dynamic_cast<GMANMovingMatrix *> (t.storage);
 
-    std::list<RtFloat> tm;
-    int i;
-    for(i=0;i<a;i++)
+    std::vector<RtFloat> tm;
+    tm.reserve((std::size_t) t1->getSamplesQuantity() +
+	       (std::size_t) t2->getSamplesQuantity());
+    for (RtInt i=0;i<t1->getSamplesQuantity();i++)
       tm.push_back(t1->getTime(i));
-    for(i=0;i<b;i++)
+    for (RtInt i=0;i<t2->getSamplesQuantity();i++)
       tm.push_back(t2->getTime(i));
 
-    GMANMovingMatrix *mm;
-    RtFloat *tmp = new RtFloat[tm.size()];
-    std::list<RtFloat>::iterator it;
-    for(it=tm.begin(),i=0;it!=tm.end();it++,i++) {
-      tmp[i]=*it;
+    GMANMovingMatrix *mm=new GMANMovingMatrix(tm);
+    for (RtInt j=0;j<mm->getSamplesQuantity();j++) {
+      mm->get(j)=t1->interpolate(mm->getTime(j));
+      mm->get(j).concat(t2->interpolate(mm->getTime(j)));
     }
-	
-    mm=new GMANMovingMatrix(tm.size(),tmp);
-    for(unsigned int j=0;j<tm.size();j++) {
-      mm->get(j)=t1->interpolate(tmp[j]);
-      mm->get(j).concat(t2->interpolate(tmp[j]));
-    }
-	if(tmp) delete[] tmp;
     delete storage;
     storage=mm;
-  } 
+  }
 }
 
 bool GMANTransform::isMoving()

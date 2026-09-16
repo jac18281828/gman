@@ -278,9 +278,7 @@ GMANGraphicState::CommandIdentity
 GMANGraphicState::cmdMakeShadow= { B|F, 0,0,0 };
 
 
-static RtFloat tr_times[1]={0}; 
-
-GMANGraphicState::GMANGraphicState() : mm(1,tr_times)
+GMANGraphicState::GMANGraphicState() : mm(std::vector<RtFloat>{0})
 {
   nest.push(B);
   block=B;
@@ -564,12 +562,8 @@ RtVoid GMANGraphicState::setTransform(GMANMatrix4 &m)
 {
   if (motion==1) { // in motion
     if (motionIndex==0) {
-      RtFloat *temp = new RtFloat[nbSamples];
-      for(RtInt i=0;i<nbSamples;i++)
-		temp[i]=samples[i];
-	  GMANMovingMatrix mm2(nbSamples,temp);
+	  GMANMovingMatrix mm2(samples);
 	  mm=mm2;
-	  if(temp) delete[] temp;
     } else if (motionIndex==nbSamples) {
       GMANError error(RIE_BADMOTION,RIE_WARNING,"Too many Transforms in Motion Block");
       throw error;
@@ -607,12 +601,8 @@ RtVoid GMANGraphicState::buildTransform(GMANMatrix4 &m)
 {
   if (motion==1) { // in motion
     if (motionIndex==0) {
-      RtFloat *temp = new RtFloat[nbSamples];
-      for(RtInt i=0;i<nbSamples;i++)
-		temp[i]=samples[i];
-      GMANMovingMatrix mm2(nbSamples,temp);
+      GMANMovingMatrix mm2(samples);
       mm=mm2;
-	  if(temp) delete[] temp;
     } else if (motionIndex==nbSamples) {
       GMANError error(RIE_BADMOTION,RIE_WARNING,"Too many Transforms in Motion Block");
       throw error;
