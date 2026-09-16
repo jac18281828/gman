@@ -583,7 +583,7 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       parseMakeBump();
       break;
     case GMANToken::RI_MAKE_LAT_LONG_ENVIRONMENT:
-      debug("Keyword token: MakeLatLongEnvironment (parse-only)");
+      debug("Keyword token: MakeLatLongEnvironment");
       parseMakeLatLongEnvironment();
       break;
     case GMANToken::RI_MAKE_CUBE_FACE_ENVIRONMENT:
@@ -1839,17 +1839,32 @@ RtVoid GMANRIBParse::parseMakeBump(RtVoid) {
 
 RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
   // MakeLatLongEnvironment picture texture filter swidth twidth paramlist
-  (void) copyStringToken(); // picture
-  (void) copyStringToken(); // texture
-  (void) copyStringToken(); // filter
-  nextFloat();
-  nextFloat();
+  const auto picture = copyStringToken();
+  const auto texture = copyStringToken();
+  const auto filterName = copyStringToken();
+  RtFloat swidth = nextFloat();
+  RtFloat twidth = nextFloat();
+
+  RtFilterFunc filterfunc;
+  if (! filterByName(filterName, filterfunc)) {
+    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") +
+      filterName + "\"";
+    GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
+    throw error;
+  }
 
   RtInt n = 0;
   RtToken *tokens;
   RtPointer *parms;
   RtInt *counts;
   parseParameterList(n, tokens, parms, counts);
+
+  // RiMakeLatLongEnvironmentV's pic/tex parameters are char* rather than
+  // const char* for historical reasons; it only reads through them.
+  renderMan->RiMakeLatLongEnvironmentV(const_cast<char *>(picture.c_str()),
+                                        const_cast<char *>(texture.c_str()),
+                                        filterfunc, swidth, twidth, n, tokens,
+                                        parms);
 }
 
 RtVoid GMANRIBParse::parseMakeCubeFaceEnvironment(RtVoid) {

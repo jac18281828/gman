@@ -30,6 +30,7 @@
  */
 
 #include "gmanshaderenvironment.h"
+#include "gmanmath.h"
 #include "gmannoise.h"
 #include "gmantexture.h"
 
@@ -93,4 +94,30 @@ GMANVector GMANSurfaceEnv::toWorld(const GMANVector &v) const {
           v.getZ() * cameraToWorld[2][1],
       v.getX() * cameraToWorld[0][2] + v.getY() * cameraToWorld[1][2] +
           v.getZ() * cameraToWorld[2][2]);
+}
+
+// RISpec 3.2 Sec 7.1.2's lat-long picture, inverted: "longitude equal to
+// 0 degrees at the left, and 360 degrees at the right. The latitude at the
+// bottom is -90 degrees and at the top is 90 degrees," with
+// x=cos(lon)cos(lat), y=sin(lon)cos(lat), z=sin(lat). lat = asin(z);
+// lon = atan2(y, x) wrapped into [0, 2*PI). s = lon / 2*PI, and
+// t = (PI/2 - lat) / PI, since t=0 is GMANTexture's own top row and the
+// top of the picture is the north pole. environment() does no space
+// conversion; the shader picks the space R is given in, as RSL's does.
+GMANColor GMANSurfaceEnv::environment(const std::string &name,
+                                       const GMANVector &R) const {
+  GMANVector r(R);
+  if (r.magnitude() < RI_EPSILON) {
+    return GMANColor((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 0.0);
+  }
+  r.normalize();
+
+  RtFloat lat = (RtFloat) std::asin(r.getZ());
+  RtFloat lon = (RtFloat) std::atan2(r.getY(), r.getX());
+  if (lon < 0) {
+    lon += (RtFloat)(2.0 * PI);
+  }
+  RtFloat s = lon / (RtFloat)(2.0 * PI);
+  RtFloat t = ((RtFloat)(PI / 2.0) - lat) / (RtFloat) PI;
+  return gmanTextureCache().sample(name, s, t);
 }

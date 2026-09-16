@@ -125,4 +125,18 @@ GMAN_EXPORT GMANTextureCache &gmanTextureCache(RtVoid);
 GMAN_EXPORT bool gmanMakeTexture(const char *picture, const char *texture,
                                   const char *swrap, const char *twrap);
 
+// RiMakeLatLongEnvironment's implementation: decodes picture and writes
+// texture as a latitude-longitude environment map, RISpec 3.2 Sec 7.1.2 --
+// "periodic,clamp" in the Pixar wrap-modes tag (longitude 0 and 360 meet
+// without a seam; latitude clamps at the poles) and "LatLong Environment"
+// in the Pixar texture-format tag, RenderMan tools' value for this format.
+// Same failure shape as gmanMakeTexture: never throws, warns once naming
+// texture and the cause, and leaves no file at texture on a null or empty
+// name, a picture that cannot be opened or decoded, an output that cannot
+// be opened or fully written, or a GMAN_WITH_TIFF=OFF build. A successful
+// write forgets texture from gmanTextureCache(), so the next lookup reads
+// what was just written.
+GMAN_EXPORT bool gmanMakeLatLongEnvironment(const char *picture,
+                                             const char *texture);
+
 #endif

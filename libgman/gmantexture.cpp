@@ -119,12 +119,12 @@ const char *wrapName(GMANTextureWrap wrap) {
 }
 
 // Writes rgb (w*h pixels, three bytes each, top-left oriented) to name as
-// a single-level 8-bit RGB TIFF carrying sw/tw in the Pixar wrap-modes
-// tag. False, removing any partial file, if the file cannot be opened or
-// a scanline fails to write.
+// a single-level 8-bit RGB TIFF carrying sw/tw in the Pixar wrap-modes tag
+// and format in the Pixar texture-format tag. False, removing any partial
+// file, if the file cannot be opened or a scanline fails to write.
 bool writeTexture(const std::string &name, uint32_t w, uint32_t h,
                    const std::vector<unsigned char> &rgb, GMANTextureWrap sw,
-                   GMANTextureWrap tw) {
+                   GMANTextureWrap tw, const std::string &format) {
   GMANTIFFWriter writer(name, w, h, 3, GMANOutputTIFF::NONE);
   if (!writer.isOpen()) {
     return false;
@@ -134,7 +134,7 @@ bool writeTexture(const std::string &name, uint32_t w, uint32_t h,
   const std::string wrapModes =
       std::string(wrapName(sw)) + "," + wrapName(tw);
   writer.setWrapModes(wrapModes);
-  writer.setTextureFormat("Plain Texture");
+  writer.setTextureFormat(format);
 
   std::vector<unsigned char> row(w * 3);
   bool writeOk = true;
@@ -314,8 +314,53 @@ bool gmanMakeTexture(const char *picture, const char *texture,
     return false;
   }
 
-  if (!writeTexture(textureName, w, h, rgb, sw, tw)) {
+  if (!writeTexture(textureName, w, h, rgb, sw, tw, "Plain Texture")) {
     warning("MakeTexture \"{}\": failed to write", textureName.c_str());
+    return false;
+  }
+
+  gmanTextureCache().forget(textureName);
+  return true;
+}
+
+bool gmanMakeLatLongEnvironment(const char *picture, const char *texture) {
+  if (!GMANTIFFReader::available()) {
+    warning("MakeLatLongEnvironment \"{}\": built without libtiff, nothing "
+            "written",
+            texture != nullptr ? texture : "");
+    return false;
+  }
+
+  const std::string textureName = texture != nullptr ? texture : "";
+  if (textureName.empty()) {
+    warning("MakeLatLongEnvironment: empty texture name, nothing written");
+    return false;
+  }
+
+  const std::string pictureName = picture != nullptr ? picture : "";
+  GMANTIFFReader reader(pictureName);
+  if (!reader.isOpen()) {
+    warning("MakeLatLongEnvironment \"{}\": cannot open picture \"{}\"",
+            textureName.c_str(), pictureName.c_str());
+    return false;
+  }
+
+  uint32_t w = 0, h = 0;
+  std::vector<unsigned char> rgb;
+  bool decoded = reader.decode(w, h, rgb);
+
+  if (!decoded) {
+    warning("MakeLatLongEnvironment \"{}\": cannot decode picture \"{}\"",
+            textureName.c_str(), pictureName.c_str());
+    return false;
+  }
+
+  // RISpec 3.2 Sec 7.1.2: periodic in s so longitude 0 and 360 meet
+  // without a seam, clamp in t so the poles hold their edge row/texel.
+  if (!writeTexture(textureName, w, h, rgb, GMAN_TEXTURE_PERIODIC,
+                     GMAN_TEXTURE_CLAMP, "LatLong Environment")) {
+    warning("MakeLatLongEnvironment \"{}\": failed to write",
+            textureName.c_str());
     return false;
   }
 

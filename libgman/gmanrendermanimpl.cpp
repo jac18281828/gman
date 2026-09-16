@@ -1631,11 +1631,12 @@ RtVoid  GMANRenderManImpl::RiMakeBumpV(char */*pic*/, char */*tex*/, RtToken /*s
 {
   allowed(cmdMakeBump);
 }
-RtVoid  GMANRenderManImpl::RiMakeLatLongEnvironmentV(char */*pic*/, char */*tex*/, RtFilterFunc /*filterfunc*/,
+RtVoid  GMANRenderManImpl::RiMakeLatLongEnvironmentV(char *pic, char *tex, RtFilterFunc /*filterfunc*/,
 				  RtFloat /*swidth*/, RtFloat /*twidth*/,
 				  RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
 {
   allowed(cmdMakeLatLongEnvironment);
+  gmanMakeLatLongEnvironment(pic, tex);
 }
 RtVoid  GMANRenderManImpl::RiMakeCubeFaceEnvironmentV(char */*px*/, char */*nx*/, char */*py*/, char */*ny*/,
 				   char */*pz*/, char */*nz*/, char */*tex*/, RtFloat /*fov*/,
