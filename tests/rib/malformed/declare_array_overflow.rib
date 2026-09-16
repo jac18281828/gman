@@ -1,0 +1,19 @@
+# A Declare array-size digit string that overflows even `long`
+# (GMANInlineParse::is_int must reject it, not saturate and accept a
+# garbage quantity that later sizes a `new RtFloat[]` in
+# GMANParameterList's constructor). gman is expected to fail cleanly on
+# the Declare itself, not crash sizing the Surface parameter that follows.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Declare "hugearray" "constant float[99999999999999999999]"
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "plastic" "hugearray" [1.0]
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

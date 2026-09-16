@@ -21,6 +21,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+#include <cerrno>
 #include <cstdlib>
 
 #include "gmaninlineparse.h"
@@ -192,8 +193,9 @@ bool GMANInlineParse::is_type (std::string str)
 bool GMANInlineParse::is_int (std::string str)
 {
   char *end;
+  errno = 0;
   const long j = strtol(str.c_str(), &end, 10);
-  if ((end==str.c_str()) || (j<=0)) return false;
+  if ((end==str.c_str()) || (errno==ERANGE) || (j<=0)) return false;
   return true;
 }
 

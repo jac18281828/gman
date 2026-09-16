@@ -27,6 +27,13 @@
  * covers two malformed shapes (a non-string array element, a non-string
  * Display argument) that are type errors, not tokenizer-level ones.
  *
+ * declare_array_overflow.rib is not a tokenizer defect either -- it is a
+ * Declare array-size digit string that overflows even `long`. It shares
+ * this harness anyway: GMANInlineParse::is_int gating that size is the
+ * only thing standing between a malformed RiDeclare and an uncaught
+ * std::bad_alloc sizing GMANParameterList's allocation, so "does not
+ * crash" is exactly this file's own bar.
+ *
  * The requirement is narrower than "parses correctly": a clean, bounded
  * exit -- crash or hang either would defeat every other test's own
  * process-spawning assumption. Each fixture runs under a hard wall-clock
@@ -114,6 +121,7 @@ int main(int argc, char *argv[]) {
       "unterminated_string.rib",
       "unbalanced_bracket.rib",
       "truncated.rib",
+      "declare_array_overflow.rib",
   };
 
   for (const char *fixture : fixtures) {
