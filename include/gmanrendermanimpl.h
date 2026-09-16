@@ -240,7 +240,7 @@ public:
 		     RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
 		     RtFloat vmin, RtFloat vmax,
 		     RtInt n, RtToken tokens[], RtPointer parms[],
-		     const RtInt *counts);
+		     RtInt const *counts);
 
   RtVoid  RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
 		    RtInt n, RtToken tokens[], RtPointer parms[]);

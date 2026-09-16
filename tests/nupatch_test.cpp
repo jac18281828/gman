@@ -63,11 +63,11 @@ namespace {
 
 // ---- geometry helpers ----
 
-double hullExtent(const std::vector<GMANPoint> &points) {
+double hullExtent(std::vector<GMANPoint> const &points) {
   double minX = 1e300, maxX = -1e300;
   double minY = 1e300, maxY = -1e300;
   double minZ = 1e300, maxZ = -1e300;
-  for (const GMANPoint &p : points) {
+  for (GMANPoint const &p : points) {
     minX = std::min(minX, (double) p.getX());
     maxX = std::max(maxX, (double) p.getX());
     minY = std::min(minY, (double) p.getY());
@@ -78,7 +78,7 @@ double hullExtent(const std::vector<GMANPoint> &points) {
   return std::max({maxX - minX, maxY - minY, maxZ - minZ});
 }
 
-bool pointsNear(const GMANPoint &a, const GMANPoint &b, double tol) {
+bool pointsNear(GMANPoint const &a, GMANPoint const &b, double tol) {
   return std::fabs(a.getX() - b.getX()) <= tol &&
          std::fabs(a.getY() - b.getY()) <= tol &&
          std::fabs(a.getZ() - b.getZ()) <= tol;
@@ -87,7 +87,7 @@ bool pointsNear(const GMANPoint &a, const GMANPoint &b, double tol) {
 // |n-hat . m-hat| >= 1 - tol; sameSign asserts the dot product itself
 // (not its absolute value) meets that bound, for cases that also derive
 // the expected sign.
-bool normalsParallel(const GMANVector &a, const GMANVector &b, double tol,
+bool normalsParallel(GMANVector const &a, GMANVector const &b, double tol,
                       bool sameSign) {
   GMANVector am = a, bm = b;
   double amag = am.magnitude();
@@ -105,7 +105,7 @@ bool normalsParallel(const GMANVector &a, const GMANVector &b, double tol,
 // pntSize is 3 ("P") or 4 ("Pw" -- the fourth float is the weight, left
 // untouched so the represented cartesian point still scales correctly:
 // Pw's xyz is cartesian*weight, so scaling xyz alone scales the point).
-std::vector<RtFloat> scaled(const std::vector<RtFloat> &base, double scale,
+std::vector<RtFloat> scaled(std::vector<RtFloat> const &base, double scale,
                              int pntSize) {
   std::vector<RtFloat> out(base);
   for (std::size_t i = 0; i + 2 < out.size(); i += pntSize) {
@@ -139,7 +139,7 @@ std::vector<RtFloat> bezierGrid() {
   return p;
 }
 
-std::vector<GMANPoint> asPoints3(const std::vector<RtFloat> &p) {
+std::vector<GMANPoint> asPoints3(std::vector<RtFloat> const &p) {
   std::vector<GMANPoint> pts;
   for (std::size_t i = 0; i + 2 < p.size(); i += 3) {
     pts.emplace_back(p[i], p[i + 1], p[i + 2]);
@@ -258,7 +258,7 @@ Cylinder buildCylinder(double r, double h) {
   return c;
 }
 
-std::vector<GMANPoint> cylinderHull(const Cylinder &c) {
+std::vector<GMANPoint> cylinderHull(Cylinder const &c) {
   std::vector<GMANPoint> pts;
   for (std::size_t i = 0; i + 3 < c.pw.size(); i += 4) {
     const RtFloat w = c.pw[i + 3];
@@ -345,14 +345,14 @@ void testSubRange() {
 
 // ---- Rendering and texture-coordinates helpers ----
 
-int runGman(const std::string &gman, const std::string &rib) {
+int runGman(std::string const &gman, std::string const &rib) {
   const std::string command =
       "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void testRenderTwin(const std::string &gman, const std::string &ribDir) {
+void testRenderTwin(std::string const &gman, std::string const &ribDir) {
   check(runGman(gman, ribDir + "/nupatch_bilinear.rib") == 0,
         "nupatch_bilinear.rib renders");
   check(runGman(gman, ribDir + "/patch_bilinear_twin.rib") == 0,
@@ -362,7 +362,7 @@ void testRenderTwin(const std::string &gman, const std::string &ribDir) {
                    "nupatch_bilinear_diff.tif");
 }
 
-bool pixelIdentical(const GmanImage &a, const GmanImage &b) {
+bool pixelIdentical(GmanImage const &a, GmanImage const &b) {
   if (!a.ok || !b.ok || a.width != b.width || a.height != b.height) {
     return false;
   }
@@ -376,8 +376,8 @@ bool pixelIdentical(const GmanImage &a, const GmanImage &b) {
   return true;
 }
 
-void testTextureCoordinatesNoOp(const std::string &gman,
-                                const std::string &ribDir) {
+void testTextureCoordinatesNoOp(std::string const &gman,
+                                std::string const &ribDir) {
   check(writeCheckerTexture("checker_texture.tif"),
         "checker_texture.tif writes into the render's working directory");
   check(runGman(gman, ribDir + "/nupatch_texturecoordinates.rib") == 0,
@@ -427,7 +427,7 @@ struct RunResult {
 
 // tests/paramclamp_test.cpp's own shape: fork/exec, waitpid,
 // WIFEXITED/WEXITSTATUS, WIFSIGNALED crash detection.
-RunResult runCapturingOutput(const std::string &gman, const std::string &rib,
+RunResult runCapturingOutput(std::string const &gman, std::string const &rib,
                              int timeoutSeconds) {
   RunResult result;
 
@@ -481,11 +481,11 @@ RunResult runCapturingOutput(const std::string &gman, const std::string &rib,
   return result;
 }
 
-void testMalformedFixtures(const std::string &gman,
-                           const std::string &malformedDir) {
+void testMalformedFixtures(std::string const &gman,
+                           std::string const &malformedDir) {
   struct Fixture {
-    const char *file;
-    const char *expectedWarning;
+    char const *file;
+    char const *expectedWarning;
   };
   const Fixture fixtures[] = {
       {"nupatch_short_uknot.rib",
@@ -507,7 +507,7 @@ void testMalformedFixtures(const std::string &gman,
        "ignoring."},
   };
 
-  for (const Fixture &fixture : fixtures) {
+  for (Fixture const &fixture : fixtures) {
     const std::string rib = malformedDir + "/" + fixture.file;
     RunResult r = runCapturingOutput(gman, rib, 10);
     check(!r.timedOut,
@@ -523,8 +523,8 @@ void testMalformedFixtures(const std::string &gman,
 
 // ---- Exception safety (commit 1) ----
 
-void testIllegalBlockLeaksNothing(const std::string &gman,
-                                  const std::string &malformedDir) {
+void testIllegalBlockLeaksNothing(std::string const &gman,
+                                  std::string const &malformedDir) {
   const std::string rib = malformedDir + "/nupatch_illegal_block.rib";
   RunResult r = runCapturingOutput(gman, rib, 10);
   check(!r.timedOut, "nupatch_illegal_block.rib: does not hang (10s bound)");

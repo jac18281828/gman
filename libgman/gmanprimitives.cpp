@@ -380,7 +380,7 @@ namespace {
 // half-open, [U[i], U[i+1)), except the last, which closes on the right
 // so u == U[n+1] still resolves to span n rather than falling off the
 // knot vector.
-int findSpan(int n, int p, double u, const std::vector<RtFloat> &U)
+int findSpan(int n, int p, double u, std::vector<RtFloat> const &U)
 {
   if (u >= U[n + 1]) {
     return n;
@@ -402,7 +402,7 @@ int findSpan(int n, int p, double u, const std::vector<RtFloat> &U)
 // because A2.3 is written for the general case and specializing it by hand
 // risks a transcription bug the book's own indices do not have.
 void dersBasisFuns(int span, double u, int p, int nDeriv,
-		    const std::vector<RtFloat> &U,
+		    std::vector<RtFloat> const &U,
 		    std::vector<std::vector<double>> &ders)
 {
   std::vector<std::vector<double>> ndu(p + 1, std::vector<double>(p + 1));
@@ -501,7 +501,7 @@ void GMANNuPatch::evaluate(double u, double v, GMANPoint &S, GMANVector &Su,
     const int j = spanV - vorder + 1 + b;
     for (int a = 0; a < uorder; a++) {
       const int i = spanU - uorder + 1 + a;
-      const RtFloat *cp = &cpts[(std::size_t) pntSize * (i + nu * j)];
+      RtFloat const *cp = &cpts[(std::size_t) pntSize * (i + nu * j)];
       const double basis = Nu[0][a] * Nv[0][b];
       const double basisU = Nu[1][a] * Nv[0][b];
       const double basisV = Nu[0][a] * Nv[1][b];

@@ -1320,9 +1320,9 @@ namespace {
 // float count) fitting in RtInt. Warns once naming the rule and its values
 // on the first violation and returns false; the caller adds
 // objectManager->create() and returns, RiPatchMeshV's own "ignoring" shape.
-bool validateNuPatch(RtInt nu, RtInt uorder, const RtFloat *uknot,
+bool validateNuPatch(RtInt nu, RtInt uorder, RtFloat const *uknot,
 		      RtFloat umin, RtFloat umax,
-		      RtInt nv, RtInt vorder, const RtFloat *vknot,
+		      RtInt nv, RtInt vorder, RtFloat const *vknot,
 		      RtFloat vmin, RtFloat vmax) {
   if (uorder < 1 || nu < uorder) {
     warning("NuPatch: nu={} uorder={} violates nu >= uorder >= 1; "
@@ -1400,7 +1400,7 @@ RtVoid  GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], R
 				  RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
 				  RtFloat vmin, RtFloat vmax,
 				  RtInt n, RtToken tokens[], RtPointer parms[],
-				  const RtInt *counts)
+				  RtInt const *counts)
 {
   allowed(cmdNuPatch);
 
