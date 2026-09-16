@@ -376,11 +376,11 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
   }
 
   while (remaining.size() > 3) {
-    const RtInt m = (RtInt) remaining.size();
+    const std::size_t m = remaining.size();
 
     std::vector<RtInt> reflex;
     std::vector<RtFloat> orient(m);
-    for (RtInt i = 0; i < m; i++) {
+    for (std::size_t i = 0; i < m; i++) {
       const RtInt iPrev = remaining[(i + m - 1) % m];
       const RtInt iCur = remaining[i];
       const RtInt iNext = remaining[(i + 1) % m];
@@ -391,10 +391,11 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
       }
     }
 
-    RtInt clipAt = -1;
-    RtInt fallbackAt = 0;
+    bool foundEar = false;
+    std::size_t clipAt = 0;
+    std::size_t fallbackAt = 0;
     RtFloat fallbackOrient = orient[0];
-    for (RtInt i = 0; i < m; i++) {
+    for (std::size_t i = 0; i < m; i++) {
       if (orient[i] > fallbackOrient) {
         fallbackOrient = orient[i];
         fallbackAt = i;
@@ -425,14 +426,15 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
       }
       if (degenerate || !containsReflex) {
         clipAt = i;
+        foundEar = true;
         break;
       }
     }
 
-    // No true ear tested empty: only reachable from malformed
-    // (self-intersecting) input, since a simple polygon always has one.
-    // Clip the least-reflex candidate anyway -- degrade, do not hang.
-    if (clipAt < 0) {
+    // No true ear found: only reachable from malformed (self-intersecting)
+    // input, since a simple polygon always has one. Clip the
+    // least-reflex candidate anyway -- degrade, do not hang.
+    if (!foundEar) {
       clipAt = fallbackAt;
     }
 
