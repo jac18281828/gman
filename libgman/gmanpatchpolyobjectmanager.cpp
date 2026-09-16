@@ -375,8 +375,15 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
     remaining[i] = i;
   }
 
-  while (remaining.size() > 3) {
+  while (true) {
+    // m is read once and reused for every index and the modulo below --
+    // re-reading remaining.size() at the point of the '% m' left the
+    // analyzer unable to connect it back to this loop's own continuation
+    // check, which is what kept m>3 true here.
     const std::size_t m = remaining.size();
+    if (m <= 3) {
+      break;
+    }
 
     std::vector<RtInt> reflex;
     std::vector<RtFloat> orient(m);
