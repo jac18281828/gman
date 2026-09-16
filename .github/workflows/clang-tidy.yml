@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 name: clang-tidy
 on:
+  push:
+    branches: ["**"]
   pull_request:
   workflow_dispatch:
 concurrency:

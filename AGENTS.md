@@ -94,8 +94,8 @@ buffer: no `sprintf`/`strcpy`/`strcat` family call (bounded or not), no
 `new char[` and no `PATH_MAX` outside `tests/`, with
 `libgman/gmanribparse.cpp`'s one RI string copy the exception.
 `.clang-tidy`'s `bugprone-unsafe-functions` reports the banned calls on
-every pull request, through `.github/workflows/clang-tidy.yml`, and is not
-yet a gate.
+every push and pull request, through `.github/workflows/clang-tidy.yml`. A
+red run reports and blocks nothing.
 
 `GMANParameterList::getPointer` returns NULL for an absent token — an
 optional, not an `unwrap`. Code with an optional parameter must check the
