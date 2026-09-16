@@ -166,6 +166,40 @@ convention. Not third-party.
 fallback as `patchmesh_baddim.rib`. A trailing `Sphere` follows the
 desync convention. Not third-party.
 
+## nupatch_bilinear.rib
+
+An order-2x2 `NuPatch` (`nu = nv = 2`, knots `[0 0 1 1]` on both axes) --
+a clamped degree-1 B-spline, mathematically bilinear interpolation of its
+own four control points, the same as `patch_bilinear_twin.rib`'s
+`Patch "bilinear"` over the same points in the same order. Registered in
+`tests/nupatch_test.cpp`, rendered and compared pixel by pixel against its
+own twin. A trailing `Sphere` follows the desync convention. Not
+third-party.
+
+## patch_bilinear_twin.rib
+
+`nupatch_bilinear.rib`'s own twin: the same four control points in the
+same order, issued as a plain `Patch "bilinear"`. Registered in
+`tests/nupatch_test.cpp`. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## nupatch_texturecoordinates.rib
+
+Pins the out-of-scope decision that `RiTextureCoordinates` never changes
+a `NuPatch`'s render: `getRSNuPatch` always passes `kIdentityCorners`
+regardless of what was supplied. An order-2x2 `NuPatch` over the same
+camera, lighting, `Sides 2` and paintedplastic/checker-texture surface as
+`tests/rib/texcoords/patch_texturecoordinates.rib`, carrying that
+fixture's own corner transpose. Registered in `tests/nupatch_test.cpp`,
+asserting this fixture and `nupatch_texturecoordinates_default.rib`
+render bit-for-bit the same. Not third-party.
+
+## nupatch_texturecoordinates_default.rib
+
+`nupatch_texturecoordinates.rib`'s own twin, with no
+`RiTextureCoordinates` at all. Registered in `tests/nupatch_test.cpp`.
+Not third-party.
+
 ## malformed/nupatch_short_uknot.rib
 
 `uknot` one value short of the declared `nu + uorder`. The RI signature

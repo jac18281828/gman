@@ -1324,22 +1324,40 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt /*nu*/,
-							  RtInt /*uorder*/,
-							  RtFloat /*uknot*/[],
-							  RtFloat /*umin*/,
-							  RtFloat /*umax*/,
-							  RtInt /*nv*/,
-							  RtInt /*vorder*/,
-							  RtFloat /*vknot*/[],
-							  RtFloat /*vmin*/,
-							  RtFloat /*vmax*/,
-							  GMANParameterList /*pl*/,
+// Texture coordinates on NuPatch are out of scope (see the settled decision
+// above getRSPatchMesh): kIdentityCorners stands in for
+// resolveParametricCorners here too, for the same reason -- a NuPatch's
+// varying values form a (nusegments+1) x (nvsegments+1) grid, which
+// resolveParametricCorners' fixed four-corner shape only fits in the
+// bilinear-equivalent case.
+GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt nu,
+							  RtInt uorder,
+							  RtFloat uknot[],
+							  RtFloat umin,
+							  RtFloat umax,
+							  RtInt nv,
+							  RtInt vorder,
+							  RtFloat vknot[],
+							  RtFloat vmin,
+							  RtFloat vmax,
+							  GMANParameterList pl,
 							  GMANOptions */*opt*/,
-							  GMANAttributes */*attr*/,
-							  GMANTransform */*t*/)
+							  GMANAttributes *attr,
+							  GMANTransform *t)
  {
-  return create();
+  // "Pw" wins over "P" when both are supplied; "P" alone means w = 1.
+  RtFloat *pw = (RtFloat *)
+      pl.getPointer(standardDictionary().getTokenId(RI_PW));
+  bool rational = pw != NULL;
+  RtFloat *p = rational ? pw : (RtFloat *)
+      pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (! p) {
+    return create();
+  }
+
+  GMANNuPatch patch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin,
+		     vmax, p, rational, pl);
+  return createParametric(&patch, t, attr, kIdentityCorners);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,

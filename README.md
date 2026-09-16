@@ -103,8 +103,9 @@ each:
 
 - **[ ] High-end geometry.** NURBS, trim curves and subdivision surfaces
   parse and are ignored. `Patch` and `PatchMesh` both rasterize, `"bilinear"`
-  and `"bicubic"`; `NuPatch` still does not. `PointsPolygons` and
-  `PointsGeneralPolygons` rasterize too, faceted.
+  and `"bicubic"`; `NuPatch` rasterizes too, polynomial and rational,
+  untrimmed. `PointsPolygons` and `PointsGeneralPolygons` rasterize too,
+  faceted.
 - **[~] Antialiasing and motion blur.** `PixelSamples` and `PixelFilter` are
   wired end to end: the z-buffer renderer rasterizes into a per-sample
   buffer (default 2x2) and resolves it through one of five filter kernels

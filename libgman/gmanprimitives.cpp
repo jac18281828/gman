@@ -372,81 +372,191 @@ GMANVector GMANHyperboloid::getNormal (double u, double v)
 
 
 
+namespace {
+
+// Cox-de Boor basis functions and their first derivative, Piegl and
+// Tiller, The NURBS Book, algorithms A2.1 (FindSpan) and A2.3
+// (DersBasisFuns, here always called for one derivative). Spans are
+// half-open, [U[i], U[i+1)), except the last, which closes on the right
+// so u == U[n+1] still resolves to span n rather than falling off the
+// knot vector.
+int findSpan(int n, int p, double u, const std::vector<RtFloat> &U)
+{
+  if (u >= U[n + 1]) {
+    return n;
+  }
+  int low = p, high = n + 1, mid = (low + high) / 2;
+  while (u < U[mid] || u >= U[mid + 1]) {
+    if (u < U[mid]) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+    mid = (low + high) / 2;
+  }
+  return mid;
+}
+
+// ders[0][0..p] are the p+1 nonzero basis functions at u over span; ders[1]
+// their first derivative. nDeriv is always 1 here; carried as a parameter
+// because A2.3 is written for the general case and specializing it by hand
+// risks a transcription bug the book's own indices do not have.
+void dersBasisFuns(int span, double u, int p, int nDeriv,
+		    const std::vector<RtFloat> &U,
+		    std::vector<std::vector<double>> &ders)
+{
+  std::vector<std::vector<double>> ndu(p + 1, std::vector<double>(p + 1));
+  std::vector<double> left(p + 1), right(p + 1);
+  ndu[0][0] = 1.0;
+  for (int j = 1; j <= p; j++) {
+    left[j] = u - U[span + 1 - j];
+    right[j] = U[span + j] - u;
+    double saved = 0.0;
+    for (int r = 0; r < j; r++) {
+      ndu[j][r] = right[r + 1] + left[j - r];
+      double temp = ndu[r][j - 1] / ndu[j][r];
+      ndu[r][j] = saved + right[r + 1] * temp;
+      saved = left[j - r] * temp;
+    }
+    ndu[j][j] = saved;
+  }
+
+  ders.assign(nDeriv + 1, std::vector<double>(p + 1, 0.0));
+  for (int j = 0; j <= p; j++) {
+    ders[0][j] = ndu[j][p];
+  }
+
+  std::vector<std::vector<double>> a(2, std::vector<double>(p + 1));
+  for (int r = 0; r <= p; r++) {
+    int s1 = 0, s2 = 1;
+    a[0][0] = 1.0;
+    for (int k = 1; k <= nDeriv; k++) {
+      double d = 0.0;
+      int rk = r - k, pk = p - k;
+      if (r >= k) {
+	a[s2][0] = a[s1][0] / ndu[pk + 1][rk];
+	d = a[s2][0] * ndu[rk][pk];
+      }
+      int j1 = (rk >= -1) ? 1 : -rk;
+      int j2 = (r - 1 <= pk) ? k - 1 : p - r;
+      for (int j = j1; j <= j2; j++) {
+	a[s2][j] = (a[s1][j] - a[s1][j - 1]) / ndu[pk + 1][rk + j];
+	d += a[s2][j] * ndu[rk + j][pk];
+      }
+      if (r <= pk) {
+	a[s2][k] = -a[s1][k - 1] / ndu[pk + 1][r];
+	d += a[s2][k] * ndu[r][pk];
+      }
+      ders[k][r] = d;
+      int tmp = s1;
+      s1 = s2;
+      s2 = tmp;
+    }
+  }
+
+  double factor = p;
+  for (int k = 1; k <= nDeriv; k++) {
+    for (int j = 0; j <= p; j++) {
+      ders[k][j] *= factor;
+    }
+    factor *= (p - k);
+  }
+}
+
+}  // namespace
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_NUPATCH.CPP
 ///////////////////////////////////////////////////////////////////////////////////////////////
-RtVoid GMANNuPatch::copy(GMANNuPatch const &np)
-{
-  int i;
-  nu=np.nu;
-  uorder=np.uorder;
-  uknot=new RtFloat[nu+uorder];
-  for (i=0; i<nu+uorder; i++) {
-    uknot[i]=np.uknot[i];
-  }
-  umin=np.umin;
-  umax=np.umax;
-
-  nv=np.nv;
-  vorder=np.vorder;
-  vknot=new RtFloat[nv+vorder];
-  for (i=0; i<nv+vorder; i++) {
-    vknot[i]=np.vknot[i];
-  }
-  vmin=np.vmin;
-  vmax=np.vmax;
-}
-
-RtVoid GMANNuPatch::destroy ()
-{
-  delete [] uknot;
-  delete [] vknot;
-}
-
 GMANNuPatch::GMANNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax,
 			 RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax,
-			 GMANParameterList p) : GMANPrimDatStorage(p)
+			 RtFloat *p, bool rational, GMANParameterList pl)
+  : GMANPrimDatStorage(pl), nu(nu), uorder(uorder),
+    uknot(uknot, uknot + nu + uorder), umin(umin), umax(umax),
+    nv(nv), vorder(vorder), vknot(vknot, vknot + nv + vorder),
+    vmin(vmin), vmax(vmax), rational(rational),
+    cpts(p, p + (std::size_t) nu * nv * (rational ? 4 : 3))
 {
-  int i;
-  this->nu=nu;
-  this->uorder=uorder;
-  this->uknot=new RtFloat[nu+uorder];
-  for (i=0; i<nu+uorder; i++) {
-    this->uknot[i]=uknot[i];
-  }
-  this->umin=umin;
-  this->umax=umax;
-
-  this->nv=nv;
-  this->vorder=vorder;
-  this->vknot=new RtFloat[nv+vorder];
-  for (i=0; i<nv+vorder; i++) {
-    this->vknot[i]=vknot[i];
-  }
-  this->vmin=vmin;
-  this->vmax=vmax;
 }
 
-GMANNuPatch::GMANNuPatch(GMANNuPatch const &np) : GMANPrimDatStorage (np)
+void GMANNuPatch::evaluate(double u, double v, GMANPoint &S, GMANVector &Su,
+			    GMANVector &Sv) const
 {
-  copy(np);
-}
+  const double uu = umin + u * (umax - umin);
+  const double vv = vmin + v * (vmax - vmin);
 
-GMANNuPatch const &GMANNuPatch::operator=(GMANNuPatch const &np)
-{
-  if (this!=&np) {
-    destroy();
-    GMANPrimDatStorage *a1=this;
-    GMANPrimDatStorage const *a2=&np;
-    *a1=*a2;
-    copy(np);
+  const int spanU = findSpan(nu - 1, uorder - 1, uu, uknot);
+  const int spanV = findSpan(nv - 1, vorder - 1, vv, vknot);
+
+  std::vector<std::vector<double>> Nu, Nv;
+  dersBasisFuns(spanU, uu, uorder - 1, 1, uknot, Nu);
+  dersBasisFuns(spanV, vv, vorder - 1, 1, vknot, Nv);
+
+  const int pntSize = rational ? 4 : 3;
+  double A[4] = {0.0, 0.0, 0.0, 0.0};
+  double Au[4] = {0.0, 0.0, 0.0, 0.0};
+  double Av[4] = {0.0, 0.0, 0.0, 0.0};
+
+  for (int b = 0; b < vorder; b++) {
+    const int j = spanV - vorder + 1 + b;
+    for (int a = 0; a < uorder; a++) {
+      const int i = spanU - uorder + 1 + a;
+      const RtFloat *cp = &cpts[(std::size_t) pntSize * (i + nu * j)];
+      const double basis = Nu[0][a] * Nv[0][b];
+      const double basisU = Nu[1][a] * Nv[0][b];
+      const double basisV = Nu[0][a] * Nv[1][b];
+      for (int c = 0; c < pntSize; c++) {
+	A[c] += basis * cp[c];
+	Au[c] += basisU * cp[c];
+	Av[c] += basisV * cp[c];
+      }
+    }
   }
-  return (*this);
+
+  if (rational) {
+    // Homogeneous "Pw": S = A/w; the quotient rule gives S_u = (A_u -
+    // w_u*S)/w. RiNuPatchV rejects every non-positive "Pw" weight before
+    // this evaluator ever runs, so w > 0 always -- no defensive guard here.
+    const double w = A[3];
+    S = GMANPoint((RtFloat)(A[0] / w), (RtFloat)(A[1] / w), (RtFloat)(A[2] / w));
+    Su = GMANVector((RtFloat)((Au[0] - Au[3] * S.getX()) / w),
+		     (RtFloat)((Au[1] - Au[3] * S.getY()) / w),
+		     (RtFloat)((Au[2] - Au[3] * S.getZ()) / w));
+    Sv = GMANVector((RtFloat)((Av[0] - Av[3] * S.getX()) / w),
+		     (RtFloat)((Av[1] - Av[3] * S.getY()) / w),
+		     (RtFloat)((Av[2] - Av[3] * S.getZ()) / w));
+  } else {
+    S = GMANPoint((RtFloat) A[0], (RtFloat) A[1], (RtFloat) A[2]);
+    Su = GMANVector((RtFloat) Au[0], (RtFloat) Au[1], (RtFloat) Au[2]);
+    Sv = GMANVector((RtFloat) Av[0], (RtFloat) Av[1], (RtFloat) Av[2]);
+  }
 }
 
-GMANNuPatch::~GMANNuPatch()
+GMANPoint GMANNuPatch::getLocation(double u, double v)
 {
-  destroy();
+  GMANPoint S;
+  GMANVector Su, Sv;
+  evaluate(u, v, S, Su, Sv);
+  return S;
+}
+
+GMANVector GMANNuPatch::getNormal(double u, double v)
+{
+  GMANPoint S;
+  GMANVector Su, Sv;
+  evaluate(u, v, S, Su, Sv);
+
+  GMANVector n = Su.cross(Sv);
+  // Divide by the cross product's own magnitude, never through
+  // GMANVector::normalize()'s absolute RI_EPSILON threshold -- a known
+  // scale defect (AGENTS.md's normal handling note; see also
+  // GMANPatch::getNormal's own comment). An exactly zero cross product
+  // returns the zero vector, as GMANPatch already does.
+  RtFloat mag = n.magnitude();
+  if (mag != 0.0) {
+    n /= mag;
+  }
+  return n;
 }
 
 

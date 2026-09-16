@@ -241,30 +241,39 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_NUPATCH.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANNuPatch : public GMANPrimDatStorage
+class GMAN_EXPORT GMANNuPatch : public GMANPrimDatStorage, public GMANParametric
 {
-private:
-  RtVoid copy(GMANNuPatch const &np);
-  RtVoid destroy ();
 protected:
   RtInt nu;
   RtInt uorder;
-  RtFloat *uknot;
+  std::vector<RtFloat> uknot;
   RtFloat umin;
   RtFloat umax;
   RtInt nv;
   RtInt vorder;
-  RtFloat *vknot;
+  std::vector<RtFloat> vknot;
   RtFloat vmin;
   RtFloat vmax;
+  bool rational;
+
+  // nu*nv control points, u-fastest/v-major (GMANPatchMesh::point's own
+  // layout). Four floats per point (homogeneous "Pw") when rational,
+  // three (cartesian "P") otherwise.
+  std::vector<RtFloat> cpts;
+
+  // The surface point and its first partials in knot-space u, v, at the
+  // unit-square (u,v) mapped onto [umin,umax] x [vmin,vmax]. Shared by
+  // getLocation and getNormal so the two never disagree.
+  void evaluate (double u, double v, GMANPoint &S, GMANVector &Su,
+		 GMANVector &Sv) const;
 
 public:
   GMANNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax,
 	      RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax,
-	      GMANParameterList p);
-  GMANNuPatch(GMANNuPatch const &np);
-  GMANNuPatch const &operator=(GMANNuPatch const &np);
-  ~GMANNuPatch();
+	      RtFloat *p, bool rational, GMANParameterList pl);
+
+  GMANPoint getLocation (double u, double v);
+  GMANVector getNormal (double u, double v);
 };
 
 
