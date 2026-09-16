@@ -722,7 +722,7 @@ set_target_properties(gman_camerashader PROPERTIES OUTPUT_NAME "camerashader")
 # orientations. See tests/environment_test.cpp.
 add_executable(gman_environment environment_test.cpp)
 target_link_libraries(gman_environment PRIVATE gman_core TIFF::TIFF)
-add_dependencies(gman_environment gman_camerashader)
+add_dependencies(gman_environment gman_camerashader gman_shinymetal)
 
 set(GMAN_ENVIRONMENT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/environment-run")
 file(MAKE_DIRECTORY "${GMAN_ENVIRONMENT_WORKDIR}")

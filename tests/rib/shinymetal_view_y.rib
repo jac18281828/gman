@@ -1,0 +1,34 @@
+# See shinymetal_view_z.rib for the full derivation this one shares.
+#
+# GMANMatrix4::rot's x-axis matrix, same row-vector, same-composition-rule
+# derivation as shinymetal_view_z.rib's y-axis one: (x,y,z) ->
+# (x, y*cos(a)-z*sin(a), y*sin(a)+z*cos(a)).
+#
+# "Rotate 90 1 0 0", declared after "Translate 0 0 5" and so applied to a
+# point first: (0,1,0) -> (0,cos(90),sin(90)) = (0,0,1) -- a point far
+# along world +y lands on the camera's own +z axis, "the camera looks
+# along world +y." The same rotation sends world z (the Patch's own
+# normal) to (0,-sin(90),cos(90)) = (0,-1,0): camera -y, again edge-on for
+# the same reason shinymetal_view_x.rib's own comment gives. The in-world
+# "Rotate -90 1 0 0" right before the Patch undoes it the same way: the
+# Patch's final transform reduces to Translate alone, so its camera-space
+# location, I, Nf and D=(0,0,-1) are the same as the other two fixtures'.
+#
+# cameraToWorld = (Rotate(90,x).Translate)^-1's rotation part is
+# Rotate(-90,x) (translation drops out of toWorld). toWorld(0,0,-1) =
+# (0,0,-1)*Rotate(-90,x): y' = 0*cos(-90)-(-1)*sin(-90) = -1,
+# z' = 0*sin(-90)+(-1)*cos(-90) = 0, so (0,-1,0): world -y: region -y.
+Display "shinymetal_view_y.tif" "file" "rgba"
+Format 32 32 1
+Projection "perspective" "fov" [30]
+Clipping 0.5 50
+Translate 0 0 5
+Rotate 90 1 0 0
+WorldBegin
+Surface "shinymetal" "Ka" [0] "Ks" [0] "Kr" [1] "texturename" ["sixregion.env"]
+Color [1 1 1]
+Opacity [1 1 1]
+Sides 2
+Rotate -90 1 0 0
+Patch "bilinear" "P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]
+WorldEnd

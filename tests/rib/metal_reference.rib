@@ -1,0 +1,17 @@
+# The metal half of shinymetal_degrades.rib's comparison: same scene,
+# same Ka/Ks/roughness, specularcolor left at its default white so
+# metal's Cs*specularcolor*Ks*specular(...) term tints identically to
+# shinymetal's untinted Ks*specular(...).
+Display "metal_reference.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 0 0] "to" [0 0 0]
+Sides 1
+Surface "metal" "Ka" [0.2] "Ks" [0.6] "roughness" [0.08]
+Sphere 1 -1 1 360
+WorldEnd

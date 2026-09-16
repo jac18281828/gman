@@ -121,7 +121,9 @@ each:
   in-memory cache (`gmanTextureCache()`), decoding each name once and
   keeping it for the run. The Reyes paper's own requirement is *many
   large* textures under *bounded* memory; this cache is unbounded, so it
-  stays `[~]` until a paging or tiled scheme lands.
+  stays `[~]` until a paging or tiled scheme lands. `environment()` reads
+  latitude-longitude maps written by `MakeLatLongEnvironment`, in world
+  space, and `shinymetal` uses it.
 - **[~] Quantization, filtering, reconstruction.** Exposure and gamma are
   honored, and pixel reconstruction now runs (see Antialiasing above).
   Quantization still warns and passes the colour through untouched.

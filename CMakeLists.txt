@@ -247,6 +247,9 @@ set_target_properties(gman_metal PROPERTIES OUTPUT_NAME "metal")
 gman_add_plugin(gman_paintedplastic shaders/gmanpaintedplastic.cpp)
 set_target_properties(gman_paintedplastic PROPERTIES OUTPUT_NAME "paintedplastic")
 
+gman_add_plugin(gman_shinymetal shaders/gmanshinymetal.cpp)
+set_target_properties(gman_shinymetal PROPERTIES OUTPUT_NAME "shinymetal")
+
 # ---------------------------------------------------------------------------
 # gman — the driver
 # ---------------------------------------------------------------------------

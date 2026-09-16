@@ -1,0 +1,38 @@
+# See shinymetal_view_z.rib for the full derivation this one shares.
+#
+# "Rotate -90 0 1 0", declared after the shared "Translate 0 0 5", is
+# applied to a world point FIRST (Rotate then Translate -- see
+# shinymetal_view_z.rib): (1,0,0) -> (cos(-90),0,-sin(-90)) = (0,0,1), so
+# a point far along world +x lands deep on the camera's own +z axis --
+# "the camera looks along world +x." The same rotation sends world z
+# (the Patch's own fixed normal) to (sin(-90),0,cos(-90)) = (-1,0,0):
+# camera -x, not camera z -- a flat Patch fixed in the world x,y plane is
+# edge-on to a camera that looks along world x, by simple geometry (it is
+# a "floor," and this camera flies past at floor height). The in-world
+# "Rotate 90 0 1 0" right before the Patch undoes exactly this: two
+# same-axis rotations of a+(-a) compose to identity regardless of order,
+# so the Patch's own final transform is Rotate(90).Rotate(-90).Translate =
+# Translate alone -- camera-space location, I and Nf are bit-identical to
+# shinymetal_view_z.rib's own. D = (0,0,-1) again, in camera space.
+#
+# cameraToWorld is the inverse of the pre-WorldBegin CTM alone (the
+# in-world Rotate never reaches GMANOptions -- RiWorldBegin records it
+# once, before this line runs): (Rotate(-90).Translate)^-1 =
+# Translate(0,0,-5).Rotate(90) (translation drops out of toWorld, a
+# direction). toWorld(0,0,-1) = (0,0,-1)*Rotate(90) =
+# (0*cos(90)+(-1)*sin(90), 0, -0*sin(90)+(-1)*cos(90)) = (-1,0,0):
+# world -x: region -x.
+Display "shinymetal_view_x.tif" "file" "rgba"
+Format 32 32 1
+Projection "perspective" "fov" [30]
+Clipping 0.5 50
+Translate 0 0 5
+Rotate -90 0 1 0
+WorldBegin
+Surface "shinymetal" "Ka" [0] "Ks" [0] "Kr" [1] "texturename" ["sixregion.env"]
+Color [1 1 1]
+Opacity [1 1 1]
+Sides 2
+Rotate 90 0 1 0
+Patch "bilinear" "P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]
+WorldEnd

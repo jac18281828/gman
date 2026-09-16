@@ -1,0 +1,45 @@
+# shinymetal_view_z/x/y.rib: a camera-facing mirror Patch, identical
+# except the camera orientation before WorldBegin and a compensating
+# in-world Rotate that keeps the Patch's own camera-space appearance
+# identical across all three -- both derived by hand below, under
+# AGENTS.md's row-vector convention and its "a locally declared transform
+# composes ahead of everything already accumulated" rule
+# (GMANGraphicState::buildTransform).
+#
+# The Patch spans world x,y in [-1,1] at z=0: flat, normal along world z.
+# Its centre vertex (u=v=0.5, a URES=VRES=16 grid vertex) sits at the
+# world origin, whichever way the camera faces -- a pure rotation fixes
+# the origin, and the shared "Translate 0 0 5" (declared first, so it is
+# the last transform applied to a point -- see below) then places it on
+# the camera axis at depth 5, same as every other fixture in this tree.
+#
+# Composition order (GMANGraphicState::buildTransform, "CTM_new = Local .
+# CTM_old", applying Local to the point before whatever is already
+# accumulated): with "Translate 0 0 5" declared first and "Rotate" second,
+# a world point p transforms as p' = (p * Rotate) * Translate -- Rotate
+# first, Translate second. GMANMatrix4::rot's own y-axis matrix (row-
+# vector form, calibrated against tests/rib/rotate.rib's comment, "Rotate
+# 90 0 1 0 turns the world x axis onto -z"): (x,y,z) -> (x*cos(a)+z*sin(a),
+# y, -x*sin(a)+z*cos(a)).
+#
+# view_z: no Rotate at all (identity). The Patch's own world z-axis normal
+# already faces the camera's own z axis, so no compensating in-world
+# Rotate is needed either. Centre vertex: location=(0,0,5), I=(0,0,1),
+# N=(0,0,1) (object-space, and the camera rotation's linear part is
+# identity, so camera-space N is unchanged); faceforward flips it to
+# Nf=(0,0,-1) since N.I=1>0. D = reflect(I,Nf) = I - 2*Nf*(I.Nf) =
+# (0,0,1) - 2*(0,0,-1)*(-1) = (0,0,-1): a mirror facing the camera
+# reflects straight back at it. cameraToWorld is identity (no camera
+# rotation), so toWorld(D) = (0,0,-1) = world -z: region -z.
+Display "shinymetal_view_z.tif" "file" "rgba"
+Format 32 32 1
+Projection "perspective" "fov" [30]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Surface "shinymetal" "Ka" [0] "Ks" [0] "Kr" [1] "texturename" ["sixregion.env"]
+Color [1 1 1]
+Opacity [1 1 1]
+Sides 2
+Patch "bilinear" "P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]
+WorldEnd

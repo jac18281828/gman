@@ -33,10 +33,13 @@
  * writes its checker.
  */
 
+#include <sys/wait.h>
+
 #include <tiffio.h>
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -56,6 +59,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvertex.h"
+#include "goldenimage.h"
 
 namespace {
 
@@ -346,9 +350,134 @@ void testWriterTagsAndFailures(const std::string &picture,
         missingPictureTarget + " is not written");
 }
 
+// ---- the mirror (commit 3) ----
+
+int runGman(const std::string &gman, const std::string &rib) {
+  const std::string command =
+      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+  int status = std::system(command.c_str());
+  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+}
+
+const int kSixRegionWidth = 64;
+const int kSixRegionHeight = 32;
+
+enum Region {
+  REGION_PLUS_X,
+  REGION_MINUS_X,
+  REGION_PLUS_Y,
+  REGION_MINUS_Y,
+  REGION_PLUS_Z,
+  REGION_MINUS_Z,
+};
+
+GMANColor regionColor(Region r) {
+  switch (r) {
+    case REGION_PLUS_X:
+      return GMANColor((RtFloat) 1.0, (RtFloat) 0.0, (RtFloat) 0.0);
+    case REGION_MINUS_X:
+      return GMANColor((RtFloat) 0.0, (RtFloat) 1.0, (RtFloat) 1.0);
+    case REGION_PLUS_Y:
+      return GMANColor((RtFloat) 0.0, (RtFloat) 1.0, (RtFloat) 0.0);
+    case REGION_MINUS_Y:
+      return GMANColor((RtFloat) 1.0, (RtFloat) 0.0, (RtFloat) 1.0);
+    case REGION_PLUS_Z:
+      return GMANColor((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 1.0);
+    default:  // REGION_MINUS_Z
+      return GMANColor((RtFloat) 1.0, (RtFloat) 1.0, (RtFloat) 0.0);
+  }
+}
+
+// The nearest cube face to d, RISpec's own +x/-x/+y/-y/+z/-z direction
+// formula: the region every point within 45 degrees of one axis belongs
+// to, so each of the six spans a full hemisphere-quadrant, "well over"
+// the few degrees a patch this small subtends from its own centre.
+Region regionAt(const GMANVector &d) {
+  RtFloat ax = (RtFloat) std::fabs(d.getX());
+  RtFloat ay = (RtFloat) std::fabs(d.getY());
+  RtFloat az = (RtFloat) std::fabs(d.getZ());
+  if (ax >= ay && ax >= az) {
+    return d.getX() > 0 ? REGION_PLUS_X : REGION_MINUS_X;
+  }
+  if (ay >= az) {
+    return d.getY() > 0 ? REGION_PLUS_Y : REGION_MINUS_Y;
+  }
+  return d.getZ() > 0 ? REGION_PLUS_Z : REGION_MINUS_Z;
+}
+
+bool writeSixRegionPicture(const std::string &path) {
+  TIFF *tif = TIFFOpen(path.c_str(), "w");
+  if (tif == nullptr) {
+    return false;
+  }
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t) kSixRegionWidth);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t) kSixRegionHeight);
+  TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
+  TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 3);
+  TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+  TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);
+  TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+  TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 1);
+
+  bool ok = true;
+  for (int j = 0; j < kSixRegionHeight && ok; ++j) {
+    std::vector<unsigned char> row((std::size_t) kSixRegionWidth * 3);
+    for (int i = 0; i < kSixRegionWidth; ++i) {
+      RtFloat lon = (RtFloat)(2.0 * PI * (i + 0.5) / kSixRegionWidth);
+      RtFloat lat =
+          (RtFloat)(PI / 2.0 - PI * (j + 0.5) / kSixRegionHeight);
+      GMANColor c = regionColor(regionAt(directionAt(lon, lat)));
+      row[(std::size_t) i * 3 + 0] = (unsigned char) (c.getRed() * 255.0);
+      row[(std::size_t) i * 3 + 1] = (unsigned char) (c.getGreen() * 255.0);
+      row[(std::size_t) i * 3 + 2] = (unsigned char) (c.getBlue() * 255.0);
+    }
+    ok = TIFFWriteScanline(tif, row.data(), (uint32_t) j, 0) >= 0;
+  }
+  TIFFClose(tif);
+  return ok;
+}
+
+// Renders fixture and reads back its own Display name (fixture's base name
+// with ".tif"), checking the pixel at the patch's centre -- a grid vertex
+// where every fixture's own derivation (see the .rib files) puts I on the
+// camera's own axis and the reflection pointing straight back at it.
+void testMirrorView(const std::string &gman, const std::string &ribDir,
+                     const std::string &fixture, Region want) {
+  check(runGman(gman, ribDir + "/" + fixture) == 0, fixture + " renders");
+  const std::string outputTif =
+      fixture.substr(0, fixture.size() - 4) + ".tif";  // strip ".rib"
+  GmanImage img = readGmanTIFF(outputTif);
+  check(img.ok, outputTif + " reads back");
+  if (!img.ok) {
+    return;
+  }
+  uint32_t cx = img.width / 2, cy = img.height / 2;
+  uint32_t px = img.at(cx, cy);
+  GMANColor got((RtFloat) TIFFGetR(px) / (RtFloat) 255.0,
+                (RtFloat) TIFFGetG(px) / (RtFloat) 255.0,
+                (RtFloat) TIFFGetB(px) / (RtFloat) 255.0);
+  checkColorNear(got, regionColor(want), (RtFloat) 0.05,
+                 fixture + ": centre pixel shows its derived region");
+}
+
+// shinymetal with an empty texturename skips the environment lookup and
+// adds black, degrading to metal (RISpec: an implementation without
+// environment mapping behaves this way) -- proved by rendering the same
+// lit sphere through both and comparing pixel by pixel.
+void testShinyMetalDegradesToMetal(const std::string &gman,
+                                    const std::string &ribDir) {
+  check(runGman(gman, ribDir + "/shinymetal_degrades.rib") == 0,
+        "shinymetal_degrades.rib renders");
+  check(runGman(gman, ribDir + "/metal_reference.rib") == 0,
+        "metal_reference.rib renders");
+  checkGoldenImage("shinymetal_degrades.tif", "metal_reference.tif",
+                    GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+                    "shinymetal_degrades_diff.tif");
+}
+
 }  // namespace
 
-int main(int /*argc*/, char * /*argv*/[]) {
+int main(int argc, char *argv[]) {
   testToWorldRotatesDirection();
   testMatrixReachesShader();
 
@@ -361,6 +490,24 @@ int main(int /*argc*/, char * /*argv*/[]) {
   testDirectLookups(map);
   testLongitudeWraps(map);
   testWriterTagsAndFailures(picture, map);
+
+  if (argc < 3) {
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n",
+                  argv[0]);
+    return 2;
+  }
+  const std::string gman = argv[1];
+  const std::string ribDir = argv[2];
+
+  check(writeSixRegionPicture("sixregion_picture.tif"),
+        "sixregion_picture.tif writes for gmanMakeLatLongEnvironment");
+  check(gmanMakeLatLongEnvironment("sixregion_picture.tif", "sixregion.env"),
+        "sixregion.env writes via gmanMakeLatLongEnvironment");
+
+  testMirrorView(gman, ribDir, "shinymetal_view_z.rib", REGION_MINUS_Z);
+  testMirrorView(gman, ribDir, "shinymetal_view_x.rib", REGION_MINUS_X);
+  testMirrorView(gman, ribDir, "shinymetal_view_y.rib", REGION_MINUS_Y);
+  testShinyMetalDegradesToMetal(gman, ribDir);
 
   return checkSummary("environment holds");
 }
