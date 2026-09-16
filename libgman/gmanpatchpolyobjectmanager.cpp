@@ -137,9 +137,11 @@ struct GMANShadingContext {
   std::vector<const GMANLight *> activeLights;
   GMANColor Cs;
   GMANColor Os;
+  GMANMatrix4 cameraToWorld;  // identity unless opt carries one
 };
 
-GMANShadingContext resolveShadingContext(GMANAttributes *attr) {
+GMANShadingContext resolveShadingContext(GMANAttributes *attr,
+                                          GMANOptions const *opt) {
   GMANShadingContext ctx;
 
   // getSurface's const pointer just reflects that GMANAttributes doesn't
@@ -162,6 +164,9 @@ GMANShadingContext resolveShadingContext(GMANAttributes *attr) {
 
   ctx.Cs = attr->getColor();
   ctx.Os = attr->getOpacity();
+  if (opt) {
+    ctx.cameraToWorld = opt->getCameraToWorld();
+  }
   return ctx;
 }
 
@@ -235,6 +240,7 @@ GMANColor shadeVertex(const GMANShadingContext &ctx, const GMANPoint &location,
   env.s = s;
   env.t = t;
   env.lights = ctx.activeLights;
+  env.cameraToWorld = ctx.cameraToWorld;
   return ctx.shader->computeCi(env);
 }
 
@@ -974,7 +980,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::create(RtVoid) {
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
 							  GMANParameterList pl,
-							  GMANOptions */*opt*/,
+							  GMANOptions *opt,
 							  GMANAttributes *attr,
 							  GMANTransform *t)
  {
@@ -1001,7 +1007,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-  GMANShadingContext shading = resolveShadingContext(attr);
+  GMANShadingContext shading = resolveShadingContext(attr, opt);
 
   std::vector<GMANPoint> location(nverts);
   std::vector<RtInt> slots(nverts);
@@ -1032,7 +1038,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
 GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
 								 RtInt nverts[],
 								 GMANParameterList pl,
-								 GMANOptions */*opt*/,
+								 GMANOptions *opt,
 								 GMANAttributes *attr,
 								 GMANTransform *t)
  {
@@ -1073,7 +1079,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-  GMANShadingContext shading = resolveShadingContext(attr);
+  GMANShadingContext shading = resolveShadingContext(attr, opt);
 
   GMANBody *body;
   GMANVertex *vertRoot;
@@ -1091,7 +1097,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys,
 								RtInt nverts[],
 								RtInt verts[],
 								GMANParameterList pl,
-								GMANOptions */*opt*/,
+								GMANOptions *opt,
 								GMANAttributes *attr,
 								GMANTransform *t)
  {
@@ -1128,7 +1134,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys,
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-  GMANShadingContext shading = resolveShadingContext(attr);
+  GMANShadingContext shading = resolveShadingContext(attr, opt);
 
   // Faceted (settled decision "Faces"): every face gathers its own
   // GMANVertex objects through "verts", one PointsPolygons face being a
@@ -1173,7 +1179,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt np
 									RtInt nverts[],
 									RtInt verts[],
 									GMANParameterList pl,
-									GMANOptions */*opt*/,
+									GMANOptions *opt,
 									GMANAttributes *attr,
 									GMANTransform *t)
  {
@@ -1206,7 +1212,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt np
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-  GMANShadingContext shading = resolveShadingContext(attr);
+  GMANShadingContext shading = resolveShadingContext(attr, opt);
 
   GMANBody *bodyHead = NULL, *bodyTail = NULL;
   GMANVertex *vertHead = NULL, *vertTail = NULL;
@@ -1254,7 +1260,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt np
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
 							GMANParameterList pl,
-							GMANOptions */*opt*/,
+							GMANOptions *opt,
 							GMANAttributes *attr,
 							GMANTransform *t)
  {
@@ -1267,12 +1273,12 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
   GMANTextureCoordinates corners = resolveParametricCorners(pl, attr);
   if (strcmp(type, RI_BILINEAR) == 0) {
     GMANPatch patch(type, p, pl);
-    return createParametric(&patch, t, attr, corners);
+    return createParametric(&patch, t, attr, corners, opt);
   }
   if (strcmp(type, RI_BICUBIC) == 0) {
     GMANBasis basis = attr->getUVBasis();
     GMANPatch patch(type, p, basis, pl);
-    return createParametric(&patch, t, attr, corners);
+    return createParametric(&patch, t, attr, corners, opt);
   }
   return create();
 };
@@ -1289,7 +1295,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
 							    RtInt nv,
 							    RtToken vwrap,
 							    GMANParameterList pl,
-							    GMANOptions */*opt*/,
+							    GMANOptions *opt,
 							    GMANAttributes *attr,
 							    GMANTransform *t)
  {
@@ -1306,7 +1312,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
       return create();
     }
     GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, pl);
-    return createParametric(&mesh, t, attr, kIdentityCorners);
+    return createParametric(&mesh, t, attr, kIdentityCorners, opt);
   }
   if (strcmp(type, RI_BICUBIC) == 0) {
     GMANBasis basis = attr->getUVBasis();
@@ -1319,7 +1325,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
       return create();
     }
     GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, basis, pl);
-    return createParametric(&mesh, t, attr, kIdentityCorners);
+    return createParametric(&mesh, t, attr, kIdentityCorners, opt);
   }
   return create();
 };
@@ -1341,7 +1347,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt nu,
 							  RtFloat vmin,
 							  RtFloat vmax,
 							  GMANParameterList pl,
-							  GMANOptions */*opt*/,
+							  GMANOptions *opt,
 							  GMANAttributes *attr,
 							  GMANTransform *t)
  {
@@ -1357,7 +1363,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt nu,
 
   GMANNuPatch patch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin,
 		     vmax, p, rational, pl);
-  return createParametric(&patch, t, attr, kIdentityCorners);
+  return createParametric(&patch, t, attr, kIdentityCorners, opt);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,
@@ -1365,24 +1371,24 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,
 							 RtFloat zmax,
 							 RtFloat tmax,
 							 GMANParameterList pl,
-							 GMANOptions */*opt*/,
+							 GMANOptions *opt,
 							 GMANAttributes *attr,
 							 GMANTransform *t)
  {
   GMANSphere sphere(radius, zmin, zmax, tmax, pl);
-  return createParametric(&sphere, t, attr, resolveParametricCorners(pl, attr));
+  return createParametric(&sphere, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSCone (RtFloat height,
 						       RtFloat radius,
 						       RtFloat tmax,
 						       GMANParameterList pl, 
-						       GMANOptions */*opt*/,
+						       GMANOptions *opt,
 						       GMANAttributes *attr,
 						       GMANTransform *t)
  {
   GMANCone cone(height, radius, tmax, pl);
-  return createParametric(&cone, t, attr, resolveParametricCorners(pl, attr));
+  return createParametric(&cone, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
@@ -1390,24 +1396,24 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
 							   RtFloat zmax,
 							   RtFloat tmax,
 							   GMANParameterList pl,
-							   GMANOptions */*opt*/,
+							   GMANOptions *opt,
 							   GMANAttributes *attr,
 							   GMANTransform *t)
  {
   GMANCylinder cylinder(radius, zmin, zmax, tmax, pl);
-  return createParametric(&cylinder, t, attr, resolveParametricCorners(pl, attr));
+  return createParametric(&cylinder, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSHyperboloid (RtPoint point1,
 							      RtPoint point2,
 							      RtFloat tmax,
 							      GMANParameterList pl,
-							      GMANOptions */*opt*/,
+							      GMANOptions *opt,
 							      GMANAttributes *attr,
 							      GMANTransform *t)
  {
   GMANHyperboloid hyperboloid(point1, point2, tmax, pl);
-  return createParametric(&hyperboloid, t, attr, resolveParametricCorners(pl, attr));
+  return createParametric(&hyperboloid, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
@@ -1415,24 +1421,24 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
 							     RtFloat zmax,
 							     RtFloat tmax,
 							     GMANParameterList pl,
-							     GMANOptions */*opt*/,
+							     GMANOptions *opt,
 							     GMANAttributes *attr,
 							     GMANTransform *t)
  {
   GMANParaboloid paraboloid(rmax, zmin, zmax, tmax, pl);
-  return createParametric(&paraboloid, t, attr, resolveParametricCorners(pl, attr));
+  return createParametric(&paraboloid, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat height,
 						       RtFloat radius,
 						       RtFloat tmax,
 						       GMANParameterList pl,
-						       GMANOptions */*opt*/,
+						       GMANOptions *opt,
 						       GMANAttributes *attr,
 						       GMANTransform *t)
  {
   GMANDisk disk(height, radius, tmax, pl);
-  return createParametric(&disk, t, attr, resolveParametricCorners(pl, attr));
+  return createParametric(&disk, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
@@ -1441,12 +1447,12 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
 							RtFloat phimax,
 							RtFloat tmax,
 							GMANParameterList pl,
-							GMANOptions */*opt*/,
+							GMANOptions *opt,
 							GMANAttributes *attr,
 							GMANTransform *t)
  {
   GMANTorus torus(majrad, minrad, phimin, phimax, tmax, pl);
-  return createParametric(&torus, t, attr, resolveParametricCorners(pl, attr));
+  return createParametric(&torus, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
 GMANPrimitive * GMANPatchPolyObjectManager::getRSBlobby (RtInt /*nleaf*/,
@@ -1506,7 +1512,8 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSSubdivisionMesh (RtToken /*mask
 GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
 							  GMANTransform* t,
 							  GMANAttributes* attr,
-							  const GMANTextureCoordinates &corners)
+							  const GMANTextureCoordinates &corners,
+							  GMANOptions const *opt)
 {
 #define URES 16
 #define VRES 16
@@ -1526,7 +1533,7 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
   ctmInv.invert();
 
   // Shading setup, resolved once per primitive rather than once per vertex.
-  GMANShadingContext shading = resolveShadingContext(attr);
+  GMANShadingContext shading = resolveShadingContext(attr, opt);
 
   GMANVertex** vertices = new GMANVertex*[(URES + 1) * (VRES + 1)];
   GMANFace** faces = new GMANFace*[URES * VRES];

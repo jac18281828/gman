@@ -708,6 +708,34 @@ set_tests_properties(nupatch PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# Test-only surface shader (see its own comment): a dlopen'd module and its
+# caller share nothing but computeCi's own return value, so
+# environment_test.cpp's plumbing proof needs a real, loadable plugin to
+# read GMANSurfaceEnv::cameraToWorld back out of a real shading call.
+# Never dlopened outside this test; not part of the shipped renderer.
+gman_add_plugin(gman_camerashader camerashader_test_plugin.cpp)
+set_target_properties(gman_camerashader PROPERTIES OUTPUT_NAME "camerashader")
+
+# environment(), MakeLatLongEnvironment and shinymetal (RISpec 3.2 Sec
+# 7.1.2, Sec 15.7.2, Appendix A.2.4): camera-to-world reaching the shading
+# path, the writer and lookup, and shinymetal rendered under three camera
+# orientations. See tests/environment_test.cpp.
+add_executable(gman_environment environment_test.cpp)
+target_link_libraries(gman_environment PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_environment gman_camerashader)
+
+set(GMAN_ENVIRONMENT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/environment-run")
+file(MAKE_DIRECTORY "${GMAN_ENVIRONMENT_WORKDIR}")
+
+add_test(NAME environment
+  COMMAND gman_environment $<TARGET_FILE:gman>
+                           "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_ENVIRONMENT_WORKDIR}")
+set_tests_properties(environment PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
 # gmanlog's sink: setLogFile used to hold logMutex across a call to info(),
 # which deadlocked. Also proves one trailing newline, a suppressed level
 # never formatting, and eight concurrent writers landing 8000 whole lines.

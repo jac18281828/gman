@@ -33,6 +33,7 @@
 
 #include "ri.h"
 #include "gmancolor.h"
+#include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "gmannormal.h"
@@ -90,6 +91,11 @@ struct GMAN_EXPORT GMANSurfaceEnv
   // owned: these point into gmanLightSourceMgr()'s storage.
   std::vector<const GMANLight *> lights;
 
+  // World-to-camera's inverse (GMANOptions::getCameraToWorld, set at
+  // RiWorldBegin), filled by shadeVertex. Identity until then, so a
+  // shader run before RiWorldBegin sees the two spaces as one.
+  GMANMatrix4 cameraToWorld;
+
   // ---- noise family (gmannoise.cpp), defined in
   // gmanshaderenvironment.cpp ----
   // A single generator shared by every GMANSurfaceEnv, matching real SL's
@@ -115,6 +121,19 @@ struct GMAN_EXPORT GMANSurfaceEnv
   // the wrap modes RiMakeTexture recorded in the file -- clamp when the
   // file carries none.
   GMANColor texture (const std::string &name, RtFloat s, RtFloat t) const;
+
+  // ---- environment() (gmantexture.cpp) and its world-space transform,
+  // defined in gmanshaderenvironment.cpp for the same reason as texture()
+  // above ----
+  // RSL's vtransform("current", "world", v): a direction, so translation
+  // is ignored -- cameraToWorld's upper-left 3x3 only, in AGENTS.md's
+  // row-vector convention (p*M, translation in row 3).
+  GMANVector toWorld (const GMANVector &v) const;
+
+  // RISpec 3.2 Sec 15.7.2: the map's colour in world-space direction R,
+  // "the length of this vector is unimportant." environment() does no
+  // space conversion itself -- the shader picks the space, as RSL's does.
+  GMANColor environment (const std::string &name, const GMANVector &R) const;
 
   // ---- gmanslapi.cpp: already free functions, forwarded here so a
   // shader reaches every builtin the same way, through env. Named

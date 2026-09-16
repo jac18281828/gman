@@ -244,6 +244,15 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid)
 					cw.farDist);
   }
 
+  // The shading path's only route to camera-to-world (this task's own
+  // goal, AGENTS.md's "Handedness and matrix convention"): the same
+  // inverse GMANViewingSystem already computed, recorded once here rather
+  // than inverted again downstream. optionsStack is not pushed on
+  // entering World (GMANGraphicState::enterMode), so every getRS* call
+  // for a primitive declared in this world block reads the same
+  // GMANOptions this sets.
+  getOptions().setCameraToWorld(viewingSystem->getCameraToWorld());
+
   output = newOutput.release();
 }
 

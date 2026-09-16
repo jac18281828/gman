@@ -48,6 +48,7 @@
 #include "gmanshader.h"
 #include "gmanimagershader.h"
 #include "gmanloadableshader.h"
+#include "gmanmatrix4.h"
 
 class GMANRenderer;
 
@@ -160,7 +161,12 @@ class GMAN_EXPORT  GMANOptions {
     ClippingStruct     clipping;
     DepthOfFieldStruct depthOfField;
     ShutterStruct      shutter;
-    
+
+    // World-to-camera's inverse, recorded once at RiWorldBegin (see
+    // AGENTS.md, "Handedness and matrix convention"): the shading path's
+    // only route to world space. Identity until RiWorldBegin sets it.
+    GMANMatrix4        cameraToWorld;
+
     /******* DISPLAY OPTIONS *******/
     RtFloat            pixelVariance;
     PixelSamplesStruct pixelSamples;
@@ -225,6 +231,9 @@ class GMAN_EXPORT  GMANOptions {
     RtVoid setShutter (RtFloat mn, RtFloat mx);
 
     const ShutterStruct &getShutter (RtVoid) const {return shutter;};
+
+    RtVoid setCameraToWorld (GMANMatrix4 const &m);
+    GMANMatrix4 const &getCameraToWorld (RtVoid) const;
 
 
     /******* DISPLAY OPTIONS *******/

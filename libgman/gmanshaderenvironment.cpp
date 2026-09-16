@@ -84,3 +84,13 @@ GMANColor GMANSurfaceEnv::texture(const std::string &name, RtFloat s,
                                    RtFloat t) const {
   return gmanTextureCache().sample(name, s, t);
 }
+
+GMANVector GMANSurfaceEnv::toWorld(const GMANVector &v) const {
+  return GMANVector(
+      v.getX() * cameraToWorld[0][0] + v.getY() * cameraToWorld[1][0] +
+          v.getZ() * cameraToWorld[2][0],
+      v.getX() * cameraToWorld[0][1] + v.getY() * cameraToWorld[1][1] +
+          v.getZ() * cameraToWorld[2][1],
+      v.getX() * cameraToWorld[0][2] + v.getY() * cameraToWorld[1][2] +
+          v.getZ() * cameraToWorld[2][2]);
+}

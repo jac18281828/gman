@@ -220,6 +220,16 @@ RtVoid  GMANOptions::setShutter (RtFloat mn, RtFloat mx)
     shutter.max=mx;
 }
 
+RtVoid GMANOptions::setCameraToWorld (GMANMatrix4 const &m)
+{
+    cameraToWorld = m;
+}
+
+GMANMatrix4 const &GMANOptions::getCameraToWorld (RtVoid) const
+{
+    return cameraToWorld;
+}
+
 
 // ******* ******* DISPLAY OPTIONS ******* *******
 RtVoid  GMANOptions::setPixelVariance (RtFloat var)
