@@ -263,6 +263,22 @@ int main(int argc, char *argv[]) {
 	  "malformed: no LeakSanitizer report (stringarray.rib)");
   }
 
+  // Same fault class again: PointsPolygons's nverts array has a string
+  // after a valid integer, so TokenVector::toRtIntArray() throws while
+  // still building nverts itself. Before Class A of the
+  // clang-tidy-typed-fixes prompt, toRtIntArray's own new[] buffer leaked
+  // on this throw -- nothing had taken ownership of it yet -- which the
+  // now-std::vector-returning toRtIntVector closes by freeing on unwind.
+  {
+    const std::string path = ribDir + "/malformed/pointspolygons_nonint_nverts.rib";
+    Result r = run(gman, path, /*debug=*/false);
+    check(r.exitStatus != 0, "malformed: a non-integer in nverts fails");
+    check(r.output.find("Non-integer in array") != std::string::npos,
+	  "malformed: the diagnostic names the fault");
+    check(r.output.find("LeakSanitizer") == std::string::npos,
+	  "malformed: no LeakSanitizer report (pointspolygons_nonint_nverts.rib)");
+  }
+
   // Same fault class, a different leak shape, and (unlike stringarray.rib
   // above) never reaching WorldBegin -- so the "no LeakSanitizer output"
   // check here is clean of the other known leak and actually gates the
