@@ -15,7 +15,15 @@
 			"extensions": [
 				"ms-vscode.cpptools",
 				"ms-vscode.cmake-tools"
-			]
+			],
+			// Unset, the C/C++ extension prefers its bundled clang-tidy
+			// whenever that is newer than the one on PATH, so the
+			// version would follow extension releases instead of the
+			// pin below.
+			"settings": {
+				"C_Cpp.codeAnalysis.clangTidy.enabled": true,
+				"C_Cpp.codeAnalysis.clangTidy.path": "/opt/clang-tidy-venv/bin/clang-tidy"
+			}
 		}
 	},
 

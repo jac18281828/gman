@@ -28,7 +28,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt install -y -q --no-install-recommends \
     sudo ca-certificates curl git gnupg2 \
     build-essential clang lld cmake ninja-build \
-    gdb python3 clang-format clang-tidy \
+    gdb python3 python3-venv clang-format \
     valgrind \
     libtiff-dev libpng-dev libjpeg-dev zlib1g-dev \
     nodejs npm \
@@ -39,6 +39,14 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 # commitlint, so the conventional-commit gate can be checked before pushing
 RUN npm install -g @commitlint/cli @commitlint/config-conventional && \
     npm cache clean --force
+
+# Pinned to clang-tidy.yml's version: debian stable-slim's apt package
+# disagrees with CI's, so the editor and CI must install the same way. A
+# venv sidesteps PEP 668's lock on the system python3.
+ENV CLANG_TIDY_VENV=/opt/clang-tidy-venv
+RUN python3 -m venv ${CLANG_TIDY_VENV} && \
+    ${CLANG_TIDY_VENV}/bin/pip install clang-tidy==22.1.8
+ENV PATH=${CLANG_TIDY_VENV}/bin:${PATH}
 
 RUN useradd --create-home -s /bin/bash gman
 RUN usermod -a -G sudo gman
