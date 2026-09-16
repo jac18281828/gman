@@ -1,6 +1,6 @@
 # nverts's first entry, 4, parses and is assigned; its second entry,
 # "bad", is a string rather than an integer, so
-# TokenVector::toRtIntArray() throws while still building nverts itself --
+# TokenVector::toRtIntVector() throws while still building nverts itself --
 # the already-assigned first element must not leak across that throw. This
 # is a genuine token-level syntax error (RIE_SYNTAX), not one of
 # PointsPolygons's own softer structural checks, so it aborts the file:

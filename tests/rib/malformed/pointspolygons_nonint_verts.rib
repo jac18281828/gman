@@ -1,5 +1,5 @@
 # nverts [4 4] parses and allocates fine; verts's third entry, 2.5, is not
-# an integer, so TokenVector::toRtIntArray() throws mid-array. The already-
+# an integer, so TokenVector::toRtIntVector() throws mid-array. The already-
 # built nverts array must not leak across that throw. This is a genuine
 # token-level syntax error (RIE_SYNTAX), not one of this request's own
 # softer structural checks, so it aborts the file: unlike the other

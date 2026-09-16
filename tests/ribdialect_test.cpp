@@ -264,11 +264,9 @@ int main(int argc, char *argv[]) {
   }
 
   // Same fault class again: PointsPolygons's nverts array has a string
-  // after a valid integer, so TokenVector::toRtIntArray() throws while
-  // still building nverts itself. Before Class A of the
-  // clang-tidy-typed-fixes prompt, toRtIntArray's own new[] buffer leaked
-  // on this throw -- nothing had taken ownership of it yet -- which the
-  // now-std::vector-returning toRtIntVector closes by freeing on unwind.
+  // after a valid integer, so TokenVector::toRtIntVector() throws while
+  // still building nverts itself. The partly filled vector owns its buffer,
+  // so unwinding frees it before anything else has taken ownership.
   {
     const std::string path = ribDir + "/malformed/pointspolygons_nonint_nverts.rib";
     Result r = run(gman, path, /*debug=*/false);
