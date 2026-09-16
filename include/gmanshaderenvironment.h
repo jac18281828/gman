@@ -128,12 +128,12 @@ struct GMAN_EXPORT GMANSurfaceEnv
   // RSL's vtransform("current", "world", v): a direction, so translation
   // is ignored -- cameraToWorld's upper-left 3x3 only, in AGENTS.md's
   // row-vector convention (p*M, translation in row 3).
-  GMANVector toWorld (const GMANVector &v) const;
+  GMANVector toWorld (GMANVector const &v) const;
 
   // RISpec 3.2 Sec 15.7.2: the map's colour in world-space direction R,
   // "the length of this vector is unimportant." environment() does no
   // space conversion itself -- the shader picks the space, as RSL's does.
-  GMANColor environment (const std::string &name, const GMANVector &R) const;
+  GMANColor environment (std::string const &name, GMANVector const &R) const;
 
   // ---- gmanslapi.cpp: already free functions, forwarded here so a
   // shader reaches every builtin the same way, through env. Named

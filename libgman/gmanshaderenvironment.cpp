@@ -86,7 +86,7 @@ GMANColor GMANSurfaceEnv::texture(const std::string &name, RtFloat s,
   return gmanTextureCache().sample(name, s, t);
 }
 
-GMANVector GMANSurfaceEnv::toWorld(const GMANVector &v) const {
+GMANVector GMANSurfaceEnv::toWorld(GMANVector const &v) const {
   return GMANVector(
       v.getX() * cameraToWorld[0][0] + v.getY() * cameraToWorld[1][0] +
           v.getZ() * cameraToWorld[2][0],
@@ -104,8 +104,8 @@ GMANVector GMANSurfaceEnv::toWorld(const GMANVector &v) const {
 // t = (PI/2 - lat) / PI, since t=0 is GMANTexture's own top row and the
 // top of the picture is the north pole. environment() does no space
 // conversion; the shader picks the space R is given in, as RSL's does.
-GMANColor GMANSurfaceEnv::environment(const std::string &name,
-                                       const GMANVector &R) const {
+GMANColor GMANSurfaceEnv::environment(std::string const &name,
+                                       GMANVector const &R) const {
   GMANVector r(R);
   if (r.magnitude() < RI_EPSILON) {
     return GMANColor((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 0.0);

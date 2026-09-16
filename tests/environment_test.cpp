@@ -69,8 +69,8 @@ bool near(RtFloat a, RtFloat b, RtFloat tol) {
   return std::fabs(a - b) <= tol;
 }
 
-void checkVectorNear(const GMANVector &got, const GMANVector &want,
-                      RtFloat tol, const std::string &what) {
+void checkVectorNear(GMANVector const &got, GMANVector const &want,
+                      RtFloat tol, std::string const &what) {
   check(near(got.getX(), want.getX(), tol) &&
             near(got.getY(), want.getY(), tol) &&
             near(got.getZ(), want.getZ(), tol),
@@ -81,8 +81,8 @@ void checkVectorNear(const GMANVector &got, const GMANVector &want,
             ")");
 }
 
-void checkColorNear(const GMANColor &got, const GMANColor &want, RtFloat tol,
-                     const std::string &what) {
+void checkColorNear(GMANColor const &got, GMANColor const &want, RtFloat tol,
+                     std::string const &what) {
   check(near(got.getRed(), want.getRed(), tol) &&
             near(got.getGreen(), want.getGreen(), tol) &&
             near(got.getBlue(), want.getBlue(), tol),
@@ -128,7 +128,7 @@ void testToWorldRotatesDirection() {
   m.trans((RtFloat) 3.0, (RtFloat) -7.0, (RtFloat) 11.0);
   env.cameraToWorld = m;
 
-  GMANVector world =
+  const auto world =
       env.toWorld(GMANVector((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 1.0));
   checkVectorNear(world,
                    GMANVector((RtFloat) 1.0, (RtFloat) 0.0, (RtFloat) 0.0),
@@ -210,7 +210,7 @@ GMANColor latLongTexel(int i, int j) {
 
 // The plain RGB TIFF gmanMakeLatLongEnvironment's own "picture" argument
 // reads -- not yet tagged as an environment; the writer adds that.
-bool writeLatLongPicture(const std::string &path) {
+bool writeLatLongPicture(std::string const &path) {
   TIFF *tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
     return false;
@@ -256,7 +256,7 @@ GMANVector texelCentreDirection(int i, int j) {
   return directionAt(lon, lat);
 }
 
-std::string readAsciiTag(const std::string &path, ttag_t tag) {
+std::string readAsciiTag(std::string const &path, ttag_t tag) {
   TIFF *tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return std::string();
@@ -270,14 +270,14 @@ std::string readAsciiTag(const std::string &path, ttag_t tag) {
   return result;
 }
 
-bool fileExists(const std::string &path) {
+bool fileExists(std::string const &path) {
   return std::filesystem::exists(path);
 }
 
 // Direct lookups: environment(map, R) at every texel centre returns that
 // texel's colour, independent of R's own length (RISpec: "the length of
 // this vector is unimportant").
-void testDirectLookups(const std::string &map) {
+void testDirectLookups(std::string const &map) {
   GMANSurfaceEnv env;
   for (int i = 0; i < kLatLongWidth; ++i) {
     for (int j = 0; j < kLatLongHeight; ++j) {
@@ -304,7 +304,7 @@ void testDirectLookups(const std::string &map) {
 // texel short of the wrap (texel 7's own centre is at s=7.5/8=0.9375), so
 // GMANTexture::sample's bilinear weights are exactly 0.75 on texel 7 and
 // 0.25 on texel 0 (wrapped from column 8).
-void testLongitudeWraps(const std::string &map) {
+void testLongitudeWraps(std::string const &map) {
   GMANSurfaceEnv env;
   const int j = 1;
   RtFloat lat = (RtFloat)(PI / 2.0 - PI * (j + 0.5) / kLatLongHeight);
@@ -323,8 +323,8 @@ void testLongitudeWraps(const std::string &map) {
 }
 
 // The written file's tags, and the writer's failure shape.
-void testWriterTagsAndFailures(const std::string &picture,
-                                const std::string &map) {
+void testWriterTagsAndFailures(std::string const &picture,
+                                std::string const &map) {
   std::remove(map.c_str());
   check(gmanMakeLatLongEnvironment(picture.c_str(), map.c_str()),
         "gmanMakeLatLongEnvironment returns true");
@@ -352,7 +352,7 @@ void testWriterTagsAndFailures(const std::string &picture,
 
 // ---- the mirror (commit 3) ----
 
-int runGman(const std::string &gman, const std::string &rib) {
+int runGman(std::string const &gman, std::string const &rib) {
   const std::string command =
       "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
@@ -392,7 +392,7 @@ GMANColor regionColor(Region r) {
 // formula: the region every point within 45 degrees of one axis belongs
 // to, so each of the six spans a full hemisphere-quadrant, "well over"
 // the few degrees a patch this small subtends from its own centre.
-Region regionAt(const GMANVector &d) {
+Region regionAt(GMANVector const &d) {
   RtFloat ax = (RtFloat) std::fabs(d.getX());
   RtFloat ay = (RtFloat) std::fabs(d.getY());
   RtFloat az = (RtFloat) std::fabs(d.getZ());
@@ -405,7 +405,7 @@ Region regionAt(const GMANVector &d) {
   return d.getZ() > 0 ? REGION_PLUS_Z : REGION_MINUS_Z;
 }
 
-bool writeSixRegionPicture(const std::string &path) {
+bool writeSixRegionPicture(std::string const &path) {
   TIFF *tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
     return false;
@@ -441,8 +441,8 @@ bool writeSixRegionPicture(const std::string &path) {
 // with ".tif"), checking the pixel at the patch's centre -- a grid vertex
 // where every fixture's own derivation (see the .rib files) puts I on the
 // camera's own axis and the reflection pointing straight back at it.
-void testMirrorView(const std::string &gman, const std::string &ribDir,
-                     const std::string &fixture, Region want) {
+void testMirrorView(std::string const &gman, std::string const &ribDir,
+                     std::string const &fixture, Region want) {
   check(runGman(gman, ribDir + "/" + fixture) == 0, fixture + " renders");
   const std::string outputTif =
       fixture.substr(0, fixture.size() - 4) + ".tif";  // strip ".rib"
@@ -464,8 +464,8 @@ void testMirrorView(const std::string &gman, const std::string &ribDir,
 // adds black, degrading to metal (RISpec: an implementation without
 // environment mapping behaves this way) -- proved by rendering the same
 // lit sphere through both and comparing pixel by pixel.
-void testShinyMetalDegradesToMetal(const std::string &gman,
-                                    const std::string &ribDir) {
+void testShinyMetalDegradesToMetal(std::string const &gman,
+                                    std::string const &ribDir) {
   check(runGman(gman, ribDir + "/shinymetal_degrades.rib") == 0,
         "shinymetal_degrades.rib renders");
   check(runGman(gman, ribDir + "/metal_reference.rib") == 0,
