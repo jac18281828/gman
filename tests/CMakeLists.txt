@@ -687,6 +687,27 @@ set_tests_properties(pointspolygons PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# NuPatch: GMANNuPatch now implements GMANParametric with a Cox-de Boor
+# evaluator, RiNuPatchV validates and sizes the request, parseNuPatch
+# checks knot lengths and owns its arrays. Evaluator cases (direct
+# construction), twin-RIB renders and texture-coordinates no-op fixtures
+# compared pixel by pixel (tests/goldenimage.h), and malformed/exception
+# fixtures. See tests/nupatch_test.cpp.
+add_executable(gman_nupatch nupatch_test.cpp)
+target_link_libraries(gman_nupatch PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_NUPATCH_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/nupatch-run")
+file(MAKE_DIRECTORY "${GMAN_NUPATCH_WORKDIR}")
+
+add_test(NAME nupatch
+  COMMAND gman_nupatch $<TARGET_FILE:gman>
+                       "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_NUPATCH_WORKDIR}")
+set_tests_properties(nupatch PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
 # gmanlog's sink: setLogFile used to hold logMutex across a call to info(),
 # which deadlocked. Also proves one trailing newline, a suppressed level
 # never formatting, and eight concurrent writers landing 8000 whole lines.

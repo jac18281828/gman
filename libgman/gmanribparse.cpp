@@ -1353,14 +1353,21 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
 RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
 
+  // Each knot array is unique_ptr-owned from the moment toRtFloatArray
+  // returns it, so a throw from the next toRtFloatArray call, from
+  // parseParameterList, or from RiNuPatchV itself (the illegal-block case,
+  // whose allowed(cmdNuPatch) throws before this task's own validation
+  // runs) releases every array already built. See parsePointsPolygons.
   RtInt nu = nextInt();
   RtInt uorder = nextInt();
   GMANRIBParse::TokenVector uknotVector = parseArray();
+  std::unique_ptr<RtFloat[]> uknot(uknotVector.toRtFloatArray());
   RtFloat umin = nextFloat();
   RtFloat umax = nextFloat();
   RtInt nv = nextInt();
   RtInt vorder = nextInt();
   GMANRIBParse::TokenVector vknotVector = parseArray();
+  std::unique_ptr<RtFloat[]> vknot(vknotVector.toRtFloatArray());
   RtFloat vmin = nextFloat();
   RtFloat vmax = nextFloat();
 
@@ -1371,18 +1378,33 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  RtFloat *uknot = uknotVector.toRtFloatArray();
-  RtFloat *vknot = vknotVector.toRtFloatArray();
+  // The RI signature carries no knot-array length; a RIB file is not a
+  // trusted caller, so a uknot/vknot whose actual length disagrees with
+  // the nu+uorder/nv+vorder the request itself declares gets its own
+  // check here -- RiNuPatchV has no way to know that length either. Every
+  // array is already consumed above, so the token stream stays in sync
+  // either way.
+  if ((long long) uknotVector.size() != (long long) nu + uorder) {
+    warning("NuPatch: uknot length {} does not match nu + uorder = {}; "
+	    "ignoring.", uknotVector.size(), (long long) nu + uorder);
+    return;
+  }
+  if ((long long) vknotVector.size() != (long long) nv + vorder) {
+    warning("NuPatch: vknot length {} does not match nv + vorder = {}; "
+	    "ignoring.", vknotVector.size(), (long long) nv + vorder);
+    return;
+  }
 
-  // RiNuPatchV is an unimplemented stub (evaluating a NURBS surface is out
-  // of Phase 2's scope); the knot arrays are built and freed here so the
-  // call, if ever wired up, sees real data rather than NULL.
-  renderMan->RiNuPatchV(nu, uorder, uknot, umin, umax, nv, vorder, vknot,
-			vmin, vmax,
-			n, tokens, parms);
-
-  delete [] uknot;
-  delete [] vknot;
+  // Dispatch beside the RI-mandated RiNuPatchV(13 args): a RIB file is not
+  // a trusted caller, so the array length parseParameterList already
+  // knows rides along outside that fixed signature. See parsePatch.
+  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(renderMan)) {
+    impl->RiNuPatchV(nu, uorder, uknot.get(), umin, umax, nv, vorder,
+		      vknot.get(), vmin, vmax, n, tokens, parms, counts);
+  } else {
+    renderMan->RiNuPatchV(nu, uorder, uknot.get(), umin, umax, nv, vorder,
+			  vknot.get(), vmin, vmax, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {

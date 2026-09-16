@@ -1312,14 +1312,147 @@ RtVoid  GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
   worldManager->add(prim);
   delete transform;
 }
-RtVoid  GMANRenderManImpl::RiNuPatchV(RtInt /*nu*/, RtInt /*uorder*/, RtFloat /*uknot*/[], RtFloat /*umin*/,
-				  RtFloat /*umax*/, RtInt /*nv*/, RtInt /*vorder*/, RtFloat /*vknot*/[],
-				  RtFloat /*vmin*/, RtFloat /*vmax*/,
-				  RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[])
+namespace {
+
+// RiSpec 3.2's RiNuPatch rules, checked once before the parameter list is
+// built: order positive and no greater than its own point count,
+// non-decreasing knots, both range rules, and nu*nv*4 (the "Pw" case's own
+// float count) fitting in RtInt. Warns once naming the rule and its values
+// on the first violation and returns false; the caller adds
+// objectManager->create() and returns, RiPatchMeshV's own "ignoring" shape.
+bool validateNuPatch(RtInt nu, RtInt uorder, const RtFloat *uknot,
+		      RtFloat umin, RtFloat umax,
+		      RtInt nv, RtInt vorder, const RtFloat *vknot,
+		      RtFloat vmin, RtFloat vmax) {
+  if (uorder < 1 || nu < uorder) {
+    warning("NuPatch: nu={} uorder={} violates nu >= uorder >= 1; "
+	    "ignoring.", nu, uorder);
+    return false;
+  }
+  if (vorder < 1 || nv < vorder) {
+    warning("NuPatch: nv={} vorder={} violates nv >= vorder >= 1; "
+	    "ignoring.", nv, vorder);
+    return false;
+  }
+  if ((long long) nu * (long long) nv * 4 > (long long) INT_MAX) {
+    warning("NuPatch: nu={} nv={}, times 4 overflows RtInt; ignoring.",
+	    nu, nv);
+    return false;
+  }
+  for (RtInt i = 1; i < nu + uorder; i++) {
+    if (uknot[i] < uknot[i - 1]) {
+      warning("NuPatch: uknot[{}]={} is less than uknot[{}]={}, not "
+	      "non-decreasing; ignoring.", i, uknot[i], i - 1, uknot[i - 1]);
+      return false;
+    }
+  }
+  for (RtInt i = 1; i < nv + vorder; i++) {
+    if (vknot[i] < vknot[i - 1]) {
+      warning("NuPatch: vknot[{}]={} is less than vknot[{}]={}, not "
+	      "non-decreasing; ignoring.", i, vknot[i], i - 1, vknot[i - 1]);
+      return false;
+    }
+  }
+  if (! (umin < umax)) {
+    warning("NuPatch: umin={} umax={} violates umin < umax; ignoring.",
+	    umin, umax);
+    return false;
+  }
+  if (! (umin >= uknot[uorder - 1])) {
+    warning("NuPatch: umin={} is less than uknot[uorder-1]={}; ignoring.",
+	    umin, uknot[uorder - 1]);
+    return false;
+  }
+  if (! (umax <= uknot[nu])) {
+    warning("NuPatch: umax={} exceeds uknot[nu]={}; ignoring.",
+	    umax, uknot[nu]);
+    return false;
+  }
+  if (! (vmin < vmax)) {
+    warning("NuPatch: vmin={} vmax={} violates vmin < vmax; ignoring.",
+	    vmin, vmax);
+    return false;
+  }
+  if (! (vmin >= vknot[vorder - 1])) {
+    warning("NuPatch: vmin={} is less than vknot[vorder-1]={}; ignoring.",
+	    vmin, vknot[vorder - 1]);
+    return false;
+  }
+  if (! (vmax <= vknot[nv])) {
+    warning("NuPatch: vmax={} exceeds vknot[nv]={}; ignoring.",
+	    vmax, vknot[nv]);
+    return false;
+  }
+  return true;
+}
+
+}  // namespace
+
+RtVoid  GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
+				  RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
+				  RtFloat vmin, RtFloat vmax,
+				  RtInt n, RtToken tokens[], RtPointer parms[])
+{
+  RiNuPatchV(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax,
+	     n, tokens, parms, NULL);
+}
+RtVoid  GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
+				  RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
+				  RtFloat vmin, RtFloat vmax,
+				  RtInt n, RtToken tokens[], RtPointer parms[],
+				  const RtInt *counts)
 {
   allowed(cmdNuPatch);
+
+  if (! validateNuPatch(nu, uorder, uknot, umin, umax, nv, vorder, vknot,
+			 vmin, vmax)) {
+    worldManager->add(objectManager->create());
+    return;
+  }
+
+  // RiSpec's NuPatch sizing: vertex nu*nv; with nusegments = nu-uorder+1
+  // and nvsegments = nv-vorder+1, varying (nusegments+1)*(nvsegments+1),
+  // uniform nusegments*nvsegments, facevarying 1.
+  const RtInt nusegments = nu - uorder + 1;
+  const RtInt nvsegments = nv - vorder + 1;
+  const RtInt vertex = nu * nv;
+  const RtInt varying = (nusegments + 1) * (nvsegments + 1);
+  const RtInt uniform = nusegments * nvsegments;
+
+  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, varying,
+			       uniform, 1, counts);
+
+  // A non-positive "Pw" weight is not itself an RISpec rule; it closes the
+  // 0/0 a zero weight would otherwise hand the evaluator's rational
+  // division. The clamp above always sizes "Pw" to vertex*4 regardless of
+  // what was supplied, zero-filling any shortfall, so this loop is
+  // memory-safe even against a short "Pw".
+  RtFloat *pw = (RtFloat *) paramList.getPointer(dictionary.getTokenId(RI_PW));
+  if (pw) {
+    for (RtInt i = 0; i < vertex; i++) {
+      RtFloat w = pw[4 * i + 3];
+      if (w <= 0) {
+	warning("NuPatch: control point {} has non-positive \"Pw\" weight "
+		"{}; ignoring.", i, w);
+	worldManager->add(objectManager->create());
+	return;
+      }
+    }
+  }
+
+  GMANTransform* transform = new GMANTransform((getTransform()));
+  GMANPrimitive* prim;
+
+  prim = objectManager->getRSNuPatch( nu, uorder, uknot, umin, umax,
+				       nv, vorder, vknot, vmin, vmax,
+				       paramList,
+				       &(getOptions()),
+				       &(getAttributes()),
+				       transform);
+  worldManager->add(prim);
+  delete transform;
 }
-  
+
 RtVoid  GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
 				 RtInt n, RtToken tokens[], RtPointer parms[])
 {

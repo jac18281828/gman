@@ -236,7 +236,12 @@ public:
 		     RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
 		     RtFloat vmin, RtFloat vmax,
 		     RtInt n, RtToken tokens[], RtPointer parms[]);
-  
+  RtVoid  RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
+		     RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
+		     RtFloat vmin, RtFloat vmax,
+		     RtInt n, RtToken tokens[], RtPointer parms[],
+		     const RtInt *counts);
+
   RtVoid  RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
 		    RtInt n, RtToken tokens[], RtPointer parms[]);
   RtVoid  RiConeV(RtFloat height, RtFloat radius, RtFloat tmax,

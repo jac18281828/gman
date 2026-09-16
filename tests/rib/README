@@ -166,6 +166,67 @@ convention. Not third-party.
 fallback as `patchmesh_baddim.rib`. A trailing `Sphere` follows the
 desync convention. Not third-party.
 
+## malformed/nupatch_short_uknot.rib
+
+`uknot` one value short of the declared `nu + uorder`. The RI signature
+carries no knot-array length, so `parseNuPatch` checks it itself and
+calls nothing rather than handing `RiNuPatchV` a short array. Registered
+in `tests/nupatch_test.cpp`, asserting the warn-and-return fallback. A
+trailing `Sphere` follows the desync convention. Not third-party.
+
+## malformed/nupatch_decreasing_knots.rib
+
+`uknot` is the declared length but not non-decreasing. Registered in
+`tests/nupatch_test.cpp`, asserting the same warn-and-`create()`
+fallback as `nupatch_short_uknot.rib`. A trailing `Sphere` follows the
+desync convention. Not third-party.
+
+## malformed/nupatch_order_exceeds_n.rib
+
+`uorder = nu + 1`: two control points cannot support a cubic span.
+Registered in `tests/nupatch_test.cpp`, asserting the same
+warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/nupatch_empty_range.rib
+
+`umin == umax`. Registered in `tests/nupatch_test.cpp`, asserting the
+same warn-and-`create()` fallback. A trailing `Sphere` follows the
+desync convention. Not third-party.
+
+## malformed/nupatch_umin_below_knot.rib
+
+`umin < uknot[uorder-1]`. Registered in `tests/nupatch_test.cpp`,
+asserting the same warn-and-`create()` fallback. A trailing `Sphere`
+follows the desync convention. Not third-party.
+
+## malformed/nupatch_short_pw.rib
+
+`"Pw"` two values short of its declared `nu*nv*4`. Registered in
+`tests/nupatch_test.cpp`, asserting the existing `GMANParameterList`
+clamp warning fires (before `RiNuPatchV`'s own weight-positivity check
+ever runs). A trailing `Sphere` follows the desync convention. Not
+third-party.
+
+## malformed/nupatch_zero_weight.rib
+
+A full-length `"Pw"` array with one control point's own weight `<= 0`.
+Registered in `tests/nupatch_test.cpp`, asserting the new
+weight-positivity warning. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/nupatch_illegal_block.rib
+
+A `NuPatch` issued inside `FrameBegin`/`FrameEnd` before any
+`WorldBegin` -- the "F"-only block state `cmdNuPatch`'s mask excludes.
+`allowed(cmdNuPatch)` throws before this task's own validation runs,
+after `parseNuPatch`'s knot arrays are already owned and before its
+trailing `delete[]`s, proving that ownership survives the throw.
+Registered in `tests/nupatch_test.cpp`, asserting exit status 1 (not the
+exit-0 shape every other `malformed/nupatch_*.rib` fixture takes) and no
+trailing `Sphere`, since the throw unwinds before one would parse. Not
+third-party.
+
 ## rotate.rib
 
 An in-world `Rotate` must compose ahead of the transforms declared after it,

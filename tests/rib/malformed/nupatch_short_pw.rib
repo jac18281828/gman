@@ -1,0 +1,24 @@
+# "Pw" two values short: nu=2 nv=2 declares 4 control points, 4 floats
+# each (16 total), but only 14 are supplied. GMANParameterList's own
+# clamp fires first, when the parameter list is built -- before
+# RiNuPatchV's own weight-positivity check ever runs -- warning and
+# zero-filling the remainder. The zero-filled last weight is then also
+# non-positive, but the clamp warning is the one this fixture asserts.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "matte" "Ka" [1] "Kd" [0]
+NuPatch 2 2 [0 0 1 1] 0 1 2 2 [0 0 1 1] 0 1
+	"Pw" [-1 -1 0 1   1 -1 0 1   -1 1 0 1   1 1]
+AttributeBegin
+	Translate 2 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

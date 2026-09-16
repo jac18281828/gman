@@ -1,0 +1,16 @@
+# A NuPatch issued inside FrameBegin/FrameEnd before any WorldBegin --
+# the "F"-only block state cmdNuPatch's W|A|T|S|O|M mask excludes
+# (gmangraphicstate.cpp). uknot/vknot are well-formed (the declared
+# nu+uorder/nv+vorder lengths) so parseNuPatch's own knot-length check
+# does not intercept this first; allowed(cmdNuPatch) throws before this
+# task's own validation ever runs, after parseNuPatch's knot arrays are
+# already owned and before its trailing delete[]s -- the one fixture
+# proving that ownership.
+#
+# Unlike every other malformed/nupatch_*.rib fixture, this one is not
+# followed by a Sphere: the throw unwinds out of GMANRIBParse::parse()
+# before any trailing request would parse, and gman itself exits 1.
+FrameBegin 1
+NuPatch 2 2 [0 0 1 1] 0 1 2 2 [0 0 1 1] 0 1
+	"P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]
+FrameEnd
