@@ -24,11 +24,14 @@
  */
 
 /* Local Headers */
+#include <limits>
+
 #include "ri.h"      /* RenderMan Interface */
 #include "gmanlog.h"
 #include "gmanbitmap.h" /* Declaration Header */
 #include "gmancolor.h"
 #include "gmandefaults.h"
+#include "gmanerror.h"
 
 /*
  * RenderMan API GMANBitmap
@@ -51,6 +54,18 @@ GMANBitmap::GMANBitmap(int width, int height, const GMANColor &bgcolor=DefaultBG
 GMANBitmap::~GMANBitmap() = default;
 
 RtVoid GMANBitmap::set(int width, int height, const GMANColor &bgcolor) {
+  if (width < 0 || height < 0) {
+    throw GMANError(RIE_RANGE, RIE_ERROR,
+                     "GMANBitmap: width and height must not be negative");
+  }
+  // Computed a width wider than int so the check itself cannot overflow:
+  // a wrapped, too-small product is exactly the bug this guards against.
+  const long long area = (long long) width * (long long) height;
+  if (area > std::numeric_limits<int>::max()) {
+    throw GMANError(RIE_LIMIT, RIE_ERROR,
+                     "GMANBitmap: width * height overflows int");
+  }
+
   background = bgcolor;
   xres = width;
   yres = height;

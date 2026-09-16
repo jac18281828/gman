@@ -119,6 +119,14 @@ set_tests_properties(facevarying PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_bitmap bitmap_test.cpp)
+target_link_libraries(gman_bitmap PRIVATE gman_core)
+
+add_test(NAME bitmap COMMAND gman_bitmap)
+set_tests_properties(bitmap PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Phase 1 -- the object -> world -> camera -> screen -> NDC -> raster chain.
 add_executable(gman_matrix4 gmanmatrix4_test.cpp)
 target_link_libraries(gman_matrix4 PRIVATE gman_core)

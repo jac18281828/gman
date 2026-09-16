@@ -77,7 +77,8 @@ public:
   virtual ~GMANBitmap(); // default destructor
 
 
-  // setup buffer
+  // setup buffer -- throws GMANError for a negative width or height, or
+  // one whose pixel count overflows int
   virtual RtVoid set(int width, int height, const GMANColor &bgcolor);
 
   // copy operation
