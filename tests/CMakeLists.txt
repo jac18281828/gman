@@ -849,3 +849,14 @@ add_test(NAME threadcontainment
 set_tests_properties(threadcontainment PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# Pins GMANConvertRGBtoHSV and GMANConvertRGBtoHSL against their
+# pre-refactor min/max macro's output; the expected values are the
+# pre-refactor output.
+add_executable(gman_colorconvert colorconvert_test.cpp)
+target_link_libraries(gman_colorconvert PRIVATE gman_core)
+
+add_test(NAME colorconvert COMMAND gman_colorconvert)
+set_tests_properties(colorconvert PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
