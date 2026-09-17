@@ -53,6 +53,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <sys/stat.h>
@@ -66,10 +67,15 @@ namespace {
 // directory is reused across ctest invocations, and a reverted fix that
 // throws before opening the display leaves the previous good file in place.
 // tests/baseline_test.cpp removes its target for the same reason.
+// GMANHandleError prints to stdout (gmanerror.cpp's print()), so a caller
+// after a diagnostic captures stdout, not stderr.
 int runGman(const std::string &gman, const std::string &rib,
-            const std::string &output) {
+            const std::string &output,
+            const std::string &stdoutCapturePath = "") {
   std::remove(output.c_str());
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+  std::string command = "\"" + gman + "\" \"" + rib + "\" 2>/dev/null";
+  command += stdoutCapturePath.empty() ? " >/dev/null"
+                                        : (" >\"" + stdoutCapturePath + "\"");
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
@@ -87,6 +93,13 @@ bool nonEmptyFile(const std::string &path) {
 bool fileExists(const std::string &path) {
   struct stat st;
   return stat(path.c_str(), &st) == 0;
+}
+
+std::string readFile(const std::string &path) {
+  std::ifstream in(path);
+  std::ostringstream contents;
+  contents << in.rdbuf();
+  return contents.str();
 }
 
 struct Image {
@@ -237,6 +250,21 @@ int main(int argc, char *argv[]) {
         "an unrecognized Display extension fails cleanly (not a crash)");
   check(!fileExists("jpegdriver.bogus"),
         "an unrecognized Display extension writes no file");
+
+  // ---- a Display path whose directory does not exist must fail loudly,
+  // not silently report success ----
+  std::snprintf(scene, sizeof scene, sceneTemplate,
+                "nonexistent-dir/jpegdriver.jpg");
+  writeFile("jpegdriver_unwritable.rib", scene);
+  const std::string diagnosticCapture = "jpegdriver_unwritable.out";
+  int unwritableExit =
+      runGman(gman, "jpegdriver_unwritable.rib",
+              "nonexistent-dir/jpegdriver.jpg", diagnosticCapture);
+  check(unwritableExit != 0,
+        "a Display path inside a nonexistent directory fails");
+  check(readFile(diagnosticCapture).find("Unable to open output file") !=
+            std::string::npos,
+        "the failure names \"Unable to open output file\"");
 
   return checkSummary("jpeg driver holds");
 }

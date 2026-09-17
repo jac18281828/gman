@@ -36,6 +36,7 @@ extern "C" {
 #include "gmanoutput.h" /* Super class */
 #include "gmanoutputjpeg.h" /* Declaration Header */
 #include "gmandefaults.h"
+#include "gmanerror.h"
 
 /*
  * RenderMan API GMANOutputJPEG
@@ -138,8 +139,9 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/,
 
     fclose(jpegFile);
   } else {
-    // FIXME
-    // throw an error here
+    std::string errorMsg("Unable to open output file: ");
+    errorMsg.append(outputName);
+    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
   }
 #endif
 }
