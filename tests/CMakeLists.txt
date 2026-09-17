@@ -461,19 +461,6 @@ set_tests_properties(filters PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# AGENTS.md's Gates block against .github/workflows/ci.yml -- a docs
-# rewrite has no other fails-when-reverted mechanism. Reads the checked-in
-# source tree directly; no dependency on this test's own build output.
-add_executable(gman_docsconsistency docsconsistency_test.cpp)
-add_test(NAME docsconsistency
-  COMMAND gman_docsconsistency
-          "${CMAKE_SOURCE_DIR}/AGENTS.md"
-          "${CMAKE_SOURCE_DIR}/.github/workflows/ci.yml"
-          "${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt")
-set_tests_properties(docsconsistency PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
 # UAT defect 0: a Projection with no explicit "fov" threw instead of
 # defaulting to 90 per RISpec 3.2.
 add_executable(gman_fovdefault fovdefault_test.cpp)

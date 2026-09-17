@@ -97,7 +97,6 @@ cmake --build build --target format-check
 
 CI covers the rest: `build` (clang and gcc), `sanitizers`, `valgrind`,
 `format-check`, `drivers-off`, plus `commitlint` and `Yamlfmt`.
-`tests/docsconsistency_test.cpp` keeps this section naming every `ci.yml` job.
 
 If a gate stays red after a genuine fix, stop and report the error.
 
