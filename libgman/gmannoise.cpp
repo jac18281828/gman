@@ -40,34 +40,34 @@ GMANNoise::GMANNoise()
 
   srand(808);
   RtInt i,t,u;
-  for (i=0; i<N ; i++) {
+  for (i=0; i<kN ; i++) {
     prn1[i]=i;
     prn2[i]=i;
     prn3[i]=i;
   }
-  for (i=0; i<N; i++) {
+  for (i=0; i<kN; i++) {
     t=prn1[i];
-    u=(RtInt) (N*(rand()/(RAND_MAX+1.0)));
+    u=(RtInt) (kN*(rand()/(RAND_MAX+1.0)));
     prn1[i]=prn1[u];
     prn1[u]=t;
   }
 
-  for (i=0; i<N; i++) {
+  for (i=0; i<kN; i++) {
     t=prn2[i];
-    u=(RtInt) (N*(rand()/(RAND_MAX+1.0)));
+    u=(RtInt) (kN*(rand()/(RAND_MAX+1.0)));
     prn2[i]=prn2[u];
     prn2[u]=t;
   }
 
-  for (i=0; i<N; i++) {
+  for (i=0; i<kN; i++) {
     t=prn3[i];
-    u=(RtInt) (N*(rand()/(RAND_MAX+1.0)));
+    u=(RtInt) (kN*(rand()/(RAND_MAX+1.0)));
     prn3[i]=prn3[u];
     prn3[u]=t;
   }
 
   i=0;
-  while (i != N*4 ) {
+  while (i != kN*4 ) {
     GMANVector4 a(rn(),rn(),rn(),rn());
     if ( a.magnitude() >1.0 || a.magnitude() <0.1) continue;
     a.normalize();
@@ -112,10 +112,10 @@ GMANNoise::GMANNoise()
 
 #define SMOOTH(x) (x*x*(3.0-2.0*x))
 #define LERP(x,a,b) (a+x*(b-a))
-#define RND1(x) prn[(x)&MASK]
-#define RND2(x,y) prn[(prn[(x)&MASK]+y)&MASK]
-#define RND3(x,y,z) prn[(prn[(prn[(x)&MASK]+y)&MASK]+z)&MASK]
-#define RND4(x,y,z,w) prn[(prn[(prn[(prn[(x)&MASK]+y)&MASK]+z)&MASK]+w)&MASK]
+#define RND1(x) prn[(x)&kMask]
+#define RND2(x,y) prn[(prn[(x)&kMask]+y)&kMask]
+#define RND3(x,y,z) prn[(prn[(prn[(x)&kMask]+y)&kMask]+z)&kMask]
+#define RND4(x,y,z,w) prn[(prn[(prn[(prn[(x)&kMask]+y)&kMask]+z)&kMask]+w)&kMask]
 
 /* 1D noise */
 RtFloat GMANNoise::noise (RtFloat v)

@@ -28,10 +28,6 @@
 #include "ri.h"
 #include "gmanpoint.h"
 
-/* Noise and pnoise */
-#define N    256
-#define MASK 0xff
-
 /* CellNoise */
 #define CN    2048
 #define CMASK 0x7ff
@@ -39,11 +35,15 @@
 class GMAN_EXPORT  GMANNoise
 {
 private:
+  /* Noise and pnoise */
+  static constexpr RtInt kN    = 256;
+  static constexpr RtInt kMask = 0xff;
+
   RtInt  *prn;
-  RtInt   prn1[N];  /* 0 to N in random order*/
-  RtInt   prn2[N];
-  RtInt   prn3[N];
-  RtFloat vect[4*N]; /* N 4D random unit vectors */
+  RtInt   prn1[kN];  /* 0 to kN in random order*/
+  RtInt   prn2[kN];
+  RtInt   prn3[kN];
+  RtFloat vect[4*kN]; /* kN 4D random unit vectors */
 
   RtInt  *cprn;
   RtInt   cprn1[CN];
