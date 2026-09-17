@@ -41,8 +41,8 @@
  * primitive to hit it.
  *
  * Phase 1 inverts the second half of this test again. Through phase 2, the
- * image was uniform -- the four severed links SPEC.md S2 describes meant
- * every face was culled and nothing was ever drawn. Phase 1 connects the
+ * image was uniform -- the four severed links meant every face was culled
+ * and nothing was ever drawn. Phase 1 connects the
  * object -> world -> camera -> screen -> NDC -> raster chain (see
  * tests/spacechain_test.cpp and tests/silhouette_test.cpp for the numeric
  * proof), so this is where a real, non-uniform image legitimately starts

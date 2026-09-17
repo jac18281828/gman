@@ -22,7 +22,7 @@
  * Phase 1, proof item 6 (secondary): tests/rib/transforms.rib renders the
  * same sphere at three RiTranslate offsets. This project has no
  * golden-image regression infrastructure yet (that is Phase 4's
- * deliverable per SPEC.md's phase map), so this checks the three
+ * deliverable), so this checks the three
  * hand-computed silhouette positions directly instead of a checked-in
  * reference image.
  *

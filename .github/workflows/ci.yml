@@ -169,10 +169,10 @@ jobs:
       # is what makes this a gate -- without it memcheck reports and still
       # exits 0. --track-origins finds the allocation site, not just the
       # use site, which is the half of an uninitialized read that
-      # identifies the bug. Leaks are summarized, not gated: SPEC.md §8
-      # records leaks that are open by design (RiWorldBegin's output
-      # driver, copyStringToken's remaining sites); gating them fails the
-      # leg on a known, unrelated issue.
+      # identifies the bug. Leaks are summarized, not gated: leaks that are
+      # open by design (RiWorldBegin's output driver, copyStringToken's
+      # remaining sites); gating them fails the leg on a known, unrelated
+      # issue.
       #
       # sphere.rib is the only fixture that reaches the rasterizer --
       # gmanzbufferrenderer.cpp is exactly the file this leg exists to

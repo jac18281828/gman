@@ -68,7 +68,8 @@
  * origin. A single flat, non-adjacent-facet primitive would sidestep it:
  * Polygon now renders (phase-5-polygon-rasterization.md), but adopting it
  * here is a separate, out-of-scope change from this test's own defect;
- * RiPatch still renders no pixels at all (SPEC.md SS8's recorded defect).
+ * RiPatch still renders no pixels at all (tests/patchnorender_test.cpp
+ * pins this defect).
  *
  * Revert check: reverting the getVertexInfo origin subtraction alone
  * reproduces the reported symptom exactly -- both sphere crops go back to

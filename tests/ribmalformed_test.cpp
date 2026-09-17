@@ -23,7 +23,7 @@
  * exercised against -- an unterminated string, an unbalanced bracketed
  * array, and a file truncated mid-keyword with no trailing newline (the
  * exact end-of-input shape the rib-frontend-fixes prompt's tokenizer
- * defect lived in; SPEC.md Section 8). tests/ribdialect_test.cpp already
+ * defect lived in). tests/ribdialect_test.cpp already
  * covers two malformed shapes (a non-string array element, a non-string
  * Display argument) that are type errors, not tokenizer-level ones.
  *

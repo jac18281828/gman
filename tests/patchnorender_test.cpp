@@ -19,11 +19,11 @@
  */
 
 /*
- * Patch tessellation, both "bilinear" and "bicubic". SPEC.md Section 8
- * ("Found by running the corpus after phase 3 landed") tracked Patch as
- * rasterizing no pixels; this file pinned that shape until getRSPatch was
- * wired up (phase 6). tests/rib/patch_norender.rib renders a bilinear
- * Patch beside a control Sphere under identical lighting and shading --
+ * Patch tessellation, both "bilinear" and "bicubic". Patch rasterized no
+ * pixels ("Found by running the corpus after phase 3 landed"); this file
+ * pinned that shape until getRSPatch was wired up (phase 6).
+ * tests/rib/patch_norender.rib renders a bilinear Patch beside a control
+ * Sphere under identical lighting and shading --
  * the Sphere proves the renderer itself works, so a Patch failure here is
  * Patch-specific. tests/rib/patch_bicubic.rib renders a bicubic Patch
  * beside its own trailing Sphere, under Sides 1 and a lit "Kd", so a

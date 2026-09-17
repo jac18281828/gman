@@ -119,8 +119,8 @@ GMANLightSourceMgr::~GMANLightSourceMgr() {
 
 RtLightHandle GMANLightSourceMgr::add(GMANLight* light) {
   // RtLightHandle is RtPointer; go through uintptr_t rather than casting
-  // an int straight to a pointer (the same integer<->pointer-width
-  // mismatch class SPEC.md records for RiObjectInstance/RiIlluminate).
+  // an int straight to a pointer -- the same integer<->pointer-width
+  // mismatch class also affects RiObjectInstance/RiIlluminate.
   RtLightHandle h = (RtLightHandle)(std::uintptr_t)nextHandle;
   lights[h] = light;
   ++nextHandle;

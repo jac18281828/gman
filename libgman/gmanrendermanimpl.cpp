@@ -445,9 +445,9 @@ namespace {
 // GMANParameterList::getPointer returns NULL for a token this parameter
 // list doesn't carry -- every light parameter here is optional, so probing
 // for one is routine. The try/catch is a defensive remnant of when
-// getPointer threw instead (see SPEC.md's account of the same defect
-// against RI_FOV); harmless to keep, since a token this dictionary never
-// declared at all would still throw out of getTokenId.
+// getPointer threw instead (the same defect threw against RI_FOV);
+// harmless to keep, since a token this dictionary never declared at all
+// would still throw out of getTokenId.
 RtFloat* tryGetPointer(GMANDictionary& dictionary, GMANParameterList& pl, RtToken token) {
   try {
     return (RtFloat*)pl.getPointer(dictionary.getTokenId(token));

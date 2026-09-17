@@ -19,9 +19,8 @@ together under perspective: an asymmetric `ScreenWindow` shifting the visible
 frustum off-centre, then `CropWindow` rendering only a sub-window of that
 already-shifted result -- the combination the UAT-defect regression fixtures
 (`orthowindow.rib`, `cropwindow_test.cpp`) test in isolation but not together.
-`FrameAspectRatio` has no tokenizer entry (SPEC.md's "RIB support" table,
-"Unrecognized" bucket); included here to prove it is warned-and-skipped, not a
-parse desync. Not third-party.
+`FrameAspectRatio` has no tokenizer entry; included here to prove it is
+warned-and-skipped, not a parse desync. Not third-party.
 
 ## clipping.rib
 
@@ -40,8 +39,8 @@ third-party.
 ## patch_norender.rib
 
 Phase 6. A `"bilinear"` `Patch` beside a control `Sphere` under identical
-lighting and shading -- once SPEC.md Section 8's pinned defect (`Patch`
-rasterized no pixels), fixed when `getRSPatch` was wired to
+lighting and shading -- once the defect `tests/patchnorender_test.cpp` pins
+(`Patch` rasterized no pixels), fixed when `getRSPatch` was wired to
 `createParametric`. The `Sphere` proves the renderer itself works and the
 pixels are the `Patch`'s own. No golden minted -- bilinear interpolation of
 a flat four-point patch has no shading detail worth pixel-regression
@@ -273,9 +272,10 @@ Phase 5. A single convex pentagon (five vertices, not four -- a 4-vertex
 fixture cannot distinguish `RiPolygonV`'s parameter-list sizing fix from
 the bug it fixes) under one ambient light, so the raster coverage and the
 shaded color both have an independently hand-computable value
-(`tests/polygon_test.cpp`). `Clipping 0.5 50` per SPEC.md Section 8: a
-camera-facing planar polygon is exactly the flat, narrow-in-z geometry the
-near-clip precision defect hits hardest. Not third-party.
+(`tests/polygon_test.cpp`). `Clipping 0.5 50` per `AGENTS.md`'s RIB
+authoring section: a camera-facing planar polygon is exactly the flat,
+narrow-in-z geometry the near-clip precision defect hits hardest. Not
+third-party.
 
 ## polygon_general_hole.rib
 

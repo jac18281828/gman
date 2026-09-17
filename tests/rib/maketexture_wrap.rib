@@ -1,7 +1,7 @@
 Display "maketexture_wrap.tif" "file" "rgba"
 Format 200 200 1
 Projection "perspective" "fov" [90]
-# Explicit, not the RI_EPSILON-near default: SPEC.md Section 8's near-clip
+# Explicit, not the RI_EPSILON-near default: the near-clip
 # precision defect corrupts geometry flat or narrow in z hardest, and a
 # camera-facing planar patch is exactly that shape.
 Clipping 0.5 50

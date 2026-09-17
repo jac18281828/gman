@@ -211,7 +211,7 @@ RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10, RtFloat c01, 
 
 // Shades one vertex in camera space, with every input the shader needs
 // already at hand -- this is what "shade per vertex and let [Gouraud
-// interpolation] interpolate" (SPEC.md) means in practice: a clip-introduced
+// interpolation] interpolate" means in practice: a clip-introduced
 // vertex has no u,v of its own to shade with, but it does get a color,
 // because GMANClipEdge::intersect already interpolates GMANVertex::color
 // across a clipped edge (the same machinery phase 1 wired up for the vertex

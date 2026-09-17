@@ -384,8 +384,7 @@ set_tests_properties(paramclamp PROPERTIES
   LABELS render
   TIMEOUT 60)
 
-# Bilinear and bicubic Patch rasterization (SPEC.md Section 8, phase 6).
-# See tests/patchnorender_test.cpp.
+# Bilinear and bicubic Patch rasterization. See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
 target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)
 

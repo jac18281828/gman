@@ -47,8 +47,8 @@
  * silhouette_test.cpp's own 16px figure is sized for its ~49px half-extent
  * and is too loose for this fixture's 34.8px one.
  *
- * Revert checks (see SPEC.md's ledger for the measurements this pins):
- * reverting GMANGraphicState::buildTransform back to CTM_new = CTM_old .
+ * Revert checks: reverting GMANGraphicState::buildTransform back to
+ * CTM_new = CTM_old .
  * Local puts the sphere at camera-space (6.5,0,0), on the eye plane
  * (z=0) -- degenerate and off-screen, so no silhouette is found at all.
  * Neutralizing RiRotate instead (with the fix in place) leaves the sphere

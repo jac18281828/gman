@@ -10,8 +10,8 @@
 ## a crash.
 ##
 ## Varying z along the cylinder's length (not a flat plate at one z) keeps
-## this clear of the near-clip precision defect (SPEC.md Section 8;
-## AGENTS.md's "Explicit Clipping" note) -- that defect needs vertices
+## this clear of the near-clip precision defect (AGENTS.md's "Explicit
+## Clipping" note) -- that defect needs vertices
 ## clustered at a single z, which a cylinder spanning [-10,10] never has.
 Display "clipping.tif" "file" "rgba"
 Format 400 400 1

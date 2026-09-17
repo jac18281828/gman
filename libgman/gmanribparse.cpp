@@ -1594,8 +1594,8 @@ RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
 // **************************************************************
 // RISpec 3.2 requests parsed and ignored. Each consumes exactly its own
 // grammar so the token stream stays in sync for whatever follows; none
-// calls into renderMan, since rendering these is Scope C (SPEC.md S4),
-// not Phase 2.
+// calls into renderMan, since rendering these is out of scope for this
+// phase.
 // **************************************************************
 
 RtVoid GMANRIBParse::parseCurves(RtVoid) {

@@ -1,4 +1,4 @@
-## Bilinear Patch, once the pinned defect from SPEC.md Section 8: Patch
+## Bilinear Patch, once the defect tests/patchnorender_test.cpp pins: Patch
 ## rasterized no pixels. getRSPatch (phase 6) wires bilinear and bicubic
 ## Patch to createParametric; this scene now renders. No golden minted --
 ## bilinear interpolation of a flat four-point patch has no shading detail

@@ -45,9 +45,9 @@
  * (a scene with ScreenWindow -2 2 -2 2 came out a quarter the expected
  * area, not the expected half, when tried).
  *
- * This defect and the near-clip precision defect (SPEC.md SS8) are
- * unrelated: this one is a projection/clip-space mismatch (RiScreenWindow
- * dropped entirely), the other is a float-cancellation defect in
+ * This defect and the near-clip precision defect are unrelated: this one
+ * is a projection/clip-space mismatch (RiScreenWindow dropped entirely),
+ * the other is a float-cancellation defect in
  * GMANClipEdge::isInside's back-clip-plane test. Fixing this one does not
  * touch GMANClipEdge or GMANMatrix4::prjPersp/prjOrtho's near/far terms,
  * so it does not fix the near-clip defect; every scene below still pairs

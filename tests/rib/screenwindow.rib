@@ -6,10 +6,10 @@
 ## visible frustum off-centre, then CropWindow rendering only a sub-window
 ## of that already-shifted result.
 ##
-## RiFrameAspectRatio has no tokenizer entry at all (SPEC.md's "RIB
-## support" table, "Unrecognized" bucket) -- included here to prove it is
-## warned-and-skipped, not a parse-desync, and that ScreenWindow/CropWindow
-## right after it still parse correctly (AGENTS.md's "desync convention").
+## RiFrameAspectRatio has no tokenizer entry at all -- included here to
+## prove it is warned-and-skipped, not a parse-desync, and that
+## ScreenWindow/CropWindow right after it still parse correctly (AGENTS.md's
+## "desync convention").
 Display "screenwindow.tif" "file" "rgba"
 Format 400 300 1
 FrameAspectRatio 1.5

@@ -77,10 +77,10 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - **The desync convention.** A request fixture is the request under test, then
   a `Sphere`, so a mis-counted parameter list fails the next parse.
 - Flat or z-narrow geometry needs `Clipping 0.5 50`: a known near-clip
-  precision defect (`SPEC.md` §8).
+  precision defect.
 - Third-party RIB: record source, commit and license in `tests/rib/README`.
 - Supported requests: `gmanribtokenize.cpp` and `gmanribparse.cpp` are ground
-  truth; `SPEC.md` lists gaps.
+  truth.
 - Shader plugins: subclass `GMANSurfaceShader`, export `GMANGetLoadableInfo`
   and `GMANLoadShader`, build with `gman_add_plugin`. See
   `shaders/gmanmatte.cpp`.

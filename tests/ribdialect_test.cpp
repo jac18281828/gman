@@ -202,9 +202,8 @@ int main(int argc, char* argv[]) {
   // gzip'd top-level file). This is also defect 1's payoff: bikeData.rib.gz
   // ends TransformEnd with no trailing newline, which used to corrupt into
   // TransformEndd, leaving the block unclosed and killing the parse on
-  // RIE_NESTING partway through the archive's ~5,300 lines -- exactly the
-  // shape SPEC.md S8 recorded. Fixed, the whole archive parses and gman
-  // reaches exit 0.
+  // RIE_NESTING partway through the archive's ~5,300 lines. Fixed, the
+  // whole archive parses and gman reaches exit 0.
   //
   // bike.rib reads bikeData.rib.gz. openRibStream decompresses the archive
   // whole before parsing begins, so reaching any token inside it exercises
@@ -213,11 +212,11 @@ int main(int argc, char* argv[]) {
   // coincidence.
   //
   // The image bike.rib writes used to be blank -- every pixel the
-  // background color, SPEC.md S8's other open defect: Patch rasterized no
-  // pixels while a Sphere in the same scene did. Phase 6 wired Patch
-  // (bilinear and bicubic) to createParametric; all 5,216 bicubic Patch
-  // requests in bikeData.rib.gz now reach a working evaluator, and the
-  // rendered image reads as a bicycle.
+  // background color, the other defect tests/patchnorender_test.cpp pins:
+  // Patch rasterized no pixels while a Sphere in the same scene did. Phase 6
+  // wired Patch (bilinear and bicubic) to createParametric; all 5,216
+  // bicubic Patch requests in bikeData.rib.gz now reach a working
+  // evaluator, and the rendered image reads as a bicycle.
   {
     const std::string bike = ribDir + "/corpus/bike.rib";
     std::remove("bike.tif");
@@ -232,8 +231,8 @@ int main(int argc, char* argv[]) {
   }
 
   // Step 1: an unrecognized request -- Bxdf, a RIS-era request GMAN
-  // deliberately does not implement (SPEC.md S4) -- warns once by name and
-  // the parse continues past it.
+  // deliberately does not implement -- warns once by name and the parse
+  // continues past it.
   {
     const std::string path = ribDir + "/unknownrequest.rib";
     Result r = run(gman, path, /*debug=*/false);

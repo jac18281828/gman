@@ -28,7 +28,7 @@
  * exactly on a sample point by construction. Orthographic (no perspective
  * distortion to reason about) and Clipping 0.5 50 per AGENTS.md's RIB
  * authoring section: this polygon is flat in z, the shape the near-clip
- * precision defect (SPEC.md S8) corrupts hardest at the default near.
+ * precision defect corrupts hardest at the default near.
  *
  * testSupersamplingEdge is the falsification proof: at 1x1 sample/pixel a
  * hard edge produces only fully-covered or fully-uncovered pixels (one
