@@ -44,8 +44,13 @@ RUN npm install -g @commitlint/cli @commitlint/config-conventional && \
 # disagrees with CI's, so the editor and CI must install the same way. A
 # venv sidesteps PEP 668's lock on the system python3.
 ENV CLANG_TIDY_VENV=/opt/clang-tidy-venv
+# A login shell resets PATH to a list that keeps /usr/local/bin, dropping
+# the venv's bin; the hard link keeps clang-tidy resolvable there too. The
+# link must be made in this layer: a later RUN would only copy the target,
+# and the image is rebuilt rather than patched, so it cannot go stale.
 RUN python3 -m venv ${CLANG_TIDY_VENV} && \
-    ${CLANG_TIDY_VENV}/bin/pip install clang-tidy==22.1.8
+    ${CLANG_TIDY_VENV}/bin/pip install clang-tidy==22.1.8 && \
+    ln ${CLANG_TIDY_VENV}/bin/clang-tidy /usr/local/bin/clang-tidy
 ENV PATH=${CLANG_TIDY_VENV}/bin:${PATH}
 
 RUN useradd --create-home -s /bin/bash gman
