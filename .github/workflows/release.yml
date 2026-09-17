@@ -35,15 +35,25 @@ jobs:
             echo "See CHANGELOG.md." > release-body.md
           fi
           cat release-body.md
+      # A rerun of a partly-failed run must not fail on a release that
+      # already exists, so edit it in place instead of creating again.
       - name: Create the release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: GMAN ${{ github.ref_name }}
-          body_path: release-body.md
-          draft: false
-          prerelease: false
-          make_latest: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "${{ github.ref_name }}" >/dev/null 2>&1; then
+            gh release edit "${{ github.ref_name }}" \
+              --title "GMAN ${{ github.ref_name }}" \
+              --notes-file release-body.md \
+              --draft=false \
+              --prerelease=false \
+              --latest
+          else
+            gh release create "${{ github.ref_name }}" \
+              --title "GMAN ${{ github.ref_name }}" \
+              --notes-file release-body.md \
+              --latest
+          fi
   binaries:
     name: ${{ matrix.target }}
     needs: release
@@ -104,10 +114,16 @@ jobs:
             "gman-${{ github.ref_name }}-${{ matrix.target }}"
           shasum -a 256 "gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" \
             > "gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz.sha256"
+      # The third-party action this replaced intermittently failed to create
+      # its asset temp dir on ubuntu-24.04-arm and macos-latest; gh ships on
+      # the runner image itself, so it carries no such gap.
       - name: Attach to the release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: |
-            ${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz
-            ${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz.sha256
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cd "${{ runner.temp }}/stage"
+          gh release upload "${{ github.ref_name }}" \
+            "gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz" \
+            "gman-${{ github.ref_name }}-${{ matrix.target }}.tar.gz.sha256" \
+            --clobber
