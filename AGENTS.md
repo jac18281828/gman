@@ -136,10 +136,15 @@ reaching for libtiff.
 
 ## Dependencies and includes
 
-Prefer the standard library. System headers `< >` before GMAN headers
-`" "`. Qualify `std::` explicitly — no blanket `using namespace std`, and
-no per-name `using std::string` either. The blanket form in a public header
-is what broke this codebase's namespace correctness once already.
+Prefer the standard library. Includes group in four blocks, each separated
+by one blank line and sorted case-sensitively inside: C++ standard library
+(`<vector>`, `<format>`), system (`<unistd.h>`, `<sys/stat.h>`), libraries
+(`<tiffio.h>`, `<png.h>`, `<jpeglib.h>`, `<zlib.h>`), then gman (`"ri.h"`,
+`"gmanfoo.h"`). A file's own header sorts inside the gman group, not first.
+`.clang-format`'s `IncludeCategories` encodes this order. Qualify `std::`
+explicitly — no blanket `using namespace std`, and no per-name
+`using std::string` either. The blanket form in a public header is what
+broke this codebase's namespace correctness once already.
 
 ## Tests
 

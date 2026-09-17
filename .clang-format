@@ -17,3 +17,20 @@ AllowShortFunctionsOnASingleLine: Empty
 DerivePointerAlignment: false
 PointerAlignment: Right
 SortIncludes: false
+IncludeBlocks: Regroup
+IncludeCategories:
+  # 1. C++ standard library: angle brackets, no extension.
+  - Regex: '^<[a-z_]+>$'
+    Priority: 1
+  # 3. Libraries, matched ahead of the general system category below.
+  - Regex: '^<(tiffio|png|jpeglib|zlib)\.h>$'
+    Priority: 3
+  # 2. System: every other angle-bracket header.
+  - Regex: '^<.*>$'
+    Priority: 2
+  # 4. gman: every quoted include.
+  - Regex: '^".*"$'
+    Priority: 4
+# No include is ever the main include: a project header never outranks the
+# standard library, and a source file's own header sorts with its group.
+IncludeIsMainRegex: '$^'
