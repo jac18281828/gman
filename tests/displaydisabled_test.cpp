@@ -129,11 +129,11 @@ int main(int argc, char *argv[]) {
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  const CapturedRun version = runCaptured({gman, "--version"});
+  const auto version = runCaptured({gman, "--version"});
   check(version.exitStatus == 0, "gman --version exits 0");
 
-  const bool pngCompiled = driverCompiled(version.stdoutText, "png");
-  const bool jpegCompiled = driverCompiled(version.stdoutText, "jpeg");
+  const auto pngCompiled = driverCompiled(version.stdoutText, "png");
+  const auto jpegCompiled = driverCompiled(version.stdoutText, "jpeg");
 
   if (pngCompiled && jpegCompiled) {
     // Nothing disabled to exercise in this build -- drivers-off runs it
@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
   if (!pngCompiled) {
     const std::string output = "x.png";
     std::remove(output.c_str());
-    const CapturedRun run =
+    const auto run =
         runCaptured({gman, ribDir + "/displaydisabled_png.rib"});
     check(run.exitStatus != 0, "a disabled PNG driver fails the render");
     check(run.stdoutText.find("Display \"png\": built without libpng") !=
@@ -156,7 +156,7 @@ int main(int argc, char *argv[]) {
   if (!jpegCompiled) {
     const std::string output = "x.jpg";
     std::remove(output.c_str());
-    const CapturedRun run =
+    const auto run =
         runCaptured({gman, ribDir + "/displaydisabled_jpg.rib"});
     check(run.exitStatus != 0, "a disabled JPEG driver fails the render");
     check(run.stdoutText.find("Display \"jpg\": built without libjpeg") !=

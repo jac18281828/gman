@@ -92,8 +92,8 @@ CapturedRun runCaptured(std::vector<std::string> const &argv) {
 std::string driversLine(std::string const &text) {
   std::size_t pos = 0;
   while (pos < text.size()) {
-    const std::size_t eol = text.find('\n', pos);
-    const std::string line = text.substr(pos, eol - pos);
+    const auto eol = text.find('\n', pos);
+    const auto line = text.substr(pos, eol - pos);
     if (line.rfind("drivers:", 0) == 0) {
       return line;
     }
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
   const std::string gman = argv[1];
   const std::string expected = "drivers: " + std::string(argv[2]);
 
-  const CapturedRun run = runCaptured({gman, "--version"});
+  const auto run = runCaptured({gman, "--version"});
   check(run.exitStatus == 0, "gman --version exits 0");
   check(run.stdoutText.rfind("gman ", 0) == 0,
         "gman --version's first line names the program");
