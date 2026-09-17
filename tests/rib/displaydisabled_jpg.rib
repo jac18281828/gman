@@ -1,0 +1,7 @@
+Display "x.jpg" "file" "rgb"
+Format 64 64 1
+Projection "perspective" "fov" [45]
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

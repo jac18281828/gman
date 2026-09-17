@@ -35,6 +35,7 @@
 #include "gmanerror.h"
 #include "gmanrendermanimpl.h"
 #include "gmanribparse.h"
+#include "gmanfiledrivers.h"
 
 namespace {
 
@@ -48,6 +49,18 @@ std::string logFileNameFor(std::string_view ribPath) {
   return std::string(ribPath) + ".log";
 }
 
+// The whole of --version's contract: two lines to stdout, parsing no
+// files.
+int printVersion() {
+  std::cout << "gman " << GMAN_PROJECT_VERSION << "\n";
+  std::cout << "drivers:";
+  for (std::string const &name : gmanFileDrivers()) {
+    std::cout << ' ' << name;
+  }
+  std::cout << "\n";
+  return EXIT_SUCCESS;
+}
+
 } // namespace
 
 /* function prototypes */
@@ -55,6 +68,15 @@ std::string logFileNameFor(std::string_view ribPath) {
 RtVoid usage(char *myname);
 
 int main(int argc, char *argv[]) {
+
+  // Works anywhere in the flag list, ahead of the copyright banner and
+  // every other flag: version reporting parses no files and touches
+  // nothing else main sets up.
+  for (int i = 1; i < argc; ++i) {
+    if (std::string_view(argv[i]) == "--version") {
+      return printVersion();
+    }
+  }
 
   int rc = EXIT_SUCCESS;
   // handle command line arguments
@@ -143,7 +165,7 @@ int main(int argc, char *argv[]) {
 /* Are you freaking kidding? */
 RtVoid usage(char *myname) {
   
-  std::cerr << myname << ": -[hdiweql] files ..." << std::endl;
+  std::cerr << myname << ": -[hdiweql] [--version] files ..." << std::endl;
   std::cerr << "\tParse RIB input files." << std::endl << std::endl;
   std::cerr << "\t-h - print this help message." << std::endl;
   std::cerr << "\t-d - set logging to: debug output." << std::endl;
@@ -152,5 +174,6 @@ RtVoid usage(char *myname) {
   std::cerr << "\t-e - set logging to: error output." << std::endl;
   std::cerr << "\t-q - set logging to: quiet, only report disasters." << std::endl;
   std::cerr << "\t-l - enable a log based on the filename of the rib." << std::endl;
+  std::cerr << "\t--version - print the version and compiled drivers, then exit." << std::endl;
 
 }

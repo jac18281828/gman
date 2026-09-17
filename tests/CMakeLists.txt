@@ -560,6 +560,53 @@ set_tests_properties(jpegdriver PROPERTIES
   TIMEOUT 30
   SKIP_RETURN_CODE 77)
 
+# The driver table's own contract: gman --version lists exactly the
+# drivers this configure actually compiled, in table order.
+set(GMAN_EXPECTED_DRIVERS "tiff pnm")
+if(GMAN_WITH_PNG)
+  string(APPEND GMAN_EXPECTED_DRIVERS " png")
+endif()
+if(GMAN_WITH_JPEG)
+  string(APPEND GMAN_EXPECTED_DRIVERS " jpeg")
+endif()
+
+add_executable(gman_filedrivers filedrivers_test.cpp)
+target_link_libraries(gman_filedrivers PRIVATE gman_core)
+
+set(GMAN_FILEDRIVERS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/filedrivers-run")
+file(MAKE_DIRECTORY "${GMAN_FILEDRIVERS_WORKDIR}")
+
+add_test(NAME filedrivers
+  COMMAND gman_filedrivers $<TARGET_FILE:gman> "${GMAN_EXPECTED_DRIVERS}"
+  WORKING_DIRECTORY "${GMAN_FILEDRIVERS_WORKDIR}")
+set_tests_properties(filedrivers PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+# A known but disabled driver's extension must fail loudly (RIE_BADFILE,
+# naming the missing library), not silently. Registered unconditionally
+# and always compiled -- it reads which drivers exist from gman --version
+# at runtime instead of a compile-time #ifdef, so it runs unchanged across
+# the ON, OFF and mixed configurations. With both drivers enabled there is
+# nothing disabled to exercise, so it self-skips (exit 77); drivers-off is
+# where it runs for real.
+add_executable(gman_displaydisabled displaydisabled_test.cpp)
+target_link_libraries(gman_displaydisabled PRIVATE gman_core)
+
+set(GMAN_DISPLAYDISABLED_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/displaydisabled-run")
+file(MAKE_DIRECTORY "${GMAN_DISPLAYDISABLED_WORKDIR}")
+
+add_test(NAME displaydisabled
+  COMMAND gman_displaydisabled $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_DISPLAYDISABLED_WORKDIR}")
+set_tests_properties(displaydisabled PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30
+  SKIP_RETURN_CODE 77)
+
 # UAT defect 4: CropWindow truncated from the origin instead of cropping --
 # nothing offset rasterization by the crop rectangle's own origin.
 add_executable(gman_cropwindow cropwindow_test.cpp)
