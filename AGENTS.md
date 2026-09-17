@@ -82,7 +82,7 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   and `GMANLoadShader`, build with `gman_add_plugin`. See
   `shaders/gmanmatte.cpp`.
 
-## Gates
+## Completion Gates
 
 Before marking work complete, run and report:
 
