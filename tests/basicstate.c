@@ -42,26 +42,23 @@ static int errorCount = 0;
 static RtInt lastCode = 0;
 static RtInt lastSeverity = 0;
 
-static RtVoid countingErrorHandler(RtInt code, RtInt severity, const char *msg)
-{
+static RtVoid countingErrorHandler(RtInt code, RtInt severity, const char* msg) {
   errorCount++;
   lastCode = code;
   lastSeverity = severity;
-  printf("    handler: code=%d severity=%d %s\n", (int) code, (int) severity, msg);
+  printf("    handler: code=%d severity=%d %s\n", (int)code, (int)severity, msg);
 }
 
 static int failures = 0;
 
-static void check(int ok, const char *what)
-{
+static void check(int ok, const char* what) {
   printf("%s: %s\n", ok ? "ok" : "FAIL", what);
   if (!ok) {
     failures++;
   }
 }
 
-int main(void)
-{
+int main(void) {
   RiErrorHandler(countingErrorHandler);
 
   /* The default renderer name is gmanzbuffer; RiBegin dlopens it. */

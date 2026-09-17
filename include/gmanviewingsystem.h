@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,7 +22,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANVIEWINGSYSTEM_H
 #define __GMAN_GMANVIEWINGSYSTEM_H 1
@@ -35,58 +34,56 @@
 #include "gmansegment.h"
 #include "ri.h"
 
-class GMAN_EXPORT  GMANViewingSystem
-{
-  protected:
-    RtInt xres;
-    RtInt yres;
-    GMANOptions::ScreenWindowStruct sw;
+class GMAN_EXPORT GMANViewingSystem {
+protected:
+  RtInt xres;
+  RtInt yres;
+  GMANOptions::ScreenWindowStruct sw;
 
-    // The CTM at RiWorldBegin -- legal only after RiProjection and before
-    // any world-space geometry, so it is exactly the world-to-camera
-    // transform. cameraToWorld is its inverse, for rays cast from raster
-    // space back toward world space.
-    GMANMatrix4 worldToCamera;
-    GMANMatrix4 cameraToWorld;
-  public:
-    GMANViewingSystem(RtInt xr, RtInt yr,
-		      const GMANOptions::ScreenWindowStruct &s,
-		      const GMANMatrix4 &w2c)
-	: xres(xr), yres(yr), sw(s), worldToCamera(w2c), cameraToWorld(w2c) {
-      cameraToWorld.invert();
-    }
-    virtual ~GMANViewingSystem() {}
+  // The CTM at RiWorldBegin -- legal only after RiProjection and before
+  // any world-space geometry, so it is exactly the world-to-camera
+  // transform. cameraToWorld is its inverse, for rays cast from raster
+  // space back toward world space.
+  GMANMatrix4 worldToCamera;
+  GMANMatrix4 cameraToWorld;
 
-    const GMANMatrix4 &getWorldToCamera(RtVoid) const { return worldToCamera; }
-    const GMANMatrix4 &getCameraToWorld(RtVoid) const { return cameraToWorld; }
+public:
+  GMANViewingSystem(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& w2c)
+      : xres(xr), yres(yr), sw(s), worldToCamera(w2c), cameraToWorld(w2c) {
+    cameraToWorld.invert();
+  }
+  virtual ~GMANViewingSystem() {}
 
-    // The screen window this viewing system was built with -- RiScreenWindow's
-    // default or explicit value. GMANPolygonClipper needs it to derive
-    // orthographic's clip planes (prjOrtho has no fov-equivalent natural
-    // bound the way prjPersp does; the screen window is the only bound
-    // there is).
-    const GMANOptions::ScreenWindowStruct &getScreenWindow(RtVoid) const { return sw; }
-    
-    /* LJL February 2001 + project & ray */
-    RtVoid screenToRaster(RtFloat &x, RtFloat &y);
-    RtVoid rasterToScreen(RtFloat &x, RtFloat &y);
-    
-    /* Project a point on screen (raster space coords) */
-    virtual GMANPoint project(GMANPoint const &p)=0;
-    
-    /* Given x y coordinate in raster space, return a ray. */
-    virtual GMANRay ray(RtFloat x, RtFloat y)=0;
-    
-    /* return true if the face is visible from the 
-     * current perspective.
-     */
-    virtual bool visible(const GMANFace *face)=0;
+  const GMANMatrix4& getWorldToCamera(RtVoid) const { return worldToCamera; }
+  const GMANMatrix4& getCameraToWorld(RtVoid) const { return cameraToWorld; }
 
-    /*
-     * return the current projective transformation
-     * matrix
-     */
-    virtual const RtMatrix &getProjMatrix(RtVoid) const = 0;
+  // The screen window this viewing system was built with -- RiScreenWindow's
+  // default or explicit value. GMANPolygonClipper needs it to derive
+  // orthographic's clip planes (prjOrtho has no fov-equivalent natural
+  // bound the way prjPersp does; the screen window is the only bound
+  // there is).
+  const GMANOptions::ScreenWindowStruct& getScreenWindow(RtVoid) const { return sw; }
+
+  /* LJL February 2001 + project & ray */
+  RtVoid screenToRaster(RtFloat& x, RtFloat& y);
+  RtVoid rasterToScreen(RtFloat& x, RtFloat& y);
+
+  /* Project a point on screen (raster space coords) */
+  virtual GMANPoint project(GMANPoint const& p) = 0;
+
+  /* Given x y coordinate in raster space, return a ray. */
+  virtual GMANRay ray(RtFloat x, RtFloat y) = 0;
+
+  /* return true if the face is visible from the
+   * current perspective.
+   */
+  virtual bool visible(const GMANFace* face) = 0;
+
+  /*
+   * return the current projective transformation
+   * matrix
+   */
+  virtual const RtMatrix& getProjMatrix(RtVoid) const = 0;
 };
 
 #endif

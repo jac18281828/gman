@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -35,7 +35,7 @@
  */
 
 // default constructor
-GMANFace::GMANFace(GMANVertex **verts, GMANSurface *p) : color() {
+GMANFace::GMANFace(GMANVertex** verts, GMANSurface* p) : color() {
   parentSurf = p;
   area = 0.0f;
 
@@ -46,14 +46,13 @@ GMANFace::GMANFace(GMANVertex **verts, GMANSurface *p) : color() {
 
   next = NULL;
 
-  for(int i=0; i<GMAN_NFACE_VERTS; i++) {
+  for (int i = 0; i < GMAN_NFACE_VERTS; i++) {
     vertices[i] = verts[i];
   };
 };
 
-
-// default destructor 
-GMANFace::~GMANFace() { };
+// default destructor
+GMANFace::~GMANFace() {};
 
 RtVoid GMANFace::calcArea(RtVoid) {
   GMANVector result;
@@ -64,19 +63,16 @@ RtVoid GMANFace::calcArea(RtVoid) {
 
   result = va.cross(vb);
   area = result.magnitude() / 2.0;
-  
+
   result = vb.cross(vc);
-  area += result.magnitude()/2.0;
-  
+  area += result.magnitude() / 2.0;
 }
 
-RtVoid GMANFace::calcNormal(RtVoid) 
-{
+RtVoid GMANFace::calcNormal(RtVoid) {
   GMANVector va(vertices[0]->getLocation(), vertices[1]->getLocation());
   GMANVector vb(vertices[0]->getLocation(), vertices[2]->getLocation());
 
   normal = va.cross(vb);
 
   normal.normalize();
-
 }

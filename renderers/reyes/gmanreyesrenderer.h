@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2002, 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2002, 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -26,7 +26,6 @@
 #ifndef __GMAN_GMANREYESRENDERER_H
 #define __GMAN_GMANREYESRENDERER_H 1
 
-
 #include <list>
 #include <map>
 #include <stack>
@@ -41,25 +40,23 @@
 #include "gmanrenderer.h"
 #include "ri.h"
 
-
-
 /*
  * RenderMan API GMANReyesRenderer
  *
- * This is an implementation of the rendering scheme 
+ * This is an implementation of the rendering scheme
  * known as 'REYES.'   REYES is a local illumination model
  * similar to a zbuffer, with the major distinction that
  * polygons in the environment are 'diced' into tiny grids
- * called micropolygons.   The micropolygons are then 
- * stochastically sampled to yield a color sample value 
+ * called micropolygons.   The micropolygons are then
+ * stochastically sampled to yield a color sample value
  * that approximates reality.
  *
  * The REYES method has the advantage of being quite fast in
- * practical applications, however it has the disadvantage of being a 
- * local illumination model, which means that it can not account 
+ * practical applications, however it has the disadvantage of being a
+ * local illumination model, which means that it can not account
  * in a practical fashion for object aspects such as specularity
- * and transparency.  For this reason, this instance of REYES also 
- * applies a global illumination model, namely ray-tracing, when the 
+ * and transparency.  For this reason, this instance of REYES also
+ * applies a global illumination model, namely ray-tracing, when the
  * object encountered has a specularity or transparency value that would
  * do better for raytracing.  This addition improves quality, while
  * taking away performance.   Cest La Vie!
@@ -73,90 +70,69 @@
  * John
  */
 class GMAN_EXPORT GMANReyesRenderer : public GMANRenderer {
-  private:
-
+private:
   RtInt height;
 
   RtInt width;
 
-    // This is an array of faces which have been hit
-    // during the REYES phase of the render
-    // It is essentially a depth/zbuffer of objects
-    // which will first intersect the rays projected from
-    // the raytracer
-    GMANFace		*firstHit;
+  // This is an array of faces which have been hit
+  // during the REYES phase of the render
+  // It is essentially a depth/zbuffer of objects
+  // which will first intersect the rays projected from
+  // the raytracer
+  GMANFace* firstHit;
 
-    // this is the depth list computed for the objects
-    // above
-    RtFloat		*zBuffer;
+  // this is the depth list computed for the objects
+  // above
+  RtFloat* zBuffer;
 
-    // the patch poly manager
-    GMANPatchPolyObjectManager		objectManager;
+  // the patch poly manager
+  GMANPatchPolyObjectManager objectManager;
 
-    // the world manager (octree for use by ray tracing)
-    GMANLinearWorldManager		worldManager;
+  // the world manager (octree for use by ray tracing)
+  GMANLinearWorldManager worldManager;
 
-    // private methods
+  // private methods
 
-    // scan the polygon with reyes :)
-    void reyes(GMANOutputPolygon &out,
-	       GMANFrameBuffer    *frameBuffer);
+  // scan the polygon with reyes :)
+  void reyes(GMANOutputPolygon& out, GMANFrameBuffer* frameBuffer);
 
-
-    // trace a ray from screen x and screen y
-    void traceRay(RtInt xs, 
-		  RtInt ys,
-		  GMANFrameBuffer    *frameBuffer,
-		  GMANViewingSystem  *viewingSystem);
+  // trace a ray from screen x and screen y
+  void traceRay(RtInt xs, RtInt ys, GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSystem);
 
   // return true if the specified point is specular
   bool checkSpec(RtInt xs, RtInt ys);
   // return true if the specified point is transparent
   bool checkTrans(RtInt xs, RtInt ys);
-  public:
-    GMANReyesRenderer(); // default constructor
 
-    ~GMANReyesRenderer(); // default destructor
+public:
+  GMANReyesRenderer(); // default constructor
 
-    RtVoid illuminance(RtInt /*i*/,
-		       GMANPoint const &/*p*/,
-		       GMANVector const &/*axis*/,
-		       RtFloat /*angle*/) {}
+  ~GMANReyesRenderer(); // default destructor
 
-    RtVoid illuminate(RtInt /*i*/,
-		      GMANPoint const &/*p*/,
-		      GMANVector const &/*axis*/,
-		      RtFloat /*angle*/) {}
+  RtVoid illuminance(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
-    RtVoid solar(RtInt /*i*/, GMANVector const &/*axis*/,
-		 RtFloat /*angle*/) {}
+  RtVoid illuminate(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
-    /*
-     * Apply the reyes micropolygon model using viewingSystem
-     * to generate a frameBuffer output.
-     */
-    virtual void render(GMANFrameBuffer *frameBuffer,
-			GMANViewingSystem *viewingSys,
-			const GMANOptions       &options,
-			const GMANAttributes    &attributes);
+  RtVoid solar(RtInt /*i*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
-    
-    int getHeight(void) {
-	return height;
-    };
+  /*
+   * Apply the reyes micropolygon model using viewingSystem
+   * to generate a frameBuffer output.
+   */
+  virtual void render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
+                      const GMANAttributes& attributes);
 
-    int getWidth(void) {
-	return width;
-    };
+  int getHeight(void) { return height; };
 
-    inline RtFloat getDepth(int x, int y) const {
-	return zBuffer[y*width + x];
-    }
+  int getWidth(void) { return width; };
 
-    // return its world manager
-    virtual GMANWorldManager *getWorldManager(void);
+  inline RtFloat getDepth(int x, int y) const { return zBuffer[y * width + x]; }
 
-    // return its object manager
-    virtual GMANObjectManager *getObjectManager(void);
+  // return its world manager
+  virtual GMANWorldManager* getWorldManager(void);
+
+  // return its object manager
+  virtual GMANObjectManager* getObjectManager(void);
 };
 #endif

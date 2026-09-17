@@ -27,10 +27,9 @@
 
 #include "gmanprimitives.h"
 
-class GMAN_EXPORT GMANRayInterface : virtual public GMANPrimitive
-{
+class GMAN_EXPORT GMANRayInterface : virtual public GMANPrimitive {
 public:
-  virtual bool intersect (const GMANRay &ray, RtFloat& t) const;
+  virtual bool intersect(const GMANRay& ray, RtFloat& t) const;
 };
 
 #endif

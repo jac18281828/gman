@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANSEGMENT_H
 #define __GMAN_GMANSEGMENT_H 1
-
 
 #include <list>
 #include <map>
@@ -43,32 +41,24 @@
  * A segment type made of two points
  */
 
-class GMAN_EXPORT  GMANSegment {
-  GMANPoint	p1;
-  GMANPoint     p2;
+class GMAN_EXPORT GMANSegment {
+  GMANPoint p1;
+  GMANPoint p2;
+
 public:
   GMANSegment(); // default constructor
 
   ~GMANSegment(); // default destructor
 
-  RtVoid setP1(const GMANPoint &p) {
-    p1 = p;
-  };
+  RtVoid setP1(const GMANPoint& p) { p1 = p; };
 
-  RtVoid setP2(const GMANPoint &p) {
-    p2 = p;
-  };
+  RtVoid setP2(const GMANPoint& p) { p2 = p; };
 
-  const GMANPoint &getP1(RtVoid) const {
-    return p1;
-  };
+  const GMANPoint& getP1(RtVoid) const { return p1; };
 
-  const GMANPoint &getP2(RtVoid) const {
-    return p2;
-  };
+  const GMANPoint& getP2(RtVoid) const { return p2; };
 };
 
 typedef GMANSegment GMANRay;
 
 #endif
-

@@ -43,7 +43,7 @@
 
 namespace {
 
-std::string readFile(const std::string &path) {
+std::string readFile(const std::string& path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream contents;
   contents << in.rdbuf();
@@ -53,9 +53,7 @@ std::string readFile(const std::string &path) {
 // setLogFile opens its target with "a", so a file left over from a
 // previous run of this binary in the same WORKING_DIRECTORY would carry
 // stale lines into a fresh count. Each test starts from no file at all.
-void removeIfExists(const std::string &path) {
-  std::remove(path.c_str());
-}
+void removeIfExists(const std::string& path) { std::remove(path.c_str()); }
 
 // A value whose formatter counts every format() call, to prove a message
 // below the current level is never formatted.
@@ -65,11 +63,10 @@ struct CountedValue {
   int value;
 };
 
-}  // namespace
+} // namespace
 
-template <>
-struct std::formatter<CountedValue> : std::formatter<int> {
-  auto format(const CountedValue &v, std::format_context &ctx) const {
+template <> struct std::formatter<CountedValue> : std::formatter<int> {
+  auto format(const CountedValue& v, std::format_context& ctx) const {
     ++gFormatCalls;
     return std::formatter<int>::format(v.value, ctx);
   }
@@ -101,7 +98,7 @@ void testBothOutputsSeeMessage() {
 
   std::fflush(stdout);
   int savedStdout = dup(fileno(stdout));
-  FILE *redirected = std::freopen("log_both.screen", "w", stdout);
+  FILE* redirected = std::freopen("log_both.screen", "w", stdout);
   check(redirected != nullptr, "stdout redirected to a file");
 
   info("both outputs see this line");
@@ -113,10 +110,8 @@ void testBothOutputsSeeMessage() {
 
   const std::string logContents = readFile("log_both.log");
   const std::string screenContents = readFile("log_both.screen");
-  check(logContents.find("both outputs see this line") != std::string::npos,
-        "the log file sees the message");
-  check(screenContents.find("both outputs see this line") != std::string::npos,
-        "stdout sees the message");
+  check(logContents.find("both outputs see this line") != std::string::npos, "the log file sees the message");
+  check(screenContents.find("both outputs see this line") != std::string::npos, "stdout sees the message");
 }
 
 // A message ending in its own newline gets exactly one trailing newline,
@@ -129,8 +124,7 @@ void testOneNewline() {
   info("line\n");
 
   const std::string contents = readFile("log_newline.log");
-  check(contents.find("GMAN INFO: line\n\n") == std::string::npos,
-        "info(\"line\\n\") leaves no blank line after it");
+  check(contents.find("GMAN INFO: line\n\n") == std::string::npos, "info(\"line\\n\") leaves no blank line after it");
   check(contents.find("GMAN INFO: line\n") != std::string::npos,
         "info(\"line\\n\") lands with exactly one trailing newline");
 }
@@ -144,8 +138,7 @@ void testSuppressedLevelsNeverFormat() {
 
   gFormatCalls = 0;
   debug("{}", CountedValue{7});
-  check(gFormatCalls == 0,
-        "debug() below the current level never formats its argument");
+  check(gFormatCalls == 0, "debug() below the current level never formats its argument");
 }
 
 // Eight threads each log 1000 numbered lines through the one shared sink;
@@ -168,7 +161,7 @@ void testConcurrentLinesStayWhole() {
       }
     });
   }
-  for (auto &th : threads) {
+  for (auto& th : threads) {
     th.join();
   }
 
@@ -181,8 +174,7 @@ void testConcurrentLinesStayWhole() {
     ++total;
     int worker = -1;
     int index = -1;
-    if (std::sscanf(line.c_str(), "GMAN WARNING: worker %d line %d", &worker,
-                    &index) != 2) {
+    if (std::sscanf(line.c_str(), "GMAN WARNING: worker %d line %d", &worker, &index) != 2) {
       ++malformed;
     }
   }
@@ -190,7 +182,7 @@ void testConcurrentLinesStayWhole() {
   check(malformed == 0, "every line is well-formed; none interleaved");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   testNoDeadlock();
@@ -199,7 +191,6 @@ int main() {
   testSuppressedLevelsNeverFormat();
   testConcurrentLinesStayWhole();
 
-  return checkSummary(
-      "gmanlog holds: no deadlock, both outputs, one "
-      "newline, suppressed levels, concurrent writers");
+  return checkSummary("gmanlog holds: no deadlock, both outputs, one "
+                      "newline, suppressed levels, concurrent writers");
 }

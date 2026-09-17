@@ -2,13 +2,13 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
 
 /* Added GMANHandleError and default Error managers.
- * Lionel Joseph Lacour -- 2000/07/19 
+ * Lionel Joseph Lacour -- 2000/07/19
  */
 
 /*
@@ -32,142 +32,150 @@
 #include "gmanerror.h"
 
 // Global variable
-RtErrorHandler GMANErrorHandler=(*RiErrorPrint);
+RtErrorHandler GMANErrorHandler = (*RiErrorPrint);
 RtInt RiLastError;
 
-static RtVoid print (RtInt code, RtInt severity, const char *msg)
-{
+static RtVoid print(RtInt code, RtInt severity, const char* msg) {
   std::string cd;
   std::string sev;
 
-  switch(code) {
-  case RIE_NOERROR: cd= "RIE_NOERROR ";
+  switch (code) {
+  case RIE_NOERROR:
+    cd = "RIE_NOERROR ";
     break;
-  case RIE_NOMEM: cd= "RIE_NOMEM ";
+  case RIE_NOMEM:
+    cd = "RIE_NOMEM ";
     break;
-  case RIE_SYSTEM: cd= "RIE_SYSTEM ";    
-    break;  
-  case RIE_NOFILE: cd= "RIE_NOFILE ";     
-    break; 
-  case RIE_BADFILE: cd= "RIE_BADFILE ";
+  case RIE_SYSTEM:
+    cd = "RIE_SYSTEM ";
     break;
-  case RIE_VERSION: cd= "RIE_VERSION ";  
+  case RIE_NOFILE:
+    cd = "RIE_NOFILE ";
     break;
-  case RIE_DISKFULL: cd= "RIE_DISKFULL ";  
+  case RIE_BADFILE:
+    cd = "RIE_BADFILE ";
     break;
-  case RIE_INCAPABLE: cd= "RIE_INCAPABLE ";
+  case RIE_VERSION:
+    cd = "RIE_VERSION ";
     break;
-  case RIE_UNIMPLEMENT: cd= "RIE_UNIMPLEMENT ";
+  case RIE_DISKFULL:
+    cd = "RIE_DISKFULL ";
     break;
-  case RIE_LIMIT: cd= "RIE_LIMIT ";
+  case RIE_INCAPABLE:
+    cd = "RIE_INCAPABLE ";
     break;
-  case RIE_BUG: cd= "RIE_BUG ";
+  case RIE_UNIMPLEMENT:
+    cd = "RIE_UNIMPLEMENT ";
     break;
-  case RIE_NOTSTARTED: cd= "RIE_NOTSTARTED ";
+  case RIE_LIMIT:
+    cd = "RIE_LIMIT ";
     break;
-  case RIE_NESTING: cd= "RIE_NESTING ";
+  case RIE_BUG:
+    cd = "RIE_BUG ";
     break;
-  case RIE_NOTOPTIONS: cd= "RIE_NOTOPTIONS ";
+  case RIE_NOTSTARTED:
+    cd = "RIE_NOTSTARTED ";
     break;
-  case RIE_NOTATTRIBS: cd= "RIE_NOTATTRIBS ";
+  case RIE_NESTING:
+    cd = "RIE_NESTING ";
     break;
-  case RIE_NOTPRIMS: cd= "RIE_NOTPRIMS ";
+  case RIE_NOTOPTIONS:
+    cd = "RIE_NOTOPTIONS ";
     break;
-  case RIE_ILLSTATE: cd= "RIE_ILLSTATE ";
+  case RIE_NOTATTRIBS:
+    cd = "RIE_NOTATTRIBS ";
     break;
-  case RIE_BADMOTION: cd= "RIE_BADMOTION ";
+  case RIE_NOTPRIMS:
+    cd = "RIE_NOTPRIMS ";
     break;
-  case RIE_BADSOLID: cd= "RIE_BADSOLID ";
+  case RIE_ILLSTATE:
+    cd = "RIE_ILLSTATE ";
     break;
-  case RIE_BADTOKEN: cd= "RIE_BADTOKEN ";
+  case RIE_BADMOTION:
+    cd = "RIE_BADMOTION ";
     break;
-  case RIE_RANGE: cd= "RIE_RANGE ";
+  case RIE_BADSOLID:
+    cd = "RIE_BADSOLID ";
     break;
-  case RIE_CONSISTENCY: cd= "RIE_CONSISTENCY ";
+  case RIE_BADTOKEN:
+    cd = "RIE_BADTOKEN ";
     break;
-  case RIE_BADHANDLE: cd= "RIE_BADHANDLE ";
+  case RIE_RANGE:
+    cd = "RIE_RANGE ";
     break;
-  case RIE_NOSHADER: cd= "RIE_NOSHADER ";
+  case RIE_CONSISTENCY:
+    cd = "RIE_CONSISTENCY ";
     break;
-  case RIE_MISSINGDATA: cd= "RIE_MISSINGDATA ";
+  case RIE_BADHANDLE:
+    cd = "RIE_BADHANDLE ";
     break;
-  case RIE_SYNTAX: cd= "RIE_SYNTAX ";
+  case RIE_NOSHADER:
+    cd = "RIE_NOSHADER ";
     break;
-  case RIE_MATH: cd= "RIE_MATH ";
+  case RIE_MISSINGDATA:
+    cd = "RIE_MISSINGDATA ";
+    break;
+  case RIE_SYNTAX:
+    cd = "RIE_SYNTAX ";
+    break;
+  case RIE_MATH:
+    cd = "RIE_MATH ";
     break;
   }
   switch (severity) {
-  case RIE_INFO: sev="INFO: ";
+  case RIE_INFO:
+    sev = "INFO: ";
     break;
-  case RIE_WARNING: sev="WARNING: ";
+  case RIE_WARNING:
+    sev = "WARNING: ";
     break;
-  case RIE_ERROR: sev="ERROR: ";
+  case RIE_ERROR:
+    sev = "ERROR: ";
     break;
-  case RIE_SEVERE: sev="SEVERE: ";
+  case RIE_SEVERE:
+    sev = "SEVERE: ";
     break;
   }
-  std::cout << sev << cd << "-- " << msg  << std::endl;
+  std::cout << sev << cd << "-- " << msg << std::endl;
 }
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-  // Standard Error Handler
-  RtVoid RiErrorIgnore( RtInt cd, RtInt /*sev*/, const char */*msg*/)
-  {
-    RiLastError=cd;
-    return;
-  }
-  RtVoid RiErrorPrint( RtInt cd, RtInt sev, const char *msg)
-  {
-    RiLastError=cd;
-    print (cd,sev,msg);
-    return;
-  }
-  RtVoid RiErrorAbort( RtInt cd, RtInt sev, const char *msg)
-  {
-    RiLastError=cd;
-    print (cd,sev,msg);
-    abort();
-  }
+// Standard Error Handler
+RtVoid RiErrorIgnore(RtInt cd, RtInt /*sev*/, const char* /*msg*/) {
+  RiLastError = cd;
+  return;
+}
+RtVoid RiErrorPrint(RtInt cd, RtInt sev, const char* msg) {
+  RiLastError = cd;
+  print(cd, sev, msg);
+  return;
+}
+RtVoid RiErrorAbort(RtInt cd, RtInt sev, const char* msg) {
+  RiLastError = cd;
+  print(cd, sev, msg);
+  abort();
+}
 #ifdef __cplusplus
 }
 #endif
 
-
-GMANError::GMANError()
-{ 
+GMANError::GMANError() {
   code = RIE_NOERROR;
   severity = RIE_INFO;
 }
 
-GMANError::GMANError (RtInt cd, RtInt sev, const char *msg)
-{
-  code=cd;
-  severity=sev;
-  message=std::string(msg);
+GMANError::GMANError(RtInt cd, RtInt sev, const char* msg) {
+  code = cd;
+  severity = sev;
+  message = std::string(msg);
 }
 
-RtVoid GMANError::set (RtInt cd, RtInt sev, const char *msg)
-{
-  code=cd;
-  severity=sev;
-  message=std::string(msg);
+RtVoid GMANError::set(RtInt cd, RtInt sev, const char* msg) {
+  code = cd;
+  severity = sev;
+  message = std::string(msg);
 }
 
-RtVoid GMANHandleError (GMANError &r)
-{
-  (*GMANErrorHandler) (r.getCode(), r.getSeverity(), r.getMessage());
-}
-
-
-
-
-
-
-
-
-
-
-
-
+RtVoid GMANHandleError(GMANError& r) { (*GMANErrorHandler)(r.getCode(), r.getSeverity(), r.getMessage()); }

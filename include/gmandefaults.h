@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,7 +22,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_DEFAULTS_H
 #define __GMAN_DEFAULTS_H 1
@@ -33,43 +32,43 @@
 /* Some important default values */
 
 /******* ******* CAMERA OPTIONS ******* *******/
-extern const RtFloat   DefaultCropWindowXMIN;
-extern const RtFloat   DefaultCropWindowXMAX;
-extern const RtFloat   DefaultCropWindowYMIN;
-extern const RtFloat   DefaultCropWindowYMAX;
+extern const RtFloat DefaultCropWindowXMIN;
+extern const RtFloat DefaultCropWindowXMAX;
+extern const RtFloat DefaultCropWindowYMIN;
+extern const RtFloat DefaultCropWindowYMAX;
 
-extern const RtFloat   DefaultClippingNear;
-extern const RtFloat   DefaultClippingFar;
+extern const RtFloat DefaultClippingNear;
+extern const RtFloat DefaultClippingFar;
 
-extern const RtFloat   DefaultFStop;
+extern const RtFloat DefaultFStop;
 
-extern const RtFloat   DefaultShutterOpen;
-extern const RtFloat   DefaultShutterClose;
+extern const RtFloat DefaultShutterOpen;
+extern const RtFloat DefaultShutterClose;
 
 /******* ******* DISPLAY OPTIONS ******* *******/
-extern const RtFloat   DefaultPixelSamplesX;
-extern const RtFloat   DefaultPixelSamplesY;
+extern const RtFloat DefaultPixelSamplesX;
+extern const RtFloat DefaultPixelSamplesY;
 
 extern const RtFilterFunc DefaultFilterFunc;
-extern const RtFloat   DefaultFilterXWidth;
-extern const RtFloat   DefaultFilterYWidth;
+extern const RtFloat DefaultFilterXWidth;
+extern const RtFloat DefaultFilterYWidth;
 
-extern const RtFloat   DefaultGain;
-extern const RtFloat   DefaultGamma;
+extern const RtFloat DefaultGain;
+extern const RtFloat DefaultGamma;
 
-extern const RtInt     DefaultColorQuantizerOne;
-extern const RtInt     DefaultColorQuantizerMin;
-extern const RtInt     DefaultColorQuantizerMax;
-extern const RtFloat   DefaultColorQuantizerDA;
+extern const RtInt DefaultColorQuantizerOne;
+extern const RtInt DefaultColorQuantizerMin;
+extern const RtInt DefaultColorQuantizerMax;
+extern const RtFloat DefaultColorQuantizerDA;
 
-extern const RtInt     DefaultDepthQuantizerOne;
+extern const RtInt DefaultDepthQuantizerOne;
 
 /******* ******* ADDITIONAL OPTIONS ******* *******/
-extern const RtInt     DefaultColorSamples;
-extern const RtFloat   DefaultCSMatrixNRGB [9];
-extern const RtFloat   DefaultCSMatrixRGBN [9];
+extern const RtInt DefaultColorSamples;
+extern const RtFloat DefaultCSMatrixNRGB[9];
+extern const RtFloat DefaultCSMatrixRGBN[9];
 
-extern const RtFloat   DefaultRelativeDetail;
+extern const RtFloat DefaultRelativeDetail;
 
 extern const GMANColor DefaultBGColor; // Black
 
@@ -80,9 +79,3 @@ extern const RtInt GMANDisplayYRES;
 extern const RtFloat GMANDisplayPAR;
 
 #endif
-
-
-
-
-
-

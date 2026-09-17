@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -23,10 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANRADIOSITYRENDERER_H
 #define __GMAN_GMANRADIOSITYRENDERER_H 1
-
 
 #include <list>
 #include <map>
@@ -47,54 +45,36 @@
 
 class GMAN_EXPORT GMANRadiosityRenderer : public GMANRenderer {
 private:
+  GMANPatchPolyObjectManager objectManager;
 
-
-  GMANPatchPolyObjectManager		objectManager;
-
-  GMANLinearWorldManager		worldManager;
+  GMANLinearWorldManager worldManager;
 
 public:
   GMANRadiosityRenderer(); // default constructor
 
   ~GMANRadiosityRenderer(); // default destructor
 
-  RtVoid illuminance(RtInt /*i*/,
-		     GMANPoint const &/*p*/,
-		     GMANVector const &/*axis*/,
-		     RtFloat /*angle*/) {}
-  RtVoid illuminate(RtInt /*i*/,
-		    GMANPoint const &/*p*/,
-		    GMANVector const &/*axis*/,
-		    RtFloat /*angle*/) {}
-  RtVoid solar(RtInt /*i*/, GMANVector const &/*axis*/,
-	       RtFloat /*angle*/) {}
+  RtVoid illuminance(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
+  RtVoid illuminate(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
+  RtVoid solar(RtInt /*i*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
   /*
-   * Apply a radiosity model to the world environment and 
+   * Apply a radiosity model to the world environment and
    * return the result in frameBuffer
    */
-  virtual void render(GMANFrameBuffer */*frameBuffer*/,
-		      GMANViewingSystem */*viewingSys*/,
-		      const GMANOptions       &/*options*/,
-		      const GMANAttributes    &/*attributes*/) { };
+  virtual void render(GMANFrameBuffer* /*frameBuffer*/, GMANViewingSystem* /*viewingSys*/,
+                      const GMANOptions& /*options*/, const GMANAttributes& /*attributes*/) {};
 
-    inline RtFloat getDepth(int /*x*/, int /*y*/)  const {
-	// implement me
-	return 0.0;
-    }
-
-
+  inline RtFloat getDepth(int /*x*/, int /*y*/) const {
+    // implement me
+    return 0.0;
+  }
 
   // return its world manager
-  virtual GMANWorldManager *getWorldManager(void);
+  virtual GMANWorldManager* getWorldManager(void);
 
   // return its object manager
-  virtual GMANObjectManager *getObjectManager(void);
-
-
-
+  virtual GMANObjectManager* getObjectManager(void);
 };
 
-
 #endif
-

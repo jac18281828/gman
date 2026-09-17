@@ -30,24 +30,22 @@
 // **************************************************************
 // ******* ******* ******* PRINTING TOOLS ******* ******* *******
 // **************************************************************
-RtVoid GMANASCII::printPL(RtInt n, RtToken tokens[], RtPointer parms[],
-			  RtInt vertex, RtInt varying, RtInt uniform)
-{
-  RtFloat *flt;
-  RtInt *nt;
-  char **cp;
+RtVoid GMANASCII::printPL(RtInt n, RtToken tokens[], RtPointer parms[], RtInt vertex, RtInt varying, RtInt uniform) {
+  RtFloat* flt;
+  RtInt* nt;
+  char** cp;
 
   GMANTokenId id;
   GMANTokenEntry::TokenType tt;
 
-  RtInt i,j;
-  for (i=0; i<n ; i++) {
-    out << "\"" << std::string(tokens[i])<< "\" ";
+  RtInt i, j;
+  for (i = 0; i < n; i++) {
+    out << "\"" << std::string(tokens[i]) << "\" ";
     out << "[ ";
-    id=dictionary.getTokenId(std::string(tokens[i]));
-    tt=dictionary.getType(id);
-    
-    for (j=0; j<(dictionary.allocSize(id, vertex, varying, uniform)); j++ ) {
+    id = dictionary.getTokenId(std::string(tokens[i]));
+    tt = dictionary.getType(id);
+
+    for (j = 0; j < (dictionary.allocSize(id, vertex, varying, uniform)); j++) {
       switch (tt) {
       case GMANTokenEntry::FLOAT:
       case GMANTokenEntry::POINT:
@@ -56,17 +54,17 @@ RtVoid GMANASCII::printPL(RtInt n, RtToken tokens[], RtPointer parms[],
       case GMANTokenEntry::COLOR:
       case GMANTokenEntry::MATRIX:
       case GMANTokenEntry::HPOINT:
-	flt=static_cast<RtFloat *> (parms[i]);
-	out << flt[j] <<" ";
-	break;
+        flt = static_cast<RtFloat*>(parms[i]);
+        out << flt[j] << " ";
+        break;
       case GMANTokenEntry::STRING:
-	cp=static_cast<char **> (parms[i]);
-	out <<"\""<< std::string(cp[j]) <<"\" ";
-	break;
+        cp = static_cast<char**>(parms[i]);
+        out << "\"" << std::string(cp[j]) << "\" ";
+        break;
       case GMANTokenEntry::INTEGER:
-	nt=static_cast<RtInt *> (parms[i]);
-	out << nt[j] << " ";
-	break;
+        nt = static_cast<RtInt*>(parms[i]);
+        out << nt[j] << " ";
+        break;
       }
     }
     out << "] ";
@@ -74,609 +72,444 @@ RtVoid GMANASCII::printPL(RtInt n, RtToken tokens[], RtPointer parms[],
   out << std::endl;
 }
 
-RtVoid GMANASCII::printToken(RtToken t)
-{
-  out << "\"" << std::string(t) << "\" ";
-}
-RtVoid GMANASCII::printCharP(const char *c)
-{
-  out << "\"" << std::string(c) << "\" ";
-}
+RtVoid GMANASCII::printToken(RtToken t) { out << "\"" << std::string(t) << "\" "; }
+RtVoid GMANASCII::printCharP(const char* c) { out << "\"" << std::string(c) << "\" "; }
 
-RtVoid GMANASCII::printArray (RtInt n, RtInt *p)
-{
+RtVoid GMANASCII::printArray(RtInt n, RtInt* p) {
   out << "[ ";
-  for (RtInt i=0; i<n; i++) {
+  for (RtInt i = 0; i < n; i++) {
     out << p[i] << " ";
   }
   out << "] ";
 }
 
-RtVoid GMANASCII::printArray (RtInt n, RtFloat *p)
-{
+RtVoid GMANASCII::printArray(RtInt n, RtFloat* p) {
   out << "[ ";
-  for (RtInt i=0; i<n; i++) {
+  for (RtInt i = 0; i < n; i++) {
     out << p[i] << " ";
   }
   out << "] ";
 }
-
-
-
 
 // *********************************************************************
 // ******* ******* ******* RIB OUTPUT FUNCTIONS  ******* ******* *******
 // *********************************************************************
-RtToken GMANASCII::RiDeclare(const char *name, const char *declaration) 
-{
-  out <<"Declare ";
+RtToken GMANASCII::RiDeclare(const char* name, const char* declaration) {
+  out << "Declare ";
   printCharP(name);
   printCharP(declaration);
-  out <<std::endl;
+  out << std::endl;
 
   return name;
 }
-RtVoid GMANASCII::RiBegin(RtToken name)
-{
-  out.open(name,std::ios::out);
+RtVoid GMANASCII::RiBegin(RtToken name) {
+  out.open(name, std::ios::out);
   if (!out) {
-    GMANError error(RIE_BADFILE,RIE_SEVERE,"Unable to open file");
+    GMANError error(RIE_BADFILE, RIE_SEVERE, "Unable to open file");
     throw error;
   }
 }
-RtVoid GMANASCII::RiEnd(RtVoid)
-{
-  out.close();
-}
-RtVoid GMANASCII::RiFrameBegin(RtInt frame)
-{
-  out <<"FrameBegin "<< frame <<std::endl;
-}
-RtVoid GMANASCII::RiFrameEnd(RtVoid)
-{
-  out <<"FrameEnd"<<std::endl;
-}
-RtVoid GMANASCII::RiWorldBegin(RtVoid)
-{
-  out <<"WorldBegin"<<std::endl;
-}
-RtVoid GMANASCII::RiWorldEnd(RtVoid)
-{
-  out <<"WorldEnd"<<std::endl;
-}
-RtObjectHandle GMANASCII::RiObjectBegin(RtVoid)
-{
-  out <<"ObjectBegin"<<std::endl;
+RtVoid GMANASCII::RiEnd(RtVoid) { out.close(); }
+RtVoid GMANASCII::RiFrameBegin(RtInt frame) { out << "FrameBegin " << frame << std::endl; }
+RtVoid GMANASCII::RiFrameEnd(RtVoid) { out << "FrameEnd" << std::endl; }
+RtVoid GMANASCII::RiWorldBegin(RtVoid) { out << "WorldBegin" << std::endl; }
+RtVoid GMANASCII::RiWorldEnd(RtVoid) { out << "WorldEnd" << std::endl; }
+RtObjectHandle GMANASCII::RiObjectBegin(RtVoid) {
+  out << "ObjectBegin" << std::endl;
 
   return ObjectBegin();
 }
-RtVoid GMANASCII::RiObjectEnd(RtVoid)
-{
-  out <<"ObjectEnd" <<std::endl;
+RtVoid GMANASCII::RiObjectEnd(RtVoid) { out << "ObjectEnd" << std::endl; }
+RtVoid GMANASCII::RiObjectInstance(RtObjectHandle handle) {
+  out << "ObjectInstance " << static_cast<RtInt>(reinterpret_cast<std::uintptr_t>(handle)) << std::endl;
 }
-RtVoid  GMANASCII::RiObjectInstance(RtObjectHandle handle)
-{
-  out <<"ObjectInstance "<< static_cast<RtInt>(reinterpret_cast<std::uintptr_t>(handle)) <<std::endl;
-}
-RtVoid  GMANASCII::RiAttributeBegin(RtVoid)
-{
-  out <<"AttributeBegin"<<std::endl;
-}
-RtVoid  GMANASCII::RiAttributeEnd(RtVoid)
-{
-  out <<"AttributeEnd"<<std::endl;
-}
-RtVoid  GMANASCII::RiTransformBegin(RtVoid)
-{
-  out <<"TransformBegin"<<std::endl;
-}
-RtVoid  GMANASCII::RiTransformEnd(RtVoid)
-{
-  out <<"TransformEnd"<<std::endl;
-}
-RtVoid  GMANASCII::RiSolidBegin(RtToken operation)
-{
-  out <<"SolidBegin ";
+RtVoid GMANASCII::RiAttributeBegin(RtVoid) { out << "AttributeBegin" << std::endl; }
+RtVoid GMANASCII::RiAttributeEnd(RtVoid) { out << "AttributeEnd" << std::endl; }
+RtVoid GMANASCII::RiTransformBegin(RtVoid) { out << "TransformBegin" << std::endl; }
+RtVoid GMANASCII::RiTransformEnd(RtVoid) { out << "TransformEnd" << std::endl; }
+RtVoid GMANASCII::RiSolidBegin(RtToken operation) {
+  out << "SolidBegin ";
   printToken(operation);
   out << std::endl;
 }
-RtVoid  GMANASCII::RiSolidEnd(RtVoid)
-{
-  out <<"SolidEnd"<<std::endl;
-}
-RtVoid  GMANASCII::RiMotionBeginV(RtInt n, RtFloat times[])
-{
-  out <<"MotionBegin ";
-  printArray(n,times);
+RtVoid GMANASCII::RiSolidEnd(RtVoid) { out << "SolidEnd" << std::endl; }
+RtVoid GMANASCII::RiMotionBeginV(RtInt n, RtFloat times[]) {
+  out << "MotionBegin ";
+  printArray(n, times);
   out << std::endl;
 }
-RtVoid  GMANASCII::RiMotionEnd(RtVoid)
-{
-  out <<"MotionEnd"<<std::endl; 
-}
-
-
-
+RtVoid GMANASCII::RiMotionEnd(RtVoid) { out << "MotionEnd" << std::endl; }
 
 // **************************************************************
 // ******* ******* ******* CAMERA OPTIONS ******* ******* *******
 // **************************************************************
-RtVoid  GMANASCII::RiFormat (RtInt xres, RtInt yres, RtFloat aspect)
-{
-  out <<"Format "<< xres <<" "<< yres <<" "<< aspect <<std::endl;
+RtVoid GMANASCII::RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
+  out << "Format " << xres << " " << yres << " " << aspect << std::endl;
 }
-RtVoid  GMANASCII::RiFrameAspectRatio (RtFloat aspect)
-{
-  out <<"FrameAspectRatio "<< aspect <<std::endl; 
+RtVoid GMANASCII::RiFrameAspectRatio(RtFloat aspect) { out << "FrameAspectRatio " << aspect << std::endl; }
+RtVoid GMANASCII::RiScreenWindow(RtFloat left, RtFloat right, RtFloat bottom, RtFloat top) {
+  out << "ScreenWindow " << left << " " << right << " " << bottom << " " << top << std::endl;
 }
-RtVoid  GMANASCII::RiScreenWindow (RtFloat left, RtFloat right, RtFloat bottom, RtFloat top)
-{
-  out <<"ScreenWindow "<< left <<" "<< right <<" "<< bottom <<" "<< top <<std::endl;
+RtVoid GMANASCII::RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
+  out << "CropWindow " << xmin << " " << xmax << " " << ymin << " " << ymax << std::endl;
 }
-RtVoid  GMANASCII::RiCropWindow (RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax)
-{
-  out <<"CropWindow "<< xmin <<" "<< xmax <<" "<< ymin <<" "<< ymax <<std::endl; 
-}
-RtVoid  GMANASCII::RiProjectionV (RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Projection ";
+RtVoid GMANASCII::RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Projection ";
   printToken(name);
-  printPL(n,tokens,parms);
+  printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiClipping(RtFloat hither, RtFloat yon)
-{
-  out <<"Clipping "<< hither <<" "<< yon <<std::endl;
+RtVoid GMANASCII::RiClipping(RtFloat hither, RtFloat yon) { out << "Clipping " << hither << " " << yon << std::endl; }
+RtVoid GMANASCII::RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) {
+  out << "DepthOfField " << fstop << " " << focallength << " " << focaldistance << std::endl;
 }
-RtVoid  GMANASCII::RiDepthOfField (RtFloat fstop, RtFloat focallength, RtFloat focaldistance)
-{
-  out <<"DepthOfField "<< fstop <<" "<< focallength <<" "<< focaldistance <<std::endl;
-}
-RtVoid  GMANASCII::RiShutter(RtFloat min, RtFloat max)
-{
-  out <<"Shutter "<< min <<" "<< max <<" "<<std::endl;
-}
-
-
-
+RtVoid GMANASCII::RiShutter(RtFloat min, RtFloat max) { out << "Shutter " << min << " " << max << " " << std::endl; }
 
 // ***************************************************************
 // ******* ******* ******* DISPLAY OPTIONS ******* ******* *******
 // ***************************************************************
-RtVoid  GMANASCII::RiPixelVariance(RtFloat variation)
-{
-  out <<"PixelVariance "<< variation <<std::endl;
+RtVoid GMANASCII::RiPixelVariance(RtFloat variation) { out << "PixelVariance " << variation << std::endl; }
+RtVoid GMANASCII::RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
+  out << "PixelSamples " << xsamples << " " << ysamples << std::endl;
 }
-RtVoid  GMANASCII::RiPixelSamples(RtFloat xsamples, RtFloat ysamples)
-{
-  out <<"PixelSamples "<< xsamples <<" "<< ysamples <<std::endl;
-}
-RtVoid  GMANASCII::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth)
-{
-  out <<"PixelFilter ";
-  if (filterfunc==RiBoxFilter)
+RtVoid GMANASCII::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
+  out << "PixelFilter ";
+  if (filterfunc == RiBoxFilter)
     out << "box ";
-  else if (filterfunc==RiTriangleFilter)
+  else if (filterfunc == RiTriangleFilter)
     out << "triangle ";
-  else if (filterfunc==RiCatmullRomFilter)
+  else if (filterfunc == RiCatmullRomFilter)
     out << "catmull-rom ";
-  else if (filterfunc==RiSincFilter)
+  else if (filterfunc == RiSincFilter)
     out << "sinc ";
-  else if (filterfunc==RiGaussianFilter)
+  else if (filterfunc == RiGaussianFilter)
     out << "gaussian ";
   out << xwidth << " " << ywidth << std::endl;
 }
-RtVoid  GMANASCII::RiExposure(RtFloat gain, RtFloat gamma)
-{
-  out <<"Exposure "<< gain <<" "<< gamma <<std::endl;
-}
-RtVoid  GMANASCII::RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Imager ";
+RtVoid GMANASCII::RiExposure(RtFloat gain, RtFloat gamma) { out << "Exposure " << gain << " " << gamma << std::endl; }
+RtVoid GMANASCII::RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Imager ";
   printToken(name);
-  printPL(n,tokens,parms);
+  printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl)
-{
-  out <<"Quantize ";
+RtVoid GMANASCII::RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
+  out << "Quantize ";
   printToken(type);
-  out << one <<" "<< min <<" "<< max <<" "<< ampl <<std::endl;
+  out << one << " " << min << " " << max << " " << ampl << std::endl;
 }
-RtVoid  GMANASCII::RiDisplayV(char *name, RtToken type, RtToken mode,
-			      RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Display ";
+RtVoid GMANASCII::RiDisplayV(char* name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Display ";
   printCharP(name);
   printToken(type);
   printToken(mode);
   printPL(n, tokens, parms);
 }
 
-
-
-
 // ******************************************************************
 // ******* ******* ******* ADDITIONAL OPTIONS ******* ******* *******
 // ******************************************************************
-RtVoid  GMANASCII::RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Hider ";
+RtVoid GMANASCII::RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Hider ";
   printToken(type);
-  printPL(n,tokens,parms);
+  printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[])
-{
-  out <<"ColorSamples ";
-  printArray(n*3,nRGB);
-  printArray(n*3,RGBn);
-  out <<std::endl;
+RtVoid GMANASCII::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
+  out << "ColorSamples ";
+  printArray(n * 3, nRGB);
+  printArray(n * 3, RGBn);
+  out << std::endl;
 }
-RtVoid  GMANASCII::RiRelativeDetail(RtFloat relativedetail)
-{
-  out <<"RelativeDetail "<< relativedetail <<std::endl;
-}
-RtVoid  GMANASCII::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Option ";
+RtVoid GMANASCII::RiRelativeDetail(RtFloat relativedetail) { out << "RelativeDetail " << relativedetail << std::endl; }
+RtVoid GMANASCII::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Option ";
   printToken(name);
-  printPL(n,tokens,parms);
+  printPL(n, tokens, parms);
 }
-
-
-
 
 // ******************************************************************
 // ******* ******* ******* SHADING ATTRIBUTES ******* ******* *******
 // ******************************************************************
-RtVoid  GMANASCII::RiColor(RtColor color)
-{
-  out <<"Color ";
-  printArray(colorNComps,color);
-  out <<std::endl;  
+RtVoid GMANASCII::RiColor(RtColor color) {
+  out << "Color ";
+  printArray(colorNComps, color);
+  out << std::endl;
 }
-RtVoid  GMANASCII::RiOpacity(RtColor color)
-{
-  out <<"Opacity ";
-  printArray(colorNComps,color);
-  out <<std::endl;
+RtVoid GMANASCII::RiOpacity(RtColor color) {
+  out << "Opacity ";
+  printArray(colorNComps, color);
+  out << std::endl;
 }
-RtVoid  GMANASCII::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2,
-					RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4)
-{
-  out <<"TextureCoordinates ";
-  out << s1 <<" "<< t1 <<" "<< s2 <<" "<< t2 <<" ";
-  out << s3 <<" "<< t3 <<" "<< s4 <<" "<< t4 <<std::endl;
+RtVoid GMANASCII::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3,
+                                       RtFloat s4, RtFloat t4) {
+  out << "TextureCoordinates ";
+  out << s1 << " " << t1 << " " << s2 << " " << t2 << " ";
+  out << s3 << " " << t3 << " " << s4 << " " << t4 << std::endl;
 }
-RtLightHandle GMANASCII::RiLightSourceV(RtToken /*name*/, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"LightSource ";
+RtLightHandle GMANASCII::RiLightSourceV(RtToken /*name*/, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "LightSource ";
   printPL(n, tokens, parms);
 
   return LightSource();
 }
-RtLightHandle GMANASCII::RiAreaLightSourceV(RtToken /*name*/,
-					    RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"AreaLightSource ";
+RtLightHandle GMANASCII::RiAreaLightSourceV(RtToken /*name*/, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "AreaLightSource ";
   printPL(n, tokens, parms);
 
   return AreaLightSource();
 }
-RtVoid  GMANASCII::RiIlluminate(RtLightHandle light, RtBoolean onoff)
-{
-  out <<"Illuminate ";
-  out <<static_cast<RtInt>(reinterpret_cast<std::uintptr_t>(light)) <<" ";
-  if (onoff==RI_TRUE)
-    out << "1" <<std::endl;
+RtVoid GMANASCII::RiIlluminate(RtLightHandle light, RtBoolean onoff) {
+  out << "Illuminate ";
+  out << static_cast<RtInt>(reinterpret_cast<std::uintptr_t>(light)) << " ";
+  if (onoff == RI_TRUE)
+    out << "1" << std::endl;
   else
-    out << "0" <<std::endl;
+    out << "0" << std::endl;
 }
-RtVoid  GMANASCII::RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Surface ";
+RtVoid GMANASCII::RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Surface ";
   printToken(name);
   printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Atmosphere ";
+RtVoid GMANASCII::RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Atmosphere ";
   printToken(name);
   printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Interior ";
+RtVoid GMANASCII::RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Interior ";
   printToken(name);
   printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Exterior ";
+RtVoid GMANASCII::RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Exterior ";
   printToken(name);
   printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiShadingRate(RtFloat size)
-{
-  out <<"ShadingRate "<< size <<std::endl;
-}
-RtVoid  GMANASCII::RiShadingInterpolation(RtToken type)
-{
-  out <<"ShadingInterpolation ";
+RtVoid GMANASCII::RiShadingRate(RtFloat size) { out << "ShadingRate " << size << std::endl; }
+RtVoid GMANASCII::RiShadingInterpolation(RtToken type) {
+  out << "ShadingInterpolation ";
   printToken(type);
   out << std::endl;
 }
-RtVoid  GMANASCII::RiMatte(RtBoolean onoff)
-{
-  out <<"Matte ";
-  if (onoff==RI_TRUE)
-    out << "1" <<std::endl;
+RtVoid GMANASCII::RiMatte(RtBoolean onoff) {
+  out << "Matte ";
+  if (onoff == RI_TRUE)
+    out << "1" << std::endl;
   else
-    out << "0" <<std::endl;
+    out << "0" << std::endl;
 }
-
-
-
 
 // *******************************************************************
 // ******* ******* ******* GEOMETRY ATTRIBUTES ******* ******* *******
 // *******************************************************************
-RtVoid  GMANASCII::RiBound(RtBound b)
-{
-  out <<"Bound ";
-  printArray(6,b);
+RtVoid GMANASCII::RiBound(RtBound b) {
+  out << "Bound ";
+  printArray(6, b);
   out << std::endl;
 }
-RtVoid  GMANASCII::RiDetail(RtBound d)
-{
-  out <<"Detail ";
-  printArray(6,d);
+RtVoid GMANASCII::RiDetail(RtBound d) {
+  out << "Detail ";
+  printArray(6, d);
   out << std::endl;
 }
-RtVoid  GMANASCII::RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis)
-{
-  out <<"DetailRange "<< minvis <<" "<< lowtran <<" "<< uptran <<" "<< maxvis <<std::endl;
+RtVoid GMANASCII::RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis) {
+  out << "DetailRange " << minvis << " " << lowtran << " " << uptran << " " << maxvis << std::endl;
 }
-RtVoid  GMANASCII::RiGeometricApproximation(RtToken type, RtFloat value)
-{
-  out <<"GeometricApproximation ";
+RtVoid GMANASCII::RiGeometricApproximation(RtToken type, RtFloat value) {
+  out << "GeometricApproximation ";
   printToken(type);
   out << value << std::endl;
 }
-RtVoid  GMANASCII::RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep)
-{
+RtVoid GMANASCII::RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) {
   RtInt i;
-  out <<"Basis [";
-  for (i=0; i<16; i++) {
-    out << ubasis[i/4][i%4] << " ";
+  out << "Basis [";
+  for (i = 0; i < 16; i++) {
+    out << ubasis[i / 4][i % 4] << " ";
   }
   out << "] ";
-  out << ustep <<" ";
+  out << ustep << " ";
   out << "[ ";
-  for (i=0; i<16; i++) {
-    out << vbasis[i/4][i%4] << " ";
+  for (i = 0; i < 16; i++) {
+    out << vbasis[i / 4][i % 4] << " ";
   }
   out << "] ";
-  out << vstep <<std::endl;
+  out << vstep << std::endl;
 }
-RtVoid  GMANASCII::RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[],
-			       RtFloat knot[], RtFloat min[], RtFloat max[], RtInt n[],
-			       RtFloat u[], RtFloat v[], RtFloat w[])
-{
+RtVoid GMANASCII::RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[], RtFloat knot[], RtFloat min[],
+                              RtFloat max[], RtInt n[], RtFloat u[], RtFloat v[], RtFloat w[]) {
   RtInt i;
-  RtInt ttlc=0;
-  for(i=0; i<nloops; i++)
-    ttlc+=ncurves[i];
+  RtInt ttlc = 0;
+  for (i = 0; i < nloops; i++)
+    ttlc += ncurves[i];
 
-  RtInt nbcoords=0;
-  RtInt knotsize=0;
-  for(i=0; i<ttlc; i++) {
-    nbcoords+=n[i];
-    knotsize+=order[i]+n[i];
+  RtInt nbcoords = 0;
+  RtInt knotsize = 0;
+  for (i = 0; i < ttlc; i++) {
+    nbcoords += n[i];
+    knotsize += order[i] + n[i];
   }
 
-  out <<"TrimCurve ";
+  out << "TrimCurve ";
   printArray(nloops, ncurves);
   printArray(ttlc, order);
   printArray(knotsize, knot);
   printArray(ttlc, min);
   printArray(ttlc, max);
   printArray(ttlc, n);
-  printArray(nbcoords,u);
-  printArray(nbcoords,v);
-  printArray(nbcoords,w);
+  printArray(nbcoords, u);
+  printArray(nbcoords, v);
+  printArray(nbcoords, w);
 }
-RtVoid  GMANASCII::RiOrientation(RtToken o)
-{
-  out <<"Orientation ";
+RtVoid GMANASCII::RiOrientation(RtToken o) {
+  out << "Orientation ";
   printToken(o);
   out << std::endl;
 }
-RtVoid  GMANASCII::RiReverseOrientation(RtVoid)
-{
-  out <<"ReverseOrientation"<<std::endl;
-}
-RtVoid  GMANASCII::RiSides(RtInt sides)
-{
-  out <<"Sides "<< sides <<std::endl;
-}
-RtVoid  GMANASCII::RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Displacement ";
+RtVoid GMANASCII::RiReverseOrientation(RtVoid) { out << "ReverseOrientation" << std::endl; }
+RtVoid GMANASCII::RiSides(RtInt sides) { out << "Sides " << sides << std::endl; }
+RtVoid GMANASCII::RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Displacement ";
   printToken(name);
   printPL(n, tokens, parms);
 }
-
-
-
 
 // ***************************************************************
 // ******* ******* ******* TRANSFORMATIONS ******* ******* *******
 // ***************************************************************
-RtVoid  GMANASCII::RiIdentity(RtVoid)
-{
-  out <<"Identity"<<std::endl;
-}
-RtVoid  GMANASCII::RiTransform(RtMatrix transform)
-{
-  out <<"Transform [";
-  for (RtInt i=0; i<16; i++) {
-    out << transform[i/4][i%4] << " ";
+RtVoid GMANASCII::RiIdentity(RtVoid) { out << "Identity" << std::endl; }
+RtVoid GMANASCII::RiTransform(RtMatrix transform) {
+  out << "Transform [";
+  for (RtInt i = 0; i < 16; i++) {
+    out << transform[i / 4][i % 4] << " ";
   }
   out << "]" << std::endl;
 }
-RtVoid  GMANASCII::RiConcatTransform(RtMatrix transform)
-{
-  out <<"ConcatTransform [";
-  for (RtInt i=0; i<16; i++) {
-    out << transform[i/4][i%4] << " ";
+RtVoid GMANASCII::RiConcatTransform(RtMatrix transform) {
+  out << "ConcatTransform [";
+  for (RtInt i = 0; i < 16; i++) {
+    out << transform[i / 4][i % 4] << " ";
   }
   out << "]" << std::endl;
 }
-RtVoid  GMANASCII::RiPerspective(RtFloat fov)
-{
-  out <<"Perspective "<< fov <<std::endl;
+RtVoid GMANASCII::RiPerspective(RtFloat fov) { out << "Perspective " << fov << std::endl; }
+RtVoid GMANASCII::RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) {
+  out << "Translate " << dx << " " << dy << " " << dz << " " << std::endl;
 }
-RtVoid  GMANASCII::RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz)
-{
-  out <<"Translate "<< dx <<" "<< dy <<" "<< dz <<" "<<std::endl;
+RtVoid GMANASCII::RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
+  out << "Rotate " << angle << " " << dx << " " << dy << " " << dz << " " << std::endl;
 }
-RtVoid  GMANASCII::RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz)
-{
-  out <<"Rotate "<< angle <<" "<< dx <<" "<< dy <<" "<< dz <<" "<<std::endl;
+RtVoid GMANASCII::RiScale(RtFloat sx, RtFloat sy, RtFloat sz) {
+  out << "Scale " << sx << " " << sy << " " << sz << " " << std::endl;
 }
-RtVoid  GMANASCII::RiScale(RtFloat sx, RtFloat sy, RtFloat sz)
-{
-  out <<"Scale "<< sx <<" "<< sy <<" "<< sz <<" "<<std::endl;
+RtVoid GMANASCII::RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2) {
+  out << "Skew " << angle << " ";
+  out << dx1 << " " << dy1 << " " << dz1 << " ";
+  out << dx2 << " " << dy2 << " " << dz2 << std::endl;
 }
-RtVoid  GMANASCII::RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1,
-			  RtFloat dx2, RtFloat dy2, RtFloat dz2)
-{
-  out <<"Skew " << angle << " ";
-  out << dx1 <<" "<< dy1 <<" "<< dz1 <<" ";
-  out << dx2 <<" "<< dy2 <<" "<< dz2 <<std::endl;
-}
-RtVoid  GMANASCII::RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Deformation ";
+RtVoid GMANASCII::RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Deformation ";
   printToken(name);
   printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiCoordinateSystem(RtToken space)
-{
-  out <<"CoordinateSystem ";
+RtVoid GMANASCII::RiCoordinateSystem(RtToken space) {
+  out << "CoordinateSystem ";
   printToken(space);
   out << std::endl;
 }
-RtVoid  GMANASCII::RiCoordSysTransform(RtToken space)
-{
-  out <<"CoordSysTransform ";
+RtVoid GMANASCII::RiCoordSysTransform(RtToken space) {
+  out << "CoordSysTransform ";
   printToken(space);
   out << std::endl;
 }
-RtPoint *GMANASCII::RiTransformPoints(RtToken /*fromspace*/, RtToken /*tospace*/, RtInt /*n*/,
-				      RtPoint /*points*/[])
-{
+RtPoint* GMANASCII::RiTransformPoints(RtToken /*fromspace*/, RtToken /*tospace*/, RtInt /*n*/, RtPoint /*points*/[]) {
   GMANError error(RIE_CONSISTENCY, RIE_WARNING, "RiTransformPoints is a C api only call");
   throw error;
-  return (RtPoint *) 0;
+  return (RtPoint*)0;
 }
-RtVoid GMANASCII::RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Attribute ";
+RtVoid GMANASCII::RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Attribute ";
   printToken(name);
   printPL(n, tokens, parms);
 }
-
-
-
 
 // **********************************************************
 // ******* ******* ******* PRIMITIVES ******* ******* *******
 // **********************************************************
-RtVoid  GMANASCII::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Polygon ";
+RtVoid GMANASCII::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Polygon ";
   printPL(n, tokens, parms, nverts, nverts);
 }
-RtVoid  GMANASCII::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], 
-				     RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"GeneralPolygon ";
-  printArray(nloops,nverts);
+RtVoid GMANASCII::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "GeneralPolygon ";
+  printArray(nloops, nverts);
 
-  RtInt nbpts=0;
-  for (RtInt i=0; i<nloops; i++) {
-    nbpts+=nverts[i];
+  RtInt nbpts = 0;
+  for (RtInt i = 0; i < nloops; i++) {
+    nbpts += nverts[i];
   }
   printPL(n, tokens, parms, nbpts, nbpts);
 }
-RtVoid  GMANASCII::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[],
-				     RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"PointsPolygons ";
-  printArray(npolys,nverts);
+RtVoid GMANASCII::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[],
+                                    RtPointer parms[]) {
+  out << "PointsPolygons ";
+  printArray(npolys, nverts);
 
   RtInt i;
-  RtInt nbpts=0;
-  for (i=0; i<npolys; i++) {
-    nbpts+=nverts[i];
+  RtInt nbpts = 0;
+  for (i = 0; i < npolys; i++) {
+    nbpts += nverts[i];
   }
-  printArray(nbpts,verts);
+  printArray(nbpts, verts);
 
-  RtInt psize=0;
-  for (i=0; i<nbpts; i++) {
-    if (psize<verts[i])
-      psize=verts[i];
+  RtInt psize = 0;
+  for (i = 0; i < nbpts; i++) {
+    if (psize < verts[i])
+      psize = verts[i];
   }
-  printPL(n, tokens, parms, psize+1, psize+1, npolys);
+  printPL(n, tokens, parms, psize + 1, psize + 1, npolys);
 }
-RtVoid  GMANASCII::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[],
-					    RtInt verts[],
-					    RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"PointsGeneralpolygons ";
-  printArray(npolys,nloops);
+RtVoid GMANASCII::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
+                                           RtToken tokens[], RtPointer parms[]) {
+  out << "PointsGeneralpolygons ";
+  printArray(npolys, nloops);
 
   RtInt i;
-  RtInt nbvert=0;
-  for (i=0; i<npolys; i++) {
-    nbvert+=nloops[i];
+  RtInt nbvert = 0;
+  for (i = 0; i < npolys; i++) {
+    nbvert += nloops[i];
   }
-  printArray(nbvert,nverts);
+  printArray(nbvert, nverts);
 
-  RtInt nv=0;
-  for (i=0; i<nbvert; i++) {
-    nv+=nverts[i];
+  RtInt nv = 0;
+  for (i = 0; i < nbvert; i++) {
+    nv += nverts[i];
   }
-  printArray(nv,verts);
+  printArray(nv, verts);
 
-  RtInt psize=0;
-  for (i=0; i<nv; i++) {
-    if (psize<verts[i])
-      psize=verts[i];
+  RtInt psize = 0;
+  for (i = 0; i < nv; i++) {
+    if (psize < verts[i])
+      psize = verts[i];
   }
-  printPL(n, tokens, parms, psize+1, psize+1, npolys);
+  printPL(n, tokens, parms, psize + 1, psize + 1, npolys);
 }
-RtVoid  GMANASCII::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[])
-{
+RtVoid GMANASCII::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
   RtInt nb;
-  if (type==RI_BILINEAR)
-    nb=4;
-  else if (type==RI_BICUBIC)
-    nb=16;
+  if (type == RI_BILINEAR)
+    nb = 4;
+  else if (type == RI_BICUBIC)
+    nb = 16;
   else {
     GMANError error(RIE_BADTOKEN, RIE_WARNING, "Unknown RiPatch type specified");
     throw error;
   }
 
-  out <<"Patch ";
+  out << "Patch ";
   printToken(type);
   printPL(n, tokens, parms, nb, 4);
 }
-RtVoid  GMANASCII::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
-				RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[], 
-				RtPointer parms[])
-{
-  out <<"PatchMesh ";
+RtVoid GMANASCII::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n,
+                               RtToken tokens[], RtPointer parms[]) {
+  out << "PatchMesh ";
   printToken(type);
   out << nu << " ";
   printToken(uwrap);
@@ -684,172 +517,145 @@ RtVoid  GMANASCII::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap,
   printToken(vwrap);
 
   RtInt nuptch, nvptch;
-  RtInt ii=0;
-  if (type==RI_BILINEAR) {
-    if (uwrap==RI_PERIODIC) {
-      nuptch=nu;
-    } else if (uwrap==RI_NONPERIODIC) {
-      nuptch=nu-1;
-      ii+=1;
+  RtInt ii = 0;
+  if (type == RI_BILINEAR) {
+    if (uwrap == RI_PERIODIC) {
+      nuptch = nu;
+    } else if (uwrap == RI_NONPERIODIC) {
+      nuptch = nu - 1;
+      ii += 1;
     } else {
-      GMANError error(RIE_BADTOKEN, RIE_WARNING,
-		      "Unknown RiPatchMesh uwrap token specified");
+      GMANError error(RIE_BADTOKEN, RIE_WARNING, "Unknown RiPatchMesh uwrap token specified");
       throw error;
     }
-    if (vwrap==RI_PERIODIC) {
-      nvptch=nv;
-    } else if (vwrap==RI_NONPERIODIC) {
-      nvptch=nv-1;
-      ii+=1;
+    if (vwrap == RI_PERIODIC) {
+      nvptch = nv;
+    } else if (vwrap == RI_NONPERIODIC) {
+      nvptch = nv - 1;
+      ii += 1;
     } else {
-      GMANError error(RIE_BADTOKEN, RIE_WARNING,
-		      "Unknown RiPatchMesh vwrap token specified");
+      GMANError error(RIE_BADTOKEN, RIE_WARNING, "Unknown RiPatchMesh vwrap token specified");
       throw error;
     }
-    ii+=nuptch+nvptch;
+    ii += nuptch + nvptch;
 
+  } else if (type == RI_BICUBIC) {
+    RtInt nustep = steps.top().uStep;
+    RtInt nvstep = steps.top().vStep;
 
-  } else if (type==RI_BICUBIC) {
-    RtInt nustep=steps.top().uStep;
-    RtInt nvstep=steps.top().vStep;
-    
-    if (uwrap==RI_PERIODIC) {
-      nuptch=nu/nustep;
-    } else if (uwrap==RI_NONPERIODIC) {
-      nuptch=(nu-4)/nustep +1;
-      ii+=1;
+    if (uwrap == RI_PERIODIC) {
+      nuptch = nu / nustep;
+    } else if (uwrap == RI_NONPERIODIC) {
+      nuptch = (nu - 4) / nustep + 1;
+      ii += 1;
     } else {
-      GMANError error(RIE_BADTOKEN, RIE_WARNING,
-		      "Unknown RiPatchMesh uwrap token specified");
+      GMANError error(RIE_BADTOKEN, RIE_WARNING, "Unknown RiPatchMesh uwrap token specified");
       throw error;
     }
-    if (vwrap==RI_PERIODIC) {
-      nvptch=nv/nvstep;
-    } else if (vwrap==RI_NONPERIODIC) {
-      nvptch=(nv-4)/nvstep +1;
-      ii+=1;
+    if (vwrap == RI_PERIODIC) {
+      nvptch = nv / nvstep;
+    } else if (vwrap == RI_NONPERIODIC) {
+      nvptch = (nv - 4) / nvstep + 1;
+      ii += 1;
     } else {
-      GMANError error(RIE_BADTOKEN, RIE_WARNING,
-		      "Unknown RiPatchMesh vwrap token specified");
+      GMANError error(RIE_BADTOKEN, RIE_WARNING, "Unknown RiPatchMesh vwrap token specified");
       throw error;
     }
-    ii+=nuptch+nvptch;
+    ii += nuptch + nvptch;
 
-
-  
   } else {
-    GMANError error(RIE_BADTOKEN, RIE_WARNING,
-		    "Unknown RiPatchMesh type specified");
+    GMANError error(RIE_BADTOKEN, RIE_WARNING, "Unknown RiPatchMesh type specified");
     throw error;
   }
-  printPL(n, tokens, parms, nu*nv, ii, nuptch*nvptch);
+  printPL(n, tokens, parms, nu * nv, ii, nuptch * nvptch);
 }
-RtVoid  GMANASCII::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[],
-			      RtFloat umin, RtFloat umax,
-			      RtInt nv, RtInt vorder, RtFloat vknot[],
-			      RtFloat vmin, RtFloat vmax,
-			      RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"NuPatch ";
-  out << nu <<" "<< uorder << " ";
-  printArray(nu+uorder,uknot);
-  out << umin <<" "<< umax <<" ";
+RtVoid GMANASCII::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv,
+                             RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtInt n, RtToken tokens[],
+                             RtPointer parms[]) {
+  out << "NuPatch ";
+  out << nu << " " << uorder << " ";
+  printArray(nu + uorder, uknot);
+  out << umin << " " << umax << " ";
 
-  out << nv <<" "<< vorder << " ";
-  printArray(nv+vorder,vknot);
-  out << vmin <<" "<< vmax <<" ";
-  printPL(n, tokens, parms, nu*nv, (2+nu-uorder)*(2+nv-vorder), (1+nu-uorder)*(1+nv-vorder));
+  out << nv << " " << vorder << " ";
+  printArray(nv + vorder, vknot);
+  out << vmin << " " << vmax << " ";
+  printPL(n, tokens, parms, nu * nv, (2 + nu - uorder) * (2 + nv - vorder), (1 + nu - uorder) * (1 + nv - vorder));
 }
-RtVoid  GMANASCII::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-			     RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Sphere "<< radius <<" "<< zmin<<" "<< zmax <<" "<< tmax <<" ";
+RtVoid GMANASCII::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
+                            RtPointer parms[]) {
+  out << "Sphere " << radius << " " << zmin << " " << zmax << " " << tmax << " ";
   printPL(n, tokens, parms, 4, 4);
 }
-RtVoid  GMANASCII::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax,
-			   RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Cone "<< height <<" "<< radius <<" "<< tmax <<" ";
+RtVoid GMANASCII::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Cone " << height << " " << radius << " " << tmax << " ";
   printPL(n, tokens, parms, 4, 4);
 }
-RtVoid  GMANASCII::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-			       RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Cylinder "<< radius <<" "<< zmin <<" "<< zmax <<" "<< tmax <<" ";
+RtVoid GMANASCII::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
+                              RtPointer parms[]) {
+  out << "Cylinder " << radius << " " << zmin << " " << zmax << " " << tmax << " ";
   printPL(n, tokens, parms, 4, 4);
 }
-RtVoid  GMANASCII::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax,
-				  RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Hyperboloid ";
-  printArray(3,point1);
-  printArray(3,point2);
+RtVoid GMANASCII::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
+                                 RtPointer parms[]) {
+  out << "Hyperboloid ";
+  printArray(3, point1);
+  printArray(3, point2);
   out << tmax << " ";
   printPL(n, tokens, parms, 4, 4);
 }
-RtVoid  GMANASCII::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-				 RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Paraboloid "<< rmax <<" "<< zmin <<" "<< zmax <<" "<< tmax <<" ";
+RtVoid GMANASCII::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
+                                RtPointer parms[]) {
+  out << "Paraboloid " << rmax << " " << zmin << " " << zmax << " " << tmax << " ";
   printPL(n, tokens, parms, 4, 4);
 }
-RtVoid  GMANASCII::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax,
-			   RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Disk "<< height <<" "<< radius <<" "<< tmax <<" ";
+RtVoid GMANASCII::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Disk " << height << " " << radius << " " << tmax << " ";
   printPL(n, tokens, parms, 4, 4);
 }
-RtVoid  GMANASCII::RiTorusV(RtFloat majrad,RtFloat minrad,RtFloat phimin,RtFloat phimax,
-			    RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Torus "<< majrad <<" "<< minrad <<" "<< phimin <<" "<< phimax <<" "<< tmax <<" ";
+RtVoid GMANASCII::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, RtInt n,
+                           RtToken tokens[], RtPointer parms[]) {
+  out << "Torus " << majrad << " " << minrad << " " << phimin << " " << phimax << " " << tmax << " ";
   printPL(n, tokens, parms, 4, 4);
 }
-RtVoid  GMANASCII::RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[],
-			     RtInt nflt, RtFloat flt[],
-			     RtInt nstr, RtToken str[], 
-			     RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Blobby " << nleaf << " ";
-  printArray(ncode,code);
-  printArray(nflt,flt);
-  for(RtInt i=0; i<nstr; i++)
+RtVoid GMANASCII::RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr,
+                            RtToken str[], RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Blobby " << nleaf << " ";
+  printArray(ncode, code);
+  printArray(nflt, flt);
+  for (RtInt i = 0; i < nstr; i++)
     printToken(str[i]);
   printPL(n, tokens, parms, nleaf, nleaf);
 }
-RtVoid  GMANASCII::RiPointsV(RtInt npoints,
-			     RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"Points ";
+RtVoid GMANASCII::RiPointsV(RtInt npoints, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Points ";
   printPL(n, tokens, parms, npoints, npoints);
 }
-RtVoid  GMANASCII::RiCurvesV(RtToken type, RtInt ncurves,
-			     RtInt nvertices[], RtToken wrap,
-			     RtInt n, RtToken tokens[], RtPointer parms[])
-{
+RtVoid GMANASCII::RiCurvesV(RtToken type, RtInt ncurves, RtInt nvertices[], RtToken wrap, RtInt n, RtToken tokens[],
+                            RtPointer parms[]) {
   RtInt i;
-  RtInt vval=0;
-  if (type==RI_LINEAR) {
-    if (wrap==RI_PERIODIC) {
-      for(i=0; i<ncurves; i++) {
-	vval+=nvertices[i];
+  RtInt vval = 0;
+  if (type == RI_LINEAR) {
+    if (wrap == RI_PERIODIC) {
+      for (i = 0; i < ncurves; i++) {
+        vval += nvertices[i];
       }
-    } else if (wrap==RI_NONPERIODIC) {
-      for(i=0; i<ncurves; i++) {
-	vval+=nvertices[i];
+    } else if (wrap == RI_NONPERIODIC) {
+      for (i = 0; i < ncurves; i++) {
+        vval += nvertices[i];
       }
     } else {
       GMANError error(RIE_BADTOKEN, RIE_WARNING, "Unknown RiCurves wrap mode");
       throw error;
     }
-  } else if (type==RI_CUBIC) {
-    if (wrap==RI_PERIODIC) {
-      for(i=0; i<ncurves; i++) {
-	vval+=(nvertices[i]-4)/steps.top().vStep;
+  } else if (type == RI_CUBIC) {
+    if (wrap == RI_PERIODIC) {
+      for (i = 0; i < ncurves; i++) {
+        vval += (nvertices[i] - 4) / steps.top().vStep;
       }
-    } else if (wrap==RI_NONPERIODIC) {
-      for(i=0; i<ncurves; i++) {
-	vval+=2 + (nvertices[i]-4)/steps.top().vStep;
+    } else if (wrap == RI_NONPERIODIC) {
+      for (i = 0; i < ncurves; i++) {
+        vval += 2 + (nvertices[i] - 4) / steps.top().vStep;
       }
     } else {
       GMANError error(RIE_BADTOKEN, RIE_WARNING, "Unknown RiCurves wrap mode");
@@ -860,223 +666,204 @@ RtVoid  GMANASCII::RiCurvesV(RtToken type, RtInt ncurves,
     throw error;
   }
 
-  out <<"Curves ";
+  out << "Curves ";
   printToken(type);
-  printArray(ncurves,nvertices);
+  printArray(ncurves, nvertices);
   printToken(wrap);
 
-  RtInt nbpts=0;
-  for(i=0; i<ncurves; i++) {
-    nbpts+=nvertices[i];
+  RtInt nbpts = 0;
+  for (i = 0; i < ncurves; i++) {
+    nbpts += nvertices[i];
   }
   printPL(n, tokens, parms, nbpts, vval, ncurves);
 }
-RtVoid  GMANASCII::RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[],
-				      RtInt verts[],
-				      RtInt ntags, RtToken tags[], RtInt numargs[],
-				      RtInt intargs[], RtFloat floatargs[],
-				      RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"SubdivisionMesh ";
+RtVoid GMANASCII::RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[],
+                                     RtInt numargs[], RtInt intargs[], RtFloat floatargs[], RtInt n, RtToken tokens[],
+                                     RtPointer parms[]) {
+  out << "SubdivisionMesh ";
   printToken(mask);
-  printArray(nf,nverts);
+  printArray(nf, nverts);
 
   RtInt i;
-  RtInt vsize=0;
-  for(i=0; i<nf; i++) {
-    vsize+=nverts[i];
+  RtInt vsize = 0;
+  for (i = 0; i < nf; i++) {
+    vsize += nverts[i];
   }
-  printArray(vsize,verts);
-  
-  for(i=0; i<ntags; i++) {
+  printArray(vsize, verts);
+
+  for (i = 0; i < ntags; i++) {
     printToken(tags[i]);
   }
-  printArray(ntags*2,numargs);
+  printArray(ntags * 2, numargs);
 
-  RtInt isize=0, fsize=0;
-  for(i=0; i<ntags*2; i++) {
-    if (i%2==0)
-      isize+=numargs[i];
+  RtInt isize = 0, fsize = 0;
+  for (i = 0; i < ntags * 2; i++) {
+    if (i % 2 == 0)
+      isize += numargs[i];
     else
-      fsize+=numargs[i];
+      fsize += numargs[i];
   }
-  printArray(isize,intargs);
-  printArray(fsize,floatargs);
+  printArray(isize, intargs);
+  printArray(fsize, floatargs);
 
-  RtInt psize=0;
-  for(i=0; i<vsize; i++) {
-    if (psize<verts[i])
-      psize=verts[i];
+  RtInt psize = 0;
+  for (i = 0; i < vsize; i++) {
+    if (psize < verts[i])
+      psize = verts[i];
   }
-  printPL(n, tokens, parms, psize+1, psize+1, nf);
+  printPL(n, tokens, parms, psize + 1, psize + 1, nf);
 }
-RtVoid  GMANASCII::RiProcedural(RtPointer data, RtBound bound,
-				RtVoid (*subdivfunc)(RtPointer, RtFloat),
-				RtVoid (*/*freefunc*/)(RtPointer))
-{
+RtVoid GMANASCII::RiProcedural(RtPointer data, RtBound bound, RtVoid (*subdivfunc)(RtPointer, RtFloat),
+                               RtVoid (* /*freefunc*/)(RtPointer)) {
   std::string sf;
   RtInt a;
-  if (subdivfunc==RiProcDelayedReadArchive) {
-    sf="DelayedReadArchive";
-    a=1;
-  } else if (subdivfunc==RiProcRunProgram) {
-    sf="ReadProgram";
-    a=2;
-  } else if (subdivfunc==RiProcDynamicLoad) {
-    sf="DynamicLoad";
-    a=3;
+  if (subdivfunc == RiProcDelayedReadArchive) {
+    sf = "DelayedReadArchive";
+    a = 1;
+  } else if (subdivfunc == RiProcRunProgram) {
+    sf = "ReadProgram";
+    a = 2;
+  } else if (subdivfunc == RiProcDynamicLoad) {
+    sf = "DynamicLoad";
+    a = 3;
   } else {
-    GMANError error(RIE_CONSISTENCY,RIE_WARNING,"Unknow procedural function");
+    GMANError error(RIE_CONSISTENCY, RIE_WARNING, "Unknow procedural function");
     throw error;
   }
 
-  out <<"Procedural ";
+  out << "Procedural ";
   switch (a) {
   case 1:
-    out << sf <<" [ "<< std::string(&((char *) data)[0]) <<" ] [ "; 
-    for (RtInt i=0; i<6 ; i++)
-      out << bound[i] <<" ";
+    out << sf << " [ " << std::string(&((char*)data)[0]) << " ] [ ";
+    for (RtInt i = 0; i < 6; i++)
+      out << bound[i] << " ";
     out << "]" << std::endl;
     break;
   case 2:
-    out << sf <<" [ ";
-    out << std::string(&((char *) data)[0]) <<" ";
-    out << std::string(&((char *) data)[1]) <<" ] [ ";
-    for (RtInt i=0; i<6 ; i++)
-      out << bound[i] <<" ";
+    out << sf << " [ ";
+    out << std::string(&((char*)data)[0]) << " ";
+    out << std::string(&((char*)data)[1]) << " ] [ ";
+    for (RtInt i = 0; i < 6; i++)
+      out << bound[i] << " ";
     out << "]" << std::endl;
     break;
   case 3:
-    out << sf <<" [ ";
-    out << std::string(&((char *) data)[0]) <<" ";
-    out << std::string(&((char *) data)[1]) <<" ] [ ";
-    for (RtInt i=0; i<6 ; i++)
-      out << bound[i] <<" ";
+    out << sf << " [ ";
+    out << std::string(&((char*)data)[0]) << " ";
+    out << std::string(&((char*)data)[1]) << " ] [ ";
+    for (RtInt i = 0; i < 6; i++)
+      out << bound[i] << " ";
     out << "]" << std::endl;
     break;
   }
 }
-RtVoid  GMANASCII::RiGeometryV(RtToken type, RtInt n, RtToken tokens[], 
-			       RtPointer parms[])
-{
-  out <<"Geometry ";
+RtVoid GMANASCII::RiGeometryV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "Geometry ";
   printToken(type);
   printPL(n, tokens, parms);
 }
 
-
-
-
 // *******************************************************
 // ******* ******* ******* TEXTURE ******* ******* *******
 // *******************************************************
-RtVoid  GMANASCII::RiMakeTextureV(char *pic, char *tex, RtToken swrap, RtToken twrap,
-				  RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
-				  RtInt n, RtToken tokens[], RtPointer parms[])
-{
+RtVoid GMANASCII::RiMakeTextureV(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
+                                 RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
   std::string ff;
-  if (filterfunc==RiGaussianFilter)
-    ff="gaussian";
-  else if (filterfunc==RiBoxFilter)
-    ff="box";
-  else if (filterfunc==RiTriangleFilter)
-    ff="triangle";
-  else if (filterfunc==RiCatmullRomFilter)
-    ff="catmull-rom";
-  else if (filterfunc==RiSincFilter)
-    ff="sinc";
+  if (filterfunc == RiGaussianFilter)
+    ff = "gaussian";
+  else if (filterfunc == RiBoxFilter)
+    ff = "box";
+  else if (filterfunc == RiTriangleFilter)
+    ff = "triangle";
+  else if (filterfunc == RiCatmullRomFilter)
+    ff = "catmull-rom";
+  else if (filterfunc == RiSincFilter)
+    ff = "sinc";
   else {
     GMANError error(RIE_CONSISTENCY, RIE_WARNING, "Unknown filter function");
     throw error;
   }
 
-  out <<"MakeTexture ";
+  out << "MakeTexture ";
   printCharP(pic);
   printCharP(tex);
   printToken(swrap);
   printToken(twrap);
-  out << ff <<" "<< swidth <<" "<< twidth <<" ";
+  out << ff << " " << swidth << " " << twidth << " ";
   printPL(n, tokens, parms);
 }
 
 // Declared in gmanascii.h since 2001 and never defined, which is why linking
 // libgmanrib was never attempted. Mirrors RiMakeTextureV.
-RtVoid  GMANASCII::RiMakeBumpV(char *pic, char *tex, RtToken swrap, RtToken twrap,
-			       RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
-			       RtInt n, RtToken tokens[], RtPointer parms[])
-{
+RtVoid GMANASCII::RiMakeBumpV(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
+                              RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
   std::string ff;
-  if (filterfunc==RiGaussianFilter)
-    ff="gaussian";
-  else if (filterfunc==RiBoxFilter)
-    ff="box";
-  else if (filterfunc==RiTriangleFilter)
-    ff="triangle";
-  else if (filterfunc==RiCatmullRomFilter)
-    ff="catmull-rom";
-  else if (filterfunc==RiSincFilter)
-    ff="sinc";
+  if (filterfunc == RiGaussianFilter)
+    ff = "gaussian";
+  else if (filterfunc == RiBoxFilter)
+    ff = "box";
+  else if (filterfunc == RiTriangleFilter)
+    ff = "triangle";
+  else if (filterfunc == RiCatmullRomFilter)
+    ff = "catmull-rom";
+  else if (filterfunc == RiSincFilter)
+    ff = "sinc";
   else {
     GMANError error(RIE_CONSISTENCY, RIE_WARNING, "Unknown filter function");
     throw error;
   }
 
-  out <<"MakeBump ";
+  out << "MakeBump ";
   printCharP(pic);
   printCharP(tex);
   printToken(swrap);
   printToken(twrap);
-  out << ff <<" "<< swidth <<" "<< twidth <<" ";
+  out << ff << " " << swidth << " " << twidth << " ";
   printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiMakeLatLongEnvironmentV(char *pic, char *tex, RtFilterFunc filterfunc,
-					     RtFloat swidth, RtFloat twidth,
-					     RtInt n, RtToken tokens[], RtPointer parms[])
-{
+RtVoid GMANASCII::RiMakeLatLongEnvironmentV(char* pic, char* tex, RtFilterFunc filterfunc, RtFloat swidth,
+                                            RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
   std::string ff;
-  if (filterfunc==RiGaussianFilter)
-    ff="gaussian";
-  else if (filterfunc==RiBoxFilter)
-    ff="box";
-  else if (filterfunc==RiTriangleFilter)
-    ff="triangle";
-  else if (filterfunc==RiCatmullRomFilter)
-    ff="catmull-rom";
-  else if (filterfunc==RiSincFilter)
-    ff="sinc";
+  if (filterfunc == RiGaussianFilter)
+    ff = "gaussian";
+  else if (filterfunc == RiBoxFilter)
+    ff = "box";
+  else if (filterfunc == RiTriangleFilter)
+    ff = "triangle";
+  else if (filterfunc == RiCatmullRomFilter)
+    ff = "catmull-rom";
+  else if (filterfunc == RiSincFilter)
+    ff = "sinc";
   else {
     GMANError error(RIE_CONSISTENCY, RIE_WARNING, "Unknown filter function");
     throw error;
   }
 
-  out <<"MakeLatLongEnvironment ";
+  out << "MakeLatLongEnvironment ";
   printCharP(pic);
   printCharP(tex);
-  out << ff <<" "<< swidth <<" "<< twidth <<" ";
+  out << ff << " " << swidth << " " << twidth << " ";
   printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiMakeCubeFaceEnvironmentV(char *px, char *nx, char *py, char *ny,
-					      char *pz, char *nz, char *tex, RtFloat fov,
-					      RtFilterFunc filterfunc, RtFloat swidth, 
-					      RtFloat twidth,
-					      RtInt n, RtToken tokens[], RtPointer parms[])
-{
+RtVoid GMANASCII::RiMakeCubeFaceEnvironmentV(char* px, char* nx, char* py, char* ny, char* pz, char* nz, char* tex,
+                                             RtFloat fov, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
+                                             RtInt n, RtToken tokens[], RtPointer parms[]) {
   std::string ff;
-  if (filterfunc==RiGaussianFilter)
-    ff="gaussian";
-  else if (filterfunc==RiBoxFilter)
-    ff="box";
-  else if (filterfunc==RiTriangleFilter)
-    ff="triangle";
-  else if (filterfunc==RiCatmullRomFilter)
-    ff="catmull-rom";
-  else if (filterfunc==RiSincFilter)
-    ff="sinc";
+  if (filterfunc == RiGaussianFilter)
+    ff = "gaussian";
+  else if (filterfunc == RiBoxFilter)
+    ff = "box";
+  else if (filterfunc == RiTriangleFilter)
+    ff = "triangle";
+  else if (filterfunc == RiCatmullRomFilter)
+    ff = "catmull-rom";
+  else if (filterfunc == RiSincFilter)
+    ff = "sinc";
   else {
     GMANError error(RIE_CONSISTENCY, RIE_WARNING, "Unknown filter function");
     throw error;
   }
-  out <<"MakeCubeFaceEnvironment ";
+  out << "MakeCubeFaceEnvironment ";
   printCharP(px);
   printCharP(nx);
   printCharP(py);
@@ -1084,32 +871,29 @@ RtVoid  GMANASCII::RiMakeCubeFaceEnvironmentV(char *px, char *nx, char *py, char
   printCharP(pz);
   printCharP(nz);
   printCharP(tex);
-  out << fov <<" "<< ff <<" "<< swidth <<" "<< twidth <<" ";
+  out << fov << " " << ff << " " << swidth << " " << twidth << " ";
   printPL(n, tokens, parms);
 }
-RtVoid  GMANASCII::RiMakeShadowV(char *pic, char *tex,
-				 RtInt n, RtToken tokens[], RtPointer parms[])
-{
-  out <<"MakeShadow ";
+RtVoid GMANASCII::RiMakeShadowV(char* pic, char* tex, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  out << "MakeShadow ";
   printCharP(pic);
   printCharP(tex);
   printPL(n, tokens, parms);
 }
 
-
-
-
 // *************************************************************
 // ******* ******* ******* ERROR HANDLER ******* ******* *******
 // *************************************************************
-RtVoid GMANASCII::RiErrorHandler(RtErrorHandler handler)
-{
+RtVoid GMANASCII::RiErrorHandler(RtErrorHandler handler) {
   std::string ch;
-  if (handler==RiErrorIgnore) ch="\"ignore\"";
-  else if (handler==RiErrorPrint) ch="\"print\"";
-  else if (handler==RiErrorAbort) ch="\"abort\"";
+  if (handler == RiErrorIgnore)
+    ch = "\"ignore\"";
+  else if (handler == RiErrorPrint)
+    ch = "\"print\"";
+  else if (handler == RiErrorAbort)
+    ch = "\"abort\"";
   else {
-    throw GMANError(RIE_CONSISTENCY,RIE_WARNING,"Unknown Error handler");
+    throw GMANError(RIE_CONSISTENCY, RIE_WARNING, "Unknown Error handler");
   }
-  out <<"ErrorHandler "<< ch <<std::endl;
+  out << "ErrorHandler " << ch << std::endl;
 }

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANVOLUMESHADER_H
 #define __GMAN_GMANVOLUMESHADER_H 1
-
 
 #include <list>
 #include <map>
@@ -45,18 +43,15 @@
  *
  */
 
-class GMAN_EXPORT  GMANVolumeShader : public GMANShader
-{
+class GMAN_EXPORT GMANVolumeShader : public GMANShader {
 public:
   GMANVolumeShader(); // default constructor
 
   virtual ~GMANVolumeShader(); // default destructor
 
-   /* output of volume shader */
-  virtual const GMANColor &computeCi(GMANVolumeEnv &ve)=0; 
-  virtual const GMANColor &computeOi(GMANVolumeEnv &ve)=0;
+  /* output of volume shader */
+  virtual const GMANColor& computeCi(GMANVolumeEnv& ve) = 0;
+  virtual const GMANColor& computeOi(GMANVolumeEnv& ve) = 0;
 };
 
-
 #endif
-

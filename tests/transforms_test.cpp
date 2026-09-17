@@ -50,9 +50,8 @@
 
 namespace {
 
-bool hasNonBackgroundPixel(const std::string &path, int xmin, int xmax,
-                            int ymin, int ymax) {
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+bool hasNonBackgroundPixel(const std::string& path, int xmin, int xmax, int ymin, int ymax) {
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return false;
   }
@@ -61,8 +60,7 @@ bool hasNonBackgroundPixel(const std::string &path, int xmin, int xmax,
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(width * height);
-  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                       ORIENTATION_TOPLEFT, 0);
+  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0);
   bool found = false;
   if (ok) {
     const uint32_t bg = raster[0];
@@ -88,7 +86,7 @@ bool hasNonBackgroundPixel(const std::string &path, int xmin, int xmax,
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <transforms.rib>\n", argv[0]);
     return 2;
@@ -100,23 +98,18 @@ int main(int argc, char *argv[]) {
   int status = std::system(command.c_str());
   check(WIFEXITED(status) && WEXITSTATUS(status) == 0, "transforms.rib renders");
 
-  const char *tif = "transforms.tif";
+  const char* tif = "transforms.tif";
   const int y0 = 40, y1 = 60; // centre row is y=50 for all three
 
-  check(hasNonBackgroundPixel(tif, 120, 150, y0, y1),
-        "a silhouette is present around x=135 (Translate -1.5 0 0)");
-  check(hasNonBackgroundPixel(tif, 143, 157, y0, y1),
-        "a silhouette is present around x=150 (Translate 0 0 0)");
-  check(hasNonBackgroundPixel(tif, 150, 180, y0, y1),
-        "a silhouette is present around x=165 (Translate 1.5 0 0)");
+  check(hasNonBackgroundPixel(tif, 120, 150, y0, y1), "a silhouette is present around x=135 (Translate -1.5 0 0)");
+  check(hasNonBackgroundPixel(tif, 143, 157, y0, y1), "a silhouette is present around x=150 (Translate 0 0 0)");
+  check(hasNonBackgroundPixel(tif, 150, 180, y0, y1), "a silhouette is present around x=165 (Translate 1.5 0 0)");
 
   // The gap between the left and right clusters should be empty
   // background -- three separated spheres, not one smear, and not the
   // "every offset collapses to the origin" symptom of a reverted step 1.
-  check(!hasNonBackgroundPixel(tif, 0, 100, y0, y1),
-        "background stays background to the left of the left sphere");
-  check(!hasNonBackgroundPixel(tif, 200, 300, y0, y1),
-        "background stays background to the right of the right sphere");
+  check(!hasNonBackgroundPixel(tif, 0, 100, y0, y1), "background stays background to the left of the left sphere");
+  check(!hasNonBackgroundPixel(tif, 200, 300, y0, y1), "background stays background to the right of the right sphere");
 
   return checkSummary("transforms holds");
 }

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,7 +22,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GETARGUMENTS_H
 #define __GMAN_GETARGUMENTS_H 1
@@ -31,9 +30,8 @@
 
 #include "ri.h"
 
-extern GMAN_EXPORT  RtVoid GMANGetArguments (va_list args, RtInt n, RtToken *tokens, RtPointer *parms);
+extern GMAN_EXPORT RtVoid GMANGetArguments(va_list args, RtInt n, RtToken* tokens, RtPointer* parms);
 
-extern GMAN_EXPORT  RtInt GMANCountArguments (va_list args);
+extern GMAN_EXPORT RtInt GMANCountArguments(va_list args);
 
 #endif
-

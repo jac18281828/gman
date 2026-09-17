@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANLINEARWORLDMANAGER_H
 #define __GMAN_GMANLINEARWORLDMANAGER_H 1
-
 
 #include <list>
 #include <map>
@@ -46,14 +44,15 @@
 class GMAN_EXPORT GMANLinearWorldManager : public GMANWorldManager {
 public:
   // public types
-  typedef GMANPrimitive*	ObjectPtr;
+  typedef GMANPrimitive* ObjectPtr;
 
-  typedef std::list<ObjectPtr>	ObjectList;
+  typedef std::list<ObjectPtr> ObjectList;
 
 private:
-  ObjectList			objects;
+  ObjectList objects;
 
-  ObjectList::iterator		current;
+  ObjectList::iterator current;
+
 public:
   GMANLinearWorldManager(); // default constructor
 
@@ -66,9 +65,6 @@ public:
 
   // find each subsequent object until end and then return NULL
   virtual ObjectPtr getNext(RtVoid);
-
 };
 
-
 #endif
-

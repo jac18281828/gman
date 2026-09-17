@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,16 +27,13 @@
 #include "gmansegment.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANSegment
  *
  */
 
 // default constructor
-GMANSegment::GMANSegment() : p1(), p2() { };
+GMANSegment::GMANSegment() : p1(), p2() {};
 
-
-// default destructor 
-GMANSegment::~GMANSegment() { };
-
+// default destructor
+GMANSegment::~GMANSegment() {};

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -25,14 +25,11 @@
 
 #include "gmanviewingsystem.h"
 
-RtVoid GMANViewingSystem::screenToRaster(RtFloat &x, RtFloat &y)
-{
-  x=xres*(x-sw.left)/(sw.right-sw.left);
-  y=yres-yres*(y-sw.bottom)/(sw.top-sw.bottom);
+RtVoid GMANViewingSystem::screenToRaster(RtFloat& x, RtFloat& y) {
+  x = xres * (x - sw.left) / (sw.right - sw.left);
+  y = yres - yres * (y - sw.bottom) / (sw.top - sw.bottom);
 }
-RtVoid GMANViewingSystem::rasterToScreen(RtFloat &x, RtFloat &y)
-{
-  x=sw.left+(sw.right-sw.left)*x/xres;
-  y=sw.bottom+(sw.top-sw.bottom)*(yres-y)/yres;
+RtVoid GMANViewingSystem::rasterToScreen(RtFloat& x, RtFloat& y) {
+  x = sw.left + (sw.right - sw.left) * x / xres;
+  y = sw.bottom + (sw.top - sw.bottom) * (yres - y) / yres;
 }
-

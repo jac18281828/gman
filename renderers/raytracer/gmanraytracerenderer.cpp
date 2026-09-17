@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -36,19 +36,13 @@
  */
 
 // default constructor
-GMANRaytraceRenderer::GMANRaytraceRenderer() : GMANRenderer() { };
+GMANRaytraceRenderer::GMANRaytraceRenderer() : GMANRenderer() {};
 
+// default destructor
+GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
 
-// default destructor 
-GMANRaytraceRenderer::~GMANRaytraceRenderer() { };
-
-
-
-void GMANRaytraceRenderer::render(GMANFrameBuffer *frameBuffer,
-				  GMANViewingSystem */*viewingSys*/,
-				  const GMANOptions       &/*options*/,
-				  const GMANAttributes    &/*attributes*/)
- {
+void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* /*viewingSys*/,
+                                  const GMANOptions& /*options*/, const GMANAttributes& /*attributes*/) {
 
   RtInt width, height;
   GMANRay ray;
@@ -89,12 +83,7 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer *frameBuffer,
   }
 }
 
-GMANWorldManager *GMANRaytraceRenderer::getWorldManager(void) {
-  return &worldManager;
-}
+GMANWorldManager* GMANRaytraceRenderer::getWorldManager(void) { return &worldManager; }
 
 // return its object manager
-GMANObjectManager *GMANRaytraceRenderer::getObjectManager(void) {
-  return &objectManager;
-}
-
+GMANObjectManager* GMANRaytraceRenderer::getObjectManager(void) { return &objectManager; }

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -28,38 +28,34 @@
 #include "gmansurface.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANBody
  *
  */
 
 // default constructor
-GMANBody::GMANBody(const GMANColor &ref, const GMANColor &emit) { 
+GMANBody::GMANBody(const GMANColor& ref, const GMANColor& emit) {
   reflectance = ref;
   emittance = emit;
 
   surfaceRoot = NULL;
-  next        = NULL;
+  next = NULL;
 };
 
+// default destructor
+GMANBody::~GMANBody() {
 
-// default destructor 
-GMANBody::~GMANBody() { 
-  
-  GMANSurface *surface = surfaceRoot;
-  GMANSurface *nextSurf;
+  GMANSurface* surface = surfaceRoot;
+  GMANSurface* nextSurf;
 
-  while(surface != NULL) // delete all
-    {
-      // nextSurf must be read before delete: it used to be assigned
-      // `surface` itself, which reassigned the freed pointer right back to
-      // `surface`, so any body with more than one surface deleted the same
-      // freed GMANSurface forever -- a use-after-free on every teardown.
-      nextSurf = surface->getNext();
-      delete surface;
-      surface = nextSurf;
-    }
-  
+  while (surface != NULL) // delete all
+  {
+    // nextSurf must be read before delete: it used to be assigned
+    // `surface` itself, which reassigned the freed pointer right back to
+    // `surface`, so any body with more than one surface deleted the same
+    // freed GMANSurface forever -- a use-after-free on every teardown.
+    nextSurf = surface->getNext();
+    delete surface;
+    surface = nextSurf;
+  }
 };
-

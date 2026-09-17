@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2002, 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2002, 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -40,218 +40,205 @@ extern "C" {
  */
 
 // default constructor
-GMANOutputPNG::GMANOutputPNG(const char *path, int width, int height) : 
-    GMANOutput(path, width, height, DefaultBGColor) { 
-};
+GMANOutputPNG::GMANOutputPNG(const char* path, int width, int height)
+    : GMANOutput(path, width, height, DefaultBGColor) {};
 
+// default destructor
+GMANOutputPNG::~GMANOutputPNG() {};
 
-// default destructor 
-GMANOutputPNG::~GMANOutputPNG() { };
+RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma) {
+  gammaCorrect.setExposure(gain, gamma);
 
-RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
-			   RtFloat gain,
-			   RtFloat gamma) {
-    gammaCorrect.setExposure(gain, gamma);
+  // write a PNG file to 'fileName'
 
-    // write a PNG file to 'fileName'
-  
-    // open jpeg output file for writing
-    FILE *pngFile = fopen(outputName.c_str(), "w");
-    if(pngFile == NULL) {
-	std::string errorMsg("Unable to open output file: ");
-	errorMsg.append(outputName);
-	throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
-    }
-	
-    png_structp png_ptr;
-    png_infop   info_ptr;
+  // open jpeg output file for writing
+  FILE* pngFile = fopen(outputName.c_str(), "w");
+  if (pngFile == NULL) {
+    std::string errorMsg("Unable to open output file: ");
+    errorMsg.append(outputName);
+    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
+  }
 
-    /* initialize png */
-    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  png_structp png_ptr;
+  png_infop info_ptr;
 
-    if(png_ptr == NULL) {
-	// very bad
-	fclose(pngFile);
-	throw(GMANError(RIE_SYSTEM, 
-			RIE_SEVERE, 
-			"PNG initialization failure."));
-    }
-    
-    // allocate the image information data 
-    info_ptr = png_create_info_struct(png_ptr);
-    if(info_ptr == NULL) {
-	// ouch!
-	fclose(pngFile);
-	png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-	throw(GMANError(RIE_SYSTEM, 
-			RIE_SEVERE, 
-			"PNG initialization failure."));
-    }
-    
-    // set the error handler
+  /* initialize png */
+  png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+
+  if (png_ptr == NULL) {
+    // very bad
+    fclose(pngFile);
+    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "PNG initialization failure."));
+  }
+
+  // allocate the image information data
+  info_ptr = png_create_info_struct(png_ptr);
+  if (info_ptr == NULL) {
+    // ouch!
+    fclose(pngFile);
+    png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "PNG initialization failure."));
+  }
+
+  // set the error handler
 #ifdef PNG_SETJMP_SUPPORTED
-    if(setjmp(png_jmpbuf(png_ptr))) {
-	// jump here on error
-	fclose(pngFile);
-	png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-	throw(GMANError(RIE_SYSTEM, 
-			RIE_SEVERE, 
-			"Internal PNG library error."));
-    }
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    // jump here on error
+    fclose(pngFile);
+    png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "Internal PNG library error."));
+  }
 #endif
-    
-    /* setup C stream */
-    png_init_io(png_ptr, pngFile);
-    
-    // set compression level
-    png_set_compression_level(png_ptr, Z_BEST_COMPRESSION);
-    
-    //png_set_invert_mono(png_ptr); // reverse video black->white
-    
-    /* setup image information... */
 
-    // for now we only support RGBA
-    //
-    // need support for other display modes
-    png_set_IHDR(png_ptr, info_ptr, xres, 
-		 yres, 8, PNG_COLOR_TYPE_RGB_ALPHA,
-		 PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, 
-		 PNG_FILTER_TYPE_DEFAULT);
-    
-    // set time
-    png_time modtime;
-    png_convert_from_time_t(&modtime, time(NULL));
-    png_set_tIME(png_ptr, info_ptr, &modtime);
-    
-    // set PNG gamma correction
-    png_set_gAMA(png_ptr, info_ptr, gamma);
-    
-    // set bgcolor black;
-    png_color_16 bgcolor;
-    bgcolor.red = 0x0;
-    bgcolor.green = 0x0;
-    bgcolor.blue = 0x0;
-    png_set_bKGD(png_ptr, info_ptr, &bgcolor);
+  /* setup C stream */
+  png_init_io(png_ptr, pngFile);
 
-    // write useful comments
-    png_text text_ptr[3];
-    text_ptr[0].key = const_cast<png_charp>("Title");
-    text_ptr[0].text = const_cast<png_charp>("GMAN Generated Image");
-    text_ptr[0].compression = PNG_TEXT_COMPRESSION_NONE;
-    text_ptr[1].key = const_cast<png_charp>("Copyright");
-    text_ptr[1].text = const_cast<png_charp>("Copyright (c) 2002 John Cairns");
-    text_ptr[1].compression = PNG_TEXT_COMPRESSION_NONE;
-    text_ptr[2].key = const_cast<png_charp>("Author");
-    text_ptr[2].text = const_cast<png_charp>("John Cairns <john@2ad.com> ");
-    text_ptr[2].compression = PNG_TEXT_COMPRESSION_NONE;
-    png_set_text(png_ptr, info_ptr, text_ptr, 2);
-    png_write_info(png_ptr, info_ptr);
+  // set compression level
+  png_set_compression_level(png_ptr, Z_BEST_COMPRESSION);
 
-    // make sure < 8-bit images are packed into pixels as much as possible
-    png_set_packing(png_ptr);
+  // png_set_invert_mono(png_ptr); // reverse video black->white
+
+  /* setup image information... */
+
+  // for now we only support RGBA
+  //
+  // need support for other display modes
+  png_set_IHDR(png_ptr, info_ptr, xres, yres, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE,
+               PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+  // set time
+  png_time modtime;
+  png_convert_from_time_t(&modtime, time(NULL));
+  png_set_tIME(png_ptr, info_ptr, &modtime);
+
+  // set PNG gamma correction
+  png_set_gAMA(png_ptr, info_ptr, gamma);
+
+  // set bgcolor black;
+  png_color_16 bgcolor;
+  bgcolor.red = 0x0;
+  bgcolor.green = 0x0;
+  bgcolor.blue = 0x0;
+  png_set_bKGD(png_ptr, info_ptr, &bgcolor);
+
+  // write useful comments
+  png_text text_ptr[3];
+  text_ptr[0].key = const_cast<png_charp>("Title");
+  text_ptr[0].text = const_cast<png_charp>("GMAN Generated Image");
+  text_ptr[0].compression = PNG_TEXT_COMPRESSION_NONE;
+  text_ptr[1].key = const_cast<png_charp>("Copyright");
+  text_ptr[1].text = const_cast<png_charp>("Copyright (c) 2002 John Cairns");
+  text_ptr[1].compression = PNG_TEXT_COMPRESSION_NONE;
+  text_ptr[2].key = const_cast<png_charp>("Author");
+  text_ptr[2].text = const_cast<png_charp>("John Cairns <john@2ad.com> ");
+  text_ptr[2].compression = PNG_TEXT_COMPRESSION_NONE;
+  png_set_text(png_ptr, info_ptr, text_ptr, 2);
+  png_write_info(png_ptr, info_ptr);
+
+  // make sure < 8-bit images are packed into pixels as much as possible
+  png_set_packing(png_ptr);
 
 #if BIG_ENDIAN_HOST == 1
-    /* Get rid of filler (OR ALPHA) bytes, pack XRGB/RGBX/ARGB/RGBA into
-     * RGB (4 channels -> 3 channels). The second parameter is not used.
-     */
-    if (mode != RGBA) {
-	// png_set_filler(png_ptr, 0, PNG_FILLER_AFTER);
-    }
+  /* Get rid of filler (OR ALPHA) bytes, pack XRGB/RGBX/ARGB/RGBA into
+   * RGB (4 channels -> 3 channels). The second parameter is not used.
+   */
+  if (mode != RGBA) {
+    // png_set_filler(png_ptr, 0, PNG_FILLER_AFTER);
+  }
 
 #else
-    /* Get rid of filler (OR ALPHA) bytes, pack XRGB/RGBX/ARGB/RGBA into
-     * RGB (4 channels -> 3 channels). The second parameter is not used.
-     */
-    if (mode != RGBA) {
-	// png_set_filler(png_ptr, 0, PNG_FILLER_BEFORE);
-    }
+  /* Get rid of filler (OR ALPHA) bytes, pack XRGB/RGBX/ARGB/RGBA into
+   * RGB (4 channels -> 3 channels). The second parameter is not used.
+   */
+  if (mode != RGBA) {
+    // png_set_filler(png_ptr, 0, PNG_FILLER_BEFORE);
+  }
 
-    // No png_set_swap_alpha here: that call tells libpng the row data
-    // supplied below is ARGB and asks it to move alpha to the end for
-    // RGBA storage. The loop below already packs R,G,B,A in that order
-    // to match PNG_COLOR_TYPE_RGB_ALPHA directly, so swapping rotated
-    // every channel by one position -- R became stored G, G became
-    // stored B, and the real alpha (always 255, opaque) overwrote R.
+  // No png_set_swap_alpha here: that call tells libpng the row data
+  // supplied below is ARGB and asks it to move alpha to the end for
+  // RGBA storage. The loop below already packs R,G,B,A in that order
+  // to match PNG_COLOR_TYPE_RGB_ALPHA directly, so swapping rotated
+  // every channel by one position -- R became stored G, G became
+  // stored B, and the real alpha (always 255, opaque) overwrote R.
 
 #endif
 
-    // png_read_update_info is a read-side call (its own doc: "MUST be
-    // called before png_read_update_info or png_start_read_image") --
-    // png_ptr here came from png_create_write_struct and was never set up
-    // for reading, so this corrupted internal state libpng only fills in
-    // for a read stream. png_write_info already populated info_ptr's
-    // rowbytes from the IHDR set above; no update call is needed on the
-    // write side.
-    png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
-    
-    // One row of rowbytes per scanline -- yres of them, not xres. A square
-    // Format hid this: the two are equal there, so the buffer happened to
-    // be exactly right.
-    png_byte *image_data = new png_byte[rowbytes*yres];
-    if(image_data) {
-	png_bytep *row_pointers = new png_bytep[yres];
-	if(row_pointers) {
-    
-	    /* set the row_pointers to point at the correct offset */
-	    png_uint_32 i;
-	    for(i = 0; i < (png_uint_32)yres; ++i)
-		row_pointers[i] = image_data + i*rowbytes;
-	    
-	    // set x,y pixel color values
-	    
-	    // memory is contiguous by x not by y so order all x operations to
-	    // occur before y operations to take advantage of CPU cache
-	    int rowoffset = 0;
-	    
+  // png_read_update_info is a read-side call (its own doc: "MUST be
+  // called before png_read_update_info or png_start_read_image") --
+  // png_ptr here came from png_create_write_struct and was never set up
+  // for reading, so this corrupted internal state libpng only fills in
+  // for a read stream. png_write_info already populated info_ptr's
+  // rowbytes from the IHDR set above; no update call is needed on the
+  // write side.
+  png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 
-	    for(int y=0; y<yres; y++) {
-      
-		// invert order data is written
-		// so viewer sees map upright
-		unsigned char *src = image_data + rowoffset;
-		
-		// avoid a multiply
-		rowoffset += rowbytes;
+  // One row of rowbytes per scanline -- yres of them, not xres. A square
+  // Format hid this: the two are equal there, so the buffer happened to
+  // be exactly right.
+  png_byte* image_data = new png_byte[rowbytes * yres];
+  if (image_data) {
+    png_bytep* row_pointers = new png_bytep[yres];
+    if (row_pointers) {
 
-		int colOff=0;
-      
-		for(int x=0; x<xres; x++) {
-	    
-		    GMANColorRGB color;
-		    color = getPixel(x, y);
-       
-		    // color correct it
-		    gammaCorrect.correct(color);
-	
-		    // mask off appropriate bits for image generation
-		    if(quantizer) 
-			quantizer->doColor(color);
+      /* set the row_pointers to point at the correct offset */
+      png_uint_32 i;
+      for (i = 0; i < (png_uint_32)yres; ++i)
+        row_pointers[i] = image_data + i * rowbytes;
 
-		    src[colOff++] = color.getRed();
-		    src[colOff++] = color.getGreen();
-		    src[colOff++] = color.getBlue();
-		    
-		    // FIXME FIXME FIXME
-		    // FIX Alpha support
-       
-		    src[colOff++] = 255;
-		}
-	    }
-	    // Write out entire image
-	    png_write_image(png_ptr, row_pointers);
-	    delete []row_pointers;
-	}
-	delete []image_data;
+      // set x,y pixel color values
+
+      // memory is contiguous by x not by y so order all x operations to
+      // occur before y operations to take advantage of CPU cache
+      int rowoffset = 0;
+
+      for (int y = 0; y < yres; y++) {
+
+        // invert order data is written
+        // so viewer sees map upright
+        unsigned char* src = image_data + rowoffset;
+
+        // avoid a multiply
+        rowoffset += rowbytes;
+
+        int colOff = 0;
+
+        for (int x = 0; x < xres; x++) {
+
+          GMANColorRGB color;
+          color = getPixel(x, y);
+
+          // color correct it
+          gammaCorrect.correct(color);
+
+          // mask off appropriate bits for image generation
+          if (quantizer)
+            quantizer->doColor(color);
+
+          src[colOff++] = color.getRed();
+          src[colOff++] = color.getGreen();
+          src[colOff++] = color.getBlue();
+
+          // FIXME FIXME FIXME
+          // FIX Alpha support
+
+          src[colOff++] = 255;
+        }
+      }
+      // Write out entire image
+      png_write_image(png_ptr, row_pointers);
+      delete[] row_pointers;
     }
-    
-    png_write_end(png_ptr, info_ptr);
+    delete[] image_data;
+  }
 
-    // clean up write struct. Passing info_ptr here (not NULL, as this
-    // used to) is what actually frees it -- png_create_info_struct and
-    // the png_set_text/tIME/gAMA/bKGD calls above all allocate through
-    // it, and passing NULL destroyed only png_ptr, leaking the rest.
-    // Unreachable before the segfault fix above (this line), so this
-    // leak was always here but never actually ran.
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    fclose(pngFile);
+  png_write_end(png_ptr, info_ptr);
+
+  // clean up write struct. Passing info_ptr here (not NULL, as this
+  // used to) is what actually frees it -- png_create_info_struct and
+  // the png_set_text/tIME/gAMA/bKGD calls above all allocate through
+  // it, and passing NULL destroyed only png_ptr, leaking the rest.
+  // Unreachable before the segfault fix above (this line), so this
+  // leak was always here but never actually ran.
+  png_destroy_write_struct(&png_ptr, &info_ptr);
+  fclose(pngFile);
 }

@@ -57,8 +57,7 @@ RunRecord runRecording(RtInt count, RtInt workers) {
       [&](RtInt index, RtInt worker) {
         record.indexHits[static_cast<std::size_t>(index)]++;
         record.perWorkerCount[static_cast<std::size_t>(worker)]++;
-        record.perWorkerThreadIds[static_cast<std::size_t>(worker)].insert(
-            std::this_thread::get_id());
+        record.perWorkerThreadIds[static_cast<std::size_t>(worker)].insert(std::this_thread::get_id());
       },
       workers);
 
@@ -81,8 +80,7 @@ void testExactlyOnce() {
           break;
         }
       }
-      check(allOnce, "count=" + std::to_string(count) +
-                         " workers=" + std::to_string(workers) +
+      check(allOnce, "count=" + std::to_string(count) + " workers=" + std::to_string(workers) +
                          ": every index ran exactly once");
     }
   }
@@ -94,10 +92,8 @@ void testSerialPath() {
   const std::thread::id callingThread = std::this_thread::get_id();
   RunRecord record = runRecording(100, 1);
 
-  check(gmanParallelWorkers(100, 1) == 1,
-        "gmanParallelWorkers(100, 1) reports one worker");
-  check(record.perWorkerThreadIds.size() == 1 &&
-            record.perWorkerThreadIds[0].size() == 1 &&
+  check(gmanParallelWorkers(100, 1) == 1, "gmanParallelWorkers(100, 1) reports one worker");
+  check(record.perWorkerThreadIds.size() == 1 && record.perWorkerThreadIds[0].size() == 1 &&
             *record.perWorkerThreadIds[0].begin() == callingThread,
         "workers=1 runs every body on the calling thread as worker 0");
 }
@@ -115,25 +111,20 @@ void testWorkerIndices() {
       RunRecord record = runRecording(count, workers);
 
       check(static_cast<RtInt>(record.perWorkerCount.size()) == numWorkers,
-            "count=" + std::to_string(count) +
-                " workers=" + std::to_string(workers) +
+            "count=" + std::to_string(count) + " workers=" + std::to_string(workers) +
                 ": worker index stays below gmanParallelWorkers' report");
 
       int total = 0;
       bool oneThreadPerWorker = true;
       for (std::size_t w = 0; w < record.perWorkerThreadIds.size(); ++w) {
         total += record.perWorkerCount[w];
-        if (record.perWorkerCount[w] > 0 &&
-            record.perWorkerThreadIds[w].size() != 1) {
+        if (record.perWorkerCount[w] > 0 && record.perWorkerThreadIds[w].size() != 1) {
           oneThreadPerWorker = false;
         }
       }
-      check(oneThreadPerWorker,
-            "count=" + std::to_string(count) +
-                " workers=" + std::to_string(workers) +
-                ": bodies sharing a worker index ran on one thread");
-      check(total == count, "count=" + std::to_string(count) +
-                                " workers=" + std::to_string(workers) +
+      check(oneThreadPerWorker, "count=" + std::to_string(count) + " workers=" + std::to_string(workers) +
+                                    ": bodies sharing a worker index ran on one thread");
+      check(total == count, "count=" + std::to_string(count) + " workers=" + std::to_string(workers) +
                                 ": per-worker counts sum to count");
     }
   }
@@ -170,7 +161,7 @@ void testExceptionsStopTheCall() {
           perWorkerCount[static_cast<std::size_t>(worker)]++;
         },
         workers);
-  } catch (GMANError &) {
+  } catch (GMANError&) {
     threw = true;
     rightType = true;
   } catch (...) {
@@ -196,10 +187,8 @@ void testExceptionsStopTheCall() {
 
   check(threw, "a throwing body's exception reaches the calling thread");
   check(rightType, "the rethrown exception is the GMANError the body threw");
-  check(total < static_cast<int>(count),
-        "fewer than every index ran after the throw requested a stop");
-  check(someWorkerStoppedEarly,
-        "a worker that never threw also stopped before finishing its share");
+  check(total < static_cast<int>(count), "fewer than every index ran after the throw requested a stop");
+  check(someWorkerStoppedEarly, "a worker that never threw also stopped before finishing its share");
 }
 
 // count <= 0 calls nothing, at all.
@@ -210,7 +199,7 @@ void testCountZeroOrNegative() {
   check(calls == 0, "count <= 0 calls the body zero times");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   testExactlyOnce();

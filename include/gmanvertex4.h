@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANVERTEX4_H
 #define __GMAN_GMANVERTEX4_H 1
-
 
 #include <list>
 #include <map>
@@ -44,38 +42,35 @@
  *
  */
 
-class GMAN_EXPORT  GMANVertex4 {
+class GMAN_EXPORT GMANVertex4 {
 private:
-  GMANColor	color;
-  GMANAlpha	alpha;
-  GMANVector4   coord; // 4-d homogeneous coordinate
+  GMANColor color;
+  GMANAlpha alpha;
+  GMANVector4 coord; // 4-d homogeneous coordinate
 
 public:
   GMANVertex4(); // default constructor
 
   ~GMANVertex4(); // default destructor
 
-  const GMANColor &getColor(RtVoid) const { return color; }
+  const GMANColor& getColor(RtVoid) const { return color; }
 
-  const GMANAlpha &getAlpha(RtVoid) const { return alpha; }
+  const GMANAlpha& getAlpha(RtVoid) const { return alpha; }
 
-  const GMANVector4  &getCoord(RtVoid) const { return coord; }
+  const GMANVector4& getCoord(RtVoid) const { return coord; }
 
-  RtVoid set(const GMANPoint &p, const GMANColor &c, const GMANAlpha &a, const RtMatrix &ptm) {
+  RtVoid set(const GMANPoint& p, const GMANColor& c, const GMANAlpha& a, const RtMatrix& ptm) {
     coord.projTransform(p, ptm);
 
     color = c;
     alpha = a;
   }
 
-  RtVoid set(const GMANVector4 &v, const GMANColor &c, const GMANAlpha &a) {
+  RtVoid set(const GMANVector4& v, const GMANColor& c, const GMANAlpha& a) {
     coord = v;
     color = c;
     alpha = a;
   }
-
 };
 
-
 #endif
-

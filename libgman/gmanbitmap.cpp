@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -38,31 +38,28 @@
  */
 
 // default constructor
-GMANBitmap::GMANBitmap() : background(DefaultBGColor) { 
+GMANBitmap::GMANBitmap() : background(DefaultBGColor) {
   xres = 0;
   yres = 0;
 };
 
-
 // construct a bitmap with the specified width and height
-GMANBitmap::GMANBitmap(int width, int height, const GMANColor &bgcolor=DefaultBGColor) : background(bgcolor) {
+GMANBitmap::GMANBitmap(int width, int height, const GMANColor& bgcolor = DefaultBGColor) : background(bgcolor) {
   set(width, height, bgcolor);
 };
 
 // default destructor
 GMANBitmap::~GMANBitmap() = default;
 
-RtVoid GMANBitmap::set(int width, int height, const GMANColor &bgcolor) {
+RtVoid GMANBitmap::set(int width, int height, const GMANColor& bgcolor) {
   if (width < 0 || height < 0) {
-    throw GMANError(RIE_RANGE, RIE_ERROR,
-                     "GMANBitmap: width and height must not be negative");
+    throw GMANError(RIE_RANGE, RIE_ERROR, "GMANBitmap: width and height must not be negative");
   }
   // Computed a width wider than int so the check itself cannot overflow:
   // a wrapped, too-small product is exactly the bug this guards against.
-  const long long area = (long long) width * (long long) height;
+  const long long area = (long long)width * (long long)height;
   if (area > std::numeric_limits<int>::max()) {
-    throw GMANError(RIE_LIMIT, RIE_ERROR,
-                     "GMANBitmap: width * height overflows int");
+    throw GMANError(RIE_LIMIT, RIE_ERROR, "GMANBitmap: width * height overflows int");
   }
 
   background = bgcolor;
@@ -71,11 +68,10 @@ RtVoid GMANBitmap::set(int width, int height, const GMANColor &bgcolor) {
   allocMemory();
 
   erase();
-
 }
 
 // copy operation
-GMANBitmap &GMANBitmap::operator =(const GMANBitmap &amap) = default;
+GMANBitmap& GMANBitmap::operator=(const GMANBitmap& amap) = default;
 
 RtVoid GMANBitmap::freeMemory(RtVoid) {
   pixels.clear();
@@ -84,26 +80,19 @@ RtVoid GMANBitmap::freeMemory(RtVoid) {
 
 RtVoid GMANBitmap::allocMemory(RtVoid) {
   const int pixelsNeeded = xres * yres;
-  pixels.assign((std::size_t) pixelsNeeded, GMANColor());
+  pixels.assign((std::size_t)pixelsNeeded, GMANColor());
 }
 
-RtVoid GMANBitmap::erase(RtVoid) {
-  fill(background);
-}
+RtVoid GMANBitmap::erase(RtVoid) { fill(background); }
 
-RtVoid GMANBitmap::fill(const GMANColor &fillColor) {
-  for(int x=0; x<xres; x++) {
-    for (int y=0; y<yres; y++) {
+RtVoid GMANBitmap::fill(const GMANColor& fillColor) {
+  for (int x = 0; x < xres; x++) {
+    for (int y = 0; y < yres; y++) {
       setPixel(x, y, fillColor);
     }
   }
 }
 
+RtInt GMANBitmap::getWidth(RtVoid) const { return xres; }
 
-RtInt GMANBitmap::getWidth(RtVoid) const {
-    return xres;
-}
-
-RtInt GMANBitmap::getHeight(RtVoid) const {
-    return yres;
-}
+RtInt GMANBitmap::getHeight(RtVoid) const { return yres; }

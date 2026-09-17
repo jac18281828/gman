@@ -21,45 +21,36 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANTRIMCURVE_H
 #define __GMAN_GMANTRIMCURVE_H 1
 
-
 #include "gmanlog.h"
 #include "ri.h"
 
-
-class GMAN_EXPORT  GMANTrimCurve
-{
- private:
-  int *counter;
+class GMAN_EXPORT GMANTrimCurve {
+private:
+  int* counter;
 
   RtInt nloops;
-  RtInt *ncurves;
-  RtInt *order;
-  RtFloat *knot;
-  RtFloat *min;
-  RtFloat *max;
-  RtInt *n;
-  RtFloat *u,*v,*w;
+  RtInt* ncurves;
+  RtInt* order;
+  RtFloat* knot;
+  RtFloat* min;
+  RtFloat* max;
+  RtInt* n;
+  RtFloat *u, *v, *w;
 
-  RtVoid copy (GMANTrimCurve const &tc);
-  RtVoid destroy ();
- public:
+  RtVoid copy(GMANTrimCurve const& tc);
+  RtVoid destroy();
+
+public:
   GMANTrimCurve();
-  GMANTrimCurve(RtInt nl, RtInt *nc, RtInt *ord,
-		RtFloat *kn, RtFloat *mn, RtFloat *mx,
-		RtInt *n, RtFloat *uu, RtFloat *vv, RtFloat *ww); 
-  GMANTrimCurve(GMANTrimCurve const &tc);
-  GMANTrimCurve const &operator=(GMANTrimCurve const &tc);
+  GMANTrimCurve(RtInt nl, RtInt* nc, RtInt* ord, RtFloat* kn, RtFloat* mn, RtFloat* mx, RtInt* n, RtFloat* uu,
+                RtFloat* vv, RtFloat* ww);
+  GMANTrimCurve(GMANTrimCurve const& tc);
+  GMANTrimCurve const& operator=(GMANTrimCurve const& tc);
   ~GMANTrimCurve();
 };
 
 #endif
-
-
-
-
-

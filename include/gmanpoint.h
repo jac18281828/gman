@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,7 +22,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANPOINT_H
 #define __GMAN_GMANPOINT_H 1
@@ -33,7 +32,6 @@
 
 class GMANHPoint;
 
-
 /*
  * RenderMan API GMANPoint
  *
@@ -41,107 +39,101 @@ class GMANHPoint;
  *
  */
 
-class GMAN_EXPORT  GMANPoint
-{
+class GMAN_EXPORT GMANPoint {
 public:
-    // public type
-    typedef enum { X=0, Y=1, Z=2, NCOORDS } CoordType;
+  // public type
+  typedef enum { X = 0, Y = 1, Z = 2, NCOORDS } CoordType;
+
 protected:
-	// point spatial coordinates
-    RtPoint	c;
+  // point spatial coordinates
+  RtPoint c;
 
- public:
-    //! Constructor
+public:
+  //! Constructor
   GMANPoint(RtFloat xv = 0.0, RtFloat yv = 0.0, RtFloat zv = 0.0) {
-   c[X] = xv;
-   c[Y] = yv;
-   c[Z] = zv;
-  }
-	
-    GMANPoint(RtPoint f) {
-      for(RtInt i=0; i<NCOORDS; i++) {
-	c[i] = f[i];
-      }
-    }
-
-    GMANPoint(GMANHPoint &p);
-    
-    //! Destructor
-    ~GMANPoint() {}
-
-    // X
-    RtVoid setX(RtFloat xv) { c[X] = xv; };
-    RtFloat getX(RtVoid) const { return c[X]; };
-
-    // Y
-    RtVoid setY(RtFloat yv) { c[Y] = yv; };
-    RtFloat getY(RtVoid) const { return c[Y]; };
-    
-    // Z
-    RtVoid setZ(RtFloat zv) { c[Z] = zv; };
-    RtFloat getZ(RtVoid) const { return c[Z]; };
-    
-    GMANPoint &operator=(RtFloat f) { 
-	for(RtInt i=0; i<NCOORDS; i++) {
-	    c[i] = f;
-	}
-	return *this;
-    }
-
-    bool operator==(const GMANPoint &v) const;
-    bool operator!=(const GMANPoint &v) const;
-
-	bool operator<(const GMANPoint &p) const;
-
-	// geometric addition of two points
-	GMANPoint &operator +=(const GMANPoint &p) {
-		for(int i=0; i<NCOORDS; i++) {
-			c[i] += p.c[i];
-		}
-
-		return *this;
-	}
-
-	// scale point by a constant
-	GMANPoint &operator *=(RtFloat f) {
-		for(int i=0; i<NCOORDS; i++) {
-			c[i] *= f;
-		}
-
-		return *this;
-	}
-
-	// geometric addition of two points
-	GMANPoint operator +(const GMANPoint &p) const {
-		GMANPoint res(*this);
-
-		res += p;
-		return res;
-	}
-
-	// scale point by a constant
-	GMANPoint operator *(RtFloat f) const {
-		GMANPoint res(*this);
-
-		res *= f;
-		return res;
-	}
-
-
-    // transform THIS point using matrix
-    GMANPoint &operator *=(const GMANMatrix4 &m);
-
-    // transform point using matrix and return it
-    // do not modify this point
-
-    GMANPoint operator *(const GMANMatrix4 &m) const;
-
-
-  const RtPoint &get(RtVoid) const {
-    return c;
+    c[X] = xv;
+    c[Y] = yv;
+    c[Z] = zv;
   }
 
+  GMANPoint(RtPoint f) {
+    for (RtInt i = 0; i < NCOORDS; i++) {
+      c[i] = f[i];
+    }
+  }
+
+  GMANPoint(GMANHPoint& p);
+
+  //! Destructor
+  ~GMANPoint() {}
+
+  // X
+  RtVoid setX(RtFloat xv) { c[X] = xv; };
+  RtFloat getX(RtVoid) const { return c[X]; };
+
+  // Y
+  RtVoid setY(RtFloat yv) { c[Y] = yv; };
+  RtFloat getY(RtVoid) const { return c[Y]; };
+
+  // Z
+  RtVoid setZ(RtFloat zv) { c[Z] = zv; };
+  RtFloat getZ(RtVoid) const { return c[Z]; };
+
+  GMANPoint& operator=(RtFloat f) {
+    for (RtInt i = 0; i < NCOORDS; i++) {
+      c[i] = f;
+    }
+    return *this;
+  }
+
+  bool operator==(const GMANPoint& v) const;
+  bool operator!=(const GMANPoint& v) const;
+
+  bool operator<(const GMANPoint& p) const;
+
+  // geometric addition of two points
+  GMANPoint& operator+=(const GMANPoint& p) {
+    for (int i = 0; i < NCOORDS; i++) {
+      c[i] += p.c[i];
+    }
+
+    return *this;
+  }
+
+  // scale point by a constant
+  GMANPoint& operator*=(RtFloat f) {
+    for (int i = 0; i < NCOORDS; i++) {
+      c[i] *= f;
+    }
+
+    return *this;
+  }
+
+  // geometric addition of two points
+  GMANPoint operator+(const GMANPoint& p) const {
+    GMANPoint res(*this);
+
+    res += p;
+    return res;
+  }
+
+  // scale point by a constant
+  GMANPoint operator*(RtFloat f) const {
+    GMANPoint res(*this);
+
+    res *= f;
+    return res;
+  }
+
+  // transform THIS point using matrix
+  GMANPoint& operator*=(const GMANMatrix4& m);
+
+  // transform point using matrix and return it
+  // do not modify this point
+
+  GMANPoint operator*(const GMANMatrix4& m) const;
+
+  const RtPoint& get(RtVoid) const { return c; }
 };
-
 
 #endif // __GMAN_GMANPOINT_H

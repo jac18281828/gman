@@ -25,32 +25,28 @@
 #include "gmanhpoint.h"
 #include "gmanvector4.h"
 
-RtVoid GMANHPoint::wToOne()
-{
-  w=1.0/w;
-  c[X]*=w;
-  c[Y]*=w;
-  c[Z]*=w;
-  w=1.0;
+RtVoid GMANHPoint::wToOne() {
+  w = 1.0 / w;
+  c[X] *= w;
+  c[Y] *= w;
+  c[Z] *= w;
+  w = 1.0;
 }
 
-GMANHPoint &GMANHPoint::operator+=(const GMANHPoint &p)
-{
-	GMANPoint(*this) += GMANPoint(p);
-	w+=p.getW();
+GMANHPoint& GMANHPoint::operator+=(const GMANHPoint& p) {
+  GMANPoint(*this) += GMANPoint(p);
+  w += p.getW();
 
   return *this;
 }
 
-GMANHPoint &GMANHPoint::operator*=(RtFloat f)
-{
-	GMANPoint(*this) *= f;
-	w*=f;
+GMANHPoint& GMANHPoint::operator*=(RtFloat f) {
+  GMANPoint(*this) *= f;
+  w *= f;
   return *this;
 }
 
-GMANHPoint &GMANHPoint::operator*=(const GMANMatrix4 &m) 
-{
+GMANHPoint& GMANHPoint::operator*=(const GMANMatrix4& m) {
 
   GMANVector4 vec(*this);
 
@@ -60,25 +56,22 @@ GMANHPoint &GMANHPoint::operator*=(const GMANMatrix4 &m)
   return *this;
 }
 
-GMANHPoint GMANHPoint::operator+(const GMANHPoint &p) const
-{
+GMANHPoint GMANHPoint::operator+(const GMANHPoint& p) const {
   GMANHPoint res(*this);
   res += p;
   return res;
 }
 
-GMANHPoint GMANHPoint::operator*(RtFloat f) const
-{
+GMANHPoint GMANHPoint::operator*(RtFloat f) const {
   GMANHPoint res(*this);
   res *= f;
   return res;
 }
 
-GMANHPoint GMANHPoint::operator*(const GMANMatrix4 &m) const
-{
-	GMANHPoint res(*this);
+GMANHPoint GMANHPoint::operator*(const GMANMatrix4& m) const {
+  GMANHPoint res(*this);
 
-	res *= m;
+  res *= m;
 
-	return res;
+  return res;
 }

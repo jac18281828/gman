@@ -51,15 +51,12 @@
 
 namespace {
 
-bool near(RtFloat a, RtFloat b, RtFloat tol) {
-  return std::fabs(a - b) <= tol;
-}
+bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }
 
 // central difference of getLocation, cross(dP/du, dP/dv), normalized --
 // the same convention every getNormal in gmanprimitives.cpp is written
 // against (see phase-3-REPORT.md for the derivation).
-GMANVector finiteDifferenceNormal(GMANParametric &p, double u, double v,
-                                   double h) {
+GMANVector finiteDifferenceNormal(GMANParametric& p, double u, double v, double h) {
   GMANPoint pu0 = p.getLocation(u - h, v);
   GMANPoint pu1 = p.getLocation(u + h, v);
   GMANPoint pv0 = p.getLocation(u, v - h);
@@ -72,17 +69,17 @@ GMANVector finiteDifferenceNormal(GMANParametric &p, double u, double v,
   return n;
 }
 
-void checkAnalyticMatchesFiniteDifference(GMANParametric &p, double u,
-                                           double v, const std::string &name) {
+void checkAnalyticMatchesFiniteDifference(GMANParametric& p, double u, double v, const std::string& name) {
   GMANVector analytic = p.getNormal(u, v);
   analytic.normalize();
   GMANVector numeric = finiteDifferenceNormal(p, u, v, 1e-4);
 
   RtFloat agreement = analytic.dot(numeric);
-  check(agreement > 0.995,
-        name + ": analytic normal agrees with a finite difference of "
-        "getLocation at u=" + std::to_string(u) + " v=" + std::to_string(v) +
-        " (dot=" + std::to_string(agreement) + ")");
+  check(agreement > 0.995, name +
+                               ": analytic normal agrees with a finite difference of "
+                               "getLocation at u=" +
+                               std::to_string(u) + " v=" + std::to_string(v) + " (dot=" + std::to_string(agreement) +
+                               ")");
 }
 
 // ---- proof item 1: analytic normals against finite differences ----
@@ -153,20 +150,17 @@ void testOrientationConsistency() {
       GMANPoint p = sphere.getLocation(u, v);
       GMANVector n = sphere.getNormal(u, v);
       GMANVector radial(p.getX(), p.getY(), p.getZ());
-      check(n.dot(radial) > 0.0,
-            "sphere: normal points away from the center, not into it");
+      check(n.dot(radial) > 0.0, "sphere: normal points away from the center, not into it");
 
       p = cylinder.getLocation(u, v);
       n = cylinder.getNormal(u, v);
       GMANVector axisRadial(p.getX(), p.getY(), 0.0);
-      check(n.dot(axisRadial) > 0.0,
-            "cylinder: normal points away from the axis, not into it");
+      check(n.dot(axisRadial) > 0.0, "cylinder: normal points away from the axis, not into it");
 
       p = cone.getLocation(u, v);
       n = cone.getNormal(u, v);
       GMANVector coneRadial(p.getX(), p.getY(), 0.0);
-      check(n.dot(coneRadial) > 0.0,
-            "cone: normal's radial component points away from the axis");
+      check(n.dot(coneRadial) > 0.0, "cone: normal's radial component points away from the axis");
 
       p = torus.getLocation(u, v);
       n = torus.getNormal(u, v);
@@ -174,22 +168,18 @@ void testOrientationConsistency() {
       // xy plane): tubeCenter is p projected onto that circle.
       RtFloat r = std::sqrt(p.getX() * p.getX() + p.getY() * p.getY());
       GMANVector tubeCenter(p.getX() * 2.0 / r, p.getY() * 2.0 / r, 0.0);
-      GMANVector fromTube(p.getX() - tubeCenter.getX(),
-                           p.getY() - tubeCenter.getY(), p.getZ());
-      check(n.dot(fromTube) > 0.0,
-            "torus: normal points away from the tube's own center circle");
+      GMANVector fromTube(p.getX() - tubeCenter.getX(), p.getY() - tubeCenter.getY(), p.getZ());
+      check(n.dot(fromTube) > 0.0, "torus: normal points away from the tube's own center circle");
 
       p = hyperboloid.getLocation(u, v);
       n = hyperboloid.getNormal(u, v);
       GMANVector hyperboloidRadial(p.getX(), p.getY(), 0.0);
-      check(n.dot(hyperboloidRadial) > 0.0,
-            "hyperboloid: normal points away from the axis, not into it");
+      check(n.dot(hyperboloidRadial) > 0.0, "hyperboloid: normal points away from the axis, not into it");
 
       p = paraboloid.getLocation(u, v);
       n = paraboloid.getNormal(u, v);
       GMANVector paraboloidRadial(p.getX(), p.getY(), 0.0);
-      check(n.dot(paraboloidRadial) > 0.0,
-            "paraboloid: normal points away from the axis, not into it");
+      check(n.dot(paraboloidRadial) > 0.0, "paraboloid: normal points away from the axis, not into it");
 
       // Disk: a flat plate has exactly one outward direction, the same at
       // every (u,v) -- there is no center or axis to point "away from,"
@@ -200,8 +190,7 @@ void testOrientationConsistency() {
         diskNormal0 = n;
         haveDiskNormal0 = true;
       }
-      check(n.dot(diskNormal0) > 0.0,
-            "disk: normal is the same outward direction at every (u,v)");
+      check(n.dot(diskNormal0) > 0.0, "disk: normal is the same outward direction at every (u,v)");
     }
   }
 }
@@ -222,8 +211,7 @@ void testInverseTransposeUnderNonUniformScale() {
   GMANOneMatrix storage(scale);
   GMANTransform transform(storage);
 
-  GMANPrimitive *prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, &options,
-                                         &attr, &transform);
+  GMANPrimitive* prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, &options, &attr, &transform);
   // Nothing in this tree ever frees a tessellated primitive's face/vertex
   // graph -- production code relies on process exit to reclaim it
   // (GMANRenderManImpl::RiEnd leaves worldManager/objectManager
@@ -238,7 +226,7 @@ void testInverseTransposeUnderNonUniformScale() {
   static GMANLinearWorldManager worldMgr;
   worldMgr.add(prim);
 
-  GMANObject *object = dynamic_cast<GMANObject *>(prim);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, "inverse-transpose: getRSSphere returns an object");
 
   // Walk the tessellated grid (URES=VRES=16, gmanpatchpolyobjectmanager.cpp)
@@ -249,15 +237,14 @@ void testInverseTransposeUnderNonUniformScale() {
   const int URES = 16, VRES = 16;
   int k = 0;
   int checkedSome = false;
-  for (GMANVertex *vtx = object->getVert(); vtx != nullptr;
-       vtx = vtx->getNext(), ++k) {
+  for (GMANVertex* vtx = object->getVert(); vtx != nullptr; vtx = vtx->getNext(), ++k) {
     int i = k / (VRES + 1);
     int j = k % (VRES + 1);
     if (j == 0 || j == VRES) {
       continue;
     }
-    double u = i / (double) URES;
-    double v = j / (double) VRES;
+    double u = i / (double)URES;
+    double v = j / (double)VRES;
 
     // Independent camera-space tangent vectors: finite-differencing the
     // *transformed* point folds in the forward transform automatically
@@ -281,18 +268,16 @@ void testInverseTransposeUnderNonUniformScale() {
 
     RtFloat duDot = n.dot(dPdu) / (magnitude * dPdu.magnitude());
     RtFloat dvDot = n.dot(dPdv) / (magnitude * dPdv.magnitude());
-    check(near(duDot, 0.0, 0.01),
-          "inverse-transpose: shading normal stays perpendicular to "
-          "dP/du under a non-uniform scale (u=" + std::to_string(u) +
-          " v=" + std::to_string(v) + ")");
-    check(near(dvDot, 0.0, 0.01),
-          "inverse-transpose: shading normal stays perpendicular to "
-          "dP/dv under a non-uniform scale (u=" + std::to_string(u) +
-          " v=" + std::to_string(v) + ")");
+    check(near(duDot, 0.0, 0.01), "inverse-transpose: shading normal stays perpendicular to "
+                                  "dP/du under a non-uniform scale (u=" +
+                                      std::to_string(u) + " v=" + std::to_string(v) + ")");
+    check(near(dvDot, 0.0, 0.01), "inverse-transpose: shading normal stays perpendicular to "
+                                  "dP/dv under a non-uniform scale (u=" +
+                                      std::to_string(u) + " v=" + std::to_string(v) + ")");
     checkedSome = true;
   }
   check(checkedSome, "inverse-transpose: at least one interior vertex was "
-                      "actually checked");
+                     "actually checked");
 }
 
 // ---- proof item 4: bicubic Patch's central-difference normal stays unit
@@ -308,25 +293,22 @@ void testBicubicPatchNormalUnitLengthFarFromOrigin() {
   // before the cross product (this file's own bicubic fix) does not fix
   // the cancellation itself, but this patch's own (u,v)=(0.5,0.5) does
   // not hit it, so the normal comes back unit length regardless.
-  RtFloat p[48] = {
-      -7.277, -2.329, -0.005, -7.277, -2.329, -0.025, -7.272, -2.345, -0.041,
-      -7.268, -2.365, -0.041, -7.278, -2.329, -0.005, -7.278, -2.329, -0.025,
-      -7.274, -2.346, -0.041, -7.269, -2.365, -0.041, -7.284, -2.331, -0.005,
-      -7.284, -2.331, -0.025, -7.280, -2.347, -0.041, -7.275, -2.366, -0.041,
-      -7.282, -2.330, -0.005, -7.282, -2.330, -0.025, -7.278, -2.346, -0.041,
-      -7.273, -2.366, -0.041};
+  RtFloat p[48] = {-7.277, -2.329, -0.005, -7.277, -2.329, -0.025, -7.272, -2.345, -0.041, -7.268, -2.365, -0.041,
+                   -7.278, -2.329, -0.005, -7.278, -2.329, -0.025, -7.274, -2.346, -0.041, -7.269, -2.365, -0.041,
+                   -7.284, -2.331, -0.005, -7.284, -2.331, -0.025, -7.280, -2.347, -0.041, -7.275, -2.366, -0.041,
+                   -7.282, -2.330, -0.005, -7.282, -2.330, -0.025, -7.278, -2.346, -0.041, -7.273, -2.366, -0.041};
   GMANParameterList pl;
   GMANBasis basis;
   GMANPatch patch((RtToken) "bicubic", p, basis, pl);
 
   GMANVector n = patch.getNormal(0.5, 0.5);
   RtFloat magnitude = n.magnitude();
-  check(near(magnitude, 1.0, 1e-3),
-        "bicubic Patch: getNormal is unit length far from the origin "
-        "(magnitude=" + std::to_string(magnitude) + ")");
+  check(near(magnitude, 1.0, 1e-3), "bicubic Patch: getNormal is unit length far from the origin "
+                                    "(magnitude=" +
+                                        std::to_string(magnitude) + ")");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   testFiniteDifferences();

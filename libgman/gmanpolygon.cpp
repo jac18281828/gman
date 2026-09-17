@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,31 +27,22 @@
 #include "gmanpolygon.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANPolygon
  *
  */
 
 // default constructor
-GMANPolygon::GMANPolygon() : points() { };
+GMANPolygon::GMANPolygon() : points() {};
 
 // polygon of n points
-GMANPolygon::GMANPolygon(int n) : points(n) { 
-};
+GMANPolygon::GMANPolygon(int n) : points(n) {};
 
-// default destructor 
-GMANPolygon::~GMANPolygon() { };
-
+// default destructor
+GMANPolygon::~GMANPolygon() {};
 
 // add a point to the polygon
-RtVoid GMANPolygon::addPoint(const GMANPoint &point) {
-  points.push_back(point);
-}
-
+RtVoid GMANPolygon::addPoint(const GMANPoint& point) { points.push_back(point); }
 
 // set a point a position n
-RtVoid GMANPolygon::setPoint(int n, const GMANPoint &point) {
-  points[n] = point;
-}
-
+RtVoid GMANPolygon::setPoint(int n, const GMANPoint& point) { points[n] = point; }

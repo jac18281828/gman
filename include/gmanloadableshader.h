@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -23,10 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANLOADABLESHADER_H
 #define __GMAN_GMANLOADABLESHADER_H 1
-
 
 #include <list>
 #include <map>
@@ -48,30 +46,28 @@
  *
  */
 
-class GMAN_EXPORT  GMANLoadableShader : public GMANShader, GMANLoadable {
+class GMAN_EXPORT GMANLoadableShader : public GMANShader, GMANLoadable {
 
 public:
   // public types
-  typedef GMANShader *	(*LoadShaderFnc)(RtVoid);
+  typedef GMANShader* (*LoadShaderFnc)(RtVoid);
 
-  static const char *		LoadShaderFncName;
+  static const char* LoadShaderFncName;
 
 private:
-  GMANShader		*shader;
+  GMANShader* shader;
 
 public:
-// default constructor
-  GMANLoadableShader(const char *path); 
+  // default constructor
+  GMANLoadableShader(const char* path);
 
   virtual ~GMANLoadableShader(); // default destructor
-
 
   /*
    * shader interface.
    */
 
   virtual ShaderType getType(RtVoid) const;
-
 
   /*
    * reinterpret the shader as a specific shader instance
@@ -80,18 +76,15 @@ public:
    * pointer to the specific shader object after a call to getType
    */
 
-  GMANDisplacementShader *getDisplacement(RtVoid);
+  GMANDisplacementShader* getDisplacement(RtVoid);
 
-  GMANImagerShader       *getImager(RtVoid);
+  GMANImagerShader* getImager(RtVoid);
 
-  GMANLightSourceShader  *getLightSource(RtVoid);
+  GMANLightSourceShader* getLightSource(RtVoid);
 
-  GMANSurfaceShader      *getSurface(RtVoid);
+  GMANSurfaceShader* getSurface(RtVoid);
 
-  GMANVolumeShader	 *getVolume(RtVoid);
-
+  GMANVolumeShader* getVolume(RtVoid);
 };
 
-
 #endif
-

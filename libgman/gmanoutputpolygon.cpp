@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,16 +27,13 @@
 #include "gmanoutputpolygon.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANOutputPolygon
  *
  */
 
 // default constructor
-GMANOutputPolygon::GMANOutputPolygon() { };
+GMANOutputPolygon::GMANOutputPolygon() {};
 
-
-// default destructor 
-GMANOutputPolygon::~GMANOutputPolygon() { };
-
+// default destructor
+GMANOutputPolygon::~GMANOutputPolygon() {};

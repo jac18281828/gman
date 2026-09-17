@@ -35,8 +35,7 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-class GMAN_EXPORT  GMANInlineParse
-{
+class GMAN_EXPORT GMANInlineParse {
 private:
   RtInt number_of_words;
   std::string word[7];
@@ -47,27 +46,25 @@ private:
   RtInt size;
   std::string identifier;
 
+  bool is_class(std::string str);
+  bool is_type(std::string str);
+  bool is_int(std::string str);
 
-  bool is_class (std::string str);
-  bool is_type (std::string str);
-  bool is_int (std::string str);
+  GMANTokenEntry::TokenClass get_class(std::string str);
+  GMANTokenEntry::TokenType get_type(std::string str);
+  RtInt get_size(std::string str);
 
-  GMANTokenEntry::TokenClass get_class (std::string str);
-  GMANTokenEntry::TokenType get_type (std::string str);
-  RtInt get_size (std::string str);
-
-  RtVoid check_syntax ();
-  RtVoid lc(std::string &);
+  RtVoid check_syntax();
+  RtVoid lc(std::string&);
 
 public:
-  RtVoid       parse (std::string str);
+  RtVoid parse(std::string str);
 
-  bool       isInline() { return inline_def; }
+  bool isInline() { return inline_def; }
   GMANTokenEntry::TokenClass getClass() { return tc; }
-  GMANTokenEntry::TokenType  getType() { return tt; }
-  RtInt      getQuantity() { return size; }
-  std::string     getIdentifier() { return identifier; }
+  GMANTokenEntry::TokenType getType() { return tt; }
+  RtInt getQuantity() { return size; }
+  std::string getIdentifier() { return identifier; }
 };
 
 #endif
-

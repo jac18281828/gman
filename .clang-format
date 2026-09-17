@@ -1,22 +1,19 @@
 ---
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# The tree carries no consistent style. This config is for new and touched
-# code going forward, not a mandate to reformat the history behind it
-# (AGENTS.md: no cosmetic churn riding along with a behavior change).
-# `format-check` (CMakeLists.txt)
-# runs it over the explicit file list this phase wrote to a single,
-# consistent style, not all of tests/**; widen that list only as more
-# of the tree is deliberately touched and reformatted on its own commit.
+# LLVM-based style at 120 columns. The whole tree is formatted to this file
+# by clang-format 22.1.8. `format-check` (CMakeLists.txt) checks every
+# `.c`, `.cpp` and `.h` under the eight source directories on every push.
+# Includes sort by the categories below.
 Language: Cpp
-BasedOnStyle: Google
+BasedOnStyle: LLVM
 IndentWidth: 2
-ColumnLimit: 80
-AccessModifierOffset: -2
-AllowShortFunctionsOnASingleLine: Empty
+ColumnLimit: 120
 DerivePointerAlignment: false
-PointerAlignment: Right
-SortIncludes: false
+PointerAlignment: Left
+AlignEscapedNewlines: Left
+BreakStringLiterals: false
+SortIncludes: CaseSensitive
 IncludeBlocks: Regroup
 IncludeCategories:
   # 1. C++ standard library: angle brackets, no extension.

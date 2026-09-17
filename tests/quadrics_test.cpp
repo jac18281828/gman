@@ -51,23 +51,21 @@
 
 namespace {
 
-int runGman(const std::string &gman, const std::string &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(const std::string& gman, const std::string& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
 // Number of distinct non-background runs along one horizontal scanline --
 // one run per primitive's silhouette, if all seven still rasterize.
-int countSilhouetteRuns(const GmanImage &img, uint32_t y) {
+int countSilhouetteRuns(const GmanImage& img, uint32_t y) {
   if (!img.ok) {
     return -1;
   }
   const uint32_t bg = img.at(0, 0);
   auto differsFromBackground = [&](uint32_t p) {
-    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-           std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
            std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8;
   };
   int runs = 0;
@@ -82,9 +80,9 @@ int countSilhouetteRuns(const GmanImage &img, uint32_t y) {
   return runs;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
@@ -104,14 +102,12 @@ int main(int argc, char *argv[]) {
     // pins a floor -- a vanished primitive still drops the count below
     // it, which is what a mutation would do.
     int runs = countSilhouetteRuns(img, img.height / 2);
-    check(runs >= 7,
-          "quadrics.rib: at least seven silhouettes cross the centre "
-          "scanline (found " +
-              std::to_string(runs) + ")");
+    check(runs >= 7, "quadrics.rib: at least seven silhouettes cross the centre "
+                     "scanline (found " +
+                         std::to_string(runs) + ")");
   }
 
-  checkGoldenImage("quadrics.tif", ribDir + "/quadrics_golden.tif",
-                   GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+  checkGoldenImage("quadrics.tif", ribDir + "/quadrics_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
                    "quadrics_diff.tif");
 
   return checkSummary("quadrics holds");

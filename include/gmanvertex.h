@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANVERTEX_H
 #define __GMAN_GMANVERTEX_H 1
-
 
 #include <list>
 #include <map>
@@ -46,72 +44,61 @@
  *
  */
 
-class GMAN_EXPORT  GMANVertex {
+class GMAN_EXPORT GMANVertex {
 private:
-  GMANPoint		location;
+  GMANPoint location;
 
-  GMANVector		normal;
+  GMANVector normal;
 
-  GMANColor		color;
-  
-  GMANAlpha		alpha;
+  GMANColor color;
 
-  GMANVertex		*next; // next vertex
+  GMANAlpha alpha;
 
-  GMANFaceList		*faceList;
+  GMANVertex* next; // next vertex
+
+  GMANFaceList* faceList;
+
 public:
   // default constructor
   GMANVertex();
 
-  GMANVertex(const GMANPoint &position, 
-	     GMANFaceList &/*fl*/,
-	     const GMANColor &/*col*/=DefaultBGColor,
-	     const GMANAlpha &alp=DefaultAlpha) : location(position),
-    normal(0.0, 0.0, 0.0),
-    alpha(alp),
-    next(NULL),
-    faceList(NULL)
-  { };
-    
+  GMANVertex(const GMANPoint& position, GMANFaceList& /*fl*/, const GMANColor& /*col*/ = DefaultBGColor,
+             const GMANAlpha& alp = DefaultAlpha)
+      : location(position), normal(0.0, 0.0, 0.0), alpha(alp), next(NULL), faceList(NULL) {};
 
   ~GMANVertex(); // default destructor
 
-
   // set location
-  RtVoid setLocation(const GMANPoint &p) { location = p; };
+  RtVoid setLocation(const GMANPoint& p) { location = p; };
   // get location
-  const GMANPoint &getLocation(RtVoid) const { return location; };
+  const GMANPoint& getLocation(RtVoid) const { return location; };
 
   // set color
-  RtVoid setColor(const GMANColor &c) { color = c; };
+  RtVoid setColor(const GMANColor& c) { color = c; };
   // get color
-  const GMANColor &getColor(RtVoid) const { return color; };
-
+  const GMANColor& getColor(RtVoid) const { return color; };
 
   // set alpha
-  RtVoid setColor(const GMANAlpha &a) { alpha = a; };
+  RtVoid setColor(const GMANAlpha& a) { alpha = a; };
   // get alpha
-  const GMANAlpha &getAlpha(RtVoid) const { return alpha; };
+  const GMANAlpha& getAlpha(RtVoid) const { return alpha; };
 
   // set the shading normal
-  RtVoid setNormal(const GMANVector &n) { normal = n; };
+  RtVoid setNormal(const GMANVector& n) { normal = n; };
   // return the normal
-  const GMANVector &getNormal(RtVoid) const { return normal; };
+  const GMANVector& getNormal(RtVoid) const { return normal; };
   // set next vertex
-  RtVoid setNext(GMANVertex *n) { next = n; };
+  RtVoid setNext(GMANVertex* n) { next = n; };
   // return next vertex
-  GMANVertex *getNext(RtVoid) { return next; };
+  GMANVertex* getNext(RtVoid) { return next; };
 
   // calculate the vertex normal
   RtVoid calcNormal(RtVoid);
 
   // set the face list
-  RtVoid setFaceList(GMANFaceList *fl) { faceList = fl; }
+  RtVoid setFaceList(GMANFaceList* fl) { faceList = fl; }
   // return the face list
-  GMANFaceList *getFaceList(RtVoid) const { return faceList; }
-  
+  GMANFaceList* getFaceList(RtVoid) const { return faceList; }
 };
 
-
 #endif
-

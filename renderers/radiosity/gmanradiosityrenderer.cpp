@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,25 +27,18 @@
 #include "gmanrenderer.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANRadiosityRenderer
  *
  */
 
 // default constructor
-GMANRadiosityRenderer::GMANRadiosityRenderer() : GMANRenderer() { };
+GMANRadiosityRenderer::GMANRadiosityRenderer() : GMANRenderer() {};
 
+// default destructor
+GMANRadiosityRenderer::~GMANRadiosityRenderer() {};
 
-// default destructor 
-GMANRadiosityRenderer::~GMANRadiosityRenderer() { };
-
-GMANWorldManager *GMANRadiosityRenderer::getWorldManager(void) {
-  return &worldManager;
-}
+GMANWorldManager* GMANRadiosityRenderer::getWorldManager(void) { return &worldManager; }
 
 // return its object manager
-GMANObjectManager *GMANRadiosityRenderer::getObjectManager(void) {
-  return &objectManager;
-}
-
+GMANObjectManager* GMANRadiosityRenderer::getObjectManager(void) { return &objectManager; }

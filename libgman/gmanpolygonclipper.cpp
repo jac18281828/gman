@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -28,14 +28,13 @@
 #include "gmanviewingsystem.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANPolygonClipper
  *
  */
 
 // default constructor
-GMANPolygonClipper::GMANPolygonClipper() { 
+GMANPolygonClipper::GMANPolygonClipper() {
   GMANVector4 vec;
 
   pclip = &(clipper[GMANFRONT]);
@@ -77,48 +76,35 @@ GMANPolygonClipper::GMANPolygonClipper() {
 
   vec = GMANVector4(0.0, 1.0, 0.0, 1.0);
   clipper[GMANBOTTOM].setNormal(vec.normalize());
-
 };
 
+// default destructor
+GMANPolygonClipper::~GMANPolygonClipper() {};
 
-// default destructor 
-GMANPolygonClipper::~GMANPolygonClipper() { };
-
-
-int GMANPolygonClipper::clip(GMANFace *face,
-			     GMANOutputPolygon &out,
-			     const GMANViewingSystem *vs) {
-  const GMANVertex *vert;  // 3-D world space vertex
-  GMANVertex4 hv;   // 4-D homogeneous coord vertex
+int GMANPolygonClipper::clip(GMANFace* face, GMANOutputPolygon& out, const GMANViewingSystem* vs) {
+  const GMANVertex* vert; // 3-D world space vertex
+  GMANVertex4 hv;         // 4-D homogeneous coord vertex
 
   // Both projections clip against RiScreenWindow: the same window
   // GMANViewingSystem::screenToRaster maps to the raster, so the bound
   // that discards geometry here and the bound that lays out pixels there
   // agree by construction. A window wider than the canonical +-1 square
   // must show more of the projected scene, not less.
-  const GMANOptions::ScreenWindowStruct &sw = vs->getScreenWindow();
-  clipper[GMANLEFT].setNormal(
-      GMANVector4(1.0, 0.0, 0.0, -sw.left).normalize());
-  clipper[GMANRIGHT].setNormal(
-      GMANVector4(-1.0, 0.0, 0.0, sw.right).normalize());
-  clipper[GMANTOP].setNormal(
-      GMANVector4(0.0, -1.0, 0.0, sw.top).normalize());
-  clipper[GMANBOTTOM].setNormal(
-      GMANVector4(0.0, 1.0, 0.0, -sw.bottom).normalize());
+  const GMANOptions::ScreenWindowStruct& sw = vs->getScreenWindow();
+  clipper[GMANLEFT].setNormal(GMANVector4(1.0, 0.0, 0.0, -sw.left).normalize());
+  clipper[GMANRIGHT].setNormal(GMANVector4(-1.0, 0.0, 0.0, sw.right).normalize());
+  clipper[GMANTOP].setNormal(GMANVector4(0.0, -1.0, 0.0, sw.top).normalize());
+  clipper[GMANBOTTOM].setNormal(GMANVector4(0.0, 1.0, 0.0, -sw.bottom).normalize());
 
   int nVerts = face->getNumVerts();
-  for(int i=0; i < nVerts; i++) {
+  for (int i = 0; i < nVerts; i++) {
     // get world space vertex position pointer
     vert = face->getVertex(i);
-    
+
     // set homogeneous coord
-    hv.set(vert->getLocation(), 
-	   vert->getColor(), 
-	   vert->getAlpha(), 
-	   vs->getProjMatrix());
+    hv.set(vert->getLocation(), vert->getColor(), vert->getAlpha(), vs->getProjMatrix());
 
     pclip->clip(hv, out);
-
   }
   pclip->close(out);
 

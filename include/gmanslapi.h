@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANSLAPI_H
 #define __GMAN_GMANSLAPI_H 1
-
 
 #include <list>
 #include <map>
@@ -40,39 +38,36 @@
 #include "ri.h"
 
 /*
- * RenderMan SL API 
+ * RenderMan SL API
  *
  */
 
 // min takes a list of two or more arguments and return the argument with
 // minimum value, on a component-by-components basis
-GMANColor  GMAN_EXPORT GMANMin(GMANColor  a, GMANColor  b ...);
-GMANPoint  GMAN_EXPORT GMANMin(GMANPoint  a, GMANPoint  b ...);
-GMANVector GMAN_EXPORT GMANMin(GMANVector a, GMANVector b ...);
+GMANColor GMAN_EXPORT GMANMin(GMANColor a, GMANColor b...);
+GMANPoint GMAN_EXPORT GMANMin(GMANPoint a, GMANPoint b...);
+GMANVector GMAN_EXPORT GMANMin(GMANVector a, GMANVector b...);
 
 // max takes a list of two or more arguments and return the argument with
 // maximum value, on a component-by-components basis
-GMANColor  GMAN_EXPORT GMANMax(GMANColor  a, GMANColor  b ...);
-GMANPoint  GMAN_EXPORT GMANMax(GMANPoint  a, GMANPoint  b ...);
-GMANVector GMAN_EXPORT GMANMax(GMANVector a, GMANVector b ...);
+GMANColor GMAN_EXPORT GMANMax(GMANColor a, GMANColor b...);
+GMANPoint GMAN_EXPORT GMANMax(GMANPoint a, GMANPoint b...);
+GMANVector GMAN_EXPORT GMANMax(GMANVector a, GMANVector b...);
 
 // clamp returns min if a is less than min, max if a is greater than max;
 // otherwise it returns a, on a component-by-components basis
-GMAN_EXPORT GMANColor  GMANClamp(GMANColor  a, GMANColor  min, GMANColor  max);
-GMAN_EXPORT GMANPoint  GMANClamp(GMANPoint  a, GMANPoint  min, GMANPoint  max);
+GMAN_EXPORT GMANColor GMANClamp(GMANColor a, GMANColor min, GMANColor max);
+GMAN_EXPORT GMANPoint GMANClamp(GMANPoint a, GMANPoint min, GMANPoint max);
 GMAN_EXPORT GMANVector GAMNClamp(GMANVector a, GMANVector min, GMANVector max);
 
 // mix returns a*(1-alpha) + b*alpha, that is, it performs a linear
 // blend between values a and b, on a component-by-components basis
-GMAN_EXPORT GMANColor  GMANMix(GMANColor  a, GMANColor  b, RtFloat alpha);
-GMAN_EXPORT GMANPoint  GMANMix(GMANPoint  a, GMANPoint  b, RtFloat alpha);
+GMAN_EXPORT GMANColor GMANMix(GMANColor a, GMANColor b, RtFloat alpha);
+GMAN_EXPORT GMANPoint GMANMix(GMANPoint a, GMANPoint b, RtFloat alpha);
 GMAN_EXPORT GMANVector GMANMix(GMANVector a, GMANVector b, RtFloat alpha);
 
 // step returns 0 if value is less than min, otherwise if returns 1
-inline GMAN_EXPORT RtFloat GMANStep(RtFloat min, RtFloat value)
-{
-	return value < min ? 0.0 : 1.0;
-}
+inline GMAN_EXPORT RtFloat GMANStep(RtFloat min, RtFloat value) { return value < min ? 0.0 : 1.0; }
 
 // smoothstep returns 0 if value is less than min, 1 if value is greater than
 // or equal to max, and performs a smooth Hermite interpolation between 0 and 1
@@ -80,117 +75,106 @@ inline GMAN_EXPORT RtFloat GMANStep(RtFloat min, RtFloat value)
 GMAN_EXPORT RtFloat GMANSmoothStep(RtFloat min, RtFloat max, RtFloat value);
 
 // filterstep provides an analytically antialiased step function
-GMAN_EXPORT RtFloat GMANFilterStep(RtFloat edge, RtFloat s1 ...);
+GMAN_EXPORT RtFloat GMANFilterStep(RtFloat edge, RtFloat s1...);
 
 // the spline family fits a spline to the control points given
 // LJL - spline functions added - February 2001
 //  #define RI_CATMULLROMSTEP              ((RtInt)1)
 //  RtBasis RiCatmullRomBasis = { {-1.0/2,  3.0/2, -3.0/2,  1.0/2},
-//                                { 2.0/2, -5.0/2,  4.0/2, -1.0/2}, 
+//                                { 2.0/2, -5.0/2,  4.0/2, -1.0/2},
 //                                {-1.0/2,  0.0/2,  1.0/2,  0.0/2},
 //                                { 0.0/2,  2.0/2,  0.0/2,  0.0/2} };
-template <class T>
-T GMANCatmullSpline(RtFloat value, RtInt nvals, T fvals[])
-{
-  RtInt nbSeg=nvals-3;
-  RtFloat temp=value*nbSeg;
-  RtInt ptr=(RtInt) temp;
-  value=temp-ptr;
-  RtFloat vv=value*value;
-  RtFloat vvv=vv*value;
+template <class T> T GMANCatmullSpline(RtFloat value, RtInt nvals, T fvals[]) {
+  RtInt nbSeg = nvals - 3;
+  RtFloat temp = value * nbSeg;
+  RtInt ptr = (RtInt)temp;
+  value = temp - ptr;
+  RtFloat vv = value * value;
+  RtFloat vvv = vv * value;
 
-  RtFloat c0,c1,c2,c3;
-  c0=-0.5*vvv+vv-0.5*value;
-  c1=1.5*vvv-2.5*vv+1;
-  c2=-1.5*vvv+2.0*vv+0.5*value;
-  c3=0.5*vvv-0.5*vv;
+  RtFloat c0, c1, c2, c3;
+  c0 = -0.5 * vvv + vv - 0.5 * value;
+  c1 = 1.5 * vvv - 2.5 * vv + 1;
+  c2 = -1.5 * vvv + 2.0 * vv + 0.5 * value;
+  c3 = 0.5 * vvv - 0.5 * vv;
 
-  return (fvals[ptr]*c0 + fvals[ptr+1]*c1 + fvals[ptr+2]*c2 + fvals[ptr+3]*c3);
+  return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
 }
 
 //  #define RI_BEZIERSTEP              ((RtInt)3)
 //  RtBasis RiBezierBasis= { {-1,  3, -3,  1},
-//                           { 3, -6,  3,  0}, 
+//                           { 3, -6,  3,  0},
 //                           {-3,  3,  0,  0},
 //                           { 1,  0,  0,  0} };
-template <class T>
-T GMANBezierSpline(RtFloat value, RtInt nvals, T fvals[])
-{
-  RtInt nbSeg=1+(nvals-4)/3;
-  RtFloat temp=value*nbSeg;
-  RtInt ptr=(RtInt) temp;
-  value=temp-ptr;
-  RtFloat vv=value*value;
-  RtFloat vvv=vv*value;
+template <class T> T GMANBezierSpline(RtFloat value, RtInt nvals, T fvals[]) {
+  RtInt nbSeg = 1 + (nvals - 4) / 3;
+  RtFloat temp = value * nbSeg;
+  RtInt ptr = (RtInt)temp;
+  value = temp - ptr;
+  RtFloat vv = value * value;
+  RtFloat vvv = vv * value;
 
-  RtFloat c0,c1,c2,c3;
-  c0=-vvv+3.0*vv-3.0*value+1.0;
-  c1=3.0*vvv-6.0*vv+3.0*value;
-  c2=-3.0*vvv+3.0*vv;
-  c3=vvv;
+  RtFloat c0, c1, c2, c3;
+  c0 = -vvv + 3.0 * vv - 3.0 * value + 1.0;
+  c1 = 3.0 * vvv - 6.0 * vv + 3.0 * value;
+  c2 = -3.0 * vvv + 3.0 * vv;
+  c3 = vvv;
 
-  return (fvals[ptr]*c0 + fvals[ptr+1]*c1 + fvals[ptr+2]*c2 + fvals[ptr+3]*c3);
+  return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
 }
 
 //  #define RI_BSPLINESTEP              ((RtInt)1)
 //  RtBasis RiBSplineBasis = { {-1.0/6,  3.0/6, -3.0/6,  1.0/6},
-//                             { 3.0/6, -6.0/6,  3.0/6,  0.0/6}, 
+//                             { 3.0/6, -6.0/6,  3.0/6,  0.0/6},
 //                             {-3.0/6,  0.0/6,  3.0/6,  0.0/6},
 //                             { 1.0/6,  4.0/6,  1.0/6,  0.0/6} };
-template <class T>
-T GMANBsplineSpline(RtFloat value, RtInt nvals, T fvals[])
-{
-  RtInt nbSeg=nvals-3;
-  RtFloat temp=value*nbSeg;
-  RtInt ptr=(RtInt) temp;
-  value=temp-ptr;
-  RtFloat vv=value*value;
-  RtFloat vvv=vv*value;
+template <class T> T GMANBsplineSpline(RtFloat value, RtInt nvals, T fvals[]) {
+  RtInt nbSeg = nvals - 3;
+  RtFloat temp = value * nbSeg;
+  RtInt ptr = (RtInt)temp;
+  value = temp - ptr;
+  RtFloat vv = value * value;
+  RtFloat vvv = vv * value;
 
-  RtFloat c0,c1,c2,c3;
-  c0=-1.0/6*vvv+0.5*vv-0.5*value+1/6;
-  c1=0.5*vvv-vv+2/3;
-  c2=-0.5*vvv+0.5*vv+0.5*value+1/6;
-  c3=1/6*vvv;
+  RtFloat c0, c1, c2, c3;
+  c0 = -1.0 / 6 * vvv + 0.5 * vv - 0.5 * value + 1 / 6;
+  c1 = 0.5 * vvv - vv + 2 / 3;
+  c2 = -0.5 * vvv + 0.5 * vv + 0.5 * value + 1 / 6;
+  c3 = 1 / 6 * vvv;
 
-  return (fvals[ptr]*c0 + fvals[ptr+1]*c1 + fvals[ptr+2]*c2 + fvals[ptr+3]*c3);
+  return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
 }
 
 //  #define RI_HERMITESTEP              ((RtInt)2)
 //  RtBasis RiHermiteBasis = { { 2,  1, -2,  1},
-//                             {-3, -2,  3, -1}, 
+//                             {-3, -2,  3, -1},
 //                             { 0,  1,  0,  0},
 //                             { 1,  0,  0,  0} };
-template <class T>
-T GMANHermiteSpline(RtFloat value, RtInt nvals, T fvals[])
-{
-  RtInt nbSeg=1+(nvals-4)/2;
-  RtFloat temp=value*nbSeg;
-  RtInt ptr=(RtInt) temp;
-  value=temp-ptr;
-  RtFloat vv=value*value;
-  RtFloat vvv=vv*value;
+template <class T> T GMANHermiteSpline(RtFloat value, RtInt nvals, T fvals[]) {
+  RtInt nbSeg = 1 + (nvals - 4) / 2;
+  RtFloat temp = value * nbSeg;
+  RtInt ptr = (RtInt)temp;
+  value = temp - ptr;
+  RtFloat vv = value * value;
+  RtFloat vvv = vv * value;
 
-  RtFloat c0,c1,c2,c3;
-  c0=2*vvv-3.0*vv+1.0;
-  c1=vvv-2.0*vv+value;
-  c2=-2.0*vvv+3.0*vv;
-  c3=vvv-vv;
+  RtFloat c0, c1, c2, c3;
+  c0 = 2 * vvv - 3.0 * vv + 1.0;
+  c1 = vvv - 2.0 * vv + value;
+  c2 = -2.0 * vvv + 3.0 * vv;
+  c3 = vvv - vv;
 
-  return (fvals[ptr]*c0 + fvals[ptr+1]*c1 + fvals[ptr+2]*c2 + fvals[ptr+3]*c3);
+  return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
 }
 
-template <class T>
-T GMANLinearSpline(RtFloat value, RtInt nvals, T fvals[])
-{
-  RtInt nbSeg=1+(nvals-4);
-  RtFloat temp=value*nbSeg;
-  RtInt ptr=(RtInt) temp;
-  value=temp-ptr;
+template <class T> T GMANLinearSpline(RtFloat value, RtInt nvals, T fvals[]) {
+  RtInt nbSeg = 1 + (nvals - 4);
+  RtFloat temp = value * nbSeg;
+  RtInt ptr = (RtInt)temp;
+  value = temp - ptr;
 
-  return (fvals[ptr+1]*(1-value) + fvals[ptr+2]*value);
+  return (fvals[ptr + 1] * (1 - value) + fvals[ptr + 2] * value);
 }
-
 
 // Declared to match gmanslapi.cpp's actual names. This header previously
 // declared these five (faceforward, reflect, refract, the two fresnel
@@ -202,19 +186,14 @@ T GMANLinearSpline(RtFloat value, RtInt nvals, T fvals[])
 // (GMANDistance/GMANPTLined/GMANRotate are what's defined) but are outside
 // this phase's shading path; left as-is and flagged in phase-3-REPORT.md
 // rather than fixed silently.
-GMAN_EXPORT RtFloat    distance (const GMANPoint &p1, const GMANPoint &p2);
-GMAN_EXPORT RtFloat    ptlined (const GMANPoint &p0, const GMANPoint &p1, const GMANPoint &q);
-GMAN_EXPORT GMANPoint  rotate (const GMANPoint &q, RtFloat angle,
-					   const GMANPoint &p1, const GMANPoint &p2);
-GMAN_EXPORT GMANVector GMANFaceForward (const GMANVector &n, const GMANVector &i,
-			const GMANVector &nr);
-GMAN_EXPORT GMANVector GMANReflect (const GMANVector &i, const GMANVector &n);
-GMAN_EXPORT GMANVector GMANRefract (const GMANVector &i, const GMANVector &n, RtFloat eta);
-GMAN_EXPORT RtVoid     GMANFresnel (const GMANVector &i, const GMANVector &n, RtFloat eta,
-		    RtFloat &kr, RtFloat &kt);
-GMAN_EXPORT RtVoid     GMANFresnel (const GMANVector &i, const GMANVector &n, RtFloat eta,
-		    RtFloat &kr, RtFloat &kt,
-		    GMANVector &r, GMANVector &t);
-
+GMAN_EXPORT RtFloat distance(const GMANPoint& p1, const GMANPoint& p2);
+GMAN_EXPORT RtFloat ptlined(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& q);
+GMAN_EXPORT GMANPoint rotate(const GMANPoint& q, RtFloat angle, const GMANPoint& p1, const GMANPoint& p2);
+GMAN_EXPORT GMANVector GMANFaceForward(const GMANVector& n, const GMANVector& i, const GMANVector& nr);
+GMAN_EXPORT GMANVector GMANReflect(const GMANVector& i, const GMANVector& n);
+GMAN_EXPORT GMANVector GMANRefract(const GMANVector& i, const GMANVector& n, RtFloat eta);
+GMAN_EXPORT RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt);
+GMAN_EXPORT RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt,
+                               GMANVector& r, GMANVector& t);
 
 #endif

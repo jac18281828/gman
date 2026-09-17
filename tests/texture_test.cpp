@@ -86,44 +86,40 @@
 namespace {
 
 const int kColorTol = 8; // per-channel tolerance out of 255, this
-                          // codebase's standard (polygon_test.cpp,
-                          // silhouette_test.cpp, lighting_test.cpp)
+                         // codebase's standard (polygon_test.cpp,
+                         // silhouette_test.cpp, lighting_test.cpp)
 
 // Direct GMANColor comparisons below are exact rational arithmetic over
 // texel centres (0.25, 0.75) and half-integer texel-space offsets, so a
 // tight float tolerance still leaves headroom for rounding.
-const RtFloat kSampleTol = (RtFloat) 1.0e-4;
+const RtFloat kSampleTol = (RtFloat)1.0e-4;
 
-const GMANColor kRed((RtFloat) 1.0, (RtFloat) 0.0, (RtFloat) 0.0);
-const GMANColor kGreen((RtFloat) 0.0, (RtFloat) 1.0, (RtFloat) 0.0);
-const GMANColor kBlue((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 1.0);
-const GMANColor kWhite((RtFloat) 1.0, (RtFloat) 1.0, (RtFloat) 1.0);
-const GMANColor kBlack((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 0.0);
+const GMANColor kRed((RtFloat)1.0, (RtFloat)0.0, (RtFloat)0.0);
+const GMANColor kGreen((RtFloat)0.0, (RtFloat)1.0, (RtFloat)0.0);
+const GMANColor kBlue((RtFloat)0.0, (RtFloat)0.0, (RtFloat)1.0);
+const GMANColor kWhite((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
+const GMANColor kBlack((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
 
-bool colorNear(const GMANColor &got, const GMANColor &want, RtFloat tol) {
-  return std::fabs(got.getRed() - want.getRed()) <= tol &&
-         std::fabs(got.getGreen() - want.getGreen()) <= tol &&
+bool colorNear(const GMANColor& got, const GMANColor& want, RtFloat tol) {
+  return std::fabs(got.getRed() - want.getRed()) <= tol && std::fabs(got.getGreen() - want.getGreen()) <= tol &&
          std::fabs(got.getBlue() - want.getBlue()) <= tol;
 }
 
-std::string describe(const GMANColor &c) {
-  return "(" + std::to_string(c.getRed()) + ", " +
-         std::to_string(c.getGreen()) + ", " + std::to_string(c.getBlue()) +
+std::string describe(const GMANColor& c) {
+  return "(" + std::to_string(c.getRed()) + ", " + std::to_string(c.getGreen()) + ", " + std::to_string(c.getBlue()) +
          ")";
 }
 
-void checkColor(const GMANColor &got, const GMANColor &want,
-                 const std::string &what) {
-  check(colorNear(got, want, kSampleTol),
-        what + ": got " + describe(got) + ", want " + describe(want));
+void checkColor(const GMANColor& got, const GMANColor& want, const std::string& what) {
+  check(colorNear(got, want, kSampleTol), what + ": got " + describe(got) + ", want " + describe(want));
 }
 
 // ---- direct cache assertions: tests/rib/texture.rib's own fixture is
 // the same checker, so these pin the sampler's contract independent of
 // the shading and rasterization the render assertion also exercises. ----
 
-void testBilinearAtTexelCentres(const std::string &name) {
-  GMANTextureCache &cache = gmanTextureCache();
+void testBilinearAtTexelCentres(const std::string& name) {
+  GMANTextureCache& cache = gmanTextureCache();
   checkColor(cache.sample(name, 0.25, 0.25, GMAN_TEXTURE_CLAMP), kRed,
              "texel centre (0.25, 0.25) is the top-left texel exactly");
   checkColor(cache.sample(name, 0.75, 0.25, GMAN_TEXTURE_CLAMP), kGreen,
@@ -134,100 +130,82 @@ void testBilinearAtTexelCentres(const std::string &name) {
              "texel centre (0.75, 0.75) is the bottom-right texel exactly");
 }
 
-void testBilinearHalfway(const std::string &name) {
-  GMANTextureCache &cache = gmanTextureCache();
-  const GMANColor redGreenMean((RtFloat) 0.5, (RtFloat) 0.5, (RtFloat) 0.0);
-  const GMANColor redBlueMean((RtFloat) 0.5, (RtFloat) 0.0, (RtFloat) 0.5);
+void testBilinearHalfway(const std::string& name) {
+  GMANTextureCache& cache = gmanTextureCache();
+  const GMANColor redGreenMean((RtFloat)0.5, (RtFloat)0.5, (RtFloat)0.0);
+  const GMANColor redBlueMean((RtFloat)0.5, (RtFloat)0.0, (RtFloat)0.5);
   checkColor(cache.sample(name, 0.5, 0.25, GMAN_TEXTURE_CLAMP), redGreenMean,
              "halfway between the top two texel centres is their mean");
   checkColor(cache.sample(name, 0.25, 0.5, GMAN_TEXTURE_CLAMP), redBlueMean,
              "halfway between the left two texel centres is their mean");
 }
 
-void testTopRowConvention(const std::string &name) {
-  GMANTextureCache &cache = gmanTextureCache();
+void testTopRowConvention(const std::string& name) {
+  GMANTextureCache& cache = gmanTextureCache();
   checkColor(cache.sample(name, 0.25, 0.0, GMAN_TEXTURE_CLAMP), kRed,
              "t=0 samples the image's top row (red), not the bottom");
   checkColor(cache.sample(name, 0.25, 1.0, GMAN_TEXTURE_CLAMP), kBlue,
              "t=1 samples the image's bottom row (blue), not the top");
 }
 
-void testWrapModes(const std::string &name) {
-  GMANTextureCache &cache = gmanTextureCache();
+void testWrapModes(const std::string& name) {
+  GMANTextureCache& cache = gmanTextureCache();
 
-  checkColor(cache.sample(name, -0.5, 0.25, GMAN_TEXTURE_CLAMP), kRed,
-             "clamp: s<0 holds the left edge texel");
-  checkColor(cache.sample(name, 1.5, 0.25, GMAN_TEXTURE_CLAMP), kGreen,
-             "clamp: s>1 holds the right edge texel");
+  checkColor(cache.sample(name, -0.5, 0.25, GMAN_TEXTURE_CLAMP), kRed, "clamp: s<0 holds the left edge texel");
+  checkColor(cache.sample(name, 1.5, 0.25, GMAN_TEXTURE_CLAMP), kGreen, "clamp: s>1 holds the right edge texel");
 
   checkColor(cache.sample(name, -0.75, 0.25, GMAN_TEXTURE_PERIODIC), kRed,
              "periodic: s=-0.75 wraps to the same texel as s=0.25");
   checkColor(cache.sample(name, 1.25, 0.25, GMAN_TEXTURE_PERIODIC), kRed,
              "periodic: s=1.25 wraps to the same texel as s=0.25");
 
-  checkColor(cache.sample(name, -0.5, 0.25, GMAN_TEXTURE_BLACK), kBlack,
-             "black: s<0 returns black");
-  checkColor(cache.sample(name, 1.5, 0.25, GMAN_TEXTURE_BLACK), kBlack,
-             "black: s>1 returns black");
+  checkColor(cache.sample(name, -0.5, 0.25, GMAN_TEXTURE_BLACK), kBlack, "black: s<0 returns black");
+  checkColor(cache.sample(name, 1.5, 0.25, GMAN_TEXTURE_BLACK), kBlack, "black: s>1 returns black");
 }
 
 // The three-argument cache sample() reads a file's own recorded wrap
 // modes instead of taking one from the caller -- proved against a tag of
 // "periodic,black", asymmetric on purpose so an axis swap is visible.
-void testRecordedWrapModes(const std::string &pbName,
-                            const std::string &plainName,
-                            const std::string &mirrorClampName) {
-  check(writeCheckerTexture(pbName, "periodic", "black"),
-        pbName + " writes with wrap tag \"periodic,black\"");
-  GMANTextureCache &cache = gmanTextureCache();
+void testRecordedWrapModes(const std::string& pbName, const std::string& plainName,
+                           const std::string& mirrorClampName) {
+  check(writeCheckerTexture(pbName, "periodic", "black"), pbName + " writes with wrap tag \"periodic,black\"");
+  GMANTextureCache& cache = gmanTextureCache();
 
-  checkColor(cache.sample(pbName, 1.25, 0.25), kRed,
-             "periodic,black: s=1.25 wraps periodically to red");
-  checkColor(cache.sample(pbName, 0.25, 1.5), kBlack,
-             "periodic,black: t=1.5 is black outside the image");
-  checkColor(cache.sample(pbName, 0.25, 0.25), kRed,
-             "periodic,black: texel centre (0.25, 0.25) is red");
-  checkColor(cache.sample(pbName, 0.75, 0.25), kGreen,
-             "periodic,black: texel centre (0.75, 0.25) is green");
-  checkColor(cache.sample(pbName, 0.25, 0.75), kBlue,
-             "periodic,black: texel centre (0.25, 0.75) is blue");
-  checkColor(cache.sample(pbName, 0.75, 0.75), kWhite,
-             "periodic,black: texel centre (0.75, 0.75) is white");
+  checkColor(cache.sample(pbName, 1.25, 0.25), kRed, "periodic,black: s=1.25 wraps periodically to red");
+  checkColor(cache.sample(pbName, 0.25, 1.5), kBlack, "periodic,black: t=1.5 is black outside the image");
+  checkColor(cache.sample(pbName, 0.25, 0.25), kRed, "periodic,black: texel centre (0.25, 0.25) is red");
+  checkColor(cache.sample(pbName, 0.75, 0.25), kGreen, "periodic,black: texel centre (0.75, 0.25) is green");
+  checkColor(cache.sample(pbName, 0.25, 0.75), kBlue, "periodic,black: texel centre (0.25, 0.75) is blue");
+  checkColor(cache.sample(pbName, 0.75, 0.75), kWhite, "periodic,black: texel centre (0.75, 0.75) is white");
 
   check(writeCheckerTexture(plainName), plainName + " writes with no tag");
-  checkColor(cache.sample(plainName, 1.5, 0.25), kGreen,
-             "no tag: s=1.5 clamps to the right edge texel");
+  checkColor(cache.sample(plainName, 1.5, 0.25), kGreen, "no tag: s=1.5 clamps to the right edge texel");
 
   check(writeCheckerTexture(mirrorClampName, "mirror", "clamp"),
         mirrorClampName + " writes with wrap tag \"mirror,clamp\"");
-  checkColor(cache.sample(mirrorClampName, 1.5, 0.25), kGreen,
-             "unparseable tag: falls back to clamp on both axes");
+  checkColor(cache.sample(mirrorClampName, 1.5, 0.25), kGreen, "unparseable tag: falls back to clamp on both axes");
 }
 
 // The shadeop: a default-constructed GMANSurfaceEnv's texture() reaches
 // the same three-argument cache sample(), so it also honors the file's
 // own recorded modes.
-void testShadeopUsesRecordedWrapModes(const std::string &pbName) {
+void testShadeopUsesRecordedWrapModes(const std::string& pbName) {
   GMANSurfaceEnv env;
-  checkColor(env.texture(pbName, 1.25, 0.25), kRed,
-             "texture() shadeop: s=1.25 wraps periodically to red");
+  checkColor(env.texture(pbName, 1.25, 0.25), kRed, "texture() shadeop: s=1.25 wraps periodically to red");
 }
 
 void testMissingFile() {
-  GMANColor c = gmanTextureCache().sample("texture_test_missing_9f3ab2.tif",
-                                           0.5, 0.5, GMAN_TEXTURE_CLAMP);
+  GMANColor c = gmanTextureCache().sample("texture_test_missing_9f3ab2.tif", 0.5, 0.5, GMAN_TEXTURE_CLAMP);
   checkColor(c, kBlack, "a name that cannot be decoded returns opaque black");
 }
 
-void testSecondLookupReadsNoFile(const std::string &name) {
+void testSecondLookupReadsNoFile(const std::string& name) {
   check(writeCheckerTexture(name), name + " writes");
-  GMANColor before =
-      gmanTextureCache().sample(name, 0.25, 0.25, GMAN_TEXTURE_CLAMP);
+  GMANColor before = gmanTextureCache().sample(name, 0.25, 0.25, GMAN_TEXTURE_CLAMP);
   checkColor(before, kRed, "first lookup decodes the file");
 
   check(std::remove(name.c_str()) == 0, name + " deletes");
-  GMANColor after =
-      gmanTextureCache().sample(name, 0.25, 0.25, GMAN_TEXTURE_CLAMP);
+  GMANColor after = gmanTextureCache().sample(name, 0.25, 0.25, GMAN_TEXTURE_CLAMP);
   checkColor(after, kRed,
              "second lookup after deleting the file still reads red: the "
              "cache, not a second decode");
@@ -235,9 +213,8 @@ void testSecondLookupReadsNoFile(const std::string &name) {
 
 // ---- the render assertion ----
 
-int runGman(const std::string &gman, const std::string &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(const std::string& gman, const std::string& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
@@ -250,71 +227,60 @@ struct Image {
   uint32_t at(int x, int y) const { return raster[y * width + x]; }
 };
 
-Image readTIFF(const std::string &path) {
+Image readTIFF(const std::string& path) {
   Image img;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return img;
   }
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &img.width);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &img.height);
   img.raster.resize(img.width * img.height);
-  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height,
-                                      img.raster.data(), ORIENTATION_TOPLEFT,
-                                      0);
+  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height, img.raster.data(), ORIENTATION_TOPLEFT, 0);
   TIFFClose(tif);
   return img;
 }
 
 struct Quadrant {
   int x, y;
-  const char *label;
+  const char* label;
   GMANColor expected; // texel colour * 0.3 (ambientlight intensity, Ka=1)
 };
 
 // texture.rib and maketexture_wrap.rib share this checker, this camera and
 // this ambientlight, so both read back the same four quadrant colours.
-void checkQuadrants(const Image &img) {
-  const RtFloat kAmbient = (RtFloat) 0.3;
+void checkQuadrants(const Image& img) {
+  const RtFloat kAmbient = (RtFloat)0.3;
   const Quadrant quadrants[4] = {
       {90, 110, "top-left (red)",
-       GMANColor(kRed.getRed() * kAmbient, kRed.getGreen() * kAmbient,
-                  kRed.getBlue() * kAmbient)},
+       GMANColor(kRed.getRed() * kAmbient, kRed.getGreen() * kAmbient, kRed.getBlue() * kAmbient)},
       {110, 110, "top-right (green)",
-       GMANColor(kGreen.getRed() * kAmbient, kGreen.getGreen() * kAmbient,
-                  kGreen.getBlue() * kAmbient)},
+       GMANColor(kGreen.getRed() * kAmbient, kGreen.getGreen() * kAmbient, kGreen.getBlue() * kAmbient)},
       {90, 90, "bottom-left (blue)",
-       GMANColor(kBlue.getRed() * kAmbient, kBlue.getGreen() * kAmbient,
-                  kBlue.getBlue() * kAmbient)},
+       GMANColor(kBlue.getRed() * kAmbient, kBlue.getGreen() * kAmbient, kBlue.getBlue() * kAmbient)},
       {110, 90, "bottom-right (white)",
-       GMANColor(kWhite.getRed() * kAmbient, kWhite.getGreen() * kAmbient,
-                  kWhite.getBlue() * kAmbient)},
+       GMANColor(kWhite.getRed() * kAmbient, kWhite.getGreen() * kAmbient, kWhite.getBlue() * kAmbient)},
   };
 
-  for (const Quadrant &q : quadrants) {
+  for (const Quadrant& q : quadrants) {
     uint32_t p = img.at(q.x, q.y);
-    double expectedR = (double) q.expected.getRed() * 255.0;
-    double expectedG = (double) q.expected.getGreen() * 255.0;
-    double expectedB = (double) q.expected.getBlue() * 255.0;
-    check(std::fabs((double) TIFFGetR(p) - expectedR) <= kColorTol,
-          std::string("quadrant ") + q.label + " red matches (got " +
-              std::to_string(TIFFGetR(p)) + ", expected " +
+    double expectedR = (double)q.expected.getRed() * 255.0;
+    double expectedG = (double)q.expected.getGreen() * 255.0;
+    double expectedB = (double)q.expected.getBlue() * 255.0;
+    check(std::fabs((double)TIFFGetR(p) - expectedR) <= kColorTol,
+          std::string("quadrant ") + q.label + " red matches (got " + std::to_string(TIFFGetR(p)) + ", expected " +
               std::to_string(expectedR) + ")");
-    check(std::fabs((double) TIFFGetG(p) - expectedG) <= kColorTol,
-          std::string("quadrant ") + q.label + " green matches (got " +
-              std::to_string(TIFFGetG(p)) + ", expected " +
+    check(std::fabs((double)TIFFGetG(p) - expectedG) <= kColorTol,
+          std::string("quadrant ") + q.label + " green matches (got " + std::to_string(TIFFGetG(p)) + ", expected " +
               std::to_string(expectedG) + ")");
-    check(std::fabs((double) TIFFGetB(p) - expectedB) <= kColorTol,
-          std::string("quadrant ") + q.label + " blue matches (got " +
-              std::to_string(TIFFGetB(p)) + ", expected " +
+    check(std::fabs((double)TIFFGetB(p) - expectedB) <= kColorTol,
+          std::string("quadrant ") + q.label + " blue matches (got " + std::to_string(TIFFGetB(p)) + ", expected " +
               std::to_string(expectedB) + ")");
   }
 }
 
-void testRenderedQuadrants(const std::string &gman,
-                            const std::string &ribDir) {
-  check(writeCheckerTexture("checker_texture.tif"),
-        "checker_texture.tif writes into the render's working directory");
+void testRenderedQuadrants(const std::string& gman, const std::string& ribDir) {
+  check(writeCheckerTexture("checker_texture.tif"), "checker_texture.tif writes into the render's working directory");
 
   const std::string rib = ribDir + "/texture.rib";
   check(runGman(gman, rib) == 0, "texture.rib renders");
@@ -329,12 +295,12 @@ void testRenderedQuadrants(const std::string &gman,
 
 // ---- the writer: gmanMakeTexture (commit 2) ----
 
-std::string readAsciiTag(const std::string &path, ttag_t tag) {
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+std::string readAsciiTag(const std::string& path, ttag_t tag) {
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return std::string();
   }
-  char *value = nullptr;
+  char* value = nullptr;
   std::string result;
   if (TIFFGetField(tif, tag, &value) && value != nullptr) {
     result = value;
@@ -343,80 +309,62 @@ std::string readAsciiTag(const std::string &path, ttag_t tag) {
   return result;
 }
 
-bool fileExists(const std::string &path) {
-  return std::filesystem::exists(path);
-}
+bool fileExists(const std::string& path) { return std::filesystem::exists(path); }
 
-void testMakeTextureWriter(const std::string &picture,
-                            const std::string &texture) {
+void testMakeTextureWriter(const std::string& picture, const std::string& texture) {
   std::remove(texture.c_str());
-  check(gmanMakeTexture(picture.c_str(), texture.c_str(), "periodic",
-                         "black"),
+  check(gmanMakeTexture(picture.c_str(), texture.c_str(), "periodic", "black"),
         "gmanMakeTexture(\"periodic\", \"black\") returns true");
 
   check(readAsciiTag(texture, TIFFTAG_PIXAR_WRAPMODES) == "periodic,black",
         texture + "'s TIFFTAG_PIXAR_WRAPMODES is \"periodic,black\"");
-  check(readAsciiTag(texture, TIFFTAG_PIXAR_TEXTUREFORMAT) ==
-            "Plain Texture",
+  check(readAsciiTag(texture, TIFFTAG_PIXAR_TEXTUREFORMAT) == "Plain Texture",
         texture + "'s TIFFTAG_PIXAR_TEXTUREFORMAT is \"Plain Texture\"");
 
-  GMANTextureCache &cache = gmanTextureCache();
-  checkColor(cache.sample(texture, 0.25, 0.25), kRed,
-             "made texture: texel centre (0.25, 0.25) is red");
-  checkColor(cache.sample(texture, 0.75, 0.25), kGreen,
-             "made texture: texel centre (0.75, 0.25) is green");
-  checkColor(cache.sample(texture, 0.25, 0.75), kBlue,
-             "made texture: texel centre (0.25, 0.75) is blue");
-  checkColor(cache.sample(texture, 0.75, 0.75), kWhite,
-             "made texture: texel centre (0.75, 0.75) is white");
-  checkColor(cache.sample(texture, 1.25, 0.25), kRed,
-             "made texture: s=1.25 wraps periodically to red");
-  checkColor(cache.sample(texture, 0.25, 1.5), kBlack,
-             "made texture: t=1.5 is black outside the image");
+  GMANTextureCache& cache = gmanTextureCache();
+  checkColor(cache.sample(texture, 0.25, 0.25), kRed, "made texture: texel centre (0.25, 0.25) is red");
+  checkColor(cache.sample(texture, 0.75, 0.25), kGreen, "made texture: texel centre (0.75, 0.25) is green");
+  checkColor(cache.sample(texture, 0.25, 0.75), kBlue, "made texture: texel centre (0.25, 0.75) is blue");
+  checkColor(cache.sample(texture, 0.75, 0.75), kWhite, "made texture: texel centre (0.75, 0.75) is white");
+  checkColor(cache.sample(texture, 1.25, 0.25), kRed, "made texture: s=1.25 wraps periodically to red");
+  checkColor(cache.sample(texture, 0.25, 1.5), kBlack, "made texture: t=1.5 is black outside the image");
 }
 
-void testMakeTextureEviction(const std::string &picture,
-                              const std::string &texture) {
+void testMakeTextureEviction(const std::string& picture, const std::string& texture) {
   std::remove(texture.c_str());
-  GMANTextureCache &cache = gmanTextureCache();
+  GMANTextureCache& cache = gmanTextureCache();
 
   check(gmanMakeTexture(picture.c_str(), texture.c_str(), "clamp", "clamp"),
         "gmanMakeTexture(\"clamp\", \"clamp\") returns true");
-  checkColor(cache.sample(texture, 1.25, 0.25), kGreen,
-             "eviction: clamp holds the right edge texel (green)");
+  checkColor(cache.sample(texture, 1.25, 0.25), kGreen, "eviction: clamp holds the right edge texel (green)");
 
-  check(gmanMakeTexture(picture.c_str(), texture.c_str(), "periodic",
-                         "periodic"),
+  check(gmanMakeTexture(picture.c_str(), texture.c_str(), "periodic", "periodic"),
         "gmanMakeTexture(\"periodic\", \"periodic\") returns true");
   checkColor(cache.sample(texture, 1.25, 0.25), kRed,
              "eviction: a second MakeTexture forgets the cached name, so "
              "this reads periodic (red)");
 }
 
-void testMakeTextureFailures(const std::string &picture) {
+void testMakeTextureFailures(const std::string& picture) {
   const std::string badWrap = "made_bad_wrap.tex";
   std::remove(badWrap.c_str());
-  check(! gmanMakeTexture(picture.c_str(), badWrap.c_str(), "mirror",
-                           "black"),
+  check(!gmanMakeTexture(picture.c_str(), badWrap.c_str(), "mirror", "black"),
         "gmanMakeTexture with an unknown wrap name returns false");
-  check(! fileExists(badWrap), badWrap + " is not written");
+  check(!fileExists(badWrap), badWrap + " is not written");
 
   const std::string missingPictureTarget = "made_missing_picture.tex";
   std::remove(missingPictureTarget.c_str());
-  check(! gmanMakeTexture("texture_test_missing_9f3ab2.tif",
-                           missingPictureTarget.c_str(), "clamp", "clamp"),
+  check(!gmanMakeTexture("texture_test_missing_9f3ab2.tif", missingPictureTarget.c_str(), "clamp", "clamp"),
         "gmanMakeTexture with a picture that does not exist returns false");
-  check(! fileExists(missingPictureTarget),
-        missingPictureTarget + " is not written");
+  check(!fileExists(missingPictureTarget), missingPictureTarget + " is not written");
 
-  check(! gmanMakeTexture(picture.c_str(), "", "clamp", "clamp"),
+  check(!gmanMakeTexture(picture.c_str(), "", "clamp", "clamp"),
         "gmanMakeTexture with an empty texture name returns false");
 }
 
 // ---- through RIB: MakeTexture followed by a render (commit 2) ----
 
-void testMadeTextureRenders(const std::string &gman,
-                             const std::string &ribDir) {
+void testMadeTextureRenders(const std::string& gman, const std::string& ribDir) {
   check(writeCheckerTexture("checker_texture.tif"),
         "checker_texture.tif writes for maketexture_wrap.rib's MakeTexture");
   std::remove("checker_made.tex");
@@ -424,8 +372,7 @@ void testMadeTextureRenders(const std::string &gman,
   const std::string rib = ribDir + "/maketexture_wrap.rib";
   check(runGman(gman, rib) == 0, "maketexture_wrap.rib renders");
 
-  check(readAsciiTag("checker_made.tex", TIFFTAG_PIXAR_WRAPMODES) ==
-            "periodic,black",
+  check(readAsciiTag("checker_made.tex", TIFFTAG_PIXAR_WRAPMODES) == "periodic,black",
         "checker_made.tex's TIFFTAG_PIXAR_WRAPMODES is \"periodic,black\"");
 
   Image img = readTIFF("maketexture_wrap.tif");
@@ -438,17 +385,15 @@ void testMadeTextureRenders(const std::string &gman,
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n",
-                  argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  check(writeCheckerTexture("checker_direct.tif"),
-        "checker_direct.tif writes for the direct cache assertions");
+  check(writeCheckerTexture("checker_direct.tif"), "checker_direct.tif writes for the direct cache assertions");
   testBilinearAtTexelCentres("checker_direct.tif");
   testBilinearHalfway("checker_direct.tif");
   testTopRowConvention("checker_direct.tif");
@@ -459,8 +404,7 @@ int main(int argc, char *argv[]) {
   std::remove("checker_pb.tif");
   std::remove("checker_plain.tif");
   std::remove("checker_mirror_clamp.tif");
-  testRecordedWrapModes("checker_pb.tif", "checker_plain.tif",
-                         "checker_mirror_clamp.tif");
+  testRecordedWrapModes("checker_pb.tif", "checker_plain.tif", "checker_mirror_clamp.tif");
   testShadeopUsesRecordedWrapModes("checker_pb.tif");
 
   testRenderedQuadrants(gman, ribDir);

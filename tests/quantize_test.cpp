@@ -57,9 +57,9 @@ struct Result {
   std::string output;
 };
 
-Result runGman(const std::string &gman, const std::string &rib) {
+Result runGman(const std::string& gman, const std::string& rib) {
   const std::string command = "\"" + gman + "\" \"" + rib + "\" 2>&1";
-  std::FILE *pipe = popen(command.c_str(), "r");
+  std::FILE* pipe = popen(command.c_str(), "r");
   Result result{-1, ""};
   if (pipe == nullptr) {
     return result;
@@ -73,7 +73,7 @@ Result runGman(const std::string &gman, const std::string &rib) {
   return result;
 }
 
-int countOccurrences(const std::string &haystack, const std::string &needle) {
+int countOccurrences(const std::string& haystack, const std::string& needle) {
   int count = 0;
   std::size_t pos = 0;
   while ((pos = haystack.find(needle, pos)) != std::string::npos) {
@@ -87,7 +87,7 @@ int countOccurrences(const std::string &haystack, const std::string &needle) {
 // copy of quantizeWarned -- otherwise a prior call in this same test binary
 // (there is none today, but a future test added to this file could add
 // one) would make the "exactly once" assertion pass for the wrong reason.
-std::string callBothOverloadsInChild(const std::string &captureFile) {
+std::string callBothOverloadsInChild(const std::string& captureFile) {
   // fork() copies the parent's block-buffered stdout; without a flush here
   // the child's freopen() implicit flush-then-close later writes the
   // inherited buffer back out to the real stdout, duplicating whatever this
@@ -98,11 +98,10 @@ std::string callBothOverloadsInChild(const std::string &captureFile) {
     return "";
   }
   if (pid == 0) {
-    FILE *outRedirect = std::freopen(captureFile.c_str(), "w", stdout);
+    FILE* outRedirect = std::freopen(captureFile.c_str(), "w", stdout);
     (void)outRedirect;
     GMANQuantize quantizer(GMANQuantize::RGB, 1, 0, 255, 0.0);
-    GMANColor color(static_cast<GMANColorSample>(0.5),
-                    static_cast<GMANColorSample>(0.5),
+    GMANColor color(static_cast<GMANColorSample>(0.5), static_cast<GMANColorSample>(0.5),
                     static_cast<GMANColorSample>(0.5));
     GMANColorRGB colorRgb;
     colorRgb.setRed(128);
@@ -117,7 +116,7 @@ std::string callBothOverloadsInChild(const std::string &captureFile) {
   waitpid(pid, &status, 0);
 
   std::string output;
-  std::FILE *file = std::fopen(captureFile.c_str(), "r");
+  std::FILE* file = std::fopen(captureFile.c_str(), "r");
   if (file == nullptr) {
     return output;
   }
@@ -131,7 +130,7 @@ std::string callBothOverloadsInChild(const std::string &captureFile) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
@@ -146,12 +145,9 @@ int main(int argc, char *argv[]) {
   const std::string message = "Color quantization not currently implemented.";
   int count = countOccurrences(r.output, message);
 
-  check(count >= 1,
-        "quantize: the message still appears for a scene that reaches "
-        "the quantizer");
-  check(count <= 1,
-        "quantize: the message appears at most once per process (found " +
-            std::to_string(count) + ")");
+  check(count >= 1, "quantize: the message still appears for a scene that reaches "
+                    "the quantizer");
+  check(count <= 1, "quantize: the message appears at most once per process (found " + std::to_string(count) + ")");
 
   // Relative to WORKING_DIRECTORY -- a scratch dir CMake creates for this
   // test, not the read-only tests/rib source tree ribDir names.
@@ -159,10 +155,9 @@ int main(int argc, char *argv[]) {
   const std::string overloadOutput = callBothOverloadsInChild(captureFile);
   std::remove(captureFile.c_str());
   const int overloadCount = countOccurrences(overloadOutput, message);
-  check(overloadCount == 1,
-        "quantize: GMANColor& and GMANColorRGB& share one warn-once guard "
-        "(found " +
-            std::to_string(overloadCount) + ")");
+  check(overloadCount == 1, "quantize: GMANColor& and GMANColorRGB& share one warn-once guard "
+                            "(found " +
+                                std::to_string(overloadCount) + ")");
 
   return checkSummary("quantize holds");
 }

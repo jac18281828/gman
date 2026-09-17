@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANPOLYGON_H
 #define __GMAN_GMANPOLYGON_H 1
-
 
 #include <vector>
 
@@ -46,8 +44,9 @@ typedef std::vector<GMANPoint> PointVector;
  *
  */
 
-class GMAN_EXPORT  GMANPolygon {
-  PointVector	points;
+class GMAN_EXPORT GMANPolygon {
+  PointVector points;
+
 public:
   GMANPolygon(); // default constructor
 
@@ -57,20 +56,16 @@ public:
   ~GMANPolygon(); // default destructor
 
   // add a point to the polygon.
-  RtVoid addPoint(const GMANPoint &point);
+  RtVoid addPoint(const GMANPoint& point);
 
   // set a point a position n
-  RtVoid setPoint(int n, const GMANPoint &point);
+  RtVoid setPoint(int n, const GMANPoint& point);
 
   // reveal a point
-  GMANPoint& operator[](int n) {
-    return points[n];
-  };
+  GMANPoint& operator[](int n) { return points[n]; };
 
   // get number of points
   int getNPoints(RtVoid) { return points.size(); };
 };
 
-
 #endif
-

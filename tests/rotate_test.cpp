@@ -72,9 +72,8 @@
 
 namespace {
 
-int runGman(const std::string &gman, const std::string &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(const std::string& gman, const std::string& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
@@ -91,9 +90,9 @@ struct BBox {
 
 // Reads an RGBA TIFF and finds the bounding box of pixels that differ from
 // the top-left corner (the background, since nothing is drawn there).
-BBox findSilhouette(const std::string &path) {
+BBox findSilhouette(const std::string& path) {
   BBox box;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return box;
   }
@@ -103,8 +102,7 @@ BBox findSilhouette(const std::string &path) {
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(width * height);
-  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                  ORIENTATION_TOPLEFT, 0)) {
+  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0)) {
     TIFFClose(tif);
     return box;
   }
@@ -142,7 +140,7 @@ BBox findSilhouette(const std::string &path) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <rotate.rib>\n", argv[0]);
     return 2;
@@ -160,14 +158,12 @@ int main(int argc, char *argv[]) {
   check(box.found && std::fabs(box.centerX() - 100.0) <= tol,
         "silhouette centred on x (hand-derived: Rotate then Translate "
         "carries the sphere to raster centre 100)");
-  check(box.found && std::fabs(box.centerY() - 100.0) <= tol,
-        "silhouette centred on y (hand-derived 100)");
+  check(box.found && std::fabs(box.centerY() - 100.0) <= tol, "silhouette centred on y (hand-derived 100)");
 
   // asin(0.5/3.5) = 8.213deg; tan(8.213deg) = 0.144332.
   const double tanAngularRadius = std::tan(std::asin(0.5 / 3.5));
   const double halfFov = 45.0 / 2.0 * M_PI / 180.0;
-  const double expectedHalfExtent =
-      tanAngularRadius / std::tan(halfFov) * 100.0; // ~34.8px, 200px/2
+  const double expectedHalfExtent = tanAngularRadius / std::tan(halfFov) * 100.0; // ~34.8px, 200px/2
 
   check(box.found && std::fabs(box.halfWidth() - expectedHalfExtent) <= tol,
         "silhouette half-width matches the d=3.5 hand-derivation (~34.8px), "

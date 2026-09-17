@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANRIBTOKENIZE_H
 #define __GMAN_GMANRIBTOKENIZE_H 1
-
 
 #include <fstream>
 #include <istream>
@@ -37,19 +35,18 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-
 // jac 03/31/2002
 // win32 doesn't support inner classes in templates
-// so I moved these out 
-  
-  /*
-   * Token return type populated by tokenizer.
-   */
-class GMAN_EXPORT  GMANToken {
- public:
-	 // public types
-	 
- typedef enum {
+// so I moved these out
+
+/*
+ * Token return type populated by tokenizer.
+ */
+class GMAN_EXPORT GMANToken {
+public:
+  // public types
+
+  typedef enum {
     UNKNOWN,
     STRING,
     REAL,
@@ -157,157 +154,117 @@ class GMAN_EXPORT  GMANToken {
     RI_IF_END,
     RI_PIXEL_FILTER,
 
- } TokenType;
+  } TokenType;
 
-  private:
-    TokenType		type;
+private:
+  TokenType type;
 
-    /* real and longint were left indeterminate by every constructor that did
-     * not set them, so reading the wrong arm of this struct read garbage.
-     * gcc flags it under -Werror=maybe-uninitialized. */
-    struct TokVals {
-      std::string	stringVal;
-      RtFloat	real{};
-      long	longint{};
-    } value;
-    
-  public:
-    
-    // Empty ctor
-    GMANToken() {
-      type = UNKNOWN;
-    }
-    
-    // Token ctor
-    GMANToken(TokenType t) {
-      type = t;
-    }
+  /* real and longint were left indeterminate by every constructor that did
+   * not set them, so reading the wrong arm of this struct read garbage.
+   * gcc flags it under -Werror=maybe-uninitialized. */
+  struct TokVals {
+    std::string stringVal;
+    RtFloat real{};
+    long longint{};
+  } value;
 
-    // Token ctor carrying a name -- RI_UNKNOWN_REQUEST's request name
-    GMANToken(TokenType t, const std::string &name) {
-      type = t;
-      value.stringVal = name;
-    }
+public:
+  // Empty ctor
+  GMANToken() { type = UNKNOWN; }
 
-    // string ctor
-    GMANToken(char *str) { 
-      type = STRING; 
-      value.stringVal = str; 
-    };
+  // Token ctor
+  GMANToken(TokenType t) { type = t; }
 
+  // Token ctor carrying a name -- RI_UNKNOWN_REQUEST's request name
+  GMANToken(TokenType t, const std::string& name) {
+    type = t;
+    value.stringVal = name;
+  }
 
-    // string ctor
-    GMANToken(const std::string &str) { 
-      type = STRING; 
-      value.stringVal = str; 
-    };
-
-    // float ctor
-    GMANToken(RtFloat f ) { 
-      type = REAL; 
-      value.real = f; 
-    };
-
-    // long ctor
-    GMANToken(long l ) { 
-      type = LONGINT; 
-      value.longint = l; 
-    };
-
-
-    TokenType	getType(RtVoid) const {
-      return type;
-    };
-
-    operator TokenType() {
-      return getType();
-    }
-
-
-    RtToken getRtToken(RtVoid) const {
-      return (RtToken)value.stringVal.c_str();
-    }
-
-    operator RtToken() {
-      return getRtToken();
-    }
-
-    const std::string &getString(RtVoid) const {
-      return value.stringVal;
-    }
-
-    operator	std::string() {
-      return getString();
-    }
-
-    RtFloat   getReal(RtVoid) const {
-      return value.real;
-    }
-
-    operator RtFloat() {
-      return getReal();
-    }
-
-    long      getLongInt(RtVoid) const {
-      return value.longint;
-    }
-
-    operator long() {
-      return getLongInt();
-    };
-
+  // string ctor
+  GMANToken(char* str) {
+    type = STRING;
+    value.stringVal = str;
   };
 
+  // string ctor
+  GMANToken(const std::string& str) {
+    type = STRING;
+    value.stringVal = str;
+  };
+
+  // float ctor
+  GMANToken(RtFloat f) {
+    type = REAL;
+    value.real = f;
+  };
+
+  // long ctor
+  GMANToken(long l) {
+    type = LONGINT;
+    value.longint = l;
+  };
+
+  TokenType getType(RtVoid) const { return type; };
+
+  operator TokenType() { return getType(); }
+
+  RtToken getRtToken(RtVoid) const { return (RtToken)value.stringVal.c_str(); }
+
+  operator RtToken() { return getRtToken(); }
+
+  const std::string& getString(RtVoid) const { return value.stringVal; }
+
+  operator std::string() { return getString(); }
+
+  RtFloat getReal(RtVoid) const { return value.real; }
+
+  operator RtFloat() { return getReal(); }
+
+  long getLongInt(RtVoid) const { return value.longint; }
+
+  operator long() { return getLongInt(); };
+};
 
 /*
  * RenderMan API gmanribtokenize
  *
  */
 
-class GMAN_EXPORT  GMANRIBTokenize {
+class GMAN_EXPORT GMANRIBTokenize {
 public:
-
   static const int bufSz;
 
 private:
-
-  std::string  		buffer;
+  std::string buffer;
 
   /* private methods */
   bool isKeyToken(char c) const {
-    if(isalnum(c))
-		return true;
-	return false;
+    if (isalnum(c))
+      return true;
+    return false;
   };
 
-  bool isStrToken(char c) const {
-    return (c == '\"');
-  };
+  bool isStrToken(char c) const { return (c == '\"'); };
 
-  bool isNumToken(char c) const {
-    return (isdigit(c) || (c == '.') || (c == '-') || c == '+' || c == 'e');
-  };
+  bool isNumToken(char c) const { return (isdigit(c) || (c == '.') || (c == '-') || c == '+' || c == 'e'); };
 
-  const GMANToken parseKeyword(std::istream &ribFile);
+  const GMANToken parseKeyword(std::istream& ribFile);
 
-  const GMANToken parseString(std::istream &ribFile);
+  const GMANToken parseString(std::istream& ribFile);
 
-  const GMANToken parseNum(std::istream &ribFile);
+  const GMANToken parseNum(std::istream& ribFile);
 
-  void consumeWhitespace(std::istream &ribFile) const;
-
+  void consumeWhitespace(std::istream& ribFile) const;
 
 public:
-
   GMANRIBTokenize(); // default constructor
 
   ~GMANRIBTokenize(); // default destructor
 
   // ribFile is any character stream, not necessarily a file -- ReadArchive
   // and gzip decompression both feed this from an in-memory stream.
-  const GMANToken	getNext(std::istream &ribFile);
+  const GMANToken getNext(std::istream& ribFile);
 };
 
-
 #endif
-

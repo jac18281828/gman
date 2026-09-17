@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -29,7 +29,6 @@
 #include "gmanvertex.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANVertex
  *
@@ -43,18 +42,12 @@
 // blend (GMANCombine, weighted by e.getAlpha()) reads it as soon as the
 // clipper actually runs, turning the garbage into an out-of-range color
 // that later corrupts gamma/quantization.
-GMANVertex::GMANVertex() : location(0.0, 0.0, 0.0),
-			   normal(0.0, 0.0, 0.0),
-			   color(DefaultBGColor),
-			   alpha(DefaultAlpha),
-			   next(NULL),
-			   faceList(NULL) { };
+GMANVertex::GMANVertex()
+    : location(0.0, 0.0, 0.0), normal(0.0, 0.0, 0.0), color(DefaultBGColor), alpha(DefaultAlpha), next(NULL),
+      faceList(NULL) {};
 
-
-// default destructor 
-GMANVertex::~GMANVertex() { };
-
-
+// default destructor
+GMANVertex::~GMANVertex() {};
 
 // calculate vertex normal: the area-weighted average of the adjacent
 // faces' geometric normals, for polygonal input with no analytic normal.
@@ -75,9 +68,7 @@ RtVoid GMANVertex::calcNormal() {
   }
 
   GMANVector accum(0.0, 0.0, 0.0);
-  for (GMANFaceList::iterator face = faceList->begin();
-       face != faceList->end();
-       ++face) {
+  for (GMANFaceList::iterator face = faceList->begin(); face != faceList->end(); ++face) {
     accum += (*face)->getNormal() * (*face)->getArea();
   }
   accum.normalize();

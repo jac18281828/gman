@@ -46,8 +46,7 @@ RtInt gmanParallelWorkers(RtInt count, RtInt workers) {
   return result;
 }
 
-void gmanParallelFor(RtInt count, const std::function<void(RtInt, RtInt)> &body,
-                     RtInt workers) {
+void gmanParallelFor(RtInt count, const std::function<void(RtInt, RtInt)>& body, RtInt workers) {
   if (count <= 0) {
     return;
   }
@@ -88,7 +87,7 @@ void gmanParallelFor(RtInt count, const std::function<void(RtInt, RtInt)> &body,
       threads.emplace_back([&runWorker, w] { runWorker(w); });
     }
     runWorker(0);
-    for (auto &t : threads) {
+    for (auto& t : threads) {
       t.join();
     }
   }

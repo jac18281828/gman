@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -31,31 +31,26 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANVector
  *
  */
 GMANVector::GMANVector() {
-    for(RtInt i=0; i<NCOORDS; i++) {
-	vec[i] = 0.0;
-    }
+  for (RtInt i = 0; i < NCOORDS; i++) {
+    vec[i] = 0.0;
+  }
 }
 
 GMANVector::GMANVector(RtFloat x, RtFloat y, RtFloat z) {
-    setX(x);
-    setY(y);
-    setZ(z);
+  setX(x);
+  setY(y);
+  setZ(z);
 }
 
-GMANVector::GMANVector(const GMANPoint &p) {
-
-    *this = p;
-}
+GMANVector::GMANVector(const GMANPoint& p) { *this = p; }
 
 /* construct a vector from two points V = b - a */
-GMANVector::GMANVector(const GMANPoint &a, const GMANPoint &b)
-{
+GMANVector::GMANVector(const GMANPoint& a, const GMANPoint& b) {
   setX(b.getX() - a.getX());
   setY(b.getY() - a.getY());
   setZ(b.getZ() - a.getZ());
@@ -66,77 +61,66 @@ GMANVector::~GMANVector() {
 }
 
 // copy operator
-GMANVector &GMANVector::operator=(const GMANPoint &p) {
-    setX(p.getX());
-    setY(p.getY());
-    setZ(p.getZ());
-    
-    return *this;
+GMANVector& GMANVector::operator=(const GMANPoint& p) {
+  setX(p.getX());
+  setY(p.getY());
+  setZ(p.getZ());
+
+  return *this;
 }
 
 // copy operator
-GMANVector &GMANVector::operator=(const GMANVector &v) {
-    setX(v.getX());
-    setY(v.getY());
-    setZ(v.getZ());
+GMANVector& GMANVector::operator=(const GMANVector& v) {
+  setX(v.getX());
+  setY(v.getY());
+  setZ(v.getZ());
 
+  return *this;
+}
+
+RtFloat GMANVector::magnitude(RtVoid) { return sqrt(vec[X] * vec[X] + vec[Y] * vec[Y] + vec[Z] * vec[Z]); }
+
+GMANVector& GMANVector::normalize(RtVoid) {
+  RtFloat mag = magnitude();
+  if (mag < RI_EPSILON) {
     return *this;
+  }
+  *this /= mag;
+  return *this;
 }
 
-RtFloat     GMANVector::magnitude(RtVoid)
-{
-    return sqrt(vec[X]*vec[X] + vec[Y]*vec[Y] + vec[Z]*vec[Z]);
+RtFloat GMANVector::dot(const GMANVector& v) const {
+  RtFloat rc = 0.0;
+  for (RtInt i = 0; i < NCOORDS; i++) {
+    rc += vec[i] * v.vec[i];
+  }
+  return rc;
 }
 
-GMANVector &GMANVector::normalize(RtVoid)
-{
-    RtFloat mag = magnitude();
-    if(mag < RI_EPSILON) {
-	return *this;
-    }
-    *this /= mag;
-    return *this;
+GMANVector GMANVector::cross(const GMANVector& v) const {
+  GMANVector result(vec[Y] * v.vec[Z] - vec[Z] * v.vec[Y], vec[Z] * v.vec[X] - vec[X] * v.vec[Z],
+                    vec[X] * v.vec[Y] - vec[Y] * v.vec[X]);
+  return result;
 }
-
-RtFloat     GMANVector::dot(const GMANVector &v) const
-{
-    RtFloat rc=0.0;
-    for(RtInt i=0; i<NCOORDS; i++) {
-	rc += vec[i]*v.vec[i];
-    }
-    return rc;
-}
-
-GMANVector  GMANVector::cross(const GMANVector &v) const
-{
-    GMANVector result( vec[Y]*v.vec[Z] - vec[Z]*v.vec[Y],
-		       vec[Z]*v.vec[X] - vec[X]*v.vec[Z],
-		       vec[X]*v.vec[Y] - vec[Y]*v.vec[X] );
-    return result;
-}
-
 
 /* operators */
-GMANVector GMANVector::operator *(const GMANMatrix4 &m) const {
-    GMANVector res(*this);
+GMANVector GMANVector::operator*(const GMANMatrix4& m) const {
+  GMANVector res(*this);
 
-    res *= m;
+  res *= m;
 
-    return res;
+  return res;
 }
 
-GMANVector &GMANVector::operator *=(const GMANMatrix4 &m) {
+GMANVector& GMANVector::operator*=(const GMANMatrix4& m) {
 
-    // transform the point 
-    GMANVector res;
-    
-    for(RtInt i=0; i<NCOORDS; i++) {
-	res[i] = m[i][0]*vec[X] +
-	    m[i][1]*vec[Y] +
-	    m[i][2]*vec[Z] +
-	    m[i][3];
-    }
-    
-    *this = res;
-    return *this;
+  // transform the point
+  GMANVector res;
+
+  for (RtInt i = 0; i < NCOORDS; i++) {
+    res[i] = m[i][0] * vec[X] + m[i][1] * vec[Y] + m[i][2] * vec[Z] + m[i][3];
+  }
+
+  *this = res;
+  return *this;
 }

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,18 +27,13 @@
 #include "gmanobjectmanager.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANObjectManager
  *
  */
 
 // default constructor
-GMANObjectManager::GMANObjectManager() { 
-};
+GMANObjectManager::GMANObjectManager() {};
 
-
-// default destructor 
-GMANObjectManager::~GMANObjectManager() { 
-};
-
+// default destructor
+GMANObjectManager::~GMANObjectManager() {};

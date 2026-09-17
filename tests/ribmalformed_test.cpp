@@ -55,15 +55,14 @@ namespace {
 
 struct RunResult {
   bool timedOut = false;
-  bool crashed = false;  // terminated by a signal (SIGSEGV, SIGABRT, ...)
+  bool crashed = false; // terminated by a signal (SIGSEGV, SIGABRT, ...)
   int exitStatus = -1;
 };
 
 // Polls rather than using SIGALRM: simpler to reason about across the two
 // platforms these tests run on, and 50ms resolution is more than tight
 // enough against a multi-second timeout.
-RunResult runWithTimeout(const std::string &gman, const std::string &rib,
-                         int timeoutSeconds) {
+RunResult runWithTimeout(const std::string& gman, const std::string& rib, int timeoutSeconds) {
   RunResult result;
 
   pid_t pid = fork();
@@ -76,11 +75,11 @@ RunResult runWithTimeout(const std::string &gman, const std::string &rib,
     // gcc's freopen is warn_unused_result; a plain (void) cast does not
     // silence it, so the result is captured and then deliberately
     // unused rather than left as an ignored return value.
-    FILE *outRedirect = std::freopen("/dev/null", "w", stdout);
-    FILE *errRedirect = std::freopen("/dev/null", "w", stderr);
+    FILE* outRedirect = std::freopen("/dev/null", "w", stdout);
+    FILE* errRedirect = std::freopen("/dev/null", "w", stderr);
     (void)outRedirect;
     (void)errRedirect;
-    execl(gman.c_str(), gman.c_str(), rib.c_str(), (char *)nullptr);
+    execl(gman.c_str(), gman.c_str(), rib.c_str(), (char*)nullptr);
     _exit(127);
   }
 
@@ -106,30 +105,28 @@ RunResult runWithTimeout(const std::string &gman, const std::string &rib,
   return result;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/malformed dir>\n",
-                 argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/malformed dir>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
   const std::string dir = argv[2];
 
-  const char *fixtures[] = {
+  const char* fixtures[] = {
       "unterminated_string.rib",
       "unbalanced_bracket.rib",
       "truncated.rib",
       "declare_array_overflow.rib",
   };
 
-  for (const char *fixture : fixtures) {
+  for (const char* fixture : fixtures) {
     const std::string rib = dir + "/" + fixture;
     RunResult r = runWithTimeout(gman, rib, 10);
     check(!r.timedOut, std::string(fixture) + ": does not hang (10s bound)");
-    check(!r.crashed,
-          std::string(fixture) + ": does not crash (no signal termination)");
+    check(!r.crashed, std::string(fixture) + ": does not crash (no signal termination)");
   }
 
   return checkSummary("RIB malformed-input handling holds");

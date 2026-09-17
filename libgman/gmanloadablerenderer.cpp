@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -33,62 +33,48 @@
  *
  */
 
-const char *		GMANLoadableRenderer::LoadRendererFncName = "GMANLoadRenderer";
+const char* GMANLoadableRenderer::LoadRendererFncName = "GMANLoadRenderer";
 
 // default constructor
-GMANLoadableRenderer::GMANLoadableRenderer(const char *path) 
-  : GMANRenderer(), GMANLoadable(path), renderer(NULL) { 
+GMANLoadableRenderer::GMANLoadableRenderer(const char* path) : GMANRenderer(), GMANLoadable(path), renderer(NULL) {
 
-  LoadRendererFnc loadRenderer = 
-    (LoadRendererFnc)loadSymbol(LoadRendererFncName);
+  LoadRendererFnc loadRenderer = (LoadRendererFnc)loadSymbol(LoadRendererFncName);
 
-  if(loadRenderer == NULL) {
+  if (loadRenderer == NULL) {
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "Loadable module missing renderer."));
   }
 
   renderer = loadRenderer();
 
-  if(renderer == NULL) {
+  if (renderer == NULL) {
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "Loadable module missing renderer."));
   }
 };
 
-
-// default destructor 
-GMANLoadableRenderer::~GMANLoadableRenderer() { };
+// default destructor
+GMANLoadableRenderer::~GMANLoadableRenderer() {};
 
 /*
  * Default rendering interface.
  *
- * A renderer applies a lighting and environment model to the 
+ * A renderer applies a lighting and environment model to the
  * objects in object manager, applies the projection represented
  * by the viewing system, and uses this information to
  * produce a frame buffer with a representation of the environment.
  */
-RtVoid GMANLoadableRenderer::render(GMANFrameBuffer *frameBuffer,
-				    GMANViewingSystem *viewingSys,
-				    const GMANOptions       &options,
-				    const GMANAttributes    &attributes) 
+RtVoid GMANLoadableRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+                                    const GMANOptions& options, const GMANAttributes& attributes)
 
 {
-  if(renderer) {
+  if (renderer) {
     renderer->render(frameBuffer, viewingSys, options, attributes);
   } else {
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "No renderer available."));
   }
 }
 
-GMANWorldManager* GMANLoadableRenderer::getWorldManager(RtVoid)
-{
-  return renderer->getWorldManager();
-}
+GMANWorldManager* GMANLoadableRenderer::getWorldManager(RtVoid) { return renderer->getWorldManager(); }
 
-GMANObjectManager* GMANLoadableRenderer::getObjectManager(RtVoid)
-{
-  return renderer->getObjectManager();
-}
+GMANObjectManager* GMANLoadableRenderer::getObjectManager(RtVoid) { return renderer->getObjectManager(); }
 
-
-RtFloat GMANLoadableRenderer::getDepth(RtInt xs, RtInt ys) const {
-    return renderer->getDepth(xs, ys);
-}
+RtFloat GMANLoadableRenderer::getDepth(RtInt xs, RtInt ys) const { return renderer->getDepth(xs, ys); }

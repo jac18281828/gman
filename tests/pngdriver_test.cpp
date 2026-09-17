@@ -71,20 +71,19 @@ namespace {
 // directory is reused across ctest invocations, and a reverted fix that
 // throws before opening the display leaves the previous good file in place.
 // tests/baseline_test.cpp removes its target for the same reason.
-int runGman(const std::string &gman, const std::string &rib,
-            const std::string &output) {
+int runGman(const std::string& gman, const std::string& rib, const std::string& output) {
   std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void writeFile(const std::string &path, const std::string &contents) {
+void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
   out << contents;
 }
 
-bool nonEmptyFile(const std::string &path) {
+bool nonEmptyFile(const std::string& path) {
   struct stat st;
   return stat(path.c_str(), &st) == 0 && st.st_size > 0;
 }
@@ -97,15 +96,14 @@ struct Image {
 
 // Decodes a PNG to top-down 8-bit RGB, dropping alpha -- GMANOutputPNG
 // always writes PNG_COLOR_TYPE_RGB_ALPHA, so this expects exactly that.
-Image readPNG(const std::string &path) {
+Image readPNG(const std::string& path) {
   Image img;
-  FILE *fp = std::fopen(path.c_str(), "rb");
+  FILE* fp = std::fopen(path.c_str(), "rb");
   if (fp == nullptr) {
     return img;
   }
 
-  png_structp png_ptr =
-      png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+  png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
   if (png_ptr == nullptr) {
     std::fclose(fp);
     return img;
@@ -129,19 +127,21 @@ Image readPNG(const std::string &path) {
 
   png_uint_32 width = 0, height = 0;
   int bitDepth = 0, colorType = 0;
-  png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitDepth, &colorType,
-               nullptr, nullptr, nullptr);
+  png_get_IHDR(png_ptr, info_ptr, &width, &height, &bitDepth, &colorType, nullptr, nullptr, nullptr);
 
   // Normalize to 8-bit RGBA regardless of what's on disk, so this reader
   // works whether or not the driver still emits exactly RGB_ALPHA.
-  if (bitDepth == 16) png_set_strip_16(png_ptr);
-  if (colorType == PNG_COLOR_TYPE_PALETTE) png_set_palette_to_rgb(png_ptr);
-  if (colorType == PNG_COLOR_TYPE_GRAY && bitDepth < 8) png_set_expand_gray_1_2_4_to_8(png_ptr);
-  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) png_set_tRNS_to_alpha(png_ptr);
+  if (bitDepth == 16)
+    png_set_strip_16(png_ptr);
+  if (colorType == PNG_COLOR_TYPE_PALETTE)
+    png_set_palette_to_rgb(png_ptr);
+  if (colorType == PNG_COLOR_TYPE_GRAY && bitDepth < 8)
+    png_set_expand_gray_1_2_4_to_8(png_ptr);
+  if (png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+    png_set_tRNS_to_alpha(png_ptr);
   if (colorType == PNG_COLOR_TYPE_GRAY || colorType == PNG_COLOR_TYPE_GRAY_ALPHA)
     png_set_gray_to_rgb(png_ptr);
-  if (colorType == PNG_COLOR_TYPE_RGB || colorType == PNG_COLOR_TYPE_PALETTE ||
-      colorType == PNG_COLOR_TYPE_GRAY)
+  if (colorType == PNG_COLOR_TYPE_RGB || colorType == PNG_COLOR_TYPE_PALETTE || colorType == PNG_COLOR_TYPE_GRAY)
     png_set_filler(png_ptr, 0xff, PNG_FILLER_AFTER);
   png_read_update_info(png_ptr, info_ptr); // read side: legitimate here
 
@@ -171,9 +171,9 @@ Image readPNG(const std::string &path) {
   return img;
 }
 
-Image readTIFF(const std::string &path) {
+Image readTIFF(const std::string& path) {
   Image img;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return img;
   }
@@ -182,8 +182,7 @@ Image readTIFF(const std::string &path) {
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(size_t(width) * height);
-  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                  ORIENTATION_TOPLEFT, 0)) {
+  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0)) {
     TIFFClose(tif);
     return img;
   }
@@ -203,23 +202,22 @@ Image readTIFF(const std::string &path) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::fprintf(stderr, "usage: %s <gman-binary>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
 
-  const char *sceneTemplate =
-      "Display \"%s\" \"file\" \"rgb\"\n"
-      "Format 64 64 1\n"
-      "Projection \"perspective\" \"fov\" [45]\n"
-      "WorldBegin\n"
-      "AttributeBegin\n"
-      "  Translate 0 0 5\n"
-      "  Sphere 1 -1 1 360\n"
-      "AttributeEnd\n"
-      "WorldEnd\n";
+  const char* sceneTemplate = "Display \"%s\" \"file\" \"rgb\"\n"
+                              "Format 64 64 1\n"
+                              "Projection \"perspective\" \"fov\" [45]\n"
+                              "WorldBegin\n"
+                              "AttributeBegin\n"
+                              "  Translate 0 0 5\n"
+                              "  Sphere 1 -1 1 360\n"
+                              "AttributeEnd\n"
+                              "WorldEnd\n";
 
   char scene[1024];
   std::snprintf(scene, sizeof scene, sceneTemplate, "pngdriver.png");
@@ -256,8 +254,7 @@ int main(int argc, char *argv[]) {
         }
       }
     }
-    check(nonFirstColumnDiffers,
-          "PNG has non-background content past column 0");
+    check(nonFirstColumnDiffers, "PNG has non-background content past column 0");
   }
 
   return checkSummary("png driver holds");

@@ -30,28 +30,26 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANISO
-{
+class GMAN_EXPORT GMANISO {
   /* searchpath */
   std::string archive;
   std::string texture;
   std::string shader;
   std::string procedural;
+
 public:
-  RtVoid set (RtToken name, int n, RtToken *tk, RtPointer *dt);
-  const std::string &getArchivePath() const { return archive; }
-  const std::string &getTexturePath() const { return texture; }
-  const std::string &getShaderPath() const { return shader; }
-  const std::string &getProceduralPath() const { return procedural; }
+  RtVoid set(RtToken name, int n, RtToken* tk, RtPointer* dt);
+  const std::string& getArchivePath() const { return archive; }
+  const std::string& getTexturePath() const { return texture; }
+  const std::string& getShaderPath() const { return shader; }
+  const std::string& getProceduralPath() const { return procedural; }
 };
 
-class GMANISA
-{
+class GMANISA {
 private:
 public:
-  GMANISA ();
-  ~GMANISA ();
+  GMANISA();
+  ~GMANISA();
 };
 
 #endif
-

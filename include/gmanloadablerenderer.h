@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -23,10 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANLOADABLERENDERER_H
 #define __GMAN_GMANLOADABLERENDERER_H 1
-
 
 #include <list>
 #include <map>
@@ -43,70 +41,55 @@
  *
  */
 
-class GMAN_EXPORT  GMANLoadableRenderer : public GMANRenderer, GMANLoadable {
+class GMAN_EXPORT GMANLoadableRenderer : public GMANRenderer, GMANLoadable {
 
-  public:
-    // public types
-    typedef GMANRenderer *	(*LoadRendererFnc)(RtVoid);
+public:
+  // public types
+  typedef GMANRenderer* (*LoadRendererFnc)(RtVoid);
 
-    static const char *		LoadRendererFncName;
+  static const char* LoadRendererFncName;
 
-  private:
-    GMANRenderer		*renderer;
+private:
+  GMANRenderer* renderer;
 
-  public:
-// default constructor
-    GMANLoadableRenderer(const char *path); 
+public:
+  // default constructor
+  GMANLoadableRenderer(const char* path);
 
-    ~GMANLoadableRenderer(); // default destructor
+  ~GMANLoadableRenderer(); // default destructor
 
-    RtVoid illuminance(RtInt /*i*/,
-		       GMANPoint const &/*p*/,
-		       GMANVector const &/*axis*/,
-		       RtFloat /*angle*/) {}
+  RtVoid illuminance(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
-    RtVoid illuminate(RtInt /*i*/,
-		      GMANPoint const &/*p*/,
-		      GMANVector const &/*axis*/,
-		      RtFloat /*angle*/) {}
+  RtVoid illuminate(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
-    RtVoid solar(RtInt /*i*/, GMANVector const &/*axis*/,
-		 RtFloat /*angle*/) {}
+  RtVoid solar(RtInt /*i*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
+  /*
+   * Default rendering interface.
+   *
+   * A renderer applies a lighting and environment model to the
+   * objects in object manager, applies the projection represented
+   * by the viewing system, and uses this information to
+   * produce a frame buffer with a representation of the environment.
+   */
+  virtual RtVoid render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
+                        const GMANAttributes& attributes);
 
-    /*
-     * Default rendering interface.
-     *
-     * A renderer applies a lighting and environment model to the 
-     * objects in object manager, applies the projection represented
-     * by the viewing system, and uses this information to
-     * produce a frame buffer with a representation of the environment.
-     */
-    virtual RtVoid render(GMANFrameBuffer *frameBuffer,
-			  GMANViewingSystem *viewingSys,
-			  const GMANOptions       &options,
-			  const GMANAttributes    &attributes)
-;
+  /*
+   * Return the depth from the renderer.
+   */
+  virtual RtFloat getDepth(RtInt xs, RtInt ys) const;
 
-    /*
-     * Return the depth from the renderer.
-     */
-    virtual RtFloat getDepth(RtInt xs, RtInt ys) const;
+  /*
+   * Return a world manager appropriate to this renderer
+   */
 
-    /*
-     * Return a world manager appropriate to this renderer
-     */
+  virtual GMANWorldManager* getWorldManager(RtVoid);
 
-    virtual GMANWorldManager* getWorldManager(RtVoid);
-
-    /*
-     * Each renderer provides its own object manager.
-     */
-    virtual GMANObjectManager *getObjectManager(RtVoid);
-
-
+  /*
+   * Each renderer provides its own object manager.
+   */
+  virtual GMANObjectManager* getObjectManager(RtVoid);
 };
 
-
 #endif
-

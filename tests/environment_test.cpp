@@ -63,35 +63,23 @@
 
 namespace {
 
-const RtFloat kTightTol = (RtFloat) 1.0e-5;
+const RtFloat kTightTol = (RtFloat)1.0e-5;
 
-bool near(RtFloat a, RtFloat b, RtFloat tol) {
-  return std::fabs(a - b) <= tol;
+bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }
+
+void checkVectorNear(GMANVector const& got, GMANVector const& want, RtFloat tol, std::string const& what) {
+  check(near(got.getX(), want.getX(), tol) && near(got.getY(), want.getY(), tol) && near(got.getZ(), want.getZ(), tol),
+        what + ": got (" + std::to_string(got.getX()) + ", " + std::to_string(got.getY()) + ", " +
+            std::to_string(got.getZ()) + "), want (" + std::to_string(want.getX()) + ", " +
+            std::to_string(want.getY()) + ", " + std::to_string(want.getZ()) + ")");
 }
 
-void checkVectorNear(GMANVector const &got, GMANVector const &want,
-                      RtFloat tol, std::string const &what) {
-  check(near(got.getX(), want.getX(), tol) &&
-            near(got.getY(), want.getY(), tol) &&
-            near(got.getZ(), want.getZ(), tol),
-        what + ": got (" + std::to_string(got.getX()) + ", " +
-            std::to_string(got.getY()) + ", " + std::to_string(got.getZ()) +
-            "), want (" + std::to_string(want.getX()) + ", " +
-            std::to_string(want.getY()) + ", " + std::to_string(want.getZ()) +
-            ")");
-}
-
-void checkColorNear(GMANColor const &got, GMANColor const &want, RtFloat tol,
-                     std::string const &what) {
-  check(near(got.getRed(), want.getRed(), tol) &&
-            near(got.getGreen(), want.getGreen(), tol) &&
+void checkColorNear(GMANColor const& got, GMANColor const& want, RtFloat tol, std::string const& what) {
+  check(near(got.getRed(), want.getRed(), tol) && near(got.getGreen(), want.getGreen(), tol) &&
             near(got.getBlue(), want.getBlue(), tol),
-        what + ": got (" + std::to_string(got.getRed()) + ", " +
-            std::to_string(got.getGreen()) + ", " +
-            std::to_string(got.getBlue()) + "), want (" +
-            std::to_string(want.getRed()) + ", " +
-            std::to_string(want.getGreen()) + ", " +
-            std::to_string(want.getBlue()) + ")");
+        what + ": got (" + std::to_string(got.getRed()) + ", " + std::to_string(got.getGreen()) + ", " +
+            std::to_string(got.getBlue()) + "), want (" + std::to_string(want.getRed()) + ", " +
+            std::to_string(want.getGreen()) + ", " + std::to_string(want.getBlue()) + ")");
 }
 
 // A do-nothing GMANRenderer: GMANAttributes::setSurface needs one to pass
@@ -99,16 +87,13 @@ void checkColorNear(GMANColor const &got, GMANColor const &want, RtFloat tol,
 // (gmanshader.cpp) -- no override below is ever actually called.
 class NullRenderer : public GMANRenderer {
 public:
-  RtVoid illuminance(RtInt, GMANPoint const &, GMANVector const &,
-                      RtFloat) override {}
-  RtVoid illuminate(RtInt, GMANPoint const &, GMANVector const &,
-                     RtFloat) override {}
-  RtVoid solar(RtInt, GMANVector const &, RtFloat) override {}
+  RtVoid illuminance(RtInt, GMANPoint const&, GMANVector const&, RtFloat) override {}
+  RtVoid illuminate(RtInt, GMANPoint const&, GMANVector const&, RtFloat) override {}
+  RtVoid solar(RtInt, GMANVector const&, RtFloat) override {}
   RtFloat getDepth(int, int) const override { return 0; }
-  RtVoid render(GMANFrameBuffer *, GMANViewingSystem *, const GMANOptions &,
-                const GMANAttributes &) override {}
-  GMANWorldManager *getWorldManager(RtVoid) override { return nullptr; }
-  GMANObjectManager *getObjectManager(RtVoid) override { return nullptr; }
+  RtVoid render(GMANFrameBuffer*, GMANViewingSystem*, const GMANOptions&, const GMANAttributes&) override {}
+  GMANWorldManager* getWorldManager(RtVoid) override { return nullptr; }
+  GMANObjectManager* getObjectManager(RtVoid) override { return nullptr; }
 };
 
 // ---- toWorld and the plumbing (commit 1) ----
@@ -125,15 +110,12 @@ void testToWorldRotatesDirection() {
   // A translation must not move a direction: toWorld is RSL's
   // vtransform("current", "world", v), which reads only cameraToWorld's
   // upper-left 3x3. Folded in here to prove exactly that.
-  m.trans((RtFloat) 3.0, (RtFloat) -7.0, (RtFloat) 11.0);
+  m.trans((RtFloat)3.0, (RtFloat)-7.0, (RtFloat)11.0);
   env.cameraToWorld = m;
 
-  const auto world =
-      env.toWorld(GMANVector((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 1.0));
-  checkVectorNear(world,
-                   GMANVector((RtFloat) 1.0, (RtFloat) 0.0, (RtFloat) 0.0),
-                   kTightTol,
-                   "toWorld: a 90-deg Y rotation maps (0,0,1) to (1,0,0)");
+  const auto world = env.toWorld(GMANVector((RtFloat)0.0, (RtFloat)0.0, (RtFloat)1.0));
+  checkVectorNear(world, GMANVector((RtFloat)1.0, (RtFloat)0.0, (RtFloat)0.0), kTightTol,
+                  "toWorld: a 90-deg Y rotation maps (0,0,1) to (1,0,0)");
 }
 
 // Call getRSSphere directly with a GMANOptions carrying the same rotation
@@ -154,31 +136,27 @@ void testMatrixReachesShader() {
 
   GMANPatchPolyObjectManager mgr;
   GMANParameterList spherePl;
-  GMANTransform transform;  // identity
+  GMANTransform transform; // identity
 
-  GMANPrimitive *prim = mgr.getRSSphere((RtFloat) 1.0, (RtFloat) -1.0,
-                                         (RtFloat) 1.0, (RtFloat) 360.0,
-                                         spherePl, &options, &attr,
-                                         &transform);
+  GMANPrimitive* prim =
+      mgr.getRSSphere((RtFloat)1.0, (RtFloat)-1.0, (RtFloat)1.0, (RtFloat)360.0, spherePl, &options, &attr, &transform);
   // Kept reachable the same way production does (GMANRenderManImpl::RiEnd
   // leaves worldManager/objectManager deliberately unfreed) -- see
   // tests/normals_test.cpp's own comment at its analogous getRSSphere call.
   static GMANLinearWorldManager worldMgr;
   worldMgr.add(prim);
 
-  GMANObject *object = dynamic_cast<GMANObject *>(prim);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, "plumbing: getRSSphere returns an object");
   if (!object) {
     return;
   }
-  GMANVertex *vtx = object->getVert();
+  GMANVertex* vtx = object->getVert();
   check(vtx != nullptr, "plumbing: object has a vertex");
   if (!vtx) {
     return;
   }
-  checkColorNear(vtx->getColor(),
-                 GMANColor((RtFloat) 0.0, (RtFloat) -1.0, (RtFloat) 1.0),
-                 (RtFloat) 1.0e-4,
+  checkColorNear(vtx->getColor(), GMANColor((RtFloat)0.0, (RtFloat)-1.0, (RtFloat)1.0), (RtFloat)1.0e-4,
                  "plumbing: GMANOptions's camera-to-world reaches "
                  "GMANSurfaceEnv::cameraToWorld through getRSSphere");
 }
@@ -194,29 +172,29 @@ const int kLatLongHeight = 4;
 // change a colour.
 unsigned char latLongByte(int channel, int i, int j) {
   switch (channel) {
-    case 0: return (unsigned char)(i * 255 / (kLatLongWidth - 1));
-    case 1: return (unsigned char)(j * 255 / (kLatLongHeight - 1));
-    default:
-      return (unsigned char)((i * kLatLongHeight + j) * 255 /
-                              (kLatLongWidth * kLatLongHeight - 1));
+  case 0:
+    return (unsigned char)(i * 255 / (kLatLongWidth - 1));
+  case 1:
+    return (unsigned char)(j * 255 / (kLatLongHeight - 1));
+  default:
+    return (unsigned char)((i * kLatLongHeight + j) * 255 / (kLatLongWidth * kLatLongHeight - 1));
   }
 }
 
 GMANColor latLongTexel(int i, int j) {
-  return GMANColor((RtFloat) latLongByte(0, i, j) / (RtFloat) 255.0,
-                    (RtFloat) latLongByte(1, i, j) / (RtFloat) 255.0,
-                    (RtFloat) latLongByte(2, i, j) / (RtFloat) 255.0);
+  return GMANColor((RtFloat)latLongByte(0, i, j) / (RtFloat)255.0, (RtFloat)latLongByte(1, i, j) / (RtFloat)255.0,
+                   (RtFloat)latLongByte(2, i, j) / (RtFloat)255.0);
 }
 
 // The plain RGB TIFF gmanMakeLatLongEnvironment's own "picture" argument
 // reads -- not yet tagged as an environment; the writer adds that.
-bool writeLatLongPicture(std::string const &path) {
-  TIFF *tif = TIFFOpen(path.c_str(), "w");
+bool writeLatLongPicture(std::string const& path) {
+  TIFF* tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
     return false;
   }
-  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t) kLatLongWidth);
-  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t) kLatLongHeight);
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t)kLatLongWidth);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t)kLatLongHeight);
   TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
   TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 3);
   TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
@@ -226,13 +204,13 @@ bool writeLatLongPicture(std::string const &path) {
 
   bool ok = true;
   for (int j = 0; j < kLatLongHeight && ok; ++j) {
-    std::vector<unsigned char> row((std::size_t) kLatLongWidth * 3);
+    std::vector<unsigned char> row((std::size_t)kLatLongWidth * 3);
     for (int i = 0; i < kLatLongWidth; ++i) {
-      row[(std::size_t) i * 3 + 0] = latLongByte(0, i, j);
-      row[(std::size_t) i * 3 + 1] = latLongByte(1, i, j);
-      row[(std::size_t) i * 3 + 2] = latLongByte(2, i, j);
+      row[(std::size_t)i * 3 + 0] = latLongByte(0, i, j);
+      row[(std::size_t)i * 3 + 1] = latLongByte(1, i, j);
+      row[(std::size_t)i * 3 + 2] = latLongByte(2, i, j);
     }
-    ok = TIFFWriteScanline(tif, row.data(), (uint32_t) j, 0) >= 0;
+    ok = TIFFWriteScanline(tif, row.data(), (uint32_t)j, 0) >= 0;
   }
   TIFFClose(tif);
   return ok;
@@ -242,9 +220,8 @@ bool writeLatLongPicture(std::string const &path) {
 // included -- gman is left-handed and latlong maps are handedness-
 // sensitive): x=cos(lon)cos(lat), y=sin(lon)cos(lat), z=sin(lat).
 GMANVector directionAt(RtFloat lon, RtFloat lat) {
-  return GMANVector((RtFloat)(std::cos(lon) * std::cos(lat)),
-                     (RtFloat)(std::sin(lon) * std::cos(lat)),
-                     (RtFloat) std::sin(lat));
+  return GMANVector((RtFloat)(std::cos(lon) * std::cos(lat)), (RtFloat)(std::sin(lon) * std::cos(lat)),
+                    (RtFloat)std::sin(lat));
 }
 
 // Texel (i, j)'s own centre direction, RISpec's lat-long picture: longitude
@@ -256,12 +233,12 @@ GMANVector texelCentreDirection(int i, int j) {
   return directionAt(lon, lat);
 }
 
-std::string readAsciiTag(std::string const &path, ttag_t tag) {
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+std::string readAsciiTag(std::string const& path, ttag_t tag) {
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return std::string();
   }
-  char *value = nullptr;
+  char* value = nullptr;
   std::string result;
   if (TIFFGetField(tif, tag, &value) && value != nullptr) {
     result = value;
@@ -270,33 +247,25 @@ std::string readAsciiTag(std::string const &path, ttag_t tag) {
   return result;
 }
 
-bool fileExists(std::string const &path) {
-  return std::filesystem::exists(path);
-}
+bool fileExists(std::string const& path) { return std::filesystem::exists(path); }
 
 // Direct lookups: environment(map, R) at every texel centre returns that
 // texel's colour, independent of R's own length (RISpec: "the length of
 // this vector is unimportant").
-void testDirectLookups(std::string const &map) {
+void testDirectLookups(std::string const& map) {
   GMANSurfaceEnv env;
   for (int i = 0; i < kLatLongWidth; ++i) {
     for (int j = 0; j < kLatLongHeight; ++j) {
       GMANVector r = texelCentreDirection(i, j);
-      const std::string what = "environment: texel (" + std::to_string(i) +
-                                ", " + std::to_string(j) + ")";
-      checkColorNear(env.environment(map, r), latLongTexel(i, j),
-                     (RtFloat) 1.0e-4, what);
-      checkColorNear(env.environment(map, r * (RtFloat) 1.0e3),
-                     latLongTexel(i, j), (RtFloat) 1.0e-4, what + " (*1e3)");
-      checkColorNear(env.environment(map, r * (RtFloat) 1.0e-3),
-                     latLongTexel(i, j), (RtFloat) 1.0e-4, what + " (*1e-3)");
+      const std::string what = "environment: texel (" + std::to_string(i) + ", " + std::to_string(j) + ")";
+      checkColorNear(env.environment(map, r), latLongTexel(i, j), (RtFloat)1.0e-4, what);
+      checkColorNear(env.environment(map, r * (RtFloat)1.0e3), latLongTexel(i, j), (RtFloat)1.0e-4, what + " (*1e3)");
+      checkColorNear(env.environment(map, r * (RtFloat)1.0e-3), latLongTexel(i, j), (RtFloat)1.0e-4, what + " (*1e-3)");
     }
   }
-  checkColorNear(
-      env.environment(map, GMANVector((RtFloat) 0.0, (RtFloat) 0.0,
-                                       (RtFloat) 0.0)),
-      GMANColor((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 0.0),
-      (RtFloat) 1.0e-6, "environment: R=0 returns black");
+  checkColorNear(env.environment(map, GMANVector((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0)),
+                 GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0), (RtFloat)1.0e-6,
+                 "environment: R=0 returns black");
 }
 
 // A direction at lon just below 2*PI blends texel (7, j) with (0, j) --
@@ -304,7 +273,7 @@ void testDirectLookups(std::string const &map) {
 // texel short of the wrap (texel 7's own centre is at s=7.5/8=0.9375), so
 // GMANTexture::sample's bilinear weights are exactly 0.75 on texel 7 and
 // 0.25 on texel 0 (wrapped from column 8).
-void testLongitudeWraps(std::string const &map) {
+void testLongitudeWraps(std::string const& map) {
   GMANSurfaceEnv env;
   const int j = 1;
   RtFloat lat = (RtFloat)(PI / 2.0 - PI * (j + 0.5) / kLatLongHeight);
@@ -313,48 +282,41 @@ void testLongitudeWraps(std::string const &map) {
 
   GMANColor c7 = latLongTexel(kLatLongWidth - 1, j);
   GMANColor c0 = latLongTexel(0, j);
-  GMANColor want((RtFloat) 0.75 * c7.getRed() + (RtFloat) 0.25 * c0.getRed(),
-                 (RtFloat) 0.75 * c7.getGreen() +
-                     (RtFloat) 0.25 * c0.getGreen(),
-                 (RtFloat) 0.75 * c7.getBlue() + (RtFloat) 0.25 * c0.getBlue());
-  checkColorNear(env.environment(map, r), want, (RtFloat) 1.0e-3,
+  GMANColor want((RtFloat)0.75 * c7.getRed() + (RtFloat)0.25 * c0.getRed(),
+                 (RtFloat)0.75 * c7.getGreen() + (RtFloat)0.25 * c0.getGreen(),
+                 (RtFloat)0.75 * c7.getBlue() + (RtFloat)0.25 * c0.getBlue());
+  checkColorNear(env.environment(map, r), want, (RtFloat)1.0e-3,
                  "environment: longitude just below 2*PI blends texel "
                  "(7, j) with (0, j)");
 }
 
 // The written file's tags, and the writer's failure shape.
-void testWriterTagsAndFailures(std::string const &picture,
-                                std::string const &map) {
+void testWriterTagsAndFailures(std::string const& picture, std::string const& map) {
   std::remove(map.c_str());
-  check(gmanMakeLatLongEnvironment(picture.c_str(), map.c_str()),
-        "gmanMakeLatLongEnvironment returns true");
+  check(gmanMakeLatLongEnvironment(picture.c_str(), map.c_str()), "gmanMakeLatLongEnvironment returns true");
   check(readAsciiTag(map, TIFFTAG_PIXAR_WRAPMODES) == "periodic,clamp",
         map + "'s TIFFTAG_PIXAR_WRAPMODES is \"periodic,clamp\"");
-  check(readAsciiTag(map, TIFFTAG_PIXAR_TEXTUREFORMAT) ==
-            "LatLong Environment",
+  check(readAsciiTag(map, TIFFTAG_PIXAR_TEXTUREFORMAT) == "LatLong Environment",
         map + "'s TIFFTAG_PIXAR_TEXTUREFORMAT is \"LatLong Environment\"");
 
   const std::string emptyTarget = "made_empty_name.env";
   std::remove(emptyTarget.c_str());
-  check(! gmanMakeLatLongEnvironment(picture.c_str(), ""),
+  check(!gmanMakeLatLongEnvironment(picture.c_str(), ""),
         "gmanMakeLatLongEnvironment with an empty texture name returns "
         "false");
-  check(! fileExists(emptyTarget), emptyTarget + " is not written");
+  check(!fileExists(emptyTarget), emptyTarget + " is not written");
 
   const std::string missingPictureTarget = "made_missing_picture.env";
   std::remove(missingPictureTarget.c_str());
-  check(! gmanMakeLatLongEnvironment("environment_test_missing_9f3ab2.tif",
-                                      missingPictureTarget.c_str()),
+  check(!gmanMakeLatLongEnvironment("environment_test_missing_9f3ab2.tif", missingPictureTarget.c_str()),
         "gmanMakeLatLongEnvironment with a missing picture returns false");
-  check(! fileExists(missingPictureTarget),
-        missingPictureTarget + " is not written");
+  check(!fileExists(missingPictureTarget), missingPictureTarget + " is not written");
 }
 
 // ---- the mirror (commit 3) ----
 
-int runGman(std::string const &gman, std::string const &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(std::string const& gman, std::string const& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
@@ -373,18 +335,18 @@ enum Region {
 
 GMANColor regionColor(Region r) {
   switch (r) {
-    case REGION_PLUS_X:
-      return GMANColor((RtFloat) 1.0, (RtFloat) 0.0, (RtFloat) 0.0);
-    case REGION_MINUS_X:
-      return GMANColor((RtFloat) 0.0, (RtFloat) 1.0, (RtFloat) 1.0);
-    case REGION_PLUS_Y:
-      return GMANColor((RtFloat) 0.0, (RtFloat) 1.0, (RtFloat) 0.0);
-    case REGION_MINUS_Y:
-      return GMANColor((RtFloat) 1.0, (RtFloat) 0.0, (RtFloat) 1.0);
-    case REGION_PLUS_Z:
-      return GMANColor((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 1.0);
-    default:  // REGION_MINUS_Z
-      return GMANColor((RtFloat) 1.0, (RtFloat) 1.0, (RtFloat) 0.0);
+  case REGION_PLUS_X:
+    return GMANColor((RtFloat)1.0, (RtFloat)0.0, (RtFloat)0.0);
+  case REGION_MINUS_X:
+    return GMANColor((RtFloat)0.0, (RtFloat)1.0, (RtFloat)1.0);
+  case REGION_PLUS_Y:
+    return GMANColor((RtFloat)0.0, (RtFloat)1.0, (RtFloat)0.0);
+  case REGION_MINUS_Y:
+    return GMANColor((RtFloat)1.0, (RtFloat)0.0, (RtFloat)1.0);
+  case REGION_PLUS_Z:
+    return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)1.0);
+  default: // REGION_MINUS_Z
+    return GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)0.0);
   }
 }
 
@@ -392,10 +354,10 @@ GMANColor regionColor(Region r) {
 // formula: the region every point within 45 degrees of one axis belongs
 // to, so each of the six spans a full hemisphere-quadrant, "well over"
 // the few degrees a patch this small subtends from its own centre.
-Region regionAt(GMANVector const &d) {
-  RtFloat ax = (RtFloat) std::fabs(d.getX());
-  RtFloat ay = (RtFloat) std::fabs(d.getY());
-  RtFloat az = (RtFloat) std::fabs(d.getZ());
+Region regionAt(GMANVector const& d) {
+  RtFloat ax = (RtFloat)std::fabs(d.getX());
+  RtFloat ay = (RtFloat)std::fabs(d.getY());
+  RtFloat az = (RtFloat)std::fabs(d.getZ());
   if (ax >= ay && ax >= az) {
     return d.getX() > 0 ? REGION_PLUS_X : REGION_MINUS_X;
   }
@@ -405,13 +367,13 @@ Region regionAt(GMANVector const &d) {
   return d.getZ() > 0 ? REGION_PLUS_Z : REGION_MINUS_Z;
 }
 
-bool writeSixRegionPicture(std::string const &path) {
-  TIFF *tif = TIFFOpen(path.c_str(), "w");
+bool writeSixRegionPicture(std::string const& path) {
+  TIFF* tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
     return false;
   }
-  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t) kSixRegionWidth);
-  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t) kSixRegionHeight);
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t)kSixRegionWidth);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t)kSixRegionHeight);
   TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
   TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 3);
   TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
@@ -421,17 +383,16 @@ bool writeSixRegionPicture(std::string const &path) {
 
   bool ok = true;
   for (int j = 0; j < kSixRegionHeight && ok; ++j) {
-    std::vector<unsigned char> row((std::size_t) kSixRegionWidth * 3);
+    std::vector<unsigned char> row((std::size_t)kSixRegionWidth * 3);
     for (int i = 0; i < kSixRegionWidth; ++i) {
       RtFloat lon = (RtFloat)(2.0 * PI * (i + 0.5) / kSixRegionWidth);
-      RtFloat lat =
-          (RtFloat)(PI / 2.0 - PI * (j + 0.5) / kSixRegionHeight);
+      RtFloat lat = (RtFloat)(PI / 2.0 - PI * (j + 0.5) / kSixRegionHeight);
       GMANColor c = regionColor(regionAt(directionAt(lon, lat)));
-      row[(std::size_t) i * 3 + 0] = (unsigned char) (c.getRed() * 255.0);
-      row[(std::size_t) i * 3 + 1] = (unsigned char) (c.getGreen() * 255.0);
-      row[(std::size_t) i * 3 + 2] = (unsigned char) (c.getBlue() * 255.0);
+      row[(std::size_t)i * 3 + 0] = (unsigned char)(c.getRed() * 255.0);
+      row[(std::size_t)i * 3 + 1] = (unsigned char)(c.getGreen() * 255.0);
+      row[(std::size_t)i * 3 + 2] = (unsigned char)(c.getBlue() * 255.0);
     }
-    ok = TIFFWriteScanline(tif, row.data(), (uint32_t) j, 0) >= 0;
+    ok = TIFFWriteScanline(tif, row.data(), (uint32_t)j, 0) >= 0;
   }
   TIFFClose(tif);
   return ok;
@@ -441,11 +402,9 @@ bool writeSixRegionPicture(std::string const &path) {
 // with ".tif"), checking the pixel at the patch's centre -- a grid vertex
 // where every fixture's own derivation (see the .rib files) puts I on the
 // camera's own axis and the reflection pointing straight back at it.
-void testMirrorView(std::string const &gman, std::string const &ribDir,
-                     std::string const &fixture, Region want) {
+void testMirrorView(std::string const& gman, std::string const& ribDir, std::string const& fixture, Region want) {
   check(runGman(gman, ribDir + "/" + fixture) == 0, fixture + " renders");
-  const std::string outputTif =
-      fixture.substr(0, fixture.size() - 4) + ".tif";  // strip ".rib"
+  const std::string outputTif = fixture.substr(0, fixture.size() - 4) + ".tif"; // strip ".rib"
   GmanImage img = readGmanTIFF(outputTif);
   check(img.ok, outputTif + " reads back");
   if (!img.ok) {
@@ -453,54 +412,44 @@ void testMirrorView(std::string const &gman, std::string const &ribDir,
   }
   uint32_t cx = img.width / 2, cy = img.height / 2;
   uint32_t px = img.at(cx, cy);
-  GMANColor got((RtFloat) TIFFGetR(px) / (RtFloat) 255.0,
-                (RtFloat) TIFFGetG(px) / (RtFloat) 255.0,
-                (RtFloat) TIFFGetB(px) / (RtFloat) 255.0);
-  checkColorNear(got, regionColor(want), (RtFloat) 0.05,
-                 fixture + ": centre pixel shows its derived region");
+  GMANColor got((RtFloat)TIFFGetR(px) / (RtFloat)255.0, (RtFloat)TIFFGetG(px) / (RtFloat)255.0,
+                (RtFloat)TIFFGetB(px) / (RtFloat)255.0);
+  checkColorNear(got, regionColor(want), (RtFloat)0.05, fixture + ": centre pixel shows its derived region");
 }
 
 // shinymetal with an empty texturename skips the environment lookup and
 // adds black, degrading to metal (RISpec: an implementation without
 // environment mapping behaves this way) -- proved by rendering the same
 // lit sphere through both and comparing pixel by pixel.
-void testShinyMetalDegradesToMetal(std::string const &gman,
-                                    std::string const &ribDir) {
-  check(runGman(gman, ribDir + "/shinymetal_degrades.rib") == 0,
-        "shinymetal_degrades.rib renders");
-  check(runGman(gman, ribDir + "/metal_reference.rib") == 0,
-        "metal_reference.rib renders");
-  checkGoldenImage("shinymetal_degrades.tif", "metal_reference.tif",
-                    GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
-                    "shinymetal_degrades_diff.tif");
+void testShinyMetalDegradesToMetal(std::string const& gman, std::string const& ribDir) {
+  check(runGman(gman, ribDir + "/shinymetal_degrades.rib") == 0, "shinymetal_degrades.rib renders");
+  check(runGman(gman, ribDir + "/metal_reference.rib") == 0, "metal_reference.rib renders");
+  checkGoldenImage("shinymetal_degrades.tif", "metal_reference.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+                   "shinymetal_degrades_diff.tif");
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   testToWorldRotatesDirection();
   testMatrixReachesShader();
 
   const std::string picture = "latlong_picture.tif";
   const std::string map = "latlong.env";
-  check(writeLatLongPicture(picture),
-        picture + " writes for gmanMakeLatLongEnvironment");
-  check(gmanMakeLatLongEnvironment(picture.c_str(), map.c_str()),
-        map + " writes via gmanMakeLatLongEnvironment");
+  check(writeLatLongPicture(picture), picture + " writes for gmanMakeLatLongEnvironment");
+  check(gmanMakeLatLongEnvironment(picture.c_str(), map.c_str()), map + " writes via gmanMakeLatLongEnvironment");
   testDirectLookups(map);
   testLongitudeWraps(map);
   testWriterTagsAndFailures(picture, map);
 
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n",
-                  argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  check(writeSixRegionPicture("sixregion_picture.tif"),
-        "sixregion_picture.tif writes for gmanMakeLatLongEnvironment");
+  check(writeSixRegionPicture("sixregion_picture.tif"), "sixregion_picture.tif writes for gmanMakeLatLongEnvironment");
   check(gmanMakeLatLongEnvironment("sixregion_picture.tif", "sixregion.env"),
         "sixregion.env writes via gmanMakeLatLongEnvironment");
 

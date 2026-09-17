@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -38,16 +38,13 @@
  */
 
 // default constructor
-GMANLightSourceShader::GMANLightSourceShader() : GMANShader() { };
+GMANLightSourceShader::GMANLightSourceShader() : GMANShader() {};
 
-
-// default destructor 
-GMANLightSourceShader::~GMANLightSourceShader() { };
-
+// default destructor
+GMANLightSourceShader::~GMANLightSourceShader() {};
 
 // execute corresponding illuminate and solar statement
-RtVoid GMANLightSourceShader::illuminate (RtInt i, GMANVector L)
-{
+RtVoid GMANLightSourceShader::illuminate(RtInt i, GMANVector L) {
 #ifdef DEBUG
   if (i >= istmt.size()) {
     throw GMANError(RIE_BUG, RIE_SEVERE, "bad illuminate function asked");
@@ -56,8 +53,7 @@ RtVoid GMANLightSourceShader::illuminate (RtInt i, GMANVector L)
   istmt[i](L);
 }
 
-RtVoid GMANLightSourceShader::solar (RtInt i, GMANVector L)
-{
+RtVoid GMANLightSourceShader::solar(RtInt i, GMANVector L) {
 #ifdef DEBUG
   if (i >= solstmt.size()) {
     throw GMANError(RIE_BUG, RIE_SEVERE, "bad solar function asked");

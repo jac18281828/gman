@@ -21,10 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANSAMPLEBUFFER_H
 #define __GMAN_GMANSAMPLEBUFFER_H 1
-
 
 #include "gmancolor.h"
 #include "ri.h"
@@ -48,14 +46,13 @@ public:
   // ysamples are samples per pixel along each axis. Every sample starts
   // at background colour and RI_INFINITY depth, so an uncovered pixel
   // resolves to background rather than to indeterminate or black.
-  GMANSampleBuffer(int width, int height, int xsamples, int ysamples,
-                    const GMANColor &background);
+  GMANSampleBuffer(int width, int height, int xsamples, int ysamples, const GMANColor& background);
   ~GMANSampleBuffer();
 
-  GMANSampleBuffer(const GMANSampleBuffer &) = delete;
-  GMANSampleBuffer &operator=(const GMANSampleBuffer &) = delete;
-  GMANSampleBuffer(GMANSampleBuffer &&) = delete;
-  GMANSampleBuffer &operator=(GMANSampleBuffer &&) = delete;
+  GMANSampleBuffer(const GMANSampleBuffer&) = delete;
+  GMANSampleBuffer& operator=(const GMANSampleBuffer&) = delete;
+  GMANSampleBuffer(GMANSampleBuffer&&) = delete;
+  GMANSampleBuffer& operator=(GMANSampleBuffer&&) = delete;
 
   int getSampleWidth(void) const { return sampleWidth; }
   int getSampleHeight(void) const { return sampleHeight; }
@@ -64,7 +61,7 @@ public:
   // current depth, stores color and depth and returns true. sx/sy address
   // the full sample grid (pixel index * samples-per-pixel + local sample
   // index), not a single pixel's own samples.
-  bool zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor &color);
+  bool zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor& color);
 
   // Filters every pixel's covering samples through filterfunc and writes
   // the result to frameBuffer. xwidth/ywidth are the filter's full support
@@ -73,26 +70,21 @@ public:
   // follows). Also records, per pixel, the minimum depth among that
   // pixel's own samples -- retrieve with getResolvedDepth after this
   // returns.
-  RtVoid resolve(GMANFrameBuffer *frameBuffer, RtFilterFunc filterfunc,
-                 RtFloat xwidth, RtFloat ywidth);
+  RtVoid resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth);
 
   RtFloat getResolvedDepth(int x, int y) const;
 
 private:
-  int width, height;              // output image, pixel resolution
-  int xsamples, ysamples;         // samples per pixel, per axis
-  int sampleWidth, sampleHeight;  // width*xsamples, height*ysamples
+  int width, height;             // output image, pixel resolution
+  int xsamples, ysamples;        // samples per pixel, per axis
+  int sampleWidth, sampleHeight; // width*xsamples, height*ysamples
 
-  GMANColor *sampleColor; // sampleWidth*sampleHeight
-  RtFloat   *sampleDepth; // sampleWidth*sampleHeight
-  RtFloat   *resolvedDepth; // width*height, filled by resolve()
+  GMANColor* sampleColor; // sampleWidth*sampleHeight
+  RtFloat* sampleDepth;   // sampleWidth*sampleHeight
+  RtFloat* resolvedDepth; // width*height, filled by resolve()
 
-  inline int sampleIndex(int sx, int sy) const {
-    return sy * sampleWidth + sx;
-  }
-  inline int pixelIndex(int x, int y) const {
-    return y * width + x;
-  }
+  inline int sampleIndex(int sx, int sy) const { return sy * sampleWidth + sx; }
+  inline int pixelIndex(int x, int y) const { return y * width + x; }
 };
 
 #endif

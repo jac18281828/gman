@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -25,10 +25,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANSURFACESHADER_H
 #define __GMAN_GMANSURFACESHADER_H 1
-
 
 #include <list>
 #include <map>
@@ -50,10 +48,9 @@
  *
  */
 
-class GMAN_EXPORT  GMANSurfaceShader : public GMANShader
-{
- protected:
-  typedef RtVoid (*illuminanceFunc) (GMANVector L, GMANColor Cl, GMANColor Ol); 
+class GMAN_EXPORT GMANSurfaceShader : public GMANShader {
+protected:
+  typedef RtVoid (*illuminanceFunc)(GMANVector L, GMANColor Cl, GMANColor Ol);
 
   std::vector<illuminanceFunc> istmt;
 
@@ -64,16 +61,14 @@ public:
 
   ShaderType getType(RtVoid) const { return SURFACE; }
 
-  RtVoid illuminance (RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
+  RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
   /*
    * Output of a surface shader
    */
 
-  virtual const GMANColor &computeCi(GMANSurfaceEnv &se)= 0;
-  virtual const GMANColor &computeOi(GMANSurfaceEnv &se)= 0;
+  virtual const GMANColor& computeCi(GMANSurfaceEnv& se) = 0;
+  virtual const GMANColor& computeOi(GMANSurfaceEnv& se) = 0;
 };
 
-
 #endif
-

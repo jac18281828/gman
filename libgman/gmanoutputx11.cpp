@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -28,25 +28,17 @@
 #include "gmanoutputx11.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANOutputX11
  *
  */
 
 // default constructor
-GMANOutputX11::GMANOutputX11(const char */*name*/, int /*width*/, int /*height*/) : 
-  GMANWindowOutput() { };
+GMANOutputX11::GMANOutputX11(const char* /*name*/, int /*width*/, int /*height*/) : GMANWindowOutput() {};
 
+// default destructor
+GMANOutputX11::~GMANOutputX11() {};
 
-// default destructor 
-GMANOutputX11::~GMANOutputX11() { };
-
-RtVoid GMANOutputX11::save(GMANOutput::DisplayMode /*mode*/, 
-			   RtFloat /*gain*/, 
-			   RtFloat /*gamma*/) {
-    debug("sorry framebuffer display is not currently supported");
+RtVoid GMANOutputX11::save(GMANOutput::DisplayMode /*mode*/, RtFloat /*gain*/, RtFloat /*gamma*/) {
+  debug("sorry framebuffer display is not currently supported");
 }
-
-
-

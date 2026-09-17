@@ -47,16 +47,15 @@
 
 namespace {
 
-int runGman(const std::string &gman, const std::string &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(const std::string& gman, const std::string& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
@@ -70,14 +69,12 @@ int main(int argc, char *argv[]) {
   GmanImage img = readGmanTIFF("screenwindow.tif");
   check(img.ok, "screenwindow.rib: TIFF read back");
   if (img.ok) {
-    check(img.width == 200 && img.height == 300,
-          "screenwindow.rib: output sized to the CropWindow rectangle "
-          "(200x300 of the full 400x300 Format), got " +
-              std::to_string(img.width) + "x" + std::to_string(img.height));
+    check(img.width == 200 && img.height == 300, "screenwindow.rib: output sized to the CropWindow rectangle "
+                                                 "(200x300 of the full 400x300 Format), got " +
+                                                     std::to_string(img.width) + "x" + std::to_string(img.height));
   }
 
-  checkGoldenImage("screenwindow.tif", ribDir + "/screenwindow_golden.tif",
-                   GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+  checkGoldenImage("screenwindow.tif", ribDir + "/screenwindow_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
                    "screenwindow_diff.tif");
 
   return checkSummary("screenwindow holds");

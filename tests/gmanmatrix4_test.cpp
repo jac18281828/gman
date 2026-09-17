@@ -41,9 +41,7 @@
 
 namespace {
 
-bool near(RtFloat a, RtFloat b, RtFloat tol = 1e-4) {
-  return std::fabs(a - b) <= tol;
-}
+bool near(RtFloat a, RtFloat b, RtFloat tol = 1e-4) { return std::fabs(a - b) <= tol; }
 
 void testPrjPersp() {
   GMANMatrix4 m;
@@ -166,8 +164,7 @@ void testP3mRowVectorConvention() {
   RtFloat src[] = {1.0, 2.0, 3.0};
   RtFloat dst[3];
   t.p3m(1, src, dst);
-  check(near(dst[0], 6.0) && near(dst[1], 2.0) && near(dst[2], 3.0),
-        "p3m: a translation matrix translates the point");
+  check(near(dst[0], 6.0) && near(dst[1], 2.0) && near(dst[2], 3.0), "p3m: a translation matrix translates the point");
 
   // Rotate (1,0,0) by +90deg about Z: row-vector p*R sends it to (0,1,0)
   // for GMANMatrix4::rot()'s sign convention (hand-derived from rot()'s
@@ -194,8 +191,7 @@ void testP4mCarriesW() {
   RtFloat srcPoint[] = {1.0, 2.0, 3.0, 1.0};
   RtFloat dstPoint[4];
   t.p4m(1, srcPoint, dstPoint);
-  check(near(dstPoint[0], 6.0) && near(dstPoint[1], 2.0) &&
-        near(dstPoint[2], 3.0) && near(dstPoint[3], 1.0),
+  check(near(dstPoint[0], 6.0) && near(dstPoint[1], 2.0) && near(dstPoint[2], 3.0) && near(dstPoint[3], 1.0),
         "p4m: a translated point matches p3m's result, w left at 1");
 
   // A direction (w=0) is translation-invariant -- the whole reason
@@ -203,8 +199,7 @@ void testP4mCarriesW() {
   RtFloat srcDir[] = {1.0, 0.0, 0.0, 0.0};
   RtFloat dstDir[4];
   t.p4m(1, srcDir, dstDir);
-  check(near(dstDir[0], 1.0) && near(dstDir[1], 0.0) &&
-        near(dstDir[2], 0.0) && near(dstDir[3], 0.0),
+  check(near(dstDir[0], 1.0) && near(dstDir[1], 0.0) && near(dstDir[2], 0.0) && near(dstDir[3], 0.0),
         "p4m: a direction (w=0) is unaffected by translation");
 }
 
@@ -229,8 +224,7 @@ void testVector4TimesEqualsMatrixRowVector() {
   GMANVector4 pa(0.125, 0.25, 0.5, 1.0);
   pa *= bezier;
 
-  check(near(pa.getX(), 0.125) && near(pa.getY(), 0.375) &&
-        near(pa.getZ(), 0.375) && near(pa.getW(), 0.125),
+  check(near(pa.getX(), 0.125) && near(pa.getY(), 0.375) && near(pa.getZ(), 0.375) && near(pa.getW(), 0.125),
         "GMANVector4 *= GMANMatrix4 matches the hand-computed row-vector "
         "product, not the pre-fix no-op");
 }

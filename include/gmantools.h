@@ -31,68 +31,41 @@
 #include "gmanpoint.h"
 #include "ri.h"
 
-class GMAN_EXPORT  GMANTools
-{
- public:
+class GMAN_EXPORT GMANTools {
+public:
   /*----------------------------------------------------------
    * Bilinear Patch tools
    */
-  static GMANPoint bilinear  (RtFloat u, RtFloat v, RtFloat *pnts);
-  static GMANPoint bilinearZ (RtFloat u, RtFloat v, RtFloat *pnts);
-  static GMANPoint bilinearW (RtFloat u, RtFloat v, RtFloat *pnts);
-  
+  static GMANPoint bilinear(RtFloat u, RtFloat v, RtFloat* pnts);
+  static GMANPoint bilinearZ(RtFloat u, RtFloat v, RtFloat* pnts);
+  static GMANPoint bilinearW(RtFloat u, RtFloat v, RtFloat* pnts);
+
   /*----------------------------------------------------------
    * Bilinear PatchMesh tools
    */
-  static GMANPoint bilinearMesh  (RtFloat u, RtFloat v,
-				  RtInt nu, bool uwrap,
-				  RtInt nv, bool vwrap,
-				  RtFloat *pts);
-  static GMANPoint bilinearMeshZ (RtFloat u, RtFloat v,
-				  RtInt nu, RtInt nv,
-				  RtFloat *pts);
-  static GMANPoint bilinearMeshW (RtFloat u, RtFloat v,
-				  RtInt nu, bool uwrap,
-				  RtInt nv, bool vwrap,
-				  RtFloat *pts);
+  static GMANPoint bilinearMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pts);
+  static GMANPoint bilinearMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFloat* pts);
+  static GMANPoint bilinearMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pts);
 
- /*----------------------------------------------------------
-  * NuPatch tools
-  */
-  static RtFloat nurbsBlendFactor (RtInt i, RtInt degree, RtFloat u, RtFloat *knot);
-  static GMANPoint nurbs          (RtFloat u, RtFloat v,
-				   RtInt nu, RtInt uorder, RtFloat *uknot,
-				   RtInt nv, RtInt vorder, RtFloat *vknot,
-				   RtFloat *points);
-  static GMANPoint nurbsW         (RtFloat u, RtFloat v,
-				   RtInt nu, RtInt uorder, RtFloat *uknot,
-				   RtInt nv, RtInt vorder, RtFloat *vknot,
-				   RtFloat *points);
+  /*----------------------------------------------------------
+   * NuPatch tools
+   */
+  static RtFloat nurbsBlendFactor(RtInt i, RtInt degree, RtFloat u, RtFloat* knot);
+  static GMANPoint nurbs(RtFloat u, RtFloat v, RtInt nu, RtInt uorder, RtFloat* uknot, RtInt nv, RtInt vorder,
+                         RtFloat* vknot, RtFloat* points);
+  static GMANPoint nurbsW(RtFloat u, RtFloat v, RtInt nu, RtInt uorder, RtFloat* uknot, RtInt nv, RtInt vorder,
+                          RtFloat* vknot, RtFloat* points);
 
   /*----------------------------------------------------------
    * Quadrics tools
    */
-  static GMANPoint sphere      (RtFloat u, RtFloat v,
-				RtFloat radius, RtFloat zmin, RtFloat zmax,
-				RtFloat thetamax);
-  static GMANPoint cone        (RtFloat u, RtFloat v,
-				RtFloat height, RtFloat radius, 
-				RtFloat thetamax);
-  static GMANPoint cylinder    (RtFloat u, RtFloat v,
-				RtFloat radius, RtFloat zmin, RtFloat zmax,
-				RtFloat thetamax);
-  static GMANPoint hyperboloid (RtFloat u, RtFloat v,
-				GMANPoint const &p1, GMANPoint const &p2,
-				RtFloat thetamax);
-  static GMANPoint paraboloid  (RtFloat u, RtFloat v,
-				RtFloat rmax, RtFloat zmin, RtFloat zmax,
-				RtFloat thetamax);
-  static GMANPoint disk        (RtFloat u, RtFloat v,
-				RtFloat height, RtFloat radius,
-				RtFloat thetamax);
-  static GMANPoint torus       (RtFloat u, RtFloat v,
-				RtFloat majorr, RtFloat minorr,
-				RtFloat phimin, RtFloat phimax,
-				RtFloat thetamax);
+  static GMANPoint sphere(RtFloat u, RtFloat v, RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat thetamax);
+  static GMANPoint cone(RtFloat u, RtFloat v, RtFloat height, RtFloat radius, RtFloat thetamax);
+  static GMANPoint cylinder(RtFloat u, RtFloat v, RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat thetamax);
+  static GMANPoint hyperboloid(RtFloat u, RtFloat v, GMANPoint const& p1, GMANPoint const& p2, RtFloat thetamax);
+  static GMANPoint paraboloid(RtFloat u, RtFloat v, RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat thetamax);
+  static GMANPoint disk(RtFloat u, RtFloat v, RtFloat height, RtFloat radius, RtFloat thetamax);
+  static GMANPoint torus(RtFloat u, RtFloat v, RtFloat majorr, RtFloat minorr, RtFloat phimin, RtFloat phimax,
+                         RtFloat thetamax);
 };
 #endif

@@ -23,10 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANRIBPARSE_H
 #define __GMAN_GMANRIBPARSE_H 1
-
 
 #include <fstream>
 #include <istream>
@@ -47,15 +45,13 @@
  *
  */
 
-class GMAN_EXPORT  GMANRIBParse {
+class GMAN_EXPORT GMANRIBParse {
 public: // types
+  typedef RtBoolean (GMANRIBParse::*RIBHandler)(RtToken keyword, GMANRIBTokenize& tokenizer);
 
-  typedef RtBoolean (GMANRIBParse::*RIBHandler)(RtToken keyword,
-						GMANRIBTokenize &tokenizer);
-
-  typedef std::map<RtToken, RIBHandler>              TokenHandlerMap;
-  typedef std::map<RtInt, RtLightHandle>             LightHandleMap;
-  typedef std::map<RtInt, RtObjectHandle>            ObjectHandleMap;
+  typedef std::map<RtToken, RIBHandler> TokenHandlerMap;
+  typedef std::map<RtInt, RtLightHandle> LightHandleMap;
+  typedef std::map<RtInt, RtObjectHandle> ObjectHandleMap;
 
   class TokenVector : public std::vector<GMANToken> {
   public:
@@ -69,38 +65,38 @@ public: // types
    */
 
   /* The number of RIB keywords in KeywordTable */
-  static  const int	nKeywords;
+  static const int nKeywords;
 
   /* A table of all RIB keywords/commands */
-  static RtToken *KeywordTable;
+  static RtToken* KeywordTable;
 
   /* A RIB that includes itself, directly or through a chain of archives,
    * is a hang rather than a parse error without a depth cap. */
   static const int maxArchiveDepth;
 
 private:
-  bool			handlersRegistered;
+  bool handlersRegistered;
 
-  GMANRenderMan		&renderMan;
+  GMANRenderMan& renderMan;
 
   // the token stream currently being read -- the top-level RIB file or,
   // while inside ReadArchive, the archive. Gzip'd sources are transparently
   // decompressed into an in-memory stream by openRibStream, so this is an
   // istream rather than an ifstream.
-  std::unique_ptr<std::istream>	ribStream;
+  std::unique_ptr<std::istream> ribStream;
 
   // the directory each currently-open file (or archive) resolves its own
   // relative ReadArchive paths against, innermost last
-  std::vector<std::string>	includeDirs;
+  std::vector<std::string> includeDirs;
 
   // absolute, resolved paths of every file currently open, for cycle
   // detection: a RIB that reads itself, directly or through a chain of
   // archives, errors cleanly instead of hanging
-  std::vector<std::string>	openArchives;
+  std::vector<std::string> openArchives;
 
   // request names skipped by skipUnknownRequest, reported once at end of
   // parse rather than once per occurrence
-  std::set<std::string>	skippedRequests;
+  std::set<std::string> skippedRequests;
 
   // parseParameterList's own buffers (the flattened tokens/parms arrays,
   // each key, each value) outlive the parseXxx call that built them -- the
@@ -121,33 +117,30 @@ private:
     // when isStringArray.
     std::vector<RtFloat> floatStorage;
   };
-  std::vector<std::unique_ptr<char[]>>	pendingParamKeys;
-  std::vector<PendingParamValue>	pendingParamValues;
-  std::vector<RtToken *>		pendingTokenArrays;
-  std::vector<RtPointer *>		pendingParmArrays;
-  std::vector<RtInt *>			pendingCountArrays;
+  std::vector<std::unique_ptr<char[]>> pendingParamKeys;
+  std::vector<PendingParamValue> pendingParamValues;
+  std::vector<RtToken*> pendingTokenArrays;
+  std::vector<RtPointer*> pendingParmArrays;
+  std::vector<RtInt*> pendingCountArrays;
 
-  GMANRIBTokenize	tokenizer;
+  GMANRIBTokenize tokenizer;
 
   GMANToken currentToken;
   GMANToken lookAheadToken;
 
-  TokenHandlerMap	tokenHandlerMap;
+  TokenHandlerMap tokenHandlerMap;
 
-  LightHandleMap        lightHandleMap;
-  ObjectHandleMap       objectHandleMap;
+  LightHandleMap lightHandleMap;
+  ObjectHandleMap objectHandleMap;
 
 public:
   /**
    * open the file rib, where name is the parameter to RiBegin
    */
-  GMANRIBParse(GMANRenderMan &renderman,
-	       const char *rib,
-	       RtToken name="gmanzbuffer")
-; // default constructor
+  GMANRIBParse(GMANRenderMan& renderman, const char* rib,
+               RtToken name = "gmanzbuffer"); // default constructor
 
   virtual ~GMANRIBParse(); // default destructor
-
 
   /*
    * This method registers the indicated rib keyword token
@@ -163,8 +156,7 @@ public:
    * that have not already been registered
    */
 
-  virtual RtVoid addHandlers(RtVoid) {
-  }
+  virtual RtVoid addHandlers(RtVoid) {}
 
   /*
    * parse the rib file and take any specified action based on the rib stream.
@@ -175,10 +167,10 @@ public:
   RtVoid parse(RtVoid);
 
 private:
-  RtVoid	addDefaultHandlers(RtVoid);
+  RtVoid addDefaultHandlers(RtVoid);
 
-  const GMANToken &peekToken();
-  const GMANToken &nextToken();
+  const GMANToken& peekToken();
+  const GMANToken& nextToken();
 
   // Utility functions
   RtFloat nextFloat();
@@ -197,8 +189,7 @@ private:
   // same index space as tokens/parms -- index-aligned by construction
   // inside parseParameterList itself, since paramMap's own order is by
   // key, not push order.
-  RtVoid parseParameterList(RtInt &n, RtToken* &tokens,
-			    RtPointer* &params, RtInt* &counts);
+  RtVoid parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& params, RtInt*& counts);
 
   // the token-dispatch loop, run once for the top-level file and once more,
   // re-entrantly, for each nested ReadArchive
@@ -206,12 +197,12 @@ private:
 
   // opens path, transparently decompressing it first if it is gzip'd
   // (detected by magic bytes, not by extension)
-  static std::unique_ptr<std::istream> openRibStream(const std::string &path);
+  static std::unique_ptr<std::istream> openRibStream(const std::string& path);
 
   // an unrecognized keyword: warn once per name, then consume its arguments
   // by balancing brackets so the token stream stays in sync, without
   // knowing the request's grammar
-  RtVoid skipUnknownRequest(const std::string &name);
+  RtVoid skipUnknownRequest(const std::string& name);
 
   // releases every buffer parseParameterList allocated for the request just
   // dispatched
@@ -303,13 +294,10 @@ private:
   RtVoid parseElse(RtVoid);
   RtVoid parseIfEnd(RtVoid);
   RtVoid parsePixelFilter(RtVoid);
-//  RtVoid parse(RtVoid);
+  //  RtVoid parse(RtVoid);
 
 protected:
-
-  RIBHandler	defaultHandler;
-
+  RIBHandler defaultHandler;
 };
-
 
 #endif

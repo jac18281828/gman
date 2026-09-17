@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -48,7 +48,7 @@ namespace {
 // division carries absolute error near 1e-7; this sits an order above
 // that noise and far below any turn or offset a real polygon intends --
 // 1e-6 radians is 0.00006 degrees.
-const RtFloat kTriangulationTolerance = (RtFloat) 1.0e-6;
+const RtFloat kTriangulationTolerance = (RtFloat)1.0e-6;
 
 // getRSPatchMesh's own corners: RiTextureCoordinates spans a single
 // parametric surface's unit square, and a PatchMesh's sub-patches already
@@ -60,9 +60,9 @@ const GMANTextureCoordinates kIdentityCorners = {0, 0, 1, 0, 0, 1, 1, 1};
 // The RISpec's own default: a scene that never calls RiSurface still
 // shades, as matte. One instance, loaded on first use and reused --
 // dlopen once, not once per primitive.
-GMANSurfaceShader *defaultSurfaceShader() {
+GMANSurfaceShader* defaultSurfaceShader() {
   static GMANLoadableShader loader("libmatte.so");
-  static GMANSurfaceShader *shader = loader.getSurface();
+  static GMANSurfaceShader* shader = loader.getSurface();
   return shader;
 }
 
@@ -73,7 +73,7 @@ GMANSurfaceShader *defaultSurfaceShader() {
 // the same GMANTokenId the request's own parameter list was built against
 // -- shaders/gmanshaderparams.h's dictionary() is the same idiom, for the
 // same reason.
-GMANDictionary &standardDictionary() {
+GMANDictionary& standardDictionary() {
   static GMANDictionary d;
   return d;
 }
@@ -122,9 +122,7 @@ bool validBicubicMeshDim(RtInt n, bool periodic, RtInt step) {
 
 // A bilinear sub-patch is one 2x2 block of corners; either axis needs at
 // least two distinct control points to form one, wrapped or not.
-bool validBilinearMeshDim(RtInt n) {
-  return n >= 2;
-}
+bool validBilinearMeshDim(RtInt n) { return n >= 2; }
 
 // Per-primitive shading inputs that don't vary per vertex: the surface
 // shader (falling back to matte, per the RISpec's own default, when
@@ -132,30 +130,26 @@ bool validBilinearMeshDim(RtInt n) {
 // (RiIlluminate), and the primitive's own Cs/Os. Shared by createParametric
 // and getRSPolygon, which otherwise duplicated this resolution verbatim.
 struct GMANShadingContext {
-  GMANSurfaceShader *shader;
-  std::vector<const GMANLight *> activeLights;
+  GMANSurfaceShader* shader;
+  std::vector<const GMANLight*> activeLights;
   GMANColor Cs;
   GMANColor Os;
-  GMANMatrix4 cameraToWorld;  // identity unless opt carries one
+  GMANMatrix4 cameraToWorld; // identity unless opt carries one
 };
 
-GMANShadingContext resolveShadingContext(GMANAttributes *attr,
-                                          GMANOptions const *opt) {
+GMANShadingContext resolveShadingContext(GMANAttributes* attr, GMANOptions const* opt) {
   GMANShadingContext ctx;
 
   // getSurface's const pointer just reflects that GMANAttributes doesn't
   // want its shader pointer reseated through it; computeCi/computeOi are
   // not logically const on the shader instance itself, which is why this
   // casts rather than threading const through the shading call below.
-  const GMANSurfaceShader *constShader = attr->getSurface(0.0);
-  ctx.shader = constShader
-      ? const_cast<GMANSurfaceShader *>(constShader)
-      : defaultSurfaceShader();
+  const GMANSurfaceShader* constShader = attr->getSurface(0.0);
+  ctx.shader = constShader ? const_cast<GMANSurfaceShader*>(constShader) : defaultSurfaceShader();
 
-  const std::list<RtLightHandle> &handles = attr->getLightList().getHandles();
-  for (std::list<RtLightHandle>::const_iterator it = handles.begin();
-       it != handles.end(); ++it) {
-    const GMANLight *light = gmanLightSourceMgr().get(*it);
+  const std::list<RtLightHandle>& handles = attr->getLightList().getHandles();
+  for (std::list<RtLightHandle>::const_iterator it = handles.begin(); it != handles.end(); ++it) {
+    const GMANLight* light = gmanLightSourceMgr().get(*it);
     if (light) {
       ctx.activeLights.push_back(light);
     }
@@ -177,25 +171,28 @@ GMANShadingContext resolveShadingContext(GMANAttributes *attr,
 // varying values each, overriding only their own component). Shared by every
 // quadric and getRSPatch; getRSPatchMesh does not call this (see its own
 // comment).
-GMANTextureCoordinates resolveParametricCorners(GMANParameterList &pl,
-                                                 GMANAttributes *attr) {
+GMANTextureCoordinates resolveParametricCorners(GMANParameterList& pl, GMANAttributes* attr) {
   GMANTextureCoordinates corners = attr->getTextureCoordinates();
 
-  RtFloat *st = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_ST));
+  RtFloat* st = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_ST));
   if (st) {
-    corners.s1 = st[0]; corners.t1 = st[1];
-    corners.s2 = st[2]; corners.t2 = st[3];
-    corners.s3 = st[4]; corners.t3 = st[5];
-    corners.s4 = st[6]; corners.t4 = st[7];
+    corners.s1 = st[0];
+    corners.t1 = st[1];
+    corners.s2 = st[2];
+    corners.t2 = st[3];
+    corners.s3 = st[4];
+    corners.t3 = st[5];
+    corners.s4 = st[6];
+    corners.t4 = st[7];
   }
-  RtFloat *s = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_S));
+  RtFloat* s = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_S));
   if (s) {
     corners.s1 = s[0];
     corners.s2 = s[1];
     corners.s3 = s[2];
     corners.s4 = s[3];
   }
-  RtFloat *tp = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_T));
+  RtFloat* tp = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_T));
   if (tp) {
     corners.t1 = tp[0];
     corners.t2 = tp[1];
@@ -208,10 +205,8 @@ GMANTextureCoordinates resolveParametricCorners(GMANParameterList &pl,
 // The bilinear interpolation RiTextureCoordinates' own corner rule spells
 // out: corner order (0,0), (1,0), (0,1), (1,1), the same order
 // GMANTextureCoordinates' s1..t4 already carry.
-RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10,
-                      RtFloat c01, RtFloat c11) {
-  return (RtFloat) ((1.0 - u) * (1.0 - v) * c00 + u * (1.0 - v) * c10 +
-                     (1.0 - u) * v * c01 + u * v * c11);
+RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10, RtFloat c01, RtFloat c11) {
+  return (RtFloat)((1.0 - u) * (1.0 - v) * c00 + u * (1.0 - v) * c10 + (1.0 - u) * v * c01 + u * v * c11);
 }
 
 // Shades one vertex in camera space, with every input the shader needs
@@ -222,15 +217,14 @@ RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10,
 // across a clipped edge (the same machinery phase 1 wired up for the vertex
 // alpha blend). Eye sits at the camera-space origin (GMANVSPerspective::ray),
 // so the incident direction is just the normalized surface point.
-GMANColor shadeVertex(const GMANShadingContext &ctx, const GMANPoint &location,
-		       const GMANNormal &normal, RtFloat u, RtFloat v,
-		       RtFloat s, RtFloat t) {
+GMANColor shadeVertex(const GMANShadingContext& ctx, const GMANPoint& location, const GMANNormal& normal, RtFloat u,
+                      RtFloat v, RtFloat s, RtFloat t) {
   GMANSurfaceEnv env;
   env.Cs = ctx.Cs;
   env.Os = ctx.Os;
   env.P = location;
   env.N = normal;
-  env.Ng = normal;  // no displacement this phase; the two never diverge
+  env.Ng = normal; // no displacement this phase; the two never diverge
   env.I = GMANVector(location.getX(), location.getY(), location.getZ());
   env.I.normalize();
   env.E = GMANPoint(0.0, 0.0, 0.0);
@@ -250,18 +244,15 @@ GMANColor shadeVertex(const GMANShadingContext &ctx, const GMANPoint &location,
 // three-vertex cross product points opposite the polygon's true face
 // normal, while summing over every edge cannot, since each edge
 // contributes in proportion to the area it bounds.
-GMANVector newellNormal(const std::vector<GMANPoint> &ring) {
+GMANVector newellNormal(const std::vector<GMANPoint>& ring) {
   GMANVector sum;
   const std::size_t n = ring.size();
   for (std::size_t i = 0; i < n; i++) {
-    const GMANPoint &cur = ring[i];
-    const GMANPoint &next = ring[(i + 1) % n];
-    sum.setX(sum.getX() +
-             (cur.getY() - next.getY()) * (cur.getZ() + next.getZ()));
-    sum.setY(sum.getY() +
-             (cur.getZ() - next.getZ()) * (cur.getX() + next.getX()));
-    sum.setZ(sum.getZ() +
-             (cur.getX() - next.getX()) * (cur.getY() + next.getY()));
+    const GMANPoint& cur = ring[i];
+    const GMANPoint& next = ring[(i + 1) % n];
+    sum.setX(sum.getX() + (cur.getY() - next.getY()) * (cur.getZ() + next.getZ()));
+    sum.setY(sum.getY() + (cur.getZ() - next.getZ()) * (cur.getX() + next.getX()));
+    sum.setZ(sum.getZ() + (cur.getX() - next.getX()) * (cur.getY() + next.getY()));
   }
   return sum;
 }
@@ -271,22 +262,30 @@ GMANVector newellNormal(const std::vector<GMANPoint> &ring) {
 // against this extent rather than against an absolute constant, so a
 // sliver a million times longer than it is wide reads the same way at
 // any scale.
-RtFloat boundingBoxExtent(const std::vector<GMANPoint> &ring) {
+RtFloat boundingBoxExtent(const std::vector<GMANPoint>& ring) {
   RtFloat minX = ring[0].getX(), maxX = minX;
   RtFloat minY = ring[0].getY(), maxY = minY;
   RtFloat minZ = ring[0].getZ(), maxZ = minZ;
   for (std::size_t i = 1; i < ring.size(); i++) {
-    const GMANPoint &pt = ring[i];
-    if (pt.getX() < minX) minX = pt.getX();
-    if (pt.getX() > maxX) maxX = pt.getX();
-    if (pt.getY() < minY) minY = pt.getY();
-    if (pt.getY() > maxY) maxY = pt.getY();
-    if (pt.getZ() < minZ) minZ = pt.getZ();
-    if (pt.getZ() > maxZ) maxZ = pt.getZ();
+    const GMANPoint& pt = ring[i];
+    if (pt.getX() < minX)
+      minX = pt.getX();
+    if (pt.getX() > maxX)
+      maxX = pt.getX();
+    if (pt.getY() < minY)
+      minY = pt.getY();
+    if (pt.getY() > maxY)
+      maxY = pt.getY();
+    if (pt.getZ() < minZ)
+      minZ = pt.getZ();
+    if (pt.getZ() > maxZ)
+      maxZ = pt.getZ();
   }
   RtFloat extent = maxX - minX;
-  if (maxY - minY > extent) extent = maxY - minY;
-  if (maxZ - minZ > extent) extent = maxZ - minZ;
+  if (maxY - minY > extent)
+    extent = maxY - minY;
+  if (maxZ - minZ > extent)
+    extent = maxZ - minZ;
   return extent;
 }
 
@@ -299,12 +298,11 @@ RtFloat boundingBoxExtent(const std::vector<GMANPoint> &ring) {
 // fails every comparison; returning 0 reads instead as the angle a
 // vanishing vector cannot have a turn or a side of, which is what both
 // callers below already treat a zero-length input as.
-RtFloat dimensionlessCross(GMANVector a, GMANVector b,
-                            const GMANVector &normal) {
+RtFloat dimensionlessCross(GMANVector a, GMANVector b, const GMANVector& normal) {
   RtFloat lenA = a.magnitude();
   RtFloat lenB = b.magnitude();
-  if (lenA == (RtFloat) 0.0 || lenB == (RtFloat) 0.0) {
-    return (RtFloat) 0.0;
+  if (lenA == (RtFloat)0.0 || lenB == (RtFloat)0.0) {
+    return (RtFloat)0.0;
   }
   return a.cross(b).dot(normal) / (lenA * lenB);
 }
@@ -314,10 +312,8 @@ RtFloat dimensionlessCross(GMANVector a, GMANVector b,
 // vertex. Testing against this normal, rather than against the ring's own
 // winding, keeps the result correct whichever way the ring winds --
 // normal already followed that winding when Newell's method built it.
-RtFloat turnOrientation(const GMANPoint &prev, const GMANPoint &cur,
-                         const GMANPoint &next, const GMANVector &normal) {
-  return dimensionlessCross(GMANVector(prev, cur), GMANVector(cur, next),
-                             normal);
+RtFloat turnOrientation(const GMANPoint& prev, const GMANPoint& cur, const GMANPoint& next, const GMANVector& normal) {
+  return dimensionlessCross(GMANVector(prev, cur), GMANVector(cur, next), normal);
 }
 
 // The sine of the angle between one triangle edge and the vector from
@@ -328,25 +324,20 @@ RtFloat turnOrientation(const GMANPoint &prev, const GMANPoint &cur,
 // diagonal of its own polygon -- gives exactly 0 in exact arithmetic;
 // comparing that against literal 0 instead of a tolerance band lets
 // rounding alone decide which side p falls on.
-RtFloat sideOf(const GMANPoint &from, const GMANPoint &to,
-               const GMANPoint &p, const GMANVector &normal) {
-  return dimensionlessCross(GMANVector(from, to), GMANVector(from, p),
-                             normal);
+RtFloat sideOf(const GMANPoint& from, const GMANPoint& to, const GMANPoint& p, const GMANVector& normal) {
+  return dimensionlessCross(GMANVector(from, to), GMANVector(from, p), normal);
 }
 
 // True when p lies inside or on the boundary of coplanar triangle
 // (a, b, c): on the same side of every edge, judged by sideOf, so the
 // test does not depend on which way the triangle happens to wind.
-bool pointInTriangle(const GMANPoint &a, const GMANPoint &b,
-                      const GMANPoint &c, const GMANPoint &p,
-                      const GMANVector &normal) {
+bool pointInTriangle(const GMANPoint& a, const GMANPoint& b, const GMANPoint& c, const GMANPoint& p,
+                     const GMANVector& normal) {
   RtFloat d0 = sideOf(a, b, p, normal);
   RtFloat d1 = sideOf(b, c, p, normal);
   RtFloat d2 = sideOf(c, a, p, normal);
-  bool hasNeg = d0 < -kTriangulationTolerance || d1 < -kTriangulationTolerance ||
-                d2 < -kTriangulationTolerance;
-  bool hasPos = d0 > kTriangulationTolerance || d1 > kTriangulationTolerance ||
-                d2 > kTriangulationTolerance;
+  bool hasNeg = d0 < -kTriangulationTolerance || d1 < -kTriangulationTolerance || d2 < -kTriangulationTolerance;
+  bool hasPos = d0 > kTriangulationTolerance || d1 > kTriangulationTolerance || d2 > kTriangulationTolerance;
   return !(hasNeg && hasPos);
 }
 
@@ -360,10 +351,9 @@ bool pointInTriangle(const GMANPoint &a, const GMANPoint &b,
 // Only a reflex vertex can lie inside a convex ear's triangle -- a
 // standard property of simple polygons -- so each candidate's containment
 // test runs against the reflex set alone, not every remaining vertex.
-std::vector<std::array<RtInt, 3>> triangulateEarClipping(
-    const std::vector<GMANPoint> &ring, const GMANVector &normal) {
+std::vector<std::array<RtInt, 3>> triangulateEarClipping(const std::vector<GMANPoint>& ring, const GMANVector& normal) {
   std::vector<std::array<RtInt, 3>> triangles;
-  const RtInt n = (RtInt) ring.size();
+  const RtInt n = (RtInt)ring.size();
   if (n < 3) {
     return triangles;
   }
@@ -381,8 +371,7 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
       const RtInt iPrev = remaining[(i + m - 1) % m];
       const RtInt iCur = remaining[i];
       const RtInt iNext = remaining[(i + 1) % m];
-      orient[i] =
-          turnOrientation(ring[iPrev], ring[iCur], ring[iNext], normal);
+      orient[i] = turnOrientation(ring[iPrev], ring[iCur], ring[iNext], normal);
       if (orient[i] < -kTriangulationTolerance) {
         reflex.push_back(iCur);
       }
@@ -398,7 +387,7 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
         fallbackAt = i;
       }
       if (orient[i] < -kTriangulationTolerance) {
-        continue;  // reflex: never an ear
+        continue; // reflex: never an ear
       }
       const RtInt iPrev = remaining[(i + m - 1) % m];
       const RtInt iCur = remaining[i];
@@ -412,14 +401,13 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(
       // own neighbors.
       bool degenerate = orient[i] <= kTriangulationTolerance;
       bool containsReflex = false;
-      for (std::vector<RtInt>::const_iterator it = reflex.begin();
-           !degenerate && !containsReflex && it != reflex.end(); ++it) {
+      for (std::vector<RtInt>::const_iterator it = reflex.begin(); !degenerate && !containsReflex && it != reflex.end();
+           ++it) {
         RtInt idx = *it;
         if (idx == iPrev || idx == iCur || idx == iNext) {
           continue;
         }
-        containsReflex = pointInTriangle(ring[iPrev], ring[iCur],
-                                          ring[iNext], ring[idx], normal);
+        containsReflex = pointInTriangle(ring[iPrev], ring[iCur], ring[iNext], ring[idx], normal);
       }
       if (degenerate || !containsReflex) {
         clipAt = i;
@@ -460,11 +448,11 @@ struct GMANPolygonVertexTexCoord {
 // p is the vertex's own flat "P" array (3 floats per vertex, object space,
 // before the CTM); nverts is also "s"/"t"/"st"'s own declared length, so
 // index i reads the same vertex from every one of them.
-std::vector<GMANPolygonVertexTexCoord> resolvePolygonTextureCoordinates(
-    GMANParameterList &pl, RtInt nverts, const RtFloat *p) {
-  RtFloat *sArr = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_S));
-  RtFloat *tArr = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_T));
-  RtFloat *stArr = (RtFloat *) pl.getPointer(standardDictionary().getTokenId(RI_ST));
+std::vector<GMANPolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParameterList& pl, RtInt nverts,
+                                                                        const RtFloat* p) {
+  RtFloat* sArr = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_S));
+  RtFloat* tArr = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_T));
+  RtFloat* stArr = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_ST));
 
   std::vector<GMANPolygonVertexTexCoord> coords(nverts);
   for (RtInt i = 0; i < nverts; i++) {
@@ -495,45 +483,42 @@ std::vector<GMANPolygonVertexTexCoord> resolvePolygonTextureCoordinates(
 // array, so the two ring slots a bridge duplicates share one GMANVertex and
 // one shaded colour instead of splitting the surface. texCoords is
 // index-aligned with vertexLocations, not with ring.
-GMANObject *buildPolygonObject(
-    const std::vector<GMANPoint> &vertexLocations,
-    const std::vector<RtInt> &ring, const GMANVector &normalVec, RtInt sides,
-    RtToken orientation, const GMANShadingContext &shading,
-    const std::vector<GMANPolygonVertexTexCoord> &texCoords) {
+GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, const std::vector<RtInt>& ring,
+                               const GMANVector& normalVec, RtInt sides, RtToken orientation,
+                               const GMANShadingContext& shading,
+                               const std::vector<GMANPolygonVertexTexCoord>& texCoords) {
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
-  GMANBody *body = new GMANBody(GMANColor(), GMANColor());
-  GMANSurface *surface = new GMANSurface(body);
+  GMANBody* body = new GMANBody(GMANColor(), GMANColor());
+  GMANSurface* surface = new GMANSurface(body);
   body->setSurface(surface);
 
-  const RtInt nverts = (RtInt) vertexLocations.size();
-  GMANVertex **vertices = new GMANVertex*[nverts];
+  const RtInt nverts = (RtInt)vertexLocations.size();
+  GMANVertex** vertices = new GMANVertex*[nverts];
   for (RtInt i = 0; i < nverts; i++) {
     vertices[i] = new GMANVertex();
     vertices[i]->setLocation(vertexLocations[i]);
     vertices[i]->setNormal(normalVec);
 
-    const GMANPolygonVertexTexCoord &tc = texCoords[i];
-    vertices[i]->setColor(
-        shadeVertex(shading, vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t));
+    const GMANPolygonVertexTexCoord& tc = texCoords[i];
+    vertices[i]->setColor(shadeVertex(shading, vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t));
   }
 
   std::vector<GMANPoint> ringPoints(ring.size());
   for (std::size_t i = 0; i < ring.size(); i++) {
     ringPoints[i] = vertexLocations[ring[i]];
   }
-  std::vector<std::array<RtInt, 3>> triangles =
-      triangulateEarClipping(ringPoints, normalVec);
+  std::vector<std::array<RtInt, 3>> triangles = triangulateEarClipping(ringPoints, normalVec);
 
   // Ear-clip into GMANFace's fixed 4-vertex shape, the 4th slot duplicating
   // the 3rd -- calcArea/calcNormal both read [0][1][2] or collapse cleanly
   // when [2]==[3], the same idiom every quadric's pole face already uses
   // for a degenerate triangle. triangles[i] indexes ring, so it is mapped
   // through ring[...] to reach vertexLocations' own indexing.
-  RtInt nfaces = (RtInt) triangles.size();
-  GMANFace **faces = new GMANFace*[nfaces];
+  RtInt nfaces = (RtInt)triangles.size();
+  GMANFace** faces = new GMANFace*[nfaces];
   for (RtInt i = 0; i < nfaces; i++) {
-    GMANVertex *faceVertices[4];
+    GMANVertex* faceVertices[4];
     faceVertices[0] = vertices[ring[triangles[i][0]]];
     faceVertices[1] = vertices[ring[triangles[i][1]]];
     faceVertices[2] = vertices[ring[triangles[i][2]]];
@@ -552,7 +537,7 @@ GMANObject *buildPolygonObject(
   }
   surface->setFace(faces[0]);
 
-  GMANObject *object = new GMANObject();
+  GMANObject* object = new GMANObject();
   object->setVert(vertices[0]);
   object->setBody(body);
 
@@ -571,15 +556,12 @@ GMANObject *buildPolygonObject(
 // bridgeHoles' own use: which of a bridge vertex's two ring occurrences to
 // bridge to, since only one has the hole's rightmost vertex inside its
 // wedge.
-bool inInteriorWedge(const GMANPoint &v, const GMANPoint &prev,
-                      const GMANPoint &next, const GMANPoint &target,
-                      const GMANVector &normal) {
-  bool convex =
-      turnOrientation(prev, v, next, normal) > -kTriangulationTolerance;
+bool inInteriorWedge(const GMANPoint& v, const GMANPoint& prev, const GMANPoint& next, const GMANPoint& target,
+                     const GMANVector& normal) {
+  bool convex = turnOrientation(prev, v, next, normal) > -kTriangulationTolerance;
   bool leftOfIncoming = sideOf(prev, v, target, normal) > -kTriangulationTolerance;
   bool leftOfOutgoing = sideOf(v, next, target, normal) > -kTriangulationTolerance;
-  return convex ? (leftOfIncoming && leftOfOutgoing)
-                : (leftOfIncoming || leftOfOutgoing);
+  return convex ? (leftOfIncoming && leftOfOutgoing) : (leftOfIncoming || leftOfOutgoing);
 }
 
 // Bridges every non-degenerate loop in loops[1..] into loops[0], the outer
@@ -606,13 +588,10 @@ bool inInteriorWedge(const GMANPoint &v, const GMANPoint &prev,
 // (index-aligned with vertexPositions) carries each kept vertex's original
 // loopSlots entry, since bridging commits holes in descending-rightmostU
 // order, not input order.
-void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
-                  const std::vector<std::vector<RtInt>> &loopSlots,
-                  const GMANVector &normalVec, RtFloat outerBboxSide,
-                  std::vector<GMANPoint> &vertexPositions,
-                  std::vector<RtInt> &vertexSlots,
-                  std::vector<RtInt> &ring) {
-  const std::vector<GMANPoint> &outer = loops[0];
+void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::vector<std::vector<RtInt>>& loopSlots,
+                 const GMANVector& normalVec, RtFloat outerBboxSide, std::vector<GMANPoint>& vertexPositions,
+                 std::vector<RtInt>& vertexSlots, std::vector<RtInt>& ring) {
+  const std::vector<GMANPoint>& outer = loops[0];
 
   // u is the first edge of non-zero length, so the frame rotates with the
   // polygon rather than sitting on a fixed world axis a rotated placement
@@ -624,7 +603,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
   // uDir all the same.
   GMANVector uDir;
   bool foundEdge = false;
-  RtFloat longestEdge = (RtFloat) 0.0;
+  RtFloat longestEdge = (RtFloat)0.0;
   for (std::size_t i = 0; i < outer.size() && !foundEdge; i++) {
     GMANVector edge(outer[i], outer[(i + 1) % outer.size()]);
     RtFloat len = edge.magnitude();
@@ -637,18 +616,14 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
       uDir = edge;
     }
   }
-  if (!foundEdge && longestEdge > (RtFloat) 0.0) {
+  if (!foundEdge && longestEdge > (RtFloat)0.0) {
     uDir /= longestEdge;
   }
   GMANVector vDir = normalVec.cross(uDir);
-  const GMANPoint &origin = outer[0];
+  const GMANPoint& origin = outer[0];
 
-  auto projU = [&](const GMANPoint &pt) {
-    return GMANVector(origin, pt).dot(uDir);
-  };
-  auto projV = [&](const GMANPoint &pt) {
-    return GMANVector(origin, pt).dot(vDir);
-  };
+  auto projU = [&](const GMANPoint& pt) { return GMANVector(origin, pt).dot(uDir); };
+  auto projV = [&](const GMANPoint& pt) { return GMANVector(origin, pt).dot(vDir); };
 
   // Outer vertices keep ids 0..outer.size()-1, in "P" order -- the mapping
   // getRSPolygon's own vertex chain already relies on when nloops == 1.
@@ -656,7 +631,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
   vertexSlots = loopSlots[0];
   ring.resize(outer.size());
   for (std::size_t i = 0; i < outer.size(); i++) {
-    ring[i] = (RtInt) i;
+    ring[i] = (RtInt)i;
   }
 
   // A hole's own points stay in "P" order until it is actually bridged (see
@@ -675,26 +650,25 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
   std::vector<Hole> holes;
 
   for (std::size_t loopIndex = 1; loopIndex < loops.size(); loopIndex++) {
-    const std::vector<GMANPoint> &loop = loops[loopIndex];
+    const std::vector<GMANPoint>& loop = loops[loopIndex];
     if (loop.size() < 3) {
-      continue;  // encloses no area: dropped
+      continue; // encloses no area: dropped
     }
     RtFloat bboxSide = boundingBoxExtent(loop);
     GMANVector holeNewell = newellNormal(loop);
     RtFloat holeMag = holeNewell.magnitude();
-    if (bboxSide == (RtFloat) 0.0 ||
-        holeMag < kTriangulationTolerance * bboxSide * bboxSide) {
-      continue;  // degenerate against its own extent: dropped
+    if (bboxSide == (RtFloat)0.0 || holeMag < kTriangulationTolerance * bboxSide * bboxSide) {
+      continue; // degenerate against its own extent: dropped
     }
 
     Hole hole;
-    hole.loopIndex = (RtInt) loopIndex;
+    hole.loopIndex = (RtInt)loopIndex;
     hole.points = loop;
     hole.slots = loopSlots[loopIndex];
     // A hole wound the same way as the outer loop would add its area
     // instead of removing it; reversing its traversal order below is what
     // turns the bridge into a cut.
-    hole.reversed = holeNewell.dot(normalVec) > (RtFloat) 0.0;
+    hole.reversed = holeNewell.dot(normalVec) > (RtFloat)0.0;
 
     hole.rightmostLocal = 0;
     hole.rightmostU = projU(loop[0]);
@@ -702,7 +676,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
       RtFloat u = projU(loop[j]);
       if (u > hole.rightmostU) {
         hole.rightmostU = u;
-        hole.rightmostLocal = (RtInt) j;
+        hole.rightmostLocal = (RtInt)j;
       }
     }
     holes.push_back(hole);
@@ -711,34 +685,34 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
   // Rule 1: descending largest u, so a ray cast from a not-yet-bridged
   // hole's rightmost vertex can only meet the boundary or a hole already
   // bridged -- never one still to come, which it could otherwise cross.
-  std::sort(holes.begin(), holes.end(), [](const Hole &a, const Hole &b) {
+  std::sort(holes.begin(), holes.end(), [](const Hole& a, const Hole& b) {
     if (a.rightmostU != b.rightmostU) {
       return a.rightmostU > b.rightmostU;
     }
     return a.loopIndex < b.loopIndex;
   });
 
-  for (const Hole &hole : holes) {
-    const RtInt n = (RtInt) hole.points.size();
-    const GMANPoint &M = hole.points[hole.rightmostLocal];
+  for (const Hole& hole : holes) {
+    const RtInt n = (RtInt)hole.points.size();
+    const GMANPoint& M = hole.points[hole.rightmostLocal];
     const RtFloat mu = projU(M);
     const RtFloat mv = projV(M);
 
     // Rule 2: the nearest ring edge the +u ray from M crosses.
     RtInt edgeStart = -1;
     RtFloat nearestU = 0;
-    const RtInt ringSize = (RtInt) ring.size();
+    const RtInt ringSize = (RtInt)ring.size();
     for (RtInt e = 0; e < ringSize; e++) {
-      const GMANPoint &a = vertexPositions[ring[e]];
-      const GMANPoint &b = vertexPositions[ring[(e + 1) % ringSize]];
+      const GMANPoint& a = vertexPositions[ring[e]];
+      const GMANPoint& b = vertexPositions[ring[(e + 1) % ringSize]];
       RtFloat av = projV(a), bv = projV(b);
       if ((av > mv) == (bv > mv)) {
-        continue;  // does not cross the ray's line
+        continue; // does not cross the ray's line
       }
       RtFloat au = projU(a), bu = projU(b);
       RtFloat crossU = au + (mv - av) / (bv - av) * (bu - au);
       if (crossU <= mu) {
-        continue;  // behind the ray's origin
+        continue; // behind the ray's origin
       }
       if (edgeStart < 0 || crossU < nearestU) {
         edgeStart = e;
@@ -746,17 +720,17 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
       }
     }
     if (edgeStart < 0) {
-      continue;  // the hole's ray meets no ring edge: outside the outer
-                 // loop, dropped
+      continue; // the hole's ray meets no ring edge: outside the outer
+                // loop, dropped
     }
 
     const RtInt aId = ring[edgeStart];
     const RtInt bId = ring[(edgeStart + 1) % ringSize];
-    const GMANPoint &a = vertexPositions[aId];
-    const GMANPoint &b = vertexPositions[bId];
+    const GMANPoint& a = vertexPositions[aId];
+    const GMANPoint& b = vertexPositions[bId];
     const RtInt pId = (projU(a) > projU(b)) ? aId : bId;
     const RtFloat tParam = (mv - projV(a)) / (projV(b) - projV(a));
-    const GMANPoint iPoint = a + (GMANPoint) (GMANVector(a, b) * tParam);
+    const GMANPoint iPoint = a + (GMANPoint)(GMANVector(a, b) * tParam);
 
     const RtFloat coincideTol = kTriangulationTolerance * outerBboxSide;
     RtInt bridgeTarget;
@@ -770,33 +744,31 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
       // No ring vertex sits at I: the target is P, unless a reflex ring
       // vertex inside triangle (M, I, P) is a better -- nearer the ray --
       // bridge; bridging straight to P past such a vertex would cross it.
-      const GMANPoint &pPoint = vertexPositions[pId];
+      const GMANPoint& pPoint = vertexPositions[pId];
       RtInt best = -1;
       RtFloat bestCos = 0;
       RtFloat bestDist = 0;
       for (RtInt e = 0; e < ringSize; e++) {
         RtInt vId = ring[e];
         if (vId == aId || vId == bId) {
-          continue;  // the crossed edge's own endpoints, already considered
+          continue; // the crossed edge's own endpoints, already considered
         }
-        const GMANPoint &v = vertexPositions[vId];
-        const GMANPoint &prev = vertexPositions[ring[(e + ringSize - 1) % ringSize]];
-        const GMANPoint &next = vertexPositions[ring[(e + 1) % ringSize]];
-        if (turnOrientation(prev, v, next, normalVec) >=
-            -kTriangulationTolerance) {
-          continue;  // only a reflex vertex can lie inside a visibility ear
+        const GMANPoint& v = vertexPositions[vId];
+        const GMANPoint& prev = vertexPositions[ring[(e + ringSize - 1) % ringSize]];
+        const GMANPoint& next = vertexPositions[ring[(e + 1) % ringSize]];
+        if (turnOrientation(prev, v, next, normalVec) >= -kTriangulationTolerance) {
+          continue; // only a reflex vertex can lie inside a visibility ear
         }
         if (!pointInTriangle(M, iPoint, pPoint, v, normalVec)) {
           continue;
         }
         GMANVector toV(M, v);
         RtFloat dist = toV.magnitude();
-        if (dist == (RtFloat) 0.0) {
+        if (dist == (RtFloat)0.0) {
           continue;
         }
         RtFloat cosAngle = toV.dot(uDir) / dist;
-        if (best < 0 || cosAngle > bestCos ||
-            (cosAngle == bestCos && dist < bestDist)) {
+        if (best < 0 || cosAngle > bestCos || (cosAngle == bestCos && dist < bestDist)) {
           best = vId;
           bestCos = cosAngle;
           bestDist = dist;
@@ -814,11 +786,11 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
         continue;
       }
       if (targetSlot < 0) {
-        targetSlot = e;  // first occurrence: the default if none matches
+        targetSlot = e; // first occurrence: the default if none matches
       }
-      const GMANPoint &v = vertexPositions[ring[e]];
-      const GMANPoint &prev = vertexPositions[ring[(e + ringSize - 1) % ringSize]];
-      const GMANPoint &next = vertexPositions[ring[(e + 1) % ringSize]];
+      const GMANPoint& v = vertexPositions[ring[e]];
+      const GMANPoint& prev = vertexPositions[ring[(e + ringSize - 1) % ringSize]];
+      const GMANPoint& next = vertexPositions[ring[(e + 1) % ringSize]];
       if (inInteriorWedge(v, prev, next, M, normalVec)) {
         targetSlot = e;
         break;
@@ -827,13 +799,12 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
 
     // Commit the hole: only now, knowing it bridges, do its vertices get
     // ids and join vertexPositions (see the Hole struct's own comment).
-    RtInt base = (RtInt) vertexPositions.size();
+    RtInt base = (RtInt)vertexPositions.size();
     std::vector<RtInt> ids(n);
     for (RtInt j = 0; j < n; j++) {
       ids[j] = base + j;
     }
-    vertexPositions.insert(vertexPositions.end(), hole.points.begin(),
-                            hole.points.end());
+    vertexPositions.insert(vertexPositions.end(), hole.points.begin(), hole.points.end());
     vertexSlots.insert(vertexSlots.end(), hole.slots.begin(), hole.slots.end());
     const RtInt mId = ids[hole.rightmostLocal];
 
@@ -879,23 +850,18 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>> &loops,
 // Returns false, leaving body and vertRoot untouched, for a degenerate or
 // under-three-point outer loop -- the caller skips the face rather than
 // treating it as fatal.
-bool buildFace(const std::vector<std::vector<GMANPoint>> &loops,
-               const std::vector<std::vector<RtInt>> &loopSlots,
-               const std::vector<GMANPolygonVertexTexCoord> &pointTexCoords,
-               RtInt sides, RtToken orientation,
-               const GMANShadingContext &shading, GMANBody *&body,
-               GMANVertex *&vertRoot) {
-  const std::vector<GMANPoint> &outer = loops[0];
+bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vector<std::vector<RtInt>>& loopSlots,
+               const std::vector<GMANPolygonVertexTexCoord>& pointTexCoords, RtInt sides, RtToken orientation,
+               const GMANShadingContext& shading, GMANBody*& body, GMANVertex*& vertRoot) {
+  const std::vector<GMANPoint>& outer = loops[0];
   if (outer.size() < 3) {
     return false;
   }
   RtFloat outerBboxSide = boundingBoxExtent(outer);
   GMANVector normalVec = newellNormal(outer);
   RtFloat normalMagnitude = normalVec.magnitude();
-  if (outerBboxSide == (RtFloat) 0.0 ||
-      normalMagnitude <
-          kTriangulationTolerance * outerBboxSide * outerBboxSide) {
-    return false;  // fully degenerate: no plane worth shading or filling
+  if (outerBboxSide == (RtFloat)0.0 || normalMagnitude < kTriangulationTolerance * outerBboxSide * outerBboxSide) {
+    return false; // fully degenerate: no plane worth shading or filling
   }
   // Dividing by the magnitude already computed above, rather than calling
   // GMANVector::normalize(), matters here: that method silently leaves a
@@ -910,17 +876,14 @@ bool buildFace(const std::vector<std::vector<GMANPoint>> &loops,
   std::vector<GMANPoint> vertexLocations;
   std::vector<RtInt> vertexSlots;
   std::vector<RtInt> ring;
-  bridgeHoles(loops, loopSlots, normalVec, outerBboxSide, vertexLocations,
-              vertexSlots, ring);
+  bridgeHoles(loops, loopSlots, normalVec, outerBboxSide, vertexLocations, vertexSlots, ring);
 
   std::vector<GMANPolygonVertexTexCoord> texCoords(vertexLocations.size());
   for (std::size_t i = 0; i < vertexSlots.size(); i++) {
     texCoords[i] = pointTexCoords[vertexSlots[i]];
   }
 
-  GMANObject *object = buildPolygonObject(vertexLocations, ring, normalVec,
-                                           sides, orientation, shading,
-                                           texCoords);
+  GMANObject* object = buildPolygonObject(vertexLocations, ring, normalVec, sides, orientation, shading, texCoords);
   body = object->getBody();
   vertRoot = object->getVert();
   object->setBody(NULL);
@@ -935,9 +898,8 @@ bool buildFace(const std::vector<std::vector<GMANPoint>> &loops,
 // they are linked here (settled decision "One primitive, many bodies").
 // A face contributes more than one vertex, unlike GMANBody's single node,
 // so its own chain's tail has to be found by walking.
-void appendFace(GMANBody *faceBody, GMANVertex *faceVert,
-                 GMANBody *&bodyHead, GMANBody *&bodyTail,
-                 GMANVertex *&vertHead, GMANVertex *&vertTail) {
+void appendFace(GMANBody* faceBody, GMANVertex* faceVert, GMANBody*& bodyHead, GMANBody*& bodyTail,
+                GMANVertex*& vertHead, GMANVertex*& vertTail) {
   if (bodyTail) {
     bodyTail->setNext(faceBody);
   } else {
@@ -950,15 +912,14 @@ void appendFace(GMANBody *faceBody, GMANVertex *faceVert,
   } else {
     vertHead = faceVert;
   }
-  GMANVertex *last = faceVert;
+  GMANVertex* last = faceVert;
   while (last->getNext()) {
     last = last->getNext();
   }
   vertTail = last;
 }
 
-}  // namespace
-
+} // namespace
 
 /*
  * RenderMan API GMANPatchPolyObjectManager
@@ -966,23 +927,15 @@ void appendFace(GMANBody *faceBody, GMANVertex *faceVert,
  */
 
 // default constructor
-GMANPatchPolyObjectManager::GMANPatchPolyObjectManager() : GMANObjectManager() { };
+GMANPatchPolyObjectManager::GMANPatchPolyObjectManager() : GMANObjectManager() {};
 
+// default destructor
+GMANPatchPolyObjectManager::~GMANPatchPolyObjectManager() {};
 
-// default destructor 
-GMANPatchPolyObjectManager::~GMANPatchPolyObjectManager() { };
+GMANPrimitive* GMANPatchPolyObjectManager::create(RtVoid) { return new GMANObject(); }
 
-
-GMANPrimitive* GMANPatchPolyObjectManager::create(RtVoid) {
-  return new GMANObject();
-}
-
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
-							  GMANParameterList pl,
-							  GMANOptions *opt,
-							  GMANAttributes *attr,
-							  GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParameterList pl, GMANOptions* opt,
+                                                        GMANAttributes* attr, GMANTransform* t) {
   // A Polygon is required to be planar and simple, not necessarily convex.
   // triangulateEarClipping below handles concave input correctly; a fan
   // from vertex 0 would silently fill the wrong region the moment a
@@ -998,9 +951,8 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
   if (nverts < 3) {
     return create();
   }
-  RtFloat *p = (RtFloat *)
-      pl.getPointer(standardDictionary().getTokenId(RI_P));
-  if (! p) {
+  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (!p) {
     return create();
   }
 
@@ -1019,37 +971,30 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPolygon (RtInt nverts,
   // the degeneracy guard, the bridging (a no-op with one loop and no
   // holes) and the triangulation this shares with every other polygon
   // face.
-  std::vector<GMANPolygonVertexTexCoord> texCoords =
-      resolvePolygonTextureCoordinates(pl, nverts, p);
+  std::vector<GMANPolygonVertexTexCoord> texCoords = resolvePolygonTextureCoordinates(pl, nverts, p);
 
-  GMANBody *body;
-  GMANVertex *vertRoot;
-  if (! buildFace({location}, {slots}, texCoords, sides, orientation,
-		  shading, body, vertRoot)) {
+  GMANBody* body;
+  GMANVertex* vertRoot;
+  if (!buildFace({location}, {slots}, texCoords, sides, orientation, shading, body, vertRoot)) {
     return create();
   }
-  GMANObject *object = new GMANObject();
+  GMANObject* object = new GMANObject();
   object->setBody(body);
   object->setVert(vertRoot);
   return object;
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
-								 RtInt nverts[],
-								 GMANParameterList pl,
-								 GMANOptions *opt,
-								 GMANAttributes *attr,
-								 GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSGeneralPolygon(RtInt nloops, RtInt nverts[], GMANParameterList pl,
+                                                               GMANOptions* opt, GMANAttributes* attr,
+                                                               GMANTransform* t) {
   // Loop 0 is the outer boundary; RiGeneralPolygonV rejects nloops < 1 and
   // any negative nverts[i] before this ever runs (see its own comment), so
   // this guard only matters to a direct, white-box caller.
   if (nloops < 1) {
     return create();
   }
-  RtFloat *p = (RtFloat *)
-      pl.getPointer(standardDictionary().getTokenId(RI_P));
-  if (! p) {
+  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (!p) {
     return create();
   }
 
@@ -1061,9 +1006,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
     loops[i].resize(count);
     loopSlots[i].resize(count);
     for (RtInt j = 0; j < count; j++) {
-      loops[i][j] =
-	  t->apply(GMANPoint(p[3 * (offset + j)], p[3 * (offset + j) + 1],
-			      p[3 * (offset + j) + 2]));
+      loops[i][j] = t->apply(GMANPoint(p[3 * (offset + j)], p[3 * (offset + j) + 1], p[3 * (offset + j) + 2]));
       loopSlots[i][j] = offset + j;
     }
     offset += count;
@@ -1073,42 +1016,34 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSGeneralPolygon (RtInt nloops,
   // from above -- bridgeHoles (inside buildFace) then reports which of
   // these slots each committed vertex carries, since it commits holes in
   // descending-rightmostU order, not this order.
-  std::vector<GMANPolygonVertexTexCoord> pointTexCoords =
-      resolvePolygonTextureCoordinates(pl, offset, p);
+  std::vector<GMANPolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, offset, p);
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
   GMANShadingContext shading = resolveShadingContext(attr, opt);
 
-  GMANBody *body;
-  GMANVertex *vertRoot;
-  if (! buildFace(loops, loopSlots, pointTexCoords, sides, orientation,
-		  shading, body, vertRoot)) {
+  GMANBody* body;
+  GMANVertex* vertRoot;
+  if (!buildFace(loops, loopSlots, pointTexCoords, sides, orientation, shading, body, vertRoot)) {
     return create();
   }
-  GMANObject *object = new GMANObject();
+  GMANObject* object = new GMANObject();
   object->setBody(body);
   object->setVert(vertRoot);
   return object;
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys,
-								RtInt nverts[],
-								RtInt verts[],
-								GMANParameterList pl,
-								GMANOptions *opt,
-								GMANAttributes *attr,
-								GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[],
+                                                              GMANParameterList pl, GMANOptions* opt,
+                                                              GMANAttributes* attr, GMANTransform* t) {
   // Direct, white-box caller guard, as getRSGeneralPolygon's own
   // nloops < 1 guard is -- RiPointsPolygonsV rejects npolys < 0 before
   // this ever runs, and npolys == 0 draws nothing either way.
   if (npolys < 1) {
     return create();
   }
-  RtFloat *p = (RtFloat *)
-      pl.getPointer(standardDictionary().getTokenId(RI_P));
-  if (! p) {
+  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (!p) {
     return create();
   }
 
@@ -1128,8 +1063,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys,
   // Resolved once, over the shared "P" a point at a time -- not per face,
   // and not in "verts" order -- so a point three faces share still reads
   // the same "s"/"t"/"st" wherever it is referenced from.
-  std::vector<GMANPolygonVertexTexCoord> pointTexCoords =
-      resolvePolygonTextureCoordinates(pl, pointCount, p);
+  std::vector<GMANPolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, pointCount, p);
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
@@ -1150,44 +1084,36 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsPolygon (RtInt npolys,
     std::vector<RtInt> slots(count);
     for (RtInt j = 0; j < count; j++) {
       RtInt pointIndex = verts[offset + j];
-      loop[j] = t->apply(GMANPoint(p[3 * pointIndex], p[3 * pointIndex + 1],
-				    p[3 * pointIndex + 2]));
+      loop[j] = t->apply(GMANPoint(p[3 * pointIndex], p[3 * pointIndex + 1], p[3 * pointIndex + 2]));
       slots[j] = pointIndex;
     }
     offset += count;
 
-    GMANBody *faceBody;
-    GMANVertex *faceVert;
-    if (buildFace({loop}, {slots}, pointTexCoords, sides, orientation,
-		  shading, faceBody, faceVert)) {
+    GMANBody* faceBody;
+    GMANVertex* faceVert;
+    if (buildFace({loop}, {slots}, pointTexCoords, sides, orientation, shading, faceBody, faceVert)) {
       appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
     }
   }
 
-  if (! bodyHead) {
-    return create();  // no face survived: the whole mesh is the empty stub
+  if (!bodyHead) {
+    return create(); // no face survived: the whole mesh is the empty stub
   }
-  GMANObject *object = new GMANObject();
+  GMANObject* object = new GMANObject();
   object->setBody(bodyHead);
   object->setVert(vertHead);
   return object;
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt npolys,
-									RtInt nloops[],
-									RtInt nverts[],
-									RtInt verts[],
-									GMANParameterList pl,
-									GMANOptions *opt,
-									GMANAttributes *attr,
-									GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[],
+                                                                      RtInt verts[], GMANParameterList pl,
+                                                                      GMANOptions* opt, GMANAttributes* attr,
+                                                                      GMANTransform* t) {
   if (npolys < 1) {
     return create();
   }
-  RtFloat *p = (RtFloat *)
-      pl.getPointer(standardDictionary().getTokenId(RI_P));
-  if (! p) {
+  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (!p) {
     return create();
   }
 
@@ -1206,8 +1132,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt np
     }
   }
 
-  std::vector<GMANPolygonVertexTexCoord> pointTexCoords =
-      resolvePolygonTextureCoordinates(pl, pointCount, p);
+  std::vector<GMANPolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, pointCount, p);
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
@@ -1220,7 +1145,7 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt np
   for (RtInt i = 0; i < npolys; i++) {
     RtInt faceLoops = nloops[i] > 0 ? nloops[i] : 0;
     if (faceLoops == 0) {
-      continue;  // no outer loop at all: degenerate, skip
+      continue; // no outer loop at all: degenerate, skip
     }
 
     std::vector<std::vector<GMANPoint>> loops(faceLoops);
@@ -1230,42 +1155,34 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPointsGeneralPolygons (RtInt np
       loops[li].resize(count);
       loopSlots[li].resize(count);
       for (RtInt j = 0; j < count; j++) {
-	RtInt pointIndex = verts[vertOffset + j];
-	loops[li][j] = t->apply(GMANPoint(p[3 * pointIndex],
-					   p[3 * pointIndex + 1],
-					   p[3 * pointIndex + 2]));
-	loopSlots[li][j] = pointIndex;
+        RtInt pointIndex = verts[vertOffset + j];
+        loops[li][j] = t->apply(GMANPoint(p[3 * pointIndex], p[3 * pointIndex + 1], p[3 * pointIndex + 2]));
+        loopSlots[li][j] = pointIndex;
       }
       vertOffset += count;
     }
     loopOffset += faceLoops;
 
-    GMANBody *faceBody;
-    GMANVertex *faceVert;
-    if (buildFace(loops, loopSlots, pointTexCoords, sides, orientation,
-		  shading, faceBody, faceVert)) {
+    GMANBody* faceBody;
+    GMANVertex* faceVert;
+    if (buildFace(loops, loopSlots, pointTexCoords, sides, orientation, shading, faceBody, faceVert)) {
       appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
     }
   }
 
-  if (! bodyHead) {
+  if (!bodyHead) {
     return create();
   }
-  GMANObject *object = new GMANObject();
+  GMANObject* object = new GMANObject();
   object->setBody(bodyHead);
   object->setVert(vertHead);
   return object;
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
-							GMANParameterList pl,
-							GMANOptions *opt,
-							GMANAttributes *attr,
-							GMANTransform *t)
- {
-  RtFloat *p = (RtFloat *)
-      pl.getPointer(standardDictionary().getTokenId(RI_P));
-  if (! p) {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt,
+                                                      GMANAttributes* attr, GMANTransform* t) {
+  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (!p) {
     return create();
   }
 
@@ -1288,26 +1205,19 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatch (RtToken type,
 // coordinates would need a periodic-wrap-aware (nupatches+1) x
 // (nvpatches+1) grid of corners -- today's identity mapping stands until
 // that grid is worth the reading.
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
-							    RtInt nu,
-							    RtToken uwrap,
-							    RtInt nv,
-							    RtToken vwrap,
-							    GMANParameterList pl,
-							    GMANOptions *opt,
-							    GMANAttributes *attr,
-							    GMANTransform *t)
- {
-  RtFloat *p = (RtFloat *)
-      pl.getPointer(standardDictionary().getTokenId(RI_P));
-  if (! p) {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv,
+                                                          RtToken vwrap, GMANParameterList pl, GMANOptions* opt,
+                                                          GMANAttributes* attr, GMANTransform* t) {
+  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (!p) {
     return create();
   }
 
   if (strcmp(type, RI_BILINEAR) == 0) {
-    if (! validBilinearMeshDim(nu) || ! validBilinearMeshDim(nv)) {
+    if (!validBilinearMeshDim(nu) || !validBilinearMeshDim(nv)) {
       warning("PatchMesh \"bilinear\": nu={} nv={} cannot form a patch; "
-	      "ignoring.", nu, nv);
+              "ignoring.",
+              nu, nv);
       return create();
     }
     GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, pl);
@@ -1317,10 +1227,11 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
     GMANBasis basis = attr->getUVBasis();
     bool uPeriodic = strcmp(uwrap, RI_PERIODIC) == 0;
     bool vPeriodic = strcmp(vwrap, RI_PERIODIC) == 0;
-    if (! validBicubicMeshDim(nu, uPeriodic, basis.getUStep()) ||
-	! validBicubicMeshDim(nv, vPeriodic, basis.getVStep())) {
+    if (!validBicubicMeshDim(nu, uPeriodic, basis.getUStep()) ||
+        !validBicubicMeshDim(nv, vPeriodic, basis.getVStep())) {
       warning("PatchMesh \"bicubic\": nu={} nv={} does not align to the "
-	      "current basis step; ignoring.", nu, nv);
+              "current basis step; ignoring.",
+              nu, nv);
       return create();
     }
     GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, basis, pl);
@@ -1335,185 +1246,101 @@ GMANPrimitive * GMANPatchPolyObjectManager::getRSPatchMesh (RtToken type,
 // varying values form a (nusegments+1) x (nvsegments+1) grid, which
 // resolveParametricCorners' fixed four-corner shape only fits in the
 // bilinear-equivalent case.
-GMANPrimitive * GMANPatchPolyObjectManager::getRSNuPatch (RtInt nu,
-							  RtInt uorder,
-							  RtFloat uknot[],
-							  RtFloat umin,
-							  RtFloat umax,
-							  RtInt nv,
-							  RtInt vorder,
-							  RtFloat vknot[],
-							  RtFloat vmin,
-							  RtFloat vmax,
-							  GMANParameterList pl,
-							  GMANOptions *opt,
-							  GMANAttributes *attr,
-							  GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
+                                                        RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
+                                                        RtFloat vmin, RtFloat vmax, GMANParameterList pl,
+                                                        GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
   // "Pw" wins over "P" when both are supplied; "P" alone means w = 1.
-  RtFloat *pw = (RtFloat *)
-      pl.getPointer(standardDictionary().getTokenId(RI_PW));
+  RtFloat* pw = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_PW));
   bool rational = pw != NULL;
-  RtFloat *p = rational ? pw : (RtFloat *)
-      pl.getPointer(standardDictionary().getTokenId(RI_P));
-  if (! p) {
+  RtFloat* p = rational ? pw : (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  if (!p) {
     return create();
   }
 
-  GMANNuPatch patch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin,
-		     vmax, p, rational, pl);
+  GMANNuPatch patch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, p, rational, pl);
   return createParametric(&patch, t, attr, kIdentityCorners, opt);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSSphere (RtFloat radius,
-							 RtFloat zmin,
-							 RtFloat zmax,
-							 RtFloat tmax,
-							 GMANParameterList pl,
-							 GMANOptions *opt,
-							 GMANAttributes *attr,
-							 GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                       GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                       GMANTransform* t) {
   GMANSphere sphere(radius, zmin, zmax, tmax, pl);
   return createParametric(&sphere, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSCone (RtFloat height,
-						       RtFloat radius,
-						       RtFloat tmax,
-						       GMANParameterList pl, 
-						       GMANOptions *opt,
-						       GMANAttributes *attr,
-						       GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
+                                                     GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
   GMANCone cone(height, radius, tmax, pl);
   return createParametric(&cone, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSCylinder (RtFloat radius,
-							   RtFloat zmin,
-							   RtFloat zmax,
-							   RtFloat tmax,
-							   GMANParameterList pl,
-							   GMANOptions *opt,
-							   GMANAttributes *attr,
-							   GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                         GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                         GMANTransform* t) {
   GMANCylinder cylinder(radius, zmin, zmax, tmax, pl);
   return createParametric(&cylinder, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSHyperboloid (RtPoint point1,
-							      RtPoint point2,
-							      RtFloat tmax,
-							      GMANParameterList pl,
-							      GMANOptions *opt,
-							      GMANAttributes *attr,
-							      GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
+                                                            GMANParameterList pl, GMANOptions* opt,
+                                                            GMANAttributes* attr, GMANTransform* t) {
   GMANHyperboloid hyperboloid(point1, point2, tmax, pl);
   return createParametric(&hyperboloid, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSParaboloid (RtFloat rmax,
-							     RtFloat zmin,
-							     RtFloat zmax,
-							     RtFloat tmax,
-							     GMANParameterList pl,
-							     GMANOptions *opt,
-							     GMANAttributes *attr,
-							     GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                           GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                           GMANTransform* t) {
   GMANParaboloid paraboloid(rmax, zmin, zmax, tmax, pl);
   return createParametric(&paraboloid, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSDisk (RtFloat height,
-						       RtFloat radius,
-						       RtFloat tmax,
-						       GMANParameterList pl,
-						       GMANOptions *opt,
-						       GMANAttributes *attr,
-						       GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
+                                                     GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
   GMANDisk disk(height, radius, tmax, pl);
   return createParametric(&disk, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSTorus (RtFloat majrad,
-							RtFloat minrad,
-							RtFloat phimin,
-							RtFloat phimax,
-							RtFloat tmax,
-							GMANParameterList pl,
-							GMANOptions *opt,
-							GMANAttributes *attr,
-							GMANTransform *t)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax,
+                                                      RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
+                                                      GMANAttributes* attr, GMANTransform* t) {
   GMANTorus torus(majrad, minrad, phimin, phimax, tmax, pl);
   return createParametric(&torus, t, attr, resolveParametricCorners(pl, attr), opt);
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSBlobby (RtInt /*nleaf*/,
-							 RtInt /*ncode*/,
-							 RtInt /*code*/[],
-							 RtInt /*nflt*/,
-							 RtFloat /*flt*/[],
-							 RtInt /*nstr*/,
-							 RtToken /*str*/[], 
-							 GMANParameterList /*pl*/,
-							 GMANOptions */*opt*/,
-							 GMANAttributes */*attr*/,
-							 GMANTransform */*t*/)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSBlobby(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[],
+                                                       RtInt /*nflt*/, RtFloat /*flt*/[], RtInt /*nstr*/,
+                                                       RtToken /*str*/[], GMANParameterList /*pl*/,
+                                                       GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
+                                                       GMANTransform* /*t*/) {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSPoints (RtInt /*npoints*/,
-							 GMANParameterList /*pl*/,
-							 GMANOptions */*opt*/,
-							 GMANAttributes */*attr*/,
-							 GMANTransform */*t*/)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSPoints(RtInt /*npoints*/, GMANParameterList /*pl*/,
+                                                       GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
+                                                       GMANTransform* /*t*/) {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSCurves (RtToken /*type*/,
-							 RtInt /*ncurves*/, 
-							 RtInt /*nvertices*/[],
-							 RtToken /*wrap*/,
-							 GMANParameterList /*pl*/,
-							 GMANOptions */*opt*/,
-							 GMANAttributes */*attr*/,
-							 GMANTransform */*t*/)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSCurves(RtToken /*type*/, RtInt /*ncurves*/, RtInt /*nvertices*/[],
+                                                       RtToken /*wrap*/, GMANParameterList /*pl*/, GMANOptions* /*opt*/,
+                                                       GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
   return create();
 };
 
-GMANPrimitive * GMANPatchPolyObjectManager::getRSSubdivisionMesh (RtToken /*mask*/,
-								  RtInt /*nf*/,
-								  RtInt /*nverts*/[],
-								  RtInt /*verts*/[],
-								  RtInt /*ntags*/,
-								  RtToken /*tags*/[],
-								  RtInt /*numargs*/[],
-								  RtInt /*intargs*/[],
-								  RtFloat /*floatargs*/[],
-								  GMANParameterList /*pl*/,
-								  GMANOptions */*opt*/,
-								  GMANAttributes */*attr*/,
-								  GMANTransform */*t*/)
- {
+GMANPrimitive* GMANPatchPolyObjectManager::getRSSubdivisionMesh(RtToken /*mask*/, RtInt /*nf*/, RtInt /*nverts*/[],
+                                                                RtInt /*verts*/[], RtInt /*ntags*/, RtToken /*tags*/[],
+                                                                RtInt /*numargs*/[], RtInt /*intargs*/[],
+                                                                RtFloat /*floatargs*/[], GMANParameterList /*pl*/,
+                                                                GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
+                                                                GMANTransform* /*t*/) {
   return create();
 };
 
-
-GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
-							  GMANTransform* t,
-							  GMANAttributes* attr,
-							  const GMANTextureCoordinates &corners,
-							  GMANOptions const *opt)
-{
+GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMANTransform* t, GMANAttributes* attr,
+                                                         const GMANTextureCoordinates& corners,
+                                                         GMANOptions const* opt) {
 #define URES 16
 #define VRES 16
   int i, j;
@@ -1540,41 +1367,30 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
   GMANSurface* surface = new GMANSurface(body);
   body->setSurface(surface);
 
-  for (i = 0; i < (URES + 1) * (VRES + 1); i++)
-  {
+  for (i = 0; i < (URES + 1) * (VRES + 1); i++) {
     vertices[i] = new GMANVertex();
   }
 
-  for (i = 0; i <= URES; i++)
-  {
-    for (j = 0; j <= VRES; j++)
-    {
+  for (i = 0; i <= URES; i++) {
+    for (j = 0; j <= VRES; j++) {
       // Create a vertex
-      double u = i / (double) URES;
-      double v = j / (double) VRES;
+      double u = i / (double)URES;
+      double v = j / (double)VRES;
       GMANPoint location = t->apply(p->getLocation(u, v));
       GMANVector objectNormal = p->getNormal(u, v);
-      GMANVector normal(ctmInv[0][0] * objectNormal.getX() +
-			 ctmInv[0][1] * objectNormal.getY() +
-			 ctmInv[0][2] * objectNormal.getZ(),
-			 ctmInv[1][0] * objectNormal.getX() +
-			 ctmInv[1][1] * objectNormal.getY() +
-			 ctmInv[1][2] * objectNormal.getZ(),
-			 ctmInv[2][0] * objectNormal.getX() +
-			 ctmInv[2][1] * objectNormal.getY() +
-			 ctmInv[2][2] * objectNormal.getZ());
+      GMANVector normal(
+          ctmInv[0][0] * objectNormal.getX() + ctmInv[0][1] * objectNormal.getY() + ctmInv[0][2] * objectNormal.getZ(),
+          ctmInv[1][0] * objectNormal.getX() + ctmInv[1][1] * objectNormal.getY() + ctmInv[1][2] * objectNormal.getZ(),
+          ctmInv[2][0] * objectNormal.getX() + ctmInv[2][1] * objectNormal.getY() + ctmInv[2][2] * objectNormal.getZ());
       normal.normalize();
       GMANVertex* vertex = vertices[(URES + 1) * i + j];
       vertex->setLocation(location);
       vertex->setNormal(normal);
 
       GMANNormal shadingNormal(normal.getX(), normal.getY(), normal.getZ());
-      RtFloat s = bilerpCorner(u, v, corners.s1, corners.s2, corners.s3,
-				corners.s4);
-      RtFloat texT = bilerpCorner(u, v, corners.t1, corners.t2, corners.t3,
-				   corners.t4);
-      vertex->setColor(shadeVertex(shading, location, shadingNormal,
-				    (RtFloat) u, (RtFloat) v, s, texT));
+      RtFloat s = bilerpCorner(u, v, corners.s1, corners.s2, corners.s3, corners.s4);
+      RtFloat texT = bilerpCorner(u, v, corners.t1, corners.t2, corners.t3, corners.t4);
+      vertex->setColor(shadeVertex(shading, location, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT));
     }
   }
 
@@ -1589,10 +1405,8 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
   // render time, long after this function returns, so geometry was never
   // affected -- only RiSides 1 culling, which silently culled and kept
   // faces close to at random. See phase-3-REPORT.md.
-  for (i = 0; i < URES; i++)
-  {
-    for (j = 0; j < VRES; j++)
-    {
+  for (i = 0; i < URES; i++) {
+    for (j = 0; j < VRES; j++) {
       GMANVertex* faceVertices[4];
       faceVertices[0] = vertices[(URES + 1) * i + j];
       faceVertices[1] = vertices[(URES + 1) * i + (j + 1)];
@@ -1611,17 +1425,15 @@ GMANObject* GMANPatchPolyObjectManager::createParametric (GMANParametric* p,
     }
   }
 
-  for (i = 0; i < (URES + 1) * (VRES + 1) - 1; i++)
-  {
+  for (i = 0; i < (URES + 1) * (VRES + 1) - 1; i++) {
     vertices[i]->setNext(vertices[i + 1]);
   }
-  for (i = 0; i < URES * VRES - 1; i++)
-  {
+  for (i = 0; i < URES * VRES - 1; i++) {
     faces[i]->setNext(faces[i + 1]);
   }
   surface->setFace(faces[0]);
 
-  GMANObject* object = (GMANObject*) create();
+  GMANObject* object = (GMANObject*)create();
   object->setVert(vertices[0]);
   object->setBody(body);
 

@@ -27,14 +27,12 @@
 
 #include "gmanrayinterface.h"
 
-class GMAN_EXPORT GMANRaySphere : public GMANRayInterface, public GMANSphere
-{
+class GMAN_EXPORT GMANRaySphere : public GMANRayInterface, public GMANSphere {
 public:
-  GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-		GMANParameterList pl)
-    : GMANSphere(radius,zmin,zmax,tmax,pl) {}
+  GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl)
+      : GMANSphere(radius, zmin, zmax, tmax, pl) {}
 
-  bool intersect (const GMANRay &ray, RtFloat& t) const;
+  bool intersect(const GMANRay& ray, RtFloat& t) const;
 };
 
 #endif

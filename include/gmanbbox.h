@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANBBOX_H
 #define __GMAN_GMANBBOX_H 1
-
 
 #include "gmanlog.h"
 #include "ri.h"
@@ -38,25 +36,21 @@
  *
  */
 
-class GMAN_EXPORT GMANBBox 
-{
- private:
-  RtBound		box;
- public:
-  GMANBBox ();
-  GMANBBox (RtBound bb);
+class GMAN_EXPORT GMANBBox {
+private:
+  RtBound box;
 
-  GMANBBox (const GMANBBox &bb) = default;
+public:
+  GMANBBox();
+  GMANBBox(RtBound bb);
 
-  GMANBBox &operator =(const GMANBBox &bb);
+  GMANBBox(const GMANBBox& bb) = default;
 
-  GMANBBox &operator =(const RtBound bb);
+  GMANBBox& operator=(const GMANBBox& bb);
 
-  operator RtBound&() {
-    return box;
-  };
+  GMANBBox& operator=(const RtBound bb);
+
+  operator RtBound&() { return box; };
 };
 
-
 #endif
-

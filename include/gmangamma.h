@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,7 +22,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GAMMA_H
 #define __GMAN_GAMMA_H 1
@@ -34,32 +33,27 @@
 #include "ri.h"
 
 // gamma correction class
-class GMAN_EXPORT  GMANGammaCorrect {
+class GMAN_EXPORT GMANGammaCorrect {
 public:
-
   static const RtFloat DEFAULT_GAMMA;
   static const RtFloat DEFAULT_GAIN;
 
 private:
-
   static const int G_Domain;
   static const int G_Range;
 
   // gamma value lookup table
   static GMANByte GammaTable[256];
 
-  RtFloat gamma; // gamma 
-  RtFloat gain;    // exposure gain
+  RtFloat gamma; // gamma
+  RtFloat gain;  // exposure gain
 
   RtVoid initTable() {
     int i; // counter
-    
+
     // pre calculate gamma correction lookup table entries
-    for(i=0; i<= G_Domain; i++) {
-      GammaTable[i] = (GMANByte) ((RtFloat) G_Range *
-			      pow((RtFloat)i*gain / (RtFloat) G_Domain, 
-				  1.0 / gamma));
-      
+    for (i = 0; i <= G_Domain; i++) {
+      GammaTable[i] = (GMANByte)((RtFloat)G_Range * pow((RtFloat)i * gain / (RtFloat)G_Domain, 1.0 / gamma));
     }
 
     // future gamma correction with this object will only
@@ -69,12 +63,11 @@ private:
 public:
   /*
    * Default Constructor with required gamma correction value.
-   * 
+   *
    * \param g Gamma value used for correction.
    *
    */
-  GMANGammaCorrect(RtFloat gainVal = DEFAULT_GAIN, RtFloat gammaVal = DEFAULT_GAMMA) 
-  { 
+  GMANGammaCorrect(RtFloat gainVal = DEFAULT_GAIN, RtFloat gammaVal = DEFAULT_GAMMA) {
     setExposure(gainVal, gammaVal);
   };
 
@@ -85,32 +78,28 @@ public:
    */
   RtFloat getGamma() { return gamma; };
 
-
-  
   /*
    * Correct the color objects gamma values.
    *
    * param color The color object to be corrected.
    *
    */
-  RtVoid correct( GMANColorRGB &color ) {
-    // lookup each color value in turn, and 
+  RtVoid correct(GMANColorRGB& color) {
+    // lookup each color value in turn, and
     // set that value here.
-    color.setRed( GammaTable[color.getRed()] );
-    color.setGreen( GammaTable[color.getGreen()] );
-    color.setBlue( GammaTable[color.getBlue()] );
-    
+    color.setRed(GammaTable[color.getRed()]);
+    color.setGreen(GammaTable[color.getGreen()]);
+    color.setBlue(GammaTable[color.getBlue()]);
   };
 
   /*
    * Correct the color objects gamma value.
    */
-  RtVoid correct( GMANColor &color ) {
+  RtVoid correct(GMANColor& color) {
 
-    color.setRed (pow(gain * color.getRed(), 1.0 / gamma) );
-    color.setGreen (pow(gain * color.getGreen(), 1.0 / gamma) );
-    color.setBlue (pow(gain* color.getBlue(), 1.0 / gamma) );
-
+    color.setRed(pow(gain * color.getRed(), 1.0 / gamma));
+    color.setGreen(pow(gain * color.getGreen(), 1.0 / gamma));
+    color.setBlue(pow(gain * color.getBlue(), 1.0 / gamma));
   }
 
   /*
@@ -119,15 +108,11 @@ public:
    *
    * \param g The gamma value to use for gamma correction.
    */
-  RtVoid setExposure( RtFloat gainVal, RtFloat gammaVal ) {
+  RtVoid setExposure(RtFloat gainVal, RtFloat gammaVal) {
     gain = gainVal;
     gamma = gammaVal;
     initTable();
-
   };
-
 };
 
-
 #endif
-

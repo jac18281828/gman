@@ -24,89 +24,77 @@
 
 #include "gmanattributes.h"
 
-GMANAttributes::GMANAttributes() :
-  areaLight(NULL),
-  surface(NULL),
-  atmosphere(NULL),
-  interior(NULL),
-  exterior(NULL),
-  displacement(NULL)
+GMANAttributes::GMANAttributes()
+    : areaLight(NULL), surface(NULL), atmosphere(NULL), interior(NULL), exterior(NULL), displacement(NULL)
 
 { // Shading attributes
-  for(int i=0; i<NCOMPS; i++) {
-    color[i]=1.0;
-    opacity[i]=1.0;
+  for (int i = 0; i < NCOMPS; i++) {
+    color[i] = 1.0;
+    opacity[i] = 1.0;
   }
-  setTextureCoordinates(0,0, 1,0, 0,1, 1,1);
-  shadingRate=1;
-  shadingInterpolation=RI_CONSTANT;
-  matte=false;
+  setTextureCoordinates(0, 0, 1, 0, 0, 1, 1, 1);
+  shadingRate = 1;
+  shadingInterpolation = RI_CONSTANT;
+  matte = false;
 
   // Geometry attributes
-  setDetailRange (0,0,1,1);
-  orientation=RI_OUTSIDE;
-  sides=2;
-  objectFlag=false;
+  setDetailRange(0, 0, 1, 1);
+  orientation = RI_OUTSIDE;
+  sides = 2;
+  objectFlag = false;
 
   // attempt to load default shaders
-/*
-  surfaceModule = new GMANLoadableShader("defaultsurface");
-  if(surfaceModule->getType() == GMANShader::SURFACE) {
-    surface = surfaceModule->getSurface();
-  } else {
-    throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Default surface shader is not a surface shader."));
-  }
-*/
+  /*
+    surfaceModule = new GMANLoadableShader("defaultsurface");
+    if(surfaceModule->getType() == GMANShader::SURFACE) {
+      surface = surfaceModule->getSurface();
+    } else {
+      throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Default surface shader is not a surface shader."));
+    }
+  */
 }
 
 // The six *Module members are shared_ptr now; each releases its reference
 // on its own, deleting the underlying GMANLoadableShader only when this is
 // the last GMANAttributes holding it.
-GMANAttributes::~GMANAttributes() {
-}
+GMANAttributes::~GMANAttributes() {}
 
-RtVoid GMANAttributes::setColor (RtColor c)
-{
-  for(int i=0; i<NCOMPS; i++) {
-    color[i]=c[i];
+RtVoid GMANAttributes::setColor(RtColor c) {
+  for (int i = 0; i < NCOMPS; i++) {
+    color[i] = c[i];
   }
 }
-RtVoid GMANAttributes::setOpacity (RtColor o)
-{
-  for(int i=0; i<NCOMPS; i++) {
-    opacity[i]=o[i];
+RtVoid GMANAttributes::setOpacity(RtColor o) {
+  for (int i = 0; i < NCOMPS; i++) {
+    opacity[i] = o[i];
   }
 }
-RtVoid GMANAttributes::setTextureCoordinates (RtFloat sf1, RtFloat tf1, RtFloat sf2, RtFloat tf2,
-					      RtFloat sf3, RtFloat tf3, RtFloat sf4, RtFloat tf4)
-{
-  textureCoordinates.s1=sf1;
-  textureCoordinates.t1=tf1;
-  textureCoordinates.s2=sf2;
-  textureCoordinates.t2=tf2;
-  textureCoordinates.s3=sf3;
-  textureCoordinates.t3=tf3;
-  textureCoordinates.s4=sf4;
-  textureCoordinates.t4=tf4;
+RtVoid GMANAttributes::setTextureCoordinates(RtFloat sf1, RtFloat tf1, RtFloat sf2, RtFloat tf2, RtFloat sf3,
+                                             RtFloat tf3, RtFloat sf4, RtFloat tf4) {
+  textureCoordinates.s1 = sf1;
+  textureCoordinates.t1 = tf1;
+  textureCoordinates.s2 = sf2;
+  textureCoordinates.t2 = tf2;
+  textureCoordinates.s3 = sf3;
+  textureCoordinates.t3 = tf3;
+  textureCoordinates.s4 = sf4;
+  textureCoordinates.t4 = tf4;
 }
 // RiLightSource
 // RiAreaLightSource
-RtVoid GMANAttributes::setIlluminate (RtLightHandle lh, RtBoolean onoff)
-{
-  if (onoff==RI_TRUE)
+RtVoid GMANAttributes::setIlluminate(RtLightHandle lh, RtBoolean onoff) {
+  if (onoff == RI_TRUE)
     lightList.on(lh);
-  else 
-    lightList.off(lh);  
+  else
+    lightList.off(lh);
 }
 
-RtVoid GMANAttributes::setSurface (const std::string & name, GMANParameterList &pl,
-				   GMANRenderer &rd)
-{
+RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
   std::string objectName = "lib";
   objectName += name;
   objectName += ".so";
   surfaceModule = std::make_shared<GMANLoadableShader>(objectName.c_str());
-  if(surfaceModule->getType() == GMANShader::SURFACE) {
+  if (surfaceModule->getType() == GMANShader::SURFACE) {
     surface = surfaceModule->getSurface();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified surface shader is not a surface shader."));
@@ -116,11 +104,9 @@ RtVoid GMANAttributes::setSurface (const std::string & name, GMANParameterList &
   surface->set(rd);
 }
 
-RtVoid GMANAttributes::setDisplacement (const std::string & name, GMANParameterList &pl,
-					GMANRenderer &rd)
-{
+RtVoid GMANAttributes::setDisplacement(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
   displacementModule = std::make_shared<GMANLoadableShader>(name.c_str());
-  if(displacementModule->getType() == GMANShader::DISPLACEMENT) {
+  if (displacementModule->getType() == GMANShader::DISPLACEMENT) {
     displacement = displacementModule->getDisplacement();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified displacement shader is not a displacement shader."));
@@ -130,11 +116,9 @@ RtVoid GMANAttributes::setDisplacement (const std::string & name, GMANParameterL
   displacement->set(rd);
 }
 
-RtVoid GMANAttributes::setAtmosphere (const std::string & name, GMANParameterList &pl,
-				      GMANRenderer &rd)
-{
+RtVoid GMANAttributes::setAtmosphere(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
   atmosphereModule = std::make_shared<GMANLoadableShader>(name.c_str());
-  if(atmosphereModule->getType() == GMANShader::VOLUME) {
+  if (atmosphereModule->getType() == GMANShader::VOLUME) {
     atmosphere = atmosphereModule->getVolume();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified atmosphere shader is not a volume shader."));
@@ -144,11 +128,9 @@ RtVoid GMANAttributes::setAtmosphere (const std::string & name, GMANParameterLis
   atmosphere->set(rd);
 }
 
-RtVoid GMANAttributes::setInterior (const std::string & name, GMANParameterList &pl,
-				    GMANRenderer &rd)
-{
+RtVoid GMANAttributes::setInterior(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
   interiorModule = std::make_shared<GMANLoadableShader>(name.c_str());
-  if(interiorModule->getType() == GMANShader::VOLUME) {
+  if (interiorModule->getType() == GMANShader::VOLUME) {
     interior = interiorModule->getVolume();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified interior shader is not a volume shader."));
@@ -158,11 +140,9 @@ RtVoid GMANAttributes::setInterior (const std::string & name, GMANParameterList 
   interior->set(rd);
 }
 
-RtVoid GMANAttributes::setExterior (const std::string & name, GMANParameterList &pl,
-				    GMANRenderer &rd)
-{
+RtVoid GMANAttributes::setExterior(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
   exteriorModule = std::make_shared<GMANLoadableShader>(name.c_str());
-  if(exteriorModule->getType() == GMANShader::VOLUME) {
+  if (exteriorModule->getType() == GMANShader::VOLUME) {
     exterior = exteriorModule->getVolume();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified exterior shader is not a volume shader."));
@@ -172,85 +152,50 @@ RtVoid GMANAttributes::setExterior (const std::string & name, GMANParameterList 
   exterior->set(rd);
 }
 
-RtVoid GMANAttributes::setShadingRate (RtFloat sz)
-{
-  shadingRate=sz;
+RtVoid GMANAttributes::setShadingRate(RtFloat sz) { shadingRate = sz; }
+RtVoid GMANAttributes::setShadingInterpolation(RtToken si) { shadingInterpolation = si; }
+RtVoid GMANAttributes::setMatte(RtBoolean on) {
+  if (on == RI_TRUE)
+    matte = true;
+  else
+    matte = false;
 }
-RtVoid GMANAttributes::setShadingInterpolation (RtToken si)
-{
-  shadingInterpolation=si;
-}
-RtVoid GMANAttributes::setMatte (RtBoolean on)
-{
-  if (on==RI_TRUE) matte=true;
-  else matte=false;
-}
-
 
 // ******* ******* GEOMETRY ATTRIBUTES ******* *******
-RtVoid GMANAttributes::setBound (RtBound b)
-{
-  bound=GMANBBox(b);
+RtVoid GMANAttributes::setBound(RtBound b) { bound = GMANBBox(b); }
+RtVoid GMANAttributes::setDetail(RtBound d) { detail = GMANBBox(d); }
+RtVoid GMANAttributes::setDetailRange(RtFloat minv, RtFloat lt, RtFloat up, RtFloat maxv) {
+  detailRange.minVisible = minv;
+  detailRange.lowerTransition = lt;
+  detailRange.upperTransition = up;
+  detailRange.maxVisible = maxv;
 }
-RtVoid GMANAttributes::setDetail (RtBound d)
-{
-  detail=GMANBBox(d);
+RtVoid GMANAttributes::setGeometricApproximation(RtToken ga, RtFloat v) {
+  geometricApproximation.type = ga;
+  geometricApproximation.value = v;
 }
-RtVoid GMANAttributes::setDetailRange (RtFloat minv, RtFloat lt,  RtFloat up, RtFloat maxv)
-{
-  detailRange.minVisible=minv;
-  detailRange.lowerTransition=lt;
-  detailRange.upperTransition=up;
-  detailRange.maxVisible=maxv;
+RtVoid GMANAttributes::setOrientation(RtToken o) { orientation = o; }
+RtVoid GMANAttributes::toggleOrientation() {
+  if (orientation == RI_OUTSIDE)
+    orientation = RI_INSIDE;
+  else if (orientation == RI_INSIDE)
+    orientation = RI_OUTSIDE;
+  else if (orientation == RI_LH)
+    orientation = RI_RH;
+  else if (orientation == RI_RH)
+    orientation = RI_LH;
 }
-RtVoid GMANAttributes::setGeometricApproximation (RtToken ga, RtFloat v)
-{
-  geometricApproximation.type=ga;
-  geometricApproximation.value=v;
-}
-RtVoid GMANAttributes::setOrientation (RtToken o)
-{
-  orientation=o;
-}
-RtVoid GMANAttributes::toggleOrientation ()
-{
-  if (orientation==RI_OUTSIDE) orientation=RI_INSIDE;
-  else if (orientation==RI_INSIDE) orientation=RI_OUTSIDE;
-  else if (orientation==RI_LH) orientation=RI_RH;
-  else if (orientation==RI_RH) orientation=RI_LH;
-}
-RtVoid GMANAttributes::setSides (RtInt n)
-{
-  sides=n;
-}
-RtVoid GMANAttributes::setTrimCurves (GMANTrimCurve const &tc)
-{
-  trimCurves=tc;
-}
-RtVoid GMANAttributes::setUVBasis (RtBasis uu, 
-				   RtInt uustep, 
-				   RtBasis vv, 
-				   RtInt vvstep)
-{
+RtVoid GMANAttributes::setSides(RtInt n) { sides = n; }
+RtVoid GMANAttributes::setTrimCurves(GMANTrimCurve const& tc) { trimCurves = tc; }
+RtVoid GMANAttributes::setUVBasis(RtBasis uu, RtInt uustep, RtBasis vv, RtInt vvstep) {
   GMANMatrix4 uuBas(uu);
 
   GMANMatrix4 vvBas(vv);
 
-  uvBasis=GMANBasis(uuBas,uustep,vvBas,vvstep);
+  uvBasis = GMANBasis(uuBas, uustep, vvBas, vvstep);
 }
-RtVoid GMANAttributes::setObjectBasis (GMANBasis *b)
-{
-  objectBasis=*b;
-  objectFlag=true;
+RtVoid GMANAttributes::setObjectBasis(GMANBasis* b) {
+  objectBasis = *b;
+  objectFlag = true;
 }
-RtVoid GMANAttributes::clearObjectFlag ()
-{
-  objectFlag=false;
-}
-
-
-
-
-
-
-
+RtVoid GMANAttributes::clearObjectFlag() { objectFlag = false; }

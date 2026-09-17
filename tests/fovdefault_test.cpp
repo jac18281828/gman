@@ -61,15 +61,14 @@ namespace {
 // directory is reused across ctest invocations, and a reverted fix that
 // throws before opening the display leaves the previous good file in place.
 // tests/baseline_test.cpp removes its target for the same reason.
-int runGman(const std::string &gman, const std::string &rib,
-            const std::string &output) {
+int runGman(const std::string& gman, const std::string& rib, const std::string& output) {
   std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void writeFile(const std::string &path, const std::string &contents) {
+void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
   out << contents;
 }
@@ -85,9 +84,9 @@ struct BBox {
 };
 
 // Same bounding-box-by-difference-from-corner reading as silhouette_test.cpp.
-BBox findSilhouette(const std::string &path) {
+BBox findSilhouette(const std::string& path) {
   BBox box;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return box;
   }
@@ -97,8 +96,7 @@ BBox findSilhouette(const std::string &path) {
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(width * height);
-  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                  ORIENTATION_TOPLEFT, 0)) {
+  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0)) {
     TIFFClose(tif);
     return box;
   }
@@ -136,7 +134,7 @@ BBox findSilhouette(const std::string &path) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::fprintf(stderr, "usage: %s <gman-binary>\n", argv[0]);
     return 2;
@@ -144,14 +142,13 @@ int main(int argc, char *argv[]) {
   const std::string gman = argv[1];
 
   // ---- perspective, no "fov" at all ----
-  const char *noFovRib =
-      "Display \"nofov.tif\" \"file\" \"rgba\"\n"
-      "Format 200 200 1\n"
-      "Projection \"perspective\"\n"
-      "Translate 0 0 5\n"
-      "WorldBegin\n"
-      "Sphere 1 -1 1 360\n"
-      "WorldEnd\n";
+  const char* noFovRib = "Display \"nofov.tif\" \"file\" \"rgba\"\n"
+                         "Format 200 200 1\n"
+                         "Projection \"perspective\"\n"
+                         "Translate 0 0 5\n"
+                         "WorldBegin\n"
+                         "Sphere 1 -1 1 360\n"
+                         "WorldEnd\n";
   writeFile("nofov.rib", noFovRib);
   check(runGman(gman, "nofov.rib", "nofov.tif") == 0, "no-fov perspective scene renders");
 
@@ -159,14 +156,13 @@ int main(int argc, char *argv[]) {
   check(noFov.found, "no-fov scene: a silhouette was found");
 
   // ---- perspective, "fov" [90] explicit control ----
-  const char *fov90Rib =
-      "Display \"fov90.tif\" \"file\" \"rgba\"\n"
-      "Format 200 200 1\n"
-      "Projection \"perspective\" \"fov\" [90]\n"
-      "Translate 0 0 5\n"
-      "WorldBegin\n"
-      "Sphere 1 -1 1 360\n"
-      "WorldEnd\n";
+  const char* fov90Rib = "Display \"fov90.tif\" \"file\" \"rgba\"\n"
+                         "Format 200 200 1\n"
+                         "Projection \"perspective\" \"fov\" [90]\n"
+                         "Translate 0 0 5\n"
+                         "WorldBegin\n"
+                         "Sphere 1 -1 1 360\n"
+                         "WorldEnd\n";
   writeFile("fov90.rib", fov90Rib);
   check(runGman(gman, "fov90.rib", "fov90.tif") == 0, "explicit fov=90 scene renders");
 
@@ -174,8 +170,7 @@ int main(int argc, char *argv[]) {
   check(fov90.found, "fov=90 scene: a silhouette was found");
 
   const double tol = 4.0; // both scenes should default/resolve identically
-  check(std::fabs(noFov.centerX() - fov90.centerX()) <= tol &&
-            std::fabs(noFov.centerY() - fov90.centerY()) <= tol,
+  check(std::fabs(noFov.centerX() - fov90.centerX()) <= tol && std::fabs(noFov.centerY() - fov90.centerY()) <= tol,
         "no-fov and explicit fov=90 silhouettes share a centre");
   check(std::fabs(noFov.halfWidth() - fov90.halfWidth()) <= tol &&
             std::fabs(noFov.halfHeight() - fov90.halfHeight()) <= tol,
@@ -188,14 +183,13 @@ int main(int argc, char *argv[]) {
         "no-fov silhouette half-width matches the fov=90 hand-derivation");
 
   // ---- orthographic, no "fov" (unused, but must not throw either) ----
-  const char *orthoNoFovRib =
-      "Display \"ortho_nofov.tif\" \"file\" \"rgba\"\n"
-      "Format 200 200 1\n"
-      "Projection \"orthographic\"\n"
-      "Translate 0 0 5\n"
-      "WorldBegin\n"
-      "Sphere 1 -1 1 360\n"
-      "WorldEnd\n";
+  const char* orthoNoFovRib = "Display \"ortho_nofov.tif\" \"file\" \"rgba\"\n"
+                              "Format 200 200 1\n"
+                              "Projection \"orthographic\"\n"
+                              "Translate 0 0 5\n"
+                              "WorldBegin\n"
+                              "Sphere 1 -1 1 360\n"
+                              "WorldEnd\n";
   writeFile("ortho_nofov.rib", orthoNoFovRib);
   check(runGman(gman, "ortho_nofov.rib", "ortho_nofov.tif") == 0,
         "no-fov orthographic scene renders (fov unused but still looked up)");

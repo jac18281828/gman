@@ -25,37 +25,32 @@
 #include "gmanvector4.h"
 #include "gmanvsperspective.h"
 
-GMANVSPerspective::GMANVSPerspective(RtInt xr, RtInt yr,
-				     const GMANOptions::ScreenWindowStruct &s,
-				     const GMANMatrix4 &worldToCamera,
-				     RtFloat fov, RtFloat nearDist, RtFloat farDist)
-  : GMANViewingSystem(xr,yr,s,worldToCamera)
-{
-    mtrx.prjPersp(fov,nearDist,farDist);
+GMANVSPerspective::GMANVSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s,
+                                     const GMANMatrix4& worldToCamera, RtFloat fov, RtFloat nearDist, RtFloat farDist)
+    : GMANViewingSystem(xr, yr, s, worldToCamera) {
+  mtrx.prjPersp(fov, nearDist, farDist);
 }
 
-GMANPoint GMANVSPerspective::project(GMANPoint const &p)
-{
+GMANPoint GMANVSPerspective::project(GMANPoint const& p) {
   GMANVector4 clip;
   clip.projTransform(p, mtrx.get());
   GMANPoint a;
   clip.perspective(a);
-  RtFloat x=a.getX();
-  RtFloat y=a.getY();
-  screenToRaster(x,y);
+  RtFloat x = a.getX();
+  RtFloat y = a.getY();
+  screenToRaster(x, y);
   a.setX(x);
   a.setY(y);
   return a;
 }
-GMANRay   GMANVSPerspective::ray(RtFloat x, RtFloat y)
-{
+GMANRay GMANVSPerspective::ray(RtFloat x, RtFloat y) {
   GMANRay r;
-  rasterToScreen(x,y);
+  rasterToScreen(x, y);
 
   // camera-space origin and a point along the ray direction, carried into
   // world space via the camera-to-world transform captured at RiWorldBegin.
-  RtFloat srcOrigin[] = {0,0,0};
-  RtFloat srcThrough[] = {x,y,1};
+  RtFloat srcOrigin[] = {0, 0, 0};
+  RtFloat srcThrough[] = {x, y, 1};
   RtFloat dstOrigin[3], dstThrough[3];
   GMANMatrix4 c2w = getCameraToWorld();
   c2w.p3m(1, srcOrigin, dstOrigin);
@@ -65,7 +60,6 @@ GMANRay   GMANVSPerspective::ray(RtFloat x, RtFloat y)
   r.setP2(GMANPoint(dstThrough[0], dstThrough[1], dstThrough[2]));
   return r;
 }
-
 
 /*
  * return true if the face is visible from this perspective.
@@ -85,28 +79,26 @@ GMANRay   GMANVSPerspective::ray(RtFloat x, RtFloat y)
  * deliberately. The two agree on-axis and diverge only near the
  * silhouette.
  */
-bool GMANVSPerspective::visible(const GMANFace *face) {
-    if (face->getSides() != 1) {
-      return true;
-    }
+bool GMANVSPerspective::visible(const GMANFace* face) {
+  if (face->getSides() != 1) {
+    return true;
+  }
 
-    // Centroid of the face's four vertices approximates the point on the
-    // face the view vector is measured to; camera-space, so no further
-    // transform is needed. GMANFace::getNumVerts isn't const-qualified,
-    // so this uses the same GMAN_NFACE_VERTS it always returns.
-    GMANVector toFace(0.0, 0.0, 0.0);
-    for (int i = 0; i < GMAN_NFACE_VERTS; ++i) {
-      toFace += GMANVector(face->getVertex(i)->getLocation());
-    }
-    toFace *= (1.0 / GMAN_NFACE_VERTS);
+  // Centroid of the face's four vertices approximates the point on the
+  // face the view vector is measured to; camera-space, so no further
+  // transform is needed. GMANFace::getNumVerts isn't const-qualified,
+  // so this uses the same GMAN_NFACE_VERTS it always returns.
+  GMANVector toFace(0.0, 0.0, 0.0);
+  for (int i = 0; i < GMAN_NFACE_VERTS; ++i) {
+    toFace += GMANVector(face->getVertex(i)->getLocation());
+  }
+  toFace *= (1.0 / GMAN_NFACE_VERTS);
 
-    bool facingCamera = (face->getNormal().dot(toFace) > 0);
-    if (face->getOrientation() == RI_INSIDE) {
-      facingCamera = !facingCamera;
-    }
-    return facingCamera;
+  bool facingCamera = (face->getNormal().dot(toFace) > 0);
+  if (face->getOrientation() == RI_INSIDE) {
+    facingCamera = !facingCamera;
+  }
+  return facingCamera;
 }
 
-const RtMatrix &GMANVSPerspective::getProjMatrix(RtVoid) const {
-  return mtrx.get();
-}
+const RtMatrix& GMANVSPerspective::getProjMatrix(RtVoid) const { return mtrx.get(); }

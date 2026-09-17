@@ -28,23 +28,21 @@
 #include "gmanmatrix4.h"
 #include "gmanviewingsystem.h"
 
-class GMAN_EXPORT  GMANVSOrthographic : public GMANViewingSystem
-{
-  private:
-    GMANMatrix4 mtrx;
-  public:
-    GMANVSOrthographic(RtInt xres, RtInt yres,
-		       const GMANOptions::ScreenWindowStruct &s,
-		       const GMANMatrix4 &worldToCamera,
-		       RtFloat nearDist, RtFloat farDist);
-    ~GMANVSOrthographic() {}
-    
-    virtual GMANPoint project(GMANPoint const &p);
-    virtual GMANRay   ray(RtFloat x, RtFloat y);
-    
-    virtual bool visible(const GMANFace *face);
+class GMAN_EXPORT GMANVSOrthographic : public GMANViewingSystem {
+private:
+  GMANMatrix4 mtrx;
 
-    virtual const RtMatrix &getProjMatrix(RtVoid) const;
+public:
+  GMANVSOrthographic(RtInt xres, RtInt yres, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
+                     RtFloat nearDist, RtFloat farDist);
+  ~GMANVSOrthographic() {}
+
+  virtual GMANPoint project(GMANPoint const& p);
+  virtual GMANRay ray(RtFloat x, RtFloat y);
+
+  virtual bool visible(const GMANFace* face);
+
+  virtual const RtMatrix& getProjMatrix(RtVoid) const;
 };
 
 #endif

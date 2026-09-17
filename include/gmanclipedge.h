@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANCLIPEDGE_H
 #define __GMAN_GMANCLIPEDGE_H 1
-
 
 #include <list>
 #include <map>
@@ -39,10 +37,8 @@
 #include "gmanvertex4.h"
 #include "ri.h"
 
-
 /* Global types */
-enum GMANPlane { GMANFRONT, GMANBACK, GMANLEFT, GMANRIGHT, GMANTOP, 
-		 GMANBOTTOM };
+enum GMANPlane { GMANFRONT, GMANBACK, GMANLEFT, GMANRIGHT, GMANTOP, GMANBOTTOM };
 
 /*
  * RenderMan API GMANClipEdge
@@ -51,35 +47,31 @@ enum GMANPlane { GMANFRONT, GMANBACK, GMANLEFT, GMANRIGHT, GMANTOP,
 
 class GMAN_EXPORT GMANClipEdge {
 private:
-  GMANClipEdge *next;	// next clipper
-  GMANVector4   normal;
-  GMANVertex4 first;    // first vertex
-  GMANVertex4 start;    // start vertex
+  GMANClipEdge* next; // next clipper
+  GMANVector4 normal;
+  GMANVertex4 first; // first vertex
+  GMANVertex4 start; // start vertex
 
-  bool first_inside;	// first vertex inside flag
-  bool start_inside;    // start vertex inside flag
-  bool first_flag;	// first vertex seen flag
+  bool first_inside; // first vertex inside flag
+  bool start_inside; // start vertex inside flag
+  bool first_flag;   // first vertex seen flag
 
   // private methods
-  bool isInside(const GMANVertex4 &v) {
-    return (normal.dot(v.getCoord()) >= 0.0)?true:false;
-  };
-  
-  GMANVertex4 intersect(const GMANVertex4 &s, const GMANVertex4 &e);
-  
-  RtVoid output(const GMANVertex4 &v, GMANOutputPolygon & out);
-  
+  bool isInside(const GMANVertex4& v) { return (normal.dot(v.getCoord()) >= 0.0) ? true : false; };
+
+  GMANVertex4 intersect(const GMANVertex4& s, const GMANVertex4& e);
+
+  RtVoid output(const GMANVertex4& v, GMANOutputPolygon& out);
+
 public:
   GMANClipEdge(); // default constructor
 
   ~GMANClipEdge(); // default destructor
 
-  RtVoid add(GMANClipEdge *c) { next = c; };
-  RtVoid clip(const GMANVertex4 &v, GMANOutputPolygon &p);
-  RtVoid close(GMANOutputPolygon &p);
-  RtVoid setNormal(const GMANVector4 &n) { normal = n; };
+  RtVoid add(GMANClipEdge* c) { next = c; };
+  RtVoid clip(const GMANVertex4& v, GMANOutputPolygon& p);
+  RtVoid close(GMANOutputPolygon& p);
+  RtVoid setNormal(const GMANVector4& n) { normal = n; };
 };
 
-
 #endif
-

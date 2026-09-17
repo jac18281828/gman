@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 19992000  John Cairns 
+ * Copyright (c) 2001, 2000, 19992000  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,17 +27,16 @@
 #include "gmangamma.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANGamma
  *
  */
 
 const int GMANGammaCorrect::G_Domain = 255;
-const int GMANGammaCorrect::G_Range  = 255;
+const int GMANGammaCorrect::G_Range = 255;
 
 // defaults are for a PC
-const RtFloat GMANGammaCorrect::DEFAULT_GAMMA  = 2.2f;
-const RtFloat GMANGammaCorrect::DEFAULT_GAIN  = 1.0f;
+const RtFloat GMANGammaCorrect::DEFAULT_GAMMA = 2.2f;
+const RtFloat GMANGammaCorrect::DEFAULT_GAIN = 1.0f;
 
-GMANByte  GMANGammaCorrect::GammaTable[256];
+GMANByte GMANGammaCorrect::GammaTable[256];

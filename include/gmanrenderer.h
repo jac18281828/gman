@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -26,7 +26,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
-
 
 #ifndef __GMAN_GMANRENDERER_H
 #define __GMAN_GMANRENDERER_H 1
@@ -59,68 +58,50 @@
  *
  */
 
-class GMAN_EXPORT  GMANRenderer
-{
- protected:
-  bool lightBeams (GMANPoint pos1, GMANVector axis1, RtFloat angle1,
-		   GMANPoint pos2, GMANVector axis2, RtFloat angle2);
-  bool solarBeams (GMANVector axis1, RtFloat angle1,
-		   GMANVector axis2, RtFloat angle2);
+class GMAN_EXPORT GMANRenderer {
+protected:
+  bool lightBeams(GMANPoint pos1, GMANVector axis1, RtFloat angle1, GMANPoint pos2, GMANVector axis2, RtFloat angle2);
+  bool solarBeams(GMANVector axis1, RtFloat angle1, GMANVector axis2, RtFloat angle2);
 
- public:
-  GMANRenderer(); // default constructor
+public:
+  GMANRenderer();          // default constructor
   virtual ~GMANRenderer(); // default destructor
 
-  virtual RtVoid illuminance(RtInt i,
-			     GMANPoint const &p,
-			     GMANVector const &axis,
-			     RtFloat angle) = 0;
+  virtual RtVoid illuminance(RtInt i, GMANPoint const& p, GMANVector const& axis, RtFloat angle) = 0;
 
-  virtual RtVoid illuminate(RtInt i,
-			    GMANPoint const &p,
-			    GMANVector const &axis,
-			    RtFloat angle) = 0;
+  virtual RtVoid illuminate(RtInt i, GMANPoint const& p, GMANVector const& axis, RtFloat angle) = 0;
 
-  virtual RtVoid solar(RtInt i, GMANVector const &axis, RtFloat angle)
- = 0;
+  virtual RtVoid solar(RtInt i, GMANVector const& axis, RtFloat angle) = 0;
 
-
-    /**
-     * To support output of depth all renderers must
-     * compute and store depth information.
-     *
-     * After a call to the 'render' method, this method
-     * should return the appropriate depth at xs, ys.
-     */
-    virtual RtFloat	getDepth(int xs, int ys) const = 0;
+  /**
+   * To support output of depth all renderers must
+   * compute and store depth information.
+   *
+   * After a call to the 'render' method, this method
+   * should return the appropriate depth at xs, ys.
+   */
+  virtual RtFloat getDepth(int xs, int ys) const = 0;
 
   /*
    * Default rendering interface.
    *
-   * A renderer applies a lighting and environment model to the 
+   * A renderer applies a lighting and environment model to the
    * objects in object manager, applies the projection represented
    * by the viewing system, and uses this information to
    * produce a frame buffer with a representation of the environment.
    */
-  virtual RtVoid render(GMANFrameBuffer *frameBuffer,
-			GMANViewingSystem *viewingSys,
-			const GMANOptions       &options,
-			const GMANAttributes    &attributes) 
- = 0;
-
+  virtual RtVoid render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
+                        const GMANAttributes& attributes) = 0;
 
   /*
    * Each renderer provides its own world manager.
    */
-  virtual GMANWorldManager *getWorldManager(RtVoid) = 0;
+  virtual GMANWorldManager* getWorldManager(RtVoid) = 0;
 
   /*
    * Each renderer provides its own object manager.
    */
-  virtual GMANObjectManager *getObjectManager(RtVoid) = 0;
-
+  virtual GMANObjectManager* getObjectManager(RtVoid) = 0;
 };
 
-
 #endif
-

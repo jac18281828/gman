@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -23,10 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANZBUFFERRENDERER_H
 #define __GMAN_GMANZBUFFERRENDERER_H 1
-
 
 #include <list>
 #include <map>
@@ -44,8 +42,6 @@
 #include "gmansamplebuffer.h"
 #include "ri.h"
 
-
-
 /*
  * RenderMan API GMANZBufferRenderer
  *
@@ -55,32 +51,29 @@
 
 class GMAN_EXPORT GMANZBufferRenderer : public GMANRenderer {
 private:
-
   // private types
 
-  struct Point		  // integer screen position
+  struct Point // integer screen position
   {
     int x, y;
   };
 
-  struct VertexInfo	  // vertex information
+  struct VertexInfo // vertex information
   {
 
-    Point	screen;   // screen coord
-    GMANPoint   posn;     // scaled position
-    GMANColor   color;    // vertex color
-
+    Point screen;    // screen coord
+    GMANPoint posn;  // scaled position
+    GMANColor color; // vertex color
   };
 
-  struct ScanInfo	  // a scan line intersection
+  struct ScanInfo // a scan line intersection
   {
-    RtFloat	x;	  //  x coord
-    RtFloat   z;        //  pseudo-depth
-    GMANColor   color;    //  color
+    RtFloat x;       //  x coord
+    RtFloat z;       //  pseudo-depth
+    GMANColor color; //  color
   };
 
-  struct EdgeInfo
-  {
+  struct EdgeInfo {
     // How many of isect[] this scanline actually received, not merely
     // whether it received any. Edges are scan-converted over a half-open
     // y range, so the bottom scanline of every polygon -- y == ymax --
@@ -88,16 +81,16 @@ private:
     // and read them unconditionally before this was a count.
     int nisect;
 
-    ScanInfo  isect[2];   // scan line intersection array
+    ScanInfo isect[2]; // scan line intersection array
   };
 
   // private data
-  RtFloat	*zbuffer; // the depth buffer.
+  RtFloat* zbuffer; // the depth buffer.
 
   // private methods
 
-  int ymin;   // minimum y-axis coordinate, in samples
-  int ymax;   // maximum y-axis coordinate, in samples
+  int ymin; // minimum y-axis coordinate, in samples
+  int ymax; // maximum y-axis coordinate, in samples
 
   int width;  // display width, in pixels
   int height; // display height, in pixels
@@ -136,33 +129,30 @@ private:
 
   int num_vert; // number of vertices
 
-  EdgeInfo	*edge_list;
+  EdgeInfo* edge_list;
 
   // Sutherland-Hodgman clipping a convex n-gon (faces are always
   // GMAN_NFACE_VERTS==4) against a convex region of k half-planes (the
   // clipper's 6) produces at most n+k vertices -- 10 here. Sized well
   // past that; getVertexInfo() still clamps defensively.
   static constexpr int kMaxClippedVerts = 16;
-  VertexInfo	v_info[kMaxClippedVerts];
+  VertexInfo v_info[kMaxClippedVerts];
 
   // a polygon clipper
-  GMANPolygonClipper	clipper;
+  GMANPolygonClipper clipper;
 
   // the viewing system for the frame currently being rendered, needed by
   // getVertexInfo() to map already-projected NDC coordinates to raster
   // space via GMANViewingSystem::screenToRaster.
-  GMANViewingSystem	*viewingSys;
+  GMANViewingSystem* viewingSys;
 
-  GMANPatchPolyObjectManager		objectManager;
+  GMANPatchPolyObjectManager objectManager;
 
-  GMANLinearWorldManager		worldManager;
-
+  GMANLinearWorldManager worldManager;
 
   // private methods
 
-  inline void setDepth(int x, int y, RtFloat f) {
-    zbuffer[y*width + x] = f;
-  }
+  inline void setDepth(int x, int y, RtFloat f) { zbuffer[y * width + x] = f; }
 
   bool initZBuffer(void);
 
@@ -177,7 +167,7 @@ private:
   // produce a finite but enormous NDC coordinate after perspective
   // divide, and scanEdges/drawEdgeList index into fixed-size arrays with
   // it unchecked.
-  bool getVertexInfo( GMANOutputPolygon & out );
+  bool getVertexInfo(GMANOutputPolygon& out);
   // edge scanning alg
   void scanEdges(void);
   // draw each of the scanned edges, sample-testing and storing into
@@ -185,68 +175,41 @@ private:
   void drawEdgeList(void);
 
   // render each outpolygon
-  void render(GMANOutputPolygon &out);
+  void render(GMANOutputPolygon& out);
 
 public:
-  GMANZBufferRenderer(int w, 
-		      int h);
+  GMANZBufferRenderer(int w, int h);
 
   GMANZBufferRenderer(); // default constructor
 
   ~GMANZBufferRenderer(); // default destructor
 
-  RtVoid illuminance(RtInt /*i*/,
-		     GMANPoint const &/*p*/,
-		     GMANVector const &/*axis*/,
-		     RtFloat /*angle*/) {}
-  RtVoid illuminate(RtInt /*i*/,
-		    GMANPoint const &/*p*/,
-		    GMANVector const &/*axis*/,
-		    RtFloat /*angle*/) {}
-  RtVoid solar(RtInt /*i*/, GMANVector const &/*axis*/,
-	       RtFloat /*angle*/) {}
+  RtVoid illuminance(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
+  RtVoid illuminate(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
+  RtVoid solar(RtInt /*i*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
-
-
-    inline RtFloat getDepth(int x, int y) const {
-	return zbuffer[y*width + x];
-    }
-
-
-
+  inline RtFloat getDepth(int x, int y) const { return zbuffer[y * width + x]; }
 
   /*
    * Apply a zbuffer environment to the objects in object manager
    * to generate a frameBuffer output.
    */
-  virtual RtVoid render(GMANFrameBuffer *frameBuffer,
-			GMANViewingSystem *viewingSys,
-			const GMANOptions       &options,
-			const GMANAttributes    &attributes);
+  virtual RtVoid render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
+                        const GMANAttributes& attributes);
 
+  void setHeight(int h) { height = h; };
 
-  void setHeight(int h) {
-    height = h;
-  };
+  int getHeight(void) { return height; };
 
-  int getHeight(void) {
-    return height;
-  };
+  void setWidth(int w) { width = w; };
 
-  void setWidth(int w) {
-    width = w;
-  };
-
-  int getWidth(void) {
-    return width;
-  };
+  int getWidth(void) { return width; };
 
   // return its world manager
-  virtual GMANWorldManager *getWorldManager(void);
+  virtual GMANWorldManager* getWorldManager(void);
 
   // return its object manager
-  virtual GMANObjectManager *getObjectManager(void);
+  virtual GMANObjectManager* getObjectManager(void);
 };
 
 #endif
-

@@ -83,9 +83,8 @@ namespace {
 
 // Distinct pixel values in the produced image -- capped at 2, since this
 // only needs to distinguish "uniform" from "not uniform".
-int distinctPixelValues(const char *path)
-{
-  TIFF *tif = TIFFOpen(path, "r");
+int distinctPixelValues(const char* path) {
+  TIFF* tif = TIFFOpen(path, "r");
   if (tif == nullptr) {
     return -1;
   }
@@ -94,8 +93,7 @@ int distinctPixelValues(const char *path)
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(width * height);
-  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                       ORIENTATION_TOPLEFT, 0);
+  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0);
   TIFFClose(tif);
   if (!ok || raster.empty()) {
     return -1;
@@ -113,9 +111,8 @@ int distinctPixelValues(const char *path)
 // Reads back a TIFF's raster verbatim, for the determinism check: two
 // renders of the same RIB must decode to the same pixels, not merely the
 // same file size or distinct-value count.
-bool readRaster(const char *path, std::vector<uint32_t> &raster)
-{
-  TIFF *tif = TIFFOpen(path, "r");
+bool readRaster(const char* path, std::vector<uint32_t>& raster) {
+  TIFF* tif = TIFFOpen(path, "r");
   if (tif == nullptr) {
     return false;
   }
@@ -124,16 +121,14 @@ bool readRaster(const char *path, std::vector<uint32_t> &raster)
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   raster.assign(width * height, 0);
-  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                       ORIENTATION_TOPLEFT, 0);
+  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0);
   TIFFClose(tif);
   return ok && !raster.empty();
 }
 
 } // namespace
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <sphere.rib>\n", argv[0]);
     return 2;
@@ -141,7 +136,7 @@ int main(int argc, char *argv[])
 
   const std::string gman = argv[1];
   const std::string rib = argv[2];
-  const char *image = "sphere.tif";
+  const char* image = "sphere.tif";
 
   // CTest runs this in a scratch directory of its own, so the image the RIB
   // asks for would land beside us if it were ever written.
@@ -149,7 +144,7 @@ int main(int argc, char *argv[])
 
   const std::string command = "\"" + gman + "\" \"" + rib + "\" 2>&1";
 
-  std::FILE *pipe = popen(command.c_str(), "r");
+  std::FILE* pipe = popen(command.c_str(), "r");
   if (pipe == nullptr) {
     std::fprintf(stderr, "FAIL: could not run %s\n", command.c_str());
     return 1;
@@ -167,15 +162,14 @@ int main(int argc, char *argv[])
   std::printf("--- gman output ---\n%s-------------------\n", output.c_str());
 
   check(exitStatus == 0, "gman exits 0");
-  check(output.find("Parsing") != std::string::npos,
-        "the RIB was opened and parsing started");
+  check(output.find("Parsing") != std::string::npos, "the RIB was opened and parsing started");
   check(output.find("TOKEN_NOT_FOUND") == std::string::npos,
         "the array-parameter bug that pinned exit 1 does not recur");
 
   // parseParameterList now reaches the projection's "fov" [45], WorldBegin
   // loads the zbuffer renderer, and it runs the sphere through to a real
   // TIFF.
-  std::FILE *produced = std::fopen(image, "rb");
+  std::FILE* produced = std::fopen(image, "rb");
   check(produced != nullptr, "an image file is produced");
   if (produced != nullptr) {
     std::fseek(produced, 0, SEEK_END);
@@ -190,8 +184,7 @@ int main(int argc, char *argv[])
   // pin the exact geometry; this only pins that *something* is drawn.)
   int distinct = distinctPixelValues(image);
   check(distinct >= 0, "the produced TIFF can be read back");
-  check(distinct > 1,
-        "the image is not uniform -- the sphere silhouette is visible");
+  check(distinct > 1, "the image is not uniform -- the sphere silhouette is visible");
 
   // Phase 3: rendering the same RIB twice produces the same image both
   // times. Confetti (GMANColor(drand48(), drand48(), drand48()) per
@@ -210,9 +203,8 @@ int main(int argc, char *argv[])
   std::vector<uint32_t> secondRaster;
   check(readRaster(image, secondRaster), "second render's TIFF decodes");
 
-  check(firstRaster == secondRaster,
-        "two renders of the same RIB produce pixel-identical images -- "
-        "real shading is deterministic, confetti was not");
+  check(firstRaster == secondRaster, "two renders of the same RIB produce pixel-identical images -- "
+                                     "real shading is deterministic, confetti was not");
 
   return checkSummary("baseline holds");
 }

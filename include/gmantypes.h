@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,39 +22,35 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_TYPES_H
 #define __GMAN_TYPES_H 1
-
 
 #include <list>
 
 #include "ri.h"
 
 /* useful values */
-#define GMAN_BYTEMAX   255
+#define GMAN_BYTEMAX 255
 
 /* type declaration */
 typedef unsigned char GMANByte;
 
-typedef unsigned int  GMANUInt;
+typedef unsigned int GMANUInt;
 
-typedef int           GMANInt;
+typedef int GMANInt;
 
 /* Color sample type */
-typedef RtFloat		GMANColorSample;
+typedef RtFloat GMANColorSample;
 
 /* forward declarations for lists */
 class GMANFace;
 class GMANSurface;
 
-typedef GMANFace	*GMANFacePtr;
-typedef GMANSurface	*GMANSurfacePtr;
+typedef GMANFace* GMANFacePtr;
+typedef GMANSurface* GMANSurfacePtr;
 
-typedef std::list<GMANFacePtr>		 GMANFaceList;
-typedef std::list<GMANSurfacePtr>     GMANSurfaceList;
-
+typedef std::list<GMANFacePtr> GMANFaceList;
+typedef std::list<GMANSurfacePtr> GMANSurfaceList;
 
 #endif
-

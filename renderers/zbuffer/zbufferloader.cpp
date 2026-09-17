@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -34,19 +34,14 @@
 /* Global static data */
 
 static GMANLoadableObjectInfo loadableInfo = {
-  "ZBuffer Lighting Model",
-  "John Cairns <john@2ad.com> ",
-  "Copyright (c) 2001, 2000, 1999 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
-  "A GMAN Renderer based on the ZBuffer lighting model simulation.",
+    "ZBuffer Lighting Model",
+    "John Cairns <john@2ad.com> ",
+    "Copyright (c) 2001, 2000, 1999 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
+    "A GMAN Renderer based on the ZBuffer lighting model simulation.",
 };
 
-static GMANZBufferRenderer	renderer;
+static GMANZBufferRenderer renderer;
 
+extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT  GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &loadableInfo;
-}
-
-extern "C" GMAN_EXPORT GMANRenderer *GMANLoadRenderer(void) {
-  return &renderer;
-}
+extern "C" GMAN_EXPORT GMANRenderer* GMANLoadRenderer(void) { return &renderer; }

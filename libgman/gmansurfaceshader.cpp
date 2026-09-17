@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -38,21 +38,16 @@
  */
 
 // default constructor
-GMANSurfaceShader::GMANSurfaceShader() : GMANShader() { };
+GMANSurfaceShader::GMANSurfaceShader() : GMANShader() {};
 
+// default destructor
+GMANSurfaceShader::~GMANSurfaceShader() {};
 
-// default destructor 
-GMANSurfaceShader::~GMANSurfaceShader() { };
-
-RtVoid GMANSurfaceShader::illuminance (RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol)
-{
+RtVoid GMANSurfaceShader::illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol) {
 #ifdef DEBUG
   if (i >= istmt.size()) {
     throw GMANError(RIE_BUG, RIE_SEVERE, "bad illuminance function asked");
   }
 #endif
-  istmt[i](L,Cl,Ol);
+  istmt[i](L, Cl, Ol);
 }
-
-
-

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -37,24 +37,20 @@
  */
 
 // default constructor
-GMANOutputPNM::GMANOutputPNM(const char *path, int width, int height) 
-  : GMANOutput(path, width, height) { };
+GMANOutputPNM::GMANOutputPNM(const char* path, int width, int height) : GMANOutput(path, width, height) {};
 
-
-// default destructor 
-GMANOutputPNM::~GMANOutputPNM() { };
+// default destructor
+GMANOutputPNM::~GMANOutputPNM() {};
 
 // Writes a binary P6 portable pixmap directly. This driver used to depend on
 // netpbm and its whole body was compiled out when libpnm was absent, which it
 // always was, so PNM output never produced a file.
-RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/,
-			   RtFloat gain, 
-			   RtFloat gamma) {
+RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
 
   gammaCorrect.setExposure(gain, gamma);
 
-  FILE *ppmFile = std::fopen(outputName.c_str(), "wb");
-  if(!ppmFile) {
+  FILE* ppmFile = std::fopen(outputName.c_str(), "wb");
+  if (!ppmFile) {
     std::string errorMsg("Unable to open output file: ");
     errorMsg.append(outputName);
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
@@ -62,21 +58,19 @@ RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/,
 
   std::fprintf(ppmFile, "P6\n%d %d\n255\n", xres, yres);
 
-  for(int row=0; row<yres; row++) {
-    for(int col=0; col<xres; col++) {
+  for (int row = 0; row < yres; row++) {
+    for (int col = 0; col < xres; col++) {
       GMANColorRGB color;
       color = getPixel(col, row);
 
       gammaCorrect.correct(color);
 
-      if(quantizer) 
-	quantizer->doColor(color);
+      if (quantizer)
+        quantizer->doColor(color);
 
-      const unsigned char rgb[3] = {
-	static_cast<unsigned char>(color.getRed()),
-	static_cast<unsigned char>(color.getGreen()),
-	static_cast<unsigned char>(color.getBlue())
-      };
+      const unsigned char rgb[3] = {static_cast<unsigned char>(color.getRed()),
+                                    static_cast<unsigned char>(color.getGreen()),
+                                    static_cast<unsigned char>(color.getBlue())};
       std::fwrite(rgb, 1, sizeof(rgb), ppmFile);
     }
   }

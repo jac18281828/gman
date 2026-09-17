@@ -22,23 +22,21 @@
 
 #include "gmangetarguments.h"
 
-RtVoid GMANGetArguments(va_list args, RtInt n, RtToken *token, RtPointer *parms)
-{
-  for(int i=0; i<n; i++) {
-    token[i]=va_arg(args,RtToken);
-    parms[i]=va_arg(args,RtPointer);
+RtVoid GMANGetArguments(va_list args, RtInt n, RtToken* token, RtPointer* parms) {
+  for (int i = 0; i < n; i++) {
+    token[i] = va_arg(args, RtToken);
+    parms[i] = va_arg(args, RtPointer);
   }
 }
 
-RtInt GMANCountArguments (va_list args)
-{
+RtInt GMANCountArguments(va_list args) {
   RtToken t;
-  int n=0;
-  t=va_arg(args,RtToken);
-  while (t!=RI_NULL) {
+  int n = 0;
+  t = va_arg(args, RtToken);
+  while (t != RI_NULL) {
     n++;
-    (void) va_arg(args,RtPointer);
-    t=va_arg(args,RtToken);
+    (void)va_arg(args, RtPointer);
+    t = va_arg(args, RtToken);
   }
   return n;
 }

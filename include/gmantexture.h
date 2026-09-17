@@ -35,11 +35,7 @@
 // and t. RiMakeTexture records this per file in libtiff's Pixar
 // wrap-modes tag; GMANTexture reads it back at construction, and
 // GMANTextureCache::sample applies it per axis.
-enum GMANTextureWrap {
-  GMAN_TEXTURE_CLAMP,
-  GMAN_TEXTURE_PERIODIC,
-  GMAN_TEXTURE_BLACK
-};
+enum GMANTextureWrap { GMAN_TEXTURE_CLAMP, GMAN_TEXTURE_PERIODIC, GMAN_TEXTURE_BLACK };
 
 /*
  * One decoded texture: the RGBA pixels of a single named file, and the
@@ -54,7 +50,7 @@ enum GMANTextureWrap {
  */
 class GMAN_EXPORT GMANTexture {
 public:
-  explicit GMANTexture(const std::string &name);
+  explicit GMANTexture(const std::string& name);
 
   // Bilinear sample at (s, t); t=0 is the image's top row. wrap resolves
   // both s and t identically outside [0, 1].
@@ -62,8 +58,7 @@ public:
 
   // Per-axis form: wrap resolves s and t independently. The single-wrap
   // overload above forwards here with the same mode on both axes.
-  GMANColor sample(RtFloat s, RtFloat t, GMANTextureWrap swrap,
-                    GMANTextureWrap twrap) const;
+  GMANColor sample(RtFloat s, RtFloat t, GMANTextureWrap swrap, GMANTextureWrap twrap) const;
 
   // Read from libtiff's Pixar wrap-modes tag at construction; an absent
   // or unparseable tag leaves both clamp. GMANTextureCache reads these
@@ -91,20 +86,19 @@ class GMAN_EXPORT GMANTextureCache {
 public:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file.
-  GMANColor sample(const std::string &name, RtFloat s, RtFloat t,
-                    GMANTextureWrap wrap);
+  GMANColor sample(const std::string& name, RtFloat s, RtFloat t, GMANTextureWrap wrap);
 
   // Samples with the texture's own recorded wrap modes.
-  GMANColor sample(const std::string &name, RtFloat s, RtFloat t);
+  GMANColor sample(const std::string& name, RtFloat s, RtFloat t);
 
   // Drops name from the cache, so the next lookup reads the file again.
-  void forget(const std::string &name);
+  void forget(const std::string& name);
 
 private:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file. Both sample overloads route
   // through this.
-  GMANTexture &entry(const std::string &name);
+  GMANTexture& entry(const std::string& name);
 
   std::map<std::string, GMANTexture> textures;
 };
@@ -112,7 +106,7 @@ private:
 // One cache per process, like gmanLightSourceMgr(). A free function rather
 // than a member threaded through the shading path, for the same reason:
 // shading runs per vertex, far from anything that would otherwise own it.
-GMAN_EXPORT GMANTextureCache &gmanTextureCache(RtVoid);
+GMAN_EXPORT GMANTextureCache& gmanTextureCache(RtVoid);
 
 // RiMakeTexture's implementation: decodes picture the way GMANTexture does
 // and writes texture as a single-level 8-bit RGB TIFF carrying swrap and
@@ -122,8 +116,7 @@ GMAN_EXPORT GMANTextureCache &gmanTextureCache(RtVoid);
 // decoded, or an output that cannot be opened or fully written. A
 // successful write forgets texture from gmanTextureCache(), so the next
 // lookup reads what was just written.
-GMAN_EXPORT bool gmanMakeTexture(const char *picture, const char *texture,
-                                  const char *swrap, const char *twrap);
+GMAN_EXPORT bool gmanMakeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap);
 
 // RiMakeLatLongEnvironment's implementation: decodes picture and writes
 // texture as a latitude-longitude environment map, RISpec 3.2 Sec 7.1.2 --
@@ -135,7 +128,6 @@ GMAN_EXPORT bool gmanMakeTexture(const char *picture, const char *texture,
 // name, a picture that cannot be opened or decoded, or an output that
 // cannot be opened or fully written. A successful write forgets texture
 // from gmanTextureCache(), so the next lookup reads what was just written.
-GMAN_EXPORT bool gmanMakeLatLongEnvironment(const char *picture,
-                                             const char *texture);
+GMAN_EXPORT bool gmanMakeLatLongEnvironment(const char* picture, const char* texture);
 
 #endif

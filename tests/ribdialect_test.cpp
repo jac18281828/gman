@@ -47,16 +47,15 @@ struct Result {
 // WORKING_DIRECTORY (see tests/CMakeLists.txt) -- so a plain relative open
 // finds whatever the run above wrote, without threading the scratch path
 // through every call site.
-bool nonEmptyFile(const std::string &path) {
+bool nonEmptyFile(const std::string& path) {
   std::ifstream in(path, std::ios::binary | std::ios::ate);
   return in.good() && in.tellg() > 0;
 }
 
-Result run(const std::string &gman, const std::string &rib, bool debug) {
-  const std::string command = "\"" + gman + "\" " + (debug ? "-d " : "") +
-    "\"" + rib + "\" 2>&1";
+Result run(const std::string& gman, const std::string& rib, bool debug) {
+  const std::string command = "\"" + gman + "\" " + (debug ? "-d " : "") + "\"" + rib + "\" 2>&1";
 
-  std::FILE *pipe = popen(command.c_str(), "r");
+  std::FILE* pipe = popen(command.c_str(), "r");
   Result result{-1, ""};
   if (pipe == nullptr) {
     return result;
@@ -74,7 +73,7 @@ Result run(const std::string &gman, const std::string &rib, bool debug) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib dir>\n", argv[0]);
     return 2;
@@ -93,28 +92,44 @@ int main(int argc, char *argv[]) {
   // fixture: GeneralPolygon has a variable-length nverts array ahead of
   // its parameter list, the same shape a mis-counted parse could desync.
   const std::vector<std::string> requestFixtures = {
-    "curves.rib", "blobby.rib", "subdivisionmesh.rib", "procedural.rib",
-    "solid.rib", "detail.rib", "detailrange.rib", "relativedetail.rib",
-    "skew.rib", "matte.rib", "trimcurve.rib", "errorhandler.rib",
-    "archiverecord.rib", "maketexture.rib", "makebump.rib",
-    "makelatlongenvironment.rib", "makecubefaceenvironment.rib",
-    "makeshadow.rib", "ifelse.rib", "pixelfilter.rib",
-    "geometricapproximation.rib", "generalpolygon.rib",
-    "pointspolygons.rib", "pointsgeneralpolygons.rib",
+      "curves.rib",
+      "blobby.rib",
+      "subdivisionmesh.rib",
+      "procedural.rib",
+      "solid.rib",
+      "detail.rib",
+      "detailrange.rib",
+      "relativedetail.rib",
+      "skew.rib",
+      "matte.rib",
+      "trimcurve.rib",
+      "errorhandler.rib",
+      "archiverecord.rib",
+      "maketexture.rib",
+      "makebump.rib",
+      "makelatlongenvironment.rib",
+      "makecubefaceenvironment.rib",
+      "makeshadow.rib",
+      "ifelse.rib",
+      "pixelfilter.rib",
+      "geometricapproximation.rib",
+      "generalpolygon.rib",
+      "pointspolygons.rib",
+      "pointsgeneralpolygons.rib",
   };
 
-  for (const std::string &fixture : requestFixtures) {
+  for (const std::string& fixture : requestFixtures) {
     const std::string path = ribDir + "/requests/" + fixture;
     Result r = run(gman, path, /*debug=*/true);
     check(r.exitStatus == 0, fixture + ": gman exits 0");
     check(r.output.find("Keyword token: Sphere") != std::string::npos,
-	  fixture + ": the Sphere after it still parses (no desync)");
+          fixture + ": the Sphere after it still parses (no desync)");
     // Exit 0 and a parsed Sphere are also what an *unrecognized* request
     // produces, since the front end warns and skips those by design. Without
     // this line, deleting a keyword from the tokenizer leaves the whole
     // table green.
     check(r.output.find("Unrecognized keyword") == std::string::npos,
-	  fixture + ": the tokenizer recognizes the request");
+          fixture + ": the tokenizer recognizes the request");
   }
 
   // Defect 1: a token that runs to end of input with no trailing delimiter
@@ -130,32 +145,29 @@ int main(int argc, char *argv[]) {
     Result r = run(gman, path, /*debug=*/true);
     check(r.exitStatus == 0, "no trailing newline: top-level file exits 0");
     check(r.output.find("Unrecognized keyword") == std::string::npos,
-	  "no trailing newline: WorldEnd does not become WorldEndd");
-    check(nonEmptyFile("nonewline_top.tif"),
-	  "no trailing newline: top-level file still writes an image");
+          "no trailing newline: WorldEnd does not become WorldEndd");
+    check(nonEmptyFile("nonewline_top.tif"), "no trailing newline: top-level file still writes an image");
   }
   {
     const std::string path = ribDir + "/nonewline/parent.rib";
     Result r = run(gman, path, /*debug=*/true);
-    check(r.exitStatus == 0,
-	  "no trailing newline: plain archive target exits 0");
+    check(r.exitStatus == 0, "no trailing newline: plain archive target exits 0");
     check(r.output.find("Unrecognized keyword") == std::string::npos,
-	  "no trailing newline: AttributeEnd does not become AttributeEndd "
-	  "(plain archive)");
+          "no trailing newline: AttributeEnd does not become AttributeEndd "
+          "(plain archive)");
     check(r.output.find("Keyword token: Sphere") != std::string::npos,
-	  "no trailing newline: the Sphere after the archive still parses");
+          "no trailing newline: the Sphere after the archive still parses");
   }
   {
     const std::string path = ribDir + "/nonewline/parent_gz.rib";
     Result r = run(gman, path, /*debug=*/true);
-    check(r.exitStatus == 0,
-	  "no trailing newline: gzip'd archive target exits 0");
+    check(r.exitStatus == 0, "no trailing newline: gzip'd archive target exits 0");
     check(r.output.find("Unrecognized keyword") == std::string::npos,
-	  "no trailing newline: AttributeEnd does not become AttributeEndd "
-	  "(gzip'd archive)");
+          "no trailing newline: AttributeEnd does not become AttributeEndd "
+          "(gzip'd archive)");
     check(r.output.find("Keyword token: Sphere") != std::string::npos,
-	  "no trailing newline: the Sphere after the gzip'd archive still "
-	  "parses");
+          "no trailing newline: the Sphere after the gzip'd archive still "
+          "parses");
   }
 
   // The corpus test. tests/rib/corpus/menger.rib is real third-party RIB
@@ -180,11 +192,9 @@ int main(int argc, char *argv[]) {
     std::remove("menger.tif");
     Result r = run(gman, corpus, /*debug=*/false);
     check(r.exitStatus == 0, "corpus: menger.rib parses to completion, exit 0");
-    check(r.output.find("ERROR") == std::string::npos,
-	  "corpus: no error reported");
-    check(nonEmptyFile("menger.tif"),
-	  "corpus: the file display survives the later framebuffer Display "
-	  "(defect 3)");
+    check(r.output.find("ERROR") == std::string::npos, "corpus: no error reported");
+    check(nonEmptyFile("menger.tif"), "corpus: the file display survives the later framebuffer Display "
+                                      "(defect 3)");
   }
 
   // ReadArchive of a gzip'd child -- steps 5 and 6 composed, which no other
@@ -212,15 +222,13 @@ int main(int argc, char *argv[]) {
     const std::string bike = ribDir + "/corpus/bike.rib";
     std::remove("bike.tif");
     Result r = run(gman, bike, /*debug=*/true);
-    check(r.output.find("Keyword token: ReadArchive") != std::string::npos,
-	  "corpus: bike.rib reaches its ReadArchive");
+    check(r.output.find("Keyword token: ReadArchive") != std::string::npos, "corpus: bike.rib reaches its ReadArchive");
     check(r.output.find("Keyword token: TransformBegin") != std::string::npos,
-	  "corpus: the gzip'd archive decompresses and its requests reach the "
-	  "parser");
+          "corpus: the gzip'd archive decompresses and its requests reach the "
+          "parser");
     check(r.exitStatus == 0, "corpus: bike.rib parses to completion, exit 0");
-    check(nonEmptyFile("bike.tif"),
-	  "corpus: bike.rib now parses to completion and writes a "
-	  "non-empty image (defect 1)");
+    check(nonEmptyFile("bike.tif"), "corpus: bike.rib now parses to completion and writes a "
+                                    "non-empty image (defect 1)");
   }
 
   // Step 1: an unrecognized request -- Bxdf, a RIS-era request GMAN
@@ -230,12 +238,10 @@ int main(int argc, char *argv[]) {
     const std::string path = ribDir + "/unknownrequest.rib";
     Result r = run(gman, path, /*debug=*/false);
     check(r.exitStatus == 0, "unknown request: gman exits 0");
-    check(r.output.find("skipping unrecognized request") != std::string::npos,
-	  "unknown request: warns once");
-    check(r.output.find("Bxdf") != std::string::npos,
-	  "unknown request: names the request in the warning");
+    check(r.output.find("skipping unrecognized request") != std::string::npos, "unknown request: warns once");
+    check(r.output.find("Bxdf") != std::string::npos, "unknown request: names the request in the warning");
     check(r.output.find("unrecognized requests skipped: Bxdf") != std::string::npos,
-	  "unknown request: reported once more in the end-of-parse summary");
+          "unknown request: reported once more in the end-of-parse summary");
   }
 
   // Malformed input, for the error paths. A parameter list that throws
@@ -257,10 +263,8 @@ int main(int argc, char *argv[]) {
     const std::string path = ribDir + "/malformed/stringarray.rib";
     Result r = run(gman, path, /*debug=*/false);
     check(r.exitStatus != 0, "malformed: a non-string in a string array fails");
-    check(r.output.find("Non-string in array") != std::string::npos,
-	  "malformed: the diagnostic names the fault");
-    check(r.output.find("LeakSanitizer") == std::string::npos,
-	  "malformed: no LeakSanitizer report (stringarray.rib)");
+    check(r.output.find("Non-string in array") != std::string::npos, "malformed: the diagnostic names the fault");
+    check(r.output.find("LeakSanitizer") == std::string::npos, "malformed: no LeakSanitizer report (stringarray.rib)");
   }
 
   // Same fault class again: PointsPolygons's nverts array has a string
@@ -271,10 +275,9 @@ int main(int argc, char *argv[]) {
     const std::string path = ribDir + "/malformed/pointspolygons_nonint_nverts.rib";
     Result r = run(gman, path, /*debug=*/false);
     check(r.exitStatus != 0, "malformed: a non-integer in nverts fails");
-    check(r.output.find("Non-integer in array") != std::string::npos,
-	  "malformed: the diagnostic names the fault");
+    check(r.output.find("Non-integer in array") != std::string::npos, "malformed: the diagnostic names the fault");
     check(r.output.find("LeakSanitizer") == std::string::npos,
-	  "malformed: no LeakSanitizer report (pointspolygons_nonint_nverts.rib)");
+          "malformed: no LeakSanitizer report (pointspolygons_nonint_nverts.rib)");
   }
 
   // Same fault class, a different leak shape, and (unlike stringarray.rib
@@ -291,10 +294,9 @@ int main(int argc, char *argv[]) {
     const std::string path = ribDir + "/malformed/display_badtype.rib";
     Result r = run(gman, path, /*debug=*/false);
     check(r.exitStatus != 0, "malformed: a non-string Display type fails");
-    check(r.output.find("Expecting string token") != std::string::npos,
-	  "malformed: the diagnostic names the fault");
+    check(r.output.find("Expecting string token") != std::string::npos, "malformed: the diagnostic names the fault");
     check(r.output.find("LeakSanitizer") == std::string::npos,
-	  "malformed: no LeakSanitizer report (display_badtype.rib)");
+          "malformed: no LeakSanitizer report (display_badtype.rib)");
   }
 
   // Not malformed -- the point is the opposite. parseHider used to leak its
@@ -305,8 +307,7 @@ int main(int argc, char *argv[]) {
     const std::string path = ribDir + "/hider.rib";
     Result r = run(gman, path, /*debug=*/false);
     check(r.exitStatus == 0, "hider: a well-formed Hider request parses");
-    check(r.output.find("LeakSanitizer") == std::string::npos,
-	  "hider: no LeakSanitizer report (hider.rib)");
+    check(r.output.find("LeakSanitizer") == std::string::npos, "hider: no LeakSanitizer report (hider.rib)");
   }
 
   return checkSummary("RIB dialect coverage holds");

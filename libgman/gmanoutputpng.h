@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2002, 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2002, 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANOUTPUTPNG_H
 #define __GMAN_GMANOUTPUTPNG_H 1
-
 
 #include <list>
 #include <map>
@@ -44,18 +42,11 @@
 
 class GMANOutputPNG : public GMANOutput {
 public:
-  GMANOutputPNG(const char *path, int width, int height); // default constructor
+  GMANOutputPNG(const char* path, int width, int height); // default constructor
 
   ~GMANOutputPNG(); // default destructor
 
-  
-    virtual RtVoid save(GMANOutput::DisplayMode mode, 
-			RtFloat gain, 
-			RtFloat gamma);
-
-
+  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
 };
 
-
 #endif
-

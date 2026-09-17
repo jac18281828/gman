@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANNORMAL_H
 #define __GMAN_GMANNORMAL_H 1
-
 
 #include "gmanlog.h"
 #include "gmanpoint.h"
@@ -34,16 +32,14 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-
-class GMAN_EXPORT  GMANNormal : public GMANVector
-{
+class GMAN_EXPORT GMANNormal : public GMANVector {
 public:
   GMANNormal();
   GMANNormal(RtFloat x, RtFloat y, RtFloat z);
-  GMANNormal(const GMANPoint &p);
+  GMANNormal(const GMANPoint& p);
 
   /* construct a normal from two points N = b - a */
-  GMANNormal(const GMANPoint &a, const GMANPoint &b) : GMANVector(a,b) {}
+  GMANNormal(const GMANPoint& a, const GMANPoint& b) : GMANVector(a, b) {}
   ~GMANNormal() {}
 };
 

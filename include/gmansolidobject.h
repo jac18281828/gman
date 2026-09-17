@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANSOLIDOBJECT_H
 #define __GMAN_GMANSOLIDOBJECT_H 1
-
 
 #include <list>
 #include <map>
@@ -45,13 +43,11 @@
  *
  */
 
-class GMAN_EXPORT  GMANSolidObject : public GMANObject {
+class GMAN_EXPORT GMANSolidObject : public GMANObject {
 public:
   GMANSolidObject(); // default constructor
 
   ~GMANSolidObject(); // default destructor
 };
 
-
 #endif
-

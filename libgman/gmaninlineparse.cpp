@@ -26,8 +26,7 @@
 
 #include "gmaninlineparse.h"
 
-RtVoid GMANInlineParse::check_syntax ()
-{
+RtVoid GMANInlineParse::check_syntax() {
   // number_of_words =0 ---> ERROR
   // number_of_words =1 ---> not an inline def
   // number_of_words =2 ---> type id
@@ -36,93 +35,91 @@ RtVoid GMANInlineParse::check_syntax ()
   // number_of_words =5 ---> type [ size ] id
   // number_of_words =6 ---> class type [ size ] id
   // number_of_words =7 ---> ERROR
-  GMANError error( RIE_SYNTAX, RIE_ERROR, "GMANInlineParse: BAD_SYNTAX" );
+  GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANInlineParse: BAD_SYNTAX");
 
   switch (number_of_words) {
   case 0:
     error.setMessage("GMANInlineParse: RTVOID_STRING");
     throw error;
   case 4:
-  case 7: 
+  case 7:
     throw error;
-  case 1: inline_def=false;
+  case 1:
+    inline_def = false;
     break;
   case 2:
     lc(word[0]);
-    if (is_type(word[0])==false) {
+    if (is_type(word[0]) == false) {
       throw error;
     }
-    inline_def=true;
-    tc=GMANTokenEntry::UNIFORM;
-    tt=get_type(word[0]);
-    size=1;
-    identifier=word[1];
+    inline_def = true;
+    tc = GMANTokenEntry::UNIFORM;
+    tt = get_type(word[0]);
+    size = 1;
+    identifier = word[1];
     break;
   case 3:
     lc(word[0]);
     lc(word[1]);
-    if ((is_class(word[0])==false) || (is_type(word[1])==false)) {
+    if ((is_class(word[0]) == false) || (is_type(word[1]) == false)) {
       throw error;
     }
-    inline_def=true;
-    tc=get_class(word[0]);
-    tt=get_type(word[1]);
-    size=1;
-    identifier=word[2];
+    inline_def = true;
+    tc = get_class(word[0]);
+    tt = get_type(word[1]);
+    size = 1;
+    identifier = word[2];
     break;
   case 5:
     lc(word[0]);
-    if ((is_type(word[0])==false) || (word[1]!="[") ||
-	(is_int(word[2])==false) || (word[3]!="]")) {
+    if ((is_type(word[0]) == false) || (word[1] != "[") || (is_int(word[2]) == false) || (word[3] != "]")) {
       throw error;
     }
-    inline_def=true;
-    tc=GMANTokenEntry::UNIFORM;
-    tt=get_type(word[0]);
-    size=get_size(word[2]);
-    identifier=word[4];
+    inline_def = true;
+    tc = GMANTokenEntry::UNIFORM;
+    tt = get_type(word[0]);
+    size = get_size(word[2]);
+    identifier = word[4];
     break;
   case 6:
     lc(word[0]);
     lc(word[1]);
-    if ((is_class(word[0])==false) || (is_type(word[1])==false) ||
-	 (word[2]!="[") || (is_int(word[3])==false) ||
-	 (word[4]!="]")) {
+    if ((is_class(word[0]) == false) || (is_type(word[1]) == false) || (word[2] != "[") || (is_int(word[3]) == false) ||
+        (word[4] != "]")) {
       throw error;
     }
-    inline_def=true;
-    tc=get_class(word[0]);
-    tt=get_type(word[1]);
-    size=get_size(word[3]);
-    identifier=word[5];
+    inline_def = true;
+    tc = get_class(word[0]);
+    tt = get_type(word[1]);
+    size = get_size(word[3]);
+    identifier = word[5];
     break;
   }
 }
 
-RtVoid GMANInlineParse::parse (std::string str)
-{
-  GMANError error( RIE_SYNTAX, RIE_ERROR, "GMANInlineParse: BAD_SYNTAX" );
+RtVoid GMANInlineParse::parse(std::string str) {
+  GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANInlineParse: BAD_SYNTAX");
   RtInt j;
   size_t sp;
   size_t sz;
   bool start_found;
 
-  sp=0;
-  sz=1;
-  j=0;
-  start_found=false;
+  sp = 0;
+  sz = 1;
+  j = 0;
+  start_found = false;
 
-  for (unsigned int i=0;(i<str.length())&&(j<7);i++) {
+  for (unsigned int i = 0; (i < str.length()) && (j < 7); i++) {
     switch (str[i]) {
     case ' ':
     case '\t':
     case '\n':
-      if (start_found==true) {
-	word[j]=str.substr(sp,sz);
-	j++;	
-	sz=1;	
-	}
-      start_found=false;
+      if (start_found == true) {
+        word[j] = str.substr(sp, sz);
+        j++;
+        sz = 1;
+      }
+      start_found = false;
       break;
     case '#':
       error.setMessage("GMANInlineParse: '#' character not allowed in strings");
@@ -132,109 +129,99 @@ RtVoid GMANInlineParse::parse (std::string str)
       throw error;
     case '[':
     case ']':
-      if (start_found==true) {
-	word[j]=str.substr(sp,sz);
-	j++;
-	start_found=false;
+      if (start_found == true) {
+        word[j] = str.substr(sp, sz);
+        j++;
+        start_found = false;
       }
-      sp=i;
-      sz=1;
-      word[j]=str.substr(sp,sz);
+      sp = i;
+      sz = 1;
+      word[j] = str.substr(sp, sz);
       j++;
       break;
     default:
-      if (start_found==true) {
-	sz+=1;
-	break;
+      if (start_found == true) {
+        sz += 1;
+        break;
       }
-      start_found=true;
-      sp=i;
-      sz=1;
+      start_found = true;
+      sp = i;
+      sz = 1;
     }
   }
   // if there is no space at the end of the string,
   // the previous loop will not notice the end of the word,
   // and so will 'forget' to store it.
-  if (start_found==true) {
-    word[j]=str.substr(sp,sz);
+  if (start_found == true) {
+    word[j] = str.substr(sp, sz);
     j++;
   }
-  number_of_words=j;
-  check_syntax ();
+  number_of_words = j;
+  check_syntax();
 }
 
-bool GMANInlineParse::is_class (std::string str)
-{
-  if ((str=="constant") ||
-      (str=="uniform") ||
-      (str=="varying") ||
-      (str=="vertex") ||
-      (str=="facevarying"))
+bool GMANInlineParse::is_class(std::string str) {
+  if ((str == "constant") || (str == "uniform") || (str == "varying") || (str == "vertex") || (str == "facevarying"))
     return true;
   return false;
 }
 
-bool GMANInlineParse::is_type (std::string str)
-{
-  if ((str=="float") ||
-      (str=="point") ||
-      (str=="vector") ||
-      (str=="normal") ||
-      (str=="color") ||
-      (str=="string") ||
-      (str=="matrix") ||
-      (str=="hpoint") ||
-      (str=="integer"))
+bool GMANInlineParse::is_type(std::string str) {
+  if ((str == "float") || (str == "point") || (str == "vector") || (str == "normal") || (str == "color") ||
+      (str == "string") || (str == "matrix") || (str == "hpoint") || (str == "integer"))
     return true;
   return false;
 }
 
 // check if this int is >0 too
-bool GMANInlineParse::is_int (std::string str)
-{
-  char *end;
+bool GMANInlineParse::is_int(std::string str) {
+  char* end;
   errno = 0;
   const long j = strtol(str.c_str(), &end, 10);
-  if ((end==str.c_str()) || (errno==ERANGE) || (j<=0)) return false;
+  if ((end == str.c_str()) || (errno == ERANGE) || (j <= 0))
+    return false;
   return true;
 }
 
-GMANTokenEntry::TokenClass GMANInlineParse::get_class (std::string str)
-{
-  if (str=="constant") return GMANTokenEntry::CONSTANT;
-  if (str=="uniform") return GMANTokenEntry::UNIFORM;
-  if (str=="varying") return GMANTokenEntry::VARYING;
-  if (str=="facevarying") return GMANTokenEntry::FACEVARYING;
+GMANTokenEntry::TokenClass GMANInlineParse::get_class(std::string str) {
+  if (str == "constant")
+    return GMANTokenEntry::CONSTANT;
+  if (str == "uniform")
+    return GMANTokenEntry::UNIFORM;
+  if (str == "varying")
+    return GMANTokenEntry::VARYING;
+  if (str == "facevarying")
+    return GMANTokenEntry::FACEVARYING;
 
   // if (str=="vertex")
-		return GMANTokenEntry::VERTEX;
-
+  return GMANTokenEntry::VERTEX;
 }
 
-GMANTokenEntry::TokenType GMANInlineParse::get_type (std::string str)
-{
-  if (str=="float") return GMANTokenEntry::FLOAT;
-  if (str=="point") return GMANTokenEntry::POINT;
-  if (str=="vector") return GMANTokenEntry::VECTOR;
-  if (str=="normal") return GMANTokenEntry::NORMAL;
-  if (str=="color") return GMANTokenEntry::COLOR;
-  if (str=="string") return GMANTokenEntry::STRING;
-  if (str=="matrix") return GMANTokenEntry::MATRIX;
-  if (str=="hpoint") return GMANTokenEntry::HPOINT;
-  // if (str=="integer") 
-	  return GMANTokenEntry::INTEGER;
+GMANTokenEntry::TokenType GMANInlineParse::get_type(std::string str) {
+  if (str == "float")
+    return GMANTokenEntry::FLOAT;
+  if (str == "point")
+    return GMANTokenEntry::POINT;
+  if (str == "vector")
+    return GMANTokenEntry::VECTOR;
+  if (str == "normal")
+    return GMANTokenEntry::NORMAL;
+  if (str == "color")
+    return GMANTokenEntry::COLOR;
+  if (str == "string")
+    return GMANTokenEntry::STRING;
+  if (str == "matrix")
+    return GMANTokenEntry::MATRIX;
+  if (str == "hpoint")
+    return GMANTokenEntry::HPOINT;
+  // if (str=="integer")
+  return GMANTokenEntry::INTEGER;
 }
 
-int  GMANInlineParse::get_size (std::string str)
-{
-  return static_cast<int>(strtol(str.c_str(), nullptr, 10));
-}
+int GMANInlineParse::get_size(std::string str) { return static_cast<int>(strtol(str.c_str(), nullptr, 10)); }
 
-RtVoid GMANInlineParse::lc(std::string &str)
-{
-  for(unsigned int i=0;i<str.length();i++) {
-    str[i]=tolower(str[i]);
+RtVoid GMANInlineParse::lc(std::string& str) {
+  for (unsigned int i = 0; i < str.length(); i++) {
+    str[i] = tolower(str[i]);
   }
 }
-
-

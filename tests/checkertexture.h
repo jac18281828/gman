@@ -39,15 +39,13 @@
 // TIFFTAG_PIXAR_WRAPMODES to "<swrap>,<twrap>" -- the tag RiMakeTexture
 // writes and GMANTexture reads back; the default leaves a plain, untagged
 // checker.
-inline bool writeCheckerTexture(const std::string &path,
-                                const std::string &swrap = "",
-                                const std::string &twrap = "") {
-  TIFF *tif = TIFFOpen(path.c_str(), "w");
+inline bool writeCheckerTexture(const std::string& path, const std::string& swrap = "", const std::string& twrap = "") {
+  TIFF* tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
     return false;
   }
-  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t) 2);
-  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t) 2);
+  TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, (uint32_t)2);
+  TIFFSetField(tif, TIFFTAG_IMAGELENGTH, (uint32_t)2);
   TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 8);
   TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 3);
   TIFFSetField(tif, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
@@ -62,8 +60,7 @@ inline bool writeCheckerTexture(const std::string &path,
   // Row 0 (top): red, green. Row 1 (bottom): blue, white.
   const unsigned char row0[6] = {255, 0, 0, 0, 255, 0};
   const unsigned char row1[6] = {0, 0, 255, 255, 255, 255};
-  bool ok = TIFFWriteScanline(tif, (void *) row0, 0, 0) >= 0 &&
-            TIFFWriteScanline(tif, (void *) row1, 1, 0) >= 0;
+  bool ok = TIFFWriteScanline(tif, (void*)row0, 0, 0) >= 0 && TIFFWriteScanline(tif, (void*)row1, 1, 0) >= 0;
   TIFFClose(tif);
   return ok;
 }

@@ -59,19 +59,17 @@ namespace {
 // AGENTS.md's heading for the Gates section, as of this writing.
 const std::string kGatesHeading = "## Completion Gates";
 
-std::string readFile(const std::string &path) {
+std::string readFile(const std::string& path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream contents;
   contents << in.rdbuf();
   return contents.str();
 }
 
-bool containsWord(const std::string &text, const std::string &word) {
+bool containsWord(const std::string& text, const std::string& word) {
   std::size_t pos = 0;
   while ((pos = text.find(word, pos)) != std::string::npos) {
-    auto isIdentChar = [](char c) {
-      return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
-    };
+    auto isIdentChar = [](char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; };
     bool leftOk = pos == 0 || !isIdentChar(text[pos - 1]);
     std::size_t end = pos + word.size();
     bool rightOk = end >= text.size() || !isIdentChar(text[end]);
@@ -86,7 +84,7 @@ bool containsWord(const std::string &text, const std::string &word) {
 // Job ids declared directly under ci.yml's top-level `jobs:` key: exactly
 // two leading spaces, a bare identifier, and a trailing colon. Anything
 // more indented is a step or a matrix entry, not a job.
-std::vector<std::string> ciJobNames(const std::string &ciYaml) {
+std::vector<std::string> ciJobNames(const std::string& ciYaml) {
   std::vector<std::string> jobs;
   std::istringstream lines(ciYaml);
   std::string line;
@@ -107,8 +105,7 @@ std::vector<std::string> ciJobNames(const std::string &ciYaml) {
     if (line[0] != ' ') {
       break; // back to a top-level key; the jobs: block is over
     }
-    if (line.size() > 3 && line[0] == ' ' && line[1] == ' ' &&
-        line[2] != ' ' && line.back() == ':') {
+    if (line.size() > 3 && line[0] == ' ' && line[1] == ' ' && line[2] != ' ' && line.back() == ':') {
       jobs.push_back(line.substr(2, line.size() - 3));
     }
   }
@@ -117,7 +114,7 @@ std::vector<std::string> ciJobNames(const std::string &ciYaml) {
 
 // The whole Gates section, heading to the next `## ` heading: the fenced
 // block plus the prose around it that names the CI jobs.
-std::string gatesSection(const std::string &agentsMd) {
+std::string gatesSection(const std::string& agentsMd) {
   std::size_t start = agentsMd.find(kGatesHeading);
   if (start == std::string::npos) {
     return "";
@@ -131,7 +128,7 @@ std::string gatesSection(const std::string &agentsMd) {
 
 // The Gates section's fenced shell block: the exact commands a developer
 // runs by hand.
-std::string gatesBlock(const std::string &agentsMd) {
+std::string gatesBlock(const std::string& agentsMd) {
   std::size_t gatesHeading = agentsMd.find(kGatesHeading);
   if (gatesHeading == std::string::npos) {
     return "";
@@ -153,20 +150,17 @@ std::string gatesBlock(const std::string &agentsMd) {
 }
 
 // Every `add_test(NAME <name>` in tests/CMakeLists.txt, in file order.
-std::vector<std::string> addTestNames(const std::string &cmakeTxt) {
+std::vector<std::string> addTestNames(const std::string& cmakeTxt) {
   std::vector<std::string> names;
   const std::string marker = "add_test(NAME";
   std::size_t pos = 0;
   while ((pos = cmakeTxt.find(marker, pos)) != std::string::npos) {
     std::size_t start = pos + marker.size();
-    while (start < cmakeTxt.size() &&
-           std::isspace(static_cast<unsigned char>(cmakeTxt[start]))) {
+    while (start < cmakeTxt.size() && std::isspace(static_cast<unsigned char>(cmakeTxt[start]))) {
       ++start;
     }
     std::size_t end = start;
-    while (end < cmakeTxt.size() &&
-           !std::isspace(static_cast<unsigned char>(cmakeTxt[end])) &&
-           cmakeTxt[end] != ')') {
+    while (end < cmakeTxt.size() && !std::isspace(static_cast<unsigned char>(cmakeTxt[end])) && cmakeTxt[end] != ')') {
       ++end;
     }
     names.push_back(cmakeTxt.substr(start, end - start));
@@ -178,8 +172,7 @@ std::vector<std::string> addTestNames(const std::string &cmakeTxt) {
 // The set_tests_properties(<name> PROPERTIES ...) call for one test, body
 // included, or empty if there is none. Property values in this file never
 // contain a literal '(', so the call's own closing paren is unambiguous.
-std::string testPropertiesBlock(const std::string &cmakeTxt,
-                                const std::string &name) {
+std::string testPropertiesBlock(const std::string& cmakeTxt, const std::string& name) {
   const std::string marker = "set_tests_properties(" + name + " PROPERTIES";
   std::size_t start = cmakeTxt.find(marker);
   if (start == std::string::npos) {
@@ -195,21 +188,17 @@ std::string testPropertiesBlock(const std::string &cmakeTxt,
 
 // The token immediately following a property name, e.g. "unit" out of
 // "LABELS unit\n  TIMEOUT 30".
-std::string propertyToken(const std::string &block,
-                          const std::string &property) {
+std::string propertyToken(const std::string& block, const std::string& property) {
   std::size_t pos = block.find(property);
   if (pos == std::string::npos) {
     return "";
   }
   pos += property.size();
-  while (pos < block.size() &&
-         std::isspace(static_cast<unsigned char>(block[pos]))) {
+  while (pos < block.size() && std::isspace(static_cast<unsigned char>(block[pos]))) {
     ++pos;
   }
   std::size_t end = pos;
-  while (end < block.size() &&
-         !std::isspace(static_cast<unsigned char>(block[end])) &&
-         block[end] != ')') {
+  while (end < block.size() && !std::isspace(static_cast<unsigned char>(block[end])) && block[end] != ')') {
     ++end;
   }
   return block.substr(pos, end - pos);
@@ -217,22 +206,18 @@ std::string propertyToken(const std::string &block,
 
 // True for a non-empty run of decimal digits -- the shape a TIMEOUT value
 // must have before std::stoi is safe to call on it.
-bool isDecimal(const std::string &token) {
+bool isDecimal(const std::string& token) {
   if (token.empty()) {
     return false;
   }
-  return std::all_of(token.begin(), token.end(), [](unsigned char c) {
-    return std::isdigit(c) != 0;
-  });
+  return std::all_of(token.begin(), token.end(), [](unsigned char c) { return std::isdigit(c) != 0; });
 }
 
 } // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (argc != 4) {
-    std::fprintf(stderr,
-                 "usage: %s <AGENTS.md> <ci.yml> <tests/CMakeLists.txt>\n",
-                 argv[0]);
+    std::fprintf(stderr, "usage: %s <AGENTS.md> <ci.yml> <tests/CMakeLists.txt>\n", argv[0]);
     return 2;
   }
 
@@ -254,7 +239,7 @@ int main(int argc, char **argv) {
   // check mean "documented here" rather than "these letters appear".
   const std::string section = gatesSection(agentsMd);
   check(!section.empty(), "AGENTS.md has a Gates section");
-  for (const auto &job : jobs) {
+  for (const auto& job : jobs) {
     check(section.find("`" + job + "`") != std::string::npos,
           "ci.yml job \"" + job + "\" is named in AGENTS.md's Gates section");
   }
@@ -265,32 +250,26 @@ int main(int argc, char **argv) {
   // The vocabulary the Gates block names as of this writing -- see the
   // file comment above for why it is a fixed constant.
   const std::vector<std::string> vocabulary = {"cmake", "ctest"};
-  for (const auto &tool : vocabulary) {
-    check(containsWord(gates, tool),
-          "Gates block still names \"" + tool + "\"");
-    check(containsWord(ciYaml, tool),
-          "ci.yml still runs \"" + tool + "\"");
+  for (const auto& tool : vocabulary) {
+    check(containsWord(gates, tool), "Gates block still names \"" + tool + "\"");
+    check(containsWord(ciYaml, tool), "ci.yml still runs \"" + tool + "\"");
   }
 
   const std::string testsCMakeLists = readFile(argv[3]);
   check(!testsCMakeLists.empty(), "tests/CMakeLists.txt read");
 
   const std::vector<std::string> testNames = addTestNames(testsCMakeLists);
-  check(testNames.size() >= 31,
-        "tests/CMakeLists.txt registers at least 31 tests");
-  for (const auto &name : testNames) {
+  check(testNames.size() >= 31, "tests/CMakeLists.txt registers at least 31 tests");
+  for (const auto& name : testNames) {
     const std::string block = testPropertiesBlock(testsCMakeLists, name);
     check(!block.empty(), name + " has a set_tests_properties block");
 
     const std::string labels = propertyToken(block, "LABELS");
-    check(labels == "unit" || labels == "render",
-          name + " LABELS is \"unit\" or \"render\"");
+    check(labels == "unit" || labels == "render", name + " LABELS is \"unit\" or \"render\"");
 
     const std::string timeout = propertyToken(block, "TIMEOUT");
-    check(isDecimal(timeout) && std::stoi(timeout) > 0,
-          name + " TIMEOUT is greater than zero");
+    check(isDecimal(timeout) && std::stoi(timeout) > 0, name + " TIMEOUT is greater than zero");
   }
 
-  return checkSummary(
-      "AGENTS.md tracks ci.yml, and every test carries LABELS and TIMEOUT");
+  return checkSummary("AGENTS.md tracks ci.yml, and every test carries LABELS and TIMEOUT");
 }

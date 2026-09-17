@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,7 +22,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_MATH_H
 #define __GMAN_MATH_H 1
@@ -33,11 +32,11 @@
 #include "ri.h"
 
 // GMan constants
-const double PI       = 3.1415926535898;
-const double DEGTORAD = PI/180.0;
+const double PI = 3.1415926535898;
+const double DEGTORAD = PI / 180.0;
 
-#define GMANMAX(x,y) (x>y?x:y)
-#define GMANMIN(x,y) (x<y?x:y)
+#define GMANMAX(x, y) (x > y ? x : y)
+#define GMANMIN(x, y) (x < y ? x : y)
 
 #if 0
 inline GMAN_EXPORT  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
@@ -49,78 +48,46 @@ inline GMAN_EXPORT  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
 #endif
 
 // Trigonometric functions - asandro
-inline GMAN_EXPORT  RtFloat GMANRadians(RtFloat degrees)
-{
-	return (RtFloat)(degrees * DEGTORAD);
-}
+inline GMAN_EXPORT RtFloat GMANRadians(RtFloat degrees) { return (RtFloat)(degrees * DEGTORAD); }
 
-inline GMAN_EXPORT  RtFloat GMANDegrees(RtFloat radians)
-{
-	return (RtFloat)(radians / DEGTORAD);
-}
+inline GMAN_EXPORT RtFloat GMANDegrees(RtFloat radians) { return (RtFloat)(radians / DEGTORAD); }
 
-inline GMAN_EXPORT  RtFloat GMANAtan(RtFloat y, RtFloat x)
-{
-	return (RtFloat)atan2(y, x);
-}
-
+inline GMAN_EXPORT RtFloat GMANAtan(RtFloat y, RtFloat x) { return (RtFloat)atan2(y, x); }
 
 // Square root & logarithmic - asandro
-inline GMAN_EXPORT RtFloat GMANInversesqrt(RtFloat x)
-{
-	RtFloat y = (RtFloat)sqrt(x);
-	// avoid division by zero
-	if(y - RI_EPSILON > 0.0) {
-		return (RtFloat)(1.0 / y);
-	} else {
-		return (RtFloat)RI_INFINITY;
-	}
+inline GMAN_EXPORT RtFloat GMANInversesqrt(RtFloat x) {
+  RtFloat y = (RtFloat)sqrt(x);
+  // avoid division by zero
+  if (y - RI_EPSILON > 0.0) {
+    return (RtFloat)(1.0 / y);
+  } else {
+    return (RtFloat)RI_INFINITY;
+  }
 }
 
-inline GMAN_EXPORT RtFloat GMANLogFn(RtFloat x, RtFloat base)
-{
-	return (RtFloat)(log(x) / log(base));
-}
+inline GMAN_EXPORT RtFloat GMANLogFn(RtFloat x, RtFloat base) { return (RtFloat)(log(x) / log(base)); }
 
 // Module functions - asandro
-inline GMAN_EXPORT RtFloat GMANMod(RtFloat a, RtFloat b)
-{
-  if (a<0) return b-(RtFloat)fmod(-a,b);
-  else return (RtFloat)fmod(a,b);
+inline GMAN_EXPORT RtFloat GMANMod(RtFloat a, RtFloat b) {
+  if (a < 0)
+    return b - (RtFloat)fmod(-a, b);
+  else
+    return (RtFloat)fmod(a, b);
 }
 
-inline GMAN_EXPORT RtFloat GMANSign(RtFloat x)
-{
-	return (RtFloat)(x < 0.0 ? -1.0 : x > 0.0 ? 1.0 : 0.0);
-}
+inline GMAN_EXPORT RtFloat GMANSign(RtFloat x) { return (RtFloat)(x < 0.0 ? -1.0 : x > 0.0 ? 1.0 : 0.0); }
 
 // Comparison functions - asandro
-template<class T> inline T GMANMin(T a, T b)
-{
-	return a < b ? a : b;
-}
+template <class T> inline T GMANMin(T a, T b) { return a < b ? a : b; }
 
-template<class T> inline T GMANMax(T a, T b)
-{
-	return a > b ? a : b;
-}
+template <class T> inline T GMANMax(T a, T b) { return a > b ? a : b; }
 
-template<class T> inline T GMANClamp(T a, T min, T max)
-{
-	return a < min ? min : a > max ? max : a;
-}
-
+template <class T> inline T GMANClamp(T a, T min, T max) { return a < min ? min : a > max ? max : a; }
 
 // Mixing values - asandro
-template<class T> inline T GMANMix(T a, T b, RtFloat alpha)
-{
-	return a*(1-alpha) + b*alpha;
-}
+template <class T> inline T GMANMix(T a, T b, RtFloat alpha) { return a * (1 - alpha) + b * alpha; }
 
 // Rounding - asandro
-inline RtFloat GMANRound(RtFloat x)
-{
-	return (RtFloat)floor(x+.5);
-}
+inline RtFloat GMANRound(RtFloat x) { return (RtFloat)floor(x + .5); }
 
 #endif

@@ -31,43 +31,35 @@
 #include "gmanloadable.h"
 #include "gmansurfaceshader.h"
 
-class GMANCameraShaderProbe : public GMANSurfaceShader
-{
+class GMANCameraShaderProbe : public GMANSurfaceShader {
 public:
-  const GMANColor &computeCi(GMANSurfaceEnv &se);
-  const GMANColor &computeOi(GMANSurfaceEnv &se);
+  const GMANColor& computeCi(GMANSurfaceEnv& se);
+  const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-const GMANColor &GMANCameraShaderProbe::computeCi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANCameraShaderProbe::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
-  ci = GMANColor(se.cameraToWorld[0][0], se.cameraToWorld[0][2],
-                 se.cameraToWorld[2][0]);
+  ci = GMANColor(se.cameraToWorld[0][0], se.cameraToWorld[0][2], se.cameraToWorld[2][0]);
   return ci;
 }
 
-const GMANColor &GMANCameraShaderProbe::computeOi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANCameraShaderProbe::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
 
 static GMANLoadableObjectInfo loadableInfo = {
-  "Camera-to-world probe (test-only)",
-  "John Cairns <john@2ad.com>",
-  "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
-  "Test-only: encodes GMANSurfaceEnv::cameraToWorld's [0][0], [0][2] and "
-  "[2][0] entries into Ci so environment_test.cpp can read camera-to-world "
-  "back out of a real shading call. Never dlopened outside the test suite.",
+    "Camera-to-world probe (test-only)",
+    "John Cairns <john@2ad.com>",
+    "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
+    "Test-only: encodes GMANSurfaceEnv::cameraToWorld's [0][0], [0][2] and "
+    "[2][0] entries into Ci so environment_test.cpp can read camera-to-world "
+    "back out of a real shading call. Never dlopened outside the test suite.",
 };
 
 static GMANCameraShaderProbe shader;
 
-extern "C" GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &loadableInfo;
-}
+extern "C" GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMANShader *GMANLoadShader(void) {
-  return &shader;
-}
+extern "C" GMANShader* GMANLoadShader(void) { return &shader; }

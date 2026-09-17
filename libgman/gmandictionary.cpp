@@ -4,7 +4,7 @@
   Copyright (C) Lionel Joseph Lacour 2000, 2001
   2000/07/09  First release
   ----------------------------------------------------------
-  This Dictionary can handle inline declaration as described in the 
+  This Dictionary can handle inline declaration as described in the
   RenderMan Spec v3.2
 */
 /*
@@ -30,8 +30,7 @@
 #include "gmanerror.h"
 #include "gmaninlineparse.h"
 
-GMANTokenEntry::GMANTokenEntry(std::string n, TokenClass tc, TokenType tt, RtInt qnt, bool inln) 
-{  
+GMANTokenEntry::GMANTokenEntry(std::string n, TokenClass tc, TokenType tt, RtInt qnt, bool inln) {
   name = n;
   tclass = tc;
   ttype = tt;
@@ -39,135 +38,136 @@ GMANTokenEntry::GMANTokenEntry(std::string n, TokenClass tc, TokenType tt, RtInt
   quantity = qnt;
 }
 
-GMANTokenEntry::GMANTokenEntry() {
+GMANTokenEntry::GMANTokenEntry() {}
 
+GMANTokenEntry::GMANTokenEntry(const GMANTokenEntry& ent) { *this = ent; }
+
+const GMANTokenEntry& GMANTokenEntry::operator=(const GMANTokenEntry& ent) {
+
+  name = ent.getName();
+  tclass = ent.getClass();
+  ttype = ent.getType();
+  in_line = ent.isInline();
+  quantity = ent.getQuantity();
+
+  return *this;
 }
-
-
-GMANTokenEntry::GMANTokenEntry(const GMANTokenEntry &ent) {
-	*this = ent;
-}
-
-const GMANTokenEntry &GMANTokenEntry::operator=(const GMANTokenEntry &ent) {
-
-	name = ent.getName();
-	tclass = ent.getClass();
-	ttype = ent.getType();
-	in_line = ent.isInline();
-	quantity = ent.getQuantity();
-
-	return *this;
-}
-
 
 #ifdef DEBUG
-RtVoid GMANTokenEntry::printClassType ( RtVoid )
-{
+RtVoid GMANTokenEntry::printClassType(RtVoid) {
   std::cout << std::setw(9);
   switch (tclass) {
-  case GMANTokenEntry::CONSTANT: std::cout << "CONSTANT";
+  case GMANTokenEntry::CONSTANT:
+    std::cout << "CONSTANT";
     break;
-  case GMANTokenEntry::UNIFORM: std::cout << "UNIFORM";
+  case GMANTokenEntry::UNIFORM:
+    std::cout << "UNIFORM";
     break;
-  case GMANTokenEntry::VARYING: std::cout << "VARYING";
+  case GMANTokenEntry::VARYING:
+    std::cout << "VARYING";
     break;
-  case GMANTokenEntry::VERTEX: std::cout << "VERTEX";
+  case GMANTokenEntry::VERTEX:
+    std::cout << "VERTEX";
     break;
-  case GMANTokenEntry::FACEVARYING: std::cout << "FACEVARYING";
+  case GMANTokenEntry::FACEVARYING:
+    std::cout << "FACEVARYING";
   }
   std::cout << std::setw(8);
   switch (ttype) {
-  case GMANTokenEntry::HPOINT: std::cout << "HPOINT";
+  case GMANTokenEntry::HPOINT:
+    std::cout << "HPOINT";
     break;
-  case GMANTokenEntry::MATRIX: std::cout << "MATRIX";
+  case GMANTokenEntry::MATRIX:
+    std::cout << "MATRIX";
     break;
-  case GMANTokenEntry::NORMAL: std::cout << "NORMAL";
+  case GMANTokenEntry::NORMAL:
+    std::cout << "NORMAL";
     break;
-  case GMANTokenEntry::VECTOR: std::cout << "VECTOR";
+  case GMANTokenEntry::VECTOR:
+    std::cout << "VECTOR";
     break;
-  case GMANTokenEntry::FLOAT: std::cout << "FLOAT";
+  case GMANTokenEntry::FLOAT:
+    std::cout << "FLOAT";
     break;
-  case GMANTokenEntry::INTEGER: std::cout << "INTEGER";
+  case GMANTokenEntry::INTEGER:
+    std::cout << "INTEGER";
     break;
-  case GMANTokenEntry::STRING: std::cout << "STRING";
+  case GMANTokenEntry::STRING:
+    std::cout << "STRING";
     break;
-  case GMANTokenEntry::POINT: std::cout << "POINT";
+  case GMANTokenEntry::POINT:
+    std::cout << "POINT";
     break;
-  case GMANTokenEntry::COLOR: std::cout << "COLOR";
+  case GMANTokenEntry::COLOR:
+    std::cout << "COLOR";
   }
 }
-#endif 
+#endif
 /**========CLASS Token_entry END========**/
 
-
-
-
-GMANDictionary::GMANDictionary()
-{
+GMANDictionary::GMANDictionary() {
   //=== Standard Geometric Primitive Variables ===
-  addToken (RI_P, GMANTokenEntry::VERTEX, GMANTokenEntry::POINT);
-  addToken (RI_PZ, GMANTokenEntry::VERTEX, GMANTokenEntry::FLOAT);
-  addToken (RI_PW, GMANTokenEntry::VERTEX, GMANTokenEntry::HPOINT);
-  addToken (RI_N, GMANTokenEntry::VARYING, GMANTokenEntry::NORMAL);
-  addToken (RI_NP, GMANTokenEntry::UNIFORM, GMANTokenEntry::NORMAL);
-  addToken (RI_CS, GMANTokenEntry::VARYING, GMANTokenEntry::COLOR);
-  addToken (RI_OS, GMANTokenEntry::VARYING, GMANTokenEntry::COLOR);
-  addToken (RI_S, GMANTokenEntry::VARYING, GMANTokenEntry::FLOAT);
-  addToken (RI_T, GMANTokenEntry::VARYING, GMANTokenEntry::FLOAT);
-  addToken (RI_ST, GMANTokenEntry::VARYING, GMANTokenEntry::FLOAT, 2);
+  addToken(RI_P, GMANTokenEntry::VERTEX, GMANTokenEntry::POINT);
+  addToken(RI_PZ, GMANTokenEntry::VERTEX, GMANTokenEntry::FLOAT);
+  addToken(RI_PW, GMANTokenEntry::VERTEX, GMANTokenEntry::HPOINT);
+  addToken(RI_N, GMANTokenEntry::VARYING, GMANTokenEntry::NORMAL);
+  addToken(RI_NP, GMANTokenEntry::UNIFORM, GMANTokenEntry::NORMAL);
+  addToken(RI_CS, GMANTokenEntry::VARYING, GMANTokenEntry::COLOR);
+  addToken(RI_OS, GMANTokenEntry::VARYING, GMANTokenEntry::COLOR);
+  addToken(RI_S, GMANTokenEntry::VARYING, GMANTokenEntry::FLOAT);
+  addToken(RI_T, GMANTokenEntry::VARYING, GMANTokenEntry::FLOAT);
+  addToken(RI_ST, GMANTokenEntry::VARYING, GMANTokenEntry::FLOAT, 2);
 
   //=== Standard Light Source Shader Parameters ===
-  addToken (RI_INTENSITY, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_LIGHTCOLOR, GMANTokenEntry::CONSTANT, GMANTokenEntry::COLOR);
-  addToken (RI_FROM, GMANTokenEntry::CONSTANT, GMANTokenEntry::POINT);
-  addToken (RI_TO, GMANTokenEntry::CONSTANT, GMANTokenEntry::POINT);
-  addToken (RI_CONEANGLE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_CONEDELTAANGLE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_BEAMDISTRIBUTION, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_INTENSITY, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_LIGHTCOLOR, GMANTokenEntry::CONSTANT, GMANTokenEntry::COLOR);
+  addToken(RI_FROM, GMANTokenEntry::CONSTANT, GMANTokenEntry::POINT);
+  addToken(RI_TO, GMANTokenEntry::CONSTANT, GMANTokenEntry::POINT);
+  addToken(RI_CONEANGLE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_CONEDELTAANGLE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_BEAMDISTRIBUTION, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
 
   //=== Standard Surface Shader Parameters ===
-  addToken (RI_KA, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_KD, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_KS, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_KR, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_ROUGHNESS, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_SPECULARCOLOR, GMANTokenEntry::CONSTANT, GMANTokenEntry::COLOR);
-  addToken (RI_TEXTURENAME, GMANTokenEntry::CONSTANT, GMANTokenEntry::STRING);
+  addToken(RI_KA, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_KD, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_KS, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_KR, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_ROUGHNESS, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_SPECULARCOLOR, GMANTokenEntry::CONSTANT, GMANTokenEntry::COLOR);
+  addToken(RI_TEXTURENAME, GMANTokenEntry::CONSTANT, GMANTokenEntry::STRING);
 
   //=== Standard Volume Shader Parameters ===
-  addToken (RI_MINDISTANCE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_MAXDISTANCE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_BACKGROUND, GMANTokenEntry::CONSTANT, GMANTokenEntry::COLOR);
-  addToken (RI_DISTANCE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_MINDISTANCE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_MAXDISTANCE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_BACKGROUND, GMANTokenEntry::CONSTANT, GMANTokenEntry::COLOR);
+  addToken(RI_DISTANCE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
 
   //=== Standard Displacement Shader Parameter ===
-  addToken (RI_AMPLITUDE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_AMPLITUDE, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
 
-  addToken (RI_FOV, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
-  addToken (RI_ORIGIN, GMANTokenEntry::CONSTANT, GMANTokenEntry::INTEGER, 2);
-  addToken (RI_WIDTH, GMANTokenEntry::VARYING, GMANTokenEntry::FLOAT);
-  addToken (RI_CONSTANTWIDTH, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_FOV, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
+  addToken(RI_ORIGIN, GMANTokenEntry::CONSTANT, GMANTokenEntry::INTEGER, 2);
+  addToken(RI_WIDTH, GMANTokenEntry::VARYING, GMANTokenEntry::FLOAT);
+  addToken(RI_CONSTANTWIDTH, GMANTokenEntry::CONSTANT, GMANTokenEntry::FLOAT);
 }
 
-
-// If the token already exists, addToken return the corresponding id 
-GMANTokenId GMANDictionary::addToken (std::string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt, bool inln)
-{
-  std::vector<GMANTokenEntry>::iterator first=te.begin();
-  std::vector<GMANTokenEntry>::iterator last=te.end();
+// If the token already exists, addToken return the corresponding id
+GMANTokenId GMANDictionary::addToken(std::string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt,
+                                     RtInt qnt, bool inln) {
+  std::vector<GMANTokenEntry>::iterator first = te.begin();
+  std::vector<GMANTokenEntry>::iterator last = te.end();
   GMANTokenId i;
 
-  GMANTokenEntry tmp(n,tc,tt,qnt,inln);
+  GMANTokenEntry tmp(n, tc, tt, qnt, inln);
 
-  for(i=1;first!=last;first++,i++)
-    {
-      if ( tmp == *first ) {
-	if (inln==false) (*first).inlineOff();
-		return i;
-      }
+  for (i = 1; first != last; first++, i++) {
+    if (tmp == *first) {
+      if (inln == false)
+        (*first).inlineOff();
+      return i;
     }
+  }
 
-  
   te.push_back(tmp);
   return i;
 }
@@ -178,71 +178,71 @@ GMANTokenId GMANDictionary::addToken (std::string n, GMANTokenEntry::TokenClass 
 // Example:
 //   getTokenId ("uniform float[4] item")-> id 24
 //   getClass (24)-> UNIFORM
-//   getTokenId ("item")-> an error is thrown 
+//   getTokenId ("item")-> an error is thrown
 //   (except if item was previously defined with RiDeclare)
-GMANTokenId GMANDictionary::getTokenId (std::string n)
-{
+GMANTokenId GMANDictionary::getTokenId(std::string n) {
   GMANInlineParse ip;
-  GMANError error(RIE_BADTOKEN, RIE_ERROR,"GMANDictionary: TOKEN_NOT_FOUND");
-  GMANTokenId i,j=0;
- 
-  ip.parse(n);
-  if (ip.isInline()==true) {
-    j=addToken (ip.getIdentifier(), ip.getClass(), ip.getType(), ip.getQuantity(), true);
-  } else {
-    std::vector<GMANTokenEntry>::iterator first=te.begin();
-    std::vector<GMANTokenEntry>::iterator last=te.end();
+  GMANError error(RIE_BADTOKEN, RIE_ERROR, "GMANDictionary: TOKEN_NOT_FOUND");
+  GMANTokenId i, j = 0;
 
-    for(i=1;first!=last;first++,i++)
-      {
-	if ((n==(first->getName())) && ((first->isInline())==false))
-	  j=i;
-      }
-    if (j==0) throw error;
+  ip.parse(n);
+  if (ip.isInline() == true) {
+    j = addToken(ip.getIdentifier(), ip.getClass(), ip.getType(), ip.getQuantity(), true);
+  } else {
+    std::vector<GMANTokenEntry>::iterator first = te.begin();
+    std::vector<GMANTokenEntry>::iterator last = te.end();
+
+    for (i = 1; first != last; first++, i++) {
+      if ((n == (first->getName())) && ((first->isInline()) == false))
+        j = i;
+    }
+    if (j == 0)
+      throw error;
   }
   return j;
 }
 #ifdef PRE
-RtVoid GMANDictionary::isValid (GMANTokenId id)
-{
+RtVoid GMANDictionary::isValid(GMANTokenId id) {
   GMANError error(RIE_MISSINGDATA, RIE_ERROR, "GMANDictionary: ID_OUT_OF_RANGE");
-  if (id>te.size()) throw error;
-  if (id==0) {
+  if (id > te.size())
+    throw error;
+  if (id == 0) {
     error.setMessage("GMANDictionary: ID=0");
     throw error;
   }
 }
 #endif
-GMANTokenEntry::TokenClass GMANDictionary::getClass (GMANTokenId id)
-{
+GMANTokenEntry::TokenClass GMANDictionary::getClass(GMANTokenId id) {
 #ifdef PRE
-  is_valid (id);
+  is_valid(id);
 #endif
-  std::vector<GMANTokenEntry>::iterator first=te.begin();
-  return ((first+id-1)->getClass());
+  std::vector<GMANTokenEntry>::iterator first = te.begin();
+  return ((first + id - 1)->getClass());
 }
-GMANTokenEntry::TokenType GMANDictionary::getType (GMANTokenId id)
-{
+GMANTokenEntry::TokenType GMANDictionary::getType(GMANTokenId id) {
 #ifdef PRE
-  is_valid (id);
+  is_valid(id);
 #endif
-  std::vector<GMANTokenEntry>::iterator first=te.begin();
-  return ((first+id-1)->getType());
+  std::vector<GMANTokenEntry>::iterator first = te.begin();
+  return ((first + id - 1)->getType());
 }
-int GMANDictionary::allocSize (GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying)
-{
+int GMANDictionary::allocSize(GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying) {
   int size;
-  std::vector<GMANTokenEntry>::iterator first=te.begin();
-  first+=id-1;
-  size= getTypeSize(first->getType());
+  std::vector<GMANTokenEntry>::iterator first = te.begin();
+  first += id - 1;
+  size = getTypeSize(first->getType());
   switch (first->getClass()) {
-  case GMANTokenEntry::VERTEX: size*= vertex;
+  case GMANTokenEntry::VERTEX:
+    size *= vertex;
     break;
-  case GMANTokenEntry::VARYING: size*= varying;
+  case GMANTokenEntry::VARYING:
+    size *= varying;
     break;
-  case GMANTokenEntry::UNIFORM: size*= uniform;
+  case GMANTokenEntry::UNIFORM:
+    size *= uniform;
     break;
-  case GMANTokenEntry::FACEVARYING: size*= facevarying;
+  case GMANTokenEntry::FACEVARYING:
+    size *= facevarying;
     break;
   case GMANTokenEntry::CONSTANT:
     break;
@@ -250,71 +250,64 @@ int GMANDictionary::allocSize (GMANTokenId id, RtInt vertex, RtInt varying, RtIn
   size *= (first->getQuantity());
   return size;
 }
-int GMANDictionary::getTypeSize (GMANTokenEntry::TokenType t)
-{
+int GMANDictionary::getTypeSize(GMANTokenEntry::TokenType t) {
   switch (t) {
-  case GMANTokenEntry::FLOAT: return 1;
-  case GMANTokenEntry::POINT: return 3;
-  case GMANTokenEntry::VECTOR: return 3;
-  case GMANTokenEntry::NORMAL: return 3;
-  case GMANTokenEntry::COLOR: return NCOMPS;
-  case GMANTokenEntry::STRING: return 1;
-  case GMANTokenEntry::MATRIX: return 16;
-  case GMANTokenEntry::HPOINT: return 4;
-  case GMANTokenEntry::INTEGER: return 1;
-  default : 
-    GMANError error(RIE_WARNING, RIE_BUG, "Unknown token type"); 
+  case GMANTokenEntry::FLOAT:
+    return 1;
+  case GMANTokenEntry::POINT:
+    return 3;
+  case GMANTokenEntry::VECTOR:
+    return 3;
+  case GMANTokenEntry::NORMAL:
+    return 3;
+  case GMANTokenEntry::COLOR:
+    return NCOMPS;
+  case GMANTokenEntry::STRING:
+    return 1;
+  case GMANTokenEntry::MATRIX:
+    return 16;
+  case GMANTokenEntry::HPOINT:
+    return 4;
+  case GMANTokenEntry::INTEGER:
+    return 1;
+  default:
+    GMANError error(RIE_WARNING, RIE_BUG, "Unknown token type");
     throw(error);
   }
   // appease mswin
   return 1;
 }
-int GMANDictionary::getQuantity (GMANTokenId id)
-{
+int GMANDictionary::getQuantity(GMANTokenId id) {
 #ifdef PRE
-  is_valid (id);
+  is_valid(id);
 #endif
-  std::vector<GMANTokenEntry>::iterator first=te.begin();
-  return ((first+id-1)->getQuantity());
+  std::vector<GMANTokenEntry>::iterator first = te.begin();
+  return ((first + id - 1)->getQuantity());
 }
 #ifdef DEBUG
-RtVoid GMANDictionary::stats (RtVoid)
-{
-  std::vector<GMANTokenEntry>::iterator first=te.begin();
-  std::vector<GMANTokenEntry>::iterator last=te.end();
+RtVoid GMANDictionary::stats(RtVoid) {
+  std::vector<GMANTokenEntry>::iterator first = te.begin();
+  std::vector<GMANTokenEntry>::iterator last = te.end();
   GMANTokenId i;
 
   std::cout << std::endl;
   std::cout << "GMANDictionary   Number of entries: " << te.size() << std::endl;
   std::cout << "------------------------------------------------------" << std::endl;
-  std::cout << "NAME                  CLASS    TYPE   [SIZE] IS_INLINE" << std::endl;                 
+  std::cout << "NAME                  CLASS    TYPE   [SIZE] IS_INLINE" << std::endl;
   std::cout << "------------------------------------------------------" << std::endl;
 
-  for(i=1;first!=last;first++,i++)
-    {
-      std::cout << std::setw(20) << std::setfill (' ');
-      std::cout << setiosflags(ios::left) << (first->getName()).c_str() << "  ";
-      first->printClassType (); 
-      std::cout << "[" << get_quantity(i) << "]  ";
-      if ((first->isInline())==true) { 
-	std::cout << " inline";
-      }
-      std::cout << std::endl;
+  for (i = 1; first != last; first++, i++) {
+    std::cout << std::setw(20) << std::setfill(' ');
+    std::cout << setiosflags(ios::left) << (first->getName()).c_str() << "  ";
+    first->printClassType();
+    std::cout << "[" << get_quantity(i) << "]  ";
+    if ((first->isInline()) == true) {
+      std::cout << " inline";
     }
+    std::cout << std::endl;
+  }
   std::cout << "------------------------------------------------------" << std::endl;
   std::cout << std::endl;
 }
 #endif
 /**--------CLASS GMANDictionary END--------**/
-
-
-
-
-
-
-
-
-
-
-
-

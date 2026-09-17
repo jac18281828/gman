@@ -29,65 +29,61 @@
 #include "ri.h"
 
 /* CellNoise */
-#define CN    2048
+#define CN 2048
 #define CMASK 0x7ff
 
-class GMAN_EXPORT  GMANNoise
-{
+class GMAN_EXPORT GMANNoise {
 private:
   /* Noise and pnoise */
-  static constexpr RtInt kN    = 256;
+  static constexpr RtInt kN = 256;
   static constexpr RtInt kMask = 0xff;
 
-  RtInt  *prn;
-  RtInt   prn1[kN];  /* 0 to kN in random order*/
-  RtInt   prn2[kN];
-  RtInt   prn3[kN];
-  RtFloat vect[4*kN]; /* kN 4D random unit vectors */
+  RtInt* prn;
+  RtInt prn1[kN]; /* 0 to kN in random order*/
+  RtInt prn2[kN];
+  RtInt prn3[kN];
+  RtFloat vect[4 * kN]; /* kN 4D random unit vectors */
 
-  RtInt  *cprn;
-  RtInt   cprn1[CN];
-  RtInt   cprn2[CN];
-  RtInt   cprn3[CN];
+  RtInt* cprn;
+  RtInt cprn1[CN];
+  RtInt cprn2[CN];
+  RtInt cprn3[CN];
   RtFloat cvect[CN];
 
   RtFloat rn();
+
 public:
   GMANNoise();
 
-  RtFloat noise (RtFloat v);
-  RtFloat noise (RtFloat u, RtFloat v);
-  RtFloat noise (GMANPoint const &p);
-  RtFloat noise (GMANPoint const &p, RtFloat t);
+  RtFloat noise(RtFloat v);
+  RtFloat noise(RtFloat u, RtFloat v);
+  RtFloat noise(GMANPoint const& p);
+  RtFloat noise(GMANPoint const& p, RtFloat t);
 
-  RtVoid  noise (RtFloat v, RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  noise (RtFloat u, RtFloat v, RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  noise (GMANPoint const &p, RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  noise (GMANPoint const &p, RtFloat t, RtFloat &a, RtFloat &b, RtFloat &c);
+  RtVoid noise(RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid noise(RtFloat u, RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid noise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid noise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFloat& c);
 
-  RtFloat periodic (RtFloat v, RtFloat pv);
-  RtFloat periodic (RtFloat u, RtFloat v, RtFloat pu, RtFloat pv);
-  RtFloat periodic (GMANPoint const &p, GMANPoint const &pp);
-  RtFloat periodic (GMANPoint const &p, RtFloat t, GMANPoint const &pp, RtFloat pt);
+  RtFloat periodic(RtFloat v, RtFloat pv);
+  RtFloat periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv);
+  RtFloat periodic(GMANPoint const& p, GMANPoint const& pp);
+  RtFloat periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, RtFloat pt);
 
-  RtVoid  periodic (RtFloat v, RtFloat pv,
-		    RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  periodic (RtFloat u, RtFloat v, RtFloat pu, RtFloat pv,
-		    RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  periodic (GMANPoint const &p, GMANPoint const &pp,
-		    RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  periodic (GMANPoint const &p, RtFloat t, GMANPoint const &pp,
-		    RtFloat pt, RtFloat &a, RtFloat &b, RtFloat &c);
+  RtVoid periodic(RtFloat v, RtFloat pv, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid periodic(GMANPoint const& p, GMANPoint const& pp, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, RtFloat pt, RtFloat& a, RtFloat& b, RtFloat& c);
 
-  RtFloat cellnoise (RtFloat v);
-  RtFloat cellnoise (RtFloat u, RtFloat v);
-  RtFloat cellnoise (GMANPoint const &p);
-  RtFloat cellnoise (GMANPoint const &p, RtFloat t);
+  RtFloat cellnoise(RtFloat v);
+  RtFloat cellnoise(RtFloat u, RtFloat v);
+  RtFloat cellnoise(GMANPoint const& p);
+  RtFloat cellnoise(GMANPoint const& p, RtFloat t);
 
-  RtVoid  cellnoise (RtFloat v, RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  cellnoise (RtFloat u, RtFloat v, RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  cellnoise (GMANPoint const &p, RtFloat &a, RtFloat &b, RtFloat &c);
-  RtVoid  cellnoise (GMANPoint const &p, RtFloat t, RtFloat &a, RtFloat &b, RtFloat &c);
+  RtVoid cellnoise(RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid cellnoise(RtFloat u, RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid cellnoise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c);
+  RtVoid cellnoise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFloat& c);
 };
 
 #endif

@@ -57,12 +57,11 @@
 
 namespace {
 
-bool near3(const GMANPoint &p, RtFloat x, RtFloat y, RtFloat z, RtFloat tol) {
-  return std::fabs(p.getX() - x) <= tol && std::fabs(p.getY() - y) <= tol &&
-         std::fabs(p.getZ() - z) <= tol;
+bool near3(const GMANPoint& p, RtFloat x, RtFloat y, RtFloat z, RtFloat tol) {
+  return std::fabs(p.getX() - x) <= tol && std::fabs(p.getY() - y) <= tol && std::fabs(p.getZ() - z) <= tol;
 }
 
-bool pointsNear(const GMANPoint &a, const GMANPoint &b, RtFloat tol) {
+bool pointsNear(const GMANPoint& a, const GMANPoint& b, RtFloat tol) {
   return near3(a, b.getX(), b.getY(), b.getZ(), tol);
 }
 
@@ -75,17 +74,13 @@ bool pointsNear(const GMANPoint &a, const GMANPoint &b, RtFloat tol) {
 // corners (1,0,0) (2,0,0) (1,1,0) (2,1,0) at newU=newV=0.5 averages the
 // four corners: (1.5, 0.5, 0).
 void testBilinearHandComputed() {
-  RtFloat p[18] = {
-      0, 0, 0,  1, 0, 0,  2, 0, 0,
-      0, 1, 0,  1, 1, 0,  2, 1, 0};
+  RtFloat p[18] = {0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 1, 0, 1, 1, 0, 2, 1, 0};
   GMANParameterList pl;
-  GMANPatchMesh mesh((RtToken) "bilinear", p, 3, (RtToken) RI_NONPERIODIC,
-                      2, (RtToken) RI_NONPERIODIC, pl);
+  GMANPatchMesh mesh((RtToken) "bilinear", p, 3, (RtToken)RI_NONPERIODIC, 2, (RtToken)RI_NONPERIODIC, pl);
 
   GMANPoint loc = mesh.getLocation(0.75, 0.5);
-  check(near3(loc, 1.5, 0.5, 0.0, 1e-5),
-        "bilinear PatchMesh: getLocation(0.75,0.5) on a 3x2 nonperiodic "
-        "grid matches the hand-computed (1.5,0.5,0)");
+  check(near3(loc, 1.5, 0.5, 0.0, 1e-5), "bilinear PatchMesh: getLocation(0.75,0.5) on a 3x2 nonperiodic "
+                                         "grid matches the hand-computed (1.5,0.5,0)");
 }
 
 // ---- white-box: bilinear, periodic closure ----
@@ -99,20 +94,18 @@ void testBilinearPeriodicClosure() {
   for (int j = 0; j < 2; ++j) {
     for (int i = 0; i < 3; ++i) {
       double angle = 2.0 * M_PI * i / 3.0;
-      RtFloat *dst = &p[3 * (i + 3 * j)];
-      dst[0] = (RtFloat) std::cos(angle);
-      dst[1] = (RtFloat) std::sin(angle);
-      dst[2] = (RtFloat) j;
+      RtFloat* dst = &p[3 * (i + 3 * j)];
+      dst[0] = (RtFloat)std::cos(angle);
+      dst[1] = (RtFloat)std::sin(angle);
+      dst[2] = (RtFloat)j;
     }
   }
   GMANParameterList pl;
-  GMANPatchMesh mesh((RtToken) "bilinear", p, 3, (RtToken) RI_PERIODIC,
-                      2, (RtToken) RI_NONPERIODIC, pl);
+  GMANPatchMesh mesh((RtToken) "bilinear", p, 3, (RtToken)RI_PERIODIC, 2, (RtToken)RI_NONPERIODIC, pl);
 
   GMANPoint atOne = mesh.getLocation(1.0, 0.25);
   GMANPoint atZero = mesh.getLocation(0.0, 0.25);
-  check(pointsNear(atOne, atZero, 1e-4),
-        "bilinear PatchMesh: a periodic u axis closes u=1.0 onto u=0.0");
+  check(pointsNear(atOne, atZero, 1e-4), "bilinear PatchMesh: a periodic u axis closes u=1.0 onto u=0.0");
 }
 
 // ---- white-box: bicubic, hand-computed corner ----
@@ -128,17 +121,15 @@ void testBilinearPeriodicClosure() {
 void testBicubicCornerHandComputed() {
   RtFloat p[48];
   for (int i = 0; i < 48; ++i) {
-    p[i] = (RtFloat) i;
+    p[i] = (RtFloat)i;
   }
   GMANParameterList pl;
   GMANBasis basis;
-  GMANPatchMesh mesh((RtToken) "bicubic", p, 4, (RtToken) RI_NONPERIODIC,
-                      4, (RtToken) RI_NONPERIODIC, basis, pl);
+  GMANPatchMesh mesh((RtToken) "bicubic", p, 4, (RtToken)RI_NONPERIODIC, 4, (RtToken)RI_NONPERIODIC, basis, pl);
 
   GMANPoint corner = mesh.getLocation(1.0, 1.0);
-  check(near3(corner, 45.0, 46.0, 47.0, 1e-3),
-        "bicubic PatchMesh: getLocation(1,1) on a 4x4 nonperiodic grid "
-        "matches the last control point (45,46,47)");
+  check(near3(corner, 45.0, 46.0, 47.0, 1e-3), "bicubic PatchMesh: getLocation(1,1) on a 4x4 nonperiodic grid "
+                                               "matches the last control point (45,46,47)");
 }
 
 // ---- white-box: bicubic, multi-sub-patch corner ----
@@ -154,17 +145,15 @@ void testBicubicCornerHandComputed() {
 void testBicubicMultiPatchCornerHandComputed() {
   RtFloat p[84];
   for (int i = 0; i < 84; ++i) {
-    p[i] = (RtFloat) i;
+    p[i] = (RtFloat)i;
   }
   GMANParameterList pl;
   GMANBasis basis;
-  GMANPatchMesh mesh((RtToken) "bicubic", p, 7, (RtToken) RI_NONPERIODIC,
-                      4, (RtToken) RI_NONPERIODIC, basis, pl);
+  GMANPatchMesh mesh((RtToken) "bicubic", p, 7, (RtToken)RI_NONPERIODIC, 4, (RtToken)RI_NONPERIODIC, basis, pl);
 
   GMANPoint corner = mesh.getLocation(1.0, 1.0);
-  check(near3(corner, 81.0, 82.0, 83.0, 1e-3),
-        "bicubic PatchMesh: getLocation(1,1) on a 7x4 nonperiodic grid "
-        "(two u sub-patches) matches the last control point (81,82,83)");
+  check(near3(corner, 81.0, 82.0, 83.0, 1e-3), "bicubic PatchMesh: getLocation(1,1) on a 7x4 nonperiodic grid "
+                                               "(two u sub-patches) matches the last control point (81,82,83)");
 }
 
 // ---- white-box: bicubic, periodic closure ----
@@ -177,17 +166,15 @@ void testBicubicMultiPatchCornerHandComputed() {
 void testBicubicPeriodicClosure() {
   RtFloat p[72];
   for (int i = 0; i < 72; ++i) {
-    p[i] = (RtFloat) i;
+    p[i] = (RtFloat)i;
   }
   GMANParameterList pl;
   GMANBasis basis;
-  GMANPatchMesh mesh((RtToken) "bicubic", p, 6, (RtToken) RI_PERIODIC,
-                      4, (RtToken) RI_NONPERIODIC, basis, pl);
+  GMANPatchMesh mesh((RtToken) "bicubic", p, 6, (RtToken)RI_PERIODIC, 4, (RtToken)RI_NONPERIODIC, basis, pl);
 
   GMANPoint atOne = mesh.getLocation(1.0, 0.3);
   GMANPoint atZero = mesh.getLocation(0.0, 0.3);
-  check(pointsNear(atOne, atZero, 1e-2),
-        "bicubic PatchMesh: a periodic u axis closes u=1.0 onto u=0.0");
+  check(pointsNear(atOne, atZero, 1e-2), "bicubic PatchMesh: a periodic u axis closes u=1.0 onto u=0.0");
 }
 
 // ---- white-box: bicubic, periodic closure at a step=1 basis's minimum n ----
@@ -215,17 +202,15 @@ void testBicubicBSplinePeriodicClosureAtMinimum() {
   // nu=3 periodic (the step=1 floor), nv=4 nonperiodic (one v sub-patch).
   RtFloat p[36];
   for (int i = 0; i < 36; ++i) {
-    p[i] = (RtFloat) i;
+    p[i] = (RtFloat)i;
   }
   GMANParameterList pl;
-  GMANPatchMesh mesh((RtToken) "bicubic", p, 3, (RtToken) RI_PERIODIC,
-                      4, (RtToken) RI_NONPERIODIC, basis, pl);
+  GMANPatchMesh mesh((RtToken) "bicubic", p, 3, (RtToken)RI_PERIODIC, 4, (RtToken)RI_NONPERIODIC, basis, pl);
 
   GMANPoint atOne = mesh.getLocation(1.0, 0.4);
   GMANPoint atZero = mesh.getLocation(0.0, 0.4);
-  check(pointsNear(atOne, atZero, 1e-2),
-        "bicubic PatchMesh, step=1 basis: a periodic u axis at nu=3 (the "
-        "step=1 safety floor) closes u=1.0 onto u=0.0");
+  check(pointsNear(atOne, atZero, 1e-2), "bicubic PatchMesh, step=1 basis: a periodic u axis at nu=3 (the "
+                                         "step=1 safety floor) closes u=1.0 onto u=0.0");
 }
 
 // ---- white-box: mixed wrap, hand-computed corner ----
@@ -239,17 +224,15 @@ void testBicubicBSplinePeriodicClosureAtMinimum() {
 void testMixedWrapCornerHandComputed() {
   RtFloat p[72];
   for (int i = 0; i < 72; ++i) {
-    p[i] = (RtFloat) i;
+    p[i] = (RtFloat)i;
   }
   GMANParameterList pl;
   GMANBasis basis;
-  GMANPatchMesh mesh((RtToken) "bicubic", p, 6, (RtToken) RI_PERIODIC,
-                      4, (RtToken) RI_NONPERIODIC, basis, pl);
+  GMANPatchMesh mesh((RtToken) "bicubic", p, 6, (RtToken)RI_PERIODIC, 4, (RtToken)RI_NONPERIODIC, basis, pl);
 
   GMANPoint corner = mesh.getLocation(1.0, 1.0);
-  check(near3(corner, 54.0, 55.0, 56.0, 1e-3),
-        "bicubic PatchMesh, mixed wrap: getLocation(1,1) matches "
-        "point(0,3) = (54,55,56)");
+  check(near3(corner, 54.0, 55.0, 56.0, 1e-3), "bicubic PatchMesh, mixed wrap: getLocation(1,1) matches "
+                                               "point(0,3) = (54,55,56)");
 }
 
 // ---- white-box: nonperiodic bicubic, zero basis step rejected ----
@@ -263,7 +246,7 @@ void testMixedWrapCornerHandComputed() {
 void testNonperiodicBicubicZeroStepRejected() {
   RtFloat p[36];
   for (int i = 0; i < 36; ++i) {
-    p[i] = (RtFloat) i;
+    p[i] = (RtFloat)i;
   }
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
@@ -277,11 +260,9 @@ void testNonperiodicBicubicZeroStepRejected() {
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
 
-  GMANPrimitive *prim =
-      mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken) RI_NONPERIODIC, 3,
-                         (RtToken) RI_PERIODIC, pl, &options, &attr,
-                         &transform);
-  GMANObject *object = dynamic_cast<GMANObject *>(prim);
+  GMANPrimitive* prim = mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken)RI_NONPERIODIC, 3, (RtToken)RI_PERIODIC, pl,
+                                           &options, &attr, &transform);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr && object->getVert() == nullptr,
         "bicubic PatchMesh, nonperiodic ustep=0: getRSPatchMesh rejects "
         "the mesh instead of dividing by zero");
@@ -291,21 +272,18 @@ void testNonperiodicBicubicZeroStepRejected() {
 // ---- render-level: each fixture rasterizes, reverting getRSPatchMesh
 // falsifies every one of these ----
 
-int runGman(const std::string &gman, const std::string &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(const std::string& gman, const std::string& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-bool regionHasContent(const GmanImage &img, uint32_t x0, uint32_t x1,
-                      uint32_t y0, uint32_t y1) {
+bool regionHasContent(const GmanImage& img, uint32_t x0, uint32_t x1, uint32_t y0, uint32_t y1) {
   const uint32_t bg = img.at(0, 0);
   for (uint32_t y = y0; y < y1; ++y) {
     for (uint32_t x = x0; x < x1; ++x) {
       uint32_t p = img.at(x, y);
-      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-          std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
           std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8) {
         return true;
       }
@@ -318,8 +296,7 @@ bool regionHasContent(const GmanImage &img, uint32_t x0, uint32_t x1,
 // frame (Translate -1 0 0) and a control Sphere in the right half
 // (Translate 1 0 0) -- the Sphere renders in every case, including the
 // invalid-dimension fixture, so a left-half failure is PatchMesh's own.
-void checkFixtureRenders(const std::string &gman, const std::string &ribDir,
-                         const std::string &name) {
+void checkFixtureRenders(const std::string& gman, const std::string& ribDir, const std::string& name) {
   const std::string rib = ribDir + "/" + name + ".rib";
   check(runGman(gman, rib) == 0, name + ".rib renders (exit 0)");
 
@@ -329,10 +306,8 @@ void checkFixtureRenders(const std::string &gman, const std::string &ribDir,
     return;
   }
   const uint32_t mid = img.width / 2;
-  check(regionHasContent(img, 0, mid, 0, img.height),
-        name + ": PatchMesh renders (left half)");
-  check(regionHasContent(img, mid, img.width, 0, img.height),
-        name + ": control Sphere renders (right half)");
+  check(regionHasContent(img, 0, mid, 0, img.height), name + ": PatchMesh renders (left half)");
+  check(regionHasContent(img, mid, img.width, 0, img.height), name + ": control Sphere renders (right half)");
 }
 
 // The malformed-fixture mirror of checkFixtureRenders: a mesh dimension
@@ -341,11 +316,10 @@ void checkFixtureRenders(const std::string &gman, const std::string &ribDir,
 // control Sphere still renders on the right -- isolating the fallback to
 // PatchMesh rather than the renderer as a whole. `why` names the specific
 // dimension or step that trips the rejection.
-void checkFixtureFallsBack(const std::string &gman, const std::string &ribDir,
-                           const std::string &name, const std::string &why) {
+void checkFixtureFallsBack(const std::string& gman, const std::string& ribDir, const std::string& name,
+                           const std::string& why) {
   const std::string rib = ribDir + "/malformed/" + name + ".rib";
-  check(runGman(gman, rib) == 0,
-        name + ".rib renders without crashing (exit 0)");
+  check(runGman(gman, rib) == 0, name + ".rib renders without crashing (exit 0)");
 
   GmanImage img = readGmanTIFF(name + ".tif");
   check(img.ok, name + ".rib: TIFF read back");
@@ -353,16 +327,15 @@ void checkFixtureFallsBack(const std::string &gman, const std::string &ribDir,
     return;
   }
   const uint32_t mid = img.width / 2;
-  check(! regionHasContent(img, 0, mid, 0, img.height),
-        name + ": " + why + " -- nothing renders on the PatchMesh side");
+  check(!regionHasContent(img, 0, mid, 0, img.height), name + ": " + why + " -- nothing renders on the PatchMesh side");
   check(regionHasContent(img, mid, img.width, 0, img.height),
         name + ": control Sphere still renders, isolating the fallback "
-        "to PatchMesh rather than the renderer as a whole");
+               "to PatchMesh rather than the renderer as a whole");
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
@@ -386,19 +359,19 @@ int main(int argc, char *argv[]) {
   checkFixtureRenders(gman, ribDir, "patchmesh_mixed_wrap");
   checkFixtureRenders(gman, ribDir, "patchmesh_bspline_periodic");
   checkFixtureFallsBack(gman, ribDir, "patchmesh_baddim",
-                       "nu=5 fails the Bezier step's alignment, so "
-                       "getRSPatchMesh warns and falls back to create()");
+                        "nu=5 fails the Bezier step's alignment, so "
+                        "getRSPatchMesh warns and falls back to create()");
   // A step=1 basis's periodic axis has a tighter safety floor than
   // n>=step alone; nu=1 falls below it.
   checkFixtureFallsBack(gman, ribDir, "patchmesh_bspline_periodic_baddim",
-                       "nu=1 is below a step=1 basis's periodic safety "
-                       "floor, so getRSPatchMesh warns and falls back to "
-                       "create()");
+                        "nu=1 is below a step=1 basis's periodic safety "
+                        "floor, so getRSPatchMesh warns and falls back to "
+                        "create()");
   // A zero-step basis reaches RiPatchMeshV's nupatches/nvpatches division
   // before getRSPatchMesh's own validation runs.
   checkFixtureFallsBack(gman, ribDir, "patchmesh_zero_step_basis",
-                       "a zero basis step warns and falls back to "
-                       "create()");
+                        "a zero basis step warns and falls back to "
+                        "create()");
 
   return checkSummary("PatchMesh bilinear and bicubic both rasterize");
 }

@@ -32,24 +32,23 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-
-class GMAN_EXPORT  GMANParameterList
-{
+class GMAN_EXPORT GMANParameterList {
 private:
-  RtInt *counter;
-  
-  RtInt  number;
-  GMANTokenId *id;
-  RtPointer *datas;
-  GMANDictionary *dic;
+  RtInt* counter;
 
-  RtVoid copy_float(RtInt number, RtFloat *source, RtFloat *dest, RtInt supplied);
-  RtVoid copy_integer(RtInt number, RtInt *source, RtInt *dest, RtInt supplied);
-  RtVoid copy_string(RtInt number, char **source, std::string *dest, RtInt supplied);
-  RtVoid copy (GMANParameterList const &pl);
-  RtVoid destroy ();
+  RtInt number;
+  GMANTokenId* id;
+  RtPointer* datas;
+  GMANDictionary* dic;
+
+  RtVoid copy_float(RtInt number, RtFloat* source, RtFloat* dest, RtInt supplied);
+  RtVoid copy_integer(RtInt number, RtInt* source, RtInt* dest, RtInt supplied);
+  RtVoid copy_string(RtInt number, char** source, std::string* dest, RtInt supplied);
+  RtVoid copy(GMANParameterList const& pl);
+  RtVoid destroy();
+
 public:
-  GMANParameterList ();
+  GMANParameterList();
 
   // suppliedCounts, when present, is index-aligned with tk/dt: element i is
   // the length the caller actually supplied for dt[i], as opposed to
@@ -63,23 +62,13 @@ public:
   // passes real counts; a program calling the public RI API directly is
   // trusted with its own memory, and the RISpec gives no way to describe
   // an RtPointer's length regardless.
-  GMANParameterList (GMANDictionary &di,
-		     RtInt n, RtToken *tk, RtPointer *dt,
-		     RtInt vertex=1, RtInt varying=1, RtInt uniform=1,
-		     RtInt facevarying=1, const RtInt *suppliedCounts=NULL);
-  GMANParameterList (GMANParameterList const &pl);
-  GMANParameterList const &operator=(GMANParameterList const &pl);
-  ~GMANParameterList ();
+  GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, RtPointer* dt, RtInt vertex = 1, RtInt varying = 1,
+                    RtInt uniform = 1, RtInt facevarying = 1, const RtInt* suppliedCounts = NULL);
+  GMANParameterList(GMANParameterList const& pl);
+  GMANParameterList const& operator=(GMANParameterList const& pl);
+  ~GMANParameterList();
 
   RtPointer getPointer(GMANTokenId tid) const;
 };
 
 #endif
-
-
-
-
-
-
-
-

@@ -37,15 +37,13 @@
 
 namespace {
 
-int runIn(const std::string &gman, const std::string &rib,
-	 const std::string &workdir) {
-  const std::string command = "cd \"" + workdir + "\" && \"" + gman +
-    "\" \"" + rib + "\" > run.log 2>&1";
+int runIn(const std::string& gman, const std::string& rib, const std::string& workdir) {
+  const std::string command = "cd \"" + workdir + "\" && \"" + gman + "\" \"" + rib + "\" > run.log 2>&1";
   const int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-std::string slurp(const std::string &path) {
+std::string slurp(const std::string& path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream ss;
   ss << in.rdbuf();
@@ -54,11 +52,9 @@ std::string slurp(const std::string &path) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 4) {
-    std::fprintf(stderr,
-		 "usage: %s <gman-binary> <tests/rib/gzip dir> <scratch dir>\n",
-		 argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/gzip dir> <scratch dir>\n", argv[0]);
     return 2;
   }
 
@@ -72,12 +68,11 @@ int main(int argc, char *argv[]) {
   /* Each source renders in its own directory so the three gzip_out.tif can be
    * compared. A directory that failed to appear would silently run gman
    * somewhere else, so the result is checked rather than discarded. */
-  for (const std::string &dir : {plainWork, gzWork, misnamedWork}) {
+  for (const std::string& dir : {plainWork, gzWork, misnamedWork}) {
     std::error_code ec;
     std::filesystem::create_directories(dir, ec);
     if (ec) {
-      std::fprintf(stderr, "cannot create %s: %s\n", dir.c_str(),
-		   ec.message().c_str());
+      std::fprintf(stderr, "cannot create %s: %s\n", dir.c_str(), ec.message().c_str());
       return 2;
     }
   }
@@ -88,18 +83,15 @@ int main(int argc, char *argv[]) {
 
   check(plainExit == 0, "plain.rib parses");
   check(gzExit == 0, "plain_gz.rib.gz (gzip'd, gzip-named) parses");
-  check(misnamedExit == 0,
-	"misnamed.rib (gzip'd, .rib-named) parses -- magic bytes, not extension");
+  check(misnamedExit == 0, "misnamed.rib (gzip'd, .rib-named) parses -- magic bytes, not extension");
 
   const std::string plainImage = slurp(plainWork + "/gzip_out.tif");
   const std::string gzImage = slurp(gzWork + "/gzip_out.tif");
   const std::string misnamedImage = slurp(misnamedWork + "/gzip_out.tif");
 
-  check(! plainImage.empty(), "plain.rib produced an image");
-  check(plainImage == gzImage,
-	"gzip'd and plain sources parse to byte-identical output");
-  check(plainImage == misnamedImage,
-	"a gzip'd file misnamed .rib parses identically (magic-byte detection)");
+  check(!plainImage.empty(), "plain.rib produced an image");
+  check(plainImage == gzImage, "gzip'd and plain sources parse to byte-identical output");
+  check(plainImage == misnamedImage, "a gzip'd file misnamed .rib parses identically (magic-byte detection)");
 
   return checkSummary("gzip transparency holds");
 }

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -29,42 +29,38 @@
 #include "gmanvertex.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANObject
  *
  */
 
 // default constructor
-GMANObject::GMANObject() : 
-  GMANPrimitive() { 
+GMANObject::GMANObject() : GMANPrimitive() {
   vertRoot = NULL;
   bodyRoot = NULL;
-  next     = NULL;
+  next = NULL;
 };
 
-GMANObject::GMANObject(GMANVertex *v, GMANBody *b) : 
-  GMANPrimitive() { 
+GMANObject::GMANObject(GMANVertex* v, GMANBody* b) : GMANPrimitive() {
   vertRoot = v;
   bodyRoot = b;
-  next     = NULL;
+  next = NULL;
 };
 
+// default destructor
+GMANObject::~GMANObject() {
+  GMANBody* body = bodyRoot;
+  GMANBody* bNext;
 
-// default destructor 
-GMANObject::~GMANObject() { 
-  GMANBody      *body = bodyRoot;
-  GMANBody	*bNext;
-  
-  while(body != NULL) {
+  while (body != NULL) {
     bNext = body->getNext();
     delete body;
     body = bNext;
   };
-  
-  GMANVertex   *vert = vertRoot;
-  GMANVertex   *vNext;
-  while(vert != NULL) {
+
+  GMANVertex* vert = vertRoot;
+  GMANVertex* vNext;
+  while (vert != NULL) {
     vNext = vert->getNext();
     delete vert;
     vert = vNext;
@@ -75,9 +71,7 @@ GMANObject::~GMANObject() {
 // return the surface that intersects the ray or NULL
 // const GMANSurface *GMANObject::intersects(const GMANRay &ray)
 
-
-
-GMANObject *GMANObject::clone(RtVoid) {
+GMANObject* GMANObject::clone(RtVoid) {
   // FIXME FIXME FIXME
   return NULL;
 }

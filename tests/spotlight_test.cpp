@@ -56,7 +56,7 @@
 
 namespace {
 
-int runGman(const std::string &gman, const std::string &rib) {
+int runGman(const std::string& gman, const std::string& rib) {
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
@@ -70,36 +70,32 @@ struct Image {
   uint32_t at(uint32_t x, uint32_t y) const { return raster[y * width + x]; }
 };
 
-Image readTIFF(const std::string &path) {
+Image readTIFF(const std::string& path) {
   Image img;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return img;
   }
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &img.width);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &img.height);
   img.raster.resize(img.width * img.height);
-  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height,
-                                      img.raster.data(), ORIENTATION_TOPLEFT, 0);
+  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height, img.raster.data(), ORIENTATION_TOPLEFT, 0);
   TIFFClose(tif);
   return img;
 }
 
 // The disk is matte, lit only by the spotlight (no ambient term), so its
 // channels track the light's own greyscale falloff directly.
-int redAt(const Image &img, uint32_t x, uint32_t y) {
-  return (int) TIFFGetR(img.at(x, y));
-}
+int redAt(const Image& img, uint32_t x, uint32_t y) { return (int)TIFFGetR(img.at(x, y)); }
 
 // The disk's silhouette on row y: background outside it, the light's own
 // falloff inside. Both fixtures share this camera and disk, so both locate
 // their silhouette the same way.
-bool findSilhouette(const Image &img, uint32_t y, uint32_t &xmin, uint32_t &xmax) {
+bool findSilhouette(const Image& img, uint32_t y, uint32_t& xmin, uint32_t& xmax) {
   const uint32_t bg = img.at(0, y);
   auto differsFromBackground = [&](uint32_t x) {
     uint32_t p = img.at(x, y);
-    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-           std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
            std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8;
   };
   xmin = img.width;
@@ -117,7 +113,7 @@ bool findSilhouette(const Image &img, uint32_t y, uint32_t &xmin, uint32_t &xmax
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <rib-dir>\n", argv[0]);
     return 2;
@@ -157,23 +153,21 @@ int main(int argc, char *argv[]) {
 
   // ---- inside the cone: lit ----
   const int centreBrightness = redAt(img, silCentreX, midY);
-  check(centreBrightness > 200,
-        "spotlight: the disk's centre, well inside the cone, is lit "
-        "(R=" + std::to_string(centreBrightness) + ")");
+  check(centreBrightness > 200, "spotlight: the disk's centre, well inside the cone, is lit "
+                                "(R=" +
+                                    std::to_string(centreBrightness) + ")");
 
   // ---- outside the cone: exactly unlit, not just dim ----
   // A few pixels in from the silhouette's own edge, past the pixel
   // filter's antialiased rim, but still well outside the cone's small
   // half-angle at this disk's radius.
   const uint32_t margin = 4;
-  check(silXmax - silXmin > 2 * margin,
-        "spotlight: the silhouette is wide enough to sample past its rim");
+  check(silXmax - silXmin > 2 * margin, "spotlight: the silhouette is wide enough to sample past its rim");
   const int outsideNear = redAt(img, silXmin + margin, midY);
   const int outsideFar = redAt(img, silXmax - margin, midY);
-  check(outsideNear <= 2 && outsideFar <= 2,
-        "spotlight: past the cone, the disk reads exactly unlit on both "
-        "sides (R=" + std::to_string(outsideNear) + "," +
-        std::to_string(outsideFar) + ")");
+  check(outsideNear <= 2 && outsideFar <= 2, "spotlight: past the cone, the disk reads exactly unlit on both "
+                                             "sides (R=" +
+                                                 std::to_string(outsideNear) + "," + std::to_string(outsideFar) + ")");
 
   // ---- the taper: a band, not a step ----
   // Walking outward from the centre, count consecutive samples strictly
@@ -206,8 +200,8 @@ int main(int argc, char *argv[]) {
   check(rightTaper >= minTaperPx && leftTaper >= minTaperPx,
         "spotlight: the cone's edge tapers over several pixels on both "
         "sides, not a single-pixel step (right=" +
-        std::to_string(rightTaper) + ", left=" + std::to_string(leftTaper) +
-        ", expected >= " + std::to_string(minTaperPx) + ")");
+            std::to_string(rightTaper) + ", left=" + std::to_string(leftTaper) +
+            ", expected >= " + std::to_string(minTaperPx) + ")");
 
   // ---- the beam term: isolate beamdistribution from the taper and
   // inverse-square, using tests/rib/spotlight_beam.rib's own lower
@@ -243,7 +237,7 @@ int main(int argc, char *argv[]) {
   const double pixelsPerUnitR = (beamXmax - beamCentreX) / diskRadius;
   auto xOfTheta = [&](double theta) -> uint32_t {
     double r = diskStandoff * std::tan(theta);
-    return (uint32_t) std::lround(beamCentreX + r * pixelsPerUnitR);
+    return (uint32_t)std::lround(beamCentreX + r * pixelsPerUnitR);
   };
 
   // Two off-axis points, both short of the taper band (theta <
@@ -255,31 +249,28 @@ int main(int argc, char *argv[]) {
   // proportion as spotlight.rib's own taper check above.
   const uint32_t beamX1 = xOfTheta(0.25 * taperFreeTheta);
   const uint32_t beamX2 = xOfTheta(0.90 * taperFreeTheta);
-  check(beamX1 < beamX2 && beamX2 < beamXmax,
-        "spotlight_beam: both sample points land inside the taper-free "
-        "zone (x1=" + std::to_string(beamX1) + ", x2=" +
-        std::to_string(beamX2) + ", silXmax=" + std::to_string(beamXmax) +
-        ")");
+  check(beamX1 < beamX2 && beamX2 < beamXmax, "spotlight_beam: both sample points land inside the taper-free "
+                                              "zone (x1=" +
+                                                  std::to_string(beamX1) + ", x2=" + std::to_string(beamX2) +
+                                                  ", silXmax=" + std::to_string(beamXmax) + ")");
 
   const int beamBrightness1 = redAt(beamImg, beamX1, beamMidY);
   const int beamBrightness2 = redAt(beamImg, beamX2, beamMidY);
-  check(beamBrightness1 > 50 && beamBrightness1 < 250,
-        "spotlight_beam: the near sample point is lit and unsaturated "
-        "(R=" + std::to_string(beamBrightness1) + ")");
-  check(beamBrightness2 > 50 && beamBrightness2 < 250,
-        "spotlight_beam: the far sample point is lit and unsaturated "
-        "(R=" + std::to_string(beamBrightness2) + ")");
+  check(beamBrightness1 > 50 && beamBrightness1 < 250, "spotlight_beam: the near sample point is lit and unsaturated "
+                                                       "(R=" +
+                                                           std::to_string(beamBrightness1) + ")");
+  check(beamBrightness2 > 50 && beamBrightness2 < 250, "spotlight_beam: the far sample point is lit and unsaturated "
+                                                       "(R=" +
+                                                           std::to_string(beamBrightness2) + ")");
 
   // beamdistribution == 6 predicts a ratio near 0.85; the atten == 1.0
   // mutation (beamdistribution dropped from the falloff) predicts a
   // ratio near 0.945 from inverse-square and N.L alone. 0.90 sits with
   // real margin on both sides of that gap.
-  const double beamRatio =
-    double(beamBrightness2) / double(beamBrightness1);
-  check(beamRatio < 0.90,
-        "spotlight_beam: beamdistribution attenuates the farther "
-        "taper-free point relative to the nearer one (ratio=" +
-        std::to_string(beamRatio) + ")");
+  const double beamRatio = double(beamBrightness2) / double(beamBrightness1);
+  check(beamRatio < 0.90, "spotlight_beam: beamdistribution attenuates the farther "
+                          "taper-free point relative to the nearer one (ratio=" +
+                              std::to_string(beamRatio) + ")");
 
   return checkSummary("spotlight holds");
 }

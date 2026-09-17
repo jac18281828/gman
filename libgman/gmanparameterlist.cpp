@@ -24,116 +24,104 @@
 
 #include "gmanparameterlist.h"
 
-RtVoid GMANParameterList::copy (GMANParameterList const &pl)
-{
-  counter=pl.counter;
-  *counter+=1;
-  number=pl.number;
-  id=pl.id;
-  datas=pl.datas;
-  dic=pl.dic;
+RtVoid GMANParameterList::copy(GMANParameterList const& pl) {
+  counter = pl.counter;
+  *counter += 1;
+  number = pl.number;
+  id = pl.id;
+  datas = pl.datas;
+  dic = pl.dic;
 }
 
-RtVoid GMANParameterList::destroy ()
-{
-  if (*counter!=0) {
-    *counter -=1;
+RtVoid GMANParameterList::destroy() {
+  if (*counter != 0) {
+    *counter -= 1;
     return;
   }
-  for(int i=0;i<number;i++) {
+  for (int i = 0; i < number; i++) {
     switch (dic->getType(id[i])) {
     case GMANTokenEntry::STRING:
-      delete [] (std::string *)datas[i];
+      delete[] (std::string*)datas[i];
       break;
     case GMANTokenEntry::INTEGER:
-      delete [] (RtInt *)datas[i];
+      delete[] (RtInt*)datas[i];
       break;
     default:
-      delete [] (RtFloat *)datas[i];
+      delete[] (RtFloat*)datas[i];
       break;
     }
   }
-  delete [] datas;
-  delete [] id;
+  delete[] datas;
+  delete[] id;
   delete counter;
 }
 
-GMANParameterList::GMANParameterList ()
-{
-  counter=new int;
-  *counter=0;
-  number=0;
-  id=0;
-  datas=0;
-  dic=0;
+GMANParameterList::GMANParameterList() {
+  counter = new int;
+  *counter = 0;
+  number = 0;
+  id = 0;
+  datas = 0;
+  dic = 0;
 }
 
-GMANParameterList::GMANParameterList (GMANDictionary &di,
-				      RtInt n, RtToken *tk, RtPointer *dt,
-				      RtInt vertex, RtInt varying, RtInt uniform,
-				      RtInt facevarying, const RtInt *suppliedCounts)
-{
-  int i,index;
+GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, RtPointer* dt, RtInt vertex,
+                                     RtInt varying, RtInt uniform, RtInt facevarying, const RtInt* suppliedCounts) {
+  int i, index;
   int size;
-  counter=new int;
-  *counter=0;
+  counter = new int;
+  *counter = 0;
 
-  dic=&di;
-  id=new GMANTokenId[n];
-  datas= new RtPointer[n];
+  dic = &di;
+  id = new GMANTokenId[n];
+  datas = new RtPointer[n];
 
-  index=0;
-  for (i=0; i<n; i++) { // convert token to id
+  index = 0;
+  for (i = 0; i < n; i++) { // convert token to id
     try {
-      id[index]= di.getTokenId (std::string(tk[i]));
-    } catch (GMANError &r) {
-      GMANHandleError (r);
+      id[index] = di.getTokenId(std::string(tk[i]));
+    } catch (GMANError& r) {
+      GMANHandleError(r);
       continue;
     }
 
-    size =di.allocSize(id[index], vertex, varying, uniform, facevarying);
+    size = di.allocSize(id[index], vertex, varying, uniform, facevarying);
     RtInt supplied = suppliedCounts ? suppliedCounts[i] : size;
     if (supplied < size) {
       warning("Parameter \"{}\": declared length {}, supplied length {}; "
-	      "clamping and zero-filling the remainder.", tk[i], size, supplied);
+              "clamping and zero-filling the remainder.",
+              tk[i], size, supplied);
     }
     switch (di.getType(id[index])) {
     case GMANTokenEntry::STRING:
-      datas[index]=(RtPointer)new std::string[size];
-      copy_string(size,(char **)dt[i],(std::string *)datas[index],supplied);
+      datas[index] = (RtPointer) new std::string[size];
+      copy_string(size, (char**)dt[i], (std::string*)datas[index], supplied);
       break;
     case GMANTokenEntry::INTEGER:
-      datas[index]=(RtPointer)new RtInt[size];
-      copy_integer(size,(RtInt *)dt[i],(RtInt *)datas[index],supplied);
+      datas[index] = (RtPointer) new RtInt[size];
+      copy_integer(size, (RtInt*)dt[i], (RtInt*)datas[index], supplied);
       break;
     default:
-      datas[index]=(RtPointer) new RtFloat[size];
-      copy_float(size,(RtFloat *)dt[i],(RtFloat *)datas[index],supplied);
+      datas[index] = (RtPointer) new RtFloat[size];
+      copy_float(size, (RtFloat*)dt[i], (RtFloat*)datas[index], supplied);
       break;
     }
     index++;
   }
-  number=index;
+  number = index;
 }
 
-GMANParameterList::GMANParameterList (GMANParameterList const &pl)
-{
- copy(pl);
-}
+GMANParameterList::GMANParameterList(GMANParameterList const& pl) { copy(pl); }
 
-GMANParameterList const &GMANParameterList::operator=(GMANParameterList const &pl)
-{
-  if (this!=&pl) {
+GMANParameterList const& GMANParameterList::operator=(GMANParameterList const& pl) {
+  if (this != &pl) {
     destroy();
     copy(pl);
   }
   return (*this);
 }
 
-GMANParameterList::~GMANParameterList()
-{
-  destroy();
-}
+GMANParameterList::~GMANParameterList() { destroy(); }
 
 // Absence of a token is the routine case: every caller asks "did the user
 // pass this optional parameter," not "is this parameter list well-formed."
@@ -142,54 +130,35 @@ GMANParameterList::~GMANParameterList()
 // falls back to a spec default or wraps this call in try/catch to force
 // that meaning by hand. Returning NULL directly makes that the only meaning
 // there is to get.
-RtPointer GMANParameterList::getPointer(GMANTokenId tid) const
-{
-  for(int i=0;i<number;i++) {
-    if (tid==id[i]) return datas[i];
+RtPointer GMANParameterList::getPointer(GMANTokenId tid) const {
+  for (int i = 0; i < number; i++) {
+    if (tid == id[i])
+      return datas[i];
   }
   return NULL;
 }
 
-
-RtVoid GMANParameterList::copy_float(RtInt n, RtFloat *source, RtFloat *dest, RtInt supplied)
-{
+RtVoid GMANParameterList::copy_float(RtInt n, RtFloat* source, RtFloat* dest, RtInt supplied) {
   int count = supplied < n ? supplied : n;
   int i;
-  for (i = 0; i < count; i++) dest[i] = source[i];
-  for (; i < n; i++)          dest[i] = 0.0;
+  for (i = 0; i < count; i++)
+    dest[i] = source[i];
+  for (; i < n; i++)
+    dest[i] = 0.0;
 }
-RtVoid GMANParameterList::copy_integer(RtInt n, RtInt *source, RtInt *dest, RtInt supplied)
-{
+RtVoid GMANParameterList::copy_integer(RtInt n, RtInt* source, RtInt* dest, RtInt supplied) {
   int count = supplied < n ? supplied : n;
   int i;
-  for (i = 0; i < count; i++) dest[i] = source[i];
-  for (; i < n; i++)          dest[i] = 0;
+  for (i = 0; i < count; i++)
+    dest[i] = source[i];
+  for (; i < n; i++)
+    dest[i] = 0;
 }
-RtVoid GMANParameterList::copy_string(RtInt n, char **source, std::string *dest, RtInt supplied)
-{
+RtVoid GMANParameterList::copy_string(RtInt n, char** source, std::string* dest, RtInt supplied) {
   int count = supplied < n ? supplied : n;
   int i;
-  for (i = 0; i < count; i++) dest[i] = std::string(source[i]);
-  for (; i < n; i++)          dest[i] = std::string();
+  for (i = 0; i < count; i++)
+    dest[i] = std::string(source[i]);
+  for (; i < n; i++)
+    dest[i] = std::string();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

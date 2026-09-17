@@ -5,7 +5,7 @@
   --------------------------------------------------------------------
   2000/10/19  First release
   2000/11     Moved Stacks from gmanrenderman here.
-	      Changed allowed(), and added partial support for motion.
+              Changed allowed(), and added partial support for motion.
   --------------------------------------------------------------------
   This class store everything related with the graphic state.
   It manage motion, and check that Ri commands appear in the
@@ -41,29 +41,27 @@
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMAN_EXPORT  GMANGraphicState
-{
+class GMAN_EXPORT GMANGraphicState {
 public:
   // public types
-  typedef std::stack<GMANOptions>	    OptionsStack;
-  typedef std::stack<GMANAttributes>     AttributesStack;
-  typedef std::stack<GMANTransform>	    TransformStack;
-
+  typedef std::stack<GMANOptions> OptionsStack;
+  typedef std::stack<GMANAttributes> AttributesStack;
+  typedef std::stack<GMANTransform> TransformStack;
 
   /* Begin-End Blocks */
 
-  typedef enum { B=0x1, /* BEGIN */
-		 F=0x2, /* FRAME */
-		 W=0x4, /* WORLD */
-		 A=0x8, /* ATTRIBUTE */
-		 T=0x10, /* TRANSFORM */
-		 O=0x20, /* OBJECT */
-		 S=0x40, /* SOLID */
-		 M=0x80  /* MOTION */
+  typedef enum {
+    B = 0x1,  /* BEGIN */
+    F = 0x2,  /* FRAME */
+    W = 0x4,  /* WORLD */
+    A = 0x8,  /* ATTRIBUTE */
+    T = 0x10, /* TRANSFORM */
+    O = 0x20, /* OBJECT */
+    S = 0x40, /* SOLID */
+    M = 0x80  /* MOTION */
   } CurrentState;
 
-  struct CommandIdentity
-  {
+  struct CommandIdentity {
     int allowedBlocks;
 
     bool isAttribute;
@@ -72,7 +70,7 @@ public:
   };
 
 protected:
-  // all of the command identities recognized by 
+  // all of the command identities recognized by
   // the state machine
 
   static CommandIdentity cmdFormat;
@@ -81,7 +79,7 @@ protected:
   static CommandIdentity cmdCropWindow;
   static CommandIdentity cmdProjection;
   static CommandIdentity cmdClipping;
-  static CommandIdentity cmdDepthOfField ;
+  static CommandIdentity cmdDepthOfField;
   static CommandIdentity cmdShutter;
   static CommandIdentity cmdPixelVariance;
   static CommandIdentity cmdPixelSamples;
@@ -158,13 +156,12 @@ protected:
 
 private:
   std::stack<CurrentState> nest;
-    
+
   CurrentState block;
 
   RtInt frame, world;
   RtInt attribute, transform;
   RtInt solid, motion, object;
-
 
   bool attribsChangedFlag;
   bool transformChangedFlag;
@@ -174,39 +171,40 @@ private:
   std::vector<RtFloat> samples;
   RtInt motionIndex;
   GMANMovingMatrix mm;
-  
-  CommandIdentity *currentMC;
+
+  CommandIdentity* currentMC;
   bool motionError;
-    
-  OptionsStack    optionsStack;
+
+  OptionsStack optionsStack;
   AttributesStack attributesStack;
-  TransformStack  transformStack;
-    
+  TransformStack transformStack;
+
   RtVoid push(CurrentState st);
   RtVoid pop();
-  RtVoid overlap(CurrentState mode, CurrentState  current);
-  RtVoid error(const char *message);
+  RtVoid overlap(CurrentState mode, CurrentState current);
+  RtVoid error(const char* message);
   RtVoid allowed(RtInt mode);
+
 public:
   GMANGraphicState();
-    
-  GMANOptions &getOptions();
-  GMANAttributes &getAttributes();
-  const GMANTransform &getTransform() const;
-    
+
+  GMANOptions& getOptions();
+  GMANAttributes& getAttributes();
+  const GMANTransform& getTransform() const;
+
   RtVoid enterMode(CurrentState m);
-  RtVoid enterMotion(RtInt n, RtFloat *s);
+  RtVoid enterMotion(RtInt n, RtFloat* s);
   RtVoid leaveMode(CurrentState m);
 
-  RtVoid allowed(CommandIdentity &cid);
+  RtVoid allowed(CommandIdentity& cid);
 
   /* Attributes and transform state */
   bool sameAttribs(RtVoid);
   bool sameTransform(RtVoid);
 
   /* Motion block */
-  RtVoid setTransform(GMANMatrix4 &m);
-  RtVoid buildTransform(GMANMatrix4 &m);
+  RtVoid setTransform(GMANMatrix4& m);
+  RtVoid buildTransform(GMANMatrix4& m);
 };
 
 #endif

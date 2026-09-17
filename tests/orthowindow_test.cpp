@@ -88,15 +88,14 @@ namespace {
 // directory is reused across ctest invocations, and a reverted fix that
 // throws before opening the display leaves the previous good file in place.
 // tests/baseline_test.cpp removes its target for the same reason.
-int runGman(const std::string &gman, const std::string &rib,
-            const std::string &output) {
+int runGman(const std::string& gman, const std::string& rib, const std::string& output) {
   std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void writeFile(const std::string &path, const std::string &contents) {
+void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
   out << contents;
 }
@@ -109,9 +108,9 @@ struct BBox {
 };
 
 // Same bounding-box-by-difference-from-corner reading as silhouette_test.cpp.
-BBox findSilhouette(const std::string &path) {
+BBox findSilhouette(const std::string& path) {
   BBox box;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return box;
   }
@@ -121,8 +120,7 @@ BBox findSilhouette(const std::string &path) {
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(size_t(width) * height);
-  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                  ORIENTATION_TOPLEFT, 0)) {
+  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0)) {
     TIFFClose(tif);
     return box;
   }
@@ -160,7 +158,7 @@ BBox findSilhouette(const std::string &path) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::fprintf(stderr, "usage: %s <gman-binary>\n", argv[0]);
     return 2;
@@ -174,66 +172,59 @@ int main(int argc, char *argv[]) {
   // raster.x = 400*(x+3)/6, raster.y = 200 - 200*(y+1.5)/3:
   //   x=-2.5 -> 33.33, x=-0.5 -> 166.67 (width ~133.3)
   //   y=-1   -> 166.67, y=1   -> 33.33  (height ~133.3)
-  const char *repro =
-      "Display \"repro.tif\" \"file\" \"rgb\"\n"
-      "Format 400 200 1\n"
-      "Projection \"orthographic\"\n"
-      "ScreenWindow -3 3 -1.5 1.5\n"
-      "Clipping 0.5 100\n"
-      "WorldBegin\n"
-      "Translate -1.5 0 5\n"
-      "Sphere 1 -1 1 360\n"
-      "WorldEnd\n";
+  const char* repro = "Display \"repro.tif\" \"file\" \"rgb\"\n"
+                      "Format 400 200 1\n"
+                      "Projection \"orthographic\"\n"
+                      "ScreenWindow -3 3 -1.5 1.5\n"
+                      "Clipping 0.5 100\n"
+                      "WorldBegin\n"
+                      "Translate -1.5 0 5\n"
+                      "Sphere 1 -1 1 360\n"
+                      "WorldEnd\n";
   writeFile("repro.rib", repro);
   check(runGman(gman, "repro.rib", "repro.tif") == 0, "the reproduction scene renders");
 
   BBox b = findSilhouette("repro.tif");
   check(b.found, "the reproduction scene: a silhouette was found");
   if (b.found) {
-    check(std::abs(b.centerX() - 100.0) <= tol,
-          "silhouette centre-x matches the analytically computed raster "
-          "position (100)");
-    check(std::abs(b.centerY() - 100.0) <= tol,
-          "silhouette centre-y matches the analytically computed raster "
-          "position (100)");
-    check(b.xmin < 133,
-          "silhouette extends left of raster x=133 -- the pre-fix hard "
-          "clip at camera-space x=-1 -- proving content beyond that line "
-          "is no longer discarded");
+    check(std::abs(b.centerX() - 100.0) <= tol, "silhouette centre-x matches the analytically computed raster "
+                                                "position (100)");
+    check(std::abs(b.centerY() - 100.0) <= tol, "silhouette centre-y matches the analytically computed raster "
+                                                "position (100)");
+    check(b.xmin < 133, "silhouette extends left of raster x=133 -- the pre-fix hard "
+                        "clip at camera-space x=-1 -- proving content beyond that line "
+                        "is no longer discarded");
   }
 
   // ---- a sphere the pre-fix hard clip made vanish entirely ----
   // Translate 0 1.3 5 puts the whole sphere (y camera-space [0.3,2.3])
   // beyond the old y=+-1.1-ish vanishing point; the wide ScreenWindow's
   // top=1.5 still keeps part of it in frame.
-  const char *vanished =
-      "Display \"vanished.tif\" \"file\" \"rgb\"\n"
-      "Format 400 200 1\n"
-      "Projection \"orthographic\"\n"
-      "ScreenWindow -3 3 -1.5 1.5\n"
-      "Clipping 0.5 100\n"
-      "WorldBegin\n"
-      "Translate 0 1.3 5\n"
-      "Sphere 1 -1 1 360\n"
-      "WorldEnd\n";
+  const char* vanished = "Display \"vanished.tif\" \"file\" \"rgb\"\n"
+                         "Format 400 200 1\n"
+                         "Projection \"orthographic\"\n"
+                         "ScreenWindow -3 3 -1.5 1.5\n"
+                         "Clipping 0.5 100\n"
+                         "WorldBegin\n"
+                         "Translate 0 1.3 5\n"
+                         "Sphere 1 -1 1 360\n"
+                         "WorldEnd\n";
   writeFile("vanished.rib", vanished);
   check(runGman(gman, "vanished.rib", "vanished.tif") == 0, "the off-centre scene renders");
   BBox v = findSilhouette("vanished.tif");
-  check(v.found,
-        "a sphere beyond the pre-fix vanishing point still has a "
-        "silhouette (used to vanish entirely)");
+  check(v.found, "a sphere beyond the pre-fix vanishing point still has a "
+                 "silhouette (used to vanish entirely)");
 
   // ---- differential control: the default (unit) ScreenWindow still
   // clips at camera-space x=+-1, so this is not a "clip nothing" fix ----
-  const char *unit =
-      "Display \"unit.tif\" \"file\" \"rgb\"\n"
-      "Format 400 200 1\n"
-      "Projection \"orthographic\"\n"
-      "Clipping 0.5 100\n"
-      "WorldBegin\n"
-      "Translate -1.5 0 5\n"
-      "Sphere 1 -1 1 360\n"
-      "WorldEnd\n";
+  const char* unit = "Display \"unit.tif\" \"file\" \"rgb\"\n"
+                     "Format 400 200 1\n"
+                     "Projection \"orthographic\"\n"
+                     "Clipping 0.5 100\n"
+                     "WorldBegin\n"
+                     "Translate -1.5 0 5\n"
+                     "Sphere 1 -1 1 360\n"
+                     "WorldEnd\n";
   writeFile("unit.rib", unit);
   check(runGman(gman, "unit.rib", "unit.tif") == 0, "the default-window control scene renders");
   BBox u = findSilhouette("unit.tif");
@@ -246,10 +237,9 @@ int main(int argc, char *argv[]) {
   // sphere at all. Different ScreenWindows now genuinely produce
   // different clipping, not the same hardcoded box either way.
   if (u.found) {
-    check(u.xmin <= 4,
-          "under the (narrower) default screen window the same sphere is "
-          "clipped at the frame's left edge -- honoring ScreenWindow is "
-          "not the same as clipping nothing");
+    check(u.xmin <= 4, "under the (narrower) default screen window the same sphere is "
+                       "clipped at the frame's left edge -- honoring ScreenWindow is "
+                       "not the same as clipping nothing");
   }
 
   return checkSummary("orthographic screen window holds");

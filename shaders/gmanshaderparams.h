@@ -38,7 +38,7 @@ namespace gmanshaders {
 // this is what makes reading a shader's declared parameters back out of
 // its GMANParameterList work without the plugin sharing the renderer's
 // actual dictionary object, which it has no access to.
-inline GMANDictionary &dictionary() {
+inline GMANDictionary& dictionary() {
   static GMANDictionary d;
   return d;
 }
@@ -50,43 +50,40 @@ inline GMANDictionary &dictionary() {
 // call: GMANDictionary::getTokenId throws RIE_BADTOKEN for a name the
 // dictionary has never seen, which is what a shader asking for a parameter
 // nobody ever declared does.
-inline RtFloat *tryGetFloatParam(GMANParameterList &pl, RtToken token) {
+inline RtFloat* tryGetFloatParam(GMANParameterList& pl, RtToken token) {
   try {
-    return (RtFloat *) pl.getPointer(dictionary().getTokenId(token));
-  } catch (GMANError &) {
+    return (RtFloat*)pl.getPointer(dictionary().getTokenId(token));
+  } catch (GMANError&) {
     return NULL;
   }
 }
 
-inline RtFloat getFloatParam(GMANParameterList &pl, RtToken token,
-			      RtFloat def) {
-  RtFloat *p = tryGetFloatParam(pl, token);
+inline RtFloat getFloatParam(GMANParameterList& pl, RtToken token, RtFloat def) {
+  RtFloat* p = tryGetFloatParam(pl, token);
   return p ? p[0] : def;
 }
 
-inline GMANColor getColorParam(GMANParameterList &pl, RtToken token,
-				const GMANColor &def) {
-  RtFloat *p = tryGetFloatParam(pl, token);
+inline GMANColor getColorParam(GMANParameterList& pl, RtToken token, const GMANColor& def) {
+  RtFloat* p = tryGetFloatParam(pl, token);
   return p ? GMANColor(p[0], p[1], p[2]) : def;
 }
 
 // GMANParameterList stores a STRING parameter as std::string[], not
 // RtFloat[] -- getPointer's void* still needs the caller's own cast, same
 // as tryGetFloatParam above, just to std::string rather than RtFloat.
-inline std::string *tryGetStringParam(GMANParameterList &pl, RtToken token) {
+inline std::string* tryGetStringParam(GMANParameterList& pl, RtToken token) {
   try {
-    return (std::string *) pl.getPointer(dictionary().getTokenId(token));
-  } catch (GMANError &) {
+    return (std::string*)pl.getPointer(dictionary().getTokenId(token));
+  } catch (GMANError&) {
     return NULL;
   }
 }
 
-inline std::string getStringParam(GMANParameterList &pl, RtToken token,
-				    const std::string &def) {
-  std::string *p = tryGetStringParam(pl, token);
+inline std::string getStringParam(GMANParameterList& pl, RtToken token, const std::string& def) {
+  std::string* p = tryGetStringParam(pl, token);
   return p ? p[0] : def;
 }
 
-}  // namespace gmanshaders
+} // namespace gmanshaders
 
 #endif

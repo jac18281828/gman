@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -32,20 +32,14 @@
 /* Global static data */
 
 static GMANLoadableObjectInfo loadableInfo = {
-  "Radiosity Lighting Model",
-  "John Cairns <john@2ad.com>",
-  "Copyright (c) 2001, 2000, 1999 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
-  "A GMAN Renderer based on the radiosity lighting model simulation.",
+    "Radiosity Lighting Model",
+    "John Cairns <john@2ad.com>",
+    "Copyright (c) 2001, 2000, 1999 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
+    "A GMAN Renderer based on the radiosity lighting model simulation.",
 };
 
-static GMANRadiosityRenderer	renderer;
+static GMANRadiosityRenderer renderer;
 
+extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &loadableInfo;
-}
-
-extern "C" GMAN_EXPORT GMANRenderer *GMANLoadRenderer(void) {
-  return &renderer;
-}
-
+extern "C" GMAN_EXPORT GMANRenderer* GMANLoadRenderer(void) { return &renderer; }

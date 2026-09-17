@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,64 +27,51 @@
 #include "gmanshader.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANLoadableShader
  *
  */
 
-const char *		GMANLoadableShader::LoadShaderFncName = "GMANLoadShader";
+const char* GMANLoadableShader::LoadShaderFncName = "GMANLoadShader";
 
 // default constructor
-GMANLoadableShader::GMANLoadableShader(const char *path) 
-  : GMANShader(),  GMANLoadable(path), shader(NULL) { 
+GMANLoadableShader::GMANLoadableShader(const char* path) : GMANShader(), GMANLoadable(path), shader(NULL) {
 
-  LoadShaderFnc loadShader = 
-    (LoadShaderFnc)loadSymbol(LoadShaderFncName);
+  LoadShaderFnc loadShader = (LoadShaderFnc)loadSymbol(LoadShaderFncName);
 
-  if(loadShader == NULL) {
+  if (loadShader == NULL) {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Loadable module missing shader."));
   }
 
   shader = loadShader();
 
-  if(shader == NULL) {
+  if (shader == NULL) {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Loadable module missing shader."));
   }
 };
 
+// default destructor
+GMANLoadableShader::~GMANLoadableShader() {};
 
-// default destructor 
-GMANLoadableShader::~GMANLoadableShader() { };
-
-GMANShader::ShaderType GMANLoadableShader::getType(RtVoid) const 
+GMANShader::ShaderType GMANLoadableShader::getType(RtVoid) const
 
 {
-  if(!shader) {
+  if (!shader) {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "No shader available."));
   }
   return shader->getType();
 }
 
-GMANImagerShader	*GMANLoadableShader::getImager(RtVoid) {
-  return dynamic_cast<GMANImagerShader*>(shader);
-}
+GMANImagerShader* GMANLoadableShader::getImager(RtVoid) { return dynamic_cast<GMANImagerShader*>(shader); }
 
-GMANDisplacementShader	*GMANLoadableShader::getDisplacement(RtVoid) {
+GMANDisplacementShader* GMANLoadableShader::getDisplacement(RtVoid) {
   return dynamic_cast<GMANDisplacementShader*>(shader);
 }
 
-
-GMANLightSourceShader	*GMANLoadableShader::getLightSource(RtVoid) {
+GMANLightSourceShader* GMANLoadableShader::getLightSource(RtVoid) {
   return dynamic_cast<GMANLightSourceShader*>(shader);
 }
 
+GMANSurfaceShader* GMANLoadableShader::getSurface(RtVoid) { return dynamic_cast<GMANSurfaceShader*>(shader); }
 
-GMANSurfaceShader	*GMANLoadableShader::getSurface(RtVoid) {
-  return dynamic_cast<GMANSurfaceShader*>(shader);
-}
-
-
-GMANVolumeShader	*GMANLoadableShader::getVolume(RtVoid) {
-  return dynamic_cast<GMANVolumeShader*>(shader);
-}
+GMANVolumeShader* GMANLoadableShader::getVolume(RtVoid) { return dynamic_cast<GMANVolumeShader*>(shader); }

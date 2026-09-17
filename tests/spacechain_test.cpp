@@ -68,13 +68,14 @@
 
 namespace {
 
-bool near(RtFloat a, RtFloat b, RtFloat tol) {
-  return std::fabs(a - b) <= tol;
-}
+bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }
 
 GMANOptions::ScreenWindowStruct squareWindow() {
   GMANOptions::ScreenWindowStruct sw;
-  sw.left = -1.0; sw.right = 1.0; sw.bottom = -1.0; sw.top = 1.0;
+  sw.left = -1.0;
+  sw.right = 1.0;
+  sw.bottom = -1.0;
+  sw.top = 1.0;
   return sw;
 }
 
@@ -107,9 +108,8 @@ void testFullChain() {
   // The sphere's own local origin -- object space, before any transform.
   GMANPoint objectSpace(0.0, 0.0, 0.0);
   GMANPoint cameraSpace = objectCTM.apply(objectSpace);
-  check(near(cameraSpace.getX(), 1.0, 1e-4) &&
-        near(cameraSpace.getY(), 0.0, 1e-4) &&
-        near(cameraSpace.getZ(), 5.0, 1e-4),
+  check(near(cameraSpace.getX(), 1.0, 1e-4) && near(cameraSpace.getY(), 0.0, 1e-4) &&
+            near(cameraSpace.getZ(), 5.0, 1e-4),
         "full chain: object CTM carries object space to camera space "
         "(camera Translate 0 0 5, object Translate 1 0 0 -> (1,0,5))");
 
@@ -117,10 +117,8 @@ void testFullChain() {
   // [-1,1]^2 and the raster is 100x100, so raster.x = 100*(0.2+1)/2 = 60,
   // raster.y = 100 - 100*(0+1)/2 = 50.
   GMANPoint raster = vs.project(cameraSpace);
-  check(near(raster.getX(), 60.0, 0.5),
-        "full chain: known point lands at the hand-computed raster x (60)");
-  check(near(raster.getY(), 50.0, 0.5),
-        "full chain: known point lands at the hand-computed raster y (50)");
+  check(near(raster.getX(), 60.0, 0.5), "full chain: known point lands at the hand-computed raster x (60)");
+  check(near(raster.getY(), 50.0, 0.5), "full chain: known point lands at the hand-computed raster y (50)");
 }
 
 // ---- proof item 1: a point behind the camera clips ----
@@ -133,18 +131,17 @@ void testBehindCameraClips() {
   // none can survive near-plane clipping.
   GMANVertex a, b, c, d;
   a.setLocation(GMANPoint(-1.0, -1.0, -5.0));
-  b.setLocation(GMANPoint( 1.0, -1.0, -5.0));
-  c.setLocation(GMANPoint( 1.0,  1.0, -5.0));
-  d.setLocation(GMANPoint(-1.0,  1.0, -5.0));
-  GMANVertex *verts[4] = {&a, &b, &c, &d};
+  b.setLocation(GMANPoint(1.0, -1.0, -5.0));
+  c.setLocation(GMANPoint(1.0, 1.0, -5.0));
+  d.setLocation(GMANPoint(-1.0, 1.0, -5.0));
+  GMANVertex* verts[4] = {&a, &b, &c, &d};
   GMANFace behind(verts, nullptr);
 
   GMANPolygonClipper clipper;
   GMANOutputPolygon out;
   int n = clipper.clip(&behind, out, &vs);
-  check(n == 0,
-        "clip: a face entirely behind the camera clips away completely, "
-        "rather than wrapping to a plausible-looking pixel");
+  check(n == 0, "clip: a face entirely behind the camera clips away completely, "
+                "rather than wrapping to a plausible-looking pixel");
 }
 
 // ---- proof item 4: a polygon straddling the near plane ----
@@ -159,18 +156,17 @@ void testClipperNearPlane() {
   // vertices, two of them exactly on the near plane (NDC z = -1).
   GMANVertex v0, v1, v2, v3;
   v0.setLocation(GMANPoint(-0.1, -0.1, 0.5));
-  v1.setLocation(GMANPoint( 0.1, -0.1, 0.5));
-  v2.setLocation(GMANPoint( 0.1,  0.1, 5.0));
-  v3.setLocation(GMANPoint(-0.1,  0.1, 5.0));
-  GMANVertex *verts[4] = {&v0, &v1, &v2, &v3};
+  v1.setLocation(GMANPoint(0.1, -0.1, 0.5));
+  v2.setLocation(GMANPoint(0.1, 0.1, 5.0));
+  v3.setLocation(GMANPoint(-0.1, 0.1, 5.0));
+  GMANVertex* verts[4] = {&v0, &v1, &v2, &v3};
   GMANFace straddling(verts, nullptr);
 
   GMANPolygonClipper clipper;
   GMANOutputPolygon out;
   int n = clipper.clip(&straddling, out, &vs);
-  check(n == 4,
-        "clip: a quad straddling the near plane keeps 4 vertices "
-        "(2 original + 2 new intersection points)");
+  check(n == 4, "clip: a quad straddling the near plane keeps 4 vertices "
+                "(2 original + 2 new intersection points)");
 
   int onNearPlane = 0;
   for (int i = 0; i < n; ++i) {
@@ -178,10 +174,9 @@ void testClipperNearPlane() {
       ++onNearPlane;
     }
   }
-  check(onNearPlane == 2,
-        "clip: exactly the two intersection vertices land on the near "
-        "plane (NDC z = -1) -- catches both an unused interpolation "
-        "parameter and a current/isect output swap");
+  check(onNearPlane == 2, "clip: exactly the two intersection vertices land on the near "
+                          "plane (NDC z = -1) -- catches both an unused interpolation "
+                          "parameter and a current/isect output swap");
 }
 
 // ---- Step 4: the other five of the clipper's six planes ----
@@ -192,14 +187,14 @@ void testClipperNearPlane() {
 // exactly one plane clips: a quad clipped this way always produces 4
 // output vertices (2 original + 2 new intersections), matching the near
 // plane test's own derivation.
-int clipQuad(const GMANPoint &p0, const GMANPoint &p1, const GMANPoint &p2,
-             const GMANPoint &p3, const GMANVSPerspective &vs) {
+int clipQuad(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2, const GMANPoint& p3,
+             const GMANVSPerspective& vs) {
   GMANVertex v0, v1, v2, v3;
   v0.setLocation(p0);
   v1.setLocation(p1);
   v2.setLocation(p2);
   v3.setLocation(p3);
-  GMANVertex *verts[4] = {&v0, &v1, &v2, &v3};
+  GMANVertex* verts[4] = {&v0, &v1, &v2, &v3};
   GMANFace quad(verts, nullptr);
   GMANPolygonClipper clipper;
   GMANOutputPolygon out;
@@ -213,32 +208,30 @@ void testClipperOtherFivePlanes() {
 
   // LEFT: boundary at x=-z=-5. Two vertices at x=-6 (outside), two at
   // x=-4 (inside).
-  int nLeft = clipQuad(GMANPoint(-6.0, -0.1, 5.0), GMANPoint(-4.0, -0.1, 5.0),
-                        GMANPoint(-4.0, 0.1, 5.0), GMANPoint(-6.0, 0.1, 5.0), vs);
+  int nLeft = clipQuad(GMANPoint(-6.0, -0.1, 5.0), GMANPoint(-4.0, -0.1, 5.0), GMANPoint(-4.0, 0.1, 5.0),
+                       GMANPoint(-6.0, 0.1, 5.0), vs);
   check(nLeft == 4, "clip: a quad straddling the LEFT plane keeps 4 vertices");
 
   // RIGHT: boundary at x=+z=5. Two at x=6 (outside), two at x=4 (inside).
-  int nRight = clipQuad(GMANPoint(6.0, -0.1, 5.0), GMANPoint(4.0, -0.1, 5.0),
-                         GMANPoint(4.0, 0.1, 5.0), GMANPoint(6.0, 0.1, 5.0), vs);
+  int nRight = clipQuad(GMANPoint(6.0, -0.1, 5.0), GMANPoint(4.0, -0.1, 5.0), GMANPoint(4.0, 0.1, 5.0),
+                        GMANPoint(6.0, 0.1, 5.0), vs);
   check(nRight == 4, "clip: a quad straddling the RIGHT plane keeps 4 vertices");
 
   // TOP: boundary at y=+z=5. Two at y=6 (outside), two at y=4 (inside).
-  int nTop = clipQuad(GMANPoint(-0.1, 6.0, 5.0), GMANPoint(0.1, 6.0, 5.0),
-                       GMANPoint(0.1, 4.0, 5.0), GMANPoint(-0.1, 4.0, 5.0), vs);
+  int nTop = clipQuad(GMANPoint(-0.1, 6.0, 5.0), GMANPoint(0.1, 6.0, 5.0), GMANPoint(0.1, 4.0, 5.0),
+                      GMANPoint(-0.1, 4.0, 5.0), vs);
   check(nTop == 4, "clip: a quad straddling the TOP plane keeps 4 vertices");
 
   // BOTTOM: boundary at y=-z=-5. Two at y=-6 (outside), two at y=-4
   // (inside).
-  int nBottom = clipQuad(GMANPoint(-0.1, -6.0, 5.0), GMANPoint(0.1, -6.0, 5.0),
-                          GMANPoint(0.1, -4.0, 5.0), GMANPoint(-0.1, -4.0, 5.0),
-                          vs);
-  check(nBottom == 4,
-        "clip: a quad straddling the BOTTOM plane keeps 4 vertices");
+  int nBottom = clipQuad(GMANPoint(-0.1, -6.0, 5.0), GMANPoint(0.1, -6.0, 5.0), GMANPoint(0.1, -4.0, 5.0),
+                         GMANPoint(-0.1, -4.0, 5.0), vs);
+  check(nBottom == 4, "clip: a quad straddling the BOTTOM plane keeps 4 vertices");
 
   // BACK (far): boundary at z=100. Two at z=110 (outside), two at z=90
   // (inside). x,y stay near 0 so no side plane also clips.
-  int nBack = clipQuad(GMANPoint(-0.1, -0.1, 110.0), GMANPoint(0.1, -0.1, 110.0),
-                        GMANPoint(0.1, 0.1, 90.0), GMANPoint(-0.1, 0.1, 90.0), vs);
+  int nBack = clipQuad(GMANPoint(-0.1, -0.1, 110.0), GMANPoint(0.1, -0.1, 110.0), GMANPoint(0.1, 0.1, 90.0),
+                       GMANPoint(-0.1, 0.1, 90.0), vs);
   check(nBack == 4, "clip: a quad straddling the BACK (far) plane keeps 4 vertices");
 }
 
@@ -250,46 +243,39 @@ void testBackfaceCulling() {
 
   GMANVertex p0, p1, p2, p3;
   p0.setLocation(GMANPoint(-1.0, -1.0, 5.0));
-  p1.setLocation(GMANPoint( 1.0, -1.0, 5.0));
-  p2.setLocation(GMANPoint( 1.0,  1.0, 5.0));
-  p3.setLocation(GMANPoint(-1.0,  1.0, 5.0));
+  p1.setLocation(GMANPoint(1.0, -1.0, 5.0));
+  p2.setLocation(GMANPoint(1.0, 1.0, 5.0));
+  p3.setLocation(GMANPoint(-1.0, 1.0, 5.0));
 
   // Wound so cross(e1,e2) points toward +z -- facing the camera.
-  GMANVertex *windingFacing[4] = {&p0, &p1, &p2, &p3};
+  GMANVertex* windingFacing[4] = {&p0, &p1, &p2, &p3};
   GMANFace facing(windingFacing, nullptr);
   facing.calcNormal();
   facing.setSides(1);
   facing.setOrientation(RI_OUTSIDE);
-  check(near(facing.getNormal().getZ(), 1.0, 1e-4),
-        "backface: sanity check, this winding's normal is +z");
-  check(vs.visible(&facing),
-        "backface: a face whose normal faces the camera is visible");
+  check(near(facing.getNormal().getZ(), 1.0, 1e-4), "backface: sanity check, this winding's normal is +z");
+  check(vs.visible(&facing), "backface: a face whose normal faces the camera is visible");
 
   // Reverse winding -- normal flips to -z, facing away.
-  GMANVertex *windingAway[4] = {&p0, &p3, &p2, &p1};
+  GMANVertex* windingAway[4] = {&p0, &p3, &p2, &p1};
   GMANFace away(windingAway, nullptr);
   away.calcNormal();
   away.setSides(1);
   away.setOrientation(RI_OUTSIDE);
-  check(near(away.getNormal().getZ(), -1.0, 1e-4),
-        "backface: sanity check, the reversed winding's normal is -z");
-  check(!vs.visible(&away),
-        "backface: a face whose normal faces away from the camera is culled");
+  check(near(away.getNormal().getZ(), -1.0, 1e-4), "backface: sanity check, the reversed winding's normal is -z");
+  check(!vs.visible(&away), "backface: a face whose normal faces away from the camera is culled");
 
   // RiSides 2: both windings stay visible -- the case that catches an
   // unconditional single-sided cull.
   away.setSides(2);
-  check(vs.visible(&away),
-        "backface: RiSides 2 keeps a face facing away from the camera");
+  check(vs.visible(&away), "backface: RiSides 2 keeps a face facing away from the camera");
   facing.setSides(2);
-  check(vs.visible(&facing),
-        "backface: RiSides 2 keeps a face facing the camera too");
+  check(vs.visible(&facing), "backface: RiSides 2 keeps a face facing the camera too");
 
   // RiOrientation "inside" inverts which winding counts as facing out.
   away.setSides(1);
   away.setOrientation(RI_INSIDE);
-  check(vs.visible(&away),
-        "backface: RiOrientation inside flips a culled face to visible");
+  check(vs.visible(&away), "backface: RiOrientation inside flips a culled face to visible");
 }
 
 // ---- Phase 3, proof item 5: the perspective culling term ----
@@ -307,27 +293,17 @@ void testPerspectiveCullingNearSilhouette() {
   // below before this relies on it.
   GMANPoint centroid(5.0, 0.0, 0.01);
   GMANVertex q0, q1, q2, q3;
-  q0.setLocation(GMANPoint(centroid.getX() - 0.00001,
-                            centroid.getY() - 0.01,
-                            centroid.getZ() - 0.01));
-  q1.setLocation(GMANPoint(centroid.getX() - 0.00001,
-                            centroid.getY() + 0.01,
-                            centroid.getZ() - 0.01));
-  q2.setLocation(GMANPoint(centroid.getX() + 0.00001,
-                            centroid.getY() + 0.01,
-                            centroid.getZ() + 0.01));
-  q3.setLocation(GMANPoint(centroid.getX() + 0.00001,
-                            centroid.getY() - 0.01,
-                            centroid.getZ() + 0.01));
-  GMANVertex *verts[4] = {&q0, &q1, &q2, &q3};
+  q0.setLocation(GMANPoint(centroid.getX() - 0.00001, centroid.getY() - 0.01, centroid.getZ() - 0.01));
+  q1.setLocation(GMANPoint(centroid.getX() - 0.00001, centroid.getY() + 0.01, centroid.getZ() - 0.01));
+  q2.setLocation(GMANPoint(centroid.getX() + 0.00001, centroid.getY() + 0.01, centroid.getZ() + 0.01));
+  q3.setLocation(GMANPoint(centroid.getX() + 0.00001, centroid.getY() - 0.01, centroid.getZ() + 0.01));
+  GMANVertex* verts[4] = {&q0, &q1, &q2, &q3};
   GMANFace face(verts, nullptr);
   face.calcNormal();
 
   // Confirms the hand derivation above landed where intended before
   // trusting the visible() result below: almost pure +x, tiny negative z.
-  check(face.getNormal().getX() > 0.99 &&
-        face.getNormal().getZ() < 0.0 &&
-        face.getNormal().getZ() > -0.01,
+  check(face.getNormal().getX() > 0.99 && face.getNormal().getZ() < 0.0 && face.getNormal().getZ() > -0.01,
         "perspective culling: hand-built near-silhouette quad's own "
         "geometric normal is +x with a hairline-negative z");
   face.setSides(1);
@@ -339,13 +315,11 @@ void testPerspectiveCullingNearSilhouette() {
   // almost pure +x) dotted with a normal that is almost pure +x, the
   // result is strongly positive: visible. This is exactly the
   // disagreement step 3 exists to fix.
-  check(!(face.getNormal().getZ() > 0.0),
-        "perspective culling: sanity check, the orthographic "
-        "approximation would have culled this face");
-  check(vs.visible(&face),
-        "perspective culling: the real per-face view vector keeps this "
-        "near-silhouette face visible where the orthographic "
-        "approximation would have culled it");
+  check(!(face.getNormal().getZ() > 0.0), "perspective culling: sanity check, the orthographic "
+                                          "approximation would have culled this face");
+  check(vs.visible(&face), "perspective culling: the real per-face view vector keeps this "
+                           "near-silhouette face visible where the orthographic "
+                           "approximation would have culled it");
 }
 
 } // namespace

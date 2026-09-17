@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANOUTPUT_H
 #define __GMAN_GMANOUTPUT_H 1
-
 
 #include <string>
 
@@ -45,69 +43,54 @@
  *
  */
 
-class GMAN_EXPORT  GMANOutput : public GMANFrameBuffer {
-  public:
+class GMAN_EXPORT GMANOutput : public GMANFrameBuffer {
+public:
+  // public types
+  typedef enum {
+    RGB = GMANQuantize::RGB,
+    RGBA = GMANQuantize::RGBA,
+    RGBAZ = GMANQuantize::RGBAZ,
+    A = GMANQuantize::A,
+    AZ = GMANQuantize::AZ,
+    Z = GMANQuantize::Z
+  } DisplayMode;
 
-    // public types
-    typedef enum { 
-	RGB=GMANQuantize::RGB,
-	RGBA=GMANQuantize::RGBA,
-	RGBAZ=GMANQuantize::RGBAZ,
-	A=GMANQuantize::A, 
-	AZ=GMANQuantize::AZ,
-	Z=GMANQuantize::Z } DisplayMode;
-    
-  protected:
-    std::string	outputName;
+protected:
+  std::string outputName;
 
-    GMANQuantize	*quantizer;
+  GMANQuantize* quantizer;
 
-    GMANGammaCorrect	gammaCorrect;
+  GMANGammaCorrect gammaCorrect;
 
-  public:
+public:
+  GMANOutput();
+  ; // default constructor
 
-    GMANOutput();; // default constructor
-  
-    //name, width, height
-    GMANOutput(const char *name, int width, int height);
+  // name, width, height
+  GMANOutput(const char* name, int width, int height);
 
-    // path, width, height, background
+  // path, width, height, background
 
-    GMANOutput(const char *name, 
-	       int width, 
-	       int height, 
-	       const GMANColor &background);
+  GMANOutput(const char* name, int width, int height, const GMANColor& background);
 
-    virtual ~GMANOutput(); // default destructor
+  virtual ~GMANOutput(); // default destructor
 
-    // set the output device exposure control
-    RtVoid setExposure(RtFloat gain, RtFloat gamma) {
-	gammaCorrect.setExposure(gain, gamma);
-    }
+  // set the output device exposure control
+  RtVoid setExposure(RtFloat gain, RtFloat gamma) { gammaCorrect.setExposure(gain, gamma); }
 
-    // set the output name
-    virtual RtVoid setName(const char *name) {
-	outputName = name;
-    };
+  // set the output name
+  virtual RtVoid setName(const char* name) { outputName = name; };
 
-    // call this to set up the quantization
-    virtual RtVoid setQuantization(DisplayMode mode,
-				   RtInt one,
-				   RtInt min,
-				   RtInt max,
-				   RtFloat ditheramplitude);
+  // call this to set up the quantization
+  virtual RtVoid setQuantization(DisplayMode mode, RtInt one, RtInt min, RtInt max, RtFloat ditheramplitude);
 
-  
-    //
-    // Copy or swap the frame buffer bank so the 
-    // buffer data becomes visible.
-    // or save the image data to the display device
-    //
+  //
+  // Copy or swap the frame buffer bank so the
+  // buffer data becomes visible.
+  // or save the image data to the display device
+  //
 
-    virtual RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma) = 0;
-
+  virtual RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma) = 0;
 };
 
-
 #endif
-

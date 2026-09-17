@@ -46,7 +46,7 @@ namespace {
 
 namespace fs = std::filesystem;
 
-bool isHeader(const fs::path &path) {
+bool isHeader(const fs::path& path) {
   const std::string ext = path.extension().string();
   return ext == ".h" || ext == ".hpp";
 }
@@ -54,29 +54,27 @@ bool isHeader(const fs::path &path) {
 // The threading list §1 confines to gmanparallel.cpp and (for <mutex> and
 // std::mutex/std::lock_guard only) gmanlog.cpp.
 struct ForbiddenHeader {
-  const char *include;  // as it appears between the angle brackets
+  const char* include; // as it appears between the angle brackets
 };
 
 const std::vector<ForbiddenHeader> kForbiddenHeaders = {
-    {"thread"},       {"stop_token"},         {"mutex"},
-    {"atomic"},       {"condition_variable"}, {"future"},
-    {"shared_mutex"}, {"pthread.h"},
+    {"thread"}, {"stop_token"},   {"mutex"},     {"atomic"}, {"condition_variable"},
+    {"future"}, {"shared_mutex"}, {"pthread.h"},
 };
 
 struct ForbiddenToken {
-  const char *token;
+  const char* token;
 };
 
 const std::vector<ForbiddenToken> kForbiddenTokens = {
-    {"std::jthread"}, {"std::thread"}, {"std::stop_token"},
-    {"std::mutex"},   {"std::atomic"}, {"pthread_"},
+    {"std::jthread"}, {"std::thread"}, {"std::stop_token"}, {"std::mutex"}, {"std::atomic"}, {"pthread_"},
 };
 
 // Headers this file includes that are on the forbidden list, as the
 // literal "<name>" substring #include writes them with.
-std::vector<std::string> forbiddenHeadersFound(const std::string &text) {
+std::vector<std::string> forbiddenHeadersFound(const std::string& text) {
   std::vector<std::string> found;
-  for (const auto &header : kForbiddenHeaders) {
+  for (const auto& header : kForbiddenHeaders) {
     std::string needle = std::string("<") + header.include + ">";
     if (text.find(needle) != std::string::npos) {
       found.push_back(header.include);
@@ -86,9 +84,9 @@ std::vector<std::string> forbiddenHeadersFound(const std::string &text) {
 }
 
 // Forbidden tokens this file names.
-std::vector<std::string> forbiddenTokensFound(const std::string &text) {
+std::vector<std::string> forbiddenTokensFound(const std::string& text) {
   std::vector<std::string> found;
-  for (const auto &tok : kForbiddenTokens) {
+  for (const auto& tok : kForbiddenTokens) {
     if (text.find(tok.token) != std::string::npos) {
       found.push_back(tok.token);
     }
@@ -96,9 +94,9 @@ std::vector<std::string> forbiddenTokensFound(const std::string &text) {
   return found;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   if (argc < 2) {
     std::cerr << "usage: " << argv[0] << " <source-dir> [source-dir ...]\n";
     return 2;
@@ -110,13 +108,12 @@ int main(int argc, char **argv) {
   }
 
   const std::vector<fs::path> files = collectSourceFiles(dirs);
-  check(files.size() > 100,
-        "scanned a plausible number of source files (>100)");
+  check(files.size() > 100, "scanned a plausible number of source files (>100)");
 
   bool sawParallelFile = false;
   bool sawLogFile = false;
 
-  for (const fs::path &file : files) {
+  for (const fs::path& file : files) {
     const std::string text = readFile(file);
     const std::string generic = file.generic_string();
     const bool isParallelFile = pathEndsWith(file, "libgman/gmanparallel.cpp");
@@ -124,7 +121,7 @@ int main(int argc, char **argv) {
 
     if (isParallelFile) {
       sawParallelFile = true;
-      continue;  // sanctioned: may include and name any of the list.
+      continue; // sanctioned: may include and name any of the list.
     }
 
     const std::vector<std::string> headers = forbiddenHeadersFound(text);
@@ -134,37 +131,30 @@ int main(int argc, char **argv) {
       sawLogFile = true;
       // May include <mutex> and name std::mutex/std::lock_guard, nothing
       // else from the threading list.
-      for (const auto &header : headers) {
-        check(header == "mutex",
-              generic + ": only <mutex> is sanctioned here, not <" + header +
-                  ">");
+      for (const auto& header : headers) {
+        check(header == "mutex", generic + ": only <mutex> is sanctioned here, not <" + header + ">");
       }
-      for (const auto &token : tokens) {
-        check(token == "std::mutex",
-              generic + ": only std::mutex is sanctioned here, not " + token);
+      for (const auto& token : tokens) {
+        check(token == "std::mutex", generic + ": only std::mutex is sanctioned here, not " + token);
       }
       continue;
     }
 
     if (isHeader(file)) {
       check(headers.empty(),
-            generic + ": a header includes a threading header (<" +
-                (headers.empty() ? "" : headers.front()) + ">)");
-      check(tokens.empty(), generic + ": a header names a thread primitive (" +
-                                (tokens.empty() ? "" : tokens.front()) + ")");
-    } else {
-      check(headers.empty(),
-            generic + ": includes a threading header outside the seam (<" +
-                (headers.empty() ? "" : headers.front()) + ">)");
+            generic + ": a header includes a threading header (<" + (headers.empty() ? "" : headers.front()) + ">)");
       check(tokens.empty(),
-            generic + ": names a thread primitive outside the seam (" +
-                (tokens.empty() ? "" : tokens.front()) + ")");
+            generic + ": a header names a thread primitive (" + (tokens.empty() ? "" : tokens.front()) + ")");
+    } else {
+      check(headers.empty(), generic + ": includes a threading header outside the seam (<" +
+                                 (headers.empty() ? "" : headers.front()) + ">)");
+      check(tokens.empty(),
+            generic + ": names a thread primitive outside the seam (" + (tokens.empty() ? "" : tokens.front()) + ")");
     }
   }
 
   check(sawParallelFile, "libgman/gmanparallel.cpp was scanned");
   check(sawLogFile, "libgman/gmanlog.cpp was scanned");
 
-  return checkSummary(
-      "no thread primitive escapes gmanparallel.cpp/gmanlog.cpp's seam");
+  return checkSummary("no thread primitive escapes gmanparallel.cpp/gmanlog.cpp's seam");
 }

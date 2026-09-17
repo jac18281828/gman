@@ -48,7 +48,7 @@ struct CapturedRun {
 // tests/ribmalformed_test.cpp uses, capturing stdout. --version's output
 // is two short lines, well under a pipe's buffer, so reading it after the
 // child exits cannot deadlock.
-CapturedRun runCaptured(std::vector<std::string> const &argv) {
+CapturedRun runCaptured(std::vector<std::string> const& argv) {
   CapturedRun result;
   int outPipe[2];
   if (pipe(outPipe) != 0) {
@@ -65,9 +65,9 @@ CapturedRun runCaptured(std::vector<std::string> const &argv) {
     close(outPipe[0]);
     dup2(outPipe[1], STDOUT_FILENO);
     close(outPipe[1]);
-    std::vector<char *> cargv;
-    for (auto const &arg : argv) {
-      cargv.push_back(const_cast<char *>(arg.c_str()));
+    std::vector<char*> cargv;
+    for (auto const& arg : argv) {
+      cargv.push_back(const_cast<char*>(arg.c_str()));
     }
     cargv.push_back(nullptr);
     execv(cargv[0], cargv.data());
@@ -89,7 +89,7 @@ CapturedRun runCaptured(std::vector<std::string> const &argv) {
 }
 
 // The line beginning "drivers:" among captured lines, or "" if absent.
-std::string driversLine(std::string const &text) {
+std::string driversLine(std::string const& text) {
   std::size_t pos = 0;
   while (pos < text.size()) {
     const auto eol = text.find('\n', pos);
@@ -107,10 +107,9 @@ std::string driversLine(std::string const &text) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc != 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <expected driver list>\n",
-                 argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <expected driver list>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
@@ -118,11 +117,9 @@ int main(int argc, char *argv[]) {
 
   const auto run = runCaptured({gman, "--version"});
   check(run.exitStatus == 0, "gman --version exits 0");
-  check(run.stdoutText.rfind("gman ", 0) == 0,
-        "gman --version's first line names the program");
+  check(run.stdoutText.rfind("gman ", 0) == 0, "gman --version's first line names the program");
   check(driversLine(run.stdoutText) == expected,
-        "gman --version's drivers: line matches this build (\"" + expected +
-            "\")");
+        "gman --version's drivers: line matches this build (\"" + expected + "\")");
 
   return checkSummary("gman --version reports this build's file drivers");
 }

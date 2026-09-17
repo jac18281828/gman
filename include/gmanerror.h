@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -30,44 +30,28 @@
 
 #include "ri.h"
 
-
-class GMAN_EXPORT  GMANError
-{
+class GMAN_EXPORT GMANError {
 private:
   RtInt code;
   RtInt severity;
   std::string message;
+
 public:
-  GMANError ();
-  GMANError (RtInt cd, RtInt sev, const char *msg);
+  GMANError();
+  GMANError(RtInt cd, RtInt sev, const char* msg);
 
-  RtVoid set (RtInt cd, RtInt sev, const char *msg);
-  RtVoid setCode (RtInt cd) { code = cd; }
-  RtVoid setSeverity (RtInt sev) { severity = sev; }
-  RtVoid setMessage (const char *msg) { message = std::string(msg); }
+  RtVoid set(RtInt cd, RtInt sev, const char* msg);
+  RtVoid setCode(RtInt cd) { code = cd; }
+  RtVoid setSeverity(RtInt sev) { severity = sev; }
+  RtVoid setMessage(const char* msg) { message = std::string(msg); }
 
-  RtInt  getCode (RtVoid) const { return code; }
-  RtInt  getSeverity (RtVoid) const { return severity; }
-  const char *getMessage (RtVoid) const{ return message.c_str(); }
+  RtInt getCode(RtVoid) const { return code; }
+  RtInt getSeverity(RtVoid) const { return severity; }
+  const char* getMessage(RtVoid) const { return message.c_str(); }
 };
 
-extern RtVoid GMAN_EXPORT  GMANHandleError (GMANError &);
+extern RtVoid GMAN_EXPORT GMANHandleError(GMANError&);
 
-extern RtErrorHandler GMAN_EXPORT  GMANErrorHandler;
+extern RtErrorHandler GMAN_EXPORT GMANErrorHandler;
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

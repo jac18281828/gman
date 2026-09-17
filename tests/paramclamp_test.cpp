@@ -52,7 +52,7 @@ namespace {
 
 struct RunResult {
   bool timedOut = false;
-  bool crashed = false;  // terminated by a signal (SIGSEGV, SIGABRT, ...)
+  bool crashed = false; // terminated by a signal (SIGSEGV, SIGABRT, ...)
   int exitStatus = -1;
   std::string output;
 };
@@ -61,8 +61,7 @@ struct RunResult {
 // stdout/stderr for the caller to inspect -- warning() (gmanlog.cpp) writes
 // to stdout, not stderr. Polls rather than SIGALRM, matching
 // ribmalformed_test.cpp's own reasoning.
-RunResult runCapturingOutput(const std::string &gman, const std::string &rib,
-                             int timeoutSeconds) {
+RunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
   RunResult result;
 
   int pipeFds[2];
@@ -81,7 +80,7 @@ RunResult runCapturingOutput(const std::string &gman, const std::string &rib,
     dup2(pipeFds[1], STDOUT_FILENO);
     dup2(pipeFds[1], STDERR_FILENO);
     close(pipeFds[1]);
-    execl(gman.c_str(), gman.c_str(), rib.c_str(), (char *)nullptr);
+    execl(gman.c_str(), gman.c_str(), rib.c_str(), (char*)nullptr);
     _exit(127);
   }
   close(pipeFds[1]);
@@ -116,7 +115,7 @@ RunResult runCapturingOutput(const std::string &gman, const std::string &rib,
 }
 
 // Counts non-overlapping occurrences of needle in haystack.
-int countOccurrences(const std::string &haystack, const std::string &needle) {
+int countOccurrences(const std::string& haystack, const std::string& needle) {
   int count = 0;
   std::string::size_type pos = 0;
   while ((pos = haystack.find(needle, pos)) != std::string::npos) {
@@ -126,52 +125,39 @@ int countOccurrences(const std::string &haystack, const std::string &needle) {
   return count;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/malformed dir>\n",
-                 argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/malformed dir>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
   const std::string dir = argv[2];
 
   struct Fixture {
-    const char *file;
-    const char *expectedWarning;
+    const char* file;
+    const char* expectedWarning;
   };
   const Fixture fixtures[] = {
-      {"patch_short_p_bilinear.rib",
-       "Parameter \"P\": declared length 12, supplied length 6"},
-      {"patch_short_p_bicubic.rib",
-       "Parameter \"P\": declared length 48, supplied length 6"},
-      {"patchmesh_short_p.rib",
-       "Parameter \"P\": declared length 18, supplied length 9"},
-      {"patch_param_reorder.rib",
-       "Parameter \"P\": declared length 12, supplied length 6"},
-      {"generalpolygon_short_p.rib",
-       "Parameter \"P\": declared length 24, supplied length 9"},
-      {"generalpolygon_negative_nverts.rib",
-       "GeneralPolygon: nverts[1] = -1 is negative; ignoring."},
-      {"generalpolygon_empty_nverts.rib",
-       "GeneralPolygon: nloops = 0 is invalid; ignoring."},
+      {"patch_short_p_bilinear.rib", "Parameter \"P\": declared length 12, supplied length 6"},
+      {"patch_short_p_bicubic.rib", "Parameter \"P\": declared length 48, supplied length 6"},
+      {"patchmesh_short_p.rib", "Parameter \"P\": declared length 18, supplied length 9"},
+      {"patch_param_reorder.rib", "Parameter \"P\": declared length 12, supplied length 6"},
+      {"generalpolygon_short_p.rib", "Parameter \"P\": declared length 24, supplied length 9"},
+      {"generalpolygon_negative_nverts.rib", "GeneralPolygon: nverts[1] = -1 is negative; ignoring."},
+      {"generalpolygon_empty_nverts.rib", "GeneralPolygon: nloops = 0 is invalid; ignoring."},
   };
 
-  for (const Fixture &fixture : fixtures) {
+  for (const Fixture& fixture : fixtures) {
     const std::string rib = dir + "/" + fixture.file;
     RunResult r = runCapturingOutput(gman, rib, 10);
-    check(!r.timedOut,
-          std::string(fixture.file) + ": does not hang (10s bound)");
-    check(!r.crashed,
-          std::string(fixture.file) +
-              ": does not crash -- a short array stays inside its own "
-              "allocation instead of reading past it");
-    check(r.exitStatus == 0,
-          std::string(fixture.file) + ": exits cleanly (degrade, don't abort)");
+    check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
+    check(!r.crashed, std::string(fixture.file) + ": does not crash -- a short array stays inside its own "
+                                                  "allocation instead of reading past it");
+    check(r.exitStatus == 0, std::string(fixture.file) + ": exits cleanly (degrade, don't abort)");
     check(r.output.find(fixture.expectedWarning) != std::string::npos,
-          std::string(fixture.file) +
-              ": warns naming the short parameter and both lengths");
+          std::string(fixture.file) + ": warns naming the short parameter and both lengths");
   }
 
   // patch_param_reorder.rib's other three parameters ("N", "Cs", "st") are
@@ -180,8 +166,7 @@ int main(int argc, char *argv[]) {
   // counts array built in the wrong order lined a full-length value up
   // with a different key's short count.
   {
-    RunResult r =
-        runCapturingOutput(gman, dir + "/patch_param_reorder.rib", 10);
+    RunResult r = runCapturingOutput(gman, dir + "/patch_param_reorder.rib", 10);
     check(countOccurrences(r.output, "Parameter \"") == 1,
           "patch_param_reorder.rib: only the short parameter (\"P\") warns, "
           "not one of the fully-supplied ones a misaligned counts array "

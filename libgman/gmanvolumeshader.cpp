@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,15 +27,13 @@
 #include "gmanvolumeshader.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANVolumeShader
  *
  */
 
 // default constructor
-GMANVolumeShader::GMANVolumeShader() : GMANShader() { };
+GMANVolumeShader::GMANVolumeShader() : GMANShader() {};
 
-
-// default destructor 
-GMANVolumeShader::~GMANVolumeShader() { };
+// default destructor
+GMANVolumeShader::~GMANVolumeShader() {};

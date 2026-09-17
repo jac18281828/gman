@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,58 +27,42 @@
 #include "gmanworldmanager.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANLinearWorldManager
  *
  */
 
 // default constructor
-GMANLinearWorldManager::GMANLinearWorldManager() : GMANWorldManager() { 
-};
+GMANLinearWorldManager::GMANLinearWorldManager() : GMANWorldManager() {};
 
+// default destructor
+GMANLinearWorldManager::~GMANLinearWorldManager() {
 
-// default destructor 
-GMANLinearWorldManager::~GMANLinearWorldManager() { 
-
-  for(ObjectList::iterator obj=objects.begin();
-      obj!= objects.end();
-      obj++) {
-    if(*obj) {
+  for (ObjectList::iterator obj = objects.begin(); obj != objects.end(); obj++) {
+    if (*obj) {
 
       delete (*obj);
-
     }
-
   }
   current = objects.begin();
-
 };
 
-RtVoid GMANLinearWorldManager::add(ObjectPtr object) {
-   objects.push_back(object);
+RtVoid GMANLinearWorldManager::add(ObjectPtr object) { objects.push_back(object); };
 
-};
-
-
-GMANPrimitive *GMANLinearWorldManager::getFirst(RtVoid) {
+GMANPrimitive* GMANLinearWorldManager::getFirst(RtVoid) {
   current = objects.begin();
-  if(objects.size()) {
+  if (objects.size()) {
     return *current;
   } else {
     return NULL;
   }
-  
 };
 
-GMANPrimitive *GMANLinearWorldManager::getNext(RtVoid) {
+GMANPrimitive* GMANLinearWorldManager::getNext(RtVoid) {
 
   current++;
-  if(current != objects.end()) {
+  if (current != objects.end()) {
     return *current;
   }
   return NULL;
-
 };
-
-

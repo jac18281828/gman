@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,16 +27,13 @@
 #include "gmanvertex4.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANVertex4
  *
  */
 
 // default constructor
-GMANVertex4::GMANVertex4() { };
+GMANVertex4::GMANVertex4() {};
 
-
-// default destructor 
-GMANVertex4::~GMANVertex4() { };
-
+// default destructor
+GMANVertex4::~GMANVertex4() {};

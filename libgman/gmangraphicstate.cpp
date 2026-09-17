@@ -5,7 +5,7 @@
   --------------------------------------------------------------------
   2000/10/19  First release
   2000/11     Moved Stacks from gmanrenderman here.
-	      Changed allowed(), and added partial support for motion.
+              Changed allowed(), and added partial support for motion.
   --------------------------------------------------------------------
   This class store everything related with the graphic state.
   It manage motion, and check that Ri commands appear in the
@@ -29,274 +29,188 @@
 
 #include "gmangraphicstate.h"
 
-
 // OPTIONS
-GMANGraphicState::CommandIdentity 
-GMANGraphicState::cmdFormat = { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdFormat = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity 
-GMANGraphicState::cmdFrameAspectRatio= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdFrameAspectRatio = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity 
-GMANGraphicState::cmdScreenWindow= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdScreenWindow = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdCropWindow= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdCropWindow = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdProjection= { B|F|M, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdProjection = {B | F | M, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdClipping= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdClipping = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdDepthOfField = { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdDepthOfField = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdShutter= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdShutter = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPixelVariance= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPixelVariance = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPixelSamples= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPixelSamples = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPixelFilter= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPixelFilter = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdExposure= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdExposure = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdImager= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdImager = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdQuantize= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdQuantize = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdDisplay= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdDisplay = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdHider= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdHider = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdColorSamples= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdColorSamples = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdRelativeDetail= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdRelativeDetail = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdOption= { 0, 0,0,0 }; // TODO ****
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdOption = {0, 0, 0, 0}; // TODO ****
 
 // ATTRIBUTES
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdColor= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdColor = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdOpacity= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdOpacity = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdTextureCoordinates= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdTextureCoordinates = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdLightSource= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdLightSource = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdAreaLightSource= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdAreaLightSource = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdIlluminate= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdIlluminate = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdSurface= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdSurface = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdAtmosphere= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdAtmosphere = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdDisplacement= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdDisplacement = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdInterior= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdInterior = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdExterior= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdExterior = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdShadingRate= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdShadingRate = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdShadingInterpolation= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdShadingInterpolation = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdMatte= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdMatte = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdBound= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdBound = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdDetail= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdDetail = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdDetailRange= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdDetailRange = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdGeometricApproximation= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdGeometricApproximation = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdOrientation= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdOrientation = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdReverseOrientation= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdReverseOrientation = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdSides= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdSides = {B | F | W | A | T | S | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity 
-GMANGraphicState::cmdBasis= { B|F|W|A|T|S|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdBasis = {B | F | W | A | T | S | M, 1, 0, 0};
 
 // TRANSFORMS
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdIdentity= { B|F|W|A|T|S|M, 0,1,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdIdentity = {B | F | W | A | T | S | M, 0, 1, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdTransform= { B|F|W|A|T|S|M, 0,1,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdTransform = {B | F | W | A | T | S | M, 0, 1, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdConcatTransform= { B|F|W|A|T|S|M, 0,1,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdConcatTransform = {B | F | W | A | T | S | M, 0, 1, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPerspective= { B|F|W|A|T|S|M, 0,1,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPerspective = {B | F | W | A | T | S | M, 0, 1, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdTranslate= { B|F|W|A|T|S|M, 0,1,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdTranslate = {B | F | W | A | T | S | M, 0, 1, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdRotate= { B|F|W|A|T|S|M, 0,1,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdRotate = {B | F | W | A | T | S | M, 0, 1, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdScale= { B|F|W|A|T|S|M, 0,1,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdScale = {B | F | W | A | T | S | M, 0, 1, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdSkew= { B|F|W|A|T|S|M, 0,1,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdSkew = {B | F | W | A | T | S | M, 0, 1, 0};
 
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdCoordinateSystem = {B | F | W | A | T | S, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdCoordinateSystem= { B|F|W|A|T|S, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdCoordSysTransform = {B | F | W | A | T | S, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdCoordSysTransform= { B|F|W|A|T|S, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdTransformPoints = {B | F | W | A | T | S, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdTransformPoints= { B|F|W|A|T|S, 0,0,0 };
-
-
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdAttribute= { 0, 0,0,0 }; // TODO ****
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdAttribute = {0, 0, 0, 0}; // TODO ****
 
 // PRIMITIVES
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPolygon= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPolygon = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdGeneralPolygon= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdGeneralPolygon = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPointsPolygon= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPointsPolygon = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPointsGeneralPolygons= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPointsGeneralPolygons = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPatch= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPatch = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPatchMesh= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPatchMesh = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdNuPatch= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdNuPatch = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdTrimCurve= { W|A|T|S|O|M, 1,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdTrimCurve = {W | A | T | S | O | M, 1, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdSphere= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdSphere = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdCone= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdCone = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdCylinder= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdCylinder = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdHyperboloid= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdHyperboloid = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdParaboloid= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdParaboloid = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdDisk= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdDisk = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdTorus= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdTorus = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdBlobby= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdBlobby = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdCurves= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdCurves = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdPoints= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdPoints = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdSubdivisionMesh= { W|A|T|S|O|M, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdSubdivisionMesh = {W | A | T | S | O | M, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdProcedural= { W|A|T|S|O, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdProcedural = {W | A | T | S | O, 0, 0, 1};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdGeometry= { W|A|T|S|O, 0,0,1 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdGeometry = {W | A | T | S | O, 0, 0, 1};
 
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdObjectInstance = {W | A | T | S, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdObjectInstance= { W|A|T|S, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdMakeTexture = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdMakeTexture= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdMakeBump = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdMakeBump= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdMakeLatLongEnvironment = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdMakeLatLongEnvironment= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdMakeCubeFaceEnvironment = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdMakeCubeFaceEnvironment= { B|F, 0,0,0 };
+GMANGraphicState::CommandIdentity GMANGraphicState::cmdMakeShadow = {B | F, 0, 0, 0};
 
-GMANGraphicState::CommandIdentity
-GMANGraphicState::cmdMakeShadow= { B|F, 0,0,0 };
-
-
-GMANGraphicState::GMANGraphicState() : mm(std::vector<RtFloat>{0})
-{
+GMANGraphicState::GMANGraphicState() : mm(std::vector<RtFloat>{0}) {
   nest.push(B);
-  block=B;
-  frame=0;
-  world=0;
-  attribute=0;
-  transform=0;
-  solid=0;
-  motion=0;
-  object=0;
+  block = B;
+  frame = 0;
+  world = 0;
+  attribute = 0;
+  transform = 0;
+  solid = 0;
+  motion = 0;
+  object = 0;
 
-  attribsChangedFlag=false;
-  transformChangedFlag=false;
+  attribsChangedFlag = false;
+  transformChangedFlag = false;
 
-  nbSamples=0;
-  motionIndex=0;
-  currentMC=0;
-  motionError=false;
+  nbSamples = 0;
+  motionIndex = 0;
+  currentMC = 0;
+  motionError = false;
 
   /* These stacks hold values, not pointers, so push() copies its argument and
    * the *(new X) originals were leaked immediately -- 1332 bytes per context,
@@ -306,25 +220,18 @@ GMANGraphicState::GMANGraphicState() : mm(std::vector<RtFloat>{0})
   attributesStack.push(GMANAttributes());
   transformStack.push(GMANTransform());
 }
-GMANOptions &GMANGraphicState::getOptions()
-{
-  return optionsStack.top();
-}
-GMANAttributes &GMANGraphicState::getAttributes()
-{
-  return attributesStack.top();
-}
-RtVoid GMANGraphicState::enterMode (CurrentState mode)
-{
+GMANOptions& GMANGraphicState::getOptions() { return optionsStack.top(); }
+GMANAttributes& GMANGraphicState::getAttributes() { return attributesStack.top(); }
+RtVoid GMANGraphicState::enterMode(CurrentState mode) {
   switch (mode) {
   case B: // the outermost block is never entered or left explicitly
     break;
   case F: // ** ENTER FRAME ** //
     allowed(B);
-    if (frame==1) {
+    if (frame == 1) {
       error("RiFrameBegin cannot be nested");
     }
-    frame=1;
+    frame = 1;
     push(F);
 
     optionsStack.push(optionsStack.top());
@@ -333,11 +240,11 @@ RtVoid GMANGraphicState::enterMode (CurrentState mode)
     break;
 
   case W: // ** ENTER WORLD ** //
-    allowed(B|F);
-    if (world==1) {
+    allowed(B | F);
+    if (world == 1) {
       error("RiWorldBegin cannot be nested");
     }
-    world=1;
+    world = 1;
     push(W);
 
     attributesStack.push(attributesStack.top());
@@ -345,8 +252,8 @@ RtVoid GMANGraphicState::enterMode (CurrentState mode)
     break;
 
   case A: // ** ENTER ATTRIBUTE ** //
-    allowed(B|F|W|A|T|S);
-    attribute+=1;
+    allowed(B | F | W | A | T | S);
+    attribute += 1;
     push(A);
 
     attributesStack.push(attributesStack.top());
@@ -354,25 +261,25 @@ RtVoid GMANGraphicState::enterMode (CurrentState mode)
     break;
 
   case T: // ** ENTER TRANSFORM ** //
-    allowed(B|F|W|A|T|S);
-    transform+=1;
+    allowed(B | F | W | A | T | S);
+    transform += 1;
     push(T);
 
     transformStack.push(transformStack.top());
     break;
 
   case O: // ** ENTER OBJECT ** //
-    allowed(B|F|W|S);
-    if (object==1) {
+    allowed(B | F | W | S);
+    if (object == 1) {
       error("RiObjectBegin cannot be nested");
     }
-    object=1;
+    object = 1;
     push(O);
     break;
 
   case S: // ** ENTER SOLID ** //
-    allowed(W|S);
-    solid+=1;
+    allowed(W | S);
+    solid += 1;
     push(S);
 
     attributesStack.push(attributesStack.top());
@@ -380,39 +287,37 @@ RtVoid GMANGraphicState::enterMode (CurrentState mode)
     break;
 
   case M: // ** ENTER MOTION ** //
-    GMANError error (RIE_BUG,RIE_SEVERE,"Internal error: use of entermode(int) for a motion block");
+    GMANError error(RIE_BUG, RIE_SEVERE, "Internal error: use of entermode(int) for a motion block");
     throw error;
   }
 }
-RtVoid GMANGraphicState::enterMotion (RtInt n, RtFloat *s)
-{
-  allowed(B|F|W|A|T|S);
-  if (motion==1) {
+RtVoid GMANGraphicState::enterMotion(RtInt n, RtFloat* s) {
+  allowed(B | F | W | A | T | S);
+  if (motion == 1) {
     error("RiMotionBegin cannot be nested");
   }
-  motion=1;
+  motion = 1;
   push(M);
-  
-  nbSamples=n;
+
+  nbSamples = n;
   samples.resize(n);
-  for(RtInt i=0;i<n;i++)
-      samples[i]=s[i];
-  motionIndex=0;
-  motionError=false;
+  for (RtInt i = 0; i < n; i++)
+    samples[i] = s[i];
+  motionIndex = 0;
+  motionError = false;
 }
 
-RtVoid GMANGraphicState::leaveMode (CurrentState mode)
-{
-  CurrentState i=nest.top();
+RtVoid GMANGraphicState::leaveMode(CurrentState mode) {
+  CurrentState i = nest.top();
   switch (mode) {
   case B: // the outermost block is never entered or left explicitly
     break;
   case F: // ** LEAVE FRAME ** //
-    if (frame==0) {
+    if (frame == 0) {
       error("RiFrameBegin not called");
     }
-    overlap(F,i);
-    frame=0;
+    overlap(F, i);
+    frame = 0;
     pop();
 
     optionsStack.pop();
@@ -421,11 +326,11 @@ RtVoid GMANGraphicState::leaveMode (CurrentState mode)
     break;
 
   case W: // ** LEAVE WORLD ** //
-    if (world==0) {
+    if (world == 0) {
       error("RiWorldBegin not called");
     }
-    overlap(W,i);
-    world=0;
+    overlap(W, i);
+    world = 0;
     pop();
 
     attributesStack.pop();
@@ -433,11 +338,11 @@ RtVoid GMANGraphicState::leaveMode (CurrentState mode)
     break;
 
   case A: // ** LEAVE ATTRIBUTE ** //
-    if (attribute==0) {
+    if (attribute == 0) {
       error("RiAttributeBegin not called");
     }
-    overlap(A,i);
-    attribute-=1;
+    overlap(A, i);
+    attribute -= 1;
     pop();
 
     attributesStack.pop();
@@ -445,31 +350,31 @@ RtVoid GMANGraphicState::leaveMode (CurrentState mode)
     break;
 
   case T: // ** LEAVE TRANSFORM ** //
-    if (transform==0) {
+    if (transform == 0) {
       error("RiTransformBegin not called");
     }
-    overlap(T,i);
-    transform-=1;
+    overlap(T, i);
+    transform -= 1;
     pop();
 
     transformStack.pop();
     break;
 
   case O: // ** LEAVE OBJECT ** //
-    if (object==0) {
+    if (object == 0) {
       error("RiObjectBegin not called");
     }
-    object=0;
+    object = 0;
     pop();
-    overlap(O,i);
+    overlap(O, i);
     break;
 
   case S: // ** LEAVE SOLID ** //
-    if (solid==0) {
+    if (solid == 0) {
       error("RiSolidBegin not called");
     }
-    overlap(S,i);
-    solid-=1;
+    overlap(S, i);
+    solid -= 1;
     pop();
 
     attributesStack.pop();
@@ -477,108 +382,95 @@ RtVoid GMANGraphicState::leaveMode (CurrentState mode)
     break;
 
   case M: // ** LEAVE MOTION ** //
-    if (motion==0) {
+    if (motion == 0) {
       error("RiMotionBegin not called");
     }
-    overlap(M,i);
-    motion=0;
+    overlap(M, i);
+    motion = 0;
     pop();
 
-    nbSamples=0;
+    nbSamples = 0;
     samples.resize(0);
     break;
   }
 }
 
-RtVoid GMANGraphicState::allowed(CommandIdentity &cid)
-{
+RtVoid GMANGraphicState::allowed(CommandIdentity& cid) {
   allowed(cid.allowedBlocks);
-  if (cid.isAttribute==true) attribsChangedFlag=true; 
-  if (cid.isTransform==true) transformChangedFlag=true;
-  if (cid.isPrimitive==true) {
-    attribsChangedFlag=false;
-    transformChangedFlag=false;
+  if (cid.isAttribute == true)
+    attribsChangedFlag = true;
+  if (cid.isTransform == true)
+    transformChangedFlag = true;
+  if (cid.isPrimitive == true) {
+    attribsChangedFlag = false;
+    transformChangedFlag = false;
   };
 
-  if (motion==1) {
-    if (motionIndex==0) {
-      currentMC=&cid;
-    } else if (&cid!=currentMC) {
-      motionError=true;
-      GMANError error(RIE_BADMOTION,RIE_WARNING,
-		      "Commands must be the same in a Motion Block");
+  if (motion == 1) {
+    if (motionIndex == 0) {
+      currentMC = &cid;
+    } else if (&cid != currentMC) {
+      motionError = true;
+      GMANError error(RIE_BADMOTION, RIE_WARNING, "Commands must be the same in a Motion Block");
       throw error;
     }
   }
 }
-RtVoid GMANGraphicState::allowed (RtInt mode)
-{
-  if ((block&mode)==0) {
-    GMANError r(RIE_ILLSTATE,RIE_WARNING,"Invalid mode for procedure");
+RtVoid GMANGraphicState::allowed(RtInt mode) {
+  if ((block & mode) == 0) {
+    GMANError r(RIE_ILLSTATE, RIE_WARNING, "Invalid mode for procedure");
     throw r;
   }
 }
-RtVoid GMANGraphicState::push(CurrentState mode)
-{
+RtVoid GMANGraphicState::push(CurrentState mode) {
   nest.push(mode);
-  //if ((mode!=T)&&(mode!=A)) block=mode;
-  block=mode;
+  // if ((mode!=T)&&(mode!=A)) block=mode;
+  block = mode;
 }
-RtVoid GMANGraphicState::pop()
-{
-  if (nest.size()==0) return;
+RtVoid GMANGraphicState::pop() {
+  if (nest.size() == 0)
+    return;
   nest.pop();
-  //if ((nest.top()!=T)&&(nest.top()!=A)) block=nest.top();
-  block=nest.top();
+  // if ((nest.top()!=T)&&(nest.top()!=A)) block=nest.top();
+  block = nest.top();
 }
-RtVoid GMANGraphicState::overlap (CurrentState mode, CurrentState current)
-{
-  if (mode!=current) {
+RtVoid GMANGraphicState::overlap(CurrentState mode, CurrentState current) {
+  if (mode != current) {
     error("Blocks cannot overlap");
   }
 }
-RtVoid GMANGraphicState::error(const char *message)
-{
-  GMANError error(RIE_NESTING,RIE_SEVERE,message);
+RtVoid GMANGraphicState::error(const char* message) {
+  GMANError error(RIE_NESTING, RIE_SEVERE, message);
   throw error;
 }
 
-bool GMANGraphicState::sameAttribs()
-{
-  return !attribsChangedFlag;
-}
+bool GMANGraphicState::sameAttribs() { return !attribsChangedFlag; }
 
-bool GMANGraphicState::sameTransform()
-{
-  return !transformChangedFlag;
-}
+bool GMANGraphicState::sameTransform() { return !transformChangedFlag; }
 
-const GMANTransform &GMANGraphicState::getTransform() const 
-{
-  return transformStack.top();
-}
+const GMANTransform& GMANGraphicState::getTransform() const { return transformStack.top(); }
 
-RtVoid GMANGraphicState::setTransform(GMANMatrix4 &m)
-{
-  if (motion==1) { // in motion
-    if (motionIndex==0) {
-	  GMANMovingMatrix mm2(samples);
-	  mm=mm2;
-    } else if (motionIndex==nbSamples) {
-      GMANError error(RIE_BADMOTION,RIE_WARNING,"Too many Transforms in Motion Block");
+RtVoid GMANGraphicState::setTransform(GMANMatrix4& m) {
+  if (motion == 1) { // in motion
+    if (motionIndex == 0) {
+      GMANMovingMatrix mm2(samples);
+      mm = mm2;
+    } else if (motionIndex == nbSamples) {
+      GMANError error(RIE_BADMOTION, RIE_WARNING, "Too many Transforms in Motion Block");
       throw error;
     }
-    mm.get(motionIndex)=m;
-    motionIndex+=1;
-    if (motionIndex==nbSamples) {
-      if (motionError==true) return;
+    mm.get(motionIndex) = m;
+    motionIndex += 1;
+    if (motionIndex == nbSamples) {
+      if (motionError == true)
+        return;
       GMANTransform a(mm);
-      transformStack.top()=a;
+      transformStack.top() = a;
     }
   } else { // not in motion
     GMANOneMatrix a(m);
     GMANTransform b(a);
-    transformStack.top()=b;
+    transformStack.top() = b;
   }
 }
 namespace {
@@ -589,28 +481,27 @@ namespace {
 // everything already accumulated rather than before it. GMANTransform's
 // copy assignment deep-copies storage, so the stack top ends up owning
 // exactly one live GMANMatrixStorage either way.
-void foldLocalAhead(GMANTransform &local,
-		     GMANGraphicState::TransformStack &transformStack) {
+void foldLocalAhead(GMANTransform& local, GMANGraphicState::TransformStack& transformStack) {
   local.concat(transformStack.top());
   transformStack.top() = local;
 }
 
-}  // namespace
+} // namespace
 
-RtVoid GMANGraphicState::buildTransform(GMANMatrix4 &m)
-{
-  if (motion==1) { // in motion
-    if (motionIndex==0) {
+RtVoid GMANGraphicState::buildTransform(GMANMatrix4& m) {
+  if (motion == 1) { // in motion
+    if (motionIndex == 0) {
       GMANMovingMatrix mm2(samples);
-      mm=mm2;
-    } else if (motionIndex==nbSamples) {
-      GMANError error(RIE_BADMOTION,RIE_WARNING,"Too many Transforms in Motion Block");
+      mm = mm2;
+    } else if (motionIndex == nbSamples) {
+      GMANError error(RIE_BADMOTION, RIE_WARNING, "Too many Transforms in Motion Block");
       throw error;
     }
-    mm.get(motionIndex)=m;
-    motionIndex+=1;
-    if (motionIndex==nbSamples) {
-      if (motionError==true) return;
+    mm.get(motionIndex) = m;
+    motionIndex += 1;
+    if (motionIndex == nbSamples) {
+      if (motionError == true)
+        return;
       GMANTransform a(mm);
       foldLocalAhead(a, transformStack);
     }

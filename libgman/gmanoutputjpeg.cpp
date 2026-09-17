@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -39,7 +39,6 @@ extern "C" {
  *
  */
 
-
 // default constructor
 //
 // quality was never initialized here, so save()'s jpeg_set_quality(&cinfo,
@@ -47,27 +46,24 @@ extern "C" {
 // ever actually instantiated via RIB, which happened for the first time
 // once RiWorldBegin gained its jpg/jpeg dispatch branch. 75 matches
 // libjpeg's own conventional default quality.
-GMANOutputJPEG::GMANOutputJPEG(const char *path, int width, int height) :
-  GMANOutput(path, width, height, DefaultBGColor), quality(75)  { };
+GMANOutputJPEG::GMANOutputJPEG(const char* path, int width, int height)
+    : GMANOutput(path, width, height, DefaultBGColor), quality(75) {};
 
+// default destructor
+GMANOutputJPEG::~GMANOutputJPEG() {};
 
-// default destructor 
-GMANOutputJPEG::~GMANOutputJPEG() { };
-
-RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, 
-			    RtFloat gain, 
-			    RtFloat gamma) {
+RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
   gammaCorrect.setExposure(gain, gamma);
-  FILE *jpegFile = fopen(outputName.c_str(), "w");
-  if(jpegFile) {
-    struct jpeg_compress_struct cinfo;  // jpeg compression params
-    struct jpeg_error_mgr jerr;         // error handler
-    
+  FILE* jpegFile = fopen(outputName.c_str(), "w");
+  if (jpegFile) {
+    struct jpeg_compress_struct cinfo; // jpeg compression params
+    struct jpeg_error_mgr jerr;        // error handler
+
     /* 3 color samples per pixel */
-    JSAMPLE *row = new JSAMPLE[xres*3];
-    if(row) {
+    JSAMPLE* row = new JSAMPLE[xres * 3];
+    if (row) {
       /* pointer to JSAMPLE row */
-      JSAMPROW row_pointer[1] = { row };
+      JSAMPROW row_pointer[1] = {row};
 
       // allocate jpeg compression object
       cinfo.err = jpeg_std_error(&jerr);
@@ -82,10 +78,10 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/,
       cinfo.image_width = xres;
       cinfo.image_height = yres;
 
-      cinfo.input_components = 3;  // number of color components per pixel
+      cinfo.input_components = 3;     // number of color components per pixel
       cinfo.in_color_space = JCS_RGB; // color space of image
 
-    // set defaults
+      // set defaults
       jpeg_set_defaults(&cinfo);
 
       // set image quality
@@ -94,41 +90,40 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/,
       // start compress job
       jpeg_start_compress(&cinfo, TRUE);
 
-
       // copy frameBuffer to jpeg sample array
-      for(int y=0; y<yres; y++) {
-	int colOff=0;
-	for(int x=0; x<xres; x++) {
-	  GMANColorRGB color;
+      for (int y = 0; y < yres; y++) {
+        int colOff = 0;
+        for (int x = 0; x < xres; x++) {
+          GMANColorRGB color;
 
-	  // get a pixel
-	  color = getPixel(x,y);
+          // get a pixel
+          color = getPixel(x, y);
 
-	  // color correct it
-	  gammaCorrect.correct(color);
+          // color correct it
+          gammaCorrect.correct(color);
 
-	  if(quantizer) {
-	      color = quantizer->doColor(color);
-	  }
-	
-	  // default, (no reduction) is 24bit
-	
-	  // write r, g, and b
+          if (quantizer) {
+            color = quantizer->doColor(color);
+          }
 
-	  // use x*3 + [0,1,2] .. aRtVoid a multiply by summing.
-	  row[colOff++] = color.getRed();
-	  row[colOff++] = color.getGreen();
-	  row[colOff++] = color.getBlue();
-	}
-	// write jpeg scanline
-	jpeg_write_scanlines(&cinfo, row_pointer, 1);
+          // default, (no reduction) is 24bit
+
+          // write r, g, and b
+
+          // use x*3 + [0,1,2] .. aRtVoid a multiply by summing.
+          row[colOff++] = color.getRed();
+          row[colOff++] = color.getGreen();
+          row[colOff++] = color.getBlue();
+        }
+        // write jpeg scanline
+        jpeg_write_scanlines(&cinfo, row_pointer, 1);
       }
 
       jpeg_finish_compress(&cinfo);
 
       // we are done
       jpeg_destroy_compress(&cinfo);
-      delete []row;
+      delete[] row;
     }
 
     fclose(jpegFile);
@@ -139,12 +134,6 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/,
   }
 }
 
+RtVoid GMANOutputJPEG::setQuality(int q) { quality = q; }
 
-RtVoid GMANOutputJPEG::setQuality(int q) {
-  quality = q;
-}
-
-int GMANOutputJPEG::getQuality(RtVoid) {
-  return quality;
-}
-
+int GMANOutputJPEG::getQuality(RtVoid) { return quality; }

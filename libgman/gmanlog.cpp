@@ -31,12 +31,12 @@
 
 // FIXME FIXME FIXME
 // set this with autoconf macros
-static const char *softwareVersion = "1.0.0 Alpha";
+static const char* softwareVersion = "1.0.0 Alpha";
 
 /* log state */
 static GMANLogLevel logLevel = LOGLVL_INFO;
-static FILE *logFile = NULL;
-static bool  screenOutput = true;
+static FILE* logFile = NULL;
+static bool screenOutput = true;
 static std::mutex logMutex;
 
 bool logEnabled(GMANLogLevel lvl) {
@@ -47,8 +47,8 @@ bool logEnabled(GMANLogLevel lvl) {
 void logWrite(GMANLogLevel lvl, std::string_view message) {
   std::lock_guard<std::mutex> guard(logMutex);
 
-  const char *dispMsg = "";
-  switch(lvl) {
+  const char* dispMsg = "";
+  switch (lvl) {
   case LOGLVL_DEBUG:
     dispMsg = "GMAN DEBUG: ";
     break;
@@ -66,24 +66,26 @@ void logWrite(GMANLogLevel lvl, std::string_view message) {
     break;
   }
   bool hasEol = !message.empty() && message.back() == '\n';
-  if(logFile) {
+  if (logFile) {
     std::fprintf(logFile, "%s", dispMsg);
     std::fwrite(message.data(), 1, message.size(), logFile);
-    if(!hasEol) std::fputc('\n', logFile);
+    if (!hasEol)
+      std::fputc('\n', logFile);
     std::fflush(logFile);
   }
-  if(screenOutput) {
+  if (screenOutput) {
     std::fwrite(message.data(), 1, message.size(), stdout);
-    if(!hasEol) std::fputc('\n', stdout);
+    if (!hasEol)
+      std::fputc('\n', stdout);
     std::fflush(stdout);
   }
 }
 
 // set an output file for logging
-void setLogFile(const char *path) {
+void setLogFile(const char* path) {
   {
     std::lock_guard<std::mutex> guard(logMutex);
-    if(logFile != NULL) {
+    if (logFile != NULL) {
       std::fclose(logFile);
     }
     logFile = std::fopen(path, "a");
@@ -101,26 +103,23 @@ void setLogLevel(GMANLogLevel lvl) {
   logLevel = lvl;
 }
 
-
 /*
  * RenderMan API GMANLog
  *
  */
 
 // default constructor
-GMANLog::GMANLog() { };
-
+GMANLog::GMANLog() {};
 
 // default destructor
-GMANLog::~GMANLog() { };
+GMANLog::~GMANLog() {};
 
 RtVoid GMANLog::copyright(RtVoid) {
-    info("GMAN {}\n\n",
-	 "This library is free software; you can redistribute it and/or\n"
-	 "modify it under the terms of the GNU Lesser General Public\n"
-	 "License as published by the Free Software Foundation; either\n"
-	 "version 2.1 of the License, or (at your option) any later version.\n"
-	 "Copyright (c) 2002, 2001, 2000, 1999  John Cairns <john@2ad.com>.\n\n",
-	 "The RenderMan interface is copyright Pixar (c) 1987, 1988, 1989, 1995.\n\n",
-	 softwareVersion);
+  info("GMAN {}\n\n",
+       "This library is free software; you can redistribute it and/or\n"
+       "modify it under the terms of the GNU Lesser General Public\n"
+       "License as published by the Free Software Foundation; either\n"
+       "version 2.1 of the License, or (at your option) any later version.\n"
+       "Copyright (c) 2002, 2001, 2000, 1999  John Cairns <john@2ad.com>.\n\n",
+       "The RenderMan interface is copyright Pixar (c) 1987, 1988, 1989, 1995.\n\n", softwareVersion);
 }

@@ -3,7 +3,7 @@
 /*
  * This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999, John Cairns 
+ * Copyright (c) 2001, 2000, 1999, John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -52,7 +52,7 @@ std::string logFileNameFor(std::string_view ribPath) {
 int printVersion() {
   std::cout << "gman " << GMAN_PROJECT_VERSION << "\n";
   std::cout << "drivers:";
-  for (std::string const &name : gmanFileDrivers()) {
+  for (std::string const& name : gmanFileDrivers()) {
     std::cout << ' ' << name;
   }
   std::cout << "\n";
@@ -62,7 +62,7 @@ int printVersion() {
 // True when --version appears anywhere in argv[1..argc), ahead of the
 // copyright banner and every other flag: version reporting parses no files
 // and touches nothing else main sets up.
-bool hasVersionFlag(int argc, char *argv[]) {
+bool hasVersionFlag(int argc, char* argv[]) {
   for (int i = 1; i < argc; ++i) {
     if (std::string_view(argv[i]) == "--version") {
       return true;
@@ -75,9 +75,9 @@ bool hasVersionFlag(int argc, char *argv[]) {
 
 /* function prototypes */
 
-RtVoid usage(char *myname);
+RtVoid usage(char* myname);
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 
   if (hasVersionFlag(argc, argv)) {
     return printVersion();
@@ -85,11 +85,11 @@ int main(int argc, char *argv[]) {
 
   int rc = EXIT_SUCCESS;
   // handle command line arguments
-  if(argc < 2) {
+  if (argc < 2) {
     usage(argv[0]);
   } else {
     try {
-	   // artificial log object for log settings
+      // artificial log object for log settings
       // Static, not a plain local: renderMan owns the GMANDictionary a
       // shader's GMANParameterList::pl points into once a shader reads
       // its own parameters, so renderMan has to outlive every dlopen'd
@@ -97,79 +97,77 @@ int main(int argc, char *argv[]) {
       // local it does not -- it is torn down when main returns, while
       // those run later, leaving pl's dictionary pointer dangling
       // (caught by AddressSanitizer as a stack-use-after-return).
-      static GMANRenderManImpl   renderMan;
+      static GMANRenderManImpl renderMan;
 
-	  GMANLog logObj;
-      
+      GMANLog logObj;
+
       // info on by default
       logObj.setLogLevel(LOGLVL_INFO);
       // announce the copyright
       logObj.copyright();
 
-      bool writeLog=false;
+      bool writeLog = false;
 
-      int arg=1;
+      int arg = 1;
 
-      while((arg < argc) && 
-	    (argv[arg][0] == '-')) {
-	  switch(argv[arg][1]) {
-	      case 'd':
-		  logObj.setLogLevel(LOGLVL_DEBUG);
-		  break;
-	      case 'e':
-		  logObj.setLogLevel(LOGLVL_ERROR);
-		  break;
-	      case 'h':
-		  usage(argv[0]);
-		  exit(EXIT_SUCCESS);
-	      case 'i':
-		  logObj.setLogLevel(LOGLVL_INFO);
-		  break;
-	      case 'l':
-		  writeLog=true;
-		  break;
-	      case 'q':
-		  logObj.setLogLevel(LOGLVL_DISASTER);
-		  break;
-	      case 'w':
-		  logObj.setLogLevel(LOGLVL_WARNING);
-		  break;
-	  }
-	  arg++;
+      while ((arg < argc) && (argv[arg][0] == '-')) {
+        switch (argv[arg][1]) {
+        case 'd':
+          logObj.setLogLevel(LOGLVL_DEBUG);
+          break;
+        case 'e':
+          logObj.setLogLevel(LOGLVL_ERROR);
+          break;
+        case 'h':
+          usage(argv[0]);
+          exit(EXIT_SUCCESS);
+        case 'i':
+          logObj.setLogLevel(LOGLVL_INFO);
+          break;
+        case 'l':
+          writeLog = true;
+          break;
+        case 'q':
+          logObj.setLogLevel(LOGLVL_DISASTER);
+          break;
+        case 'w':
+          logObj.setLogLevel(LOGLVL_WARNING);
+          break;
+        }
+        arg++;
       }
 
-      for(int i=arg; i<argc; i++) {
-	  try {
-	      const char *ribFile = argv[i];
-	      info("Parsing {}", argv[i]);
-	      
-	      if(writeLog) {
-		  const std::string fileName = logFileNameFor(ribFile);
-		  logObj.setLogFile(fileName.c_str());
-	      }
-	      
-	      GMANRIBParse	parser(renderMan,
-				       argv[i]);
-	      
-	      // just parse it...
-	      parser.parse();
-	      
-	  } catch (GMANError &e) {
-	      GMANHandleError(e);
-	      rc = EXIT_FAILURE;
-	  }
+      for (int i = arg; i < argc; i++) {
+        try {
+          const char* ribFile = argv[i];
+          info("Parsing {}", argv[i]);
+
+          if (writeLog) {
+            const std::string fileName = logFileNameFor(ribFile);
+            logObj.setLogFile(fileName.c_str());
+          }
+
+          GMANRIBParse parser(renderMan, argv[i]);
+
+          // just parse it...
+          parser.parse();
+
+        } catch (GMANError& e) {
+          GMANHandleError(e);
+          rc = EXIT_FAILURE;
+        }
       }
-    } catch (GMANError &e) {
-	GMANHandleError(e);
-	rc = EXIT_FAILURE;
+    } catch (GMANError& e) {
+      GMANHandleError(e);
+      rc = EXIT_FAILURE;
     }
   }
   return rc;
 }
 
 /* Are you freaking kidding? */
-RtVoid usage(char *myname) {
-  
+RtVoid usage(char* myname) {
+
   std::cerr << myname << ": -[hdiweql] [--version] files ..." << std::endl;
   std::cerr << "\tParse RIB input files." << std::endl << std::endl;
   std::cerr << "\t-h - print this help message." << std::endl;
@@ -180,5 +178,4 @@ RtVoid usage(char *myname) {
   std::cerr << "\t-q - set logging to: quiet, only report disasters." << std::endl;
   std::cerr << "\t-l - enable a log based on the filename of the rib." << std::endl;
   std::cerr << "\t--version - print the version and compiled drivers, then exit." << std::endl;
-
 }

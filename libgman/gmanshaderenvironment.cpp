@@ -34,58 +34,39 @@ namespace {
 // (srand(808)); a fresh instance per shading call would be both wasteful
 // and non-deterministic with respect to whatever else in the process
 // calls rand().
-GMANNoise &noiseGenerator() {
+GMANNoise& noiseGenerator() {
   static GMANNoise generator;
   return generator;
 }
 
-}  // namespace
+} // namespace
 
-RtFloat GMANSurfaceEnv::noise(RtFloat v) const {
-  return noiseGenerator().noise(v);
-}
+RtFloat GMANSurfaceEnv::noise(RtFloat v) const { return noiseGenerator().noise(v); }
 
-RtFloat GMANSurfaceEnv::noise(RtFloat u_, RtFloat v_) const {
-  return noiseGenerator().noise(u_, v_);
-}
+RtFloat GMANSurfaceEnv::noise(RtFloat u_, RtFloat v_) const { return noiseGenerator().noise(u_, v_); }
 
-RtFloat GMANSurfaceEnv::noise(const GMANPoint &p) const {
-  return noiseGenerator().noise(p);
-}
+RtFloat GMANSurfaceEnv::noise(const GMANPoint& p) const { return noiseGenerator().noise(p); }
 
-RtFloat GMANSurfaceEnv::noise(const GMANPoint &p, RtFloat t_) const {
-  return noiseGenerator().noise(p, t_);
-}
+RtFloat GMANSurfaceEnv::noise(const GMANPoint& p, RtFloat t_) const { return noiseGenerator().noise(p, t_); }
 
-RtFloat GMANSurfaceEnv::pnoise(RtFloat v, RtFloat pv) const {
-  return noiseGenerator().periodic(v, pv);
-}
+RtFloat GMANSurfaceEnv::pnoise(RtFloat v, RtFloat pv) const { return noiseGenerator().periodic(v, pv); }
 
-RtFloat GMANSurfaceEnv::pnoise(const GMANPoint &p, const GMANPoint &pp) const {
+RtFloat GMANSurfaceEnv::pnoise(const GMANPoint& p, const GMANPoint& pp) const {
   return noiseGenerator().periodic(p, pp);
 }
 
-RtFloat GMANSurfaceEnv::cellnoise(RtFloat v) const {
-  return noiseGenerator().cellnoise(v);
-}
+RtFloat GMANSurfaceEnv::cellnoise(RtFloat v) const { return noiseGenerator().cellnoise(v); }
 
-RtFloat GMANSurfaceEnv::cellnoise(const GMANPoint &p) const {
-  return noiseGenerator().cellnoise(p);
-}
+RtFloat GMANSurfaceEnv::cellnoise(const GMANPoint& p) const { return noiseGenerator().cellnoise(p); }
 
-GMANColor GMANSurfaceEnv::texture(const std::string &name, RtFloat s,
-                                   RtFloat t) const {
+GMANColor GMANSurfaceEnv::texture(const std::string& name, RtFloat s, RtFloat t) const {
   return gmanTextureCache().sample(name, s, t);
 }
 
-GMANVector GMANSurfaceEnv::toWorld(GMANVector const &v) const {
-  return GMANVector(
-      v.getX() * cameraToWorld[0][0] + v.getY() * cameraToWorld[1][0] +
-          v.getZ() * cameraToWorld[2][0],
-      v.getX() * cameraToWorld[0][1] + v.getY() * cameraToWorld[1][1] +
-          v.getZ() * cameraToWorld[2][1],
-      v.getX() * cameraToWorld[0][2] + v.getY() * cameraToWorld[1][2] +
-          v.getZ() * cameraToWorld[2][2]);
+GMANVector GMANSurfaceEnv::toWorld(GMANVector const& v) const {
+  return GMANVector(v.getX() * cameraToWorld[0][0] + v.getY() * cameraToWorld[1][0] + v.getZ() * cameraToWorld[2][0],
+                    v.getX() * cameraToWorld[0][1] + v.getY() * cameraToWorld[1][1] + v.getZ() * cameraToWorld[2][1],
+                    v.getX() * cameraToWorld[0][2] + v.getY() * cameraToWorld[1][2] + v.getZ() * cameraToWorld[2][2]);
 }
 
 // RISpec 3.2 Sec 7.1.2's lat-long picture, inverted: "longitude equal to
@@ -96,20 +77,19 @@ GMANVector GMANSurfaceEnv::toWorld(GMANVector const &v) const {
 // t = (PI/2 - lat) / PI, since t=0 is GMANTexture's own top row and the
 // top of the picture is the north pole. environment() does no space
 // conversion; the shader picks the space R is given in, as RSL's does.
-GMANColor GMANSurfaceEnv::environment(std::string const &name,
-                                       GMANVector const &R) const {
+GMANColor GMANSurfaceEnv::environment(std::string const& name, GMANVector const& R) const {
   GMANVector r(R);
   if (r.magnitude() < RI_EPSILON) {
-    return GMANColor((RtFloat) 0.0, (RtFloat) 0.0, (RtFloat) 0.0);
+    return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
   }
   r.normalize();
 
-  RtFloat lat = (RtFloat) std::asin(r.getZ());
-  RtFloat lon = (RtFloat) std::atan2(r.getY(), r.getX());
+  RtFloat lat = (RtFloat)std::asin(r.getZ());
+  RtFloat lon = (RtFloat)std::atan2(r.getY(), r.getX());
   if (lon < 0) {
     lon += (RtFloat)(2.0 * PI);
   }
   RtFloat s = lon / (RtFloat)(2.0 * PI);
-  RtFloat t = ((RtFloat)(PI / 2.0) - lat) / (RtFloat) PI;
+  RtFloat t = ((RtFloat)(PI / 2.0) - lat) / (RtFloat)PI;
   return gmanTextureCache().sample(name, s, t);
 }

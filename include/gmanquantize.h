@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2002, 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2002, 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANQUANTIZE_H
 #define __GMAN_GMANQUANTIZE_H 1
-
 
 #include <list>
 #include <map>
@@ -41,47 +39,33 @@
  * RenderMan API GMANQuantize
  *
  * Color depth and alpha quantization
- * 
+ *
  */
 
-class GMAN_EXPORT  GMANQuantize {
-  public:
-    // public types
-    typedef enum { 
-	RGB,
-	RGBA,
-	RGBAZ,
-	A, 
-	AZ,
-	Z } DisplayMode;
+class GMAN_EXPORT GMANQuantize {
+public:
+  // public types
+  typedef enum { RGB, RGBA, RGBAZ, A, AZ, Z } DisplayMode;
 
-  private:
-
-    // private data
-    [[maybe_unused]] DisplayMode mode;
-    [[maybe_unused]] RtInt	one;
-    [[maybe_unused]] RtInt	minVal;
-    [[maybe_unused]] RtInt	maxVal;
-    [[maybe_unused]] RtFloat     ditherAmplitude;
-    
+private:
+  // private data
+  [[maybe_unused]] DisplayMode mode;
+  [[maybe_unused]] RtInt one;
+  [[maybe_unused]] RtInt minVal;
+  [[maybe_unused]] RtInt maxVal;
+  [[maybe_unused]] RtFloat ditherAmplitude;
 
 public:
-    GMANQuantize(DisplayMode md,
-		 RtInt oneMap,
-		 RtInt mn,
-		 RtInt mx,
-		 RtFloat ditheramp); // default constructor
+  GMANQuantize(DisplayMode md, RtInt oneMap, RtInt mn, RtInt mx,
+               RtFloat ditheramp); // default constructor
 
   ~GMANQuantize(); // default destructor
 
+  // inline color reduction
+  GMANColor& doColor(GMANColor& col);
 
-    // inline color reduction
-    GMANColor &doColor(GMANColor &col);
-
-    // inline color reduction
-    GMANColorRGB &doColor(GMANColorRGB &col);
+  // inline color reduction
+  GMANColorRGB& doColor(GMANColorRGB& col);
 };
 
-
 #endif
-

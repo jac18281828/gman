@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -60,134 +60,129 @@ static GMANContext context;
 // Standard error handlers are global functions (not provided by C++ object)
 // find them in gmanerror.cpp
 
-
-extern "C" RtContextHandle RiGetContext (RtVoid) {
+extern "C" RtContextHandle RiGetContext(RtVoid) {
   try {
     return context.getContext();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
     return RI_NULL;
   }
 };
 
-extern "C" RtVoid RiContext (RtContextHandle ch) {
+extern "C" RtVoid RiContext(RtContextHandle ch) {
   try {
     context.switchTo(ch);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 //
-extern "C" RtToken RiDeclare (char *name, char *declaration) {
+extern "C" RtToken RiDeclare(char* name, char* declaration) {
   try {
     return context.current().RiDeclare(name, declaration);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
     return RI_NULL;
   }
-}; 
+};
 
 //
-extern "C" RtVoid RiBegin (RtToken name) {
+extern "C" RtVoid RiBegin(RtToken name) {
   try {
     context.addContext();
     context.current().RiBegin(name);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 }
 
-// 
-extern "C" RtVoid RiEnd (RtVoid) {
+//
+extern "C" RtVoid RiEnd(RtVoid) {
   try {
     context.current().RiEnd();
     context.removeCurrent();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 }
 
 //
-extern "C" RtVoid RiFrameBegin (RtInt frame) {
+extern "C" RtVoid RiFrameBegin(RtInt frame) {
   try {
     context.current().RiFrameBegin(frame);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 //
-extern "C" RtVoid RiFrameEnd (RtVoid) {
+extern "C" RtVoid RiFrameEnd(RtVoid) {
   try {
     context.current().RiFrameEnd();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 //
-extern "C" RtVoid RiWorldBegin (RtVoid) {
+extern "C" RtVoid RiWorldBegin(RtVoid) {
   try {
     context.current().RiWorldBegin();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 //
-extern "C" RtVoid RiWorldEnd (RtVoid) {
+extern "C" RtVoid RiWorldEnd(RtVoid) {
   try {
     context.current().RiWorldEnd();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Global Options */
-extern "C" RtVoid RiFormat (RtInt xres, RtInt yres, RtFloat aspect) {
+extern "C" RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
   try {
     context.current().RiFormat(xres, yres, aspect);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiFrameAspectRatio (RtFloat aspect) {
+extern "C" RtVoid RiFrameAspectRatio(RtFloat aspect) {
   try {
     context.current().RiFrameAspectRatio(aspect);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiScreenWindow (RtFloat left, RtFloat right, 
-				  RtFloat bot, RtFloat top) {
+extern "C" RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top) {
   try {
     context.current().RiScreenWindow(left, right, bot, top);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiCropWindow (RtFloat xmin, 
-				RtFloat xmax, 
-				RtFloat ymin, 
-				RtFloat ymax) {
+extern "C" RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
   try {
-    context.current().RiCropWindow( xmin,  xmax,  ymin, ymax);
-  } catch (GMANError &error) {
+    context.current().RiCropWindow(xmin, xmax, ymin, ymax);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiProjection (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiProjection(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
@@ -195,132 +190,134 @@ extern "C" RtVoid RiProjection (RtToken name, ...) {
     va_end(args);
 
     RiProjectionV(name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiProjectionV (RtToken name, RtInt n, 
-				 RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
     context.current().RiProjectionV(name, n, tokens, parms);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiClipping (RtFloat hither, RtFloat yon) {
+extern "C" RtVoid RiClipping(RtFloat hither, RtFloat yon) {
   try {
-    context.current().RiClipping( hither, yon);
-  } catch (GMANError &error) {
+    context.current().RiClipping(hither, yon);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDepthOfField (RtFloat fstop, 
-				  RtFloat focallength, RtFloat focaldistance) {
+extern "C" RtVoid RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) {
   try {
-    context.current().RiDepthOfField (fstop, focallength, focaldistance);
-  } catch (GMANError &error) {
+    context.current().RiDepthOfField(fstop, focallength, focaldistance);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiShutter (RtFloat min, RtFloat max) {
+extern "C" RtVoid RiShutter(RtFloat min, RtFloat max) {
   try {
-    context.current().RiShutter( min, max);
-  } catch (GMANError &error) {
+    context.current().RiShutter(min, max);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPixelVariance (RtFloat variation) {
+extern "C" RtVoid RiPixelVariance(RtFloat variation) {
   try {
-    context.current().RiPixelVariance( variation);
-  } catch (GMANError &error) {
+    context.current().RiPixelVariance(variation);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPixelSamples (RtFloat xsamples, RtFloat ysamples) {
+extern "C" RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
   try {
-    context.current().RiPixelSamples( xsamples, ysamples);
-  } catch (GMANError &error) {
+    context.current().RiPixelSamples(xsamples, ysamples);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPixelFilter (RtFilterFunc filterfunc, RtFloat xwidth, 
-				 RtFloat ywidth) {
+extern "C" RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
   try {
-    context.current().RiPixelFilter( filterfunc,  xwidth, ywidth);
-  } catch (GMANError &error) {
+    context.current().RiPixelFilter(filterfunc, xwidth, ywidth);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiExposure (RtFloat gain, RtFloat gamma) {
+extern "C" RtVoid RiExposure(RtFloat gain, RtFloat gamma) {
   try {
-    context.current().RiExposure( gain, gamma);
-  } catch (GMANError &error) {
+    context.current().RiExposure(gain, gamma);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiImager (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiImager(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-  
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RiImagerV(name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiImagerV (RtToken name, RtInt n, 
-			     RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
     context.current().RiImagerV(name, n, tokens, parms);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiQuantize (RtToken type, RtInt one, 
-			      RtInt min, RtInt max, RtFloat ampl) {
+extern "C" RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
   try {
-    context.current().RiQuantize( type,  one,  min,  max,  ampl);
-  } catch (GMANError &error) {
+    context.current().RiQuantize(type, one, min, max, ampl);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDisplay (char *name, RtToken type, RtToken mode, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiDisplay(char* name, RtToken type, RtToken mode, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, mode);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
@@ -328,946 +325,977 @@ extern "C" RtVoid RiDisplay (char *name, RtToken type, RtToken mode, ...) {
     va_end(args);
 
     RiDisplayV(name, type, mode, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDisplayV (char *name, RtToken type, RtToken mode,
-			      RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiDisplayV(char* name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiDisplayV(name, type,  mode, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiDisplayV(name, type, mode, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Settings for Hidden Surface removal -- If renderer uses it */
 
-extern "C" RtVoid RiHider (RtToken type, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiHider(RtToken type, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, type);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RiHiderV(type, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiHiderV (RtToken type, RtInt n, RtToken tokens[], 
-			    RtPointer parms[]) {
+extern "C" RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiHiderV( type,  n,  tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiHiderV(type, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiColorSamples (RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
+extern "C" RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
   try {
-    context.current().RiColorSamples( n,  nRGB,  RGBn);
-  } catch (GMANError &error) {
+    context.current().RiColorSamples(n, nRGB, RGBn);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiRelativeDetail (RtFloat relativedetail) {
+extern "C" RtVoid RiRelativeDetail(RtFloat relativedetail) {
   try {
     context.current().RiRelativeDetail(relativedetail);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiOption (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiOption(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RiOptionV(name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiOptionV (RtToken name, RtInt n, 
-			     RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiOptionV( name,  n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiOptionV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiAttributeBegin (RtVoid) {
+extern "C" RtVoid RiAttributeBegin(RtVoid) {
   try {
     context.current().RiAttributeBegin();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiAttributeEnd (RtVoid) {
+extern "C" RtVoid RiAttributeEnd(RtVoid) {
   try {
     context.current().RiAttributeEnd();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Attributes */
-extern "C" RtVoid RiColor (RtColor color) {
+extern "C" RtVoid RiColor(RtColor color) {
   try {
     context.current().RiColor(color);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiOpacity (RtColor color) {
+extern "C" RtVoid RiOpacity(RtColor color) {
   try {
     context.current().RiOpacity(color);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiTextureCoordinates(RtFloat s1, RtFloat t1, 
-				       RtFloat s2, RtFloat t2,
-				       RtFloat s3, RtFloat t3, 
-				       RtFloat s4, RtFloat t4) {
+extern "C" RtVoid RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3,
+                                       RtFloat s4, RtFloat t4) {
   try {
-    context.current().RiTextureCoordinates(s1,  t1, s2, t2, s3, t3, s4, t4);
-  } catch (GMANError &error) {
+    context.current().RiTextureCoordinates(s1, t1, s2, t2, s3, t3, s4, t4);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtLightHandle RiLightSource (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtLightHandle RiLightSource(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RtLightHandle source=RiLightSourceV( name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RtLightHandle source = RiLightSourceV(name, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     return source;
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     GMANHandleError(error);
   }
   return RI_NULL;
 };
 
-extern "C" RtLightHandle RiLightSourceV (RtToken name, RtInt n, 
-					 RtToken tokens[], RtPointer parms[]) {
+extern "C" RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
     return context.current().RiLightSourceV(name, n, tokens, parms);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
     return RI_NULL;
   }
 };
 
-extern "C" RtLightHandle RiAreaLightSource (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtLightHandle RiAreaLightSource(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RtLightHandle source = RiAreaLightSourceV(name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     return source;
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     GMANHandleError(error);
   }
   return RI_NULL;
 };
 
-extern "C" RtLightHandle RiAreaLightSourceV (RtToken name,
-					     RtInt n, RtToken tokens[], 
-					     RtPointer parms[]) {
+extern "C" RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    return context.current().RiAreaLightSourceV( name, n, tokens, parms);
-  } catch (GMANError &error) {
+    return context.current().RiAreaLightSourceV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
     return RI_NULL;
   }
 };
 
-
-extern "C" RtVoid RiIlluminate (RtLightHandle light, RtBoolean onoff) {
+extern "C" RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
   try {
     context.current().RiIlluminate(light, onoff);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
-extern "C" RtVoid RiSurface (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiSurface(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
-    
+
     RiSurfaceV(name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiSurfaceV (RtToken name, RtInt n, 
-			      RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiSurfaceV(name,  n,  tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiSurfaceV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiAtmosphere (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiAtmosphere(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiAtmosphereV( name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiAtmosphereV(name, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiAtmosphereV (RtToken name, RtInt n, 
-				 RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiAtmosphereV(name, n,  tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiAtmosphereV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiInterior (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiInterior(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiInteriorV(name, n, tokens, parms );
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiInteriorV(name, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiInteriorV (RtToken name, RtInt n, 
-			       RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiInteriorV( name, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiInteriorV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiExterior (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiExterior(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RiExteriorV(name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiExteriorV (RtToken name, RtInt n, 
-			       RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiExteriorV( name,  n,  tokens,  parms);
-  } catch (GMANError &error) {
+    context.current().RiExteriorV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiShadingRate (RtFloat size) {
+extern "C" RtVoid RiShadingRate(RtFloat size) {
   try {
     context.current().RiShadingRate(size);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiShadingInterpolation (RtToken type) {
+extern "C" RtVoid RiShadingInterpolation(RtToken type) {
   try {
     context.current().RiShadingInterpolation(type);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMatte (RtBoolean onoff) {
+extern "C" RtVoid RiMatte(RtBoolean onoff) {
   try {
     context.current().RiMatte(onoff);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiBound (RtBound b){
+extern "C" RtVoid RiBound(RtBound b) {
   try {
     context.current().RiBound(b);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDetail (RtBound b){
+extern "C" RtVoid RiDetail(RtBound b) {
   try {
     context.current().RiDetail(b);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDetailRange (RtFloat minvis, RtFloat lowtran, 
-				 RtFloat uptran, RtFloat maxvis) {
+extern "C" RtVoid RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis) {
   try {
     context.current().RiDetailRange(minvis, lowtran, uptran, maxvis);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiGeometricApproximation (RtToken type, RtFloat value) {
+extern "C" RtVoid RiGeometricApproximation(RtToken type, RtFloat value) {
   try {
     context.current().RiGeometricApproximation(type, value);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiOrientation (RtToken orientation) {
+extern "C" RtVoid RiOrientation(RtToken orientation) {
   try {
     context.current().RiOrientation(orientation);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiReverseOrientation (RtVoid) {
+extern "C" RtVoid RiReverseOrientation(RtVoid) {
   try {
     context.current().RiReverseOrientation();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiSides (RtInt sides) {
+extern "C" RtVoid RiSides(RtInt sides) {
   try {
     context.current().RiSides(sides);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Transformations */
-extern "C" RtVoid RiIdentity (RtVoid) {
+extern "C" RtVoid RiIdentity(RtVoid) {
   try {
     context.current().RiIdentity();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiTransform (RtMatrix transform) {
+extern "C" RtVoid RiTransform(RtMatrix transform) {
   try {
     context.current().RiTransform(transform);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiConcatTransform (RtMatrix transform) {
+extern "C" RtVoid RiConcatTransform(RtMatrix transform) {
   try {
     context.current().RiConcatTransform(transform);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPerspective (RtFloat fov) {
+extern "C" RtVoid RiPerspective(RtFloat fov) {
   try {
     context.current().RiPerspective(fov);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiTranslate (RtFloat dx, RtFloat dy, RtFloat dz) {
+extern "C" RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) {
   try {
-    context.current().RiTranslate(dx,  dy,  dz);
-  } catch (GMANError &error) {
+    context.current().RiTranslate(dx, dy, dz);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiRotate (RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
+extern "C" RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
   try {
-    context.current().RiRotate( angle,  dx,  dy,  dz);
-  } catch (GMANError &error) {
+    context.current().RiRotate(angle, dx, dy, dz);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiScale (RtFloat sx, RtFloat sy, RtFloat sz) {
+extern "C" RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz) {
   try {
     context.current().RiScale(sx, sy, sz);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiSkew (RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1,
-			  RtFloat dx2, RtFloat dy2, RtFloat dz2) {
-  
+extern "C" RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2) {
+
   try {
-    context.current().RiSkew( angle,  dx1, dy1, dz1, dx2, dy2,  dz2);
+    context.current().RiSkew(angle, dx1, dy1, dz1, dx2, dy2, dz2);
 
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDeformation (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiDeformation(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RiDeformationV(name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDeformationV (RtToken name, RtInt n, 
-				  RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiDeformationV( name, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiDeformationV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDisplacement (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiDisplacement(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
-  
-    RiDisplacementV( name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiDisplacementV(name, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDisplacementV (RtToken name, RtInt n, 
-				   RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiDisplacementV( name,  n,  tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiDisplacementV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiCoordinateSystem (RtToken space) {
+extern "C" RtVoid RiCoordinateSystem(RtToken space) {
   try {
-    context.current().RiCoordinateSystem(space);   /* The final frontier */
-  } catch (GMANError &error) {
+    context.current().RiCoordinateSystem(space); /* The final frontier */
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiCoordSysTransform (RtToken space) {
+extern "C" RtVoid RiCoordSysTransform(RtToken space) {
   try {
     context.current().RiCoordSysTransform(space);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
-};  
+};
 
 /* Spatial transformation of a list of points */
-extern "C" RtPoint * RiTransformPoints (RtToken fromspace, RtToken tospace, 
-					RtInt n, RtPoint points[]) {
+extern "C" RtPoint* RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n, RtPoint points[]) {
   try {
-    return context.current().RiTransformPoints (fromspace, tospace, n, points);
-  } catch (GMANError &error) {
-    throw (error);//Until I can figure out a reasonable return value here.
+    return context.current().RiTransformPoints(fromspace, tospace, n, points);
+  } catch (GMANError& error) {
+    throw(error); // Until I can figure out a reasonable return value here.
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiTransformBegin (RtVoid) {
+extern "C" RtVoid RiTransformBegin(RtVoid) {
   try {
     context.current().RiTransformBegin();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiTransformEnd (RtVoid) {
+extern "C" RtVoid RiTransformEnd(RtVoid) {
   try {
     context.current().RiTransformEnd();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiAttribute (RtToken name, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiAttribute(RtToken name, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, name);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RiAttributeV(name, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiAttributeV (RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiAttributeV( name,  n,  tokens,  parms);
-  } catch (GMANError &error) {
+    context.current().RiAttributeV(name, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Primitives */
-extern "C" RtVoid RiPolygon (RtInt nverts, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiPolygon(RtInt nverts, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, nverts);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiPolygonV( nverts, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiPolygonV(nverts, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPolygonV (RtInt nverts, RtInt n, 
-			      RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiPolygonV(nverts,  n,  tokens,  parms);
-  } catch (GMANError &error) {
+    context.current().RiPolygonV(nverts, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiGeneralPolygon (RtInt nloops, RtInt nverts[], ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiGeneralPolygon(RtInt nloops, RtInt nverts[], ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, nverts);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiGeneralPolygonV( nloops,  nverts, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiGeneralPolygonV(nloops, nverts, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiGeneralPolygonV (RtInt nloops, RtInt nverts[], RtInt n,
-				     RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiGeneralPolygonV( nloops, nverts, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiGeneralPolygonV(nloops, nverts, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPointsPolygons (RtInt npolys, RtInt nverts[], 
-				    RtInt verts[], ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, verts);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiPointsPolygonsV(npolys,  nverts,  verts, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiPointsPolygonsV(npolys, nverts, verts, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-
-extern "C" RtVoid RiPointsPolygonsV (RtInt npolys, RtInt nverts[],
-				     RtInt verts[],  RtInt n,
-				     RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[],
+                                    RtPointer parms[]) {
   try {
-    context.current().RiPointsPolygonsV( npolys, nverts, verts, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiPointsPolygonsV(npolys, nverts, verts, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPointsGeneralPolygons (RtInt npolys, RtInt nloops[], 
-					   RtInt nverts[], RtInt verts[], ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, verts);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiPointsGeneralPolygonsV( npolys, nloops, nverts, verts, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiPointsGeneralPolygonsV(npolys, nloops, nverts, verts, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPointsGeneralPolygonsV (RtInt npolys, RtInt nloops[], 
-					    RtInt nverts[], RtInt verts[], 
-					    RtInt n, RtToken tokens[], 
-					    RtPointer parms[]) {
+extern "C" RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
+                                           RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiPointsGeneralPolygonsV( npolys, nloops, nverts,
-				       verts, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiPointsGeneralPolygonsV(npolys, nloops, nverts, verts, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiBasis (RtBasis ubasis, RtInt ustep, 
-			   RtBasis vbasis, RtInt vstep) {
+extern "C" RtVoid RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) {
   try {
-    context.current().RiBasis( ubasis,  ustep,  vbasis,  vstep);
-  } catch (GMANError &error) {
+    context.current().RiBasis(ubasis, ustep, vbasis, vstep);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPatch (RtToken type, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiPatch(RtToken type, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, type);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiPatchV( type, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiPatchV(type, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPatchV (RtToken type, RtInt n, 
-			    RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiPatchV( type,  n,  tokens,  parms);
-  } catch (GMANError &error) {
+    context.current().RiPatchV(type, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPatchMesh (RtToken type, RtInt nu, RtToken uwrap,
-			       RtInt nv, RtToken vwrap, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, vwrap);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiPatchMeshV( type,  nu,  uwrap, nv, vwrap, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiPatchMeshV(type, nu, uwrap, nv, vwrap, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiPatchMeshV (RtToken type, RtInt nu, RtToken uwrap,
-				RtInt nv, RtToken vwrap, RtInt n, 
-				RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n,
+                               RtToken tokens[], RtPointer parms[]) {
   try {
     context.current().RiPatchMeshV(type, nu, uwrap, nv, vwrap, n, tokens, parms);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiNuPatch (RtInt nu, RtInt uorder, 
-			     RtFloat uknot[], RtFloat umin,
-			     RtFloat umax, RtInt nv, 
-			     RtInt vorder, RtFloat vknot[],
-			     RtFloat vmin, RtFloat vmax, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
+                            RtFloat vknot[], RtFloat vmin, RtFloat vmax, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, vmax);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiNuPatchV(nu,  uorder,  uknot,  umin,
-	       umax,  nv,  vorder,  vknot,
-	       vmin,  vmax, n,  tokens,  parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiNuPatchV(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiNuPatchV (RtInt nu, RtInt uorder, 
-			      RtFloat uknot[], RtFloat umin,
-			      RtFloat umax, RtInt nv, 
-			      RtInt vorder, RtFloat vknot[],
-			      RtFloat vmin, RtFloat vmax,
-			      RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv,
+                             RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtInt n, RtToken tokens[],
+                             RtPointer parms[]) {
   try {
-    context.current().RiNuPatchV(nu,  uorder,  uknot,  umin,
-				 umax,  nv,  vorder,  vknot,
-				 vmin,  vmax, n,  tokens,  parms);
-  } catch (GMANError &error) {
+    context.current().RiNuPatchV(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiTrimCurve (RtInt nloops, RtInt ncurves[], RtInt order[],
-			       RtFloat knot[], RtFloat min[], RtFloat max[], 
-			       RtInt n[], RtFloat u[], RtFloat v[],
-			       RtFloat w[]) {
+extern "C" RtVoid RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[], RtFloat knot[], RtFloat min[],
+                              RtFloat max[], RtInt n[], RtFloat u[], RtFloat v[], RtFloat w[]) {
   try {
-    context.current().RiTrimCurve( nloops, ncurves, order,
-				   knot,  min,  max,  n,
-				   u, v, w);
-  } catch (GMANError &error) {
+    context.current().RiTrimCurve(nloops, ncurves, order, knot, min, max, n, u, v, w);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
@@ -1276,780 +1304,774 @@ extern "C" RtVoid RiTrimCurve (RtInt nloops, RtInt ncurves[], RtInt order[],
 /* Whew!  -- lots of typing here !! */
 /* Whew! */
 
-extern "C" RtVoid RiSphere (RtFloat radius, RtFloat zmin, 
-			    RtFloat zmax, RtFloat tmax, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiSphereV( radius, zmin, zmax,  tmax, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiSphereV(radius, zmin, zmax, tmax, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiSphereV (RtFloat radius, RtFloat zmin, RtFloat zmax, 
-			     RtFloat tmax, RtInt n, RtToken tokens[], 
-			     RtPointer parms[]) {
-  
+extern "C" RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
+                            RtPointer parms[]) {
+
   try {
-    context.current().RiSphereV( radius, zmin, zmax, tmax, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiSphereV(radius, zmin, zmax, tmax, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiCone (RtFloat height, RtFloat radius, RtFloat tmax, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiCone(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiConeV( height, radius,  tmax, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiConeV(height, radius, tmax, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiConeV (RtFloat height, RtFloat radius, RtFloat tmax,
-			   RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiConeV( height,  radius,  tmax, n,  tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiConeV(height, radius, tmax, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiCylinder (RtFloat radius, RtFloat zmin, 
-			      RtFloat zmax, RtFloat tmax, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiCylinderV( radius, zmin, zmax, tmax, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiCylinderV(radius, zmin, zmax, tmax, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiCylinderV (RtFloat radius, RtFloat zmin, 
-			       RtFloat zmax, RtFloat tmax,
-			       RtInt n, RtToken tokens[], 
-			       RtPointer parms[]) {
+extern "C" RtVoid RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
+                              RtPointer parms[]) {
   try {
-    context.current().RiCylinderV( radius, zmin, zmax, tmax, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiCylinderV(radius, zmin, zmax, tmax, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiHyperboloid (RtPoint point1, RtPoint point2, 
-				 RtFloat tmax, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiHyperboloidV( point1,  point2, tmax, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiHyperboloidV(point1, point2, tmax, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiHyperboloidV (RtPoint point1, RtPoint point2, 
-				  RtFloat tmax, RtInt n, RtToken tokens[], 
-				  RtPointer parms[]) {
+extern "C" RtVoid RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
+                                 RtPointer parms[]) {
   try {
-    context.current().RiHyperboloidV( point1,  point2, tmax, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiHyperboloidV(point1, point2, tmax, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiParaboloid (RtFloat rmax, RtFloat zmin, RtFloat zmax, 
-				RtFloat tmax, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiParaboloidV( rmax, zmin, zmax, tmax, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiParaboloidV(rmax, zmin, zmax, tmax, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiParaboloidV (RtFloat rmax, RtFloat zmin, 
-				 RtFloat zmax, RtFloat tmax,
-				 RtInt n, RtToken tokens[], 
-				 RtPointer parms[]) {
+extern "C" RtVoid RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
+                                RtPointer parms[]) {
   try {
-    context.current().RiParaboloidV( rmax, zmin, zmax, tmax, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiParaboloidV(rmax, zmin, zmax, tmax, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDisk (RtFloat height, RtFloat radius, RtFloat tmax, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiDisk(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
 
-    RiDiskV( height, radius, tmax, n, tokens, parms);
+    RiDiskV(height, radius, tmax, n, tokens, parms);
 
     va_end(args);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiDiskV (RtFloat height, RtFloat radius, RtFloat tmax,
-			   RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiDiskV( height,  radius,  tmax, n,  tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiDiskV(height, radius, tmax, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiTorus (RtFloat majrad, RtFloat minrad, 
-			   RtFloat phimin, RtFloat phimax,
-			   RtFloat tmax, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiTorusV( majrad, minrad, phimin, phimax, tmax, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiTorusV(majrad, minrad, phimin, phimax, tmax, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiTorusV (RtFloat majrad, RtFloat minrad, RtFloat phimin,
-			    RtFloat phimax, RtFloat tmax, RtInt n, 
-			    RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, RtInt n,
+                           RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiTorusV( majrad, minrad, phimin, phimax,
-				tmax,  n,  tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiTorusV(majrad, minrad, phimin, phimax, tmax, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiBlobby (RtInt nleaf, RtInt ncode, RtInt code[],
-			    RtInt nflt, RtFloat flt[],
-			    RtInt nstr, RtToken str[], ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiBlobby(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr, RtToken str[],
+                           ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, str);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RiBlobbyV(nleaf, ncode, code, nflt, flt, nstr, str, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiBlobbyV (RtInt nleaf, RtInt ncode, RtInt code[],
-			     RtInt nflt, RtFloat flt[],
-			     RtInt nstr, RtToken str[], 
-			     RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr,
+                            RtToken str[], RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiBlobbyV(nleaf, ncode, code, nflt, flt,
-				nstr, str, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiBlobbyV(nleaf, ncode, code, nflt, flt, nstr, str, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 }
 
 extern "C" RtVoid RiPoints(RtInt npoints, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, npoints);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
-   
-    RiPointsV(npoints, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiPointsV(npoints, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 }
 
-extern "C" RtVoid RiPointsV(RtInt npoints,
-			    RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiPointsV(RtInt npoints, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
     context.current().RiPointsV(npoints, n, tokens, parms);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 }
 
-extern "C" RtVoid RiCurves (RtToken type, RtInt ncurves,
-			    RtInt nvertices[], RtToken wrap, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiCurves(RtToken type, RtInt ncurves, RtInt nvertices[], RtToken wrap, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, wrap);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
-   
-    RiCurvesV(type, ncurves, nvertices, wrap, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiCurvesV(type, ncurves, nvertices, wrap, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid  RiCurvesV (RtToken type, RtInt ncurves,
-			      RtInt nvertices[], RtToken wrap,
-			      RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiCurvesV(RtToken type, RtInt ncurves, RtInt nvertices[], RtToken wrap, RtInt n, RtToken tokens[],
+                            RtPointer parms[]) {
   try {
     context.current().RiCurvesV(type, ncurves, nvertices, wrap, n, tokens, parms);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 }
 
-extern "C" RtVoid  RiSubdivisionMesh (RtToken mask, RtInt nf, RtInt nverts[],
-				      RtInt verts[],
-				      RtInt ntags, RtToken tags[], RtInt numargs[],
-				      RtInt intargs[], RtFloat floatargs[], ...){
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[],
+                                    RtInt numargs[], RtInt intargs[], RtFloat floatargs[], ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, floatargs);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
- 
-    RiSubdivisionMeshV(mask, nf, nverts, verts, ntags, tags, numargs,
-		       intargs, floatargs, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiSubdivisionMeshV(mask, nf, nverts, verts, ntags, tags, numargs, intargs, floatargs, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiSubdivisionMeshV (RtToken mask, RtInt nf, RtInt nverts[],
-				      RtInt verts[],
-				      RtInt ntags, RtToken tags[], RtInt numargs[],
-				      RtInt intargs[], RtFloat floatargs[],
-				      RtInt n, RtToken tokens[], RtPointer parms[]){
+extern "C" RtVoid RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[],
+                                     RtInt numargs[], RtInt intargs[], RtFloat floatargs[], RtInt n, RtToken tokens[],
+                                     RtPointer parms[]) {
   try {
-    context.current().RiSubdivisionMeshV(mask, nf, nverts, verts,
-					 ntags, tags, numargs,intargs, floatargs,
-					 n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiSubdivisionMeshV(mask, nf, nverts, verts, ntags, tags, numargs, intargs, floatargs, n, tokens,
+                                         parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 }
- 
-extern "C" RtVoid RiProcedural (RtPointer data, RtBound bound,
-				RtVoid (*subdivfunc)(RtPointer, RtFloat),
-				RtVoid (*freefunc)(RtPointer)) {
-  try {  
-    context.current().RiProcedural( data,  bound, subdivfunc, freefunc );
-  } catch (GMANError &error) {
+
+extern "C" RtVoid RiProcedural(RtPointer data, RtBound bound, RtVoid (*subdivfunc)(RtPointer, RtFloat),
+                               RtVoid (*freefunc)(RtPointer)) {
+  try {
+    context.current().RiProcedural(data, bound, subdivfunc, freefunc);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 }
-extern "C" RtVoid RiGeometry (RtToken type, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiGeometry(RtToken type, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, type);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
-    
-    RiGeometryV(type, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiGeometryV(type, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
+
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiGeometryV (RtToken type, RtInt n, RtToken tokens[], 
-			       RtPointer parms[]) {
+extern "C" RtVoid RiGeometryV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
     context.current().RiGeometryV(type, n, tokens, parms);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Solid */
-extern "C" RtVoid RiSolidBegin (RtToken operation) {
+extern "C" RtVoid RiSolidBegin(RtToken operation) {
   try {
-    context.current().RiSolidBegin( operation);
-  } catch (GMANError &error) {
+    context.current().RiSolidBegin(operation);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiSolidEnd (RtVoid){
+extern "C" RtVoid RiSolidEnd(RtVoid) {
   try {
     context.current().RiSolidEnd();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Retained geometry */
-extern "C" RtObjectHandle RiObjectBegin (RtVoid) {
+extern "C" RtObjectHandle RiObjectBegin(RtVoid) {
   try {
     return context.current().RiObjectBegin();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
     return RI_NULL;
   }
 };
 
-extern "C" RtVoid RiObjectEnd (RtVoid) {
+extern "C" RtVoid RiObjectEnd(RtVoid) {
   try {
     context.current().RiObjectEnd();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiObjectInstance (RtObjectHandle handle) {
+extern "C" RtVoid RiObjectInstance(RtObjectHandle handle) {
   try {
     context.current().RiObjectInstance(handle);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Motion */
-extern "C" RtVoid RiMotionBegin (RtInt n, ...) {
-  RtFloat *times=NULL;
+extern "C" RtVoid RiMotionBegin(RtInt n, ...) {
+  RtFloat* times = NULL;
   try {
     va_list args;
     va_start(args, n);
     times = new RtFloat[n];
 
-    for (int i=0;i<n;i++) {
+    for (int i = 0; i < n; i++) {
       // some compilers promote RtFloat to double for va_arg
       // therefore ask for double and not RtFloat
-      times[i]=va_arg(args, double);
+      times[i] = va_arg(args, double);
     }
     va_end(args);
 
     RiMotionBeginV(n, times);
-	if(times) delete[] times;
-  } catch (GMANError &error) {
-	if(times) delete[] times;
+    if (times)
+      delete[] times;
+  } catch (GMANError& error) {
+    if (times)
+      delete[] times;
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMotionBeginV (RtInt n, RtFloat times[]) {
+extern "C" RtVoid RiMotionBeginV(RtInt n, RtFloat times[]) {
   try {
     context.current().RiMotionBeginV(n, times);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMotionEnd (RtVoid) {
+extern "C" RtVoid RiMotionEnd(RtVoid) {
   try {
     context.current().RiMotionEnd();
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Texture */
-extern "C" RtVoid RiMakeTexture (char *pic, char *tex, 
-				 RtToken swrap, RtToken twrap,
-				 RtFilterFunc filterfunc, 
-				 RtFloat swidth, RtFloat twidth, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiMakeTexture(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
+                                RtFloat swidth, RtFloat twidth, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiMakeTextureV(pic, tex, swrap, twrap,
-			    filterfunc, swidth, twidth, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiMakeTextureV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeTextureV (char *pic, char *tex, 
-				  RtToken swrap, RtToken twrap,
-				  RtFilterFunc filterfunc, 
-				  RtFloat swidth, RtFloat twidth,
-				  RtInt n, RtToken tokens[], RtPointer parms[]) {
-  
+extern "C" RtVoid RiMakeTextureV(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
+                                 RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
+
   try {
-    context.current().RiMakeTextureV( pic, tex, swrap,  twrap, filterfunc,  swidth, 
-				      twidth, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiMakeTextureV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeBump (char *pic, char *tex, 
-			      RtToken swrap, RtToken twrap,
-			      RtFilterFunc filterfunc, RtFloat swidth, 
-			      RtFloat twidth, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiMakeBump(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
+                             RtFloat swidth, RtFloat twidth, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiMakeBumpV(pic, tex, swrap, twrap,
-			 filterfunc,  swidth, twidth, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiMakeBumpV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeBumpV (char *pic, char *tex, 
-			       RtToken swrap, RtToken twrap,
-			       RtFilterFunc filterfunc, 
-			       RtFloat swidth, RtFloat twidth,
-			       RtInt n, RtToken tokens[], RtPointer parms[]) {
+extern "C" RtVoid RiMakeBumpV(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
+                              RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiMakeBumpV(pic,tex, swrap, twrap, filterfunc,  swidth, 
-				  twidth, n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiMakeBumpV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeLatLongEnvironment (char *pic, char *tex, 
-					    RtFilterFunc filterfunc,
-					    RtFloat swidth, 
-					    RtFloat twidth, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiMakeLatLongEnvironment(char* pic, char* tex, RtFilterFunc filterfunc, RtFloat swidth,
+                                           RtFloat twidth, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiMakeLatLongEnvironmentV(pic, tex, filterfunc, 
-			      swidth, twidth, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiMakeLatLongEnvironmentV(pic, tex, filterfunc, swidth, twidth, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeLatLongEnvironmentV (char *pic, char *tex, 
-					     RtFilterFunc filterfunc,
-					     RtFloat swidth, RtFloat twidth,
-					     RtInt n, RtToken tokens[], 
-					     RtPointer parms[]) {
+extern "C" RtVoid RiMakeLatLongEnvironmentV(char* pic, char* tex, RtFilterFunc filterfunc, RtFloat swidth,
+                                            RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiMakeLatLongEnvironmentV(pic, tex, filterfunc,
-						swidth, twidth,
-						n,  tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiMakeLatLongEnvironmentV(pic, tex, filterfunc, swidth, twidth, n, tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeCubeFaceEnvironment (char *px, char *nx, 
-					     char *py, char *ny,
-					     char *pz, char *nz, 
-					     char *tex, RtFloat fov,
-					     RtFilterFunc filterfunc, 
-					     RtFloat swidth, 
-					     RtFloat ywidth, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiMakeCubeFaceEnvironment(char* px, char* nx, char* py, char* ny, char* pz, char* nz, char* tex,
+                                            RtFloat fov, RtFilterFunc filterfunc, RtFloat swidth, RtFloat ywidth, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
 
   try {
     va_list args;
     va_start(args, ywidth);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
-    RiMakeCubeFaceEnvironmentV(px, nx, py, ny, pz, nz, tex, fov,
-			       filterfunc, swidth, ywidth, n,
-			       tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    RiMakeCubeFaceEnvironmentV(px, nx, py, ny, pz, nz, tex, fov, filterfunc, swidth, ywidth, n, tokens, parms);
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeCubeFaceEnvironmentV (char *px, char *nx, 
-					      char *py, char *ny,
-					      char *pz, char *nz, 
-					      char *tex, RtFloat fov,
-					      RtFilterFunc filterfunc, 
-					      RtFloat swidth, RtFloat ywidth,
-					      RtInt n, RtToken tokens[], 
-					      RtPointer parms[]) {
+extern "C" RtVoid RiMakeCubeFaceEnvironmentV(char* px, char* nx, char* py, char* ny, char* pz, char* nz, char* tex,
+                                             RtFloat fov, RtFilterFunc filterfunc, RtFloat swidth, RtFloat ywidth,
+                                             RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
-    context.current().RiMakeCubeFaceEnvironmentV(px, nx, py, ny, pz, nz, tex, fov,
-						 filterfunc, swidth, ywidth,
-						 n, tokens, parms);
-  } catch (GMANError &error) {
+    context.current().RiMakeCubeFaceEnvironmentV(px, nx, py, ny, pz, nz, tex, fov, filterfunc, swidth, ywidth, n,
+                                                 tokens, parms);
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeShadow (char *pic, char *tex, ...) {
-  RtToken *tokens=NULL;
-  RtPointer *parms=NULL;
+extern "C" RtVoid RiMakeShadow(char* pic, char* tex, ...) {
+  RtToken* tokens = NULL;
+  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, tex);
-    RtInt n=GMANCountArguments(args);
+    RtInt n = GMANCountArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
-  
+
     GMANGetArguments(args, n, tokens, parms);
     va_end(args);
 
     RiMakeShadowV(pic, tex, n, tokens, parms);
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
-  } catch (GMANError &error) {
-    if(tokens) delete []tokens;
-    if(parms) delete []parms;
+  } catch (GMANError& error) {
+    if (tokens)
+      delete[] tokens;
+    if (parms)
+      delete[] parms;
 
     GMANHandleError(error);
   }
 };
 
-extern "C" RtVoid RiMakeShadowV (char *pic, char *tex,
-				 RtInt n, RtToken tokens[], 
-				 RtPointer parms[]) {
+extern "C" RtVoid RiMakeShadowV(char* pic, char* tex, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
     context.current().RiMakeShadowV(pic, tex, n, tokens, parms);
-  } catch (GMANError &error) {
+  } catch (GMANError& error) {
     GMANHandleError(error);
   }
 };
 
 /* Error handler */
-extern "C" RtVoid RiErrorHandler (RtErrorHandler handler)
-{
-  GMANErrorHandler=handler;
-}
+extern "C" RtVoid RiErrorHandler(RtErrorHandler handler) { GMANErrorHandler = handler; }
 
 /* Whew! */
 
 /* ... cheesh, glad to be finished typing this module ...
  * ... talk about repetition
  */
-
-
-
-
-

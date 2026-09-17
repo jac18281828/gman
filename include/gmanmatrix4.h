@@ -34,62 +34,52 @@
 
 class GMANVector;
 
-class GMAN_EXPORT  GMANMatrix4
-{
-  private:
-    RtMatrix mtrx;
-  public:
-    GMANMatrix4 ();
-    GMANMatrix4 (RtMatrix m);
-    
-    RtVoid identity();
-    RtVoid concat (const GMANMatrix4 &m);
-    RtVoid persp (RtFloat fov);
-    RtVoid trans (RtFloat dx, RtFloat dy, RtFloat dz);
-    RtVoid rot (RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz);
-    RtVoid scale (RtFloat sx, RtFloat sy, RtFloat sz);
-    RtVoid skew (RtFloat angle, GMANVector &a, GMANVector &b);
-    
-    RtVoid prjPersp (RtFloat fov, RtFloat nearOne, RtFloat farOne);
-    RtVoid prjOrtho (RtFloat nearOne, RtFloat farOne);
-    
-    RtFloat determinant (RtVoid);
-    RtVoid invert (RtVoid);
-    
-    RtVoid p3m (RtInt n, RtFloat *src, RtFloat *dest);
-    RtVoid p4m (RtInt n, RtFloat *src, RtFloat *dest);
-    
-    GMANMatrix4 operator*(RtFloat f) const ;
-    GMANMatrix4 &operator*=(RtFloat f);
-    GMANMatrix4 operator*(const GMANMatrix4 &m) const;
-    GMANMatrix4 &operator*=(const GMANMatrix4 &m);
-    GMANMatrix4 operator+(const GMANMatrix4 &m) const;
-    GMANMatrix4 &operator+=(const GMANMatrix4 &m);
+class GMAN_EXPORT GMANMatrix4 {
+private:
+  RtMatrix mtrx;
 
-    GMANMatrix4 &operator=(const RtMatrix &m);
-	GMANMatrix4(const GMANMatrix4 &m) = default;
+public:
+  GMANMatrix4();
+  GMANMatrix4(RtMatrix m);
 
-	GMANMatrix4 &operator=(const GMANMatrix4 &m);
+  RtVoid identity();
+  RtVoid concat(const GMANMatrix4& m);
+  RtVoid persp(RtFloat fov);
+  RtVoid trans(RtFloat dx, RtFloat dy, RtFloat dz);
+  RtVoid rot(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz);
+  RtVoid scale(RtFloat sx, RtFloat sy, RtFloat sz);
+  RtVoid skew(RtFloat angle, GMANVector& a, GMANVector& b);
 
-	GMANMatrix4 &assign(const GMANMatrix4 &m);
-    
-	RtVoid setBasis(RtBasis &b);
+  RtVoid prjPersp(RtFloat fov, RtFloat nearOne, RtFloat farOne);
+  RtVoid prjOrtho(RtFloat nearOne, RtFloat farOne);
 
-    RtFloat  *operator[](size_t i) {
-      return mtrx[i];
-    }
+  RtFloat determinant(RtVoid);
+  RtVoid invert(RtVoid);
 
-    const RtFloat *operator[](size_t i) const {
-	return mtrx[i];
-    }
+  RtVoid p3m(RtInt n, RtFloat* src, RtFloat* dest);
+  RtVoid p4m(RtInt n, RtFloat* src, RtFloat* dest);
 
-  const RtMatrix &get(RtVoid) const {
-    return mtrx;
-  }
+  GMANMatrix4 operator*(RtFloat f) const;
+  GMANMatrix4& operator*=(RtFloat f);
+  GMANMatrix4 operator*(const GMANMatrix4& m) const;
+  GMANMatrix4& operator*=(const GMANMatrix4& m);
+  GMANMatrix4 operator+(const GMANMatrix4& m) const;
+  GMANMatrix4& operator+=(const GMANMatrix4& m);
+
+  GMANMatrix4& operator=(const RtMatrix& m);
+  GMANMatrix4(const GMANMatrix4& m) = default;
+
+  GMANMatrix4& operator=(const GMANMatrix4& m);
+
+  GMANMatrix4& assign(const GMANMatrix4& m);
+
+  RtVoid setBasis(RtBasis& b);
+
+  RtFloat* operator[](size_t i) { return mtrx[i]; }
+
+  const RtFloat* operator[](size_t i) const { return mtrx[i]; }
+
+  const RtMatrix& get(RtVoid) const { return mtrx; }
 };
 
 #endif
-
-
-
-

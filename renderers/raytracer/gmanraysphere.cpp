@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -26,44 +26,42 @@
 #include "gmanraysphere.h"
 #include "gmanvector.h"
 
-bool GMANRaySphere::intersect(const GMANRay& ray, RtFloat &t ) const
-{
-  GMANVector direction( ray.getP1(), ray.getP2() );
-//  RtPoint intersection;
-  GMANPoint centre( 0, 0, 0);
+bool GMANRaySphere::intersect(const GMANRay& ray, RtFloat& t) const {
+  GMANVector direction(ray.getP1(), ray.getP2());
+  //  RtPoint intersection;
+  GMANPoint centre(0, 0, 0);
   RtFloat coef[3];
   int numRoots;
   RtFloat roots[2];
 
+  GMANVector deltaP(ray.getP1(), centre);
 
+  coef[0] = direction.dot(direction);
+  coef[1] = 2 * direction.dot(deltaP);
+  coef[2] = deltaP.dot(deltaP) - radius * radius;
 
-  GMANVector deltaP( ray.getP1(), centre);
-  
-  coef[0] = direction.dot( direction);
-  coef[1] = 2*direction.dot( deltaP);
-  coef[2] = deltaP.dot( deltaP) - radius*radius;
-  
   // TODO(phase-1): the root solver is not written, so this always misses.
   numRoots = 0;
   //   QuadraticRoots(coef, numRoots, roots);
-  if (numRoots == 0) return false;
-  
-  if (numRoots==1)
+  if (numRoots == 0)
+    return false;
+
+  if (numRoots == 1)
     t = roots[0];
   else {
-    if (roots[0]>0 && (roots[1]<0 || roots[0]<roots[1]) ) {
+    if (roots[0] > 0 && (roots[1] < 0 || roots[0] < roots[1])) {
       t = roots[0];
-    }
-    else {
+    } else {
       t = roots[1];
     }
   }
 
-  if ( t < RI_EPSILON ) return false;
+  if (t < RI_EPSILON)
+    return false;
   /*
   if (calcData ){
     intersection = pvAdd( ray.getP1(),
-			  svMpy( t, currentRay.direction) );
+                          svMpy( t, currentRay.direction) );
     hit.t = t;
     hit.point = intersection;
     hit.normal = ppSub(intersection, sphere.centre);

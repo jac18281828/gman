@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,31 +27,29 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANFrameBuffer
  *
  */
 
 // default constructor
-GMANFrameBuffer::GMANFrameBuffer() : GMANBitmap() { 
+GMANFrameBuffer::GMANFrameBuffer() : GMANBitmap() {
   // by default do a bartlett 3x3
   filter = RiBoxFilter;
   filterWidth = 3;
   filterHeight = 3;
 };
 
-GMANFrameBuffer::GMANFrameBuffer(int width, int height, const GMANColor &background) : GMANBitmap(width, height, background) { 
+GMANFrameBuffer::GMANFrameBuffer(int width, int height, const GMANColor& background)
+    : GMANBitmap(width, height, background) {
   // by default do a bartlett 3x3
   filter = RiBoxFilter;
   filterWidth = 3;
   filterHeight = 3;
 };
 
-
-// default destructor 
-GMANFrameBuffer::~GMANFrameBuffer() { 
-};
+// default destructor
+GMANFrameBuffer::~GMANFrameBuffer() {};
 
 // Set the type of filter used by the anti-aliasing code
 RtVoid GMANFrameBuffer::setFilter(RtFilterFunc filt, int fwidth, int fheight) {
@@ -60,24 +58,23 @@ RtVoid GMANFrameBuffer::setFilter(RtFilterFunc filt, int fwidth, int fheight) {
   filterHeight = fheight;
 }
 
-
 // apply a filter windowed about x and y to achieve the super sampled
 // pixel
 GMANColor GMANFrameBuffer::getSuperSampledPixel(int x, int y) {
 
   GMANColor filterVal(0.0);
-  for(int i=0; i<filterWidth; i++) {
-    for(int j=0; j<filterHeight; j++) {
+  for (int i = 0; i < filterWidth; i++) {
+    for (int j = 0; j < filterHeight; j++) {
 
-      GMANColor   pixelVal(getPixel(x+i, y+j));
-      pixelVal.scale(filter(x+i, y+j, filterWidth, filterHeight));
-      
-      filterVal +=  pixelVal;
+      GMANColor pixelVal(getPixel(x + i, y + j));
+      pixelVal.scale(filter(x + i, y + j, filterWidth, filterHeight));
+
+      filterVal += pixelVal;
     }
   };
 
   // compute average.
-  filterVal /= (GMANColor::ColorSampleType)(filterWidth*filterHeight);
-  
+  filterVal /= (GMANColor::ColorSampleType)(filterWidth * filterHeight);
+
   return filterVal;
 };

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -25,25 +25,15 @@
 
 #include "gmanshader.h"
 
-
 /*
  * RenderMan API GMANShader
  *
  */
 
-GMANShader::GMANShader () {
-  renderer=NULL;
-};
+GMANShader::GMANShader() { renderer = NULL; };
 
-GMANShader::~GMANShader () 
-{ };
+GMANShader::~GMANShader() {};
 
-RtVoid GMANShader::set (GMANParameterList &p) 
-{
-  pl=p;
-}
+RtVoid GMANShader::set(GMANParameterList& p) { pl = p; }
 
-RtVoid GMANShader::set (GMANRenderer &r)
-{
-  renderer=&r;
-}
+RtVoid GMANShader::set(GMANRenderer& r) { renderer = &r; }

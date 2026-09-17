@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 1999, John Cairns 
+ * Copyright (c) 1999, John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,7 +22,6 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_SL_H
 #define __GMAN_SL_H 1
@@ -34,24 +33,24 @@
 #include "ri.h"
 
 /* global variables */
-extern int   lineNumber;
-extern FILE  *outHeaderFile, *outSourceFile, *logFile;
+extern int lineNumber;
+extern FILE *outHeaderFile, *outSourceFile, *logFile;
 
 /* function prototypes */
 
-RtVoid usage(char *myname);
+RtVoid usage(char* myname);
 
-RtBoolean compile(char *shader);
+RtBoolean compile(char* shader);
 
 // create a new header
-FILE *initHeader(const std::string &headerName);
+FILE* initHeader(const std::string& headerName);
 // create a new source
-FILE *initSource(const std::string &headerName, const std::string &srcName);
+FILE* initSource(const std::string& headerName, const std::string& srcName);
 
 // build a shading language source
 // into a dynamic loadable module
-RtVoid build(const std::string &srcName);
+RtVoid build(const std::string& srcName);
 
-void yyerror(char *s);
+void yyerror(char* s);
 
 #endif

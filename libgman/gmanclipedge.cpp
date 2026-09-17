@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -29,56 +29,48 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANClipEdge
  *
  */
 
 // default constructor
-GMANClipEdge::GMANClipEdge() { 
-  first_flag=false;
-};
+GMANClipEdge::GMANClipEdge() { first_flag = false; };
 
+// default destructor
+GMANClipEdge::~GMANClipEdge() {};
 
-// default destructor 
-GMANClipEdge::~GMANClipEdge() { };
+RtVoid GMANClipEdge::output(const GMANVertex4& v, GMANOutputPolygon& out) {
 
-
-RtVoid GMANClipEdge::output(const GMANVertex4 &v, GMANOutputPolygon &out) {
-  
-  if(next != NULL) 
+  if (next != NULL)
     next->clip(v, out);
   else
     out.addVertex(v);
-
 }
 
-GMANVertex4 GMANClipEdge::intersect(const GMANVertex4 &s, 
-				    const GMANVertex4 &e) {
+GMANVertex4 GMANClipEdge::intersect(const GMANVertex4& s, const GMANVertex4& e) {
 
-  RtFloat	d, t;
-  GMANColor	color;
-  GMANVector4   p, r;
-  GMANVertex4   v;
-
+  RtFloat d, t;
+  GMANColor color;
+  GMANVector4 p, r;
+  GMANVertex4 v;
 
   r = e.getCoord() - s.getCoord();
   d = normal.dot(r);
 
-  if(fabs(d) > RI_EPSILON)
-    t = -normal.dot(s.getCoord())/d;
+  if (fabs(d) > RI_EPSILON)
+    t = -normal.dot(s.getCoord()) / d;
   else
     t = 1.0;
 
-  if(t < 0.0)
+  if (t < 0.0)
     t = 0.0;
 
-  if(t > 1.0)
+  if (t > 1.0)
     t = 1.0;
 
   // the clip-plane intersection point, in homogeneous clip space
-  p = s.getCoord() + r*t;
+  p = s.getCoord() + r * t;
 
   // linearly interpolate vertex color
   GMANCombine colorCombine;
@@ -90,49 +82,45 @@ GMANVertex4 GMANClipEdge::intersect(const GMANVertex4 &s,
   v.set(p, color, alpha);
 
   return v;
-
 }
 
+RtVoid GMANClipEdge::clip(const GMANVertex4& current, GMANOutputPolygon& out) {
+  bool curr_inside; // current point inside flag
 
-RtVoid GMANClipEdge::clip(const GMANVertex4 &current, GMANOutputPolygon &out) {
-  bool curr_inside;   // current point inside flag
-
-  GMANVertex4 isect;  // intersection vertex
+  GMANVertex4 isect; // intersection vertex
 
   // check visibility
   curr_inside = isInside(current);
 
-  if(first_flag == false) {
+  if (first_flag == false) {
     first = current;
     first_inside = curr_inside;
     first_flag = true;
   } else {
     // does edge intersect plane?
-    if(start_inside ^ curr_inside)
-      {
-	isect = intersect(start, current);
-	output(isect, out);
-      }
+    if (start_inside ^ curr_inside) {
+      isect = intersect(start, current);
+      output(isect, out);
+    }
   }
-  if(curr_inside)
+  if (curr_inside)
     output(current, out);
 
   start = current;
   start_inside = curr_inside;
 }
 
-
-RtVoid GMANClipEdge::close(GMANOutputPolygon &out) {
+RtVoid GMANClipEdge::close(GMANOutputPolygon& out) {
   GMANVertex4 isect; // intersection vertex
 
-  if(first_flag) {
+  if (first_flag) {
     // does edge intersect plane
-    if(start_inside ^ first_inside) {
+    if (start_inside ^ first_inside) {
       isect = intersect(start, first);
       output(isect, out);
     }
 
-    if(next != NULL) // more planes
+    if (next != NULL) // more planes
       next->close(out);
 
     // reset first vertex seen flag

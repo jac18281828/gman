@@ -4,7 +4,7 @@
   Copyright (C) Lionel Joseph Lacour 2000, 2001
   2000/07/09  First release
   ----------------------------------------------------------
-  This Dictionary can handle inline declaration as described in the 
+  This Dictionary can handle inline declaration as described in the
   RenderMan Spec v3.2
 */
 /*
@@ -34,89 +34,70 @@
 
 typedef GMANUInt GMANTokenId;
 
-class GMAN_EXPORT  GMANTokenEntry
-{
-	// public types
+class GMAN_EXPORT GMANTokenEntry {
+  // public types
 public:
-	typedef enum  { CONSTANT, UNIFORM, VARYING, VERTEX, FACEVARYING } TokenClass;
-	typedef enum { FLOAT, POINT, VECTOR, NORMAL, COLOR, STRING, MATRIX, HPOINT, INTEGER }  TokenType;
+  typedef enum { CONSTANT, UNIFORM, VARYING, VERTEX, FACEVARYING } TokenClass;
+  typedef enum { FLOAT, POINT, VECTOR, NORMAL, COLOR, STRING, MATRIX, HPOINT, INTEGER } TokenType;
 
 private:
-  std::string     name;
-  TokenClass tclass:4;
-  TokenType  ttype:6;
-  RtBoolean  in_line;
-  RtInt      quantity;
+  std::string name;
+  TokenClass tclass : 4;
+  TokenType ttype : 6;
+  RtBoolean in_line;
+  RtInt quantity;
 
 public:
-	GMANTokenEntry (std::string n, TokenClass tc, TokenType tt, RtInt qnt=1, bool inln=false);
-	GMANTokenEntry ();
-	// copy ctor
-	GMANTokenEntry(const GMANTokenEntry &ent);
+  GMANTokenEntry(std::string n, TokenClass tc, TokenType tt, RtInt qnt = 1, bool inln = false);
+  GMANTokenEntry();
+  // copy ctor
+  GMANTokenEntry(const GMANTokenEntry& ent);
 
-	const GMANTokenEntry &operator=(const GMANTokenEntry &ent);
+  const GMANTokenEntry& operator=(const GMANTokenEntry& ent);
 
-	bool operator<(const GMANTokenEntry &ent) const {
-		return ((name < ent.name) &&
-				(tclass < ent.tclass) &&
-				(ttype  < ent.ttype) &&
-				(quantity < ent.quantity));
-	}
+  bool operator<(const GMANTokenEntry& ent) const {
+    return ((name < ent.name) && (tclass < ent.tclass) && (ttype < ent.ttype) && (quantity < ent.quantity));
+  }
 
-	bool operator==(const GMANTokenEntry &ent) const {
-		return ((name == ent.name) &&
-				(tclass == ent.tclass) &&
-				(ttype  == ent.ttype) &&
-				(quantity == ent.quantity));
-	}
+  bool operator==(const GMANTokenEntry& ent) const {
+    return ((name == ent.name) && (tclass == ent.tclass) && (ttype == ent.ttype) && (quantity == ent.quantity));
+  }
 
-  const std::string &getName(void) const     { return name;     }
-  TokenClass   getClass(void) const   { return tclass;   }
-  TokenType    getType(void)  const   { return ttype;    }
-  RtInt        getQuantity(void) const { return quantity; }
-  bool         isInline(void)  const  { return in_line;  } 
-  RtVoid       inlineOff(void)  { in_line=false;   }
+  const std::string& getName(void) const { return name; }
+  TokenClass getClass(void) const { return tclass; }
+  TokenType getType(void) const { return ttype; }
+  RtInt getQuantity(void) const { return quantity; }
+  bool isInline(void) const { return in_line; }
+  RtVoid inlineOff(void) { in_line = false; }
 #ifdef DEBUG
-  RtVoid printClassType ();
+  RtVoid printClassType();
 #endif
 };
 
-
-
-class GMAN_EXPORT GMANDictionary
-{
+class GMAN_EXPORT GMANDictionary {
 private:
-	std::vector<GMANTokenEntry> te;
+  std::vector<GMANTokenEntry> te;
 
 public:
   GMANDictionary();
 
-  GMANTokenId addToken (std::string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt=1, bool inln=false);
-  GMANTokenId getTokenId (std::string n);
+  GMANTokenId addToken(std::string n, GMANTokenEntry::TokenClass tc, GMANTokenEntry::TokenType tt, RtInt qnt = 1,
+                       bool inln = false);
+  GMANTokenId getTokenId(std::string n);
 #ifdef PRE
-  RtVoid      isValid     (GMANTokenId id);
+  RtVoid isValid(GMANTokenId id);
 #endif
-  GMANTokenEntry::TokenClass  getClass    (GMANTokenId id);
-  GMANTokenEntry::TokenType   getType     (GMANTokenId id);
+  GMANTokenEntry::TokenClass getClass(GMANTokenId id);
+  GMANTokenEntry::TokenType getType(GMANTokenId id);
   // facevarying defaults to 1 -- only PointsPolygons/PointsGeneralPolygons
   // meshes have a real facevarying count, and neither is wired to a
   // renderer yet (Phase 2 scope).
-  RtInt       allocSize   (GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying=1);
-  RtInt       getTypeSize (GMANTokenEntry::TokenType);
-  RtInt       getQuantity (GMANTokenId id);
+  RtInt allocSize(GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying = 1);
+  RtInt getTypeSize(GMANTokenEntry::TokenType);
+  RtInt getQuantity(GMANTokenId id);
 #ifdef DEBUG
-  RtVoid      stats (RtVoid);
+  RtVoid stats(RtVoid);
 #endif
 };
 
 #endif
-
-
-
-
-
-
-
-
-
-

@@ -2,17 +2,16 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  */
 /*---------------------------------------------------------
- * Author: 
+ * Author:
    Copyright (C) Lionel Joseph Lacour 2000, 2001
    December 2000  First release
   ---------------------------------------------------------
   Primitives datas storage.
 */
-
 
 /*
  * This library is free software; you can redistribute it and/or
@@ -29,11 +28,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANPRIMITIVE_H
 #define __GMAN_GMANPRIMITIVE_H 1
-
 
 #include <list>
 #include <map>
@@ -49,19 +46,16 @@
  *
  */
 
-class GMAN_EXPORT  GMANPrimitive {
+class GMAN_EXPORT GMANPrimitive {
 protected:
-  GMANBBox		bbox;
+  GMANBBox bbox;
 
 public:
   GMANPrimitive(); // default constructor
 
   virtual ~GMANPrimitive(); // default destructor
 
-  const GMANBBox &getBBox(RtVoid) const;
-
+  const GMANBBox& getBBox(RtVoid) const;
 };
 
-
 #endif
-

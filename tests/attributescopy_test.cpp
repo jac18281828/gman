@@ -62,27 +62,26 @@ namespace {
 // directory is reused across ctest invocations, and a reverted fix that
 // throws before opening the display leaves the previous good file in place.
 // tests/baseline_test.cpp removes its target for the same reason.
-int runGman(const std::string &gman, const std::string &rib,
-            const std::string &output) {
+int runGman(const std::string& gman, const std::string& rib, const std::string& output) {
   std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void writeFile(const std::string &path, const std::string &contents) {
+void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
   out << contents;
 }
 
-bool nonEmptyFile(const std::string &path) {
+bool nonEmptyFile(const std::string& path) {
   struct stat st;
   return stat(path.c_str(), &st) == 0 && st.st_size > 0;
 }
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::fprintf(stderr, "usage: %s <gman-binary>\n", argv[0]);
     return 2;
@@ -90,39 +89,35 @@ int main(int argc, char *argv[]) {
   const std::string gman = argv[1];
 
   // ---- Surface declared once, then used inside AttributeBegin/End ----
-  const char *attrRib =
-      "Display \"attr.tif\" \"file\" \"rgb\"\n"
-      "Format 64 64 1\n"
-      "Projection \"perspective\" \"fov\" [45]\n"
-      "WorldBegin\n"
-      "Surface \"matte\"\n"
-      "AttributeBegin\n"
-      "  Translate 0 0 5\n"
-      "  Sphere 1 -1 1 360\n"
-      "AttributeEnd\n"
-      "WorldEnd\n";
+  const char* attrRib = "Display \"attr.tif\" \"file\" \"rgb\"\n"
+                        "Format 64 64 1\n"
+                        "Projection \"perspective\" \"fov\" [45]\n"
+                        "WorldBegin\n"
+                        "Surface \"matte\"\n"
+                        "AttributeBegin\n"
+                        "  Translate 0 0 5\n"
+                        "  Sphere 1 -1 1 360\n"
+                        "AttributeEnd\n"
+                        "WorldEnd\n";
   writeFile("attr.rib", attrRib);
-  check(runGman(gman, "attr.rib", "attr.tif") == 0,
-        "Surface before AttributeBegin runs to completion");
+  check(runGman(gman, "attr.rib", "attr.tif") == 0, "Surface before AttributeBegin runs to completion");
   check(nonEmptyFile("attr.tif"), "AttributeBegin scene wrote a TIFF");
 
   // ---- Surface declared once, then a FrameBegin/FrameEnd pair (outside
   // WorldBegin, with a frame number -- nested inside WorldBegin fails on an
   // unrelated RIE_ILLSTATE and would be a false negative here) ----
-  const char *frameRib =
-      "Display \"frame.tif\" \"file\" \"rgb\"\n"
-      "Format 64 64 1\n"
-      "Projection \"perspective\" \"fov\" [45]\n"
-      "Surface \"matte\"\n"
-      "FrameBegin 1\n"
-      "WorldBegin\n"
-      "  Translate 0 0 5\n"
-      "  Sphere 1 -1 1 360\n"
-      "WorldEnd\n"
-      "FrameEnd\n";
+  const char* frameRib = "Display \"frame.tif\" \"file\" \"rgb\"\n"
+                         "Format 64 64 1\n"
+                         "Projection \"perspective\" \"fov\" [45]\n"
+                         "Surface \"matte\"\n"
+                         "FrameBegin 1\n"
+                         "WorldBegin\n"
+                         "  Translate 0 0 5\n"
+                         "  Sphere 1 -1 1 360\n"
+                         "WorldEnd\n"
+                         "FrameEnd\n";
   writeFile("frame.rib", frameRib);
-  check(runGman(gman, "frame.rib", "frame.tif") == 0,
-        "Surface before FrameBegin runs to completion");
+  check(runGman(gman, "frame.rib", "frame.tif") == 0, "Surface before FrameBegin runs to completion");
   check(nonEmptyFile("frame.tif"), "FrameBegin scene wrote a TIFF");
 
   return checkSummary("attributes copy holds");

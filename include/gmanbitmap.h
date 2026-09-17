@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANBITMAP_H
 #define __GMAN_GMANBITMAP_H 1
-
 
 #include <list>
 #include <map>
@@ -37,7 +35,6 @@
 #include "gmancolor.h"
 #include "gmanlog.h"
 #include "ri.h"
-
 
 /*
  * RenderMan API GMANBitmap
@@ -50,62 +47,53 @@ protected:
 
   GMANColor background;
 
-  int		  xres;
-  int		  yres;
+  int xres;
+  int yres;
 
   // protected methods
 
-  // these may be overridden by a specific output device 
+  // these may be overridden by a specific output device
   // depending on how it allocates or frees it's memory
-  
+
   virtual RtVoid freeMemory(RtVoid);
   virtual RtVoid allocMemory(RtVoid);
-  
 
 public:
   GMANBitmap(); // default constructor
 
   // construct a bitmap with the specified width and height
-  GMANBitmap(int width, int height, const GMANColor &background);
+  GMANBitmap(int width, int height, const GMANColor& background);
 
   virtual ~GMANBitmap(); // default destructor
 
-
   // setup buffer -- throws GMANError for a negative width or height, or
   // one whose pixel count overflows int
-  virtual RtVoid set(int width, int height, const GMANColor &bgcolor);
+  virtual RtVoid set(int width, int height, const GMANColor& bgcolor);
 
   // copy operation -- takes the source's dimensions unconditionally
-  GMANBitmap &operator=(const GMANBitmap &amap);
+  GMANBitmap& operator=(const GMANBitmap& amap);
 
   // what is the value of a specific pixel
-  virtual const GMANColor &getPixel(int x, int y) const { 
-    return pixels[y*xres+x]; 
-  };
+  virtual const GMANColor& getPixel(int x, int y) const { return pixels[y * xres + x]; };
 
   // set the color value of a specific pixel
-  virtual RtVoid setPixel(int x, int y, const GMANColor &color) {
-    pixels[y*xres+x] = color;
-  };
+  virtual RtVoid setPixel(int x, int y, const GMANColor& color) { pixels[y * xres + x] = color; };
 
   // set a specific row in the frame buffer
-  virtual RtVoid setRow(int y, const GMANColor *row) {
-    for(int i=0;i<xres; i++) {
+  virtual RtVoid setRow(int y, const GMANColor* row) {
+    for (int i = 0; i < xres; i++) {
       setPixel(i, y, row[i]);
     }
   }
-  
+
   // get a specific row in the frame buffer
-  virtual const GMANColor *getRow(int y) const {
-    return pixels.data() + y*xres;
-  }  
+  virtual const GMANColor* getRow(int y) const { return pixels.data() + y * xres; }
 
   // overwrite color value with the specified color
   // keeping track of alpha layers
-  RtVoid overlayPixel(int x, int y, const GMANColor &color, 
-		      const GMANAlpha &alpha) {
+  RtVoid overlayPixel(int x, int y, const GMANColor& color, const GMANAlpha& alpha) {
     GMANCombine combine;
-    GMANColor result = combine(getPixel(x,y), color, alpha);
+    GMANColor result = combine(getPixel(x, y), color, alpha);
     setPixel(x, y, result);
   };
 
@@ -113,12 +101,10 @@ public:
   RtVoid erase(RtVoid);
 
   // Fill bitmap to specified color
-  RtVoid fill(const GMANColor &fillColor);
+  RtVoid fill(const GMANColor& fillColor);
 
   RtInt getWidth(void) const;
-  RtInt getHeight(void) const; 
- 
+  RtInt getHeight(void) const;
 };
 
 #endif
-

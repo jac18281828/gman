@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2002, 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2002, 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANOUTPUTTIFF_H
 #define __GMAN_GMANOUTPUTTIFF_H 1
-
 
 #include <list>
 #include <map>
@@ -42,36 +40,25 @@
  *
  */
 
-class GMAN_EXPORT  GMANOutputTIFF : public GMANOutput {
-  public:
+class GMAN_EXPORT GMANOutputTIFF : public GMANOutput {
+public:
+  // public types
+  typedef enum { NONE, PACKBITS, LZW, CCITTRLE, CCITTFAX3, CCITTFAX4 } Compression;
 
-    // public types
-    typedef enum {
-	NONE,
-	PACKBITS,
-	LZW,
-	CCITTRLE,
-	CCITTFAX3,
-	CCITTFAX4 } Compression;
+private:
+  Compression compression;
 
-  private:
-    Compression compression;
-    
-  public:
-    GMANOutputTIFF(const char *path, int width, int height); // default constructor
+public:
+  GMANOutputTIFF(const char* path, int width, int height); // default constructor
 
-    ~GMANOutputTIFF(); // default destructor
-  
-    virtual RtVoid save(GMANOutput::DisplayMode mode, 
-			RtFloat gain, 
-			RtFloat gamma);
+  ~GMANOutputTIFF(); // default destructor
 
-    // get/set the TIFF compression type
-    RtVoid setCompression(Compression c);
+  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
 
-    Compression getCompression(void) const;
+  // get/set the TIFF compression type
+  RtVoid setCompression(Compression c);
+
+  Compression getCompression(void) const;
 };
 
-
 #endif
-

@@ -45,32 +45,27 @@
  * shinymetal degrades to metal (gmanmetal.cpp), as the RISpec says an
  * implementation without environment mapping behaves.
  */
-class GMANShinyMetal : public GMANSurfaceShader
-{
+class GMANShinyMetal : public GMANSurfaceShader {
 public:
-  RtVoid illuminance (RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
+  RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  const GMANColor &computeCi(GMANSurfaceEnv &se);
-  const GMANColor &computeOi(GMANSurfaceEnv &se);
+  const GMANColor& computeCi(GMANSurfaceEnv& se);
+  const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANShinyMetal::illuminance (RtInt /*i*/, GMANVector /*L*/,
-				      GMANColor /*Cl*/, GMANColor /*Ol*/)
-{
+RtVoid GMANShinyMetal::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi sums lights itself via env.ambient()/specular(),
   // the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor &GMANShinyMetal::computeCi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANShinyMetal::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
   RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
   RtFloat ks = gmanshaders::getFloatParam(pl, RI_KS, 1.0);
   RtFloat kr = gmanshaders::getFloatParam(pl, RI_KR, 1.0);
   RtFloat roughness = gmanshaders::getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  std::string texturename =
-      gmanshaders::getStringParam(pl, RI_TEXTURENAME, std::string());
+  std::string texturename = gmanshaders::getStringParam(pl, RI_TEXTURENAME, std::string());
 
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
   GMANVector vf(-se.I.getX(), -se.I.getY(), -se.I.getZ());
@@ -83,40 +78,34 @@ const GMANColor &GMANShinyMetal::computeCi(GMANSurfaceEnv &se)
   specularTerm.scale(ks);
   lit += specularTerm;
 
-  if (! texturename.empty()) {
+  if (!texturename.empty()) {
     GMANVector reflected = se.reflect(se.I, nf);
     GMANColor env = se.environment(texturename, se.toWorld(reflected));
     env.scale(kr);
     lit += env;
   }
 
-  ci = GMANColor(se.Os.getRed() * se.Cs.getRed() * lit.getRed(),
-		 se.Os.getGreen() * se.Cs.getGreen() * lit.getGreen(),
-		 se.Os.getBlue() * se.Cs.getBlue() * lit.getBlue());
+  ci = GMANColor(se.Os.getRed() * se.Cs.getRed() * lit.getRed(), se.Os.getGreen() * se.Cs.getGreen() * lit.getGreen(),
+                 se.Os.getBlue() * se.Cs.getBlue() * lit.getBlue());
   return ci;
 }
 
-const GMANColor &GMANShinyMetal::computeOi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANShinyMetal::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
 
 static GMANLoadableObjectInfo loadableInfo = {
-  "Shiny metal surface shader",
-  "John Cairns <john@2ad.com>",
-  "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
-  "A GMAN SurfaceShader for shiny metal surfaces: Cs-tinted specular "
-  "response plus a world-space environment reflection.",
+    "Shiny metal surface shader",
+    "John Cairns <john@2ad.com>",
+    "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
+    "A GMAN SurfaceShader for shiny metal surfaces: Cs-tinted specular "
+    "response plus a world-space environment reflection.",
 };
 
 static GMANShinyMetal shader;
 
-extern "C" GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &loadableInfo;
-}
+extern "C" GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMANShader *GMANLoadShader(void) {
-  return &shader;
-}
+extern "C" GMANShader* GMANLoadShader(void) { return &shader; }

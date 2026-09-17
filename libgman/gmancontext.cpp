@@ -25,65 +25,44 @@
 #include "gmancontext.h"
 #include "gmanrendermanimpl.h"
 
-GMANContext::GMANContext()
-{
-  active=(GMANRenderMan *)RI_NULL;
-}
+GMANContext::GMANContext() { active = (GMANRenderMan*)RI_NULL; }
 
-RtVoid  GMANContext::addContext()
-{
-  active=new GMANRenderManImpl;
+RtVoid GMANContext::addContext() {
+  active = new GMANRenderManImpl;
   chl.push_back(active);
 }
 
-RtContextHandle GMANContext::getContext()
-{
-  return (RtContextHandle) active;
-}
+RtContextHandle GMANContext::getContext() { return (RtContextHandle)active; }
 
-GMANRenderMan & GMANContext::current()
-{
-  if (active==((GMANRenderMan *) RI_NULL)) {
+GMANRenderMan& GMANContext::current() {
+  if (active == ((GMANRenderMan*)RI_NULL)) {
     GMANError error(RIE_NOTSTARTED, RIE_SEVERE, "GMANContext: No active context");
     throw error;
   }
   return *active;
 }
-RtVoid GMANContext::switchTo(RtContextHandle ch)
-{
-  std::list<GMANRenderMan *>::iterator first=chl.begin();
-  std::list<GMANRenderMan *>::iterator last=chl.end();
-  GMANRenderMan *r=(GMANRenderMan *)ch;
-  for (;first!=last;first++) {
-    if (*first==r) { 
-      active=r;
+RtVoid GMANContext::switchTo(RtContextHandle ch) {
+  std::list<GMANRenderMan*>::iterator first = chl.begin();
+  std::list<GMANRenderMan*>::iterator last = chl.end();
+  GMANRenderMan* r = (GMANRenderMan*)ch;
+  for (; first != last; first++) {
+    if (*first == r) {
+      active = r;
       return;
     }
   }
-  GMANError error(RIE_NESTING,RIE_SEVERE,"GMANContext: invalid Context Handle");
+  GMANError error(RIE_NESTING, RIE_SEVERE, "GMANContext: invalid Context Handle");
   throw(error);
 }
-RtVoid GMANContext::removeCurrent(RtVoid)
-{
-  std::list<GMANRenderMan *>::iterator first=chl.begin();
-  std::list<GMANRenderMan *>::iterator last=chl.end();
-  for (;first!=last;first++) {
-    if (*first==active) {
+RtVoid GMANContext::removeCurrent(RtVoid) {
+  std::list<GMANRenderMan*>::iterator first = chl.begin();
+  std::list<GMANRenderMan*>::iterator last = chl.end();
+  for (; first != last; first++) {
+    if (*first == active) {
       delete *first;
       chl.erase(first);
-      active = (GMANRenderMan *)RI_NULL;
+      active = (GMANRenderMan*)RI_NULL;
       return;
     }
-  } 
+  }
 }
-
-
-
-
-
-
-
-
-
-
-

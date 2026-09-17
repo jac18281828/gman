@@ -56,13 +56,11 @@ void testAreaWeightedAverage() {
   cornersA[1].setLocation(GMANPoint(1.0, 0.0, 0.0));
   cornersA[2].setLocation(GMANPoint(1.0, 1.0, 0.0));
   cornersA[3].setLocation(GMANPoint(0.0, 1.0, 0.0));
-  GMANVertex *vertsA[GMAN_NFACE_VERTS] = {&cornersA[0], &cornersA[1],
-                                           &cornersA[2], &cornersA[3]};
+  GMANVertex* vertsA[GMAN_NFACE_VERTS] = {&cornersA[0], &cornersA[1], &cornersA[2], &cornersA[3]};
   GMANFace faceA(vertsA, nullptr);
   faceA.calcArea();
   faceA.calcNormal();
-  check(std::fabs(faceA.getArea() - 1.0) < 1e-5,
-        "face A: area is 1.0 (a hand-computable reference)");
+  check(std::fabs(faceA.getArea() - 1.0) < 1e-5, "face A: area is 1.0 (a hand-computable reference)");
   check(faceA.getNormal().dot(GMANVector(0.0, 0.0, 1.0)) > 0.999,
         "face A: normal is (0,0,1) (a hand-computable reference)");
 
@@ -76,13 +74,11 @@ void testAreaWeightedAverage() {
   cornersB[1].setLocation(GMANPoint(0.0, 1.0, 0.0));
   cornersB[2].setLocation(GMANPoint(0.0, 1.0, 2.0));
   cornersB[3].setLocation(GMANPoint(0.0, 0.0, 2.0));
-  GMANVertex *vertsB[GMAN_NFACE_VERTS] = {&cornersB[0], &cornersB[1],
-                                           &cornersB[2], &cornersB[3]};
+  GMANVertex* vertsB[GMAN_NFACE_VERTS] = {&cornersB[0], &cornersB[1], &cornersB[2], &cornersB[3]};
   GMANFace faceB(vertsB, nullptr);
   faceB.calcArea();
   faceB.calcNormal();
-  check(std::fabs(faceB.getArea() - 2.0) < 1e-5,
-        "face B: area is 2.0 (a hand-computable reference)");
+  check(std::fabs(faceB.getArea() - 2.0) < 1e-5, "face B: area is 2.0 (a hand-computable reference)");
   check(faceB.getNormal().dot(GMANVector(1.0, 0.0, 0.0)) > 0.999,
         "face B: normal is (1,0,0) (a hand-computable reference)");
 
@@ -104,11 +100,9 @@ void testAreaWeightedAverage() {
   expected.normalize();
 
   GMANVector actual = vertex.getNormal();
-  check(std::fabs(actual.magnitude() - 1.0) < 1e-5,
-        "calcNormal: result is normalized");
-  check(actual.dot(expected) > 0.9999,
-        "calcNormal: area-weighted average of the two faces' normals "
-        "matches the hand-computed direction");
+  check(std::fabs(actual.magnitude() - 1.0) < 1e-5, "calcNormal: result is normalized");
+  check(actual.dot(expected) > 0.9999, "calcNormal: area-weighted average of the two faces' normals "
+                                       "matches the hand-computed direction");
 }
 
 void testEmptyFaceListLeavesDefaultNormal() {
@@ -118,11 +112,10 @@ void testEmptyFaceListLeavesDefaultNormal() {
   GMANVertex vertex;
   vertex.calcNormal();
   GMANVector normal = vertex.getNormal();
-  check(normal.magnitude() < 1e-6,
-        "calcNormal: an empty face list leaves the default zero normal");
+  check(normal.magnitude() < 1e-6, "calcNormal: an empty face list leaves the default zero normal");
 }
 
-}  // namespace
+} // namespace
 
 int main() {
   testAreaWeightedAverage();

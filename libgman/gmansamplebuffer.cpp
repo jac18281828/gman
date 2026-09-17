@@ -49,22 +49,19 @@ constexpr std::size_t kMaxSamples = std::size_t(1) << 28;
 
 } // namespace
 
-GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys,
-                                   const GMANColor &background)
-  : width(w), height(h), xsamples(xs), ysamples(ys),
-    sampleWidth(w * xs), sampleHeight(h * ys) {
+GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys, const GMANColor& background)
+    : width(w), height(h), xsamples(xs), ysamples(ys), sampleWidth(w * xs), sampleHeight(h * ys) {
 
   // size_t, not int: sampleWidth*sampleHeight overflows a signed int well
   // within realistic Format/PixelSamples inputs (see kMaxSamples' comment
   // above), and an overflowed, wrapped-negative count turned a too-large
   // request into a too-small allocation that render() then wrote past.
-  const std::size_t nSamples =
-      (std::size_t) sampleWidth * (std::size_t) sampleHeight;
+  const std::size_t nSamples = (std::size_t)sampleWidth * (std::size_t)sampleHeight;
   if (nSamples > kMaxSamples) {
     throw(GMANError(RIE_LIMIT, RIE_SEVERE,
-                     "PixelSamples/Format requests more samples than this "
-                     "renderer will allocate; reduce Format's resolution "
-                     "or PixelSamples."));
+                    "PixelSamples/Format requests more samples than this "
+                    "renderer will allocate; reduce Format's resolution "
+                    "or PixelSamples."));
   }
   sampleColor = new GMANColor[nSamples];
   sampleDepth = new RtFloat[nSamples];
@@ -73,7 +70,7 @@ GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys,
     sampleDepth[i] = RI_INFINITY;
   }
 
-  const std::size_t nPixels = (std::size_t) width * (std::size_t) height;
+  const std::size_t nPixels = (std::size_t)width * (std::size_t)height;
   resolvedDepth = new RtFloat[nPixels];
   for (std::size_t i = 0; i < nPixels; i++) {
     resolvedDepth[i] = RI_INFINITY;
@@ -81,13 +78,12 @@ GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys,
 }
 
 GMANSampleBuffer::~GMANSampleBuffer() {
-  delete [] sampleColor;
-  delete [] sampleDepth;
-  delete [] resolvedDepth;
+  delete[] sampleColor;
+  delete[] sampleDepth;
+  delete[] resolvedDepth;
 }
 
-bool GMANSampleBuffer::zTestAndSet(int sx, int sy, RtFloat depth,
-                                   const GMANColor &color) {
+bool GMANSampleBuffer::zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor& color) {
   const int idx = sampleIndex(sx, sy);
   if (depth < sampleDepth[idx]) {
     sampleDepth[idx] = depth;
@@ -97,9 +93,8 @@ bool GMANSampleBuffer::zTestAndSet(int sx, int sy, RtFloat depth,
   return false;
 }
 
-RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer *frameBuffer,
-                                 RtFilterFunc filterfunc,
-                                 RtFloat xwidth, RtFloat ywidth) {
+RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filterfunc, RtFloat xwidth,
+                                 RtFloat ywidth) {
   const RtFloat xhalf = xwidth / 2.0;
   const RtFloat yhalf = ywidth / 2.0;
 
@@ -116,10 +111,10 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer *frameBuffer,
       // the frame edge is never written, so the weighted sum below
       // renormalizes over whatever support survives there rather than
       // assuming a full box every filter width implies.
-      int gxMin = (int) floor((cx - xhalf) * xsamples);
-      int gxMax = (int) ceil((cx + xhalf) * xsamples) - 1;
-      int gyMin = (int) floor((cy - yhalf) * ysamples);
-      int gyMax = (int) ceil((cy + yhalf) * ysamples) - 1;
+      int gxMin = (int)floor((cx - xhalf) * xsamples);
+      int gxMax = (int)ceil((cx + xhalf) * xsamples) - 1;
+      int gyMin = (int)floor((cy - yhalf) * ysamples);
+      int gyMax = (int)ceil((cy + yhalf) * ysamples) - 1;
       gxMin = GMANMax(gxMin, 0);
       gxMax = GMANMin(gxMax, sampleWidth - 1);
       gyMin = GMANMax(gyMin, 0);
@@ -133,14 +128,16 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer *frameBuffer,
         // gy is that sample's index in the full sample grid, so this is
         // its position in the same continuous pixel-space units as cx/cy
         // above, independent of which pixel it belongs to.
-        const RtFloat sy = (gy + 0.5) / (RtFloat) ysamples;
+        const RtFloat sy = (gy + 0.5) / (RtFloat)ysamples;
         const RtFloat dy = sy - cy;
-        if (dy < -yhalf || dy > yhalf) continue;
+        if (dy < -yhalf || dy > yhalf)
+          continue;
 
         for (int gx = gxMin; gx <= gxMax; gx++) {
-          const RtFloat sx = (gx + 0.5) / (RtFloat) xsamples;
+          const RtFloat sx = (gx + 0.5) / (RtFloat)xsamples;
           const RtFloat dx = sx - cx;
-          if (dx < -xhalf || dx > xhalf) continue;
+          if (dx < -xhalf || dx > xhalf)
+            continue;
 
           // The kernel has no notion of its own support (RiBoxFilter
           // returns 1.0 unconditionally) -- the dx/dy bounds above are
@@ -175,8 +172,7 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer *frameBuffer,
         for (int i = 0; i < xsamples; i++) {
           const int sxIdx = px * xsamples + i;
           const int syIdx = py * ysamples + j;
-          pixelMinDepth = GMANMin(pixelMinDepth,
-                                  sampleDepth[sampleIndex(sxIdx, syIdx)]);
+          pixelMinDepth = GMANMin(pixelMinDepth, sampleDepth[sampleIndex(sxIdx, syIdx)]);
         }
       }
       resolvedDepth[pixelIndex(px, py)] = pixelMinDepth;
@@ -184,6 +180,4 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer *frameBuffer,
   }
 }
 
-RtFloat GMANSampleBuffer::getResolvedDepth(int x, int y) const {
-  return resolvedDepth[pixelIndex(x, y)];
-}
+RtFloat GMANSampleBuffer::getResolvedDepth(int x, int y) const { return resolvedDepth[pixelIndex(x, y)]; }

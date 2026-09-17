@@ -20,58 +20,47 @@
 #include "gmanhpoint.h"
 #include "gmanpoint.h"
 
-GMANPoint::GMANPoint(GMANHPoint &p)
-{
+GMANPoint::GMANPoint(GMANHPoint& p) {
   p.wToOne();
-  c[X]=p.getX();
-  c[Y]=p.getY();
-  c[Z]=p.getZ();
+  c[X] = p.getX();
+  c[Y] = p.getY();
+  c[Z] = p.getZ();
 }
 
 /* operators */
 //--------------------------------------------------
 // == !=
-bool GMANPoint::operator==(const GMANPoint &v) const
-{
-    for(RtInt i=0; i<NCOORDS; i++) {
-	if(c[i] != v.c[i]) {
-	    return false;
-	}
+bool GMANPoint::operator==(const GMANPoint& v) const {
+  for (RtInt i = 0; i < NCOORDS; i++) {
+    if (c[i] != v.c[i]) {
+      return false;
     }
-    return true;
+  }
+  return true;
 }
-bool GMANPoint::operator!=(const GMANPoint &v) const
-{
-    return !(*this == v);
-}
+bool GMANPoint::operator!=(const GMANPoint& v) const { return !(*this == v); }
 
-bool GMANPoint::operator<(const GMANPoint &p) const {
-    return ((c[X]<p.c[X]) && (c[Y]<p.c[Y]) && (c[Z]<p.c[Z]));
-}
+bool GMANPoint::operator<(const GMANPoint& p) const { return ((c[X] < p.c[X]) && (c[Y] < p.c[Y]) && (c[Z] < p.c[Z])); }
 
 //-------------------------------------------------------------
-GMANPoint GMANPoint::operator*(const GMANMatrix4 &m) const
-{
-    GMANPoint res(*this);
+GMANPoint GMANPoint::operator*(const GMANMatrix4& m) const {
+  GMANPoint res(*this);
 
-    res *= m;
+  res *= m;
 
-    return res;
+  return res;
 }
 
-GMANPoint &GMANPoint::operator *=(const GMANMatrix4 &m) {
+GMANPoint& GMANPoint::operator*=(const GMANMatrix4& m) {
 
-    // transform the point 
-    RtPoint res;
-    
-    for(RtInt i=0; i<NCOORDS; i++) {
-	res[i] = m[i][0]*c[X] +
-	    m[i][1]*c[Y] +
-	    m[i][2]*c[Z] +
-	    m[i][3];
-    }
+  // transform the point
+  RtPoint res;
 
-    *this = res;
+  for (RtInt i = 0; i < NCOORDS; i++) {
+    res[i] = m[i][0] * c[X] + m[i][1] * c[Y] + m[i][2] * c[Z] + m[i][3];
+  }
 
-    return *this;
+  *this = res;
+
+  return *this;
 }

@@ -40,32 +40,28 @@
  * a specular highlight tinted by specularcolor (not Cs -- this is what
  * makes plastic look like plastic instead of metal).
  */
-class GMANPlastic : public GMANSurfaceShader
-{
+class GMANPlastic : public GMANSurfaceShader {
 public:
-  RtVoid illuminance (RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
+  RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  const GMANColor &computeCi(GMANSurfaceEnv &se);
-  const GMANColor &computeOi(GMANSurfaceEnv &se);
+  const GMANColor& computeCi(GMANSurfaceEnv& se);
+  const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANPlastic::illuminance (RtInt /*i*/, GMANVector /*L*/,
-				  GMANColor /*Cl*/, GMANColor /*Ol*/)
-{
+RtVoid GMANPlastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi sums lights itself via env.ambient()/diffuse()/
   // specular(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor &GMANPlastic::computeCi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANPlastic::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
   RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
   RtFloat kd = gmanshaders::getFloatParam(pl, RI_KD, 0.5);
   RtFloat ks = gmanshaders::getFloatParam(pl, RI_KS, 0.5);
   RtFloat roughness = gmanshaders::getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  GMANColor specularcolor = gmanshaders::getColorParam(
-      pl, RI_SPECULARCOLOR, GMANColor((RtFloat) 1.0, (RtFloat) 1.0, (RtFloat) 1.0));
+  GMANColor specularcolor =
+      gmanshaders::getColorParam(pl, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0));
 
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
   GMANVector vf(-se.I.getX(), -se.I.getY(), -se.I.getZ());
@@ -80,40 +76,33 @@ const GMANColor &GMANPlastic::computeCi(GMANSurfaceEnv &se)
   GMANColor specularTerm = se.specular(nf, vf, roughness);
   specularTerm.scale(ks);
   GMANColor tintedSpecular(specularcolor.getRed() * specularTerm.getRed(),
-			    specularcolor.getGreen() * specularTerm.getGreen(),
-			    specularcolor.getBlue() * specularTerm.getBlue());
+                           specularcolor.getGreen() * specularTerm.getGreen(),
+                           specularcolor.getBlue() * specularTerm.getBlue());
 
   GMANColor lit(se.Cs.getRed() * diffuseTerm.getRed() + tintedSpecular.getRed(),
-		se.Cs.getGreen() * diffuseTerm.getGreen() + tintedSpecular.getGreen(),
-		se.Cs.getBlue() * diffuseTerm.getBlue() + tintedSpecular.getBlue());
+                se.Cs.getGreen() * diffuseTerm.getGreen() + tintedSpecular.getGreen(),
+                se.Cs.getBlue() * diffuseTerm.getBlue() + tintedSpecular.getBlue());
 
-  ci = GMANColor(se.Os.getRed() * lit.getRed(),
-		 se.Os.getGreen() * lit.getGreen(),
-		 se.Os.getBlue() * lit.getBlue());
+  ci = GMANColor(se.Os.getRed() * lit.getRed(), se.Os.getGreen() * lit.getGreen(), se.Os.getBlue() * lit.getBlue());
   return ci;
 }
 
-const GMANColor &GMANPlastic::computeOi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANPlastic::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
 
 static GMANLoadableObjectInfo loadableInfo = {
-  "Plastic surface shader",
-  "John Cairns <john@2ad.com>",
-  "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
-  "A GMAN SurfaceShader for plastic surfaces: diffuse base plus a "
-  "specularcolor-tinted specular highlight.",
+    "Plastic surface shader",
+    "John Cairns <john@2ad.com>",
+    "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
+    "A GMAN SurfaceShader for plastic surfaces: diffuse base plus a "
+    "specularcolor-tinted specular highlight.",
 };
 
 static GMANPlastic shader;
 
-extern "C" GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &loadableInfo;
-}
+extern "C" GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMANShader *GMANLoadShader(void) {
-  return &shader;
-}
+extern "C" GMANShader* GMANLoadShader(void) { return &shader; }

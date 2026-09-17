@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANSURFACE_H
 #define __GMAN_GMANSURFACE_H 1
-
 
 #include <list>
 #include <map>
@@ -38,7 +36,6 @@
 #include "gmanvector.h"
 #include "gmanvertex.h"
 #include "ri.h"
-
 
 // forward declaration of body
 class GMANBody;
@@ -52,45 +49,44 @@ class GMANBody;
  *
  */
 
-class GMAN_EXPORT  GMANSurface {
+class GMAN_EXPORT GMANSurface {
 protected:
-  GMANPoint		center;
+  GMANPoint center;
 
-  GMANBody		*parentBody;
+  GMANBody* parentBody;
 
-  GMANFace		*faceRoot; // faces
+  GMANFace* faceRoot; // faces
 
-  GMANSurface           *next;	  // next face pointer
-  
+  GMANSurface* next; // next face pointer
 
 public:
   // default constructor
-  GMANSurface(GMANBody *p) {
+  GMANSurface(GMANBody* p) {
     parentBody = p;
     faceRoot = NULL;
     next = NULL;
   };
 
-  ~GMANSurface() { 
-    GMANFace *faceEle = faceRoot;
-    GMANFace *faceNex;
+  ~GMANSurface() {
+    GMANFace* faceEle = faceRoot;
+    GMANFace* faceNex;
 
-    while(faceEle != NULL) {
+    while (faceEle != NULL) {
       faceNex = faceEle->getNext();
-      delete  faceEle;
+      delete faceEle;
       faceEle = faceNex;
     }
   }; // default destructor
 
   // test all faces for intersection and return one if it does
-  const GMANFace *intersects(const GMANRay &/*ray*/) {
-    GMANFace *faceEle = faceRoot;
-    while(faceEle != NULL) {
+  const GMANFace* intersects(const GMANRay& /*ray*/) {
+    GMANFace* faceEle = faceRoot;
+    while (faceEle != NULL) {
       // FIXME test face for intersection
-      
+
       faceEle = faceEle->getNext();
     }
-      
+
     return NULL;
   };
 
@@ -98,25 +94,25 @@ public:
   RtFloat getUnsentFlux(RtVoid) {
     /* FIXME: Should loop through faces and sum unsent flux
     return (color.getRed() + color.getGreen() +
-	    color.getBlue()) * (RtFloat)area;
+            color.getBlue()) * (RtFloat)area;
     */
     throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
   }
 
   // return face pointer
-  GMANFace *getFace(RtVoid) { return faceRoot; };
+  GMANFace* getFace(RtVoid) { return faceRoot; };
   // set face pointer
-  RtVoid setFace(GMANFace *face) { faceRoot = face; };
-  
+  RtVoid setFace(GMANFace* face) { faceRoot = face; };
+
   // return next surface
-  GMANSurface *getNext(RtVoid) { return next; }
+  GMANSurface* getNext(RtVoid) { return next; }
   // set next surface
-  RtVoid setNext(GMANSurface *surface) { next = surface; };
+  RtVoid setNext(GMANSurface* surface) { next = surface; };
 
   // return the parent body
-  GMANBody *getParent(RtVoid) { return parentBody; };
+  GMANBody* getParent(RtVoid) { return parentBody; };
 
-  const GMANPoint &getCenter(RtVoid) const { return center; };
+  const GMANPoint& getCenter(RtVoid) const { return center; };
 
   /*
   RtVoid calcCenter(RtVoid) {
@@ -124,7 +120,7 @@ public:
     GMANVector centerV = vertices[0]->getLocation();
 
     // find centroid
-    for(int i=1; i<GMAN_NFACE_VERTS; i++) 
+    for(int i=1; i<GMAN_NFACE_VERTS; i++)
       centerV += vertices[i]->getLocation();
 
     centerV /= GMAN_NFACE_VERTS;
@@ -135,9 +131,6 @@ public:
 
   }
   */
-  
 };
 
-
 #endif
-

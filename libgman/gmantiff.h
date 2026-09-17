@@ -52,13 +52,13 @@ struct tiff;
 // reader needs.
 class GMANTIFFReader {
 public:
-  explicit GMANTIFFReader(const std::string &path);
+  explicit GMANTIFFReader(const std::string& path);
   ~GMANTIFFReader();
 
-  GMANTIFFReader(const GMANTIFFReader &) = delete;
-  GMANTIFFReader &operator=(const GMANTIFFReader &) = delete;
-  GMANTIFFReader(GMANTIFFReader &&) = delete;
-  GMANTIFFReader &operator=(GMANTIFFReader &&) = delete;
+  GMANTIFFReader(const GMANTIFFReader&) = delete;
+  GMANTIFFReader& operator=(const GMANTIFFReader&) = delete;
+  GMANTIFFReader(GMANTIFFReader&&) = delete;
+  GMANTIFFReader& operator=(GMANTIFFReader&&) = delete;
 
   // False when path could not be opened for reading.
   bool isOpen() const;
@@ -70,11 +70,10 @@ public:
   // reports whether the read succeeded and both dimensions are nonzero --
   // in that order, so a failed read is never masked by checking the
   // dimensions first.
-  bool decode(std::uint32_t &width, std::uint32_t &height,
-              std::vector<unsigned char> &rgb);
+  bool decode(std::uint32_t& width, std::uint32_t& height, std::vector<unsigned char>& rgb);
 
 private:
-  struct tiff *handle;
+  struct tiff* handle;
 };
 
 // Writes an 8-bit RGB or RGBA TIFF one scanline at a time. Construction
@@ -85,15 +84,14 @@ private:
 // switch over it.
 class GMANTIFFWriter {
 public:
-  GMANTIFFWriter(const std::string &path, std::uint32_t width,
-                 std::uint32_t height, std::uint16_t samplesPerPixel,
+  GMANTIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height, std::uint16_t samplesPerPixel,
                  GMANOutputTIFF::Compression compression);
   ~GMANTIFFWriter();
 
-  GMANTIFFWriter(const GMANTIFFWriter &) = delete;
-  GMANTIFFWriter &operator=(const GMANTIFFWriter &) = delete;
-  GMANTIFFWriter(GMANTIFFWriter &&) = delete;
-  GMANTIFFWriter &operator=(GMANTIFFWriter &&) = delete;
+  GMANTIFFWriter(const GMANTIFFWriter&) = delete;
+  GMANTIFFWriter& operator=(const GMANTIFFWriter&) = delete;
+  GMANTIFFWriter(GMANTIFFWriter&&) = delete;
+  GMANTIFFWriter& operator=(GMANTIFFWriter&&) = delete;
 
   // False when path could not be opened for writing.
   bool isOpen() const;
@@ -103,9 +101,9 @@ public:
   // libtiff's own default strip size for a row of hint bytes.
   std::uint32_t defaultStripSize(std::uint32_t hint) const;
 
-  void setImageDescription(const std::string &text);
-  void setWrapModes(const std::string &modes);
-  void setTextureFormat(const std::string &format);
+  void setImageDescription(const std::string& text);
+  void setWrapModes(const std::string& modes);
+  void setTextureFormat(const std::string& format);
 
   // The byte length libtiff expects for one scanline of this file -- a
   // caller sizes its row buffer against this rather than trusting
@@ -113,10 +111,10 @@ public:
   std::size_t scanlineSize() const;
 
   // Writes one scanline at row; false on failure.
-  bool writeScanline(unsigned char *data, std::uint32_t row);
+  bool writeScanline(unsigned char* data, std::uint32_t row);
 
 private:
-  struct tiff *handle;
+  struct tiff* handle;
 };
 
 #endif

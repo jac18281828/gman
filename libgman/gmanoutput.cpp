@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -35,55 +35,27 @@
 
 // default constructor
 
-GMANOutput::GMANOutput() :
-  GMANFrameBuffer(), outputName(), quantizer(NULL), gammaCorrect() {
-}
+GMANOutput::GMANOutput() : GMANFrameBuffer(), outputName(), quantizer(NULL), gammaCorrect() {}
 
-GMANOutput::GMANOutput(const char *name, 
-		       int width, 
-		       int height) : 
-  GMANFrameBuffer(width, 
-		  height,
-		  DefaultBGColor), 
-  outputName(name), 
-  quantizer(NULL), 
-  gammaCorrect()
-{ 
+GMANOutput::GMANOutput(const char* name, int width, int height)
+    : GMANFrameBuffer(width, height, DefaultBGColor), outputName(name), quantizer(NULL), gammaCorrect() {
 
-};
-
+      };
 
 // default constructor
-GMANOutput::GMANOutput(const char *name, 
-		       int width, 
-		       int height, 
-		       const GMANColor &background) : 
-  GMANFrameBuffer(width, 
-		  height,
-		  background), 
-  outputName(name), 
-  quantizer(NULL), 
-  gammaCorrect()
-{ 
+GMANOutput::GMANOutput(const char* name, int width, int height, const GMANColor& background)
+    : GMANFrameBuffer(width, height, background), outputName(name), quantizer(NULL), gammaCorrect() {
 
+      };
+
+// default destructor
+GMANOutput::~GMANOutput() {
+  if (quantizer)
+    delete quantizer;
 };
 
-
-// default destructor 
-GMANOutput::~GMANOutput() { 
-    if(quantizer) delete quantizer;
-};
-
-RtVoid GMANOutput::setQuantization(DisplayMode mode,
-				   RtInt one,
-				   RtInt min,
-				   RtInt max,
-				   RtFloat ditheramplitude) {
-    if(quantizer) delete quantizer;
-    quantizer = new GMANQuantize((GMANQuantize::DisplayMode)mode,
-				 one, 
-				 min, 
-				 max,
-				 ditheramplitude);
+RtVoid GMANOutput::setQuantization(DisplayMode mode, RtInt one, RtInt min, RtInt max, RtFloat ditheramplitude) {
+  if (quantizer)
+    delete quantizer;
+  quantizer = new GMANQuantize((GMANQuantize::DisplayMode)mode, one, min, max, ditheramplitude);
 }
-

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  */
 /*---------------------------------------------------------
@@ -32,7 +32,6 @@
 #include "gmanprimitive.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANPrimitive
  *
@@ -41,16 +40,10 @@
 ////  GMAN_PRIMITIVE.CPP
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-
 // default constructor
-GMANPrimitive::GMANPrimitive() : bbox() { 
-};
+GMANPrimitive::GMANPrimitive() : bbox() {};
 
+// default destructor
+GMANPrimitive::~GMANPrimitive() {};
 
-// default destructor 
-GMANPrimitive::~GMANPrimitive() { };
-
-
-const GMANBBox &GMANPrimitive::getBBox(RtVoid) const {
-  return bbox;
-};
+const GMANBBox& GMANPrimitive::getBBox(RtVoid) const { return bbox; };

@@ -53,7 +53,7 @@ struct CapturedRun {
 // (gmanerror.cpp's print()) writes every diagnostic there. Output here is
 // a handful of short lines, well under a pipe's buffer, so reading it
 // after the child exits cannot deadlock.
-CapturedRun runCaptured(std::vector<std::string> const &argv) {
+CapturedRun runCaptured(std::vector<std::string> const& argv) {
   CapturedRun result;
   int outPipe[2];
   if (pipe(outPipe) != 0) {
@@ -70,9 +70,9 @@ CapturedRun runCaptured(std::vector<std::string> const &argv) {
     close(outPipe[0]);
     dup2(outPipe[1], STDOUT_FILENO);
     close(outPipe[1]);
-    std::vector<char *> cargv;
-    for (auto const &arg : argv) {
-      cargv.push_back(const_cast<char *>(arg.c_str()));
+    std::vector<char*> cargv;
+    for (auto const& arg : argv) {
+      cargv.push_back(const_cast<char*>(arg.c_str()));
     }
     cargv.push_back(nullptr);
     execv(cargv[0], cargv.data());
@@ -95,7 +95,7 @@ CapturedRun runCaptured(std::vector<std::string> const &argv) {
 
 // True when `name` appears as one of the space-separated tokens on
 // --version's "drivers:" line.
-bool driverCompiled(std::string const &versionStdout, std::string const &name) {
+bool driverCompiled(std::string const& versionStdout, std::string const& name) {
   std::istringstream lines(versionStdout);
   std::string line;
   while (std::getline(lines, line)) {
@@ -113,17 +113,16 @@ bool driverCompiled(std::string const &versionStdout, std::string const &name) {
   return false;
 }
 
-bool fileExists(std::string const &path) {
+bool fileExists(std::string const& path) {
   std::ifstream in(path);
   return in.good();
 }
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc != 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib dir>\n",
-                 argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib dir>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
@@ -144,11 +143,9 @@ int main(int argc, char *argv[]) {
   if (!pngCompiled) {
     const std::string output = "x.png";
     std::remove(output.c_str());
-    const auto run =
-        runCaptured({gman, ribDir + "/displaydisabled_png.rib"});
+    const auto run = runCaptured({gman, ribDir + "/displaydisabled_png.rib"});
     check(run.exitStatus != 0, "a disabled PNG driver fails the render");
-    check(run.stdoutText.find("Display \"png\": built without libpng") !=
-              std::string::npos,
+    check(run.stdoutText.find("Display \"png\": built without libpng") != std::string::npos,
           "the failure names the disabled png driver");
     check(!fileExists(output), "a disabled PNG driver writes no file");
   }
@@ -156,11 +153,9 @@ int main(int argc, char *argv[]) {
   if (!jpegCompiled) {
     const std::string output = "x.jpg";
     std::remove(output.c_str());
-    const auto run =
-        runCaptured({gman, ribDir + "/displaydisabled_jpg.rib"});
+    const auto run = runCaptured({gman, ribDir + "/displaydisabled_jpg.rib"});
     check(run.exitStatus != 0, "a disabled JPEG driver fails the render");
-    check(run.stdoutText.find("Display \"jpg\": built without libjpeg") !=
-              std::string::npos,
+    check(run.stdoutText.find("Display \"jpg\": built without libjpeg") != std::string::npos,
           "the failure names the disabled jpeg driver");
     check(!fileExists(output), "a disabled JPEG driver writes no file");
   }

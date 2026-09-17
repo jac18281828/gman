@@ -66,22 +66,19 @@ struct GmanImage {
   uint32_t width = 0, height = 0;
   std::vector<uint32_t> raster;
 
-  uint32_t at(uint32_t x, uint32_t y) const {
-    return raster[y * width + x];
-  }
+  uint32_t at(uint32_t x, uint32_t y) const { return raster[y * width + x]; }
 };
 
-inline GmanImage readGmanTIFF(const std::string &path) {
+inline GmanImage readGmanTIFF(const std::string& path) {
   GmanImage img;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return img;
   }
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &img.width);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &img.height);
   img.raster.resize(img.width * img.height);
-  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height,
-                                     img.raster.data(), ORIENTATION_TOPLEFT, 0);
+  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height, img.raster.data(), ORIENTATION_TOPLEFT, 0);
   TIFFClose(tif);
   return img;
 }
@@ -89,14 +86,12 @@ inline GmanImage readGmanTIFF(const std::string &path) {
 // Red where a channel exceeds channelTol, the actual image's own grey
 // luminance elsewhere -- so a failure shows where two images differ, not
 // only that they do.
-inline void writeGoldenDiffTIFF(const std::string &path,
-                                const GmanImage &actual,
-                                const GmanImage &golden, int channelTol) {
-  if (!actual.ok || !golden.ok || actual.width != golden.width ||
-      actual.height != golden.height) {
+inline void writeGoldenDiffTIFF(const std::string& path, const GmanImage& actual, const GmanImage& golden,
+                                int channelTol) {
+  if (!actual.ok || !golden.ok || actual.width != golden.width || actual.height != golden.height) {
     return;
   }
-  TIFF *tif = TIFFOpen(path.c_str(), "w");
+  TIFF* tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
     return;
   }
@@ -113,10 +108,9 @@ inline void writeGoldenDiffTIFF(const std::string &path,
     for (uint32_t x = 0; x < actual.width; ++x) {
       uint32_t a = actual.at(x, y);
       uint32_t g = golden.at(x, y);
-      bool differs =
-          std::abs(int(TIFFGetR(a)) - int(TIFFGetR(g))) > channelTol ||
-          std::abs(int(TIFFGetG(a)) - int(TIFFGetG(g))) > channelTol ||
-          std::abs(int(TIFFGetB(a)) - int(TIFFGetB(g))) > channelTol;
+      bool differs = std::abs(int(TIFFGetR(a)) - int(TIFFGetR(g))) > channelTol ||
+                     std::abs(int(TIFFGetG(a)) - int(TIFFGetG(g))) > channelTol ||
+                     std::abs(int(TIFFGetB(a)) - int(TIFFGetB(g))) > channelTol;
       if (differs) {
         row[x * 3 + 0] = 255;
         row[x * 3 + 1] = 0;
@@ -154,9 +148,8 @@ constexpr double GOLDEN_MAX_FRACTION = 0.001;
 // per-channel comparison within tolerance, and -- on failure -- writes
 // diffPath (in the current working directory, already the CMake test's own
 // build-tree run directory) showing which pixels differed.
-inline void checkGoldenImage(const std::string &actualPath,
-                             const std::string &goldenPath, int channelTol,
-                             double maxFraction, const std::string &diffPath) {
+inline void checkGoldenImage(const std::string& actualPath, const std::string& goldenPath, int channelTol,
+                             double maxFraction, const std::string& diffPath) {
   GmanImage actual = readGmanTIFF(actualPath);
   check(actual.ok, "golden image: TIFF read back (" + actualPath + ")");
   if (!actual.ok) {
@@ -192,11 +185,9 @@ inline void checkGoldenImage(const std::string &actualPath,
   bool passed = fraction < maxFraction;
   char pct[32];
   std::snprintf(pct, sizeof(pct), "%g", maxFraction * 100);
-  check(passed, "golden image: fewer than " + std::string(pct) +
-                    "% of pixels differ from " + goldenPath + " by more than " +
-                    std::to_string(channelTol) + "/255 per channel (" +
-                    std::to_string(mismatched) + "/" + std::to_string(total) +
-                    " differed)");
+  check(passed, "golden image: fewer than " + std::string(pct) + "% of pixels differ from " + goldenPath +
+                    " by more than " + std::to_string(channelTol) + "/255 per channel (" + std::to_string(mismatched) +
+                    "/" + std::to_string(total) + " differed)");
   if (!passed) {
     writeGoldenDiffTIFF(diffPath, actual, golden, channelTol);
   }

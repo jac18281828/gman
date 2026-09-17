@@ -68,13 +68,13 @@
 
 namespace {
 
-int runGman(const std::string &gman, const std::string &rib) {
+int runGman(const std::string& gman, const std::string& rib) {
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void writeFile(const std::string &path, const std::string &contents) {
+void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
   out << contents;
 }
@@ -87,42 +87,39 @@ struct Image {
   uint32_t at(uint32_t x, uint32_t y) const { return raster[y * width + x]; }
 };
 
-Image readTIFF(const std::string &path) {
+Image readTIFF(const std::string& path) {
   Image img;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return img;
   }
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &img.width);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &img.height);
   img.raster.resize(img.width * img.height);
-  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height,
-                                      img.raster.data(), ORIENTATION_TOPLEFT, 0);
+  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height, img.raster.data(), ORIENTATION_TOPLEFT, 0);
   TIFFClose(tif);
   return img;
 }
 
 // ---- proof item 4: lighting, brightest pixel and the N.L=0 terminator ----
-void testTerminator(const std::string &gman) {
+void testTerminator(const std::string& gman) {
   // Matte, no ambient: Ci is exactly Kd*(N.L) clamped at 0, so the
   // terminator (where shading crosses from lit to unlit) is exactly
   // where N.L = 0 -- a hard boundary, not a matter of degree.
-  const char *rib =
-      "Display \"lighting_terminator.tif\" \"file\" \"rgba\"\n"
-      "Format 200 200 1\n"
-      "Projection \"perspective\" \"fov\" [45]\n"
-      // Explicit, not the RI_EPSILON-near default -- see phase-3-REPORT.md
-      // and tests/rib/lights.rib's own comment on this.
-      "Clipping 0.5 50\n"
-      "Translate 0 0 5\n"
-      "WorldBegin\n"
-      "LightSource \"distantlight\" 1 \"intensity\" [1] \"from\" [5 0 0] \"to\" [0 0 0]\n"
-      "Surface \"matte\" \"Ka\" [0] \"Kd\" [1]\n"
-      "Sphere 1 -1 1 360\n"
-      "WorldEnd\n";
+  const char* rib = "Display \"lighting_terminator.tif\" \"file\" \"rgba\"\n"
+                    "Format 200 200 1\n"
+                    "Projection \"perspective\" \"fov\" [45]\n"
+                    // Explicit, not the RI_EPSILON-near default -- see phase-3-REPORT.md
+                    // and tests/rib/lights.rib's own comment on this.
+                    "Clipping 0.5 50\n"
+                    "Translate 0 0 5\n"
+                    "WorldBegin\n"
+                    "LightSource \"distantlight\" 1 \"intensity\" [1] \"from\" [5 0 0] \"to\" [0 0 0]\n"
+                    "Surface \"matte\" \"Ka\" [0] \"Kd\" [1]\n"
+                    "Sphere 1 -1 1 360\n"
+                    "WorldEnd\n";
   writeFile("lighting_terminator.rib", rib);
-  check(runGman(gman, "lighting_terminator.rib") == 0,
-        "terminator scene renders");
+  check(runGman(gman, "lighting_terminator.rib") == 0, "terminator scene renders");
 
   Image img = readTIFF("lighting_terminator.tif");
   check(img.ok, "terminator scene: TIFF read back");
@@ -138,8 +135,7 @@ void testTerminator(const std::string &gman) {
   // way silhouette_test.cpp does.
   const uint32_t bg = img.at(0, 0);
   auto differsFromBackground = [&](uint32_t p) {
-    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-           std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
            std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8;
   };
 
@@ -175,9 +171,9 @@ void testTerminator(const std::string &gman) {
     for (uint32_t x = silXmin; x <= silXmax; ++x) {
       uint32_t p = img.at(x, y);
       if (!differsFromBackground(p)) {
-        continue;  // background showing through a corner of the bbox
+        continue; // background showing through a corner of the bbox
       }
-      int v = (int) TIFFGetR(p);
+      int v = (int)TIFFGetR(p);
       maxVal = std::max(maxVal, v);
       if (x < silCentreX) {
         negSum += v;
@@ -188,18 +184,15 @@ void testTerminator(const std::string &gman) {
       }
     }
   }
-  check(maxVal > 200,
-        "terminator: a strongly lit pixel exists within the silhouette "
-        "(brightest sample channel > 200/255)");
-  check(negCount > 0 && posCount > 0,
-        "terminator: both halves of the silhouette have samples");
+  check(maxVal > 200, "terminator: a strongly lit pixel exists within the silhouette "
+                      "(brightest sample channel > 200/255)");
+  check(negCount > 0 && posCount > 0, "terminator: both halves of the silhouette have samples");
   if (negCount > 0 && posCount > 0) {
-    double negAvg = (double) negSum / (double) negCount;
-    double posAvg = (double) posSum / (double) posCount;
-    check(posAvg > negAvg,
-          "terminator: the +x (light) side of the silhouette is brighter "
-          "on average than the -x side (" + std::to_string(posAvg) +
-          " vs " + std::to_string(negAvg) + ")");
+    double negAvg = (double)negSum / (double)negCount;
+    double posAvg = (double)posSum / (double)posCount;
+    check(posAvg > negAvg, "terminator: the +x (light) side of the silhouette is brighter "
+                           "on average than the -x side (" +
+                               std::to_string(posAvg) + " vs " + std::to_string(negAvg) + ")");
   }
 
   // Terminator: along the horizontal scanline through the silhouette's
@@ -221,13 +214,12 @@ void testTerminator(const std::string &gman) {
   int enteredSilhouetteX = -1;
   for (uint32_t x = silXmin; x <= silXmax; ++x) {
     if (differsFromBackground(img.at(x, midY))) {
-      enteredSilhouetteX = (int) x;
+      enteredSilhouetteX = (int)x;
       break;
     }
   }
-  check(enteredSilhouetteX >= 0,
-        "terminator: the silhouette's centre scanline actually crosses "
-        "the silhouette");
+  check(enteredSilhouetteX >= 0, "terminator: the silhouette's centre scanline actually crosses "
+                                 "the silhouette");
 
   // A pixel filter (Gaussian by default, PixelSamples on by default since
   // 0.7) blends a covered edge pixel with the background for a pixel or
@@ -239,35 +231,32 @@ void testTerminator(const std::string &gman) {
   const uint32_t kSustainedLit = 3;
   int firstLitX = -1;
   if (enteredSilhouetteX >= 0) {
-    for (uint32_t x = (uint32_t) enteredSilhouetteX;
-         x + kSustainedLit <= img.width; ++x) {
+    for (uint32_t x = (uint32_t)enteredSilhouetteX; x + kSustainedLit <= img.width; ++x) {
       bool allLit = true;
       for (uint32_t k = 0; k < kSustainedLit; ++k) {
-        if ((int) TIFFGetR(img.at(x + k, midY)) <= 0) {
+        if ((int)TIFFGetR(img.at(x + k, midY)) <= 0) {
           allLit = false;
           break;
         }
       }
       if (allLit) {
-        firstLitX = (int) x;
+        firstLitX = (int)x;
         break;
       }
     }
   }
-  check(firstLitX >= 0,
-        "terminator: a lit pixel exists on the silhouette's centre scanline");
+  check(firstLitX >= 0, "terminator: a lit pixel exists on the silhouette's centre scanline");
   if (firstLitX >= 0) {
     double silCentre = (silXmin + silXmax) / 2.0;
-    double tol = 10.0;  // px, 16x16 tessellation facet width at this scale
-    check(std::fabs(firstLitX - silCentre) <= tol,
-          "terminator: the lit/unlit boundary on the centre scanline "
-          "falls at the silhouette's own centre (N.L = 0), not offset "
-          "toward either side");
+    double tol = 10.0; // px, 16x16 tessellation facet width at this scale
+    check(std::fabs(firstLitX - silCentre) <= tol, "terminator: the lit/unlit boundary on the centre scanline "
+                                                   "falls at the silhouette's own centre (N.L = 0), not offset "
+                                                   "toward either side");
   }
 }
 
 // ---- proof item 5: RiSides 1 vs RiSides 2 ----
-void testBackfaceCulling(const std::string &gman) {
+void testBackfaceCulling(const std::string& gman) {
   // Disk, not Sphere: every point of a flat, camera-facing disk shares the
   // same view-vector/normal angle, so there is no grazing-silhouette
   // region where the cull test's dot product is inherently close to zero
@@ -275,36 +264,34 @@ void testBackfaceCulling(const std::string &gman) {
   // made this test numerically noisy under -O0). ReverseOrientation makes
   // the whole disk read as backfacing, so RiSides 1 culls it completely
   // and RiSides 2 shows it regardless of winding.
-  const char *sidesOneRib =
-      "Display \"lighting_sides1.tif\" \"file\" \"rgba\"\n"
-      "Format 100 100 1\n"
-      "Projection \"perspective\" \"fov\" [45]\n"
-      "Clipping 0.5 50\n"
-      "Translate 0 0 5\n"
-      "WorldBegin\n"
-      "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
-      "ReverseOrientation\n"
-      "Sides 1\n"
-      "Disk 0 1 360\n"
-      "WorldEnd\n";
+  const char* sidesOneRib = "Display \"lighting_sides1.tif\" \"file\" \"rgba\"\n"
+                            "Format 100 100 1\n"
+                            "Projection \"perspective\" \"fov\" [45]\n"
+                            "Clipping 0.5 50\n"
+                            "Translate 0 0 5\n"
+                            "WorldBegin\n"
+                            "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
+                            "ReverseOrientation\n"
+                            "Sides 1\n"
+                            "Disk 0 1 360\n"
+                            "WorldEnd\n";
   writeFile("lighting_sides1.rib", sidesOneRib);
   check(runGman(gman, "lighting_sides1.rib") == 0, "Sides 1 scene renders");
 
   Image sides1 = readTIFF("lighting_sides1.tif");
   check(sides1.ok, "Sides 1 scene: TIFF read back");
 
-  const char *sidesTwoRib =
-      "Display \"lighting_sides2.tif\" \"file\" \"rgba\"\n"
-      "Format 100 100 1\n"
-      "Projection \"perspective\" \"fov\" [45]\n"
-      "Clipping 0.5 50\n"
-      "Translate 0 0 5\n"
-      "WorldBegin\n"
-      "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
-      "ReverseOrientation\n"
-      "Sides 2\n"
-      "Disk 0 1 360\n"
-      "WorldEnd\n";
+  const char* sidesTwoRib = "Display \"lighting_sides2.tif\" \"file\" \"rgba\"\n"
+                            "Format 100 100 1\n"
+                            "Projection \"perspective\" \"fov\" [45]\n"
+                            "Clipping 0.5 50\n"
+                            "Translate 0 0 5\n"
+                            "WorldBegin\n"
+                            "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
+                            "ReverseOrientation\n"
+                            "Sides 2\n"
+                            "Disk 0 1 360\n"
+                            "WorldEnd\n";
   writeFile("lighting_sides2.rib", sidesTwoRib);
   check(runGman(gman, "lighting_sides2.rib") == 0, "Sides 2 scene renders");
 
@@ -316,43 +303,39 @@ void testBackfaceCulling(const std::string &gman) {
   }
 
   const uint32_t bg = sides1.at(0, 0);
-  auto nonBackgroundFraction = [&](const Image &img) {
+  auto nonBackgroundFraction = [&](const Image& img) {
     long count = 0;
     for (uint32_t y = 0; y < img.height; ++y) {
       for (uint32_t x = 0; x < img.width; ++x) {
         uint32_t p = img.at(x, y);
-        if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-            std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+        if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
             std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8) {
           ++count;
         }
       }
     }
-    return (double) count / (double) (img.width * img.height);
+    return (double)count / (double)(img.width * img.height);
   };
 
   // A flat disk has no grazing-angle region (every point shares the same
   // view-vector/normal angle), so this is a clean pass/fail, not a
   // tolerance: RiSides 1 culls the whole disk, RiSides 2 does not.
-  check(nonBackgroundFraction(sides1) < 0.01,
-        "Sides 1 + ReverseOrientation: the whole disk reads as "
-        "backfacing and vanishes -- nothing but background is drawn");
-  check(nonBackgroundFraction(sides2) > 0.15,
-        "Sides 2 + ReverseOrientation: the same disk still renders "
-        "(no culling at Sides 2, regardless of winding)");
+  check(nonBackgroundFraction(sides1) < 0.01, "Sides 1 + ReverseOrientation: the whole disk reads as "
+                                              "backfacing and vanishes -- nothing but background is drawn");
+  check(nonBackgroundFraction(sides2) > 0.15, "Sides 2 + ReverseOrientation: the same disk still renders "
+                                              "(no culling at Sides 2, regardless of winding)");
 }
 
 // ---- proof item 6: the golden image ----
-void testGoldenImage(const std::string &gman, const std::string &ribDir) {
+void testGoldenImage(const std::string& gman, const std::string& ribDir) {
   const std::string rib = ribDir + "/lights.rib";
   check(runGman(gman, rib) == 0, "lights.rib renders");
 
   // Tolerance: see tests/goldenimage.h for the measured provenance. On
   // failure, lights_diff.tif (this test's own build-tree run directory)
   // shows which pixels differed.
-  checkGoldenImage("lights.tif", ribDir + "/lights_golden.tif",
-                    GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
-                    "lights_diff.tif");
+  checkGoldenImage("lights.tif", ribDir + "/lights_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+                   "lights_diff.tif");
 }
 
 // Silhouette pixels of a rendered sphere (non-background), and their mean
@@ -363,11 +346,11 @@ struct SilhouetteStats {
   double meanR = 0.0;
   double stddevR = 0.0;
   int maxR = -1;
-  long litCount = 0;   // R above a low threshold
+  long litCount = 0; // R above a low threshold
   long totalCount = 0;
 };
 
-SilhouetteStats silhouetteStats(const Image &img, int litThreshold) {
+SilhouetteStats silhouetteStats(const Image& img, int litThreshold) {
   SilhouetteStats stats;
   if (!img.ok) {
     return stats;
@@ -377,10 +360,9 @@ SilhouetteStats silhouetteStats(const Image &img, int litThreshold) {
   for (uint32_t y = 0; y < img.height; ++y) {
     for (uint32_t x = 0; x < img.width; ++x) {
       uint32_t p = img.at(x, y);
-      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-          std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
           std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8) {
-        int v = (int) TIFFGetR(p);
+        int v = (int)TIFFGetR(p);
         values.push_back(v);
         stats.maxR = std::max(stats.maxR, v);
         if (v > litThreshold) {
@@ -389,7 +371,7 @@ SilhouetteStats silhouetteStats(const Image &img, int litThreshold) {
       }
     }
   }
-  stats.totalCount = (long) values.size();
+  stats.totalCount = (long)values.size();
   stats.found = !values.empty();
   if (!stats.found) {
     return stats;
@@ -398,13 +380,13 @@ SilhouetteStats silhouetteStats(const Image &img, int litThreshold) {
   for (int v : values) {
     sum += v;
   }
-  stats.meanR = sum / (double) values.size();
+  stats.meanR = sum / (double)values.size();
   double sqSum = 0.0;
   for (int v : values) {
     double d = v - stats.meanR;
     sqSum += d * d;
   }
-  stats.stddevR = std::sqrt(sqSum / (double) values.size());
+  stats.stddevR = std::sqrt(sqSum / (double)values.size());
   return stats;
 }
 
@@ -416,15 +398,14 @@ SilhouetteStats silhouetteStats(const Image &img, int litThreshold) {
 // pixels whose whole (2*margin+1)^2 neighbourhood is non-background --
 // solidly inside the silhouette, past any coverage blend. Shared by every
 // check below that needs the same AA-safe interior pixel set.
-std::vector<int> interiorValues(const Image &img, uint32_t bg, int margin) {
+std::vector<int> interiorValues(const Image& img, uint32_t bg, int margin) {
   auto differs = [&](uint32_t p) {
-    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-           std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
            std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8;
   };
   std::vector<int> values;
-  for (int y = 0; y < (int) img.height; ++y) {
-    for (int x = 0; x < (int) img.width; ++x) {
+  for (int y = 0; y < (int)img.height; ++y) {
+    for (int x = 0; x < (int)img.width; ++x) {
       if (!differs(img.at(x, y))) {
         continue;
       }
@@ -432,21 +413,20 @@ std::vector<int> interiorValues(const Image &img, uint32_t bg, int margin) {
       for (int dy = -margin; dy <= margin && interior; ++dy) {
         for (int dx = -margin; dx <= margin && interior; ++dx) {
           int nx = x + dx, ny = y + dy;
-          if (nx < 0 || ny < 0 || nx >= (int) img.width ||
-              ny >= (int) img.height || !differs(img.at(nx, ny))) {
+          if (nx < 0 || ny < 0 || nx >= (int)img.width || ny >= (int)img.height || !differs(img.at(nx, ny))) {
             interior = false;
           }
         }
       }
       if (interior) {
-        values.push_back((int) TIFFGetR(img.at(x, y)));
+        values.push_back((int)TIFFGetR(img.at(x, y)));
       }
     }
   }
   return values;
 }
 
-double computeInteriorStddevR(const Image &img, uint32_t bg, int margin) {
+double computeInteriorStddevR(const Image& img, uint32_t bg, int margin) {
   std::vector<int> values = interiorValues(img, bg, margin);
   if (values.empty()) {
     return 0.0;
@@ -455,16 +435,16 @@ double computeInteriorStddevR(const Image &img, uint32_t bg, int margin) {
   for (int v : values) {
     sum += v;
   }
-  double mean = sum / (double) values.size();
+  double mean = sum / (double)values.size();
   double sqSum = 0.0;
   for (int v : values) {
     double d = v - mean;
     sqSum += d * d;
   }
-  return std::sqrt(sqSum / (double) values.size());
+  return std::sqrt(sqSum / (double)values.size());
 }
 
-double interiorMeanR(const Image &img, uint32_t bg, int margin) {
+double interiorMeanR(const Image& img, uint32_t bg, int margin) {
   std::vector<int> values = interiorValues(img, bg, margin);
   if (values.empty()) {
     return 0.0;
@@ -473,11 +453,10 @@ double interiorMeanR(const Image &img, uint32_t bg, int margin) {
   for (int v : values) {
     sum += v;
   }
-  return sum / (double) values.size();
+  return sum / (double)values.size();
 }
 
-double interiorLitFraction(const Image &img, uint32_t bg, int margin,
-                            int litThreshold) {
+double interiorLitFraction(const Image& img, uint32_t bg, int margin, int litThreshold) {
   std::vector<int> values = interiorValues(img, bg, margin);
   if (values.empty()) {
     return 0.0;
@@ -488,7 +467,7 @@ double interiorLitFraction(const Image &img, uint32_t bg, int margin,
       ++lit;
     }
   }
-  return (double) lit / (double) values.size();
+  return (double)lit / (double)values.size();
 }
 
 // ---- metal shader, finding: never exercised by any test ----
@@ -501,20 +480,22 @@ double interiorLitFraction(const Image &img, uint32_t bg, int margin,
 // dlopen, GMANSurfaceEnv, the tessellator's per-vertex shading) and
 // checks the result against a value computed independently of
 // gmanmetal.cpp's own code.
-void testMetalKaResponse(const std::string &gman) {
-  auto renderKa = [&](double ka, const std::string &name) -> SilhouetteStats {
-    const std::string rib =
-        "Display \"" + name + ".tif\" \"file\" \"rgba\"\n"
-        "Format 100 100 1\n"
-        "Projection \"perspective\" \"fov\" [45]\n"
-        "Clipping 0.5 50\n"
-        "Translate 0 0 5\n"
-        "WorldBegin\n"
-        "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
-        "Surface \"metal\" \"Ka\" [" + std::to_string(ka) + "] \"Ks\" [0] "
-        "\"roughness\" [0.1]\n"
-        "Sphere 1 -1 1 360\n"
-        "WorldEnd\n";
+void testMetalKaResponse(const std::string& gman) {
+  auto renderKa = [&](double ka, const std::string& name) -> SilhouetteStats {
+    const std::string rib = "Display \"" + name +
+                            ".tif\" \"file\" \"rgba\"\n"
+                            "Format 100 100 1\n"
+                            "Projection \"perspective\" \"fov\" [45]\n"
+                            "Clipping 0.5 50\n"
+                            "Translate 0 0 5\n"
+                            "WorldBegin\n"
+                            "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
+                            "Surface \"metal\" \"Ka\" [" +
+                            std::to_string(ka) +
+                            "] \"Ks\" [0] "
+                            "\"roughness\" [0.1]\n"
+                            "Sphere 1 -1 1 360\n"
+                            "WorldEnd\n";
     writeFile(name + ".rib", rib);
     check(runGman(gman, name + ".rib") == 0, name + ": scene renders");
     return silhouetteStats(readTIFF(name + ".tif"), 0);
@@ -523,8 +504,7 @@ void testMetalKaResponse(const std::string &gman) {
   SilhouetteStats low = renderKa(0.3, "metal_ka_low");
   SilhouetteStats high = renderKa(0.6, "metal_ka_high");
 
-  check(low.found && high.found,
-        "metal Ka: both ambient-only renders found a silhouette");
+  check(low.found && high.found, "metal Ka: both ambient-only renders found a silhouette");
   if (!low.found || !high.found) {
     return;
   }
@@ -537,10 +517,9 @@ void testMetalKaResponse(const std::string &gman) {
   Image highImg = readTIFF("metal_ka_high.tif");
   double lowStddev = computeInteriorStddevR(lowImg, lowImg.at(0, 0), 2);
   double highStddev = computeInteriorStddevR(highImg, highImg.at(0, 0), 2);
-  check(lowStddev < 4.0 && highStddev < 4.0,
-        "metal Ka: ambient-only shading is flat across the silhouette's "
-        "interior (stddev " + std::to_string(lowStddev) + ", " +
-        std::to_string(highStddev) + ")");
+  check(lowStddev < 4.0 && highStddev < 4.0, "metal Ka: ambient-only shading is flat across the silhouette's "
+                                             "interior (stddev " +
+                                                 std::to_string(lowStddev) + ", " + std::to_string(highStddev) + ")");
 
   // Ci = Os*Cs*Ka*ambient() = Ka * 0.5 (intensity), independent of
   // gmanmetal.cpp's own code -- computed here from the RISpec's own
@@ -554,19 +533,15 @@ void testMetalKaResponse(const std::string &gman) {
   double highMeanR = interiorMeanR(highImg, highImg.at(0, 0), 2);
   double expectedLow = 0.3 * 0.5 * 255.0;
   double expectedHigh = 0.6 * 0.5 * 255.0;
-  const double tol = 20.0;  // quantization + tessellation rounding
-  check(std::fabs(lowMeanR - expectedLow) < tol,
-        "metal Ka=0.3: mean brightness matches Ka*ambient (expected ~" +
-        std::to_string(expectedLow) + ", got " + std::to_string(lowMeanR) +
-        ")");
-  check(std::fabs(highMeanR - expectedHigh) < tol,
-        "metal Ka=0.6: mean brightness matches Ka*ambient (expected ~" +
-        std::to_string(expectedHigh) + ", got " +
-        std::to_string(highMeanR) + ")");
-  check(highMeanR > lowMeanR * 1.5,
-        "metal Ka: doubling Ka roughly doubles brightness (Ka=0.3 -> " +
-        std::to_string(lowMeanR) + ", Ka=0.6 -> " +
-        std::to_string(highMeanR) + ")");
+  const double tol = 20.0; // quantization + tessellation rounding
+  check(std::fabs(lowMeanR - expectedLow) < tol, "metal Ka=0.3: mean brightness matches Ka*ambient (expected ~" +
+                                                     std::to_string(expectedLow) + ", got " + std::to_string(lowMeanR) +
+                                                     ")");
+  check(std::fabs(highMeanR - expectedHigh) < tol, "metal Ka=0.6: mean brightness matches Ka*ambient (expected ~" +
+                                                       std::to_string(expectedHigh) + ", got " +
+                                                       std::to_string(highMeanR) + ")");
+  check(highMeanR > lowMeanR * 1.5, "metal Ka: doubling Ka roughly doubles brightness (Ka=0.3 -> " +
+                                        std::to_string(lowMeanR) + ", Ka=0.6 -> " + std::to_string(highMeanR) + ")");
 }
 
 // A metal sphere lit by one directional light, Ka=0: the whole picture
@@ -575,22 +550,22 @@ void testMetalKaResponse(const std::string &gman) {
 // highlight is small and concentrated -- and a rougher surface spreads it
 // wider. Both properties would break if gmanmetal.cpp dropped Ks, ignored
 // roughness, or (wrongly) added a diffuse contribution.
-void testMetalSpecularHighlight(const std::string &gman) {
-  auto renderSpecular = [&](double roughness,
-                             const std::string &name) -> SilhouetteStats {
-    const std::string rib =
-        "Display \"" + name + ".tif\" \"file\" \"rgba\"\n"
-        "Format 200 200 1\n"
-        "Projection \"perspective\" \"fov\" [45]\n"
-        "Clipping 0.5 50\n"
-        "Translate 0 0 5\n"
-        "WorldBegin\n"
-        "LightSource \"distantlight\" 1 \"intensity\" [1] \"from\" [5 0 0] "
-        "\"to\" [0 0 0]\n"
-        "Surface \"metal\" \"Ka\" [0] \"Ks\" [1] \"roughness\" [" +
-        std::to_string(roughness) + "] \"specularcolor\" [1 1 1]\n"
-        "Sphere 1 -1 1 360\n"
-        "WorldEnd\n";
+void testMetalSpecularHighlight(const std::string& gman) {
+  auto renderSpecular = [&](double roughness, const std::string& name) -> SilhouetteStats {
+    const std::string rib = "Display \"" + name +
+                            ".tif\" \"file\" \"rgba\"\n"
+                            "Format 200 200 1\n"
+                            "Projection \"perspective\" \"fov\" [45]\n"
+                            "Clipping 0.5 50\n"
+                            "Translate 0 0 5\n"
+                            "WorldBegin\n"
+                            "LightSource \"distantlight\" 1 \"intensity\" [1] \"from\" [5 0 0] "
+                            "\"to\" [0 0 0]\n"
+                            "Surface \"metal\" \"Ka\" [0] \"Ks\" [1] \"roughness\" [" +
+                            std::to_string(roughness) +
+                            "] \"specularcolor\" [1 1 1]\n"
+                            "Sphere 1 -1 1 360\n"
+                            "WorldEnd\n";
     writeFile(name + ".rib", rib);
     check(runGman(gman, name + ".rib") == 0, name + ": scene renders");
     return silhouetteStats(readTIFF(name + ".tif"), 15);
@@ -599,17 +574,15 @@ void testMetalSpecularHighlight(const std::string &gman) {
   SilhouetteStats tight = renderSpecular(0.05, "metal_spec_tight");
   SilhouetteStats broad = renderSpecular(0.5, "metal_spec_broad");
 
-  check(tight.found && broad.found,
-        "metal specular: both directional-light renders found a "
-        "silhouette");
+  check(tight.found && broad.found, "metal specular: both directional-light renders found a "
+                                    "silhouette");
   if (!tight.found || !broad.found) {
     return;
   }
 
-  check(tight.maxR > 150,
-        "metal specular: a strongly lit highlight exists (Ks and "
-        "specular() both contributed; brightest sample " +
-        std::to_string(tight.maxR) + "/255)");
+  check(tight.maxR > 150, "metal specular: a strongly lit highlight exists (Ks and "
+                          "specular() both contributed; brightest sample " +
+                              std::to_string(tight.maxR) + "/255)");
 
   // No diffuse term: a Lambertian half-sphere would light up roughly half
   // the silhouette. A specular highlight, even a broad one, is a small
@@ -620,28 +593,24 @@ void testMetalSpecularHighlight(const std::string &gman) {
   // guards against above.
   Image tightImg = readTIFF("metal_spec_tight.tif");
   Image broadImg = readTIFF("metal_spec_broad.tif");
-  double tightFraction =
-      interiorLitFraction(tightImg, tightImg.at(0, 0), 2, 15);
-  double broadFraction =
-      interiorLitFraction(broadImg, broadImg.at(0, 0), 2, 15);
-  check(tightFraction < 0.25,
-        "metal specular: a tight highlight (roughness=0.05) covers well "
-        "under half the silhouette, not a diffuse-lit hemisphere (" +
-        std::to_string(tightFraction) + ")");
+  double tightFraction = interiorLitFraction(tightImg, tightImg.at(0, 0), 2, 15);
+  double broadFraction = interiorLitFraction(broadImg, broadImg.at(0, 0), 2, 15);
+  check(tightFraction < 0.25, "metal specular: a tight highlight (roughness=0.05) covers well "
+                              "under half the silhouette, not a diffuse-lit hemisphere (" +
+                                  std::to_string(tightFraction) + ")");
 
   // Roughness response: a rougher surface (larger roughness -> smaller
   // Blinn-Phong exponent) spreads the same highlight over more of the
   // silhouette.
-  check(broadFraction > tightFraction,
-        "metal specular: roughness=0.5's highlight covers more of the "
-        "silhouette than roughness=0.05's (" +
-        std::to_string(broadFraction) + " vs " +
-        std::to_string(tightFraction) + ")");
+  check(broadFraction > tightFraction, "metal specular: roughness=0.5's highlight covers more of the "
+                                       "silhouette than roughness=0.05's (" +
+                                           std::to_string(broadFraction) + " vs " + std::to_string(tightFraction) +
+                                           ")");
 }
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <rib-dir>\n", argv[0]);
     return 2;

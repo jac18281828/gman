@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -37,39 +37,33 @@
  */
 
 // default constructor
-GMANOutputTIFF::GMANOutputTIFF(const char *path, int width, int height) : 
-    GMANOutput(path, width, height, DefaultBGColor) { 
+GMANOutputTIFF::GMANOutputTIFF(const char* path, int width, int height)
+    : GMANOutput(path, width, height, DefaultBGColor) {
   // damn the torpedoes and the patents
-  compression=LZW;
+  compression = LZW;
 };
 
+// default destructor
+GMANOutputTIFF::~GMANOutputTIFF() {};
 
-// default destructor 
-GMANOutputTIFF::~GMANOutputTIFF() { };
-
-
-RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/,
-			    RtFloat gain,
-			    RtFloat gamma) {
+RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
   gammaCorrect.setExposure(gain, gamma);
 
-  const RtInt samplesperpixel = 4;  // RGBA
+  const RtInt samplesperpixel = 4; // RGBA
 
-  GMANTIFFWriter writer(outputName, (uint32_t) xres, (uint32_t) yres,
-                         (uint16_t) samplesperpixel, compression);
+  GMANTIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, compression);
   if (!writer.isOpen()) {
     std::string errorMsg("Unable to open output file: ");
     errorMsg.append(outputName);
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
   }
 
-  writer.setImageDescription(
-      "GMAN Generated TIFF Image.\n"
-      "Copyright (c) 2002 John Cairns <john@2ad.com>\n"
-      "Licensed under the GNU Lesser General Public License v2.1 or later.\n");
+  writer.setImageDescription("GMAN Generated TIFF Image.\n"
+                             "Copyright (c) 2002 John Cairns <john@2ad.com>\n"
+                             "Licensed under the GNU Lesser General Public License v2.1 or later.\n");
 
   // length in memory of one row of pixels in the image
-  const std::size_t linebytes = (std::size_t) samplesperpixel * (std::size_t) xres;
+  const std::size_t linebytes = (std::size_t)samplesperpixel * (std::size_t)xres;
   std::vector<unsigned char> buf;
   if (writer.scanlineSize() == linebytes) {
     buf.assign(linebytes, 0);
@@ -78,50 +72,45 @@ RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/,
   }
 
   // We set the strip size of the file to be size of one row of pixels
-  writer.setRowsPerStrip(
-      writer.defaultStripSize((uint32_t) (xres * samplesperpixel)));
+  writer.setRowsPerStrip(writer.defaultStripSize((uint32_t)(xres * samplesperpixel)));
 
   // copy frameBuffer to jpeg sample array
-  for(int y=0; y<yres; y++) {
-      int colOff=0, rowOff=y;
-      for(int x=0; x<xres; x++) {
-	  GMANColorRGB color;
-	  color = getPixel(x,y);
+  for (int y = 0; y < yres; y++) {
+    int colOff = 0, rowOff = y;
+    for (int x = 0; x < xres; x++) {
+      GMANColorRGB color;
+      color = getPixel(x, y);
 
-	  // color correct it
-	  gammaCorrect.correct(color);
+      // color correct it
+      gammaCorrect.correct(color);
 
-	  if(quantizer)
-	      quantizer->doColor(color);
+      if (quantizer)
+        quantizer->doColor(color);
 
-	  // default, (no reduction) is 32bit
+      // default, (no reduction) is 32bit
 
-	  // write r, g, b, a byte
-	  buf[colOff++] = color.getRed();
-	  buf[colOff++] = color.getGreen();
-	  buf[colOff++] = color.getBlue();
+      // write r, g, b, a byte
+      buf[colOff++] = color.getRed();
+      buf[colOff++] = color.getGreen();
+      buf[colOff++] = color.getBlue();
 
-	  // FIXME FIXME FIXME
-	  // FIX Alpha support
+      // FIXME FIXME FIXME
+      // FIX Alpha support
 
-	  buf[colOff++] = 255;
-      }
-      // now write a scanline into the image
-      if (!writer.writeScanline(buf.data(), rowOff)) {
-	  // FIXME
-	  // throw an error here
-	  break;
-      }
+      buf[colOff++] = 255;
+    }
+    // now write a scanline into the image
+    if (!writer.writeScanline(buf.data(), rowOff)) {
+      // FIXME
+      // throw an error here
+      break;
+    }
   }
 
   // now isn't that just easy.
 }
 
 // get/set the TIFF compression type
-RtVoid GMANOutputTIFF::setCompression(Compression c) {
-    compression=c;
-}
- 
-GMANOutputTIFF::Compression GMANOutputTIFF::getCompression(void) const {
-    return compression;
-}
+RtVoid GMANOutputTIFF::setCompression(Compression c) { compression = c; }
+
+GMANOutputTIFF::Compression GMANOutputTIFF::getCompression(void) const { return compression; }

@@ -51,9 +51,9 @@ struct Result {
   std::string output;
 };
 
-Result runGman(const std::string &gman, const std::string &rib) {
+Result runGman(const std::string& gman, const std::string& rib) {
   const std::string command = "\"" + gman + "\" \"" + rib + "\" 2>&1";
-  std::FILE *pipe = popen(command.c_str(), "r");
+  std::FILE* pipe = popen(command.c_str(), "r");
   Result result{-1, ""};
   if (pipe == nullptr) {
     return result;
@@ -67,14 +67,13 @@ Result runGman(const std::string &gman, const std::string &rib) {
   return result;
 }
 
-int countSilhouetteRuns(const GmanImage &img, uint32_t y) {
+int countSilhouetteRuns(const GmanImage& img, uint32_t y) {
   if (!img.ok) {
     return -1;
   }
   const uint32_t bg = img.at(0, 0);
   auto differsFromBackground = [&](uint32_t p) {
-    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-           std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
            std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8;
   };
   int runs = 0;
@@ -89,9 +88,9 @@ int countSilhouetteRuns(const GmanImage &img, uint32_t y) {
   return runs;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
@@ -108,14 +107,13 @@ int main(int argc, char *argv[]) {
   check(img.ok, "shaders.rib: TIFF read back");
   if (img.ok) {
     int runs = countSilhouetteRuns(img, img.height / 2);
-    check(runs == 3,
-          "shaders.rib: three separate silhouettes (matte, plastic, "
-          "metal) cross the centre scanline (found " +
-              std::to_string(runs) + ")");
+    check(runs == 3, "shaders.rib: three separate silhouettes (matte, plastic, "
+                     "metal) cross the centre scanline (found " +
+                         std::to_string(runs) + ")");
   }
 
-  checkGoldenImage("shaders.tif", ribDir + "/shaders_golden.tif",
-                   GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION, "shaders_diff.tif");
+  checkGoldenImage("shaders.tif", ribDir + "/shaders_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+                   "shaders_diff.tif");
 
   return checkSummary("shaders holds");
 }

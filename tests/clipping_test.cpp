@@ -43,14 +43,13 @@
 
 namespace {
 
-int runGman(const std::string &gman, const std::string &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(const std::string& gman, const std::string& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-bool hasSilhouette(const GmanImage &img) {
+bool hasSilhouette(const GmanImage& img) {
   if (!img.ok) {
     return false;
   }
@@ -58,8 +57,7 @@ bool hasSilhouette(const GmanImage &img) {
   for (uint32_t y = 0; y < img.height; ++y) {
     for (uint32_t x = 0; x < img.width; ++x) {
       uint32_t p = img.at(x, y);
-      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-          std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
           std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8) {
         return true;
       }
@@ -68,9 +66,9 @@ bool hasSilhouette(const GmanImage &img) {
   return false;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
@@ -84,12 +82,10 @@ int main(int argc, char *argv[]) {
   GmanImage img = readGmanTIFF("clipping.tif");
   check(img.ok, "clipping.rib: TIFF read back");
   if (img.ok) {
-    check(hasSilhouette(img),
-          "clipping.rib: a bounded, clipped silhouette is visible");
+    check(hasSilhouette(img), "clipping.rib: a bounded, clipped silhouette is visible");
   }
 
-  checkGoldenImage("clipping.tif", ribDir + "/clipping_golden.tif",
-                   GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+  checkGoldenImage("clipping.tif", ribDir + "/clipping_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
                    "clipping_diff.tif");
 
   return checkSummary("clipping holds");

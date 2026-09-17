@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANWORLDMANAGER_H
 #define __GMAN_GMANWORLDMANAGER_H 1
-
 
 #include <list>
 #include <map>
@@ -43,22 +41,18 @@
  *
  */
 
-class GMAN_EXPORT  GMANWorldManager {
+class GMAN_EXPORT GMANWorldManager {
 public:
   GMANWorldManager(); // default constructor
 
   virtual ~GMANWorldManager(); // default destructor
 
-  virtual RtVoid add(GMANPrimitive *primitive) = 0;
+  virtual RtVoid add(GMANPrimitive* primitive) = 0;
 
+  virtual GMANPrimitive* getFirst(RtVoid) = 0; // get the first object
 
-  virtual GMANPrimitive *getFirst(RtVoid) = 0; // get the first object
-  
   // get the next object until end (return NULL)
-  virtual GMANPrimitive *getNext(RtVoid)  = 0;
-  
+  virtual GMANPrimitive* getNext(RtVoid) = 0;
 };
 
-
 #endif
-

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANFACE_H
 #define __GMAN_GMANFACE_H 1
-
 
 #include <list>
 #include <map>
@@ -52,52 +50,50 @@ class GMANSurface;
  *
  */
 
-class GMAN_EXPORT  GMANFace {
+class GMAN_EXPORT GMANFace {
 protected:
-
-  RtFloat	area;
-  GMANSurface	*parentSurf;  // the parent surface
-  GMANColor	color;    // the face color
-  GMANVector    normal;   // normal to the face, in the space the
-                          // vertices were in when calcNormal() ran
+  RtFloat area;
+  GMANSurface* parentSurf; // the parent surface
+  GMANColor color;         // the face color
+  GMANVector normal;       // normal to the face, in the space the
+                           // vertices were in when calcNormal() ran
 
   // RiSides/RiOrientation active when this face was tessellated, so
   // visible() can answer honestly without depending on renderer-global
   // state that may differ per attribute block.
-  RtInt         sides;
-  RtToken       orientation;
+  RtInt sides;
+  RtToken orientation;
 
-  GMANVertex *vertices[GMAN_NFACE_VERTS]; // pointer array to vertexes
+  GMANVertex* vertices[GMAN_NFACE_VERTS]; // pointer array to vertexes
 
-  GMANFace	*next;	  // next face pointer
-  
+  GMANFace* next; // next face pointer
+
 public:
-  GMANFace(GMANVertex *verts[GMAN_NFACE_VERTS], 
-	   GMANSurface *p); // default constructor
+  GMANFace(GMANVertex* verts[GMAN_NFACE_VERTS],
+           GMANSurface* p); // default constructor
 
   ~GMANFace(); // default destructor
 
   // Test this face for intersection in a ray
-  bool intersects(const GMANRay	&/*ray*/) { 
+  bool intersects(const GMANRay& /*ray*/) {
     // fix me!
-    return false; 
+    return false;
   };
 
   RtFloat getArea(RtVoid) { return area; }
 
   int getNumVerts(RtVoid) { return GMAN_NFACE_VERTS; };
 
-  GMANSurface *getParent(RtVoid) { return parentSurf; };
-
+  GMANSurface* getParent(RtVoid) { return parentSurf; };
 
   // set color
-  RtVoid setColor(const GMANColor &c) { color = c; };
+  RtVoid setColor(const GMANColor& c) { color = c; };
   // get color
-  const GMANColor &getColor(RtVoid) const { return color; };
+  const GMANColor& getColor(RtVoid) const { return color; };
   // get normal
-  const GMANVector &getNormal(RtVoid) const { return normal; };
+  const GMANVector& getNormal(RtVoid) const { return normal; };
   // get nth vertex
-  const GMANVertex *getVertex(int n) const { return vertices[n]; };
+  const GMANVertex* getVertex(int n) const { return vertices[n]; };
 
   // RiSides/RiOrientation captured at tessellation time
   RtVoid setSides(RtInt s) { sides = s; };
@@ -109,11 +105,9 @@ public:
   RtVoid calcNormal(RtVoid);
 
   // get next face
-  GMANFace *getNext(RtVoid) { return next; };
+  GMANFace* getNext(RtVoid) { return next; };
   // set next face
-  RtVoid setNext(GMANFace *face) { next = face; };
-  
+  RtVoid setNext(GMANFace* face) { next = face; };
 };
-
 
 #endif

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2002, 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2002, 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -24,43 +24,43 @@
  */
 #include "gmandefaults.h"
 
-const RtFloat   DefaultCropWindowXMIN = 0.0;
-const RtFloat   DefaultCropWindowXMAX = 1.0;
-const RtFloat   DefaultCropWindowYMIN = 0.0;
-const RtFloat   DefaultCropWindowYMAX = 1.0;
+const RtFloat DefaultCropWindowXMIN = 0.0;
+const RtFloat DefaultCropWindowXMAX = 1.0;
+const RtFloat DefaultCropWindowYMIN = 0.0;
+const RtFloat DefaultCropWindowYMAX = 1.0;
 
-const RtFloat   DefaultClippingNear = (RtFloat)RI_EPSILON;
-const RtFloat   DefaultClippingFar = (RtFloat)RI_INFINITY;
+const RtFloat DefaultClippingNear = (RtFloat)RI_EPSILON;
+const RtFloat DefaultClippingFar = (RtFloat)RI_INFINITY;
 
-const RtFloat   DefaultFStop = RI_INFINITY;
+const RtFloat DefaultFStop = RI_INFINITY;
 
-const RtFloat   DefaultShutterOpen = 0;
-const RtFloat   DefaultShutterClose = 0;
+const RtFloat DefaultShutterOpen = 0;
+const RtFloat DefaultShutterClose = 0;
 
 /******* ******* DISPLAY OPTIONS ******* *******/
-const RtFloat   DefaultPixelSamplesX = 2;
-const RtFloat   DefaultPixelSamplesY = 2;
+const RtFloat DefaultPixelSamplesX = 2;
+const RtFloat DefaultPixelSamplesY = 2;
 
 const RtFilterFunc DefaultFilterFunc = RiGaussianFilter;
-const RtFloat   DefaultFilterXWidth = 2;
-const RtFloat   DefaultFilterYWidth = 2;
+const RtFloat DefaultFilterXWidth = 2;
+const RtFloat DefaultFilterYWidth = 2;
 
-const RtFloat   DefaultGain = 1;
-const RtFloat   DefaultGamma = 1;
+const RtFloat DefaultGain = 1;
+const RtFloat DefaultGamma = 1;
 
-const RtInt     DefaultColorQuantizerOne = 255;
-const RtInt     DefaultColorQuantizerMin = 0;
-const RtInt     DefaultColorQuantizerMax = 255;
-const RtFloat   DefaultColorQuantizerDA = 0.5;
+const RtInt DefaultColorQuantizerOne = 255;
+const RtInt DefaultColorQuantizerMin = 0;
+const RtInt DefaultColorQuantizerMax = 255;
+const RtFloat DefaultColorQuantizerDA = 0.5;
 
-const RtInt     DefaultDepthQuantizerOne = 0;
+const RtInt DefaultDepthQuantizerOne = 0;
 
 /******* ******* ADDITIONAL OPTIONS ******* *******/
-const RtInt     DefaultColorSamples = 3;
-const RtFloat   DefaultCSMatrixNRGB [9] = {1,0,0,0,1,0,0,0,1};
-const RtFloat   DefaultCSMatrixRGBN [9] = {1,0,0,0,1,0,0,0,1};
+const RtInt DefaultColorSamples = 3;
+const RtFloat DefaultCSMatrixNRGB[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
+const RtFloat DefaultCSMatrixRGBN[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
 
-const RtFloat   DefaultRelativeDetail = 1.0;
+const RtFloat DefaultRelativeDetail = 1.0;
 
 const GMANColor DefaultBGColor(1.0); // Black
 
@@ -68,4 +68,4 @@ const GMANAlpha DefaultAlpha(1.0); // opaque
 
 const RtInt GMANDisplayXRES = 100;
 const RtInt GMANDisplayYRES = 100;
-const RtFloat GMANDisplayPAR  = 1.0;
+const RtFloat GMANDisplayPAR = 1.0;

@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -32,13 +32,12 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANLoadable
  *
  */
 
-const char *GMANLoadable::getInfoFncName = "GMANGetLoadableInfo";
+const char* GMANLoadable::getInfoFncName = "GMANGetLoadableInfo";
 
 #ifdef HAVE_LIBDL
 namespace {
@@ -48,10 +47,10 @@ namespace {
 // instead of dlopen'ing (and, at teardown, dlclose'ing) it again.
 struct GMANLoadableCacheEntry {
   GMANLoadableObjectHandle object;
-  const GMANLoadableObjectInfo *objInfo;
+  const GMANLoadableObjectInfo* objInfo;
 };
 
-std::map<std::string, GMANLoadableCacheEntry> &loadableCache() {
+std::map<std::string, GMANLoadableCacheEntry>& loadableCache() {
   static std::map<std::string, GMANLoadableCacheEntry> cache;
   return cache;
 }
@@ -60,15 +59,12 @@ std::map<std::string, GMANLoadableCacheEntry> &loadableCache() {
 #endif
 
 // default constructor
-GMANLoadable::GMANLoadable(const char *path) 
- : object(NULL),
-		     objInfo(NULL)
-{
+GMANLoadable::GMANLoadable(const char* path) : object(NULL), objInfo(NULL) {
 
 #ifdef HAVE_LIBDL
-  auto &cache = loadableCache();
+  auto& cache = loadableCache();
   auto cached = cache.find(path);
-  if(cached != cache.end()) {
+  if (cached != cache.end()) {
     object = cached->second.object;
     objInfo = cached->second.objInfo;
     return;
@@ -78,7 +74,7 @@ GMANLoadable::GMANLoadable(const char *path)
 
   object = dlopen(path, RTLD_LAZY);
 
-  if(object == NULL) {
+  if (object == NULL) {
     std::string errorMsg("Unable to open shared object specified by: ");
     errorMsg.append(path);
     errorMsg.append(": ");
@@ -87,9 +83,9 @@ GMANLoadable::GMANLoadable(const char *path)
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
   }
 
-  LoadInfoFnc getInfo = (LoadInfoFnc) loadSymbol(getInfoFncName);
+  LoadInfoFnc getInfo = (LoadInfoFnc)loadSymbol(getInfoFncName);
 
-  if(getInfo == NULL) {
+  if (getInfo == NULL) {
     std::string errorMsg("Loadable Info function not found: ");
 
     errorMsg.append(getInfoFncName);
@@ -97,27 +93,25 @@ GMANLoadable::GMANLoadable(const char *path)
     errorMsg.append(dlerror());
 
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
-
   }
 
   objInfo = getInfo();
 
-  if(objInfo == NULL) {
+  if (objInfo == NULL) {
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, "Loadable module missing info data."));
   }
 
-  cache[path] = { object, objInfo };
+  cache[path] = {object, objInfo};
 #endif
 };
-
 
 // default destructor
 // Handles are never closed: the cache above retains them for the process
 // lifetime, since dlclose'ing one lets the dynamic linker remap another,
 // still-live module into the freed address range.
-GMANLoadable::~GMANLoadable() { };
+GMANLoadable::~GMANLoadable() {};
 
-RtVoid *GMANLoadable::loadSymbol(const char *symName) {
+RtVoid* GMANLoadable::loadSymbol(const char* symName) {
 #ifdef HAVE_LIBDL
   return dlsym(object, symName);
 #else
@@ -126,33 +120,29 @@ RtVoid *GMANLoadable::loadSymbol(const char *symName) {
 }
 
 // get name of DSO
-const char *GMANLoadable::getName(RtVoid) const {
-  if((objInfo == NULL) || (objInfo->name == NULL))
+const char* GMANLoadable::getName(RtVoid) const {
+  if ((objInfo == NULL) || (objInfo->name == NULL))
     return "Unknown";
   return objInfo->name;
 }
 
 // get author of DSO
-const char *GMANLoadable::getAuthor(RtVoid) const {
-  if((objInfo == NULL) || (objInfo->author == NULL))
+const char* GMANLoadable::getAuthor(RtVoid) const {
+  if ((objInfo == NULL) || (objInfo->author == NULL))
     return "Unknown";
   return objInfo->author;
 }
 
 // get description of DSO
-const char *GMANLoadable::getDescription(RtVoid) const {
-  if((objInfo == NULL) || (objInfo->description == NULL))
+const char* GMANLoadable::getDescription(RtVoid) const {
+  if ((objInfo == NULL) || (objInfo->description == NULL))
     return "Unknown";
   return objInfo->description;
-
 }
 
-
 // get copyright of DSO
-const char *GMANLoadable::getCopyright(RtVoid) const {
-  if((objInfo == NULL) || (objInfo->copyright == NULL))
+const char* GMANLoadable::getCopyright(RtVoid) const {
+  if ((objInfo == NULL) || (objInfo->copyright == NULL))
     return "Copyright (c) 2001, 2000, 1999 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/";
   return objInfo->copyright;
 }
-
-

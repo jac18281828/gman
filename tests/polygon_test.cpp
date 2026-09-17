@@ -102,11 +102,7 @@ struct Point {
 // The pentagon's exact raster-space vertices, hand-projected from
 // tests/rib/polygon.rib's "P" as described in the file comment above.
 const Point kPentagon[5] = {
-    {100.0, 80.0},
-    {80.97887, 93.81966},
-    {88.24429, 116.18034},
-    {111.75571, 116.18034},
-    {119.02113, 93.81966},
+    {100.0, 80.0}, {80.97887, 93.81966}, {88.24429, 116.18034}, {111.75571, 116.18034}, {119.02113, 93.81966},
 };
 const Point kCentroid = {100.0, 100.0};
 
@@ -114,8 +110,7 @@ const Point kCentroid = {100.0, 100.0};
 // point -- the tolerance band a point-in-polygon test needs to absorb
 // rasterization rounding at an edge without weakening what a point deep
 // inside or outside the true edge proves.
-std::vector<Point> scaled(const Point *poly, int n, const Point &centre,
-                           double factor) {
+std::vector<Point> scaled(const Point* poly, int n, const Point& centre, double factor) {
   std::vector<Point> out(n);
   for (int i = 0; i < n; ++i) {
     out[i].x = centre.x + (poly[i].x - centre.x) * factor;
@@ -125,11 +120,11 @@ std::vector<Point> scaled(const Point *poly, int n, const Point &centre,
 }
 
 // Even-odd rule point-in-polygon test.
-bool pointInPolygon(const std::vector<Point> &poly, double px, double py) {
+bool pointInPolygon(const std::vector<Point>& poly, double px, double py) {
   bool inside = false;
   for (std::size_t i = 0, j = poly.size() - 1; i < poly.size(); j = i++) {
-    const Point &a = poly[i];
-    const Point &b = poly[j];
+    const Point& a = poly[i];
+    const Point& b = poly[j];
     bool crosses = (a.y > py) != (b.y > py);
     if (crosses) {
       double xCross = a.x + (py - a.y) * (b.x - a.x) / (b.y - a.y);
@@ -141,9 +136,8 @@ bool pointInPolygon(const std::vector<Point> &poly, double px, double py) {
   return inside;
 }
 
-int runGman(const std::string &gman, const std::string &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(const std::string& gman, const std::string& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
@@ -156,18 +150,16 @@ struct Image {
   uint32_t at(int x, int y) const { return raster[y * width + x]; }
 };
 
-Image readTIFF(const std::string &path) {
+Image readTIFF(const std::string& path) {
   Image img;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return img;
   }
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &img.width);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &img.height);
   img.raster.resize(img.width * img.height);
-  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height,
-                                      img.raster.data(), ORIENTATION_TOPLEFT,
-                                      0);
+  img.ok = TIFFReadRGBAImageOriented(tif, img.width, img.height, img.raster.data(), ORIENTATION_TOPLEFT, 0);
   TIFFClose(tif);
   return img;
 }
@@ -180,10 +172,10 @@ bool differsFromBackground(uint32_t p, uint32_t bg, int tol) {
 }
 
 const int kColorTol = 8; // per-channel tolerance out of 255, this
-                          // codebase's standard (silhouette_test.cpp,
-                          // lighting_test.cpp)
+                         // codebase's standard (silhouette_test.cpp,
+                         // lighting_test.cpp)
 
-void testConvexPentagon(const std::string &gman, const std::string &ribDir) {
+void testConvexPentagon(const std::string& gman, const std::string& ribDir) {
   const std::string rib = ribDir + "/polygon.rib";
   check(runGman(gman, rib) == 0, "polygon.rib renders");
 
@@ -202,12 +194,12 @@ void testConvexPentagon(const std::string &gman, const std::string &ribDir) {
   for (int y = 70; y <= 126; y += 2) {
     for (int x = 70; x <= 130; x += 2) {
       bool coveredPixel = differsFromBackground(img.at(x, y), bg, kColorTol);
-      if (pointInPolygon(inner, (double) x, (double) y)) {
+      if (pointInPolygon(inner, (double)x, (double)y)) {
         ++insideChecked;
         if (!coveredPixel) {
           ++insideFailures;
         }
-      } else if (!pointInPolygon(outer, (double) x, (double) y)) {
+      } else if (!pointInPolygon(outer, (double)x, (double)y)) {
         ++outsideChecked;
         if (coveredPixel) {
           ++outsideFailures;
@@ -220,14 +212,10 @@ void testConvexPentagon(const std::string &gman, const std::string &ribDir) {
 
   check(insideChecked > 0, "sampled at least one point inside the pentagon");
   check(outsideChecked > 0, "sampled at least one point outside the pentagon");
-  check(insideFailures == 0,
-        "every sampled interior point is non-background (" +
-            std::to_string(insideFailures) + "/" +
-            std::to_string(insideChecked) + " failed)");
-  check(outsideFailures == 0,
-        "every sampled exterior point stays background (" +
-            std::to_string(outsideFailures) + "/" +
-            std::to_string(outsideChecked) + " failed)");
+  check(insideFailures == 0, "every sampled interior point is non-background (" + std::to_string(insideFailures) + "/" +
+                                 std::to_string(insideChecked) + " failed)");
+  check(outsideFailures == 0, "every sampled exterior point stays background (" + std::to_string(outsideFailures) +
+                                  "/" + std::to_string(outsideChecked) + " failed)");
 
   // The shading assertion: an ambient-only light (intensity 0.3) and a
   // matte surface with Ka=1, Cs=(0.8, 0.4, 0.2) give
@@ -242,28 +230,24 @@ void testConvexPentagon(const std::string &gman, const std::string &ribDir) {
   const double expectedB = 0.2 * 1.0 * 1.0 * 0.3 * 255.0;
   const double shadeTol = 8.0; // testMetalKaResponse's own tolerance
 
-  check(std::fabs((double) TIFFGetR(centre) - expectedR) <= shadeTol,
-        "interior pixel red matches Cs*Os*Ka*ambient_intensity (got " +
-            std::to_string(TIFFGetR(centre)) + ", expected " +
-            std::to_string(expectedR) + ")");
-  check(std::fabs((double) TIFFGetG(centre) - expectedG) <= shadeTol,
-        "interior pixel green matches Cs*Os*Ka*ambient_intensity (got " +
-            std::to_string(TIFFGetG(centre)) + ", expected " +
-            std::to_string(expectedG) + ")");
-  check(std::fabs((double) TIFFGetB(centre) - expectedB) <= shadeTol,
-        "interior pixel blue matches Cs*Os*Ka*ambient_intensity (got " +
-            std::to_string(TIFFGetB(centre)) + ", expected " +
-            std::to_string(expectedB) + ")");
+  check(std::fabs((double)TIFFGetR(centre) - expectedR) <= shadeTol,
+        "interior pixel red matches Cs*Os*Ka*ambient_intensity (got " + std::to_string(TIFFGetR(centre)) +
+            ", expected " + std::to_string(expectedR) + ")");
+  check(std::fabs((double)TIFFGetG(centre) - expectedG) <= shadeTol,
+        "interior pixel green matches Cs*Os*Ka*ambient_intensity (got " + std::to_string(TIFFGetG(centre)) +
+            ", expected " + std::to_string(expectedG) + ")");
+  check(std::fabs((double)TIFFGetB(centre) - expectedB) <= shadeTol,
+        "interior pixel blue matches Cs*Os*Ka*ambient_intensity (got " + std::to_string(TIFFGetB(centre)) +
+            ", expected " + std::to_string(expectedB) + ")");
 }
 
 // Shared by every concave/collinear/winding fixture below: render, read
 // the named TIFF back, and check each hand-projected pixel against
 // background -- the same differsFromBackground comparison
 // testConvexPentagon already uses, not a second mechanism.
-void checkFillPattern(const std::string &gman, const std::string &ribDir,
-                       const std::string &name,
-                       const std::vector<std::pair<int, int>> &mustBeBg,
-                       const std::vector<std::pair<int, int>> &mustBeFilled) {
+void checkFillPattern(const std::string& gman, const std::string& ribDir, const std::string& name,
+                      const std::vector<std::pair<int, int>>& mustBeBg,
+                      const std::vector<std::pair<int, int>>& mustBeFilled) {
   const std::string rib = ribDir + "/" + name + ".rib";
   check(runGman(gman, rib) == 0, name + ".rib renders");
 
@@ -274,18 +258,14 @@ void checkFillPattern(const std::string &gman, const std::string &ribDir,
   }
   const uint32_t bg = img.at(0, 0);
 
-  for (const std::pair<int, int> &pix : mustBeBg) {
-    bool covered = differsFromBackground(img.at(pix.first, pix.second), bg,
-                                          kColorTol);
-    check(!covered, name + ": (" + std::to_string(pix.first) + "," +
-                        std::to_string(pix.second) +
+  for (const std::pair<int, int>& pix : mustBeBg) {
+    bool covered = differsFromBackground(img.at(pix.first, pix.second), bg, kColorTol);
+    check(!covered, name + ": (" + std::to_string(pix.first) + "," + std::to_string(pix.second) +
                         ") stays background, outside the true polygon");
   }
-  for (const std::pair<int, int> &pix : mustBeFilled) {
-    bool covered = differsFromBackground(img.at(pix.first, pix.second), bg,
-                                          kColorTol);
-    check(covered, name + ": (" + std::to_string(pix.first) + "," +
-                       std::to_string(pix.second) +
+  for (const std::pair<int, int>& pix : mustBeFilled) {
+    bool covered = differsFromBackground(img.at(pix.first, pix.second), bg, kColorTol);
+    check(covered, name + ": (" + std::to_string(pix.first) + "," + std::to_string(pix.second) +
                        ") is filled, inside the true polygon");
   }
 }
@@ -298,21 +278,19 @@ void checkFillPattern(const std::string &gman, const std::string &ribDir,
 // chain, not inferred from a render. A stalled ear-clipping loop would
 // time out under ctest here rather than fail this assertion.
 
-int countFaces(GMANObject *object) {
+int countFaces(GMANObject* object) {
   if (object == nullptr || object->getBody() == nullptr) {
     return 0;
   }
-  GMANSurface *surface = object->getBody()->getSurface();
+  GMANSurface* surface = object->getBody()->getSurface();
   int count = 0;
-  for (GMANFace *face = surface ? surface->getFace() : nullptr;
-       face != nullptr; face = face->getNext()) {
+  for (GMANFace* face = surface ? surface->getFace() : nullptr; face != nullptr; face = face->getNext()) {
     ++count;
   }
   return count;
 }
 
-void checkTriangleCount(const std::string &label, std::vector<RtFloat> p,
-                         RtInt nverts) {
+void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt nverts) {
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
@@ -323,25 +301,21 @@ void checkTriangleCount(const std::string &label, std::vector<RtFloat> p,
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
 
-  GMANPrimitive *prim =
-      mgr.getRSPolygon(nverts, pl, &options, &attr, &transform);
-  GMANObject *object = dynamic_cast<GMANObject *>(prim);
+  GMANPrimitive* prim = mgr.getRSPolygon(nverts, pl, &options, &attr, &transform);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, label + ": getRSPolygon returns an object");
 
   int faces = countFaces(object);
-  check(faces == nverts - 2,
-        label + ": " + std::to_string(nverts) + " vertices yield " +
-            std::to_string(nverts - 2) + " triangles (got " +
-            std::to_string(faces) + ")");
+  check(faces == nverts - 2, label + ": " + std::to_string(nverts) + " vertices yield " + std::to_string(nverts - 2) +
+                                 " triangles (got " + std::to_string(faces) + ")");
   delete prim;
 }
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n",
-                  argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
@@ -353,70 +327,47 @@ int main(int argc, char *argv[]) {
   // World (0.2, 0.2) -> raster (104, 96) sits in the removed notch
   // square: inside the fan-from-vertex-0 triangulation this replaces,
   // outside the true L.
-  checkFillPattern(gman, ribDir, "polygon_concave",
-                   {{104, 96}},
-                   {{110, 110}, {90, 90}, {90, 110}});
+  checkFillPattern(gman, ribDir, "polygon_concave", {{104, 96}}, {{110, 110}, {90, 90}, {90, 110}});
 
   // polygon_concave_cw.rib: the same L, vertex order reversed. A
   // triangulator correct for one winding and wrong for the other is the
   // standard error.
-  checkFillPattern(gman, ribDir, "polygon_concave_cw",
-                   {{104, 96}},
-                   {{110, 110}, {90, 90}, {90, 110}});
+  checkFillPattern(gman, ribDir, "polygon_concave_cw", {{104, 96}}, {{110, 110}, {90, 90}, {90, 110}});
 
   // polygon_concave_multi.rib: a 4-pointed star, four reflex vertices.
   // World (0.495, 0.495) -> raster (110, 90) sits between two tips,
   // outside the star; the centre and a point toward each tip are inside.
-  checkFillPattern(gman, ribDir, "polygon_concave_multi",
-                   {{110, 90}},
-                   {{100, 100}, {118, 100}, {82, 100}});
+  checkFillPattern(gman, ribDir, "polygon_concave_multi", {{110, 90}}, {{100, 100}, {118, 100}, {82, 100}});
 
   // polygon_collinear.rib: polygon_concave.rib's L with a vertex added on
   // a straight edge -- a zero-area ear a naive test rejects forever.
   // Renders identically to polygon_concave.rib if the loop still
   // terminates.
-  checkFillPattern(gman, ribDir, "polygon_collinear",
-                   {{104, 96}},
-                   {{110, 110}, {90, 90}, {90, 110}});
+  checkFillPattern(gman, ribDir, "polygon_collinear", {{104, 96}}, {{110, 110}, {90, 90}, {90, 110}});
 
   // polygon_general_hole.rib: a GeneralPolygon, a square with a square
   // hole cut from its centre. World (0, 0) -> raster (100, 100) and world
   // (0.2, -0.2) -> raster (104, 104) sit inside the hole; world (0.7, 0),
   // (-0.7, 0.7) and (0, -0.7) -> raster (114, 100), (86, 86), (100, 114)
   // sit inside the outer square but outside the hole.
-  checkFillPattern(gman, ribDir, "polygon_general_hole",
-                   {{100, 100}, {104, 104}},
-                   {{114, 100}, {86, 86}, {100, 114}});
+  checkFillPattern(gman, ribDir, "polygon_general_hole", {{100, 100}, {104, 104}}, {{114, 100}, {86, 86}, {100, 114}});
 
   // n - 2 triangles, direct: convex, concave, reversed winding, a star
   // with four reflex vertices, a collinear vertex and a duplicate vertex.
   checkTriangleCount("convex pentagon",
-                     {0, 1, 0,  -0.9510565f, 0.3090170f, 0,
-                      -0.5877853f, -0.8090170f, 0,  0.5877853f, -0.8090170f, 0,
+                     {0, 1, 0, -0.9510565f, 0.3090170f, 0, -0.5877853f, -0.8090170f, 0, 0.5877853f, -0.8090170f, 0,
                       0.9510565f, 0.3090170f, 0},
                      5);
-  checkTriangleCount("concave L",
-                     {1, -1, 0,  1, 0, 0,  0, 0, 0,
-                      0, 1, 0,  -1, 1, 0,  -1, -1, 0},
-                     6);
-  checkTriangleCount("concave L, reversed winding",
-                     {-1, -1, 0,  -1, 1, 0,  0, 1, 0,
-                      0, 0, 0,  1, 0, 0,  1, -1, 0},
-                     6);
+  checkTriangleCount("concave L", {1, -1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, -1, 1, 0, -1, -1, 0}, 6);
+  checkTriangleCount("concave L, reversed winding", {-1, -1, 0, -1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, -1, 0}, 6);
   checkTriangleCount("4-pointed star, four reflex vertices",
-                     {1.0f, 0.0f, 0,  0.2475f, 0.2475f, 0,  0.0f, 1.0f, 0,
-                      -0.2475f, 0.2475f, 0,  -1.0f, 0.0f, 0,
-                      -0.2475f, -0.2475f, 0,  0.0f, -1.0f, 0,
-                      0.2475f, -0.2475f, 0},
+                     {1.0f,  0.0f, 0, 0.2475f,  0.2475f,  0, 0.0f, 1.0f,  0, -0.2475f, 0.2475f,  0,
+                      -1.0f, 0.0f, 0, -0.2475f, -0.2475f, 0, 0.0f, -1.0f, 0, 0.2475f,  -0.2475f, 0},
                      8);
   checkTriangleCount("concave L with a collinear vertex",
-                     {1, -1, 0,  1, -0.5, 0,  1, 0, 0,  0, 0, 0,
-                      0, 1, 0,  -1, 1, 0,  -1, -1, 0},
-                     7);
+                     {1, -1, 0, 1, -0.5, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, -1, 1, 0, -1, -1, 0}, 7);
   checkTriangleCount("concave L with a duplicate vertex",
-                     {1, -1, 0,  1, -1, 0,  1, 0, 0,  0, 0, 0,
-                      0, 1, 0,  -1, 1, 0,  -1, -1, 0},
-                     7);
+                     {1, -1, 0, 1, -1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, -1, 1, 0, -1, -1, 0}, 7);
 
   return checkSummary("polygon holds");
 }

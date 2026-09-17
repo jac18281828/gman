@@ -44,7 +44,7 @@
  */
 
 #include <algorithm>
-#include <cstdio>  // jpeglib.h expects FILE already declared
+#include <cstdio> // jpeglib.h expects FILE already declared
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -68,33 +68,31 @@ namespace {
 // tests/baseline_test.cpp removes its target for the same reason.
 // GMANHandleError prints to stdout (gmanerror.cpp's print()), so a caller
 // after a diagnostic captures stdout, not stderr.
-int runGman(const std::string &gman, const std::string &rib,
-            const std::string &output,
-            const std::string &stdoutCapturePath = "") {
+int runGman(const std::string& gman, const std::string& rib, const std::string& output,
+            const std::string& stdoutCapturePath = "") {
   std::remove(output.c_str());
   std::string command = "\"" + gman + "\" \"" + rib + "\" 2>/dev/null";
-  command += stdoutCapturePath.empty() ? " >/dev/null"
-                                        : (" >\"" + stdoutCapturePath + "\"");
+  command += stdoutCapturePath.empty() ? " >/dev/null" : (" >\"" + stdoutCapturePath + "\"");
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void writeFile(const std::string &path, const std::string &contents) {
+void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
   out << contents;
 }
 
-bool nonEmptyFile(const std::string &path) {
+bool nonEmptyFile(const std::string& path) {
   struct stat st;
   return stat(path.c_str(), &st) == 0 && st.st_size > 0;
 }
 
-bool fileExists(const std::string &path) {
+bool fileExists(const std::string& path) {
   struct stat st;
   return stat(path.c_str(), &st) == 0;
 }
 
-std::string readFile(const std::string &path) {
+std::string readFile(const std::string& path) {
   std::ifstream in(path);
   std::ostringstream contents;
   contents << in.rdbuf();
@@ -107,9 +105,9 @@ struct Image {
   std::vector<unsigned char> rgb; // 3 bytes/pixel, row-major, top to bottom
 };
 
-Image readJPEG(const std::string &path) {
+Image readJPEG(const std::string& path) {
   Image img;
-  FILE *fp = std::fopen(path.c_str(), "rb");
+  FILE* fp = std::fopen(path.c_str(), "rb");
   if (fp == nullptr) {
     return img;
   }
@@ -133,13 +131,12 @@ Image readJPEG(const std::string &path) {
 
   const int rowStride = img.width * cinfo.output_components;
   std::vector<unsigned char> row(rowStride);
-  unsigned char *rowPtr[1];
+  unsigned char* rowPtr[1];
   int y = 0;
   while (cinfo.output_scanline < cinfo.output_height) {
     rowPtr[0] = row.data();
     jpeg_read_scanlines(&cinfo, rowPtr, 1);
-    std::copy(row.begin(), row.begin() + img.width * 3,
-              img.rgb.begin() + size_t(y) * img.width * 3);
+    std::copy(row.begin(), row.begin() + img.width * 3, img.rgb.begin() + size_t(y) * img.width * 3);
     ++y;
   }
 
@@ -150,9 +147,9 @@ Image readJPEG(const std::string &path) {
   return img;
 }
 
-Image readTIFF(const std::string &path) {
+Image readTIFF(const std::string& path) {
   Image img;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return img;
   }
@@ -161,8 +158,7 @@ Image readTIFF(const std::string &path) {
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(size_t(width) * height);
-  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                  ORIENTATION_TOPLEFT, 0)) {
+  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0)) {
     TIFFClose(tif);
     return img;
   }
@@ -182,23 +178,22 @@ Image readTIFF(const std::string &path) {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::fprintf(stderr, "usage: %s <gman-binary>\n", argv[0]);
     return 2;
   }
   const std::string gman = argv[1];
 
-  const char *sceneTemplate =
-      "Display \"%s\" \"file\" \"rgb\"\n"
-      "Format 64 64 1\n"
-      "Projection \"perspective\" \"fov\" [45]\n"
-      "WorldBegin\n"
-      "AttributeBegin\n"
-      "  Translate 0 0 5\n"
-      "  Sphere 1 -1 1 360\n"
-      "AttributeEnd\n"
-      "WorldEnd\n";
+  const char* sceneTemplate = "Display \"%s\" \"file\" \"rgb\"\n"
+                              "Format 64 64 1\n"
+                              "Projection \"perspective\" \"fov\" [45]\n"
+                              "WorldBegin\n"
+                              "AttributeBegin\n"
+                              "  Translate 0 0 5\n"
+                              "  Sphere 1 -1 1 360\n"
+                              "AttributeEnd\n"
+                              "WorldEnd\n";
 
   char scene[1024];
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.jpg");
@@ -236,33 +231,25 @@ int main(int argc, char *argv[]) {
       }
     }
     const double mismatchFraction = double(mismatches) / double(jpg.rgb.size());
-    check(mismatchFraction < 0.10,
-          "JPEG pixels are within tolerance of the equivalent TIFF render "
-          "(fewer than 10% of channel samples exceed +-24/255)");
+    check(mismatchFraction < 0.10, "JPEG pixels are within tolerance of the equivalent TIFF render "
+                                   "(fewer than 10% of channel samples exceed +-24/255)");
   }
 
   // ---- a genuinely unknown extension must diagnose, not crash ----
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.bogus");
   writeFile("jpegdriver_bogus.rib", scene);
   int bogusExit = runGman(gman, "jpegdriver_bogus.rib", "jpegdriver.bogus");
-  check(bogusExit != 0 && bogusExit != -1,
-        "an unrecognized Display extension fails cleanly (not a crash)");
-  check(!fileExists("jpegdriver.bogus"),
-        "an unrecognized Display extension writes no file");
+  check(bogusExit != 0 && bogusExit != -1, "an unrecognized Display extension fails cleanly (not a crash)");
+  check(!fileExists("jpegdriver.bogus"), "an unrecognized Display extension writes no file");
 
   // ---- a Display path whose directory does not exist must fail loudly,
   // not silently report success ----
-  std::snprintf(scene, sizeof scene, sceneTemplate,
-                "nonexistent-dir/jpegdriver.jpg");
+  std::snprintf(scene, sizeof scene, sceneTemplate, "nonexistent-dir/jpegdriver.jpg");
   writeFile("jpegdriver_unwritable.rib", scene);
   const std::string diagnosticCapture = "jpegdriver_unwritable.out";
-  int unwritableExit =
-      runGman(gman, "jpegdriver_unwritable.rib",
-              "nonexistent-dir/jpegdriver.jpg", diagnosticCapture);
-  check(unwritableExit != 0,
-        "a Display path inside a nonexistent directory fails");
-  check(readFile(diagnosticCapture).find("Unable to open output file") !=
-            std::string::npos,
+  int unwritableExit = runGman(gman, "jpegdriver_unwritable.rib", "nonexistent-dir/jpegdriver.jpg", diagnosticCapture);
+  check(unwritableExit != 0, "a Display path inside a nonexistent directory fails");
+  check(readFile(diagnosticCapture).find("Unable to open output file") != std::string::npos,
         "the failure names \"Unable to open output file\"");
 
   return checkSummary("jpeg driver holds");

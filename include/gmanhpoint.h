@@ -29,33 +29,29 @@
 #include "gmanpoint.h"
 #include "ri.h"
 
-
-class GMAN_EXPORT  GMANHPoint : public GMANPoint
-{
+class GMAN_EXPORT GMANHPoint : public GMANPoint {
 protected:
   RtFloat w;
+
 public:
-  GMANHPoint() : GMANPoint(0,0,0), w(1.0) {}
+  GMANHPoint() : GMANPoint(0, 0, 0), w(1.0) {}
 
-  GMANHPoint(RtFloat x, RtFloat y, RtFloat z, RtFloat wv)
-    : GMANPoint(x,y,z), w(wv) {}
+  GMANHPoint(RtFloat x, RtFloat y, RtFloat z, RtFloat wv) : GMANPoint(x, y, z), w(wv) {}
 
-  GMANHPoint(RtFloat *f)
-    : GMANPoint(f[0], f[1], f[2]), w(f[3]) {}
+  GMANHPoint(RtFloat* f) : GMANPoint(f[0], f[1], f[2]), w(f[3]) {}
 
   RtFloat getW() const { return w; };
-  RtVoid  setW(RtFloat wv) { w=wv; };
+  RtVoid setW(RtFloat wv) { w = wv; };
 
   RtVoid wToOne();
 
-  GMANHPoint operator+(const GMANHPoint &p) const;
+  GMANHPoint operator+(const GMANHPoint& p) const;
   GMANHPoint operator*(RtFloat f) const;
-  GMANHPoint operator*(const GMANMatrix4 &m) const;
+  GMANHPoint operator*(const GMANMatrix4& m) const;
 
-  GMANHPoint &operator+=(const GMANHPoint &p);
-  GMANHPoint &operator*=(RtFloat f);
-  GMANHPoint &operator*=(const GMANMatrix4 &m);
-
+  GMANHPoint& operator+=(const GMANHPoint& p);
+  GMANHPoint& operator*=(RtFloat f);
+  GMANHPoint& operator*=(const GMANMatrix4& m);
 };
 
 #endif

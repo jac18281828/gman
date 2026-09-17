@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -24,11 +24,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANLIGHTSOURCEMGR_H
 #define __GMAN_GMANLIGHTSOURCEMGR_H 1
-
 
 #include <list>
 #include <map>
@@ -48,32 +46,24 @@
  * shading happens entirely in camera space, so a light declared in any
  * other space would make every N.L wrong.
  */
-enum GMANLightType {
-  GMAN_LIGHT_AMBIENT,
-  GMAN_LIGHT_DISTANT,
-  GMAN_LIGHT_POINT,
-  GMAN_LIGHT_SPOT
-};
+enum GMANLightType { GMAN_LIGHT_AMBIENT, GMAN_LIGHT_DISTANT, GMAN_LIGHT_POINT, GMAN_LIGHT_SPOT };
 
 class GMAN_EXPORT GMANLight {
 private:
   GMANLightType type;
-  GMANColor     cl;        // color * intensity, RiLightSourceV time
-  GMANPoint     position;  // camera space; pointlight and spotlight
-  GMANVector    direction; // camera space, light -> scene; distantlight
-                           // and spotlight (the cone's axis)
-  RtFloat       coneAngle;        // radians; spotlight only
-  RtFloat       coneDeltaAngle;   // radians; spotlight only
-  RtFloat       beamDistribution; // spotlight only
+  GMANColor cl;             // color * intensity, RiLightSourceV time
+  GMANPoint position;       // camera space; pointlight and spotlight
+  GMANVector direction;     // camera space, light -> scene; distantlight
+                            // and spotlight (the cone's axis)
+  RtFloat coneAngle;        // radians; spotlight only
+  RtFloat coneDeltaAngle;   // radians; spotlight only
+  RtFloat beamDistribution; // spotlight only
 
 public:
-  GMANLight(GMANLightType t, const GMANColor &c,
-	    const GMANPoint &pos, const GMANVector &dir,
-	    RtFloat cAngle = 0.0, RtFloat cDeltaAngle = 0.0,
-	    RtFloat beamDist = 0.0)
-    : type(t), cl(c), position(pos), direction(dir),
-      coneAngle(cAngle), coneDeltaAngle(cDeltaAngle),
-      beamDistribution(beamDist) {}
+  GMANLight(GMANLightType t, const GMANColor& c, const GMANPoint& pos, const GMANVector& dir, RtFloat cAngle = 0.0,
+            RtFloat cDeltaAngle = 0.0, RtFloat beamDist = 0.0)
+      : type(t), cl(c), position(pos), direction(dir), coneAngle(cAngle), coneDeltaAngle(cDeltaAngle),
+        beamDistribution(beamDist) {}
 
   GMANLightType getType(RtVoid) const { return type; }
 
@@ -83,7 +73,7 @@ public:
   // RiSL convention. Point and spotlights get inverse-square falloff
   // baked into Cl here, and spotlights their cone falloff too, so a
   // shader's own math stays a plain N.L.
-  RtVoid sample(const GMANPoint &p, GMANVector &l, GMANColor &lightCl) const;
+  RtVoid sample(const GMANPoint& p, GMANVector& l, GMANColor& lightCl) const;
 };
 
 /*
@@ -95,9 +85,9 @@ public:
  * actual light.
  */
 
-class GMAN_EXPORT  GMANLightSourceMgr {
+class GMAN_EXPORT GMANLightSourceMgr {
 private:
-  std::map<RtLightHandle, GMANLight *> lights;
+  std::map<RtLightHandle, GMANLight*> lights;
   // RtLightHandle is RtPointer (void*); a plain counter, cast to
   // RtLightHandle at handout, is simpler than allocating an object per
   // handle just to have a unique address.
@@ -110,10 +100,10 @@ public:
 
   // Takes ownership of light; returns the handle RiLightSourceV hands back
   // to the caller and RiIlluminate later toggles.
-  RtLightHandle add(GMANLight *light);
+  RtLightHandle add(GMANLight* light);
 
   // NULL if h names no light this manager holds.
-  const GMANLight *get(RtLightHandle h) const;
+  const GMANLight* get(RtLightHandle h) const;
 };
 
 // One light manager per render, like the object and world managers this
@@ -121,24 +111,21 @@ public:
 // createParametric (tessellation time, where a primitive's lit vertices
 // are shaded) does not need a light manager threaded through every
 // GMANObjectManager::getRS* signature to reach it.
-GMAN_EXPORT GMANLightSourceMgr &gmanLightSourceMgr(RtVoid);
+GMAN_EXPORT GMANLightSourceMgr& gmanLightSourceMgr(RtVoid);
 
 /*
  * A class for light lists storage
  */
 
-class GMAN_EXPORT GMANLightList
-{
+class GMAN_EXPORT GMANLightList {
 private:
   std::list<RtLightHandle> ll;
-public:
-  RtVoid  on  (RtLightHandle h);
-  RtVoid  off (RtLightHandle h);
 
-  const std::list<RtLightHandle> &getHandles(RtVoid) const { return ll; }
+public:
+  RtVoid on(RtLightHandle h);
+  RtVoid off(RtLightHandle h);
+
+  const std::list<RtLightHandle>& getHandles(RtVoid) const { return ll; }
 };
 
 #endif
-
-
-

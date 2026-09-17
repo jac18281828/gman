@@ -38,31 +38,27 @@
  * comes entirely from its (Cs-tinted) specular response, unlike plastic's
  * Cs-tinted diffuse base plus separately-tinted highlight.
  */
-class GMANMetal : public GMANSurfaceShader
-{
+class GMANMetal : public GMANSurfaceShader {
 public:
-  RtVoid illuminance (RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
+  RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  const GMANColor &computeCi(GMANSurfaceEnv &se);
-  const GMANColor &computeOi(GMANSurfaceEnv &se);
+  const GMANColor& computeCi(GMANSurfaceEnv& se);
+  const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANMetal::illuminance (RtInt /*i*/, GMANVector /*L*/,
-				GMANColor /*Cl*/, GMANColor /*Ol*/)
-{
+RtVoid GMANMetal::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi sums lights itself via env.ambient()/specular(),
   // the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor &GMANMetal::computeCi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANMetal::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
   RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
   RtFloat ks = gmanshaders::getFloatParam(pl, RI_KS, 1.0);
   RtFloat roughness = gmanshaders::getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  GMANColor specularcolor = gmanshaders::getColorParam(
-      pl, RI_SPECULARCOLOR, GMANColor((RtFloat) 1.0, (RtFloat) 1.0, (RtFloat) 1.0));
+  GMANColor specularcolor =
+      gmanshaders::getColorParam(pl, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0));
 
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
   GMANVector vf(-se.I.getX(), -se.I.getY(), -se.I.getZ());
@@ -73,37 +69,30 @@ const GMANColor &GMANMetal::computeCi(GMANSurfaceEnv &se)
 
   GMANColor specularTerm = se.specular(nf, vf, roughness);
   specularTerm.scale(ks);
-  lit += GMANColor(specularcolor.getRed() * specularTerm.getRed(),
-		    specularcolor.getGreen() * specularTerm.getGreen(),
-		    specularcolor.getBlue() * specularTerm.getBlue());
+  lit += GMANColor(specularcolor.getRed() * specularTerm.getRed(), specularcolor.getGreen() * specularTerm.getGreen(),
+                   specularcolor.getBlue() * specularTerm.getBlue());
 
-  ci = GMANColor(se.Os.getRed() * se.Cs.getRed() * lit.getRed(),
-		 se.Os.getGreen() * se.Cs.getGreen() * lit.getGreen(),
-		 se.Os.getBlue() * se.Cs.getBlue() * lit.getBlue());
+  ci = GMANColor(se.Os.getRed() * se.Cs.getRed() * lit.getRed(), se.Os.getGreen() * se.Cs.getGreen() * lit.getGreen(),
+                 se.Os.getBlue() * se.Cs.getBlue() * lit.getBlue());
   return ci;
 }
 
-const GMANColor &GMANMetal::computeOi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANMetal::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
 
 static GMANLoadableObjectInfo loadableInfo = {
-  "Metal surface shader",
-  "John Cairns <john@2ad.com>",
-  "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
-  "A GMAN SurfaceShader for metal surfaces: Cs-tinted specular response, "
-  "no diffuse term.",
+    "Metal surface shader",
+    "John Cairns <john@2ad.com>",
+    "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
+    "A GMAN SurfaceShader for metal surfaces: Cs-tinted specular response, "
+    "no diffuse term.",
 };
 
 static GMANMetal shader;
 
-extern "C" GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &loadableInfo;
-}
+extern "C" GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMANShader *GMANLoadShader(void) {
-  return &shader;
-}
+extern "C" GMANShader* GMANLoadShader(void) { return &shader; }

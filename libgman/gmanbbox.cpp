@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -25,48 +25,26 @@
 
 #include "gmanbbox.h"
 
-
 /*
  * RenderMan API GMANBBox
  *
  */
 
-static RtBound	defaultBBox = {
-  -RI_INFINITY,
-  RI_INFINITY,
-  -RI_INFINITY,
-  RI_INFINITY,
-  -RI_INFINITY,
-  RI_INFINITY
-};
+static RtBound defaultBBox = {-RI_INFINITY, RI_INFINITY, -RI_INFINITY, RI_INFINITY, -RI_INFINITY, RI_INFINITY};
 
+GMANBBox::GMANBBox() { *this = defaultBBox; }
 
-GMANBBox::GMANBBox() {
-  *this = defaultBBox;
-}
+GMANBBox::GMANBBox(RtBound bb) { *this = bb; }
 
-GMANBBox::GMANBBox (RtBound bb)
-{
-  *this = bb;
-}
+GMANBBox& GMANBBox::operator=(const RtBound bb) {
 
-
-GMANBBox &GMANBBox::operator=(const RtBound bb) {
-  
-
-  for(unsigned int i=0; i<sizeof(RtBound)/sizeof(RtFloat); i++) {
+  for (unsigned int i = 0; i < sizeof(RtBound) / sizeof(RtFloat); i++) {
 
     // copy back to back
     box[i] = bb[i];
-
   }
-  
+
   return *this;
 };
 
-GMANBBox &GMANBBox::operator=(const GMANBBox &bb) {
-  
-  return (*this = bb.box);
-
-}
-
+GMANBBox& GMANBBox::operator=(const GMANBBox& bb) { return (*this = bb.box); }

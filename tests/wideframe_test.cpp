@@ -55,9 +55,8 @@
 
 namespace {
 
-bool hasNonBackgroundPixel(const std::string &path, int xmin, int xmax,
-                           int ymin, int ymax) {
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+bool hasNonBackgroundPixel(const std::string& path, int xmin, int xmax, int ymin, int ymax) {
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return false;
   }
@@ -66,8 +65,7 @@ bool hasNonBackgroundPixel(const std::string &path, int xmin, int xmax,
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(width * height);
-  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                      ORIENTATION_TOPLEFT, 0);
+  bool ok = TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0);
   bool found = false;
   if (ok) {
     const uint32_t bg = raster[0];
@@ -91,9 +89,9 @@ bool hasNonBackgroundPixel(const std::string &path, int xmin, int xmax,
   return found;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <wideframe.rib>\n", argv[0]);
     return 2;
@@ -101,12 +99,11 @@ int main(int argc, char *argv[]) {
   const std::string gman = argv[1];
   const std::string rib = argv[2];
 
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   check(WIFEXITED(status) && WEXITSTATUS(status) == 0, "wideframe.rib renders");
 
-  const char *tif = "wideframe.tif";
+  const char* tif = "wideframe.tif";
 
   // Row 100 (frame centre) sits inside the rectangle's raster row span
   // [60,140] regardless of the x-axis fix under test.
@@ -117,12 +114,10 @@ int main(int argc, char *argv[]) {
   // them with headroom for rasterization rounding, without reaching far
   // enough in to also catch a false pass from the old +-1 cube (whose
   // own edge sits at column 300, 280 columns further in).
-  check(hasNonBackgroundPixel(tif, 0, 20, y0, y1),
-        "the rectangle reaches within 20px of the left frame edge "
-        "(hand-computed column 10)");
-  check(hasNonBackgroundPixel(tif, 779, 799, y0, y1),
-        "the rectangle reaches within 20px of the right frame edge "
-        "(hand-computed column 790)");
+  check(hasNonBackgroundPixel(tif, 0, 20, y0, y1), "the rectangle reaches within 20px of the left frame edge "
+                                                   "(hand-computed column 10)");
+  check(hasNonBackgroundPixel(tif, 779, 799, y0, y1), "the rectangle reaches within 20px of the right frame edge "
+                                                      "(hand-computed column 790)");
 
   return checkSummary("wideframe holds");
 }

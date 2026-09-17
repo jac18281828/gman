@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANBODY_H
 #define __GMAN_GMANBODY_H 1
-
 
 #include <list>
 #include <map>
@@ -46,29 +44,26 @@
  */
 
 class GMAN_EXPORT GMANBody {
-  GMANColor	reflectance; // object reflectivity
-  GMANColor     emittance;   // object emittivity
-  GMANSurface   *surfaceRoot; // surfaces in body
+  GMANColor reflectance;    // object reflectivity
+  GMANColor emittance;      // object emittivity
+  GMANSurface* surfaceRoot; // surfaces in body
 
-  GMANBody	*next;	      // body list
-  
+  GMANBody* next; // body list
+
 public:
-  GMANBody(const GMANColor &ref, const GMANColor &emit); // default constructor
+  GMANBody(const GMANColor& ref, const GMANColor& emit); // default constructor
 
   ~GMANBody(); // default destructor
 
-  const  GMANColor &getReflectance(RtVoid) const { return reflectance; };
+  const GMANColor& getReflectance(RtVoid) const { return reflectance; };
 
-  const  GMANColor &getEmittance(RtVoid)  const { return emittance; };
+  const GMANColor& getEmittance(RtVoid) const { return emittance; };
 
-  RtVoid setSurface(GMANSurface *surf) { surfaceRoot = surf; };
-  GMANSurface *getSurface(RtVoid) { return surfaceRoot; }
+  RtVoid setSurface(GMANSurface* surf) { surfaceRoot = surf; };
+  GMANSurface* getSurface(RtVoid) { return surfaceRoot; }
 
-  RtVoid setNext(GMANBody *n) { next = n; };
-  GMANBody *getNext(RtVoid) { return next; };
-
+  RtVoid setNext(GMANBody* n) { next = n; };
+  GMANBody* getNext(RtVoid) { return next; };
 };
 
-
 #endif
-

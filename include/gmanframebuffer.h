@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANFRAMEBUFFER_H
 #define __GMAN_GMANFRAMEBUFFER_H 1
-
 
 #include <list>
 #include <map>
@@ -47,18 +45,18 @@ class GMAN_EXPORT GMANFilter;
  */
 
 // support anti-aliasing
-class GMAN_EXPORT  GMANFrameBuffer : public GMANBitmap {
+class GMAN_EXPORT GMANFrameBuffer : public GMANBitmap {
 private:
-  int		filterWidth;
-  int		filterHeight;
+  int filterWidth;
+  int filterHeight;
 
-  RtFilterFunc   filter;
-  
+  RtFilterFunc filter;
+
 public:
   // default constructor
-  GMANFrameBuffer(); 
+  GMANFrameBuffer();
   // construct based on a specified width/height and background
-  GMANFrameBuffer(int width, int height, const GMANColor &background); 
+  GMANFrameBuffer(int width, int height, const GMANColor& background);
 
   ~GMANFrameBuffer(); // default destructor
 
@@ -66,22 +64,17 @@ public:
   RtVoid setFilter(RtFilterFunc filter, int fwidth, int fheight);
 
   // get the type of filter used by the anti-aliasing code
-  RtFilterFunc getFilter(RtVoid) {
-    return filter;
-  };
-  
+  RtFilterFunc getFilter(RtVoid) { return filter; };
+
   // get a supersampled pixel from the frame buffer
   GMANColor getSuperSampledPixel(int x, int y);
 
   // get the width of the filter in pixels
-  
+
   int getFilterWidth(RtVoid) { return filterWidth; };
 
   // get the height of the filter in pixels
   int getFilterHeight(RtVoid) { return filterHeight; };
-
 };
 
-
 #endif
-

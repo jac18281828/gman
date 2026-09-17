@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,15 +27,13 @@
 #include "gmanshader.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANImagerShader
  *
  */
 
 // default constructor
-GMANImagerShader::GMANImagerShader() : GMANShader() { };
+GMANImagerShader::GMANImagerShader() : GMANShader() {};
 
-
-// default destructor 
-GMANImagerShader::~GMANImagerShader() { };
+// default destructor
+GMANImagerShader::~GMANImagerShader() {};

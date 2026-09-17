@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -31,60 +31,56 @@
 #include "gmanzbufferrenderer.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANZBufferRenderer
  *
  */
 
 // default constructor
-GMANZBufferRenderer::GMANZBufferRenderer(int w,
-					 int h) :
-  GMANRenderer(), width(w), height(h),
-  xsamples(1), ysamples(1), sampleWidth(w), sampleHeight(h),
-  rasterOriginX(0), rasterOriginY(0),
-  fullResX(w), fullResY(h) {
-  zbuffer=NULL;
-  edge_list=NULL;
-  viewingSys=NULL;
+GMANZBufferRenderer::GMANZBufferRenderer(int w, int h)
+    : GMANRenderer(), width(w), height(h), xsamples(1), ysamples(1), sampleWidth(w), sampleHeight(h), rasterOriginX(0),
+      rasterOriginY(0), fullResX(w), fullResY(h) {
+  zbuffer = NULL;
+  edge_list = NULL;
+  viewingSys = NULL;
 };
-GMANZBufferRenderer::GMANZBufferRenderer() :
-  GMANRenderer(), width(0), height(0),
-  xsamples(1), ysamples(1), sampleWidth(0), sampleHeight(0),
-  rasterOriginX(0), rasterOriginY(0),
-  fullResX(0), fullResY(0) {
-  zbuffer=NULL;
-  edge_list=NULL;
-  viewingSys=NULL;
+GMANZBufferRenderer::GMANZBufferRenderer()
+    : GMANRenderer(), width(0), height(0), xsamples(1), ysamples(1), sampleWidth(0), sampleHeight(0), rasterOriginX(0),
+      rasterOriginY(0), fullResX(0), fullResY(0) {
+  zbuffer = NULL;
+  edge_list = NULL;
+  viewingSys = NULL;
 };
-
 
 // default destructor
-GMANZBufferRenderer::~GMANZBufferRenderer() { 
-  if(zbuffer) delete []zbuffer;
-  if(edge_list) delete []edge_list;
+GMANZBufferRenderer::~GMANZBufferRenderer() {
+  if (zbuffer)
+    delete[] zbuffer;
+  if (edge_list)
+    delete[] edge_list;
 };
 
-
-/* 
+/*
  * Initialize the Z-buffer.
  */
 bool GMANZBufferRenderer::initZBuffer(void) {
 
-  if((width > 0) && (height>0)) {
+  if ((width > 0) && (height > 0)) {
 
-    if(zbuffer) delete []zbuffer;
+    if (zbuffer)
+      delete[] zbuffer;
 
-    zbuffer = new RtFloat[width*height];
+    zbuffer = new RtFloat[width * height];
 
-    if(zbuffer) {
-      for(int x=0; x<width; x++) {
-	for(int y=0; y<height; y++) {
-	  setZBuffer(x, y, RI_INFINITY);
-	}
+    if (zbuffer) {
+      for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+          setZBuffer(x, y, RI_INFINITY);
+        }
       }
 
-      if(edge_list) delete []edge_list;
+      if (edge_list)
+        delete[] edge_list;
       // Sized to sampleHeight, not height: scanEdges/drawEdgeList walk the
       // sample grid, not the pixel grid -- see the settled decision on
       // rasterizing at sample resolution while zbuffer above stays at
@@ -94,8 +90,8 @@ bool GMANZBufferRenderer::initZBuffer(void) {
       // indeterminate EdgeInfo unreachable by construction rather than by
       // that argument holding.
       edge_list = new EdgeInfo[sampleHeight]();
-      if(edge_list == NULL)
-	return false;
+      if (edge_list == NULL)
+        return false;
 
       return true;
     }
@@ -103,25 +99,21 @@ bool GMANZBufferRenderer::initZBuffer(void) {
   return false;
 }
 
-
 // render each clipped output polygon
-void GMANZBufferRenderer::render(GMANOutputPolygon &out)
- {
+void GMANZBufferRenderer::render(GMANOutputPolygon& out) {
 
   if (!getVertexInfo(out)) {
     return;
   }
   scanEdges();
   drawEdgeList();
-
 };
 
-
 // Get vertex info
-bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
+bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon& out) {
 
-  VertexInfo    *vert;
-  GMANPoint	posn;
+  VertexInfo* vert;
+  GMANPoint posn;
 
   // y axis, in samples
   ymax = 0;
@@ -154,7 +146,7 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
   // below has been translated into this buffer's local grid.
   const RtFloat rasterMargin = (fullResX > fullResY ? fullResX : fullResY);
 
-  for(int i=0; i<num_vert; i++) {
+  for (int i = 0; i < num_vert; i++) {
 
     vert = &(v_info[i]); // get vertex info element
 
@@ -166,8 +158,7 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
     RtFloat x = posn.getX();
     RtFloat y = posn.getY();
     viewingSys->screenToRaster(x, y);
-    if (!std::isfinite(x) || !std::isfinite(y) ||
-        x < -rasterMargin || x > fullResX + rasterMargin ||
+    if (!std::isfinite(x) || !std::isfinite(y) || x < -rasterMargin || x > fullResX + rasterMargin ||
         y < -rasterMargin || y > fullResY + rasterMargin) {
       return false;
     }
@@ -192,10 +183,10 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
     // scanEdges' edge_list[] walk (sized to `sampleHeight`) never runs off
     // the end even if a vertex landed just inside the margin above but
     // still outside the visible frame.
-    if(vert->screen.y < ymin)
+    if (vert->screen.y < ymin)
       ymin = vert->screen.y;
 
-    if(vert->screen.y > ymax)
+    if (vert->screen.y > ymax)
       ymax = vert->screen.y;
 
     // Gouraud color: computeCi already ran once per tessellated vertex,
@@ -206,14 +197,15 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
     // the already-shaded, already-linearly-interpolated result rather
     // than calling computeCi per output vertex.
     vert->color = out.getVertexColor(i);
-
   }
 
   // Individual vertices can still land just outside the visible frame
   // (an ordinary partially-offscreen polygon); clamp the scan range that
   // indexes edge_list[] to what it was actually sized for.
-  if (ymin < 0) ymin = 0;
-  if (ymax > sampleHeight - 1) ymax = sampleHeight - 1;
+  if (ymin < 0)
+    ymin = 0;
+  if (ymax > sampleHeight - 1)
+    ymax = sampleHeight - 1;
 
   return true;
 }
@@ -222,47 +214,48 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon &out) {
 void GMANZBufferRenderer::scanEdges(void) {
   int i, j;
 
-  RtFloat	dx;		// x axis delta
-  RtFloat	dz;		// pseudodepth delta
-  RtFloat       ix;             // x intercept
-  RtFloat       iz;             // pseudodepth intercept
+  RtFloat dx; // x axis delta
+  RtFloat dz; // pseudodepth delta
+  RtFloat ix; // x intercept
+  RtFloat iz; // pseudodepth intercept
 
-  RtFloat       y_dist;		// y distance
+  RtFloat y_dist; // y distance
 
-  GMANColor     dc;		// intersection color delta
-  GMANColor	ic;		// intersection color
+  GMANColor dc; // intersection color delta
+  GMANColor ic; // intersection color
 
-  EdgeInfo	*edge;		// edge 
-  ScanInfo	*scan;		// scan line
+  EdgeInfo* edge; // edge
+  ScanInfo* scan; // scan line
 
-  VertexInfo	*sv;		// start vertex
-  VertexInfo	*ev;		// end vertex
+  VertexInfo* sv; // start vertex
+  VertexInfo* ev; // end vertex
 
-  VertexInfo	*sw;		// swap vertex info
-
+  VertexInfo* sw; // swap vertex info
 
   // initialize edge list
-  for(i=ymin; i<=ymax; i++)
+  for (i = ymin; i <= ymax; i++)
     edge_list[i].nisect = 0;
 
-
-  for(i=0; i<num_vert; i++) {
+  for (i = 0; i < num_vert; i++) {
 
     // get edge pointers
     sv = &(v_info[i]);
-    ev = &(v_info[(i+1)%num_vert]);
-
+    ev = &(v_info[(i + 1) % num_vert]);
 
     // FIXME: Not needed if polygon clipped
-    if(sv->screen.y < 0 && ev->screen.y < 0) continue;
-    if(sv->screen.y >= sampleHeight && ev->screen.y >= sampleHeight) continue;
+    if (sv->screen.y < 0 && ev->screen.y < 0)
+      continue;
+    if (sv->screen.y >= sampleHeight && ev->screen.y >= sampleHeight)
+      continue;
     // END FIXME
 
-    if(sv->screen.y == ev->screen.y)
+    if (sv->screen.y == ev->screen.y)
       continue;
 
-    if(sv->screen.y > ev->screen.y) {
-      sw = sv; sv = ev; ev = sw;
+    if (sv->screen.y > ev->screen.y) {
+      sw = sv;
+      sv = ev;
+      ev = sw;
     }
 
     // get start info
@@ -271,7 +264,7 @@ void GMANZBufferRenderer::scanEdges(void) {
     ic = sv->color;
 
     // determine inverse slopes
-    y_dist = (RtFloat) (ev->screen.y - sv->screen.y);
+    y_dist = (RtFloat)(ev->screen.y - sv->screen.y);
 
     dx = (ev->posn.getX() - ix) / y_dist;
     dz = (ev->posn.getZ() - iz) / y_dist;
@@ -279,38 +272,34 @@ void GMANZBufferRenderer::scanEdges(void) {
     // linearly interpolate color
     // FIXME FIXME FIXME
     // FIXME -- surface shader code here
-    dc.setRed((ev->color.getRed() - sv->color.getRed()) / 
-	      (GMANColorSample)y_dist);
+    dc.setRed((ev->color.getRed() - sv->color.getRed()) / (GMANColorSample)y_dist);
 
-    dc.setGreen((ev->color.getGreen() - sv->color.getGreen()) / 
-	      (GMANColorSample)y_dist);
+    dc.setGreen((ev->color.getGreen() - sv->color.getGreen()) / (GMANColorSample)y_dist);
 
-    dc.setBlue((ev->color.getBlue() - sv->color.getBlue()) / 
-	      (GMANColorSample)y_dist);
-
+    dc.setBlue((ev->color.getBlue() - sv->color.getBlue()) / (GMANColorSample)y_dist);
 
     // scan convert edge
     edge = &(edge_list[sv->screen.y]);
 
-    for(j=sv->screen.y; j< ev->screen.y; j++) {
+    for (j = sv->screen.y; j < ev->screen.y; j++) {
 
       if (j >= 0 && j < sampleHeight) { // FIXME: Not necessary if polygon is clipped
-	// determine intersection info
-	if(edge->nisect < 2) {
-	  scan = &(edge->isect[edge->nisect++]);
+        // determine intersection info
+        if (edge->nisect < 2) {
+          scan = &(edge->isect[edge->nisect++]);
 
-	} else {
-	  // A third crossing cannot occur for the convex polygons the
-	  // clipper emits; overwrite isect[1] as this always did rather
-	  // than run off the end of the array.
-	  scan = &(edge->isect[1]);
-	}
+        } else {
+          // A third crossing cannot occur for the convex polygons the
+          // clipper emits; overwrite isect[1] as this always did rather
+          // than run off the end of the array.
+          scan = &(edge->isect[1]);
+        }
 
-	// insert edge intersection info
-	scan->x = ix;
-	scan->z = iz;
-	scan->color = ic;
-      }	
+        // insert edge intersection info
+        scan->x = ix;
+        scan->z = iz;
+        scan->color = ic;
+      }
 
       // update intersection info
       ix += dx;
@@ -319,36 +308,33 @@ void GMANZBufferRenderer::scanEdges(void) {
 
       edge++; // go to next edge list element
     }
-
   }
-
 }
-
 
 // draw edge list into the sample buffer, sample-testing each column
 void GMANZBufferRenderer::drawEdgeList(void) {
   int x, y;
   int sx, ex;
-  RtFloat dz;		// depth delta
-  RtFloat iz;		// pixel depth
-  RtFloat x_dist;	// x distance
+  RtFloat dz;     // depth delta
+  RtFloat iz;     // pixel depth
+  RtFloat x_dist; // x distance
 
-  GMANColor	dc;	// color delta
-  GMANColor	ic;	// pixel color
+  GMANColor dc; // color delta
+  GMANColor ic; // pixel color
 
-  EdgeInfo	*edge;	// edge info
-  ScanInfo	*ss;    // scan line start info
-  ScanInfo	*se;    // scan line end info
-  ScanInfo      *sw;    // scan line swap
+  EdgeInfo* edge; // edge info
+  ScanInfo* ss;   // scan line start info
+  ScanInfo* se;   // scan line end info
+  ScanInfo* sw;   // scan line swap
 
   edge = &(edge_list[ymin]);
-  for(y = ymin; y<=ymax; y++) {
+  for (y = ymin; y <= ymax; y++) {
 
     // Fewer than two intersections is no span. y == ymax always lands
     // here, and reading its isect[] before this guard was the
     // uninitialized read valgrind caught -- one per polygon, which is
     // what made the rendered image nondeterministic.
-    if(edge->nisect < 2) {
+    if (edge->nisect < 2) {
       edge++;
       continue;
     }
@@ -356,15 +342,17 @@ void GMANZBufferRenderer::drawEdgeList(void) {
     ss = &(edge->isect[0]);
     se = &(edge->isect[1]);
 
-    if(ss->x > se->x) {
-      sw = ss; ss = se; se = sw;
+    if (ss->x > se->x) {
+      sw = ss;
+      ss = se;
+      se = sw;
     }
 
-      // get scan line x coord
-    sx = (int) ss->x;
-    ex = (int) se->x;
+    // get scan line x coord
+    sx = (int)ss->x;
+    ex = (int)se->x;
 
-    if(sx < ex) {
+    if (sx < ex) {
 
       iz = ss->z;
       ic = ss->color;
@@ -379,44 +367,39 @@ void GMANZBufferRenderer::drawEdgeList(void) {
       // number of pixels this scanline covers, so a span narrower than
       // one pixel is clamped to one.
       x_dist = se->x - ss->x;
-      if (x_dist < 1.0) x_dist = 1.0;
+      if (x_dist < 1.0)
+        x_dist = 1.0;
 
       dz = (se->z - iz) / x_dist;
 
-      dc.setRed((se->color.getRed() -
-		 ss->color.getRed()) / (GMANColorSample) x_dist);
+      dc.setRed((se->color.getRed() - ss->color.getRed()) / (GMANColorSample)x_dist);
 
-      dc.setGreen((se->color.getGreen() -
-		   ss->color.getGreen()) / (GMANColorSample) x_dist);
+      dc.setGreen((se->color.getGreen() - ss->color.getGreen()) / (GMANColorSample)x_dist);
 
-      dc.setBlue((se->color.getBlue() -
-		  ss->color.getBlue()) / (GMANColorSample) x_dist);
+      dc.setBlue((se->color.getBlue() - ss->color.getBlue()) / (GMANColorSample)x_dist);
 
-      
       // Gouraud shade scan line, one sample at a time
-      for(x=sx; x <= ex; x++) {
+      for (x = sx; x <= ex; x++) {
 
-	if (x >= 0 && x < sampleWidth) { // FIXME: poly should already be clipped?
+        if (x >= 0 && x < sampleWidth) { // FIXME: poly should already be clipped?
 
-	  // Linear interpolation can overshoot [0,1] by a small amount at
-	  // the far end of a span (accumulated float error over many
-	  // += dc steps); GMANColorRGB's float->byte conversion has no
-	  // clamp of its own, so an unclamped color here is UB, not just
-	  // a visibly wrong pixel.
-	  GMANColor clamped(GMANClamp<GMANColorSample>(ic.getRed(), 0.0, 1.0),
-			     GMANClamp<GMANColorSample>(ic.getGreen(), 0.0, 1.0),
-			     GMANClamp<GMANColorSample>(ic.getBlue(), 0.0, 1.0));
-	  // The real per-sample visibility test: closer samples overwrite,
-	  // farther ones are dropped, exactly as the old per-pixel zbuffer
-	  // test did -- just at sample, not pixel, resolution.
-	  sampleBuffer->zTestAndSet(x, y, iz, clamped);
+          // Linear interpolation can overshoot [0,1] by a small amount at
+          // the far end of a span (accumulated float error over many
+          // += dc steps); GMANColorRGB's float->byte conversion has no
+          // clamp of its own, so an unclamped color here is UB, not just
+          // a visibly wrong pixel.
+          GMANColor clamped(GMANClamp<GMANColorSample>(ic.getRed(), 0.0, 1.0),
+                            GMANClamp<GMANColorSample>(ic.getGreen(), 0.0, 1.0),
+                            GMANClamp<GMANColorSample>(ic.getBlue(), 0.0, 1.0));
+          // The real per-sample visibility test: closer samples overwrite,
+          // farther ones are dropped, exactly as the old per-pixel zbuffer
+          // test did -- just at sample, not pixel, resolution.
+          sampleBuffer->zTestAndSet(x, y, iz, clamped);
+        }
 
-	}
-
-	// update pixel info
-	iz += dz;
-	ic += dc;
-
+        // update pixel info
+        iz += dz;
+        ic += dc;
       }
     }
 
@@ -424,17 +407,13 @@ void GMANZBufferRenderer::drawEdgeList(void) {
   }
 }
 
+RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
+                                   const GMANOptions& options, const GMANAttributes& /*attributes*/) {
 
-RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
-				   GMANViewingSystem  *viewingSys,
-				   const GMANOptions       &options,
-				   const GMANAttributes    &/*attributes*/)
- {
-
-  GMANFace	*face;
-  GMANSurface   *surf;
-  GMANBody      *body;
-  GMANOutputPolygon		outPoly;
+  GMANFace* face;
+  GMANSurface* surf;
+  GMANBody* body;
+  GMANOutputPolygon outPoly;
 
   width = frameBuffer->getWidth();
   height = frameBuffer->getHeight();
@@ -454,9 +433,9 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
   // GMANRenderManImpl::RiPixelSamples already rounds to an integer count
   // and clamps to [1,16]; GMANMax here is just the floor this renderer
   // itself relies on for a default-constructed GMANOptions.
-  const GMANOptions::PixelSamplesStruct &ps = options.getPixelSamples();
-  xsamples = GMANMax(1, (int) GMANRound(ps.xsamples));
-  ysamples = GMANMax(1, (int) GMANRound(ps.ysamples));
+  const GMANOptions::PixelSamplesStruct& ps = options.getPixelSamples();
+  xsamples = GMANMax(1, (int)GMANRound(ps.xsamples));
+  ysamples = GMANMax(1, (int)GMANRound(ps.ysamples));
   sampleWidth = width * xsamples;
   sampleHeight = height * ysamples;
 
@@ -466,42 +445,41 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
   // depth (the settled decision on uncovered samples): frameBuffer is
   // already erased to background at construction, so this is a plain read
   // of known-good state, not a new ordering dependency.
-  sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples,
-					  frameBuffer->getPixel(0, 0)));
+  sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, frameBuffer->getPixel(0, 0)));
 
   debug("GMANZBufferRenderer::render");
 
   // render each object
   GMANPrimitive* primitive = worldManager.getFirst();
-  while(primitive) {
+  while (primitive) {
 
-    GMANObject *object = dynamic_cast<GMANObject*>(primitive);
+    GMANObject* object = dynamic_cast<GMANObject*>(primitive);
 
     body = object->getBody();
-    while(body) {
+    while (body) {
       surf = body->getSurface();
-      while(surf) {
-  	  face = surf->getFace();
-	  while(face) {
-	    // do back face culling
-	    if(viewingSys->visible(face)) {
-	      outPoly.reset();
-	      // Projects each vertex through viewingSys->getProjMatrix(),
-	      // clips in homogeneous space against the 6-plane frustum,
-	      // and perspective-divides the surviving vertices into outPoly
-	      // -- so near-plane clipping happens here, before rasterization
-	      // ever sees a point behind the camera.
-	      clipper.clip(face, outPoly, viewingSys);
+      while (surf) {
+        face = surf->getFace();
+        while (face) {
+          // do back face culling
+          if (viewingSys->visible(face)) {
+            outPoly.reset();
+            // Projects each vertex through viewingSys->getProjMatrix(),
+            // clips in homogeneous space against the 6-plane frustum,
+            // and perspective-divides the surviving vertices into outPoly
+            // -- so near-plane clipping happens here, before rasterization
+            // ever sees a point behind the camera.
+            clipper.clip(face, outPoly, viewingSys);
 
-	      //render the face into the sample buffer
-	      if (outPoly.getNumVert() > 0) {
-		render(outPoly);
-	      }
-	    }
+            // render the face into the sample buffer
+            if (outPoly.getNumVert() > 0) {
+              render(outPoly);
+            }
+          }
 
-	    face = face->getNext();
-  	  }
-	surf = surf->getNext();
+          face = face->getNext();
+        }
+        surf = surf->getNext();
       }
       body = body->getNext();
     }
@@ -513,7 +491,7 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
   // below so GMANRenderer::getDepth's existing contract keeps working
   // unchanged for any external caller. The sample buffer stays the real
   // visibility test every polygon above went through.
-  const GMANOptions::PixelFilterStruct &pf = options.getPixelFilter();
+  const GMANOptions::PixelFilterStruct& pf = options.getPixelFilter();
   sampleBuffer->resolve(frameBuffer, pf.filterfunc, pf.xwidth, pf.ywidth);
 
   for (int y = 0; y < height; y++) {
@@ -524,19 +502,11 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer    *frameBuffer,
 }
 
 // world manager
-GMANWorldManager *GMANZBufferRenderer::getWorldManager(void) {
-  return &worldManager;
-}
+GMANWorldManager* GMANZBufferRenderer::getWorldManager(void) { return &worldManager; }
 
 // return its object manager
-GMANObjectManager *GMANZBufferRenderer::getObjectManager(void) {
-  return &objectManager;
-}
+GMANObjectManager* GMANZBufferRenderer::getObjectManager(void) { return &objectManager; }
 
-RtVoid GMANZBufferRenderer::setZBuffer(RtInt x, RtInt y, RtFloat val) {
-  zbuffer[y*width + x] = val;
-}
+RtVoid GMANZBufferRenderer::setZBuffer(RtInt x, RtInt y, RtFloat val) { zbuffer[y * width + x] = val; }
 
-RtFloat GMANZBufferRenderer::getZBuffer(RtInt x, RtInt y) const {
-  return zbuffer[y*width + x];
-}
+RtFloat GMANZBufferRenderer::getZBuffer(RtInt x, RtInt y) const { return zbuffer[y * width + x]; }

@@ -39,28 +39,24 @@
  * when RiSurface was never called (GMANAttributes::setSurface's fallback,
  * step 6).
  */
-class GMANMatte : public GMANSurfaceShader
-{
+class GMANMatte : public GMANSurfaceShader {
 public:
-  RtVoid illuminance (RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
+  RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
   /*
    * Output of a surface shader
    */
 
-  const GMANColor &computeCi(GMANSurfaceEnv &se);
-  const GMANColor &computeOi(GMANSurfaceEnv &se);
+  const GMANColor& computeCi(GMANSurfaceEnv& se);
+  const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANMatte::illuminance (RtInt /*i*/, GMANVector /*L*/,
-			       GMANColor /*Cl*/, GMANColor /*Ol*/)
-{
+RtVoid GMANMatte::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi below sums lights itself via env.ambient()/
   // diffuse(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor &GMANMatte::computeCi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANMatte::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
   RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
@@ -74,33 +70,26 @@ const GMANColor &GMANMatte::computeCi(GMANSurfaceEnv &se)
   diff.scale(kd);
   lit += diff;
 
-  ci = GMANColor(se.Cs.getRed() * se.Os.getRed() * lit.getRed(),
-		 se.Cs.getGreen() * se.Os.getGreen() * lit.getGreen(),
-		 se.Cs.getBlue() * se.Os.getBlue() * lit.getBlue());
+  ci = GMANColor(se.Cs.getRed() * se.Os.getRed() * lit.getRed(), se.Cs.getGreen() * se.Os.getGreen() * lit.getGreen(),
+                 se.Cs.getBlue() * se.Os.getBlue() * lit.getBlue());
   return ci;
 }
 
-const GMANColor &GMANMatte::computeOi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANMatte::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
 
 static GMANLoadableObjectInfo loadableInfo = {
-  "Matte surface shader",
-  "Ken Geis",
-  "Copyright (c) 2001 Ken Geis, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
-  "A GMAN SurfaceShader for matte surfaces.",
+    "Matte surface shader",
+    "Ken Geis",
+    "Copyright (c) 2001 Ken Geis, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
+    "A GMAN SurfaceShader for matte surfaces.",
 };
 
 static GMANMatte shader;
 
+extern "C" GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &loadableInfo;
-}
-
-extern "C" GMANShader *GMANLoadShader(void) {
-  return &shader;
-}
+extern "C" GMANShader* GMANLoadShader(void) { return &shader; }

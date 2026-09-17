@@ -46,30 +46,30 @@ namespace {
 
 namespace fs = std::filesystem;
 
-bool fileExists(const std::string &path) {
+bool fileExists(const std::string& path) {
   std::error_code ec;
   return fs::exists(path, ec);
 }
 
-std::string dirName(const std::string &path) {
+std::string dirName(const std::string& path) {
   fs::path p(path);
   fs::path dir = p.parent_path();
   return dir.empty() ? std::string(".") : dir.string();
 }
 
-std::string canonicalOrSelf(const std::string &path) {
+std::string canonicalOrSelf(const std::string& path) {
   std::error_code ec;
   fs::path canonical = fs::canonical(path, ec);
   return ec ? path : canonical.string();
 }
 
 // RiBasis's five standard bases, looked up by RISpec name.
-bool basisByName(const std::string &name, RtBasis &basis) {
+bool basisByName(const std::string& name, RtBasis& basis) {
   std::string lower = name;
   for (std::string::size_type i = 0; i < lower.size(); ++i) {
     lower[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lower[i])));
   }
-  const RtBasis *match = nullptr;
+  const RtBasis* match = nullptr;
   if (lower == "bezier") {
     match = &RiBezierBasis;
   } else if (lower == "b-spline" || lower == "bspline") {
@@ -91,7 +91,7 @@ bool basisByName(const std::string &name, RtBasis &basis) {
 // RiPixelFilter's five standard filters, looked up by RISpec name -- the
 // names GMANASCII::RiPixelFilter (libgmanrib/gmanascii.cpp) already writes
 // for the reverse direction.
-bool filterByName(const std::string &name, RtFilterFunc &filterfunc) {
+bool filterByName(const std::string& name, RtFilterFunc& filterfunc) {
   std::string lower = name;
   for (std::string::size_type i = 0; i < lower.size(); ++i) {
     lower[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lower[i])));
@@ -117,7 +117,7 @@ bool filterByName(const std::string &name, RtFilterFunc &filterfunc) {
 // unique_ptr's default deleter is delete[], matching the copy's allocation
 // exactly. A caller that needs a raw char* past this function's return
 // takes it with .release() and keeps releasing it with delete[] itself.
-std::unique_ptr<char[]> duplicateCString(const std::string &s) {
+std::unique_ptr<char[]> duplicateCString(const std::string& s) {
   std::unique_ptr<char[]> dup(new char[s.size() + 1]);
   std::memcpy(dup.get(), s.c_str(), s.size() + 1);
   return dup;
@@ -130,7 +130,7 @@ std::unique_ptr<char[]> duplicateCString(const std::string &s) {
  *
  */
 const int GMANRIBParse::nKeywords = 0;
-RtToken   *GMANRIBParse::KeywordTable=NULL;
+RtToken* GMANRIBParse::KeywordTable = NULL;
 
 // A RIB that reads itself, directly or through a chain of archives, is a
 // hang without a depth cap.
@@ -142,45 +142,31 @@ const int GMANRIBParse::maxArchiveDepth = 64;
  */
 
 // default constructor
-GMANRIBParse::GMANRIBParse(GMANRenderMan &renderman,
-			   const char *rib,
-			   RtToken name)
- : handlersRegistered(false),
-  renderMan(renderman),
-  ribStream(openRibStream(rib))
-{
+GMANRIBParse::GMANRIBParse(GMANRenderMan& renderman, const char* rib, RtToken name)
+    : handlersRegistered(false), renderMan(renderman), ribStream(openRibStream(rib)) {
   includeDirs.push_back(dirName(std::string(rib)));
   openArchives.push_back(canonicalOrSelf(std::string(rib)));
 
   renderMan.RiBegin(name);
-
 };
-
 
 // default destructor
-GMANRIBParse::~GMANRIBParse() {
-  renderMan.RiEnd();
-};
+GMANRIBParse::~GMANRIBParse() { renderMan.RiEnd(); };
 
-
-RtBoolean	GMANRIBParse::addHandler(RtToken	keyword,
-				       RIBHandler	handler) {
+RtBoolean GMANRIBParse::addHandler(RtToken keyword, RIBHandler handler) {
 
   // attempt to find keyword
   TokenHandlerMap::iterator handlerIter = tokenHandlerMap.find(keyword);
-  if(handlerIter == tokenHandlerMap.end()) {
+  if (handlerIter == tokenHandlerMap.end()) {
 
-    tokenHandlerMap.insert(TokenHandlerMap::value_type(keyword,
-						       handler));
+    tokenHandlerMap.insert(TokenHandlerMap::value_type(keyword, handler));
 
     return RI_TRUE;
   }
   return RI_FALSE;
-
 }
 
-
-RtVoid	GMANRIBParse::addDefaultHandlers(RtVoid) {
+RtVoid GMANRIBParse::addDefaultHandlers(RtVoid) {
 #if 0
   for(int i=0; i=nKeywords; i++) {
     // ignore return
@@ -189,16 +175,16 @@ RtVoid	GMANRIBParse::addDefaultHandlers(RtVoid) {
 #endif
 }
 
-RtVoid  GMANRIBParse::parse(RtVoid) {
+RtVoid GMANRIBParse::parse(RtVoid) {
 
   // add all handlers
-  if(!handlersRegistered) {
+  if (!handlersRegistered) {
     addHandlers();
 
     // add default handlers
     addDefaultHandlers();
 
-    handlersRegistered=true;
+    handlersRegistered = true;
   }
 
   parseStream();
@@ -206,12 +192,11 @@ RtVoid  GMANRIBParse::parse(RtVoid) {
   // The set of requests recognized but never rendered, reported once here
   // rather than as a warning per occurrence -- a RIB with 40,000
   // PointsPolygons calls must not produce 40,000 warnings.
-  if (! skippedRequests.empty()) {
+  if (!skippedRequests.empty()) {
     std::string list;
-    for (std::set<std::string>::const_iterator it = skippedRequests.begin();
-	 it != skippedRequests.end(); ++it) {
-      if (! list.empty()) {
-	list += ", ";
+    for (std::set<std::string>::const_iterator it = skippedRequests.begin(); it != skippedRequests.end(); ++it) {
+      if (!list.empty()) {
+        list += ", ";
       }
       list += *it;
     }
@@ -219,19 +204,19 @@ RtVoid  GMANRIBParse::parse(RtVoid) {
   }
 }
 
-RtVoid  GMANRIBParse::parseStream(RtVoid) {
+RtVoid GMANRIBParse::parseStream(RtVoid) {
 
   /* A GMANError thrown out of a request handler -- malformed parameter list,
    * bad token, unreadable archive -- unwinds past the end of the loop body,
    * so releasing the pending parameters there would miss every error path.
    * The guard runs on both. */
   struct PendingParamGuard {
-    GMANRIBParse *parser;
+    GMANRIBParse* parser;
     ~PendingParamGuard() { parser->freePendingParams(); }
   };
 
-  while(true) {
-    const GMANToken &tok = nextToken();
+  while (true) {
+    const GMANToken& tok = nextToken();
 
     if (tok.getType() == GMANToken::END_OF_FILE) {
       break;
@@ -239,7 +224,7 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
 
     PendingParamGuard guard{this};
 
-    switch(tok.getType()) {
+    switch (tok.getType()) {
     case GMANToken::STRING:
       debug("String token: \"{}\"", tok.getString().c_str());
       break;
@@ -618,7 +603,7 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
       break;
     default:
       debug("Unknown token type: {}", static_cast<int>(tok.getType()));
-      GMANError error(RIE_BADFILE,RIE_WARNING,"Unknown token in ribfile");
+      GMANError error(RIE_BADFILE, RIE_WARNING, "Unknown token in ribfile");
       throw(error);
       break;
     }
@@ -629,31 +614,30 @@ RtVoid  GMANRIBParse::parseStream(RtVoid) {
     // all. PendingParamGuard releases them as the iteration ends, by either
     // path.
   }
-
 }
 
-RtFloat GMANRIBParse::nextFloat () {
-  const GMANToken &tok = nextToken();
+RtFloat GMANRIBParse::nextFloat() {
+  const GMANToken& tok = nextToken();
 
   float real;
 
   if (tok.getType() == GMANToken::REAL) {
     real = tok.getReal();
   } else if (tok.getType() == GMANToken::LONGINT) {
-    real = (float) tok.getLongInt();
+    real = (float)tok.getLongInt();
   } else {
-    GMANError error(RIE_BADFILE,RIE_ERROR,"Expecting float token");
+    GMANError error(RIE_BADFILE, RIE_ERROR, "Expecting float token");
     throw(error);
   }
 
   return real;
 }
 
-RtInt GMANRIBParse::nextInt () {
-  const GMANToken &tok = nextToken();
+RtInt GMANRIBParse::nextInt() {
+  const GMANToken& tok = nextToken();
 
   if (tok.getType() != GMANToken::LONGINT) {
-    GMANError error(RIE_BADFILE,RIE_ERROR,"Expecting int token");
+    GMANError error(RIE_BADFILE, RIE_ERROR, "Expecting int token");
     throw(error);
   }
 
@@ -661,17 +645,17 @@ RtInt GMANRIBParse::nextInt () {
 }
 
 std::string GMANRIBParse::copyStringToken() {
-  const GMANToken &tok = nextToken();
+  const GMANToken& tok = nextToken();
 
   if (tok.getType() != GMANToken::STRING) {
-    GMANError error(RIE_BADFILE,RIE_ERROR,"Expecting string token");
+    GMANError error(RIE_BADFILE, RIE_ERROR, "Expecting string token");
     throw(error);
   }
 
   return tok.getString();
 }
 
-RtVoid  GMANRIBParse::parseOption(RtVoid) {
+RtVoid GMANRIBParse::parseOption(RtVoid) {
   const auto name = copyStringToken();
 
   RtInt n = 0;
@@ -682,10 +666,9 @@ RtVoid  GMANRIBParse::parseOption(RtVoid) {
   parseParameterList(n, tokens, parms, counts);
 
   renderMan.RiOptionV(name.c_str(), n, tokens, parms);
-
 }
 
-RtVoid  GMANRIBParse::parseDisplay(RtVoid) {
+RtVoid GMANRIBParse::parseDisplay(RtVoid) {
   const auto name = copyStringToken();
   const auto type = copyStringToken();
   const auto mode = copyStringToken();
@@ -699,12 +682,10 @@ RtVoid  GMANRIBParse::parseDisplay(RtVoid) {
 
   // RiDisplayV's name parameter is char* rather than const char* for
   // historical reasons; it only reads through it.
-  renderMan.RiDisplayV(const_cast<char *>(name.c_str()), type.c_str(),
-			 mode.c_str(), n, tokens, parms);
-
+  renderMan.RiDisplayV(const_cast<char*>(name.c_str()), type.c_str(), mode.c_str(), n, tokens, parms);
 }
 
-RtVoid  GMANRIBParse::parseFormat(RtVoid) {
+RtVoid GMANRIBParse::parseFormat(RtVoid) {
   RtInt xresolution = nextInt();
   RtInt yresolution = nextInt();
   RtFloat pixelaspectratio = nextFloat();
@@ -852,15 +833,15 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
 RtVoid GMANRIBParse::parseColor(RtVoid) {
   int number = 3;
-  //FIXME: Should actually get number from options
-  //renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
+  // FIXME: Should actually get number from options
+  // renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
 
   std::vector<RtFloat> color(number);
-  const GMANToken &lookAhead = peekToken();
+  const GMANToken& lookAhead = peekToken();
   if (lookAhead.getType() == GMANToken::LEFT_BRACKET) {
     GMANRIBParse::TokenVector tokenVector = parseArray();
     std::vector<RtFloat> values = tokenVector.toRtFloatVector();
-    int count = number < (int) tokenVector.size() ? number : (int) tokenVector.size();
+    int count = number < (int)tokenVector.size() ? number : (int)tokenVector.size();
     int i;
     for (i = 0; i < count; i++) {
       color[i] = values[i];
@@ -879,15 +860,15 @@ RtVoid GMANRIBParse::parseColor(RtVoid) {
 
 RtVoid GMANRIBParse::parseOpacity(RtVoid) {
   int number = 3;
-  //FIXME: Should actually get number from options
-  //renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
+  // FIXME: Should actually get number from options
+  // renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
 
   std::vector<RtFloat> color(number);
-  const GMANToken &lookAhead = peekToken();
+  const GMANToken& lookAhead = peekToken();
   if (lookAhead.getType() == GMANToken::LEFT_BRACKET) {
     GMANRIBParse::TokenVector tokenVector = parseArray();
     std::vector<RtFloat> values = tokenVector.toRtFloatVector();
-    int count = number < (int) tokenVector.size() ? number : (int) tokenVector.size();
+    int count = number < (int)tokenVector.size() ? number : (int)tokenVector.size();
     int i;
     for (i = 0; i < count; i++) {
       color[i] = values[i];
@@ -915,8 +896,7 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  RtLightHandle handle =
-    renderMan.RiLightSourceV(shadername.c_str(), n, tokens, parms);
+  RtLightHandle handle = renderMan.RiLightSourceV(shadername.c_str(), n, tokens, parms);
 
   lightHandleMap[sequence] = handle;
 }
@@ -945,8 +925,7 @@ RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) {
 RtVoid GMANRIBParse::parseTransform(RtVoid) {
   GMANRIBParse::TokenVector tokenVector = parseArray();
   if (tokenVector.size() != 16) {
-    GMANError error(RIE_SYNTAX, RIE_ERROR,
-		     "GMANRIBParse: Transform matrix must have 16 elements");
+    GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: Transform matrix must have 16 elements");
     throw error;
   }
   std::vector<RtFloat> values = tokenVector.toRtFloatVector();
@@ -964,8 +943,7 @@ RtVoid GMANRIBParse::parseTransform(RtVoid) {
 RtVoid GMANRIBParse::parseConcatTransform(RtVoid) {
   GMANRIBParse::TokenVector tokenVector = parseArray();
   if (tokenVector.size() != 16) {
-    GMANError error(RIE_SYNTAX, RIE_ERROR,
-		     "GMANRIBParse: ConcatTransform matrix must have 16 elements");
+    GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: ConcatTransform matrix must have 16 elements");
     throw error;
   }
   std::vector<RtFloat> values = tokenVector.toRtFloatVector();
@@ -1109,8 +1087,7 @@ RtVoid GMANRIBParse::parseTorus(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax,
-		      n, tokens, parms);
+  renderMan.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseDisk(RtVoid) {
@@ -1146,14 +1123,14 @@ RtVoid GMANRIBParse::parsePolygon(RtVoid) {
   // soft failure this codebase gives other malformed input.
   int nverts = 0;
   for (int i = 0; i < n; i++) {
-    if (! strcmp(tokens[i], "P")) {
-      for (const auto &pending : pendingParamValues) {
-	if (pending.value == parms[i]) {
-	  if (pending.count % 3 == 0) {
-	    nverts = pending.count / 3;
-	  }
-	  break;
-	}
+    if (!strcmp(tokens[i], "P")) {
+      for (const auto& pending : pendingParamValues) {
+        if (pending.value == parms[i]) {
+          if (pending.count % 3 == 0) {
+            nverts = pending.count / 3;
+          }
+          break;
+        }
       }
       break;
     }
@@ -1174,13 +1151,13 @@ RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  RtInt nloops = (RtInt) nvertsVector.size();
+  RtInt nloops = (RtInt)nvertsVector.size();
 
   // Dispatch beside the RI-mandated RiGeneralPolygonV(5 args): a RIB file
   // is not a trusted caller, so the array length parseParameterList
   // already knows rides along outside that fixed signature. See
   // gmanparameterlist.h.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
     impl->RiGeneralPolygonV(nloops, nverts.data(), n, tokens, parms, counts);
   } else {
     renderMan.RiGeneralPolygonV(nloops, nverts.data(), n, tokens, parms);
@@ -1198,7 +1175,7 @@ RtVoid GMANRIBParse::parsePoints(RtVoid) {
 
   int npoints = 0;
   for (int i = 0; i < n; i++) {
-    if (! strcmp(tokens[i], "P")) {
+    if (!strcmp(tokens[i], "P")) {
       // FIXME: Are arrays NULL terminated?  Can use that for length
     }
   }
@@ -1221,7 +1198,7 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  RtInt npolys = (RtInt) nvertsVector.size();
+  RtInt npolys = (RtInt)nvertsVector.size();
 
   // The RI signature carries no array length, so a RIB file -- not a
   // trusted caller -- gets its own structural check here: a verts array
@@ -1233,9 +1210,10 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
   for (RtInt i = 0; i < npolys; i++) {
     expectedVerts += nverts[i];
   }
-  if ((long long) vertsVector.size() != expectedVerts) {
+  if ((long long)vertsVector.size() != expectedVerts) {
     warning("PointsPolygons: verts length {} does not match nverts sum "
-	    "{}; ignoring.", vertsVector.size(), expectedVerts);
+            "{}; ignoring.",
+            vertsVector.size(), expectedVerts);
     return;
   }
 
@@ -1243,12 +1221,10 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
   // is not a trusted caller, so the array length parseParameterList
   // already knows rides along outside that fixed signature. See
   // parseGeneralPolygon's own comment.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
-    impl->RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n, tokens,
-			    parms, counts);
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n, tokens, parms, counts);
   } else {
-    renderMan.RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n,
-				 tokens, parms);
+    renderMan.RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n, tokens, parms);
   }
 }
 
@@ -1270,7 +1246,7 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  RtInt npolys = (RtInt) nloopsVector.size();
+  RtInt npolys = (RtInt)nloopsVector.size();
 
   // nverts' own required length is nloops' sum, and verts' own required
   // length is nverts' sum -- two structural checks this request carries
@@ -1279,9 +1255,10 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
   for (RtInt i = 0; i < npolys; i++) {
     expectedNverts += nloops[i];
   }
-  if ((long long) nvertsVector.size() != expectedNverts) {
+  if ((long long)nvertsVector.size() != expectedNverts) {
     warning("PointsGeneralPolygons: nverts length {} does not match "
-	    "nloops sum {}; ignoring.", nvertsVector.size(), expectedNverts);
+            "nloops sum {}; ignoring.",
+            nvertsVector.size(), expectedNverts);
     return;
   }
 
@@ -1289,18 +1266,17 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
   for (std::size_t i = 0; i < nvertsVector.size(); i++) {
     expectedVerts += nverts[i];
   }
-  if ((long long) vertsVector.size() != expectedVerts) {
+  if ((long long)vertsVector.size() != expectedVerts) {
     warning("PointsGeneralPolygons: verts length {} does not match "
-	    "nverts sum {}; ignoring.", vertsVector.size(), expectedVerts);
+            "nverts sum {}; ignoring.",
+            vertsVector.size(), expectedVerts);
     return;
   }
 
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
-    impl->RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(),
-				   verts.data(), n, tokens, parms, counts);
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(), verts.data(), n, tokens, parms, counts);
   } else {
-    renderMan.RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(),
-					verts.data(), n, tokens, parms);
+    renderMan.RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(), verts.data(), n, tokens, parms);
   }
 }
 
@@ -1318,7 +1294,7 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) {
   // Dispatch beside the RI-mandated RiPatchV(4 args): a RIB file is not a
   // trusted caller, so the array length parseParameterList already knows
   // rides along outside that fixed signature. See gmanparameterlist.h.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
     impl->RiPatchV(type.c_str(), n, tokens, parms, counts);
   } else {
     renderMan.RiPatchV(type.c_str(), n, tokens, parms);
@@ -1353,26 +1329,27 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
   // check here -- RiNuPatchV has no way to know that length either. Every
   // array is already consumed above, so the token stream stays in sync
   // either way.
-  if ((long long) uknotVector.size() != (long long) nu + uorder) {
+  if ((long long)uknotVector.size() != (long long)nu + uorder) {
     warning("NuPatch: uknot length {} does not match nu + uorder = {}; "
-	    "ignoring.", uknotVector.size(), (long long) nu + uorder);
+            "ignoring.",
+            uknotVector.size(), (long long)nu + uorder);
     return;
   }
-  if ((long long) vknotVector.size() != (long long) nv + vorder) {
+  if ((long long)vknotVector.size() != (long long)nv + vorder) {
     warning("NuPatch: vknot length {} does not match nv + vorder = {}; "
-	    "ignoring.", vknotVector.size(), (long long) nv + vorder);
+            "ignoring.",
+            vknotVector.size(), (long long)nv + vorder);
     return;
   }
 
   // Dispatch beside the RI-mandated RiNuPatchV(13 args): a RIB file is not
   // a trusted caller, so the array length parseParameterList already
   // knows rides along outside that fixed signature. See parsePatch.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
-    impl->RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder,
-		      vknot.data(), vmin, vmax, n, tokens, parms, counts);
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder, vknot.data(), vmin, vmax, n, tokens, parms,
+                     counts);
   } else {
-    renderMan.RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder,
-			  vknot.data(), vmin, vmax, n, tokens, parms);
+    renderMan.RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder, vknot.data(), vmin, vmax, n, tokens, parms);
   }
 }
 
@@ -1393,12 +1370,10 @@ RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
 
   // See parsePatch: dispatch beside the RI-mandated RiPatchMeshV(7 args)
   // when the concrete impl is available, carrying the supplied counts.
-  if (GMANRenderManImpl *impl = dynamic_cast<GMANRenderManImpl *>(&renderMan)) {
-    impl->RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(),
-			n, tokens, parms, counts);
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(), n, tokens, parms, counts);
   } else {
-    renderMan.RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(),
-			     n, tokens, parms);
+    renderMan.RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(), n, tokens, parms);
   }
 }
 
@@ -1428,16 +1403,12 @@ RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
   if (requestedPath.is_absolute()) {
     resolved = requested;
   } else {
-    std::string candidate = includeDirs.empty()
-      ? requested
-      : includeDirs.back() + "/" + requested;
+    std::string candidate = includeDirs.empty() ? requested : includeDirs.back() + "/" + requested;
     resolved = fileExists(candidate) ? candidate : requested;
   }
 
-  if (! fileExists(resolved)) {
-    GMANError error(RIE_NOFILE, RIE_ERROR,
-		     ("GMANRIBParse: cannot find archive \"" + requested +
-		      "\"").c_str());
+  if (!fileExists(resolved)) {
+    GMANError error(RIE_NOFILE, RIE_ERROR, ("GMANRIBParse: cannot find archive \"" + requested + "\"").c_str());
     throw error;
   }
 
@@ -1445,16 +1416,13 @@ RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
 
   if (static_cast<int>(openArchives.size()) >= maxArchiveDepth) {
     GMANError error(RIE_LIMIT, RIE_ERROR,
-		     "GMANRIBParse: ReadArchive nesting too deep "
-		     "(possible cycle)");
+                    "GMANRIBParse: ReadArchive nesting too deep "
+                    "(possible cycle)");
     throw error;
   }
-  for (std::vector<std::string>::const_iterator it = openArchives.begin();
-       it != openArchives.end(); ++it) {
+  for (std::vector<std::string>::const_iterator it = openArchives.begin(); it != openArchives.end(); ++it) {
     if (*it == canonicalPath) {
-      GMANError error(RIE_LIMIT, RIE_ERROR,
-		       ("GMANRIBParse: ReadArchive cycle at \"" + requested +
-			"\"").c_str());
+      GMANError error(RIE_LIMIT, RIE_ERROR, ("GMANRIBParse: ReadArchive cycle at \"" + requested + "\"").c_str());
       throw error;
     }
   }
@@ -1469,7 +1437,7 @@ RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
 
   try {
     parseStream();
-  } catch (GMANError &) {
+  } catch (GMANError&) {
     includeDirs.pop_back();
     openArchives.pop_back();
     ribStream = std::move(savedStream);
@@ -1492,9 +1460,7 @@ RtVoid GMANRIBParse::parseMotionBegin(RtVoid) {
   renderMan.RiMotionBeginV(n, times.data());
 }
 
-RtVoid GMANRIBParse::parseMotionEnd(RtVoid) {
-  renderMan.RiMotionEnd();
-}
+RtVoid GMANRIBParse::parseMotionEnd(RtVoid) { renderMan.RiMotionEnd(); }
 
 RtVoid GMANRIBParse::parseObjectBegin(RtVoid) {
 
@@ -1504,9 +1470,7 @@ RtVoid GMANRIBParse::parseObjectBegin(RtVoid) {
   objectHandleMap[sequence] = handle;
 }
 
-RtVoid GMANRIBParse::parseObjectEnd(RtVoid) {
-  renderMan.RiObjectEnd();
-}
+RtVoid GMANRIBParse::parseObjectEnd(RtVoid) { renderMan.RiObjectEnd(); }
 
 RtVoid GMANRIBParse::parseObjectInstance(RtVoid) {
 
@@ -1522,52 +1486,48 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
   RtBasis ubasis;
   RtBasis vbasis;
 
-  const GMANToken &uLook = peekToken();
+  const GMANToken& uLook = peekToken();
   if (uLook.getType() == GMANToken::LEFT_BRACKET) {
     GMANRIBParse::TokenVector tokenVector = parseArray();
     if (tokenVector.size() != 16) {
-      GMANError error(RIE_SYNTAX, RIE_ERROR,
-		       "GMANRIBParse: inline basis matrix must have 16 elements");
+      GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: inline basis matrix must have 16 elements");
       throw error;
     }
     std::vector<RtFloat> values = tokenVector.toRtFloatVector();
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
-	ubasis[i][j] = values[i * 4 + j];
+        ubasis[i][j] = values[i * 4 + j];
       }
     }
   } else {
     const auto uname = copyStringToken();
     bool found = basisByName(uname, ubasis);
-    if (! found) {
-      std::string msg = std::string("GMANRIBParse: unknown basis \"") +
-	uname + "\"";
+    if (!found) {
+      std::string msg = std::string("GMANRIBParse: unknown basis \"") + uname + "\"";
       GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
       throw error;
     }
   }
   RtInt ustep = nextInt();
 
-  const GMANToken &vLook = peekToken();
+  const GMANToken& vLook = peekToken();
   if (vLook.getType() == GMANToken::LEFT_BRACKET) {
     GMANRIBParse::TokenVector tokenVector = parseArray();
     if (tokenVector.size() != 16) {
-      GMANError error(RIE_SYNTAX, RIE_ERROR,
-		       "GMANRIBParse: inline basis matrix must have 16 elements");
+      GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: inline basis matrix must have 16 elements");
       throw error;
     }
     std::vector<RtFloat> values = tokenVector.toRtFloatVector();
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
-	vbasis[i][j] = values[i * 4 + j];
+        vbasis[i][j] = values[i * 4 + j];
       }
     }
   } else {
     const auto vname = copyStringToken();
     bool found = basisByName(vname, vbasis);
-    if (! found) {
-      std::string msg = std::string("GMANRIBParse: unknown basis \"") +
-	vname + "\"";
+    if (!found) {
+      std::string msg = std::string("GMANRIBParse: unknown basis \"") + vname + "\"";
       GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
       throw error;
     }
@@ -1619,7 +1579,7 @@ RtVoid GMANRIBParse::parseImager(RtVoid) {
   parseParameterList(n, tokens, parms, counts);
 
   // FIXME: implement some imagers
-  //renderMan.RiImagerV(name.c_str(), n, tokens, parms);
+  // renderMan.RiImagerV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
@@ -1628,7 +1588,7 @@ RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
   int onoff = nextInt();
 
   RtLightHandle handle = lightHandleMap[sequence];
-  renderMan.RiIlluminate(handle, onoff==0?false:true);
+  renderMan.RiIlluminate(handle, onoff == 0 ? false : true);
 }
 
 // **************************************************************
@@ -1640,14 +1600,14 @@ RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
 
 RtVoid GMANRIBParse::parseCurves(RtVoid) {
   // Curves type ncurves[] wrap paramlist
-  (void) copyStringToken(); // type
+  (void)copyStringToken(); // type
   GMANRIBParse::TokenVector ncurves = parseArray();
-  (void) copyStringToken(); // wrap
+  (void)copyStringToken(); // wrap
 
   RtInt n = 0;
-  RtToken *tokens;
-  RtPointer *parms;
-  RtInt *counts;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
   parseParameterList(n, tokens, parms, counts);
 }
 
@@ -1659,15 +1619,15 @@ RtVoid GMANRIBParse::parseBlobby(RtVoid) {
   GMANRIBParse::TokenVector strs = parseArray();
 
   RtInt n = 0;
-  RtToken *tokens;
-  RtPointer *parms;
-  RtInt *counts;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
   parseParameterList(n, tokens, parms, counts);
 }
 
 RtVoid GMANRIBParse::parseSubdivisionMesh(RtVoid) {
   // SubdivisionMesh scheme nvertices[] vertices[] tags[] nargs[] intargs[] floatargs[] paramlist
-  (void) copyStringToken(); // scheme
+  (void)copyStringToken(); // scheme
   GMANRIBParse::TokenVector nvertices = parseArray();
   GMANRIBParse::TokenVector vertices = parseArray();
   GMANRIBParse::TokenVector tags = parseArray();
@@ -1676,22 +1636,22 @@ RtVoid GMANRIBParse::parseSubdivisionMesh(RtVoid) {
   GMANRIBParse::TokenVector floatargs = parseArray();
 
   RtInt n = 0;
-  RtToken *tokens;
-  RtPointer *parms;
-  RtInt *counts;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
   parseParameterList(n, tokens, parms, counts);
 }
 
 RtVoid GMANRIBParse::parseProcedural(RtVoid) {
   // Procedural procname procargs[] bound[6] -- no trailing paramlist
-  (void) copyStringToken(); // procname
+  (void)copyStringToken(); // procname
   GMANRIBParse::TokenVector procargs = parseArray();
   GMANRIBParse::TokenVector bound = parseArray();
 }
 
 RtVoid GMANRIBParse::parseSolidBegin(RtVoid) {
   // SolidBegin "type"
-  (void) copyStringToken(); // type
+  (void)copyStringToken(); // type
 }
 
 RtVoid GMANRIBParse::parseSolidEnd(RtVoid) {
@@ -1744,13 +1704,13 @@ RtVoid GMANRIBParse::parseTrimCurve(RtVoid) {
 
 RtVoid GMANRIBParse::parseErrorHandler(RtVoid) {
   // ErrorHandler "handler"
-  (void) copyStringToken(); // handler
+  (void)copyStringToken(); // handler
 }
 
 RtVoid GMANRIBParse::parseArchiveRecord(RtVoid) {
   // ArchiveRecord "type" "text"
-  (void) copyStringToken(); // type
-  (void) copyStringToken(); // text
+  (void)copyStringToken(); // type
+  (void)copyStringToken(); // text
 }
 
 RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
@@ -1764,41 +1724,38 @@ RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
   RtFloat twidth = nextFloat();
 
   RtFilterFunc filterfunc;
-  if (! filterByName(filterName, filterfunc)) {
-    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") +
-      filterName + "\"";
+  if (!filterByName(filterName, filterfunc)) {
+    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") + filterName + "\"";
     GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
     throw error;
   }
 
   RtInt n = 0;
-  RtToken *tokens;
-  RtPointer *parms;
-  RtInt *counts;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
   parseParameterList(n, tokens, parms, counts);
 
   // RiMakeTextureV's pic/tex parameters are char* rather than const
   // char* for historical reasons; it only reads through them.
-  renderMan.RiMakeTextureV(const_cast<char *>(picture.c_str()),
-                             const_cast<char *>(texture.c_str()),
-                             swrap.c_str(), twrap.c_str(), filterfunc,
-                             swidth, twidth, n, tokens, parms);
+  renderMan.RiMakeTextureV(const_cast<char*>(picture.c_str()), const_cast<char*>(texture.c_str()), swrap.c_str(),
+                           twrap.c_str(), filterfunc, swidth, twidth, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseMakeBump(RtVoid) {
   // Same grammar as MakeTexture.
-  (void) copyStringToken(); // picture
-  (void) copyStringToken(); // texture
-  (void) copyStringToken(); // swrap
-  (void) copyStringToken(); // twrap
-  (void) copyStringToken(); // filter
+  (void)copyStringToken(); // picture
+  (void)copyStringToken(); // texture
+  (void)copyStringToken(); // swrap
+  (void)copyStringToken(); // twrap
+  (void)copyStringToken(); // filter
   nextFloat();
   nextFloat();
 
   RtInt n = 0;
-  RtToken *tokens;
-  RtPointer *parms;
-  RtInt *counts;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
   parseParameterList(n, tokens, parms, counts);
 }
 
@@ -1811,68 +1768,65 @@ RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
   RtFloat twidth = nextFloat();
 
   RtFilterFunc filterfunc;
-  if (! filterByName(filterName, filterfunc)) {
-    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") +
-      filterName + "\"";
+  if (!filterByName(filterName, filterfunc)) {
+    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") + filterName + "\"";
     GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
     throw error;
   }
 
   RtInt n = 0;
-  RtToken *tokens;
-  RtPointer *parms;
-  RtInt *counts;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
   parseParameterList(n, tokens, parms, counts);
 
   // RiMakeLatLongEnvironmentV's pic/tex parameters are char* rather than
   // const char* for historical reasons; it only reads through them.
-  renderMan.RiMakeLatLongEnvironmentV(const_cast<char *>(picture.c_str()),
-                                        const_cast<char *>(texture.c_str()),
-                                        filterfunc, swidth, twidth, n, tokens,
-                                        parms);
+  renderMan.RiMakeLatLongEnvironmentV(const_cast<char*>(picture.c_str()), const_cast<char*>(texture.c_str()),
+                                      filterfunc, swidth, twidth, n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseMakeCubeFaceEnvironment(RtVoid) {
   // MakeCubeFaceEnvironment px nx py ny pz nz texture fov filter swidth twidth paramlist
-  (void) copyStringToken(); // px
-  (void) copyStringToken(); // nx
-  (void) copyStringToken(); // py
-  (void) copyStringToken(); // ny
-  (void) copyStringToken(); // pz
-  (void) copyStringToken(); // nz
-  (void) copyStringToken(); // texture
-  nextFloat(); // fov
-  (void) copyStringToken(); // filter
+  (void)copyStringToken(); // px
+  (void)copyStringToken(); // nx
+  (void)copyStringToken(); // py
+  (void)copyStringToken(); // ny
+  (void)copyStringToken(); // pz
+  (void)copyStringToken(); // nz
+  (void)copyStringToken(); // texture
+  nextFloat();             // fov
+  (void)copyStringToken(); // filter
   nextFloat();
   nextFloat();
 
   RtInt n = 0;
-  RtToken *tokens;
-  RtPointer *parms;
-  RtInt *counts;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
   parseParameterList(n, tokens, parms, counts);
 }
 
 RtVoid GMANRIBParse::parseMakeShadow(RtVoid) {
   // MakeShadow picture texture paramlist
-  (void) copyStringToken(); // picture
-  (void) copyStringToken(); // texture
+  (void)copyStringToken(); // picture
+  (void)copyStringToken(); // texture
 
   RtInt n = 0;
-  RtToken *tokens;
-  RtPointer *parms;
-  RtInt *counts;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
   parseParameterList(n, tokens, parms, counts);
 }
 
 RtVoid GMANRIBParse::parseIfBegin(RtVoid) {
   // IfBegin "expression"
-  (void) copyStringToken(); // expression
+  (void)copyStringToken(); // expression
 }
 
 RtVoid GMANRIBParse::parseElseIf(RtVoid) {
   // ElseIf "expression"
-  (void) copyStringToken(); // expression
+  (void)copyStringToken(); // expression
 }
 
 RtVoid GMANRIBParse::parseElse(RtVoid) {
@@ -1891,9 +1845,8 @@ RtVoid GMANRIBParse::parsePixelFilter(RtVoid) {
   RtFloat ywidth = nextFloat();
 
   RtFilterFunc filterfunc;
-  if (! filterByName(name, filterfunc)) {
-    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") +
-      name + "\"";
+  if (!filterByName(name, filterfunc)) {
+    std::string msg = std::string("GMANRIBParse: unknown pixel filter \"") + name + "\"";
     GMANError error(RIE_BADTOKEN, RIE_ERROR, msg.c_str());
     throw error;
   }
@@ -1901,7 +1854,7 @@ RtVoid GMANRIBParse::parsePixelFilter(RtVoid) {
   renderMan.RiPixelFilter(filterfunc, xwidth, ywidth);
 }
 
-RtVoid GMANRIBParse::skipUnknownRequest(const std::string &name) {
+RtVoid GMANRIBParse::skipUnknownRequest(const std::string& name) {
   if (skippedRequests.insert(name).second) {
     warning("RIB: skipping unrecognized request \"{}\"", name.c_str());
   }
@@ -1911,17 +1864,14 @@ RtVoid GMANRIBParse::skipUnknownRequest(const std::string &name) {
   // fool this into stopping early.
   int depth = 0;
   while (true) {
-    const GMANToken &tok = peekToken();
+    const GMANToken& tok = peekToken();
     GMANToken::TokenType type = tok.getType();
 
     if (type == GMANToken::END_OF_FILE) {
       break;
     }
-    if (depth == 0 &&
-	type != GMANToken::LEFT_BRACKET &&
-	type != GMANToken::STRING &&
-	type != GMANToken::REAL &&
-	type != GMANToken::LONGINT) {
+    if (depth == 0 && type != GMANToken::LEFT_BRACKET && type != GMANToken::STRING && type != GMANToken::REAL &&
+        type != GMANToken::LONGINT) {
       break;
     }
 
@@ -1930,7 +1880,7 @@ RtVoid GMANRIBParse::skipUnknownRequest(const std::string &name) {
       ++depth;
     } else if (consumed.getType() == GMANToken::RIGHT_BRACKET) {
       if (depth > 0) {
-	--depth;
+        --depth;
       }
     }
   }
@@ -1947,8 +1897,7 @@ GMANRIBParse::TokenVector GMANRIBParse::parseArray(RtVoid) {
       break;
     }
     if (tok.getType() == GMANToken::END_OF_FILE) {
-      GMANError error(RIE_SYNTAX, RIE_ERROR,
-		       "GMANRIBParse: unterminated array (missing ']')");
+      GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: unterminated array (missing ']')");
       throw error;
     }
     tokens.insert(tokens.end(), tok);
@@ -1957,8 +1906,7 @@ GMANRIBParse::TokenVector GMANRIBParse::parseArray(RtVoid) {
   return tokens;
 }
 
-RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
-					RtPointer* &parms, RtInt* &counts) {
+RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& parms, RtInt*& counts) {
   // The supplied element count travels with its value through the map:
   // paramMap emits in key order, not push order, so a counts array built
   // separately in push order would not line up with tokens/parms below.
@@ -1974,18 +1922,18 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
   // buffer, so the pointer stays valid once this struct is in the
   // (possibly reallocated) pendingParamValues vector.
   auto pushFloatValue = [this](std::vector<RtFloat> values) -> RtPointer {
-    const unsigned int count = (unsigned int) values.size();
+    const unsigned int count = (unsigned int)values.size();
     pendingParamValues.push_back({nullptr, false, count, std::move(values)});
-    RtFloat *data = pendingParamValues.back().floatStorage.data();
-    pendingParamValues.back().value = (RtPointer) data;
-    return (RtPointer) data;
+    RtFloat* data = pendingParamValues.back().floatStorage.data();
+    pendingParamValues.back().value = (RtPointer)data;
+    return (RtPointer)data;
   };
 
   while (true) {
-    const GMANToken &tok = peekToken();
+    const GMANToken& tok = peekToken();
     if (tok.getType() != GMANToken::STRING) {
-      //debug("While parsing parameter list, got token type: "
-      //     << tok.getType());
+      // debug("While parsing parameter list, got token type: "
+      //      << tok.getType());
       break;
     }
 
@@ -1995,27 +1943,26 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
     // about to be destroyed. freePendingParams releases it once the
     // request that owns this parameter list has been dispatched.
     GMANToken keyToken = nextToken();
-    const std::string &keyStr = keyToken.getString();
+    const std::string& keyStr = keyToken.getString();
     pendingParamKeys.push_back(duplicateCString(keyStr));
-    char *key = pendingParamKeys.back().get();
+    char* key = pendingParamKeys.back().get();
 
-    const GMANToken &lookAhead = peekToken();
+    const GMANToken& lookAhead = peekToken();
     if (lookAhead.getType() == GMANToken::LEFT_BRACKET) {
       GMANRIBParse::TokenVector tokenVector = parseArray();
-      const bool isStringArray = ! tokenVector.empty() &&
-	tokenVector[0].getType() == GMANToken::STRING;
-      const unsigned int count = (unsigned int) tokenVector.size();
+      const bool isStringArray = !tokenVector.empty() && tokenVector[0].getType() == GMANToken::STRING;
+      const unsigned int count = (unsigned int)tokenVector.size();
       if (isStringArray) {
-	RtPointer value = (RtPointer) tokenVector.toRtTokenArray();
-	paramMap[key] = {value, count};
-	pendingParamValues.push_back({value, true, count, {}});
+        RtPointer value = (RtPointer)tokenVector.toRtTokenArray();
+        paramMap[key] = {value, count};
+        pendingParamValues.push_back({value, true, count, {}});
       } else {
-	RtPointer value = pushFloatValue(tokenVector.toRtFloatVector());
-	paramMap[key] = {value, count};
+        RtPointer value = pushFloatValue(tokenVector.toRtFloatVector());
+        paramMap[key] = {value, count};
       }
     } else if (lookAhead.getType() == GMANToken::LONGINT) {
       GMANToken token = nextToken();
-      RtPointer value = pushFloatValue({(RtFloat) token.getLongInt()});
+      RtPointer value = pushFloatValue({(RtFloat)token.getLongInt()});
       paramMap[key] = {value, 1};
     } else if (lookAhead.getType() == GMANToken::REAL) {
       GMANToken token = nextToken();
@@ -2028,11 +1975,11 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
       // registered with pendingParamValues the same way parseArray's string
       // arrays are, rather than kept as a std::string here.
       const auto str = copyStringToken();
-      char *dup = duplicateCString(str).release();
-      RtToken *value = new RtToken[1];
+      char* dup = duplicateCString(str).release();
+      RtToken* value = new RtToken[1];
       value[0] = dup;
-      paramMap[key] = {(RtPointer) value, 1};
-      pendingParamValues.push_back({(RtPointer) value, true, 1, {}});
+      paramMap[key] = {(RtPointer)value, 1};
+      pendingParamValues.push_back({(RtPointer)value, true, 1, {}});
     }
   }
 
@@ -2044,7 +1991,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
   for (unsigned int i = 0; cur != paramMap.end(); i++, cur++) {
     tokens[i] = cur->first;
     parms[i] = cur->second.value;
-    counts[i] = (RtInt) cur->second.count;
+    counts[i] = (RtInt)cur->second.count;
   }
   pendingTokenArrays.push_back(tokens);
   pendingParmArrays.push_back(parms);
@@ -2054,41 +2001,36 @@ RtVoid GMANRIBParse::parseParameterList(RtInt &n, RtToken* &tokens,
 RtVoid GMANRIBParse::freePendingParams(RtVoid) {
   pendingParamKeys.clear();
 
-  for (std::vector<PendingParamValue>::iterator it = pendingParamValues.begin();
-       it != pendingParamValues.end(); ++it) {
+  for (std::vector<PendingParamValue>::iterator it = pendingParamValues.begin(); it != pendingParamValues.end(); ++it) {
     if (it->isStringArray) {
-      RtToken *strings = (RtToken *) it->value;
+      RtToken* strings = (RtToken*)it->value;
       for (unsigned int i = 0; i < it->count; i++) {
-	delete [] (char *) strings[i];
+        delete[] (char*)strings[i];
       }
-      delete [] strings;
+      delete[] strings;
     }
     // Non-string values live in floatStorage, released by its own
     // destructor when pendingParamValues.clear() runs below.
   }
   pendingParamValues.clear();
 
-  for (std::vector<RtToken *>::iterator it = pendingTokenArrays.begin();
-       it != pendingTokenArrays.end(); ++it) {
-    delete [] *it;
+  for (std::vector<RtToken*>::iterator it = pendingTokenArrays.begin(); it != pendingTokenArrays.end(); ++it) {
+    delete[] *it;
   }
   pendingTokenArrays.clear();
 
-  for (std::vector<RtPointer *>::iterator it = pendingParmArrays.begin();
-       it != pendingParmArrays.end(); ++it) {
-    delete [] *it;
+  for (std::vector<RtPointer*>::iterator it = pendingParmArrays.begin(); it != pendingParmArrays.end(); ++it) {
+    delete[] *it;
   }
   pendingParmArrays.clear();
 
-  for (std::vector<RtInt *>::iterator it = pendingCountArrays.begin();
-       it != pendingCountArrays.end(); ++it) {
-    delete [] *it;
+  for (std::vector<RtInt*>::iterator it = pendingCountArrays.begin(); it != pendingCountArrays.end(); ++it) {
+    delete[] *it;
   }
   pendingCountArrays.clear();
 }
 
-
-const GMANToken &GMANRIBParse::nextToken() {
+const GMANToken& GMANRIBParse::nextToken() {
   if (lookAheadToken.getType() == GMANToken::UNKNOWN) {
     currentToken = tokenizer.getNext(*ribStream);
   } else {
@@ -2099,7 +2041,7 @@ const GMANToken &GMANRIBParse::nextToken() {
   return currentToken;
 }
 
-const GMANToken &GMANRIBParse::peekToken() {
+const GMANToken& GMANRIBParse::peekToken() {
   if (lookAheadToken.getType() == GMANToken::UNKNOWN) {
     lookAheadToken = tokenizer.getNext(*ribStream);
   }
@@ -2107,28 +2049,24 @@ const GMANToken &GMANRIBParse::peekToken() {
   return lookAheadToken;
 }
 
-std::unique_ptr<std::istream> GMANRIBParse::openRibStream(const std::string &path) {
+std::unique_ptr<std::istream> GMANRIBParse::openRibStream(const std::string& path) {
   std::ifstream probe(path, std::ios::binary);
-  if (! probe) {
-    GMANError error(RIE_NOFILE, RIE_ERROR,
-		     ("GMANRIBParse: cannot open \"" + path + "\"").c_str());
+  if (!probe) {
+    GMANError error(RIE_NOFILE, RIE_ERROR, ("GMANRIBParse: cannot open \"" + path + "\"").c_str());
     throw error;
   }
   unsigned char magic[2] = {0, 0};
-  probe.read(reinterpret_cast<char *>(magic), 2);
+  probe.read(reinterpret_cast<char*>(magic), 2);
   probe.close();
 
   const bool isGzip = (magic[0] == 0x1f) && (magic[1] == 0x8b);
-  if (! isGzip) {
-    return std::unique_ptr<std::istream>(
-      new std::ifstream(path, std::ios::binary));
+  if (!isGzip) {
+    return std::unique_ptr<std::istream>(new std::ifstream(path, std::ios::binary));
   }
 
   gzFile gz = gzopen(path.c_str(), "rb");
   if (gz == nullptr) {
-    GMANError error(RIE_NOFILE, RIE_ERROR,
-		     ("GMANRIBParse: cannot open gzip archive \"" + path +
-		      "\"").c_str());
+    GMANError error(RIE_NOFILE, RIE_ERROR, ("GMANRIBParse: cannot open gzip archive \"" + path + "\"").c_str());
     throw error;
   }
 
@@ -2142,27 +2080,24 @@ std::unique_ptr<std::istream> GMANRIBParse::openRibStream(const std::string &pat
   char chunk[65536];
   int bytesRead = 0;
   while ((bytesRead = gzread(gz, chunk, sizeof(chunk))) > 0) {
-    if (decompressed.size() + static_cast<std::string::size_type>(bytesRead) >
-	maxDecompressed) {
+    if (decompressed.size() + static_cast<std::string::size_type>(bytesRead) > maxDecompressed) {
       gzclose(gz);
       GMANError error(RIE_BADFILE, RIE_ERROR,
-		       ("GMANRIBParse: gzip archive \"" + path +
-			"\" exceeds the decompression limit").c_str());
+                      ("GMANRIBParse: gzip archive \"" + path + "\" exceeds the decompression limit").c_str());
       throw error;
     }
     decompressed.append(chunk, static_cast<std::string::size_type>(bytesRead));
   }
 
   int gzErrNum = Z_OK;
-  const char *gzErrStr = gzerror(gz, &gzErrNum);
+  const char* gzErrStr = gzerror(gz, &gzErrNum);
   const bool hadError = (bytesRead < 0) || (gzErrNum != Z_OK);
   std::string errMsg = hadError && gzErrStr != nullptr ? std::string(gzErrStr) : std::string();
   gzclose(gz);
 
   if (hadError) {
     GMANError error(RIE_BADFILE, RIE_ERROR,
-		     ("GMANRIBParse: gzip decompression failed for \"" +
-		      path + "\": " + errMsg).c_str());
+                    ("GMANRIBParse: gzip decompression failed for \"" + path + "\": " + errMsg).c_str());
     throw error;
   }
 
@@ -2213,7 +2148,7 @@ std::vector<RtFloat> GMANRIBParse::TokenVector::toRtFloatVector() {
   for (unsigned int i = 0; i < size(); i++) {
     GMANToken tok = (*this)[i];
     if (tok.getType() == GMANToken::LONGINT) {
-      array[i] = (RtFloat) tok.getLongInt();
+      array[i] = (RtFloat)tok.getLongInt();
     } else if (tok.getType() == GMANToken::REAL) {
       array[i] = tok.getReal();
     } else {

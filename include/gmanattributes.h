@@ -61,15 +61,14 @@ struct GMAN_EXPORT GMANGeometricApproximation {
   RtFloat value;
 };
 
-class GMAN_EXPORT GMANAttributes
-{
+class GMAN_EXPORT GMANAttributes {
 private:
   /* SHADING ATTRIBUTES */
-  RtColor                color;
-  RtColor                opacity;
+  RtColor color;
+  RtColor opacity;
 
-  GMANTextureCoordinates     textureCoordinates;
-  GMANLightList          lightList;
+  GMANTextureCoordinates textureCoordinates;
+  GMANLightList lightList;
 
   // Shared, not deep-copied: a loaded module is immutable once dlopen'd, and
   // AttributeBegin/AttributeEnd (GMANGraphicState::attributesStack.push
@@ -79,134 +78,118 @@ private:
   // free: reassigning a block-local shared_ptr (RiSurface inside
   // AttributeBegin) never touches the parent's copy, and AttributeEnd
   // discards it along with the rest of the popped GMANAttributes.
-  std::shared_ptr<GMANLoadableShader>     areaLightModule;
-  [[maybe_unused]] GMANLightSourceShader  *areaLight;
+  std::shared_ptr<GMANLoadableShader> areaLightModule;
+  [[maybe_unused]] GMANLightSourceShader* areaLight;
 
-  std::shared_ptr<GMANLoadableShader>     surfaceModule;
-  GMANSurfaceShader      *surface;
+  std::shared_ptr<GMANLoadableShader> surfaceModule;
+  GMANSurfaceShader* surface;
 
-  std::shared_ptr<GMANLoadableShader>     atmosphereModule;
-  GMANVolumeShader       *atmosphere;
+  std::shared_ptr<GMANLoadableShader> atmosphereModule;
+  GMANVolumeShader* atmosphere;
 
-  std::shared_ptr<GMANLoadableShader>     interiorModule;
-  GMANVolumeShader       *interior;
+  std::shared_ptr<GMANLoadableShader> interiorModule;
+  GMANVolumeShader* interior;
 
-  std::shared_ptr<GMANLoadableShader>     exteriorModule;
-  GMANVolumeShader       *exterior;
+  std::shared_ptr<GMANLoadableShader> exteriorModule;
+  GMANVolumeShader* exterior;
 
-  std::shared_ptr<GMANLoadableShader>     displacementModule;
-  GMANDisplacementShader *displacement;
+  std::shared_ptr<GMANLoadableShader> displacementModule;
+  GMANDisplacementShader* displacement;
 
-  RtFloat                shadingRate;
-  RtToken                shadingInterpolation;
-  bool                   matte;
+  RtFloat shadingRate;
+  RtToken shadingInterpolation;
+  bool matte;
 
   /* GEOMETRY ATTRIBUTES */
-  GMANBBox               bound;
-  GMANBBox               detail;
-  GMANDetailRange            detailRange;
+  GMANBBox bound;
+  GMANBBox detail;
+  GMANDetailRange detailRange;
   GMANGeometricApproximation geometricApproximation;
-  RtToken                orientation;
-  RtInt                  sides;
-  GMANTrimCurve          trimCurves;
-  GMANBasis              uvBasis;
-  GMANBasis              objectBasis;
-  bool                   objectFlag;
-
+  RtToken orientation;
+  RtInt sides;
+  GMANTrimCurve trimCurves;
+  GMANBasis uvBasis;
+  GMANBasis objectBasis;
+  bool objectFlag;
 
 public:
   GMANAttributes();
   ~GMANAttributes();
 
-
   /* SHADING ATTRIBUTES */
-  RtVoid setColor (RtColor c);
-  RtVoid setOpacity (RtColor o);
-  GMANColor getColor () const { return GMANColor(color[0], color[1], color[2]); };
-  GMANColor getOpacity () const { return GMANColor(opacity[0], opacity[1], opacity[2]); };
+  RtVoid setColor(RtColor c);
+  RtVoid setOpacity(RtColor o);
+  GMANColor getColor() const { return GMANColor(color[0], color[1], color[2]); };
+  GMANColor getOpacity() const { return GMANColor(opacity[0], opacity[1], opacity[2]); };
 
-  RtVoid setTextureCoordinates (RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2,
-				RtFloat s3, RtFloat t3, RtFloat s4, RtFloat t4);
-  GMANTextureCoordinates const getTextureCoordinates () const {return textureCoordinates;};
+  RtVoid setTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3, RtFloat s4,
+                               RtFloat t4);
+  GMANTextureCoordinates const getTextureCoordinates() const { return textureCoordinates; };
 
   // RiLightSource
   // RtLightHandle setAreaLight (const string & name, GMANParameterList &pl);
-  RtVoid setIlluminate (RtLightHandle lh, RtBoolean onoff);
-  const GMANLightList &getLightList () const { return lightList; };
+  RtVoid setIlluminate(RtLightHandle lh, RtBoolean onoff);
+  const GMANLightList& getLightList() const { return lightList; };
 
   /* SHADERS */
-  RtVoid setSurface (const std::string & name, GMANParameterList &pl,
-		     GMANRenderer &rd);
-  const GMANSurfaceShader *getSurface(RtFloat /*time*/) const {return surface;};
+  RtVoid setSurface(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  const GMANSurfaceShader* getSurface(RtFloat /*time*/) const { return surface; };
 
-  RtVoid setAtmosphere (const std::string & name, GMANParameterList &pl,
-			GMANRenderer &rd);
-  const GMANVolumeShader *getAtmosphere(RtFloat /*time*/) const {return atmosphere;};
+  RtVoid setAtmosphere(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  const GMANVolumeShader* getAtmosphere(RtFloat /*time*/) const { return atmosphere; };
 
-  RtVoid setInterior (const std::string & name, GMANParameterList &pl,
-		      GMANRenderer &rd);
-  const GMANVolumeShader  *getInterior(RtFloat /*time*/) const {return interior;};
+  RtVoid setInterior(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  const GMANVolumeShader* getInterior(RtFloat /*time*/) const { return interior; };
 
-  RtVoid setExterior (const std::string & name, GMANParameterList &pl,
-		      GMANRenderer &rd);
-  const GMANVolumeShader *getExterior(RtFloat /*time*/) const {return exterior;};
+  RtVoid setExterior(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  const GMANVolumeShader* getExterior(RtFloat /*time*/) const { return exterior; };
 
-  RtVoid setDisplacement (const std::string & name, GMANParameterList &pl,
-			  GMANRenderer &rd);
-  const GMANDisplacementShader *getDisplacement(RtFloat /*time*/) const {return displacement;};
+  RtVoid setDisplacement(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  const GMANDisplacementShader* getDisplacement(RtFloat /*time*/) const { return displacement; };
 
+  RtVoid setShadingRate(RtFloat sz);
+  RtFloat getShadingRate() const { return shadingRate; };
 
+  RtVoid setShadingInterpolation(RtToken si);
+  RtToken getShadingInterpolation() const { return shadingInterpolation; };
 
-  RtVoid setShadingRate (RtFloat sz);
-  RtFloat getShadingRate () const {return shadingRate;};
-
-  RtVoid setShadingInterpolation (RtToken si);
-  RtToken getShadingInterpolation () const {return shadingInterpolation;};
-
-  RtVoid setMatte (RtBoolean on);
-  bool getMatte () const {return matte;};
+  RtVoid setMatte(RtBoolean on);
+  bool getMatte() const { return matte; };
 
   /* GEOMETRY ATTRIBUTES */
-  RtVoid setBound (RtBound b);
-  GMANBBox const getBound (RtFloat /*time*/) const {return bound;};
+  RtVoid setBound(RtBound b);
+  GMANBBox const getBound(RtFloat /*time*/) const { return bound; };
 
-  RtVoid setDetail (RtBound d);
-  GMANBBox const getDetail (RtFloat /*time*/) const {return bound;};
+  RtVoid setDetail(RtBound d);
+  GMANBBox const getDetail(RtFloat /*time*/) const { return bound; };
 
-  RtVoid setDetailRange (RtFloat minv, RtFloat lt,  RtFloat up, RtFloat maxv);
-  GMANDetailRange const getDetailRange () const {return detailRange;};
+  RtVoid setDetailRange(RtFloat minv, RtFloat lt, RtFloat up, RtFloat maxv);
+  GMANDetailRange const getDetailRange() const { return detailRange; };
 
-  RtVoid setGeometricApproximation (RtToken ga, RtFloat v);
-  GMANGeometricApproximation const getGeometricApproximation () const {return geometricApproximation;};
+  RtVoid setGeometricApproximation(RtToken ga, RtFloat v);
+  GMANGeometricApproximation const getGeometricApproximation() const { return geometricApproximation; };
 
-  RtVoid setOrientation (RtToken o);
-  RtToken getOrientation () const {return orientation;};
+  RtVoid setOrientation(RtToken o);
+  RtToken getOrientation() const { return orientation; };
 
-  RtVoid toggleOrientation ();
+  RtVoid toggleOrientation();
 
-  RtVoid setSides (RtInt n);
-  RtInt getSides () const {return sides;};
+  RtVoid setSides(RtInt n);
+  RtInt getSides() const { return sides; };
 
-  RtVoid setTrimCurves (GMANTrimCurve const &tc);
-  GMANTrimCurve const getTrimCurves () const {return trimCurves;};
+  RtVoid setTrimCurves(GMANTrimCurve const& tc);
+  GMANTrimCurve const getTrimCurves() const { return trimCurves; };
 
-  RtVoid setUVBasis (RtBasis u, 
-		     RtInt ustep, 
-		     RtBasis v, 
-		     RtInt vstep);
+  RtVoid setUVBasis(RtBasis u, RtInt ustep, RtBasis v, RtInt vstep);
 
-  RtVoid setObjectBasis (GMANBasis *b);
-  RtVoid clearObjectFlag ();
-  GMANBasis const getUVBasis () const {
-    if (objectFlag==true)
+  RtVoid setObjectBasis(GMANBasis* b);
+  RtVoid clearObjectFlag();
+  GMANBasis const getUVBasis() const {
+    if (objectFlag == true)
       return objectBasis;
     else
       return uvBasis;
   };
-
 };
 
 #endif
-
-
-

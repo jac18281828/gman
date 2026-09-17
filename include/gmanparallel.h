@@ -57,8 +57,7 @@ GMAN_EXPORT RtInt gmanParallelWorkers(RtInt count, RtInt workers = 0);
 // one at a time. count <= 0 calls nothing. When gmanParallelWorkers
 // reports one worker, every body runs inline on the calling thread as
 // worker 0 and no thread is created.
-GMAN_EXPORT void gmanParallelFor(
-    RtInt count, const std::function<void(RtInt index, RtInt worker)> &body,
-    RtInt workers = 0);
+GMAN_EXPORT void gmanParallelFor(RtInt count, const std::function<void(RtInt index, RtInt worker)>& body,
+                                 RtInt workers = 0);
 
 #endif

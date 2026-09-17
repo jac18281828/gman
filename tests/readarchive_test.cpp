@@ -48,7 +48,7 @@ struct Result {
   std::string output;
 };
 
-std::string slurp(const std::string &path) {
+std::string slurp(const std::string& path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream ss;
   ss << in.rdbuf();
@@ -63,19 +63,17 @@ std::string slurp(const std::string &path) {
 // was ignored": a ReadArchive that silently does nothing still exits 0,
 // having rendered an empty world. The caller inspects the -d token trace to
 // prove the child's geometry actually arrived.
-Result runWithTimeout(const std::string &gman, const std::string &rib,
-		      int timeoutSeconds, const std::string &logPath) {
+Result runWithTimeout(const std::string& gman, const std::string& rib, int timeoutSeconds, const std::string& logPath) {
   pid_t pid = fork();
   if (pid == 0) {
     // child: gman's own output goes to the log, not this test's stdout. If
     // the redirect fails there is no way to report it from here without
     // producing the noise it was meant to suppress, so fail the child
     // instead -- 126 is distinct from the 127 exec-failure below.
-    if (freopen(logPath.c_str(), "w", stdout) == nullptr ||
-	dup2(fileno(stdout), fileno(stderr)) < 0) {
+    if (freopen(logPath.c_str(), "w", stdout) == nullptr || dup2(fileno(stdout), fileno(stderr)) < 0) {
       _exit(126);
     }
-    execlp(gman.c_str(), gman.c_str(), "-d", rib.c_str(), (char *) nullptr);
+    execlp(gman.c_str(), gman.c_str(), "-d", rib.c_str(), (char*)nullptr);
     _exit(127); // exec failed
   }
 
@@ -105,10 +103,9 @@ Result runWithTimeout(const std::string &gman, const std::string &rib,
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/archive dir>\n",
-		 argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/archive dir>\n", argv[0]);
     return 2;
   }
 
@@ -127,19 +124,17 @@ int main(int argc, char *argv[]) {
     // child.rib -- so the token appearing in the trace is what distinguishes
     // "the archive was read" from "the archive was skipped".
     check(r.output.find("Keyword token: Sphere") != std::string::npos,
-	  "parent.rib: child.rib's Sphere reaches the parser (archive read, "
-	  "not silently ignored)");
+          "parent.rib: child.rib's Sphere reaches the parser (archive read, "
+          "not silently ignored)");
   }
 
   {
     const std::string selfInclude = archiveDir + "/selfinclude.rib";
     Result r = runWithTimeout(gman, selfInclude, 20, "selfinclude.log");
     check(!r.timedOut, "selfinclude.rib: a self-including RIB does not hang");
-    check(!r.timedOut && r.exitStatus != 0,
-	  "selfinclude.rib: errors cleanly instead of rendering garbage");
-    check(r.output.find("ReadArchive") != std::string::npos ||
-	  r.output.find("archive") != std::string::npos,
-	  "selfinclude.rib: the diagnostic names the archive cycle");
+    check(!r.timedOut && r.exitStatus != 0, "selfinclude.rib: errors cleanly instead of rendering garbage");
+    check(r.output.find("ReadArchive") != std::string::npos || r.output.find("archive") != std::string::npos,
+          "selfinclude.rib: the diagnostic names the archive cycle");
   }
 
   return checkSummary("ReadArchive holds");

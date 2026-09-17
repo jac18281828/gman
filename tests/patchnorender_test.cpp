@@ -50,21 +50,18 @@
 
 namespace {
 
-int runGman(const std::string &gman, const std::string &rib) {
-  const std::string command =
-      "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
+int runGman(const std::string& gman, const std::string& rib) {
+  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-bool regionHasContent(const GmanImage &img, uint32_t x0, uint32_t x1,
-                      uint32_t y0, uint32_t y1) {
+bool regionHasContent(const GmanImage& img, uint32_t x0, uint32_t x1, uint32_t y0, uint32_t y1) {
   const uint32_t bg = img.at(0, 0);
   for (uint32_t y = y0; y < y1; ++y) {
     for (uint32_t x = x0; x < x1; ++x) {
       uint32_t p = img.at(x, y);
-      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 ||
-          std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
+      if (std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
           std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8) {
         return true;
       }
@@ -73,9 +70,9 @@ bool regionHasContent(const GmanImage &img, uint32_t x0, uint32_t x1,
   return false;
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
@@ -91,10 +88,8 @@ int main(int argc, char *argv[]) {
     check(img.ok, "patch_norender.rib: TIFF read back");
     if (img.ok) {
       const uint32_t mid = img.width / 2;
-      check(regionHasContent(img, 0, mid, 0, img.height),
-            "bilinear Patch renders (left half)");
-      check(regionHasContent(img, mid, img.width, 0, img.height),
-            "control: the right-half Sphere renders");
+      check(regionHasContent(img, 0, mid, 0, img.height), "bilinear Patch renders (left half)");
+      check(regionHasContent(img, mid, img.width, 0, img.height), "control: the right-half Sphere renders");
     }
   }
 
@@ -109,8 +104,7 @@ int main(int argc, char *argv[]) {
       // center half of the frame; a generous margin around the known
       // extent tolerates tessellation differences across platforms
       // without accepting a stray corner pixel as "rendered".
-      check(regionHasContent(img, img.width / 4, 3 * img.width / 4,
-                             img.height / 4, 3 * img.height / 4),
+      check(regionHasContent(img, img.width / 4, 3 * img.width / 4, img.height / 4, 3 * img.height / 4),
             "bicubic Patch renders in the frame center");
     }
   }

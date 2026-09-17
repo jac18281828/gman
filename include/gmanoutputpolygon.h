@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,13 +22,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANOUTPUTPOLYGON_H
 #define __GMAN_GMANOUTPUTPOLYGON_H 1
 
 /**
- ** This code based on source presented in Radiosity, A Programmer's 
+ ** This code based on source presented in Radiosity, A Programmer's
  ** Perspective by Ian Ashdown.
  **/
 
@@ -46,38 +45,33 @@
  *
  */
 
-class GMAN_EXPORT  GMANOutVertex // Output Vertex
-{ 
-  private:
-    GMANColor color;
-    GMANPoint posn;
+class GMAN_EXPORT GMANOutVertex // Output Vertex
+{
+private:
+  GMANColor color;
+  GMANPoint posn;
 
-  public:
-    bool operator<(const GMANOutVertex &vert) const {
-      GMANVector posVec(posn);
-      GMANVector vertPos(vert.posn);
-	return((color < vert.color) &&
-	       (posVec < vertPos));
-    }
+public:
+  bool operator<(const GMANOutVertex& vert) const {
+    GMANVector posVec(posn);
+    GMANVector vertPos(vert.posn);
+    return ((color < vert.color) && (posVec < vertPos));
+  }
 
+  const GMANPoint& getPosn(RtVoid) const { return posn; }
+  const GMANColor& getColor(RtVoid) const { return color; }
 
-    const GMANPoint &getPosn(RtVoid) const { return posn; }
-    const GMANColor &getColor(RtVoid) const { return color; }
-
-    RtVoid set(const GMANVertex4 &v) {
-	GMANVector4 c = v.getCoord();
-	c.perspective(posn);
-	color = v.getColor();
-    }
+  RtVoid set(const GMANVertex4& v) {
+    GMANVector4 c = v.getCoord();
+    c.perspective(posn);
+    color = v.getColor();
+  }
 };
 
-
-class GMAN_EXPORT  GMANOutputPolygon {
+class GMAN_EXPORT GMANOutputPolygon {
 private:
-
   std::vector<GMANOutVertex> vertexVec; // output array
 
-  
 public:
   GMANOutputPolygon(); // default constructor
 
@@ -85,27 +79,19 @@ public:
 
   int getNumVert(RtVoid) { return vertexVec.size(); };
 
-  const GMANPoint& getVertexPosn(int n) {
-    return vertexVec[n].getPosn();
-  };
+  const GMANPoint& getVertexPosn(int n) { return vertexVec[n].getPosn(); };
 
-  const GMANColor &getVertexColor(int n) {
-    return vertexVec[n].getColor();
-  };
+  const GMANColor& getVertexColor(int n) { return vertexVec[n].getColor(); };
 
-  RtVoid addVertex(const GMANVertex4 &v) {
-	  GMANOutVertex  vert;
+  RtVoid addVertex(const GMANVertex4& v) {
+    GMANOutVertex vert;
 
     vert.set(v);
-    
-    vertexVec.push_back(vert);
 
+    vertexVec.push_back(vert);
   };
 
-  RtVoid reset(RtVoid) { vertexVec.clear(); } ;
-
+  RtVoid reset(RtVoid) { vertexVec.clear(); };
 };
 
-
 #endif
-

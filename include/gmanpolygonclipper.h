@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANPOLYGONCLIPPER_H
 #define __GMAN_GMANPOLYGONCLIPPER_H 1
-
 
 #include <list>
 #include <map>
@@ -37,29 +35,23 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANPolygonClipper
  *
  */
 
-class GMAN_EXPORT  GMANPolygonClipper {
+class GMAN_EXPORT GMANPolygonClipper {
 private:
-
   [[maybe_unused]] int nOutputVertices;
-  GMANClipEdge	clipper[6]; // clipper array
-  GMANClipEdge *pclip;      // clipper list head pointer
+  GMANClipEdge clipper[6]; // clipper array
+  GMANClipEdge* pclip;     // clipper list head pointer
 
 public:
   GMANPolygonClipper(); // default constructor
 
   ~GMANPolygonClipper(); // default destructor
 
-  int clip(GMANFace *face, 
-	   GMANOutputPolygon &out,
-	   const GMANViewingSystem *vs);
+  int clip(GMANFace* face, GMANOutputPolygon& out, const GMANViewingSystem* vs);
 };
 
-
 #endif
-

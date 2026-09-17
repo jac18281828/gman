@@ -36,7 +36,7 @@
 
 inline int failures = 0;
 
-inline void check(bool ok, const std::string &what) {
+inline void check(bool ok, const std::string& what) {
   std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
   if (!ok) {
     ++failures;
@@ -44,7 +44,7 @@ inline void check(bool ok, const std::string &what) {
 }
 
 // Prints the pass/fail summary and returns the test binary's exit code.
-inline int checkSummary(const char *okMessage) {
+inline int checkSummary(const char* okMessage) {
   if (failures != 0) {
     std::printf("%d assertion(s) failed\n", failures);
     return 1;

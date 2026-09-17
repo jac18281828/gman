@@ -97,15 +97,14 @@ namespace {
 // directory is reused across ctest invocations, and a reverted fix that
 // throws before opening the display leaves the previous good file in place.
 // tests/baseline_test.cpp removes its target for the same reason.
-int runGman(const std::string &gman, const std::string &rib,
-            const std::string &output) {
+int runGman(const std::string& gman, const std::string& rib, const std::string& output) {
   std::remove(output.c_str());
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void writeFile(const std::string &path, const std::string &contents) {
+void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
   out << contents;
 }
@@ -118,9 +117,9 @@ struct BBox {
 };
 
 // Same bounding-box-by-difference-from-corner reading as silhouette_test.cpp.
-BBox findSilhouette(const std::string &path) {
+BBox findSilhouette(const std::string& path) {
   BBox box;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return box;
   }
@@ -130,8 +129,7 @@ BBox findSilhouette(const std::string &path) {
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(size_t(width) * height);
-  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                  ORIENTATION_TOPLEFT, 0)) {
+  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0)) {
     TIFFClose(tif);
     return box;
   }
@@ -167,10 +165,10 @@ BBox findSilhouette(const std::string &path) {
   return box;
 }
 
-bool readTIFFBytes(const std::string &path, std::vector<unsigned char> &out,
-                    int &width, int &height) {
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
-  if (tif == nullptr) return false;
+bool readTIFFBytes(const std::string& path, std::vector<unsigned char>& out, int& width, int& height) {
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
+  if (tif == nullptr)
+    return false;
   uint32_t w = 0, h = 0;
   TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
@@ -191,19 +189,18 @@ bool readTIFFBytes(const std::string &path, std::vector<unsigned char> &out,
   return true;
 }
 
-const char *kSceneTemplate =
-    "Display \"%s\" \"file\" \"rgb\"\n"
-    "Format 400 400 1\n"
-    "%s"
-    "Projection \"perspective\" \"fov\" [45]\n"
-    "WorldBegin\n"
-    "Translate 0 0 5\n"
-    "Sphere 1 -1 1 360\n"
-    "WorldEnd\n";
+const char* kSceneTemplate = "Display \"%s\" \"file\" \"rgb\"\n"
+                             "Format 400 400 1\n"
+                             "%s"
+                             "Projection \"perspective\" \"fov\" [45]\n"
+                             "WorldBegin\n"
+                             "Translate 0 0 5\n"
+                             "Sphere 1 -1 1 360\n"
+                             "WorldEnd\n";
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::fprintf(stderr, "usage: %s <gman-binary>\n", argv[0]);
     return 2;
@@ -219,16 +216,14 @@ int main(int argc, char *argv[]) {
   check(full.found, "uncropped scene: a silhouette was found");
 
   // ---- centre crop: 0.25 0.75 0.25 0.75 -> raster [100,299]x[100,299] ----
-  std::snprintf(scene, sizeof scene, kSceneTemplate, "centre.tif",
-                "CropWindow 0.25 0.75 0.25 0.75\n");
+  std::snprintf(scene, sizeof scene, kSceneTemplate, "centre.tif", "CropWindow 0.25 0.75 0.25 0.75\n");
   writeFile("centre.rib", scene);
   check(runGman(gman, "centre.rib", "centre.tif") == 0, "centre-crop scene renders");
   BBox centre = findSilhouette("centre.tif");
   check(centre.found, "centre-crop scene: a silhouette was found");
 
   // ---- bottom-right crop: 0.5 1.0 0.5 1.0 -> raster [200,399]x[200,399] ----
-  std::snprintf(scene, sizeof scene, kSceneTemplate, "bottomright.tif",
-                "CropWindow 0.5 1.0 0.5 1.0\n");
+  std::snprintf(scene, sizeof scene, kSceneTemplate, "bottomright.tif", "CropWindow 0.5 1.0 0.5 1.0\n");
   writeFile("bottomright.rib", scene);
   check(runGman(gman, "bottomright.rib", "bottomright.tif") == 0, "bottom-right-crop scene renders");
   BBox br = findSilhouette("bottomright.tif");
@@ -239,10 +234,8 @@ int main(int argc, char *argv[]) {
   if (full.found && centre.found) {
     // The centre crop's window starts at raster (100,100), so its
     // silhouette should be the uncropped one, offset by that origin.
-    check(std::abs(centre.xmin - (full.xmin - 100)) <= tol &&
-              std::abs(centre.xmax - (full.xmax - 100)) <= tol &&
-              std::abs(centre.ymin - (full.ymin - 100)) <= tol &&
-              std::abs(centre.ymax - (full.ymax - 100)) <= tol,
+    check(std::abs(centre.xmin - (full.xmin - 100)) <= tol && std::abs(centre.xmax - (full.xmax - 100)) <= tol &&
+              std::abs(centre.ymin - (full.ymin - 100)) <= tol && std::abs(centre.ymax - (full.ymax - 100)) <= tol,
           "centre crop's silhouette matches the uncropped render's, offset "
           "by the crop rectangle's own origin (100,100)");
 
@@ -250,9 +243,8 @@ int main(int argc, char *argv[]) {
     // sliver near raster 101-199, regardless of which crop was requested.
     // The fixed centre crop should show most of the sphere's own width
     // (194px in the uncropped render), not that sliver.
-    check(centre.width() > full.width() - 2 * tol,
-          "centre crop's silhouette is not truncated to the pre-fix "
-          "101-199-ish sliver");
+    check(centre.width() > full.width() - 2 * tol, "centre crop's silhouette is not truncated to the pre-fix "
+                                                   "101-199-ish sliver");
   }
 
   if (br.found) {
@@ -262,21 +254,17 @@ int main(int argc, char *argv[]) {
     // sphere's true edge, clips this silhouette at its near corner. That
     // near corner has to be the *crop's* origin (0,0), not the full
     // Format's.
-    check(br.xmin <= tol && br.ymin <= tol,
-          "bottom-right crop's silhouette is anchored at the crop's own "
-          "top-left corner (clipped by the crop boundary)");
+    check(br.xmin <= tol && br.ymin <= tol, "bottom-right crop's silhouette is anchored at the crop's own "
+                                            "top-left corner (clipped by the crop boundary)");
   }
 
   // ---- the defect's own reproduction: two different crops must differ ----
   std::vector<unsigned char> centrePixels, brPixels;
   int cw = 0, ch = 0, bw = 0, bh = 0;
-  check(readTIFFBytes("centre.tif", centrePixels, cw, ch),
-        "centre-crop TIFF decodes");
-  check(readTIFFBytes("bottomright.tif", brPixels, bw, bh),
-        "bottom-right-crop TIFF decodes");
-  check(centrePixels != brPixels,
-        "two crops of the same scene at different origins produce "
-        "different images (these were byte-identical before the fix)");
+  check(readTIFFBytes("centre.tif", centrePixels, cw, ch), "centre-crop TIFF decodes");
+  check(readTIFFBytes("bottomright.tif", brPixels, bw, bh), "bottom-right-crop TIFF decodes");
+  check(centrePixels != brPixels, "two crops of the same scene at different origins produce "
+                                  "different images (these were byte-identical before the fix)");
 
   return checkSummary("cropwindow holds");
 }

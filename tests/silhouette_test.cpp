@@ -66,13 +66,13 @@
 
 namespace {
 
-int runGman(const std::string &gman, const std::string &rib) {
+int runGman(const std::string& gman, const std::string& rib) {
   const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
   int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-void writeFile(const std::string &path, const std::string &contents) {
+void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
   out << contents;
 }
@@ -90,9 +90,9 @@ struct BBox {
 // Reads an RGBA TIFF and finds the bounding box of pixels that differ from
 // the top-left corner (the background, since nothing is drawn there in any
 // of these scenes).
-BBox findSilhouette(const std::string &path) {
+BBox findSilhouette(const std::string& path) {
   BBox box;
-  TIFF *tif = TIFFOpen(path.c_str(), "r");
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return box;
   }
@@ -102,8 +102,7 @@ BBox findSilhouette(const std::string &path) {
   TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
 
   std::vector<uint32_t> raster(width * height);
-  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(),
-                                  ORIENTATION_TOPLEFT, 0)) {
+  if (!TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0)) {
     TIFFClose(tif);
     return box;
   }
@@ -139,19 +138,18 @@ BBox findSilhouette(const std::string &path) {
   return box;
 }
 
-const char *kSceneTemplate =
-    "Display \"%s\" \"file\" \"rgba\"\n"
-    "Format 200 200 1\n"
-    "Projection \"perspective\" \"fov\" [%g]\n"
-    "Translate 0 0 5\n"
-    "WorldBegin\n"
-    "Translate %g 0 0\n"
-    "Sphere 1 -1 1 360\n"
-    "WorldEnd\n";
+const char* kSceneTemplate = "Display \"%s\" \"file\" \"rgba\"\n"
+                             "Format 200 200 1\n"
+                             "Projection \"perspective\" \"fov\" [%g]\n"
+                             "Translate 0 0 5\n"
+                             "WorldBegin\n"
+                             "Translate %g 0 0\n"
+                             "Sphere 1 -1 1 360\n"
+                             "WorldEnd\n";
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 2) {
     std::fprintf(stderr, "usage: %s <gman-binary>\n", argv[0]);
     return 2;
@@ -162,8 +160,8 @@ int main(int argc, char *argv[]) {
   const double tanAngularRadius = std::tan(std::asin(0.2));
 
   // ---- base case: fov 45, no local translate ----
-  const char *baseRib = "silhouette_base.rib";
-  const char *baseTif = "silhouette_base.tif";
+  const char* baseRib = "silhouette_base.rib";
+  const char* baseTif = "silhouette_base.tif";
   char scene[1024];
   std::snprintf(scene, sizeof scene, kSceneTemplate, baseTif, 45.0, 0.0);
   writeFile(baseRib, scene);
@@ -173,40 +171,35 @@ int main(int argc, char *argv[]) {
   check(base.found, "base scene: a silhouette was found");
 
   const double halfFovBase = 45.0 / 2.0 * M_PI / 180.0;
-  const double expectedHalfExtent =
-      tanAngularRadius / std::tan(halfFovBase) * 100.0; // 200px / 2
+  const double expectedHalfExtent = tanAngularRadius / std::tan(halfFovBase) * 100.0; // 200px / 2
   const double tol = 16.0;
 
-  check(std::fabs(base.centerX() - 100.0) <= tol,
-        "base scene: silhouette centered on x (hand-computed 100)");
-  check(std::fabs(base.centerY() - 100.0) <= tol,
-        "base scene: silhouette centered on y (hand-computed 100)");
+  check(std::fabs(base.centerX() - 100.0) <= tol, "base scene: silhouette centered on x (hand-computed 100)");
+  check(std::fabs(base.centerY() - 100.0) <= tol, "base scene: silhouette centered on y (hand-computed 100)");
   check(std::fabs(base.halfWidth() - expectedHalfExtent) <= tol,
         "base scene: silhouette half-width matches asin(r/d) hand-derivation");
   check(std::fabs(base.halfHeight() - expectedHalfExtent) <= tol,
         "base scene: silhouette half-height matches asin(r/d) hand-derivation");
 
   // ---- doubling fov shrinks the silhouette ----
-  const char *doubledRib = "silhouette_doubled_fov.rib";
-  const char *doubledTif = "silhouette_doubled_fov.tif";
+  const char* doubledRib = "silhouette_doubled_fov.rib";
+  const char* doubledTif = "silhouette_doubled_fov.tif";
   std::snprintf(scene, sizeof scene, kSceneTemplate, doubledTif, 90.0, 0.0);
   writeFile(doubledRib, scene);
   check(runGman(gman, doubledRib) == 0, "doubled-fov scene renders");
 
   BBox doubled = findSilhouette(doubledTif);
   check(doubled.found, "doubled-fov scene: a silhouette was found");
-  check(doubled.halfWidth() < base.halfWidth(),
-        "doubling fov shrinks the silhouette (half-width)");
-  check(doubled.halfWidth() < base.halfWidth() * 0.6,
-        "doubling fov shrinks the silhouette by roughly the hand-derived "
-        "ratio (0.204/0.414 vs 1.0), not just marginally");
+  check(doubled.halfWidth() < base.halfWidth(), "doubling fov shrinks the silhouette (half-width)");
+  check(doubled.halfWidth() < base.halfWidth() * 0.6, "doubling fov shrinks the silhouette by roughly the hand-derived "
+                                                      "ratio (0.204/0.414 vs 1.0), not just marginally");
 
   // ---- a known RiTranslate moves the silhouette's centre ----
   // fov=90 -> tan(45deg)=1, so ndc.x = x_cam/z_cam = 0.5/5 = 0.1, and
   // raster.x = 100*(0.1 - -1) = 110: a +10px shift from the untranslated
   // centre (100).
-  const char *translatedRib = "silhouette_translated.rib";
-  const char *translatedTif = "silhouette_translated.tif";
+  const char* translatedRib = "silhouette_translated.rib";
+  const char* translatedTif = "silhouette_translated.tif";
   std::snprintf(scene, sizeof scene, kSceneTemplate, translatedTif, 90.0, 0.5);
   writeFile(translatedRib, scene);
   check(runGman(gman, translatedRib) == 0, "translated scene renders");
@@ -215,8 +208,7 @@ int main(int argc, char *argv[]) {
   check(translated.found, "translated scene: a silhouette was found");
   check(std::fabs(translated.centerX() - 110.0) <= tol,
         "RiTranslate 0.5 0 0 moves the centre to the hand-computed x (110)");
-  check(std::fabs(translated.centerY() - 100.0) <= tol,
-        "RiTranslate 0.5 0 0 does not move the centre on y");
+  check(std::fabs(translated.centerY() - 100.0) <= tol, "RiTranslate 0.5 0 0 does not move the centre on y");
 
   return checkSummary("silhouette holds");
 }

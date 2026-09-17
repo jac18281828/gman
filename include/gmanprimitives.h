@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef  __GMANGMANPRIMITIVES_H
-#define  __GMANGMANPRIMITIVES_H 1
+#ifndef __GMANGMANPRIMITIVES_H
+#define __GMANGMANPRIMITIVES_H 1
 
 #include <vector>
 
@@ -38,70 +38,53 @@
 #include "gmantransform.h"
 #include "ri.h"
 
-
-class GMAN_EXPORT GMANParametric : public virtual GMANPrimitive
-{
- public:
-  virtual GMANPoint getLocation (double u, double v) = 0;
-  virtual GMANVector getNormal (double u, double v) = 0;
+class GMAN_EXPORT GMANParametric : public virtual GMANPrimitive {
+public:
+  virtual GMANPoint getLocation(double u, double v) = 0;
+  virtual GMANVector getNormal(double u, double v) = 0;
 };
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN__PRIMDATSTORAGE.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPrimDatStorage : public virtual GMANPrimitive
-{
+class GMAN_EXPORT GMANPrimDatStorage : public virtual GMANPrimitive {
 protected:
   GMANParameterList pl;
+
 public:
   GMANPrimDatStorage(GMANParameterList p) : pl(p) {};
   ~GMANPrimDatStorage() {};
 };
 
-
-
-
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_BLOBBY.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANBlobby : public GMANPrimDatStorage
-{
+class GMAN_EXPORT GMANBlobby : public GMANPrimDatStorage {
 private:
-  int *counter;
-  RtVoid copy(GMANBlobby const &b);
+  int* counter;
+  RtVoid copy(GMANBlobby const& b);
   RtVoid destroy();
 
 protected:
   RtInt nleaf;
   RtInt ncode;
-  RtInt *code;
+  RtInt* code;
   RtInt nfloat;
-  RtFloat *floats;
+  RtFloat* floats;
   RtInt nstrings;
-  std::string *strings;
-  
+  std::string* strings;
+
 public:
-  GMANBlobby(RtInt nlf, RtInt ncd, RtInt cd[],
-	     RtInt nf, RtFloat f[],
-	     RtInt ns, RtString s[], GMANParameterList p);
-  GMANBlobby(GMANBlobby const &b);
+  GMANBlobby(RtInt nlf, RtInt ncd, RtInt cd[], RtInt nf, RtFloat f[], RtInt ns, RtString s[], GMANParameterList p);
+  GMANBlobby(GMANBlobby const& b);
   ~GMANBlobby();
-  GMANBlobby const &operator=(GMANBlobby const &b);
+  GMANBlobby const& operator=(GMANBlobby const& b);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_CONE.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANCone : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANCone : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtFloat height;
   RtFloat radius;
@@ -109,47 +92,35 @@ protected:
 
 public:
   GMANCone(RtFloat h, RtFloat rad, RtFloat theta, GMANParameterList p)
-    : GMANPrimDatStorage(p), height(h), radius(rad), thetamax(theta) {}
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+      : GMANPrimDatStorage(p), height(h), radius(rad), thetamax(theta) {}
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_CURVES.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANCurves : public GMANPrimDatStorage
-{
+class GMAN_EXPORT GMANCurves : public GMANPrimDatStorage {
 private:
-  RtVoid copy(GMANCurves const &c);
+  RtVoid copy(GMANCurves const& c);
+
 protected:
   RtToken type;
   RtInt ncurves;
-  RtInt *nvertices;
+  RtInt* nvertices;
   RtToken wrap;
 
 public:
-  GMANCurves(RtToken type, RtInt ncurves, RtInt *nvertices, RtToken wrap,
-	     GMANParameterList p);
-  GMANCurves(GMANCurves const &c);
-  GMANCurves const &operator=(GMANCurves const &c);
+  GMANCurves(RtToken type, RtInt ncurves, RtInt* nvertices, RtToken wrap, GMANParameterList p);
+  GMANCurves(GMANCurves const& c);
+  GMANCurves const& operator=(GMANCurves const& c);
   ~GMANCurves();
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_CYLINDER.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANCylinder : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANCylinder : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtFloat radius;
   RtFloat zmin;
@@ -157,23 +128,16 @@ protected:
   RtFloat thetamax;
 
 public:
-  GMANCylinder(RtFloat rad, RtFloat zmn, RtFloat zmx, RtFloat theta,
-	       GMANParameterList p)
-    : GMANPrimDatStorage(p), radius(rad), zmin(zmn), zmax(zmx), thetamax(theta) {}
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+  GMANCylinder(RtFloat rad, RtFloat zmn, RtFloat zmx, RtFloat theta, GMANParameterList p)
+      : GMANPrimDatStorage(p), radius(rad), zmin(zmn), zmax(zmx), thetamax(theta) {}
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_DISK.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANDisk : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANDisk : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtFloat height;
   RtFloat radius;
@@ -181,68 +145,49 @@ protected:
 
 public:
   GMANDisk(RtFloat h, RtFloat rad, RtFloat theta, GMANParameterList p)
-    : GMANPrimDatStorage(p), height(h), radius(rad), thetamax(theta) {}
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+      : GMANPrimDatStorage(p), height(h), radius(rad), thetamax(theta) {}
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_GENERALPOLYGON.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANGeneralPolygon : public GMANPrimDatStorage
-{
+class GMAN_EXPORT GMANGeneralPolygon : public GMANPrimDatStorage {
 private:
-  RtVoid copy(GMANGeneralPolygon const &gp);
+  RtVoid copy(GMANGeneralPolygon const& gp);
+
 protected:
   RtInt nloop;
-  RtInt *nvert;
+  RtInt* nvert;
 
 public:
-  GMANGeneralPolygon(RtInt,RtInt[],
-		     GMANParameterList p);
-  GMANGeneralPolygon(GMANGeneralPolygon const &);
-  GMANGeneralPolygon const &operator=(GMANGeneralPolygon const &);
+  GMANGeneralPolygon(RtInt, RtInt[], GMANParameterList p);
+  GMANGeneralPolygon(GMANGeneralPolygon const&);
+  GMANGeneralPolygon const& operator=(GMANGeneralPolygon const&);
   ~GMANGeneralPolygon();
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_HYPERBOLOID.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANHyperboloid : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANHyperboloid : public GMANPrimDatStorage, public GMANParametric {
 protected:
   GMANPoint point1;
   GMANPoint point2;
   RtFloat thetamax;
 
 public:
-  GMANHyperboloid(RtPoint p1, RtPoint p2, RtFloat theta,
-		  GMANParameterList p)
-    : GMANPrimDatStorage(p), point1(p1), point2(p2), thetamax(theta) {}
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+  GMANHyperboloid(RtPoint p1, RtPoint p2, RtFloat theta, GMANParameterList p)
+      : GMANPrimDatStorage(p), point1(p1), point2(p2), thetamax(theta) {}
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_NUPATCH.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANNuPatch : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANNuPatch : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtInt nu;
   RtInt uorder;
@@ -264,28 +209,20 @@ protected:
   // The surface point and its first partials in knot-space u, v, at the
   // unit-square (u,v) mapped onto [umin,umax] x [vmin,vmax]. Shared by
   // getLocation and getNormal so the two never disagree.
-  void evaluate (double u, double v, GMANPoint &S, GMANVector &Su,
-		 GMANVector &Sv) const;
+  void evaluate(double u, double v, GMANPoint& S, GMANVector& Su, GMANVector& Sv) const;
 
 public:
-  GMANNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax,
-	      RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax,
-	      RtFloat *p, bool rational, GMANParameterList pl);
+  GMANNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
+              RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtFloat* p, bool rational, GMANParameterList pl);
 
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_PARABOLOID.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANParaboloid : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANParaboloid : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtFloat rmax;
   RtFloat zmin;
@@ -293,23 +230,16 @@ protected:
   RtFloat thetamax;
 
 public:
-  GMANParaboloid(RtFloat rmx, RtFloat zmn, RtFloat zmx, RtFloat theta,
-		 GMANParameterList p)
-    : GMANPrimDatStorage(p), rmax(rmx), zmin(zmn), zmax(zmx), thetamax(theta) {}
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+  GMANParaboloid(RtFloat rmx, RtFloat zmn, RtFloat zmx, RtFloat theta, GMANParameterList p)
+      : GMANPrimDatStorage(p), rmax(rmx), zmin(zmn), zmax(zmx), thetamax(theta) {}
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_PATCH.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPatch : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANPatch : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtToken pt;
   bool bicubic;
@@ -324,24 +254,18 @@ protected:
 
 public:
   // Bilinear: four control points, RiSpec order P(0,0) P(1,0) P(0,1) P(1,1).
-  GMANPatch(RtToken pat, RtFloat *p, GMANParameterList pl);
+  GMANPatch(RtToken pat, RtFloat* p, GMANParameterList pl);
   // Bicubic: sixteen control points, u-fastest/v-major, blended with b.
-  GMANPatch(RtToken pat, RtFloat *p, GMANBasis const &b, GMANParameterList pl);
+  GMANPatch(RtToken pat, RtFloat* p, GMANBasis const& b, GMANParameterList pl);
 
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_PATCHMESH.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPatchMesh : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANPatchMesh : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtToken pt;
   RtInt nu;
@@ -358,127 +282,92 @@ protected:
 
   // Point (i,j) of the nu-by-nv grid, i in [0,nu), j in [0,nv) -- matches
   // GMANBasis::offset's layout (pntSize*(i+nu*j)).
-  GMANPoint point (RtInt i, RtInt j) const;
+  GMANPoint point(RtInt i, RtInt j) const;
 
   // The bilinear sub-patch containing (u,v): its four corners and the
   // local parameter within it. Shared by getLocation and getNormal so
   // the two never disagree about which sub-patch a point falls in.
-  void bilinearPatch (double u, double v,
-		       GMANPoint &p00, GMANPoint &p10,
-		       GMANPoint &p01, GMANPoint &p11,
-		       RtFloat &newU, RtFloat &newV) const;
+  void bilinearPatch(double u, double v, GMANPoint& p00, GMANPoint& p10, GMANPoint& p01, GMANPoint& p11, RtFloat& newU,
+                     RtFloat& newV) const;
 
 public:
   // Bilinear: nu*nv control points, no basis.
-  GMANPatchMesh(RtToken pat, RtFloat *p, RtInt u, RtToken uw, RtInt v, RtToken vw,
-		GMANParameterList pl);
+  GMANPatchMesh(RtToken pat, RtFloat* p, RtInt u, RtToken uw, RtInt v, RtToken vw, GMANParameterList pl);
   // Bicubic: nu*nv control points, blended with b.
-  GMANPatchMesh(RtToken pat, RtFloat *p, RtInt u, RtToken uw, RtInt v, RtToken vw,
-		GMANBasis const &b, GMANParameterList pl);
+  GMANPatchMesh(RtToken pat, RtFloat* p, RtInt u, RtToken uw, RtInt v, RtToken vw, GMANBasis const& b,
+                GMANParameterList pl);
 
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_POINTS.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPoints : public GMANPrimDatStorage
-{
+class GMAN_EXPORT GMANPoints : public GMANPrimDatStorage {
 protected:
   RtInt npoints;
 
 public:
-  GMANPoints(RtInt npts, GMANParameterList p)
-    : GMANPrimDatStorage(p), npoints(npts) {}
+  GMANPoints(RtInt npts, GMANParameterList p) : GMANPrimDatStorage(p), npoints(npts) {}
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_POINTSGENERALPOLYGONS.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPointsGeneralPolygons : public GMANPrimDatStorage
-{
+class GMAN_EXPORT GMANPointsGeneralPolygons : public GMANPrimDatStorage {
 private:
-  RtVoid copy(GMANPointsGeneralPolygons const &pgp);
+  RtVoid copy(GMANPointsGeneralPolygons const& pgp);
   RtVoid destroy();
+
 protected:
   RtInt npolys;
-  RtInt *nloops;
-  RtInt *nvertices;
-  RtInt *vertices;
+  RtInt* nloops;
+  RtInt* nvertices;
+  RtInt* vertices;
 
 public:
-  GMANPointsGeneralPolygons(RtInt, RtInt[], RtInt[], RtInt[],
-			    GMANParameterList p);
-  GMANPointsGeneralPolygons(GMANPointsGeneralPolygons const &);
-  GMANPointsGeneralPolygons const &operator=(GMANPointsGeneralPolygons const &);
+  GMANPointsGeneralPolygons(RtInt, RtInt[], RtInt[], RtInt[], GMANParameterList p);
+  GMANPointsGeneralPolygons(GMANPointsGeneralPolygons const&);
+  GMANPointsGeneralPolygons const& operator=(GMANPointsGeneralPolygons const&);
   ~GMANPointsGeneralPolygons();
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_POINTSPOLYGONS.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPointsPolygons : public GMANPrimDatStorage
-{
+class GMAN_EXPORT GMANPointsPolygons : public GMANPrimDatStorage {
 private:
-  RtVoid copy(GMANPointsPolygons const &pp);
+  RtVoid copy(GMANPointsPolygons const& pp);
   RtVoid destroy();
+
 protected:
   RtInt npolys;
-  RtInt *nvertices;
-  RtInt *vertices;
+  RtInt* nvertices;
+  RtInt* vertices;
 
 public:
-  GMANPointsPolygons(RtInt,RtInt[],RtInt[],
-		     GMANParameterList p);
-  GMANPointsPolygons(GMANPointsPolygons const &);
-  GMANPointsPolygons const &operator=(GMANPointsPolygons const &);
+  GMANPointsPolygons(RtInt, RtInt[], RtInt[], GMANParameterList p);
+  GMANPointsPolygons(GMANPointsPolygons const&);
+  GMANPointsPolygons const& operator=(GMANPointsPolygons const&);
   ~GMANPointsPolygons();
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_POLYGON.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANPolygon : public GMANPrimDatStorage
-{
+class GMAN_EXPORT GMANPolygon : public GMANPrimDatStorage {
 protected:
   RtInt nvert;
 
 public:
-  GMANPolygon(RtInt n, GMANParameterList p)
-    : GMANPrimDatStorage(p), nvert(n) {}
+  GMANPolygon(RtInt n, GMANParameterList p) : GMANPrimDatStorage(p), nvert(n) {}
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_SPHERE.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANSphere : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANSphere : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtFloat radius;
   RtFloat zmin;
@@ -486,76 +375,60 @@ protected:
   RtFloat thetamax;
 
 public:
-  GMANSphere(RtFloat rad, RtFloat zmn, RtFloat zmx, RtFloat theta,
-	     GMANParameterList p)
-    : GMANPrimDatStorage(p), radius(rad), zmin(zmn), zmax(zmx), thetamax(theta) {}
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+  GMANSphere(RtFloat rad, RtFloat zmn, RtFloat zmx, RtFloat theta, GMANParameterList p)
+      : GMANPrimDatStorage(p), radius(rad), zmin(zmn), zmax(zmx), thetamax(theta) {}
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_SUBDIVISIONMESH.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANSubdivisionTag
-{
+class GMAN_EXPORT GMANSubdivisionTag {
 private:
   RtToken tag;
-  RtInt intsize,floatsize;
-  RtInt *intargs;
-  RtFloat *floatargs;
+  RtInt intsize, floatsize;
+  RtInt* intargs;
+  RtFloat* floatargs;
 
   RtVoid copy(GMANSubdivisionTag const& st);
 
-  GMANSubdivisionTag(RtToken t, RtInt isize, RtInt fsize, RtInt *iargs, RtFloat *fargs);
-  GMANSubdivisionTag(GMANSubdivisionTag const &st);
-  GMANSubdivisionTag const &operator=(GMANSubdivisionTag const &st);
+  GMANSubdivisionTag(RtToken t, RtInt isize, RtInt fsize, RtInt* iargs, RtFloat* fargs);
+  GMANSubdivisionTag(GMANSubdivisionTag const& st);
+  GMANSubdivisionTag const& operator=(GMANSubdivisionTag const& st);
   ~GMANSubdivisionTag();
-  
+
   friend class GMANSubdivisionMesh;
 };
 
-
-class GMAN_EXPORT GMANSubdivisionMesh : public GMANPrimDatStorage
-{
+class GMAN_EXPORT GMANSubdivisionMesh : public GMANPrimDatStorage {
 private:
-  RtInt *counter;
-  RtVoid copy(GMANSubdivisionMesh const &sbd);
+  RtInt* counter;
+  RtVoid copy(GMANSubdivisionMesh const& sbd);
   RtVoid destroy();
+
 protected:
   RtToken scheme;
 
   RtInt nfaces;
-  RtInt *nvertices;
-  RtInt *vertices;
+  RtInt* nvertices;
+  RtInt* vertices;
 
   RtInt ntags;
-  GMANSubdivisionTag **tags;
+  GMANSubdivisionTag** tags;
 
 public:
-  GMANSubdivisionMesh(RtToken schm, RtInt nf, RtInt nverts[],
-		      RtInt verts[],
-		      RtInt ntgs, RtToken tgs[], RtInt numargs[],
-		      RtInt iargs[], RtFloat fltargs[],
-		      GMANParameterList p);
-  GMANSubdivisionMesh(GMANSubdivisionMesh const &sbd);
-  GMANSubdivisionMesh const &operator=(GMANSubdivisionMesh const &sbd);
+  GMANSubdivisionMesh(RtToken schm, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntgs, RtToken tgs[], RtInt numargs[],
+                      RtInt iargs[], RtFloat fltargs[], GMANParameterList p);
+  GMANSubdivisionMesh(GMANSubdivisionMesh const& sbd);
+  GMANSubdivisionMesh const& operator=(GMANSubdivisionMesh const& sbd);
   ~GMANSubdivisionMesh();
 };
-
-
-
-
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_TORUS.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
-class GMAN_EXPORT GMANTorus : public GMANPrimDatStorage, public GMANParametric
-{
+class GMAN_EXPORT GMANTorus : public GMANPrimDatStorage, public GMANParametric {
 protected:
   RtFloat majorradius;
   RtFloat minorradius;
@@ -564,18 +437,11 @@ protected:
   RtFloat thetamax;
 
 public:
-  GMANTorus(RtFloat mjrrad, RtFloat mnrrad,
-	    RtFloat phimn, RtFloat phimx, RtFloat theta,
-	    GMANParameterList p)
-    : GMANPrimDatStorage(p), majorradius(mjrrad), minorradius(mnrrad),
-    phimin(phimn), phimax(phimx), thetamax(theta) {}
-  GMANPoint getLocation (double u, double v);
-  GMANVector getNormal (double u, double v);
+  GMANTorus(RtFloat mjrrad, RtFloat mnrrad, RtFloat phimn, RtFloat phimx, RtFloat theta, GMANParameterList p)
+      : GMANPrimDatStorage(p), majorradius(mjrrad), minorradius(mnrrad), phimin(phimn), phimax(phimx), thetamax(theta) {
+  }
+  GMANPoint getLocation(double u, double v);
+  GMANVector getNormal(double u, double v);
 };
-
-
-
-
-
 
 #endif

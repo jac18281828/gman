@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -23,10 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANSHADER_H
 #define __GMAN_GMANSHADER_H 1
-
 
 #include <string>
 
@@ -37,16 +35,15 @@
 
 class GMANRenderer;
 
-struct GMANShaderParamInfo
-{
-  char *name;
+struct GMANShaderParamInfo {
+  char* name;
   GMANTokenEntry::TokenClass cls;
   GMANTokenEntry::TokenType type;
   RtInt quantity;
   union {
-    float *f;
-    int *i;
-    char *c;
+    float* f;
+    int* i;
+    char* c;
   } def;
   GMANTokenId id;
 };
@@ -55,35 +52,30 @@ struct GMANShaderParamInfo
  * RenderMan API GMANShader
  *
  * A user definable and customizable shading object
- * for producing image and rendering customizations 
+ * for producing image and rendering customizations
  * on the fly and at run time.
  *
  */
 
-class GMAN_EXPORT  GMANShader 
-{
+class GMAN_EXPORT GMANShader {
 public:
-
   // public types
 
   // enumerated shader types
   typedef enum { DISPLACEMENT, VOLUME, IMAGER, LIGHTSOURCE, SURFACE } ShaderType;
 
-  
 protected:
   GMANParameterList pl;
-  GMANRenderer *renderer;
+  GMANRenderer* renderer;
   /* load */
 public:
-  GMANShader ();
-  virtual ~GMANShader ();
+  GMANShader();
+  virtual ~GMANShader();
 
-  virtual RtVoid set (GMANParameterList &p);
-  virtual RtVoid set (GMANRenderer &p);
+  virtual RtVoid set(GMANParameterList& p);
+  virtual RtVoid set(GMANRenderer& p);
 
   virtual ShaderType getType(RtVoid) const = 0;
 };
 
-
 #endif
-

@@ -22,41 +22,40 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 /*
   This class make possible, concatenation of moving transforms.
   It can handle any number of time samples, and times can be different in
   each Motion Block.
   It also perfectly concatenate on any transform as well.
-  
+
   So you can have:
-  
-  --- any number of transforms here --- 
+
+  --- any number of transforms here ---
   MotionBlock 3   0.1 0.2 0.3
   transforms
   EndBlock
-  
+
   MotionBlock 8   25 27 28 32 56 75 88 99
   transforms
   EndBlock
   --- again some transforms here ---
-  
+
   (again some Motion Block ...)
-  
+
   an object.
   This object then will have a transform that handle all this!
 
 
  . When you want to render an object, retrieve its transform,
   and then call:
-  
+
   interpolate( any time )
-  
-  and you will get the right GMANMatrix4, that's all:) 
-  
+
+  and you will get the right GMANMatrix4, that's all:)
+
 
   -------------------------------------------------------------
-  PS: I use matrix interpolation. I think it's a better choice 
+  PS: I use matrix interpolation. I think it's a better choice
   although rotations may look like lines, without enough time samples.
   Anyway, this is not a problem, since samples are not limited.
 */
@@ -67,173 +66,136 @@
 #include "gmantransform.h"
 
 // MATRIX STORAGE
-GMANMatrixStorage::~GMANMatrixStorage()
-{
-};
-
+GMANMatrixStorage::~GMANMatrixStorage() {};
 
 // ONE MATRIX
-GMANOneMatrix::GMANOneMatrix(GMANMatrix4 &m)
-{
-  mx=m; 
-}
-GMANMatrix4 GMANOneMatrix::interpolate(RtFloat /*tm*/)
-{
-  return mx;
-}
-RtInt GMANOneMatrix::getSamplesQuantity()
-{
-  return 1;
-}
+GMANOneMatrix::GMANOneMatrix(GMANMatrix4& m) { mx = m; }
+GMANMatrix4 GMANOneMatrix::interpolate(RtFloat /*tm*/) { return mx; }
+RtInt GMANOneMatrix::getSamplesQuantity() { return 1; }
 
 // MOVING MATRIX
-GMANMovingMatrix::GMANMovingMatrix(std::vector<RtFloat> tms)
-  : times(std::move(tms)), storage(times.size())
-{
-}
-GMANMatrix4 &GMANMovingMatrix::get(RtInt nb)
-{
-  return storage[nb];
-}
-GMANMatrix4 GMANMovingMatrix::interpolate(RtFloat time)
-{
-  GMANMatrix4 temp,result;
-  if (time<=times[0]) {return (storage[0]);}
-  if (time>=times[times.size()-1]) {return (storage[times.size()-1]);}
+GMANMovingMatrix::GMANMovingMatrix(std::vector<RtFloat> tms) : times(std::move(tms)), storage(times.size()) {}
+GMANMatrix4& GMANMovingMatrix::get(RtInt nb) { return storage[nb]; }
+GMANMatrix4 GMANMovingMatrix::interpolate(RtFloat time) {
+  GMANMatrix4 temp, result;
+  if (time <= times[0]) {
+    return (storage[0]);
+  }
+  if (time >= times[times.size() - 1]) {
+    return (storage[times.size() - 1]);
+  }
 
   std::size_t i;
-  for(i=1;i<times.size();i++) {
-    if (time<=times[i]) break;
+  for (i = 1; i < times.size(); i++) {
+    if (time <= times[i])
+      break;
   }
-  RtFloat t1=times[i-1];
-  RtFloat t2=times[i];
-  RtFloat n=((time-t1)/(t2-t1));
-  temp=storage[i-1];
-  result=storage[i];
-  return (result*(n)+temp*(1-n));
+  RtFloat t1 = times[i - 1];
+  RtFloat t2 = times[i];
+  RtFloat n = ((time - t1) / (t2 - t1));
+  temp = storage[i - 1];
+  result = storage[i];
+  return (result * (n) + temp * (1 - n));
 }
-RtInt GMANMovingMatrix::getSamplesQuantity()
-{
-  return (RtInt) times.size();
-}
+RtInt GMANMovingMatrix::getSamplesQuantity() { return (RtInt)times.size(); }
 
-RtFloat GMANMovingMatrix::getTime(RtInt t)
-{
-  return times[t];
-}
-
+RtFloat GMANMovingMatrix::getTime(RtInt t) { return times[t]; }
 
 // GMAN TRANSFORM ---
-RtVoid GMANTransform::copy(GMANTransform const &t)
-{
-  GMANOneMatrix *om=dynamic_cast<GMANOneMatrix *> (t.storage);
-  GMANMovingMatrix *mm=dynamic_cast<GMANMovingMatrix *> (t.storage);
+RtVoid GMANTransform::copy(GMANTransform const& t) {
+  GMANOneMatrix* om = dynamic_cast<GMANOneMatrix*>(t.storage);
+  GMANMovingMatrix* mm = dynamic_cast<GMANMovingMatrix*>(t.storage);
   if (om) {
-    storage=new GMANOneMatrix(*om);
+    storage = new GMANOneMatrix(*om);
   } else if (mm) {
-    storage=new GMANMovingMatrix(*mm);
+    storage = new GMANMovingMatrix(*mm);
   }
 }
-GMANTransform::GMANTransform()
-{
+GMANTransform::GMANTransform() {
   GMANMatrix4 a;
-  storage=new GMANOneMatrix(a);
+  storage = new GMANOneMatrix(a);
 }
 
-GMANTransform::GMANTransform(GMANMatrixStorage &m)
-{
-  GMANOneMatrix *om=dynamic_cast<GMANOneMatrix *> (&m);
-  GMANMovingMatrix *mm=dynamic_cast<GMANMovingMatrix *> (&m);
+GMANTransform::GMANTransform(GMANMatrixStorage& m) {
+  GMANOneMatrix* om = dynamic_cast<GMANOneMatrix*>(&m);
+  GMANMovingMatrix* mm = dynamic_cast<GMANMovingMatrix*>(&m);
   if (om) {
-    storage=new GMANOneMatrix(*om);
+    storage = new GMANOneMatrix(*om);
   } else if (mm) {
-    storage=new GMANMovingMatrix(*mm);
+    storage = new GMANMovingMatrix(*mm);
   }
 }
 
-GMANTransform::GMANTransform(GMANTransform const &t)
-{
-  copy(t);
-}
+GMANTransform::GMANTransform(GMANTransform const& t) { copy(t); }
 
-GMANTransform::~GMANTransform()
-{
-  delete storage;
-}
-GMANTransform const &GMANTransform::operator=(GMANTransform const &t)
-{
-  if(this!=&t) {
+GMANTransform::~GMANTransform() { delete storage; }
+GMANTransform const& GMANTransform::operator=(GMANTransform const& t) {
+  if (this != &t) {
     delete storage;
     copy(t);
   }
   return *this;
 }
-GMANMatrix4 GMANTransform::interpolate(RtFloat tm) const
-{
-  return storage->interpolate(tm);
-} 
-RtVoid GMANTransform::concat(GMANTransform &t)
-{
-  RtInt a,b;
+GMANMatrix4 GMANTransform::interpolate(RtFloat tm) const { return storage->interpolate(tm); }
+RtVoid GMANTransform::concat(GMANTransform& t) {
+  RtInt a, b;
   GMANMatrix4 m;
-  a=storage->getSamplesQuantity();
-  b=t.storage->getSamplesQuantity();
- 
-  if (a==1 && b==1) {       // =======
+  a = storage->getSamplesQuantity();
+  b = t.storage->getSamplesQuantity();
+
+  if (a == 1 && b == 1) { // =======
     // FIXME: Change transform in place instead of replacing
-    m=interpolate(0);
+    m = interpolate(0);
     m.concat(t.storage->interpolate(0));
-    GMANOneMatrix *om = new GMANOneMatrix(m);
+    GMANOneMatrix* om = new GMANOneMatrix(m);
     delete storage;
-    storage=om;
-  } else if (a==1 && b>1) { // =======
-    GMANMovingMatrix *t1=dynamic_cast<GMANMovingMatrix *> (t.storage);
-    GMANMovingMatrix *mm=new GMANMovingMatrix(*t1);
-    m=interpolate(0);
-    for (RtInt i=0;i<mm->getSamplesQuantity();i++) {
+    storage = om;
+  } else if (a == 1 && b > 1) { // =======
+    GMANMovingMatrix* t1 = dynamic_cast<GMANMovingMatrix*>(t.storage);
+    GMANMovingMatrix* mm = new GMANMovingMatrix(*t1);
+    m = interpolate(0);
+    for (RtInt i = 0; i < mm->getSamplesQuantity(); i++) {
       mm->get(i) = m;
       mm->get(i).concat(t1->get(i));
     }
     delete storage;
-    storage=mm;
-  } else if (b==1 && a>1) { // =======
-    GMANMovingMatrix *t1=dynamic_cast<GMANMovingMatrix *> (storage);
-    m=t.storage->interpolate(0);
-    for (RtInt i=0;i<t1->getSamplesQuantity();i++) {
+    storage = mm;
+  } else if (b == 1 && a > 1) { // =======
+    GMANMovingMatrix* t1 = dynamic_cast<GMANMovingMatrix*>(storage);
+    m = t.storage->interpolate(0);
+    for (RtInt i = 0; i < t1->getSamplesQuantity(); i++) {
       t1->get(i).concat(m);
     }
-  } else if (a>1 && b>1) {  // =======
-    GMANMovingMatrix *t1,*t2;
-    t1=dynamic_cast<GMANMovingMatrix *> (storage);
-    t2=dynamic_cast<GMANMovingMatrix *> (t.storage);
+  } else if (a > 1 && b > 1) { // =======
+    GMANMovingMatrix *t1, *t2;
+    t1 = dynamic_cast<GMANMovingMatrix*>(storage);
+    t2 = dynamic_cast<GMANMovingMatrix*>(t.storage);
 
     std::vector<RtFloat> tm;
-    tm.reserve((std::size_t) t1->getSamplesQuantity() +
-	       (std::size_t) t2->getSamplesQuantity());
-    for (RtInt i=0;i<t1->getSamplesQuantity();i++)
+    tm.reserve((std::size_t)t1->getSamplesQuantity() + (std::size_t)t2->getSamplesQuantity());
+    for (RtInt i = 0; i < t1->getSamplesQuantity(); i++)
       tm.push_back(t1->getTime(i));
-    for (RtInt i=0;i<t2->getSamplesQuantity();i++)
+    for (RtInt i = 0; i < t2->getSamplesQuantity(); i++)
       tm.push_back(t2->getTime(i));
 
-    GMANMovingMatrix *mm=new GMANMovingMatrix(tm);
-    for (RtInt j=0;j<mm->getSamplesQuantity();j++) {
-      mm->get(j)=t1->interpolate(mm->getTime(j));
+    GMANMovingMatrix* mm = new GMANMovingMatrix(tm);
+    for (RtInt j = 0; j < mm->getSamplesQuantity(); j++) {
+      mm->get(j) = t1->interpolate(mm->getTime(j));
       mm->get(j).concat(t2->interpolate(mm->getTime(j)));
     }
     delete storage;
-    storage=mm;
+    storage = mm;
   }
 }
 
-bool GMANTransform::isMoving()
-{
-  if (storage->getSamplesQuantity()==1) {
+bool GMANTransform::isMoving() {
+  if (storage->getSamplesQuantity() == 1) {
     return false;
-  } else return true;
+  } else
+    return true;
 }
 
-GMANPoint GMANTransform::apply(const GMANPoint &p)
-{
+GMANPoint GMANTransform::apply(const GMANPoint& p) {
   static bool warned1 = false;
   if (isMoving() && !warned1) {
     debug("GMANTransform::apply is not frame sensitive");
@@ -241,16 +203,15 @@ GMANPoint GMANTransform::apply(const GMANPoint &p)
   }
 
   GMANMatrix4 matrix = storage->interpolate(0.0);
-  RtFloat src[] = { p.getX(), p.getY(), p.getZ() };
+  RtFloat src[] = {p.getX(), p.getY(), p.getZ()};
   RtFloat dest[3];
   matrix.p3m(1, src, dest);
   return GMANPoint(dest[0], dest[1], dest[2]);
 }
 
-GMANVector4 GMANTransform::apply(const GMANVector4 &p)
-{
+GMANVector4 GMANTransform::apply(const GMANVector4& p) {
   GMANMatrix4 matrix = storage->interpolate(0.0);
-  RtFloat src[] = { p.getX(), p.getY(), p.getZ(), p.getW() };
+  RtFloat src[] = {p.getX(), p.getY(), p.getZ(), p.getW()};
   RtFloat dest[4];
   matrix.p4m(1, src, dest);
   return GMANVector4(dest[0], dest[1], dest[2], dest[3]);

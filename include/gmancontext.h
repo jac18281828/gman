@@ -32,21 +32,19 @@
 #include "gmanrenderman.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANContext
-{
+class GMAN_EXPORT GMANContext {
 private:
-  std::list<GMANRenderMan *> chl;
-  GMANRenderMan *active;
+  std::list<GMANRenderMan*> chl;
+  GMANRenderMan* active;
+
 public:
   GMANContext();
 
-  RtVoid            addContext(RtVoid);
+  RtVoid addContext(RtVoid);
   RtContextHandle getContext(RtVoid);
-  GMANRenderMan & current(RtVoid);
-  RtVoid            switchTo (RtContextHandle);
-  RtVoid            removeCurrent(RtVoid);
+  GMANRenderMan& current(RtVoid);
+  RtVoid switchTo(RtContextHandle);
+  RtVoid removeCurrent(RtVoid);
 };
 
 #endif
-
-

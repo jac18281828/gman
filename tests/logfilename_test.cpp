@@ -38,29 +38,24 @@
 
 namespace {
 
-int runGmanLog(const std::string &gman, const std::string &ribPath,
-               const std::string &workdir) {
-  const std::string command = "cd \"" + workdir + "\" && \"" + gman +
-                              "\" -l \"" + ribPath + "\" > run.log 2>&1";
+int runGmanLog(const std::string& gman, const std::string& ribPath, const std::string& workdir) {
+  const std::string command = "cd \"" + workdir + "\" && \"" + gman + "\" -l \"" + ribPath + "\" > run.log 2>&1";
   const int status = std::system(command.c_str());
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-std::string slurp(const std::string &path) {
+std::string slurp(const std::string& path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream ss;
   ss << in.rdbuf();
   return ss.str();
 }
 
-}  // namespace
+} // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc < 4) {
-    std::fprintf(
-        stderr,
-        "usage: %s <gman-binary> <tests/rib/sphere.rib> <scratch dir>\n",
-        argv[0]);
+    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/sphere.rib> <scratch dir>\n", argv[0]);
     return 2;
   }
 
@@ -71,16 +66,15 @@ int main(int argc, char *argv[]) {
   std::error_code ec;
   std::filesystem::create_directories(scratch, ec);
   if (ec) {
-    std::fprintf(stderr, "cannot create %s: %s\n", scratch.c_str(),
-                 ec.message().c_str());
+    std::fprintf(stderr, "cannot create %s: %s\n", scratch.c_str(), ec.message().c_str());
     return 2;
   }
 
   const std::string sphereContents = slurp(sphereRib);
 
   struct Case {
-    const char *name;
-    const char *logName;
+    const char* name;
+    const char* logName;
   };
   const Case cases[] = {
       {"ab", "ab.log"},
@@ -89,7 +83,7 @@ int main(int argc, char *argv[]) {
       {"sphere.ribx", "sphere.ribx.log"},
   };
 
-  for (const Case &c : cases) {
+  for (const Case& c : cases) {
     const std::string ribPath = scratch + "/" + c.name;
     const std::string logPath = scratch + "/" + c.logName;
 
@@ -105,15 +99,12 @@ int main(int argc, char *argv[]) {
     const int exitCode = runGmanLog(gman, c.name, scratch);
     check(exitCode == 0, std::string(c.name) + ": gman -l exits 0");
 
-    check(std::filesystem::exists(logPath),
-          std::string(c.name) + ": " + c.logName + " exists");
+    check(std::filesystem::exists(logPath), std::string(c.name) + ": " + c.logName + " exists");
 
     const std::string logContents = slurp(logPath);
-    check(
-        logContents.find("Setting log:") != std::string::npos,
-        std::string(c.name) + ": " + c.logName + " contains \"Setting log:\"");
+    check(logContents.find("Setting log:") != std::string::npos,
+          std::string(c.name) + ": " + c.logName + " contains \"Setting log:\"");
   }
 
-  return checkSummary(
-      "gman -l names its log file correctly for every path length");
+  return checkSummary("gman -l names its log file correctly for every path length");
 }

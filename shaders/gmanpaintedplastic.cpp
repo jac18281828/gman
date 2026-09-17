@@ -42,38 +42,32 @@
  * empty texturename multiplies by white, degrading to plastic rather than
  * to black.
  */
-class GMANPaintedPlastic : public GMANSurfaceShader
-{
+class GMANPaintedPlastic : public GMANSurfaceShader {
 public:
-  RtVoid illuminance (RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
+  RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  const GMANColor &computeCi(GMANSurfaceEnv &se);
-  const GMANColor &computeOi(GMANSurfaceEnv &se);
+  const GMANColor& computeCi(GMANSurfaceEnv& se);
+  const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANPaintedPlastic::illuminance (RtInt /*i*/, GMANVector /*L*/,
-					  GMANColor /*Cl*/, GMANColor /*Ol*/)
-{
+RtVoid GMANPaintedPlastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi sums lights itself via env.ambient()/diffuse()/
   // specular(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor &GMANPaintedPlastic::computeCi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANPaintedPlastic::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
   RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
   RtFloat kd = gmanshaders::getFloatParam(pl, RI_KD, 0.5);
   RtFloat ks = gmanshaders::getFloatParam(pl, RI_KS, 0.5);
   RtFloat roughness = gmanshaders::getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  GMANColor specularcolor = gmanshaders::getColorParam(
-      pl, RI_SPECULARCOLOR, GMANColor((RtFloat) 1.0, (RtFloat) 1.0, (RtFloat) 1.0));
-  std::string texturename =
-      gmanshaders::getStringParam(pl, RI_TEXTURENAME, std::string());
+  GMANColor specularcolor =
+      gmanshaders::getColorParam(pl, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0));
+  std::string texturename = gmanshaders::getStringParam(pl, RI_TEXTURENAME, std::string());
 
-  GMANColor tex = texturename.empty()
-      ? GMANColor((RtFloat) 1.0, (RtFloat) 1.0, (RtFloat) 1.0)
-      : se.texture(texturename, se.s, se.t);
+  GMANColor tex =
+      texturename.empty() ? GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0) : se.texture(texturename, se.s, se.t);
 
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
   GMANVector vf(-se.I.getX(), -se.I.getY(), -se.I.getZ());
@@ -88,44 +82,35 @@ const GMANColor &GMANPaintedPlastic::computeCi(GMANSurfaceEnv &se)
   GMANColor specularTerm = se.specular(nf, vf, roughness);
   specularTerm.scale(ks);
   GMANColor tintedSpecular(specularcolor.getRed() * specularTerm.getRed(),
-			    specularcolor.getGreen() * specularTerm.getGreen(),
-			    specularcolor.getBlue() * specularTerm.getBlue());
+                           specularcolor.getGreen() * specularTerm.getGreen(),
+                           specularcolor.getBlue() * specularTerm.getBlue());
 
-  GMANColor paint(se.Cs.getRed() * tex.getRed(),
-		   se.Cs.getGreen() * tex.getGreen(),
-		   se.Cs.getBlue() * tex.getBlue());
+  GMANColor paint(se.Cs.getRed() * tex.getRed(), se.Cs.getGreen() * tex.getGreen(), se.Cs.getBlue() * tex.getBlue());
 
   GMANColor lit(paint.getRed() * diffuseTerm.getRed() + tintedSpecular.getRed(),
-		paint.getGreen() * diffuseTerm.getGreen() + tintedSpecular.getGreen(),
-		paint.getBlue() * diffuseTerm.getBlue() + tintedSpecular.getBlue());
+                paint.getGreen() * diffuseTerm.getGreen() + tintedSpecular.getGreen(),
+                paint.getBlue() * diffuseTerm.getBlue() + tintedSpecular.getBlue());
 
-  ci = GMANColor(se.Os.getRed() * lit.getRed(),
-		 se.Os.getGreen() * lit.getGreen(),
-		 se.Os.getBlue() * lit.getBlue());
+  ci = GMANColor(se.Os.getRed() * lit.getRed(), se.Os.getGreen() * lit.getGreen(), se.Os.getBlue() * lit.getBlue());
   return ci;
 }
 
-const GMANColor &GMANPaintedPlastic::computeOi(GMANSurfaceEnv &se)
-{
+const GMANColor& GMANPaintedPlastic::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
 
 static GMANLoadableObjectInfo loadableInfo = {
-  "Painted plastic surface shader",
-  "John Cairns <john@2ad.com>",
-  "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
-  "A GMAN SurfaceShader for plastic surfaces with a texture-mapped diffuse "
-  "colour: the RISpec's own paintedplastic.",
+    "Painted plastic surface shader",
+    "John Cairns <john@2ad.com>",
+    "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
+    "A GMAN SurfaceShader for plastic surfaces with a texture-mapped diffuse "
+    "colour: the RISpec's own paintedplastic.",
 };
 
 static GMANPaintedPlastic shader;
 
-extern "C" GMANLoadableObjectInfo *GMANGetLoadableInfo(void) {
-  return &loadableInfo;
-}
+extern "C" GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMANShader *GMANLoadShader(void) {
-  return &shader;
-}
+extern "C" GMANShader* GMANLoadShader(void) { return &shader; }

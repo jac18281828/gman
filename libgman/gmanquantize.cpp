@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2002, 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2002, 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -27,28 +27,17 @@
 #include "gmanquantize.h"
 #include "ri.h"
 
-
 /*
  * RenderMan API GMANQuantize
  *
  */
 
 // default constructor
-GMANQuantize::GMANQuantize(DisplayMode md,
-			   RtInt oneMap,
-			   RtInt mn,
-			   RtInt mx,
-			   RtFloat ditheramp) : mode(md),
-    one(oneMap),
-    minVal(mn),
-    maxVal(mx),
-    ditherAmplitude(ditheramp) { 
-};
+GMANQuantize::GMANQuantize(DisplayMode md, RtInt oneMap, RtInt mn, RtInt mx, RtFloat ditheramp)
+    : mode(md), one(oneMap), minVal(mn), maxVal(mx), ditherAmplitude(ditheramp) {};
 
-
-// default destructor 
-GMANQuantize::~GMANQuantize() { };
-
+// default destructor
+GMANQuantize::~GMANQuantize() {};
 
 namespace {
 
@@ -57,22 +46,20 @@ namespace {
 bool quantizeWarned = false;
 
 void warnQuantizeUnimplemented() {
-    if (!quantizeWarned) {
-	error("Color quantization not currently implemented.");
-	quantizeWarned = true;
-    }
+  if (!quantizeWarned) {
+    error("Color quantization not currently implemented.");
+    quantizeWarned = true;
+  }
 }
 
 } // namespace
 
-
-GMANColor &GMANQuantize::doColor(GMANColor &col) {
-    warnQuantizeUnimplemented();
-    return col;
+GMANColor& GMANQuantize::doColor(GMANColor& col) {
+  warnQuantizeUnimplemented();
+  return col;
 }
 
-
-GMANColorRGB &GMANQuantize::doColor(GMANColorRGB &col) {
-    warnQuantizeUnimplemented();
-    return col;
+GMANColorRGB& GMANQuantize::doColor(GMANColorRGB& col) {
+  warnQuantizeUnimplemented();
+  return col;
 }

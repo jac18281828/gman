@@ -33,28 +33,26 @@
 #include "gmanvector4.h"
 #include "ri.h"
 
-class GMAN_EXPORT  GMANMatrixStorage
-{
+class GMAN_EXPORT GMANMatrixStorage {
 public:
   virtual ~GMANMatrixStorage();
 
-  virtual GMANMatrix4 interpolate(RtFloat tm)=0;
-  virtual RtInt getSamplesQuantity()=0;
+  virtual GMANMatrix4 interpolate(RtFloat tm) = 0;
+  virtual RtInt getSamplesQuantity() = 0;
 };
 
-class GMAN_EXPORT GMANOneMatrix : public GMANMatrixStorage
-{
+class GMAN_EXPORT GMANOneMatrix : public GMANMatrixStorage {
 private:
   GMANMatrix4 mx;
+
 public:
-  GMANOneMatrix(GMANMatrix4 &m);
+  GMANOneMatrix(GMANMatrix4& m);
 
   GMANMatrix4 interpolate(RtFloat tm);
   RtInt getSamplesQuantity();
 };
 
-class GMAN_EXPORT GMANMovingMatrix : public GMANMatrixStorage
-{
+class GMAN_EXPORT GMANMovingMatrix : public GMANMatrixStorage {
 private:
   std::vector<RtFloat> times;
   std::vector<GMANMatrix4> storage;
@@ -64,36 +62,32 @@ public:
 
   GMANMatrix4 interpolate(RtFloat tm);
   RtInt getSamplesQuantity();
-  GMANMatrix4 &get(RtInt nb);
+  GMANMatrix4& get(RtInt nb);
   RtFloat getTime(RtInt n);
 };
 
-
-class GMAN_EXPORT GMANTransform
-{
+class GMAN_EXPORT GMANTransform {
 private:
-  GMANMatrixStorage *storage;
+  GMANMatrixStorage* storage;
 
-  RtVoid copy(GMANTransform const &t);
+  RtVoid copy(GMANTransform const& t);
+
 public:
   GMANTransform();
-  GMANTransform(GMANMatrixStorage &m);
-  GMANTransform(GMANTransform const &t);
+  GMANTransform(GMANMatrixStorage& m);
+  GMANTransform(GMANTransform const& t);
   ~GMANTransform();
-  GMANTransform const &operator=(GMANTransform const &t);
+  GMANTransform const& operator=(GMANTransform const& t);
 
   GMANMatrix4 interpolate(RtFloat tm) const;
-  RtVoid concat(GMANTransform &t);
+  RtVoid concat(GMANTransform& t);
   bool isMoving();
 
-  GMANPoint apply(const GMANPoint &p);
+  GMANPoint apply(const GMANPoint& p);
   // Homogeneous overload: carries w through unnormalized, for callers
   // (e.g. normal transforms) that need the raw matrix product rather
   // than a perspective-divided point.
-  GMANVector4 apply(const GMANVector4 &p);
+  GMANVector4 apply(const GMANVector4& p);
 };
 
 #endif
-
-
-

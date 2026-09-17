@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -23,10 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-
 #ifndef __GMAN_GMANLOADABLE_H
 #define __GMAN_GMANLOADABLE_H 1
-
 
 #include <list>
 #include <map>
@@ -39,17 +37,14 @@
 
 /* Global loadable object types */
 
-typedef RtVoid *GMANLoadableObjectHandle;
-
+typedef RtVoid* GMANLoadableObjectHandle;
 
 typedef struct {
-  const char *name;
-  const char *author;
-  const char *copyright;
-  const char *description;
+  const char* name;
+  const char* author;
+  const char* copyright;
+  const char* description;
 } GMANLoadableObjectInfo;
-
-
 
 /*
  * RenderMan API GMANLoadable
@@ -59,7 +54,7 @@ typedef struct {
  *
  */
 
-class GMAN_EXPORT  GMANLoadable {
+class GMAN_EXPORT GMANLoadable {
 public:
   // a required function for every loadable object.
   // The function returning the loadable object info struct
@@ -69,15 +64,14 @@ public:
    * here made the call through this pointer an incompatible function type,
    * which UBSan reports as undefined behavior. objInfo below is const, so the
    * result still converts on assignment; the plugin ABI is unchanged. */
-  typedef	GMANLoadableObjectInfo*	(*LoadInfoFnc)(RtVoid);
+  typedef GMANLoadableObjectInfo* (*LoadInfoFnc)(RtVoid);
 
-  static        const char *		getInfoFncName;
+  static const char* getInfoFncName;
 
 protected:
+  GMANLoadableObjectHandle object;
 
-  GMANLoadableObjectHandle		object;
-
-  const GMANLoadableObjectInfo		 *objInfo;
+  const GMANLoadableObjectInfo* objInfo;
 
   /*
    * Protected methods
@@ -86,29 +80,26 @@ protected:
   /*
    * Load a symbol by name form of the current object
    */
-  RtVoid *loadSymbol(const char *symName);
+  RtVoid* loadSymbol(const char* symName);
 
 public:
   // construct a loadable object from the
   // specified path
-  GMANLoadable(const char *path); // default constructor
+  GMANLoadable(const char* path); // default constructor
 
   ~GMANLoadable(); // default destructor
 
   // get name of DSO
-  const char *getName(RtVoid) const;
+  const char* getName(RtVoid) const;
 
   // get author of DSO
-  const char *getAuthor(RtVoid) const;
+  const char* getAuthor(RtVoid) const;
 
   // get description of DSO
-  const char *getDescription(RtVoid) const;
+  const char* getDescription(RtVoid) const;
 
   // get copyright of DSO
-  const char *getCopyright(RtVoid) const;
-
+  const char* getCopyright(RtVoid) const;
 };
 
-
 #endif
-

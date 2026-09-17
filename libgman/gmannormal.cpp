@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999  John Cairns 
+ * Copyright (c) 2001, 2000, 1999  John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -35,14 +35,8 @@
  *
  */
 
-GMANNormal::GMANNormal() : GMANVector(0,0,0) {
-  
-}
+GMANNormal::GMANNormal() : GMANVector(0, 0, 0) {}
 
-GMANNormal::GMANNormal(RtFloat x, RtFloat y, RtFloat z) : GMANVector(x,y,z) {
-  
-}
+GMANNormal::GMANNormal(RtFloat x, RtFloat y, RtFloat z) : GMANVector(x, y, z) {}
 
-GMANNormal::GMANNormal(const GMANPoint &p) : GMANVector(p) {
-  
-}
+GMANNormal::GMANNormal(const GMANPoint& p) : GMANVector(p) {}

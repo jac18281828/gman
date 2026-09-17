@@ -27,40 +27,29 @@
 #include "gmanmath.h"
 #include "gmanvector4.h"
 
-RtBasis RiBezierBasis= { {-1,  3, -3,  1},
-			 { 3, -6,  3,  0}, 
-			 {-3,  3,  0,  0},
-			 { 1,  0,  0,  0} };
+RtBasis RiBezierBasis = {{-1, 3, -3, 1}, {3, -6, 3, 0}, {-3, 3, 0, 0}, {1, 0, 0, 0}};
 
-RtBasis RiBSplineBasis = { {-1.0/6,  3.0/6, -3.0/6,  1.0/6},
-			   { 3.0/6, -6.0/6,  3.0/6,  0.0/6}, 
-			   {-3.0/6,  0.0/6,  3.0/6,  0.0/6},
-			   { 1.0/6,  4.0/6,  1.0/6,  0.0/6} };
+RtBasis RiBSplineBasis = {{-1.0 / 6, 3.0 / 6, -3.0 / 6, 1.0 / 6},
+                          {3.0 / 6, -6.0 / 6, 3.0 / 6, 0.0 / 6},
+                          {-3.0 / 6, 0.0 / 6, 3.0 / 6, 0.0 / 6},
+                          {1.0 / 6, 4.0 / 6, 1.0 / 6, 0.0 / 6}};
 
-RtBasis RiCatmullRomBasis = { {-1.0/2,  3.0/2, -3.0/2,  1.0/2},
-			      { 2.0/2, -5.0/2,  4.0/2, -1.0/2}, 
-			      {-1.0/2,  0.0/2,  1.0/2,  0.0/2},
-			      { 0.0/2,  2.0/2,  0.0/2,  0.0/2} };
+RtBasis RiCatmullRomBasis = {{-1.0 / 2, 3.0 / 2, -3.0 / 2, 1.0 / 2},
+                             {2.0 / 2, -5.0 / 2, 4.0 / 2, -1.0 / 2},
+                             {-1.0 / 2, 0.0 / 2, 1.0 / 2, 0.0 / 2},
+                             {0.0 / 2, 2.0 / 2, 0.0 / 2, 0.0 / 2}};
 
-RtBasis RiHermiteBasis = { { 2,  1, -2,  1},
-			   {-3, -2,  3, -1}, 
-			   { 0,  1,  0,  0},
-			   { 1,  0,  0,  0} };
+RtBasis RiHermiteBasis = {{2, 1, -2, 1}, {-3, -2, 3, -1}, {0, 1, 0, 0}, {1, 0, 0, 0}};
 
-RtBasis RiPowerBasis = { {1, 0, 0, 0},
-			 {0, 1, 0, 0}, 
-			 {0, 0, 1, 0},
-			 {0, 0, 0, 1} };
+RtBasis RiPowerBasis = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
 
-
-GMANBasis::GMANBasis ()
-{
+GMANBasis::GMANBasis() {
   uBasis.setBasis(RiBezierBasis);
   vBasis.setBasis(RiBezierBasis);
-  uStep=vStep=RI_BEZIERSTEP;
+  uStep = vStep = RI_BEZIERSTEP;
 }
 
-GMANBasis::GMANBasis(const GMANBasis &basis) {
+GMANBasis::GMANBasis(const GMANBasis& basis) {
   uBasis = basis.uBasis;
   vBasis = basis.vBasis;
   uStep = basis.uStep;
@@ -75,57 +64,53 @@ GMANBasis::~GMANBasis() {
 /*----------------------------------------------------------
  * Bicubic Patch tools
  */
-GMANPoint  GMANBasis::bicubic  (RtFloat u, RtFloat v, RtFloat *pts)
-{
+GMANPoint GMANBasis::bicubic(RtFloat u, RtFloat v, RtFloat* pts) {
   GMANVector4 q[4];
-  GMANVector4 pa(u*u*u, u*u, u, 1.0);
-  GMANVector4 pb(v*v*v, v*v, v, 1.0);
-  pa*=uBasis;
-  pb*=vBasis;
+  GMANVector4 pa(u * u * u, u * u, u, 1.0);
+  GMANVector4 pb(v * v * v, v * v, v, 1.0);
+  pa *= uBasis;
+  pb *= vBasis;
 
-  for (RtInt i=0; i<4; i++) {
-    GMANVector4 p1(&pts[0+i*12]), p2(&pts[3+i*12]), p3(&pts[6+i*12]), p4(&pts[9+i*12]);
-    q[i]=p1*pa.getX()+p2*pa.getY()+p3*pa.getZ()+p4*pa.getW();
+  for (RtInt i = 0; i < 4; i++) {
+    GMANVector4 p1(&pts[0 + i * 12]), p2(&pts[3 + i * 12]), p3(&pts[6 + i * 12]), p4(&pts[9 + i * 12]);
+    q[i] = p1 * pa.getX() + p2 * pa.getY() + p3 * pa.getZ() + p4 * pa.getW();
   }
-  GMANVector4 res(q[0]*pb.getX()+q[1]*pb.getY()+q[2]*pb.getZ()+q[3]*pb.getW());
+  GMANVector4 res(q[0] * pb.getX() + q[1] * pb.getY() + q[2] * pb.getZ() + q[3] * pb.getW());
   return (GMANVector)res;
 }
 
-GMANPoint  GMANBasis::bicubicZ (RtFloat u, RtFloat v, RtFloat *pts)
-{
+GMANPoint GMANBasis::bicubicZ(RtFloat u, RtFloat v, RtFloat* pts) {
   GMANVector4 q[4];
-  GMANVector4 pa(u*u*u, u*u, u, 1.0);
-  GMANVector4 pb(v*v*v, v*v, v, 1.0);
-  pa*=uBasis;
-  pb*=vBasis;
+  GMANVector4 pa(u * u * u, u * u, u, 1.0);
+  GMANVector4 pb(v * v * v, v * v, v, 1.0);
+  pa *= uBasis;
+  pb *= vBasis;
 
-  for (RtInt i=0; i<4; i++) {
-    GMANVector p1(0.000, (1.0/3)*i, pts[0+i*4]);
-    GMANVector p2(1.0/3, (1.0/3)*i, pts[1+i*4]);
-    GMANVector p3(2.0/3, (1.0/3)*i, pts[2+i*4]);
-    GMANVector p4(1.000, (1.0/3)*i, pts[3+i*4]);
-    q[i]=p1*pa.getX()+p2*pa.getY()+p3*pa.getZ()+p4*pa.getW();
+  for (RtInt i = 0; i < 4; i++) {
+    GMANVector p1(0.000, (1.0 / 3) * i, pts[0 + i * 4]);
+    GMANVector p2(1.0 / 3, (1.0 / 3) * i, pts[1 + i * 4]);
+    GMANVector p3(2.0 / 3, (1.0 / 3) * i, pts[2 + i * 4]);
+    GMANVector p4(1.000, (1.0 / 3) * i, pts[3 + i * 4]);
+    q[i] = p1 * pa.getX() + p2 * pa.getY() + p3 * pa.getZ() + p4 * pa.getW();
   }
-  GMANVector4 res(q[0]*pb.getX()+q[1]*pb.getY()+q[2]*pb.getZ()+q[3]*pb.getW());
+  GMANVector4 res(q[0] * pb.getX() + q[1] * pb.getY() + q[2] * pb.getZ() + q[3] * pb.getW());
   return res;
 }
 
-GMANPoint GMANBasis::bicubicW (RtFloat u, RtFloat v, RtFloat *pts)
-{
+GMANPoint GMANBasis::bicubicW(RtFloat u, RtFloat v, RtFloat* pts) {
   GMANVector4 q[4];
-  GMANVector4 pa(u*u*u, u*u, u, 1.0);
-  GMANVector4 pb(v*v*v, v*v, v, 1.0);
-  pa*=uBasis;
-  pb*=vBasis;
+  GMANVector4 pa(u * u * u, u * u, u, 1.0);
+  GMANVector4 pb(v * v * v, v * v, v, 1.0);
+  pa *= uBasis;
+  pb *= vBasis;
 
-  for (RtInt i=0; i<4; i++) {
-    GMANVector4 p1(&pts[0+i*16]), p2(&pts[4+i*16]), p3(&pts[8+i*16]), p4(&pts[12+i*16]);
-    q[i]=p1*pa.getX()+p2*pa.getY()+p3*pa.getZ()+p4*pa.getW();
+  for (RtInt i = 0; i < 4; i++) {
+    GMANVector4 p1(&pts[0 + i * 16]), p2(&pts[4 + i * 16]), p3(&pts[8 + i * 16]), p4(&pts[12 + i * 16]);
+    q[i] = p1 * pa.getX() + p2 * pa.getY() + p3 * pa.getZ() + p4 * pa.getW();
   }
-  GMANVector res(q[0]*pb.getX()+q[1]*pb.getY()+q[2]*pb.getZ()+q[3]*pb.getW());
+  GMANVector res(q[0] * pb.getX() + q[1] * pb.getY() + q[2] * pb.getZ() + q[3] * pb.getW());
   return res;
 }
-
 
 /*----------------------------------------------------------
  * Bicubic PatchMesh tools
@@ -136,36 +121,29 @@ GMANPoint GMANBasis::bicubicW (RtFloat u, RtFloat v, RtFloat *pts)
 // that closes the loop back onto point 0 -- wrapping only when i is
 // strictly greater than nu leaves that exact index unwrapped and one past
 // the valid range.
-RtInt GMANBasis::offset (RtInt astart, RtInt bstart, RtInt a, RtInt b,
-			 RtInt nu, RtInt nv,
-			 RtInt pntSize)
-{
-  RtInt i,j;
-  i=astart+a;
-  j=bstart+b;
-  if (i>=nu)
-    i-=nu;
-  if (j>=nv)
-    j-=nv;
-  return pntSize*(i+nu*j);
+RtInt GMANBasis::offset(RtInt astart, RtInt bstart, RtInt a, RtInt b, RtInt nu, RtInt nv, RtInt pntSize) {
+  RtInt i, j;
+  i = astart + a;
+  j = bstart + b;
+  if (i >= nu)
+    i -= nu;
+  if (j >= nv)
+    j -= nv;
+  return pntSize * (i + nu * j);
 }
 
-GMANPoint  GMANBasis::bicubicMesh  (RtFloat u, RtFloat v,
-				    RtInt nu, bool uwrap,
-				    RtInt nv, bool vwrap,
-				    RtFloat *pts)
-{
-  // number of patchs in u and v direction 
+GMANPoint GMANBasis::bicubicMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pts) {
+  // number of patchs in u and v direction
   RtInt nbupatch, nbvpatch;
- if (uwrap==true) {
-    nbupatch= nu/uStep;
+  if (uwrap == true) {
+    nbupatch = nu / uStep;
   } else {
-    nbupatch= 1 + (nu-4)/uStep;
+    nbupatch = 1 + (nu - 4) / uStep;
   }
-  if (vwrap==true) {
-    nbvpatch= nv/vStep;
+  if (vwrap == true) {
+    nbvpatch = nv / vStep;
   } else {
-    nbvpatch= 1 + (nv-4)/vStep;
+    nbvpatch = 1 + (nv - 4) / vStep;
   }
 
   // find which patch to draw
@@ -178,152 +156,138 @@ GMANPoint  GMANBasis::bicubicMesh  (RtFloat u, RtFloat v,
   // sub-patch rather than the leading edge of one that does not exist,
   // and on a periodic axis it lands exactly on the sub-patch offset()
   // wraps back onto index 0, closing the loop onto u==0.0.
-  RtInt patchUStart=(RtInt) floor(u*nbupatch);
+  RtInt patchUStart = (RtInt)floor(u * nbupatch);
   if (patchUStart < 0) {
     patchUStart = 0;
   } else if (patchUStart >= nbupatch) {
     patchUStart = nbupatch - 1;
   }
-  RtInt patchVStart=(RtInt) floor(v*nbvpatch);
+  RtInt patchVStart = (RtInt)floor(v * nbvpatch);
   if (patchVStart < 0) {
     patchVStart = 0;
   } else if (patchVStart >= nbvpatch) {
     patchVStart = nbvpatch - 1;
   }
-  RtFloat newU=u*nbupatch-patchUStart;
-  RtFloat newV=v*nbvpatch-patchVStart;
-  patchUStart*=uStep;
-  patchVStart*=vStep;
+  RtFloat newU = u * nbupatch - patchUStart;
+  RtFloat newV = v * nbvpatch - patchVStart;
+  patchUStart *= uStep;
+  patchVStart *= vStep;
 
   // Calculate Point coords at u,v
   GMANVector q[4];
-  GMANVector4 pa(newU*newU*newU, newU*newU, newU, 1.0);
-  GMANVector4 pb(newV*newV*newV, newV*newV, newV, 1.0);
-  pa*=uBasis;
-  pb*=vBasis;
+  GMANVector4 pa(newU * newU * newU, newU * newU, newU, 1.0);
+  GMANVector4 pb(newV * newV * newV, newV * newV, newV, 1.0);
+  pa *= uBasis;
+  pb *= vBasis;
 
   RtInt ofst;
-  for (RtInt i=0; i<4; i++) {
-    ofst=offset(patchUStart, patchVStart, 0, i, nu, nv, 3);
+  for (RtInt i = 0; i < 4; i++) {
+    ofst = offset(patchUStart, patchVStart, 0, i, nu, nv, 3);
     GMANVector p1(&pts[ofst]);
-    
-    ofst=offset(patchUStart, patchVStart, 1, i, nu, nv, 3);
+
+    ofst = offset(patchUStart, patchVStart, 1, i, nu, nv, 3);
     GMANVector p2(&pts[ofst]);
-    
-    ofst=offset(patchUStart, patchVStart, 2, i, nu, nv, 3);
+
+    ofst = offset(patchUStart, patchVStart, 2, i, nu, nv, 3);
     GMANVector p3(&pts[ofst]);
-    
-    ofst=offset(patchUStart, patchVStart, 3, i, nu, nv, 3);
+
+    ofst = offset(patchUStart, patchVStart, 3, i, nu, nv, 3);
     GMANVector p4(&pts[ofst]);
-    
-    q[i]=p1*pa.getX()+p2*pa.getY()+p3*pa.getZ()+p4*pa.getW();
+
+    q[i] = p1 * pa.getX() + p2 * pa.getY() + p3 * pa.getZ() + p4 * pa.getW();
   }
-  GMANVector res(q[0]*pb.getX()+q[1]*pb.getY()+q[2]*pb.getZ()+q[3]*pb.getW());
+  GMANVector res(q[0] * pb.getX() + q[1] * pb.getY() + q[2] * pb.getZ() + q[3] * pb.getW());
   return res;
 }
 
-GMANPoint  GMANBasis::bicubicMeshZ (RtFloat u, RtFloat v,
-				    RtInt nu, RtInt nv,
-				    RtFloat *pts)
-{
-  // number of patchs in u and v direction 
-  RtInt nbupatch= 1 + (nu-4)/uStep;
-  RtInt nbvpatch= 1 + (nv-4)/vStep;
+GMANPoint GMANBasis::bicubicMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFloat* pts) {
+  // number of patchs in u and v direction
+  RtInt nbupatch = 1 + (nu - 4) / uStep;
+  RtInt nbvpatch = 1 + (nv - 4) / vStep;
 
   // find which patch to draw
-  RtInt scustart=(RtInt) floor(u*nbupatch);
-  RtInt scvstart=(RtInt) floor(v*nbvpatch);
-  RtFloat newU=u*nbupatch-scustart;
-  RtFloat newV=v*nbvpatch-scvstart;
-  RtInt patchUStart=scustart*uStep;
-  RtInt patchVStart=scvstart*vStep;
+  RtInt scustart = (RtInt)floor(u * nbupatch);
+  RtInt scvstart = (RtInt)floor(v * nbvpatch);
+  RtFloat newU = u * nbupatch - scustart;
+  RtFloat newV = v * nbvpatch - scvstart;
+  RtInt patchUStart = scustart * uStep;
+  RtInt patchVStart = scvstart * vStep;
 
   // Calculate Point coords at u,v
   GMANVector q[4];
-  GMANVector4 pa(newU*newU*newU, newU*newU, newU, 1.0);
-  GMANVector4 pb(newV*newV*newV, newV*newV, newV, 1.0);
-  pa*=uBasis;
-  pb*=vBasis;
+  GMANVector4 pa(newU * newU * newU, newU * newU, newU, 1.0);
+  GMANVector4 pb(newV * newV * newV, newV * newV, newV, 1.0);
+  pa *= uBasis;
+  pb *= vBasis;
 
-  RtFloat scu=1.0/(nu-1);
-  RtFloat scv=1.0/(nv-1);
+  RtFloat scu = 1.0 / (nu - 1);
+  RtFloat scv = 1.0 / (nv - 1);
 
   RtInt ofst;
-  for (RtInt i=0; i<4; i++) {
-    ofst=patchUStart+0 +(patchVStart+i)*nu;
-    GMANVector p1( scustart*scu,     (scvstart+i)*scv, pts[ofst]);
-    
-    ofst=patchUStart+1 +(patchVStart+i)*nu;
-    GMANVector p2( (scustart+1)*scu, (scvstart+i)*scv, pts[ofst]);
-    
-    ofst=patchUStart+2 +(patchVStart+i)*nu;
-    GMANVector p3( (scustart+2)*scu, (scvstart+i)*scv, pts[ofst]);
-    
-    ofst=patchUStart+3 +(patchVStart+i)*nu;
-    GMANVector p4( (scustart+3)*scu, (scvstart+i)*scv, pts[ofst]);
-    
-    q[i]=p1*pa.getX()+p2*pa.getY()+p3*pa.getZ()+p4*pa.getW();
+  for (RtInt i = 0; i < 4; i++) {
+    ofst = patchUStart + 0 + (patchVStart + i) * nu;
+    GMANVector p1(scustart * scu, (scvstart + i) * scv, pts[ofst]);
+
+    ofst = patchUStart + 1 + (patchVStart + i) * nu;
+    GMANVector p2((scustart + 1) * scu, (scvstart + i) * scv, pts[ofst]);
+
+    ofst = patchUStart + 2 + (patchVStart + i) * nu;
+    GMANVector p3((scustart + 2) * scu, (scvstart + i) * scv, pts[ofst]);
+
+    ofst = patchUStart + 3 + (patchVStart + i) * nu;
+    GMANVector p4((scustart + 3) * scu, (scvstart + i) * scv, pts[ofst]);
+
+    q[i] = p1 * pa.getX() + p2 * pa.getY() + p3 * pa.getZ() + p4 * pa.getW();
   }
-  GMANVector res(q[0]*pb.getX()+q[1]*pb.getY()+q[2]*pb.getZ()+q[3]*pb.getW());
+  GMANVector res(q[0] * pb.getX() + q[1] * pb.getY() + q[2] * pb.getZ() + q[3] * pb.getW());
   return res;
 }
 
-GMANPoint GMANBasis::bicubicMeshW (RtFloat u, RtFloat v,
-				   RtInt nu, bool uwrap,
-				   RtInt nv, bool vwrap,
-				   RtFloat *pts)
-{
-  // number of patchs in u and v direction 
+GMANPoint GMANBasis::bicubicMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pts) {
+  // number of patchs in u and v direction
   RtInt nbupatch, nbvpatch;
-  if (uwrap==true) {
-    nbupatch= nu/uStep;
+  if (uwrap == true) {
+    nbupatch = nu / uStep;
   } else {
-    nbupatch= 1 + (nu-4)/uStep;
+    nbupatch = 1 + (nu - 4) / uStep;
   }
-  if (vwrap==true) {
-    nbvpatch= nv/vStep;
+  if (vwrap == true) {
+    nbvpatch = nv / vStep;
   } else {
-    nbvpatch= 1 + (nv-4)/vStep;
+    nbvpatch = 1 + (nv - 4) / vStep;
   }
 
   // find which patch to draw
-  RtInt patchUStart=(RtInt) floor(u*nbupatch);
-  RtInt patchVStart=(RtInt) floor(v*nbvpatch);
-  RtFloat newU=u*nbupatch-patchUStart;
-  RtFloat newV=v*nbvpatch-patchVStart;
-  patchUStart*=uStep;
-  patchVStart*=vStep;
+  RtInt patchUStart = (RtInt)floor(u * nbupatch);
+  RtInt patchVStart = (RtInt)floor(v * nbvpatch);
+  RtFloat newU = u * nbupatch - patchUStart;
+  RtFloat newV = v * nbvpatch - patchVStart;
+  patchUStart *= uStep;
+  patchVStart *= vStep;
 
   // Calculate Point coords at u,v
   GMANVector4 q[4];
-  GMANVector4 pa(newU*newU*newU, newU*newU, newU, 1.0);
-  GMANVector4 pb(newV*newV*newV, newV*newV, newV, 1.0);
-  pa*=uBasis;
-  pb*=vBasis;
+  GMANVector4 pa(newU * newU * newU, newU * newU, newU, 1.0);
+  GMANVector4 pb(newV * newV * newV, newV * newV, newV, 1.0);
+  pa *= uBasis;
+  pb *= vBasis;
 
   RtInt ofst;
-  for (RtInt i=0; i<4; i++) {
-    ofst=offset(patchUStart, patchVStart, 0, i, nu, nv, 4);
+  for (RtInt i = 0; i < 4; i++) {
+    ofst = offset(patchUStart, patchVStart, 0, i, nu, nv, 4);
     GMANVector4 p1(&pts[ofst]);
-    
-    ofst=offset(patchUStart, patchVStart, 1, i, nu, nv, 4);
+
+    ofst = offset(patchUStart, patchVStart, 1, i, nu, nv, 4);
     GMANVector4 p2(&pts[ofst]);
-    
-    ofst=offset(patchUStart, patchVStart, 2, i, nu, nv, 4);
+
+    ofst = offset(patchUStart, patchVStart, 2, i, nu, nv, 4);
     GMANVector4 p3(&pts[ofst]);
-    
-    ofst=offset(patchUStart, patchVStart, 3, i, nu, nv, 4);
+
+    ofst = offset(patchUStart, patchVStart, 3, i, nu, nv, 4);
     GMANVector4 p4(&pts[ofst]);
-    
-    q[i]=p1*pa.getX()+p2*pa.getY()+p3*pa.getZ()+p4*pa.getW();
+
+    q[i] = p1 * pa.getX() + p2 * pa.getY() + p3 * pa.getZ() + p4 * pa.getW();
   }
-  GMANVector res(q[0]*pb.getX()+q[1]*pb.getY()+q[2]*pb.getZ()+q[3]*pb.getW());
+  GMANVector res(q[0] * pb.getX() + q[1] * pb.getY() + q[2] * pb.getZ() + q[3] * pb.getW());
   return res;
 }
-
-
-
-
-
-
-

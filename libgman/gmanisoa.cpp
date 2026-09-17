@@ -26,32 +26,29 @@
 
 #include "gmanisoa.h"
 
-RtVoid GMANISO::set (RtToken name, int n, RtToken *tk, RtPointer *dt)
-{
-  std::string a=name;
-  if (a=="searchpath") {
-    for (int i=0;i<n;i++) {
-      a=tk[i];
-      if (a=="archive") {
-	archive=(char *)dt[i];
-	continue;
+RtVoid GMANISO::set(RtToken name, int n, RtToken* tk, RtPointer* dt) {
+  std::string a = name;
+  if (a == "searchpath") {
+    for (int i = 0; i < n; i++) {
+      a = tk[i];
+      if (a == "archive") {
+        archive = (char*)dt[i];
+        continue;
       }
-      if (a=="texture") {
-	texture=(char *)dt[i];
-	continue;
+      if (a == "texture") {
+        texture = (char*)dt[i];
+        continue;
       }
-      if (a=="shader") {
-	shader=(char *)dt[i];
-	continue;
+      if (a == "shader") {
+        shader = (char*)dt[i];
+        continue;
       }
-      if (a=="procedural") {
-	procedural=(char *)dt[i];
+      if (a == "procedural") {
+        procedural = (char*)dt[i];
       }
     }
   }
 }
 
-GMANISA::GMANISA()
-{}
-GMANISA::~GMANISA()
-{}
+GMANISA::GMANISA() {}
+GMANISA::~GMANISA() {}

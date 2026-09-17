@@ -37,16 +37,15 @@
 
 namespace {
 
-bool colorsEqual(const GMANColor &a, const GMANColor &b) {
-  return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() &&
-         a.getBlue() == b.getBlue();
+bool colorsEqual(const GMANColor& a, const GMANColor& b) {
+  return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
 void testNegativeWidthThrows() {
   bool threw = false;
   try {
     GMANBitmap bmp(-1, 4, GMANColor(0.0));
-  } catch (GMANError &) {
+  } catch (GMANError&) {
     threw = true;
   }
   check(threw, "a negative width throws GMANError");
@@ -57,7 +56,7 @@ void testOverflowingSizeThrows() {
   try {
     // 65536 * 65536 == 2^32, which wraps a 32-bit int to 0.
     GMANBitmap bmp(65536, 65536, GMANColor(0.0));
-  } catch (GMANError &) {
+  } catch (GMANError&) {
     threw = true;
   }
   check(threw, "a pixel count that overflows int throws GMANError");
@@ -67,7 +66,7 @@ void testZeroByZeroConstructsWithoutThrowing() {
   bool threw = false;
   try {
     GMANBitmap bmp(0, 0, GMANColor(0.0));
-  } catch (GMANError &) {
+  } catch (GMANError&) {
     threw = true;
   }
   check(!threw, "a 0x0 bitmap constructs without throwing");
@@ -75,7 +74,7 @@ void testZeroByZeroConstructsWithoutThrowing() {
   bool defaultThrew = false;
   try {
     GMANBitmap bmp;
-  } catch (GMANError &) {
+  } catch (GMANError&) {
     defaultThrew = true;
   }
   check(!defaultThrew, "the default constructor builds 0x0 without throwing");
@@ -86,7 +85,7 @@ void testAssignmentCopiesBothDimensions() {
   GMANBitmap src(4, 8, GMANColor(0.0));
   for (int y = 0; y < 8; y++) {
     for (int x = 0; x < 4; x++) {
-      const GMANColorSample sample = (GMANColorSample) (x + y * 4) / 32.0f;
+      const GMANColorSample sample = (GMANColorSample)(x + y * 4) / 32.0f;
       src.setPixel(x, y, GMANColor(sample));
     }
   }
@@ -96,8 +95,7 @@ void testAssignmentCopiesBothDimensions() {
   GMANBitmap dst(4, 2, GMANColor(1.0));
   dst = src;
 
-  check(dst.getWidth() == 4 && dst.getHeight() == 8,
-        "assignment: target takes the source's width and height");
+  check(dst.getWidth() == 4 && dst.getHeight() == 8, "assignment: target takes the source's width and height");
 
   bool allMatch = true;
   for (int y = 0; y < 8 && allMatch; y++) {

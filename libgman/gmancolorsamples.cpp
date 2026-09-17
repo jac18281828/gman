@@ -25,78 +25,62 @@
 
 #include "gmancolorsamples.h"
 
-
-RtVoid GMANColorSamples::copy(RtInt n, RtFloat *ncolor, RtFloat *colorn)
-{
-  for(int i=0;i<n;i++) {
-    nRGB[i]=ncolor[i];
-    RGBn[i]=colorn[i];
+RtVoid GMANColorSamples::copy(RtInt n, RtFloat* ncolor, RtFloat* colorn) {
+  for (int i = 0; i < n; i++) {
+    nRGB[i] = ncolor[i];
+    RGBn[i] = colorn[i];
   }
 }
 
-RtVoid GMANColorSamples::copy(GMANColorSamples const &cs)
-{
-  counter=cs.counter;
-  *counter+=1;
-  number=cs.number;
-  RGBn=cs.RGBn;
-  nRGB=cs.nRGB;
+RtVoid GMANColorSamples::copy(GMANColorSamples const& cs) {
+  counter = cs.counter;
+  *counter += 1;
+  number = cs.number;
+  RGBn = cs.RGBn;
+  nRGB = cs.nRGB;
 }
 
-RtVoid GMANColorSamples::destroy()
-{
-  if (*counter!=0) {
-    *counter-=1;
+RtVoid GMANColorSamples::destroy() {
+  if (*counter != 0) {
+    *counter -= 1;
     return;
   }
   delete counter;
-  delete [] nRGB;
-  delete [] RGBn;
+  delete[] nRGB;
+  delete[] RGBn;
 }
 
-GMANColorSamples::GMANColorSamples ()
-{
-  counter=new int;
-  *counter=0;
-  number=DefaultColorSamples;
-  nRGB=new RtFloat [DefaultColorSamples*3];
-  RGBn=new RtFloat [DefaultColorSamples*3];
-  for (int i=0;i<DefaultColorSamples*3;i++) {
-    nRGB[i]=DefaultCSMatrixNRGB[i];
-    RGBn[i]=DefaultCSMatrixRGBN[i];
+GMANColorSamples::GMANColorSamples() {
+  counter = new int;
+  *counter = 0;
+  number = DefaultColorSamples;
+  nRGB = new RtFloat[DefaultColorSamples * 3];
+  RGBn = new RtFloat[DefaultColorSamples * 3];
+  for (int i = 0; i < DefaultColorSamples * 3; i++) {
+    nRGB[i] = DefaultCSMatrixNRGB[i];
+    RGBn[i] = DefaultCSMatrixRGBN[i];
   }
 }
 
-GMANColorSamples::GMANColorSamples (RtInt n, RtFloat *ncolor, RtFloat *colorn)
-{
-  counter=new int;
-  *counter=0;
-  number=n;
-  nRGB=new RtFloat[3*n];
-  RGBn=new RtFloat[3*n];
-  for (int i=0;i<3*n;i++) {
-    nRGB[i]=ncolor[i];
-    RGBn[i]=colorn[i];
+GMANColorSamples::GMANColorSamples(RtInt n, RtFloat* ncolor, RtFloat* colorn) {
+  counter = new int;
+  *counter = 0;
+  number = n;
+  nRGB = new RtFloat[3 * n];
+  RGBn = new RtFloat[3 * n];
+  for (int i = 0; i < 3 * n; i++) {
+    nRGB[i] = ncolor[i];
+    RGBn[i] = colorn[i];
   }
 }
 
-GMANColorSamples::GMANColorSamples (GMANColorSamples const &cs)
-{
-  copy(cs);
-}
-GMANColorSamples::~GMANColorSamples ()
-{
-  destroy();
-}
+GMANColorSamples::GMANColorSamples(GMANColorSamples const& cs) { copy(cs); }
+GMANColorSamples::~GMANColorSamples() { destroy(); }
 
-GMANColorSamples const &GMANColorSamples::operator=(GMANColorSamples const &cs)
-{
-  if (this!=&cs) {
+GMANColorSamples const& GMANColorSamples::operator=(GMANColorSamples const& cs) {
+  if (this != &cs) {
     destroy();
     copy(cs);
   }
   return (*this);
 }
-
-
-

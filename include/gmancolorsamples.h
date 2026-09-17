@@ -30,26 +30,26 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANColorSamples
-{
+class GMAN_EXPORT GMANColorSamples {
 private:
-  int *counter;
+  int* counter;
 
   RtInt number;
-  RtFloat *nRGB;
-  RtFloat *RGBn;
+  RtFloat* nRGB;
+  RtFloat* RGBn;
 
-  RtVoid copy(RtInt n, RtFloat *ncolor, RtFloat *colorn);
-  RtVoid copy(GMANColorSamples const &);
+  RtVoid copy(RtInt n, RtFloat* ncolor, RtFloat* colorn);
+  RtVoid copy(GMANColorSamples const&);
   RtVoid destroy();
-public:
-  GMANColorSamples ();
-  GMANColorSamples (RtInt n, RtFloat *ncolor, RtFloat *colorn);
-  GMANColorSamples (GMANColorSamples const &);
-  ~GMANColorSamples ();
-  GMANColorSamples const &operator=(GMANColorSamples const &);
 
-  int getNumber () { return number; }
+public:
+  GMANColorSamples();
+  GMANColorSamples(RtInt n, RtFloat* ncolor, RtFloat* colorn);
+  GMANColorSamples(GMANColorSamples const&);
+  ~GMANColorSamples();
+  GMANColorSamples const& operator=(GMANColorSamples const&);
+
+  int getNumber() { return number; }
 };
 
 #endif

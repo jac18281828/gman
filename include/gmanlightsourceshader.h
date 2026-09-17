@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -24,11 +24,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANLIGHTSOURCESHADER_H
 #define __GMAN_GMANLIGHTSOURCESHADER_H 1
-
 
 #include <list>
 #include <map>
@@ -47,28 +45,25 @@
  *
  */
 
-class GMAN_EXPORT  GMANLightSourceShader : public GMANShader
-{
+class GMAN_EXPORT GMANLightSourceShader : public GMANShader {
 protected:
-  typedef RtVoid (*illuminateFunc) (GMANVector L);
-  typedef RtVoid (*solarFunc) (GMANVector L);
+  typedef RtVoid (*illuminateFunc)(GMANVector L);
+  typedef RtVoid (*solarFunc)(GMANVector L);
 
-  std::vector <illuminateFunc> istmt;
-  std::vector <solarFunc> solstmt;
+  std::vector<illuminateFunc> istmt;
+  std::vector<solarFunc> solstmt;
 
 public:
   GMANLightSourceShader(); // default constructor
 
   ~GMANLightSourceShader(); // default destructor
 
-  RtVoid illuminate (RtInt i, GMANVector L);
-  RtVoid solar (RtInt i, GMANVector L);
+  RtVoid illuminate(RtInt i, GMANVector L);
+  RtVoid solar(RtInt i, GMANVector L);
 
   /* output of light source shader */
-  virtual const GMANColor &computeCl(GMANLightEnv &le)= 0;
-  virtual const GMANColor &computeOl(GMANLightEnv &le)= 0;
+  virtual const GMANColor& computeCl(GMANLightEnv& le) = 0;
+  virtual const GMANColor& computeOl(GMANLightEnv& le) = 0;
 };
 
-
 #endif
-

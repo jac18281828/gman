@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns 
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANOUTPUTJPEG_H
 #define __GMAN_GMANOUTPUTJPEG_H 1
-
 
 #include <list>
 #include <map>
@@ -44,26 +42,20 @@
 
 class GMANOutputJPEG : public GMANOutput {
 private:
-  int		quality;
+  int quality;
+
 public:
-  GMANOutputJPEG(const char *path, int width, int height); // default constructor
+  GMANOutputJPEG(const char* path, int width, int height); // default constructor
 
   ~GMANOutputJPEG(); // default destructor
 
-  
   /* set the jpeg quality */
   RtVoid setQuality(int q);
-  
+
   /* get the current jpeg quality */
-  int  getQuality(RtVoid);
+  int getQuality(RtVoid);
 
-
-  virtual RtVoid save(GMANOutput::DisplayMode mode, 
-		      RtFloat gain, 
-		      RtFloat gamma);
-
+  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
 };
 
-
 #endif
-

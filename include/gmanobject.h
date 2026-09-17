@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns 
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -22,11 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
- 
 
 #ifndef __GMAN_GMANOBJECT_H
 #define __GMAN_GMANOBJECT_H 1
-
 
 #include <list>
 #include <map>
@@ -48,48 +46,42 @@
  *
  */
 
-class GMAN_EXPORT  GMANObject : public GMANPrimitive {
+class GMAN_EXPORT GMANObject : public GMANPrimitive {
 private:
+  GMANBody* bodyRoot; // body's
 
-  GMANBody *bodyRoot;	// body's
+  GMANVertex* vertRoot; // vertices
 
-  GMANVertex *vertRoot; // vertices
-
-  GMANObject *next;     // next instance
+  GMANObject* next; // next instance
 
 public:
-  GMANObject();// default constructor
+  GMANObject(); // default constructor
 
-  GMANObject(GMANVertex *v, GMANBody *b); 
+  GMANObject(GMANVertex* v, GMANBody* b);
 
   ~GMANObject(); // default destructor
 
-
   // intersection test
   // return the surface that intersects the ray or NULL
-  const GMANSurface *intersects(const GMANRay &ray);
-
+  const GMANSurface* intersects(const GMANRay& ray);
 
   //
   // return a pointer to a handle for this object
-  RtObjectHandle *getHandle(RtVoid);
-
+  RtObjectHandle* getHandle(RtVoid);
 
   // clone ... must be able to clone a gman object
   // return an identical copy in a newly allocated memory
   // space
-  GMANObject *clone(RtVoid);
+  GMANObject* clone(RtVoid);
 
-  GMANObject *getNext(RtVoid) { return next; };
-  RtVoid setNext(GMANObject *o) { next = o; };
+  GMANObject* getNext(RtVoid) { return next; };
+  RtVoid setNext(GMANObject* o) { next = o; };
 
-  RtVoid setBody(GMANBody *b) { bodyRoot = b; };
-  GMANBody *getBody(RtVoid) { return bodyRoot; };
-  
-  RtVoid setVert(GMANVertex *v) { vertRoot = v; };
-  GMANVertex *getVert(RtVoid) { return vertRoot; };
+  RtVoid setBody(GMANBody* b) { bodyRoot = b; };
+  GMANBody* getBody(RtVoid) { return bodyRoot; };
+
+  RtVoid setVert(GMANVertex* v) { vertRoot = v; };
+  GMANVertex* getVert(RtVoid) { return vertRoot; };
 };
 
-
 #endif
-
