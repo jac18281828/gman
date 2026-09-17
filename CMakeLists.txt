@@ -74,7 +74,7 @@ option(GMAN_BUILD_RADIOSITY "Build the (non-functional) radiosity plugin" OFF)
 function(gman_add_file_driver name)
   string(TOUPPER "${name}" upper)
 
-  option(GMAN_WITH_${upper} "Build the ${name} display driver" ${${upper}_FOUND})
+  option(GMAN_WITH_${upper} "Build the ${upper} display driver" ${${upper}_FOUND})
   if(GMAN_WITH_${upper} AND NOT ${upper}_FOUND)
     message(FATAL_ERROR "GMAN_WITH_${upper} is ON but lib${name} was not found")
   endif()
