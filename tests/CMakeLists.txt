@@ -508,20 +508,30 @@ set_tests_properties(attributescopy PROPERTIES
 
 # UAT defect 2: the PNG output driver segfaulted -- a read-side libpng call
 # on a write struct, a mis-sized pixel buffer, and a loop that only ever
-# wrote column 0.
-add_executable(gman_pngdriver pngdriver_test.cpp)
-target_link_libraries(gman_pngdriver PRIVATE gman_core PNG::PNG TIFF::TIFF)
+# wrote column 0. The binary needs libpng to link, so it stays guarded; the
+# test itself registers unconditionally so a build without libpng reports
+# the gap as Skipped rather than making the PNG driver invisible to ctest.
+if(GMAN_WITH_PNG)
+  add_executable(gman_pngdriver pngdriver_test.cpp)
+  target_link_libraries(gman_pngdriver PRIVATE gman_core PNG::PNG TIFF::TIFF)
 
-set(GMAN_PNGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pngdriver-run")
-file(MAKE_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
+  set(GMAN_PNGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pngdriver-run")
+  file(MAKE_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
+
+  set(GMAN_PNGDRIVER_COMMAND gman_pngdriver $<TARGET_FILE:gman>)
+else()
+  set(GMAN_PNGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}")
+  set(GMAN_PNGDRIVER_COMMAND sh -c "exit 77")
+endif()
 
 add_test(NAME pngdriver
-  COMMAND gman_pngdriver $<TARGET_FILE:gman>
+  COMMAND ${GMAN_PNGDRIVER_COMMAND}
   WORKING_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
 set_tests_properties(pngdriver PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
-  TIMEOUT 30)
+  TIMEOUT 30
+  SKIP_RETURN_CODE 77)
 
 # UAT defect 3: .jpg/.jpeg had no Display extension dispatch branch, so
 # newOutput stayed null and RiWorldEnd dereferenced it unconditionally. The
