@@ -25,11 +25,9 @@
 
 #include <stdio.h>
 /* util headers */
-#ifdef HAVE_LIBJPEG
 extern "C" {
-#include <jpeglib.h> 
+#include <jpeglib.h>
 }
-#endif
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
@@ -61,8 +59,6 @@ GMANOutputJPEG::~GMANOutputJPEG() { };
 RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, 
 			    RtFloat gain, 
 			    RtFloat gamma) {
-#ifdef HAVE_LIBJPEG
-
   gammaCorrect.setExposure(gain, gamma);
   FILE *jpegFile = fopen(outputName.c_str(), "w");
   if(jpegFile) {
@@ -143,7 +139,6 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/,
     errorMsg.append(outputName);
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
   }
-#endif
 }
 
 

@@ -25,12 +25,10 @@
 
 /* System Headers */
 
-#ifdef HAVE_LIBPNG
 extern "C" {
 #include <png.h>
 #include <zlib.h>
 }
-#endif
 
 /* Local Headers */
 #include "ri.h"      /* RenderMan Interface */
@@ -53,10 +51,9 @@ GMANOutputPNG::GMANOutputPNG(const char *path, int width, int height) :
 // default destructor 
 GMANOutputPNG::~GMANOutputPNG() { };
 
-RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode, 
-			   RtFloat gain, 
+RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
+			   RtFloat gain,
 			   RtFloat gamma) {
-#ifdef HAVE_LIBPNG
     gammaCorrect.setExposure(gain, gamma);
 
     // write a PNG file to 'fileName'
@@ -260,6 +257,4 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode,
     // leak was always here but never actually ran.
     png_destroy_write_struct(&png_ptr, &info_ptr);
     fclose(pngFile);
-
-#endif
 }

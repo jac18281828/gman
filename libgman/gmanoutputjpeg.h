@@ -48,7 +48,7 @@
  *
  */
 
-class GMAN_EXPORT GMANOutputJPEG : public GMANOutput {
+class GMANOutputJPEG : public GMANOutput {
 private:
   int		quality;
 public:

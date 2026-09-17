@@ -50,10 +50,7 @@
 #include "gmanvsorthographic.h"
 #include "gmanvsperspective.h"
 
-#include "gmanoutputjpeg.h"
-#include "gmanoutputpnm.h"
-#include "gmanoutputpng.h"
-#include "gmanoutputtiff.h"
+#include "gmanfiledrivers.h"
 #include "gmanoutputx11.h"
 #include "gmaninlineparse.h"
 #include "gmanvector.h"
@@ -162,43 +159,13 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid)
     }
     debug("Displaying to file with extension, {}.", ext.c_str());
 
-    if((ext == "tif") || (ext == "tiff")) {
-
-      newOutput.reset(new GMANOutputTIFF( getOptions().
-				   getDisplay().name.c_str(),
-				   ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				   ri.rymax-ri.rymin+1));
-    } else if (ext == "png") {
-
-      newOutput.reset(new GMANOutputPNG( getOptions().
-				  getDisplay().name.c_str(),
-				  ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				  ri.rymax-ri.rymin+1));
-
-
-    } else if (ext == "pnm") {
-
-      newOutput.reset(new GMANOutputPNM( getOptions().
-				  getDisplay().name.c_str(),
-				  ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				  ri.rymax-ri.rymin+1));
-    } else if ((ext == "jpg") || (ext == "jpeg")) {
-
-      newOutput.reset(new GMANOutputJPEG( getOptions().
-				  getDisplay().name.c_str(),
-				  ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
-				  ri.rymax-ri.rymin+1));
-    } else {
-      // Every recognized extension above leaves newOutput set; falling
-      // through here means none matched. Diagnose it -- an unrecognized
-      // extension is the same defect this branch exists to close in its
-      // general form, not just for "jpg"/"jpeg": a null newOutput handed
-      // to `output` below gets dereferenced in RiWorldEnd with no
-      // diagnostic at all.
-      std::string errorMsg("Unrecognized Display file extension: ");
-      errorMsg.append(ext);
-      throw(GMANError(RIE_BADFILE, RIE_ERROR, errorMsg.c_str()));
-    }
+    // Throws RIE_BADFILE for a known but disabled driver's extension, or
+    // an unrecognized one -- either way newOutput never reaches
+    // RiWorldEnd null.
+    newOutput = gmanMakeFileOutput(ext,
+				    getOptions().getDisplay().name.c_str(),
+				    ri.rxmax-ri.rxmin+1, // if the user use RiCropWindow
+				    ri.rymax-ri.rymin+1);
 
   } else {  // type == framebuffer
     // our frame buffer

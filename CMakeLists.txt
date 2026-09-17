@@ -47,12 +47,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 # ---------------------------------------------------------------------------
 
 find_package(ZLIB REQUIRED)
-find_package(PNG REQUIRED)
+find_package(PNG)
 find_package(TIFF REQUIRED)
 find_package(JPEG)
 find_package(Threads REQUIRED)
 
-option(GMAN_WITH_PNG "Build the PNG display driver" ON)
+option(GMAN_WITH_PNG "Build the PNG display driver" ${PNG_FOUND})
 option(GMAN_WITH_JPEG "Build the JPEG display driver" ${JPEG_FOUND})
 
 # All three are non-functional and kept for the design intent a later phase may
@@ -62,9 +62,50 @@ option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
 option(GMAN_BUILD_RAYTRACER "Build the (non-functional) ray tracer plugin" OFF)
 option(GMAN_BUILD_RADIOSITY "Build the (non-functional) radiosity plugin" OFF)
 
+if(GMAN_WITH_PNG AND NOT PNG_FOUND)
+  message(FATAL_ERROR "GMAN_WITH_PNG is ON but libpng was not found")
+endif()
 if(GMAN_WITH_JPEG AND NOT JPEG_FOUND)
   message(FATAL_ERROR "GMAN_WITH_JPEG is ON but libjpeg was not found")
 endif()
+
+# ---------------------------------------------------------------------------
+# The file-Display driver table -- see libgman/gmanfiledrivers.cpp.in for the
+# design. Each option contributes its own include and factory only when it is
+# actually compiled, so the generated table never has to preprocess a choice
+# CMake already made.
+# ---------------------------------------------------------------------------
+
+set(GMAN_PNG_INCLUDE "")
+set(GMAN_PNG_FACTORY_DEFINITION "")
+set(GMAN_PNG_FACTORY_REF "nullptr")
+if(GMAN_WITH_PNG)
+  set(GMAN_PNG_INCLUDE "#include \"gmanoutputpng.h\"")
+  set(GMAN_PNG_FACTORY_DEFINITION
+"std::unique_ptr<GMANOutput> gmanMakePNGOutput(char const *path, int width,
+                                               int height) {
+  return std::make_unique<GMANOutputPNG>(path, width, height);
+}")
+  set(GMAN_PNG_FACTORY_REF "&gmanMakePNGOutput")
+endif()
+
+set(GMAN_JPEG_INCLUDE "")
+set(GMAN_JPEG_FACTORY_DEFINITION "")
+set(GMAN_JPEG_FACTORY_REF "nullptr")
+if(GMAN_WITH_JPEG)
+  set(GMAN_JPEG_INCLUDE "#include \"gmanoutputjpeg.h\"")
+  set(GMAN_JPEG_FACTORY_DEFINITION
+"std::unique_ptr<GMANOutput> gmanMakeJPEGOutput(char const *path, int width,
+                                                int height) {
+  return std::make_unique<GMANOutputJPEG>(path, width, height);
+}")
+  set(GMAN_JPEG_FACTORY_REF "&gmanMakeJPEGOutput")
+endif()
+
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/libgman/gmanfiledrivers.cpp.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp"
+  @ONLY)
 
 # ---------------------------------------------------------------------------
 # gman_core — the renderer front end and its support library
@@ -86,6 +127,7 @@ add_library(gman_core SHARED
   libgman/gmandisplacementshader.cpp
   libgman/gmanerror.cpp
   libgman/gmanface.cpp
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp"
   libgman/gmanfilters.cpp
   libgman/gmanframebuffer.cpp
   libgman/gmangamma.cpp
@@ -109,8 +151,6 @@ add_library(gman_core SHARED
   libgman/gmanobjectmanager.cpp
   libgman/gmanoptions.cpp
   libgman/gmanoutput.cpp
-  libgman/gmanoutputjpeg.cpp
-  libgman/gmanoutputpng.cpp
   libgman/gmanoutputpnm.cpp
   libgman/gmanoutputpolygon.cpp
   libgman/gmanoutputtiff.cpp
@@ -165,6 +205,11 @@ target_include_directories(gman_core PUBLIC
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
   "${CMAKE_CURRENT_BINARY_DIR}/include")
 
+# The generated driver table (build tree, not libgman/) quote-includes
+# gmanfiledrivers.h and the driver headers as if it lived beside them.
+target_include_directories(gman_core PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
+
 # HAVE_LIBDL is not an optional driver: it guards the whole body of
 # GMANLoadable's constructor and loadSymbol. Undefined, the plugin loader
 # compiles and silently loads nothing.
@@ -174,11 +219,11 @@ target_link_libraries(gman_core PUBLIC ZLIB::ZLIB Threads::Threads ${CMAKE_DL_LI
 target_link_libraries(gman_core PRIVATE TIFF::TIFF)
 
 if(GMAN_WITH_PNG)
-  target_compile_definitions(gman_core PRIVATE HAVE_LIBPNG)
+  target_sources(gman_core PRIVATE libgman/gmanoutputpng.cpp)
   target_link_libraries(gman_core PRIVATE PNG::PNG)
 endif()
 if(GMAN_WITH_JPEG)
-  target_compile_definitions(gman_core PRIVATE HAVE_LIBJPEG)
+  target_sources(gman_core PRIVATE libgman/gmanoutputjpeg.cpp)
   target_link_libraries(gman_core PRIVATE JPEG::JPEG)
 endif()
 
@@ -252,6 +297,12 @@ set_target_properties(gman_shinymetal PROPERTIES OUTPUT_NAME "shinymetal")
 
 add_executable(gman gman/gman.cpp)
 target_link_libraries(gman PRIVATE gman_core)
+
+# gman --version reports gmanFileDrivers(), the driver table's own private
+# contract, and PROJECT_VERSION -- neither is part of gman_core's public API.
+target_include_directories(gman PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
+target_compile_definitions(gman PRIVATE
+  GMAN_PROJECT_VERSION="${PROJECT_VERSION}")
 
 # RiBegin dlopen's "lib<renderer>.so" by bare name, so the build tree itself
 # has to be on the runtime search path or no renderer ever loads.
