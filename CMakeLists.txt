@@ -52,9 +52,6 @@ find_package(TIFF REQUIRED)
 find_package(JPEG)
 find_package(Threads REQUIRED)
 
-option(GMAN_WITH_PNG "Build the PNG display driver" ${PNG_FOUND})
-option(GMAN_WITH_JPEG "Build the JPEG display driver" ${JPEG_FOUND})
-
 # All three are non-functional and kept for the design intent a later phase may
 # want. reyes and raytracer additionally do not link -- each has declared
 # virtuals with no definition -- so their options compile but do not complete.
@@ -62,50 +59,44 @@ option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
 option(GMAN_BUILD_RAYTRACER "Build the (non-functional) ray tracer plugin" OFF)
 option(GMAN_BUILD_RADIOSITY "Build the (non-functional) radiosity plugin" OFF)
 
-if(GMAN_WITH_PNG AND NOT PNG_FOUND)
-  message(FATAL_ERROR "GMAN_WITH_PNG is ON but libpng was not found")
-endif()
-if(GMAN_WITH_JPEG AND NOT JPEG_FOUND)
-  message(FATAL_ERROR "GMAN_WITH_JPEG is ON but libjpeg was not found")
-endif()
-
 # ---------------------------------------------------------------------------
-# The file-Display driver table -- see libgman/gmanfiledrivers.cpp.in for the
-# design. Each option contributes its own include and factory only when it is
-# actually compiled, so the generated table never has to preprocess a choice
-# CMake already made.
+# Optional file-Display drivers -- one gman_add_file_driver(<name>) call per
+# driver. It declares GMAN_WITH_<NAME>, defaulting to whether <name>'s
+# library was found; a FATAL_ERROR names that library when the option is
+# forced ON without it; once enabled, it adds the driver's source and links
+# its library PRIVATE on gman_core. It also sets the
+# GMAN_<NAME>_INCLUDE/FACTORY_DEFINITION/FACTORY_REF variables
+# gmanfiledrivers.cpp.in's configure_file below substitutes -- empty and
+# "nullptr" when disabled, so the generated table never has to preprocess a
+# choice CMake already made. Requires gman_core to already exist.
 # ---------------------------------------------------------------------------
 
-set(GMAN_PNG_INCLUDE "")
-set(GMAN_PNG_FACTORY_DEFINITION "")
-set(GMAN_PNG_FACTORY_REF "nullptr")
-if(GMAN_WITH_PNG)
-  set(GMAN_PNG_INCLUDE "#include \"gmanoutputpng.h\"")
-  set(GMAN_PNG_FACTORY_DEFINITION
-"std::unique_ptr<GMANOutput> gmanMakePNGOutput(char const *path, int width,
-                                               int height) {
-  return std::make_unique<GMANOutputPNG>(path, width, height);
-}")
-  set(GMAN_PNG_FACTORY_REF "&gmanMakePNGOutput")
-endif()
+function(gman_add_file_driver name)
+  string(TOUPPER "${name}" upper)
 
-set(GMAN_JPEG_INCLUDE "")
-set(GMAN_JPEG_FACTORY_DEFINITION "")
-set(GMAN_JPEG_FACTORY_REF "nullptr")
-if(GMAN_WITH_JPEG)
-  set(GMAN_JPEG_INCLUDE "#include \"gmanoutputjpeg.h\"")
-  set(GMAN_JPEG_FACTORY_DEFINITION
-"std::unique_ptr<GMANOutput> gmanMakeJPEGOutput(char const *path, int width,
-                                                int height) {
-  return std::make_unique<GMANOutputJPEG>(path, width, height);
-}")
-  set(GMAN_JPEG_FACTORY_REF "&gmanMakeJPEGOutput")
-endif()
+  option(GMAN_WITH_${upper} "Build the ${name} display driver" ${${upper}_FOUND})
+  if(GMAN_WITH_${upper} AND NOT ${upper}_FOUND)
+    message(FATAL_ERROR "GMAN_WITH_${upper} is ON but lib${name} was not found")
+  endif()
 
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/libgman/gmanfiledrivers.cpp.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp"
-  @ONLY)
+  set(GMAN_${upper}_INCLUDE "" PARENT_SCOPE)
+  set(GMAN_${upper}_FACTORY_DEFINITION "" PARENT_SCOPE)
+  set(GMAN_${upper}_FACTORY_REF "nullptr" PARENT_SCOPE)
+  if(NOT GMAN_WITH_${upper})
+    return()
+  endif()
+
+  set(GMAN_${upper}_INCLUDE "#include \"gmanoutput${name}.h\"" PARENT_SCOPE)
+  set(GMAN_${upper}_FACTORY_DEFINITION
+"std::unique_ptr<GMANOutput> gmanMake${upper}Output(char const *path,
+                                          int width, int height) {
+  return std::make_unique<GMANOutput${upper}>(path, width, height);
+}" PARENT_SCOPE)
+  set(GMAN_${upper}_FACTORY_REF "&gmanMake${upper}Output" PARENT_SCOPE)
+
+  target_sources(gman_core PRIVATE "libgman/gmanoutput${name}.cpp")
+  target_link_libraries(gman_core PRIVATE ${upper}::${upper})
+endfunction()
 
 # ---------------------------------------------------------------------------
 # gman_core — the renderer front end and its support library
@@ -127,7 +118,6 @@ add_library(gman_core SHARED
   libgman/gmandisplacementshader.cpp
   libgman/gmanerror.cpp
   libgman/gmanface.cpp
-  "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp"
   libgman/gmanfilters.cpp
   libgman/gmanframebuffer.cpp
   libgman/gmangamma.cpp
@@ -218,14 +208,17 @@ target_compile_definitions(gman_core PUBLIC HAVE_LIBDL)
 target_link_libraries(gman_core PUBLIC ZLIB::ZLIB Threads::Threads ${CMAKE_DL_LIBS})
 target_link_libraries(gman_core PRIVATE TIFF::TIFF)
 
-if(GMAN_WITH_PNG)
-  target_sources(gman_core PRIVATE libgman/gmanoutputpng.cpp)
-  target_link_libraries(gman_core PRIVATE PNG::PNG)
-endif()
-if(GMAN_WITH_JPEG)
-  target_sources(gman_core PRIVATE libgman/gmanoutputjpeg.cpp)
-  target_link_libraries(gman_core PRIVATE JPEG::JPEG)
-endif()
+gman_add_file_driver(png)
+gman_add_file_driver(jpeg)
+
+# The file-Display driver table -- see libgman/gmanfiledrivers.cpp.in for
+# the design; fixed order tiff, pnm, png, jpeg.
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/libgman/gmanfiledrivers.cpp.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp"
+  @ONLY)
+target_sources(gman_core PRIVATE
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp")
 
 # ---------------------------------------------------------------------------
 # gman_rib — the RIB writer backend over the abstract RI interface
