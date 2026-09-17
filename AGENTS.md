@@ -124,14 +124,13 @@ this on every build.
 
 ## libtiff
 
-One seam: `libgman/gmantiff.cpp` owns the only `HAVE_LIBTIFF` and the only
-`<tiffio.h>`. No other source file under `include`, `libgman`,
-`libgmanrib`, `shaders`, `renderers`, `gman` or `gmansl`, and no header,
-includes it or names a libtiff symbol — `tests/tiffcontainment_test.cpp`
-enforces this on every build. `tests/` is outside the rule:
-`tests/goldenimage.h` and `tests/texture_test.cpp` link `TIFF::TIFF` and
-read TIFFs directly, which is a harness reading the renderer's output
-rather than the renderer reaching for libtiff.
+One seam: `libgman/gmantiff.cpp` owns the only `<tiffio.h>`. No other
+source file under `include`, `libgman`, `libgmanrib`, `shaders`,
+`renderers`, `gman` or `gmansl`, and no header, includes it or names a
+libtiff symbol. `tests/` is outside the rule: `tests/goldenimage.h` and
+`tests/texture_test.cpp` link `TIFF::TIFF` and read TIFFs directly, which
+is a harness reading the renderer's output rather than the renderer
+reaching for libtiff.
 
 ## Dependencies and includes
 
