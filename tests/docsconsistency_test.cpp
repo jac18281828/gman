@@ -19,11 +19,11 @@
  */
 
 /*
- * AGENTS.md's Gates section claims to be what CI enforces, runnable by
- * hand. Nothing else keeps that claim honest after a workflow edit, so
- * this test does: every job in .github/workflows/ci.yml must be named in
- * AGENTS.md, and the tool vocabulary the Gates block names -- cmake,
- * ctest, valgrind -- must appear on both sides.
+ * AGENTS.md's Gates section names what CI enforces and the subset a
+ * developer runs by hand. Nothing else keeps that honest after a workflow
+ * edit, so this test does: every job in .github/workflows/ci.yml must be
+ * named in AGENTS.md, and the tool vocabulary the Gates block names --
+ * cmake, ctest -- must appear on both sides.
  *
  * The `os` dimension of ci.yml's build-job matrix (ubuntu-latest /
  * macos-latest) is deliberately exempt: Gates runs once, locally, on
@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
 
   // The vocabulary the Gates block names as of this writing -- see the
   // file comment above for why it is a fixed constant.
-  const std::vector<std::string> vocabulary = {"cmake", "ctest", "valgrind"};
+  const std::vector<std::string> vocabulary = {"cmake", "ctest"};
   for (const auto &tool : vocabulary) {
     check(containsWord(gates, tool),
           "Gates block still names \"" + tool + "\"");

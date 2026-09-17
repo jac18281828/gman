@@ -1,345 +1,104 @@
 # AGENTS.md
 
-GMAN — a RenderMan-compatible renderer. This file briefs an AI agent working
-on this repo: the conventions, the traps and the gates a change must pass.
-Read it before changing anything. Humans contributing by hand want
-`CONTRIBUTING.md`, which covers the same ground more briefly.
+GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 
-## Build
+## Workflow
+1. Summarize current behavior and invariants before proposing edits.
+2. **Ask each time** — dependencies, cross-module or public-API refactors, file
+   deletions, CI or build-preset changes.
+3. **Always ask** — merging to `main`, opening a PR, tags, force ops.
 
-Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
-Clang 17 or newer), libtiff and zlib. libpng and libjpeg are optional: a
-build without one rejects that `Display` extension with `RIE_BADFILE`, and
-`gman --version` lists the drivers actually compiled in. POSIX only:
-macOS and Linux.
-
-```sh
-cmake --preset dev && cmake --build build --parallel
-ctest --test-dir build --output-on-failure
-```
-
-Three presets: `dev` (`build/`, `-Wall -Wextra -Werror` — what the gates
-run), `debug` (`build-debug/`, ASan + UBSan), `release` (`build-release/`,
-optimized, no sanitizers). Adding, renaming or retargeting a preset is a CI
-change — ask first.
-
-## Workflow and approval tiers
-
-**Ask each time, before doing it:** adding or upgrading a dependency, a
-cross-module or public-API refactor, deleting a file, changing CI or a
-build preset.
-
-**Always ask, no matter how routine it looks:** merging to `main`, opening
-a PR, tagging, any force operation. Landing is the operator's, on explicit
-approval — never the agent's.
-
-## C/C++ style and design
-
-Correctness first, then idiomatic, reviewable C++. Small functions, early
-returns, shallow nesting. Small diffs; no cosmetic churn riding along with
-a behavior change. A port that changes results cannot be reviewed, because
-a port bug becomes indistinguishable from a logic change — a behavior
-change gets its own commit, named as such in the message.
-
-Prefer `const auto` for a local that is never reassigned, over spelling
-out its type: `const auto name = expr;` beats `Type name = expr;` when
-`expr`'s type is already evident — a function return, a constructor call
-— and repeating it only gives it a second place to drift out of sync.
-Keep a spelled-out type where `auto` would hide intent: a narrowing
-conversion, an `initializer_list`, or a literal whose type documents
-something a reader would otherwise have to trace.
-
-New code spells a const reference `T const &` and a const pointee
-`T const *`, not `const T &`/`const T *`: `const` binds to its
-immediate left, so `T const &` and `T const *` read uniformly as
-"reference to const T" and "pointer to const T" — the same rule
-that makes `T * const` a const pointer to `T`. This binds new code
-only — the existing `const std::string &` and `const char *`
-signatures predate the rule and are not renamed to satisfy it.
-
-## Comments
-
-No expository or "my way" comments. No comments about the change instead
-of the code — "low overhead version," "fully optimal version" and similar
-have no place once a diff lands; the commit message carries that history,
-not the source. Comments document the code, not the edit that produced it.
+## C++ Style & Design
+- Correctness first; then idiomatic, reviewable C++.
+- Small functions, early returns, shallow nesting.
+- Small diffs, no cosmetic churn. A behavior change gets its own commit, named
+  as such.
+- `const auto x = expr;` when the type is evident; spell the type for a
+  narrowing conversion, an `initializer_list` or a literal whose type matters.
+- New code writes `T const &` and `T const *`.
+- Build strings with `std::string` and `std::format`: no `sprintf`/`strcpy`/
+  `strcat` family, no `new char[`, no `PATH_MAX` outside `tests/`.
+- Prefer RAII. A class owning a raw pointer declares or deletes all five
+  special members.
+- Comments document the code, not the change. No expository or 'my way'
+  comments.
 
 ## Naming
+- Semantic, not pattern-based. Avoid `State`, `Context`, `Manager` without a
+  real contrast. Existing names stay.
+- `GMAN` prefix on every global-scope class; it is the namespace, so add no
+  second one.
+- Lower-case filenames; `methodName`, `SymbolName`.
 
-Semantic, not pattern-based. Avoid suffixes like `State`, `Context`,
-`Manager` in new code unless there is a real contrast to draw (`Config` vs
-`Runtime`, `Snapshot` vs `Live`). This binds new code only:
-`GMANLightSourceMgr`, `GMANGraphicState` and `GMANObjectManager` predate the
-rule and are not renamed to satisfy it — renaming a public class is a
-cross-module refactor (ask first) with nothing to gain here. Do not use a
-prefix or suffix as a namespace: everything in this codebase already starts
-with `GMAN` (see "House conventions" below), so that prefix does the one
-job a namespace would; do not layer a second one on top of it.
+## Abstraction
+- Abstract only to remove duplication or encode an invariant.
+- Prefer concrete domain types over generic wrappers.
+- `GMANParameterList::getPointer` returns NULL for an absent token; check it,
+  or use `gmanshaderparams.h`'s helpers.
+- No universal base class; logging is the free functions in `gmanlog.h`.
 
-## Abstraction and error handling
+## Seams
+- Threads: only `gmanParallelFor` (`include/gmanparallel.h`).
+  `libgman/gmanparallel.cpp` and `libgman/gmanlog.cpp` alone may name a thread
+  primitive; `tests/threadcontainment_test.cpp` enforces it.
+- libtiff: only `libgman/gmantiff.cpp` includes `<tiffio.h>` (`tests/` exempt).
 
-Abstract only to remove duplication or encode an invariant. Prefer concrete
-domain types over generic wrappers.
-
-Any class that owns a resource through a raw pointer declares — or
-explicitly `= delete`s — its copy constructor, copy assignment, move
-constructor and move assignment (the Rule of Five). Prefer RAII —
-`std::unique_ptr`, `std::string`, standard containers — over raw
-`new`/`delete`. This repo has shipped a double-free from a class with owned
-raw pointers and no copy constructor, and a leak spanning roughly sixty call
-sites from an allocation whose owner threw before reaching its `delete`. A
-class that cannot be safely copied, and a function that returns before it
-frees, are exactly the shapes those two bugs took.
-
-Build strings with `std::string` and `std::format`, not a hand-sized
-buffer: no `sprintf`/`strcpy`/`strcat` family call (bounded or not), no
-`new char[` and no `PATH_MAX` outside `tests/`, with
-`libgman/gmanribparse.cpp`'s one RI string copy the exception.
-`.clang-tidy`'s `bugprone-unsafe-functions` reports the banned calls on
-every push and pull request, through `.github/workflows/clang-tidy.yml`. A
-red run reports and blocks nothing.
-
-`GMANParameterList::getPointer` returns NULL for an absent token — an
-optional, not an `unwrap`. Code with an optional parameter must check the
-returned pointer before dereferencing it (`gmanshaderparams.h`'s
-`getFloatParam`/`getColorParam` do this); do not assume presence. It threw
-once, and that made every `Projection` without an explicit `"fov"` fail:
-`RiWorldBegin`'s own default-to-90 path was unreachable, because the lookup
-feeding it never returned. Absence is the routine case here, and a
-throw is the wrong shape for it.
-
-## Threading
-
-One seam: `gmanParallelFor` (`include/gmanparallel.h`) runs a body once
-per index, spread over a bounded set of workers, and returns only once
-every body has returned. A body owns its worker's slice of any per-worker
-state outright — no lock needed for that; anything else it reads must
-already be read-only for the call, logging the one sanctioned exception.
-Two files may name a thread primitive: `libgman/gmanparallel.cpp` owns
-thread creation, and `libgman/gmanlog.cpp` owns one private `std::mutex`
-because a worker calls `warning()`. No other source file, and no header,
-includes `<thread>`, `<stop_token>`, `<mutex>`, `<atomic>`,
-`<condition_variable>`, `<future>`, `<shared_mutex>` or `<pthread.h>`, or
-names `std::thread`, `std::jthread`, `std::stop_token`, `std::mutex`,
-`std::atomic` or `pthread_` — `tests/threadcontainment_test.cpp` enforces
-this on every build.
-
-## libtiff
-
-One seam: `libgman/gmantiff.cpp` owns the only `<tiffio.h>`. No other
-source file under `include`, `libgman`, `libgmanrib`, `shaders`,
-`renderers`, `gman` or `gmansl`, and no header, includes it or names a
-libtiff symbol. `tests/` is outside the rule: `tests/goldenimage.h` and
-`tests/texture_test.cpp` link `TIFF::TIFF` and read TIFFs directly, which
-is a harness reading the renderer's output rather than the renderer
-reaching for libtiff.
-
-## Dependencies and includes
-
-Prefer the standard library. Includes group in four blocks, each separated
-by one blank line and sorted case-sensitively inside: C++ standard library
-(`<vector>`, `<format>`), system (`<unistd.h>`, `<sys/stat.h>`), libraries
-(`<tiffio.h>`, `<png.h>`, `<jpeglib.h>`, `<zlib.h>`), then gman (`"ri.h"`,
-`"gmanfoo.h"`). A file's own header sorts inside the gman group, not first.
-`.clang-format`'s `IncludeCategories` encodes this order. Qualify `std::`
-explicitly — no blanket `using namespace std`, and no per-name
-`using std::string` either. The blanket form in a public header is what
-broke this codebase's namespace correctness once already.
+## Dependencies and Includes
+- Prefer the standard library. Qualify `std::`; no `using` of `std` names.
+- Four include blocks, sorted: standard library, system, libraries, gman.
+  `.clang-format` encodes it.
 
 ## Tests
-
-Test behavior and contracts, not language or library internals. Avoid
-vacuous tests: removing or breaking the target code must cause a test to
-fail — this project has shipped three defects past green assertions, each
-one caught only by human or adversarial review, never by CI. Unit tests
-hermetic: no network, no files outside the checked-in tree. Add or update
-tests for every behavior change.
-
-**Layout.** Every C++ test is its own `tests/<name>_test.cpp`, its own
-`gman_<name>` executable, and its own `add_test(NAME <name> ...)` in
-`tests/CMakeLists.txt`. `tests/basicstate.c` is the one exception — a
-genuine C translation unit exercising the `extern "C"` RI API the way a
-real client would, with its own `static void check(int, const char *)`
-matching that language's calling convention; leave it alone. Every other
-test includes `tests/check.h` for the shared `check()`/`checkSummary()`
-harness — write assertions with `check(condition, "message")`, and end
-`main` with `return checkSummary("<name> holds");` rather than hand-rolling
-the pass/fail counter or the summary line. A test that renders a scene and
-compares it against a checked-in golden includes `tests/goldenimage.h` and
-calls `checkGoldenImage(...)` instead of writing a second comparison path.
-
-**Adding a test.** Write `tests/<name>_test.cpp` (or reuse an existing one
-if the behavior belongs there — "one scene, one thing" is about RIB
-fixtures, not a rule that every fixture needs its own binary), register it
-in `tests/CMakeLists.txt` following an existing entry's shape, and add any
-new `tests/rib/*.rib` fixture per the RIB authoring section below. Give its
-`set_tests_properties` a `LABELS` of `unit` or `render` — `render` if its
-`COMMAND` names `$<TARGET_FILE:gman>`, `unit` otherwise — and a `TIMEOUT`
-measured from the `debug` preset (ASan+UBSan), floored at 30 seconds:
-`ctest`'s `TIMEOUT 0` means no timeout at all, so a measurement that rounds
-to 0 would silently ship a hang. `tests/docsconsistency_test.cpp` fails at
-`ctest` time if either property is missing.
-
-**Pinning a known defect.** `WILL_FAIL TRUE` on a test's
-`set_tests_properties` marks a defect deliberately left unfixed: write the
-assertion for the behavior you actually want, not the broken one, so the
-test fails today and the property inverts that failure to a pass. Delete
-the `WILL_FAIL` line the moment the fix lands — CTest then fails loudly on
-an unexpected pass, so the fix cannot land silently under a property that
-still expects it to fail.
-
-**Golden images.** Checked into the repo, never generated on demand — see
-`tests/goldenimage.h`'s own comment for the tolerance and its
-justification. Regenerating one is legitimate only when the pixels moved
-because of an intended, reviewed behavior change (a shading, clipping or
-projection fix), never to turn a red test green without understanding why
-it moved: render the scene with the fixed `gman`, inspect the failing
-test's own `*_diff.tif` one last time, then overwrite the checked-in
-golden and say so explicitly in the commit message.
+- Test behavior and contracts, not language or library internals.
+- Avoid vacuous tests: breaking the target code must fail a test.
+- Hermetic: no network, no files outside the tree.
+- Add or update tests for every behavior change.
+- One `tests/<name>_test.cpp` per test, using `tests/check.h`; golden renders
+  use `tests/goldenimage.h`. Register it in `tests/CMakeLists.txt` with
+  `LABELS` (`render` if it runs `gman`, else `unit`) and a `TIMEOUT` of at
+  least 30.
+- Pin a known defect with `WILL_FAIL TRUE` asserting the wanted behavior;
+  remove it with the fix.
+- Regenerate a golden image only for a reviewed behavior change, and say so
+  in the commit.
 
 ## RIB authoring
-
-RIB fixtures and the renderer's own coordinate math are this project's
-genuine difficulty.
-
-**Handedness and matrix convention.** RenderMan's camera looks down `+z`,
-left-handed: a point in front of the camera has positive camera-space z.
-The CTM chain is row-vector, `p * M`, with translation in row 3
-(`GMANMatrix4::trans`/`rot`/`scale`, matching `GMANMatrix4::p3m`/`p4m` and
-`GMANMatrix4::concat`). The projection stage (`prjPersp`/`prjOrtho`,
-consumed by `GMANVector4::projTransform`) uses a different, equally
-pre-existing layout — do not mix them: a CTM fed through `projTransform`'s
-formula, or a projection matrix fed through `p3m`'s, silently produces a
-plausible-looking wrong image (see `libgman/gmanmatrix4.cpp`'s comments at
-`prjPersp`/`p3m` for the two formulas side by side). `RiWorldBegin` does not
-reset the CTM to identity, so a primitive's own CTM already carries
-world-to-camera in one product, not two — do not re-apply the world-to-
-camera transform on top of it. A locally declared transform composes ahead
-of everything already accumulated — `CTM_new = Local . CTM_old`
-(`GMANGraphicState::buildTransform`) — applying to the point before the
-world-to-camera transform, not after it. Both projections clip against
-`RiScreenWindow` (`GMANPolygonClipper::clip`), the same window
-`GMANViewingSystem::screenToRaster` maps to the raster — one window,
-applied in the two places that must agree.
-
-Object-space normals (what `getNormal(u,v)` returns on a primitive)
-transform by the inverse transpose of the CTM — `createParametric` builds
-`ctmInv` for exactly this. Face normals (`GMANFace::calcNormal()`) do not:
-`calcNormal()` runs *after* the face's vertices are already in camera
-space, so the cross product of two already-transformed edges needs no
-separate transform at all. Treat these as two different rules for two
-different kinds of normal, not one rule with an exception.
-
-**The camera convention for fixtures.** Every hand-written scene in
-`tests/rib/` puts the camera at a working distance before `WorldBegin` —
-`Translate 0 0 5`, as in `sphere.rib`, `lights.rib` and
-`partial_sphere.rib`. A RIB with no transform before `WorldBegin` puts the
-camera inside the geometry.
-
-**One scene, one thing.** Each fixture tests a single behavior.
-
-**The desync convention.** A request fixture is "the request under test,
-then a `Sphere`": a handler that mis-counts its own parameters desyncs the
-token stream, and that failure surfaces as the *following* request failing
-to parse — a request tested in isolation misses it entirely. This is the
-one home for this rule; `tests/rib/README` and `tests/ribdialect_test.cpp`
-both point here instead of restating it.
-
-**Third-party RIB.** Record source, upstream commit and license in
-`tests/rib/README`. Fetch once and check in; tests are hermetic and do not
-reach the network.
-
-**Explicit `Clipping` where geometry is flat or narrow in z.** Not because
-the spec requires it, but because this renderer has a known near-clip
-precision defect (`SPEC.md` §8) that corrupts such geometry at the default.
-Pair affected geometry with `Clipping <near> <far>` using a `near` that is
-not astronomically small (`0.5`, not the default) — e.g. `Clipping 0.5 50`.
-
-**What the RIB front end actually supports.** Do not hand-maintain a
-request-support table here — the last one drifted false in over a dozen
-places and stayed that way until this rewrite. `libgman/gmanribtokenize.cpp`
-(`parseKeyword`) is ground truth for which keywords the tokenizer
-recognizes at all; `libgman/gmanribparse.cpp`'s request switch is ground
-truth for which of those actually reach a renderer call versus parse and
-get ignored. `SPEC.md` records the currently-known gaps between the two —
-including tokens with a parser handler already wired but historically
-missing from the tokenizer, and requests with neither.
-
-**Shader plugin authoring.** Subclass `GMANSurfaceShader`
-(`gmansurfaceshader.h`) and implement `computeCi`/`computeOi`; read your own
-parameters off the protected `GMANParameterList pl` your `GMANShader` base
-carries, through `gmanshaderparams.h`'s helpers rather than
-`GMANParameterList::getPointer` directly (see "Abstraction and error
-handling" above). Export the two `extern "C"` symbols `GMANGetLoadableInfo`
-and `GMANLoadShader` (returning a `GMANShader*`); build the plugin as a
-`MODULE` library via `gman_add_plugin` in `CMakeLists.txt`, named
-`lib<name>.so` — `RiSurface "<name>"` dlopens exactly that name.
-`shaders/gmanmatte.cpp`, `gmanplastic.cpp` and `gmanmetal.cpp` are the
-reference implementations. Everything a shader sees is camera space (see
-"Handedness and matrix convention" above) — a shader that mixes spaces
-produces a plausible-looking wrong picture, not a crash.
+- **Handedness and matrix convention.** Camera looks down `+z`, left-handed.
+  CTM is row-vector `p * M`, composed `CTM_new = Local . CTM_old`; the
+  projection matrices (`prjPersp`/`prjOrtho`) use a different layout, so never
+  mix them. `RiWorldBegin` does not reset the CTM. Shaders see camera space.
+- Primitive normals transform by the CTM's inverse transpose; face normals are
+  computed already in camera space.
+- Fixtures put the camera at `Translate 0 0 5` before `WorldBegin`.
+- One scene, one thing.
+- **The desync convention.** A request fixture is the request under test, then
+  a `Sphere`, so a mis-counted parameter list fails the next parse.
+- Flat or z-narrow geometry needs `Clipping 0.5 50`: a known near-clip
+  precision defect (`SPEC.md` §8).
+- Third-party RIB: record source, commit and license in `tests/rib/README`.
+- Supported requests: `gmanribtokenize.cpp` and `gmanribparse.cpp` are ground
+  truth; `SPEC.md` lists gaps.
+- Shader plugins: subclass `GMANSurfaceShader`, export `GMANGetLoadableInfo`
+  and `GMANLoadShader`, build with `gman_add_plugin`. See
+  `shaders/gmanmatte.cpp`.
 
 ## Gates
 
-Not complete until every one is green.
+Before marking work complete, run and report:
 
 ```sh
 cmake --preset dev && cmake --build build --parallel
-cmake --preset debug && cmake --build build-debug
 ctest --test-dir build --output-on-failure
-ctest --test-dir build-debug --output-on-failure
-CXX=g++ cmake --preset dev -B build-gcc && cmake --build build-gcc
-valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
-  ./build/gman tests/rib/sphere.rib
-valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
-  ./build/gman tests/rib/corpus/menger.rib
-valgrind --error-exitcode=1 --track-origins=yes --leak-check=summary \
-  ./build/gman tests/rib/patchmesh_bicubic_periodic.rib
 cmake --build build --target format-check
 ```
 
-Three CI workflows gate every push: `ci` (jobs `build`, `sanitizers`,
-`valgrind`, `format-check`, `drivers-off`), `commitlint`, and `Yamlfmt`.
-`tests/docsconsistency_test.cpp` keeps this block and
-`.github/workflows/ci.yml` from drifting apart.
+CI covers the rest: `build` (clang and gcc), `sanitizers`, `valgrind`,
+`format-check`, `drivers-off`, plus `commitlint` and `Yamlfmt`.
+`tests/docsconsistency_test.cpp` keeps this section naming every `ci.yml` job.
 
-`ASAN_OPTIONS=halt_on_error=1` and `UBSAN_OPTIONS=halt_on_error=1` on the
-`sanitizers` job: UBSan's own default is to print a diagnostic and keep
-running, exit 0 — the same failure class the `valgrind` job exists to
-close for uninitialized reads elsewhere. Set explicitly rather than
-trusted as a runtime default.
+If a gate stays red after a genuine fix, stop and report the error.
 
-`format-check` runs `clang-format --dry-run --Werror` over a fixed file
-list (`.clang-format`'s own comment names it) — the files one phase wrote
-to a single, deliberate style, not the whole tree. The tree carries no
-consistent style; reformatting it wholesale is exactly the cosmetic-churn
-commit this file's own "no cosmetic churn riding along with a behavior
-change" rule forbids, and would destroy `git blame` across 200 files
-besides. Widen the list only by deliberately reformatting the files being
-added to it, on their own commit.
-
-If a gate is still red after a genuine fix attempt, stop and report the
-actual error rather than iterating on guesses.
-
-## Commits and landing
-
-Conventional Commits, signed. `type(scope): subject`, type and scope and
-subject all lower-case, no trailing period. Subject and every body line
-wrapped at 80 columns.
-
-All commits land on a branch; `main` only ever sees a fast-forward. Merging
-is the operator's, on explicit approval — never the agent's.
-
-## House conventions
-
-- All source filenames lower-case.
-- Bicapitalized identifiers: `methodName`, `SymbolName`.
-- `GMAN` prefix on every global-scope class and object name.
-- Implementation in `.cpp`, except templates and code deliberately inlined.
-- RenderMan API types throughout; a new `GMAN` type for anything the RI type
-  system does not cover.
-- Header files guarded against multiple inclusion.
-
-**No universal base class.** Logging is free functions in `gmanlog.h`;
-call `debug("...")` unqualified. Do not introduce a base class every type
-inherits.
+## Commits
+- Conventional Commits, signed, lower-case `type(scope): subject`, wrapped at
+  80 columns.
+- All commits land on a branch; `main` only fast-forwards.
