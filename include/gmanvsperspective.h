@@ -38,7 +38,7 @@ public:
   ~GMANVSPerspective() {}
 
   GMANPoint project(GMANPoint const& p);
-  GMANRay ray(RtFloat x, RtFloat y);
+  GMANRay cameraRay(RtFloat x, RtFloat y);
 
   bool visible(const GMANFace* face);
 

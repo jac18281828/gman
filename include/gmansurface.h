@@ -33,6 +33,7 @@
 
 #include "gmanface.h"
 #include "gmanlog.h"
+#include "gmanray.h"
 #include "gmanvector.h"
 #include "gmanvertex.h"
 #include "ri.h"

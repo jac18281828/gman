@@ -33,3 +33,24 @@ RtVoid GMANViewingSystem::rasterToScreen(RtFloat& x, RtFloat& y) {
   x = sw.left + (sw.right - sw.left) * x / xres;
   y = sw.bottom + (sw.top - sw.bottom) * (yres - y) / yres;
 }
+
+GMANRay GMANViewingSystem::ray(RtFloat x, RtFloat y) {
+  GMANRay cam = cameraRay(x, y);
+  GMANPoint const origin = cam.getOrigin();
+  GMANPoint const through = cam.pointAt(1.0);
+
+  // p3m adds the translation row, so it transforms a point; carrying
+  // origin and origin+direction through it as points and taking the
+  // difference transforms the direction without picking up that
+  // translation.
+  RtFloat srcOrigin[] = {origin.getX(), origin.getY(), origin.getZ()};
+  RtFloat srcThrough[] = {through.getX(), through.getY(), through.getZ()};
+  RtFloat dstOrigin[3], dstThrough[3];
+  GMANMatrix4 c2w = getCameraToWorld();
+  c2w.p3m(1, srcOrigin, dstOrigin);
+  c2w.p3m(1, srcThrough, dstThrough);
+
+  GMANPoint const worldOrigin(dstOrigin[0], dstOrigin[1], dstOrigin[2]);
+  GMANPoint const worldThrough(dstThrough[0], dstThrough[1], dstThrough[2]);
+  return GMANRay(worldOrigin, GMANVector(worldOrigin, worldThrough), cam.getTMin(), cam.getTMax());
+}

@@ -31,7 +31,7 @@
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
-#include "gmansegment.h"
+#include "gmanray.h"
 #include "ri.h"
 
 class GMAN_EXPORT GMANViewingSystem {
@@ -71,8 +71,17 @@ public:
   /* Project a point on screen (raster space coords) */
   virtual GMANPoint project(GMANPoint const& p) = 0;
 
-  /* Given x y coordinate in raster space, return a ray. */
-  virtual GMANRay ray(RtFloat x, RtFloat y) = 0;
+  /* Given an x y coordinate in raster space, return the camera-space ray
+   * through it -- origin and direction as GMANVSPerspective and
+   * GMANVSOrthographic each build them, before any transform.
+   */
+  virtual GMANRay cameraRay(RtFloat x, RtFloat y) = 0;
+
+  /* Given an x y coordinate in raster space, return the world-space ray
+   * through it: cameraRay carried into world space through
+   * getCameraToWorld().
+   */
+  GMANRay ray(RtFloat x, RtFloat y);
 
   /* return true if the face is visible from the
    * current perspective.

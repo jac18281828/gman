@@ -59,6 +59,4 @@ public:
   const GMANPoint& getP2(RtVoid) const { return p2; };
 };
 
-typedef GMANSegment GMANRay;
-
 #endif

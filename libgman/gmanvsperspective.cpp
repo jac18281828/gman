@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanvector.h"
 #include "gmanvector4.h"
 #include "gmanvsperspective.h"
 
@@ -43,22 +44,13 @@ GMANPoint GMANVSPerspective::project(GMANPoint const& p) {
   a.setY(y);
   return a;
 }
-GMANRay GMANVSPerspective::ray(RtFloat x, RtFloat y) {
-  GMANRay r;
+GMANRay GMANVSPerspective::cameraRay(RtFloat x, RtFloat y) {
   rasterToScreen(x, y);
 
-  // camera-space origin and a point along the ray direction, carried into
-  // world space via the camera-to-world transform captured at RiWorldBegin.
-  RtFloat srcOrigin[] = {0, 0, 0};
-  RtFloat srcThrough[] = {x, y, 1};
-  RtFloat dstOrigin[3], dstThrough[3];
-  GMANMatrix4 c2w = getCameraToWorld();
-  c2w.p3m(1, srcOrigin, dstOrigin);
-  c2w.p3m(1, srcThrough, dstThrough);
-
-  r.setP1(GMANPoint(dstOrigin[0], dstOrigin[1], dstOrigin[2]));
-  r.setP2(GMANPoint(dstThrough[0], dstThrough[1], dstThrough[2]));
-  return r;
+  // The eye sits at the camera-space origin; the screen point at z=1 sets
+  // the direction. GMANViewingSystem::ray carries this into world space
+  // via the camera-to-world transform captured at RiWorldBegin.
+  return GMANRay(GMANPoint(0, 0, 0), GMANVector(x, y, 1));
 }
 
 /*

@@ -859,3 +859,14 @@ add_test(NAME colorconvert COMMAND gman_colorconvert)
 set_tests_properties(colorconvert PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# Ray tracer core, unit 1: GMANViewingSystem answers a camera-space ray
+# (cameraRay) as well as a world-space one (ray), and pins the [tmin,
+# tmax] interval every GMANRay defaults to.
+add_executable(gman_cameraray cameraray_test.cpp)
+target_link_libraries(gman_cameraray PRIVATE gman_core)
+
+add_test(NAME cameraray COMMAND gman_cameraray)
+set_tests_properties(cameraray PROPERTIES
+  LABELS unit
+  TIMEOUT 30)

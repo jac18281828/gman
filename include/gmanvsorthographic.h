@@ -38,7 +38,7 @@ public:
   ~GMANVSOrthographic() {}
 
   virtual GMANPoint project(GMANPoint const& p);
-  virtual GMANRay ray(RtFloat x, RtFloat y);
+  virtual GMANRay cameraRay(RtFloat x, RtFloat y);
 
   virtual bool visible(const GMANFace* face);
 

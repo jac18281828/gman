@@ -35,6 +35,7 @@
 #include "gmanface.h"
 #include "gmanlog.h"
 #include "gmanprimitive.h"
+#include "gmanray.h"
 #include "gmansegment.h"
 #include "gmansurface.h"
 #include "ri.h"

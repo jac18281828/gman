@@ -45,7 +45,6 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
                                   const GMANOptions& /*options*/, const GMANAttributes& /*attributes*/) {
 
   RtInt width, height;
-  GMANRay ray;
   width = frameBuffer->getWidth();
   height = frameBuffer->getHeight();
 
@@ -53,6 +52,7 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
     for (int y = 0; y < height; y++) {
       GMANColor color;
 #if 0
+      GMANRay ray;
       GMANRayInterface *prim = dynamic_cast<GMANRayInterface*>(worldManager.getFirst());
       const GMANRayInterface *hitPrimitive = NULL;
       RtFloat t,tempT;

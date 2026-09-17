@@ -32,7 +32,7 @@ public:
   GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl)
       : GMANSphere(radius, zmin, zmax, tmax, pl) {}
 
-  bool intersect(const GMANRay& ray, RtFloat& t) const;
+  bool intersect(const GMANRay& ray, GMANHit& hit) const;
 };
 
 #endif

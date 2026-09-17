@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanvector.h"
 #include "gmanvector4.h"
 #include "gmanvsorthographic.h"
 
@@ -42,20 +43,13 @@ GMANPoint GMANVSOrthographic::project(GMANPoint const& p) {
   a.setY(y);
   return a;
 }
-GMANRay GMANVSOrthographic::ray(RtFloat x, RtFloat y) {
-  GMANRay r;
+GMANRay GMANVSOrthographic::cameraRay(RtFloat x, RtFloat y) {
   rasterToScreen(x, y);
 
-  RtFloat srcOrigin[] = {x, y, 0};
-  RtFloat srcThrough[] = {x, y, 1};
-  RtFloat dstOrigin[3], dstThrough[3];
-  GMANMatrix4 c2w = getCameraToWorld();
-  c2w.p3m(1, srcOrigin, dstOrigin);
-  c2w.p3m(1, srcThrough, dstThrough);
-
-  r.setP1(GMANPoint(dstOrigin[0], dstOrigin[1], dstOrigin[2]));
-  r.setP2(GMANPoint(dstThrough[0], dstThrough[1], dstThrough[2]));
-  return r;
+  // Every ray points down the view axis; the screen point sets the
+  // origin instead. GMANViewingSystem::ray carries this into world space
+  // via the camera-to-world transform captured at RiWorldBegin.
+  return GMANRay(GMANPoint(x, y, 0), GMANVector(0, 0, 1));
 }
 
 /*

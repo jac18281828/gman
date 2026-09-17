@@ -32,6 +32,7 @@
 #include <string>
 
 #include "gmanlog.h"
+#include "gmanray.h"
 #include "gmansegment.h"
 #include "gmantypes.h"
 #include "gmanvertex.h"

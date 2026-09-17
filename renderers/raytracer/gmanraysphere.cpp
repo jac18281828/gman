@@ -26,15 +26,14 @@
 #include "gmanraysphere.h"
 #include "gmanvector.h"
 
-bool GMANRaySphere::intersect(const GMANRay& ray, RtFloat& t) const {
-  GMANVector direction(ray.getP1(), ray.getP2());
-  //  RtPoint intersection;
+bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& /*hit*/) const {
+  const GMANVector& direction = ray.getDirection();
   GMANPoint centre(0, 0, 0);
   RtFloat coef[3];
   int numRoots;
   RtFloat roots[2];
 
-  GMANVector deltaP(ray.getP1(), centre);
+  GMANVector deltaP(ray.getOrigin(), centre);
 
   coef[0] = direction.dot(direction);
   coef[1] = 2 * direction.dot(deltaP);
@@ -46,26 +45,5 @@ bool GMANRaySphere::intersect(const GMANRay& ray, RtFloat& t) const {
   if (numRoots == 0)
     return false;
 
-  if (numRoots == 1)
-    t = roots[0];
-  else {
-    if (roots[0] > 0 && (roots[1] < 0 || roots[0] < roots[1])) {
-      t = roots[0];
-    } else {
-      t = roots[1];
-    }
-  }
-
-  if (t < RI_EPSILON)
-    return false;
-  /*
-  if (calcData ){
-    intersection = pvAdd( ray.getP1(),
-                          svMpy( t, currentRay.direction) );
-    hit.t = t;
-    hit.point = intersection;
-    hit.normal = ppSub(intersection, sphere.centre);
-    hit.side = -1;
-    }*/
-  return true;
+  return false;
 }
