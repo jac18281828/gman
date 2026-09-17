@@ -45,9 +45,11 @@ rather than reading a list here.
 
 ## Style
 
-`clang-format` covers new and touched code. Otherwise match the file you are
-in: lower-case filenames, `GMAN`-prefixed globals, `methodName` and
-`SymbolName`, implementation in `.cpp`, RenderMan API types, guarded headers.
+The tree is clang-format clean, pinned to 22.1.8
+(`pip install clang-format==22.1.8`); format before you commit. Otherwise
+match the file you are in: lower-case filenames, `GMAN`-prefixed globals,
+`methodName` and `SymbolName`, implementation in `.cpp`, RenderMan API
+types, guarded headers.
 
 ## Bug reports
 

@@ -28,7 +28,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt install -y -q --no-install-recommends \
     sudo ca-certificates curl git gnupg2 \
     build-essential clang lld cmake ninja-build \
-    gdb python3 python3-venv clang-format \
+    gdb python3 python3-venv \
     valgrind \
     libtiff-dev libpng-dev libjpeg-dev zlib1g-dev \
     nodejs npm \
@@ -40,18 +40,20 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 RUN npm install -g @commitlint/cli @commitlint/config-conventional && \
     npm cache clean --force
 
-# Pinned to clang-tidy.yml's version: debian stable-slim's apt package
-# disagrees with CI's, so the editor and CI must install the same way. A
-# venv sidesteps PEP 668's lock on the system python3.
-ENV CLANG_TIDY_VENV=/opt/clang-tidy-venv
+# Pinned to clang-tidy.yml's and ci.yml's format-check job's versions:
+# debian stable-slim's apt package disagrees with CI's, so the editor and
+# CI must install the same way. A venv sidesteps PEP 668's lock on the
+# system python3.
+ENV CLANG_TOOLS_VENV=/opt/clang-tools-venv
 # A login shell resets PATH to a list that keeps /usr/local/bin, dropping
-# the venv's bin; the hard link keeps clang-tidy resolvable there too. The
+# the venv's bin; the hard link keeps both tools resolvable there too. The
 # link must be made in this layer: a later RUN would only copy the target,
 # and the image is rebuilt rather than patched, so it cannot go stale.
-RUN python3 -m venv ${CLANG_TIDY_VENV} && \
-    ${CLANG_TIDY_VENV}/bin/pip install clang-tidy==22.1.8 && \
-    ln ${CLANG_TIDY_VENV}/bin/clang-tidy /usr/local/bin/clang-tidy
-ENV PATH=${CLANG_TIDY_VENV}/bin:${PATH}
+RUN python3 -m venv ${CLANG_TOOLS_VENV} && \
+    ${CLANG_TOOLS_VENV}/bin/pip install clang-tidy==22.1.8 clang-format==22.1.8 && \
+    ln ${CLANG_TOOLS_VENV}/bin/clang-tidy /usr/local/bin/clang-tidy && \
+    ln ${CLANG_TOOLS_VENV}/bin/clang-format /usr/local/bin/clang-format
+ENV PATH=${CLANG_TOOLS_VENV}/bin:${PATH}
 
 RUN useradd --create-home -s /bin/bash gman
 RUN usermod -a -G sudo gman

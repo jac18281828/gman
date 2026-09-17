@@ -193,9 +193,9 @@ jobs:
             echo "::endgroup::"
           done
   format-check:
-    # The tree carries no consistent style, so this checks only the files
-    # written to one deliberate style (.clang-format's own comment names
-    # the exact list) -- not a whole-tree gate.
+    # Checks every .c, .cpp and .h under the eight source directories
+    # against the pinned clang-format version (.clang-format's own header
+    # names it) -- a whole-tree gate.
     name: clang-format
     runs-on: ubuntu-latest
     steps:
@@ -203,12 +203,22 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build clang-format \
+          sudo apt-get install -y cmake ninja-build \
             libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+      # Pinned so this whole-tree gate reads the same everywhere: an apt
+      # package follows the distribution, and this runner's Ubuntu version
+      # would otherwise disagree with a contributor's local run.
+      - name: Install clang-format
+        run: |
+          python3 -m venv .venv-format
+          .venv-format/bin/pip install clang-format==22.1.8
+          echo "$PWD/.venv-format/bin" >> "$GITHUB_PATH"
       - name: Configure
         run: cmake --preset dev
       - name: Format check
-        run: cmake --build build --target format-check
+        run: |
+          clang-format --version
+          cmake --build build --target format-check
   drivers-off:
     # Proves the optional drivers are actually optional: no libpng-dev or
     # libjpeg-dev installed at all, both options forced OFF, full suite

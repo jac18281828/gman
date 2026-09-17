@@ -15,13 +15,16 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   as such.
 - `const auto x = expr;` when the type is evident; spell the type for a
   narrowing conversion, an `initializer_list` or a literal whose type matters.
-- New code writes `T const &` and `T const *`.
+- New code writes `T const&` and `T const*`.
 - Build strings with `std::string` and `std::format`: no `sprintf`/`strcpy`/
   `strcat` family, no `new char[`, no `PATH_MAX` outside `tests/`.
 - Prefer RAII. A class owning a raw pointer declares or deletes all five
   special members.
 - Comments document the code, not the change. No expository or 'my way'
   comments.
+- clang-format 22.1.8 keeps the tree formatted to `.clang-format`; a change
+  keeps it so. `format-check` names `pip install clang-format==22.1.8` for a
+  local run and fails on any other version.
 
 ## Naming
 - Semantic, not pattern-based. Avoid `State`, `Context`, `Manager` without a
@@ -100,5 +103,5 @@ If a gate stays red after a genuine fix, stop and report the error.
 
 ## Commits
 - Conventional Commits, signed, lower-case `type(scope): subject`, wrapped at
-  80 columns.
+  100 columns: commitlint's limit, not code's 120.
 - All commits land on a branch; `main` only fast-forwards.

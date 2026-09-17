@@ -338,29 +338,48 @@ endif()
 # Format check
 # ---------------------------------------------------------------------------
 
-# The tree carries no consistent style to enforce, and reformatting it is not
-# this target's job -- a whitespace commit across 200 files destroys git
-# blame. Scoped to the
-# files this phase wrote to a single, deliberate style: tests/check.h and
-# tests/goldenimage.h (the shared harness) and the six RIB-scene test files
-# this phase added. Widen the list only as more of the tree is deliberately
-# touched and reformatted on its own commit, not folded into a behavior
-# change. Check only -- never reformats the tree.
+# Every .c, .cpp and .h under the eight source directories, gathered with
+# CONFIGURE_DEPENDS so a new file is checked without anyone widening a list.
+# gmanfiledrivers.cpp.in is a template, not a C++ source: its .cpp.in
+# extension already leaves it out. Check only -- never reformats the tree.
+set(GMAN_CLANG_FORMAT_VERSION "22.1.8")
+set(GMAN_FORMAT_CHECK_DIRS
+  include libgman libgmanrib shaders renderers gman gmansl tests)
+set(GMAN_FORMAT_CHECK_GLOBS "")
+foreach(dir ${GMAN_FORMAT_CHECK_DIRS})
+  list(APPEND GMAN_FORMAT_CHECK_GLOBS
+    "${CMAKE_SOURCE_DIR}/${dir}/*.c"
+    "${CMAKE_SOURCE_DIR}/${dir}/*.cpp"
+    "${CMAKE_SOURCE_DIR}/${dir}/*.h")
+endforeach()
+file(GLOB_RECURSE GMAN_FORMAT_CHECK_SOURCES CONFIGURE_DEPENDS
+  ${GMAN_FORMAT_CHECK_GLOBS})
+
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
 if(CLANG_FORMAT_EXECUTABLE)
-  add_custom_target(format-check
-    COMMAND "${CLANG_FORMAT_EXECUTABLE}" --dry-run --Werror
-      "${CMAKE_SOURCE_DIR}/tests/check.h"
-      "${CMAKE_SOURCE_DIR}/tests/goldenimage.h"
-      "${CMAKE_SOURCE_DIR}/tests/quadrics_test.cpp"
-      "${CMAKE_SOURCE_DIR}/tests/screenwindow_test.cpp"
-      "${CMAKE_SOURCE_DIR}/tests/clipping_test.cpp"
-      "${CMAKE_SOURCE_DIR}/tests/shaders_test.cpp"
-      "${CMAKE_SOURCE_DIR}/tests/ribmalformed_test.cpp"
-      "${CMAKE_SOURCE_DIR}/tests/patchnorender_test.cpp"
-      "${CMAKE_SOURCE_DIR}/tests/wideframe_test.cpp"
-      "${CMAKE_SOURCE_DIR}/tests/filters_test.cpp"
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    COMMENT "Checking clang-format compliance of this phase's new test files"
-    VERBATIM)
+  # The pin in CI and the dev container would otherwise leave a
+  # contributor's local run on another version, disagreeing with CI while
+  # the gate reads green.
+  execute_process(
+    COMMAND "${CLANG_FORMAT_EXECUTABLE}" --version
+    OUTPUT_VARIABLE GMAN_CLANG_FORMAT_FOUND_VERSION_RAW
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+"
+    GMAN_CLANG_FORMAT_FOUND_VERSION "${GMAN_CLANG_FORMAT_FOUND_VERSION_RAW}")
+
+  if(NOT GMAN_CLANG_FORMAT_FOUND_VERSION STREQUAL GMAN_CLANG_FORMAT_VERSION)
+    add_custom_target(format-check
+      COMMAND "${CMAKE_COMMAND}" -E echo
+        "format-check requires clang-format ${GMAN_CLANG_FORMAT_VERSION}, found ${GMAN_CLANG_FORMAT_FOUND_VERSION}"
+      COMMAND "${CMAKE_COMMAND}" -E false
+      COMMENT "Checking the clang-format version format-check requires"
+      VERBATIM)
+  else()
+    add_custom_target(format-check
+      COMMAND "${CLANG_FORMAT_EXECUTABLE}" --dry-run --Werror
+        ${GMAN_FORMAT_CHECK_SOURCES}
+      WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+      COMMENT "Checking clang-format compliance of every source file in the tree"
+      VERBATIM)
+  endif()
 endif()

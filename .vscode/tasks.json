@@ -42,7 +42,7 @@
             "label": "format-check",
             "type": "shell",
             "command": "cmake --build build --target format-check",
-            "detail": "Dry-run clang-format check, scoped to CMakeLists.txt's fixed file list -- never reformats the tree.",
+            "detail": "Dry-run clang-format check over every .c, .cpp and .h in the tree -- never reformats it.",
             "problemMatcher": [],
             "group": "test"
         },
