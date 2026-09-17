@@ -33,7 +33,7 @@
 namespace {
 
 // A single opaque black texel: what a missing, unreadable or unsupported
-// file, or a GMAN_WITH_TIFF=OFF build, decodes to.
+// file decodes to.
 std::vector<GMANColor> blackTexel() {
   return std::vector<GMANColor>(1, GMANColor((RtFloat) 0.0, (RtFloat) 0.0,
                                               (RtFloat) 0.0));
@@ -153,13 +153,6 @@ bool writeTexture(const std::string &name, uint32_t w, uint32_t h,
 }  // namespace
 
 GMANTexture::GMANTexture(const std::string &name) : width(1), height(1) {
-  if (!GMANTIFFReader::available()) {
-    warning("texture \"{}\": built without libtiff, using opaque black",
-            name.c_str());
-    texels = blackTexel();
-    return;
-  }
-
   GMANTIFFReader reader(name);
   if (!reader.isOpen()) {
     warning("texture \"{}\": cannot open, using opaque black", name.c_str());
@@ -272,12 +265,6 @@ GMANTextureCache &gmanTextureCache(RtVoid) {
 
 bool gmanMakeTexture(const char *picture, const char *texture,
                       const char *swrap, const char *twrap) {
-  if (!GMANTIFFReader::available()) {
-    warning("MakeTexture \"{}\": built without libtiff, nothing written",
-            texture != nullptr ? texture : "");
-    return false;
-  }
-
   const std::string textureName = texture != nullptr ? texture : "";
   if (textureName.empty()) {
     warning("MakeTexture: empty texture name, nothing written");
@@ -324,13 +311,6 @@ bool gmanMakeTexture(const char *picture, const char *texture,
 }
 
 bool gmanMakeLatLongEnvironment(const char *picture, const char *texture) {
-  if (!GMANTIFFReader::available()) {
-    warning("MakeLatLongEnvironment \"{}\": built without libtiff, nothing "
-            "written",
-            texture != nullptr ? texture : "");
-    return false;
-  }
-
   const std::string textureName = texture != nullptr ? texture : "";
   if (textureName.empty()) {
     warning("MakeLatLongEnvironment: empty texture name, nothing written");

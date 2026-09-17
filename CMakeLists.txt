@@ -52,7 +52,6 @@ find_package(TIFF REQUIRED)
 find_package(JPEG)
 find_package(Threads REQUIRED)
 
-option(GMAN_WITH_TIFF "Build the TIFF display driver" ON)
 option(GMAN_WITH_PNG "Build the PNG display driver" ON)
 option(GMAN_WITH_JPEG "Build the JPEG display driver" ${JPEG_FOUND})
 
@@ -172,11 +171,8 @@ target_include_directories(gman_core PUBLIC
 target_compile_definitions(gman_core PUBLIC HAVE_LIBDL)
 
 target_link_libraries(gman_core PUBLIC ZLIB::ZLIB Threads::Threads ${CMAKE_DL_LIBS})
+target_link_libraries(gman_core PRIVATE TIFF::TIFF)
 
-if(GMAN_WITH_TIFF)
-  target_compile_definitions(gman_core PRIVATE HAVE_LIBTIFF)
-  target_link_libraries(gman_core PRIVATE TIFF::TIFF)
-endif()
 if(GMAN_WITH_PNG)
   target_compile_definitions(gman_core PRIVATE HAVE_LIBPNG)
   target_link_libraries(gman_core PRIVATE PNG::PNG)

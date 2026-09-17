@@ -23,12 +23,9 @@
 
 #include "gmantiff.h"
 
-// The tree's one HAVE_LIBTIFF and one <tiffio.h>. Every other production
-// file reaches a TIFF only through the classes above, so a libtiff symbol
-// appearing anywhere else is a leak, not a convenience --
-// tests/tiffcontainment_test.cpp exempts this file alone.
-#ifdef HAVE_LIBTIFF
-
+// The tree's one <tiffio.h>. Every other production file reaches a TIFF only
+// through the classes above, so a libtiff symbol appearing anywhere else is
+// a leak, not a convenience.
 extern "C" {
 #include <tiffio.h>
 }
@@ -64,10 +61,6 @@ GMANTIFFReader::~GMANTIFFReader() {
   if (handle != nullptr) {
     TIFFClose(handle);
   }
-}
-
-bool GMANTIFFReader::available() {
-  return true;
 }
 
 bool GMANTIFFReader::isOpen() const {
@@ -128,10 +121,6 @@ GMANTIFFWriter::~GMANTIFFWriter() {
   }
 }
 
-bool GMANTIFFWriter::available() {
-  return true;
-}
-
 bool GMANTIFFWriter::isOpen() const {
   return handle != nullptr;
 }
@@ -163,68 +152,3 @@ std::size_t GMANTIFFWriter::scanlineSize() const {
 bool GMANTIFFWriter::writeScanline(unsigned char *data, std::uint32_t row) {
   return TIFFWriteScanline(handle, data, row, 0) >= 0;
 }
-
-#else  // !HAVE_LIBTIFF
-
-GMANTIFFReader::GMANTIFFReader(const std::string & /*path*/)
-    : handle(nullptr) {}
-
-GMANTIFFReader::~GMANTIFFReader() {}
-
-bool GMANTIFFReader::available() {
-  return false;
-}
-
-bool GMANTIFFReader::isOpen() const {
-  return handle != nullptr;
-}
-
-std::optional<std::string> GMANTIFFReader::wrapModes() const {
-  return std::nullopt;
-}
-
-bool GMANTIFFReader::decode(std::uint32_t & /*width*/,
-                            std::uint32_t & /*height*/,
-                            std::vector<unsigned char> & /*rgb*/) {
-  return false;
-}
-
-GMANTIFFWriter::GMANTIFFWriter(const std::string & /*path*/,
-                               std::uint32_t /*width*/,
-                               std::uint32_t /*height*/,
-                               std::uint16_t /*samplesPerPixel*/,
-                               GMANOutputTIFF::Compression /*compression*/)
-    : handle(nullptr) {}
-
-GMANTIFFWriter::~GMANTIFFWriter() {}
-
-bool GMANTIFFWriter::available() {
-  return false;
-}
-
-bool GMANTIFFWriter::isOpen() const {
-  return handle != nullptr;
-}
-
-void GMANTIFFWriter::setRowsPerStrip(std::uint32_t /*rowsPerStrip*/) {}
-
-std::uint32_t GMANTIFFWriter::defaultStripSize(std::uint32_t hint) const {
-  return hint;
-}
-
-void GMANTIFFWriter::setImageDescription(const std::string & /*text*/) {}
-
-void GMANTIFFWriter::setWrapModes(const std::string & /*modes*/) {}
-
-void GMANTIFFWriter::setTextureFormat(const std::string & /*format*/) {}
-
-std::size_t GMANTIFFWriter::scanlineSize() const {
-  return 0;
-}
-
-bool GMANTIFFWriter::writeScanline(unsigned char * /*data*/,
-                                   std::uint32_t /*row*/) {
-  return false;
-}
-
-#endif

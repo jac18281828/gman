@@ -40,15 +40,11 @@ struct tiff;
 /*
  * The one seam onto libtiff. Every other source file under include,
  * libgman, libgmanrib, shaders, renderers, gman and gmansl reaches a TIFF
- * file only through GMANTIFFReader and GMANTIFFWriter below --
- * tests/tiffcontainment_test.cpp enforces that on every build.
+ * file only through GMANTIFFReader and GMANTIFFWriter below.
  *
  * Two classes, not one with a mode: a reader and a writer share nothing
  * beyond "a handle that must be closed," and each constructor establishes
  * its own invariant instead of a runtime flag re-asserting it.
- * available() reports whether either can do anything at all -- false in a
- * GMAN_WITH_TIFF=OFF build -- so a caller decides what to do before it
- * tries to open anything.
  */
 
 // Reads a TIFF's pixels as unpacked, top-left-oriented RGB -- three bytes
@@ -63,9 +59,6 @@ public:
   GMANTIFFReader &operator=(const GMANTIFFReader &) = delete;
   GMANTIFFReader(GMANTIFFReader &&) = delete;
   GMANTIFFReader &operator=(GMANTIFFReader &&) = delete;
-
-  // False in a GMAN_WITH_TIFF=OFF build.
-  static bool available();
 
   // False when path could not be opened for reading.
   bool isOpen() const;
@@ -101,9 +94,6 @@ public:
   GMANTIFFWriter &operator=(const GMANTIFFWriter &) = delete;
   GMANTIFFWriter(GMANTIFFWriter &&) = delete;
   GMANTIFFWriter &operator=(GMANTIFFWriter &&) = delete;
-
-  // False in a GMAN_WITH_TIFF=OFF build.
-  static bool available();
 
   // False when path could not be opened for writing.
   bool isOpen() const;

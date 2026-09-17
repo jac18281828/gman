@@ -119,9 +119,9 @@ GMAN_EXPORT GMANTextureCache &gmanTextureCache(RtVoid);
 // twrap in libtiff's Pixar wrap-modes tag. Never throws -- warns once,
 // naming texture and the cause, and leaves no file at texture, on a null or
 // empty name, an unknown wrap name, a picture that cannot be opened or
-// decoded, an output that cannot be opened or fully written, or a
-// GMAN_WITH_TIFF=OFF build. A successful write forgets texture from
-// gmanTextureCache(), so the next lookup reads what was just written.
+// decoded, or an output that cannot be opened or fully written. A
+// successful write forgets texture from gmanTextureCache(), so the next
+// lookup reads what was just written.
 GMAN_EXPORT bool gmanMakeTexture(const char *picture, const char *texture,
                                   const char *swrap, const char *twrap);
 
@@ -132,10 +132,9 @@ GMAN_EXPORT bool gmanMakeTexture(const char *picture, const char *texture,
 // in the Pixar texture-format tag, RenderMan tools' value for this format.
 // Same failure shape as gmanMakeTexture: never throws, warns once naming
 // texture and the cause, and leaves no file at texture on a null or empty
-// name, a picture that cannot be opened or decoded, an output that cannot
-// be opened or fully written, or a GMAN_WITH_TIFF=OFF build. A successful
-// write forgets texture from gmanTextureCache(), so the next lookup reads
-// what was just written.
+// name, a picture that cannot be opened or decoded, or an output that
+// cannot be opened or fully written. A successful write forgets texture
+// from gmanTextureCache(), so the next lookup reads what was just written.
 GMAN_EXPORT bool gmanMakeLatLongEnvironment(const char *picture,
                                              const char *texture);
 
