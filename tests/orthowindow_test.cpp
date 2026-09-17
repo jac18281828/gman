@@ -68,16 +68,16 @@
  * x_camera=-1 or y_camera=1.1 go red -- back to the reported hard clip.
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 

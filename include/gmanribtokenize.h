@@ -28,18 +28,14 @@
 #define __GMAN_GMANRIBTOKENIZE_H 1
 
 
-/* Headers */
-#include <ctype.h>
-
-// STL
-#include <string>
 #include <fstream>
 #include <istream>
+#include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
+#include <ctype.h>
+
 #include "gmanlog.h"
+#include "ri.h"
 
 
 // jac 03/31/2002

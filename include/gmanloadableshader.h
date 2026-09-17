@@ -28,28 +28,20 @@
 #define __GMAN_GMANLOADABLESHADER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// Our parent class
-#include "gmanshader.h"
 #include "gmandisplacementshader.h"
 #include "gmanimagershader.h"
 #include "gmanlightsourceshader.h"
+#include "gmanloadable.h"
+#include "gmanlog.h"
+#include "gmanshader.h"
 #include "gmansurfaceshader.h"
 #include "gmanvolumeshader.h"
-
-// also the DSO loader
-#include "gmanloadable.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANLoadableShader

@@ -30,12 +30,13 @@
  * silhouette), and a golden-image comparison via the shared harness.
  */
 
-#include <tiffio.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+
 #include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"

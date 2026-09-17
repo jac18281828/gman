@@ -28,20 +28,14 @@
 #define __GMAN_GMANSEGMENT_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
-// point type
 #include "gmanpoint.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANSegment

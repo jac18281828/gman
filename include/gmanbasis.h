@@ -26,11 +26,11 @@
 #ifndef __GMANBASIS_H
 #define __GMANBASIS_H 1
 
-#include "ri.h"
+#include "gmanhpoint.h"
 #include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
-#include "gmanhpoint.h"
+#include "ri.h"
 
 class GMAN_EXPORT GMANBasis
 {

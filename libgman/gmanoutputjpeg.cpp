@@ -24,17 +24,15 @@
  */
 
 #include <stdio.h>
-/* util headers */
 extern "C" {
 #include <jpeglib.h>
 }
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanoutput.h" /* Super class */
-#include "gmanoutputjpeg.h" /* Declaration Header */
 #include "gmandefaults.h"
 #include "gmanerror.h"
+#include "gmanoutput.h"
+#include "gmanoutputjpeg.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANOutputJPEG

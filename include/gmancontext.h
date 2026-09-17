@@ -26,10 +26,11 @@
 #define __GMANCONTEXT_H 1
 
 #include <list>
-#include "ri.h"
-#include "gmanlog.h"
+
 #include "gmanerror.h"
+#include "gmanlog.h"
 #include "gmanrenderman.h"
+#include "ri.h"
 
 class GMAN_EXPORT GMANContext
 {

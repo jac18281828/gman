@@ -28,21 +28,13 @@
 #define __GMAN_GMANPOLYGON_H 1
 
 
-/* Headers */
-
-// STL
 #include <vector>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// point type
-#include "gmanpoint.h"
-// face interface
 #include "gmanface.h"
-// segment or ray
+#include "gmanlog.h"
+#include "gmanpoint.h"
 #include "gmansegment.h"
+#include "ri.h"
 
 // types
 typedef std::vector<GMANPoint> PointVector;

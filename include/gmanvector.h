@@ -28,11 +28,10 @@
 #define __GMAN_GMANVECTOR_H 1
 
 
-/* Headers */
-#include "ri.h"
 #include "gmanlog.h"
-#include "gmantypes.h"
 #include "gmanpoint.h"
+#include "gmantypes.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANVector

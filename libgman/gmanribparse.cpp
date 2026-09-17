@@ -23,9 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* Local Headers */
-#include <cctype>    /* tolower */
-#include <cstring>   /* strcmp, memcpy -- libstdc++ does not pull these in
+#include <cctype>
+#include <cstring> /* strcmp, memcpy -- libstdc++ does not pull these in
                       * transitively the way libc++ does */
 #include <filesystem>
 #include <fstream>
@@ -36,9 +35,9 @@
 
 #include <zlib.h>
 
-#include "ri.h"      /* RenderMan Interface */
 #include "gmanlog.h"
-#include "gmanribparse.h" /* Declaration Header */
+#include "gmanribparse.h"
+#include "ri.h"
 // the concrete renderer: parsePatch/parsePatchMesh dynamic_cast to it to
 // reach the counts-aware RiPatchV/RiPatchMeshV overloads (see there)
 #include "gmanrendermanimpl.h"

@@ -31,21 +31,18 @@
 #include <cmath>
 #include <vector>
 
-#include "ri.h"
 #include "gmancolor.h"
-#include "gmanmatrix4.h"
-#include "gmanpoint.h"
-#include "gmanvector.h"
-#include "gmannormal.h"
 #include "gmanlightsourcemgr.h"
+#include "gmanmatrix4.h"
+#include "gmannormal.h"
+#include "gmanpoint.h"
 #include "gmanslapi.h"
+#include "gmanvector.h"
+#include "ri.h"
 
-// Forward-declared, not included: gmannoise.h #defines N (and MASK) at
-// file scope with no #undef, which collides with GMANSurfaceEnv's own N
-// (the shading normal) the moment both are visible in one translation
-// unit. The noise family below is declared here and defined in
-// gmanshaderenvironment.cpp, the one file that can safely include
-// gmannoise.h.
+// Forward-declared, not included: the noise family below is declared
+// here and defined in gmanshaderenvironment.cpp, so this header needs
+// only GMANNoise's name, not gmannoise.h's own includes and members.
 class GMANNoise;
 
 /*

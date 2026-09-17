@@ -23,19 +23,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* System Headers */
-
 extern "C" {
 #include <png.h>
 #include <zlib.h>
 }
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanoutput.h" /* Super class */
-#include "gmanerror.h"
-#include "gmanoutputpng.h" /* Declaration Header */
 #include "gmandefaults.h"
+#include "gmanerror.h"
+#include "gmanoutput.h"
+#include "gmanoutputpng.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANOutputPNG

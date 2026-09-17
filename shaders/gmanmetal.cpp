@@ -22,8 +22,8 @@
  */
 
 #include "gmanloadable.h"
-#include "gmansurfaceshader.h"
 #include "gmanshaderparams.h"
+#include "gmansurfaceshader.h"
 
 /*
  * surface metal(float Ka=1, Ks=1, roughness=.1; color specularcolor=1)

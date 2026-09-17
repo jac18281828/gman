@@ -56,15 +56,15 @@
 #include <string>
 
 #include "check.h"
-#include "gmanmatrix4.h"
-#include "gmantransform.h"
-#include "gmanpoint.h"
-#include "gmanvertex.h"
 #include "gmanface.h"
-#include "gmanpolygonclipper.h"
-#include "gmanoutputpolygon.h"
-#include "gmanvsperspective.h"
+#include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanoutputpolygon.h"
+#include "gmanpoint.h"
+#include "gmanpolygonclipper.h"
+#include "gmantransform.h"
+#include "gmanvertex.h"
+#include "gmanvsperspective.h"
 
 namespace {
 

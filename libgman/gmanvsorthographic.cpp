@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include "gmanvsorthographic.h"
 #include "gmanvector4.h"
+#include "gmanvsorthographic.h"
 
 GMANVSOrthographic::GMANVSOrthographic(RtInt xr, RtInt yr,
 				       const GMANOptions::ScreenWindowStruct &s,

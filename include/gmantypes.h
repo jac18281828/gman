@@ -28,10 +28,8 @@
 #define __GMAN_TYPES_H 1
 
 
-/* system headers */
 #include <list>
 
-/* local headers */
 #include "ri.h"
 
 /* useful values */

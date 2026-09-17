@@ -27,16 +27,16 @@
 
 #include <vector>
 
-#include "ri.h"
-#include "gmanparameterlist.h"
-#include "gmanoptions.h"
 #include "gmanattributes.h"
 #include "gmanbasis.h"
-#include "gmantransform.h"
-#include "gmansegment.h"
 #include "gmanlog.h"
+#include "gmanoptions.h"
+#include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanprimitive.h"
+#include "gmansegment.h"
+#include "gmantransform.h"
+#include "ri.h"
 
 
 class GMAN_EXPORT GMANParametric : public virtual GMANPrimitive

@@ -26,9 +26,9 @@
 #ifndef __GMANCOLORSAMPLES_H
 #define __GMANCOLORSAMPLES_H
 
-#include "ri.h"
-#include "gmanlog.h"
 #include "gmandefaults.h"
+#include "gmanlog.h"
+#include "ri.h"
 
 class GMAN_EXPORT GMANColorSamples
 {

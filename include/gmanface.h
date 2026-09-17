@@ -28,22 +28,16 @@
 #define __GMAN_GMANFACE_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
-// the ray type
 #include "gmansegment.h"
 #include "gmantypes.h"
 #include "gmanvertex.h"
+#include "ri.h"
 
 /* Global Macros */
 

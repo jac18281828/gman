@@ -28,27 +28,19 @@
 #define __GMAN_GMANRIBPARSE_H 1
 
 
-/* Headers */
-
-// STL
+#include <fstream>
+#include <istream>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
-#include <fstream>
-#include <istream>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// GMAN Renderman state machine
-#include "gmanrenderman.h"
-// GMAN RIB tokenizer
-#include "gmanribtokenize.h"
-// GMAN Error
 #include "gmanerror.h"
+#include "gmanlog.h"
+#include "gmanrenderman.h"
+#include "gmanribtokenize.h"
+#include "ri.h"
 
 /*
  * RenderMan API gmanribparse

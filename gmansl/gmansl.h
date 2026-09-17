@@ -27,11 +27,10 @@
 #ifndef __GMAN_SL_H
 #define __GMAN_SL_H 1
 
-/* global headers */
-#include <stdio.h>
 #include <string>
 
-/* gman headers */
+#include <stdio.h>
+
 #include "ri.h"
 
 /* global variables */

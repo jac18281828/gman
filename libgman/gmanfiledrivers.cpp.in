@@ -37,7 +37,7 @@
 #include <vector>
 
 #include "gmanerror.h"
-#include "gmanfiledrivers.h" /* Declaration Header */
+#include "gmanfiledrivers.h"
 #include "gmanoutput.h"
 #include "gmanoutputpnm.h"
 #include "gmanoutputtiff.h"

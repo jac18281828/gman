@@ -28,22 +28,15 @@
 #define __GMAN_GMANCOLOR_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
-// standard types
-#include "gmantypes.h"
-// math helpers
 #include "gmanmath.h"
+#include "gmantypes.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANColor

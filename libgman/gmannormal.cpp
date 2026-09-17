@@ -25,12 +25,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* system headers */
 #include <math.h>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmannormal.h" /* Declaration Header */
+#include "gmannormal.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANNormal

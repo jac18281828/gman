@@ -25,8 +25,8 @@
 #ifndef __GMANNOISE_H
 #define __GMANNOISE_H 1
 
-#include "ri.h"
 #include "gmanpoint.h"
+#include "ri.h"
 
 /* CellNoise */
 #define CN    2048

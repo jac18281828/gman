@@ -28,21 +28,13 @@
 #define __GMAN_GMANOUTPUT_H 1
 
 
-/* Headers */
-
-// STL
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// the frame buffer
 #include "gmanframebuffer.h"
-
-#include "gmanquantize.h"
-
 #include "gmangamma.h"
+#include "gmanlog.h"
+#include "gmanquantize.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANOutput

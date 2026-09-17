@@ -26,13 +26,13 @@
  * desync convention."
  */
 
-#include <sys/wait.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
 
 #include "check.h"
 

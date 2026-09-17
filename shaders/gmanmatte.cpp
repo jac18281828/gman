@@ -24,8 +24,8 @@
  */
 
 #include "gmanloadable.h"
-#include "gmansurfaceshader.h"
 #include "gmanshaderparams.h"
+#include "gmansurfaceshader.h"
 
 /*
  * surface matte(float Ka = 1, Kd = 1)

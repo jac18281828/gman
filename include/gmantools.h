@@ -26,10 +26,10 @@
 #ifndef _GMANTOOLS_H
 #define _GMANTOOLS_H
 
-#include "ri.h"
+#include "gmanhpoint.h"
 #include "gmanlog.h"
 #include "gmanpoint.h"
-#include "gmanhpoint.h"
+#include "ri.h"
 
 class GMAN_EXPORT  GMANTools
 {

@@ -27,9 +27,8 @@
 #include <thread>
 #include <vector>
 
-/* Local Headers */
-#include "ri.h"           /* RenderMan Interface */
-#include "gmanparallel.h" /* Declaration Header */
+#include "gmanparallel.h"
+#include "ri.h"
 
 RtInt gmanParallelWorkers(RtInt count, RtInt workers) {
   if (count <= 0) {

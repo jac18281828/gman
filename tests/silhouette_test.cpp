@@ -50,10 +50,6 @@
  * same size.
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -61,6 +57,10 @@
 #include <fstream>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 

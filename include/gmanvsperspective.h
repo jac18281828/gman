@@ -25,8 +25,8 @@
 #ifndef __GMANVSPERSPECTIVE_H
 #define __GMANVSPERSPECTIVE_H 1
 
-#include "gmanviewingsystem.h"
 #include "gmanmatrix4.h"
+#include "gmanviewingsystem.h"
 
 class GMAN_EXPORT  GMANVSPerspective : public GMANViewingSystem
 {

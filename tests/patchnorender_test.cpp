@@ -37,12 +37,13 @@
  * to Patch rather than the renderer as a whole.
  */
 
-#include <tiffio.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+
 #include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"

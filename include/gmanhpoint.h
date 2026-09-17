@@ -25,9 +25,9 @@
 #ifndef __GMANHPOINT_H
 #define __GMANHPOINT_H 1
 
-#include "ri.h"
 #include "gmanlog.h"
 #include "gmanpoint.h"
+#include "ri.h"
 
 
 class GMAN_EXPORT  GMANHPoint : public GMANPoint

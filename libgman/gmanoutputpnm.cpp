@@ -23,15 +23,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* system headers */
 #include <cstdio>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanoutput.h" /* Super class */
-#include "gmanoutputpnm.h" /* Declaration Header */
 #include "gmancolor.h"
 #include "gmanerror.h"
+#include "gmanoutput.h"
+#include "gmanoutputpnm.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANOutputPNM

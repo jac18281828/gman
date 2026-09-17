@@ -23,15 +23,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* Local Headers */
 #include <limits>
 
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanlog.h"
-#include "gmanbitmap.h" /* Declaration Header */
+#include "gmanbitmap.h"
 #include "gmancolor.h"
 #include "gmandefaults.h"
 #include "gmanerror.h"
+#include "gmanlog.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANBitmap

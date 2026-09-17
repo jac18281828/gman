@@ -23,11 +23,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanoutput.h" /* Super class */
-#include "gmanoutputx11.h" /* Declaration Header */
 #include "gmandefaults.h"
+#include "gmanoutput.h"
+#include "gmanoutputx11.h"
+#include "ri.h"
 
 
 /*

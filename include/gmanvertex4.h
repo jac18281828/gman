@@ -28,21 +28,16 @@
 #define __GMAN_GMANVERTEX4_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-#include "gmanvector4.h"
-#include "gmansurface.h"
 #include "gmancolor.h"
+#include "gmanlog.h"
+#include "gmansurface.h"
+#include "gmanvector4.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANVertex4

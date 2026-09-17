@@ -28,11 +28,8 @@
 #define __GMAN_GMANBBOX_H 1
 
 
-/* Headers */
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANBBox

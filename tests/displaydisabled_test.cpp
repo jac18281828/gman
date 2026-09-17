@@ -29,15 +29,15 @@
  * it actually renders.
  */
 
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "check.h"
 

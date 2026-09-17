@@ -23,12 +23,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 #ifdef DEBUG
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #endif
 #include "gmandictionary.h"
-#include "gmaninlineparse.h"
 #include "gmanerror.h"
+#include "gmaninlineparse.h"
 
 GMANTokenEntry::GMANTokenEntry(std::string n, TokenClass tc, TokenType tt, RtInt qnt, bool inln) 
 {  

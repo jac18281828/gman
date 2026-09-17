@@ -24,13 +24,12 @@
  */
 #include <vector>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanoutput.h" /* Super class */
-#include "gmanoutputtiff.h" /* Declaration Header */
-#include "gmanerror.h"
 #include "gmandefaults.h"
+#include "gmanerror.h"
+#include "gmanoutput.h"
+#include "gmanoutputtiff.h"
 #include "gmantiff.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANOutputTIFF

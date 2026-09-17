@@ -26,12 +26,8 @@
 #define __GMAN_GMANSAMPLEBUFFER_H 1
 
 
-/* Headers */
-
-// the renderman interface
-#include "ri.h"
-// the color object
 #include "gmancolor.h"
+#include "ri.h"
 
 class GMANFrameBuffer;
 

@@ -28,11 +28,10 @@
 #include <cmath>
 #include <cstdint>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
+#include "gmanlightsourcemgr.h"
 #include "gmanlog.h"
-#include "gmanlightsourcemgr.h" /* Declaration Header */
 #include "gmanslapi.h"
+#include "ri.h"
 
 namespace {
 

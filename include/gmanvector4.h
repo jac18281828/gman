@@ -28,23 +28,18 @@
 #define __GMAN_GMANVECTOR4_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
+
 #include <math.h>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// Our parent class
-#include "gmanvector.h"
 #include "gmanhpoint.h"
+#include "gmanlog.h"
 #include "gmantypes.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 /* forward declaration of the viewing system */
 class GMANViewingSystem;

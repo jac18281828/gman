@@ -38,13 +38,14 @@
  *    Sphere stays green, isolating the failure to PatchMesh.
  */
 
-#include <tiffio.h>
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+
 #include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "gmandictionary.h"

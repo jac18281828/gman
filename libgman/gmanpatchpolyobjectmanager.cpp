@@ -28,15 +28,14 @@
 #include <cstring>
 #include <vector>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanobjectmanager.h" /* Super class */
-#include "gmanpatchpolyobjectmanager.h" /* Declaration Header */
+#include "gmanlightsourcemgr.h"
+#include "gmanloadableshader.h"
+#include "gmanobjectmanager.h"
+#include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
 #include "gmanshaderenvironment.h"
 #include "gmansurfaceshader.h"
-#include "gmanloadableshader.h"
-#include "gmanlightsourcemgr.h"
+#include "ri.h"
 
 namespace {
 

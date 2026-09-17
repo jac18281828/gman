@@ -28,21 +28,15 @@
 #define __GMAN_GMANBITMAP_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 #include <vector>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// the color object
 #include "gmancolor.h"
+#include "gmanlog.h"
+#include "ri.h"
 
 
 /*

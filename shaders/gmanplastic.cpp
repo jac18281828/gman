@@ -22,8 +22,8 @@
  */
 
 #include "gmanloadable.h"
-#include "gmansurfaceshader.h"
 #include "gmanshaderparams.h"
+#include "gmansurfaceshader.h"
 
 /*
  * surface plastic(float Ka=1, Kd=.5, Ks=.5, roughness=.1;

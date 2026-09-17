@@ -23,13 +23,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* System Headers */
 #include <cstdio>
 #include <mutex>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanlog.h" /* Declaration Header */
+#include "gmanlog.h"
+#include "ri.h"
 
 // FIXME FIXME FIXME
 // set this with autoconf macros

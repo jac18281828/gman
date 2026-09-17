@@ -23,10 +23,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanworldmanager.h" /* Super class */
-#include "gmanlinearworldmanager.h" /* Declaration Header */
+#include "gmanlinearworldmanager.h"
+#include "gmanworldmanager.h"
+#include "ri.h"
 
 
 /*

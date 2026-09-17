@@ -27,9 +27,8 @@
 #ifndef __GMAN_DEFAULTS_H
 #define __GMAN_DEFAULTS_H 1
 
-#include "ri.h"
-
 #include "gmancolor.h"
+#include "ri.h"
 
 /* Some important default values */
 

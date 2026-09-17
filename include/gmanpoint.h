@@ -27,10 +27,9 @@
 #ifndef __GMAN_GMANPOINT_H
 #define __GMAN_GMANPOINT_H 1
 
-/* Headers */
-#include "ri.h"
 #include "gmanlog.h"
 #include "gmanmatrix4.h"
+#include "ri.h"
 
 class GMANHPoint;
 

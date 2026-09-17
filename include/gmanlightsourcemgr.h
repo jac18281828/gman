@@ -30,21 +30,16 @@
 #define __GMAN_GMANLIGHTSOURCEMGR_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
 #include "gmancolor.h"
+#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
+#include "ri.h"
 
 /*
  * A built-in light: ambientlight, distantlight, pointlight or spotlight.

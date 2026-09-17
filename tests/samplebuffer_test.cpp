@@ -50,16 +50,16 @@
  * resolve's support box empty for every sample at a pixel.
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 

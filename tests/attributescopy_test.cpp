@@ -45,13 +45,13 @@
  * both scenes below go back to a non-zero/signal exit status.
  */
 
-#include <sys/wait.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
+
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include "check.h"
 

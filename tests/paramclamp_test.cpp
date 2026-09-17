@@ -37,14 +37,14 @@
  * happened to follow the allocation.
  */
 
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "check.h"
 

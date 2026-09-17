@@ -28,20 +28,14 @@
 #define __GMAN_GMANLOADABLE_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// gman error object
 #include "gmanerror.h"
+#include "gmanlog.h"
+#include "ri.h"
 
 /* Global loadable object types */
 

@@ -51,13 +51,13 @@
 #ifndef GMAN_TESTS_GOLDENIMAGE_H
 #define GMAN_TESTS_GOLDENIMAGE_H
 
-#include <tiffio.h>
-
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <string>
 #include <vector>
+
+#include <tiffio.h>
 
 #include "check.h"
 

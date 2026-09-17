@@ -24,18 +24,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* system headers */
 #include <iostream>
 #include <string>
 #include <string_view>
 
-/* gman headers */
-#include "ri.h"
-#include "gmanlog.h"
 #include "gmanerror.h"
+#include "gmanfiledrivers.h"
+#include "gmanlog.h"
 #include "gmanrendermanimpl.h"
 #include "gmanribparse.h"
-#include "gmanfiledrivers.h"
+#include "ri.h"
 
 namespace {
 

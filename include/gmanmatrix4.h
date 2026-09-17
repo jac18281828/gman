@@ -27,10 +27,10 @@
 #ifndef __GMANMATRIX4_H
 #define __GMANMATRIX4_H 1
 
-#include "ri.h"
+#include "gmanerror.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
-#include "gmanerror.h"
+#include "ri.h"
 
 class GMANVector;
 

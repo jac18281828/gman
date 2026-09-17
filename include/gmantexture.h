@@ -28,8 +28,8 @@
 #include <string>
 #include <vector>
 
-#include "ri.h"
 #include "gmancolor.h"
+#include "ri.h"
 
 // How a sample outside [0, 1] is resolved, per axis, independently for s
 // and t. RiMakeTexture records this per file in libtiff's Pixar

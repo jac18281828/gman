@@ -28,22 +28,16 @@
 #define __GMAN_GMANSURFACE_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// world feature characteristics
 #include "gmanface.h"
+#include "gmanlog.h"
 #include "gmanvector.h"
 #include "gmanvertex.h"
+#include "ri.h"
 
 
 // forward declaration of body

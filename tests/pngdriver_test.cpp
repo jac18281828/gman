@@ -49,18 +49,18 @@
  * pixel-match assertion red.
  */
 
-#include <sys/wait.h>
-
-#include <png.h>
-#include <tiffio.h>
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
 #include <vector>
+
 #include <sys/stat.h>
+#include <sys/wait.h>
+
+#include <png.h>
+#include <tiffio.h>
 
 #include "check.h"
 

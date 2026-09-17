@@ -37,14 +37,14 @@
  * clusters" assertion goes red.
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 

@@ -28,29 +28,16 @@
 #define __GMAN_RENDERMANIMPL_H 1
 
 
-/* Headers */
-
-// renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-
-// the frame buffer
-#include "gmanframebuffer.h"
-// the gman object manager
-#include "gmanobjectmanager.h"
-// the rendering system
-#include "gmanrenderer.h"
-// the viewing system
-#include "gmanviewingsystem.h"
-// the output object
-#include "gmanoutput.h"
-// the token dictionary
 #include "gmandictionary.h"
-// the graphic state manager
+#include "gmanframebuffer.h"
 #include "gmangraphicstate.h"
-// the abstract RI backend interface this implements
+#include "gmanlog.h"
+#include "gmanobjectmanager.h"
+#include "gmanoutput.h"
+#include "gmanrenderer.h"
 #include "gmanrenderman.h"
+#include "gmanviewingsystem.h"
+#include "ri.h"
 
 
 

@@ -27,13 +27,13 @@
  * what the build actually compiled.
  */
 
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "check.h"
 

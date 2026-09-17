@@ -28,13 +28,12 @@
 #define __GMAN_GMANSHADER_H 1
 
 
-/* Headers */
 #include <string>
 
-#include "ri.h"
+#include "gmandictionary.h"
 #include "gmanlog.h"
 #include "gmanparameterlist.h"
-#include "gmandictionary.h"
+#include "ri.h"
 
 class GMANRenderer;
 

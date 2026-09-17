@@ -28,22 +28,15 @@
 #define __GMAN_GMANLINEARWORLDMANAGER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
-// Our parent class
-#include "gmanworldmanager.h"
-// GMANRay def
 #include "gmansegment.h"
+#include "gmanworldmanager.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANLinearWorldManager

@@ -24,10 +24,8 @@
 #ifndef __GMAN_GMANPARALLEL_H
 #define __GMAN_GMANPARALLEL_H 1
 
-/* Headers */
 #include <functional>
 
-// the renderman interface
 #include "ri.h"
 
 /*

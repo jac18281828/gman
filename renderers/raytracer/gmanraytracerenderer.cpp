@@ -23,13 +23,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanrenderer.h" /* Super class */
-#include "gmanraytracerenderer.h" /* Declaration Header */
 #include "gmanrayinterface.h"
 #include "gmanraysphere.h"
+#include "gmanraytracerenderer.h"
+#include "gmanrenderer.h"
 #include "gmanworldmanager.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANRaytraceRenderer

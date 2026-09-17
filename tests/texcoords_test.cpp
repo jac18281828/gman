@@ -36,15 +36,15 @@
  * task's closing report, not this file, for each revert's result).
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "checkertexture.h"

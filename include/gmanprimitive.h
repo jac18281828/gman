@@ -35,20 +35,14 @@
 #define __GMAN_GMANPRIMITIVE_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// bbox
 #include "gmanbbox.h"
+#include "gmanlog.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANPrimitive

@@ -24,12 +24,11 @@
 #include <cmath>
 #include <cstddef>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
 #include "gmanerror.h"
-#include "gmanmath.h"
 #include "gmanframebuffer.h"
-#include "gmansamplebuffer.h" /* Declaration Header */
+#include "gmanmath.h"
+#include "gmansamplebuffer.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANSampleBuffer

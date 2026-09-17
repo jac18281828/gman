@@ -23,20 +23,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <climits> /* INT_MAX -- not transitive via libstdc++ */
 #include <string>
 
-#include <climits>   /* INT_MAX -- not transitive via libstdc++ */
-
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanlog.h"
-#include "gmanribtokenize.h" /* Declaration Header */
 #include "gmanerror.h"
+#include "gmanlog.h"
+#include "gmanribtokenize.h"
+#include "ri.h"
 /*
  * Global static data
  */

@@ -30,25 +30,22 @@
 #define __GMAN_OPTIONS_H 1
 
 
-/* Headers */
 #include <string>
+
 #include <math.h>
 
-#include "ri.h"
-#include "gmanparameterlist.h"
+#include "gmancolor.h"
 #include "gmancolorsamples.h"
 #include "gmandefaults.h"
-#include "gmanoutput.h"
-
-// logging
-#include "gmanlog.h"
-#include "gmancolor.h" // color decl
-#include "gmanmath.h"
-
-#include "gmanshader.h"
 #include "gmanimagershader.h"
 #include "gmanloadableshader.h"
+#include "gmanlog.h"
+#include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmanoutput.h"
+#include "gmanparameterlist.h"
+#include "gmanshader.h"
+#include "ri.h"
 
 class GMANRenderer;
 

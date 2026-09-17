@@ -26,11 +26,12 @@
 
 #include <set>
 #include <vector>
-#include "ri.h"
+
+#include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanvector4.h"
-#include "gmanlog.h"
+#include "ri.h"
 
 class GMAN_EXPORT  GMANMatrixStorage
 {

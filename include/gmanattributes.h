@@ -27,22 +27,20 @@
 
 #include <memory>
 #include <string>
-#include "ri.h"
-#include "gmanlog.h"
-#include "gmancolor.h"
 
-#include "gmanshader.h"
-#include "gmanlightsourceshader.h"
-#include "gmandisplacementshader.h"
-#include "gmansurfaceshader.h"
-#include "gmanvolumeshader.h"
-
-#include "gmanloadableshader.h"
-
-#include "gmantrimcurve.h"
 #include "gmanbasis.h"
 #include "gmanbbox.h"
+#include "gmancolor.h"
+#include "gmandisplacementshader.h"
 #include "gmanlightsourcemgr.h"
+#include "gmanlightsourceshader.h"
+#include "gmanloadableshader.h"
+#include "gmanlog.h"
+#include "gmanshader.h"
+#include "gmansurfaceshader.h"
+#include "gmantrimcurve.h"
+#include "gmanvolumeshader.h"
+#include "ri.h"
 
 class GMAN_EXPORT GMANRenderer;
 

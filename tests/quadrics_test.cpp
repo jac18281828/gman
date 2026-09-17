@@ -38,12 +38,13 @@
  * asserted here -- this test only pins the corrected fixture's output.
  */
 
-#include <tiffio.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+
 #include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"

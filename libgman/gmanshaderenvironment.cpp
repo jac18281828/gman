@@ -21,17 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/*
- * GMANSurfaceEnv's noise family. Isolated in its own translation unit
- * because gmannoise.h #defines N (and MASK) at file scope with no #undef,
- * which collides with GMANSurfaceEnv::N (the shading normal) the moment
- * both are visible together -- see gmanshaderenvironment.h's comment at
- * the forward declaration this file resolves.
- */
-
-#include "gmanshaderenvironment.h"
 #include "gmanmath.h"
 #include "gmannoise.h"
+#include "gmanshaderenvironment.h"
 #include "gmantexture.h"
 
 namespace {

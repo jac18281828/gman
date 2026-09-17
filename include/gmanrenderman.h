@@ -30,11 +30,10 @@
 #define __GMAN_RENDERMAN_H 1
 
 
-/* Headers */
 #include <stack>
 
-#include "ri.h"
 #include "gmandictionary.h"
+#include "ri.h"
 
 class GMAN_EXPORT GMANRenderMan
 {

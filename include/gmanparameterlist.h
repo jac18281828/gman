@@ -26,10 +26,11 @@
 #define __GMANPARAMETERLIST_H 1
 
 #include <string>
-#include "ri.h"
-#include "gmanlog.h"
+
 #include "gmandictionary.h"
 #include "gmanerror.h"
+#include "gmanlog.h"
+#include "ri.h"
 
 
 class GMAN_EXPORT  GMANParameterList

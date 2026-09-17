@@ -25,9 +25,6 @@
  * rather than trusting it to exit on its own.
  */
 
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
@@ -37,6 +34,9 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "check.h"
 

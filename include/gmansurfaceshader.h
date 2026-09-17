@@ -30,23 +30,16 @@
 #define __GMAN_GMANSURFACESHADER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 #include <vector>
 
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
-// Our parent class
 #include "gmanshader.h"
-
 #include "gmanshaderenvironment.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANSurfaceShader

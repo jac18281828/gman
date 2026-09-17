@@ -26,11 +26,10 @@
 #include <cmath>
 #include <typeinfo>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
 #include "gmanmath.h"
-#include "gmanrenderer.h" /* Super class */
-#include "gmanzbufferrenderer.h" /* Declaration Header */
+#include "gmanrenderer.h"
+#include "gmanzbufferrenderer.h"
+#include "ri.h"
 
 
 /*

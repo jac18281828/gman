@@ -27,13 +27,13 @@
 #ifndef __GMAN_GMANVIEWINGSYSTEM_H
 #define __GMAN_GMANVIEWINGSYSTEM_H 1
 
-#include "ri.h"
-#include "gmanlog.h"
-#include "gmanpoint.h"
 #include "gmanface.h"
-#include "gmansegment.h"
-#include "gmanoptions.h"
+#include "gmanlog.h"
 #include "gmanmatrix4.h"
+#include "gmanoptions.h"
+#include "gmanpoint.h"
+#include "gmansegment.h"
+#include "ri.h"
 
 class GMAN_EXPORT  GMANViewingSystem
 {

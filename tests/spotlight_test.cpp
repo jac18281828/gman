@@ -41,16 +41,16 @@
  * brightness assertion goes red because the disk renders solid black.
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 

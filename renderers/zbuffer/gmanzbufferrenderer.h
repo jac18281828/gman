@@ -28,32 +28,21 @@
 #define __GMAN_GMANZBUFFERRENDERER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <memory>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// Our parent class
-#include "gmanrenderer.h"
-// gamma correction
 #include "gmangamma.h"
-// polygon clipper
-#include "gmanpolygonclipper.h"
-// linear world manager
 #include "gmanlinearworldmanager.h"
-// patch poly object manager
+#include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "gmanpatchpolyobjectmanager.h"
-// per-sample colour/depth and pixel-filter resolve
+#include "gmanpolygonclipper.h"
+#include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
+#include "ri.h"
 
 
 

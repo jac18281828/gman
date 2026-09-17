@@ -72,16 +72,16 @@
  *     as a wrong render or a crash on its own.
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "gmanattributes.h"

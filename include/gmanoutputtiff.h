@@ -28,20 +28,14 @@
 #define __GMAN_GMANOUTPUTTIFF_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
-// Our parent class
 #include "gmanoutput.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANOutputTIFF

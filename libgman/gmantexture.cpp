@@ -26,8 +26,8 @@
 #include <cmath>
 #include <cstdio>
 
-#include "gmantexture.h"
 #include "gmanlog.h"
+#include "gmantexture.h"
 #include "gmantiff.h"
 
 namespace {

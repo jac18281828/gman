@@ -24,8 +24,9 @@
  */
 
 #include <math.h>
-#include "ri.h"
+
 #include "gmanmath.h"
+#include "ri.h"
 
 
 

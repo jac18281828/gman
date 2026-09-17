@@ -42,10 +42,6 @@
  *    throw.
  */
 
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -53,11 +49,15 @@
 #include <string>
 #include <vector>
 
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 #include "check.h"
 #include "checkertexture.h"
-#include "goldenimage.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
+#include "goldenimage.h"
 
 namespace {
 

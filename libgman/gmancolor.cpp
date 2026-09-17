@@ -23,10 +23,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
+#include "gmancolor.h"
 #include "gmanlog.h"
-#include "gmancolor.h" /* Declaration Header */
+#include "ri.h"
 
 
 /*

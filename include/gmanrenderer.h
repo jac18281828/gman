@@ -31,34 +31,25 @@
 #ifndef __GMAN_GMANRENDERER_H
 #define __GMAN_GMANRENDERER_H 1
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-
-#include "ri.h"
-#include "gmanlog.h"
-
-#include "gmanframebuffer.h"
-#include "gmanworldmanager.h"
-#include "gmanviewingsystem.h"
-
-#include "gmanprimitives.h"
-#include "gmanoptions.h"
 #include "gmanattributes.h"
-#include "gmantransform.h"
-
-#include "gmanpoint.h"
-#include "gmanvector.h"
-
-#include "gmanworldmanager.h"
+#include "gmanframebuffer.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanlog.h"
 #include "gmanobjectmanager.h"
+#include "gmanoptions.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpoint.h"
+#include "gmanprimitives.h"
+#include "gmantransform.h"
+#include "gmanvector.h"
+#include "gmanviewingsystem.h"
+#include "gmanworldmanager.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANRenderer

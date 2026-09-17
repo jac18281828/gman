@@ -32,19 +32,14 @@
  ** Perspective by Ian Ashdown.
  **/
 
-/* Headers */
-
-// STL
 #include <vector>
 
-// the renderman interface
-#include "ri.h"
-// logging
+#include "gmancolor.h"
 #include "gmanlog.h"
 #include "gmanpoint.h"
-#include "gmancolor.h"
 #include "gmanvertex.h"
 #include "gmanvertex4.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANOutputPolygon

@@ -41,13 +41,13 @@
  * own TIMEOUT property, which bounds the whole binary, not one fixture).
  */
 
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "check.h"
 

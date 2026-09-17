@@ -68,14 +68,14 @@
  * about the light-free baseline scene phases 0-2 established.)
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 

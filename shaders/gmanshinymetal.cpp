@@ -24,8 +24,8 @@
 #include <string>
 
 #include "gmanloadable.h"
-#include "gmansurfaceshader.h"
 #include "gmanshaderparams.h"
+#include "gmansurfaceshader.h"
 
 /*
  * surface shinymetal(float Ka=1, Ks=1, Kr=1, roughness=.1;

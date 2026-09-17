@@ -23,9 +23,10 @@
  */
 
 #include <stdlib.h>
+
+#include "gmanmath.h"
 #include "gmannoise.h"
 #include "gmanvector4.h"
-#include "gmanmath.h"
 
 
 float GMANNoise::rn()

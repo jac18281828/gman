@@ -33,16 +33,16 @@
  * writes its checker.
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "gmanattributes.h"

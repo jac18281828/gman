@@ -25,12 +25,12 @@
 #ifndef __GMANDICTIONARY_H
 #define __GMANDICTIONARY_H 1
 
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "ri.h"
 #include "gmanlog.h"
 #include "gmantypes.h"
+#include "ri.h"
 
 typedef GMANUInt GMANTokenId;
 

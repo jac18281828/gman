@@ -23,17 +23,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include "ri.h"
-/* System Headers */
-// variable argument lists
-#include <stdarg.h> 
 #include <stack>
 
-/* Local headers */
+#include <stdarg.h>
+
+#include "gmancontext.h"
 #include "gmanerror.h"
 #include "gmangetarguments.h"
 #include "gmanrenderman.h"
-#include "gmancontext.h"
+#include "ri.h"
 
 // Several RI requests end in an RtFloat before the ellipsis, and RtFloat is
 // subject to default argument promotion. Changing those signatures would

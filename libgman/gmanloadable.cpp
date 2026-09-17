@@ -22,18 +22,15 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
-/*
- * System Headers
- */
 #ifdef HAVE_LIBDL
 #include <dlfcn.h>
 #endif
 #include <map>
 #include <string>
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
+
+#include "gmanloadable.h"
 #include "gmanlog.h"
-#include "gmanloadable.h" /* Declaration Header */
+#include "ri.h"
 
 
 /*

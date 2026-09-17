@@ -23,13 +23,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* system headers */
 #include <math.h>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
+#include "gmanclipedge.h"
 #include "gmanlog.h"
-#include "gmanclipedge.h" /* Declaration Header */
+#include "ri.h"
 
 
 /*

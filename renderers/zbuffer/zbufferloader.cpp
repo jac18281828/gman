@@ -24,12 +24,12 @@
  */
 
 #include <iostream>
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanrenderer.h" /* Super class */
+
 #include "gmanloadable.h"
 #include "gmanloadablerenderer.h"
-#include "gmanzbufferrenderer.h" /* Declaration Header */
+#include "gmanrenderer.h"
+#include "gmanzbufferrenderer.h"
+#include "ri.h"
 
 /* Global static data */
 

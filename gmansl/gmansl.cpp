@@ -24,17 +24,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* system headers */
-#include <stdlib.h>
-#include <stdio.h>
 #include <filesystem>
 #include <iostream>
 #include <string>
 
-/* gman headers */
-#include "ri.h"
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "gmanerror.h"
 #include "gmansl.h"
+#include "ri.h"
 
 /* global variables */
 int      lineNumber;

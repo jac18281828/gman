@@ -25,8 +25,8 @@
 #ifndef __GMANVSORTHOGRAPHIC_H
 #define __GMANVSORTHOGRAPHIC_H 1
 
-#include "gmanviewingsystem.h"
 #include "gmanmatrix4.h"
+#include "gmanviewingsystem.h"
 
 class GMAN_EXPORT  GMANVSOrthographic : public GMANViewingSystem
 {

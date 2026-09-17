@@ -28,18 +28,13 @@
 #define __GMAN_GMANFRAMEBUFFER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// a bitmap object
 #include "gmanbitmap.h"
+#include "ri.h"
 
 // the filter object forward declaration
 class GMAN_EXPORT GMANFilter;

@@ -28,19 +28,14 @@
 #define __GMAN_GMANPOLYGONCLIPPER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
 #include "gmanclipedge.h"
+#include "gmanlog.h"
+#include "ri.h"
 
 
 /*

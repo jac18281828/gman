@@ -28,22 +28,15 @@
 #define __GMAN_GMANOBJECTMANGER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
-// the object type
 #include "gmanobject.h"
-// primitives
 #include "gmanprimitives.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANObjectManager

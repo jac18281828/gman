@@ -65,10 +65,6 @@
  * closing report, not this file, for that result.
  */
 
-#include <sys/wait.h>
-
-#include <tiffio.h>
-
 #include <array>
 #include <cmath>
 #include <cstdio>
@@ -76,6 +72,10 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+
+#include <sys/wait.h>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "checkertexture.h"

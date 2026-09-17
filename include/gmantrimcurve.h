@@ -27,8 +27,8 @@
 #define __GMAN_GMANTRIMCURVE_H 1
 
 
-#include "ri.h"
 #include "gmanlog.h"
+#include "ri.h"
 
 
 class GMAN_EXPORT  GMANTrimCurve

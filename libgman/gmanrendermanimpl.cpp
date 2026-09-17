@@ -36,26 +36,21 @@
 #include <memory>
 #include <string>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanlog.h"
-#include "gmanrendermanimpl.h" /* Declaration Header */
-
-#include "gmanrenderer.h"  
-#include "gmanloadablerenderer.h"
-
+#include "gmanfiledrivers.h"
+#include "gmaninlineparse.h"
 #include "gmanlinearworldmanager.h"
-
+#include "gmanloadablerenderer.h"
+#include "gmanlog.h"
+#include "gmanmath.h"
+#include "gmanoutputx11.h"
+#include "gmanrenderer.h"
+#include "gmanrendermanimpl.h"
+#include "gmantexture.h"
+#include "gmanvector.h"
 #include "gmanviewingsystem.h"
 #include "gmanvsorthographic.h"
 #include "gmanvsperspective.h"
-
-#include "gmanfiledrivers.h"
-#include "gmanoutputx11.h"
-#include "gmaninlineparse.h"
-#include "gmanvector.h"
-#include "gmanmath.h"
-#include "gmantexture.h"
+#include "ri.h"
 
 /*
  * RenderMan API RiRenderMan

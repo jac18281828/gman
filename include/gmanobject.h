@@ -28,24 +28,18 @@
 #define __GMAN_GMANOBJECT_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
+#include "gmanbody.h"
+#include "gmanface.h"
 #include "gmanlog.h"
-// ray and segment type
+#include "gmanprimitive.h"
 #include "gmansegment.h"
 #include "gmansurface.h"
-#include "gmanface.h"
-#include "gmanbody.h"
-#include "gmanprimitive.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANObject

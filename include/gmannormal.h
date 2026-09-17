@@ -28,12 +28,11 @@
 #define __GMAN_GMANNORMAL_H 1
 
 
-/* Headers */
-#include "ri.h"
 #include "gmanlog.h"
 #include "gmanpoint.h"
-#include "gmanvector.h"
 #include "gmantypes.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 
 class GMAN_EXPORT  GMANNormal : public GMANVector

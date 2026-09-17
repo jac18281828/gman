@@ -29,9 +29,9 @@
 #ifndef GMAN_TESTS_CHECKERTEXTURE_H
 #define GMAN_TESTS_CHECKERTEXTURE_H
 
-#include <tiffio.h>
-
 #include <string>
+
+#include <tiffio.h>
 
 // Writes a 2x2 RGB TIFF, row 0 first -- ORIENTATION_TOPLEFT (set below)
 // then makes that row the image's top row on read-back, matching

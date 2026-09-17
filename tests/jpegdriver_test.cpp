@@ -43,20 +43,19 @@
  * to a null-`output` crash for both.
  */
 
-#include <sys/wait.h>
-
-#include <cstdio> // jpeglib.h expects FILE already declared
-
-#include <jpeglib.h>
-#include <tiffio.h>
-
 #include <algorithm>
+#include <cstdio>  // jpeglib.h expects FILE already declared
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
+
 #include <sys/stat.h>
+#include <sys/wait.h>
+
+#include <jpeglib.h>
+#include <tiffio.h>
 
 #include "check.h"
 

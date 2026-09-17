@@ -34,16 +34,12 @@
 #include <stack>
 #include <vector>
 
-#include "ri.h"
-
-#include "gmanerror.h"
-
-
-#include "gmanlog.h"
-
-#include "gmanoptions.h"
 #include "gmanattributes.h"
+#include "gmanerror.h"
+#include "gmanlog.h"
+#include "gmanoptions.h"
 #include "gmantransform.h"
+#include "ri.h"
 
 class GMAN_EXPORT  GMANGraphicState
 {

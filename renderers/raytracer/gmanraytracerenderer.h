@@ -28,28 +28,18 @@
 #define __GMAN_GMANRAYTRACERENDERER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// Our parent class
-#include "gmanrenderer.h"
-// world manager
-#include "gmanworldmanager.h"
-
-// linear world manager
 #include "gmanlinearworldmanager.h"
-// patch poly object manager
+#include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "gmanrayobjectmanager.h"
+#include "gmanrenderer.h"
+#include "gmanworldmanager.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANRaytraceRenderer

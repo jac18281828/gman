@@ -26,11 +26,11 @@
  */
 
 #include <cstdint>
-
 #include <string>
-#include "ri.h"
-#include "gmanrenderman.h"
+
 #include "gmaninlineparse.h"
+#include "gmanrenderman.h"
+#include "ri.h"
 
 
 GMANRenderMan::GMANRenderMan() : colorNComps(3), lastObjectHandle(0), lastLightHandle(0)

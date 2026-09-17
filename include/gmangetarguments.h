@@ -28,6 +28,7 @@
 #define __GMAN_GETARGUMENTS_H 1
 
 #include <stdarg.h>
+
 #include "ri.h"
 
 extern GMAN_EXPORT  RtVoid GMANGetArguments (va_list args, RtInt n, RtToken *tokens, RtPointer *parms);

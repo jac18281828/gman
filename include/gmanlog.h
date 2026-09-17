@@ -28,12 +28,10 @@
 #define __GMAN_GMANLOG_H 1
 
 
-/* Headers */
 #include <format>
 #include <string_view>
 #include <utility>
 
-// the renderman interface
 #include "ri.h"
 
 /*

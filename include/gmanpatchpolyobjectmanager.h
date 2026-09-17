@@ -28,22 +28,15 @@
 #define __GMAN_GMANPATCHPOLYOBJECTMANAGER_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
-#include "gmanlog.h"
-// Our parent class
-#include "gmanobjectmanager.h"
-// GMANTextureCoordinates
 #include "gmanattributes.h"
+#include "gmanlog.h"
+#include "gmanobjectmanager.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANPatchPolyObjectManager

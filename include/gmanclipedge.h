@@ -28,21 +28,16 @@
 #define __GMAN_GMANCLIPEDGE_H 1
 
 
-/* Headers */
-
-// STL
 #include <list>
 #include <map>
 #include <stack>
 #include <string>
 
-// the renderman interface
-#include "ri.h"
-// logging
 #include "gmanlog.h"
 #include "gmanoutputpolygon.h"
 #include "gmanvector4.h"
 #include "gmanvertex4.h"
+#include "ri.h"
 
 
 /* Global types */

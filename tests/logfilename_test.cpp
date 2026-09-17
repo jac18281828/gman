@@ -25,14 +25,14 @@
  * than the checked-in tree.
  */
 
-#include <sys/wait.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
+
+#include <sys/wait.h>
 
 #include "check.h"
 

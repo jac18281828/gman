@@ -29,9 +29,9 @@
 
 #include <math.h>
 
-#include "ri.h"
 #include "gmancolor.h"
 #include "gmantypes.h"
+#include "ri.h"
 
 // gamma correction class
 class GMAN_EXPORT  GMANGammaCorrect {

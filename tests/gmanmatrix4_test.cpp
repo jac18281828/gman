@@ -36,8 +36,8 @@
 
 #include "check.h"
 #include "gmanmatrix4.h"
-#include "gmanvector4.h"
 #include "gmanpoint.h"
+#include "gmanvector4.h"
 
 namespace {
 

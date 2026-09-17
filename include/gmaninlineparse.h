@@ -25,14 +25,15 @@
 #ifndef __GMANINLINEPARSE_H
 #define __GMANINLINEPARSE_H 1
 
-#include <stdio.h>
-#include <ctype.h>
 #include <string>
 
-#include "ri.h"
-#include "gmanlog.h"
+#include <ctype.h>
+#include <stdio.h>
+
 #include "gmandictionary.h"
 #include "gmanerror.h"
+#include "gmanlog.h"
+#include "ri.h"
 
 class GMAN_EXPORT  GMANInlineParse
 {

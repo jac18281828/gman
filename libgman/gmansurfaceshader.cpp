@@ -25,10 +25,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanshader.h" /* Super class */
-#include "gmansurfaceshader.h" /* Declaration Header */
+#include "gmanshader.h"
+#include "gmansurfaceshader.h"
+#include "ri.h"
 #ifdef DEBUG
 #include "gmanerror.h"
 #endif

@@ -25,11 +25,10 @@
 
 #include <typeinfo>
 
-/* Local Headers */
-#include "ri.h"      /* RenderMan Interface */
-#include "gmanrenderer.h" /* Super class */
-#include "gmanreyesrenderer.h" /* Declaration Header */
 #include "gmanpolygonclipper.h"
+#include "gmanrenderer.h"
+#include "gmanreyesrenderer.h"
+#include "ri.h"
 
 GMANReyesRenderer::GMANReyesRenderer()  {
     zBuffer=NULL;

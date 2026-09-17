@@ -39,12 +39,12 @@
  * the guard is shared rather than duplicated per overload.
  */
 
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "check.h"
 #include "gmancolor.h"
