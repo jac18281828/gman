@@ -1,3 +1,9 @@
+0.8.1 (2026-09-17)
+
+* **0.8.0 shipped one tarball of three; this release ships all three.** On the 0.8.0 tag push `softprops/action-gh-release@v2` failed with "Error creating asset temp dir" on `ubuntu-24.04-arm` and `macos-latest`, twice each — the small `.sha256` uploaded and the tarball beside it did not. The release workflow now creates the release and attaches every asset with `gh`, which ships on the runner image itself rather than arriving as a third-party action holding `contents: write`. The create step edits an existing release in place and the upload passes `--clobber`, so rerunning one partly-failed leg replaces that leg's assets instead of colliding with them
+* **The documentation no longer cites a file that is not there.** 36 references to `SPEC.md` across 31 files pointed at a document deleted before 0.8.0
+* **Groundwork for the ray tracer.** `include/gmanray.h` gives `GMANRay` an origin, a normalized direction and a `[tmin, tmax]` interval, and `GMANHit` the record an intersection fills in; `GMANViewingSystem::ray` transforms a camera-space ray into world space. The ray-tracing plugin remains non-functional and built `OFF`, and no rendered image changes
+
 0.8.0 (2026-09-17)
 
 * **libtiff is now required.** `GMAN_WITH_TIFF` is gone, and configure fails without libtiff rather than building a renderer that cannot write its own default output. TIFF is the `Display` default and the format every texture is read from, so the option only ever chose between a working build and a crippled one
