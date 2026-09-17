@@ -56,6 +56,9 @@
 
 namespace {
 
+// AGENTS.md's heading for the Gates section, as of this writing.
+const std::string kGatesHeading = "## Completion Gates";
+
 std::string readFile(const std::string &path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream contents;
@@ -115,7 +118,7 @@ std::vector<std::string> ciJobNames(const std::string &ciYaml) {
 // The whole Gates section, heading to the next `## ` heading: the fenced
 // block plus the prose around it that names the CI jobs.
 std::string gatesSection(const std::string &agentsMd) {
-  std::size_t start = agentsMd.find("## Gates");
+  std::size_t start = agentsMd.find(kGatesHeading);
   if (start == std::string::npos) {
     return "";
   }
@@ -129,7 +132,7 @@ std::string gatesSection(const std::string &agentsMd) {
 // The Gates section's fenced shell block: the exact commands a developer
 // runs by hand.
 std::string gatesBlock(const std::string &agentsMd) {
-  std::size_t gatesHeading = agentsMd.find("## Gates");
+  std::size_t gatesHeading = agentsMd.find(kGatesHeading);
   if (gatesHeading == std::string::npos) {
     return "";
   }
