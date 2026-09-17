@@ -141,7 +141,6 @@ that nobody settles what finished means.
 ```
 COPYING      GNU Lesser General Public License, version 2.1
 AGENTS.md    build commands, gate list and house conventions
-NEWS         release notes
 TODO         what was outstanding when the project was shelved
 AUTHORS      contributors
 ```
