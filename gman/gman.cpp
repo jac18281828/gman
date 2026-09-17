@@ -61,6 +61,18 @@ int printVersion() {
   return EXIT_SUCCESS;
 }
 
+// True when --version appears anywhere in argv[1..argc), ahead of the
+// copyright banner and every other flag: version reporting parses no files
+// and touches nothing else main sets up.
+bool hasVersionFlag(int argc, char *argv[]) {
+  for (int i = 1; i < argc; ++i) {
+    if (std::string_view(argv[i]) == "--version") {
+      return true;
+    }
+  }
+  return false;
+}
+
 } // namespace
 
 /* function prototypes */
@@ -69,13 +81,8 @@ RtVoid usage(char *myname);
 
 int main(int argc, char *argv[]) {
 
-  // Works anywhere in the flag list, ahead of the copyright banner and
-  // every other flag: version reporting parses no files and touches
-  // nothing else main sets up.
-  for (int i = 1; i < argc; ++i) {
-    if (std::string_view(argv[i]) == "--version") {
-      return printVersion();
-    }
+  if (hasVersionFlag(argc, argv)) {
+    return printVersion();
   }
 
   int rc = EXIT_SUCCESS;
