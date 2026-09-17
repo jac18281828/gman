@@ -109,10 +109,6 @@ public:
 
   ~GMANLog(); // default destructor
 
-  // invoke a copyright message laying claim for this
-  // software to it's lawful heirs :)
-  RtVoid copyright(RtVoid);
-
   RtVoid setLogLevel(GMANLogLevel lvl) { ::setLogLevel(lvl); }
 
   RtVoid setLogFile(const char* path) { ::setLogFile(path); }

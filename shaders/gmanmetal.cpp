@@ -86,7 +86,6 @@ const GMANColor& GMANMetal::computeOi(GMANSurfaceEnv& se) {
 static GMANLoadableObjectInfo loadableInfo = {
     "Metal surface shader",
     "John Cairns <john@2ad.com>",
-    "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
     "A GMAN SurfaceShader for metal surfaces: Cs-tinted specular response, "
     "no diffuse term.",
 };

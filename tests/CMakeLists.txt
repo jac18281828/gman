@@ -571,6 +571,23 @@ set_tests_properties(filedrivers PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# Pins gman's one-line startup banner against a version-bump regression.
+add_executable(gman_banner banner_test.cpp)
+target_link_libraries(gman_banner PRIVATE gman_core)
+
+set(GMAN_BANNER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/banner-run")
+file(MAKE_DIRECTORY "${GMAN_BANNER_WORKDIR}")
+
+add_test(NAME banner
+  COMMAND gman_banner $<TARGET_FILE:gman>
+                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
+                       "${PROJECT_VERSION}"
+  WORKING_DIRECTORY "${GMAN_BANNER_WORKDIR}")
+set_tests_properties(banner PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
 # A known but disabled driver's extension must fail loudly (RIE_BADFILE,
 # naming the missing library), not silently. Registered unconditionally
 # and always compiled -- it reads which drivers exist from gman --version

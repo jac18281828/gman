@@ -42,7 +42,6 @@ typedef RtVoid* GMANLoadableObjectHandle;
 typedef struct {
   const char* name;
   const char* author;
-  const char* copyright;
   const char* description;
 } GMANLoadableObjectInfo;
 
@@ -97,9 +96,6 @@ public:
 
   // get description of DSO
   const char* getDescription(RtVoid) const;
-
-  // get copyright of DSO
-  const char* getCopyright(RtVoid) const;
 };
 
 #endif

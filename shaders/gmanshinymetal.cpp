@@ -99,7 +99,6 @@ const GMANColor& GMANShinyMetal::computeOi(GMANSurfaceEnv& se) {
 static GMANLoadableObjectInfo loadableInfo = {
     "Shiny metal surface shader",
     "John Cairns <john@2ad.com>",
-    "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
     "A GMAN SurfaceShader for shiny metal surfaces: Cs-tinted specular "
     "response plus a world-space environment reflection.",
 };

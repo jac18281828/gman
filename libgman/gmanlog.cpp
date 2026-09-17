@@ -29,10 +29,6 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-// FIXME FIXME FIXME
-// set this with autoconf macros
-static const char* softwareVersion = "1.0.0 Alpha";
-
 /* log state */
 static GMANLogLevel logLevel = LOGLVL_INFO;
 static FILE* logFile = NULL;
@@ -113,13 +109,3 @@ GMANLog::GMANLog() {};
 
 // default destructor
 GMANLog::~GMANLog() {};
-
-RtVoid GMANLog::copyright(RtVoid) {
-  info("GMAN {}\n\n",
-       "This library is free software; you can redistribute it and/or\n"
-       "modify it under the terms of the GNU Lesser General Public\n"
-       "License as published by the Free Software Foundation; either\n"
-       "version 2.1 of the License, or (at your option) any later version.\n"
-       "Copyright (c) 2002, 2001, 2000, 1999  John Cairns <john@2ad.com>.\n\n",
-       "The RenderMan interface is copyright Pixar (c) 1987, 1988, 1989, 1995.\n\n", softwareVersion);
-}

@@ -104,7 +104,6 @@ const GMANColor& GMANPaintedPlastic::computeOi(GMANSurfaceEnv& se) {
 static GMANLoadableObjectInfo loadableInfo = {
     "Painted plastic surface shader",
     "John Cairns <john@2ad.com>",
-    "Copyright (c) 2026 John Cairns, Licensed under the GNU Lesser General Public License v2.1 or later, https://www.gnu.org/licenses/",
     "A GMAN SurfaceShader for plastic surfaces with a texture-mapped diffuse "
     "colour: the RISpec's own paintedplastic.",
 };

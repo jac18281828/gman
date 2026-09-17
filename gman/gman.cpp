@@ -60,8 +60,8 @@ int printVersion() {
 }
 
 // True when --version appears anywhere in argv[1..argc), ahead of the
-// copyright banner and every other flag: version reporting parses no files
-// and touches nothing else main sets up.
+// banner and every other flag: version reporting parses no files and
+// touches nothing else main sets up.
 bool hasVersionFlag(int argc, char* argv[]) {
   for (int i = 1; i < argc; ++i) {
     if (std::string_view(argv[i]) == "--version") {
@@ -103,8 +103,8 @@ int main(int argc, char* argv[]) {
 
       // info on by default
       logObj.setLogLevel(LOGLVL_INFO);
-      // announce the copyright
-      logObj.copyright();
+      // announce the banner
+      info("gman {} -- LGPL-2.1-or-later, see COPYING\n", GMAN_PROJECT_VERSION);
 
       bool writeLog = false;
 
