@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
+
 #include "gmancolor.h"
 #include "gmanlog.h"
 #include "ri.h"
@@ -55,19 +57,6 @@ const RtFloat GMANColorRGB::blueWeight = 0.11f;
  *
  */
 
-#define MINMAX(a, b, c) \
-  if (a > b) {          \
-    max = a;            \
-    min = b;            \
-  } else {              \
-    max = b;            \
-    min = a;            \
-  }                     \
-  if (max < c)          \
-    max = c;            \
-  else if (min > c)     \
-    min = c;
-
 const RtFloat RGBXYZ[] = {0.412453, 0.357580, 0.180423, 0.212671, 0.715160, 0.072169, 0.019334, 0.119193, 0.950227};
 
 const RtFloat XYZRGB[] = {3.240479, -1.537150, -0.498535, -0.969256, 1.875991, 0.041556, 0.055648, -0.204043, 1.057311};
@@ -82,10 +71,10 @@ const RtFloat YUVRGB[] = {1.0, 0.0, 1.140, 1.0, -0.394, -0.581, 1.0, 2.028, 0.0}
 
 // ==== HSV ==== //
 RtVoid GMANConvertRGBtoHSV(RtFloat* c) {
-  RtFloat min, max, delta;
+  RtFloat delta;
   RtFloat r = c[0], g = c[1], b = c[2];
 
-  MINMAX(r, g, b)
+  const auto [min, max] = std::minmax({r, g, b});
   delta = max - min;
   c[2] = max;
 
@@ -163,10 +152,10 @@ RtVoid GMANConvertHSVtoRGB(RtFloat* c) {
 
 // ==== HSL ==== //
 RtVoid GMANConvertRGBtoHSL(RtFloat* c) {
-  RtFloat min, max, delta;
+  RtFloat delta;
   RtFloat r = c[0], g = c[1], b = c[2];
 
-  MINMAX(r, g, b);
+  const auto [min, max] = std::minmax({r, g, b});
   delta = (max - min);
 
   c[1] = (min + max) / 2.0;
