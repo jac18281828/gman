@@ -58,25 +58,25 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
       RtFloat t,tempT;
 
       while(prim) {
-	if ( prim->intersect(ray, tempT) ){
-	  //We have a hit 
-	  if (hitPrimitive == NULL || tempT<t);
-	  t = tempT;
-	  hitPrimitive = prim;
-	}
+        if ( prim->intersect(ray, tempT) ){
+          //We have a hit
+          if (hitPrimitive == NULL || tempT<t);
+          t = tempT;
+          hitPrimitive = prim;
+        }
 
-	// FIXME FIXME FIXME
-	// this should use a 'findNearest' directive in the BSP world
-	// manager
+        // FIXME FIXME FIXME
+        // this should use a 'findNearest' directive in the BSP world
+        // manager
 
-	prim = (GMANRayInterface*)(worldManager.getNext());
+        prim = (GMANRayInterface*)(worldManager.getNext());
       }
       GMANColor black( 1.f, 1.f, 1.f ), white( 0.f, 0.f, 0.f );
       if ( hitPrimitive != NULL ) {
-	frameBuffer->setPixel(x, y, white); 
+        frameBuffer->setPixel(x, y, white);
       }
       else {
-	frameBuffer->setPixel(x, y, black); 
+        frameBuffer->setPixel(x, y, black);
       }
 #endif
     }
