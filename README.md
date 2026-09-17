@@ -32,8 +32,10 @@ doc/         the 1999 design document
 ## Building
 
 Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
-Clang 17 or newer), libtiff, libpng and zlib. libjpeg is optional. POSIX
-only -- macOS and Linux.
+Clang 17 or newer), libtiff and zlib. libpng and libjpeg are optional: a
+build without one rejects that `Display` extension with `RIE_BADFILE`, and
+`gman --version` lists the drivers actually compiled in. POSIX only --
+macOS and Linux.
 
 ```sh
 cmake --preset dev

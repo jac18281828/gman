@@ -63,6 +63,7 @@ jobs:
       - name: Configure
         run: |
           cmake --preset dev \
+            -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
@@ -114,6 +115,7 @@ jobs:
           CXX: clang++
         run: |
           cmake --preset debug \
+            -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
@@ -155,6 +157,7 @@ jobs:
           CXX: g++
         run: |
           cmake --preset dev \
+            -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
@@ -206,3 +209,37 @@ jobs:
         run: cmake --preset dev
       - name: Format check
         run: cmake --build build --target format-check
+  drivers-off:
+    # Proves the optional drivers are actually optional: no libpng-dev or
+    # libjpeg-dev installed at all, both options forced OFF, full suite
+    # green. The build job above proves the opposite shape (both ON,
+    # required); this is the one CI leg where neither library ever exists
+    # on the runner.
+    name: ubuntu / gcc / png+jpeg off
+    runs-on: ubuntu-latest
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build ccache \
+            libtiff-dev zlib1g-dev
+      - name: Cache ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-drivers-off-${{ hashFiles('**/*.cpp', '**/*.h', '**/*.cc') }}
+          restore-keys: |
+            ccache-drivers-off-
+      - name: Configure
+        run: |
+          cmake --preset dev \
+            -DGMAN_WITH_PNG=OFF -DGMAN_WITH_JPEG=OFF \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

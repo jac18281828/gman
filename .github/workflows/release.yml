@@ -70,7 +70,7 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install cmake libtiff libpng jpeg
       - name: Configure
-        run: cmake --preset release
+        run: cmake --preset release -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
       - name: Build
         run: cmake --build build-release --parallel
       # A release ships a tested build or it does not ship. The suite is the
@@ -90,6 +90,13 @@ jobs:
           ./bin/gman "${{ github.workspace }}/tests/rib/sphere.rib"
           test -s sphere.tif
           rm -f sphere.tif
+      # The explicit ON configure above means a runner missing either
+      # library fails configure instead of silently shipping a tarball
+      # with a driver quietly missing.
+      - name: Verify the staged binary's driver list
+        run: |
+          cd "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
+          ./bin/gman --version | grep -qx "drivers: tiff pnm png jpeg"
       - name: Package
         run: |
           cd "${{ runner.temp }}/stage"

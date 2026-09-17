@@ -8,8 +8,10 @@ Read it before changing anything. Humans contributing by hand want
 ## Build
 
 Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
-Clang 17 or newer), libtiff, libpng and zlib. libjpeg is optional. POSIX
-only: macOS and Linux.
+Clang 17 or newer), libtiff and zlib. libpng and libjpeg are optional: a
+build without one rejects that `Display` extension with `RIE_BADFILE`, and
+`gman --version` lists the drivers actually compiled in. POSIX only:
+macOS and Linux.
 
 ```sh
 cmake --preset dev && cmake --build build --parallel
@@ -292,7 +294,7 @@ cmake --build build --target format-check
 ```
 
 Three CI workflows gate every push: `ci` (jobs `build`, `sanitizers`,
-`valgrind`, `format-check`), `commitlint`, and `Yamlfmt`.
+`valgrind`, `format-check`, `drivers-off`), `commitlint`, and `Yamlfmt`.
 `tests/docsconsistency_test.cpp` keeps this block and
 `.github/workflows/ci.yml` from drifting apart.
 
