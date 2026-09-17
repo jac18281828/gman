@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(gman
-  VERSION 0.7.2
+  VERSION 0.8.0
   DESCRIPTION "GMAN — a RenderMan-compatible renderer"
   LANGUAGES C CXX)
 
