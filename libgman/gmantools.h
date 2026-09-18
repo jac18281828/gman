@@ -30,7 +30,7 @@
 #include "gmanpoint.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANTools {
+class GMANTools {
 public:
   /*----------------------------------------------------------
    * Bilinear Patch tools

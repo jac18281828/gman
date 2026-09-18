@@ -40,7 +40,7 @@
  * A segment type made of two points
  */
 
-class GMAN_EXPORT GMANSegment {
+class GMANSegment {
   GMANPoint p1;
   GMANPoint p2;
 

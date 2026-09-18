@@ -49,7 +49,7 @@ class GMANBody;
  *
  */
 
-class GMAN_EXPORT GMANSurface {
+class GMANSurface {
 protected:
   GMANPoint center;
 

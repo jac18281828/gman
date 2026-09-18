@@ -38,7 +38,7 @@ const double DEGTORAD = PI / 180.0;
 #define GMANMIN(x, y) (x < y ? x : y)
 
 #if 0
-inline GMAN_EXPORT  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
+inline  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
 {
   if(value < min) return min;
   if(value > max) return max;
@@ -47,14 +47,14 @@ inline GMAN_EXPORT  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
 #endif
 
 // Trigonometric functions - asandro
-inline GMAN_EXPORT RtFloat GMANRadians(RtFloat degrees) { return (RtFloat)(degrees * DEGTORAD); }
+inline RtFloat GMANRadians(RtFloat degrees) { return (RtFloat)(degrees * DEGTORAD); }
 
-inline GMAN_EXPORT RtFloat GMANDegrees(RtFloat radians) { return (RtFloat)(radians / DEGTORAD); }
+inline RtFloat GMANDegrees(RtFloat radians) { return (RtFloat)(radians / DEGTORAD); }
 
-inline GMAN_EXPORT RtFloat GMANAtan(RtFloat y, RtFloat x) { return (RtFloat)atan2(y, x); }
+inline RtFloat GMANAtan(RtFloat y, RtFloat x) { return (RtFloat)atan2(y, x); }
 
 // Square root & logarithmic - asandro
-inline GMAN_EXPORT RtFloat GMANInversesqrt(RtFloat x) {
+inline RtFloat GMANInversesqrt(RtFloat x) {
   RtFloat y = (RtFloat)sqrt(x);
   // avoid division by zero
   if (y - RI_EPSILON > 0.0) {
@@ -64,17 +64,17 @@ inline GMAN_EXPORT RtFloat GMANInversesqrt(RtFloat x) {
   }
 }
 
-inline GMAN_EXPORT RtFloat GMANLogFn(RtFloat x, RtFloat base) { return (RtFloat)(log(x) / log(base)); }
+inline RtFloat GMANLogFn(RtFloat x, RtFloat base) { return (RtFloat)(log(x) / log(base)); }
 
 // Module functions - asandro
-inline GMAN_EXPORT RtFloat GMANMod(RtFloat a, RtFloat b) {
+inline RtFloat GMANMod(RtFloat a, RtFloat b) {
   if (a < 0)
     return b - (RtFloat)fmod(-a, b);
   else
     return (RtFloat)fmod(a, b);
 }
 
-inline GMAN_EXPORT RtFloat GMANSign(RtFloat x) { return (RtFloat)(x < 0.0 ? -1.0 : x > 0.0 ? 1.0 : 0.0); }
+inline RtFloat GMANSign(RtFloat x) { return (RtFloat)(x < 0.0 ? -1.0 : x > 0.0 ? 1.0 : 0.0); }
 
 // Comparison functions - asandro
 template <class T> inline T GMANMin(T a, T b) { return a < b ? a : b; }
@@ -96,7 +96,7 @@ inline RtFloat GMANRound(RtFloat x) { return (RtFloat)floor(x + .5); }
 // catastrophically when b^2 >> 4ac -- a ray passing far from a small
 // sphere, not a corner case -- so this takes the numerically stable root
 // first and derives the other from the root product c/q.
-inline GMAN_EXPORT int GMANQuadraticRoots(RtFloat a, RtFloat b, RtFloat c, RtFloat& t0, RtFloat& t1) {
+inline int GMANQuadraticRoots(RtFloat a, RtFloat b, RtFloat c, RtFloat& t0, RtFloat& t1) {
   if (a == 0.0)
     return 0;
 

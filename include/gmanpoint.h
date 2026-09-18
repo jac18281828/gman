@@ -38,7 +38,7 @@ class GMANHPoint;
  *
  */
 
-class GMAN_EXPORT GMANPoint {
+class GMANPoint {
 public:
   // public type
   typedef enum { X = 0, Y = 1, Z = 2, NCOORDS } CoordType;

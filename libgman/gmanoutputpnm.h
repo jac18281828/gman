@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
-/*----------------------------------------------------------
-  Copyright (C) Lionel Joseph Lacour 2000, 2001
-  2000/08/06  First release
-  ----------------------------------------------------------
-  This class implements the RiContext feature of the
-  RiSpec V3.2
-*/
+/* This is part of GMAN, a RenderMan-compatible renderer.
+ *
+ * Copyright (c) 2001, 2000, 1999 by John Cairns
+ *
+ * Author: John Cairns <john@2ad.com>
+ */
+
 /*
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,26 +22,29 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+
 #pragma once
 
 #include <list>
+#include <map>
+#include <stack>
+#include <string>
 
-#include "gmanerror.h"
 #include "gmanlog.h"
-#include "gmanrenderman.h"
+#include "gmanoutput.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANContext {
-private:
-  std::list<GMANRenderMan*> chl;
-  GMANRenderMan* active;
+/*
+ * RenderMan API GMANOutputPNM
+ *
+ */
 
+class GMANOutputPNM : public GMANOutput {
 public:
-  GMANContext();
+  // default constructor
+  GMANOutputPNM(const char* path, int width, int height);
 
-  RtVoid addContext(RtVoid);
-  RtContextHandle getContext(RtVoid);
-  GMANRenderMan& current(RtVoid);
-  RtVoid switchTo(RtContextHandle);
-  RtVoid removeCurrent(RtVoid);
+  ~GMANOutputPNM(); // default destructor
+
+  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
 };

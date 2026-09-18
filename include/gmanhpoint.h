@@ -28,7 +28,7 @@
 #include "gmanpoint.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANHPoint : public GMANPoint {
+class GMANHPoint : public GMANPoint {
 protected:
   RtFloat w;
 

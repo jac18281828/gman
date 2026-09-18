@@ -33,7 +33,7 @@
 
 typedef GMANUInt GMANTokenId;
 
-class GMAN_EXPORT GMANTokenEntry {
+class GMANTokenEntry {
   // public types
 public:
   typedef enum { CONSTANT, UNIFORM, VARYING, VERTEX, FACEVARYING } TokenClass;

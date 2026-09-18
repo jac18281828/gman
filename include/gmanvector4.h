@@ -46,7 +46,7 @@ class GMANViewingSystem;
  *
  */
 
-class GMAN_EXPORT GMANVector4 : public GMANVector {
+class GMANVector4 : public GMANVector {
 private:
   RtFloat w; // the w-axis coord
 

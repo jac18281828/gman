@@ -1,10 +1,10 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
-/*---------------------------------------------------------
-  Copyright (C) Lionel Joseph Lacour 2000, 2001
-  2000/07/31  datas storage
-  ---------------------------------------------------------
-  Trim curves data storage
+/*----------------------------------------------------------
+  Copyright (C) Lionel Joseph Lacour 2001, 2002
+  February 2001 First release
+  ----------------------------------------------------------
+  Perspective viewing system.
 */
 /*
  * This library is free software; you can redistribute it and/or
@@ -24,30 +24,22 @@
 
 #pragma once
 
-#include "gmanlog.h"
-#include "ri.h"
+#include "gmanmatrix4.h"
+#include "gmanviewingsystem.h"
 
-class GMANTrimCurve {
+class GMANVSPerspective : public GMANViewingSystem {
 private:
-  int* counter;
-
-  RtInt nloops;
-  RtInt* ncurves;
-  RtInt* order;
-  RtFloat* knot;
-  RtFloat* min;
-  RtFloat* max;
-  RtInt* n;
-  RtFloat *u, *v, *w;
-
-  RtVoid copy(GMANTrimCurve const& tc);
-  RtVoid destroy();
+  GMANMatrix4 mtrx;
 
 public:
-  GMANTrimCurve();
-  GMANTrimCurve(RtInt nl, RtInt* nc, RtInt* ord, RtFloat* kn, RtFloat* mn, RtFloat* mx, RtInt* n, RtFloat* uu,
-                RtFloat* vv, RtFloat* ww);
-  GMANTrimCurve(GMANTrimCurve const& tc);
-  GMANTrimCurve const& operator=(GMANTrimCurve const& tc);
-  ~GMANTrimCurve();
+  GMANVSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
+                    RtFloat fov, RtFloat nearDist, RtFloat farDist);
+  ~GMANVSPerspective() {}
+
+  GMANPoint project(GMANPoint const& p);
+  GMANRay cameraRay(RtFloat x, RtFloat y);
+
+  bool visible(const GMANFace* face);
+
+  const RtMatrix& getProjMatrix(RtVoid) const;
 };

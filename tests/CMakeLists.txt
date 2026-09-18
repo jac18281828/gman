@@ -1,5 +1,11 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
+# A test that includes a header moved out of the published include/ tree
+# links this instead of adding libgman/ to its own include path.
+add_library(gman_internal_headers INTERFACE)
+target_include_directories(gman_internal_headers INTERFACE
+  "${CMAKE_SOURCE_DIR}/libgman")
+
 # The phase 0 runtime baseline. Asserts what gman actually does with a minimal
 # scene -- exit status, message and the absence of an image -- not what it was
 # predicted to do. See tests/baseline_test.cpp for the finding and for which phase
@@ -136,7 +142,7 @@ set_tests_properties(matrix4 PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_spacechain spacechain_test.cpp)
-target_link_libraries(gman_spacechain PRIVATE gman_core)
+target_link_libraries(gman_spacechain PRIVATE gman_core gman_internal_headers)
 add_test(NAME spacechain COMMAND gman_spacechain)
 set_tests_properties(spacechain PROPERTIES
   LABELS unit
@@ -702,7 +708,7 @@ set_tests_properties(wideframe PROPERTIES
 # (a paintedplastic Patch read back for its four quadrants' colours) and
 # tests/rib/maketexture_wrap.rib (the same, through a MakeTexture request).
 add_executable(gman_texture texture_test.cpp)
-target_link_libraries(gman_texture PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_texture PRIVATE gman_core TIFF::TIFF gman_internal_headers)
 
 set(GMAN_TEXTURE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texture-run")
 file(MAKE_DIRECTORY "${GMAN_TEXTURE_WORKDIR}")
@@ -789,7 +795,7 @@ set_target_properties(gman_camerashader PROPERTIES OUTPUT_NAME "camerashader")
 # path, the writer and lookup, and shinymetal rendered under three camera
 # orientations. See tests/environment_test.cpp.
 add_executable(gman_environment environment_test.cpp)
-target_link_libraries(gman_environment PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_environment PRIVATE gman_core TIFF::TIFF gman_internal_headers)
 add_dependencies(gman_environment gman_camerashader gman_shinymetal)
 
 set(GMAN_ENVIRONMENT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/environment-run")
@@ -825,7 +831,7 @@ set_tests_properties(log PROPERTIES
 # an exception from one body stopping every worker before reaching the
 # calling thread.
 add_executable(gman_parallel parallel_test.cpp)
-target_link_libraries(gman_parallel PRIVATE gman_core)
+target_link_libraries(gman_parallel PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME parallel COMMAND gman_parallel)
 set_tests_properties(parallel PROPERTIES
@@ -875,7 +881,7 @@ set_tests_properties(gamma PROPERTIES
 # (cameraRay) as well as a world-space one (ray), and pins the [tmin,
 # tmax] interval every GMANRay defaults to.
 add_executable(gman_cameraray cameraray_test.cpp)
-target_link_libraries(gman_cameraray PRIVATE gman_core)
+target_link_libraries(gman_cameraray PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME cameraray COMMAND gman_cameraray)
 set_tests_properties(cameraray PROPERTIES

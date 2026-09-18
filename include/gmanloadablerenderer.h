@@ -40,7 +40,7 @@
  *
  */
 
-class GMAN_EXPORT GMANLoadableRenderer : public GMANRenderer, GMANLoadable {
+class GMANLoadableRenderer : public GMANRenderer, GMANLoadable {
 
 public:
   // public types

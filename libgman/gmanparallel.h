@@ -48,7 +48,7 @@
 // The worker count a gmanParallelFor call with the same arguments uses.
 // workers <= 0 means the hardware's reported concurrency, floored at 1 if
 // that reports 0; the result never exceeds count. count <= 0 returns 0.
-GMAN_EXPORT RtInt gmanParallelWorkers(RtInt count, RtInt workers = 0);
+RtInt gmanParallelWorkers(RtInt count, RtInt workers = 0);
 
 // Runs body(index, worker) exactly once for each index in [0, count), in
 // unspecified order. worker lies in [0, gmanParallelWorkers(count,
@@ -56,5 +56,4 @@ GMAN_EXPORT RtInt gmanParallelWorkers(RtInt count, RtInt workers = 0);
 // one at a time. count <= 0 calls nothing. When gmanParallelWorkers
 // reports one worker, every body runs inline on the calling thread as
 // worker 0 and no thread is created.
-GMAN_EXPORT void gmanParallelFor(RtInt count, const std::function<void(RtInt index, RtInt worker)>& body,
-                                 RtInt workers = 0);
+void gmanParallelFor(RtInt count, const std::function<void(RtInt index, RtInt worker)>& body, RtInt workers = 0);

@@ -42,7 +42,7 @@
  *
  */
 
-class GMAN_EXPORT GMANVolumeShader : public GMANShader {
+class GMANVolumeShader : public GMANShader {
 public:
   GMANVolumeShader(); // default constructor
 

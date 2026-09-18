@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 John Cairns
+ * Copyright (c) 2002, 2001, 2000, 1999 by John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -35,15 +35,27 @@
 #include "ri.h"
 
 /*
- * RenderMan API GMANWindowOutput
- *
- * Storage of frame buffer data in a window on the screen.
+ * RenderMan API GMANOutputTIFF
  *
  */
 
-class GMAN_EXPORT GMANWindowOutput : public GMANOutput {
+class GMANOutputTIFF : public GMANOutput {
 public:
-  GMANWindowOutput(); // default constructor
+  // public types
+  typedef enum { NONE, PACKBITS, LZW, CCITTRLE, CCITTFAX3, CCITTFAX4 } Compression;
 
-  ~GMANWindowOutput(); // default destructor
+private:
+  Compression compression;
+
+public:
+  GMANOutputTIFF(const char* path, int width, int height); // default constructor
+
+  ~GMANOutputTIFF(); // default destructor
+
+  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
+
+  // get/set the TIFF compression type
+  RtVoid setCompression(Compression c);
+
+  Compression getCompression(void) const;
 };

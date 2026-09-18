@@ -44,14 +44,15 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - No universal base class; logging is the free functions in `gmanlog.h`.
 
 ## Seams
-- Threads: only `gmanParallelFor` (`include/gmanparallel.h`).
+- Threads: only `gmanParallelFor` (`libgman/gmanparallel.h`).
   `libgman/gmanparallel.cpp` and `libgman/gmanlog.cpp` alone may name a thread
   primitive; `tests/threadcontainment_test.cpp` enforces it.
 - libtiff: only `libgman/gmantiff.cpp` includes `<tiffio.h>` (`tests/` exempt).
 - Symbol visibility follows `BUILD_TESTING`. A test build exports every
   symbol, so tests reach internals; a build with tests off exports only what
-  `GMAN_EXPORT` tags, and `release.yml` ships that build. A declaration used
-  outside its own library carries `GMAN_EXPORT`.
+  `GMAN_EXPORT` tags, and `release.yml` ships that build. A declaration
+  production code uses outside its own library carries `GMAN_EXPORT`; a
+  test's use does not.
 
 ## Dependencies and Includes
 - Prefer the standard library. Qualify `std::`; no `using` of `std` names.

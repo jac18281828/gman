@@ -40,7 +40,7 @@
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANGraphicState {
+class GMANGraphicState {
 public:
   // public types
   typedef std::stack<GMANOptions> OptionsStack;

@@ -224,7 +224,7 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   }
 };
 
-struct GMAN_EXPORT GMANLightEnv {
+struct GMANLightEnv {
   GMANPoint P;     // surface position
   GMANVector dPdu; // derivative of surface position along u.
   GMANVector dPdv; // derivative of surface position along v.
@@ -251,7 +251,7 @@ struct GMAN_EXPORT GMANLightEnv {
   GMANColor Ol; // Outgoing light ray opacity
 };
 
-struct GMAN_EXPORT GMANVolumeEnv {
+struct GMANVolumeEnv {
   GMANPoint P; // surface position
 
   GMANVector I; // incident ray direction
@@ -265,7 +265,7 @@ struct GMAN_EXPORT GMANVolumeEnv {
   RtFloat dtime;  // amount of time covered by this shading sample
 };
 
-struct GMAN_EXPORT GMANDisplacementEnv {
+struct GMANDisplacementEnv {
   GMANPoint P;     // surface position
   GMANVector dPdu; // derivative of surface position along u.
   GMANVector dPdv; // derivative of surface position along v.
@@ -289,7 +289,7 @@ struct GMAN_EXPORT GMANDisplacementEnv {
   GMANVector dPdtime;
 };
 
-struct GMAN_EXPORT GMANImagerEnv {
+struct GMANImagerEnv {
   GMANPoint P; // Pixel raster position
 
   GMANColor Ci;  // Pixel color

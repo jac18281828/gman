@@ -43,7 +43,7 @@
  *
  */
 
-class GMAN_EXPORT GMANVertex {
+class GMANVertex {
 private:
   GMANPoint location;
 

@@ -50,7 +50,7 @@ class GMANSurface;
  *
  */
 
-class GMAN_EXPORT GMANFace {
+class GMANFace {
 protected:
   RtFloat area;
   GMANSurface* parentSurf; // the parent surface

@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
-/*---------------------------------------------------------
-  Copyright (C) Lionel Joseph Lacour 2000, 2001
-  2000/07/30  First release
-  ---------------------------------------------------------
-  GMAN Implementation Specific Options & Attributes
-*/
+/* This is part of GMAN, a RenderMan-compatible renderer.
+ *
+ * Copyright (c) 2001, 2000, 1999 John Cairns
+ *
+ * Author: John Cairns <john@2ad.com>
+ */
+
 /*
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,29 +25,26 @@
 
 #pragma once
 
+#include <list>
+#include <map>
+#include <stack>
 #include <string>
 
 #include "gmanlog.h"
+#include "gmanobject.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANISO {
-  /* searchpath */
-  std::string archive;
-  std::string texture;
-  std::string shader;
-  std::string procedural;
+/*
+ * RenderMan API GMANSolidObject
+ *
+ * An implementation of solid object operations
+ * including union, difference, etc.
+ *
+ */
 
+class GMANSolidObject : public GMANObject {
 public:
-  RtVoid set(RtToken name, int n, RtToken* tk, RtPointer* dt);
-  const std::string& getArchivePath() const { return archive; }
-  const std::string& getTexturePath() const { return texture; }
-  const std::string& getShaderPath() const { return shader; }
-  const std::string& getProceduralPath() const { return procedural; }
-};
+  GMANSolidObject(); // default constructor
 
-class GMANISA {
-private:
-public:
-  GMANISA();
-  ~GMANISA();
+  ~GMANSolidObject(); // default destructor
 };

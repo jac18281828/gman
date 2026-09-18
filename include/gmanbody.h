@@ -42,7 +42,7 @@
  *
  */
 
-class GMAN_EXPORT GMANBody {
+class GMANBody {
   GMANColor reflectance;    // object reflectivity
   GMANColor emittance;      // object emittivity
   GMANSurface* surfaceRoot; // surfaces in body

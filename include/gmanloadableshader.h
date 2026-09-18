@@ -45,7 +45,7 @@
  *
  */
 
-class GMAN_EXPORT GMANLoadableShader : public GMANShader, GMANLoadable {
+class GMANLoadableShader : public GMANShader, GMANLoadable {
 
 public:
   // public types

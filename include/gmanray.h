@@ -41,7 +41,7 @@ class GMANPrimitive;
  * that scales t against the transform used, rather than paying to
  * re-normalize a direction that already lost the scale that produced it.
  */
-class GMAN_EXPORT GMANRay {
+class GMANRay {
   GMANPoint origin;
   GMANVector direction;
   RtFloat tmin;
@@ -76,7 +76,7 @@ public:
  * returns bool and writes this record only on a hit, so a
  * default-constructed GMANHit -- primitive null -- is a miss.
  */
-struct GMAN_EXPORT GMANHit {
+struct GMANHit {
   RtFloat t = 0.0;
   GMANPoint point;
   GMANVector normal;

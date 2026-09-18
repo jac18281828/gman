@@ -31,7 +31,7 @@
 #include "gmanpoint.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANBasis {
+class GMANBasis {
 private:
   GMANMatrix4 uBasis;
   RtInt uStep;

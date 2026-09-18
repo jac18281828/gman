@@ -27,7 +27,7 @@
 #include "gmanmatrix4.h"
 #include "gmanviewingsystem.h"
 
-class GMAN_EXPORT GMANVSOrthographic : public GMANViewingSystem {
+class GMANVSOrthographic : public GMANViewingSystem {
 private:
   GMANMatrix4 mtrx;
 

@@ -34,7 +34,7 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANInlineParse {
+class GMANInlineParse {
 private:
   RtInt number_of_words;
   std::string word[7];

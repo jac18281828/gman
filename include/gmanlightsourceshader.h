@@ -44,7 +44,7 @@
  *
  */
 
-class GMAN_EXPORT GMANLightSourceShader : public GMANShader {
+class GMANLightSourceShader : public GMANShader {
 protected:
   typedef RtVoid (*illuminateFunc)(GMANVector L);
   typedef RtVoid (*solarFunc)(GMANVector L);

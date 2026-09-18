@@ -32,7 +32,7 @@
 #include "gmanvector4.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANMatrixStorage {
+class GMANMatrixStorage {
 public:
   virtual ~GMANMatrixStorage();
 
@@ -40,7 +40,7 @@ public:
   virtual RtInt getSamplesQuantity() = 0;
 };
 
-class GMAN_EXPORT GMANOneMatrix : public GMANMatrixStorage {
+class GMANOneMatrix : public GMANMatrixStorage {
 private:
   GMANMatrix4 mx;
 
@@ -51,7 +51,7 @@ public:
   RtInt getSamplesQuantity();
 };
 
-class GMAN_EXPORT GMANMovingMatrix : public GMANMatrixStorage {
+class GMANMovingMatrix : public GMANMatrixStorage {
 private:
   std::vector<RtFloat> times;
   std::vector<GMANMatrix4> storage;
@@ -65,7 +65,7 @@ public:
   RtFloat getTime(RtInt n);
 };
 
-class GMAN_EXPORT GMANTransform {
+class GMANTransform {
 private:
   GMANMatrixStorage* storage;
 

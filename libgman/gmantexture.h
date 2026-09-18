@@ -47,7 +47,7 @@ enum GMANTextureWrap { GMAN_TEXTURE_CLAMP, GMAN_TEXTURE_PERIODIC, GMAN_TEXTURE_B
  * of Five is then satisfied by owning nothing raw, and the compiler's
  * implicit copy/move members are correct as written.
  */
-class GMAN_EXPORT GMANTexture {
+class GMANTexture {
 public:
   explicit GMANTexture(const std::string& name);
 
@@ -81,7 +81,7 @@ private:
  * plugin, so every "paintedplastic" surface in a scene shares one
  * parameter list, and the filename is the only thing that varies.
  */
-class GMAN_EXPORT GMANTextureCache {
+class GMANTextureCache {
 public:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file.
@@ -105,7 +105,7 @@ private:
 // One cache per process, like gmanLightSourceMgr(). A free function rather
 // than a member threaded through the shading path, for the same reason:
 // shading runs per vertex, far from anything that would otherwise own it.
-GMAN_EXPORT GMANTextureCache& gmanTextureCache(RtVoid);
+GMANTextureCache& gmanTextureCache(RtVoid);
 
 // RiMakeTexture's implementation: decodes picture the way GMANTexture does
 // and writes texture as a single-level 8-bit RGB TIFF carrying swrap and
@@ -115,7 +115,7 @@ GMAN_EXPORT GMANTextureCache& gmanTextureCache(RtVoid);
 // decoded, or an output that cannot be opened or fully written. A
 // successful write forgets texture from gmanTextureCache(), so the next
 // lookup reads what was just written.
-GMAN_EXPORT bool gmanMakeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap);
+bool gmanMakeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap);
 
 // RiMakeLatLongEnvironment's implementation: decodes picture and writes
 // texture as a latitude-longitude environment map, RISpec 3.2 Sec 7.1.2 --
@@ -127,4 +127,4 @@ GMAN_EXPORT bool gmanMakeTexture(const char* picture, const char* texture, const
 // name, a picture that cannot be opened or decoded, or an output that
 // cannot be opened or fully written. A successful write forgets texture
 // from gmanTextureCache(), so the next lookup reads what was just written.
-GMAN_EXPORT bool gmanMakeLatLongEnvironment(const char* picture, const char* texture);
+bool gmanMakeLatLongEnvironment(const char* picture, const char* texture);

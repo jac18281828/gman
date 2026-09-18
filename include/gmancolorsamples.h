@@ -29,7 +29,7 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANColorSamples {
+class GMANColorSamples {
 private:
   int* counter;
 

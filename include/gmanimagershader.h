@@ -42,7 +42,7 @@
  *
  */
 
-class GMAN_EXPORT GMANImagerShader : public GMANShader {
+class GMANImagerShader : public GMANShader {
 public:
   GMANImagerShader(); // default constructor
 

@@ -84,7 +84,7 @@ public:
  * actual light.
  */
 
-class GMAN_EXPORT GMANLightSourceMgr {
+class GMANLightSourceMgr {
 private:
   std::map<RtLightHandle, GMANLight*> lights;
   // RtLightHandle is RtPointer (void*); a plain counter, cast to
@@ -110,13 +110,13 @@ public:
 // createParametric (tessellation time, where a primitive's lit vertices
 // are shaded) does not need a light manager threaded through every
 // GMANObjectManager::getRS* signature to reach it.
-GMAN_EXPORT GMANLightSourceMgr& gmanLightSourceMgr(RtVoid);
+GMANLightSourceMgr& gmanLightSourceMgr(RtVoid);
 
 /*
  * A class for light lists storage
  */
 
-class GMAN_EXPORT GMANLightList {
+class GMANLightList {
 private:
   std::list<RtLightHandle> ll;
 

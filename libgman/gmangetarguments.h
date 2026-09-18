@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -25,26 +25,10 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
+#include <stdarg.h>
 
-#include "gmanlog.h"
-#include "gmanoutput.h"
 #include "ri.h"
 
-/*
- * RenderMan API GMANOutputPNM
- *
- */
+extern RtVoid GMANGetArguments(va_list args, RtInt n, RtToken* tokens, RtPointer* parms);
 
-class GMAN_EXPORT GMANOutputPNM : public GMANOutput {
-public:
-  // default constructor
-  GMANOutputPNM(const char* path, int width, int height);
-
-  ~GMANOutputPNM(); // default destructor
-
-  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
-};
+extern RtInt GMANCountArguments(va_list args);

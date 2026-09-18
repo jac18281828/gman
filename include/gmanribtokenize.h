@@ -41,7 +41,7 @@
 /*
  * Token return type populated by tokenizer.
  */
-class GMAN_EXPORT GMANToken {
+class GMANToken {
 public:
   // public types
 
@@ -230,7 +230,7 @@ public:
  *
  */
 
-class GMAN_EXPORT GMANRIBTokenize {
+class GMANRIBTokenize {
 public:
   static const int bufSz;
 

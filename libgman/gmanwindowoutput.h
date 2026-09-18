@@ -25,44 +25,25 @@
 
 #pragma once
 
-#include <vector>
+#include <list>
+#include <map>
+#include <stack>
+#include <string>
 
-#include "gmanface.h"
 #include "gmanlog.h"
-#include "gmanpoint.h"
-#include "gmansegment.h"
+#include "gmanoutput.h"
 #include "ri.h"
 
-// types
-typedef std::vector<GMANPoint> PointVector;
-
 /*
- * RenderMan API GMANPolygon
+ * RenderMan API GMANWindowOutput
  *
- * A polygon defined by a series of points in space.
+ * Storage of frame buffer data in a window on the screen.
  *
  */
 
-class GMAN_EXPORT GMANPolygon {
-  PointVector points;
-
+class GMANWindowOutput : public GMANOutput {
 public:
-  GMANPolygon(); // default constructor
+  GMANWindowOutput(); // default constructor
 
-  // create a polygon with n points
-  GMANPolygon(int n);
-
-  ~GMANPolygon(); // default destructor
-
-  // add a point to the polygon.
-  RtVoid addPoint(const GMANPoint& point);
-
-  // set a point a position n
-  RtVoid setPoint(int n, const GMANPoint& point);
-
-  // reveal a point
-  GMANPoint& operator[](int n) { return points[n]; };
-
-  // get number of points
-  int getNPoints(RtVoid) { return points.size(); };
+  ~GMANWindowOutput(); // default destructor
 };

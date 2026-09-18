@@ -42,7 +42,7 @@
  *
  */
 
-class GMAN_EXPORT GMANOutput : public GMANFrameBuffer {
+class GMANOutput : public GMANFrameBuffer {
 public:
   // public types
   typedef enum {

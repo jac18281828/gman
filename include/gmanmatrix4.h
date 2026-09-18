@@ -33,7 +33,7 @@
 
 class GMANVector;
 
-class GMAN_EXPORT GMANMatrix4 {
+class GMANMatrix4 {
 private:
   RtMatrix mtrx;
 

@@ -42,7 +42,7 @@
  *
  */
 
-class GMAN_EXPORT GMANDisplacementShader : public GMANShader {
+class GMANDisplacementShader : public GMANShader {
 public:
   GMANDisplacementShader(); // default constructor
 

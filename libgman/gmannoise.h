@@ -31,7 +31,7 @@
 #define CN 2048
 #define CMASK 0x7ff
 
-class GMAN_EXPORT GMANNoise {
+class GMANNoise {
 private:
   /* Noise and pnoise */
   static constexpr RtInt kN = 256;

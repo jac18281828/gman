@@ -44,7 +44,7 @@
  *
  */
 
-template <class SampleType> class GMAN_EXPORT GMANColorBase {
+template <class SampleType> class GMANColorBase {
 public:
   typedef SampleType ColorSampleType;
 
@@ -138,7 +138,7 @@ public:
 };
 
 // combine two colors
-template <class ColorObj, class AlphaObj> struct GMAN_EXPORT GMANCombineBase {
+template <class ColorObj, class AlphaObj> struct GMANCombineBase {
   ColorObj operator()(const ColorObj& c1, const ColorObj& c2, const AlphaObj& a) {
     ColorObj res(c1.getRed() + (c2.getRed() - c1.getRed()) * a.getRed(),
                  c1.getGreen() + (c2.getGreen() - c1.getGreen()) * a.getGreen(),
@@ -149,7 +149,7 @@ template <class ColorObj, class AlphaObj> struct GMAN_EXPORT GMANCombineBase {
 };
 
 // default color type
-class GMAN_EXPORT GMANColor : public GMANColorBase<GMANColorSample> {
+class GMANColor : public GMANColorBase<GMANColorSample> {
 public:
   GMANColor() : GMANColorBase<GMANColorSample>() {}; // default constructor
 
@@ -168,7 +168,7 @@ public:
 };
 
 // default alpha type
-class GMAN_EXPORT GMANAlpha : public GMANColorBase<GMANColorSample> {
+class GMANAlpha : public GMANColorBase<GMANColorSample> {
 public:
   GMANAlpha() : GMANColorBase<GMANColorSample>() {}; // default constructor
 
@@ -190,7 +190,7 @@ typedef GMANCombineBase<GMANColor, GMANAlpha> GMANCombine;
 typedef GMANCombineBase<GMANAlpha, GMANAlpha> GMANAlphaCombine;
 
 // 24 bit rgb color object
-class GMAN_EXPORT GMANColorRGB : public GMANColorBase<GMANByte> {
+class GMANColorRGB : public GMANColorBase<GMANByte> {
 private:
   /*
    * Weighting factors representing the sensitivity of the
@@ -221,19 +221,19 @@ public:
  * Color space conversions.
  */
 
-GMAN_EXPORT RtVoid GMANConvertRGBtoHSV(RtFloat* c);
-GMAN_EXPORT RtVoid GMANConvertHSVtoRGB(RtFloat* c);
+RtVoid GMANConvertRGBtoHSV(RtFloat* c);
+RtVoid GMANConvertHSVtoRGB(RtFloat* c);
 
-GMAN_EXPORT RtVoid GMANConvertRGBtoHSL(RtFloat* c);
-GMAN_EXPORT RtVoid GMANConvertHSLtoRGB(RtFloat* c);
+RtVoid GMANConvertRGBtoHSL(RtFloat* c);
+RtVoid GMANConvertHSLtoRGB(RtFloat* c);
 
-GMAN_EXPORT RtVoid GMANConvertRGBtoXYZ(RtFloat* c);
-GMAN_EXPORT RtVoid GMANConvertXYZtoRGB(RtFloat* c);
+RtVoid GMANConvertRGBtoXYZ(RtFloat* c);
+RtVoid GMANConvertXYZtoRGB(RtFloat* c);
 
-GMAN_EXPORT RtVoid GMANConvertRGBtoXYY(RtFloat* c);
-GMAN_EXPORT RtVoid GMANConvertXYYtoRGB(RtFloat* c);
+RtVoid GMANConvertRGBtoXYY(RtFloat* c);
+RtVoid GMANConvertXYYtoRGB(RtFloat* c);
 
-GMAN_EXPORT RtVoid GMANConvertRGBtoYIQ(RtFloat* c);
-GMAN_EXPORT RtVoid GMANConvertYIQtoRGB(RtFloat* c);
-GMAN_EXPORT RtVoid GMANConvertRGBtoYUV(RtFloat* c);
-GMAN_EXPORT RtVoid GMANConvertYUVtoRGB(RtFloat* c);
+RtVoid GMANConvertRGBtoYIQ(RtFloat* c);
+RtVoid GMANConvertYIQtoRGB(RtFloat* c);
+RtVoid GMANConvertRGBtoYUV(RtFloat* c);
+RtVoid GMANConvertYUVtoRGB(RtFloat* c);

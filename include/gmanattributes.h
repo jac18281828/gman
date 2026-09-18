@@ -41,26 +41,26 @@
 #include "gmanvolumeshader.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANRenderer;
+class GMANRenderer;
 
-struct GMAN_EXPORT GMANTextureCoordinates {
+struct GMANTextureCoordinates {
   RtFloat s1, t1, s2, t2;
   RtFloat s3, t3, s4, t4;
 };
 
-struct GMAN_EXPORT GMANDetailRange {
+struct GMANDetailRange {
   RtFloat minVisible;
   RtFloat lowerTransition;
   RtFloat upperTransition;
   RtFloat maxVisible;
 };
 
-struct GMAN_EXPORT GMANGeometricApproximation {
+struct GMANGeometricApproximation {
   RtToken type;
   RtFloat value;
 };
 
-class GMAN_EXPORT GMANAttributes {
+class GMANAttributes {
 private:
   /* SHADING ATTRIBUTES */
   RtColor color;

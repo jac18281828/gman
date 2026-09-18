@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
 /*----------------------------------------------------------
-  Copyright (C) Lionel Joseph Lacour 2001, 2002
-  February 2001 First release
+  Copyright (C) Lionel Joseph Lacour 2000, 2001
+  2000/08/06  First release
   ----------------------------------------------------------
-  Perspective viewing system.
+  This class implements the RiContext feature of the
+  RiSpec V3.2
 */
 /*
  * This library is free software; you can redistribute it and/or
@@ -21,25 +22,26 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
-
 #pragma once
 
-#include "gmanmatrix4.h"
-#include "gmanviewingsystem.h"
+#include <list>
 
-class GMAN_EXPORT GMANVSPerspective : public GMANViewingSystem {
+#include "gmanerror.h"
+#include "gmanlog.h"
+#include "gmanrenderman.h"
+#include "ri.h"
+
+class GMANContext {
 private:
-  GMANMatrix4 mtrx;
+  std::list<GMANRenderMan*> chl;
+  GMANRenderMan* active;
 
 public:
-  GMANVSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
-                    RtFloat fov, RtFloat nearDist, RtFloat farDist);
-  ~GMANVSPerspective() {}
+  GMANContext();
 
-  GMANPoint project(GMANPoint const& p);
-  GMANRay cameraRay(RtFloat x, RtFloat y);
-
-  bool visible(const GMANFace* face);
-
-  const RtMatrix& getProjMatrix(RtVoid) const;
+  RtVoid addContext(RtVoid);
+  RtContextHandle getContext(RtVoid);
+  GMANRenderMan& current(RtVoid);
+  RtVoid switchTo(RtContextHandle);
+  RtVoid removeCurrent(RtVoid);
 };

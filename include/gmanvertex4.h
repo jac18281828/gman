@@ -41,7 +41,7 @@
  *
  */
 
-class GMAN_EXPORT GMANVertex4 {
+class GMANVertex4 {
 private:
   GMANColor color;
   GMANAlpha alpha;

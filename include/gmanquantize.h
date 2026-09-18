@@ -41,7 +41,7 @@
  *
  */
 
-class GMAN_EXPORT GMANQuantize {
+class GMANQuantize {
 public:
   // public types
   typedef enum { RGB, RGBA, RGBAZ, A, AZ, Z } DisplayMode;

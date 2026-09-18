@@ -2,7 +2,7 @@
 
 /* This is part of GMAN, a RenderMan-compatible renderer.
  *
- * Copyright (c) 2001, 2000, 1999 by John Cairns
+ * Copyright (c) 2001, 2000, 1999 John Cairns
  *
  * Author: John Cairns <john@2ad.com>
  */
@@ -25,25 +25,44 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
+#include <vector>
 
+#include "gmanface.h"
 #include "gmanlog.h"
-#include "gmanwindowoutput.h"
+#include "gmanpoint.h"
+#include "gmansegment.h"
 #include "ri.h"
 
+// types
+typedef std::vector<GMANPoint> PointVector;
+
 /*
- * RenderMan API GMANOutputX11
+ * RenderMan API GMANPolygon
+ *
+ * A polygon defined by a series of points in space.
  *
  */
 
-class GMAN_EXPORT GMANOutputX11 : public GMANWindowOutput {
+class GMANPolygon {
+  PointVector points;
+
 public:
-  GMANOutputX11(const char* name, int width, int height); // default constructor
+  GMANPolygon(); // default constructor
 
-  ~GMANOutputX11(); // default destructor
+  // create a polygon with n points
+  GMANPolygon(int n);
 
-  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
+  ~GMANPolygon(); // default destructor
+
+  // add a point to the polygon.
+  RtVoid addPoint(const GMANPoint& point);
+
+  // set a point a position n
+  RtVoid setPoint(int n, const GMANPoint& point);
+
+  // reveal a point
+  GMANPoint& operator[](int n) { return points[n]; };
+
+  // get number of points
+  int getNPoints(RtVoid) { return points.size(); };
 };
