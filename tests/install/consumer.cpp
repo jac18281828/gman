@@ -20,10 +20,13 @@
 
 /*
  * Proves an installed gman compiles and links from its own CMake package:
- * <gman/ri.h> resolves through the installed interface, and gman::gman_core
- * supplies RiBegin/RiEnd.
+ * <gman/ri.h> resolves through the installed interface, gman::gman_core
+ * supplies RiBegin/RiEnd, and gmanlog.h's <format> use compiles without this
+ * project setting its own C++ standard -- gman::gman_core's cxx_std_20
+ * usage requirement is what supplies it.
  */
 
+#include <gman/gmanlog.h>
 #include <gman/ri.h>
 
 int main() {

@@ -927,7 +927,7 @@ set_tests_properties(visibility PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# N4: proves both halves of an installed gman. bin/gman renders every
+# Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, and a second, unrelated CMake project finds
 # it with find_package(gman), links gman::gman_core, compiles <gman/ri.h>

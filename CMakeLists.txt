@@ -353,8 +353,7 @@ install(EXPORT gmanTargets
   NAMESPACE gman::
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gman")
 
-# Before 1.0 a minor release breaks ABI: the symbol-visibility change in this
-# arc's other units is one.
+# Before 1.0 a minor release breaks ABI.
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/gmanConfigVersion.cmake"
   COMPATIBILITY SameMinorVersion)
