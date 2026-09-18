@@ -77,7 +77,7 @@ RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFl
     int colOff = 0, rowOff = y;
     for (int x = 0; x < xres; x++) {
       GMANColorRGB color;
-      color = gmanGammaCorrected(getPixel(x, y), gain, gamma);
+      color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
 
       if (quantizer)
         quantizer->doColor(color);

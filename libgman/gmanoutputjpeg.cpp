@@ -95,7 +95,7 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFl
         for (int x = 0; x < xres; x++) {
           // get a pixel
           GMANColorRGB color;
-          color = gmanGammaCorrected(getPixel(x, y), gain, gamma);
+          color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
 
           if (quantizer) {
             color = quantizer->doColor(color);

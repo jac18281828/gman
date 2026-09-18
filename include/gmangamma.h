@@ -32,11 +32,13 @@
 #include "gmantypes.h"
 #include "ri.h"
 
+namespace gman {
+
 // channel' = pow(gain * channel, 1 / gamma), per channel. Runs on the float
 // pixel, ahead of narrowing to bytes, so a channel below 1/255 can still
 // gamma-lift into a nonzero byte. GMANColor is trivially copyable and three
 // floats wide, so it is taken and returned in registers.
-inline GMANColor gmanGammaCorrected(GMANColor color, RtFloat gain, RtFloat gamma) {
+inline GMANColor gammaCorrected(GMANColor color, RtFloat gain, RtFloat gamma) {
   static_assert(GMANColor::hasFloatingPointSamples, "gamma correction designed for normalized floating point math");
 
   if (gain == 1.0f && gamma == 1.0f) {
@@ -49,5 +51,7 @@ inline GMANColor gmanGammaCorrected(GMANColor color, RtFloat gain, RtFloat gamma
   color.setBlue(static_cast<GMANColor::ColorSampleType>(std::pow(gain * color.getBlue(), exponent)));
   return color;
 }
+
+} // namespace gman
 
 #endif

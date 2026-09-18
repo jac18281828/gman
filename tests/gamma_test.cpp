@@ -43,14 +43,14 @@ int main() {
   // equality is the claim that no golden image moves.
   {
     GMANColor color(0.1f, 0.5f, 0.9f);
-    color = gmanGammaCorrected(color, 1.0f, 1.0f);
+    color = gman::gammaCorrected(color, 1.0f, 1.0f);
     check(color.getRed() == 0.1f && color.getGreen() == 0.5f && color.getBlue() == 0.9f, "identity leaves color");
   }
 
   // Gamma: gain 1, gamma 2.2 applies pow(v, 1/2.2) per channel.
   {
     GMANColor color(0.1f, 0.5f, 0.9f);
-    color = gmanGammaCorrected(color, 1.0f, 2.2f);
+    color = gman::gammaCorrected(color, 1.0f, 2.2f);
     check(near(color.getRed(), std::pow(0.1f, 1.0f / 2.2f)), "gamma corrects red");
     check(near(color.getGreen(), std::pow(0.5f, 1.0f / 2.2f)), "gamma corrects green");
     check(near(color.getBlue(), std::pow(0.9f, 1.0f / 2.2f)), "gamma corrects blue");
@@ -59,7 +59,7 @@ int main() {
   // Gain: gain 2, gamma 1 doubles each channel.
   {
     GMANColor color(0.1f, 0.2f, 0.3f);
-    color = gmanGammaCorrected(color, 2.0f, 1.0f);
+    color = gman::gammaCorrected(color, 2.0f, 1.0f);
     check(near(color.getRed(), 0.2f), "gain doubles red");
     check(near(color.getGreen(), 0.4f), "gain doubles green");
     check(near(color.getBlue(), 0.6f), "gain doubles blue");
@@ -74,7 +74,7 @@ int main() {
     check(below < 1.0f / 255.0f, "0.003 is below one byte step");
 
     GMANColor color(below, below, below);
-    color = gmanGammaCorrected(color, 1.0f, 2.2f);
+    color = gman::gammaCorrected(color, 1.0f, 2.2f);
     check(color.getRed() > 1.0f / 255.0f, "sub-byte red lifts above one step");
     check(color.getGreen() > 1.0f / 255.0f, "sub-byte green lifts above one step");
     check(color.getBlue() > 1.0f / 255.0f, "sub-byte blue lifts above one step");

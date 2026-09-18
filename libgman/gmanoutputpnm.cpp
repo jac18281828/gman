@@ -59,7 +59,7 @@ RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFlo
   for (int row = 0; row < yres; row++) {
     for (int col = 0; col < xres; col++) {
       GMANColorRGB color;
-      color = gmanGammaCorrected(getPixel(col, row), gain, gamma);
+      color = gman::gammaCorrected(getPixel(col, row), gain, gamma);
 
       if (quantizer)
         quantizer->doColor(color);
