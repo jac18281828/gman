@@ -90,4 +90,34 @@ template <class T> inline T GMANMix(T a, T b, RtFloat alpha) { return a * (1 - a
 // Rounding - asandro
 inline RtFloat GMANRound(RtFloat x) { return (RtFloat)floor(x + .5); }
 
+// Solves a*t^2 + b*t + c == 0, returning the count of real roots (0, 1 or
+// 2) and writing t0 <= t1 when it returns 2. a == 0 returns 0 rather than
+// falling back to a linear solve, since a degenerate ray direction is the
+// only way to reach it here. The textbook (-b +/- sqrt(disc)) / 2a cancels
+// catastrophically when b^2 >> 4ac -- a ray passing far from a small
+// sphere, not a corner case -- so this takes the numerically stable root
+// first and derives the other from the root product c/q.
+inline GMAN_EXPORT int GMANQuadraticRoots(RtFloat a, RtFloat b, RtFloat c, RtFloat& t0, RtFloat& t1) {
+  if (a == 0.0)
+    return 0;
+
+  RtFloat disc = b * b - 4.0 * a * c;
+  if (disc < 0.0)
+    return 0;
+  if (disc == 0.0) {
+    t0 = -b / (2.0 * a);
+    return 1;
+  }
+
+  RtFloat sqrtDisc = (RtFloat)sqrt(disc);
+  RtFloat sign = b < 0.0 ? -1.0 : 1.0;
+  RtFloat q = -(b + sign * sqrtDisc) / 2.0;
+
+  RtFloat r0 = q / a;
+  RtFloat r1 = c / q;
+  t0 = GMANMin(r0, r1);
+  t1 = GMANMax(r0, r1);
+  return 2;
+}
+
 #endif

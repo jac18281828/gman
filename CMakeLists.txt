@@ -53,10 +53,10 @@ find_package(JPEG)
 find_package(Threads REQUIRED)
 
 # All three are non-functional and kept for the design intent a later phase may
-# want. reyes and raytracer additionally do not link -- each has declared
-# virtuals with no definition -- so their options compile but do not complete.
+# want. reyes additionally does not link -- it has a declared virtual with no
+# definition -- so its option compiles but does not complete.
 option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
-option(GMAN_BUILD_RAYTRACER "Build the (non-functional) ray tracer plugin" OFF)
+option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin, which intersects but does not yet render" OFF)
 option(GMAN_BUILD_RADIOSITY "Build the (non-functional) radiosity plugin" OFF)
 
 # ---------------------------------------------------------------------------
@@ -255,6 +255,7 @@ endif()
 
 if(GMAN_BUILD_RAYTRACER)
   gman_add_plugin(gman_raytracer
+    renderers/raytracer/gmanrayinterface.cpp
     renderers/raytracer/gmanrayobjectmanager.cpp
     renderers/raytracer/gmanraysphere.cpp
     renderers/raytracer/gmanraytracerenderer.cpp

@@ -870,3 +870,28 @@ add_test(NAME cameraray COMMAND gman_cameraray)
 set_tests_properties(cameraray PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# Ray tracer core, unit 2: GMANQuadraticRoots solves a*t^2 + b*t + c == 0
+# with the numerically stable root form, pinning its root count and
+# ordering at every discriminant sign.
+add_executable(gman_quadratic quadratic_test.cpp)
+target_link_libraries(gman_quadratic PRIVATE gman_core)
+
+add_test(NAME quadratic COMMAND gman_quadratic)
+set_tests_properties(quadratic PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# Ray tracer core, unit 2: GMANRaySphere::intersect, compiled here from the
+# raytracer plugin's own sources since the plugin builds only under
+# GMAN_BUILD_RAYTRACER, which no CI job sets.
+add_executable(gman_raysphere raysphere_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp")
+target_link_libraries(gman_raysphere PRIVATE gman_core)
+target_include_directories(gman_raysphere PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME raysphere COMMAND gman_raysphere)
+set_tests_properties(raysphere PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
