@@ -552,7 +552,7 @@ extern "C" RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken token
   }
 };
 
-extern "C" RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
+extern "C" GMAN_EXPORT RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) {
   try {
     context.current().RiIlluminate(light, onoff);
   } catch (GMANError& error) {
@@ -964,7 +964,7 @@ extern "C" RtVoid RiTransformBegin(RtVoid) {
   }
 };
 
-extern "C" RtVoid RiTransformEnd(RtVoid) {
+extern "C" GMAN_EXPORT RtVoid RiTransformEnd(RtVoid) {
   try {
     context.current().RiTransformEnd();
   } catch (GMANError& error) {

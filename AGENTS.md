@@ -45,6 +45,9 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   `libgman/gmanparallel.cpp` and `libgman/gmanlog.cpp` alone may name a thread
   primitive; `tests/threadcontainment_test.cpp` enforces it.
 - libtiff: only `libgman/gmantiff.cpp` includes `<tiffio.h>` (`tests/` exempt).
+- Symbols are hidden by default (`CMAKE_CXX_VISIBILITY_PRESET` in
+  `CMakeLists.txt`). A declaration used outside its own library carries
+  `GMAN_EXPORT`; `tests/visibility_test.cpp` checks both.
 
 ## Dependencies and Includes
 - Prefer the standard library. Qualify `std::`; no `using` of `std` names.
@@ -81,9 +84,9 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - Third-party RIB: record source, commit and license in `tests/rib/README`.
 - Supported requests: `gmanribtokenize.cpp` and `gmanribparse.cpp` are ground
   truth.
-- Shader plugins: subclass `GMANSurfaceShader`, export `GMANGetLoadableInfo`
-  and `GMANLoadShader`, build with `gman_add_plugin`. See
-  `shaders/gmanmatte.cpp`.
+- Shader plugins: subclass `GMANSurfaceShader`, define `GMANGetLoadableInfo`
+  and `GMANLoadShader` as `extern "C" GMAN_EXPORT`, build with
+  `gman_add_plugin`. See `shaders/gmanmatte.cpp`.
 
 ## Completion Gates
 

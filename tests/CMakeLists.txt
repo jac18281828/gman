@@ -906,3 +906,23 @@ add_test(NAME raysphere COMMAND gman_raysphere)
 set_tests_properties(raysphere PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# Pins CMAKE_CXX_VISIBILITY_PRESET hidden: dlsym finds a GMAN_EXPORT'd
+# symbol and misses an untagged one, in gman_core and in each shader
+# plugin's loadable entry points.
+add_executable(gman_visibility visibility_test.cpp)
+target_link_libraries(gman_visibility PRIVATE gman_core)
+add_dependencies(gman_visibility gman_matte gman_metal gman_paintedplastic gman_plastic
+  gman_shinymetal gman_camerashader)
+
+add_test(NAME visibility
+  COMMAND gman_visibility $<TARGET_FILE:gman_core>
+                          $<TARGET_FILE:gman_matte>
+                          $<TARGET_FILE:gman_metal>
+                          $<TARGET_FILE:gman_paintedplastic>
+                          $<TARGET_FILE:gman_plastic>
+                          $<TARGET_FILE:gman_shinymetal>
+                          $<TARGET_FILE:gman_camerashader>)
+set_tests_properties(visibility PROPERTIES
+  LABELS unit
+  TIMEOUT 30)

@@ -44,4 +44,4 @@
 std::unique_ptr<GMANOutput> gmanMakeFileOutput(std::string const& extension, char const* path, int width, int height);
 
 // The compiled file drivers' names, in table order.
-std::vector<std::string> gmanFileDrivers();
+GMAN_EXPORT std::vector<std::string> gmanFileDrivers();

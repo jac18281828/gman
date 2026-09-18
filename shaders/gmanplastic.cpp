@@ -102,6 +102,6 @@ static GMANLoadableObjectInfo loadableInfo = {
 
 static GMANPlastic shader;
 
-extern "C" GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
+extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMANShader* GMANLoadShader(void) { return &shader; }
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(void) { return &shader; }
