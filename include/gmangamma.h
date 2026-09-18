@@ -27,23 +27,27 @@
 #define __GMAN_GAMMA_H 1
 
 #include <cmath>
+#include <type_traits>
 
 #include "gmancolor.h"
 #include "gmantypes.h"
 #include "ri.h"
 
+static_assert(std::is_floating_point_v<GMANColor::ColorSampleType>,
+              "gamma correction designed for normalized floating point math");
+
 // Corrects color in place: channel' = pow(gain * channel, 1 / gamma), per
 // channel. Runs on the float pixel, ahead of narrowing to bytes, so a
 // channel below 1/255 can still gamma-lift into a nonzero byte.
 inline RtVoid gmanGammaCorrect(GMANColor& color, RtFloat gain, RtFloat gamma) {
-  if (gain == 1 && gamma == 1) {
+  if (gain == 1.0f && gamma == 1.0f) {
     return;
   }
 
-  const RtFloat exponent = 1 / gamma;
-  color.setRed(std::pow(gain * color.getRed(), exponent));
-  color.setGreen(std::pow(gain * color.getGreen(), exponent));
-  color.setBlue(std::pow(gain * color.getBlue(), exponent));
+  const RtFloat exponent = 1.0f / gamma;
+  color.setRed(static_cast<GMANColor::ColorSampleType>(std::pow(gain * color.getRed(), exponent)));
+  color.setGreen(static_cast<GMANColor::ColorSampleType>(std::pow(gain * color.getGreen(), exponent)));
+  color.setBlue(static_cast<GMANColor::ColorSampleType>(std::pow(gain * color.getBlue(), exponent)));
 }
 
 #endif
