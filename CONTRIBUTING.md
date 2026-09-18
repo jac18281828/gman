@@ -2,7 +2,7 @@
 
 Contributions are welcome: a bug report, a fix, a scene that renders wrong or
 a whole subsystem. Plenty is open — shadows, trimmed `NuPatch`, `Points` and
-`Curves`, a renderer that threads through `gmanParallelFor`, and most of the
+`Curves`, a renderer that threads through `gman::parallelFor`, and most of the
 RISpec beyond the primitives CHANGELOG.md records as rendering.
 
 ## Pull requests

@@ -215,7 +215,7 @@ RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10, RtFloat c01, 
 // vertex has no u,v of its own to shade with, but it does get a color,
 // because GMANClipEdge::intersect already interpolates GMANVertex::color
 // across a clipped edge (the same machinery phase 1 wired up for the vertex
-// alpha blend). Eye sits at the camera-space origin (GMANVSPerspective::ray),
+// alpha blend). Eye sits at the camera-space origin (gman::VSPerspective::ray),
 // so the incident direction is just the normalized surface point.
 GMANColor shadeVertex(const GMANShadingContext& ctx, const GMANPoint& location, const GMANNormal& normal, RtFloat u,
                       RtFloat v, RtFloat s, RtFloat t) {

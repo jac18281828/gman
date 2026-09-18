@@ -26,7 +26,7 @@
  * prompt named for GMANSphere::getLocation's zmin/zmax fix -- and checks
  * a geometric consequence only the fixed parameterization produces.
  *
- * With Sides 1 (single-sided), GMANVSPerspective::visible keeps a face
+ * With Sides 1 (single-sided), gman::VSPerspective::visible keeps a face
  * whose geometric normal has a positive dot product with the (eye-at-
  * origin) view vector to its centroid -- for this sphere (radius 1,
  * centred at world z=5) that works out to "keep the face where 1 + 5*z >

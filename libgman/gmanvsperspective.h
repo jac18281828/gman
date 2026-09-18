@@ -27,14 +27,16 @@
 #include "gmanmatrix4.h"
 #include "gmanviewingsystem.h"
 
-class GMANVSPerspective : public GMANViewingSystem {
+namespace gman {
+
+class VSPerspective : public GMANViewingSystem {
 private:
   GMANMatrix4 mtrx;
 
 public:
-  GMANVSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
-                    RtFloat fov, RtFloat nearDist, RtFloat farDist);
-  ~GMANVSPerspective() {}
+  VSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
+                RtFloat fov, RtFloat nearDist, RtFloat farDist);
+  ~VSPerspective() {}
 
   GMANPoint project(GMANPoint const& p);
   GMANRay cameraRay(RtFloat x, RtFloat y);
@@ -43,3 +45,5 @@ public:
 
   const RtMatrix& getProjMatrix(RtVoid) const;
 };
+
+} // namespace gman

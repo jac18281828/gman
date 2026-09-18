@@ -27,16 +27,18 @@
 
 #include "ri.h"
 
+namespace gman {
+
 /*
  * GMAN parallelism
  *
- * One seam: gmanParallelFor runs a body once per index, spread over a
+ * One seam: parallelFor runs a body once per index, spread over a
  * bounded set of workers, and returns only once every body has returned.
  * A caller partitions its own state by worker index -- each worker's
  * indices run on one thread, one at a time, so state a worker owns
  * outright needs no lock. Anything a body reads that it does not own
  * outright must already be read-only for the call; logging is the one
- * sanctioned exception. gmanParallelWorkers reports the worker count a
+ * sanctioned exception. parallelWorkers reports the worker count a
  * call with the same arguments would use, so a caller can size its
  * per-worker state before making the call.
  *
@@ -45,15 +47,17 @@
  * caught is rethrown on the calling thread.
  */
 
-// The worker count a gmanParallelFor call with the same arguments uses.
+// The worker count a parallelFor call with the same arguments uses.
 // workers <= 0 means the hardware's reported concurrency, floored at 1 if
 // that reports 0; the result never exceeds count. count <= 0 returns 0.
-RtInt gmanParallelWorkers(RtInt count, RtInt workers = 0);
+RtInt parallelWorkers(RtInt count, RtInt workers = 0);
 
 // Runs body(index, worker) exactly once for each index in [0, count), in
-// unspecified order. worker lies in [0, gmanParallelWorkers(count,
+// unspecified order. worker lies in [0, parallelWorkers(count,
 // workers)); every body sharing a worker index runs on the same thread,
-// one at a time. count <= 0 calls nothing. When gmanParallelWorkers
+// one at a time. count <= 0 calls nothing. When parallelWorkers
 // reports one worker, every body runs inline on the calling thread as
 // worker 0 and no thread is created.
-void gmanParallelFor(RtInt count, const std::function<void(RtInt index, RtInt worker)>& body, RtInt workers = 0);
+void parallelFor(RtInt count, const std::function<void(RtInt index, RtInt worker)>& body, RtInt workers = 0);
+
+} // namespace gman

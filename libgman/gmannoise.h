@@ -31,7 +31,9 @@
 #define CN 2048
 #define CMASK 0x7ff
 
-class GMANNoise {
+namespace gman {
+
+class Noise {
 private:
   /* Noise and pnoise */
   static constexpr RtInt kN = 256;
@@ -52,7 +54,7 @@ private:
   RtFloat rn();
 
 public:
-  GMANNoise();
+  Noise();
 
   RtFloat noise(RtFloat v);
   RtFloat noise(RtFloat u, RtFloat v);
@@ -84,3 +86,5 @@ public:
   RtVoid cellnoise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c);
   RtVoid cellnoise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFloat& c);
 };
+
+} // namespace gman

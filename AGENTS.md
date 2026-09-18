@@ -31,8 +31,9 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   real contrast. Existing names stay.
 - The `GMAN` prefix marks global scope: every global-scope class carries it,
   and code in a namespace sheds it, as `gman::gammaCorrected` and
-  `gmanshader::plastic` do. `ri.h` stays global; the RenderMan interface
-  fixes it there.
+  `gmanshader::plastic` do. A `libgman/` header declares its names in
+  `namespace gman`. `ri.h` stays global; the RenderMan interface fixes it
+  there.
 - Lower-case filenames; `methodName`, `SymbolName`. A shader class takes its
   RIB token as its name: `Surface "plastic"` loads `gmanshader::plastic`.
 
@@ -44,7 +45,7 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - No universal base class; logging is the free functions in `gmanlog.h`.
 
 ## Seams
-- Threads: only `gmanParallelFor` (`libgman/gmanparallel.h`).
+- Threads: only `gman::parallelFor` (`libgman/gmanparallel.h`).
   `libgman/gmanparallel.cpp` and `libgman/gmanlog.cpp` alone may name a thread
   primitive; `tests/threadcontainment_test.cpp` enforces it.
 - libtiff: only `libgman/gmantiff.cpp` includes `<tiffio.h>` (`tests/` exempt).

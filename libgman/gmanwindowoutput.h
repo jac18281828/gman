@@ -34,16 +34,20 @@
 #include "gmanoutput.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANWindowOutput
+ * RenderMan API gman::WindowOutput
  *
  * Storage of frame buffer data in a window on the screen.
  *
  */
 
-class GMANWindowOutput : public GMANOutput {
+class WindowOutput : public GMANOutput {
 public:
-  GMANWindowOutput(); // default constructor
+  WindowOutput(); // default constructor
 
-  ~GMANWindowOutput(); // default destructor
+  ~WindowOutput(); // default destructor
 };
+
+} // namespace gman

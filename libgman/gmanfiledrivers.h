@@ -38,10 +38,14 @@
  * given.
  */
 
+namespace gman {
+
 // Returns the driver for `extension` (compared case-sensitively). Throws
 // GMANError(RIE_BADFILE, ...) for a known but disabled extension, naming
 // the extension and the missing library, or for an unrecognized one.
-std::unique_ptr<GMANOutput> gmanMakeFileOutput(std::string const& extension, char const* path, int width, int height);
+std::unique_ptr<GMANOutput> makeFileOutput(std::string const& extension, char const* path, int width, int height);
 
 // The compiled file drivers' names, in table order.
-GMAN_EXPORT std::vector<std::string> gmanFileDrivers();
+GMAN_EXPORT std::vector<std::string> fileDrivers();
+
+} // namespace gman

@@ -19,7 +19,7 @@
  */
 
 /*
- * A known but disabled file driver must fail loudly: gmanMakeFileOutput
+ * A known but disabled file driver must fail loudly: gman::makeFileOutput
  * throws RIE_BADFILE naming the extension and the missing library. Which
  * drivers are disabled is a runtime fact of this build, read back from
  * gman --version, rather than a compile-time #ifdef in this test -- the

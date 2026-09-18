@@ -31,13 +31,15 @@
 #include "gmanrenderman.h"
 #include "ri.h"
 
-class GMANContext {
+namespace gman {
+
+class Context {
 private:
   std::list<GMANRenderMan*> chl;
   GMANRenderMan* active;
 
 public:
-  GMANContext();
+  Context();
 
   RtVoid addContext(RtVoid);
   RtContextHandle getContext(RtVoid);
@@ -45,3 +47,5 @@ public:
   RtVoid switchTo(RtContextHandle);
   RtVoid removeCurrent(RtVoid);
 };
+
+} // namespace gman

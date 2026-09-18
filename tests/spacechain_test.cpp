@@ -37,7 +37,7 @@
  *     `output(current, out)`: the near-plane intersection assertion goes
  *     red because no output vertex has NDC z near -1.
  *   - Revert GMANFace::calcNormal's call site in createParametric, or make
- *     GMANVSPerspective::visible() unconditional again: the backface test
+ *     gman::VSPerspective::visible() unconditional again: the backface test
  *     goes red for both winding orders (see the backface culling section).
  *
  * Step 4: the clipper's other five planes (LEFT, RIGHT, TOP, BOTTOM, and
@@ -45,7 +45,7 @@
  *
  * Phase 3, proof item 5 (the perspective culling term): a face near the
  * silhouette, off-axis enough that the true eye-to-face view vector and
- * the z axis disagree on sign. Revert GMANVSPerspective::visible to
+ * the z axis disagree on sign. Revert gman::VSPerspective::visible to
  * `getNormal().getZ() > 0` and testPerspectiveCullingNearSilhouette goes
  * red -- the orthographic approximation culls a face the real view vector
  * says is visible.
@@ -88,7 +88,7 @@ void testFullChain() {
   GMANMatrix4 worldToCamera;
   worldToCamera.trans(0.0, 0.0, 5.0);
 
-  GMANVSPerspective vs(100, 100, sw, worldToCamera, 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(100, 100, sw, worldToCamera, 90.0, 1.0, 100.0);
 
   // The primitive's own CTM: "Translate 1 0 0" declared inside the world
   // block, composed ahead of worldToCamera as it stood at RiWorldBegin --
@@ -125,7 +125,7 @@ void testFullChain() {
 void testBehindCameraClips() {
   GMANOptions::ScreenWindowStruct sw = squareWindow();
   GMANMatrix4 identity;
-  GMANVSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
 
   // All four corners sit behind the camera (negative camera-space z);
   // none can survive near-plane clipping.
@@ -148,7 +148,7 @@ void testBehindCameraClips() {
 void testClipperNearPlane() {
   GMANOptions::ScreenWindowStruct sw = squareWindow();
   GMANMatrix4 identity;
-  GMANVSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
 
   // A quad with two vertices too close (z=0.5, inside near=1) and two
   // safely in the frustum (z=5). x,y stay small enough that only the
@@ -188,7 +188,7 @@ void testClipperNearPlane() {
 // output vertices (2 original + 2 new intersections), matching the near
 // plane test's own derivation.
 int clipQuad(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2, const GMANPoint& p3,
-             const GMANVSPerspective& vs) {
+             const gman::VSPerspective& vs) {
   GMANVertex v0, v1, v2, v3;
   v0.setLocation(p0);
   v1.setLocation(p1);
@@ -204,7 +204,7 @@ int clipQuad(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2, cons
 void testClipperOtherFivePlanes() {
   GMANOptions::ScreenWindowStruct sw = squareWindow();
   GMANMatrix4 identity;
-  GMANVSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
 
   // LEFT: boundary at x=-z=-5. Two vertices at x=-6 (outside), two at
   // x=-4 (inside).
@@ -239,7 +239,7 @@ void testClipperOtherFivePlanes() {
 void testBackfaceCulling() {
   GMANOptions::ScreenWindowStruct sw = squareWindow();
   GMANMatrix4 identity;
-  GMANVSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
 
   GMANVertex p0, p1, p2, p3;
   p0.setLocation(GMANPoint(-1.0, -1.0, 5.0));
@@ -282,7 +282,7 @@ void testBackfaceCulling() {
 void testPerspectiveCullingNearSilhouette() {
   GMANOptions::ScreenWindowStruct sw = squareWindow();
   GMANMatrix4 identity;
-  GMANVSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(100, 100, sw, identity, 90.0, 1.0, 100.0);
 
   // A small quad centered at (5, 0, 0.01), spanned by e1=(0,0.02,0) and
   // e2=(0.00002,0.02,0.02) -- both perpendicular to (1, 0, -0.001), so

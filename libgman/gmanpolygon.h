@@ -33,26 +33,28 @@
 #include "gmansegment.h"
 #include "ri.h"
 
+namespace gman {
+
 // types
 typedef std::vector<GMANPoint> PointVector;
 
 /*
- * RenderMan API GMANPolygon
+ * RenderMan API gman::Polygon
  *
  * A polygon defined by a series of points in space.
  *
  */
 
-class GMANPolygon {
+class Polygon {
   PointVector points;
 
 public:
-  GMANPolygon(); // default constructor
+  Polygon(); // default constructor
 
   // create a polygon with n points
-  GMANPolygon(int n);
+  Polygon(int n);
 
-  ~GMANPolygon(); // default destructor
+  ~Polygon(); // default destructor
 
   // add a point to the polygon.
   RtVoid addPoint(const GMANPoint& point);
@@ -66,3 +68,5 @@ public:
   // get number of points
   int getNPoints(RtVoid) { return points.size(); };
 };
+
+} // namespace gman

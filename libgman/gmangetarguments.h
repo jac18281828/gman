@@ -29,6 +29,10 @@
 
 #include "ri.h"
 
-extern RtVoid GMANGetArguments(va_list args, RtInt n, RtToken* tokens, RtPointer* parms);
+namespace gman {
 
-extern RtInt GMANCountArguments(va_list args);
+extern RtVoid getArguments(va_list args, RtInt n, RtToken* tokens, RtPointer* parms);
+
+extern RtInt countArguments(va_list args);
+
+} // namespace gman

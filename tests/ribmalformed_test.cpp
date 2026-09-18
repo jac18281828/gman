@@ -29,7 +29,7 @@
  *
  * declare_array_overflow.rib is not a tokenizer defect either -- it is a
  * Declare array-size digit string that overflows even `long`. It shares
- * this harness anyway: GMANInlineParse::is_int gating that size is the
+ * this harness anyway: gman::InlineParse::is_int gating that size is the
  * only thing standing between a malformed RiDeclare and an uncaught
  * std::bad_alloc sizing GMANParameterList's allocation, so "does not
  * crash" is exactly this file's own bar.

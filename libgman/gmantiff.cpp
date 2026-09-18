@@ -30,23 +30,25 @@ extern "C" {
 #include <tiffio.h>
 }
 
+namespace gman {
+
 namespace {
 
 // gman's own six-way Compression, mapped to libtiff's constants -- the one
 // switch every writer shares instead of one copy per caller.
-uint16_t libtiffCompression(GMANOutputTIFF::Compression compression) {
+uint16_t libtiffCompression(OutputTIFF::Compression compression) {
   switch (compression) {
-  case GMANOutputTIFF::NONE:
+  case OutputTIFF::NONE:
     return COMPRESSION_NONE;
-  case GMANOutputTIFF::PACKBITS:
+  case OutputTIFF::PACKBITS:
     return COMPRESSION_PACKBITS;
-  case GMANOutputTIFF::LZW:
+  case OutputTIFF::LZW:
     return COMPRESSION_LZW;
-  case GMANOutputTIFF::CCITTRLE:
+  case OutputTIFF::CCITTRLE:
     return COMPRESSION_CCITTRLE;
-  case GMANOutputTIFF::CCITTFAX3:
+  case OutputTIFF::CCITTFAX3:
     return COMPRESSION_CCITTFAX3;
-  case GMANOutputTIFF::CCITTFAX4:
+  case OutputTIFF::CCITTFAX4:
     return COMPRESSION_CCITTFAX4;
   }
   return COMPRESSION_NONE;
@@ -54,17 +56,17 @@ uint16_t libtiffCompression(GMANOutputTIFF::Compression compression) {
 
 } // namespace
 
-GMANTIFFReader::GMANTIFFReader(const std::string& path) : handle(TIFFOpen(path.c_str(), "r")) {}
+TIFFReader::TIFFReader(const std::string& path) : handle(TIFFOpen(path.c_str(), "r")) {}
 
-GMANTIFFReader::~GMANTIFFReader() {
+TIFFReader::~TIFFReader() {
   if (handle != nullptr) {
     TIFFClose(handle);
   }
 }
 
-bool GMANTIFFReader::isOpen() const { return handle != nullptr; }
+bool TIFFReader::isOpen() const { return handle != nullptr; }
 
-std::optional<std::string> GMANTIFFReader::wrapModes() const {
+std::optional<std::string> TIFFReader::wrapModes() const {
   char* tag = nullptr;
   if (TIFFGetField(handle, TIFFTAG_PIXAR_WRAPMODES, &tag) && tag != nullptr) {
     return std::string(tag);
@@ -72,7 +74,7 @@ std::optional<std::string> GMANTIFFReader::wrapModes() const {
   return std::nullopt;
 }
 
-bool GMANTIFFReader::decode(std::uint32_t& width, std::uint32_t& height, std::vector<unsigned char>& rgb) {
+bool TIFFReader::decode(std::uint32_t& width, std::uint32_t& height, std::vector<unsigned char>& rgb) {
   TIFFGetField(handle, TIFFTAG_IMAGEWIDTH, &width);
   TIFFGetField(handle, TIFFTAG_IMAGELENGTH, &height);
 
@@ -91,8 +93,8 @@ bool GMANTIFFReader::decode(std::uint32_t& width, std::uint32_t& height, std::ve
   return true;
 }
 
-GMANTIFFWriter::GMANTIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height,
-                               std::uint16_t samplesPerPixel, GMANOutputTIFF::Compression compression)
+TIFFWriter::TIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height,
+                       std::uint16_t samplesPerPixel, OutputTIFF::Compression compression)
     : handle(TIFFOpen(path.c_str(), "w")) {
   if (handle == nullptr) {
     return;
@@ -107,36 +109,38 @@ GMANTIFFWriter::GMANTIFFWriter(const std::string& path, std::uint32_t width, std
   TIFFSetField(handle, TIFFTAG_COMPRESSION, libtiffCompression(compression));
 }
 
-GMANTIFFWriter::~GMANTIFFWriter() {
+TIFFWriter::~TIFFWriter() {
   if (handle != nullptr) {
     TIFFClose(handle);
   }
 }
 
-bool GMANTIFFWriter::isOpen() const { return handle != nullptr; }
+bool TIFFWriter::isOpen() const { return handle != nullptr; }
 
-void GMANTIFFWriter::setRowsPerStrip(std::uint32_t rowsPerStrip) {
+void TIFFWriter::setRowsPerStrip(std::uint32_t rowsPerStrip) {
   TIFFSetField(handle, TIFFTAG_ROWSPERSTRIP, rowsPerStrip);
 }
 
-std::uint32_t GMANTIFFWriter::defaultStripSize(std::uint32_t hint) const {
+std::uint32_t TIFFWriter::defaultStripSize(std::uint32_t hint) const {
   return (std::uint32_t)TIFFDefaultStripSize(handle, hint);
 }
 
-void GMANTIFFWriter::setImageDescription(const std::string& text) {
+void TIFFWriter::setImageDescription(const std::string& text) {
   TIFFSetField(handle, TIFFTAG_IMAGEDESCRIPTION, text.c_str());
 }
 
-void GMANTIFFWriter::setWrapModes(const std::string& modes) {
+void TIFFWriter::setWrapModes(const std::string& modes) {
   TIFFSetField(handle, TIFFTAG_PIXAR_WRAPMODES, modes.c_str());
 }
 
-void GMANTIFFWriter::setTextureFormat(const std::string& format) {
+void TIFFWriter::setTextureFormat(const std::string& format) {
   TIFFSetField(handle, TIFFTAG_PIXAR_TEXTUREFORMAT, format.c_str());
 }
 
-std::size_t GMANTIFFWriter::scanlineSize() const { return (std::size_t)TIFFScanlineSize(handle); }
+std::size_t TIFFWriter::scanlineSize() const { return (std::size_t)TIFFScanlineSize(handle); }
 
-bool GMANTIFFWriter::writeScanline(unsigned char* data, std::uint32_t row) {
+bool TIFFWriter::writeScanline(unsigned char* data, std::uint32_t row) {
   return TIFFWriteScanline(handle, data, row, 0) >= 0;
 }
+
+} // namespace gman

@@ -26,10 +26,12 @@
 #include "gmanmath.h"
 #include "gmantools.h"
 
+namespace gman {
+
 /*----------------------------------------------------------
  * Bilinear Patch tools
  */
-GMANPoint GMANTools::bilinear(RtFloat u, RtFloat v, RtFloat* pnts) {
+GMANPoint Tools::bilinear(RtFloat u, RtFloat v, RtFloat* pnts) {
   RtFloat uv = u * v;
   GMANPoint p1(&pnts[0]);
   GMANPoint p2(&pnts[3]);
@@ -37,7 +39,7 @@ GMANPoint GMANTools::bilinear(RtFloat u, RtFloat v, RtFloat* pnts) {
   GMANPoint p4(&pnts[9]);
   return (p1 * (1.0 - u - v + uv) + p2 * (u - uv) + p3 * (v - uv) + p4 * uv);
 }
-GMANPoint GMANTools::bilinearZ(RtFloat u, RtFloat v, RtFloat* pnts) {
+GMANPoint Tools::bilinearZ(RtFloat u, RtFloat v, RtFloat* pnts) {
   RtFloat uv = u * v;
   GMANPoint p1(0.0, 0.0, pnts[0]);
   GMANPoint p2(1.0, 0.0, pnts[1]);
@@ -45,7 +47,7 @@ GMANPoint GMANTools::bilinearZ(RtFloat u, RtFloat v, RtFloat* pnts) {
   GMANPoint p4(1.0, 1.0, pnts[3]);
   return (p1 * (1.0 - u - v + uv) + p2 * (u - uv) + p3 * (v - uv) + p4 * uv);
 }
-GMANPoint GMANTools::bilinearW(RtFloat u, RtFloat v, RtFloat* pnts) {
+GMANPoint Tools::bilinearW(RtFloat u, RtFloat v, RtFloat* pnts) {
   RtFloat uv = u * v;
   GMANHPoint p1(&pnts[0]);
   GMANHPoint p2(&pnts[4]);
@@ -58,7 +60,7 @@ GMANPoint GMANTools::bilinearW(RtFloat u, RtFloat v, RtFloat* pnts) {
 /*----------------------------------------------------------
  * Bilinear PatchMesh tools
  */
-GMANPoint GMANTools::bilinearMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pnts) {
+GMANPoint Tools::bilinearMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pnts) {
   // number of patchs in u and v direction
   RtInt nbupatch = nu, nbvpatch = nv;
   if (uwrap == false) // aperiodic
@@ -93,7 +95,7 @@ GMANPoint GMANTools::bilinearMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, Rt
   GMANPoint p4(&pnts[pos2 * 3 + pos4 * 3 * nu]);
   return (p1 * (1.0 - u - v + uv) + p2 * (u - uv) + p3 * (v - uv) + p4 * uv);
 }
-GMANPoint GMANTools::bilinearMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFloat* pnts) {
+GMANPoint Tools::bilinearMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFloat* pnts) {
   // number of patchs in u and v direction
   RtInt nbupatch = nu - 1, nbvpatch = nv - 1;
 
@@ -121,7 +123,7 @@ GMANPoint GMANTools::bilinearMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtF
   GMANPoint p4(pos2 * scu, pos4 * scv, pnts[pos2 + pos4 * nu]);
   return (p1 * (1.0 - u - v + uv) + p2 * (u - uv) + p3 * (v - uv) + p4 * uv);
 }
-GMANPoint GMANTools::bilinearMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pnts) {
+GMANPoint Tools::bilinearMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pnts) {
   // number of patchs in u and v direction
   RtInt nbupatch = nu, nbvpatch = nv;
   if (uwrap == false) // aperiodic
@@ -161,7 +163,7 @@ GMANPoint GMANTools::bilinearMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, R
 /*----------------------------------------------------------
  * NuPatch tools
  */
-RtFloat GMANTools::nurbsBlendFactor(RtInt i, RtInt degree, RtFloat u, RtFloat* knot) {
+RtFloat Tools::nurbsBlendFactor(RtInt i, RtInt degree, RtFloat u, RtFloat* knot) {
   if (degree == 1) {
     if (u >= knot[i] && u <= knot[i + 1])
       return 1.0;
@@ -184,8 +186,8 @@ RtFloat GMANTools::nurbsBlendFactor(RtInt i, RtInt degree, RtFloat u, RtFloat* k
 /* Be careful! unlike other prims, u & v parameters range is
    not [0,1] but umin,umax and vmin,vmax (see RiSpec)
 */
-GMANPoint GMANTools::nurbs(RtFloat u, RtFloat v, RtInt nu, RtInt uorder, RtFloat* uknot, RtInt nv, RtInt vorder,
-                           RtFloat* vknot, RtFloat* points) {
+GMANPoint Tools::nurbs(RtFloat u, RtFloat v, RtInt nu, RtInt uorder, RtFloat* uknot, RtInt nv, RtInt vorder,
+                       RtFloat* vknot, RtFloat* points) {
   GMANPoint* pts = new GMANPoint[nu];
   GMANPoint* temp = new GMANPoint[nv];
   GMANPoint res;
@@ -215,8 +217,8 @@ GMANPoint GMANTools::nurbs(RtFloat u, RtFloat v, RtInt nu, RtInt uorder, RtFloat
     delete[] vbf;
   return res;
 }
-GMANPoint GMANTools::nurbsW(RtFloat u, RtFloat v, RtInt nu, RtInt uorder, RtFloat* uknot, RtInt nv, RtInt vorder,
-                            RtFloat* vknot, RtFloat* points) {
+GMANPoint Tools::nurbsW(RtFloat u, RtFloat v, RtInt nu, RtInt uorder, RtFloat* uknot, RtInt nv, RtInt vorder,
+                        RtFloat* vknot, RtFloat* points) {
   GMANHPoint* pts = new GMANHPoint[nu];
   GMANHPoint* temp = new GMANHPoint[nv];
   GMANHPoint t2(0, 0, 0, 0);
@@ -255,7 +257,7 @@ GMANPoint GMANTools::nurbsW(RtFloat u, RtFloat v, RtInt nu, RtInt uorder, RtFloa
 /*----------------------------------------------------------
  * Quadrics tools
  */
-GMANPoint GMANTools::sphere(RtFloat u, RtFloat v, RtFloat rad, RtFloat zmin, RtFloat zmax, RtFloat theta) {
+GMANPoint Tools::sphere(RtFloat u, RtFloat v, RtFloat rad, RtFloat zmin, RtFloat zmax, RtFloat theta) {
   RtFloat phimin, phimax, phi;
 
   if (zmin > -rad)
@@ -271,15 +273,15 @@ GMANPoint GMANTools::sphere(RtFloat u, RtFloat v, RtFloat rad, RtFloat zmin, RtF
   GMANPoint res(cos(theta * u) * cos(phi), sin(theta * u) * cos(phi), sin(phi));
   return (res * rad);
 }
-GMANPoint GMANTools::cone(RtFloat u, RtFloat v, RtFloat height, RtFloat rad, RtFloat theta) {
+GMANPoint Tools::cone(RtFloat u, RtFloat v, RtFloat height, RtFloat rad, RtFloat theta) {
   GMANPoint res(cos(u * theta) * (1 - v) * rad, sin(u * theta) * (1 - v) * rad, v * height);
   return res;
 }
-GMANPoint GMANTools::cylinder(RtFloat u, RtFloat v, RtFloat rad, RtFloat zmin, RtFloat zmax, RtFloat theta) {
+GMANPoint Tools::cylinder(RtFloat u, RtFloat v, RtFloat rad, RtFloat zmin, RtFloat zmax, RtFloat theta) {
   GMANPoint res(cos(u * theta) * rad, sin(u * theta) * rad, zmin + v * (zmax - zmin));
   return res;
 }
-GMANPoint GMANTools::hyperboloid(RtFloat u, RtFloat v, GMANPoint const& p1, GMANPoint const& p2, RtFloat theta) {
+GMANPoint Tools::hyperboloid(RtFloat u, RtFloat v, GMANPoint const& p1, GMANPoint const& p2, RtFloat theta) {
   RtFloat x, y;
   GMANPoint vi = p1 * (1 - v) + p2 * v;
   x = vi.getX();
@@ -288,18 +290,18 @@ GMANPoint GMANTools::hyperboloid(RtFloat u, RtFloat v, GMANPoint const& p1, GMAN
   vi.setY(x * sin(u * theta) + y * cos(u * theta));
   return vi;
 }
-GMANPoint GMANTools::paraboloid(RtFloat u, RtFloat v, RtFloat /*rmax*/, RtFloat zmin, RtFloat zmax, RtFloat theta) {
+GMANPoint Tools::paraboloid(RtFloat u, RtFloat v, RtFloat /*rmax*/, RtFloat zmin, RtFloat zmax, RtFloat theta) {
   RtFloat a = zmin + v * (zmax - zmin);
   RtFloat b = sqrt(a / zmax);
   GMANPoint res(b * cos(u * theta), b * sin(u * theta), a);
   return res;
 }
-GMANPoint GMANTools::disk(RtFloat u, RtFloat v, RtFloat height, RtFloat radius, RtFloat theta) {
+GMANPoint Tools::disk(RtFloat u, RtFloat v, RtFloat height, RtFloat radius, RtFloat theta) {
   GMANPoint res((1 - v) * radius * cos(u * theta), (1 - v) * radius * sin(u * theta), height);
   return res;
 }
-GMANPoint GMANTools::torus(RtFloat u, RtFloat v, RtFloat majorr, RtFloat minorr, RtFloat phimin, RtFloat phimax,
-                           RtFloat theta) {
+GMANPoint Tools::torus(RtFloat u, RtFloat v, RtFloat majorr, RtFloat minorr, RtFloat phimin, RtFloat phimax,
+                       RtFloat theta) {
   RtFloat x, a;
   a = (phimax - phimin) * v + phimin;
   GMANPoint res(majorr + cos(a) * minorr, 0, sin(a) * minorr);
@@ -308,3 +310,5 @@ GMANPoint GMANTools::torus(RtFloat u, RtFloat v, RtFloat majorr, RtFloat minorr,
   res.setY(x * sin(u * theta));
   return res;
 }
+
+} // namespace gman

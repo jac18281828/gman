@@ -71,7 +71,7 @@ GMANMatrix4 nonIdentityWorldToCamera() {
 
 // ---- check 1: the centre pixel looks down the view axis ----
 void testPerspectiveCentreLooksDownAxis() {
-  GMANVSPerspective vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 90.0, 1.0, 100.0);
 
   GMANRay centre = vs.cameraRay(kXRes / 2.0, kYRes / 2.0);
   check(near(centre.getDirection().getX(), 0.0) && near(centre.getDirection().getY(), 0.0) &&
@@ -81,7 +81,7 @@ void testPerspectiveCentreLooksDownAxis() {
 
 // ---- check 2: the corners match the screen window ----
 void testPerspectiveCornersMatchScreenWindow() {
-  GMANVSPerspective vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 90.0, 1.0, 100.0);
 
   RtFloat const corners[4][2] = {
       {0.0, 0.0}, {(RtFloat)kXRes, 0.0}, {0.0, (RtFloat)kYRes}, {(RtFloat)kXRes, (RtFloat)kYRes}};
@@ -102,7 +102,7 @@ void testPerspectiveCornersMatchScreenWindow() {
 
 // ---- check 3: orthographic rays are parallel ----
 void testOrthographicRaysAreParallel() {
-  GMANVSOrthographic vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 1.0, 100.0);
+  gman::VSOrthographic vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 1.0, 100.0);
 
   RtFloat const points[5][2] = {{(RtFloat)kXRes / 2.0f, (RtFloat)kYRes / 2.0f},
                                 {0.0, 0.0},
@@ -125,7 +125,7 @@ void testOrthographicRaysAreParallel() {
 
 // ---- check 4: the world-space ray is the camera-space ray transformed ----
 void testWorldRayIsCameraRayTransformed() {
-  GMANVSPerspective vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 90.0, 1.0, 100.0);
+  gman::VSPerspective vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 90.0, 1.0, 100.0);
 
   RtFloat const x = 137.0, y = 63.0;
   GMANRay cam = vs.cameraRay(x, y);
@@ -161,8 +161,8 @@ void testWorldRayIsCameraRayTransformed() {
 
 // ---- check 5: the interval defaults ----
 void testIntervalDefaults() {
-  GMANVSPerspective persp(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 90.0, 1.0, 100.0);
-  GMANVSOrthographic ortho(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 1.0, 100.0);
+  gman::VSPerspective persp(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 90.0, 1.0, 100.0);
+  gman::VSOrthographic ortho(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), 1.0, 100.0);
 
   GMANRay perspCam = persp.cameraRay(10.0, 10.0);
   GMANRay perspWorld = persp.ray(10.0, 10.0);

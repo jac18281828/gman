@@ -20,7 +20,7 @@
 
 /*
  * gman --version's contract: "gman <version>" then a "drivers:" line
- * listing gmanFileDrivers(), space-separated, in table order. CMake
+ * listing gman::fileDrivers(), space-separated, in table order. CMake
  * computes the expected list for this build (tests/CMakeLists.txt) and
  * passes it on the command line, so this test never re-derives which
  * options were enabled -- it checks the program's own output against

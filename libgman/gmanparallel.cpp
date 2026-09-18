@@ -30,7 +30,9 @@
 #include "gmanparallel.h"
 #include "ri.h"
 
-RtInt gmanParallelWorkers(RtInt count, RtInt workers) {
+namespace gman {
+
+RtInt parallelWorkers(RtInt count, RtInt workers) {
   if (count <= 0) {
     return 0;
   }
@@ -46,12 +48,12 @@ RtInt gmanParallelWorkers(RtInt count, RtInt workers) {
   return result;
 }
 
-void gmanParallelFor(RtInt count, const std::function<void(RtInt, RtInt)>& body, RtInt workers) {
+void parallelFor(RtInt count, const std::function<void(RtInt, RtInt)>& body, RtInt workers) {
   if (count <= 0) {
     return;
   }
 
-  const RtInt numWorkers = gmanParallelWorkers(count, workers);
+  const RtInt numWorkers = parallelWorkers(count, workers);
 
   // One shared stop_source: any worker's exception stops every worker, not
   // only the one that threw.
@@ -96,3 +98,5 @@ void gmanParallelFor(RtInt count, const std::function<void(RtInt, RtInt)>& body,
     std::rethrow_exception(firstException);
   }
 }
+
+} // namespace gman

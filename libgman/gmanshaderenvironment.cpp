@@ -30,12 +30,12 @@ namespace {
 
 // One generator for every GMANSurfaceEnv, matching real SL's noise()
 // being a pure function of its argument, not of shader instance.
-// Constructing a GMANNoise reseeds the process-global C rand()
+// Constructing a gman::Noise reseeds the process-global C rand()
 // (srand(808)); a fresh instance per shading call would be both wasteful
 // and non-deterministic with respect to whatever else in the process
 // calls rand().
-GMANNoise& noiseGenerator() {
-  static GMANNoise generator;
+gman::Noise& noiseGenerator() {
+  static gman::Noise generator;
   return generator;
 }
 
@@ -60,7 +60,7 @@ RtFloat GMANSurfaceEnv::cellnoise(RtFloat v) const { return noiseGenerator().cel
 RtFloat GMANSurfaceEnv::cellnoise(const GMANPoint& p) const { return noiseGenerator().cellnoise(p); }
 
 GMANColor GMANSurfaceEnv::texture(const std::string& name, RtFloat s, RtFloat t) const {
-  return gmanTextureCache().sample(name, s, t);
+  return gman::textureCache().sample(name, s, t);
 }
 
 GMANVector GMANSurfaceEnv::toWorld(GMANVector const& v) const {
@@ -74,7 +74,7 @@ GMANVector GMANSurfaceEnv::toWorld(GMANVector const& v) const {
 // bottom is -90 degrees and at the top is 90 degrees," with
 // x=cos(lon)cos(lat), y=sin(lon)cos(lat), z=sin(lat). lat = asin(z);
 // lon = atan2(y, x) wrapped into [0, 2*PI). s = lon / 2*PI, and
-// t = (PI/2 - lat) / PI, since t=0 is GMANTexture's own top row and the
+// t = (PI/2 - lat) / PI, since t=0 is gman::Texture's own top row and the
 // top of the picture is the north pole. environment() does no space
 // conversion; the shader picks the space R is given in, as RSL's does.
 GMANColor GMANSurfaceEnv::environment(std::string const& name, GMANVector const& R) const {
@@ -91,5 +91,5 @@ GMANColor GMANSurfaceEnv::environment(std::string const& name, GMANVector const&
   }
   RtFloat s = lon / (RtFloat)(2.0 * PI);
   RtFloat t = ((RtFloat)(PI / 2.0) - lat) / (RtFloat)PI;
-  return gmanTextureCache().sample(name, s, t);
+  return gman::textureCache().sample(name, s, t);
 }

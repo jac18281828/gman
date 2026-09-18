@@ -30,6 +30,8 @@
 #include "gmantexture.h"
 #include "gmantiff.h"
 
+namespace gman {
+
 namespace {
 
 // A single opaque black texel: what a missing, unreadable or unsupported
@@ -44,20 +46,20 @@ std::vector<GMANColor> blackTexel() {
 // taps, so a coordinate anywhere outside [0, 1] -- not just past the
 // image's outer edge -- already gets clamp/periodic/black's own answer
 // with no separate top-level check.
-RtInt wrapIndex(RtInt i, RtInt dim, GMANTextureWrap wrap, bool& valid) {
+RtInt wrapIndex(RtInt i, RtInt dim, TextureWrap wrap, bool& valid) {
   valid = true;
   switch (wrap) {
-  case GMAN_TEXTURE_PERIODIC: {
+  case TEXTURE_PERIODIC: {
     RtInt m = i % dim;
     return m < 0 ? m + dim : m;
   }
-  case GMAN_TEXTURE_BLACK:
+  case TEXTURE_BLACK:
     if (i < 0 || i >= dim) {
       valid = false;
       return 0;
     }
     return i;
-  case GMAN_TEXTURE_CLAMP:
+  case TEXTURE_CLAMP:
   default:
     if (i < 0)
       return 0;
@@ -69,21 +71,21 @@ RtInt wrapIndex(RtInt i, RtInt dim, GMANTextureWrap wrap, bool& valid) {
 
 // Matches a wrap name case-insensitively, the way gmanribparse.cpp's
 // filterByName matches a pixel filter.
-bool wrapByName(const std::string& name, GMANTextureWrap& wrap) {
+bool wrapByName(const std::string& name, TextureWrap& wrap) {
   std::string lower = name;
   for (std::string::size_type i = 0; i < lower.size(); ++i) {
     lower[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lower[i])));
   }
   if (lower == "periodic") {
-    wrap = GMAN_TEXTURE_PERIODIC;
+    wrap = TEXTURE_PERIODIC;
     return true;
   }
   if (lower == "clamp") {
-    wrap = GMAN_TEXTURE_CLAMP;
+    wrap = TEXTURE_CLAMP;
     return true;
   }
   if (lower == "black") {
-    wrap = GMAN_TEXTURE_BLACK;
+    wrap = TEXTURE_BLACK;
     return true;
   }
   return false;
@@ -92,13 +94,13 @@ bool wrapByName(const std::string& name, GMANTextureWrap& wrap) {
 // Parses libtiff's Pixar wrap-modes tag's "<swrap>,<twrap>" -- the form
 // libtiff's own texture tools write. False, leaving swrap/twrap
 // untouched, unless both halves name a known wrap mode.
-bool parseWrapModes(const char* tag, GMANTextureWrap& swrap, GMANTextureWrap& twrap) {
+bool parseWrapModes(const char* tag, TextureWrap& swrap, TextureWrap& twrap) {
   const auto joined = std::string(tag);
   const auto comma = joined.find(',');
   if (comma == std::string::npos) {
     return false;
   }
-  GMANTextureWrap s, t;
+  TextureWrap s, t;
   if (!wrapByName(joined.substr(0, comma), s) || !wrapByName(joined.substr(comma + 1), t)) {
     return false;
   }
@@ -108,13 +110,13 @@ bool parseWrapModes(const char* tag, GMANTextureWrap& swrap, GMANTextureWrap& tw
 }
 
 // RISpec's wrap names, written lower-case -- the inverse of wrapByName.
-const char* wrapName(GMANTextureWrap wrap) {
+const char* wrapName(TextureWrap wrap) {
   switch (wrap) {
-  case GMAN_TEXTURE_PERIODIC:
+  case TEXTURE_PERIODIC:
     return "periodic";
-  case GMAN_TEXTURE_BLACK:
+  case TEXTURE_BLACK:
     return "black";
-  case GMAN_TEXTURE_CLAMP:
+  case TEXTURE_CLAMP:
   default:
     return "clamp";
   }
@@ -125,8 +127,8 @@ const char* wrapName(GMANTextureWrap wrap) {
 // and format in the Pixar texture-format tag. False, removing any partial
 // file, if the file cannot be opened or a scanline fails to write.
 bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::vector<unsigned char>& rgb,
-                  GMANTextureWrap sw, GMANTextureWrap tw, const std::string& format) {
-  GMANTIFFWriter writer(name, w, h, 3, GMANOutputTIFF::NONE);
+                  TextureWrap sw, TextureWrap tw, const std::string& format) {
+  TIFFWriter writer(name, w, h, 3, OutputTIFF::NONE);
   if (!writer.isOpen()) {
     return false;
   }
@@ -151,8 +153,8 @@ bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::ve
 
 } // namespace
 
-GMANTexture::GMANTexture(const std::string& name) : width(1), height(1) {
-  GMANTIFFReader reader(name);
+Texture::Texture(const std::string& name) : width(1), height(1) {
+  TIFFReader reader(name);
   if (!reader.isOpen()) {
     warning("texture \"{}\": cannot open, using opaque black", name.c_str());
     texels = blackTexel();
@@ -187,9 +189,9 @@ GMANTexture::GMANTexture(const std::string& name) : width(1), height(1) {
   }
 }
 
-GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap wrap) const { return sample(s, t, wrap, wrap); }
+GMANColor Texture::sample(RtFloat s, RtFloat t, TextureWrap wrap) const { return sample(s, t, wrap, wrap); }
 
-GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap swrap, GMANTextureWrap twrap) const {
+GMANColor Texture::sample(RtFloat s, RtFloat t, TextureWrap swrap, TextureWrap twrap) const {
   // Texel centres sit at (i + 0.5) / dim; solving that for i turns (s, t)
   // into a coordinate where an integer means "exactly this texel's
   // centre" and a half-integer means "exactly between two centres" --
@@ -223,38 +225,38 @@ GMANColor GMANTexture::sample(RtFloat s, RtFloat t, GMANTextureWrap swrap, GMANT
                    w00 * c00.getBlue() + w10 * c10.getBlue() + w01 * c01.getBlue() + w11 * c11.getBlue());
 }
 
-GMANTexture& GMANTextureCache::entry(const std::string& name) {
-  std::map<std::string, GMANTexture>::iterator it = textures.find(name);
+Texture& TextureCache::entry(const std::string& name) {
+  std::map<std::string, Texture>::iterator it = textures.find(name);
   if (it == textures.end()) {
-    it = textures.emplace(name, GMANTexture(name)).first;
+    it = textures.emplace(name, Texture(name)).first;
   }
   return it->second;
 }
 
-GMANColor GMANTextureCache::sample(const std::string& name, RtFloat s, RtFloat t, GMANTextureWrap wrap) {
+GMANColor TextureCache::sample(const std::string& name, RtFloat s, RtFloat t, TextureWrap wrap) {
   return entry(name).sample(s, t, wrap);
 }
 
-GMANColor GMANTextureCache::sample(const std::string& name, RtFloat s, RtFloat t) {
-  GMANTexture& tex = entry(name);
+GMANColor TextureCache::sample(const std::string& name, RtFloat s, RtFloat t) {
+  Texture& tex = entry(name);
   return tex.sample(s, t, tex.swrap, tex.twrap);
 }
 
-void GMANTextureCache::forget(const std::string& name) { textures.erase(name); }
+void TextureCache::forget(const std::string& name) { textures.erase(name); }
 
-GMANTextureCache& gmanTextureCache(RtVoid) {
-  static GMANTextureCache cache;
+TextureCache& textureCache(RtVoid) {
+  static TextureCache cache;
   return cache;
 }
 
-bool gmanMakeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap) {
+bool makeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap) {
   const std::string textureName = texture != nullptr ? texture : "";
   if (textureName.empty()) {
     warning("MakeTexture: empty texture name, nothing written");
     return false;
   }
 
-  GMANTextureWrap sw, tw;
+  TextureWrap sw, tw;
   if (!wrapByName(swrap != nullptr ? swrap : "", sw) || !wrapByName(twrap != nullptr ? twrap : "", tw)) {
     warning("MakeTexture \"{}\": unknown wrap mode \"{}\",\"{}\"", textureName.c_str(), swrap != nullptr ? swrap : "",
             twrap != nullptr ? twrap : "");
@@ -262,7 +264,7 @@ bool gmanMakeTexture(const char* picture, const char* texture, const char* swrap
   }
 
   const std::string pictureName = picture != nullptr ? picture : "";
-  GMANTIFFReader reader(pictureName);
+  TIFFReader reader(pictureName);
   if (!reader.isOpen()) {
     warning("MakeTexture \"{}\": cannot open picture \"{}\"", textureName.c_str(), pictureName.c_str());
     return false;
@@ -270,7 +272,7 @@ bool gmanMakeTexture(const char* picture, const char* texture, const char* swrap
 
   uint32_t w = 0, h = 0;
   std::vector<unsigned char> rgb;
-  // Same decode call GMANTexture's own constructor uses: a texture made
+  // Same decode call Texture's own constructor uses: a texture made
   // from a picture samples identically to that picture at every texel
   // centre.
   bool decoded = reader.decode(w, h, rgb);
@@ -285,11 +287,11 @@ bool gmanMakeTexture(const char* picture, const char* texture, const char* swrap
     return false;
   }
 
-  gmanTextureCache().forget(textureName);
+  textureCache().forget(textureName);
   return true;
 }
 
-bool gmanMakeLatLongEnvironment(const char* picture, const char* texture) {
+bool makeLatLongEnvironment(const char* picture, const char* texture) {
   const std::string textureName = texture != nullptr ? texture : "";
   if (textureName.empty()) {
     warning("MakeLatLongEnvironment: empty texture name, nothing written");
@@ -297,7 +299,7 @@ bool gmanMakeLatLongEnvironment(const char* picture, const char* texture) {
   }
 
   const std::string pictureName = picture != nullptr ? picture : "";
-  GMANTIFFReader reader(pictureName);
+  TIFFReader reader(pictureName);
   if (!reader.isOpen()) {
     warning("MakeLatLongEnvironment \"{}\": cannot open picture \"{}\"", textureName.c_str(), pictureName.c_str());
     return false;
@@ -314,11 +316,13 @@ bool gmanMakeLatLongEnvironment(const char* picture, const char* texture) {
 
   // RISpec 3.2 Sec 7.1.2: periodic in s so longitude 0 and 360 meet
   // without a seam, clamp in t so the poles hold their edge row/texel.
-  if (!writeTexture(textureName, w, h, rgb, GMAN_TEXTURE_PERIODIC, GMAN_TEXTURE_CLAMP, "LatLong Environment")) {
+  if (!writeTexture(textureName, w, h, rgb, TEXTURE_PERIODIC, TEXTURE_CLAMP, "LatLong Environment")) {
     warning("MakeLatLongEnvironment \"{}\": failed to write", textureName.c_str());
     return false;
   }
 
-  gmanTextureCache().forget(textureName);
+  textureCache().forget(textureName);
   return true;
 }
+
+} // namespace gman

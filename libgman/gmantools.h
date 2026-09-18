@@ -30,7 +30,9 @@
 #include "gmanpoint.h"
 #include "ri.h"
 
-class GMANTools {
+namespace gman {
+
+class Tools {
 public:
   /*----------------------------------------------------------
    * Bilinear Patch tools
@@ -67,3 +69,5 @@ public:
   static GMANPoint torus(RtFloat u, RtFloat v, RtFloat majorr, RtFloat minorr, RtFloat phimin, RtFloat phimax,
                          RtFloat thetamax);
 };
+
+} // namespace gman

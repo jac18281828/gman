@@ -30,40 +30,42 @@
 #include "gmancolor.h"
 #include "ri.h"
 
+namespace gman {
+
 // How a sample outside [0, 1] is resolved, per axis, independently for s
 // and t. RiMakeTexture records this per file in libtiff's Pixar
-// wrap-modes tag; GMANTexture reads it back at construction, and
-// GMANTextureCache::sample applies it per axis.
-enum GMANTextureWrap { GMAN_TEXTURE_CLAMP, GMAN_TEXTURE_PERIODIC, GMAN_TEXTURE_BLACK };
+// wrap-modes tag; Texture reads it back at construction, and
+// TextureCache::sample applies it per axis.
+enum TextureWrap { TEXTURE_CLAMP, TEXTURE_PERIODIC, TEXTURE_BLACK };
 
 /*
  * One decoded texture: the RGBA pixels of a single named file, and the
  * bilinear sampler over them. A missing, unreadable or unsupported file
  * decodes to a single opaque black texel and warns once, at construction
- * -- GMANTextureCache builds exactly one of these per filename, so the
+ * -- TextureCache builds exactly one of these per filename, so the
  * warning fires exactly once no matter how many lookups the name gets.
  *
  * Owns its texels in a std::vector, never a raw pointer: AGENTS.md's Rule
  * of Five is then satisfied by owning nothing raw, and the compiler's
  * implicit copy/move members are correct as written.
  */
-class GMANTexture {
+class Texture {
 public:
-  explicit GMANTexture(const std::string& name);
+  explicit Texture(const std::string& name);
 
   // Bilinear sample at (s, t); t=0 is the image's top row. wrap resolves
   // both s and t identically outside [0, 1].
-  GMANColor sample(RtFloat s, RtFloat t, GMANTextureWrap wrap) const;
+  GMANColor sample(RtFloat s, RtFloat t, TextureWrap wrap) const;
 
   // Per-axis form: wrap resolves s and t independently. The single-wrap
   // overload above forwards here with the same mode on both axes.
-  GMANColor sample(RtFloat s, RtFloat t, GMANTextureWrap swrap, GMANTextureWrap twrap) const;
+  GMANColor sample(RtFloat s, RtFloat t, TextureWrap swrap, TextureWrap twrap) const;
 
   // Read from libtiff's Pixar wrap-modes tag at construction; an absent
-  // or unparseable tag leaves both clamp. GMANTextureCache reads these
+  // or unparseable tag leaves both clamp. TextureCache reads these
   // for its own sample().
-  GMANTextureWrap swrap = GMAN_TEXTURE_CLAMP;
-  GMANTextureWrap twrap = GMAN_TEXTURE_CLAMP;
+  TextureWrap swrap = TEXTURE_CLAMP;
+  TextureWrap twrap = TEXTURE_CLAMP;
 
 private:
   RtInt width;
@@ -81,11 +83,11 @@ private:
  * plugin, so every "paintedplastic" surface in a scene shares one
  * parameter list, and the filename is the only thing that varies.
  */
-class GMANTextureCache {
+class TextureCache {
 public:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file.
-  GMANColor sample(const std::string& name, RtFloat s, RtFloat t, GMANTextureWrap wrap);
+  GMANColor sample(const std::string& name, RtFloat s, RtFloat t, TextureWrap wrap);
 
   // Samples with the texture's own recorded wrap modes.
   GMANColor sample(const std::string& name, RtFloat s, RtFloat t);
@@ -97,34 +99,36 @@ private:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file. Both sample overloads route
   // through this.
-  GMANTexture& entry(const std::string& name);
+  Texture& entry(const std::string& name);
 
-  std::map<std::string, GMANTexture> textures;
+  std::map<std::string, Texture> textures;
 };
 
 // One cache per process, like gmanLightSourceMgr(). A free function rather
 // than a member threaded through the shading path, for the same reason:
 // shading runs per vertex, far from anything that would otherwise own it.
-GMANTextureCache& gmanTextureCache(RtVoid);
+TextureCache& textureCache(RtVoid);
 
-// RiMakeTexture's implementation: decodes picture the way GMANTexture does
+// RiMakeTexture's implementation: decodes picture the way Texture does
 // and writes texture as a single-level 8-bit RGB TIFF carrying swrap and
 // twrap in libtiff's Pixar wrap-modes tag. Never throws -- warns once,
 // naming texture and the cause, and leaves no file at texture, on a null or
 // empty name, an unknown wrap name, a picture that cannot be opened or
 // decoded, or an output that cannot be opened or fully written. A
-// successful write forgets texture from gmanTextureCache(), so the next
+// successful write forgets texture from textureCache(), so the next
 // lookup reads what was just written.
-bool gmanMakeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap);
+bool makeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap);
 
 // RiMakeLatLongEnvironment's implementation: decodes picture and writes
 // texture as a latitude-longitude environment map, RISpec 3.2 Sec 7.1.2 --
 // "periodic,clamp" in the Pixar wrap-modes tag (longitude 0 and 360 meet
 // without a seam; latitude clamps at the poles) and "LatLong Environment"
 // in the Pixar texture-format tag, RenderMan tools' value for this format.
-// Same failure shape as gmanMakeTexture: never throws, warns once naming
+// Same failure shape as makeTexture: never throws, warns once naming
 // texture and the cause, and leaves no file at texture on a null or empty
 // name, a picture that cannot be opened or decoded, or an output that
 // cannot be opened or fully written. A successful write forgets texture
-// from gmanTextureCache(), so the next lookup reads what was just written.
-bool gmanMakeLatLongEnvironment(const char* picture, const char* texture);
+// from textureCache(), so the next lookup reads what was just written.
+bool makeLatLongEnvironment(const char* picture, const char* texture);
+
+} // namespace gman

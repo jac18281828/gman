@@ -48,7 +48,7 @@
  */
 
 /* The context handler */
-static GMANContext context;
+static gman::Context context;
 
 /* Pass all C API functions through the instantiation of
  * the C++ API
@@ -182,11 +182,11 @@ extern "C" RtVoid RiProjection(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiProjectionV(name, n, tokens, parms);
@@ -274,11 +274,11 @@ extern "C" RtVoid RiImager(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiImagerV(name, n, tokens, parms);
@@ -317,11 +317,11 @@ extern "C" RtVoid RiDisplay(char* name, RtToken type, RtToken mode, ...) {
   try {
     va_list args;
     va_start(args, mode);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiDisplayV(name, type, mode, n, tokens, parms);
@@ -354,11 +354,11 @@ extern "C" RtVoid RiHider(RtToken type, ...) {
   try {
     va_list args;
     va_start(args, type);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiHiderV(type, n, tokens, parms);
@@ -405,11 +405,11 @@ extern "C" RtVoid RiOption(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiOptionV(name, n, tokens, parms);
@@ -482,11 +482,11 @@ extern "C" RtLightHandle RiLightSource(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RtLightHandle source = RiLightSourceV(name, n, tokens, parms);
@@ -520,11 +520,11 @@ extern "C" RtLightHandle RiAreaLightSource(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RtLightHandle source = RiAreaLightSourceV(name, n, tokens, parms);
@@ -565,11 +565,11 @@ extern "C" RtVoid RiSurface(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiSurfaceV(name, n, tokens, parms);
@@ -600,11 +600,11 @@ extern "C" RtVoid RiAtmosphere(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiAtmosphereV(name, n, tokens, parms);
@@ -638,11 +638,11 @@ extern "C" RtVoid RiInterior(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiInteriorV(name, n, tokens, parms);
@@ -676,11 +676,11 @@ extern "C" RtVoid RiExterior(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiExteriorV(name, n, tokens, parms);
@@ -861,11 +861,11 @@ extern "C" RtVoid RiDeformation(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiDeformationV(name, n, tokens, parms);
@@ -899,11 +899,11 @@ extern "C" RtVoid RiDisplacement(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiDisplacementV(name, n, tokens, parms);
@@ -979,11 +979,11 @@ extern "C" RtVoid RiAttribute(RtToken name, ...) {
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiAttributeV(name, n, tokens, parms);
@@ -1018,11 +1018,11 @@ extern "C" RtVoid RiPolygon(RtInt nverts, ...) {
   try {
     va_list args;
     va_start(args, nverts);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiPolygonV(nverts, n, tokens, parms);
@@ -1056,11 +1056,11 @@ extern "C" RtVoid RiGeneralPolygon(RtInt nloops, RtInt nverts[], ...) {
   try {
     va_list args;
     va_start(args, nverts);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiGeneralPolygonV(nloops, nverts, n, tokens, parms);
@@ -1094,11 +1094,11 @@ extern "C" RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], 
   try {
     va_list args;
     va_start(args, verts);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiPointsPolygonsV(npolys, nverts, verts, n, tokens, parms);
@@ -1133,11 +1133,11 @@ extern "C" RtVoid RiPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nv
   try {
     va_list args;
     va_start(args, verts);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiPointsGeneralPolygonsV(npolys, nloops, nverts, verts, n, tokens, parms);
@@ -1180,11 +1180,11 @@ extern "C" RtVoid RiPatch(RtToken type, ...) {
   try {
     va_list args;
     va_start(args, type);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiPatchV(type, n, tokens, parms);
@@ -1218,11 +1218,11 @@ extern "C" RtVoid RiPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, R
   try {
     va_list args;
     va_start(args, vwrap);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiPatchMeshV(type, nu, uwrap, nv, vwrap, n, tokens, parms);
@@ -1258,11 +1258,11 @@ extern "C" RtVoid RiNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umi
   try {
     va_list args;
     va_start(args, vmax);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiNuPatchV(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, n, tokens, parms);
@@ -1311,11 +1311,11 @@ extern "C" RtVoid RiSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat t
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiSphereV(radius, zmin, zmax, tmax, n, tokens, parms);
@@ -1351,11 +1351,11 @@ extern "C" RtVoid RiCone(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiConeV(height, radius, tmax, n, tokens, parms);
@@ -1389,11 +1389,11 @@ extern "C" RtVoid RiCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiCylinderV(radius, zmin, zmax, tmax, n, tokens, parms);
@@ -1428,11 +1428,11 @@ extern "C" RtVoid RiHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, ..
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiHyperboloidV(point1, point2, tmax, n, tokens, parms);
@@ -1467,11 +1467,11 @@ extern "C" RtVoid RiParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiParaboloidV(rmax, zmin, zmax, tmax, n, tokens, parms);
@@ -1506,11 +1506,11 @@ extern "C" RtVoid RiDisk(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
 
     RiDiskV(height, radius, tmax, n, tokens, parms);
 
@@ -1545,11 +1545,11 @@ extern "C" RtVoid RiTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloa
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiTorusV(majrad, minrad, phimin, phimax, tmax, n, tokens, parms);
@@ -1585,11 +1585,11 @@ extern "C" RtVoid RiBlobby(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, R
   try {
     va_list args;
     va_start(args, str);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiBlobbyV(nleaf, ncode, code, nflt, flt, nstr, str, n, tokens, parms);
@@ -1624,11 +1624,11 @@ extern "C" RtVoid RiPoints(RtInt npoints, ...) {
   try {
     va_list args;
     va_start(args, npoints);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiPointsV(npoints, n, tokens, parms);
@@ -1662,11 +1662,11 @@ extern "C" RtVoid RiCurves(RtToken type, RtInt ncurves, RtInt nvertices[], RtTok
   try {
     va_list args;
     va_start(args, wrap);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiCurvesV(type, ncurves, nvertices, wrap, n, tokens, parms);
@@ -1702,11 +1702,11 @@ extern "C" RtVoid RiSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtIn
   try {
     va_list args;
     va_start(args, floatargs);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiSubdivisionMeshV(mask, nf, nverts, verts, ntags, tags, numargs, intargs, floatargs, n, tokens, parms);
@@ -1751,11 +1751,11 @@ extern "C" RtVoid RiGeometry(RtToken type, ...) {
   try {
     va_list args;
     va_start(args, type);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiGeometryV(type, n, tokens, parms);
@@ -1875,11 +1875,11 @@ extern "C" RtVoid RiMakeTexture(char* pic, char* tex, RtToken swrap, RtToken twr
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiMakeTextureV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, n, tokens, parms);
@@ -1916,11 +1916,11 @@ extern "C" RtVoid RiMakeBump(char* pic, char* tex, RtToken swrap, RtToken twrap,
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiMakeBumpV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, n, tokens, parms);
@@ -1956,11 +1956,11 @@ extern "C" RtVoid RiMakeLatLongEnvironment(char* pic, char* tex, RtFilterFunc fi
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiMakeLatLongEnvironmentV(pic, tex, filterfunc, swidth, twidth, n, tokens, parms);
@@ -1996,11 +1996,11 @@ extern "C" RtVoid RiMakeCubeFaceEnvironment(char* px, char* nx, char* py, char* 
   try {
     va_list args;
     va_start(args, ywidth);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiMakeCubeFaceEnvironmentV(px, nx, py, ny, pz, nz, tex, fov, filterfunc, swidth, ywidth, n, tokens, parms);
@@ -2036,11 +2036,11 @@ extern "C" RtVoid RiMakeShadow(char* pic, char* tex, ...) {
   try {
     va_list args;
     va_start(args, tex);
-    RtInt n = GMANCountArguments(args);
+    RtInt n = gman::countArguments(args);
     tokens = new RtToken[n];
     parms = new RtPointer[n];
 
-    GMANGetArguments(args, n, tokens, parms);
+    gman::getArguments(args, n, tokens, parms);
     va_end(args);
 
     RiMakeShadowV(pic, tex, n, tokens, parms);

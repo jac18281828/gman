@@ -36,10 +36,12 @@
 // needs no libtiff header; only gmantiff.cpp ever includes one.
 struct tiff;
 
+namespace gman {
+
 /*
  * The one seam onto libtiff. Every other source file under include,
  * libgman, libgmanrib, shaders, renderers, gman and gmansl reaches a TIFF
- * file only through GMANTIFFReader and GMANTIFFWriter below.
+ * file only through TIFFReader and TIFFWriter below.
  *
  * Two classes, not one with a mode: a reader and a writer share nothing
  * beyond "a handle that must be closed," and each constructor establishes
@@ -49,15 +51,15 @@ struct tiff;
 // Reads a TIFF's pixels as unpacked, top-left-oriented RGB -- three bytes
 // per pixel -- and its Pixar wrap-modes tag, the only tag gman's texture
 // reader needs.
-class GMANTIFFReader {
+class TIFFReader {
 public:
-  explicit GMANTIFFReader(const std::string& path);
-  ~GMANTIFFReader();
+  explicit TIFFReader(const std::string& path);
+  ~TIFFReader();
 
-  GMANTIFFReader(const GMANTIFFReader&) = delete;
-  GMANTIFFReader& operator=(const GMANTIFFReader&) = delete;
-  GMANTIFFReader(GMANTIFFReader&&) = delete;
-  GMANTIFFReader& operator=(GMANTIFFReader&&) = delete;
+  TIFFReader(const TIFFReader&) = delete;
+  TIFFReader& operator=(const TIFFReader&) = delete;
+  TIFFReader(TIFFReader&&) = delete;
+  TIFFReader& operator=(TIFFReader&&) = delete;
 
   // False when path could not be opened for reading.
   bool isOpen() const;
@@ -81,16 +83,16 @@ private:
 // photometric, contiguous planar config and compression -- gman's own
 // six-way Compression, mapped to libtiff's constants by the seam's one
 // switch over it.
-class GMANTIFFWriter {
+class TIFFWriter {
 public:
-  GMANTIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height, std::uint16_t samplesPerPixel,
-                 GMANOutputTIFF::Compression compression);
-  ~GMANTIFFWriter();
+  TIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height, std::uint16_t samplesPerPixel,
+             OutputTIFF::Compression compression);
+  ~TIFFWriter();
 
-  GMANTIFFWriter(const GMANTIFFWriter&) = delete;
-  GMANTIFFWriter& operator=(const GMANTIFFWriter&) = delete;
-  GMANTIFFWriter(GMANTIFFWriter&&) = delete;
-  GMANTIFFWriter& operator=(GMANTIFFWriter&&) = delete;
+  TIFFWriter(const TIFFWriter&) = delete;
+  TIFFWriter& operator=(const TIFFWriter&) = delete;
+  TIFFWriter(TIFFWriter&&) = delete;
+  TIFFWriter& operator=(TIFFWriter&&) = delete;
 
   // False when path could not be opened for writing.
   bool isOpen() const;
@@ -115,3 +117,5 @@ public:
 private:
   struct tiff* handle;
 };
+
+} // namespace gman

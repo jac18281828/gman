@@ -71,8 +71,8 @@ public:
   virtual GMANPoint project(GMANPoint const& p) = 0;
 
   /* Given an x y coordinate in raster space, return the camera-space ray
-   * through it -- origin and direction as GMANVSPerspective and
-   * GMANVSOrthographic each build them, before any transform.
+   * through it -- origin and direction as gman::VSPerspective and
+   * gman::VSOrthographic each build them, before any transform.
    */
   virtual GMANRay cameraRay(RtFloat x, RtFloat y) = 0;
 

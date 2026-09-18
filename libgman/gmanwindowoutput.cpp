@@ -27,13 +27,17 @@
 #include "gmanwindowoutput.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANWindowOutput
+ * RenderMan API gman::WindowOutput
  *
  */
 
 // default constructor
-GMANWindowOutput::GMANWindowOutput() : GMANOutput() {};
+WindowOutput::WindowOutput() : GMANOutput() {};
 
 // default destructor
-GMANWindowOutput::~GMANWindowOutput() {};
+WindowOutput::~WindowOutput() {};
+
+} // namespace gman

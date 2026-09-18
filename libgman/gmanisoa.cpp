@@ -26,7 +26,9 @@
 
 #include "gmanisoa.h"
 
-RtVoid GMANISO::set(RtToken name, int n, RtToken* tk, RtPointer* dt) {
+namespace gman {
+
+RtVoid ISO::set(RtToken name, int n, RtToken* tk, RtPointer* dt) {
   std::string a = name;
   if (a == "searchpath") {
     for (int i = 0; i < n; i++) {
@@ -50,5 +52,7 @@ RtVoid GMANISO::set(RtToken name, int n, RtToken* tk, RtPointer* dt) {
   }
 }
 
-GMANISA::GMANISA() {}
-GMANISA::~GMANISA() {}
+ISA::ISA() {}
+ISA::~ISA() {}
+
+} // namespace gman

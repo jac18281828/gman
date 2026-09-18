@@ -25,7 +25,7 @@
  *
  *  - toWorld and the camera-to-world matrix reaching the shading path
  *    (commit 1);
- *  - gmanMakeLatLongEnvironment's writer and environment()'s lookup,
+ *  - gman::makeLatLongEnvironment's writer and environment()'s lookup,
  *    direct and through RIB (commit 2);
  *  - shinymetal rendered under three camera orientations (commit 3).
  *
@@ -186,7 +186,7 @@ GMANColor latLongTexel(int i, int j) {
                    (RtFloat)latLongByte(2, i, j) / (RtFloat)255.0);
 }
 
-// The plain RGB TIFF gmanMakeLatLongEnvironment's own "picture" argument
+// The plain RGB TIFF gman::makeLatLongEnvironment's own "picture" argument
 // reads -- not yet tagged as an environment; the writer adds that.
 bool writeLatLongPicture(std::string const& path) {
   TIFF* tif = TIFFOpen(path.c_str(), "w");
@@ -271,7 +271,7 @@ void testDirectLookups(std::string const& map) {
 // A direction at lon just below 2*PI blends texel (7, j) with (0, j) --
 // periodic wrap, not clamp holding (7, j) alone. s = 31/32 sits a quarter
 // texel short of the wrap (texel 7's own centre is at s=7.5/8=0.9375), so
-// GMANTexture::sample's bilinear weights are exactly 0.75 on texel 7 and
+// gman::Texture::sample's bilinear weights are exactly 0.75 on texel 7 and
 // 0.25 on texel 0 (wrapped from column 8).
 void testLongitudeWraps(std::string const& map) {
   GMANSurfaceEnv env;
@@ -293,7 +293,7 @@ void testLongitudeWraps(std::string const& map) {
 // The written file's tags, and the writer's failure shape.
 void testWriterTagsAndFailures(std::string const& picture, std::string const& map) {
   std::remove(map.c_str());
-  check(gmanMakeLatLongEnvironment(picture.c_str(), map.c_str()), "gmanMakeLatLongEnvironment returns true");
+  check(gman::makeLatLongEnvironment(picture.c_str(), map.c_str()), "gman::makeLatLongEnvironment returns true");
   check(readAsciiTag(map, TIFFTAG_PIXAR_WRAPMODES) == "periodic,clamp",
         map + "'s TIFFTAG_PIXAR_WRAPMODES is \"periodic,clamp\"");
   check(readAsciiTag(map, TIFFTAG_PIXAR_TEXTUREFORMAT) == "LatLong Environment",
@@ -301,15 +301,15 @@ void testWriterTagsAndFailures(std::string const& picture, std::string const& ma
 
   const std::string emptyTarget = "made_empty_name.env";
   std::remove(emptyTarget.c_str());
-  check(!gmanMakeLatLongEnvironment(picture.c_str(), ""),
-        "gmanMakeLatLongEnvironment with an empty texture name returns "
+  check(!gman::makeLatLongEnvironment(picture.c_str(), ""),
+        "gman::makeLatLongEnvironment with an empty texture name returns "
         "false");
   check(!fileExists(emptyTarget), emptyTarget + " is not written");
 
   const std::string missingPictureTarget = "made_missing_picture.env";
   std::remove(missingPictureTarget.c_str());
-  check(!gmanMakeLatLongEnvironment("environment_test_missing_9f3ab2.tif", missingPictureTarget.c_str()),
-        "gmanMakeLatLongEnvironment with a missing picture returns false");
+  check(!gman::makeLatLongEnvironment("environment_test_missing_9f3ab2.tif", missingPictureTarget.c_str()),
+        "gman::makeLatLongEnvironment with a missing picture returns false");
   check(!fileExists(missingPictureTarget), missingPictureTarget + " is not written");
 }
 
@@ -436,8 +436,8 @@ int main(int argc, char* argv[]) {
 
   const std::string picture = "latlong_picture.tif";
   const std::string map = "latlong.env";
-  check(writeLatLongPicture(picture), picture + " writes for gmanMakeLatLongEnvironment");
-  check(gmanMakeLatLongEnvironment(picture.c_str(), map.c_str()), map + " writes via gmanMakeLatLongEnvironment");
+  check(writeLatLongPicture(picture), picture + " writes for gman::makeLatLongEnvironment");
+  check(gman::makeLatLongEnvironment(picture.c_str(), map.c_str()), map + " writes via gman::makeLatLongEnvironment");
   testDirectLookups(map);
   testLongitudeWraps(map);
   testWriterTagsAndFailures(picture, map);
@@ -449,9 +449,10 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  check(writeSixRegionPicture("sixregion_picture.tif"), "sixregion_picture.tif writes for gmanMakeLatLongEnvironment");
-  check(gmanMakeLatLongEnvironment("sixregion_picture.tif", "sixregion.env"),
-        "sixregion.env writes via gmanMakeLatLongEnvironment");
+  check(writeSixRegionPicture("sixregion_picture.tif"),
+        "sixregion_picture.tif writes for gman::makeLatLongEnvironment");
+  check(gman::makeLatLongEnvironment("sixregion_picture.tif", "sixregion.env"),
+        "sixregion.env writes via gman::makeLatLongEnvironment");
 
   testMirrorView(gman, ribDir, "shinymetal_view_z.rib", REGION_MINUS_Z);
   testMirrorView(gman, ribDir, "shinymetal_view_x.rib", REGION_MINUS_X);

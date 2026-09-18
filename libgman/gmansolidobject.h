@@ -34,17 +34,21 @@
 #include "gmanobject.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANSolidObject
+ * RenderMan API gman::SolidObject
  *
  * An implementation of solid object operations
  * including union, difference, etc.
  *
  */
 
-class GMANSolidObject : public GMANObject {
+class SolidObject : public GMANObject {
 public:
-  GMANSolidObject(); // default constructor
+  SolidObject(); // default constructor
 
-  ~GMANSolidObject(); // default destructor
+  ~SolidObject(); // default destructor
 };
+
+} // namespace gman

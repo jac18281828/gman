@@ -20,7 +20,7 @@
 
 /*
  * Defect 2 (uat-defects prompt): the PNG output driver segfaulted (exit
- * 139) leaving a zero-byte file. Three bugs in GMANOutputPNG::save,
+ * 139) leaving a zero-byte file. Three bugs in gman::OutputPNG::save,
  * gmanoutputpng.cpp:
  *
  * 1. It called png_read_update_info on a png_ptr from
@@ -94,7 +94,7 @@ struct Image {
   std::vector<unsigned char> rgb; // 3 bytes/pixel, row-major, top to bottom
 };
 
-// Decodes a PNG to top-down 8-bit RGB, dropping alpha -- GMANOutputPNG
+// Decodes a PNG to top-down 8-bit RGB, dropping alpha -- gman::OutputPNG
 // always writes PNG_COLOR_TYPE_RGB_ALPHA, so this expects exactly that.
 Image readPNG(const std::string& path) {
   Image img;

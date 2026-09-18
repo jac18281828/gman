@@ -28,9 +28,11 @@
 #include "gmannoise.h"
 #include "gmanvector4.h"
 
-float GMANNoise::rn() { return 1.0 - 2.0 * (rand() / (RAND_MAX + 0.0)); }
+namespace gman {
 
-GMANNoise::GMANNoise() {
+float Noise::rn() { return 1.0 - 2.0 * (rand() / (RAND_MAX + 0.0)); }
+
+Noise::Noise() {
   prn = prn1;
   cprn = cprn1;
 
@@ -114,7 +116,7 @@ GMANNoise::GMANNoise() {
 #define RND4(x, y, z, w) prn[(prn[(prn[(prn[(x) & kMask] + y) & kMask] + z) & kMask] + w) & kMask]
 
 /* 1D noise */
-RtFloat GMANNoise::noise(RtFloat v) {
+RtFloat Noise::noise(RtFloat v) {
   RtInt i = (RtInt)floor(v);
 
   RtFloat f0, f1, st;
@@ -128,7 +130,7 @@ RtFloat GMANNoise::noise(RtFloat v) {
 }
 
 /* 2D noise */
-RtFloat GMANNoise::noise(RtFloat u, RtFloat v) {
+RtFloat Noise::noise(RtFloat u, RtFloat v) {
   RtInt i = (RtInt)floor(u);
   RtInt j = (RtInt)floor(v);
 
@@ -160,7 +162,7 @@ RtFloat GMANNoise::noise(RtFloat u, RtFloat v) {
 }
 
 /* 3D noise */
-RtFloat GMANNoise::noise(GMANPoint const& p) {
+RtFloat Noise::noise(GMANPoint const& p) {
   RtFloat u = p.getX();
   RtFloat v = p.getY();
   RtFloat w = p.getZ();
@@ -216,7 +218,7 @@ RtFloat GMANNoise::noise(GMANPoint const& p) {
 }
 
 /* 4D noise */
-RtFloat GMANNoise::noise(GMANPoint const& p, RtFloat t) {
+RtFloat Noise::noise(GMANPoint const& p, RtFloat t) {
   RtFloat u = p.getX();
   RtFloat v = p.getY();
   RtFloat w = p.getZ();
@@ -315,7 +317,7 @@ RtFloat GMANNoise::noise(GMANPoint const& p, RtFloat t) {
 /* I just change the prn table to get a */
 /* different value in x,y and z         */
 /****************************************/
-RtVoid GMANNoise::noise(RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::noise(RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = noise(v);
   prn = prn2;
   b = noise(v);
@@ -324,7 +326,7 @@ RtVoid GMANNoise::noise(RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
   prn = prn1;
 }
 
-RtVoid GMANNoise::noise(RtFloat u, RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::noise(RtFloat u, RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = noise(u, v);
   prn = prn2;
   b = noise(u, v);
@@ -333,7 +335,7 @@ RtVoid GMANNoise::noise(RtFloat u, RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c
   prn = prn1;
 }
 
-RtVoid GMANNoise::noise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::noise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = noise(p);
   prn = prn2;
   b = noise(p);
@@ -342,7 +344,7 @@ RtVoid GMANNoise::noise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c) 
   prn = prn1;
 }
 
-RtVoid GMANNoise::noise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::noise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = noise(p, t);
   prn = prn2;
   b = noise(p, t);
@@ -354,7 +356,7 @@ RtVoid GMANNoise::noise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, R
 /****************************/
 /* Periodic noise functions */
 /****************************/
-RtFloat GMANNoise::periodic(RtFloat v, RtFloat pv) {
+RtFloat Noise::periodic(RtFloat v, RtFloat pv) {
   v = GMANMod(v, pv);
   RtInt i = (RtInt)floor(v);
 
@@ -371,7 +373,7 @@ RtFloat GMANNoise::periodic(RtFloat v, RtFloat pv) {
   f1 *= vect[4 * RND1(i)];
   return 0.5 + 0.5 * LERP(st, f0, f1);
 }
-RtFloat GMANNoise::periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv) {
+RtFloat Noise::periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv) {
   u = GMANMod(u, pu);
   v = GMANMod(v, pv);
   RtInt i = (RtInt)floor(u);
@@ -412,7 +414,7 @@ RtFloat GMANNoise::periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv) {
   b = LERP(stu, t3, t4);
   return 0.5 + 0.5 * LERP(stv, a, b);
 }
-RtFloat GMANNoise::periodic(GMANPoint const& p, GMANPoint const& pp) {
+RtFloat Noise::periodic(GMANPoint const& p, GMANPoint const& pp) {
   RtFloat pu = pp.getX();
   RtFloat pv = pp.getY();
   RtFloat pw = pp.getZ();
@@ -482,7 +484,7 @@ RtFloat GMANNoise::periodic(GMANPoint const& p, GMANPoint const& pp) {
   f = LERP(stv, c, d);
   return 0.5 + 0.5 * LERP(stw, e, f);
 }
-RtFloat GMANNoise::periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, RtFloat pt) {
+RtFloat Noise::periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, RtFloat pt) {
   RtFloat pu = pp.getX();
   RtFloat pv = pp.getY();
   RtFloat pw = pp.getZ();
@@ -596,7 +598,7 @@ RtFloat GMANNoise::periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, 
   return 0.5 + 0.5 * LERP(stt, g, h);
 }
 
-RtVoid GMANNoise::periodic(RtFloat v, RtFloat pv, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::periodic(RtFloat v, RtFloat pv, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = periodic(v, pv);
   prn = prn2;
   b = periodic(v, pv);
@@ -604,7 +606,7 @@ RtVoid GMANNoise::periodic(RtFloat v, RtFloat pv, RtFloat& a, RtFloat& b, RtFloa
   c = periodic(v, pv);
   prn = prn1;
 }
-RtVoid GMANNoise::periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = periodic(u, v, pu, pv);
   prn = prn2;
   b = periodic(u, v, pu, pv);
@@ -612,7 +614,7 @@ RtVoid GMANNoise::periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv, RtFloat
   c = periodic(u, v, pu, pv);
   prn = prn1;
 }
-RtVoid GMANNoise::periodic(GMANPoint const& p, GMANPoint const& pp, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::periodic(GMANPoint const& p, GMANPoint const& pp, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = periodic(p, pp);
   prn = prn2;
   b = periodic(p, pp);
@@ -620,8 +622,8 @@ RtVoid GMANNoise::periodic(GMANPoint const& p, GMANPoint const& pp, RtFloat& a, 
   c = periodic(p, pp);
   prn = prn1;
 }
-RtVoid GMANNoise::periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, RtFloat pt, RtFloat& a, RtFloat& b,
-                           RtFloat& c) {
+RtVoid Noise::periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, RtFloat pt, RtFloat& a, RtFloat& b,
+                       RtFloat& c) {
   a = periodic(p, t, pp, pt);
   prn = prn2;
   b = periodic(p, t, pp, pt);
@@ -643,23 +645,23 @@ RtVoid GMANNoise::periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, R
 #define RND3(x, y, z) cprn[(cprn[(cprn[(x) & CMASK] + y) & CMASK] + z) & CMASK]
 #define RND4(x, y, z, w) cprn[(cprn[(cprn[(cprn[(x) & CMASK] + y) & CMASK] + z) & CMASK] + w) & CMASK]
 
-RtFloat GMANNoise::cellnoise(RtFloat v) {
+RtFloat Noise::cellnoise(RtFloat v) {
   // TODO: handle the case where v is greater than an int.
   RtInt a = (RtInt)floor(v);
   return cvect[RND1(a)];
 }
-RtFloat GMANNoise::cellnoise(RtFloat u, RtFloat v) {
+RtFloat Noise::cellnoise(RtFloat u, RtFloat v) {
   RtInt a = (RtInt)floor(u);
   RtInt b = (RtInt)floor(v);
   return cvect[RND2(a, b)];
 }
-RtFloat GMANNoise::cellnoise(GMANPoint const& p) {
+RtFloat Noise::cellnoise(GMANPoint const& p) {
   RtInt a = (RtInt)floor(p.getX());
   RtInt b = (RtInt)floor(p.getY());
   RtInt c = (RtInt)floor(p.getZ());
   return cvect[RND3(a, b, c)];
 }
-RtFloat GMANNoise::cellnoise(GMANPoint const& p, RtFloat t) {
+RtFloat Noise::cellnoise(GMANPoint const& p, RtFloat t) {
   RtInt a = (RtInt)floor(p.getX());
   RtInt b = (RtInt)floor(p.getY());
   RtInt c = (RtInt)floor(p.getZ());
@@ -667,7 +669,7 @@ RtFloat GMANNoise::cellnoise(GMANPoint const& p, RtFloat t) {
   return cvect[RND4(a, b, c, d)];
 }
 
-RtVoid GMANNoise::cellnoise(RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::cellnoise(RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = cellnoise(v);
   cprn = cprn2;
   b = cellnoise(v);
@@ -675,7 +677,7 @@ RtVoid GMANNoise::cellnoise(RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
   c = cellnoise(v);
   cprn = cprn1;
 }
-RtVoid GMANNoise::cellnoise(RtFloat u, RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::cellnoise(RtFloat u, RtFloat v, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = cellnoise(u, v);
   cprn = cprn2;
   b = cellnoise(u, v);
@@ -683,7 +685,7 @@ RtVoid GMANNoise::cellnoise(RtFloat u, RtFloat v, RtFloat& a, RtFloat& b, RtFloa
   c = cellnoise(u, v);
   cprn = cprn1;
 }
-RtVoid GMANNoise::cellnoise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::cellnoise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = cellnoise(p);
   cprn = cprn2;
   b = cellnoise(p);
@@ -691,7 +693,7 @@ RtVoid GMANNoise::cellnoise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat&
   c = cellnoise(p);
   cprn = cprn1;
 }
-RtVoid GMANNoise::cellnoise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFloat& c) {
+RtVoid Noise::cellnoise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFloat& c) {
   a = cellnoise(p, t);
   cprn = cprn2;
   b = cellnoise(p, t);
@@ -699,3 +701,5 @@ RtVoid GMANNoise::cellnoise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& 
   c = cellnoise(p, t);
   cprn = cprn1;
 }
+
+} // namespace gman

@@ -34,16 +34,20 @@
 #include "gmanoutput.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANOutputPNG
+ * RenderMan API gman::OutputPNG
  *
  */
 
-class GMANOutputPNG : public GMANOutput {
+class OutputPNG : public GMANOutput {
 public:
-  GMANOutputPNG(const char* path, int width, int height); // default constructor
+  OutputPNG(const char* path, int width, int height); // default constructor
 
-  ~GMANOutputPNG(); // default destructor
+  ~OutputPNG(); // default destructor
 
   virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
 };
+
+} // namespace gman

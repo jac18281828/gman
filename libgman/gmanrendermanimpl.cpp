@@ -65,7 +65,7 @@ GMANRenderManImpl::~GMANRenderManImpl() {};
 
 // declare shading language variable
 RtToken GMANRenderManImpl::RiDeclare(const char* name, const char* declaration) {
-  GMANInlineParse ip;
+  gman::InlineParse ip;
   std::string a(name);
   std::string b(declaration);
 
@@ -139,15 +139,15 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
     // Throws RIE_BADFILE for a known but disabled driver's extension, or
     // an unrecognized one -- either way newOutput never reaches
     // RiWorldEnd null.
-    newOutput = gmanMakeFileOutput(ext, getOptions().getDisplay().name.c_str(),
-                                   ri.rxmax - ri.rxmin + 1, // if the user use RiCropWindow
-                                   ri.rymax - ri.rymin + 1);
+    newOutput = gman::makeFileOutput(ext, getOptions().getDisplay().name.c_str(),
+                                     ri.rxmax - ri.rxmin + 1, // if the user use RiCropWindow
+                                     ri.rymax - ri.rymin + 1);
 
   } else { // type == framebuffer
     // our frame buffer
-    newOutput.reset(new GMANOutputX11(getOptions().getDisplay().name.c_str(),
-                                      ri.rxmax - ri.rxmin + 1, // if the user use RiCropWindow
-                                      ri.rymax - ri.rymin + 1));
+    newOutput.reset(new gman::OutputX11(getOptions().getDisplay().name.c_str(),
+                                        ri.rxmax - ri.rxmin + 1, // if the user use RiCropWindow
+                                        ri.rymax - ri.rymin + 1));
   }
 
   // the default projection is orthographic
@@ -168,9 +168,9 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
   }
 
   if (ps.name == "orthographic") {
-    viewingSystem = new GMANVSOrthographic(ri.xres, ri.yres, sw, worldToCamera, cw.nearDist, cw.farDist);
+    viewingSystem = new gman::VSOrthographic(ri.xres, ri.yres, sw, worldToCamera, cw.nearDist, cw.farDist);
   } else {
-    viewingSystem = new GMANVSPerspective(ri.xres, ri.yres, sw, worldToCamera, fov, cw.nearDist, cw.farDist);
+    viewingSystem = new gman::VSPerspective(ri.xres, ri.yres, sw, worldToCamera, fov, cw.nearDist, cw.farDist);
   }
 
   // The shading path's only route to camera-to-world (this task's own
@@ -1300,7 +1300,7 @@ RtVoid GMANRenderManImpl::RiMakeTextureV(char* pic, char* tex, RtToken swrap, Rt
                                          RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, RtFloat /*twidth*/,
                                          RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[]) {
   allowed(cmdMakeTexture);
-  gmanMakeTexture(pic, tex, swrap, twrap);
+  gman::makeTexture(pic, tex, swrap, twrap);
 }
 RtVoid GMANRenderManImpl::RiMakeBumpV(char* /*pic*/, char* /*tex*/, RtToken /*swrap*/, RtToken /*twrap*/,
                                       RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, RtFloat /*twidth*/, RtInt /*n*/,
@@ -1311,7 +1311,7 @@ RtVoid GMANRenderManImpl::RiMakeLatLongEnvironmentV(char* pic, char* tex, RtFilt
                                                     RtFloat /*swidth*/, RtFloat /*twidth*/, RtInt /*n*/,
                                                     RtToken /*tokens*/[], RtPointer /*parms*/[]) {
   allowed(cmdMakeLatLongEnvironment);
-  gmanMakeLatLongEnvironment(pic, tex);
+  gman::makeLatLongEnvironment(pic, tex);
 }
 RtVoid GMANRenderManImpl::RiMakeCubeFaceEnvironmentV(char* /*px*/, char* /*nx*/, char* /*py*/, char* /*ny*/,
                                                      char* /*pz*/, char* /*nz*/, char* /*tex*/, RtFloat /*fov*/,

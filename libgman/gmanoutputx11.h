@@ -34,16 +34,20 @@
 #include "gmanwindowoutput.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANOutputX11
+ * RenderMan API gman::OutputX11
  *
  */
 
-class GMANOutputX11 : public GMANWindowOutput {
+class OutputX11 : public WindowOutput {
 public:
-  GMANOutputX11(const char* name, int width, int height); // default constructor
+  OutputX11(const char* name, int width, int height); // default constructor
 
-  ~GMANOutputX11(); // default destructor
+  ~OutputX11(); // default destructor
 
   virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
 };
+
+} // namespace gman

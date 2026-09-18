@@ -38,7 +38,7 @@ namespace {
 // One run's bookkeeping: which index landed in which worker's slot, and
 // which thread ran each worker. Each vector entry belongs to exactly one
 // worker for the whole call, so writing it from inside the body needs no
-// lock -- that is the invariant gmanParallelFor exists to make true.
+// lock -- that is the invariant gman::parallelFor exists to make true.
 struct RunRecord {
   std::vector<int> indexHits;
   std::vector<int> perWorkerCount;
@@ -46,13 +46,13 @@ struct RunRecord {
 };
 
 RunRecord runRecording(RtInt count, RtInt workers) {
-  RtInt numWorkers = gmanParallelWorkers(count, workers);
+  RtInt numWorkers = gman::parallelWorkers(count, workers);
   RunRecord record;
   record.indexHits.assign(static_cast<std::size_t>(count), 0);
   record.perWorkerCount.assign(static_cast<std::size_t>(numWorkers), 0);
   record.perWorkerThreadIds.resize(static_cast<std::size_t>(numWorkers));
 
-  gmanParallelFor(
+  gman::parallelFor(
       count,
       [&](RtInt index, RtInt worker) {
         record.indexHits[static_cast<std::size_t>(index)]++;
@@ -92,13 +92,13 @@ void testSerialPath() {
   const std::thread::id callingThread = std::this_thread::get_id();
   RunRecord record = runRecording(100, 1);
 
-  check(gmanParallelWorkers(100, 1) == 1, "gmanParallelWorkers(100, 1) reports one worker");
+  check(gman::parallelWorkers(100, 1) == 1, "gman::parallelWorkers(100, 1) reports one worker");
   check(record.perWorkerThreadIds.size() == 1 && record.perWorkerThreadIds[0].size() == 1 &&
             *record.perWorkerThreadIds[0].begin() == callingThread,
         "workers=1 runs every body on the calling thread as worker 0");
 }
 
-// gmanParallelWorkers reports the count the call actually used; every
+// gman::parallelWorkers reports the count the call actually used; every
 // worker index stays below it; a worker's indices all ran on one thread;
 // per-worker counts sum to count.
 void testWorkerIndices() {
@@ -107,12 +107,12 @@ void testWorkerIndices() {
 
   for (RtInt count : counts) {
     for (RtInt workers : workerCounts) {
-      RtInt numWorkers = gmanParallelWorkers(count, workers);
+      RtInt numWorkers = gman::parallelWorkers(count, workers);
       RunRecord record = runRecording(count, workers);
 
       check(static_cast<RtInt>(record.perWorkerCount.size()) == numWorkers,
             "count=" + std::to_string(count) + " workers=" + std::to_string(workers) +
-                ": worker index stays below gmanParallelWorkers' report");
+                ": worker index stays below gman::parallelWorkers' report");
 
       int total = 0;
       bool oneThreadPerWorker = true;
@@ -136,7 +136,7 @@ void testWorkerIndices() {
 void testExceptionsStopTheCall() {
   const RtInt count = 400;
   const RtInt workers = 4;
-  const RtInt numWorkers = gmanParallelWorkers(count, workers);
+  const RtInt numWorkers = gman::parallelWorkers(count, workers);
 
   // Disjoint per-worker slots: each is only ever incremented by the one
   // thread that owns that worker index, so no lock is needed here either.
@@ -145,7 +145,7 @@ void testExceptionsStopTheCall() {
   bool rightType = false;
 
   try {
-    gmanParallelFor(
+    gman::parallelFor(
         count,
         [&](RtInt index, RtInt worker) {
           // index 0 throws before doing any work, so the stop request
@@ -194,8 +194,8 @@ void testExceptionsStopTheCall() {
 // count <= 0 calls nothing, at all.
 void testCountZeroOrNegative() {
   int calls = 0;
-  gmanParallelFor(0, [&](RtInt, RtInt) { ++calls; });
-  gmanParallelFor(-5, [&](RtInt, RtInt) { ++calls; });
+  gman::parallelFor(0, [&](RtInt, RtInt) { ++calls; });
+  gman::parallelFor(-5, [&](RtInt, RtInt) { ++calls; });
   check(calls == 0, "count <= 0 calls the body zero times");
 }
 
@@ -208,5 +208,5 @@ int main() {
   testExceptionsStopTheCall();
   testCountZeroOrNegative();
 
-  return checkSummary("gmanParallelFor holds its contract");
+  return checkSummary("gman::parallelFor holds its contract");
 }

@@ -52,7 +52,7 @@ std::string logFileNameFor(std::string_view ribPath) {
 int printVersion() {
   std::cout << "gman " << GMAN_PROJECT_VERSION << "\n";
   std::cout << "drivers:";
-  for (std::string const& name : gmanFileDrivers()) {
+  for (std::string const& name : gman::fileDrivers()) {
     std::cout << ' ' << name;
   }
   std::cout << "\n";

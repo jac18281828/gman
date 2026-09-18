@@ -63,7 +63,7 @@ RtVoid GMANRenderMan::pop() {
 // ******* ******* ******* RIB OUTPUT FUNCTIONS ******* ******* *******
 // ********************************************************************
 RtToken GMANRenderMan::Declare(const char* name, const char* declaration) {
-  GMANInlineParse ip;
+  gman::InlineParse ip;
   std::string a(name);
   std::string b(declaration);
 

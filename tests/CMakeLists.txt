@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 
-# A test that includes a header moved out of the published include/ tree
-# links this instead of adding libgman/ to its own include path.
+# A test that includes a libgman/ header links this instead of adding
+# libgman/ to its own include path.
 add_library(gman_internal_headers INTERFACE)
 target_include_directories(gman_internal_headers INTERFACE
   "${CMAKE_SOURCE_DIR}/libgman")
@@ -704,7 +704,7 @@ set_tests_properties(wideframe PROPERTIES
   TIMEOUT 30)
 
 # The texture cache (gmantexture.h), the texture() shadeop and
-# gmanMakeTexture: direct sampler and writer assertions, tests/rib/texture.rib
+# gman::makeTexture: direct sampler and writer assertions, tests/rib/texture.rib
 # (a paintedplastic Patch read back for its four quadrants' colours) and
 # tests/rib/maketexture_wrap.rib (the same, through a MakeTexture request).
 add_executable(gman_texture texture_test.cpp)
@@ -826,7 +826,7 @@ set_tests_properties(log PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# gmanParallelFor's contract: exactly once per index, the serial path at
+# gman::parallelFor's contract: exactly once per index, the serial path at
 # workers=1, worker indices and thread ownership, actual parallelism, and
 # an exception from one body stopping every worker before reaching the
 # calling thread.
@@ -852,6 +852,15 @@ add_test(NAME threadcontainment
           "${CMAKE_SOURCE_DIR}/gman"
           "${CMAKE_SOURCE_DIR}/gmansl")
 set_tests_properties(threadcontainment PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# The line is the directory: every class, struct, enum, free function and
+# typedef/alias a libgman/ header declares lives in namespace gman.
+add_executable(gman_internalnamespace internalnamespace_test.cpp)
+add_test(NAME internalnamespace
+  COMMAND gman_internalnamespace "${CMAKE_SOURCE_DIR}/libgman")
+set_tests_properties(internalnamespace PROPERTIES
   LABELS unit
   TIMEOUT 30)
 

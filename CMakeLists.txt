@@ -97,7 +97,7 @@ function(gman_add_file_driver name)
   set(GMAN_${upper}_FACTORY_DEFINITION
 "std::unique_ptr<GMANOutput> gmanMake${upper}Output(char const *path,
                                           int width, int height) {
-  return std::make_unique<GMANOutput${upper}>(path, width, height);
+  return std::make_unique<gman::Output${upper}>(path, width, height);
 }" PARENT_SCOPE)
   set(GMAN_${upper}_FACTORY_REF "&gmanMake${upper}Output" PARENT_SCOPE)
 
@@ -308,7 +308,7 @@ set_target_properties(gman_shinymetal PROPERTIES OUTPUT_NAME "shinymetal")
 add_executable(gman gman/gman.cpp)
 target_link_libraries(gman PRIVATE gman_core)
 
-# gman --version reports gmanFileDrivers(), the driver table's own private
+# gman --version reports gman::fileDrivers(), the driver table's own private
 # contract, and PROJECT_VERSION -- neither is part of gman_core's public API.
 target_include_directories(gman PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
 target_compile_definitions(gman PRIVATE

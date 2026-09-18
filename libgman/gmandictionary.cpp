@@ -181,7 +181,7 @@ GMANTokenId GMANDictionary::addToken(std::string n, GMANTokenEntry::TokenClass t
 //   getTokenId ("item")-> an error is thrown
 //   (except if item was previously defined with RiDeclare)
 GMANTokenId GMANDictionary::getTokenId(std::string n) {
-  GMANInlineParse ip;
+  gman::InlineParse ip;
   GMANError error(RIE_BADTOKEN, RIE_ERROR, "GMANDictionary: TOKEN_NOT_FOUND");
   GMANTokenId i, j = 0;
 

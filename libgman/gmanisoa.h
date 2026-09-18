@@ -29,7 +29,9 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-class GMANISO {
+namespace gman {
+
+class ISO {
   /* searchpath */
   std::string archive;
   std::string texture;
@@ -44,9 +46,11 @@ public:
   const std::string& getProceduralPath() const { return procedural; }
 };
 
-class GMANISA {
+class ISA {
 private:
 public:
-  GMANISA();
-  ~GMANISA();
+  ISA();
+  ~ISA();
 };
+
+} // namespace gman

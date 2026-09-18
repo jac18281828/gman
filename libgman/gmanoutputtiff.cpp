@@ -31,25 +31,26 @@
 #include "gmantiff.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANOutputTIFF
+ * RenderMan API gman::OutputTIFF
  *
  */
 
 // default constructor
-GMANOutputTIFF::GMANOutputTIFF(const char* path, int width, int height)
-    : GMANOutput(path, width, height, DefaultBGColor) {
+OutputTIFF::OutputTIFF(const char* path, int width, int height) : GMANOutput(path, width, height, DefaultBGColor) {
   // damn the torpedoes and the patents
   compression = LZW;
 };
 
 // default destructor
-GMANOutputTIFF::~GMANOutputTIFF() {};
+OutputTIFF::~OutputTIFF() {};
 
-RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
+RtVoid OutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
   const RtInt samplesperpixel = 4; // RGBA
 
-  GMANTIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, compression);
+  TIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, compression);
   if (!writer.isOpen()) {
     std::string errorMsg("Unable to open output file: ");
     errorMsg.append(outputName);
@@ -106,6 +107,8 @@ RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFl
 }
 
 // get/set the TIFF compression type
-RtVoid GMANOutputTIFF::setCompression(Compression c) { compression = c; }
+RtVoid OutputTIFF::setCompression(Compression c) { compression = c; }
 
-GMANOutputTIFF::Compression GMANOutputTIFF::getCompression(void) const { return compression; }
+OutputTIFF::Compression OutputTIFF::getCompression(void) const { return compression; }
+
+} // namespace gman

@@ -26,12 +26,14 @@
 #include "gmanvector4.h"
 #include "gmanvsorthographic.h"
 
-GMANVSOrthographic::GMANVSOrthographic(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s,
-                                       const GMANMatrix4& worldToCamera, RtFloat nearDist, RtFloat farDist)
+namespace gman {
+
+VSOrthographic::VSOrthographic(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s,
+                               const GMANMatrix4& worldToCamera, RtFloat nearDist, RtFloat farDist)
     : GMANViewingSystem(xr, yr, s, worldToCamera) {
   mtrx.prjOrtho(nearDist, farDist);
 }
-GMANPoint GMANVSOrthographic::project(GMANPoint const& p) {
+GMANPoint VSOrthographic::project(GMANPoint const& p) {
   GMANVector4 clip;
   clip.projTransform(p, mtrx.get());
   GMANPoint a;
@@ -43,7 +45,7 @@ GMANPoint GMANVSOrthographic::project(GMANPoint const& p) {
   a.setY(y);
   return a;
 }
-GMANRay GMANVSOrthographic::cameraRay(RtFloat x, RtFloat y) {
+GMANRay VSOrthographic::cameraRay(RtFloat x, RtFloat y) {
   rasterToScreen(x, y);
 
   // Every ray points down the view axis; the screen point sets the
@@ -54,9 +56,9 @@ GMANRay GMANVSOrthographic::cameraRay(RtFloat x, RtFloat y) {
 
 /*
  * return true if the face is visible from this perspective. See
- * GMANVSPerspective::visible for the RiSides/RiOrientation rationale.
+ * VSPerspective::visible for the RiSides/RiOrientation rationale.
  */
-bool GMANVSOrthographic::visible(const GMANFace* face) {
+bool VSOrthographic::visible(const GMANFace* face) {
   if (face->getSides() != 1) {
     return true;
   }
@@ -68,4 +70,6 @@ bool GMANVSOrthographic::visible(const GMANFace* face) {
   return facingCamera;
 }
 
-const RtMatrix& GMANVSOrthographic::getProjMatrix(RtVoid) const { return mtrx.get(); }
+const RtMatrix& VSOrthographic::getProjMatrix(RtVoid) const { return mtrx.get(); }
+
+} // namespace gman

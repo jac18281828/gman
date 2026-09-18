@@ -26,13 +26,15 @@
 #include "gmanvector4.h"
 #include "gmanvsperspective.h"
 
-GMANVSPerspective::GMANVSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s,
-                                     const GMANMatrix4& worldToCamera, RtFloat fov, RtFloat nearDist, RtFloat farDist)
+namespace gman {
+
+VSPerspective::VSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s,
+                             const GMANMatrix4& worldToCamera, RtFloat fov, RtFloat nearDist, RtFloat farDist)
     : GMANViewingSystem(xr, yr, s, worldToCamera) {
   mtrx.prjPersp(fov, nearDist, farDist);
 }
 
-GMANPoint GMANVSPerspective::project(GMANPoint const& p) {
+GMANPoint VSPerspective::project(GMANPoint const& p) {
   GMANVector4 clip;
   clip.projTransform(p, mtrx.get());
   GMANPoint a;
@@ -44,7 +46,7 @@ GMANPoint GMANVSPerspective::project(GMANPoint const& p) {
   a.setY(y);
   return a;
 }
-GMANRay GMANVSPerspective::cameraRay(RtFloat x, RtFloat y) {
+GMANRay VSPerspective::cameraRay(RtFloat x, RtFloat y) {
   rasterToScreen(x, y);
 
   // The eye sits at the camera-space origin; the screen point at z=1 sets
@@ -67,11 +69,11 @@ GMANRay GMANVSPerspective::cameraRay(RtFloat x, RtFloat y) {
  * which varies across the frame under perspective -- not the z axis. The
  * eye sits at the camera-space origin, so that vector is just the face's
  * own (unnormalized) position; comparing against a fixed +z axis is the
- * orthographic approximation GMANVSOrthographic::visible keeps
+ * orthographic approximation VSOrthographic::visible keeps
  * deliberately. The two agree on-axis and diverge only near the
  * silhouette.
  */
-bool GMANVSPerspective::visible(const GMANFace* face) {
+bool VSPerspective::visible(const GMANFace* face) {
   if (face->getSides() != 1) {
     return true;
   }
@@ -93,4 +95,6 @@ bool GMANVSPerspective::visible(const GMANFace* face) {
   return facingCamera;
 }
 
-const RtMatrix& GMANVSPerspective::getProjMatrix(RtVoid) const { return mtrx.get(); }
+const RtMatrix& VSPerspective::getProjMatrix(RtVoid) const { return mtrx.get(); }
+
+} // namespace gman

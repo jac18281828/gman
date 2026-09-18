@@ -27,22 +27,26 @@
 #include "gmanpolygon.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANPolygon
+ * RenderMan API gman::Polygon
  *
  */
 
 // default constructor
-GMANPolygon::GMANPolygon() : points() {};
+Polygon::Polygon() : points() {};
 
 // polygon of n points
-GMANPolygon::GMANPolygon(int n) : points(n) {};
+Polygon::Polygon(int n) : points(n) {};
 
 // default destructor
-GMANPolygon::~GMANPolygon() {};
+Polygon::~Polygon() {};
 
 // add a point to the polygon
-RtVoid GMANPolygon::addPoint(const GMANPoint& point) { points.push_back(point); }
+RtVoid Polygon::addPoint(const GMANPoint& point) { points.push_back(point); }
 
 // set a point a position n
-RtVoid GMANPolygon::setPoint(int n, const GMANPoint& point) { points[n] = point; }
+RtVoid Polygon::setPoint(int n, const GMANPoint& point) { points[n] = point; }
+
+} // namespace gman

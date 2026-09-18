@@ -31,21 +31,23 @@
 #include "gmanoutputpnm.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANOutputPNM
+ * RenderMan API gman::OutputPNM
  *
  */
 
 // default constructor
-GMANOutputPNM::GMANOutputPNM(const char* path, int width, int height) : GMANOutput(path, width, height) {};
+OutputPNM::OutputPNM(const char* path, int width, int height) : GMANOutput(path, width, height) {};
 
 // default destructor
-GMANOutputPNM::~GMANOutputPNM() {};
+OutputPNM::~OutputPNM() {};
 
 // Writes a binary P6 portable pixmap directly. This driver used to depend on
 // netpbm and its whole body was compiled out when libpnm was absent, which it
 // always was, so PNM output never produced a file.
-RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
+RtVoid OutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
 
   FILE* ppmFile = std::fopen(outputName.c_str(), "wb");
   if (!ppmFile) {
@@ -73,3 +75,5 @@ RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFlo
 
   std::fclose(ppmFile);
 }
+
+} // namespace gman

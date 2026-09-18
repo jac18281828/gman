@@ -34,19 +34,20 @@ extern "C" {
 #include "gmanoutputpng.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANOutputPNG
+ * RenderMan API gman::OutputPNG
  *
  */
 
 // default constructor
-GMANOutputPNG::GMANOutputPNG(const char* path, int width, int height)
-    : GMANOutput(path, width, height, DefaultBGColor) {};
+OutputPNG::OutputPNG(const char* path, int width, int height) : GMANOutput(path, width, height, DefaultBGColor) {};
 
 // default destructor
-GMANOutputPNG::~GMANOutputPNG() {};
+OutputPNG::~OutputPNG() {};
 
-RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma) {
+RtVoid OutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma) {
   // write a PNG file to 'fileName'
 
   // open jpeg output file for writing
@@ -237,3 +238,5 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat g
   png_destroy_write_struct(&png_ptr, &info_ptr);
   fclose(pngFile);
 }
+
+} // namespace gman

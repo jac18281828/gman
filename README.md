@@ -125,7 +125,7 @@ each:
 - **[ ] Displacement shading.** Wants micropolygons, which want REYES.
 - **[~] Many large textures, flat memory.** `texture()` reads a TIFF by
   name, honoring the wrap modes `MakeTexture` records in it, through the
-  in-memory cache (`gmanTextureCache()`), decoding each name once and
+  in-memory cache (`gman::textureCache()`), decoding each name once and
   keeping it for the run. The Reyes paper's own requirement is *many
   large* textures under *bounded* memory; this cache is unbounded, so it
   stays `[~]` until a paging or tiled scheme lands. `environment()` reads

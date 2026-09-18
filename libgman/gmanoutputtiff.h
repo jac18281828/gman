@@ -34,12 +34,14 @@
 #include "gmanoutput.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANOutputTIFF
+ * RenderMan API gman::OutputTIFF
  *
  */
 
-class GMANOutputTIFF : public GMANOutput {
+class OutputTIFF : public GMANOutput {
 public:
   // public types
   typedef enum { NONE, PACKBITS, LZW, CCITTRLE, CCITTFAX3, CCITTFAX4 } Compression;
@@ -48,9 +50,9 @@ private:
   Compression compression;
 
 public:
-  GMANOutputTIFF(const char* path, int width, int height); // default constructor
+  OutputTIFF(const char* path, int width, int height); // default constructor
 
-  ~GMANOutputTIFF(); // default destructor
+  ~OutputTIFF(); // default destructor
 
   virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
 
@@ -59,3 +61,5 @@ public:
 
   Compression getCompression(void) const;
 };
+
+} // namespace gman

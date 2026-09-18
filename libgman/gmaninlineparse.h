@@ -34,7 +34,9 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-class GMANInlineParse {
+namespace gman {
+
+class InlineParse {
 private:
   RtInt number_of_words;
   std::string word[7];
@@ -65,3 +67,5 @@ public:
   RtInt getQuantity() { return size; }
   std::string getIdentifier() { return identifier; }
 };
+
+} // namespace gman

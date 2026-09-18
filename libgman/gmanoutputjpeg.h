@@ -34,19 +34,21 @@
 #include "gmanoutput.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANOutputJPEG
+ * RenderMan API gman::OutputJPEG
  *
  */
 
-class GMANOutputJPEG : public GMANOutput {
+class OutputJPEG : public GMANOutput {
 private:
   int quality;
 
 public:
-  GMANOutputJPEG(const char* path, int width, int height); // default constructor
+  OutputJPEG(const char* path, int width, int height); // default constructor
 
-  ~GMANOutputJPEG(); // default destructor
+  ~OutputJPEG(); // default destructor
 
   /* set the jpeg quality */
   RtVoid setQuality(int q);
@@ -56,3 +58,5 @@ public:
 
   virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
 };
+
+} // namespace gman

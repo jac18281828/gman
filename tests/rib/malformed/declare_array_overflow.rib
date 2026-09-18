@@ -1,5 +1,5 @@
 # A Declare array-size digit string that overflows even `long`
-# (GMANInlineParse::is_int must reject it, not saturate and accept a
+# (gman::InlineParse::is_int must reject it, not saturate and accept a
 # garbage quantity that later sizes a `new RtFloat[]` in
 # GMANParameterList's constructor). gman is expected to fail cleanly on
 # the Declare itself, not crash sizing the Surface parameter that follows.

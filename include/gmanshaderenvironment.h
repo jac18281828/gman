@@ -39,11 +39,6 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-// Forward-declared, not included: the noise family below is declared
-// here and defined in gmanshaderenvironment.cpp, so this header needs
-// only GMANNoise's name, not gmannoise.h's own includes and members.
-class GMANNoise;
-
 /*
  * The interface a surface shader is written against -- and the interface
  * a future shading-language VM would target, since a C++ shader and an
@@ -109,10 +104,10 @@ struct GMAN_EXPORT GMANSurfaceEnv {
 
   // ---- texture() (gmantexture.cpp), defined in
   // gmanshaderenvironment.cpp ----
-  // Declared here and defined there for the same reason as the noise
-  // family above: this header is included by every translation unit that
-  // shades, and gmantexture.h's own decoder must not follow it in.
-  // Forwards to gmanTextureCache()'s three-argument sample, which applies
+  // Declared here and defined there because this header is included by
+  // every translation unit that shades, and gmantexture.h's own decoder
+  // must not follow it in.
+  // Forwards to gman::textureCache()'s three-argument sample, which applies
   // the wrap modes RiMakeTexture recorded in the file -- clamp when the
   // file carries none.
   GMANColor texture(const std::string& name, RtFloat s, RtFloat t) const;

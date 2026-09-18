@@ -36,7 +36,7 @@
 // then makes that row the image's top row on read-back, matching
 // gmanoutputtiff.cpp's own write order. A non-empty swrap also sets
 // TIFFTAG_PIXAR_WRAPMODES to "<swrap>,<twrap>" -- the tag RiMakeTexture
-// writes and GMANTexture reads back; the default leaves a plain, untagged
+// writes and gman::Texture reads back; the default leaves a plain, untagged
 // checker.
 inline bool writeCheckerTexture(const std::string& path, const std::string& swrap = "", const std::string& twrap = "") {
   TIFF* tif = TIFFOpen(path.c_str(), "w");

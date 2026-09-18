@@ -24,7 +24,7 @@
  * extension dispatch (gmanrendermanimpl.cpp) had branches for
  * `tif`/`tiff`, `png` and `pnm` and none for `jpg`/`jpeg`, so `newOutput`
  * stayed null and was released into `output`, which RiWorldEnd then
- * dereferences unconditionally. GMANOutputJPEG already existed and
+ * dereferences unconditionally. gman::OutputJPEG already existed and
  * libjpeg already linked -- the branch was simply missing.
  *
  * Added the jpg/jpeg branch, and an else branch for any other unmatched

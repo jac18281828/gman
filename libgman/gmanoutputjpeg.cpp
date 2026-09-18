@@ -34,8 +34,10 @@ extern "C" {
 #include "gmanoutputjpeg.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANOutputJPEG
+ * RenderMan API gman::OutputJPEG
  *
  */
 
@@ -46,13 +48,13 @@ extern "C" {
 // ever actually instantiated via RIB, which happened for the first time
 // once RiWorldBegin gained its jpg/jpeg dispatch branch. 75 matches
 // libjpeg's own conventional default quality.
-GMANOutputJPEG::GMANOutputJPEG(const char* path, int width, int height)
+OutputJPEG::OutputJPEG(const char* path, int width, int height)
     : GMANOutput(path, width, height, DefaultBGColor), quality(75) {};
 
 // default destructor
-GMANOutputJPEG::~GMANOutputJPEG() {};
+OutputJPEG::~OutputJPEG() {};
 
-RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
+RtVoid OutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
   FILE* jpegFile = fopen(outputName.c_str(), "w");
   if (jpegFile) {
     struct jpeg_compress_struct cinfo; // jpeg compression params
@@ -129,6 +131,8 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFl
   }
 }
 
-RtVoid GMANOutputJPEG::setQuality(int q) { quality = q; }
+RtVoid OutputJPEG::setQuality(int q) { quality = q; }
 
-int GMANOutputJPEG::getQuality(RtVoid) { return quality; }
+int OutputJPEG::getQuality(RtVoid) { return quality; }
+
+} // namespace gman

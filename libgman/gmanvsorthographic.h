@@ -27,14 +27,16 @@
 #include "gmanmatrix4.h"
 #include "gmanviewingsystem.h"
 
-class GMANVSOrthographic : public GMANViewingSystem {
+namespace gman {
+
+class VSOrthographic : public GMANViewingSystem {
 private:
   GMANMatrix4 mtrx;
 
 public:
-  GMANVSOrthographic(RtInt xres, RtInt yres, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
-                     RtFloat nearDist, RtFloat farDist);
-  ~GMANVSOrthographic() {}
+  VSOrthographic(RtInt xres, RtInt yres, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
+                 RtFloat nearDist, RtFloat farDist);
+  ~VSOrthographic() {}
 
   virtual GMANPoint project(GMANPoint const& p);
   virtual GMANRay cameraRay(RtFloat x, RtFloat y);
@@ -43,3 +45,5 @@ public:
 
   virtual const RtMatrix& getProjMatrix(RtVoid) const;
 };
+
+} // namespace gman

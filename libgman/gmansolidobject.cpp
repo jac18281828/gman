@@ -27,13 +27,17 @@
 #include "gmansolidobject.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANSolidObject
+ * RenderMan API gman::SolidObject
  *
  */
 
 // default constructor
-GMANSolidObject::GMANSolidObject() : GMANObject() {};
+SolidObject::SolidObject() : GMANObject() {};
 
 // default destructor
-GMANSolidObject::~GMANSolidObject() {};
+SolidObject::~SolidObject() {};
+
+} // namespace gman

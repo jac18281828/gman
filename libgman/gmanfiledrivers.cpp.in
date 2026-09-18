@@ -58,12 +58,12 @@ struct GMANFileDriverEntry {
 
 std::unique_ptr<GMANOutput> gmanMakeTIFFOutput(char const *path, int width,
                                                 int height) {
-  return std::make_unique<GMANOutputTIFF>(path, width, height);
+  return std::make_unique<gman::OutputTIFF>(path, width, height);
 }
 
 std::unique_ptr<GMANOutput> gmanMakePNMOutput(char const *path, int width,
                                                int height) {
-  return std::make_unique<GMANOutputPNM>(path, width, height);
+  return std::make_unique<gman::OutputPNM>(path, width, height);
 }
 
 @GMAN_PNG_FACTORY_DEFINITION@
@@ -82,9 +82,11 @@ const std::vector<GMANFileDriverEntry> kFileDrivers = {
 
 } // namespace
 
-std::unique_ptr<GMANOutput> gmanMakeFileOutput(std::string const &extension,
-                                                char const *path, int width,
-                                                int height) {
+namespace gman {
+
+std::unique_ptr<GMANOutput> makeFileOutput(std::string const &extension,
+                                            char const *path, int width,
+                                            int height) {
   for (auto const &entry : kFileDrivers) {
     for (auto const &candidate : entry.extensions) {
       if (candidate != extension) {
@@ -103,7 +105,7 @@ std::unique_ptr<GMANOutput> gmanMakeFileOutput(std::string const &extension,
   throw(GMANError(RIE_BADFILE, RIE_ERROR, errorMsg.c_str()));
 }
 
-std::vector<std::string> gmanFileDrivers() {
+std::vector<std::string> fileDrivers() {
   std::vector<std::string> names;
   for (auto const &entry : kFileDrivers) {
     if (entry.factory != nullptr) {
@@ -112,3 +114,5 @@ std::vector<std::string> gmanFileDrivers() {
   }
   return names;
 }
+
+} // namespace gman

@@ -26,7 +26,9 @@
 
 #include "gmaninlineparse.h"
 
-RtVoid GMANInlineParse::check_syntax() {
+namespace gman {
+
+RtVoid InlineParse::check_syntax() {
   // number_of_words =0 ---> ERROR
   // number_of_words =1 ---> not an inline def
   // number_of_words =2 ---> type id
@@ -97,7 +99,7 @@ RtVoid GMANInlineParse::check_syntax() {
   }
 }
 
-RtVoid GMANInlineParse::parse(std::string str) {
+RtVoid InlineParse::parse(std::string str) {
   GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANInlineParse: BAD_SYNTAX");
   RtInt j;
   size_t sp;
@@ -160,13 +162,13 @@ RtVoid GMANInlineParse::parse(std::string str) {
   check_syntax();
 }
 
-bool GMANInlineParse::is_class(std::string str) {
+bool InlineParse::is_class(std::string str) {
   if ((str == "constant") || (str == "uniform") || (str == "varying") || (str == "vertex") || (str == "facevarying"))
     return true;
   return false;
 }
 
-bool GMANInlineParse::is_type(std::string str) {
+bool InlineParse::is_type(std::string str) {
   if ((str == "float") || (str == "point") || (str == "vector") || (str == "normal") || (str == "color") ||
       (str == "string") || (str == "matrix") || (str == "hpoint") || (str == "integer"))
     return true;
@@ -174,7 +176,7 @@ bool GMANInlineParse::is_type(std::string str) {
 }
 
 // check if this int is >0 too
-bool GMANInlineParse::is_int(std::string str) {
+bool InlineParse::is_int(std::string str) {
   char* end;
   errno = 0;
   const long j = strtol(str.c_str(), &end, 10);
@@ -183,7 +185,7 @@ bool GMANInlineParse::is_int(std::string str) {
   return true;
 }
 
-GMANTokenEntry::TokenClass GMANInlineParse::get_class(std::string str) {
+GMANTokenEntry::TokenClass InlineParse::get_class(std::string str) {
   if (str == "constant")
     return GMANTokenEntry::CONSTANT;
   if (str == "uniform")
@@ -197,7 +199,7 @@ GMANTokenEntry::TokenClass GMANInlineParse::get_class(std::string str) {
   return GMANTokenEntry::VERTEX;
 }
 
-GMANTokenEntry::TokenType GMANInlineParse::get_type(std::string str) {
+GMANTokenEntry::TokenType InlineParse::get_type(std::string str) {
   if (str == "float")
     return GMANTokenEntry::FLOAT;
   if (str == "point")
@@ -218,10 +220,12 @@ GMANTokenEntry::TokenType GMANInlineParse::get_type(std::string str) {
   return GMANTokenEntry::INTEGER;
 }
 
-int GMANInlineParse::get_size(std::string str) { return static_cast<int>(strtol(str.c_str(), nullptr, 10)); }
+int InlineParse::get_size(std::string str) { return static_cast<int>(strtol(str.c_str(), nullptr, 10)); }
 
-RtVoid GMANInlineParse::lc(std::string& str) {
+RtVoid InlineParse::lc(std::string& str) {
   for (unsigned int i = 0; i < str.length(); i++) {
     str[i] = tolower(str[i]);
   }
 }
+
+} // namespace gman
