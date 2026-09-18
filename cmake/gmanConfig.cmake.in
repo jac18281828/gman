@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# The gman CMake package. A consumer writes find_package(gman CONFIG
+# REQUIRED) and links gman::gman_core or gman::gman_rib.
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# gman_core's PUBLIC link dependencies; PRIVATE ones (libtiff, libpng,
+# libjpeg) stay internal to the shared library and need no find_dependency.
+find_dependency(ZLIB)
+find_dependency(Threads)
+
+include("${CMAKE_CURRENT_LIST_DIR}/gmanTargets.cmake")
+
+check_required_components(gman)

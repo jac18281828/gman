@@ -55,6 +55,11 @@ To install into a prefix:
 cmake --install build --prefix /usr/local
 ```
 
+The installed prefix carries `bin/gman` and a CMake package. A program
+links gman with `find_package(gman CONFIG REQUIRED)` and
+`target_link_libraries(app PRIVATE gman::gman_core)`, and includes
+`<gman/ri.h>`.
+
 ## Development container
 
 A devcontainer carrying the same toolchain CI uses -- both gcc and clang, the

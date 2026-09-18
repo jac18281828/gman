@@ -926,3 +926,33 @@ add_test(NAME visibility
 set_tests_properties(visibility PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# N4: proves both halves of an installed gman. bin/gman renders every
+# shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
+# fresh cmake --install prefix, and a second, unrelated CMake project finds
+# it with find_package(gman), links gman::gman_core, compiles <gman/ri.h>
+# and runs. See tests/install_test.cmake for the three steps and
+# tests/install/ for the consumer project it builds.
+#
+# No ENVIRONMENT property: see tests/install_test.cmake's step 2 for why.
+add_test(NAME install
+  COMMAND "${CMAKE_COMMAND}"
+          -D "GMAN_BUILD_DIR=${CMAKE_BINARY_DIR}"
+          -D "GMAN_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
+          -D "GMAN_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/install-run/prefix"
+          -D "GMAN_RENDER_DIR=${CMAKE_CURRENT_BINARY_DIR}/install-run/render"
+          -D "GMAN_CONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/install"
+          -D "GMAN_CONSUMER_BUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}/install-run/consumer-build"
+          -D "GMAN_BINDIR=${CMAKE_INSTALL_BINDIR}"
+          -D "GMAN_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+          -D "GMAN_VERSION=${PROJECT_VERSION}"
+          -D "GMAN_GENERATOR=${CMAKE_GENERATOR}"
+          -D "GMAN_C_COMPILER=${CMAKE_C_COMPILER}"
+          -D "GMAN_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+          -D "GMAN_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+          -D "GMAN_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
+          -D "GMAN_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+          -P "${CMAKE_CURRENT_SOURCE_DIR}/install_test.cmake")
+set_tests_properties(install PROPERTIES
+  LABELS render
+  TIMEOUT 300)

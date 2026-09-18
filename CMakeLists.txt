@@ -22,6 +22,7 @@ include(GenerateExportHeader)
 include(GNUInstallDirs)
 include(CTest)
 include(CheckCXXSourceCompiles)
+include(CMakePackageConfigHelpers)
 
 # A compiler that accepts -std=c++20 with an older standard library fails
 # deep in a template error instead of at configure time. Check both features
@@ -191,9 +192,19 @@ generate_export_header(gman_core
   BASE_NAME GMAN
   EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/gman/export.h")
 
+# The installed headers quote-include "gman/export.h" and each other, so an
+# install-interface consumer needs only the include root, not the two
+# source/binary directories the build tree carries; a bare "ri.h" on every
+# consumer's path would collide with other RenderMan SDKs' own.
 target_include_directories(gman_core PUBLIC
-  "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_BINARY_DIR}/include")
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+
+# CMAKE_CXX_STANDARD is a directory variable and never reaches an exported
+# target; installed headers such as gmanlog.h use <format>, so a consumer on
+# a compiler defaulting to an older standard must inherit this floor.
+target_compile_features(gman_core PUBLIC cxx_std_20)
 
 # The generated driver table (build tree, not libgman/) quote-includes
 # gmanfiledrivers.h and the driver headers as if it lived beside them.
@@ -315,17 +326,48 @@ set_target_properties(gman gman_core gman_rib PROPERTIES
   BUILD_RPATH "${CMAKE_BINARY_DIR}"
   INSTALL_RPATH "${GMAN_INSTALL_RPATH}")
 
-add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic)
+add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal)
 
 # ---------------------------------------------------------------------------
 # Install
 # ---------------------------------------------------------------------------
 
-install(TARGETS gman gman_core gman_rib gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic
+# gman_core and gman_rib alone join the export set: they are what a
+# programmer links, and nothing links against the executable or the plugins.
+install(TARGETS gman_core gman_rib
+  EXPORT gmanTargets
+  RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+  LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
   FILES_MATCHING PATTERN "*.h")
+# generate_export_header writes export.h into the build tree; the source
+# tree it sits beside above never carries it.
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/gman/export.h"
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman")
+
+install(EXPORT gmanTargets
+  FILE gmanTargets.cmake
+  NAMESPACE gman::
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gman")
+
+# Before 1.0 a minor release breaks ABI: the symbol-visibility change in this
+# arc's other units is one.
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/gmanConfigVersion.cmake"
+  COMPATIBILITY SameMinorVersion)
+
+configure_package_config_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/gmanConfig.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/gmanConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gman")
+
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/gmanConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/gmanConfigVersion.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/gman")
 
 # ---------------------------------------------------------------------------
 # Tests
