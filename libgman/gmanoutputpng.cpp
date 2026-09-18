@@ -202,11 +202,8 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat g
 
         for (int x = 0; x < xres; x++) {
 
-          GMANColor pixel = getPixel(x, y);
-          gmanGammaCorrect(pixel, gain, gamma);
-
           GMANColorRGB color;
-          color = pixel;
+          color = gmanGammaCorrected(getPixel(x, y), gain, gamma);
 
           // mask off appropriate bits for image generation
           if (quantizer)

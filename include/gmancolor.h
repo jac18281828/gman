@@ -75,20 +75,9 @@ public:
 
   GMANColorBase(SampleType sval) { r = g = b = sval; };
 
-  // default destructor
-  ~GMANColorBase() {};
-
-  // copy operator
-  GMANColorBase& operator=(const GMANColorBase& color) {
-    r = color.r;
-    g = color.g;
-    b = color.b;
-
-    return *this;
-  };
-
-  // copy constructor
-  GMANColorBase(const GMANColorBase& color) { *this = color; }
+  // Copy, move and destruction are the implicit ones. Spelling them out cost
+  // the class its triviality, and a class non-trivial for the purposes of
+  // calls returns through a hidden pointer instead of in registers.
 
   // less comparison for use by MSVC templates
   bool operator<(const GMANColorBase& c) const { return ((r < c.r) && (g < c.g) && (b < c.b)); }
