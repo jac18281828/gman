@@ -833,7 +833,7 @@ GMANPoint GMANSphere::getLocation(double u, double v) {
   float phimin = (float)asin(GMANClamp<double>(zmin / radius, -1.0, 1.0));
   float phimax = (float)asin(GMANClamp<double>(zmax / radius, -1.0, 1.0));
 
-  float theta = (u * (thetamax / 360.0) - 0.5) * PI * 2.0;
+  float theta = u * (thetamax / 360.0) * 2.0 * PI;
   float phi = phimin + v * (phimax - phimin);
 
   float cosPhi = cos(phi);
