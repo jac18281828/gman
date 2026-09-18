@@ -30,6 +30,7 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <type_traits>
 
 #include "gmanlog.h"
 #include "gmanmath.h"
@@ -47,6 +48,11 @@
 template <class SampleType> class GMAN_EXPORT GMANColorBase {
 public:
   typedef SampleType ColorSampleType;
+
+  // A transfer curve -- gamma, and the clamping the drivers narrow through --
+  // is defined over normalized floating-point samples. A byte instantiation
+  // answers false, and the code that needs the guarantee asserts on this.
+  static constexpr bool hasFloatingPointSamples = std::is_floating_point_v<SampleType>;
 
 protected:
   /* Value-initialized: the default constructor below left these indeterminate,
