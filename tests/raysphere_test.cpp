@@ -152,6 +152,93 @@ void testPartialSphereClips() {
 // Check 8, the plugin links, is proven by the $GMAN_BUILD_RAYTRACER gate
 // build in CMakeLists.txt, not by anything this executable can assert.
 
+// ---- review round 1: normal.normalize() pins on a non-unit sphere ----
+// Every sphere above is radius 1, where the raw radial vector is already
+// unit length and dropping normalize() would change nothing. A radius-2
+// sphere makes the call observable.
+void testNormalIsNormalized() {
+  GMANRaySphere sphere(2.0, -2.0, 2.0, 360.0, GMANParameterList());
+  GMANRay ray(GMANPoint(0.0, 0.0, -10.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit hit;
+
+  bool const hitFound = sphere.intersect(ray, hit);
+  check(hitFound, "normalized normal: a ray hits the radius-2 sphere");
+  RtFloat const normalLength = (RtFloat)std::sqrt(hit.normal.dot(hit.normal));
+  check(near(normalLength, 1.0), "normalized normal: |n| == 1 on a radius-2 sphere");
+}
+
+// ---- review round 1: hit.u's thetamax scaling pins on a partial wedge ----
+// The full-sphere round trip above runs only at thetamax 360, where
+// theta/thetamaxRad and theta/(2*PI) agree, and the wedge check runs only
+// a miss, so u is never read there. A thetamax-90 sphere, hit by the same
+// off-axis ray, survives the wedge and rounds trip through a scaling that
+// depends on thetamax.
+void testPartialThetamaxRoundTrip() {
+  GMANRaySphere sphere(1.0, -1.0, 1.0, 90.0, GMANParameterList());
+  GMANRay ray = offAxisRayTowardOrigin();
+  GMANHit hit;
+
+  bool const hitFound = sphere.intersect(ray, hit);
+  check(hitFound, "partial thetamax: the off-axis ray survives a 90-degree wedge");
+
+  GMANPoint const roundTrip = sphere.getLocation(hit.u, hit.v);
+  check(near(roundTrip.getX(), hit.point.getX()) && near(roundTrip.getY(), hit.point.getY()) &&
+            near(roundTrip.getZ(), hit.point.getZ()),
+        "partial thetamax: getLocation(hit.u, hit.v) reproduces hit.point");
+  check(hit.u >= 0.0 && hit.u <= 1.0, "partial thetamax: 0 <= u <= 1");
+  check(hit.v >= 0.0 && hit.v <= 1.0, "partial thetamax: 0 <= v <= 1");
+}
+
+// ---- review round 1: a == d.dot(d) pins on a zero-length direction ----
+// Every ray above normalizes to a == 1, so hardcoding a == 1.0 changes
+// nothing there. GMANVector::normalize leaves a sub-RI_EPSILON vector
+// unchanged, so a zero-length direction survives GMANRay's constructor
+// and must reach GMANQuadraticRoots' a == 0 return rather than a spurious
+// a == 1 solve.
+void testZeroLengthDirectionMisses() {
+  GMANRaySphere sphere = fullSphere();
+  GMANRay zeroRay(GMANPoint(0.0, 0.0, 0.0), GMANVector(0.0, 0.0, 0.0));
+  GMANHit hit;
+
+  check(!sphere.intersect(zeroRay, hit), "zero direction: a direction-less ray fired from inside the sphere misses");
+}
+
+// ---- review round 1: degenerate spheres miss instead of filling NaN ----
+// zmin == zmax collapses phimax - phimin to zero, thetamax == 0 collapses
+// thetamaxRad to zero, and radius == 0 collapses the z/radius divisions:
+// each is a real division by zero reachable from four floats a RIB Sphere
+// request passes straight through, not a theoretical one.
+void testDegenerateSpheresMiss() {
+  GMANPoint const origin(0.0, 0.0, -5.0);
+  GMANVector const direction(0.0, 0.0, 1.0);
+  GMANHit hit;
+
+  GMANRaySphere nullBand(1.0, 0.0, 0.0, 360.0, GMANParameterList());
+  check(!nullBand.intersect(GMANRay(origin, direction), hit), "degenerate: zmin == zmax misses");
+
+  GMANRaySphere nullWedge(1.0, -1.0, 1.0, 0.0, GMANParameterList());
+  check(!nullWedge.intersect(GMANRay(origin, direction), hit), "degenerate: thetamax == 0 misses");
+
+  GMANRaySphere nullRadius(0.0, -1.0, 1.0, 360.0, GMANParameterList());
+  check(!nullRadius.intersect(GMANRay(origin, direction), hit), "degenerate: radius == 0 misses");
+}
+
+// ---- review round 1: a negative thetamax sweeps its positive twin's span ----
+// theta is always in [0, 2*PI), so comparing it against a raw negative
+// thetamaxRad rejected every root. An equatorial +x ray, at theta == 0,
+// sits on the boundary shared by thetamax 90 and thetamax -90 alike.
+void testNegativeThetamaxWedge() {
+  GMANRaySphere wedge(1.0, -1.0, 1.0, -90.0, GMANParameterList());
+  GMANRay ray(GMANPoint(5.0, 0.0, 0.0), GMANVector(-1.0, 0.0, 0.0));
+  GMANHit hit;
+
+  bool const hitFound = wedge.intersect(ray, hit);
+  check(hitFound, "negative thetamax: an equatorial +x ray hits where thetamax 360 hits");
+  check(near(hit.t, 4.0), "negative thetamax: t == 4");
+  check(near(hit.point.getX(), 1.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
+        "negative thetamax: point == (1, 0, 0)");
+}
+
 } // namespace
 
 int main() {
@@ -160,6 +247,11 @@ int main() {
   testIntervalRejectsAndFallsThrough();
   testTangentInsideAndBehind();
   testPartialSphereClips();
+  testNormalIsNormalized();
+  testPartialThetamaxRoundTrip();
+  testZeroLengthDirectionMisses();
+  testDegenerateSpheresMiss();
+  testNegativeThetamaxWedge();
 
   return checkSummary("GMANRaySphere::intersect hits, misses and clips correctly");
 }

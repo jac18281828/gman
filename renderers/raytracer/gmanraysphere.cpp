@@ -28,6 +28,12 @@
 #include "gmanvector.h"
 
 bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
+  // A null z-band, a null wedge or a zero radius leaves no surface to hit;
+  // without this guard, phi's z/radius division and u's theta/thetamaxRad
+  // division below fill the hit with NaN instead of reporting a miss.
+  if (zmin == zmax || thetamax == 0.0 || radius == 0.0)
+    return false;
+
   const GMANVector& direction = ray.getDirection();
   GMANPoint centre(0, 0, 0);
   GMANVector deltaP(centre, ray.getOrigin()); // O - C
@@ -44,7 +50,9 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
   RtFloat roots[2] = {t0, t1};
   RtFloat phimin = (RtFloat)asin(GMANClamp<double>(zmin / radius, -1.0, 1.0));
   RtFloat phimax = (RtFloat)asin(GMANClamp<double>(zmax / radius, -1.0, 1.0));
-  RtFloat thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
+  // A negative thetamax sweeps the same angular width as its positive
+  // twin; compare theta -- always in [0, 2*PI) -- against the magnitude.
+  RtFloat thetamaxRad = (RtFloat)(fabs(thetamax) / 360.0 * 2.0 * PI);
 
   // Test the near root first and fall through to the far one rather than
   // choosing a root and then validating it: a root can fail on the ray's
