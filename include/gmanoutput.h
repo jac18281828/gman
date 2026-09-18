@@ -60,8 +60,6 @@ protected:
 
   GMANQuantize* quantizer;
 
-  GMANGammaCorrect gammaCorrect;
-
 public:
   GMANOutput();
   ; // default constructor
@@ -74,9 +72,6 @@ public:
   GMANOutput(const char* name, int width, int height, const GMANColor& background);
 
   virtual ~GMANOutput(); // default destructor
-
-  // set the output device exposure control
-  RtVoid setExposure(RtFloat gain, RtFloat gamma) { gammaCorrect.setExposure(gain, gamma); }
 
   // set the output name
   virtual RtVoid setName(const char* name) { outputName = name; };

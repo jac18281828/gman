@@ -47,8 +47,6 @@ GMANOutputPNG::GMANOutputPNG(const char* path, int width, int height)
 GMANOutputPNG::~GMANOutputPNG() {};
 
 RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma) {
-  gammaCorrect.setExposure(gain, gamma);
-
   // write a PNG file to 'fileName'
 
   // open jpeg output file for writing
@@ -204,11 +202,11 @@ RtVoid GMANOutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat g
 
         for (int x = 0; x < xres; x++) {
 
-          GMANColorRGB color;
-          color = getPixel(x, y);
+          GMANColor pixel = getPixel(x, y);
+          gmanGammaCorrect(pixel, gain, gamma);
 
-          // color correct it
-          gammaCorrect.correct(color);
+          GMANColorRGB color;
+          color = pixel;
 
           // mask off appropriate bits for image generation
           if (quantizer)

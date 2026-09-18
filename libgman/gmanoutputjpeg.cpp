@@ -53,7 +53,6 @@ GMANOutputJPEG::GMANOutputJPEG(const char* path, int width, int height)
 GMANOutputJPEG::~GMANOutputJPEG() {};
 
 RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
-  gammaCorrect.setExposure(gain, gamma);
   FILE* jpegFile = fopen(outputName.c_str(), "w");
   if (jpegFile) {
     struct jpeg_compress_struct cinfo; // jpeg compression params
@@ -94,13 +93,12 @@ RtVoid GMANOutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFl
       for (int y = 0; y < yres; y++) {
         int colOff = 0;
         for (int x = 0; x < xres; x++) {
-          GMANColorRGB color;
-
           // get a pixel
-          color = getPixel(x, y);
+          GMANColor pixel = getPixel(x, y);
+          gmanGammaCorrect(pixel, gain, gamma);
 
-          // color correct it
-          gammaCorrect.correct(color);
+          GMANColorRGB color;
+          color = pixel;
 
           if (quantizer) {
             color = quantizer->doColor(color);

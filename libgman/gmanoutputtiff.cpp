@@ -47,8 +47,6 @@ GMANOutputTIFF::GMANOutputTIFF(const char* path, int width, int height)
 GMANOutputTIFF::~GMANOutputTIFF() {};
 
 RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
-  gammaCorrect.setExposure(gain, gamma);
-
   const RtInt samplesperpixel = 4; // RGBA
 
   GMANTIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, compression);
@@ -78,11 +76,11 @@ RtVoid GMANOutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFl
   for (int y = 0; y < yres; y++) {
     int colOff = 0, rowOff = y;
     for (int x = 0; x < xres; x++) {
-      GMANColorRGB color;
-      color = getPixel(x, y);
+      GMANColor pixel = getPixel(x, y);
+      gmanGammaCorrect(pixel, gain, gamma);
 
-      // color correct it
-      gammaCorrect.correct(color);
+      GMANColorRGB color;
+      color = pixel;
 
       if (quantizer)
         quantizer->doColor(color);

@@ -26,93 +26,24 @@
 #ifndef __GMAN_GAMMA_H
 #define __GMAN_GAMMA_H 1
 
-#include <math.h>
+#include <cmath>
 
 #include "gmancolor.h"
 #include "gmantypes.h"
 #include "ri.h"
 
-// gamma correction class
-class GMAN_EXPORT GMANGammaCorrect {
-public:
-  static const RtFloat DEFAULT_GAMMA;
-  static const RtFloat DEFAULT_GAIN;
-
-private:
-  static const int G_Domain;
-  static const int G_Range;
-
-  // gamma value lookup table
-  static GMANByte GammaTable[256];
-
-  RtFloat gamma; // gamma
-  RtFloat gain;  // exposure gain
-
-  RtVoid initTable() {
-    int i; // counter
-
-    // pre calculate gamma correction lookup table entries
-    for (i = 0; i <= G_Domain; i++) {
-      GammaTable[i] = (GMANByte)((RtFloat)G_Range * pow((RtFloat)i * gain / (RtFloat)G_Domain, 1.0 / gamma));
-    }
-
-    // future gamma correction with this object will only
-    // require a lookup in gamma table.
-  };
-
-public:
-  /*
-   * Default Constructor with required gamma correction value.
-   *
-   * \param g Gamma value used for correction.
-   *
-   */
-  GMANGammaCorrect(RtFloat gainVal = DEFAULT_GAIN, RtFloat gammaVal = DEFAULT_GAMMA) {
-    setExposure(gainVal, gammaVal);
-  };
-
-  /*
-   * Return the current gamma value used in this object
-   *
-   * \retval RtFloat Gamma Value.
-   */
-  RtFloat getGamma() { return gamma; };
-
-  /*
-   * Correct the color objects gamma values.
-   *
-   * param color The color object to be corrected.
-   *
-   */
-  RtVoid correct(GMANColorRGB& color) {
-    // lookup each color value in turn, and
-    // set that value here.
-    color.setRed(GammaTable[color.getRed()]);
-    color.setGreen(GammaTable[color.getGreen()]);
-    color.setBlue(GammaTable[color.getBlue()]);
-  };
-
-  /*
-   * Correct the color objects gamma value.
-   */
-  RtVoid correct(GMANColor& color) {
-
-    color.setRed(pow(gain * color.getRed(), 1.0 / gamma));
-    color.setGreen(pow(gain * color.getGreen(), 1.0 / gamma));
-    color.setBlue(pow(gain * color.getBlue(), 1.0 / gamma));
+// Corrects color in place: channel' = pow(gain * channel, 1 / gamma), per
+// channel. Runs on the float pixel, ahead of narrowing to bytes, so a
+// channel below 1/255 can still gamma-lift into a nonzero byte.
+inline RtVoid gmanGammaCorrect(GMANColor& color, RtFloat gain, RtFloat gamma) {
+  if (gain == 1 && gamma == 1) {
+    return;
   }
 
-  /*
-   * Set the current gamma value used
-   * for correction.
-   *
-   * \param g The gamma value to use for gamma correction.
-   */
-  RtVoid setExposure(RtFloat gainVal, RtFloat gammaVal) {
-    gain = gainVal;
-    gamma = gammaVal;
-    initTable();
-  };
-};
+  const RtFloat exponent = 1 / gamma;
+  color.setRed(std::pow(gain * color.getRed(), exponent));
+  color.setGreen(std::pow(gain * color.getGreen(), exponent));
+  color.setBlue(std::pow(gain * color.getBlue(), exponent));
+}
 
 #endif

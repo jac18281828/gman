@@ -47,8 +47,6 @@ GMANOutputPNM::~GMANOutputPNM() {};
 // always was, so PNM output never produced a file.
 RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
 
-  gammaCorrect.setExposure(gain, gamma);
-
   FILE* ppmFile = std::fopen(outputName.c_str(), "wb");
   if (!ppmFile) {
     std::string errorMsg("Unable to open output file: ");
@@ -60,10 +58,11 @@ RtVoid GMANOutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFlo
 
   for (int row = 0; row < yres; row++) {
     for (int col = 0; col < xres; col++) {
-      GMANColorRGB color;
-      color = getPixel(col, row);
+      GMANColor pixel = getPixel(col, row);
+      gmanGammaCorrect(pixel, gain, gamma);
 
-      gammaCorrect.correct(color);
+      GMANColorRGB color;
+      color = pixel;
 
       if (quantizer)
         quantizer->doColor(color);

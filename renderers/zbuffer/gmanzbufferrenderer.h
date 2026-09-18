@@ -32,7 +32,6 @@
 #include <stack>
 #include <string>
 
-#include "gmangamma.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanobjectmanager.h"

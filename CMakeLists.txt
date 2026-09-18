@@ -120,7 +120,6 @@ add_library(gman_core SHARED
   libgman/gmanface.cpp
   libgman/gmanfilters.cpp
   libgman/gmanframebuffer.cpp
-  libgman/gmangamma.cpp
   libgman/gmangetarguments.cpp
   libgman/gmangraphicstate.cpp
   libgman/gmanhpoint.cpp

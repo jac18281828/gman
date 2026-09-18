@@ -860,6 +860,17 @@ set_tests_properties(colorconvert PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gmanGammaCorrect: identity at gain 1/gamma 1 (no golden image moves), the
+# pow(gain * channel, 1/gamma) shape, and the sub-byte precision case the
+# deleted byte lookup table could never produce.
+add_executable(gman_gamma gamma_test.cpp)
+target_link_libraries(gman_gamma PRIVATE gman_core)
+
+add_test(NAME gamma COMMAND gman_gamma)
+set_tests_properties(gamma PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 1: GMANViewingSystem answers a camera-space ray
 # (cameraRay) as well as a world-space one (ray), and pins the [tmin,
 # tmax] interval every GMANRay defaults to.
