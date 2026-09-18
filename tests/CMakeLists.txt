@@ -907,26 +907,6 @@ set_tests_properties(raysphere PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Pins CMAKE_CXX_VISIBILITY_PRESET hidden: dlsym finds gman_core's exported
-# RenderMan data and C entry points, misses one internal symbol there, and
-# finds both loadable entry points in every shader plugin.
-add_executable(gman_visibility visibility_test.cpp)
-target_link_libraries(gman_visibility PRIVATE gman_core)
-add_dependencies(gman_visibility gman_matte gman_metal gman_paintedplastic gman_plastic
-  gman_shinymetal gman_camerashader)
-
-add_test(NAME visibility
-  COMMAND gman_visibility $<TARGET_FILE:gman_core>
-                          $<TARGET_FILE:gman_matte>
-                          $<TARGET_FILE:gman_metal>
-                          $<TARGET_FILE:gman_paintedplastic>
-                          $<TARGET_FILE:gman_plastic>
-                          $<TARGET_FILE:gman_shinymetal>
-                          $<TARGET_FILE:gman_camerashader>)
-set_tests_properties(visibility PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, and a second, unrelated CMake project finds

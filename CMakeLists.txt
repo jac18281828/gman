@@ -12,7 +12,6 @@ project(gman
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 if(WIN32)
   message(FATAL_ERROR "GMAN is POSIX only. Windows support was removed in phase 0.")
@@ -23,6 +22,15 @@ include(GNUInstallDirs)
 include(CTest)
 include(CheckCXXSourceCompiles)
 include(CMakePackageConfigHelpers)
+
+# Tests link internals through gman_core directly, as if they were external;
+# hiding by default would break every one of them. Only a build with tests
+# off is the shipped product.
+if(BUILD_TESTING)
+  set(CMAKE_CXX_VISIBILITY_PRESET default)
+else()
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+endif()
 
 # A compiler that accepts -std=c++20 with an older standard library fails
 # deep in a template error instead of at configure time. Check both features

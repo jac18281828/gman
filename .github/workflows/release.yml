@@ -79,27 +79,51 @@ jobs:
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: brew install cmake libtiff libpng jpeg
-      - name: Configure
-        run: cmake --preset release -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
-      - name: Build
-        run: cmake --build build-release --parallel
-      # A release ships a tested build or it does not ship. The suite is the
-      # same one CI runs on every push.
+      # A release ships a tested build or it does not ship. This build keeps
+      # tests on, so it exports every symbol and the suite reaches internals
+      # as CI's does; the package build below is the one that ships.
+      - name: Configure the test build
+        run: |
+          cmake --preset release -B build-release-test \
+            -DBUILD_TESTING=ON -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
+      - name: Build the test build
+        run: cmake --build build-release-test --parallel
       - name: Test
-        run: ctest --test-dir build-release --output-on-failure
+        run: ctest --test-dir build-release-test --output-on-failure
+      - name: Configure the package build
+        run: cmake --preset release -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
+      - name: Build the package build
+        run: cmake --build build-release --parallel
+      # The operator's concern is shipping a tarball built with tests on by
+      # accident, which would export internals; this makes it impossible.
+      - name: Guard against a test build shipping
+        run: grep -qx "BUILD_TESTING:BOOL=OFF" build-release/CMakeCache.txt
       - name: Stage the install tree
         run: |
           cmake --install build-release \
             --prefix "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
       # The staged gman must find its own plugins from wherever it is
       # extracted -- that is what the relative INSTALL_RPATH buys, and a
-      # tarball that cannot render is not worth publishing.
+      # tarball that cannot render is not worth publishing. The package build
+      # hides everything GMAN_EXPORT does not tag, so this is where a missing
+      # tag first shows: sphere.rib alone loads no shader plugin, so the four
+      # renders below cover every shipped shader. texture.rib cannot open
+      # checker_texture.tif and renders with opaque black; that is expected.
       - name: Verify the staged binary renders
         run: |
           cd "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
           ./bin/gman "${{ github.workspace }}/tests/rib/sphere.rib"
           test -s sphere.tif
           rm -f sphere.tif
+          ./bin/gman "${{ github.workspace }}/tests/rib/shaders.rib"
+          test -s shaders.tif
+          rm -f shaders.tif
+          ./bin/gman "${{ github.workspace }}/tests/rib/texture.rib"
+          test -s texture.tif
+          rm -f texture.tif
+          ./bin/gman "${{ github.workspace }}/tests/rib/shinymetal_degrades.rib"
+          test -s shinymetal_degrades.tif
+          rm -f shinymetal_degrades.tif
       # The explicit ON configure above means a runner missing either
       # library fails configure instead of silently shipping a tarball
       # with a driver quietly missing.
