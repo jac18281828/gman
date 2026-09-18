@@ -28,7 +28,7 @@
 #include "gmanerror.h"
 #include "gmanparameterlist.h"
 
-namespace gmanshaders {
+namespace gmanshader {
 
 // A GMANDictionary registers the same standard RI_* tokens (Ka, Kd, ...)
 // in the same order on every construction (GMANDictionary::GMANDictionary,
@@ -83,4 +83,4 @@ inline std::string getStringParam(GMANParameterList& pl, RtToken token, const st
   return p ? p[0] : def;
 }
 
-} // namespace gmanshaders
+} // namespace gmanshader

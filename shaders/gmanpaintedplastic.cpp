@@ -42,7 +42,9 @@
  * empty texturename multiplies by white, degrading to plastic rather than
  * to black.
  */
-class GMANPaintedPlastic : public GMANSurfaceShader {
+namespace gmanshader {
+
+class paintedplastic : public GMANSurfaceShader {
 public:
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
@@ -50,21 +52,20 @@ public:
   const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANPaintedPlastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
+RtVoid paintedplastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi sums lights itself via env.ambient()/diffuse()/
   // specular(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor& GMANPaintedPlastic::computeCi(GMANSurfaceEnv& se) {
+const GMANColor& paintedplastic::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
-  RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
-  RtFloat kd = gmanshaders::getFloatParam(pl, RI_KD, 0.5);
-  RtFloat ks = gmanshaders::getFloatParam(pl, RI_KS, 0.5);
-  RtFloat roughness = gmanshaders::getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  GMANColor specularcolor =
-      gmanshaders::getColorParam(pl, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0));
-  std::string texturename = gmanshaders::getStringParam(pl, RI_TEXTURENAME, std::string());
+  RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
+  RtFloat kd = getFloatParam(pl, RI_KD, 0.5);
+  RtFloat ks = getFloatParam(pl, RI_KS, 0.5);
+  RtFloat roughness = getFloatParam(pl, RI_ROUGHNESS, 0.1);
+  GMANColor specularcolor = getColorParam(pl, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0));
+  std::string texturename = getStringParam(pl, RI_TEXTURENAME, std::string());
 
   GMANColor tex =
       texturename.empty() ? GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0) : se.texture(texturename, se.s, se.t);
@@ -95,11 +96,13 @@ const GMANColor& GMANPaintedPlastic::computeCi(GMANSurfaceEnv& se) {
   return ci;
 }
 
-const GMANColor& GMANPaintedPlastic::computeOi(GMANSurfaceEnv& se) {
+const GMANColor& paintedplastic::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
+
+} // namespace gmanshader
 
 static GMANLoadableObjectInfo loadableInfo = {
     "Painted plastic surface shader",
@@ -108,7 +111,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "colour: the RISpec's own paintedplastic.",
 };
 
-static GMANPaintedPlastic shader;
+static gmanshader::paintedplastic shader;
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 

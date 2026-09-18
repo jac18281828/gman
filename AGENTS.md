@@ -29,9 +29,12 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 ## Naming
 - Semantic, not pattern-based. Avoid `State`, `Context`, `Manager` without a
   real contrast. Existing names stay.
-- `GMAN` prefix on every global-scope class; it is the namespace, so add no
-  second one.
-- Lower-case filenames; `methodName`, `SymbolName`.
+- The `GMAN` prefix marks global scope: every global-scope class carries it,
+  and code in a namespace sheds it, as `gman::gammaCorrected` and
+  `gmanshader::plastic` do. `ri.h` stays global; the RenderMan interface
+  fixes it there.
+- Lower-case filenames; `methodName`, `SymbolName`. A shader class takes its
+  RIB token as its name: `Surface "plastic"` loads `gmanshader::plastic`.
 
 ## Abstraction
 - Abstract only to remove duplication or encode an invariant.
@@ -84,9 +87,10 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - Third-party RIB: record source, commit and license in `tests/rib/README`.
 - Supported requests: `gmanribtokenize.cpp` and `gmanribparse.cpp` are ground
   truth.
-- Shader plugins: subclass `GMANSurfaceShader`, define `GMANGetLoadableInfo`
-  and `GMANLoadShader` as `extern "C" GMAN_EXPORT`, build with
-  `gman_add_plugin`. See `shaders/gmanmatte.cpp`.
+- Shader plugins: subclass `GMANSurfaceShader` in `namespace gmanshader`;
+  define `GMANGetLoadableInfo` and `GMANLoadShader` at global scope as
+  `extern "C" GMAN_EXPORT`, build with `gman_add_plugin`. See
+  `shaders/gmanmatte.cpp`.
 
 ## Completion Gates
 

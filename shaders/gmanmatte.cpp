@@ -39,7 +39,9 @@
  * when RiSurface was never called (GMANAttributes::setSurface's fallback,
  * step 6).
  */
-class GMANMatte : public GMANSurfaceShader {
+namespace gmanshader {
+
+class matte : public GMANSurfaceShader {
 public:
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
@@ -51,16 +53,16 @@ public:
   const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANMatte::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
+RtVoid matte::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi below sums lights itself via env.ambient()/
   // diffuse(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor& GMANMatte::computeCi(GMANSurfaceEnv& se) {
+const GMANColor& matte::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
-  RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
-  RtFloat kd = gmanshaders::getFloatParam(pl, RI_KD, 1.0);
+  RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
+  RtFloat kd = getFloatParam(pl, RI_KD, 1.0);
 
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
 
@@ -75,11 +77,13 @@ const GMANColor& GMANMatte::computeCi(GMANSurfaceEnv& se) {
   return ci;
 }
 
-const GMANColor& GMANMatte::computeOi(GMANSurfaceEnv& se) {
+const GMANColor& matte::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
+
+} // namespace gmanshader
 
 static GMANLoadableObjectInfo loadableInfo = {
     "Matte surface shader",
@@ -87,7 +91,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "A GMAN SurfaceShader for matte surfaces.",
 };
 
-static GMANMatte shader;
+static gmanshader::matte shader;
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 

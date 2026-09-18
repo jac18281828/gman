@@ -40,7 +40,9 @@
  * a specular highlight tinted by specularcolor (not Cs -- this is what
  * makes plastic look like plastic instead of metal).
  */
-class GMANPlastic : public GMANSurfaceShader {
+namespace gmanshader {
+
+class plastic : public GMANSurfaceShader {
 public:
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
@@ -48,20 +50,19 @@ public:
   const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANPlastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
+RtVoid plastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi sums lights itself via env.ambient()/diffuse()/
   // specular(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor& GMANPlastic::computeCi(GMANSurfaceEnv& se) {
+const GMANColor& plastic::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
-  RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
-  RtFloat kd = gmanshaders::getFloatParam(pl, RI_KD, 0.5);
-  RtFloat ks = gmanshaders::getFloatParam(pl, RI_KS, 0.5);
-  RtFloat roughness = gmanshaders::getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  GMANColor specularcolor =
-      gmanshaders::getColorParam(pl, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0));
+  RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
+  RtFloat kd = getFloatParam(pl, RI_KD, 0.5);
+  RtFloat ks = getFloatParam(pl, RI_KS, 0.5);
+  RtFloat roughness = getFloatParam(pl, RI_ROUGHNESS, 0.1);
+  GMANColor specularcolor = getColorParam(pl, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0));
 
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
   GMANVector vf(-se.I.getX(), -se.I.getY(), -se.I.getZ());
@@ -87,11 +88,13 @@ const GMANColor& GMANPlastic::computeCi(GMANSurfaceEnv& se) {
   return ci;
 }
 
-const GMANColor& GMANPlastic::computeOi(GMANSurfaceEnv& se) {
+const GMANColor& plastic::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
+
+} // namespace gmanshader
 
 static GMANLoadableObjectInfo loadableInfo = {
     "Plastic surface shader",
@@ -100,7 +103,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "specularcolor-tinted specular highlight.",
 };
 
-static GMANPlastic shader;
+static gmanshader::plastic shader;
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 

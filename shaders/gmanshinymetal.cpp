@@ -45,7 +45,9 @@
  * shinymetal degrades to metal (gmanmetal.cpp), as the RISpec says an
  * implementation without environment mapping behaves.
  */
-class GMANShinyMetal : public GMANSurfaceShader {
+namespace gmanshader {
+
+class shinymetal : public GMANSurfaceShader {
 public:
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
@@ -53,19 +55,19 @@ public:
   const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-RtVoid GMANShinyMetal::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
+RtVoid shinymetal::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
   // Unused: computeCi sums lights itself via env.ambient()/specular(),
   // the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor& GMANShinyMetal::computeCi(GMANSurfaceEnv& se) {
+const GMANColor& shinymetal::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
 
-  RtFloat ka = gmanshaders::getFloatParam(pl, RI_KA, 1.0);
-  RtFloat ks = gmanshaders::getFloatParam(pl, RI_KS, 1.0);
-  RtFloat kr = gmanshaders::getFloatParam(pl, RI_KR, 1.0);
-  RtFloat roughness = gmanshaders::getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  std::string texturename = gmanshaders::getStringParam(pl, RI_TEXTURENAME, std::string());
+  RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
+  RtFloat ks = getFloatParam(pl, RI_KS, 1.0);
+  RtFloat kr = getFloatParam(pl, RI_KR, 1.0);
+  RtFloat roughness = getFloatParam(pl, RI_ROUGHNESS, 0.1);
+  std::string texturename = getStringParam(pl, RI_TEXTURENAME, std::string());
 
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
   GMANVector vf(-se.I.getX(), -se.I.getY(), -se.I.getZ());
@@ -90,11 +92,13 @@ const GMANColor& GMANShinyMetal::computeCi(GMANSurfaceEnv& se) {
   return ci;
 }
 
-const GMANColor& GMANShinyMetal::computeOi(GMANSurfaceEnv& se) {
+const GMANColor& shinymetal::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
+
+} // namespace gmanshader
 
 static GMANLoadableObjectInfo loadableInfo = {
     "Shiny metal surface shader",
@@ -103,7 +107,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "response plus a world-space environment reflection.",
 };
 
-static GMANShinyMetal shader;
+static gmanshader::shinymetal shader;
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 

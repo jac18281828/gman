@@ -56,7 +56,7 @@
  * Lighting matches polygon_test.cpp's own fixture: a single ambientlight
  * at intensity 0.3, Ka=1, Kd=0, Ks=0, so
  * Ci = Os * texture() * Cs * Ka * ambient_intensity = texel * 0.3
- * (GMANPaintedPlastic::computeCi), independent of N/I/E.
+ * (gmanshader::paintedplastic::computeCi), independent of N/I/E.
  *
  * Revert-falsifiable by construction: a texture() returning any constant
  * collapses all four quadrants to one colour and fails at least three of

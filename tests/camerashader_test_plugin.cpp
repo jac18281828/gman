@@ -31,23 +31,27 @@
 #include "gmanloadable.h"
 #include "gmansurfaceshader.h"
 
-class GMANCameraShaderProbe : public GMANSurfaceShader {
+namespace gmanshader {
+
+class camerashader : public GMANSurfaceShader {
 public:
   const GMANColor& computeCi(GMANSurfaceEnv& se);
   const GMANColor& computeOi(GMANSurfaceEnv& se);
 };
 
-const GMANColor& GMANCameraShaderProbe::computeCi(GMANSurfaceEnv& se) {
+const GMANColor& camerashader::computeCi(GMANSurfaceEnv& se) {
   static GMANColor ci;
   ci = GMANColor(se.cameraToWorld[0][0], se.cameraToWorld[0][2], se.cameraToWorld[2][0]);
   return ci;
 }
 
-const GMANColor& GMANCameraShaderProbe::computeOi(GMANSurfaceEnv& se) {
+const GMANColor& camerashader::computeOi(GMANSurfaceEnv& se) {
   static GMANColor oi;
   oi = se.Os;
   return oi;
 }
+
+} // namespace gmanshader
 
 static GMANLoadableObjectInfo loadableInfo = {
     "Camera-to-world probe (test-only)",
@@ -57,7 +61,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "back out of a real shading call. Never dlopened outside the test suite.",
 };
 
-static GMANCameraShaderProbe shader;
+static gmanshader::camerashader shader;
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 

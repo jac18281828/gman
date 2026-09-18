@@ -220,7 +220,7 @@ void testConvexPentagon(const std::string& gman, const std::string& ribDir) {
   // The shading assertion: an ambient-only light (intensity 0.3) and a
   // matte surface with Ka=1, Cs=(0.8, 0.4, 0.2) give
   // Ci = Cs * Os * Ka * ambient_intensity = (0.24, 0.12, 0.06) at every
-  // interior pixel (GMANMatte::computeCi), independent of N/I/E since
+  // interior pixel (gmanshader::matte::computeCi), independent of N/I/E since
   // diffuse() is 0 with no non-ambient light. (100, 100) is the pentagon's
   // exact centroid (see file comment), roughly 16px from the nearest edge.
   const int centreX = 100, centreY = 100;
