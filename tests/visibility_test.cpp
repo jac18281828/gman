@@ -27,8 +27,10 @@
  * assertion is a real consumer's need -- an ri.h data token, a shader
  * plugin's dlsym'd entry points, and the two undocumented Ri* C entry
  * points no in-tree caller links against, so only this test would notice
- * their loss. GMANTIFFWriter::isOpen, declared untagged in gmantiff.h,
- * stands for every internal the flip is meant to hide.
+ * their loss. GMANTIFFWriter::isOpen() const stands for every internal:
+ * defined out of line in libgman/gmantiff.cpp and declared untagged in
+ * libgman/gmantiff.h, its mangled name holds no standard-library type, so
+ * it is identical under libc++ and libstdc++.
  */
 
 #include <cstdio>
@@ -41,11 +43,11 @@
 namespace {
 
 struct Plugin {
-  const char* path;
-  const char* name;
+  char const* path;
+  char const* name;
 };
 
-void* openOrFail(const char* path, std::string const& what) {
+void* openOrFail(char const* path, std::string const& what) {
   void* handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
   check(handle != nullptr, what + ": dlopen succeeds");
   return handle;
@@ -62,8 +64,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  const char* corePath = argv[1];
-  const Plugin plugins[] = {
+  char const* corePath = argv[1];
+  Plugin const plugins[] = {
       {argv[2], "matte"},   {argv[3], "metal"},      {argv[4], "paintedplastic"},
       {argv[5], "plastic"}, {argv[6], "shinymetal"}, {argv[7], "camerashader"},
   };
