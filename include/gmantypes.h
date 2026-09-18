@@ -31,26 +31,26 @@
 #include "ri.h"
 
 /* useful values */
-#define GMAN_BYTEMAX 255
+constexpr auto GMAN_BYTEMAX = 255;
 
 /* type declaration */
-typedef unsigned char GMANByte;
+using GMANByte = unsigned char;
 
-typedef unsigned int GMANUInt;
+using GMANUInt = unsigned int;
 
-typedef int GMANInt;
+using GMANInt = int;
 
 /* Color sample type */
-typedef RtFloat GMANColorSample;
+using GMANColorSample = RtFloat;
 
 /* forward declarations for lists */
 class GMANFace;
 class GMANSurface;
 
-typedef GMANFace* GMANFacePtr;
-typedef GMANSurface* GMANSurfacePtr;
+using GMANFacePtr = GMANFace*;
+using GMANSurfacePtr = GMANSurface*;
 
-typedef std::list<GMANFacePtr> GMANFaceList;
-typedef std::list<GMANSurfacePtr> GMANSurfaceList;
+using GMANFaceList = std::list<GMANFacePtr>;
+using GMANSurfaceList = std::list<GMANSurfacePtr>;
 
 #endif

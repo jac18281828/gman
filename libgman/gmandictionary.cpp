@@ -261,7 +261,7 @@ int GMANDictionary::getTypeSize(GMANTokenEntry::TokenType t) {
   case GMANTokenEntry::NORMAL:
     return 3;
   case GMANTokenEntry::COLOR:
-    return NCOMPS;
+    return 3;
   case GMANTokenEntry::STRING:
     return 1;
   case GMANTokenEntry::MATRIX:

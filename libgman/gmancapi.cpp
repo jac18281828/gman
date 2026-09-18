@@ -65,7 +65,7 @@ extern "C" RtContextHandle RiGetContext(RtVoid) {
     return context.getContext();
   } catch (GMANError& error) {
     GMANHandleError(error);
-    return RI_NULL;
+    return nullptr;
   }
 };
 
@@ -502,7 +502,7 @@ extern "C" RtLightHandle RiLightSource(RtToken name, ...) {
       delete[] parms;
     GMANHandleError(error);
   }
-  return RI_NULL;
+  return nullptr;
 };
 
 extern "C" RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
@@ -510,7 +510,7 @@ extern "C" RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[],
     return context.current().RiLightSourceV(name, n, tokens, parms);
   } catch (GMANError& error) {
     GMANHandleError(error);
-    return RI_NULL;
+    return nullptr;
   }
 };
 
@@ -540,7 +540,7 @@ extern "C" RtLightHandle RiAreaLightSource(RtToken name, ...) {
       delete[] parms;
     GMANHandleError(error);
   }
-  return RI_NULL;
+  return nullptr;
 };
 
 extern "C" RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
@@ -548,7 +548,7 @@ extern "C" RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken token
     return context.current().RiAreaLightSourceV(name, n, tokens, parms);
   } catch (GMANError& error) {
     GMANHandleError(error);
-    return RI_NULL;
+    return nullptr;
   }
 };
 
@@ -1805,7 +1805,7 @@ extern "C" RtObjectHandle RiObjectBegin(RtVoid) {
     return context.current().RiObjectBegin();
   } catch (GMANError& error) {
     GMANHandleError(error);
-    return RI_NULL;
+    return nullptr;
   }
 };
 

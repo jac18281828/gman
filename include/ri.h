@@ -33,45 +33,18 @@
  * For ANSI C
  */
 
-/* Global Constants */
-/* none */
-
 /* Types Section */
-#ifdef __cplusplus
-typedef bool RtBoolean; /* TRUE/False */
-#else
-typedef unsigned char RtBoolean; /* TRUE/False */
-#endif
-/* Don't assume this is 32bits !!! */
-typedef int RtInt; /* Integer */
+typedef short RtBoolean; /* TRUE/False */
+typedef int RtInt;
 /*
  * By default RtFloats are the size of a float
- * setting this to double might consume excessive memory
- * for some applications, and it doesn't really accomplish
- * very much.
- *
- * Yes, it would make the renderer a 'true-64bit' render,
- * however this measure of wordsize is just about meaningless.
- *
- * The real issue is the quality of the lighting model,
- * environment simulation, and number of color samples.
- *
- * Using 64bit values may improve the quality of the Radiosity
- * solution at the expense of time and space, but other techniques
- * such as using more color samples should be used first...
  */
-#ifdef __USE_DOUBLE
-typedef double RtFloat; /* Long Real */
-#else
 typedef float RtFloat; /* Real */
-#endif
 
-#define NCOMPS 3
-
-typedef const char* RtToken;     /* a token value string */
-typedef RtFloat RtColor[NCOMPS]; /* RenderMan uses RGB */
-typedef RtFloat RtPoint[3];      /* Three dimensional
-                                  * spatial coordinate */
+typedef const char* RtToken; /* a token value string */
+typedef RtFloat RtColor[3];  /* RenderMan uses RGB */
+typedef RtFloat RtPoint[3];  /* Three dimensional
+                              * spatial coordinate */
 typedef RtFloat RtVector[3];
 typedef RtFloat RtNormal[3];
 typedef RtFloat RtHpoint[4];
@@ -84,7 +57,7 @@ typedef RtFloat RtBound[6]; /* An object bounding box */
                             /* x1, x2, y1, y2, z1, z2 */
 typedef char* RtString;     /* a char string */
 
-#define RtVoid void        /* Its not in the K&R API ! */
+typedef void RtVoid;       /* Its not in the K&R API ! */
 typedef RtVoid* RtPointer; /* a pointer data type */
 
 /* A Function Pointer */
@@ -112,15 +85,11 @@ typedef RtPointer RtLightHandle;  /* pointer to an internal
 typedef RtPointer RtContextHandle;
 
 /* Extern Declarations for Predefined RI Data Structures */
-#ifdef __cplusplus
-#define RI_FALSE false
-#else
 #define RI_FALSE 0
-#endif
 #define RI_TRUE (!RI_FALSE)
 #define RI_INFINITY (RtFloat)1.0e38
 #define RI_EPSILON (RtFloat)1.0e-10
-#define RI_NULL 0
+#define RI_NULL ((RtToken)0)
 
 /* RIB Interface tokens */
 

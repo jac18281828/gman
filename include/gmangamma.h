@@ -29,7 +29,6 @@
 #include <cmath>
 
 #include "gmancolor.h"
-#include "gmantypes.h"
 #include "ri.h"
 
 namespace gman {

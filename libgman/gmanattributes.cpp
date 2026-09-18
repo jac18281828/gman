@@ -24,6 +24,10 @@
 
 #include "gmanattributes.h"
 
+namespace {
+constexpr auto NCOMPS = 3;
+}
+
 GMANAttributes::GMANAttributes()
     : areaLight(NULL), surface(NULL), atmosphere(NULL), interior(NULL), exterior(NULL), displacement(NULL)
 
