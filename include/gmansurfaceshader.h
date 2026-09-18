@@ -25,8 +25,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANSURFACESHADER_H
-#define __GMAN_GMANSURFACESHADER_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -70,5 +69,3 @@ public:
   virtual const GMANColor& computeCi(GMANSurfaceEnv& se) = 0;
   virtual const GMANColor& computeOi(GMANSurfaceEnv& se) = 0;
 };
-
-#endif

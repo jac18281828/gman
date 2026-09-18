@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANVECTOR4_H
-#define __GMAN_GMANVECTOR4_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -236,5 +235,3 @@ public:
     v.setZ(vec[Z] / w);
   }
 };
-
-#endif

@@ -25,8 +25,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_RENDERMAN_H
-#define __GMAN_RENDERMAN_H 1
+#pragma once
 
 #include <stack>
 
@@ -220,5 +219,3 @@ public:
   /* ERROR HANDLER */
   virtual RtVoid RiErrorHandler(RtErrorHandler handler) = 0;
 };
-
-#endif

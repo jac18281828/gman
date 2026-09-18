@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANCOLORSAMPLES_H
-#define __GMANCOLORSAMPLES_H
+#pragma once
 
 #include "gmandefaults.h"
 #include "gmanlog.h"
@@ -51,5 +50,3 @@ public:
 
   int getNumber() { return number; }
 };
-
-#endif

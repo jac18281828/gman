@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_DEFAULTS_H
-#define __GMAN_DEFAULTS_H 1
+#pragma once
 
 #include "gmancolor.h"
 #include "ri.h"
@@ -77,5 +76,3 @@ extern const GMANAlpha DefaultAlpha; // opaque
 extern const RtInt GMANDisplayXRES;
 extern const RtInt GMANDisplayYRES;
 extern const RtFloat GMANDisplayPAR;
-
-#endif

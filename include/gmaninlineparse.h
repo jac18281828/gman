@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANINLINEPARSE_H
-#define __GMANINLINEPARSE_H 1
+#pragma once
 
 #include <string>
 
@@ -66,5 +65,3 @@ public:
   RtInt getQuantity() { return size; }
   std::string getIdentifier() { return identifier; }
 };
-
-#endif

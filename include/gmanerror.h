@@ -22,8 +22,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
-#ifndef __GMANERROR_H
-#define __GMANERROR_H 1
+#pragma once
 
 #include <iostream>
 #include <string>
@@ -53,5 +52,3 @@ public:
 extern RtVoid GMAN_EXPORT GMANHandleError(GMANError&);
 
 extern RtErrorHandler GMAN_EXPORT GMANErrorHandler;
-
-#endif

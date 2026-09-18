@@ -24,8 +24,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANMATRIX4_H
-#define __GMANMATRIX4_H 1
+#pragma once
 
 #include "gmanerror.h"
 #include "gmanlog.h"
@@ -81,5 +80,3 @@ public:
 
   const RtMatrix& get(RtVoid) const { return mtrx; }
 };
-
-#endif

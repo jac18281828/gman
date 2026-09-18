@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANATTRIBUTES_H
-#define __GMANATTRIBUTES_H 1
+#pragma once
 
 #include <memory>
 #include <string>
@@ -191,5 +190,3 @@ public:
       return uvBasis;
   };
 };
-
-#endif

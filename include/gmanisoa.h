@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANISOA_H
-#define __GMANISOA_H 1
+#pragma once
 
 #include <string>
 
@@ -51,5 +50,3 @@ public:
   GMANISA();
   ~GMANISA();
 };
-
-#endif

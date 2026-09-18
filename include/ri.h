@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_RI_H
-#define __GMAN_RI_H 1
+#pragma once
 
 #include "gman/export.h"
 
@@ -36,9 +35,6 @@
 /* Types Section */
 typedef short RtBoolean; /* TRUE/False */
 typedef int RtInt;
-/*
- * By default RtFloats are the size of a float
- */
 typedef float RtFloat; /* Real */
 
 typedef const char* RtToken; /* a token value string */
@@ -372,5 +368,3 @@ extern GMAN_EXPORT RtVoid RiErrorHandler(RtErrorHandler handler);
 #define RIE_SEVERE ((RtInt)3)  /* So bad you should probably abort */
 
 /* End of RenderMan Interface */
-
-#endif

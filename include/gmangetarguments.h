@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GETARGUMENTS_H
-#define __GMAN_GETARGUMENTS_H 1
+#pragma once
 
 #include <stdarg.h>
 
@@ -33,5 +32,3 @@
 extern GMAN_EXPORT RtVoid GMANGetArguments(va_list args, RtInt n, RtToken* tokens, RtPointer* parms);
 
 extern GMAN_EXPORT RtInt GMANCountArguments(va_list args);
-
-#endif

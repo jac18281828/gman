@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANOUTPUTPOLYGON_H
-#define __GMAN_GMANOUTPUTPOLYGON_H 1
+#pragma once
 
 /**
  ** This code based on source presented in Radiosity, A Programmer's
@@ -93,5 +92,3 @@ public:
 
   RtVoid reset(RtVoid) { vertexVec.clear(); };
 };
-
-#endif

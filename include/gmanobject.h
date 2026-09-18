@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANOBJECT_H
-#define __GMAN_GMANOBJECT_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -84,5 +83,3 @@ public:
   RtVoid setVert(GMANVertex* v) { vertRoot = v; };
   GMANVertex* getVert(RtVoid) { return vertRoot; };
 };
-
-#endif

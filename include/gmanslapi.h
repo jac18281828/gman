@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANSLAPI_H
-#define __GMAN_GMANSLAPI_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -195,5 +194,3 @@ GMAN_EXPORT GMANVector GMANRefract(const GMANVector& i, const GMANVector& n, RtF
 GMAN_EXPORT RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt);
 GMAN_EXPORT RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt,
                                GMANVector& r, GMANVector& t);
-
-#endif

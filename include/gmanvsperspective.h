@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANVSPERSPECTIVE_H
-#define __GMANVSPERSPECTIVE_H 1
+#pragma once
 
 #include "gmanmatrix4.h"
 #include "gmanviewingsystem.h"
@@ -44,5 +43,3 @@ public:
 
   const RtMatrix& getProjMatrix(RtVoid) const;
 };
-
-#endif

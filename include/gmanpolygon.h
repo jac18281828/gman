@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANPOLYGON_H
-#define __GMAN_GMANPOLYGON_H 1
+#pragma once
 
 #include <vector>
 
@@ -67,5 +66,3 @@ public:
   // get number of points
   int getNPoints(RtVoid) { return points.size(); };
 };
-
-#endif

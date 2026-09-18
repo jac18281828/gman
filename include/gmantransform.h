@@ -21,8 +21,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
-#ifndef __GMANTRANSFORM_HH
-#define __GMANTRANSFORM_HH 1
+#pragma once
 
 #include <set>
 #include <vector>
@@ -89,5 +88,3 @@ public:
   // than a perspective-divided point.
   GMANVector4 apply(const GMANVector4& p);
 };
-
-#endif

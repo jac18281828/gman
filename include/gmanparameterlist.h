@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANPARAMETERLIST_H
-#define __GMANPARAMETERLIST_H 1
+#pragma once
 
 #include <string>
 
@@ -70,5 +69,3 @@ public:
 
   RtPointer getPointer(GMANTokenId tid) const;
 };
-
-#endif

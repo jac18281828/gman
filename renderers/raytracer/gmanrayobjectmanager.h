@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANRAYOBJECTMANAGER_H
-#define __GMAN_GMANRAYOBJECTMANAGER_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -114,5 +113,3 @@ public:
                                               GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                               GMANTransform* t);
 };
-
-#endif

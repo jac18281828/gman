@@ -48,8 +48,7 @@
  * before overwriting it, and say so in the commit message.
  */
 
-#ifndef GMAN_TESTS_GOLDENIMAGE_H
-#define GMAN_TESTS_GOLDENIMAGE_H
+#pragma once
 
 #include <cmath>
 #include <cstdint>
@@ -192,5 +191,3 @@ inline void checkGoldenImage(const std::string& actualPath, const std::string& g
     writeGoldenDiffTIFF(diffPath, actual, golden, channelTol);
   }
 }
-
-#endif

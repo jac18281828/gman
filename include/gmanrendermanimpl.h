@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_RENDERMANIMPL_H
-#define __GMAN_RENDERMANIMPL_H 1
+#pragma once
 
 #include "gmandictionary.h"
 #include "gmanframebuffer.h"
@@ -242,5 +241,3 @@ public:
                                     RtPointer parms[]);
   RtVoid RiMakeShadowV(char* pic, char* tex, RtInt n, RtToken tokens[], RtPointer parms[]);
 };
-
-#endif

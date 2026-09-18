@@ -21,8 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANRAY_H
-#define __GMAN_GMANRAY_H 1
+#pragma once
 
 #include "gmanpoint.h"
 #include "gmanvector.h"
@@ -87,5 +86,3 @@ struct GMAN_EXPORT GMANHit {
   // against it, so this pointer is non-owning.
   GMANPrimitive const* primitive = nullptr;
 };
-
-#endif

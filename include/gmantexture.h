@@ -21,8 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANTEXTURE_H
-#define __GMAN_GMANTEXTURE_H 1
+#pragma once
 
 #include <map>
 #include <string>
@@ -129,5 +128,3 @@ GMAN_EXPORT bool gmanMakeTexture(const char* picture, const char* texture, const
 // cannot be opened or fully written. A successful write forgets texture
 // from gmanTextureCache(), so the next lookup reads what was just written.
 GMAN_EXPORT bool gmanMakeLatLongEnvironment(const char* picture, const char* texture);
-
-#endif

@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_MATH_H
-#define __GMAN_MATH_H 1
+#pragma once
 
 // Make this file self-contained - asandro
 #include <math.h>
@@ -119,5 +118,3 @@ inline GMAN_EXPORT int GMANQuadraticRoots(RtFloat a, RtFloat b, RtFloat c, RtFlo
   t1 = GMANMax(r0, r1);
   return 2;
 }
-
-#endif

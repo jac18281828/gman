@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANREYESRENDERER_H
-#define __GMAN_GMANREYESRENDERER_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -134,4 +133,3 @@ public:
   // return its object manager
   virtual GMANObjectManager* getObjectManager(void);
 };
-#endif

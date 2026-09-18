@@ -21,8 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANPARALLEL_H
-#define __GMAN_GMANPARALLEL_H 1
+#pragma once
 
 #include <functional>
 
@@ -59,5 +58,3 @@ GMAN_EXPORT RtInt gmanParallelWorkers(RtInt count, RtInt workers = 0);
 // worker 0 and no thread is created.
 GMAN_EXPORT void gmanParallelFor(RtInt count, const std::function<void(RtInt index, RtInt worker)>& body,
                                  RtInt workers = 0);
-
-#endif

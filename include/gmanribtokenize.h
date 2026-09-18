@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANRIBTOKENIZE_H
-#define __GMAN_GMANRIBTOKENIZE_H 1
+#pragma once
 
 #include <fstream>
 #include <istream>
@@ -266,5 +265,3 @@ public:
   // and gzip decompression both feed this from an in-memory stream.
   const GMANToken getNext(std::istream& ribFile);
 };
-
-#endif

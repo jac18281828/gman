@@ -31,8 +31,7 @@
  * case that ever changes, but nothing in the tree uses them today.
  */
 
-#ifndef GMAN_TESTS_SOURCESCAN_H
-#define GMAN_TESTS_SOURCESCAN_H
+#pragma once
 
 #include <algorithm>
 #include <filesystem>
@@ -74,5 +73,3 @@ inline std::vector<std::filesystem::path> collectSourceFiles(const std::vector<s
   }
   return files;
 }
-
-#endif

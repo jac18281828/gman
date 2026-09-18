@@ -21,8 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANTIFF_H
-#define __GMAN_GMANTIFF_H 1
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
@@ -116,5 +115,3 @@ public:
 private:
   struct tiff* handle;
 };
-
-#endif

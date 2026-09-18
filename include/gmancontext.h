@@ -22,8 +22,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
-#ifndef __GMANCONTEXT_H
-#define __GMANCONTEXT_H 1
+#pragma once
 
 #include <list>
 
@@ -46,5 +45,3 @@ public:
   RtVoid switchTo(RtContextHandle);
   RtVoid removeCurrent(RtVoid);
 };
-
-#endif

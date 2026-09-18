@@ -21,8 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_SHADERS_GMANSHADERPARAMS_H
-#define __GMAN_SHADERS_GMANSHADERPARAMS_H 1
+#pragma once
 
 #include "gmancolor.h"
 #include "gmandictionary.h"
@@ -85,5 +84,3 @@ inline std::string getStringParam(GMANParameterList& pl, RtToken token, const st
 }
 
 } // namespace gmanshaders
-
-#endif

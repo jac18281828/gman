@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANQUANTIZE_H
-#define __GMAN_GMANQUANTIZE_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -67,5 +66,3 @@ public:
   // inline color reduction
   GMANColorRGB& doColor(GMANColorRGB& col);
 };
-
-#endif

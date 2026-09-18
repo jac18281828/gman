@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANSHADER_H
-#define __GMAN_GMANSHADER_H 1
+#pragma once
 
 #include <string>
 
@@ -77,5 +76,3 @@ public:
 
   virtual ShaderType getType(RtVoid) const = 0;
 };
-
-#endif

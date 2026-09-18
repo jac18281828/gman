@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANCOLOR_H
-#define __GMAN_GMANCOLOR_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -238,5 +237,3 @@ GMAN_EXPORT RtVoid GMANConvertRGBtoYIQ(RtFloat* c);
 GMAN_EXPORT RtVoid GMANConvertYIQtoRGB(RtFloat* c);
 GMAN_EXPORT RtVoid GMANConvertRGBtoYUV(RtFloat* c);
 GMAN_EXPORT RtVoid GMANConvertYUVtoRGB(RtFloat* c);
-
-#endif

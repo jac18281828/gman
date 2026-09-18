@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANNOISE_H
-#define __GMANNOISE_H 1
+#pragma once
 
 #include "gmanpoint.h"
 #include "ri.h"
@@ -85,5 +84,3 @@ public:
   RtVoid cellnoise(GMANPoint const& p, RtFloat& a, RtFloat& b, RtFloat& c);
   RtVoid cellnoise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFloat& c);
 };
-
-#endif

@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_SL_H
-#define __GMAN_SL_H 1
+#pragma once
 
 #include <string>
 
@@ -52,5 +51,3 @@ FILE* initSource(const std::string& headerName, const std::string& srcName);
 RtVoid build(const std::string& srcName);
 
 void yyerror(char* s);
-
-#endif

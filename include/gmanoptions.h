@@ -25,8 +25,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_OPTIONS_H
-#define __GMAN_OPTIONS_H 1
+#pragma once
 
 #include <string>
 
@@ -267,5 +266,3 @@ public:
 
   const OutputDefaults& getOutputDefaults(RtVoid) const;
 };
-
-#endif

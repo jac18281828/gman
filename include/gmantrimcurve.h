@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANTRIMCURVE_H
-#define __GMAN_GMANTRIMCURVE_H 1
+#pragma once
 
 #include "gmanlog.h"
 #include "ri.h"
@@ -52,5 +51,3 @@ public:
   GMANTrimCurve const& operator=(GMANTrimCurve const& tc);
   ~GMANTrimCurve();
 };
-
-#endif

@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANNORMAL_H
-#define __GMAN_GMANNORMAL_H 1
+#pragma once
 
 #include "gmanlog.h"
 #include "gmanpoint.h"
@@ -42,5 +41,3 @@ public:
   GMANNormal(const GMANPoint& a, const GMANPoint& b) : GMANVector(a, b) {}
   ~GMANNormal() {}
 };
-
-#endif

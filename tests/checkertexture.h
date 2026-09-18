@@ -26,8 +26,7 @@
  * already proved, so both include this rather than keeping their own copy.
  */
 
-#ifndef GMAN_TESTS_CHECKERTEXTURE_H
-#define GMAN_TESTS_CHECKERTEXTURE_H
+#pragma once
 
 #include <string>
 
@@ -64,5 +63,3 @@ inline bool writeCheckerTexture(const std::string& path, const std::string& swra
   TIFFClose(tif);
   return ok;
 }
-
-#endif

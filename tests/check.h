@@ -28,8 +28,7 @@
  * const char *) matching that language's calling convention.
  */
 
-#ifndef GMAN_TESTS_CHECK_H
-#define GMAN_TESTS_CHECK_H
+#pragma once
 
 #include <cstdio>
 #include <string>
@@ -52,5 +51,3 @@ inline int checkSummary(const char* okMessage) {
   std::printf("%s\n", okMessage);
   return 0;
 }
-
-#endif

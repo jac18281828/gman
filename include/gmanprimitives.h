@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANGMANPRIMITIVES_H
-#define __GMANGMANPRIMITIVES_H 1
+#pragma once
 
 #include <vector>
 
@@ -443,5 +442,3 @@ public:
   GMANPoint getLocation(double u, double v);
   GMANVector getNormal(double u, double v);
 };
-
-#endif

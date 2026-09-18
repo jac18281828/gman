@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANWORLDMANAGER_H
-#define __GMAN_GMANWORLDMANAGER_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -54,5 +53,3 @@ public:
   // get the next object until end (return NULL)
   virtual GMANPrimitive* getNext(RtVoid) = 0;
 };
-
-#endif

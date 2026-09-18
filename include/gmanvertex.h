@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANVERTEX_H
-#define __GMAN_GMANVERTEX_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -100,5 +99,3 @@ public:
   // return the face list
   GMANFaceList* getFaceList(RtVoid) const { return faceList; }
 };
-
-#endif

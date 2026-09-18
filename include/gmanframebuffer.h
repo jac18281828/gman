@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANFRAMEBUFFER_H
-#define __GMAN_GMANFRAMEBUFFER_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -76,5 +75,3 @@ public:
   // get the height of the filter in pixels
   int getFilterHeight(RtVoid) { return filterHeight; };
 };
-
-#endif

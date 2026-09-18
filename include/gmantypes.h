@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_TYPES_H
-#define __GMAN_TYPES_H 1
+#pragma once
 
 #include <list>
 
@@ -52,5 +51,3 @@ using GMANSurfacePtr = GMANSurface*;
 
 using GMANFaceList = std::list<GMANFacePtr>;
 using GMANSurfaceList = std::list<GMANSurfacePtr>;
-
-#endif

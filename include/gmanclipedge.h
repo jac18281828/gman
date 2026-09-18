@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANCLIPEDGE_H
-#define __GMAN_GMANCLIPEDGE_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -73,5 +72,3 @@ public:
   RtVoid close(GMANOutputPolygon& p);
   RtVoid setNormal(const GMANVector4& n) { normal = n; };
 };
-
-#endif

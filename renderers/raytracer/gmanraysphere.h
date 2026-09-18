@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANRAYSPHERE_H
-#define __GMANRAYSPHERE_H 1
+#pragma once
 
 #include "gmanrayinterface.h"
 
@@ -34,5 +33,3 @@ public:
 
   bool intersect(const GMANRay& ray, GMANHit& hit) const;
 };
-
-#endif

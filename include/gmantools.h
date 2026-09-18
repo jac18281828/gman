@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef _GMANTOOLS_H
-#define _GMANTOOLS_H
+#pragma once
 
 #include "gmanhpoint.h"
 #include "gmanlog.h"
@@ -68,4 +67,3 @@ public:
   static GMANPoint torus(RtFloat u, RtFloat v, RtFloat majorr, RtFloat minorr, RtFloat phimin, RtFloat phimax,
                          RtFloat thetamax);
 };
-#endif

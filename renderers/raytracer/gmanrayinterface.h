@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANRAYINTERFACE_H
-#define __GMANRAYINTERFACE_H 1
+#pragma once
 
 #include "gmanprimitives.h"
 #include "gmanray.h"
@@ -32,5 +31,3 @@ class GMAN_EXPORT GMANRayInterface : virtual public GMANPrimitive {
 public:
   virtual bool intersect(const GMANRay& ray, GMANHit& hit) const;
 };
-
-#endif

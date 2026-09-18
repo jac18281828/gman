@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANLOADABLE_H
-#define __GMAN_GMANLOADABLE_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -97,5 +96,3 @@ public:
   // get description of DSO
   const char* getDescription(RtVoid) const;
 };
-
-#endif

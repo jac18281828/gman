@@ -22,8 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMANHPOINT_H
-#define __GMANHPOINT_H 1
+#pragma once
 
 #include "gmanlog.h"
 #include "gmanpoint.h"
@@ -53,5 +52,3 @@ public:
   GMANHPoint& operator*=(RtFloat f);
   GMANHPoint& operator*=(const GMANMatrix4& m);
 };
-
-#endif

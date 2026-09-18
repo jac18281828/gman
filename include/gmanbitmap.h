@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANBITMAP_H
-#define __GMAN_GMANBITMAP_H 1
+#pragma once
 
 #include <list>
 #include <map>
@@ -106,5 +105,3 @@ public:
   RtInt getWidth(void) const;
   RtInt getHeight(void) const;
 };
-
-#endif

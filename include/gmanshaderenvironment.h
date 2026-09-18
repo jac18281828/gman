@@ -25,8 +25,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef _GMANSHADERENVIRONMENT_H
-#define _GMANSHADERENVIRONMENT_H 1
+#pragma once
 
 #include <cmath>
 #include <vector>
@@ -301,5 +300,3 @@ struct GMAN_EXPORT GMANImagerEnv {
   RtFloat time;   // current shutter time
   RtFloat dtime;  // amount of time covered by this shading sample
 };
-
-#endif

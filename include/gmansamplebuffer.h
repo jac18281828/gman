@@ -21,8 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANSAMPLEBUFFER_H
-#define __GMAN_GMANSAMPLEBUFFER_H 1
+#pragma once
 
 #include "gmancolor.h"
 #include "ri.h"
@@ -86,5 +85,3 @@ private:
   inline int sampleIndex(int sx, int sy) const { return sy * sampleWidth + sx; }
   inline int pixelIndex(int x, int y) const { return y * width + x; }
 };
-
-#endif

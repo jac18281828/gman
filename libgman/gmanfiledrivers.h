@@ -21,8 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANFILEDRIVERS_H
-#define __GMAN_GMANFILEDRIVERS_H 1
+#pragma once
 
 #include <memory>
 #include <string>
@@ -46,5 +45,3 @@ std::unique_ptr<GMANOutput> gmanMakeFileOutput(std::string const& extension, cha
 
 // The compiled file drivers' names, in table order.
 std::vector<std::string> gmanFileDrivers();
-
-#endif

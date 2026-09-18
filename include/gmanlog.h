@@ -23,8 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#ifndef __GMAN_GMANLOG_H
-#define __GMAN_GMANLOG_H 1
+#pragma once
 
 #include <format>
 #include <string_view>
@@ -115,5 +114,3 @@ public:
 
   RtVoid setScreenOutput(bool output) { ::setScreenOutput(output); }
 };
-
-#endif
