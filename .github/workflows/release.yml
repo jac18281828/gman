@@ -94,8 +94,8 @@ jobs:
         run: cmake --preset release -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
       - name: Build the package build
         run: cmake --build build-release --parallel
-      # The operator's concern is shipping a tarball built with tests on by
-      # accident, which would export internals; this makes it impossible.
+      # A package built with tests on exports internals; refuse any tree not
+      # configured with tests off.
       - name: Guard against a test build shipping
         run: grep -qx "BUILD_TESTING:BOOL=OFF" build-release/CMakeCache.txt
       - name: Stage the install tree
@@ -112,18 +112,11 @@ jobs:
       - name: Verify the staged binary renders
         run: |
           cd "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
-          ./bin/gman "${{ github.workspace }}/tests/rib/sphere.rib"
-          test -s sphere.tif
-          rm -f sphere.tif
-          ./bin/gman "${{ github.workspace }}/tests/rib/shaders.rib"
-          test -s shaders.tif
-          rm -f shaders.tif
-          ./bin/gman "${{ github.workspace }}/tests/rib/texture.rib"
-          test -s texture.tif
-          rm -f texture.tif
-          ./bin/gman "${{ github.workspace }}/tests/rib/shinymetal_degrades.rib"
-          test -s shinymetal_degrades.tif
-          rm -f shinymetal_degrades.tif
+          for scene in sphere shaders texture shinymetal_degrades; do
+            ./bin/gman "${{ github.workspace }}/tests/rib/${scene}.rib"
+            test -s "${scene}.tif"
+            rm -f "${scene}.tif"
+          done
       # The explicit ON configure above means a runner missing either
       # library fails configure instead of silently shipping a tarball
       # with a driver quietly missing.

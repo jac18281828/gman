@@ -23,12 +23,9 @@ include(CTest)
 include(CheckCXXSourceCompiles)
 include(CMakePackageConfigHelpers)
 
-# Tests link internals through gman_core directly, as if they were external;
-# hiding by default would break every one of them. Only a build with tests
-# off is the shipped product.
-if(BUILD_TESTING)
-  set(CMAKE_CXX_VISIBILITY_PRESET default)
-else()
+# Tests reach internals through the shared library, so a test build exports
+# every symbol.
+if(NOT BUILD_TESTING)
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 endif()
 
