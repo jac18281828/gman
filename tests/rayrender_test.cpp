@@ -19,13 +19,13 @@
  */
 
 /*
- * R4's actual gate: `gman -r gmanraytracer` renders tests/rib/r4_raytracer.rib
- * (lights.rib's scene under its own Display) to a round, plastic-shaded
- * sphere matching a checked-in golden image, whose covered-pixel count
- * agrees with the z-buffer's own render of the same scene within 8%, and
- * that differs from the z-buffer's render by more than the golden's own
- * mismatch tolerance -- silhouette and specular highlight really differ,
- * not a renderer silently falling back to the other's path.
+ * `gman -r gmanraytracer` renders tests/rib/r4_raytracer.rib (lights.rib's
+ * scene under its own Display) to a round, plastic-shaded sphere matching a
+ * checked-in golden image, whose covered-pixel count agrees with the
+ * z-buffer's own render of the same scene within 8%, and that differs from
+ * the z-buffer's render by more than the golden's own mismatch tolerance --
+ * silhouette and specular highlight really differ, not a renderer silently
+ * falling back to the other's path.
  *
  * "Covered" is judged against each image's own corner pixel
  * (silhouette_test.cpp's own idiom), not a literal nonzero-channel test:
@@ -35,7 +35,9 @@
  * would read every pixel, background included, as covered.
  *
  * Both renders write r4_raytracer.tif; each is moved aside before the next
- * overwrites it.
+ * overwrites it. Any r4_raytracer_raytraced.tif/r4_raytracer_zbuffer.tif left
+ * by a prior run is removed first, so a failed render cannot leave this run
+ * judging a stale image.
  */
 
 #include <cmath>
@@ -88,13 +90,21 @@ int main(int argc, char* argv[]) {
   std::string const ribDir = argv[2];
   std::string const rib = ribDir + "/r4_raytracer.rib";
 
+  // Remove any output a prior run left, so a render that fails to write
+  // r4_raytracer.tif cannot leave this run's rename silently reusing that
+  // prior output instead of failing.
+  std::remove("r4_raytracer_raytraced.tif");
+  std::remove("r4_raytracer_zbuffer.tif");
+
   check(runGman("\"" + gman + "\" -r gmanraytracer \"" + rib + "\" >/dev/null 2>&1") == 0,
         "r4_raytracer.rib renders under -r gmanraytracer");
-  std::rename("r4_raytracer.tif", "r4_raytracer_raytraced.tif");
+  check(std::rename("r4_raytracer.tif", "r4_raytracer_raytraced.tif") == 0,
+        "r4_raytracer.tif renders and renames to r4_raytracer_raytraced.tif");
 
   check(runGman("\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1") == 0,
         "r4_raytracer.rib renders under the default z-buffer");
-  std::rename("r4_raytracer.tif", "r4_raytracer_zbuffer.tif");
+  check(std::rename("r4_raytracer.tif", "r4_raytracer_zbuffer.tif") == 0,
+        "r4_raytracer.tif renders and renames to r4_raytracer_zbuffer.tif");
 
   // 1. Golden: see tests/goldenimage.h for GOLDEN_CHANNEL_TOL/
   // GOLDEN_MAX_FRACTION's provenance. On failure, r4_raytracer_diff.tif
