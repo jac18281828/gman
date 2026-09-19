@@ -993,6 +993,18 @@ set_tests_properties(gamma PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R7 proof, check 1: GMANSurfaceEnv's occlusion hook -- diffuse()/specular()
+# scale each non-ambient light by occluder->transmission(), ambient() never
+# consults it, and a point/distant light reports the distance and direction
+# the contract promises.
+add_executable(gman_occlusion occlusion_test.cpp)
+target_link_libraries(gman_occlusion PRIVATE gman_core)
+
+add_test(NAME occlusion COMMAND gman_occlusion)
+set_tests_properties(occlusion PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 1: GMANViewingSystem answers a camera-space ray
 # (cameraRay) as well as a world-space one (ray), and pins the [tmin,
 # tmax] interval every GMANRay defaults to.

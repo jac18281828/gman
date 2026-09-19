@@ -34,10 +34,21 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
+#include "gmanocclude.h"
 #include "gmanpoint.h"
 #include "gmanslapi.h"
 #include "gmanvector.h"
 #include "ri.h"
+
+// cl scaled per channel by an occluder's transmission. GMANColor gains no
+// operator* for this; diffuse() and specular() share this rather than
+// repeating the three get/set pairs each.
+inline GMANColor GMANOccludedColor(GMANColor cl, GMANColor const& transmission) {
+  cl.setRed(cl.getRed() * transmission.getRed());
+  cl.setGreen(cl.getGreen() * transmission.getGreen());
+  cl.setBlue(cl.getBlue() * transmission.getBlue());
+  return cl;
+}
 
 /*
  * The interface a surface shader is written against -- and the interface
@@ -85,6 +96,14 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // RiWorldBegin), filled by gman::shade. Identity until then, so a
   // shader run before RiWorldBegin sees the two spaces as one.
   GMANMatrix4 cameraToWorld;
+
+  // The renderer's answer to "does light reach P?" (gmanocclude.h), null
+  // by default and last so existing field offsets hold. Null means every
+  // light is visible, today's behaviour: the z-buffer passes none, and a
+  // shader built against an older header ignores this until rebuilt.
+  // diffuse() and specular() consult it; ambient() cannot, having no
+  // direction to occlude.
+  gman::Occluder const* occluder = nullptr;
 
   // ---- noise family (gmannoise.cpp), defined in
   // gmanshaderenvironment.cpp ----
@@ -182,9 +201,16 @@ struct GMAN_EXPORT GMANSurfaceEnv {
       GMANVector l;
       GMANColor cl;
       lights[i]->sample(P, l, cl);
+      // A distant light's l has the length of its from-to vector, which
+      // means nothing; every other light's is the distance to it, taken
+      // before normalize() below discards it.
+      RtFloat const distance = (lights[i]->getType() == GMAN_LIGHT_DISTANT) ? RI_INFINITY : l.magnitude();
       l.normalize();
       RtFloat nDotL = nn.dot(l);
       if (nDotL > 0.0) {
+        if (occluder) {
+          cl = GMANOccludedColor(cl, occluder->transmission(*lights[i], P, l, distance));
+        }
         cl.scale(nDotL);
         sum += cl;
       }
@@ -205,11 +231,17 @@ struct GMAN_EXPORT GMANSurfaceEnv {
       GMANVector l;
       GMANColor cl;
       lights[i]->sample(P, l, cl);
+      // See diffuse()'s own comment: distance before normalize() discards
+      // a point or spot light's l magnitude.
+      RtFloat const distance = (lights[i]->getType() == GMAN_LIGHT_DISTANT) ? RI_INFINITY : l.magnitude();
       l.normalize();
       GMANVector h(l.getX() + vv.getX(), l.getY() + vv.getY(), l.getZ() + vv.getZ());
       h.normalize();
       RtFloat nDotH = nn.dot(h);
       if (nDotH > 0.0) {
+        if (occluder) {
+          cl = GMANOccludedColor(cl, occluder->transmission(*lights[i], P, l, distance));
+        }
         RtFloat exponent = (roughness > RI_EPSILON) ? (1.0 / roughness) : (1.0 / RI_EPSILON);
         cl.scale((RtFloat)pow(nDotH, exponent));
         sum += cl;

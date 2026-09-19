@@ -29,6 +29,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
+#include "gmanocclude.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -79,7 +80,10 @@ struct GMAN_EXPORT SurfacePoint {
 // shader's Ci. cameraToWorld is the camera's own world-to-camera inverse
 // (GMANOptions::getCameraToWorld) -- an argument rather than a member of
 // Appearance, since it belongs to the camera, not to what a primitive
-// looks like.
-GMAN_EXPORT GMANColor shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld);
+// looks like. occluder answers the illuminance loop's "does light reach
+// P?" (gmanocclude.h); a caller that omits it keeps every light visible,
+// today's behaviour.
+GMAN_EXPORT GMANColor shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
+                            Occluder const* occluder = nullptr);
 
 } // namespace gman
