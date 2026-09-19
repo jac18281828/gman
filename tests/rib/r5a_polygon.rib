@@ -1,0 +1,27 @@
+## R5a proof: a single matte, camera-facing Polygon, alone under a distant
+## light -- no shadow falls on it, so this fixture is safe to reuse once R7
+## lands shadows. The same fixture also grounds the ray tracer's render
+## against the z-buffer's own (tests/polygonzbuffer_test.cpp).
+##
+## A convex, regular pentagon -- five vertices, not four, the same shape and
+## reasoning as tests/rib/polygon.rib's own (a 4-vertex fixture cannot tell
+## a real vertex-count fix from a hardcoded-4 coincidence), scaled up from
+## its unit radius so the silhouette clears both tests' pixel-count floors
+## at this fixture's own Format.
+Display "r5a_polygon.tif" "file" "rgba"
+Format 320 240 1
+Projection "perspective" "fov" [60]
+# Explicit, not the RI_EPSILON-near default: a flat, camera-facing polygon
+# is exactly the shape the near-clip precision defect corrupts hardest
+# (AGENTS.md, "Flat or z-narrow geometry needs Clipping 0.5 50").
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 0 0] "to" [0 0 0]
+Sides 2
+Surface "matte" "Ka" [0.3] "Kd" [0.8]
+Polygon "P" [0 1.3 0  -1.236374 0.401722 0  -0.764121 -1.051722 0
+             0.764121 -1.051722 0  1.236374 0.401722 0]
+WorldEnd

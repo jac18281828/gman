@@ -267,6 +267,7 @@ if(GMAN_BUILD_RAYTRACER)
     renderers/raytracer/gmanrayinterface.cpp
     renderers/raytracer/gmanrayobjectmanager.cpp
     renderers/raytracer/gmanraydisk.cpp
+    renderers/raytracer/gmanraypolygon.cpp
     renderers/raytracer/gmanraysphere.cpp
     renderers/raytracer/gmanraytracerenderer.cpp
     renderers/raytracer/rayloader.cpp)
