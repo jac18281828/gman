@@ -44,6 +44,13 @@ bool GMANRayDisk::intersect(const GMANRay& ray, GMANHit& hit) const {
   // A null wedge or a zero radius leaves no surface to hit; without this
   // guard, u's theta/thetamaxRad division below fills the hit with NaN
   // instead of reporting a miss.
+  //
+  // Open question, the same one GMANRaySphere's own intersect leaves open:
+  // a negative thetamax hits nothing here (thetamaxRad goes negative, and
+  // theta -- always in [0, 2*PI) -- can never be less than it), and a
+  // negative radius likewise hits nothing (r is never negative, so
+  // r > radius is always true), while GMANDisk::getLocation sweeps or
+  // mirrors a real shape for either. Which behavior is right is undecided.
   if (thetamax == 0.0 || radius == 0.0)
     return false;
 

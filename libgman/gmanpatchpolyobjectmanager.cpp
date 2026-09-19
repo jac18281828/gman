@@ -31,6 +31,7 @@
 #include "gmanobjectmanager.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygon.h"
+#include "gmanpolygoninternal.h"
 #include "gmanprimitives.h"
 #include "gmanshading.h"
 #include "ri.h"
@@ -174,38 +175,6 @@ gman::SurfacePoint vertexSurfacePoint(const GMANPoint& location, const GMANNorma
   point.s = s;
   point.t = t;
   return point;
-}
-
-// The ring's largest bounding-box side, in whichever of x, y or z spans
-// it widest. getRSPolygon's degeneracy guard judges the polygon's area
-// against this extent rather than against an absolute constant, so a
-// sliver a million times longer than it is wide reads the same way at
-// any scale.
-RtFloat boundingBoxExtent(const std::vector<GMANPoint>& ring) {
-  RtFloat minX = ring[0].getX(), maxX = minX;
-  RtFloat minY = ring[0].getY(), maxY = minY;
-  RtFloat minZ = ring[0].getZ(), maxZ = minZ;
-  for (std::size_t i = 1; i < ring.size(); i++) {
-    const GMANPoint& pt = ring[i];
-    if (pt.getX() < minX)
-      minX = pt.getX();
-    if (pt.getX() > maxX)
-      maxX = pt.getX();
-    if (pt.getY() < minY)
-      minY = pt.getY();
-    if (pt.getY() > maxY)
-      maxY = pt.getY();
-    if (pt.getZ() < minZ)
-      minZ = pt.getZ();
-    if (pt.getZ() > maxZ)
-      maxZ = pt.getZ();
-  }
-  RtFloat extent = maxX - minX;
-  if (maxY - minY > extent)
-    extent = maxY - minY;
-  if (maxZ - minZ > extent)
-    extent = maxZ - minZ;
-  return extent;
 }
 
 // The sine of the angle between a and b, judged against normal: a.cross(b)
@@ -571,15 +540,10 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
 
   for (std::size_t loopIndex = 1; loopIndex < loops.size(); loopIndex++) {
     const std::vector<GMANPoint>& loop = loops[loopIndex];
-    if (loop.size() < 3) {
-      continue; // encloses no area: dropped
+    if (gman::isDegeneratePolygon(loop)) {
+      continue; // too few points, or degenerate against its own extent: dropped
     }
-    RtFloat bboxSide = boundingBoxExtent(loop);
     GMANVector holeNewell = gman::newellNormal(loop);
-    RtFloat holeMag = holeNewell.magnitude();
-    if (bboxSide == (RtFloat)0.0 || holeMag < kTriangulationTolerance * bboxSide * bboxSide) {
-      continue; // degenerate against its own extent: dropped
-    }
 
     Hole hole;
     hole.loopIndex = (RtInt)loopIndex;
@@ -776,7 +740,7 @@ bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vect
   if (gman::isDegeneratePolygon(outer)) {
     return false; // fully degenerate: no plane worth shading or filling
   }
-  RtFloat outerBboxSide = boundingBoxExtent(outer);
+  RtFloat outerBboxSide = gman::boundingBoxExtent(outer);
   GMANVector normalVec = gman::newellNormal(outer);
   RtFloat normalMagnitude = normalVec.magnitude();
   // Dividing by the magnitude already computed above, rather than calling

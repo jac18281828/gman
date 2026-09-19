@@ -22,6 +22,7 @@
  */
 
 #include "gmanpolygon.h"
+#include "gmanpolygoninternal.h"
 
 namespace {
 
@@ -34,10 +35,10 @@ namespace {
 // polygon intends.
 const RtFloat kDegeneracyTolerance = (RtFloat)1.0e-6;
 
-// The ring's largest bounding-box side, in whichever of x, y or z spans it
-// widest. isDegeneratePolygon judges the ring's area against this extent
-// rather than against an absolute constant, so a sliver a million times
-// longer than it is wide reads the same way at any scale.
+} // namespace
+
+namespace gman {
+
 RtFloat boundingBoxExtent(std::vector<GMANPoint> const& ring) {
   RtFloat minX = ring[0].getX(), maxX = minX;
   RtFloat minY = ring[0].getY(), maxY = minY;
@@ -64,10 +65,6 @@ RtFloat boundingBoxExtent(std::vector<GMANPoint> const& ring) {
     extent = maxZ - minZ;
   return extent;
 }
-
-} // namespace
-
-namespace gman {
 
 GMANVector newellNormal(std::vector<GMANPoint> const& ring) {
   GMANVector sum;

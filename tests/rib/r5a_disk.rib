@@ -10,9 +10,12 @@ Projection "perspective" "fov" [45]
 Clipping 0.5 50
 Translate 0 0 5
 WorldBegin
+## The disk's normal is (0, 0, -1) (GMANDisk::getNormal); "from"/"to" below
+## give the light a strong -z component in its own travel direction, so it
+## reaches that face nearly head-on (N.L ~ 0.96) instead of grazing it.
 LightSource "ambientlight" 1 "intensity" [0.1]
 LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
-	"from" [5 0 0] "to" [0 0 0]
+	"from" [1 1 -5] "to" [0 0 0]
 Sides 2
 Surface "matte" "Ka" [0.3] "Kd" [0.8]
 Disk 0 1.5 270

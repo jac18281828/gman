@@ -68,9 +68,12 @@ void testRimBoundary() {
   check(disk.intersect(insideRay, insideHit) && near(insideHit.point.getX(), 0.5),
         "rim: a ray inside the rim (r == 0.5) hits");
 
-  GMANRay outsideRay(GMANPoint(1.5, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  // r == radius + 1e-3, not radius + 0.5: a rim comparison loosened to
+  // e.g. radius * 1.4 would still (wrongly) call this a hit if the ray sat
+  // well outside the true edge, so the miss has to be pinned close to it.
+  GMANRay outsideRay(GMANPoint(1.001, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit outsideHit;
-  check(!disk.intersect(outsideRay, outsideHit), "rim: a ray just outside the rim (r == 1.5) misses");
+  check(!disk.intersect(outsideRay, outsideHit), "rim: a ray just outside the rim (r == radius + 1e-3) misses");
 }
 
 // ---- check 3: a ray parallel to the plane misses ----
@@ -114,9 +117,12 @@ void testUVRoundTrip() {
   check(hit.v >= 0.0 && hit.v <= 1.0, "uv round trip: 0 <= v <= 1");
 }
 
-// ---- check 6: a rotation exercises the transform placement and the
-// normal's inverse transpose, neither of which a translation or a
-// diagonal scale can tell from its opposite ----
+// ---- check 6: a rotation exercises the transform's placement of the
+// disk and its hit normal -- but not the inverse-transpose itself, since a
+// rotation matrix is orthogonal (its inverse is its own transpose), so
+// cameraToObject's inverse-transpose and a naive forward transform give
+// the same answer here. testShearTransform below is the one that can tell
+// them apart. ----
 void testRotatingTransform() {
   GMANMatrix4 matrix;
   matrix.rot(GMANRadians(90.0), 0.0, 1.0, 0.0);
@@ -137,6 +143,36 @@ void testRotatingTransform() {
         "rotation: normal == (-1, 0, 0), the object normal carried by the inverse transpose");
 }
 
+// ---- a shear is the one transform here that is not its own transpose
+// under inversion, so it is the one that can tell
+// transformNormal(cameraToObject, ...) (correct) apart from
+// transformDirection(objectToCamera, ...) (the naive substitute) ----
+void testShearTransform() {
+  GMANMatrix4 matrix; // identity, then sheared
+  // m[2][0] = k mixes object z into camera x (p' = p * m: x' = x + k*z)
+  // while leaving z' = z, so the object's z == 0 plane still maps to
+  // camera z == 0 -- the shear changes only which normal computation is
+  // right, not where the plane itself sits.
+  matrix[2][0] = 2.0;
+  GMANTransform transform = makeTransform(matrix);
+
+  GMANRayDisk disk(0.0, 1.0, 360.0, GMANParameterList(), transform);
+  GMANRay ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit hit;
+
+  bool const hitFound = disk.intersect(ray, hit);
+  check(hitFound && near(hit.t, 5.0), "shear: t == 5, the axial ray's own z geometry is unaffected by the shear");
+  check(near(hit.point.getX(), 0.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
+        "shear: point == (0, 0, 0)");
+  // The correct inverse-transpose gives (0, 0, -1) here (cameraToObject's
+  // z row is untouched by the shear); transformDirection(objectToCamera,
+  // (0, 0, -1)) -- the naive substitute -- would instead give (-2, 0, -1)'s
+  // direction, so this tells the two apart.
+  check(near(hit.normal.getX(), 0.0) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), -1.0),
+        "shear: normal == (0, 0, -1), the inverse transpose, not transformDirection(objectToCamera, ...)'s "
+        "(-2, 0, -1) direction");
+}
+
 // ---- check 7: the ray's interval rejects a hit before tmin and one past
 // tmax ----
 void testIntervalRejects() {
@@ -150,6 +186,20 @@ void testIntervalRejects() {
 
   GMANRay farRay(origin, direction, 7.0, RI_INFINITY);
   check(!disk.intersect(farRay, hit), "interval: tmin above the plane hit (5) rejects it");
+}
+
+// ---- a singular transform (e.g. Scale 1 1 0) has no invertible object
+// space to intersect in, and never hits ----
+void testSingularTransform() {
+  GMANMatrix4 matrix;
+  matrix.scale(1.0, 1.0, 0.0);
+  GMANTransform transform = makeTransform(matrix);
+
+  GMANRayDisk disk(0.0, 1.0, 360.0, GMANParameterList(), transform);
+  GMANRay ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit hit;
+
+  check(!disk.intersect(ray, hit), "singular transform: a disk with no invertible object space never hits");
 }
 
 // ---- degenerate disks miss instead of filling NaN ----
@@ -174,7 +224,9 @@ int main() {
   testPartialThetamaxWedge();
   testUVRoundTrip();
   testRotatingTransform();
+  testShearTransform();
   testIntervalRejects();
+  testSingularTransform();
   testDegenerateDisksMiss();
 
   return checkSummary("GMANRayDisk::intersect hits, misses and clips correctly");

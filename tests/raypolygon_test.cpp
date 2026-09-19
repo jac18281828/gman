@@ -70,9 +70,12 @@ void testSquareCentreAndEdge() {
   check(near(centreHit.u, 0.0) && near(centreHit.v, 0.0), "square: u == v == 0, no parametric surface");
   check(centreHit.primitive == &square, "square: primitive points at the square hit");
 
-  GMANRay pastEdgeRay(GMANPoint(1.5, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  // x == edge + 1e-3, not edge + 0.5: an inside test loosened to accept a
+  // point well past the true edge would still (wrongly) call a ray this
+  // far out a hit, so the miss has to be pinned close to the edge itself.
+  GMANRay pastEdgeRay(GMANPoint(1.001, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit pastEdgeHit;
-  check(!square.intersect(pastEdgeRay, pastEdgeHit), "square: a ray just past the x == 1 edge misses");
+  check(!square.intersect(pastEdgeRay, pastEdgeHit), "square: a ray just past the x == 1 edge (x == 1 + 1e-3) misses");
 }
 
 // ---- check 2: the L-shape's notch misses, its arms hit ----

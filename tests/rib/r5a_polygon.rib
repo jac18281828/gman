@@ -17,9 +17,14 @@ Projection "perspective" "fov" [60]
 Clipping 0.5 50
 Translate 0 0 5
 WorldBegin
+## This vertex order's Newell normal is (0, 0, 1), but matte's shader
+## (shaders/gmanmatte.cpp) faceforwards it against the incident ray before
+## shading, so the same "from"/"to" the disk fixture uses -- a strong -z
+## component in the light's own travel direction -- reaches this face
+## nearly head-on too (N.L ~ 0.96) instead of grazing it.
 LightSource "ambientlight" 1 "intensity" [0.1]
 LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
-	"from" [5 0 0] "to" [0 0 0]
+	"from" [1 1 -5] "to" [0 0 0]
 Sides 2
 Surface "matte" "Ka" [0.3] "Kd" [0.8]
 Polygon "P" [0 1.3 0  -1.236374 0.401722 0  -0.764121 -1.051722 0

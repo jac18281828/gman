@@ -23,12 +23,20 @@
  * renders the same shape under both renderers. The two renderers place
  * samples differently (the z-buffer truncates to integer sample
  * coordinates, the tracer uses gman::sampleCentre), so edge pixels differ
- * by design; this pins agreement everywhere else. A pixel whose 5x5
- * neighbourhood is covered in both renders sits well inside both
- * silhouettes, past that edge disagreement, so it should match closely;
- * any pixel that still mismatches there has to sit within 2px of the
- * z-buffer's own covered/uncovered boundary, where a one-sample placement
- * difference can plausibly flip a pixel's coverage.
+ * by design. Two checks, over two different pixel sets, per §8.4:
+ *
+ *   1. A pixel whose 5x5 neighbourhood is covered in both renders sits
+ *      well inside both silhouettes, past that edge disagreement, and
+ *      has to match exactly (within GOLDEN_CHANNEL_TOL) -- this pins
+ *      normal, appearance and lights away from any edge effect. At least
+ *      100 such pixels exist.
+ *   2. Every pixel in the whole frame -- coverage disagreements included,
+ *      not only the interior set above -- where the two renders mismatch
+ *      has to sit within 2px of the z-buffer's own covered/uncovered
+ *      boundary, where a one-sample placement difference can plausibly
+ *      flip a pixel's coverage or shift its antialiased blend. A mismatch
+ *      anywhere else would mean the two renderers disagree on the shape
+ *      itself, not merely on sample placement.
  */
 
 #include <cmath>
@@ -158,34 +166,53 @@ int main(int argc, char* argv[]) {
   std::vector<uint8_t> const covZ = coveredGrid(zbuffer);
   std::vector<uint8_t> const boundaryZ = boundaryGrid(covZ, w, h);
 
-  long candidates = 0, mismatched = 0, mismatchedFarFromBoundary = 0;
+  auto mismatches = [&](uint32_t x, uint32_t y) {
+    uint32_t const a = raytraced.at(x, y);
+    uint32_t const b = zbuffer.at(x, y);
+    return std::abs(int(TIFFGetR(a)) - int(TIFFGetR(b))) > GOLDEN_CHANNEL_TOL ||
+           std::abs(int(TIFFGetG(a)) - int(TIFFGetG(b))) > GOLDEN_CHANNEL_TOL ||
+           std::abs(int(TIFFGetB(a)) - int(TIFFGetB(b))) > GOLDEN_CHANNEL_TOL;
+  };
+
+  // 1. Interior: every 5x5-covered-in-both pixel must match exactly.
+  long candidates = 0, interiorMismatched = 0;
   for (uint32_t y = 0; y < h; ++y) {
     for (uint32_t x = 0; x < w; ++x) {
       if (!neighbourhoodCovered(covRay, w, h, x, y) || !neighbourhoodCovered(covZ, w, h, x, y)) {
         continue;
       }
       ++candidates;
-      uint32_t const a = raytraced.at(x, y);
-      uint32_t const b = zbuffer.at(x, y);
-      bool const matches = std::abs(int(TIFFGetR(a)) - int(TIFFGetR(b))) <= GOLDEN_CHANNEL_TOL &&
-                           std::abs(int(TIFFGetG(a)) - int(TIFFGetG(b))) <= GOLDEN_CHANNEL_TOL &&
-                           std::abs(int(TIFFGetB(a)) - int(TIFFGetB(b))) <= GOLDEN_CHANNEL_TOL;
-      if (!matches) {
-        ++mismatched;
-        if (!near2px(boundaryZ, w, h, x, y)) {
-          ++mismatchedFarFromBoundary;
-        }
+      if (mismatches(x, y)) {
+        ++interiorMismatched;
       }
     }
   }
-  std::printf("candidates=%ld mismatched=%ld mismatchedFarFromBoundary=%ld\n", candidates, mismatched,
-              mismatchedFarFromBoundary);
+
+  // 2. Whole frame: every mismatch anywhere, coverage disagreements
+  // included, must sit within 2px of the z-buffer's own boundary.
+  long totalMismatched = 0, mismatchedFarFromBoundary = 0;
+  for (uint32_t y = 0; y < h; ++y) {
+    for (uint32_t x = 0; x < w; ++x) {
+      if (!mismatches(x, y)) {
+        continue;
+      }
+      ++totalMismatched;
+      if (!near2px(boundaryZ, w, h, x, y)) {
+        ++mismatchedFarFromBoundary;
+      }
+    }
+  }
+  std::printf("candidates=%ld interiorMismatched=%ld totalMismatched=%ld mismatchedFarFromBoundary=%ld\n", candidates,
+              interiorMismatched, totalMismatched, mismatchedFarFromBoundary);
 
   check(candidates >= 100, "at least 100 pixels have their 5x5 neighbourhood covered in both renders (" +
                                std::to_string(candidates) + ")");
-  check(mismatchedFarFromBoundary == 0, "every mismatched interior pixel lies within 2px of the z-buffer's own "
-                                        "covered/uncovered boundary (" +
-                                            std::to_string(mismatchedFarFromBoundary) + " did not)");
+  check(interiorMismatched == 0, "every interior (5x5-covered-in-both) pixel matches within GOLDEN_CHANNEL_TOL (" +
+                                     std::to_string(interiorMismatched) + " did not)");
+  check(mismatchedFarFromBoundary == 0,
+        "every mismatched pixel in the whole frame lies within 2px of the z-buffer's own covered/uncovered "
+        "boundary (" +
+            std::to_string(mismatchedFarFromBoundary) + " of " + std::to_string(totalMismatched) + " did not)");
 
   return checkSummary("R5a: the ray tracer's polygon matches the z-buffer's own, away from silhouette edges");
 }

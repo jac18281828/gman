@@ -41,9 +41,7 @@ GMAN_EXPORT GMANVector newellNormal(std::vector<GMANPoint> const& ring);
 
 // True for a ring too small or too thin to shade or intersect: fewer than
 // three vertices, or a Newell normal whose magnitude, against the ring's
-// own bounding-box extent, reads as a sliver rather than a real face. A
-// renderer that skips a degenerate ring here agrees with every other
-// renderer that does the same.
+// own bounding-box extent, reads as a sliver rather than a real face.
 GMAN_EXPORT bool isDegeneratePolygon(std::vector<GMANPoint> const& ring);
 
 // The dictionary every standard RI_* token (e.g. RI_P) resolves against,
