@@ -59,14 +59,16 @@ struct GMAN_EXPORT Appearance {
 GMAN_EXPORT Appearance appearanceOf(GMANAttributes const& attributes);
 
 // Where on a surface a point sits, and how it is seen -- every field
-// camera space. I is the caller's own incident direction rather than
-// assumed from the camera-space origin: an orthographic ray, or a
-// secondary ray reflection/refraction casts, does not look from there.
+// camera space. I is the caller's own incident direction, and E its own
+// eye position, rather than both assumed at the camera-space origin: an
+// orthographic ray, or a secondary ray reflection/refraction casts, does
+// not look from there.
 struct GMAN_EXPORT SurfacePoint {
   GMANPoint P;
   GMANNormal N;
   GMANNormal Ng;
   GMANVector I;
+  GMANPoint E;
   RtFloat u = 0.0;
   RtFloat v = 0.0;
   RtFloat s = 0.0;

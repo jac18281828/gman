@@ -36,16 +36,18 @@ namespace {
 
 // The gman::SurfacePoint a ray hit implies: P and N/Ng already camera
 // space (GMANRayInterface::intersect's own contract), I the ray's own
-// direction rather than assumed from the camera-space origin -- an
-// orthographic ray, or a future secondary ray, does not look from there.
-// s and t default to u and v, the RISpec's own default texture-coordinate
-// mapping; texture-coordinate corners on a ray primitive are a later unit.
+// direction and E its own origin, rather than both assumed at the
+// camera-space origin -- an orthographic ray, or a future secondary ray,
+// does not look from there. s and t default to u and v, the RISpec's own
+// default texture-coordinate mapping; texture-coordinate corners on a ray
+// primitive are a later unit.
 gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   gman::SurfacePoint point;
   point.P = hit.point;
   point.N = GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
   point.Ng = point.N;
   point.I = ray.getDirection();
+  point.E = ray.getOrigin();
   point.u = hit.u;
   point.v = hit.v;
   point.s = hit.u;

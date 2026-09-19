@@ -75,7 +75,7 @@ GMANColor shade(Appearance const& appearance, SurfacePoint const& point, GMANMat
   env.N = point.N;
   env.Ng = point.Ng;
   env.I = point.I;
-  env.E = GMANPoint(0.0, 0.0, 0.0);
+  env.E = point.E;
   env.u = point.u;
   env.v = point.v;
   env.s = point.s;

@@ -179,6 +179,7 @@ gman::SurfacePoint vertexSurfacePoint(const GMANPoint& location, const GMANNorma
   point.Ng = normal; // no displacement this phase; the two never diverge
   point.I = GMANVector(location.getX(), location.getY(), location.getZ());
   point.I.normalize();
+  point.E = GMANPoint(0.0, 0.0, 0.0);
   point.u = u;
   point.v = v;
   point.s = s;
