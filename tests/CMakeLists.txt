@@ -801,6 +801,17 @@ set_tests_properties(samplebuffer PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# gman::sampleCentre: the raster centre of one sample, and the deleted
+# (T, U, V) overload that keeps a non-int argument from truncating
+# silently, pinned at compile time via a requires-expression.
+add_executable(gman_samplecentre samplecentre_test.cpp)
+target_link_libraries(gman_samplecentre PRIVATE gman_core)
+
+add_test(NAME samplecentre COMMAND gman_samplecentre)
+set_tests_properties(samplecentre PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Perspective clipping honours RiScreenWindow, not the canonical +-1 NDC
 # cube: tests/rib/wideframe.rib's rectangle spans a wide, non-square
 # frame's default aspect-derived window.

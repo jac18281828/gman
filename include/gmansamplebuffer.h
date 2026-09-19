@@ -28,6 +28,23 @@
 
 class GMANFrameBuffer;
 
+namespace gman {
+
+// Raster coordinate of the centre of sample s along one axis, where
+// samplesPerPixel samples tile each pixel and origin is the crop offset.
+// The sample buffer owns the sample grid, so this shared geometry lives
+// beside it for every renderer.
+constexpr RtFloat sampleCentre(int origin, int s, int samplesPerPixel) {
+  return static_cast<RtFloat>(origin) + (static_cast<RtFloat>(s) + 0.5f) / static_cast<RtFloat>(samplesPerPixel);
+}
+
+// Deleted rather than left to implicit conversion: a double crop origin
+// or an int64_t sample index would otherwise truncate to int silently,
+// with no -Wconversion in the gate build to catch it.
+template <class T, class U, class V> RtFloat sampleCentre(T, U, V) = delete;
+
+} // namespace gman
+
 /*
  * RenderMan API GMANSampleBuffer
  *

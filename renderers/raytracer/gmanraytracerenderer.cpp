@@ -130,11 +130,11 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
           // raster.rxmin/rymin place this (possibly cropped) buffer's
           // local (px, py) there, the same origin the z-buffer's render
           // reads.
-          RtFloat const rasterX =
-              (RtFloat)raster.rxmin + (RtFloat)px + ((RtFloat)subX + (RtFloat)0.5) / (RtFloat)xsamples;
-          RtFloat const rasterY =
-              (RtFloat)raster.rymin + (RtFloat)py + ((RtFloat)subY + (RtFloat)0.5) / (RtFloat)ysamples;
-          shadeSample(viewingSys, cameraToWorld, rasterX, rasterY, px * xsamples + subX, py * ysamples + subY);
+          int const sampleX = px * xsamples + subX;
+          int const sampleY = py * ysamples + subY;
+          RtFloat const rasterX = gman::sampleCentre(raster.rxmin, sampleX, xsamples);
+          RtFloat const rasterY = gman::sampleCentre(raster.rymin, sampleY, ysamples);
+          shadeSample(viewingSys, cameraToWorld, rasterX, rasterY, sampleX, sampleY);
         }
       }
     }
