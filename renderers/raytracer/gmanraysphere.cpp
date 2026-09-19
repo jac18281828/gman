@@ -23,8 +23,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <math.h>
-
 #include "gmanmath.h"
 #include "gmanraysphere.h"
 #include "gmanvector.h"
@@ -33,6 +31,10 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
   // A null z-band, a null wedge or a zero radius leaves no surface to hit;
   // without this guard, phi's z/radius division and u's theta/thetamaxRad
   // division below fill the hit with NaN instead of reporting a miss.
+  //
+  // Open question: a negative thetamax hits nothing here, while
+  // GMANSphere::getLocation sweeps a real clockwise wedge for one. Which
+  // behavior is right is undecided.
   if (zmin == zmax || thetamax == 0.0 || radius == 0.0)
     return false;
 

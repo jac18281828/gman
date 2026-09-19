@@ -213,10 +213,13 @@ void testDegenerateSpheresMiss() {
   GMANVector const direction(0.0, 0.0, 1.0);
   GMANHit hit;
 
-  // The axial ray's roots sit at z == -1 and z == 1, outside the
-  // collapsed band, so the ordinary z < zmin || z > zmax check rejects
-  // them on its own. An equatorial ray hits at z == 0, inside the
-  // collapsed band's single point, and reaches the guard clause itself.
+  // The guard runs before any root is examined, on any ray. The test
+  // still fires an equatorial ray rather than an axial one: the axial
+  // ray's roots sit at z == -1 and z == 1, outside the collapsed band,
+  // so the ordinary z < zmin || z > zmax check would reject them too.
+  // The equatorial ray's z == 0 lies inside the collapsed band's single
+  // point and would pass that check, so only the guard stops the
+  // resulting 0/0.
   GMANRaySphere nullBand(1.0, 0.0, 0.0, 360.0, GMANParameterList());
   GMANRay const equatorialRay(GMANPoint(5.0, 0.0, 0.0), GMANVector(-1.0, 0.0, 0.0));
   check(!nullBand.intersect(equatorialRay, hit), "degenerate: zmin == zmax misses");
