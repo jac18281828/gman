@@ -169,6 +169,7 @@ add_library(gman_core SHARED
   libgman/gmansegment.cpp
   libgman/gmanshader.cpp
   libgman/gmanshaderenvironment.cpp
+  libgman/gmanshading.cpp
   libgman/gmanslapi.cpp
   libgman/gmansolidobject.cpp
   libgman/gmansurfaceshader.cpp

@@ -28,13 +28,10 @@
 #include <cstring>
 #include <vector>
 
-#include "gmanlightsourcemgr.h"
-#include "gmanloadableshader.h"
 #include "gmanobjectmanager.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
-#include "gmanshaderenvironment.h"
-#include "gmansurfaceshader.h"
+#include "gmanshading.h"
 #include "ri.h"
 
 namespace {
@@ -56,15 +53,6 @@ const RtFloat kTriangulationTolerance = (RtFloat)1.0e-6;
 // mapping rather than resolving RiTextureCoordinates or "s"/"t"/"st" itself
 // -- see its own comment.
 const GMANTextureCoordinates kIdentityCorners = {0, 0, 1, 0, 0, 1, 1, 1};
-
-// The RISpec's own default: a scene that never calls RiSurface still
-// shades, as matte. One instance, loaded on first use and reused --
-// dlopen once, not once per primitive.
-GMANSurfaceShader* defaultSurfaceShader() {
-  static GMANLoadableShader loader("libmatte.so");
-  static GMANSurfaceShader* shader = loader.getSurface();
-  return shader;
-}
 
 // Shared by getRSPolygon and getRSPatch to resolve "P" against. Its
 // signature carries no GMANDictionary, and every GMANDictionary registers
@@ -124,44 +112,10 @@ bool validBicubicMeshDim(RtInt n, bool periodic, RtInt step) {
 // least two distinct control points to form one, wrapped or not.
 bool validBilinearMeshDim(RtInt n) { return n >= 2; }
 
-// Per-primitive shading inputs that don't vary per vertex: the surface
-// shader (falling back to matte, per the RISpec's own default, when
-// RiSurface was never called), the lights active in this attribute scope
-// (RiIlluminate), and the primitive's own Cs/Os. Shared by createParametric
-// and getRSPolygon, which otherwise duplicated this resolution verbatim.
-struct GMANShadingContext {
-  GMANSurfaceShader* shader;
-  std::vector<const GMANLight*> activeLights;
-  GMANColor Cs;
-  GMANColor Os;
-  GMANMatrix4 cameraToWorld; // identity unless opt carries one
-};
-
-GMANShadingContext resolveShadingContext(GMANAttributes* attr, GMANOptions const* opt) {
-  GMANShadingContext ctx;
-
-  // getSurface's const pointer just reflects that GMANAttributes doesn't
-  // want its shader pointer reseated through it; computeCi/computeOi are
-  // not logically const on the shader instance itself, which is why this
-  // casts rather than threading const through the shading call below.
-  const GMANSurfaceShader* constShader = attr->getSurface(0.0);
-  ctx.shader = constShader ? const_cast<GMANSurfaceShader*>(constShader) : defaultSurfaceShader();
-
-  const std::list<RtLightHandle>& handles = attr->getLightList().getHandles();
-  for (std::list<RtLightHandle>::const_iterator it = handles.begin(); it != handles.end(); ++it) {
-    const GMANLight* light = gmanLightSourceMgr().get(*it);
-    if (light) {
-      ctx.activeLights.push_back(light);
-    }
-  }
-
-  ctx.Cs = attr->getColor();
-  ctx.Os = attr->getOpacity();
-  if (opt) {
-    ctx.cameraToWorld = opt->getCameraToWorld();
-  }
-  return ctx;
-}
+// opt's camera-to-world, or identity when opt is null (before RiWorldBegin,
+// or a caller with no options at all) -- gman::shade's own cameraToWorld
+// argument, resolved once per primitive rather than once per vertex.
+GMANMatrix4 cameraToWorldOf(GMANOptions const* opt) { return opt ? opt->getCameraToWorld() : GMANMatrix4(); }
 
 // A parametric surface's four corner texture coordinates (RISpec 3.2's
 // RiTextureCoordinates), resolved in precedence order, most specific last so
@@ -209,32 +163,27 @@ RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10, RtFloat c01, 
   return (RtFloat)((1.0 - u) * (1.0 - v) * c00 + u * (1.0 - v) * c10 + (1.0 - u) * v * c01 + u * v * c11);
 }
 
-// Shades one vertex in camera space, with every input the shader needs
-// already at hand -- this is what "shade per vertex and let [Gouraud
-// interpolation] interpolate" means in practice: a clip-introduced
-// vertex has no u,v of its own to shade with, but it does get a color,
-// because GMANClipEdge::intersect already interpolates GMANVertex::color
-// across a clipped edge (the same machinery phase 1 wired up for the vertex
-// alpha blend). Eye sits at the camera-space origin (gman::VSPerspective::ray),
-// so the incident direction is just the normalized surface point.
-GMANColor shadeVertex(const GMANShadingContext& ctx, const GMANPoint& location, const GMANNormal& normal, RtFloat u,
-                      RtFloat v, RtFloat s, RtFloat t) {
-  GMANSurfaceEnv env;
-  env.Cs = ctx.Cs;
-  env.Os = ctx.Os;
-  env.P = location;
-  env.N = normal;
-  env.Ng = normal; // no displacement this phase; the two never diverge
-  env.I = GMANVector(location.getX(), location.getY(), location.getZ());
-  env.I.normalize();
-  env.E = GMANPoint(0.0, 0.0, 0.0);
-  env.u = u;
-  env.v = v;
-  env.s = s;
-  env.t = t;
-  env.lights = ctx.activeLights;
-  env.cameraToWorld = ctx.cameraToWorld;
-  return ctx.shader->computeCi(env);
+// The gman::SurfacePoint at one vertex, in camera space -- this is what
+// "shade per vertex and let [Gouraud interpolation] interpolate" means in
+// practice: a clip-introduced vertex has no u,v of its own to shade with,
+// but it does get a color, because GMANClipEdge::intersect already
+// interpolates GMANVertex::color across a clipped edge (the same machinery
+// phase 1 wired up for the vertex alpha blend). Eye sits at the
+// camera-space origin (gman::VSPerspective::ray), so the incident
+// direction is just the normalized surface point.
+gman::SurfacePoint vertexSurfacePoint(const GMANPoint& location, const GMANNormal& normal, RtFloat u, RtFloat v,
+                                      RtFloat s, RtFloat t) {
+  gman::SurfacePoint point;
+  point.P = location;
+  point.N = normal;
+  point.Ng = normal; // no displacement this phase; the two never diverge
+  point.I = GMANVector(location.getX(), location.getY(), location.getZ());
+  point.I.normalize();
+  point.u = u;
+  point.v = v;
+  point.s = s;
+  point.t = t;
+  return point;
 }
 
 // Newell's method: the face normal as the sum of every edge's
@@ -485,7 +434,7 @@ std::vector<GMANPolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANPara
 // index-aligned with vertexLocations, not with ring.
 GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, const std::vector<RtInt>& ring,
                                const GMANVector& normalVec, RtInt sides, RtToken orientation,
-                               const GMANShadingContext& shading,
+                               gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
                                const std::vector<GMANPolygonVertexTexCoord>& texCoords) {
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
@@ -501,7 +450,8 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
     vertices[i]->setNormal(normalVec);
 
     const GMANPolygonVertexTexCoord& tc = texCoords[i];
-    vertices[i]->setColor(shadeVertex(shading, vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t));
+    gman::SurfacePoint const point = vertexSurfacePoint(vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t);
+    vertices[i]->setColor(gman::shade(appearance, point, cameraToWorld));
   }
 
   std::vector<GMANPoint> ringPoints(ring.size());
@@ -852,7 +802,8 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
 // treating it as fatal.
 bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vector<std::vector<RtInt>>& loopSlots,
                const std::vector<GMANPolygonVertexTexCoord>& pointTexCoords, RtInt sides, RtToken orientation,
-               const GMANShadingContext& shading, GMANBody*& body, GMANVertex*& vertRoot) {
+               gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld, GMANBody*& body,
+               GMANVertex*& vertRoot) {
   const std::vector<GMANPoint>& outer = loops[0];
   if (outer.size() < 3) {
     return false;
@@ -883,7 +834,8 @@ bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vect
     texCoords[i] = pointTexCoords[vertexSlots[i]];
   }
 
-  GMANObject* object = buildPolygonObject(vertexLocations, ring, normalVec, sides, orientation, shading, texCoords);
+  GMANObject* object =
+      buildPolygonObject(vertexLocations, ring, normalVec, sides, orientation, appearance, cameraToWorld, texCoords);
   body = object->getBody();
   vertRoot = object->getVert();
   object->setBody(NULL);
@@ -958,7 +910,8 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParame
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-  GMANShadingContext shading = resolveShadingContext(attr, opt);
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
 
   std::vector<GMANPoint> location(nverts);
   std::vector<RtInt> slots(nverts);
@@ -975,7 +928,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParame
 
   GMANBody* body;
   GMANVertex* vertRoot;
-  if (!buildFace({location}, {slots}, texCoords, sides, orientation, shading, body, vertRoot)) {
+  if (!buildFace({location}, {slots}, texCoords, sides, orientation, appearance, cameraToWorld, body, vertRoot)) {
     return create();
   }
   GMANObject* object = new GMANObject();
@@ -1020,11 +973,12 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSGeneralPolygon(RtInt nloops, RtI
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-  GMANShadingContext shading = resolveShadingContext(attr, opt);
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
 
   GMANBody* body;
   GMANVertex* vertRoot;
-  if (!buildFace(loops, loopSlots, pointTexCoords, sides, orientation, shading, body, vertRoot)) {
+  if (!buildFace(loops, loopSlots, pointTexCoords, sides, orientation, appearance, cameraToWorld, body, vertRoot)) {
     return create();
   }
   GMANObject* object = new GMANObject();
@@ -1067,7 +1021,8 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtIn
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-  GMANShadingContext shading = resolveShadingContext(attr, opt);
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
 
   // Faceted (settled decision "Faces"): every face gathers its own
   // GMANVertex objects through "verts", one PointsPolygons face being a
@@ -1091,7 +1046,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtIn
 
     GMANBody* faceBody;
     GMANVertex* faceVert;
-    if (buildFace({loop}, {slots}, pointTexCoords, sides, orientation, shading, faceBody, faceVert)) {
+    if (buildFace({loop}, {slots}, pointTexCoords, sides, orientation, appearance, cameraToWorld, faceBody, faceVert)) {
       appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
     }
   }
@@ -1136,7 +1091,8 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
-  GMANShadingContext shading = resolveShadingContext(attr, opt);
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
 
   GMANBody *bodyHead = NULL, *bodyTail = NULL;
   GMANVertex *vertHead = NULL, *vertTail = NULL;
@@ -1165,7 +1121,8 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
 
     GMANBody* faceBody;
     GMANVertex* faceVert;
-    if (buildFace(loops, loopSlots, pointTexCoords, sides, orientation, shading, faceBody, faceVert)) {
+    if (buildFace(loops, loopSlots, pointTexCoords, sides, orientation, appearance, cameraToWorld, faceBody,
+                  faceVert)) {
       appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
     }
   }
@@ -1359,7 +1316,8 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   ctmInv.invert();
 
   // Shading setup, resolved once per primitive rather than once per vertex.
-  GMANShadingContext shading = resolveShadingContext(attr, opt);
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
 
   GMANVertex** vertices = new GMANVertex*[(URES + 1) * (VRES + 1)];
   GMANFace** faces = new GMANFace*[URES * VRES];
@@ -1390,7 +1348,8 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
       GMANNormal shadingNormal(normal.getX(), normal.getY(), normal.getZ());
       RtFloat s = bilerpCorner(u, v, corners.s1, corners.s2, corners.s3, corners.s4);
       RtFloat texT = bilerpCorner(u, v, corners.t1, corners.t2, corners.t3, corners.t4);
-      vertex->setColor(shadeVertex(shading, location, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT));
+      gman::SurfacePoint const point = vertexSurfacePoint(location, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT);
+      vertex->setColor(gman::shade(appearance, point, cameraToWorld));
     }
   }
 

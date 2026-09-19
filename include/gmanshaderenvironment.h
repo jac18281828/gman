@@ -82,7 +82,7 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   std::vector<const GMANLight*> lights;
 
   // World-to-camera's inverse (GMANOptions::getCameraToWorld, set at
-  // RiWorldBegin), filled by shadeVertex. Identity until then, so a
+  // RiWorldBegin), filled by gman::shade. Identity until then, so a
   // shader run before RiWorldBegin sees the two spaces as one.
   GMANMatrix4 cameraToWorld;
 
