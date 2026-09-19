@@ -25,6 +25,7 @@
  */
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <string_view>
 
@@ -100,9 +101,11 @@ int main(int argc, char* argv[]) {
       info("gman {} -- LGPL-2.1-or-later, see COPYING\n", GMAN_PROJECT_VERSION);
 
       bool writeLog = false;
-      // Empty means GMANRIBParse's own default ("gmanzbuffer"); -r overrides
-      // it with the name RiBegin loads, verbatim.
+      // Empty means -r was never given; GMANRIBParse's own default
+      // ("gmanzbuffer") applies by omitting the argument entirely below,
+      // not by repeating that name here.
       std::string rendererName;
+      bool rendererNameGiven = false;
 
       int arg = 1;
 
@@ -127,11 +130,22 @@ int main(int argc, char* argv[]) {
           logObj.setLogLevel(LOGLVL_DISASTER);
           break;
         case 'r':
-          if (arg + 1 >= argc) {
+          // -rNAME (glued, the getopt convention) or -r NAME (the next
+          // argv); either way, an empty name is a usage error, not a
+          // silent fall-through to the default.
+          if (argv[arg][2] != '\0') {
+            rendererName = argv[arg] + 2;
+          } else if (arg + 1 < argc) {
+            rendererName = argv[++arg];
+          } else {
             std::cerr << argv[0] << ": -r requires a renderer name" << std::endl;
             return EXIT_FAILURE;
           }
-          rendererName = argv[++arg];
+          if (rendererName.empty()) {
+            std::cerr << argv[0] << ": -r requires a non-empty renderer name" << std::endl;
+            return EXIT_FAILURE;
+          }
+          rendererNameGiven = true;
           break;
         case 'w':
           logObj.setLogLevel(LOGLVL_WARNING);
@@ -139,8 +153,6 @@ int main(int argc, char* argv[]) {
         }
         arg++;
       }
-
-      RtToken const renderer = rendererName.empty() ? "gmanzbuffer" : rendererName.c_str();
 
       for (int i = arg; i < argc; i++) {
         try {
@@ -152,10 +164,12 @@ int main(int argc, char* argv[]) {
             logObj.setLogFile(fileName.c_str());
           }
 
-          GMANRIBParse parser(renderMan, argv[i], renderer);
+          std::unique_ptr<GMANRIBParse> const parser =
+              rendererNameGiven ? std::make_unique<GMANRIBParse>(renderMan, argv[i], rendererName.c_str())
+                                : std::make_unique<GMANRIBParse>(renderMan, argv[i]);
 
           // just parse it...
-          parser.parse();
+          parser->parse();
 
         } catch (GMANError& e) {
           GMANHandleError(e);

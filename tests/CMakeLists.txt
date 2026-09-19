@@ -218,6 +218,21 @@ set_tests_properties(logfilename PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+add_executable(gman_rflag rflag_test.cpp)
+target_link_libraries(gman_rflag PRIVATE gman_core)
+
+set(GMAN_RFLAG_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rflag-run")
+file(MAKE_DIRECTORY "${GMAN_RFLAG_WORKDIR}")
+
+add_test(NAME rflag
+  COMMAND gman_rflag $<TARGET_FILE:gman>
+                     "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
+  WORKING_DIRECTORY "${GMAN_RFLAG_WORKDIR}")
+set_tests_properties(rflag PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
 add_executable(gman_facevarying facevarying_test.cpp)
 target_link_libraries(gman_facevarying PRIVATE gman_core)
 
