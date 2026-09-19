@@ -48,26 +48,26 @@ bool namesRibFile(RtToken name) {
 
 Context::Context() { active = (GMANRenderMan*)RI_NULL; }
 
+// A failed load leaves no context current: RiGetContext and RiEnd see
+// RI_NULL until RiBegin or RiContext selects one. The context active before
+// this call is untouched here, so it survives for RiContext to return to;
+// nothing falls back to rendering.
+RtVoid Context::activateRibWriter() {
+  try {
+    active = loadRenderMan(kRibWriterPlugin);
+  } catch (GMANError&) {
+    active = (GMANRenderMan*)RI_NULL;
+    throw;
+  }
+  chl.push_back(active);
+}
+
 RtVoid Context::addContext(RtToken name) {
   if (namesRibFile(name)) {
-    // Mirrors the renderer branch below: a context is always pushed and
-    // made current, even when the plugin fails to load, so the caller's
-    // RiGetContext and RiEnd operate on this context, not whichever one was
-    // active before RiBegin. RiBegin(RI_NULL) loads the always-built default
-    // renderer, so RiEnd's delete on this fallback has a real object to
-    // delete instead of GMANRenderManImpl's never-set renderer pointer.
-    try {
-      active = loadRenderMan(kRibWriterPlugin);
-    } catch (GMANError&) {
-      GMANRenderManImpl* fallback = new GMANRenderManImpl;
-      fallback->RiBegin(RI_NULL);
-      active = fallback;
-      chl.push_back(active);
-      throw;
-    }
-  } else {
-    active = new GMANRenderManImpl;
+    activateRibWriter();
+    return;
   }
+  active = new GMANRenderManImpl;
   chl.push_back(active);
 }
 

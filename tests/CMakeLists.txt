@@ -71,20 +71,41 @@ set_tests_properties(ribwriter PROPERTIES
   TIMEOUT 30
   RESOURCE_LOCK gmanrib_plugin_file)
 
-# A failed .rib load must not leave the outer context current. See
-# tests/ribwriterfailure.c.
+# A failed .rib load leaves no context current. See tests/ribwriterfailure.c,
+# which renames libgmanrib.so aside for the run and restores it whether it
+# passes or fails. libgmanrib.so is also read by gman_ribwriter and by the
+# install test (which cmake --installs it), so every test below that touches
+# it carries RESOURCE_LOCK gmanrib_plugin_file, keeping ctest from ever
+# running two of them at once -- including two repeats of this test under
+# --repeat, which would otherwise race each other's rename.
+#
+# ribwriterfailure_cleanup is paired to ribwriterfailure through a fixture
+# rather than a plain dependency so ctest runs it even if ribwriterfailure
+# crashes or times out before its own restore -- the case its own restore
+# can't cover. FIXTURES_SETUP here does not mean another test requires the
+# fixture; it exists only to give ribwriterfailure a paired
+# FIXTURES_CLEANUP test.
 add_executable(gman_ribwriterfailure ribwriterfailure.c)
 target_link_libraries(gman_ribwriterfailure PRIVATE gman_core)
 set_target_properties(gman_ribwriterfailure PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(gman_ribwriterfailure gman_rib)
 
 add_test(NAME ribwriterfailure
-  COMMAND gman_ribwriterfailure "$<TARGET_FILE:gman_rib>"
-  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+  COMMAND gman_ribwriterfailure "$<TARGET_FILE:gman_rib>")
 set_tests_properties(ribwriterfailure PROPERTIES
   LABELS unit
   TIMEOUT 30
-  RESOURCE_LOCK gmanrib_plugin_file)
+  RESOURCE_LOCK gmanrib_plugin_file
+  FIXTURES_SETUP gmanrib_hidden)
+
+add_test(NAME ribwriterfailure_cleanup
+  COMMAND "${CMAKE_COMMAND}" -D "PLUGIN=$<TARGET_FILE:gman_rib>"
+          -P "${CMAKE_CURRENT_SOURCE_DIR}/restoreplugin.cmake")
+set_tests_properties(ribwriterfailure_cleanup PROPERTIES
+  LABELS unit
+  TIMEOUT 30
+  RESOURCE_LOCK gmanrib_plugin_file
+  FIXTURES_CLEANUP gmanrib_hidden)
 
 # Pins RIE_NOTSTARTED's and RiDeclare's RIE_SYNTAX messages through
 # RiErrorHandler.
@@ -985,6 +1006,9 @@ set_tests_properties(rayobjectmanager PROPERTIES
 # and runs. See tests/install_test.cmake for the three steps and
 # tests/install/ for the consumer project it builds.
 #
+# cmake --install (step 1) reads libgmanrib.so from the build tree, so this
+# carries the same RESOURCE_LOCK as the ribwriter tests above.
+#
 # No ENVIRONMENT property: see tests/install_test.cmake's step 2 for why.
 add_test(NAME install
   COMMAND "${CMAKE_COMMAND}"
@@ -1006,4 +1030,5 @@ add_test(NAME install
           -P "${CMAKE_CURRENT_SOURCE_DIR}/install_test.cmake")
 set_tests_properties(install PROPERTIES
   LABELS render
-  TIMEOUT 300)
+  TIMEOUT 300
+  RESOURCE_LOCK gmanrib_plugin_file)

@@ -38,6 +38,10 @@ private:
   std::list<GMANRenderMan*> chl;
   GMANRenderMan* active;
 
+  // Loads the RIB-writer plugin and makes it current; clears current and
+  // rethrows if the load fails.
+  RtVoid activateRibWriter(RtVoid);
+
 public:
   Context();
 

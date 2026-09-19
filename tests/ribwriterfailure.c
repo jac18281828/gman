@@ -19,16 +19,17 @@
  */
 
 /*
- * A failed .rib load must not leave the previous context current. argv[1]
- * is the built libgmanrib.so; this test renames it out of the way for the
- * duration of the run (RESOURCE_LOCK in tests/CMakeLists.txt keeps this
- * from racing gman_ribwriter, the only other user of that file) and
- * restores it before exiting, pass or fail.
+ * A failed .rib load leaves no context current: RiBegin raises the load
+ * error, every later request raises RIE_NOTSTARTED until RiBegin or
+ * RiContext selects a context, and the outer context, opened first,
+ * survives untouched for RiContext to return to.
  *
- * With the plugin unreachable, RiBegin("y.rib") must still push and
- * activate a new context -- exactly as a bad renderer name already does --
- * so the caller's RiGetContext and RiEnd operate on it, and the outer
- * context, opened first, survives untouched.
+ * argv[1] is the built libgmanrib.so; this test renames it out of the way
+ * for the duration of the run and restores it before exiting, pass or
+ * fail, so a normal exit never leaves it renamed. tests/CMakeLists.txt
+ * pairs this test with an idempotent FIXTURES_CLEANUP test that restores
+ * the file too, for the crash-or-timeout case this program's own restore
+ * can't reach.
  */
 
 #include <stdio.h>
@@ -75,16 +76,29 @@ int main(int argc, char** argv) {
 
   errorCount = 0;
   RiBegin("y.rib");
-  check(errorCount == 1, "the failed load reports exactly one error");
-  check(lastCode == RIE_SYSTEM, "the error is RIE_SYSTEM");
-  check(RiGetContext() != outer, "a new context is current, not the outer one");
+  check(errorCount == 1, "the load error is raised");
+  check(lastCode == RIE_SYSTEM, "the load error is RIE_SYSTEM");
+  check(RiGetContext() == RI_NULL, "RiGetContext returns no context");
 
+  errorCount = 0;
+  RiWorldBegin();
+  check(errorCount == 1, "a request with no active context is rejected");
+  check(lastCode == RIE_NOTSTARTED, "the rejection is RIE_NOTSTARTED");
+
+  errorCount = 0;
   RiEnd();
-  check(RiGetContext() == RI_NULL, "ending the broken context clears current");
+  check(errorCount == 1, "RiEnd with no active context is rejected the same way");
+  check(lastCode == RIE_NOTSTARTED, "so it cannot have ended the outer context");
 
   errorCount = 0;
   RiContext(outer);
-  check(errorCount == 0, "the outer context survives and is still reachable");
+  check(errorCount == 0, "RiContext returns to the outer context");
+  check(RiGetContext() == outer, "which is current again");
+
+  errorCount = 0;
+  RiAttributeBegin();
+  RiAttributeEnd();
+  check(errorCount == 0, "the outer context still works");
 
   RiEnd();
 
@@ -98,6 +112,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  printf("a failed .rib load does not leak the outer context\n");
+  printf("a failed .rib load leaves no context current\n");
   return 0;
 }
