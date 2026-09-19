@@ -215,25 +215,3 @@ public:
     r = g = b = (GMANByte)(c.getRed() * redWeight + c.getGreen() * greenWeight + c.getBlue() * blueWeight);
   };
 };
-
-/*
- * January 2001 -- LJL
- * Color space conversions.
- */
-
-RtVoid GMANConvertRGBtoHSV(RtFloat* c);
-RtVoid GMANConvertHSVtoRGB(RtFloat* c);
-
-RtVoid GMANConvertRGBtoHSL(RtFloat* c);
-RtVoid GMANConvertHSLtoRGB(RtFloat* c);
-
-RtVoid GMANConvertRGBtoXYZ(RtFloat* c);
-RtVoid GMANConvertXYZtoRGB(RtFloat* c);
-
-RtVoid GMANConvertRGBtoXYY(RtFloat* c);
-RtVoid GMANConvertXYYtoRGB(RtFloat* c);
-
-RtVoid GMANConvertRGBtoYIQ(RtFloat* c);
-RtVoid GMANConvertYIQtoRGB(RtFloat* c);
-RtVoid GMANConvertRGBtoYUV(RtFloat* c);
-RtVoid GMANConvertYUVtoRGB(RtFloat* c);
