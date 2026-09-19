@@ -49,12 +49,19 @@
  * nearestHit does -- any hit inside the ray's interval blocks, so the
  * nearest is not needed. A public, standalone class (not nested in
  * GMANRaytraceRenderer) so a unit test can probe transmission() directly
- * against a world manager it controls.
+ * against a world manager it controls. Not GMAN_EXPORT: only its own test
+ * uses it, and that test compiles the plugin's sources directly rather
+ * than linking the installed library.
  */
-class GMAN_EXPORT GMANRayOccluder : public gman::Occluder {
+class GMANRayOccluder : public gman::Occluder {
 public:
   explicit GMANRayOccluder(GMANWorldManager& worldManager) : worldManager(worldManager) {}
 
+  // const on this class's own state, but walking worldManager still moves
+  // its shared getFirst/getNext cursor -- a call must not interleave with
+  // another traversal of the same world manager. shadeSample's own
+  // ordering already guarantees this: nearestHit finishes walking before
+  // shading, and so before this, ever begins.
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
                          RtFloat distance) const override;
 

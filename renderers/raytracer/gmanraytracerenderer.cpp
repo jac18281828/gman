@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
 #include "gmanmath.h"
 #include "gmanrayinterface.h"
 #include "gmanraysphere.h"
@@ -31,6 +33,17 @@
 #include "gmanshading.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
+
+// The shadow ray's tmin, scaled to the hit point's own coordinate
+// magnitude rather than fixed. kSelfShadowBiasScale must stay above the
+// hit-point error recomputing a point through a primitive's own quadratic
+// solve leaves behind -- an error that grows with that magnitude -- and
+// below the smallest gap this renderer's own geometry ever puts between
+// two surfaces, or a real blocker close to what it shadows stops
+// registering. kSelfShadowBiasFloor keeps a hit point at or near the
+// origin, where the scaled term vanishes, a positive tmin.
+constexpr RtFloat kSelfShadowBiasScale = (RtFloat)1.0e-2;
+constexpr RtFloat kSelfShadowBiasFloor = (RtFloat)1.0e-6;
 
 namespace {
 
@@ -55,36 +68,43 @@ gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   return point;
 }
 
-} // namespace
-
-// kSelfShadowBias offsets the shadow ray's tmin rather than its origin:
-// transmission() gets no surface normal to offset against, and GMANRay's
-// own tmin already skips t < tmin the way a primary ray's RI_EPSILON
-// does. RI_EPSILON (1e-10) is too small here -- recomputing a hit point
-// through a primitive's own quadratic solve loses more precision than
-// that, worst near a grazing N.L where the surviving root's magnitude
-// goes as sqrt of that error rather than the error itself. Measured
-// against a unit sphere sampled densely across its own lit side
-// (tests/rayoccluder_test.cpp): 5e-3 was the smallest tried value clearing
-// every sample; 1e-2 keeps a real margin above that measurement, still far
-// below this renderer's own geometry (shadow.rib's smaller sphere has
-// radius 0.6) for a visible shadow to detach from what casts it.
-constexpr RtFloat kSelfShadowBias = (RtFloat)1.0e-2;
-
-GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
-                                        RtFloat distance) const {
-  GMANRay const shadowRay(P, towardLight, kSelfShadowBias, distance);
-
+// Walks worldManager for a ray-primitive hit against ray, shared by
+// nearestHit (every primitive, keeping the nearest) and
+// GMANRayOccluder::transmission (the first hit, since any one blocks).
+// stopAtFirst selects which; moves worldManager's shared getFirst/getNext
+// cursor either way.
+bool walkWorldManager(GMANWorldManager& worldManager, GMANRay const& ray, bool stopAtFirst, GMANHit& hit,
+                      GMANRayInterface const*& hitPrimitive) {
+  bool found = false;
   GMANPrimitive* primitive = worldManager.getFirst();
   while (primitive) {
     GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
-    GMANHit hit;
-    if (rayPrimitive && rayPrimitive->intersect(shadowRay, hit)) {
-      return GMANColor(0.0f, 0.0f, 0.0f);
+    GMANHit candidate;
+    if (rayPrimitive && rayPrimitive->intersect(ray, candidate) && (!found || candidate.t < hit.t)) {
+      hit = candidate;
+      hitPrimitive = rayPrimitive;
+      found = true;
+      if (stopAtFirst) {
+        return true;
+      }
     }
     primitive = worldManager.getNext();
   }
-  return GMANColor(1.0f, 1.0f, 1.0f);
+  return found;
+}
+
+} // namespace
+
+GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
+                                        RtFloat distance) const {
+  RtFloat const magnitude = GMANMax(GMANMax(std::fabs(P.getX()), std::fabs(P.getY())), std::fabs(P.getZ()));
+  RtFloat const bias = GMANMax(kSelfShadowBiasScale * magnitude, kSelfShadowBiasFloor);
+  GMANRay const shadowRay(P, towardLight, bias, distance);
+
+  GMANHit hit;
+  GMANRayInterface const* hitPrimitive = nullptr;
+  bool const blocked = walkWorldManager(worldManager, shadowRay, /*stopAtFirst=*/true, hit, hitPrimitive);
+  return blocked ? GMANColor(0.0f, 0.0f, 0.0f) : GMANColor(1.0f, 1.0f, 1.0f);
 }
 
 /*
@@ -100,16 +120,9 @@ GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
 
 GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray) {
   RayHit result;
-  GMANPrimitive* primitive = worldManager.getFirst();
-  while (primitive) {
-    GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
-    GMANHit candidate;
-    if (rayPrimitive && rayPrimitive->intersect(ray, candidate) &&
-        (result.appearance == nullptr || candidate.t < result.hit.t)) {
-      result.hit = candidate;
-      result.appearance = &rayPrimitive->getAppearance();
-    }
-    primitive = worldManager.getNext();
+  GMANRayInterface const* hitPrimitive = nullptr;
+  if (walkWorldManager(worldManager, ray, /*stopAtFirst=*/false, result.hit, hitPrimitive)) {
+    result.appearance = &hitPrimitive->getAppearance();
   }
   return result;
 }
