@@ -38,7 +38,7 @@ RtContextHandle Context::getContext() { return (RtContextHandle)active; }
 
 GMANRenderMan& Context::current() {
   if (active == ((GMANRenderMan*)RI_NULL)) {
-    GMANError error(RIE_NOTSTARTED, RIE_SEVERE, "GMANContext: No active context");
+    GMANError error(RIE_NOTSTARTED, RIE_SEVERE, "No active context");
     throw error;
   }
   return *active;
@@ -53,7 +53,7 @@ RtVoid Context::switchTo(RtContextHandle ch) {
       return;
     }
   }
-  GMANError error(RIE_NESTING, RIE_SEVERE, "GMANContext: invalid Context Handle");
+  GMANError error(RIE_NESTING, RIE_SEVERE, "invalid Context Handle");
   throw(error);
 }
 RtVoid Context::removeCurrent(RtVoid) {

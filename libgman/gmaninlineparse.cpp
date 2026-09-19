@@ -37,11 +37,11 @@ RtVoid InlineParse::check_syntax() {
   // number_of_words =5 ---> type [ size ] id
   // number_of_words =6 ---> class type [ size ] id
   // number_of_words =7 ---> ERROR
-  GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANInlineParse: BAD_SYNTAX");
+  GMANError error(RIE_SYNTAX, RIE_ERROR, "BAD_SYNTAX");
 
   switch (number_of_words) {
   case 0:
-    error.setMessage("GMANInlineParse: RTVOID_STRING");
+    error.setMessage("RTVOID_STRING");
     throw error;
   case 4:
   case 7:
@@ -100,7 +100,7 @@ RtVoid InlineParse::check_syntax() {
 }
 
 RtVoid InlineParse::parse(std::string str) {
-  GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANInlineParse: BAD_SYNTAX");
+  GMANError error(RIE_SYNTAX, RIE_ERROR, "BAD_SYNTAX");
   RtInt j;
   size_t sp;
   size_t sz;
@@ -124,10 +124,10 @@ RtVoid InlineParse::parse(std::string str) {
       start_found = false;
       break;
     case '#':
-      error.setMessage("GMANInlineParse: '#' character not allowed in strings");
+      error.setMessage("'#' character not allowed in strings");
       throw error;
     case '\"':
-      error.setMessage("GMANInlineParse: '\"' character not allowed in strings");
+      error.setMessage("'\"' character not allowed in strings");
       throw error;
     case '[':
     case ']':

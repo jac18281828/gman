@@ -49,6 +49,18 @@ set_tests_properties(basicstate PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Pins RIE_NOTSTARTED's and RiDeclare's RIE_SYNTAX messages through
+# RiErrorHandler.
+add_executable(gman_diagnostics diagnostics_test.cpp)
+target_link_libraries(gman_diagnostics PRIVATE gman_core)
+
+add_test(NAME diagnostics
+  COMMAND gman_diagnostics
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(diagnostics PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Phase 2 -- RIB dialect coverage. Each spawns the real gman binary, which
 # dlopens its renderer by bare name, so each needs the same library path as
 # the baseline test above.
