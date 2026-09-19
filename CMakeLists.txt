@@ -236,15 +236,6 @@ target_sources(gman_core PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp")
 
 # ---------------------------------------------------------------------------
-# gman_rib — the RIB writer backend over the abstract RI interface
-# ---------------------------------------------------------------------------
-
-add_library(gman_rib SHARED
-  libgmanrib/gmanascii.cpp)
-
-target_link_libraries(gman_rib PUBLIC gman_core)
-
-# ---------------------------------------------------------------------------
 # Renderer plugins
 # ---------------------------------------------------------------------------
 
@@ -301,6 +292,15 @@ gman_add_plugin(gman_shinymetal shaders/gmanshinymetal.cpp)
 set_target_properties(gman_shinymetal PROPERTIES OUTPUT_NAME "shinymetal")
 
 # ---------------------------------------------------------------------------
+# gman_rib — the RIB writer, loaded the way a renderer is
+# ---------------------------------------------------------------------------
+
+gman_add_plugin(gman_rib
+  libgmanrib/gmanascii.cpp
+  libgmanrib/ribloader.cpp)
+set_target_properties(gman_rib PROPERTIES OUTPUT_NAME "gmanrib")
+
+# ---------------------------------------------------------------------------
 # gman — the driver
 # ---------------------------------------------------------------------------
 
@@ -326,23 +326,24 @@ if(APPLE)
 else()
   set(GMAN_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
 endif()
-set_target_properties(gman gman_core gman_rib PROPERTIES
+set_target_properties(gman gman_core PROPERTIES
   BUILD_RPATH "${CMAKE_BINARY_DIR}"
   INSTALL_RPATH "${GMAN_INSTALL_RPATH}")
 
-add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal)
+add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_rib)
 
 # ---------------------------------------------------------------------------
 # Install
 # ---------------------------------------------------------------------------
 
-# gman_core and gman_rib alone join the export set: they are what a
-# programmer links, and nothing links against the executable or the plugins.
-install(TARGETS gman_core gman_rib
+# gman_core alone joins the export set: it is what a programmer links.
+# gman_rib is a plugin, dlopen'd like gman_zbuffer, and installs beside the
+# other plugins below.
+install(TARGETS gman_core
   EXPORT gmanTargets
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal
+install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_rib
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
