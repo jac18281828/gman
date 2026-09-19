@@ -25,6 +25,7 @@
 
 #include "gmanobjectmanager.h"
 #include "gmanprimitives.h"
+#include "gmanraydisk.h"
 #include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanraysphere.h"
@@ -119,10 +120,11 @@ GMANPrimitive* GMANRayObjectManager::getRSParaboloid(RtFloat /*rmax*/, RtFloat /
   return create();
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSDisk(RtFloat /*height*/, RtFloat /*radius*/, RtFloat /*tmax*/,
-                                               GMANParameterList /*pl*/, GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
-                                               GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
+                                               GMANOptions* /*opt*/, GMANAttributes* attr, GMANTransform* t) {
+  GMANRayDisk* disk = new GMANRayDisk(height, radius, tmax, pl, *t);
+  disk->setAppearance(gman::appearanceOf(*attr));
+  return disk;
 };
 
 GMANPrimitive* GMANRayObjectManager::getRSTorus(RtFloat /*majrad*/, RtFloat /*minrad*/, RtFloat /*phimin*/,

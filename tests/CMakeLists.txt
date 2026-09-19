@@ -1029,12 +1029,26 @@ set_tests_properties(raysphere PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R5a proof, unit: GMANRayDisk::intersect, compiled from the plugin's own
+# sources for the same reason as gman_raysphere above.
+add_executable(gman_raydisk raydisk_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp")
+target_link_libraries(gman_raydisk PRIVATE gman_core)
+target_include_directories(gman_raydisk PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME raydisk COMMAND gman_raydisk)
+set_tests_properties(raydisk PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
 # GMANRaySphere holding its parameters and a copied transform, compiled
 # from the raytracer plugin's own sources for the same reason as
 # gman_raysphere above.
 add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp")
 target_link_libraries(gman_rayobjectmanager PRIVATE gman_core)
@@ -1052,6 +1066,7 @@ set_tests_properties(rayobjectmanager PROPERTIES
 # ENVIRONMENT as gman_rayobjectmanager.
 add_executable(gman_raydepth raydepth_test.cpp
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
@@ -1085,6 +1100,26 @@ if(GMAN_BUILD_RAYTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+
+  # R5a proof: `gman -r gmanraytracer` renders tests/rib/r5a_disk.rib, a
+  # partial-thetamax disk, matching a checked-in golden image. See
+  # tests/diskrayrender_test.cpp.
+  add_executable(gman_diskrayrender diskrayrender_test.cpp)
+  target_link_libraries(gman_diskrayrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_diskrayrender gman_raytracer)
+
+  set(GMAN_DISKRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/diskrayrender-run")
+  file(MAKE_DIRECTORY "${GMAN_DISKRAYRENDER_WORKDIR}")
+
+  add_test(NAME diskrayrender
+    COMMAND gman_diskrayrender $<TARGET_FILE:gman>
+                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_DISKRAYRENDER_WORKDIR}")
+  set_tests_properties(diskrayrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
 endif()
 
 # Proves both halves of an installed gman. bin/gman renders every

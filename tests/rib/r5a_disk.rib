@@ -1,0 +1,19 @@
+## R5a proof: a single matte Disk, partial thetamax, alone under a distant
+## light -- no shadow falls on it, so this fixture is safe to reuse once R7
+## lands shadows.
+Display "r5a_disk.tif" "file" "rgba"
+Format 320 240 1
+Projection "perspective" "fov" [45]
+# Explicit, not the RI_EPSILON-near default: a flat, camera-facing disk is
+# exactly the shape the near-clip precision defect corrupts hardest
+# (AGENTS.md, "Flat or z-narrow geometry needs Clipping 0.5 50").
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 0 0] "to" [0 0 0]
+Sides 2
+Surface "matte" "Ka" [0.3] "Kd" [0.8]
+Disk 0 1.5 270
+WorldEnd
