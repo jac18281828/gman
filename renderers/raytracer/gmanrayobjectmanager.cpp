@@ -27,6 +27,7 @@
 #include "gmanprimitives.h"
 #include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
+#include "gmanraysphere.h"
 #include "ri.h"
 
 /*
@@ -85,10 +86,10 @@ GMANPrimitive* GMANRayObjectManager::getRSNuPatch(RtInt /*nu*/, RtInt /*uorder*/
   return create();
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSSphere(RtFloat /*radius*/, RtFloat /*zmin*/, RtFloat /*zmax*/,
-                                                 RtFloat /*tmax*/, GMANParameterList /*pl*/, GMANOptions* /*opt*/,
-                                                 GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                 GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
+                                                 GMANTransform* t) {
+  return new GMANRaySphere(radius, zmin, zmax, tmax, pl, *t);
 };
 
 GMANPrimitive* GMANRayObjectManager::getRSCone(RtFloat /*height*/, RtFloat /*radius*/, RtFloat /*tmax*/,

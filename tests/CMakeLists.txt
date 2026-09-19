@@ -925,6 +925,22 @@ set_tests_properties(raysphere PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
+# GMANRaySphere holding its parameters and a copied transform, compiled
+# from the raytracer plugin's own sources for the same reason as
+# gman_raysphere above.
+add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp")
+target_link_libraries(gman_rayobjectmanager PRIVATE gman_core)
+target_include_directories(gman_rayobjectmanager PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME rayobjectmanager COMMAND gman_rayobjectmanager)
+set_tests_properties(rayobjectmanager PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, and a second, unrelated CMake project finds

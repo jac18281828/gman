@@ -25,11 +25,26 @@
 #pragma once
 
 #include "gmanrayinterface.h"
+#include "gmantransform.h"
 
 class GMAN_EXPORT GMANRaySphere : public GMANRayInterface, public GMANSphere {
 public:
   GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl)
       : GMANSphere(radius, zmin, zmax, tmax, pl) {}
 
+  // Placed by transform's shutter-open matrix. A singular matrix (e.g.
+  // Scale 1 1 0) cannot invert into an object space to intersect in, so
+  // the sphere is built anyway and simply never hits.
+  GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
+                GMANTransform const& transform);
+
   bool intersect(const GMANRay& ray, GMANHit& hit) const;
+
+private:
+  // objectToCamera places the sphere; cameraToObject is its inverse, used
+  // to bring a ray into the object space GMANSphere's parameters describe.
+  // Both are the shutter-open matrix: motion blur is out of scope here.
+  GMANMatrix4 objectToCamera;
+  GMANMatrix4 cameraToObject;
+  bool singular = false;
 };

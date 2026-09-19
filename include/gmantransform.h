@@ -65,7 +65,7 @@ public:
   RtFloat getTime(RtInt n);
 };
 
-class GMANTransform {
+class GMAN_EXPORT GMANTransform {
 private:
   GMANMatrixStorage* storage;
 
