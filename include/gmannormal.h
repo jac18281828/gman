@@ -31,7 +31,7 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-class GMANNormal : public GMANVector {
+class GMAN_EXPORT GMANNormal : public GMANVector {
 public:
   GMANNormal();
   GMANNormal(RtFloat x, RtFloat y, RtFloat z);
