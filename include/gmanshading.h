@@ -37,10 +37,10 @@ class GMANAttributes;
 class GMANSurfaceShader;
 
 /*
- * The renderer-facing shading API (docs/renderer-boundary.md): whatever
- * more than one renderer needs to shade a surface lives here, public,
- * installed and GMAN_EXPORT, so a renderer plugin -- in this tree or
- * outside it -- keeps only its own algorithm.
+ * The renderer-facing shading API: whatever more than one renderer needs
+ * to shade a surface lives here, public, installed and GMAN_EXPORT, so a
+ * renderer plugin -- in this tree or outside it -- keeps only its own
+ * algorithm.
  */
 namespace gman {
 

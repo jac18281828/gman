@@ -30,14 +30,12 @@
  * must be off the view axis: a pure z rotation fixes (0,0,1) in place,
  * so check 1's centre ray would not catch that mistake either.
  *
- * Check 6 (R4): every check above uses fov=90, where tan(45deg)=1 makes
- * cameraRay's screen point and its correctly fov-scaled direction
+ * Check 6: every check above uses fov=90, where tan(45deg)=1 makes
+ * cameraRay's raw screen point and its correctly fov-scaled direction
  * numerically identical -- a dropped fov term would still pass all of
- * them. R4's own render loop caught this: VSPerspective::cameraRay built
- * its ray from the raw screen point, unscaled by tan(fov/2), so a
- * lights.rib-shaped scene at fov=45 traced a sphere less than half the
- * z-buffer's own silhouette diameter. Fixed in VSPerspective::cameraRay;
- * check 6 pins fov=60, where the two disagree.
+ * them. Check 6 pins fov=60, where the two disagree: cameraRay's
+ * direction has to scale by tan(fov/2) (GMANMatrix4::prjPersp's own
+ * cot(fov/2), inverted), not stand in for the screen point unscaled.
  */
 
 #include <cmath>

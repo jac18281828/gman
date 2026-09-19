@@ -1053,10 +1053,10 @@ set_tests_properties(raydepth PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R4's actual gate: `gman -r gmanraytracer` renders tests/rib/r4_raytracer.rib
-# to a round, plastic-shaded sphere matching a checked-in golden image and
-# differing from the z-buffer's own render of the same scene. Registered only
-# when the plugin builds, since `-r gmanraytracer` has nothing to load
+# `gman -r gmanraytracer` renders tests/rib/r4_raytracer.rib to a round,
+# plastic-shaded sphere matching a checked-in golden image and differing
+# from the z-buffer's own render of the same scene. Registered only when
+# the plugin builds, since `-r gmanraytracer` has nothing to load
 # otherwise.
 if(GMAN_BUILD_RAYTRACER)
   add_executable(gman_rayrender rayrender_test.cpp)
