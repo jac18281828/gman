@@ -39,7 +39,7 @@ namespace {
 // direction rather than assumed from the camera-space origin -- an
 // orthographic ray, or a future secondary ray, does not look from there.
 // s and t default to u and v, the RISpec's own default texture-coordinate
-// mapping (texture-coordinate corners on a ray primitive are R5).
+// mapping; texture-coordinate corners on a ray primitive are a later unit.
 gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   gman::SurfacePoint point;
   point.P = hit.point;
@@ -66,19 +66,35 @@ GMANRaytraceRenderer::GMANRaytraceRenderer() : GMANRenderer() {};
 // default destructor
 GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
 
-GMANHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray) {
-  GMANHit best;
+GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray) {
+  RayHit result;
   GMANPrimitive* primitive = worldManager.getFirst();
   while (primitive) {
     GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
     GMANHit candidate;
     if (rayPrimitive && rayPrimitive->intersect(ray, candidate) &&
-        (best.primitive == nullptr || candidate.t < best.t)) {
-      best = candidate;
+        (result.appearance == nullptr || candidate.t < result.hit.t)) {
+      result.hit = candidate;
+      result.appearance = &rayPrimitive->getAppearance();
     }
     primitive = worldManager.getNext();
   }
-  return best;
+  return result;
+}
+
+void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, RtFloat rasterX,
+                                       RtFloat rasterY, int sampleX, int sampleY) {
+  GMANRay const ray = viewingSys->cameraRay(rasterX, rasterY);
+  RayHit const nearest = nearestHit(ray);
+  if (nearest.appearance == nullptr) {
+    return;
+  }
+
+  GMANColor const color = gman::shade(*nearest.appearance, hitSurfacePoint(ray, nearest.hit), cameraToWorld);
+
+  // Camera-space z of the hit point (see getDepth's own comment on why
+  // this differs from the z-buffer's post-projection depth).
+  sampleBuffer->zTestAndSet(sampleX, sampleY, nearest.hit.point.getZ(), color);
 }
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
@@ -86,7 +102,7 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
   RtInt const width = frameBuffer->getWidth();
   RtInt const height = frameBuffer->getHeight();
 
-  GMANOptions::RasterInfo const ri = options.getRasterInfo();
+  GMANOptions::RasterInfo const raster = options.getRasterInfo();
 
   // GMANRenderManImpl::RiPixelSamples already rounds to an integer count
   // and clamps to [1,16]; GMANMax here is just the floor this renderer
@@ -96,8 +112,9 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
   int const ysamples = GMANMax(1, (int)GMANRound(ps.ysamples));
 
   // Every sample starts at the frame's background colour and infinite
-  // depth (the settled decision on uncovered samples); frameBuffer is
-  // already erased to background at construction.
+  // depth, so an uncovered sample resolves to background rather than to
+  // indeterminate or black; frameBuffer is already erased to background
+  // at construction.
   sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, frameBuffer->getPixel(0, 0)));
 
   GMANMatrix4 const& cameraToWorld = options.getCameraToWorld();
@@ -108,27 +125,14 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
         for (int subX = 0; subX < xsamples; subX++) {
           // The raster point at this sample's centre, in the full
           // (uncropped) raster grid GMANViewingSystem::cameraRay expects --
-          // ri.rxmin/rymin place this (possibly cropped) buffer's local
-          // (px, py) there, the same origin the z-buffer's render reads.
-          RtFloat const rasterX = (RtFloat)ri.rxmin + (RtFloat)px + ((RtFloat)subX + (RtFloat)0.5) / (RtFloat)xsamples;
-          RtFloat const rasterY = (RtFloat)ri.rymin + (RtFloat)py + ((RtFloat)subY + (RtFloat)0.5) / (RtFloat)ysamples;
-          GMANRay const ray = viewingSys->cameraRay(rasterX, rasterY);
-
-          GMANHit const hit = nearestHit(ray);
-          if (hit.primitive == nullptr) {
-            continue;
-          }
-
-          GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(hit.primitive);
-          GMANColor const color = gman::shade(rayPrimitive->getAppearance(), hitSurfacePoint(ray, hit), cameraToWorld);
-
-          int const sampleX = px * xsamples + subX;
-          int const sampleY = py * ysamples + subY;
-          // Camera-space z of the hit (GMANRay::pointAt on the camera-space
-          // ray cameraRay returned), not post-projection z -- the settled
-          // decision that leaves this renderer's depth and the z-buffer's
-          // unaligned; nothing reads getDepth today.
-          sampleBuffer->zTestAndSet(sampleX, sampleY, hit.point.getZ(), color);
+          // raster.rxmin/rymin place this (possibly cropped) buffer's
+          // local (px, py) there, the same origin the z-buffer's render
+          // reads.
+          RtFloat const rasterX =
+              (RtFloat)raster.rxmin + (RtFloat)px + ((RtFloat)subX + (RtFloat)0.5) / (RtFloat)xsamples;
+          RtFloat const rasterY =
+              (RtFloat)raster.rymin + (RtFloat)py + ((RtFloat)subY + (RtFloat)0.5) / (RtFloat)ysamples;
+          shadeSample(viewingSys, cameraToWorld, rasterX, rasterY, px * xsamples + subX, py * ysamples + subY);
         }
       }
     }

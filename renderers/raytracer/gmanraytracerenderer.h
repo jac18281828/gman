@@ -38,6 +38,7 @@
 #include "gmanrayobjectmanager.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
+#include "gmanshading.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 
@@ -58,9 +59,23 @@ private:
   // frameBuffer at the end of render(). getDepth reads its resolved depth.
   std::unique_ptr<GMANSampleBuffer> sampleBuffer;
 
-  // Walks worldManager for the ray primitive nearest ray's origin;
-  // GMANHit::primitive is null when none is hit. The BVH is R6.
-  GMANHit nearestHit(GMANRay const& ray);
+  // The nearest ray-primitive hit and the appearance it was declared
+  // under; both null (hit.primitive null, appearance null) when nothing
+  // is hit. Carrying the appearance here, rather than re-deriving it from
+  // hit.primitive afterward, keeps the downcast to GMANRayInterface to
+  // nearestHit's own loop.
+  struct RayHit {
+    GMANHit hit;
+    gman::Appearance const* appearance = nullptr;
+  };
+
+  // Walks worldManager for the ray primitive nearest ray's origin. The
+  // BVH is future work; this walk is linear in the primitive count.
+  RayHit nearestHit(GMANRay const& ray);
+
+  // Traces, shades and stores one sample -- render()'s per-sample body.
+  void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, RtFloat rasterX, RtFloat rasterY,
+                   int sampleX, int sampleY);
 
 public:
   GMANRaytraceRenderer(); // default constructor

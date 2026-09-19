@@ -36,7 +36,7 @@ public:
   // shader, active lights and Cs/Os -- so the render loop can shade any
   // hit through gman::shade without knowing the primitive's concrete type.
   gman::Appearance const& getAppearance() const { return appearance; }
-  void setAppearance(gman::Appearance const& a) { appearance = a; }
+  void setAppearance(gman::Appearance const& declaredAppearance) { appearance = declaredAppearance; }
 
 private:
   gman::Appearance appearance;
