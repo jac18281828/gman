@@ -31,6 +31,7 @@
 #include "gmanmath.h"
 #include "ri.h"
 
+class GMANPoint;
 class GMANVector;
 
 class GMAN_EXPORT GMANMatrix4 {
@@ -80,3 +81,29 @@ public:
 
   const RtMatrix& get(RtVoid) const { return mtrx; }
 };
+
+namespace gman {
+
+// A ray tracer's own transform of a point, a direction or a normal, needed
+// wherever a ray moves between camera and object space. m applies as a
+// row vector, p * m (AGENTS.md's CTM convention), the opposite of
+// GMANPoint::operator*'s m * p; a caller reaching for that operator here
+// instead would silently transform by the wrong side of the matrix.
+
+// The same row-vector product GMANMatrix4::p3m computes, through the
+// const operator[] a library caller can use, since p3m itself is not
+// const-qualified. Perspective-divides when m's homogeneous w is neither
+// 0 nor 1.
+GMAN_EXPORT GMANPoint transformPoint(GMANMatrix4 const& m, GMANPoint const& p);
+
+// A direction's homogeneous w is 0, so the translation row (row 3) drops
+// out and no perspective divide applies.
+GMAN_EXPORT GMANVector transformDirection(GMANMatrix4 const& m, GMANVector const& v);
+
+// A normal transforms by the inverse transpose of the point transform, not
+// by the point or direction transform itself: callers pass m already
+// inverted. The two productions agree whenever m is symmetric, as a
+// translation's or a scale's linear part is, and diverge under a rotation.
+GMAN_EXPORT GMANVector transformNormal(GMANMatrix4 const& m, GMANVector const& v);
+
+} // namespace gman

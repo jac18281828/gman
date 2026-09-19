@@ -26,6 +26,7 @@
  */
 
 #include "gmanmatrix4.h"
+#include "gmanpoint.h"
 #include "gmanvector.h"
 
 GMANMatrix4::GMANMatrix4() { identity(); }
@@ -356,3 +357,30 @@ GMANMatrix4& GMANMatrix4::assign(const GMANMatrix4& m) {
   *this = m;
   return *this;
 }
+
+namespace gman {
+
+GMANPoint transformPoint(GMANMatrix4 const& m, GMANPoint const& p) {
+  RtFloat const x = p.getX(), y = p.getY(), z = p.getZ();
+  RtFloat const rx = x * m[0][0] + y * m[1][0] + z * m[2][0] + m[3][0];
+  RtFloat const ry = x * m[0][1] + y * m[1][1] + z * m[2][1] + m[3][1];
+  RtFloat const rz = x * m[0][2] + y * m[1][2] + z * m[2][2] + m[3][2];
+  RtFloat const rw = x * m[0][3] + y * m[1][3] + z * m[2][3] + m[3][3];
+  if (rw != 1.0 && rw != 0.0)
+    return GMANPoint(rx / rw, ry / rw, rz / rw);
+  return GMANPoint(rx, ry, rz);
+}
+
+GMANVector transformDirection(GMANMatrix4 const& m, GMANVector const& v) {
+  RtFloat const x = v.getX(), y = v.getY(), z = v.getZ();
+  return GMANVector(x * m[0][0] + y * m[1][0] + z * m[2][0], x * m[0][1] + y * m[1][1] + z * m[2][1],
+                    x * m[0][2] + y * m[1][2] + z * m[2][2]);
+}
+
+GMANVector transformNormal(GMANMatrix4 const& m, GMANVector const& v) {
+  RtFloat const x = v.getX(), y = v.getY(), z = v.getZ();
+  return GMANVector(m[0][0] * x + m[0][1] * y + m[0][2] * z, m[1][0] * x + m[1][1] * y + m[1][2] * z,
+                    m[2][0] * x + m[2][1] * y + m[2][2] * z);
+}
+
+} // namespace gman

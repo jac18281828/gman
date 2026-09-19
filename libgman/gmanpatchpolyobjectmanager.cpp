@@ -30,6 +30,7 @@
 
 #include "gmanobjectmanager.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpolygon.h"
 #include "gmanprimitives.h"
 #include "gmanshading.h"
 #include "ri.h"
@@ -53,18 +54,6 @@ const RtFloat kTriangulationTolerance = (RtFloat)1.0e-6;
 // mapping rather than resolving RiTextureCoordinates or "s"/"t"/"st" itself
 // -- see its own comment.
 const GMANTextureCoordinates kIdentityCorners = {0, 0, 1, 0, 0, 1, 1, 1};
-
-// Shared by getRSPolygon and getRSPatch to resolve "P" against. Its
-// signature carries no GMANDictionary, and every GMANDictionary registers
-// the same standard RI_* tokens in the same order
-// (GMANDictionary::GMANDictionary), so a second instance resolves "P" to
-// the same GMANTokenId the request's own parameter list was built against
-// -- shaders/gmanshaderparams.h's dictionary() is the same idiom, for the
-// same reason.
-GMANDictionary& standardDictionary() {
-  static GMANDictionary d;
-  return d;
-}
 
 // GMANBasis::offset closes a periodic axis's wraparound with a single
 // subtraction (`if (i>=nu) i-=nu`), which only lands the raw index back
@@ -128,7 +117,7 @@ GMANMatrix4 cameraToWorldOf(GMANOptions const* opt) { return opt ? opt->getCamer
 GMANTextureCoordinates resolveParametricCorners(GMANParameterList& pl, GMANAttributes* attr) {
   GMANTextureCoordinates corners = attr->getTextureCoordinates();
 
-  RtFloat* st = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_ST));
+  RtFloat* st = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
   if (st) {
     corners.s1 = st[0];
     corners.t1 = st[1];
@@ -139,14 +128,14 @@ GMANTextureCoordinates resolveParametricCorners(GMANParameterList& pl, GMANAttri
     corners.s4 = st[6];
     corners.t4 = st[7];
   }
-  RtFloat* s = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_S));
+  RtFloat* s = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
   if (s) {
     corners.s1 = s[0];
     corners.s2 = s[1];
     corners.s3 = s[2];
     corners.s4 = s[3];
   }
-  RtFloat* tp = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_T));
+  RtFloat* tp = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
   if (tp) {
     corners.t1 = tp[0];
     corners.t2 = tp[1];
@@ -185,26 +174,6 @@ gman::SurfacePoint vertexSurfacePoint(const GMANPoint& location, const GMANNorma
   point.s = s;
   point.t = t;
   return point;
-}
-
-// Newell's method: the face normal as the sum of every edge's
-// contribution, rather than the cross product of two edges at one
-// arbitrarily chosen vertex. Correct for any simple planar polygon,
-// including one where vertices 0, 1 and 2 form a reflex corner -- there, a
-// three-vertex cross product points opposite the polygon's true face
-// normal, while summing over every edge cannot, since each edge
-// contributes in proportion to the area it bounds.
-GMANVector newellNormal(const std::vector<GMANPoint>& ring) {
-  GMANVector sum;
-  const std::size_t n = ring.size();
-  for (std::size_t i = 0; i < n; i++) {
-    const GMANPoint& cur = ring[i];
-    const GMANPoint& next = ring[(i + 1) % n];
-    sum.setX(sum.getX() + (cur.getY() - next.getY()) * (cur.getZ() + next.getZ()));
-    sum.setY(sum.getY() + (cur.getZ() - next.getZ()) * (cur.getX() + next.getX()));
-    sum.setZ(sum.getZ() + (cur.getX() - next.getX()) * (cur.getY() + next.getY()));
-  }
-  return sum;
 }
 
 // The ring's largest bounding-box side, in whichever of x, y or z spans
@@ -400,9 +369,9 @@ struct GMANPolygonVertexTexCoord {
 // index i reads the same vertex from every one of them.
 std::vector<GMANPolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParameterList& pl, RtInt nverts,
                                                                         const RtFloat* p) {
-  RtFloat* sArr = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_S));
-  RtFloat* tArr = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_T));
-  RtFloat* stArr = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_ST));
+  RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
+  RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
+  RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
 
   std::vector<GMANPolygonVertexTexCoord> coords(nverts);
   for (RtInt i = 0; i < nverts; i++) {
@@ -606,7 +575,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
       continue; // encloses no area: dropped
     }
     RtFloat bboxSide = boundingBoxExtent(loop);
-    GMANVector holeNewell = newellNormal(loop);
+    GMANVector holeNewell = gman::newellNormal(loop);
     RtFloat holeMag = holeNewell.magnitude();
     if (bboxSide == (RtFloat)0.0 || holeMag < kTriangulationTolerance * bboxSide * bboxSide) {
       continue; // degenerate against its own extent: dropped
@@ -790,13 +759,11 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
 // bare Polygon or GeneralPolygon, a face's own "verts" entries (indices
 // into the shared "P") for a Points* request.
 //
-// Degeneracy is judged by a ratio, not an absolute area: twice the outer
-// loop's area (normalVec's own magnitude, before normalizing) against the
-// square of its largest bounding-box side. A polygon a million times
-// longer than it is wide is degenerate at any scale, and this ratio reads
-// the same wherever the polygon sits. A zero-extent ring -- every vertex
-// identical -- is degenerate by definition; guarded directly rather than
-// dividing by a zero-length side.
+// Degeneracy (gman::isDegeneratePolygon) is judged by a ratio, not an
+// absolute area: twice the outer loop's area (its Newell normal's
+// magnitude) against the square of its largest bounding-box side. A
+// polygon a million times longer than it is wide is degenerate at any
+// scale, and this ratio reads the same wherever the polygon sits.
 //
 // Returns false, leaving body and vertRoot untouched, for a degenerate or
 // under-three-point outer loop -- the caller skips the face rather than
@@ -806,15 +773,12 @@ bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vect
                gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld, GMANBody*& body,
                GMANVertex*& vertRoot) {
   const std::vector<GMANPoint>& outer = loops[0];
-  if (outer.size() < 3) {
-    return false;
-  }
-  RtFloat outerBboxSide = boundingBoxExtent(outer);
-  GMANVector normalVec = newellNormal(outer);
-  RtFloat normalMagnitude = normalVec.magnitude();
-  if (outerBboxSide == (RtFloat)0.0 || normalMagnitude < kTriangulationTolerance * outerBboxSide * outerBboxSide) {
+  if (gman::isDegeneratePolygon(outer)) {
     return false; // fully degenerate: no plane worth shading or filling
   }
+  RtFloat outerBboxSide = boundingBoxExtent(outer);
+  GMANVector normalVec = gman::newellNormal(outer);
+  RtFloat normalMagnitude = normalVec.magnitude();
   // Dividing by the magnitude already computed above, rather than calling
   // GMANVector::normalize(), matters here: that method silently leaves a
   // vector unchanged when its magnitude is below RI_EPSILON (1e-10), an
@@ -904,7 +868,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParame
   if (nverts < 3) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p) {
     return create();
   }
@@ -947,7 +911,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSGeneralPolygon(RtInt nloops, RtI
   if (nloops < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p) {
     return create();
   }
@@ -997,7 +961,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtIn
   if (npolys < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p) {
     return create();
   }
@@ -1068,7 +1032,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
   if (npolys < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p) {
     return create();
   }
@@ -1139,7 +1103,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt,
                                                       GMANAttributes* attr, GMANTransform* t) {
-  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p) {
     return create();
   }
@@ -1166,7 +1130,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPatch(RtToken type, GMANParamete
 GMANPrimitive* GMANPatchPolyObjectManager::getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv,
                                                           RtToken vwrap, GMANParameterList pl, GMANOptions* opt,
                                                           GMANAttributes* attr, GMANTransform* t) {
-  RtFloat* p = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p) {
     return create();
   }
@@ -1209,9 +1173,9 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSNuPatch(RtInt nu, RtInt uorder, 
                                                         RtFloat vmin, RtFloat vmax, GMANParameterList pl,
                                                         GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
   // "Pw" wins over "P" when both are supplied; "P" alone means w = 1.
-  RtFloat* pw = (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_PW));
+  RtFloat* pw = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_PW));
   bool rational = pw != NULL;
-  RtFloat* p = rational ? pw : (RtFloat*)pl.getPointer(standardDictionary().getTokenId(RI_P));
+  RtFloat* p = rational ? pw : (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p) {
     return create();
   }

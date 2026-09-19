@@ -28,45 +28,6 @@
 #include "gmanraysphere.h"
 #include "gmanvector.h"
 
-namespace {
-
-// The same row-vector product GMANMatrix4::p3m computes, through the
-// const operator[] a library caller can use, since p3m itself is not
-// const-qualified.
-GMANPoint transformPoint(GMANMatrix4 const& m, GMANPoint const& p) {
-  RtFloat const x = p.getX(), y = p.getY(), z = p.getZ();
-  RtFloat const rx = x * m[0][0] + y * m[1][0] + z * m[2][0] + m[3][0];
-  RtFloat const ry = x * m[0][1] + y * m[1][1] + z * m[2][1] + m[3][1];
-  RtFloat const rz = x * m[0][2] + y * m[1][2] + z * m[2][2] + m[3][2];
-  RtFloat const rw = x * m[0][3] + y * m[1][3] + z * m[2][3] + m[3][3];
-  if (rw != 1.0 && rw != 0.0)
-    return GMANPoint(rx / rw, ry / rw, rz / rw);
-  return GMANPoint(rx, ry, rz);
-}
-
-// A direction's homogeneous w is 0, so the translation row (row 3) drops
-// out and no perspective divide applies.
-GMANVector transformDirection(GMANMatrix4 const& m, GMANVector const& v) {
-  RtFloat const x = v.getX(), y = v.getY(), z = v.getZ();
-  return GMANVector(x * m[0][0] + y * m[1][0] + z * m[2][0], x * m[0][1] + y * m[1][1] + z * m[2][1],
-                    x * m[0][2] + y * m[1][2] + z * m[2][2]);
-}
-
-// A camera-space normal is objectToCamera's inverse transpose applied to
-// the object-space one (AGENTS.md's RIB-authoring rule), not the plain
-// product transformPoint and transformDirection compute. Those read m as
-// v * M -- v against m's columns; a normal instead needs M * v -- m's own
-// rows dotted against v. The two productions agree whenever m is
-// symmetric, as a translation's or a scale's linear part is, and diverge
-// under a rotation.
-GMANVector transformNormal(GMANMatrix4 const& m, GMANVector const& v) {
-  RtFloat const x = v.getX(), y = v.getY(), z = v.getZ();
-  return GMANVector(m[0][0] * x + m[0][1] * y + m[0][2] * z, m[1][0] * x + m[1][1] * y + m[1][2] * z,
-                    m[2][0] * x + m[2][1] * y + m[2][2] * z);
-}
-
-} // namespace
-
 GMANRaySphere::GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
                              GMANTransform const& transform)
     : GMANSphere(radius, zmin, zmax, tmax, pl), objectToCamera(transform.interpolate(0.0)),
@@ -97,8 +58,8 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
   // gives it rather than the unit length a freshly built GMANRay would
   // normalize it to, so a root found against it is already a camera-space
   // distance and the ray's own [tmin, tmax] interval applies unchanged.
-  GMANPoint const objOrigin = transformPoint(cameraToObject, ray.getOrigin());
-  GMANVector const objDirection = transformDirection(cameraToObject, ray.getDirection());
+  GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
+  GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
   GMANPoint centre(0, 0, 0);
   GMANVector deltaP(centre, objOrigin); // O - C, in object space
@@ -141,7 +102,7 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
     GMANVector objNormal(centre, objPoint); // outward radial direction, object space
     objNormal.normalize();
 
-    GMANVector normal = transformNormal(cameraToObject, objNormal);
+    GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
     hit.t = t;

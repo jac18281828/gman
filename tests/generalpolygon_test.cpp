@@ -123,7 +123,7 @@ std::vector<std::vector<GMANPoint>> placeLoops(const std::vector<std::vector<GMA
 }
 
 // Newell's method in double precision -- the test's own area oracle,
-// independent of the anonymous-namespace newellNormal it is checking.
+// independent of the gman::newellNormal it is checking.
 std::array<double, 3> newellNormal(const std::vector<GMANPoint>& ring) {
   double nx = 0.0, ny = 0.0, nz = 0.0;
   const std::size_t n = ring.size();
