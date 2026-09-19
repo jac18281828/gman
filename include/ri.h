@@ -199,7 +199,7 @@ extern GMAN_EXPORT RtLightHandle RiLightSource(RtToken name, ...),
     RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]), RiAreaLightSource(RtToken name, ...),
     RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
 
-extern GMAN_EXPORT RtVoid RiIllumnate(RtLightHandle light, RtBoolean onoff), RiSurface(RtToken name, ...),
+extern GMAN_EXPORT RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff), RiSurface(RtToken name, ...),
     RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]), RiAtmosphere(RtToken name, ...),
     RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]), RiInterior(RtToken name, ...),
     RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]), RiExterior(RtToken name, ...),
@@ -222,7 +222,7 @@ extern GMAN_EXPORT RtVoid RiIdentity(RtVoid), RiTransform(RtMatrix transform), R
 /* Spatial transformation of a list of points */
 extern GMAN_EXPORT RtPoint* RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n, RtPoint points[]);
 
-extern GMAN_EXPORT RtVoid RiTransformBegin(RtVoid), RiTranformEnd(RtVoid);
+extern GMAN_EXPORT RtVoid RiTransformBegin(RtVoid), RiTransformEnd(RtVoid);
 
 extern GMAN_EXPORT RtVoid RiAttribute(RtToken name, ...),
     RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
