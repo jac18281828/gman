@@ -107,6 +107,37 @@ set_tests_properties(ribwriterfailure_cleanup PROPERTIES
   RESOURCE_LOCK gmanrib_plugin_file
   FIXTURES_CLEANUP gmanrib_hidden)
 
+# Two RiBegin/RiEnd cycles with a parameterized surface shader, plus process
+# exit: the three points where a dlopen'd, never-unloaded shader's static
+# instance is reached again. See tests/shaderoutlivesrenderer_test.c.
+add_executable(gman_shaderoutlivesrenderer shaderoutlivesrenderer_test.c)
+target_link_libraries(gman_shaderoutlivesrenderer PRIVATE gman_core)
+# RiBegin(RI_NULL) dlopens the default renderer; RiSurface dlopens plastic.
+add_dependencies(gman_shaderoutlivesrenderer gman_zbuffer gman_plastic)
+
+# Same C-against-C++ link requirement as gman_basicstate above.
+set_target_properties(gman_shaderoutlivesrenderer PROPERTIES LINKER_LANGUAGE CXX)
+
+add_test(NAME shaderoutlivesrenderer
+  COMMAND gman_shaderoutlivesrenderer
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+# RiSurface dlopens libplastic.so by bare name out of the build tree.
+set_tests_properties(shaderoutlivesrenderer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# GMANParameterList's own contract, in-process: default/moved-from/copy
+# lifetime and throw-safety. See tests/paramlist_test.cpp.
+add_executable(gman_paramlist paramlist_test.cpp)
+target_link_libraries(gman_paramlist PRIVATE gman_core)
+
+add_test(NAME paramlist COMMAND gman_paramlist)
+set_tests_properties(paramlist PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Pins RIE_NOTSTARTED's and RiDeclare's RIE_SYNTAX messages through
 # RiErrorHandler.
 add_executable(gman_diagnostics diagnostics_test.cpp)

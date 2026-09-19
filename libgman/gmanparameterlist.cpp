@@ -24,104 +24,54 @@
 
 #include "gmanparameterlist.h"
 
-RtVoid GMANParameterList::copy(GMANParameterList const& pl) {
-  counter = pl.counter;
-  *counter += 1;
-  number = pl.number;
-  id = pl.id;
-  datas = pl.datas;
-  dic = pl.dic;
-}
-
-RtVoid GMANParameterList::destroy() {
-  if (*counter != 0) {
-    *counter -= 1;
-    return;
-  }
-  for (int i = 0; i < number; i++) {
-    switch (dic->getType(id[i])) {
-    case GMANTokenEntry::STRING:
-      delete[] (std::string*)datas[i];
-      break;
-    case GMANTokenEntry::INTEGER:
-      delete[] (RtInt*)datas[i];
-      break;
-    default:
-      delete[] (RtFloat*)datas[i];
-      break;
-    }
-  }
-  delete[] datas;
-  delete[] id;
-  delete counter;
-}
-
-GMANParameterList::GMANParameterList() {
-  counter = new int;
-  *counter = 0;
-  number = 0;
-  id = 0;
-  datas = 0;
-  dic = 0;
+// Allocates one entry's array, fills it with copy, and appends it to block;
+// copy takes the array to fill and applies whichever of copy_float/
+// copy_integer/copy_string matches T.
+template <typename T, typename CopyFn>
+RtVoid GMANParameterList::appendEntry(std::vector<Entry>& block, GMANTokenId id, RtInt size, CopyFn copy) {
+  auto data = std::make_unique<T[]>(size);
+  copy(data.get());
+  block.push_back(Entry{id, std::move(data)});
 }
 
 GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, RtPointer* dt, RtInt vertex,
                                      RtInt varying, RtInt uniform, RtInt facevarying, const RtInt* suppliedCounts) {
-  int i, index;
-  int size;
-  counter = new int;
-  *counter = 0;
+  auto block = std::make_shared<std::vector<Entry>>();
+  block->reserve(n);
 
-  dic = &di;
-  id = new GMANTokenId[n];
-  datas = new RtPointer[n];
-
-  index = 0;
-  for (i = 0; i < n; i++) { // convert token to id
+  for (int i = 0; i < n; i++) { // convert token to id
+    GMANTokenId tid;
     try {
-      id[index] = di.getTokenId(std::string(tk[i]));
+      tid = di.getTokenId(std::string(tk[i]));
     } catch (GMANError& r) {
       GMANHandleError(r);
       continue;
     }
 
-    size = di.allocSize(id[index], vertex, varying, uniform, facevarying);
-    RtInt supplied = suppliedCounts ? suppliedCounts[i] : size;
+    const auto size = di.allocSize(tid, vertex, varying, uniform, facevarying);
+    const auto supplied = suppliedCounts ? suppliedCounts[i] : size;
     if (supplied < size) {
       warning("Parameter \"{}\": declared length {}, supplied length {}; "
               "clamping and zero-filling the remainder.",
               tk[i], size, supplied);
     }
-    switch (di.getType(id[index])) {
+    switch (di.getType(tid)) {
     case GMANTokenEntry::STRING:
-      datas[index] = (RtPointer) new std::string[size];
-      copy_string(size, (char**)dt[i], (std::string*)datas[index], supplied);
+      appendEntry<std::string>(*block, tid, size,
+                               [&](std::string* dest) { copy_string(size, (char**)dt[i], dest, supplied); });
       break;
     case GMANTokenEntry::INTEGER:
-      datas[index] = (RtPointer) new RtInt[size];
-      copy_integer(size, (RtInt*)dt[i], (RtInt*)datas[index], supplied);
+      appendEntry<RtInt>(*block, tid, size, [&](RtInt* dest) { copy_integer(size, (RtInt*)dt[i], dest, supplied); });
       break;
     default:
-      datas[index] = (RtPointer) new RtFloat[size];
-      copy_float(size, (RtFloat*)dt[i], (RtFloat*)datas[index], supplied);
+      appendEntry<RtFloat>(*block, tid, size,
+                           [&](RtFloat* dest) { copy_float(size, (RtFloat*)dt[i], dest, supplied); });
       break;
     }
-    index++;
   }
-  number = index;
+
+  entries = std::move(block);
 }
-
-GMANParameterList::GMANParameterList(GMANParameterList const& pl) { copy(pl); }
-
-GMANParameterList const& GMANParameterList::operator=(GMANParameterList const& pl) {
-  if (this != &pl) {
-    destroy();
-    copy(pl);
-  }
-  return (*this);
-}
-
-GMANParameterList::~GMANParameterList() { destroy(); }
 
 // Absence of a token is the routine case: every caller asks "did the user
 // pass this optional parameter," not "is this parameter list well-formed."
@@ -131,9 +81,13 @@ GMANParameterList::~GMANParameterList() { destroy(); }
 // that meaning by hand. Returning NULL directly makes that the only meaning
 // there is to get.
 RtPointer GMANParameterList::getPointer(GMANTokenId tid) const {
-  for (int i = 0; i < number; i++) {
-    if (tid == id[i])
-      return datas[i];
+  if (!entries) {
+    return NULL;
+  }
+  for (auto const& entry : *entries) {
+    if (tid == entry.id) {
+      return std::visit([](auto const& data) -> RtPointer { return data.get(); }, entry.data);
+    }
   }
   return NULL;
 }

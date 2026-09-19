@@ -24,7 +24,10 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
+#include <variant>
+#include <vector>
 
 #include "gmandictionary.h"
 #include "gmanerror.h"
@@ -33,21 +36,24 @@
 
 class GMAN_EXPORT GMANParameterList {
 private:
-  RtInt* counter;
+  // Owns one parameter's array; the active alternative matches its type.
+  struct Entry {
+    GMANTokenId id;
+    std::variant<std::unique_ptr<RtFloat[]>, std::unique_ptr<RtInt[]>, std::unique_ptr<std::string[]>> data;
+  };
 
-  RtInt number;
-  GMANTokenId* id;
-  RtPointer* datas;
-  GMANDictionary* dic;
+  // Shared by every copy of this list; the last one to go frees the block.
+  std::shared_ptr<std::vector<Entry>> entries;
 
   RtVoid copy_float(RtInt number, RtFloat* source, RtFloat* dest, RtInt supplied);
   RtVoid copy_integer(RtInt number, RtInt* source, RtInt* dest, RtInt supplied);
   RtVoid copy_string(RtInt number, char** source, std::string* dest, RtInt supplied);
-  RtVoid copy(GMANParameterList const& pl);
-  RtVoid destroy();
+
+  template <typename T, typename CopyFn>
+  static RtVoid appendEntry(std::vector<Entry>& block, GMANTokenId id, RtInt size, CopyFn copy);
 
 public:
-  GMANParameterList();
+  GMANParameterList() = default;
 
   // suppliedCounts, when present, is index-aligned with tk/dt: element i is
   // the length the caller actually supplied for dt[i], as opposed to
@@ -63,9 +69,9 @@ public:
   // an RtPointer's length regardless.
   GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, RtPointer* dt, RtInt vertex = 1, RtInt varying = 1,
                     RtInt uniform = 1, RtInt facevarying = 1, const RtInt* suppliedCounts = NULL);
-  GMANParameterList(GMANParameterList const& pl);
-  GMANParameterList const& operator=(GMANParameterList const& pl);
-  ~GMANParameterList();
+
+  // Rule of zero: none of copy, move, or destroy is declared, so a moved-
+  // from list's shared_ptr is left null instead of still owning its data.
 
   RtPointer getPointer(GMANTokenId tid) const;
 };
