@@ -1106,6 +1106,23 @@ set_tests_properties(raydepth PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R7 proof, check 5: GMANRayOccluder::transmission, built from the plugin's
+# own sources for the same reason as gman_raysphere above; carries
+# raydepth's own ENVIRONMENT for the same reason too.
+add_executable(gman_rayoccluder rayoccluder_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
+target_link_libraries(gman_rayoccluder PRIVATE gman_core gman_internal_headers)
+target_include_directories(gman_rayoccluder PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME rayoccluder COMMAND gman_rayoccluder)
+set_tests_properties(rayoccluder PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # `gman -r gmanraytracer` renders tests/rib/r4_raytracer.rib to a round,
 # plastic-shaded sphere matching a checked-in golden image and differing
 # from the z-buffer's own render of the same scene. Registered only when
@@ -1182,6 +1199,27 @@ if(GMAN_BUILD_RAYTRACER)
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_POLYGONZBUFFER_WORKDIR}")
   set_tests_properties(polygonzbuffer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
+  # R7 proof, checks 3-4: tests/rib/shadow.rib -- a small sphere between a
+  # distant light and a large receiver -- casts a shadow a checked-in
+  # golden pins, and one pixel inside it holds two further relations
+  # against shadow_nolight.rib and shadow_noblocker.rib. See
+  # shadowrender_test.cpp's own comment.
+  add_executable(gman_shadowrender shadowrender_test.cpp)
+  target_link_libraries(gman_shadowrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_shadowrender gman_raytracer)
+
+  set(GMAN_SHADOWRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shadowrender-run")
+  file(MAKE_DIRECTORY "${GMAN_SHADOWRENDER_WORKDIR}")
+
+  add_test(NAME shadowrender
+    COMMAND gman_shadowrender $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_SHADOWRENDER_WORKDIR}")
+  set_tests_properties(shadowrender PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)

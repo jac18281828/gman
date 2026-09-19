@@ -57,13 +57,43 @@ gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
 
 } // namespace
 
+// kSelfShadowBias offsets the shadow ray's tmin rather than its origin:
+// transmission() gets no surface normal to offset against, and GMANRay's
+// own tmin already skips t < tmin the way a primary ray's RI_EPSILON
+// does. RI_EPSILON (1e-10) is too small here -- recomputing a hit point
+// through a primitive's own quadratic solve loses more precision than
+// that, worst near a grazing N.L where the surviving root's magnitude
+// goes as sqrt of that error rather than the error itself. Measured
+// against a unit sphere sampled densely across its own lit side
+// (tests/rayoccluder_test.cpp): 5e-3 was the smallest tried value clearing
+// every sample; 1e-2 keeps a real margin above that measurement, still far
+// below this renderer's own geometry (shadow.rib's smaller sphere has
+// radius 0.6) for a visible shadow to detach from what casts it.
+constexpr RtFloat kSelfShadowBias = (RtFloat)1.0e-2;
+
+GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
+                                        RtFloat distance) const {
+  GMANRay const shadowRay(P, towardLight, kSelfShadowBias, distance);
+
+  GMANPrimitive* primitive = worldManager.getFirst();
+  while (primitive) {
+    GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
+    GMANHit hit;
+    if (rayPrimitive && rayPrimitive->intersect(shadowRay, hit)) {
+      return GMANColor(0.0f, 0.0f, 0.0f);
+    }
+    primitive = worldManager.getNext();
+  }
+  return GMANColor(1.0f, 1.0f, 1.0f);
+}
+
 /*
  * RenderMan API GMANRaytraceRenderer
  *
  */
 
 // default constructor
-GMANRaytraceRenderer::GMANRaytraceRenderer() : GMANRenderer() {};
+GMANRaytraceRenderer::GMANRaytraceRenderer() : GMANRenderer(), occluder(worldManager) {};
 
 // default destructor
 GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
@@ -92,7 +122,7 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
     return;
   }
 
-  GMANColor const color = gman::shade(*nearest.appearance, hitSurfacePoint(ray, nearest.hit), cameraToWorld);
+  GMANColor const color = gman::shade(*nearest.appearance, hitSurfacePoint(ray, nearest.hit), cameraToWorld, &occluder);
 
   // Camera-space z of the hit point (see getDepth's own comment on why
   // this differs from the z-buffer's post-projection depth).

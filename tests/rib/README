@@ -291,6 +291,15 @@ R4's render-loop proof: `lights.rib`'s scene (ambient plus distant light,
 gmanraytracer` and again with the default z-buffer without the two runs
 colliding on one output file. Not third-party.
 
+## shadow.rib, shadow_nolight.rib, shadow_noblocker.rib
+
+R7's shadow-ray proof (`tests/shadowrender_test.cpp`): a small sphere sits
+between a distant light and a large receiving sphere, plus an ambient
+light so the cast shadow is not pure black. `shadow_nolight.rib` is the
+same scene with the distant light removed, and `shadow_noblocker.rib` the
+same scene with the small sphere removed; the test pins one pixel inside
+the shadow against both. Not third-party.
+
 ## malformed/
 
 Hand-written fixtures for malformed RIB input. `gman` is expected to fail on

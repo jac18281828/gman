@@ -34,6 +34,7 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanobjectmanager.h"
+#include "gmanocclude.h"
 #include "gmanray.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanrenderer.h"
@@ -41,6 +42,25 @@
 #include "gmanshading.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
+
+/*
+ * The ray tracer's own occlusion test: casts a shadow ray from P toward
+ * the light and walks worldManager for the first blocking hit, as
+ * nearestHit does -- any hit inside the ray's interval blocks, so the
+ * nearest is not needed. A public, standalone class (not nested in
+ * GMANRaytraceRenderer) so a unit test can probe transmission() directly
+ * against a world manager it controls.
+ */
+class GMAN_EXPORT GMANRayOccluder : public gman::Occluder {
+public:
+  explicit GMANRayOccluder(GMANWorldManager& worldManager) : worldManager(worldManager) {}
+
+  GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
+                         RtFloat distance) const override;
+
+private:
+  GMANWorldManager& worldManager;
+};
 
 /*
  * RenderMan API GMANRaytraceRenderer
@@ -54,6 +74,10 @@ private:
   GMANRayObjectManager objectManager;
 
   GMANLinearWorldManager worldManager;
+
+  // Shadow rays walk worldManager above; declared after it so occluder's
+  // reference binds to an already-constructed object.
+  GMANRayOccluder occluder;
 
   // The real per-sample visibility test and colour store; resolved into
   // frameBuffer at the end of render(). getDepth reads its resolved depth.
