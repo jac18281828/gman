@@ -49,10 +49,15 @@ GMANPoint VSPerspective::project(GMANPoint const& p) {
 GMANRay VSPerspective::cameraRay(RtFloat x, RtFloat y) {
   rasterToScreen(x, y);
 
+  // project() divides camera-space x/y by z and then by tan(fov/2)
+  // (mtrx[0][0] == cot(fov/2), GMANMatrix4::prjPersp); a ray through this
+  // screen point has to invert that same factor, or it only lands back on
+  // the point project() maps it to when fov happens to be 90 (tan(45) = 1).
   // The eye sits at the camera-space origin; the screen point at z=1 sets
   // the direction. GMANViewingSystem::ray carries this into world space
   // via the camera-to-world transform captured at RiWorldBegin.
-  return GMANRay(GMANPoint(0, 0, 0), GMANVector(x, y, 1));
+  RtFloat const tanHalfFov = (RtFloat)1.0 / mtrx[0][0];
+  return GMANRay(GMANPoint(0, 0, 0), GMANVector(x * tanHalfFov, y * tanHalfFov, 1));
 }
 
 /*

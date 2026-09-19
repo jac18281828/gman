@@ -29,6 +29,15 @@
  * mistakenly returns world space pass every one of them. The rotation
  * must be off the view axis: a pure z rotation fixes (0,0,1) in place,
  * so check 1's centre ray would not catch that mistake either.
+ *
+ * Check 6 (R4): every check above uses fov=90, where tan(45deg)=1 makes
+ * cameraRay's screen point and its correctly fov-scaled direction
+ * numerically identical -- a dropped fov term would still pass all of
+ * them. R4's own render loop caught this: VSPerspective::cameraRay built
+ * its ray from the raw screen point, unscaled by tan(fov/2), so a
+ * lights.rib-shaped scene at fov=45 traced a sphere less than half the
+ * z-buffer's own silhouette diameter. Fixed in VSPerspective::cameraRay;
+ * check 6 pins fov=60, where the two disagree.
  */
 
 #include <cmath>
@@ -179,6 +188,29 @@ void testIntervalDefaults() {
         "interval defaults: an orthographic world-space ray carries [RI_EPSILON, RI_INFINITY]");
 }
 
+// ---- check 6: a non-90 fov scales the ray's direction ----
+// fov=60, where tan(30deg) != 1, so a dropped fov term (the ray built
+// straight from the screen point, as if fov were always 90) reads as a
+// wrong direction rather than passing by coincidence -- see the file
+// comment.
+void testFovScalesDirection() {
+  RtFloat const fov = 60.0;
+  gman::VSPerspective vs(kXRes, kYRes, squareWindow(), nonIdentityWorldToCamera(), fov, 1.0, 100.0);
+
+  RtFloat sx = (RtFloat)kXRes, sy = (RtFloat)kYRes / 2.0f; // an edge point, not the centre (unscaled there too)
+  vs.rasterToScreen(sx, sy);
+
+  RtFloat const tanHalfFov = (RtFloat)std::tan(fov / 2.0 * M_PI / 180.0);
+  GMANVector expected(sx * tanHalfFov, sy * tanHalfFov, 1.0);
+  expected.normalize();
+
+  GMANRay ray = vs.cameraRay((RtFloat)kXRes, (RtFloat)kYRes / 2.0f);
+  check(near(ray.getDirection().getX(), expected.getX()) && near(ray.getDirection().getY(), expected.getY()) &&
+            near(ray.getDirection().getZ(), expected.getZ()),
+        "perspective: a non-90 fov's camera-space direction is the screen point scaled by "
+        "tan(fov/2), not the raw screen coordinate");
+}
+
 } // namespace
 
 int main() {
@@ -187,6 +219,7 @@ int main() {
   testOrthographicRaysAreParallel();
   testWorldRayIsCameraRayTransformed();
   testIntervalDefaults();
+  testFovScalesDirection();
 
   return checkSummary("the camera-space and world-space rays agree");
 }
