@@ -1,12 +1,10 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
-/*----------------------------------------------------------
-  Copyright (C) Lionel Joseph Lacour 2000, 2001
-  2000/08/06  First release
-  ----------------------------------------------------------
-  This class implements the RiContext feature of the
-  RiSpec V3.2
-*/
+/* This is part of GMAN, a RenderMan-compatible renderer.
+ *
+ * Copyright (c) 2026 John Cairns <john@2ad.com>
+ */
+
 /*
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,28 +22,13 @@
  */
 #pragma once
 
-#include <list>
-
-#include "gmanerror.h"
-#include "gmanlog.h"
 #include "gmanrenderman.h"
-#include "ri.h"
 
 namespace gman {
 
-class Context {
-private:
-  std::list<GMANRenderMan*> chl;
-  GMANRenderMan* active;
-
-public:
-  Context();
-
-  RtVoid addContext(RtToken name);
-  RtContextHandle getContext(RtVoid);
-  GMANRenderMan& current(RtVoid);
-  RtVoid switchTo(RtContextHandle);
-  RtVoid removeCurrent(RtVoid);
-};
+// Loads path as a GMANLoadable plugin exporting GMANLoadRenderMan and
+// returns the GMANRenderMan instance it constructs. The caller owns the
+// result; the plugin itself is never unloaded.
+GMANRenderMan* loadRenderMan(const char* path);
 
 } // namespace gman

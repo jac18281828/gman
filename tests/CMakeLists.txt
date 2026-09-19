@@ -49,6 +49,43 @@ set_tests_properties(basicstate PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RiBegin("x.rib") loads libgmanrib.so and writes RIB through GMANASCII;
+# RI_NULL still routes to the renderer. See tests/ribwriter.c.
+add_executable(gman_ribwriter ribwriter.c)
+target_link_libraries(gman_ribwriter PRIVATE gman_core)
+set_target_properties(gman_ribwriter PROPERTIES LINKER_LANGUAGE CXX)
+# gman_ribwriter dlopens libgmanrib.so at runtime rather than linking it, so
+# nothing else forces the plugin to build before the test does.
+add_dependencies(gman_ribwriter gman_rib)
+
+set(GMAN_RIBWRITER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribwriter-run")
+file(MAKE_DIRECTORY "${GMAN_RIBWRITER_WORKDIR}")
+
+add_test(NAME ribwriter
+  COMMAND gman_ribwriter
+          "${GMAN_RIBWRITER_WORKDIR}/scene.rib"
+          "${CMAKE_CURRENT_SOURCE_DIR}/rib/golden/ribwriter_scene.rib"
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(ribwriter PROPERTIES
+  LABELS unit
+  TIMEOUT 30
+  RESOURCE_LOCK gmanrib_plugin_file)
+
+# A failed .rib load must not leave the outer context current. See
+# tests/ribwriterfailure.c.
+add_executable(gman_ribwriterfailure ribwriterfailure.c)
+target_link_libraries(gman_ribwriterfailure PRIVATE gman_core)
+set_target_properties(gman_ribwriterfailure PROPERTIES LINKER_LANGUAGE CXX)
+add_dependencies(gman_ribwriterfailure gman_rib)
+
+add_test(NAME ribwriterfailure
+  COMMAND gman_ribwriterfailure "$<TARGET_FILE:gman_rib>"
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(ribwriterfailure PROPERTIES
+  LABELS unit
+  TIMEOUT 30
+  RESOURCE_LOCK gmanrib_plugin_file)
+
 # Pins RIE_NOTSTARTED's and RiDeclare's RIE_SYNTAX messages through
 # RiErrorHandler.
 add_executable(gman_diagnostics diagnostics_test.cpp)

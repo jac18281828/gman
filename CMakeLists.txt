@@ -138,6 +138,7 @@ add_library(gman_core SHARED
   libgman/gmanlinearworldmanager.cpp
   libgman/gmanloadable.cpp
   libgman/gmanloadablerenderer.cpp
+  libgman/gmanloadablerenderman.cpp
   libgman/gmanloadableshader.cpp
   libgman/gmanlog.cpp
   libgman/gmanmatrix4.cpp

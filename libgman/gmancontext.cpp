@@ -22,15 +22,52 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+#include <string_view>
+
 #include "gmancontext.h"
+#include "gmanloadablerenderman.h"
 #include "gmanrendermanimpl.h"
 
 namespace gman {
 
+namespace {
+
+const char* const kRibSuffix = ".rib";
+const char* const kRibWriterPlugin = "libgmanrib.so";
+
+// A name ending in ".rib" selects the RIB-writer plugin; any other name,
+// RI_NULL included, keeps the renderer.
+bool namesRibFile(RtToken name) {
+  if (name == nullptr) {
+    return false;
+  }
+  return std::string_view(name).ends_with(kRibSuffix);
+}
+
+} // namespace
+
 Context::Context() { active = (GMANRenderMan*)RI_NULL; }
 
-RtVoid Context::addContext() {
-  active = new GMANRenderManImpl;
+RtVoid Context::addContext(RtToken name) {
+  if (namesRibFile(name)) {
+    // Mirrors the renderer branch below: a context is always pushed and
+    // made current, even when the plugin fails to load, so the caller's
+    // RiGetContext and RiEnd operate on this context, not whichever one was
+    // active before RiBegin. RiBegin(RI_NULL) loads the always-built default
+    // renderer, so RiEnd's delete on this fallback has a real object to
+    // delete instead of GMANRenderManImpl's never-set renderer pointer.
+    try {
+      active = loadRenderMan(kRibWriterPlugin);
+    } catch (GMANError&) {
+      GMANRenderManImpl* fallback = new GMANRenderManImpl;
+      fallback->RiBegin(RI_NULL);
+      active = fallback;
+      chl.push_back(active);
+      throw;
+    }
+  } else {
+    active = new GMANRenderManImpl;
+  }
   chl.push_back(active);
 }
 

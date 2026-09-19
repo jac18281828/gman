@@ -1,0 +1,26 @@
+FrameBegin 1
+Format 640 480 1
+Projection "perspective" "fov" [ 30 ]
+Clipping 0.5 50
+PixelSamples 2 2
+ScreenWindow -1 1 -1 1
+WorldBegin
+AttributeBegin
+TransformBegin
+Translate 0 0 5
+Rotate 45 0 1 0
+Scale 1 1 1
+Color [ 1 0 0 ]
+Opacity [ 1 1 1 ]
+Surface "plastic" "Ka" [ 1 ] "Kd" [ 0.5 ]
+Sphere 1 -1 1 360
+Cone 1 1 360
+Cylinder 1 -1 1 360
+Disk 1 1 360
+Paraboloid 1 0 1 360
+Torus 1 0.5 0 360 360
+Polygon "P" [ 0 0 0 1 0 0 1 1 0 0 1 0 ]
+TransformEnd
+AttributeEnd
+WorldEnd
+FrameEnd

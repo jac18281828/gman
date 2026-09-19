@@ -90,7 +90,7 @@ extern "C" RtToken RiDeclare(char* name, char* declaration) {
 //
 extern "C" RtVoid RiBegin(RtToken name) {
   try {
-    context.addContext();
+    context.addContext(name);
     context.current().RiBegin(name);
   } catch (GMANError& error) {
     GMANHandleError(error);
