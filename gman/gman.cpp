@@ -100,6 +100,9 @@ int main(int argc, char* argv[]) {
       info("gman {} -- LGPL-2.1-or-later, see COPYING\n", GMAN_PROJECT_VERSION);
 
       bool writeLog = false;
+      // Empty means GMANRIBParse's own default ("gmanzbuffer"); -r overrides
+      // it with the name RiBegin loads, verbatim.
+      std::string rendererName;
 
       int arg = 1;
 
@@ -123,12 +126,21 @@ int main(int argc, char* argv[]) {
         case 'q':
           logObj.setLogLevel(LOGLVL_DISASTER);
           break;
+        case 'r':
+          if (arg + 1 >= argc) {
+            std::cerr << argv[0] << ": -r requires a renderer name" << std::endl;
+            return EXIT_FAILURE;
+          }
+          rendererName = argv[++arg];
+          break;
         case 'w':
           logObj.setLogLevel(LOGLVL_WARNING);
           break;
         }
         arg++;
       }
+
+      RtToken const renderer = rendererName.empty() ? "gmanzbuffer" : rendererName.c_str();
 
       for (int i = arg; i < argc; i++) {
         try {
@@ -140,7 +152,7 @@ int main(int argc, char* argv[]) {
             logObj.setLogFile(fileName.c_str());
           }
 
-          GMANRIBParse parser(renderMan, argv[i]);
+          GMANRIBParse parser(renderMan, argv[i], renderer);
 
           // just parse it...
           parser.parse();
@@ -161,7 +173,7 @@ int main(int argc, char* argv[]) {
 /* Are you freaking kidding? */
 RtVoid usage(char* myname) {
 
-  std::cerr << myname << ": -[hdiweql] [--version] files ..." << std::endl;
+  std::cerr << myname << ": -[hdiweql] [-r renderer] [--version] files ..." << std::endl;
   std::cerr << "\tParse RIB input files." << std::endl << std::endl;
   std::cerr << "\t-h - print this help message." << std::endl;
   std::cerr << "\t-d - set logging to: debug output." << std::endl;
@@ -170,5 +182,6 @@ RtVoid usage(char* myname) {
   std::cerr << "\t-e - set logging to: error output." << std::endl;
   std::cerr << "\t-q - set logging to: quiet, only report disasters." << std::endl;
   std::cerr << "\t-l - enable a log based on the filename of the rib." << std::endl;
+  std::cerr << "\t-r renderer - choose the renderer plugin (default: gmanzbuffer)." << std::endl;
   std::cerr << "\t--version - print the version and compiled drivers, then exit." << std::endl;
 }
