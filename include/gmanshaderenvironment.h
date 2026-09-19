@@ -40,16 +40,6 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-// cl scaled per channel by an occluder's transmission. GMANColor gains no
-// operator* for this; diffuse() and specular() share this rather than
-// repeating the three get/set pairs each.
-inline GMANColor GMANOccludedColor(GMANColor cl, GMANColor const& transmission) {
-  cl.setRed(cl.getRed() * transmission.getRed());
-  cl.setGreen(cl.getGreen() * transmission.getGreen());
-  cl.setBlue(cl.getBlue() * transmission.getBlue());
-  return cl;
-}
-
 /*
  * The interface a surface shader is written against -- and the interface
  * a future shading-language VM would target, since a C++ shader and an
@@ -201,16 +191,11 @@ struct GMAN_EXPORT GMANSurfaceEnv {
       GMANVector l;
       GMANColor cl;
       lights[i]->sample(P, l, cl);
-      // A distant light's l has the length of its from-to vector, which
-      // means nothing; every other light's is the distance to it, taken
-      // before normalize() below discards it.
-      RtFloat const distance = (lights[i]->getType() == GMAN_LIGHT_DISTANT) ? RI_INFINITY : l.magnitude();
+      RtFloat const distance = lightDistance(*lights[i], l);
       l.normalize();
       RtFloat nDotL = nn.dot(l);
       if (nDotL > 0.0) {
-        if (occluder) {
-          cl = GMANOccludedColor(cl, occluder->transmission(*lights[i], P, l, distance));
-        }
+        cl = occludedContribution(*lights[i], l, distance, cl);
         cl.scale(nDotL);
         sum += cl;
       }
@@ -231,23 +216,44 @@ struct GMAN_EXPORT GMANSurfaceEnv {
       GMANVector l;
       GMANColor cl;
       lights[i]->sample(P, l, cl);
-      // See diffuse()'s own comment: distance before normalize() discards
-      // a point or spot light's l magnitude.
-      RtFloat const distance = (lights[i]->getType() == GMAN_LIGHT_DISTANT) ? RI_INFINITY : l.magnitude();
+      RtFloat const distance = lightDistance(*lights[i], l);
       l.normalize();
       GMANVector h(l.getX() + vv.getX(), l.getY() + vv.getY(), l.getZ() + vv.getZ());
       h.normalize();
       RtFloat nDotH = nn.dot(h);
       if (nDotH > 0.0) {
-        if (occluder) {
-          cl = GMANOccludedColor(cl, occluder->transmission(*lights[i], P, l, distance));
-        }
+        cl = occludedContribution(*lights[i], l, distance, cl);
         RtFloat exponent = (roughness > RI_EPSILON) ? (1.0 / roughness) : (1.0 / RI_EPSILON);
         cl.scale((RtFloat)pow(nDotH, exponent));
         sum += cl;
       }
     }
     return sum;
+  }
+
+private:
+  // Scales cl's three channels by transmission's own.
+  static GMANColor occluded(GMANColor cl, GMANColor const& transmission) {
+    cl.setRed(cl.getRed() * transmission.getRed());
+    cl.setGreen(cl.getGreen() * transmission.getGreen());
+    cl.setBlue(cl.getBlue() * transmission.getBlue());
+    return cl;
+  }
+
+  // RI_INFINITY for a distant light, whose sample()'s l has the length of
+  // its from-to vector, not a useful distance; otherwise l's own
+  // magnitude, read before a caller's normalize() discards it.
+  // GMANVector::magnitude() is not const-qualified, hence l by non-const
+  // reference rather than const&.
+  static RtFloat lightDistance(GMANLight const& light, GMANVector& l) {
+    return light.getType() == GMAN_LIGHT_DISTANT ? RI_INFINITY : l.magnitude();
+  }
+
+  // cl scaled by this env's occluder, if it has one; cl unchanged
+  // otherwise.
+  GMANColor occludedContribution(GMANLight const& light, GMANVector const& towardLight, RtFloat distance,
+                                 GMANColor cl) const {
+    return occluder ? occluded(cl, occluder->transmission(light, P, towardLight, distance)) : cl;
   }
 };
 

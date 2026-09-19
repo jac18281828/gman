@@ -31,6 +31,10 @@
 
 namespace gman {
 
+// Out-of-line so this translation unit, not every one that includes
+// gmanocclude.h, emits Occluder's vtable and typeinfo.
+Occluder::~Occluder() = default;
+
 namespace {
 
 // The RISpec's own default: a scene that never calls RiSurface still
