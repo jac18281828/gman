@@ -26,8 +26,8 @@
  * white: kSelfShadowBiasScale keeps a lit convex surface from shadowing
  * itself, at three scales spanning 1e6:1 -- a fixed bias self-shadows once
  * the scene is large enough, and swallows a genuine blocker once it is
- * small enough, so the self-shadow sweep and a scaled blocker/receiver
- * pair both run at x1000 and x0.001 as well as x1.
+ * small enough, so the self-shadow sweep runs at x1, x1000 and x0.001,
+ * and a scaled blocker/receiver pair at x1 and x0.001.
  */
 
 #include <cmath>

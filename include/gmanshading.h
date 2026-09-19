@@ -81,8 +81,7 @@ struct GMAN_EXPORT SurfacePoint {
 // (GMANOptions::getCameraToWorld) -- an argument rather than a member of
 // Appearance, since it belongs to the camera, not to what a primitive
 // looks like. occluder answers the illuminance loop's "does light reach
-// P?" (gmanocclude.h); a caller that omits it keeps every light visible,
-// today's behaviour.
+// P?" (gmanocclude.h); a caller that omits it keeps every light visible.
 GMAN_EXPORT GMANColor shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
                             Occluder const* occluder = nullptr);
 

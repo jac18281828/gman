@@ -35,13 +35,15 @@
 #include "ri.h"
 
 // The shadow ray's tmin, scaled to the hit point's own coordinate
-// magnitude rather than fixed. kSelfShadowBiasScale must stay above the
-// hit-point error recomputing a point through a primitive's own quadratic
-// solve leaves behind -- an error that grows with that magnitude -- and
-// below the smallest gap this renderer's own geometry ever puts between
-// two surfaces, or a real blocker close to what it shadows stops
-// registering. kSelfShadowBiasFloor keeps a hit point at or near the
-// origin, where the scaled term vanishes, a positive tmin.
+// magnitude rather than fixed. A self-hit's surviving root is
+// approximately the hit point's own floating-point error divided by N.L,
+// so it grows both toward a grazing angle and with that magnitude.
+// kSelfShadowBiasScale must clear that quantity at every angle and
+// magnitude this renderer meets, and still stay below the smallest gap
+// its own geometry ever puts between two surfaces, or a real blocker
+// close to what it shadows stops registering. kSelfShadowBiasFloor keeps
+// a hit point at or near the origin, where the scaled term vanishes, a
+// positive tmin.
 constexpr RtFloat kSelfShadowBiasScale = (RtFloat)1.0e-2;
 constexpr RtFloat kSelfShadowBiasFloor = (RtFloat)1.0e-6;
 

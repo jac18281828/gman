@@ -51,9 +51,7 @@ namespace gman {
  */
 class GMAN_EXPORT Occluder {
 public:
-  // Out-of-line (libgman/gmanshading.cpp): the one place this class's
-  // vtable and typeinfo are emitted, so a renderer outside this tree gets
-  // both from libgman rather than a weak copy of its own.
+  // Defined out of line, in libgman/gmanshading.cpp.
   virtual ~Occluder();
 
   // towardLight is unit length, from P toward light. distance is

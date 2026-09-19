@@ -158,20 +158,29 @@ int main() {
       checkScaledByTransmission(env, n, v, roughness, ambientBaseline, diffuseBaseline, specularBaseline,
                                 GMANColor(1.0f, 0.5f, 0.0f), "non-grey transmission");
 
-  // ---- per-light distance and direction, from diffuse()'s own record --
-  // specular() ran after it above and would previously have overwritten a
-  // single shared record with its own last call. A diffuse() that passed
-  // RI_INFINITY for every light, point included, fails the check below.
+  // ---- per-light distance and direction, from diffuse()'s and
+  // specular()'s own records ----
+  GMANVector const expectedTowardLight(0.0f, 0.0f, 1.0f);
+
   RecordingOccluder::Record const& diffuseRecord = nonGrey.diffuseRecord();
   check(diffuseRecord.distantDistance == RI_INFINITY,
         "distant light: diffuse()'s transmission() call receives RI_INFINITY");
   check(std::fabs(diffuseRecord.pointDistance - 5.0f) <= kTol,
         "point light: diffuse()'s transmission() call receives its own distance (5.0)");
-  GMANVector const expectedTowardLight(0.0f, 0.0f, 1.0f);
   check(std::fabs(diffuseRecord.pointTowardLight.getX() - expectedTowardLight.getX()) <= kTol &&
             std::fabs(diffuseRecord.pointTowardLight.getY() - expectedTowardLight.getY()) <= kTol &&
             std::fabs(diffuseRecord.pointTowardLight.getZ() - expectedTowardLight.getZ()) <= kTol,
         "point light: diffuse()'s transmission() call receives a unit towardLight");
+
+  RecordingOccluder::Record const& specularRecord = nonGrey.specularRecord();
+  check(specularRecord.distantDistance == RI_INFINITY,
+        "distant light: specular()'s transmission() call receives RI_INFINITY");
+  check(std::fabs(specularRecord.pointDistance - 5.0f) <= kTol,
+        "point light: specular()'s transmission() call receives its own distance (5.0)");
+  check(std::fabs(specularRecord.pointTowardLight.getX() - expectedTowardLight.getX()) <= kTol &&
+            std::fabs(specularRecord.pointTowardLight.getY() - expectedTowardLight.getY()) <= kTol &&
+            std::fabs(specularRecord.pointTowardLight.getZ() - expectedTowardLight.getZ()) <= kTol,
+        "point light: specular()'s transmission() call receives a unit towardLight");
 
   return checkSummary(
       "GMANSurfaceEnv's occlusion hook: diffuse()/specular() consult it per channel, ambient() does not");
