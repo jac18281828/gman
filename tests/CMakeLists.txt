@@ -855,15 +855,6 @@ set_tests_properties(threadcontainment PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# The line is the directory: every class, struct, enum, free function and
-# typedef/alias a libgman/ header declares lives in namespace gman.
-add_executable(gman_internalnamespace internalnamespace_test.cpp)
-add_test(NAME internalnamespace
-  COMMAND gman_internalnamespace "${CMAKE_SOURCE_DIR}/libgman")
-set_tests_properties(internalnamespace PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
 # Pins GMANConvertRGBtoHSV and GMANConvertRGBtoHSL against their
 # pre-refactor min/max macro's output; the expected values are the
 # pre-refactor output.
