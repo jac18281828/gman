@@ -59,11 +59,11 @@ find_package(TIFF REQUIRED)
 find_package(JPEG)
 find_package(Threads REQUIRED)
 
-# All three are non-functional and kept for the design intent a later phase may
-# want. reyes additionally does not link -- it has a declared virtual with no
-# definition -- so its option compiles but does not complete.
+# reyes and radiosity are non-functional and kept for the design intent a later
+# phase may want. reyes additionally does not link -- it has a declared virtual
+# with no definition -- so its option compiles but does not complete.
 option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
-option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin, which intersects but does not yet render" OFF)
+option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin" ON)
 option(GMAN_BUILD_RADIOSITY "Build the (non-functional) radiosity plugin" OFF)
 
 # ---------------------------------------------------------------------------
@@ -348,6 +348,11 @@ install(TARGETS gman_core
 install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_rib
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+if(GMAN_BUILD_RAYTRACER)
+  install(TARGETS gman_raytracer
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+endif()
 install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
   FILES_MATCHING PATTERN "*.h")
 # generate_export_header writes export.h into the build tree; the source

@@ -990,8 +990,8 @@ set_tests_properties(quadratic PROPERTIES
   TIMEOUT 30)
 
 # Ray tracer core, unit 2: GMANRaySphere::intersect, compiled here from the
-# raytracer plugin's own sources since the plugin builds only under
-# GMAN_BUILD_RAYTRACER, which no CI job sets.
+# raytracer plugin's own sources rather than linked against the gman_raytracer
+# target, so this still builds and runs with GMAN_BUILD_RAYTRACER off.
 add_executable(gman_raysphere raysphere_test.cpp
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp")
