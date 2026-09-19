@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 name: release
-# A tag is the release trigger. Tags are bare versions -- 0.6.0, no v prefix
-# -- and land on main's release commit, per the checksmix workflow.
+# Every branch push builds the tests-off release and guards its exports.
+# A tag push instead creates a release and attaches the platform
+# tarballs. Tags are bare versions -- 0.6.0, no v prefix -- and land on
+# main's release commit, per the checksmix workflow.
 on:
   push:
+    branches: ["**"]
     tags: ["*"]
 permissions:
   contents: write
@@ -11,11 +14,40 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  # A build with tests off exports only what GMAN_EXPORT tags. --no-undefined
+  # turns a hidden symbol a plugin calls into a link failure instead of a
+  # dlopen-time one, so this is where a missing export first shows -- before
+  # the tag path's package build.
+  export-guard:
+    name: tests-off build, undefined symbols as link errors
+    if: github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build \
+            libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+      - name: Configure
+        run: |
+          cmake --preset release \
+            -DGMAN_BUILD_RAYTRACER=ON -DGMAN_BUILD_RADIOSITY=ON \
+            -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON \
+            -DCMAKE_MODULE_LINKER_FLAGS=-Wl,--no-undefined \
+            -DCMAKE_SHARED_LINKER_FLAGS=-Wl,--no-undefined
+      - name: Build
+        run: cmake --build build-release --parallel
+      - name: Guard against a test build shipping
+        run: grep -qx "BUILD_TESTING:BOOL=OFF" build-release/CMakeCache.txt
   # The release is created first and empty, so every matrix leg has something
   # to upload into. Legs run with fail-fast off: one platform failing to build
   # should cost that platform's tarball, not the whole release.
   release:
     name: create the release
+    if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,6 +89,7 @@ jobs:
   binaries:
     name: ${{ matrix.target }}
     needs: release
+    if: github.ref_type == 'tag'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -103,12 +136,14 @@ jobs:
           cmake --install build-release \
             --prefix "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
       # The staged gman must find its own plugins from wherever it is
-      # extracted -- that is what the relative INSTALL_RPATH buys, and a
-      # tarball that cannot render is not worth publishing. The package build
-      # hides everything GMAN_EXPORT does not tag, so this is where a missing
-      # tag first shows: sphere.rib alone loads no shader plugin, so the four
-      # renders below cover every shipped shader. texture.rib cannot open
-      # checker_texture.tif and renders with opaque black; that is expected.
+      # extracted -- that is what the relative INSTALL_RPATH buys, and
+      # a tarball that cannot render is not worth publishing. The
+      # export-guard job's --no-undefined guard already catches a
+      # missing tag on Linux at link time; this is where one first
+      # shows on the other two platforms: sphere.rib alone loads no
+      # shader plugin, so the four renders below cover every shipped
+      # shader. texture.rib cannot open checker_texture.tif and
+      # renders with opaque black; that is expected.
       - name: Verify the staged binary renders
         run: |
           cd "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
