@@ -19,7 +19,7 @@ jobs:
           go-version: 1.x
       - name: Install yamlfmt
         run: |
-          go install github.com/google/yamlfmt/cmd/yamlfmt@v0.16.0
+          go install github.com/google/yamlfmt/cmd/yamlfmt@v0.21.0
           strip $(which yamlfmt)
       - name: Run yamlfmt
         run: yamlfmt -lint .github/workflows/*.yml
