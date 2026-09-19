@@ -1016,8 +1016,50 @@ target_include_directories(gman_rayobjectmanager PRIVATE "${CMAKE_SOURCE_DIR}/re
 
 add_test(NAME rayobjectmanager COMMAND gman_rayobjectmanager)
 set_tests_properties(rayobjectmanager PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
+
+# R4 proof, unit 4: GMANRaytraceRenderer::getDepth, built from the plugin's
+# own sources for the same reason as gman_raysphere above. A default
+# GMANAttributes loads libmatte.so by bare name, so this carries the same
+# ENVIRONMENT as gman_rayobjectmanager.
+add_executable(gman_raydepth raydepth_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
+target_link_libraries(gman_raydepth PRIVATE gman_core gman_internal_headers)
+target_include_directories(gman_raydepth PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME raydepth COMMAND gman_raydepth)
+set_tests_properties(raydepth PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# R4's actual gate: `gman -r gmanraytracer` renders tests/rib/r4_raytracer.rib
+# to a round, plastic-shaded sphere matching a checked-in golden image and
+# differing from the z-buffer's own render of the same scene. Registered only
+# when the plugin builds, since `-r gmanraytracer` has nothing to load
+# otherwise.
+if(GMAN_BUILD_RAYTRACER)
+  add_executable(gman_rayrender rayrender_test.cpp)
+  target_link_libraries(gman_rayrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_rayrender gman_raytracer)
+
+  set(GMAN_RAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rayrender-run")
+  file(MAKE_DIRECTORY "${GMAN_RAYRENDER_WORKDIR}")
+
+  add_test(NAME rayrender
+    COMMAND gman_rayrender $<TARGET_FILE:gman>
+                           "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_RAYRENDER_WORKDIR}")
+  set_tests_properties(rayrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
 
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
@@ -1047,6 +1089,7 @@ add_test(NAME install
           -D "GMAN_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
           -D "GMAN_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
           -D "GMAN_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+          -D "GMAN_HAS_RAYTRACER=${GMAN_BUILD_RAYTRACER}"
           -P "${CMAKE_CURRENT_SOURCE_DIR}/install_test.cmake")
 set_tests_properties(install PROPERTIES
   LABELS render

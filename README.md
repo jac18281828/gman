@@ -18,7 +18,7 @@ polygons, three surface shaders, three lights and one sample per pixel.
 include/     GMAN header files, including ri.h
 libgman/     the core library: RIB parser, RI state machine, image writers
 libgmanrib/  the RIB-writer plugin RiBegin("x.rib") loads, not yet trustworthy
-renderers/   loadable rendering modules -- zbuffer, plus reyes, raytracer and
+renderers/   loadable rendering modules -- zbuffer and raytracer, plus reyes and
              radiosity, which are non-functional and build OFF by default
 shaders/     loadable shading modules
 gmansl/      grammar and driver for a shading language compiler that was never

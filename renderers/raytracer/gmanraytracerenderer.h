@@ -27,14 +27,17 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <stack>
 #include <string>
 
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanobjectmanager.h"
+#include "gmanray.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanrenderer.h"
+#include "gmansamplebuffer.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 
@@ -50,6 +53,14 @@ private:
   GMANRayObjectManager objectManager;
 
   GMANLinearWorldManager worldManager;
+
+  // The real per-sample visibility test and colour store; resolved into
+  // frameBuffer at the end of render(). getDepth reads its resolved depth.
+  std::unique_ptr<GMANSampleBuffer> sampleBuffer;
+
+  // Walks worldManager for the ray primitive nearest ray's origin;
+  // GMANHit::primitive is null when none is hit. The BVH is R6.
+  GMANHit nearestHit(GMANRay const& ray);
 
 public:
   GMANRaytraceRenderer(); // default constructor
@@ -67,10 +78,10 @@ public:
   virtual void render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
                       const GMANAttributes& attributes);
 
-  inline RtFloat getDepth(int /*x*/, int /*y*/) const {
-    // implement me
-    return 0.0;
-  }
+  // Camera-space z of the nearest sample at (x, y), RI_INFINITY where none
+  // hit -- the sample buffer's own uncovered value. Unlike the z-buffer's
+  // getDepth, this is not post-projection z.
+  RtFloat getDepth(int x, int y) const { return sampleBuffer ? sampleBuffer->getResolvedDepth(x, y) : RI_INFINITY; }
 
   // return its world manager
   virtual GMANWorldManager* getWorldManager(void);

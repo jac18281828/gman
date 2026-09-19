@@ -283,6 +283,14 @@ Written for the `GeneralPolygon` hole-bridging task: a square with a square
 hole cut from its centre, `polygon_concave.rib`'s shape and camera. Not
 third-party.
 
+## r4_raytracer.rib
+
+R4's render-loop proof: `lights.rib`'s scene (ambient plus distant light,
+`plastic`, a unit sphere at `Translate 0 0 5`, 640x480) under its own
+`Display` name, so `tests/rayrender_test.cpp` can render it under `-r
+gmanraytracer` and again with the default z-buffer without the two runs
+colliding on one output file. Not third-party.
+
 ## malformed/
 
 Hand-written fixtures for malformed RIB input. `gman` is expected to fail on

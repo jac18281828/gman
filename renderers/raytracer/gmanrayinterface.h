@@ -26,8 +26,18 @@
 
 #include "gmanprimitives.h"
 #include "gmanray.h"
+#include "gmanshading.h"
 
 class GMAN_EXPORT GMANRayInterface : virtual public GMANPrimitive {
 public:
   virtual bool intersect(const GMANRay& ray, GMANHit& hit) const;
+
+  // The appearance this primitive was declared under -- its surface
+  // shader, active lights and Cs/Os -- so the render loop can shade any
+  // hit through gman::shade without knowing the primitive's concrete type.
+  gman::Appearance const& getAppearance() const { return appearance; }
+  void setAppearance(gman::Appearance const& a) { appearance = a; }
+
+private:
+  gman::Appearance appearance;
 };

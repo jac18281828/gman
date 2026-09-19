@@ -20,7 +20,8 @@ foreach(var
     GMAN_CXX_COMPILER
     GMAN_BUILD_TYPE
     GMAN_CXX_FLAGS
-    GMAN_EXE_LINKER_FLAGS)
+    GMAN_EXE_LINKER_FLAGS
+    GMAN_HAS_RAYTRACER)
   if(NOT DEFINED ${var})
     message(FATAL_ERROR "install_test.cmake: ${var} is required")
   endif()
@@ -88,6 +89,24 @@ gman_render_shader(shaders.rib shaders.tif)
 gman_render_shader(texture.rib texture.tif)
 # shinymetal.
 gman_render_shader(shinymetal_degrades.rib shinymetal_degrades.tif)
+
+# R4: `-r gmanraytracer` from an install prefix, on the one fixture step 2
+# above does not already render. Only when the plugin was built -- GMAN_HAS_RAYTRACER
+# reflects GMAN_BUILD_RAYTRACER, passed in by tests/CMakeLists.txt.
+if(GMAN_HAS_RAYTRACER)
+  gman_run_or_fail("step 2 (render): rendering r4_raytracer.rib under -r gmanraytracer"
+    COMMAND "${GMAN_INSTALLED_EXE}" -r gmanraytracer "${GMAN_SOURCE_DIR}/tests/rib/r4_raytracer.rib"
+    WORKING_DIRECTORY "${GMAN_RENDER_DIR}")
+
+  set(GMAN_RAYTRACER_IMAGE "${GMAN_RENDER_DIR}/r4_raytracer.tif")
+  if(NOT EXISTS "${GMAN_RAYTRACER_IMAGE}")
+    message(FATAL_ERROR "step 2 (render): r4_raytracer.rib did not write r4_raytracer.tif")
+  endif()
+  file(SIZE "${GMAN_RAYTRACER_IMAGE}" GMAN_RAYTRACER_IMAGE_SIZE)
+  if(GMAN_RAYTRACER_IMAGE_SIZE EQUAL 0)
+    message(FATAL_ERROR "step 2 (render): r4_raytracer.tif is empty")
+  endif()
+endif()
 
 # --- Step 3: configure, build and run a consumer against the prefix --------
 

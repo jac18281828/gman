@@ -29,6 +29,7 @@
 #include <cmath>
 
 #include "check.h"
+#include "gmanattributes.h"
 #include "gmanray.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanraysphere.h"
@@ -44,14 +45,17 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
   return GMANTransform(storage);
 }
 
-// getRSSphere ignores opt and attr (R4's concern, per the plan), so both
-// are null here. Casts to GMANRaySphere rather than GMANRayInterface: the
-// base's own bare create() also satisfies a GMANRayInterface cast, so
-// that cast alone cannot tell the factory's old and new behavior apart.
+// getRSSphere ignores opt, so it is null here; attr is a default-constructed
+// GMANAttributes, as polygon_test.cpp passes, since getRSSphere now resolves
+// it into the sphere's appearance. Casts to GMANRaySphere rather than
+// GMANRayInterface: the base's own bare create() also satisfies a
+// GMANRayInterface cast, so that cast alone cannot tell the factory's old
+// and new behavior apart.
 GMANRaySphere* buildSphere(GMANRayObjectManager& manager, RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
                            GMANTransform& transform) {
+  GMANAttributes attr;
   GMANPrimitive* primitive =
-      manager.getRSSphere(radius, zmin, zmax, tmax, GMANParameterList(), nullptr, nullptr, &transform);
+      manager.getRSSphere(radius, zmin, zmax, tmax, GMANParameterList(), nullptr, &attr, &transform);
   return dynamic_cast<GMANRaySphere*>(primitive);
 }
 
