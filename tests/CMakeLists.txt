@@ -1111,6 +1111,8 @@ set_tests_properties(raydepth PROPERTIES
 # raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_rayoccluder rayoccluder_test.cpp
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
