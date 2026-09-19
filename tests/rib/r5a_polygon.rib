@@ -19,8 +19,9 @@ Translate 0 0 5
 WorldBegin
 ## This vertex order's Newell normal is (0, 0, 1), but matte's shader
 ## (shaders/gmanmatte.cpp) faceforwards it against the incident ray before
-## shading, so the same "from"/"to" the disk fixture uses -- a strong -z
-## component in the light's own travel direction -- reaches this face
+## shading, so the same "from"/"to" the disk fixture uses -- placing the
+## light so the direction toward it has a strong -z component (its own
+## travel direction, from [1 1 -5] to [0 0 0], is +z) -- reaches this face
 ## nearly head-on too (N.L ~ 0.96) instead of grazing it.
 LightSource "ambientlight" 1 "intensity" [0.1]
 LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]

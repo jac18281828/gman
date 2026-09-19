@@ -188,11 +188,16 @@ void testIntervalRejects() {
   check(!disk.intersect(farRay, hit), "interval: tmin above the plane hit (5) rejects it");
 }
 
-// ---- a singular transform (e.g. Scale 1 1 0) has no invertible object
-// space to intersect in, and never hits ----
+// ---- a singular transform (e.g. Scale 0 1 1) has no invertible object
+// space to intersect in, and never hits. Scaling z instead of x would
+// leave this axial ray's own direction transformed to (0, 0, 0), which
+// the "parallel to the plane" guard above already rejects on its own --
+// vacuously passing this check whether or not the singular guard ran at
+// all. Scaling x keeps the z row (and so this ray's z component) intact,
+// so only the singular guard stands between this ray and a false hit. ----
 void testSingularTransform() {
   GMANMatrix4 matrix;
-  matrix.scale(1.0, 1.0, 0.0);
+  matrix.scale(0.0, 1.0, 1.0);
   GMANTransform transform = makeTransform(matrix);
 
   GMANRayDisk disk(0.0, 1.0, 360.0, GMANParameterList(), transform);
