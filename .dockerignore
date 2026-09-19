@@ -1,5 +1,2 @@
-build
-build-debug
-build-release
-build-gcc
+build*
 .git
