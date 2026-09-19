@@ -27,7 +27,7 @@
 #include "gmanlog.h"
 #include "ri.h"
 
-class GMANTrimCurve {
+class GMAN_EXPORT GMANTrimCurve {
 private:
   int* counter;
 
