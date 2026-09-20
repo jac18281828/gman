@@ -1,10 +1,10 @@
 # 1e999 overflows float; strtof flags it with ERANGE as a side effect but
 # still returns a usable (infinite) value, so GMANRIBTokenize::parseNum
-# returns a REAL token rather than throwing. Without parseNum resetting
-# errno before its own strtol attempt, that leftover ERANGE would wrongly
-# poison the very next integer literal -- the 0 in "Translate 0 0 5" here
-# -- with a spurious RIE_RANGE. Nothing else in this fixture set creates a
-# pending ERANGE for a later integer to trip over.
+# returns a REAL token rather than throwing. parseNum's own integer branch
+# no longer reads errno at all -- it bounds the parsed long directly
+# against RtInt's range -- so this fixture no longer exercises a distinct
+# code path from clipping_literal_overflow.rib's; retained as fixture data
+# only, not wired into an assertion.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

@@ -1,6 +1,6 @@
-# A Sides argument beyond RtInt's range. GMANRIBParse::nextInt must reject
-# 4294967297 with RIE_RANGE instead of truncating it to 1 (4294967297 mod
-# 2^32).
+# A Sides argument beyond RtInt's range. GMANRIBTokenize::parseNum must
+# reject 4294967297 with RIE_RANGE at tokenize time, before nextInt ever
+# sees it, instead of truncating it to 1 (4294967297 mod 2^32).
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

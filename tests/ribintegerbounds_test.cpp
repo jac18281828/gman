@@ -19,19 +19,29 @@
  */
 
 /*
- * A RIB integer narrows twice on its way from text to RtInt: strtol in
- * GMANRIBTokenize::parseNum, then the implicit long-to-RtInt conversion in
- * GMANRIBParse::nextInt and GMANRIBParse::TokenVector::toRtIntVector.
- * gman::InlineParse::get_size narrows a Declare array size the same way.
- * Each fixture here proves one of those narrowings raises RIE_RANGE
- * instead of silently truncating or, for the Declare case, aborting on an
- * uncaught std::bad_alloc.
+ * A RIB integer literal is bounded once, in GMANRIBTokenize::parseNum,
+ * directly against RtInt's own range, where the token is built -- strtol's
+ * own saturation at LONG_MIN/LONG_MAX already falls outside that range, so
+ * the one check catches a literal that overflows `long` itself and one
+ * that merely exceeds RtInt. GMANRIBParse::nextInt and
+ * GMANRIBParse::TokenVector::toRtIntVector then take the token's value
+ * directly; neither re-checks it. gman::InlineParse::get_size narrows a
+ * Declare array size the same way, on its own path.
+ *
+ * sides_overflow.rib and generalpolygon_nverts_overflow.rib cover the
+ * "fits `long`, not RtInt" former failure range (4294967297) in an integer
+ * slot; clipping_literal_overflow.rib covers the "overflows `long` itself"
+ * former failure range (99999999999999999999); both land here as of this
+ * commit rather than after a second, destination-side check.
+ * clipping_float_slot_rtint_overflow.rib covers the newer rule that an
+ * out-of-range integer literal is an error even when its destination is a
+ * float, not just when it is an RtInt.
  *
  * tests/ribmalformed_test.cpp's own harness only asserts a fixture neither
- * hangs nor crashes; checks 1-3's fixtures already satisfy that bar before
- * the fix, silently and with exit 0, so it would prove nothing there. This
- * file borrows tests/paramclamp_test.cpp's runCapturingOutput instead,
- * asserting both the exit status and the exact error text.
+ * hangs nor crashes; checks 1, 2, 3 and 5's fixtures already satisfy that
+ * bar before the fix, silently and with exit 0, so it would prove nothing
+ * there. This file borrows tests/paramclamp_test.cpp's runCapturingOutput
+ * instead, asserting both the exit status and the exact error text.
  */
 
 #include <cstdio>
@@ -118,14 +128,19 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string dir = argv[2];
 
-  // Checks 1, 2, 3 and 4: each fixture's overflowing value must be
-  // refused with RIE_RANGE, and the run must exit with failure rather
-  // than rendering a truncated result or, for check 4, crashing.
+  // Checks 1 through 5: each fixture's overflowing value must be refused
+  // with RIE_RANGE, and the run must exit with failure rather than
+  // rendering a truncated result or, for check 4, crashing. 1 and 2 are
+  // the "fits long, not RtInt" former failure range; 3 is the "overflows
+  // long itself" former failure range; 4 is get_size's own Declare-array
+  // bound, unrelated to parseNum; 5 is the newer rule that an
+  // out-of-range integer literal is an error even in a float slot.
   const char* rangeFixtures[] = {
       "sides_overflow.rib",
       "generalpolygon_nverts_overflow.rib",
       "clipping_literal_overflow.rib",
       "declare_array_size_overflow.rib",
+      "clipping_float_slot_rtint_overflow.rib",
   };
 
   for (const char* fixture : rangeFixtures) {
@@ -135,19 +150,6 @@ int main(int argc, char* argv[]) {
     check(!r.crashed, std::string(fixture) + ": does not crash (no signal termination)");
     check(r.exitStatus == EXIT_FAILURE, std::string(fixture) + ": exits with failure");
     check(r.output.find("RIE_RANGE") != std::string::npos, std::string(fixture) + ": reports RIE_RANGE");
-  }
-
-  // Check 3b: a stale ERANGE left by an overflowing float literal must not
-  // poison the legal integer that follows it.
-  {
-    const std::string rib = dir + "/clipping_stale_erange.rib";
-    RunResult r = runCapturingOutput(gman, rib, 10);
-    check(!r.timedOut, "clipping_stale_erange.rib: does not hang (10s bound)");
-    check(!r.crashed, "clipping_stale_erange.rib: does not crash (no signal termination)");
-    check(r.exitStatus == EXIT_SUCCESS, "clipping_stale_erange.rib: exits cleanly");
-    check(r.output.find("RIE_RANGE") == std::string::npos,
-          "clipping_stale_erange.rib: the legal Translate 0 that follows an overflowing float "
-          "is not rejected by a stale errno");
   }
 
   return checkSummary("RIB integer bounds hold");

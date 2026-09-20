@@ -1,10 +1,11 @@
 # A digit-string literal beyond even `long`, in Clipping's far-plane float
-# slot. GMANRIBTokenize::parseNum's errno check must reject it with
+# slot. strtol saturates it at LONG_MAX, which itself exceeds RtInt's
+# range, so GMANRIBTokenize::parseNum's range check rejects it with
 # RIE_RANGE where it is tokenized, before nextFloat ever sees it --
-# nextFloat carries no RtInt bound of its own, so a float slot is the only
-# place this guard is uniquely observable. An integer slot would let
-# nextInt's own new bound catch the tokenizer's saturated LONG_MAX and
-# raise RIE_RANGE too, proving nothing about this guard specifically.
+# nextFloat carries no RtInt bound of its own. See
+# clipping_float_slot_rtint_overflow.rib for the other former failure
+# range (a literal that fits `long` but not RtInt) reaching this same
+# float slot.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

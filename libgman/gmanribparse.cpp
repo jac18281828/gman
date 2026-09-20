@@ -28,7 +28,6 @@
                       * transitively the way libc++ does */
 #include <filesystem>
 #include <fstream>
-#include <limits>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -122,20 +121,6 @@ std::unique_ptr<char[]> duplicateCString(const std::string& s) {
   std::unique_ptr<char[]> dup(new char[s.size() + 1]);
   std::memcpy(dup.get(), s.c_str(), s.size() + 1);
   return dup;
-}
-
-// A RIB integer reaches here as a long, already free of the tokenizer's own
-// overflow -- this is the second, independent narrowing, to RtInt itself.
-RtInt narrowToRtInt(long value) {
-  if (value < std::numeric_limits<RtInt>::min() || value > std::numeric_limits<RtInt>::max()) {
-    GMANError error(RIE_RANGE, RIE_ERROR,
-                    ("RIB integer " + std::to_string(value) + " exceeds RtInt's range [" +
-                     std::to_string(std::numeric_limits<RtInt>::min()) + ", " +
-                     std::to_string(std::numeric_limits<RtInt>::max()) + "]")
-                        .c_str());
-    throw(error);
-  }
-  return static_cast<RtInt>(value);
 }
 
 } // namespace
@@ -656,7 +641,7 @@ RtInt GMANRIBParse::nextInt() {
     throw(error);
   }
 
-  return narrowToRtInt(tok.getLongInt());
+  return static_cast<RtInt>(tok.getLongInt());
 }
 
 std::string GMANRIBParse::copyStringToken() {
@@ -2148,7 +2133,7 @@ std::vector<RtInt> GMANRIBParse::TokenVector::toRtIntVector() {
   for (unsigned int i = 0; i < size(); i++) {
     GMANToken tok = (*this)[i];
     if (tok.getType() == GMANToken::LONGINT) {
-      array[i] = narrowToRtInt(tok.getLongInt());
+      array[i] = static_cast<RtInt>(tok.getLongInt());
     } else {
       throw(GMANError(RIE_SYNTAX, RIE_ERROR, "Non-integer in array."));
     }

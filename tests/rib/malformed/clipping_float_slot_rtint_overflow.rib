@@ -1,0 +1,19 @@
+# 4294967297 fits `long` but exceeds RtInt's range, in Clipping's far-plane
+# float slot. GMANRIBTokenize::parseNum now rejects an out-of-range integer
+# literal with RIE_RANGE regardless of the destination it is headed for --
+# an integer literal is bounded against RtInt at the token, before the
+# parser ever learns whether it wants an RtInt or an RtFloat. Before this,
+# nextFloat's LONGINT branch carried no RtInt bound of its own, so this
+# exact literal silently became the float 4294967297.0 instead of raising
+# an error.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 4294967297
+Translate 0 0 5
+WorldBegin
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

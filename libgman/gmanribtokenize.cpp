@@ -23,8 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <cerrno>
 #include <climits> /* INT_MAX -- not transitive via libstdc++ */
+#include <limits>
 #include <string>
 
 #include <ctype.h>
@@ -336,13 +336,17 @@ const GMANToken GMANRIBTokenize::parseNum(std::istream& ribFile) {
 
   // attempt to parse as a long int
   char* endptr;
-  errno = 0;
   long int longIntValue = strtol(buffer.c_str(), &endptr, 10);
   if (*endptr == '\0') {
-    if (errno == ERANGE) {
+    // RtInt is the only destination a RIB integer ever narrows to; strtol's
+    // own saturation at LONG_MIN/LONG_MAX already falls outside this range,
+    // so one check here catches both an over-long literal and one that fits
+    // a long but not an RtInt.
+    if (longIntValue < std::numeric_limits<RtInt>::min() || longIntValue > std::numeric_limits<RtInt>::max()) {
       GMANError error(RIE_RANGE, RIE_ERROR,
-                      ("RIB integer literal \"" + buffer + "\" exceeds long's range [" + std::to_string(LONG_MIN) +
-                       ", " + std::to_string(LONG_MAX) + "]")
+                      ("RIB integer literal \"" + buffer + "\" exceeds RtInt's range [" +
+                       std::to_string(std::numeric_limits<RtInt>::min()) + ", " +
+                       std::to_string(std::numeric_limits<RtInt>::max()) + "]")
                           .c_str());
       throw(error);
     }
