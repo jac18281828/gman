@@ -1,0 +1,18 @@
+# A digit-string literal beyond even `long`, in Clipping's far-plane float
+# slot. GMANRIBTokenize::parseNum's errno check must reject it with
+# RIE_RANGE where it is tokenized, before nextFloat ever sees it --
+# nextFloat carries no RtInt bound of its own, so a float slot is the only
+# place this guard is uniquely observable. An integer slot would let
+# nextInt's own new bound catch the tokenizer's saturated LONG_MAX and
+# raise RIE_RANGE too, proving nothing about this guard specifically.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 99999999999999999999
+Translate 0 0 5
+WorldBegin
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

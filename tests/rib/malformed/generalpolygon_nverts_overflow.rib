@@ -1,0 +1,17 @@
+# A GeneralPolygon nverts element beyond RtInt's range.
+# GMANRIBParse::TokenVector::toRtIntVector must reject 4294967297 with
+# RIE_RANGE. GeneralPolygon, unlike PointsPolygons, carries no sum check
+# at its own dispatch, so a truncated count here would become an
+# out-of-bounds read rather than a caught mismatch.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+GeneralPolygon [4294967297] "P" [-1 -1 0  1 -1 0  1 1 0]
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

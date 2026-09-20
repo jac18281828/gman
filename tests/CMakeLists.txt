@@ -506,6 +506,20 @@ set_tests_properties(paramclamp PROPERTIES
   LABELS render
   TIMEOUT 60)
 
+# A RIB integer narrows twice, unchecked, on its way to RtInt: the
+# tokenizer's strtol, then nextInt/toRtIntVector's own implicit
+# conversion. See tests/ribintegerbounds_test.cpp.
+add_executable(gman_ribintegerbounds ribintegerbounds_test.cpp)
+target_link_libraries(gman_ribintegerbounds PRIVATE gman_core)
+
+add_test(NAME ribintegerbounds
+  COMMAND gman_ribintegerbounds $<TARGET_FILE:gman>
+                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
+set_tests_properties(ribintegerbounds PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 60)
+
 # Bilinear and bicubic Patch rasterization. See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
 target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)

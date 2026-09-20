@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cerrno>
 #include <climits> /* INT_MAX -- not transitive via libstdc++ */
 #include <string>
 
@@ -335,8 +336,16 @@ const GMANToken GMANRIBTokenize::parseNum(std::istream& ribFile) {
 
   // attempt to parse as a long int
   char* endptr;
+  errno = 0;
   long int longIntValue = strtol(buffer.c_str(), &endptr, 10);
   if (*endptr == '\0') {
+    if (errno == ERANGE) {
+      GMANError error(RIE_RANGE, RIE_ERROR,
+                      ("RIB integer literal \"" + buffer + "\" exceeds long's range [" + std::to_string(LONG_MIN) +
+                       ", " + std::to_string(LONG_MAX) + "]")
+                          .c_str());
+      throw(error);
+    }
     return GMANToken(longIntValue);
   } else {
     char* floatEndPtr;
