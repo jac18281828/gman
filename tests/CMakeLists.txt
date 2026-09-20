@@ -1067,6 +1067,32 @@ set_tests_properties(raypolygon PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R5b proof, unit: GMANRayCylinder::intersect, compiled from the plugin's
+# own sources for the same reason as gman_raysphere above.
+add_executable(gman_raycylinder raycylinder_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp")
+target_link_libraries(gman_raycylinder PRIVATE gman_core)
+target_include_directories(gman_raycylinder PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME raycylinder COMMAND gman_raycylinder)
+set_tests_properties(raycylinder PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# R5b proof, unit: GMANRayCone::intersect, compiled from the plugin's own
+# sources for the same reason as gman_raysphere above.
+add_executable(gman_raycone raycone_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp")
+target_link_libraries(gman_raycone PRIVATE gman_core)
+target_include_directories(gman_raycone PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME raycone COMMAND gman_raycone)
+set_tests_properties(raycone PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
 # GMANRaySphere holding its parameters and a copied transform, compiled
 # from the raytracer plugin's own sources for the same reason as
