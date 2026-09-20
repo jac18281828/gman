@@ -135,9 +135,11 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
   GMANPoint origin = P;
   RtFloat remaining = distance;
 
-  // Every blocker between P and the light attenuates in turn, not just the
-  // nearest: walkWorldManager keeps one hit per call, so this walks the
-  // interval itself, moving origin/remaining past each blocker found.
+  // A closed solid contributes one (1 - Os) factor per surface the shadow
+  // ray crosses, not per blocker: walkWorldManager keeps one hit per call,
+  // so this walks the interval itself, moving origin/remaining past each
+  // surface found. This matches the composite loop below, which likewise
+  // crosses both shells of a sphere the ray enters.
   while (true) {
     RtFloat const bias = selfShadowBias(origin);
     if (bias >= remaining) {

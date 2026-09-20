@@ -1,7 +1,9 @@
 ## R-transparency proof, check 4: one Opacity 0.4 blocker between the
 ## receiver and light -- reads between transparencyshadow_none.rib (no
-## blocker) and transparencyshadow_opaque.rib (opaque blocker). Not
-## third-party.
+## blocker) and transparencyshadow_opaque.rib (opaque blocker). The
+## blocker is a closed sphere, so the shadow ray crosses its near and far
+## shell alike: transmission is (1 - Os)^2, one factor per surface
+## crossed, not per blocker. Not third-party.
 Display "transparencyshadow_one.tif" "file" "rgba"
 Format 320 240 1
 Projection "perspective" "fov" [45]

@@ -29,8 +29,15 @@
  * than GOLDEN_CHANNEL_TOL: the stacked pair is what separates
  * accumulating over every blocker from reading only the nearest one, which
  * would read one and two alike.
+ *
+ * Ordering alone cannot distinguish a transmission of 0.6 from 0.36 or
+ * 0.216, so this also pins the value. Each blocker is a closed sphere: the
+ * shadow ray crosses its near and far shell alike, so one Opacity 0.4
+ * sphere attenuates by (1 - 0.4)^2 = 0.36 and two stacked spheres by
+ * (1 - 0.4)^4 = 0.1296, both relative to the none/opaque span.
  */
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
@@ -46,6 +53,14 @@ namespace {
 
 constexpr int kShadowPixelX = 197;
 constexpr int kShadowPixelY = 101;
+
+// Each blocker is a closed sphere; the shadow ray crosses two of its
+// surfaces (near and far shell) per sphere it passes through, so one
+// Opacity 0.4 blocker's transmission is (1 - 0.4)^2 and two stacked
+// blockers' is (1 - 0.4)^4, both relative to the none/opaque span.
+constexpr double kOneBlockerRatio = 0.36;
+constexpr double kTwoBlockerRatio = 0.1296;
+constexpr double kRatioTolerance = 0.02;
 
 int runGman(const std::string& command) {
   int status = std::system(command.c_str());
@@ -98,6 +113,17 @@ int main(int argc, char* argv[]) {
         "accumulating over every blocker, not just the nearest");
   check((int)TIFFGetR(twoPixel) - (int)TIFFGetR(opaquePixel) > GOLDEN_CHANNEL_TOL,
         "check 4: two stacked blockers read brighter than one opaque blocker by more than GOLDEN_CHANNEL_TOL");
+
+  double const span = (double)TIFFGetR(nonePixel) - (double)TIFFGetR(opaquePixel);
+  double const oneRatio = ((double)TIFFGetR(onePixel) - (double)TIFFGetR(opaquePixel)) / span;
+  double const twoRatio = ((double)TIFFGetR(twoPixel) - (double)TIFFGetR(opaquePixel)) / span;
+  std::printf("check 4 ratios: one/none %.4f (want %.4f), two/none %.4f (want %.4f)\n", oneRatio, kOneBlockerRatio,
+              twoRatio, kTwoBlockerRatio);
+
+  check(std::fabs(oneRatio - kOneBlockerRatio) <= kRatioTolerance,
+        "check 4: one blocker's transmission is (1 - Os)^2 within 0.02, not just darker than no blocker");
+  check(std::fabs(twoRatio - kTwoBlockerRatio) <= kRatioTolerance,
+        "check 4: two stacked blockers' transmission is (1 - Os)^4 within 0.02, not just darker than one blocker");
 
   return checkSummary("R-transparency's shadow attenuation: light through a stack of transparent blockers");
 }

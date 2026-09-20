@@ -2,7 +2,9 @@
 ## the light direction -- reads darker than transparencyshadow_one.rib's
 ## single blocker (the occluder accumulates over every blocker in the
 ## interval, not only the nearest) and lighter than
-## transparencyshadow_opaque.rib. Not third-party.
+## transparencyshadow_opaque.rib. Each blocker is a closed sphere crossed
+## on its near and far shell alike, so transmission is (1 - Os)^4, one
+## factor per surface crossed, not per blocker. Not third-party.
 Display "transparencyshadow_two.tif" "file" "rgba"
 Format 320 240 1
 Projection "perspective" "fov" [45]
