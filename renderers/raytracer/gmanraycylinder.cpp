@@ -56,17 +56,18 @@ bool GMANRayCylinder::intersect(const GMANRay& ray, GMANHit& hit) const {
   // the axis -- and in exact arithmetic that forces b to vanish too, both
   // being built from the same dx, dy: a ray parallel to the axis either
   // lies outside the wall for its whole length or runs along it, neither a
-  // transverse hit. A dx or dy far enough below float's normal range can
-  // underflow a to exactly 0 while b, scaled by the ray's origin rather
-  // than squared, survives as a tiny nonzero value; solveRayQuadratic then
-  // returns one root of correspondingly enormous magnitude, which the
-  // ray's own [tmin, tmax] interval below still rejects.
+  // transverse hit. A dx or dy whose square underflows leaves a exactly 0
+  // while b, scaled by the ray's origin rather than squared, survives as a
+  // tiny nonzero value; gman::solveRayQuadratic's linear root is then
+  // rejected downstream, by tmin when the origin sits on the wall (a small
+  // or negative root) or by the z-band when it does not (a large root) --
+  // never by tmax.
   RtFloat const a = objDirection.getX() * objDirection.getX() + objDirection.getY() * objDirection.getY();
   RtFloat const b = 2 * (objDirection.getX() * objOrigin.getX() + objDirection.getY() * objOrigin.getY());
   RtFloat const c = objOrigin.getX() * objOrigin.getX() + objOrigin.getY() * objOrigin.getY() - radius * radius;
 
   RtFloat t0 = 0.0, t1 = 0.0;
-  int const numRoots = solveRayQuadratic(a, b, c, t0, t1);
+  int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)
     return false;
 

@@ -25,6 +25,8 @@
 
 #include "gmanmath.h"
 
+namespace gman {
+
 // Solves a ray's own a*t^2 + b*t + c == 0, shared by the swept quadrics'
 // intersectors (cone, cylinder, hyperboloid, paraboloid). a vanishes when
 // the ray's direction cancels the quadratic term -- parallel to a
@@ -43,3 +45,5 @@ inline int solveRayQuadratic(RtFloat a, RtFloat b, RtFloat c, RtFloat& t0, RtFlo
   }
   return GMANQuadraticRoots(a, b, c, t0, t1);
 }
+
+} // namespace gman

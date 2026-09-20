@@ -19,7 +19,7 @@
  */
 
 /*
- * R5b review proof: solveRayQuadratic solves the a == 0 linear case
+ * R5b review proof: gman::solveRayQuadratic solves the a == 0 linear case
  * exactly, at coefficients a caller's own floating-point contraction
  * cannot perturb, and otherwise delegates to GMANQuadraticRoots unchanged.
  */
@@ -32,7 +32,7 @@ namespace {
 // ---- check 1: a == 0, b != 0 is the single root -c/b ----
 void testLinearRoot() {
   RtFloat t0 = 0.0, t1 = 0.0;
-  int const numRoots = solveRayQuadratic(0.0, 2.0, -6.0, t0, t1);
+  int const numRoots = gman::solveRayQuadratic(0.0, 2.0, -6.0, t0, t1);
 
   check(numRoots == 1, "linear: a == 0, b != 0 returns one root");
   check(t0 == 3.0, "linear: -c/b == 3");
@@ -41,7 +41,7 @@ void testLinearRoot() {
 // ---- check 2: a == 0, b == 0 has no equation left to solve ----
 void testLinearNoEquation() {
   RtFloat t0 = 0.0, t1 = 0.0;
-  int const numRoots = solveRayQuadratic(0.0, 0.0, 1.0, t0, t1);
+  int const numRoots = gman::solveRayQuadratic(0.0, 0.0, 1.0, t0, t1);
 
   check(numRoots == 0, "linear: a == 0, b == 0 returns no roots");
 }
@@ -52,7 +52,7 @@ void testDelegatesToQuadraticRoots() {
   int const expectedRoots = GMANQuadraticRoots(1.0, -3.0, 2.0, expected0, expected1);
 
   RtFloat t0 = 0.0, t1 = 0.0;
-  int const numRoots = solveRayQuadratic(1.0, -3.0, 2.0, t0, t1);
+  int const numRoots = gman::solveRayQuadratic(1.0, -3.0, 2.0, t0, t1);
 
   check(numRoots == expectedRoots, "delegate: root count matches GMANQuadraticRoots");
   check(t0 == expected0 && t1 == expected1, "delegate: roots match GMANQuadraticRoots");

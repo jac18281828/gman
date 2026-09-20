@@ -66,9 +66,9 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
 
   // a vanishes for a ray parallel to the axis (dx == dy == 0): the
   // apex-seeking case GMANQuadraticRoots' own comment does not cover.
-  // solveRayQuadratic solves that linear case directly.
+  // gman::solveRayQuadratic solves that linear case directly.
   RtFloat t0 = 0.0, t1 = 0.0;
-  int const numRoots = solveRayQuadratic(a, b, c, t0, t1);
+  int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)
     return false;
 
