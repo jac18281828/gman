@@ -29,9 +29,13 @@
 #include "gmanobjectmanager.h"
 #include "gmanpolygon.h"
 #include "gmanprimitives.h"
+#include "gmanraycone.h"
+#include "gmanraycylinder.h"
 #include "gmanraydisk.h"
+#include "gmanrayhyperboloid.h"
 #include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
+#include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanshading.h"
@@ -124,28 +128,35 @@ GMANPrimitive* GMANRayObjectManager::getRSSphere(RtFloat radius, RtFloat zmin, R
   return sphere;
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSCone(RtFloat /*height*/, RtFloat /*radius*/, RtFloat /*tmax*/,
-                                               GMANParameterList /*pl*/, GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
-                                               GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
+                                               GMANOptions* /*opt*/, GMANAttributes* attr, GMANTransform* t) {
+  GMANRayCone* cone = new GMANRayCone(height, radius, tmax, pl, *t);
+  cone->setAppearance(gman::appearanceOf(*attr));
+  return cone;
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSCylinder(RtFloat /*radius*/, RtFloat /*zmin*/, RtFloat /*zmax*/,
-                                                   RtFloat /*tmax*/, GMANParameterList /*pl*/, GMANOptions* /*opt*/,
-                                                   GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                   GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* attr,
+                                                   GMANTransform* t) {
+  GMANRayCylinder* cylinder = new GMANRayCylinder(radius, zmin, zmax, tmax, pl, *t);
+  cylinder->setAppearance(gman::appearanceOf(*attr));
+  return cylinder;
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSHyperboloid(RtPoint /*point1*/, RtPoint /*point2*/, RtFloat /*tmax*/,
-                                                      GMANParameterList /*pl*/, GMANOptions* /*opt*/,
-                                                      GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
+                                                      GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* attr,
+                                                      GMANTransform* t) {
+  GMANRayHyperboloid* hyperboloid = new GMANRayHyperboloid(point1, point2, tmax, pl, *t);
+  hyperboloid->setAppearance(gman::appearanceOf(*attr));
+  return hyperboloid;
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSParaboloid(RtFloat /*rmax*/, RtFloat /*zmin*/, RtFloat /*zmax*/,
-                                                     RtFloat /*tmax*/, GMANParameterList /*pl*/, GMANOptions* /*opt*/,
-                                                     GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                     GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* attr,
+                                                     GMANTransform* t) {
+  GMANRayParaboloid* paraboloid = new GMANRayParaboloid(rmax, zmin, zmax, tmax, pl, *t);
+  paraboloid->setAppearance(gman::appearanceOf(*attr));
+  return paraboloid;
 };
 
 GMANPrimitive* GMANRayObjectManager::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,

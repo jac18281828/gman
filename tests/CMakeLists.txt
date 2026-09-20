@@ -1141,7 +1141,11 @@ set_tests_properties(hyperboloidflatannulus PROPERTIES
 # gman_raysphere above.
 add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp")
@@ -1160,7 +1164,11 @@ set_tests_properties(rayobjectmanager PROPERTIES
 # ENVIRONMENT as gman_rayobjectmanager.
 add_executable(gman_raydepth raydepth_test.cpp
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
@@ -1179,7 +1187,11 @@ set_tests_properties(raydepth PROPERTIES
 # raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_rayoccluder rayoccluder_test.cpp
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
@@ -1198,7 +1210,11 @@ set_tests_properties(rayoccluder PROPERTIES
 # above; carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_compositelayercap compositelayercap_test.cpp
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
   "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
@@ -1249,6 +1265,25 @@ if(GMAN_BUILD_RAYTRACER)
                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_DISKRAYRENDER_WORKDIR}")
   set_tests_properties(diskrayrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
+  # R5b proof: `gman -r gmanraytracer` renders tests/rib/r5b_quadrics.rib,
+  # a cylinder, cone, paraboloid and hyperboloid side by side, matching a
+  # checked-in golden image. See tests/quadricsrayrender_test.cpp.
+  add_executable(gman_quadricsrayrender quadricsrayrender_test.cpp)
+  target_link_libraries(gman_quadricsrayrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_quadricsrayrender gman_raytracer)
+
+  set(GMAN_QUADRICSRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quadricsrayrender-run")
+  file(MAKE_DIRECTORY "${GMAN_QUADRICSRAYRENDER_WORKDIR}")
+
+  add_test(NAME quadricsrayrender
+    COMMAND gman_quadricsrayrender $<TARGET_FILE:gman>
+                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_QUADRICSRAYRENDER_WORKDIR}")
+  set_tests_properties(quadricsrayrender PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)

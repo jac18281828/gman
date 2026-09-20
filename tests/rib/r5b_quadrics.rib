@@ -1,0 +1,46 @@
+## R5b proof: the four swept quadrics GMANRayObjectManager used to stub
+## out -- Cylinder, Cone, Paraboloid, Hyperboloid -- side by side under one
+## light. Each is rotated broadside (quadrics.rib's own precedent: Cone,
+## Cylinder, Hyperboloid and Paraboloid all extend along their own local z
+## axis, so an unrotated one shows only a thin end-on silhouette ring).
+## This fixture overrides two of AGENTS.md's RIB authoring rules --
+## "Translate 0 0 5" and "one scene, one thing" -- on quadrics.rib's own
+## precedent; Format and Translate here are this fixture's own, not
+## quadrics.rib's 1400x260/16, sized so each primitive covers well clear
+## of GOLDEN_MAX_FRACTION.
+Display "r5b_quadrics.tif" "file" "rgba"
+Format 640 480 1
+Projection "perspective" "fov" [50]
+Clipping 1 35
+Translate 0 0 15
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [1.2] "lightcolor" [1 1 1]
+	"from" [1 1 -5] "to" [0 0 0]
+Sides 1
+Surface "matte" "Ka" [0.3] "Kd" [0.9]
+
+AttributeBegin
+	Translate -6.5 0 0
+	Rotate 90 0 1 0
+	Cylinder 1.3 -1.3 1.3 360
+AttributeEnd
+
+AttributeBegin
+	Translate -2.2 0 0
+	Rotate 90 0 1 0
+	Cone 2.2 1.3 360
+AttributeEnd
+
+AttributeBegin
+	Translate 2.2 0 0
+	Rotate 90 0 1 0
+	Paraboloid 1.3 0 2.2 360
+AttributeEnd
+
+AttributeBegin
+	Translate 6.5 0 0
+	Rotate 90 0 1 0
+	Hyperboloid 0.6 0 -1.3  1.4 0 1.3  360
+AttributeEnd
+WorldEnd

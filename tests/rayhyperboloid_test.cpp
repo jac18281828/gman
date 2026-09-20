@@ -23,8 +23,11 @@
  * hit of a segment spanning z, its v-band and thetamax wedge, honors the
  * ray's own [tmin, tmax] interval, and fills a GMANHit that round trips
  * through GMANHyperboloid::getLocation. The segment here (point1 == (1,
- * 0, -1), point2 == (2, 0, 1)) never crosses the axis, so it has no
- * axial hit at all; checks are aimed across the axis instead.
+ * 0, -1), point2 == (0, 1, 1)) never crosses the axis, so it has no
+ * axial hit at all; checks are aimed across the axis instead. Its own
+ * azimuth phi(v) varies with v (0 degrees at point1, 90 at point2) --
+ * unlike a segment held at a fixed y, which would make measuring theta
+ * from phi(v) indistinguishable from measuring it from the x-axis.
  */
 
 #include <cmath>
@@ -41,7 +44,7 @@ bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a -
 
 GMANRayHyperboloid segmentHyperboloid(RtFloat thetamax) {
   RtPoint p1 = {1.0, 0.0, -1.0};
-  RtPoint p2 = {2.0, 0.0, 1.0};
+  RtPoint p2 = {0.0, 1.0, 1.0};
   return GMANRayHyperboloid(p1, p2, thetamax, GMANParameterList());
 }
 
@@ -51,22 +54,20 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
 }
 
 // ---- check 1: aimed across the axis, at the segment's own midpoint
-// height (z == 0, r == 1.5) ----
+// height (z == 0, v == 0.5, r == 1/sqrt(2)) ----
 void testAcrossAxisHit() {
   GMANRayHyperboloid hyperboloid = segmentHyperboloid(360.0);
   GMANRay ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
   bool const hitFound = hyperboloid.intersect(ray, hit);
   check(hitFound, "across axis: a ray toward the axis hits the segment's midpoint radius");
-  check(near(hit.t, 3.5), "across axis: t == 3.5");
-  check(near(hit.point.getX(), -1.5) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
-        "across axis: point == (-1.5, 0, 0)");
-  RtFloat const twoOverSqrt5 = (RtFloat)(2.0 / std::sqrt(5.0));
-  RtFloat const oneOverSqrt5 = (RtFloat)(1.0 / std::sqrt(5.0));
-  check(near(hit.normal.getX(), -twoOverSqrt5) && near(hit.normal.getY(), 0.0) &&
-            near(hit.normal.getZ(), -oneOverSqrt5),
-        "across axis: normal == (-2, 0, -1)/sqrt(5)");
+  check(near(hit.t, 5.0 - invSqrt2), "across axis: t == 5 - 1/sqrt(2)");
+  check(near(hit.point.getX(), -invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
+        "across axis: point == (-1/sqrt(2), 0, 0)");
+  check(near(hit.normal.getX(), -1.0) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), 0.0),
+        "across axis: normal == (-1, 0, 0)");
   check(hit.primitive == &hyperboloid, "across axis: primitive points at the hyperboloid hit");
 }
 
@@ -96,33 +97,41 @@ void testOffAxisRoundTrip() {
         "off-axis: hit.normal matches getNormal(hit.u, hit.v)");
 }
 
-// ---- check 3: the v-band and the wedge each clip ----
+// ---- check 3: the v-band and the wedge each clip. The v-band checks use
+// a full (thetamax 360) hyperboloid: phi(v) here approaches 90 degrees as
+// v approaches 1, so pairing a near-v-1 hit with a partial wedge would
+// couple the two bounds together instead of pinning the v-band alone. ----
 void testBoundsBite() {
-  GMANRayHyperboloid hyperboloid = segmentHyperboloid(90.0);
+  GMANRayHyperboloid full = segmentHyperboloid(360.0);
 
   // z == 1.5 is v == 1.25, past the point2 end of the segment.
   GMANRay aboveBand(GMANPoint(-5.0, 0.0, 1.5), GMANVector(1.0, 0.0, 0.0));
   GMANHit aboveHit;
-  check(!hyperboloid.intersect(aboveBand, aboveHit), "v-band: z == 1.5 is past point2 (v == 1.25) and misses");
+  check(!full.intersect(aboveBand, aboveHit), "v-band: z == 1.5 is past point2 (v == 1.25) and misses");
 
   // z == 0.98 is v == 0.99, just inside the point2 end.
   GMANRay insideBand(GMANPoint(-5.0, 0.0, 0.98), GMANVector(1.0, 0.0, 0.0));
   GMANHit insideHit;
-  check(hyperboloid.intersect(insideBand, insideHit) && near(insideHit.point.getZ(), 0.98),
+  check(full.intersect(insideBand, insideHit) && near(insideHit.point.getZ(), 0.98),
         "v-band: z == 0.98 is just inside point2 (v == 0.99) and hits");
 
-  GMANPoint const insideWedgeTarget = hyperboloid.getLocation(0.5, 0.5); // theta == 45 degrees
-  GMANPoint const outsideWedgeTarget(-insideWedgeTarget.getX(), insideWedgeTarget.getY(), insideWedgeTarget.getZ());
+  // getLocation does not itself clamp u to [0, 1]; theta == u*thetamax
+  // reaches 135 degrees at u == 1.5, outside the 90-degree wedge, and 45
+  // degrees at u == 0.5, inside it. v == 0.5 keeps phi(v) away from the
+  // v-band's own edge case above.
+  GMANRayHyperboloid wedge = segmentHyperboloid(90.0);
+  GMANPoint const insideWedgeTarget = wedge.getLocation(0.5, 0.5);
+  GMANPoint const outsideWedgeTarget = wedge.getLocation(1.5, 0.5);
 
-  GMANPoint const wedgeOrigin(-5.0, 5.0, insideWedgeTarget.getZ());
+  GMANPoint const wedgeOrigin(-5.0, 5.0, outsideWedgeTarget.getZ());
   GMANRay outsideWedge(wedgeOrigin, GMANVector(wedgeOrigin, outsideWedgeTarget));
   GMANHit wedgeMiss;
-  check(!hyperboloid.intersect(outsideWedge, wedgeMiss), "wedge: theta == 135 degrees is outside a 90-degree wedge");
+  check(!wedge.intersect(outsideWedge, wedgeMiss), "wedge: theta == 135 degrees is outside a 90-degree wedge");
 
   GMANPoint const insideOrigin(5.0, 5.0, insideWedgeTarget.getZ());
   GMANRay insideWedgeRay(insideOrigin, GMANVector(insideOrigin, insideWedgeTarget));
   GMANHit wedgeHit;
-  check(hyperboloid.intersect(insideWedgeRay, wedgeHit), "wedge: theta == 45 degrees is inside a 90-degree wedge");
+  check(wedge.intersect(insideWedgeRay, wedgeHit), "wedge: theta == 45 degrees is inside a 90-degree wedge");
 }
 
 // ---- check 4: a ray from inside the segment's radius, angled across the
@@ -132,10 +141,11 @@ void testFarRootFromInside() {
   GMANRay ray(GMANPoint(0.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
   bool const hitFound = hyperboloid.intersect(ray, hit);
-  check(hitFound && near(hit.t, 1.5), "far root: a ray from inside the segment's radius hits the far wall at t == 1.5");
-  check(near(hit.point.getX(), 1.5) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
-        "far root: point == (1.5, 0, 0)");
+  check(hitFound && near(hit.t, invSqrt2), "far root: a ray from inside the segment's radius hits the far wall");
+  check(near(hit.point.getX(), invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
+        "far root: point == (1/sqrt(2), 0, 0)");
 }
 
 // ---- a segment descending in z (point1.z > point2.z) is an ordinary
@@ -143,20 +153,19 @@ void testFarRootFromInside() {
 // t and point, but its normal follows getNormal's cross product, which
 // reverses sign with dz. ----
 void testDescendingSegment() {
-  RtPoint p1 = {2.0, 0.0, 1.0};
+  RtPoint p1 = {0.0, 1.0, 1.0};
   RtPoint p2 = {1.0, 0.0, -1.0};
   GMANRayHyperboloid hyperboloid(p1, p2, 360.0, GMANParameterList());
   GMANRay ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
   bool const hitFound = hyperboloid.intersect(ray, hit);
-  check(hitFound && near(hit.t, 3.5), "descending: t == 3.5, the same physical wall as the ascending segment");
-  check(near(hit.point.getX(), -1.5) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
-        "descending: point == (-1.5, 0, 0)");
-  RtFloat const twoOverSqrt5 = (RtFloat)(2.0 / std::sqrt(5.0));
-  RtFloat const oneOverSqrt5 = (RtFloat)(1.0 / std::sqrt(5.0));
-  check(near(hit.normal.getX(), twoOverSqrt5) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), oneOverSqrt5),
-        "descending: normal == (2, 0, 1)/sqrt(5), the ascending segment's normal negated");
+  check(hitFound && near(hit.t, 5.0 - invSqrt2), "descending: t == 5 - 1/sqrt(2), the same physical wall");
+  check(near(hit.point.getX(), -invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
+        "descending: point == (-1/sqrt(2), 0, 0)");
+  check(near(hit.normal.getX(), 1.0) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), 0.0),
+        "descending: normal == (1, 0, 0), the ascending segment's normal negated");
 }
 
 // ---- check 5a: a rotation places the segment's axis along camera x ----
@@ -166,48 +175,47 @@ void testRotatingTransform() {
   GMANTransform transform = makeTransform(matrix);
 
   RtPoint p1 = {1.0, 0.0, -1.0};
-  RtPoint p2 = {2.0, 0.0, 1.0};
+  RtPoint p2 = {0.0, 1.0, 1.0};
   GMANRayHyperboloid hyperboloid(p1, p2, 360.0, GMANParameterList(), transform);
   GMANRay ray(GMANPoint(0.0, 0.0, 5.0), GMANVector(0.0, 0.0, -1.0));
   GMANHit hit;
 
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
   bool const hitFound = hyperboloid.intersect(ray, hit);
-  check(hitFound && near(hit.t, 3.5), "rotation: t == 3.5");
-  check(near(hit.point.getX(), 0.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 1.5),
-        "rotation: point == (0, 0, 1.5)");
-  RtFloat const twoOverSqrt5 = (RtFloat)(2.0 / std::sqrt(5.0));
-  RtFloat const oneOverSqrt5 = (RtFloat)(1.0 / std::sqrt(5.0));
-  check(near(hit.normal.getX(), -oneOverSqrt5) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), twoOverSqrt5),
-        "rotation: normal == (-1, 0, 2)/sqrt(5)");
+  check(hitFound && near(hit.t, 5.0 - invSqrt2), "rotation: t == 5 - 1/sqrt(2)");
+  check(near(hit.point.getX(), 0.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), invSqrt2),
+        "rotation: point == (0, 0, 1/sqrt(2))");
+  check(near(hit.normal.getX(), 0.0) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), 1.0),
+        "rotation: normal == (0, 0, 1)");
 }
 
 // ---- check 5b: a shear tells transformNormal(cameraToObject, n) apart
 // from transformDirection(objectToCamera, n). The ray's own geometry sits
 // entirely at object z == 0, so the shear leaves the hit point and t
-// unchanged; only the normal, which carries a nonzero z component,
-// exposes it. ----
+// unchanged; only the normal, which carries a nonzero z component after
+// the shear, exposes it. ----
 void testShearTransform() {
   GMANMatrix4 matrix; // identity, then sheared
   matrix[2][0] = 2.0;
   GMANTransform transform = makeTransform(matrix);
 
   RtPoint p1 = {1.0, 0.0, -1.0};
-  RtPoint p2 = {2.0, 0.0, 1.0};
+  RtPoint p2 = {0.0, 1.0, 1.0};
   GMANRayHyperboloid hyperboloid(p1, p2, 360.0, GMANParameterList(), transform);
   GMANRay ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
   bool const hitFound = hyperboloid.intersect(ray, hit);
-  check(hitFound && near(hit.t, 3.5), "shear: t == 3.5");
-  check(near(hit.point.getX(), -1.5) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
-        "shear: point == (-1.5, 0, 0)");
-  // The object normal here is (-3, 0, -1.5) (unnormalized); the inverse
-  // transpose gives (-3, 0, -1.5 - 2*(-3)) == (-3, 0, 4.5), normalized
-  // below. transformDirection(objectToCamera, ...) -- the naive
-  // substitute -- would instead leave the object normal's own direction
-  // unchanged.
-  check(near(hit.normal.getX(), -0.554700) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), 0.832050),
-        "shear: normal == (-3, 0, 4.5), normalized");
+  check(hitFound && near(hit.t, 5.0 - invSqrt2), "shear: t == 5 - 1/sqrt(2)");
+  check(near(hit.point.getX(), -invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
+        "shear: point == (-1/sqrt(2), 0, 0)");
+  // The object normal here is (-sqrt(2), 0, 0) (unnormalized); the inverse
+  // transpose gives (-sqrt(2), 0, 2*sqrt(2)), normalized below.
+  // transformDirection(objectToCamera, ...) -- the naive substitute --
+  // would instead leave the object normal's own (-1, 0, 0) unchanged.
+  check(near(hit.normal.getX(), -0.447214) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), 0.894427),
+        "shear: normal == (-sqrt(2), 0, 2*sqrt(2)), normalized");
 }
 
 // ---- check 5c: a uniform scale leaves t a camera-space distance ----
@@ -217,20 +225,18 @@ void testUniformScale() {
   GMANTransform transform = makeTransform(matrix);
 
   RtPoint p1 = {1.0, 0.0, -1.0};
-  RtPoint p2 = {2.0, 0.0, 1.0};
+  RtPoint p2 = {0.0, 1.0, 1.0};
   GMANRayHyperboloid hyperboloid(p1, p2, 360.0, GMANParameterList(), transform);
   GMANRay ray(GMANPoint(-10.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
+  RtFloat const sqrt2 = (RtFloat)std::sqrt(2.0);
   bool const hitFound = hyperboloid.intersect(ray, hit);
-  check(hitFound && near(hit.t, 7.0), "uniform scale: t == 7, the camera-space distance to the doubled wall");
-  check(near(hit.point.getX(), -3.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
-        "uniform scale: point == (-3, 0, 0)");
-  RtFloat const twoOverSqrt5 = (RtFloat)(2.0 / std::sqrt(5.0));
-  RtFloat const oneOverSqrt5 = (RtFloat)(1.0 / std::sqrt(5.0));
-  check(near(hit.normal.getX(), -twoOverSqrt5) && near(hit.normal.getY(), 0.0) &&
-            near(hit.normal.getZ(), -oneOverSqrt5),
-        "uniform scale: normal == (-2, 0, -1)/sqrt(5), unchanged by a uniform scale");
+  check(hitFound && near(hit.t, 10.0 - sqrt2), "uniform scale: t == 10 - sqrt(2), the camera-space distance");
+  check(near(hit.point.getX(), -sqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
+        "uniform scale: point == (-sqrt(2), 0, 0)");
+  check(near(hit.normal.getX(), -1.0) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), 0.0),
+        "uniform scale: normal == (-1, 0, 0), unchanged by a uniform scale");
 }
 
 // ---- check 6: a singular transform never hits ----
@@ -240,7 +246,7 @@ void testSingularTransform() {
   GMANTransform transform = makeTransform(matrix);
 
   RtPoint p1 = {1.0, 0.0, -1.0};
-  RtPoint p2 = {2.0, 0.0, 1.0};
+  RtPoint p2 = {0.0, 1.0, 1.0};
   GMANRayHyperboloid hyperboloid(p1, p2, 360.0, GMANParameterList(), transform);
   GMANRay ray(GMANPoint(0.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
@@ -257,11 +263,11 @@ void testIntervalRejects() {
   GMANVector const direction(1.0, 0.0, 0.0);
   GMANHit hit;
 
-  GMANRay shortRay(origin, direction, RI_EPSILON, 3.0);
-  check(!hyperboloid.intersect(shortRay, hit), "interval: tmax below the wall hit (3.5) rejects it");
+  GMANRay shortRay(origin, direction, RI_EPSILON, 4.0);
+  check(!hyperboloid.intersect(shortRay, hit), "interval: tmax below the wall hit (~4.29) rejects it");
 
-  GMANRay farRay(origin, direction, 7.0, RI_INFINITY);
-  check(!hyperboloid.intersect(farRay, hit), "interval: tmin above both wall hits (3.5 and 6.5) rejects them");
+  GMANRay farRay(origin, direction, 6.0, RI_INFINITY);
+  check(!hyperboloid.intersect(farRay, hit), "interval: tmin above both wall hits (~4.29 and ~5.71) rejects them");
 }
 
 // ---- a null wedge misses instead of filling NaN ----
