@@ -996,7 +996,12 @@ RtVoid GMANRIBParse::parseSphere(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan.RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms);
+  // Dispatch mirrors parseGeneralPolygon's; see its comment.
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms, counts);
+  } else {
+    renderMan.RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parseCone(RtVoid) {
@@ -1011,7 +1016,12 @@ RtVoid GMANRIBParse::parseCone(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan.RiConeV(height, radius, thetamax, n, tokens, parms);
+  // Dispatch mirrors parseGeneralPolygon's; see its comment.
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiConeV(height, radius, thetamax, n, tokens, parms, counts);
+  } else {
+    renderMan.RiConeV(height, radius, thetamax, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parseCylinder(RtVoid) {
@@ -1027,7 +1037,12 @@ RtVoid GMANRIBParse::parseCylinder(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan.RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms);
+  // Dispatch mirrors parseGeneralPolygon's; see its comment.
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms, counts);
+  } else {
+    renderMan.RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parseSides(RtVoid) {
@@ -1054,7 +1069,12 @@ RtVoid GMANRIBParse::parseHyperboloid(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan.RiHyperboloidV(point1, point2, thetamax, n, tokens, parms);
+  // Dispatch mirrors parseGeneralPolygon's; see its comment.
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiHyperboloidV(point1, point2, thetamax, n, tokens, parms, counts);
+  } else {
+    renderMan.RiHyperboloidV(point1, point2, thetamax, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
@@ -1070,7 +1090,12 @@ RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan.RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms);
+  // Dispatch mirrors parseGeneralPolygon's; see its comment.
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms, counts);
+  } else {
+    renderMan.RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parseTorus(RtVoid) {
@@ -1087,7 +1112,12 @@ RtVoid GMANRIBParse::parseTorus(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms);
+  // Dispatch mirrors parseGeneralPolygon's; see its comment.
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms, counts);
+  } else {
+    renderMan.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parseDisk(RtVoid) {
@@ -1102,7 +1132,12 @@ RtVoid GMANRIBParse::parseDisk(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  renderMan.RiDiskV(height, radius, thetamax, n, tokens, parms);
+  // Dispatch mirrors parseGeneralPolygon's; see its comment.
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiDiskV(height, radius, thetamax, n, tokens, parms, counts);
+  } else {
+    renderMan.RiDiskV(height, radius, thetamax, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parsePolygon(RtVoid) {
@@ -1136,7 +1171,12 @@ RtVoid GMANRIBParse::parsePolygon(RtVoid) {
     }
   }
 
-  renderMan.RiPolygonV(nverts, n, tokens, parms);
+  // Dispatch mirrors parseGeneralPolygon's; see its comment.
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    impl->RiPolygonV(nverts, n, tokens, parms, counts);
+  } else {
+    renderMan.RiPolygonV(nverts, n, tokens, parms);
+  }
 }
 
 RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {

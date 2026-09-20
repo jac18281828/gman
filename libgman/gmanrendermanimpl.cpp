@@ -754,10 +754,13 @@ RtVoid GMANRenderManImpl::RiAttributeV(RtToken /*name*/, RtInt /*n*/, RtToken /*
 // ******* ******* ******* PRIMITIVES ******* ******* *******
 // **********************************************************
 RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  RiPolygonV(nverts, n, tokens, parms, NULL);
+}
+RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdPolygon);
   // "P" is sized by nverts, not a fixed 4x4 grid like a quadric: Polygon has
   // no distinct varying count beyond its vertex count.
-  GMANParameterList paramList(dictionary, n, tokens, parms, nverts, nverts);
+  GMANParameterList paramList(dictionary, n, tokens, parms, nverts, nverts, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
@@ -1177,8 +1180,12 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
 
 RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
                                     RtPointer parms[]) {
+  RiSphereV(radius, zmin, zmax, tmax, n, tokens, parms, NULL);
+}
+RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
+                                    RtPointer parms[], const RtInt* counts) {
   allowed(cmdSphere);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
@@ -1190,8 +1197,12 @@ RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, 
 }
 RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
                                   RtPointer parms[]) {
+  RiConeV(height, radius, tmax, n, tokens, parms, NULL);
+}
+RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
+                                  RtPointer parms[], const RtInt* counts) {
   allowed(cmdCone);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
@@ -1202,8 +1213,12 @@ RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, 
 }
 RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
                                       RtToken tokens[], RtPointer parms[]) {
+  RiCylinderV(radius, zmin, zmax, tmax, n, tokens, parms, NULL);
+}
+RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
+                                      RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdCylinder);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
@@ -1215,8 +1230,12 @@ RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax
 }
 RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
                                          RtPointer parms[]) {
+  RiHyperboloidV(point1, point2, tmax, n, tokens, parms, NULL);
+}
+RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
+                                         RtPointer parms[], const RtInt* counts) {
   allowed(cmdHyperboloid);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
@@ -1228,8 +1247,12 @@ RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat
 }
 RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
                                         RtToken tokens[], RtPointer parms[]) {
+  RiParaboloidV(rmax, zmin, zmax, tmax, n, tokens, parms, NULL);
+}
+RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
+                                        RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdParaboloid);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
@@ -1241,8 +1264,12 @@ RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax
 }
 RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
                                   RtPointer parms[]) {
+  RiDiskV(height, radius, tmax, n, tokens, parms, NULL);
+}
+RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
+                                  RtPointer parms[], const RtInt* counts) {
   allowed(cmdDisk);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;
@@ -1253,8 +1280,12 @@ RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, 
 }
 RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
                                    RtInt n, RtToken tokens[], RtPointer parms[]) {
+  RiTorusV(majrad, minrad, phimin, phimax, tmax, n, tokens, parms, NULL);
+}
+RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
+                                   RtInt n, RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdTorus);
-  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4);
+  GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform* transform = new GMANTransform((getTransform()));
   GMANPrimitive* prim;

@@ -520,6 +520,20 @@ set_tests_properties(ribintegerbounds PROPERTIES
   LABELS render
   TIMEOUT 60)
 
+# Polygon and the seven quadrics built their GMANParameterList with no
+# suppliedCounts at all, so a short array read past its own allocation
+# instead of clamping. See tests/geometryparamclamp_test.cpp.
+add_executable(gman_geometryparamclamp geometryparamclamp_test.cpp)
+target_link_libraries(gman_geometryparamclamp PRIVATE gman_core)
+
+add_test(NAME geometryparamclamp
+  COMMAND gman_geometryparamclamp $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
+set_tests_properties(geometryparamclamp PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 60)
+
 # Bilinear and bicubic Patch rasterization. See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
 target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)
