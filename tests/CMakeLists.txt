@@ -1062,92 +1062,71 @@ set_tests_properties(rayquadratic PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Ray tracer core, unit 2: GMANRaySphere::intersect, compiled here from the
-# raytracer plugin's own sources rather than linked against the gman_raytracer
+# Ray tracer core, unit 2: GMANRaySphere::intersect, linked against the
+# shared raytracer object library rather than the gman_raytracer plugin
 # target, so this still builds and runs with GMAN_BUILD_RAYTRACER off.
-add_executable(gman_raysphere raysphere_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp")
-target_link_libraries(gman_raysphere PRIVATE gman_core)
-target_include_directories(gman_raysphere PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+add_executable(gman_raysphere raysphere_test.cpp)
+target_link_libraries(gman_raysphere PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME raysphere COMMAND gman_raysphere)
 set_tests_properties(raysphere PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5a proof, unit: GMANRayDisk::intersect, compiled from the plugin's own
-# sources for the same reason as gman_raysphere above.
-add_executable(gman_raydisk raydisk_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp")
-target_link_libraries(gman_raydisk PRIVATE gman_core)
-target_include_directories(gman_raydisk PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+# R5a proof, unit: GMANRayDisk::intersect, linked against the shared object
+# library for the same reason as gman_raysphere above.
+add_executable(gman_raydisk raydisk_test.cpp)
+target_link_libraries(gman_raydisk PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME raydisk COMMAND gman_raydisk)
 set_tests_properties(raydisk PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5a proof, unit: GMANRayPolygon::intersect, compiled from the plugin's
-# own sources for the same reason as gman_raysphere above.
-add_executable(gman_raypolygon raypolygon_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp")
-target_link_libraries(gman_raypolygon PRIVATE gman_core)
-target_include_directories(gman_raypolygon PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+# R5a proof, unit: GMANRayPolygon::intersect, linked against the shared
+# object library for the same reason as gman_raysphere above.
+add_executable(gman_raypolygon raypolygon_test.cpp)
+target_link_libraries(gman_raypolygon PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME raypolygon COMMAND gman_raypolygon)
 set_tests_properties(raypolygon PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayCylinder::intersect, compiled from the plugin's
-# own sources for the same reason as gman_raysphere above.
-add_executable(gman_raycylinder raycylinder_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp")
-target_link_libraries(gman_raycylinder PRIVATE gman_core)
-target_include_directories(gman_raycylinder PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+# R5b proof, unit: GMANRayCylinder::intersect, linked against the shared
+# object library for the same reason as gman_raysphere above.
+add_executable(gman_raycylinder raycylinder_test.cpp)
+target_link_libraries(gman_raycylinder PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME raycylinder COMMAND gman_raycylinder)
 set_tests_properties(raycylinder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayCone::intersect, compiled from the plugin's own
-# sources for the same reason as gman_raysphere above.
-add_executable(gman_raycone raycone_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp")
-target_link_libraries(gman_raycone PRIVATE gman_core)
-target_include_directories(gman_raycone PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+# R5b proof, unit: GMANRayCone::intersect, linked against the shared object
+# library for the same reason as gman_raysphere above.
+add_executable(gman_raycone raycone_test.cpp)
+target_link_libraries(gman_raycone PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME raycone COMMAND gman_raycone)
 set_tests_properties(raycone PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayParaboloid::intersect, compiled from the
-# plugin's own sources for the same reason as gman_raysphere above.
-add_executable(gman_rayparaboloid rayparaboloid_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp")
-target_link_libraries(gman_rayparaboloid PRIVATE gman_core)
-target_include_directories(gman_rayparaboloid PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+# R5b proof, unit: GMANRayParaboloid::intersect, linked against the shared
+# object library for the same reason as gman_raysphere above.
+add_executable(gman_rayparaboloid rayparaboloid_test.cpp)
+target_link_libraries(gman_rayparaboloid PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME rayparaboloid COMMAND gman_rayparaboloid)
 set_tests_properties(rayparaboloid PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayHyperboloid::intersect, compiled from the
-# plugin's own sources for the same reason as gman_raysphere above.
-add_executable(gman_rayhyperboloid rayhyperboloid_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp")
-target_link_libraries(gman_rayhyperboloid PRIVATE gman_core)
-target_include_directories(gman_rayhyperboloid PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+# R5b proof, unit: GMANRayHyperboloid::intersect, linked against the shared
+# object library for the same reason as gman_raysphere above.
+add_executable(gman_rayhyperboloid rayhyperboloid_test.cpp)
+target_link_libraries(gman_rayhyperboloid PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME rayhyperboloid COMMAND gman_rayhyperboloid)
 set_tests_properties(rayhyperboloid PROPERTIES
@@ -1158,11 +1137,8 @@ set_tests_properties(rayhyperboloid PROPERTIES
 # second intersector's worth of work no fixture in this tree needs yet.
 # Pins the wanted behavior; WILL_FAIL until a future unit implements it --
 # the first WILL_FAIL test in this tree.
-add_executable(gman_hyperboloidflatannulus hyperboloidflatannulus_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp")
-target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core)
-target_include_directories(gman_hyperboloidflatannulus PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+add_executable(gman_hyperboloidflatannulus hyperboloidflatannulus_test.cpp)
+target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME hyperboloidflatannulus COMMAND gman_hyperboloidflatannulus)
 set_tests_properties(hyperboloidflatannulus PROPERTIES
@@ -1171,21 +1147,11 @@ set_tests_properties(hyperboloidflatannulus PROPERTIES
   TIMEOUT 30)
 
 # Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
-# GMANRaySphere holding its parameters and a copied transform, compiled
-# from the raytracer plugin's own sources for the same reason as
+# GMANRaySphere holding its parameters and a copied transform, linked
+# against the shared raytracer object library for the same reason as
 # gman_raysphere above.
-add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp")
-target_link_libraries(gman_rayobjectmanager PRIVATE gman_core)
-target_include_directories(gman_rayobjectmanager PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp)
+target_link_libraries(gman_rayobjectmanager PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME rayobjectmanager COMMAND gman_rayobjectmanager)
 set_tests_properties(rayobjectmanager PROPERTIES
@@ -1193,23 +1159,12 @@ set_tests_properties(rayobjectmanager PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R4 proof, unit 4: GMANRaytraceRenderer::getDepth, built from the plugin's
-# own sources for the same reason as gman_raysphere above. A default
-# GMANAttributes loads libmatte.so by bare name, so this carries the same
-# ENVIRONMENT as gman_rayobjectmanager.
-add_executable(gman_raydepth raydepth_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
-target_link_libraries(gman_raydepth PRIVATE gman_core gman_internal_headers)
-target_include_directories(gman_raydepth PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+# R4 proof, unit 4: GMANRaytraceRenderer::getDepth, linked against the
+# shared object library for the same reason as gman_raysphere above. A
+# default GMANAttributes loads libmatte.so by bare name, so this carries the
+# same ENVIRONMENT as gman_rayobjectmanager.
+add_executable(gman_raydepth raydepth_test.cpp)
+target_link_libraries(gman_raydepth PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME raydepth COMMAND gman_raydepth)
 set_tests_properties(raydepth PROPERTIES
@@ -1217,22 +1172,11 @@ set_tests_properties(raydepth PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, check 5: GMANRayOccluder::transmission, built from the plugin's
-# own sources for the same reason as gman_raysphere above; carries
-# raydepth's own ENVIRONMENT for the same reason too.
-add_executable(gman_rayoccluder rayoccluder_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
-target_link_libraries(gman_rayoccluder PRIVATE gman_core gman_internal_headers)
-target_include_directories(gman_rayoccluder PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+# R7 proof, check 5: GMANRayOccluder::transmission, linked against the
+# shared object library for the same reason as gman_raysphere above;
+# carries raydepth's own ENVIRONMENT for the same reason too.
+add_executable(gman_rayoccluder rayoccluder_test.cpp)
+target_link_libraries(gman_rayoccluder PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME rayoccluder COMMAND gman_rayoccluder)
 set_tests_properties(rayoccluder PROPERTIES
@@ -1240,22 +1184,11 @@ set_tests_properties(rayoccluder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R-transparency proof, check 5: the composite loop's own layer cap, built
-# from the plugin's own sources for the same reason as gman_raysphere
+# R-transparency proof, check 5: the composite loop's own layer cap, linked
+# against the shared object library for the same reason as gman_raysphere
 # above; carries raydepth's own ENVIRONMENT for the same reason too.
-add_executable(gman_compositelayercap compositelayercap_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
-target_link_libraries(gman_compositelayercap PRIVATE gman_core gman_internal_headers)
-target_include_directories(gman_compositelayercap PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+add_executable(gman_compositelayercap compositelayercap_test.cpp)
+target_link_libraries(gman_compositelayercap PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME compositelayercap COMMAND gman_compositelayercap)
 set_tests_properties(compositelayercap PROPERTIES
@@ -1264,22 +1197,11 @@ set_tests_properties(compositelayercap PROPERTIES
   TIMEOUT 30)
 
 # R7 proof, §8 check 7: GMANRayOccluder::transmission's own iteration cap,
-# built from the plugin's own sources for the same reason as
+# linked against the shared object library for the same reason as
 # gman_raysphere above; carries raydepth's own ENVIRONMENT for the same
 # reason too. See coincidenttransmission_test.cpp's own comment.
-add_executable(gman_coincidenttransmission coincidenttransmission_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
-target_link_libraries(gman_coincidenttransmission PRIVATE gman_core gman_internal_headers)
-target_include_directories(gman_coincidenttransmission PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+add_executable(gman_coincidenttransmission coincidenttransmission_test.cpp)
+target_link_libraries(gman_coincidenttransmission PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME coincidenttransmission COMMAND gman_coincidenttransmission)
 set_tests_properties(coincidenttransmission PROPERTIES
@@ -1287,23 +1209,12 @@ set_tests_properties(coincidenttransmission PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, §8 check 6: two close, camera-facing transparent disks, built
-# from the plugin's own sources for the same reason as gman_raysphere
+# R7 proof, §8 check 6: two close, camera-facing transparent disks, linked
+# against the shared object library for the same reason as gman_raysphere
 # above; carries raydepth's own ENVIRONMENT for the same reason too. See
 # closetransparentstack_test.cpp's own comment.
-add_executable(gman_closetransparentstack closetransparentstack_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
-target_link_libraries(gman_closetransparentstack PRIVATE gman_core gman_internal_headers)
-target_include_directories(gman_closetransparentstack PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+add_executable(gman_closetransparentstack closetransparentstack_test.cpp)
+target_link_libraries(gman_closetransparentstack PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME closetransparentstack COMMAND gman_closetransparentstack)
 set_tests_properties(closetransparentstack PROPERTIES
@@ -1311,23 +1222,12 @@ set_tests_properties(closetransparentstack PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, §8 check 8: a grazing transparent hit, built from the plugin's
-# own sources for the same reason as gman_raysphere above; carries
-# raydepth's own ENVIRONMENT for the same reason too. See
+# R7 proof, §8 check 8: a grazing transparent hit, linked against the
+# shared object library for the same reason as gman_raysphere above;
+# carries raydepth's own ENVIRONMENT for the same reason too. See
 # grazingtransparent_test.cpp's own comment.
-add_executable(gman_grazingtransparent grazingtransparent_test.cpp
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
-  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
-target_link_libraries(gman_grazingtransparent PRIVATE gman_core gman_internal_headers)
-target_include_directories(gman_grazingtransparent PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+add_executable(gman_grazingtransparent grazingtransparent_test.cpp)
+target_link_libraries(gman_grazingtransparent PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME grazingtransparent COMMAND gman_grazingtransparent)
 set_tests_properties(grazingtransparent PROPERTIES

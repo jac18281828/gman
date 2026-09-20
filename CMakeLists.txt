@@ -262,8 +262,15 @@ if(GMAN_BUILD_REYES)
   set_target_properties(gman_reyes PROPERTIES OUTPUT_NAME "gmanreyes")
 endif()
 
-if(GMAN_BUILD_RAYTRACER)
-  gman_add_plugin(gman_raytracer
+# The raytracer's own sources, shared by the gman_raytracer plugin below and
+# by the ray tracer unit tests in tests/CMakeLists.txt. Compiled once here
+# instead of once per consumer: fifteen test targets used to each compile
+# the same ten translation units from scratch, which is what exhausted the
+# gcc CI runners under --parallel. Built whenever GMAN_BUILD_RAYTRACER or
+# BUILD_TESTING is ON, never inside the GMAN_BUILD_RAYTRACER guard alone --
+# the ray tracer unit tests must still build and run with the raytracer off.
+if(GMAN_BUILD_RAYTRACER OR BUILD_TESTING)
+  add_library(gman_raytracer_objects OBJECT
     renderers/raytracer/gmanrayinterface.cpp
     renderers/raytracer/gmanrayobjectmanager.cpp
     renderers/raytracer/gmanraycone.cpp
@@ -273,8 +280,20 @@ if(GMAN_BUILD_RAYTRACER)
     renderers/raytracer/gmanrayparaboloid.cpp
     renderers/raytracer/gmanraypolygon.cpp
     renderers/raytracer/gmanraysphere.cpp
-    renderers/raytracer/gmanraytracerenderer.cpp
-    renderers/raytracer/rayloader.cpp)
+    renderers/raytracer/gmanraytracerenderer.cpp)
+  target_link_libraries(gman_raytracer_objects PUBLIC gman_core)
+  target_include_directories(gman_raytracer_objects PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderers/raytracer")
+  # OBJECT libraries do not get PIC automatically the way SHARED and MODULE
+  # targets do; without it, linking these objects into gman_raytracer (a
+  # MODULE) fails or silently succeeds only on some platforms.
+  set_target_properties(gman_raytracer_objects PROPERTIES
+    POSITION_INDEPENDENT_CODE ON)
+endif()
+
+if(GMAN_BUILD_RAYTRACER)
+  gman_add_plugin(gman_raytracer renderers/raytracer/rayloader.cpp)
+  target_link_libraries(gman_raytracer PRIVATE gman_raytracer_objects)
   set_target_properties(gman_raytracer PROPERTIES OUTPUT_NAME "gmanraytracer")
 endif()
 
