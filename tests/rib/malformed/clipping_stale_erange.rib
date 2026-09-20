@@ -2,9 +2,9 @@
 # still returns a usable (infinite) value, so GMANRIBTokenize::parseNum
 # returns a REAL token rather than throwing. Without parseNum resetting
 # errno before its own strtol attempt, that leftover ERANGE would wrongly
-# poison the very next integer literal -- Sides 4 here -- with a spurious
-# RIE_RANGE. Nothing else in this fixture set creates a pending ERANGE for
-# a later integer to trip over.
+# poison the very next integer literal -- the 0 in "Translate 0 0 5" here
+# -- with a spurious RIE_RANGE. Nothing else in this fixture set creates a
+# pending ERANGE for a later integer to trip over.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

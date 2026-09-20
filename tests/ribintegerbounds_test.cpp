@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
     check(!r.crashed, "clipping_stale_erange.rib: does not crash (no signal termination)");
     check(r.exitStatus == EXIT_SUCCESS, "clipping_stale_erange.rib: exits cleanly");
     check(r.output.find("RIE_RANGE") == std::string::npos,
-          "clipping_stale_erange.rib: the legal Sides 4 that follows an overflowing float "
+          "clipping_stale_erange.rib: the legal Translate 0 that follows an overflowing float "
           "is not rejected by a stale errno");
   }
 

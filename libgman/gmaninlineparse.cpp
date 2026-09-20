@@ -223,8 +223,9 @@ GMANTokenEntry::TokenType InlineParse::get_type(std::string str) {
   return GMANTokenEntry::INTEGER;
 }
 
-// is_int has already rejected a non-digit string, an ERANGE (beyond long)
-// value and a non-positive one; this is the one narrowing left, to RtInt.
+// is_int has already rejected a string with no leading digits, a value
+// beyond long's range (ERANGE) and a non-positive one; this is the one
+// narrowing left, to RtInt.
 int InlineParse::get_size(std::string str) {
   const long value = strtol(str.c_str(), nullptr, 10);
   if (value > std::numeric_limits<RtInt>::max()) {

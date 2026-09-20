@@ -24,14 +24,16 @@
 /*
  * tolower and toupper are defined only for EOF and for values representable
  * as unsigned char; passing a plain (signed, on x86 and ARM) char is
- * undefined behaviour for any byte above 127. This scans every source file
- * under libgman/ for a call that skips the static_cast<unsigned char> cast
- * the idiom requires -- gman::InlineParse::lc was the one outlier; three
- * other call sites already spell it correctly.
+ * undefined behaviour for any byte above 127. The idiom this scans for is
+ * static_cast<char>(std::tolower(static_cast<unsigned char>(c))): the inner
+ * cast avoids the UB, the outer cast avoids the implicit int-to-char
+ * narrowing tolower's return then triggers. This scans every source file
+ * under libgman/ for a call missing either half -- gman::InlineParse::lc was
+ * the one outlier; three other call sites already spell it correctly.
  *
  * Neither ASan nor UBSan instruments a libc domain precondition, so this
- * source scan is the only thing that fails under plain ctest when the cast
- * is reverted.
+ * source scan is the only thing that fails under plain ctest when a cast is
+ * reverted.
  */
 
 #include <filesystem>
@@ -46,18 +48,27 @@ namespace {
 
 namespace fs = std::filesystem;
 
-const std::string kGuardedPrefix = "static_cast<unsigned char>";
+const std::string kInnerCast = "static_cast<unsigned char>";
+const std::string kOuterCastQualified = "static_cast<char>(std::";
+const std::string kOuterCastBare = "static_cast<char>(";
 
-// Every "tolower(" or "toupper(" call (qualified or not) whose argument
-// does not open with the sanctioned unsigned-char cast.
-std::vector<std::string> unqualifiedCalls(const std::string& text) {
+// Every "tolower(" or "toupper(" call (qualified or not) missing either the
+// inner static_cast<unsigned char> that avoids UB or the outer
+// static_cast<char> that avoids narrowing tolower's int return.
+std::vector<std::string> callsMissingRequiredCasts(const std::string& text) {
   std::vector<std::string> found;
   for (const std::string& name : {std::string("tolower"), std::string("toupper")}) {
     const std::string callOpen = name + "(";
     std::string::size_type pos = 0;
     while ((pos = text.find(callOpen, pos)) != std::string::npos) {
       const std::string::size_type argStart = pos + callOpen.size();
-      if (text.compare(argStart, kGuardedPrefix.size(), kGuardedPrefix) != 0) {
+      const bool hasInnerCast = text.compare(argStart, kInnerCast.size(), kInnerCast) == 0;
+      const bool hasOuterCast =
+          (pos >= kOuterCastQualified.size() &&
+           text.compare(pos - kOuterCastQualified.size(), kOuterCastQualified.size(), kOuterCastQualified) == 0) ||
+          (pos >= kOuterCastBare.size() &&
+           text.compare(pos - kOuterCastBare.size(), kOuterCastBare.size(), kOuterCastBare) == 0);
+      if (!hasInnerCast || !hasOuterCast) {
         found.push_back(name);
       }
       pos = argStart;
@@ -84,9 +95,9 @@ int main(int argc, char** argv) {
 
   for (const fs::path& file : files) {
     const std::string text = readFile(file);
-    const std::vector<std::string> calls = unqualifiedCalls(text);
-    check(calls.empty(),
-          file.generic_string() + ": tolower/toupper takes static_cast<unsigned char>(...), not a plain char");
+    const std::vector<std::string> calls = callsMissingRequiredCasts(text);
+    check(calls.empty(), file.generic_string() + ": tolower/toupper must be static_cast<char>(std::tolower("
+                                                 "static_cast<unsigned char>(...)))");
   }
 
   return checkSummary("no tolower/toupper in libgman/ takes an unqualified char");
