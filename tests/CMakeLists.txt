@@ -1093,6 +1093,48 @@ set_tests_properties(raycone PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R5b proof, unit: GMANRayParaboloid::intersect, compiled from the
+# plugin's own sources for the same reason as gman_raysphere above.
+add_executable(gman_rayparaboloid rayparaboloid_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp")
+target_link_libraries(gman_rayparaboloid PRIVATE gman_core)
+target_include_directories(gman_rayparaboloid PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME rayparaboloid COMMAND gman_rayparaboloid)
+set_tests_properties(rayparaboloid PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# R5b proof, unit: GMANRayHyperboloid::intersect, compiled from the
+# plugin's own sources for the same reason as gman_raysphere above.
+add_executable(gman_rayhyperboloid rayhyperboloid_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp")
+target_link_libraries(gman_rayhyperboloid PRIVATE gman_core)
+target_include_directories(gman_rayhyperboloid PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME rayhyperboloid COMMAND gman_rayhyperboloid)
+set_tests_properties(rayhyperboloid PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# R5b deferral: the flat-annulus hyperboloid (point1.z == point2.z), a
+# second intersector's worth of work no fixture in this tree needs yet.
+# Pins the wanted behavior; WILL_FAIL until a future unit implements it --
+# the first WILL_FAIL test in this tree.
+add_executable(gman_hyperboloidflatannulus hyperboloidflatannulus_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp")
+target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core)
+target_include_directories(gman_hyperboloidflatannulus PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME hyperboloidflatannulus COMMAND gman_hyperboloidflatannulus)
+set_tests_properties(hyperboloidflatannulus PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
 # GMANRaySphere holding its parameters and a copied transform, compiled
 # from the raytracer plugin's own sources for the same reason as
