@@ -38,9 +38,14 @@ namespace gman {
  * colour leaves room for a semi-transparent occluder's partial
  * transmission, and the light argument for a per-light shadow switch
  * (RenderMan's Attribute "light" "shadows") or an area light, both without
- * changing this signature. A renderer with nothing to say here -- the
+ * a further signature change. A renderer with nothing to say here -- the
  * z-buffer -- passes no Occluder at all rather than one that always
  * returns white.
+ *
+ * Ng, unlike the light argument above, already cost this signature a
+ * change: offsetting a self-hit's origin is a ray tracer's own numerical
+ * business, and P and towardLight alone say nothing about the surface the
+ * offset must clear.
  *
  * A shader built outside this tree against an older header, before this
  * class existed, still links and runs: its own diffuse()/specular() were
@@ -54,12 +59,15 @@ public:
   // Defined out of line, in libgman/gmanshading.cpp.
   virtual ~Occluder();
 
-  // towardLight is unit length, from P toward light. distance is
-  // RI_INFINITY when light has none to report (a distant light);
-  // otherwise the length GMANLight::sample's own l carried before the
-  // illuminance loop normalized it.
+  // towardLight and Ng are each unit length -- towardLight from P toward
+  // light, Ng the geometric normal of the surface P sits on. A caller
+  // shading a point with no surface passes a zero vector for Ng, which
+  // degrades a ray tracer's own origin offset to none rather than a NaN.
+  // distance is RI_INFINITY when light has none to report (a distant
+  // light); otherwise the length GMANLight::sample's own l carried before
+  // the illuminance loop normalized it.
   virtual GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
-                                 RtFloat distance) const = 0;
+                                 GMANVector const& Ng, RtFloat distance) const = 0;
 };
 
 } // namespace gman

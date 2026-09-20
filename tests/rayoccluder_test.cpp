@@ -83,7 +83,9 @@ void testPointLightDistanceBoundsTheShadowRay() {
     worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 15.0f)); // beyond the light
     GMANRayOccluder const occluder(worldManager);
 
-    GMANColor const result = occluder.transmission(light, P, towardLight, distance);
+    // P is a free-space point, not on any primitive: Ng is the zero
+    // vector the header's own contract names for that case.
+    GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance);
     check(result.getRed() > 0.99f && result.getGreen() > 0.99f && result.getBlue() > 0.99f,
           "point light: a blocker beyond the light's own distance transmits white");
   }
@@ -93,7 +95,7 @@ void testPointLightDistanceBoundsTheShadowRay() {
     worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 5.0f)); // between P and the light
     GMANRayOccluder const occluder(worldManager);
 
-    GMANColor const result = occluder.transmission(light, P, towardLight, distance);
+    GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance);
     check(result.getRed() < 0.01f && result.getGreen() < 0.01f && result.getBlue() < 0.01f,
           "point light: the same blocker between P and the light transmits black");
   }
@@ -145,7 +147,7 @@ void testSelfShadowAtScale(RtFloat scale) {
         continue; // the sphere's own dark side: not this check's business
       }
       ++litSamples;
-      GMANColor const result = occluder.transmission(light, hit.point, lightDir, RI_INFINITY);
+      GMANColor const result = occluder.transmission(light, hit.point, lightDir, hit.normal, RI_INFINITY);
       if (result.getRed() < 0.5f) {
         ++selfShadowed;
       }
@@ -179,7 +181,11 @@ void testBlockerRelightsAtScale(RtFloat scale) {
   worldManager.add(sphereAt(scale, 0.4f * scale, 0.0f, 5.0f * scale)); // between P and the light, off-axis
   GMANRayOccluder const occluder(worldManager);
 
-  GMANColor const result = occluder.transmission(light, P, towardLight, distance);
+  // P is a free-space point, not on any primitive -- Ng is the zero vector
+  // the header's own contract names for that case. No offset scale would
+  // change this test's own result, since a free point has no surface to
+  // offset from; that is testSelfShadowAtScale's business, not this one's.
+  GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance);
   std::string const scaleLabel = "x" + std::to_string(scale);
   check(result.getRed() < 0.01f && result.getGreen() < 0.01f && result.getBlue() < 0.01f,
         "blocker relights " + scaleLabel + ": a blocker between P and the light still transmits black");

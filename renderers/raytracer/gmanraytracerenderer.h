@@ -63,7 +63,7 @@ public:
   // ordering already guarantees this: nearestHit finishes walking before
   // shading, and so before this, ever begins.
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
-                         RtFloat distance) const override;
+                         GMANVector const& Ng, RtFloat distance) const override;
 
 private:
   GMANWorldManager& worldManager;

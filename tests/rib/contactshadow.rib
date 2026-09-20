@@ -1,0 +1,28 @@
+## R7 proof, §8 check 1: a thin vertical blocker standing on a horizontal
+## floor, its base at gap 0.001, lit at near-grazing incidence --
+## towardLight makes 86.57 degrees with the floor's own normal (sinTheta
+## 0.9982) -- from the side. A narrow fov (6 degrees) magnifies the floor
+## strip beside the blocker's base: the leaked band the old
+## magnitude-scaled bias left there is 1e-2*sinTheta*Yres/(2*tan(fov/2)) =
+## 1e-2*0.9982*480/(2*tan(3deg)) =~ 46 px, comfortably above the 10 px a
+## per-pixel comparison needs to resolve. This overrides AGENTS.md's
+## default camera for this fixture, on r5b_quadrics.rib's own precedent.
+## contactshadow_noblocker.rib is this scene with the blocker removed. Not
+## third-party.
+Display "contactshadow.tif" "file" "rgba"
+Format 640 480 1
+Projection "perspective" "fov" [6]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1]
+LightSource "distantlight" 2 "intensity" [15.0] "lightcolor" [1 1 1]
+	"from" [50 3 0] "to" [0 0 0]
+Surface "matte" "Ka" [0.2] "Kd" [0.8]
+
+Polygon "P" [-0.5 -0.05 -3  -0.5 -0.05 3  0.5 -0.05 3  0.5 -0.05 -3]
+
+AttributeBegin
+	Polygon "P" [0.1 -0.049 -3  0.1 -0.049 3  0.1 0.051 3  0.1 0.051 -3]
+AttributeEnd
+WorldEnd

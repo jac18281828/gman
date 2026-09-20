@@ -1403,6 +1403,48 @@ if(GMAN_BUILD_RAYTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+
+  # R7 proof, §8 check 1: tests/rib/contactshadow.rib -- a thin vertical
+  # blocker resting on a horizontal floor at gap 0.001 -- against
+  # contactshadow_noblocker.rib, pinning that the receiver strip beside the
+  # blocker's base darkens once the shadow ray's origin offset lands. See
+  # contactshadow_test.cpp's own comment.
+  add_executable(gman_contactshadow contactshadow_test.cpp)
+  target_link_libraries(gman_contactshadow PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_contactshadow gman_raytracer)
+
+  set(GMAN_CONTACTSHADOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/contactshadow-run")
+  file(MAKE_DIRECTORY "${GMAN_CONTACTSHADOW_WORKDIR}")
+
+  add_test(NAME contactshadow
+    COMMAND gman_contactshadow $<TARGET_FILE:gman>
+                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_CONTACTSHADOW_WORKDIR}")
+  set_tests_properties(contactshadow PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
+  # R7 proof, §8 check 2: tests/rib/acnesphere_x1.rib, acnesphere_x1000.rib
+  # and acnesphere_xsmall.rib -- one lit sphere at three scales -- pinning
+  # that self-shadow acne is scale-independent and that no pixel inside the
+  # silhouette dips below both its horizontal neighbors. See
+  # acnesphere_test.cpp's own comment.
+  add_executable(gman_acnesphere acnesphere_test.cpp)
+  target_link_libraries(gman_acnesphere PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_acnesphere gman_raytracer)
+
+  set(GMAN_ACNESPHERE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/acnesphere-run")
+  file(MAKE_DIRECTORY "${GMAN_ACNESPHERE_WORKDIR}")
+
+  add_test(NAME acnesphere
+    COMMAND gman_acnesphere $<TARGET_FILE:gman>
+                            "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_ACNESPHERE_WORKDIR}")
+  set_tests_properties(acnesphere PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
 endif()
 
 # Proves both halves of an installed gman. bin/gman renders every

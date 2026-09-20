@@ -126,7 +126,7 @@ RtFloat selfShadowBias(GMANPoint const& hitPoint) {
 } // namespace
 
 GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
-                                        RtFloat distance) const {
+                                        GMANVector const& /*Ng*/, RtFloat distance) const {
   GMANColor transmission(1.0f, 1.0f, 1.0f);
   GMANPoint origin = P;
   RtFloat remaining = distance;

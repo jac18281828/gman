@@ -253,7 +253,7 @@ private:
   // otherwise.
   GMANColor occludedContribution(GMANLight const& light, GMANVector const& towardLight, RtFloat distance,
                                  GMANColor cl) const {
-    return occluder ? occluded(cl, occluder->transmission(light, P, towardLight, distance)) : cl;
+    return occluder ? occluded(cl, occluder->transmission(light, P, towardLight, Ng, distance)) : cl;
   }
 };
 

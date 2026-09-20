@@ -25,6 +25,11 @@
  * three; ambient() never consults it, having no direction to occlude. A
  * point light reports its own distance and a unit towardLight; a distant
  * light reports RI_INFINITY, its sample()'s l having no useful length.
+ *
+ * R7 proof, check 4: occludedContribution passes the occluder env.Ng, the
+ * surface's own geometric normal -- not env.N, which diffuse()/specular()
+ * already faceforward and which a displacement or bump can perturb away
+ * from the real surface a self-hit offset must clear.
  */
 
 #include <cmath>
@@ -68,6 +73,7 @@ public:
 
   struct Record {
     GMANVector pointTowardLight;
+    GMANVector ng;
     RtFloat pointDistance = -1.0f;
     RtFloat distantDistance = -1.0f;
   };
@@ -75,8 +81,9 @@ public:
   Record const& specularRecord() const { return specularRecord_; }
 
   GMANColor transmission(GMANLight const& light, GMANPoint const& /*P*/, GMANVector const& towardLight,
-                         RtFloat distance) const override {
+                         GMANVector const& Ng, RtFloat distance) const override {
     Record& record = (phase_ == Phase::kDiffuse) ? diffuseRecord_ : specularRecord_;
+    record.ng = Ng;
     if (light.getType() == GMAN_LIGHT_POINT) {
       record.pointTowardLight = towardLight;
       record.pointDistance = distance;
@@ -117,6 +124,34 @@ RecordingOccluder checkScaledByTransmission(GMANSurfaceEnv& env, GMANVector cons
         label + ": specular() scales the baseline per channel");
 
   return occluder;
+}
+
+// check 4: occludedContribution passes Ng, not N. env.N and env.Ng are set
+// to two different unit vectors here; diffuse() is called with the same
+// vector env.N holds, not env.Ng, so a call recording env.Ng cannot be
+// mistaken for a caller that simply passed diffuse() its own Ng.
+void checkOccluderReceivesNg() {
+  GMANLight point(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, 5.0f), GMANVector());
+
+  GMANSurfaceEnv env;
+  env.P = GMANPoint(0.0f, 0.0f, 0.0f);
+  env.lights = {&point};
+  env.N = GMANNormal(0.0f, 0.0f, 1.0f);
+  env.Ng = GMANNormal(1.0f, 0.0f, 0.0f);
+
+  RecordingOccluder occluder(GMANColor(1.0f, 1.0f, 1.0f));
+  env.occluder = &occluder;
+
+  GMANVector const n(env.N.getX(), env.N.getY(), env.N.getZ());
+  env.diffuse(n);
+
+  RecordingOccluder::Record const& record = occluder.diffuseRecord();
+  check(std::fabs(record.ng.getX() - env.Ng.getX()) <= kTol && std::fabs(record.ng.getY() - env.Ng.getY()) <= kTol &&
+            std::fabs(record.ng.getZ() - env.Ng.getZ()) <= kTol,
+        "check 4: occludedContribution's transmission() call receives env.Ng");
+  check(std::fabs(record.ng.getX() - env.N.getX()) > kTol || std::fabs(record.ng.getY() - env.N.getY()) > kTol ||
+            std::fabs(record.ng.getZ() - env.N.getZ()) > kTol,
+        "check 4: the received normal differs from env.N -- N and Ng were set apart for this reason");
 }
 
 } // namespace
@@ -181,6 +216,8 @@ int main() {
             std::fabs(specularRecord.pointTowardLight.getY() - expectedTowardLight.getY()) <= kTol &&
             std::fabs(specularRecord.pointTowardLight.getZ() - expectedTowardLight.getZ()) <= kTol,
         "point light: specular()'s transmission() call receives a unit towardLight");
+
+  checkOccluderReceivesNg();
 
   return checkSummary(
       "GMANSurfaceEnv's occlusion hook: diffuse()/specular() consult it per channel, ambient() does not");
