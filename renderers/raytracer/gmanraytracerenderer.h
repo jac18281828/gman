@@ -105,8 +105,11 @@ private:
   RayHit nearestHit(GMANRay const& ray);
 
   // Traces, shades and stores one sample -- render()'s per-sample body.
-  void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, RtFloat rasterX, RtFloat rasterY,
-                   int sampleX, int sampleY);
+  // background is the sample buffer's own seed colour (frameBuffer's
+  // corner pixel), what remains after every layer's own transmission
+  // composites over.
+  void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
+                   RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY);
 
 public:
   GMANRaytraceRenderer(); // default constructor

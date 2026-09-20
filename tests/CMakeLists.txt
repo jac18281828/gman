@@ -1125,6 +1125,25 @@ set_tests_properties(rayoccluder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R-transparency proof, check 5: the composite loop's own layer cap, built
+# from the plugin's own sources for the same reason as gman_raysphere
+# above; carries raydepth's own ENVIRONMENT for the same reason too.
+add_executable(gman_compositelayercap compositelayercap_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
+target_link_libraries(gman_compositelayercap PRIVATE gman_core gman_internal_headers)
+target_include_directories(gman_compositelayercap PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME compositelayercap COMMAND gman_compositelayercap)
+set_tests_properties(compositelayercap PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # `gman -r gmanraytracer` renders tests/rib/r4_raytracer.rib to a round,
 # plastic-shaded sphere matching a checked-in golden image and differing
 # from the z-buffer's own render of the same scene. Registered only when
@@ -1222,6 +1241,28 @@ if(GMAN_BUILD_RAYTRACER)
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_SHADOWRENDER_WORKDIR}")
   set_tests_properties(shadowrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
+  # R-transparency proof, checks 2-3: tests/rib/transparency_composite.rib
+  # -- a semi-transparent square over a larger opaque one -- matches a
+  # checked-in golden, and its centre pixel holds two further relations
+  # against transparency_front_alone.rib, transparency_front_opaque.rib
+  # and transparency_back_alone.rib. See transparencyrender_test.cpp's own
+  # comment.
+  add_executable(gman_transparencyrender transparencyrender_test.cpp)
+  target_link_libraries(gman_transparencyrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_transparencyrender gman_raytracer)
+
+  set(GMAN_TRANSPARENCYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/transparencyrender-run")
+  file(MAKE_DIRECTORY "${GMAN_TRANSPARENCYRENDER_WORKDIR}")
+
+  add_test(NAME transparencyrender
+    COMMAND gman_transparencyrender $<TARGET_FILE:gman>
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_TRANSPARENCYRENDER_WORKDIR}")
+  set_tests_properties(transparencyrender PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)

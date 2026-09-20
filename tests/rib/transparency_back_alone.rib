@@ -1,0 +1,21 @@
+## R-transparency proof, check 2: the larger back square alone, behind
+## where the front square would sit -- its centre pixel is check 2's
+## other reference value. Not third-party.
+Display "transparency_back_alone.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [40]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.1]
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
+	"from" [5 0 -5] "to" [0 0 0]
+Sides 2
+Surface "matte" "Ka" [0.1] "Kd" [0.9]
+
+AttributeBegin
+	Color [0.2 0.3 0.9]
+	Opacity [1 1 1]
+	Polygon "P" [-1.2 -1.2 0  1.2 -1.2 0  1.2 1.2 0  -1.2 1.2 0]
+AttributeEnd
+WorldEnd

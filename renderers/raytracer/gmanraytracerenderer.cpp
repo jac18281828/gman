@@ -47,6 +47,13 @@
 constexpr RtFloat kSelfShadowBiasScale = (RtFloat)1.0e-2;
 constexpr RtFloat kSelfShadowBiasFloor = (RtFloat)1.0e-6;
 
+// The composite loop's own stop conditions: a transmission below this in
+// every channel is invisible in an 8-bit image, and a stack deeper than
+// this many surfaces bounds a pathological scene rather than tracing it
+// forever.
+constexpr RtFloat kTransmissionCutoff = (RtFloat)(1.0 / 255.0);
+constexpr int kMaxCompositeLayers = 16;
+
 namespace {
 
 // The gman::SurfacePoint a ray hit implies: P and N/Ng already camera
@@ -95,6 +102,31 @@ bool walkWorldManager(GMANWorldManager& worldManager, GMANRay const& ray, bool s
   return found;
 }
 
+// Channel-wise product: how an attenuation composes with a colour or with
+// another attenuation throughout this file.
+GMANColor multiplyChannels(GMANColor const& a, GMANColor const& b) {
+  return GMANColor(a.getRed() * b.getRed(), a.getGreen() * b.getGreen(), a.getBlue() * b.getBlue());
+}
+
+// 1 - c per channel: what a surface of opacity c leaves for whatever lies
+// behind it.
+GMANColor oneMinus(GMANColor const& c) { return GMANColor(1.0f - c.getRed(), 1.0f - c.getGreen(), 1.0f - c.getBlue()); }
+
+// True once transmission is invisible in an 8-bit image on every channel.
+bool transmissionNegligible(GMANColor const& transmission) {
+  return transmission.getRed() < kTransmissionCutoff && transmission.getGreen() < kTransmissionCutoff &&
+         transmission.getBlue() < kTransmissionCutoff;
+}
+
+// The bias a ray continuing past hitPoint applies to its own tmin -- the
+// shadow ray below and the composite loop's next ray share this, one rule
+// for "past this hit" (see kSelfShadowBiasScale/kSelfShadowBiasFloor).
+RtFloat selfShadowBias(GMANPoint const& hitPoint) {
+  RtFloat const magnitude =
+      GMANMax(GMANMax(std::fabs(hitPoint.getX()), std::fabs(hitPoint.getY())), std::fabs(hitPoint.getZ()));
+  return GMANMax(kSelfShadowBiasScale * magnitude, kSelfShadowBiasFloor);
+}
+
 } // namespace
 
 GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
@@ -129,20 +161,43 @@ GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray
   return result;
 }
 
-void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, RtFloat rasterX,
-                                       RtFloat rasterY, int sampleX, int sampleY) {
-  GMANRay const ray = viewingSys->cameraRay(rasterX, rasterY);
-  RayHit const nearest = nearestHit(ray);
-  if (nearest.appearance == nullptr) {
+void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld,
+                                       GMANColor const& background, RtFloat rasterX, RtFloat rasterY, int sampleX,
+                                       int sampleY) {
+  GMANRay ray = viewingSys->cameraRay(rasterX, rasterY);
+  RayHit hit = nearestHit(ray);
+  if (hit.appearance == nullptr) {
     return;
   }
 
-  gman::Shading const shading =
-      gman::shade(*nearest.appearance, hitSurfacePoint(ray, nearest.hit), cameraToWorld, &occluder);
-
   // Camera-space z of the hit point (see getDepth's own comment on why
-  // this differs from the z-buffer's post-projection depth).
-  sampleBuffer->zTestAndSet(sampleX, sampleY, nearest.hit.point.getZ(), shading.Ci);
+  // this differs from the z-buffer's post-projection depth). The first
+  // hit owns the sample's depth even when it is only partly opaque:
+  // getDepth answers "what is nearest", not "what is opaque".
+  RtFloat const sampleDepth = hit.hit.point.getZ();
+
+  // Front-to-back composite, the RISpec's own "over": colour accumulates
+  // what each layer contributes through everything already crossed,
+  // transmission shrinks by that layer's own opacity. Every shipped
+  // shader's Ci already carries its own Os factor, so no second Oi
+  // multiplies the running colour here.
+  GMANColor accumulated(0.0f, 0.0f, 0.0f);
+  GMANColor transmission(1.0f, 1.0f, 1.0f);
+
+  for (int layer = 0; layer < kMaxCompositeLayers && hit.appearance != nullptr; ++layer) {
+    gman::Shading const shading = gman::shade(*hit.appearance, hitSurfacePoint(ray, hit.hit), cameraToWorld, &occluder);
+    accumulated += multiplyChannels(transmission, shading.Ci);
+    transmission = multiplyChannels(transmission, oneMinus(shading.Oi));
+    if (transmissionNegligible(transmission)) {
+      break;
+    }
+
+    ray = GMANRay(hit.hit.point, ray.getDirection(), selfShadowBias(hit.hit.point), RI_INFINITY);
+    hit = nearestHit(ray);
+  }
+
+  accumulated += multiplyChannels(transmission, background);
+  sampleBuffer->zTestAndSet(sampleX, sampleY, sampleDepth, accumulated);
 }
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
@@ -162,8 +217,10 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
   // Every sample starts at the frame's background colour and infinite
   // depth, so an uncovered sample resolves to background rather than to
   // indeterminate or black; frameBuffer is already erased to background
-  // at construction.
-  sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, frameBuffer->getPixel(0, 0)));
+  // at construction. shadeSample composites the same colour under
+  // whatever transmission a sample's own layers leave.
+  GMANColor const background = frameBuffer->getPixel(0, 0);
+  sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, background));
 
   GMANMatrix4 const& cameraToWorld = options.getCameraToWorld();
 
@@ -180,7 +237,7 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
           int const sampleY = py * ysamples + subY;
           RtFloat const rasterX = gman::sampleCentre(raster.rxmin, sampleX, xsamples);
           RtFloat const rasterY = gman::sampleCentre(raster.rymin, sampleY, ysamples);
-          shadeSample(viewingSys, cameraToWorld, rasterX, rasterY, sampleX, sampleY);
+          shadeSample(viewingSys, cameraToWorld, background, rasterX, rasterY, sampleX, sampleY);
         }
       }
     }
