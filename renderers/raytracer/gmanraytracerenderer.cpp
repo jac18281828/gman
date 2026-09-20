@@ -77,12 +77,11 @@ gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   return point;
 }
 
-// Walks worldManager for a ray-primitive hit against ray, shared by
-// nearestHit (every primitive, keeping the nearest) and
-// GMANRayOccluder::transmission (the first hit, since any one blocks).
-// stopAtFirst selects which; moves worldManager's shared getFirst/getNext
-// cursor either way.
-bool walkWorldManager(GMANWorldManager& worldManager, GMANRay const& ray, bool stopAtFirst, GMANHit& hit,
+// Finds the nearest ray-primitive hit against ray, moving worldManager's
+// shared getFirst/getNext cursor. Shared by nearestHit and
+// GMANRayOccluder::transmission, each of which walks past its own nearest
+// hit in turn to advance along the ray.
+bool walkWorldManager(GMANWorldManager& worldManager, GMANRay const& ray, GMANHit& hit,
                       GMANRayInterface const*& hitPrimitive) {
   bool found = false;
   GMANPrimitive* primitive = worldManager.getFirst();
@@ -93,9 +92,6 @@ bool walkWorldManager(GMANWorldManager& worldManager, GMANRay const& ray, bool s
       hit = candidate;
       hitPrimitive = rayPrimitive;
       found = true;
-      if (stopAtFirst) {
-        return true;
-      }
     }
     primitive = worldManager.getNext();
   }
@@ -148,7 +144,7 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
     GMANRay const shadowRay(origin, towardLight, bias, remaining);
     GMANHit hit;
     GMANRayInterface const* hitPrimitive = nullptr;
-    if (!walkWorldManager(worldManager, shadowRay, /*stopAtFirst=*/false, hit, hitPrimitive)) {
+    if (!walkWorldManager(worldManager, shadowRay, hit, hitPrimitive)) {
       break;
     }
     transmission = multiplyChannels(transmission, oneMinus(hitPrimitive->getAppearance().Os));
@@ -175,7 +171,7 @@ GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
 GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray) {
   RayHit result;
   GMANRayInterface const* hitPrimitive = nullptr;
-  if (walkWorldManager(worldManager, ray, /*stopAtFirst=*/false, result.hit, hitPrimitive)) {
+  if (walkWorldManager(worldManager, ray, result.hit, hitPrimitive)) {
     result.appearance = &hitPrimitive->getAppearance();
   }
   return result;
