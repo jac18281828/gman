@@ -996,6 +996,15 @@ set_tests_properties(threadcontainment PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# tolower/toupper are undefined for a byte above 127 unless the argument is
+# cast through unsigned char first. See tests/tolowerscan_test.cpp.
+add_executable(gman_tolowerscan tolowerscan_test.cpp)
+add_test(NAME tolowerscan
+  COMMAND gman_tolowerscan "${CMAKE_SOURCE_DIR}/libgman")
+set_tests_properties(tolowerscan PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # gman::gammaCorrected: identity at gain 1/gamma 1 (no golden image moves), the
 # pow(gain * channel, 1/gamma) shape, and the sub-byte precision case the
 # deleted byte lookup table could never produce.

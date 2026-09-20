@@ -1,0 +1,22 @@
+# A declared array size between INT_MAX and LONG_MAX. is_int accepts it --
+# it fits in a long and is positive -- but gman::InlineParse::get_size must
+# still refuse it with RIE_RANGE rather than let static_cast<int> turn it
+# negative. Declare alone only adds to the dictionary and would exit 0; the
+# crash (today, an uncaught std::bad_alloc, SIGABRT) happens where a request
+# *uses* the token and GMANParameterList sizes an allocation from the
+# resulting negative quantity, so this fixture uses "big" the way
+# tests/rib/malformed/declare_array_overflow.rib uses "hugearray".
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Declare "big" "constant float[3000000000]"
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "plastic" "big" [1.0]
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

@@ -21,12 +21,14 @@
 /*
  * A RIB integer narrows twice on its way from text to RtInt: strtol in
  * GMANRIBTokenize::parseNum, then the implicit long-to-RtInt conversion in
- * GMANRIBParse::nextInt and GMANRIBParse::TokenVector::toRtIntVector. Each
- * fixture here proves one of those narrowings raises RIE_RANGE instead of
- * silently truncating.
+ * GMANRIBParse::nextInt and GMANRIBParse::TokenVector::toRtIntVector.
+ * gman::InlineParse::get_size narrows a Declare array size the same way.
+ * Each fixture here proves one of those narrowings raises RIE_RANGE
+ * instead of silently truncating or, for the Declare case, aborting on an
+ * uncaught std::bad_alloc.
  *
  * tests/ribmalformed_test.cpp's own harness only asserts a fixture neither
- * hangs nor crashes; every fixture below already satisfies that bar before
+ * hangs nor crashes; checks 1-3's fixtures already satisfy that bar before
  * the fix, silently and with exit 0, so it would prove nothing there. This
  * file borrows tests/paramclamp_test.cpp's runCapturingOutput instead,
  * asserting both the exit status and the exact error text.
@@ -116,13 +118,14 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string dir = argv[2];
 
-  // Checks 1, 2 and 3: each fixture's overflowing value must be refused
-  // with RIE_RANGE, and the run must exit with failure rather than
-  // rendering a truncated result.
+  // Checks 1, 2, 3 and 4: each fixture's overflowing value must be
+  // refused with RIE_RANGE, and the run must exit with failure rather
+  // than rendering a truncated result or, for check 4, crashing.
   const char* rangeFixtures[] = {
       "sides_overflow.rib",
       "generalpolygon_nverts_overflow.rib",
       "clipping_literal_overflow.rib",
+      "declare_array_size_overflow.rib",
   };
 
   for (const char* fixture : rangeFixtures) {

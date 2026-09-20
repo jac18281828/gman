@@ -21,8 +21,11 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+#include <cctype>
 #include <cerrno>
 #include <cstdlib>
+#include <limits>
+#include <string>
 
 #include "gmaninlineparse.h"
 
@@ -220,11 +223,23 @@ GMANTokenEntry::TokenType InlineParse::get_type(std::string str) {
   return GMANTokenEntry::INTEGER;
 }
 
-int InlineParse::get_size(std::string str) { return static_cast<int>(strtol(str.c_str(), nullptr, 10)); }
+// is_int has already rejected a non-digit string, an ERANGE (beyond long)
+// value and a non-positive one; this is the one narrowing left, to RtInt.
+int InlineParse::get_size(std::string str) {
+  const long value = strtol(str.c_str(), nullptr, 10);
+  if (value > std::numeric_limits<RtInt>::max()) {
+    GMANError error(RIE_RANGE, RIE_ERROR,
+                    ("InlineParse: declared array size " + str + " exceeds RtInt's limit of " +
+                     std::to_string(std::numeric_limits<RtInt>::max()))
+                        .c_str());
+    throw error;
+  }
+  return static_cast<int>(value);
+}
 
 RtVoid InlineParse::lc(std::string& str) {
   for (unsigned int i = 0; i < str.length(); i++) {
-    str[i] = tolower(str[i]);
+    str[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(str[i])));
   }
 }
 
