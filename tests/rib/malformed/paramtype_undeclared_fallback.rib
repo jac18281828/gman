@@ -1,0 +1,18 @@
+# A token never declared by RiDeclare or an inline declaration.
+# GMANDictionary::getTokenId throws RIE_BADTOKEN; the parser must fall back
+# to the float path rather than let that abort the request --
+# GMANParameterList already treats an unresolvable token as "skip this
+# parameter." Baseline behaviour recorded against the pre-fix binary: exits
+# 0, no diagnostic.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Surface "plastic" "nosuchtoken" [4]
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

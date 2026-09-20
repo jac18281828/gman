@@ -1,0 +1,18 @@
+# The positive case matching paramtype_declared_int_float_literal.rib: a
+# token declared uniform integer given an integer literal parses cleanly
+# and emits no diagnostic. tests/paramlistdeclaredtype_test.cpp also drives
+# this fixture in-process, through its own GMANRenderManImpl subclass, to
+# read the value RiSurfaceV actually received back as RtInt.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Declare "myint" "uniform integer"
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Surface "plastic" "myint" [4]
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

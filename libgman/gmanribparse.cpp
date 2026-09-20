@@ -35,6 +35,7 @@
 
 #include <zlib.h>
 
+#include "gmandictionary.h"
 #include "gmanlog.h"
 #include "gmanribparse.h"
 #include "ri.h"
@@ -1969,6 +1970,17 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
     return (RtPointer)data;
   };
 
+  // Same ownership as pushFloatValue, through intStorage instead: a
+  // parameter declared INTEGER must reach GMANParameterList's (RtInt*) read
+  // as RtInt, not as RtFloat bits reinterpreted.
+  auto pushIntValue = [this](std::vector<RtInt> values) -> RtPointer {
+    const unsigned int count = (unsigned int)values.size();
+    pendingParamValues.push_back({nullptr, false, count, {}, std::move(values)});
+    RtInt* data = pendingParamValues.back().intStorage.data();
+    pendingParamValues.back().value = (RtPointer)data;
+    return (RtPointer)data;
+  };
+
   while (true) {
     const GMANToken& tok = peekToken();
     if (tok.getType() != GMANToken::STRING) {
@@ -1987,6 +1999,20 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
     pendingParamKeys.push_back(duplicateCString(keyStr));
     char* key = pendingParamKeys.back().get();
 
+    // Both sides of the Ri*V boundary must agree on a parameter's type, and
+    // the dictionary is the only place that type lives -- resolved once per
+    // parameter, ahead of the value, so the array, scalar-integer and
+    // scalar-real branches below cannot answer differently for the same
+    // key. An undeclared token -- getTokenId throws RIE_BADTOKEN -- falls
+    // back to the float path; GMANParameterList already treats an unknown
+    // token as "skip this parameter," so the request must not abort here.
+    bool isDeclaredInteger = false;
+    try {
+      const GMANTokenId tid = renderMan.getDictionary().getTokenId(keyStr);
+      isDeclaredInteger = renderMan.getDictionary().getType(tid) == GMANTokenEntry::INTEGER;
+    } catch (GMANError&) {
+    }
+
     const GMANToken& lookAhead = peekToken();
     if (lookAhead.getType() == GMANToken::LEFT_BRACKET) {
       GMANRIBParse::TokenVector tokenVector = parseArray();
@@ -1996,16 +2022,22 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
         RtPointer value = (RtPointer)tokenVector.toRtTokenArray();
         paramMap[key] = {value, count};
         pendingParamValues.push_back({value, true, count, {}, {}});
+      } else if (isDeclaredInteger) {
+        RtPointer value = pushIntValue(tokenVector.toRtIntVector());
+        paramMap[key] = {value, count};
       } else {
         RtPointer value = pushFloatValue(tokenVector.toRtFloatVector());
         paramMap[key] = {value, count};
       }
     } else if (lookAhead.getType() == GMANToken::LONGINT) {
       GMANToken token = nextToken();
-      RtPointer value = pushFloatValue({(RtFloat)token.getInt()});
+      RtPointer value = isDeclaredInteger ? pushIntValue({token.getInt()}) : pushFloatValue({(RtFloat)token.getInt()});
       paramMap[key] = {value, 1};
     } else if (lookAhead.getType() == GMANToken::REAL) {
       GMANToken token = nextToken();
+      if (isDeclaredInteger) {
+        throw(GMANError(RIE_SYNTAX, RIE_ERROR, "Non-integer in array."));
+      }
       RtPointer value = pushFloatValue({token.getReal()});
       paramMap[key] = {value, 1};
     } else {

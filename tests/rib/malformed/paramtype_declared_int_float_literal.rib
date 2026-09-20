@@ -1,0 +1,18 @@
+# A token declared uniform integer, given a float literal in an array of
+# one. Before the parser consulted the declared type, this stored the float
+# bits and read back as garbage instead of failing; it now must raise
+# RIE_SYNTAX ("Non-integer in array.") the same way an out-of-place float
+# already does inside a genuine integer array.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Declare "myint" "uniform integer"
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Surface "plastic" "myint" [4.0]
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

@@ -1,0 +1,16 @@
+# The common case in every RIB ever written: an integer literal in a
+# float-declared parameter ("Kd" [1]), and a mixed int/real array in one
+# ("Ks" [0.25 1 1 8]), both still coerced through toRtFloatVector unchanged
+# now that the parser consults the declared type for the INTEGER case only.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Surface "plastic" "Kd" [1] "Ks" [0.25 1 1 8]
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

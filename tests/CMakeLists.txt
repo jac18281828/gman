@@ -534,6 +534,23 @@ set_tests_properties(geometryparamclamp PROPERTIES
   LABELS render
   TIMEOUT 60)
 
+# A declared-integer parameter used to be stored as RtFloat and read back
+# through an (RtInt*) cast -- float bits reinterpreted as an integer, not
+# precision loss. See tests/paramlistdeclaredtype_test.cpp; its own final
+# check drives GMANRIBParse in process (RiBegin dlopens the default
+# renderer by bare name, hence the same LD_LIBRARY_PATH/DYLD_LIBRARY_PATH
+# as tests/basicstate.c).
+add_executable(gman_paramlistdeclaredtype paramlistdeclaredtype_test.cpp)
+target_link_libraries(gman_paramlistdeclaredtype PRIVATE gman_core)
+
+add_test(NAME paramlistdeclaredtype
+  COMMAND gman_paramlistdeclaredtype $<TARGET_FILE:gman>
+                                      "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
+set_tests_properties(paramlistdeclaredtype PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 60)
+
 # Bilinear and bicubic Patch rasterization. See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
 target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)
