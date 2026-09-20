@@ -34,18 +34,17 @@
 #include "gmanworldmanager.h"
 #include "ri.h"
 
-// The shadow ray's tmin, scaled to the hit point's own coordinate
-// magnitude rather than fixed. A self-hit's surviving root is
-// approximately the hit point's own floating-point error divided by N.L,
-// so it grows both toward a grazing angle and with that magnitude.
-// kSelfShadowBiasScale must clear that quantity at every angle and
-// magnitude this renderer meets, and still stay below the smallest gap
-// its own geometry ever puts between two surfaces, or a real blocker
-// close to what it shadows stops registering. kSelfShadowBiasFloor keeps
-// a hit point at or near the origin, where the scaled term vanishes, a
-// positive tmin.
-constexpr RtFloat kSelfShadowBiasScale = (RtFloat)1.0e-2;
-constexpr RtFloat kSelfShadowBiasFloor = (RtFloat)1.0e-6;
+// The distance a ray continuing past a hit displaces its own origin,
+// along the surface's geometric normal, scaled to the hit point's own
+// coordinate magnitude rather than fixed. The offset must clear a
+// self-hit's surviving root -- which grows both toward a grazing angle
+// and with that magnitude -- while staying far under the smallest gap
+// this renderer's own geometry ever puts between two surfaces, or a real
+// blocker close to what it shadows stops registering.
+// kSelfShadowOffsetFloor keeps a hit point at or near the origin, where
+// the scaled term vanishes, a positive offset.
+constexpr RtFloat kSelfShadowOffsetScale = (RtFloat)1.0e-6;
+constexpr RtFloat kSelfShadowOffsetFloor = (RtFloat)1.0e-9;
 
 // The composite loop's own stop conditions: a transmission below this in
 // every channel is invisible in an 8-bit image, and a stack deeper than
@@ -114,34 +113,56 @@ bool transmissionNegligible(GMANColor const& transmission) {
          transmission.getBlue() < kTransmissionCutoff;
 }
 
-// The bias a ray continuing past hitPoint applies to its own tmin -- the
-// shadow ray below and the composite loop's next ray share this, one rule
-// for "past this hit" (see kSelfShadowBiasScale/kSelfShadowBiasFloor).
-RtFloat selfShadowBias(GMANPoint const& hitPoint) {
+// The self-shadow offset's own magnitude at hitPoint (see
+// kSelfShadowOffsetScale/kSelfShadowOffsetFloor); offsetOrigin below
+// scales Ng by this and orients the result, and transmission's own loop
+// guard compares a ray's remaining interval against it directly.
+RtFloat selfShadowOffsetMagnitude(GMANPoint const& hitPoint) {
   RtFloat const magnitude =
       GMANMax(GMANMax(std::fabs(hitPoint.getX()), std::fabs(hitPoint.getY())), std::fabs(hitPoint.getZ()));
-  return GMANMax(kSelfShadowBiasScale * magnitude, kSelfShadowBiasFloor);
+  return GMANMax(kSelfShadowOffsetScale * magnitude, kSelfShadowOffsetFloor);
+}
+
+// hitPoint displaced along Ng by the self-shadow offset, oriented toward
+// reference by the sign of Ng . reference -- Ng carries no orientation
+// guarantee of its own, and an offset on the wrong side would place the
+// new origin inside the surface. reference is towardLight for a shadow
+// ray (the offset lands toward the light) and the incoming ray's own
+// direction for the composite loop (the offset lands on the far side of
+// the surface the ray is continuing through). Both Ng and reference are
+// unit length at every call site below.
+GMANPoint offsetOrigin(GMANPoint const& hitPoint, GMANVector const& Ng, GMANVector const& reference) {
+  RtFloat const magnitude = selfShadowOffsetMagnitude(hitPoint);
+  RtFloat const offset = (Ng.dot(reference) < (RtFloat)0.0) ? -magnitude : magnitude;
+  return GMANPoint(hitPoint.getX() + Ng.getX() * offset, hitPoint.getY() + Ng.getY() * offset,
+                   hitPoint.getZ() + Ng.getZ() * offset);
 }
 
 } // namespace
 
 GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
-                                        GMANVector const& /*Ng*/, RtFloat distance) const {
+                                        GMANVector const& Ng, RtFloat distance) const {
   GMANColor transmission(1.0f, 1.0f, 1.0f);
-  GMANPoint origin = P;
+  GMANPoint origin = offsetOrigin(P, Ng, towardLight);
   RtFloat remaining = distance;
 
   // A closed solid contributes one (1 - Os) factor per surface the shadow
   // ray crosses, not per blocker: walkWorldManager keeps one hit per call,
   // so this walks the interval itself, moving origin/remaining past each
   // surface found. This matches the composite loop below, which likewise
-  // crosses both shells of a sphere the ray enters.
-  while (true) {
-    RtFloat const bias = selfShadowBias(origin);
-    if (bias >= remaining) {
+  // crosses both shells of a sphere the ray enters. The cap bounds a
+  // stack deeper than it, not an infinite walk: offsetOrigin always
+  // advances toward reference regardless of which surface's own normal
+  // produced it, so a zero-opacity surface stack never decays
+  // transmission enough to break the loop on its own, and a pathological
+  // stack deeper than the cap would otherwise be walked in full.
+  for (int layer = 0; layer < kMaxCompositeLayers; ++layer) {
+    // A light nearer than the offset itself still has to end the walk,
+    // though at this offset's scale that is effectively never.
+    if (selfShadowOffsetMagnitude(origin) >= remaining) {
       break;
     }
-    GMANRay const shadowRay(origin, towardLight, bias, remaining);
+    GMANRay const shadowRay(origin, towardLight, RI_EPSILON, remaining);
     GMANHit hit;
     GMANRayInterface const* hitPrimitive = nullptr;
     if (!walkWorldManager(worldManager, shadowRay, hit, hitPrimitive)) {
@@ -151,7 +172,10 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
     if (transmissionNegligible(transmission)) {
       return GMANColor(0.0f, 0.0f, 0.0f);
     }
-    origin = hit.point;
+    // The surface this iteration is leaving, not the Ng the caller
+    // passed: that one belongs to the first hit only, a different
+    // surface once the walk has crossed it.
+    origin = offsetOrigin(hit.point, hit.normal, towardLight);
     remaining -= hit.t;
   }
   return transmission;
@@ -208,7 +232,12 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
       break;
     }
 
-    ray = GMANRay(hit.hit.point, ray.getDirection(), selfShadowBias(hit.hit.point), RI_INFINITY);
+    // Offset along Ng rather than the ray direction: offsetting along the
+    // direction gives a perpendicular clearance of offset * |Ng . D|,
+    // which vanishes at a grazing hit and lets a silhouette-grazing
+    // surface composite itself repeatedly.
+    GMANPoint const origin = offsetOrigin(hit.hit.point, hit.hit.normal, ray.getDirection());
+    ray = GMANRay(origin, ray.getDirection(), RI_EPSILON, RI_INFINITY);
     hit = nearestHit(ray);
   }
 

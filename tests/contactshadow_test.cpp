@@ -22,21 +22,23 @@
  * R7 proof, §8 check 1: contactshadow.rib -- a thin vertical blocker
  * standing on a horizontal floor, its base at gap 0.001, lit at
  * near-grazing incidence -- against contactshadow_noblocker.rib, the same
- * floor alone. Row 300, columns 400-438 is the receiver strip immediately
- * beside the blocker's base, out to (and safely inside) the width the old
- * magnitude-scaled bias leaked: at the base commit every pixel there
- * matches contactshadow_noblocker.rib's render exactly (a floor point the
- * old bias treated as unshadowed reads no differently once the blocker is
- * there at all), which is what makes this check non-vacuous. A fixed
- * offset origin makes the shadow ray see the blocker regardless of that
- * bias, so the strip must darken once the fix lands.
+ * floor alone. At the base commit, the old magnitude-scaled bias leaks
+ * unshadowed all the way from the blocker's own base out past the
+ * receiver's true umbra edge; row 300, columns 400-415 sit inside both --
+ * within the leak (every pixel there matches
+ * contactshadow_noblocker.rib's render exactly at the base commit, which
+ * is what makes this check non-vacuous) and within the true shadow a
+ * correct contact must produce. A fixed offset origin makes the shadow
+ * ray see the blocker regardless of that bias, so the strip must darken
+ * once the fix lands.
  *
  * fov 6 degrees overrides AGENTS.md's default camera for this fixture, on
  * r5b_quadrics.rib's own precedent: the leaked band's width in pixels is
  * 1e-2*sinTheta*Yres/(2*tan(fov/2)); at Yres 480 and sinTheta 0.9982 (the
  * light's 86.57 degree incidence off the floor's normal) that is about 46
- * px, comfortably inside which columns 400-438 (39 px) sit clear of the
- * antialiased edges on either side.
+ * px, comfortably inside which columns 400-415 (16 px) sit clear of the
+ * antialiased edges on every side, including the true umbra edge the fix
+ * itself reveals near column 419.
  */
 
 #include <cmath>
@@ -55,7 +57,7 @@ namespace {
 
 constexpr int kStripRow = 300;
 constexpr int kStripColFirst = 400;
-constexpr int kStripColLast = 438; // inclusive; 39 columns
+constexpr int kStripColLast = 415; // inclusive; 16 columns
 
 int runGman(std::string const& command) {
   int status = std::system(command.c_str());

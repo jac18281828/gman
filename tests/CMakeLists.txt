@@ -1240,6 +1240,78 @@ set_tests_properties(compositelayercap PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R7 proof, §8 check 7: GMANRayOccluder::transmission's own iteration cap,
+# built from the plugin's own sources for the same reason as
+# gman_raysphere above; carries raydepth's own ENVIRONMENT for the same
+# reason too. See coincidenttransmission_test.cpp's own comment.
+add_executable(gman_coincidenttransmission coincidenttransmission_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
+target_link_libraries(gman_coincidenttransmission PRIVATE gman_core gman_internal_headers)
+target_include_directories(gman_coincidenttransmission PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME coincidenttransmission COMMAND gman_coincidenttransmission)
+set_tests_properties(coincidenttransmission PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# R7 proof, §8 check 6: two close, camera-facing transparent disks, built
+# from the plugin's own sources for the same reason as gman_raysphere
+# above; carries raydepth's own ENVIRONMENT for the same reason too. See
+# closetransparentstack_test.cpp's own comment.
+add_executable(gman_closetransparentstack closetransparentstack_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
+target_link_libraries(gman_closetransparentstack PRIVATE gman_core gman_internal_headers)
+target_include_directories(gman_closetransparentstack PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME closetransparentstack COMMAND gman_closetransparentstack)
+set_tests_properties(closetransparentstack PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# R7 proof, §8 check 8: a grazing transparent hit, built from the plugin's
+# own sources for the same reason as gman_raysphere above; carries
+# raydepth's own ENVIRONMENT for the same reason too. See
+# grazingtransparent_test.cpp's own comment.
+add_executable(gman_grazingtransparent grazingtransparent_test.cpp
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayinterface.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycone.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraycylinder.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraydisk.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayhyperboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayparaboloid.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraypolygon.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraysphere.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanrayobjectmanager.cpp"
+  "${CMAKE_SOURCE_DIR}/renderers/raytracer/gmanraytracerenderer.cpp")
+target_link_libraries(gman_grazingtransparent PRIVATE gman_core gman_internal_headers)
+target_include_directories(gman_grazingtransparent PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME grazingtransparent COMMAND gman_grazingtransparent)
+set_tests_properties(grazingtransparent PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # `gman -r gmanraytracer` renders tests/rib/r4_raytracer.rib to a round,
 # plastic-shaded sphere matching a checked-in golden image and differing
 # from the z-buffer's own render of the same scene. Registered only when
