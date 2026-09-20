@@ -23,11 +23,28 @@
  * distance bounds the shadow ray -- a blocker past it does not shadow,
  * the same blocker short of it does. Sampled densely across a lit sphere's
  * own surface, near-grazing points included, every self-test transmits
- * white: kSelfShadowBiasScale keeps a lit convex surface from shadowing
- * itself, at three scales spanning 1e6:1 -- a fixed bias self-shadows once
- * the scene is large enough, and swallows a genuine blocker once it is
- * small enough, so the self-shadow sweep runs at x1, x1000 and x0.001,
- * and a scaled blocker/receiver pair at x1 and x0.001.
+ * white: kSelfShadowOffsetScale keeps a lit convex surface from shadowing
+ * itself, at three scales spanning 1e6:1 -- an offset scaled to coordinate
+ * magnitude self-shadows once the scene is large enough, and swallows a
+ * genuine blocker once it is small enough, so the self-shadow sweep runs
+ * at x1, x1000 and x0.001, and a scaled blocker/receiver pair at x1 and
+ * x0.001.
+ *
+ * §8 check 3: testSelfShadowAtScale's own sphere is centred at
+ * (0, 0, 10 * scale), not the origin -- decoupling the sphere's position
+ * from its radius. At a sphere centred on the origin, the offset (scaled
+ * to the hit point's own magnitude, which is then approximately the
+ * radius) and GMANRaySphere::intersect's own quadratic-solve error (also
+ * approximately proportional to that magnitude) scale together, leaving
+ * only about an 8x margin between them at a grazing sample -- sometimes
+ * not enough, and this test regressed under exactly that arrangement
+ * before the sphere moved. Moving the centre out to 10x the radius keeps
+ * the offset's own magnitude tied to the centre's distance rather than
+ * the sphere's own size, restoring the margin this check needs to read
+ * zero self-shadowed samples at every scale. testBlockerRelightsAtScale
+ * shades a free point at the camera-space origin with no primitive on it,
+ * so no value of the offset scale changes its result -- moving it to a
+ * non-zero magnitude would not repair that, and it is left as it was.
  */
 
 #include <cmath>
@@ -106,17 +123,27 @@ void testPointLightDistanceBoundsTheShadowRay() {
 // render loop makes, so hit.point carries the same object-space round
 // trip's floating-point error a primary ray's hit does -- not a point
 // placed directly by trigonometry, which would never exercise it. scale
-// multiplies the sphere's own radius and every ray origin, so the sampled
-// hit points carry that scale's coordinate magnitude, the way a scaled
-// RIB scene would.
+// multiplies the sphere's own radius, its distance from the origin and
+// every ray origin, so the sampled hit points carry that scale's
+// coordinate magnitude, the way a scaled RIB scene would.
+//
+// The sphere sits at 10 * scale on the z axis, not at the origin: the
+// offset's own magnitude comes from the hit point's coordinate value,
+// which is the sphere's *distance* from the origin in any realistic
+// scene, not its radius. A sphere centred on the origin conflates the
+// two -- the object's own size is then what both the intersector's
+// numerical precision and the offset scale from, leaving only the
+// difference between kSelfShadowOffsetScale and that precision as this
+// test's margin, which is not the scale-independence this constant
+// promises for a scene shaped like the ones this renderer actually
+// draws.
 void testSelfShadowAtScale(RtFloat scale) {
+  GMANPoint const centre(0.0f, 0.0f, 10.0f * scale);
+
   GMANLinearWorldManager worldManager;
-  // GMANLinearWorldManager owns what it holds and deletes it on
-  // destruction, so sphere is heap-allocated rather than a stack object.
-  GMANRaySphere* sphere = new GMANRaySphere(scale, -scale, scale, 360.0f, GMANParameterList());
-  gman::Appearance opaque;
-  opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
-  sphere->setAppearance(opaque);
+  // sphereAt owns what worldManager holds and deletes it on destruction
+  // (GMANLinearWorldManager's own contract).
+  GMANRaySphere* sphere = sphereAt(scale, centre.getX(), centre.getY(), centre.getZ());
   worldManager.add(sphere);
   GMANRayOccluder const occluder(worldManager);
 
@@ -135,8 +162,9 @@ void testSelfShadowAtScale(RtFloat scale) {
       RtFloat const phi = (RtFloat)pi / (RtFloat)kPhiSteps * (RtFloat)PI;
       GMANVector const dir((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),
                            (RtFloat)std::cos(phi));
-      GMANPoint const origin(dir.getX() * 5.0f * scale, dir.getY() * 5.0f * scale, dir.getZ() * 5.0f * scale);
-      GMANVector const direction(origin, GMANPoint(0.0f, 0.0f, 0.0f));
+      GMANPoint const origin(centre.getX() + dir.getX() * 5.0f * scale, centre.getY() + dir.getY() * 5.0f * scale,
+                             centre.getZ() + dir.getZ() * 5.0f * scale);
+      GMANVector const direction(origin, centre);
       GMANRay const ray(origin, direction);
       GMANHit hit;
       if (!sphere->intersect(ray, hit)) {
