@@ -128,7 +128,8 @@ int main(int argc, char* argv[]) {
   // running colour (which scales every front-surface term alike) cannot
   // cancel out of it.
   for (int c = 0; c < 3; ++c) {
-    double const predicted = 0.4 * (double)channel(frontOpaquePixel, c) + 0.6 * (double)channel(bgPixel, c);
+    double const predicted =
+        predict((double)channel(bgPixel, c), 0.4, (double)channel(frontOpaquePixel, c), (double)channel(bgPixel, c));
     check(withinTolerance(predicted, channel(frontAlonePixel, c)),
           std::string("check 2, ") + channelNames[c] +
               ": front_alone matches 0.4*front_opaque + 0.6*bg within 3 counts");
