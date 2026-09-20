@@ -1266,6 +1266,28 @@ if(GMAN_BUILD_RAYTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+
+  # R-transparency proof, check 4: tests/rib/transparencyshadow_none.rib,
+  # transparencyshadow_one.rib, transparencyshadow_two.rib and
+  # transparencyshadow_opaque.rib share one receiver and one light; the
+  # shadowed pixel reads strictly none > one > two > opaque, each gap
+  # wider than GOLDEN_CHANNEL_TOL. See
+  # transparencyshadowrender_test.cpp's own comment.
+  add_executable(gman_transparencyshadowrender transparencyshadowrender_test.cpp)
+  target_link_libraries(gman_transparencyshadowrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_transparencyshadowrender gman_raytracer)
+
+  set(GMAN_TRANSPARENCYSHADOWRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/transparencyshadowrender-run")
+  file(MAKE_DIRECTORY "${GMAN_TRANSPARENCYSHADOWRENDER_WORKDIR}")
+
+  add_test(NAME transparencyshadowrender
+    COMMAND gman_transparencyshadowrender $<TARGET_FILE:gman>
+                                          "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_TRANSPARENCYSHADOWRENDER_WORKDIR}")
+  set_tests_properties(transparencyshadowrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
 endif()
 
 # Proves both halves of an installed gman. bin/gman renders every

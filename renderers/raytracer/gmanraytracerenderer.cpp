@@ -131,14 +131,32 @@ RtFloat selfShadowBias(GMANPoint const& hitPoint) {
 
 GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
                                         RtFloat distance) const {
-  RtFloat const magnitude = GMANMax(GMANMax(std::fabs(P.getX()), std::fabs(P.getY())), std::fabs(P.getZ()));
-  RtFloat const bias = GMANMax(kSelfShadowBiasScale * magnitude, kSelfShadowBiasFloor);
-  GMANRay const shadowRay(P, towardLight, bias, distance);
+  GMANColor transmission(1.0f, 1.0f, 1.0f);
+  GMANPoint origin = P;
+  RtFloat remaining = distance;
 
-  GMANHit hit;
-  GMANRayInterface const* hitPrimitive = nullptr;
-  bool const blocked = walkWorldManager(worldManager, shadowRay, /*stopAtFirst=*/true, hit, hitPrimitive);
-  return blocked ? GMANColor(0.0f, 0.0f, 0.0f) : GMANColor(1.0f, 1.0f, 1.0f);
+  // Every blocker between P and the light attenuates in turn, not just the
+  // nearest: walkWorldManager keeps one hit per call, so this walks the
+  // interval itself, moving origin/remaining past each blocker found.
+  while (true) {
+    RtFloat const bias = selfShadowBias(origin);
+    if (bias >= remaining) {
+      break;
+    }
+    GMANRay const shadowRay(origin, towardLight, bias, remaining);
+    GMANHit hit;
+    GMANRayInterface const* hitPrimitive = nullptr;
+    if (!walkWorldManager(worldManager, shadowRay, /*stopAtFirst=*/false, hit, hitPrimitive)) {
+      break;
+    }
+    transmission = multiplyChannels(transmission, oneMinus(hitPrimitive->getAppearance().Os));
+    if (transmissionNegligible(transmission)) {
+      return GMANColor(0.0f, 0.0f, 0.0f);
+    }
+    origin = hit.point;
+    remaining -= hit.t;
+  }
+  return transmission;
 }
 
 /*

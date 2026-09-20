@@ -1,0 +1,34 @@
+## R-transparency proof, check 4: two Opacity 0.4 blockers stacked along
+## the light direction -- reads darker than transparencyshadow_one.rib's
+## single blocker (the occluder accumulates over every blocker in the
+## interval, not only the nearest) and lighter than
+## transparencyshadow_opaque.rib. Not third-party.
+Display "transparencyshadow_two.tif" "file" "rgba"
+Format 320 240 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.04]
+LightSource "distantlight" 2 "intensity" [1.45] "lightcolor" [1 1 1]
+	"from" [5 2 -3] "to" [0 0 0]
+Sides 1
+Surface "matte" "Ka" [0.2] "Kd" [0.8]
+
+AttributeBegin
+	Translate 0 0 7
+	Sphere 3 -3 3 360
+AttributeEnd
+
+AttributeBegin
+	Translate 1.8 0.8 3.5
+	Opacity [0.4 0.4 0.4]
+	Sphere 0.6 -0.6 0.6 360
+AttributeEnd
+
+AttributeBegin
+	Translate 2.9356 1.2542 2.8187
+	Opacity [0.4 0.4 0.4]
+	Sphere 0.6 -0.6 0.6 360
+AttributeEnd
+WorldEnd

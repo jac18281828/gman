@@ -53,11 +53,18 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
   return GMANTransform(storage);
 }
 
+// Opaque (Os = white): a bare GMANRayInterface's appearance defaults to
+// black, and the occluder now attenuates by Os rather than by the hit
+// alone, so a blocker meant to fully occlude has to say so.
 GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
   GMANMatrix4 place;
   place.trans(cx, cy, cz);
   GMANTransform const transform = makeTransform(place);
-  return new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+  GMANRaySphere* sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+  gman::Appearance opaque;
+  opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  sphere->setAppearance(opaque);
+  return sphere;
 }
 
 // ---- a point light's own distance bounds the shadow ray ----
@@ -105,6 +112,9 @@ void testSelfShadowAtScale(RtFloat scale) {
   // GMANLinearWorldManager owns what it holds and deletes it on
   // destruction, so sphere is heap-allocated rather than a stack object.
   GMANRaySphere* sphere = new GMANRaySphere(scale, -scale, scale, 360.0f, GMANParameterList());
+  gman::Appearance opaque;
+  opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  sphere->setAppearance(opaque);
   worldManager.add(sphere);
   GMANRayOccluder const occluder(worldManager);
 
