@@ -43,6 +43,13 @@
 // ever puts between two surfaces, or a real blocker close to what it
 // shadows stops registering. kSelfShadowOffsetFloor keeps a hit point at
 // or near the origin, where the scaled term vanishes, a positive offset.
+//
+// The scale keys on the hit point's own distance from the camera-space
+// origin, not on the primitive's extent or the intersector's own
+// rounding-error bound. It tracks a uniformly scaled scene exactly, but
+// not a primitive's own size: geometry small against that distance
+// receives an offset large against itself, and a contact shadow at that
+// scale stops registering.
 constexpr RtFloat kSelfShadowOffsetScale = (RtFloat)3.0e-5;
 constexpr RtFloat kSelfShadowOffsetFloor = (RtFloat)1.0e-9;
 
