@@ -38,12 +38,12 @@
 // along the surface's geometric normal, scaled to the hit point's own
 // coordinate magnitude rather than fixed. The offset must clear a
 // self-hit's surviving root -- which grows both toward a grazing angle
-// and with that magnitude -- while staying far under the smallest gap
-// this renderer's own geometry ever puts between two surfaces, or a real
-// blocker close to what it shadows stops registering.
-// kSelfShadowOffsetFloor keeps a hit point at or near the origin, where
-// the scaled term vanishes, a positive offset.
-constexpr RtFloat kSelfShadowOffsetScale = (RtFloat)1.0e-6;
+// and with that magnitude, worse on a swept quadric than on a sphere --
+// while staying far under the smallest gap this renderer's own geometry
+// ever puts between two surfaces, or a real blocker close to what it
+// shadows stops registering. kSelfShadowOffsetFloor keeps a hit point at
+// or near the origin, where the scaled term vanishes, a positive offset.
+constexpr RtFloat kSelfShadowOffsetScale = (RtFloat)3.0e-5;
 constexpr RtFloat kSelfShadowOffsetFloor = (RtFloat)1.0e-9;
 
 // The composite loop's own stop conditions: a transmission below this in
