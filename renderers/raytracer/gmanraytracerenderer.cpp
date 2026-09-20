@@ -137,11 +137,12 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
     return;
   }
 
-  GMANColor const color = gman::shade(*nearest.appearance, hitSurfacePoint(ray, nearest.hit), cameraToWorld, &occluder);
+  gman::Shading const shading =
+      gman::shade(*nearest.appearance, hitSurfacePoint(ray, nearest.hit), cameraToWorld, &occluder);
 
   // Camera-space z of the hit point (see getDepth's own comment on why
   // this differs from the z-buffer's post-projection depth).
-  sampleBuffer->zTestAndSet(sampleX, sampleY, nearest.hit.point.getZ(), color);
+  sampleBuffer->zTestAndSet(sampleX, sampleY, nearest.hit.point.getZ(), shading.Ci);
 }
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,

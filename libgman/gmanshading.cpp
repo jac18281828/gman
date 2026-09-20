@@ -71,8 +71,8 @@ Appearance appearanceOf(GMANAttributes const& attributes) {
   return appearance;
 }
 
-GMANColor shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
-                Occluder const* occluder) {
+Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
+              Occluder const* occluder) {
   GMANSurfaceEnv env;
   env.Cs = appearance.Cs;
   env.Os = appearance.Os;
@@ -88,7 +88,11 @@ GMANColor shade(Appearance const& appearance, SurfacePoint const& point, GMANMat
   env.lights = appearance.lights;
   env.cameraToWorld = cameraToWorld;
   env.occluder = occluder;
-  return appearance.shader->computeCi(env);
+
+  Shading shading;
+  shading.Ci = appearance.shader->computeCi(env);
+  shading.Oi = appearance.shader->computeOi(env);
+  return shading;
 }
 
 } // namespace gman

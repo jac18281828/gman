@@ -390,7 +390,7 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
 
     const GMANPolygonVertexTexCoord& tc = texCoords[i];
     gman::SurfacePoint const point = vertexSurfacePoint(vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t);
-    vertices[i]->setColor(gman::shade(appearance, point, cameraToWorld));
+    vertices[i]->setColor(gman::shade(appearance, point, cameraToWorld).Ci);
   }
 
   std::vector<GMANPoint> ringPoints(ring.size());
@@ -1278,7 +1278,7 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
       RtFloat s = bilerpCorner(u, v, corners.s1, corners.s2, corners.s3, corners.s4);
       RtFloat texT = bilerpCorner(u, v, corners.t1, corners.t2, corners.t3, corners.t4);
       gman::SurfacePoint const point = vertexSurfacePoint(location, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT);
-      vertex->setColor(gman::shade(appearance, point, cameraToWorld));
+      vertex->setColor(gman::shade(appearance, point, cameraToWorld).Ci);
     }
   }
 

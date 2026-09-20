@@ -76,13 +76,22 @@ struct GMAN_EXPORT SurfacePoint {
   RtFloat t = 0.0;
 };
 
+// What shading a point produces: colour and opacity together, so a
+// front-to-back compositor reads both from one call rather than shading
+// the point twice.
+struct GMAN_EXPORT Shading {
+  GMANColor Ci;
+  GMANColor Oi;
+};
+
 // Fills a GMANSurfaceEnv from appearance and point and returns the
-// shader's Ci. cameraToWorld is the camera's own world-to-camera inverse
-// (GMANOptions::getCameraToWorld) -- an argument rather than a member of
-// Appearance, since it belongs to the camera, not to what a primitive
-// looks like. occluder answers the illuminance loop's "does light reach
-// P?" (gmanocclude.h); a caller that omits it keeps every light visible.
-GMAN_EXPORT GMANColor shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
-                            Occluder const* occluder = nullptr);
+// shader's Ci and Oi. cameraToWorld is the camera's own world-to-camera
+// inverse (GMANOptions::getCameraToWorld) -- an argument rather than a
+// member of Appearance, since it belongs to the camera, not to what a
+// primitive looks like. occluder answers the illuminance loop's "does
+// light reach P?" (gmanocclude.h); a caller that omits it keeps every
+// light visible.
+GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
+                          Occluder const* occluder = nullptr);
 
 } // namespace gman
