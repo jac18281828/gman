@@ -164,7 +164,7 @@ private:
   struct TokVals {
     std::string stringVal;
     RtFloat real{};
-    long longint{};
+    RtInt intVal{};
   } value;
 
 public:
@@ -198,10 +198,10 @@ public:
     value.real = f;
   };
 
-  // long ctor
-  GMANToken(long l) {
+  // int ctor -- the caller has already bounded the value to RtInt's range
+  GMANToken(RtInt i) {
     type = LONGINT;
-    value.longint = l;
+    value.intVal = i;
   };
 
   TokenType getType(RtVoid) const { return type; };
@@ -220,9 +220,9 @@ public:
 
   operator RtFloat() { return getReal(); }
 
-  long getLongInt(RtVoid) const { return value.longint; }
+  RtInt getInt(RtVoid) const { return value.intVal; }
 
-  operator long() { return getLongInt(); };
+  operator long() { return getInt(); };
 };
 
 /*

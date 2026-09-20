@@ -350,7 +350,7 @@ const GMANToken GMANRIBTokenize::parseNum(std::istream& ribFile) {
                           .c_str());
       throw(error);
     }
-    return GMANToken(longIntValue);
+    return GMANToken(static_cast<RtInt>(longIntValue));
   } else {
     char* floatEndPtr;
     float floatValue = strtof(buffer.c_str(), &floatEndPtr);

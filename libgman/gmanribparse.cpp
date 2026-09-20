@@ -232,7 +232,7 @@ RtVoid GMANRIBParse::parseStream(RtVoid) {
       debug("Real token: {:f}", tok.getReal());
       break;
     case GMANToken::LONGINT:
-      debug("Long token: {}", tok.getLongInt());
+      debug("Long token: {}", tok.getInt());
       break;
     case GMANToken::RI_VERSION:
       debug("Keyword token: Version");
@@ -624,7 +624,7 @@ RtFloat GMANRIBParse::nextFloat() {
   if (tok.getType() == GMANToken::REAL) {
     real = tok.getReal();
   } else if (tok.getType() == GMANToken::LONGINT) {
-    real = (float)tok.getLongInt();
+    real = (float)tok.getInt();
   } else {
     GMANError error(RIE_BADFILE, RIE_ERROR, "Expecting float token");
     throw(error);
@@ -641,7 +641,7 @@ RtInt GMANRIBParse::nextInt() {
     throw(error);
   }
 
-  return static_cast<RtInt>(tok.getLongInt());
+  return tok.getInt();
 }
 
 std::string GMANRIBParse::copyStringToken() {
@@ -1962,7 +1962,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
       }
     } else if (lookAhead.getType() == GMANToken::LONGINT) {
       GMANToken token = nextToken();
-      RtPointer value = pushFloatValue({(RtFloat)token.getLongInt()});
+      RtPointer value = pushFloatValue({(RtFloat)token.getInt()});
       paramMap[key] = {value, 1};
     } else if (lookAhead.getType() == GMANToken::REAL) {
       GMANToken token = nextToken();
@@ -2133,7 +2133,7 @@ std::vector<RtInt> GMANRIBParse::TokenVector::toRtIntVector() {
   for (unsigned int i = 0; i < size(); i++) {
     GMANToken tok = (*this)[i];
     if (tok.getType() == GMANToken::LONGINT) {
-      array[i] = static_cast<RtInt>(tok.getLongInt());
+      array[i] = tok.getInt();
     } else {
       throw(GMANError(RIE_SYNTAX, RIE_ERROR, "Non-integer in array."));
     }
@@ -2148,7 +2148,7 @@ std::vector<RtFloat> GMANRIBParse::TokenVector::toRtFloatVector() {
   for (unsigned int i = 0; i < size(); i++) {
     GMANToken tok = (*this)[i];
     if (tok.getType() == GMANToken::LONGINT) {
-      array[i] = (RtFloat)tok.getLongInt();
+      array[i] = (RtFloat)tok.getInt();
     } else if (tok.getType() == GMANToken::REAL) {
       array[i] = tok.getReal();
     } else {
