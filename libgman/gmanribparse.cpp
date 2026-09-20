@@ -1963,7 +1963,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
   // (possibly reallocated) pendingParamValues vector.
   auto pushFloatValue = [this](std::vector<RtFloat> values) -> RtPointer {
     const unsigned int count = (unsigned int)values.size();
-    pendingParamValues.push_back({nullptr, false, count, std::move(values)});
+    pendingParamValues.push_back({nullptr, false, count, std::move(values), {}});
     RtFloat* data = pendingParamValues.back().floatStorage.data();
     pendingParamValues.back().value = (RtPointer)data;
     return (RtPointer)data;
@@ -1995,7 +1995,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
       if (isStringArray) {
         RtPointer value = (RtPointer)tokenVector.toRtTokenArray();
         paramMap[key] = {value, count};
-        pendingParamValues.push_back({value, true, count, {}});
+        pendingParamValues.push_back({value, true, count, {}, {}});
       } else {
         RtPointer value = pushFloatValue(tokenVector.toRtFloatVector());
         paramMap[key] = {value, count};
@@ -2019,7 +2019,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
       RtToken* value = new RtToken[1];
       value[0] = dup;
       paramMap[key] = {(RtPointer)value, 1};
-      pendingParamValues.push_back({(RtPointer)value, true, 1, {}});
+      pendingParamValues.push_back({(RtPointer)value, true, 1, {}, {}});
     }
   }
 
@@ -2049,8 +2049,8 @@ RtVoid GMANRIBParse::freePendingParams(RtVoid) {
       }
       delete[] strings;
     }
-    // Non-string values live in floatStorage, released by its own
-    // destructor when pendingParamValues.clear() runs below.
+    // Non-string values live in floatStorage or intStorage, released by
+    // its own destructor when pendingParamValues.clear() runs below.
   }
   pendingParamValues.clear();
 

@@ -110,11 +110,13 @@ private:
     unsigned int count; // element count; parseArray populates it via
                         // tokenVector.size() for float arrays too, not only
                         // string arrays
-    // Owns value's buffer when !isStringArray: moving a vector preserves
-    // its buffer, so value keeps pointing at floatStorage's data once this
-    // struct is in pendingParamValues. Empty, and value unrelated to it,
+    // Owns value's buffer through whichever of floatStorage/intStorage is
+    // non-empty when !isStringArray: moving a vector preserves its buffer,
+    // so value keeps pointing at that data once this struct is in
+    // pendingParamValues. Both stay empty, and value unrelated to either,
     // when isStringArray.
     std::vector<RtFloat> floatStorage;
+    std::vector<RtInt> intStorage;
   };
   std::vector<std::unique_ptr<char[]>> pendingParamKeys;
   std::vector<PendingParamValue> pendingParamValues;

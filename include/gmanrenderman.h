@@ -53,6 +53,13 @@ public:
   RtVoid push();
   RtVoid pop();
 
+  // The dictionary RiDeclare and inline declarations populate. A parameter's
+  // producer and its consumer must resolve the same declared type from the
+  // same dictionary, so the RIB parser reaches it through this accessor
+  // rather than keeping a table of its own. getTokenId can add an inline
+  // declaration as a side effect, so this returns a mutable reference.
+  GMANDictionary& getDictionary() { return dictionary; }
+
   RtToken Declare(const char* name, const char* declaration);
   RtVoid ColorSamples(RtInt n);
   RtLightHandle LightSource();
