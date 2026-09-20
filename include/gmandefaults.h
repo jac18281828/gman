@@ -69,7 +69,7 @@ extern const RtFloat DefaultCSMatrixRGBN[9];
 
 extern const RtFloat DefaultRelativeDetail;
 
-extern const GMANColor DefaultBGColor; // Black
+extern const GMANColor DefaultBGColor;
 
 extern const GMANAlpha DefaultAlpha; // opaque
 
