@@ -1027,6 +1027,18 @@ set_tests_properties(quadratic PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R5b review proof: solveRayQuadratic, the linear-case helper the four
+# swept quadrics' intersectors share, at coefficients a caller's own
+# floating-point contraction cannot perturb.
+add_executable(gman_rayquadratic rayquadratic_test.cpp)
+target_link_libraries(gman_rayquadratic PRIVATE gman_core)
+target_include_directories(gman_rayquadratic PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+
+add_test(NAME rayquadratic COMMAND gman_rayquadratic)
+set_tests_properties(rayquadratic PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 2: GMANRaySphere::intersect, compiled here from the
 # raytracer plugin's own sources rather than linked against the gman_raytracer
 # target, so this still builds and runs with GMAN_BUILD_RAYTRACER off.

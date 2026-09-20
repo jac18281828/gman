@@ -24,6 +24,7 @@
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanraycone.h"
+#include "gmanrayquadratic.h"
 #include "gmanvector.h"
 
 GMANRayCone::GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl,
@@ -64,24 +65,14 @@ bool GMANRayCone::intersect(const GMANRay& ray, GMANHit& hit) const {
   RtFloat const b = 2 * (objDirection.getX() * objOrigin.getX() + objDirection.getY() * objOrigin.getY() - A * B);
   RtFloat const c = objOrigin.getX() * objOrigin.getX() + objOrigin.getY() * objOrigin.getY() - A * A;
 
+  // a vanishes for a ray parallel to a generatrix: an ordinary ray with no
+  // quadratic term left to solve, not a degenerate direction.
+  // solveRayQuadratic's own comment covers the linear case and why a
+  // near-degenerate a never reaches it.
   RtFloat t0 = 0.0, t1 = 0.0;
-  int numRoots = 0;
-  // a vanishes for a ray parallel to a generatrix: not a degenerate
-  // direction, an ordinary ray with no quadratic term left to solve.
-  // GMANQuadraticRoots reports that case as no roots at all, so the linear
-  // equation is solved here instead, and a direction parallel to a
-  // generatrix that never reaches it (b == 0 too, an axis-parallel wedge
-  // edge) is reported as a miss rather than dividing by zero.
-  if (a == 0.0) {
-    if (b == 0.0)
-      return false;
-    t0 = -c / b;
-    numRoots = 1;
-  } else {
-    numRoots = GMANQuadraticRoots(a, b, c, t0, t1);
-    if (numRoots == 0)
-      return false;
-  }
+  int const numRoots = solveRayQuadratic(a, b, c, t0, t1);
+  if (numRoots == 0)
+    return false;
 
   RtFloat const roots[2] = {t0, t1};
   RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);

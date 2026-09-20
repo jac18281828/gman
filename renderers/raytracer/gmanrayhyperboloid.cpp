@@ -24,6 +24,7 @@
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanrayhyperboloid.h"
+#include "gmanrayquadratic.h"
 #include "gmanvector.h"
 
 GMANRayHyperboloid::GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat thetamax, GMANParameterList pl,
@@ -79,20 +80,13 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   RtFloat const b = 2 * (objDirection.getX() * objOrigin.getX() + objDirection.getY() * objOrigin.getY()) - r2b;
   RtFloat const c = objOrigin.getX() * objOrigin.getX() + objOrigin.getY() * objOrigin.getY() - r2c;
 
+  // a vanishes for a ray parallel to a ruling of the hyperboloid.
+  // solveRayQuadratic's own comment covers the linear case and why a
+  // near-degenerate a never reaches it.
   RtFloat t0 = 0.0, t1 = 0.0;
-  int numRoots = 0;
-  // a vanishes for a ray parallel to a ruling of the hyperboloid: a real
-  // hit with only a linear equation left to solve.
-  if (a == 0.0) {
-    if (b == 0.0)
-      return false;
-    t0 = -c / b;
-    numRoots = 1;
-  } else {
-    numRoots = GMANQuadraticRoots(a, b, c, t0, t1);
-    if (numRoots == 0)
-      return false;
-  }
+  int const numRoots = solveRayQuadratic(a, b, c, t0, t1);
+  if (numRoots == 0)
+    return false;
 
   RtFloat const roots[2] = {t0, t1};
   RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);

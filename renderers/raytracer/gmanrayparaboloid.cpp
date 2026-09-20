@@ -24,6 +24,7 @@
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanrayparaboloid.h"
+#include "gmanrayquadratic.h"
 #include "gmanvector.h"
 
 GMANRayParaboloid::GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl,
@@ -63,21 +64,13 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   RtFloat const c =
       objOrigin.getX() * objOrigin.getX() + objOrigin.getY() * objOrigin.getY() - k * (objOrigin.getZ() - zmin);
 
-  RtFloat t0 = 0.0, t1 = 0.0;
-  int numRoots = 0;
   // a vanishes for a ray parallel to the axis (dx == dy == 0): the
-  // apex-seeking case GMANQuadraticRoots' own comment does not cover, a
-  // real hit with only a linear equation left to solve.
-  if (a == 0.0) {
-    if (b == 0.0)
-      return false;
-    t0 = -c / b;
-    numRoots = 1;
-  } else {
-    numRoots = GMANQuadraticRoots(a, b, c, t0, t1);
-    if (numRoots == 0)
-      return false;
-  }
+  // apex-seeking case GMANQuadraticRoots' own comment does not cover.
+  // solveRayQuadratic solves that linear case directly.
+  RtFloat t0 = 0.0, t1 = 0.0;
+  int const numRoots = solveRayQuadratic(a, b, c, t0, t1);
+  if (numRoots == 0)
+    return false;
 
   RtFloat const roots[2] = {t0, t1};
   RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
