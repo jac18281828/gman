@@ -252,6 +252,13 @@ private:
 
   const GMANToken parseString(std::istream& ribFile);
 
+  // Consumes the character(s) after a backslash already read by parseString
+  // and appends the decoded result to buffer. Returns false only when the
+  // backslash itself is the last character in the stream, leaving buffer
+  // unchanged so parseString's caller can stop exactly as it does for any
+  // other unterminated string.
+  bool decodeEscape(std::istream& ribFile);
+
   const GMANToken parseNum(std::istream& ribFile);
 
   void consumeWhitespace(std::istream& ribFile) const;

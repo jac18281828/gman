@@ -1,0 +1,13 @@
+# A quote escaped with a backslash, inside a bracketed string array. Before
+# GMANRIBTokenize::parseString decoded escapes, the unescaped "\"" closed
+# the string early, the array never saw its "]", and the parse desynced
+# from there on -- exactly the failure AGENTS.md's "RIB authoring" section,
+# "The desync convention," is written to catch. A trailing Sphere follows
+# that convention.
+Display "string_escape.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Attribute "user" "note" ["a \" b"]
+Sphere 1 -1 1 360
+WorldEnd

@@ -314,11 +314,91 @@ const GMANToken GMANRIBTokenize::parseString(std::istream& ribFile) {
     if (c == '\"') {
       break;
     }
+    if (c == '\\') {
+      // A backslash with nothing after it is an unterminated escape, not a
+      // literal character: stop exactly as an unterminated string does,
+      // rather than read past the end looking for one.
+      if (!decodeEscape(ribFile)) {
+        break;
+      }
+      continue;
+    }
     buffer += c;
   }
 
   return GMANToken(buffer);
 };
+
+bool GMANRIBTokenize::decodeEscape(std::istream& ribFile) {
+  char c;
+
+  if (!ribFile.get(c)) {
+    return false;
+  }
+
+  switch (c) {
+  case 'n':
+    buffer += '\n';
+    break;
+  case 'r':
+    buffer += '\r';
+    break;
+  case 't':
+    buffer += '\t';
+    break;
+  case 'b':
+    buffer += '\b';
+    break;
+  case 'f':
+    buffer += '\f';
+    break;
+  case '\\':
+    buffer += '\\';
+    break;
+  case '\"':
+    buffer += '\"';
+    break;
+  case '\n':
+    // Line continuation: the backslash and the newline both vanish.
+    break;
+  case '0':
+  case '1':
+  case '2':
+  case '3':
+  case '4':
+  case '5':
+  case '6':
+  case '7': {
+    // Up to three octal digits, stopping at the first non-octal character
+    // or the third digit, whichever comes first. Running out of input
+    // while reading a second or third digit stops the run the same way a
+    // non-octal character would; the caller's own end-of-input handling
+    // then closes the string.
+    int value = c - '0';
+    for (int digits = 1; digits < 3; ++digits) {
+      char next;
+      if (!ribFile.get(next)) {
+        break;
+      }
+      if (next < '0' || next > '7') {
+        ribFile.putback(next);
+        break;
+      }
+      value = value * 8 + (next - '0');
+    }
+    buffer += static_cast<char>(static_cast<unsigned char>(value));
+    break;
+  }
+  default:
+    // An unrecognized escape yields the escaped character itself, with no
+    // diagnostic: exporters vary, and this tokenizer's job is to stay in
+    // step with the quoting, not to validate content.
+    buffer += c;
+    break;
+  }
+
+  return true;
+}
 
 const GMANToken GMANRIBTokenize::parseNum(std::istream& ribFile) {
   char c;

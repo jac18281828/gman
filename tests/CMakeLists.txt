@@ -569,6 +569,21 @@ set_tests_properties(paramlistdeclaredtype PROPERTIES
   LABELS render
   TIMEOUT 60)
 
+# GMANRIBTokenize::parseString gained escape decoding so an embedded \"
+# stops desyncing the parse. See tests/ribstringescape_test.cpp; its own
+# in-process check drives GMANRIBParse directly, hence the same
+# LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
+add_executable(gman_ribstringescape ribstringescape_test.cpp)
+target_link_libraries(gman_ribstringescape PRIVATE gman_core)
+
+add_test(NAME ribstringescape
+  COMMAND gman_ribstringescape $<TARGET_FILE:gman>
+                               "${CMAKE_CURRENT_SOURCE_DIR}/rib")
+set_tests_properties(ribstringescape PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 60)
+
 # Bilinear and bicubic Patch rasterization. See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
 target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)

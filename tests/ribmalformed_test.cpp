@@ -27,6 +27,11 @@
  * covers two malformed shapes (a non-string array element, a non-string
  * Display argument) that are type errors, not tokenizer-level ones.
  *
+ * string_trailing_backslash.rib pins the same end-of-input bar for the
+ * escape decoding parseString gained afterward: a backslash with nothing
+ * after it is an incomplete escape, not a literal character, and must stop
+ * the tokenizer as cleanly as the plain unterminated string above.
+ *
  * declare_array_overflow.rib is not a tokenizer defect either -- it is a
  * Declare array-size digit string that overflows even `long`. It shares
  * this harness anyway: gman::InlineParse::is_int gating that size is the
@@ -116,10 +121,8 @@ int main(int argc, char* argv[]) {
   const std::string dir = argv[2];
 
   const char* fixtures[] = {
-      "unterminated_string.rib",
-      "unbalanced_bracket.rib",
-      "truncated.rib",
-      "declare_array_overflow.rib",
+      "unterminated_string.rib",    "unbalanced_bracket.rib",        "truncated.rib",
+      "declare_array_overflow.rib", "string_trailing_backslash.rib",
   };
 
   for (const char* fixture : fixtures) {

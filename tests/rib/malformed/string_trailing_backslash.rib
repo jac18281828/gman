@@ -1,0 +1,9 @@
+# A string whose last character before end of file is a backslash: an
+# incomplete escape sequence, not a literal character. GMANRIBTokenize::
+# parseString and its escape decoding must stop cleanly at end of input
+# here, exactly as unterminated_string.rib does for the unescaped case.
+Display "malformed_out.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Attribute "user" "note" "trailing\

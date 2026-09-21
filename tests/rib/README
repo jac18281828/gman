@@ -300,6 +300,17 @@ same scene with the distant light removed, and `shadow_noblocker.rib` the
 same scene with the small sphere removed; the test pins one pixel inside
 the shadow against both. Not third-party.
 
+## string_escape.rib
+
+Written for the RIB string-escape task: an `Attribute "user" "note"` array
+holding `"a \" b"` -- an escaped quote inside a bracketed string -- followed
+by a `Sphere`. Before `GMANRIBTokenize::parseString` decoded escapes, the
+unescaped `"` closed the string early, the array never saw its `]`, and the
+parse desynced from there on; registered in `tests/ribstringescape_test.cpp`,
+which reads the decoded value back through a `GMANRenderManImpl` subclass
+overriding `RiAttributeV`, as well as running it end to end. Not
+third-party.
+
 ## malformed/
 
 Hand-written fixtures for malformed RIB input. `gman` is expected to fail on
@@ -314,6 +325,7 @@ no leak and no hang, not with a crash or an infinite loop.
 | `unbalanced_bracket.rib` | A bracketed array with no closing bracket -- `GMANRIBParse::parseArray` must stop at EOF rather than consuming the rest of the file looking for a `]` that never arrives. |
 | `unterminated_string.rib` | A plain (non-array) string with no closing quote, running to EOF -- `GMANRIBTokenize::parseString` must terminate cleanly at end of input. |
 | `declare_array_overflow.rib` | A `Declare` array-size digit string that overflows even `long` -- `gman::InlineParse::is_int` must reject it rather than let `strtol` saturate to a garbage quantity that sizes a later `new RtFloat[]`. Not tokenizer-level like the rest of this table; shares the harness because the bar is the same, see `tests/ribmalformed_test.cpp`. |
+| `string_trailing_backslash.rib` | A string whose last character before end of file is a backslash -- an incomplete escape, not a literal character. `GMANRIBTokenize::decodeEscape` must stop cleanly at end of input here, exactly as `unterminated_string.rib` does for the unescaped case. |
 
 Each is run under a hard wall-clock timeout (`tests/ribmalformed_test.cpp`),
 independent of ctest's own `TIMEOUT` property, since a tokenizer hang on
