@@ -271,7 +271,7 @@ int GMANDictionary::getTypeSize(GMANTokenEntry::TokenType t) {
   case GMANTokenEntry::INTEGER:
     return 1;
   default:
-    GMANError error(RIE_WARNING, RIE_BUG, "Unknown token type");
+    GMANError error(RIE_BUG, RIE_SEVERE, "Unknown token type");
     throw(error);
   }
   // appease mswin

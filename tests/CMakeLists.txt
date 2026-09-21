@@ -138,6 +138,16 @@ set_tests_properties(paramlist PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANDictionary::getTypeSize's default: arm reports an unknown token type
+# truthfully. See tests/dictionaryerror_test.cpp.
+add_executable(gman_dictionaryerror dictionaryerror_test.cpp)
+target_link_libraries(gman_dictionaryerror PRIVATE gman_core)
+
+add_test(NAME dictionaryerror COMMAND gman_dictionaryerror)
+set_tests_properties(dictionaryerror PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Pins RIE_NOTSTARTED's and RiDeclare's RIE_SYNTAX messages through
 # RiErrorHandler.
 add_executable(gman_diagnostics diagnostics_test.cpp)
