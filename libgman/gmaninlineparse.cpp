@@ -114,7 +114,7 @@ RtVoid InlineParse::parse(std::string str) {
   j = 0;
   start_found = false;
 
-  for (unsigned int i = 0; (i < str.length()) && (j < 7); i++) {
+  for (unsigned int i = 0; (i < str.length()) && (j < kWordCount); i++) {
     switch (str[i]) {
     case ' ':
     case '\t':
@@ -139,6 +139,11 @@ RtVoid InlineParse::parse(std::string str) {
         j++;
         start_found = false;
       }
+      // The word closed above may have just taken the array's last slot;
+      // the bracket itself still needs one of its own.
+      if (j >= kWordCount) {
+        throw error;
+      }
       sp = i;
       sz = 1;
       word[j] = str.substr(sp, sz);
@@ -157,7 +162,7 @@ RtVoid InlineParse::parse(std::string str) {
   // if there is no space at the end of the string,
   // the previous loop will not notice the end of the word,
   // and so will 'forget' to store it.
-  if (start_found == true) {
+  if ((start_found == true) && (j < kWordCount)) {
     word[j] = str.substr(sp, sz);
     j++;
   }

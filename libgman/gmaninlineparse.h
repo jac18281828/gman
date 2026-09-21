@@ -38,8 +38,12 @@ namespace gman {
 
 class InlineParse {
 private:
+  // check_syntax's grammar caps an inline declaration at seven words
+  // (class type [ size ] id); an eighth is RIE_SYNTAX same as a seventh.
+  static constexpr RtInt kWordCount = 7;
+
   RtInt number_of_words;
-  std::string word[7];
+  std::string word[kWordCount];
 
   bool inline_def;
   GMANTokenEntry::TokenClass tc;

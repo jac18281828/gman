@@ -249,6 +249,14 @@ set_tests_properties(bitmap PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_inlineparsewordbound inlineparsewordbound_test.cpp)
+target_link_libraries(gman_inlineparsewordbound PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME inlineparsewordbound COMMAND gman_inlineparsewordbound)
+set_tests_properties(inlineparsewordbound PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Phase 1 -- the object -> world -> camera -> screen -> NDC -> raster chain.
 add_executable(gman_matrix4 gmanmatrix4_test.cpp)
 target_link_libraries(gman_matrix4 PRIVATE gman_core)
