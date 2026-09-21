@@ -160,7 +160,10 @@ std::string captureStdout(void (*fn)(GMANRIBTokenize&, const std::string&), GMAN
   std::fflush(stdout);
   int savedStdout = dup(STDOUT_FILENO);
   int pipeFds[2];
-  pipe(pipeFds);
+  if (pipe(pipeFds) != 0) {
+    close(savedStdout);
+    return std::string();
+  }
   dup2(pipeFds[1], STDOUT_FILENO);
   close(pipeFds[1]);
 
