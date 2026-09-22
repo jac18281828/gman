@@ -281,6 +281,7 @@ if(GMAN_BUILD_RAYTRACER OR BUILD_TESTING)
     renderers/raytracer/gmanraypolygon.cpp
     renderers/raytracer/gmanrayquartic.cpp
     renderers/raytracer/gmanraysphere.cpp
+    renderers/raytracer/gmanraytorus.cpp
     renderers/raytracer/gmanraytracerenderer.cpp)
   target_link_libraries(gman_raytracer_objects PUBLIC gman_core)
   target_include_directories(gman_raytracer_objects PUBLIC

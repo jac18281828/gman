@@ -1262,6 +1262,28 @@ set_tests_properties(hyperboloidflatannulus PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R5c proof, parts B and C: GMANRayTorus::intersect, linked against the
+# shared object library for the same reason as gman_raysphere above.
+add_executable(gman_raytorus raytorus_test.cpp)
+target_link_libraries(gman_raytorus PRIVATE gman_core gman_raytracer_objects)
+
+add_test(NAME raytorus COMMAND gman_raytorus)
+set_tests_properties(raytorus PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# R5c deferral: the spindle and horn torus (minorradius >= majorradius), a
+# second inverse mapping no fixture in this tree needs yet. Pins the wanted
+# behavior; WILL_FAIL until a future unit implements it.
+add_executable(gman_torusspindle torusspindle_test.cpp)
+target_link_libraries(gman_torusspindle PRIVATE gman_core gman_raytracer_objects)
+
+add_test(NAME torusspindle COMMAND gman_torusspindle)
+set_tests_properties(torusspindle PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
 # GMANRaySphere holding its parameters and a copied transform, linked
 # against the shared raytracer object library for the same reason as
