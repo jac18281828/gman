@@ -160,6 +160,33 @@ set_tests_properties(diagnostics PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A world block with no display output -- no Display, or one naming
+# "framebuffer" -- reports RIE_ILLSTATE instead of rendering into
+# gman::OutputX11's 0x0 stub. See tests/worldnodisplay_test.cpp.
+add_executable(gman_worldnodisplay worldnodisplay_test.cpp)
+target_link_libraries(gman_worldnodisplay PRIVATE gman_core)
+add_dependencies(gman_worldnodisplay gman_zbuffer)
+
+add_test(NAME worldnodisplay_zbuffer
+  COMMAND gman_worldnodisplay gmanzbuffer
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(worldnodisplay_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_worldnodisplay gman_raytracer)
+
+  add_test(NAME worldnodisplay_raytracer
+    COMMAND gman_worldnodisplay gmanraytracer
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+  set_tests_properties(worldnodisplay_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS unit
+    TIMEOUT 30)
+endif()
+
 # Phase 2 -- RIB dialect coverage. Each spawns the real gman binary, which
 # dlopens its renderer by bare name, so each needs the same library path as
 # the baseline test above.

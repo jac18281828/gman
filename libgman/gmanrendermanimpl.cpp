@@ -186,6 +186,17 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
 }
 
 RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
+  // Every renderer reads pixel (0, 0) as its background, so it needs a
+  // frame buffer with at least one pixel. With no Display, or a framebuffer
+  // one, RiWorldBegin builds gman::OutputX11's 0x0 stub; report that instead
+  // of handing it to the renderer.
+  if (output == NULL || output->getWidth() == 0 || output->getHeight() == 0) {
+    delete output;
+    output = NULL;
+    leaveMode(W);
+    throw GMANError(RIE_ILLSTATE, RIE_ERROR, "No display output to render into.");
+  }
+
   const GMANOptions::ExposureStruct& exposure = getOptions().getExposure();
   renderer->render(output, viewingSystem, getOptions(), getAttributes());
 
