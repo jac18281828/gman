@@ -1282,6 +1282,18 @@ set_tests_properties(raytorus PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R6 proof, §8 check B: every ray primitive's camera-space bbox --
+# containment, tightness, the singular guard and the degenerate,
+# non-singular case -- linked against the shared object library for the
+# same reason as gman_raysphere above. See tests/raybbox_test.cpp.
+add_executable(gman_raybbox raybbox_test.cpp)
+target_link_libraries(gman_raybbox PRIVATE gman_core gman_raytracer_objects)
+
+add_test(NAME raybbox COMMAND gman_raybbox)
+set_tests_properties(raybbox PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # R5c deferral: the spindle and horn torus (minorradius >= majorradius), a
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
 # behavior; WILL_FAIL until the second inverse mapping is implemented.

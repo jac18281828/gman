@@ -25,6 +25,7 @@
 
 #include "gmanerror.h"
 #include "gmanmath.h"
+#include "gmanraybboxbuilder.h"
 #include "gmanrayquartic.h"
 #include "gmanraytorus.h"
 #include "gmanvector.h"
@@ -106,6 +107,21 @@ GMANRayTorus::GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phi
   } catch (GMANError const&) {
     singular = true;
   }
+
+  if (singular)
+    return;
+
+  // majorradius/minorradius are the shape's own named extrema: x and y
+  // bound in +/-(majorradius + minorradius), z in +/-minorradius, for the
+  // full revolution. Absolute values keep the box finite and well-ordered
+  // even for a majorradius/minorradius pair intersect() itself rejects
+  // (the spindle/horn torus, a negative radius).
+  RtFloat const majorAbs = (RtFloat)std::fabs(majorradius);
+  RtFloat const minorAbs = (RtFloat)std::fabs(minorradius);
+  RtFloat const xy = majorAbs + minorAbs;
+  GMANPoint const objMin(-xy, -xy, -minorAbs);
+  GMANPoint const objMax(xy, xy, minorAbs);
+  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
 }
 
 bool GMANRayTorus::intersect(const GMANRay& ray, GMANHit& hit) const {

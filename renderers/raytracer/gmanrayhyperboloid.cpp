@@ -21,8 +21,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
 #include "gmanerror.h"
 #include "gmanmath.h"
+#include "gmanraybboxbuilder.h"
 #include "gmanrayhyperboloid.h"
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
@@ -36,6 +39,23 @@ GMANRayHyperboloid::GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat t
   } catch (GMANError const&) {
     singular = true;
   }
+
+  if (singular)
+    return;
+
+  // r(v)^2 (GMANRayHyperboloid::intersect's own p0sq + 2*pDot*v + dSq*v^2)
+  // is convex in v (dSq >= 0), so its max over the swept segment [0, 1]
+  // falls at an endpoint: the greater of the two control points' own
+  // radii bounds x and y for the full revolution. z takes the segment's
+  // own z extent exactly, the parameter that directly clips the shape.
+  RtFloat const r0 = (RtFloat)std::sqrt(
+      (double)(this->point1.getX() * this->point1.getX() + this->point1.getY() * this->point1.getY()));
+  RtFloat const r1 = (RtFloat)std::sqrt(
+      (double)(this->point2.getX() * this->point2.getX() + this->point2.getY() * this->point2.getY()));
+  RtFloat const r = GMANMax(r0, r1);
+  GMANPoint const objMin(-r, -r, GMANMin(this->point1.getZ(), this->point2.getZ()));
+  GMANPoint const objMax(r, r, GMANMax(this->point1.getZ(), this->point2.getZ()));
+  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
 }
 
 bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {

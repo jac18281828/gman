@@ -21,8 +21,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
 #include "gmanerror.h"
 #include "gmanmath.h"
+#include "gmanraybboxbuilder.h"
 #include "gmanrayparaboloid.h"
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
@@ -36,6 +39,24 @@ GMANRayParaboloid::GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, R
   } catch (GMANError const&) {
     singular = true;
   }
+
+  if (singular)
+    return;
+
+  // x^2 + y^2 == k*(z - zmin), k == rmax^2 / (zmax*(zmax - zmin))
+  // (GMANRayParaboloid::intersect's own substitution): at z == zmax this
+  // gives radius rmax^2/zmax, independent of zmin's sign or ordering
+  // against zmax, so |rmax| / sqrt(zmax) bounds x and y for the full
+  // revolution. sqrt(zmax) is undefined for zmax <= 0 (intersect()'s own
+  // guard already rejects zmax == 0; a negative zmax is the sphere's own
+  // open question): leave the default box rather than compute one.
+  if (zmax <= 0.0)
+    return;
+
+  RtFloat const r = (RtFloat)(std::fabs(rmax) / std::sqrt((double)zmax));
+  GMANPoint const objMin(-r, -r, GMANMin(zmin, zmax));
+  GMANPoint const objMax(r, r, GMANMax(zmin, zmax));
+  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
 }
 
 bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {

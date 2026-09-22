@@ -23,8 +23,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
 #include "gmanerror.h"
 #include "gmanmath.h"
+#include "gmanraybboxbuilder.h"
 #include "gmanraysphere.h"
 #include "gmanvector.h"
 
@@ -37,6 +40,17 @@ GMANRaySphere::GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat
   } catch (GMANError const&) {
     singular = true;
   }
+
+  if (singular)
+    return;
+
+  // The full sphere's revolution bounds x and y in +/-radius regardless of
+  // thetamax (conservative when the wedge is narrower); z takes zmin/zmax
+  // exactly, the parameters that directly clip the shape.
+  RtFloat const r = (RtFloat)std::fabs(radius);
+  GMANPoint const objMin(-r, -r, GMANMin(zmin, zmax));
+  GMANPoint const objMax(r, r, GMANMax(zmin, zmax));
+  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
 }
 
 bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
