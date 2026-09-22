@@ -161,8 +161,9 @@ void testFlatIntervalRejects() {
   check(!hyperboloid.intersect(farRay, hit), "interval: tmin above the wall hit (5.0) rejects it");
 }
 
-// A ray lying entirely in the object-space z == point1.z plane never
-// reaches a division: objDirection.getZ() == 0.0 rejects it first.
+// A ray lying entirely in the object-space z == point1.z plane divides
+// 0/0 for t, a NaN that propagates to NaN v roots; the v guard's
+// NaN-safe form rejects them.
 void testFlatCoplanarRayMisses() {
   GMANRayHyperboloid hyperboloid = symmetricSegment();
   GMANRay ray(GMANPoint(0.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
