@@ -44,9 +44,7 @@ public:
   GMANBBox();
   GMANBBox(RtBound bb);
 
-  // The box spanning min and max, componentwise; neither point need be
-  // ordered against the other's coordinates, since each axis takes its own
-  // low and high from GMANMin/GMANMax.
+  // The box spanning min and max, componentwise.
   GMANBBox(GMANPoint const& min, GMANPoint const& max);
 
   GMANBBox(const GMANBBox& bb) = default;
