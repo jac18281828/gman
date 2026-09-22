@@ -279,6 +279,7 @@ if(GMAN_BUILD_RAYTRACER OR BUILD_TESTING)
     renderers/raytracer/gmanrayhyperboloid.cpp
     renderers/raytracer/gmanrayparaboloid.cpp
     renderers/raytracer/gmanraypolygon.cpp
+    renderers/raytracer/gmanrayquartic.cpp
     renderers/raytracer/gmanraysphere.cpp
     renderers/raytracer/gmanraytracerenderer.cpp)
   target_link_libraries(gman_raytracer_objects PUBLIC gman_core)

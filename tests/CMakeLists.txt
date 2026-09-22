@@ -1168,6 +1168,18 @@ set_tests_properties(rayquadratic PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R5c proof, part A: gman::solveQuartic against quartics built from known
+# dyadic roots, linked against the shared object library (it carries the
+# compiled solver, unlike solveRayQuadratic's header-only one) for the same
+# reason as gman_raysphere below.
+add_executable(gman_rayquartic rayquartic_test.cpp)
+target_link_libraries(gman_rayquartic PRIVATE gman_core gman_raytracer_objects)
+
+add_test(NAME rayquartic COMMAND gman_rayquartic)
+set_tests_properties(rayquartic PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 2: GMANRaySphere::intersect, linked against the
 # shared raytracer object library rather than the gman_raytracer plugin
 # target, so this still builds and runs with GMAN_BUILD_RAYTRACER off.
