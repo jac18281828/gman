@@ -145,6 +145,7 @@ target_link_libraries(gman_bbox PRIVATE gman_core)
 
 add_test(NAME bbox COMMAND gman_bbox)
 set_tests_properties(bbox PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
@@ -1291,6 +1292,7 @@ target_link_libraries(gman_raybbox PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME raybbox COMMAND gman_raybbox)
 set_tests_properties(raybbox PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
@@ -1304,6 +1306,7 @@ target_link_libraries(gman_raybvh PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME raybvh COMMAND gman_raybvh)
 set_tests_properties(raybvh PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
