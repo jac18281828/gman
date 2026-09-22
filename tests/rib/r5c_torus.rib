@@ -1,0 +1,31 @@
+## R5c proof: two tori side by side under one light -- a full one tilted so
+## its hole shows, and a partial one (thetamax below 360, a band with a
+## negative phimin). This fixture overrides two of AGENTS.md's RIB
+## authoring rules -- "Translate 0 0 5" and "one scene, one thing" -- on
+## quadrics.rib's and r5b_quadrics.rib's own precedent; Format and Translate
+## here are this fixture's own, sized so each torus covers well clear of
+## GOLDEN_MAX_FRACTION.
+Display "r5c_torus.tif" "file" "rgba"
+Format 640 480 1
+Projection "perspective" "fov" [50]
+Clipping 1 30
+Translate 0 0 7
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [1.2] "lightcolor" [1 1 1]
+	"from" [1 1 -5] "to" [0 0 0]
+Sides 1
+Surface "matte" "Ka" [0.3] "Kd" [0.9]
+
+AttributeBegin
+	Translate -1.8 0 0
+	Rotate 60 1 0 0
+	Torus 1.3 0.5 0 360 360
+AttributeEnd
+
+AttributeBegin
+	Translate 1.8 0 0
+	Rotate 60 1 0 0
+	Torus 1.3 0.5 -60 60 270
+AttributeEnd
+WorldEnd

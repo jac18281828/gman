@@ -1433,6 +1433,25 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
+  # R5c proof: `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib, a
+  # full torus tilted so its hole shows and a partial torus, matching a
+  # checked-in golden image. See tests/torusrayrender_test.cpp.
+  add_executable(gman_torusrayrender torusrayrender_test.cpp)
+  target_link_libraries(gman_torusrayrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_torusrayrender gman_raytracer)
+
+  set(GMAN_TORUSRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/torusrayrender-run")
+  file(MAKE_DIRECTORY "${GMAN_TORUSRAYRENDER_WORKDIR}")
+
+  add_test(NAME torusrayrender
+    COMMAND gman_torusrayrender $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_TORUSRAYRENDER_WORKDIR}")
+  set_tests_properties(torusrayrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
   # R5a proof: `gman -r gmanraytracer` renders tests/rib/r5a_polygon.rib, a
   # camera-facing pentagon, matching a checked-in golden image. See
   # tests/polygonrayrender_test.cpp.

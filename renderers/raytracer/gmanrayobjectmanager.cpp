@@ -38,6 +38,7 @@
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
+#include "gmanraytorus.h"
 #include "gmanshading.h"
 #include "ri.h"
 
@@ -166,10 +167,12 @@ GMANPrimitive* GMANRayObjectManager::getRSDisk(RtFloat height, RtFloat radius, R
   return disk;
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSTorus(RtFloat /*majrad*/, RtFloat /*minrad*/, RtFloat /*phimin*/,
-                                                RtFloat /*phimax*/, RtFloat /*tmax*/, GMANParameterList /*pl*/,
-                                                GMANOptions* /*opt*/, GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax,
+                                                RtFloat tmax, GMANParameterList pl, GMANOptions* /*opt*/,
+                                                GMANAttributes* attr, GMANTransform* t) {
+  GMANRayTorus* torus = new GMANRayTorus(majrad, minrad, phimin, phimax, tmax, pl, *t);
+  torus->setAppearance(gman::appearanceOf(*attr));
+  return torus;
 };
 
 GMANPrimitive* GMANRayObjectManager::getRSBlobby(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[], RtInt /*nflt*/,
