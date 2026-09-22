@@ -24,18 +24,33 @@
  * changes.
  *
  * Check 1: a mixed fixture's GMANRayBVH::nearestHit and a small linear
- * scan written locally here (not the removed walkWorldManager) agree on
- * every ray -- identical primitive, t, point, normal, u and v, or an
- * identical miss.
+ * scan (linearScan, below) agree on every ray -- identical primitive, t,
+ * point, normal, u and v, or an identical miss. A dedicated pair
+ * (testExitPruningPair) isolates the one
+ * case a naive additional exit-based prune gets wrong: a box entered
+ * first whose own surface is hit late, next to a box entered later whose
+ * surface is hit nearer but whose own box extends past the first box's
+ * hit. A fixed-seed random sweep (testRandomSweep) casts rays from every
+ * octant, some with an axis-parallel (including a signed-zero) direction
+ * component and random tmin/tmax, against the same fixture. A dedicated
+ * pair (testCoincidentTieBothOrders) builds the coincident tie in both
+ * insertion orders, since the earlier-inserted primitive is not always
+ * the one a leaf happens to test first.
  *
  * Check 2: a second, one-axis fixture's primitiveTests counter matches
  * the leaf size or less for a targeted ray, exactly 0 for a ray whose
  * tmax ends short of every primitive, and the leaf size or less again for
  * a perpendicular ray -- the case a poor split axis actually exposes.
+ *
+ * testSignedZeroFacePlane probes GMANRayBVH::nearestHit's own box test
+ * with a direction component of +0.0 and of -0.0, origin on each face in
+ * turn: a leaf's own primitive must still be tested regardless of the
+ * zero's sign.
  */
 
 #include <cmath>
 #include <cstdio>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -69,10 +84,9 @@ GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
   return makeTransform(m);
 }
 
-// The BVH's own contract, written independently of it: the nearest hit
-// within ray's [tmin, tmax], the earlier-inserted primitive winning an
-// exact t tie -- walkWorldManager's own semantics, before its removal,
-// reproduced here rather than resurrected.
+// GMANRayBVH::nearestHit's own contract, written independently of it: the
+// nearest hit within ray's [tmin, tmax], the earlier-inserted primitive
+// winning an exact t tie.
 bool linearScan(std::vector<GMANRayInterface*> const& prims, GMANRay const& ray, GMANHit& hit,
                 GMANRayInterface const*& hitPrimitive) {
   bool found = false;
@@ -282,6 +296,131 @@ void testCheck1() {
   runCheck1(true);
 }
 
+// ---- an additional exit-based prune, past the settled traversal rule,
+// gets one case wrong: a box entered first (A, entry 20) whose own
+// surface is hit late (24.005), next to a box entered later (B, entry
+// 22, still short of A's own hit) whose surface is hit nearer (23.451)
+// but whose own box extends past A's hit (exit 40, unclamped). Once A
+// sets the running best to 24.005, B's own box clamps its exit to
+// exactly that limit; "exit >= hit.t" then reads as true and would skip
+// B's leaf outright, even though B's entry is still in range and its
+// surface is the true nearest. Six spheres spread along z put A and B in
+// separate leaves (leaf size 4): two filler spheres on each side keep
+// each of A/B's own 3-primitive group under the leaf size, so the
+// median split parts them instead of grouping them together. ----
+void testExitPruningPair() {
+  GMANLinearWorldManager worldManager;
+  std::vector<GMANRayInterface*> prims;
+  auto add = [&](GMANRayInterface* p) {
+    worldManager.add(p);
+    prims.push_back(p);
+  };
+
+  add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, -50.0)));
+  add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, -20.0)));
+  auto* primA = new GMANRaySphere(5.0, -5.0, 5.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 20.0));
+  auto* primB = new GMANRaySphere(9.0, -9.0, 9.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 26.0));
+  add(primA);
+  add(primB);
+  add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 50.0)));
+  add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 80.0)));
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+
+  GMANRay const ray(GMANPoint(4.9, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  checkAgreement(bvh, prims, ray, "exit-pruning pair");
+
+  GMANHit hit;
+  GMANRayInterface const* prim = nullptr;
+  bool const found = bvh.nearestHit(ray, hit, prim);
+  check(found && prim == primB,
+        "exit-pruning pair: the nearer sphere (B) wins, not the one entered first but hit late (A)");
+}
+
+// ---- a fixed-seed sweep of random rays -- every octant of direction and
+// origin, some with an axis-parallel component (including a signed
+// zero), random tmin and a random or infinite tmax -- against check 1's
+// own mixed fixture, catching what a hand-picked ray set might miss:
+// among others, a slab test that skips std::swap(t0, t1) still passes a
+// positive-direction ray on every axis this fixture's own hand-picked
+// rays travel, since a positive invD never needs the swap. ----
+void testRandomSweep() {
+  GMANLinearWorldManager worldManager;
+  std::vector<GMANRayInterface*> prims;
+  buildCheck1Fixture(false, worldManager, prims);
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+
+  std::mt19937 rng(0xC0FFEEu); // fixed seed: this sweep is reproducible, not re-derived per run
+  std::uniform_real_distribution<float> dirDist(-1.0f, 1.0f);
+  std::uniform_real_distribution<float> originDist(-10.0f, 30.0f);
+  std::uniform_real_distribution<float> tminDist(0.0f, 2.0f);
+  std::uniform_real_distribution<float> tmaxSpanDist(5.0f, 60.0f);
+
+  constexpr int kSweepCount = 3000;
+  for (int i = 0; i < kSweepCount; ++i) {
+    RtFloat dx = dirDist(rng);
+    RtFloat dy = dirDist(rng);
+    RtFloat dz = dirDist(rng);
+    switch (i % 8) {
+    case 0:
+      dx = 0.0f;
+      break;
+    case 1:
+      dy = 0.0f;
+      break;
+    case 2:
+      dz = 0.0f;
+      break;
+    case 3:
+      dx = -0.0f;
+      break;
+    default:
+      break; // the remaining four eighths keep a fully random direction
+    }
+    if (dx == 0.0f && dy == 0.0f && dz == 0.0f) {
+      dz = 1.0f; // never hand GMANRay a zero-length direction
+    }
+
+    GMANPoint const origin(originDist(rng), originDist(rng), originDist(rng));
+    GMANVector const direction(dx, dy, dz);
+    RtFloat const tmin = tminDist(rng);
+    bool const bounded = (i % 3 == 0);
+    RtFloat const tmax = bounded ? tmin + tmaxSpanDist(rng) : RI_INFINITY;
+
+    GMANRay const ray(origin, direction, tmin, tmax);
+    checkAgreement(bvh, prims, ray, "random sweep ray " + std::to_string(i));
+  }
+}
+
+// ---- the coincident tie resolves to the earlier-inserted disk in
+// either insertion order -- a leaf's own internal test order need not
+// match insertion order, so testing only one leaves the other silent ----
+void testCoincidentTieBothOrders() {
+  for (bool swapOrder : {false, true}) {
+    GMANLinearWorldManager worldManager;
+    auto* diskA = new GMANRayDisk(40.0, 3.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0));
+    auto* diskB = new GMANRayDisk(40.0, 3.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0));
+    GMANRayInterface* first = swapOrder ? static_cast<GMANRayInterface*>(diskB) : static_cast<GMANRayInterface*>(diskA);
+    GMANRayInterface* second =
+        swapOrder ? static_cast<GMANRayInterface*>(diskA) : static_cast<GMANRayInterface*>(diskB);
+    worldManager.add(first);
+    worldManager.add(second);
+
+    GMANRayBVH bvh;
+    bvh.build(worldManager);
+
+    GMANRay const ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+    GMANHit hit;
+    GMANRayInterface const* prim = nullptr;
+    bool const found = bvh.nearestHit(ray, hit, prim);
+    check(found && prim == first, std::string("tie: resolves to the earlier-inserted disk (") +
+                                      (swapOrder ? "B inserted first" : "A inserted first") + ")");
+  }
+}
+
 // ---- check 2 ----
 void testCheck2() {
   constexpr int kCount = 16; // 4x the leaf size
@@ -293,14 +432,12 @@ void testCheck2() {
   int const insertionOrder[kCount] = {7, 2, 13, 0, 9, 4, 11, 15, 1, 8, 5, 14, 3, 10, 6, 12};
 
   GMANLinearWorldManager worldManager;
-  std::vector<GMANRayInterface*> prims(kCount, nullptr);
   GMANRayInterface* bySpatialIndex[kCount];
   for (int slot = 0; slot < kCount; ++slot) {
     int const spatialIndex = insertionOrder[slot];
     RtFloat const x = (RtFloat)spatialIndex * kSpacing;
     auto* sphere = new GMANRaySphere(kRadius, -kRadius, kRadius, 360.0, GMANParameterList(), translated(x, 0.0, 0.0));
     worldManager.add(sphere);
-    prims[slot] = sphere;
     bySpatialIndex[spatialIndex] = sphere;
   }
 
@@ -350,11 +487,58 @@ void testCheck2() {
   }
 }
 
+// ---- a direction component of +0.0 or -0.0, origin exactly on the
+// box's own min or max face on that axis, must still test the leaf's own
+// primitive: 1.0 / -0.0 is negative infinity, which folds a zero offset
+// on that face into a NaN on one side and a wrongly-signed infinity on
+// the other, and only the NaN side is caught by treating a NaN as no
+// constraint. primitiveTests, not the hit/miss outcome, is the signal
+// here -- the ray may or may not cross the sphere's own surface at this
+// exact x, but the leaf must be reached either way. ----
+void testSignedZeroFacePlane() {
+  GMANLinearWorldManager worldManager;
+  auto* sphere = new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 10.0));
+  worldManager.add(sphere);
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+
+  GMANPoint const boxMin = sphere->getBBox().getMin();
+  GMANPoint const boxMax = sphere->getBBox().getMax();
+
+  struct Case {
+    RtFloat originX;
+    RtFloat dirX;
+    char const* label;
+  };
+  RtFloat const posZero = 0.0f;
+  RtFloat const negZero = -0.0f;
+  Case const cases[] = {
+      {boxMin.getX(), posZero, "+0.0 direction, origin on the min face"},
+      {boxMax.getX(), posZero, "+0.0 direction, origin on the max face"},
+      {boxMin.getX(), negZero, "-0.0 direction, origin on the min face"},
+      {boxMax.getX(), negZero, "-0.0 direction, origin on the max face"},
+  };
+
+  for (Case const& c : cases) {
+    GMANRay const ray(GMANPoint(c.originX, 0.0, -5.0), GMANVector(c.dirX, 0.0, 1.0));
+    std::size_t tests = 0;
+    GMANHit hit;
+    GMANRayInterface const* prim = nullptr;
+    bvh.nearestHit(ray, hit, prim, &tests);
+    check(tests >= 1, std::string("signed zero: ") + c.label + " still tests the leaf's own primitive");
+  }
+}
+
 } // namespace
 
 int main() {
   testCheck1();
+  testExitPruningPair();
+  testRandomSweep();
+  testCoincidentTieBothOrders();
   testCheck2();
+  testSignedZeroFacePlane();
 
   return checkSummary("GMANRayBVH: identical hits against a linear scan, and a bounded primitive-test count");
 }
