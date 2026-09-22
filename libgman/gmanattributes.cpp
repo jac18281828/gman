@@ -106,6 +106,7 @@ RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList& pl
 
   surface->set(pl);
   surface->set(rd);
+  surfaceParameters = pl;
 }
 
 RtVoid GMANAttributes::setDisplacement(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {

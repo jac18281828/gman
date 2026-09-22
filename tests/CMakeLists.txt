@@ -1546,6 +1546,27 @@ if(GMAN_BUILD_RAYTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+
+  # Fix proof: tests/rib/surfaceparameters_two_surfaces.rib,
+  # surfaceparameters_restored.rib and surfaceparameters_default.rib pin
+  # that every surface shades with its own RiSurface's parameter list, one
+  # fixture per §1 form of the defect. See surfaceparameters_test.cpp's
+  # own comment.
+  add_executable(gman_surfaceparameters surfaceparameters_test.cpp)
+  target_link_libraries(gman_surfaceparameters PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_surfaceparameters gman_raytracer)
+
+  set(GMAN_SURFACEPARAMETERS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/surfaceparameters-run")
+  file(MAKE_DIRECTORY "${GMAN_SURFACEPARAMETERS_WORKDIR}")
+
+  add_test(NAME surfaceparameters
+    COMMAND gman_surfaceparameters $<TARGET_FILE:gman>
+                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_SURFACEPARAMETERS_WORKDIR}")
+  set_tests_properties(surfaceparameters PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
 endif()
 
 # Proves both halves of an installed gman. bin/gman renders every

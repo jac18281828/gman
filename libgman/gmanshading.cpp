@@ -57,6 +57,7 @@ Appearance appearanceOf(GMANAttributes const& attributes) {
   // casts rather than threading const through shade() below.
   GMANSurfaceShader const* constShader = attributes.getSurface(0.0);
   appearance.shader = constShader ? const_cast<GMANSurfaceShader*>(constShader) : defaultSurfaceShader();
+  appearance.parameters = attributes.getSurfaceParameters();
 
   std::list<RtLightHandle> const& handles = attributes.getLightList().getHandles();
   for (RtLightHandle const handle : handles) {
@@ -88,6 +89,15 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
   env.lights = appearance.lights;
   env.cameraToWorld = cameraToWorld;
   env.occluder = occluder;
+
+  // GMANLoadShader returns one static instance per plugin, shared by every
+  // surface naming it, so each call rebinds this surface's own list before
+  // running the shader -- on every call, the empty list included, and
+  // whichever shader the Appearance holds, defaultSurfaceShader's included.
+  // Sound only while shading stays serial and is never re-entered: nothing
+  // here holds if a shader itself calls shade().
+  GMANParameterList parameters = appearance.parameters;
+  appearance.shader->set(parameters);
 
   Shading shading;
   shading.Ci = appearance.shader->computeCi(env);

@@ -79,9 +79,10 @@ private:
 /*
  * Every texture RiSurface's "texturename" has named, keyed by filename and
  * decoded once -- the gmanLightSourceMgr() idiom. Keyed on the name rather
- * than the shader instance: GMANLoadShader returns one static shader per
- * plugin, so every "paintedplastic" surface in a scene shares one
- * parameter list, and the filename is the only thing that varies.
+ * than the shader instance or its parameter list: the same file decodes to
+ * the same texels regardless of which surface samples it, so every
+ * "paintedplastic" surface naming that file shares one decode even though
+ * each now shades with its own parameters.
  */
 class TextureCache {
 public:

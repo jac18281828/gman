@@ -30,6 +30,7 @@
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
 #include "gmanocclude.h"
+#include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -47,9 +48,12 @@ namespace gman {
 
 // What a primitive looks like, fixed when it is declared: its surface
 // shader (the RISpec's matte default when RiSurface was never called), the
-// lights active in its attribute scope (RiIlluminate) and its Cs/Os.
+// parameter list that shader's own RiSurface passed (empty for the default
+// surface), the lights active in its attribute scope (RiIlluminate) and its
+// Cs/Os.
 struct GMAN_EXPORT Appearance {
   GMANSurfaceShader* shader = nullptr;
+  GMANParameterList parameters;
   std::vector<GMANLight const*> lights;
   GMANColor Cs;
   GMANColor Os;

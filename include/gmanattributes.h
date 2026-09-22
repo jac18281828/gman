@@ -35,6 +35,7 @@
 #include "gmanlightsourceshader.h"
 #include "gmanloadableshader.h"
 #include "gmanlog.h"
+#include "gmanparameterlist.h"
 #include "gmanshader.h"
 #include "gmansurfaceshader.h"
 #include "gmantrimcurve.h"
@@ -82,6 +83,7 @@ private:
 
   std::shared_ptr<GMANLoadableShader> surfaceModule;
   GMANSurfaceShader* surface;
+  GMANParameterList surfaceParameters;
 
   std::shared_ptr<GMANLoadableShader> atmosphereModule;
   GMANVolumeShader* atmosphere;
@@ -133,6 +135,7 @@ public:
   /* SHADERS */
   RtVoid setSurface(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
   const GMANSurfaceShader* getSurface(RtFloat /*time*/) const { return surface; };
+  GMANParameterList const& getSurfaceParameters() const { return surfaceParameters; };
 
   RtVoid setAtmosphere(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
   const GMANVolumeShader* getAtmosphere(RtFloat /*time*/) const { return atmosphere; };
