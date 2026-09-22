@@ -24,6 +24,7 @@
  */
 
 #include "gmanbbox.h"
+#include "gmanmath.h"
 
 /*
  * RenderMan API GMANBBox
@@ -35,6 +36,17 @@ static RtBound defaultBBox = {-RI_INFINITY, RI_INFINITY, -RI_INFINITY, RI_INFINI
 GMANBBox::GMANBBox() { *this = defaultBBox; }
 
 GMANBBox::GMANBBox(RtBound bb) { *this = bb; }
+
+GMANBBox::GMANBBox(GMANPoint const& min, GMANPoint const& max) {
+  RtBound const bb = {GMANMin(min.getX(), max.getX()), GMANMax(min.getX(), max.getX()),
+                      GMANMin(min.getY(), max.getY()), GMANMax(min.getY(), max.getY()),
+                      GMANMin(min.getZ(), max.getZ()), GMANMax(min.getZ(), max.getZ())};
+  *this = bb;
+}
+
+GMANPoint GMANBBox::getMin() const { return GMANPoint(box[0], box[2], box[4]); }
+
+GMANPoint GMANBBox::getMax() const { return GMANPoint(box[1], box[3], box[5]); }
 
 GMANBBox& GMANBBox::operator=(const RtBound bb) {
 

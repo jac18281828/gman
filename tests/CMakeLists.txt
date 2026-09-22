@@ -138,6 +138,16 @@ set_tests_properties(paramlist PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R6 proof, §8 check A: GMANBBox's two-point constructor and its
+# getMin()/getMax() accessors. See tests/bbox_test.cpp.
+add_executable(gman_bbox bbox_test.cpp)
+target_link_libraries(gman_bbox PRIVATE gman_core)
+
+add_test(NAME bbox COMMAND gman_bbox)
+set_tests_properties(bbox PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANDictionary::getTypeSize's default: arm reports an unknown token type
 # truthfully. See tests/dictionaryerror_test.cpp.
 add_executable(gman_dictionaryerror dictionaryerror_test.cpp)

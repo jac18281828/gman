@@ -26,6 +26,7 @@
 #pragma once
 
 #include "gmanlog.h"
+#include "gmanpoint.h"
 #include "ri.h"
 
 /*
@@ -43,6 +44,11 @@ public:
   GMANBBox();
   GMANBBox(RtBound bb);
 
+  // The box spanning min and max, componentwise; neither point need be
+  // ordered against the other's coordinates, since each axis takes its own
+  // low and high from GMANMin/GMANMax.
+  GMANBBox(GMANPoint const& min, GMANPoint const& max);
+
   GMANBBox(const GMANBBox& bb) = default;
 
   GMANBBox& operator=(const GMANBBox& bb);
@@ -50,4 +56,7 @@ public:
   GMANBBox& operator=(const RtBound bb);
 
   operator RtBound&() { return box; };
+
+  GMANPoint getMin() const;
+  GMANPoint getMax() const;
 };
