@@ -47,11 +47,16 @@ GMANPoint boxCentroid(GMANBBox const& box) {
 
 // The ray's own ray-box slab test, clamped to [tMinLimit, tMaxLimit]:
 // entry/exit narrow to the box's own intersection with that interval, and
-// the box overlaps it exactly when entry <= exit on return. An
-// axis-aligned ray whose origin lies exactly on a box-face plane produces
-// 0 * inf (NaN) on that axis's t0/t1; treated as no constraint there
-// (skipped rather than folded into entry/exit) rather than a rejection,
-// so this test never rejects a ray intersect() would accept.
+// the box overlaps it exactly when entry <= exit on return. A direction
+// component of exactly 0 -- +0.0 and -0.0 alike -- skips the division
+// (1.0/-0.0 is -infinity, which would fold an origin exactly on that
+// axis's near face into the wrong sign and reject a ray intersect()
+// would accept) and instead tests the ray's fixed coordinate on that
+// axis against [lo, hi] directly: outside it, the box is missed
+// regardless of the other axes; inside it (the on-a-face-plane case
+// included), the axis imposes no constraint, the same conservative
+// outcome the settled NaN-counts-as-overlap rule names, reached here
+// without ever producing a NaN.
 bool slabIntersect(GMANBBox const& box, GMANRay const& ray, RtFloat tMinLimit, RtFloat tMaxLimit, RtFloat& entryOut,
                    RtFloat& exitOut) {
   GMANPoint const lo = box.getMin();
@@ -67,15 +72,21 @@ bool slabIntersect(GMANBBox const& box, GMANRay const& ray, RtFloat tMinLimit, R
   RtFloat entry = tMinLimit;
   RtFloat exit = tMaxLimit;
   for (int axis = 0; axis < 3; ++axis) {
+    if (dirArr[axis] == (RtFloat)0.0) {
+      if (originArr[axis] < loArr[axis] || originArr[axis] > hiArr[axis]) {
+        entryOut = entry;
+        exitOut = exit;
+        return false;
+      }
+      continue;
+    }
     RtFloat const invD = (RtFloat)1.0 / dirArr[axis];
     RtFloat t0 = (loArr[axis] - originArr[axis]) * invD;
     RtFloat t1 = (hiArr[axis] - originArr[axis]) * invD;
     if (t0 > t1)
       std::swap(t0, t1);
-    if (!std::isnan(t0))
-      entry = GMANMax(entry, t0);
-    if (!std::isnan(t1))
-      exit = GMANMin(exit, t1);
+    entry = GMANMax(entry, t0);
+    exit = GMANMin(exit, t1);
   }
   entryOut = entry;
   exitOut = exit;
