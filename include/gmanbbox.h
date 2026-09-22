@@ -35,7 +35,7 @@
  *
  */
 
-class GMANBBox {
+class GMAN_EXPORT GMANBBox {
 private:
   RtBound box;
 

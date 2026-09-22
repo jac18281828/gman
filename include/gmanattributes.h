@@ -60,7 +60,7 @@ struct GMANGeometricApproximation {
   RtFloat value;
 };
 
-class GMANAttributes {
+class GMAN_EXPORT GMANAttributes {
 private:
   /* SHADING ATTRIBUTES */
   RtColor color;
