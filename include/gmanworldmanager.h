@@ -40,7 +40,7 @@
  *
  */
 
-class GMANWorldManager {
+class GMAN_EXPORT GMANWorldManager {
 public:
   GMANWorldManager(); // default constructor
 
