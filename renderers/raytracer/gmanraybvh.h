@@ -74,9 +74,9 @@ private:
   };
 
   // A leaf (leaf true) holds [primStart, primStart + primCount) of
-  // primitives_, tested directly against intersect() with no further box
+  // primitives, tested directly against intersect() with no further box
   // test; an internal node (leaf false) holds two child indices into
-  // nodes_. bbox is always the union of what the node holds.
+  // nodes. bbox is always the union of what the node holds.
   struct Node {
     GMANBBox bbox;
     bool leaf = false;
@@ -86,18 +86,47 @@ private:
     std::size_t primCount = 0;
   };
 
+  // nearestHit's own running state, threaded through testLeaf and
+  // pushChildren rather than held on the class: a local to each call, so
+  // two calls against the same tree never share it.
+  struct Search {
+    bool found = false;
+    GMANHit hit;
+    GMANRayInterface const* hitPrimitive = nullptr;
+    std::size_t bestInsertionIndex = 0;
+    std::size_t* primitiveTests = nullptr;
+  };
+
   // Every leaf holds at most this many primitives -- pinned, not left to
   // construction's discretion, so a visited leaf's own intersect() count
   // is exact rather than approximate.
   static constexpr std::size_t kLeafSize = 4;
 
-  std::vector<Entry> primitives_;
-  std::vector<Node> nodes_;
-  int rootIndex_ = -1;
+  std::vector<Entry> primitives;
+  std::vector<Node> nodes;
+  int rootIndex = -1;
 
-  // Builds the subtree over primitives_[start, start + count), reordering
+  // Builds the subtree over primitives[start, start + count), reordering
   // that range in place (nth_element's own partition) around an
   // object-median split on the axis of greatest centroid extent, and
-  // returns its node's index in nodes_.
+  // returns its node's index in nodes.
   int buildRange(std::size_t start, std::size_t count);
+
+  // The union of primitives[start, start + count)'s own boxes.
+  GMANBBox rangeBounds(std::size_t start, std::size_t count) const;
+
+  // The axis along which primitives[start, start + count)'s own
+  // centroids have the greatest extent -- buildRange's split axis.
+  int splitAxis(std::size_t start, std::size_t count) const;
+
+  // Tests every primitive node (a leaf) holds against ray, updating
+  // search with the nearest (ties keeping the earlier-inserted
+  // primitive) and counting each intersect() call.
+  void testLeaf(Node const& node, GMANRay const& ray, Search& search) const;
+
+  // Tests node's two children against ray (clamped to search's own best
+  // hit so far) and pushes whichever overlap onto stack, farther-entry
+  // child first so the nearer one -- by actual box-entry distance, not
+  // tree structure -- pops, and so is visited, first.
+  void pushChildren(Node const& node, GMANRay const& ray, Search const& search, std::vector<int>& stack) const;
 };
