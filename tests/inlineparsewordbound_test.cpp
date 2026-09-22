@@ -44,7 +44,7 @@ void testTriggerThrowsSyntaxError() {
   bool threw = false;
   try {
     ip.parse("a b c d e f g[h]");
-  } catch (GMANError& e) {
+  } catch (GMANError const& e) {
     threw = true;
     code = e.getCode();
   }
@@ -58,7 +58,7 @@ void testSevenWordsNoBracketStillThrows() {
   bool threw = false;
   try {
     ip.parse("a b c d e f g");
-  } catch (GMANError& e) {
+  } catch (GMANError const& e) {
     threw = true;
     code = e.getCode();
   }
