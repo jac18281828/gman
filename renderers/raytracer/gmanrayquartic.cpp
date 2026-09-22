@@ -81,6 +81,62 @@ double largestRealCubicRoot(double aa, double bb) {
   return largest;
 }
 
+// The biquadratic special case (the original quartic's own b == d == 0,
+// so q == 0 after depression): y^4 + p*y^2 + r == 0, a quadratic in
+// w == y^2, with no resolvent cubic to solve. Writes up to 2 real roots
+// into yRoots and returns their count.
+int solveBiquadratic(double p, double r, double yRoots[2]) {
+  double w0 = 0.0, w1 = 0.0;
+  int const nW = solveQuadraticDouble(1.0, p, r, w0, w1);
+  double const w[2] = {w0, w1};
+  int nY = 0;
+  for (int i = 0; i < nW; ++i) {
+    if (w[i] < 0.0)
+      continue;
+    double const s = std::sqrt(w[i]);
+    yRoots[nY++] = -s;
+    yRoots[nY++] = s;
+  }
+  return nY;
+}
+
+// Ferrari's method, q != 0: pick m solving the resolvent cubic
+// 8m^3 + 8p*m^2 + (2p^2 - 8r)*m - q^2 == 0 so that
+// y^4+p*y^2+q*y+r == (y^2+p/2+m)^2 - (sqrt(2m)*y - q/(2*sqrt(2m)))^2,
+// factoring the quartic into two quadratics in y. Dividing by 8 and
+// depressing (m == n - p/3) gives a cubic in n, solved via
+// largestRealCubicRoot. Writes up to 4 real roots (unsorted) into yRoots
+// and returns their count.
+int solveFerrari(double p, double q, double r, double yRoots[4]) {
+  double const cubicQ = p * p / 4.0 - r;
+  double const cubicR = -q * q / 8.0;
+  double const aa = cubicQ - p * p / 3.0;
+  double const cubicBB = 2.0 * p * p * p / 27.0 - p * cubicQ / 3.0 + cubicR;
+  double const n = largestRealCubicRoot(aa, cubicBB);
+  double const m = std::max(n - p / 3.0, 0.0);
+
+  double const sqrt2m = std::sqrt(2.0 * m);
+  // m == 0 forces q == 0 by the resolvent cubic itself (ruled out above),
+  // so this branch never divides by an exact zero.
+  double const qTerm = sqrt2m > 0.0 ? q / (2.0 * sqrt2m) : 0.0;
+
+  int nY = 0;
+  double y0 = 0.0, y1 = 0.0;
+  int const n1 = solveQuadraticDouble(1.0, -sqrt2m, p / 2.0 + m + qTerm, y0, y1);
+  if (n1 >= 1)
+    yRoots[nY++] = y0;
+  if (n1 >= 2)
+    yRoots[nY++] = y1;
+
+  double y2 = 0.0, y3 = 0.0;
+  int const n2 = solveQuadraticDouble(1.0, sqrt2m, p / 2.0 + m - qTerm, y2, y3);
+  if (n2 >= 1)
+    yRoots[nY++] = y2;
+  if (n2 >= 2)
+    yRoots[nY++] = y3;
+  return nY;
+}
+
 } // namespace
 
 namespace gman {
@@ -96,53 +152,7 @@ int solveQuartic(double a, double b, double c, double d, double e, double roots[
   double const shift = -bb / 4.0;
 
   double yRoots[4];
-  int nY = 0;
-
-  if (q == 0.0) {
-    // The biquadratic special case (the original b == d == 0): a quadratic
-    // in w == y^2, with no resolvent cubic to solve.
-    double w0 = 0.0, w1 = 0.0;
-    int const nW = solveQuadraticDouble(1.0, p, r, w0, w1);
-    double const w[2] = {w0, w1};
-    for (int i = 0; i < nW; ++i) {
-      if (w[i] < 0.0)
-        continue;
-      double const s = std::sqrt(w[i]);
-      yRoots[nY++] = -s;
-      yRoots[nY++] = s;
-    }
-  } else {
-    // Ferrari: pick m solving the resolvent cubic
-    // 8m^3 + 8p*m^2 + (2p^2 - 8r)*m - q^2 == 0 so that
-    // y^4+p*y^2+q*y+r == (y^2+p/2+m)^2 - (sqrt(2m)*y - q/(2*sqrt(2m)))^2,
-    // factoring the quartic into two quadratics in y. Dividing by 8 and
-    // depressing (m == n - p/3) gives the cubic below in n.
-    double const cubicQ = p * p / 4.0 - r;
-    double const cubicR = -q * q / 8.0;
-    double const aa = cubicQ - p * p / 3.0;
-    double const cubicBB = 2.0 * p * p * p / 27.0 - p * cubicQ / 3.0 + cubicR;
-    double const n = largestRealCubicRoot(aa, cubicBB);
-    double const m = std::max(n - p / 3.0, 0.0);
-
-    double const sqrt2m = std::sqrt(2.0 * m);
-    // m == 0 forces q == 0 by the resolvent cubic itself (ruled out above),
-    // so this branch never divides by an exact zero.
-    double const qTerm = sqrt2m > 0.0 ? q / (2.0 * sqrt2m) : 0.0;
-
-    double y0 = 0.0, y1 = 0.0;
-    int const n1 = solveQuadraticDouble(1.0, -sqrt2m, p / 2.0 + m + qTerm, y0, y1);
-    if (n1 >= 1)
-      yRoots[nY++] = y0;
-    if (n1 >= 2)
-      yRoots[nY++] = y1;
-
-    double y2 = 0.0, y3 = 0.0;
-    int const n2 = solveQuadraticDouble(1.0, sqrt2m, p / 2.0 + m - qTerm, y2, y3);
-    if (n2 >= 1)
-      yRoots[nY++] = y2;
-    if (n2 >= 2)
-      yRoots[nY++] = y3;
-  }
+  int const nY = (q == 0.0) ? solveBiquadratic(p, r, yRoots) : solveFerrari(p, q, r, yRoots);
 
   int nT = 0;
   for (int i = 0; i < nY; ++i)
