@@ -22,17 +22,22 @@
  * R5c proof, parts B and C: GMANRayTorus::intersect finds the object-space
  * hit of a ray against the implicit torus (sqrt(x^2+y^2)-majorradius)^2 +
  * z^2 == minorradius^2, honors thetamax's wedge and the [phimin, phimax]
- * band (including a negative phimin and a descending phimin > phimax),
- * tests the ray's own [tmin, tmax] interval, and fills a GMANHit that round
- * trips through GMANTorus::getLocation/getNormal. Part C sweeps 5120 rays
- * at a solid torus from five viewpoints, from a camera 5 major radii away
- * to one 10,000 away, to catch the speckle a careless quartic solve shows
- * as a miss on a ray aimed straight at the surface.
+ * band (including a negative phimin, a descending phimin > phimax, and a
+ * band offset by any number of turns), tests the ray's own [tmin, tmax]
+ * interval, and fills a GMANHit that round trips through
+ * GMANTorus::getLocation/getNormal. Part C sweeps 5120 rays at a solid
+ * torus from five viewpoints, from a camera 5 major radii away to one
+ * 10,000 away, to catch the speckle a careless quartic solve shows as a
+ * miss on a ray aimed straight at the surface; the edge-on viewpoint aims
+ * every ray at a z == 0 target, so its own rays carry object-space dz == 0
+ * throughout, the quartic's q ~= 0 trigger for a near-zero resolvent root.
+ * A pinned ray and a further sweep of horizontal (dz == 0) rays regress
+ * that same defect directly.
  */
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
+#include <format>
 #include <string>
 
 #include "check.h"
@@ -173,7 +178,9 @@ void testLaterRoots() {
   // theta == 90 degrees (distance 0 from the tube's own centre circle).
   GMANRay fromInside(GMANPoint(0.0, 2.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit insideHit;
-  check(full.intersect(fromInside, insideHit), "later roots: a ray starting inside the tube hits its far wall");
+  bool const insideHitFound = full.intersect(fromInside, insideHit);
+  check(insideHitFound, "later roots: a ray starting inside the tube hits its far wall");
+  check(insideHitFound && near(insideHit.t, 1.5f), "later roots: t == 1.5");
 
   // thetamax == 170 excludes the theta == 180 crossings (the near side, at
   // x == -2.5 and x == -1.5); the ray's first two roots there fall through,
@@ -208,6 +215,76 @@ void testDescendingBand() {
   check(near(roundTrip.getX(), hit.point.getX()) && near(roundTrip.getY(), hit.point.getY()) &&
             near(roundTrip.getZ(), hit.point.getZ()),
         "descending band: getLocation(hit.u, hit.v) reproduces hit.point");
+}
+
+// ---- B1 regression: a horizontal ray (object-space dz == 0, the
+// quartic's own q ~= 0 trigger for the near-zero-resolvent-root defect)
+// at origin (0, -5, 0.1), direction (1, 5, 0), R == 1, r == 0.3. The true
+// hit is t == 4.0758, at (0.7993, -1.0034, 0.1). ----
+void testPinnedHorizontalRay() {
+  GMANRayTorus torus(1.0, 0.3, 0.0, 360.0, 360.0, GMANParameterList());
+  GMANRay ray(GMANPoint(0.0, -5.0, 0.1), GMANVector(1.0, 5.0, 0.0));
+  GMANHit hit;
+
+  bool const hitFound = torus.intersect(ray, hit);
+  check(hitFound, "pinned horizontal ray: the ray hits");
+  check(hitFound && near(hit.t, 4.0758f), "pinned horizontal ray: t == 4.0758");
+  check(hitFound && near(hit.point.getX(), 0.7993f) && near(hit.point.getY(), -1.0034f) && near(hit.point.getZ(), 0.1f),
+        "pinned horizontal ray: point == (0.7993, -1.0034, 0.1)");
+}
+
+// ---- B1 regression: a sweep of horizontal rays (dz == 0) at z == 0.1,
+// the pinned ray's own direction (1, 5, 0), laterally offset in x across
+// [-0.48, 0.28] -- verified, both before and after the fix, to be exactly
+// where this direction's rays cross the tube at that height. A direction
+// with dx == 0 (straight down y, the naive reading of "offset from the
+// axis") turns out not to trigger the defect at all: with the ray's own x
+// fixed, Q1 in gmanraytorus.cpp's coefficient build loses the odd-degree
+// term that makes q small but nonzero in the first place. Every ray must
+// hit, at a point whose implicit residual is within 1e-4 of zero. ----
+void testHorizontalRaySweep() {
+  double const R = 1.0, r = 0.3, z = 0.1;
+  GMANRayTorus torus(R, r, 0.0, 360.0, 360.0, GMANParameterList());
+
+  constexpr int kSamples = 25;
+  constexpr double kLo = -0.48, kHi = 0.28;
+  for (int i = 0; i < kSamples; ++i) {
+    double const frac = (i + 0.5) / kSamples;
+    double const xoffset = kLo + frac * (kHi - kLo);
+
+    GMANRay ray(GMANPoint((RtFloat)xoffset, -5.0, (RtFloat)z), GMANVector(1.0, 5.0, 0.0));
+    GMANHit hit;
+    bool const hitFound = torus.intersect(ray, hit);
+    check(hitFound, "horizontal ray sweep: x offset " + std::to_string(xoffset) + " hits");
+    if (!hitFound)
+      continue;
+
+    double const px = hit.point.getX(), py = hit.point.getY(), pz = hit.point.getZ();
+    double const radial = std::sqrt(px * px + py * py) - R;
+    double const residual = std::fabs(radial * radial + pz * pz - r * r);
+    check(residual <= 1e-4, "horizontal ray sweep: x offset " + std::to_string(xoffset) + " residual " +
+                                std::to_string(residual) + " <= 1e-4");
+  }
+}
+
+// ---- A1: the band search's representative works for a band offset by
+// any number of turns -- [1400, 1500] hits wherever [-40, 60] does, with
+// the same v ----
+void testBandOffsetByManyTurns() {
+  GMANRayTorus nearBand(2.0, 0.5, -40.0, 60.0, 360.0, GMANParameterList());
+  GMANRayTorus farBand(2.0, 0.5, 1400.0, 1500.0, 360.0, GMANParameterList());
+
+  GMANPoint const target = nearBand.getLocation(0.3, 0.4);
+  GMANVector const normal = nearBand.getNormal(0.3, 0.4);
+  GMANRay ray = rayAtSurfacePoint(target, normal);
+
+  GMANHit nearHit, farHit;
+  bool const nearHitFound = nearBand.intersect(ray, nearHit);
+  bool const farHitFound = farBand.intersect(ray, farHit);
+  check(nearHitFound, "band offset by many turns: the [-40, 60] band hits");
+  check(farHitFound, "band offset by many turns: the [1400, 1500] band, the same physical band, hits too");
+  check(nearHitFound && farHitFound && near(nearHit.v, farHit.v),
+        "band offset by many turns: both bands report the same v");
 }
 
 // ---- B6a: a rotation places the torus's axis along camera x ----
@@ -353,44 +430,63 @@ struct SweepResult {
   double largestResidual = 0.0;
 };
 
-// GMANTorus::getLocation/getNormal are non-const (out of this unit's
-// scope to change), so this takes torus by mutable reference.
+// GMANTorus::getLocation and getNormal are non-const, so this takes torus
+// by mutable reference even though the sweep itself never modifies it.
+// One target: getLocation(u, v) moved 1% of minorradius toward the
+// tube's centre circle, so it lies inside the solid tube, then a ray from
+// viewpoint aimed at it, folded into result.
+void sweepOneTarget(GMANRayTorus& torus, GMANPoint const& viewpoint, double majorradius, double minorradius, double u,
+                    double v, SweepResult& result) {
+  GMANPoint const surface = torus.getLocation(u, v);
+  GMANVector const normal = torus.getNormal(u, v);
+  GMANPoint const target(surface.getX() - (RtFloat)(0.01 * minorradius) * normal.getX(),
+                         surface.getY() - (RtFloat)(0.01 * minorradius) * normal.getY(),
+                         surface.getZ() - (RtFloat)(0.01 * minorradius) * normal.getZ());
+
+  double const ddx = target.getX() - viewpoint.getX();
+  double const ddy = target.getY() - viewpoint.getY();
+  double const ddz = target.getZ() - viewpoint.getZ();
+  double const targetDistance = std::sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
+
+  GMANRay ray(viewpoint, GMANVector(viewpoint, target));
+  GMANHit hit;
+  if (!torus.intersect(ray, hit)) {
+    ++result.misses;
+    return;
+  }
+  if (hit.t > targetDistance + 1e-3f)
+    ++result.tExceeded;
+
+  double const px = hit.point.getX(), py = hit.point.getY(), pz = hit.point.getZ();
+  double const radial = std::sqrt(px * px + py * py) - majorradius;
+  double const residual = std::fabs(radial * radial + pz * pz - minorradius * minorradius);
+  result.largestResidual = std::max(result.largestResidual, residual);
+}
+
+// A 32x32 grid over (u, v): 1024 targets spanning the whole tube.
 SweepResult sweepFromViewpoint(GMANRayTorus& torus, GMANPoint const& viewpoint, double majorradius,
                                double minorradius) {
   SweepResult result;
   constexpr int kGrid = 32;
+  for (int i = 0; i < kGrid; ++i)
+    for (int j = 0; j < kGrid; ++j)
+      sweepOneTarget(torus, viewpoint, majorradius, minorradius, (i + 0.5) / kGrid, (j + 0.5) / kGrid, result);
+  return result;
+}
 
-  for (int i = 0; i < kGrid; ++i) {
-    for (int j = 0; j < kGrid; ++j) {
-      double const u = (i + 0.5) / kGrid;
-      double const v = (j + 0.5) / kGrid;
-
-      GMANPoint const surface = torus.getLocation(u, v);
-      GMANVector const normal = torus.getNormal(u, v);
-      GMANPoint const target(surface.getX() - (RtFloat)(0.01 * minorradius) * normal.getX(),
-                             surface.getY() - (RtFloat)(0.01 * minorradius) * normal.getY(),
-                             surface.getZ() - (RtFloat)(0.01 * minorradius) * normal.getZ());
-
-      double const ddx = target.getX() - viewpoint.getX();
-      double const ddy = target.getY() - viewpoint.getY();
-      double const ddz = target.getZ() - viewpoint.getZ();
-      double const targetDistance = std::sqrt(ddx * ddx + ddy * ddy + ddz * ddz);
-
-      GMANRay ray(viewpoint, GMANVector(viewpoint, target));
-      GMANHit hit;
-      if (!torus.intersect(ray, hit)) {
-        ++result.misses;
-        continue;
-      }
-      if (hit.t > targetDistance + 1e-3f)
-        ++result.tExceeded;
-
-      double const px = hit.point.getX(), py = hit.point.getY(), pz = hit.point.getZ();
-      double const radial = std::sqrt(px * px + py * py) - majorradius;
-      double const residual = std::fabs(radial * radial + pz * pz - minorradius * minorradius);
-      result.largestResidual = std::max(result.largestResidual, residual);
-    }
-  }
+// B1 regression: every target sits on a z == 0 ring (v == 0, phi == 0;
+// v == 0.5, phi == 180), so a ray from a viewpoint that is itself at
+// z == 0 has object-space dz == 0 exactly -- the quartic's own q ~= 0
+// trigger for the near-zero-resolvent-root defect. 1024 rays, the same
+// budget as the general sweep, split across the two rings.
+SweepResult sweepEdgeOnAtZeroZ(GMANRayTorus& torus, GMANPoint const& viewpoint, double majorradius,
+                               double minorradius) {
+  SweepResult result;
+  constexpr int kSamplesPerRing = 512;
+  double const zeroZRings[2] = {0.0, 0.5};
+  for (double const v : zeroZRings)
+    for (int i = 0; i < kSamplesPerRing; ++i)
+      sweepOneTarget(torus, viewpoint, majorradius, minorradius, (i + 0.5) / kSamplesPerRing, v, result);
   return result;
 }
 
@@ -402,27 +498,28 @@ void testNoSpeckle() {
   struct Viewpoint {
     char const* name;
     GMANPoint point;
+    bool zeroZTargets = false;
   };
   Viewpoint const viewpoints[] = {
-      {"face on, 5 major radii along z", GMANPoint(0.0, 0.0, 5.0)},
-      {"edge on, 5 major radii in the xy-plane", GMANPoint(5.0, 0.0, 0.0)},
-      {"level with the tube's top, 5 major radii out", GMANPoint(5.0, 0.0, (RtFloat)minorradius)},
+      {"face on, 5 major radii along z", GMANPoint(0.0, 0.0, 5.0), false},
+      {"edge on, 5 major radii in the xy-plane, aimed at z == 0 targets", GMANPoint(5.0, 0.0, 0.0), true},
+      {"level with the tube's top, 5 major radii out", GMANPoint(5.0, 0.0, (RtFloat)minorradius), false},
       {"300 major radii away, off-axis",
-       GMANPoint((RtFloat)(300.0 * invSqrt3), (RtFloat)(300.0 * invSqrt3), (RtFloat)(300.0 * invSqrt3))},
+       GMANPoint((RtFloat)(300.0 * invSqrt3), (RtFloat)(300.0 * invSqrt3), (RtFloat)(300.0 * invSqrt3)), false},
       {"10,000 major radii away, off-axis",
-       GMANPoint((RtFloat)(10000.0 * invSqrt3), (RtFloat)(10000.0 * invSqrt3), (RtFloat)(10000.0 * invSqrt3))},
+       GMANPoint((RtFloat)(10000.0 * invSqrt3), (RtFloat)(10000.0 * invSqrt3), (RtFloat)(10000.0 * invSqrt3)), false},
   };
 
   for (auto const& vp : viewpoints) {
-    SweepResult const result = sweepFromViewpoint(torus, vp.point, majorradius, minorradius);
+    SweepResult const result = vp.zeroZTargets ? sweepEdgeOnAtZeroZ(torus, vp.point, majorradius, minorradius)
+                                               : sweepFromViewpoint(torus, vp.point, majorradius, minorradius);
     check(result.misses == 0,
           std::string(vp.name) + ": 0/1024 rays missed the torus (got " + std::to_string(result.misses) + ")");
     check(result.tExceeded == 0, std::string(vp.name) + ": 0/1024 rays exceeded the target's distance (got " +
                                      std::to_string(result.tExceeded) + ")");
-    char buf[64];
-    std::snprintf(buf, sizeof(buf), "%.3e", result.largestResidual);
-    check(result.largestResidual <= 1e-4,
-          std::string(vp.name) + ": largest implicit residual " + buf + " is within 1e-4 of zero");
+    check(result.largestResidual <= 1e-4, std::string(vp.name) + ": largest implicit residual " +
+                                              std::format("{:.3e}", result.largestResidual) +
+                                              " is within 1e-4 of zero");
   }
 }
 
@@ -434,6 +531,9 @@ int main() {
   testBoundsBite();
   testLaterRoots();
   testDescendingBand();
+  testPinnedHorizontalRay();
+  testHorizontalRaySweep();
+  testBandOffsetByManyTurns();
   testRotatingTransform();
   testShearTransform();
   testUniformScale();
