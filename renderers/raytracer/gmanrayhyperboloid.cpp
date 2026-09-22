@@ -70,17 +70,8 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   // the plane hit's own radius, and the wedge is a spiral sector since
   // phi(v) varies with v.
   if (dzSeg == 0.0) {
-    // The plane z == point1.z, in object space -- GMANRayDisk::intersect's
-    // own pattern for its z == height plane. A ray parallel to it never
-    // reaches that z.
-    if (objDirection.getZ() == 0.0)
-      return false;
-
-    // NaN fails every comparison, so each guard below rejects unless the
-    // wanted range explicitly holds, rather than accepting unless an
-    // unwanted one does.
     RtFloat const t = (point1.getZ() - objOrigin.getZ()) / objDirection.getZ();
-    if (!(t >= ray.getTMin() && t <= ray.getTMax()))
+    if (t < ray.getTMin() || t > ray.getTMax())
       return false;
 
     RtFloat const x = objOrigin.getX() + objDirection.getX() * t;
@@ -96,6 +87,7 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     RtFloat const vRoots[2] = {vRoot0, vRoot1};
     for (int i = 0; i < numVRoots; ++i) {
       RtFloat const v = vRoots[i];
+      // Rejects NaN, the only place a NaN from a degenerate ray is caught: NaN fails every comparison.
       if (!(v >= 0.0 && v <= 1.0))
         continue;
 
@@ -106,7 +98,7 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
       RtFloat const phi = GMANAtan(yv, xv);
       RtFloat const pointPhi = GMANAtan(y, x);
       RtFloat const theta = GMANMod(pointPhi - phi, (RtFloat)(2.0 * PI));
-      if (!(theta <= thetamaxRad))
+      if (theta > thetamaxRad)
         continue;
 
       // The fold, pDot + dSq*v == 0, is measure-zero: the formula and getNormal both vanish there in exact arithmetic.

@@ -172,9 +172,9 @@ void testFlatCoplanarRayMisses() {
 }
 
 // A near-tangent direction drives t toward 1e25: x*x overflows, and the
-// v-quadratic's c/q division produces NaN roots. Each flat-branch guard
-// rejects unless its wanted range explicitly holds, so NaN -- which fails
-// every comparison -- cannot slip through as an accepted candidate.
+// v-quadratic's c/q division produces NaN roots. The v guard's NaN-safe
+// form is the only guard that catches it -- NaN fails every comparison,
+// so a plain range check would let it slip through as an accepted root.
 void testFlatNaNGuardRejects() {
   RtPoint p1 = {1.0, 0.0, 0.0};
   RtPoint p2 = {2.0, 0.0, 0.0};
