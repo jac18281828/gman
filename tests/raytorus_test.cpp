@@ -28,11 +28,12 @@
  * GMANTorus::getLocation/getNormal. Part C sweeps 5120 rays at a solid
  * torus from five viewpoints, from a camera 5 major radii away to one
  * 10,000 away, to catch the speckle a careless quartic solve shows as a
- * miss on a ray aimed straight at the surface; the edge-on viewpoint aims
- * every ray at a z == 0 target, so its own rays carry object-space dz == 0
- * throughout, the quartic's q ~= 0 trigger for a near-zero resolvent root.
- * A pinned ray and a further sweep of horizontal (dz == 0) rays regress
- * that same defect directly.
+ * miss on a ray aimed straight at the surface; the edge-on viewpoint's own
+ * rays carry object-space dz == 0 whenever their target does too, the
+ * quartic's q ~= 0 trigger for a near-zero resolvent root, so it also
+ * sweeps 1024 further rays confined to the tube's own z == 0 rings, where
+ * every ray shares that property at once. Two pinned rays and a sweep of
+ * horizontal (dz == 0) rays regress that same defect directly.
  */
 
 #include <algorithm>
@@ -521,11 +522,11 @@ void testNoSpeckle() {
   struct Viewpoint {
     char const* name;
     GMANPoint point;
-    bool zeroZTargets = false;
+    bool zeroZTargetsToo = false;
   };
   Viewpoint const viewpoints[] = {
       {"face on, 5 major radii along z", GMANPoint(0.0, 0.0, 5.0), false},
-      {"edge on, 5 major radii in the xy-plane, aimed at z == 0 targets", GMANPoint(5.0, 0.0, 0.0), true},
+      {"edge on, 5 major radii in the xy-plane", GMANPoint(5.0, 0.0, 0.0), true},
       {"level with the tube's top, 5 major radii out", GMANPoint(5.0, 0.0, (RtFloat)minorradius), false},
       {"300 major radii away, off-axis",
        GMANPoint((RtFloat)(300.0 * invSqrt3), (RtFloat)(300.0 * invSqrt3), (RtFloat)(300.0 * invSqrt3)), false},
@@ -534,8 +535,7 @@ void testNoSpeckle() {
   };
 
   for (auto const& vp : viewpoints) {
-    SweepResult const result = vp.zeroZTargets ? sweepEdgeOnAtZeroZ(torus, vp.point, majorradius, minorradius)
-                                               : sweepFromViewpoint(torus, vp.point, majorradius, minorradius);
+    SweepResult const result = sweepFromViewpoint(torus, vp.point, majorradius, minorradius);
     check(result.misses == 0,
           std::string(vp.name) + ": 0/1024 rays missed the torus (got " + std::to_string(result.misses) + ")");
     check(result.tExceeded == 0, std::string(vp.name) + ": 0/1024 rays exceeded the target's distance (got " +
@@ -543,6 +543,21 @@ void testNoSpeckle() {
     check(result.largestResidual <= 1e-4, std::string(vp.name) + ": largest implicit residual " +
                                               std::format("{:.3e}", result.largestResidual) +
                                               " is within 1e-4 of zero");
+
+    if (!vp.zeroZTargetsToo)
+      continue;
+
+    // B1 regression: this viewpoint's own dz == 0 rays, aimed at the two
+    // z == 0 rings, run in addition to the general 32x32 grid above.
+    SweepResult const zeroZResult = sweepEdgeOnAtZeroZ(torus, vp.point, majorradius, minorradius);
+    check(zeroZResult.misses == 0, std::string(vp.name) + ", z == 0 targets: 0/1024 rays missed the torus (got " +
+                                       std::to_string(zeroZResult.misses) + ")");
+    check(zeroZResult.tExceeded == 0, std::string(vp.name) +
+                                          ", z == 0 targets: 0/1024 rays exceeded the target's distance (got " +
+                                          std::to_string(zeroZResult.tExceeded) + ")");
+    check(zeroZResult.largestResidual <= 1e-4, std::string(vp.name) + ", z == 0 targets: largest implicit residual " +
+                                                   std::format("{:.3e}", zeroZResult.largestResidual) +
+                                                   " is within 1e-4 of zero");
   }
 }
 
