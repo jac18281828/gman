@@ -34,12 +34,8 @@ class GMANPrimitive;
  *
  * An origin, a direction and a [tmin, tmax] interval along it. The
  * constructor always normalizes the direction, so every GMANRay's t is a
- * distance and there is no unnormalized path to take: the sphere
- * quadratic's leading coefficient is 1, and an RI_EPSILON self-hit
- * rejection means the same thing at every pixel. An object-space ray
- * whose t must match the world-space one needs its own construction path
- * that scales t against the transform used, rather than paying to
- * re-normalize a direction that already lost the scale that produced it.
+ * distance, and an RI_EPSILON self-hit rejection means the same distance
+ * at every pixel.
  */
 class GMANRay {
   GMANPoint origin;
