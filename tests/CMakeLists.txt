@@ -1239,16 +1239,14 @@ set_tests_properties(rayhyperboloid PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b deferral: the flat-annulus hyperboloid (point1.z == point2.z), a
-# second intersector's worth of work no fixture in this tree needs yet.
-# Pins the wanted behavior; WILL_FAIL until a future unit implements it --
-# the first WILL_FAIL test in this tree.
+# The flat-annulus hyperboloid (point1.z == point2.z): z carries no
+# information about v on this plane, so v comes from the plane hit's own
+# radius, and the wedge is a spiral sector since phi(v) varies with v.
 add_executable(gman_hyperboloidflatannulus hyperboloidflatannulus_test.cpp)
 target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core gman_raytracer_objects)
 
 add_test(NAME hyperboloidflatannulus COMMAND gman_hyperboloidflatannulus)
 set_tests_properties(hyperboloidflatannulus PROPERTIES
-  WILL_FAIL TRUE
   LABELS unit
   TIMEOUT 30)
 

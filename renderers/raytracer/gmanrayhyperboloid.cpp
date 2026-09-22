@@ -42,25 +42,18 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   if (singular)
     return false;
 
-  // A null wedge leaves no surface to hit, the sphere's own guard. A
-  // segment with point1.z == point2.z is a flat annulus this unit defers
-  // (R5b's own prompt): v is no longer recoverable from z alone, its
-  // radial extent is [min r(v), max r(v)] rather than the endpoint radii,
-  // and its wedge is a spiral sector since phi(v) varies with v -- a
-  // second intersector's worth of work for a shape no fixture in this
-  // tree uses.
-  if (thetamax == 0.0 || point1.getZ() == point2.getZ())
+  // A null wedge leaves no surface to hit, the sphere's own guard; it
+  // covers both branches below.
+  if (thetamax == 0.0)
     return false;
 
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
   // GMANHyperboloid::getLocation sweeps the segment point1..point2 by v,
-  // r(v) == dist(P(v), axis), phi(v) == atan2(P(v).y, P(v).x). z spans the
-  // segment, so v == (z - point1.z) / dzSeg is affine in z and so in t;
-  // r(v)^2 is quadratic in v (P0sq + 2*Pdot*v + Dsq*v^2, expanding
-  // P(v) == point1 + v*(point2 - point1)), so x(t)^2 + y(t)^2 - r(v(t))^2
-  // is an ordinary quadratic in t.
+  // r(v) == dist(P(v), axis), phi(v) == atan2(P(v).y, P(v).x); r(v)^2 is
+  // quadratic in v (P0sq + 2*Pdot*v + Dsq*v^2, expanding
+  // P(v) == point1 + v*(point2 - point1)).
   RtFloat const dxSeg = point2.getX() - point1.getX();
   RtFloat const dySeg = point2.getY() - point1.getY();
   RtFloat const dzSeg = point2.getZ() - point1.getZ();
@@ -69,6 +62,77 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   RtFloat const pDot = point1.getX() * dxSeg + point1.getY() * dySeg;
   RtFloat const dSq = dxSeg * dxSeg + dySeg * dySeg;
 
+  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
+
+  // A segment with point1.z == point2.z sweeps a flat annulus: z is
+  // constant across it, so it carries no information about v, unlike the
+  // spanning branch below, which divides by dzSeg. v instead comes from
+  // the plane hit's own radius, and the wedge is a spiral sector since
+  // phi(v) varies with v.
+  if (dzSeg == 0.0) {
+    // The plane z == point1.z, in object space -- GMANRayDisk::intersect's
+    // own pattern for its z == height plane. A ray parallel to it never
+    // reaches that z.
+    if (objDirection.getZ() == 0.0)
+      return false;
+
+    RtFloat const t = (point1.getZ() - objOrigin.getZ()) / objDirection.getZ();
+    if (t < ray.getTMin() || t > ray.getTMax())
+      return false;
+
+    RtFloat const x = objOrigin.getX() + objDirection.getX() * t;
+    RtFloat const y = objOrigin.getY() + objDirection.getY() * t;
+
+    // r(v)^2 == x*x + y*y at the plane hit: dSq*v^2 + 2*pDot*v +
+    // (p0sq - x*x - y*y) == 0. point1 == point2 forces dSq == pDot == 0.0,
+    // so GMANQuadraticRoots' own a == 0.0 contract already returns zero
+    // roots for that degeneracy.
+    RtFloat vRoot0 = 0.0, vRoot1 = 0.0;
+    int const numVRoots = GMANQuadraticRoots(dSq, 2 * pDot, p0sq - x * x - y * y, vRoot0, vRoot1);
+    if (numVRoots == 0)
+      return false;
+
+    RtFloat const vRoots[2] = {vRoot0, vRoot1};
+    for (int i = 0; i < numVRoots; ++i) {
+      RtFloat const v = vRoots[i];
+      if (v < 0.0 || v > 1.0)
+        continue;
+
+      // theta is measured from the segment's own azimuth phi(v) at this v,
+      // which moves with v here (a spiral sector), not from the x-axis.
+      RtFloat const xv = point1.getX() + v * dxSeg;
+      RtFloat const yv = point1.getY() + v * dySeg;
+      RtFloat const phi = GMANAtan(yv, xv);
+      RtFloat const pointPhi = GMANAtan(y, x);
+      RtFloat const theta = GMANMod(pointPhi - phi, (RtFloat)(2.0 * PI));
+      if (theta > thetamaxRad)
+        continue;
+
+      // dzSeg == 0 collapses getNormal's cross product (see the spanning
+      // branch's own comment below) onto the axis alone. At the fold --
+      // r(v)'s interior minimum, where pDot + dSq*v == 0 -- this formula
+      // and getNormal's cross product both vanish in exact arithmetic;
+      // float rounding there can normalize to either +-z sign. A
+      // measure-zero line, left alone.
+      GMANVector objNormal(0.0, 0.0, -(pDot + dSq * v));
+      GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
+      normal.normalize();
+
+      hit.t = t;
+      hit.point = ray.pointAt(t);
+      hit.normal = normal;
+      hit.u = theta / thetamaxRad;
+      hit.v = v;
+      hit.primitive = this;
+      return true;
+    }
+
+    return false;
+  }
+
+  // z spans the segment here, so v == (z - point1.z) / dzSeg is affine in
+  // z and so in t; x(t)^2 + y(t)^2 - r(v(t))^2 is then an ordinary
+  // quadratic in t.
   RtFloat const v0 = (objOrigin.getZ() - point1.getZ()) / dzSeg;
   RtFloat const vSlope = objDirection.getZ() / dzSeg;
 
@@ -89,7 +153,6 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     return false;
 
   RtFloat const roots[2] = {t0, t1};
-  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
 
   for (int i = 0; i < numRoots; ++i) {
     RtFloat const t = roots[i];
