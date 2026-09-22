@@ -56,8 +56,8 @@ public:
   RtFloat determinant(RtVoid);
   RtVoid invert(RtVoid);
 
-  RtVoid p3m(RtInt n, RtFloat* src, RtFloat* dest);
-  RtVoid p4m(RtInt n, RtFloat* src, RtFloat* dest);
+  RtVoid p3m(RtInt n, RtFloat* src, RtFloat* dest) const;
+  RtVoid p4m(RtInt n, RtFloat* src, RtFloat* dest) const;
 
   GMANMatrix4 operator*(RtFloat f) const;
   GMANMatrix4& operator*=(RtFloat f);
@@ -90,10 +90,8 @@ namespace gman {
 // GMANPoint::operator*'s m * p; a caller reaching for that operator here
 // instead would silently transform by the wrong side of the matrix.
 
-// The same row-vector product GMANMatrix4::p3m computes, through the
-// const operator[] a library caller can use, since p3m itself is not
-// const-qualified. Perspective-divides when m's homogeneous w is neither
-// 0 nor 1.
+// Delegates to GMANMatrix4::p3m. Perspective-divides when m's homogeneous
+// w is neither 0 nor 1.
 GMAN_EXPORT GMANPoint transformPoint(GMANMatrix4 const& m, GMANPoint const& p);
 
 // A direction's homogeneous w is 0, so the translation row (row 3) drops

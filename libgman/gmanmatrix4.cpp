@@ -260,7 +260,7 @@ RtVoid GMANMatrix4::invert() {
 // sum_i src_i*M[i][j] + M[3][j], matching trans()/rot()/scale()/concat(),
 // which store translation in row 3. Divides by the resulting w so a
 // (rare) projective matrix passed here still produces a valid point.
-RtVoid GMANMatrix4::p3m(RtInt nbpts, RtFloat* src, RtFloat* dest) {
+RtVoid GMANMatrix4::p3m(RtInt nbpts, RtFloat* src, RtFloat* dest) const {
   for (RtInt i = 0; i < nbpts * 3; i += 3) {
     RtFloat x = src[0 + i], y = src[1 + i], z = src[2 + i];
     RtFloat rx = x * mtrx[0][0] + y * mtrx[1][0] + z * mtrx[2][0] + mtrx[3][0];
@@ -282,7 +282,7 @@ RtVoid GMANMatrix4::p3m(RtInt nbpts, RtFloat* src, RtFloat* dest) {
 // Homogeneous counterpart of p3m: carries w through unnormalized, for
 // callers (e.g. normal transforms) that need the raw row-vector product
 // rather than a perspective-divided point.
-RtVoid GMANMatrix4::p4m(RtInt nbpts, RtFloat* src, RtFloat* dest) {
+RtVoid GMANMatrix4::p4m(RtInt nbpts, RtFloat* src, RtFloat* dest) const {
   for (RtInt i = 0; i < nbpts * 4; i += 4) {
     RtFloat x = src[0 + i], y = src[1 + i], z = src[2 + i], w = src[3 + i];
     dest[0 + i] = x * mtrx[0][0] + y * mtrx[1][0] + z * mtrx[2][0] + w * mtrx[3][0];
@@ -361,14 +361,10 @@ GMANMatrix4& GMANMatrix4::assign(const GMANMatrix4& m) {
 namespace gman {
 
 GMANPoint transformPoint(GMANMatrix4 const& m, GMANPoint const& p) {
-  RtFloat const x = p.getX(), y = p.getY(), z = p.getZ();
-  RtFloat const rx = x * m[0][0] + y * m[1][0] + z * m[2][0] + m[3][0];
-  RtFloat const ry = x * m[0][1] + y * m[1][1] + z * m[2][1] + m[3][1];
-  RtFloat const rz = x * m[0][2] + y * m[1][2] + z * m[2][2] + m[3][2];
-  RtFloat const rw = x * m[0][3] + y * m[1][3] + z * m[2][3] + m[3][3];
-  if (rw != 1.0 && rw != 0.0)
-    return GMANPoint(rx / rw, ry / rw, rz / rw);
-  return GMANPoint(rx, ry, rz);
+  RtFloat src[3] = {p.getX(), p.getY(), p.getZ()};
+  RtFloat dest[3];
+  m.p3m(1, src, dest);
+  return GMANPoint(dest[0], dest[1], dest[2]);
 }
 
 GMANVector transformDirection(GMANMatrix4 const& m, GMANVector const& v) {
