@@ -36,8 +36,9 @@
 namespace {
 
 // Simple roots agree to 1e-9 relative to the largest root's magnitude; a
-// double root (tested via testDoubleRoot's own tolerance) to 1e-6, the
-// polish converging more slowly against a vanishing derivative.
+// double root (tested via testDoubleRootBesideSimpleRoots's own tolerance)
+// to 1e-6, the closed form itself conditioned more poorly there against a
+// vanishing derivative.
 void checkRoots(char const* name, double a, double b, double c, double d, double e, double const* expected,
                 int expectedCount, double relTol) {
   double roots[4];
@@ -96,6 +97,37 @@ void testClusteredRoots() {
   checkRoots("clustered", 1.0, 0.0, -1.25, 0.0, 0.25, expected, 4, 1e-9);
 }
 
+// (t+1.5)(t-2)(t^2+2t+5): a real pair beside a complex pair, taking the
+// Ferrari path (b, d != 0) rather than the biquadratic special case.
+void testFerrariComplexPair() {
+  double const expected[2] = {-1.5, 2.0};
+  checkRoots("Ferrari path, complex pair", 1.0, 1.5, 1.0, -8.5, -15.0, expected, 2, 1e-9);
+}
+
+// (t^2+t+1)(t^2+3t+10): no real roots at all, taking the Ferrari path.
+void testFerrariNoRealRoots() {
+  checkRoots("Ferrari path, no real roots", 1.0, 4.0, 14.0, 13.0, 10.0, nullptr, 0, 1e-9);
+}
+
+// (t+0.5)(t-0.5-2^-21)(t^2-2^-22*t+4): q is small but nonzero and the
+// resolvent cubic's own root sits near zero, where n - p/3 (the depressed
+// cubic's root, shifted back) cancels catastrophically. Regression for the
+// speckle a horizontal ray (object-space dz ~= 0) showed on the torus.
+void testNearZeroResolventRoot() {
+  double const expected[2] = {-0.5, 0.5000004768371582};
+  checkRoots("near-zero resolvent root", 1.0, -7.152557373046875e-07, 3.7499997615815346, -1.8477439311936905e-06,
+             -1.0000009536743164, expected, 2, 1e-6);
+}
+
+// (t+0.5)(t-0.5-2^-23)(t^2+2^-22*t+4): a second near-zero resolvent root, one
+// bit narrower than testNearZeroResolventRoot's, regressing the same
+// cancellation at a different magnitude.
+void testNearZeroResolventRootNarrower() {
+  double const expected[2] = {-0.5, 0.50000011920928955};
+  checkRoots("near-zero resolvent root, narrower", 1.0, 1.1920928955078125e-07, 3.7499999403953268,
+             -5.3644181718937034e-07, -1.0000002384185791, expected, 2, 1e-6);
+}
+
 } // namespace
 
 int main() {
@@ -105,6 +137,10 @@ int main() {
   testBiquadratic();
   testDoubleRootBesideSimpleRoots();
   testClusteredRoots();
+  testFerrariComplexPair();
+  testFerrariNoRealRoots();
+  testNearZeroResolventRoot();
+  testNearZeroResolventRootNarrower();
 
   return checkSummary("gman::solveQuartic solves a ray's quartic at every discriminant shape");
 }

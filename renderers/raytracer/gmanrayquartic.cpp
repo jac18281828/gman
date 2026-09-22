@@ -29,6 +29,11 @@
 
 namespace {
 
+// Below this, n - p/3 (the depressed cubic's own root, shifted back) is
+// cancellation noise rather than a measured small root: reseed from the
+// resolvent cubic's linear term instead (see refineResolventRoot).
+constexpr double kResolventSeedFloor = 1e-8;
+
 // A stable real solve of w*t^2 + x*t + y == 0 in double, GMANQuadraticRoots'
 // own cancellation-avoiding root form (that helper is RtFloat-only, so the
 // quartic solver -- built end to end in double -- carries its own copy).
@@ -100,20 +105,49 @@ int solveBiquadratic(double p, double r, double yRoots[2]) {
   return nY;
 }
 
-// Ferrari's method, q != 0: pick m solving the resolvent cubic
-// 8m^3 + 8p*m^2 + (2p^2 - 8r)*m - q^2 == 0 so that
+// Refines seed -- the depressed cubic's own root n minus its p/3 shift --
+// against the exact resolvent cubic 8m^3+8p*m^2+(2p^2-8r)*m-q^2 == 0.
+// n - p/3 subtracts two O(p) quantities, so it is cancellation noise, not
+// a measurement, whenever the true m is many orders smaller than p: below
+// kResolventSeedFloor, reseed from the cubic's own linear term instead,
+// valid because 8m^3 and 8p*m^2 are negligible next to it there, leaving
+// (2p^2-8r)*m ~= q^2. Each Newton step is accepted only if it shrinks the
+// residual, so a seed already at or past the nearby root simply stops.
+double refineResolventRoot(double p, double r, double q, double seed) {
+  double const linear = 2.0 * p * p - 8.0 * r;
+  double m = seed;
+  if (std::abs(seed) < kResolventSeedFloor * std::max(1.0, std::abs(p)) && linear != 0.0)
+    m = (q * q) / linear;
+
+  double f = 8.0 * m * m * m + 8.0 * p * m * m + linear * m - q * q;
+  for (int iter = 0; iter < 8; ++iter) {
+    double const fp = 24.0 * m * m + 16.0 * p * m + linear;
+    if (fp == 0.0)
+      break;
+    double const delta = f / fp;
+    double const mNext = m - delta;
+    double const fNext = 8.0 * mNext * mNext * mNext + 8.0 * p * mNext * mNext + linear * mNext - q * q;
+    if (std::abs(fNext) >= std::abs(f))
+      break;
+    m = mNext;
+    f = fNext;
+    if (std::abs(delta) <= 1e-15 * std::max(1.0, std::abs(m)))
+      break;
+  }
+  return m;
+}
+
+// Ferrari's method, q != 0: pick m solving the resolvent cubic so that
 // y^4+p*y^2+q*y+r == (y^2+p/2+m)^2 - (sqrt(2m)*y - q/(2*sqrt(2m)))^2,
-// factoring the quartic into two quadratics in y. Dividing by 8 and
-// depressing (m == n - p/3) gives a cubic in n, solved via
-// largestRealCubicRoot. Writes up to 4 real roots (unsorted) into yRoots
-// and returns their count.
+// factoring the quartic into two quadratics in y. Writes up to 4 real
+// roots (unsorted) into yRoots and returns their count.
 int solveFerrari(double p, double q, double r, double yRoots[4]) {
   double const cubicQ = p * p / 4.0 - r;
   double const cubicR = -q * q / 8.0;
   double const aa = cubicQ - p * p / 3.0;
   double const cubicBB = 2.0 * p * p * p / 27.0 - p * cubicQ / 3.0 + cubicR;
   double const n = largestRealCubicRoot(aa, cubicBB);
-  double const m = std::max(n - p / 3.0, 0.0);
+  double const m = std::max(refineResolventRoot(p, r, q, n - p / 3.0), 0.0);
 
   double const sqrt2m = std::sqrt(2.0 * m);
   // m == 0 forces q == 0 by the resolvent cubic itself (ruled out above),
@@ -157,24 +191,6 @@ int solveQuartic(double a, double b, double c, double d, double e, double roots[
   int nT = 0;
   for (int i = 0; i < nY; ++i)
     roots[nT++] = yRoots[i] + shift;
-
-  // Newton polish, each root independently, against the original quartic:
-  // the closed form's cancellation error shrinks toward machine epsilon in
-  // a handful of iterations near a simple root.
-  for (int i = 0; i < nT; ++i) {
-    double t = roots[i];
-    for (int iter = 0; iter < 8; ++iter) {
-      double const f = (((a * t + b) * t + c) * t + d) * t + e;
-      double const fp = ((4.0 * a * t + 3.0 * b) * t + 2.0 * c) * t + d;
-      if (fp == 0.0)
-        break;
-      double const delta = f / fp;
-      t -= delta;
-      if (std::abs(delta) <= 1e-15 * std::max(1.0, std::abs(t)))
-        break;
-    }
-    roots[i] = t;
-  }
 
   std::sort(roots, roots + nT);
   return nT;

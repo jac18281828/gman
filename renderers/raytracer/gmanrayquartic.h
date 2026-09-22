@@ -28,10 +28,11 @@ namespace gman {
 // Solves a*t^4 + b*t^3 + c*t^2 + d*t + e == 0 for real t, a != 0 a
 // precondition -- a zero-length ray direction is the only way a caller
 // reaches a == 0, and should check for it before calling. Closed form
-// (Ferrari, through the resolvent cubic) in double, each real root then
-// polished by Newton's method against the original quartic to recover
-// what the closed form loses to cancellation. Returns the count of real
-// roots (0-4) and writes them ascending in roots; a repeated root may be
+// (Ferrari, through the resolvent cubic) in double; the resolvent's own
+// root is itself Newton-refined against its cubic, avoiding the
+// catastrophic cancellation a small root suffers when read off the
+// depressed cubic's solution directly. Returns the count of real roots
+// (0-4) and writes them ascending in roots; a repeated root may be
 // reported once or twice, and the caller treats both the same.
 int solveQuartic(double a, double b, double c, double d, double e, double roots[4]);
 
