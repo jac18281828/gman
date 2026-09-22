@@ -23,6 +23,7 @@
 
 #include "gmanmath.h"
 #include "gmanpolygon.h"
+#include "gmanraybboxbuilder.h"
 #include "gmanraypolygon.h"
 
 namespace {
@@ -92,6 +93,21 @@ bool insidePolygon(std::vector<GMANPoint> const& ring, int axis, GMANPoint const
 GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> verts, GMANParameterList pl)
     : GMANPolygon((RtInt)verts.size(), pl), vertices(std::move(verts)),
       degenerate(gman::isDegeneratePolygon(vertices)) {
+  // Already camera space (RiPolygonV bakes the CTM in before the factory
+  // returns): the componentwise min and max of vertices needs no corner
+  // transform, unlike every other ray primitive here. Computed regardless
+  // of degenerate -- plain min/max, unlike the normal below, divides by
+  // nothing and so never needs the guard.
+  if (!vertices.empty()) {
+    GMANPoint minP = vertices[0];
+    GMANPoint maxP = vertices[0];
+    for (GMANPoint const& v : vertices) {
+      minP = GMANPoint(GMANMin(minP.getX(), v.getX()), GMANMin(minP.getY(), v.getY()), GMANMin(minP.getZ(), v.getZ()));
+      maxP = GMANPoint(GMANMax(maxP.getX(), v.getX()), GMANMax(maxP.getY(), v.getY()), GMANMax(maxP.getZ(), v.getZ()));
+    }
+    bbox = gman::padBBox(minP, maxP);
+  }
+
   if (degenerate)
     return;
 

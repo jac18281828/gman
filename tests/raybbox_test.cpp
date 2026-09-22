@@ -37,14 +37,17 @@
 
 #include <cmath>
 #include <string>
+#include <vector>
 
 #include "check.h"
 #include "gmanray.h"
+#include "gmanraybboxbuilder.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
 #include "gmanrayparaboloid.h"
+#include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 
@@ -260,6 +263,38 @@ void testTorus() {
   checkFiniteWellOrdered("torus degenerate (zero minorradius)", zeroMinor.getBBox());
 }
 
+// ---- polygon: componentwise min/max of vertices, already camera space
+// (no transform step, unlike every other ray primitive here) -- within
+// the shared pad every assigned box carries, so not an exact-equality
+// check ----
+void testPolygon() {
+  std::vector<GMANPoint> const verts = {
+      GMANPoint(1.0, 0.0, 0.0),
+      GMANPoint(5.0, 0.0, 2.0),
+      GMANPoint(5.0, 3.0, 2.0),
+      GMANPoint(1.0, 3.0, 0.0),
+  };
+  GMANRayPolygon polygon(verts, GMANParameterList());
+  GMANBBox const box = polygon.getBBox();
+  GMANPoint const boxMin = box.getMin();
+  GMANPoint const boxMax = box.getMax();
+
+  GMANPoint const vertMin(1.0, 0.0, 0.0);
+  GMANPoint const vertMax(5.0, 3.0, 2.0);
+  RtFloat const magnitude = 5.0f; // the largest coordinate magnitude among vertMin/vertMax
+  RtFloat const pad = GMANMax(gman::kBBoxPadScale * magnitude, gman::kBBoxPadFloor);
+  constexpr RtFloat kEpsilon = 1e-5f;
+
+  check(std::fabs(boxMin.getX() - (vertMin.getX() - pad)) < kEpsilon &&
+            std::fabs(boxMin.getY() - (vertMin.getY() - pad)) < kEpsilon &&
+            std::fabs(boxMin.getZ() - (vertMin.getZ() - pad)) < kEpsilon,
+        "polygon: getBBox().getMin() == the vertices' own min, within the shared pad");
+  check(std::fabs(boxMax.getX() - (vertMax.getX() + pad)) < kEpsilon &&
+            std::fabs(boxMax.getY() - (vertMax.getY() + pad)) < kEpsilon &&
+            std::fabs(boxMax.getZ() - (vertMax.getZ() + pad)) < kEpsilon,
+        "polygon: getBBox().getMax() == the vertices' own max, within the shared pad");
+}
+
 } // namespace
 
 int main() {
@@ -270,6 +305,7 @@ int main() {
   testHyperboloid();
   testParaboloid();
   testTorus();
+  testPolygon();
 
   return checkSummary("R6: every ray primitive's camera-space bbox contains, tightly bounds and degrades correctly");
 }
