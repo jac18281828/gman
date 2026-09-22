@@ -187,6 +187,21 @@ if(GMAN_BUILD_RAYTRACER)
     TIMEOUT 30)
 endif()
 
+# GMANRenderManImpl's renderer/objectManager/worldManager/viewingSystem/output
+# pointers stay null from construction, and RiEnd leaves null every one it
+# releases. See tests/rendermanpointers_test.cpp.
+add_executable(gman_rendermanpointers rendermanpointers_test.cpp)
+target_link_libraries(gman_rendermanpointers PRIVATE gman_core)
+add_dependencies(gman_rendermanpointers gman_zbuffer)
+
+add_test(NAME rendermanpointers
+  COMMAND gman_rendermanpointers
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(rendermanpointers PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Phase 2 -- RIB dialect coverage. Each spawns the real gman binary, which
 # dlopens its renderer by bare name, so each needs the same library path as
 # the baseline test above.

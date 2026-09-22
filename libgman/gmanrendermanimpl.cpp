@@ -58,7 +58,13 @@
  */
 
 // default constructor
-GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState() { viewingSystem = NULL; };
+GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState() {
+  renderer = NULL;
+  objectManager = NULL;
+  worldManager = NULL;
+  viewingSystem = NULL;
+  output = NULL;
+};
 
 // default destructor
 GMANRenderManImpl::~GMANRenderManImpl() {};
@@ -99,10 +105,14 @@ RtVoid GMANRenderManImpl::RiBegin(RtToken name) {
 
 RtVoid GMANRenderManImpl::RiEnd(RtVoid) {
   delete renderer;
-  //  delete worldManager;
-  // delete objectManager;
+  renderer = NULL;
+  // worldManager and objectManager belong to renderer, not to this object;
+  // deleting it invalidates them too.
+  worldManager = NULL;
+  objectManager = NULL;
   if (viewingSystem)
     delete viewingSystem;
+  viewingSystem = NULL;
 }
 
 RtVoid GMANRenderManImpl::RiFrameBegin(RtInt /*frame*/) { enterMode(F); }
