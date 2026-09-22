@@ -29,9 +29,10 @@
 
 namespace {
 
-// Below this, n - p/3 (the depressed cubic's own root, shifted back) is
-// cancellation noise rather than a measured small root: reseed from the
-// resolvent cubic's linear term instead (see refineResolventRoot).
+// The relative threshold, against |p|, below which the resolvent cubic's
+// linear-term estimate of m is treated as small enough to reseed from
+// directly (see refineResolventRoot): m scales as p, so this is a scale-
+// free fraction of p rather than an absolute floor.
 constexpr double kResolventSeedFloor = 1e-8;
 
 // A stable real solve of w*t^2 + x*t + y == 0 in double, GMANQuadraticRoots'
@@ -108,15 +109,19 @@ int solveBiquadratic(double p, double r, double yRoots[2]) {
 // Refines seed -- the depressed cubic's own root n minus its p/3 shift --
 // against the exact resolvent cubic 8m^3+8p*m^2+(2p^2-8r)*m-q^2 == 0.
 // n - p/3 subtracts two O(p) quantities, so it is cancellation noise, not
-// a measurement, whenever the true m is many orders smaller than p: below
-// kResolventSeedFloor, reseed from the cubic's own linear term instead,
-// valid because 8m^3 and 8p*m^2 are negligible next to it there, leaving
+// a measurement, whenever the true m is many orders smaller than p; but
+// seed itself is already cancellation noise there; testing seed against
+// the floor tests a corrupted value; testing (q*q)/linear -- the
+// candidate reseed value itself, computed independently of seed -- against
+// kResolventSeedFloor * |p| (m scales as p, so the floor must too) reseeds
+// exactly when that direct estimate says m is small, valid because 8m^3
+// and 8p*m^2 are then negligible next to the linear term, leaving
 // (2p^2-8r)*m ~= q^2. Each Newton step is accepted only if it shrinks the
 // residual, so a seed already at or past the nearby root simply stops.
 double refineResolventRoot(double p, double r, double q, double seed) {
   double const linear = 2.0 * p * p - 8.0 * r;
   double m = seed;
-  if (std::abs(seed) < kResolventSeedFloor * std::max(1.0, std::abs(p)) && linear != 0.0)
+  if (linear > 0.0 && (q * q) / linear < kResolventSeedFloor * std::abs(p))
     m = (q * q) / linear;
 
   double f = 8.0 * m * m * m + 8.0 * p * m * m + linear * m - q * q;

@@ -233,6 +233,29 @@ void testPinnedHorizontalRay() {
         "pinned horizontal ray: point == (0.7993, -1.0034, 0.1)");
 }
 
+// ---- B1 regression, round 2: origin (3.35775137, 3.91563964,
+// 0.027229961), direction (-0.444452167, -0.895802617, 0), R == 1, r ==
+// 0.3, a horizontal ray whose resolvent root's linear-term estimate
+// itself is small (q ~= 1e-31), where reading a noisy seed against
+// kResolventSeedFloor instead of reading that estimate directly missed
+// the reseed and lost the root. The true hit is t == 4.71706. ----
+void testPinnedReviewerHorizontalRay() {
+  GMANRayTorus torus(1.0, 0.3, 0.0, 360.0, 360.0, GMANParameterList());
+  GMANRay ray(GMANPoint(3.35775137f, 3.91563964f, 0.027229961f), GMANVector(-0.444452167f, -0.895802617f, 0.0f));
+  GMANHit hit;
+
+  bool const hitFound = torus.intersect(ray, hit);
+  check(hitFound, "pinned reviewer horizontal ray: the ray hits");
+  check(hitFound && near(hit.t, 4.71706f), "pinned reviewer horizontal ray: t == 4.71706");
+  if (!hitFound)
+    return;
+
+  double const px = hit.point.getX(), py = hit.point.getY(), pz = hit.point.getZ();
+  double const radial = std::sqrt(px * px + py * py) - 1.0;
+  double const residual = std::fabs(radial * radial + pz * pz - 0.3 * 0.3);
+  check(residual <= 1e-4, "pinned reviewer horizontal ray: implicit residual within 1e-4 of zero");
+}
+
 // ---- B1 regression: a sweep of horizontal rays (dz == 0) at z == 0.1,
 // the pinned ray's own direction (1, 5, 0), laterally offset in x across
 // [-0.48, 0.28] -- verified, both before and after the fix, to be exactly
@@ -532,6 +555,7 @@ int main() {
   testLaterRoots();
   testDescendingBand();
   testPinnedHorizontalRay();
+  testPinnedReviewerHorizontalRay();
   testHorizontalRaySweep();
   testBandOffsetByManyTurns();
   testRotatingTransform();
