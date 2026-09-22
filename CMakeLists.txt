@@ -273,6 +273,7 @@ if(GMAN_BUILD_RAYTRACER OR BUILD_TESTING)
   add_library(gman_raytracer_objects OBJECT
     renderers/raytracer/gmanrayinterface.cpp
     renderers/raytracer/gmanrayobjectmanager.cpp
+    renderers/raytracer/gmanraybvh.cpp
     renderers/raytracer/gmanraycone.cpp
     renderers/raytracer/gmanraycylinder.cpp
     renderers/raytracer/gmanraydisk.cpp
