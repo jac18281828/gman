@@ -83,27 +83,6 @@ gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   return point;
 }
 
-// Finds the nearest ray-primitive hit against ray, moving worldManager's
-// shared getFirst/getNext cursor. Shared by nearestHit and
-// GMANRayOccluder::transmission, each of which walks past its own nearest
-// hit in turn to advance along the ray.
-bool walkWorldManager(GMANWorldManager& worldManager, GMANRay const& ray, GMANHit& hit,
-                      GMANRayInterface const*& hitPrimitive) {
-  bool found = false;
-  GMANPrimitive* primitive = worldManager.getFirst();
-  while (primitive) {
-    GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
-    GMANHit candidate;
-    if (rayPrimitive && rayPrimitive->intersect(ray, candidate) && (!found || candidate.t < hit.t)) {
-      hit = candidate;
-      hitPrimitive = rayPrimitive;
-      found = true;
-    }
-    primitive = worldManager.getNext();
-  }
-  return found;
-}
-
 // Channel-wise product: how an attenuation composes with a colour or with
 // another attenuation throughout this file.
 GMANColor multiplyChannels(GMANColor const& a, GMANColor const& b) {
@@ -154,7 +133,7 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
   RtFloat remaining = distance;
 
   // A closed solid contributes one (1 - Os) factor per surface the shadow
-  // ray crosses, not per blocker: walkWorldManager keeps one hit per call,
+  // ray crosses, not per blocker: bvh.nearestHit keeps one hit per call,
   // so this walks the interval itself, moving origin/remaining past each
   // surface found. This matches the composite loop below, which likewise
   // crosses both shells of a sphere the ray enters. The cap bounds a
@@ -172,7 +151,7 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
     GMANRay const shadowRay(origin, towardLight, RI_EPSILON, remaining);
     GMANHit hit;
     GMANRayInterface const* hitPrimitive = nullptr;
-    if (!walkWorldManager(worldManager, shadowRay, hit, hitPrimitive)) {
+    if (!bvh.nearestHit(shadowRay, hit, hitPrimitive)) {
       break;
     }
     transmission = multiplyChannels(transmission, oneMinus(hitPrimitive->getAppearance().Os));
@@ -194,7 +173,7 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
  */
 
 // default constructor
-GMANRaytraceRenderer::GMANRaytraceRenderer() : GMANRenderer(), occluder(worldManager) {};
+GMANRaytraceRenderer::GMANRaytraceRenderer() : GMANRenderer(), occluder(bvh) {};
 
 // default destructor
 GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
@@ -202,7 +181,7 @@ GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
 GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray) {
   RayHit result;
   GMANRayInterface const* hitPrimitive = nullptr;
-  if (walkWorldManager(worldManager, ray, result.hit, hitPrimitive)) {
+  if (bvh.nearestHit(ray, result.hit, hitPrimitive)) {
     result.appearance = &hitPrimitive->getAppearance();
   }
   return result;
@@ -254,6 +233,12 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                   const GMANOptions& options, const GMANAttributes& /*attributes*/) {
+  // Rebuilt every call, discarding any tree a prior call built: simpler
+  // than tracking whether a stale tree needs invalidating, and a render
+  // pass over the whole frame already costs far more than one extra tree
+  // build.
+  bvh.build(worldManager);
+
   RtInt const width = frameBuffer->getWidth();
   RtInt const height = frameBuffer->getHeight();
 

@@ -85,7 +85,9 @@ int main() {
   for (int i = 0; i < kLayerCount; ++i) {
     worldManager.add(squareAt(kFirstLayerZ + (RtFloat)i * kLayerSpacing));
   }
-  GMANRayOccluder const occluder(worldManager);
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
 
   GMANVector towardLight(0.0f, 0.0f, 1.0f);
   GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector(0.0f, 0.0f, -1.0f));

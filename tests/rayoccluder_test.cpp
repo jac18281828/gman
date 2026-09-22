@@ -82,7 +82,9 @@ void testPointLightDistanceBoundsTheShadowRay() {
     // destruction (see its own destructor), so blocker is not deleted here.
     GMANLinearWorldManager worldManager;
     worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 15.0f)); // beyond the light
-    GMANRayOccluder const occluder(worldManager);
+    GMANRayBVH bvh;
+    bvh.build(worldManager);
+    GMANRayOccluder const occluder(bvh);
 
     // P is a free-space point, not on any primitive: Ng is the zero
     // vector the header's own contract names for that case.
@@ -94,7 +96,9 @@ void testPointLightDistanceBoundsTheShadowRay() {
   {
     GMANLinearWorldManager worldManager;
     worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 5.0f)); // between P and the light
-    GMANRayOccluder const occluder(worldManager);
+    GMANRayBVH bvh;
+    bvh.build(worldManager);
+    GMANRayOccluder const occluder(bvh);
 
     GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance);
     check(result.getRed() < 0.01f && result.getGreen() < 0.01f && result.getBlue() < 0.01f,
@@ -116,7 +120,9 @@ void testSelfShadowAtScale(RtFloat scale) {
   // (GMANLinearWorldManager's own contract).
   GMANRaySphere* sphere = sphereAt(scale, 0.0f, 0.0f, 0.0f);
   worldManager.add(sphere);
-  GMANRayOccluder const occluder(worldManager);
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
 
   GMANVector lightDir(1.0f, 0.6f, 0.3f); // off-axis, so many samples graze
   lightDir.normalize();
@@ -177,7 +183,9 @@ void testBlockerRelightsAtScale(RtFloat scale) {
 
   GMANLinearWorldManager worldManager;
   worldManager.add(sphereAt(scale, 0.4f * scale, 0.0f, 5.0f * scale)); // between P and the light, off-axis
-  GMANRayOccluder const occluder(worldManager);
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
 
   // P is a free-space point, not on any primitive -- Ng is the zero vector
   // the header's own contract names for that case. No offset scale would

@@ -36,6 +36,7 @@
 #include "gmanobjectmanager.h"
 #include "gmanocclude.h"
 #include "gmanray.h"
+#include "gmanraybvh.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
@@ -45,28 +46,27 @@
 
 /*
  * The ray tracer's own occlusion test: casts a shadow ray from P toward
- * the light and walks worldManager for the first blocking hit, as
- * nearestHit does -- any hit inside the ray's interval blocks, so the
- * nearest is not needed. A public, standalone class (not nested in
- * GMANRaytraceRenderer) so a unit test can probe transmission() directly
- * against a world manager it controls. Not GMAN_EXPORT: only its own test
- * uses it, and that test compiles the plugin's sources directly rather
- * than linking the installed library.
+ * the light and finds the first blocking hit through bvh, as nearestHit
+ * does -- any hit inside the ray's interval blocks, so the nearest is not
+ * needed, but GMANRayBVH offers only nearestHit (see its own header). A
+ * public, standalone class (not nested in GMANRaytraceRenderer) so a unit
+ * test can probe transmission() directly against a GMANRayBVH it
+ * controls. Not GMAN_EXPORT: only its own tests use it, and they compile
+ * the plugin's sources directly rather than linking the installed
+ * library.
  */
 class GMANRayOccluder : public gman::Occluder {
 public:
-  explicit GMANRayOccluder(GMANWorldManager& worldManager) : worldManager(worldManager) {}
+  explicit GMANRayOccluder(GMANRayBVH const& bvh) : bvh(bvh) {}
 
-  // const on this class's own state, but walking worldManager still moves
-  // its shared getFirst/getNext cursor -- a call must not interleave with
-  // another traversal of the same world manager. shadeSample's own
-  // ordering already guarantees this: nearestHit finishes walking before
-  // shading, and so before this, ever begins.
+  // const on this class's own state; bvh.nearestHit is itself const and
+  // re-entrant, so unlike the shared cursor it replaces, a call here no
+  // longer has to avoid interleaving with another traversal.
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
                          GMANVector const& Ng, RtFloat distance) const override;
 
 private:
-  GMANWorldManager& worldManager;
+  GMANRayBVH const& bvh;
 };
 
 /*
@@ -82,7 +82,13 @@ private:
 
   GMANLinearWorldManager worldManager;
 
-  // Shadow rays walk worldManager above; declared after it so occluder's
+  // Rebuilt from worldManager at the top of every render() call (see
+  // render()'s own comment); declared after worldManager and before
+  // occluder so occluder's reference binds to an already-constructed
+  // object.
+  GMANRayBVH bvh;
+
+  // Shadow rays route through bvh above; declared after it so occluder's
   // reference binds to an already-constructed object.
   GMANRayOccluder occluder;
 
@@ -94,14 +100,13 @@ private:
   // under; both null (hit.primitive null, appearance null) when nothing
   // is hit. Carrying the appearance here, rather than re-deriving it from
   // hit.primitive afterward, keeps the downcast to GMANRayInterface to
-  // nearestHit's own loop.
+  // GMANRayBVH::build's own loop.
   struct RayHit {
     GMANHit hit;
     gman::Appearance const* appearance = nullptr;
   };
 
-  // Walks worldManager for the ray primitive nearest ray's origin. The
-  // BVH is future work; this walk is linear in the primitive count.
+  // Finds the ray primitive nearest ray's origin, through bvh.
   RayHit nearestHit(GMANRay const& ray);
 
   // Traces, shades and stores one sample -- render()'s per-sample body.
