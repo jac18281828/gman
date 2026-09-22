@@ -76,8 +76,11 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     if (objDirection.getZ() == 0.0)
       return false;
 
+    // NaN fails every comparison, so each guard below rejects unless the
+    // wanted range explicitly holds, rather than accepting unless an
+    // unwanted one does.
     RtFloat const t = (point1.getZ() - objOrigin.getZ()) / objDirection.getZ();
-    if (t < ray.getTMin() || t > ray.getTMax())
+    if (!(t >= ray.getTMin() && t <= ray.getTMax()))
       return false;
 
     RtFloat const x = objOrigin.getX() + objDirection.getX() * t;
@@ -89,13 +92,11 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     // roots for that degeneracy.
     RtFloat vRoot0 = 0.0, vRoot1 = 0.0;
     int const numVRoots = GMANQuadraticRoots(dSq, 2 * pDot, p0sq - x * x - y * y, vRoot0, vRoot1);
-    if (numVRoots == 0)
-      return false;
 
     RtFloat const vRoots[2] = {vRoot0, vRoot1};
     for (int i = 0; i < numVRoots; ++i) {
       RtFloat const v = vRoots[i];
-      if (v < 0.0 || v > 1.0)
+      if (!(v >= 0.0 && v <= 1.0))
         continue;
 
       // theta is measured from the segment's own azimuth phi(v) at this v,
@@ -105,15 +106,10 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
       RtFloat const phi = GMANAtan(yv, xv);
       RtFloat const pointPhi = GMANAtan(y, x);
       RtFloat const theta = GMANMod(pointPhi - phi, (RtFloat)(2.0 * PI));
-      if (theta > thetamaxRad)
+      if (!(theta <= thetamaxRad))
         continue;
 
-      // dzSeg == 0 collapses getNormal's cross product (see the spanning
-      // branch's own comment below) onto the axis alone. At the fold --
-      // r(v)'s interior minimum, where pDot + dSq*v == 0 -- this formula
-      // and getNormal's cross product both vanish in exact arithmetic;
-      // float rounding there can normalize to either +-z sign. A
-      // measure-zero line, left alone.
+      // The fold, pDot + dSq*v == 0, is measure-zero: the formula and getNormal both vanish there in exact arithmetic.
       GMANVector objNormal(0.0, 0.0, -(pDot + dSq * v));
       GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
       normal.normalize();

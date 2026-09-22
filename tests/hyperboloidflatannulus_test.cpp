@@ -23,11 +23,7 @@
  * flat annulus rather than a surface spanning z: z is constant across the
  * segment, so v comes from the plane hit's own radius instead of from z
  * (dSq*v^2 + 2*pDot*v + (p0sq - x*x - y*y) == 0), and the wedge is a
- * spiral sector since phi(v) varies with v. Checks below pin the pinned
- * hit, both edges of the radial band, the ambiguous-root tie-break, the
- * spiral wedge boundary, a (u, v) round trip, a rotated and a sheared
- * placement, the ray interval, a coplanar-ray miss and the point1 ==
- * point2 degeneracy.
+ * spiral sector since phi(v) varies with v.
  */
 
 #include <cmath>
@@ -50,10 +46,10 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
 // p0sq == 13, pDot == -8, dSq == 16: r(v)^2 == 13 - 16v + 16v^2, minimum
 // r == 3 at v == 0.5, r(0) == r(1) == sqrt(13) -- the two endpoint radii
 // are equal to each other and strictly greater than the true minimum.
-GMANRayHyperboloid symmetricSegment() {
+GMANRayHyperboloid symmetricSegment(RtFloat thetamax = 360.0) {
   RtPoint p1 = {3.0, -2.0, 0.0};
   RtPoint p2 = {3.0, 2.0, 0.0};
-  return GMANRayHyperboloid(p1, p2, 360.0, GMANParameterList());
+  return GMANRayHyperboloid(p1, p2, thetamax, GMANParameterList());
 }
 
 // p0sq == 4, pDot == 0, dSq == 9: r(v)^2 == 4 + 9v^2 is strictly
@@ -120,6 +116,20 @@ void testAmbiguousRootPicksSmallerV() {
         "ambiguous root: the ascending, smaller root (~= 0.15631) wins over ~= 0.84369");
 }
 
+// x == 3.3 again, now against a 30-degree wedge aimed at theta == 30
+// degrees: the smaller root's theta (~= 54.62 degrees) falls outside the
+// wedge, so the loop must fall through to the larger root (v ~= 0.84369,
+// theta ~= 5.38 degrees, u ~= 0.1793) instead of stopping at the first miss.
+void testWedgeFallsThroughToSecondRoot() {
+  GMANRayHyperboloid hyperboloid = symmetricSegment(30.0);
+  GMANRay ray(GMANPoint(2.85788, 1.65, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit hit;
+
+  bool const hitFound = hyperboloid.intersect(ray, hit);
+  check(hitFound && near(hit.v, 0.84369) && near(hit.u, 0.1793),
+        "wedge fall-through: the smaller root misses the wedge, so the larger root wins");
+}
+
 // dSq == 0 forces pDot == 0 too, so GMANQuadraticRoots' own a == 0.0
 // contract returns zero roots: no separate guard needed.
 void testFlatSamePointMisses() {
@@ -159,6 +169,20 @@ void testFlatCoplanarRayMisses() {
   GMANHit hit;
 
   check(!hyperboloid.intersect(ray, hit), "coplanar: a ray lying in the object-space z == point1.z plane misses");
+}
+
+// A near-tangent direction drives t toward 1e25: x*x overflows, and the
+// v-quadratic's c/q division produces NaN roots. Each flat-branch guard
+// rejects unless its wanted range explicitly holds, so NaN -- which fails
+// every comparison -- cannot slip through as an accepted candidate.
+void testFlatNaNGuardRejects() {
+  RtPoint p1 = {1.0, 0.0, 0.0};
+  RtPoint p2 = {2.0, 0.0, 0.0};
+  GMANRayHyperboloid hyperboloid(p1, p2, 360.0, GMANParameterList());
+  GMANRay ray(GMANPoint(0.0, 0.0, -1.0), GMANVector(1.0, 0.0, 1e-25f));
+  GMANHit hit;
+
+  check(!hyperboloid.intersect(ray, hit), "NaN guard: a near-tangent ray overflowing x*x misses, not a NaN-filled hit");
 }
 
 // theta ~= 89.5 degrees sits just inside the 90-degree wedge and hits at
@@ -262,9 +286,11 @@ int main() {
   testRadialBandInnerEdge();
   testRadialBandOuterEdge();
   testAmbiguousRootPicksSmallerV();
+  testWedgeFallsThroughToSecondRoot();
   testFlatSamePointMisses();
   testFlatIntervalRejects();
   testFlatCoplanarRayMisses();
+  testFlatNaNGuardRejects();
   testWedgeBoundary();
   testFlatRoundTrip();
   testFlatRotatingTransform();
