@@ -46,22 +46,22 @@
 
 /*
  * The ray tracer's own occlusion test: casts a shadow ray from P toward
- * the light and finds the first blocking hit through bvh, as nearestHit
- * does -- any hit inside the ray's interval blocks, so the nearest is not
- * needed, but GMANRayBVH offers only nearestHit (see its own header). A
- * public, standalone class (not nested in GMANRaytraceRenderer) so a unit
- * test can probe transmission() directly against a GMANRayBVH it
- * controls. Not GMAN_EXPORT: only its own tests use it, and they compile
- * the plugin's sources directly rather than linking the installed
- * library.
+ * the light and walks bvh's nearestHit repeatedly, each call's hit
+ * shrinking the ray's remaining interval and compositing that blocker's
+ * own opacity into the running transmission, until the interval is spent
+ * or transmission is negligible -- the nearest hit at each step is what
+ * lets the walk advance past exactly one blocker per call. A public,
+ * standalone class (not nested in GMANRaytraceRenderer) so a unit test
+ * can probe transmission() directly against a GMANRayBVH it controls.
+ * Not GMAN_EXPORT: only its own tests use it, and they compile the
+ * plugin's sources directly rather than linking the installed library.
  */
 class GMANRayOccluder : public gman::Occluder {
 public:
   explicit GMANRayOccluder(GMANRayBVH const& bvh) : bvh(bvh) {}
 
   // const on this class's own state; bvh.nearestHit is itself const and
-  // re-entrant, so unlike the shared cursor it replaces, a call here no
-  // longer has to avoid interleaving with another traversal.
+  // re-entrant, so concurrent calls here never interleave state.
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
                          GMANVector const& Ng, RtFloat distance) const override;
 
