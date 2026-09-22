@@ -22,11 +22,11 @@
  * R5c deferral: a torus with minorradius >= majorradius is a spindle or
  * horn torus -- the tube crosses the axis, and a surface point there has
  * two parameterizations, (theta, phi) and (theta + 180, phi'), whose
- * wedge/band membership decides the hit (see the prompt's own account).
- * GMANRayTorus::intersect returns false for one rather than solving that
- * second inverse mapping. This pins the wanted behavior -- WILL_FAIL until
- * a future unit implements it -- at theta == 0, phi == 0, the outer
- * equator, unambiguous even for a spindle torus and the same point
+ * wedge/band membership decides the hit, an inverse mapping
+ * GMANRayTorus::intersect does not solve; it returns false there instead.
+ * This pins the wanted behavior -- WILL_FAIL until that second inverse
+ * mapping is implemented -- at theta == 0, phi == 0, the outer equator,
+ * unambiguous even for a spindle torus and the same point
  * raytorus_test.cpp's testAxisAlignedHits already verifies for an ordinary
  * one.
  */
