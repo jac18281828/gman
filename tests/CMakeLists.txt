@@ -1274,7 +1274,7 @@ set_tests_properties(raytorus PROPERTIES
 
 # R5c deferral: the spindle and horn torus (minorradius >= majorradius), a
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
-# behavior; WILL_FAIL until a future unit implements it.
+# behavior; WILL_FAIL until the second inverse mapping is implemented.
 add_executable(gman_torusspindle torusspindle_test.cpp)
 target_link_libraries(gman_torusspindle PRIVATE gman_core gman_raytracer_objects)
 

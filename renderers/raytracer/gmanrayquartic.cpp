@@ -108,16 +108,12 @@ int solveBiquadratic(double p, double r, double yRoots[2]) {
 
 // Refines seed -- the depressed cubic's own root n minus its p/3 shift --
 // against the exact resolvent cubic 8m^3+8p*m^2+(2p^2-8r)*m-q^2 == 0.
-// n - p/3 subtracts two O(p) quantities, so it is cancellation noise, not
-// a measurement, whenever the true m is many orders smaller than p; but
-// seed itself is already cancellation noise there; testing seed against
-// the floor tests a corrupted value; testing (q*q)/linear -- the
-// candidate reseed value itself, computed independently of seed -- against
-// kResolventSeedFloor * |p| (m scales as p, so the floor must too) reseeds
-// exactly when that direct estimate says m is small, valid because 8m^3
-// and 8p*m^2 are then negligible next to the linear term, leaving
-// (2p^2-8r)*m ~= q^2. Each Newton step is accepted only if it shrinks the
-// residual, so a seed already at or past the nearby root simply stops.
+// Reseeds from q^2/linear (linear == 2p^2-8r) whenever that estimate sits
+// below kResolventSeedFloor * |p|: there, n - p/3 is cancellation noise
+// rather than a measurement, while 8m^3 and 8p*m^2 are negligible next to
+// the linear term, leaving (2p^2-8r)*m ~= q^2. Each Newton step is
+// accepted only if it shrinks the residual, so a seed already at or past
+// the nearby root simply stops.
 double refineResolventRoot(double p, double r, double q, double seed) {
   double const linear = 2.0 * p * p - 8.0 * r;
   double m = seed;
