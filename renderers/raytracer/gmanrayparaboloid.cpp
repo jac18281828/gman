@@ -25,7 +25,7 @@
 
 #include "gmanerror.h"
 #include "gmanmath.h"
-#include "gmanraybboxbuilder.h"
+#include "gmanraybbox.h"
 #include "gmanrayparaboloid.h"
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
@@ -54,9 +54,7 @@ GMANRayParaboloid::GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, R
     return;
 
   RtFloat const r = (RtFloat)(std::fabs(rmax) / std::sqrt((double)zmax));
-  GMANPoint const objMin(-r, -r, GMANMin(zmin, zmax));
-  GMANPoint const objMax(r, r, GMANMax(zmin, zmax));
-  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
+  bbox = gman::revolutionBBox(objectToCamera, r, zmin, zmax);
 }
 
 bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {

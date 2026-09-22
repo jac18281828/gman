@@ -23,7 +23,7 @@
 
 #include "gmanmath.h"
 #include "gmanpolygon.h"
-#include "gmanraybboxbuilder.h"
+#include "gmanraybbox.h"
 #include "gmanraypolygon.h"
 
 namespace {

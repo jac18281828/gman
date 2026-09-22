@@ -41,7 +41,7 @@
 
 #include "check.h"
 #include "gmanray.h"
-#include "gmanraybboxbuilder.h"
+#include "gmanraybbox.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
@@ -78,7 +78,7 @@ GMANMatrix4 representativePlacement() {
 }
 
 // A per-axis tolerance scaled to the coordinate's own magnitude, matching
-// the pad's own scale (kBBoxPadScale in gmanraybboxbuilder.h) rather than
+// the pad's own scale (kBBoxPadScale in gmanraybbox.h) rather than
 // a fixed absolute one.
 RtFloat tolerance(RtFloat coord) { return kRelTolerance * GMANMax((RtFloat)1.0, (RtFloat)std::fabs(coord)); }
 

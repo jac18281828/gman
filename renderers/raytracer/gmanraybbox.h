@@ -32,6 +32,16 @@
 
 namespace gman {
 
+// The componentwise min, or max, of two points -- every axis taken
+// independently, so neither point need be ordered against the other's.
+inline GMANPoint pointMin(GMANPoint const& a, GMANPoint const& b) {
+  return GMANPoint(GMANMin(a.getX(), b.getX()), GMANMin(a.getY(), b.getY()), GMANMin(a.getZ(), b.getZ()));
+}
+
+inline GMANPoint pointMax(GMANPoint const& a, GMANPoint const& b) {
+  return GMANPoint(GMANMax(a.getX(), b.getX()), GMANMax(a.getY(), b.getY()), GMANMax(a.getZ(), b.getZ()));
+}
+
 // A box built from RtFloat corner transforms can, by a few ULP, fall just
 // inside a hit a double-precision intersector computes (R5c's torus solves
 // its quartic in double). Padding every assigned box outward by an epsilon
@@ -80,15 +90,26 @@ inline GMANBBox cameraSpaceBBox(GMANMatrix4 const& objectToCamera, GMANPoint con
           first = false;
           continue;
         }
-        camMin = GMANPoint(GMANMin(camMin.getX(), corner.getX()), GMANMin(camMin.getY(), corner.getY()),
-                           GMANMin(camMin.getZ(), corner.getZ()));
-        camMax = GMANPoint(GMANMax(camMax.getX(), corner.getX()), GMANMax(camMax.getY(), corner.getY()),
-                           GMANMax(camMax.getZ(), corner.getZ()));
+        camMin = pointMin(camMin, corner);
+        camMax = pointMax(camMax, corner);
       }
     }
   }
 
   return padBBox(camMin, camMax);
+}
+
+// The shared shape of a surface of revolution's object-space bound: x and
+// y span +/-|r| (the full sweep, safe whether or not thetamax clips it),
+// z spans [z0, z1] however ordered. Every ray primitive but the polygon
+// (already camera space, see cameraSpaceBBox above) calls this, each
+// computing its own r from the fields its own intersect() reads -- the
+// disk passes height for both z0 and z1.
+inline GMANBBox revolutionBBox(GMANMatrix4 const& objectToCamera, RtFloat r, RtFloat z0, RtFloat z1) {
+  RtFloat const absR = (RtFloat)std::fabs(r);
+  GMANPoint const objMin(-absR, -absR, GMANMin(z0, z1));
+  GMANPoint const objMax(absR, absR, GMANMax(z0, z1));
+  return cameraSpaceBBox(objectToCamera, objMin, objMax);
 }
 
 } // namespace gman

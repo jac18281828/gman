@@ -21,11 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <cmath>
-
 #include "gmanerror.h"
 #include "gmanmath.h"
-#include "gmanraybboxbuilder.h"
+#include "gmanraybbox.h"
 #include "gmanraycylinder.h"
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
@@ -46,10 +44,7 @@ GMANRayCylinder::GMANRayCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtF
   // The wall's radius is constant across z, so x and y bound in
   // +/-radius; z takes zmin/zmax exactly, the parameters that directly
   // clip the shape.
-  RtFloat const r = (RtFloat)std::fabs(radius);
-  GMANPoint const objMin(-r, -r, GMANMin(zmin, zmax));
-  GMANPoint const objMax(r, r, GMANMax(zmin, zmax));
-  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
+  bbox = gman::revolutionBBox(objectToCamera, radius, zmin, zmax);
 }
 
 bool GMANRayCylinder::intersect(const GMANRay& ray, GMANHit& hit) const {

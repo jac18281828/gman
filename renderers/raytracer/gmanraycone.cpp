@@ -21,11 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <cmath>
-
 #include "gmanerror.h"
 #include "gmanmath.h"
-#include "gmanraybboxbuilder.h"
+#include "gmanraybbox.h"
 #include "gmanraycone.h"
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
@@ -47,10 +45,7 @@ GMANRayCone::GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANP
   // factor) is linear from radius at z == 0 to 0 at z == height, so its
   // magnitude over [0, height] never exceeds |radius|; z spans 0..height
   // exactly, the parameter that directly clips the shape.
-  RtFloat const r = (RtFloat)std::fabs(radius);
-  GMANPoint const objMin(-r, -r, GMANMin((RtFloat)0.0, height));
-  GMANPoint const objMax(r, r, GMANMax((RtFloat)0.0, height));
-  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
+  bbox = gman::revolutionBBox(objectToCamera, radius, (RtFloat)0.0, height);
 }
 
 bool GMANRayCone::intersect(const GMANRay& ray, GMANHit& hit) const {

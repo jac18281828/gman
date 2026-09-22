@@ -25,7 +25,7 @@
 
 #include "gmanerror.h"
 #include "gmanmath.h"
-#include "gmanraybboxbuilder.h"
+#include "gmanraybbox.h"
 #include "gmanrayhyperboloid.h"
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
@@ -53,9 +53,7 @@ GMANRayHyperboloid::GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat t
   RtFloat const r1 = (RtFloat)std::sqrt(
       (double)(this->point2.getX() * this->point2.getX() + this->point2.getY() * this->point2.getY()));
   RtFloat const r = GMANMax(r0, r1);
-  GMANPoint const objMin(-r, -r, GMANMin(this->point1.getZ(), this->point2.getZ()));
-  GMANPoint const objMax(r, r, GMANMax(this->point1.getZ(), this->point2.getZ()));
-  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
+  bbox = gman::revolutionBBox(objectToCamera, r, this->point1.getZ(), this->point2.getZ());
 }
 
 bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {

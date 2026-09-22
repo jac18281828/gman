@@ -21,11 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <cmath>
-
 #include "gmanerror.h"
 #include "gmanmath.h"
-#include "gmanraybboxbuilder.h"
+#include "gmanraybbox.h"
 #include "gmanraydisk.h"
 #include "gmanvector.h"
 
@@ -44,10 +42,7 @@ GMANRayDisk::GMANRayDisk(RtFloat height, RtFloat radius, RtFloat thetamax, GMANP
 
   // The flat plate's z is height exactly, the parameter that directly
   // clips the shape; x and y bound in +/-radius, the full revolution.
-  RtFloat const r = (RtFloat)std::fabs(radius);
-  GMANPoint const objMin(-r, -r, height);
-  GMANPoint const objMax(r, r, height);
-  bbox = gman::cameraSpaceBBox(objectToCamera, objMin, objMax);
+  bbox = gman::revolutionBBox(objectToCamera, radius, height, height);
 }
 
 bool GMANRayDisk::intersect(const GMANRay& ray, GMANHit& hit) const {
