@@ -54,11 +54,12 @@ public:
   // primitive this renderer's world manager holds is already one.
   void build(GMANWorldManager& worldManager);
 
-  // Finds the nearest hit within ray's own [tmin, tmax], written
-  // through hit/hitPrimitive. On an exact t tie between two candidates,
-  // the earlier-inserted primitive wins, regardless of traversal order.
-  // primitiveTests, when non-null, is incremented once per
-  // primitive-level intersect() call this traversal makes (hit or
+  // Finds the nearest hit within ray's own [tmin, tmax]. On a hit,
+  // writes it through hit/hitPrimitive and returns true; on a miss,
+  // leaves both untouched and returns false. On an exact t tie between
+  // two candidates, the earlier-inserted primitive wins, regardless of
+  // traversal order. primitiveTests, when non-null, is incremented once
+  // per primitive-level intersect() call this traversal makes (hit or
   // miss) -- an out-parameter rather than a member, so two calls stay
   // re-entrant.
   bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,

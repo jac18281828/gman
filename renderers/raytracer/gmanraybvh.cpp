@@ -265,7 +265,9 @@ bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface c
     }
   }
 
-  hit = search.hit;
-  hitPrimitive = search.hitPrimitive;
+  if (search.found) {
+    hit = search.hit;
+    hitPrimitive = search.hitPrimitive;
+  }
   return search.found;
 }

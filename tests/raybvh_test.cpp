@@ -530,6 +530,25 @@ void testSignedZeroFacePlane() {
   }
 }
 
+// A miss must leave hit exactly as the caller had it -- nearestHit's own
+// contract -- not overwrite it with an empty, default-constructed one.
+void testMissLeavesHitUntouched() {
+  GMANLinearWorldManager worldManager;
+  worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 10.0)));
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+
+  GMANRay const missRay(GMANPoint(100.0, 100.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit hit;
+  constexpr RtFloat kSentinelT = 12345.0f;
+  hit.t = kSentinelT;
+  GMANRayInterface const* prim = nullptr;
+  bool const found = bvh.nearestHit(missRay, hit, prim);
+  check(!found, "miss: nearestHit returns false when no primitive is hit");
+  check(hit.t == kSentinelT, "miss: nearestHit leaves the caller's own hit untouched");
+}
+
 } // namespace
 
 int main() {
@@ -539,6 +558,7 @@ int main() {
   testCoincidentTieBothOrders();
   testCheck2();
   testSignedZeroFacePlane();
+  testMissLeavesHitUntouched();
 
   return checkSummary("GMANRayBVH: identical hits against a linear scan, and a bounded primitive-test count");
 }
