@@ -109,17 +109,42 @@ std::string edgeRib(const std::string& display, const std::string& filterLine, c
          "WorldBegin\n"
          "LightSource \"ambientlight\" 1 \"intensity\" [1]\n"
          "Sides 2\n"
-         "Color [0 0 0]\n"
+         "Color [0.5 0.5 0.5]\n"
          "Surface \"matte\" \"Ka\" [1] \"Kd\" [0]\n"
          "Polygon \"P\" [ -2 -2 0  0.031 -2 0  0.031 2 0  -2 2 0 ]\n"
          "WorldEnd\n";
 }
 
-// A pixel reading strictly between the black covered colour and the white
-// background -- neither fully covered nor fully uncovered.
-bool isIntermediate(uint32_t p) {
-  int r = (int)TIFFGetR(p);
-  return r > 4 && r < 251;
+// A fixture for the two PixelFilter width guards below: geometry covers
+// every pixel in the frame, so "resolved correctly" and "fell back to
+// GMANSampleBuffer::resolve's empty-support black" stay distinguishable
+// regardless of DefaultBGColor -- unlike edgeRib, whose uncovered half
+// would collide with a future black background.
+std::string fullFrameRib(const std::string& display, const std::string& filterLine, const std::string& samplesLine) {
+  return "Display \"" + display +
+         "\" \"file\" \"rgba\"\n"
+         "Format 100 100 1\n"
+         "Projection \"orthographic\"\n"
+         "Clipping 0.5 50\n" +
+         filterLine + samplesLine +
+         "Translate 0 0 5\n"
+         "WorldBegin\n"
+         "LightSource \"ambientlight\" 1 \"intensity\" [1]\n"
+         "Sides 2\n"
+         "Color [1 1 1]\n"
+         "Surface \"matte\" \"Ka\" [1] \"Kd\" [0]\n"
+         "Polygon \"P\" [ -10 -10 0  10 -10 0  10 10 0  -10 10 0 ]\n"
+         "WorldEnd\n";
+}
+
+// A pixel reading strictly between two references taken from the rendered
+// image itself, at least a guard away from either -- rather than fixed
+// literals, which only worked because the covered and background colours
+// happened to be the two extremes 0 and 255.
+bool isIntermediate(int coveredR, int backgroundR, int guard, int r) {
+  const int lo = std::min(coveredR, backgroundR) + guard;
+  const int hi = std::max(coveredR, backgroundR) - guard;
+  return r > lo && r < hi;
 }
 
 void testSupersamplingEdge(const std::string& gman) {
@@ -138,9 +163,22 @@ void testSupersamplingEdge(const std::string& gman) {
   }
 
   const uint32_t y = img1.height / 2;
+
+  // References taken from the rendered image itself: column 0 sits
+  // comfortably inside the polygon (the covered reference), and the last
+  // column sits comfortably beyond its right edge at world x=0.031 (the
+  // background reference).
+  const int guard = 4; // matches today's spacing from each literal extreme
+  const int coveredR = (int)TIFFGetR(img1.at(0, y));
+  const int backgroundR = (int)TIFFGetR(img1.at(img1.width - 1, y));
+  check(std::abs(coveredR - backgroundR) > 2 * guard,
+        "the covered and background references differ enough to classify an "
+        "intermediate value (covered=" +
+            std::to_string(coveredR) + ", background=" + std::to_string(backgroundR) + ")");
+
   bool oneSampleIntermediate = false;
   for (uint32_t x = 0; x < img1.width; ++x) {
-    if (isIntermediate(img1.at(x, y))) {
+    if (isIntermediate(coveredR, backgroundR, guard, (int)TIFFGetR(img1.at(x, y)))) {
       oneSampleIntermediate = true;
       break;
     }
@@ -150,7 +188,7 @@ void testSupersamplingEdge(const std::string& gman) {
 
   bool fourSampleIntermediate = false;
   for (uint32_t x = 0; x < img4.width; ++x) {
-    if (isIntermediate(img4.at(x, y))) {
+    if (isIntermediate(coveredR, backgroundR, guard, (int)TIFFGetR(img4.at(x, y)))) {
       fourSampleIntermediate = true;
       break;
     }
@@ -216,13 +254,16 @@ void testSampleCountCeiling(const std::string& gman) {
 // A zero-width PixelFilter leaves the resolve's support box empty for
 // any pixel whose samples don't land exactly on its centre, so every
 // pixel is at risk of resolving to its default-constructed (black)
-// colour regardless of the scene's actual background. The guard must
-// keep that from happening.
+// colour regardless of the scene's own content. A full-frame fixture (every
+// pixel covered by bright geometry, not edgeRib's half-background scene)
+// keeps "resolved" and "fell back to black" distinguishable independent of
+// DefaultBGColor. The guard must keep that fallback from happening.
 void testPixelFilterZeroWidthGuard(const std::string& gman) {
-  writeFile("edge_filter_zero.rib", edgeRib("edge_filter_zero.tif", "PixelFilter \"box\" 0 0\n", "PixelSamples 4 4\n"));
-  check(runGman(gman, "edge_filter_zero.rib") == 0, "zero-width filter scene renders");
+  writeFile("full_filter_zero.rib",
+            fullFrameRib("full_filter_zero.tif", "PixelFilter \"box\" 0 0\n", "PixelSamples 4 4\n"));
+  check(runGman(gman, "full_filter_zero.rib") == 0, "zero-width filter scene renders");
 
-  Image img = readTIFF("edge_filter_zero.tif");
+  Image img = readTIFF("full_filter_zero.tif");
   check(img.ok, "zero-width filter scene: TIFF read back");
   if (!img.ok) {
     return;
@@ -233,9 +274,9 @@ void testPixelFilterZeroWidthGuard(const std::string& gman) {
   for (uint32_t x = 0; x < img.width; ++x) {
     maxRed = std::max(maxRed, (int)TIFFGetR(img.at(x, y)));
   }
-  check(maxRed > 200, "a zero-width PixelFilter still resolves the background colour "
-                      "somewhere in frame, rather than every pixel falling back to "
-                      "its default-constructed black");
+  check(maxRed > 200, "a zero-width PixelFilter still resolves the scene's own bright "
+                      "geometry somewhere in frame, rather than every pixel falling "
+                      "back to its default-constructed black");
 }
 
 // A sub-1.0 but positive PixelFilter width narrows the resolve's support
@@ -243,14 +284,15 @@ void testPixelFilterZeroWidthGuard(const std::string& gman) {
 // what an even sample count can land inside: with 4x4 samples and a 0.2
 // width, no sample offset from the pixel centre falls within +/-0.1, so
 // weightSum stays 0 and the pixel falls back to its default-constructed
-// black regardless of the scene. The guard must floor the width before
+// black regardless of the scene. Same full-frame fixture as the zero-width
+// guard above, for the same reason. The guard must floor the width before
 // it reaches resolve, not just reject non-positive widths.
 void testPixelFilterSubOneWidthGuard(const std::string& gman) {
-  writeFile("edge_filter_subone.rib",
-            edgeRib("edge_filter_subone.tif", "PixelFilter \"box\" 0.2 0.2\n", "PixelSamples 4 4\n"));
-  check(runGman(gman, "edge_filter_subone.rib") == 0, "sub-1.0-width filter scene renders");
+  writeFile("full_filter_subone.rib",
+            fullFrameRib("full_filter_subone.tif", "PixelFilter \"box\" 0.2 0.2\n", "PixelSamples 4 4\n"));
+  check(runGman(gman, "full_filter_subone.rib") == 0, "sub-1.0-width filter scene renders");
 
-  Image img = readTIFF("edge_filter_subone.tif");
+  Image img = readTIFF("full_filter_subone.tif");
   check(img.ok, "sub-1.0-width filter scene: TIFF read back");
   if (!img.ok) {
     return;
@@ -261,8 +303,8 @@ void testPixelFilterSubOneWidthGuard(const std::string& gman) {
   for (uint32_t x = 0; x < img.width; ++x) {
     maxRed = std::max(maxRed, (int)TIFFGetR(img.at(x, y)));
   }
-  check(maxRed > 200, "a sub-1.0-width PixelFilter still resolves the background "
-                      "colour somewhere in frame, rather than every pixel falling "
+  check(maxRed > 200, "a sub-1.0-width PixelFilter still resolves the scene's own bright "
+                      "geometry somewhere in frame, rather than every pixel falling "
                       "back to its default-constructed black");
 }
 
