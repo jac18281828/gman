@@ -1441,6 +1441,20 @@ set_tests_properties(rayoccluder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R9 proof, §8 A: the self-shadow sweep -- every ray primitive, at every
+# scale and placement, through its own real intersect() and
+# GMANRayOccluder::transmission, linked against the shared object library
+# for the same reason as gman_raysphere above; carries raydepth's own
+# ENVIRONMENT for the same reason too.
+add_executable(gman_selfshadowsweep selfshadowsweep_test.cpp)
+target_link_libraries(gman_selfshadowsweep PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+
+add_test(NAME selfshadowsweep COMMAND gman_selfshadowsweep)
+set_tests_properties(selfshadowsweep PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 60)
+
 # R8 proof, §8 C: GMANRayTracer -- depth-limit termination, background on a
 # miss or at the depth limit, single-hit shading matching gman::shade
 # directly, the self-shadow offset applied to a traced ray and recursion
