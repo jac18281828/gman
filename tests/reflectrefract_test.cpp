@@ -254,22 +254,24 @@ void checkFresnelSixArgParity() {
   }
 }
 
-// Check 7 (review fix pass, BLOCKING finding 2): a pair whose incidence
-// cosine's magnitude rounds a single ulp past 1 in float32 -- v =
-// normalize(0.003, 1.11, 1.039), n = -v, so i.dot(n) = -1.00000012 --
-// drove 1 - incidenceCosine^2 negative before the clamp, producing
-// kr = kt = NaN past every guard. Clamped, it lands at the same
-// normal-incidence value every other normal-incidence pin reaches. A
-// second pair with i.dot(n) > 0 -- outside GMANRefract's own calling
-// convention, but not undefined behaviour -- exercised the pre-fix
-// formula's sign-dependent near-cancellation in sinapb/tanapb; clamped,
-// it must still land in [0, 1].
+// Check 7: GMANFresnel's incidence-cosine clamp holds at two pairs its
+// unclamped formula could not. v = normalize(0.003, 1.11, 1.039), n =
+// -v is an anti-parallel, normal-incidence pair whose incidence
+// cosine's magnitude rounds a single ulp past 1 in float32 -- i.dot(n)
+// = -1.00000012 -- which drives 1 - incidenceCosine^2 negative before
+// the clamp, producing kr = kt = NaN past every guard; clamped, it
+// lands at the same normal-incidence value every other normal-incidence
+// pin reaches. A second pair with i.dot(n) > 0 -- outside GMANRefract's
+// own calling convention, but not undefined behaviour -- exercised the
+// unclamped formula's sign-dependent near-cancellation in
+// sinapb/tanapb; clamped, it lands at its own closed-form value.
 void checkFresnelClampGuards() {
   GMANSurfaceEnv env;
 
   GMANVector v(0.003f, 1.11f, 1.039f);
   v.normalize();
   GMANVector const n(-v.getX(), -v.getY(), -v.getZ());
+  check(std::fabs(v.dot(n)) > 1.0f, "clamp: the first pin's own i.dot(n) genuinely rounds past 1 in float32");
   RtFloat kr = 0.0f, kt = 0.0f;
   env.fresnel(v, n, 1.5f, kr, kt);
   check(std::isfinite(kr) && std::isfinite(kt), "clamp: the 1-ulp-over normalized pair produces no NaN");
@@ -282,7 +284,11 @@ void checkFresnelClampGuards() {
   check(i3.dot(n3) > 0.0f, "clamp: the second pin is genuinely i.dot(n) > 0");
   RtFloat kr3 = 0.0f, kt3 = 0.0f;
   env.fresnel(i3, n3, 1.5f, kr3, kt3);
-  check(std::isfinite(kr3) && kr3 >= 0.0f && kr3 <= 1.0f, "clamp: an i.dot(n) > 0 input lands kr in [0, 1]");
+  // A range check ([0, 1]) passes for the wrong reason too: without the
+  // fabs, a positive i.dot(n) clamps to a negative cosine, the grazing
+  // guard fires, and kr = 1 -- in range, but not this pair's own value.
+  check(near(kr3, closedFormKr(i3.dot(n3), 1.5f), kTol),
+        "clamp: an i.dot(n) > 0 input lands at its own closed-form kr");
 }
 
 } // namespace
