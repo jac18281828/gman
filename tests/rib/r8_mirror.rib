@@ -9,22 +9,26 @@ LightSource "distantlight" 2 "intensity" [0.8] "lightcolor" [1 1 1]
 	"from" [5 0 0] "to" [0 0 0]
 Sides 1
 
-# Behind the camera, at negative camera-space z: invisible to every
-# primary ray (the camera looks down +z), visible only in the mirror
-# sphere's own reflection. A dead-on mirror reflects what sits directly
-# behind it through its own centre pixel.
+# A wall, not a sphere: at camera-space z = -10, invisible to every
+# primary ray (the camera looks down +z, the near clip stops at 0.5),
+# but its own plane never intrudes on the frustum regardless of extent
+# in x and y, so it can be sized to fill nearly the whole hemisphere a
+# convex mirror's own demagnification folds into its silhouette.
 AttributeBegin
 Identity
 Translate 0 0 -10
 Surface "matte" "Ka" [0.9] "Kd" [0.3]
 Color [0 1 0]
 Opacity [1 1 1]
-Sphere 1.5 -1.5 1.5 360
+Sides 2
+Polygon "P" [-50 -50 0  50 -50 0  50 50 0  -50 50 0]
 AttributeEnd
 
+# Cs off-white: the mirror's own silhouette stays visible against a
+# white background even where it reflects that same background.
 AttributeBegin
 Surface "mirror" "Kr" [1]
-Color [1 1 1]
+Color [0.8 0.8 0.85]
 Opacity [1 1 1]
 Sphere 1.2 -1.2 1.2 360
 AttributeEnd

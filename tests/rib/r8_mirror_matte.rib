@@ -10,19 +10,22 @@ LightSource "distantlight" 2 "intensity" [0.8] "lightcolor" [1 1 1]
 Sides 1
 
 # Same scene as r8_mirror.rib, the mirror sphere replaced by matte: the
-# non-golden comparison E.1 needs, referenced from §1's Scope.
+# non-golden comparison E.1 needs, referenced from §1's Scope. Its own
+# silhouette also stands in for the mirror sphere's own screen footprint,
+# geometry and camera being identical between the two fixtures.
 AttributeBegin
 Identity
 Translate 0 0 -10
 Surface "matte" "Ka" [0.9] "Kd" [0.3]
 Color [0 1 0]
 Opacity [1 1 1]
-Sphere 1.5 -1.5 1.5 360
+Sides 2
+Polygon "P" [-50 -50 0  50 -50 0  50 50 0  -50 50 0]
 AttributeEnd
 
 AttributeBegin
 Surface "matte" "Ka" [0.9] "Kd" [0.3]
-Color [1 1 1]
+Color [0.8 0.8 0.85]
 Opacity [1 1 1]
 Sphere 1.2 -1.2 1.2 360
 AttributeEnd

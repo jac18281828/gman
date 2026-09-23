@@ -21,10 +21,13 @@
 /*
  * R8 proof, §8 E.1: `gman -r gmanraytracer` renders tests/rib/r8_mirror.rib
  * -- a mirror sphere dead-on to the camera, reflecting a distinctly
- * coloured sphere placed behind the camera (invisible to every primary
- * ray) -- matching a checked-in golden image, and the same reflected
- * colour appears nowhere in tests/rib/r8_mirror_matte.rib's render, the
- * identical scene with the mirror sphere replaced by matte.
+ * coloured wall placed behind the camera (invisible to every primary ray)
+ * -- matching a checked-in golden image, and the same reflected colour
+ * appears nowhere in tests/rib/r8_mirror_matte.rib's render, the identical
+ * scene with the mirror sphere replaced by matte. That matte render's own
+ * silhouette -- same geometry, same camera -- also stands in for the
+ * mirror sphere's own screen footprint, masking the reflected-colour check
+ * to inside it rather than the whole frame.
  */
 
 #include <cstdio>
@@ -43,11 +46,16 @@ int runGman(std::string const& command) {
   return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
 }
 
-// The reflected sphere's own Color [0 1 0]: green well clear of red and
+// The reflected wall's own Color [0 1 0]: green well clear of red and
 // blue, distinguishable from every other colour this scene's ambient and
 // distant lighting produce (white, grey and the mirror sphere's own
-// white base).
+// off-white base).
 constexpr int kGreenMargin = 40;
+
+// The reflected signal's own required share of the frame (§1's "each
+// fixture covers at least 5% of its frame"), applied to the green pixels
+// within the mirror's own silhouette, not to the silhouette itself.
+constexpr double kMinReflectedFraction = 0.05;
 
 bool greenDominant(uint32_t px) {
   int const r = (int)TIFFGetR(px);
@@ -67,6 +75,15 @@ bool anyGreenDominant(GmanImage const& img) {
   return false;
 }
 
+// True where the matte comparison's own pixel differs from its background
+// corner: the mirror sphere's screen footprint, both fixtures sharing one
+// camera and one sphere position/radius.
+bool inMirrorSilhouette(GmanImage const& matteImg, uint32_t backgroundPixel, uint32_t x, uint32_t y) {
+  uint32_t const px = matteImg.at(x, y);
+  return TIFFGetR(px) != TIFFGetR(backgroundPixel) || TIFFGetG(px) != TIFFGetG(backgroundPixel) ||
+         TIFFGetB(px) != TIFFGetB(backgroundPixel);
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -76,20 +93,6 @@ int main(int argc, char* argv[]) {
   }
   std::string const gman = argv[1];
   std::string const ribDir = argv[2];
-
-  std::remove("r8_mirror.tif");
-  int const status = runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/r8_mirror.rib\" >/dev/null 2>&1");
-  check(status == 0, "r8_mirror.rib renders under -r gmanraytracer (exit " + std::to_string(status) + ")");
-
-  checkGoldenImage("r8_mirror.tif", ribDir + "/r8_mirror_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
-                   "r8_mirror_diff.tif");
-
-  GmanImage const mirrorImg = readGmanTIFF("r8_mirror.tif");
-  check(mirrorImg.ok, "r8_mirror.tif reads back");
-  if (mirrorImg.ok) {
-    check(anyGreenDominant(mirrorImg),
-          "the reflected sphere's own colour appears somewhere within the mirror sphere's silhouette");
-  }
 
   std::remove("r8_mirror_matte.tif");
   int const matteStatus =
@@ -101,8 +104,35 @@ int main(int argc, char* argv[]) {
   check(matteImg.ok, "r8_mirror_matte.tif reads back");
   if (matteImg.ok) {
     check(!anyGreenDominant(matteImg),
-          "the reflected sphere's own colour appears nowhere in the matte comparison's render");
+          "the reflected wall's own colour appears nowhere in the matte comparison's render");
   }
 
-  return checkSummary("R8 E.1: a mirror sphere reflects a sphere placed behind the camera, invisible without it");
+  std::remove("r8_mirror.tif");
+  int const status = runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/r8_mirror.rib\" >/dev/null 2>&1");
+  check(status == 0, "r8_mirror.rib renders under -r gmanraytracer (exit " + std::to_string(status) + ")");
+
+  checkGoldenImage("r8_mirror.tif", ribDir + "/r8_mirror_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
+                   "r8_mirror_diff.tif");
+
+  GmanImage const mirrorImg = readGmanTIFF("r8_mirror.tif");
+  check(mirrorImg.ok, "r8_mirror.tif reads back");
+  if (mirrorImg.ok && matteImg.ok && mirrorImg.width == matteImg.width && mirrorImg.height == matteImg.height) {
+    uint32_t const background = matteImg.at(0, 0);
+    uint32_t reflectedCount = 0;
+    for (uint32_t y = 0; y < mirrorImg.height; ++y) {
+      for (uint32_t x = 0; x < mirrorImg.width; ++x) {
+        if (inMirrorSilhouette(matteImg, background, x, y) && greenDominant(mirrorImg.at(x, y))) {
+          ++reflectedCount;
+        }
+      }
+    }
+    double const frameFraction = (double)mirrorImg.width * (double)mirrorImg.height;
+    double const reflectedFraction = (double)reflectedCount / frameFraction;
+    check(reflectedFraction >= kMinReflectedFraction,
+          "the reflected wall's own colour covers at least " + std::to_string(kMinReflectedFraction) +
+              " of the frame within the mirror sphere's silhouette (got " + std::to_string(reflectedFraction) + ", " +
+              std::to_string(reflectedCount) + " pixels)");
+  }
+
+  return checkSummary("R8 E.1: a mirror sphere reflects a wall placed behind the camera, invisible without it");
 }
