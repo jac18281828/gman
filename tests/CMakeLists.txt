@@ -1167,6 +1167,19 @@ set_tests_properties(reflectrefract PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R8 proof, §8 D: mirror and glass, loaded exactly as defaultSurfaceShader()
+# loads matte -- libmirror.so/libglass.so built first, found by bare name
+# at runtime through LD_LIBRARY_PATH/DYLD_LIBRARY_PATH.
+add_executable(gman_mirrorglass mirrorglass_test.cpp)
+target_link_libraries(gman_mirrorglass PRIVATE gman_core)
+add_dependencies(gman_mirrorglass gman_mirror gman_glass)
+
+add_test(NAME mirrorglass COMMAND gman_mirrorglass)
+set_tests_properties(mirrorglass PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 1: GMANViewingSystem answers a camera-space ray
 # (cameraRay) as well as a world-space one (ray), and pins the [tmin,
 # tmax] interval every GMANRay defaults to.

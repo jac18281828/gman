@@ -322,6 +322,12 @@ set_target_properties(gman_paintedplastic PROPERTIES OUTPUT_NAME "paintedplastic
 gman_add_plugin(gman_shinymetal shaders/gmanshinymetal.cpp)
 set_target_properties(gman_shinymetal PROPERTIES OUTPUT_NAME "shinymetal")
 
+gman_add_plugin(gman_mirror shaders/gmanmirror.cpp)
+set_target_properties(gman_mirror PROPERTIES OUTPUT_NAME "mirror")
+
+gman_add_plugin(gman_glass shaders/gmanglass.cpp)
+set_target_properties(gman_glass PROPERTIES OUTPUT_NAME "glass")
+
 # ---------------------------------------------------------------------------
 # gman_rib — the RIB writer, loaded the way a renderer is
 # ---------------------------------------------------------------------------
@@ -361,7 +367,8 @@ set_target_properties(gman gman_core PROPERTIES
   BUILD_RPATH "${CMAKE_BINARY_DIR}"
   INSTALL_RPATH "${GMAN_INSTALL_RPATH}")
 
-add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_rib)
+add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_mirror
+                 gman_glass gman_rib)
 
 # ---------------------------------------------------------------------------
 # Install
@@ -374,7 +381,8 @@ install(TARGETS gman_core
   EXPORT gmanTargets
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_rib
+install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_mirror
+                gman_glass gman_rib
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 if(GMAN_BUILD_RAYTRACER)
