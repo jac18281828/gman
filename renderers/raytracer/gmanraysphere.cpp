@@ -66,7 +66,9 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
     return false;
 
   // Move the ray into the sphere's object space, centred at the origin,
-  // through cameraToObject.
+  // through cameraToObject. transformDirection keeps the length
+  // cameraToObject gives it, so a root along objDirection is already a
+  // camera-space distance, with no rescaling needed for hit.t.
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 

@@ -71,13 +71,11 @@ bool GMANRayCylinder::intersect(const GMANRay& ray, GMANHit& hit) const {
   if (!gman::shiftIntoBoundingSphere(objOrigin, objDirection, boundingRadius, shifted))
     return false;
 
-  // x^2 + y^2 == radius^2, independent of z. a vanishes only when the
-  // ray's object-space direction has no x or y component at all --
-  // straight down the axis -- since dx and dy are promoted to double
-  // before squaring: a merely tiny dx or dy no longer underflows a to
-  // zero the way a float square once could. A ray parallel to the axis
-  // either lies outside the wall for its whole length or runs along it,
-  // neither a transverse hit.
+  // x^2 + y^2 == radius^2, independent of z. dx and dy square in double,
+  // so a vanishes only when the ray's object-space direction has no x or
+  // y component at all -- straight down the axis, which either lies
+  // outside the wall for its whole length or runs along it, neither a
+  // transverse hit.
   double const a = shifted.dx * shifted.dx + shifted.dy * shifted.dy;
   double const b = 2.0 * (shifted.dx * shifted.ox + shifted.dy * shifted.oy);
   double const c = shifted.ox * shifted.ox + shifted.oy * shifted.oy - (double)radius * (double)radius;

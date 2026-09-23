@@ -22,10 +22,9 @@
  * R5c proof: GMANRayCone::intersect finds the object-space wall hit, its
  * height and thetamax wedge, honors the ray's own [tmin, tmax] interval,
  * and fills a GMANHit that round trips through GMANCone::getLocation. A
- * ray parallel to a generatrix now hits through solveRayQuadratic's own
- * a == 0 linear branch: computed in double, a's two squared terms cancel
- * exactly, where a float square once left a contraction-sensitive
- * residual (see tests/rayquadratic_test.cpp for the branch itself).
+ * ray parallel to a generatrix hits through solveRayQuadratic's own a == 0
+ * linear branch: computed in double, a's two squared terms cancel exactly
+ * (see tests/rayquadratic_test.cpp for the branch itself).
  */
 
 #include <cmath>
