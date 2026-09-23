@@ -65,6 +65,60 @@ void project(GMANPoint const& p, int axis, RtFloat& a, RtFloat& b) {
   }
 }
 
+// Barycentric weights of (px, py) in the 2D triangle (a, b, c); not
+// clamped, so a point outside the triangle still returns a well-defined
+// extrapolation rather than a failure.
+void barycentric2D(RtFloat px, RtFloat py, RtFloat ax, RtFloat ay, RtFloat bx, RtFloat by, RtFloat cx, RtFloat cy,
+                   RtFloat& wa, RtFloat& wb, RtFloat& wc) {
+  RtFloat const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
+  if ((RtFloat)fabs(d) < kParallelTolerance) {
+    wa = wb = wc = 0.0;
+    return;
+  }
+  wa = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;
+  wb = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / d;
+  wc = (RtFloat)1.0 - wa - wb;
+}
+
+// True when (wa, wb, wc) place a point inside its own triangle; a small
+// negative tolerance admits a point that lands right on a fan diagonal.
+bool insideTriangle(RtFloat wa, RtFloat wb, RtFloat wc) {
+  constexpr RtFloat kBaryTolerance = (RtFloat)1.0e-4;
+  return wa >= -kBaryTolerance && wb >= -kBaryTolerance && wc >= -kBaryTolerance;
+}
+
+// Interpolates each vertex's own (s, t) across hitPoint, fan-triangulated
+// from vertex 0 ((v0, vi, vi+1) for i = 1..n-2) and projected the same way
+// insidePolygon is. Exact for a triangle; for a per-vertex (s, t) that is
+// itself affine in position -- every fixture this unit tests -- any
+// triangulation gives the identical result at any interior point.
+std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<GMANPoint> const& ring,
+                                                std::vector<std::pair<RtFloat, RtFloat>> const& texCoords, int axis,
+                                                GMANPoint const& hitPoint) {
+  RtFloat px, py;
+  project(hitPoint, axis, px, py);
+  RtFloat ax, ay;
+  project(ring[0], axis, ax, ay);
+
+  RtFloat wa = 0.0, wb = 0.0, wc = 0.0;
+  std::size_t bi = 1, ci = 2;
+  std::size_t const n = ring.size();
+  for (std::size_t i = 1; i + 1 < n; i++) {
+    RtFloat bx, by, cx, cy;
+    project(ring[i], axis, bx, by);
+    project(ring[i + 1], axis, cx, cy);
+    barycentric2D(px, py, ax, ay, bx, by, cx, cy, wa, wb, wc);
+    bi = i;
+    ci = i + 1;
+    if (insideTriangle(wa, wb, wc))
+      break;
+  }
+
+  RtFloat const s = wa * texCoords[0].first + wb * texCoords[bi].first + wc * texCoords[ci].first;
+  RtFloat const t = wa * texCoords[0].second + wb * texCoords[bi].second + wc * texCoords[ci].second;
+  return {s, t};
+}
+
 // Even-odd (crossing number) test on the ring's projection to the plane
 // dominantAxis names: correct for the convex polygon RiPolygon promises
 // and, matching the z-buffer's own ear-clipped fill rule, for a concave or
@@ -108,6 +162,36 @@ GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> verts, GMANParameterList p
     bbox = gman::padBBox(minP, maxP);
   }
 
+  // "P" is the same object-space floats GMANRayObjectManager::getRSPolygon
+  // itself reads before applying the CTM -- not vertices, already camera
+  // space by now -- so a vertex's default (s, t) is its own pre-CTM (x, y),
+  // GMANPatchPolyObjectManager's own polygon rule
+  // (resolvePolygonTextureCoordinates). Every entry is (0, 0) when pl
+  // carries no "P": the only construction path that reaches here is direct
+  // construction bypassing getRSPolygon, which never omits it.
+  texCoords.assign(vertices.size(), {(RtFloat)0.0, (RtFloat)0.0});
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  if (p) {
+    RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
+    RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
+    RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
+    for (std::size_t i = 0; i < vertices.size(); i++) {
+      RtFloat const objX = p[3 * i];
+      RtFloat const objY = p[3 * i + 1];
+      RtFloat s = objX;
+      RtFloat t = objY;
+      if (stArr) {
+        s = stArr[2 * i];
+        t = stArr[2 * i + 1];
+      }
+      if (sArr)
+        s = sArr[i];
+      if (tArr)
+        t = tArr[i];
+      texCoords[i] = {s, t};
+    }
+  }
+
   if (degenerate)
     return;
 
@@ -135,16 +219,18 @@ bool GMANRayPolygon::intersect(const GMANRay& ray, GMANHit& hit) const {
     return false;
 
   GMANPoint const hitPoint = ray.pointAt(t);
-  if (!insidePolygon(vertices, dominantAxis(normal), hitPoint))
+  int const axis = dominantAxis(normal);
+  if (!insidePolygon(vertices, axis, hitPoint))
     return false;
 
   hit.t = t;
   hit.point = hitPoint;
   hit.normal = normal;
-  // A polygon has no parametric surface of its own; interpolated texture
-  // coordinates wait for a later unit.
-  hit.u = 0.0;
-  hit.v = 0.0;
+  // Each vertex's own resolved (s, t) (see the constructor), interpolated
+  // across the hit.
+  std::pair<RtFloat, RtFloat> const uv = interpolateTexCoord(vertices, texCoords, axis, hitPoint);
+  hit.u = uv.first;
+  hit.v = uv.second;
   hit.primitive = this;
   return true;
 }

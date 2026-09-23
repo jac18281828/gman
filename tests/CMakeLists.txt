@@ -1637,6 +1637,27 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
+  # GMANRayPolygon::intersect resolves and interpolates "st" the way
+  # GMANPatchPolyObjectManager's own polygon rule does: pinned against the
+  # checker texture's own texels, then cross-checked against the z-buffer's
+  # own polygon output on a texture affine in (s, t). See
+  # tests/polygonstparity_test.cpp.
+  add_executable(gman_polygonstparity polygonstparity_test.cpp)
+  target_link_libraries(gman_polygonstparity PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_polygonstparity gman_raytracer)
+
+  set(GMAN_POLYGONSTPARITY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonstparity-run")
+  file(MAKE_DIRECTORY "${GMAN_POLYGONSTPARITY_WORKDIR}")
+
+  add_test(NAME polygonstparity
+    COMMAND gman_polygonstparity $<TARGET_FILE:gman>
+                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_POLYGONSTPARITY_WORKDIR}")
+  set_tests_properties(polygonstparity PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
   # R7 proof, checks 3-4: tests/rib/shadow.rib -- a small sphere between a
   # distant light and a large receiver -- casts a shadow a checked-in
   # golden pins, and one pixel inside it holds two further relations

@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <utility>
 #include <vector>
 
 #include "gmanrayinterface.h"
@@ -45,4 +46,11 @@ private:
   // describe a real face -- both computed once here rather than per ray.
   GMANVector normal;
   bool degenerate;
+
+  // Each vertex's own resolved (s, t) -- default its object-space "P",
+  // "st" then "s"/"t" overriding, GMANPatchPolyObjectManager's own polygon
+  // rule -- computed once here rather than per ray. Every entry is (0, 0)
+  // when pl carries no "P" (direct construction bypassing
+  // GMANRayObjectManager::getRSPolygon).
+  std::vector<std::pair<RtFloat, RtFloat>> texCoords;
 };

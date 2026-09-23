@@ -67,7 +67,7 @@ void testSquareCentreAndEdge() {
   check(centreHitFound && near(centreHit.t, 5.0), "square: a ray through the centre hits at t == 5");
   check(near(centreHit.point.getX(), 0.0) && near(centreHit.point.getY(), 0.0) && near(centreHit.point.getZ(), 0.0),
         "square: point == (0, 0, 0)");
-  check(near(centreHit.u, 0.0) && near(centreHit.v, 0.0), "square: u == v == 0, no parametric surface");
+  check(near(centreHit.u, 0.0) && near(centreHit.v, 0.0), "square: no \"P\" in pl, u == v == 0 (the fallback)");
   check(centreHit.primitive == &square, "square: primitive points at the square hit");
 
   // x == edge + 1e-3, not edge + 0.5: an inside test loosened to accept a
@@ -180,6 +180,66 @@ void testIntervalRejects() {
   check(!square.intersect(farRay, hit), "interval: tmin above the plane hit (5) rejects it");
 }
 
+// A GMANRayPolygon built the way RiPolygonV itself builds one
+// (gmanrendermanimpl.cpp:784: GMANParameterList(dictionary, n, tokens,
+// parms, nverts, nverts, 1, 1)), so its pl carries a real "P" -- and, per
+// case, "st"/"s" -- rather than raypolygon_test.cpp's own default-
+// constructed, "P"-less GMANParameterList(). vertices and "P" are the
+// identical unit-square corners (an implicit identity CTM).
+GMANRayPolygon squareWithP(RtToken* tokens, RtPointer* parms, RtInt n) {
+  std::vector<GMANPoint> verts = {GMANPoint(-1.0, -1.0, 0.0), GMANPoint(1.0, -1.0, 0.0), GMANPoint(1.0, 1.0, 0.0),
+                                  GMANPoint(-1.0, 1.0, 0.0)};
+  GMANParameterList pl(gman::standardDictionary(), n, tokens, parms, 4, 4, 1, 1);
+  return GMANRayPolygon(verts, pl);
+}
+
+// A ray through object point (ox, oy, 0), the same object-space plane
+// vertices and "P" share here.
+GMANRay rayThroughObject(RtFloat ox, RtFloat oy) { return GMANRay(GMANPoint(ox, oy, -5.0), GMANVector(0.0, 0.0, 1.0)); }
+
+// ---- check 8: default (s, t) is each vertex's own object-space P ----
+void testDefaultStIsObjectSpaceP() {
+  RtFloat p[] = {-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0};
+  RtToken tokens[] = {RI_P};
+  RtPointer parms[] = {(RtPointer)p};
+  GMANRayPolygon square = squareWithP(tokens, parms, 1);
+
+  GMANRay ray = rayThroughObject(0.5, 0.25);
+  GMANHit hit;
+  check(square.intersect(ray, hit), "default st: a ray through object (0.5, 0.25) hits");
+  check(near(hit.u, 0.5) && near(hit.v, 0.25), "default st: interpolated (u, v) == the hit's own object-space (x, y)");
+}
+
+// ---- check 9: "st" overrides both components, transposed here ----
+void testStOverride() {
+  RtFloat p[] = {-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0};
+  // Each vertex's own default (x, y) transposed to (y, x).
+  RtFloat st[] = {-1, -1, -1, 1, 1, 1, 1, -1};
+  RtToken tokens[] = {RI_P, RI_ST};
+  RtPointer parms[] = {(RtPointer)p, (RtPointer)st};
+  GMANRayPolygon square = squareWithP(tokens, parms, 2);
+
+  GMANRay ray = rayThroughObject(0.5, 0.25);
+  GMANHit hit;
+  check(square.intersect(ray, hit), "\"st\" override: a ray through object (0.5, 0.25) hits");
+  check(near(hit.u, 0.25) && near(hit.v, 0.5), "\"st\" override: (u, v) swapped from the default (0.5, 0.25)");
+}
+
+// ---- check 10: "s" alone overrides only s, "t" stays the default ----
+void testSAloneOverride() {
+  RtFloat p[] = {-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0};
+  // (objX + 1) / 2 per vertex: 0 at x == -1, 1 at x == 1.
+  RtFloat s[] = {0, 1, 1, 0};
+  RtToken tokens[] = {RI_P, RI_S};
+  RtPointer parms[] = {(RtPointer)p, (RtPointer)s};
+  GMANRayPolygon square = squareWithP(tokens, parms, 2);
+
+  GMANRay ray = rayThroughObject(0.5, 0.25);
+  GMANHit hit;
+  check(square.intersect(ray, hit), "\"s\" alone: a ray through object (0.5, 0.25) hits");
+  check(near(hit.u, 0.75) && near(hit.v, 0.25), "\"s\" alone: u from \"s\", v stays the default object-space y");
+}
+
 } // namespace
 
 int main() {
@@ -190,6 +250,9 @@ int main() {
   testDegenerateRingsNeverHit();
   testHitNormalIsNewellDirection();
   testIntervalRejects();
+  testDefaultStIsObjectSpaceP();
+  testStOverride();
+  testSAloneOverride();
 
   return checkSummary("GMANRayPolygon::intersect hits, misses and clips correctly");
 }
