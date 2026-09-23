@@ -101,6 +101,20 @@ Image readTIFF(const std::string& path) {
   return img;
 }
 
+struct AnalyticCircle {
+  double centreX, centreY, radius;
+};
+
+// testMetalSpecularHighlight's own scene (Sphere 1 -1 1 360, Translate 0 0
+// 5, fov 45, Format 200 200) is identical to tests/silhouette_test.cpp's
+// base case, and Ka=0 there leaves every unlit pixel exactly equal to a
+// future black background -- a background-diff read would find only the
+// specular highlight, not the sphere's own silhouette. This is the circle
+// silhouette_test.cpp's own formula predicts instead: centred at (100,
+// 100), radius = tan(asin(r/d)) / tan(fov/2) * (width/2), r=1, d=5.
+const AnalyticCircle kMetalSpecularCircle{100.0, 100.0,
+                                          std::tan(std::asin(0.2)) / std::tan(22.5 * M_PI / 180.0) * 100.0};
+
 // ---- proof item 4: lighting, brightest pixel and the N.L=0 terminator ----
 void testTerminator(const std::string& gman) {
   // Matte, no ambient: Ci is exactly Kd*(N.L) clamped at 0, so the
@@ -456,18 +470,68 @@ double interiorMeanR(const Image& img, uint32_t bg, int margin) {
   return sum / (double)values.size();
 }
 
-double interiorLitFraction(const Image& img, uint32_t bg, int margin, int litThreshold) {
-  std::vector<int> values = interiorValues(img, bg, margin);
-  if (values.empty()) {
-    return 0.0;
+bool insideCircle(const AnalyticCircle& c, int x, int y) {
+  const double dx = x - c.centreX, dy = y - c.centreY;
+  return dx * dx + dy * dy <= c.radius * c.radius;
+}
+
+SilhouetteStats analyticSilhouetteStats(const Image& img, int litThreshold, const AnalyticCircle& circle) {
+  SilhouetteStats stats;
+  if (!img.ok) {
+    return stats;
   }
-  long lit = 0;
-  for (int v : values) {
-    if (v > litThreshold) {
-      ++lit;
+  std::vector<int> values;
+  for (uint32_t y = 0; y < img.height; ++y) {
+    for (uint32_t x = 0; x < img.width; ++x) {
+      if (!insideCircle(circle, (int)x, (int)y)) {
+        continue;
+      }
+      const int v = (int)TIFFGetR(img.at(x, y));
+      values.push_back(v);
+      stats.maxR = std::max(stats.maxR, v);
+      if (v > litThreshold) {
+        ++stats.litCount;
+      }
     }
   }
-  return (double)lit / (double)values.size();
+  stats.totalCount = (long)values.size();
+  stats.found = !values.empty();
+  if (!stats.found) {
+    return stats;
+  }
+  double sum = 0.0;
+  for (int v : values) {
+    sum += v;
+  }
+  stats.meanR = sum / (double)values.size();
+  double sqSum = 0.0;
+  for (int v : values) {
+    double d = v - stats.meanR;
+    sqSum += d * d;
+  }
+  stats.stddevR = std::sqrt(sqSum / (double)values.size());
+  return stats;
+}
+
+// Same AA-safe-interior reasoning as interiorLitFraction, eroded from the
+// analytic circle's own edge rather than from a background-diff-detected
+// one -- the diff read has the same Ka=0-vs-black-background collision the
+// circle itself exists to avoid.
+double analyticInteriorLitFraction(const Image& img, const AnalyticCircle& circle, int margin, int litThreshold) {
+  const AnalyticCircle eroded{circle.centreX, circle.centreY, circle.radius - margin};
+  long lit = 0, total = 0;
+  for (uint32_t y = 0; y < img.height; ++y) {
+    for (uint32_t x = 0; x < img.width; ++x) {
+      if (!insideCircle(eroded, (int)x, (int)y)) {
+        continue;
+      }
+      ++total;
+      if ((int)TIFFGetR(img.at(x, y)) > litThreshold) {
+        ++lit;
+      }
+    }
+  }
+  return total == 0 ? 0.0 : (double)lit / (double)total;
 }
 
 // ---- metal shader, finding: never exercised by any test ----
@@ -568,7 +632,7 @@ void testMetalSpecularHighlight(const std::string& gman) {
                             "WorldEnd\n";
     writeFile(name + ".rib", rib);
     check(runGman(gman, name + ".rib") == 0, name + ": scene renders");
-    return silhouetteStats(readTIFF(name + ".tif"), 15);
+    return analyticSilhouetteStats(readTIFF(name + ".tif"), 15, kMetalSpecularCircle);
   };
 
   SilhouetteStats tight = renderSpecular(0.05, "metal_spec_tight");
@@ -593,8 +657,8 @@ void testMetalSpecularHighlight(const std::string& gman) {
   // guards against above.
   Image tightImg = readTIFF("metal_spec_tight.tif");
   Image broadImg = readTIFF("metal_spec_broad.tif");
-  double tightFraction = interiorLitFraction(tightImg, tightImg.at(0, 0), 2, 15);
-  double broadFraction = interiorLitFraction(broadImg, broadImg.at(0, 0), 2, 15);
+  double tightFraction = analyticInteriorLitFraction(tightImg, kMetalSpecularCircle, 2, 15);
+  double broadFraction = analyticInteriorLitFraction(broadImg, kMetalSpecularCircle, 2, 15);
   check(tightFraction < 0.25, "metal specular: a tight highlight (roughness=0.05) covers well "
                               "under half the silhouette, not a diffuse-lit hemisphere (" +
                                   std::to_string(tightFraction) + ")");

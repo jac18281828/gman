@@ -41,7 +41,6 @@
  * brightness assertion goes red because the disk renders solid black.
  */
 
-#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -88,27 +87,23 @@ Image readTIFF(const std::string& path) {
 // channels track the light's own greyscale falloff directly.
 int redAt(const Image& img, uint32_t x, uint32_t y) { return (int)TIFFGetR(img.at(x, y)); }
 
-// The disk's silhouette on row y: background outside it, the light's own
-// falloff inside. Both fixtures share this camera and disk, so both locate
-// their silhouette the same way.
-bool findSilhouette(const Image& img, uint32_t y, uint32_t& xmin, uint32_t& xmax) {
-  const uint32_t bg = img.at(0, y);
-  auto differsFromBackground = [&](uint32_t x) {
-    uint32_t p = img.at(x, y);
-    return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
-           std::abs(int(TIFFGetB(p)) - int(TIFFGetB(bg))) > 8;
-  };
-  xmin = img.width;
-  xmax = 0;
-  bool found = false;
-  for (uint32_t x = 0; x < img.width; ++x) {
-    if (differsFromBackground(x)) {
-      found = true;
-      xmin = std::min(xmin, x);
-      xmax = std::max(xmax, x);
-    }
-  }
-  return found;
+struct DiskSilhouette {
+  double xmin, xmax, centreX;
+};
+
+// The disk's screen extent is exactly computable rather than scanned
+// against the background: a flat, camera-facing disk needs no asin (unlike
+// a sphere's curved horizon, tests/silhouette_test.cpp) -- half-extent in
+// raster pixels is (radius / depth) / tan(fov/2) * (width/2). Scanning
+// against the background instead would collide with a future black
+// default: tests/rib/spotlight.rib's disk is lit only outside its own
+// cone-unlit region, so a background-diff read would find the disk's full
+// radius today but only the lit cone once the background turns black.
+DiskSilhouette analyticDiskSilhouette(uint32_t width, double fovDegrees, double radius, double depth) {
+  const double halfFov = fovDegrees / 2.0 * M_PI / 180.0;
+  const double halfExtent = (radius / depth) / std::tan(halfFov) * (width / 2.0);
+  const double centre = width / 2.0;
+  return {centre - halfExtent, centre + halfExtent, centre};
 }
 
 } // namespace
@@ -130,24 +125,26 @@ int main(int argc, char* argv[]) {
   }
 
   const uint32_t midY = img.height / 2;
-  uint32_t silXmin = 0, silXmax = 0;
-  const bool silFound = findSilhouette(img, midY, silXmin, silXmax);
-  check(silFound, "spotlight: the disk's silhouette was found");
-  if (!silFound) {
-    return checkSummary("spotlight holds");
-  }
 
-  const uint32_t silCentreX = (silXmin + silXmax) / 2;
-
-  // Geometry shared by the taper check below, mirroring tests/rib/
-  // spotlight.rib's own literals: the light's axial standoff from the
-  // disk (both share the "Translate 0 0 5" ahead of WorldBegin) and the
-  // cone's two angles. The silhouette's own edge is the disk's radius, at
-  // thetaMax = atan(diskRadius / standoff); pixelsPerRadian converts that
-  // measured span into an x-offset-per-radian for the taper's own span.
-  const double diskStandoff = 5.0;
+  // Geometry shared by both fixtures, mirroring tests/rib/spotlight.rib's
+  // own literals: "Disk 5 3 360" (radius 3) under "Translate 0 0 5" ahead
+  // of WorldBegin, so depth = 5 (translate) + 5 (disk height) = 10; fov 45,
+  // Format 200 200.
+  const double diskStandoff = 5.0; // the Translate ahead of WorldBegin
+  const double diskHeight = 5.0;   // Disk's own height parameter
   const double diskRadius = 3.0;
+  const double diskDepth = diskStandoff + diskHeight;
+  const double fovDegrees = 45.0;
   const double coneDeltaAngle = 0.08;
+
+  const DiskSilhouette sil = analyticDiskSilhouette(img.width, fovDegrees, diskRadius, diskDepth);
+  const uint32_t silXmin = (uint32_t)std::lround(sil.xmin);
+  const uint32_t silXmax = (uint32_t)std::lround(sil.xmax);
+  const uint32_t silCentreX = (uint32_t)std::lround(sil.centreX);
+
+  // The silhouette's own edge is the disk's radius, at thetaMax =
+  // atan(diskRadius / standoff); pixelsPerRadian converts that analytic
+  // span into an x-offset-per-radian for the taper's own span.
   const double thetaMax = std::atan(diskRadius / diskStandoff);
   const double pixelsPerRadian = double(silXmax - silCentreX) / thetaMax;
 
@@ -216,13 +213,14 @@ int main(int argc, char* argv[]) {
   }
 
   const uint32_t beamMidY = beamImg.height / 2;
-  uint32_t beamXmin = 0, beamXmax = 0;
-  const bool beamSilFound = findSilhouette(beamImg, beamMidY, beamXmin, beamXmax);
-  check(beamSilFound, "spotlight_beam: the disk's silhouette was found");
-  if (!beamSilFound) {
-    return checkSummary("spotlight holds");
-  }
-  const double beamCentreX = (beamXmin + beamXmax) / 2.0;
+
+  // spotlight_beam.rib's own header comment states its geometry is
+  // unchanged from spotlight.rib's -- confirmed by reading the file:
+  // identical "Disk 5 3 360", "Translate 0 0 5", fov and Format -- so the
+  // same analytic bound applies.
+  const DiskSilhouette beamSil = analyticDiskSilhouette(beamImg.width, fovDegrees, diskRadius, diskDepth);
+  const uint32_t beamXmax = (uint32_t)std::lround(beamSil.xmax);
+  const double beamCentreX = beamSil.centreX;
 
   // Same disk and cone as spotlight.rib. Unlike the taper check above, the
   // mapping from x to theta here must be exact rather than a straight-line
