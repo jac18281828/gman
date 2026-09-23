@@ -71,14 +71,17 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   // GMANHyperboloid::getLocation sweeps the segment point1..point2 by v,
   // r(v) == dist(P(v), axis), phi(v) == atan2(P(v).y, P(v).x); r(v)^2 is
   // quadratic in v (P0sq + 2*Pdot*v + Dsq*v^2, expanding
-  // P(v) == point1 + v*(point2 - point1)).
-  RtFloat const dxSeg = point2.getX() - point1.getX();
-  RtFloat const dySeg = point2.getY() - point1.getY();
-  RtFloat const dzSeg = point2.getZ() - point1.getZ();
+  // P(v) == point1 + v*(point2 - point1)). Both branches below read these
+  // in double: a merely tiny dxSeg or dySeg would otherwise underflow
+  // dSq's float square to 0 while pDot survives, and the flat branch's
+  // linear-case fallback would return a spurious root.
+  double const dxSeg = (double)point2.getX() - (double)point1.getX();
+  double const dySeg = (double)point2.getY() - (double)point1.getY();
+  double const dzSeg = (double)point2.getZ() - (double)point1.getZ();
 
-  RtFloat const p0sq = point1.getX() * point1.getX() + point1.getY() * point1.getY();
-  RtFloat const pDot = point1.getX() * dxSeg + point1.getY() * dySeg;
-  RtFloat const dSq = dxSeg * dxSeg + dySeg * dySeg;
+  double const p0sq = (double)point1.getX() * point1.getX() + (double)point1.getY() * point1.getY();
+  double const pDot = (double)point1.getX() * dxSeg + (double)point1.getY() * dySeg;
+  double const dSq = dxSeg * dxSeg + dySeg * dySeg;
 
   RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
 
@@ -99,14 +102,12 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     double const x = (double)objOrigin.getX() + (double)objDirection.getX() * tLocal;
     double const y = (double)objOrigin.getY() + (double)objDirection.getY() * tLocal;
 
-    double const dSqD = (double)dSq, pDotD = (double)pDot, p0sqD = (double)p0sq;
-
     // r(v)^2 == x*x + y*y at the plane hit: dSq*v^2 + 2*pDot*v +
     // (p0sq - x*x - y*y) == 0, solved in double. point1 == point2 forces
     // dSq == pDot == 0.0, so gman::solveRayQuadratic's own a == 0.0
     // contract already returns zero roots for that degeneracy.
     double vRoot0 = 0.0, vRoot1 = 0.0;
-    int const numVRoots = gman::solveRayQuadratic(dSqD, 2.0 * pDotD, p0sqD - x * x - y * y, vRoot0, vRoot1);
+    int const numVRoots = gman::solveRayQuadratic(dSq, 2.0 * pDot, p0sq - x * x - y * y, vRoot0, vRoot1);
 
     double const vRoots[2] = {vRoot0, vRoot1};
     for (int i = 0; i < numVRoots; ++i) {
@@ -126,7 +127,7 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
         continue;
 
       // The fold, pDot + dSq*v == 0, is measure-zero: the formula and getNormal both vanish there in exact arithmetic.
-      GMANVector objNormal(0.0, 0.0, (RtFloat)(-(pDotD + dSqD * v)));
+      GMANVector objNormal(0.0, 0.0, (RtFloat)(-(pDot + dSq * v)));
       GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
       normal.normalize();
 
@@ -173,14 +174,12 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
 
   double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
 
-  double const dzSegD = (double)dzSeg;
-  double const v0 = (soz - (double)point1.getZ()) / dzSegD;
-  double const vSlope = dz / dzSegD;
+  double const v0 = (soz - (double)point1.getZ()) / dzSeg;
+  double const vSlope = dz / dzSeg;
 
-  double const p0sqD = (double)p0sq, pDotD = (double)pDot, dSqD = (double)dSq;
-  double const r2c = p0sqD + 2.0 * pDotD * v0 + dSqD * v0 * v0;
-  double const r2b = 2.0 * vSlope * (pDotD + dSqD * v0);
-  double const r2a = dSqD * vSlope * vSlope;
+  double const r2c = p0sq + 2.0 * pDot * v0 + dSq * v0 * v0;
+  double const r2b = 2.0 * vSlope * (pDot + dSq * v0);
+  double const r2a = dSq * vSlope * vSlope;
 
   double const a = dx * dx + dy * dy - r2a;
   double const b = 2.0 * (dx * sox + dy * soy) - r2b;
@@ -205,7 +204,7 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     double const px = sox + tLocal * dx;
     double const py = soy + tLocal * dy;
     double const pz = soz + tLocal * dz;
-    double const v = (pz - (double)point1.getZ()) / dzSegD;
+    double const v = (pz - (double)point1.getZ()) / dzSeg;
     if (v < 0.0 || v > 1.0)
       continue;
 
@@ -225,7 +224,7 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     // dropping the common positive factor kt leaves the vector below,
     // which also carries the sign reversal getNormal's own comment
     // documents for a segment descending in z (dzSeg < 0).
-    GMANVector objNormal((RtFloat)(dzSeg * px), (RtFloat)(dzSeg * py), (RtFloat)(-(pDotD + dSqD * v)));
+    GMANVector objNormal((RtFloat)(dzSeg * px), (RtFloat)(dzSeg * py), (RtFloat)(-(pDot + dSq * v)));
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
