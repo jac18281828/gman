@@ -112,4 +112,23 @@ inline GMANBBox revolutionBBox(GMANMatrix4 const& objectToCamera, RtFloat r, RtF
   return cameraSpaceBBox(objectToCamera, objMin, objMax);
 }
 
+// The object-space parameter shifting the ray's origin to its closest
+// approach to the origin, when that origin starts outside the bounding
+// sphere (radius boundingRadius, centred on the origin); 0 when already
+// inside. Every coefficient a caller builds from the shifted origin then
+// sits near the shape regardless of camera distance, so a double root
+// solve holds its accuracy there. Returns false, shift left at the
+// closest approach, when that approach still clears the bounding sphere:
+// such a ray misses the shape outright, before any coefficient is built.
+inline bool boundingSphereShift(double ox, double oy, double oz, double dx, double dy, double dz, double dirSq,
+                                double boundingRadius, double& shift) {
+  double const boundingRadiusSq = boundingRadius * boundingRadius;
+  shift = 0.0;
+  if (ox * ox + oy * oy + oz * oz <= boundingRadiusSq)
+    return true;
+  shift = -(ox * dx + oy * dy + oz * dz) / dirSq;
+  double const cx = ox + shift * dx, cy = oy + shift * dy, cz = oz + shift * dz;
+  return cx * cx + cy * cy + cz * cz <= boundingRadiusSq;
+}
+
 } // namespace gman

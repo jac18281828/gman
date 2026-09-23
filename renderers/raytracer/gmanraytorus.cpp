@@ -32,26 +32,6 @@
 
 namespace {
 
-// The object-space parameter shifting the ray's origin to its closest
-// approach to the torus's centre, when that origin starts outside the
-// bounding sphere (radius boundingRadius, centred on the origin); 0 when
-// already inside. Every quartic coefficient built from the shifted origin
-// then sits near the torus regardless of camera distance, so the roots
-// gman::solveQuartic returns stay small, where its closed form holds its
-// accuracy. Returns false, shift left at the closest
-// approach, when that approach still clears the bounding sphere: such a
-// ray misses the torus outright, before any coefficient is built.
-bool boundingSphereShift(double ox, double oy, double oz, double dx, double dy, double dz, double dirSq,
-                         double boundingRadius, double& shift) {
-  double const boundingRadiusSq = boundingRadius * boundingRadius;
-  shift = 0.0;
-  if (ox * ox + oy * oy + oz * oz <= boundingRadiusSq)
-    return true;
-  shift = -(ox * dx + oy * dy + oz * dz) / dirSq;
-  double const cx = ox + shift * dx, cy = oy + shift * dy, cz = oz + shift * dz;
-  return cx * cx + cy * cy + cz * cz <= boundingRadiusSq;
-}
-
 // The implicit torus (x^2+y^2+z^2+R^2-r^2)^2 == 4*R^2*(x^2+y^2), R ==
 // majorradius, r == minorradius, matches GMANTorus::getLocation's own
 // parametrization exactly (expand x, y, z there and both sides agree).
@@ -165,7 +145,7 @@ bool GMANRayTorus::intersect(const GMANRay& ray, GMANHit& hit) const {
   double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
 
   double shift = 0.0;
-  if (!boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, majorradius + minorradius, shift))
+  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, majorradius + minorradius, shift))
     return false;
 
   double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
