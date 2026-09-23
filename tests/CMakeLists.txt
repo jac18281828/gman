@@ -1520,6 +1520,48 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
+  # R8 proof, §8 E.1: `gman -r gmanraytracer` renders tests/rib/r8_mirror.rib
+  # -- a mirror sphere reflecting a sphere placed behind the camera --
+  # matching a checked-in golden image, and the reflected colour appears
+  # nowhere in tests/rib/r8_mirror_matte.rib's render, the same scene with
+  # the mirror sphere replaced by matte. See tests/mirrorrayrender_test.cpp.
+  add_executable(gman_mirrorrayrender mirrorrayrender_test.cpp)
+  target_link_libraries(gman_mirrorrayrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_mirrorrayrender gman_raytracer gman_mirror gman_matte)
+
+  set(GMAN_MIRRORRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/mirrorrayrender-run")
+  file(MAKE_DIRECTORY "${GMAN_MIRRORRAYRENDER_WORKDIR}")
+
+  add_test(NAME mirrorrayrender
+    COMMAND gman_mirrorrayrender $<TARGET_FILE:gman>
+                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_MIRRORRAYRENDER_WORKDIR}")
+  set_tests_properties(mirrorrayrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
+  # R8 proof, §8 E.2: `gman -r gmanraytracer` renders tests/rib/r8_glass.rib
+  # -- a glass sphere in front of a two-tone backdrop -- matching a
+  # checked-in golden image, and a horizontal scanline through the sphere
+  # shows the backdrop's edge displaced from its unrefracted raster x. See
+  # tests/glassrayrender_test.cpp.
+  add_executable(gman_glassrayrender glassrayrender_test.cpp)
+  target_link_libraries(gman_glassrayrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_glassrayrender gman_raytracer gman_glass)
+
+  set(GMAN_GLASSRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/glassrayrender-run")
+  file(MAKE_DIRECTORY "${GMAN_GLASSRAYRENDER_WORKDIR}")
+
+  add_test(NAME glassrayrender
+    COMMAND gman_glassrayrender $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_GLASSRAYRENDER_WORKDIR}")
+  set_tests_properties(glassrayrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
   # R5c proof: `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib, a
   # full torus tilted so its hole shows and a partial torus, matching a
   # checked-in golden image. See tests/torusrayrender_test.cpp.

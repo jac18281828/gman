@@ -1,0 +1,32 @@
+Display "r8_mirror.tif" "file" "rgba"
+Format 128 128 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+LightSource "distantlight" 2 "intensity" [0.8] "lightcolor" [1 1 1]
+	"from" [5 0 0] "to" [0 0 0]
+Sides 1
+
+# Behind the camera, at negative camera-space z: invisible to every
+# primary ray (the camera looks down +z), visible only in the mirror
+# sphere's own reflection. A dead-on mirror reflects what sits directly
+# behind it through its own centre pixel.
+AttributeBegin
+Identity
+Translate 0 0 -10
+Surface "matte" "Ka" [0.9] "Kd" [0.3]
+Color [0 1 0]
+Opacity [1 1 1]
+Sphere 1.5 -1.5 1.5 360
+AttributeEnd
+
+AttributeBegin
+Surface "mirror" "Kr" [1]
+Color [1 1 1]
+Opacity [1 1 1]
+Sphere 1.2 -1.2 1.2 360
+AttributeEnd
+
+WorldEnd
