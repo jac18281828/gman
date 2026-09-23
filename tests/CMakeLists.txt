@@ -1016,6 +1016,24 @@ set_tests_properties(texcoords PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# Guards buildPolygonObject's own dicing resolution against a future,
+# silent coarsening: a Polygon square, diced the ordinary way, must match a
+# much finer hand-diced equivalent of the identical geometry and texture
+# within checkGoldenImage's own tolerance. See tests/polygondicing_test.cpp.
+add_executable(gman_polygondicing polygondicing_test.cpp)
+target_link_libraries(gman_polygondicing PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_POLYGONDICING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygondicing-run")
+file(MAKE_DIRECTORY "${GMAN_POLYGONDICING_WORKDIR}")
+
+add_test(NAME polygondicing
+  COMMAND gman_polygondicing $<TARGET_FILE:gman>
+  WORKING_DIRECTORY "${GMAN_POLYGONDICING_WORKDIR}")
+set_tests_properties(polygondicing PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
 # PointsPolygons and PointsGeneralPolygons: every face is the equivalent
 # Polygon/GeneralPolygon, gathered through "verts" out of a shared "P".
 # Direct object-manager calls, twin-RIB renders compared pixel by pixel
