@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
 #include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanslapi.h"
@@ -32,6 +34,14 @@
  * RenderMan SL API
  *
  */
+
+namespace {
+// sin(phi) or |cos(phi)| below this is close enough to exactly zero that
+// GMANFresnel's general reflectance formula divides by zero or reduces to
+// 0/0; well under any angle step a fixture ray is meant to hit obliquely
+// by, so a genuinely oblique hit never trips it by accident.
+constexpr RtFloat kFresnelGuardTol = (RtFloat)1.0e-5;
+} // namespace
 
 // LJL - February 2001
 RtFloat GMANSmoothStep(RtFloat min, RtFloat max, RtFloat value) {
@@ -100,16 +110,41 @@ GMANVector GMANRefract(const GMANVector& i, const GMANVector& n, RtFloat eta) {
 
 RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt) {
   RtFloat cosphi = i.dot(n);
-  RtFloat sinphi = sqrt(1 - cosphi * cosphi);
-  RtFloat sint = sinphi * eta;
-  RtFloat cost = sqrt(1 - sint * sint);
+  // r/t's own sign convention (unused here) leaves cosphi negative on a
+  // typical entering hit; the reflectance math below needs the actual,
+  // non-negative cosine of the incidence angle.
+  RtFloat const reflectCosPhi = -cosphi;
+  RtFloat sinphi = std::sqrt(1 - reflectCosPhi * reflectCosPhi);
 
-  RtFloat sinapb = sinphi * cost + sint * cosphi;
-  RtFloat sinamb = sinphi * cost - sint * cosphi;
-  RtFloat tanphi = sinphi / cosphi;
+  if (sinphi <= kFresnelGuardTol) {
+    // Normal incidence: sinamb/sinapb and tanamb/tanapb below are all 0/0.
+    RtFloat const kr0 = (eta - 1) / (eta + 1);
+    kr = kr0 * kr0;
+    kt = 1 - kr;
+    return;
+  }
+  if (std::fabs(reflectCosPhi) <= kFresnelGuardTol) {
+    // Grazing incidence: tanphi below divides by zero.
+    kr = 1;
+    kt = 0;
+    return;
+  }
+
+  RtFloat sint = sinphi * eta;
+  if (sint >= 1) {
+    // Total internal reflection: cost below is NaN.
+    kr = 1;
+    kt = 0;
+    return;
+  }
+
+  RtFloat cost = std::sqrt(1 - sint * sint);
+  RtFloat sinapb = sinphi * cost + sint * reflectCosPhi;
+  RtFloat sinamb = sinphi * cost - sint * reflectCosPhi;
+  RtFloat tanphi = sinphi / reflectCosPhi;
   RtFloat tant = sint / cost;
-  RtFloat tanapb = (tanphi + tant) / (1 - tanphi + tant);
-  RtFloat tanamb = (tanphi - tant) / (1 + tanphi + tant);
+  RtFloat tanapb = (tanphi + tant) / (1 - tanphi * tant);
+  RtFloat tanamb = (tanphi - tant) / (1 + tanphi * tant);
 
   kr = 0.5 * ((sinamb * sinamb) / (sinapb * sinapb) + (tanamb * tanamb) / (tanapb * tanapb));
   kt = 1 - kr;
@@ -118,23 +153,54 @@ RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloa
 RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt, GMANVector& r,
                    GMANVector& t) {
   RtFloat cosphi = i.dot(n);
-  RtFloat sinphi = sqrt(1 - cosphi * cosphi);
-  RtFloat sint = sinphi * eta;
-  RtFloat cost = sqrt(1 - sint * sint);
+  // r/t's own sign convention (unused here) leaves cosphi negative on a
+  // typical entering hit; the reflectance math below needs the actual,
+  // non-negative cosine of the incidence angle.
+  RtFloat const reflectCosPhi = -cosphi;
+  RtFloat sinphi = std::sqrt(1 - reflectCosPhi * reflectCosPhi);
 
-  RtFloat sinapb = sinphi * cost + sint * cosphi;
-  RtFloat sinamb = sinphi * cost - sint * cosphi;
-  RtFloat tanphi = sinphi / cosphi;
+  if (sinphi <= kFresnelGuardTol) {
+    // Normal incidence: sinamb/sinapb and tanamb/tanapb below are all 0/0.
+    RtFloat const kr0 = (eta - 1) / (eta + 1);
+    kr = kr0 * kr0;
+    kt = 1 - kr;
+    r = GMANReflect(i, n);
+    t = GMANRefract(i, n, eta);
+    return;
+  }
+  if (std::fabs(reflectCosPhi) <= kFresnelGuardTol) {
+    // Grazing incidence: tanphi below divides by zero.
+    kr = 1;
+    kt = 0;
+    r = GMANReflect(i, n);
+    t = GMANRefract(i, n, eta);
+    return;
+  }
+
+  RtFloat sint = sinphi * eta;
+  if (sint >= 1) {
+    // Total internal reflection: cost below is NaN.
+    kr = 1;
+    kt = 0;
+    r = GMANReflect(i, n);
+    t = GMANVector(0, 0, 0);
+    return;
+  }
+
+  RtFloat cost = std::sqrt(1 - sint * sint);
+  RtFloat sinapb = sinphi * cost + sint * reflectCosPhi;
+  RtFloat sinamb = sinphi * cost - sint * reflectCosPhi;
+  RtFloat tanphi = sinphi / reflectCosPhi;
   RtFloat tant = sint / cost;
-  RtFloat tanapb = (tanphi + tant) / (1 - tanphi + tant);
-  RtFloat tanamb = (tanphi - tant) / (1 + tanphi + tant);
+  RtFloat tanapb = (tanphi + tant) / (1 - tanphi * tant);
+  RtFloat tanamb = (tanphi - tant) / (1 + tanphi * tant);
 
   kr = 0.5 * ((sinamb * sinamb) / (sinapb * sinapb) + (tanamb * tanamb) / (tanapb * tanapb));
   kt = 1 - kr;
 
+  // The unchanged r/t formulas, kept inline rather than calling
+  // GMANReflect/GMANRefract: a different floating-point path than the
+  // guards above take, reaching the same value.
   r = (i - n * cosphi * 2);
-  if (cost < 0) {
-    t = GMANVector(0, 0, 0);
-  } else
-    t = (i * eta - n * (eta * cosphi + cost));
+  t = (i * eta - n * (eta * cosphi + cost));
 }

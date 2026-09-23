@@ -1145,6 +1145,17 @@ set_tests_properties(occlusion PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R8 proof, §8 B: GMANReflect, GMANRefract and GMANFresnel at known angles,
+# through GMANSurfaceEnv's own wrapper and, for the six-argument overload,
+# the free function directly.
+add_executable(gman_reflectrefract reflectrefract_test.cpp)
+target_link_libraries(gman_reflectrefract PRIVATE gman_core)
+
+add_test(NAME reflectrefract COMMAND gman_reflectrefract)
+set_tests_properties(reflectrefract PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 1: GMANViewingSystem answers a camera-space ray
 # (cameraRay) as well as a world-space one (ray), and pins the [tmin,
 # tmax] interval every GMANRay defaults to.
