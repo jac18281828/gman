@@ -62,7 +62,7 @@ const RtFloat DefaultCSMatrixRGBN[9] = {1, 0, 0, 0, 1, 0, 0, 0, 1};
 
 const RtFloat DefaultRelativeDetail = 1.0;
 
-const GMANColor DefaultBGColor(1.0);
+const GMANColor DefaultBGColor(0.0);
 
 const GMANAlpha DefaultAlpha(1.0); // opaque
 

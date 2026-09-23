@@ -1499,6 +1499,24 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
+  # DefaultBGColor is the RISpec's black: an ambient-only scene with a
+  # small sphere leaves every corner of an 8x8 frame uncovered, reading
+  # exactly (0, 0, 0) under both renderers. See tests/backgroundcolor_test.cpp.
+  add_executable(gman_backgroundcolor backgroundcolor_test.cpp)
+  target_link_libraries(gman_backgroundcolor PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_backgroundcolor gman_raytracer)
+
+  set(GMAN_BACKGROUNDCOLOR_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/backgroundcolor-run")
+  file(MAKE_DIRECTORY "${GMAN_BACKGROUNDCOLOR_WORKDIR}")
+
+  add_test(NAME backgroundcolor
+    COMMAND gman_backgroundcolor $<TARGET_FILE:gman>
+    WORKING_DIRECTORY "${GMAN_BACKGROUNDCOLOR_WORKDIR}")
+  set_tests_properties(backgroundcolor PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
   # R5a proof: `gman -r gmanraytracer` renders tests/rib/r5a_disk.rib, a
   # partial-thetamax disk, matching a checked-in golden image. See
   # tests/diskrayrender_test.cpp.
