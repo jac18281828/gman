@@ -28,6 +28,7 @@
  * that surface point, whether D is 5, 1e4 or 1e6.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <format>
 #include <string>
@@ -49,6 +50,31 @@ struct SweepResult {
   double worstResidual = 0.0;
   double worstOnRay = 0.0;
 };
+
+// Scores a hit against residual (the implicit surface equation) and against
+// the ray itself, both in double. GMANRay normalizes direction to float
+// precision only, so dirSq sits a few ULPs off 1 -- dividing the projection
+// by it (rather than assuming a unit direction) keeps that deficit from
+// scaling up by the origin's own magnitude and forging a residual of its
+// own.
+template <typename Residual>
+void recordHit(SweepResult& result, GMANRay const& ray, GMANHit const& hit, Residual residual) {
+  ++result.hits;
+
+  double const res = std::fabs(residual(hit.point));
+  result.worstResidual = std::max(result.worstResidual, res);
+
+  double const ox = (double)ray.getOrigin().getX(), oy = (double)ray.getOrigin().getY(),
+               oz = (double)ray.getOrigin().getZ();
+  double const dx = (double)ray.getDirection().getX(), dy = (double)ray.getDirection().getY(),
+               dz = (double)ray.getDirection().getZ();
+  double const rayDirSq = dx * dx + dy * dy + dz * dz;
+  double const px = (double)hit.point.getX() - ox, py = (double)hit.point.getY() - oy,
+               pz = (double)hit.point.getZ() - oz;
+  double const proj = (px * dx + py * dy + pz * dz) / rayDirSq;
+  double const rx = px - proj * dx, ry = py - proj * dy, rz = pz - proj * dz;
+  result.worstOnRay = std::max(result.worstOnRay, std::sqrt(rx * rx + ry * ry + rz * rz));
+}
 
 // A 16x16 grid of (u, v) cell centres over [0.1, 0.9]^2, kept 10% off every
 // edge: at D == 1e6 a float ray direction resolves only about 0.06 across a
@@ -85,44 +111,68 @@ SweepResult sweepShape(Shape& shape, double scale, double D, Residual residual) 
       ++result.total;
       if (!shape.intersect(ray, hit))
         continue;
-      ++result.hits;
-
-      double const res = std::fabs(residual(hit.point));
-      result.worstResidual = std::max(result.worstResidual, res);
-
-      // The distance from hit.point to the line through the ray's own
-      // camera-space origin along its direction, all in double. GMANRay
-      // normalizes direction to float precision only, so dirSq sits a few
-      // ULPs off 1 -- dividing the projection by it (rather than assuming
-      // a unit direction) keeps that deficit from scaling up by the
-      // origin's own magnitude and forging a residual of its own.
-      double const ox = (double)ray.getOrigin().getX(), oy = (double)ray.getOrigin().getY(),
-                   oz = (double)ray.getOrigin().getZ();
-      double const dx = (double)ray.getDirection().getX(), dy = (double)ray.getDirection().getY(),
-                   dz = (double)ray.getDirection().getZ();
-      double const rayDirSq = dx * dx + dy * dy + dz * dz;
-      double const px = (double)hit.point.getX() - ox, py = (double)hit.point.getY() - oy,
-                   pz = (double)hit.point.getZ() - oz;
-      double const proj = (px * dx + py * dy + pz * dz) / rayDirSq;
-      double const rx = px - proj * dx, ry = py - proj * dy, rz = pz - proj * dz;
-      result.worstOnRay = std::max(result.worstOnRay, std::sqrt(rx * rx + ry * ry + rz * rz));
+      recordHit(result, ray, hit, residual);
     }
   }
   return result;
 }
 
-void checkSweep(char const* surfaceName, double D, SweepResult const& r) {
-  double const minFraction = (D >= 1e6) ? 0.95 : 1.0;
+// The oblique companion to sweepShape, for a plane surface (the disk, the
+// flat annulus): a normal-aligned ray leaves a plane's x and y exact, since
+// its own normal is the z-axis, so item 3 needs a ray that actually moves
+// x and y. Each ray sits at 45 degrees from the normal, in the target's own
+// radial plane (the vertical plane through the axis and the target), on the
+// far side of the axis, and aims at the surface point itself -- a plane has
+// no inside to aim short of. As it travels from origin to target, the ray
+// crosses the axis and moves outward.
+template <typename Shape, typename Residual>
+SweepResult sweepShapePlaneOblique(Shape& shape, double D, Residual residual) {
+  SweepResult result;
+  constexpr int kGrid = 16;
+  constexpr double kLo = 0.1, kHi = 0.9;
+  constexpr double kCos45 = 0.70710678118654752;
+
+  for (int i = 0; i < kGrid; ++i) {
+    for (int j = 0; j < kGrid; ++j) {
+      double const u = kLo + (kHi - kLo) * (i + 0.5) / kGrid;
+      double const v = kLo + (kHi - kLo) * (j + 0.5) / kGrid;
+
+      GMANPoint const surface = shape.getLocation(u, v);
+      GMANVector normal = shape.getNormal(u, v);
+      normal.normalize();
+
+      double const sx = surface.getX(), sy = surface.getY();
+      double const radialLen = std::sqrt((double)sx * sx + (double)sy * sy);
+      double const radialX = (double)sx / radialLen, radialY = (double)sy / radialLen;
+
+      GMANPoint const origin(surface.getX() + (RtFloat)(D * kCos45 * (normal.getX() - radialX)),
+                             surface.getY() + (RtFloat)(D * kCos45 * (normal.getY() - radialY)),
+                             surface.getZ() + (RtFloat)(D * kCos45 * normal.getZ()));
+      GMANVector const direction(origin, surface);
+      GMANRay const ray(origin, direction);
+      GMANHit hit;
+
+      ++result.total;
+      if (!shape.intersect(ray, hit))
+        continue;
+      recordHit(result, ray, hit, residual);
+    }
+  }
+  return result;
+}
+
+void checkSweep(char const* surfaceName, double D, SweepResult const& r, double minFractionAt1e6 = 0.95) {
+  double const minFraction = (D >= 1e6) ? minFractionAt1e6 : 1.0;
   int const minHits = (int)std::ceil(minFraction * r.total);
   std::string const label = std::string(surfaceName) + ", D == " + std::format("{:g}", D);
+  std::string const hits = std::to_string(r.hits) + "/" + std::to_string(r.total) + " rays hit";
 
-  check(r.hits >= minHits, label + ": " + std::to_string(r.hits) + "/" + std::to_string(r.total) +
-                               " rays hit, worst residual " + std::format("{:.3e}", r.worstResidual) +
+  check(r.hits >= minHits, label + ": " + hits + ", worst residual " + std::format("{:.3e}", r.worstResidual) +
                                ", worst on-ray distance " + std::format("{:.3e}", r.worstOnRay));
-  check(r.worstResidual <= 1e-5,
-        label + ": worst implicit residual " + std::format("{:.3e}", r.worstResidual) + " is within 1e-5 of zero");
-  check(r.worstOnRay <= 1e-5,
-        label + ": worst on-ray distance " + std::format("{:.3e}", r.worstOnRay) + " is within 1e-5");
+  check(r.worstResidual <= 1e-5, label + ": " + hits + ", worst implicit residual " +
+                                     std::format("{:.3e}", r.worstResidual) + " is within 1e-5 of zero");
+  check(r.worstOnRay <= 1e-5, label + ": " + hits + ", worst residual " + std::format("{:.3e}", r.worstResidual) +
+                                  ", worst on-ray distance " + std::format("{:.3e}", r.worstOnRay) + " is within 1e-5");
 }
 
 void testSphere() {
@@ -200,6 +250,17 @@ void testDisk() {
     checkSweep("disk", D, sweepShape(disk, 1.0, D, residual));
 }
 
+// item 3: a normal-aligned ray leaves the disk's own x and y exact, since
+// its normal is the z-axis; the oblique sweep exercises the intersector's
+// double t, x and y instead.
+void testDiskOblique() {
+  double const height = 0.3, radius = 1.0;
+  GMANRayDisk disk(height, radius, 360.0, GMANParameterList());
+  auto const residual = [=](GMANPoint const& p) { return (double)p.getZ() - height; };
+  for (double const D : {5.0, 1e4, 1e6})
+    checkSweep("disk oblique", D, sweepShapePlaneOblique(disk, D, residual), 0.90);
+}
+
 // A flat annulus (point1.z == point2.z, the same non-dyadic height as the
 // disk above): the wedge is a spiral sector since phi(v) varies with v,
 // exercising the flat branch's own v-root solve instead of the disk's
@@ -214,6 +275,17 @@ void testFlatAnnulus() {
     checkSweep("flat annulus", D, sweepShape(flatAnnulus, 1.0, D, residual));
 }
 
+// item 3, the flat annulus's own case: see testDiskOblique's comment.
+void testFlatAnnulusOblique() {
+  RtPoint p1 = {1.0, 0.0, 0.3};
+  RtPoint p2 = {0.2, 0.4, 0.3};
+  GMANRayHyperboloid flatAnnulus(p1, p2, 360.0, GMANParameterList());
+  double const z1 = p1[2];
+  auto const residual = [=](GMANPoint const& p) { return (double)p.getZ() - z1; };
+  for (double const D : {5.0, 1e4, 1e6})
+    checkSweep("flat annulus oblique", D, sweepShapePlaneOblique(flatAnnulus, D, residual), 0.90);
+}
+
 } // namespace
 
 int main() {
@@ -223,7 +295,9 @@ int main() {
   testParaboloid();
   testHyperboloidSpanning();
   testDisk();
+  testDiskOblique();
   testFlatAnnulus();
+  testFlatAnnulusOblique();
 
   return checkSummary("Every quadric intersector's hit sits on its implicit surface and its own ray");
 }
