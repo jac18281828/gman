@@ -102,8 +102,8 @@ GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> verts, GMANParameterList p
     GMANPoint minP = vertices[0];
     GMANPoint maxP = vertices[0];
     for (GMANPoint const& v : vertices) {
-      minP = GMANPoint(GMANMin(minP.getX(), v.getX()), GMANMin(minP.getY(), v.getY()), GMANMin(minP.getZ(), v.getZ()));
-      maxP = GMANPoint(GMANMax(maxP.getX(), v.getX()), GMANMax(maxP.getY(), v.getY()), GMANMax(maxP.getZ(), v.getZ()));
+      minP = gman::pointMin(minP, v);
+      maxP = gman::pointMax(maxP, v);
     }
     bbox = gman::padBBox(minP, maxP);
   }
