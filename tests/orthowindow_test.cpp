@@ -178,6 +178,7 @@ int main(int argc, char* argv[]) {
                       "ScreenWindow -3 3 -1.5 1.5\n"
                       "Clipping 0.5 100\n"
                       "WorldBegin\n"
+                      "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
                       "Translate -1.5 0 5\n"
                       "Sphere 1 -1 1 360\n"
                       "WorldEnd\n";
@@ -206,6 +207,7 @@ int main(int argc, char* argv[]) {
                          "ScreenWindow -3 3 -1.5 1.5\n"
                          "Clipping 0.5 100\n"
                          "WorldBegin\n"
+                         "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
                          "Translate 0 1.3 5\n"
                          "Sphere 1 -1 1 360\n"
                          "WorldEnd\n";
@@ -222,6 +224,7 @@ int main(int argc, char* argv[]) {
                      "Projection \"orthographic\"\n"
                      "Clipping 0.5 100\n"
                      "WorldBegin\n"
+                     "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
                      "Translate -1.5 0 5\n"
                      "Sphere 1 -1 1 360\n"
                      "WorldEnd\n";

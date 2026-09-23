@@ -147,6 +147,7 @@ int main(int argc, char* argv[]) {
                          "Projection \"perspective\"\n"
                          "Translate 0 0 5\n"
                          "WorldBegin\n"
+                         "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
                          "Sphere 1 -1 1 360\n"
                          "WorldEnd\n";
   writeFile("nofov.rib", noFovRib);
@@ -161,6 +162,7 @@ int main(int argc, char* argv[]) {
                          "Projection \"perspective\" \"fov\" [90]\n"
                          "Translate 0 0 5\n"
                          "WorldBegin\n"
+                         "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
                          "Sphere 1 -1 1 360\n"
                          "WorldEnd\n";
   writeFile("fov90.rib", fov90Rib);
@@ -188,6 +190,7 @@ int main(int argc, char* argv[]) {
                               "Projection \"orthographic\"\n"
                               "Translate 0 0 5\n"
                               "WorldBegin\n"
+                              "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
                               "Sphere 1 -1 1 360\n"
                               "WorldEnd\n";
   writeFile("ortho_nofov.rib", orthoNoFovRib);

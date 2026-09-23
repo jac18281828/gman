@@ -195,6 +195,7 @@ const char* kSceneTemplate = "Display \"%s\" \"file\" \"rgb\"\n"
                              "%s"
                              "Projection \"perspective\" \"fov\" [45]\n"
                              "WorldBegin\n"
+                             "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
                              "Translate 0 0 5\n"
                              "Sphere 1 -1 1 360\n"
                              "WorldEnd\n";

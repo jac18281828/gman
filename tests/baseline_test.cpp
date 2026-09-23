@@ -66,6 +66,17 @@
  * tests/rib/lights.rib, with a real gradient and a specular highlight --
  * gets its own golden-image comparison; this file stays intentionally
  * about the light-free baseline scene phases 0-2 established.)
+ *
+ * `DefaultBGColor` is due to flip from white to black in a later unit,
+ * which would collapse phase 3's "black sphere against a white background"
+ * contrast into a single uniform value -- the very thing phase 1's
+ * distinct-pixel-value check exists to rule out. `tests/rib/sphere.rib`
+ * itself stays untouched for every other reader (tests/banner_test.cpp,
+ * tests/logfilename_test.cpp, tests/rflag_test.cpp check only exit status
+ * and text output, never pixels). This file's own render targets
+ * `tests/rib/sphere_ambient.rib` instead: the same sphere, with one
+ * `LightSource "ambientlight"` line added, so its silhouette stays
+ * distinguishable from either background colour.
  */
 
 #include <cstdio>

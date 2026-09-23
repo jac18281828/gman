@@ -189,6 +189,7 @@ int main(int argc, char* argv[]) {
                               "Format 64 64 1\n"
                               "Projection \"perspective\" \"fov\" [45]\n"
                               "WorldBegin\n"
+                              "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
                               "AttributeBegin\n"
                               "  Translate 0 0 5\n"
                               "  Sphere 1 -1 1 360\n"

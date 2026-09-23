@@ -20,7 +20,7 @@ file(MAKE_DIRECTORY "${GMAN_BASELINE_WORKDIR}")
 
 add_test(NAME baseline
   COMMAND gman_baseline $<TARGET_FILE:gman>
-                        "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere_ambient.rib"
   WORKING_DIRECTORY "${GMAN_BASELINE_WORKDIR}")
 
 # gman dlopens lib<renderer>.so by bare name out of the build tree.
