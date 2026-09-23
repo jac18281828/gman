@@ -530,23 +530,40 @@ void testSignedZeroFacePlane() {
   }
 }
 
-// A miss must leave hit exactly as the caller had it -- nearestHit's own
-// contract -- not overwrite it with an empty, default-constructed one.
+// A miss must leave hit and hitPrimitive exactly as the caller had them
+// -- nearestHit's own contract -- not overwrite either with an empty,
+// default-constructed hit or a null primitive. Covers both of
+// nearestHit's own miss paths: a built tree the ray clears, and the
+// rootIndex < 0 early return for a tree build() never populated.
 void testMissLeavesHitUntouched() {
+  // A sentinel prim never touched by build() or nearestHit here: its
+  // address, not its contents, is what a miss must leave alone.
+  GMANRaySphere sentinelPrimitive(1.0, -1.0, 1.0, 360.0, GMANParameterList(), GMANTransform());
+  constexpr RtFloat kSentinelT = 12345.0f;
+  GMANRay const missRay(GMANPoint(100.0, 100.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+
   GMANLinearWorldManager worldManager;
   worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 10.0)));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
 
-  GMANRay const missRay(GMANPoint(100.0, 100.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit hit;
-  constexpr RtFloat kSentinelT = 12345.0f;
   hit.t = kSentinelT;
-  GMANRayInterface const* prim = nullptr;
+  GMANRayInterface const* prim = &sentinelPrimitive;
   bool const found = bvh.nearestHit(missRay, hit, prim);
   check(!found, "miss: nearestHit returns false when no primitive is hit");
   check(hit.t == kSentinelT, "miss: nearestHit leaves the caller's own hit untouched");
+  check(prim == &sentinelPrimitive, "miss: nearestHit leaves the caller's own hitPrimitive untouched");
+
+  GMANRayBVH emptyBvh;
+  GMANHit emptyHit;
+  emptyHit.t = kSentinelT;
+  GMANRayInterface const* emptyPrim = &sentinelPrimitive;
+  bool const emptyFound = emptyBvh.nearestHit(missRay, emptyHit, emptyPrim);
+  check(!emptyFound, "empty tree: nearestHit returns false");
+  check(emptyHit.t == kSentinelT, "empty tree: nearestHit leaves the caller's own hit untouched");
+  check(emptyPrim == &sentinelPrimitive, "empty tree: nearestHit leaves the caller's own hitPrimitive untouched");
 }
 
 } // namespace

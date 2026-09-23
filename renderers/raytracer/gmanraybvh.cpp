@@ -233,7 +233,6 @@ void GMANRayBVH::pushChildren(Node const& node, GMANRay const& ray, Search const
 
 bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
                             std::size_t* primitiveTests) const {
-  hitPrimitive = nullptr;
   if (rootIndex < 0) {
     return false;
   }

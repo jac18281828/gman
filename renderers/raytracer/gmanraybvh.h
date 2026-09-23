@@ -37,13 +37,13 @@
  * holds, so nearestHit finds the nearest ray-primitive hit by pruning
  * subtrees a ray's own interval clears, rather than testing every
  * primitive in turn. build() discards any tree a prior call built and
- * walks worldManager
- * once, an object-median split over each primitive's own bbox; nearestHit
- * then traverses the tree it built, touching only that tree and a local
- * stack -- const, re-entrant, no shared mutable state of its own. Not
- * GMAN_EXPORT: used only within gman_raytracer_objects and by its own
- * tests, which compile these sources directly rather than linking the
- * installed library (GMANRayOccluder's own precedent).
+ * walks worldManager once, an object-median split over each primitive's
+ * own bbox; nearestHit then traverses the tree it built, touching only
+ * that tree and a local stack -- const, re-entrant, no shared mutable
+ * state of its own. Not GMAN_EXPORT: used only within
+ * gman_raytracer_objects and by its own tests, which compile these
+ * sources directly rather than linking the installed library
+ * (GMANRayOccluder's own precedent).
  */
 class GMANRayBVH {
 public:
