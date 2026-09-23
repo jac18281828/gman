@@ -384,6 +384,92 @@ void checkDepthCountsCorrectly() {
   check(colorExactly(result, background), "check 5: the fully-bottomed-out chain resolves to exactly background");
 }
 
+// Check 6 (review fix pass, ADVISORY finding 4): trace()'s own nested
+// shade() call threads the occluder through, not just returns a hit's
+// unshadowed colour. A blocker sphere sits on the shadow ray from the
+// traced hit toward its one light, off the primary ray's own axis so it
+// cannot occlude that ray too, only the shadow ray to the light.
+// LambertianTestShader has no ambient term, so a fully blocked light
+// leaves Ci exactly black -- a passing &occluder reaches nullptr instead
+// would light the hit unshadowed, same as this fixture's own
+// without-occluder reference below.
+void checkNestedOccluderShadowsBlocker() {
+  GMANLinearWorldManager worldManager;
+  GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
+  LambertianTestShader shader;
+  gman::Appearance appearance;
+  appearance.shader = &shader;
+  appearance.Cs = GMANColor(0.8f, 0.3f, 0.2f);
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  // lightDirection (0.8, 0, 0.6): towardLight = (-0.8, 0, -0.6), off the
+  // primary ray's z-axis, so the shadow ray from the hit point (0,0,4)
+  // and the blocker placed on it never coincide with the primary ray
+  // from the origin to that hit.
+  GMANVector const lightDirection(0.8f, 0.0f, 0.6f);
+  GMANLight const distant(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), lightDirection);
+  appearance.lights = {&distant};
+  sphere->setAppearance(appearance);
+  worldManager.add(sphere);
+
+  // On the shadow ray from (0,0,4) toward towardLight, at parameter 5:
+  // (0,0,4) + 5*(-0.8,0,-0.6) = (-4,0,1). Distance from the primary
+  // ray's own line (the z-axis) is 4, well clear of this blocker's own
+  // radius 1.
+  GMANRaySphere* blocker = sphereAt(1.0f, -4.0f, 0.0f, 1.0f);
+  FixedColorShader blockerShader(GMANColor(0.0f, 0.0f, 0.0f));
+  gman::Appearance blockerAppearance;
+  blockerAppearance.shader = &blockerShader;
+  blockerAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f); // fully opaque
+  blocker->setAppearance(blockerAppearance);
+  worldManager.add(blocker);
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
+  GMANMatrix4 const cameraToWorld;
+  GMANColor const background(0.1f, 0.1f, 0.1f);
+  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
+
+  GMANPoint const p0(0.0f, 0.0f, 0.0f);
+  GMANVector const r0(0.0f, 0.0f, 1.0f);
+  GMANColor const traced = tracer.trace(p0, r0, GMANVector());
+
+  GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
+  GMANHit hit;
+  GMANRayInterface const* hitPrimitive = nullptr;
+  bool const gotHit = bvh.nearestHit(ray, hit, hitPrimitive);
+  check(gotHit, "check 6 setup: the hand-built ray hits the sphere, not the blocker");
+  if (!gotHit) {
+    return;
+  }
+
+  gman::SurfacePoint point;
+  point.P = hit.point;
+  point.N = GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
+  point.Ng = point.N;
+  point.I = r0;
+  point.E = p0;
+  point.u = hit.u;
+  point.v = hit.v;
+  point.s = hit.u;
+  point.t = hit.v;
+
+  gman::Shading const withOccluder =
+      gman::shade(hitPrimitive->getAppearance(), point, cameraToWorld, &occluder, nullptr);
+  gman::Shading const withoutOccluder =
+      gman::shade(hitPrimitive->getAppearance(), point, cameraToWorld, nullptr, nullptr);
+
+  check(colorExactly(withOccluder.Ci, GMANColor(0.0f, 0.0f, 0.0f)),
+        "check 6 setup: the blocker leaves the occluded reference exactly black (no ambient term)");
+  check(!colorNear(withoutOccluder.Ci, GMANColor(0.0f, 0.0f, 0.0f), kTol),
+        "check 6 setup: the same hit is clearly lit once the occluder is dropped");
+
+  check(colorNear(traced, withOccluder.Ci, kTol),
+        "check 6: trace()'s nested shade() call applies the occluder, matching the shadowed reference");
+  check(!colorNear(traced, withoutOccluder.Ci, kTol),
+        "check 6: trace()'s result does not match the unshadowed reference");
+}
+
 } // namespace
 
 int main() {
@@ -392,7 +478,9 @@ int main() {
   checkRealHitMatchesDirectShade();
   checkSelfShadowSweepAppliesOffset();
   checkDepthCountsCorrectly();
+  checkNestedOccluderShadowsBlocker();
 
   return checkSummary("GMANRayTracer: depth-limit termination, background on miss, single-hit shading matches "
-                      "gman::shade, self-shadow swept clean, and recursion depth counted correctly");
+                      "gman::shade, self-shadow swept clean, recursion depth counted correctly, and the nested "
+                      "shade() call applies the occluder");
 }
