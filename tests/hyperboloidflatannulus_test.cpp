@@ -130,8 +130,8 @@ void testWedgeFallsThroughToSecondRoot() {
         "wedge fall-through: the smaller root misses the wedge, so the larger root wins");
 }
 
-// dSq == 0 forces pDot == 0 too, so GMANQuadraticRoots' own a == 0.0
-// contract returns zero roots: no separate guard needed.
+// dSq == 0 forces pDot == 0 too, so gman::solveRayQuadratic's own
+// a == 0.0 contract returns zero roots: no separate guard needed.
 void testFlatSamePointMisses() {
   RtPoint p1 = {1.0, 2.0, 0.0};
   GMANRayHyperboloid hyperboloid(p1, p1, 360.0, GMANParameterList());
