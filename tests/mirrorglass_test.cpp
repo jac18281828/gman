@@ -409,6 +409,15 @@ void checkMirrorReentrant(GMANSurfaceShader* mirrorShader) {
 // own inner SurfacePoint and their own terminating colour. Grazing
 // incidence at the outer call pins kr = 1, kt = 0 exactly (§1's own
 // guard), so the predicted composite is exactly representable.
+//
+// This pins only the reflected branch's own contribution to the outer
+// Ci: kt == 0 makes branch B's own composite value vanish from it
+// regardless of what that value is, so callCount() == 2 is this check's
+// only evidence branch B's own recursion ran at all, not that its
+// result combined correctly. checkMirrorReentrant and the callCount()
+// == 2 assertion below are what stand in for that; a genuinely oblique
+// outer angle, with both kr and kt nonzero and a tolerance instead of
+// an exact match, would pin it directly.
 void checkGlassReentrant(GMANSurfaceShader* glassShader) {
   GMANColor const answerA(0.5f, 0.25f, 0.75f);     // branch A: Rr
   GMANColor const answerB(0.125f, 0.625f, 0.375f); // branch B: Rt
