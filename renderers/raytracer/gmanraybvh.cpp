@@ -242,8 +242,8 @@ bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface c
   search.primitiveTests = primitiveTests;
 
   // A local stack: nearestHit's whole traversal state lives here, so two
-  // calls against the same tree never interfere -- re-entrant, unlike the
-  // removed walkWorldManager's shared cursor.
+  // calls against the same tree never interfere -- re-entrant, with no
+  // shared mutable state of its own.
   std::vector<int> stack;
   stack.push_back(rootIndex);
 

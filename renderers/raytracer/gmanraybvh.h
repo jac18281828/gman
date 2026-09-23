@@ -34,8 +34,10 @@
 
 /*
  * A bounding volume hierarchy over every GMANRayInterface worldManager
- * holds, replacing GMANLinearWorldManager's own shared-cursor walk.
- * build() discards any tree a prior call built and walks worldManager
+ * holds, so nearestHit finds the nearest ray-primitive hit by pruning
+ * subtrees a ray's own interval clears, rather than testing every
+ * primitive in turn. build() discards any tree a prior call built and
+ * walks worldManager
  * once, an object-median split over each primitive's own bbox; nearestHit
  * then traverses the tree it built, touching only that tree and a local
  * stack -- const, re-entrant, no shared mutable state of its own. Not
@@ -49,17 +51,16 @@ public:
   // (getFirst/getNext) once, keeping each GMANRayInterface primitive by
   // its own insertion order for nearestHit's tie-break. The dynamic_cast
   // is defensive -- GMANRayObjectManager's factories guarantee every
-  // primitive this renderer's world manager holds is already one -- the
-  // same guarantee the removed walkWorldManager relied on.
+  // primitive this renderer's world manager holds is already one.
   void build(GMANWorldManager& worldManager);
 
-  // Finds the nearest hit within ray's own [tmin, tmax], written through
-  // hit/hitPrimitive exactly as the removed walkWorldManager's contract
-  // was. On an exact t tie between two candidates, the earlier-inserted
-  // primitive wins, regardless of traversal order. primitiveTests, when
-  // non-null, is incremented once per primitive-level intersect() call
-  // this traversal makes (hit or miss) -- an out-parameter rather than a
-  // member, so two calls stay re-entrant.
+  // Finds the nearest hit within ray's own [tmin, tmax], written
+  // through hit/hitPrimitive. On an exact t tie between two candidates,
+  // the earlier-inserted primitive wins, regardless of traversal order.
+  // primitiveTests, when non-null, is incremented once per
+  // primitive-level intersect() call this traversal makes (hit or
+  // miss) -- an out-parameter rather than a member, so two calls stay
+  // re-entrant.
   bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
                   std::size_t* primitiveTests = nullptr) const;
 

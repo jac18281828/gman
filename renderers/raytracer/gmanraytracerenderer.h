@@ -60,8 +60,9 @@ class GMANRayOccluder : public gman::Occluder {
 public:
   explicit GMANRayOccluder(GMANRayBVH const& bvh) : bvh(bvh) {}
 
-  // const on this class's own state; bvh.nearestHit is itself const and
-  // re-entrant, so concurrent calls here never interleave state.
+  // const on this class's own state; nearestHit on a built bvh is itself
+  // const and re-entrant, so concurrent calls here never interleave
+  // state.
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
                          GMANVector const& Ng, RtFloat distance) const override;
 
