@@ -183,6 +183,11 @@ gman::SurfacePoint vertexSurfacePoint(const GMANPoint& location, const GMANNorma
   return point;
 }
 
+// A shaded vertex's Oi, read as the GMANAlpha a vertex's alpha channel
+// stores: both share GMANColorBase's own floating-point sample type, so
+// this is a plain repackaging of the same three numbers.
+GMANAlpha vertexAlpha(const GMANColor& oi) { return GMANAlpha(oi.getRed(), oi.getGreen(), oi.getBlue()); }
+
 // The sine of the angle between a and b, judged against normal: a.cross(b)
 // is an area (units of length squared); dividing by |a|*|b| turns it into
 // a dimensionless quantity in [-1, 1] regardless of either vector's own
@@ -393,7 +398,9 @@ GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
   const RtFloat s = tc0.s * w0 + tc1.s * w1 + tc2.s * w2;
   const RtFloat t = tc0.t * w0 + tc1.t * w1 + tc2.t * w2;
   gman::SurfacePoint const point = vertexSurfacePoint(vertex->getLocation(), normal, u, v, s, t);
-  vertex->setColor(gman::shade(appearance, point, cameraToWorld).Ci);
+  gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
+  vertex->setColor(shading.Ci);
+  vertex->setColor(vertexAlpha(shading.Oi));
   return vertex;
 }
 
@@ -502,7 +509,9 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
 
     const GMANPolygonVertexTexCoord& tc = texCoords[i];
     gman::SurfacePoint const point = vertexSurfacePoint(vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t);
-    vertices[i]->setColor(gman::shade(appearance, point, cameraToWorld).Ci);
+    gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
+    vertices[i]->setColor(shading.Ci);
+    vertices[i]->setColor(vertexAlpha(shading.Oi));
   }
 
   std::vector<GMANPoint> ringPoints(ring.size());
@@ -1375,7 +1384,9 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
       RtFloat s = bilerpCorner(u, v, corners.s1, corners.s2, corners.s3, corners.s4);
       RtFloat texT = bilerpCorner(u, v, corners.t1, corners.t2, corners.t3, corners.t4);
       gman::SurfacePoint const point = vertexSurfacePoint(location, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT);
-      vertex->setColor(gman::shade(appearance, point, cameraToWorld).Ci);
+      gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
+      vertex->setColor(shading.Ci);
+      vertex->setColor(vertexAlpha(shading.Oi));
     }
   }
 

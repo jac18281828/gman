@@ -262,8 +262,10 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
     hit = nearestHit(ray);
   }
 
+  GMANColor const coverage = oneMinus(transmission);
+  GMANAlpha const alpha(coverage.getRed(), coverage.getGreen(), coverage.getBlue());
   accumulated += multiplyChannels(transmission, background);
-  sampleBuffer->zTestAndSet(sampleX, sampleY, sampleDepth, accumulated);
+  sampleBuffer->zTestAndSet(sampleX, sampleY, sampleDepth, accumulated, alpha);
 }
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,

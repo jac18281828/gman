@@ -43,6 +43,7 @@
 class GMAN_EXPORT GMANBitmap {
 protected:
   std::vector<GMANColor> pixels;
+  std::vector<GMANAlpha> alphas;
 
   GMANColor background;
 
@@ -77,6 +78,12 @@ public:
 
   // set the color value of a specific pixel
   virtual RtVoid setPixel(int x, int y, const GMANColor& color) { pixels[y * xres + x] = color; };
+
+  // what is the alpha value of a specific pixel
+  virtual const GMANAlpha& getAlpha(int x, int y) const { return alphas[y * xres + x]; };
+
+  // set the alpha value of a specific pixel
+  virtual RtVoid setAlpha(int x, int y, const GMANAlpha& alpha) { alphas[y * xres + x] = alpha; };
 
   // set a specific row in the frame buffer
   virtual RtVoid setRow(int y, const GMANColor* row) {

@@ -62,6 +62,7 @@ private:
     Point screen;    // screen coord
     GMANPoint posn;  // scaled position
     GMANColor color; // vertex color
+    GMANAlpha alpha; // vertex alpha
   };
 
   struct ScanInfo // a scan line intersection
@@ -69,6 +70,7 @@ private:
     RtFloat x;       //  x coord
     RtFloat z;       //  pseudo-depth
     GMANColor color; //  color
+    GMANAlpha alpha; //  alpha
   };
 
   struct EdgeInfo {

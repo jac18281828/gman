@@ -197,6 +197,7 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon& out) {
     // the already-shaded, already-linearly-interpolated result rather
     // than calling computeCi per output vertex.
     vert->color = out.getVertexColor(i);
+    vert->alpha = out.getVertexAlpha(i);
   }
 
   // Individual vertices can still land just outside the visible frame
@@ -223,6 +224,9 @@ void GMANZBufferRenderer::scanEdges(void) {
 
   GMANColor dc; // intersection color delta
   GMANColor ic; // intersection color
+
+  GMANAlpha da; // intersection alpha delta
+  GMANAlpha ia; // intersection alpha
 
   EdgeInfo* edge; // edge
   ScanInfo* scan; // scan line
@@ -262,6 +266,7 @@ void GMANZBufferRenderer::scanEdges(void) {
     ix = sv->posn.getX();
     iz = sv->posn.getZ();
     ic = sv->color;
+    ia = sv->alpha;
 
     // determine inverse slopes
     y_dist = (RtFloat)(ev->screen.y - sv->screen.y);
@@ -277,6 +282,12 @@ void GMANZBufferRenderer::scanEdges(void) {
     dc.setGreen((ev->color.getGreen() - sv->color.getGreen()) / (GMANColorSample)y_dist);
 
     dc.setBlue((ev->color.getBlue() - sv->color.getBlue()) / (GMANColorSample)y_dist);
+
+    da.setRed((ev->alpha.getRed() - sv->alpha.getRed()) / (GMANColorSample)y_dist);
+
+    da.setGreen((ev->alpha.getGreen() - sv->alpha.getGreen()) / (GMANColorSample)y_dist);
+
+    da.setBlue((ev->alpha.getBlue() - sv->alpha.getBlue()) / (GMANColorSample)y_dist);
 
     // scan convert edge
     edge = &(edge_list[sv->screen.y]);
@@ -299,12 +310,14 @@ void GMANZBufferRenderer::scanEdges(void) {
         scan->x = ix;
         scan->z = iz;
         scan->color = ic;
+        scan->alpha = ia;
       }
 
       // update intersection info
       ix += dx;
       iz += dz;
       ic += dc;
+      ia += da;
 
       edge++; // go to next edge list element
     }
@@ -321,6 +334,9 @@ void GMANZBufferRenderer::drawEdgeList(void) {
 
   GMANColor dc; // color delta
   GMANColor ic; // pixel color
+
+  GMANAlpha da; // alpha delta
+  GMANAlpha ia; // pixel alpha
 
   EdgeInfo* edge; // edge info
   ScanInfo* ss;   // scan line start info
@@ -356,6 +372,7 @@ void GMANZBufferRenderer::drawEdgeList(void) {
 
       iz = ss->z;
       ic = ss->color;
+      ia = ss->alpha;
 
       // Determine inverse slopes. sx<ex (integer pixel columns) only
       // guarantees se->x>ss->x, not that the gap is anywhere near a
@@ -378,6 +395,12 @@ void GMANZBufferRenderer::drawEdgeList(void) {
 
       dc.setBlue((se->color.getBlue() - ss->color.getBlue()) / (GMANColorSample)x_dist);
 
+      da.setRed((se->alpha.getRed() - ss->alpha.getRed()) / (GMANColorSample)x_dist);
+
+      da.setGreen((se->alpha.getGreen() - ss->alpha.getGreen()) / (GMANColorSample)x_dist);
+
+      da.setBlue((se->alpha.getBlue() - ss->alpha.getBlue()) / (GMANColorSample)x_dist);
+
       // Gouraud shade scan line, one sample at a time
       for (x = sx; x <= ex; x++) {
 
@@ -391,15 +414,19 @@ void GMANZBufferRenderer::drawEdgeList(void) {
           GMANColor clamped(GMANClamp<GMANColorSample>(ic.getRed(), 0.0, 1.0),
                             GMANClamp<GMANColorSample>(ic.getGreen(), 0.0, 1.0),
                             GMANClamp<GMANColorSample>(ic.getBlue(), 0.0, 1.0));
+          GMANAlpha clampedAlpha(GMANClamp<GMANColorSample>(ia.getRed(), 0.0, 1.0),
+                                 GMANClamp<GMANColorSample>(ia.getGreen(), 0.0, 1.0),
+                                 GMANClamp<GMANColorSample>(ia.getBlue(), 0.0, 1.0));
           // The real per-sample visibility test: closer samples overwrite,
           // farther ones are dropped, exactly as the old per-pixel zbuffer
           // test did -- just at sample, not pixel, resolution.
-          sampleBuffer->zTestAndSet(x, y, iz, clamped);
+          sampleBuffer->zTestAndSet(x, y, iz, clamped, clampedAlpha);
         }
 
         // update pixel info
         iz += dz;
         ic += dc;
+        ia += da;
       }
     }
 

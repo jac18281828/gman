@@ -92,9 +92,12 @@ RtVoid OutputTIFF::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamm
       buf[colOff++] = color.getBlue();
 
       if (samplesperpixel == 4) {
-        // FIXME FIXME FIXME
-        // FIX Alpha support
-        buf[colOff++] = 255;
+        // The mean of alpha's three channels, never gamma-corrected or
+        // quantized: alpha is linear coverage, not a colour sample, and
+        // every shipped shader sets it channel-uniform regardless.
+        const GMANAlpha& alpha = getAlpha(x, y);
+        const RtFloat coverage = (alpha.getRed() + alpha.getGreen() + alpha.getBlue()) / (RtFloat)3.0;
+        buf[colOff++] = (GMANByte)(GMANClamp(coverage, (RtFloat)0.0, (RtFloat)1.0) * (RtFloat)GMAN_BYTEMAX);
       }
     }
     // now write a scanline into the image

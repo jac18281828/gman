@@ -74,18 +74,19 @@ public:
   int getSampleHeight(void) const { return sampleHeight; }
 
   // The per-sample visibility test: if depth is closer than the sample's
-  // current depth, stores color and depth and returns true. sx/sy address
-  // the full sample grid (pixel index * samples-per-pixel + local sample
-  // index), not a single pixel's own samples.
-  bool zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor& color);
+  // current depth, stores color, alpha and depth and returns true. sx/sy
+  // address the full sample grid (pixel index * samples-per-pixel + local
+  // sample index), not a single pixel's own samples.
+  bool zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor& color, const GMANAlpha& alpha);
 
   // Filters every pixel's covering samples through filterfunc and writes
-  // the result to frameBuffer. xwidth/ywidth are the filter's full support
-  // width in pixel units, symmetric about the pixel centre being resolved
-  // (the RISpec convention every kernel in gmanfilters.cpp already
-  // follows). Also records, per pixel, the minimum depth among that
-  // pixel's own samples -- retrieve with getResolvedDepth after this
-  // returns.
+  // the result to frameBuffer, alpha filtered by the same weights in the
+  // same pass and published through frameBuffer->setAlpha. xwidth/ywidth
+  // are the filter's full support width in pixel units, symmetric about
+  // the pixel centre being resolved (the RISpec convention every kernel in
+  // gmanfilters.cpp already follows). Also records, per pixel, the minimum
+  // depth among that pixel's own samples -- retrieve with getResolvedDepth
+  // after this returns.
   RtVoid resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth);
 
   RtFloat getResolvedDepth(int x, int y) const;
@@ -96,6 +97,7 @@ private:
   int sampleWidth, sampleHeight; // width*xsamples, height*ysamples
 
   GMANColor* sampleColor; // sampleWidth*sampleHeight
+  GMANAlpha* sampleAlpha; // sampleWidth*sampleHeight
   RtFloat* sampleDepth;   // sampleWidth*sampleHeight
   RtFloat* resolvedDepth; // width*height, filled by resolve()
 

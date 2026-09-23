@@ -64,9 +64,11 @@ GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys, const GMANColor
                     "or PixelSamples."));
   }
   sampleColor = new GMANColor[nSamples];
+  sampleAlpha = new GMANAlpha[nSamples];
   sampleDepth = new RtFloat[nSamples];
   for (std::size_t i = 0; i < nSamples; i++) {
     sampleColor[i] = background;
+    sampleAlpha[i] = GMANAlpha(0.0);
     sampleDepth[i] = RI_INFINITY;
   }
 
@@ -79,15 +81,17 @@ GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys, const GMANColor
 
 GMANSampleBuffer::~GMANSampleBuffer() {
   delete[] sampleColor;
+  delete[] sampleAlpha;
   delete[] sampleDepth;
   delete[] resolvedDepth;
 }
 
-bool GMANSampleBuffer::zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor& color) {
+bool GMANSampleBuffer::zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor& color, const GMANAlpha& alpha) {
   const int idx = sampleIndex(sx, sy);
   if (depth < sampleDepth[idx]) {
     sampleDepth[idx] = depth;
     sampleColor[idx] = color;
+    sampleAlpha[idx] = alpha;
     return true;
   }
   return false;
@@ -121,6 +125,7 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
       gyMax = GMANMin(gyMax, sampleHeight - 1);
 
       GMANColor sum;
+      GMANAlpha alphaSum;
       RtFloat weightSum = 0.0;
 
       for (int gy = gyMin; gy <= gyMax; gy++) {
@@ -146,12 +151,16 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
           GMANColor weighted = sampleColor[sampleIndex(gx, gy)];
           weighted.scale(weight);
           sum += weighted;
+          GMANAlpha weightedAlpha = sampleAlpha[sampleIndex(gx, gy)];
+          weightedAlpha.scale(weight);
+          alphaSum += weightedAlpha;
           weightSum += weight;
         }
       }
 
       if (weightSum > RI_EPSILON || weightSum < -RI_EPSILON) {
         sum /= weightSum;
+        alphaSum /= weightSum;
       }
 
       // Linear interpolation and filter convolution can both overshoot
@@ -162,6 +171,11 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
                         GMANClamp<GMANColorSample>(sum.getGreen(), 0.0, 1.0),
                         GMANClamp<GMANColorSample>(sum.getBlue(), 0.0, 1.0));
       frameBuffer->setPixel(px, py, clamped);
+
+      GMANAlpha clampedAlpha(GMANClamp<GMANColorSample>(alphaSum.getRed(), 0.0, 1.0),
+                             GMANClamp<GMANColorSample>(alphaSum.getGreen(), 0.0, 1.0),
+                             GMANClamp<GMANColorSample>(alphaSum.getBlue(), 0.0, 1.0));
+      frameBuffer->setAlpha(px, py, clampedAlpha);
 
       // The resolved depth stands in for the pixel's z for
       // GMANRenderer::getDepth's existing contract -- the minimum among

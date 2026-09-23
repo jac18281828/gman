@@ -76,11 +76,14 @@ GMANBitmap& GMANBitmap::operator=(const GMANBitmap& amap) = default;
 RtVoid GMANBitmap::freeMemory(RtVoid) {
   pixels.clear();
   pixels.shrink_to_fit();
+  alphas.clear();
+  alphas.shrink_to_fit();
 }
 
 RtVoid GMANBitmap::allocMemory(RtVoid) {
   const int pixelsNeeded = xres * yres;
   pixels.assign((std::size_t)pixelsNeeded, GMANColor());
+  alphas.assign((std::size_t)pixelsNeeded, GMANAlpha());
 }
 
 RtVoid GMANBitmap::erase(RtVoid) { fill(background); }
