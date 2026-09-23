@@ -161,7 +161,7 @@ bool insidePolygon(std::vector<GMANPoint> const& ring, int axis, GMANPoint const
 // (resolvePolygonTextureCoordinates). Every entry is (0, 0) when pl
 // carries no "P": the only construction path that reaches here is direct
 // construction bypassing getRSPolygon, which never omits it.
-std::vector<std::pair<RtFloat, RtFloat>> resolveVertexTexCoords(GMANParameterList& pl, std::size_t nverts) {
+std::vector<std::pair<RtFloat, RtFloat>> resolveVertexTexCoords(GMANParameterList const& pl, std::size_t nverts) {
   std::vector<std::pair<RtFloat, RtFloat>> texCoords(nverts, {(RtFloat)0.0, (RtFloat)0.0});
   RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p)
