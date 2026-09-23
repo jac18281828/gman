@@ -37,6 +37,7 @@
 #include "gmanocclude.h"
 #include "gmanpoint.h"
 #include "gmanslapi.h"
+#include "gmantrace.h"
 #include "gmanvector.h"
 #include "ri.h"
 
@@ -94,6 +95,19 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // specular() consult it; ambient() cannot, having no direction to
   // occlude.
   gman::Occluder const* occluder = nullptr;
+
+  // The renderer's answer to trace(): null by default and last, after
+  // occluder, so existing field offsets hold. Null means trace() returns
+  // black -- a shader's Kr * trace(...) term simply vanishes, the same
+  // degradation shinymetal already has with an empty texturename. A bound
+  // Tracer whose cast ray escapes the scene, or whose recursion depth is
+  // exhausted, answers with the renderer's own background colour instead.
+  gman::Tracer const* tracer = nullptr;
+
+  // RSL's trace(P, R): the colour along R from this surface's own P, Ng
+  // passed for the renderer's self-shadow offset (see gmantrace.h). Black
+  // when no tracer is bound.
+  GMANColor trace(GMANVector const& R) const;
 
   // ---- noise family (gmannoise.cpp), defined in
   // gmanshaderenvironment.cpp ----

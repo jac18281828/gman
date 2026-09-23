@@ -1145,6 +1145,17 @@ set_tests_properties(occlusion PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R8 proof, §8 A: the tracer hook -- a null tracer degrades trace() to
+# black, a bound one sees this env's own P/Ng and the caller's R, and
+# gman::shade forwards its own tracer argument to the shader it runs.
+add_executable(gman_trace trace_test.cpp)
+target_link_libraries(gman_trace PRIVATE gman_core)
+
+add_test(NAME trace COMMAND gman_trace)
+set_tests_properties(trace PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # R8 proof, §8 B: GMANReflect, GMANRefract and GMANFresnel at known angles,
 # through GMANSurfaceEnv's own wrapper and, for the six-argument overload,
 # the free function directly.

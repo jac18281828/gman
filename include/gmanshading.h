@@ -32,6 +32,7 @@
 #include "gmanocclude.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
+#include "gmantrace.h"
 #include "gmanvector.h"
 #include "ri.h"
 
@@ -94,8 +95,9 @@ struct GMAN_EXPORT Shading {
 // member of Appearance, since it belongs to the camera, not to what a
 // primitive looks like. occluder answers the illuminance loop's "does
 // light reach P?" (gmanocclude.h); a caller that omits it keeps every
-// light visible.
+// light visible. tracer answers a shader's own trace() calls
+// (gmantrace.h); a caller that omits it leaves trace() returning black.
 GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
-                          Occluder const* occluder = nullptr);
+                          Occluder const* occluder = nullptr, Tracer const* tracer = nullptr);
 
 } // namespace gman

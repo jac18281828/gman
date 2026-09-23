@@ -35,6 +35,11 @@ namespace gman {
 // gmanocclude.h, emits Occluder's vtable and typeinfo.
 Occluder::~Occluder() = default;
 
+// Out-of-line for the same reason, beside Occluder's, and for the
+// identical reason: gmantrace.h is included by gmanshaderenvironment.h,
+// which every shading translation unit pulls in.
+Tracer::~Tracer() = default;
+
 namespace {
 
 // The RISpec's own default: a scene that never calls RiSurface still
@@ -73,7 +78,7 @@ Appearance appearanceOf(GMANAttributes const& attributes) {
 }
 
 Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
-              Occluder const* occluder) {
+              Occluder const* occluder, Tracer const* tracer) {
   GMANSurfaceEnv env;
   env.Cs = appearance.Cs;
   env.Os = appearance.Os;
@@ -89,13 +94,18 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
   env.lights = appearance.lights;
   env.cameraToWorld = cameraToWorld;
   env.occluder = occluder;
+  env.tracer = tracer;
 
   // GMANLoadShader returns one static instance per plugin, shared by every
   // surface naming it, so each call rebinds this surface's own list before
   // running the shader -- on every call, the empty list included, and
   // whichever shader the Appearance holds, defaultSurfaceShader's included.
-  // Sound only while shading stays serial and is never re-entered: nothing
-  // here holds if a shader itself calls shade().
+  // A nested shade() call a shader's own trace() makes rebinds the same
+  // pl before it returns, and does not restore it afterward: sound only
+  // under the discipline a shader recursing through trace() must follow
+  // -- read every parameter before the first trace() call, write Ci
+  // after the last, and never read pl from computeOi, since a nested
+  // call may have already rebound it by the time computeOi runs.
   GMANParameterList parameters = appearance.parameters;
   appearance.shader->set(parameters);
 
