@@ -218,6 +218,37 @@ void checkFresnelSixArgParity() {
   }
 }
 
+// Check 7 (review fix pass, BLOCKING finding 2): a pair whose incidence
+// cosine's magnitude rounds a single ulp past 1 in float32 -- v =
+// normalize(0.003, 1.11, 1.039), n = -v, so i.dot(n) = -1.00000012 --
+// drove 1 - incidenceCosine^2 negative before the clamp, producing
+// kr = kt = NaN past every guard. Clamped, it lands at the same
+// normal-incidence value every other normal-incidence pin reaches. A
+// second pair with i.dot(n) > 0 -- outside GMANRefract's own calling
+// convention, but not undefined behaviour -- exercised the pre-fix
+// formula's sign-dependent near-cancellation in sinapb/tanapb; clamped,
+// it must still land in [0, 1].
+void checkFresnelClampGuards() {
+  GMANSurfaceEnv env;
+
+  GMANVector v(0.003f, 1.11f, 1.039f);
+  v.normalize();
+  GMANVector const n(-v.getX(), -v.getY(), -v.getZ());
+  RtFloat kr = 0.0f, kt = 0.0f;
+  env.fresnel(v, n, 1.5f, kr, kt);
+  check(std::isfinite(kr) && std::isfinite(kt), "clamp: the 1-ulp-over normalized pair produces no NaN");
+  check(near(kr, 0.04f, kTol), "clamp: the 1-ulp-over normalized pair lands at the normal-incidence kr");
+
+  GMANVector i3(0.6f, 0.0f, 0.8f);
+  i3.normalize();
+  GMANVector n3(0.5f, 0.0f, 0.866025f);
+  n3.normalize();
+  check(i3.dot(n3) > 0.0f, "clamp: the second pin is genuinely i.dot(n) > 0");
+  RtFloat kr3 = 0.0f, kt3 = 0.0f;
+  env.fresnel(i3, n3, 1.5f, kr3, kt3);
+  check(std::isfinite(kr3) && kr3 >= 0.0f && kr3 <= 1.0f, "clamp: an i.dot(n) > 0 input lands kr in [0, 1]");
+}
+
 } // namespace
 
 int main() {
@@ -227,7 +258,9 @@ int main() {
   checkFresnelPins();
   checkFresnelNoNaNAcrossSweep();
   checkFresnelSixArgParity();
+  checkFresnelClampGuards();
 
   return checkSummary("reflect()/refract() pinned at known angles; GMANFresnel's reflectance fixed at seven pins, "
-                      "no NaN/Inf across a full sweep, six-argument overload agrees with the four-argument one");
+                      "no NaN/Inf across a full sweep, six-argument overload agrees with the four-argument one, "
+                      "and the incidence-cosine clamp holds at a 1-ulp-over pair and an i.dot(n) > 0 pair");
 }

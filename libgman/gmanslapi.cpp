@@ -26,6 +26,7 @@
 #include <cmath>
 
 #include "gmanlog.h"
+#include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanslapi.h"
 #include "ri.h"
@@ -110,11 +111,13 @@ GMANVector GMANRefract(const GMANVector& i, const GMANVector& n, RtFloat eta) {
 
 RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt) {
   RtFloat cosphi = i.dot(n);
-  // r/t's own sign convention (unused here) leaves cosphi negative on a
-  // typical entering hit; the reflectance math below needs the actual,
-  // non-negative cosine of the incidence angle.
-  RtFloat const reflectCosPhi = -cosphi;
-  RtFloat sinphi = std::sqrt(1 - reflectCosPhi * reflectCosPhi);
+  // The reflectance math below needs the incidence angle's own cosine:
+  // non-negative, and clamped to 1 against the fp slop that can carry
+  // fabs(i.dot(n)) a ulp past it for a grazing-normal pair, which would
+  // otherwise leave 1 - incidenceCosine^2 negative and every guard below
+  // false against a NaN sinphi.
+  RtFloat const incidenceCosine = GMANMin(std::fabs(cosphi), (RtFloat)1.0);
+  RtFloat sinphi = std::sqrt(1 - incidenceCosine * incidenceCosine);
 
   if (sinphi <= kFresnelGuardTol) {
     // Normal incidence: sinamb/sinapb and tanamb/tanapb below are all 0/0.
@@ -123,7 +126,7 @@ RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloa
     kt = 1 - kr;
     return;
   }
-  if (std::fabs(reflectCosPhi) <= kFresnelGuardTol) {
+  if (incidenceCosine <= kFresnelGuardTol) {
     // Grazing incidence: tanphi below divides by zero.
     kr = 1;
     kt = 0;
@@ -139,9 +142,9 @@ RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloa
   }
 
   RtFloat cost = std::sqrt(1 - sint * sint);
-  RtFloat sinapb = sinphi * cost + sint * reflectCosPhi;
-  RtFloat sinamb = sinphi * cost - sint * reflectCosPhi;
-  RtFloat tanphi = sinphi / reflectCosPhi;
+  RtFloat sinapb = sinphi * cost + sint * incidenceCosine;
+  RtFloat sinamb = sinphi * cost - sint * incidenceCosine;
+  RtFloat tanphi = sinphi / incidenceCosine;
   RtFloat tant = sint / cost;
   RtFloat tanapb = (tanphi + tant) / (1 - tanphi * tant);
   RtFloat tanamb = (tanphi - tant) / (1 + tanphi * tant);
@@ -153,11 +156,13 @@ RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloa
 RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt, GMANVector& r,
                    GMANVector& t) {
   RtFloat cosphi = i.dot(n);
-  // r/t's own sign convention (unused here) leaves cosphi negative on a
-  // typical entering hit; the reflectance math below needs the actual,
-  // non-negative cosine of the incidence angle.
-  RtFloat const reflectCosPhi = -cosphi;
-  RtFloat sinphi = std::sqrt(1 - reflectCosPhi * reflectCosPhi);
+  // The reflectance math below needs the incidence angle's own cosine:
+  // non-negative, and clamped to 1 against the fp slop that can carry
+  // fabs(i.dot(n)) a ulp past it for a grazing-normal pair, which would
+  // otherwise leave 1 - incidenceCosine^2 negative and every guard below
+  // false against a NaN sinphi.
+  RtFloat const incidenceCosine = GMANMin(std::fabs(cosphi), (RtFloat)1.0);
+  RtFloat sinphi = std::sqrt(1 - incidenceCosine * incidenceCosine);
 
   if (sinphi <= kFresnelGuardTol) {
     // Normal incidence: sinamb/sinapb and tanamb/tanapb below are all 0/0.
@@ -168,7 +173,7 @@ RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloa
     t = GMANRefract(i, n, eta);
     return;
   }
-  if (std::fabs(reflectCosPhi) <= kFresnelGuardTol) {
+  if (incidenceCosine <= kFresnelGuardTol) {
     // Grazing incidence: tanphi below divides by zero.
     kr = 1;
     kt = 0;
@@ -188,9 +193,9 @@ RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloa
   }
 
   RtFloat cost = std::sqrt(1 - sint * sint);
-  RtFloat sinapb = sinphi * cost + sint * reflectCosPhi;
-  RtFloat sinamb = sinphi * cost - sint * reflectCosPhi;
-  RtFloat tanphi = sinphi / reflectCosPhi;
+  RtFloat sinapb = sinphi * cost + sint * incidenceCosine;
+  RtFloat sinamb = sinphi * cost - sint * incidenceCosine;
+  RtFloat tanphi = sinphi / incidenceCosine;
   RtFloat tant = sint / cost;
   RtFloat tanapb = (tanphi + tant) / (1 - tanphi * tant);
   RtFloat tanamb = (tanphi - tant) / (1 + tanphi * tant);
