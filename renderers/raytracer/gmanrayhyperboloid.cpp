@@ -88,47 +88,55 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   // the plane hit's own radius, and the wedge is a spiral sector since
   // phi(v) varies with v.
   if (dzSeg == 0.0) {
-    RtFloat const t = (point1.getZ() - objOrigin.getZ()) / objDirection.getZ();
+    double const dzPlane = objDirection.getZ();
+    // A plane solve has no discriminant to cancel, so it runs in double
+    // from the unshifted origin: no bounding-sphere shift applies here.
+    double const tLocal = ((double)point1.getZ() - (double)objOrigin.getZ()) / dzPlane;
+    RtFloat const t = (RtFloat)tLocal;
     if (t < ray.getTMin() || t > ray.getTMax())
       return false;
 
-    RtFloat const x = objOrigin.getX() + objDirection.getX() * t;
-    RtFloat const y = objOrigin.getY() + objDirection.getY() * t;
+    double const x = (double)objOrigin.getX() + (double)objDirection.getX() * tLocal;
+    double const y = (double)objOrigin.getY() + (double)objDirection.getY() * tLocal;
+
+    double const dSqD = (double)dSq, pDotD = (double)pDot, p0sqD = (double)p0sq;
 
     // r(v)^2 == x*x + y*y at the plane hit: dSq*v^2 + 2*pDot*v +
-    // (p0sq - x*x - y*y) == 0. point1 == point2 forces dSq == pDot == 0.0,
-    // so GMANQuadraticRoots' own a == 0.0 contract already returns zero
-    // roots for that degeneracy.
-    RtFloat vRoot0 = 0.0, vRoot1 = 0.0;
-    int const numVRoots = GMANQuadraticRoots(dSq, 2 * pDot, p0sq - x * x - y * y, vRoot0, vRoot1);
+    // (p0sq - x*x - y*y) == 0, solved in double. point1 == point2 forces
+    // dSq == pDot == 0.0, so gman::solveRayQuadratic's own a == 0.0
+    // contract already returns zero roots for that degeneracy.
+    double vRoot0 = 0.0, vRoot1 = 0.0;
+    int const numVRoots = gman::solveRayQuadratic(dSqD, 2.0 * pDotD, p0sqD - x * x - y * y, vRoot0, vRoot1);
 
-    RtFloat const vRoots[2] = {vRoot0, vRoot1};
+    double const vRoots[2] = {vRoot0, vRoot1};
     for (int i = 0; i < numVRoots; ++i) {
-      RtFloat const v = vRoots[i];
+      double const v = vRoots[i];
       // Rejects NaN, the only place a NaN from a degenerate ray is caught: NaN fails every comparison.
       if (!(v >= 0.0 && v <= 1.0))
         continue;
 
       // theta is measured from the segment's own azimuth phi(v) at this v,
       // which moves with v here (a spiral sector), not from the x-axis.
-      RtFloat const xv = point1.getX() + v * dxSeg;
-      RtFloat const yv = point1.getY() + v * dySeg;
+      RtFloat const xv = (RtFloat)(point1.getX() + v * dxSeg);
+      RtFloat const yv = (RtFloat)(point1.getY() + v * dySeg);
       RtFloat const phi = GMANAtan(yv, xv);
-      RtFloat const pointPhi = GMANAtan(y, x);
+      RtFloat const pointPhi = GMANAtan((RtFloat)y, (RtFloat)x);
       RtFloat const theta = GMANMod(pointPhi - phi, (RtFloat)(2.0 * PI));
       if (theta > thetamaxRad)
         continue;
 
       // The fold, pDot + dSq*v == 0, is measure-zero: the formula and getNormal both vanish there in exact arithmetic.
-      GMANVector objNormal(0.0, 0.0, -(pDot + dSq * v));
+      GMANVector objNormal(0.0, 0.0, (RtFloat)(-(pDotD + dSqD * v)));
       GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
       normal.normalize();
 
+      GMANPoint const objPoint((RtFloat)x, (RtFloat)y, point1.getZ());
+
       hit.t = t;
-      hit.point = ray.pointAt(t);
+      hit.point = gman::transformPoint(objectToCamera, objPoint);
       hit.normal = normal;
       hit.u = theta / thetamaxRad;
-      hit.v = v;
+      hit.v = (RtFloat)v;
       hit.primitive = this;
       return true;
     }

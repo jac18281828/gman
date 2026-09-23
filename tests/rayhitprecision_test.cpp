@@ -21,10 +21,11 @@
 /*
  * R5c review proof: every quadric intersector places a hit on its own
  * implicit surface and on its own ray at any origin distance, R5c's
- * torus pattern applied to the sphere, cylinder, cone, paraboloid,
- * hyperboloid and disk. A viewpoint at distance D fires a ray from a
- * surface point back at a target just inside the shape; the first
- * crossing must be that surface point, whether D is 5, 1e4 or 1e6.
+ * torus pattern applied to the sphere, cylinder, cone, paraboloid, the
+ * hyperboloid's two branches (a spanning segment and a flat annulus) and
+ * the disk. A viewpoint at distance D fires a ray from a surface point
+ * back at a target just inside the shape; the first crossing must be
+ * that surface point, whether D is 5, 1e4 or 1e6.
  */
 
 #include <cmath>
@@ -35,6 +36,7 @@
 #include "gmanray.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
+#include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraysphere.h"
@@ -187,6 +189,31 @@ void testHyperboloidSpanning() {
     checkSweep("spanning hyperboloid", D, sweepShape(hyperboloid, 1.0, D, residual));
 }
 
+// The disk sits at a non-dyadic height: at a dyadic height, an axis-
+// aligned ray does exact float arithmetic, and the unfixed intersector
+// (or the pointAt mutation in section 8) would pass this sweep vacuously.
+void testDisk() {
+  double const height = 0.3, radius = 1.0;
+  GMANRayDisk disk(height, radius, 360.0, GMANParameterList());
+  auto const residual = [=](GMANPoint const& p) { return (double)p.getZ() - height; };
+  for (double const D : {5.0, 1e4, 1e6})
+    checkSweep("disk", D, sweepShape(disk, 1.0, D, residual));
+}
+
+// A flat annulus (point1.z == point2.z, the same non-dyadic height as the
+// disk above): the wedge is a spiral sector since phi(v) varies with v,
+// exercising the flat branch's own v-root solve instead of the disk's
+// direct radius check.
+void testFlatAnnulus() {
+  RtPoint p1 = {1.0, 0.0, 0.3};
+  RtPoint p2 = {0.2, 0.4, 0.3};
+  GMANRayHyperboloid flatAnnulus(p1, p2, 360.0, GMANParameterList());
+  double const z1 = p1[2];
+  auto const residual = [=](GMANPoint const& p) { return (double)p.getZ() - z1; };
+  for (double const D : {5.0, 1e4, 1e6})
+    checkSweep("flat annulus", D, sweepShape(flatAnnulus, 1.0, D, residual));
+}
+
 } // namespace
 
 int main() {
@@ -195,6 +222,8 @@ int main() {
   testCone();
   testParaboloid();
   testHyperboloidSpanning();
+  testDisk();
+  testFlatAnnulus();
 
   return checkSummary("Every quadric intersector's hit sits on its implicit surface and its own ray");
 }
