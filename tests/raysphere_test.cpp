@@ -189,12 +189,11 @@ void testPartialThetamaxRoundTrip() {
   check(hit.v >= 0.0 && hit.v <= 1.0, "partial thetamax: 0 <= v <= 1");
 }
 
-// ---- a == d.dot(d) pins on a zero-length direction ----
-// Every ray above normalizes to a == 1, so hardcoding a == 1.0 changes
-// nothing there. GMANVector::normalize leaves a sub-RI_EPSILON vector
-// unchanged, so a zero-length direction survives GMANRay's constructor
-// and must reach GMANQuadraticRoots' a == 0 return rather than a spurious
-// a == 1 solve.
+// ---- dirSq's own guard pins on a zero-length direction ----
+// GMANVector::normalize leaves a sub-RI_EPSILON vector unchanged, so a
+// zero-length direction survives GMANRay's constructor and must miss at
+// intersect()'s own dirSq == 0.0 check, before boundingSphereShift's
+// divide by it, rather than reach a spurious a == 1 solve.
 void testZeroLengthDirectionMisses() {
   GMANRaySphere sphere = fullSphere();
   GMANRay zeroRay(GMANPoint(0.0, 0.0, 0.0), GMANVector(0.0, 0.0, 0.0));

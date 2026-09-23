@@ -1219,9 +1219,9 @@ set_tests_properties(quadratic PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b review proof: solveRayQuadratic, the linear-case helper the four
-# swept quadrics' intersectors share, at coefficients a caller's own
-# floating-point contraction cannot perturb.
+# R5c proof: solveRayQuadratic, the double a*t^2+b*t+c == 0 solver the
+# sphere and the four swept quadrics' intersectors share, its linear
+# branch exact and its quadratic branch stable under cancellation.
 add_executable(gman_rayquadratic rayquadratic_test.cpp)
 target_link_libraries(gman_rayquadratic PRIVATE gman_core)
 target_include_directories(gman_rayquadratic PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
@@ -1253,6 +1253,17 @@ add_test(NAME raysphere COMMAND gman_raysphere)
 set_tests_properties(raysphere PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# R5c proof: every quadric intersector's hit sits on its implicit surface
+# and its own ray at origin distances 5, 1e4 and 1e6, linked against the
+# shared object library for the same reason as gman_raysphere above.
+add_executable(gman_rayhitprecision rayhitprecision_test.cpp)
+target_link_libraries(gman_rayhitprecision PRIVATE gman_core gman_raytracer_objects)
+
+add_test(NAME rayhitprecision COMMAND gman_rayhitprecision)
+set_tests_properties(rayhitprecision PROPERTIES
+  LABELS unit
+  TIMEOUT 60)
 
 # R5a proof, unit: GMANRayDisk::intersect, linked against the shared object
 # library for the same reason as gman_raysphere above.

@@ -23,9 +23,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"
+#include "gmanrayquadratic.h"
 #include "gmanraysphere.h"
 #include "gmanvector.h"
 
@@ -63,59 +66,83 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
     return false;
 
   // Move the ray into the sphere's object space, centred at the origin,
-  // through cameraToObject. The direction keeps the length the transform
-  // gives it rather than the unit length a freshly built GMANRay would
-  // normalize it to, so a root found against it is already a camera-space
-  // distance and the ray's own [tmin, tmax] interval applies unchanged.
+  // through cameraToObject.
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
-  GMANPoint centre(0, 0, 0);
-  GMANVector deltaP(centre, objOrigin); // O - C, in object space
+  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
+  double const dirSq = dx * dx + dy * dy + dz * dz;
+  // A zero-length direction survives GMANRay's own construction (see
+  // gmanray.h); boundingSphereShift below divides by dirSq, so this check
+  // must come first, the torus's own guard.
+  if (dirSq == 0.0)
+    return false;
 
-  RtFloat a = objDirection.dot(objDirection);
-  RtFloat b = 2 * objDirection.dot(deltaP);
-  RtFloat c = deltaP.dot(deltaP) - radius * radius;
+  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
 
-  RtFloat t0 = 0.0, t1 = 0.0;
-  int numRoots = GMANQuadraticRoots(a, b, c, t0, t1);
+  // Every surface point satisfies x^2+y^2+z^2 <= radius^2 + max(zmin^2,
+  // zmax^2), gmanraybbox.h's revolutionBBox's own r, z0, z1 bound
+  // (radius, zmin, zmax here).
+  double const boundingRadius = std::sqrt((double)radius * radius + GMANMax((double)zmin * zmin, (double)zmax * zmax));
+
+  double shift = 0.0;
+  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, boundingRadius, shift))
+    return false;
+
+  // The shifted origin's own distance from the centre and the ray's
+  // direction give the sphere quadratic directly: no separate deltaP is
+  // needed once the centre sits at the object-space origin.
+  double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
+
+  double const a = dirSq;
+  double const b = 2.0 * (sox * dx + soy * dy + soz * dz);
+  double const c = sox * sox + soy * soy + soz * soz - (double)radius * (double)radius;
+
+  double t0 = 0.0, t1 = 0.0;
+  int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)
     return false;
 
-  RtFloat roots[2] = {t0, t1};
-  RtFloat phimin = (RtFloat)asin(GMANClamp<double>(zmin / radius, -1.0, 1.0));
-  RtFloat phimax = (RtFloat)asin(GMANClamp<double>(zmax / radius, -1.0, 1.0));
-  RtFloat thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
+  double const roots[2] = {t0, t1};
+  RtFloat const phimin = (RtFloat)asin(GMANClamp<double>(zmin / radius, -1.0, 1.0));
+  RtFloat const phimax = (RtFloat)asin(GMANClamp<double>(zmax / radius, -1.0, 1.0));
+  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
 
   // Test the near root first and fall through to the far one rather than
   // choosing a root and then validating it: a root can fail on the ray's
   // own interval, on zmin/zmax, or on thetamax, and a ray from inside the
   // sphere or one grazing a clipped cap can still hit on its far root.
   for (int i = 0; i < numRoots; ++i) {
-    RtFloat t = roots[i];
+    double const tLocal = roots[i];
+    RtFloat const t = (RtFloat)(tLocal + shift);
     if (t < ray.getTMin() || t > ray.getTMax())
       continue;
 
-    GMANPoint objPoint(objOrigin.getX() + objDirection.getX() * t, objOrigin.getY() + objDirection.getY() * t,
-                       objOrigin.getZ() + objDirection.getZ() * t);
-    RtFloat z = objPoint.getZ();
+    double const px = sox + tLocal * dx;
+    double const py = soy + tLocal * dy;
+    double const pz = soz + tLocal * dz;
+    RtFloat const z = (RtFloat)pz;
     if (z < zmin || z > zmax)
       continue;
 
-    RtFloat theta = GMANMod(GMANAtan(objPoint.getY(), objPoint.getX()), (RtFloat)(2.0 * PI));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)py, (RtFloat)px), (RtFloat)(2.0 * PI));
     if (theta > thetamaxRad)
       continue;
 
-    RtFloat phi = (RtFloat)asin(GMANClamp<double>(z / radius, -1.0, 1.0));
+    RtFloat const phi = (RtFloat)asin(GMANClamp<double>(pz / radius, -1.0, 1.0));
 
-    GMANVector objNormal(centre, objPoint); // outward radial direction, object space
+    double const invRadius = 1.0 / (double)radius;
+    GMANVector objNormal((RtFloat)(px * invRadius), (RtFloat)(py * invRadius),
+                         (RtFloat)(pz * invRadius)); // outward radial direction, object space
     objNormal.normalize();
 
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    GMANPoint const objPoint((RtFloat)px, (RtFloat)py, (RtFloat)pz);
+
     hit.t = t;
-    hit.point = ray.pointAt(t);
+    hit.point = gman::transformPoint(objectToCamera, objPoint);
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = (phi - phimin) / (phimax - phimin);

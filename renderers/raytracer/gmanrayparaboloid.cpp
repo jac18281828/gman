@@ -71,41 +71,66 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
+  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
+  double const dirSq = dx * dx + dy * dy + dz * dz;
+  // A zero-length direction survives GMANRay's own construction (see
+  // gmanray.h); boundingSphereShift below divides by dirSq, so this check
+  // must come first, the torus's own guard.
+  if (dirSq == 0.0)
+    return false;
+
+  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
+
+  // Every surface point satisfies x^2+y^2+z^2 <= r^2 + max(zmin^2,
+  // zmax^2), r == |rmax|/sqrt(|zmax|) (gmanraybbox.h's revolutionBBox's
+  // own r for zmax > 0; the constructor's own default-box guard leaves
+  // zmax <= 0 unbounded there, but intersect() below still needs a finite
+  // radius for any zmax, hence the absolute value).
+  double const rParaboloid = std::fabs((double)rmax) / std::sqrt(std::fabs((double)zmax));
+  double const boundingRadius =
+      std::sqrt(rParaboloid * rParaboloid + GMANMax((double)zmin * zmin, (double)zmax * zmax));
+
+  double shift = 0.0;
+  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, boundingRadius, shift))
+    return false;
+
+  double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
+
   // GMANParaboloid::getLocation's radial factor is rmax*sqrt(v/zmax); the
   // settled reading (see R5b's own prompt) substitutes v == (z - zmin) /
   // (zmax - zmin) to give x^2 + y^2 == k*(z - zmin), k == rmax^2 /
   // (zmax*(zmax - zmin)) -- quadratic in the ray parameter t.
-  RtFloat const k = rmax * rmax / (zmax * (zmax - zmin));
+  double const k = (double)rmax * rmax / ((double)zmax * ((double)zmax - zmin));
 
-  RtFloat const a = objDirection.getX() * objDirection.getX() + objDirection.getY() * objDirection.getY();
-  RtFloat const b =
-      2 * (objDirection.getX() * objOrigin.getX() + objDirection.getY() * objOrigin.getY()) - k * objDirection.getZ();
-  RtFloat const c =
-      objOrigin.getX() * objOrigin.getX() + objOrigin.getY() * objOrigin.getY() - k * (objOrigin.getZ() - zmin);
+  double const a = dx * dx + dy * dy;
+  double const b = 2.0 * (dx * sox + dy * soy) - k * dz;
+  double const c = sox * sox + soy * soy - k * (soz - (double)zmin);
 
   // a vanishes for a ray parallel to the axis (dx == dy == 0): the
   // apex-seeking case GMANQuadraticRoots' own comment does not cover.
   // gman::solveRayQuadratic solves that linear case directly.
-  RtFloat t0 = 0.0, t1 = 0.0;
+  double t0 = 0.0, t1 = 0.0;
   int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)
     return false;
 
-  RtFloat const roots[2] = {t0, t1};
+  double const roots[2] = {t0, t1};
   RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
 
   for (int i = 0; i < numRoots; ++i) {
-    RtFloat const t = roots[i];
+    double const tLocal = roots[i];
+    RtFloat const t = (RtFloat)(tLocal + shift);
     if (t < ray.getTMin() || t > ray.getTMax())
       continue;
 
-    GMANPoint const objPoint(objOrigin.getX() + objDirection.getX() * t, objOrigin.getY() + objDirection.getY() * t,
-                             objOrigin.getZ() + objDirection.getZ() * t);
-    RtFloat const z = objPoint.getZ();
+    double const px = sox + tLocal * dx;
+    double const py = soy + tLocal * dy;
+    double const pz = soz + tLocal * dz;
+    RtFloat const z = (RtFloat)pz;
     if (z < zmin || z > zmax)
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan(objPoint.getY(), objPoint.getX()), (RtFloat)(2.0 * PI));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)py, (RtFloat)px), (RtFloat)(2.0 * PI));
     if (theta > thetamaxRad)
       continue;
 
@@ -116,12 +141,14 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     // -fPrime/(zmax-zmin) == -k/(2*r), the same ratio to (x, y) == r*(cos
     // theta, sin theta) that (2x, 2y, -k) carries -- so no division by r
     // is needed, and the apex (r == 0) is not a special case here.
-    GMANVector objNormal(2 * objPoint.getX(), 2 * objPoint.getY(), -k);
+    GMANVector objNormal((RtFloat)(2.0 * px), (RtFloat)(2.0 * py), (RtFloat)(-k));
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    GMANPoint const objPoint((RtFloat)px, (RtFloat)py, (RtFloat)pz);
+
     hit.t = t;
-    hit.point = ray.pointAt(t);
+    hit.point = gman::transformPoint(objectToCamera, objPoint);
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = (z - zmin) / (zmax - zmin);

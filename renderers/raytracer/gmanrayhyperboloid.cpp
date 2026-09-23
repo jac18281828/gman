@@ -139,45 +139,75 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   // z spans the segment here, so v == (z - point1.z) / dzSeg is affine in
   // z and so in t; x(t)^2 + y(t)^2 - r(v(t))^2 is then an ordinary
   // quadratic in t.
-  RtFloat const v0 = (objOrigin.getZ() - point1.getZ()) / dzSeg;
-  RtFloat const vSlope = objDirection.getZ() / dzSeg;
+  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
+  double const dirSq = dx * dx + dy * dy + dz * dz;
+  // A zero-length direction survives GMANRay's own construction (see
+  // gmanray.h); boundingSphereShift below divides by dirSq, so this check
+  // must come first, the torus's own guard.
+  if (dirSq == 0.0)
+    return false;
 
-  RtFloat const r2c = p0sq + 2 * pDot * v0 + dSq * v0 * v0;
-  RtFloat const r2b = 2 * vSlope * (pDot + dSq * v0);
-  RtFloat const r2a = dSq * vSlope * vSlope;
+  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
 
-  RtFloat const a = objDirection.getX() * objDirection.getX() + objDirection.getY() * objDirection.getY() - r2a;
-  RtFloat const b = 2 * (objDirection.getX() * objOrigin.getX() + objDirection.getY() * objOrigin.getY()) - r2b;
-  RtFloat const c = objOrigin.getX() * objOrigin.getX() + objOrigin.getY() * objOrigin.getY() - r2c;
+  // Every surface point satisfies x^2+y^2+z^2 <= r^2 + max(point1.z^2,
+  // point2.z^2), r the greater of the two control points' own radii --
+  // gmanraybbox.h's revolutionBBox's own r, z0, z1 (the constructor's own
+  // bbox uses this same r).
+  double const r0 = std::sqrt((double)point1.getX() * point1.getX() + (double)point1.getY() * point1.getY());
+  double const r1 = std::sqrt((double)point2.getX() * point2.getX() + (double)point2.getY() * point2.getY());
+  double const boundingRadius =
+      std::sqrt(GMANMax(r0, r1) * GMANMax(r0, r1) +
+                GMANMax((double)point1.getZ() * point1.getZ(), (double)point2.getZ() * point2.getZ()));
+
+  double shift = 0.0;
+  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, boundingRadius, shift))
+    return false;
+
+  double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
+
+  double const dzSegD = (double)dzSeg;
+  double const v0 = (soz - (double)point1.getZ()) / dzSegD;
+  double const vSlope = dz / dzSegD;
+
+  double const p0sqD = (double)p0sq, pDotD = (double)pDot, dSqD = (double)dSq;
+  double const r2c = p0sqD + 2.0 * pDotD * v0 + dSqD * v0 * v0;
+  double const r2b = 2.0 * vSlope * (pDotD + dSqD * v0);
+  double const r2a = dSqD * vSlope * vSlope;
+
+  double const a = dx * dx + dy * dy - r2a;
+  double const b = 2.0 * (dx * sox + dy * soy) - r2b;
+  double const c = sox * sox + soy * soy - r2c;
 
   // a vanishes for a ray parallel to a ruling of the hyperboloid.
   // gman::solveRayQuadratic's own comment covers the linear case and why a
   // near-degenerate a never reaches it.
-  RtFloat t0 = 0.0, t1 = 0.0;
+  double t0 = 0.0, t1 = 0.0;
   int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)
     return false;
 
-  RtFloat const roots[2] = {t0, t1};
+  double const roots[2] = {t0, t1};
 
   for (int i = 0; i < numRoots; ++i) {
-    RtFloat const t = roots[i];
+    double const tLocal = roots[i];
+    RtFloat const t = (RtFloat)(tLocal + shift);
     if (t < ray.getTMin() || t > ray.getTMax())
       continue;
 
-    GMANPoint const objPoint(objOrigin.getX() + objDirection.getX() * t, objOrigin.getY() + objDirection.getY() * t,
-                             objOrigin.getZ() + objDirection.getZ() * t);
-    RtFloat const v = (objPoint.getZ() - point1.getZ()) / dzSeg;
+    double const px = sox + tLocal * dx;
+    double const py = soy + tLocal * dy;
+    double const pz = soz + tLocal * dz;
+    double const v = (pz - (double)point1.getZ()) / dzSegD;
     if (v < 0.0 || v > 1.0)
       continue;
 
     // theta is measured from the segment's own azimuth phi(v) at this v,
     // not from the x-axis: GMANHyperboloid::getLocation adds theta to
     // phi(v), so recovering it any other way would not round trip.
-    RtFloat const xv = point1.getX() + v * dxSeg;
-    RtFloat const yv = point1.getY() + v * dySeg;
+    RtFloat const xv = (RtFloat)(point1.getX() + v * dxSeg);
+    RtFloat const yv = (RtFloat)(point1.getY() + v * dySeg);
     RtFloat const phi = GMANAtan(yv, xv);
-    RtFloat const pointPhi = GMANAtan(objPoint.getY(), objPoint.getX());
+    RtFloat const pointPhi = GMANAtan((RtFloat)py, (RtFloat)px);
     RtFloat const theta = GMANMod(pointPhi - phi, (RtFloat)(2.0 * PI));
     if (theta > thetamaxRad)
       continue;
@@ -187,15 +217,17 @@ bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     // dropping the common positive factor kt leaves the vector below,
     // which also carries the sign reversal getNormal's own comment
     // documents for a segment descending in z (dzSeg < 0).
-    GMANVector objNormal(dzSeg * objPoint.getX(), dzSeg * objPoint.getY(), -(pDot + dSq * v));
+    GMANVector objNormal((RtFloat)(dzSeg * px), (RtFloat)(dzSeg * py), (RtFloat)(-(pDotD + dSqD * v)));
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    GMANPoint const objPoint((RtFloat)px, (RtFloat)py, (RtFloat)pz);
+
     hit.t = t;
-    hit.point = ray.pointAt(t);
+    hit.point = gman::transformPoint(objectToCamera, objPoint);
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
-    hit.v = v;
+    hit.v = (RtFloat)v;
     hit.primitive = this;
     return true;
   }

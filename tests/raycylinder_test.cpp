@@ -116,7 +116,8 @@ void testBoundsBite() {
 
 // ---- check 4: a ray from inside the bore, angled across the axis, hits
 // the far wall. A ray straight down the axis would instead be the
-// a == 0, b == 0 miss GMANQuadraticRoots already reports correctly. ----
+// a == 0, b == 0 miss gman::solveRayQuadratic's own linear branch already
+// reports correctly, without delegating to GMANQuadraticRoots. ----
 void testFarRootFromInside() {
   GMANRayCylinder cylinder = fullCylinder();
   GMANRay ray(GMANPoint(0.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));

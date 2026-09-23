@@ -23,27 +23,49 @@
 
 #pragma once
 
+#include <cmath>
+
 #include "gmanmath.h"
 
 namespace gman {
 
-// Solves a ray's own a*t^2 + b*t + c == 0, shared by the swept quadrics'
-// intersectors (cone, cylinder, hyperboloid, paraboloid). a vanishes when
-// the ray's direction cancels the quadratic term -- parallel to a
-// generatrix or a ruling, or down an axis -- leaving at most a linear
-// equation: b == 0 too has no equation left to solve, a miss; otherwise
-// the single root is -c/b. That exactly-degenerate a is reachable in
-// principle; a merely near-degenerate one never reaches this branch,
-// since GMANQuadraticRoots' stable c/q form already recovers its correct
-// root. A nonzero a delegates to it unchanged.
-inline int solveRayQuadratic(RtFloat a, RtFloat b, RtFloat c, RtFloat& t0, RtFloat& t1) {
+// Solves a ray's own a*t^2 + b*t + c == 0 in double, shared by the
+// sphere and the four swept quadrics' intersectors (cylinder, cone,
+// hyperboloid, paraboloid), each from an origin shifted into the shape's
+// bounding sphere. a vanishes when the ray's direction cancels the
+// quadratic term -- parallel to a generatrix or a ruling, or down an
+// axis -- leaving at most a linear equation: b == 0 too has no equation
+// left to solve, a miss; otherwise the single root is -c/b. A nonzero a
+// solves in the stable q form itself, rather than delegating to
+// GMANQuadraticRoots (public, RtFloat only): a negative discriminant
+// returns no roots, a zero discriminant returns one, and two roots come
+// back ascending, the smaller one recovered through c/q rather than a
+// cancelling subtraction.
+inline int solveRayQuadratic(double a, double b, double c, double& t0, double& t1) {
   if (a == 0.0) {
     if (b == 0.0)
       return 0;
     t0 = -c / b;
     return 1;
   }
-  return GMANQuadraticRoots(a, b, c, t0, t1);
+
+  double const disc = b * b - 4.0 * a * c;
+  if (disc < 0.0)
+    return 0;
+  if (disc == 0.0) {
+    t0 = -b / (2.0 * a);
+    return 1;
+  }
+
+  double const sqrtDisc = std::sqrt(disc);
+  double const sign = b < 0.0 ? -1.0 : 1.0;
+  double const q = -(b + sign * sqrtDisc) / 2.0;
+
+  double const r0 = q / a;
+  double const r1 = c / q;
+  t0 = GMANMin(r0, r1);
+  t1 = GMANMax(r0, r1);
+  return 2;
 }
 
 } // namespace gman

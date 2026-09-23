@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"
@@ -63,42 +65,63 @@ bool GMANRayCone::intersect(const GMANRay& ray, GMANHit& hit) const {
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
+  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
+  double const dirSq = dx * dx + dy * dy + dz * dz;
+  // A zero-length direction survives GMANRay's own construction (see
+  // gmanray.h); boundingSphereShift below divides by dirSq, so this check
+  // must come first, the torus's own guard.
+  if (dirSq == 0.0)
+    return false;
+
+  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
+
+  // Every surface point satisfies x^2+y^2+z^2 <= radius^2 + height^2,
+  // gmanraybbox.h's revolutionBBox's own r, z0, z1 bound (radius, 0,
+  // height here).
+  double const boundingRadius = std::sqrt((double)radius * radius + (double)height * height);
+
+  double shift = 0.0;
+  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, boundingRadius, shift))
+    return false;
+
+  double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
+
   // x^2 + y^2 == g(z)^2, g(z) = radius*(1 - z/height) (GMANCone::getLocation's
   // own radial factor). g(z(u)) is affine in the ray parameter t, g(z(t)) ==
   // A + B*t, so substituting collects into an ordinary a*t^2+b*t+c == 0.
-  RtFloat const objOriginZ = objOrigin.getZ();
-  RtFloat const objDirectionZ = objDirection.getZ();
-  RtFloat const A = radius * (1.0 - objOriginZ / height);
-  RtFloat const B = -radius * objDirectionZ / height;
+  double const A = (double)radius * (1.0 - soz / (double)height);
+  double const B = -(double)radius * dz / (double)height;
 
-  RtFloat const a = objDirection.getX() * objDirection.getX() + objDirection.getY() * objDirection.getY() - B * B;
-  RtFloat const b = 2 * (objDirection.getX() * objOrigin.getX() + objDirection.getY() * objOrigin.getY() - A * B);
-  RtFloat const c = objOrigin.getX() * objOrigin.getX() + objOrigin.getY() * objOrigin.getY() - A * A;
+  double const a = dx * dx + dy * dy - B * B;
+  double const b = 2.0 * (dx * sox + dy * soy - A * B);
+  double const c = sox * sox + soy * soy - A * A;
 
   // a vanishes for a ray parallel to a generatrix: an ordinary ray with no
   // quadratic term left to solve, not a degenerate direction.
   // gman::solveRayQuadratic's own comment covers the linear case and why a
   // near-degenerate a never reaches it.
-  RtFloat t0 = 0.0, t1 = 0.0;
+  double t0 = 0.0, t1 = 0.0;
   int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)
     return false;
 
-  RtFloat const roots[2] = {t0, t1};
+  double const roots[2] = {t0, t1};
   RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
 
   for (int i = 0; i < numRoots; ++i) {
-    RtFloat const t = roots[i];
+    double const tLocal = roots[i];
+    RtFloat const t = (RtFloat)(tLocal + shift);
     if (t < ray.getTMin() || t > ray.getTMax())
       continue;
 
-    GMANPoint const objPoint(objOrigin.getX() + objDirection.getX() * t, objOrigin.getY() + objDirection.getY() * t,
-                             objOriginZ + objDirectionZ * t);
-    RtFloat const z = objPoint.getZ();
+    double const px = sox + tLocal * dx;
+    double const py = soy + tLocal * dy;
+    double const pz = soz + tLocal * dz;
+    RtFloat const z = (RtFloat)pz;
     if (z < 0.0 || z > height)
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan(objPoint.getY(), objPoint.getX()), (RtFloat)(2.0 * PI));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)py, (RtFloat)px), (RtFloat)(2.0 * PI));
     if (theta > thetamaxRad)
       continue;
 
@@ -108,8 +131,10 @@ bool GMANRayCone::intersect(const GMANRay& ray, GMANHit& hit) const {
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    GMANPoint const objPoint((RtFloat)px, (RtFloat)py, (RtFloat)pz);
+
     hit.t = t;
-    hit.point = ray.pointAt(t);
+    hit.point = gman::transformPoint(objectToCamera, objPoint);
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = z / height;

@@ -19,13 +19,13 @@
  */
 
 /*
- * R5b proof: GMANRayCone::intersect finds the object-space wall hit, its
+ * R5c proof: GMANRayCone::intersect finds the object-space wall hit, its
  * height and thetamax wedge, honors the ray's own [tmin, tmax] interval,
  * and fills a GMANHit that round trips through GMANCone::getLocation. A
- * ray parallel to a generatrix hits through solveRayQuadratic, which on
- * this toolchain delegates to GMANQuadraticRoots' stable form rather than
- * reaching its own a == 0 linear branch (see tests/rayquadratic_test.cpp
- * for that).
+ * ray parallel to a generatrix now hits through solveRayQuadratic's own
+ * a == 0 linear branch: computed in double, a's two squared terms cancel
+ * exactly, where a float square once left a contraction-sensitive
+ * residual (see tests/rayquadratic_test.cpp for the branch itself).
  */
 
 #include <cmath>
@@ -63,11 +63,11 @@ void testAxialHit() {
         "axial: normal == (1, 0, 1)/sqrt(2)");
 }
 
-// ---- check 1b: a ray parallel to a generatrix. In exact arithmetic a
-// vanishes here, leaving only a linear equation; on this toolchain
-// floating-point contraction leaves a small nonzero residual instead,
-// so this hits through GMANQuadraticRoots' stable c/q form rather than
-// solveRayQuadratic's own a == 0 branch. ----
+// ---- check 1b: a ray parallel to a generatrix. a vanishes here, leaving
+// only a linear equation: computed in double from this ray's own origin
+// (inside the cone's bounding sphere, so unshifted), a's two squared
+// terms are bit-identical and cancel exactly, so this hits through
+// solveRayQuadratic's own a == 0 branch, not its stable q form. ----
 void testGeneratrixParallelHit() {
   GMANRayCone cone = unitCone();
   GMANRay ray(GMANPoint(0.0, 0.0, 0.0), GMANVector(-1.0, 0.0, 1.0));
