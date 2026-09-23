@@ -29,11 +29,13 @@
 
 namespace gman {
 
-// Solves a ray's own a*t^2 + b*t + c == 0 in double, shared by the
-// sphere and the four swept quadrics' intersectors (cylinder, cone,
-// hyperboloid, paraboloid), each from an origin shifted into the shape's
-// bounding sphere. a vanishes when the ray's direction cancels the
-// quadratic term -- parallel to a generatrix or a ruling, or down an
+// Solves a ray's own a*t^2 + b*t + c == 0 in double. Callers: the sphere,
+// cylinder, cone, paraboloid and the hyperboloid's spanning branch, each
+// once on its own shifted-origin coefficients; the hyperboloid's flat
+// branch again, on its v-solve; and the torus's quartic solve (in
+// gmanrayquartic.cpp), for the biquadratic case and for each of Ferrari's
+// two resolvent quadratics. a vanishes when the ray's direction cancels
+// the quadratic term -- parallel to a generatrix or a ruling, or down an
 // axis -- leaving at most a linear equation: b == 0 too has no equation
 // left to solve, a miss; otherwise the single root is -c/b. A nonzero a
 // solves in the stable q form itself, rather than delegating to

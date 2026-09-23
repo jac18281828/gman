@@ -119,8 +119,9 @@ SweepResult sweepShape(Shape& shape, double scale, double D, Residual residual) 
 
 // The oblique companion to sweepShape, for a plane surface (the disk, the
 // flat annulus): a normal-aligned ray leaves a plane's x and y exact, since
-// its own normal is the z-axis, so item 3 needs a ray that actually moves
-// x and y. Each ray sits at 45 degrees from the normal, in the target's own
+// its own normal is the z-axis, so this sweep instead needs a ray that
+// actually moves x and y, to exercise the intersector's own double t, x
+// and y solve. Each ray sits at 45 degrees from the normal, in the target's own
 // radial plane (the vertical plane through the axis and the target), on the
 // far side of the axis, and aims at the surface point itself -- a plane has
 // no inside to aim short of. As it travels from origin to target, the ray
@@ -240,8 +241,8 @@ void testHyperboloidSpanning() {
 }
 
 // The disk sits at a non-dyadic height: at a dyadic height, an axis-
-// aligned ray does exact float arithmetic, and the unfixed intersector
-// (or the pointAt mutation in section 8) would pass this sweep vacuously.
+// aligned ray does exact float arithmetic, and an intersector that solves
+// t, x or y in float instead of double would pass this sweep vacuously.
 void testDisk() {
   double const height = 0.3, radius = 1.0;
   GMANRayDisk disk(height, radius, 360.0, GMANParameterList());
@@ -250,8 +251,8 @@ void testDisk() {
     checkSweep("disk", D, sweepShape(disk, 1.0, D, residual));
 }
 
-// item 3: a normal-aligned ray leaves the disk's own x and y exact, since
-// its normal is the z-axis; the oblique sweep exercises the intersector's
+// A normal-aligned ray leaves the disk's own x and y exact, since its
+// normal is the z-axis; the oblique sweep exercises the intersector's
 // double t, x and y instead.
 void testDiskOblique() {
   double const height = 0.3, radius = 1.0;
@@ -275,7 +276,8 @@ void testFlatAnnulus() {
     checkSweep("flat annulus", D, sweepShape(flatAnnulus, 1.0, D, residual));
 }
 
-// item 3, the flat annulus's own case: see testDiskOblique's comment.
+// The flat annulus's own case of the same normal-aligned-ray blind spot;
+// see testDiskOblique's comment.
 void testFlatAnnulusOblique() {
   RtPoint p1 = {1.0, 0.0, 0.3};
   RtPoint p2 = {0.2, 0.4, 0.3};
