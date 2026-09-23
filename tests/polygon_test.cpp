@@ -291,9 +291,8 @@ int countFaces(GMANObject* object) {
 }
 
 // Each ear-clipped triangle dices into a fixed 16-per-edge barycentric grid
-// (256 sub-triangles) before shading (bugs-zbuffer-polygon-dice.md, Settled
-// decision 1, 7) -- construction-independent, so the face count is always
-// the old per-triangle count times this multiplier.
+// (256 sub-triangles) before shading -- construction-independent, so the
+// face count is always the old per-triangle count times this multiplier.
 const int kSubTrianglesPerEar = 256;
 
 void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt nverts) {

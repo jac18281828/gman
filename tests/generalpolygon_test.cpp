@@ -78,6 +78,14 @@ const double kOrientationAreaExemption = 1e-6;
 
 const double kRotationDegrees = 37.0;
 
+// Each ear-clipped triangle dices into a fixed 16-per-edge barycentric grid
+// (256 sub-triangles) before shading -- construction-independent, so the
+// face count is always the old per-triangle count times this multiplier,
+// and every 256 consecutive faces on the chain are one ear-clipped
+// triangle's own sub-faces (built contiguously, one ear-clipped triangle
+// at a time).
+const int kSubTrianglesPerEar = 256;
+
 // Rodrigues' rotation formula in double precision, independent of the
 // RtFloat arithmetic under test -- triangulation_test.cpp's own helper.
 std::array<double, 3> rotate(double x, double y, double z, double ax, double ay, double az, double angleRad) {
@@ -191,20 +199,10 @@ int countFaces(GMANObject* object) {
   return count;
 }
 
-// Each ear-clipped triangle dices into a fixed 16-per-edge barycentric grid
-// (256 sub-triangles) before shading (bugs-zbuffer-polygon-dice.md, Settled
-// decision 1) -- construction-independent, so the face count is always the
-// old per-triangle count times this multiplier, and every 256 consecutive
-// faces on the chain are one ear-clipped triangle's own sub-faces (built
-// contiguously, one ear-clipped triangle at a time).
-const int kSubTrianglesPerEar = 256;
-
-// Maps only the first chainLength entries of the vertex chain -- the one
-// GMANVertex per bridged-ring position getRSGeneralPolygon still builds
-// first, before dicing appends new, strictly interior or edge-interior
-// vertices afterward (Settled decision 5). Bounding the walk here is what
-// keeps this a 1:1 map; walking the whole (now much longer) chain would
-// not be.
+// Maps only the first chainLength entries of the vertex chain: one
+// GMANVertex per bridged-ring position. Every entry after that is a diced,
+// strictly interior or edge-interior vertex, not a bridged-ring position,
+// so bounding the walk here is what keeps this a 1:1 map.
 std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int chainLength) {
   std::map<const GMANVertex*, int> index;
   GMANVertex* v = object->getVert();
@@ -223,18 +221,15 @@ std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int chainLeng
 // already recorded as failures) if getRSGeneralPolygon did not return a
 // usable object.
 //
-// Dicing means most sub-triangles are now strictly interior -- none of
-// their three vertices is a pre-dicing chain vertex -- so "every face
-// vertex maps back to a chain index" is no longer the right shape for
-// either the coverage or the identity check (Settled decision 10).
-// Coverage instead asks only whether each pre-dicing chain vertex still
-// appears somewhere on the (now larger) chain. Identity is recovered per
-// ear-clipped triangle: since decision 5 keeps each of its three original
-// corners as one of its own 256 sub-faces' vertices, and dicing is
-// contiguous (comment above), scanning each 256-face block for the
-// (exactly three) sub-face vertices that map back to a chain index
-// reconstructs the same chain-index triple this oracle returned before
-// dicing existed, in a combinatorial (placement-independent) order.
+// Most sub-triangles are strictly interior -- none of their three vertices
+// is a pre-dicing chain vertex -- so coverage asks only whether each
+// pre-dicing chain vertex still appears somewhere on the (much larger)
+// chain. Identity is recovered per ear-clipped triangle: each triangle's
+// three original corners are each one of its own 256 sub-faces' vertices,
+// and dicing is contiguous (comment above), so scanning each 256-face
+// block for the (exactly three) sub-face vertices that map back to a
+// chain index reconstructs that triangle's own chain-index triple, in a
+// combinatorial (placement-independent) order.
 std::vector<std::array<int, 3>> checkPlacement(const std::string& label,
                                                const std::vector<std::vector<GMANPoint>>& loops,
                                                const std::vector<bool>& kept) {

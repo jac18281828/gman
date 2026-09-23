@@ -24,14 +24,12 @@
  * textured square, rendered two ways over the identical geometry and
  * texture -- once as a single Polygon (ordinary dicing), once as a grid of
  * kGroundTruthGrid^2 small Polygon requests tiling the same square (a much
- * finer hand-diced equivalent, the same technique
- * bugs-zbuffer-polygon-dice.md's own diagnosis used). Every vertex, in
- * either fixture, defaults its own s, t to its own object x, y, so both
- * fixtures shade the identical continuous texture-mapped surface; only
- * how many vertices sample it before Gouraud interpolation takes over
- * differs. At the production dicing resolution the two agree within
- * checkGoldenImage's own tolerance; forced coarser (see this task's own
- * closing report for the falsification run, not this file) they do not.
+ * finer hand-diced equivalent). Every vertex, in either fixture, defaults
+ * its own s, t to its own object x, y, so both fixtures shade the
+ * identical continuous texture-mapped surface; only how many vertices
+ * sample it before Gouraud interpolation takes over differs. At the
+ * production dicing resolution the two agree within checkGoldenImage's
+ * own tolerance; forced coarser, they do not.
  */
 
 #include <cstdio>

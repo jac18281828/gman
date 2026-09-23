@@ -52,8 +52,7 @@ const RtFloat kTriangulationTolerance = (RtFloat)1.0e-6;
 // buildPolygonObject's own dicing resolution: divisions per edge of each
 // ear-clipped triangle's barycentric grid, fixed rather than screen-space
 // or ShadingRate-driven -- the same fixed count createParametric's own
-// URES/VRES already establishes for a quadric (bugs-zbuffer-polygon-dice.md,
-// Settled decision 1).
+// URES/VRES already establishes for a quadric.
 const RtInt kPolygonDiceN = 16;
 
 // getRSPatchMesh's own corners: RiTextureCoordinates spans a single
@@ -377,13 +376,13 @@ RtInt dicedGridIndex(RtInt a, RtInt b, RtInt n) { return a * (n + 1) - a * (a - 
 
 // One new, freshly shaded grid vertex at barycentric weights (w0, w1, w2)
 // against a diced triangle's own three corners -- P, u, v, s and t each the
-// same affine combination (Settled decision 4). The shading normal is not
-// interpolated: normalVec is already the one planar normal every vertex of
-// a Polygon/GeneralPolygon shares.
-GMANVertex* dicedGridVertex(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2,
-                            const GMANPolygonVertexTexCoord& tc0, const GMANPolygonVertexTexCoord& tc1,
-                            const GMANPolygonVertexTexCoord& tc2, RtFloat w0, RtFloat w1, RtFloat w2,
-                            const GMANNormal& normal, const GMANVector& normalVec, gman::Appearance const& appearance,
+// same affine combination of those three corners' own values. The shading
+// normal is not interpolated: normalVec is already the one planar normal
+// every vertex of a Polygon/GeneralPolygon shares.
+GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2,
+                            GMANPolygonVertexTexCoord const& tc0, GMANPolygonVertexTexCoord const& tc1,
+                            GMANPolygonVertexTexCoord const& tc2, RtFloat w0, RtFloat w1, RtFloat w2,
+                            GMANNormal const& normal, GMANVector const& normalVec, gman::Appearance const& appearance,
                             GMANMatrix4 const& cameraToWorld) {
   GMANVertex* vertex = new GMANVertex();
   vertex->setLocation(p0 * w0 + p1 * w1 + p2 * w2);
@@ -403,12 +402,12 @@ GMANVertex* dicedGridVertex(const GMANPoint& p0, const GMANPoint& p1, const GMAN
 // grid, appending every newly shaded interior or edge-interior vertex to
 // vertices and every sub-triangle's face to faceList. Reuses the triangle's
 // three corners' own GMANVertex objects unchanged at the grid's three
-// corners (Settled decision 5) rather than duplicating them; two
-// ear-clipped triangles never share a diced grid vertex, even along a
-// common diagonal -- each dices independently (Settled decision 2).
-void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, const std::vector<GMANPoint>& vertexLocations,
-                         const std::vector<GMANPolygonVertexTexCoord>& texCoords, const GMANNormal& normal,
-                         const GMANVector& normalVec, gman::Appearance const& appearance,
+// corners rather than duplicating them; two ear-clipped triangles never
+// share a diced grid vertex, even along a common diagonal -- each dices
+// independently.
+void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> const& vertexLocations,
+                         std::vector<GMANPolygonVertexTexCoord> const& texCoords, GMANNormal const& normal,
+                         GMANVector const& normalVec, gman::Appearance const& appearance,
                          GMANMatrix4 const& cameraToWorld, RtInt sides, RtToken orientation, GMANSurface* surface,
                          std::vector<GMANVertex*>& vertices, std::vector<GMANFace*>& faceList) {
   const RtInt n = kPolygonDiceN;

@@ -225,10 +225,9 @@ void testDiskTextureCoordinates(const std::string& gman, const std::string& ribD
 // corner along both of T1 or T2's legs, and derives the exact Gouraud
 // (barycentric) blend from the two other vertices sharing that triangle.
 //
-// Dicing (bugs-zbuffer-polygon-dice.md) shades each of T1/T2's own
-// 16-per-edge sub-vertices individually instead of only the triangle's
-// three corners, so each of the four points below -- still offset from its
-// nearest corner along both legs, as derived above -- now lies well inside
+// Each of T1/T2's own 16-per-edge sub-vertices is shaded individually, so
+// each of the four points below -- still offset from its nearest corner
+// along both legs, as derived above -- lies well inside
 // that corner's own texel quadrant (s, t each default to object x, y; the
 // square spans object [0,1]^2 over raster [80,120], so the quadrant
 // boundary sits at raster 100) rather than blending the triangle's three
@@ -266,8 +265,8 @@ void testPolygonDefault(const std::string& gman, const std::string& ribDir) {
 // own texel] and (0,1)->(1,0) [blue corner reads green's own texel] swap.
 //
 // Each of the four points samples a barycentric (affine) combination of
-// its own triangle's three *resolved* corner (s, t) values (Settled
-// decision 4), the same weights the file header above derives. (88,88):
+// its own triangle's three *resolved* corner (s, t) values, the same
+// weights the file header above derives. (88,88):
 // weights (0.6 red-corner, 0.2 green-corner, 0.2 blue-corner) against
 // resolved (s,t) (0,0), (0,1), (1,0) give (s,t) = (0.2,0.2) -- red
 // quadrant, unchanged from polygon_default.rib (the swap cancels at equal

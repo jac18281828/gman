@@ -378,17 +378,17 @@ void testIndicesNotOrder() {
 
   check(countBodies(object) == 2, "indices, not order: two bodies");
   // Each quad ear-clips into two triangles, each diced into its own
-  // independent 256-sub-triangle barycentric grid (Settled decision 1, 2):
-  // 2 * 256 = 512 sub-triangles per quad, 1024 total.
+  // independent 256-sub-triangle barycentric grid: 2 * 256 = 512
+  // sub-triangles per quad, 1024 total.
   check(countFaces(object) == 2 * 256 * 2, "indices, not order: 1024 diced sub-triangles total (two "
                                            "256-facet ears per quad)");
   std::vector<GMANVertex*> chain = vertexChain(object);
-  // Two ear-clipped triangles per quad, dicing independently (no grid
-  // vertex shared along their common diagonal): each triangle's own grid
-  // has (16+1)(16+2)/2 = 153 points, 3 of them its own original corners
-  // (Settled decision 5), so 150 freshly built. A quad keeps its own 4
-  // original vertices and adds 2 * 150 = 300 new ones, 304 total; two
-  // quads, sharing nothing (Settled decision 8), give 608.
+  // Two ear-clipped triangles per quad, dicing independently -- neither
+  // shares a grid vertex with the other along their common diagonal: each
+  // triangle's own grid has (16+1)(16+2)/2 = 153 points, 3 of them its own
+  // original corners, so 150 freshly built. A quad keeps its own 4 original
+  // vertices and adds 2 * 150 = 300 new ones, 304 total; two quads,
+  // sharing nothing with each other, give 608.
   check(chain.size() == 608, "indices, not order: 608 vertices total (4 original + 300 diced per "
                              "quad, none shared)");
 
