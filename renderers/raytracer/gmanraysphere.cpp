@@ -70,33 +70,22 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
-  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
-  double const dirSq = dx * dx + dy * dy + dz * dz;
-  // A zero-length direction survives GMANRay's own construction (see
-  // gmanray.h); boundingSphereShift below divides by dirSq, so this check
-  // must come first, the torus's own guard.
-  if (dirSq == 0.0)
-    return false;
-
-  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
-
   // Every surface point satisfies x^2+y^2+z^2 <= radius^2 + max(zmin^2,
   // zmax^2), gmanraybbox.h's revolutionBBox's own r, z0, z1 bound
   // (radius, zmin, zmax here).
   double const boundingRadius = std::sqrt((double)radius * radius + GMANMax((double)zmin * zmin, (double)zmax * zmax));
 
-  double shift = 0.0;
-  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, boundingRadius, shift))
+  gman::ShiftedRay shifted;
+  if (!gman::shiftIntoBoundingSphere(objOrigin, objDirection, boundingRadius, shifted))
     return false;
 
   // The shifted origin's own distance from the centre and the ray's
   // direction give the sphere quadratic directly: no separate deltaP is
   // needed once the centre sits at the object-space origin.
-  double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
-
-  double const a = dirSq;
-  double const b = 2.0 * (sox * dx + soy * dy + soz * dz);
-  double const c = sox * sox + soy * soy + soz * soz - (double)radius * (double)radius;
+  double const a = shifted.dirSq;
+  double const b = 2.0 * (shifted.ox * shifted.dx + shifted.oy * shifted.dy + shifted.oz * shifted.dz);
+  double const c =
+      shifted.ox * shifted.ox + shifted.oy * shifted.oy + shifted.oz * shifted.oz - (double)radius * (double)radius;
 
   double t0 = 0.0, t1 = 0.0;
   int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
@@ -114,37 +103,32 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
   // sphere or one grazing a clipped cap can still hit on its far root.
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
-    RtFloat const t = (RtFloat)(tLocal + shift);
-    if (t < ray.getTMin() || t > ray.getTMax())
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    if (root.t < ray.getTMin() || root.t > ray.getTMax())
       continue;
 
-    double const px = sox + tLocal * dx;
-    double const py = soy + tLocal * dy;
-    double const pz = soz + tLocal * dz;
-    RtFloat const z = (RtFloat)pz;
+    RtFloat const z = (RtFloat)root.pz;
     if (z < zmin || z > zmax)
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan((RtFloat)py, (RtFloat)px), (RtFloat)(2.0 * PI));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), (RtFloat)(2.0 * PI));
     if (theta > thetamaxRad)
       continue;
 
-    RtFloat const phi = (RtFloat)asin(GMANClamp<double>(pz / radius, -1.0, 1.0));
+    RtFloat const phi = (RtFloat)asin(GMANClamp<double>(root.pz / radius, -1.0, 1.0));
 
     // The sphere is centred at the object-space origin, so the outward
     // normal is the point itself, normalized: valid for either sign of
     // radius, unlike dividing by radius, which points inward when it is
     // negative.
-    GMANVector objNormal((RtFloat)px, (RtFloat)py, (RtFloat)pz);
+    GMANVector objNormal((RtFloat)root.px, (RtFloat)root.py, (RtFloat)root.pz);
     objNormal.normalize();
 
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
-    GMANPoint const objPoint((RtFloat)px, (RtFloat)py, (RtFloat)pz);
-
-    hit.t = t;
-    hit.point = gman::transformPoint(objectToCamera, objPoint);
+    hit.t = root.t;
+    hit.point = root.point;
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = (phi - phimin) / (phimax - phimin);

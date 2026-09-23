@@ -29,6 +29,7 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "gmanvector.h"
 
 namespace gman {
 
@@ -129,6 +130,69 @@ inline bool boundingSphereShift(double ox, double oy, double oz, double dx, doub
   shift = -(ox * dx + oy * dy + oz * dz) / dirSq;
   double const cx = ox + shift * dx, cy = oy + shift * dy, cz = oz + shift * dz;
   return cx * cx + cy * cy + cz * cz <= boundingRadiusSq;
+}
+
+// A ray moved to its closest approach to the bounding sphere: (ox, oy, oz)
+// is the object-space origin already shifted, (dx, dy, dz) keeps the
+// length cameraToObject gives it, dirSq is their squared length, and
+// shift is how far along the direction the origin moved. Every quadratic
+// intersector builds its a, b, c from these six fields.
+struct ShiftedRay {
+  double ox, oy, oz;
+  double dx, dy, dz;
+  double dirSq;
+  double shift;
+};
+
+// Moves objOrigin/objDirection into a ShiftedRay via boundingSphereShift
+// above. Returns false for a zero-length direction -- checked before the
+// shift divides by dirSq, the torus's own guard -- and for a ray that
+// clears the bounding sphere outright.
+inline bool shiftIntoBoundingSphere(GMANPoint const& objOrigin, GMANVector const& objDirection, double boundingRadius,
+                                    ShiftedRay& shifted) {
+  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
+  double const dirSq = dx * dx + dy * dy + dz * dz;
+  if (dirSq == 0.0)
+    return false;
+
+  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
+
+  double shift = 0.0;
+  if (!boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, boundingRadius, shift))
+    return false;
+
+  shifted.ox = ox + shift * dx;
+  shifted.oy = oy + shift * dy;
+  shifted.oz = oz + shift * dz;
+  shifted.dx = dx;
+  shifted.dy = dy;
+  shifted.dz = dz;
+  shifted.dirSq = dirSq;
+  shifted.shift = shift;
+  return true;
+}
+
+// A quadratic root's own camera-space distance and object-space point,
+// object and camera coordinates both: hit.t, hit.point and the double
+// (px, py, pz) a caller's own surface checks (z-band, theta, phi) read.
+struct ShiftedRootPoint {
+  RtFloat t;
+  double px, py, pz;
+  GMANPoint point;
+};
+
+// Evaluates a ShiftedRay at its shifted-frame root tLocal and casts the
+// result to camera space through objectToCamera. hit.t is tLocal + shift,
+// the camera-space distance along the ray's own (unshifted) origin.
+inline ShiftedRootPoint shiftedRootPoint(ShiftedRay const& shifted, double tLocal, GMANMatrix4 const& objectToCamera) {
+  ShiftedRootPoint result;
+  result.t = (RtFloat)(tLocal + shifted.shift);
+  result.px = shifted.ox + tLocal * shifted.dx;
+  result.py = shifted.oy + tLocal * shifted.dy;
+  result.pz = shifted.oz + tLocal * shifted.dz;
+  GMANPoint const objPoint((RtFloat)result.px, (RtFloat)result.py, (RtFloat)result.pz);
+  result.point = gman::transformPoint(objectToCamera, objPoint);
+  return result;
 }
 
 } // namespace gman

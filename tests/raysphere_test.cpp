@@ -208,8 +208,9 @@ void testNegativeRadiusNormalOutward() {
 // ---- dirSq's own guard pins on a zero-length direction ----
 // GMANVector::normalize leaves a sub-RI_EPSILON vector unchanged, so a
 // zero-length direction survives GMANRay's constructor and must miss at
-// intersect()'s own dirSq == 0.0 check, before boundingSphereShift's
-// divide by it, rather than reach a spurious a == 1 solve.
+// gman::shiftIntoBoundingSphere's own dirSq == 0.0 check, before
+// boundingSphereShift's divide by it, rather than reach a spurious a == 1
+// solve.
 void testZeroLengthDirectionMisses() {
   GMANRaySphere sphere = fullSphere();
   GMANRay zeroRay(GMANPoint(0.0, 0.0, 0.0), GMANVector(0.0, 0.0, 0.0));

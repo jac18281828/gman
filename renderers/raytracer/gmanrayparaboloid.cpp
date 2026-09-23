@@ -71,16 +71,6 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
-  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
-  double const dirSq = dx * dx + dy * dy + dz * dz;
-  // A zero-length direction survives GMANRay's own construction (see
-  // gmanray.h); boundingSphereShift below divides by dirSq, so this check
-  // must come first, the torus's own guard.
-  if (dirSq == 0.0)
-    return false;
-
-  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
-
   // Every surface point satisfies x^2+y^2+z^2 <= r^2 + max(zmin^2,
   // zmax^2), r == |rmax|/sqrt(|zmax|) (gmanraybbox.h's revolutionBBox's
   // own r for zmax > 0; the constructor's own default-box guard leaves
@@ -90,11 +80,9 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   double const boundingRadius =
       std::sqrt(rParaboloid * rParaboloid + GMANMax((double)zmin * zmin, (double)zmax * zmax));
 
-  double shift = 0.0;
-  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, boundingRadius, shift))
+  gman::ShiftedRay shifted;
+  if (!gman::shiftIntoBoundingSphere(objOrigin, objDirection, boundingRadius, shifted))
     return false;
-
-  double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
 
   // GMANParaboloid::getLocation's radial factor is rmax*sqrt(v/zmax); the
   // settled reading (see R5b's own prompt) substitutes v == (z - zmin) /
@@ -102,9 +90,9 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   // (zmax*(zmax - zmin)) -- quadratic in the ray parameter t.
   double const k = (double)rmax * rmax / ((double)zmax * ((double)zmax - zmin));
 
-  double const a = dx * dx + dy * dy;
-  double const b = 2.0 * (dx * sox + dy * soy) - k * dz;
-  double const c = sox * sox + soy * soy - k * (soz - (double)zmin);
+  double const a = shifted.dx * shifted.dx + shifted.dy * shifted.dy;
+  double const b = 2.0 * (shifted.dx * shifted.ox + shifted.dy * shifted.oy) - k * shifted.dz;
+  double const c = shifted.ox * shifted.ox + shifted.oy * shifted.oy - k * (shifted.oz - (double)zmin);
 
   // a vanishes for a ray parallel to the axis (dx == dy == 0): the
   // apex-seeking case GMANQuadraticRoots' own comment does not cover.
@@ -119,18 +107,15 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
 
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
-    RtFloat const t = (RtFloat)(tLocal + shift);
-    if (t < ray.getTMin() || t > ray.getTMax())
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    if (root.t < ray.getTMin() || root.t > ray.getTMax())
       continue;
 
-    double const px = sox + tLocal * dx;
-    double const py = soy + tLocal * dy;
-    double const pz = soz + tLocal * dz;
-    RtFloat const z = (RtFloat)pz;
+    RtFloat const z = (RtFloat)root.pz;
     if (z < zmin || z > zmax)
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan((RtFloat)py, (RtFloat)px), (RtFloat)(2.0 * PI));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), (RtFloat)(2.0 * PI));
     if (theta > thetamaxRad)
       continue;
 
@@ -141,14 +126,12 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
     // -fPrime/(zmax-zmin) == -k/(2*r), the same ratio to (x, y) == r*(cos
     // theta, sin theta) that (2x, 2y, -k) carries -- so no division by r
     // is needed, and the apex (r == 0) is not a special case here.
-    GMANVector objNormal((RtFloat)(2.0 * px), (RtFloat)(2.0 * py), (RtFloat)(-k));
+    GMANVector objNormal((RtFloat)(2.0 * root.px), (RtFloat)(2.0 * root.py), (RtFloat)(-k));
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
-    GMANPoint const objPoint((RtFloat)px, (RtFloat)py, (RtFloat)pz);
-
-    hit.t = t;
-    hit.point = gman::transformPoint(objectToCamera, objPoint);
+    hit.t = root.t;
+    hit.point = root.point;
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = (z - zmin) / (zmax - zmin);

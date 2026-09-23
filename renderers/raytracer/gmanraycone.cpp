@@ -65,36 +65,24 @@ bool GMANRayCone::intersect(const GMANRay& ray, GMANHit& hit) const {
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
-  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
-  double const dirSq = dx * dx + dy * dy + dz * dz;
-  // A zero-length direction survives GMANRay's own construction (see
-  // gmanray.h); boundingSphereShift below divides by dirSq, so this check
-  // must come first, the torus's own guard.
-  if (dirSq == 0.0)
-    return false;
-
-  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
-
   // Every surface point satisfies x^2+y^2+z^2 <= radius^2 + height^2,
   // gmanraybbox.h's revolutionBBox's own r, z0, z1 bound (radius, 0,
   // height here).
   double const boundingRadius = std::sqrt((double)radius * radius + (double)height * height);
 
-  double shift = 0.0;
-  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, boundingRadius, shift))
+  gman::ShiftedRay shifted;
+  if (!gman::shiftIntoBoundingSphere(objOrigin, objDirection, boundingRadius, shifted))
     return false;
-
-  double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
 
   // x^2 + y^2 == g(z)^2, g(z) = radius*(1 - z/height) (GMANCone::getLocation's
   // own radial factor). g(z(u)) is affine in the ray parameter t, g(z(t)) ==
   // A + B*t, so substituting collects into an ordinary a*t^2+b*t+c == 0.
-  double const A = (double)radius * (1.0 - soz / (double)height);
-  double const B = -(double)radius * dz / (double)height;
+  double const A = (double)radius * (1.0 - shifted.oz / (double)height);
+  double const B = -(double)radius * shifted.dz / (double)height;
 
-  double const a = dx * dx + dy * dy - B * B;
-  double const b = 2.0 * (dx * sox + dy * soy - A * B);
-  double const c = sox * sox + soy * soy - A * A;
+  double const a = shifted.dx * shifted.dx + shifted.dy * shifted.dy - B * B;
+  double const b = 2.0 * (shifted.dx * shifted.ox + shifted.dy * shifted.oy - A * B);
+  double const c = shifted.ox * shifted.ox + shifted.oy * shifted.oy - A * A;
 
   // a vanishes for a ray parallel to a generatrix: an ordinary ray with no
   // quadratic term left to solve, not a degenerate direction.
@@ -110,18 +98,15 @@ bool GMANRayCone::intersect(const GMANRay& ray, GMANHit& hit) const {
 
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
-    RtFloat const t = (RtFloat)(tLocal + shift);
-    if (t < ray.getTMin() || t > ray.getTMax())
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    if (root.t < ray.getTMin() || root.t > ray.getTMax())
       continue;
 
-    double const px = sox + tLocal * dx;
-    double const py = soy + tLocal * dy;
-    double const pz = soz + tLocal * dz;
-    RtFloat const z = (RtFloat)pz;
+    RtFloat const z = (RtFloat)root.pz;
     if (z < 0.0 || z > height)
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan((RtFloat)py, (RtFloat)px), (RtFloat)(2.0 * PI));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), (RtFloat)(2.0 * PI));
     if (theta > thetamaxRad)
       continue;
 
@@ -131,10 +116,8 @@ bool GMANRayCone::intersect(const GMANRay& ray, GMANHit& hit) const {
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
-    GMANPoint const objPoint((RtFloat)px, (RtFloat)py, (RtFloat)pz);
-
-    hit.t = t;
-    hit.point = gman::transformPoint(objectToCamera, objPoint);
+    hit.t = root.t;
+    hit.point = root.point;
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = z / height;

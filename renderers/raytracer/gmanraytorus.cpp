@@ -134,25 +134,14 @@ bool GMANRayTorus::intersect(const GMANRay& ray, GMANHit& hit) const {
   GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
   GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
 
-  double const dx = objDirection.getX(), dy = objDirection.getY(), dz = objDirection.getZ();
-  double const dirSq = dx * dx + dy * dy + dz * dz;
-  // A zero-length direction survives GMANRay's own construction (see
-  // gmanray.h); boundingSphereShift below divides by dirSq, so this check
-  // must come first.
-  if (dirSq == 0.0)
+  gman::ShiftedRay shifted;
+  if (!gman::shiftIntoBoundingSphere(objOrigin, objDirection, majorradius + minorradius, shifted))
     return false;
-
-  double const ox = objOrigin.getX(), oy = objOrigin.getY(), oz = objOrigin.getZ();
-
-  double shift = 0.0;
-  if (!gman::boundingSphereShift(ox, oy, oz, dx, dy, dz, dirSq, majorradius + minorradius, shift))
-    return false;
-
-  double const sox = ox + shift * dx, soy = oy + shift * dy, soz = oz + shift * dz;
 
   double const R = majorradius, r = minorradius;
   double a = 0.0, b = 0.0, c = 0.0, d = 0.0, e = 0.0;
-  torusQuarticCoefficients(sox, soy, soz, dx, dy, dz, dirSq, R, r, a, b, c, d, e);
+  torusQuarticCoefficients(shifted.ox, shifted.oy, shifted.oz, shifted.dx, shifted.dy, shifted.dz, shifted.dirSq, R, r,
+                           a, b, c, d, e);
 
   double localRoots[4];
   int const numRoots = gman::solveQuartic(a, b, c, d, e, localRoots);
@@ -168,22 +157,19 @@ bool GMANRayTorus::intersect(const GMANRay& ray, GMANHit& hit) const {
   // hit (GMANRaySphere's own pattern).
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = localRoots[i];
-    RtFloat const t = (RtFloat)(tLocal + shift);
-    if (t < ray.getTMin() || t > ray.getTMax())
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    if (root.t < ray.getTMin() || root.t > ray.getTMax())
       continue;
 
-    double const px = sox + tLocal * dx;
-    double const py = soy + tLocal * dy;
-    double const pz = soz + tLocal * dz;
-
-    double rawTheta = std::atan2(py, px);
+    double rawTheta = std::atan2(root.py, root.px);
     if (rawTheta < 0.0)
       rawTheta += 2.0 * PI;
     if (rawTheta > thetamaxRad)
       continue;
 
-    double const radial = std::sqrt(px * px + py * py); // > 0: minorradius < majorradius, guarded above.
-    double const phiRad = std::atan2(pz, radial - R);
+    double const radial =
+        std::sqrt(root.px * root.px + root.py * root.py); // > 0: minorradius < majorradius, guarded above.
+    double const phiRad = std::atan2(root.pz, radial - R);
     double const phiDeg0 = phiRad / DEGTORAD;
 
     double v = 0.0;
@@ -195,14 +181,13 @@ bool GMANRayTorus::intersect(const GMANRay& ray, GMANHit& hit) const {
     // sin(theta) == py/radial, cos(phi) == (radial-R)/r, sin(phi) == pz/r
     // -- GMANTorus::getNormal's own formula before its normalize().
     double const cosPhi = (radial - R) / r;
-    GMANVector objNormal((RtFloat)(cosPhi * px / radial), (RtFloat)(cosPhi * py / radial), (RtFloat)(pz / r));
+    GMANVector objNormal((RtFloat)(cosPhi * root.px / radial), (RtFloat)(cosPhi * root.py / radial),
+                         (RtFloat)(root.pz / r));
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
-    GMANPoint const objPoint((RtFloat)px, (RtFloat)py, (RtFloat)pz);
-
-    hit.t = t;
-    hit.point = gman::transformPoint(objectToCamera, objPoint);
+    hit.t = root.t;
+    hit.point = root.point;
     hit.normal = normal;
     hit.u = (RtFloat)(rawTheta / thetamaxRad);
     hit.v = (RtFloat)v;
