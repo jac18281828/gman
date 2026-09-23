@@ -51,10 +51,10 @@
  *
  * checkTriangleCount below calls GMANPatchPolyObjectManager::getRSPolygon
  * directly (white-box, mirroring normals_test.cpp and patchmesh_test.cpp)
- * to assert nverts - 2 triangles come out the other side -- concave,
- * reversed winding, collinear or duplicate vertices included -- which
- * distinguishes a finished triangulation from a stalled one; a stalled
- * loop would time out under ctest rather than fail an assertion.
+ * to assert (nverts - 2) * 256 diced sub-triangles come out the other side
+ * -- concave, reversed winding, collinear or duplicate vertices included --
+ * which distinguishes a finished triangulation from a stalled one; a
+ * stalled loop would time out under ctest rather than fail an assertion.
  *
  * Revert checks (verified by actually reverting, not asserted):
  *   - Restoring GMANPatchPolyObjectManager::getRSPolygon's triangulation
@@ -290,6 +290,12 @@ int countFaces(GMANObject* object) {
   return count;
 }
 
+// Each ear-clipped triangle dices into a fixed 16-per-edge barycentric grid
+// (256 sub-triangles) before shading (bugs-zbuffer-polygon-dice.md, Settled
+// decision 1, 7) -- construction-independent, so the face count is always
+// the old per-triangle count times this multiplier.
+const int kSubTrianglesPerEar = 256;
+
 void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt nverts) {
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
@@ -306,8 +312,10 @@ void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt 
   check(object != nullptr, label + ": getRSPolygon returns an object");
 
   int faces = countFaces(object);
-  check(faces == nverts - 2, label + ": " + std::to_string(nverts) + " vertices yield " + std::to_string(nverts - 2) +
-                                 " triangles (got " + std::to_string(faces) + ")");
+  const int expected = (nverts - 2) * kSubTrianglesPerEar;
+  check(faces == expected, label + ": " + std::to_string(nverts) + " vertices yield " + std::to_string(nverts - 2) +
+                               " ear-clipped triangles, diced to " + std::to_string(expected) + " (got " +
+                               std::to_string(faces) + ")");
   delete prim;
 }
 

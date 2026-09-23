@@ -49,6 +49,13 @@ namespace {
 // 1e-6 radians is 0.00006 degrees.
 const RtFloat kTriangulationTolerance = (RtFloat)1.0e-6;
 
+// buildPolygonObject's own dicing resolution: divisions per edge of each
+// ear-clipped triangle's barycentric grid, fixed rather than screen-space
+// or ShadingRate-driven -- the same fixed count createParametric's own
+// URES/VRES already establishes for a quadric (bugs-zbuffer-polygon-dice.md,
+// Settled decision 1).
+const RtInt kPolygonDiceN = 16;
+
 // getRSPatchMesh's own corners: RiTextureCoordinates spans a single
 // parametric surface's unit square, and a PatchMesh's sub-patches already
 // share one such square end to end. getRSPatchMesh passes this identity
@@ -363,14 +370,120 @@ std::vector<GMANPolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANPara
   return coords;
 }
 
+// Row-major index into one ear-clipped triangle's own (n+1)(n+2)/2-point
+// barycentric grid: row a (0..n) holds n-a+1 points (b = 0..n-a), so row a
+// starts right after every shorter row before it.
+RtInt dicedGridIndex(RtInt a, RtInt b, RtInt n) { return a * (n + 1) - a * (a - 1) / 2 + b; }
+
+// One new, freshly shaded grid vertex at barycentric weights (w0, w1, w2)
+// against a diced triangle's own three corners -- P, u, v, s and t each the
+// same affine combination (Settled decision 4). The shading normal is not
+// interpolated: normalVec is already the one planar normal every vertex of
+// a Polygon/GeneralPolygon shares.
+GMANVertex* dicedGridVertex(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2,
+                            const GMANPolygonVertexTexCoord& tc0, const GMANPolygonVertexTexCoord& tc1,
+                            const GMANPolygonVertexTexCoord& tc2, RtFloat w0, RtFloat w1, RtFloat w2,
+                            const GMANNormal& normal, const GMANVector& normalVec, gman::Appearance const& appearance,
+                            GMANMatrix4 const& cameraToWorld) {
+  GMANVertex* vertex = new GMANVertex();
+  vertex->setLocation(p0 * w0 + p1 * w1 + p2 * w2);
+  vertex->setNormal(normalVec);
+
+  const RtFloat u = tc0.u * w0 + tc1.u * w1 + tc2.u * w2;
+  const RtFloat v = tc0.v * w0 + tc1.v * w1 + tc2.v * w2;
+  const RtFloat s = tc0.s * w0 + tc1.s * w1 + tc2.s * w2;
+  const RtFloat t = tc0.t * w0 + tc1.t * w1 + tc2.t * w2;
+  gman::SurfacePoint const point = vertexSurfacePoint(vertex->getLocation(), normal, u, v, s, t);
+  vertex->setColor(gman::shade(appearance, point, cameraToWorld).Ci);
+  return vertex;
+}
+
+// Dices one ear-clipped triangle (corners i0, i1, i2, indexing
+// vertexLocations/texCoords/vertices) into kPolygonDiceN's own barycentric
+// grid, appending every newly shaded interior or edge-interior vertex to
+// vertices and every sub-triangle's face to faceList. Reuses the triangle's
+// three corners' own GMANVertex objects unchanged at the grid's three
+// corners (Settled decision 5) rather than duplicating them; two
+// ear-clipped triangles never share a diced grid vertex, even along a
+// common diagonal -- each dices independently (Settled decision 2).
+void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, const std::vector<GMANPoint>& vertexLocations,
+                         const std::vector<GMANPolygonVertexTexCoord>& texCoords, const GMANNormal& normal,
+                         const GMANVector& normalVec, gman::Appearance const& appearance,
+                         GMANMatrix4 const& cameraToWorld, RtInt sides, RtToken orientation, GMANSurface* surface,
+                         std::vector<GMANVertex*>& vertices, std::vector<GMANFace*>& faceList) {
+  const RtInt n = kPolygonDiceN;
+  const GMANPoint& p0 = vertexLocations[i0];
+  const GMANPoint& p1 = vertexLocations[i1];
+  const GMANPoint& p2 = vertexLocations[i2];
+  const GMANPolygonVertexTexCoord& tc0 = texCoords[i0];
+  const GMANPolygonVertexTexCoord& tc1 = texCoords[i1];
+  const GMANPolygonVertexTexCoord& tc2 = texCoords[i2];
+
+  std::vector<GMANVertex*> grid((n + 1) * (n + 2) / 2);
+  for (RtInt a = 0; a <= n; a++) {
+    for (RtInt b = 0; b <= n - a; b++) {
+      const RtInt idx = dicedGridIndex(a, b, n);
+      if (a == 0 && b == 0) {
+        grid[idx] = vertices[i0];
+      } else if (a == n && b == 0) {
+        grid[idx] = vertices[i1];
+      } else if (a == 0 && b == n) {
+        grid[idx] = vertices[i2];
+      } else {
+        const RtFloat w1 = (RtFloat)a / (RtFloat)n;
+        const RtFloat w2 = (RtFloat)b / (RtFloat)n;
+        const RtFloat w0 = (RtFloat)1.0 - w1 - w2;
+        grid[idx] =
+            dicedGridVertex(p0, p1, p2, tc0, tc1, tc2, w0, w1, w2, normal, normalVec, appearance, cameraToWorld);
+        vertices.push_back(grid[idx]);
+      }
+    }
+  }
+
+  // Splits each unit cell into an "up" triangle (a,b), (a+1,b), (a,b+1)
+  // and, unless it is the row's last cell, a "down" triangle (a+1,b),
+  // (a+1,b+1), (a,b+1) -- the standard triangulated grid, n*n sub-triangles
+  // total. GMANFace's fixed 4-vertex shape repeats the 3rd slot in the 4th,
+  // the same idiom every quadric's pole face already uses for a
+  // degenerate triangle.
+  for (RtInt a = 0; a < n; a++) {
+    for (RtInt b = 0; b < n - a; b++) {
+      GMANVertex* up[4];
+      up[0] = grid[dicedGridIndex(a, b, n)];
+      up[1] = grid[dicedGridIndex(a + 1, b, n)];
+      up[2] = grid[dicedGridIndex(a, b + 1, n)];
+      up[3] = up[2];
+      GMANFace* upFace = new GMANFace(up, surface);
+      upFace->calcNormal();
+      upFace->setSides(sides);
+      upFace->setOrientation(orientation);
+      faceList.push_back(upFace);
+
+      if (b < n - a - 1) {
+        GMANVertex* down[4];
+        down[0] = grid[dicedGridIndex(a + 1, b, n)];
+        down[1] = grid[dicedGridIndex(a + 1, b + 1, n)];
+        down[2] = grid[dicedGridIndex(a, b + 1, n)];
+        down[3] = down[2];
+        GMANFace* downFace = new GMANFace(down, surface);
+        downFace->calcNormal();
+        downFace->setSides(sides);
+        downFace->setOrientation(orientation);
+        faceList.push_back(downFace);
+      }
+    }
+  }
+}
+
 // The tail shared by getRSPolygon and getRSGeneralPolygon: one GMANVertex
 // per entry in vertexLocations, triangulated over ring (which may repeat an
 // entry at a bridge -- triangulateEarClipping's own comment already covers
-// the resulting duplicate position and zero-area corner), linked into a new
-// GMANObject. ring indexes vertexLocations rather than a face's own vertex
-// array, so the two ring slots a bridge duplicates share one GMANVertex and
-// one shaded colour instead of splitting the surface. texCoords is
-// index-aligned with vertexLocations, not with ring.
+// the resulting duplicate position and zero-area corner), each ear-clipped
+// triangle then diced and shaded across its own face (dicePolygonTriangle),
+// linked into a new GMANObject. ring indexes vertexLocations rather than a
+// face's own vertex array, so the two ring slots a bridge duplicates share
+// one GMANVertex and one shaded colour instead of splitting the surface.
+// texCoords is index-aligned with vertexLocations, not with ring.
 GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, const std::vector<RtInt>& ring,
                                const GMANVector& normalVec, RtInt sides, RtToken orientation,
                                gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
@@ -382,7 +495,7 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
   body->setSurface(surface);
 
   const RtInt nverts = (RtInt)vertexLocations.size();
-  GMANVertex** vertices = new GMANVertex*[nverts];
+  std::vector<GMANVertex*> vertices(nverts);
   for (RtInt i = 0; i < nverts; i++) {
     vertices[i] = new GMANVertex();
     vertices[i]->setLocation(vertexLocations[i]);
@@ -399,39 +512,24 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
   }
   std::vector<std::array<RtInt, 3>> triangles = triangulateEarClipping(ringPoints, normalVec);
 
-  // Ear-clip into GMANFace's fixed 4-vertex shape, the 4th slot duplicating
-  // the 3rd -- calcArea/calcNormal both read [0][1][2] or collapse cleanly
-  // when [2]==[3], the same idiom every quadric's pole face already uses
-  // for a degenerate triangle. triangles[i] indexes ring, so it is mapped
-  // through ring[...] to reach vertexLocations' own indexing.
-  RtInt nfaces = (RtInt)triangles.size();
-  GMANFace** faces = new GMANFace*[nfaces];
-  for (RtInt i = 0; i < nfaces; i++) {
-    GMANVertex* faceVertices[4];
-    faceVertices[0] = vertices[ring[triangles[i][0]]];
-    faceVertices[1] = vertices[ring[triangles[i][1]]];
-    faceVertices[2] = vertices[ring[triangles[i][2]]];
-    faceVertices[3] = vertices[ring[triangles[i][2]]];
-    faces[i] = new GMANFace(faceVertices, surface);
-    faces[i]->calcNormal();
-    faces[i]->setSides(sides);
-    faces[i]->setOrientation(orientation);
+  std::vector<GMANFace*> faceList;
+  faceList.reserve(triangles.size() * (std::size_t)kPolygonDiceN * (std::size_t)kPolygonDiceN);
+  for (const std::array<RtInt, 3>& tri : triangles) {
+    dicePolygonTriangle(ring[tri[0]], ring[tri[1]], ring[tri[2]], vertexLocations, texCoords, normal, normalVec,
+                        appearance, cameraToWorld, sides, orientation, surface, vertices, faceList);
   }
 
-  for (RtInt i = 0; i < nverts - 1; i++) {
+  for (std::size_t i = 0; i + 1 < vertices.size(); i++) {
     vertices[i]->setNext(vertices[i + 1]);
   }
-  for (RtInt i = 0; i < nfaces - 1; i++) {
-    faces[i]->setNext(faces[i + 1]);
+  for (std::size_t i = 0; i + 1 < faceList.size(); i++) {
+    faceList[i]->setNext(faceList[i + 1]);
   }
-  surface->setFace(faces[0]);
+  surface->setFace(faceList.empty() ? NULL : faceList[0]);
 
   GMANObject* object = new GMANObject();
-  object->setVert(vertices[0]);
+  object->setVert(vertices.empty() ? NULL : vertices[0]);
   object->setBody(body);
-
-  delete[] vertices;
-  delete[] faces;
 
   return object;
 }

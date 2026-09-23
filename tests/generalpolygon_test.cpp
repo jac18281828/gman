@@ -191,11 +191,25 @@ int countFaces(GMANObject* object) {
   return count;
 }
 
-std::map<const GMANVertex*, int> indexVertices(GMANObject* object) {
+// Each ear-clipped triangle dices into a fixed 16-per-edge barycentric grid
+// (256 sub-triangles) before shading (bugs-zbuffer-polygon-dice.md, Settled
+// decision 1) -- construction-independent, so the face count is always the
+// old per-triangle count times this multiplier, and every 256 consecutive
+// faces on the chain are one ear-clipped triangle's own sub-faces (built
+// contiguously, one ear-clipped triangle at a time).
+const int kSubTrianglesPerEar = 256;
+
+// Maps only the first chainLength entries of the vertex chain -- the one
+// GMANVertex per bridged-ring position getRSGeneralPolygon still builds
+// first, before dicing appends new, strictly interior or edge-interior
+// vertices afterward (Settled decision 5). Bounding the walk here is what
+// keeps this a 1:1 map; walking the whole (now much longer) chain would
+// not be.
+std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int chainLength) {
   std::map<const GMANVertex*, int> index;
-  int i = 0;
-  for (GMANVertex* v = object->getVert(); v != nullptr; v = v->getNext()) {
-    index[v] = i++;
+  GMANVertex* v = object->getVert();
+  for (int i = 0; i < chainLength && v != nullptr; ++i, v = v->getNext()) {
+    index[v] = i;
   }
   return index;
 }
@@ -208,6 +222,19 @@ std::map<const GMANVertex*, int> indexVertices(GMANObject* object) {
 // this function is called on). Returns an empty vector (with assertions
 // already recorded as failures) if getRSGeneralPolygon did not return a
 // usable object.
+//
+// Dicing means most sub-triangles are now strictly interior -- none of
+// their three vertices is a pre-dicing chain vertex -- so "every face
+// vertex maps back to a chain index" is no longer the right shape for
+// either the coverage or the identity check (Settled decision 10).
+// Coverage instead asks only whether each pre-dicing chain vertex still
+// appears somewhere on the (now larger) chain. Identity is recovered per
+// ear-clipped triangle: since decision 5 keeps each of its three original
+// corners as one of its own 256 sub-faces' vertices, and dicing is
+// contiguous (comment above), scanning each 256-face block for the
+// (exactly three) sub-face vertices that map back to a chain index
+// reconstructs the same chain-index triple this oracle returned before
+// dicing existed, in a combinatorial (placement-independent) order.
 std::vector<std::array<int, 3>> checkPlacement(const std::string& label,
                                                const std::vector<std::vector<GMANPoint>>& loops,
                                                const std::vector<bool>& kept) {
@@ -231,22 +258,25 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label,
       ++keptHoleCount;
     }
   }
-  const int expectedFaces = chainLength + 2 * keptHoleCount - 2;
+  const int earCount = chainLength + 2 * keptHoleCount - 2;
+  const int expectedFaces = earCount * kSubTrianglesPerEar;
 
   const int faces = countFaces(object);
   check(faces == expectedFaces, label + ": " + std::to_string(chainLength) + " kept vertices, " +
-                                    std::to_string(keptHoleCount) + " kept holes yield " +
-                                    std::to_string(expectedFaces) + " triangles (got " + std::to_string(faces) + ")");
+                                    std::to_string(keptHoleCount) + " kept holes yield " + std::to_string(earCount) +
+                                    " ear-clipped triangles, diced to " + std::to_string(expectedFaces) + " (got " +
+                                    std::to_string(faces) + ")");
 
   std::array<double, 3> outerNormal = newellNormal(loops[0]);
 
-  std::map<const GMANVertex*, int> index = indexVertices(object);
+  std::map<const GMANVertex*, int> index = indexVertices(object, chainLength);
   std::vector<std::array<int, 3>> triples;
   std::vector<bool> covered(chainLength, false);
   double summedArea = 0.0;
   bool orientationOk = true;
-  bool coverageOk = true;
-  bool indicesOk = true;
+  bool cornersOk = true;
+  std::vector<int> blockCorners;
+  int facesSeen = 0;
 
   GMANSurface* surface = object->getBody() ? object->getBody()->getSurface() : nullptr;
   for (GMANFace* face = surface ? surface->getFace() : nullptr; face != nullptr; face = face->getNext()) {
@@ -268,24 +298,30 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label,
       orientationOk = false;
     }
 
-    auto it0 = index.find(face->getVertex(0));
-    auto it1 = index.find(face->getVertex(1));
-    auto it2 = index.find(face->getVertex(2));
-    if (it0 == index.end() || it1 == index.end() || it2 == index.end()) {
-      indicesOk = false;
-      continue;
+    for (int k = 0; k < 3; ++k) {
+      auto it = index.find(face->getVertex(k));
+      if (it != index.end()) {
+        covered[it->second] = true;
+        blockCorners.push_back(it->second);
+      }
     }
-    covered[it0->second] = true;
-    covered[it1->second] = true;
-    covered[it2->second] = true;
-    triples.push_back({it0->second, it1->second, it2->second});
+    if (++facesSeen % kSubTrianglesPerEar == 0) {
+      if (blockCorners.size() == 3) {
+        triples.push_back({blockCorners[0], blockCorners[1], blockCorners[2]});
+      } else {
+        cornersOk = false;
+      }
+      blockCorners.clear();
+    }
   }
 
+  bool coverageOk = true;
   for (bool c : covered) {
     coverageOk = coverageOk && c;
   }
 
-  check(indicesOk, label + ": every face vertex maps back to a chain index");
+  check(cornersOk, label + ": each ear-clipped triangle's 256 sub-faces touch exactly its own "
+                           "three chain corners");
   check(std::fabs(summedArea - expectedArea) <= kAreaRelTol * expectedArea,
         label +
             ": triangle areas sum to the outer loop's area minus every "

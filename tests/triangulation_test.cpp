@@ -197,14 +197,25 @@ int countFaces(GMANObject* object) {
   return count;
 }
 
-// Maps every GMANVertex pointer getRSPolygon allocated back to its
-// position in the ring, by walking the chain GMANObject::getVert() heads
-// in ring order (per getRSPolygon's own construction).
-std::map<const GMANVertex*, int> indexVertices(GMANObject* object) {
+// Each ear-clipped triangle dices into a fixed 16-per-edge barycentric grid
+// (256 sub-triangles) before shading (bugs-zbuffer-polygon-dice.md, Settled
+// decision 1) -- construction-independent, so the face count is always the
+// old per-triangle count times this multiplier, and every 256 consecutive
+// faces on the chain are one ear-clipped triangle's own sub-faces (built
+// contiguously, one ear-clipped triangle at a time).
+const int kSubTrianglesPerEar = 256;
+
+// Maps only the first nverts entries of the vertex chain -- the one
+// GMANVertex per ring position getRSPolygon still builds first, in ring
+// order, before dicing appends new, strictly interior or edge-interior
+// vertices afterward (Settled decision 5). Bounding the walk here is what
+// keeps this a 1:1 ring-position map; walking the whole (now much longer)
+// chain would not be.
+std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int nverts) {
   std::map<const GMANVertex*, int> index;
-  int i = 0;
-  for (GMANVertex* v = object->getVert(); v != nullptr; v = v->getNext()) {
-    index[v] = i++;
+  GMANVertex* v = object->getVert();
+  for (int i = 0; i < nverts && v != nullptr; ++i, v = v->getNext()) {
+    index[v] = i;
   }
   return index;
 }
@@ -214,6 +225,19 @@ std::map<const GMANVertex*, int> indexVertices(GMANObject* object) {
 // for the caller's own cross-placement identity check. Returns an empty
 // vector (with assertions already recorded as failures) if getRSPolygon
 // did not return a usable object.
+//
+// Dicing means most sub-triangles are now strictly interior -- none of
+// their three vertices is an original ring vertex -- so "every face vertex
+// maps back to a ring index" is no longer the right shape for either the
+// coverage or the identity check (Settled decision 10). Coverage instead
+// asks only whether each original ring vertex's own GMANVertex still
+// appears somewhere on the chain. Identity is recovered per ear-clipped
+// triangle: since decision 5 keeps each of its three original corners as
+// one of its own 256 sub-faces' vertices, and dicing is contiguous
+// (comment above), scanning each 256-face block for the (exactly three)
+// sub-face vertices that map back to a ring index reconstructs the same
+// ring-index triple this oracle returned before dicing existed, in a
+// combinatorial (placement-independent) order.
 std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const std::vector<GMANPoint>& ring) {
   const int nverts = (int)ring.size();
   GMANPrimitive* prim = runGetRSPolygon(ring);
@@ -225,20 +249,24 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
   }
 
   const int faces = countFaces(object);
-  check(faces == nverts - 2, label + ": " + std::to_string(nverts) + " vertices yield " + std::to_string(nverts - 2) +
-                                 " triangles (got " + std::to_string(faces) + ")");
+  const int earCount = nverts - 2;
+  const int expectedFaces = earCount * kSubTrianglesPerEar;
+  check(faces == expectedFaces, label + ": " + std::to_string(nverts) + " vertices yield " + std::to_string(earCount) +
+                                    " ear-clipped triangles, diced to " + std::to_string(expectedFaces) + " (got " +
+                                    std::to_string(faces) + ")");
 
   std::array<double, 3> polyNormal = newellNormal(ring);
   const double polyArea =
       0.5 * std::sqrt(polyNormal[0] * polyNormal[0] + polyNormal[1] * polyNormal[1] + polyNormal[2] * polyNormal[2]);
 
-  std::map<const GMANVertex*, int> index = indexVertices(object);
+  std::map<const GMANVertex*, int> index = indexVertices(object, nverts);
   std::vector<std::array<int, 3>> triples;
   std::vector<bool> covered(nverts, false);
   double summedArea = 0.0;
   bool orientationOk = true;
-  bool coverageOk = true;
-  bool indicesOk = true;
+  bool cornersOk = true;
+  std::vector<int> blockCorners;
+  int facesSeen = 0;
 
   GMANSurface* surface = object->getBody() ? object->getBody()->getSurface() : nullptr;
   for (GMANFace* face = surface ? surface->getFace() : nullptr; face != nullptr; face = face->getNext()) {
@@ -259,24 +287,30 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
       orientationOk = false;
     }
 
-    auto it0 = index.find(face->getVertex(0));
-    auto it1 = index.find(face->getVertex(1));
-    auto it2 = index.find(face->getVertex(2));
-    if (it0 == index.end() || it1 == index.end() || it2 == index.end()) {
-      indicesOk = false;
-      continue;
+    for (int k = 0; k < 3; ++k) {
+      auto it = index.find(face->getVertex(k));
+      if (it != index.end()) {
+        covered[it->second] = true;
+        blockCorners.push_back(it->second);
+      }
     }
-    covered[it0->second] = true;
-    covered[it1->second] = true;
-    covered[it2->second] = true;
-    triples.push_back({it0->second, it1->second, it2->second});
+    if (++facesSeen % kSubTrianglesPerEar == 0) {
+      if (blockCorners.size() == 3) {
+        triples.push_back({blockCorners[0], blockCorners[1], blockCorners[2]});
+      } else {
+        cornersOk = false;
+      }
+      blockCorners.clear();
+    }
   }
 
+  bool coverageOk = true;
   for (bool c : covered) {
     coverageOk = coverageOk && c;
   }
 
-  check(indicesOk, label + ": every face vertex maps back to a ring index");
+  check(cornersOk, label + ": each ear-clipped triangle's 256 sub-faces touch exactly its own "
+                           "three original corners");
   check(std::fabs(summedArea - polyArea) <= kAreaRelTol * polyArea,
         label + ": triangle areas sum to the polygon's area (got " + std::to_string(summedArea) + ", expected " +
             std::to_string(polyArea) + ")");
@@ -513,9 +547,10 @@ void runDegenerateInput() {
   check(object != nullptr, "asymmetric bow-tie: getRSPolygon returns an object");
   if (object != nullptr) {
     int faces = countFaces(object);
-    check(faces == (int)bowtie.size() - 2, "asymmetric bow-tie: the clipAt<0 fallback still emits n-2 "
-                                           "triangles (got " +
-                                               std::to_string(faces) + ")");
+    const int expected = ((int)bowtie.size() - 2) * kSubTrianglesPerEar;
+    check(faces == expected, "asymmetric bow-tie: the clipAt<0 fallback still emits n-2 ear-clipped "
+                             "triangles, diced (got " +
+                                 std::to_string(faces) + ", expected " + std::to_string(expected) + ")");
   }
   delete prim;
 }

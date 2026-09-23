@@ -377,9 +377,20 @@ void testIndicesNotOrder() {
   }
 
   check(countBodies(object) == 2, "indices, not order: two bodies");
-  check(countFaces(object) == 4, "indices, not order: four triangles total (two per quad)");
+  // Each quad ear-clips into two triangles, each diced into its own
+  // independent 256-sub-triangle barycentric grid (Settled decision 1, 2):
+  // 2 * 256 = 512 sub-triangles per quad, 1024 total.
+  check(countFaces(object) == 2 * 256 * 2, "indices, not order: 1024 diced sub-triangles total (two "
+                                           "256-facet ears per quad)");
   std::vector<GMANVertex*> chain = vertexChain(object);
-  check(chain.size() == 8, "indices, not order: eight vertices total (4+4, none shared)");
+  // Two ear-clipped triangles per quad, dicing independently (no grid
+  // vertex shared along their common diagonal): each triangle's own grid
+  // has (16+1)(16+2)/2 = 153 points, 3 of them its own original corners
+  // (Settled decision 5), so 150 freshly built. A quad keeps its own 4
+  // original vertices and adds 2 * 150 = 300 new ones, 304 total; two
+  // quads, sharing nothing (Settled decision 8), give 608.
+  check(chain.size() == 608, "indices, not order: 608 vertices total (4 original + 300 diced per "
+                             "quad, none shared)");
 
   const std::vector<GMANPoint> faceARing = {canonical[0], canonical[1], canonical[4], canonical[3]};
   const std::vector<GMANPoint> faceBRing = {canonical[1], canonical[2], canonical[5], canonical[4]};
@@ -449,7 +460,7 @@ void testOneBadFace() {
   if (object != nullptr) {
     check(countBodies(object) == 2, "one bad face: the collinear middle face is skipped, the other "
                                     "two survive");
-    check(countFaces(object) == 2, "one bad face: one triangle per surviving face");
+    check(countFaces(object) == 2 * 256, "one bad face: one 256-facet diced triangle per surviving face");
     const std::vector<GMANPoint> face0Ring = {points[0], points[1], points[2]};
     const std::vector<GMANPoint> face2Ring = {points[6], points[7], points[8]};
     GMANBody* body0 = object->getBody();

@@ -225,21 +225,18 @@ void testDiskTextureCoordinates(const std::string& gman, const std::string& ribD
 // corner along both of T1 or T2's legs, and derives the exact Gouraud
 // (barycentric) blend from the two other vertices sharing that triangle.
 //
-// (88,88): T1, 8 px along each leg from (80,80). weight(80,80) =
-// 1 - 8/40 - 8/40 = 0.6, weight(120,80) [green] = 8/40 = 0.2,
-// weight(80,120) [blue] = 8/40 = 0.2. Colour = 0.6*red + 0.2*green +
-// 0.2*blue = (0.18, 0.06, 0.06).
-// (110,86): T1, legs measured from (80,80): 30/40 toward (120,80)
-// [green], 6/40 toward (80,120) [blue]. weight(80,80) = 1 - 0.75 - 0.15 =
-// 0.10, weight(120,80) = 0.75, weight(80,120) = 0.15. Colour = 0.10*red +
-// 0.75*green + 0.15*blue = (0.03, 0.225, 0.045).
-// (86,110): T1, legs from (80,80): 6/40 toward green, 30/40 toward blue.
-// weight(80,80) = 0.10, weight(120,80) = 0.15, weight(80,120) = 0.75.
-// Colour = 0.10*red + 0.15*green + 0.75*blue = (0.03, 0.045, 0.225).
-// (112,112): T2, 8 px along each leg from (120,120) [white].
-// weight(120,120) = 0.6, weight(120,80) [green] = 8/40 = 0.2,
-// weight(80,120) [blue] = 8/40 = 0.2. Colour = 0.6*white + 0.2*green +
-// 0.2*blue = (0.18, 0.24, 0.24).
+// Dicing (bugs-zbuffer-polygon-dice.md) shades each of T1/T2's own
+// 16-per-edge sub-vertices individually instead of only the triangle's
+// three corners, so each of the four points below -- still offset from its
+// nearest corner along both legs, as derived above -- now lies well inside
+// that corner's own texel quadrant (s, t each default to object x, y; the
+// square spans object [0,1]^2 over raster [80,120], so the quadrant
+// boundary sits at raster 100) rather than blending the triangle's three
+// corner colours. (88,88): object (0.2,0.2), s,t=(0.2,0.2), inside the
+// (0,0)-(0.5,0.5) quadrant -- red. (110,86): object (0.75,0.15), inside
+// (0.5,0)-(1,0.5) -- green. (86,110): object (0.15,0.75), inside
+// (0,0.5)-(0.5,1) -- blue. (112,112): object (0.8,0.8), inside
+// (0.5,0.5)-(1,1) -- white.
 //
 // Revert "polygons pass zero for u, v, s, t again": every vertex reads
 // s,t=(0,0) -- red -- so the whole polygon is flat red (0.3,0,0); every
@@ -250,18 +247,17 @@ void testDiskTextureCoordinates(const std::string& gman, const std::string& ribD
 // (80,80) [red] to camera-space (-1,1), clamping to (col 0, row 1) =
 // blue; (120,80) [green] to (1,1), clamping to (col 1, row 1) = white;
 // (120,120) [white] to (1,-1), clamping to (col 1, row 0) = green;
-// (80,120) [blue] to (-1,-1), clamping to (col 0, row 0) = red. Re-blending
-// each case above with these swapped vertex colours differs from the
-// correct colour by more than 3*kColorTol in some channel at every one
-// of the four pixels (largest: (110,86)'s blue channel, 0.255 vs 0.045).
+// (80,120) [blue] to (-1,-1), clamping to (col 0, row 0) = red. Every pixel
+// above then samples a different quadrant's pure colour than the one
+// listed, differing by more than 3*kColorTol in some channel.
 void testPolygonDefault(const std::string& gman, const std::string& ribDir) {
   Image img = renderFixture(gman, ribDir, "polygon_default");
   if (!img.ok)
     return;
-  checkPixel(img, 88, 88, {0.18, 0.06, 0.06}, "polygon_default red-leaning");
-  checkPixel(img, 110, 86, {0.03, 0.225, 0.045}, "polygon_default green-leaning");
-  checkPixel(img, 86, 110, {0.03, 0.045, 0.225}, "polygon_default blue-leaning");
-  checkPixel(img, 112, 112, {0.18, 0.24, 0.24}, "polygon_default white-leaning");
+  checkPixel(img, 88, 88, scaled(kRed), "polygon_default red-leaning");
+  checkPixel(img, 110, 86, scaled(kGreen), "polygon_default green-leaning");
+  checkPixel(img, 86, 110, scaled(kBlue), "polygon_default blue-leaning");
+  checkPixel(img, 112, 112, scaled(kWhite), "polygon_default white-leaning");
 }
 
 // Same square, placement and triangulation as polygon_default.rib. "st"
@@ -269,27 +265,30 @@ void testPolygonDefault(const std::string& gman, const std::string& ribDir) {
 // unchanged (on the diagonal), (1,0)->(0,1) [green corner reads blue's
 // own texel] and (0,1)->(1,0) [blue corner reads green's own texel] swap.
 //
-// (88,88) and (112,112) blend the (80,80) [still red] or (120,120)
-// [still white] corner with the (120,80) and (80,120) corners at equal
-// weight (0.2 each in both cases), so swapping those two changes nothing
-// there -- same colours as polygon_default.rib. (110,86) and (86,110)
-// weight them unequally (0.75/0.15), so the swap is visible: (110,86),
-// mostly (120,80) [now blue], reads (0.03, 0.045, 0.225); (86,110),
-// mostly (80,120) [now green], reads (0.03, 0.225, 0.045) -- exactly
-// trading polygon_default.rib's own two colours at these two pixels.
+// Each of the four points samples a barycentric (affine) combination of
+// its own triangle's three *resolved* corner (s, t) values (Settled
+// decision 4), the same weights the file header above derives. (88,88):
+// weights (0.6 red-corner, 0.2 green-corner, 0.2 blue-corner) against
+// resolved (s,t) (0,0), (0,1), (1,0) give (s,t) = (0.2,0.2) -- red
+// quadrant, unchanged from polygon_default.rib (the swap cancels at equal
+// weight). (110,86): weights (0.10, 0.75, 0.15) give (s,t) =
+// (0.15,0.75) -- blue quadrant, swapped from green. (86,110): weights
+// (0.10, 0.15, 0.75) give (s,t) = (0.75,0.15) -- green quadrant, swapped
+// from blue. (112,112): weights (0.6 white-corner, 0.2 green-corner, 0.2
+// blue-corner) against resolved (1,1), (0,1), (1,0) give (s,t) =
+// (0.8,0.8) -- white quadrant, unchanged.
 //
 // Revert "'st' on polygons is ignored": every pixel reads its
 // polygon_default.rib colour instead -- (110,86) and (86,110) each
-// differ from this fixture's own expected colour by more than
-// 3*kColorTol in two channels (green and blue swap entirely).
+// differ from this fixture's own expected colour, a full quadrant swap.
 void testPolygonSt(const std::string& gman, const std::string& ribDir) {
   Image img = renderFixture(gman, ribDir, "polygon_st");
   if (!img.ok)
     return;
-  checkPixel(img, 88, 88, {0.18, 0.06, 0.06}, "polygon_st red-leaning");
-  checkPixel(img, 110, 86, {0.03, 0.045, 0.225}, "polygon_st blue-leaning (was green)");
-  checkPixel(img, 86, 110, {0.03, 0.225, 0.045}, "polygon_st green-leaning (was blue)");
-  checkPixel(img, 112, 112, {0.18, 0.24, 0.24}, "polygon_st white-leaning");
+  checkPixel(img, 88, 88, scaled(kRed), "polygon_st red-leaning");
+  checkPixel(img, 110, 86, scaled(kBlue), "polygon_st blue-leaning (was green)");
+  checkPixel(img, 86, 110, scaled(kGreen), "polygon_st green-leaning (was blue)");
+  checkPixel(img, 112, 112, scaled(kWhite), "polygon_st white-leaning");
 }
 
 // An outer square (object (0,0)-(1,1), same placement as polygon_default)
