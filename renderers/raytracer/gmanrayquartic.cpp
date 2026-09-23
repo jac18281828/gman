@@ -25,6 +25,7 @@
 #include <cmath>
 
 #include "gmanmath.h"
+#include "gmanrayquadratic.h"
 #include "gmanrayquartic.h"
 
 namespace {
@@ -34,33 +35,6 @@ namespace {
 // directly (see refineResolventRoot): m scales as p, so this is a scale-
 // free fraction of p rather than an absolute floor.
 constexpr double kResolventSeedFloor = 1e-8;
-
-// A stable real solve of w*t^2 + x*t + y == 0 in double, GMANQuadraticRoots'
-// own cancellation-avoiding root form (that helper is RtFloat-only, so the
-// quartic solver -- built end to end in double -- carries its own copy).
-int solveQuadraticDouble(double w, double x, double y, double& t0, double& t1) {
-  if (w == 0.0) {
-    if (x == 0.0)
-      return 0;
-    t0 = -y / x;
-    return 1;
-  }
-  double const disc = x * x - 4.0 * w * y;
-  if (disc < 0.0)
-    return 0;
-  if (disc == 0.0) {
-    t0 = -x / (2.0 * w);
-    return 1;
-  }
-  double const sqrtDisc = std::sqrt(disc);
-  double const sign = x < 0.0 ? -1.0 : 1.0;
-  double const q = -(x + sign * sqrtDisc) / 2.0;
-  double const r0 = q / w;
-  double const r1 = y / q;
-  t0 = std::min(r0, r1);
-  t1 = std::max(r0, r1);
-  return 2;
-}
 
 // The largest real root of the depressed cubic n^3 + aa*n + bb == 0,
 // Cardano's method with the trigonometric form when it has three real
@@ -93,7 +67,7 @@ double largestRealCubicRoot(double aa, double bb) {
 // into yRoots and returns their count.
 int solveBiquadratic(double p, double r, double yRoots[2]) {
   double w0 = 0.0, w1 = 0.0;
-  int const nW = solveQuadraticDouble(1.0, p, r, w0, w1);
+  int const nW = gman::solveRayQuadratic(1.0, p, r, w0, w1);
   double const w[2] = {w0, w1};
   int nY = 0;
   for (int i = 0; i < nW; ++i) {
@@ -157,14 +131,14 @@ int solveFerrari(double p, double q, double r, double yRoots[4]) {
 
   int nY = 0;
   double y0 = 0.0, y1 = 0.0;
-  int const n1 = solveQuadraticDouble(1.0, -sqrt2m, p / 2.0 + m + qTerm, y0, y1);
+  int const n1 = gman::solveRayQuadratic(1.0, -sqrt2m, p / 2.0 + m + qTerm, y0, y1);
   if (n1 >= 1)
     yRoots[nY++] = y0;
   if (n1 >= 2)
     yRoots[nY++] = y1;
 
   double y2 = 0.0, y3 = 0.0;
-  int const n2 = solveQuadraticDouble(1.0, sqrt2m, p / 2.0 + m - qTerm, y2, y3);
+  int const n2 = gman::solveRayQuadratic(1.0, sqrt2m, p / 2.0 + m - qTerm, y2, y3);
   if (n2 >= 1)
     yRoots[nY++] = y2;
   if (n2 >= 2)
