@@ -8,9 +8,16 @@ Projection "perspective" "fov" [90]
 Clipping 0.5 50
 Translate 0 0 5
 WorldBegin
+# "from"/"to" sit off this camera-facing plane's own N.L=0 plane, unlike
+# r5a_disk.rib/r5a_polygon.rib's oblique light: that angle's strong -z tilt
+# aligns this flat, tight-roughness (0.08) plastic's mirror-like specular
+# reflection with the camera across the whole face, saturating it to pure
+# white -- a worse collision than the one being fixed. A shallow -z tilt
+# keeps the specular term off that alignment while still lifting N.L off
+# zero.
 LightSource "ambientlight" 1 "intensity" [0.1]
 LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
-	"from" [5 0 0] "to" [0 0 0]
+	"from" [5 0 -1] "to" [0 0 0]
 Sides 2
 Surface "plastic" "Ka" [0.2] "Kd" [0.7] "Ks" [0.6] "roughness" [0.08]
 	"specularcolor" [1 1 1]
