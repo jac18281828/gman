@@ -111,29 +111,31 @@ GMANVector GMANRefract(const GMANVector& i, const GMANVector& n, RtFloat eta) {
 
 namespace {
 
+// Which of GMANFresnel's three cases produced kr/kt: general, the
+// normal- or grazing-incidence guard (guarded -- their r/t agree), or
+// total internal reflection (tir -- the one case needing its own t, the
+// zero vector, rather than GMANRefract's).
+enum class FresnelCase { general, guarded, tir };
+
 // GMANFresnel's reflectance core, shared between its two overloads: the
 // incidence-cosine clamp, the three numerical guards (normal incidence,
 // grazing incidence, total internal reflection) and the general trig
-// formula. cost is meaningful only when neither guarded nor tir: the
-// general path's own r/t formulas need it, while the guarded and tir
-// cases compute r/t through GMANReflect/GMANRefract instead and never
-// read it. guarded covers both the normal- and grazing-incidence
-// guards, whose r/t agree; tir is the one case needing its own t, the
-// zero vector, rather than GMANRefract's.
+// formula. cost is meaningful only when fresnelCase is general: that
+// path's own r/t formulas need it, while guarded and tir compute r/t
+// through GMANReflect/GMANRefract instead and never read it.
 struct FresnelReflectance {
   RtFloat kr;
   RtFloat kt;
   RtFloat cost;
-  bool guarded;
-  bool tir;
+  FresnelCase fresnelCase;
 };
 
 FresnelReflectance fresnelReflectance(RtFloat cosphi, RtFloat eta) {
   // The reflectance math below needs the incidence angle's own cosine:
   // non-negative, and clamped to 1 against the fp slop that can carry
-  // fabs(i.dot(n)) a ulp past it for a grazing-normal pair, which would
-  // otherwise leave 1 - incidenceCosine^2 negative and every guard below
-  // false against a NaN sinphi.
+  // fabs(i.dot(n)) a ulp past it for an anti-parallel, normal-incidence
+  // pair, which would otherwise leave 1 - incidenceCosine^2 negative
+  // and every guard below false against a NaN sinphi.
   RtFloat const incidenceCosine = GMANMin(std::fabs(cosphi), (RtFloat)1.0);
   RtFloat const sinphi = std::sqrt(1 - incidenceCosine * incidenceCosine);
 
@@ -141,17 +143,17 @@ FresnelReflectance fresnelReflectance(RtFloat cosphi, RtFloat eta) {
     // Normal incidence: sinamb/sinapb and tanamb/tanapb below are all 0/0.
     RtFloat const kr0 = (eta - 1) / (eta + 1);
     RtFloat const kr = kr0 * kr0;
-    return {kr, 1 - kr, 0.0f, true, false};
+    return {kr, 1 - kr, 0.0f, FresnelCase::guarded};
   }
   if (incidenceCosine <= kFresnelGuardTol) {
     // Grazing incidence: tanphi below divides by zero.
-    return {1.0f, 0.0f, 0.0f, true, false};
+    return {1.0f, 0.0f, 0.0f, FresnelCase::guarded};
   }
 
   RtFloat const sint = sinphi * eta;
   if (sint >= 1) {
     // Total internal reflection: cost below is NaN.
-    return {1.0f, 0.0f, 0.0f, false, true};
+    return {1.0f, 0.0f, 0.0f, FresnelCase::tir};
   }
 
   RtFloat const cost = std::sqrt(1 - sint * sint);
@@ -162,7 +164,7 @@ FresnelReflectance fresnelReflectance(RtFloat cosphi, RtFloat eta) {
   RtFloat const tanapb = (tanphi + tant) / (1 - tanphi * tant);
   RtFloat const tanamb = (tanphi - tant) / (1 + tanphi * tant);
   RtFloat const kr = 0.5 * ((sinamb * sinamb) / (sinapb * sinapb) + (tanamb * tanamb) / (tanapb * tanapb));
-  return {kr, 1 - kr, cost, false, false};
+  return {kr, 1 - kr, cost, FresnelCase::general};
 }
 
 } // namespace
@@ -180,12 +182,12 @@ RtVoid GMANFresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloa
   kr = refl.kr;
   kt = refl.kt;
 
-  if (refl.tir) {
+  if (refl.fresnelCase == FresnelCase::tir) {
     r = GMANReflect(i, n);
     t = GMANVector(0, 0, 0);
     return;
   }
-  if (refl.guarded) {
+  if (refl.fresnelCase == FresnelCase::guarded) {
     r = GMANReflect(i, n);
     t = GMANRefract(i, n, eta);
     return;
