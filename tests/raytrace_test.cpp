@@ -167,6 +167,57 @@ private:
   GMANColor oi_;
 };
 
+// A sphere at (0,0,5) radius 1, Lambertian-shaded, lit by one distant
+// light from lightDirection -- shared by checks 3 and 6. bvh and
+// occluder are built in place: GMANRayOccluder holds bvh by reference,
+// so this fixture is never moved or returned by value, only constructed
+// directly where it is used.
+class LambertianHitFixture {
+public:
+  explicit LambertianHitFixture(GMANVector const& lightDirection)
+      : occluder(bvh), light_(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), lightDirection) {
+    GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
+    gman::Appearance appearance;
+    appearance.shader = &shader;
+    appearance.Cs = GMANColor(0.8f, 0.3f, 0.2f);
+    appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+    appearance.lights = {&light_};
+    sphere->setAppearance(appearance);
+    worldManager_.add(sphere);
+  }
+
+  // Adds an extra primitive before build(); ownership passes to the
+  // fixture's own world manager, matching sphereAt's own convention.
+  void addPrimitive(GMANLinearWorldManager::ObjectPtr primitive) { worldManager_.add(primitive); }
+
+  void build() { bvh.build(worldManager_); }
+
+  LambertianTestShader shader;
+  GMANRayBVH bvh;
+  GMANRayOccluder occluder;
+
+private:
+  GMANLinearWorldManager worldManager_;
+  GMANLight light_;
+};
+
+// The SurfacePoint a bare GMANHit doesn't carry, built the same way
+// checks 3 and 6 each need it to call gman::shade directly against a
+// hand-built ray's own hit and compare it with what trace() found.
+gman::SurfacePoint surfacePointFromHit(GMANHit const& hit, GMANVector const& r0, GMANPoint const& p0) {
+  gman::SurfacePoint point;
+  point.P = hit.point;
+  point.N = GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
+  point.Ng = point.N;
+  point.I = r0;
+  point.E = p0;
+  point.u = hit.u;
+  point.v = hit.v;
+  point.s = hit.u;
+  point.t = hit.v;
+  return point;
+}
+
 // Check 1: a GMANRayTracer built at depth == kMaxTraceDepth (4), trace()ing
 // toward a primitive that would be hit, returns exactly background --
 // without touching the sentinel shader at all: a mutated depth guard
@@ -224,27 +275,15 @@ void checkEscapeReturnsBackground() {
 // contract), so the ray trace() casts internally is bit-identical to the
 // one built here by hand, and the two shading paths should agree tightly.
 void checkRealHitMatchesDirectShade() {
-  GMANLinearWorldManager worldManager;
-  GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
-  LambertianTestShader shader;
-  gman::Appearance appearance;
-  appearance.shader = &shader;
-  appearance.Cs = GMANColor(0.8f, 0.3f, 0.2f);
-  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   // Direction is light -> scene; (0,0,1) makes toward-light (0,0,-1), the
   // same side as the sphere's own outward normal at the tested hit point
   // (0,0,4), so N.dot(towardLight) > 0 and diffuse() actually lights it.
-  GMANLight const distant(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector(0.0f, 0.0f, 1.0f));
-  appearance.lights = {&distant};
-  sphere->setAppearance(appearance);
-  worldManager.add(sphere);
+  LambertianHitFixture fixture(GMANVector(0.0f, 0.0f, 1.0f));
+  fixture.build();
 
-  GMANRayBVH bvh;
-  bvh.build(worldManager);
-  GMANRayOccluder const occluder(bvh);
   GMANMatrix4 const cameraToWorld;
   GMANColor const background(0.1f, 0.1f, 0.1f);
-  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
+  GMANRayTracer const tracer(fixture.bvh, fixture.occluder, cameraToWorld, background, 0);
 
   GMANPoint const p0(0.0f, 0.0f, 0.0f);
   GMANVector const r0(0.0f, 0.0f, 1.0f);
@@ -253,23 +292,15 @@ void checkRealHitMatchesDirectShade() {
   GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
   GMANRayInterface const* hitPrimitive = nullptr;
-  bool const gotHit = bvh.nearestHit(ray, hit, hitPrimitive);
+  bool const gotHit = fixture.bvh.nearestHit(ray, hit, hitPrimitive);
   check(gotHit, "check 3 setup: the hand-built ray hits the sphere");
   if (!gotHit) {
     return;
   }
 
-  gman::SurfacePoint point;
-  point.P = hit.point;
-  point.N = GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
-  point.Ng = point.N;
-  point.I = r0;
-  point.E = p0;
-  point.u = hit.u;
-  point.v = hit.v;
-  point.s = hit.u;
-  point.t = hit.v;
-  gman::Shading const direct = gman::shade(hitPrimitive->getAppearance(), point, cameraToWorld, &occluder, nullptr);
+  gman::SurfacePoint const point = surfacePointFromHit(hit, r0, p0);
+  gman::Shading const direct =
+      gman::shade(hitPrimitive->getAppearance(), point, cameraToWorld, &fixture.occluder, nullptr);
 
   check(colorNear(traced, direct.Ci, kTol),
         "check 3: trace()'s single-hit shading matches gman::shade called directly");
@@ -384,32 +415,21 @@ void checkDepthCountsCorrectly() {
   check(colorExactly(result, background), "check 5: the fully-bottomed-out chain resolves to exactly background");
 }
 
-// Check 6 (review fix pass, ADVISORY finding 4): trace()'s own nested
-// shade() call threads the occluder through, not just returns a hit's
-// unshadowed colour. A blocker sphere sits on the shadow ray from the
-// traced hit toward its one light, off the primary ray's own axis so it
-// cannot occlude that ray too, only the shadow ray to the light.
-// LambertianTestShader has no ambient term, so a fully blocked light
-// leaves Ci exactly black -- a passing &occluder reaches nullptr instead
-// would light the hit unshadowed, same as this fixture's own
+// Check 6: trace()'s own nested shade() call threads the occluder
+// through, not just returns a hit's unshadowed colour. A blocker sphere
+// sits on the shadow ray from the traced hit toward its one light, off
+// the primary ray's own axis so it cannot occlude that ray too, only
+// the shadow ray to the light. LambertianTestShader has no ambient
+// term, so a fully blocked light leaves Ci exactly black; a mutation
+// that dropped the occluder from trace()'s own nested shade() call
+// would light the hit unshadowed instead, matching this fixture's own
 // without-occluder reference below.
 void checkNestedOccluderShadowsBlocker() {
-  GMANLinearWorldManager worldManager;
-  GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
-  LambertianTestShader shader;
-  gman::Appearance appearance;
-  appearance.shader = &shader;
-  appearance.Cs = GMANColor(0.8f, 0.3f, 0.2f);
-  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   // lightDirection (0.8, 0, 0.6): towardLight = (-0.8, 0, -0.6), off the
   // primary ray's z-axis, so the shadow ray from the hit point (0,0,4)
   // and the blocker placed on it never coincide with the primary ray
   // from the origin to that hit.
-  GMANVector const lightDirection(0.8f, 0.0f, 0.6f);
-  GMANLight const distant(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), lightDirection);
-  appearance.lights = {&distant};
-  sphere->setAppearance(appearance);
-  worldManager.add(sphere);
+  LambertianHitFixture fixture(GMANVector(0.8f, 0.0f, 0.6f));
 
   // On the shadow ray from (0,0,4) toward towardLight, at parameter 5:
   // (0,0,4) + 5*(-0.8,0,-0.6) = (-4,0,1). Distance from the primary
@@ -421,14 +441,12 @@ void checkNestedOccluderShadowsBlocker() {
   blockerAppearance.shader = &blockerShader;
   blockerAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f); // fully opaque
   blocker->setAppearance(blockerAppearance);
-  worldManager.add(blocker);
+  fixture.addPrimitive(blocker);
+  fixture.build();
 
-  GMANRayBVH bvh;
-  bvh.build(worldManager);
-  GMANRayOccluder const occluder(bvh);
   GMANMatrix4 const cameraToWorld;
   GMANColor const background(0.1f, 0.1f, 0.1f);
-  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
+  GMANRayTracer const tracer(fixture.bvh, fixture.occluder, cameraToWorld, background, 0);
 
   GMANPoint const p0(0.0f, 0.0f, 0.0f);
   GMANVector const r0(0.0f, 0.0f, 1.0f);
@@ -437,25 +455,16 @@ void checkNestedOccluderShadowsBlocker() {
   GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
   GMANRayInterface const* hitPrimitive = nullptr;
-  bool const gotHit = bvh.nearestHit(ray, hit, hitPrimitive);
+  bool const gotHit = fixture.bvh.nearestHit(ray, hit, hitPrimitive);
   check(gotHit, "check 6 setup: the hand-built ray hits the sphere, not the blocker");
   if (!gotHit) {
     return;
   }
 
-  gman::SurfacePoint point;
-  point.P = hit.point;
-  point.N = GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
-  point.Ng = point.N;
-  point.I = r0;
-  point.E = p0;
-  point.u = hit.u;
-  point.v = hit.v;
-  point.s = hit.u;
-  point.t = hit.v;
+  gman::SurfacePoint const point = surfacePointFromHit(hit, r0, p0);
 
   gman::Shading const withOccluder =
-      gman::shade(hitPrimitive->getAppearance(), point, cameraToWorld, &occluder, nullptr);
+      gman::shade(hitPrimitive->getAppearance(), point, cameraToWorld, &fixture.occluder, nullptr);
   gman::Shading const withoutOccluder =
       gman::shade(hitPrimitive->getAppearance(), point, cameraToWorld, nullptr, nullptr);
 
