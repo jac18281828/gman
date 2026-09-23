@@ -89,6 +89,62 @@ std::vector<FresnelPin> const& fresnelPins() {
   return pins;
 }
 
+// Check 1: reflect() at normal incidence (I anti-parallel to N) returns
+// -I, and at 45 degrees returns the hand-computed mirrored direction, not
+// merely one at the right angle to N.
+void checkReflectPins() {
+  GMANSurfaceEnv env;
+  GMANVector const n(0.0f, 0.0f, 1.0f);
+
+  GMANVector const iNormal(0.0f, 0.0f, -1.0f);
+  GMANVector const gotNormal = env.reflect(iNormal, n);
+  GMANVector const wantNormal = -iNormal;
+  check(vectorNear(gotNormal, wantNormal, kTol), "reflect: normal incidence returns -I");
+
+  // I at 45 degrees off -N in the x-z plane; the hand-computed mirror of
+  // (sin45, 0, -cos45) about n = (0,0,1) is (sin45, 0, cos45) -- the x
+  // component unchanged, the z component flipped.
+  RtFloat const s45 = (RtFloat)(std::sqrt(2.0) / 2.0);
+  GMANVector const i45(s45, 0.0f, -s45);
+  GMANVector const got45 = env.reflect(i45, n);
+  GMANVector const want45(s45, 0.0f, s45);
+  check(vectorNear(got45, want45, kTol), "reflect: 45 degrees returns the hand-computed mirrored direction");
+}
+
+// Check 2: refract() at a known Snell's-law case -- ior = 1.5, an
+// incidence angle short of the critical angle -- lands at the expected
+// refraction angle off -N.
+void checkRefractSnellCase() {
+  GMANSurfaceEnv env;
+  GMANVector const n(0.0f, 0.0f, 1.0f);
+  RtFloat const ior = 1.5f;
+  RtFloat const incidenceDegrees = 30.0f;
+
+  GMANVector const i = obliqueDirection(incidenceDegrees);
+  GMANVector const refracted = env.refract(i, n, 1.0f / ior);
+
+  RtFloat const wantAngleRad = std::asin(std::sin(incidenceDegrees * kDegToRad) / ior);
+  GMANVector const negN(-n.getX(), -n.getY(), -n.getZ());
+  RtFloat const cosGotAngle = refracted.dot(negN);
+  RtFloat const gotAngleRad = std::acos(cosGotAngle);
+  check(near(gotAngleRad, wantAngleRad, (RtFloat)1.0e-3),
+        "refract: a known Snell's-law case lands at the expected angle off -N");
+}
+
+// Check 3: refract() past the critical angle (exiting glass into air)
+// returns exactly the zero vector, not merely a small one.
+void checkRefractTotalInternalReflection() {
+  GMANSurfaceEnv env;
+  GMANVector const n(0.0f, 0.0f, 1.0f);
+  RtFloat const ior = 1.5f;
+  RtFloat const incidenceDegrees = 60.0f; // past asin(1/1.5) =~ 41.81 degrees
+
+  GMANVector const i = obliqueDirection(incidenceDegrees);
+  GMANVector const refracted = env.refract(i, n, ior);
+  check(refracted.getX() == 0.0f && refracted.getY() == 0.0f && refracted.getZ() == 0.0f,
+        "refract: past the critical angle returns exactly the zero vector");
+}
+
 // Check 4: GMANSurfaceEnv::fresnel at the seven pins above, kt == 1 - kr
 // throughout and kr/kt exactly 1/0 at the three guarded cases.
 void checkFresnelPins() {
@@ -165,10 +221,13 @@ void checkFresnelSixArgParity() {
 } // namespace
 
 int main() {
+  checkReflectPins();
+  checkRefractSnellCase();
+  checkRefractTotalInternalReflection();
   checkFresnelPins();
   checkFresnelNoNaNAcrossSweep();
   checkFresnelSixArgParity();
 
-  return checkSummary("GMANFresnel: reflectance fixed at seven pins, no NaN/Inf across a full sweep, six-argument "
-                      "overload agrees with the four-argument one");
+  return checkSummary("reflect()/refract() pinned at known angles; GMANFresnel's reflectance fixed at seven pins, "
+                      "no NaN/Inf across a full sweep, six-argument overload agrees with the four-argument one");
 }
