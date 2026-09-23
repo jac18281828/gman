@@ -67,17 +67,20 @@ void project(GMANPoint const& p, int axis, RtFloat& a, RtFloat& b) {
 
 // Barycentric weights of (px, py) in the 2D triangle (a, b, c); not
 // clamped, so a point outside the triangle still returns a well-defined
-// extrapolation rather than a failure.
-void barycentric2D(RtFloat px, RtFloat py, RtFloat ax, RtFloat ay, RtFloat bx, RtFloat by, RtFloat cx, RtFloat cy,
+// extrapolation rather than a failure. Returns false, leaving wa/wb/wc
+// untouched, when the triangle's own area is too close to zero to divide
+// by -- a's own fan vertex collinear with this pair -- so a caller never
+// mistakes a degenerate triangle's leftover weights for containment.
+bool barycentric2D(RtFloat px, RtFloat py, RtFloat ax, RtFloat ay, RtFloat bx, RtFloat by, RtFloat cx, RtFloat cy,
                    RtFloat& wa, RtFloat& wb, RtFloat& wc) {
   RtFloat const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
   if ((RtFloat)fabs(d) < kParallelTolerance) {
-    wa = wb = wc = 0.0;
-    return;
+    return false;
   }
   wa = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;
   wb = ((cy - ay) * (px - cx) + (ax - cx) * (py - cy)) / d;
   wc = (RtFloat)1.0 - wa - wb;
+  return true;
 }
 
 // True when (wa, wb, wc) place a point inside its own triangle; a small
@@ -107,7 +110,16 @@ std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<GMANPoint> const& ri
     RtFloat bx, by, cx, cy;
     project(ring[i], axis, bx, by);
     project(ring[i + 1], axis, cx, cy);
-    barycentric2D(px, py, ax, ay, bx, by, cx, cy, wa, wb, wc);
+    RtFloat triWa, triWb, triWc;
+    // A degenerate fan triangle (vertex 0 collinear with this pair, e.g. a
+    // pentagon whose first three vertices lie on one edge) never contains
+    // the hit -- skip it rather than let insideTriangle read its own
+    // leftover weights as containment.
+    if (!barycentric2D(px, py, ax, ay, bx, by, cx, cy, triWa, triWb, triWc))
+      continue;
+    wa = triWa;
+    wb = triWb;
+    wc = triWc;
     bi = i;
     ci = i + 1;
     if (insideTriangle(wa, wb, wc))
@@ -142,6 +154,40 @@ bool insidePolygon(std::vector<GMANPoint> const& ring, int axis, GMANPoint const
   return inside;
 }
 
+// Each vertex's own resolved (s, t): default its object-space "P" -- the
+// same pre-CTM floats GMANRayObjectManager::getRSPolygon itself reads,
+// not vertices, already camera space by the time it reaches here -- "st"
+// then "s"/"t" overriding, GMANPatchPolyObjectManager's own polygon rule
+// (resolvePolygonTextureCoordinates). Every entry is (0, 0) when pl
+// carries no "P": the only construction path that reaches here is direct
+// construction bypassing getRSPolygon, which never omits it.
+std::vector<std::pair<RtFloat, RtFloat>> resolveVertexTexCoords(GMANParameterList& pl, std::size_t nverts) {
+  std::vector<std::pair<RtFloat, RtFloat>> texCoords(nverts, {(RtFloat)0.0, (RtFloat)0.0});
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  if (!p)
+    return texCoords;
+
+  RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
+  RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
+  RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
+  for (std::size_t i = 0; i < nverts; i++) {
+    RtFloat const objX = p[3 * i];
+    RtFloat const objY = p[3 * i + 1];
+    RtFloat s = objX;
+    RtFloat t = objY;
+    if (stArr) {
+      s = stArr[2 * i];
+      t = stArr[2 * i + 1];
+    }
+    if (sArr)
+      s = sArr[i];
+    if (tArr)
+      t = tArr[i];
+    texCoords[i] = {s, t};
+  }
+  return texCoords;
+}
+
 } // namespace
 
 GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> verts, GMANParameterList pl)
@@ -162,35 +208,7 @@ GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> verts, GMANParameterList p
     bbox = gman::padBBox(minP, maxP);
   }
 
-  // "P" is the same object-space floats GMANRayObjectManager::getRSPolygon
-  // itself reads before applying the CTM -- not vertices, already camera
-  // space by now -- so a vertex's default (s, t) is its own pre-CTM (x, y),
-  // GMANPatchPolyObjectManager's own polygon rule
-  // (resolvePolygonTextureCoordinates). Every entry is (0, 0) when pl
-  // carries no "P": the only construction path that reaches here is direct
-  // construction bypassing getRSPolygon, which never omits it.
-  texCoords.assign(vertices.size(), {(RtFloat)0.0, (RtFloat)0.0});
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
-  if (p) {
-    RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
-    RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
-    RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
-    for (std::size_t i = 0; i < vertices.size(); i++) {
-      RtFloat const objX = p[3 * i];
-      RtFloat const objY = p[3 * i + 1];
-      RtFloat s = objX;
-      RtFloat t = objY;
-      if (stArr) {
-        s = stArr[2 * i];
-        t = stArr[2 * i + 1];
-      }
-      if (sArr)
-        s = sArr[i];
-      if (tArr)
-        t = tArr[i];
-      texCoords[i] = {s, t};
-    }
-  }
+  texCoords = resolveVertexTexCoords(pl, vertices.size());
 
   if (degenerate)
     return;

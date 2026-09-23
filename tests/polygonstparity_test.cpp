@@ -69,18 +69,14 @@ void checkPixelColor(const GmanImage& img, uint32_t x, uint32_t y, const RGB& wa
             "," + std::to_string((int)wantG) + "," + std::to_string((int)wantB) + ")");
 }
 
-bool pixelsMatch(const GmanImage& a, const GmanImage& b, uint32_t x, uint32_t y, int tol) {
-  uint32_t const pa = a.at(x, y);
-  uint32_t const pb = b.at(x, y);
+bool colorsMatch(uint32_t pa, uint32_t pb, int tol) {
   return std::abs((int)TIFFGetR(pa) - (int)TIFFGetR(pb)) <= tol &&
          std::abs((int)TIFFGetG(pa) - (int)TIFFGetG(pb)) <= tol &&
          std::abs((int)TIFFGetB(pa) - (int)TIFFGetB(pb)) <= tol;
 }
 
-bool colorsMatch(uint32_t pa, uint32_t pb, int tol) {
-  return std::abs((int)TIFFGetR(pa) - (int)TIFFGetR(pb)) <= tol &&
-         std::abs((int)TIFFGetG(pa) - (int)TIFFGetG(pb)) <= tol &&
-         std::abs((int)TIFFGetB(pa) - (int)TIFFGetB(pb)) <= tol;
+bool pixelsMatch(const GmanImage& a, const GmanImage& b, uint32_t x, uint32_t y, int tol) {
+  return colorsMatch(a.at(x, y), b.at(x, y), tol);
 }
 
 // Three interior points well inside the quad's own silhouette (raster

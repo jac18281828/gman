@@ -240,6 +240,28 @@ void testSAloneOverride() {
   check(near(hit.u, 0.75) && near(hit.v, 0.25), "\"s\" alone: u from \"s\", v stays the default object-space y");
 }
 
+// ---- check 11: a fan triangle degenerate at vertex 0 is skipped, not
+// read as containing the hit ----
+void testDegenerateFanTriangleSkipped() {
+  // v0, v1, v2 collinear (all on y == 0): interpolateTexCoord's own fan
+  // triangulation from vertex 0 makes (v0, v1, v2) its first triangle,
+  // degenerate (zero area) and so never containing (2, 2) -- the point has
+  // to fall through to the real triangle (v0, v2, v3) instead.
+  std::vector<GMANPoint> verts = {GMANPoint(0.0, 0.0, 0.0), GMANPoint(2.0, 0.0, 0.0), GMANPoint(4.0, 0.0, 0.0),
+                                  GMANPoint(4.0, 4.0, 0.0), GMANPoint(0.0, 4.0, 0.0)};
+  RtFloat p[] = {0, 0, 0, 2, 0, 0, 4, 0, 0, 4, 4, 0, 0, 4, 0};
+  RtToken tokens[] = {RI_P};
+  RtPointer parms[] = {(RtPointer)p};
+  GMANParameterList pl(gman::standardDictionary(), 1, tokens, parms, 5, 5, 1, 1);
+  GMANRayPolygon pentagon(verts, pl);
+
+  GMANRay ray = rayThroughObject(2.0, 2.0);
+  GMANHit hit;
+  check(pentagon.intersect(ray, hit), "collinear fan vertex: a ray through object (2, 2) hits");
+  check(near(hit.u, 2.0) && near(hit.v, 2.0),
+        "collinear fan vertex: (u, v) == (2, 2), not (0, 0) from the degenerate first fan triangle");
+}
+
 } // namespace
 
 int main() {
@@ -253,6 +275,7 @@ int main() {
   testDefaultStIsObjectSpaceP();
   testStOverride();
   testSAloneOverride();
+  testDegenerateFanTriangleSkipped();
 
   return checkSummary("GMANRayPolygon::intersect hits, misses and clips correctly");
 }
