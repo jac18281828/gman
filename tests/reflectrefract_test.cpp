@@ -65,6 +65,44 @@ RtFloat closedFormKr(RtFloat cosI, RtFloat eta) {
   return (RtFloat)0.5 * (rs * rs + rp * rp);
 }
 
+// Candidates for check 7's first pin: each normalizes to a v whose
+// magnitude, squared, can round a ulp past 1 in float32 -- the exact
+// amount depends on the platform's own floating-point contraction (FMA
+// fuses a multiply and an add into one rounding step, changing the last
+// ulp), so no single candidate is guaranteed to round past 1 on every
+// compiler. clang contracts to FMA by default on arm64 but not x86-64;
+// gcc never contracts without -ffast-math. Kept deliberately redundant
+// -- several candidates land past 1 under either contraction mode, so a
+// compiler this list was not tested against still has more than one
+// chance.
+struct ClampPinCandidate {
+  RtFloat x, y, z;
+};
+
+constexpr ClampPinCandidate kClampPinCandidates[] = {
+    {0.003f, 1.11f, 1.039f},  {0.7f, 0.7f, 0.14142f}, {0.001f, 0.999f, 0.0447f},
+    {0.0173f, 0.2f, 0.9797f}, {0.6f, 0.8f, 0.0003f},  {1.0f, 0.003f, 0.007f},
+};
+
+// The first candidate whose normalized v, with n = -v, has
+// fabs(v.dot(n)) > 1.0f on the running platform -- a bounded,
+// deterministic search, never a randomized one, so a failure reproduces
+// identically on every run. Returns false, leaving v/n unset, only if
+// every candidate rounds to exactly 1 on this platform.
+bool findClampPinPastOne(GMANVector& v, GMANVector& n) {
+  for (ClampPinCandidate const& c : kClampPinCandidates) {
+    GMANVector candidate(c.x, c.y, c.z);
+    candidate.normalize();
+    GMANVector const negated(-candidate.getX(), -candidate.getY(), -candidate.getZ());
+    if (std::fabs(candidate.dot(negated)) > 1.0f) {
+      v = candidate;
+      n = negated;
+      return true;
+    }
+  }
+  return false;
+}
+
 // A unit direction in the x-z plane, degrees off -N (N = (0,0,1)):
 // (sin(deg), 0, -cos(deg)). Its dot with N is -cos(deg), so this is
 // entering at incidence angle deg under the i.dot(n) <= 0 convention.
@@ -255,23 +293,29 @@ void checkFresnelSixArgParity() {
 }
 
 // Check 7: GMANFresnel's incidence-cosine clamp holds at two pairs its
-// unclamped formula could not. v = normalize(0.003, 1.11, 1.039), n =
-// -v is an anti-parallel, normal-incidence pair whose incidence
-// cosine's magnitude rounds a single ulp past 1 in float32 -- i.dot(n)
-// = -1.00000012 -- which drives 1 - incidenceCosine^2 negative before
-// the clamp, producing kr = kt = NaN past every guard; clamped, it
-// lands at the same normal-incidence value every other normal-incidence
-// pin reaches. A second pair with i.dot(n) > 0 -- outside GMANRefract's
-// own calling convention, but not undefined behaviour -- exercised the
+// unclamped formula could not. The first is an anti-parallel,
+// normal-incidence pair (v normalized, n = -v) picked at run time by
+// findClampPinPastOne() from kClampPinCandidates: whichever candidate's
+// incidence cosine rounds a single ulp past 1 in float32 on this
+// platform, which drives 1 - incidenceCosine^2 negative before the
+// clamp, producing kr = kt = NaN past every guard; clamped, it lands at
+// the same normal-incidence value every other normal-incidence pin
+// reaches. A second pair with i.dot(n) > 0 -- outside GMANRefract's own
+// calling convention, but not undefined behaviour -- exercised the
 // unclamped formula's sign-dependent near-cancellation in
 // sinapb/tanapb; clamped, it lands at its own closed-form value.
 void checkFresnelClampGuards() {
   GMANSurfaceEnv env;
 
-  GMANVector v(0.003f, 1.11f, 1.039f);
-  v.normalize();
-  GMANVector const n(-v.getX(), -v.getY(), -v.getZ());
-  check(std::fabs(v.dot(n)) > 1.0f, "clamp: the first pin's own i.dot(n) genuinely rounds past 1 in float32");
+  GMANVector v;
+  GMANVector n;
+  bool const foundPastOne = findClampPinPastOne(v, n);
+  check(foundPastOne,
+        "clamp: the candidate search found a pair whose i.dot(n) genuinely rounds past 1 in float32 on this "
+        "platform");
+  if (!foundPastOne) {
+    return;
+  }
   RtFloat kr = 0.0f, kt = 0.0f;
   env.fresnel(v, n, 1.5f, kr, kt);
   check(std::isfinite(kr) && std::isfinite(kt), "clamp: the 1-ulp-over normalized pair produces no NaN");
