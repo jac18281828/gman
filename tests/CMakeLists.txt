@@ -713,6 +713,23 @@ set_tests_properties(filters PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# OutputTIFF::save ignored its DisplayMode and always wrote 4 samples with
+# no ExtraSamples tag. Direct unit test against gman::OutputTIFF, no gman
+# binary: "rgb" writes 3 samples and no tag, "rgba" keeps 4 and tags the
+# fourth EXTRASAMPLE_ASSOCALPHA.
+add_executable(gman_tiffdisplaymode tiffdisplaymode_test.cpp)
+target_link_libraries(gman_tiffdisplaymode PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+
+set(GMAN_TIFFDISPLAYMODE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/tiffdisplaymode-run")
+file(MAKE_DIRECTORY "${GMAN_TIFFDISPLAYMODE_WORKDIR}")
+
+add_test(NAME tiffdisplaymode
+  COMMAND gman_tiffdisplaymode
+  WORKING_DIRECTORY "${GMAN_TIFFDISPLAYMODE_WORKDIR}")
+set_tests_properties(tiffdisplaymode PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # UAT defect 0: a Projection with no explicit "fov" threw instead of
 # defaulting to 90 per RISpec 3.2.
 add_executable(gman_fovdefault fovdefault_test.cpp)

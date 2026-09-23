@@ -106,6 +106,10 @@ public:
   void setWrapModes(const std::string& modes);
   void setTextureFormat(const std::string& format);
 
+  // Tags the fourth of a 4-sample-per-pixel file as associated alpha.
+  // Call before the first writeScanline.
+  void tagAlphaAssociated();
+
   // The byte length libtiff expects for one scanline of this file -- a
   // caller sizes its row buffer against this rather than trusting
   // samplesPerPixel * width to match.

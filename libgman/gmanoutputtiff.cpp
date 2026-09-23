@@ -47,14 +47,18 @@ OutputTIFF::OutputTIFF(const char* path, int width, int height) : GMANOutput(pat
 // default destructor
 OutputTIFF::~OutputTIFF() {};
 
-RtVoid OutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
-  const RtInt samplesperpixel = 4; // RGBA
+RtVoid OutputTIFF::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma) {
+  const RtInt samplesperpixel = (mode == GMANOutput::RGB) ? 3 : 4;
 
   TIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, compression);
   if (!writer.isOpen()) {
     std::string errorMsg("Unable to open output file: ");
     errorMsg.append(outputName);
     throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
+  }
+
+  if (samplesperpixel == 4) {
+    writer.tagAlphaAssociated();
   }
 
   writer.setImageDescription("GMAN Generated TIFF Image.\n"
@@ -83,17 +87,15 @@ RtVoid OutputTIFF::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat 
       if (quantizer)
         quantizer->doColor(color);
 
-      // default, (no reduction) is 32bit
-
-      // write r, g, b, a byte
       buf[colOff++] = color.getRed();
       buf[colOff++] = color.getGreen();
       buf[colOff++] = color.getBlue();
 
-      // FIXME FIXME FIXME
-      // FIX Alpha support
-
-      buf[colOff++] = 255;
+      if (samplesperpixel == 4) {
+        // FIXME FIXME FIXME
+        // FIX Alpha support
+        buf[colOff++] = 255;
+      }
     }
     // now write a scanline into the image
     if (!writer.writeScanline(buf.data(), rowOff)) {

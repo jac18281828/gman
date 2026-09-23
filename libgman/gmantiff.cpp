@@ -137,6 +137,11 @@ void TIFFWriter::setTextureFormat(const std::string& format) {
   TIFFSetField(handle, TIFFTAG_PIXAR_TEXTUREFORMAT, format.c_str());
 }
 
+void TIFFWriter::tagAlphaAssociated() {
+  const uint16_t extraSample = EXTRASAMPLE_ASSOCALPHA;
+  TIFFSetField(handle, TIFFTAG_EXTRASAMPLES, 1, &extraSample);
+}
+
 std::size_t TIFFWriter::scanlineSize() const { return (std::size_t)TIFFScanlineSize(handle); }
 
 bool TIFFWriter::writeScanline(unsigned char* data, std::uint32_t row) {
