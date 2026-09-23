@@ -59,7 +59,7 @@ namespace {
 
 constexpr int kCrossScaleTolerance = 2;
 constexpr int kLocalDipTolerance = 2;
-// Any channel this close to the background (255,255,255) counts as
+// Any channel this close to the background (0,0,0) counts as
 // background itself, not a silhouette pixel the local-dip scan should
 // judge.
 constexpr int kBackgroundTolerance = 2;

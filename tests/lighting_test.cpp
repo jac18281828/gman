@@ -141,12 +141,12 @@ void testTerminator(const std::string& gman) {
     return;
   }
 
-  // The background (DefaultBGColor) is white, brighter than any lit
-  // sample of an unlit-capable matte sphere (Ka=0 here), so "brightest
-  // pixel" and "first lit pixel" both have to stay inside the sphere's
-  // own silhouette -- otherwise the background itself, everywhere at the
-  // frame's edges, wins trivially. Find the silhouette first, the same
-  // way silhouette_test.cpp does.
+  // The background (DefaultBGColor) is black, an extreme value like any
+  // lit or unlit sample of an unlit-capable matte sphere (Ka=0 here), so
+  // "brightest pixel" and "first lit pixel" both have to stay inside the
+  // sphere's own silhouette -- otherwise the background itself, everywhere
+  // at the frame's edges, wins trivially. Find the silhouette first, the
+  // same way silhouette_test.cpp does.
   const uint32_t bg = img.at(0, 0);
   auto differsFromBackground = [&](uint32_t p) {
     return std::abs(int(TIFFGetR(p)) - int(TIFFGetR(bg))) > 8 || std::abs(int(TIFFGetG(p)) - int(TIFFGetG(bg))) > 8 ||
@@ -221,8 +221,9 @@ void testTerminator(const std::string& gman) {
   // silhouette's own centre column, within one tessellation facet.
   // silXmin is the leftmost silhouette column over the *whole* image,
   // not necessarily this row (a circle is narrower off its own widest
-  // row); background pixels at (silXmin, midY) are >0 too (white), so
-  // this has to enter the silhouette on this row first, then look for
+  // row); background pixels at (silXmin, midY) read the same black as an
+  // unlit sphere pixel there, so this has to enter the silhouette on this
+  // row first (via differsFromBackground's corner-diff), then look for
   // the lit transition from there.
   uint32_t midY = (silYmin + silYmax) / 2;
   int enteredSilhouetteX = -1;
@@ -354,7 +355,7 @@ void testGoldenImage(const std::string& gman, const std::string& ribDir) {
 
 // Silhouette pixels of a rendered sphere (non-background), and their mean
 // R-channel brightness -- shared by the two metal tests below, which both
-// need to isolate the sphere from the (white) background.
+// need to isolate the sphere from the (black) background.
 struct SilhouetteStats {
   bool found = false;
   double meanR = 0.0;
@@ -589,7 +590,7 @@ void testMetalKaResponse(const std::string& gman) {
   // gmanmetal.cpp's own code -- computed here from the RISpec's own
   // formula for a metal shader's ambient term. Compare against the
   // interior mean, not the whole silhouette's: antialiasing blends
-  // silhouette-edge pixels toward the (white) background, so any
+  // silhouette-edge pixels toward the (black) background, so any
   // whole-silhouette statistic drifts as the filter widens, the same
   // erosion computeInteriorStddevR guards against above. Restricting to the
   // AA-safe interior keeps this measuring only fully-covered pixels.
@@ -651,7 +652,7 @@ void testMetalSpecularHighlight(const std::string& gman) {
   // No diffuse term: a Lambertian half-sphere would light up roughly half
   // the silhouette. A specular highlight, even a broad one, is a small
   // fraction of it. Count over the AA-safe interior, not the whole
-  // silhouette: near the (white) background, coverage blending pulls rim
+  // silhouette: near the (black) background, coverage blending pulls rim
   // pixels above litThreshold regardless of shading, inflating both
   // fractions as the filter widens -- the same erosion computeInteriorStddevR
   // guards against above.

@@ -24,8 +24,12 @@ Sides 2
 Polygon "P" [-50 -50 0  50 -50 0  50 50 0  -50 50 0]
 AttributeEnd
 
-# Cs off-white: the mirror's own silhouette stays visible against a
-# white background even where it reflects that same background.
+# Cs off-white: the mirror's reflected colour tints toward Cs (Ci =
+# Os*Cs*Kr*trace(R)) rather than passing the traced colour through
+# unmodified. Where nothing else is behind it, the reflection still
+# renders as exactly the background colour -- the sphere's own footprint
+# there comes from the companion matte render (tests/mirrorrayrender_test.cpp),
+# not a colour contrast in this file alone.
 AttributeBegin
 Surface "mirror" "Kr" [1]
 Color [0.8 0.8 0.85]

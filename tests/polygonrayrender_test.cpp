@@ -23,7 +23,7 @@
  * single matte, camera-facing pentagon under an ambient and a distant
  * light -- matching a checked-in golden image. Reverting
  * GMANRayObjectManager::getRSPolygon to `return create();` renders nothing
- * but the white background, failing this check.
+ * but the black background, failing this check.
  */
 
 #include <cstdio>

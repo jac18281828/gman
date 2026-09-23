@@ -22,7 +22,7 @@
  * R5a proof: `gman -r gmanraytracer` renders tests/rib/r5a_disk.rib -- a
  * single matte disk, thetamax 270, under an ambient and a distant light --
  * matching a checked-in golden image. Reverting GMANRayObjectManager::
- * getRSDisk to `return create();` renders nothing but the white background,
+ * getRSDisk to `return create();` renders nothing but the black background,
  * failing this check.
  */
 

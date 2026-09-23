@@ -29,10 +29,9 @@
  *
  * "Covered" is judged against each image's own corner pixel
  * (silhouette_test.cpp's own idiom), not a literal nonzero-channel test:
- * gman's DefaultBGColor is white (255,255,255) despite its own "// Black"
- * comment in libgman/gmandefaults.cpp -- tests/lighting_test.cpp's
- * testTerminator already documents this. A literal nonzero-channel test
- * would read every pixel, background included, as covered.
+ * gman's DefaultBGColor is black (0,0,0), matching the sphere's own
+ * unlit-black regions exactly. A literal nonzero-channel test would read
+ * those regions as uncovered background.
  *
  * Both renders write r4_raytracer.tif; each is moved aside before the next
  * overwrites it. Any r4_raytracer_raytraced.tif/r4_raytracer_zbuffer.tif left
