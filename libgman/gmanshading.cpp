@@ -35,9 +35,9 @@ namespace gman {
 // gmanocclude.h, emits Occluder's vtable and typeinfo.
 Occluder::~Occluder() = default;
 
-// Out-of-line for the same reason, beside Occluder's, and for the
-// identical reason: gmantrace.h is included by gmanshaderenvironment.h,
-// which every shading translation unit pulls in.
+// Out-of-line beside Occluder's, for the same reason: gmantrace.h is
+// included by gmanshaderenvironment.h, which every shading translation
+// unit pulls in.
 Tracer::~Tracer() = default;
 
 namespace {

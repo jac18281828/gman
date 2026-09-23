@@ -43,9 +43,9 @@
  */
 namespace gmanshader {
 
-// A RIB-side "ior" parameter needs a standard dictionary token this
-// unit's Decision authority does not grant (gmanshaderparams.h); a
-// future unit may add RI_IOR following RI_KR's own precedent.
+// A RIB-side "ior" parameter would need a standard dictionary token
+// that does not exist yet (gmanshaderparams.h); a future unit may add
+// RI_IOR following RI_KR's own precedent.
 constexpr RtFloat kIor = (RtFloat)1.5;
 
 class glass : public GMANSurfaceShader {

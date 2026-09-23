@@ -89,11 +89,10 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   GMANMatrix4 cameraToWorld;
 
   // The renderer's answer to "does light reach P?" (gmanocclude.h), null
-  // by default and last so existing field offsets hold. Null means every
-  // light is visible: the z-buffer passes none, and a shader built
-  // against an older header ignores this until rebuilt. diffuse() and
-  // specular() consult it; ambient() cannot, having no direction to
-  // occlude.
+  // by default so existing field offsets hold. Null means every light is
+  // visible: the z-buffer passes none, and a shader built against an
+  // older header ignores this until rebuilt. diffuse() and specular()
+  // consult it; ambient() cannot, having no direction to occlude.
   gman::Occluder const* occluder = nullptr;
 
   // The renderer's answer to trace(): null by default and last, after

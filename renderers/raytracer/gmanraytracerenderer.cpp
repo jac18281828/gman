@@ -122,8 +122,11 @@ RtFloat selfShadowOffsetMagnitude(GMANPoint const& hitPoint) {
 // new origin inside the surface. reference is towardLight for a shadow
 // ray (the offset lands toward the light) and the incoming ray's own
 // direction for the composite loop (the offset lands on the far side of
-// the surface the ray is continuing through). Both Ng and reference are
-// unit length at every call site below.
+// the surface the ray is continuing through), both unit length by
+// construction. GMANRayTracer::trace()'s own reference is a
+// shader-supplied R instead -- unit length only insofar as the
+// shader's own reflect()/refract() (or whatever it called) produced
+// one; this file does not itself enforce it.
 GMANPoint offsetOrigin(GMANPoint const& hitPoint, GMANVector const& Ng, GMANVector const& reference) {
   RtFloat const magnitude = selfShadowOffsetMagnitude(hitPoint);
   RtFloat const offset = (Ng.dot(reference) < (RtFloat)0.0) ? -magnitude : magnitude;

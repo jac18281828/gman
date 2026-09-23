@@ -1548,7 +1548,7 @@ if(GMAN_BUILD_RAYTRACER)
   # tests/glassrayrender_test.cpp.
   add_executable(gman_glassrayrender glassrayrender_test.cpp)
   target_link_libraries(gman_glassrayrender PRIVATE gman_core TIFF::TIFF)
-  add_dependencies(gman_glassrayrender gman_raytracer gman_glass)
+  add_dependencies(gman_glassrayrender gman_raytracer gman_glass gman_matte)
 
   set(GMAN_GLASSRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/glassrayrender-run")
   file(MAKE_DIRECTORY "${GMAN_GLASSRAYRENDER_WORKDIR}")
