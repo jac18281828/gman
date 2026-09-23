@@ -60,6 +60,13 @@ constexpr RtFloat kSelfShadowOffsetFloor = (RtFloat)1.0e-9;
 constexpr RtFloat kTransmissionCutoff = (RtFloat)(1.0 / 255.0);
 constexpr int kMaxCompositeLayers = 16;
 
+// GMANRayTracer::trace()'s own recursion bound: independent of
+// kMaxCompositeLayers above, which bounds semi-transparent layers along
+// one ray's own path, not recursion branching. A primary ray shades at
+// depth 0; each trace() call a hit's own shader makes recurses at
+// depth + 1.
+constexpr int kMaxTraceDepth = 4;
+
 namespace {
 
 // The gman::SurfacePoint a ray hit implies: P and N/Ng already camera
@@ -167,6 +174,26 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
   return transmission;
 }
 
+GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng) const {
+  if (depth >= kMaxTraceDepth) {
+    // The cheapest possible bound: no ray cast, bvh untouched.
+    return background;
+  }
+
+  GMANPoint const origin = offsetOrigin(P, Ng, R);
+  GMANRay const ray(origin, R, RI_EPSILON, RI_INFINITY);
+  GMANHit hit;
+  GMANRayInterface const* hitPrimitive = nullptr;
+  if (!bvh.nearestHit(ray, hit, hitPrimitive)) {
+    return background;
+  }
+
+  GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1);
+  gman::Shading const shading =
+      gman::shade(hitPrimitive->getAppearance(), hitSurfacePoint(ray, hit), cameraToWorld, &occluder, &child);
+  return shading.Ci;
+}
+
 /*
  * RenderMan API GMANRaytraceRenderer
  *
@@ -210,8 +237,13 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
   GMANColor accumulated(0.0f, 0.0f, 0.0f);
   GMANColor transmission(1.0f, 1.0f, 1.0f);
 
+  // Depth 0: a primary ray's own hit. A shader's trace() call recurses
+  // into a child GMANRayTracer at depth 1 (see GMANRayTracer::trace()).
+  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
+
   for (int layer = 0; layer < kMaxCompositeLayers && hit.appearance != nullptr; ++layer) {
-    gman::Shading const shading = gman::shade(*hit.appearance, hitSurfacePoint(ray, hit.hit), cameraToWorld, &occluder);
+    gman::Shading const shading =
+        gman::shade(*hit.appearance, hitSurfacePoint(ray, hit.hit), cameraToWorld, &occluder, &tracer);
     accumulated += multiplyChannels(transmission, shading.Ci);
     transmission = multiplyChannels(transmission, oneMinus(shading.Oi));
     if (transmissionNegligible(transmission)) {

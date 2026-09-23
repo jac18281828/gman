@@ -41,6 +41,7 @@
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
 #include "gmanshading.h"
+#include "gmantrace.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 
@@ -68,6 +69,33 @@ public:
 
 private:
   GMANRayBVH const& bvh;
+};
+
+/*
+ * The ray tracer's own gman::Tracer: casts R from P (offset off Ng, the
+ * same self-shadow discipline shadeSample's composite loop and
+ * GMANRayOccluder::transmission already take), shades the nearest hit at
+ * depth + 1, and returns background on a miss or once depth reaches
+ * kMaxTraceDepth (gmanraytracerenderer.cpp) -- without casting a ray or
+ * touching bvh at all in that last case. A public, standalone class for
+ * the same reason as GMANRayOccluder above: a unit test builds one
+ * directly, against a GMANRayBVH and GMANRayOccluder it controls. Not
+ * GMAN_EXPORT, for the same reason as GMANRayOccluder too.
+ */
+class GMANRayTracer : public gman::Tracer {
+public:
+  GMANRayTracer(GMANRayBVH const& bvh, GMANRayOccluder const& occluder, GMANMatrix4 const& cameraToWorld,
+                GMANColor const& background, int depth)
+      : bvh(bvh), occluder(occluder), cameraToWorld(cameraToWorld), background(background), depth(depth) {}
+
+  GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng) const override;
+
+private:
+  GMANRayBVH const& bvh;
+  GMANRayOccluder const& occluder;
+  GMANMatrix4 const& cameraToWorld;
+  GMANColor background;
+  int depth;
 };
 
 /*

@@ -1382,6 +1382,20 @@ set_tests_properties(rayoccluder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# R8 proof, §8 C: GMANRayTracer -- depth-limit termination, background on a
+# miss or at the depth limit, single-hit shading matching gman::shade
+# directly, the self-shadow offset applied to a traced ray and recursion
+# depth counted correctly. Linked and carries the ENVIRONMENT rayoccluder
+# above does, for the same reasons.
+add_executable(gman_raytrace raytrace_test.cpp)
+target_link_libraries(gman_raytrace PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+
+add_test(NAME raytrace COMMAND gman_raytrace)
+set_tests_properties(raytrace PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # R-transparency proof, check 5: the composite loop's own layer cap, linked
 # against the shared object library for the same reason as gman_raysphere
 # above; carries raydepth's own ENVIRONMENT for the same reason too.
