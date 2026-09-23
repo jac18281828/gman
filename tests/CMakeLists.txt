@@ -1832,6 +1832,30 @@ if(GMAN_BUILD_RAYTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+
+  # Coverage-alpha proof: `gman -r gmanzbuffer` (default) and `-r
+  # gmanraytracer` each track per-sample coverage into OutputTIFF's own
+  # alpha byte -- an uncovered pixel reads 0, a fully-covered bright pixel
+  # reads 255, a silhouette-straddling pixel reads an intermediate value
+  # tracking its own colour-implied coverage fraction, and a uniformly
+  # semi-transparent surface's pixel reads its own Opacity, every asserted
+  # pixel's RGB at or below its own alpha. See coveragealpha_test.cpp's own
+  # comment.
+  add_executable(gman_coveragealpha coveragealpha_test.cpp)
+  target_link_libraries(gman_coveragealpha PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_coveragealpha gman_raytracer)
+
+  set(GMAN_COVERAGEALPHA_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/coveragealpha-run")
+  file(MAKE_DIRECTORY "${GMAN_COVERAGEALPHA_WORKDIR}")
+
+  add_test(NAME coveragealpha
+    COMMAND gman_coveragealpha $<TARGET_FILE:gman>
+                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_COVERAGEALPHA_WORKDIR}")
+  set_tests_properties(coveragealpha PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
 endif()
 
 # Proves both halves of an installed gman. bin/gman renders every
