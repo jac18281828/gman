@@ -199,6 +199,38 @@ void testSphere() {
   checkFiniteWellOrdered("sphere degenerate (zero radius)", zeroRadius.getBBox());
 }
 
+// padBBox's own contribution on the revolution-primitive path
+// (cameraSpaceBBox -> padBBox) is untested by containment/tightness
+// alone -- both already carry a tolerance well above the pad's own
+// few-ULP scale, so a mutant returning GMANBBox(camMin, camMax)
+// unpadded still passes them. Assert a literal expected max instead,
+// not one read back from padBBox's own constants: an unrotated sphere's
+// exact camera-space corner (computed by hand from unrotatedPlacement's
+// translate-then-scale, not sampled), offset by the pad those constants
+// compute at that corner's own magnitude.
+void testRevolutionPad() {
+  GMANMatrix4 const unrotated = unrotatedPlacement();
+  GMANRaySphere sphere(2.0, -2.0, 2.0, 360.0, GMANParameterList(), makeTransform(unrotated));
+  GMANPoint const boxMax = sphere.getBBox().getMax();
+
+  // unrotatedPlacement composes trans(3, -2, 7) then concat(scale(1.3,
+  // 0.7, 2.1)), so a point's translation is itself scaled: object corner
+  // (2, 2, 2) maps to (2*1.3 + 3*1.3, 2*0.7 + -2*0.7, 2*2.1 + 7*2.1) ==
+  // (6.5, 0.0, 18.9).
+  constexpr RtFloat kUnpaddedMaxX = 6.5f;
+  constexpr RtFloat kUnpaddedMaxY = 0.0f;
+  constexpr RtFloat kUnpaddedMaxZ = 18.9f;
+  // The largest coordinate magnitude among this box's own six corners is
+  // 18.9 (the z max); 3e-5 * 18.9 == 5.67e-4, above the 1e-9 floor.
+  constexpr RtFloat kExpectedPad = 5.67e-4f;
+  constexpr RtFloat kEpsilon = 1e-4f;
+
+  check(std::fabs(boxMax.getX() - (kUnpaddedMaxX + kExpectedPad)) < kEpsilon &&
+            std::fabs(boxMax.getY() - (kUnpaddedMaxY + kExpectedPad)) < kEpsilon &&
+            std::fabs(boxMax.getZ() - (kUnpaddedMaxZ + kExpectedPad)) < kEpsilon,
+        "sphere unrotated: getBBox().getMax() == the exact corner, offset by the literal expected pad");
+}
+
 // ---- cone ----
 void testCone() {
   GMANMatrix4 const placement = representativePlacement();
@@ -365,13 +397,14 @@ void testPolygon() {
   check(std::fabs(boxMax.getX() - (vertMax.getX() + kExpectedPad)) < kEpsilon &&
             std::fabs(boxMax.getY() - (vertMax.getY() + kExpectedPad)) < kEpsilon &&
             std::fabs(boxMax.getZ() - (vertMax.getZ() + kExpectedPad)) < kEpsilon,
-        "polygon: getBBox().getMax() == the vertices' own max, within the shared pad");
+        "polygon: getBBox().getMax() == the vertices' own max, offset by the literal expected pad");
 }
 
 } // namespace
 
 int main() {
   testSphere();
+  testRevolutionPad();
   testCone();
   testCylinder();
   testDisk();
