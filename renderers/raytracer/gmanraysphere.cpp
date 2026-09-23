@@ -131,9 +131,11 @@ bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
 
     RtFloat const phi = (RtFloat)asin(GMANClamp<double>(pz / radius, -1.0, 1.0));
 
-    double const invRadius = 1.0 / (double)radius;
-    GMANVector objNormal((RtFloat)(px * invRadius), (RtFloat)(py * invRadius),
-                         (RtFloat)(pz * invRadius)); // outward radial direction, object space
+    // The sphere is centred at the object-space origin, so the outward
+    // normal is the point itself, normalized: valid for either sign of
+    // radius, unlike dividing by radius, which points inward when it is
+    // negative.
+    GMANVector objNormal((RtFloat)px, (RtFloat)py, (RtFloat)pz);
     objNormal.normalize();
 
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);

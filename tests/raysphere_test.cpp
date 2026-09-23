@@ -189,6 +189,22 @@ void testPartialThetamaxRoundTrip() {
   check(hit.v >= 0.0 && hit.v <= 1.0, "partial thetamax: 0 <= v <= 1");
 }
 
+// ---- a negative radius keeps the normal outward ----
+// x^2+y^2+z^2 == radius^2 is the same unit sphere whether radius is 1 or
+// -1, so this ray hits the same point (0, 0, -1) as testAxialHitFields;
+// only the normal's sign is at stake, dividing the point by radius would
+// flip it inward.
+void testNegativeRadiusNormalOutward() {
+  GMANRaySphere sphere(-1.0, -1.0, 1.0, 360.0, GMANParameterList());
+  GMANRay ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit hit;
+
+  bool const hitFound = sphere.intersect(ray, hit);
+  check(hitFound, "negative radius: a ray down +z hits the radius == -1 sphere");
+  check(near(hit.normal.getX(), 0.0) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), -1.0),
+        "negative radius: outward normal == (0, 0, -1)");
+}
+
 // ---- dirSq's own guard pins on a zero-length direction ----
 // GMANVector::normalize leaves a sub-RI_EPSILON vector unchanged, so a
 // zero-length direction survives GMANRay's constructor and must miss at
@@ -240,6 +256,7 @@ int main() {
   testPartialSphereClips();
   testNormalIsNormalized();
   testPartialThetamaxRoundTrip();
+  testNegativeRadiusNormalOutward();
   testZeroLengthDirectionMisses();
   testDegenerateSpheresMiss();
 
