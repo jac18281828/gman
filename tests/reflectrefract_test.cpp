@@ -26,6 +26,7 @@
  * assumes too.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -45,6 +46,23 @@ bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }
 
 bool vectorNear(GMANVector const& a, GMANVector const& b, RtFloat tol) {
   return near(a.getX(), b.getX(), tol) && near(a.getY(), b.getY(), tol) && near(a.getZ(), b.getZ(), tol);
+}
+
+// An independent reference for GMANFresnel's reflectance: the standard
+// unpolarized Fresnel equations in terms of the two media's index ratio
+// eta = n1/n2, not the tan/sin angle-sum-difference identities
+// GMANFresnel itself uses. cosI is the incidence angle's own cosine,
+// non-negative.
+RtFloat closedFormKr(RtFloat cosI, RtFloat eta) {
+  RtFloat const sinI = std::sqrt(std::max((RtFloat)0.0, 1 - cosI * cosI));
+  RtFloat const sinT = sinI * eta;
+  if (sinT >= 1.0f) {
+    return 1.0f; // total internal reflection
+  }
+  RtFloat const cosT = std::sqrt(1 - sinT * sinT);
+  RtFloat const rs = (eta * cosI - cosT) / (eta * cosI + cosT);
+  RtFloat const rp = (eta * cosT - cosI) / (eta * cosT + cosI);
+  return (RtFloat)0.5 * (rs * rs + rp * rp);
 }
 
 // A unit direction in the x-z plane, degrees off -N (N = (0,0,1)):
@@ -164,13 +182,19 @@ void checkFresnelPins() {
 }
 
 // Check 5: no NaN or Inf at any angle from 0 to 90 degrees, in 0.5-degree
-// steps, both entering (eta < 1) and exiting (eta > 1).
+// steps, both entering (eta < 1) and exiting (eta > 1), and kr matches
+// the independent closed-form reference within 1e-4 throughout -- tight
+// enough that raising kFresnelGuardTol far past its own 1e-5 (0.02, well
+// short of the guard's own grazing regime) fails somewhere in the sweep
+// rather than passing unnoticed.
 void checkFresnelNoNaNAcrossSweep() {
   GMANSurfaceEnv env;
   GMANVector const n(0.0f, 0.0f, 1.0f);
   RtFloat const etas[2] = {(RtFloat)(1.0 / 1.5), (RtFloat)1.5};
+  constexpr RtFloat kSweepTol = (RtFloat)1.0e-4;
   int badCount = 0;
   int sampleCount = 0;
+  int mismatchCount = 0;
   for (RtFloat eta : etas) {
     for (RtFloat degrees = 0.0f; degrees <= 90.0f; degrees += 0.5f) {
       RtFloat kr = 0.0f, kt = 0.0f;
@@ -178,12 +202,19 @@ void checkFresnelNoNaNAcrossSweep() {
       ++sampleCount;
       if (!std::isfinite(kr) || !std::isfinite(kt)) {
         ++badCount;
+        continue;
+      }
+      RtFloat const cosI = std::cos(degrees * kDegToRad);
+      if (!near(kr, closedFormKr(cosI, eta), kSweepTol)) {
+        ++mismatchCount;
       }
     }
   }
   check(sampleCount > 300, "fresnel sweep: enough samples were gathered to trust a zero count");
   check(badCount == 0, "fresnel sweep: 0-90 degrees in 0.5-degree steps, entering and exiting, produced no NaN/Inf (" +
                            std::to_string(badCount) + "/" + std::to_string(sampleCount) + " bad)");
+  check(mismatchCount == 0, "fresnel sweep: kr matches the closed-form reference within 1e-4 throughout (" +
+                                std::to_string(mismatchCount) + "/" + std::to_string(sampleCount) + " mismatched)");
 }
 
 // Check 6: the six-argument GMANFresnel overload, called directly (no
@@ -205,8 +236,13 @@ void checkFresnelSixArgParity() {
       check(near(kr6, pin.wantKr, kTol), pin.label + ": six-arg kr matches its own pinned value");
     }
 
+    // Exact, not within tolerance: the guarded branches call
+    // GMANReflect(i, n) directly, and the general path's inline
+    // r = i - n*cosphi*2 is the identical expression on the identical
+    // operands GMANReflect itself computes, in the same order.
     GMANVector const wantR = GMANReflect(pin.i, pin.n);
-    check(vectorNear(r, wantR, kTol), pin.label + ": six-arg r matches GMANReflect(i, n)");
+    check(r.getX() == wantR.getX() && r.getY() == wantR.getY() && r.getZ() == wantR.getZ(),
+          pin.label + ": six-arg r matches GMANReflect(i, n) exactly");
 
     if (pin.tir) {
       check(t.getX() == 0.0f && t.getY() == 0.0f && t.getZ() == 0.0f,
