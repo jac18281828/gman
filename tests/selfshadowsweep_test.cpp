@@ -33,6 +33,7 @@
  */
 
 #include <cmath>
+#include <cstdio>
 #include <string>
 #include <vector>
 
@@ -334,11 +335,106 @@ void sweepAllCells() {
   }
 }
 
+// The large-primitive row: a sphere of radius R placed so its own hits sit
+// at max|P| ~ 5 (centre (0,0,R+5)), rays cast from the camera origin
+// rather than 5*scale out -- the case max|P| keying alone cannot clear,
+// since M grows with R while max|P| stays ~5. Runs the same hit under
+// both keyings, the real occluder.transmission both times: the magnitude
+// rule (the primitive's own M) and max|P| alone (surfaceMagnitude forced
+// to 0), so both readings come from the one production code path.
+void sweepLargePrimitiveRow(RtFloat radius) {
+  GMANMatrix4 placement;
+  placement.trans(0.0, 0.0, (double)radius + 5.0);
+  GMANRaySphere* sphere =
+      new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(placement));
+  gman::Appearance opaque;
+  opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  sphere->setAppearance(opaque);
+
+  GMANLinearWorldManager worldManager;
+  worldManager.add(sphere);
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
+
+  // The near cap's own outward normal is close to (0,0,-1); towardLight
+  // sits 87 degrees off it, close enough to graze that N.L stays small
+  // and positive across the whole sampled cap -- self-hit risk grows
+  // toward a grazing shadow ray (gmanraytracerenderer.cpp's own comment),
+  // so a light aimed straight down the normal would never stress it.
+  RtFloat const kGrazeAngle = GMANRadians(89.9f);
+  GMANVector const towardLight((RtFloat)std::sin(kGrazeAngle), 0.0f, (RtFloat)-std::cos(kGrazeAngle));
+  GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(),
+                        GMANVector(-towardLight.getX(), -towardLight.getY(), -towardLight.getZ()));
+  RtFloat const magnitude = boxMagnitude(sphere->getBBox());
+
+  GMANPoint const origin(0.0f, 0.0f, 0.0f);
+  constexpr int kThetaSteps = 36;
+  constexpr int kConeSteps = 12;
+  // Keeps every sampled hit's own max|P| close to 5: a wider cone would
+  // sweep further round the sphere's own visible cap, where max|P| itself
+  // grows with the sample instead of staying pinned near the camera.
+  constexpr RtFloat kMaxConeAngle = (RtFloat)0.05;
+
+  int lit = 0;
+  int magnitudeRuleSelfHit = 0;
+  int maxPOnlySelfHit = 0;
+  for (int ti = 0; ti < kThetaSteps; ++ti) {
+    RtFloat const theta = (RtFloat)ti / (RtFloat)kThetaSteps * 2.0f * (RtFloat)PI;
+    for (int ci = 1; ci <= kConeSteps; ++ci) {
+      RtFloat const phi = (RtFloat)ci / (RtFloat)kConeSteps * kMaxConeAngle;
+      GMANVector const dir((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),
+                           (RtFloat)std::cos(phi));
+      GMANRay const ray(origin, dir);
+      GMANHit hit;
+      if (!sphere->intersect(ray, hit)) {
+        continue;
+      }
+      RtFloat const nDotL = hit.normal.dot(towardLight);
+      if (nDotL <= 0.0f) {
+        continue;
+      }
+      ++lit;
+
+      GMANColor const withMagnitude =
+          occluder.transmission(light, hit.point, towardLight, hit.normal, RI_INFINITY, magnitude);
+      if (withMagnitude.getRed() < 0.99f || withMagnitude.getGreen() < 0.99f || withMagnitude.getBlue() < 0.99f) {
+        ++magnitudeRuleSelfHit;
+      }
+
+      GMANColor const maxPOnly = occluder.transmission(light, hit.point, towardLight, hit.normal, RI_INFINITY, 0.0f);
+      if (maxPOnly.getRed() < 0.99f || maxPOnly.getGreen() < 0.99f || maxPOnly.getBlue() < 0.99f) {
+        ++maxPOnlySelfHit;
+      }
+    }
+  }
+
+  std::string const label = "large sphere R=" + std::to_string((int)radius);
+  std::printf("%s: lit=%d magnitude-rule self-hits=%d max|P|-only self-hits=%d (M=%.6g)\n", label.c_str(), lit,
+              magnitudeRuleSelfHit, maxPOnlySelfHit, (double)magnitude);
+  check(lit >= 40, label + ": enough lit samples were gathered to trust a zero count");
+  check(magnitudeRuleSelfHit == 0, label + ": every lit sample transmits white under the magnitude rule");
+  // §1's own scope note claims R = 100 self-shadows under max|P| keying
+  // alone once c < 32; this harness's own sampling (a small near-pole
+  // cone, an 89.9-degree graze) never reproduces that at R = 100 for any
+  // c up to 256, only R = 1000 does (see the REPORT's own departure).
+  // Only the R = 1000 claim -- the one this harness does reproduce -- is
+  // asserted here.
+  if (radius >= 1000.0f) {
+    check(maxPOnlySelfHit > 0, label + ": max|P| keying alone self-shadows, the gap the magnitude rule closes");
+  }
+}
+
 } // namespace
 
 int main() {
   sweepAllCells();
 
+  sweepLargePrimitiveRow(10.0f);
+  sweepLargePrimitiveRow(100.0f);
+  sweepLargePrimitiveRow(1000.0f);
+
   return checkSummary("R9's self-shadow sweep: every ray primitive, at every scale and placement, never shadows "
-                      "itself once legitimate self-occlusion is excluded");
+                      "itself once legitimate self-occlusion is excluded, and a large primitive near the camera "
+                      "needs the magnitude rule");
 }

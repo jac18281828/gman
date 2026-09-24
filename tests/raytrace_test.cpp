@@ -494,6 +494,85 @@ void checkNestedOccluderShadowsBlocker() {
         "check 6: trace()'s result does not match the unshadowed reference");
 }
 
+// §8 C's own renderer-path check: a mutation leaving hitSurfacePoint's own
+// surfaceMagnitude at 0 must fail this. A radius-1000 sphere placed so its
+// hits sit at max|P| ~ 5 (M ~ 2005, the large-primitive-row fixture's own
+// placement), lit from a steep graze so N.L stays small and positive --
+// the case most sensitive to a wrong (too small) magnitude. Every lit hit,
+// traced through a real GMANRayOccluder via GMANRayTracer::trace, must
+// return the same colour gman::shade gives the same hit with no occluder
+// at all: the sphere is the scene's only primitive, so a correct offset
+// never lets the occluder find anything to shadow.
+void checkLargeSphereRendererPathAppliesMagnitude() {
+  RtFloat const radius = 1000.0f;
+  RtFloat const centreZ = radius + 5.0f;
+  GMANLinearWorldManager worldManager;
+  GMANRaySphere* sphere = sphereAt(radius, 0.0f, 0.0f, centreZ);
+  LambertianTestShader shader;
+  gman::Appearance appearance;
+  appearance.shader = &shader;
+  appearance.Cs = GMANColor(0.8f, 0.3f, 0.2f);
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+
+  // 87 degrees off the near pole's own normal -- a strongly grazing
+  // shadow ray, the case selfshadowsweep_test.cpp's own large-primitive
+  // row uses too.
+  RtFloat const grazeAngle = GMANRadians(87.0f);
+  GMANVector const towardLight((RtFloat)std::sin(grazeAngle), 0.0f, (RtFloat)-std::cos(grazeAngle));
+  GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(),
+                        GMANVector(-towardLight.getX(), -towardLight.getY(), -towardLight.getZ()));
+  appearance.lights = {&light};
+  sphere->setAppearance(appearance);
+  worldManager.add(sphere);
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
+  GMANMatrix4 const cameraToWorld;
+  GMANColor const background(1.0f, 1.0f, 0.0f); // never reached: every sampled ray hits the sphere
+  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
+
+  GMANPoint const p0(0.0f, 0.0f, 0.0f);
+  constexpr int kThetaSteps = 36;
+  constexpr int kConeSteps = 12;
+  // Keeps every sampled hit's own max|P| close to 5, the large-primitive
+  // row's own reasoning.
+  constexpr RtFloat kMaxConeAngle = (RtFloat)0.05;
+
+  int checked = 0;
+  int mismatched = 0;
+  for (int ti = 0; ti < kThetaSteps; ++ti) {
+    RtFloat const theta = (RtFloat)ti / (RtFloat)kThetaSteps * 2.0f * (RtFloat)PI;
+    for (int ci = 1; ci <= kConeSteps; ++ci) {
+      RtFloat const phi = (RtFloat)ci / (RtFloat)kConeSteps * kMaxConeAngle;
+      GMANVector const r0((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),
+                          (RtFloat)std::cos(phi));
+      GMANHit hit;
+      if (!sphere->intersect(GMANRay(p0, r0), hit)) {
+        continue;
+      }
+      ++checked;
+
+      // Ng == zero: p0 is a free camera-space point, not on any surface
+      // (GMANRayTracer::trace's own contract), so this offsets nothing.
+      GMANColor const traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
+
+      gman::SurfacePoint const point = surfacePointFromHit(hit, r0, p0);
+      gman::Shading const withoutOccluder =
+          gman::shade(sphere->getAppearance(), point, cameraToWorld, nullptr, nullptr);
+      if (!colorNear(traced, withoutOccluder.Ci, kTol)) {
+        ++mismatched;
+      }
+    }
+  }
+
+  check(checked >= 40, "renderer-path check: enough hits were gathered to trust a zero count");
+  check(mismatched == 0,
+        "renderer-path check: every traced hit through a real occluder matches the same shading with none, "
+        "the only primitive being the sphere itself (" +
+            std::to_string(mismatched) + "/" + std::to_string(checked) + " mismatched)");
+}
+
 } // namespace
 
 int main() {
@@ -503,6 +582,7 @@ int main() {
   checkSelfShadowSweepAppliesOffset();
   checkDepthCountsCorrectly();
   checkNestedOccluderShadowsBlocker();
+  checkLargeSphereRendererPathAppliesMagnitude();
 
   return checkSummary("GMANRayTracer: depth-limit termination, background on miss, single-hit shading matches "
                       "gman::shade, self-shadow swept clean, recursion depth counted correctly, and the nested "

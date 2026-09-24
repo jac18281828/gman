@@ -1455,6 +1455,20 @@ set_tests_properties(selfshadowsweep PROPERTIES
   LABELS unit
   TIMEOUT 60)
 
+# R9 proof, §8 B: the contact gap -- a small receiver (M ~ max|P|) shadows
+# at a gap the old offset hid, a large receiver (M >> max|P|) keeps
+# today's own contact under the ceiling, linked against the shared object
+# library for the same reason as gman_raysphere above; carries raydepth's
+# own ENVIRONMENT for the same reason too.
+add_executable(gman_contactgap contactgap_test.cpp)
+target_link_libraries(gman_contactgap PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+
+add_test(NAME contactgap COMMAND gman_contactgap)
+set_tests_properties(contactgap PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # R8 proof, §8 C: GMANRayTracer -- depth-limit termination, background on a
 # miss or at the depth limit, single-hit shading matching gman::shade
 # directly, the self-shadow offset applied to a traced ray and recursion

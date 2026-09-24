@@ -24,6 +24,7 @@
  */
 
 #include <cmath>
+#include <limits>
 
 #include "gmanmath.h"
 #include "gmanrayinterface.h"
@@ -34,23 +35,36 @@
 #include "gmanworldmanager.h"
 #include "ri.h"
 
+// One unit roundoff: half an RtFloat ulp at 1.0, the size of every term
+// kSelfShadowOffsetScale's own derivation below counts in.
+constexpr RtFloat kUnitRoundoff = std::numeric_limits<RtFloat>::epsilon() / (RtFloat)2.0;
+
 // The distance a ray continuing past a hit displaces its own origin,
-// along the surface's geometric normal, scaled to the hit point's own
-// coordinate magnitude rather than fixed. The offset must clear a
-// self-hit's surviving root -- which grows both toward a grazing angle
-// and with that magnitude, worse on a swept quadric than on a sphere --
-// while staying far under the smallest gap this renderer's own geometry
-// ever puts between two surfaces, or a real blocker close to what it
-// shadows stops registering. kSelfShadowOffsetFloor keeps a hit point at
-// or near the origin, where the scaled term vanishes, a positive offset.
+// along the surface's geometric normal, keyed on the larger of the hit
+// point's own coordinate magnitude and the hit primitive's own
+// camera-space extent (M) -- a primitive's own size, not the camera
+// distance alone, since a large surface near the camera needs an offset
+// proportional to itself, not to |P|. kSelfShadowOffsetFloor keeps a hit
+// point at or near the origin, where the scaled term vanishes, a positive
+// offset. kSelfShadowOffsetCeiling caps the result at today's own
+// max|P|-scaled offset, so a large receiver near the camera never gets a
+// larger offset than before, and its own contact shadows are no worse.
 //
-// The scale keys on the hit point's own distance from the camera-space
-// origin, not on the primitive's extent or the intersector's own
-// rounding-error bound. It tracks a uniformly scaled scene exactly, but
-// not a primitive's own size: geometry small against that distance
-// receives an offset large against itself, and a contact shadow at that
-// scale stops registering.
-constexpr RtFloat kSelfShadowOffsetScale = (RtFloat)3.0e-5;
+// c (16) is the larger of two bounds. The derivation: the chain from the
+// exact surface point to the next intersect's view of the moved origin
+// crosses four roundings -- the object-space root cast to RtFloat, the
+// float objectToCamera transformPoint building hit.point, the float add
+// in offsetOrigin, and the next intersect's float cameraToObject
+// transformPoint (which also carries GMANMatrix4::invert's own error and
+// a homogeneous divide off 1 by a ulp) -- each bounded by the sweep's own
+// condition-number-4 affine transform, so each contributes at most
+// 4 * kUnitRoundoff * max(max|P|, M); four such terms sum to 16. The
+// measured bound: the self-shadow sweep's own largest per-cell minimum
+// self-hit-free c, over the quadrics and the torus at x1 and x1000 in
+// both the dev and nofma builds, was 3 (the nofma build's skewed
+// paraboloid at x1000); 4x that margin is 12. 16 clears both.
+constexpr RtFloat kSelfShadowOffsetScale = (RtFloat)16.0 * kUnitRoundoff;
+constexpr RtFloat kSelfShadowOffsetCeiling = (RtFloat)3.0e-5;
 constexpr RtFloat kSelfShadowOffsetFloor = (RtFloat)1.0e-9;
 
 // The composite loop's own stop conditions: a transmission below this in
@@ -129,10 +143,14 @@ bool transmissionNegligible(GMANColor const& transmission) {
 // kSelfShadowOffsetScale/kSelfShadowOffsetFloor); offsetOrigin below
 // scales Ng by this and orients the result, and transmission's own loop
 // guard compares a ray's remaining interval against it directly.
-RtFloat selfShadowOffsetMagnitude(GMANPoint const& hitPoint) {
-  RtFloat const magnitude =
+// surfaceMagnitude is the hit primitive's own M (0 for a free point, no
+// surface known), so max|P| alone applies there.
+RtFloat selfShadowOffsetMagnitude(GMANPoint const& hitPoint, RtFloat surfaceMagnitude) {
+  RtFloat const maxP =
       GMANMax(GMANMax(std::fabs(hitPoint.getX()), std::fabs(hitPoint.getY())), std::fabs(hitPoint.getZ()));
-  return GMANMax(kSelfShadowOffsetScale * magnitude, kSelfShadowOffsetFloor);
+  RtFloat const keyMagnitude = GMANMax(maxP, surfaceMagnitude);
+  RtFloat const scaled = GMANMin(kSelfShadowOffsetCeiling * maxP, kSelfShadowOffsetScale * keyMagnitude);
+  return GMANMax(kSelfShadowOffsetFloor, scaled);
 }
 
 // hitPoint displaced along Ng by the self-shadow offset, oriented toward
@@ -145,9 +163,11 @@ RtFloat selfShadowOffsetMagnitude(GMANPoint const& hitPoint) {
 // construction. GMANRayTracer::trace()'s own reference is a
 // shader-supplied R instead -- unit length only insofar as the
 // shader's own reflect()/refract() (or whatever it called) produced
-// one; this file does not itself enforce it.
-GMANPoint offsetOrigin(GMANPoint const& hitPoint, GMANVector const& Ng, GMANVector const& reference) {
-  RtFloat const magnitude = selfShadowOffsetMagnitude(hitPoint);
+// one; this file does not itself enforce it. surfaceMagnitude is
+// hitPoint's own surface's M, forwarded to selfShadowOffsetMagnitude.
+GMANPoint offsetOrigin(GMANPoint const& hitPoint, GMANVector const& Ng, GMANVector const& reference,
+                       RtFloat surfaceMagnitude) {
+  RtFloat const magnitude = selfShadowOffsetMagnitude(hitPoint, surfaceMagnitude);
   RtFloat const offset = (Ng.dot(reference) < (RtFloat)0.0) ? -magnitude : magnitude;
   return GMANPoint(hitPoint.getX() + Ng.getX() * offset, hitPoint.getY() + Ng.getY() * offset,
                    hitPoint.getZ() + Ng.getZ() * offset);
@@ -156,10 +176,13 @@ GMANPoint offsetOrigin(GMANPoint const& hitPoint, GMANVector const& Ng, GMANVect
 } // namespace
 
 GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
-                                        GMANVector const& Ng, RtFloat distance, RtFloat /*surfaceMagnitude*/) const {
+                                        GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const {
   GMANColor transmission(1.0f, 1.0f, 1.0f);
-  GMANPoint origin = offsetOrigin(P, Ng, towardLight);
+  GMANPoint origin = offsetOrigin(P, Ng, towardLight, surfaceMagnitude);
   RtFloat remaining = distance;
+  // The surface origin currently sits on: the caller's own P until the
+  // walk crosses a blocker, then that blocker's own M.
+  RtFloat currentMagnitude = surfaceMagnitude;
 
   // A closed solid contributes one (1 - Os) factor per surface the shadow
   // ray crosses, not per blocker: bvh.nearestHit keeps one hit per call,
@@ -174,7 +197,7 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
   for (int layer = 0; layer < kMaxCompositeLayers; ++layer) {
     // A light nearer than the offset itself still has to end the walk,
     // though at this offset's scale that is effectively never.
-    if (selfShadowOffsetMagnitude(origin) >= remaining) {
+    if (selfShadowOffsetMagnitude(origin, currentMagnitude) >= remaining) {
       break;
     }
     GMANRay const shadowRay(origin, towardLight, RI_EPSILON, remaining);
@@ -190,20 +213,21 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
     // The surface this iteration is leaving, not the Ng the caller
     // passed: that one belongs to the first hit only, a different
     // surface once the walk has crossed it.
-    origin = offsetOrigin(hit.point, hit.normal, towardLight);
+    currentMagnitude = primitiveMagnitude(hitPrimitive->getBBox());
+    origin = offsetOrigin(hit.point, hit.normal, towardLight, currentMagnitude);
     remaining -= hit.t;
   }
   return transmission;
 }
 
 GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
-                               RtFloat /*surfaceMagnitude*/) const {
+                               RtFloat surfaceMagnitude) const {
   if (depth >= kMaxTraceDepth) {
     // The cheapest possible bound: no ray cast, bvh untouched.
     return background;
   }
 
-  GMANPoint const origin = offsetOrigin(P, Ng, R);
+  GMANPoint const origin = offsetOrigin(P, Ng, R, surfaceMagnitude);
   GMANRay const ray(origin, R, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
   GMANRayInterface const* hitPrimitive = nullptr;
@@ -276,8 +300,11 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
     // Offset along Ng rather than the ray direction: offsetting along the
     // direction gives a perpendicular clearance of offset * |Ng . D|,
     // which vanishes at a grazing hit and lets a silhouette-grazing
-    // surface composite itself repeatedly.
-    GMANPoint const origin = offsetOrigin(hit.hit.point, hit.hit.normal, ray.getDirection());
+    // surface composite itself repeatedly. The hit primitive's own M, not
+    // the previous layer's: each layer composited here can be a different
+    // surface.
+    RtFloat const magnitude = primitiveMagnitude(hit.hit.primitive->getBBox());
+    GMANPoint const origin = offsetOrigin(hit.hit.point, hit.hit.normal, ray.getDirection(), magnitude);
     ray = GMANRay(origin, ray.getDirection(), RI_EPSILON, RI_INFINITY);
     hit = nearestHit(ray);
   }
