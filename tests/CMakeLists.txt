@@ -1241,8 +1241,7 @@ set_tests_properties(quadratic PROPERTIES
 # sphere and the four swept quadrics' intersectors share, its linear
 # branch exact and its quadratic branch stable under cancellation.
 add_executable(gman_rayquadratic rayquadratic_test.cpp)
-target_link_libraries(gman_rayquadratic PRIVATE gman_core)
-target_include_directories(gman_rayquadratic PRIVATE "${CMAKE_SOURCE_DIR}/renderers/raytracer")
+target_link_libraries(gman_rayquadratic PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME rayquadratic COMMAND gman_rayquadratic)
 set_tests_properties(rayquadratic PROPERTIES
@@ -1250,22 +1249,21 @@ set_tests_properties(rayquadratic PROPERTIES
   TIMEOUT 30)
 
 # R5c proof, part A: gman::solveQuartic against quartics built from known
-# dyadic roots, linked against the shared object library (it carries the
-# compiled solver, unlike solveRayQuadratic's header-only one) for the same
-# reason as gman_raysphere below.
+# dyadic roots. The compiled solver lives in gman_core now; gmanrayquartic.h
+# is a libgman/ header, reached through gman_internal_headers.
 add_executable(gman_rayquartic rayquartic_test.cpp)
-target_link_libraries(gman_rayquartic PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_rayquartic PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME rayquartic COMMAND gman_rayquartic)
 set_tests_properties(rayquartic PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Ray tracer core, unit 2: GMANRaySphere::intersect, linked against the
-# shared raytracer object library rather than the gman_raytracer plugin
-# target, so this still builds and runs with GMAN_BUILD_RAYTRACER off.
+# Ray tracer core, unit 2: GMANRaySphere::intersect, linked against
+# gman_core alone, where ray geometry lives unconditionally, so this still
+# builds and runs with GMAN_BUILD_RAYTRACER off.
 add_executable(gman_raysphere raysphere_test.cpp)
-target_link_libraries(gman_raysphere PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_raysphere PRIVATE gman_core)
 
 add_test(NAME raysphere COMMAND gman_raysphere)
 set_tests_properties(raysphere PROPERTIES
@@ -1273,70 +1271,77 @@ set_tests_properties(raysphere PROPERTIES
   TIMEOUT 30)
 
 # R5c proof: every quadric intersector's hit sits on its implicit surface
-# and its own ray at origin distances 5, 1e4 and 1e6, linked against the
-# shared object library for the same reason as gman_raysphere above.
+# and its own ray at origin distances 5, 1e4 and 1e6, linked against
+# gman_core for the same reason as gman_raysphere above; gman_internal_headers
+# reaches the libgman/ primitive headers it includes.
 add_executable(gman_rayhitprecision rayhitprecision_test.cpp)
-target_link_libraries(gman_rayhitprecision PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_rayhitprecision PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME rayhitprecision COMMAND gman_rayhitprecision)
 set_tests_properties(rayhitprecision PROPERTIES
   LABELS unit
   TIMEOUT 60)
 
-# R5a proof, unit: GMANRayDisk::intersect, linked against the shared object
-# library for the same reason as gman_raysphere above.
+# R5a proof, unit: GMANRayDisk::intersect, linked against gman_core for the
+# same reason as gman_raysphere above; gman_internal_headers reaches
+# gmanraydisk.h, a libgman/ header.
 add_executable(gman_raydisk raydisk_test.cpp)
-target_link_libraries(gman_raydisk PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_raydisk PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raydisk COMMAND gman_raydisk)
 set_tests_properties(raydisk PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5a proof, unit: GMANRayPolygon::intersect, linked against the shared
-# object library for the same reason as gman_raysphere above.
+# R5a proof, unit: GMANRayPolygon::intersect, linked against gman_core for
+# the same reason as gman_raysphere above; gman_internal_headers reaches
+# gmanraypolygon.h, a libgman/ header.
 add_executable(gman_raypolygon raypolygon_test.cpp)
-target_link_libraries(gman_raypolygon PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_raypolygon PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raypolygon COMMAND gman_raypolygon)
 set_tests_properties(raypolygon PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayCylinder::intersect, linked against the shared
-# object library for the same reason as gman_raysphere above.
+# R5b proof, unit: GMANRayCylinder::intersect, linked against gman_core for
+# the same reason as gman_raysphere above; gman_internal_headers reaches
+# gmanraycylinder.h, a libgman/ header.
 add_executable(gman_raycylinder raycylinder_test.cpp)
-target_link_libraries(gman_raycylinder PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_raycylinder PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raycylinder COMMAND gman_raycylinder)
 set_tests_properties(raycylinder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayCone::intersect, linked against the shared object
-# library for the same reason as gman_raysphere above.
+# R5b proof, unit: GMANRayCone::intersect, linked against gman_core for the
+# same reason as gman_raysphere above; gman_internal_headers reaches
+# gmanraycone.h, a libgman/ header.
 add_executable(gman_raycone raycone_test.cpp)
-target_link_libraries(gman_raycone PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_raycone PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raycone COMMAND gman_raycone)
 set_tests_properties(raycone PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayParaboloid::intersect, linked against the shared
-# object library for the same reason as gman_raysphere above.
+# R5b proof, unit: GMANRayParaboloid::intersect, linked against gman_core
+# for the same reason as gman_raysphere above; gman_internal_headers reaches
+# gmanrayparaboloid.h, a libgman/ header.
 add_executable(gman_rayparaboloid rayparaboloid_test.cpp)
-target_link_libraries(gman_rayparaboloid PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_rayparaboloid PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME rayparaboloid COMMAND gman_rayparaboloid)
 set_tests_properties(rayparaboloid PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayHyperboloid::intersect, linked against the shared
-# object library for the same reason as gman_raysphere above.
+# R5b proof, unit: GMANRayHyperboloid::intersect, linked against gman_core
+# for the same reason as gman_raysphere above; gman_internal_headers reaches
+# gmanrayhyperboloid.h, a libgman/ header.
 add_executable(gman_rayhyperboloid rayhyperboloid_test.cpp)
-target_link_libraries(gman_rayhyperboloid PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_rayhyperboloid PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME rayhyperboloid COMMAND gman_rayhyperboloid)
 set_tests_properties(rayhyperboloid PROPERTIES
@@ -1347,17 +1352,18 @@ set_tests_properties(rayhyperboloid PROPERTIES
 # information about v on this plane, so v comes from the plane hit's own
 # radius, and the wedge is a spiral sector since phi(v) varies with v.
 add_executable(gman_hyperboloidflatannulus hyperboloidflatannulus_test.cpp)
-target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME hyperboloidflatannulus COMMAND gman_hyperboloidflatannulus)
 set_tests_properties(hyperboloidflatannulus PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5c proof, parts B and C: GMANRayTorus::intersect, linked against the
-# shared object library for the same reason as gman_raysphere above.
+# R5c proof, parts B and C: GMANRayTorus::intersect, linked against
+# gman_core for the same reason as gman_raysphere above; gman_internal_headers
+# reaches gmanraytorus.h, a libgman/ header.
 add_executable(gman_raytorus raytorus_test.cpp)
-target_link_libraries(gman_raytorus PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_raytorus PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raytorus COMMAND gman_raytorus)
 set_tests_properties(raytorus PROPERTIES
@@ -1366,10 +1372,11 @@ set_tests_properties(raytorus PROPERTIES
 
 # R6 proof, §8 check B: every ray primitive's camera-space bbox --
 # containment, tightness, the singular guard and the degenerate,
-# non-singular case -- linked against the shared object library for the
-# same reason as gman_raysphere above. See tests/raybbox_test.cpp.
+# non-singular case -- linked against gman_core for the same reason as
+# gman_raysphere above; gman_internal_headers reaches the libgman/ primitive
+# headers it includes. See tests/raybbox_test.cpp.
 add_executable(gman_raybbox raybbox_test.cpp)
-target_link_libraries(gman_raybbox PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_raybbox PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raybbox COMMAND gman_raybbox)
 set_tests_properties(raybbox PROPERTIES
@@ -1379,11 +1386,11 @@ set_tests_properties(raybbox PROPERTIES
 
 # R6 proof, §8 check C: GMANRayBVH, tested standalone against a hand-built
 # GMANLinearWorldManager -- identical hits against a linear scan and a
-# bounded primitive-test count -- linked against the shared object
-# library for the same reason as gman_raysphere above. See
-# tests/raybvh_test.cpp.
+# bounded primitive-test count -- linked against gman_core for the same
+# reason as gman_raysphere above; gman_internal_headers reaches the
+# libgman/ primitive headers it includes. See tests/raybvh_test.cpp.
 add_executable(gman_raybvh raybvh_test.cpp)
-target_link_libraries(gman_raybvh PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_raybvh PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raybvh COMMAND gman_raybvh)
 set_tests_properties(raybvh PROPERTIES
@@ -1395,7 +1402,7 @@ set_tests_properties(raybvh PROPERTIES
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
 # behavior; WILL_FAIL until the second inverse mapping is implemented.
 add_executable(gman_torusspindle torusspindle_test.cpp)
-target_link_libraries(gman_torusspindle PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_torusspindle PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME torusspindle COMMAND gman_torusspindle)
 set_tests_properties(torusspindle PROPERTIES
@@ -1405,10 +1412,10 @@ set_tests_properties(torusspindle PROPERTIES
 
 # Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
 # GMANRaySphere holding its parameters and a copied transform, linked
-# against the shared raytracer object library for the same reason as
-# gman_raysphere above.
+# against gman_core alone, where GMANRayObjectManager and GMANRaySphere
+# both now live.
 add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp)
-target_link_libraries(gman_rayobjectmanager PRIVATE gman_core gman_raytracer_objects)
+target_link_libraries(gman_rayobjectmanager PRIVATE gman_core)
 
 add_test(NAME rayobjectmanager COMMAND gman_rayobjectmanager)
 set_tests_properties(rayobjectmanager PROPERTIES
@@ -1416,8 +1423,8 @@ set_tests_properties(rayobjectmanager PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R4 proof, unit 4: GMANRaytraceRenderer::getDepth, linked against the
-# shared object library for the same reason as gman_raysphere above. A
+# R4 proof, unit 4: GMANRaytraceRenderer::getDepth, linked against
+# gman_raytracer_objects, which still compiles GMANRaytraceRenderer itself. A
 # default GMANAttributes loads libmatte.so by bare name, so this carries the
 # same ENVIRONMENT as gman_rayobjectmanager.
 add_executable(gman_raydepth raydepth_test.cpp)
@@ -1429,8 +1436,8 @@ set_tests_properties(raydepth PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, check 5: GMANRayOccluder::transmission, linked against the
-# shared object library for the same reason as gman_raysphere above;
+# R7 proof, check 5: GMANRayOccluder::transmission, linked against
+# gman_raytracer_objects, which still compiles GMANRayOccluder itself;
 # carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_rayoccluder rayoccluder_test.cpp)
 target_link_libraries(gman_rayoccluder PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
@@ -1443,9 +1450,10 @@ set_tests_properties(rayoccluder PROPERTIES
 
 # The self-shadow sweep -- every ray primitive, at every scale and
 # placement, through its own real intersect() and
-# GMANRayOccluder::transmission, linked against the shared object library
-# for the same reason as gman_raysphere above; carries raydepth's own
-# ENVIRONMENT for the same reason too.
+# GMANRayOccluder::transmission, linked against gman_core (where every
+# primitive lives) and gman_raytracer_objects (which still compiles
+# GMANRayOccluder itself); carries raydepth's own ENVIRONMENT for the same
+# reason too.
 add_executable(gman_selfshadowsweep selfshadowsweep_test.cpp)
 target_link_libraries(gman_selfshadowsweep PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
@@ -1457,9 +1465,10 @@ set_tests_properties(selfshadowsweep PROPERTIES
 
 # The contact gap -- a small receiver (M ~ max|P|) shadows at a gap the
 # old offset hid, a large receiver (M >> max|P|) keeps its own contact
-# under the ceiling, linked against the shared object library for the
-# same reason as gman_raysphere above; carries raydepth's own ENVIRONMENT
-# for the same reason too.
+# under the ceiling, linked against gman_core (where GMANRaySphere and
+# GMANRayPolygon live) and gman_raytracer_objects (which still compiles
+# GMANRayOccluder itself); carries raydepth's own ENVIRONMENT for the same
+# reason too.
 add_executable(gman_contactgap contactgap_test.cpp)
 target_link_libraries(gman_contactgap PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
@@ -1484,8 +1493,8 @@ set_tests_properties(raytrace PROPERTIES
   TIMEOUT 30)
 
 # R-transparency proof, check 5: the composite loop's own layer cap, linked
-# against the shared object library for the same reason as gman_raysphere
-# above; carries raydepth's own ENVIRONMENT for the same reason too.
+# against gman_raytracer_objects, which still compiles GMANRaytraceRenderer
+# itself; carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_compositelayercap compositelayercap_test.cpp)
 target_link_libraries(gman_compositelayercap PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
@@ -1496,9 +1505,10 @@ set_tests_properties(compositelayercap PROPERTIES
   TIMEOUT 30)
 
 # R7 proof, §8 check 7: GMANRayOccluder::transmission's own iteration cap,
-# linked against the shared object library for the same reason as
-# gman_raysphere above; carries raydepth's own ENVIRONMENT for the same
-# reason too. See coincidenttransmission_test.cpp's own comment.
+# linked against gman_core (where GMANRayPolygon lives) and
+# gman_raytracer_objects (which still compiles GMANRayOccluder itself);
+# carries raydepth's own ENVIRONMENT for the same reason too. See
+# coincidenttransmission_test.cpp's own comment.
 add_executable(gman_coincidenttransmission coincidenttransmission_test.cpp)
 target_link_libraries(gman_coincidenttransmission PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
@@ -1509,8 +1519,8 @@ set_tests_properties(coincidenttransmission PROPERTIES
   TIMEOUT 30)
 
 # R7 proof, §8 check 6: two close, camera-facing transparent disks, linked
-# against the shared object library for the same reason as gman_raysphere
-# above; carries raydepth's own ENVIRONMENT for the same reason too. See
+# against gman_raytracer_objects, which still compiles GMANRaytraceRenderer
+# itself; carries raydepth's own ENVIRONMENT for the same reason too. See
 # closetransparentstack_test.cpp's own comment.
 add_executable(gman_closetransparentstack closetransparentstack_test.cpp)
 target_link_libraries(gman_closetransparentstack PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
@@ -1521,8 +1531,8 @@ set_tests_properties(closetransparentstack PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, §8 check 8: a grazing transparent hit, linked against the
-# shared object library for the same reason as gman_raysphere above;
+# R7 proof, §8 check 8: a grazing transparent hit, linked against
+# gman_raytracer_objects, which still compiles GMANRaytraceRenderer itself;
 # carries raydepth's own ENVIRONMENT for the same reason too. See
 # grazingtransparent_test.cpp's own comment.
 add_executable(gman_grazingtransparent grazingtransparent_test.cpp)

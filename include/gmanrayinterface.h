@@ -28,6 +28,12 @@
 #include "gmanray.h"
 #include "gmanshading.h"
 
+/*
+ * A primitive a ray can hit. intersect is const and touches no shared
+ * mutable state -- the same contract GMANRayBVH::nearestHit and
+ * GMANRayOccluder::transmission keep -- so a caller can invoke it from
+ * concurrent gman::parallelFor workers.
+ */
 class GMAN_EXPORT GMANRayInterface : virtual public GMANPrimitive {
 public:
   virtual bool intersect(const GMANRay& ray, GMANHit& hit) const;

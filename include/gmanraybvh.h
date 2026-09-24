@@ -40,12 +40,12 @@
  * walks worldManager once, an object-median split over each primitive's
  * own bbox; nearestHit then traverses the tree it built, touching only
  * that tree and a local stack -- const, re-entrant, no shared mutable
- * state of its own. Not GMAN_EXPORT: used only within
- * gman_raytracer_objects and by its own tests, which compile these
- * sources directly rather than linking the installed library
- * (GMANRayOccluder's own precedent).
+ * state of its own, the same contract GMANRayInterface::intersect and
+ * GMANRayOccluder::transmission keep, which is what lets a caller invoke
+ * any of the three from concurrent gman::parallelFor workers. GMAN_EXPORT,
+ * along with GMANRayOccluder: the path tracer's own API.
  */
-class GMANRayBVH {
+class GMAN_EXPORT GMANRayBVH {
 public:
   // Discards any tree a prior call built, then walks worldManager
   // (getFirst/getNext) once, keeping each GMANRayInterface primitive by
