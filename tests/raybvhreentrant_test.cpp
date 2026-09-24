@@ -30,7 +30,7 @@
  * still visited); the far leaf holds the outer ray's only real hit. A
  * traversal that shares mutable state between the outer and nested call
  * loses track of the outer's own pending far leaf once the nested call
- * returns, and so never finds it -- exactly what §8 C's mutation pins.
+ * returns, and so never finds it.
  */
 
 #include "check.h"
