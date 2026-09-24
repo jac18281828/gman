@@ -1520,6 +1520,20 @@ set_tests_properties(radiositymesh PROPERTIES
   LABELS unit
   TIMEOUT 60)
 
+# GMANRadiosityMesh over a holed GeneralPolygon, a PointsPolygons mesh and
+# a PointsGeneralPolygons face with a hole: element areas against the
+# analytic outer-minus-hole area, node inside flags around a hole, and
+# locate() against hits a GMANRayBVH reports on a mesh face. Linked
+# against gman_radiosity_objects alone, with no gman_internal_headers:
+# every header it includes is public.
+add_executable(gman_radiositypolygonmesh radiositypolygonmesh_test.cpp)
+target_link_libraries(gman_radiositypolygonmesh PRIVATE gman_radiosity_objects)
+
+add_test(NAME radiositypolygonmesh COMMAND gman_radiositypolygonmesh)
+set_tests_properties(radiositypolygonmesh PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Counts GMANRadiosityMesh::build's own resolution-search evaluations for
 # one primitive driven to kMaxDivisions, and bounds them well below a
 # one-step linear search's cubic cost.

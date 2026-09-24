@@ -42,6 +42,7 @@
 #include "gmanrayinterface.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
+#include "gmanraypolygonmesh.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanvector.h"
@@ -53,9 +54,10 @@ namespace {
 // outside.
 constexpr std::size_t kNoElement = static_cast<std::size_t>(-1);
 
-// A clipped polygon cell smaller than this is a sliver too small to
-// divide safely for its own centroid; its area alone still contributes
-// correctly to the primitive's total.
+// A clipped cell's own net area at or under this is a sliver too small to
+// divide safely for a centroid, or a hole's own subtraction erasing the
+// cell outright; either way it gets no element, the same fate a cell
+// entirely outside the outer loop meets.
 constexpr double kMinPolygonCellArea = 1e-12;
 
 // A ceiling on how many nu/nv relaxation rounds chooseParametricResolution
@@ -297,6 +299,19 @@ PolygonExtent projectPolygonExtent(std::vector<GMANPoint> const& loop, PolygonBa
   return extent;
 }
 
+// A hole loop's own vertices in basis's (s, t) coordinates -- the same
+// projection projectPolygonExtent applies to the outer loop, without the
+// extent: a hole is assumed inside the outer loop's own bounds, so it
+// contributes no grid sizing of its own.
+std::vector<Point2> projectLoopST(std::vector<GMANPoint> const& loop, PolygonBasis const& basis) {
+  std::vector<Point2> loopST(loop.size());
+  for (std::size_t i = 0; i < loop.size(); ++i) {
+    GMANVector const rel(basis.origin, loop[i]);
+    loopST[i] = {(double)rel.dot(basis.e0), (double)rel.dot(basis.e1)};
+  }
+  return loopST;
+}
+
 // A polygon's own grid resolution and step, once its extent is known: the
 // smallest counts, capped, that keep a cell's own edge at or under
 // maxEdgeLength.
@@ -343,8 +358,9 @@ Point2 clipIntersection(Point2 const& a, Point2 const& b, int axis, double bound
 }
 
 // Sutherland-Hodgman against one half-plane (axis >= bound, or axis <=
-// bound when keepAbove is false): the standard reason a convex clip
-// applies here at all, RiPolygon's own contract (AGENTS.md).
+// bound when keepAbove is false). Only the clip window need be convex --
+// each grid cell here -- for this to give the correct signed area and
+// centroid; the subject polygon (an outer loop or a hole) can be concave.
 std::vector<Point2> clipHalfPlane(std::vector<Point2> const& poly, int axis, double bound, bool keepAbove) {
   std::vector<Point2> out;
   std::size_t const n = poly.size();
@@ -376,41 +392,44 @@ std::vector<Point2> clipCellAgainstPolygon(std::vector<Point2> const& loopST, do
   return result;
 }
 
-// The shoelace signed area and centroid of a (possibly clockwise) simple
-// 2D polygon. A near-zero area falls back to the plain vertex average, a
-// sliver too small to divide by safely; its own contribution to the
-// primitive's total area is unaffected, since that comes from area
-// itself, not from this fallback.
-void polygon2DAreaAndCentroid(std::vector<Point2> const& poly, double& signedArea, double& cx, double& cy) {
+// The shoelace signed area and raw (undivided) first moments of a
+// (possibly clockwise) simple 2D polygon: momentX/momentY are 6 * area *
+// centroid, sign and all, so a caller can subtract one loop's moment from
+// another's before ever dividing by an area that might itself be near
+// zero.
+void polygon2DAreaAndMoments(std::vector<Point2> const& poly, double& signedArea, double& momentX, double& momentY) {
   signedArea = 0;
-  double sumX = 0;
-  double sumY = 0;
+  momentX = 0;
+  momentY = 0;
   std::size_t const n = poly.size();
   for (std::size_t i = 0; i < n; ++i) {
     Point2 const& a = poly[i];
     Point2 const& b = poly[(i + 1) % n];
     double const cross = a[0] * b[1] - b[0] * a[1];
     signedArea += cross;
-    sumX += (a[0] + b[0]) * cross;
-    sumY += (a[1] + b[1]) * cross;
+    momentX += (a[0] + b[0]) * cross;
+    momentY += (a[1] + b[1]) * cross;
   }
   signedArea *= 0.5;
+}
 
-  if (std::fabs(signedArea) > kMinPolygonCellArea) {
-    double const denom = 6.0 * signedArea;
-    cx = sumX / denom;
-    cy = sumY / denom;
-    return;
-  }
+// One loop's own contribution to a cell's net area and moment: loopST
+// clipped against the cell, then reduced to a magnitude-only area and a
+// moment carrying the same sign convention as area * centroid regardless
+// of loopST's own winding, so an outer loop's and a hole's own
+// contributions add and subtract correctly no matter how each was wound.
+struct ClippedMoments {
+  double area = 0;
+  double momentX = 0;
+  double momentY = 0;
+};
 
-  cx = 0;
-  cy = 0;
-  for (Point2 const& p : poly) {
-    cx += p[0];
-    cy += p[1];
-  }
-  cx /= (double)n;
-  cy /= (double)n;
+ClippedMoments clipCellMoments(std::vector<Point2> const& loopST, double sLo, double sHi, double tLo, double tHi) {
+  std::vector<Point2> const clipped = clipCellAgainstPolygon(loopST, sLo, sHi, tLo, tHi);
+  double signedArea = 0, sumX = 0, sumY = 0;
+  polygon2DAreaAndMoments(clipped, signedArea, sumX, sumY);
+  double const sign = signedArea < 0.0 ? -1.0 : 1.0;
+  return {std::fabs(signedArea), sign * sumX, sign * sumY};
 }
 
 PolygonGrid choosePolygonGrid(PolygonExtent const& extent, RtFloat maxEdgeLength) {
@@ -426,29 +445,42 @@ PolygonGrid choosePolygonGrid(PolygonExtent const& extent, RtFloat maxEdgeLength
 
 // Appends a polygon's own (nu + 1) x (nv + 1) grid nodes -- every one of
 // them, inside the polygon or not, flagged accordingly, so a clipped
-// cell's own four corners are always there to interpolate between.
+// cell's own four corners are always there to interpolate between. A node
+// is inside only within the outer loop and outside every hole.
 void appendPolygonNodes(PolygonBasis const& basis, PolygonExtent const& extent, PolygonGrid const& grid,
-                        GMANVector const& normal, std::vector<GMANRadiosityNode>& nodes) {
+                        std::vector<std::vector<Point2>> const& holesST, GMANVector const& normal,
+                        std::vector<GMANRadiosityNode>& nodes) {
   for (std::size_t j = 0; j <= grid.nv; ++j) {
     double const t = extent.tMin + grid.dvStep * (double)j;
     for (std::size_t i = 0; i <= grid.nu; ++i) {
       double const s = extent.sMin + grid.duStep * (double)i;
+      bool inside = insidePolygonST(extent.loopST, s, t);
+      for (std::vector<Point2> const& holeST : holesST) {
+        if (inside && insidePolygonST(holeST, s, t)) {
+          inside = false;
+        }
+      }
+
       GMANRadiosityNode node;
       node.position = basis.origin + basis.e0 * (RtFloat)s + basis.e1 * (RtFloat)t;
       node.normal = normal;
-      node.inside = insidePolygonST(extent.loopST, s, t);
+      node.inside = inside;
       nodes.push_back(node);
     }
   }
 }
 
-// Clips each grid cell against the polygon and appends an element for
-// every surviving one -- its own clipped area and centroid, so the kept
-// elements sum to the polygon's own area up to rounding. A cell entirely
-// outside is dropped; cellToElement stays kNoElement there.
+// Clips each grid cell against the outer loop and against every hole, and
+// appends an element for every cell whose net area (outer minus holes)
+// clears kMinPolygonCellArea -- its own net area and centroid, so the
+// kept elements sum to the outer loop's own area minus its holes', up to
+// rounding. A cell the outer loop's own clip finds outside, or a hole's
+// own subtraction erases, is dropped; cellToElement stays kNoElement
+// there.
 void appendPolygonElements(PolygonBasis const& basis, PolygonExtent const& extent, PolygonGrid const& grid,
-                           GMANVector const& normal, std::size_t nodeOffset,
-                           std::vector<GMANRadiosityElement>& elements, std::vector<std::size_t>& cellToElement) {
+                           std::vector<std::vector<Point2>> const& holesST, GMANVector const& normal,
+                           std::size_t nodeOffset, std::vector<GMANRadiosityElement>& elements,
+                           std::vector<std::size_t>& cellToElement) {
   for (std::size_t j = 0; j < grid.nv; ++j) {
     double const tLo = extent.tMin + grid.dvStep * (double)j;
     double const tHi = tLo + grid.dvStep;
@@ -456,18 +488,19 @@ void appendPolygonElements(PolygonBasis const& basis, PolygonExtent const& exten
       double const sLo = extent.sMin + grid.duStep * (double)i;
       double const sHi = sLo + grid.duStep;
 
-      std::vector<Point2> const clipped = clipCellAgainstPolygon(extent.loopST, sLo, sHi, tLo, tHi);
-      if (clipped.size() < 3) {
-        continue; // entirely outside; cellToElement stays kNoElement
+      ClippedMoments net = clipCellMoments(extent.loopST, sLo, sHi, tLo, tHi);
+      for (std::vector<Point2> const& holeST : holesST) {
+        ClippedMoments const hole = clipCellMoments(holeST, sLo, sHi, tLo, tHi);
+        net.area -= hole.area;
+        net.momentX -= hole.momentX;
+        net.momentY -= hole.momentY;
+      }
+      if (net.area <= kMinPolygonCellArea) {
+        continue; // outside the outer loop, or a hole erased the cell
       }
 
-      double signedArea = 0;
-      double cx = 0, cy = 0;
-      polygon2DAreaAndCentroid(clipped, signedArea, cx, cy);
-      double const area = std::fabs(signedArea);
-      if (area <= 0.0) {
-        continue;
-      }
+      double const cx = net.momentX / (6.0 * net.area);
+      double const cy = net.momentY / (6.0 * net.area);
 
       std::array<std::size_t, 4> const corners = {
           nodeOffset + j * (grid.nu + 1) + i,
@@ -477,7 +510,7 @@ void appendPolygonElements(PolygonBasis const& basis, PolygonExtent const& exten
       };
 
       GMANRadiosityElement element;
-      element.area = (RtFloat)area;
+      element.area = (RtFloat)net.area;
       element.normal = normal;
       element.centre = basis.origin + basis.e0 * (RtFloat)cx + basis.e1 * (RtFloat)cy;
       element.corners = corners;
@@ -623,7 +656,7 @@ void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric&
   primitiveMeshes.push_back(std::move(mesh));
 }
 
-void GMANRadiosityMesh::dicePolygon(GMANRayPolygon& polygon, RtFloat maxEdgeLength) {
+void GMANRadiosityMesh::dicePolygon(GMANRayPolygon const& polygon, RtFloat maxEdgeLength) {
   if (polygon.isDegenerate()) {
     // Its own intersect() never hits it either, so there is nothing for
     // locate() to ever need here: zero elements, not a skip.
@@ -631,15 +664,21 @@ void GMANRadiosityMesh::dicePolygon(GMANRayPolygon& polygon, RtFloat maxEdgeLeng
   }
 
   std::vector<GMANPoint> const& loop = polygon.getOuterLoop();
+  std::vector<std::vector<GMANPoint>> const& holes = polygon.getHoles();
   GMANVector const normal = polygon.getPlaneNormal();
 
   PolygonBasis const basis = computePolygonBasis(loop, normal);
   PolygonExtent const extent = projectPolygonExtent(loop, basis);
   PolygonGrid const grid = choosePolygonGrid(extent, maxEdgeLength);
 
+  std::vector<std::vector<Point2>> holesST(holes.size());
+  for (std::size_t h = 0; h < holes.size(); ++h) {
+    holesST[h] = projectLoopST(holes[h], basis);
+  }
+
   std::size_t const nodeOffset = nodes.size();
   std::size_t const elementOffset = elements.size();
-  appendPolygonNodes(basis, extent, grid, normal, nodes);
+  appendPolygonNodes(basis, extent, grid, holesST, normal, nodes);
 
   PrimitiveMesh mesh;
   mesh.primitive = &polygon;
@@ -657,14 +696,24 @@ void GMANRadiosityMesh::dicePolygon(GMANRayPolygon& polygon, RtFloat maxEdgeLeng
   mesh.dvStep = grid.dvStep;
   mesh.cellToElement.assign(grid.nu * grid.nv, kNoElement);
 
-  appendPolygonElements(basis, extent, grid, normal, nodeOffset, elements, mesh.cellToElement);
+  appendPolygonElements(basis, extent, grid, holesST, normal, nodeOffset, elements, mesh.cellToElement);
 
   primitiveMeshes.push_back(std::move(mesh));
+}
+
+void GMANRadiosityMesh::diceMesh(GMANRayPolygonMesh const& mesh, RtFloat maxEdgeLength) {
+  for (std::size_t i = 0; i < mesh.getFaceCount(); ++i) {
+    dicePolygon(mesh.getFace(i), maxEdgeLength);
+  }
 }
 
 bool GMANRadiosityMesh::diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength) {
   if (auto* polygon = dynamic_cast<GMANRayPolygon*>(primitive)) {
     dicePolygon(*polygon, maxEdgeLength);
+    return true;
+  }
+  if (auto* mesh = dynamic_cast<GMANRayPolygonMesh*>(primitive)) {
+    diceMesh(*mesh, maxEdgeLength);
     return true;
   }
 

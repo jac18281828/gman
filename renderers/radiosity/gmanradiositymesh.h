@@ -34,6 +34,7 @@
 
 class GMANParametric;
 class GMANRayPolygon;
+class GMANRayPolygonMesh;
 
 // One grid corner, shared by up to four elements. position and normal are
 // camera space. inside is false only for a polygon grid node clipping
@@ -74,12 +75,15 @@ struct GMANRadiosityLocation {
  * gmanraytracerenderer.h).
  *
  * build() walks worldManager once (getFirst()/getNext()), dicing each
- * primitive that is one of the seven quadric GMANRayInterface classes or a
- * GMANRayPolygon. Anything else -- an unsupported primitive, or a quadric
- * whose object-to-camera placement will not invert -- is skipped and
- * counted (getSkippedCount()), never silently dropped. A degenerate
- * polygon is not skipped; it dices to zero elements, since its own
- * intersect() never hits it either.
+ * primitive that is one of the seven quadric GMANRayInterface classes, a
+ * GMANRayPolygon, or a GMANRayPolygonMesh. A mesh dices face by face,
+ * through its own getFaceCount()/getFace(); each face is keyed for
+ * locate() by its own address, the same address a GMANRayBVH hit reports,
+ * so the mesh primitive itself is never a lookup key. Anything else -- an
+ * unsupported primitive, or a quadric whose object-to-camera placement
+ * will not invert -- is skipped and counted (getSkippedCount()), never
+ * silently dropped. A degenerate polygon or mesh face is not skipped; it
+ * dices to zero elements, since its own intersect() never hits it either.
  *
  * Each diced primitive gets an (nu + 1) x (nv + 1) node grid and nu x nv
  * elements. nu and nv are the smallest counts, capped at kMaxDivisions
@@ -91,12 +95,17 @@ struct GMANRadiosityLocation {
  * the placement's inverse transpose (AGENTS.md's own normal-transform
  * rule), normalized. A polygon dices over an orthonormal in-plane basis
  * (e0 along its first non-degenerate edge, e1 = normal x e0) instead,
- * every cell clipped against the polygon -- a cell entirely outside is
- * dropped, and a surviving cell's own area is its clipped area, so the
- * kept elements sum to the polygon's own area up to rounding. A clipped
- * cell keeps its own four unclipped corner nodes regardless (flagging one
- * outside if clipping found it so), so it still has four to interpolate
- * between.
+ * every cell clipped against the outer loop and, for a GeneralPolygon,
+ * against each hole in turn -- a cell's own area is its clipped outer
+ * area minus its clipped hole areas, and a cell whose net area falls at
+ * or under the dicer's own minimum is dropped, the fate a cell entirely
+ * outside the outer loop already meets. The kept elements sum to the
+ * outer loop's own area minus its holes', up to rounding; holes are
+ * assumed inside the outer loop and mutually non-overlapping
+ * (RiGeneralPolygon's own contract), so no union is computed. A clipped
+ * cell keeps its own four unclipped corner nodes regardless, each flagged
+ * inside only when it falls inside the outer loop and outside every hole,
+ * so it still has four to interpolate between.
  *
  * An element's own area is the sum of its two triangles' own areas: a
  * facet quantity, so its error against a curved primitive's true area
@@ -108,9 +117,9 @@ struct GMANRadiosityLocation {
  * locate() is const and touches no shared mutable state, so a solver and
  * the ray tracer's own shading can call it from concurrent
  * gman::parallelFor workers. For a quadric hit, the element comes from
- * (hit.u, hit.v) clamped into the grid; for a polygon hit, from the hit
- * point's own in-plane coordinates. It returns false for a primitive the
- * mesh does not hold.
+ * (hit.u, hit.v) clamped into the grid; for a polygon or mesh-face hit,
+ * from the hit point's own in-plane coordinates. It returns false for a
+ * primitive the mesh does not hold.
  */
 class GMANRadiosityMesh {
 public:
@@ -132,7 +141,7 @@ public:
   GMANRadiosityNode const& getNode(std::size_t index) const { return nodes[index]; }
   GMANRadiosityElement const& getElement(std::size_t index) const { return elements[index]; }
 
-  // Primitives build() walked but could not dice: not one of the eight
+  // Primitives build() walked but could not dice: not one of the nine
   // supported classes, or a quadric singular under its own placement.
   std::size_t getSkippedCount() const { return skippedCount; }
 
@@ -147,7 +156,7 @@ private:
   // .cpp for why that needs no separate case.
   GMANRadiosityElement buildFacetElement(std::array<std::size_t, 4> const& corners) const;
 
-  // Dices primitive, already known to be one of the eight diceable
+  // Dices primitive, already known to be one of the nine diceable
   // classes; returns false on the one further way it can still fail (a
   // quadric whose placement will not invert).
   bool diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength);
@@ -155,7 +164,11 @@ private:
   void diceParametric(GMANPrimitive* primitive, GMANParametric& parametric, GMANMatrix4 const& objectToCamera,
                       GMANMatrix4 const& cameraToObject, RtFloat maxEdgeLength);
 
-  void dicePolygon(GMANRayPolygon& polygon, RtFloat maxEdgeLength);
+  void dicePolygon(GMANRayPolygon const& polygon, RtFloat maxEdgeLength);
+
+  // Dices each of mesh's own faces as its own GMANRayPolygon, keyed for
+  // locate() by that face's own address, never the mesh's.
+  void diceMesh(GMANRayPolygonMesh const& mesh, RtFloat maxEdgeLength);
 
   std::vector<GMANRadiosityNode> nodes;
   std::vector<GMANRadiosityElement> elements;
