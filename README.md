@@ -101,7 +101,7 @@ corrupted or blank; pair it with an explicit `Clipping <near> <far>`.
 crash: quadrics and polygons, the `matte` and `plastic` surface shaders,
 three lights. Its `Display` writes PNG, which needs libpng at build time:
 without it, `gman samples/vase.rib` rejects the scene with `RIE_BADFILE`;
-install libpng and reconfigure to fix it.
+install libpng and reconfigure with `-DGMAN_WITH_PNG=ON` to fix it.
 
 Render it through the default z-buffer renderer:
 
@@ -125,8 +125,8 @@ mv vase.png ../samples/vase-raytraced.png
 cd ..
 ```
 
-The ray-traced render, above, adds real reflection, refraction and shadows
-over `samples/vase.png`'s z-buffer preview.
+The ray-traced render, above, adds real shadows and the table seen
+through the translucent vase, over `samples/vase.png`'s z-buffer preview.
 
 A few more scenes worth running, from `tests/rib/`:
 
@@ -179,6 +179,7 @@ one renders a lit sphere:
 int main(void) {
   RiBegin(RI_NULL);
   RiDisplay("sphere.tif", RI_FILE, RI_RGBA, RI_NULL);
+  RiTranslate(0, 0, 5);
 
   RiWorldBegin();
   RiLightSource("ambientlight", RI_NULL);
@@ -243,7 +244,7 @@ each:
   time; light shaders build into libgman, and an unknown name warns and is
   ignored. Pluggable, not programmable: volume shaders parse and do
   nothing.
-- **[ ] Displacement shading.** Wants micropolygons, which want REYES.
+- **[ ] Displacement shading.** Wants micropolygons.
 - **[~] Many large textures, flat memory.** `texture()` and `environment()`
   read through an in-memory cache that decodes each name once and never
   bounds its own memory.
