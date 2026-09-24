@@ -58,6 +58,17 @@ constexpr std::size_t kNoElement = static_cast<std::size_t>(-1);
 // correctly to the primitive's total.
 constexpr double kMinPolygonCellArea = 1e-12;
 
+// A ceiling on how many nu/nv relaxation rounds chooseParametricResolution
+// takes, sized well above the worst case its own seven quadrics need.
+// A full sphere -- the deepest coupling among them, since only its u (not
+// its v) resolution depends on the other axis's own row sampling -- settles
+// in 3: one round resolves v correctly (u independent of it) while u still
+// sits at its pole-degenerate first guess, the next corrects u against that
+// settled v, the third confirms nothing moved. Kept a fixed constant rather
+// than tied to kMaxDivisions, so it stays a round count, not another factor
+// of N, and the whole search stays within O(N^2 log N).
+constexpr std::size_t kMaxResolutionRounds = 6;
+
 using Point2 = std::array<double, 2>;
 
 RtFloat length(GMANVector const& v) { return (RtFloat)std::sqrt(v.dot(v)); }
@@ -159,17 +170,6 @@ template <class Measure> std::size_t resolveAxisCount(std::size_t cap, RtFloat t
   }
   return hi;
 }
-
-// A ceiling on how many nu/nv relaxation rounds chooseParametricResolution
-// takes below, sized well above the worst case its own seven quadrics need.
-// A full sphere -- the deepest coupling among them, since only its u (not
-// its v) resolution depends on the other axis's own row sampling -- settles
-// in 3: one round resolves v correctly (u independent of it) while u still
-// sits at its pole-degenerate first guess, the next corrects u against that
-// settled v, the third confirms nothing moved. Kept a fixed constant rather
-// than tied to kMaxDivisions, so it stays a round count, not another factor
-// of N, and the whole search stays within O(N^2 log N).
-constexpr std::size_t kMaxResolutionRounds = 6;
 
 // The smallest (nu, nv), capped at GMANRadiosityMesh::kMaxDivisions each,
 // whose own real grid keeps every edge at or under maxEdgeLength. Growing

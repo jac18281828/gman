@@ -93,9 +93,9 @@ int main() {
   // one final (257 x 257) grid build:
   //   B = 3*(1551*256 + 1031) + (1551*1 + 1031) + 257*257
   //     = 3*398087 + 2582 + 66049 = 1262892
-  // rounded up for platform slack. The old one-step search measures
-  // 17007488 calls for this same cylinder (checked at 43b107b) -- over 13x
-  // above B, so a return to it fails this check.
+  // rounded up for platform slack. A one-step-at-a-time search makes
+  // 17007488 calls for this same cylinder, over 13x above B, so it fails
+  // this check.
   constexpr std::size_t B = 1300000;
 
   std::printf("resolution search: cylinder evaluationCount=%zu B=%zu\n", cylinder->evaluationCount, B);
