@@ -304,6 +304,21 @@ if(GMAN_BUILD_RAYTRACER)
   set_target_properties(gman_raytracer PROPERTIES OUTPUT_NAME "gmanraytracer")
 endif()
 
+# The radiosity solver's own element mesh, gman_raytracer_objects' own
+# pattern above: built whenever GMAN_BUILD_RADIOSITY or BUILD_TESTING is
+# on, so its unit tests still build and run with the plugin off. The
+# gman_radiosity plugin below does not link it yet -- no solver or shading
+# change is in scope until it does.
+if(GMAN_BUILD_RADIOSITY OR BUILD_TESTING)
+  add_library(gman_radiosity_objects OBJECT
+    renderers/radiosity/gmanradiositymesh.cpp)
+  target_link_libraries(gman_radiosity_objects PUBLIC gman_core)
+  target_include_directories(gman_radiosity_objects PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderers/radiosity")
+  set_target_properties(gman_radiosity_objects PROPERTIES
+    POSITION_INDEPENDENT_CODE ON)
+endif()
+
 if(GMAN_BUILD_RADIOSITY)
   gman_add_plugin(gman_radiosity
     renderers/radiosity/gmanradiosityrenderer.cpp

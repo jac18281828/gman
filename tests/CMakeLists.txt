@@ -1484,11 +1484,10 @@ set_tests_properties(raypolygonhole PROPERTIES
 # primitive; GMANRayBVH::build flattens it into one entry per face. A ray
 # aimed at a face never reports the mesh as hitPrimitive, and a fan of
 # rays across a cube agrees, face by face, between the BVH, the mesh's own
-# linear intersect and the analytic nearest face. gman_internal_headers
-# reaches gmanraypolygon.h, a libgman/ header. See
+# linear intersect and the analytic nearest face. See
 # tests/polygonmeshbvh_test.cpp.
 add_executable(gman_polygonmeshbvh polygonmeshbvh_test.cpp)
-target_link_libraries(gman_polygonmeshbvh PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_polygonmeshbvh PRIVATE gman_core)
 
 add_test(NAME polygonmeshbvh COMMAND gman_polygonmeshbvh)
 set_tests_properties(polygonmeshbvh PROPERTIES
@@ -1508,6 +1507,18 @@ add_test(NAME polygonmeshtexcoord COMMAND gman_polygonmeshtexcoord)
 set_tests_properties(polygonmeshtexcoord PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# GMANRadiosityMesh: area (analytic and by convergence) and locate()'s own
+# round trip. Linked against gman_radiosity_objects alone, with no
+# gman_internal_headers: every header it includes is public, proving the
+# mesh reaches nothing in libgman/.
+add_executable(gman_radiositymesh radiositymesh_test.cpp)
+target_link_libraries(gman_radiositymesh PRIVATE gman_radiosity_objects)
+
+add_test(NAME radiositymesh COMMAND gman_radiositymesh)
+set_tests_properties(radiositymesh PROPERTIES
+  LABELS unit
+  TIMEOUT 60)
 
 # R5c deferral: the spindle and horn torus (minorradius >= majorradius), a
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
