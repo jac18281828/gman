@@ -79,6 +79,13 @@ struct GMAN_EXPORT SurfacePoint {
   RtFloat v = 0.0;
   RtFloat s = 0.0;
   RtFloat t = 0.0;
+
+  // The hit primitive's own camera-space magnitude (gmanraytracerenderer.cpp's
+  // primitiveMagnitude), 0 when P names no real surface -- a renderer's
+  // self-shadow offset keys on this alongside |P| itself, so a large
+  // primitive near the camera offsets by its own size, not the camera
+  // distance alone.
+  RtFloat surfaceMagnitude = 0.0;
 };
 
 // What shading a point produces: colour and opacity together, so a

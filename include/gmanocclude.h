@@ -65,9 +65,12 @@ public:
   // degrades a ray tracer's own origin offset to none rather than a NaN.
   // distance is RI_INFINITY when light has none to report (a distant
   // light); otherwise the length GMANLight::sample's own l carried before
-  // the illuminance loop normalized it.
+  // the illuminance loop normalized it. surfaceMagnitude is P's own
+  // surface's camera-space magnitude (gman::SurfacePoint's own field), 0
+  // for a caller with no surface -- no default: a default argument on a
+  // virtual binds by static type, not the override actually called.
   virtual GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
-                                 GMANVector const& Ng, RtFloat distance) const = 0;
+                                 GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const = 0;
 };
 
 } // namespace gman

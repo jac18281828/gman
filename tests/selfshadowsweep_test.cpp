@@ -100,6 +100,23 @@ GMANPoint placementCenter(GMANMatrix4 const& placement) {
   return gman::transformPoint(placement, GMANPoint(0.0, 0.0, 0.0));
 }
 
+// The largest absolute coordinate over box's own six corners, 0 for a box
+// still at its default +/-RI_INFINITY -- mirrors gmanraytracerenderer.cpp's
+// own primitiveMagnitude, duplicated here since that one is file-local.
+RtFloat boxMagnitude(GMANBBox const& box) {
+  GMANPoint const boxMin = box.getMin();
+  GMANPoint const boxMax = box.getMax();
+  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
+  RtFloat magnitude = 0.0;
+  for (RtFloat const coord : coords) {
+    if ((RtFloat)std::fabs(coord) >= RI_INFINITY) {
+      return 0.0;
+    }
+    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
+  }
+  return magnitude;
+}
+
 // One sweep cell's own fixture: a single primitive, alone in its own BVH,
 // its own outward light direction (object space, transformed by the same
 // placement the primitive was built with) and the placement's own centre,
@@ -277,7 +294,9 @@ void sweepCell(Cell& cell) {
         continue;
       }
 
-      GMANColor const result = occluder.transmission(light, hit.point, cell.towardLight, hit.normal, RI_INFINITY);
+      RtFloat const magnitude = boxMagnitude(cell.primitive->getBBox());
+      GMANColor const result =
+          occluder.transmission(light, hit.point, cell.towardLight, hit.normal, RI_INFINITY, magnitude);
       if (result.getRed() < 0.99f || result.getGreen() < 0.99f || result.getBlue() < 0.99f) {
         ++selfShadowed;
       }

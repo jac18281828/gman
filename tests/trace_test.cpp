@@ -28,6 +28,8 @@
 #include <cmath>
 
 #include "check.h"
+#include "gmanlightsourcemgr.h"
+#include "gmanocclude.h"
 #include "gmanshaderenvironment.h"
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
@@ -50,11 +52,13 @@ class RecordingTracer : public gman::Tracer {
 public:
   explicit RecordingTracer(GMANColor answer) : answer_(answer) {}
 
-  GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng) const override {
+  GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
+                  RtFloat surfaceMagnitude) const override {
     ++callCount_;
     lastP_ = P;
     lastR_ = R;
     lastNg_ = Ng;
+    lastSurfaceMagnitude_ = surfaceMagnitude;
     return answer_;
   }
 
@@ -62,6 +66,7 @@ public:
   GMANPoint const& lastP() const { return lastP_; }
   GMANVector const& lastR() const { return lastR_; }
   GMANVector const& lastNg() const { return lastNg_; }
+  RtFloat lastSurfaceMagnitude() const { return lastSurfaceMagnitude_; }
 
 private:
   GMANColor answer_;
@@ -69,6 +74,7 @@ private:
   mutable GMANPoint lastP_;
   mutable GMANVector lastR_;
   mutable GMANVector lastNg_;
+  mutable RtFloat lastSurfaceMagnitude_ = 0.0;
 };
 
 // Calls se.trace() once, unconditionally, with a fixed direction, and
@@ -78,6 +84,50 @@ class TraceProbeShader : public GMANSurfaceShader {
 public:
   const GMANColor& computeCi(GMANSurfaceEnv& se) override {
     ci_ = se.trace(GMANVector(0.0f, 0.0f, -1.0f));
+    return ci_;
+  }
+  const GMANColor& computeOi(GMANSurfaceEnv& se) override {
+    oi_ = se.Os;
+    return oi_;
+  }
+
+private:
+  GMANColor ci_;
+  GMANColor oi_;
+};
+
+// Records its own last surfaceMagnitude argument, white transmission
+// otherwise -- the minimum Occluder that lets a test observe
+// occludedContribution's own forwarding of env.surfaceMagnitude.
+class RecordingOccluder : public gman::Occluder {
+public:
+  GMANColor transmission(GMANLight const& /*light*/, GMANPoint const& /*P*/, GMANVector const& /*towardLight*/,
+                         GMANVector const& /*Ng*/, RtFloat /*distance*/, RtFloat surfaceMagnitude) const override {
+    ++callCount_;
+    lastSurfaceMagnitude_ = surfaceMagnitude;
+    return GMANColor(1.0f, 1.0f, 1.0f);
+  }
+
+  int callCount() const { return callCount_; }
+  RtFloat lastSurfaceMagnitude() const { return lastSurfaceMagnitude_; }
+
+private:
+  mutable int callCount_ = 0;
+  mutable RtFloat lastSurfaceMagnitude_ = 0.0;
+};
+
+// Calls both se.trace() (reaching a bound Tracer) and se.diffuse()
+// (reaching a bound Occluder, one light active and N.L > 0) -- the
+// minimum shader that lets a test observe env.surfaceMagnitude's own
+// forwarding to both hooks through one gman::shade call.
+class MagnitudeProbeShader : public GMANSurfaceShader {
+public:
+  const GMANColor& computeCi(GMANSurfaceEnv& se) override {
+    GMANVector const n(se.N.getX(), se.N.getY(), se.N.getZ());
+    GMANColor const traced = se.trace(GMANVector(0.0f, 0.0f, -1.0f));
+    GMANColor const lit = se.diffuse(n);
+    ci_ =
+        GMANColor(traced.getRed() + lit.getRed(), traced.getGreen() + lit.getGreen(), traced.getBlue() + lit.getBlue());
     return ci_;
   }
   const GMANColor& computeOi(GMANSurfaceEnv& se) override {
@@ -155,12 +205,52 @@ void checkShadeForwardsItsOwnTracer() {
         "the shader's Ci is what the bound tracer answered");
 }
 
+// A SurfacePoint with a non-zero surfaceMagnitude reaches both a recording
+// Tracer and a recording Occluder unchanged, through one gman::shade call
+// -- checkShadeForwardsItsOwnTracer's own model, since a check on a
+// hand-built env never passes through gman::shade at all.
+void checkShadeForwardsSurfaceMagnitude() {
+  RtFloat const magnitude = 42.5f;
+
+  RecordingTracer tracer(GMANColor(0.1f, 0.1f, 0.1f));
+  RecordingOccluder occluder;
+
+  MagnitudeProbeShader shader;
+  gman::Appearance appearance;
+  appearance.shader = &shader;
+  appearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+
+  GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector(0.0f, 0.0f, -1.0f));
+  appearance.lights = {&light};
+
+  gman::SurfacePoint point;
+  point.P = GMANPoint(0.0f, 0.0f, 0.0f);
+  point.N = GMANNormal(0.0f, 0.0f, 1.0f);
+  point.Ng = GMANNormal(0.0f, 0.0f, 1.0f);
+  point.I = GMANVector(0.0f, 0.0f, -1.0f);
+  point.E = GMANPoint(0.0f, 0.0f, 5.0f);
+  point.surfaceMagnitude = magnitude;
+
+  GMANMatrix4 const cameraToWorld;
+  gman::shade(appearance, point, cameraToWorld, &occluder, &tracer);
+
+  check(tracer.callCount() == 1, "commit 2 forwarding: the shader's own trace() call reached the recording tracer");
+  check(tracer.lastSurfaceMagnitude() == magnitude,
+        "commit 2 forwarding: the recording tracer receives the point's own surfaceMagnitude unchanged");
+  check(occluder.callCount() == 1,
+        "commit 2 forwarding: the shader's own diffuse() call reached the recording occluder");
+  check(occluder.lastSurfaceMagnitude() == magnitude,
+        "commit 2 forwarding: the recording occluder receives the point's own surfaceMagnitude unchanged");
+}
+
 } // namespace
 
 int main() {
   checkDefaultTraceIsBlack();
   checkRecordingTracerReceivesEnvArguments();
   checkShadeForwardsItsOwnTracer();
+  checkShadeForwardsSurfaceMagnitude();
 
   return checkSummary("gman::Tracer: a null tracer degrades to black, a bound one sees env's own P/Ng and the "
                       "caller's R, and gman::shade forwards it to the shader");

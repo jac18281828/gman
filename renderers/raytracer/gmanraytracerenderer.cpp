@@ -69,6 +69,24 @@ constexpr int kMaxTraceDepth = 4;
 
 namespace {
 
+// The largest absolute coordinate over box's own six corners, 0 for a box
+// still at its default +/-RI_INFINITY (a primitive whose own bbox was
+// never assigned) -- hitSurfacePoint's own M, gman::SurfacePoint's
+// surfaceMagnitude field.
+RtFloat primitiveMagnitude(GMANBBox const& box) {
+  GMANPoint const boxMin = box.getMin();
+  GMANPoint const boxMax = box.getMax();
+  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
+  RtFloat magnitude = 0.0;
+  for (RtFloat const coord : coords) {
+    if (std::fabs(coord) >= RI_INFINITY) {
+      return 0.0;
+    }
+    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
+  }
+  return magnitude;
+}
+
 // The gman::SurfacePoint a ray hit implies: P and N/Ng already camera
 // space (GMANRayInterface::intersect's own contract), I the ray's own
 // direction and E its own origin, rather than both assumed at the
@@ -87,6 +105,7 @@ gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   point.v = hit.v;
   point.s = hit.u;
   point.t = hit.v;
+  point.surfaceMagnitude = primitiveMagnitude(hit.primitive->getBBox());
   return point;
 }
 
@@ -137,7 +156,7 @@ GMANPoint offsetOrigin(GMANPoint const& hitPoint, GMANVector const& Ng, GMANVect
 } // namespace
 
 GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
-                                        GMANVector const& Ng, RtFloat distance) const {
+                                        GMANVector const& Ng, RtFloat distance, RtFloat /*surfaceMagnitude*/) const {
   GMANColor transmission(1.0f, 1.0f, 1.0f);
   GMANPoint origin = offsetOrigin(P, Ng, towardLight);
   RtFloat remaining = distance;
@@ -177,7 +196,8 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
   return transmission;
 }
 
-GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng) const {
+GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
+                               RtFloat /*surfaceMagnitude*/) const {
   if (depth >= kMaxTraceDepth) {
     // The cheapest possible bound: no ray cast, bvh untouched.
     return background;

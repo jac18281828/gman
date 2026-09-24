@@ -103,6 +103,12 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // exhausted, answers with the renderer's own background colour instead.
   gman::Tracer const* tracer = nullptr;
 
+  // This surface's own camera-space magnitude (gman::SurfacePoint's own
+  // field, gman::shade's own copy), last so existing field offsets hold.
+  // 0 for a shader run with no real surface -- occludedContribution and
+  // trace() below forward it unchanged to occluder/tracer.
+  RtFloat surfaceMagnitude = 0.0;
+
   // RSL's trace(P, R): the colour along R from this surface's own P, Ng
   // passed for the renderer's self-shadow offset (see gmantrace.h). Black
   // when no tracer is bound.
@@ -266,7 +272,7 @@ private:
   // otherwise.
   GMANColor occludedContribution(GMANLight const& light, GMANVector const& towardLight, RtFloat distance,
                                  GMANColor cl) const {
-    return occluder ? occluded(cl, occluder->transmission(light, P, towardLight, Ng, distance)) : cl;
+    return occluder ? occluded(cl, occluder->transmission(light, P, towardLight, Ng, distance, surfaceMagnitude)) : cl;
   }
 };
 

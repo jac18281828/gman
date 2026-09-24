@@ -106,7 +106,8 @@ GMANParameterList krParams(RtFloat kr) {
 class FixedAnswerTracer : public gman::Tracer {
 public:
   explicit FixedAnswerTracer(GMANColor answer) : answer_(answer) {}
-  GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng) const override {
+  GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
+                  RtFloat /*surfaceMagnitude*/) const override {
     lastP_ = P;
     lastR_ = R;
     lastNg_ = Ng;
@@ -136,7 +137,8 @@ public:
 
   TwoAnswerTracer(GMANColor first, GMANColor second) : first_(first), second_(second) {}
 
-  GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng) const override {
+  GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
+                  RtFloat /*surfaceMagnitude*/) const override {
     Record& record = (callCount_ == 0) ? recordFirst_ : recordSecond_;
     record.P = P;
     record.R = R;
@@ -169,7 +171,8 @@ public:
       : innerAppearance_(innerAppearance), innerPoint_(innerPoint), cameraToWorld_(cameraToWorld),
         terminatingTracer_(terminatingTracer) {}
 
-  GMANColor trace(GMANPoint const& /*P*/, GMANVector const& /*R*/, GMANVector const& /*Ng*/) const override {
+  GMANColor trace(GMANPoint const& /*P*/, GMANVector const& /*R*/, GMANVector const& /*Ng*/,
+                  RtFloat /*surfaceMagnitude*/) const override {
     gman::Shading const inner =
         gman::shade(innerAppearance_, innerPoint_, cameraToWorld_, nullptr, &terminatingTracer_);
     return inner.Ci;
@@ -193,7 +196,8 @@ public:
       : innerAppearance_(innerAppearance), innerPointA_(innerPointA), terminatingA_(terminatingA),
         innerPointB_(innerPointB), terminatingB_(terminatingB), cameraToWorld_(cameraToWorld) {}
 
-  GMANColor trace(GMANPoint const& /*P*/, GMANVector const& /*R*/, GMANVector const& /*Ng*/) const override {
+  GMANColor trace(GMANPoint const& /*P*/, GMANVector const& /*R*/, GMANVector const& /*Ng*/,
+                  RtFloat /*surfaceMagnitude*/) const override {
     if (callCount_ == 0) {
       ++callCount_;
       return gman::shade(innerAppearance_, innerPointA_, cameraToWorld_, nullptr, &terminatingA_).Ci;

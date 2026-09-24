@@ -66,6 +66,20 @@ bool colorExactly(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
+// The largest absolute coordinate over box's own six corners -- mirrors
+// gmanraytracerenderer.cpp's own primitiveMagnitude, duplicated here since
+// that one is file-local.
+RtFloat boxMagnitude(GMANBBox const& box) {
+  GMANPoint const boxMin = box.getMin();
+  GMANPoint const boxMax = box.getMax();
+  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
+  RtFloat magnitude = 0.0;
+  for (RtFloat const coord : coords) {
+    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
+  }
+  return magnitude;
+}
+
 // Opaque (Os = white), matching rayoccluder_test.cpp's own sphereAt: a
 // bare GMANRayInterface's appearance defaults to black/transparent.
 GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
@@ -239,7 +253,7 @@ void checkDepthLimitTermination() {
   GMANColor const background(0.2f, 0.2f, 0.8f);
   GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 4);
 
-  GMANColor const result = tracer.trace(GMANPoint(0.0f, 0.0f, 0.0f), GMANVector(0.0f, 0.0f, 1.0f), GMANVector());
+  GMANColor const result = tracer.trace(GMANPoint(0.0f, 0.0f, 0.0f), GMANVector(0.0f, 0.0f, 1.0f), GMANVector(), 0.0f);
   check(colorExactly(result, background), "check 1: depth == kMaxTraceDepth returns exactly background");
 }
 
@@ -263,7 +277,7 @@ void checkEscapeReturnsBackground() {
   GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
 
   // Away from the sphere entirely (it sits at +z).
-  GMANColor const result = tracer.trace(GMANPoint(0.0f, 0.0f, 0.0f), GMANVector(0.0f, 0.0f, -1.0f), GMANVector());
+  GMANColor const result = tracer.trace(GMANPoint(0.0f, 0.0f, 0.0f), GMANVector(0.0f, 0.0f, -1.0f), GMANVector(), 0.0f);
   check(colorExactly(result, background), "check 2: a direction clearing every primitive returns exactly background");
   check(!(result.getRed() == 0.0f && result.getGreen() == 0.0f && result.getBlue() == 0.0f),
         "check 2: a miss does not return black");
@@ -287,7 +301,7 @@ void checkRealHitMatchesDirectShade() {
 
   GMANPoint const p0(0.0f, 0.0f, 0.0f);
   GMANVector const r0(0.0f, 0.0f, 1.0f);
-  GMANColor const traced = tracer.trace(p0, r0, GMANVector());
+  GMANColor const traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
 
   GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
@@ -368,7 +382,8 @@ void checkSelfShadowSweepAppliesOffset() {
         continue;
       }
 
-      GMANColor const result = tracer.trace(hit.point, grazeR, ng);
+      RtFloat const magnitude = boxMagnitude(sphere->getBBox());
+      GMANColor const result = tracer.trace(hit.point, grazeR, ng, magnitude);
       if (!colorNear(result, background, kTol)) {
         ++selfHitCount;
       }
@@ -408,7 +423,7 @@ void checkDepthCountsCorrectly() {
 
   GMANVector r0(0.6f, 0.3f, 0.75f);
   r0.normalize();
-  GMANColor const result = tracer.trace(GMANPoint(0.0f, 0.0f, 0.0f), r0, GMANVector());
+  GMANColor const result = tracer.trace(GMANPoint(0.0f, 0.0f, 0.0f), r0, GMANVector(), 0.0f);
 
   check(shader.computeCiCallCount == 4,
         "check 5: computeCi runs exactly 4 times (depths 0-3), got " + std::to_string(shader.computeCiCallCount));
@@ -450,7 +465,7 @@ void checkNestedOccluderShadowsBlocker() {
 
   GMANPoint const p0(0.0f, 0.0f, 0.0f);
   GMANVector const r0(0.0f, 0.0f, 1.0f);
-  GMANColor const traced = tracer.trace(p0, r0, GMANVector());
+  GMANColor const traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
 
   GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
   GMANHit hit;

@@ -64,7 +64,7 @@ GMANColor GMANSurfaceEnv::texture(const std::string& name, RtFloat s, RtFloat t)
 }
 
 GMANColor GMANSurfaceEnv::trace(GMANVector const& R) const {
-  return tracer ? tracer->trace(P, R, Ng) : GMANColor(0.0f, 0.0f, 0.0f);
+  return tracer ? tracer->trace(P, R, Ng, surfaceMagnitude) : GMANColor(0.0f, 0.0f, 0.0f);
 }
 
 GMANVector GMANSurfaceEnv::toWorld(GMANVector const& v) const {

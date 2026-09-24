@@ -49,8 +49,13 @@ public:
 
   // R need not be unit length -- GMANRay's constructor normalizes. Returns
   // whatever colour the cast ray finds: a shaded hit, a renderer's own
-  // background on a miss or at its own recursion limit.
-  virtual GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng) const = 0;
+  // background on a miss or at its own recursion limit. surfaceMagnitude
+  // is P's own surface's camera-space magnitude (gman::SurfacePoint's own
+  // field), 0 for a caller with no surface -- no default: a default
+  // argument on a virtual binds by static type, not the override actually
+  // called.
+  virtual GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
+                          RtFloat surfaceMagnitude) const = 0;
 };
 
 } // namespace gman

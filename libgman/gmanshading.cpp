@@ -91,6 +91,7 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
   env.v = point.v;
   env.s = point.s;
   env.t = point.t;
+  env.surfaceMagnitude = point.surfaceMagnitude;
   env.lights = appearance.lights;
   env.cameraToWorld = cameraToWorld;
   env.occluder = occluder;

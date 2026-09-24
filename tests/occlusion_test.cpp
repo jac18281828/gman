@@ -81,7 +81,7 @@ public:
   Record const& specularRecord() const { return specularRecord_; }
 
   GMANColor transmission(GMANLight const& light, GMANPoint const& /*P*/, GMANVector const& towardLight,
-                         GMANVector const& Ng, RtFloat distance) const override {
+                         GMANVector const& Ng, RtFloat distance, RtFloat /*surfaceMagnitude*/) const override {
     Record& record = (phase_ == Phase::kDiffuse) ? diffuseRecord_ : specularRecord_;
     record.ng = Ng;
     if (light.getType() == GMAN_LIGHT_POINT) {

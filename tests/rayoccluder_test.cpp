@@ -54,6 +54,20 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
   return GMANTransform(storage);
 }
 
+// The largest absolute coordinate over box's own six corners -- mirrors
+// gmanraytracerenderer.cpp's own primitiveMagnitude, duplicated here since
+// that one is file-local.
+RtFloat boxMagnitude(GMANBBox const& box) {
+  GMANPoint const boxMin = box.getMin();
+  GMANPoint const boxMax = box.getMax();
+  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
+  RtFloat magnitude = 0.0;
+  for (RtFloat const coord : coords) {
+    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
+  }
+  return magnitude;
+}
+
 // Opaque (Os = white): a bare GMANRayInterface's appearance defaults to
 // black, and the occluder now attenuates by Os rather than by the hit
 // alone, so a blocker meant to fully occlude has to say so.
@@ -87,8 +101,9 @@ void testPointLightDistanceBoundsTheShadowRay() {
     GMANRayOccluder const occluder(bvh);
 
     // P is a free-space point, not on any primitive: Ng is the zero
-    // vector the header's own contract names for that case.
-    GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance);
+    // vector and surfaceMagnitude is 0.0, the header's own contract for
+    // that case.
+    GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance, 0.0f);
     check(result.getRed() > 0.99f && result.getGreen() > 0.99f && result.getBlue() > 0.99f,
           "point light: a blocker beyond the light's own distance transmits white");
   }
@@ -100,7 +115,7 @@ void testPointLightDistanceBoundsTheShadowRay() {
     bvh.build(worldManager);
     GMANRayOccluder const occluder(bvh);
 
-    GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance);
+    GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance, 0.0f);
     check(result.getRed() < 0.01f && result.getGreen() < 0.01f && result.getBlue() < 0.01f,
           "point light: the same blocker between P and the light transmits black");
   }
@@ -151,7 +166,8 @@ void testSelfShadowAtScale(RtFloat scale) {
         continue; // the sphere's own dark side: not this check's business
       }
       ++litSamples;
-      GMANColor const result = occluder.transmission(light, hit.point, lightDir, hit.normal, RI_INFINITY);
+      RtFloat const magnitude = boxMagnitude(sphere->getBBox());
+      GMANColor const result = occluder.transmission(light, hit.point, lightDir, hit.normal, RI_INFINITY, magnitude);
       if (result.getRed() < 0.5f) {
         ++selfShadowed;
       }
@@ -191,7 +207,7 @@ void testBlockerRelightsAtScale(RtFloat scale) {
   // the header's own contract names for that case. No offset scale would
   // change this test's own result, since a free point has no surface to
   // offset from; that is testSelfShadowAtScale's business, not this one's.
-  GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance);
+  GMANColor const result = occluder.transmission(light, P, towardLight, GMANVector(), distance, 0.0f);
   std::string const scaleLabel = "x" + std::to_string(scale);
   check(result.getRed() < 0.01f && result.getGreen() < 0.01f && result.getBlue() < 0.01f,
         "blocker relights " + scaleLabel + ": a blocker between P and the light still transmits black");

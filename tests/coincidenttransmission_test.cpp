@@ -94,7 +94,9 @@ int main() {
 
   GMANPoint const P(0.0f, 0.0f, 0.0f);
   GMANVector const Ng(0.0f, 0.0f, -1.0f); // facing the shaded point away from the stack, toward the light
-  GMANColor const result = occluder.transmission(light, P, towardLight, Ng, RI_INFINITY);
+  // P is a free-space point, not on any primitive: surfaceMagnitude 0.0,
+  // the header's own contract for that case.
+  GMANColor const result = occluder.transmission(light, P, towardLight, Ng, RI_INFINITY, 0.0f);
 
   RtFloat const cappedPrediction = std::pow(1.0f - kOpacity, (RtFloat)kMaxCompositeLayers);
   RtFloat const allLayersPrediction = std::pow(1.0f - kOpacity, (RtFloat)kLayerCount);
