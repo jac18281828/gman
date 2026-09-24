@@ -175,13 +175,19 @@ void testFaceNotMesh() {
   std::vector<std::vector<RtInt>> const faces = cubeFaces();
 
   GMANPrimitive* meshPrim = runGetRSPointsPolygonDirect(points, faces);
+  GMANRayInterface* mesh = dynamic_cast<GMANRayInterface*>(meshPrim);
+  check(mesh != nullptr, "face k: getRSPointsPolygon returns a GMANRayInterface");
+
   GMANLinearWorldManager worldManager;
   worldManager.add(meshPrim);
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
 
-  GMANRay const ray = axisRay(2, -1.0f, 0.0f, 0.0f); // straight at the bottom face's own centre
+  // The top face, not the bottom: its own analytic normal points opposite
+  // this ray's own direction, so a mutation reporting the ray's direction
+  // as the hit normal is distinguishable here.
+  GMANRay const ray = axisRay(2, 1.0f, 0.0f, 0.0f); // straight at the top face's own centre
   GMANHit hit;
   GMANRayInterface const* hitPrimitive = nullptr;
   bool const found = bvh.nearestHit(ray, hit, hitPrimitive);
@@ -194,10 +200,20 @@ void testFaceNotMesh() {
   check(facePolygon != nullptr, "face k: hitPrimitive is a GMANRayPolygon, never the mesh");
   check(hitPrimitive == hit.primitive, "face k: hitPrimitive equals hit.primitive");
 
-  GMANVector expectedNormal = gman::newellNormal(faceRing(points, faces[0]));
+  GMANVector expectedNormal = gman::newellNormal(faceRing(points, faces[1]));
   expectedNormal /= expectedNormal.magnitude();
   check(near(hit.t, 4.0), "face k: t == 4, the analytic distance from the ray's own origin");
   check(sameDirection(hit.normal, expectedNormal), "face k: the hit normal matches the face's own analytic plane");
+
+  // The mesh's own intersect, called directly rather than through the
+  // BVH, must agree on the same face's own analytic normal.
+  GMANHit meshHit;
+  bool const meshFound = mesh != nullptr && mesh->intersect(ray, meshHit);
+  check(meshFound, "face k: the mesh's own intersect hits too");
+  if (meshFound) {
+    check(sameDirection(meshHit.normal, expectedNormal),
+          "face k: the mesh's own intersect normal matches the face's own analytic plane");
+  }
 }
 
 // ---- check: a fan of rays across the cube agrees, face by face, between
