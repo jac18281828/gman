@@ -139,7 +139,7 @@ struct RasterProjection {
 // dices. worldToCamera is left identity -- diceCountFor only ever calls
 // project(), which reads none of a GMANViewingSystem's world-to-camera or
 // camera-to-world state.
-RasterProjection dicingContextFor(GMANOptions const* opt, GMANAttributes const* attr) {
+RasterProjection rasterProjectionFor(GMANOptions const* opt, GMANAttributes const* attr) {
   RtFloat const shadingRate = attr->getShadingRate();
   if (!opt) {
     return RasterProjection{nullptr, false, shadingRate};
@@ -147,7 +147,8 @@ RasterProjection dicingContextFor(GMANOptions const* opt, GMANAttributes const* 
   // standardDictionary(), not the renderer's own dictionary: no getRS*
   // signature carries one in, and none may change to add it. "fov"
   // resolves the same as RiWorldBegin's unless a scene redeclares it,
-  // which changes only this dicing estimate, never the rendered image.
+  // which changes the dicing granularity, and so the shading
+  // resolution, never coverage.
   gman::ViewingSystemInputs const vsi = gman::resolveViewingSystemInputs(*opt, gman::standardDictionary());
   bool const perspective = vsi.projectionName != "orthographic";
   GMANMatrix4 const worldToCamera;
@@ -1065,7 +1066,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParame
   RtToken orientation = attr->getOrientation();
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  RasterProjection const dicing = dicingContextFor(opt, attr);
+  RasterProjection const dicing = rasterProjectionFor(opt, attr);
 
   std::vector<GMANPoint> location(nverts);
   std::vector<RtInt> slots(nverts);
@@ -1130,7 +1131,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSGeneralPolygon(RtInt nloops, RtI
   RtToken orientation = attr->getOrientation();
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  RasterProjection const dicing = dicingContextFor(opt, attr);
+  RasterProjection const dicing = rasterProjectionFor(opt, attr);
 
   GMANBody* body;
   GMANVertex* vertRoot;
@@ -1180,7 +1181,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtIn
   RtToken orientation = attr->getOrientation();
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  RasterProjection const dicing = dicingContextFor(opt, attr);
+  RasterProjection const dicing = rasterProjectionFor(opt, attr);
 
   // Faceted (settled decision "Faces"): every face gathers its own
   // GMANVertex objects through "verts", one PointsPolygons face being a
@@ -1252,7 +1253,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
   RtToken orientation = attr->getOrientation();
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  RasterProjection const dicing = dicingContextFor(opt, attr);
+  RasterProjection const dicing = rasterProjectionFor(opt, attr);
 
   GMANBody *bodyHead = NULL, *bodyTail = NULL;
   GMANVertex *vertHead = NULL, *vertTail = NULL;
