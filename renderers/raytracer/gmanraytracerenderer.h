@@ -65,7 +65,7 @@ public:
   // const and re-entrant, so concurrent calls here never interleave
   // state.
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
-                         GMANVector const& Ng, RtFloat distance, RtFloat /*surfaceMagnitude*/) const override;
+                         GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const override;
 
 private:
   GMANRayBVH const& bvh;
@@ -89,7 +89,7 @@ public:
       : bvh(bvh), occluder(occluder), cameraToWorld(cameraToWorld), background(background), depth(depth) {}
 
   GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
-                  RtFloat /*surfaceMagnitude*/) const override;
+                  RtFloat surfaceMagnitude) const override;
 
 private:
   GMANRayBVH const& bvh;

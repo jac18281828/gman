@@ -481,7 +481,7 @@ void checkNestedOccluderShadowsBlocker() {
         "check 6: trace()'s result does not match the unshadowed reference");
 }
 
-// §8 C's own renderer-path check: a mutation leaving hitSurfacePoint's own
+// The renderer-path check: a mutation leaving hitSurfacePoint's own
 // surfaceMagnitude at 0 must fail this. A radius-1000 sphere placed so its
 // hits sit at max|P| ~ 5 (M ~ 2005, the large-primitive-row fixture's own
 // placement), lit from a steep graze so N.L stays small and positive --

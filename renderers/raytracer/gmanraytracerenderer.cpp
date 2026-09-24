@@ -47,23 +47,15 @@ constexpr RtFloat kUnitRoundoff = std::numeric_limits<RtFloat>::epsilon() / (RtF
 // distance alone, since a large surface near the camera needs an offset
 // proportional to itself, not to |P|. kSelfShadowOffsetFloor keeps a hit
 // point at or near the origin, where the scaled term vanishes, a positive
-// offset. kSelfShadowOffsetCeiling caps the result at today's own
-// max|P|-scaled offset, so a large receiver near the camera never gets a
-// larger offset than before, and its own contact shadows are no worse.
+// offset. kSelfShadowOffsetCeiling caps the result at a max|P|-scaled
+// offset, so a large receiver near the camera never gets an offset
+// larger than max|P| alone would give it, and its own contact shadows
+// are no worse.
 //
-// c (16) is the larger of two bounds. The derivation: the chain from the
-// exact surface point to the next intersect's view of the moved origin
-// crosses four roundings -- the object-space root cast to RtFloat, the
-// float objectToCamera transformPoint building hit.point, the float add
-// in offsetOrigin, and the next intersect's float cameraToObject
-// transformPoint (which also carries GMANMatrix4::invert's own error and
-// a homogeneous divide off 1 by a ulp) -- each bounded by the sweep's own
-// condition-number-4 affine transform, so each contributes at most
-// 4 * kUnitRoundoff * max(max|P|, M); four such terms sum to 16. The
-// measured bound: the self-shadow sweep's own largest per-cell minimum
-// self-hit-free c, over the quadrics and the torus at x1 and x1000 in
-// both the dev and nofma builds, was 3 (the nofma build's skewed
-// paraboloid at x1000); 4x that margin is 12. 16 clears both.
+// c (16) is 4x the self-shadow sweep's own measured minimum self-hit-free
+// c on the power-of-two grid {1, 2, 4, 8, ...}: the nofma build still
+// self-hits at c = 2 but clears every quadric and the torus, at x1 and
+// x1000, at c = 4. 16 clears that floor with a 4x margin.
 constexpr RtFloat kSelfShadowOffsetScale = (RtFloat)16.0 * kUnitRoundoff;
 constexpr RtFloat kSelfShadowOffsetCeiling = (RtFloat)3.0e-5;
 constexpr RtFloat kSelfShadowOffsetFloor = (RtFloat)1.0e-9;

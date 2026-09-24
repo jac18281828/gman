@@ -235,13 +235,14 @@ void checkShadeForwardsSurfaceMagnitude() {
   GMANMatrix4 const cameraToWorld;
   gman::shade(appearance, point, cameraToWorld, &occluder, &tracer);
 
-  check(tracer.callCount() == 1, "commit 2 forwarding: the shader's own trace() call reached the recording tracer");
+  check(tracer.callCount() == 1,
+        "surfaceMagnitude forwarding: the shader's own trace() call reached the recording tracer");
   check(tracer.lastSurfaceMagnitude() == magnitude,
-        "commit 2 forwarding: the recording tracer receives the point's own surfaceMagnitude unchanged");
+        "surfaceMagnitude forwarding: the recording tracer receives the point's own surfaceMagnitude unchanged");
   check(occluder.callCount() == 1,
-        "commit 2 forwarding: the shader's own diffuse() call reached the recording occluder");
+        "surfaceMagnitude forwarding: the shader's own diffuse() call reached the recording occluder");
   check(occluder.lastSurfaceMagnitude() == magnitude,
-        "commit 2 forwarding: the recording occluder receives the point's own surfaceMagnitude unchanged");
+        "surfaceMagnitude forwarding: the recording occluder receives the point's own surfaceMagnitude unchanged");
 }
 
 } // namespace

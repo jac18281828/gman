@@ -1441,8 +1441,8 @@ set_tests_properties(rayoccluder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R9 proof, §8 A: the self-shadow sweep -- every ray primitive, at every
-# scale and placement, through its own real intersect() and
+# The self-shadow sweep -- every ray primitive, at every scale and
+# placement, through its own real intersect() and
 # GMANRayOccluder::transmission, linked against the shared object library
 # for the same reason as gman_raysphere above; carries raydepth's own
 # ENVIRONMENT for the same reason too.
@@ -1455,11 +1455,11 @@ set_tests_properties(selfshadowsweep PROPERTIES
   LABELS unit
   TIMEOUT 60)
 
-# R9 proof, §8 B: the contact gap -- a small receiver (M ~ max|P|) shadows
-# at a gap the old offset hid, a large receiver (M >> max|P|) keeps
-# today's own contact under the ceiling, linked against the shared object
-# library for the same reason as gman_raysphere above; carries raydepth's
-# own ENVIRONMENT for the same reason too.
+# The contact gap -- a small receiver (M ~ max|P|) shadows at a gap the
+# old offset hid, a large receiver (M >> max|P|) keeps its own contact
+# under the ceiling, linked against the shared object library for the
+# same reason as gman_raysphere above; carries raydepth's own ENVIRONMENT
+# for the same reason too.
 add_executable(gman_contactgap contactgap_test.cpp)
 target_link_libraries(gman_contactgap PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 

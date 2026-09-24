@@ -19,11 +19,11 @@
  */
 
 /*
- * R9 proof, §8 B: the contact gap. A small receiver (M ~ max|P|) shadows
- * at a gap the old, unkeyed 3e-5*max|P| offset hid; a large receiver
- * (M >> max|P|, a radius-1000 sphere) keeps today's own contact shadow,
- * since kSelfShadowOffsetCeiling caps the magnitude-keyed offset at what
- * the old constant already gave. Both fixtures use an open, single-sided
+ * The contact gap. A small receiver (M ~ max|P|) shadows at a gap the
+ * old, unkeyed 3e-5*max|P| offset hid; a large receiver (M >> max|P|, a
+ * radius-1000 sphere) keeps its own contact shadow, since
+ * kSelfShadowOffsetCeiling caps the magnitude-keyed offset at what the
+ * old constant already gave. Both fixtures use an open, single-sided
  * polygon blocker: a closed solid would put even the old offset's origin
  * inside it, where the exit wall still blocks, hiding the defect this
  * file exists to catch.
@@ -115,11 +115,11 @@ void checkSmallReceiver() {
   RtFloat const M = receiver->getBBox().getMax().getZ(); // ~5, padded
   RtFloat const magnitude = GMANMax(maxP, M);
 
-  // Window (§1): 4*c*u*max(max|P|,M) <= g <= 0.5*kCeiling*max|P|.
+  // Window: 4*c*u*max(max|P|,M) <= g <= 0.5*kCeiling*max|P|.
   RtFloat const windowLow = 4.0f * kDerivedC * kUnitRoundoff * magnitude;
   RtFloat const windowHigh = 0.5f * kCeiling * maxP;
   RtFloat const g = 4.0e-5f;
-  check(g >= windowLow && g <= windowHigh, "small receiver setup: g lies inside §1's contact-gap window");
+  check(g >= windowLow && g <= windowHigh, "small receiver setup: g lies inside the contact-gap window");
 
   RtFloat const oldOffset = kCeiling * maxP;
   check(g < oldOffset, "small receiver setup: g is a gap the unkeyed old offset would have carried past");
@@ -197,7 +197,7 @@ void checkLargeReceiver() {
   bvh.build(worldManager);
   GMANRayOccluder const occluder(bvh);
   GMANColor const result = occluder.transmission(light, hitPoint, towardLight, Ng, RI_INFINITY, magnitude);
-  check(isBlack(result), "large receiver: transmission returns black -- the ceiling keeps today's own contact");
+  check(isBlack(result), "large receiver: transmission returns black -- the ceiling keeps its own contact");
 }
 
 } // namespace
@@ -206,6 +206,6 @@ int main() {
   checkSmallReceiver();
   checkLargeReceiver();
 
-  return checkSummary("R9's contact gap: a small receiver shadows at a gap the old offset hid, and a large "
-                      "receiver's ceiling keeps today's own contact");
+  return checkSummary("the contact gap: a small receiver shadows at a gap the old offset hid, and a large "
+                      "receiver's ceiling keeps its own contact");
 }

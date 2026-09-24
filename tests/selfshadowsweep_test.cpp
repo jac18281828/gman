@@ -19,17 +19,16 @@
  */
 
 /*
- * R9 proof, §8 A: every ray primitive, at every scale and placement this
- * tree cares about, never shadows itself. Each cell places one primitive
- * alone in its own BVH, samples it with real GMANRayInterface::intersect
- * hits (never a hand-placed point), and calls GMANRayOccluder::transmission
+ * Every ray primitive, at every scale and placement this tree cares
+ * about, never shadows itself. Each cell places one primitive alone in
+ * its own BVH, samples it with real GMANRayInterface::intersect hits
+ * (never a hand-placed point), and calls GMANRayOccluder::transmission
  * toward a light on its own outward side. A sample where a shadow ray
  * re-cast from well off the surface still hits the same primitive is
- * excluded as legitimate self-occlusion (the torus's own tube, a saddle on
- * the skewed hyperboloid) rather than a numerical self-hit; every other
- * lit sample must transmit white. §8 A's own bisection (a separate,
- * uncommitted driver over these same cells) is what sets kSelfShadowOffsetScale;
- * this file only proves the shipped constant clears every cell.
+ * excluded as legitimate self-occlusion (the torus's own tube, a saddle
+ * on the skewed hyperboloid) rather than a numerical self-hit; every
+ * other lit sample must transmit white. This file proves the shipped
+ * kSelfShadowOffsetScale clears every cell; it does not derive it.
  */
 
 #include <cmath>
@@ -65,7 +64,7 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
   return GMANTransform(storage);
 }
 
-// translated 3x the scale, no rotation or shear: the plain placement §1's
+// translated 3x the scale, no rotation or shear: the plain placement this
 // sweep contrasts against skewedPlacement below.
 GMANMatrix4 translatedPlacement(RtFloat scale) {
   GMANMatrix4 m;
@@ -74,7 +73,7 @@ GMANMatrix4 translatedPlacement(RtFloat scale) {
 }
 
 // The same translation, behind a rotation off every axis and the
-// non-uniform scale (1, 2, 0.5) -- the sweep's skewed placement, §1's own
+// non-uniform scale (1, 2, 0.5) -- the sweep's skewed placement, a
 // condition-number-4 case.
 GMANMatrix4 skewedPlacement(RtFloat scale) {
   GMANMatrix4 m;
@@ -398,12 +397,11 @@ void sweepLargePrimitiveRow(RtFloat radius) {
               magnitudeRuleSelfHit, maxPOnlySelfHit, (double)magnitude);
   check(lit >= 40, label + ": enough lit samples were gathered to trust a zero count");
   check(magnitudeRuleSelfHit == 0, label + ": every lit sample transmits white under the magnitude rule");
-  // §1's own scope note claims R = 100 self-shadows under max|P| keying
-  // alone once c < 32; this harness's own sampling (a small near-pole
-  // cone, an 89.9-degree graze) never reproduces that at R = 100 for any
-  // c up to 256, only R = 1000 does (see the REPORT's own departure).
-  // Only the R = 1000 claim -- the one this harness does reproduce -- is
-  // asserted here.
+  // Under max|P| keying alone, R = 100 self-hits at a smaller c (4 and 8
+  // measured, both builds) but clears at the shipped c = 16, the same as
+  // every larger R; only R = 1000 still self-hits under max|P| alone at
+  // c = 16, so only its own assertion below pins the need for M at the
+  // shipped constant.
   if (radius >= 1000.0f) {
     check(maxPOnlySelfHit > 0, label + ": max|P| keying alone self-shadows, the gap the magnitude rule closes");
   }

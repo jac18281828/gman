@@ -43,7 +43,7 @@ inline GMANPoint pointMax(GMANPoint const& a, GMANPoint const& b) {
   return GMANPoint(GMANMax(a.getX(), b.getX()), GMANMax(a.getY(), b.getY()), GMANMax(a.getZ(), b.getZ()));
 }
 
-// The largest absolute coordinate over box's own six corners, 0 for a box
+// The largest absolute coordinate over box's own six coordinates, 0 for a box
 // still at its default +/-RI_INFINITY (a primitive whose own bbox was
 // never assigned) -- hitSurfacePoint's own M, gman::SurfacePoint's
 // surfaceMagnitude field.
@@ -66,7 +66,7 @@ inline RtFloat primitiveMagnitude(GMANBBox const& box) {
 // its quartic in double). Padding every assigned box outward by an epsilon
 // scaled to its own largest coordinate magnitude -- with an absolute floor
 // for a box near the origin -- means this rounding gap can never exclude a
-// real hit. gmanraytracerenderer.cpp's kSelfShadowOffsetScale/
+// real hit. gmanraytracerenderer.cpp's kSelfShadowOffsetCeiling/
 // kSelfShadowOffsetFloor are the precedent for this shape.
 constexpr RtFloat kBBoxPadScale = (RtFloat)3.0e-5;
 constexpr RtFloat kBBoxPadFloor = (RtFloat)1.0e-9;
