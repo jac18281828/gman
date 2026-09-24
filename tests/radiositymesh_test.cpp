@@ -69,6 +69,21 @@ constexpr RtFloat kParamAgreementTolerance = 1e-4f;
 // The four corner weights sum to 1.
 constexpr RtFloat kWeightSumTolerance = 1e-6f;
 
+// checkEdgeLengths' own slack over the literal maxEdgeLength bound, split
+// into its two sources rather than one unexplained pair of numbers: a
+// relative factor for the float rounding the resolution search's own
+// float-typed comparisons carry, and an absolute floor for an edge whose
+// true length rounds to (near) zero, where a relative factor alone would
+// demand exactness. Neither loosens the contract itself.
+constexpr RtFloat kEdgeLengthRelativeSlack = 1.0001f;
+constexpr RtFloat kEdgeLengthAbsoluteSlack = 1e-6f;
+
+// locate() must reproduce a hit point within this fraction of the
+// polygon's own extent -- an edge or vertex hit lands exactly on a cell
+// boundary, so its round trip is exact up to float rounding, the same
+// margin testPolygonLookup already uses for its own interior hits.
+constexpr RtFloat kPolygonRoundTripTolerance = 1e-3f;
+
 RtFloat pointDistance(GMANPoint const& a, GMANPoint const& b) {
   GMANVector const v(a, b);
   return (RtFloat)std::sqrt(v.dot(v));
@@ -107,9 +122,7 @@ RtFloat sumElementAreas(GMANRadiosityMesh const& mesh) {
 // maxEdgeLength. A coincident corner pair (a pole) has ~0 length and so
 // trivially holds regardless.
 void checkEdgeLengths(GMANRadiosityMesh const& mesh, RtFloat maxEdgeLength, std::string const& what) {
-  // A little slack over the literal bound for float rounding in the
-  // resolution search itself, not a loosened contract.
-  RtFloat const limit = maxEdgeLength * 1.0001f + 1e-6f;
+  RtFloat const limit = maxEdgeLength * kEdgeLengthRelativeSlack + kEdgeLengthAbsoluteSlack;
   bool ok = true;
   RtFloat worst = 0;
   for (std::size_t e = 0; e < mesh.getElementCount(); ++e) {
@@ -700,6 +713,71 @@ void testPolygonLookup() {
   check(maxPositionError < 1e-3f, "polygon: round trip reproduces the hit point exactly (flat, up to rounding)");
 }
 
+// Every vertex, then every edge midpoint, of the same quad: locate() must
+// resolve each to an element, never "none", including where the owning
+// cell is one clipping left partial -- a coarse maxEdgeLength here puts
+// most boundary cells in that state.
+void testPolygonEdgesAndVertices() {
+  std::vector<GMANPoint> const localVertices = {
+      GMANPoint(0.0, 0.0, 0.0),
+      GMANPoint(4.0, 0.0, 0.0),
+      GMANPoint(5.0, 3.0, 0.0),
+      GMANPoint(1.0, 4.0, 0.0),
+  };
+  GMANMatrix4 const placement = uniformPlacement(1.3f);
+  std::vector<GMANPoint> vertices;
+  for (GMANPoint const& p : localVertices) {
+    vertices.push_back(gman::transformPoint(placement, p));
+  }
+
+  GMANLinearWorldManager worldManager;
+  auto* polygon = new GMANRayPolygon(vertices, GMANParameterList());
+  worldManager.add(polygon);
+  GMANRadiosityMesh mesh;
+  RtFloat const maxEdgeLength = 0.6f;
+  mesh.build(worldManager, maxEdgeLength);
+
+  std::vector<GMANPoint> samples(vertices);
+  for (std::size_t i = 0; i < vertices.size(); ++i) {
+    GMANPoint const& a = vertices[i];
+    GMANPoint const& b = vertices[(i + 1) % vertices.size()];
+    samples.push_back((a + b) * (RtFloat)0.5);
+  }
+
+  bool allFound = true;
+  bool allSumOk = true;
+  RtFloat maxPositionError = 0;
+  for (GMANPoint const& point : samples) {
+    GMANHit hit;
+    hit.primitive = polygon;
+    hit.point = point;
+
+    GMANRadiosityLocation location;
+    bool const located = mesh.locate(hit, location);
+    if (!located) {
+      allFound = false;
+      continue;
+    }
+
+    RtFloat const weightSum = location.weights[0] + location.weights[1] + location.weights[2] + location.weights[3];
+    if (std::fabs(weightSum - 1.0f) >= kWeightSumTolerance) {
+      allSumOk = false;
+    }
+    GMANPoint blended(0, 0, 0);
+    for (int k = 0; k < 4; ++k) {
+      GMANPoint const& corner = mesh.getNode(location.corners[k]).position;
+      blended += corner * location.weights[k];
+    }
+    maxPositionError = GMANMax(maxPositionError, pointDistance(blended, point));
+  }
+
+  check(allFound, "polygon: every vertex and edge-midpoint hit locates an element, never none");
+  check(allSumOk, "polygon: edge/vertex corner weights sum to 1 within tolerance");
+  std::printf("round trip: polygon edges/vertices maxPositionError=%.6g\n", maxPositionError);
+  check(maxPositionError < kPolygonRoundTripTolerance,
+        "polygon: edge/vertex round trip reproduces the hit point within tolerance");
+}
+
 // A full sphere's own pole (v = 0 and v = 1) and seam (u = 0 wrapping to
 // u = 1) return an element, never "none".
 void testSpherePoleSeam() {
@@ -802,6 +880,7 @@ int main() {
   testParaboloidLookup();
   testHyperboloidLookup();
   testPolygonLookup();
+  testPolygonEdgesAndVertices();
   testSpherePoleSeam();
   testNonUniformScaleNormal();
 
