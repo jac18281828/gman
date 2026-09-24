@@ -39,6 +39,7 @@
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
+#include "gmanraybbox.h"
 #include "gmanraysphere.h"
 #include "gmanraytracerenderer.h"
 #include "gmanshaderenvironment.h"
@@ -64,20 +65,6 @@ bool colorNear(GMANColor const& a, GMANColor const& b, RtFloat tol) {
 
 bool colorExactly(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
-}
-
-// The largest absolute coordinate over box's own six corners -- mirrors
-// gmanraytracerenderer.cpp's own primitiveMagnitude, duplicated here since
-// that one is file-local.
-RtFloat boxMagnitude(GMANBBox const& box) {
-  GMANPoint const boxMin = box.getMin();
-  GMANPoint const boxMax = box.getMax();
-  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
-  RtFloat magnitude = 0.0;
-  for (RtFloat const coord : coords) {
-    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
-  }
-  return magnitude;
 }
 
 // Opaque (Os = white), matching rayoccluder_test.cpp's own sphereAt: a
@@ -382,7 +369,7 @@ void checkSelfShadowSweepAppliesOffset() {
         continue;
       }
 
-      RtFloat const magnitude = boxMagnitude(sphere->getBBox());
+      RtFloat const magnitude = gman::primitiveMagnitude(sphere->getBBox());
       GMANColor const result = tracer.trace(hit.point, grazeR, ng, magnitude);
       if (!colorNear(result, background, kTol)) {
         ++selfHitCount;

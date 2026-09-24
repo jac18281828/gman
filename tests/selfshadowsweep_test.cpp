@@ -45,6 +45,7 @@
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
+#include "gmanraybbox.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
@@ -99,23 +100,6 @@ GMANMatrix4 skewedPlacement(RtFloat scale) {
 // origins circle this point, not the world origin.
 GMANPoint placementCenter(GMANMatrix4 const& placement) {
   return gman::transformPoint(placement, GMANPoint(0.0, 0.0, 0.0));
-}
-
-// The largest absolute coordinate over box's own six corners, 0 for a box
-// still at its default +/-RI_INFINITY -- mirrors gmanraytracerenderer.cpp's
-// own primitiveMagnitude, duplicated here since that one is file-local.
-RtFloat boxMagnitude(GMANBBox const& box) {
-  GMANPoint const boxMin = box.getMin();
-  GMANPoint const boxMax = box.getMax();
-  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
-  RtFloat magnitude = 0.0;
-  for (RtFloat const coord : coords) {
-    if ((RtFloat)std::fabs(coord) >= RI_INFINITY) {
-      return 0.0;
-    }
-    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
-  }
-  return magnitude;
 }
 
 // One sweep cell's own fixture: a single primitive, alone in its own BVH,
@@ -295,7 +279,7 @@ void sweepCell(Cell& cell) {
         continue;
       }
 
-      RtFloat const magnitude = boxMagnitude(cell.primitive->getBBox());
+      RtFloat const magnitude = gman::primitiveMagnitude(cell.primitive->getBBox());
       GMANColor const result =
           occluder.transmission(light, hit.point, cell.towardLight, hit.normal, RI_INFINITY, magnitude);
       if (result.getRed() < 0.99f || result.getGreen() < 0.99f || result.getBlue() < 0.99f) {
@@ -366,7 +350,7 @@ void sweepLargePrimitiveRow(RtFloat radius) {
   GMANVector const towardLight((RtFloat)std::sin(kGrazeAngle), 0.0f, (RtFloat)-std::cos(kGrazeAngle));
   GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(),
                         GMANVector(-towardLight.getX(), -towardLight.getY(), -towardLight.getZ()));
-  RtFloat const magnitude = boxMagnitude(sphere->getBBox());
+  RtFloat const magnitude = gman::primitiveMagnitude(sphere->getBBox());
 
   GMANPoint const origin(0.0f, 0.0f, 0.0f);
   constexpr int kThetaSteps = 36;

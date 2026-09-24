@@ -41,6 +41,7 @@
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
+#include "gmanraybbox.h"
 #include "gmanraysphere.h"
 #include "gmanraytracerenderer.h"
 #include "gmantransform.h"
@@ -52,20 +53,6 @@ namespace {
 GMANTransform makeTransform(GMANMatrix4 matrix) {
   GMANOneMatrix storage(matrix);
   return GMANTransform(storage);
-}
-
-// The largest absolute coordinate over box's own six corners -- mirrors
-// gmanraytracerenderer.cpp's own primitiveMagnitude, duplicated here since
-// that one is file-local.
-RtFloat boxMagnitude(GMANBBox const& box) {
-  GMANPoint const boxMin = box.getMin();
-  GMANPoint const boxMax = box.getMax();
-  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
-  RtFloat magnitude = 0.0;
-  for (RtFloat const coord : coords) {
-    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
-  }
-  return magnitude;
 }
 
 // Opaque (Os = white): a bare GMANRayInterface's appearance defaults to
@@ -166,7 +153,7 @@ void testSelfShadowAtScale(RtFloat scale) {
         continue; // the sphere's own dark side: not this check's business
       }
       ++litSamples;
-      RtFloat const magnitude = boxMagnitude(sphere->getBBox());
+      RtFloat const magnitude = gman::primitiveMagnitude(sphere->getBBox());
       GMANColor const result = occluder.transmission(light, hit.point, lightDir, hit.normal, RI_INFINITY, magnitude);
       if (result.getRed() < 0.5f) {
         ++selfShadowed;

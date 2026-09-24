@@ -43,6 +43,24 @@ inline GMANPoint pointMax(GMANPoint const& a, GMANPoint const& b) {
   return GMANPoint(GMANMax(a.getX(), b.getX()), GMANMax(a.getY(), b.getY()), GMANMax(a.getZ(), b.getZ()));
 }
 
+// The largest absolute coordinate over box's own six corners, 0 for a box
+// still at its default +/-RI_INFINITY (a primitive whose own bbox was
+// never assigned) -- hitSurfacePoint's own M, gman::SurfacePoint's
+// surfaceMagnitude field.
+inline RtFloat primitiveMagnitude(GMANBBox const& box) {
+  GMANPoint const boxMin = box.getMin();
+  GMANPoint const boxMax = box.getMax();
+  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
+  RtFloat magnitude = 0.0;
+  for (RtFloat const coord : coords) {
+    if (std::fabs(coord) >= RI_INFINITY) {
+      return 0.0;
+    }
+    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
+  }
+  return magnitude;
+}
+
 // A box built from RtFloat corner transforms can, by a few ULP, fall just
 // inside a hit a double-precision intersector computes (R5c's torus solves
 // its quartic in double). Padding every assigned box outward by an epsilon

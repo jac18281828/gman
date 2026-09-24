@@ -27,6 +27,7 @@
 #include <limits>
 
 #include "gmanmath.h"
+#include "gmanraybbox.h"
 #include "gmanrayinterface.h"
 #include "gmanraysphere.h"
 #include "gmanraytracerenderer.h"
@@ -83,24 +84,6 @@ constexpr int kMaxTraceDepth = 4;
 
 namespace {
 
-// The largest absolute coordinate over box's own six corners, 0 for a box
-// still at its default +/-RI_INFINITY (a primitive whose own bbox was
-// never assigned) -- hitSurfacePoint's own M, gman::SurfacePoint's
-// surfaceMagnitude field.
-RtFloat primitiveMagnitude(GMANBBox const& box) {
-  GMANPoint const boxMin = box.getMin();
-  GMANPoint const boxMax = box.getMax();
-  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
-  RtFloat magnitude = 0.0;
-  for (RtFloat const coord : coords) {
-    if (std::fabs(coord) >= RI_INFINITY) {
-      return 0.0;
-    }
-    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
-  }
-  return magnitude;
-}
-
 // The gman::SurfacePoint a ray hit implies: P and N/Ng already camera
 // space (GMANRayInterface::intersect's own contract), I the ray's own
 // direction and E its own origin, rather than both assumed at the
@@ -119,7 +102,7 @@ gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   point.v = hit.v;
   point.s = hit.u;
   point.t = hit.v;
-  point.surfaceMagnitude = primitiveMagnitude(hit.primitive->getBBox());
+  point.surfaceMagnitude = gman::primitiveMagnitude(hit.primitive->getBBox());
   return point;
 }
 
@@ -213,7 +196,7 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
     // The surface this iteration is leaving, not the Ng the caller
     // passed: that one belongs to the first hit only, a different
     // surface once the walk has crossed it.
-    currentMagnitude = primitiveMagnitude(hitPrimitive->getBBox());
+    currentMagnitude = gman::primitiveMagnitude(hitPrimitive->getBBox());
     origin = offsetOrigin(hit.point, hit.normal, towardLight, currentMagnitude);
     remaining -= hit.t;
   }
@@ -303,7 +286,7 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
     // surface composite itself repeatedly. The hit primitive's own M, not
     // the previous layer's: each layer composited here can be a different
     // surface.
-    RtFloat const magnitude = primitiveMagnitude(hit.hit.primitive->getBBox());
+    RtFloat const magnitude = gman::primitiveMagnitude(hit.hit.primitive->getBBox());
     GMANPoint const origin = offsetOrigin(hit.hit.point, hit.hit.normal, ray.getDirection(), magnitude);
     ray = GMANRay(origin, ray.getDirection(), RI_EPSILON, RI_INFINITY);
     hit = nearestHit(ray);
