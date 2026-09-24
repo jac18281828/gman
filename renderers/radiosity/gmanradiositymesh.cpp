@@ -35,6 +35,7 @@
 #include "gmanprimitives.h"
 #include "gmanradiositymesh.h"
 #include "gmanray.h"
+#include "gmanraybbox.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
@@ -70,6 +71,18 @@ constexpr double kMinPolygonCellArea = 1e-12;
 // than tied to kMaxDivisions, so it stays a round count, not another factor
 // of N, and the whole search stays within O(N^2 log N).
 constexpr std::size_t kMaxResolutionRounds = 6;
+
+// Two nodes of one primitive are the same node within this fraction of
+// its gman::primitiveMagnitude: wide enough for a closed quadric's u = 0
+// and u = 1 seam and a pole's row, which differ only by float rounding,
+// and far below any element edge.
+constexpr double kSameNodeScale = 1e-6;
+
+// A quadric's density central difference reaches this fraction of its
+// cell to either side, balancing truncation, which grows with the step,
+// against float getLocation's rounding, which shrinks with it: both stay
+// under 1e-4 relative across a cell spanning 0.4 rad or less.
+constexpr double kDensityStep = 0.05;
 
 using Point2 = std::array<double, 2>;
 
@@ -522,6 +535,60 @@ void appendPolygonElements(PolygonBasis const& basis, PolygonExtent const& exten
   }
 }
 
+// A camera-space point's own cell in a grid of side cell, one integer
+// per axis, held as doubles so a far coordinate cannot overflow.
+using CellKey = std::array<double, 3>;
+
+CellKey cellKeyOf(GMANPoint const& p, double cell) {
+  return {std::floor((double)p.getX() / cell), std::floor((double)p.getY() / cell),
+          std::floor((double)p.getZ() / cell)};
+}
+
+double pointDistanceDouble(GMANPoint const& a, GMANPoint const& b) {
+  double const dx = (double)b.getX() - (double)a.getX();
+  double const dy = (double)b.getY() - (double)a.getY();
+  double const dz = (double)b.getZ() - (double)a.getZ();
+  return std::sqrt(dx * dx + dy * dy + dz * dz);
+}
+
+// The root of index's union-find set, compressing the path walked.
+std::size_t findRoot(std::vector<std::size_t>& parent, std::size_t index) {
+  std::size_t root = index;
+  while (parent[root] != root) {
+    root = parent[root];
+  }
+  while (parent[index] != root) {
+    std::size_t const next = parent[index];
+    parent[index] = root;
+    index = next;
+  }
+  return root;
+}
+
+// Joins two sets under the lower root, so every set's root is its lowest
+// index.
+void uniteSets(std::vector<std::size_t>& parent, std::size_t a, std::size_t b) {
+  std::size_t const rootA = findRoot(parent, a);
+  std::size_t const rootB = findRoot(parent, b);
+  if (rootA < rootB) {
+    parent[rootB] = rootA;
+  } else if (rootB < rootA) {
+    parent[rootA] = rootB;
+  }
+}
+
+std::array<double, 3> pointDifference(GMANPoint const& hi, GMANPoint const& lo, double span) {
+  return {((double)hi.getX() - (double)lo.getX()) / span, ((double)hi.getY() - (double)lo.getY()) / span,
+          ((double)hi.getZ() - (double)lo.getZ()) / span};
+}
+
+double crossMagnitude(std::array<double, 3> const& a, std::array<double, 3> const& b) {
+  double const x = a[1] * b[2] - a[2] * b[1];
+  double const y = a[2] * b[0] - a[0] * b[2];
+  double const z = a[0] * b[1] - a[1] * b[0];
+  return std::sqrt(x * x + y * y + z * z);
+}
+
 } // namespace
 
 // Per-primitive dicing state locate() needs: which grid a hit's own
@@ -529,6 +596,7 @@ void appendPolygonElements(PolygonBasis const& basis, PolygonExtent const& exten
 // a cell within it.
 struct GMANRadiosityMesh::PrimitiveMesh {
   GMANPrimitive const* primitive = nullptr;
+  GMANRayInterface const* rayPrimitive = nullptr;
   bool isPolygon = false;
 
   std::size_t nu = 0;
@@ -550,6 +618,24 @@ struct GMANRadiosityMesh::PrimitiveMesh {
   double vMin = 0;
   double duStep = 0;
   double dvStep = 0;
+
+  // Polygon only: the plane normal and the loops, in the same (s, t)
+  // basis, that surfacePoint tests containment against.
+  GMANVector planeNormal;
+  std::vector<Point2> outerST;
+  std::vector<std::vector<Point2>> holesST;
+
+  // Quadric only: the surface and its placement surfacePoint evaluates.
+  // getLocation and getNormal are non-const, hence the non-const pointer.
+  GMANParametric* parametric = nullptr;
+  GMANMatrix4 objectToCamera;
+  GMANMatrix4 cameraToObject;
+};
+
+struct GMANRadiosityMesh::ElementCell {
+  std::size_t primitiveMesh = 0;
+  std::size_t i = 0;
+  std::size_t j = 0;
 };
 
 GMANRadiosityMesh::GMANRadiosityMesh() = default;
@@ -632,12 +718,16 @@ void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric&
 
   PrimitiveMesh mesh;
   mesh.primitive = primitive;
+  mesh.rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
   mesh.isPolygon = false;
   mesh.nu = nu;
   mesh.nv = nv;
   mesh.nodeOffset = nodeOffset;
   mesh.elementOffset = elementOffset;
   mesh.cellToElement.resize(nu * nv);
+  mesh.parametric = &parametric;
+  mesh.objectToCamera = objectToCamera;
+  mesh.cameraToObject = cameraToObject;
 
   for (std::size_t j = 0; j < nv; ++j) {
     for (std::size_t i = 0; i < nu; ++i) {
@@ -654,6 +744,8 @@ void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric&
   }
 
   primitiveMeshes.push_back(std::move(mesh));
+  recordElementCells();
+  groupCoincidentNodes();
 }
 
 void GMANRadiosityMesh::dicePolygon(GMANRayPolygon const& polygon, RtFloat maxEdgeLength) {
@@ -682,6 +774,7 @@ void GMANRadiosityMesh::dicePolygon(GMANRayPolygon const& polygon, RtFloat maxEd
 
   PrimitiveMesh mesh;
   mesh.primitive = &polygon;
+  mesh.rayPrimitive = &polygon;
   mesh.isPolygon = true;
   mesh.nu = grid.nu;
   mesh.nv = grid.nv;
@@ -698,7 +791,13 @@ void GMANRadiosityMesh::dicePolygon(GMANRayPolygon const& polygon, RtFloat maxEd
 
   appendPolygonElements(basis, extent, grid, holesST, normal, nodeOffset, elements, mesh.cellToElement);
 
+  mesh.planeNormal = normal;
+  mesh.outerST = extent.loopST;
+  mesh.holesST = std::move(holesST);
+
   primitiveMeshes.push_back(std::move(mesh));
+  recordElementCells();
+  groupCoincidentNodes();
 }
 
 void GMANRadiosityMesh::diceMesh(GMANRayPolygonMesh const& mesh, RtFloat maxEdgeLength) {
@@ -743,6 +842,8 @@ void GMANRadiosityMesh::build(GMANWorldManager& worldManager, RtFloat maxEdgeLen
   nodes.clear();
   elements.clear();
   primitiveMeshes.clear();
+  elementCells.clear();
+  nodeGroups.clear();
   skippedCount = 0;
 
   for (GMANPrimitive* primitive = worldManager.getFirst(); primitive; primitive = worldManager.getNext()) {
@@ -807,4 +908,123 @@ bool GMANRadiosityMesh::locate(GMANHit const& hit, GMANRadiosityLocation& locati
   location.weights[2] = localU * localV;
   location.weights[3] = (1 - localU) * localV;
   return true;
+}
+
+GMANRayInterface const* GMANRadiosityMesh::getElementPrimitive(std::size_t element) const {
+  return primitiveMeshes[elementCells[element].primitiveMesh].rayPrimitive;
+}
+
+bool GMANRadiosityMesh::surfacePoint(std::size_t element, double s, double t, GMANRadiositySurfacePoint& point) const {
+  ElementCell const& cell = elementCells[element];
+  PrimitiveMesh const& mesh = primitiveMeshes[cell.primitiveMesh];
+  GMANRadiositySurfacePoint found;
+
+  if (mesh.isPolygon) {
+    double const planeS = mesh.uMin + mesh.duStep * ((double)cell.i + s);
+    double const planeT = mesh.vMin + mesh.dvStep * ((double)cell.j + t);
+    if (!insidePolygonST(mesh.outerST, planeS, planeT)) {
+      return false;
+    }
+    for (std::vector<Point2> const& holeST : mesh.holesST) {
+      if (insidePolygonST(holeST, planeS, planeT)) {
+        return false;
+      }
+    }
+    found.P = mesh.basisOrigin + mesh.basisE0 * (RtFloat)planeS + mesh.basisE1 * (RtFloat)planeT;
+    found.N = mesh.planeNormal;
+    found.density = (RtFloat)(mesh.duStep * mesh.dvStep);
+  } else {
+    double const nu = (double)mesh.nu;
+    double const nv = (double)mesh.nv;
+    double const u = ((double)cell.i + s) / nu;
+    double const v = ((double)cell.j + t) / nv;
+    auto const location = [&](double atU, double atV) {
+      return gman::transformPoint(mesh.objectToCamera, mesh.parametric->getLocation(atU, atV));
+    };
+
+    found.P = location(u, v);
+    found.N = gman::transformNormal(mesh.cameraToObject, mesh.parametric->getNormal(u, v));
+    found.N.normalize();
+
+    // The stencil stays inside the primitive's own [0, 1]^2, one-sided at
+    // its border.
+    double const uLo = GMANMax(u - kDensityStep / nu, 0.0);
+    double const uHi = GMANMin(u + kDensityStep / nu, 1.0);
+    double const vLo = GMANMax(v - kDensityStep / nv, 0.0);
+    double const vHi = GMANMin(v + kDensityStep / nv, 1.0);
+    std::array<double, 3> const dPdu = pointDifference(location(uHi, v), location(uLo, v), uHi - uLo);
+    std::array<double, 3> const dPdv = pointDifference(location(u, vHi), location(u, vLo), vHi - vLo);
+    found.density = (RtFloat)(crossMagnitude(dPdu, dPdv) / (nu * nv));
+  }
+
+  GMANVector const& front = elements[element].normal;
+  if (found.N.dot(found.N) == (RtFloat)0) {
+    found.N = front;
+  } else if (found.N.dot(front) < (RtFloat)0) {
+    found.N = -found.N;
+  }
+  point = found;
+  return true;
+}
+
+bool GMANRadiosityMesh::sameNode(std::size_t a, std::size_t b) const { return nodeGroups[a] == nodeGroups[b]; }
+
+void GMANRadiosityMesh::recordElementCells() {
+  std::size_t const meshIndex = primitiveMeshes.size() - 1;
+  PrimitiveMesh const& mesh = primitiveMeshes.back();
+  elementCells.resize(elements.size());
+  for (std::size_t cell = 0; cell < mesh.cellToElement.size(); ++cell) {
+    std::size_t const element = mesh.cellToElement[cell];
+    if (element == kNoElement) {
+      continue;
+    }
+    elementCells[element] = {meshIndex, cell % mesh.nu, cell / mesh.nu};
+  }
+}
+
+void GMANRadiosityMesh::groupCoincidentNodes() {
+  PrimitiveMesh const& mesh = primitiveMeshes.back();
+  std::size_t const begin = mesh.nodeOffset;
+  std::size_t const count = nodes.size() - begin;
+  double const magnitude = mesh.rayPrimitive ? (double)gman::primitiveMagnitude(mesh.rayPrimitive->getBBox()) : 0.0;
+  double const tolerance = kSameNodeScale * magnitude;
+  // Nodes within tolerance share a cell or sit in adjacent ones.
+  double const cell = tolerance > 0.0 ? tolerance : 1.0;
+
+  std::vector<std::pair<CellKey, std::size_t>> keyed;
+  keyed.reserve(count);
+  for (std::size_t local = 0; local < count; ++local) {
+    keyed.push_back({cellKeyOf(nodes[begin + local].position, cell), local});
+  }
+  std::sort(keyed.begin(), keyed.end());
+
+  std::vector<std::size_t> parent(count);
+  for (std::size_t local = 0; local < count; ++local) {
+    parent[local] = local;
+  }
+
+  auto const keyBefore = [](std::pair<CellKey, std::size_t> const& entry, CellKey const& key) {
+    return entry.first < key;
+  };
+  for (auto const& [key, a] : keyed) {
+    for (int dx = -1; dx <= 1; ++dx) {
+      for (int dy = -1; dy <= 1; ++dy) {
+        for (int dz = -1; dz <= 1; ++dz) {
+          CellKey const probe = {key[0] + dx, key[1] + dy, key[2] + dz};
+          for (auto it = std::lower_bound(keyed.begin(), keyed.end(), probe, keyBefore);
+               it != keyed.end() && it->first == probe; ++it) {
+            std::size_t const b = it->second;
+            if (b > a && pointDistanceDouble(nodes[begin + a].position, nodes[begin + b].position) <= tolerance) {
+              uniteSets(parent, a, b);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  nodeGroups.resize(nodes.size());
+  for (std::size_t local = 0; local < count; ++local) {
+    nodeGroups[begin + local] = begin + findRoot(parent, local);
+  }
 }

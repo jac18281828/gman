@@ -1534,6 +1534,19 @@ set_tests_properties(radiositypolygonmesh PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRadiosityMesh's element accessors: getElementPrimitive against a
+# GMANRayBVH hit, surfacePoint against a triangle, a holed polygon and a
+# sphere's analytic density, and sameNode across a sphere's seam and poles,
+# two coincident spheres and two faces of one mesh. Linked against
+# gman_radiosity_objects alone.
+add_executable(gman_radiositymeshaccessors radiositymeshaccessors_test.cpp)
+target_link_libraries(gman_radiositymeshaccessors PRIVATE gman_radiosity_objects)
+
+add_test(NAME radiositymeshaccessors COMMAND gman_radiositymeshaccessors)
+set_tests_properties(radiositymeshaccessors PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Counts GMANRadiosityMesh::build's own resolution-search evaluations for
 # one primitive driven to kMaxDivisions, and bounds them well below a
 # one-step linear search's cubic cost.

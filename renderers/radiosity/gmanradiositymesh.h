@@ -33,6 +33,7 @@
 #include "gmanworldmanager.h"
 
 class GMANParametric;
+class GMANRayInterface;
 class GMANRayPolygon;
 class GMANRayPolygonMesh;
 
@@ -64,6 +65,15 @@ struct GMANRadiosityLocation {
   std::size_t element = 0;
   std::array<std::size_t, 4> corners{};
   std::array<RtFloat, 4> weights{};
+};
+
+// surfacePoint()'s own answer, camera space: the true-surface point P,
+// its unit normal N, sign-agreed with the element's normal, and the area
+// density dA / (ds dt) across the element's grid cell.
+struct GMANRadiositySurfacePoint {
+  GMANPoint P;
+  GMANVector N;
+  RtFloat density = 0;
 };
 
 /*
@@ -147,8 +157,38 @@ public:
 
   bool locate(GMANHit const& hit, GMANRadiosityLocation& location) const;
 
+  // The ray primitive element was diced from: for a GMANRayPolygonMesh,
+  // the face, the pointer a GMANRayBVH hit reports.
+  GMANRayInterface const* getElementPrimitive(std::size_t element) const;
+
+  // The true surface at (s, t) in [0, 1]^2 across element's grid cell.
+  // A quadric's point and normal are its own getLocation/getNormal at the
+  // cell's (u, v), through its placement and the placement's inverse
+  // transpose, and its density is |dP/ds x dP/dt| by central difference.
+  // A polygon's point is the in-plane point, its normal the plane normal
+  // and its density the full cell's area; false, with point untouched,
+  // where that point lies outside the outer loop or inside a hole.
+  bool surfacePoint(std::size_t element, double s, double t, GMANRadiositySurfacePoint& point) const;
+
+  // True when nodes a and b belong to the same primitive (for a
+  // GMANRayPolygonMesh, the same face) and coincide within 1e-6 of its
+  // gman::primitiveMagnitude: a closed quadric's u seam and a pole's row.
+  // Groups are that relation's transitive closure, fixed at build().
+  bool sameNode(std::size_t a, std::size_t b) const;
+
 private:
   struct PrimitiveMesh;
+
+  // Where an element came from: its primitiveMeshes index and grid cell.
+  struct ElementCell;
+
+  // Records each of the latest primitive's own elements' cells, read from
+  // its cellToElement.
+  void recordElementCells();
+
+  // Joins each coincident node pair of the latest primitive into one
+  // group in nodeGroups.
+  void groupCoincidentNodes();
 
   // The quad-facet element over four corner node indices, already
   // appended to nodes. A pole cell -- two adjacent corners coincident --
@@ -173,5 +213,9 @@ private:
   std::vector<GMANRadiosityNode> nodes;
   std::vector<GMANRadiosityElement> elements;
   std::vector<PrimitiveMesh> primitiveMeshes;
+  std::vector<ElementCell> elementCells;
+
+  // Per node, the lowest node index of its sameNode group.
+  std::vector<std::size_t> nodeGroups;
   std::size_t skippedCount = 0;
 };
