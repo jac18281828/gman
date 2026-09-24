@@ -544,6 +544,10 @@ CellKey cellKeyOf(GMANPoint const& p, double cell) {
           std::floor((double)p.getZ() / cell)};
 }
 
+double maxAbsCoordinate(GMANPoint const& p) {
+  return GMANMax(GMANMax(std::fabs((double)p.getX()), std::fabs((double)p.getY())), std::fabs((double)p.getZ()));
+}
+
 double pointDistanceDouble(GMANPoint const& a, GMANPoint const& b) {
   double const dx = (double)b.getX() - (double)a.getX();
   double const dy = (double)b.getY() - (double)a.getY();
@@ -988,8 +992,17 @@ void GMANRadiosityMesh::groupCoincidentNodes() {
   std::size_t const count = nodes.size() - begin;
   double const magnitude = mesh.rayPrimitive ? (double)gman::primitiveMagnitude(mesh.rayPrimitive->getBBox()) : 0.0;
   double const tolerance = kSameNodeScale * magnitude;
-  // Nodes within tolerance share a cell or sit in adjacent ones.
-  double const cell = tolerance > 0.0 ? tolerance : 1.0;
+  double extent = 0.0;
+  for (std::size_t local = 0; local < count; ++local) {
+    extent = GMANMax(extent, maxAbsCoordinate(nodes[begin + local].position));
+  }
+  // Nodes within tolerance share a cell or sit in adjacent ones. An
+  // unassigned bbox leaves tolerance 0, exact coincidence, and the nodes'
+  // own extent sizes the cell instead, keeping each cell sparse.
+  double cell = GMANMax(tolerance, kSameNodeScale * extent);
+  if (cell <= 0.0) {
+    cell = 1.0;
+  }
 
   std::vector<std::pair<CellKey, std::size_t>> keyed;
   keyed.reserve(count);
