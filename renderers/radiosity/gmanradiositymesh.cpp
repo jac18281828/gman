@@ -211,39 +211,27 @@ ParametricGrid chooseParametricResolution(GMANParametric& parametric, GMANMatrix
   return buildParametricGrid(parametric, objectToCamera, nu, nv);
 }
 
+// Tries one quadric class's own getObjectToCamera, false for anything else.
+template <class Quadric> bool tryQuadricObjectToCamera(GMANPrimitive* primitive, GMANMatrix4& matrix) {
+  auto* p = dynamic_cast<Quadric*>(primitive);
+  if (!p) {
+    return false;
+  }
+  matrix = p->getObjectToCamera();
+  return true;
+}
+
 // Fetches the shutter-open placement from whichever of the seven quadric
-// classes primitive actually is. Returns false for anything else,
-// including a GMANRayPolygon, which has no such matrix.
+// classes primitive actually is, tried once per type. Returns false for
+// anything else, including a GMANRayPolygon, which has no such matrix.
 bool getQuadricObjectToCamera(GMANPrimitive* primitive, GMANMatrix4& matrix) {
-  if (auto* p = dynamic_cast<GMANRaySphere*>(primitive)) {
-    matrix = p->getObjectToCamera();
-    return true;
-  }
-  if (auto* p = dynamic_cast<GMANRayCylinder*>(primitive)) {
-    matrix = p->getObjectToCamera();
-    return true;
-  }
-  if (auto* p = dynamic_cast<GMANRayCone*>(primitive)) {
-    matrix = p->getObjectToCamera();
-    return true;
-  }
-  if (auto* p = dynamic_cast<GMANRayDisk*>(primitive)) {
-    matrix = p->getObjectToCamera();
-    return true;
-  }
-  if (auto* p = dynamic_cast<GMANRayParaboloid*>(primitive)) {
-    matrix = p->getObjectToCamera();
-    return true;
-  }
-  if (auto* p = dynamic_cast<GMANRayHyperboloid*>(primitive)) {
-    matrix = p->getObjectToCamera();
-    return true;
-  }
-  if (auto* p = dynamic_cast<GMANRayTorus*>(primitive)) {
-    matrix = p->getObjectToCamera();
-    return true;
-  }
-  return false;
+  return tryQuadricObjectToCamera<GMANRaySphere>(primitive, matrix) ||
+         tryQuadricObjectToCamera<GMANRayCylinder>(primitive, matrix) ||
+         tryQuadricObjectToCamera<GMANRayCone>(primitive, matrix) ||
+         tryQuadricObjectToCamera<GMANRayDisk>(primitive, matrix) ||
+         tryQuadricObjectToCamera<GMANRayParaboloid>(primitive, matrix) ||
+         tryQuadricObjectToCamera<GMANRayHyperboloid>(primitive, matrix) ||
+         tryQuadricObjectToCamera<GMANRayTorus>(primitive, matrix);
 }
 
 // The first edge long enough to define a direction -- isDegenerate()
@@ -260,6 +248,64 @@ GMANVector firstEdgeDirection(std::vector<GMANPoint> const& loop) {
   }
   return GMANVector(1, 0, 0);
 }
+
+// A polygon's own orthonormal in-plane basis: e0 along its first
+// non-degenerate edge, e1 completing a right-handed frame with its plane
+// normal, both anchored at its first vertex.
+struct PolygonBasis {
+  GMANPoint origin;
+  GMANVector e0;
+  GMANVector e1;
+};
+
+PolygonBasis computePolygonBasis(std::vector<GMANPoint> const& loop, GMANVector const& normal) {
+  PolygonBasis basis;
+  basis.origin = loop[0];
+  basis.e0 = firstEdgeDirection(loop);
+  basis.e1 = normal.cross(basis.e0);
+  basis.e1.normalize();
+  return basis;
+}
+
+// A polygon's own vertices in basis's (s, t) coordinates, and their
+// bounding extent -- double precision throughout, so a polygon's own tight
+// area tolerance below measures geometry, not accumulated float rounding
+// across many cells.
+struct PolygonExtent {
+  std::vector<Point2> loopST;
+  double sMin = 0, sMax = 0, tMin = 0, tMax = 0;
+};
+
+PolygonExtent projectPolygonExtent(std::vector<GMANPoint> const& loop, PolygonBasis const& basis) {
+  PolygonExtent extent;
+  extent.loopST.resize(loop.size());
+  for (std::size_t i = 0; i < loop.size(); ++i) {
+    GMANVector const rel(basis.origin, loop[i]);
+    double const s = (double)rel.dot(basis.e0);
+    double const t = (double)rel.dot(basis.e1);
+    extent.loopST[i] = {s, t};
+    if (i == 0) {
+      extent.sMin = extent.sMax = s;
+      extent.tMin = extent.tMax = t;
+    } else {
+      extent.sMin = GMANMin(extent.sMin, s);
+      extent.sMax = GMANMax(extent.sMax, s);
+      extent.tMin = GMANMin(extent.tMin, t);
+      extent.tMax = GMANMax(extent.tMax, t);
+    }
+  }
+  return extent;
+}
+
+// A polygon's own grid resolution and step, once its extent is known: the
+// smallest counts, capped, that keep a cell's own edge at or under
+// maxEdgeLength.
+struct PolygonGrid {
+  std::size_t nu = 1;
+  std::size_t nv = 1;
+  double duStep = 0;
+  double dvStep = 0;
+};
 
 std::size_t resolutionFromExtent(RtFloat extent, RtFloat maxEdgeLength) {
   if (extent <= (RtFloat)0) {
@@ -365,6 +411,82 @@ void polygon2DAreaAndCentroid(std::vector<Point2> const& poly, double& signedAre
   }
   cx /= (double)n;
   cy /= (double)n;
+}
+
+PolygonGrid choosePolygonGrid(PolygonExtent const& extent, RtFloat maxEdgeLength) {
+  PolygonGrid grid;
+  double const extentU = GMANMax(extent.sMax - extent.sMin, 0.0);
+  double const extentV = GMANMax(extent.tMax - extent.tMin, 0.0);
+  grid.nu = resolutionFromExtent((RtFloat)extentU, maxEdgeLength);
+  grid.nv = resolutionFromExtent((RtFloat)extentV, maxEdgeLength);
+  grid.duStep = extentU / (double)grid.nu;
+  grid.dvStep = extentV / (double)grid.nv;
+  return grid;
+}
+
+// Appends a polygon's own (nu + 1) x (nv + 1) grid nodes -- every one of
+// them, inside the polygon or not, flagged accordingly, so a clipped
+// cell's own four corners are always there to interpolate between.
+void appendPolygonNodes(PolygonBasis const& basis, PolygonExtent const& extent, PolygonGrid const& grid,
+                        GMANVector const& normal, std::vector<GMANRadiosityNode>& nodes) {
+  for (std::size_t j = 0; j <= grid.nv; ++j) {
+    double const t = extent.tMin + grid.dvStep * (double)j;
+    for (std::size_t i = 0; i <= grid.nu; ++i) {
+      double const s = extent.sMin + grid.duStep * (double)i;
+      GMANRadiosityNode node;
+      node.position = basis.origin + basis.e0 * (RtFloat)s + basis.e1 * (RtFloat)t;
+      node.normal = normal;
+      node.inside = insidePolygonST(extent.loopST, s, t);
+      nodes.push_back(node);
+    }
+  }
+}
+
+// Clips each grid cell against the polygon and appends an element for
+// every surviving one -- its own clipped area and centroid, so the kept
+// elements sum to the polygon's own area up to rounding. A cell entirely
+// outside is dropped; cellToElement stays kNoElement there.
+void appendPolygonElements(PolygonBasis const& basis, PolygonExtent const& extent, PolygonGrid const& grid,
+                           GMANVector const& normal, std::size_t nodeOffset,
+                           std::vector<GMANRadiosityElement>& elements, std::vector<std::size_t>& cellToElement) {
+  for (std::size_t j = 0; j < grid.nv; ++j) {
+    double const tLo = extent.tMin + grid.dvStep * (double)j;
+    double const tHi = tLo + grid.dvStep;
+    for (std::size_t i = 0; i < grid.nu; ++i) {
+      double const sLo = extent.sMin + grid.duStep * (double)i;
+      double const sHi = sLo + grid.duStep;
+
+      std::vector<Point2> const clipped = clipCellAgainstPolygon(extent.loopST, sLo, sHi, tLo, tHi);
+      if (clipped.size() < 3) {
+        continue; // entirely outside; cellToElement stays kNoElement
+      }
+
+      double signedArea = 0;
+      double cx = 0, cy = 0;
+      polygon2DAreaAndCentroid(clipped, signedArea, cx, cy);
+      double const area = std::fabs(signedArea);
+      if (area <= 0.0) {
+        continue;
+      }
+
+      std::array<std::size_t, 4> const corners = {
+          nodeOffset + j * (grid.nu + 1) + i,
+          nodeOffset + j * (grid.nu + 1) + i + 1,
+          nodeOffset + (j + 1) * (grid.nu + 1) + i + 1,
+          nodeOffset + (j + 1) * (grid.nu + 1) + i,
+      };
+
+      GMANRadiosityElement element;
+      element.area = (RtFloat)area;
+      element.normal = normal;
+      element.centre = basis.origin + basis.e0 * (RtFloat)cx + basis.e1 * (RtFloat)cy;
+      element.corners = corners;
+
+      std::size_t const cell = j * grid.nu + i;
+      cellToElement[cell] = elements.size();
+      elements.push_back(element);
+    }
+  }
 }
 
 } // namespace
@@ -511,109 +633,31 @@ void GMANRadiosityMesh::dicePolygon(GMANRayPolygon& polygon, RtFloat maxEdgeLeng
   std::vector<GMANPoint> const& loop = polygon.getOuterLoop();
   GMANVector const normal = polygon.getPlaneNormal();
 
-  GMANPoint const origin = loop[0];
-  GMANVector const e0 = firstEdgeDirection(loop);
-  GMANVector e1 = normal.cross(e0);
-  e1.normalize();
-
-  // The in-plane basis and grid bounds carry double precision through
-  // clipping and the area/centroid sums below: an element's clipped area
-  // is otherwise exact, so a polygon's own tight area tolerance should
-  // measure geometry, not accumulated float rounding across many cells.
-  std::vector<Point2> loopST(loop.size());
-  double uMin = 0, uMax = 0, vMin = 0, vMax = 0;
-  for (std::size_t i = 0; i < loop.size(); ++i) {
-    GMANVector const rel(origin, loop[i]);
-    double const s = (double)rel.dot(e0);
-    double const t = (double)rel.dot(e1);
-    loopST[i] = {s, t};
-    if (i == 0) {
-      uMin = uMax = s;
-      vMin = vMax = t;
-    } else {
-      uMin = GMANMin(uMin, s);
-      uMax = GMANMax(uMax, s);
-      vMin = GMANMin(vMin, t);
-      vMax = GMANMax(vMax, t);
-    }
-  }
-
-  double const extentU = GMANMax(uMax - uMin, 0.0);
-  double const extentV = GMANMax(vMax - vMin, 0.0);
-  std::size_t const nu = resolutionFromExtent((RtFloat)extentU, maxEdgeLength);
-  std::size_t const nv = resolutionFromExtent((RtFloat)extentV, maxEdgeLength);
-  double const duStep = extentU / (double)nu;
-  double const dvStep = extentV / (double)nv;
+  PolygonBasis const basis = computePolygonBasis(loop, normal);
+  PolygonExtent const extent = projectPolygonExtent(loop, basis);
+  PolygonGrid const grid = choosePolygonGrid(extent, maxEdgeLength);
 
   std::size_t const nodeOffset = nodes.size();
   std::size_t const elementOffset = elements.size();
-
-  for (std::size_t j = 0; j <= nv; ++j) {
-    double const t = vMin + dvStep * (double)j;
-    for (std::size_t i = 0; i <= nu; ++i) {
-      double const s = uMin + duStep * (double)i;
-      GMANRadiosityNode node;
-      node.position = origin + e0 * (RtFloat)s + e1 * (RtFloat)t;
-      node.normal = normal;
-      node.inside = insidePolygonST(loopST, s, t);
-      nodes.push_back(node);
-    }
-  }
+  appendPolygonNodes(basis, extent, grid, normal, nodes);
 
   PrimitiveMesh mesh;
   mesh.primitive = &polygon;
   mesh.isPolygon = true;
-  mesh.nu = nu;
-  mesh.nv = nv;
+  mesh.nu = grid.nu;
+  mesh.nv = grid.nv;
   mesh.nodeOffset = nodeOffset;
   mesh.elementOffset = elementOffset;
-  mesh.basisOrigin = origin;
-  mesh.basisE0 = e0;
-  mesh.basisE1 = e1;
-  mesh.uMin = uMin;
-  mesh.vMin = vMin;
-  mesh.duStep = duStep;
-  mesh.dvStep = dvStep;
-  mesh.cellToElement.assign(nu * nv, kNoElement);
+  mesh.basisOrigin = basis.origin;
+  mesh.basisE0 = basis.e0;
+  mesh.basisE1 = basis.e1;
+  mesh.uMin = extent.sMin;
+  mesh.vMin = extent.tMin;
+  mesh.duStep = grid.duStep;
+  mesh.dvStep = grid.dvStep;
+  mesh.cellToElement.assign(grid.nu * grid.nv, kNoElement);
 
-  for (std::size_t j = 0; j < nv; ++j) {
-    double const tLo = vMin + dvStep * (double)j;
-    double const tHi = tLo + dvStep;
-    for (std::size_t i = 0; i < nu; ++i) {
-      double const sLo = uMin + duStep * (double)i;
-      double const sHi = sLo + duStep;
-
-      std::vector<Point2> const clipped = clipCellAgainstPolygon(loopST, sLo, sHi, tLo, tHi);
-      if (clipped.size() < 3) {
-        continue; // entirely outside; cellToElement stays kNoElement
-      }
-
-      double signedArea = 0;
-      double cx = 0, cy = 0;
-      polygon2DAreaAndCentroid(clipped, signedArea, cx, cy);
-      double const area = std::fabs(signedArea);
-      if (area <= 0.0) {
-        continue;
-      }
-
-      std::array<std::size_t, 4> const corners = {
-          nodeOffset + j * (nu + 1) + i,
-          nodeOffset + j * (nu + 1) + i + 1,
-          nodeOffset + (j + 1) * (nu + 1) + i + 1,
-          nodeOffset + (j + 1) * (nu + 1) + i,
-      };
-
-      GMANRadiosityElement element;
-      element.area = (RtFloat)area;
-      element.normal = normal;
-      element.centre = origin + e0 * (RtFloat)cx + e1 * (RtFloat)cy;
-      element.corners = corners;
-
-      std::size_t const cell = j * nu + i;
-      mesh.cellToElement[cell] = elements.size();
-      elements.push_back(element);
-    }
-  }
+  appendPolygonElements(basis, extent, grid, normal, nodeOffset, elements, mesh.cellToElement);
 
   primitiveMeshes.push_back(std::move(mesh));
 }
