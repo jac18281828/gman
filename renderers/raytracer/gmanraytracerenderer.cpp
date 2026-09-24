@@ -36,8 +36,8 @@
 #include "gmanworldmanager.h"
 #include "ri.h"
 
-// One unit roundoff: half an RtFloat ulp at 1.0, the size of every term
-// kSelfShadowOffsetScale's own derivation below counts in.
+// u: half an RtFloat ulp at 1.0. kSelfShadowOffsetScale below scales the
+// self-shadow offset in units of u.
 constexpr RtFloat kUnitRoundoff = std::numeric_limits<RtFloat>::epsilon() / (RtFloat)2.0;
 
 // The distance a ray continuing past a hit displaces its own origin,
@@ -47,10 +47,10 @@ constexpr RtFloat kUnitRoundoff = std::numeric_limits<RtFloat>::epsilon() / (RtF
 // distance alone, since a large surface near the camera needs an offset
 // proportional to itself, not to |P|. kSelfShadowOffsetFloor keeps a hit
 // point at or near the origin, where the scaled term vanishes, a positive
-// offset. kSelfShadowOffsetCeiling caps the result at a max|P|-scaled
-// offset, so a large receiver near the camera never gets an offset
-// larger than max|P| alone would give it, and its own contact shadows
-// are no worse.
+// offset. kSelfShadowOffsetCeiling caps the result at
+// kSelfShadowOffsetCeiling * max|P|, the same bound the old, unkeyed
+// offset used, so a large receiver near the camera never exceeds it, and
+// its own contact shadows are no worse.
 //
 // c (16) is 4x the self-shadow sweep's own measured minimum self-hit-free
 // c on the power-of-two grid {1, 2, 4, 8, ...}: the nofma build still

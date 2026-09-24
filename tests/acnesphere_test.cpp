@@ -32,8 +32,8 @@
  * A sphere's intersector is well conditioned; this fixture cannot produce
  * the acne a swept quadric's does at a comparable magnitude. Neither this
  * fixture nor quadricsrayrender_test.cpp's own golden catches an
- * undersized kSelfShadowOffsetScale -- selfshadowsweep_test.cpp's own
- * bisection is the defence; a golden failing here still means real acne.
+ * undersized kSelfShadowOffsetScale -- the self-shadow sweep's own
+ * assertions are the defence; a golden failing here still means real acne.
  *
  * The local-dip scan (worstLocalDip) also reads 0 at every scale tested,
  * including with the offset scale forced to zero: acne on a sphere is a

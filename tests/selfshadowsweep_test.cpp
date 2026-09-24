@@ -399,7 +399,7 @@ void sweepLargePrimitiveRow(RtFloat radius) {
   check(magnitudeRuleSelfHit == 0, label + ": every lit sample transmits white under the magnitude rule");
   // Under max|P| keying alone, R = 100 self-hits at a smaller c (4 and 8
   // measured, both builds) but clears at the shipped c = 16, the same as
-  // every larger R; only R = 1000 still self-hits under max|P| alone at
+  // every smaller R; only R = 1000 still self-hits under max|P| alone at
   // c = 16, so only its own assertion below pins the need for M at the
   // shipped constant.
   if (radius >= 1000.0f) {
@@ -416,7 +416,7 @@ int main() {
   sweepLargePrimitiveRow(100.0f);
   sweepLargePrimitiveRow(1000.0f);
 
-  return checkSummary("R9's self-shadow sweep: every ray primitive, at every scale and placement, never shadows "
+  return checkSummary("the self-shadow sweep: every ray primitive, at every scale and placement, never shadows "
                       "itself once legitimate self-occlusion is excluded, and a large primitive near the camera "
                       "needs the magnitude rule");
 }
