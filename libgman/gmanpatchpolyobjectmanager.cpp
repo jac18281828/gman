@@ -196,14 +196,18 @@ RtInt diceCountFor(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2
     return kPolygonDiceN;
   }
 
-  RtInt n = (RtInt)std::ceil(L / std::sqrt(dicing.shadingRate));
-  if (n < 1) {
-    n = 1;
+  // Clamped in real (double) arithmetic before ever becoming an RtInt: L
+  // can be finite and still project past what an int can hold (a huge
+  // scale, or a screen window narrow enough to blow up the raster scale),
+  // and converting an out-of-range double to int is undefined behaviour.
+  double n = std::ceil((double)L / std::sqrt((double)dicing.shadingRate));
+  if (n < 1.0) {
+    n = 1.0;
   }
-  if (n > kPolygonDiceN) {
-    n = kPolygonDiceN;
+  if (n > (double)kPolygonDiceN) {
+    n = (double)kPolygonDiceN;
   }
-  return n;
+  return (RtInt)n;
 }
 
 // A parametric surface's four corner texture coordinates (RISpec 3.2's

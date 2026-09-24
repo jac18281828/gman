@@ -198,5 +198,16 @@ int main() {
   checkFaces("10px longest edge under a halved ScreenWindow, n=10",
              runTriangle(legWindowed, kDepth, windowedOptions, defaultAttr), 100);
 
+  // A finite longest edge past INT_MAX pixels (a huge but legitimate
+  // world-space triangle, not a degenerate or infinite one): the clamp to
+  // [1, 16] has to happen before the ceil()'d ratio ever becomes an
+  // RtInt, or converting an out-of-range double to int is undefined
+  // behaviour (caught under UBSan; this platform's own conversion
+  // happens to saturate, so the count alone does not falsify the old
+  // code -- the sanitizer does).
+  const RtFloat legHuge = legFor(3.0e9, false);
+  checkFaces("longest edge past INT_MAX pixels, still finite, capped at n=16",
+             runTriangle(legHuge, kDepth, options, defaultAttr), 256);
+
   return checkSummary("polygondicecount holds");
 }

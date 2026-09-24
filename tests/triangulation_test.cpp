@@ -143,14 +143,17 @@ int expectedDiceN(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2,
   if (!(shadingRate > (RtFloat)0.0) || !std::isfinite(L)) {
     return 16;
   }
-  int n = (int)std::ceil(L / std::sqrt((double)shadingRate));
-  if (n < 1) {
-    n = 1;
+  // Clamped in double before the RtInt conversion: mirrors
+  // gmanpatchpolyobjectmanager.cpp's own diceCountFor, since L can be
+  // finite and still past what an int can hold.
+  double n = std::ceil(L / std::sqrt((double)shadingRate));
+  if (n < 1.0) {
+    n = 1.0;
   }
-  if (n > 16) {
-    n = 16;
+  if (n > 16.0) {
+    n = 16.0;
   }
-  return n;
+  return (int)n;
 }
 
 // Rodrigues' rotation formula in double precision -- an independent
