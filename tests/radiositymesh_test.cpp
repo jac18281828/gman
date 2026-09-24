@@ -740,7 +740,7 @@ void testNonUniformScaleNormal() {
   r.rot(GMANRadians(17.0), 0.2, 1.0, 0.4);
   m.concat(r);
   GMANMatrix4 s;
-  s.scale(2.0, 1.0, 1.0);
+  s.scale(5.0, 1.0, 1.0);
   m.concat(s);
 
   GMANLinearWorldManager worldManager;
@@ -780,7 +780,7 @@ void testNonUniformScaleNormal() {
 
   RtFloat const dot = blendedNormal.dot(expectedNormal);
   std::printf("non-uniform scale normal: dot(blended, expected)=%.6g\n", dot);
-  check(dot > 0.99f, "non-uniform scale: node normals match the inverse-transpose transform, not the plain matrix");
+  check(dot > 0.9999f, "non-uniform scale: node normals match the inverse-transpose transform, not the plain matrix");
 }
 
 } // namespace
