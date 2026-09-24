@@ -78,6 +78,18 @@ constexpr std::size_t kMaxResolutionRounds = 6;
 // and far below any element edge.
 constexpr double kSameNodeScale = 1e-6;
 
+// The coincidence sweep's projection direction, (1, sqrt 2, sqrt 3) /
+// sqrt 6. Nodes within tolerance project within tolerance, and the
+// irrational ratios keep a regular grid's projections apart, so a window
+// that wide holds little besides coincident nodes.
+constexpr double kSweepX = 0.40824829046386302;
+constexpr double kSweepY = 0.57735026918962576;
+constexpr double kSweepZ = 0.70710678118654752;
+
+// The sweep window's slack over the tolerance, relative to the nodes'
+// extent: double rounding in two projections, far below any tolerance.
+constexpr double kSweepSlack = 1e-12;
+
 // A quadric's density central difference reaches this fraction of its
 // cell to either side, balancing truncation, which grows with the step,
 // against float getLocation's rounding, which shrinks with it: both stay
@@ -537,11 +549,8 @@ void appendPolygonElements(PolygonBasis const& basis, PolygonExtent const& exten
 
 // A camera-space point's own cell in a grid of side cell, one integer
 // per axis, held as doubles so a far coordinate cannot overflow.
-using CellKey = std::array<double, 3>;
-
-CellKey cellKeyOf(GMANPoint const& p, double cell) {
-  return {std::floor((double)p.getX() / cell), std::floor((double)p.getY() / cell),
-          std::floor((double)p.getZ() / cell)};
+double sweepProjection(GMANPoint const& p) {
+  return kSweepX * (double)p.getX() + kSweepY * (double)p.getY() + kSweepZ * (double)p.getZ();
 }
 
 double maxAbsCoordinate(GMANPoint const& p) {
@@ -996,42 +1005,24 @@ void GMANRadiosityMesh::groupCoincidentNodes() {
   for (std::size_t local = 0; local < count; ++local) {
     extent = GMANMax(extent, maxAbsCoordinate(nodes[begin + local].position));
   }
-  // Nodes within tolerance share a cell or sit in adjacent ones. An
-  // unassigned bbox leaves tolerance 0, exact coincidence, and the nodes'
-  // own extent sizes the cell instead, keeping each cell sparse.
-  double cell = GMANMax(tolerance, kSameNodeScale * extent);
-  if (cell <= 0.0) {
-    cell = 1.0;
-  }
+  double const window = tolerance + kSweepSlack * extent;
 
-  std::vector<std::pair<CellKey, std::size_t>> keyed;
-  keyed.reserve(count);
+  std::vector<std::pair<double, std::size_t>> order;
+  order.reserve(count);
   for (std::size_t local = 0; local < count; ++local) {
-    keyed.push_back({cellKeyOf(nodes[begin + local].position, cell), local});
+    order.push_back({sweepProjection(nodes[begin + local].position), local});
   }
-  std::sort(keyed.begin(), keyed.end());
+  std::sort(order.begin(), order.end());
 
   std::vector<std::size_t> parent(count);
   for (std::size_t local = 0; local < count; ++local) {
     parent[local] = local;
   }
-
-  auto const keyBefore = [](std::pair<CellKey, std::size_t> const& entry, CellKey const& key) {
-    return entry.first < key;
-  };
-  for (auto const& [key, a] : keyed) {
-    for (int dx = -1; dx <= 1; ++dx) {
-      for (int dy = -1; dy <= 1; ++dy) {
-        for (int dz = -1; dz <= 1; ++dz) {
-          CellKey const probe = {key[0] + dx, key[1] + dy, key[2] + dz};
-          for (auto it = std::lower_bound(keyed.begin(), keyed.end(), probe, keyBefore);
-               it != keyed.end() && it->first == probe; ++it) {
-            std::size_t const b = it->second;
-            if (b > a && pointDistanceDouble(nodes[begin + a].position, nodes[begin + b].position) <= tolerance) {
-              uniteSets(parent, a, b);
-            }
-          }
-        }
+  for (std::size_t i = 0; i < count; ++i) {
+    GMANPoint const& a = nodes[begin + order[i].second].position;
+    for (std::size_t j = i + 1; j < count && order[j].first - order[i].first <= window; ++j) {
+      if (pointDistanceDouble(a, nodes[begin + order[j].second].position) <= tolerance) {
+        uniteSets(parent, order[i].second, order[j].second);
       }
     }
   }
