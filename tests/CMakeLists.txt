@@ -1522,13 +1522,12 @@ set_tests_properties(radiositymesh PROPERTIES
 
 # Counts GMANRadiosityMesh::build's own resolution-search evaluations for
 # one primitive driven to kMaxDivisions, and bounds them well below a
-# one-step linear search's cubic cost. WILL_FAIL until that search is fixed.
+# one-step linear search's cubic cost.
 add_executable(gman_radiositymeshcost radiositymeshcost_test.cpp)
 target_link_libraries(gman_radiositymeshcost PRIVATE gman_radiosity_objects)
 
 add_test(NAME radiositymeshcost COMMAND gman_radiositymeshcost)
 set_tests_properties(radiositymeshcost PROPERTIES
-  WILL_FAIL TRUE
   LABELS unit
   TIMEOUT 30)
 

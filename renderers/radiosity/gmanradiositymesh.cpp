@@ -131,34 +131,84 @@ void maxGridEdgeLengths(GMANParametric& parametric, GMANMatrix4 const& objectToC
   }
 }
 
+// A primitive's own true edge length only shrinks, or holds, as its axis's
+// division count grows -- a chord tightens toward its arc as it shortens,
+// never loosens. resolveAxisCount leans on that to find the smallest count
+// in [1, cap] whose own measure is at or under threshold: double the guess
+// until measure holds or the cap is hit, then bisect the last doubling
+// step down to the exact smallest count that holds. O(log count) calls to
+// measure, against one per unit step.
+template <class Measure> std::size_t resolveAxisCount(std::size_t cap, RtFloat threshold, Measure measure) {
+  std::size_t hi = 1;
+  bool hiHolds = measure(hi) <= threshold;
+  while (!hiHolds && hi < cap) {
+    hi = hi > cap / 2 ? cap : hi * 2;
+    hiHolds = measure(hi) <= threshold;
+  }
+  if (!hiHolds) {
+    return cap;
+  }
+  std::size_t lo = hi / 2;
+  while (hi - lo > 1) {
+    std::size_t const mid = lo + (hi - lo) / 2;
+    if (measure(mid) <= threshold) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
+  }
+  return hi;
+}
+
+// A ceiling on how many nu/nv relaxation rounds chooseParametricResolution
+// takes below, sized well above the worst case its own seven quadrics need.
+// A full sphere -- the deepest coupling among them, since only its u (not
+// its v) resolution depends on the other axis's own row sampling -- settles
+// in 3: one round resolves v correctly (u independent of it) while u still
+// sits at its pole-degenerate first guess, the next corrects u against that
+// settled v, the third confirms nothing moved. Kept a fixed constant rather
+// than tied to kMaxDivisions, so it stays a round count, not another factor
+// of N, and the whole search stays within O(N^2 log N).
+constexpr std::size_t kMaxResolutionRounds = 6;
+
 // The smallest (nu, nv), capped at GMANRadiosityMesh::kMaxDivisions each,
-// whose own real grid keeps every edge at or under maxEdgeLength -- grown
-// one step at a time and re-measured on its own real grid, so the answer
-// is exact rather than a proxy's estimate.
+// whose own real grid keeps every edge at or under maxEdgeLength. Growing
+// nv only ever reveals a larger true maxU (finer v-sampling never shrinks
+// an edge already found), and symmetrically for nu against maxV, so
+// resolving nu then nv, each against the other's latest count, is a
+// monotone relaxation that climbs to the same fixed point the old one-step
+// joint growth reached -- in a handful of rounds rather than one step per
+// unit.
 ParametricGrid chooseParametricResolution(GMANParametric& parametric, GMANMatrix4 const& objectToCamera,
                                           RtFloat maxEdgeLength) {
+  std::size_t const cap = GMANRadiosityMesh::kMaxDivisions;
   std::size_t nu = 1;
   std::size_t nv = 1;
-  ParametricGrid grid = buildParametricGrid(parametric, objectToCamera, nu, nv);
-  for (;;) {
-    RtFloat maxU = 0;
-    RtFloat maxV = 0;
-    maxGridEdgeLengths(parametric, objectToCamera, grid, maxU, maxV);
 
-    bool grown = false;
-    if (maxU > maxEdgeLength && nu < GMANRadiosityMesh::kMaxDivisions) {
-      ++nu;
-      grown = true;
+  for (std::size_t round = 0; round < kMaxResolutionRounds; ++round) {
+    std::size_t const prevNu = nu;
+    std::size_t const prevNv = nv;
+
+    nu = resolveAxisCount(cap, maxEdgeLength, [&](std::size_t candidate) {
+      ParametricGrid const grid = buildParametricGrid(parametric, objectToCamera, candidate, nv);
+      RtFloat maxU = 0, maxV = 0;
+      maxGridEdgeLengths(parametric, objectToCamera, grid, maxU, maxV);
+      return maxU;
+    });
+
+    nv = resolveAxisCount(cap, maxEdgeLength, [&](std::size_t candidate) {
+      ParametricGrid const grid = buildParametricGrid(parametric, objectToCamera, nu, candidate);
+      RtFloat maxU = 0, maxV = 0;
+      maxGridEdgeLengths(parametric, objectToCamera, grid, maxU, maxV);
+      return maxV;
+    });
+
+    if (nu == prevNu && nv == prevNv) {
+      break;
     }
-    if (maxV > maxEdgeLength && nv < GMANRadiosityMesh::kMaxDivisions) {
-      ++nv;
-      grown = true;
-    }
-    if (!grown) {
-      return grid;
-    }
-    grid = buildParametricGrid(parametric, objectToCamera, nu, nv);
   }
+
+  return buildParametricGrid(parametric, objectToCamera, nu, nv);
 }
 
 // Fetches the shutter-open placement from whichever of the seven quadric
