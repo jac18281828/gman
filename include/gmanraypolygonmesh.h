@@ -32,19 +32,21 @@
 // GMANRayPolygon in camera space, joined under one GMANPrimitive so
 // RiPointsPolygonsV/RiPointsGeneralPolygonsV add exactly one primitive to
 // the world. GMANRayBVH::build recognizes this type by dynamic_cast and
-// adds each face as its own entry instead of the mesh itself, so a
-// house-sized mesh culls per face; intersect below tests every face
-// linearly, for any caller that reaches this primitive directly rather
-// than through the BVH. Internal: no exported declaration names it, and
-// it carries no face accessor.
-class GMANRayPolygonMesh : public GMANRayInterface {
+// adds each face as its own entry instead of the mesh itself, through
+// getFaceCount()/getFace(), so a house-sized mesh culls per face;
+// intersect below tests every face linearly, for any caller that reaches
+// this primitive directly rather than through the BVH.
+class GMAN_EXPORT GMANRayPolygonMesh : public GMANRayInterface {
 public:
   explicit GMANRayPolygonMesh(std::vector<std::unique_ptr<GMANRayPolygon>> polygons);
 
   bool intersect(GMANRay const& ray, GMANHit& hit) const;
 
-private:
-  friend class GMANRayBVH; // the only flattener: reads faces directly
+  // The mesh's own faces, in construction order -- what GMANRayBVH::build
+  // and a radiosity dicer each read one at a time.
+  std::size_t getFaceCount() const { return faces.size(); }
+  GMANRayPolygon const& getFace(std::size_t index) const { return *faces[index]; }
 
+private:
   std::vector<std::unique_ptr<GMANRayPolygon>> faces;
 };

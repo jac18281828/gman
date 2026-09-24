@@ -74,6 +74,10 @@ public:
   // normal, the polygon's own plane normal (see the constructor).
   GMANVector const& getPlaneNormal() const { return normal; }
 
+  // holes, each a loop RiGeneralPolygon cuts from the outer boundary,
+  // tested even-odd on its own (see the constructor).
+  std::vector<std::vector<GMANPoint>> const& getHoles() const { return holes; }
+
   // degenerate: whether the constructor found vertices and normal to
   // describe no real face.
   bool isDegenerate() const { return degenerate; }

@@ -123,8 +123,8 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
     // exported interface, which still sees one primitive per request.
     GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(primitive);
     if (mesh) {
-      for (std::unique_ptr<GMANRayPolygon> const& face : mesh->faces) {
-        addEntry(face.get());
+      for (std::size_t i = 0; i < mesh->getFaceCount(); ++i) {
+        addEntry(&mesh->getFace(i));
       }
       continue;
     }
