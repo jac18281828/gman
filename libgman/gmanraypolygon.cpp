@@ -154,15 +154,19 @@ bool insidePolygon(std::vector<GMANPoint> const& ring, int axis, GMANPoint const
   return inside;
 }
 
-// Each vertex's own resolved (s, t): default its object-space "P" -- the
-// same pre-CTM floats GMANRayObjectManager::getRSPolygon itself reads,
-// not vertices, already camera space by the time it reaches here -- "st"
-// then "s"/"t" overriding, GMANPatchPolyObjectManager's own polygon rule
-// (resolvePolygonTextureCoordinates). Every entry is (0, 0) when pl
-// carries no "P": the only construction path that reaches here is direct
-// construction bypassing getRSPolygon, which never omits it.
-std::vector<std::pair<RtFloat, RtFloat>> resolveVertexTexCoords(GMANParameterList const& pl, std::size_t nverts) {
-  std::vector<std::pair<RtFloat, RtFloat>> texCoords(nverts, {(RtFloat)0.0, (RtFloat)0.0});
+} // namespace
+
+namespace gman {
+
+// Each point's own resolved (s, t): default its object-space "P" -- the
+// same pre-CTM floats a request's own factory reads, not vertices, already
+// camera space by the time it reaches here -- "st" then "s"/"t"
+// overriding, GMANPatchPolyObjectManager's own polygon rule
+// (resolvePolygonTextureCoordinates). Returns count entries of (0, 0) when
+// pl carries no "P": a direct construction bypassing the object manager,
+// or (for a mesh) a request whose "P" is already known present.
+std::vector<std::pair<RtFloat, RtFloat>> resolvePointTexCoords(GMANParameterList const& pl, std::size_t count) {
+  std::vector<std::pair<RtFloat, RtFloat>> texCoords(count, {(RtFloat)0.0, (RtFloat)0.0});
   RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
   if (!p)
     return texCoords;
@@ -170,7 +174,7 @@ std::vector<std::pair<RtFloat, RtFloat>> resolveVertexTexCoords(GMANParameterLis
   RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
   RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
   RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
-  for (std::size_t i = 0; i < nverts; i++) {
+  for (std::size_t i = 0; i < count; i++) {
     RtFloat const objX = p[3 * i];
     RtFloat const objY = p[3 * i + 1];
     RtFloat s = objX;
@@ -188,7 +192,7 @@ std::vector<std::pair<RtFloat, RtFloat>> resolveVertexTexCoords(GMANParameterLis
   return texCoords;
 }
 
-} // namespace
+} // namespace gman
 
 GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> outer, GMANParameterList pl)
     : GMANRayPolygon(std::move(outer), {}, pl) {}
@@ -196,7 +200,7 @@ GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> outer, GMANParameterList p
 GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holeLoops,
                                GMANParameterList pl)
     : GMANPolygon((RtInt)outer.size(), pl), vertices(std::move(outer)), holes(std::move(holeLoops)) {
-  texCoords = resolveVertexTexCoords(pl, vertices.size());
+  texCoords = gman::resolvePointTexCoords(pl, vertices.size());
   initGeometry();
 }
 

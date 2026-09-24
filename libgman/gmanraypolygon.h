@@ -23,10 +23,23 @@
 
 #pragma once
 
+#include <cstddef>
 #include <utility>
 #include <vector>
 
 #include "gmanrayinterface.h"
+
+namespace gman {
+
+// Each point's own resolved (s, t): default its own object-space "P" (x,
+// y, the pre-CTM floats a request's factory itself reads), "st" then
+// "s"/"t" overriding, GMANPatchPolyObjectManager's own polygon rule
+// (resolvePolygonTextureCoordinates). Returns count entries of (0, 0) when
+// pl carries no "P". A GMANRayPolygon's own texCoords and a mesh's shared
+// point pool both resolve through this one function.
+std::vector<std::pair<RtFloat, RtFloat>> resolvePointTexCoords(GMANParameterList const& pl, std::size_t count);
+
+} // namespace gman
 
 class GMAN_EXPORT GMANRayPolygon : public GMANRayInterface, public GMANPolygon {
 public:

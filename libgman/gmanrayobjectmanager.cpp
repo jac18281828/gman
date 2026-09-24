@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -45,35 +46,6 @@
 #include "ri.h"
 
 namespace {
-
-// Each shared "P" point's own resolved (s, t): default that point's own
-// object-space x, y, "st" then "s"/"t" overriding,
-// GMANPatchPolyObjectManager's own polygon rule
-// (resolvePolygonTextureCoordinates). Resolved once over the whole shared
-// point pool, not per face, so a point three faces reference still reads
-// the same values wherever a face gathers it from.
-std::vector<std::pair<RtFloat, RtFloat>> resolveSharedPointTexCoords(GMANParameterList& pl, RtInt pointCount,
-                                                                     RtFloat* p) {
-  RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
-  RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
-  RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
-
-  std::vector<std::pair<RtFloat, RtFloat>> coords(pointCount);
-  for (RtInt i = 0; i < pointCount; i++) {
-    RtFloat s = p[3 * i];
-    RtFloat t = p[3 * i + 1];
-    if (stArr) {
-      s = stArr[2 * i];
-      t = stArr[2 * i + 1];
-    }
-    if (sArr)
-      s = sArr[i];
-    if (tArr)
-      t = tArr[i];
-    coords[i] = {s, t};
-  }
-  return coords;
-}
 
 // One Points*/PointsGeneralPolygons face: loopVerts[0] the outer boundary,
 // loopVerts[1..] holes, each a run of indices into the shared point pool
@@ -215,7 +187,10 @@ GMANPrimitive* GMANRayObjectManager::getRSPointsPolygon(RtInt npolys, RtInt nver
       pointCount = verts[i] + 1;
     }
   }
-  std::vector<std::pair<RtFloat, RtFloat>> pointTexCoords = resolveSharedPointTexCoords(pl, pointCount, p);
+  // Resolved once over the whole shared point pool, not per face, so a
+  // point three faces reference still reads the same values wherever a
+  // face gathers it from.
+  std::vector<std::pair<RtFloat, RtFloat>> pointTexCoords = gman::resolvePointTexCoords(pl, (std::size_t)pointCount);
   gman::Appearance const appearance = gman::appearanceOf(*attr);
 
   // Faceted: every face gathers its own vertices through "verts", one
@@ -270,7 +245,10 @@ GMANPrimitive* GMANRayObjectManager::getRSPointsGeneralPolygons(RtInt npolys, Rt
       pointCount = verts[i] + 1;
     }
   }
-  std::vector<std::pair<RtFloat, RtFloat>> pointTexCoords = resolveSharedPointTexCoords(pl, pointCount, p);
+  // Resolved once over the whole shared point pool, not per face, so a
+  // point three faces reference still reads the same values wherever a
+  // face gathers it from.
+  std::vector<std::pair<RtFloat, RtFloat>> pointTexCoords = gman::resolvePointTexCoords(pl, (std::size_t)pointCount);
   gman::Appearance const appearance = gman::appearanceOf(*attr);
 
   std::vector<std::unique_ptr<GMANRayPolygon>> faces;

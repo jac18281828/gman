@@ -240,6 +240,24 @@ void testSAloneOverride() {
   check(near(hit.u, 0.75) && near(hit.v, 0.25), "\"s\" alone: u from \"s\", v stays the default object-space y");
 }
 
+// ---- check: "s" overrides "st"'s own s, and "t" stays "st"'s own t --
+// applying "st" after "s"/"t" instead would restore "st"'s s here too ----
+void testSOverridesSt() {
+  RtFloat p[] = {-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0};
+  // Each vertex's own default (x, y) transposed to (y, x).
+  RtFloat st[] = {-1, -1, -1, 1, 1, 1, 1, -1};
+  // (objX + 1) / 2 per vertex: 0 at x == -1, 1 at x == 1.
+  RtFloat s[] = {0, 1, 1, 0};
+  RtToken tokens[] = {RI_P, RI_ST, RI_S};
+  RtPointer parms[] = {(RtPointer)p, (RtPointer)st, (RtPointer)s};
+  GMANRayPolygon square = squareWithP(tokens, parms, 3);
+
+  GMANRay ray = rayThroughObject(0.5, 0.25);
+  GMANHit hit;
+  check(square.intersect(ray, hit), "\"s\" over \"st\": a ray through object (0.5, 0.25) hits");
+  check(near(hit.u, 0.75) && near(hit.v, 0.5), "\"s\" over \"st\": u comes from \"s\", v stays \"st\"'s own t");
+}
+
 // ---- check 11: a fan triangle degenerate at vertex 0 is skipped, not
 // read as containing the hit ----
 void testDegenerateFanTriangleSkipped() {
@@ -305,6 +323,7 @@ int main() {
   testDefaultStIsObjectSpaceP();
   testStOverride();
   testSAloneOverride();
+  testSOverridesSt();
   testDegenerateFanTriangleSkipped();
   testLoopConstructorHole();
 
