@@ -103,6 +103,20 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
   rootIndex = -1;
 
   std::size_t index = 0;
+  // Builds one Entry from a ray primitive and appends it, keeping the
+  // insertion order build()'s own tie-break in testLeaf relies on. A
+  // lambda local to build() rather than a free function: Entry is private,
+  // and a member function's own scope is what gives this the access it
+  // needs.
+  auto addEntry = [this, &index](GMANRayInterface const* primitive) {
+    Entry entry;
+    entry.primitive = primitive;
+    entry.bbox = primitive->getBBox();
+    entry.centroid = boxCentroid(entry.bbox);
+    entry.insertionIndex = index++;
+    primitives.push_back(entry);
+  };
+
   for (GMANPrimitive* primitive = worldManager.getFirst(); primitive; primitive = worldManager.getNext()) {
     // A mesh contributes each of its own faces as its own entry, never
     // itself: a house-sized mesh then culls per face, at no cost to the
@@ -110,12 +124,7 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
     GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(primitive);
     if (mesh) {
       for (std::unique_ptr<GMANRayPolygon> const& face : mesh->faces) {
-        Entry entry;
-        entry.primitive = face.get();
-        entry.bbox = face->getBBox();
-        entry.centroid = boxCentroid(entry.bbox);
-        entry.insertionIndex = index++;
-        primitives.push_back(entry);
+        addEntry(face.get());
       }
       continue;
     }
@@ -124,12 +133,7 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
     if (!rayPrimitive) {
       continue;
     }
-    Entry entry;
-    entry.primitive = rayPrimitive;
-    entry.bbox = rayPrimitive->getBBox();
-    entry.centroid = boxCentroid(entry.bbox);
-    entry.insertionIndex = index++;
-    primitives.push_back(entry);
+    addEntry(rayPrimitive);
   }
 
   if (primitives.empty()) {
