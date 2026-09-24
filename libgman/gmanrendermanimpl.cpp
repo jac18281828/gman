@@ -48,6 +48,7 @@
 #include "gmantexture.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
+#include "gmanviewingsysteminputs.h"
 #include "gmanvsorthographic.h"
 #include "gmanvsperspective.h"
 #include "ri.h"
@@ -160,27 +161,23 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
                                         ri.rymax - ri.rymin + 1));
   }
 
-  // the default projection is orthographic
-  const GMANOptions::ScreenWindowStruct sw = getOptions().getScreenWindow();
-  GMANOptions::ClippingStruct cw = getOptions().getClipping();
-  const GMANOptions::ProjectionStruct& ps = getOptions().getProjection();
-
-  GMANTokenId fovTok = dictionary.getTokenId(RI_FOV);
-  RtFloat* param = (RtFloat*)ps.pl.getPointer(fovTok);
-  RtFloat fov = 0.0;
-  if (param) {
-    fov = param[0];
-  }
-  if (fov == 0.0) {
+  // The inputs both this renderer and the z-buffer polygon dicer
+  // (GMANPatchPolyObjectManager) build their own viewing system from, so a
+  // triangle's raster-space size matches what actually renders. The fov
+  // warning stays here, resolved before either projection branch, rather
+  // than moving into the shared function: it must print once per
+  // RiWorldBegin, never once per polygon.
+  gman::ViewingSystemInputs const vsi = gman::resolveViewingSystemInputs(getOptions());
+  if (vsi.fovDefaulted) {
     warning("FOV not set, defaulting to 90.0.");
-    // token not found
-    fov = 90.0;
   }
 
-  if (ps.name == "orthographic") {
-    viewingSystem = new gman::VSOrthographic(ri.xres, ri.yres, sw, worldToCamera, cw.nearDist, cw.farDist);
+  if (vsi.projectionName == "orthographic") {
+    viewingSystem = new gman::VSOrthographic(vsi.xres, vsi.yres, vsi.screenWindow, worldToCamera, vsi.clipping.nearDist,
+                                             vsi.clipping.farDist);
   } else {
-    viewingSystem = new gman::VSPerspective(ri.xres, ri.yres, sw, worldToCamera, fov, cw.nearDist, cw.farDist);
+    viewingSystem = new gman::VSPerspective(vsi.xres, vsi.yres, vsi.screenWindow, worldToCamera, vsi.fov,
+                                            vsi.clipping.nearDist, vsi.clipping.farDist);
   }
 
   // The shading path's only route to camera-to-world (this task's own

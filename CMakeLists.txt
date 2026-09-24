@@ -198,6 +198,7 @@ add_library(gman_core SHARED
   libgman/gmanvertex.cpp
   libgman/gmanvertex4.cpp
   libgman/gmanviewingsystem.cpp
+  libgman/gmanviewingsysteminputs.cpp
   libgman/gmanvolumeshader.cpp
   libgman/gmanvsorthographic.cpp
   libgman/gmanvsperspective.cpp
