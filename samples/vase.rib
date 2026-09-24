@@ -4,9 +4,9 @@
 ## y is depth (back wall at y=-4, camera outside the open front), z is
 ## up. Table height, vase height and flower height each follow the
 ## golden ratio. Both distant lights come down through the open ceiling
-## and front, so the ray tracer's shadow rays reach the table and vase
-## instead of dying in the side walls. The vase carries a partial
-## Opacity, so the ray-traced render shows the table through it.
+## and front, so the ray tracer's shadow rays reach the table and vase.
+## The vase carries a partial Opacity, so the ray-traced render shows the
+## table through it.
 ##
 
 Display "vase.png" "file" "rgba"
