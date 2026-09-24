@@ -52,7 +52,7 @@ namespace {
 // "verts" carries. Rejects a degenerate outer loop exactly as the
 // z-buffer's buildFace does; a hole needs no texCoords, so only the outer
 // loop's are gathered.
-bool buildMeshFace(std::vector<std::vector<RtInt>> const& loopVerts, RtFloat* p,
+bool buildMeshFace(std::vector<std::vector<RtInt>> const& loopVerts, RtFloat const* p,
                    std::vector<std::pair<RtFloat, RtFloat>> const& pointTexCoords, GMANTransform* t,
                    std::unique_ptr<GMANRayPolygon>& outFace) {
   std::vector<std::vector<GMANPoint>> loops(loopVerts.size());

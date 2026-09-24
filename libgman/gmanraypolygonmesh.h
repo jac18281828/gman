@@ -41,7 +41,7 @@ class GMANRayPolygonMesh : public GMANRayInterface {
 public:
   explicit GMANRayPolygonMesh(std::vector<std::unique_ptr<GMANRayPolygon>> polygons);
 
-  bool intersect(const GMANRay& ray, GMANHit& hit) const;
+  bool intersect(GMANRay const& ray, GMANHit& hit) const;
 
 private:
   friend class GMANRayBVH; // the only flattener: reads faces directly

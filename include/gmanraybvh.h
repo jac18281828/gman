@@ -54,7 +54,7 @@ public:
   // its own entry instead of the mesh itself, so a mesh culls per face.
   // The dynamic_cast is defensive -- GMANRayObjectManager's factories
   // guarantee every primitive this renderer's world manager holds is
-  // already a GMANRayInterface or that internal mesh type.
+  // already a GMANRayInterface, the internal mesh type included.
   void build(GMANWorldManager& worldManager);
 
   // Finds the nearest hit within ray's own [tmin, tmax]. On a hit,

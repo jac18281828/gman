@@ -23,10 +23,9 @@
  * PointsGeneralPolygons with the z-buffer's own coverage: each of the
  * four fixtures below, rendered under both `-r gmanzbuffer` (the default)
  * and `-r gmanraytracer`, covers (alpha > 0) the same pixels to within a
- * small fraction of the z-buffer's own covered count. Before this unit,
- * every one of these requests was a bare stub under the ray tracer, so
- * every fixture would fail this check outright (0 covered pixels against
- * the z-buffer's own).
+ * small fraction of the z-buffer's own covered count. A renderer drawing
+ * nothing fails this check: every one of the z-buffer's own covered
+ * pixels then differs.
  */
 
 #include <cstdint>
@@ -113,8 +112,7 @@ std::size_t countCovered(RawImage const& img) {
 }
 
 // The fraction of the z-buffer's own covered pixels a differing pixel may
-// account for -- the critic measured at most 0.6% on a good render and
-// 22.5% with a hole wrongly filled in.
+// account for.
 constexpr double kMaxDifferingFraction = 0.02;
 
 void checkCoverageMatches(const std::string& gman, const std::string& ribDir, const std::string& fixture) {

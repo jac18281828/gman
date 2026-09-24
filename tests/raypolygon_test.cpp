@@ -303,8 +303,8 @@ void testLoopConstructorHole() {
   GMANHit outsideHit;
   check(!square.intersect(outsideRay, outsideHit), "loop constructor: a ray outside the outer loop misses");
 
-  // A one-loop construction (empty holes) still behaves exactly as the
-  // two-argument constructor above.
+  // An empty holes list, on the same (outer, holes, pl) constructor above,
+  // still hits at the centre ray a hole would have rejected.
   GMANRayPolygon noHole(outer, {}, GMANParameterList());
   GMANHit noHoleHit;
   check(noHole.intersect(centreRay, noHoleHit), "loop constructor: an empty holes list hits at the same centre ray");

@@ -38,7 +38,7 @@ GMANRayPolygonMesh::GMANRayPolygonMesh(std::vector<std::unique_ptr<GMANRayPolygo
   bbox = GMANBBox(minP, maxP);
 }
 
-bool GMANRayPolygonMesh::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRayPolygonMesh::intersect(GMANRay const& ray, GMANHit& hit) const {
   bool found = false;
   for (std::unique_ptr<GMANRayPolygon> const& face : faces) {
     GMANHit candidate;

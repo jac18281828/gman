@@ -53,9 +53,10 @@ public:
   GMANRayPolygon(std::vector<GMANPoint> outer, GMANParameterList pl);
 
   // A GeneralPolygon: outer is the boundary loop, each entry of holes a
-  // loop cut out of it (RISpec's even-odd loop rule). texCoords resolve
-  // from pl's own leading entries, the outer loop's flat "P" slots -- the
-  // same rule the one-loop constructor uses.
+  // loop cut out of it. Each loop is tested even-odd on its own; a hit
+  // point is inside when it lands inside the outer loop and in no hole.
+  // texCoords resolve from pl's own leading entries, the outer loop's flat
+  // "P" slots -- the same rule the one-loop constructor uses.
   GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holes, GMANParameterList pl);
 
   // A Points*/PointsGeneralPolygons face: outerTexCoords is already
