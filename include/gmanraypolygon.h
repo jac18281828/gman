@@ -67,6 +67,17 @@ public:
 
   bool intersect(const GMANRay& ray, GMANHit& hit) const;
 
+  // vertices, the camera-space outer loop a renderer dices, in RiPolygonV's
+  // own winding.
+  std::vector<GMANPoint> const& getOuterLoop() const { return vertices; }
+
+  // normal, the polygon's own plane normal (see the constructor).
+  GMANVector const& getPlaneNormal() const { return normal; }
+
+  // degenerate: whether the constructor found vertices and normal to
+  // describe no real face.
+  bool isDegenerate() const { return degenerate; }
+
 private:
   // The plane, the Newell normal and the degeneracy test all come from
   // this loop alone. A hit lands inside it and outside every loop in

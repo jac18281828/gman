@@ -1322,10 +1322,9 @@ set_tests_properties(raysphere PROPERTIES
 
 # R5c proof: every quadric intersector's hit sits on its implicit surface
 # and its own ray at origin distances 5, 1e4 and 1e6, linked against
-# gman_core for the same reason as gman_raysphere above; gman_internal_headers
-# reaches the libgman/ primitive headers it includes.
+# gman_core for the same reason as gman_raysphere above.
 add_executable(gman_rayhitprecision rayhitprecision_test.cpp)
-target_link_libraries(gman_rayhitprecision PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_rayhitprecision PRIVATE gman_core)
 
 add_test(NAME rayhitprecision COMMAND gman_rayhitprecision)
 set_tests_properties(rayhitprecision PROPERTIES
@@ -1333,10 +1332,9 @@ set_tests_properties(rayhitprecision PROPERTIES
   TIMEOUT 60)
 
 # R5a proof, unit: GMANRayDisk::intersect, linked against gman_core for the
-# same reason as gman_raysphere above; gman_internal_headers reaches
-# gmanraydisk.h, a libgman/ header.
+# same reason as gman_raysphere above.
 add_executable(gman_raydisk raydisk_test.cpp)
-target_link_libraries(gman_raydisk PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_raydisk PRIVATE gman_core)
 
 add_test(NAME raydisk COMMAND gman_raydisk)
 set_tests_properties(raydisk PROPERTIES
@@ -1344,10 +1342,9 @@ set_tests_properties(raydisk PROPERTIES
   TIMEOUT 30)
 
 # R5a proof, unit: GMANRayPolygon::intersect, linked against gman_core for
-# the same reason as gman_raysphere above; gman_internal_headers reaches
-# gmanraypolygon.h, a libgman/ header.
+# the same reason as gman_raysphere above.
 add_executable(gman_raypolygon raypolygon_test.cpp)
-target_link_libraries(gman_raypolygon PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_raypolygon PRIVATE gman_core)
 
 add_test(NAME raypolygon COMMAND gman_raypolygon)
 set_tests_properties(raypolygon PROPERTIES
@@ -1355,10 +1352,9 @@ set_tests_properties(raypolygon PROPERTIES
   TIMEOUT 30)
 
 # R5b proof, unit: GMANRayCylinder::intersect, linked against gman_core for
-# the same reason as gman_raysphere above; gman_internal_headers reaches
-# gmanraycylinder.h, a libgman/ header.
+# the same reason as gman_raysphere above.
 add_executable(gman_raycylinder raycylinder_test.cpp)
-target_link_libraries(gman_raycylinder PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_raycylinder PRIVATE gman_core)
 
 add_test(NAME raycylinder COMMAND gman_raycylinder)
 set_tests_properties(raycylinder PROPERTIES
@@ -1366,10 +1362,9 @@ set_tests_properties(raycylinder PROPERTIES
   TIMEOUT 30)
 
 # R5b proof, unit: GMANRayCone::intersect, linked against gman_core for the
-# same reason as gman_raysphere above; gman_internal_headers reaches
-# gmanraycone.h, a libgman/ header.
+# same reason as gman_raysphere above.
 add_executable(gman_raycone raycone_test.cpp)
-target_link_libraries(gman_raycone PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_raycone PRIVATE gman_core)
 
 add_test(NAME raycone COMMAND gman_raycone)
 set_tests_properties(raycone PROPERTIES
@@ -1377,10 +1372,9 @@ set_tests_properties(raycone PROPERTIES
   TIMEOUT 30)
 
 # R5b proof, unit: GMANRayParaboloid::intersect, linked against gman_core
-# for the same reason as gman_raysphere above; gman_internal_headers reaches
-# gmanrayparaboloid.h, a libgman/ header.
+# for the same reason as gman_raysphere above.
 add_executable(gman_rayparaboloid rayparaboloid_test.cpp)
-target_link_libraries(gman_rayparaboloid PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_rayparaboloid PRIVATE gman_core)
 
 add_test(NAME rayparaboloid COMMAND gman_rayparaboloid)
 set_tests_properties(rayparaboloid PROPERTIES
@@ -1388,10 +1382,9 @@ set_tests_properties(rayparaboloid PROPERTIES
   TIMEOUT 30)
 
 # R5b proof, unit: GMANRayHyperboloid::intersect, linked against gman_core
-# for the same reason as gman_raysphere above; gman_internal_headers reaches
-# gmanrayhyperboloid.h, a libgman/ header.
+# for the same reason as gman_raysphere above.
 add_executable(gman_rayhyperboloid rayhyperboloid_test.cpp)
-target_link_libraries(gman_rayhyperboloid PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_rayhyperboloid PRIVATE gman_core)
 
 add_test(NAME rayhyperboloid COMMAND gman_rayhyperboloid)
 set_tests_properties(rayhyperboloid PROPERTIES
@@ -1402,7 +1395,7 @@ set_tests_properties(rayhyperboloid PROPERTIES
 # information about v on this plane, so v comes from the plane hit's own
 # radius, and the wedge is a spiral sector since phi(v) varies with v.
 add_executable(gman_hyperboloidflatannulus hyperboloidflatannulus_test.cpp)
-target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core)
 
 add_test(NAME hyperboloidflatannulus COMMAND gman_hyperboloidflatannulus)
 set_tests_properties(hyperboloidflatannulus PROPERTIES
@@ -1410,10 +1403,9 @@ set_tests_properties(hyperboloidflatannulus PROPERTIES
   TIMEOUT 30)
 
 # R5c proof, parts B and C: GMANRayTorus::intersect, linked against
-# gman_core for the same reason as gman_raysphere above; gman_internal_headers
-# reaches gmanraytorus.h, a libgman/ header.
+# gman_core for the same reason as gman_raysphere above.
 add_executable(gman_raytorus raytorus_test.cpp)
-target_link_libraries(gman_raytorus PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_raytorus PRIVATE gman_core)
 
 add_test(NAME raytorus COMMAND gman_raytorus)
 set_tests_properties(raytorus PROPERTIES
@@ -1423,10 +1415,9 @@ set_tests_properties(raytorus PROPERTIES
 # R6 proof, §8 check B: every ray primitive's camera-space bbox --
 # containment, tightness, the singular guard and the degenerate,
 # non-singular case -- linked against gman_core for the same reason as
-# gman_raysphere above; gman_internal_headers reaches the libgman/ primitive
-# headers it includes. See tests/raybbox_test.cpp.
+# gman_raysphere above. See tests/raybbox_test.cpp.
 add_executable(gman_raybbox raybbox_test.cpp)
-target_link_libraries(gman_raybbox PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_raybbox PRIVATE gman_core)
 
 add_test(NAME raybbox COMMAND gman_raybbox)
 set_tests_properties(raybbox PROPERTIES
@@ -1434,13 +1425,25 @@ set_tests_properties(raybbox PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The seven quadrics' getObjectToCamera() and GMANRayPolygon's
+# getOuterLoop()/getPlaneNormal()/isDegenerate(): each returns exactly what
+# its primitive was built with, linked against gman_core alone -- every
+# header these accessors need is public. See
+# tests/rayplacementaccessors_test.cpp.
+add_executable(gman_rayplacementaccessors rayplacementaccessors_test.cpp)
+target_link_libraries(gman_rayplacementaccessors PRIVATE gman_core)
+
+add_test(NAME rayplacementaccessors COMMAND gman_rayplacementaccessors)
+set_tests_properties(rayplacementaccessors PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # R6 proof, §8 check C: GMANRayBVH, tested standalone against a hand-built
 # GMANLinearWorldManager -- identical hits against a linear scan and a
 # bounded primitive-test count -- linked against gman_core for the same
-# reason as gman_raysphere above; gman_internal_headers reaches the
-# libgman/ primitive headers it includes. See tests/raybvh_test.cpp.
+# reason as gman_raysphere above. See tests/raybvh_test.cpp.
 add_executable(gman_raybvh raybvh_test.cpp)
-target_link_libraries(gman_raybvh PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_raybvh PRIVATE gman_core)
 
 add_test(NAME raybvh COMMAND gman_raybvh)
 set_tests_properties(raybvh PROPERTIES
@@ -1510,7 +1513,7 @@ set_tests_properties(polygonmeshtexcoord PROPERTIES
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
 # behavior; WILL_FAIL until the second inverse mapping is implemented.
 add_executable(gman_torusspindle torusspindle_test.cpp)
-target_link_libraries(gman_torusspindle PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_torusspindle PRIVATE gman_core)
 
 add_test(NAME torusspindle COMMAND gman_torusspindle)
 set_tests_properties(torusspindle PROPERTIES
@@ -1559,10 +1562,9 @@ set_tests_properties(rayoccluder PROPERTIES
 # The self-shadow sweep -- every ray primitive, at every scale and
 # placement, through its own real intersect() and
 # GMANRayOccluder::transmission, linked against gman_core, where both now
-# live; gman_internal_headers reaches the libgman/ primitive headers it
-# includes. Carries raydepth's own ENVIRONMENT for the same reason too.
+# live. Carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_selfshadowsweep selfshadowsweep_test.cpp)
-target_link_libraries(gman_selfshadowsweep PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_selfshadowsweep PRIVATE gman_core)
 
 add_test(NAME selfshadowsweep COMMAND gman_selfshadowsweep)
 set_tests_properties(selfshadowsweep PROPERTIES
@@ -1573,10 +1575,9 @@ set_tests_properties(selfshadowsweep PROPERTIES
 # The contact gap -- a small receiver (M ~ max|P|) shadows at a gap the
 # old offset hid, a large receiver (M >> max|P|) keeps its own contact
 # under the ceiling, linked against gman_core, where GMANRayOccluder now
-# lives; gman_internal_headers reaches gmanraypolygon.h, a libgman/
-# header. Carries raydepth's own ENVIRONMENT for the same reason too.
+# lives. Carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_contactgap contactgap_test.cpp)
-target_link_libraries(gman_contactgap PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_contactgap PRIVATE gman_core)
 
 add_test(NAME contactgap COMMAND gman_contactgap)
 set_tests_properties(contactgap PROPERTIES
@@ -1611,12 +1612,11 @@ set_tests_properties(compositelayercap PROPERTIES
   TIMEOUT 30)
 
 # R7 proof, §8 check 7: GMANRayOccluder::transmission's own iteration cap,
-# linked against gman_core, where GMANRayOccluder now lives;
-# gman_internal_headers reaches gmanraypolygon.h, a libgman/ header.
-# Carries raydepth's own ENVIRONMENT for the same reason too. See
+# linked against gman_core, where GMANRayOccluder now lives. Carries
+# raydepth's own ENVIRONMENT for the same reason too. See
 # coincidenttransmission_test.cpp's own comment.
 add_executable(gman_coincidenttransmission coincidenttransmission_test.cpp)
-target_link_libraries(gman_coincidenttransmission PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_coincidenttransmission PRIVATE gman_core)
 
 add_test(NAME coincidenttransmission COMMAND gman_coincidenttransmission)
 set_tests_properties(coincidenttransmission PROPERTIES

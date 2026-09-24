@@ -40,6 +40,10 @@ public:
 
   bool intersect(const GMANRay& ray, GMANHit& hit) const;
 
+  // The shutter-open matrix placing the sphere, for a renderer that needs
+  // to reproduce its own placement (e.g. dicing it into camera space).
+  GMANMatrix4 const& getObjectToCamera() const { return objectToCamera; }
+
 private:
   // objectToCamera places the sphere; cameraToObject is its inverse, used
   // to bring a ray into the object space GMANSphere's parameters describe.

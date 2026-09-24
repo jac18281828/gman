@@ -39,6 +39,11 @@ public:
 
   bool intersect(const GMANRay& ray, GMANHit& hit) const;
 
+  // The shutter-open matrix placing the cylinder, for a renderer that
+  // needs to reproduce its own placement (e.g. dicing it into camera
+  // space).
+  GMANMatrix4 const& getObjectToCamera() const { return objectToCamera; }
+
 private:
   GMANMatrix4 objectToCamera;
   GMANMatrix4 cameraToObject;

@@ -26,17 +26,21 @@
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT GMANRayDisk : public GMANRayInterface, public GMANDisk {
+class GMAN_EXPORT GMANRayCone : public GMANRayInterface, public GMANCone {
 public:
-  GMANRayDisk(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl)
-      : GMANDisk(height, radius, thetamax, pl) {}
+  GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl)
+      : GMANCone(height, radius, thetamax, pl) {}
 
   // Placed by transform's shutter-open matrix, GMANRaySphere's own pattern:
   // a singular matrix cannot invert into an object space to intersect in,
-  // so the disk is built anyway and simply never hits.
-  GMANRayDisk(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl, GMANTransform const& transform);
+  // so the cone is built anyway and simply never hits.
+  GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl, GMANTransform const& transform);
 
   bool intersect(const GMANRay& ray, GMANHit& hit) const;
+
+  // The shutter-open matrix placing the cone, for a renderer that needs
+  // to reproduce its own placement (e.g. dicing it into camera space).
+  GMANMatrix4 const& getObjectToCamera() const { return objectToCamera; }
 
 private:
   GMANMatrix4 objectToCamera;

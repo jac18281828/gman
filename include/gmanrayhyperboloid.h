@@ -26,19 +26,23 @@
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT GMANRayTorus : public GMANRayInterface, public GMANTorus {
+class GMAN_EXPORT GMANRayHyperboloid : public GMANRayInterface, public GMANHyperboloid {
 public:
-  GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phimin, RtFloat phimax, RtFloat thetamax,
-               GMANParameterList pl)
-      : GMANTorus(majorradius, minorradius, phimin, phimax, thetamax, pl) {}
+  GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat thetamax, GMANParameterList pl)
+      : GMANHyperboloid(point1, point2, thetamax, pl) {}
 
   // Placed by transform's shutter-open matrix, GMANRaySphere's own pattern:
   // a singular matrix cannot invert into an object space to intersect in,
-  // so the torus is built anyway and simply never hits.
-  GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phimin, RtFloat phimax, RtFloat thetamax,
-               GMANParameterList pl, GMANTransform const& transform);
+  // so the hyperboloid is built anyway and simply never hits.
+  GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat thetamax, GMANParameterList pl,
+                     GMANTransform const& transform);
 
   bool intersect(const GMANRay& ray, GMANHit& hit) const;
+
+  // The shutter-open matrix placing the hyperboloid, for a renderer that
+  // needs to reproduce its own placement (e.g. dicing it into camera
+  // space).
+  GMANMatrix4 const& getObjectToCamera() const { return objectToCamera; }
 
 private:
   GMANMatrix4 objectToCamera;
