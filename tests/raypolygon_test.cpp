@@ -262,6 +262,36 @@ void testDegenerateFanTriangleSkipped() {
         "collinear fan vertex: (u, v) == (2, 2), not (0, 0) from the degenerate first fan triangle");
 }
 
+// ---- check 12: the loop constructor's own hole cuts what the outer loop
+// covers, tested on the constructor directly rather than through any
+// object-manager request ----
+void testLoopConstructorHole() {
+  std::vector<GMANPoint> outer = {GMANPoint(-1.0, -1.0, 0.0), GMANPoint(1.0, -1.0, 0.0), GMANPoint(1.0, 1.0, 0.0),
+                                  GMANPoint(-1.0, 1.0, 0.0)};
+  std::vector<GMANPoint> hole = {GMANPoint(-0.5, -0.5, 0.0), GMANPoint(0.5, -0.5, 0.0), GMANPoint(0.5, 0.5, 0.0),
+                                 GMANPoint(-0.5, 0.5, 0.0)};
+  GMANRayPolygon square(outer, {hole}, GMANParameterList());
+
+  GMANRay centreRay(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit centreHit;
+  check(!square.intersect(centreRay, centreHit), "loop constructor: a ray through the hole's centre misses");
+
+  GMANRay ringRay(GMANPoint(0.75, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit ringHit;
+  check(square.intersect(ringRay, ringHit) && near(ringHit.t, 5.0),
+        "loop constructor: a ray through the ring between hole and edge hits at t == 5");
+
+  GMANRay outsideRay(GMANPoint(1.5, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit outsideHit;
+  check(!square.intersect(outsideRay, outsideHit), "loop constructor: a ray outside the outer loop misses");
+
+  // A one-loop construction (empty holes) still behaves exactly as the
+  // two-argument constructor above.
+  GMANRayPolygon noHole(outer, {}, GMANParameterList());
+  GMANHit noHoleHit;
+  check(noHole.intersect(centreRay, noHoleHit), "loop constructor: an empty holes list hits at the same centre ray");
+}
+
 } // namespace
 
 int main() {
@@ -276,6 +306,7 @@ int main() {
   testStOverride();
   testSAloneOverride();
   testDegenerateFanTriangleSkipped();
+  testLoopConstructorHole();
 
   return checkSummary("GMANRayPolygon::intersect hits, misses and clips correctly");
 }

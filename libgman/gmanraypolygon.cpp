@@ -190,9 +190,26 @@ std::vector<std::pair<RtFloat, RtFloat>> resolveVertexTexCoords(GMANParameterLis
 
 } // namespace
 
-GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> verts, GMANParameterList pl)
-    : GMANPolygon((RtInt)verts.size(), pl), vertices(std::move(verts)),
-      degenerate(gman::isDegeneratePolygon(vertices)) {
+GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> outer, GMANParameterList pl)
+    : GMANRayPolygon(std::move(outer), {}, pl) {}
+
+GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holeLoops,
+                               GMANParameterList pl)
+    : GMANPolygon((RtInt)outer.size(), pl), vertices(std::move(outer)), holes(std::move(holeLoops)) {
+  texCoords = resolveVertexTexCoords(pl, vertices.size());
+  initGeometry();
+}
+
+GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holeLoops,
+                               std::vector<std::pair<RtFloat, RtFloat>> outerTexCoords)
+    : GMANPolygon((RtInt)outer.size(), GMANParameterList()), vertices(std::move(outer)), holes(std::move(holeLoops)),
+      texCoords(std::move(outerTexCoords)) {
+  initGeometry();
+}
+
+void GMANRayPolygon::initGeometry() {
+  degenerate = gman::isDegeneratePolygon(vertices);
+
   // Already camera space (RiPolygonV bakes the CTM in before the factory
   // returns): the componentwise min and max of vertices needs no corner
   // transform, unlike every other ray primitive here. Computed regardless
@@ -207,8 +224,6 @@ GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> verts, GMANParameterList p
     }
     bbox = gman::padBBox(minP, maxP);
   }
-
-  texCoords = resolveVertexTexCoords(pl, vertices.size());
 
   if (degenerate)
     return;
@@ -240,6 +255,14 @@ bool GMANRayPolygon::intersect(const GMANRay& ray, GMANHit& hit) const {
   int const axis = dominantAxis(normal);
   if (!insidePolygon(vertices, axis, hitPoint))
     return false;
+  // Inside the outer loop and outside every hole, each tested on its own:
+  // overlapping holes stay empty rather than refilled by a combined
+  // crossing count, and a hole reaching outside the outer loop adds
+  // nothing.
+  for (std::vector<GMANPoint> const& hole : holes) {
+    if (insidePolygon(hole, axis, hitPoint))
+      return false;
+  }
 
   hit.t = t;
   hit.point = hitPoint;
