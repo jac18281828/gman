@@ -9,9 +9,9 @@ program the same interface.
 
 ![A robot drives into a table; the translucent vase tips and its flowers eject](samples/vase-raytraced.png)
 
-*The robot crashes into the table; the vase, now translucent, tips and its
-flowers eject* — `samples/vase.rib`, ray-traced. Quadrics and polygons, two
-surface shaders and three lights.
+*The robot crashes into the table; the translucent vase tips and its
+flowers eject.* `samples/vase.rib`, ray-traced, with quadrics and polygons,
+two surface shaders and three lights.
 
 ## Install
 
@@ -25,7 +25,7 @@ tar xzf gman-0.9.0-macos-arm64.tar.gz
 ```
 
 It unpacks to `gman-<version>-<platform>/`, holding `bin/gman`, the
-renderer and shader plugins under `lib/`, and `include/gman`. It carries no
+renderer and shader plugins under `lib/` and `include/gman`. It carries no
 scenes: clone the repo, or download `samples/` from it, to render the
 examples below.
 
@@ -34,8 +34,8 @@ examples below.
 Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
 Clang 17 or newer), libtiff and zlib. libpng and libjpeg are optional: a
 build without one rejects that `Display` extension with `RIE_BADFILE`, and
-`gman --version` lists the drivers actually compiled in. POSIX only —
-macOS and Linux.
+`gman --version` lists the drivers compiled in. POSIX only: macOS and
+Linux.
 
 ```sh
 cmake --preset dev
@@ -43,7 +43,7 @@ cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 ```
 
-`AGENTS.md`'s Tests section covers the test layout, adding a new test, and
+`AGENTS.md`'s Tests section covers the test layout, adding a new test and
 golden-image regeneration; its Completion Gates section lists the local
 gates, and says CI covers the rest.
 
@@ -56,12 +56,12 @@ cmake --install build --prefix /usr/local
 The installed prefix carries `bin/gman` and a CMake package. A program
 links gman with `find_package(gman CONFIG REQUIRED)` and
 `target_link_libraries(app PRIVATE gman::gman_core)`, and includes
-`<gman/ri.h>` — Link libgman from C, below, walks through a full example.
+`<gman/ri.h>`. Link libgman from C, below, walks through a full example.
 
 #### Development container
 
-A devcontainer carrying the same toolchain CI uses — both gcc and clang, the
-sanitizers, valgrind, yamlfmt and commitlint — lives in `.devcontainer/`.
+A devcontainer lives in `.devcontainer/`, carrying the same toolchain CI
+uses: both gcc and clang, the sanitizers, valgrind, yamlfmt and commitlint.
 Open the repo in VS Code and choose "Reopen in Container", or run
 `./build.sh`, which configures, builds, tests and lints the workflow YAML
 with yamlfmt:
@@ -76,7 +76,7 @@ with yamlfmt:
 `gmanzbuffer`. `-r gmanraytracer` renders the same file through the ray
 tracer instead, with real reflection, refraction and shadows. Output lands
 wherever the scene's own `Display` request names, relative to the current
-directory — `gman` takes no output flag of its own.
+directory; `gman` takes no output flag of its own.
 
 `-d`, `-i`, `-w`, `-e` and `-q` set the log level to debug, info (the
 default), warning, error or disaster-only; `-l` also writes a log file named
@@ -92,14 +92,14 @@ gman 0.9.1
 drivers: tiff pnm png jpeg
 ```
 
-At the default `Clipping`, flat or narrow-z-range geometry can render
+At the default `Clipping`, flat or narrow-z-range geometry renders
 corrupted or blank; pair it with an explicit `Clipping <near> <far>`.
 
 ## Scenes
 
 `samples/vase.rib` is a room, a table, a vase of flowers and a robot mid
 crash: quadrics and polygons, the `matte` and `plastic` surface shaders,
-three lights. Its `Display` writes PNG, which needs libpng at build time —
+three lights. Its `Display` writes PNG, which needs libpng at build time:
 without it, `gman samples/vase.rib` rejects the scene with `RIE_BADFILE`;
 install libpng and reconfigure to fix it.
 
@@ -114,8 +114,8 @@ cd ..
 The z-buffer keeps only the nearest sample, so the vase's `Opacity` only
 darkens it there, rather than showing the table through.
 
-Both renderers write the same `Display` name, `vase.png`, so render the ray
-tracer's version in its own directory and rename it clear:
+Both renderers write the same `Display` name, `vase.png`; render the ray
+tracer's version in its own directory, then rename it:
 
 ```sh
 mkdir vase-raytraced
@@ -125,8 +125,8 @@ mv vase.png ../samples/vase-raytraced.png
 cd ..
 ```
 
-The ray-traced render is this README's hero image, above; `samples/vase.png`
-is the fast preview.
+The ray-traced render, above, adds real reflection, refraction and shadows
+over `samples/vase.png`'s z-buffer preview.
 
 A few more scenes worth running, from `tests/rib/`:
 
@@ -169,6 +169,9 @@ gives it. The installed package exports no `gman_add_plugin`: a new shader
 builds only inside a gman checkout.
 
 ## Link libgman from C
+
+A C program calls the same RenderMan interface through `<gman/ri.h>`. This
+one renders a lit sphere:
 
 ```c
 #include <gman/ri.h>
@@ -238,7 +241,7 @@ each:
   `DepthOfField` read and unused.
 - **[~] Programmable shading.** Surface shaders load as C++ plugins at run
   time; light shaders build into libgman, and an unknown name warns and is
-  ignored — pluggable, not programmable; volume shaders parse and do
+  ignored. Pluggable, not programmable: volume shaders parse and do
   nothing.
 - **[ ] Displacement shading.** Wants micropolygons, which want REYES.
 - **[~] Many large textures, flat memory.** `texture()` and `environment()`
