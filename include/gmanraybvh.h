@@ -49,9 +49,12 @@ class GMAN_EXPORT GMANRayBVH {
 public:
   // Discards any tree a prior call built, then walks worldManager
   // (getFirst/getNext) once, keeping each GMANRayInterface primitive by
-  // its own insertion order for nearestHit's tie-break. The dynamic_cast
-  // is defensive -- GMANRayObjectManager's factories guarantee every
-  // primitive this renderer's world manager holds is already one.
+  // its own insertion order for nearestHit's tie-break -- except a
+  // polygon mesh primitive, which contributes each of its own faces as
+  // its own entry instead of the mesh itself, so a mesh culls per face.
+  // The dynamic_cast is defensive -- GMANRayObjectManager's factories
+  // guarantee every primitive this renderer's world manager holds is
+  // already a GMANRayInterface or that internal mesh type.
   void build(GMANWorldManager& worldManager);
 
   // Finds the nearest hit within ray's own [tmin, tmax]. On a hit,

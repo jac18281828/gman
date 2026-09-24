@@ -27,6 +27,7 @@
 #include "gmanmath.h"
 #include "gmanraybbox.h"
 #include "gmanraybvh.h"
+#include "gmanraypolygonmesh.h"
 
 namespace {
 
@@ -103,6 +104,22 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
 
   std::size_t index = 0;
   for (GMANPrimitive* primitive = worldManager.getFirst(); primitive; primitive = worldManager.getNext()) {
+    // A mesh contributes each of its own faces as its own entry, never
+    // itself: a house-sized mesh then culls per face, at no cost to the
+    // exported interface, which still sees one primitive per request.
+    GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(primitive);
+    if (mesh) {
+      for (std::unique_ptr<GMANRayPolygon> const& face : mesh->faces) {
+        Entry entry;
+        entry.primitive = face.get();
+        entry.bbox = face->getBBox();
+        entry.centroid = boxCentroid(entry.bbox);
+        entry.insertionIndex = index++;
+        primitives.push_back(entry);
+      }
+      continue;
+    }
+
     GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
     if (!rayPrimitive) {
       continue;

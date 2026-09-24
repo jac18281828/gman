@@ -1477,6 +1477,21 @@ set_tests_properties(raypolygonhole PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRayObjectManager::getRSPointsPolygon returns one internal mesh
+# primitive; GMANRayBVH::build flattens it into one entry per face. A ray
+# aimed at a face never reports the mesh as hitPrimitive, and a fan of
+# rays across a cube agrees, face by face, between the BVH, the mesh's own
+# linear intersect and the analytic nearest face. gman_internal_headers
+# reaches gmanraypolygon.h, a libgman/ header. See
+# tests/polygonmeshbvh_test.cpp.
+add_executable(gman_polygonmeshbvh polygonmeshbvh_test.cpp)
+target_link_libraries(gman_polygonmeshbvh PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME polygonmeshbvh COMMAND gman_polygonmeshbvh)
+set_tests_properties(polygonmeshbvh PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A PointsPolygons face's own "s"/"t" is gathered through "verts" out of
 # the shared "P" pool, not indexed by local slot --
 # tests/rib/pointspolygons_textured.rib's own two faces, cast at each
