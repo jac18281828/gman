@@ -1398,6 +1398,20 @@ set_tests_properties(raybvh PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Proves GMANRayBVH::nearestHit and GMANRayOccluder::transmission
+# re-entrant: a probe primitive nests a second call, on the same tree, mid-
+# traversal, and both the nested and the outer result must match their own
+# standalone calls. Linked against gman_core alone, where both now live --
+# the proof that the geometry, the BVH and the occluder are libgman's, not
+# the plugin's.
+add_executable(gman_raybvhreentrant raybvhreentrant_test.cpp)
+target_link_libraries(gman_raybvhreentrant PRIVATE gman_core)
+
+add_test(NAME raybvhreentrant COMMAND gman_raybvhreentrant)
+set_tests_properties(raybvhreentrant PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # R5c deferral: the spindle and horn torus (minorradius >= majorradius), a
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
 # behavior; WILL_FAIL until the second inverse mapping is implemented.
