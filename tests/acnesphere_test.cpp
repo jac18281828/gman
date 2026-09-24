@@ -30,10 +30,10 @@
  * fails -- only the cross-scale comparison can catch.
  *
  * A sphere's intersector is well conditioned; this fixture cannot produce
- * the acne a swept quadric's does at a comparable magnitude, so it does
- * not defend kSelfShadowOffsetScale for a Cylinder, Cone, Paraboloid or
- * Hyperboloid. quadricsrayrender_test.cpp, against r5b_quadrics.rib and
- * its golden, is what does.
+ * the acne a swept quadric's does at a comparable magnitude. Neither this
+ * fixture nor quadricsrayrender_test.cpp's own golden catches an
+ * undersized kSelfShadowOffsetScale -- selfshadowsweep_test.cpp's own
+ * bisection is the defence; a golden failing here still means real acne.
  *
  * The local-dip scan (worstLocalDip) also reads 0 at every scale tested,
  * including with the offset scale forced to zero: acne on a sphere is a
