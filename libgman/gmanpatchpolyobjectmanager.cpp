@@ -144,7 +144,11 @@ DicingContext dicingContextFor(GMANOptions const* opt, GMANAttributes const* att
   if (!opt) {
     return DicingContext{nullptr, false, shadingRate};
   }
-  gman::ViewingSystemInputs const vsi = gman::resolveViewingSystemInputs(*opt);
+  // standardDictionary(), not the renderer's own dictionary: no getRS*
+  // signature carries one in, and none may change to add it. "fov"
+  // resolves the same as RiWorldBegin's unless a scene redeclares it,
+  // which changes only this dicing estimate, never the rendered image.
+  gman::ViewingSystemInputs const vsi = gman::resolveViewingSystemInputs(*opt, gman::standardDictionary());
   bool const perspective = vsi.projectionName != "orthographic";
   GMANMatrix4 const worldToCamera;
   std::unique_ptr<GMANViewingSystem> projector;

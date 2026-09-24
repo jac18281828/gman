@@ -21,17 +21,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include "gmanpolygon.h" // gman::standardDictionary()
 #include "gmanviewingsysteminputs.h"
 
 namespace gman {
 
-ViewingSystemInputs resolveViewingSystemInputs(GMANOptions const& opt) {
+ViewingSystemInputs resolveViewingSystemInputs(GMANOptions const& opt, GMANDictionary& dictionary) {
   ViewingSystemInputs vsi;
   vsi.projectionName = opt.getProjection().name;
 
-  GMANTokenId const fovTok = standardDictionary().getTokenId(RI_FOV);
-  RtFloat* param = (RtFloat*)opt.getProjection().pl.getPointer(fovTok);
+  GMANTokenId const fovTok = dictionary.getTokenId(RI_FOV);
+  RtFloat const* param = (RtFloat const*)opt.getProjection().pl.getPointer(fovTok);
   vsi.fov = param ? param[0] : (RtFloat)0.0;
   vsi.fovDefaulted = (vsi.fov == (RtFloat)0.0);
   if (vsi.fovDefaulted) {

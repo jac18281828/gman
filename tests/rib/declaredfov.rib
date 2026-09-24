@@ -1,0 +1,17 @@
+## resolveViewingSystemInputs must resolve "fov" through the same
+## dictionary Projection's own parameter list did: Declare redeclares
+## "fov" before Projection sets it to 30, and RiWorldBegin has to see
+## that value, not silently default to 90.
+Display "declaredfov.tif" "file" "rgba"
+Format 100 100 1
+Declare "fov" "float"
+Projection "perspective" "fov" [30]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [1.0]
+Sides 2
+Color [1 1 1]
+Surface "matte" "Ka" [1.0] "Kd" [0.0]
+Polygon "P" [-1 -1 0  1 -1 0  1 1 0  -1 1 0]
+WorldEnd

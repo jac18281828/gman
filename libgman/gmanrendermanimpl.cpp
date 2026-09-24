@@ -163,11 +163,11 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
 
   // The inputs both this renderer and the z-buffer polygon dicer
   // (GMANPatchPolyObjectManager) build their own viewing system from, so a
-  // triangle's raster-space size matches what actually renders. The fov
-  // warning stays here, resolved before either projection branch, rather
-  // than moving into the shared function: it must print once per
-  // RiWorldBegin, never once per polygon.
-  gman::ViewingSystemInputs const vsi = gman::resolveViewingSystemInputs(getOptions());
+  // triangle's raster-space size matches what actually renders. dictionary
+  // is the same one RiProjectionV resolved the projection's parameter list
+  // through, so a redeclared "fov" still resolves here. The warning fires
+  // once, before either projection branch, per RiWorldBegin.
+  gman::ViewingSystemInputs const vsi = gman::resolveViewingSystemInputs(getOptions(), dictionary);
   if (vsi.fovDefaulted) {
     warning("FOV not set, defaulting to 90.0.");
   }

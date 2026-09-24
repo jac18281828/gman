@@ -25,6 +25,7 @@
 
 #include <string>
 
+#include "gmandictionary.h"
 #include "gmanoptions.h"
 #include "ri.h"
 
@@ -45,6 +46,12 @@ struct ViewingSystemInputs {
   RtInt yres;
 };
 
-ViewingSystemInputs resolveViewingSystemInputs(GMANOptions const& opt);
+// dictionary must be the one that resolved opt's projection parameter
+// list's token ids (RiProjectionV's own dictionary for RiWorldBegin's
+// call): a token redeclared through RiDeclare gets a new id in that
+// dictionary, and looking it up through a different instance misses it.
+// GMANDictionary::getTokenId is not const, so dictionary is not const
+// either.
+ViewingSystemInputs resolveViewingSystemInputs(GMANOptions const& opt, GMANDictionary& dictionary);
 
 } // namespace gman

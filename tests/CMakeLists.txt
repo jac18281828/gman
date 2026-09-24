@@ -945,6 +945,25 @@ set_tests_properties(polygonfovwarning PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# resolveViewingSystemInputs resolves "fov" through the same dictionary
+# RiProjectionV's own parameter list used: a Declare'd "fov" prints no
+# "FOV not set" and renders at the value the RIB set, not 90. See
+# tests/declaredfov_test.cpp.
+add_executable(gman_declaredfov declaredfov_test.cpp)
+target_link_libraries(gman_declaredfov PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_DECLAREDFOV_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/declaredfov-run")
+file(MAKE_DIRECTORY "${GMAN_DECLAREDFOV_WORKDIR}")
+
+add_test(NAME declaredfov
+  COMMAND gman_declaredfov $<TARGET_FILE:gman>
+                           "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_DECLAREDFOV_WORKDIR}")
+set_tests_properties(declaredfov PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
 # Phase 5's actual gate: tests/rib/polygon.rib renders a convex pentagon
 # whose raster coverage and shaded colour both match an analytically
 # computed region and value.
