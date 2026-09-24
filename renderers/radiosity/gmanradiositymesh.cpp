@@ -82,9 +82,9 @@ constexpr double kSameNodeScale = 1e-6;
 // sqrt 6. Nodes within tolerance project within tolerance, and the
 // irrational ratios keep a regular grid's projections apart, so a window
 // that wide holds little besides coincident nodes.
-constexpr double kSweepX = 0.40824829046386302;
-constexpr double kSweepY = 0.57735026918962576;
-constexpr double kSweepZ = 0.70710678118654752;
+double const kSweepX = 1 / std::sqrt(6.0);
+double const kSweepY = 1 / std::sqrt(3.0);
+double const kSweepZ = 1 / std::sqrt(2.0);
 
 // The sweep window's slack over the tolerance, relative to the nodes'
 // extent: double rounding in two projections, far below any tolerance.
