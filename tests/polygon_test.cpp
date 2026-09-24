@@ -290,9 +290,15 @@ int countFaces(GMANObject* object) {
   return count;
 }
 
-// Each ear-clipped triangle dices into a fixed 16-per-edge barycentric grid
-// (256 sub-triangles) before shading -- construction-independent, so the
-// face count is always the old per-triangle count times this multiplier.
+// Each ear-clipped triangle dices per its own raster-space size and the
+// current ShadingRate, capped at 16 divisions per edge (256 sub-triangles)
+// -- gmanpatchpolyobjectmanager.cpp's diceCountFor. Every ring below is
+// checked here under GMANOptions' own default (orthographic, 640x480) and
+// an identity transform, where every ear's longest edge -- even the
+// shortest one, the duplicate-vertex ring's own zero-length edge aside,
+// which can never be an ear's own longest -- projects past several
+// hundred raster pixels, so every ear still hits the cap and this
+// constant still holds.
 const int kSubTrianglesPerEar = 256;
 
 void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt nverts) {

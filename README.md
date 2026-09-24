@@ -134,10 +134,13 @@ each:
 - **[~] Quantization, filtering, reconstruction.** Exposure and gamma are
   honored, and pixel reconstruction now runs (see Antialiasing above).
   Quantization still warns and passes the colour through untouched.
-- **[ ] Shading time against shading quality.** `ShadingRate` and the detail
-  controls are read from the RIB and never consulted.
+- **[~] Shading time against shading quality.** The z-buffer renderer's
+  polygon dicing (`Polygon`, `GeneralPolygon`, `PointsPolygons`,
+  `PointsGeneralPolygons`) sizes each ear-clipped triangle's own facet
+  count to `ShadingRate` and its raster-space extent. Quadrics, patches and
+  the detail controls still ignore it.
 
-None finished, four begun. The standard is worth keeping as the target: a
+None finished, five begun. The standard is worth keeping as the target: a
 renderer is easy to begin and hard to finish, and the usual way it fails is
 that nobody settles what finished means.
 

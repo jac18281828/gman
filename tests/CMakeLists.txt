@@ -914,6 +914,37 @@ set_tests_properties(orthowindow PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# Pins gmanpatchpolyobjectmanager.cpp's diceCountFor: n =
+# clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L an ear-clipped triangle's
+# longest raster-space edge. See tests/polygondicecount_test.cpp.
+add_executable(gman_polygondicecount polygondicecount_test.cpp)
+target_link_libraries(gman_polygondicecount PRIVATE gman_core)
+add_test(NAME polygondicecount COMMAND gman_polygondicecount)
+# getRSPolygon falls back to dlopen'ing "libmatte.so" when no RiSurface is
+# set -- triangulation's own comment, same lookup.
+set_tests_properties(polygondicecount PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# The fov warning fires once per RiWorldBegin, never once per polygon: a
+# two-Polygon perspective scene with no fov prints "FOV not set" exactly
+# once. See tests/polygonfovwarning_test.cpp.
+add_executable(gman_polygonfovwarning polygonfovwarning_test.cpp)
+target_link_libraries(gman_polygonfovwarning PRIVATE gman_core)
+
+set(GMAN_POLYGONFOVWARNING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonfovwarning-run")
+file(MAKE_DIRECTORY "${GMAN_POLYGONFOVWARNING_WORKDIR}")
+
+add_test(NAME polygonfovwarning
+  COMMAND gman_polygonfovwarning $<TARGET_FILE:gman>
+                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_POLYGONFOVWARNING_WORKDIR}")
+set_tests_properties(polygonfovwarning PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
 # Phase 5's actual gate: tests/rib/polygon.rib renders a convex pentagon
 # whose raster coverage and shaded colour both match an analytically
 # computed region and value.

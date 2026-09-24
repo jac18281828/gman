@@ -68,12 +68,14 @@
  * rounding decide which side of it the vertex falls on.
  */
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdio>
 #include <map>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -105,13 +107,51 @@ const double kOrientationAreaExemption = 1e-6;
 
 const double kRotationDegrees = 37.0;
 
-// Each ear-clipped triangle dices into a fixed 16-per-edge barycentric grid
-// (256 sub-triangles) before shading -- construction-independent, so the
-// face count is always the old per-triangle count times this multiplier,
-// and every 256 consecutive faces on the chain are one ear-clipped
-// triangle's own sub-faces (built contiguously, one ear-clipped triangle
-// at a time).
-const int kSubTrianglesPerEar = 256;
+// This suite's own dicing-count oracle for one ear-clipped triangle --
+// never GMANPatchPolyObjectManager's diceCountFor -- clamp(ceil(L /
+// sqrt(ShadingRate)), 1, 16), L the longest of p0, p1, p2's own
+// raster-space edges (see gmanpatchpolyobjectmanager.cpp). Orthographic
+// screen-to-raster (GMANViewingSystem::screenToRaster): this suite never
+// calls RiProjectionV, so GMANOptions' own default projection applies,
+// and raster x, y pass straight through a camera-space point's own x, y,
+// unaffected by z -- the perspective behind-the-eye fallback this file
+// never needs.
+int expectedDiceN(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2, const GMANOptions& options,
+                  RtFloat shadingRate) {
+  const GMANOptions::ScreenWindowStruct sw = options.getScreenWindow();
+  const GMANOptions::RasterInfo ri = options.getRasterInfo();
+  auto raster = [&](const GMANPoint& p) {
+    return std::make_pair(ri.xres * (p.getX() - sw.left) / (sw.right - sw.left),
+                          ri.yres - ri.yres * (p.getY() - sw.bottom) / (sw.top - sw.bottom));
+  };
+  auto dist = [](std::pair<double, double> a, std::pair<double, double> b) {
+    double const dx = a.first - b.first;
+    double const dy = a.second - b.second;
+    return std::sqrt(dx * dx + dy * dy);
+  };
+
+  std::pair<double, double> const r0 = raster(p0), r1 = raster(p1), r2 = raster(p2);
+  double L = dist(r0, r1);
+  double const e12 = dist(r1, r2);
+  double const e20 = dist(r2, r0);
+  if (e12 > L) {
+    L = e12;
+  }
+  if (e20 > L) {
+    L = e20;
+  }
+  if (!(shadingRate > (RtFloat)0.0) || !std::isfinite(L)) {
+    return 16;
+  }
+  int n = (int)std::ceil(L / std::sqrt((double)shadingRate));
+  if (n < 1) {
+    n = 1;
+  }
+  if (n > 16) {
+    n = 16;
+  }
+  return n;
+}
 
 // Rodrigues' rotation formula in double precision -- an independent
 // computation from the RtFloat arithmetic under test, so the placement
@@ -218,6 +258,31 @@ std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int nverts) {
   return index;
 }
 
+// The sum of every ear-clipped triangle's own expected n*n, ear boundaries
+// found the same way checkPlacement's own oracle finds them (see its
+// comment) -- used where only the aggregate diced face count matters, not
+// the full area/orientation/coverage oracle checkPlacement also runs.
+long long sumExpectedDicedFaces(GMANObject* object, int nverts, const GMANOptions& options, RtFloat shadingRate) {
+  std::map<const GMANVertex*, int> index = indexVertices(object, nverts);
+  std::vector<GMANPoint> blockCornerLoc;
+  long long total = 0;
+
+  GMANSurface* surface = object->getBody() ? object->getBody()->getSurface() : nullptr;
+  for (GMANFace* face = surface ? surface->getFace() : nullptr; face != nullptr; face = face->getNext()) {
+    for (int k = 0; k < 3; ++k) {
+      if (index.find(face->getVertex(k)) != index.end()) {
+        blockCornerLoc.push_back(face->getVertex(k)->getLocation());
+      }
+    }
+    if (blockCornerLoc.size() >= 3) {
+      const int n = expectedDiceN(blockCornerLoc[0], blockCornerLoc[1], blockCornerLoc[2], options, shadingRate);
+      total += (long long)n * n;
+      blockCornerLoc.clear();
+    }
+  }
+  return total;
+}
+
 // Runs the full oracle -- count, area, orientation, coverage -- against
 // one placed ring and returns the emitted triangles as ring-index triples
 // for the caller's own cross-placement identity check. Returns an empty
@@ -227,14 +292,19 @@ std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int nverts) {
 // Most sub-triangles are strictly interior -- none of their three vertices
 // is an original ring vertex -- so coverage asks only whether each
 // original ring vertex's own GMANVertex still appears somewhere on the
-// chain. Identity is recovered per ear-clipped triangle: each triangle's
-// three original corners are each one of its own 256 sub-faces' vertices,
-// and dicing is contiguous (comment above), so scanning each 256-face
-// block for the (exactly three) sub-face vertices that map back to a ring
-// index reconstructs that triangle's own ring-index triple, in a
-// combinatorial (placement-independent) order.
+// chain. Identity is recovered per ear-clipped triangle: dicePolygonTriangle
+// reuses each ear's own three original vertices at exactly three of its own
+// sub-faces (the barycentric grid's three corners) and nowhere else, and
+// dicing is contiguous (comment above), so three corner sightings close one
+// ear-clipped triangle's own block of consecutive faces, whatever its own n
+// turns out to be -- read back from that block's own three corner
+// locations via expectedDiceN, the same rule every block's own size is
+// checked against.
 std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const std::vector<GMANPoint>& ring) {
   const int nverts = (int)ring.size();
+  GMANOptions oracleOptions; // same default GMANOptions runGetRSPolygon's own uses
+  GMANAttributes oracleAttr; // ShadingRate = 1, runGetRSPolygon's own default
+
   GMANPrimitive* prim = runGetRSPolygon(ring);
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, label + ": getRSPolygon returns an object");
@@ -243,12 +313,7 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
     return {};
   }
 
-  const int faces = countFaces(object);
   const int earCount = nverts - 2;
-  const int expectedFaces = earCount * kSubTrianglesPerEar;
-  check(faces == expectedFaces, label + ": " + std::to_string(nverts) + " vertices yield " + std::to_string(earCount) +
-                                    " ear-clipped triangles, diced to " + std::to_string(expectedFaces) + " (got " +
-                                    std::to_string(faces) + ")");
 
   std::array<double, 3> polyNormal = newellNormal(ring);
   const double polyArea =
@@ -260,8 +325,12 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
   double summedArea = 0.0;
   bool orientationOk = true;
   bool cornersOk = true;
-  std::vector<int> blockCorners;
-  int facesSeen = 0;
+  bool diceCountOk = true;
+  std::vector<int> blockCornerIdx;
+  std::vector<GMANPoint> blockCornerLoc;
+  int blockFaceCount = 0;
+  long long totalFaces = 0;
+  long long sumExpectedFaces = 0;
 
   GMANSurface* surface = object->getBody() ? object->getBody()->getSurface() : nullptr;
   for (GMANFace* face = surface ? surface->getFace() : nullptr; face != nullptr; face = face->getNext()) {
@@ -282,20 +351,40 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
       orientationOk = false;
     }
 
+    ++totalFaces;
+    ++blockFaceCount;
     for (int k = 0; k < 3; ++k) {
       auto it = index.find(face->getVertex(k));
       if (it != index.end()) {
         covered[it->second] = true;
-        blockCorners.push_back(it->second);
+        blockCornerIdx.push_back(it->second);
+        blockCornerLoc.push_back(face->getVertex(k)->getLocation());
+        if (blockCornerIdx.size() > 3) {
+          cornersOk = false; // a fourth corner before the block closed
+        }
       }
     }
-    if (++facesSeen % kSubTrianglesPerEar == 0) {
-      if (blockCorners.size() == 3) {
-        triples.push_back({blockCorners[0], blockCorners[1], blockCorners[2]});
-      } else {
-        cornersOk = false;
+    if (blockCornerIdx.size() >= 3) {
+      const int expectedN = expectedDiceN(blockCornerLoc[0], blockCornerLoc[1], blockCornerLoc[2], oracleOptions,
+                                          oracleAttr.getShadingRate());
+      const long long expectedBlockFaces = (long long)expectedN * expectedN;
+      sumExpectedFaces += expectedBlockFaces;
+      if (blockFaceCount != expectedBlockFaces) {
+        diceCountOk = false;
       }
-      blockCorners.clear();
+      // Sorted, not discovery order: dicePolygonTriangle's own traversal
+      // visits an ear's three corners in a different sequence at n=1 (one
+      // face, corners in i0,i1,i2 order) than at n>1 (three separate faces,
+      // corners in i0,i2,i1 order -- the barycentric grid's own row-major
+      // layout), and this suite places the same ring at scales that hit
+      // both. Sorting keeps the comparison about which three ring vertices
+      // form each ear, not dicing's own internal order.
+      std::array<int, 3> triple = {blockCornerIdx[0], blockCornerIdx[1], blockCornerIdx[2]};
+      std::sort(triple.begin(), triple.end());
+      triples.push_back(triple);
+      blockCornerIdx.clear();
+      blockCornerLoc.clear();
+      blockFaceCount = 0;
     }
   }
 
@@ -304,7 +393,19 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
     coverageOk = coverageOk && c;
   }
 
-  check(cornersOk, label + ": each ear-clipped triangle's 256 sub-faces touch exactly its own "
+  check(blockCornerIdx.empty(), label + ": the last ear-clipped triangle's own block of faces "
+                                        "closes cleanly");
+  check((int)triples.size() == earCount, label + ": " + std::to_string(nverts) + " vertices yield " +
+                                             std::to_string(earCount) +
+                                             " ear-clipped "
+                                             "triangles (got " +
+                                             std::to_string(triples.size()) + ")");
+  check(diceCountOk, label + ": each ear-clipped triangle dices to n*n faces, n this suite's own "
+                             "clamp(ceil(L / sqrt(ShadingRate)), 1, 16) computed from its own three corners");
+  check(totalFaces == sumExpectedFaces,
+        label + ": diced faces total every ear-clipped triangle's own expected n*n (got " + std::to_string(totalFaces) +
+            ", expected " + std::to_string(sumExpectedFaces) + ")");
+  check(cornersOk, label + ": each ear-clipped triangle's own sub-faces touch exactly its own "
                            "three original corners");
   check(std::fabs(summedArea - polyArea) <= kAreaRelTol * polyArea,
         label + ": triangle areas sum to the polygon's area (got " + std::to_string(summedArea) + ", expected " +
@@ -537,14 +638,17 @@ void runDegenerateInput() {
   // would otherwise return the empty stub before the triangulator ever
   // runs.
   std::vector<GMANPoint> bowtie = {{0, 0, 0}, {10, 10, 0}, {10, 0, 0}, {0, 3, 0}};
+  GMANOptions bowtieOptions; // same default GMANOptions runGetRSPolygon's own uses
+  GMANAttributes bowtieAttr; // ShadingRate = 1, runGetRSPolygon's own default
   prim = runGetRSPolygon(bowtie);
   object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, "asymmetric bow-tie: getRSPolygon returns an object");
   if (object != nullptr) {
     int faces = countFaces(object);
-    const int expected = ((int)bowtie.size() - 2) * kSubTrianglesPerEar;
+    const long long expected =
+        sumExpectedDicedFaces(object, (int)bowtie.size(), bowtieOptions, bowtieAttr.getShadingRate());
     check(faces == expected, "asymmetric bow-tie: the clipAt<0 fallback still emits n-2 ear-clipped "
-                             "triangles, diced (got " +
+                             "triangles, each diced to its own expected n*n (got " +
                                  std::to_string(faces) + ", expected " + std::to_string(expected) + ")");
   }
   delete prim;

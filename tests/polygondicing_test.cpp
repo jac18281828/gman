@@ -43,12 +43,15 @@
 
 namespace {
 
-// Nine times finer per edge than buildPolygonObject's own 16-per-edge
-// dicing (kPolygonDiceN) -- each of this grid's own small quads is diced
-// again by that same resolution once it reaches the shared tail, so the
-// ground truth samples the texture roughly 8*16 times across the square's
-// own width, comfortably past where further refinement would move a
-// rendered pixel.
+// Nine times finer per edge than buildPolygonObject's own dicing cap
+// (kPolygonDiceN, 16 divisions per edge) -- every triangle in both
+// fixtures projects well past 15 raster pixels on its longest edge (this
+// file's own commonHeader comment), so both still hit that cap
+// (gmanpatchpolyobjectmanager.cpp's diceCountFor), and each of this grid's
+// own small quads is diced again at the same 16 once it reaches the
+// shared tail. The ground truth then samples the texture roughly 8*16
+// times across the square's own width, comfortably past where further
+// refinement would move a rendered pixel.
 const int kGroundTruthGrid = 8;
 
 int runGman(const std::string& gman, const std::string& rib) {
