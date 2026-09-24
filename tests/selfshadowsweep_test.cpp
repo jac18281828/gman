@@ -49,11 +49,11 @@
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
+#include "gmanrayoccluder.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
-#include "gmanraytracerenderer.h"
 #include "gmanvector.h"
 #include "ri.h"
 

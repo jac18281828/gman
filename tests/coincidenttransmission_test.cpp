@@ -19,18 +19,19 @@
  */
 
 /*
- * R7 proof, §8 check 7: more transparent layers than kMaxCompositeLayers,
- * spaced widely enough (1 world unit, far past the offset's own hop size
- * at this magnitude) that the walk must find each one in its own
- * iteration rather than clearing several in a single hop. offsetOrigin
- * orients every hop toward the light regardless of which surface's own
- * normal produced it (see gmanraytracerenderer.cpp's own comment), so it
- * always advances and two exactly coincident surfaces clear together in
- * one hop -- never stuck re-finding the same point, and so never a
- * fixture for this check. Twenty separated layers, each attenuating by a
- * fixed factor, forces exactly what the cap is for: bounding a walk's own
- * depth against a pathological stack, not preventing infinite recursion
- * that this offset design does not produce.
+ * R7 proof, §8 check 7: more transparent layers than
+ * gman::kMaxCompositeLayers, spaced widely enough (1 world unit, far past
+ * the offset's own hop size at this magnitude) that the walk must find
+ * each one in its own iteration rather than clearing several in a single
+ * hop. gman::offsetOrigin orients every hop toward the light regardless
+ * of which surface's own normal produced it (see gmanrayoccluder.cpp's
+ * own comment), so it always advances and two exactly coincident surfaces
+ * clear together in one hop -- never stuck re-finding the same point, and
+ * so never a fixture for this check. Twenty separated layers, each
+ * attenuating by a fixed factor, forces exactly what the cap is for:
+ * bounding a walk's own depth against a pathological stack, not
+ * preventing infinite recursion that this offset design does not
+ * produce.
  *
  * RI_INFINITY carries the walk past every layer with no interval of its
  * own to run out first, so only the cap can end it early. The capped
@@ -48,15 +49,14 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
+#include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
-#include "gmanraytracerenderer.h"
 #include "gmanvector.h"
 #include "ri.h"
 
 namespace {
 
-constexpr int kLayerCount = 20;         // more than kMaxCompositeLayers (16)
-constexpr int kMaxCompositeLayers = 16; // gmanraytracerenderer.cpp's own constant, mirrored for the prediction below
+constexpr int kLayerCount = 20;         // more than gman::kMaxCompositeLayers (16)
 constexpr RtFloat kLayerSpacing = 1.0f; // world units; far past the offset's own hop size at this magnitude
 constexpr RtFloat kFirstLayerZ = 5.0f;
 constexpr RtFloat kOpacity = 0.1f; // low enough that 20 layers still clear kTransmissionCutoff
@@ -98,9 +98,9 @@ int main() {
   // the header's own contract for that case.
   GMANColor const result = occluder.transmission(light, P, towardLight, Ng, RI_INFINITY, 0.0f);
 
-  RtFloat const cappedPrediction = std::pow(1.0f - kOpacity, (RtFloat)kMaxCompositeLayers);
+  RtFloat const cappedPrediction = std::pow(1.0f - kOpacity, (RtFloat)gman::kMaxCompositeLayers);
   RtFloat const allLayersPrediction = std::pow(1.0f - kOpacity, (RtFloat)kLayerCount);
-  std::printf("check 7: result=%.6f capped(%d)=%.6f all(%d)=%.6f\n", result.getRed(), kMaxCompositeLayers,
+  std::printf("check 7: result=%.6f capped(%d)=%.6f all(%d)=%.6f\n", result.getRed(), gman::kMaxCompositeLayers,
               cappedPrediction, kLayerCount, allLayersPrediction);
 
   check(std::fabs(result.getRed() - cappedPrediction) <= 1e-4f,

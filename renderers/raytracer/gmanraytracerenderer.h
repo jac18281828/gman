@@ -34,10 +34,10 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanobjectmanager.h"
-#include "gmanocclude.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanrayobjectmanager.h"
+#include "gmanrayoccluder.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
 #include "gmanshading.h"
@@ -46,41 +46,16 @@
 #include "ri.h"
 
 /*
- * The ray tracer's own occlusion test: casts a shadow ray from P toward
- * the light and walks bvh's nearestHit repeatedly, each call's hit
- * shrinking the ray's remaining interval and compositing that blocker's
- * own opacity into the running transmission, until the interval is spent
- * or transmission is negligible -- the nearest hit at each step is what
- * lets the walk advance past exactly one blocker per call. A public,
- * standalone class (not nested in GMANRaytraceRenderer) so a unit test
- * can probe transmission() directly against a GMANRayBVH it controls.
- * Not GMAN_EXPORT: only its own tests use it, and they compile the
- * plugin's sources directly rather than linking the installed library.
- */
-class GMANRayOccluder : public gman::Occluder {
-public:
-  explicit GMANRayOccluder(GMANRayBVH const& bvh) : bvh(bvh) {}
-
-  // const on this class's own state; nearestHit on a built bvh is itself
-  // const and re-entrant, so concurrent calls here never interleave
-  // state.
-  GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
-                         GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const override;
-
-private:
-  GMANRayBVH const& bvh;
-};
-
-/*
  * The ray tracer's own gman::Tracer: casts R from P (offset off Ng, the
  * same self-shadow discipline shadeSample's composite loop and
  * GMANRayOccluder::transmission already take), shades the nearest hit at
  * depth + 1, and returns background on a miss or once depth reaches
  * kMaxTraceDepth (gmanraytracerenderer.cpp) -- without casting a ray or
- * touching bvh at all in that last case. A public, standalone class for
- * the same reason as GMANRayOccluder above: a unit test builds one
- * directly, against a GMANRayBVH and GMANRayOccluder it controls. Not
- * GMAN_EXPORT, for the same reason as GMANRayOccluder too.
+ * touching bvh at all in that last case. A public, standalone class so a
+ * unit test builds one directly, against a GMANRayBVH and GMANRayOccluder
+ * it controls. Not GMAN_EXPORT: only its own tests use it, and they
+ * compile the plugin's own sources directly rather than linking the
+ * installed library.
  */
 class GMANRayTracer : public gman::Tracer {
 public:

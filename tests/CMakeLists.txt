@@ -1437,10 +1437,10 @@ set_tests_properties(raydepth PROPERTIES
   TIMEOUT 30)
 
 # R7 proof, check 5: GMANRayOccluder::transmission, linked against
-# gman_raytracer_objects, which still compiles GMANRayOccluder itself;
-# carries raydepth's own ENVIRONMENT for the same reason too.
+# gman_core alone, where GMANRayOccluder now lives; carries raydepth's own
+# ENVIRONMENT for the same reason too.
 add_executable(gman_rayoccluder rayoccluder_test.cpp)
-target_link_libraries(gman_rayoccluder PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_rayoccluder PRIVATE gman_core)
 
 add_test(NAME rayoccluder COMMAND gman_rayoccluder)
 set_tests_properties(rayoccluder PROPERTIES
@@ -1450,12 +1450,11 @@ set_tests_properties(rayoccluder PROPERTIES
 
 # The self-shadow sweep -- every ray primitive, at every scale and
 # placement, through its own real intersect() and
-# GMANRayOccluder::transmission, linked against gman_core (where every
-# primitive lives) and gman_raytracer_objects (which still compiles
-# GMANRayOccluder itself); carries raydepth's own ENVIRONMENT for the same
-# reason too.
+# GMANRayOccluder::transmission, linked against gman_core, where both now
+# live; gman_internal_headers reaches the libgman/ primitive headers it
+# includes. Carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_selfshadowsweep selfshadowsweep_test.cpp)
-target_link_libraries(gman_selfshadowsweep PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_selfshadowsweep PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME selfshadowsweep COMMAND gman_selfshadowsweep)
 set_tests_properties(selfshadowsweep PROPERTIES
@@ -1465,12 +1464,11 @@ set_tests_properties(selfshadowsweep PROPERTIES
 
 # The contact gap -- a small receiver (M ~ max|P|) shadows at a gap the
 # old offset hid, a large receiver (M >> max|P|) keeps its own contact
-# under the ceiling, linked against gman_core (where GMANRaySphere and
-# GMANRayPolygon live) and gman_raytracer_objects (which still compiles
-# GMANRayOccluder itself); carries raydepth's own ENVIRONMENT for the same
-# reason too.
+# under the ceiling, linked against gman_core, where GMANRayOccluder now
+# lives; gman_internal_headers reaches gmanraypolygon.h, a libgman/
+# header. Carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_contactgap contactgap_test.cpp)
-target_link_libraries(gman_contactgap PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_contactgap PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME contactgap COMMAND gman_contactgap)
 set_tests_properties(contactgap PROPERTIES
@@ -1505,12 +1503,12 @@ set_tests_properties(compositelayercap PROPERTIES
   TIMEOUT 30)
 
 # R7 proof, §8 check 7: GMANRayOccluder::transmission's own iteration cap,
-# linked against gman_core (where GMANRayPolygon lives) and
-# gman_raytracer_objects (which still compiles GMANRayOccluder itself);
-# carries raydepth's own ENVIRONMENT for the same reason too. See
+# linked against gman_core, where GMANRayOccluder now lives;
+# gman_internal_headers reaches gmanraypolygon.h, a libgman/ header.
+# Carries raydepth's own ENVIRONMENT for the same reason too. See
 # coincidenttransmission_test.cpp's own comment.
 add_executable(gman_coincidenttransmission coincidenttransmission_test.cpp)
-target_link_libraries(gman_coincidenttransmission PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_coincidenttransmission PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME coincidenttransmission COMMAND gman_coincidenttransmission)
 set_tests_properties(coincidenttransmission PROPERTIES

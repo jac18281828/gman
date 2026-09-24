@@ -28,12 +28,11 @@
  * inside it, where the exit wall still blocks, hiding the defect this
  * file exists to catch.
  *
- * kUnitRoundoff/kDerivedC/kCeiling below mirror
- * gmanraytracerenderer.cpp's own kSelfShadowOffsetScale/
- * kSelfShadowOffsetCeiling literally, not read back from that
- * file-local anonymous namespace: this file's own choice of g depends on
- * their value, stated here as the fixtures' own literal expectation, the
- * way raybbox_test.cpp's own literal expected pads do.
+ * kUnitRoundoff/kDerivedC/kCeiling below mirror gmanrayoccluder.cpp's own
+ * kSelfShadowOffsetScale/kSelfShadowOffsetCeiling literally, not read back
+ * from that file-local anonymous namespace: this file's own choice of g
+ * depends on their value, stated here as the fixtures' own literal
+ * expectation, the way raybbox_test.cpp's own literal expected pads do.
  */
 
 #include <cmath>
@@ -47,9 +46,9 @@
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
+#include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
-#include "gmanraytracerenderer.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "ri.h"

@@ -168,6 +168,7 @@ add_library(gman_core SHARED
   libgman/gmanrayhyperboloid.cpp
   libgman/gmanrayinterface.cpp
   libgman/gmanrayobjectmanager.cpp
+  libgman/gmanrayoccluder.cpp
   libgman/gmanrayparaboloid.cpp
   libgman/gmanraypolygon.cpp
   libgman/gmanrayquartic.cpp
