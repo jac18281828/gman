@@ -171,6 +171,7 @@ add_library(gman_core SHARED
   libgman/gmanrayoccluder.cpp
   libgman/gmanrayparaboloid.cpp
   libgman/gmanraypolygon.cpp
+  libgman/gmanraypolygonmesh.cpp
   libgman/gmanrayquartic.cpp
   libgman/gmanraysphere.cpp
   libgman/gmanraytorus.cpp

@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -37,10 +38,76 @@
 #include "gmanrayobjectmanager.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
+#include "gmanraypolygonmesh.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanshading.h"
 #include "ri.h"
+
+namespace {
+
+// Each shared "P" point's own resolved (s, t): default that point's own
+// object-space x, y, "st" then "s"/"t" overriding,
+// GMANPatchPolyObjectManager's own polygon rule
+// (resolvePolygonTextureCoordinates). Resolved once over the whole shared
+// point pool, not per face, so a point three faces reference still reads
+// the same values wherever a face gathers it from.
+std::vector<std::pair<RtFloat, RtFloat>> resolveSharedPointTexCoords(GMANParameterList& pl, RtInt pointCount,
+                                                                     RtFloat* p) {
+  RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
+  RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
+  RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
+
+  std::vector<std::pair<RtFloat, RtFloat>> coords(pointCount);
+  for (RtInt i = 0; i < pointCount; i++) {
+    RtFloat s = p[3 * i];
+    RtFloat t = p[3 * i + 1];
+    if (stArr) {
+      s = stArr[2 * i];
+      t = stArr[2 * i + 1];
+    }
+    if (sArr)
+      s = sArr[i];
+    if (tArr)
+      t = tArr[i];
+    coords[i] = {s, t};
+  }
+  return coords;
+}
+
+// One Points*/PointsGeneralPolygons face: loopVerts[0] the outer boundary,
+// loopVerts[1..] holes, each a run of indices into the shared point pool
+// "verts" carries. Rejects a degenerate outer loop exactly as the
+// z-buffer's buildFace does; a hole needs no texCoords, so only the outer
+// loop's are gathered.
+bool buildMeshFace(std::vector<std::vector<RtInt>> const& loopVerts, RtFloat* p,
+                   std::vector<std::pair<RtFloat, RtFloat>> const& pointTexCoords, GMANTransform* t,
+                   std::unique_ptr<GMANRayPolygon>& outFace) {
+  std::vector<std::vector<GMANPoint>> loops(loopVerts.size());
+  for (std::size_t li = 0; li < loopVerts.size(); li++) {
+    loops[li].resize(loopVerts[li].size());
+    for (std::size_t j = 0; j < loopVerts[li].size(); j++) {
+      RtInt const pointIndex = loopVerts[li][j];
+      loops[li][j] = t->apply(GMANPoint(p[3 * pointIndex], p[3 * pointIndex + 1], p[3 * pointIndex + 2]));
+    }
+  }
+  if (loops.empty() || gman::isDegeneratePolygon(loops[0])) {
+    return false;
+  }
+
+  std::vector<std::pair<RtFloat, RtFloat>> outerTexCoords(loopVerts[0].size());
+  for (std::size_t j = 0; j < loopVerts[0].size(); j++) {
+    outerTexCoords[j] = pointTexCoords[loopVerts[0][j]];
+  }
+
+  std::vector<GMANPoint> outer = std::move(loops[0]);
+  std::vector<std::vector<GMANPoint>> holes(std::make_move_iterator(loops.begin() + 1),
+                                            std::make_move_iterator(loops.end()));
+  outFace = std::make_unique<GMANRayPolygon>(std::move(outer), std::move(holes), std::move(outerTexCoords));
+  return true;
+}
+
+} // namespace
 
 /*
  * RenderMan API GMANRayObjectManager
@@ -83,23 +150,158 @@ GMANPrimitive* GMANRayObjectManager::getRSPolygon(RtInt nverts, GMANParameterLis
   return polygon;
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSGeneralPolygon(RtInt /*nloops*/, RtInt /*nverts*/[], GMANParameterList /*pl*/,
-                                                         GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
-                                                         GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSGeneralPolygon(RtInt nloops, RtInt nverts[], GMANParameterList pl,
+                                                         GMANOptions* /*opt*/, GMANAttributes* attr, GMANTransform* t) {
+  // nloops < 1 and a missing "P" both degrade to the same empty stub the
+  // z-buffer's own getRSGeneralPolygon falls back to.
+  if (nloops < 1) {
+    return create();
+  }
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  if (!p) {
+    return create();
+  }
+
+  // Loop 0 is the outer boundary; every later loop a hole (RISpec's
+  // GeneralPolygon). "P" is flat across every loop in that same order.
+  std::vector<std::vector<GMANPoint>> loops(nloops);
+  RtInt offset = 0;
+  for (RtInt i = 0; i < nloops; i++) {
+    RtInt const count = nverts[i] > 0 ? nverts[i] : 0;
+    loops[i].resize(count);
+    for (RtInt j = 0; j < count; j++) {
+      loops[i][j] = t->apply(GMANPoint(p[3 * (offset + j)], p[3 * (offset + j) + 1], p[3 * (offset + j) + 2]));
+    }
+    offset += count;
+  }
+
+  // A degenerate outer loop draws nothing, the same rejection the
+  // z-buffer's buildFace applies.
+  if (gman::isDegeneratePolygon(loops[0])) {
+    return create();
+  }
+  std::vector<GMANPoint> outer = std::move(loops[0]);
+  std::vector<std::vector<GMANPoint>> holes(std::make_move_iterator(loops.begin() + 1),
+                                            std::make_move_iterator(loops.end()));
+
+  GMANRayPolygon* polygon = new GMANRayPolygon(std::move(outer), std::move(holes), pl);
+  polygon->setAppearance(gman::appearanceOf(*attr));
+  return polygon;
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSPointsPolygon(RtInt /*npolys*/, RtInt /*nverts*/[], RtInt /*verts*/[],
-                                                        GMANParameterList /*pl*/, GMANOptions* /*opt*/,
-                                                        GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[],
+                                                        GMANParameterList pl, GMANOptions* /*opt*/,
+                                                        GMANAttributes* attr, GMANTransform* t) {
+  // Direct, white-box caller guard, as getRSGeneralPolygon's own
+  // nloops < 1 guard is -- RiPointsPolygonsV rejects npolys < 0 before this
+  // ever runs, and npolys == 0 draws nothing either way.
+  if (npolys < 1) {
+    return create();
+  }
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  if (!p) {
+    return create();
+  }
+
+  RtInt totalVerts = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    totalVerts += nverts[i] > 0 ? nverts[i] : 0;
+  }
+  // 1 + max(verts): RiSpec's own vertex/varying count for this request --
+  // one "P"/"s"/"t"/"st" entry per point the mesh actually references.
+  RtInt pointCount = 0;
+  for (RtInt i = 0; i < totalVerts; i++) {
+    if (verts[i] + 1 > pointCount) {
+      pointCount = verts[i] + 1;
+    }
+  }
+  std::vector<std::pair<RtFloat, RtFloat>> pointTexCoords = resolveSharedPointTexCoords(pl, pointCount, p);
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+
+  // Faceted: every face gathers its own vertices through "verts", one
+  // PointsPolygons face being a one-loop GeneralPolygon. A degenerate face
+  // is skipped, not fatal; every surviving face joins one mesh primitive,
+  // so the request still adds exactly one primitive to the world.
+  std::vector<std::unique_ptr<GMANRayPolygon>> faces;
+  RtInt offset = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    RtInt const count = nverts[i] > 0 ? nverts[i] : 0;
+    std::vector<RtInt> const faceVerts(verts + offset, verts + offset + count);
+    offset += count;
+
+    std::unique_ptr<GMANRayPolygon> face;
+    if (buildMeshFace({faceVerts}, p, pointTexCoords, t, face)) {
+      face->setAppearance(appearance);
+      faces.push_back(std::move(face));
+    }
+  }
+
+  if (faces.empty()) {
+    return create(); // no face survived: the whole mesh is the empty stub
+  }
+  GMANRayPolygonMesh* mesh = new GMANRayPolygonMesh(std::move(faces));
+  mesh->setAppearance(appearance);
+  return mesh;
 };
 
-GMANPrimitive* GMANRayObjectManager::getRSPointsGeneralPolygons(RtInt /*npolys*/, RtInt /*nloops*/[],
-                                                                RtInt /*nverts*/[], RtInt /*verts*/[],
-                                                                GMANParameterList /*pl*/, GMANOptions* /*opt*/,
-                                                                GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+GMANPrimitive* GMANRayObjectManager::getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[],
+                                                                RtInt verts[], GMANParameterList pl,
+                                                                GMANOptions* /*opt*/, GMANAttributes* attr,
+                                                                GMANTransform* t) {
+  if (npolys < 1) {
+    return create();
+  }
+  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  if (!p) {
+    return create();
+  }
+
+  RtInt sumNloops = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    sumNloops += nloops[i] > 0 ? nloops[i] : 0;
+  }
+  RtInt totalVerts = 0;
+  for (RtInt i = 0; i < sumNloops; i++) {
+    totalVerts += nverts[i] > 0 ? nverts[i] : 0;
+  }
+  RtInt pointCount = 0;
+  for (RtInt i = 0; i < totalVerts; i++) {
+    if (verts[i] + 1 > pointCount) {
+      pointCount = verts[i] + 1;
+    }
+  }
+  std::vector<std::pair<RtFloat, RtFloat>> pointTexCoords = resolveSharedPointTexCoords(pl, pointCount, p);
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+
+  std::vector<std::unique_ptr<GMANRayPolygon>> faces;
+  RtInt loopOffset = 0, vertOffset = 0;
+  for (RtInt i = 0; i < npolys; i++) {
+    RtInt const faceLoops = nloops[i] > 0 ? nloops[i] : 0;
+    if (faceLoops == 0) {
+      continue; // no outer loop at all: degenerate, skip
+    }
+
+    std::vector<std::vector<RtInt>> loopVerts(faceLoops);
+    for (RtInt li = 0; li < faceLoops; li++) {
+      RtInt const count = nverts[loopOffset + li] > 0 ? nverts[loopOffset + li] : 0;
+      loopVerts[li].assign(verts + vertOffset, verts + vertOffset + count);
+      vertOffset += count;
+    }
+    loopOffset += faceLoops;
+
+    std::unique_ptr<GMANRayPolygon> face;
+    if (buildMeshFace(loopVerts, p, pointTexCoords, t, face)) {
+      face->setAppearance(appearance);
+      faces.push_back(std::move(face));
+    }
+  }
+
+  if (faces.empty()) {
+    return create();
+  }
+  GMANRayPolygonMesh* mesh = new GMANRayPolygonMesh(std::move(faces));
+  mesh->setAppearance(appearance);
+  return mesh;
 };
 
 GMANPrimitive* GMANRayObjectManager::getRSPatch(RtToken /*type*/, GMANParameterList /*pl*/, GMANOptions* /*opt*/,

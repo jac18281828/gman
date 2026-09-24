@@ -1462,6 +1462,35 @@ set_tests_properties(raybvhreentrant PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRayObjectManager::getRSGeneralPolygon builds a multi-loop
+# GMANRayPolygon -- a hole misses at its centre, the ring between hole and
+# edge hits, and a point outside the outer loop misses -- and
+# getRSPolygon's own one-loop case keeps today's hits on the same three
+# rays. Linked against gman_core alone: both factories return a bare
+# GMANRayInterface, no libgman/ header needed. See
+# tests/raypolygonhole_test.cpp.
+add_executable(gman_raypolygonhole raypolygonhole_test.cpp)
+target_link_libraries(gman_raypolygonhole PRIVATE gman_core)
+
+add_test(NAME raypolygonhole COMMAND gman_raypolygonhole)
+set_tests_properties(raypolygonhole PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# A PointsPolygons face's own "s"/"t" is gathered through "verts" out of
+# the shared "P" pool, not indexed by local slot --
+# tests/rib/pointspolygons_textured.rib's own two faces, cast at each
+# one's off-centre local (0.25, 0.3), where a constant, swapped or
+# mirrored (s, t) would still fail even though both faces' centroids alone
+# could not tell it apart. See tests/polygonmeshtexcoord_test.cpp.
+add_executable(gman_polygonmeshtexcoord polygonmeshtexcoord_test.cpp)
+target_link_libraries(gman_polygonmeshtexcoord PRIVATE gman_core)
+
+add_test(NAME polygonmeshtexcoord COMMAND gman_polygonmeshtexcoord)
+set_tests_properties(polygonmeshtexcoord PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # R5c deferral: the spindle and horn torus (minorradius >= majorradius), a
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
 # behavior; WILL_FAIL until the second inverse mapping is implemented.
@@ -1804,6 +1833,28 @@ if(GMAN_BUILD_RAYTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+
+  # GeneralPolygon, PointsPolygons and PointsGeneralPolygons render with
+  # the z-buffer's own coverage -- tests/rib/generalpolygon_hole_twin.rib,
+  # pointsgeneralpolygons_hole.rib, pointspolygons_cube.rib and
+  # pointspolygons_textured.rib, each rendered under both renderers and
+  # compared pixel by pixel on alpha coverage. See
+  # tests/polygonraycoverage_test.cpp.
+  add_executable(gman_polygonraycoverage polygonraycoverage_test.cpp)
+  target_link_libraries(gman_polygonraycoverage PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_polygonraycoverage gman_raytracer)
+
+  set(GMAN_POLYGONRAYCOVERAGE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonraycoverage-run")
+  file(MAKE_DIRECTORY "${GMAN_POLYGONRAYCOVERAGE_WORKDIR}")
+
+  add_test(NAME polygonraycoverage
+    COMMAND gman_polygonraycoverage $<TARGET_FILE:gman>
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_POLYGONRAYCOVERAGE_WORKDIR}")
+  set_tests_properties(polygonraycoverage PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 60)
 
   # R7 proof, checks 3-4: tests/rib/shadow.rib -- a small sphere between a
   # distant light and a large receiver -- casts a shadow a checked-in
