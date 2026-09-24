@@ -29,7 +29,7 @@
  * projection (fov 60, never 90, so a stray hardcoded 90 fails loudly) and
  * resolution.
  *
- * Every triangle is a right isoceles triangle at a fixed camera-space
+ * Every triangle is a right isosceles triangle at a fixed camera-space
  * depth (z=10), legs along x and y, so its longest edge is always the
  * hypotenuse and the projection is exactly affine across it (constant
  * depth): raster L = (xres / (right-left)) * (1 / tan(fov/2)) * (leg *
@@ -38,7 +38,9 @@
  * diceCountFor -- never the production function that computes n.
  */
 
+#include <array>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -99,10 +101,10 @@ RtFloat legFor(double targetPixels, bool nonDefaultScreenWindow) {
   return (RtFloat)(targetPixels / (rasterScale(nonDefaultScreenWindow) * std::sqrt(2.0)));
 }
 
-// A right isoceles triangle (apex at object origin, legs along x and y)
-// at camera-space depth z, sides p[1]z and p[2]z: (0,0,z), (leg,0,z),
-// (0,leg,z), unless behindEyeCorner names one corner (0, 1 or 2) to move
-// to camera-space z=-1 instead -- diceCountFor's own fallback trigger.
+// A right isosceles triangle (apex at object origin, legs along x and y)
+// at camera-space depth z: corners (0,0,z), (leg,0,z), (0,leg,z), unless
+// behindEyeCorner names one corner (0, 1 or 2) to move to camera-space
+// z=-1 instead -- diceCountFor's own fallback trigger.
 GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, const GMANOptions& options, const GMANAttributes& attr,
                            int behindEyeCorner = -1) {
   RtFloat zs[3] = {z, z, z};
@@ -114,6 +116,24 @@ GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, const GMANOptions& options, c
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
+  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/3, /*varying=*/3, /*uniform=*/1);
+  GMANTransform transform;
+  GMANPatchPolyObjectManager mgr;
+  GMANOptions optionsCopy = options;
+  GMANAttributes attrCopy = attr;
+  return mgr.getRSPolygon(3, pl, &optionsCopy, &attrCopy, &transform);
+}
+
+// nine world-space coordinates (three corners, x, y, z each) as-is: the
+// NaN-corner fallback case below needs an explicit y and z per corner,
+// which runTriangle's own shared leg/z parameters cannot express.
+GMANPrimitive* runTriangleCorners(const std::array<RtFloat, 9>& p, const GMANOptions& options,
+                                  const GMANAttributes& attr) {
+  std::vector<RtFloat> pv(p.begin(), p.end());
+
+  GMANDictionary dictionary;
+  RtToken tokens[1] = {RI_P};
+  RtPointer parms[1] = {pv.data()};
   GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/3, /*varying=*/3, /*uniform=*/1);
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
@@ -152,7 +172,7 @@ int main() {
   GMANOptions options = makeOptions(/*nonDefaultScreenWindow=*/false);
   GMANAttributes defaultAttr; // ShadingRate = 1
 
-  const RtFloat legSmall = legFor(1.5, false); // would dice below 16 under normal fallback rules
+  const RtFloat legSmall = legFor(1.5, false); // dices below 16 unless a fallback overrides it
   const RtFloat leg7_5 = legFor(7.5, false);
 
   // 1.5px longest edge: n = ceil(1.5 / 1) = 2, 4 faces.
@@ -208,6 +228,17 @@ int main() {
   const RtFloat legHuge = legFor(3.0e9, false);
   checkFaces("longest edge past INT_MAX pixels, still finite, capped at n=16",
              runTriangle(legHuge, kDepth, options, defaultAttr), 256);
+
+  // A corner whose y and z are both infinite (as if each had been given
+  // something like 1e39, past float's own range) projects to a NaN raster
+  // point: the perspective divide's numerator and denominator are each
+  // infinite, and infinity over infinity is NaN. Both edges the corner
+  // touches are NaN too, and a NaN edge fails every ">" comparison a
+  // running max relies on, so tracking the longest edge that way misses
+  // it -- it has to be tested for directly, per edge.
+  const RtFloat inf = std::numeric_limits<RtFloat>::infinity();
+  const std::array<RtFloat, 9> nanCorner = {0, 0, kDepth, legFor(7.5, false), 0, kDepth, 0, inf, inf};
+  checkFaces("one corner projects to NaN, capped at n=16", runTriangleCorners(nanCorner, options, defaultAttr), 256);
 
   return checkSummary("polygondicecount holds");
 }

@@ -127,7 +127,7 @@ GMANMatrix4 cameraToWorldOf(GMANOptions const* opt) { return opt ? opt->getCamer
 // reads as "fall back to the cap"), whether that projection is perspective
 // (orthographic's projection is affine, so it never falls back on a
 // corner's position), and the current ShadingRate.
-struct DicingContext {
+struct RasterProjection {
   std::unique_ptr<GMANViewingSystem> projector;
   bool perspective;
   RtFloat shadingRate;
@@ -139,10 +139,10 @@ struct DicingContext {
 // dices. worldToCamera is left identity -- diceCountFor only ever calls
 // project(), which reads none of a GMANViewingSystem's world-to-camera or
 // camera-to-world state.
-DicingContext dicingContextFor(GMANOptions const* opt, GMANAttributes const* attr) {
+RasterProjection dicingContextFor(GMANOptions const* opt, GMANAttributes const* attr) {
   RtFloat const shadingRate = attr->getShadingRate();
   if (!opt) {
-    return DicingContext{nullptr, false, shadingRate};
+    return RasterProjection{nullptr, false, shadingRate};
   }
   // standardDictionary(), not the renderer's own dictionary: no getRS*
   // signature carries one in, and none may change to add it. "fov"
@@ -159,7 +159,7 @@ DicingContext dicingContextFor(GMANOptions const* opt, GMANAttributes const* att
     projector = std::make_unique<gman::VSOrthographic>(vsi.xres, vsi.yres, vsi.screenWindow, worldToCamera,
                                                        vsi.clipping.nearDist, vsi.clipping.farDist);
   }
-  return DicingContext{std::move(projector), perspective, shadingRate};
+  return RasterProjection{std::move(projector), perspective, shadingRate};
 }
 
 // The raster-space distance between two of project()'s own return points --
@@ -176,7 +176,7 @@ RtFloat rasterDistance(GMANPoint const& a, GMANPoint const& b) {
 // whenever the rule cannot be evaluated: no projection resolved, a
 // non-positive ShadingRate, a non-finite L, or (perspective only) a corner
 // at or behind the eye, where a projection is meaningless.
-RtInt diceCountFor(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2, DicingContext const& dicing) {
+RtInt diceCountFor(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2, RasterProjection const& dicing) {
   if (!dicing.projector || !(dicing.shadingRate > (RtFloat)0.0)) {
     return kPolygonDiceN;
   }
@@ -187,17 +187,21 @@ RtInt diceCountFor(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2
   GMANPoint const r0 = dicing.projector->project(p0);
   GMANPoint const r1 = dicing.projector->project(p1);
   GMANPoint const r2 = dicing.projector->project(p2);
-  RtFloat L = rasterDistance(r0, r1);
+  RtFloat const e01 = rasterDistance(r0, r1);
   RtFloat const e12 = rasterDistance(r1, r2);
   RtFloat const e20 = rasterDistance(r2, r0);
+  // Each edge is checked on its own: a NaN or infinite edge fails every ">"
+  // comparison, so folding it into a running max the way a finite edge
+  // would silently drops it instead of forcing the fallback below.
+  if (!std::isfinite(e01) || !std::isfinite(e12) || !std::isfinite(e20)) {
+    return kPolygonDiceN;
+  }
+  RtFloat L = e01;
   if (e12 > L) {
     L = e12;
   }
   if (e20 > L) {
     L = e20;
-  }
-  if (!std::isfinite(L)) {
-    return kPolygonDiceN;
   }
 
   // Clamped in real (double) arithmetic before ever becoming an RtInt: L
@@ -594,7 +598,8 @@ void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> co
 GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, const std::vector<RtInt>& ring,
                                const GMANVector& normalVec, RtInt sides, RtToken orientation,
                                gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
-                               const std::vector<GMANPolygonVertexTexCoord>& texCoords, DicingContext const& dicing) {
+                               const std::vector<GMANPolygonVertexTexCoord>& texCoords,
+                               RasterProjection const& dicing) {
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
@@ -622,9 +627,7 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
   std::vector<std::array<RtInt, 3>> triangles = triangulateEarClipping(ringPoints, normalVec);
 
   // Each triangle's own n, found before any dicing so faceList reserves
-  // its exact total rather than dicing's own worst case (every triangle at
-  // the cap) -- the difference this task exists to avoid for a scene whose
-  // triangles mostly dice far below it.
+  // its exact total instead of every triangle's worst case at the cap.
   std::vector<RtInt> diceCounts(triangles.size());
   std::size_t totalFaces = 0;
   for (std::size_t i = 0; i < triangles.size(); i++) {
@@ -955,7 +958,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
 // treating it as fatal.
 bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vector<std::vector<RtInt>>& loopSlots,
                const std::vector<GMANPolygonVertexTexCoord>& pointTexCoords, RtInt sides, RtToken orientation,
-               gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld, DicingContext const& dicing,
+               gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld, RasterProjection const& dicing,
                GMANBody*& body, GMANVertex*& vertRoot) {
   const std::vector<GMANPoint>& outer = loops[0];
   if (gman::isDegeneratePolygon(outer)) {
@@ -1062,7 +1065,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParame
   RtToken orientation = attr->getOrientation();
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  DicingContext const dicing = dicingContextFor(opt, attr);
+  RasterProjection const dicing = dicingContextFor(opt, attr);
 
   std::vector<GMANPoint> location(nverts);
   std::vector<RtInt> slots(nverts);
@@ -1127,7 +1130,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSGeneralPolygon(RtInt nloops, RtI
   RtToken orientation = attr->getOrientation();
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  DicingContext const dicing = dicingContextFor(opt, attr);
+  RasterProjection const dicing = dicingContextFor(opt, attr);
 
   GMANBody* body;
   GMANVertex* vertRoot;
@@ -1177,7 +1180,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtIn
   RtToken orientation = attr->getOrientation();
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  DicingContext const dicing = dicingContextFor(opt, attr);
+  RasterProjection const dicing = dicingContextFor(opt, attr);
 
   // Faceted (settled decision "Faces"): every face gathers its own
   // GMANVertex objects through "verts", one PointsPolygons face being a
@@ -1249,7 +1252,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
   RtToken orientation = attr->getOrientation();
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  DicingContext const dicing = dicingContextFor(opt, attr);
+  RasterProjection const dicing = dicingContextFor(opt, attr);
 
   GMANBody *bodyHead = NULL, *bodyTail = NULL;
   GMANVertex *vertHead = NULL, *vertTail = NULL;

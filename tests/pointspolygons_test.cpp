@@ -377,12 +377,10 @@ void testIndicesNotOrder() {
   }
 
   check(countBodies(object) == 2, "indices, not order: two bodies");
-  // Each quad ear-clips into two triangles, each with a raster-space
-  // longest edge of 240px under GMANOptions' own default (orthographic,
-  // 640x480) and an identity transform -- comfortably past the 16-division
-  // cap (256 sub-triangles) -- so each still dices into its own independent
-  // 256-sub-triangle barycentric grid: 2 * 256 = 512 sub-triangles per
-  // quad, 1024 total.
+  // Each quad's diagonal, its two ear-clipped triangles' shared and
+  // longest edge, projects to about 339px under GMANOptions' own default
+  // (orthographic, 640x480) -- past the 16-division cap, so both dice at
+  // 256: 2 * 256 = 512 sub-triangles per quad, 1024 total.
   check(countFaces(object) == 2 * 256 * 2, "indices, not order: 1024 diced sub-triangles total (two "
                                            "256-facet ears per quad)");
   std::vector<GMANVertex*> chain = vertexChain(object);
@@ -463,9 +461,9 @@ void testOneBadFace() {
   if (object != nullptr) {
     check(countBodies(object) == 2, "one bad face: the collinear middle face is skipped, the other "
                                     "two survive");
-    // Both surviving triangles' shortest edge is 2 world units, a 480px
-    // raster-space longest edge under GMANOptions' own default (see the
-    // "indices, not order" case above) -- past the 16-division cap.
+    // Both surviving triangles' longest edge, sqrt(5) world units, projects
+    // to about 537px under GMANOptions' own default (see the "indices, not
+    // order" case above) -- past the 16-division cap.
     check(countFaces(object) == 2 * 256, "one bad face: one 256-facet diced triangle per surviving face");
     const std::vector<GMANPoint> face0Ring = {points[0], points[1], points[2]};
     const std::vector<GMANPoint> face2Ring = {points[6], points[7], points[8]};
