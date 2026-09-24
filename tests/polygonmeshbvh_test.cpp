@@ -19,7 +19,7 @@
  */
 
 /*
- * GMANRayObjectManager::getRSPointsPolygon returns one internal mesh
+ * GMANRayObjectManager::getRSPointsPolygon returns one polygon mesh
  * primitive; GMANRayBVH::build flattens it into one entry per face rather
  * than one entry for the whole mesh. A ray aimed at a face never reports
  * the mesh as hitPrimitive -- it is a GMANRayPolygon, and it equals the

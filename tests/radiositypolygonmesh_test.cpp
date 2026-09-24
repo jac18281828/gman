@@ -53,6 +53,9 @@ namespace {
 // tests/radiositymesh_test.cpp's own kPolygonAreaRelTolerance uses.
 constexpr RtFloat kAreaRelTolerance = 1e-5f;
 
+// The hole's half side, plus a margin for float grid coordinates at its edge.
+constexpr RtFloat kHoleHalfSide = 0.5f + 1e-5f;
+
 // A hit's own point, reproduced from its located element's four corner
 // positions and weights, must match within this fraction of the cube's own
 // edge length -- flat faces, so the round trip is exact up to float
@@ -232,14 +235,24 @@ void testHoledSquareArea() {
               expected, diced, relError);
   check(relError < kAreaRelTolerance, "holed square: elements sum to outer minus hole area within 1e-5 relative");
 
-  bool anyCentreInHole = false;
+  // A cell wholly inside the hole has all four corners within its closed
+  // bounds and no surface left to dice. A straddling cell's own centroid
+  // may still fall inside the hole (a concave remainder's centroid need
+  // not lie in it), so corners, not centres, decide.
+  bool anyElementWhollyInHole = false;
   for (std::size_t i = 0; i < mesh.getElementCount(); ++i) {
-    GMANPoint const& c = mesh.getElement(i).centre;
-    if (std::fabs(c.getX()) < 0.5f && std::fabs(c.getY()) < 0.5f) {
-      anyCentreInHole = true;
+    bool allCornersInHole = true;
+    for (std::size_t corner : mesh.getElement(i).corners) {
+      GMANPoint const& p = mesh.getNode(corner).position;
+      if (std::fabs(p.getX()) > kHoleHalfSide || std::fabs(p.getY()) > kHoleHalfSide) {
+        allCornersInHole = false;
+      }
+    }
+    if (allCornersInHole) {
+      anyElementWhollyInHole = true;
     }
   }
-  check(!anyCentreInHole, "holed square: no element's centre lies inside the hole");
+  check(!anyElementWhollyInHole, "holed square: no element lies wholly inside the hole");
 
   bool everyHoleNodeOutside = true;
   for (std::size_t i = 0; i < mesh.getNodeCount(); ++i) {
