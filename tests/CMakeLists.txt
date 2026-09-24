@@ -1547,6 +1547,18 @@ set_tests_properties(radiositymeshaccessors PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRadiositySolver against analytic answers: a closed sphere lit from
+# inside, form-factor closure in a cube, transmission through a translucent
+# square, two-sided squares, a sphere lit from outside beside a floor, and
+# determinism. Linked against gman_radiosity_objects alone.
+add_executable(gman_radiositysolver radiositysolver_test.cpp)
+target_link_libraries(gman_radiositysolver PRIVATE gman_radiosity_objects)
+
+add_test(NAME radiositysolver COMMAND gman_radiositysolver)
+set_tests_properties(radiositysolver PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Counts GMANRadiosityMesh::build's own resolution-search evaluations for
 # one primitive driven to kMaxDivisions, and bounds them well below a
 # one-step linear search's cubic cost.
