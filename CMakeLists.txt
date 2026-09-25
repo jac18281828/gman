@@ -117,7 +117,6 @@ add_library(gman_core SHARED
   libgman/gmanbody.cpp
   libgman/gmancapi.cpp
   libgman/gmanclipedge.cpp
-  libgman/gmancolor.cpp
   libgman/gmancolorsamples.cpp
   libgman/gmancontext.cpp
   libgman/gmandefaults.cpp

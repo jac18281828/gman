@@ -188,30 +188,3 @@ public:
 
 typedef GMANCombineBase<GMANColor, GMANAlpha> GMANCombine;
 typedef GMANCombineBase<GMANAlpha, GMANAlpha> GMANAlphaCombine;
-
-// 24 bit rgb color object
-class GMANColorRGB : public GMANColorBase<GMANByte> {
-private:
-  /*
-   * Weighting factors representing the sensitivity of the
-   * human eye to a given color.
-   *
-   */
-  static const RtFloat redWeight;
-  static const RtFloat blueWeight;
-  static const RtFloat greenWeight;
-
-public:
-  GMANColorRGB& operator=(const GMANColor& c) {
-    r = (GMANByte)(c.getRed() * (RtFloat)GMAN_BYTEMAX);
-    g = (GMANByte)(c.getGreen() * (RtFloat)GMAN_BYTEMAX);
-    b = (GMANByte)(c.getBlue() * (RtFloat)GMAN_BYTEMAX);
-
-    return *this;
-  };
-
-  // set color to 24bit grayscale
-  RtVoid setMono(const GMANColor& c) {
-    r = g = b = (GMANByte)(c.getRed() * redWeight + c.getGreen() * greenWeight + c.getBlue() * blueWeight);
-  };
-};

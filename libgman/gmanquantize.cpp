@@ -41,8 +41,8 @@ GMANQuantize::~GMANQuantize() {};
 
 namespace {
 
-// Shared by both doColor overloads so "warn once per process" holds no
-// matter which overload a caller reaches first.
+// "Warn once per process": every pixel GMANOutput::save quantizes reaches
+// doColor, so a full-frame render would otherwise log this once per pixel.
 bool quantizeWarned = false;
 
 void warnQuantizeUnimplemented() {
@@ -55,11 +55,6 @@ void warnQuantizeUnimplemented() {
 } // namespace
 
 GMANColor& GMANQuantize::doColor(GMANColor& col) {
-  warnQuantizeUnimplemented();
-  return col;
-}
-
-GMANColorRGB& GMANQuantize::doColor(GMANColorRGB& col) {
   warnQuantizeUnimplemented();
   return col;
 }

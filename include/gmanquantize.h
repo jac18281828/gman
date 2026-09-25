@@ -62,7 +62,4 @@ public:
 
   // inline color reduction
   GMANColor& doColor(GMANColor& col);
-
-  // inline color reduction
-  GMANColorRGB& doColor(GMANColorRGB& col);
 };
