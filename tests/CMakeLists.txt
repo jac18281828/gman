@@ -350,6 +350,13 @@ set_tests_properties(matrixscalarmultiply PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_subdivisiontag subdivisiontag_test.cpp)
+target_link_libraries(gman_subdivisiontag PRIVATE gman_core)
+add_test(NAME subdivisiontag COMMAND gman_subdivisiontag)
+set_tests_properties(subdivisiontag PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_spacechain spacechain_test.cpp)
 target_link_libraries(gman_spacechain PRIVATE gman_core gman_internal_headers)
 add_test(NAME spacechain COMMAND gman_spacechain)
