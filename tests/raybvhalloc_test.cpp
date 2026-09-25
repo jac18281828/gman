@@ -20,14 +20,14 @@
 
 /*
  * GMANRayBVH::nearestHit's own traversal, and GMANRayOccluder::transmission's
- * walk across it, make no heap allocation. A global operator new/delete
- * override counts every allocation this process makes (paramlist_test.cpp's
- * own technique); a zero delta across a batch of calls is evidence only once
- * the counter is shown to see the library at all, by first checking that
- * build() -- which does allocate -- moves it. AddressSanitizer replaces
- * allocation at a level this override cannot see, so the counting checks
- * skip (and print so) under it; the nearestHit and transmission calls
- * themselves still run either way.
+ * walk across it, make no heap allocation. raybvhallocator.cpp's global
+ * operator new/delete override counts every allocation this process makes
+ * (paramlist_test.cpp's own technique); a zero delta across a batch of calls
+ * is evidence only once the counter is shown to see the library at all, by
+ * first checking that build() -- which does allocate -- moves it.
+ * AddressSanitizer replaces allocation at a level this override cannot see,
+ * so the counting checks skip (and print so) under it; the nearestHit and
+ * transmission calls themselves still run either way.
  *
  * The fixture: 20 spheres at x = 0, 10, ..., 190 (alternating y = +2/-2,
  * radius 1), plus 3 more overlapping spheres isolated at x = -1000 (used
@@ -52,10 +52,7 @@
  * remaining interval.
  */
 
-#include <atomic>
 #include <cstdio>
-#include <cstdlib>
-#include <new>
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
@@ -79,41 +76,9 @@
 #define GMAN_ADDRESS_SANITIZED 0
 #endif
 
-namespace {
-
-// Counts every operator new and operator delete call this process makes,
-// so a batch of calls can be bracketed and its own delta checked against
-// 0: an allocation freed within the same batch still moves it.
-std::atomic<long> allocationCount{0};
-
-} // namespace
-
-void* operator new(std::size_t n) {
-  void* p = std::malloc(n != 0 ? n : 1);
-  if (p == nullptr) {
-    throw std::bad_alloc();
-  }
-  ++allocationCount;
-  return p;
-}
-
-void operator delete(void* p) noexcept {
-  if (p != nullptr) {
-    ++allocationCount;
-  }
-  std::free(p);
-}
-
-// GCC's -Wsized-deallocation requires the sized form once the unsized one
-// is replaced; both just forward, since this allocator counts calls, not
-// sizes.
-void operator delete(void* p, std::size_t) noexcept { ::operator delete(p); }
-
-void* operator new[](std::size_t n) { return ::operator new(n); }
-
-void operator delete[](void* p) noexcept { ::operator delete(p); }
-
-void operator delete[](void* p, std::size_t) noexcept { ::operator delete(p); }
+// Defined in raybvhallocator.cpp, alongside the replacement operator
+// new/delete it counts.
+extern long raybvhAllocationCount();
 
 namespace {
 
@@ -226,7 +191,7 @@ void testHitAndMissBatch(GMANRayBVH const& bvh) {
   bool missFound[kBatchCount];
   bool peakFound[kBatchCount];
 
-  long const before = allocationCount.load();
+  long const before = raybvhAllocationCount();
   for (int i = 0; i < kBatchCount; ++i) {
     GMANHit hit;
     GMANRayInterface const* prim = nullptr;
@@ -240,7 +205,7 @@ void testHitAndMissBatch(GMANRayBVH const& bvh) {
     GMANRayInterface const* peakPrim = nullptr;
     peakFound[i] = bvh.nearestHit(peakRay, peakHit, peakPrim);
   }
-  long const after = allocationCount.load();
+  long const after = raybvhAllocationCount();
 
   for (int i = 0; i < kBatchCount; ++i) {
     check(hitFound[i], "hit/miss batch: the overlap-cluster ray hits");
@@ -266,11 +231,11 @@ void testTransmissionBatch(GMANRayOccluder const& occluder) {
   // as testHitAndMissBatch above.
   GMANColor results[kBatchCount];
 
-  long const before = allocationCount.load();
+  long const before = raybvhAllocationCount();
   for (int i = 0; i < kBatchCount; ++i) {
     results[i] = occluder.transmission(light, P, towardLight, GMANVector(), kDistance, 0.0f);
   }
-  long const after = allocationCount.load();
+  long const after = raybvhAllocationCount();
 
   for (int i = 0; i < kBatchCount; ++i) {
     check(results[i].getRed() == expected.getRed() && results[i].getGreen() == expected.getGreen() &&
@@ -289,9 +254,9 @@ int main() {
   buildFixture(worldManager);
 
   GMANRayBVH bvh;
-  long const beforeBuild = allocationCount.load();
+  long const beforeBuild = raybvhAllocationCount();
   bvh.build(worldManager);
-  long const afterBuild = allocationCount.load();
+  long const afterBuild = raybvhAllocationCount();
   checkAllocationDelta(afterBuild > beforeBuild, "the counter sees build()'s own allocations");
 
   GMANRayOccluder occluder(bvh);

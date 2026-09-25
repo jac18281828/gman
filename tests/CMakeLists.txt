@@ -1467,9 +1467,11 @@ set_tests_properties(raybvhreentrant PROPERTIES
 
 # GMANRayBVH::nearestHit's own traversal, and GMANRayOccluder::transmission's
 # walk across it, make no heap allocation -- a global operator new/delete
-# override counts allocations across a batch of calls. See
-# tests/raybvhalloc_test.cpp.
-add_executable(gman_raybvhalloc raybvhalloc_test.cpp)
+# override counts allocations across a batch of calls. The override lives in
+# raybvhallocator.cpp, its own translation unit, so a compiler inlining a
+# call site back to malloc/free never sees both halves of a pairing in the
+# same file. See tests/raybvhalloc_test.cpp.
+add_executable(gman_raybvhalloc raybvhalloc_test.cpp raybvhallocator.cpp)
 target_link_libraries(gman_raybvhalloc PRIVATE gman_core)
 
 add_test(NAME raybvhalloc COMMAND gman_raybvhalloc)
