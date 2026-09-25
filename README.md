@@ -1,4 +1,4 @@
-# GMAN — the Realistic RenderMan Renderer
+# GMAN — Realistic RenderMan Renderer
 
 [![ci](https://github.com/jac18281828/gman/actions/workflows/ci.yml/badge.svg)](https://github.com/jac18281828/gman/actions/workflows/ci.yml)
 
