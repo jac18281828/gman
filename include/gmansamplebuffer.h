@@ -82,12 +82,12 @@ public:
   // Filters every pixel's covering samples through filterfunc and writes
   // the result to frameBuffer, alpha filtered by the same weights in the
   // same pass and published through frameBuffer->setAlpha. Colour is
-  // written as filtered, unclamped; alpha is clamped to [0, 1]. xwidth/
-  // ywidth are the filter's full support width in pixel units, symmetric
-  // about the pixel centre being resolved (the RISpec convention every
-  // kernel in gmanfilters.cpp already follows). Also records, per pixel,
-  // the minimum depth among that pixel's own samples -- retrieve with
-  // getResolvedDepth after this returns.
+  // written as filtered, unclamped; alpha is clamped to [0, 1].
+  // xwidth/ywidth are the filter's full support width in pixel units,
+  // symmetric about the pixel centre being resolved (the RISpec
+  // convention every kernel in gmanfilters.cpp already follows). Also
+  // records, per pixel, the minimum depth among that pixel's own
+  // samples -- retrieve with getResolvedDepth after this returns.
   RtVoid resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth);
 
   RtFloat getResolvedDepth(int x, int y) const;
