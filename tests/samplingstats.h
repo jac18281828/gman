@@ -26,22 +26,22 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <string>
 #include <vector>
 
 #include "check.h"
-#include "gmanvector.h"
 
-struct MeanStderr {
+struct GmanMeanStderr {
   double mean;
   double stderrOfMean;
 };
 
 // The sample mean of values and the standard error of that mean -- the
 // sample standard deviation over sqrt(n).
-inline MeanStderr meanStderr(std::vector<double> const& values) {
+inline GmanMeanStderr meanStderr(std::vector<double> const& values) {
   double sum = 0.0;
   for (double v : values) {
     sum += v;
@@ -61,9 +61,9 @@ inline MeanStderr meanStderr(std::vector<double> const& values) {
 // independence: the per-item product of standardized a and standardized
 // b has expectation 0 and unit variance when a and b are independent, so
 // its own mean/stderr is the correlation and its standard error.
-inline MeanStderr correlationStderr(std::vector<double> const& a, std::vector<double> const& b) {
-  MeanStderr const statA = meanStderr(a);
-  MeanStderr const statB = meanStderr(b);
+inline GmanMeanStderr correlationStderr(std::vector<double> const& a, std::vector<double> const& b) {
+  GmanMeanStderr const statA = meanStderr(a);
+  GmanMeanStderr const statB = meanStderr(b);
   double const stdA = statA.stderrOfMean * std::sqrt(static_cast<double>(a.size()));
   double const stdB = statB.stderrOfMean * std::sqrt(static_cast<double>(b.size()));
 
@@ -80,5 +80,3 @@ inline void checkNear(double value, double expected, double sigma, double floor,
   double const tolerance = std::max(5.0 * sigma, floor);
   check(std::fabs(value - expected) <= tolerance, what);
 }
-
-inline RtFloat vectorLength(GMANVector const& v) { return std::sqrt(v.dot(v)); }

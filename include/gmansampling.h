@@ -74,8 +74,8 @@ GMAN_EXPORT RtFloat unitFloat(std::uint32_t h);
 // at dimension: a hashed permutation of sampleCount jittered strata,
 // chosen by (seed, x, y, dimension), so the N values fill each of N equal
 // strata of [0, 1) exactly once. sampleIndex < sampleCount is a
-// precondition, checked by assert. A raw, unstratified draw stays
-// reachable as unitFloat(sampleHash(...)).
+// precondition, checked by assert; a sampleCount of 0 behaves as 1. A
+// raw, unstratified draw stays reachable as unitFloat(sampleHash(...)).
 GMAN_EXPORT RtFloat sample1D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleIndex, std::uint32_t sampleCount,
                              std::uint32_t dimension);
 
@@ -87,7 +87,7 @@ GMAN_EXPORT RtFloat sample1D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t
 // ceil(sampleCount / m); when sampleCount == m * n, the sampleCount
 // points fill every m*n grid cell once, every stratum of u1 once and
 // every stratum of u2 once. sampleIndex < sampleCount is a precondition,
-// checked by assert.
+// checked by assert; a sampleCount of 0 behaves as 1.
 GMAN_EXPORT Sample2D sample2D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleIndex,
                               std::uint32_t sampleCount, std::uint32_t dimension);
 

@@ -2315,8 +2315,9 @@ set_tests_properties(sampler PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# gman's direction warps, their pdfs and the tangent frame, each warp
-# driven by gman::sample2D.
+# gman's direction warps, their pdfs and the tangent frame. Domain
+# checks are driven by gman::sample2D; the statistics draw i.i.d.
+# samples so their standard error is the real one.
 add_executable(gman_samplewarp samplewarp_test.cpp)
 target_link_libraries(gman_samplewarp PRIVATE gman_core)
 

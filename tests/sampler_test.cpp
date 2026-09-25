@@ -110,14 +110,14 @@ void checkUnitFloatUniformity() {
   }
   check(inRange, "unitFloat(sampleHash(...)) over 2^16 draws stays in [0, 1)");
 
-  MeanStderr const mean = meanStderr(draws);
+  GmanMeanStderr const mean = meanStderr(draws);
   checkNear(mean.mean, 0.5, mean.stderrOfMean, 1e-4, "unitFloat draws: mean within 5sigma of 1/2");
 
   std::vector<double> sqDev(kCount);
   for (std::uint32_t i = 0; i < kCount; ++i) {
     sqDev[i] = (draws[i] - 0.5) * (draws[i] - 0.5);
   }
-  MeanStderr const variance = meanStderr(sqDev);
+  GmanMeanStderr const variance = meanStderr(sqDev);
   checkNear(variance.mean, 1.0 / 12.0, variance.stderrOfMean, 1e-4, "unitFloat draws: variance within 5sigma of 1/12");
 
   bool histOk = true;
@@ -158,7 +158,7 @@ void checkSampleHashPairIndependence() {
   constexpr std::uint32_t kCount = 1u << 16;
 
   auto checkPairCorrelation = [](std::vector<double> const& a, std::vector<double> const& b, std::string const& what) {
-    MeanStderr const stat = correlationStderr(a, b);
+    GmanMeanStderr const stat = correlationStderr(a, b);
     checkNear(stat.mean, 0.0, stat.stderrOfMean, 1e-3, what);
   };
 
@@ -199,7 +199,7 @@ void checkSample1DSample2DIndependence() {
     sample1DValues[i] = gman::sample1D(kSeed, x, 5, 0u, 16u, 3u);
     sample2DU1Values[i] = gman::sample2D(kSeed, x, 5, 0u, 16u, 3u).u1;
   }
-  MeanStderr const stat = correlationStderr(sample1DValues, sample2DU1Values);
+  GmanMeanStderr const stat = correlationStderr(sample1DValues, sample2DU1Values);
   checkNear(stat.mean, 0.0, stat.stderrOfMean, 1e-3, "sample1D vs sample2D's u1 are independent");
 }
 
@@ -467,13 +467,11 @@ void checkWithinPixelIndependence() {
   checkNear(crossFraction, 0.0, 0.0, 0.01, "sample2D(d)'s u1 column is not fixed by sample1D(d)'s stratum");
 }
 
-// Permutation reach: Kensler's permute() for length 16 has a fixed image
-// of at most 2^14 distinct permutations -- independently verified, its
-// 32-bit seed selects among at most 16384 sixteen-element permutations
-// regardless of how the seed is derived -- so 2^14 pixel-keyed draws hit
-// a birthday bound near 63% distinct, not 99%. fa2bc5a's T-function
-// reached only 128 of 16384 (0.78%); this floor sits far above that and
-// comfortably below the unreachable ceiling.
+// Permutation reach: Kensler's permute() for a 16-element stratum order
+// draws from at most 2^14 distinct permutations, whatever seed drives
+// it. 2^14 pixel-keyed draws against that many outcomes is a birthday
+// draw, expected near 1 - 1/e (about 63%) distinct; the check floors
+// well under that expectation.
 void checkPermutationReach() {
   constexpr std::uint32_t kN = 16u;
   constexpr int kPixels = 1 << 14;
@@ -508,11 +506,10 @@ void checkLargeSampleCounts() {
   }
 }
 
-// The reviewer's two inputs do not reach the rounding edge in this
-// implementation's arithmetic; these do, both landing on the unclamped
-// value 1.0000000000 at sampleCount 4294836225 -- large enough that
-// ulp(count)/2 covers the jitter's rounding window. Both stay below 1
-// with clampBelowOne.
+// clampBelowOne's window grows with sampleCount: at 4294836225,
+// ulp(count)/2 covers the jitter's rounding window, and these inputs
+// land exactly on the unclamped value 1.0f. Both stay below 1 with the
+// clamp.
 void checkClampBelowOne() {
   RtFloat const s1 = gman::sample1D(12345u, 191, 0, 50543188u, 4294836225u, 0u);
   check(s1 < 1.0f, "sample1D(12345, 191, 0, 50543188, 4294836225, 0) stays below 1");

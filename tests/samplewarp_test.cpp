@@ -62,6 +62,8 @@ RtFloat wrapAzimuth(RtFloat y, RtFloat x) {
 
 RtFloat azimuth(GMANVector const& d) { return wrapAzimuth(d.getY(), d.getX()); }
 
+RtFloat vectorLength(GMANVector const& v) { return std::sqrt(v.dot(v)); }
+
 // Domain: cosineHemisphere, uniformHemisphere and uniformSphere return
 // unit length and stay on their side of the frame; concentricDisk stays
 // inside the unit disk.
@@ -155,6 +157,33 @@ void checkJointHistogram(std::string const& name, Warp warp, RtFloat cosMin, RtF
   check(ok, name + ": 8x8 (cosTheta, phi) histogram matches the pdf's analytic mass within 5sigma");
 }
 
+// Azimuth alone: phi's marginal histogram is uniform on [0, 2*pi), a
+// coarser check than the joint one above and the one that bins an
+// azimuth-only distortion, invisible to a cosTheta-marginalized check.
+template <class Warp>
+void checkMarginalAzimuthHistogram(std::string const& name, Warp warp, std::uint32_t dimU1, std::uint32_t dimU2) {
+  constexpr std::uint32_t kN = 1u << 16;
+  int hist[kBins] = {};
+
+  for (std::uint32_t s = 0; s < kN; ++s) {
+    gman::Sample2D const u = independentSample(s, dimU1, dimU2);
+    GMANVector const d = warp(u.u1, u.u2);
+    RtFloat const phi = azimuth(d);
+    int phiBin = static_cast<int>(phi / (2.0f * kPi) * kBins);
+    phiBin = std::min(std::max(phiBin, 0), kBins - 1);
+    hist[phiBin]++;
+  }
+
+  bool ok = true;
+  double const p = 1.0 / kBins;
+  double const sigma = std::sqrt(p * (1.0 - p) / static_cast<double>(kN));
+  for (int i = 0; i < kBins; ++i) {
+    double const fraction = static_cast<double>(hist[i]) / static_cast<double>(kN);
+    ok = ok && std::fabs(fraction - p) <= std::max(5.0 * sigma, 1e-4);
+  }
+  check(ok, name + ": azimuth histogram is uniform within 5sigma");
+}
+
 void checkConcentricDiskHistogram() {
   constexpr std::uint32_t kN = 1u << 16;
   int hist[kBins][kBins] = {};
@@ -205,13 +234,13 @@ void checkMonteCarloIdentities() {
     coneTerms[s] = static_cast<double>(co.getZ()) / static_cast<double>(gman::uniformConePdf(kConeC));
   }
 
-  MeanStderr const hemi = meanStderr(hemiTerms);
+  GmanMeanStderr const hemi = meanStderr(hemiTerms);
   checkNear(hemi.mean, kPiD, hemi.stderrOfMean, 1e-3, "mean of cosTheta/pdf over the uniform hemisphere is pi");
 
-  MeanStderr const sphere = meanStderr(sphereTerms);
+  GmanMeanStderr const sphere = meanStderr(sphereTerms);
   checkNear(sphere.mean, kPiD, sphere.stderrOfMean, 1e-3, "mean of max(0,cosTheta)/pdf over the sphere is pi");
 
-  MeanStderr const cone = meanStderr(coneTerms);
+  GmanMeanStderr const cone = meanStderr(coneTerms);
   double const expectedCone = kPiD * (1.0 - static_cast<double>(kConeC) * static_cast<double>(kConeC));
   checkNear(cone.mean, expectedCone, cone.stderrOfMean, 1e-3,
             "mean of cosTheta/pdf over the cone at cosThetaMax=0.5 is pi(1-c^2)");
@@ -289,6 +318,10 @@ int main() {
       "uniformCone(0.5)", [](RtFloat u1, RtFloat u2) { return gman::uniformCone(u1, u2, 0.5f); }, 0.5f, 1.0f,
       [](double a, double b) { return (b - a) / 0.5; }, 7u, 8u);
   checkConcentricDiskHistogram();
+
+  checkMarginalAzimuthHistogram("cosineHemisphere", gman::cosineHemisphere, 32u, 33u);
+  checkMarginalAzimuthHistogram("uniformHemisphere", gman::uniformHemisphere, 34u, 35u);
+  checkMarginalAzimuthHistogram("uniformSphere", gman::uniformSphere, 36u, 37u);
 
   checkMonteCarloIdentities();
   checkPdfValues();

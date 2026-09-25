@@ -37,9 +37,10 @@ namespace {
 // not hash to 0 (lowbias32(0) == 0).
 constexpr std::uint32_t kChainInit = 0x9e3779b9u;
 
-// Folded into structuralHash's initial state only: sampleHash never mixes
-// this in, so no raw draw can reproduce a permutation seed and a
-// structural hash can never equal a sampleHash draw.
+// Folded into structuralHash's initial state only: sampleHash never
+// mixes this in, so no dimension a renderer draws lets a sampleHash
+// draw reproduce a permutation seed. Reproducing one needs a dimension
+// equal to one of the salts below, not a value any renderer passes.
 constexpr std::uint32_t kStructuralDomain = 0x85ebca6bu;
 
 // Salts separate the purposes sharing one hash chain, so no two draws
