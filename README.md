@@ -140,9 +140,13 @@ module. Each `Surface` call builds its own instance, whose constructor
 resolves its parameters from the plugin's `GMANParameterList`, so
 `computeCi` and `computeOi` are `const`, read the `GMANSurfaceEnv` they are
 given, and return a `GMANColor` by value. A shader may also override
-`albedo(GMANSurfaceEnv const&) const` to report its diffuse reflectance,
-defaulting to `Cs` clamped to [0, 1]. `shaders/gmanmatte.cpp` is the
-model: it exports itself through three `extern "C"` entry points:
+`bsdf(GMANSurfaceEnv const&) const` to return the `gman::BSDF` the path
+tracer samples, defaulting to a Lambert lobe of `Cs`; a `bsdf` override
+must not call the base `albedo`, since the two would recurse. A shader may
+override `albedo(GMANSurfaceEnv const&) const` to report its diffuse
+reflectance, defaulting to its BSDF's `rhoD()` clamped to [0, 1].
+`shaders/gmanmatte.cpp` is the model: it exports itself through three
+`extern "C"` entry points:
 
 ```cpp
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

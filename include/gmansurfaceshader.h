@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 
+#include "gmanbsdf.h"
 #include "gmanlog.h"
 #include "gmanshader.h"
 #include "gmanshaderenvironment.h"
@@ -73,6 +74,12 @@ public:
 
   // The diffuse reflectance, specular and Os excluded, each channel in
   // [0, 1]. Answered per hit, since a texture can vary it across one
-  // surface. The default reports Cs, clamped to [0, 1].
+  // surface. The default reports bsdf(se).rhoD(), each channel clamped to
+  // [0, 1], a NaN channel to 0.
   virtual GMANColor albedo(GMANSurfaceEnv const& se) const;
+
+  // How the surface scatters light at this hit, the closure the path
+  // tracer samples, built at se.N. The default holds one Lambert lobe of
+  // Cs. An override must not call the base albedo, which calls bsdf.
+  virtual gman::BSDF bsdf(GMANSurfaceEnv const& se) const;
 };

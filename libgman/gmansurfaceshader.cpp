@@ -25,6 +25,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanbsdf.h"
 #include "gmanshader.h"
 #include "gmansurfaceshader.h"
 #include "ri.h"
@@ -59,5 +60,12 @@ RtFloat clampToUnit(RtFloat value) { return GMANMIN(GMANMAX(value, (RtFloat)0.0)
 } // namespace
 
 GMANColor GMANSurfaceShader::albedo(GMANSurfaceEnv const& se) const {
-  return GMANColor(clampToUnit(se.Cs.getRed()), clampToUnit(se.Cs.getGreen()), clampToUnit(se.Cs.getBlue()));
+  GMANColor const rho = bsdf(se).rhoD();
+  return GMANColor(clampToUnit(rho.getRed()), clampToUnit(rho.getGreen()), clampToUnit(rho.getBlue()));
+}
+
+gman::BSDF GMANSurfaceShader::bsdf(GMANSurfaceEnv const& se) const {
+  gman::BSDF closure(se.N);
+  closure.addLambert(se.Cs);
+  return closure;
 }

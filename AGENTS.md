@@ -94,8 +94,11 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   define `GMANGetLoadableInfo`, `GMANLoadShader` and `GMANDestroyShader` at
   global scope as `extern "C" GMAN_EXPORT`, build with `gman_add_plugin`.
   See `shaders/gmanmatte.cpp`. A shader may override
-  `albedo(GMANSurfaceEnv const&) const` to report its diffuse reflectance,
-  defaulting to `Cs` clamped to [0, 1].
+  `bsdf(GMANSurfaceEnv const&) const` to return the `gman::BSDF` the path
+  tracer samples, defaulting to a Lambert lobe of `Cs`; a `bsdf` override
+  must not call the base `albedo`, since the two would recurse. A shader
+  may override `albedo(GMANSurfaceEnv const&) const` to report its diffuse
+  reflectance, defaulting to its BSDF's `rhoD()` clamped to [0, 1].
 
 ## Completion Gates
 

@@ -125,8 +125,8 @@ void checkBaseDefault() {
         "A: base default albedo maps a NaN Cs channel to exactly 0");
 }
 
-// matte, the one override this pins for NaN: a NaN Cs channel maps to
-// exactly 0, matching the base default.
+// matte, whose albedo comes from its bsdf override: a NaN Cs channel maps
+// to exactly 0, matching the base default.
 void checkMatteNaN() {
   RtFloat const nan = std::nanf("");
   GMANColor const cs(nan, (RtFloat)0.5, (RtFloat)0.4);

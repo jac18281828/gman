@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanbsdf.h"
 #include "gmanloadable.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
@@ -54,7 +55,7 @@ public:
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const override;
   GMANColor computeOi(GMANSurfaceEnv const& se) const override;
-  GMANColor albedo(GMANSurfaceEnv const& se) const override;
+  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -81,8 +82,12 @@ GMANColor matte::computeCi(GMANSurfaceEnv const& se) const {
 
 GMANColor matte::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
-GMANColor matte::albedo(GMANSurfaceEnv const& se) const {
-  return clampAlbedo(GMANColor(kd * se.Cs.getRed(), kd * se.Cs.getGreen(), kd * se.Cs.getBlue()));
+// One Lambert lobe of Kd * Cs. Ka and Os stay out: ambient light has no
+// place in a closure, and Os attenuates visibility, not scattering.
+gman::BSDF matte::bsdf(GMANSurfaceEnv const& se) const {
+  gman::BSDF closure(se.N);
+  closure.addLambert(GMANColor(kd * se.Cs.getRed(), kd * se.Cs.getGreen(), kd * se.Cs.getBlue()));
+  return closure;
 }
 
 } // namespace gmanshader

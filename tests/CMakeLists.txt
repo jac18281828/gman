@@ -2450,6 +2450,19 @@ set_tests_properties(bsdf PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
+# rhoD, and matte's Lambert lobe of Kd * Cs, with matte and plastic loaded
+# through GMANAttributes::setSurface.
+add_executable(gman_shaderbsdf shaderbsdf_test.cpp)
+target_link_libraries(gman_shaderbsdf PRIVATE gman_core)
+add_dependencies(gman_shaderbsdf gman_matte gman_plastic)
+
+add_test(NAME shaderbsdf COMMAND gman_shaderbsdf)
+set_tests_properties(shaderbsdf PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, and a second, unrelated CMake project finds
