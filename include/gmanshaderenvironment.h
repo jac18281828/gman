@@ -45,9 +45,8 @@
  * The interface a surface shader is written against -- and the interface
  * a future shading-language VM would target, since a C++ shader and an
  * SL-compiled one both need the same inputs and the same builtins. Every
- * field is camera space (see AGENTS.md's "Coordinate spaces"); every
- * shadeop below forwards to the SL runtime in gmannoise.cpp/gmanslapi.cpp,
- * which existed, worked and had no caller before this phase.
+ * field is camera space; every shadeop below forwards to the SL runtime
+ * in gmannoise.cpp/gmanslapi.cpp.
  */
 struct GMAN_EXPORT GMANSurfaceEnv {
   GMANColor Cs;    // surface color
@@ -155,9 +154,7 @@ struct GMAN_EXPORT GMANSurfaceEnv {
 
   // ---- gmanslapi.cpp: already free functions, forwarded here so a
   // shader reaches every builtin the same way, through env. Named
-  // GMANReflect/GMANRefract/GMANFresnel/GMANFaceForward in gmanslapi.cpp;
-  // gmanslapi.h previously declared unprefixed lowercase forms with no
-  // definition anywhere -- fixed alongside this, see gmanslapi.h. ----
+  // GMANReflect/GMANRefract/GMANFresnel/GMANFaceForward in gmanslapi.cpp. ----
   GMANVector reflect(const GMANVector& i, const GMANVector& n) const { return GMANReflect(i, n); }
   GMANVector refract(const GMANVector& i, const GMANVector& n, RtFloat eta) const { return GMANRefract(i, n, eta); }
   RtVoid fresnel(const GMANVector& i, const GMANVector& n, RtFloat eta, RtFloat& kr, RtFloat& kt) const {

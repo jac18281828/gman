@@ -126,7 +126,7 @@ public:
     RI_UNKNOWN_REQUEST,
 
     /* RISpec 3.2 requests GMAN's original 66 never covered. Parsed and
-     * ignored -- see AGENTS.md's RIB support table. */
+     * ignored. */
     RI_CURVES,
     RI_BLOBBY,
     RI_SUBDIVISION_MESH,

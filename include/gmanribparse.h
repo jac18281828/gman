@@ -268,9 +268,9 @@ private:
   RtVoid parseImager(RtVoid);
   RtVoid parseIlluminate(RtVoid);
 
-  // RISpec 3.2 requests parsed and ignored -- see AGENTS.md's RIB support
-  // table. None of these renders; each still has to consume its own
-  // arguments correctly, or every request after it desyncs.
+  // RISpec 3.2 requests parsed and ignored. None of these renders; each
+  // still has to consume its own arguments correctly, or every request
+  // after it desyncs.
   RtVoid parseCurves(RtVoid);
   RtVoid parseBlobby(RtVoid);
   RtVoid parseSubdivisionMesh(RtVoid);

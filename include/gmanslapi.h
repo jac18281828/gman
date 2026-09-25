@@ -175,13 +175,8 @@ template <class T> T GMANLinearSpline(RtFloat value, RtInt nvals, T fvals[]) {
   return (fvals[ptr + 1] * (1 - value) + fvals[ptr + 2] * value);
 }
 
-// Declared to match gmanslapi.cpp's actual names. This header previously
-// declared these five (faceforward, reflect, refract, the two fresnel
-// overloads) lowercase and unprefixed -- SL-spec spelling -- but
-// gmanslapi.cpp has only ever defined GMANFaceForward, GMANReflect,
-// GMANRefract and GMANFresnel; the lowercase forms had no definition
-// anywhere in the tree and would fail to link the moment anything called
-// them.
+// The shading-language faceforward, reflect, refract and fresnel carry the
+// GMAN prefix, matching their definitions in gmanslapi.cpp.
 GMAN_EXPORT GMANVector GMANFaceForward(const GMANVector& n, const GMANVector& i, const GMANVector& nr);
 GMAN_EXPORT GMANVector GMANReflect(const GMANVector& i, const GMANVector& n);
 GMAN_EXPORT GMANVector GMANRefract(const GMANVector& i, const GMANVector& n, RtFloat eta);

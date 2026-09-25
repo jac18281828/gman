@@ -41,9 +41,9 @@
 /*
  * A built-in light: ambientlight, distantlight, pointlight or spotlight.
  * Position and direction are captured in camera space at RiLightSourceV
- * time (the CTM then in effect), per AGENTS.md's "Coordinate spaces" --
- * shading happens entirely in camera space, so a light declared in any
- * other space would make every N.L wrong.
+ * time (the CTM then in effect): shading happens entirely in camera
+ * space, so a light declared in any other space would make every N.L
+ * wrong.
  */
 enum GMANLightType { GMAN_LIGHT_AMBIENT, GMAN_LIGHT_DISTANT, GMAN_LIGHT_POINT, GMAN_LIGHT_SPOT };
 

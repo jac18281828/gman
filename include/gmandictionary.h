@@ -89,8 +89,7 @@ public:
   GMANTokenEntry::TokenClass getClass(GMANTokenId id);
   GMANTokenEntry::TokenType getType(GMANTokenId id);
   // facevarying defaults to 1 -- only PointsPolygons/PointsGeneralPolygons
-  // meshes have a real facevarying count, and neither is wired to a
-  // renderer yet (Phase 2 scope).
+  // meshes have a real facevarying count.
   RtInt allocSize(GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying = 1);
   RtInt getTypeSize(GMANTokenEntry::TokenType);
   RtInt getQuantity(GMANTokenId id);
