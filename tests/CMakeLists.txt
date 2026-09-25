@@ -684,7 +684,6 @@ target_link_libraries(gman_pointscount PRIVATE gman_core)
 add_test(NAME pointscount
   COMMAND gman_pointscount "${CMAKE_CURRENT_SOURCE_DIR}/rib")
 set_tests_properties(pointscount PROPERTIES
-  WILL_FAIL TRUE
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)

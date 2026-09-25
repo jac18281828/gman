@@ -1214,10 +1214,24 @@ RtVoid GMANRIBParse::parsePoints(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
+  // "P" is a POINT array, 3 floats per point; npoints is derived from its
+  // element count. pendingParamValues records that count per value pointer
+  // in parse order, not sorted by key like tokens/parms, so "P"'s entry is
+  // found by matching parms[i] rather than by index. No "P" at all, or a
+  // count not a multiple of 3, is malformed: leave npoints at 0, the same
+  // soft failure this codebase gives other malformed input.
   int npoints = 0;
   for (int i = 0; i < n; i++) {
     if (!strcmp(tokens[i], "P")) {
-      // FIXME: Are arrays NULL terminated?  Can use that for length
+      for (const auto& pending : pendingParamValues) {
+        if (pending.value == parms[i]) {
+          if (pending.count % 3 == 0) {
+            npoints = pending.count / 3;
+          }
+          break;
+        }
+      }
+      break;
     }
   }
 
