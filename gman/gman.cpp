@@ -188,7 +188,6 @@ int main(int argc, char* argv[]) {
   return rc;
 }
 
-/* Are you freaking kidding? */
 RtVoid usage(char* myname) {
 
   std::cerr << myname << ": -[hdiweql] [-r renderer] [--version] files ..." << std::endl;
