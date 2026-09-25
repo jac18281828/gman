@@ -163,15 +163,11 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
         alphaSum /= weightSum;
       }
 
-      // Linear interpolation and filter convolution can both overshoot
-      // [0,1] (a negative-lobe kernel such as sinc, or accumulated float
-      // error); this bounds each resolved pixel's colour and alpha to
-      // [0, 1]. Output narrowing clamps on its own too, at the end of the
-      // pipeline.
-      GMANColor clamped(GMANClamp<GMANColorSample>(sum.getRed(), 0.0, 1.0),
-                        GMANClamp<GMANColorSample>(sum.getGreen(), 0.0, 1.0),
-                        GMANClamp<GMANColorSample>(sum.getBlue(), 0.0, 1.0));
-      frameBuffer->setPixel(px, py, clamped);
+      // Alpha is a coverage fraction, clamped to [0, 1]. Colour passes
+      // unclamped in either direction: above 1 from a bright sample, and
+      // below 0 from a negative-lobe kernel such as sinc. The output
+      // pipeline clamps colour after Exposure.
+      frameBuffer->setPixel(px, py, sum);
 
       GMANAlpha clampedAlpha(GMANClamp<GMANColorSample>(alphaSum.getRed(), 0.0, 1.0),
                              GMANClamp<GMANColorSample>(alphaSum.getGreen(), 0.0, 1.0),

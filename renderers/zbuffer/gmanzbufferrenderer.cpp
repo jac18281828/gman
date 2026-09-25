@@ -382,10 +382,11 @@ void GMANZBufferRenderer::drawEdgeList(void) {
       // whole pixel: values straddling an integer boundary from just
       // below to just above (e.g. 1.999999 and 2.000001) round to
       // different columns but leave x_dist near zero, and dividing by
-      // it below produces a huge colour step per sample, not a narrowing
-      // overflow -- the clamp below still bounds it. sx/ex already fix
-      // the number of pixels this scanline covers, so a span narrower
-      // than one pixel is clamped to one.
+      // it below produces a huge colour step per sample. Flooring
+      // x_dist at 1 bounds each colour step by the endpoints'
+      // difference. sx/ex already fix the number of pixels this
+      // scanline covers, so a span narrower than one pixel is clamped
+      // to one.
       x_dist = se->x - ss->x;
       if (x_dist < 1.0)
         x_dist = 1.0;
@@ -400,21 +401,18 @@ void GMANZBufferRenderer::drawEdgeList(void) {
 
         if (x >= 0 && x < sampleWidth) { // FIXME: poly should already be clipped?
 
-          // Linear interpolation can overshoot [0,1] by a small amount at
-          // the far end of a span (accumulated float error over many
-          // += dc steps); this bounds each interpolated sample's colour
-          // and alpha to [0, 1] before the depth test and filter. Output
-          // narrowing clamps on its own too, at the end of the pipeline.
-          GMANColor clamped(GMANClamp<GMANColorSample>(ic.getRed(), 0.0, 1.0),
-                            GMANClamp<GMANColorSample>(ic.getGreen(), 0.0, 1.0),
-                            GMANClamp<GMANColorSample>(ic.getBlue(), 0.0, 1.0));
+          // Alpha is a coverage fraction, clamped to [0, 1]. Colour
+          // passes unclamped in either direction: above 1 from a bright
+          // shader, and past either bound where the span extrapolates
+          // beyond its far end. The output pipeline clamps colour after
+          // Exposure.
           GMANAlpha clampedAlpha(GMANClamp<GMANColorSample>(ia.getRed(), 0.0, 1.0),
                                  GMANClamp<GMANColorSample>(ia.getGreen(), 0.0, 1.0),
                                  GMANClamp<GMANColorSample>(ia.getBlue(), 0.0, 1.0));
           // The real per-sample visibility test: closer samples overwrite,
           // farther ones are dropped, exactly as the old per-pixel zbuffer
           // test did -- just at sample, not pixel, resolution.
-          sampleBuffer->zTestAndSet(x, y, iz, clamped, clampedAlpha);
+          sampleBuffer->zTestAndSet(x, y, iz, ic, clampedAlpha);
         }
 
         // update pixel info

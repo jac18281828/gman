@@ -1084,6 +1084,56 @@ set_tests_properties(samplebuffer PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# GMANSampleBuffer::resolve writes colour unclamped, alpha clamped to
+# [0, 1]: a single above-1 sample passes through bit-equal, and a step
+# edge under a negative-lobe kernel both undershoots and overshoots in
+# colour while alpha stays in range. Drives GMANSampleBuffer and
+# GMANFrameBuffer directly, no gman binary.
+add_executable(gman_resolvehdr resolvehdr_test.cpp)
+target_link_libraries(gman_resolvehdr PRIVATE gman_core)
+
+add_test(NAME resolvehdr COMMAND gman_resolvehdr)
+set_tests_properties(resolvehdr PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# A flat, fully-covered matte plane samples 1.6 -- above 1 -- so Exposure
+# below 1 must recover it rather than dim a clipped 1. Both renderers
+# write the same TIFF names, so each gets its own WORKING_DIRECTORY.
+add_executable(gman_exposurerecovery exposurerecovery_test.cpp)
+target_link_libraries(gman_exposurerecovery PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_exposurerecovery gman_zbuffer gman_matte)
+
+set(GMAN_EXPOSURERECOVERY_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/exposurerecovery-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_EXPOSURERECOVERY_ZBUFFER_WORKDIR}")
+
+add_test(NAME exposurerecovery_zbuffer
+  COMMAND gman_exposurerecovery $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                gmanzbuffer
+  WORKING_DIRECTORY "${GMAN_EXPOSURERECOVERY_ZBUFFER_WORKDIR}")
+set_tests_properties(exposurerecovery_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_exposurerecovery gman_raytracer)
+
+  set(GMAN_EXPOSURERECOVERY_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/exposurerecovery-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_EXPOSURERECOVERY_RAYTRACER_WORKDIR}")
+
+  add_test(NAME exposurerecovery_raytracer
+    COMMAND gman_exposurerecovery $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                  gmanraytracer
+    WORKING_DIRECTORY "${GMAN_EXPOSURERECOVERY_RAYTRACER_WORKDIR}")
+  set_tests_properties(exposurerecovery_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
 # gman::sampleCentre: the raster centre of one sample, and the deleted
 # (T, U, V) overload that keeps a non-int argument from truncating
 # silently, pinned at compile time via a requires-expression.
