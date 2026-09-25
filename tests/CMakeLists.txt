@@ -1375,6 +1375,19 @@ set_tests_properties(imagerownership PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANSurfaceEnv::ambient() adds indirect when it is bound, directly and
+# through gman::shade against a matte appearance loaded the same factory
+# way. See tests/indirectambient_test.cpp.
+add_executable(gman_indirectambient indirectambient_test.cpp)
+target_link_libraries(gman_indirectambient PRIVATE gman_core)
+add_dependencies(gman_indirectambient gman_matte)
+
+add_test(NAME indirectambient COMMAND gman_indirectambient)
+set_tests_properties(indirectambient PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # No shader holds state below file scope: no static above file scope, no
 # mutable, anywhere under shaders/. See tests/shaderstatics_test.cpp.
 add_executable(gman_shaderstatics shaderstatics_test.cpp)

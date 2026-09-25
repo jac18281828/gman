@@ -112,9 +112,12 @@ struct GMAN_EXPORT Shading {
 // caller that omits it leaves them reading gman::textureCache()'s single
 // process cache. A shade re-entered through a Tracer forwards its
 // caller's own textureCache, so a reflected or refracted ray keeps
-// decoding into the same worker's cache.
+// decoding into the same worker's cache. indirect is the host's own
+// answer for indirect light at this point (GMANSurfaceEnv::ambient()
+// adds it when set); a caller that omits it leaves ambient() reading the
+// ambient lights alone.
 GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
                           Occluder const* occluder = nullptr, Tracer const* tracer = nullptr,
-                          TextureCache* textureCache = nullptr);
+                          TextureCache* textureCache = nullptr, GMANColor const* indirect = nullptr);
 
 } // namespace gman
