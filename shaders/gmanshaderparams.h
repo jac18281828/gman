@@ -75,7 +75,8 @@ inline std::string getStringParam(GMANParameterList const& pl, RtToken token, co
 }
 
 // Clamps an albedo() answer's channels to [0, 1], the range every override
-// answers in.
+// answers in. GMANMAX(NaN, 0) takes its right operand, since a NaN
+// comparison is always false, so a NaN channel maps to exactly 0.
 inline GMANColor clampAlbedo(GMANColor const& c) {
   auto const clampChannel = [](RtFloat v) { return GMANMIN(GMANMAX(v, (RtFloat)0.0), (RtFloat)1.0); };
   return GMANColor(clampChannel(c.getRed()), clampChannel(c.getGreen()), clampChannel(c.getBlue()));

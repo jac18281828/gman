@@ -115,6 +115,26 @@ void checkBaseDefault() {
   GMANSurfaceEnv seOutOfRange;
   seOutOfRange.Cs = csOutOfRange;
   check(colorExactly(shader.albedo(seOutOfRange), wantClamped), "A: base default albedo clamps Cs to [0, 1]");
+
+  RtFloat const nan = std::nanf("");
+  GMANColor const csWithNaN(nan, (RtFloat)0.4, (RtFloat)0.3);
+  GMANColor const wantNaNMapped((RtFloat)0.0, (RtFloat)0.4, (RtFloat)0.3);
+  GMANSurfaceEnv seWithNaN;
+  seWithNaN.Cs = csWithNaN;
+  check(colorExactly(shader.albedo(seWithNaN), wantNaNMapped),
+        "A: base default albedo maps a NaN Cs channel to exactly 0");
+}
+
+// matte, the one override this pins for NaN: a NaN Cs channel maps to
+// exactly 0, matching the base default.
+void checkMatteNaN() {
+  RtFloat const nan = std::nanf("");
+  GMANColor const cs(nan, (RtFloat)0.5, (RtFloat)0.4);
+  GMANColor const want((RtFloat)0.0, (RtFloat)0.5, (RtFloat)0.4);
+  GMANSurfaceEnv se;
+  se.Cs = cs;
+  check(colorExactly(loadAlbedo("libmatte.so", GMANParameterList(), se), want),
+        "matte: albedo maps a NaN Cs channel to exactly 0");
 }
 
 // Shared between matte and plastic: a test Kd other than the shader's own
@@ -284,6 +304,7 @@ int main() {
   checkBaseDefault();
 
   checkMatteOrPlastic("libmatte.so", "matte", (RtFloat)0.6);
+  checkMatteNaN();
   checkMatteOrPlastic("libplastic.so", "plastic", (RtFloat)0.7);
   checkPlasticKsExcluded();
 
