@@ -88,7 +88,7 @@ GMANPoint GMANRotate(const GMANPoint& q, RtFloat angle, const GMANPoint& p1, con
   GMANVector a(p1, p2);
   m.rot(angle, a.getX(), a.getY(), a.getZ());
   GMANVector b(p1, q);
-  return p1 + b * m;
+  return p1 + gman::transformDirection(m, b);
 }
 
 GMANVector GMANFaceForward(const GMANVector& n, const GMANVector& i, const GMANVector& nr) {

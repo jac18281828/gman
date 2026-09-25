@@ -127,10 +127,5 @@ public:
   // transform THIS point using matrix
   GMANPoint& operator*=(const GMANMatrix4& m);
 
-  // transform point using matrix and return it
-  // do not modify this point
-
-  GMANPoint operator*(const GMANMatrix4& m) const;
-
   const RtPoint& get(RtVoid) const { return c; }
 };

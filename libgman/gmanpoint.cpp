@@ -43,14 +43,6 @@ bool GMANPoint::operator!=(const GMANPoint& v) const { return !(*this == v); }
 bool GMANPoint::operator<(const GMANPoint& p) const { return ((c[X] < p.c[X]) && (c[Y] < p.c[Y]) && (c[Z] < p.c[Z])); }
 
 //-------------------------------------------------------------
-GMANPoint GMANPoint::operator*(const GMANMatrix4& m) const {
-  GMANPoint res(*this);
-
-  res *= m;
-
-  return res;
-}
-
 GMANPoint& GMANPoint::operator*=(const GMANMatrix4& m) {
 
   // transform the point

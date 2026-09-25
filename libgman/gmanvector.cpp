@@ -104,14 +104,6 @@ GMANVector GMANVector::cross(const GMANVector& v) const {
 }
 
 /* operators */
-GMANVector GMANVector::operator*(const GMANMatrix4& m) const {
-  GMANVector res(*this);
-
-  res *= m;
-
-  return res;
-}
-
 GMANVector& GMANVector::operator*=(const GMANMatrix4& m) {
 
   // transform the point

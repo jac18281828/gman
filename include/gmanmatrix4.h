@@ -86,9 +86,7 @@ namespace gman {
 
 // A ray tracer's own transform of a point, a direction or a normal, needed
 // wherever a ray moves between camera and object space. m applies as a
-// row vector, p * m (AGENTS.md's CTM convention), the opposite of
-// GMANPoint::operator*'s m * p; a caller reaching for that operator here
-// instead would silently transform by the wrong side of the matrix.
+// row vector, p * m (AGENTS.md's CTM convention).
 
 // Delegates to GMANMatrix4::p3m. Perspective-divides when m's homogeneous
 // w is neither 0 nor 1.

@@ -172,7 +172,6 @@ public:
     return *this;
   }
 
-  GMANVector operator*(const GMANMatrix4& m) const;
   GMANVector& operator*=(const GMANMatrix4& m);
 
   bool operator<(const GMANVector& v) const {
