@@ -79,8 +79,9 @@
 
 namespace {
 
-// Counts every operator new call this process makes, so a batch of calls
-// can be bracketed and its own delta checked against 0.
+// Counts every operator new and operator delete call this process makes,
+// so a batch of calls can be bracketed and its own delta checked against
+// 0: an allocation freed within the same batch still moves it.
 std::atomic<long> allocationCount{0};
 
 } // namespace
@@ -94,7 +95,12 @@ void* operator new(std::size_t n) {
   return p;
 }
 
-void operator delete(void* p) noexcept { std::free(p); }
+void operator delete(void* p) noexcept {
+  if (p != nullptr) {
+    ++allocationCount;
+  }
+  std::free(p);
+}
 
 // GCC's -Wsized-deallocation requires the sized form once the unsized one
 // is replaced; both just forward, since this allocator counts calls, not
@@ -123,6 +129,9 @@ constexpr RtFloat kOverlapZStart = 10.0f;
 // The stated peak: see this file's own leading comment for how the fixture
 // forces it.
 constexpr std::size_t kStatedPeakStack = 4;
+
+// Calls per counted region, in each of the batch checks below.
+constexpr int kBatchCount = 3;
 
 GMANTransform makeTransform(GMANMatrix4 matrix) {
   GMANOneMatrix storage(matrix);
@@ -181,6 +190,18 @@ GMANRay overlapHitRay() { return GMANRay(GMANPoint(kOverlapX, 0.0, -10.0), GMANV
 // A ray that clears every primitive in the fixture.
 GMANRay clearMissRay() { return GMANRay(GMANPoint(0.0, 1000.0, 0.0), GMANVector(1.0, 0.0, 0.0)); }
 
+// Applies `holds` via check(), or prints a skip line under ASan, where this
+// override never sees the library's own allocations. `holds` is computed
+// by the caller either way, so the counts it depends on are never unused.
+void checkAllocationDelta(bool holds, char const* message) {
+#if GMAN_ADDRESS_SANITIZED
+  (void)holds;
+  std::printf("skip: %s (ASan-built)\n", message);
+#else
+  check(holds, message);
+#endif
+}
+
 void testPeakStack(GMANRayBVH const& bvh) {
   GMANRay const ray = peakStackRay();
   GMANHit hit;
@@ -199,7 +220,6 @@ void testHitAndMissBatch(GMANRayBVH const& bvh) {
   // The counted region holds only the library calls: check()'s own
   // std::string argument can allocate, so building and checking the
   // messages happens outside it, from the results captured here.
-  constexpr int kBatchCount = 3;
   bool hitFound[kBatchCount];
   bool missFound[kBatchCount];
   bool peakFound[kBatchCount];
@@ -226,11 +246,7 @@ void testHitAndMissBatch(GMANRayBVH const& bvh) {
     check(!peakFound[i], "hit/miss batch: the peak-stack ray misses");
   }
 
-#if GMAN_ADDRESS_SANITIZED
-  std::printf("skip: a batch of nearestHit calls (hits and misses) makes no heap allocation (ASan-built)\n");
-#else
-  check(after == before, "a batch of nearestHit calls (hits and misses) makes no heap allocation");
-#endif
+  checkAllocationDelta(after == before, "a batch of nearestHit calls (hits and misses) makes no heap allocation");
 }
 
 void testTransmissionBatch(GMANRayOccluder const& occluder) {
@@ -246,7 +262,6 @@ void testTransmissionBatch(GMANRayOccluder const& occluder) {
 
   // The counted region holds only the library call, for the same reason
   // as testHitAndMissBatch above.
-  constexpr int kBatchCount = 3;
   GMANColor results[kBatchCount];
 
   long const before = allocationCount.load();
@@ -261,12 +276,8 @@ void testTransmissionBatch(GMANRayOccluder const& occluder) {
           "transmission batch: the walk crosses all 3 overlapping spheres");
   }
 
-#if GMAN_ADDRESS_SANITIZED
-  std::printf("skip: a batch of transmission walks (each crossing multiple spheres) makes no heap allocation "
-              "(ASan-built)\n");
-#else
-  check(after == before, "a batch of transmission walks (each crossing multiple spheres) makes no heap allocation");
-#endif
+  checkAllocationDelta(after == before,
+                       "a batch of transmission walks (each crossing multiple spheres) makes no heap allocation");
 }
 
 } // namespace
@@ -279,12 +290,7 @@ int main() {
   long const beforeBuild = allocationCount.load();
   bvh.build(worldManager);
   long const afterBuild = allocationCount.load();
-
-#if GMAN_ADDRESS_SANITIZED
-  std::printf("skip: the counter sees build()'s own allocations (ASan-built)\n");
-#else
-  check(afterBuild > beforeBuild, "the counter sees build()'s own allocations");
-#endif
+  checkAllocationDelta(afterBuild > beforeBuild, "the counter sees build()'s own allocations");
 
   GMANRayOccluder occluder(bvh);
 
