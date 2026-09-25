@@ -32,13 +32,13 @@
  * RenderMan C API Filter functions
  *
  * Standard pixel-reconstruction filters, per the RISpec. Tested
- * (tests/filters_test.cpp), but uncalled by any resolve path anywhere in
- * the tree. Two places name these functions without calling them:
- * gmandefaults.cpp's DefaultFilterFunc stores RiGaussianFilter as a
- * pointer, never dereferenced, and gmanascii.cpp compares filter function
- * pointers by address in roughly two dozen places to pick a RIB keyword
- * to echo -- neither is a call. A filter that silently returns 1.0 for
- * every (x,y) is a landmine for whoever wires up sampling next.
+ * (tests/filters_test.cpp) and called through GMANSampleBuffer::resolve,
+ * which dereferences whichever one GMANOptions::getPixelFilter holds as
+ * its filterfunc. GMANOptions defaults that pointer to RiGaussianFilter
+ * (gmandefaults.cpp's DefaultFilterFunc); RiPixelFilter can replace it
+ * with any of these, RiBoxFilter included. gmanascii.cpp separately
+ * compares filter function pointers by address in roughly two dozen
+ * places to pick a RIB keyword to echo -- a comparison, not a call.
  *
  * RiTriangleFilter returns zero outside its support; RiGaussianFilter's
  * argument is rescaled by 2/width before squaring, matching the RISpec

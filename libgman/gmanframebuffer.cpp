@@ -25,7 +25,6 @@
 
 #include "gmanframebuffer.h"
 #include "gmanlog.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANFrameBuffer
