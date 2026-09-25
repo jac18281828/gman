@@ -62,28 +62,28 @@ const RtFloat kSampleTol = (RtFloat)1.0e-4;
 const GMANColor kRed((RtFloat)1.0, (RtFloat)0.0, (RtFloat)0.0);
 const GMANColor kBlack((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
 
-bool colorNear(const GMANColor& got, const GMANColor& want, RtFloat tol) {
+bool colorNear(GMANColor const& got, GMANColor const& want, RtFloat tol) {
   return std::fabs(got.getRed() - want.getRed()) <= tol && std::fabs(got.getGreen() - want.getGreen()) <= tol &&
          std::fabs(got.getBlue() - want.getBlue()) <= tol;
 }
 
-std::string describe(const GMANColor& c) {
+std::string describe(GMANColor const& c) {
   return "(" + std::to_string(c.getRed()) + ", " + std::to_string(c.getGreen()) + ", " + std::to_string(c.getBlue()) +
          ")";
 }
 
-void checkColor(const GMANColor& got, const GMANColor& want, const std::string& what) {
+void checkColor(GMANColor const& got, GMANColor const& want, std::string const& what) {
   check(colorNear(got, want, kSampleTol), what + ": got " + describe(got) + ", want " + describe(want));
 }
 
-std::string readFile(const std::string& path) {
+std::string readFile(std::string const& path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream contents;
   contents << in.rdbuf();
   return contents.str();
 }
 
-int countOccurrences(const std::string& haystack, const std::string& needle) {
+int countOccurrences(std::string const& haystack, std::string const& needle) {
   int count = 0;
   std::string::size_type pos = 0;
   while ((pos = haystack.find(needle, pos)) != std::string::npos) {
@@ -96,7 +96,7 @@ int countOccurrences(const std::string& haystack, const std::string& needle) {
 // A one-entry parameter list carrying "texturename", the way RiSurfaceV
 // builds one for a single string parameter -- GMANParameterList's STRING
 // case reads dt[i] as a char**, one element long here.
-GMANParameterList textureNameParam(const std::string& name) {
+GMANParameterList textureNameParam(std::string const& name) {
   static GMANDictionary dictionary;
   RtToken tokens[1] = {RI_TEXTURENAME};
   char* strs[1] = {const_cast<char*>(name.c_str())};
@@ -108,7 +108,7 @@ GMANParameterList textureNameParam(const std::string& name) {
 // light: Ci = Cs * texture(s, t) * Ka * ambientColor, with Cs, Ka and
 // ambientColor all white by default, so Ci equals the texture sample
 // exactly -- black exactly when the sample is.
-gman::Appearance paintedPlasticAppearance(const std::string& textureName) {
+gman::Appearance paintedPlasticAppearance(std::string const& textureName) {
   GMANAttributes attr;
   attr.setSurface(RI_PAINTEDPLASTIC, textureNameParam(textureName));
   return gman::appearanceOf(attr);

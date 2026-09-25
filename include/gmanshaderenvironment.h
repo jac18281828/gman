@@ -50,7 +50,8 @@ class TextureCache;
  * a future shading-language VM would target, since a C++ shader and an
  * SL-compiled one both need the same inputs and the same builtins. Every
  * field is camera space; every shadeop below forwards to the SL runtime
- * in gmannoise.cpp/gmanslapi.cpp.
+ * in gmannoise.cpp/gmanslapi.cpp. New members append at the end, so
+ * existing field offsets hold.
  */
 struct GMAN_EXPORT GMANSurfaceEnv {
   GMANColor Cs;    // surface color
@@ -107,19 +108,18 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   gman::Tracer const* tracer = nullptr;
 
   // This surface's own camera-space magnitude (gman::SurfacePoint's own
-  // field, gman::shade's own copy), last so existing field offsets hold.
-  // 0 for a shader run with no real surface -- occludedContribution and
-  // trace() below forward it unchanged to occluder/tracer.
+  // field, gman::shade's own copy). 0 for a shader run with no real
+  // surface -- occludedContribution and trace() below forward it
+  // unchanged to occluder/tracer.
   RtFloat surfaceMagnitude = 0.0;
 
   // The cache texture() and environment() sample through when set -- one
   // per gman::parallelFor worker (libgman/gmanparallel.h), never shared
   // between threads. Null, the default, means gman::textureCache()'s
   // single process cache, which serves the z-buffer and the ray tracer's
-  // own single shading thread. Non-owning, valid for one shading call, and
-  // last so existing field offsets hold. A shade re-entered through a
-  // Tracer forwards its caller's own cache (gman::shade's own comment says
-  // so).
+  // own single shading thread. Non-owning, valid for one shading call. A
+  // shade re-entered through a Tracer forwards its caller's own cache
+  // (gman::shade's own comment says so).
   gman::TextureCache* textureCache = nullptr;
 
   // RSL's trace(P, R): the colour along R from this surface's own P, Ng
