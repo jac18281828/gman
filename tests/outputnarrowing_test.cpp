@@ -290,9 +290,9 @@ void savePNG(std::string const& path, std::vector<GMANColor> const& pixels, int 
 #endif
 
 // Checks 1 through 3, run against one driver's own save and read
-// functions. A named check that only ever passed for the wrong reason on
-// one driver fails here on that driver alone once the mutation in §8.3
-// that names it lands.
+// functions. Run per driver rather than once, so a driver that narrows
+// from the wrong source fails on its own bytes without hiding behind a
+// sibling driver's correct ones.
 void checkBytesForDriver(
     std::string const& driverName,
     std::function<void(std::string const&, std::vector<GMANColor> const&, int, int, RtFloat, RtFloat)> const& save,
