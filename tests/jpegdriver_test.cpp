@@ -248,7 +248,10 @@ int main(int argc, char* argv[]) {
   const std::string rgbaCapture = "jpegdriver_rgba.out";
   int rgbaExit = runGman(gman, "jpegdriver_rgba.rib", "jpegdriver_rgba.jpg", rgbaCapture);
   check(rgbaExit == 0, "a Display asking for \"rgba\" still exits 0");
-  check(readFile(rgbaCapture).find("GMAN WARNING:") != std::string::npos,
+  // gmanlog.cpp's screen sink writes a warning's raw text with no "GMAN
+  // WARNING: " prefix (only its optional log file gets one), so this
+  // checks for the warning's own wording rather than that prefix.
+  check(readFile(rgbaCapture).find("JPEG cannot carry alpha or depth samples") != std::string::npos,
         "stdout names the mode JPEG cannot fully carry");
 
   Image rgbaJpg = readJPEG("jpegdriver_rgba.jpg");
