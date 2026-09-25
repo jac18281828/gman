@@ -23,7 +23,9 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 #include "gmanbbox.h"
@@ -107,6 +109,22 @@ private:
   // is exact rather than approximate.
   static constexpr std::size_t kLeafSize = 4;
 
+  // nearestHit's own local traversal stack never holds more entries than
+  // this. buildRange only recurses past a node whose own primitive count
+  // exceeds kLeafSize, and nth_element's own median split hands each
+  // recursive call at most half its parent's count, rounded up; by
+  // induction, a node d levels below the root holds at most
+  // ceil(N / 2^d) of the N primitives build() started with, for any N
+  // (bounded by what a std::size_t holds) and any split path. At
+  // d == digits(std::size_t), 2^d already exceeds every N a std::size_t
+  // can hold, so ceil(N / 2^d) is at most 1 -- at or below kLeafSize
+  // regardless of its own value -- so no node build() makes is ever
+  // this many levels deep. The traversal holds at most one pending
+  // sibling per level above the deepest node reached, plus the two
+  // children just pushed there, so the stack itself never exceeds that
+  // depth by more than one entry.
+  static constexpr std::size_t kMaxStackCapacity = std::numeric_limits<std::size_t>::digits + 1;
+
   std::vector<Entry> primitives;
   std::vector<Node> nodes;
   int rootIndex = -1;
@@ -130,8 +148,12 @@ private:
   void testLeaf(Node const& node, GMANRay const& ray, Search& search) const;
 
   // Tests node's two children against ray (clamped to search's own best
-  // hit so far) and pushes whichever overlap onto stack, farther-entry
-  // child first so the nearer one -- by actual box-entry distance, not
-  // tree structure -- pops, and so is visited, first.
-  void pushChildren(Node const& node, GMANRay const& ray, Search const& search, std::vector<int>& stack) const;
+  // hit so far) and pushes whichever overlap onto stack (stack[0,
+  // stackSize) already held, stackSize entries), farther-entry child
+  // first so the nearer one -- by actual box-entry distance, not tree
+  // structure -- pops, and so is visited, first. Writes past stackSize
+  // with no bounds check: kMaxStackCapacity's own comment proves a write
+  // here never reaches the array's end.
+  void pushChildren(Node const& node, GMANRay const& ray, Search const& search,
+                    std::array<int, kMaxStackCapacity>& stack, std::size_t& stackSize) const;
 };

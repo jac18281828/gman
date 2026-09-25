@@ -226,7 +226,7 @@ void GMANRayBVH::testLeaf(Node const& node, GMANRay const& ray, Search& search) 
 }
 
 void GMANRayBVH::pushChildren(Node const& node, GMANRay const& ray, Search const& search,
-                              std::vector<int>& stack) const {
+                              std::array<int, kMaxStackCapacity>& stack, std::size_t& stackSize) const {
   Node const& leftNode = nodes[(std::size_t)node.left];
   Node const& rightNode = nodes[(std::size_t)node.right];
   RtFloat const limit = search.found ? GMANMin(ray.getTMax(), search.hit.t) : ray.getTMax();
@@ -239,16 +239,16 @@ void GMANRayBVH::pushChildren(Node const& node, GMANRay const& ray, Search const
   // visited, first.
   if (leftHit && rightHit) {
     if (leftEntry <= rightEntry) {
-      stack.push_back(node.right);
-      stack.push_back(node.left);
+      stack[stackSize++] = node.right;
+      stack[stackSize++] = node.left;
     } else {
-      stack.push_back(node.left);
-      stack.push_back(node.right);
+      stack[stackSize++] = node.left;
+      stack[stackSize++] = node.right;
     }
   } else if (leftHit) {
-    stack.push_back(node.left);
+    stack[stackSize++] = node.left;
   } else if (rightHit) {
-    stack.push_back(node.right);
+    stack[stackSize++] = node.right;
   }
 }
 
@@ -261,15 +261,17 @@ bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface c
   Search search;
   search.primitiveTests = primitiveTests;
 
-  // A local stack: nearestHit's whole traversal state lives here, so two
-  // calls against the same tree never interfere -- re-entrant, with no
-  // shared mutable state of its own.
-  std::vector<int> stack;
-  stack.push_back(rootIndex);
+  // A local, fixed-capacity stack: nearestHit's whole traversal state
+  // lives here, so two calls against the same tree never interfere --
+  // re-entrant, with no shared mutable state of its own, and no heap
+  // allocation. kMaxStackCapacity's own comment proves no tree build()
+  // makes ever needs more room than this holds.
+  std::array<int, kMaxStackCapacity> stack;
+  std::size_t stackSize = 0;
+  stack[stackSize++] = rootIndex;
 
-  while (!stack.empty()) {
-    int const nodeIndex = stack.back();
-    stack.pop_back();
+  while (stackSize > 0) {
+    int const nodeIndex = stack[--stackSize];
     Node const& node = nodes[(std::size_t)nodeIndex];
 
     RtFloat const limit = search.found ? GMANMin(ray.getTMax(), search.hit.t) : ray.getTMax();
@@ -281,7 +283,7 @@ bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface c
     if (node.leaf) {
       testLeaf(node, ray, search);
     } else {
-      pushChildren(node, ray, search, stack);
+      pushChildren(node, ray, search, stack, stackSize);
     }
   }
 

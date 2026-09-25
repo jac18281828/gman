@@ -1465,6 +1465,18 @@ set_tests_properties(raybvhreentrant PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRayBVH::nearestHit's own traversal, and GMANRayOccluder::transmission's
+# walk across it, make no heap allocation -- a global operator new/delete
+# override counts allocations across a batch of calls. See
+# tests/raybvhalloc_test.cpp.
+add_executable(gman_raybvhalloc raybvhalloc_test.cpp)
+target_link_libraries(gman_raybvhalloc PRIVATE gman_core)
+
+add_test(NAME raybvhalloc COMMAND gman_raybvhalloc)
+set_tests_properties(raybvhalloc PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANRayObjectManager::getRSGeneralPolygon builds a multi-loop
 # GMANRayPolygon -- a hole misses at its centre, the ring between hole and
 # edge hits, and a point outside the outer loop misses -- and
