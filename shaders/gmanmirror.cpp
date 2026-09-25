@@ -45,8 +45,9 @@ class mirror : public GMANSurfaceShader {
 public:
   explicit mirror(GMANParameterList const& parameters) : kr(getFloatParam(parameters, RI_KR, 1.0)) {}
 
-  GMANColor computeCi(GMANSurfaceEnv const& se) const;
-  GMANColor computeOi(GMANSurfaceEnv const& se) const;
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override;
+  GMANColor albedo(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const kr;
@@ -65,6 +66,9 @@ GMANColor mirror::computeCi(GMANSurfaceEnv const& se) const {
 }
 
 GMANColor mirror::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
+
+// No diffuse term: mirror's colour comes entirely from trace().
+GMANColor mirror::albedo(GMANSurfaceEnv const&) const { return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0); }
 
 } // namespace gmanshader
 

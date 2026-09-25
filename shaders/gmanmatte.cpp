@@ -52,8 +52,9 @@ public:
    * Output of a surface shader
    */
 
-  GMANColor computeCi(GMANSurfaceEnv const& se) const;
-  GMANColor computeOi(GMANSurfaceEnv const& se) const;
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override;
+  GMANColor albedo(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -79,6 +80,10 @@ GMANColor matte::computeCi(GMANSurfaceEnv const& se) const {
 }
 
 GMANColor matte::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
+
+GMANColor matte::albedo(GMANSurfaceEnv const& se) const {
+  return clampAlbedo(GMANColor(kd * se.Cs.getRed(), kd * se.Cs.getGreen(), kd * se.Cs.getBlue()));
+}
 
 } // namespace gmanshader
 

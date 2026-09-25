@@ -52,8 +52,9 @@ public:
 
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  GMANColor computeCi(GMANSurfaceEnv const& se) const;
-  GMANColor computeOi(GMANSurfaceEnv const& se) const;
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override;
+  GMANColor albedo(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -93,6 +94,12 @@ GMANColor plastic::computeCi(GMANSurfaceEnv const& se) const {
 }
 
 GMANColor plastic::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
+
+// Kd*Cs alone: the specular term is Ks/specularcolor's own contribution,
+// never diffuse, so it plays no part in the diffuse albedo.
+GMANColor plastic::albedo(GMANSurfaceEnv const& se) const {
+  return clampAlbedo(GMANColor(kd * se.Cs.getRed(), kd * se.Cs.getGreen(), kd * se.Cs.getBlue()));
+}
 
 } // namespace gmanshader
 

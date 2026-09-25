@@ -49,8 +49,9 @@ constexpr RtFloat kIor = (RtFloat)1.5;
 
 class glass : public GMANSurfaceShader {
 public:
-  GMANColor computeCi(GMANSurfaceEnv const& se) const;
-  GMANColor computeOi(GMANSurfaceEnv const& se) const;
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override;
+  GMANColor albedo(GMANSurfaceEnv const& se) const override;
 };
 
 GMANColor glass::computeCi(GMANSurfaceEnv const& se) const {
@@ -78,6 +79,10 @@ GMANColor glass::computeCi(GMANSurfaceEnv const& se) const {
 }
 
 GMANColor glass::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
+
+// No diffuse term: glass's colour comes entirely from reflection and
+// refraction.
+GMANColor glass::albedo(GMANSurfaceEnv const&) const { return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0); }
 
 } // namespace gmanshader
 

@@ -54,8 +54,9 @@ public:
 
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  GMANColor computeCi(GMANSurfaceEnv const& se) const;
-  GMANColor computeOi(GMANSurfaceEnv const& se) const;
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override;
+  GMANColor albedo(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -101,6 +102,15 @@ GMANColor paintedplastic::computeCi(GMANSurfaceEnv const& se) const {
 }
 
 GMANColor paintedplastic::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
+
+// Kd*Cs*texture, white when texturename is empty: the texture tints the
+// diffuse base exactly as it does in computeCi.
+GMANColor paintedplastic::albedo(GMANSurfaceEnv const& se) const {
+  GMANColor const tex =
+      texturename.empty() ? GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0) : se.texture(texturename, se.s, se.t);
+  return clampAlbedo(GMANColor(kd * se.Cs.getRed() * tex.getRed(), kd * se.Cs.getGreen() * tex.getGreen(),
+                               kd * se.Cs.getBlue() * tex.getBlue()));
+}
 
 } // namespace gmanshader
 

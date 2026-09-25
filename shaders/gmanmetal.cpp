@@ -50,8 +50,9 @@ public:
 
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  GMANColor computeCi(GMANSurfaceEnv const& se) const;
-  GMANColor computeOi(GMANSurfaceEnv const& se) const;
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override;
+  GMANColor albedo(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -83,6 +84,9 @@ GMANColor metal::computeCi(GMANSurfaceEnv const& se) const {
 }
 
 GMANColor metal::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
+
+// No diffuse term: metal's colour comes entirely from specular response.
+GMANColor metal::albedo(GMANSurfaceEnv const&) const { return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0); }
 
 } // namespace gmanshader
 

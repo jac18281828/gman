@@ -56,8 +56,9 @@ public:
 
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  GMANColor computeCi(GMANSurfaceEnv const& se) const;
-  GMANColor computeOi(GMANSurfaceEnv const& se) const;
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override;
+  GMANColor albedo(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -96,6 +97,12 @@ GMANColor shinymetal::computeCi(GMANSurfaceEnv const& se) const {
 }
 
 GMANColor shinymetal::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
+
+// No diffuse term: shinymetal's colour comes from specular response and
+// its environment reflection.
+GMANColor shinymetal::albedo(GMANSurfaceEnv const&) const {
+  return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
+}
 
 } // namespace gmanshader
 

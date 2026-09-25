@@ -74,4 +74,11 @@ inline std::string getStringParam(GMANParameterList const& pl, RtToken token, co
   return p ? p[0] : def;
 }
 
+// Clamps an albedo() answer's channels to [0, 1], the range every override
+// answers in.
+inline GMANColor clampAlbedo(GMANColor const& c) {
+  auto const clampChannel = [](RtFloat v) { return GMANMIN(GMANMAX(v, (RtFloat)0.0), (RtFloat)1.0); };
+  return GMANColor(clampChannel(c.getRed()), clampChannel(c.getGreen()), clampChannel(c.getBlue()));
+}
+
 } // namespace gmanshader
