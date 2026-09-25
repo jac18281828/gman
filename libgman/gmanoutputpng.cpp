@@ -100,11 +100,16 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor
 
   /* setup image information... */
 
-  // for now we only support RGBA
-  //
-  // need support for other display modes
-  png_set_IHDR(png_ptr, info_ptr, xres, yres, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE,
-               PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+  // "A" writes coverage alone, one sample, no colour. "RGB" writes colour
+  // alone, no alpha. Every other mode -- RGBA and everything this driver
+  // has no channel for -- writes RGB plus one coverage sample, the same
+  // not-RGB bucket OutputTIFF uses.
+  const int colorType = (mode == RGB) ? PNG_COLOR_TYPE_RGB
+                        : (mode == A) ? PNG_COLOR_TYPE_GRAY
+                                      : PNG_COLOR_TYPE_RGB_ALPHA;
+
+  png_set_IHDR(png_ptr, info_ptr, xres, yres, 8, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+               PNG_FILTER_TYPE_DEFAULT);
 
   // set time
   png_time modtime;
@@ -137,31 +142,6 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor
 
   // make sure < 8-bit images are packed into pixels as much as possible
   png_set_packing(png_ptr);
-
-#if BIG_ENDIAN_HOST == 1
-  /* Get rid of filler (OR ALPHA) bytes, pack XRGB/RGBX/ARGB/RGBA into
-   * RGB (4 channels -> 3 channels). The second parameter is not used.
-   */
-  if (mode != RGBA) {
-    // png_set_filler(png_ptr, 0, PNG_FILLER_AFTER);
-  }
-
-#else
-  /* Get rid of filler (OR ALPHA) bytes, pack XRGB/RGBX/ARGB/RGBA into
-   * RGB (4 channels -> 3 channels). The second parameter is not used.
-   */
-  if (mode != RGBA) {
-    // png_set_filler(png_ptr, 0, PNG_FILLER_BEFORE);
-  }
-
-  // No png_set_swap_alpha here: that call tells libpng the row data
-  // supplied below is ARGB and asks it to move alpha to the end for
-  // RGBA storage. The loop below already packs R,G,B,A in that order
-  // to match PNG_COLOR_TYPE_RGB_ALPHA directly, so swapping rotated
-  // every channel by one position -- R became stored G, G became
-  // stored B, and the real alpha (always 255, opaque) overwrote R.
-
-#endif
 
   // png_read_update_info is a read-side call (its own doc: "MUST be
   // called before png_read_update_info or png_start_read_image") --
@@ -204,16 +184,20 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor
 
         for (int x = 0; x < xres; x++) {
 
-          GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
+          if (mode != A) {
+            GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
 
-          src[colOff++] = gman::narrowedByte(color.getRed());
-          src[colOff++] = gman::narrowedByte(color.getGreen());
-          src[colOff++] = gman::narrowedByte(color.getBlue());
+            src[colOff++] = gman::narrowedByte(color.getRed());
+            src[colOff++] = gman::narrowedByte(color.getGreen());
+            src[colOff++] = gman::narrowedByte(color.getBlue());
+          }
 
-          // FIXME FIXME FIXME
-          // FIX Alpha support
-
-          src[colOff++] = 255;
+          if (mode != RGB) {
+            // Coverage, not colour: never gamma-corrected, read straight
+            // from the alpha buffer rather than the gamma-corrected image
+            // this loop uses above.
+            src[colOff++] = gman::coverageByte(getAlpha(x, y));
+          }
         }
       }
       // Write out entire image

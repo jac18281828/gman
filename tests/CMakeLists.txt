@@ -2412,8 +2412,7 @@ add_test(NAME pngdisplaymode
   WORKING_DIRECTORY "${GMAN_PNGDISPLAYMODE_WORKDIR}")
 set_tests_properties(pngdisplaymode PROPERTIES
   LABELS unit
-  TIMEOUT 30
-  WILL_FAIL TRUE)
+  TIMEOUT 30)
 
 # gman::sampleHash, gman::unitFloat, gman::sample1D and gman::sample2D: a
 # counter-based sampler that is a pure function of its arguments, so
