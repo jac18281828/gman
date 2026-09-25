@@ -418,8 +418,8 @@ void checkMirrorReentrant(std::string const& mirrorPath) {
 // own inner SurfacePoint and their own terminating colour. glass reads no
 // parameter, so inner and outer sharing one instance proves nothing about
 // per-instance state the way checkMirrorReentrant's two instances do;
-// grazing incidence at the outer call pins kr = 1, kt = 0 exactly (§1's
-// own guard), so the predicted composite is exactly representable.
+// grazing incidence at the outer call pins kr = 1, kt = 0 exactly, so the
+// predicted composite is exactly representable.
 //
 // This pins only the reflected branch's own contribution to the outer
 // Ci: kt == 0 makes branch B's own composite value vanish from it

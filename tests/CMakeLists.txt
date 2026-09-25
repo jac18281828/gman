@@ -1238,10 +1238,9 @@ set_target_properties(gman_countingshader PROPERTIES OUTPUT_NAME "countingshader
 gman_add_plugin(gman_nodestroyshader nodestroyshader_test_plugin.cpp)
 set_target_properties(gman_nodestroyshader PROPERTIES OUTPUT_NAME "nodestroyshader")
 
-# One shader instance per Surface call (§1 ruling 1): distinct instances,
-# interleaved shading with no cross-talk, correct lifetime and destruction,
-# and a plugin missing GMANDestroyShader refused. See
-# tests/shaderinstance_test.cpp.
+# One shader instance per Surface call: distinct instances, interleaved
+# shading with no cross-talk, correct lifetime and destruction, and a
+# plugin missing GMANDestroyShader refused. See tests/shaderinstance_test.cpp.
 add_executable(gman_shaderinstance shaderinstance_test.cpp)
 target_link_libraries(gman_shaderinstance PRIVATE gman_core)
 add_dependencies(gman_shaderinstance gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal
