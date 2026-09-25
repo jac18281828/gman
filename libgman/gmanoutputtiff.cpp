@@ -97,13 +97,13 @@ RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColo
     }
     // now write a scanline into the image
     if (!writer.writeScanline(buf.data(), rowOff)) {
-      // FIXME
-      // throw an error here
-      break;
+      std::string errorMsg("Unable to write TIFF scanline ");
+      errorMsg.append(std::to_string(rowOff));
+      errorMsg.append(": ");
+      errorMsg.append(outputName);
+      throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
     }
   }
-
-  // now isn't that just easy.
 }
 
 // get/set the TIFF compression type
