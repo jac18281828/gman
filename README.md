@@ -81,17 +81,8 @@ directory; `gman` takes no output flag of its own.
 
 `-d`, `-i`, `-w`, `-e` and `-q` set the log level to debug, info (the
 default), warning, error or disaster-only; `-l` also writes a log file named
-for the RIB; `-h` prints usage. `--version` prints the version and the
-drivers built in, then exits:
-
-```sh
-gman --version
-```
-
-```
-gman 0.9.1
-drivers: tiff pnm png jpeg
-```
+for the RIB; `-h` prints usage; `--version` prints the version and the
+drivers built in.
 
 At the default `Clipping`, flat or narrow-z-range geometry renders
 corrupted or blank; pair it with an explicit `Clipping <near> <far>`.
