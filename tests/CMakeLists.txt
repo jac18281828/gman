@@ -1289,9 +1289,10 @@ gman_add_plugin(gman_camerashader camerashader_test_plugin.cpp)
 set_target_properties(gman_camerashader PROPERTIES OUTPUT_NAME "camerashader")
 
 # Test-only volume shader (see its own comment): the shader
-# unknownsurface_test.cpp's "loaded, but not a surface" fixture names, so
-# GMANAttributes::setSurface's type-check branch has a plugin to reach it
-# with. Never dlopened outside this test; not part of the shipped renderer.
+# unknownsurface_test.cpp's "loaded, but not a surface" fixture names, and
+# shadermodulenames_test.cpp's Atmosphere/Interior/Exterior success check
+# loads, so each type-check branch has a plugin to reach it with. Never
+# dlopened outside these tests; not part of the shipped renderer.
 gman_add_plugin(gman_notasurface notasurface_test_plugin.cpp)
 set_target_properties(gman_notasurface PROPERTIES OUTPUT_NAME "notasurface")
 
@@ -1321,6 +1322,36 @@ add_dependencies(gman_shaderinstance gman_matte gman_plastic gman_metal gman_pai
 add_test(NAME shaderinstance COMMAND gman_shaderinstance)
 set_tests_properties(shaderinstance PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# Test-only displacement shader (see its own comment): a correctly typed,
+# real, loadable displacement plugin, so shadermodulenames_test.cpp's
+# Displacement success check has a plugin to load. Never dlopened outside
+# this test; not part of the shipped renderer.
+gman_add_plugin(gman_identitydisplacement identitydisplacement_test_plugin.cpp)
+set_target_properties(gman_identitydisplacement PROPERTIES OUTPUT_NAME "identitydisplacement")
+
+# Test-only imager shader (see its own comment): counts its own live
+# instances, read back through its own exported GMANCountingImagerLiveCount,
+# so imagerownership_test.cpp and shadermodulenames_test.cpp can prove
+# GMANOptions::imagerModule's ownership from outside. Never dlopened
+# outside this test; not part of the shipped renderer.
+gman_add_plugin(gman_countingimager countingimager_test_plugin.cpp)
+set_target_properties(gman_countingimager PROPERTIES OUTPUT_NAME "countingimager")
+
+# Displacement, Atmosphere, Interior, Exterior and Imager each resolve their
+# token to lib<name>.so and fall back to a clean, unset state on failure,
+# exactly as Surface already does. See tests/shadermodulenames_test.cpp.
+add_executable(gman_shadermodulenames shadermodulenames_test.cpp)
+target_link_libraries(gman_shadermodulenames PRIVATE gman_core)
+add_dependencies(gman_shadermodulenames gman_zbuffer gman_matte gman_notasurface gman_nodestroyshader
+  gman_identitydisplacement gman_plastic gman_countingimager)
+
+add_test(NAME shadermodulenames COMMAND gman_shadermodulenames)
+set_tests_properties(shadermodulenames PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  WILL_FAIL TRUE
   LABELS unit
   TIMEOUT 30)
 

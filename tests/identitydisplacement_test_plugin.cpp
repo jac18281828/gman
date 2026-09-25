@@ -22,43 +22,38 @@
  */
 
 /*
- * Test-only loadable shader whose getType() reports GMANShader::VOLUME.
- * Every shipped shader plugin is a surface, so nothing else in the tree
- * reaches GMANAttributes::setSurface's "loaded, but not a surface" branch.
- * Not a shipped shader: dlopened only by unknownsurface_test.cpp and
- * shadermodulenames_test.cpp, never by RiSurface in a real scene.
+ * Test-only loadable shader whose getType() reports GMANShader::DISPLACEMENT
+ * and leaves position and normal unchanged: a correctly typed, real,
+ * loadable displacement plugin for shadermodulenames_test.cpp's success
+ * check. Never dlopened outside the test suite.
  */
 
+#include "gmandisplacementshader.h"
 #include "gmanloadable.h"
-#include "gmanvolumeshader.h"
 
 namespace gmanshader {
 
-class notasurface : public GMANVolumeShader {
+class identitydisplacement : public GMANDisplacementShader {
 public:
-  ShaderType getType(RtVoid) const { return VOLUME; }
-  GMANColor const& computeCi(GMANVolumeEnv& ve);
-  GMANColor const& computeOi(GMANVolumeEnv& ve);
+  ShaderType getType(RtVoid) const override { return DISPLACEMENT; }
+  const GMANPoint& computeP(GMANDisplacementEnv& de) override { return de.P; }
+  const GMANNormal& computeN(GMANDisplacementEnv& de) override { return de.N; }
 };
-
-GMANColor const& notasurface::computeCi(GMANVolumeEnv& ve) { return ve.Ci; }
-
-GMANColor const& notasurface::computeOi(GMANVolumeEnv& ve) { return ve.Oi; }
 
 } // namespace gmanshader
 
 static GMANLoadableObjectInfo loadableInfo = {
-    "Not-a-surface probe (test-only)",
+    "Identity displacement probe (test-only)",
     "John Cairns <john@2ad.com>",
-    "Test-only: a volume shader loaded through RiSurface, so setSurface's "
-    "\"loaded, but not a surface\" branch has a plugin to reach it with. "
-    "Never dlopened outside the test suite.",
+    "Test-only: a correctly typed, real, loadable displacement shader, so "
+    "shadermodulenames_test.cpp's success check has a plugin to load. Never "
+    "dlopened outside the test suite.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
 extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& /*parameters*/) {
-  return new gmanshader::notasurface();
+  return new gmanshader::identitydisplacement();
 }
 
 extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }
