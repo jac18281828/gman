@@ -25,11 +25,10 @@
 
 #pragma once
 
+#include <cctype>
 #include <fstream>
 #include <istream>
 #include <string>
-
-#include <ctype.h>
 
 #include "gmanlog.h"
 #include "ri.h"
@@ -235,15 +234,19 @@ private:
   std::string buffer;
 
   /* private methods */
+  // A byte read off the stream may be negative on a signed-char platform;
+  // std::isalnum/std::isdigit take an unsigned char or EOF, nothing else.
   bool isKeyToken(char c) const {
-    if (isalnum(c))
+    if (std::isalnum(static_cast<unsigned char>(c)))
       return true;
     return false;
   };
 
   bool isStrToken(char c) const { return (c == '\"'); };
 
-  bool isNumToken(char c) const { return (isdigit(c) || (c == '.') || (c == '-') || c == '+' || c == 'e'); };
+  bool isNumToken(char c) const {
+    return (std::isdigit(static_cast<unsigned char>(c)) || (c == '.') || (c == '-') || c == '+' || c == 'e');
+  };
 
   const GMANToken parseKeyword(std::istream& ribFile);
 

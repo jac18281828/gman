@@ -23,11 +23,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cctype>
 #include <climits> /* INT_MAX -- not transitive via libstdc++ */
 #include <limits>
 #include <string>
 
-#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -447,7 +447,9 @@ void GMANRIBTokenize::consumeWhitespace(std::istream& ribFile) const {
   while (!ribFile.eof()) {
     ribFile.get(c);
 
-    if (isspace(c)) {
+    // A byte read off the stream may be negative on a signed-char
+    // platform; std::isspace takes an unsigned char or EOF, nothing else.
+    if (std::isspace(static_cast<unsigned char>(c))) {
       continue;
     } else if (c == '#') {
       ribFile.ignore(INT_MAX, '\n');
