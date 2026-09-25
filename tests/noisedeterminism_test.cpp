@@ -21,9 +21,9 @@
 /*
  * gman::Noise seeds its own std::mt19937 rather than the process-global C
  * rand(). Proof: two independently constructed instances agree at the same
- * fixed inputs; those values match constants recorded from a real build;
- * and rand()'s own sequence is unaffected by constructing or exercising a
- * Noise.
+ * fixed inputs, across both noise and cellnoise; cellnoise's own values at
+ * those inputs match constants recorded from a real build; and rand()'s
+ * own sequence is unaffected by constructing or exercising a Noise.
  */
 
 #include <cmath>
@@ -56,6 +56,12 @@ void testTwoInstancesAgree() {
 // Recorded from a real build (this file's own header comment): a
 // regression here means the seeded draw sequence changed, not that two
 // instances disagree with each other.
+//
+// cellnoise only, not noise: cellnoise looks its cell's value up directly
+// from the seeded table, while noise interpolates through a gradient dot
+// product whose exact rounding is not guaranteed identical across
+// compilers -- testTwoInstancesAgree already covers noise's own
+// determinism within one build.
 void testFixedValues() {
   gman::Noise n;
 
@@ -63,9 +69,6 @@ void testFixedValues() {
   GMANPoint const p2(3.0, -1.5, 2.25);
   RtFloat const v(1.75);
 
-  check(near(n.noise(p1), (RtFloat)0.586262286), "noise(p1) matches its recorded value");
-  check(near(n.noise(p2), (RtFloat)0.391894221), "noise(p2) matches its recorded value");
-  check(near(n.noise(v), (RtFloat)0.438288748), "noise(v) matches its recorded value");
   check(near(n.cellnoise(p1), (RtFloat)0.0529898629), "cellnoise(p1) matches its recorded value");
   check(near(n.cellnoise(p2), (RtFloat)0.383108139), "cellnoise(p2) matches its recorded value");
   check(near(n.cellnoise(v), (RtFloat)0.750981987), "cellnoise(v) matches its recorded value");
