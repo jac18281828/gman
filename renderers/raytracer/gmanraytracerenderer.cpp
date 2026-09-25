@@ -26,7 +26,6 @@
 #include "gmanmath.h"
 #include "gmanraybbox.h"
 #include "gmanrayinterface.h"
-#include "gmanraysphere.h"
 #include "gmanraytracerenderer.h"
 #include "gmanrenderer.h"
 #include "gmanshading.h"
