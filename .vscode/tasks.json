@@ -45,14 +45,6 @@
             "detail": "Dry-run clang-format check over every .c, .cpp and .h in the tree -- never reformats it.",
             "problemMatcher": [],
             "group": "test"
-        },
-        {
-            "label": "gates",
-            "type": "shell",
-            "command": "./build.sh",
-            "problemMatcher": [],
-            "detail": "Builds a throwaway dev-container image and runs AGENTS.md's full gate list inside it -- the same command CI's checks are derived from. Independent of whether you're already working in the devcontainer.",
-            "group": "test"
         }
     ]
 }

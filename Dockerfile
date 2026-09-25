@@ -20,7 +20,7 @@ RUN go install github.com/google/yamlfmt/cmd/yamlfmt@v0.21.0 && \
 # only the Linux legs could see.
 FROM debian:stable-slim
 
-# Consumed by the LABEL block below; build.sh passes the short commit SHA.
+# Consumed by the LABEL block below.
 ARG VERSION=dev
 
 RUN export DEBIAN_FRONTEND=noninteractive && \

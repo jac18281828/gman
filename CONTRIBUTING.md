@@ -25,8 +25,7 @@ cmake --build build --target format-check
 
 Green on all three, and green in CI. CI also runs a sanitizer build, valgrind
 and gcc alongside clang, so it catches what a local macOS build cannot. The
-devcontainer in `.devcontainer/` carries the same toolchain if you want the
-whole set locally: `./build.sh`.
+devcontainer in `.devcontainer/` carries the same toolchain.
 
 ## Tests
 

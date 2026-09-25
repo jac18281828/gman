@@ -140,13 +140,7 @@ links gman with `find_package(gman CONFIG REQUIRED)` and
 
 A devcontainer lives in `.devcontainer/`, carrying the same toolchain CI
 uses: both gcc and clang, the sanitizers, valgrind, yamlfmt and commitlint.
-Open the repo in VS Code and choose "Reopen in Container", or run
-`./build.sh`, which configures, builds, tests and lints the workflow YAML
-with yamlfmt:
-
-```sh
-./build.sh
-```
+Open the repo in VS Code and choose "Reopen in Container".
 
 ## Write a shader
 
