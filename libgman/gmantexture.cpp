@@ -151,6 +151,27 @@ bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::ve
   return writeOk;
 }
 
+// Opens pictureName and decodes it into w/h/rgb, the shape makeTexture and
+// makeLatLongEnvironment share. who names the caller ("MakeTexture",
+// "MakeLatLongEnvironment") in a failure's warning; each keeps its own
+// exact message text otherwise. False, w/h/rgb left as decode leaves them,
+// on either failure.
+bool openAndDecodePicture(const char* who, const std::string& pictureName, const std::string& textureName, uint32_t& w,
+                          uint32_t& h, std::vector<unsigned char>& rgb) {
+  TIFFReader reader(pictureName);
+  if (!reader.isOpen()) {
+    warning("{} \"{}\": cannot open picture \"{}\"", who, textureName.c_str(), pictureName.c_str());
+    return false;
+  }
+
+  if (!reader.decode(w, h, rgb)) {
+    warning("{} \"{}\": cannot decode picture \"{}\"", who, textureName.c_str(), pictureName.c_str());
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace
 
 Texture::Texture(const std::string& name) : width(1), height(1) {
@@ -264,21 +285,12 @@ bool makeTexture(const char* picture, const char* texture, const char* swrap, co
   }
 
   const std::string pictureName = picture != nullptr ? picture : "";
-  TIFFReader reader(pictureName);
-  if (!reader.isOpen()) {
-    warning("MakeTexture \"{}\": cannot open picture \"{}\"", textureName.c_str(), pictureName.c_str());
-    return false;
-  }
-
   uint32_t w = 0, h = 0;
   std::vector<unsigned char> rgb;
   // Same decode call Texture's own constructor uses: a texture made
   // from a picture samples identically to that picture at every texel
   // centre.
-  bool decoded = reader.decode(w, h, rgb);
-
-  if (!decoded) {
-    warning("MakeTexture \"{}\": cannot decode picture \"{}\"", textureName.c_str(), pictureName.c_str());
+  if (!openAndDecodePicture("MakeTexture", pictureName, textureName, w, h, rgb)) {
     return false;
   }
 
@@ -299,18 +311,9 @@ bool makeLatLongEnvironment(const char* picture, const char* texture) {
   }
 
   const std::string pictureName = picture != nullptr ? picture : "";
-  TIFFReader reader(pictureName);
-  if (!reader.isOpen()) {
-    warning("MakeLatLongEnvironment \"{}\": cannot open picture \"{}\"", textureName.c_str(), pictureName.c_str());
-    return false;
-  }
-
   uint32_t w = 0, h = 0;
   std::vector<unsigned char> rgb;
-  bool decoded = reader.decode(w, h, rgb);
-
-  if (!decoded) {
-    warning("MakeLatLongEnvironment \"{}\": cannot decode picture \"{}\"", textureName.c_str(), pictureName.c_str());
+  if (!openAndDecodePicture("MakeLatLongEnvironment", pictureName, textureName, w, h, rgb)) {
     return false;
   }
 
