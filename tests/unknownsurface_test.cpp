@@ -20,12 +20,12 @@
 
 /*
  * A Surface naming a module that will not load -- missing entirely, opening
- * but exporting no shader, or exporting a shader that is not a surface --
- * reports RIE_NOSHADER and renders on with the default surface, matte,
- * instead of losing the frame. Three fixtures each reach one of those three
- * failures; their renders must match a control scene that never names the
- * bad Surface, pixel for pixel, since the failed request's parameters must
- * not reach the default shader either.
+ * but exporting no shader, exporting a shader that is not a surface, or
+ * missing GMANDestroyShader -- reports RIE_NOSHADER and renders on with the
+ * default surface, matte, instead of losing the frame. Four fixtures each
+ * reach one of those four failures; their renders must match a control
+ * scene that never names the bad Surface, pixel for pixel, since the
+ * failed request's parameters must not reach the default shader either.
  */
 
 #include <cstdio>
@@ -112,9 +112,9 @@ void checkReport(std::string const& output, std::string const& failingName, std:
   check(output.find("SEVERE:") == std::string::npos, tag + ": reports no SEVERE");
 }
 
-void checkFallback(std::string const& gman, std::string const& renderer, std::string const& ribDir,
-                   std::string const& ribName, std::string const& tifName, std::string const& failingName,
-                   GmanImage const& control, std::string const& tag) {
+Rendered checkFallback(std::string const& gman, std::string const& renderer, std::string const& ribDir,
+                       std::string const& ribName, std::string const& tifName, std::string const& failingName,
+                       GmanImage const& control, std::string const& tag) {
   Rendered rendered = renderFixture(gman, renderer, ribDir, ribName, tifName);
 
   // Exits 0 and writes its TIFF.
@@ -123,6 +123,7 @@ void checkFallback(std::string const& gman, std::string const& renderer, std::st
 
   checkReport(rendered.result.output, failingName, tag);
   checkPixelIdentical(rendered.image, control, tag);
+  return rendered;
 }
 
 } // namespace
@@ -159,6 +160,12 @@ int main(int argc, char* argv[]) {
                 control.image, "no GMANLoadShader");
   checkFallback(gman, renderer, ribDir, "unknownsurface_volume.rib", "unknownsurface_volume.tif", "notasurface",
                 control.image, "not a surface");
+
+  Rendered const nodestroy =
+      checkFallback(gman, renderer, ribDir, "unknownsurface_nodestroy.rib", "unknownsurface_nodestroy.tif",
+                    "nodestroyshader", control.image, "no GMANDestroyShader");
+  check(nodestroy.result.output.find("GMANDestroyShader") != std::string::npos,
+        "no GMANDestroyShader: names GMANDestroyShader");
 
   return checkSummary("an unknown Surface reports RIE_NOSHADER and falls back to the default surface");
 }

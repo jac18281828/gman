@@ -1224,6 +1224,45 @@ set_target_properties(gman_camerashader PROPERTIES OUTPUT_NAME "camerashader")
 gman_add_plugin(gman_notasurface notasurface_test_plugin.cpp)
 set_target_properties(gman_notasurface PROPERTIES OUTPUT_NAME "notasurface")
 
+# Test-only surface shader (see its own comment): counts its own live
+# instances, read back through its own exported GMANCountingShaderLiveCount,
+# so shaderinstance_test.cpp can prove GMANLoadableShader's ownership from
+# outside. Never dlopened outside this test; not part of the shipped
+# renderer.
+gman_add_plugin(gman_countingshader countingshader_test_plugin.cpp)
+set_target_properties(gman_countingshader PROPERTIES OUTPUT_NAME "countingshader")
+
+# Test-only surface shader (see its own comment): defines GMANLoadShader but
+# not GMANDestroyShader, standing in for a plugin built before this change.
+# Never dlopened outside the test suite; not part of the shipped renderer.
+gman_add_plugin(gman_nodestroyshader nodestroyshader_test_plugin.cpp)
+set_target_properties(gman_nodestroyshader PROPERTIES OUTPUT_NAME "nodestroyshader")
+
+# One shader instance per Surface call (§1 ruling 1): distinct instances,
+# interleaved shading with no cross-talk, correct lifetime and destruction,
+# and a plugin missing GMANDestroyShader refused. See
+# tests/shaderinstance_test.cpp.
+add_executable(gman_shaderinstance shaderinstance_test.cpp)
+target_link_libraries(gman_shaderinstance PRIVATE gman_core)
+add_dependencies(gman_shaderinstance gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal
+  gman_mirror gman_glass gman_countingshader gman_nodestroyshader)
+
+add_test(NAME shaderinstance COMMAND gman_shaderinstance)
+set_tests_properties(shaderinstance PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# No shader holds state below file scope: no static above file scope, no
+# mutable, anywhere under shaders/. See tests/shaderstatics_test.cpp.
+add_executable(gman_shaderstatics shaderstatics_test.cpp)
+
+add_test(NAME shaderstatics
+  COMMAND gman_shaderstatics "${CMAKE_SOURCE_DIR}/shaders")
+set_tests_properties(shaderstatics PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # environment(), MakeLatLongEnvironment and shinymetal (RISpec 3.2 Sec
 # 7.1.2, Sec 15.7.2, Appendix A.2.4): camera-to-world reaching the shading
 # path, the writer and lookup, and shinymetal rendered under three camera
@@ -2200,16 +2239,16 @@ if(GMAN_BUILD_RAYTRACER)
 endif()
 
 # A Surface naming a module that will not load -- missing entirely, opening
-# but exporting no shader, or exporting a shader that is not a surface --
-# reports RIE_NOSHADER and renders on with the default surface instead of
-# aborting the frame. Three fixtures reach the three failures; a fourth,
-# undecorated control scene proves the fallback renders identically to a
-# scene that never named the bad Surface. See unknownsurface_test.cpp's own
-# comment. Both renderers write the same TIFF names, so each gets its own
-# WORKING_DIRECTORY.
+# but exporting no shader, exporting a shader that is not a surface, or
+# missing GMANDestroyShader -- reports RIE_NOSHADER and renders on with the
+# default surface instead of aborting the frame. Four fixtures reach the
+# four failures; a fifth, undecorated control scene proves the fallback
+# renders identically to a scene that never named the bad Surface. See
+# unknownsurface_test.cpp's own comment. Both renderers write the same TIFF
+# names, so each gets its own WORKING_DIRECTORY.
 add_executable(gman_unknownsurface unknownsurface_test.cpp)
 target_link_libraries(gman_unknownsurface PRIVATE gman_core TIFF::TIFF)
-add_dependencies(gman_unknownsurface gman_zbuffer gman_matte gman_plastic gman_notasurface)
+add_dependencies(gman_unknownsurface gman_zbuffer gman_matte gman_plastic gman_notasurface gman_nodestroyshader)
 
 set(GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/unknownsurface-zbuffer-run")
 file(MAKE_DIRECTORY "${GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR}")
