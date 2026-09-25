@@ -27,6 +27,7 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <stack>
 #include <string>
 
@@ -97,3 +98,18 @@ public:
 
   GMANVolumeShader* getVolume(RtVoid);
 };
+
+namespace gman {
+
+// Maps name to the file its own kind's loader would open, resolves it and
+// checks its type against expected. On success, returns the loaded
+// module. On any failure -- no module, no GMANLoadShader, no
+// GMANDestroyShader, a null shader, or the wrong type -- reports through
+// GMANHandleError, quoting name exactly as given, and returns null.
+// requestName names the request in the report (for example "Surface");
+// fallbackPhrase names what renders in the shader's place.
+GMAN_EXPORT std::unique_ptr<GMANLoadableShader>
+resolveLoadableShader(std::string const& requestName, std::string const& fallbackPhrase, std::string const& name,
+                      GMANParameterList const& parameters, GMANShader::ShaderType expected);
+
+} // namespace gman

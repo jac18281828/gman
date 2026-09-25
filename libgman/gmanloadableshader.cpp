@@ -23,6 +23,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cctype>
+#include <memory>
+#include <string>
+
+#include "gmanerror.h"
 #include "gmanloadableshader.h"
 #include "gmanshader.h"
 #include "ri.h"
@@ -88,3 +93,64 @@ GMANLightSourceShader* GMANLoadableShader::getLightSource(RtVoid) {
 GMANSurfaceShader* GMANLoadableShader::getSurface(RtVoid) { return dynamic_cast<GMANSurfaceShader*>(shader); }
 
 GMANVolumeShader* GMANLoadableShader::getVolume(RtVoid) { return dynamic_cast<GMANVolumeShader*>(shader); }
+
+namespace gman {
+
+namespace {
+
+std::string lowered(std::string s) {
+  for (char& c : s) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  return s;
+}
+
+std::string nameOf(GMANShader::ShaderType type) {
+  switch (type) {
+  case GMANShader::DISPLACEMENT:
+    return "displacement";
+  case GMANShader::VOLUME:
+    return "volume";
+  case GMANShader::IMAGER:
+    return "imager";
+  case GMANShader::LIGHTSOURCE:
+    return "light source";
+  case GMANShader::SURFACE:
+    return "surface";
+  }
+  return "shader";
+}
+
+std::string articleFor(std::string const& word) {
+  if (!word.empty() && std::string("aeiouAEIOU").find(word.front()) != std::string::npos) {
+    return "an";
+  }
+  return "a";
+}
+
+} // namespace
+
+std::unique_ptr<GMANLoadableShader> resolveLoadableShader(std::string const& requestName,
+                                                          std::string const& fallbackPhrase, std::string const& name,
+                                                          GMANParameterList const& parameters,
+                                                          GMANShader::ShaderType expected) {
+  std::string const objectName = "lib" + name + ".so";
+  try {
+    auto resolved = std::make_unique<GMANLoadableShader>(objectName.c_str(), parameters);
+    if (resolved->getType() != expected) {
+      std::string const wantedType = nameOf(expected);
+      std::string const message = "Specified " + lowered(requestName) + " shader is not " + articleFor(wantedType) +
+                                  " " + wantedType + " shader.";
+      throw(GMANError(RIE_NOSHADER, RIE_SEVERE, message.c_str()));
+    }
+    return resolved;
+  } catch (GMANError const& loadError) {
+    std::string const message =
+        requestName + " \"" + name + "\" failed to load; " + fallbackPhrase + ": " + loadError.getMessage();
+    GMANError fallback(RIE_NOSHADER, RIE_ERROR, message.c_str());
+    GMANHandleError(fallback);
+    return nullptr;
+  }
+}
+
+} // namespace gman

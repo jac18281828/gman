@@ -94,28 +94,14 @@ RtVoid GMANAttributes::setIlluminate(RtLightHandle lh, RtBoolean onoff) {
 }
 
 RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList const& pl) {
-  std::string objectName = "lib";
-  objectName += name;
-  objectName += ".so";
-
-  // A Surface that fails to load reports RIE_NOSHADER and leaves the
-  // default surface, with no module: those parameters belong to a shader
-  // that never ran.
-  try {
-    surfaceModule = std::make_shared<GMANLoadableShader>(objectName.c_str(), pl);
-    if (surfaceModule->getType() != GMANShader::SURFACE) {
-      throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified surface shader is not a surface shader."));
-    }
-  } catch (GMANError const& loadError) {
+  auto resolved =
+      gman::resolveLoadableShader("Surface", "the default surface shades instead", name, pl, GMANShader::SURFACE);
+  if (!resolved) {
     surfaceModule.reset();
     surface.reset();
-    auto const message =
-        "Surface \"" + name + "\" failed to load; the default surface shades instead: " + loadError.getMessage();
-    GMANError fallback(RIE_NOSHADER, RIE_ERROR, message.c_str());
-    GMANHandleError(fallback);
     return;
   }
-
+  surfaceModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
   surface = std::shared_ptr<GMANSurfaceShader const>(surfaceModule, surfaceModule->getSurface());
 }
 
