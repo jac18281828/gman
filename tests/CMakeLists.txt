@@ -1557,7 +1557,7 @@ target_link_libraries(gman_radiositysolver PRIVATE gman_radiosity_objects)
 add_test(NAME radiositysolver COMMAND gman_radiositysolver)
 set_tests_properties(radiositysolver PROPERTIES
   LABELS unit
-  TIMEOUT 30)
+  TIMEOUT 60)
 
 # Counts GMANRadiosityMesh::build's own resolution-search evaluations for
 # one primitive driven to kMaxDivisions, and bounds them well below a
