@@ -43,14 +43,8 @@ class GMANFilter;
  *
  */
 
-// support anti-aliasing
+// a GMANBitmap-backed frame buffer
 class GMANFrameBuffer : public GMANBitmap {
-private:
-  int filterWidth;
-  int filterHeight;
-
-  RtFilterFunc filter;
-
 public:
   // default constructor
   GMANFrameBuffer();
@@ -58,20 +52,4 @@ public:
   GMANFrameBuffer(int width, int height, const GMANColor& background);
 
   ~GMANFrameBuffer(); // default destructor
-
-  // Set the type of filter used by the anti-aliasing code
-  RtVoid setFilter(RtFilterFunc filter, int fwidth, int fheight);
-
-  // get the type of filter used by the anti-aliasing code
-  RtFilterFunc getFilter(RtVoid) { return filter; };
-
-  // get a supersampled pixel from the frame buffer
-  GMANColor getSuperSampledPixel(int x, int y);
-
-  // get the width of the filter in pixels
-
-  int getFilterWidth(RtVoid) { return filterWidth; };
-
-  // get the height of the filter in pixels
-  int getFilterHeight(RtVoid) { return filterHeight; };
 };
