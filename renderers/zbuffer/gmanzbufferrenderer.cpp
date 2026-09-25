@@ -82,8 +82,7 @@ bool GMANZBufferRenderer::initZBuffer(void) {
       if (edge_list)
         delete[] edge_list;
       // Sized to sampleHeight, not height: scanEdges/drawEdgeList walk the
-      // sample grid, not the pixel grid -- see the settled decision on
-      // rasterizing at sample resolution while zbuffer above stays at
+      // sample grid, not the pixel grid, while zbuffer above stays at
       // pixel resolution.
       // Value-initialized: buildEdgeList sets nisect over [ymin,ymax] and
       // drawEdgeList reads no further, but zeroing here makes an
@@ -464,9 +463,9 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   initZBuffer();
 
   // Every sample starts at the frame's background colour and infinite
-  // depth (the settled decision on uncovered samples): frameBuffer is
-  // already erased to background at construction, so this is a plain read
-  // of known-good state, not a new ordering dependency.
+  // depth: frameBuffer is already erased to background at construction,
+  // so this is a plain read of known-good state, not a new ordering
+  // dependency.
   sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, frameBuffer->getPixel(0, 0)));
 
   debug("GMANZBufferRenderer::render");

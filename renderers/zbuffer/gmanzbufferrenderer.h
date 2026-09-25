@@ -98,8 +98,7 @@ private:
   // PixelSamples, and the sample-resolution grid they imply
   // (width*xsamples, height*ysamples) -- getVertexInfo, scanEdges and
   // drawEdgeList all rasterize at this resolution; zbuffer/getDepth below
-  // stay at pixel resolution regardless (see the settled decision on
-  // GMANRenderer::getDepth's contract).
+  // stay at pixel resolution regardless.
   int xsamples;
   int ysamples;
   int sampleWidth;

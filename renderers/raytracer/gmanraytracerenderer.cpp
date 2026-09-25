@@ -47,7 +47,7 @@ namespace {
 // camera-space origin -- an orthographic ray, or a future secondary ray,
 // does not look from there. s and t default to u and v, the RISpec's own
 // default texture-coordinate mapping; texture-coordinate corners on a ray
-// primitive are a later unit.
+// primitive are not implemented.
 gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   gman::SurfacePoint point;
   point.P = hit.point;
