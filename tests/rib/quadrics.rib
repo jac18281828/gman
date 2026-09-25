@@ -6,7 +6,7 @@
 ##
 ## Explicit Clipping: Disk is a flat, camera-facing plate -- the shape that
 ## hits the near-clip precision defect hardest at the RI_EPSILON default
-## (AGENTS.md, "Explicit Clipping where geometry is flat or narrow in z").
+## (AGENTS.md, "Flat or z-narrow geometry needs Clipping 0.5 50").
 ## One Clipping for the whole scene since every primitive sits in the same
 ## z range.
 Display "quadrics.tif" "file" "rgba"
