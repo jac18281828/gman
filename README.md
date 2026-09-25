@@ -139,7 +139,9 @@ A surface shader is a `GMANSurfaceShader` subclass, built as a loadable
 module. Each `Surface` call builds its own instance, whose constructor
 resolves its parameters from the plugin's `GMANParameterList`, so
 `computeCi` and `computeOi` are `const`, read the `GMANSurfaceEnv` they are
-given, and return a `GMANColor` by value. `shaders/gmanmatte.cpp` is the
+given, and return a `GMANColor` by value. A shader may also override
+`albedo(GMANSurfaceEnv const&) const` to report its diffuse reflectance,
+defaulting to `Cs` clamped to [0, 1]. `shaders/gmanmatte.cpp` is the
 model: it exports itself through three `extern "C"` entry points:
 
 ```cpp

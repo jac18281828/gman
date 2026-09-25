@@ -70,4 +70,9 @@ public:
 
   virtual GMANColor computeCi(GMANSurfaceEnv const& se) const = 0;
   virtual GMANColor computeOi(GMANSurfaceEnv const& se) const = 0;
+
+  // The diffuse reflectance rho_d, specular and Os excluded, each channel
+  // in [0, 1]. Answered per hit, since a texture can vary it across one
+  // surface. The default reports Cs, clamped to [0, 1].
+  virtual GMANColor albedo(GMANSurfaceEnv const& se) const;
 };

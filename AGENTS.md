@@ -93,7 +93,9 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - Shader plugins: subclass `GMANSurfaceShader` in `namespace gmanshader`;
   define `GMANGetLoadableInfo`, `GMANLoadShader` and `GMANDestroyShader` at
   global scope as `extern "C" GMAN_EXPORT`, build with `gman_add_plugin`.
-  See `shaders/gmanmatte.cpp`.
+  See `shaders/gmanmatte.cpp`. A shader may override
+  `albedo(GMANSurfaceEnv const&) const` to report its diffuse reflectance,
+  defaulting to `Cs` clamped to [0, 1].
 
 ## Completion Gates
 

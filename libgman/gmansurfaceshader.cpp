@@ -51,3 +51,11 @@ RtVoid GMANSurfaceShader::illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANC
 #endif
   istmt[i](L, Cl, Ol);
 }
+
+namespace {
+RtFloat clampToUnit(RtFloat value) { return GMANMIN(GMANMAX(value, (RtFloat)0.0), (RtFloat)1.0); }
+} // namespace
+
+GMANColor GMANSurfaceShader::albedo(GMANSurfaceEnv const& se) const {
+  return GMANColor(clampToUnit(se.Cs.getRed()), clampToUnit(se.Cs.getGreen()), clampToUnit(se.Cs.getBlue()));
+}
