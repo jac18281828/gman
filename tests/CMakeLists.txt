@@ -1351,7 +1351,6 @@ add_dependencies(gman_shadermodulenames gman_zbuffer gman_matte gman_notasurface
 add_test(NAME shadermodulenames COMMAND gman_shadermodulenames)
 set_tests_properties(shadermodulenames PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
-  WILL_FAIL TRUE
   LABELS unit
   TIMEOUT 30)
 

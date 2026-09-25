@@ -106,39 +106,51 @@ RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList con
 }
 
 RtVoid GMANAttributes::setDisplacement(const std::string& name, GMANParameterList const& pl) {
-  displacementModule = std::make_shared<GMANLoadableShader>(name.c_str(), pl);
-  if (displacementModule->getType() == GMANShader::DISPLACEMENT) {
-    displacement = displacementModule->getDisplacement();
-  } else {
-    throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified displacement shader is not a displacement shader."));
+  auto resolved = gman::resolveLoadableShader("Displacement", "the surface renders undisplaced", name, pl,
+                                              GMANShader::DISPLACEMENT);
+  if (!resolved) {
+    displacementModule.reset();
+    displacement = nullptr;
+    return;
   }
+  displacementModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
+  displacement = displacementModule->getDisplacement();
 }
 
 RtVoid GMANAttributes::setAtmosphere(const std::string& name, GMANParameterList const& pl) {
-  atmosphereModule = std::make_shared<GMANLoadableShader>(name.c_str(), pl);
-  if (atmosphereModule->getType() == GMANShader::VOLUME) {
-    atmosphere = atmosphereModule->getVolume();
-  } else {
-    throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified atmosphere shader is not a volume shader."));
+  auto resolved =
+      gman::resolveLoadableShader("Atmosphere", "no atmosphere shades the volume", name, pl, GMANShader::VOLUME);
+  if (!resolved) {
+    atmosphereModule.reset();
+    atmosphere = nullptr;
+    return;
   }
+  atmosphereModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
+  atmosphere = atmosphereModule->getVolume();
 }
 
 RtVoid GMANAttributes::setInterior(const std::string& name, GMANParameterList const& pl) {
-  interiorModule = std::make_shared<GMANLoadableShader>(name.c_str(), pl);
-  if (interiorModule->getType() == GMANShader::VOLUME) {
-    interior = interiorModule->getVolume();
-  } else {
-    throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified interior shader is not a volume shader."));
+  auto resolved =
+      gman::resolveLoadableShader("Interior", "the volume shades without an interior", name, pl, GMANShader::VOLUME);
+  if (!resolved) {
+    interiorModule.reset();
+    interior = nullptr;
+    return;
   }
+  interiorModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
+  interior = interiorModule->getVolume();
 }
 
 RtVoid GMANAttributes::setExterior(const std::string& name, GMANParameterList const& pl) {
-  exteriorModule = std::make_shared<GMANLoadableShader>(name.c_str(), pl);
-  if (exteriorModule->getType() == GMANShader::VOLUME) {
-    exterior = exteriorModule->getVolume();
-  } else {
-    throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified exterior shader is not a volume shader."));
+  auto resolved =
+      gman::resolveLoadableShader("Exterior", "the volume shades without an exterior", name, pl, GMANShader::VOLUME);
+  if (!resolved) {
+    exteriorModule.reset();
+    exterior = nullptr;
+    return;
   }
+  exteriorModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
+  exterior = exteriorModule->getVolume();
 }
 
 RtVoid GMANAttributes::setShadingRate(RtFloat sz) { shadingRate = sz; }
