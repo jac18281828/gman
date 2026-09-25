@@ -2129,8 +2129,7 @@ add_test(NAME unknownsurface_zbuffer
 set_tests_properties(unknownsurface_zbuffer PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
-  TIMEOUT 30
-  WILL_FAIL TRUE)
+  TIMEOUT 30)
 
 if(GMAN_BUILD_RAYTRACER)
   add_dependencies(gman_unknownsurface gman_raytracer)
@@ -2146,8 +2145,7 @@ if(GMAN_BUILD_RAYTRACER)
   set_tests_properties(unknownsurface_raytracer PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
-    TIMEOUT 30
-    WILL_FAIL TRUE)
+    TIMEOUT 30)
 endif()
 
 # Proves both halves of an installed gman. bin/gman renders every
