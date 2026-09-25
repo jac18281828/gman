@@ -68,6 +68,26 @@ GMANParameterList kdAndTextureParam(RtFloat kd, std::string const& texturename) 
   return GMANParameterList(dictionary, 2, tokens, parms);
 }
 
+GMANParameterList kdAndKsParam(RtFloat kd, RtFloat ks) {
+  static GMANDictionary dictionary;
+  RtToken tokens[2] = {RI_KD, RI_KS};
+  RtPointer parms[2] = {&kd, &ks};
+  return GMANParameterList(dictionary, 2, tokens, parms);
+}
+
+// Loads path with params, and answers its albedo for env se.
+GMANColor loadAlbedo(std::string const& path, GMANParameterList const& params, GMANSurfaceEnv const& se) {
+  GMANLoadableShader loader(path.c_str(), params);
+  GMANSurfaceShader const* shader = loader.getSurface();
+  return shader->albedo(se);
+}
+
+// Kd*Cs, the diffuse product every clamp and exclusion check compares
+// against.
+GMANColor kdCs(RtFloat kd, GMANColor const& cs) {
+  return GMANColor(kd * cs.getRed(), kd * cs.getGreen(), kd * cs.getBlue());
+}
+
 // A minimal, in-file GMANSurfaceShader that never overrides albedo, so
 // its own answer comes straight from the base default.
 class BaseDefaultShader : public GMANSurfaceShader {
@@ -105,43 +125,37 @@ void checkMatteOrPlastic(std::string const& path, std::string const& name, RtFlo
   GMANColor const opaqueOs((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
 
   {
-    GMANLoadableShader loader(path.c_str(), floatParam(RI_KD, testKd));
-    GMANSurfaceShader const* shader = loader.getSurface();
     GMANSurfaceEnv se;
     se.Cs = cs;
     se.Os = opaqueOs;
-    GMANColor const want(testKd * cs.getRed(), testKd * cs.getGreen(), testKd * cs.getBlue());
-    check(colorNear(shader->albedo(se), want, kTol), name + ": B albedo equals Kd*Cs within tolerance");
+    check(colorNear(loadAlbedo(path, floatParam(RI_KD, testKd), se), kdCs(testKd, cs), kTol),
+          name + ": B albedo equals Kd*Cs within tolerance");
   }
 
   {
     RtFloat const highKd = (RtFloat)2.0;
     GMANColor const highCs((RtFloat)0.9, (RtFloat)0.9, (RtFloat)0.9);
-    GMANLoadableShader loader(path.c_str(), floatParam(RI_KD, highKd));
-    GMANSurfaceShader const* shader = loader.getSurface();
+    GMANColor const want((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
     GMANSurfaceEnv se;
     se.Cs = highCs;
     se.Os = opaqueOs;
-    GMANColor const want((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
-    check(colorExactly(shader->albedo(se), want), name + ": B albedo clamps a raw product above 1 to exactly 1");
+    check(colorExactly(loadAlbedo(path, floatParam(RI_KD, highKd), se), want),
+          name + ": B albedo clamps a raw product above 1 to exactly 1");
   }
 
   {
     RtFloat const negativeKd = (RtFloat)-0.3;
-    GMANLoadableShader loader(path.c_str(), floatParam(RI_KD, negativeKd));
-    GMANSurfaceShader const* shader = loader.getSurface();
+    GMANColor const want((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
     GMANSurfaceEnv se;
     se.Cs = cs;
     se.Os = opaqueOs;
-    GMANColor const want((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
-    check(colorExactly(shader->albedo(se), want), name + ": B albedo clamps a raw negative product to exactly 0");
+    check(colorExactly(loadAlbedo(path, floatParam(RI_KD, negativeKd), se), want),
+          name + ": B albedo clamps a raw negative product to exactly 0");
   }
 
   {
     GMANColor const transparentOs((RtFloat)0.2, (RtFloat)0.2, (RtFloat)0.2);
-    GMANLoadableShader loader(path.c_str(), floatParam(RI_KD, testKd));
-    GMANSurfaceShader const* shader = loader.getSurface();
-    GMANColor const want(testKd * cs.getRed(), testKd * cs.getGreen(), testKd * cs.getBlue());
+    GMANColor const want = kdCs(testKd, cs);
 
     GMANSurfaceEnv seOpaque;
     seOpaque.Cs = cs;
@@ -150,25 +164,24 @@ void checkMatteOrPlastic(std::string const& path, std::string const& name, RtFlo
     seTransparent.Cs = cs;
     seTransparent.Os = transparentOs;
 
-    check(colorNear(shader->albedo(seOpaque), want, kTol), name + ": B albedo is unaffected by Os at Os = (1, 1, 1)");
-    check(colorNear(shader->albedo(seTransparent), want, kTol),
+    check(colorNear(loadAlbedo(path, floatParam(RI_KD, testKd), seOpaque), want, kTol),
+          name + ": B albedo is unaffected by Os at Os = (1, 1, 1)");
+    check(colorNear(loadAlbedo(path, floatParam(RI_KD, testKd), seTransparent), want, kTol),
           name + ": B albedo is unaffected by Os at Os = (0.2, 0.2, 0.2)");
   }
 }
 
 // Plastic only: at Kd/Cs where every channel of Kd*Cs is below 1, so a
 // leaked specular term is not hidden by the clamp, a lit env whose
-// specular(...) is independently confirmed nonzero still answers Kd*Cs
-// exactly.
+// specular(...) is independently confirmed nonzero, and a named nonzero
+// Ks, still answers Kd*Cs exactly: no Ks/specularcolor leakage.
 void checkPlasticKsExcluded() {
   RtFloat const kd = (RtFloat)0.7;
+  RtFloat const ks = (RtFloat)0.8;
   GMANColor const cs((RtFloat)0.5, (RtFloat)0.4, (RtFloat)0.3);
   RtFloat const plasticDefaultRoughness = (RtFloat)0.1;
   GMANPoint const lightPosition((RtFloat)0.0, (RtFloat)0.0, (RtFloat)5.0);
   GMANColor const lightColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
-
-  GMANLoadableShader loader("libplastic.so", floatParam(RI_KD, kd));
-  GMANSurfaceShader const* shader = loader.getSurface();
 
   GMANSurfaceEnv se;
   se.Cs = cs;
@@ -189,38 +202,34 @@ void checkPlasticKsExcluded() {
   RtFloat const specularMagnitude = specularTerm.getRed() + specularTerm.getGreen() + specularTerm.getBlue();
   check(specularMagnitude > (RtFloat)0.0, "B Ks-excluded: se.specular(...) at this env is nonzero");
 
-  GMANColor const want(kd * cs.getRed(), kd * cs.getGreen(), kd * cs.getBlue());
-  check(colorNear(shader->albedo(se), want, kTol),
-        "B Ks-excluded: plastic's albedo excludes the nonzero specular term");
+  check(colorExactly(loadAlbedo("libplastic.so", kdAndKsParam(kd, ks), se), kdCs(kd, cs)),
+        "B Ks-excluded: plastic's albedo excludes the nonzero specular term at Ks = 0.8");
 }
 
-// paintedplastic: an empty texturename matches the white-texture default;
-// a real texture multiplies in the sampled texel.
+// paintedplastic: an empty texturename matches the white-texture default; a
+// real texture multiplies in the sampled texel at an asymmetric (s, t)
+// whose swap would read a different texel; and its own clamp bounds, as
+// matte and plastic have.
 void checkPaintedPlastic() {
   RtFloat const kd = (RtFloat)0.6;
   GMANColor const cs((RtFloat)0.5, (RtFloat)0.4, (RtFloat)0.3);
 
   {
-    GMANLoadableShader loader("libpaintedplastic.so", kdAndTextureParam(kd, std::string()));
-    GMANSurfaceShader const* shader = loader.getSurface();
     GMANSurfaceEnv se;
     se.Cs = cs;
-    GMANColor const want(kd * cs.getRed(), kd * cs.getGreen(), kd * cs.getBlue());
-    check(colorNear(shader->albedo(se), want, kTol),
+    check(colorNear(loadAlbedo("libpaintedplastic.so", kdAndTextureParam(kd, std::string()), se), kdCs(kd, cs), kTol),
           "C: paintedplastic albedo with an empty texturename equals Kd*Cs, matching B's matte/plastic case");
   }
 
   {
     std::string const textureName = "shaderalbedo_checker.tif";
-    RtFloat const s = (RtFloat)0.25; // the checker's top-left texel centre
+    RtFloat const s = (RtFloat)0.75; // the checker's top-right texel centre
     RtFloat const t = (RtFloat)0.25;
     GMANColor const whiteTexel((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
-    GMANColor const redTexel((RtFloat)1.0, (RtFloat)0.0, (RtFloat)0.0); // checkertexture.h's top-left
+    GMANColor const greenTexel((RtFloat)0.0, (RtFloat)1.0, (RtFloat)0.0); // checkertexture.h's top-right
 
     check(writeCheckerTexture(textureName), textureName + " writes into the test's own working directory");
 
-    GMANLoadableShader loader("libpaintedplastic.so", kdAndTextureParam(kd, textureName));
-    GMANSurfaceShader const* shader = loader.getSurface();
     GMANSurfaceEnv se;
     se.Cs = cs;
     se.s = s;
@@ -228,11 +237,32 @@ void checkPaintedPlastic() {
 
     GMANColor const tex = se.texture(textureName, s, t);
     check(!colorExactly(tex, whiteTexel), "C: the sampled texel differs from white in at least one channel");
-    check(colorExactly(tex, redTexel), "C: the sampled texel equals the checker's own top-left texel");
+    check(colorExactly(tex, greenTexel), "C: the sampled texel equals the checker's own top-right texel");
 
     GMANColor const want(kd * cs.getRed() * tex.getRed(), kd * cs.getGreen() * tex.getGreen(),
                          kd * cs.getBlue() * tex.getBlue());
-    check(colorNear(shader->albedo(se), want, kTol), "C: paintedplastic albedo equals Kd*Cs*tex within tolerance");
+    check(colorNear(loadAlbedo("libpaintedplastic.so", kdAndTextureParam(kd, textureName), se), want, kTol),
+          "C: paintedplastic albedo equals Kd*Cs*tex within tolerance, at (s, t) whose swap reads a different "
+          "texel");
+  }
+
+  {
+    RtFloat const highKd = (RtFloat)2.0;
+    GMANColor const highCs((RtFloat)0.9, (RtFloat)0.9, (RtFloat)0.9);
+    GMANColor const want((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
+    GMANSurfaceEnv se;
+    se.Cs = highCs;
+    check(colorExactly(loadAlbedo("libpaintedplastic.so", kdAndTextureParam(highKd, std::string()), se), want),
+          "paintedplastic: C albedo clamps a raw product above 1 to exactly 1");
+  }
+
+  {
+    RtFloat const negativeKd = (RtFloat)-0.3;
+    GMANColor const want((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
+    GMANSurfaceEnv se;
+    se.Cs = cs;
+    check(colorExactly(loadAlbedo("libpaintedplastic.so", kdAndTextureParam(negativeKd, std::string()), se), want),
+          "paintedplastic: C albedo clamps a raw negative product to exactly 0");
   }
 }
 
@@ -243,11 +273,9 @@ void checkBlackShader(std::string const& path, std::string const& name) {
   GMANColor const cs((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
   GMANColor const black((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
 
-  GMANLoadableShader loader(path.c_str(), GMANParameterList());
-  GMANSurfaceShader const* shader = loader.getSurface();
   GMANSurfaceEnv se;
   se.Cs = cs;
-  check(colorExactly(shader->albedo(se), black), name + ": D albedo is exactly black");
+  check(colorExactly(loadAlbedo(path, GMANParameterList(), se), black), name + ": D albedo is exactly black");
 }
 
 } // namespace
