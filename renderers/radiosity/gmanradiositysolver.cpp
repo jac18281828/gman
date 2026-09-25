@@ -294,14 +294,15 @@ namespace {
 
 // One shooter sample's form-factor contribution to receiver: the arrival
 // side its segment reaches, and the per-channel geometric term times
-// transmission, in plain doubles. False when the segment has zero length,
-// does not leave the shooter on its shooting side, or lies exactly in the
-// receiver's plane.
+// transmission, in plain doubles.
 struct RadiositySampleContribution {
   std::size_t arrival = 0;
   double red = 0, green = 0, blue = 0;
 };
 
+// Fills contribution for one sample. False when the segment has zero
+// length, does not leave the shooter on its shooting side, or lies exactly
+// in the receiver's plane.
 bool sampleFormFactorContribution(GMANRayOccluder const& occluder, gman::RadiosityReceiver const& receiver,
                                   gman::RadiositySample const& sample, double shootingSign, double receiverScale,
                                   RadiositySampleContribution& contribution) {

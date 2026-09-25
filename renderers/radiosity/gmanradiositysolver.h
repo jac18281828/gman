@@ -208,8 +208,8 @@ private:
                                   std::vector<bool>& shootsItself, double& largestMagnitude);
 
   // Fires shooterSide's shot at every receiver element (the shooter itself
-  // included when it shoots to itself), depositing rho * dH into each
-  // receiver side's irradiance and unshot.
+  // included when it shoots to itself), adding dH to each receiver side's
+  // irradiance and rho * dH to its unshot.
   static void fireShot(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
                        std::vector<gman::RadiosityReceiver> const& receivers, std::vector<bool> const& shootsItself,
                        std::vector<GMANColor> const& reflectance, std::size_t samples, std::size_t shooterSide,
