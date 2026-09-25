@@ -111,18 +111,14 @@ private:
 
   // nearestHit's own local traversal stack never holds more entries than
   // this. buildRange only recurses past a node whose own primitive count
-  // exceeds kLeafSize, and nth_element's own median split hands each
-  // recursive call at most half its parent's count, rounded up; by
-  // induction, a node d levels below the root holds at most
-  // ceil(N / 2^d) of the N primitives build() started with, for any N
-  // (bounded by what a std::size_t holds) and any split path. At
-  // d == digits(std::size_t), 2^d already exceeds every N a std::size_t
-  // can hold, so ceil(N / 2^d) is at most 1 -- at or below kLeafSize
-  // regardless of its own value -- so no node build() makes is ever
-  // this many levels deep. The traversal holds at most one pending
-  // sibling per level above the deepest node reached, plus the two
-  // children just pushed there, so the stack itself never exceeds that
-  // depth by more than one entry.
+  // exceeds kLeafSize, so a node at depth d splits only if it holds at
+  // least 2 primitives -- which needs N > 2^d, where N is the primitive
+  // count build() started with. N is at most what a std::size_t holds,
+  // so N < 2^digits(std::size_t), and therefore d < digits: no node
+  // build() makes is ever more than digits levels deep. The traversal
+  // holds at most one pending sibling per level above the deepest node
+  // reached, plus the two children just pushed there, so the stack
+  // itself peaks at digits + 1 entries -- this capacity.
   static constexpr std::size_t kMaxStackCapacity = std::numeric_limits<std::size_t>::digits + 1;
 
   std::vector<Entry> primitives;

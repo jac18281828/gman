@@ -32,16 +32,18 @@
  * The fixture: 20 spheres at x = 0, 10, ..., 190 (alternating y = +2/-2,
  * radius 1), plus 3 more overlapping spheres isolated at x = -1000 (used
  * for the hit and transmission checks below). nth_element's own median
- * split always sends the smaller half of a range's x values left and the
- * larger half right, so a node's right child is always sized ceil(count /
- * 2) -- at least as large, hence at least as tall, as its left. A ray
- * travelling in -x visits the larger-x (right) child of every node first,
- * its own box's near face being closer that way, so taking the nearer
- * child at every level follows the tree's single deepest path. Over these
- * 23 spheres that path runs root(23) -> right(12) -> right(6) -> a
- * 3-primitive leaf, three levels below the root, so the traversal's own
- * stack peaks at 4 entries: one pending sibling per level (3) plus the two
- * children just pushed at the deepest one. testPeakStack's own probe ray
+ * split always sends the smaller half of a range's own split-axis values
+ * left and the larger half right; every node along this path splits on
+ * x, so the smaller-x half goes left there. A node's right child is
+ * always sized ceil(count / 2) -- at least as large, hence at least as
+ * tall, as its left. A ray travelling in -x visits the larger-x (right)
+ * child of every node first, its own box's near face being closer that
+ * way, so taking the nearer child at every level reaches one of the
+ * tree's eight depth-3 leaves. Over these 23 spheres that path runs
+ * root(23) -> right(12) -> right(6) -> a 3-primitive leaf, three levels
+ * below the root, so the traversal's own stack peaks at 4 entries: one
+ * pending sibling per level (3) plus the two children just pushed at the
+ * deepest one. testPeakStack's own probe ray
  * starts past every one of the 20 spheres' own x and travels toward -x
  * across their whole span at y = 0, z = 0: every node's box along that
  * path still includes y = 0 (the alternation), but no individual sphere
