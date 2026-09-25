@@ -446,20 +446,20 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(const std::vector<GMANP
 // supplied instead: "st" first, then "s"/"t" each overriding only its own
 // component. RiTextureCoordinates does not apply to a polygon (RISpec 3.2);
 // getRSPolygon and getRSGeneralPolygon never resolve it.
-struct GMANPolygonVertexTexCoord {
+struct PolygonVertexTexCoord {
   RtFloat u, v, s, t;
 };
 
 // p is the vertex's own flat "P" array (3 floats per vertex, object space,
 // before the CTM); nverts is also "s"/"t"/"st"'s own declared length, so
 // index i reads the same vertex from every one of them.
-std::vector<GMANPolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParameterList& pl, RtInt nverts,
-                                                                        const RtFloat* p) {
+std::vector<PolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParameterList& pl, RtInt nverts,
+                                                                    const RtFloat* p) {
   RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
   RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
   RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
 
-  std::vector<GMANPolygonVertexTexCoord> coords(nverts);
+  std::vector<PolygonVertexTexCoord> coords(nverts);
   for (RtInt i = 0; i < nverts; i++) {
     RtFloat objX = p[3 * i];
     RtFloat objY = p[3 * i + 1];
@@ -491,8 +491,8 @@ RtInt dicedGridIndex(RtInt a, RtInt b, RtInt n) { return a * (n + 1) - a * (a - 
 // normal is not interpolated: normalVec is already the one planar normal
 // every vertex of a Polygon/GeneralPolygon shares.
 GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2,
-                            GMANPolygonVertexTexCoord const& tc0, GMANPolygonVertexTexCoord const& tc1,
-                            GMANPolygonVertexTexCoord const& tc2, RtFloat w0, RtFloat w1, RtFloat w2,
+                            PolygonVertexTexCoord const& tc0, PolygonVertexTexCoord const& tc1,
+                            PolygonVertexTexCoord const& tc2, RtFloat w0, RtFloat w1, RtFloat w2,
                             GMANNormal const& normal, GMANVector const& normalVec, gman::Appearance const& appearance,
                             GMANMatrix4 const& cameraToWorld) {
   GMANVertex* vertex = new GMANVertex();
@@ -520,16 +520,16 @@ GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
 // diced grid vertex, even along a common diagonal -- each dices
 // independently.
 void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> const& vertexLocations,
-                         std::vector<GMANPolygonVertexTexCoord> const& texCoords, GMANNormal const& normal,
+                         std::vector<PolygonVertexTexCoord> const& texCoords, GMANNormal const& normal,
                          GMANVector const& normalVec, gman::Appearance const& appearance,
                          GMANMatrix4 const& cameraToWorld, RtInt sides, RtToken orientation, GMANSurface* surface,
                          std::vector<GMANVertex*>& vertices, std::vector<GMANFace*>& faceList, RtInt n) {
   const GMANPoint& p0 = vertexLocations[i0];
   const GMANPoint& p1 = vertexLocations[i1];
   const GMANPoint& p2 = vertexLocations[i2];
-  const GMANPolygonVertexTexCoord& tc0 = texCoords[i0];
-  const GMANPolygonVertexTexCoord& tc1 = texCoords[i1];
-  const GMANPolygonVertexTexCoord& tc2 = texCoords[i2];
+  const PolygonVertexTexCoord& tc0 = texCoords[i0];
+  const PolygonVertexTexCoord& tc1 = texCoords[i1];
+  const PolygonVertexTexCoord& tc2 = texCoords[i2];
 
   std::vector<GMANVertex*> grid((n + 1) * (n + 2) / 2);
   for (RtInt a = 0; a <= n; a++) {
@@ -599,8 +599,7 @@ void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> co
 GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, const std::vector<RtInt>& ring,
                                const GMANVector& normalVec, RtInt sides, RtToken orientation,
                                gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
-                               const std::vector<GMANPolygonVertexTexCoord>& texCoords,
-                               RasterProjection const& dicing) {
+                               const std::vector<PolygonVertexTexCoord>& texCoords, RasterProjection const& dicing) {
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
@@ -614,7 +613,7 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
     vertices[i]->setLocation(vertexLocations[i]);
     vertices[i]->setNormal(normalVec);
 
-    const GMANPolygonVertexTexCoord& tc = texCoords[i];
+    const PolygonVertexTexCoord& tc = texCoords[i];
     gman::SurfacePoint const point = vertexSurfacePoint(vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t);
     gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
     vertices[i]->setColor(shading.Ci);
@@ -958,7 +957,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
 // under-three-point outer loop -- the caller skips the face rather than
 // treating it as fatal.
 bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vector<std::vector<RtInt>>& loopSlots,
-               const std::vector<GMANPolygonVertexTexCoord>& pointTexCoords, RtInt sides, RtToken orientation,
+               const std::vector<PolygonVertexTexCoord>& pointTexCoords, RtInt sides, RtToken orientation,
                gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld, RasterProjection const& dicing,
                GMANBody*& body, GMANVertex*& vertRoot) {
   const std::vector<GMANPoint>& outer = loops[0];
@@ -983,7 +982,7 @@ bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vect
   std::vector<RtInt> ring;
   bridgeHoles(loops, loopSlots, normalVec, outerBboxSide, vertexLocations, vertexSlots, ring);
 
-  std::vector<GMANPolygonVertexTexCoord> texCoords(vertexLocations.size());
+  std::vector<PolygonVertexTexCoord> texCoords(vertexLocations.size());
   for (std::size_t i = 0; i < vertexSlots.size(); i++) {
     texCoords[i] = pointTexCoords[vertexSlots[i]];
   }
@@ -1079,7 +1078,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParame
   // the degeneracy guard, the bridging (a no-op with one loop and no
   // holes) and the triangulation this shares with every other polygon
   // face.
-  std::vector<GMANPolygonVertexTexCoord> texCoords = resolvePolygonTextureCoordinates(pl, nverts, p);
+  std::vector<PolygonVertexTexCoord> texCoords = resolvePolygonTextureCoordinates(pl, nverts, p);
 
   GMANBody* body;
   GMANVertex* vertRoot;
@@ -1125,7 +1124,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSGeneralPolygon(RtInt nloops, RtI
   // from above -- bridgeHoles (inside buildFace) then reports which of
   // these slots each committed vertex carries, since it commits holes in
   // descending-rightmostU order, not this order.
-  std::vector<GMANPolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, offset, p);
+  std::vector<PolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, offset, p);
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
@@ -1175,7 +1174,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtIn
   // Resolved once, over the shared "P" a point at a time -- not per face,
   // and not in "verts" order -- so a point three faces share still reads
   // the same "s"/"t"/"st" wherever it is referenced from.
-  std::vector<GMANPolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, pointCount, p);
+  std::vector<PolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, pointCount, p);
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
@@ -1247,7 +1246,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
     }
   }
 
-  std::vector<GMANPolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, pointCount, p);
+  std::vector<PolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, pointCount, p);
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
