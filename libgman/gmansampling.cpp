@@ -33,17 +33,29 @@ namespace gman {
 
 namespace {
 
-// Salts separate the purposes sharing one hash chain -- a CMJ cell
-// permutation, its two axis permutations, and the jitter for each --
-// so no two draws from one pixel and dimension collide, and sample1D's
-// draws stay independent of sample2D's at the same dimension.
-constexpr std::uint32_t kSample1DPermPurpose = 0x9e3779b9u;
-constexpr std::uint32_t kSample1DJitterSalt = 0x85ebca77u;
-constexpr std::uint32_t kSample2DCellPurpose = 0xc2b2ae35u;
-constexpr std::uint32_t kSample2DColPurpose = 0x27d4eb2fu;
-constexpr std::uint32_t kSample2DRowPurpose = 0x165667b1u;
+// Folded into every hash chain's initial state so the all-zero tuple does
+// not hash to 0 (lowbias32(0) == 0).
+constexpr std::uint32_t kChainInit = 0x9e3779b9u;
+
+// Folded into structuralHash's initial state only: sampleHash never mixes
+// this in, so no raw draw can reproduce a permutation seed and a
+// structural hash can never equal a sampleHash draw.
+constexpr std::uint32_t kStructuralDomain = 0x85ebca6bu;
+
+// Salts separate the purposes sharing one hash chain, so no two draws
+// from one pixel and dimension collide, and sample1D's draws stay
+// independent of sample2D's at the same dimension.
+constexpr std::uint32_t kSample1DPermSalt = 0xc2b2ae35u;
+constexpr std::uint32_t kSample1DJitterSalt = 0x27d4eb2fu;
+constexpr std::uint32_t kSample2DPatternSalt = 0x165667b1u;
 constexpr std::uint32_t kSample2DJitterXSalt = 0xd3a2646cu;
 constexpr std::uint32_t kSample2DJitterYSalt = 0xfd7046c5u;
+
+// Kensler's cmj salts, multiplied into the pattern seed to separate the
+// index permutation from the column and row shuffles.
+constexpr std::uint32_t kCmjIndexSalt = 0x51633e2du;
+constexpr std::uint32_t kCmjColSalt = 0xa511e9b3u;
+constexpr std::uint32_t kCmjRowSalt = 0x63d83595u;
 
 constexpr RtFloat kPi = 3.14159265358979323846f;
 constexpr RtFloat kInvPi = 1.0f / kPi;
@@ -69,86 +81,87 @@ std::uint32_t lowbias32(std::uint32_t x) {
 std::uint32_t chain(std::uint32_t state, std::uint32_t value) { return lowbias32(state ^ value); }
 
 // A hash for values that must stay fixed across every draw at one pixel
-// and dimension -- a CMJ permutation seed -- so it folds in a purpose tag
-// instead of a sample index.
-std::uint32_t structuralHash(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t dimension, std::uint32_t purpose) {
-  std::uint32_t h = lowbias32(seed);
+// and dimension -- a CMJ pattern seed -- so it folds in a purpose salt
+// instead of a sample index, from an initial state sampleHash never
+// reaches.
+std::uint32_t structuralHash(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t dimension, std::uint32_t salt) {
+  std::uint32_t h = lowbias32(seed ^ kChainInit ^ kStructuralDomain);
   h = chain(h, static_cast<std::uint32_t>(x));
   h = chain(h, static_cast<std::uint32_t>(y));
   h = chain(h, dimension);
-  h = chain(h, purpose);
+  h = chain(h, salt);
   return h;
 }
 
-// The largest float below 1.0f. Adding a jittered stratum index and
-// dividing by the stratum count is mathematically below 1, but float
-// rounding can still land the sum on 1.0f when the jitter sits within
-// about 2^-21 of 1 -- this nudges that one case back into range.
+// The largest float below 1.0f. (stratum + jitter) / count is
+// mathematically below 1, but float rounding can still land the sum on
+// 1.0f: the rounding window is about ulp(count)/2 near 1, growing with
+// count, not a fixed fraction.
 RtFloat clampBelowOne(RtFloat v) { return v < 1.0f ? v : std::nextafter(1.0f, 0.0f); }
 
-// floor(sqrt(n)), exact: a float sqrt can round either side of an
-// integer boundary, so this corrects it rather than trusting the cast.
+// floor(sqrt(n)), exact, computed in 64 bits: a float sqrt can round
+// either side of an integer boundary, and (r+1)*(r+1) would overflow 32
+// bits for n near UINT32_MAX.
 std::uint32_t isqrtFloor(std::uint32_t n) {
   if (n == 0) {
     return 0;
   }
-  std::uint32_t r = static_cast<std::uint32_t>(std::sqrt(static_cast<double>(n)));
-  while (r > 0 && r * r > n) {
+  auto r = static_cast<std::uint64_t>(std::sqrt(static_cast<double>(n)));
+  std::uint64_t const n64 = n;
+  while (r > 0 && r * r > n64) {
     --r;
   }
-  while ((r + 1) * (r + 1) <= n) {
+  while ((r + 1) * (r + 1) <= n64) {
     ++r;
   }
-  return r;
+  return static_cast<std::uint32_t>(r);
 }
 
-// A bijective pseudo-random permutation of {0, ..., length-1}, by
-// cycle-walking a bijection of the next power-of-two superset until it
-// lands back in range -- the technique behind Kensler's own permute()
-// ("Correlated Multi-Jittered Sampling"), with an independently chosen
-// round function. Each step of permuteRound() is invertible (XOR by a fixed
-// value, or multiply by an odd constant modulo the power-of-two domain),
-// so their composition is a bijection on the masked domain; cycle-walking
-// a bijection's orbit back into a subset of its domain is itself a
-// bijection on that subset.
-std::uint32_t permuteRound(std::uint32_t i, std::uint32_t mask, std::uint32_t seed) {
-  i ^= seed & mask;
-  i &= mask;
-  i ^= i >> 16;
-  i &= mask;
-  i *= 0x7feb352du;
-  i &= mask;
-  i ^= i >> 8;
-  i &= mask;
-  i *= 0x846ca68bu;
-  i &= mask;
-  i ^= (seed >> 16) & mask;
-  i &= mask;
-  return i;
-}
+// A sampleCount of 0 behaves as 1, before any division, in both
+// samplers: a zero-sample request then yields a defined sample instead
+// of a trap in a release build.
+std::uint32_t zeroCountAsOne(std::uint32_t sampleCount) { return sampleCount == 0 ? 1u : sampleCount; }
 
-std::uint32_t permuteIndex(std::uint32_t index, std::uint32_t length, std::uint32_t seed) {
-  if (length <= 1) {
-    return 0;
-  }
-  std::uint32_t mask = length - 1;
-  mask |= mask >> 1;
-  mask |= mask >> 2;
-  mask |= mask >> 4;
-  mask |= mask >> 8;
-  mask |= mask >> 16;
-
-  std::uint32_t i = index;
+// Kensler's permute: a pseudo-random bijection of {0, ..., length-1} by
+// cycle-walking a bijection of the smallest power-of-two superset back
+// into range (Kensler, "Correlated Multi-Jittered Sampling", Pixar
+// Technical Memo 13-01, 2013). The mask is built by OR-shift, not
+// std::bit_ceil: length can reach UINT32_MAX, where the next power of
+// two overflows std::bit_ceil's domain.
+std::uint32_t permute(std::uint32_t i, std::uint32_t length, std::uint32_t seed) {
+  std::uint32_t w = length - 1u;
+  w |= w >> 1;
+  w |= w >> 2;
+  w |= w >> 4;
+  w |= w >> 8;
+  w |= w >> 16;
   do {
-    i = permuteRound(i, mask, seed);
+    i ^= seed;
+    i *= 0xe170893du;
+    i ^= seed >> 16;
+    i ^= (i & w) >> 4;
+    i ^= seed >> 8;
+    i *= 0x0929eb3fu;
+    i ^= seed >> 23;
+    i ^= (i & w) >> 1;
+    i *= 1u | seed >> 27;
+    i *= 0x6935fa69u;
+    i ^= (i & w) >> 11;
+    i *= 0x74dcb303u;
+    i ^= (i & w) >> 2;
+    i *= 0x9e501cc3u;
+    i ^= (i & w) >> 2;
+    i *= 0xc860a3dfu;
+    i &= w;
+    i ^= i >> 5;
   } while (i >= length);
-  return i;
+  return (i + seed) % length;
 }
 
 } // namespace
 
 std::uint32_t sampleHash(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleIndex, std::uint32_t dimension) {
-  std::uint32_t h = lowbias32(seed);
+  std::uint32_t h = lowbias32(seed ^ kChainInit);
   h = chain(h, static_cast<std::uint32_t>(x));
   h = chain(h, static_cast<std::uint32_t>(y));
   h = chain(h, sampleIndex);
@@ -160,53 +173,49 @@ RtFloat unitFloat(std::uint32_t h) { return static_cast<RtFloat>(h >> 8) * 0x1p-
 
 RtFloat sample1D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleIndex, std::uint32_t sampleCount,
                  std::uint32_t dimension) {
-  assert(sampleIndex < sampleCount);
+  std::uint32_t const count = zeroCountAsOne(sampleCount);
+  assert(sampleIndex < count);
 
-  std::uint32_t const permSeed = structuralHash(seed, x, y, dimension, kSample1DPermPurpose);
-  std::uint32_t const stratum = permuteIndex(sampleIndex, sampleCount, permSeed);
+  std::uint32_t const permSeed = structuralHash(seed, x, y, dimension, kSample1DPermSalt);
+  std::uint32_t const stratum = permute(sampleIndex, count, permSeed);
   std::uint32_t const jitterHash = chain(sampleHash(seed, x, y, sampleIndex, dimension), kSample1DJitterSalt);
   RtFloat const jitter = unitFloat(jitterHash);
 
-  return clampBelowOne((static_cast<RtFloat>(stratum) + jitter) / static_cast<RtFloat>(sampleCount));
+  return clampBelowOne((static_cast<RtFloat>(stratum) + jitter) / static_cast<RtFloat>(count));
 }
 
 Sample2D sample2D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleIndex, std::uint32_t sampleCount,
                   std::uint32_t dimension) {
-  assert(sampleIndex < sampleCount);
+  std::uint32_t const count = zeroCountAsOne(sampleCount);
+  assert(sampleIndex < count);
 
-  std::uint32_t const m = isqrtFloor(sampleCount);
-  std::uint32_t const n = (sampleCount + m - 1) / m;
-  std::uint32_t const gridSize = m * n;
+  std::uint32_t const m = isqrtFloor(count);
+  // 64 bits: count + m - 1 overflows 32 bits when count is near
+  // UINT32_MAX, which would silently floor n to 0 and send permute()
+  // into an unbounded cycle walk over an empty range.
+  std::uint32_t const n =
+      static_cast<std::uint32_t>((static_cast<std::uint64_t>(count) + m - 1) / static_cast<std::uint64_t>(m));
 
-  // Shuffles which grid cell each sample index lands in, per pixel and
-  // dimension, so the (cell, stratum) sequence itself -- not just its
-  // jitter -- differs across pixels: composing a permutation with the
-  // canonical index-to-cell split below is still a bijection onto the
-  // grid.
-  std::uint32_t const cellPermSeed = structuralHash(seed, x, y, dimension, kSample2DCellPurpose);
-  std::uint32_t const s = permuteIndex(sampleIndex, sampleCount, cellPermSeed);
+  // One column shuffle and one row shuffle per pattern (seed, x, y,
+  // dimension), shared across every sample index: Kensler's cmj,
+  // correlated multi-jittered sampling.
+  std::uint32_t const pattern = structuralHash(seed, x, y, dimension, kSample2DPatternSalt);
+  std::uint32_t const s = permute(sampleIndex, count, pattern * kCmjIndexSalt);
   std::uint32_t const i = s % m;
   std::uint32_t const j = s / m;
-
-  // Within column i, the samples sharing it take each row 0..n-1
-  // exactly once as sampleIndex ranges over sampleCount; permuting that
-  // row by a seed keyed on i alone spreads them over every one of the
-  // column's n sub-strata. The symmetric permutation on j spreads each
-  // row over its m sub-strata.
-  std::uint32_t const colPermSeed = structuralHash(seed, x, y, dimension, chain(kSample2DColPurpose, i));
-  std::uint32_t const rowPermSeed = structuralHash(seed, x, y, dimension, chain(kSample2DRowPurpose, j));
-  std::uint32_t const colSub = permuteIndex(j, n, colPermSeed);
-  std::uint32_t const rowSub = permuteIndex(i, m, rowPermSeed);
-
-  std::uint32_t const subColumn = i * n + colSub;
-  std::uint32_t const subRow = j * m + rowSub;
+  std::uint32_t const colShuffle = permute(i, m, pattern * kCmjColSalt);
+  std::uint32_t const rowShuffle = permute(j, n, pattern * kCmjRowSalt);
 
   std::uint32_t const baseHash = sampleHash(seed, x, y, sampleIndex, dimension);
   RtFloat const jitterX = unitFloat(chain(baseHash, kSample2DJitterXSalt));
   RtFloat const jitterY = unitFloat(chain(baseHash, kSample2DJitterYSalt));
 
-  RtFloat const u1 = clampBelowOne((static_cast<RtFloat>(subColumn) + jitterX) / static_cast<RtFloat>(gridSize));
-  RtFloat const u2 = clampBelowOne((static_cast<RtFloat>(subRow) + jitterY) / static_cast<RtFloat>(gridSize));
+  RtFloat const u1 =
+      clampBelowOne((static_cast<RtFloat>(i) + (static_cast<RtFloat>(rowShuffle) + jitterX) / static_cast<RtFloat>(n)) /
+                    static_cast<RtFloat>(m));
+  RtFloat const u2 =
+      clampBelowOne((static_cast<RtFloat>(j) + (static_cast<RtFloat>(colShuffle) + jitterY) / static_cast<RtFloat>(m)) /
+                    static_cast<RtFloat>(n));
   return {u1, u2};
 }
 
@@ -259,7 +268,7 @@ GMANVector uniformCone(RtFloat u1, RtFloat u2, RtFloat cosThetaMax) {
   RtFloat const cosTheta = (1.0f - u1) + u1 * cosThetaMax;
   RtFloat const sinTheta = std::sqrt(std::max(0.0f, 1.0f - cosTheta * cosTheta));
   RtFloat const phi = 2.0f * kPi * u2;
-  return GMANVector(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
+  return GMANVector(sinTheta * std::cos(phi), sinTheta * std::sin(phi), std::max(cosTheta, cosThetaMax));
 }
 
 RtFloat uniformConePdf(RtFloat cosThetaMax) { return kInv2Pi / (1.0f - cosThetaMax); }
