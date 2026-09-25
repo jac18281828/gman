@@ -25,14 +25,25 @@
 
 #pragma once
 
+#include <vector>
+
 #include <stdarg.h>
 
 #include "ri.h"
 
 namespace gman {
 
-extern RtVoid getArguments(va_list args, RtInt n, RtToken* tokens, RtPointer* parms);
+// An ellipsis Ri* call's optional token/value pairs, owned by value. n
+// equals tokens.size() (== parms.size()).
+struct Arguments {
+  RtInt n;
+  std::vector<RtToken> tokens;
+  std::vector<RtPointer> parms;
+};
 
-extern RtInt countArguments(va_list args);
+// Walks args exactly once, reading RtToken/RtPointer pairs until RI_NULL.
+// The caller's va_list is consumed by this single pass; it must not be read
+// again.
+extern Arguments getArguments(va_list args);
 
 } // namespace gman

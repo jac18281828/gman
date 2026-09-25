@@ -177,29 +177,14 @@ extern "C" RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat
 };
 
 extern "C" RtVoid RiProjection(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiProjectionV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
+    RiProjectionV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -269,28 +254,14 @@ extern "C" RtVoid RiExposure(RtFloat gain, RtFloat gamma) {
 };
 
 extern "C" RtVoid RiImager(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiImagerV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
+    RiImagerV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
     GMANHandleError(error);
   }
 };
@@ -312,28 +283,14 @@ extern "C" RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFl
 };
 
 extern "C" RtVoid RiDisplay(char* name, RtToken type, RtToken mode, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, mode);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiDisplayV(name, type, mode, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
+    RiDisplayV(name, type, mode, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
     GMANHandleError(error);
   }
 };
@@ -349,28 +306,14 @@ extern "C" RtVoid RiDisplayV(char* name, RtToken type, RtToken mode, RtInt n, Rt
 /* Settings for Hidden Surface removal -- If renderer uses it */
 
 extern "C" RtVoid RiHider(RtToken type, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, type);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiHiderV(type, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
+    RiHiderV(type, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
     GMANHandleError(error);
   }
 };
@@ -400,28 +343,14 @@ extern "C" RtVoid RiRelativeDetail(RtFloat relativedetail) {
 };
 
 extern "C" RtVoid RiOption(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiOptionV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
+    RiOptionV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
     GMANHandleError(error);
   }
 };
@@ -477,29 +406,14 @@ extern "C" RtVoid RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFlo
 };
 
 extern "C" RtLightHandle RiLightSource(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RtLightHandle source = RiLightSourceV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-    return source;
+    return RiLightSourceV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
     GMANHandleError(error);
   }
   return nullptr;
@@ -515,29 +429,14 @@ extern "C" RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[],
 };
 
 extern "C" RtLightHandle RiAreaLightSource(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RtLightHandle source = RiAreaLightSourceV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-    return source;
+    return RiAreaLightSourceV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
     GMANHandleError(error);
   }
   return nullptr;
@@ -560,28 +459,14 @@ extern "C" GMAN_EXPORT RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff)
   }
 };
 extern "C" RtVoid RiSurface(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiSurfaceV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
+    RiSurfaceV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
     GMANHandleError(error);
   }
 };
@@ -595,30 +480,14 @@ extern "C" RtVoid RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer 
 };
 
 extern "C" RtVoid RiAtmosphere(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiAtmosphereV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiAtmosphereV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -632,31 +501,14 @@ extern "C" RtVoid RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPoint
 };
 
 extern "C" RtVoid RiInterior(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiInteriorV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiInteriorV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -670,31 +522,14 @@ extern "C" RtVoid RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer
 };
 
 extern "C" RtVoid RiExterior(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiExteriorV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiExteriorV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -855,31 +690,14 @@ extern "C" RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, R
 };
 
 extern "C" RtVoid RiDeformation(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiDeformationV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiDeformationV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -893,31 +711,14 @@ extern "C" RtVoid RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPoin
 };
 
 extern "C" RtVoid RiDisplacement(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiDisplacementV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiDisplacementV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -973,31 +774,14 @@ extern "C" GMAN_EXPORT RtVoid RiTransformEnd(RtVoid) {
 };
 
 extern "C" RtVoid RiAttribute(RtToken name, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, name);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiAttributeV(name, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiAttributeV(name, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1012,31 +796,14 @@ extern "C" RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointe
 
 /* Primitives */
 extern "C" RtVoid RiPolygon(RtInt nverts, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, nverts);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiPolygonV(nverts, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiPolygonV(nverts, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1050,31 +817,14 @@ extern "C" RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer 
 };
 
 extern "C" RtVoid RiGeneralPolygon(RtInt nloops, RtInt nverts[], ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, nverts);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiGeneralPolygonV(nloops, nverts, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiGeneralPolygonV(nloops, nverts, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1088,31 +838,14 @@ extern "C" RtVoid RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtTok
 };
 
 extern "C" RtVoid RiPointsPolygons(RtInt npolys, RtInt nverts[], RtInt verts[], ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, verts);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiPointsPolygonsV(npolys, nverts, verts, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiPointsPolygonsV(npolys, nverts, verts, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1127,31 +860,14 @@ extern "C" RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[],
 };
 
 extern "C" RtVoid RiPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, verts);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiPointsGeneralPolygonsV(npolys, nloops, nverts, verts, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiPointsGeneralPolygonsV(npolys, nloops, nverts, verts, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1174,31 +890,14 @@ extern "C" RtVoid RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vst
 };
 
 extern "C" RtVoid RiPatch(RtToken type, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, type);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiPatchV(type, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiPatchV(type, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1212,31 +911,14 @@ extern "C" RtVoid RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer pa
 };
 
 extern "C" RtVoid RiPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, vwrap);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiPatchMeshV(type, nu, uwrap, nv, vwrap, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiPatchMeshV(type, nu, uwrap, nv, vwrap, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1252,31 +934,14 @@ extern "C" RtVoid RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, 
 
 extern "C" RtVoid RiNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
                             RtFloat vknot[], RtFloat vmin, RtFloat vmax, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, vmax);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiNuPatchV(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiNuPatchV(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1305,31 +970,14 @@ extern "C" RtVoid RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[], RtFl
 /* Whew! */
 
 extern "C" RtVoid RiSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiSphereV(radius, zmin, zmax, tmax, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiSphereV(radius, zmin, zmax, tmax, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1345,31 +993,14 @@ extern "C" RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat 
 };
 
 extern "C" RtVoid RiCone(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiConeV(height, radius, tmax, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiConeV(height, radius, tmax, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1383,31 +1014,14 @@ extern "C" RtVoid RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n,
 };
 
 extern "C" RtVoid RiCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiCylinderV(radius, zmin, zmax, tmax, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiCylinderV(radius, zmin, zmax, tmax, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1422,31 +1036,14 @@ extern "C" RtVoid RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloa
 };
 
 extern "C" RtVoid RiHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiHyperboloidV(point1, point2, tmax, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiHyperboloidV(point1, point2, tmax, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1461,31 +1058,14 @@ extern "C" RtVoid RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, R
 };
 
 extern "C" RtVoid RiParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiParaboloidV(rmax, zmin, zmax, tmax, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiParaboloidV(rmax, zmin, zmax, tmax, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1500,32 +1080,14 @@ extern "C" RtVoid RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloa
 };
 
 extern "C" RtVoid RiDisk(RtFloat height, RtFloat radius, RtFloat tmax, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
-
-    RiDiskV(height, radius, tmax, n, tokens, parms);
-
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
 
+    RiDiskV(height, radius, tmax, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1539,31 +1101,14 @@ extern "C" RtVoid RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n,
 };
 
 extern "C" RtVoid RiTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, tmax);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiTorusV(majrad, minrad, phimin, phimax, tmax, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiTorusV(majrad, minrad, phimin, phimax, tmax, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1579,31 +1124,14 @@ extern "C" RtVoid RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFlo
 
 extern "C" RtVoid RiBlobby(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr, RtToken str[],
                            ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, str);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiBlobbyV(nleaf, ncode, code, nflt, flt, nstr, str, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiBlobbyV(nleaf, ncode, code, nflt, flt, nstr, str, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1618,34 +1146,17 @@ extern "C" RtVoid RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, 
 }
 
 extern "C" RtVoid RiPoints(RtInt npoints, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, npoints);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiPointsV(npoints, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiPointsV(npoints, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
-}
+};
 
 extern "C" RtVoid RiPointsV(RtInt npoints, RtInt n, RtToken tokens[], RtPointer parms[]) {
   try {
@@ -1656,31 +1167,14 @@ extern "C" RtVoid RiPointsV(RtInt npoints, RtInt n, RtToken tokens[], RtPointer 
 }
 
 extern "C" RtVoid RiCurves(RtToken type, RtInt ncurves, RtInt nvertices[], RtToken wrap, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, wrap);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiCurvesV(type, ncurves, nvertices, wrap, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiCurvesV(type, ncurves, nvertices, wrap, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1696,31 +1190,15 @@ extern "C" RtVoid RiCurvesV(RtToken type, RtInt ncurves, RtInt nvertices[], RtTo
 
 extern "C" RtVoid RiSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[],
                                     RtInt numargs[], RtInt intargs[], RtFloat floatargs[], ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, floatargs);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiSubdivisionMeshV(mask, nf, nverts, verts, ntags, tags, numargs, intargs, floatargs, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiSubdivisionMeshV(mask, nf, nverts, verts, ntags, tags, numargs, intargs, floatargs, a.n, a.tokens.data(),
+                       a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1745,31 +1223,14 @@ extern "C" RtVoid RiProcedural(RtPointer data, RtBound bound, RtVoid (*subdivfun
   }
 }
 extern "C" RtVoid RiGeometry(RtToken type, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, type);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiGeometryV(type, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiGeometryV(type, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1869,31 +1330,14 @@ extern "C" RtVoid RiMotionEnd(RtVoid) {
 /* Texture */
 extern "C" RtVoid RiMakeTexture(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
                                 RtFloat swidth, RtFloat twidth, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiMakeTextureV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiMakeTextureV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1910,31 +1354,14 @@ extern "C" RtVoid RiMakeTextureV(char* pic, char* tex, RtToken swrap, RtToken tw
 
 extern "C" RtVoid RiMakeBump(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
                              RtFloat swidth, RtFloat twidth, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiMakeBumpV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiMakeBumpV(pic, tex, swrap, twrap, filterfunc, swidth, twidth, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1950,31 +1377,14 @@ extern "C" RtVoid RiMakeBumpV(char* pic, char* tex, RtToken swrap, RtToken twrap
 
 extern "C" RtVoid RiMakeLatLongEnvironment(char* pic, char* tex, RtFilterFunc filterfunc, RtFloat swidth,
                                            RtFloat twidth, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, twidth);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiMakeLatLongEnvironmentV(pic, tex, filterfunc, swidth, twidth, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiMakeLatLongEnvironmentV(pic, tex, filterfunc, swidth, twidth, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -1990,31 +1400,15 @@ extern "C" RtVoid RiMakeLatLongEnvironmentV(char* pic, char* tex, RtFilterFunc f
 
 extern "C" RtVoid RiMakeCubeFaceEnvironment(char* px, char* nx, char* py, char* ny, char* pz, char* nz, char* tex,
                                             RtFloat fov, RtFilterFunc filterfunc, RtFloat swidth, RtFloat ywidth, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
-
   try {
     va_list args;
     va_start(args, ywidth);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiMakeCubeFaceEnvironmentV(px, nx, py, ny, pz, nz, tex, fov, filterfunc, swidth, ywidth, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiMakeCubeFaceEnvironmentV(px, nx, py, ny, pz, nz, tex, fov, filterfunc, swidth, ywidth, a.n, a.tokens.data(),
+                               a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
@@ -2031,30 +1425,14 @@ extern "C" RtVoid RiMakeCubeFaceEnvironmentV(char* px, char* nx, char* py, char*
 };
 
 extern "C" RtVoid RiMakeShadow(char* pic, char* tex, ...) {
-  RtToken* tokens = NULL;
-  RtPointer* parms = NULL;
   try {
     va_list args;
     va_start(args, tex);
-    RtInt n = gman::countArguments(args);
-    tokens = new RtToken[n];
-    parms = new RtPointer[n];
-
-    gman::getArguments(args, n, tokens, parms);
+    gman::Arguments a = gman::getArguments(args);
     va_end(args);
 
-    RiMakeShadowV(pic, tex, n, tokens, parms);
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
+    RiMakeShadowV(pic, tex, a.n, a.tokens.data(), a.parms.data());
   } catch (GMANError& error) {
-    if (tokens)
-      delete[] tokens;
-    if (parms)
-      delete[] parms;
-
     GMANHandleError(error);
   }
 };
