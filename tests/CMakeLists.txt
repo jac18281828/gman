@@ -2161,6 +2161,27 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
+  # `gman -r gmanraytracer` renders tests/rib/indirectseam_*.rib: Option
+  # "render" "string indirect" naming constantindirect brightens a matte
+  # sphere by exactly that module's own constant, a missing pass changes
+  # nothing, clearing the name undoes it, and the pass reaches a mirror's
+  # own reflected hit too. See tests/indirectrender_test.cpp.
+  add_executable(gman_indirectrender indirectrender_test.cpp)
+  target_link_libraries(gman_indirectrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_indirectrender gman_raytracer gman_matte gman_mirror gman_constantindirect)
+
+  set(GMAN_INDIRECTRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/indirectrender-run")
+  file(MAKE_DIRECTORY "${GMAN_INDIRECTRENDER_WORKDIR}")
+
+  add_test(NAME indirectrender
+    COMMAND gman_indirectrender $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_INDIRECTRENDER_WORKDIR}")
+  set_tests_properties(indirectrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
   # `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib, a
   # full torus tilted so its hole shows and a partial torus, matching a
   # checked-in golden image. See tests/torusrayrender_test.cpp.

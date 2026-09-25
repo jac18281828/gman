@@ -1,0 +1,16 @@
+## indirectseam_none.rib's own scene, naming a pass that does not exist: a
+## missing pass costs the indirect light, never the frame, so this must
+## render identically to indirectseam_none.rib. Not third-party.
+Display "indirectseam_nosuchpass.tif" "file" "rgba"
+Format 48 48 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Option "render" "string indirect" ["nosuchpass"]
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3931372549019608]
+Surface "matte" "Ka" [1] "Kd" [1]
+Color [1 1 1]
+Opacity [1 1 1]
+Sphere 1 -1 1 360
+WorldEnd

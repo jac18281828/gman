@@ -1,0 +1,31 @@
+## indirectseam_mirror_none.rib's own scene, naming constantindirect: the
+## mirror's own reflection brightens by exactly that module's own constant,
+## proof the pass reaches a reflected hit's own shading, not only a
+## primary one. Not third-party.
+Display "indirectseam_mirror_constant.tif" "file" "rgba"
+Format 48 48 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Option "render" "string indirect" ["constantindirect"]
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3931372549019608]
+
+AttributeBegin
+Identity
+Translate 0 0 -10
+Surface "matte" "Ka" [1] "Kd" [1]
+Color [1 1 1]
+Opacity [1 1 1]
+Sides 2
+Sphere 3 -3 3 360
+AttributeEnd
+
+AttributeBegin
+Surface "mirror" "Kr" [1]
+Color [1 1 1]
+Opacity [1 1 1]
+Sphere 1.2 -1.2 1.2 360
+AttributeEnd
+
+WorldEnd

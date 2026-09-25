@@ -1,0 +1,32 @@
+## A mirror sphere reflecting a matte sphere placed behind the camera, lit
+## by one ambientlight, no Option naming an indirect-light pass: the
+## baseline indirectseam_mirror_constant.rib compares against. The far
+## sphere's own placement, and Identity resetting the CTM before it, follow
+## the same convention tests/rib/r8_mirror.rib uses for its own wall. Not
+## third-party.
+Display "indirectseam_mirror_none.tif" "file" "rgba"
+Format 48 48 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3931372549019608]
+
+AttributeBegin
+Identity
+Translate 0 0 -10
+Surface "matte" "Ka" [1] "Kd" [1]
+Color [1 1 1]
+Opacity [1 1 1]
+Sides 2
+Sphere 3 -3 3 360
+AttributeEnd
+
+AttributeBegin
+Surface "mirror" "Kr" [1]
+Color [1 1 1]
+Opacity [1 1 1]
+Sphere 1.2 -1.2 1.2 360
+AttributeEnd
+
+WorldEnd

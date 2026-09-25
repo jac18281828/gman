@@ -34,6 +34,7 @@
 #include <string>
 
 #include "check.h"
+#include "gmanindirectpass.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
@@ -146,6 +147,31 @@ public:
     return se.trace(reflected);
   }
   GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
+};
+
+// Kr = 1, perfect reflection: Ci is the traced colour along the real
+// reflection of I about N, the production formula GMANSurfaceEnv::reflect
+// applies.
+class PerfectMirrorShader : public GMANSurfaceShader {
+public:
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override {
+    GMANVector const reflected = se.reflect(se.I, se.N);
+    return se.trace(reflected);
+  }
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
+};
+
+// Answers c unconditionally: proves the indirect-light wiring itself,
+// independent of any host's own prepare()/irradiance() contract.
+class ConstantIndirectPassFixture : public gman::IndirectPass {
+public:
+  explicit ConstantIndirectPassFixture(GMANColor const& c) : c_(c) {}
+  void prepare(GMANWorldManager& /*world*/, GMANRayOccluder const& /*occluder*/,
+               GMANOptions const& /*options*/) override {}
+  GMANColor irradiance(GMANHit const& /*hit*/, GMANVector const& /*I*/) const override { return c_; }
+
+private:
+  GMANColor c_;
 };
 
 // A sphere at (0,0,5) radius 1, Lambertian-shaded, lit by one distant
@@ -540,6 +566,112 @@ void checkLargeSphereRendererPathAppliesMagnitude() {
             std::to_string(mismatched) + "/" + std::to_string(checked) + " mismatched)");
 }
 
+// Check 7: a GMANRayTracer bound to an indirect-light pass answering c
+// traces into a matte sphere (Ka = 1, Cs = Os = 1, ambient()-only since no
+// light is bound) and returns exactly c above the same trace with no pass
+// bound -- the primary-hit wiring GMANRayTracer::trace's own
+// gman::shade call carries.
+void checkIndirectPassReachesPrimaryHit() {
+  GMANLinearWorldManager worldManager;
+  GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
+  AmbientTestShader shader;
+  gman::Appearance appearance;
+  appearance.shader = asAppearanceShader(shader);
+  appearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  sphere->setAppearance(appearance);
+  worldManager.add(sphere);
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
+  GMANMatrix4 const cameraToWorld;
+  GMANColor const background(0.1f, 0.1f, 0.1f);
+  GMANColor const c(0.05f, 0.07f, 0.09f);
+  ConstantIndirectPassFixture const pass(c);
+
+  GMANRayTracer const unbound(bvh, occluder, cameraToWorld, background, 0);
+  GMANRayTracer const bound(bvh, occluder, cameraToWorld, background, 0, &pass);
+
+  GMANPoint const p0(0.0f, 0.0f, 0.0f);
+  GMANVector const r0(0.0f, 0.0f, 1.0f);
+  GMANColor const unboundResult = unbound.trace(p0, r0, GMANVector(), 0.0f);
+  GMANColor const boundResult = bound.trace(p0, r0, GMANVector(), 0.0f);
+
+  GMANColor const delta(boundResult.getRed() - unboundResult.getRed(),
+                        boundResult.getGreen() - unboundResult.getGreen(),
+                        boundResult.getBlue() - unboundResult.getBlue());
+  check(colorNear(delta, c, kTol),
+        "check 7: a primary hit through a bound indirect-light pass differs from the unbound trace by exactly c");
+}
+
+// Check 8: a mirror hit's own reflected ray, cast by GMANRayTracer::trace's
+// child tracer, reaches a second sphere -- proof the pass reaches through
+// the child tracer, not only the depth-0 one. The reflection direction is
+// computed the same way GMANReflect does (gmanslapi.cpp), and the second
+// sphere is placed exactly along it, so the geometry needs no
+// hand-solved placement.
+void checkIndirectPassReachesChildTracer() {
+  // A throwaway probe, never added to a world manager, purely to find
+  // where the primary ray will hit the mirror sphere before the real
+  // fixture below is built around that hit.
+  std::unique_ptr<GMANRaySphere> const mirrorProbe(sphereAt(1.0f, 0.3f, 0.0f, 5.0f));
+  GMANPoint const p0(0.0f, 0.0f, 0.0f);
+  GMANVector const r0(0.0f, 0.0f, 1.0f);
+  GMANRay const primaryRay(p0, r0);
+  GMANHit mirrorHit;
+  check(mirrorProbe->intersect(primaryRay, mirrorHit), "check 8 setup: the primary ray hits the mirror sphere");
+
+  GMANVector const n(mirrorHit.normal.getX(), mirrorHit.normal.getY(), mirrorHit.normal.getZ());
+  GMANVector reflected = r0 - n * (r0.dot(n) * 2.0f);
+  reflected.normalize();
+
+  RtFloat const farDistance = 8.0f;
+  RtFloat const farRadius = 2.0f;
+  GMANPoint const farCentre(mirrorHit.point.getX() + reflected.getX() * farDistance,
+                            mirrorHit.point.getY() + reflected.getY() * farDistance,
+                            mirrorHit.point.getZ() + reflected.getZ() * farDistance);
+
+  GMANLinearWorldManager worldManager;
+  GMANRaySphere* mirrorSphere = sphereAt(1.0f, 0.3f, 0.0f, 5.0f);
+  PerfectMirrorShader mirrorShader;
+  gman::Appearance mirrorAppearance;
+  mirrorAppearance.shader = asAppearanceShader(mirrorShader);
+  mirrorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  mirrorSphere->setAppearance(mirrorAppearance);
+  worldManager.add(mirrorSphere);
+
+  GMANRaySphere* farSphere = sphereAt(farRadius, farCentre.getX(), farCentre.getY(), farCentre.getZ());
+  AmbientTestShader farShader;
+  gman::Appearance farAppearance;
+  farAppearance.shader = asAppearanceShader(farShader);
+  farAppearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
+  farAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  farSphere->setAppearance(farAppearance);
+  worldManager.add(farSphere);
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
+  GMANMatrix4 const cameraToWorld;
+  GMANColor const background(0.1f, 0.1f, 0.1f);
+  GMANColor const c(0.05f, 0.07f, 0.09f);
+  ConstantIndirectPassFixture const pass(c);
+
+  GMANRayTracer const unbound(bvh, occluder, cameraToWorld, background, 0);
+  GMANRayTracer const bound(bvh, occluder, cameraToWorld, background, 0, &pass);
+
+  GMANColor const unboundResult = unbound.trace(p0, r0, GMANVector(), 0.0f);
+  GMANColor const boundResult = bound.trace(p0, r0, GMANVector(), 0.0f);
+
+  GMANColor const delta(boundResult.getRed() - unboundResult.getRed(),
+                        boundResult.getGreen() - unboundResult.getGreen(),
+                        boundResult.getBlue() - unboundResult.getBlue());
+  check(colorNear(delta, c, kTol),
+        "check 8: a mirror's reflected hit, shaded by the child tracer, differs by exactly c -- the pass reaches "
+        "through the child tracer");
+}
+
 } // namespace
 
 int main() {
@@ -550,8 +682,11 @@ int main() {
   checkDepthCountsCorrectly();
   checkNestedOccluderShadowsBlocker();
   checkLargeSphereRendererPathAppliesMagnitude();
+  checkIndirectPassReachesPrimaryHit();
+  checkIndirectPassReachesChildTracer();
 
   return checkSummary("GMANRayTracer: depth-limit termination, background on miss, single-hit shading matches "
-                      "gman::shade, self-shadow swept clean, recursion depth counted correctly, and the nested "
-                      "shade() call applies the occluder");
+                      "gman::shade, self-shadow swept clean, recursion depth counted correctly, the nested "
+                      "shade() call applies the occluder, and a bound indirect-light pass reaches both a primary "
+                      "hit and a child tracer's own reflected hit");
 }

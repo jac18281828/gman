@@ -23,6 +23,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <memory>
+
+#include "gmanindirectpass.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"
 #include "gmanrayinterface.h"
@@ -80,9 +83,11 @@ GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVect
     return background;
   }
 
-  GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1);
-  gman::Shading const shading =
-      gman::shade(hitPrimitive->getAppearance(), hitSurfacePoint(ray, hit), cameraToWorld, &occluder, &child);
+  GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1, indirectPass);
+  GMANColor const indirect = indirectPass != nullptr ? indirectPass->irradiance(hit, R) : GMANColor();
+  GMANColor const* const indirectPtr = indirectPass != nullptr ? &indirect : nullptr;
+  gman::Shading const shading = gman::shade(hitPrimitive->getAppearance(), hitSurfacePoint(ray, hit), cameraToWorld,
+                                            &occluder, &child, nullptr, indirectPtr);
   return shading.Ci;
 }
 
@@ -108,7 +113,7 @@ GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray
 
 void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld,
                                        GMANColor const& background, RtFloat rasterX, RtFloat rasterY, int sampleX,
-                                       int sampleY) {
+                                       int sampleY, gman::IndirectPass const* indirectPass) {
   GMANRay ray = viewingSys->cameraRay(rasterX, rasterY);
   RayHit hit = nearestHit(ray);
   if (hit.appearance == nullptr) {
@@ -130,12 +135,17 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
   GMANColor transmission(1.0f, 1.0f, 1.0f);
 
   // Depth 0: a primary ray's own hit. A shader's trace() call recurses
-  // into a child GMANRayTracer at depth 1 (see GMANRayTracer::trace()).
-  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
+  // into a child GMANRayTracer at depth 1 (see GMANRayTracer::trace()),
+  // carrying indirectPass forward so a reflected or refracted hit gets
+  // indirect light too.
+  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0, indirectPass);
 
   for (int layer = 0; layer < gman::kMaxCompositeLayers && hit.appearance != nullptr; ++layer) {
-    gman::Shading const shading =
-        gman::shade(*hit.appearance, hitSurfacePoint(ray, hit.hit), cameraToWorld, &occluder, &tracer);
+    GMANColor const indirect =
+        indirectPass != nullptr ? indirectPass->irradiance(hit.hit, ray.getDirection()) : GMANColor();
+    GMANColor const* const indirectPtr = indirectPass != nullptr ? &indirect : nullptr;
+    gman::Shading const shading = gman::shade(*hit.appearance, hitSurfacePoint(ray, hit.hit), cameraToWorld, &occluder,
+                                              &tracer, nullptr, indirectPtr);
     accumulated += gman::multiplyChannels(transmission, shading.Ci);
     transmission = gman::multiplyChannels(transmission, gman::oneMinus(shading.Oi));
     if (gman::transmissionNegligible(transmission)) {
@@ -167,6 +177,22 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
   // pass over the whole frame already costs far more than one extra tree
   // build.
   bvh.build(worldManager);
+
+  // Loaded, prepared and released here, once per render() call: a pass
+  // kept across calls would answer for a scene that no longer exists,
+  // since bvh above is rebuilt every time too. No Option named one is the
+  // common case, so loadIndirectPass runs only when options.
+  // getIndirectPass() actually names something.
+  std::unique_ptr<gman::IndirectPass, void (*)(gman::IndirectPass*)> ownedIndirectPass(nullptr,
+                                                                                       [](gman::IndirectPass*) {});
+  gman::IndirectPass* indirectPass = nullptr;
+  if (!options.getIndirectPass().empty()) {
+    ownedIndirectPass = gman::loadIndirectPass(options.getIndirectPass());
+    indirectPass = ownedIndirectPass.get();
+  }
+  if (indirectPass != nullptr) {
+    indirectPass->prepare(worldManager, occluder, options);
+  }
 
   RtInt const width = frameBuffer->getWidth();
   RtInt const height = frameBuffer->getHeight();
@@ -203,7 +229,7 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
           int const sampleY = py * ysamples + subY;
           RtFloat const rasterX = gman::sampleCentre(raster.rxmin, sampleX, xsamples);
           RtFloat const rasterY = gman::sampleCentre(raster.rymin, sampleY, ysamples);
-          shadeSample(viewingSys, cameraToWorld, background, rasterX, rasterY, sampleX, sampleY);
+          shadeSample(viewingSys, cameraToWorld, background, rasterX, rasterY, sampleX, sampleY, indirectPass);
         }
       }
     }

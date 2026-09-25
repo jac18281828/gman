@@ -1,0 +1,18 @@
+## indirectseam_none.rib's own scene, naming constantindirect then
+## clearing it with a second Option: must render identically to
+## indirectseam_none.rib, proof [""] clears the name rather than leaving
+## the prior one in effect. Not third-party.
+Display "indirectseam_cleared.tif" "file" "rgba"
+Format 48 48 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Option "render" "string indirect" ["constantindirect"]
+Option "render" "string indirect" [""]
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3931372549019608]
+Surface "matte" "Ka" [1] "Kd" [1]
+Color [1 1 1]
+Opacity [1 1 1]
+Sphere 1 -1 1 360
+WorldEnd

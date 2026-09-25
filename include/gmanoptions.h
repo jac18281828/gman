@@ -179,6 +179,10 @@ private:
   GMANColor background;
   bool screenWindowSet;
 
+  // The pass Option "render" "string indirect" named, appended last so
+  // every member above keeps its offset. Empty when unset.
+  std::string indirectPass;
+
   /* default static data */
   static OutputDefaults outputDefaults;
 
@@ -262,6 +266,9 @@ public:
   RtVoid setBackground(const GMANColor& bgcolor) { background = bgcolor; }
 
   const GMANColor& getBackground(RtVoid) const { return background; }
+
+  RtVoid setIndirectPass(std::string const& name);
+  std::string const& getIndirectPass(RtVoid) const { return indirectPass; };
 
   const OutputDefaults& getOutputDefaults(RtVoid) const;
 };

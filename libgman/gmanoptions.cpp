@@ -276,4 +276,6 @@ RtVoid GMANOptions::setColorSamples(RtInt nb, RtFloat* nr, RtFloat* rn) {
 
 RtVoid GMANOptions::setRelativeDetail(RtFloat rd) { relativeDetail = rd; }
 
+RtVoid GMANOptions::setIndirectPass(std::string const& name) { indirectPass = name; }
+
 const GMANOptions::OutputDefaults& GMANOptions::getOutputDefaults(RtVoid) const { return outputDefaults; }

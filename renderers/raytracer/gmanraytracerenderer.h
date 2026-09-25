@@ -45,6 +45,10 @@
 #include "gmanworldmanager.h"
 #include "ri.h"
 
+namespace gman {
+class IndirectPass;
+} // namespace gman
+
 /*
  * The ray tracer's own gman::Tracer: casts R from P (offset off Ng, the
  * same self-shadow discipline shadeSample's composite loop and
@@ -60,8 +64,9 @@
 class GMANRayTracer : public gman::Tracer {
 public:
   GMANRayTracer(GMANRayBVH const& bvh, GMANRayOccluder const& occluder, GMANMatrix4 const& cameraToWorld,
-                GMANColor const& background, int depth)
-      : bvh(bvh), occluder(occluder), cameraToWorld(cameraToWorld), background(background), depth(depth) {}
+                GMANColor const& background, int depth, gman::IndirectPass const* indirectPass = nullptr)
+      : bvh(bvh), occluder(occluder), cameraToWorld(cameraToWorld), background(background), depth(depth),
+        indirectPass(indirectPass) {}
 
   GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
                   RtFloat surfaceMagnitude) const override;
@@ -72,6 +77,12 @@ private:
   GMANMatrix4 const& cameraToWorld;
   GMANColor background;
   int depth;
+
+  // Null when no Option named a pass: every hit this tracer shades then
+  // passes null indirect light on to gman::shade, same as before this
+  // member existed. Carried into every child GMANRayTracer trace()
+  // builds, so a reflected or refracted hit gets indirect light too.
+  gman::IndirectPass const* indirectPass;
 };
 
 /*
@@ -117,9 +128,10 @@ private:
   // Traces, shades and stores one sample -- render()'s per-sample body.
   // background is the sample buffer's own seed colour (frameBuffer's
   // corner pixel), what remains after every layer's own transmission
-  // composites over.
+  // composites over. indirectPass is render()'s own, null when no Option
+  // named one.
   void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
-                   RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY);
+                   RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY, gman::IndirectPass const* indirectPass);
 
 public:
   GMANRaytraceRenderer(); // default constructor

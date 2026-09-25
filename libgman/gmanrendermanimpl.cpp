@@ -53,6 +53,15 @@
 #include "gmanvsperspective.h"
 #include "ri.h"
 
+namespace {
+
+// Option "render" "string indirect" ["<name>"]'s own declaration token,
+// type included: RiOptionV matches it literally, so a scene that never
+// names it triggers no GMANParameterList construction at all.
+constexpr char const* kIndirectPassToken = "string indirect";
+
+} // namespace
+
 /*
  * RenderMan API RiRenderMan
  *
@@ -440,7 +449,27 @@ RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
   allowed(cmdRelativeDetail);
   getOptions().setRelativeDetail(relativedetail);
 }
-RtVoid GMANRenderManImpl::RiOptionV(RtToken /*name*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[]) {}
+// Handles Option "render" "string indirect" ["<name>"] alone: any other
+// name, or a "render" option not carrying that exact token, is ignored,
+// as every Option was before this method read anything. No
+// allowed(cmdOption) call: that mask is all zero, so it would reject
+// every Option the corpus already relies on.
+RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
+  if (std::string(name) != "render") {
+    return;
+  }
+  for (RtInt i = 0; i < n; ++i) {
+    if (std::string(tokens[i]) != kIndirectPassToken) {
+      continue;
+    }
+    GMANParameterList const p(dictionary, n, tokens, parms);
+    std::string const* const value = (std::string const*)p.getPointer(dictionary.getTokenId(kIndirectPassToken));
+    if (value != nullptr) {
+      getOptions().setIndirectPass(value[0]);
+    }
+    return;
+  }
+}
 
 // ******************************************************************
 // ******* ******* ******* SHADING ATTRIBUTES ******* ******* *******
