@@ -82,18 +82,8 @@ private:
 // observe trace()'s own plumbing through gman::shade.
 class TraceProbeShader : public GMANSurfaceShader {
 public:
-  const GMANColor& computeCi(GMANSurfaceEnv& se) override {
-    ci_ = se.trace(GMANVector(0.0f, 0.0f, -1.0f));
-    return ci_;
-  }
-  const GMANColor& computeOi(GMANSurfaceEnv& se) override {
-    oi_ = se.Os;
-    return oi_;
-  }
-
-private:
-  GMANColor ci_;
-  GMANColor oi_;
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override { return se.trace(GMANVector(0.0f, 0.0f, -1.0f)); }
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
 };
 
 // Records its own last surfaceMagnitude argument, white transmission
@@ -122,22 +112,14 @@ private:
 // forwarding to both hooks through one gman::shade call.
 class MagnitudeProbeShader : public GMANSurfaceShader {
 public:
-  const GMANColor& computeCi(GMANSurfaceEnv& se) override {
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override {
     GMANVector const n(se.N.getX(), se.N.getY(), se.N.getZ());
     GMANColor const traced = se.trace(GMANVector(0.0f, 0.0f, -1.0f));
     GMANColor const lit = se.diffuse(n);
-    ci_ =
-        GMANColor(traced.getRed() + lit.getRed(), traced.getGreen() + lit.getGreen(), traced.getBlue() + lit.getBlue());
-    return ci_;
+    return GMANColor(traced.getRed() + lit.getRed(), traced.getGreen() + lit.getGreen(),
+                     traced.getBlue() + lit.getBlue());
   }
-  const GMANColor& computeOi(GMANSurfaceEnv& se) override {
-    oi_ = se.Os;
-    return oi_;
-  }
-
-private:
-  GMANColor ci_;
-  GMANColor oi_;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
 };
 
 void checkDefaultTraceIsBlack() {

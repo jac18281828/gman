@@ -50,13 +50,11 @@ constexpr RtFloat kIor = (RtFloat)1.5;
 
 class glass : public GMANSurfaceShader {
 public:
-  const GMANColor& computeCi(GMANSurfaceEnv& se);
-  const GMANColor& computeOi(GMANSurfaceEnv& se);
+  GMANColor computeCi(GMANSurfaceEnv const& se) const;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const;
 };
 
-const GMANColor& glass::computeCi(GMANSurfaceEnv& se) {
-  static GMANColor ci;
-
+GMANColor glass::computeCi(GMANSurfaceEnv const& se) const {
   GMANVector n(se.N.getX(), se.N.getY(), se.N.getZ());
   n.normalize();
   GMANVector const nf = se.faceforward(n, se.I, se.Ng);
@@ -76,16 +74,11 @@ const GMANColor& glass::computeCi(GMANSurfaceEnv& se) {
   GMANColor const combined(kr * tracedR.getRed() + kt * tracedT.getRed(),
                            kr * tracedR.getGreen() + kt * tracedT.getGreen(),
                            kr * tracedR.getBlue() + kt * tracedT.getBlue());
-  ci = GMANColor(se.Os.getRed() * combined.getRed(), se.Os.getGreen() * combined.getGreen(),
-                 se.Os.getBlue() * combined.getBlue());
-  return ci;
+  return GMANColor(se.Os.getRed() * combined.getRed(), se.Os.getGreen() * combined.getGreen(),
+                   se.Os.getBlue() * combined.getBlue());
 }
 
-const GMANColor& glass::computeOi(GMANSurfaceEnv& se) {
-  static GMANColor oi;
-  oi = se.Os;
-  return oi;
-}
+GMANColor glass::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
 } // namespace gmanshader
 

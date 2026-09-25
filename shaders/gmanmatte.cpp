@@ -49,8 +49,8 @@ public:
    * Output of a surface shader
    */
 
-  const GMANColor& computeCi(GMANSurfaceEnv& se);
-  const GMANColor& computeOi(GMANSurfaceEnv& se);
+  GMANColor computeCi(GMANSurfaceEnv const& se) const;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const;
 };
 
 RtVoid matte::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
@@ -58,9 +58,7 @@ RtVoid matte::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANC
   // diffuse(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor& matte::computeCi(GMANSurfaceEnv& se) {
-  static GMANColor ci;
-
+GMANColor matte::computeCi(GMANSurfaceEnv const& se) const {
   RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
   RtFloat kd = getFloatParam(pl, RI_KD, 1.0);
 
@@ -72,16 +70,11 @@ const GMANColor& matte::computeCi(GMANSurfaceEnv& se) {
   diff.scale(kd);
   lit += diff;
 
-  ci = GMANColor(se.Cs.getRed() * se.Os.getRed() * lit.getRed(), se.Cs.getGreen() * se.Os.getGreen() * lit.getGreen(),
-                 se.Cs.getBlue() * se.Os.getBlue() * lit.getBlue());
-  return ci;
+  return GMANColor(se.Cs.getRed() * se.Os.getRed() * lit.getRed(), se.Cs.getGreen() * se.Os.getGreen() * lit.getGreen(),
+                   se.Cs.getBlue() * se.Os.getBlue() * lit.getBlue());
 }
 
-const GMANColor& matte::computeOi(GMANSurfaceEnv& se) {
-  static GMANColor oi;
-  oi = se.Os;
-  return oi;
-}
+GMANColor matte::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
 } // namespace gmanshader
 

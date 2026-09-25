@@ -44,8 +44,8 @@ class metal : public GMANSurfaceShader {
 public:
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  const GMANColor& computeCi(GMANSurfaceEnv& se);
-  const GMANColor& computeOi(GMANSurfaceEnv& se);
+  GMANColor computeCi(GMANSurfaceEnv const& se) const;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const;
 };
 
 RtVoid metal::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
@@ -53,9 +53,7 @@ RtVoid metal::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANC
   // the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor& metal::computeCi(GMANSurfaceEnv& se) {
-  static GMANColor ci;
-
+GMANColor metal::computeCi(GMANSurfaceEnv const& se) const {
   RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
   RtFloat ks = getFloatParam(pl, RI_KS, 1.0);
   RtFloat roughness = getFloatParam(pl, RI_ROUGHNESS, 0.1);
@@ -73,16 +71,11 @@ const GMANColor& metal::computeCi(GMANSurfaceEnv& se) {
   lit += GMANColor(specularcolor.getRed() * specularTerm.getRed(), specularcolor.getGreen() * specularTerm.getGreen(),
                    specularcolor.getBlue() * specularTerm.getBlue());
 
-  ci = GMANColor(se.Os.getRed() * se.Cs.getRed() * lit.getRed(), se.Os.getGreen() * se.Cs.getGreen() * lit.getGreen(),
-                 se.Os.getBlue() * se.Cs.getBlue() * lit.getBlue());
-  return ci;
+  return GMANColor(se.Os.getRed() * se.Cs.getRed() * lit.getRed(), se.Os.getGreen() * se.Cs.getGreen() * lit.getGreen(),
+                   se.Os.getBlue() * se.Cs.getBlue() * lit.getBlue());
 }
 
-const GMANColor& metal::computeOi(GMANSurfaceEnv& se) {
-  static GMANColor oi;
-  oi = se.Os;
-  return oi;
-}
+GMANColor metal::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
 } // namespace gmanshader
 

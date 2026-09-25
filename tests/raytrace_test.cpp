@@ -91,15 +91,11 @@ GMANVector anyPerpendicular(GMANVector const& n) {
 class FixedColorShader : public GMANSurfaceShader {
 public:
   explicit FixedColorShader(GMANColor color) : color_(color) {}
-  const GMANColor& computeCi(GMANSurfaceEnv& /*se*/) override { return color_; }
-  const GMANColor& computeOi(GMANSurfaceEnv& se) override {
-    oi_ = se.Os;
-    return oi_;
-  }
+  GMANColor computeCi(GMANSurfaceEnv const& /*se*/) const override { return color_; }
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
 
 private:
   GMANColor color_;
-  GMANColor oi_;
 };
 
 // Cs tinted by the illuminance loop's diffuse() -- Ci depends on P/N (via
@@ -107,20 +103,12 @@ private:
 // below, equal to background.
 class LambertianTestShader : public GMANSurfaceShader {
 public:
-  const GMANColor& computeCi(GMANSurfaceEnv& se) override {
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override {
     GMANVector const n(se.N.getX(), se.N.getY(), se.N.getZ());
     GMANColor const lit = se.diffuse(n);
-    ci_ = GMANColor(se.Cs.getRed() * lit.getRed(), se.Cs.getGreen() * lit.getGreen(), se.Cs.getBlue() * lit.getBlue());
-    return ci_;
+    return GMANColor(se.Cs.getRed() * lit.getRed(), se.Cs.getGreen() * lit.getGreen(), se.Cs.getBlue() * lit.getBlue());
   }
-  const GMANColor& computeOi(GMANSurfaceEnv& se) override {
-    oi_ = se.Os;
-    return oi_;
-  }
-
-private:
-  GMANColor ci_;
-  GMANColor oi_;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
 };
 
 // Ci is se.ambient()'s own contribution, scaled by Cs -- constant over
@@ -130,19 +118,11 @@ private:
 // distinct background.
 class AmbientTestShader : public GMANSurfaceShader {
 public:
-  const GMANColor& computeCi(GMANSurfaceEnv& se) override {
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override {
     GMANColor const lit = se.ambient();
-    ci_ = GMANColor(se.Cs.getRed() * lit.getRed(), se.Cs.getGreen() * lit.getGreen(), se.Cs.getBlue() * lit.getBlue());
-    return ci_;
+    return GMANColor(se.Cs.getRed() * lit.getRed(), se.Cs.getGreen() * lit.getGreen(), se.Cs.getBlue() * lit.getBlue());
   }
-  const GMANColor& computeOi(GMANSurfaceEnv& se) override {
-    oi_ = se.Os;
-    return oi_;
-  }
-
-private:
-  GMANColor ci_;
-  GMANColor oi_;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
 };
 
 // Reflects I about N and recurses unconditionally, counting its own
@@ -150,22 +130,14 @@ private:
 // GMANRayTracer's own recursion depth from outside.
 class RecursionCountingMirror : public GMANSurfaceShader {
 public:
-  int computeCiCallCount = 0;
+  mutable int computeCiCallCount = 0;
 
-  const GMANColor& computeCi(GMANSurfaceEnv& se) override {
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override {
     ++computeCiCallCount;
     GMANVector const reflected = se.reflect(se.I, se.N);
-    ci_ = se.trace(reflected);
-    return ci_;
+    return se.trace(reflected);
   }
-  const GMANColor& computeOi(GMANSurfaceEnv& se) override {
-    oi_ = se.Os;
-    return oi_;
-  }
-
-private:
-  GMANColor ci_;
-  GMANColor oi_;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
 };
 
 // A sphere at (0,0,5) radius 1, Lambertian-shaded, lit by one distant

@@ -63,9 +63,11 @@ public:
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
   /*
-   * Output of a surface shader
+   * Output of a surface shader. const: a shader instance is built fresh
+   * per Surface call and holds its own parameters, so shading never
+   * writes through it.
    */
 
-  virtual const GMANColor& computeCi(GMANSurfaceEnv& se) = 0;
-  virtual const GMANColor& computeOi(GMANSurfaceEnv& se) = 0;
+  virtual GMANColor computeCi(GMANSurfaceEnv const& se) const = 0;
+  virtual GMANColor computeOi(GMANSurfaceEnv const& se) const = 0;
 };

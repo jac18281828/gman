@@ -48,8 +48,8 @@ class paintedplastic : public GMANSurfaceShader {
 public:
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
-  const GMANColor& computeCi(GMANSurfaceEnv& se);
-  const GMANColor& computeOi(GMANSurfaceEnv& se);
+  GMANColor computeCi(GMANSurfaceEnv const& se) const;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const;
 };
 
 RtVoid paintedplastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
@@ -57,9 +57,7 @@ RtVoid paintedplastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl
   // specular(), the C++-shader equivalent of an SL illuminance() loop.
 }
 
-const GMANColor& paintedplastic::computeCi(GMANSurfaceEnv& se) {
-  static GMANColor ci;
-
+GMANColor paintedplastic::computeCi(GMANSurfaceEnv const& se) const {
   RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
   RtFloat kd = getFloatParam(pl, RI_KD, 0.5);
   RtFloat ks = getFloatParam(pl, RI_KS, 0.5);
@@ -92,15 +90,10 @@ const GMANColor& paintedplastic::computeCi(GMANSurfaceEnv& se) {
                 paint.getGreen() * diffuseTerm.getGreen() + tintedSpecular.getGreen(),
                 paint.getBlue() * diffuseTerm.getBlue() + tintedSpecular.getBlue());
 
-  ci = GMANColor(se.Os.getRed() * lit.getRed(), se.Os.getGreen() * lit.getGreen(), se.Os.getBlue() * lit.getBlue());
-  return ci;
+  return GMANColor(se.Os.getRed() * lit.getRed(), se.Os.getGreen() * lit.getGreen(), se.Os.getBlue() * lit.getBlue());
 }
 
-const GMANColor& paintedplastic::computeOi(GMANSurfaceEnv& se) {
-  static GMANColor oi;
-  oi = se.Os;
-  return oi;
-}
+GMANColor paintedplastic::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
 } // namespace gmanshader
 

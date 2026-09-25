@@ -35,21 +35,15 @@ namespace gmanshader {
 
 class camerashader : public GMANSurfaceShader {
 public:
-  const GMANColor& computeCi(GMANSurfaceEnv& se);
-  const GMANColor& computeOi(GMANSurfaceEnv& se);
+  GMANColor computeCi(GMANSurfaceEnv const& se) const;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const;
 };
 
-const GMANColor& camerashader::computeCi(GMANSurfaceEnv& se) {
-  static GMANColor ci;
-  ci = GMANColor(se.cameraToWorld[0][0], se.cameraToWorld[0][2], se.cameraToWorld[2][0]);
-  return ci;
+GMANColor camerashader::computeCi(GMANSurfaceEnv const& se) const {
+  return GMANColor(se.cameraToWorld[0][0], se.cameraToWorld[0][2], se.cameraToWorld[2][0]);
 }
 
-const GMANColor& camerashader::computeOi(GMANSurfaceEnv& se) {
-  static GMANColor oi;
-  oi = se.Os;
-  return oi;
-}
+GMANColor camerashader::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
 } // namespace gmanshader
 

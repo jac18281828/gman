@@ -43,13 +43,11 @@ namespace gmanshader {
 
 class mirror : public GMANSurfaceShader {
 public:
-  const GMANColor& computeCi(GMANSurfaceEnv& se);
-  const GMANColor& computeOi(GMANSurfaceEnv& se);
+  GMANColor computeCi(GMANSurfaceEnv const& se) const;
+  GMANColor computeOi(GMANSurfaceEnv const& se) const;
 };
 
-const GMANColor& mirror::computeCi(GMANSurfaceEnv& se) {
-  static GMANColor ci;
-
+GMANColor mirror::computeCi(GMANSurfaceEnv const& se) const {
   // Read before the first (only) trace() call: a nested shade() call
   // trace() makes may rebind pl before this call returns (gmanshading.cpp).
   RtFloat const kr = getFloatParam(pl, RI_KR, 1.0);
@@ -60,17 +58,12 @@ const GMANColor& mirror::computeCi(GMANSurfaceEnv& se) {
   GMANVector const r = se.reflect(se.I, nf);
   GMANColor const traced = se.trace(r);
 
-  ci = GMANColor(se.Os.getRed() * se.Cs.getRed() * kr * traced.getRed(),
-                 se.Os.getGreen() * se.Cs.getGreen() * kr * traced.getGreen(),
-                 se.Os.getBlue() * se.Cs.getBlue() * kr * traced.getBlue());
-  return ci;
+  return GMANColor(se.Os.getRed() * se.Cs.getRed() * kr * traced.getRed(),
+                   se.Os.getGreen() * se.Cs.getGreen() * kr * traced.getGreen(),
+                   se.Os.getBlue() * se.Cs.getBlue() * kr * traced.getBlue());
 }
 
-const GMANColor& mirror::computeOi(GMANSurfaceEnv& se) {
-  static GMANColor oi;
-  oi = se.Os;
-  return oi;
-}
+GMANColor mirror::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
 } // namespace gmanshader
 
