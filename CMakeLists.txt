@@ -131,6 +131,7 @@ add_library(gman_core SHARED
   libgman/gmangraphicstate.cpp
   libgman/gmanhpoint.cpp
   libgman/gmanimagershader.cpp
+  libgman/gmanindirectpass.cpp
   libgman/gmaninlineparse.cpp
   libgman/gmanisoa.cpp
   libgman/gmanlightsourcemgr.cpp

@@ -1311,6 +1311,14 @@ set_target_properties(gman_countingshader PROPERTIES OUTPUT_NAME "countingshader
 gman_add_plugin(gman_nodestroyshader nodestroyshader_test_plugin.cpp)
 set_target_properties(gman_nodestroyshader PROPERTIES OUTPUT_NAME "nodestroyshader")
 
+# Test-only indirect-light pass (see its own comment): answers black
+# until prepare() has seen a primitive, kConstantIndirect after, and
+# counts its own live instances through its own exported
+# GMANConstantIndirectLiveCount. Never dlopened outside the test suite;
+# not part of the shipped renderer.
+gman_add_plugin(gman_constantindirect constantindirect_test_plugin.cpp)
+set_target_properties(gman_constantindirect PROPERTIES OUTPUT_NAME "constantindirect")
+
 # One shader instance per Surface call: distinct instances, interleaved
 # shading with no cross-talk, correct lifetime and destruction, and a
 # plugin missing GMANDestroyShader refused. See tests/shaderinstance_test.cpp.
@@ -1384,6 +1392,20 @@ add_dependencies(gman_indirectambient gman_matte)
 
 add_test(NAME indirectambient COMMAND gman_indirectambient)
 set_tests_properties(indirectambient PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# gman::loadIndirectPass: a real module answers through its own entry
+# points, a missing or wrong module answers null, and the deleter frees
+# through the module rather than through a plain delete. See
+# tests/indirectpass_test.cpp.
+add_executable(gman_indirectpass indirectpass_test.cpp)
+target_link_libraries(gman_indirectpass PRIVATE gman_core gman_internal_headers)
+add_dependencies(gman_indirectpass gman_constantindirect gman_matte)
+
+add_test(NAME indirectpass COMMAND gman_indirectpass)
+set_tests_properties(indirectpass PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
