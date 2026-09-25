@@ -32,6 +32,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmath.h"
 #include "gmannormal.h"
+#include "gmanradiositygrouping.h"
 #include "gmanradiositymesh.h"
 #include "gmanradiositysolver.h"
 #include "gmanraybbox.h"
@@ -56,12 +57,6 @@ constexpr double kClearanceFloor = 3e-5;
 // every pair it joins is a candidate.
 constexpr double kNodeSearchScale = 1e-5;
 
-// The candidate sweep's projection direction, (1, sqrt 2, sqrt 3) /
-// sqrt 6: irrational ratios keep a regular grid's projections apart.
-double const kSweepX = 1 / std::sqrt(6.0);
-double const kSweepY = 1 / std::sqrt(3.0);
-double const kSweepZ = 1 / std::sqrt(2.0);
-
 std::size_t sideIndex(std::size_t element, GMANRadiositySide side) {
   return 2 * element + static_cast<std::size_t>(side);
 }
@@ -77,10 +72,6 @@ std::size_t sampleRoot(std::size_t samples) {
 
 double maxChannel(GMANColor const& c) {
   return GMANMax(GMANMax((double)c.getRed(), (double)c.getGreen()), (double)c.getBlue());
-}
-
-double maxAbsCoordinate(GMANPoint const& p) {
-  return GMANMax(GMANMax(std::fabs((double)p.getX()), std::fabs((double)p.getY())), std::fabs((double)p.getZ()));
 }
 
 bool isPolygon(GMANRayInterface const* primitive) { return dynamic_cast<GMANRayPolygon const*>(primitive) != nullptr; }
@@ -101,34 +92,6 @@ std::array<GMANColor, 2> directIrradiance(gman::RadiosityReceiver const& receive
   return {env.diffuse(receiver.N), env.diffuse(-receiver.N)};
 }
 
-// The root of index's union-find set, compressing the path walked.
-std::size_t findRoot(std::vector<std::size_t>& parent, std::size_t index) {
-  std::size_t root = index;
-  while (parent[root] != root) {
-    root = parent[root];
-  }
-  while (parent[index] != root) {
-    std::size_t const next = parent[index];
-    parent[index] = root;
-    index = next;
-  }
-  return root;
-}
-
-void uniteSets(std::vector<std::size_t>& parent, std::size_t a, std::size_t b) {
-  std::size_t const rootA = findRoot(parent, a);
-  std::size_t const rootB = findRoot(parent, b);
-  if (rootA < rootB) {
-    parent[rootB] = rootA;
-  } else if (rootB < rootA) {
-    parent[rootA] = rootB;
-  }
-}
-
-double sweepProjection(GMANPoint const& p) {
-  return kSweepX * (double)p.getX() + kSweepY * (double)p.getY() + kSweepZ * (double)p.getZ();
-}
-
 // Each node's sameNode group root, the lowest node index in its group:
 // candidate pairs come from a sweep over the nodes' projections, and the
 // mesh's own sameNode decides each.
@@ -136,14 +99,14 @@ std::vector<std::size_t> nodeGroupRoots(GMANRadiosityMesh const& mesh, double la
   std::size_t const count = mesh.getNodeCount();
   double extent = largestMagnitude;
   for (std::size_t node = 0; node < count; ++node) {
-    extent = GMANMax(extent, maxAbsCoordinate(mesh.getNode(node).position));
+    extent = GMANMax(extent, gman::maxAbsCoordinate(mesh.getNode(node).position));
   }
   double const window = kNodeSearchScale * extent;
 
   std::vector<std::pair<double, std::size_t>> order;
   order.reserve(count);
   for (std::size_t node = 0; node < count; ++node) {
-    order.push_back({sweepProjection(mesh.getNode(node).position), node});
+    order.push_back({gman::nodeGroupSweepProjection(mesh.getNode(node).position), node});
   }
   std::sort(order.begin(), order.end());
 
@@ -154,14 +117,14 @@ std::vector<std::size_t> nodeGroupRoots(GMANRadiosityMesh const& mesh, double la
   for (std::size_t i = 0; i < count; ++i) {
     for (std::size_t j = i + 1; j < count && order[j].first - order[i].first <= window; ++j) {
       if (mesh.sameNode(order[i].second, order[j].second)) {
-        uniteSets(parent, order[i].second, order[j].second);
+        gman::uniteGroups(parent, order[i].second, order[j].second);
       }
     }
   }
 
   std::vector<std::size_t> roots(count);
   for (std::size_t node = 0; node < count; ++node) {
-    roots[node] = findRoot(parent, node);
+    roots[node] = gman::findGroupRoot(parent, node);
   }
   return roots;
 }
@@ -204,6 +167,50 @@ std::vector<GMANColor> nodeIndirectMeans(GMANRadiosityMesh const& mesh, std::vec
   return means;
 }
 
+// B = rho * H_d as the starting unshot radiosity of every side, and the
+// scene's total direct power, sum max-channel(rho H_d) A_i.
+double initializeUnshot(std::vector<GMANColor> const& reflectance, std::vector<GMANColor> const& direct,
+                        std::vector<RtFloat> const& areas, std::vector<GMANColor>& unshot) {
+  double directPower = 0;
+  for (std::size_t side = 0; side < unshot.size(); ++side) {
+    unshot[side] = gman::multiplyChannels(reflectance[side / 2], direct[side]);
+    directPower += maxChannel(unshot[side]) * areas[side / 2];
+  }
+  return directPower;
+}
+
+// The side of largest unshot power, max-channel(unshot) * A_i, ties broken
+// by lowest side index (lowest element, then front); and the summed unshot
+// power over every side.
+struct RadiosityShooterPick {
+  std::size_t side = 0;
+  double totalUnshotPower = 0;
+};
+
+RadiosityShooterPick pickShooterSide(std::vector<GMANColor> const& unshot, std::vector<RtFloat> const& areas) {
+  RadiosityShooterPick pick;
+  double largest = -1;
+  for (std::size_t side = 0; side < unshot.size(); ++side) {
+    double const power = maxChannel(unshot[side]) * areas[side / 2];
+    pick.totalUnshotPower += power;
+    if (power > largest) {
+      largest = power;
+      pick.side = side;
+    }
+  }
+  return pick;
+}
+
+// H_ind = H - H_d per side.
+std::vector<GMANColor> computeIndirect(std::vector<GMANColor> const& irradiance, std::vector<GMANColor> const& direct) {
+  std::vector<GMANColor> indirect(irradiance.size());
+  for (std::size_t side = 0; side < indirect.size(); ++side) {
+    indirect[side] = irradiance[side];
+    indirect[side] -= direct[side];
+  }
+  return indirect;
+}
+
 void checkReflectance(GMANRadiosityMesh const& mesh, std::vector<GMANColor> const& reflectance) {
   if (reflectance.size() != mesh.getElementCount()) {
     throw GMANError(RIE_CONSISTENCY, RIE_ERROR, "radiosity: one reflectance per element");
@@ -232,7 +239,7 @@ RadiosityReceiver radiosityReceiver(GMANRadiosityMesh const& mesh, std::size_t e
     receiver.N = mesh.getElement(element).normal;
   }
   GMANRayInterface const* primitive = mesh.getElementPrimitive(element);
-  receiver.surfaceMagnitude = primitive ? gman::primitiveMagnitude(primitive->getBBox()) : (RtFloat)0;
+  receiver.surfaceMagnitude = gman::primitiveMagnitude(primitive->getBBox());
   return receiver;
 }
 
@@ -281,53 +288,81 @@ std::vector<RadiositySample> placeRadiositySamples(GMANRadiosityMesh const& mesh
   return placed;
 }
 
+} // namespace gman
+
+namespace {
+
+// One shooter sample's form-factor contribution to receiver: the arrival
+// side its segment reaches, and the per-channel geometric term times
+// transmission, in plain doubles. False when the segment has zero length,
+// does not leave the shooter on its shooting side, or lies exactly in the
+// receiver's plane.
+struct RadiositySampleContribution {
+  std::size_t arrival = 0;
+  double red = 0, green = 0, blue = 0;
+};
+
+bool sampleFormFactorContribution(GMANRayOccluder const& occluder, gman::RadiosityReceiver const& receiver,
+                                  gman::RadiositySample const& sample, double shootingSign, double receiverScale,
+                                  RadiositySampleContribution& contribution) {
+  double const rx = receiver.P.getX(), ry = receiver.P.getY(), rz = receiver.P.getZ();
+  double const nx = receiver.N.getX(), ny = receiver.N.getY(), nz = receiver.N.getZ();
+  double const sx = sample.P.getX(), sy = sample.P.getY(), sz = sample.P.getZ();
+  double dx = sx - rx, dy = sy - ry, dz = sz - rz;
+  double const distanceSquared = dx * dx + dy * dy + dz * dz;
+  if (distanceSquared <= 0) {
+    return false;
+  }
+  double const distance = std::sqrt(distanceSquared);
+  dx /= distance;
+  dy /= distance;
+  dz /= distance;
+
+  // Positive when the segment leaves the shooter on its shooting side.
+  double const cosShooter =
+      -shootingSign * ((double)sample.N.getX() * dx + (double)sample.N.getY() * dy + (double)sample.N.getZ() * dz);
+  double const cosReceiver = nx * dx + ny * dy + nz * dz;
+  if (cosShooter <= 0 || cosReceiver == 0) {
+    return false;
+  }
+  contribution.arrival = static_cast<std::size_t>(cosReceiver > 0 ? GMANRadiositySide::front : GMANRadiositySide::back);
+
+  double const sampleScale = std::fmax(std::fmax(std::fabs(sx), std::fabs(sy)), std::fabs(sz));
+  double const clearance =
+      std::fmax(kShooterClearance * distance, kClearanceFloor * std::fmax(receiverScale, sampleScale));
+  GMANLight const light(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), sample.P, GMANVector());
+  GMANVector const direction((RtFloat)dx, (RtFloat)dy, (RtFloat)dz);
+  GMANColor const transmission =
+      occluder.transmission(light, receiver.P, direction, receiver.N, (RtFloat)std::fmax(distance - clearance, 0.0),
+                            receiver.surfaceMagnitude);
+
+  double const weight = sample.weight;
+  double const geometric = weight * std::fabs(cosReceiver) * cosShooter / (PI * distanceSquared + weight);
+  contribution.red = geometric * transmission.getRed();
+  contribution.green = geometric * transmission.getGreen();
+  contribution.blue = geometric * transmission.getBlue();
+  return true;
+}
+
+} // namespace
+
+namespace gman {
+
 std::array<GMANColor, 2> radiosityFormFactors(GMANRayOccluder const& occluder, RadiosityReceiver const& receiver,
                                               std::vector<RadiositySample> const& shooter,
                                               GMANRadiositySide shootingSide) {
-  // Plain doubles throughout: this loop runs once per receiver, shooter
-  // sample and shot.
   double const shootingSign = shootingSide == GMANRadiositySide::front ? 1.0 : -1.0;
-  double const rx = receiver.P.getX(), ry = receiver.P.getY(), rz = receiver.P.getZ();
-  double const nx = receiver.N.getX(), ny = receiver.N.getY(), nz = receiver.N.getZ();
-  double const receiverScale = maxAbsCoordinate(receiver.P);
+  double const receiverScale = gman::maxAbsCoordinate(receiver.P);
   double sums[2][3] = {{0, 0, 0}, {0, 0, 0}};
 
+  RadiositySampleContribution contribution;
   for (RadiositySample const& sample : shooter) {
-    double const sx = sample.P.getX(), sy = sample.P.getY(), sz = sample.P.getZ();
-    double dx = sx - rx, dy = sy - ry, dz = sz - rz;
-    double const distanceSquared = dx * dx + dy * dy + dz * dz;
-    if (distanceSquared <= 0) {
+    if (!sampleFormFactorContribution(occluder, receiver, sample, shootingSign, receiverScale, contribution)) {
       continue;
     }
-    double const distance = std::sqrt(distanceSquared);
-    dx /= distance;
-    dy /= distance;
-    dz /= distance;
-
-    // Positive when the segment leaves the shooter on its shooting side.
-    double const cosShooter =
-        -shootingSign * ((double)sample.N.getX() * dx + (double)sample.N.getY() * dy + (double)sample.N.getZ() * dz);
-    double const cosReceiver = nx * dx + ny * dy + nz * dz;
-    if (cosShooter <= 0 || cosReceiver == 0) {
-      continue;
-    }
-    std::size_t const arrival =
-        static_cast<std::size_t>(cosReceiver > 0 ? GMANRadiositySide::front : GMANRadiositySide::back);
-
-    double const sampleScale = std::fmax(std::fmax(std::fabs(sx), std::fabs(sy)), std::fabs(sz));
-    double const clearance =
-        std::fmax(kShooterClearance * distance, kClearanceFloor * std::fmax(receiverScale, sampleScale));
-    GMANLight const light(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), sample.P, GMANVector());
-    GMANVector const direction((RtFloat)dx, (RtFloat)dy, (RtFloat)dz);
-    GMANColor const transmission =
-        occluder.transmission(light, receiver.P, direction, receiver.N, (RtFloat)std::fmax(distance - clearance, 0.0),
-                              receiver.surfaceMagnitude);
-
-    double const weight = sample.weight;
-    double const geometric = weight * std::fabs(cosReceiver) * cosShooter / (PI * distanceSquared + weight);
-    sums[arrival][0] += geometric * transmission.getRed();
-    sums[arrival][1] += geometric * transmission.getGreen();
-    sums[arrival][2] += geometric * transmission.getBlue();
+    sums[contribution.arrival][0] += contribution.red;
+    sums[contribution.arrival][1] += contribution.green;
+    sums[contribution.arrival][2] += contribution.blue;
   }
 
   return {GMANColor((RtFloat)sums[0][0], (RtFloat)sums[0][1], (RtFloat)sums[0][2]),
@@ -336,23 +371,20 @@ std::array<GMANColor, 2> radiosityFormFactors(GMANRayOccluder const& occluder, R
 
 } // namespace gman
 
-GMANRadiositySolution GMANRadiositySolver::solve(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
-                                                 std::vector<GMANColor> const& reflectance, std::size_t samples) const {
-  checkReflectance(mesh, reflectance);
-  sampleRoot(samples);
-
-  std::size_t const elementCount = mesh.getElementCount();
-  std::size_t const sideCount = 2 * elementCount;
+GMANRadiositySolution GMANRadiositySolver::makeEmptySolution(std::size_t elementCount, std::size_t nodeCount) {
   GMANRadiositySolution solution;
   solution.areas.resize(elementCount);
-  solution.direct.resize(sideCount);
-  solution.indirect.assign(sideCount, GMANColor());
-  solution.nodeIndirect.assign(2 * mesh.getNodeCount(), GMANColor());
+  solution.direct.resize(2 * elementCount);
+  solution.indirect.assign(2 * elementCount, GMANColor());
+  solution.nodeIndirect.assign(2 * nodeCount, GMANColor());
+  return solution;
+}
 
-  std::vector<gman::RadiosityReceiver> receivers(elementCount);
-  std::vector<bool> shootsItself(elementCount);
-  double largestMagnitude = 0;
-  for (std::size_t element = 0; element < elementCount; ++element) {
+void GMANRadiositySolver::initializeReceivers(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
+                                              std::size_t samples, GMANRadiositySolution& solution,
+                                              std::vector<gman::RadiosityReceiver>& receivers,
+                                              std::vector<bool>& shootsItself, double& largestMagnitude) {
+  for (std::size_t element = 0; element < receivers.size(); ++element) {
     GMANRayInterface const* primitive = mesh.getElementPrimitive(element);
     receivers[element] = gman::radiosityReceiver(mesh, element);
     solution.areas[element] = gman::radiosityElementArea(mesh, element, samples);
@@ -364,32 +396,63 @@ GMANRadiositySolution GMANRadiositySolver::solve(GMANRadiosityMesh const& mesh, 
     solution.direct[sideIndex(element, GMANRadiositySide::front)] = direct[0];
     solution.direct[sideIndex(element, GMANRadiositySide::back)] = direct[1];
   }
+}
+
+void GMANRadiositySolver::fireShot(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
+                                   std::vector<gman::RadiosityReceiver> const& receivers,
+                                   std::vector<bool> const& shootsItself, std::vector<GMANColor> const& reflectance,
+                                   std::size_t samples, std::size_t shooterSide, GMANColor const& shot,
+                                   GMANRadiositySolution& solution, std::vector<GMANColor>& unshot) {
+  std::size_t const element = shooterSide / 2;
+  auto const shootingSide = static_cast<GMANRadiositySide>(shooterSide % 2);
+  std::vector<gman::RadiositySample> const shooterSamples =
+      gman::placeRadiositySamples(mesh, element, solution.areas[element], samples);
+  for (std::size_t receiver = 0; receiver < receivers.size(); ++receiver) {
+    if (receiver == element && !shootsItself[element]) {
+      continue;
+    }
+    std::array<GMANColor, 2> const factors =
+        gman::radiosityFormFactors(occluder, receivers[receiver], shooterSamples, shootingSide);
+    for (std::size_t arrival = 0; arrival < 2; ++arrival) {
+      GMANColor const gained = gman::multiplyChannels(shot, factors[arrival]);
+      solution.irradiance[2 * receiver + arrival] += gained;
+      unshot[2 * receiver + arrival] += gman::multiplyChannels(reflectance[receiver], gained);
+    }
+  }
+}
+
+void GMANRadiositySolver::finalizeIndirect(GMANRadiosityMesh const& mesh, double largestMagnitude,
+                                           GMANRadiositySolution& solution) {
+  solution.indirect = computeIndirect(solution.irradiance, solution.direct);
+  solution.nodeIndirect =
+      nodeIndirectMeans(mesh, nodeGroupRoots(mesh, largestMagnitude), solution.areas, solution.indirect);
+}
+
+GMANRadiositySolution GMANRadiositySolver::solve(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
+                                                 std::vector<GMANColor> const& reflectance, std::size_t samples) const {
+  checkReflectance(mesh, reflectance);
+  sampleRoot(samples);
+
+  std::size_t const elementCount = mesh.getElementCount();
+  std::size_t const sideCount = 2 * elementCount;
+  GMANRadiositySolution solution = makeEmptySolution(elementCount, mesh.getNodeCount());
+
+  std::vector<gman::RadiosityReceiver> receivers(elementCount);
+  std::vector<bool> shootsItself(elementCount);
+  double largestMagnitude = 0;
+  initializeReceivers(mesh, occluder, samples, solution, receivers, shootsItself, largestMagnitude);
 
   solution.irradiance = solution.direct;
   std::vector<GMANColor> unshot(sideCount);
-  double directPower = 0;
-  for (std::size_t side = 0; side < sideCount; ++side) {
-    unshot[side] = gman::multiplyChannels(reflectance[side / 2], solution.direct[side]);
-    directPower += maxChannel(unshot[side]) * solution.areas[side / 2];
-  }
+  double const directPower = initializeUnshot(reflectance, solution.direct, solution.areas, unshot);
   if (directPower <= 0) {
     return solution;
   }
 
   std::size_t const shotCap = kMaxShotsPerSide * sideCount;
   for (;;) {
-    double totalUnshot = 0;
-    double largest = -1;
-    std::size_t shooter = 0;
-    for (std::size_t side = 0; side < sideCount; ++side) {
-      double const power = maxChannel(unshot[side]) * solution.areas[side / 2];
-      totalUnshot += power;
-      if (power > largest) {
-        largest = power;
-        shooter = side;
-      }
-    }
-    if (totalUnshot <= kConvergence * directPower) {
+    RadiosityShooterPick const pick = pickShooterSide(unshot, solution.areas);
+    if (pick.totalUnshotPower <= kConvergence * directPower) {
       break;
     }
     if (solution.shotCount == shotCap) {
@@ -397,32 +460,12 @@ GMANRadiositySolution GMANRadiositySolver::solve(GMANRadiosityMesh const& mesh, 
       break;
     }
 
-    std::size_t const element = shooter / 2;
-    auto const shootingSide = static_cast<GMANRadiositySide>(shooter % 2);
-    GMANColor const shot = unshot[shooter];
-    unshot[shooter] = GMANColor();
-    std::vector<gman::RadiositySample> const shooterSamples =
-        gman::placeRadiositySamples(mesh, element, solution.areas[element], samples);
-    for (std::size_t receiver = 0; receiver < elementCount; ++receiver) {
-      if (receiver == element && !shootsItself[element]) {
-        continue;
-      }
-      std::array<GMANColor, 2> const factors =
-          gman::radiosityFormFactors(occluder, receivers[receiver], shooterSamples, shootingSide);
-      for (std::size_t arrival = 0; arrival < 2; ++arrival) {
-        GMANColor const gained = gman::multiplyChannels(shot, factors[arrival]);
-        solution.irradiance[2 * receiver + arrival] += gained;
-        unshot[2 * receiver + arrival] += gman::multiplyChannels(reflectance[receiver], gained);
-      }
-    }
+    GMANColor const shot = unshot[pick.side];
+    unshot[pick.side] = GMANColor();
+    fireShot(mesh, occluder, receivers, shootsItself, reflectance, samples, pick.side, shot, solution, unshot);
     ++solution.shotCount;
   }
 
-  for (std::size_t side = 0; side < sideCount; ++side) {
-    solution.indirect[side] = solution.irradiance[side];
-    solution.indirect[side] -= solution.direct[side];
-  }
-  solution.nodeIndirect =
-      nodeIndirectMeans(mesh, nodeGroupRoots(mesh, largestMagnitude), solution.areas, solution.indirect);
+  finalizeIndirect(mesh, largestMagnitude, solution);
   return solution;
 }

@@ -193,4 +193,29 @@ public:
 
   GMANRadiositySolution solve(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
                               std::vector<GMANColor> const& reflectance, std::size_t samples = kDefaultSamples) const;
+
+private:
+  // A fresh result sized for elementCount elements and nodeCount nodes,
+  // every accumulator zeroed.
+  static GMANRadiositySolution makeEmptySolution(std::size_t elementCount, std::size_t nodeCount);
+
+  // Every element's receiver point, area and self-shoot flag, and each
+  // side's direct irradiance from the ray tracer's own diffuse(). Tracks
+  // the largest surfaceMagnitude seen, for the node-grouping search's own
+  // coordinate extent.
+  static void initializeReceivers(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder, std::size_t samples,
+                                  GMANRadiositySolution& solution, std::vector<gman::RadiosityReceiver>& receivers,
+                                  std::vector<bool>& shootsItself, double& largestMagnitude);
+
+  // Fires shooterSide's shot at every receiver element (the shooter itself
+  // included when it shoots to itself), depositing rho * dH into each
+  // receiver side's irradiance and unshot.
+  static void fireShot(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
+                       std::vector<gman::RadiosityReceiver> const& receivers, std::vector<bool> const& shootsItself,
+                       std::vector<GMANColor> const& reflectance, std::size_t samples, std::size_t shooterSide,
+                       GMANColor const& shot, GMANRadiositySolution& solution, std::vector<GMANColor>& unshot);
+
+  // H_ind = H - H_d per side, and each node side's A_i-weighted mean
+  // H_ind, once the solve is complete.
+  static void finalizeIndirect(GMANRadiosityMesh const& mesh, double largestMagnitude, GMANRadiositySolution& solution);
 };

@@ -190,6 +190,10 @@ private:
   // group in nodeGroups.
   void groupCoincidentNodes();
 
+  // Common tail of diceParametric and dicePolygon: recordElementCells()
+  // then groupCoincidentNodes() over the primitive just appended.
+  void finishPrimitiveMesh();
+
   // The quad-facet element over four corner node indices, already
   // appended to nodes. A pole cell -- two adjacent corners coincident --
   // degrades one of its two triangles to zero area on its own; see the
@@ -204,11 +208,35 @@ private:
   void diceParametric(GMANPrimitive* primitive, GMANParametric& parametric, GMANMatrix4 const& objectToCamera,
                       GMANMatrix4 const& cameraToObject, RtFloat maxEdgeLength);
 
+  // Appends a parametric primitive's own nu x nv facet elements over its
+  // freshly appended node grid, recording each cell's index in
+  // cellToElement.
+  void appendParametricElements(std::size_t nu, std::size_t nv, std::size_t nodeOffset,
+                                std::vector<std::size_t>& cellToElement);
+
   void dicePolygon(GMANRayPolygon const& polygon, RtFloat maxEdgeLength);
+
+  // Fills mesh with a polygon primitive's own basis, grid and per-cell
+  // bookkeeping, ready for appendPolygonElements and finishPrimitiveMesh.
+  void fillPolygonPrimitiveMesh(GMANRayPolygon const& polygon, GMANPoint const& basisOrigin, GMANVector const& basisE0,
+                                GMANVector const& basisE1, GMANVector const& normal, double uMin, double vMin,
+                                std::size_t nu, std::size_t nv, double duStep, double dvStep, std::size_t nodeOffset,
+                                std::size_t elementOffset, PrimitiveMesh& mesh) const;
 
   // Dices each of mesh's own faces as its own GMANRayPolygon, keyed for
   // locate() by that face's own address, never the mesh's.
   void diceMesh(GMANRayPolygonMesh const& mesh, RtFloat maxEdgeLength);
+
+  // The polygon branch of surfacePoint: the in-plane point and plane
+  // normal, false when the point falls outside the outer loop or inside a
+  // hole.
+  bool polygonSurfacePoint(PrimitiveMesh const& mesh, ElementCell const& cell, double s, double t,
+                           GMANRadiositySurfacePoint& point) const;
+
+  // The quadric branch of surfacePoint: point and normal from
+  // getLocation/getNormal, density by central difference.
+  GMANRadiositySurfacePoint quadricSurfacePoint(PrimitiveMesh const& mesh, ElementCell const& cell, double s,
+                                                double t) const;
 
   std::vector<GMANRadiosityNode> nodes;
   std::vector<GMANRadiosityElement> elements;
