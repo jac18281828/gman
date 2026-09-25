@@ -51,14 +51,14 @@ namespace {
 // extension carrying a jmp_buf, so a fatal libjpeg error -- a failed write
 // included -- longjmps back into this driver instead of error_exit's
 // default of printing to stderr and calling exit() on the whole process.
-struct GMANJPEGErrorManager {
+struct JPEGErrorManager {
   jpeg_error_mgr pub;
   jmp_buf escape;
   char message[JMSG_LENGTH_MAX];
 };
 
-void gmanJPEGErrorExit(j_common_ptr cinfo) {
-  GMANJPEGErrorManager* err = reinterpret_cast<GMANJPEGErrorManager*>(cinfo->err);
+void jpegErrorExit(j_common_ptr cinfo) {
+  auto* const err = reinterpret_cast<JPEGErrorManager*>(cinfo->err);
   (*cinfo->err->format_message)(cinfo, err->message);
   std::longjmp(err->escape, 1);
 }
@@ -89,7 +89,7 @@ RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColo
   FILE* jpegFile = fopen(outputName.c_str(), "w");
   if (jpegFile) {
     struct jpeg_compress_struct cinfo; // jpeg compression params
-    GMANJPEGErrorManager jerr;         // error handler
+    JPEGErrorManager jerr;             // error handler
 
     /* 3 color samples per pixel */
     JSAMPLE* row = new JSAMPLE[xres * 3];
@@ -99,7 +99,7 @@ RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColo
 
       // allocate jpeg compression object
       cinfo.err = jpeg_std_error(&jerr.pub);
-      jerr.pub.error_exit = gmanJPEGErrorExit;
+      jerr.pub.error_exit = jpegErrorExit;
 
       if (setjmp(jerr.escape)) {
         jpeg_destroy_compress(&cinfo);
