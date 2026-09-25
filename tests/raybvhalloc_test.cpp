@@ -41,10 +41,10 @@
  * way, so taking the nearer child at every level reaches one of the
  * tree's eight depth-3 leaves. Over these 23 spheres that path runs
  * root(23) -> right(12) -> right(6) -> a 3-primitive leaf, three levels
- * below the root, so the traversal's own stack peaks at 4 entries: one
- * pending sibling per level (3) plus the two children just pushed at the
- * deepest one. testPeakStack's own probe ray
- * starts past every one of the 20 spheres' own x and travels toward -x
+ * below the root, so the traversal's own stack peaks at 4 entries: the
+ * pending siblings left at depths 1 and 2, plus the two children just
+ * pushed at the deepest internal node. testPeakStack's own probe ray starts
+ * past every one of the 20 spheres' own x and travels toward -x
  * across their whole span at y = 0, z = 0: every node's box along that
  * path still includes y = 0 (the alternation), but no individual sphere
  * does (each one offset past its own radius), so the ray reaches that
