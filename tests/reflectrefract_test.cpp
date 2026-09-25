@@ -19,7 +19,7 @@
  */
 
 /*
- * R8 proof, §8 B: GMANReflect, GMANRefract and GMANFresnel at known
+ * GMANReflect, GMANRefract and GMANFresnel at known
  * angles. Every direction below follows GMANRefract's own calling
  * convention -- i the incident direction, n oriented against it
  * (i.dot(n) <= 0) -- since that is what GMANFresnel's reflectance fix
@@ -128,7 +128,7 @@ std::vector<FresnelPin> const& fresnelPins() {
   static RtFloat const kEtaEnter = (RtFloat)1.0 / kIor;
   static RtFloat const kEtaExit = kIor;
   static GMANVector const kN(0.0f, 0.0f, 1.0f);
-  // The exact TIR boundary float (§1): cosphi = 0.745355964, eta = 1.5,
+  // The exact TIR boundary float: cosphi = 0.745355964, eta = 1.5,
   // where sinphi*eta rounds to exactly 1.0f in RtFloat (32-bit).
   static RtFloat const kBoundaryCosPhi = 0.745355964f;
   static GMANVector const kBoundaryI(std::sqrt(1.0f - kBoundaryCosPhi * kBoundaryCosPhi), 0.0f, -kBoundaryCosPhi);

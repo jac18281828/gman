@@ -1,11 +1,11 @@
-## Fixture 1 (§6, form "Two surfaces, one shader"): two plastic spheres,
+## Fixture 1, "Two surfaces, one shader": two plastic spheres,
 ## each its own AttributeBegin/AttributeEnd block, Kd 0.1 at x=-1.2 and
 ## Kd 1.0 at x=1.2. Ks 0 and no ambient light make brightness linear in
 ## Kd, so a correct render puts the dim sphere's red channel near a tenth
-## of the bright one's, under either renderer. The z-buffer already gets
-## this right at dd49924, since it shades each sphere as it is created;
-## the ray tracer does not, since it shades every primitive only after
-## both Surface calls ran, with the last one's list. Not third-party.
+## of the bright one's, under either renderer. The z-buffer shades each
+## sphere as it is created, so it always gets this right; a ray tracer
+## that shades every primitive only after both Surface calls ran, with
+## the last one's list, would not. Not third-party.
 Display "surfaceparameters_two_surfaces.tif" "file" "rgba"
 Format 200 100 1
 Projection "perspective" "fov" [45]

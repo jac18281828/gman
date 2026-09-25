@@ -19,7 +19,7 @@
  */
 
 /*
- * R2 proof: GMANRaySphere::intersect finds the nearest surviving root of
+ * GMANRaySphere::intersect finds the nearest surviving root of
  * the sphere quadratic, honoring the ray's own [tmin, tmax] interval, the
  * closed [zmin, zmax] band and thetamax, and fills a GMANHit that round
  * trips through GMANSphere::getLocation.
@@ -136,7 +136,7 @@ void testPartialSphereClips() {
   check(clippedNear.intersect(ray, hit) && near(hit.t, 6.0) && near(hit.point.getZ(), 1.0),
         "zmin clip: the near root is clipped and the far root survives at t == 6");
 
-  // Both caps now exclude the sphere's two roots outright: a miss.
+  // Both caps exclude the sphere's two roots outright: a miss.
   GMANRaySphere clippedBoth(1.0, -0.5, 0.5, 360.0, GMANParameterList());
   GMANHit missHit;
   check(!clippedBoth.intersect(ray, missHit), "zmin/zmax clip: both roots fall outside the band");

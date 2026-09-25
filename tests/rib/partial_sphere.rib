@@ -1,9 +1,9 @@
-## Review finding: no existing test rendered a genuinely asymmetric partial
-## sphere's image. transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere
-## (zmin = -radius, zmax = radius) and proves nothing about the zmin/zmax
-## parameterization phase 3 fixed in GMANSphere::getLocation. This one --
-## zmin = -0.5, zmax = radius = 1 -- is the exact case the phase-3 prompt
-## named, and asymmetric: a cap is missing, a hemisphere is not.
+## No other test renders a genuinely asymmetric partial sphere's image.
+## transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere (zmin =
+## -radius, zmax = radius) and proves nothing about
+## GMANSphere::getLocation's zmin/zmax parameterization. This one -- zmin
+## = -0.5, zmax = radius = 1 -- is asymmetric: a cap is missing, a
+## hemisphere is not.
 ##
 ## Explicit Clipping, not the RI_EPSILON-near default: this shape hits a
 ## general near-clip precision defect (see AGENTS.md's "Near-clip precision

@@ -19,8 +19,8 @@
  */
 
 /*
- * R8 proof, §8 D: mirror and glass, loaded exactly as defaultSurfaceShader()
- * loads matte -- a real .so, not gmanmirror.cpp/gmanglass.cpp compiled
+ * Mirror and glass, loaded exactly as defaultSurfaceShader() loads
+ * matte -- a real .so, not gmanmirror.cpp/gmanglass.cpp compiled
  * directly into this binary, since both define extern "C"
  * GMANGetLoadableInfo/GMANLoadShader at global scope and linking both would
  * be a duplicate-symbol error.

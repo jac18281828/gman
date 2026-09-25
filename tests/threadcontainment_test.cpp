@@ -51,8 +51,8 @@ bool isHeader(const fs::path& path) {
   return ext == ".h" || ext == ".hpp";
 }
 
-// The threading list §1 confines to gmanparallel.cpp and (for <mutex> and
-// std::mutex/std::lock_guard only) gmanlog.cpp.
+// AGENTS.md confines naming a thread primitive to gmanparallel.cpp and
+// (for <mutex> and std::mutex/std::lock_guard only) gmanlog.cpp.
 struct ForbiddenHeader {
   const char* include; // as it appears between the angle brackets
 };

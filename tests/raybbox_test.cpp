@@ -19,7 +19,7 @@
  */
 
 /*
- * R6 proof, §8 check B: every ray primitive's camera-space bbox.
+ * Every ray primitive's camera-space bbox.
  *
  * Check 1 (the seven surfaces of revolution): a representative placement
  * -- translate, rotate and a non-uniform scale together, tilting the

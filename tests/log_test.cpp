@@ -19,12 +19,11 @@
  */
 
 /*
- * gmanlog's sink, exercised through its public API only. setLogFile used to
- * hold logMutex across a call to info(), which locks the same mutex again --
- * a hang, not a crash, so nothing before this test caught it. Every check
- * here runs against the fixed sink; the file is the one place gmanlog's own
- * concurrency invariant (one mutex, taken only inside logEnabled/logWrite)
- * is proven from outside.
+ * gmanlog's sink, exercised through its public API only. setLogFile
+ * releases logMutex before its own call to info(), which locks the same
+ * mutex again; holding it across that call would hang. This file is the
+ * one place gmanlog's own concurrency invariant (one mutex, taken only
+ * inside logEnabled/logWrite) is proven from outside.
  */
 
 #include <cstdio>

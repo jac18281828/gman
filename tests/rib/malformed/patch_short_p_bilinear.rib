@@ -1,9 +1,9 @@
-# F6: a bilinear Patch's "P" carries four vertex-class points (twelve
+# A bilinear Patch's "P" carries four vertex-class points (twelve
 # floats); this supplies two. GMANParameterList sizes its destination from
-# the declared class and used to copy that many floats from the supplied
-# array regardless of its real length -- ASan a heap-buffer-overflow READ
-# in GMANParameterList::copy_float before the clamp. gman is expected to
-# warn, clamp, zero-fill and keep going.
+# the declared class; copying that many floats from the supplied array
+# regardless of its real length would ASan a heap-buffer-overflow READ in
+# GMANParameterList::copy_float before the clamp. gman warns, clamps,
+# zero-fills and keeps going.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

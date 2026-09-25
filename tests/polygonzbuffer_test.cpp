@@ -19,11 +19,11 @@
  */
 
 /*
- * R5a proof: tests/rib/r5a_polygon.rib, a single camera-facing polygon,
+ * tests/rib/r5a_polygon.rib, a single camera-facing polygon,
  * renders the same shape under both renderers. The two renderers place
  * samples differently (the z-buffer truncates to integer sample
  * coordinates, the tracer uses gman::sampleCentre), so edge pixels differ
- * by design. Two checks, over two different pixel sets, per §8.4:
+ * by design. Two checks, over two different pixel sets:
  *
  *   1. A pixel whose 5x5 neighbourhood is covered in both renders sits
  *      well inside both silhouettes, past that edge disagreement, and

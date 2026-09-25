@@ -21,7 +21,7 @@
 /*
  * s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
  * (General)Polygon -- RiTextureCoordinates and the "s"/"t"/"st" primvars
- * GMANPatchPolyObjectManager now resolves. Every fixture under
+ * GMANPatchPolyObjectManager resolves. Every fixture under
  * tests/rib/texcoords/ copies tests/rib/texture.rib's own frame (camera,
  * Clipping, ambient light at 0.3, paintedplastic reading
  * checker_texture.tif with Ka=1 Kd=0 Ks=0) and its off-screen desync

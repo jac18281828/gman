@@ -29,8 +29,8 @@
  * brightness linear in Kd, so a correct render's dim/bright ratio sits
  * near 0.1. A build that shares one list across surfaces instead puts
  * both spheres near the same brightness, ratio near 1 -- well outside the
- * tolerance below, so this fails at dd49924 exactly where §1 measured it:
- * fixture 1 only under the ray tracer, fixtures 2 and 3 under both
+ * tolerance below. That reproduces on fixture 1 only under the ray
+ * tracer, and on fixtures 2 and 3 under both
  * renderers.
  */
 

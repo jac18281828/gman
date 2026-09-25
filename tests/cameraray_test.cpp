@@ -19,8 +19,8 @@
  */
 
 /*
- * R1 proof: GMANViewingSystem answers a camera-space ray (cameraRay) and
- * a world-space one (ray), and GMANRay carries its [tmin, tmax] defaults.
+ * GMANViewingSystem answers a camera-space ray (cameraRay) and a
+ * world-space one (ray), and GMANRay carries its [tmin, tmax] defaults.
  *
  * Every check below shares one viewing system built over a non-identity
  * world-to-camera transform -- a translation plus a rotation off the

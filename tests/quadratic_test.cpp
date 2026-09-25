@@ -19,7 +19,7 @@
  */
 
 /*
- * R2 proof: GMANQuadraticRoots solves a*t^2 + b*t + c == 0 with the
+ * GMANQuadraticRoots solves a*t^2 + b*t + c == 0 with the
  * numerically stable root form, reports the right root count at every
  * discriminant sign, and orders a 2-root answer t0 <= t1.
  */

@@ -19,12 +19,13 @@
  */
 
 /*
- * Polygon and the seven quadrics built their GMANParameterList with no
- * suppliedCounts at all, so a short RIB-supplied array read past its own
- * allocation (ASan heap-buffer-overflow in copy_float) instead of
- * clamping the way tests/paramclamp_test.cpp's six protected requests
- * already do. gman is now expected to warn once, naming the parameter and
- * both lengths, clamp and zero-fill instead, for every one of the eight.
+ * Guards against Polygon and the seven quadrics building their
+ * GMANParameterList with no suppliedCounts: without it, a short
+ * RIB-supplied array would read past its own allocation (ASan
+ * heap-buffer-overflow in copy_float) instead of clamping the way
+ * tests/paramclamp_test.cpp's six protected requests do. gman warns
+ * once, naming the parameter and both lengths, and clamps and
+ * zero-fills instead, for every one of the eight.
  *
  * Each fixture is run out-of-process (fork/exec, like
  * tests/ribmalformed_test.cpp and tests/paramclamp_test.cpp) so a

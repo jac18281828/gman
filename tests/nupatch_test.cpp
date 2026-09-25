@@ -19,7 +19,7 @@
  */
 
 /*
- * NuPatch: GMANNuPatch now implements GMANParametric with a Cox-de Boor
+ * NuPatch: GMANNuPatch implements GMANParametric with a Cox-de Boor
  * evaluator, RiNuPatchV validates and sizes the request, parseNuPatch
  * checks knot lengths and owns its arrays, and getRSNuPatch wires the
  * surface through createParametric.

@@ -19,11 +19,11 @@
  */
 
 /*
- * The one golden-image comparison path in this tree. Lifted from
- * tests/lighting_test.cpp (Phase 3), which read a TIFF and compared it per
- * channel against tests/rib/lights_golden.tif -- the only golden mechanism
- * that existed before this. Every scene needing pixel-regression protection
- * calls checkGoldenImage() below instead of writing a second comparison.
+ * The one golden-image comparison path in this tree.
+ * tests/lighting_test.cpp calls checkGoldenImage() below to compare a
+ * rendered TIFF per channel against tests/rib/lights_golden.tif. Every
+ * scene needing pixel-regression protection does the same instead of
+ * writing a second comparison.
  *
  * Format: TIFF, matching the existing golden and every output driver this
  * renderer already exercises by default -- picking PNG instead would mean
@@ -35,9 +35,9 @@
  * pixel between platforms at identical float precision -- a
  * tessellation-resolution artifact, not a shading regression;
  * silhouette_test.cpp already accepts an 8% geometric tolerance for the
- * same reason). GOLDEN_CHANNEL_TOL and GOLDEN_MAX_FRACTION below carry the
- * measured values in place of the untested guess Phase 3 made for
- * tests/rib/lights.rib and every call site then reused tree-wide.
+ * same reason). GOLDEN_CHANNEL_TOL and GOLDEN_MAX_FRACTION below carry
+ * values measured for tests/rib/lights.rib, reused tree-wide by every
+ * call site.
  *
  * Regenerating a golden is legitimate only when the change that moved the
  * pixels is itself an intended, reviewed behavior change (a shading,
@@ -124,8 +124,7 @@ inline void writeGoldenDiffTIFF(const std::string& path, const GmanImage& actual
   TIFFClose(tif);
 }
 
-// Measured 2026-09-07 against agent/golden-tolerance's instrumented push
-// (commit 3029ab7) on all five goldens, on the antialiased images the
+// Measured 2026-09-07 on all five goldens, on the antialiased images the
 // sample-buffer/filtering work regenerated: ubuntu-latest and macos-latest,
 // each gcc and clang, plus the ubuntu/clang asan+ubsan debug leg. macOS
 // (both compilers) matched every golden pixel exactly. Ubuntu (all three
@@ -134,12 +133,12 @@ inline void writeGoldenDiffTIFF(const std::string& path, const GmanImage& actual
 // from quadrics_golden.tif by up to six pixels reaching delta 57 -- a
 // tessellation-boundary shift -- 0.0016% of that scene's 364000 pixels at
 // worst. screenwindow and shaders matched exactly everywhere. Few pixels
-// differing a lot, not many differing slightly: GOLDEN_CHANNEL_TOL keeps
-// Phase 3's value, which already separates the two (every rounding delta
-// observed is 1; every boundary-shift delta above it clears 24).
-// GOLDEN_MAX_FRACTION tightens from Phase 3's untested 1% to comfortably
-// clear the measured 0.00055% (2/364000) worst case -- headroom for a
-// future compiler or runner change, not a number sized to a single defect.
+// differing a lot, not many differing slightly: GOLDEN_CHANNEL_TOL
+// separates the two (every rounding delta observed is 1; every
+// boundary-shift delta above it clears 24). GOLDEN_MAX_FRACTION
+// comfortably clears the measured 0.00055% (2/364000) worst case --
+// headroom for a future compiler or runner change, not a number sized
+// to a single defect.
 constexpr int GOLDEN_CHANNEL_TOL = 24;
 constexpr double GOLDEN_MAX_FRACTION = 0.001;
 

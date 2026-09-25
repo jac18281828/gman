@@ -19,9 +19,7 @@
  */
 
 /*
- * Patch tessellation, both "bilinear" and "bicubic". Patch rasterized no
- * pixels ("Found by running the corpus after phase 3 landed"); this file
- * pinned that shape until getRSPatch was wired up (phase 6).
+ * Patch tessellation, both "bilinear" and "bicubic".
  * tests/rib/patch_norender.rib renders a bilinear Patch beside a control
  * Sphere under identical lighting and shading --
  * the Sphere proves the renderer itself works, so a Patch failure here is

@@ -19,42 +19,37 @@
  */
 
 /*
- * Defect 4 (uat-defects prompt): CropWindow truncated from the origin
- * instead of cropping. `CropWindow 0.25 0.75 0.25 0.75` (the centre) and
- * `CropWindow 0.5 1.0 0.5 1.0` (the bottom-right quadrant) produced
- * byte-identical output -- measured bounding boxes 101-199 and 102-199 in
- * both cases -- always anchored at the full Format's top-left corner.
- *
  * GMANOptions::getRasterInfo (gmanoptions.cpp) computes the crop
- * rectangle's raster bounds correctly, and GMANRenderManImpl sizes the
- * output buffer to it, but nothing then offset rasterization by the
- * rectangle's origin: GMANViewingSystem::screenToRaster always maps into
- * the *full* Format's raster grid (correctly -- RiCropWindow selects a
- * sub-window of that grid, it does not redefine it), and
- * GMANZBufferRenderer::getVertexInfo used that full-grid position
- * directly against the cropped buffer's (width, height), silently
- * dropping anything that landed outside [0, width) x [0, height) -- true
- * for all of a non-top-left crop except whatever happened to also fall
- * within the first rows/columns of the full frame.
+ * rectangle's raster bounds, and GMANRenderManImpl sizes the output
+ * buffer to it. GMANViewingSystem::screenToRaster maps into the *full*
+ * Format's raster grid (correctly -- RiCropWindow selects a sub-window
+ * of that grid, it does not redefine it), so
+ * GMANZBufferRenderer::getVertexInfo subtracts the crop rectangle's own
+ * origin (GMANOptions::RasterInfo::rxmin/rymin) before storing a
+ * vertex's local position against the cropped buffer's (width, height).
+ * Without that subtraction, a full-grid position would silently drop
+ * anything outside [0, width) x [0, height) -- true for all of a
+ * non-top-left crop except whatever happened to also fall within the
+ * first rows/columns of the full frame, so `CropWindow 0.25 0.75 0.25
+ * 0.75` (the centre) and `CropWindow 0.5 1.0 0.5 1.0` (the bottom-right
+ * quadrant) would produce byte-identical output, always anchored at the
+ * full Format's top-left corner.
  *
- * Fixed in GMANZBufferRenderer: getVertexInfo now subtracts the crop
- * rectangle's own origin (GMANOptions::RasterInfo::rxmin/rymin) before
- * storing a vertex's local position. A related bug shared the same root
- * cause: the numerical-stability margin in that function's sanity check
- * was sized from the (possibly cropped) buffer's width/height, so the
- * same near-singular vertex could be accepted in one crop and rejected in
- * another; both the margin and the check it guards are now sized from the
- * full Format and run before the origin subtraction, so the sanity test
- * itself is crop-invariant.
+ * The numerical-stability margin in that function's sanity check, and
+ * the check it guards, are sized from the full Format and run before
+ * the origin subtraction: sizing either from the (possibly cropped)
+ * buffer's width/height instead would let the same near-singular vertex
+ * be accepted in one crop and rejected in another, so this keeps the
+ * sanity test crop-invariant.
  *
- * Proof, by bounding box (per the settled decision -- content, not exit
- * status): the reproduction's own sphere, once cropped at the centre,
- * must show a silhouette spanning most of the crop, matching the
- * uncropped render's silhouette offset by the crop's own origin -- not
- * the narrow 101-199-ish sliver defect 4 reported. Cropped at the
- * bottom-right quadrant, the same sphere's silhouette must be anchored at
- * the *crop's* top-left corner (content clipped by the crop boundary),
- * and the two crops must no longer be byte-identical.
+ * Proof, by bounding box (content, not exit status): the reproduction's
+ * own sphere, once cropped at the centre, must show a silhouette
+ * spanning most of the crop, matching the uncropped render's silhouette
+ * offset by the crop's own origin -- not a narrow sliver anchored at the
+ * Format's own top-left. Cropped at the bottom-right quadrant, the same
+ * sphere's silhouette must be anchored at the *crop's* top-left corner
+ * (content clipped by the crop boundary), and the two crops must not be
+ * byte-identical.
  *
  * A pixel-exact match against the uncropped render is deliberately not
  * asserted here: this sphere's tessellation facets share edges, and the
@@ -66,10 +61,9 @@
  * face's projected vertex position for a cropped and uncropped render of
  * the same scene: every one matched, exactly, modulo the crop's integer
  * origin. A single flat, non-adjacent-facet primitive would sidestep it:
- * Polygon now renders (phase-5-polygon-rasterization.md), but adopting it
- * here is a separate, out-of-scope change from this test's own defect;
- * RiPatch still renders no pixels at all (tests/patchnorender_test.cpp
- * pins this defect).
+ * Polygon renders, but adopting it here would be a separate, unrelated
+ * change; RiPatch still renders no pixels at all
+ * (tests/patchnorender_test.cpp pins this).
  *
  * Revert check: reverting the getVertexInfo origin subtraction alone
  * reproduces the reported symptom exactly -- both sphere crops go back to

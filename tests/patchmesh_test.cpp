@@ -19,7 +19,7 @@
  */
 
 /*
- * PatchMesh rasterization: GMANPatchMesh now implements GMANParametric,
+ * PatchMesh rasterization: GMANPatchMesh implements GMANParametric,
  * RiPatchMeshV builds the request and GMANPatchPolyObjectManager::
  * getRSPatchMesh dispatches "bilinear" to a hand-written mapping and
  * "bicubic" to GMANBasis::bicubicMesh.

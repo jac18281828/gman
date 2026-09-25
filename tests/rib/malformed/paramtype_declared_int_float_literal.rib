@@ -1,8 +1,7 @@
 # A token declared uniform integer, given a float literal in an array of
-# one. Before the parser consulted the declared type, this stored the float
-# bits and read back as garbage instead of failing; it now must raise
-# RIE_SYNTAX ("Non-integer in array.") the same way an out-of-place float
-# already does inside a genuine integer array.
+# one. Must raise RIE_SYNTAX ("Non-integer in array.") the same way an
+# out-of-place float already does inside a genuine integer array, rather
+# than storing the float bits and reading them back as garbage.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

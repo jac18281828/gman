@@ -19,7 +19,7 @@
  */
 
 /*
- * R5b proof: GMANRayParaboloid::intersect finds the object-space wall
+ * GMANRayParaboloid::intersect finds the object-space wall
  * hit, its z-band and thetamax wedge, solves the a == 0 linear case for
  * the axial ray, honors the ray's own [tmin, tmax] interval, and fills a
  * GMANHit that round trips through GMANParaboloid::getLocation.

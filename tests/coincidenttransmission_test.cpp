@@ -19,8 +19,8 @@
  */
 
 /*
- * R7 proof, §8 check 7: more transparent layers than
- * gman::kMaxCompositeLayers, spaced widely enough (1 world unit, far past
+ * More transparent layers than gman::kMaxCompositeLayers, spaced widely
+ * enough (1 world unit, far past
  * the offset's own hop size at this magnitude) that the walk must find
  * each one in its own iteration rather than clearing several in a single
  * hop. gman::offsetOrigin orients every hop toward the light regardless

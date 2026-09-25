@@ -6,10 +6,8 @@ add_library(gman_internal_headers INTERFACE)
 target_include_directories(gman_internal_headers INTERFACE
   "${CMAKE_SOURCE_DIR}/libgman")
 
-# The phase 0 runtime baseline. Asserts what gman actually does with a minimal
-# scene -- exit status, message and the absence of an image -- not what it was
-# predicted to do. See tests/baseline_test.cpp for the finding and for which phase
-# supersedes it.
+# The runtime baseline: exit status, message and image output for a minimal
+# scene. See tests/baseline_test.cpp for the full invariant.
 add_executable(gman_baseline baseline_test.cpp)
 target_link_libraries(gman_baseline PRIVATE gman_core TIFF::TIFF)
 
@@ -159,8 +157,8 @@ set_tests_properties(paramlist PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R6 proof, §8 check A: GMANBBox's two-point constructor and its
-# getMin()/getMax() accessors. See tests/bbox_test.cpp.
+# GMANBBox's two-point constructor and its getMin()/getMax() accessors.
+# See tests/bbox_test.cpp.
 add_executable(gman_bbox bbox_test.cpp)
 target_link_libraries(gman_bbox PRIVATE gman_core)
 
@@ -234,9 +232,9 @@ set_tests_properties(rendermanpointers PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Phase 2 -- RIB dialect coverage. Each spawns the real gman binary, which
-# dlopens its renderer by bare name, so each needs the same library path as
-# the baseline test above.
+# RIB dialect coverage. Each spawns the real gman binary, which dlopens
+# its renderer by bare name, so each needs the same library path as the
+# baseline test above.
 set(GMAN_PHASE2_ENV
   "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
 
@@ -356,7 +354,7 @@ set_tests_properties(inlineparsewordbound PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Phase 1 -- the object -> world -> camera -> screen -> NDC -> raster chain.
+# The object -> world -> camera -> screen -> NDC -> raster chain.
 add_executable(gman_matrix4 gmanmatrix4_test.cpp)
 target_link_libraries(gman_matrix4 PRIVATE gman_core)
 add_test(NAME matrix4 COMMAND gman_matrix4)
@@ -392,7 +390,7 @@ set_tests_properties(spacechain PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Phase 3 -- analytic primitive normals: finite-difference agreement,
+# Analytic primitive normals: finite-difference agreement,
 # cross-primitive orientation consistency, inverse-transpose under a
 # non-uniform scale.
 add_executable(gman_normals normals_test.cpp)
@@ -435,7 +433,7 @@ set_tests_properties(generalpolygon PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# The phase's actual gate: a real end-to-end render, read back and measured
+# The actual gate: a real end-to-end render, read back and measured
 # against the hand-derived silhouette geometry.
 add_executable(gman_silhouette silhouette_test.cpp)
 target_link_libraries(gman_silhouette PRIVATE gman_core TIFF::TIFF)
@@ -620,8 +618,8 @@ set_tests_properties(ribmalformed PROPERTIES
   LABELS render
   TIMEOUT 60)
 
-# F6: a RIB-supplied parameter array shorter than its declared class used to
-# read past its own allocation instead of clamping. See
+# Guards against a RIB-supplied parameter array shorter than its declared
+# class reading past its own allocation instead of clamping. See
 # tests/paramclamp_test.cpp.
 add_executable(gman_paramclamp paramclamp_test.cpp)
 target_link_libraries(gman_paramclamp PRIVATE gman_core)
@@ -662,8 +660,8 @@ set_tests_properties(geometryparamclamp PROPERTIES
   LABELS render
   TIMEOUT 60)
 
-# A RIB-supplied parameter array longer than its declared class truncated
-# silently. See tests/paramoversupply_test.cpp.
+# A RIB-supplied parameter array longer than its declared class warns and
+# truncates. See tests/paramoversupply_test.cpp.
 add_executable(gman_paramoversupply paramoversupply_test.cpp)
 target_link_libraries(gman_paramoversupply PRIVATE gman_core)
 
@@ -675,12 +673,12 @@ set_tests_properties(paramoversupply PROPERTIES
   LABELS render
   TIMEOUT 60)
 
-# A declared-integer parameter used to be stored as RtFloat and read back
-# through an (RtInt*) cast -- float bits reinterpreted as an integer, not
-# precision loss. See tests/paramlistdeclaredtype_test.cpp; its own final
-# check drives GMANRIBParse in process (RiBegin dlopens the default
-# renderer by bare name, hence the same LD_LIBRARY_PATH/DYLD_LIBRARY_PATH
-# as tests/basicstate.c).
+# Guards against a declared-integer parameter being stored as RtFloat and
+# read back through an (RtInt*) cast -- float bits reinterpreted as an
+# integer, not precision loss. See tests/paramlistdeclaredtype_test.cpp;
+# its own final check drives GMANRIBParse in process (RiBegin dlopens the
+# default renderer by bare name, hence the same
+# LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c).
 add_executable(gman_paramlistdeclaredtype paramlistdeclaredtype_test.cpp)
 target_link_libraries(gman_paramlistdeclaredtype PRIVATE gman_core)
 
@@ -767,11 +765,11 @@ set_tests_properties(patchmesh PROPERTIES
   LABELS render
   TIMEOUT 60)
 
-# Review finding: no test rendered a genuinely asymmetric partial sphere's
-# image (transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere). This
-# is the missing end-to-end proof of GMANSphere::getLocation's zmin/zmax
-# fix, and of the Clipping workaround the near-clip precision defect
-# requires for this shape.
+# No other test renders a genuinely asymmetric partial sphere's image
+# (transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere). This is
+# the end-to-end proof of GMANSphere::getLocation's zmin/zmax handling,
+# and of the Clipping workaround the near-clip precision defect requires
+# for this shape.
 add_executable(gman_partialsphere partialsphere_test.cpp)
 target_link_libraries(gman_partialsphere PRIVATE gman_core TIFF::TIFF)
 
@@ -814,8 +812,8 @@ set_tests_properties(tiffdisplaymode PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# UAT defect 0: a Projection with no explicit "fov" threw instead of
-# defaulting to 90 per RISpec 3.2.
+# A Projection with no explicit "fov" defaults to 90 per RISpec 3.2,
+# rather than throwing.
 add_executable(gman_fovdefault fovdefault_test.cpp)
 target_link_libraries(gman_fovdefault PRIVATE gman_core TIFF::TIFF)
 
@@ -830,8 +828,8 @@ set_tests_properties(fovdefault PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# UAT defect 1: Surface before AttributeBegin/FrameBegin double-freed a
-# dlopen'd shader module on the attributesStack copy both requests make.
+# Guards against Surface before AttributeBegin/FrameBegin double-freeing
+# a dlopen'd shader module on the attributesStack copy both requests make.
 add_executable(gman_attributescopy attributescopy_test.cpp)
 target_link_libraries(gman_attributescopy PRIVATE gman_core)
 
@@ -846,11 +844,12 @@ set_tests_properties(attributescopy PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# UAT defect 2: the PNG output driver segfaulted -- a read-side libpng call
-# on a write struct, a mis-sized pixel buffer, and a loop that only ever
-# wrote column 0. The binary needs libpng to link, so it stays guarded; the
-# test itself registers unconditionally so a build without libpng reports
-# the gap as Skipped rather than making the PNG driver invisible to ctest.
+# Guards against the PNG output driver segfaulting: a read-side libpng
+# call on a write struct, a mis-sized pixel buffer, or a loop that only
+# ever writes column 0. The binary needs libpng to link, so it stays
+# guarded; the test itself registers unconditionally so a build without
+# libpng reports the gap as Skipped rather than making the PNG driver
+# invisible to ctest.
 if(GMAN_WITH_PNG)
   add_executable(gman_pngdriver pngdriver_test.cpp)
   target_link_libraries(gman_pngdriver PRIVATE gman_core PNG::PNG TIFF::TIFF)
@@ -873,11 +872,12 @@ set_tests_properties(pngdriver PROPERTIES
   TIMEOUT 30
   SKIP_RETURN_CODE 77)
 
-# UAT defect 3: .jpg/.jpeg had no Display extension dispatch branch, so
-# newOutput stayed null and RiWorldEnd dereferenced it unconditionally. The
-# binary needs libjpeg to link, so it stays guarded; the test itself
-# registers unconditionally so a build without libjpeg reports the gap as
-# Skipped rather than making the JPEG driver invisible to ctest.
+# Guards against .jpg/.jpeg having no Display extension dispatch branch,
+# which would leave newOutput null and RiWorldEnd dereferencing it
+# unconditionally. The binary needs libjpeg to link, so it stays guarded;
+# the test itself registers unconditionally so a build without libjpeg
+# reports the gap as Skipped rather than making the JPEG driver invisible
+# to ctest.
 if(GMAN_WITH_JPEG)
   add_executable(gman_jpegdriver jpegdriver_test.cpp)
   target_link_libraries(gman_jpegdriver PRIVATE gman_core JPEG::JPEG TIFF::TIFF)
@@ -964,8 +964,9 @@ set_tests_properties(displaydisabled PROPERTIES
   TIMEOUT 30
   SKIP_RETURN_CODE 77)
 
-# UAT defect 4: CropWindow truncated from the origin instead of cropping --
-# nothing offset rasterization by the crop rectangle's own origin.
+# Guards against CropWindow truncating from the origin instead of
+# cropping -- rasterization must offset by the crop rectangle's own
+# origin.
 add_executable(gman_cropwindow cropwindow_test.cpp)
 target_link_libraries(gman_cropwindow PRIVATE gman_core TIFF::TIFF)
 
@@ -980,10 +981,10 @@ set_tests_properties(cropwindow PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# UAT defect 5: orthographic ignored RiScreenWindow and hard-clipped at
-# camera-space x=+-1. GMANPolygonClipper::clip now rebuilds its side planes
-# from the screen window for both projections -- see the perspective
-# analogue of this defect in gmanpolygonclipper.cpp's own history.
+# Guards against orthographic ignoring RiScreenWindow and hard-clipping
+# at camera-space x=+-1. GMANPolygonClipper::clip rebuilds its side
+# planes from the screen window for both projections -- see the
+# perspective analogue in gmanpolygonclipper.cpp.
 add_executable(gman_orthowindow orthowindow_test.cpp)
 target_link_libraries(gman_orthowindow PRIVATE gman_core TIFF::TIFF)
 
@@ -1048,9 +1049,9 @@ set_tests_properties(declaredfov PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# Phase 5's actual gate: tests/rib/polygon.rib renders a convex pentagon
-# whose raster coverage and shaded colour both match an analytically
-# computed region and value.
+# The actual gate: tests/rib/polygon.rib renders a convex pentagon whose
+# raster coverage and shaded colour both match an analytically computed
+# region and value.
 add_executable(gman_polygon polygon_test.cpp)
 target_link_libraries(gman_polygon PRIVATE gman_core TIFF::TIFF)
 
@@ -1188,7 +1189,7 @@ set_tests_properties(pointspolygons PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# NuPatch: GMANNuPatch now implements GMANParametric with a Cox-de Boor
+# NuPatch: GMANNuPatch implements GMANParametric with a Cox-de Boor
 # evaluator, RiNuPatchV validates and sizes the request, parseNuPatch
 # checks knot lengths and owns its arrays. Evaluator cases (direct
 # construction), twin-RIB renders and texture-coordinates no-op fixtures
@@ -1283,9 +1284,10 @@ set_tests_properties(environment PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# gmanlog's sink: setLogFile used to hold logMutex across a call to info(),
-# which deadlocked. Also proves one trailing newline, a suppressed level
-# never formatting, and eight concurrent writers landing 8000 whole lines.
+# gmanlog's sink: setLogFile releases logMutex before its own call to
+# info(), so it does not deadlock. Also proves one trailing newline, a
+# suppressed level never formatting, and eight concurrent writers landing
+# 8000 whole lines.
 add_executable(gman_log log_test.cpp)
 target_link_libraries(gman_log PRIVATE gman_core)
 
@@ -1357,10 +1359,10 @@ set_tests_properties(gamma PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, check 1: GMANSurfaceEnv's occlusion hook -- diffuse()/specular()
-# scale each non-ambient light by occluder->transmission(), ambient() never
-# consults it, and a point/distant light reports the distance and direction
-# the contract promises.
+# GMANSurfaceEnv's occlusion hook -- diffuse()/specular() scale each
+# non-ambient light by occluder->transmission(), ambient() never
+# consults it, and a point/distant light reports the distance and
+# direction the contract promises.
 add_executable(gman_occlusion occlusion_test.cpp)
 target_link_libraries(gman_occlusion PRIVATE gman_core)
 
@@ -1369,9 +1371,9 @@ set_tests_properties(occlusion PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R8 proof, §8 A: the tracer hook -- a null tracer degrades trace() to
-# black, a bound one sees this env's own P/Ng and the caller's R, and
-# gman::shade forwards its own tracer argument to the shader it runs.
+# The tracer hook -- a null tracer degrades trace() to black, a bound
+# one sees this env's own P/Ng and the caller's R, and gman::shade
+# forwards its own tracer argument to the shader it runs.
 add_executable(gman_trace trace_test.cpp)
 target_link_libraries(gman_trace PRIVATE gman_core)
 
@@ -1380,9 +1382,9 @@ set_tests_properties(trace PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R8 proof, §8 B: GMANReflect, GMANRefract and GMANFresnel at known angles,
-# through GMANSurfaceEnv's own wrapper and, for the six-argument overload,
-# the free function directly.
+# GMANReflect, GMANRefract and GMANFresnel at known angles, through
+# GMANSurfaceEnv's own wrapper and, for the six-argument overload, the
+# free function directly.
 add_executable(gman_reflectrefract reflectrefract_test.cpp)
 target_link_libraries(gman_reflectrefract PRIVATE gman_core)
 
@@ -1391,9 +1393,9 @@ set_tests_properties(reflectrefract PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R8 proof, §8 D: mirror and glass, loaded exactly as defaultSurfaceShader()
-# loads matte -- libmirror.so/libglass.so built first, found by bare name
-# at runtime through LD_LIBRARY_PATH/DYLD_LIBRARY_PATH.
+# Mirror and glass, loaded exactly as defaultSurfaceShader() loads
+# matte -- libmirror.so/libglass.so built first, found by bare name at
+# runtime through LD_LIBRARY_PATH/DYLD_LIBRARY_PATH.
 add_executable(gman_mirrorglass mirrorglass_test.cpp)
 target_link_libraries(gman_mirrorglass PRIVATE gman_core)
 add_dependencies(gman_mirrorglass gman_mirror gman_glass)
@@ -1426,7 +1428,7 @@ set_tests_properties(quadratic PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5c proof: solveRayQuadratic, the double a*t^2+b*t+c == 0 solver the
+# solveRayQuadratic, the double a*t^2+b*t+c == 0 solver the
 # sphere and the four swept quadrics' intersectors share, its linear
 # branch exact and its quadratic branch stable under cancellation.
 add_executable(gman_rayquadratic rayquadratic_test.cpp)
@@ -1437,8 +1439,8 @@ set_tests_properties(rayquadratic PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5c proof, part A: gman::solveQuartic against quartics built from known
-# dyadic roots. The compiled solver lives in gman_core now; gmanrayquartic.h
+# gman::solveQuartic against quartics built from known
+# dyadic roots. The compiled solver lives in gman_core; gmanrayquartic.h
 # is a libgman/ header, reached through gman_internal_headers.
 add_executable(gman_rayquartic rayquartic_test.cpp)
 target_link_libraries(gman_rayquartic PRIVATE gman_core gman_internal_headers)
@@ -1459,7 +1461,7 @@ set_tests_properties(raysphere PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5c proof: every quadric intersector's hit sits on its implicit surface
+# Every quadric intersector's hit sits on its implicit surface
 # and its own ray at origin distances 5, 1e4 and 1e6, linked against
 # gman_core for the same reason as gman_raysphere above.
 add_executable(gman_rayhitprecision rayhitprecision_test.cpp)
@@ -1470,7 +1472,7 @@ set_tests_properties(rayhitprecision PROPERTIES
   LABELS unit
   TIMEOUT 60)
 
-# R5a proof, unit: GMANRayDisk::intersect, linked against gman_core for the
+# GMANRayDisk::intersect, linked against gman_core for the
 # same reason as gman_raysphere above.
 add_executable(gman_raydisk raydisk_test.cpp)
 target_link_libraries(gman_raydisk PRIVATE gman_core)
@@ -1480,7 +1482,7 @@ set_tests_properties(raydisk PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5a proof, unit: GMANRayPolygon::intersect, linked against gman_core for
+# GMANRayPolygon::intersect, linked against gman_core for
 # the same reason as gman_raysphere above.
 add_executable(gman_raypolygon raypolygon_test.cpp)
 target_link_libraries(gman_raypolygon PRIVATE gman_core)
@@ -1490,7 +1492,7 @@ set_tests_properties(raypolygon PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayCylinder::intersect, linked against gman_core for
+# GMANRayCylinder::intersect, linked against gman_core for
 # the same reason as gman_raysphere above.
 add_executable(gman_raycylinder raycylinder_test.cpp)
 target_link_libraries(gman_raycylinder PRIVATE gman_core)
@@ -1500,7 +1502,7 @@ set_tests_properties(raycylinder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayCone::intersect, linked against gman_core for the
+# GMANRayCone::intersect, linked against gman_core for the
 # same reason as gman_raysphere above.
 add_executable(gman_raycone raycone_test.cpp)
 target_link_libraries(gman_raycone PRIVATE gman_core)
@@ -1510,7 +1512,7 @@ set_tests_properties(raycone PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayParaboloid::intersect, linked against gman_core
+# GMANRayParaboloid::intersect, linked against gman_core
 # for the same reason as gman_raysphere above.
 add_executable(gman_rayparaboloid rayparaboloid_test.cpp)
 target_link_libraries(gman_rayparaboloid PRIVATE gman_core)
@@ -1520,7 +1522,7 @@ set_tests_properties(rayparaboloid PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5b proof, unit: GMANRayHyperboloid::intersect, linked against gman_core
+# GMANRayHyperboloid::intersect, linked against gman_core
 # for the same reason as gman_raysphere above.
 add_executable(gman_rayhyperboloid rayhyperboloid_test.cpp)
 target_link_libraries(gman_rayhyperboloid PRIVATE gman_core)
@@ -1541,7 +1543,7 @@ set_tests_properties(hyperboloidflatannulus PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R5c proof, parts B and C: GMANRayTorus::intersect, linked against
+# GMANRayTorus::intersect, linked against
 # gman_core for the same reason as gman_raysphere above.
 add_executable(gman_raytorus raytorus_test.cpp)
 target_link_libraries(gman_raytorus PRIVATE gman_core)
@@ -1551,10 +1553,10 @@ set_tests_properties(raytorus PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R6 proof, §8 check B: every ray primitive's camera-space bbox --
-# containment, tightness, the singular guard and the degenerate,
-# non-singular case -- linked against gman_core for the same reason as
-# gman_raysphere above. See tests/raybbox_test.cpp.
+# Every ray primitive's camera-space bbox -- containment, tightness,
+# the singular guard and the degenerate, non-singular case -- linked
+# against gman_core for the same reason as gman_raysphere above. See
+# tests/raybbox_test.cpp.
 add_executable(gman_raybbox raybbox_test.cpp)
 target_link_libraries(gman_raybbox PRIVATE gman_core)
 
@@ -1577,7 +1579,7 @@ set_tests_properties(rayplacementaccessors PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R6 proof, §8 check C: GMANRayBVH, tested standalone against a hand-built
+# GMANRayBVH, tested standalone against a hand-built
 # GMANLinearWorldManager -- identical hits against a linear scan and a
 # bounded primitive-test count -- linked against gman_core for the same
 # reason as gman_raysphere above. See tests/raybvh_test.cpp.
@@ -1593,7 +1595,7 @@ set_tests_properties(raybvh PROPERTIES
 # Proves GMANRayBVH::nearestHit and GMANRayOccluder::transmission
 # re-entrant: a probe primitive nests a second call, on the same tree, mid-
 # traversal, and both the nested and the outer result must match their own
-# standalone calls. Linked against gman_core alone, where both now live --
+# standalone calls. Linked against gman_core alone, where both live --
 # the proof that the geometry, the BVH and the occluder are libgman's, not
 # the plugin's.
 add_executable(gman_raybvhreentrant raybvhreentrant_test.cpp)
@@ -1738,7 +1740,7 @@ set_tests_properties(torusspindle PROPERTIES
 # Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
 # GMANRaySphere holding its parameters and a copied transform, linked
 # against gman_core alone, where GMANRayObjectManager and GMANRaySphere
-# both now live.
+# both live.
 add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp)
 target_link_libraries(gman_rayobjectmanager PRIVATE gman_core)
 
@@ -1748,9 +1750,9 @@ set_tests_properties(rayobjectmanager PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R4 proof, unit 4: GMANRaytraceRenderer::getDepth, linked against
-# gman_raytracer_objects, which still compiles GMANRaytraceRenderer itself. A
-# default GMANAttributes loads libmatte.so by bare name, so this carries the
+# GMANRaytraceRenderer::getDepth, linked against gman_raytracer_objects,
+# which still compiles GMANRaytraceRenderer itself. A default
+# GMANAttributes loads libmatte.so by bare name, so this carries the
 # same ENVIRONMENT as gman_rayobjectmanager.
 add_executable(gman_raydepth raydepth_test.cpp)
 target_link_libraries(gman_raydepth PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
@@ -1761,9 +1763,9 @@ set_tests_properties(raydepth PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, check 5: GMANRayOccluder::transmission, linked against
-# gman_core alone, where GMANRayOccluder now lives; carries raydepth's own
-# ENVIRONMENT for the same reason too.
+# GMANRayOccluder::transmission, linked against gman_core alone, where
+# GMANRayOccluder lives; carries raydepth's own ENVIRONMENT for the
+# same reason too.
 add_executable(gman_rayoccluder rayoccluder_test.cpp)
 target_link_libraries(gman_rayoccluder PRIVATE gman_core)
 
@@ -1775,7 +1777,7 @@ set_tests_properties(rayoccluder PROPERTIES
 
 # The self-shadow sweep -- every ray primitive, at every scale and
 # placement, through its own real intersect() and
-# GMANRayOccluder::transmission, linked against gman_core, where both now
+# GMANRayOccluder::transmission, linked against gman_core, where both
 # live. Carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_selfshadowsweep selfshadowsweep_test.cpp)
 target_link_libraries(gman_selfshadowsweep PRIVATE gman_core)
@@ -1788,7 +1790,7 @@ set_tests_properties(selfshadowsweep PROPERTIES
 
 # The contact gap -- a small receiver (M ~ max|P|) shadows at a gap the
 # old offset hid, a large receiver (M >> max|P|) keeps its own contact
-# under the ceiling, linked against gman_core, where GMANRayOccluder now
+# under the ceiling, linked against gman_core, where GMANRayOccluder
 # lives. Carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_contactgap contactgap_test.cpp)
 target_link_libraries(gman_contactgap PRIVATE gman_core)
@@ -1799,10 +1801,10 @@ set_tests_properties(contactgap PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R8 proof, §8 C: GMANRayTracer -- depth-limit termination, background on a
-# miss or at the depth limit, single-hit shading matching gman::shade
-# directly, the self-shadow offset applied to a traced ray and recursion
-# depth counted correctly. Linked and carries the ENVIRONMENT rayoccluder
+# GMANRayTracer -- depth-limit termination, background on a miss or at
+# the depth limit, single-hit shading matching gman::shade directly,
+# the self-shadow offset applied to a traced ray and recursion depth
+# counted correctly. Linked and carries the ENVIRONMENT rayoccluder
 # above does, for the same reasons.
 add_executable(gman_raytrace raytrace_test.cpp)
 target_link_libraries(gman_raytrace PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
@@ -1825,9 +1827,9 @@ set_tests_properties(compositelayercap PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, §8 check 7: GMANRayOccluder::transmission's own iteration cap,
-# linked against gman_core, where GMANRayOccluder now lives. Carries
-# raydepth's own ENVIRONMENT for the same reason too. See
+# GMANRayOccluder::transmission's own iteration cap, linked against
+# gman_core, where GMANRayOccluder lives. Carries raydepth's own
+# ENVIRONMENT for the same reason too. See
 # coincidenttransmission_test.cpp's own comment.
 add_executable(gman_coincidenttransmission coincidenttransmission_test.cpp)
 target_link_libraries(gman_coincidenttransmission PRIVATE gman_core)
@@ -1838,10 +1840,10 @@ set_tests_properties(coincidenttransmission PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, §8 check 6: two close, camera-facing transparent disks, linked
-# against gman_raytracer_objects, which still compiles GMANRaytraceRenderer
-# itself; carries raydepth's own ENVIRONMENT for the same reason too. See
-# closetransparentstack_test.cpp's own comment.
+# Two close, camera-facing transparent disks, linked against
+# gman_raytracer_objects, which still compiles GMANRaytraceRenderer
+# itself; carries raydepth's own ENVIRONMENT for the same reason too.
+# See closetransparentstack_test.cpp's own comment.
 add_executable(gman_closetransparentstack closetransparentstack_test.cpp)
 target_link_libraries(gman_closetransparentstack PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
 
@@ -1851,9 +1853,9 @@ set_tests_properties(closetransparentstack PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R7 proof, §8 check 8: a grazing transparent hit, linked against
-# gman_raytracer_objects, which still compiles GMANRaytraceRenderer itself;
-# carries raydepth's own ENVIRONMENT for the same reason too. See
+# A grazing transparent hit, linked against gman_raytracer_objects,
+# which still compiles GMANRaytraceRenderer itself; carries raydepth's
+# own ENVIRONMENT for the same reason too. See
 # grazingtransparent_test.cpp's own comment.
 add_executable(gman_grazingtransparent grazingtransparent_test.cpp)
 target_link_libraries(gman_grazingtransparent PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
@@ -1904,7 +1906,7 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R5a proof: `gman -r gmanraytracer` renders tests/rib/r5a_disk.rib, a
+  # `gman -r gmanraytracer` renders tests/rib/r5a_disk.rib, a
   # partial-thetamax disk, matching a checked-in golden image. See
   # tests/diskrayrender_test.cpp.
   add_executable(gman_diskrayrender diskrayrender_test.cpp)
@@ -1923,7 +1925,7 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R5b proof: `gman -r gmanraytracer` renders tests/rib/r5b_quadrics.rib,
+  # `gman -r gmanraytracer` renders tests/rib/r5b_quadrics.rib,
   # a cylinder, cone, paraboloid and hyperboloid side by side, matching a
   # checked-in golden image. See tests/quadricsrayrender_test.cpp.
   add_executable(gman_quadricsrayrender quadricsrayrender_test.cpp)
@@ -1942,11 +1944,11 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R8 proof, §8 E.1: `gman -r gmanraytracer` renders tests/rib/r8_mirror.rib
-  # -- a mirror sphere reflecting a sphere placed behind the camera --
-  # matching a checked-in golden image, and the reflected colour appears
-  # nowhere in tests/rib/r8_mirror_matte.rib's render, the same scene with
-  # the mirror sphere replaced by matte. See tests/mirrorrayrender_test.cpp.
+  # `gman -r gmanraytracer` renders tests/rib/r8_mirror.rib -- a mirror
+  # sphere reflecting a sphere placed behind the camera -- matching a
+  # checked-in golden image, and the reflected colour appears nowhere in
+  # tests/rib/r8_mirror_matte.rib's render, the same scene with the
+  # mirror sphere replaced by matte. See tests/mirrorrayrender_test.cpp.
   add_executable(gman_mirrorrayrender mirrorrayrender_test.cpp)
   target_link_libraries(gman_mirrorrayrender PRIVATE gman_core TIFF::TIFF)
   add_dependencies(gman_mirrorrayrender gman_raytracer gman_mirror gman_matte)
@@ -1963,10 +1965,10 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R8 proof, §8 E.2: `gman -r gmanraytracer` renders tests/rib/r8_glass.rib
-  # -- a glass sphere in front of a two-tone backdrop -- matching a
-  # checked-in golden image, and a horizontal scanline through the sphere
-  # shows the backdrop's edge displaced from its unrefracted raster x. See
+  # `gman -r gmanraytracer` renders tests/rib/r8_glass.rib -- a glass
+  # sphere in front of a two-tone backdrop -- matching a checked-in
+  # golden image, and a horizontal scanline through the sphere shows the
+  # backdrop's edge displaced from its unrefracted raster x. See
   # tests/glassrayrender_test.cpp.
   add_executable(gman_glassrayrender glassrayrender_test.cpp)
   target_link_libraries(gman_glassrayrender PRIVATE gman_core TIFF::TIFF)
@@ -1984,7 +1986,7 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R5c proof: `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib, a
+  # `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib, a
   # full torus tilted so its hole shows and a partial torus, matching a
   # checked-in golden image. See tests/torusrayrender_test.cpp.
   add_executable(gman_torusrayrender torusrayrender_test.cpp)
@@ -2003,7 +2005,7 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R5a proof: `gman -r gmanraytracer` renders tests/rib/r5a_polygon.rib, a
+  # `gman -r gmanraytracer` renders tests/rib/r5a_polygon.rib, a
   # camera-facing pentagon, matching a checked-in golden image. See
   # tests/polygonrayrender_test.cpp.
   add_executable(gman_polygonrayrender polygonrayrender_test.cpp)
@@ -2022,7 +2024,7 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R5a proof: the same tests/rib/r5a_polygon.rib fixture, rendered by both
+  # The same tests/rib/r5a_polygon.rib fixture, rendered by both
   # renderers and compared away from the silhouette edge, where the two
   # renderers' differing sample placement is expected to disagree. See
   # tests/polygonzbuffer_test.cpp.
@@ -2085,10 +2087,10 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 60)
 
-  # R7 proof, checks 3-4: tests/rib/shadow.rib -- a small sphere between a
-  # distant light and a large receiver -- casts a shadow a checked-in
-  # golden pins, and one pixel inside it holds two further relations
-  # against shadow_nolight.rib and shadow_noblocker.rib. See
+  # tests/rib/shadow.rib -- a small sphere between a distant light and a
+  # large receiver -- casts a shadow a checked-in golden pins, and one
+  # pixel inside it holds two further relations against
+  # shadow_nolight.rib and shadow_noblocker.rib. See
   # shadowrender_test.cpp's own comment.
   add_executable(gman_shadowrender shadowrender_test.cpp)
   target_link_libraries(gman_shadowrender PRIVATE gman_core TIFF::TIFF)
@@ -2150,10 +2152,10 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R7 proof, §8 check 1: tests/rib/contactshadow.rib -- a thin vertical
-  # blocker resting on a horizontal floor at gap 0.001 -- against
-  # contactshadow_noblocker.rib, pinning that the receiver strip beside the
-  # blocker's base darkens once the shadow ray's origin offset lands. See
+  # tests/rib/contactshadow.rib -- a thin vertical blocker resting on a
+  # horizontal floor at gap 0.001 -- against contactshadow_noblocker.rib,
+  # pinning that the receiver strip beside the blocker's base darkens
+  # once the shadow ray's origin offset lands. See
   # contactshadow_test.cpp's own comment.
   add_executable(gman_contactshadow contactshadow_test.cpp)
   target_link_libraries(gman_contactshadow PRIVATE gman_core TIFF::TIFF)
@@ -2171,10 +2173,10 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # R7 proof, §8 check 2: tests/rib/acnesphere_x1.rib, acnesphere_x1000.rib
-  # and acnesphere_xsmall.rib -- one lit sphere at three scales -- pinning
-  # that self-shadow acne is scale-independent and that no pixel inside the
-  # silhouette dips below both its horizontal neighbors. See
+  # tests/rib/acnesphere_x1.rib, acnesphere_x1000.rib and
+  # acnesphere_xsmall.rib -- one lit sphere at three scales -- pinning
+  # that self-shadow acne is scale-independent and that no pixel inside
+  # the silhouette dips below both its horizontal neighbors. See
   # acnesphere_test.cpp's own comment.
   add_executable(gman_acnesphere acnesphere_test.cpp)
   target_link_libraries(gman_acnesphere PRIVATE gman_core TIFF::TIFF)
@@ -2192,11 +2194,11 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 
-  # Fix proof: tests/rib/surfaceparameters_two_surfaces.rib,
+  # tests/rib/surfaceparameters_two_surfaces.rib,
   # surfaceparameters_restored.rib and surfaceparameters_default.rib pin
   # that every surface shades with its own RiSurface's parameter list, one
-  # fixture per §1 form of the defect. See surfaceparameters_test.cpp's
-  # own comment.
+  # fixture per form of the defect. See surfaceparameters_test.cpp's own
+  # comment.
   add_executable(gman_surfaceparameters surfaceparameters_test.cpp)
   target_link_libraries(gman_surfaceparameters PRIVATE gman_core TIFF::TIFF)
   add_dependencies(gman_surfaceparameters gman_raytracer)

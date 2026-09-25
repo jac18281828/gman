@@ -207,8 +207,7 @@ int countBodies(GMANObject* object) {
 // Walks every body on the chain, unlike generalpolygon_test.cpp's own
 // countFaces (which reads only the first): a GeneralPolygon never produces
 // more than one body, but a PointsPolygons/PointsGeneralPolygons mesh's
-// faces each own their own (settled decision "One primitive, many
-// bodies").
+// faces each own their own.
 int countFaces(GMANObject* object) {
   int count = 0;
   for (GMANBody* body = object->getBody(); body != nullptr; body = body->getNext()) {

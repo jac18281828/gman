@@ -19,9 +19,9 @@
  */
 
 /*
- * Phase 1, proof items 1, 2, 4 and 5: a point behind the camera clips
- * rather than wrapping to a plausible pixel; a known world-space point
- * traced through world -> camera -> screen -> NDC -> raster lands on a
+ * A point behind the camera clips rather than wrapping to a plausible
+ * pixel; a known world-space point traced through world -> camera ->
+ * screen -> NDC -> raster lands on a
  * hand-computed pixel; a polygon straddling the near plane clips to the
  * expected vertex count and intersection point; and backface culling
  * gates on RiSides/RiOrientation rather than culling unconditionally.
@@ -43,7 +43,7 @@
  * Step 4: the clipper's other five planes (LEFT, RIGHT, TOP, BOTTOM, and
  * BACK/far) -- testClipperNearPlane above only exercised FRONT/near.
  *
- * Phase 3, proof item 5 (the perspective culling term): a face near the
+ * The perspective culling term: a face near the
  * silhouette, off-axis enough that the true eye-to-face view vector and
  * the z axis disagree on sign. Revert gman::VSPerspective::visible to
  * `getNormal().getZ() > 0` and testPerspectiveCullingNearSilhouette goes
@@ -278,7 +278,7 @@ void testBackfaceCulling() {
   check(vs.visible(&away), "backface: RiOrientation inside flips a culled face to visible");
 }
 
-// ---- Phase 3, proof item 5: the perspective culling term ----
+// ---- the perspective culling term ----
 void testPerspectiveCullingNearSilhouette() {
   GMANOptions::ScreenWindowStruct sw = squareWindow();
   GMANMatrix4 identity;

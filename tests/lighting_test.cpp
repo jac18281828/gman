@@ -19,14 +19,14 @@
  */
 
 /*
- * Phase 3, proof items 4-6: a distantlight along +x makes the brightest
- * pixel land on the +x side and the terminator fall where N.L = 0; a
- * RiSides 1 scene with reversed winding culls every face and a RiSides 2
- * scene of the same geometry does not; tests/rib/lights.rib (the goal
- * scene) matches a checked-in golden image within a per-channel tolerance.
+ * A distantlight along +x makes the brightest pixel land on the +x side
+ * and the terminator fall where N.L = 0; a RiSides 1 scene with reversed
+ * winding culls every face and a RiSides 2 scene of the same geometry
+ * does not; tests/rib/lights.rib (the goal scene) matches a checked-in
+ * golden image within a per-channel tolerance.
  *
- * Review finding: testMetalKaResponse and testMetalSpecularHighlight --
- * shaders/gmanmetal.cpp was built, installed and never rendered by any
+ * testMetalKaResponse and testMetalSpecularHighlight --
+ * shaders/gmanmetal.cpp is built and installed but rendered by no other
  * test. A metal surface has no diffuse term (unlike matte/plastic), so an
  * ambient-only light must shade it perfectly flat and scale linearly with
  * Ka, and a single directional light must produce a small, concentrated
@@ -123,8 +123,8 @@ void testTerminator(const std::string& gman) {
   const char* rib = "Display \"lighting_terminator.tif\" \"file\" \"rgba\"\n"
                     "Format 200 200 1\n"
                     "Projection \"perspective\" \"fov\" [45]\n"
-                    // Explicit, not the RI_EPSILON-near default -- see phase-3-REPORT.md
-                    // and tests/rib/lights.rib's own comment on this.
+                    // Explicit, not the RI_EPSILON-near default -- see
+                    // tests/rib/lights.rib's own comment on this.
                     "Clipping 0.5 50\n"
                     "Translate 0 0 5\n"
                     "WorldBegin\n"

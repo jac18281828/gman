@@ -1,4 +1,4 @@
-## R7 proof, check 4: shadow.rib with the small blocking sphere removed --
+## shadow.rib with the small blocking sphere removed --
 ## the shadowed pixel must read brighter once nothing stands between the
 ## receiver and the light. Not third-party.
 Display "shadow_noblocker.tif" "file" "rgba"

@@ -1,4 +1,4 @@
-## R7 proof, check 3: a small sphere between a distant light and a large
+## A small sphere between a distant light and a large
 ## receiving sphere casts a visible shadow, plus an ambient light so the
 ## shadow itself is not pure black. shadow_nolight.rib (the distant light
 ## removed) and shadow_noblocker.rib (the small sphere removed) share this

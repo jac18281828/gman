@@ -19,7 +19,7 @@
  */
 
 /*
- * R8 proof, §8 A: the tracer hook. A null tracer degrades trace() to
+ * The tracer hook. A null tracer degrades trace() to
  * black, a bound one is called with this env's own P/Ng and the caller's
  * R unchanged, and gman::shade forwards its own tracer argument through to
  * the shader it runs.

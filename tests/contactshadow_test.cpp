@@ -19,26 +19,23 @@
  */
 
 /*
- * R7 proof, §8 check 1: contactshadow.rib -- a thin vertical blocker
- * standing on a horizontal floor, its base at gap 0.001, lit at
- * near-grazing incidence -- against contactshadow_noblocker.rib, the same
- * floor alone. At the base commit, the old magnitude-scaled bias leaks
- * unshadowed all the way from the blocker's own base out past the
- * receiver's true umbra edge; row 300, columns 400-415 sit inside both --
- * within the leak (every pixel there matches
- * contactshadow_noblocker.rib's render exactly at the base commit, which
- * is what makes this check non-vacuous) and within the true shadow a
- * correct contact must produce. A fixed offset origin makes the shadow
- * ray see the blocker regardless of that bias, so the strip must darken
- * once the fix lands.
+ * contactshadow.rib -- a thin vertical blocker standing on a horizontal
+ * floor, its base at gap 0.001, lit at near-grazing incidence -- against
+ * contactshadow_noblocker.rib, the same floor alone. Row 300, columns
+ * 400-415 sit within the true shadow a correct contact must produce, and
+ * also within the band a magnitude-scaled bias would leak unshadowed
+ * (every pixel there would then match contactshadow_noblocker.rib's
+ * render instead, which is what keeps this check non-vacuous): a fixed
+ * offset origin makes the shadow ray see the blocker regardless of that
+ * bias, so the strip darkens.
  *
  * fov 6 degrees overrides AGENTS.md's default camera for this fixture, on
  * r5b_quadrics.rib's own precedent: the leaked band's width in pixels is
  * 1e-2*sinTheta*Yres/(2*tan(fov/2)); at Yres 480 and sinTheta 0.9982 (the
  * light's 86.57 degree incidence off the floor's normal) that is about 46
  * px, comfortably inside which columns 400-415 (16 px) sit clear of the
- * antialiased edges on every side, including the true umbra edge the fix
- * itself reveals near column 419.
+ * antialiased edges on every side, including the true umbra edge near
+ * column 419.
  */
 
 #include <cmath>

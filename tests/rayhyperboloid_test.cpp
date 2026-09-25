@@ -19,7 +19,7 @@
  */
 
 /*
- * R5b proof: GMANRayHyperboloid::intersect finds the object-space wall
+ * GMANRayHyperboloid::intersect finds the object-space wall
  * hit of a segment spanning z, its v-band and thetamax wedge, honors the
  * ray's own [tmin, tmax] interval, and fills a GMANHit that round trips
  * through GMANHyperboloid::getLocation. The segment here (point1 == (1,

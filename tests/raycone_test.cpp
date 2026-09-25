@@ -19,7 +19,7 @@
  */
 
 /*
- * R5c proof: GMANRayCone::intersect finds the object-space wall hit, its
+ * GMANRayCone::intersect finds the object-space wall hit, its
  * height and thetamax wedge, honors the ray's own [tmin, tmax] interval,
  * and fills a GMANHit that round trips through GMANCone::getLocation. A
  * ray parallel to a generatrix hits through solveRayQuadratic's own a == 0

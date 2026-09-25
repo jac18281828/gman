@@ -1,7 +1,7 @@
 ## nupatch_bilinear.rib's own twin: the same four control points in the
 ## same order, the same frame, lighting and "plastic" surface, issued as
-## a plain "Patch bilinear" instead of an order-2x2 NuPatch. §8's
-## rendering proof compares the two images pixel by pixel.
+## a plain "Patch bilinear" instead of an order-2x2 NuPatch. The two
+## images are compared pixel by pixel.
 ##
 ## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 ## desync convention."

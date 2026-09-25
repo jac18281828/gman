@@ -1,4 +1,4 @@
-## Phase 1, proof item 6: the same sphere at several RiTranslate offsets.
+## The same sphere at several RiTranslate offsets.
 ## Camera setup matches tests/rib/sphere.rib and corpus/menger.rib's
 ## convention (Translate 0 0 5 before WorldBegin). Three spheres, each in
 ## its own AttributeBegin/End block so their transforms don't compound,

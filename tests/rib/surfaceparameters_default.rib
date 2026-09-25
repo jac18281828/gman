@@ -1,13 +1,14 @@
-## Fixture 3 (§6, form "The default surface"): a block holding a
+## Fixture 3, "The default surface": a block holding a
 ## parameterized Surface "matte" Kd 0.1 around one sphere at x=1.2, then an
 ## un-surfaced sphere at x=-1.2 after AttributeEnd, which falls back to
 ## defaultSurfaceShader's matte with no explicit parameters (Kd 1). No
 ## ambient light leaves Ka unused, so brightness is linear in Kd exactly as
 ## in the plastic fixtures, and a correct render puts the parameterized
-## sphere's red channel near a tenth of the default one's. At dd49924 the
-## shared matte instance still holds the block's Kd 0.1 list when the
-## un-surfaced sphere shades, under both renderers, so both come out dim
-## instead of one bright. Not third-party.
+## sphere's red channel near a tenth of the default one's. A build that
+## shares one shader instance's parameter list across calls would still
+## hold the block's Kd 0.1 list when the un-surfaced sphere shades, under
+## both renderers, so both come out dim instead of one bright. Not
+## third-party.
 Display "surfaceparameters_default.tif" "file" "rgba"
 Format 200 100 1
 Projection "perspective" "fov" [45]

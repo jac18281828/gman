@@ -1,4 +1,4 @@
-## R7 proof, §8 check 2: a lone sphere lit by one off-axis distant light,
+## A lone sphere lit by one off-axis distant light,
 ## at the scene's own scale (x1). acnesphere_x1000.rib and
 ## acnesphere_xsmall.rib are the same scene at x1000 and x0.001, camera
 ## distance and Clipping scaled with the geometry -- AGENTS.md's default

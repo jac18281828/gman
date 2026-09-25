@@ -19,9 +19,9 @@
  */
 
 /*
- * Phase 1's actual gate: tests/rib/sphere.rib renders a sphere silhouette
- * whose raster position and size are analytically correct, and that
- * responds to RiProjection "fov". Runs the real gman binary end to end
+ * tests/rib/sphere.rib renders a sphere silhouette whose raster position
+ * and size are analytically correct, and that responds to RiProjection
+ * "fov". Runs the real gman binary end to end
  * (RIB parse, transform, projection, clip, rasterize) and reads the
  * produced TIFF back, rather than exercising the library classes directly
  * -- this is the one test that can't be fooled by a correct matrix wired

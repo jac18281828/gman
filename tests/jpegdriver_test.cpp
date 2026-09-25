@@ -19,18 +19,13 @@
  */
 
 /*
- * Defect 3 (uat-defects prompt): `.jpg`/`.jpeg` segfaulted (exit 139, no
- * file, no diagnostic). GMANRenderManImpl::RiWorldBegin's Display
- * extension dispatch (gmanrendermanimpl.cpp) had branches for
- * `tif`/`tiff`, `png` and `pnm` and none for `jpg`/`jpeg`, so `newOutput`
- * stayed null and was released into `output`, which RiWorldEnd then
- * dereferences unconditionally. gman::OutputJPEG already existed and
- * libjpeg already linked -- the branch was simply missing.
- *
- * Added the jpg/jpeg branch, and an else branch for any other unmatched
- * extension: the general form of the same defect is a null `output`
- * reaching RiWorldEnd with no diagnostic at all, not something specific
- * to jpg/jpeg.
+ * A `.jpg`/`.jpeg` Display extension must resolve to a real output, not
+ * a null one RiWorldEnd would dereference unconditionally.
+ * gman::makeFileOutput (gmanfiledrivers.cpp.in) looks up the extension
+ * in a compiled-in driver table and throws RIE_BADFILE -- naming the
+ * missing library, or "Unrecognized Display file extension" -- for
+ * anything it cannot resolve, rather than returning null; the jpeg
+ * entry's factory covers `jpg`/`jpeg` whenever libjpeg is linked in.
  *
  * Proof: a .jpg render exits 0, decodes as a well-formed JPEG of the
  * requested size, and is close to the equivalent TIFF render -- JPEG is

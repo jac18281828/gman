@@ -19,7 +19,7 @@
  */
 
 /*
- * R7 proof, checks 3 and 4: `gman -r gmanraytracer` renders
+ * `gman -r gmanraytracer` renders
  * tests/rib/shadow.rib -- a small sphere between a distant light and a
  * large receiving sphere, plus an ambient light -- matching a checked-in
  * golden, and pixel (197, 101), inside the cast shadow on the receiver's

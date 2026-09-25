@@ -19,11 +19,12 @@
  */
 
 /*
- * F6: a RIB-supplied parameter array shorter than its declared class used
- * to make GMANParameterList::copy_float/copy_integer/copy_string read past
- * the array's own allocation (ASan heap-buffer-overflow). gman is now
- * expected to warn once, naming the parameter and both lengths, clamp and
- * zero-fill instead. Bicubic is covered separately from bilinear because
+ * Guards against a RIB-supplied parameter array shorter than its
+ * declared class making GMANParameterList::copy_float/copy_integer/
+ * copy_string read past the array's own allocation (ASan
+ * heap-buffer-overflow). gman warns once, naming the parameter and both
+ * lengths, and clamps and zero-fills instead. Bicubic is covered
+ * separately from bilinear because
  * RiPatchV derives a different required count from the same code path (16
  * versus 4); patch_param_reorder.rib additionally proves the count stays
  * aligned with its value even though parseParameterList's std::map emits

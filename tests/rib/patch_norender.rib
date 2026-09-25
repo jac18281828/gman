@@ -1,8 +1,8 @@
-## Bilinear Patch, once the defect tests/patchnorender_test.cpp pins: Patch
-## rasterized no pixels. getRSPatch (phase 6) wires bilinear and bicubic
-## Patch to createParametric; this scene now renders. No golden minted --
-## bilinear interpolation of a flat four-point patch has no shading detail
-## worth pixel-regression protection.
+## Bilinear Patch: the defect tests/patchnorender_test.cpp pins.
+## getRSPatch wires bilinear and bicubic Patch to createParametric, so
+## this scene renders. No golden minted -- bilinear interpolation of a
+## flat four-point patch has no shading detail worth pixel-regression
+## protection.
 ##
 ## A Sphere shares the scene as a control: same lighting, same shader,
 ## proving the renderer itself works and the Patch pixels are its own.

@@ -1,6 +1,5 @@
-# F6, PatchMesh branch: review found this defect here first (see the task
-# prompt); "P" on a nu=3 nv=2 nonperiodic bilinear mesh carries six
-# vertex-class points (eighteen floats). This supplies three; gman is
+# PatchMesh branch: "P" on a nu=3 nv=2 nonperiodic bilinear mesh carries
+# six vertex-class points (eighteen floats). This supplies three; gman is
 # expected to warn, clamp and keep going rather than read past "P"'s own
 # allocation.
 #

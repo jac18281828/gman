@@ -1,5 +1,5 @@
-# F6, the map-ordering trap from the task prompt's own settled decisions:
-# parseParameterList collects into a std::map<RtToken, ...>, which emits in
+# The map-ordering trap: parseParameterList collects into a
+# std::map<RtToken, ...>, which emits in
 # key order, not push order -- "st", "N", "P", "Cs" here (in that push
 # order) come back out as "P", "Cs", "N", "st" (verified against this
 # tree). A counts array built in push order would clamp the wrong

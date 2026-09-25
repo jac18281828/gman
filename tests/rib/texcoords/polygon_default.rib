@@ -15,8 +15,8 @@ TransformBegin
 TransformEnd
 # Placed so world x = 2*object_x - 1, world y = 1 - 2*object_y (Scale
 # composes ahead of Translate for the point, since a locally declared
-# transform folds in ahead of what is already accumulated -- AGENTS.md's
-# Matrix convention note): object (0,0)-(1,1) fills world (-1,-1)-(1,1),
+# transform folds in ahead of what is already accumulated): object
+# (0,0)-(1,1) fills world (-1,-1)-(1,1),
 # the same footprint texture.rib's own Patch "bilinear" uses, mirrored on
 # y so an after-the-CTM default (reading camera-space x, y instead of
 # object-space) lands on the texture's opposite row -- a detectable

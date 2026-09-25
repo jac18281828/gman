@@ -19,14 +19,12 @@
  */
 
 /*
- * Phase 1, proof item 3: prjPersp and prjOrtho against hand-computed
- * matrices; invert against concat producing identity; determinant on known
- * inputs. Also covers p3m/p4m, which prior to this phase were dead code
- * inside a `#if 0` that didn't even compile against GMANMatrix4's actual
- * (2D-array) storage.
+ * prjPersp and prjOrtho against hand-computed matrices; invert against
+ * concat producing identity; determinant on known inputs. Also covers
+ * p3m/p4m.
  *
- * Revert check: reverting GMANMatrix4::prjPersp to its pre-phase-1 form
- * (mtrx[3][3]=0 and nothing else in row 3) makes "w carries z" and the
+ * Revert check: reverting GMANMatrix4::prjPersp to a form with
+ * mtrx[3][3]=0 and nothing else in row 3 makes "w carries z" and the
  * near/far boundary checks below go red, since w is identically zero.
  */
 
@@ -74,7 +72,7 @@ void testPrjPersp() {
 
   // A point behind the camera has negative w -- the clip test (dot with a
   // w=1 plane normal) is what actually rejects it; here we just confirm w
-  // carries the sign, which the pre-phase-1 all-zero row 3 could not.
+  // carries the sign, which an all-zero row 3 could not.
   GMANVector4 behind;
   behind.projTransform(GMANPoint(0.0, 0.0, -3.0), m.get());
   check(behind.getW() < 0.0, "prjPersp: a point behind the camera has w<0");
@@ -204,12 +202,10 @@ void testP4mCarriesW() {
 }
 
 void testVector4TimesEqualsMatrixRowVector() {
-  // GMANVector4::operator*=(const GMANMatrix4&) once built a
-  // GMANVector(*this) temporary, multiplied that, and discarded it,
-  // leaving *this unchanged -- the same sliced-temporary bug shape
-  // gmanvector4.h documents as fixed for the sibling operator*= overloads.
-  // Every call site (GMANBasis::bicubic and its bicubicMesh siblings) was
-  // unreached before phase 6 wired Patch to it, so nothing caught it.
+  // GMANVector4::operator*=(const GMANMatrix4&) assigns its four results
+  // directly rather than through a GMANVector(*this) temporary -- the
+  // same sliced-temporary bug shape gmanvector4.h's
+  // operator*=(const GMANVector4&) guards against.
   //
   // Hand-computed against RiBezierBasis's own matrix, result[j] =
   // sum_i vec[i]*m[i][j] (AGENTS.md's row-vector p*M convention, the same

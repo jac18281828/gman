@@ -19,7 +19,7 @@
  */
 
 /*
- * R8 proof, §8 C: GMANRayTracer. Depth 4 (this unit's own kMaxTraceDepth,
+ * GMANRayTracer. Depth 4 (kMaxTraceDepth,
  * asserted here as the literal 4 since the constant is file-scope in
  * gmanraytracerenderer.cpp, invisible to this translation unit) is the
  * cheapest possible bound; a miss or the depth limit answers background,
@@ -289,8 +289,8 @@ void checkRealHitMatchesDirectShade() {
         "check 3 setup: the fixture's Ci is neither black nor background");
 }
 
-// Check 4: swept, per §1's settled decision and rayoccluder_test.cpp's
-// own testSelfShadowAtScale model -- real hits from GMANRaySphere::
+// Check 4: swept, following rayoccluder_test.cpp's own
+// testSelfShadowAtScale model -- real hits from GMANRaySphere::
 // intersect only, since a hand-placed point never carries the float
 // error a real hit's own arithmetic leaves. At each hit, trace() a
 // near-grazing, outward direction: the case most likely to clip back

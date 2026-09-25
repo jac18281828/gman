@@ -19,12 +19,11 @@
  */
 
 /*
- * Review finding: no existing test rendered a genuinely asymmetric partial
- * sphere's image. transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full
- * sphere (zmin = -radius, zmax = radius); this renders tests/rib/
- * partial_sphere.rib, Sphere 1 -0.5 1 360 -- the exact case the phase-3
- * prompt named for GMANSphere::getLocation's zmin/zmax fix -- and checks
- * a geometric consequence only the fixed parameterization produces.
+ * No other test renders a genuinely asymmetric partial sphere's image.
+ * transforms.rib's Sphere 0.5 -0.5 0.5 360 is a full sphere (zmin =
+ * -radius, zmax = radius); this renders tests/rib/partial_sphere.rib,
+ * Sphere 1 -0.5 1 360, and checks a geometric consequence only the
+ * correct GMANSphere::getLocation zmin/zmax parameterization produces.
  *
  * With Sides 1 (single-sided), gman::VSPerspective::visible keeps a face
  * whose geometric normal has a positive dot product with the (eye-at-

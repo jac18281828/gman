@@ -19,8 +19,8 @@
  */
 
 /*
- * R7 proof, §8 check 2: a lone sphere lit by one off-axis distant light,
- * rendered at x1, x1000 and x0.001 (acnesphere_x1.rib,
+ * A lone sphere lit by one off-axis distant light, rendered at x1, x1000
+ * and x0.001 (acnesphere_x1.rib,
  * acnesphere_x1000.rib, acnesphere_xsmall.rib -- camera distance and
  * Clipping scaled with the geometry in each). Self-shadow acne is
  * scale-dependent (the self-hit root grows with the hit point's own

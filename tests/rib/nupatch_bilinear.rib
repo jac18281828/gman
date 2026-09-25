@@ -2,8 +2,8 @@
 ## clamped degree-1 B-spline, mathematically bilinear interpolation of its
 ## four control points, the same as patch_bilinear_twin.rib's "Patch
 ## bilinear" over the same points in the same order. Same frame, lighting
-## and "plastic" surface as that twin; §8's rendering proof compares the
-## two images pixel by pixel.
+## and "plastic" surface as that twin; the two images are compared
+## pixel by pixel.
 ##
 ## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 ## desync convention."

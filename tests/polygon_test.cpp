@@ -19,10 +19,10 @@
  */
 
 /*
- * Phase 5's original gate: tests/rib/polygon.rib renders a convex pentagon
- * whose raster coverage matches an analytically-computed region, and whose
- * shaded color matches the ambient-only value the fixture's Cs/Ka/light
- * intensity predict.
+ * tests/rib/polygon.rib renders a convex pentagon whose raster coverage
+ * matches an analytically-computed region, and whose shaded color
+ * matches the ambient-only value the fixture's Cs/Ka/light intensity
+ * predict.
  *
  * The fixture's camera (Translate 0 0 5, fov 90) puts every vertex at the
  * same camera-space depth (world z=0 maps to camera z=5), so its
@@ -67,9 +67,8 @@
  *     pure background, failing every coverage and color assertion.
  *   - Revert step 1 alone (RiPolygonV's parameter-list sizing back to the
  *     literal 4, 4): a heap over-read in getRSPolygon reading "P" back out
- *     of a too-small allocation. See phase-5-REPORT.md for the valgrind
- *     evidence this revert demonstrates; not guaranteed to be observable
- *     as a wrong render or a crash on its own.
+ *     of a too-small allocation, not guaranteed to be observable as a
+ *     wrong render or a crash on its own.
  */
 
 #include <cmath>

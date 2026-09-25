@@ -19,7 +19,7 @@
  */
 
 /*
- * Phase 2's RIB-dialect coverage: the corpus test, the per-request
+ * RIB-dialect coverage: the corpus test, the per-request
  * parameter-consumption tests, and the unknown-request skip test.
  *
  * Each request test follows AGENTS.md's "RIB authoring" section, "The
@@ -82,15 +82,14 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  // Every RISpec 3.2 request phase 2 added parse-and-ignore coverage for,
-  // plus pixelfilter.rib -- phase 2's list missed PixelFilter outright (zero
-  // hits in the tokenizer), which is defect 2 -- and
-  // geometricapproximation.rib, whose keyword this commit also adds to the
-  // tokenizer. ifelse.rib and solid.rib each cover a pair of requests that
-  // only mean anything together (IfBegin/ElseIf/Else/IfEnd,
-  // SolidBegin/SolidEnd). generalpolygon.rib is this task's own desync
-  // fixture: GeneralPolygon has a variable-length nverts array ahead of
-  // its parameter list, the same shape a mis-counted parse could desync.
+  // Every RISpec 3.2 request parsed and ignored gets its own fixture
+  // here, plus pixelfilter.rib (PixelFilter) and
+  // geometricapproximation.rib. ifelse.rib and solid.rib each cover a
+  // pair of requests that only mean anything together
+  // (IfBegin/ElseIf/Else/IfEnd, SolidBegin/SolidEnd).
+  // generalpolygon.rib is the desync fixture: GeneralPolygon has a
+  // variable-length nverts array ahead of its parameter list, the same
+  // shape a mis-counted parse could desync.
   const std::vector<std::string> requestFixtures = {
       "curves.rib",
       "blobby.rib",
@@ -132,13 +131,11 @@ int main(int argc, char* argv[]) {
           fixture + ": the tokenizer recognizes the request");
   }
 
-  // Defect 1: a token that runs to end of input with no trailing delimiter
-  // used to have its last character duplicated. parseKeyword's loop checked
-  // eof() *before* the read that could set it, so the failing read at true
-  // end of input left its char argument untouched -- still holding the
-  // previous iteration's already-consumed character -- and the loop
-  // appended it again. Reproduces three ways: a top-level file, a plain
-  // ReadArchive target, and a gzip'd one.
+  // A token that runs to end of input with no trailing delimiter must
+  // not have its last character duplicated (see
+  // GMANRIBTokenize::parseKeyword's own comment). Reproduces three
+  // ways: a top-level file, a plain ReadArchive target, and a gzip'd
+  // one.
   {
     const std::string path = ribDir + "/nonewline/top.rib";
     std::remove("nonewline_top.tif");
@@ -176,17 +173,15 @@ int main(int argc, char* argv[]) {
   // parameters, the "fov" form Projection here uses) and this fails.
   //
   // It does NOT exercise step 1: every request menger.rib uses is one GMAN
-  // already recognized, so unknown-request recovery never fires. Step 1 is
-  // covered by the unknownrequest.rib fixture below. An earlier version of
-  // this comment claimed otherwise -- verified false by reverting step 1 and
-  // observing menger.rib still exit 0.
+  // already recognizes, so unknown-request recovery never fires. Step 1
+  // is covered by the unknownrequest.rib fixture below (confirmed by
+  // reverting step 1 and observing menger.rib still exits 0).
   //
   // It also doubles as defect 3's proof: menger.rib's second line is
-  // `Display "+menger.tif" "framebuffer" "rgb"`, and GMAN used to let the
-  // last Display win outright, so the unsupported framebuffer driver
-  // replaced the working file display and nothing was ever written.
-  // Honoring RISpec's '+' prefix (add, don't replace) means the file
-  // display survives and menger.tif appears.
+  // `Display "+menger.tif" "framebuffer" "rgb"`. GMAN honors RISpec's
+  // '+' prefix (add, don't replace), so the file display survives and
+  // menger.tif appears rather than the unsupported framebuffer driver
+  // replacing it and nothing being written.
   {
     const std::string corpus = ribDir + "/corpus/menger.rib";
     std::remove("menger.tif");
@@ -200,10 +195,11 @@ int main(int argc, char* argv[]) {
   // ReadArchive of a gzip'd child -- steps 5 and 6 composed, which no other
   // fixture covers (readarchive_test.cpp uses plain files, gzip_test.cpp a
   // gzip'd top-level file). This is also defect 1's payoff: bikeData.rib.gz
-  // ends TransformEnd with no trailing newline, which used to corrupt into
-  // TransformEndd, leaving the block unclosed and killing the parse on
-  // RIE_NESTING partway through the archive's ~5,300 lines. Fixed, the
-  // whole archive parses and gman reaches exit 0.
+  // ends TransformEnd with no trailing newline, which the tokenizer's
+  // end-of-input handling must not corrupt into TransformEndd -- that
+  // would leave the block unclosed and kill the parse on RIE_NESTING
+  // partway through the archive's ~5,300 lines. The whole archive parses
+  // and gman reaches exit 0.
   //
   // bike.rib reads bikeData.rib.gz. openRibStream decompresses the archive
   // whole before parsing begins, so reaching any token inside it exercises
@@ -211,12 +207,12 @@ int main(int argc, char* argv[]) {
   // nowhere in bike.rib itself, which is what makes it evidence rather than
   // coincidence.
   //
-  // The image bike.rib writes used to be blank -- every pixel the
-  // background color, the other defect tests/patchnorender_test.cpp pins:
-  // Patch rasterized no pixels while a Sphere in the same scene did. Phase 6
-  // wired Patch (bilinear and bicubic) to createParametric; all 5,216
-  // bicubic Patch requests in bikeData.rib.gz now reach a working
-  // evaluator, and the rendered image reads as a bicycle.
+  // getRSPatch wires Patch (bilinear and bicubic) to createParametric, so
+  // all 5,216 bicubic Patch requests in bikeData.rib.gz reach a working
+  // evaluator (the other defect tests/patchnorender_test.cpp pins: Patch
+  // rasterized no pixels while a Sphere in the same scene did), and the
+  // rendered image reads as a bicycle rather than every pixel the
+  // background color.
   {
     const std::string bike = ribDir + "/corpus/bike.rib";
     std::remove("bike.tif");
@@ -244,9 +240,9 @@ int main(int argc, char* argv[]) {
   }
 
   // Malformed input, for the error paths. A parameter list that throws
-  // part-built used to strand both the strings already duplicated into the
-  // array and the keys/values the list had accumulated; both are now
-  // released as the stack unwinds. This fixture throws from Attribute,
+  // part-built must not strand either the strings already duplicated
+  // into the array or the keys/values the list had accumulated: both
+  // release as the stack unwinds. This fixture throws from Attribute,
   // after WorldBegin has already returned successfully -- nothing unwinds
   // through RiWorldBegin here, and RiWorldEnd (the only place that
   // deletes the output driver) is never reached either, so the driver
@@ -298,9 +294,9 @@ int main(int argc, char* argv[]) {
           "malformed: no LeakSanitizer report (display_badtype.rib)");
   }
 
-  // Not malformed -- the point is the opposite. parseHider used to leak its
-  // copied "type" string unconditionally, on every successful Hider request,
-  // not only on an error path. This file is well-formed, never reaches
+  // Not malformed -- the point is the opposite. parseHider must not leak
+  // its copied "type" string, on every successful Hider request, not
+  // only on an error path. This file is well-formed, never reaches
   // WorldBegin, and gman is expected to exit 0.
   {
     const std::string path = ribDir + "/hider.rib";

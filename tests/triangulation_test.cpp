@@ -493,9 +493,9 @@ std::vector<GMANPoint> concaveLDuplicate() {
 
 // A rectangle (0,0)-(10,3) with four rectangular notches cut into its top
 // edge, alternating eight reflex vertices (the notch floors) with convex
-// ones (the notch shoulders) -- the ring measured in this task's own
-// prompt as the worst-case failure under an absolute tolerance. A 2.5-unit
-// margin separates the last notch from the left edge so the polygon stays
+// ones (the notch shoulders) -- the worst-case failure under an
+// absolute tolerance. A 2.5-unit margin separates the last notch from
+// the left edge so the polygon stays
 // simple: a notch wall flush with the outer boundary would make it
 // self-touching.
 std::vector<GMANPoint> comb() {

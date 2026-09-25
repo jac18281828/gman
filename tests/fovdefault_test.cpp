@@ -19,16 +19,11 @@
  */
 
 /*
- * Defect 0 (uat-defects prompt): a `Projection` with no explicit "fov" threw
- * RIE_CONSISTENCY -- GMANParameterList: TOKEN_NOT_FOUND out of
- * GMANParameterList::getPointer and wrote no file. RiWorldBegin already had
- * a null check and a fov==0.0 -> 90.0 default, correct per RISpec 3.2, but
- * getPointer threw before that code ever ran. Reproduces for
- * "orthographic" too, where fov is unused.
- *
- * Fixed at the source: GMANParameterList::getPointer now returns NULL for
- * an absent token instead of throwing, so RiWorldBegin's existing default
- * is reached. RiWorldBegin itself is untouched.
+ * A `Projection` with no explicit "fov" must not throw.
+ * GMANParameterList::getPointer returns NULL for an absent token, so
+ * RiWorldBegin's own null check and fov==0.0 -> 90.0 default, correct
+ * per RISpec 3.2, is reached. Also holds for "orthographic", where fov
+ * is unused.
  *
  * Proof: a no-fov perspective scene renders, and its silhouette matches the
  * hand-derived geometry for fov=90 -- both an explicit "fov" [90] control

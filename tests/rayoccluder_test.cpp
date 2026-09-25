@@ -19,7 +19,7 @@
  */
 
 /*
- * R7 proof, check 5: GMANRayOccluder::transmission. A point light's own
+ * GMANRayOccluder::transmission. A point light's own
  * distance bounds the shadow ray -- a blocker past it does not shadow,
  * the same blocker short of it does. Sampled densely across a lit sphere's
  * own surface, near-grazing points included, every self-test transmits
@@ -56,7 +56,7 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
 }
 
 // Opaque (Os = white): a bare GMANRayInterface's appearance defaults to
-// black, and the occluder now attenuates by Os rather than by the hit
+// black, and the occluder attenuates by Os rather than by the hit
 // alone, so a blocker meant to fully occlude has to say so.
 GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
   GMANMatrix4 place;

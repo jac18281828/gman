@@ -44,7 +44,7 @@ bool near(RtFloat a, RtFloat b, RtFloat tol = 1e-4) { return std::fabs(a - b) <=
 
 void testBoxFilter() {
   // RiBoxFilter is the RISpec reference verbatim: unclamped 1.0
-  // everywhere, by settled decision (no support notion, no guard).
+  // everywhere (no support notion, no guard).
   check(near(RiBoxFilter(0.0, 0.0, 2.0, 2.0), 1.0), "box: 1.0 at the origin");
   check(near(RiBoxFilter(5.0, 5.0, 2.0, 2.0), 1.0), "box: 1.0 far outside its nominal width, unguarded by design");
 }

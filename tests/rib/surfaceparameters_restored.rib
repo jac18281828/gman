@@ -1,11 +1,12 @@
-## Fixture 2 (§6, form "A restored surface"): a world-scope plastic Kd 0.1,
+## Fixture 2, "A restored surface": a world-scope plastic Kd 0.1,
 ## then a block declaring plastic Kd 1.0 around one sphere at x=1.2, then a
 ## second sphere at x=-1.2 after AttributeEnd, which belongs to the
 ## restored Kd 0.1 surface. Ks 0 and no ambient light make brightness
 ## linear in Kd, so a correct render puts the restored sphere's red
-## channel near a tenth of the block's. At dd49924 the shared plastic
-## instance still holds the block's Kd 1.0 list when the restored sphere
-## shades, under both renderers. Not third-party.
+## channel near a tenth of the block's. A build that shares one shader
+## instance's parameter list across calls would still hold the block's
+## Kd 1.0 list when the restored sphere shades, under both renderers.
+## Not third-party.
 Display "surfaceparameters_restored.tif" "file" "rgba"
 Format 200 100 1
 Projection "perspective" "fov" [45]

@@ -31,7 +31,7 @@
  * which RI requests are legal in which begin/end block. Errors are routed to
  * a handler that counts them rather than printing, so both the accept and the
  * reject cases are assertable. Nothing here renders, so this test says
- * nothing about output and no phase supersedes it.
+ * nothing about output.
  */
 
 #include <stdio.h>
@@ -82,11 +82,9 @@ int main(void) {
   RiAttributeEnd();
   check(errorCount == 1, "unmatched RiAttributeEnd is rejected");
 
-  /* Phase 1: cmdTransformPoints' legal-block mask was written
-   * B|F|W|A|T||S -- the doubled "||" collapses the whole expression to 1
-   * (B alone), so RiTransformPoints was rejected everywhere except the
-   * outermost block, including here, inside RiFrameBegin/End (F is one
-   * of the masked-out blocks). */
+  /* cmdTransformPoints' legal-block mask is B|F|W|A|T|S: RiTransformPoints
+   * must be accepted in every one of those blocks, including here,
+   * inside RiFrameBegin/End. */
   errorCount = 0;
   RiFrameBegin(1);
   RiTransformPoints("world", "object", 0, NULL);

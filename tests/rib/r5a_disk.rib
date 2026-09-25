@@ -1,6 +1,6 @@
-## R5a proof: a single matte Disk, partial thetamax, alone under a distant
-## light -- no shadow falls on it, so this fixture is safe to reuse once R7
-## lands shadows.
+## A single matte Disk, partial thetamax, alone under a distant
+## light -- no shadow falls on it, so this fixture is safe to reuse for
+## shadow-related fixtures too.
 Display "r5a_disk.tif" "file" "rgba"
 Format 320 240 1
 Projection "perspective" "fov" [45]

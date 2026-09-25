@@ -19,12 +19,11 @@
  */
 
 /*
- * bug-notes.md's "background and alpha" repro: a small red matte sphere,
- * ambient-only, leaves every corner of an 8x8 frame as uncovered
- * background. DefaultBGColor (libgman/gmandefaults.cpp) is the RISpec's
- * black, not opaque white, so every corner reads (0, 0, 0) under both
- * renderers. Never asserts on alpha -- OutputTIFF's constant alpha is a
- * separate, later unit.
+ * A small red matte sphere, ambient-only, leaves every corner of an 8x8
+ * frame as uncovered background. DefaultBGColor (libgman/gmandefaults.cpp)
+ * is the RISpec's black, not opaque white, so every corner reads
+ * (0, 0, 0) under both renderers. Never asserts on alpha -- OutputTIFF's
+ * constant alpha is untested here.
  */
 
 #include <cstdint>

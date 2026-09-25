@@ -19,8 +19,8 @@
  */
 
 /*
- * R7 proof, §8 check 8: a transparent sphere hit near its own silhouette,
- * where the entry point's Ng . D is small -- offsetting along the ray
+ * A transparent sphere hit near its own silhouette, where the entry
+ * point's Ng . D is small -- offsetting along the ray
  * direction there gives a perpendicular clearance of offset * |Ng . D|,
  * shrunk by that same small factor, where offsetting along Ng keeps the
  * full offset regardless of angle. A flat surface cannot exercise this:

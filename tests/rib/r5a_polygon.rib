@@ -1,7 +1,8 @@
-## R5a proof: a single matte, camera-facing Polygon, alone under a distant
-## light -- no shadow falls on it, so this fixture is safe to reuse once R7
-## lands shadows. The same fixture also grounds the ray tracer's render
-## against the z-buffer's own (tests/polygonzbuffer_test.cpp).
+## A single matte, camera-facing Polygon, alone under a distant
+## light -- no shadow falls on it, so this fixture is safe to reuse for
+## shadow-related fixtures too. The same fixture also grounds the ray
+## tracer's render against the z-buffer's own
+## (tests/polygonzbuffer_test.cpp).
 ##
 ## A convex, regular pentagon -- five vertices, not four, the same shape and
 ## reasoning as tests/rib/polygon.rib's own (a 4-vertex fixture cannot tell

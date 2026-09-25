@@ -1,11 +1,11 @@
 # 4294967297 fits `long` but exceeds RtInt's range, in Clipping's far-plane
-# float slot. GMANRIBTokenize::parseNum now rejects an out-of-range integer
+# float slot. GMANRIBTokenize::parseNum rejects an out-of-range integer
 # literal with RIE_RANGE regardless of the destination it is headed for --
 # an integer literal is bounded against RtInt at the token, before the
-# parser ever learns whether it wants an RtInt or an RtFloat. Before this,
-# nextFloat's LONGINT branch carried no RtInt bound of its own, so this
-# exact literal silently became the float 4294967297.0 instead of raising
-# an error.
+# parser ever learns whether it wants an RtInt or an RtFloat. Without that
+# token-level bound, nextFloat's LONGINT branch would carry no RtInt bound
+# of its own, so this exact literal would silently become the float
+# 4294967297.0 instead of raising an error.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

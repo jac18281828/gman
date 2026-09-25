@@ -19,11 +19,10 @@
  */
 
 /*
- * R3 proof: GMANRayObjectManager::getRSSphere builds a GMANRaySphere that
- * keeps its parameters and a copied transform, rather than the bare
- * GMANRayInterface the factory used to return unconditionally. Each check
- * builds a sphere through the factory, exactly as RiSphereV does, and
- * intersects it with a camera-space ray.
+ * GMANRayObjectManager::getRSSphere builds a GMANRaySphere that keeps
+ * its parameters and a copied transform, rather than a bare
+ * GMANRayInterface. Each check builds a sphere through the factory,
+ * exactly as RiSphereV does, and intersects it with a camera-space ray.
  */
 
 #include <cmath>
@@ -46,11 +45,11 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
 }
 
 // getRSSphere ignores opt, so it is null here; attr is a default-constructed
-// GMANAttributes, as polygon_test.cpp passes, since getRSSphere now resolves
+// GMANAttributes, as polygon_test.cpp passes, since getRSSphere resolves
 // it into the sphere's appearance. Casts to GMANRaySphere rather than
 // GMANRayInterface: the base's own bare create() also satisfies a
-// GMANRayInterface cast, so that cast alone cannot tell the factory's old
-// and new behavior apart.
+// GMANRayInterface cast, so that cast alone cannot distinguish a real
+// GMANRaySphere from one.
 GMANRaySphere* buildSphere(GMANRayObjectManager& manager, RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
                            GMANTransform& transform) {
   GMANAttributes attr;

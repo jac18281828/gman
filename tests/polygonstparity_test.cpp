@@ -19,14 +19,15 @@
  */
 
 /*
- * GMANRayPolygon::intersect now resolves and interpolates "st" the way
+ * GMANRayPolygon::intersect resolves and interpolates "st" the way
  * GMANPatchPolyObjectManager's own polygon rule (resolvePolygonTextureCoordinates)
  * does. Check 1 pins the ray tracer's own output against the checker
- * texture's known texels, at points today's bug (hit.u = hit.v = 0) would
- * flatten to one texel's colour. Checks 2-3 cross-check the ray tracer
- * against the z-buffer's own polygon output, on a texture affine in (s, t)
- * -- see this task's own settled decision on why an affine texture, not
- * the checker, is the right tool for a cross-renderer proof.
+ * texture's known texels, at points a wrong implementation (hit.u =
+ * hit.v = 0) would flatten to one texel's colour. Checks 2-3
+ * cross-check the ray tracer against the z-buffer's own polygon output,
+ * on a texture affine in (s, t) -- see gradienttexture.h for why an
+ * affine texture, not the checker, is the right tool for a
+ * cross-renderer proof.
  */
 
 #include <cmath>

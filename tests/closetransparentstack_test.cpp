@@ -19,12 +19,12 @@
  */
 
 /*
- * R7 proof, §8 check 6: two camera-facing, Opacity-0.4 disks separated by
- * 0.01 -- well under the old magnitude-scaled bias's 0.05 at this depth
- * (1e-2 * 5) -- must both composite. Driven through the public render(),
- * as compositelayercap_test.cpp is: shadeSample and nearestHit are
- * private, and no RIB parse is needed to build the
- * GMANOptions/viewing system/frame buffer a renderer takes.
+ * Two camera-facing, Opacity-0.4 disks separated by 0.01, close enough
+ * that a magnitude-scaled self-shadow offset at this depth could
+ * plausibly swallow the gap between them -- must both composite. Driven
+ * through the public render(), as compositelayercap_test.cpp is:
+ * shadeSample and nearestHit are private, and no RIB parse is needed to
+ * build the GMANOptions/viewing system/frame buffer a renderer takes.
  *
  * Neither disk carries a light, so each contributes nothing but its own
  * attenuation (Ci stays zero): the resolved centre pixel is exactly

@@ -21,11 +21,10 @@
 /*
  * Step 4: the RIB tokenizer on malformed input it has not already been
  * exercised against -- an unterminated string, an unbalanced bracketed
- * array, and a file truncated mid-keyword with no trailing newline (the
- * exact end-of-input shape the rib-frontend-fixes prompt's tokenizer
- * defect lived in). tests/ribdialect_test.cpp already
- * covers two malformed shapes (a non-string array element, a non-string
- * Display argument) that are type errors, not tokenizer-level ones.
+ * array, and a file truncated mid-keyword with no trailing newline.
+ * tests/ribdialect_test.cpp already covers two malformed shapes (a
+ * non-string array element, a non-string Display argument) that are
+ * type errors, not tokenizer-level ones.
  *
  * string_trailing_backslash.rib pins the same end-of-input bar for the
  * escape decoding parseString gained afterward: a backslash with nothing

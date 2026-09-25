@@ -19,64 +19,35 @@
  */
 
 /*
- * The phase 1 runtime baseline.
+ * The baseline render: tests/rib/sphere_ambient.rib parses, resolves both
+ * bracketed "fov" [45] and unbracketed "fov" 45 through
+ * GMANRIBParse::parseParameterList, RiWorldBegin loads the zbuffer
+ * renderer, and gman runs the sphere through to a real TIFF.
  *
- * Phase 0 recorded this test's original finding: given tests/rib/sphere.rib,
- * gman exited 1, wrote no image, and reported
- * "ERROR: RIE_CONSISTENCY -- GMANParameterList: TOKEN_NOT_FOUND" --
- * GMANRIBParse::parseParameterList discarded bracketed array parameters
- * outright, so "fov" [45] never reached the projection's parameter list.
- *
- * Phase 2's step 7 fixed that path (see gmanribparse.cpp's
- * parseParameterList and the FIXMEs it superseded). Both "fov" [45] and the
- * unbracketed "fov" 45 now reach the projection correctly, RiWorldBegin
- * loads a renderer, and gman runs the sphere through the zbuffer renderer to
- * completion.
- *
- * Phase 2 also fixed a second, unrelated bug this path exposed for the first
- * time: GMANBody::~GMANBody() (libgman/gmanbody.cpp) reassigned its walk
- * pointer to the surface it had just freed instead of to that surface's
- * `next`, so any body with a surface use-after-freed on teardown. Nothing
- * before phase 2 ever got far enough to construct and then destroy a real
- * primitive to hit it.
- *
- * Phase 1 inverts the second half of this test again. Through phase 2, the
- * image was uniform -- the four severed links meant every face was culled
- * and nothing was ever drawn. Phase 1 connects the
- * object -> world -> camera -> screen -> NDC -> raster chain (see
+ * The object -> world -> camera -> screen -> NDC -> raster chain (see
  * tests/spacechain_test.cpp and tests/silhouette_test.cpp for the numeric
- * proof), so this is where a real, non-uniform image legitimately starts
- * appearing: this test now asserts the TIFF has more than one distinct
- * pixel value, not just that it exists and is non-empty.
+ * proof) is what puts a real, non-uniform image on the raster: this test
+ * asserts the TIFF has more than one distinct pixel value, not just that
+ * it exists and is non-empty.
  *
- * Phase 3 makes that assertion mean something for the first time. Before
- * this phase, "more than one distinct pixel value" was satisfied by
- * GMANZBufferRenderer::getVertexInfo's GMANColor(drand48(), drand48(),
- * drand48()) -- confetti, different on every run, that happened to
- * exercise the same assertion for an unrelated reason (the silhouette
- * differs from the background, not because any two of its own pixels are
- * meaningfully related to each other). tests/rib/sphere.rib carries no
- * RiLightSourceV, so a real shader renders it as a flat black silhouette
- * against the background: still "more than one distinct value", but not
- * yet a demonstration that a real shader ran, since a black sphere and a
- * black bug both look black. What only a *real, deterministic* shader
- * guarantees -- and confetti cannot -- is that rendering the same RIB
- * twice produces the same image both times. That is the new assertion
- * added below. (tests/lighting_test.cpp is where the shaded, lit case --
+ * A real shader rendering a lightless sphere against the background
+ * still gives "more than one distinct value", but is not by itself a
+ * demonstration that a real shader ran, since a black sphere and a black
+ * bug both look black. What only a *real, deterministic* shader
+ * guarantees is that rendering the same RIB twice produces the same
+ * image both times; that is the assertion this file adds.
+ * (tests/lighting_test.cpp covers the shaded, lit case --
  * tests/rib/lights.rib, with a real gradient and a specular highlight --
- * gets its own golden-image comparison; this file stays intentionally
- * about the light-free baseline scene phases 0-2 established.)
+ * with its own golden-image comparison; this file stays about the
+ * light-free baseline scene.)
  *
- * `DefaultBGColor` is due to flip from white to black in a later unit,
- * which would collapse phase 3's "black sphere against a white background"
- * contrast into a single uniform value -- the very thing phase 1's
- * distinct-pixel-value check exists to rule out. `tests/rib/sphere.rib`
- * itself stays untouched for every other reader (tests/banner_test.cpp,
- * tests/logfilename_test.cpp, tests/rflag_test.cpp check only exit status
- * and text output, never pixels). This file's own render targets
- * `tests/rib/sphere_ambient.rib` instead: the same sphere, with one
- * `LightSource "ambientlight"` line added, so its silhouette stays
- * distinguishable from either background colour.
+ * This file's own render targets `tests/rib/sphere_ambient.rib`: the same
+ * sphere as `tests/rib/sphere.rib`, with one `LightSource "ambientlight"`
+ * line added, so its silhouette stays distinguishable from the
+ * background regardless of which color `DefaultBGColor` is.
+ * `tests/rib/sphere.rib` itself stays untouched for every other reader
+ * (tests/banner_test.cpp, tests/logfilename_test.cpp, tests/rflag_test.cpp
+ * check only exit status and text output, never pixels).
  */
 
 #include <cstdio>
@@ -177,8 +148,8 @@ int main(int argc, char* argv[]) {
   check(output.find("TOKEN_NOT_FOUND") == std::string::npos,
         "the array-parameter bug that pinned exit 1 does not recur");
 
-  // parseParameterList now reaches the projection's "fov" [45], WorldBegin
-  // loads the zbuffer renderer, and it runs the sphere through to a real
+  // parseParameterList reaches the projection's "fov" [45]; WorldBegin
+  // loads the zbuffer renderer, which runs the sphere through to a real
   // TIFF.
   std::FILE* produced = std::fopen(image, "rb");
   check(produced != nullptr, "an image file is produced");
@@ -189,20 +160,20 @@ int main(int argc, char* argv[]) {
     std::fclose(produced);
   }
 
-  // Phase 1: the coordinate-space chain is connected, so the sphere is no
-  // longer culled out of existence -- the image has more than one distinct
-  // pixel value. (tests/silhouette_test.cpp and tests/spacechain_test.cpp
-  // pin the exact geometry; this only pins that *something* is drawn.)
+  // The coordinate-space chain being connected keeps the sphere from
+  // being culled out of existence -- the image has more than one
+  // distinct pixel value. (tests/silhouette_test.cpp and
+  // tests/spacechain_test.cpp pin the exact geometry; this only pins
+  // that *something* is drawn.)
   int distinct = distinctPixelValues(image);
   check(distinct >= 0, "the produced TIFF can be read back");
   check(distinct > 1, "the image is not uniform -- the sphere silhouette is visible");
 
-  // Phase 3: rendering the same RIB twice produces the same image both
-  // times. Confetti (GMANColor(drand48(), drand48(), drand48()) per
-  // vertex, the pre-phase-3 placeholder this line replaces) could not
-  // have passed this -- two runs would differ practically always. A real
-  // shader, run on the same geometry and the same lights, cannot do
-  // anything else.
+  // Rendering the same RIB twice must produce the same image both times:
+  // a real shader, run on the same geometry and the same lights, cannot
+  // do otherwise. A per-vertex random color would pass every check
+  // above while still failing this one, since two runs would then
+  // differ practically always.
   std::vector<uint32_t> firstRaster;
   check(readRaster(image, firstRaster), "first render's TIFF decodes");
 

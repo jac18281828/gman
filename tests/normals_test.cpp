@@ -19,12 +19,12 @@
  */
 
 /*
- * Phase 3, proof items 1-3: every primitive's analytic getNormal(u,v)
- * agrees with a central finite difference of its own getLocation, all
- * seven agree on which way is outward, and a non-uniformly scaled
- * primitive's shading normal stays perpendicular to its (correspondingly
- * scaled) tangent plane -- the test a plain forward-transform of the
- * normal passes only for a uniform scale.
+ * Every primitive's analytic getNormal(u,v) agrees with a central
+ * finite difference of its own getLocation, all seven agree on which
+ * way is outward, and a non-uniformly scaled primitive's shading normal
+ * stays perpendicular to its (correspondingly scaled) tangent plane --
+ * the test a plain forward-transform of the normal passes only for a
+ * uniform scale.
  *
  * Revert check (verified by actually reverting, not asserted): restoring
  * any of the seven getNormal bodies to `throw GMANError(...,"Not
@@ -55,7 +55,7 @@ bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }
 
 // central difference of getLocation, cross(dP/du, dP/dv), normalized --
 // the same convention every getNormal in gmanprimitives.cpp is written
-// against (see phase-3-REPORT.md for the derivation).
+// against.
 GMANVector finiteDifferenceNormal(GMANParametric& p, double u, double v, double h) {
   GMANPoint pu0 = p.getLocation(u - h, v);
   GMANPoint pu1 = p.getLocation(u + h, v);

@@ -19,10 +19,9 @@
  */
 
 /*
- * Pins Class E of the clang-tidy-typed-fixes prompt: GMANBitmap rejects a
- * size whose pixel count overflows int instead of allocating a wrapped,
- * too-small buffer, and assignment always takes the source's own
- * dimensions.
+ * GMANBitmap rejects a size whose pixel count overflows int instead of
+ * allocating a wrapped, too-small buffer, and assignment always takes
+ * the source's own dimensions.
  *
  * Revert check: reverting the throw in GMANBitmap::set makes the negative
  * and overflow cases below go red; reverting operator='s defaulted copy

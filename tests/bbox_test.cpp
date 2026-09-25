@@ -19,8 +19,8 @@
  */
 
 /*
- * R6 proof, §8 check A: GMANBBox's two-point constructor and its
- * getMin()/getMax() accessors -- the min/max prerequisite a BVH needs.
+ * GMANBBox's two-point constructor and its getMin()/getMax() accessors
+ * -- the min/max prerequisite a BVH needs.
  */
 
 #include "check.h"

@@ -19,8 +19,8 @@
  */
 
 /*
- * R8 proof, §8 E.2: `gman -r gmanraytracer` renders tests/rib/r8_glass.rib
- * -- a glass sphere in front of a two-tone backdrop, its edge off the
+ * `gman -r gmanraytracer` renders tests/rib/r8_glass.rib -- a glass
+ * sphere in front of a two-tone backdrop, its edge off the
  * sphere's own centre column -- matching a checked-in golden image. A
  * horizontal scanline through the sphere shows the backdrop's edge at a
  * raster x displaced from where the same edge falls outside the sphere's

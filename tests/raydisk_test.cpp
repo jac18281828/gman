@@ -19,7 +19,7 @@
  */
 
 /*
- * R5a proof: GMANRayDisk::intersect finds the object-space plane hit, its
+ * GMANRayDisk::intersect finds the object-space plane hit, its
  * radius and thetamax wedge, honoring the ray's own [tmin, tmax] interval,
  * and fills a GMANHit that round trips through GMANDisk::getLocation.
  */

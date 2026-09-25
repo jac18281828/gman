@@ -19,7 +19,7 @@
  */
 
 /*
- * R5c proof, parts B and C: GMANRayTorus::intersect finds the object-space
+ * GMANRayTorus::intersect finds the object-space
  * hit of a ray against the implicit torus (sqrt(x^2+y^2)-majorradius)^2 +
  * z^2 == minorradius^2, honors thetamax's wedge and the [phimin, phimax]
  * band (including a negative phimin, a descending phimin > phimax, and a

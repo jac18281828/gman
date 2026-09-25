@@ -10,7 +10,7 @@ LightSource "distantlight" 2 "intensity" [0.8] "lightcolor" [1 1 1]
 Sides 1
 
 # Same scene as r8_mirror.rib, the mirror sphere replaced by matte: the
-# non-golden comparison E.1 needs, referenced from §1's Scope. Its own
+# non-golden comparison mirrorrayrender_test.cpp needs. Its own
 # silhouette also stands in for the mirror sphere's own screen footprint,
 # geometry and camera being identical between the two fixtures.
 AttributeBegin

@@ -19,7 +19,7 @@
  */
 
 /*
- * R4 proof: GMANRaytraceRenderer::getDepth returns camera-space z of the
+ * GMANRaytraceRenderer::getDepth returns camera-space z of the
  * nearest hit, RI_INFINITY where none hit. A 41x41 (odd) Format at
  * PixelSamples 1 1 puts the single sample of the centre pixel exactly on
  * the view axis, so a unit sphere at camera-space z=5 pins its depth to

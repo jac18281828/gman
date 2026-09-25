@@ -1,11 +1,11 @@
-## R7 proof, §8 check 1: a thin vertical blocker standing on a horizontal
+## A thin vertical blocker standing on a horizontal
 ## floor, its base at gap 0.001, lit at near-grazing incidence --
 ## towardLight makes 86.57 degrees with the floor's own normal (sinTheta
 ## 0.9982) -- from the side. A narrow fov (6 degrees) magnifies the floor
-## strip beside the blocker's base: the leaked band the old
-## magnitude-scaled bias left there is 1e-2*sinTheta*Yres/(2*tan(fov/2)) =
-## 1e-2*0.9982*480/(2*tan(3deg)) =~ 46 px, comfortably above the 10 px a
-## per-pixel comparison needs to resolve. This overrides AGENTS.md's
+## strip beside the blocker's base: a magnitude-scaled bias would leak a
+## band there 1e-2*sinTheta*Yres/(2*tan(fov/2)) =
+## 1e-2*0.9982*480/(2*tan(3deg)) =~ 46 px wide, comfortably above the
+## 10 px a per-pixel comparison needs to resolve. This overrides AGENTS.md's
 ## default camera for this fixture, on r5b_quadrics.rib's own precedent.
 ## contactshadow_noblocker.rib is this scene with the blocker removed. Not
 ## third-party.

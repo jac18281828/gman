@@ -11,7 +11,7 @@ Sides 1
 # x = 1, not 0) -- an edge centred behind the sphere would not move, by
 # symmetry, regardless of refraction. Lit ambient alone:
 # GMANSurfaceEnv::ambient() is never shadowed, sidestepping glass's own
-# shadow rays (which treat it as fully opaque -- see §1's Scope).
+# shadow rays (which treat it as fully opaque).
 AttributeBegin
 Identity
 Translate 0 0 15

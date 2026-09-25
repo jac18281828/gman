@@ -19,48 +19,36 @@
  */
 
 /*
- * Defect 5 (uat-defects prompt): orthographic ignored RiScreenWindow and
- * hard-clipped at camera-space x = +-1. GMANPolygonClipper's six planes
- * test x_clip against +-w_clip, the correct NDC test under prjPersp,
- * where invT (from fov) calibrates x_clip and w_clip=z_camera carries no
- * screen-window dependence at all -- at the time of this fix,
- * RiScreenWindow was applied only once, downstream, in
- * GMANViewingSystem::screenToRaster (a later fix made the perspective
- * clip planes screen-window-dependent too; see gmanpolygonclipper.cpp and
- * AGENTS.md's "Handedness and matrix convention"). prjOrtho had no
- * fov-equivalent natural bound to calibrate x_clip/y_clip against, and
- * left w_clip at a constant 1, so the same six planes degenerated into a
- * hardcoded -1 <= x_camera <= 1 box independent of ScreenWindow.
+ * GMANPolygonClipper's six planes test x_clip against +-w_clip, the
+ * correct NDC test under prjPersp, where invT (from fov) calibrates
+ * x_clip and w_clip=z_camera carries no screen-window dependence at all
+ * (see gmanpolygonclipper.cpp and AGENTS.md's "Handedness and matrix
+ * convention"). prjOrtho has no fov-equivalent natural bound to
+ * calibrate x_clip/y_clip against, and leaves w_clip at a constant 1, so
+ * a fixed camera-space unit box for the four side planes would
+ * degenerate into a hardcoded -1 <= x_camera <= 1 clip independent of
+ * ScreenWindow.
  *
- * Fixed in GMANPolygonClipper::clip: the four side planes are rebuilt
- * from the screen window (GMANViewingSystem::getScreenWindow, new) each
- * call instead of the fixed camera-space unit box. At the time of this
- * fix that rebuild ran only when the active viewing system's projection
- * matrix was orthographic; a later fix made it unconditional, since
- * prjPersp needed the same rebuild for the same reason. This was the
- * only viable fix here: scaling
- * prjOrtho's x,y by the screen window instead (this prompt's other
- * suggested shape) double-applies it, since screenToRaster already scales
- * by the same screen window afterward -- confirmed by direct measurement
- * (a scene with ScreenWindow -2 2 -2 2 came out a quarter the expected
- * area, not the expected half, when tried).
+ * GMANPolygonClipper::clip instead rebuilds the four side planes from
+ * the screen window (GMANViewingSystem::getScreenWindow) each call, for
+ * both projections. Scaling prjOrtho's x,y by the screen window directly
+ * instead would double-apply it, since screenToRaster already scales by
+ * the same screen window afterward -- confirmed by direct measurement (a
+ * scene with ScreenWindow -2 2 -2 2 comes out a quarter the expected
+ * area, not the expected half, under that approach).
  *
- * This defect and the near-clip precision defect are unrelated: this one
- * is a projection/clip-space mismatch (RiScreenWindow dropped entirely),
- * the other is a float-cancellation defect in
- * GMANClipEdge::isInside's back-clip-plane test. Fixing this one does not
- * touch GMANClipEdge or GMANMatrix4::prjPersp/prjOrtho's near/far terms,
- * so it does not fix the near-clip defect; every scene below still pairs
- * an explicit Clipping with a non-default near, the near-clip defect's
- * own documented workaround, to keep that separate defect out of these
- * results.
+ * RiScreenWindow's clip-space handling and the near-clip precision
+ * defect are unrelated: the former is a projection/clip-space concern,
+ * the latter a float-cancellation defect in GMANClipEdge::isInside's
+ * back-clip-plane test, in GMANClipEdge not GMANPolygonClipper; every
+ * scene below still pairs an explicit Clipping with a non-default near,
+ * the near-clip defect's own documented workaround, to keep that
+ * separate defect out of these results.
  *
- * Proof: the prompt's own reproduction, at an analytically computed
- * raster position -- not a pixel-exact match (this sphere's tessellation
- * facets share edges; see cropwindow_test.cpp's note on the same
- * renderer's edge-tie-break float sensitivity, orthogonal to this
- * defect) but a bounding box, which is exactly what the settled decision
- * calls out as an acceptable content assertion.
+ * Proof: an analytically computed raster position -- not a pixel-exact
+ * match (this sphere's tessellation facets share edges; see
+ * cropwindow_test.cpp's note on the same renderer's edge-tie-break float
+ * sensitivity) but a bounding box, an acceptable content assertion here.
  *
  * Revert check: reverting GMANPolygonClipper::clip's screen-window
  * rebuild (falling back to the fixed camera-space unit box for every
@@ -166,7 +154,7 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const double tol = 16.0; // matches silhouette_test.cpp's own tolerance
 
-  // ---- the prompt's own reproduction ----
+  // ---- the reproduction ----
   // ScreenWindow -3 3 -1.5 1.5, Format 400x200, sphere r=1 at
   // Translate -1.5 0 5 -> camera-space x in [-2.5,-0.5], y in [-1,1].
   // raster.x = 400*(x+3)/6, raster.y = 200 - 200*(y+1.5)/3:
@@ -197,10 +185,10 @@ int main(int argc, char* argv[]) {
                         "is no longer discarded");
   }
 
-  // ---- a sphere the pre-fix hard clip made vanish entirely ----
+  // ---- a sphere a hardcoded camera-space clip would make vanish entirely ----
   // Translate 0 1.3 5 puts the whole sphere (y camera-space [0.3,2.3])
-  // beyond the old y=+-1.1-ish vanishing point; the wide ScreenWindow's
-  // top=1.5 still keeps part of it in frame.
+  // beyond where a fixed y=+-1.1-ish clip would fall; the wide
+  // ScreenWindow's top=1.5 still keeps part of it in frame.
   const char* vanished = "Display \"vanished.tif\" \"file\" \"rgb\"\n"
                          "Format 400 200 1\n"
                          "Projection \"orthographic\"\n"
@@ -237,8 +225,8 @@ int main(int argc, char* argv[]) {
   // silhouette has to touch the frame's own left edge (clipped there),
   // unlike the reproduction's silhouette above, which sits well clear of
   // both edges because ScreenWindow -3 3 is wide enough not to clip this
-  // sphere at all. Different ScreenWindows now genuinely produce
-  // different clipping, not the same hardcoded box either way.
+  // sphere at all. Different ScreenWindows produce different clipping,
+  // not the same hardcoded box either way.
   if (u.found) {
     check(u.xmin <= 4, "under the (narrower) default screen window the same sphere is "
                        "clipped at the frame's left edge -- honoring ScreenWindow is "

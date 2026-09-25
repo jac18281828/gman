@@ -1,6 +1,6 @@
-## R7 proof, §8 check 1: contactshadow.rib with the vertical blocker
+## contactshadow.rib with the vertical blocker
 ## removed -- the receiver's own unshadowed brightness, everywhere the
-## blocked version should have darkened once its shadow reaches contact.
+## blocked version should darken once its shadow reaches contact.
 ## Not third-party.
 Display "contactshadow_noblocker.tif" "file" "rgba"
 Format 640 480 1

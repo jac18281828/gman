@@ -1,5 +1,5 @@
-## R5b proof: the four swept quadrics GMANRayObjectManager used to stub
-## out -- Cylinder, Cone, Paraboloid, Hyperboloid -- side by side under one
+## The four swept quadrics GMANRayObjectManager builds --
+## Cylinder, Cone, Paraboloid, Hyperboloid -- side by side under one
 ## light. Each is rotated broadside (quadrics.rib's own precedent: Cone,
 ## Cylinder, Hyperboloid and Paraboloid all extend along their own local z
 ## axis, so an unrotated one shows only a thin end-on silhouette ring).

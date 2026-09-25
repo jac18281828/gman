@@ -19,11 +19,13 @@
  */
 
 /*
- * GMANRIBTokenize::parseString used to treat a backslash as an ordinary
- * character, so the first '"' inside a string -- escaped or not -- closed
- * it. tests/rib/string_escape.rib is the desync this produced: an escaped
- * quote inside a bracketed array closed the string early, the array never
- * saw its ']', and the parse ran on against the wrong quoting from there.
+ * GMANRIBTokenize::parseString treats a backslash as an escape
+ * introducer, not an ordinary character, so an escaped quote inside a
+ * string does not close it early. tests/rib/string_escape.rib is the
+ * desync a wrong reading would produce: an escaped quote inside a
+ * bracketed array would close the string early, the array would never
+ * see its ']', and the parse would run on against the wrong quoting
+ * from there.
  *
  * Check 1 drives that fixture two ways: out of process, following
  * tests/paramlistdeclaredtype_test.cpp's runCapturingOutput, to confirm the
@@ -194,8 +196,8 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string dir = argv[2];
 
-  // 1. The desync itself is gone: an escaped quote inside a bracketed
-  // array no longer closes the string early.
+  // 1. An escaped quote inside a bracketed array does not close the
+  // string early.
   {
     RunResult r = runCapturingOutput(gman, dir + "/string_escape.rib", 10);
     check(!r.timedOut, "string_escape: does not hang (10s bound)");

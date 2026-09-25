@@ -19,7 +19,7 @@
  */
 
 /*
- * R5c proof, part A: gman::solveQuartic against quartics built from known
+ * gman::solveQuartic against quartics built from known
  * dyadic roots (integers or halves), so the double coefficients have
  * exactly those roots and the comparison is exact arithmetic, not a fit.
  * Each case expands the product of (t - root) factors by hand in the

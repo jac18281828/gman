@@ -19,12 +19,11 @@
  */
 
 /*
- * Phase 1, proof item 6 (secondary): tests/rib/transforms.rib renders the
- * same sphere at three RiTranslate offsets. This project has no
- * golden-image regression infrastructure yet (that is Phase 4's
- * deliverable), so this checks the three
- * hand-computed silhouette positions directly instead of a checked-in
- * reference image.
+ * tests/rib/transforms.rib renders the same sphere at three RiTranslate
+ * offsets, checked against three hand-computed silhouette positions
+ * directly rather than a checked-in reference image: an analytic
+ * position pins exactly where the silhouette must land, which a
+ * pixel-tolerance golden comparison would not.
  *
  * fov=90 (tan(45deg)=1), distance=5, format 300x100 (aspect 3, screen
  * window [-3,3]x[-1,1]): raster.x = 50*(x_cam/z_cam + 3), giving centres

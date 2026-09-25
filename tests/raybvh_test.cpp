@@ -19,9 +19,8 @@
  */
 
 /*
- * R6 proof, §8 check C: GMANRayBVH, tested standalone against a
- * hand-built GMANLinearWorldManager, before anything in the renderer
- * changes.
+ * GMANRayBVH, tested standalone against a hand-built
+ * GMANLinearWorldManager.
  *
  * Check 1: a mixed fixture's GMANRayBVH::nearestHit and a small linear
  * scan (linearScan, below) agree on every ray -- identical primitive, t,
@@ -141,8 +140,8 @@ void checkAgreement(GMANRayBVH const& bvh, std::vector<GMANRayInterface*> const&
 // out-parameters, appended in insertion order) and returns the handful of
 // primitives the special-case rays below target. swapOverlap reverses
 // just the overlapping pair's own insertion order, leaving every other
-// primitive's order fixed, so the fixture is built twice (§8's own
-// requirement) to catch an order dependency.
+// primitive's order fixed, so the fixture is built twice to catch an
+// order dependency.
 struct FixtureHandles {
   GMANRayInterface* overlapNear = nullptr;
   GMANRayInterface* overlapFar = nullptr;

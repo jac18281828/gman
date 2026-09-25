@@ -2,11 +2,11 @@
 
 ## sphere.rib
 
-Written for phase 0's runtime baseline. Not third-party.
+The runtime baseline. Not third-party.
 
 ## quadrics.rib
 
-Phase 4, step 3. All seven RenderMan quadrics -- Sphere, Cone, Cylinder,
+All seven RenderMan quadrics -- Sphere, Cone, Cylinder,
 Hyperboloid, Paraboloid, Torus, Disk -- in one scene, each exercising its own
 `getLocation`/`getNormal` parameterization end to end (tessellation, shading,
 silhouette), not only the isolated finite-difference proof
@@ -14,41 +14,41 @@ silhouette), not only the isolated finite-difference proof
 
 ## screenwindow.rib
 
-Phase 4, step 3. `RiScreenWindow`, `RiCropWindow` and `RiFrameAspectRatio`
+`RiScreenWindow`, `RiCropWindow` and `RiFrameAspectRatio`
 together under perspective: an asymmetric `ScreenWindow` shifting the visible
 frustum off-centre, then `CropWindow` rendering only a sub-window of that
-already-shifted result -- the combination the UAT-defect regression fixtures
-(`orthowindow.rib`, `cropwindow_test.cpp`) test in isolation but not together.
+already-shifted result -- the combination `orthowindow.rib` and
+`cropwindow_test.cpp` test in isolation but not together.
 `FrameAspectRatio` has no tokenizer entry; included here to prove it is
 warned-and-skipped, not a parse desync. Not third-party.
 
 ## clipping.rib
 
-Phase 4, step 3. A cylinder parallel to the camera's z axis, far longer than
+A cylinder parallel to the camera's z axis, far longer than
 the scene's `[near,far]` `Clipping` range, seen in profile: `GMANPolygonClipper`
 must cut it cleanly at both ends, producing a finite visible band rather than
 the whole tube, a degenerate sliver, or a crash. Not third-party.
 
 ## shaders.rib
 
-Phase 4, step 3. The three shipped surface shaders -- matte, plastic, metal --
+The three shipped surface shaders -- matte, plastic, metal --
 side by side under identical lighting, so a regression confined to one
 shader's own math shows up as a change confined to its own sphere. Not
 third-party.
 
 ## patch_norender.rib
 
-Phase 6. A `"bilinear"` `Patch` beside a control `Sphere` under identical
-lighting and shading -- once the defect `tests/patchnorender_test.cpp` pins
-(`Patch` rasterized no pixels), fixed when `getRSPatch` was wired to
-`createParametric`. The `Sphere` proves the renderer itself works and the
+A `"bilinear"` `Patch` beside a control `Sphere` under identical
+lighting and shading -- the defect `tests/patchnorender_test.cpp` pins.
+`getRSPatch` wires bilinear and bicubic `Patch` to `createParametric`.
+The `Sphere` proves the renderer itself works and the
 pixels are the `Patch`'s own. No golden minted -- bilinear interpolation of
 a flat four-point patch has no shading detail worth pixel-regression
 protection. Not third-party.
 
 ## patch_bicubic.rib
 
-Phase 6. A `"bicubic"` `Patch`, under `Sides 1` and a lit `"Kd"`: the
+A `"bicubic"` `Patch`, under `Sides 1` and a lit `"Kd"`: the
 point set is the same whether the sixteen-point control net is read in
 RISpec's u-fastest/v-major order or transposed, so `Sides 2` or `Ka`-only
 shading cannot tell them apart -- a transposed reading culls to nothing
@@ -268,9 +268,9 @@ convention"; `tests/rotate_test.cpp`). Not third-party.
 
 ## polygon.rib
 
-Phase 5. A single convex pentagon (five vertices, not four -- a 4-vertex
-fixture cannot distinguish `RiPolygonV`'s parameter-list sizing fix from
-the bug it fixes) under one ambient light, so the raster coverage and the
+A single convex pentagon (five vertices, not four -- a 4-vertex
+fixture is not enough to pin `RiPolygonV`'s parameter-list sizing)
+under one ambient light, so the raster coverage and the
 shaded color both have an independently hand-computable value
 (`tests/polygon_test.cpp`). `Clipping 0.5 50` per `AGENTS.md`'s RIB
 authoring section: a camera-facing planar polygon is exactly the flat,
@@ -285,7 +285,7 @@ third-party.
 
 ## r4_raytracer.rib
 
-R4's render-loop proof: `lights.rib`'s scene (ambient plus distant light,
+`lights.rib`'s scene (ambient plus distant light,
 `plastic`, a unit sphere at `Translate 0 0 5`, 640x480) under its own
 `Display` name, so `tests/rayrender_test.cpp` can render it under `-r
 gmanraytracer` and again with the default z-buffer without the two runs
@@ -293,8 +293,8 @@ colliding on one output file. Not third-party.
 
 ## shadow.rib, shadow_nolight.rib, shadow_noblocker.rib
 
-R7's shadow-ray proof (`tests/shadowrender_test.cpp`): a small sphere sits
-between a distant light and a large receiving sphere, plus an ambient
+A small sphere sits between a distant light and a large receiving
+sphere (`tests/shadowrender_test.cpp`), plus an ambient
 light so the cast shadow is not pure black. `shadow_nolight.rib` is the
 same scene with the distant light removed, and `shadow_noblocker.rib` the
 same scene with the small sphere removed; the test pins one pixel inside
@@ -346,9 +346,8 @@ catch cleanly.
 Minimal, hand-written fixtures, one per RISpec 3.2 request with
 parse-and-ignore coverage (`ifelse.rib` covers the four conditional requests
 together; `solid.rib` covers `SolidBegin`/`SolidEnd` together -- neither pair
-is meaningful RIB in isolation). Most were added by phase 2;
-`pixelfilter.rib` covers `PixelFilter`, the one request phase 2's own list
-missed. `generalpolygon.rib` covers `GeneralPolygon`, a request with a
+is meaningful RIB in isolation). `pixelfilter.rib` covers `PixelFilter`.
+`generalpolygon.rib` covers `GeneralPolygon`, a request with a
 variable-length `nverts` array ahead of its parameter list -- the same
 desync exposure a mis-counted parse anywhere else in the front end has.
 Each follows AGENTS.md's
@@ -372,7 +371,7 @@ hermetic (no network at test time).
 | File | Source | License | Notes |
 |---|---|---|---|
 | `menger.rib` | [aqsis/aqsis](https://github.com/aqsis/aqsis) `examples/procedurals/menger/menger.rib`, commit `d258e4ee5200ef29a512f2f4237b06fa3e4bb853` | GPL-2.0 (repo license; this file itself carries no separate header) | The corpus test (`tests/ribdialect_test.cpp`). Shader-free, so it is one of the few Aqsis examples that reaches `RiWorldEnd` without hitting a missing shader plugin. Exercises `Procedural "DynamicLoad"` and the unbracketed `"fov" 45` parameter form. |
-| `bike.rib`, `bikeData.rib.gz` | [aqsis/aqsis](https://github.com/aqsis/aqsis) `examples/features/archives/`, commit `a9ecc18a9ccbddb418b3ad3940c98a541e427461` (model courtesy of jrMan, www.jrman.org, per the file's own header) | GPL-2.0 (repo license) | Exercises `ReadArchive` of a gzip'd file in the same step, over ~5,300 lines of real `Patch`/`Basis`/`TransformBegin` content -- the two hardest step-6/step-7 paths together. Phase 3 ships a real `plastic` shader, closing the shading-infrastructure gap that used to stop this file at its first `Surface "plastic"` call. It used to die on `RIE_NESTING -- Blocks cannot overlap` further in -- `bikeData.rib.gz` ends `TransformEnd` with no trailing newline, which the tokenizer's end-of-input defect corrupted into `TransformEndd`, leaving that block unclosed (`tests/rib/nonewline/`'s defect). Fixed, `bike.rib` reaches exit 0 and writes a non-empty image; the image used to be blank (a separate, pre-existing defect -- `Patch` rasterized no pixels at all) until phase 6 wired `Patch` to `createParametric`, and now reads as a bicycle. Used for the dedicated `ReadArchive`/gzip proof, not the corpus proof. |
+| `bike.rib`, `bikeData.rib.gz` | [aqsis/aqsis](https://github.com/aqsis/aqsis) `examples/features/archives/`, commit `a9ecc18a9ccbddb418b3ad3940c98a541e427461` (model courtesy of jrMan, www.jrman.org, per the file's own header) | GPL-2.0 (repo license) | Exercises `ReadArchive` of a gzip'd file in the same step, over ~5,300 lines of real `Patch`/`Basis`/`TransformBegin` content -- the two hardest step-6/step-7 paths together. A real `plastic` shader closes the shading-infrastructure gap this file's first `Surface "plastic"` call would otherwise stop at. `bikeData.rib.gz` ends `TransformEnd` with no trailing newline, which the tokenizer's end-of-input handling must not corrupt into `TransformEndd`, leaving that block unclosed (`tests/rib/nonewline/`'s defect); `bike.rib` reaches exit 0 and writes a non-empty image. `getRSPatch` wires `Patch` to `createParametric`, so the image reads as a bicycle rather than every pixel the background color (a separate defect `tests/patchnorender_test.cpp` pins). Used for the dedicated `ReadArchive`/gzip proof, not the corpus proof. |
 
 Checked in as gzip'd/plain exactly as fetched; `bikeData.rib.gz` is not
 decompressed in-tree so the gzip-transparency test has a real gzip'd file to

@@ -19,14 +19,14 @@
  */
 
 /*
- * R7 proof, check 1: GMANSurfaceEnv's occlusion hook. diffuse() and
+ * GMANSurfaceEnv's occlusion hook. diffuse() and
  * specular() scale each non-ambient light's colour by
  * occluder->transmission(), per channel -- not one channel applied to all
  * three; ambient() never consults it, having no direction to occlude. A
  * point light reports its own distance and a unit towardLight; a distant
  * light reports RI_INFINITY, its sample()'s l having no useful length.
  *
- * R7 proof, check 4: occludedContribution passes the occluder env.Ng, the
+ * occludedContribution passes the occluder env.Ng, the
  * surface's own geometric normal -- not env.N, which diffuse()/specular()
  * already faceforward and which a displacement or bump can perturb away
  * from the real surface a self-hit offset must clear.

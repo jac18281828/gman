@@ -19,8 +19,8 @@
  */
 
 /*
- * R8 proof, §8 E.1: `gman -r gmanraytracer` renders tests/rib/r8_mirror.rib
- * -- a mirror sphere dead-on to the camera, reflecting a distinctly
+ * `gman -r gmanraytracer` renders tests/rib/r8_mirror.rib -- a mirror
+ * sphere dead-on to the camera, reflecting a distinctly
  * coloured wall placed behind the camera (invisible to every primary ray)
  * -- matching a checked-in golden image, and the same reflected colour
  * appears nowhere in tests/rib/r8_mirror_matte.rib's render, the identical
@@ -52,9 +52,9 @@ int runGman(std::string const& command) {
 // off-white base).
 constexpr int kGreenMargin = 40;
 
-// The reflected signal's own required share of the frame (§1's "each
-// fixture covers at least 5% of its frame"), applied to the green pixels
-// within the mirror's own silhouette, not to the silhouette itself.
+// The reflected signal's own required share of the frame -- each fixture
+// covers at least 5% of its frame -- applied to the green pixels within
+// the mirror's own silhouette, not to the silhouette itself.
 constexpr double kMinReflectedFraction = 0.05;
 
 bool greenDominant(uint32_t px) {

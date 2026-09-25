@@ -19,7 +19,7 @@
  */
 
 /*
- * R5b proof: `gman -r gmanraytracer` renders tests/rib/r5b_quadrics.rib --
+ * `gman -r gmanraytracer` renders tests/rib/r5b_quadrics.rib --
  * a matte Cylinder, Cone, Paraboloid and Hyperboloid side by side under an
  * ambient and a distant light -- matching a checked-in golden image.
  * Reverting any one of GMANRayObjectManager::getRSCylinder, getRSCone,

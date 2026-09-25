@@ -1,4 +1,4 @@
-## R7 proof, §8 check 2: acnesphere_x1.rib's scene scaled x0.001 -- radius,
+## acnesphere_x1.rib's scene scaled x0.001 -- radius,
 ## camera distance and Clipping all scale together, so this must render
 ## the same image as acnesphere_x1.rib once self-shadow acne is
 ## scale-independent. This overrides AGENTS.md's default camera and

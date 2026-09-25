@@ -19,22 +19,20 @@
  */
 
 /*
- * GMANRIBParse::parseParameterList used to store every non-string
- * parameter as RtFloat, whatever its token was declared as.
- * GMANParameterList's INTEGER branch then read that buffer through an
- * (RtInt*) cast: a parameter declared uniform integer and given [4] was
- * stored as 4.0f and read back as 1082130432. The parser now resolves a
+ * GMANParameterList's INTEGER branch reads its buffer through an
+ * (RtInt*) cast, so a parameter stored as RtFloat regardless of its
+ * declared type would come back as its bit pattern reinterpreted as an
+ * integer, not its value. GMANRIBParse::parseParameterList resolves a
  * parameter's declared type from the same GMANDictionary the consumer
- * uses, through GMANRenderMan::getDictionary, and stores a declared-INTEGER
- * value as RtInt.
+ * uses, through GMANRenderMan::getDictionary, and stores a
+ * declared-INTEGER value as RtInt.
  *
  * Checks 1 through 4 run gman out of process against a fixture, following
  * tests/paramclamp_test.cpp's runCapturingOutput -- tests/ribmalformed_test.cpp's
  * own harness observes neither exit status nor message, so nothing here
- * belongs there. Check 4's baseline ("does not abort") was recorded by
- * running its fixture against the pre-fix binary: exit 0, with
+ * belongs there. Check 4's baseline ("does not abort") is exit 0, with
  * GMANParameterList's own "ERROR: RIE_BADTOKEN -- GMANDictionary:
- * TOKEN_NOT_FOUND" diagnostic, unrelated to this fix.
+ * TOKEN_NOT_FOUND" diagnostic, unrelated to declared-type resolution.
  *
  * Checks 1 through 4 assert only exit status and diagnostic text, so every
  * one of them would still pass if the parser stored a wrong-but-non-throwing
@@ -155,8 +153,7 @@ int main(int argc, char* argv[]) {
   const std::string dir = argv[2];
 
   // 1. The discriminator: a float literal in a declared-integer parameter
-  // now raises RIE_SYNTAX and exits non-zero. Before this fix, the same
-  // RIB exited 0 with no diagnostic at all.
+  // raises RIE_SYNTAX and exits non-zero.
   {
     RunResult r = runCapturingOutput(gman, dir + "/paramtype_declared_int_float_literal.rib", 10);
     check(!r.timedOut, "float-literal-in-integer: does not hang (10s bound)");

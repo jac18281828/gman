@@ -23,10 +23,12 @@
  * with column, green rises linearly with row, blue is constant --
  * regardless of which axis convention gman's own texture lookup treats as
  * s versus t. tests/polygonstparity_test.cpp needs this instead of
- * tests/checkertexture.h's checker, whose per-texel discontinuity breaks
- * the "blend the coordinate then shade" (ray tracer) versus "shade then
- * blend the colour" (z-buffer) parity it proves -- see this task's own
- * settled decision on why.
+ * tests/checkertexture.h's checker: interpolating an affine function of
+ * position commutes with evaluating it at the interpolated position, so
+ * "blend the coordinate then shade" (ray tracer) and "shade then blend
+ * the colour" (z-buffer) agree exactly. A checker's per-texel
+ * discontinuity does not commute, so the two orders could disagree even
+ * when both renderers are correct.
  */
 
 #pragma once

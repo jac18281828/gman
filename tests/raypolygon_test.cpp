@@ -19,7 +19,7 @@
  */
 
 /*
- * R5a proof: GMANRayPolygon::intersect finds the ray's hit on the
+ * GMANRayPolygon::intersect finds the ray's hit on the
  * polygon's own plane, then tests it against the ring's projection with an
  * even-odd rule that handles a concave shape correctly, honoring the ray's
  * own [tmin, tmax] interval, and never hits a degenerate ring.

@@ -19,22 +19,18 @@
  */
 
 /*
- * Defect 1 (uat-defects prompt): `Surface` before `AttributeBegin`/
- * `FrameBegin` segfaulted (exit 139) after writing a plausible-looking
- * TIFF -- a double free at process exit. Both requests push
+ * `Surface` before `AttributeBegin`/`FrameBegin` must not double-free.
+ * Both requests push
  * GMANGraphicState::attributesStack.push(attributesStack.top()), which
- * copies GMANAttributes. GMANAttributes owned six GMANLoadableShader*
- * members with no copy constructor or assignment operator, so the
- * compiler-generated ones did a shallow pointer copy: the pushed copy and
- * the original both held the same GMANLoadableShader*, and both
- * destructors freed the same GMANLoadableShader object.
- *
- * The push itself is correct RenderMan semantics -- an attribute block
- * inherits its parent's attributes -- so the fix is GMANAttributes getting
- * correct copy semantics, not avoiding the copy. The six members are now
- * std::shared_ptr<GMANLoadableShader>: a loaded module is immutable once
- * loaded, so sharing it rather than deep-copying also avoids re-dlopen'ing
- * on every AttributeBegin/AttributeEnd pair that does not change shaders.
+ * copies GMANAttributes -- correct RenderMan semantics, since an
+ * attribute block inherits its parent's attributes. GMANAttributes'
+ * six shader-module members are std::shared_ptr<GMANLoadableShader>: a
+ * raw GMANLoadableShader* with no copy protection would shallow-copy on
+ * push, so the pushed copy and the original would hold the same
+ * pointer and double-free it at their respective destructors. A loaded
+ * module is immutable once loaded, so sharing it rather than
+ * deep-copying also avoids re-dlopen'ing on every
+ * AttributeBegin/AttributeEnd pair that does not change shaders.
  *
  * Not covered here: SolidBegin shares the same attributesStack shape but
  * cannot be reached from RIB (GMANRIBParse::parseSolidBegin never calls

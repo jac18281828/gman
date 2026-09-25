@@ -19,7 +19,7 @@
  */
 
 /*
- * R5b proof: GMANRayCylinder::intersect finds the object-space wall hit,
+ * GMANRayCylinder::intersect finds the object-space wall hit,
  * its z-band and thetamax wedge, honoring the ray's own [tmin, tmax]
  * interval, and fills a GMANHit that round trips through
  * GMANCylinder::getLocation.

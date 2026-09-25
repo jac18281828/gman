@@ -1,4 +1,4 @@
-## R7 proof, check 3: shadow.rib with the distant light removed -- what a
+## shadow.rib with the distant light removed -- what a
 ## fully occluded point on the receiver should read, ambient only. Not
 ## third-party.
 Display "shadow_nolight.tif" "file" "rgba"

@@ -19,22 +19,20 @@
  */
 
 /*
- * Defect 2 (uat-defects prompt): the PNG output driver segfaulted (exit
- * 139) leaving a zero-byte file. Three bugs in gman::OutputPNG::save,
- * gmanoutputpng.cpp:
+ * Guards the PNG output driver (gman::OutputPNG::save, gmanoutputpng.cpp)
+ * against three distinct defects:
  *
- * 1. It called png_read_update_info on a png_ptr from
+ * 1. Calling png_read_update_info on a png_ptr from
  *    png_create_write_struct. That function's own doc says it "MUST be
  *    called before png_read_update_info or png_start_read_image" -- a
- *    read-side call, on a struct never set up for reading. It corrupted
- *    internal libpng state that later crashed deep inside
- *    png_write_image's compression path. This was the segfault.
- * 2. The pixel buffer was sized rowbytes*xres instead of rowbytes*yres --
- *    invisible on a square Format, where the two are equal, which is why
- *    this survived as long as it did.
- * 3. The inner x-loop that packs each row ended in `break`, so only pixel
- *    x=0 of every row was ever written; every other pixel byte was
- *    whatever `new[]` happened to return.
+ *    read-side call, on a struct never set up for reading, that would
+ *    corrupt internal libpng state and crash deep inside
+ *    png_write_image's compression path.
+ * 2. The pixel buffer sized rowbytes*xres instead of rowbytes*yres --
+ *    invisible on a square Format, where the two are equal.
+ * 3. An inner x-loop that packs each row ending in `break`, so only
+ *    pixel x=0 of every row would be written; every other pixel byte
+ *    would be whatever `new[]` happened to return.
  *
  * Proof: a PNG render must exit 0, decode as a well-formed PNG of the
  * requested size, and match an equivalent TIFF render of the same scene
