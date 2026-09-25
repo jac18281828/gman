@@ -1,74 +1,75 @@
-# GMAN — a RenderMan-compatible renderer
+# GMAN — the Realistic RenderMan Renderer
 
 [![ci](https://github.com/jac18281828/gman/actions/workflows/ci.yml/badge.svg)](https://github.com/jac18281828/gman/actions/workflows/ci.yml)
 
-GMAN is a 1999 RenderMan renderer revived and rewritten to build again in
-2026. Point it at an `.rib` file and it renders an image, through a
-z-buffer renderer or a ray tracer. C++20 and CMake; `ri.h` gives a C
-program the same interface.
+Begun in 1999, revived in 2026. [gman-toolkit.sourceforge.net](https://gman-toolkit.sourceforge.net)
 
-![A robot drives into a table; the translucent vase tips and its flowers eject](samples/vase-raytraced.png)
+[![gman's ray-traced render of samples/vase.rib](samples/vase-raytraced.png)](https://gman-toolkit.sourceforge.net)
 
-*The robot crashes into the table; the translucent vase tips and its
-flowers eject.* `samples/vase.rib`, ray-traced, with quadrics and polygons,
-two surface shaders and three lights.
-
-## Install
-
-Binary releases ship for Linux x86_64, Linux arm64 and macOS arm64. Download
-the tarball for your platform from the
-[releases page](https://github.com/jac18281828/gman/releases) and extract
-it:
+## Try it
 
 ```sh
-tar xzf gman-0.9.0-macos-arm64.tar.gz
+curl -sL https://github.com/jac18281828/gman/releases/download/0.9.1/gman-0.9.1-linux-x86_64.tar.gz | tar xz
+curl -sLO https://raw.githubusercontent.com/jac18281828/gman/0.9.1/samples/vase.rib
+export PATH="$PWD/gman-0.9.1-linux-x86_64/bin:$PATH"
+gman -r gmanraytracer vase.rib
 ```
 
-It unpacks to `gman-<version>-<platform>/`, holding `bin/gman`, the
-renderer and shader plugins under `lib/` and `include/gman`. It carries no
-scenes: clone the repo, or download `samples/` from it, to render the
-examples below.
+That writes `vase.png`, the picture above, in a few seconds. It needs libtiff, libpng, libjpeg
+and zlib installed. Linux arm64 and macOS arm64 builds are on the
+[releases page](https://github.com/jac18281828/gman/releases).
 
-### Building from source
+## Poke it
 
-Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
-Clang 17 or newer), libtiff and zlib. libpng and libjpeg are optional: a
-build without one rejects that `Display` extension with `RIE_BADFILE`, and
-`gman --version` lists the drivers compiled in. POSIX only: macOS and
-Linux.
+Change one line of `vase.rib` and render it again with `gman -r gmanraytracer vase.rib`. Each
+picture starts from the original scene.
+
+| | |
+|---|---|
+| <img src="samples/poke/glass.png" width="320" alt="the vase in glass"><br>**Glass vase.** In the `## Vase` block, make the surface `Surface "glass"` and delete the `Opacity`. | <img src="samples/poke/mirror.png" width="320" alt="the robot's dome as a mirror"><br>**Mirror dome.** Under `# head dome`, make the surface `Surface "mirror" "Kr" [1]`. |
+| <img src="samples/poke/sunlight.png" width="320" alt="the room lit by sunlight"><br>**Sunlight.** Swap the lamp for the sun: `LightSource "distantlight" 2 "intensity" [1.2] "lightcolor" [1 0.95 0.83] "from" [1 3 10] "to" [0 0 1]`. The walls now shadow the room. | <img src="samples/poke/widefov.png" width="320" alt="the room through a wider lens"><br>**Wider lens.** `Projection "perspective" "fov" [55]`. |
+| <img src="samples/poke/onesample.png" width="320" alt="the scene at one sample a pixel"><br>**One sample a pixel.** `PixelSamples 1 1`, and the edges go jagged. | <img src="samples/poke/zbuffer.png" width="320" alt="the scene through the z-buffer renderer"><br>**The z-buffer.** No edit: plain `gman vase.rib` renders the fast preview, without shadows, reflection or refraction. |
+
+### A first scene
+
+Eleven lines, from nothing:
+
+```
+Display "first.png" "file" "rgba"
+Format 640 400 1
+Projection "perspective" "fov" [30]
+Translate 0 0 6
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "from" [-2 2 -3] "to" [0 0 0]
+Surface "plastic"
+Color [0.9 0.25 0.2]
+Sphere 1 -1 1 360
+WorldEnd
+```
 
 ```sh
-cmake --preset dev
-cmake --build build --parallel
-ctest --test-dir build --output-on-failure
+gman -r gmanraytracer first.rib
 ```
 
-`AGENTS.md`'s Tests section covers the test layout, adding a new test and
-golden-image regeneration; its Completion Gates section lists the local
-gates, and says CI covers the rest.
+<img src="samples/poke/first.png" width="320" alt="a red plastic sphere">
 
-To install into a prefix:
+## What GMAN renders
 
-```sh
-cmake --install build --prefix /usr/local
-```
-
-The installed prefix carries `bin/gman` and a CMake package. A program
-links gman with `find_package(gman CONFIG REQUIRED)` and
-`target_link_libraries(app PRIVATE gman::gman_core)`, and includes
-`<gman/ri.h>`. Link libgman from C, below, walks through a full example.
-
-#### Development container
-
-A devcontainer lives in `.devcontainer/`, carrying the same toolchain CI
-uses: both gcc and clang, the sanitizers, valgrind, yamlfmt and commitlint.
-Open the repo in VS Code and choose "Reopen in Container", or run
-`./build.sh`, which configures, builds, tests and lints the workflow YAML
-with yamlfmt:
-
-```sh
-./build.sh
-```
+- **Geometry.** `Polygon`, `GeneralPolygon`, `PointsPolygons`, `PointsGeneralPolygons` and the seven
+  quadrics, `Sphere`, `Cone`, `Cylinder`, `Hyperboloid`, `Paraboloid`, `Disk` and `Torus`, under
+  both renderers. `Patch` and `PatchMesh`, bilinear and bicubic, and `NuPatch` under the z-buffer.
+- **Surface shaders.** `matte`, `plastic`, `paintedplastic`, `metal` and `shinymetal` under both
+  renderers; `glass` and `mirror` trace rays, so they need the ray tracer.
+- **Light shaders.** `ambientlight`, `distantlight`, `pointlight` and `spotlight`.
+- **Two renderers.** `gmanzbuffer`, the default preview, and `gmanraytracer`, with shadows,
+  reflection, refraction and transparency.
+- **Antialiasing.** `PixelSamples` supersamples; `PixelFilter` reconstructs through box, triangle,
+  Gaussian, Catmull-Rom or sinc.
+- **Textures.** `texture()` and `environment()` read maps written by `MakeTexture` and
+  `MakeLatLongEnvironment`.
+- **RIB.** Plain or gzip'd, with `ReadArchive`. An unrecognized request warns once and is skipped.
+- **Image drivers.** TIFF, PNM, PNG and JPEG; `gman --version` lists the ones built in.
 
 ## Render
 
@@ -95,55 +96,57 @@ drivers: tiff pnm png jpeg
 At the default `Clipping`, flat or narrow-z-range geometry renders
 corrupted or blank; pair it with an explicit `Clipping <near> <far>`.
 
-## Scenes
+## Build from source
 
-`samples/vase.rib` is a room, a table, a vase of flowers and a robot mid
-crash: quadrics and polygons, the `matte` and `plastic` surface shaders,
-three lights. Its `Display` writes PNG, which needs libpng at build time:
-without it, `gman samples/vase.rib` rejects the scene with `RIE_BADFILE`;
-install libpng and reconfigure with `-DGMAN_WITH_PNG=ON` to fix it.
+Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
+Clang 17 or newer), libtiff and zlib. libpng and libjpeg are optional: a
+build without one rejects that `Display` extension with `RIE_BADFILE`, and
+`gman --version` lists the drivers compiled in. POSIX only: macOS and
+Linux.
 
-Render it through the default z-buffer renderer:
-
-```sh
-cd samples
-gman vase.rib
-cd ..
-```
-
-The z-buffer keeps only the nearest sample, so the vase's `Opacity` only
-darkens it there, rather than showing the table through.
-
-Both renderers write the same `Display` name, `vase.png`; render the ray
-tracer's version in its own directory, then rename it:
+On Linux, install the libraries first:
 
 ```sh
-mkdir vase-raytraced
-cd vase-raytraced
-gman -r gmanraytracer ../samples/vase.rib
-mv vase.png ../samples/vase-raytraced.png
-cd ..
+sudo apt-get install cmake libtiff-dev libpng-dev libjpeg-dev zlib1g-dev
 ```
-
-The ray-traced render, above, adds real shadows and the table seen
-through the translucent vase, over `samples/vase.png`'s z-buffer preview.
-
-A few more scenes worth running, from `tests/rib/`:
 
 ```sh
-cd tests/rib
-gman sphere_ambient.rib
-gman shaders.rib
-gman -r gmanraytracer r8_mirror.rib
-cd ../..
+cmake --preset dev
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
 ```
 
-- `sphere_ambient.rib` — one lit sphere, the renderer's own runtime
-  baseline.
-- `shaders.rib` — `matte`, `plastic` and `metal` side by side under
-  identical lighting.
-- `r8_mirror.rib` — a mirrored sphere. Only `-r gmanraytracer` traces its
-  reflection; `trace()` returns black under the z-buffer.
+`AGENTS.md`'s Tests section covers the test layout, adding a new test and
+golden-image regeneration; its Completion Gates section lists the local
+gates, and says CI covers the rest.
+
+`samples/vase.rib`'s `Display` writes PNG, which needs libpng at build
+time: without it, `gman samples/vase.rib` rejects the scene with
+`RIE_BADFILE`; install libpng and reconfigure with `-DGMAN_WITH_PNG=ON` to
+fix it.
+
+To install into a prefix:
+
+```sh
+cmake --install build --prefix /usr/local
+```
+
+The installed prefix carries `bin/gman` and a CMake package. A program
+links gman with `find_package(gman CONFIG REQUIRED)` and
+`target_link_libraries(app PRIVATE gman::gman_core)`, and includes
+`<gman/ri.h>`. Link libgman from C, below, walks through a full example.
+
+### Development container
+
+A devcontainer lives in `.devcontainer/`, carrying the same toolchain CI
+uses: both gcc and clang, the sanitizers, valgrind, yamlfmt and commitlint.
+Open the repo in VS Code and choose "Reopen in Container", or run
+`./build.sh`, which configures, builds, tests and lints the workflow YAML
+with yamlfmt:
+
+```sh
+./build.sh
+```
 
 ## Write a shader
 
@@ -211,7 +214,7 @@ cmake --build build
 
 This writes `sphere.tif` in the current directory.
 
-## The tree
+## The GMAN project
 
 ```
 include/     GMAN header files, including ri.h
@@ -228,39 +231,4 @@ tests/       the test suite and its RIB corpus
 doc/         the 1999 design document
 ```
 
-## Against the standard
-
-What the RenderMan standard asks of a renderer, and where GMAN stands on
-each:
-
-- **[ ] High-end geometry.** `NuPatch`, the NURBS request, rasterizes with
-  `Patch`, `PatchMesh` and the two `PointsPolygons` requests, faceted or
-  bilinear/bicubic; trim curves and subdivision surfaces parse and are
-  ignored.
-- **[~] Antialiasing and motion blur.** `PixelSamples` and `PixelFilter`
-  resolve through five filter kernels; motion blur is absent, `Shutter` and
-  `DepthOfField` read and unused.
-- **[~] Programmable shading.** Surface shaders load as C++ plugins at run
-  time; light shaders build into libgman, and an unknown name warns and is
-  ignored. Pluggable, not programmable: volume shaders parse and do
-  nothing.
-- **[ ] Displacement shading.** Wants micropolygons.
-- **[~] Many large textures, flat memory.** `texture()` and `environment()`
-  read through an in-memory cache that decodes each name once and never
-  bounds its own memory.
-- **[~] Quantization, filtering, reconstruction.** Exposure, gamma and pixel
-  reconstruction run; quantization still warns and passes colour through
-  untouched.
-- **[~] Shading time against shading quality.** The z-buffer renderer's
-  polygon dicing sizes each facet to `ShadingRate` and its raster extent;
-  quadrics, patches and the detail controls still ignore it.
-
-None finished, five begun.
-
-## Files
-
-```
-COPYING      GNU Lesser General Public License, version 2.1
-AGENTS.md    build commands, gate list and house conventions
-AUTHORS      contributors
-```
+`tests/rib/` holds 81 more scenes, the test suite's own.
