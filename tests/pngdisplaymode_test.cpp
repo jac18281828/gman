@@ -47,12 +47,13 @@ namespace {
 
 // A non-uniform alpha, so a coverage computation that reads the wrong
 // channel or drops the divide cannot land on the right byte by accident.
-// (0.3 + 0.6 + 0.9) / 3 is 0.6 in real arithmetic; 0.6 has no exact binary
-// float representation, and the nearest float is fractionally below it, so
-// narrowing (multiplying by 255 and truncating) lands on 152, not 153.
-// Computed independently of gman::coverageByte, the function under test.
-GMANAlpha const kPartialAlpha(0.3f, 0.6f, 0.9f);
-unsigned char const kExpectedCoverageByte = 152;
+// (0.2 + 0.5 + 0.8) / 3 = 1.5 / 3 = 0.5 exactly; 0.5 * 255 = 127.5, which
+// truncates to 127. 127.5 sits half way between 127 and 128, 0.5 away from
+// either, so 127 holds regardless of whether the sum accumulates in float
+// or widens to double along the way. Computed independently of
+// gman::coverageByte, the function under test.
+GMANAlpha const kPartialAlpha(0.2f, 0.5f, 0.8f);
+unsigned char const kExpectedCoverageByte = 127;
 
 struct DecodedPNG {
   bool ok = false;

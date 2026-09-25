@@ -157,9 +157,9 @@ RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColo
       delete[] row;
     }
 
-    // libjpeg's stdio destination checks every fwrite it makes, but stdio
-    // only flushes its last buffered block at fclose: a failure there is
-    // still a write failure, not yet reported by anything above.
+    // jpeg_finish_compress's term_destination already flushes libjpeg's own
+    // output buffer and raises JERR_FILE_WRITE on a short write, but fclose
+    // can still report a write error deferred until the file is closed.
     if (fclose(jpegFile) != 0) {
       std::string errorMsg("Unable to write output file: ");
       errorMsg.append(outputName);
