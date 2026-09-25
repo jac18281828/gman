@@ -181,13 +181,7 @@ template <class T> T GMANLinearSpline(RtFloat value, RtInt nvals, T fvals[]) {
 // gmanslapi.cpp has only ever defined GMANFaceForward, GMANReflect,
 // GMANRefract and GMANFresnel; the lowercase forms had no definition
 // anywhere in the tree and would fail to link the moment anything called
-// them. distance/ptlined/rotate below have the identical mismatch
-// (GMANDistance/GMANPTLined/GMANRotate are what's defined) but are outside
-// this phase's shading path; left as-is and flagged in phase-3-REPORT.md
-// rather than fixed silently.
-GMAN_EXPORT RtFloat distance(const GMANPoint& p1, const GMANPoint& p2);
-GMAN_EXPORT RtFloat ptlined(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& q);
-GMAN_EXPORT GMANPoint rotate(const GMANPoint& q, RtFloat angle, const GMANPoint& p1, const GMANPoint& p2);
+// them.
 GMAN_EXPORT GMANVector GMANFaceForward(const GMANVector& n, const GMANVector& i, const GMANVector& nr);
 GMAN_EXPORT GMANVector GMANReflect(const GMANVector& i, const GMANVector& n);
 GMAN_EXPORT GMANVector GMANRefract(const GMANVector& i, const GMANVector& n, RtFloat eta);
