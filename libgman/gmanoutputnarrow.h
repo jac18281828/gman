@@ -59,4 +59,13 @@ inline GMANByte narrowedByte(GMANColor::ColorSampleType v) {
   return static_cast<GMANByte>(clampedChannel(v) * static_cast<GMANColor::ColorSampleType>(GMAN_BYTEMAX));
 }
 
+// Coverage narrowed from an alpha sample: the mean of its three channels,
+// through narrowedByte. Alpha is linear coverage, never gamma-corrected,
+// so this takes the raw sample rather than a colour already run through
+// the output pipeline's gamma step.
+inline GMANByte coverageByte(GMANAlpha const& alpha) {
+  return narrowedByte((alpha.getRed() + alpha.getGreen() + alpha.getBlue()) /
+                      static_cast<GMANColor::ColorSampleType>(3.0));
+}
+
 } // namespace gman

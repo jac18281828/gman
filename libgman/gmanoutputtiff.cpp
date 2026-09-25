@@ -89,14 +89,10 @@ RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColo
       buf[colOff++] = gman::narrowedByte(color.getBlue());
 
       if (samplesperpixel == 4) {
-        // The mean of alpha's three channels, never gamma-corrected or
-        // quantized: alpha is linear coverage, not a colour sample, and
-        // every shipped shader sets it channel-uniform regardless. Narrowed
-        // through the same total function colour uses, so a NaN alpha
-        // writes 0 rather than converting out of range.
-        const GMANAlpha& alpha = getAlpha(x, y);
-        const RtFloat coverage = (alpha.getRed() + alpha.getGreen() + alpha.getBlue()) / (RtFloat)3.0;
-        buf[colOff++] = gman::narrowedByte(coverage);
+        // Alpha is linear coverage, not a colour sample: never
+        // gamma-corrected or quantized. gman::coverageByte is the one
+        // formula every driver writing coverage alpha shares.
+        buf[colOff++] = gman::coverageByte(getAlpha(x, y));
       }
     }
     // now write a scanline into the image
