@@ -20,10 +20,12 @@
 
 /*
  * gman::Noise seeds its own std::mt19937 rather than the process-global C
- * rand(). Proof: two independently constructed instances agree at the same
- * fixed inputs, across both noise and cellnoise; cellnoise's own values at
- * those inputs match constants recorded from a real build; and rand()'s
- * own sequence is unaffected by constructing or exercising a Noise.
+ * rand(). Two independently constructed instances agree at the same fixed
+ * inputs, across both noise and cellnoise, proving each instance's sequence
+ * is deterministic and instance-independent. cellnoise's fixed-value
+ * constants, recorded from a real build, pin its cross-platform
+ * determinism. rand()'s own sequence is left unperturbed by constructing
+ * or exercising a Noise.
  */
 
 #include <cmath>
@@ -77,18 +79,22 @@ void testFixedValues() {
 void testRandUnperturbed() {
   constexpr unsigned kSeed = 12345;
 
+  // The expected draw: a fresh seeded sequence's first value, with no
+  // Noise construction or use in between.
   std::srand(kSeed);
-  int const before = std::rand();
+  int const expected = std::rand();
 
+  // The draw under test: reseed the same way, construct and exercise a
+  // Noise, then draw without reseeding. If Noise touches rand()'s own
+  // sequence, this draw diverges from expected.
+  std::srand(kSeed);
   gman::Noise n;
   GMANPoint const p(1.0, 2.0, 3.0);
   (void)n.noise(p);
   (void)n.cellnoise(p);
+  int const actual = std::rand();
 
-  std::srand(kSeed);
-  int const after = std::rand();
-
-  check(before == after, "constructing and exercising a Noise leaves rand()'s own sequence unperturbed");
+  check(expected == actual, "constructing and exercising a Noise leaves rand()'s own sequence unperturbed");
 }
 
 } // namespace
