@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include <math.h>
@@ -163,7 +164,7 @@ private:
   PixelSamplesStruct pixelSamples;
   PixelFilterStruct pixelFilter;
   ExposureStruct exposure;
-  GMANLoadableShader* imagerModule;
+  std::shared_ptr<GMANLoadableShader> imagerModule;
   GMANImagerShader* imager;
   QuantizeStruct colorQuantize;
   QuantizeStruct depthQuantize;

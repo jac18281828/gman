@@ -35,7 +35,7 @@ GMANOptions::OutputDefaults GMANOptions::outputDefaults = {GMANDisplayXRES, GMAN
  *
  */
 
-GMANOptions::GMANOptions() : imagerModule(NULL), imager(NULL) {
+GMANOptions::GMANOptions() : imager(NULL) {
   // **** CAMERA OPTIONS ****
   format.xres = 640;
   format.yres = 480;
@@ -81,6 +81,9 @@ GMANOptions::GMANOptions() : imagerModule(NULL), imager(NULL) {
   screenWindowSet = false;
 };
 
+// imagerModule is a shared_ptr: it releases its own reference when this
+// GMANOptions is destroyed, deleting the underlying GMANLoadableShader
+// only when no other owner remains.
 GMANOptions::~GMANOptions() {};
 
 // ******* ******* CAMERA OPTIONS ******* *******
@@ -216,9 +219,7 @@ RtVoid GMANOptions::setExposure(RtFloat gn, RtFloat gmm) {
 RtVoid GMANOptions::setImager(std::string name, GMANParameterList const& pl) {
   auto resolved =
       gman::resolveLoadableShader("Imager", "the frame renders without an imager", name, pl, GMANShader::IMAGER);
-  if (imagerModule)
-    delete (imagerModule);
-  imagerModule = resolved.release();
+  imagerModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
   imager = imagerModule ? imagerModule->getImager() : NULL;
 }
 

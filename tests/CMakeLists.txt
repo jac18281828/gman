@@ -1365,7 +1365,6 @@ add_dependencies(gman_imagerownership gman_countingimager gman_zbuffer)
 add_test(NAME imagerownership COMMAND gman_imagerownership)
 set_tests_properties(imagerownership PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
-  WILL_FAIL TRUE
   LABELS unit
   TIMEOUT 30)
 
