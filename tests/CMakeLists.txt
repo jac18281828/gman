@@ -705,7 +705,7 @@ set_tests_properties(ribstringescape PROPERTIES
   LABELS render
   TIMEOUT 60)
 
-# GMANRIBParse::parsePoints left npoints at 0 for every Points request. See
+# GMANRIBParse::parsePoints derives npoints from "P"'s float count. See
 # tests/pointscount_test.cpp; its in-process check drives GMANRIBParse
 # directly against a CapturingRenderMan overriding RiPointsV, the same
 # technique tests/paramlistdeclaredtype_test.cpp's check 5 and
