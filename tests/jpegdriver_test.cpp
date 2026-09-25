@@ -191,6 +191,17 @@ int main(int argc, char* argv[]) {
                               "AttributeEnd\n"
                               "WorldEnd\n";
 
+  const char* rgbaSceneTemplate = "Display \"%s\" \"file\" \"rgba\"\n"
+                                  "Format 64 64 1\n"
+                                  "Projection \"perspective\" \"fov\" [45]\n"
+                                  "WorldBegin\n"
+                                  "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
+                                  "AttributeBegin\n"
+                                  "  Translate 0 0 5\n"
+                                  "  Sphere 1 -1 1 360\n"
+                                  "AttributeEnd\n"
+                                  "WorldEnd\n";
+
   char scene[1024];
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.jpg");
   writeFile("jpegdriver.rib", scene);
@@ -230,6 +241,19 @@ int main(int argc, char* argv[]) {
     check(mismatchFraction < 0.10, "JPEG pixels are within tolerance of the equivalent TIFF render "
                                    "(fewer than 10% of channel samples exceed +-24/255)");
   }
+
+  // ---- a mode JPEG cannot carry warns and still writes RGB ----
+  std::snprintf(scene, sizeof scene, rgbaSceneTemplate, "jpegdriver_rgba.jpg");
+  writeFile("jpegdriver_rgba.rib", scene);
+  const std::string rgbaCapture = "jpegdriver_rgba.out";
+  int rgbaExit = runGman(gman, "jpegdriver_rgba.rib", "jpegdriver_rgba.jpg", rgbaCapture);
+  check(rgbaExit == 0, "a Display asking for \"rgba\" still exits 0");
+  check(readFile(rgbaCapture).find("GMAN WARNING:") != std::string::npos,
+        "stdout names the mode JPEG cannot fully carry");
+
+  Image rgbaJpg = readJPEG("jpegdriver_rgba.jpg");
+  check(rgbaJpg.ok, "the \"rgba\"-requested file still decodes as well-formed JPEG");
+  check(rgbaJpg.width == 64 && rgbaJpg.height == 64, "the \"rgba\"-requested file has the requested dimensions");
 
   // ---- a genuinely unknown extension must diagnose, not crash ----
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.bogus");
