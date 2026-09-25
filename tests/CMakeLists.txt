@@ -723,6 +723,15 @@ set_tests_properties(pointscount PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRIBTokenize::consumeWhitespace, isKeyToken and isNumToken classify a
+# stream byte. See tests/ribctypeunsigned_test.cpp; it drives getNext
+# directly on an istringstream, so it dlopens nothing.
+add_executable(gman_ribctypeunsigned ribctypeunsigned_test.cpp)
+target_link_libraries(gman_ribctypeunsigned PRIVATE gman_core)
+
+add_test(NAME ribctypeunsigned COMMAND gman_ribctypeunsigned)
+set_tests_properties(ribctypeunsigned PROPERTIES LABELS unit TIMEOUT 30)
+
 # Bilinear and bicubic Patch rasterization. See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
 target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)
