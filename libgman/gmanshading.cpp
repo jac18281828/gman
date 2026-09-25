@@ -75,7 +75,7 @@ Appearance appearanceOf(GMANAttributes const& attributes) {
 }
 
 Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
-              Occluder const* occluder, Tracer const* tracer) {
+              Occluder const* occluder, Tracer const* tracer, TextureCache* textureCache) {
   GMANSurfaceEnv env;
   env.Cs = appearance.Cs;
   env.Os = appearance.Os;
@@ -93,6 +93,7 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
   env.cameraToWorld = cameraToWorld;
   env.occluder = occluder;
   env.tracer = tracer;
+  env.textureCache = textureCache;
 
   Shading shading;
   shading.Ci = appearance.shader->computeCi(env);

@@ -41,6 +41,10 @@
 #include "gmanvector.h"
 #include "ri.h"
 
+namespace gman {
+class TextureCache;
+} // namespace gman
+
 /*
  * The interface a surface shader is written against -- and the interface
  * a future shading-language VM would target, since a C++ shader and an
@@ -108,6 +112,16 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // trace() below forward it unchanged to occluder/tracer.
   RtFloat surfaceMagnitude = 0.0;
 
+  // The cache texture() and environment() sample through when set -- one
+  // per gman::parallelFor worker (libgman/gmanparallel.h), never shared
+  // between threads. Null, the default, means gman::textureCache()'s
+  // single process cache, which serves the z-buffer and the ray tracer's
+  // own single shading thread. Non-owning, valid for one shading call, and
+  // last so existing field offsets hold. A shade re-entered through a
+  // Tracer forwards its caller's own cache (gman::shade's own comment says
+  // so).
+  gman::TextureCache* textureCache = nullptr;
+
   // RSL's trace(P, R): the colour along R from this surface's own P, Ng
   // passed for the renderer's self-shadow offset (see gmantrace.h). Black
   // when no tracer is bound.
@@ -134,9 +148,10 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // Declared here and defined there because this header is included by
   // every translation unit that shades, and gmantexture.h's own decoder
   // must not follow it in.
-  // Forwards to gman::textureCache()'s three-argument sample, which applies
-  // the wrap modes RiMakeTexture recorded in the file -- clamp when the
-  // file carries none.
+  // Samples through textureCache's three-argument sample when set,
+  // gman::textureCache()'s process cache otherwise, applying the wrap
+  // modes RiMakeTexture recorded in the file -- clamp when the file
+  // carries none.
   GMANColor texture(const std::string& name, RtFloat s, RtFloat t) const;
 
   // ---- environment() (gmantexture.cpp) and its world-space transform,
@@ -150,6 +165,8 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // RISpec 3.2 Sec 15.7.2: the map's colour in world-space direction R,
   // "the length of this vector is unimportant." environment() does no
   // space conversion itself -- the shader picks the space, as RSL's does.
+  // Samples through textureCache when set, gman::textureCache() otherwise,
+  // the same fallback texture() above uses.
   GMANColor environment(std::string const& name, GMANVector const& R) const;
 
   // ---- gmanslapi.cpp: already free functions, forwarded here so a

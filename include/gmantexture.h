@@ -42,8 +42,9 @@ enum TextureWrap { TEXTURE_CLAMP, TEXTURE_PERIODIC, TEXTURE_BLACK };
  * One decoded texture: the RGBA pixels of a single named file, and the
  * bilinear sampler over them. A missing, unreadable or unsupported file
  * decodes to a single opaque black texel and warns once, at construction
- * -- TextureCache builds exactly one of these per filename, so the
- * warning fires exactly once no matter how many lookups the name gets.
+ * -- a TextureCache builds exactly one of these per filename, so the
+ * warning fires exactly once per cache no matter how many lookups the
+ * name gets there.
  *
  * Owns its texels in a std::vector, never a raw pointer: AGENTS.md's Rule
  * of Five is then satisfied by owning nothing raw, and the compiler's
@@ -77,12 +78,19 @@ private:
 };
 
 /*
- * Every texture RiSurface's "texturename" has named, keyed by filename and
- * decoded once -- the gmanLightSourceMgr() idiom. Keyed on the name rather
- * than the shader instance or its parameter list: the same file decodes to
- * the same texels regardless of which surface samples it, so every
- * "paintedplastic" surface naming that file shares one decode even though
- * each now shades with its own parameters.
+ * Every texture a shading call names, keyed by filename and decoded once
+ * per cache -- the gmanLightSourceMgr() idiom, scoped to whichever cache
+ * samples it rather than to the process. Keyed on the name rather than the
+ * shader instance or its parameter list: the same file decodes to the
+ * same texels regardless of which surface samples it, so every
+ * "paintedplastic" surface naming that file shares one decode per cache
+ * even though each now shades with its own parameters.
+ *
+ * One cache serves one thread: sample() and forget() take no lock, so two
+ * threads sharing a cache race on its map. A cache its caller owns holds
+ * whatever it decoded, stale entries included, until the caller destroys
+ * it -- makeTexture and makeLatLongEnvironment below forget from the
+ * process cache alone, never from a caller-owned one.
  */
 class GMAN_EXPORT TextureCache {
 public:
@@ -105,9 +113,10 @@ private:
   std::map<std::string, Texture> textures;
 };
 
-// One cache per process, like gmanLightSourceMgr(). A free function rather
-// than a member threaded through the shading path, for the same reason:
-// shading runs per vertex, far from anything that would otherwise own it.
+// One cache per process, like gmanLightSourceMgr(). Serves single-threaded
+// shading: the z-buffer and the ray tracer, and any GMANSurfaceEnv whose
+// textureCache member is null, all sample through this one cache. A
+// threaded caller that forgets its own cache races here instead.
 TextureCache& textureCache(RtVoid);
 
 // RiMakeTexture's implementation: decodes picture the way Texture does

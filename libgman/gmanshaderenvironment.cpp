@@ -59,7 +59,7 @@ RtFloat GMANSurfaceEnv::cellnoise(RtFloat v) const { return noiseGenerator().cel
 RtFloat GMANSurfaceEnv::cellnoise(const GMANPoint& p) const { return noiseGenerator().cellnoise(p); }
 
 GMANColor GMANSurfaceEnv::texture(const std::string& name, RtFloat s, RtFloat t) const {
-  return gman::textureCache().sample(name, s, t);
+  return (textureCache ? *textureCache : gman::textureCache()).sample(name, s, t);
 }
 
 GMANColor GMANSurfaceEnv::trace(GMANVector const& R) const {
@@ -94,5 +94,5 @@ GMANColor GMANSurfaceEnv::environment(std::string const& name, GMANVector const&
   }
   RtFloat s = lon / (RtFloat)(2.0 * PI);
   RtFloat t = ((RtFloat)(PI / 2.0) - lat) / (RtFloat)PI;
-  return gman::textureCache().sample(name, s, t);
+  return (textureCache ? *textureCache : gman::textureCache()).sample(name, s, t);
 }

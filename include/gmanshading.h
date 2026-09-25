@@ -48,6 +48,8 @@ class GMANSurfaceShader;
  */
 namespace gman {
 
+class TextureCache;
+
 // What a primitive looks like, fixed when it is declared: its surface
 // shader (the RISpec's matte default when RiSurface was never called,
 // already built from its own Surface call's parameters), the lights active
@@ -106,7 +108,13 @@ struct GMAN_EXPORT Shading {
 // light reach P?" (gmanocclude.h); a caller that omits it keeps every
 // light visible. tracer answers a shader's own trace() calls
 // (gmantrace.h); a caller that omits it leaves trace() returning black.
+// textureCache is what texture() and environment() sample through; a
+// caller that omits it leaves them reading gman::textureCache()'s single
+// process cache. A shade re-entered through a Tracer forwards its
+// caller's own textureCache, so a reflected or refracted ray keeps
+// decoding into the same worker's cache.
 GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
-                          Occluder const* occluder = nullptr, Tracer const* tracer = nullptr);
+                          Occluder const* occluder = nullptr, Tracer const* tracer = nullptr,
+                          TextureCache* textureCache = nullptr);
 
 } // namespace gman
