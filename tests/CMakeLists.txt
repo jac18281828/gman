@@ -1476,6 +1476,25 @@ set_tests_properties(mirrorglass PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The diffuse-albedo query: the base default and each built-in shader's own
+# answer, loaded the same way mirrorglass_test.cpp loads mirror and glass.
+# Its own working directory, since the paintedplastic case writes and reads
+# a texture file relative to cwd.
+add_executable(gman_shaderalbedo shaderalbedo_test.cpp)
+target_link_libraries(gman_shaderalbedo PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_shaderalbedo gman_matte gman_plastic gman_paintedplastic gman_metal gman_shinymetal gman_mirror
+  gman_glass)
+
+set(GMAN_SHADERALBEDO_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shaderalbedo-run")
+file(MAKE_DIRECTORY "${GMAN_SHADERALBEDO_WORKDIR}")
+
+add_test(NAME shaderalbedo COMMAND gman_shaderalbedo
+  WORKING_DIRECTORY "${GMAN_SHADERALBEDO_WORKDIR}")
+set_tests_properties(shaderalbedo PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 1: GMANViewingSystem answers a camera-space ray
 # (cameraRay) as well as a world-space one (ray), and pins the [tmin,
 # tmax] interval every GMANRay defaults to.
