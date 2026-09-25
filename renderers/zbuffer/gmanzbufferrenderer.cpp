@@ -211,6 +211,19 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon& out) {
   return true;
 }
 
+namespace {
+
+// Per-channel (end - start) / dist: the step scanEdges and drawEdgeList add
+// to a running color or alpha value once per scanline or pixel across a
+// span.
+template <class ColorT> ColorT colorDelta(ColorT const& end, ColorT const& start, RtFloat dist) {
+  GMANColorSample const d = (GMANColorSample)dist;
+  return ColorT((end.getRed() - start.getRed()) / d, (end.getGreen() - start.getGreen()) / d,
+                (end.getBlue() - start.getBlue()) / d);
+}
+
+} // namespace
+
 // scan polygon edges
 void GMANZBufferRenderer::scanEdges(void) {
   int i, j;
@@ -277,17 +290,8 @@ void GMANZBufferRenderer::scanEdges(void) {
     // linearly interpolate color
     // FIXME FIXME FIXME
     // FIXME -- surface shader code here
-    dc.setRed((ev->color.getRed() - sv->color.getRed()) / (GMANColorSample)y_dist);
-
-    dc.setGreen((ev->color.getGreen() - sv->color.getGreen()) / (GMANColorSample)y_dist);
-
-    dc.setBlue((ev->color.getBlue() - sv->color.getBlue()) / (GMANColorSample)y_dist);
-
-    da.setRed((ev->alpha.getRed() - sv->alpha.getRed()) / (GMANColorSample)y_dist);
-
-    da.setGreen((ev->alpha.getGreen() - sv->alpha.getGreen()) / (GMANColorSample)y_dist);
-
-    da.setBlue((ev->alpha.getBlue() - sv->alpha.getBlue()) / (GMANColorSample)y_dist);
+    dc = colorDelta(ev->color, sv->color, y_dist);
+    da = colorDelta(ev->alpha, sv->alpha, y_dist);
 
     // scan convert edge
     edge = &(edge_list[sv->screen.y]);
@@ -389,17 +393,8 @@ void GMANZBufferRenderer::drawEdgeList(void) {
 
       dz = (se->z - iz) / x_dist;
 
-      dc.setRed((se->color.getRed() - ss->color.getRed()) / (GMANColorSample)x_dist);
-
-      dc.setGreen((se->color.getGreen() - ss->color.getGreen()) / (GMANColorSample)x_dist);
-
-      dc.setBlue((se->color.getBlue() - ss->color.getBlue()) / (GMANColorSample)x_dist);
-
-      da.setRed((se->alpha.getRed() - ss->alpha.getRed()) / (GMANColorSample)x_dist);
-
-      da.setGreen((se->alpha.getGreen() - ss->alpha.getGreen()) / (GMANColorSample)x_dist);
-
-      da.setBlue((se->alpha.getBlue() - ss->alpha.getBlue()) / (GMANColorSample)x_dist);
+      dc = colorDelta(se->color, ss->color, x_dist);
+      da = colorDelta(se->alpha, ss->alpha, x_dist);
 
       // Gouraud shade scan line, one sample at a time
       for (x = sx; x <= ex; x++) {
