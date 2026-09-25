@@ -32,6 +32,7 @@ extern "C" {
 #include "gmanerror.h"
 #include "gmanoutput.h"
 #include "gmanoutputjpeg.h"
+#include "gmanoutputnarrow.h"
 #include "ri.h"
 
 namespace gman {
@@ -97,17 +98,16 @@ RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMAN
         int colOff = 0;
         for (int x = 0; x < xres; x++) {
           // get a pixel
-          GMANColorRGB color;
-          color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
+          GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
 
           // default, (no reduction) is 24bit
 
           // write r, g, and b
 
           // use x*3 + [0,1,2] .. aRtVoid a multiply by summing.
-          row[colOff++] = color.getRed();
-          row[colOff++] = color.getGreen();
-          row[colOff++] = color.getBlue();
+          row[colOff++] = gman::narrowedByte(color.getRed());
+          row[colOff++] = gman::narrowedByte(color.getGreen());
+          row[colOff++] = gman::narrowedByte(color.getBlue());
         }
         // write jpeg scanline
         jpeg_write_scanlines(&cinfo, row_pointer, 1);

@@ -84,15 +84,15 @@ public:
   // buffer data becomes visible.
   // or save the image data to the display device
   //
-  // Runs gamma, then quantize, on every pixel in float, then hands the
-  // result to writeImage. A driver never narrows a value save has not
-  // already put through both steps.
+  // Runs gamma, then quantize, then a NaN-safe [0, 1] clamp on every pixel
+  // in float, then hands the result to writeImage. A driver never narrows a
+  // value save has not already put through all three steps.
   RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma);
 
 protected:
   // Writes image, xres * yres colours in row-major order (index y * xres +
-  // x), already gamma-corrected and quantized. gamma is the exponent save
-  // already applied, passed through for a format that records it rather
-  // than reapplies it.
+  // x), already gamma-corrected, quantized and clamped into [0, 1] with no
+  // NaN. gamma is the exponent save already applied, passed through for a
+  // format that records it rather than reapplies it.
   virtual RtVoid writeImage(DisplayMode mode, std::vector<GMANColor> const& image, RtFloat gamma) = 0;
 };

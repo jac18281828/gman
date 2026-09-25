@@ -31,6 +31,7 @@ extern "C" {
 #include "gmandefaults.h"
 #include "gmanerror.h"
 #include "gmanoutput.h"
+#include "gmanoutputnarrow.h"
 #include "gmanoutputpng.h"
 #include "ri.h"
 
@@ -203,12 +204,11 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor
 
         for (int x = 0; x < xres; x++) {
 
-          GMANColorRGB color;
-          color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
+          GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
 
-          src[colOff++] = color.getRed();
-          src[colOff++] = color.getGreen();
-          src[colOff++] = color.getBlue();
+          src[colOff++] = gman::narrowedByte(color.getRed());
+          src[colOff++] = gman::narrowedByte(color.getGreen());
+          src[colOff++] = gman::narrowedByte(color.getBlue());
 
           // FIXME FIXME FIXME
           // FIX Alpha support

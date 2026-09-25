@@ -28,6 +28,7 @@
 #include "gmandefaults.h"
 #include "gmanlog.h"
 #include "gmanoutput.h"
+#include "gmanoutputnarrow.h"
 #include "ri.h"
 
 /*
@@ -69,6 +70,9 @@ RtVoid GMANOutput::save(DisplayMode mode, RtFloat gain, RtFloat gamma) {
       GMANColor color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
       if (quantizer)
         quantizer->doColor(color);
+      color.setRed(gman::clampedChannel(color.getRed()));
+      color.setGreen(gman::clampedChannel(color.getGreen()));
+      color.setBlue(gman::clampedChannel(color.getBlue()));
       image[static_cast<std::size_t>(y) * static_cast<std::size_t>(xres) + static_cast<std::size_t>(x)] = color;
     }
   }

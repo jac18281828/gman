@@ -28,6 +28,7 @@
 #include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanoutput.h"
+#include "gmanoutputnarrow.h"
 #include "gmanoutputpnm.h"
 #include "ri.h"
 
@@ -60,12 +61,10 @@ RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANC
 
   for (int row = 0; row < yres; row++) {
     for (int col = 0; col < xres; col++) {
-      GMANColorRGB color;
-      color = image[(std::size_t)row * (std::size_t)xres + (std::size_t)col];
+      GMANColor const& color = image[(std::size_t)row * (std::size_t)xres + (std::size_t)col];
 
-      const unsigned char rgb[3] = {static_cast<unsigned char>(color.getRed()),
-                                    static_cast<unsigned char>(color.getGreen()),
-                                    static_cast<unsigned char>(color.getBlue())};
+      const unsigned char rgb[3] = {gman::narrowedByte(color.getRed()), gman::narrowedByte(color.getGreen()),
+                                    gman::narrowedByte(color.getBlue())};
       std::fwrite(rgb, 1, sizeof(rgb), ppmFile);
     }
   }

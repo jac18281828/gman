@@ -2148,6 +2148,28 @@ if(GMAN_BUILD_RAYTRACER)
     TIMEOUT 30)
 endif()
 
+# GMANOutput::save's own pipeline -- gamma, then quantize, then a
+# NaN-safe [0, 1] clamp, all in float -- and what gman::OutputPNM,
+# gman::OutputTIFF and gman::OutputPNG do with the float image save hands
+# their writeImage. Direct unit test against those classes, no gman
+# binary. The PNG checks compile and link only under GMAN_WITH_PNG.
+add_executable(gman_outputnarrowing outputnarrowing_test.cpp)
+target_link_libraries(gman_outputnarrowing PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+if(GMAN_WITH_PNG)
+  target_compile_definitions(gman_outputnarrowing PRIVATE GMAN_WITH_PNG)
+  target_link_libraries(gman_outputnarrowing PRIVATE PNG::PNG)
+endif()
+
+set(GMAN_OUTPUTNARROWING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/outputnarrowing-run")
+file(MAKE_DIRECTORY "${GMAN_OUTPUTNARROWING_WORKDIR}")
+
+add_test(NAME outputnarrowing
+  COMMAND gman_outputnarrowing
+  WORKING_DIRECTORY "${GMAN_OUTPUTNARROWING_WORKDIR}")
+set_tests_properties(outputnarrowing PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, and a second, unrelated CMake project finds

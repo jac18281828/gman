@@ -27,6 +27,7 @@
 #include "gmandefaults.h"
 #include "gmanerror.h"
 #include "gmanoutput.h"
+#include "gmanoutputnarrow.h"
 #include "gmanoutputtiff.h"
 #include "gmantiff.h"
 #include "ri.h"
@@ -81,20 +82,21 @@ RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColo
   for (int y = 0; y < yres; y++) {
     int colOff = 0, rowOff = y;
     for (int x = 0; x < xres; x++) {
-      GMANColorRGB color;
-      color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
+      GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
 
-      buf[colOff++] = color.getRed();
-      buf[colOff++] = color.getGreen();
-      buf[colOff++] = color.getBlue();
+      buf[colOff++] = gman::narrowedByte(color.getRed());
+      buf[colOff++] = gman::narrowedByte(color.getGreen());
+      buf[colOff++] = gman::narrowedByte(color.getBlue());
 
       if (samplesperpixel == 4) {
         // The mean of alpha's three channels, never gamma-corrected or
         // quantized: alpha is linear coverage, not a colour sample, and
-        // every shipped shader sets it channel-uniform regardless.
+        // every shipped shader sets it channel-uniform regardless. Narrowed
+        // through the same total function colour uses, so a NaN alpha
+        // writes 0 rather than converting out of range.
         const GMANAlpha& alpha = getAlpha(x, y);
         const RtFloat coverage = (alpha.getRed() + alpha.getGreen() + alpha.getBlue()) / (RtFloat)3.0;
-        buf[colOff++] = (GMANByte)(GMANClamp(coverage, (RtFloat)0.0, (RtFloat)1.0) * (RtFloat)GMAN_BYTEMAX);
+        buf[colOff++] = gman::narrowedByte(coverage);
       }
     }
     // now write a scanline into the image
