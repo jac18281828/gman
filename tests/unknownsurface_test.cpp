@@ -29,7 +29,6 @@
  */
 
 #include <cstdio>
-#include <cstdlib>
 #include <string>
 
 #include <sys/wait.h>
@@ -46,7 +45,7 @@ struct Result {
   std::string output;
 };
 
-Result runGman(const std::string& gman, const std::string& renderer, const std::string& rib) {
+Result runGman(std::string const& gman, std::string const& renderer, std::string const& rib) {
   const std::string command = "\"" + gman + "\" -r " + renderer + " \"" + rib + "\" 2>&1";
   std::FILE* pipe = popen(command.c_str(), "r");
   Result result{-1, ""};
@@ -70,8 +69,8 @@ struct Rendered {
   GmanImage image;
 };
 
-Rendered renderFixture(const std::string& gman, const std::string& renderer, const std::string& ribDir,
-                       const std::string& ribName, const std::string& tifName) {
+Rendered renderFixture(std::string const& gman, std::string const& renderer, std::string const& ribDir,
+                       std::string const& ribName, std::string const& tifName) {
   std::remove(tifName.c_str());
   Rendered rendered;
   rendered.result = runGman(gman, renderer, ribDir + "/" + ribName);
@@ -79,8 +78,8 @@ Rendered renderFixture(const std::string& gman, const std::string& renderer, con
   return rendered;
 }
 
-// Check 3: every pixel's R, G, B and A match the control exactly.
-void checkPixelIdentical(const GmanImage& actual, const GmanImage& control, const std::string& tag) {
+// Every pixel's R, G, B and A match the control exactly.
+void checkPixelIdentical(GmanImage const& actual, GmanImage const& control, std::string const& tag) {
   if (!actual.ok || !control.ok) {
     check(false, tag + ": both images read back before comparing to the control");
     return;
@@ -104,21 +103,21 @@ void checkPixelIdentical(const GmanImage& actual, const GmanImage& control, cons
                              std::to_string(mismatched) + " differed)");
 }
 
-// Check 2: the report names RIE_NOSHADER and the failing Surface name, and
-// carries no SEVERE report -- the frame renders on, it does not abort.
-void checkReport(const std::string& output, const std::string& failingName, const std::string& tag) {
+// The report names RIE_NOSHADER and the failing Surface name, and carries
+// no SEVERE report -- the frame renders on, it does not abort.
+void checkReport(std::string const& output, std::string const& failingName, std::string const& tag) {
   check(output.find("ERROR: RIE_NOSHADER") != std::string::npos, tag + ": reports ERROR: RIE_NOSHADER");
   check(output.find("Surface \"" + failingName + "\"") != std::string::npos,
         tag + ": names Surface \"" + failingName + "\"");
   check(output.find("SEVERE:") == std::string::npos, tag + ": reports no SEVERE");
 }
 
-void checkFallback(const std::string& gman, const std::string& renderer, const std::string& ribDir,
-                   const std::string& ribName, const std::string& tifName, const std::string& failingName,
-                   const GmanImage& control, const std::string& tag) {
+void checkFallback(std::string const& gman, std::string const& renderer, std::string const& ribDir,
+                   std::string const& ribName, std::string const& tifName, std::string const& failingName,
+                   GmanImage const& control, std::string const& tag) {
   Rendered rendered = renderFixture(gman, renderer, ribDir, ribName, tifName);
 
-  // Check 1: exits 0 and writes its TIFF.
+  // Exits 0 and writes its TIFF.
   check(rendered.result.exitStatus == 0, tag + ": " + ribName + " exits 0");
   check(rendered.image.ok, tag + ": " + ribName + " writes its TIFF");
 
@@ -143,7 +142,7 @@ int main(int argc, char* argv[]) {
   check(control.result.exitStatus == 0, "control: unknownsurface_control.rib exits 0");
   check(control.image.ok, "control: unknownsurface_control.rib writes its TIFF");
 
-  // Check 4: the control is a real render, not an accidentally blank frame.
+  // The control is a real render, not an accidentally blank frame.
   if (control.image.ok) {
     const uint32_t corner = control.image.at(0, 0);
     check(TIFFGetA(corner) == 0, "control: corner pixel alpha is 0");

@@ -37,13 +37,13 @@ namespace gmanshader {
 class notasurface : public GMANVolumeShader {
 public:
   ShaderType getType(RtVoid) const { return VOLUME; }
-  const GMANColor& computeCi(GMANVolumeEnv& ve);
-  const GMANColor& computeOi(GMANVolumeEnv& ve);
+  GMANColor const& computeCi(GMANVolumeEnv& ve);
+  GMANColor const& computeOi(GMANVolumeEnv& ve);
 };
 
-const GMANColor& notasurface::computeCi(GMANVolumeEnv& ve) { return ve.Ci; }
+GMANColor const& notasurface::computeCi(GMANVolumeEnv& ve) { return ve.Ci; }
 
-const GMANColor& notasurface::computeOi(GMANVolumeEnv& ve) { return ve.Oi; }
+GMANColor const& notasurface::computeOi(GMANVolumeEnv& ve) { return ve.Oi; }
 
 } // namespace gmanshader
 

@@ -98,24 +98,20 @@ RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList& pl
   objectName += name;
   objectName += ".so";
 
-  // A Surface that fails to load -- no such module, a module with no
-  // shader, or a shader that is not a surface -- reports and falls back to
-  // the default surface (a null surface, matte's own province) rather than
-  // aborting the frame or leaving whatever surface was previously bound.
-  // The failed request's own parameters are dropped with it: they belong
-  // to a shader that never ran, and binding them onto the default would
-  // shade neither what the scene asked for nor the default itself.
+  // A Surface that fails to load reports RIE_NOSHADER and leaves the
+  // default surface, with no module and no parameters: those parameters
+  // belong to a shader that never ran.
   try {
     surfaceModule = std::make_shared<GMANLoadableShader>(objectName.c_str());
     if (surfaceModule->getType() != GMANShader::SURFACE) {
       throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified surface shader is not a surface shader."));
     }
-  } catch (GMANError& loadError) {
+  } catch (GMANError const& loadError) {
     surfaceModule.reset();
     surface = NULL;
     surfaceParameters = GMANParameterList();
-    std::string message =
-        "Surface \"" + name + "\": " + loadError.getMessage() + "; the default surface shades instead.";
+    auto const message =
+        "Surface \"" + name + "\" failed to load; the default surface shades instead: " + loadError.getMessage();
     GMANError fallback(RIE_NOSHADER, RIE_ERROR, message.c_str());
     GMANHandleError(fallback);
     return;
