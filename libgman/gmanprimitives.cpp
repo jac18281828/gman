@@ -856,47 +856,8 @@ GMANVector GMANSphere::getNormal(double u, double v) {
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_SUBDIVISIONMESH.CPP
 ///////////////////////////////////////////////////////////////////////////////////////////////
-GMANSubdivisionTag::GMANSubdivisionTag(RtToken t, RtInt isize, RtInt fsize, RtInt* iargs, RtFloat* fargs) {
-  int i;
-  tag = t;
-  intsize = isize;
-  floatsize = fsize;
-  intargs = new RtInt[intsize];
-  for (i = 0; i < intsize; i++)
-    intargs[i] = iargs[i];
-  floatargs = new RtFloat[floatsize];
-  for (i = 0; i < floatsize; i++)
-    floatargs[i] = fargs[i];
-}
-
-GMANSubdivisionTag::GMANSubdivisionTag(GMANSubdivisionTag const& st) { copy(st); }
-
-GMANSubdivisionTag const& GMANSubdivisionTag::operator=(GMANSubdivisionTag const& st) {
-  if (this != &st) {
-    delete intargs;
-    delete floatargs;
-    copy(st);
-  }
-  return (*this);
-}
-
-GMANSubdivisionTag::~GMANSubdivisionTag() {
-  delete intargs;
-  delete floatargs;
-}
-
-RtVoid GMANSubdivisionTag::copy(GMANSubdivisionTag const& st) {
-  int i;
-  tag = st.tag;
-  intsize = st.intsize;
-  floatsize = st.floatsize;
-  intargs = new RtInt[intsize];
-  for (i = 0; i < intsize; i++)
-    intargs[i] = st.intargs[i];
-  floatargs = new RtFloat[floatsize];
-  for (i = 0; i < floatsize; i++)
-    floatargs[i] = st.floatargs[i];
-}
+GMANSubdivisionTag::GMANSubdivisionTag(RtToken t, RtInt isize, RtInt fsize, RtInt* iargs, RtFloat* fargs)
+    : tag(t), intargs(iargs, iargs + isize), floatargs(fargs, fargs + fsize) {}
 
 GMANSubdivisionMesh::GMANSubdivisionMesh(RtToken schm, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntgs,
                                          RtToken tgs[], RtInt numargs[], RtInt iargs[], RtFloat fargs[],

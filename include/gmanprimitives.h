@@ -383,21 +383,22 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_SUBDIVISIONMESH.HH
 ///////////////////////////////////////////////////////////////////////////////////////////////
+// Owns its int and float argument arrays through std::vector: copy,
+// assignment and destruction are all compiler-generated.
 class GMANSubdivisionTag {
 private:
   RtToken tag;
-  RtInt intsize, floatsize;
-  RtInt* intargs;
-  RtFloat* floatargs;
-
-  RtVoid copy(GMANSubdivisionTag const& st);
+  std::vector<RtInt> intargs;
+  std::vector<RtFloat> floatargs;
 
   GMANSubdivisionTag(RtToken t, RtInt isize, RtInt fsize, RtInt* iargs, RtFloat* fargs);
-  GMANSubdivisionTag(GMANSubdivisionTag const& st);
-  GMANSubdivisionTag const& operator=(GMANSubdivisionTag const& st);
-  ~GMANSubdivisionTag();
 
   friend class GMANSubdivisionMesh;
+
+public:
+  RtToken name() const { return tag; }
+  std::vector<RtInt> const& intArgs() const { return intargs; }
+  std::vector<RtFloat> const& floatArgs() const { return floatargs; }
 };
 
 class GMANSubdivisionMesh : public GMANPrimDatStorage {
