@@ -2393,6 +2393,28 @@ set_tests_properties(outputnarrowing PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::OutputPNG's own DisplayMode contract: "rgb" writes three samples
+# with no alpha, "rgbaz" keeps four with coverage in the fourth, "a"
+# writes the coverage byte alone. Direct unit test against gman::OutputPNG,
+# no gman binary. Compiles and links only under GMAN_WITH_PNG.
+add_executable(gman_pngdisplaymode pngdisplaymode_test.cpp)
+target_link_libraries(gman_pngdisplaymode PRIVATE gman_core gman_internal_headers)
+if(GMAN_WITH_PNG)
+  target_compile_definitions(gman_pngdisplaymode PRIVATE GMAN_WITH_PNG)
+  target_link_libraries(gman_pngdisplaymode PRIVATE PNG::PNG)
+endif()
+
+set(GMAN_PNGDISPLAYMODE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pngdisplaymode-run")
+file(MAKE_DIRECTORY "${GMAN_PNGDISPLAYMODE_WORKDIR}")
+
+add_test(NAME pngdisplaymode
+  COMMAND gman_pngdisplaymode
+  WORKING_DIRECTORY "${GMAN_PNGDISPLAYMODE_WORKDIR}")
+set_tests_properties(pngdisplaymode PROPERTIES
+  LABELS unit
+  TIMEOUT 30
+  WILL_FAIL TRUE)
+
 # gman::sampleHash, gman::unitFloat, gman::sample1D and gman::sample2D: a
 # counter-based sampler that is a pure function of its arguments, so
 # reproduction depends only on the arguments, never on call order.
