@@ -379,10 +379,10 @@ void GMANZBufferRenderer::drawEdgeList(void) {
       // whole pixel: values straddling an integer boundary from just
       // below to just above (e.g. 1.999999 and 2.000001) round to
       // different columns but leave x_dist near zero, and dividing by
-      // it below produces a color delta big enough to overflow the
-      // eventual float-to-byte quantization. sx/ex already fix the
-      // number of pixels this scanline covers, so a span narrower than
-      // one pixel is clamped to one.
+      // it below produces a huge colour step per sample, not a narrowing
+      // overflow -- the clamp below still bounds it. sx/ex already fix
+      // the number of pixels this scanline covers, so a span narrower
+      // than one pixel is clamped to one.
       x_dist = se->x - ss->x;
       if (x_dist < 1.0)
         x_dist = 1.0;
@@ -408,9 +408,9 @@ void GMANZBufferRenderer::drawEdgeList(void) {
 
           // Linear interpolation can overshoot [0,1] by a small amount at
           // the far end of a span (accumulated float error over many
-          // += dc steps); GMANColorRGB's float->byte conversion has no
-          // clamp of its own, so an unclamped color here is UB, not just
-          // a visibly wrong pixel.
+          // += dc steps); this bounds each interpolated sample's colour
+          // and alpha to [0, 1] before the depth test and filter. Output
+          // narrowing clamps on its own too, at the end of the pipeline.
           GMANColor clamped(GMANClamp<GMANColorSample>(ic.getRed(), 0.0, 1.0),
                             GMANClamp<GMANColorSample>(ic.getGreen(), 0.0, 1.0),
                             GMANClamp<GMANColorSample>(ic.getBlue(), 0.0, 1.0));

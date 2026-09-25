@@ -165,8 +165,9 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
 
       // Linear interpolation and filter convolution can both overshoot
       // [0,1] (a negative-lobe kernel such as sinc, or accumulated float
-      // error); the eventual float->byte conversion has no clamp of its
-      // own, so an unclamped value here is UB, not just a wrong pixel.
+      // error); this bounds each resolved pixel's colour and alpha to
+      // [0, 1]. Output narrowing clamps on its own too, at the end of the
+      // pipeline.
       GMANColor clamped(GMANClamp<GMANColorSample>(sum.getRed(), 0.0, 1.0),
                         GMANClamp<GMANColorSample>(sum.getGreen(), 0.0, 1.0),
                         GMANClamp<GMANColorSample>(sum.getBlue(), 0.0, 1.0));

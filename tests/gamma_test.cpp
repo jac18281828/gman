@@ -19,10 +19,10 @@
  */
 
 // The driver ordering -- correct in float, narrow afterwards -- needs no test
-// here. Deleting the byte `correct` overload left the drivers nothing to call
-// on a GMANColorRGB, so a driver narrowing before correcting stops compiling.
-// The compiler enforces the order; a test asserting it would only test the
-// compiler. Assertion 4 below pins the semantics that order makes possible.
+// here. GMANOutput::save runs gamma, quantize and the output clamp itself,
+// in that order, before any driver ever narrows a pixel; no driver reaches
+// a pixel outside that order. tests/outputnarrowing_test.cpp pins it end to
+// end. Assertion 4 below pins the sub-byte arithmetic that order depends on.
 
 #include <cmath>
 
