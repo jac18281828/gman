@@ -1298,6 +1298,15 @@ set_tests_properties(tolowerscan PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The other <cctype> classifiers (isspace, isalnum, isdigit and the rest)
+# carry the same unsigned-char precondition. See tests/ctypescan_test.cpp.
+add_executable(gman_ctypescan ctypescan_test.cpp)
+add_test(NAME ctypescan
+  COMMAND gman_ctypescan "${CMAKE_SOURCE_DIR}/libgman" "${CMAKE_SOURCE_DIR}/include")
+set_tests_properties(ctypescan PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # gman::gammaCorrected: identity at gain 1/gamma 1 (no golden image moves), the
 # pow(gain * channel, 1/gamma) shape, and the sub-byte precision case the
 # deleted byte lookup table could never produce.
