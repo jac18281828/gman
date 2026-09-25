@@ -180,6 +180,7 @@ add_library(gman_core SHARED
   libgman/gmanribparse.cpp
   libgman/gmanribtokenize.cpp
   libgman/gmansamplebuffer.cpp
+  libgman/gmansampling.cpp
   libgman/gmansegment.cpp
   libgman/gmanshader.cpp
   libgman/gmanshaderenvironment.cpp

@@ -2302,6 +2302,19 @@ set_tests_properties(outputnarrowing PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::sampleHash, gman::unitFloat, gman::sample1D and gman::sample2D: a
+# counter-based sampler that is a pure function of its arguments, so
+# reproduction depends only on the arguments, never on call order.
+# Links gman_internal_headers for gmanparallel.h, which the schedule
+# independence check drives directly.
+add_executable(gman_sampler sampler_test.cpp)
+target_link_libraries(gman_sampler PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME sampler COMMAND gman_sampler)
+set_tests_properties(sampler PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, and a second, unrelated CMake project finds
