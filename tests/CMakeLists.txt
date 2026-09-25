@@ -2438,6 +2438,18 @@ set_tests_properties(samplewarp PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::BSDF and its Lambert lobe: energy, reciprocity, sidedness, sample
+# against pdf by histogram, clamping, capacity and no heap allocation.
+# The statistics draw i.i.d. samples, as samplewarp's do. Links
+# raybvhallocator.cpp for its counting operator new.
+add_executable(gman_bsdf bsdf_test.cpp raybvhallocator.cpp)
+target_link_libraries(gman_bsdf PRIVATE gman_core)
+
+add_test(NAME bsdf COMMAND gman_bsdf)
+set_tests_properties(bsdf PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, and a second, unrelated CMake project finds

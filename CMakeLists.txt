@@ -115,6 +115,7 @@ add_library(gman_core SHARED
   libgman/gmanbbox.cpp
   libgman/gmanbitmap.cpp
   libgman/gmanbody.cpp
+  libgman/gmanbsdf.cpp
   libgman/gmancapi.cpp
   libgman/gmanclipedge.cpp
   libgman/gmancolorsamples.cpp
