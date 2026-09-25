@@ -32,19 +32,27 @@
 #ifdef GMAN_WITH_PNG
 
 #include <cstdio>
-#include <cstdlib>
 #include <string>
+#include <utility>
 #include <vector>
 
 extern "C" {
 #include <png.h>
 }
 
-#include "gmanoutputnarrow.h"
 #include "gmanoutputpng.h"
 #include "ri.h"
 
 namespace {
+
+// A non-uniform alpha, so a coverage computation that reads the wrong
+// channel or drops the divide cannot land on the right byte by accident.
+// (0.3 + 0.6 + 0.9) / 3 is 0.6 in real arithmetic; 0.6 has no exact binary
+// float representation, and the nearest float is fractionally below it, so
+// narrowing (multiplying by 255 and truncating) lands on 152, not 153.
+// Computed independently of gman::coverageByte, the function under test.
+GMANAlpha const kPartialAlpha(0.3f, 0.6f, 0.9f);
+unsigned char const kExpectedCoverageByte = 152;
 
 struct DecodedPNG {
   bool ok = false;
@@ -108,8 +116,7 @@ void checkRGB() {
 void checkRGBAZ() {
   const char* path = "rgbaz.png";
   gman::OutputPNG output(path, 2, 2);
-  GMANAlpha const partial(0.6f, 0.6f, 0.6f);
-  output.setAlpha(0, 0, partial);
+  output.setAlpha(0, 0, kPartialAlpha);
   output.save(GMANOutput::RGBAZ, 1.0f, 1.0f);
 
   DecodedPNG const img = readPNG(path);
@@ -120,17 +127,16 @@ void checkRGBAZ() {
   check(img.colorType == PNG_COLOR_TYPE_RGB_ALPHA, "rgbaz: color type carries RGB plus alpha");
   check(img.rowbytes == img.width * 4, "rgbaz: exactly 4 samples per pixel");
 
-  unsigned char const expected = gman::coverageByte(partial);
   unsigned char const actual = img.pixels[3];
-  check(actual == expected, "rgbaz: alpha byte matches gman::coverageByte (expected " + std::to_string((int)expected) +
-                                ", got " + std::to_string((int)actual) + ")");
+  check(actual == kExpectedCoverageByte, "rgbaz: alpha byte matches the hand-computed coverage (expected " +
+                                             std::to_string((int)kExpectedCoverageByte) + ", got " +
+                                             std::to_string((int)actual) + ")");
 }
 
 void checkA() {
   const char* path = "a.png";
   gman::OutputPNG output(path, 2, 2);
-  GMANAlpha const partial(0.6f, 0.6f, 0.6f);
-  output.setAlpha(0, 0, partial);
+  output.setAlpha(0, 0, kPartialAlpha);
   output.save(GMANOutput::A, 1.0f, 1.0f);
 
   DecodedPNG const img = readPNG(path);
@@ -141,10 +147,10 @@ void checkA() {
   check(img.colorType == PNG_COLOR_TYPE_GRAY, "a: no RGB channel present in the decoded file");
   check(img.rowbytes == img.width * 1, "a: exactly 1 sample per pixel");
 
-  unsigned char const expected = gman::coverageByte(partial);
   unsigned char const actual = img.pixels[0];
-  check(actual == expected, "a: sole sample matches gman::coverageByte (expected " + std::to_string((int)expected) +
-                                ", got " + std::to_string((int)actual) + ")");
+  check(actual == kExpectedCoverageByte, "a: sole sample matches the hand-computed coverage (expected " +
+                                             std::to_string((int)kExpectedCoverageByte) + ", got " +
+                                             std::to_string((int)actual) + ")");
 }
 
 } // namespace
