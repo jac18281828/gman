@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <csetjmp>
+
 #include <stdio.h>
 extern "C" {
 #include <jpeglib.h>
@@ -42,6 +44,26 @@ namespace gman {
  *
  */
 
+namespace {
+
+// libjpeg's own documented error-handling pattern: a private jpeg_error_mgr
+// extension carrying a jmp_buf, so a fatal libjpeg error -- a failed write
+// included -- longjmps back into this driver instead of error_exit's
+// default of printing to stderr and calling exit() on the whole process.
+struct GMANJPEGErrorManager {
+  jpeg_error_mgr pub;
+  jmp_buf escape;
+  char message[JMSG_LENGTH_MAX];
+};
+
+void gmanJPEGErrorExit(j_common_ptr cinfo) {
+  GMANJPEGErrorManager* err = reinterpret_cast<GMANJPEGErrorManager*>(cinfo->err);
+  (*cinfo->err->format_message)(cinfo, err->message);
+  std::longjmp(err->escape, 1);
+}
+
+} // namespace
+
 // default constructor
 //
 // quality was never initialized here, so save()'s jpeg_set_quality(&cinfo,
@@ -60,7 +82,7 @@ RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMAN
   FILE* jpegFile = fopen(outputName.c_str(), "w");
   if (jpegFile) {
     struct jpeg_compress_struct cinfo; // jpeg compression params
-    struct jpeg_error_mgr jerr;        // error handler
+    GMANJPEGErrorManager jerr;         // error handler
 
     /* 3 color samples per pixel */
     JSAMPLE* row = new JSAMPLE[xres * 3];
@@ -69,7 +91,16 @@ RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMAN
       JSAMPROW row_pointer[1] = {row};
 
       // allocate jpeg compression object
-      cinfo.err = jpeg_std_error(&jerr);
+      cinfo.err = jpeg_std_error(&jerr.pub);
+      jerr.pub.error_exit = gmanJPEGErrorExit;
+
+      if (setjmp(jerr.escape)) {
+        jpeg_destroy_compress(&cinfo);
+        delete[] row;
+        fclose(jpegFile);
+        throw(GMANError(RIE_SYSTEM, RIE_SEVERE, jerr.message));
+      }
+
       // compress object
       jpeg_create_compress(&cinfo);
 
