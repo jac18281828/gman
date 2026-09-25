@@ -1182,6 +1182,26 @@ set_tests_properties(texture PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# The texture cache as an argument: two caches decoding one file
+# independently, a hand-built GMANSurfaceEnv and gman::shade routing
+# through the cache each names (gman::textureCache() when they name none),
+# and one cache per gman::parallelFor worker with no cross-worker hit. See
+# tests/texturecache_test.cpp.
+add_executable(gman_texturecache texturecache_test.cpp)
+target_link_libraries(gman_texturecache PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+add_dependencies(gman_texturecache gman_paintedplastic)
+
+set(GMAN_TEXTURECACHE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texturecache-run")
+file(MAKE_DIRECTORY "${GMAN_TEXTURECACHE_WORKDIR}")
+
+add_test(NAME texturecache
+  COMMAND gman_texturecache
+  WORKING_DIRECTORY "${GMAN_TEXTURECACHE_WORKDIR}")
+set_tests_properties(texturecache PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
 # (General)Polygon: RiTextureCoordinates and the "s"/"t"/"st" primvars, over
 # tests/rib/texcoords/*.rib -- each fixture copies tests/rib/texture.rib's
