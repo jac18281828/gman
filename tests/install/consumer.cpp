@@ -23,11 +23,13 @@
  * <gman/ri.h> resolves through the installed interface, gman::gman_core
  * supplies RiBegin/RiEnd, gmanlog.h's <format> use compiles without this
  * project setting its own C++ standard -- gman::gman_core's cxx_std_20
- * usage requirement is what supplies it -- and RiTransformEnd and
- * RiIlluminate are declared and callable.
+ * usage requirement is what supplies it -- RiTransformEnd and
+ * RiIlluminate are declared and callable, and <gman/gmantexture.h>
+ * resolves and links gman::TextureCache from the installed tree.
  */
 
 #include <gman/gmanlog.h>
+#include <gman/gmantexture.h>
 #include <gman/ri.h>
 
 namespace {
@@ -58,5 +60,12 @@ int main() {
   }
 
   RiEnd();
+
+  gman::TextureCache cache;
+  GMANColor const black = cache.sample("consumer_test_missing_e8b2f1.tif", 0.5f, 0.5f, gman::TEXTURE_CLAMP);
+  if (black.getRed() != 0.0f || black.getGreen() != 0.0f || black.getBlue() != 0.0f) {
+    return 1;
+  }
+
   return 0;
 }

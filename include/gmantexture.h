@@ -84,7 +84,7 @@ private:
  * "paintedplastic" surface naming that file shares one decode even though
  * each now shades with its own parameters.
  */
-class TextureCache {
+class GMAN_EXPORT TextureCache {
 public:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file.
