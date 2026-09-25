@@ -343,6 +343,14 @@ set_tests_properties(matrix4 PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_matrixscalarmultiply matrixscalarmultiply_test.cpp)
+target_link_libraries(gman_matrixscalarmultiply PRIVATE gman_core)
+add_test(NAME matrixscalarmultiply COMMAND gman_matrixscalarmultiply)
+set_tests_properties(matrixscalarmultiply PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_spacechain spacechain_test.cpp)
 target_link_libraries(gman_spacechain PRIVATE gman_core gman_internal_headers)
 add_test(NAME spacechain COMMAND gman_spacechain)
