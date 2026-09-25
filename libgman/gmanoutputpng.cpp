@@ -120,7 +120,7 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor
   png_set_gAMA(png_ptr, info_ptr, gamma);
 
   // set bgcolor black;
-  png_color_16 bgcolor;
+  png_color_16 bgcolor{};
   bgcolor.red = 0x0;
   bgcolor.green = 0x0;
   bgcolor.blue = 0x0;
@@ -214,7 +214,15 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor
   // above all allocate through it, and passing NULL would destroy only
   // png_ptr, leaking the rest.
   png_destroy_write_struct(&png_ptr, &info_ptr);
-  fclose(pngFile);
+
+  // libpng's default write callback checks every fwrite it makes, but
+  // stdio only flushes its last buffered block at fclose: a failure there
+  // is still a write failure, not yet reported by anything above.
+  if (fclose(pngFile) != 0) {
+    std::string errorMsg("Unable to write output file: ");
+    errorMsg.append(outputName);
+    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
+  }
 }
 
 } // namespace gman
