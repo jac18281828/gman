@@ -86,9 +86,9 @@ GMANVector anyPerpendicular(GMANVector const& n) {
   return t;
 }
 
-// Wraps a stack- or member-owned shader for Appearance::shader, which now
-// owns whatever it holds: this alias shares the caller's own lifetime
-// instead, owning nothing and freeing nothing.
+// Wraps a stack- or member-owned shader for Appearance::shader, which owns
+// whatever it holds: this alias shares the caller's own lifetime instead,
+// owning nothing and freeing nothing.
 std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader const& shader) {
   return std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
 }

@@ -70,9 +70,8 @@ public:
 // A plugin's own pair of entry points, defined with extern "C" linkage so a
 // mismatched definition fails to compile rather than silently overloading.
 // GMANLoadShader builds one instance from parameters, bound at
-// construction, or returns null on failure. GMANDestroyShader frees an
-// instance GMANLoadShader returned; every plugin must define both, so a
-// shader never outlives the Surface call that built it and never leaks the
-// one GMANAttributes released.
+// construction, or returns null on failure. The instance outlives the
+// Surface call that built it, shared for as long as any Appearance holds
+// it; GMANDestroyShader frees it when its last owner releases it.
 extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& parameters);
 extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader);

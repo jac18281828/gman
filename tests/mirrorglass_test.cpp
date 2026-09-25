@@ -222,7 +222,7 @@ private:
 // Check D.1: mirror's Ci at a non-normal incidence equals Os*Cs*Kr times
 // the recording tracer's return, for the hand-computed reflected
 // direction, at Kr's default (1) and at a non-default value -- two
-// instances, one per Kr, since Kr now binds at construction.
+// instances, one per Kr, since Kr binds once, at construction.
 void checkMirrorCi(std::string const& mirrorPath) {
   GMANSurfaceEnv se;
   se.Os = GMANColor(1.0f, 1.0f, 1.0f);
@@ -261,8 +261,8 @@ void checkMirrorCi(std::string const& mirrorPath) {
 // Check D.2: glass's Ci, entering and exiting, both with hand-computed
 // expected directions, both scaled by Os alone (no Cs factor).
 void checkGlassCi(std::string const& glassPath) {
-  GMANLoadableShader loader(glassPath.c_str(), GMANParameterList()); // glass reads no parameter; hygiene only
-  GMANSurfaceShader* glassShader = loader.getSurface();
+  GMANLoadableShader loader(glassPath.c_str(), GMANParameterList()); // glass reads no parameter
+  GMANSurfaceShader const* glassShader = loader.getSurface();
 
   GMANNormal const N(0.0f, 0.0f, 1.0f);
   GMANNormal const Ng(0.0f, 0.0f, 1.0f);
@@ -331,7 +331,7 @@ void checkGlassCi(std::string const& glassPath) {
 // (kr == 1), with no NaN or Inf anywhere in Ci.
 void checkGlassTIR(std::string const& glassPath) {
   GMANLoadableShader loader(glassPath.c_str(), GMANParameterList());
-  GMANSurfaceShader* glassShader = loader.getSurface();
+  GMANSurfaceShader const* glassShader = loader.getSurface();
 
   GMANSurfaceEnv se;
   se.Os = GMANColor(1.0f, 1.0f, 1.0f);

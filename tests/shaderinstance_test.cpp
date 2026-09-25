@@ -85,7 +85,7 @@ private:
   GMANColor answer_;
 };
 
-// A1: for each of the seven shipped plugins, two setSurface calls on two
+// For each of the seven shipped plugins, two setSurface calls on two
 // GMANAttributes yield distinct, non-null shader instances.
 void checkDistinctInstances() {
   std::vector<std::string> const plugins = {RI_MATTE,      RI_PLASTIC, RI_METAL, RI_PAINTEDPLASTIC,
@@ -103,7 +103,7 @@ void checkDistinctInstances() {
   }
 }
 
-// A2: two mirror instances differing in Kr, and two matte instances
+// Two mirror instances differing in Kr, and two matte instances
 // differing in Ka, each shaded A, B, A, B once all four exist -- a shared
 // singleton or a rebound parameter list would leak one instance's own
 // value into the other's Ci.
@@ -170,10 +170,10 @@ void checkInterleavedShading() {
   gman::Shading const mirrorB1 = gman::shade(mirrorAppB, point, cameraToWorld, nullptr, &tracer);
   gman::Shading const mirrorA2 = gman::shade(mirrorAppA, point, cameraToWorld, nullptr, &tracer);
   gman::Shading const mirrorB2 = gman::shade(mirrorAppB, point, cameraToWorld, nullptr, &tracer);
-  check(colorNear(mirrorA1.Ci, wantMirrorA, kTol), "A.2 mirror: A's first interleaved Ci matches its own Kr");
-  check(colorNear(mirrorB1.Ci, wantMirrorB, kTol), "A.2 mirror: B's first interleaved Ci matches its own Kr");
-  check(colorNear(mirrorA2.Ci, wantMirrorA, kTol), "A.2 mirror: A's second interleaved Ci still matches its own Kr");
-  check(colorNear(mirrorB2.Ci, wantMirrorB, kTol), "A.2 mirror: B's second interleaved Ci still matches its own Kr");
+  check(colorNear(mirrorA1.Ci, wantMirrorA, kTol), "mirror: A's first interleaved Ci matches its own Kr");
+  check(colorNear(mirrorB1.Ci, wantMirrorB, kTol), "mirror: B's first interleaved Ci matches its own Kr");
+  check(colorNear(mirrorA2.Ci, wantMirrorA, kTol), "mirror: A's second interleaved Ci still matches its own Kr");
+  check(colorNear(mirrorB2.Ci, wantMirrorB, kTol), "mirror: B's second interleaved Ci still matches its own Kr");
 
   GMANColor const wantMatteA(matteCsA.getRed() * kaA, matteCsA.getGreen() * kaA, matteCsA.getBlue() * kaA);
   GMANColor const wantMatteB(matteCsB.getRed() * kaB, matteCsB.getGreen() * kaB, matteCsB.getBlue() * kaB);
@@ -182,16 +182,16 @@ void checkInterleavedShading() {
   gman::Shading const matteB1 = gman::shade(matteAppB, point, cameraToWorld);
   gman::Shading const matteA2 = gman::shade(matteAppA, point, cameraToWorld);
   gman::Shading const matteB2 = gman::shade(matteAppB, point, cameraToWorld);
-  check(colorNear(matteA1.Ci, wantMatteA, kTol), "A.2 matte: A's first interleaved Ci matches its own Ka");
-  check(colorNear(matteB1.Ci, wantMatteB, kTol), "A.2 matte: B's first interleaved Ci matches its own Ka");
-  check(colorNear(matteA2.Ci, wantMatteA, kTol), "A.2 matte: A's second interleaved Ci still matches its own Ka");
-  check(colorNear(matteB2.Ci, wantMatteB, kTol), "A.2 matte: B's second interleaved Ci still matches its own Ka");
+  check(colorNear(matteA1.Ci, wantMatteA, kTol), "matte: A's first interleaved Ci matches its own Ka");
+  check(colorNear(matteB1.Ci, wantMatteB, kTol), "matte: B's first interleaved Ci matches its own Ka");
+  check(colorNear(matteA2.Ci, wantMatteA, kTol), "matte: A's second interleaved Ci still matches its own Ka");
+  check(colorNear(matteB2.Ci, wantMatteB, kTol), "matte: B's second interleaved Ci still matches its own Ka");
 }
 
-// A3: countingshader's live count, read through the plugin's own
+// countingshader's live count, read through the plugin's own
 // GMANCountingShaderLiveCount, tracks GMANLoadableShader's own ownership.
 void checkLifetimeAndDestruction() {
-  check(countingShaderLiveCount() == 0, "A.3: countingshader's live count starts at 0");
+  check(countingShaderLiveCount() == 0, "countingshader's live count starts at 0");
 
   GMANColor const csA(0.2f, 0.4f, 0.6f);
   GMANColor const csB(0.8f, 0.1f, 0.3f);
@@ -209,16 +209,15 @@ void checkLifetimeAndDestruction() {
     GMANParameterList const emptyPl;
     attrA.setSurface("countingshader", emptyPl);
     attrB.setSurface("countingshader", emptyPl);
-    check(countingShaderLiveCount() == 2, "A.3: the count is 2 after setSurface on two GMANAttributes");
+    check(countingShaderLiveCount() == 2, "the count is 2 after setSurface on two GMANAttributes");
 
     GMANAttributes const copyOfAttrA(attrA); // AttributeBegin's own copy
-    check(countingShaderLiveCount() == 2, "A.3: copying a GMANAttributes leaves the count at 2");
+    check(countingShaderLiveCount() == 2, "copying a GMANAttributes leaves the count at 2");
 
     appearanceA = gman::appearanceOf(attrA);
     appearanceB = gman::appearanceOf(attrB);
   }
-  check(countingShaderLiveCount() == 2,
-        "A.3: the count stays 2 once every GMANAttributes holding the shader is destroyed");
+  check(countingShaderLiveCount() == 2, "the count stays 2 once every GMANAttributes holding the shader is destroyed");
 
   gman::SurfacePoint point;
   point.P = GMANPoint(0.0f, 0.0f, 0.0f);
@@ -230,16 +229,16 @@ void checkLifetimeAndDestruction() {
 
   gman::Shading const shadingA = gman::shade(appearanceA, point, cameraToWorld);
   gman::Shading const shadingB = gman::shade(appearanceB, point, cameraToWorld);
-  check(colorNear(shadingA.Ci, csA, kTol), "A.3: shading through the first Appearance returns its expected colour");
-  check(colorNear(shadingB.Ci, csB, kTol), "A.3: shading through the second Appearance returns its expected colour");
+  check(colorNear(shadingA.Ci, csA, kTol), "shading through the first Appearance returns its expected colour");
+  check(colorNear(shadingB.Ci, csB, kTol), "shading through the second Appearance returns its expected colour");
 
   appearanceA.shader.reset();
   appearanceB.shader.reset();
-  check(countingShaderLiveCount() == 0, "A.3: the count returns to 0 once every Appearance releases the shader");
+  check(countingShaderLiveCount() == 0, "the count returns to 0 once every Appearance releases the shader");
 }
 
-// A4, in process: nodestroyshader defines GMANLoadShader but not
-// GMANDestroyShader, standing in for a plugin built before this change.
+// nodestroyshader defines GMANLoadShader but not GMANDestroyShader,
+// standing in for a plugin lacking the destroy entry point.
 void checkRefusalInProcess() {
   bool threw = false;
   RtInt code = 0;
@@ -251,18 +250,18 @@ void checkRefusalInProcess() {
     code = error.getCode();
     message = error.getMessage();
   }
-  check(threw, "A.4 in-process: constructing GMANLoadableShader on nodestroyshader throws");
-  check(code == RIE_NOSHADER, "A.4 in-process: the thrown error carries RIE_NOSHADER");
-  check(message.find("GMANDestroyShader") != std::string::npos,
-        "A.4 in-process: the thrown error names GMANDestroyShader");
+  check(threw, "constructing GMANLoadableShader on nodestroyshader throws");
+  check(code == RIE_NOSHADER, "the thrown error carries RIE_NOSHADER");
+  check(message.find("GMANDestroyShader") != std::string::npos, "the thrown error names GMANDestroyShader");
 
   GMANAttributes attr;
   GMANParameterList const emptyPl;
   attr.setSurface("nodestroyshader", emptyPl); // must throw nothing
-  check(attr.getSurface(0.0) == nullptr, "A.4 in-process: setSurface leaves getSurface() null");
+  check(attr.getSurface(0.0) == nullptr, "setSurface leaves getSurface() null");
 
   gman::Appearance const appearance = gman::appearanceOf(attr);
-  check(appearance.shader != nullptr, "A.4 in-process: appearanceOf falls back to the default surface");
+  check(appearance.shader == gman::appearanceOf(GMANAttributes()).shader,
+        "appearanceOf falls back to the default surface's instance");
 }
 
 } // namespace

@@ -36,10 +36,10 @@ const char* GMANLoadableShader::LoadShaderFncName = "GMANLoadShader";
 const char* GMANLoadableShader::DestroyShaderFncName = "GMANDestroyShader";
 
 // Resolves GMANLoadShader, then GMANDestroyShader, and only then calls
-// GMANLoadShader: a plugin built before GMANDestroyShader existed returns a
-// static from a no-argument GMANLoadShader, and calling that through this
-// signature, then destroying a static, is undefined behaviour, so a plugin
-// missing either symbol is refused before the load ever runs.
+// GMANLoadShader: a plugin missing either symbol is refused before its own
+// GMANLoadShader ever runs, since calling a single-instance GMANLoadShader
+// through this signature and then destroying its static would be
+// undefined behaviour.
 GMANLoadableShader::GMANLoadableShader(const char* path, GMANParameterList const& parameters)
     : GMANShader(), GMANLoadable(path), destroyShader(NULL), shader(NULL) {
 

@@ -1233,8 +1233,9 @@ gman_add_plugin(gman_countingshader countingshader_test_plugin.cpp)
 set_target_properties(gman_countingshader PROPERTIES OUTPUT_NAME "countingshader")
 
 # Test-only surface shader (see its own comment): defines GMANLoadShader but
-# not GMANDestroyShader, standing in for a plugin built before this change.
-# Never dlopened outside the test suite; not part of the shipped renderer.
+# not GMANDestroyShader, standing in for a plugin lacking the destroy entry
+# point. Never dlopened outside the test suite; not part of the shipped
+# renderer.
 gman_add_plugin(gman_nodestroyshader nodestroyshader_test_plugin.cpp)
 set_target_properties(gman_nodestroyshader PROPERTIES OUTPUT_NAME "nodestroyshader")
 

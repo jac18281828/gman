@@ -44,9 +44,9 @@ namespace {
 
 // The RISpec's own default: a scene that never calls RiSurface still
 // shades, as matte. One instance for the process, built from an empty
-// parameter list and shared by every Appearance that needs it -- module
-// keeps the plugin loaded, and the aliasing shared_ptr below keeps it
-// loaded for exactly as long as some Appearance still shares this shader.
+// parameter list and shared by every Appearance that needs it. The
+// function-local statics hold the module and the aliasing shared_ptr for
+// the life of the process.
 std::shared_ptr<GMANSurfaceShader const> defaultSurfaceShader() {
   static auto const module = std::make_shared<GMANLoadableShader>("libmatte.so", GMANParameterList());
   static std::shared_ptr<GMANSurfaceShader const> const shader(module, module->getSurface());

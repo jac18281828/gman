@@ -145,11 +145,11 @@ Open the repo in VS Code and choose "Reopen in Container".
 ## Write a shader
 
 A surface shader is a `GMANSurfaceShader` subclass, built as a loadable
-module. Each `Surface` call builds its own instance from its own
-parameters, so `computeCi` and `computeOi` are `const` and return a
-`GMANColor` by value, reading only what the constructor already resolved
-from a `GMANSurfaceEnv`. `shaders/gmanmatte.cpp` is the model: it exports
-itself through three `extern "C"` entry points:
+module. Each `Surface` call builds its own instance, whose constructor
+resolves its parameters from the plugin's `GMANParameterList`, so
+`computeCi` and `computeOi` are `const`, read the `GMANSurfaceEnv` they are
+given, and return a `GMANColor` by value. `shaders/gmanmatte.cpp` is the
+model: it exports itself through three `extern "C"` entry points:
 
 ```cpp
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

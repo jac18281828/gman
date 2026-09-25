@@ -78,9 +78,9 @@ private:
   mutable RtFloat lastSurfaceMagnitude_ = 0.0;
 };
 
-// Wraps a stack-owned shader for Appearance::shader, which now owns
-// whatever it holds: this alias shares the caller's own lifetime instead,
-// owning nothing and freeing nothing.
+// Wraps a stack-owned shader for Appearance::shader, which owns whatever
+// it holds: this alias shares the caller's own lifetime instead, owning
+// nothing and freeing nothing.
 std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader const& shader) {
   return std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
 }

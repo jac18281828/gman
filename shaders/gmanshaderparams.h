@@ -37,7 +37,9 @@ namespace gmanshader {
 // list doesn't carry. The try/catch is still load-bearing, for the other
 // call: GMANDictionary::getTokenId throws RIE_BADTOKEN for a name the
 // dictionary has never seen, which is what a shader asking for a parameter
-// nobody ever declared does.
+// nobody ever declared does. getTokenId resolves against
+// gman::standardDictionary() rather than pl's own dictionary; both agree
+// on a standard token's ID.
 inline RtFloat* tryGetFloatParam(GMANParameterList const& pl, RtToken token) {
   try {
     return (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(token));
