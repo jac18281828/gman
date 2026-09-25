@@ -299,9 +299,10 @@ GMANMatrix4 GMANMatrix4::operator*(RtFloat f) const {
   return res;
 }
 
+// Scales every one of the 16 entries by f.
 GMANMatrix4& GMANMatrix4::operator*=(RtFloat f) {
   for (RtInt i = 0; i < 4; i++)
-    for (RtInt j = 0; i < 4; i++)
+    for (RtInt j = 0; j < 4; j++)
       mtrx[i][j] *= f;
 
   return *this;

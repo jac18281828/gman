@@ -347,7 +347,6 @@ add_executable(gman_matrixscalarmultiply matrixscalarmultiply_test.cpp)
 target_link_libraries(gman_matrixscalarmultiply PRIVATE gman_core)
 add_test(NAME matrixscalarmultiply COMMAND gman_matrixscalarmultiply)
 set_tests_properties(matrixscalarmultiply PROPERTIES
-  WILL_FAIL TRUE
   LABELS unit
   TIMEOUT 30)
 
