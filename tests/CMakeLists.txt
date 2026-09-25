@@ -1133,6 +1133,13 @@ set_tests_properties(nupatch PROPERTIES
 gman_add_plugin(gman_camerashader camerashader_test_plugin.cpp)
 set_target_properties(gman_camerashader PROPERTIES OUTPUT_NAME "camerashader")
 
+# Test-only volume shader (see its own comment): the shader
+# unknownsurface_test.cpp's "loaded, but not a surface" fixture names, so
+# GMANAttributes::setSurface's type-check branch has a plugin to reach it
+# with. Never dlopened outside this test; not part of the shipped renderer.
+gman_add_plugin(gman_notasurface notasurface_test_plugin.cpp)
+set_target_properties(gman_notasurface PROPERTIES OUTPUT_NAME "notasurface")
+
 # environment(), MakeLatLongEnvironment and shinymetal (RISpec 3.2 Sec
 # 7.1.2, Sec 15.7.2, Appendix A.2.4): camera-to-world reaching the shading
 # path, the writer and lookup, and shinymetal rendered under three camera
@@ -2097,6 +2104,50 @@ if(GMAN_BUILD_RAYTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+endif()
+
+# A Surface naming a module that will not load -- missing entirely, opening
+# but exporting no shader, or exporting a shader that is not a surface --
+# reports RIE_NOSHADER and renders on with the default surface instead of
+# aborting the frame. Three fixtures reach the three failures; a fourth,
+# undecorated control scene proves the fallback renders identically to a
+# scene that never named the bad Surface. See unknownsurface_test.cpp's own
+# comment. Both renderers write the same TIFF names, so each gets its own
+# WORKING_DIRECTORY.
+add_executable(gman_unknownsurface unknownsurface_test.cpp)
+target_link_libraries(gman_unknownsurface PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_unknownsurface gman_zbuffer gman_matte gman_plastic gman_notasurface)
+
+set(GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/unknownsurface-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR}")
+
+add_test(NAME unknownsurface_zbuffer
+  COMMAND gman_unknownsurface $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                              gmanzbuffer
+  WORKING_DIRECTORY "${GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR}")
+set_tests_properties(unknownsurface_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30
+  WILL_FAIL TRUE)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_unknownsurface gman_raytracer)
+
+  set(GMAN_UNKNOWNSURFACE_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/unknownsurface-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_UNKNOWNSURFACE_RAYTRACER_WORKDIR}")
+
+  add_test(NAME unknownsurface_raytracer
+    COMMAND gman_unknownsurface $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                gmanraytracer
+    WORKING_DIRECTORY "${GMAN_UNKNOWNSURFACE_RAYTRACER_WORKDIR}")
+  set_tests_properties(unknownsurface_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30
+    WILL_FAIL TRUE)
 endif()
 
 # Proves both halves of an installed gman. bin/gman renders every
