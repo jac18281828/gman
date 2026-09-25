@@ -25,6 +25,7 @@
  * a floor, and determinism.
  */
 
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -115,6 +116,10 @@ constexpr double kOutsideIntensity = 10.0;
 // Nodes sameNode joins across the u seam carry equal H_ind to this
 // relative tolerance.
 constexpr double kSeamTolerance = 1e-5;
+
+// ---- No direct power ----
+
+constexpr RtFloat kNoDirectPowerMaxEdge = 0.5f;
 
 double relativeError(double measured, double expected) { return std::fabs(measured - expected) / std::fabs(expected); }
 
@@ -547,6 +552,53 @@ void testLitFromOutside() {
         "lit from outside: the elements either side of the seam differ, so the seam check can fail");
 }
 
+// A lit square with rho = 0 on every element: unshot starts and stays at
+// 0, so the solve returns before its first shot.
+void testNoDirectPower() {
+  GMANPoint const lightPosition(0.5f, 0.5f, 6.0f);
+  GMANLight const light = pointLight(lightPosition, 1.0);
+  GMANLinearWorldManager worldManager;
+  worldManager.add(polygon(squareXY(0, 1, 0, 1, 5), opaqueAppearance({&light})));
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  GMANRayOccluder const occluder(bvh);
+  GMANRadiosityMesh mesh;
+  mesh.build(worldManager, kNoDirectPowerMaxEdge);
+
+  std::size_t const count = mesh.getElementCount();
+  GMANRadiositySolution const solution = GMANRadiositySolver().solve(mesh, occluder, uniformReflectance(count, 0.0));
+  report("no direct power", solution);
+
+  GMANRadiositySide const lit = sideFacing(mesh, 0, lightPosition);
+  double litDirect = 0;
+  bool everyHEqualsHd = true;
+  bool everyIndirectZero = true;
+  for (std::size_t e = 0; e < count; ++e) {
+    litDirect = GMANMax(litDirect, (double)solution.getDirect(e, lit).getRed());
+    for (GMANRadiositySide const side : {GMANRadiositySide::front, GMANRadiositySide::back}) {
+      everyHEqualsHd = everyHEqualsHd && bitwiseEqual(solution.getDirect(e, side), solution.getIrradiance(e, side));
+      GMANColor const& indirect = solution.getIndirect(e, side);
+      everyIndirectZero =
+          everyIndirectZero && indirect.getRed() == 0 && indirect.getGreen() == 0 && indirect.getBlue() == 0;
+    }
+  }
+
+  bool everyNodeIndirectZero = true;
+  for (std::size_t n = 0; n < mesh.getNodeCount(); ++n) {
+    for (GMANRadiositySide const side : {GMANRadiositySide::front, GMANRadiositySide::back}) {
+      GMANColor const& nodeIndirect = solution.getNodeIndirect(n, side);
+      everyNodeIndirectZero = everyNodeIndirectZero && nodeIndirect.getRed() == 0 && nodeIndirect.getGreen() == 0 &&
+                              nodeIndirect.getBlue() == 0;
+    }
+  }
+
+  std::printf("no direct power: elements=%zu litDirect=%.6g\n", count, litDirect);
+  check(litDirect > 0, "no direct power: the lit side's H_d is greater than 0");
+  check(everyHEqualsHd, "no direct power: every side's H equals its H_d");
+  check(everyIndirectZero, "no direct power: every element side's H_ind is exactly 0");
+  check(everyNodeIndirectZero, "no direct power: every node side's H_ind is exactly 0");
+}
+
 // True when solve throws GMANError for these arguments.
 bool rejects(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder, std::vector<GMANColor> const& reflectance,
              std::size_t samples) {
@@ -593,6 +645,7 @@ int main() {
   testTransmission();
   testTwoSides();
   testLitFromOutside();
+  testNoDirectPower();
   testRejectsBadInput();
 
   return checkSummary("GMANRadiositySolver matches its analytic fixtures");
