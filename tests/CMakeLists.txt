@@ -1354,6 +1354,21 @@ set_tests_properties(shadermodulenames PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANOptions::imagerModule frees exactly one instance per owner, driven
+# through the real C API with a nested RiFrameBegin/RiImagerV/RiFrameEnd, so
+# a shallow copy's aliased pointer never frees an instance a parent frame
+# still holds. See tests/imagerownership_test.cpp.
+add_executable(gman_imagerownership imagerownership_test.cpp)
+target_link_libraries(gman_imagerownership PRIVATE gman_core)
+add_dependencies(gman_imagerownership gman_countingimager gman_zbuffer)
+
+add_test(NAME imagerownership COMMAND gman_imagerownership)
+set_tests_properties(imagerownership PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
 # No shader holds state below file scope: no static above file scope, no
 # mutable, anywhere under shaders/. See tests/shaderstatics_test.cpp.
 add_executable(gman_shaderstatics shaderstatics_test.cpp)
