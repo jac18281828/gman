@@ -61,7 +61,7 @@ constexpr double kRatioHigh = 0.3;
 
 struct Fixture {
   char const* name;  // base filename under tests/rib/, without ".rib"
-  char const* label; // names the parameter-list form this fixture pins
+  char const* label; // names the surface arrangement this fixture pins
   bool leftIsDim;    // true: the Kd 0.1 sphere sits at x=-1.2 (column 50)
 };
 
