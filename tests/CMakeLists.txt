@@ -605,6 +605,19 @@ set_tests_properties(geometryparamclamp PROPERTIES
   LABELS render
   TIMEOUT 60)
 
+# A RIB-supplied parameter array longer than its declared class truncated
+# silently. See tests/paramoversupply_test.cpp.
+add_executable(gman_paramoversupply paramoversupply_test.cpp)
+target_link_libraries(gman_paramoversupply PRIVATE gman_core)
+
+add_test(NAME paramoversupply
+  COMMAND gman_paramoversupply $<TARGET_FILE:gman>
+                               "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
+set_tests_properties(paramoversupply PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 60)
+
 # A declared-integer parameter used to be stored as RtFloat and read back
 # through an (RtInt*) cast -- float bits reinterpreted as an integer, not
 # precision loss. See tests/paramlistdeclaredtype_test.cpp; its own final

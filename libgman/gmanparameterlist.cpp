@@ -54,6 +54,10 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
       warning("Parameter \"{}\": declared length {}, supplied length {}; "
               "clamping and zero-filling the remainder.",
               tk[i], size, supplied);
+    } else if (supplied > size) {
+      warning("Parameter \"{}\": declared length {}, supplied length {}; "
+              "truncating the excess.",
+              tk[i], size, supplied);
     }
     switch (di.getType(tid)) {
     case GMANTokenEntry::STRING:
