@@ -119,7 +119,7 @@ bool filterByName(const std::string& name, RtFilterFunc& filterfunc) {
 // exactly. A caller that needs a raw char* past this function's return
 // takes it with .release() and keeps releasing it with delete[] itself.
 std::unique_ptr<char[]> duplicateCString(const std::string& s) {
-  std::unique_ptr<char[]> dup(new char[s.size() + 1]);
+  std::unique_ptr<char[]> dup = std::make_unique<char[]>(s.size() + 1);
   std::memcpy(dup.get(), s.c_str(), s.size() + 1);
   return dup;
 }
