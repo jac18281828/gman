@@ -36,8 +36,8 @@
  * }
  *
  * The RISpec's own default surface shader; also this renderer's fallback
- * when RiSurface was never called (GMANAttributes::setSurface's fallback,
- * step 6).
+ * when RiSurface was never called (GMANAttributes::setSurface's
+ * fallback).
  */
 namespace gmanshader {
 
