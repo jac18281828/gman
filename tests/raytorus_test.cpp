@@ -234,12 +234,12 @@ void testPinnedHorizontalRay() {
         "pinned horizontal ray: point == (0.7993, -1.0034, 0.1)");
 }
 
-// ---- B1 regression, round 2: origin (3.35775137, 3.91563964,
+// ---- B1 regression: a horizontal ray at origin (3.35775137, 3.91563964,
 // 0.027229961), direction (-0.444452167, -0.895802617, 0), R == 1, r ==
-// 0.3, a horizontal ray whose resolvent root's linear-term estimate
-// itself is small (q ~= 1e-31), where reading a noisy seed against
-// kResolventSeedFloor instead of reading that estimate directly missed
-// the reseed and lost the root. The true hit is t == 4.71706. ----
+// 0.3, whose resolvent root's linear-term estimate is itself small
+// (q ~= 1e-31). Finding this root needs that estimate read directly, not
+// a noisier seed compared against kResolventSeedFloor. The true hit is
+// t == 4.71706. ----
 void testPinnedReviewerHorizontalRay() {
   GMANRayTorus torus(1.0, 0.3, 0.0, 360.0, 360.0, GMANParameterList());
   GMANRay ray(GMANPoint(3.35775137f, 3.91563964f, 0.027229961f), GMANVector(-0.444452167f, -0.895802617f, 0.0f));

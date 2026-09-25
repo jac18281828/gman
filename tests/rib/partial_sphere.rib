@@ -5,9 +5,8 @@
 ## = -0.5, zmax = radius = 1 -- is asymmetric: a cap is missing, a
 ## hemisphere is not.
 ##
-## Explicit Clipping, not the RI_EPSILON-near default: this shape hits a
-## general near-clip precision defect (see AGENTS.md's "Near-clip precision
-## at the default Clipping"), same as a camera-facing Disk.
+## Explicit Clipping, not the RI_EPSILON-near default: this shape hits the
+## same near-clip precision defect a camera-facing Disk does.
 Display "partial_sphere.tif" "file" "rgba"
 Format 200 200 1
 Projection "perspective" "fov" [45]

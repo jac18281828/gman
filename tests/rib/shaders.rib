@@ -1,4 +1,4 @@
-## Step 3: the three shipped surface shaders -- matte, plastic, metal --
+## The three shipped surface shaders -- matte, plastic, metal --
 ## side by side under identical lighting, so a regression in one shader's
 ## own math (dropping a term, wrong scale) shows up as a change confined
 ## to its own sphere, not the whole frame. Spheres, not rotated primitives,

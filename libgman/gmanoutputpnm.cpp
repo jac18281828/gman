@@ -45,9 +45,7 @@ OutputPNM::OutputPNM(const char* path, int width, int height) : GMANOutput(path,
 // default destructor
 OutputPNM::~OutputPNM() {};
 
-// Writes a binary P6 portable pixmap directly. This driver used to depend on
-// netpbm and its whole body was compiled out when libpnm was absent, which it
-// always was, so PNM output never produced a file.
+// Writes a binary P6 portable pixmap directly, with no netpbm dependency.
 RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANColor> const& image, RtFloat /*gamma*/) {
 
   FILE* ppmFile = std::fopen(outputName.c_str(), "wb");

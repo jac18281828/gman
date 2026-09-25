@@ -1,4 +1,4 @@
-## Step 3: all seven RenderMan quadric primitives in one scene -- Sphere,
+## All seven RenderMan quadric primitives in one scene -- Sphere,
 ## Cone, Cylinder, Hyperboloid, Paraboloid, Torus, Disk. Exercises each
 ## primitive's own getLocation/getNormal parameterization end to end
 ## (tessellation, shading, silhouette), not only the isolated

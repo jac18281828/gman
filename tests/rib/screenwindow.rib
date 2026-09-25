@@ -1,10 +1,9 @@
-## Step 3: RiScreenWindow, RiCropWindow and RiFrameAspectRatio together,
-## under perspective. RiScreenWindow and RiCropWindow already have their
-## own defect-regression fixtures (orthowindow.rib/cropwindow_test.cpp,
-## fixed by the UAT-defects pass); this scene is the combination none of
-## those isolated tests covers -- an asymmetric ScreenWindow shifting the
-## visible frustum off-centre, then CropWindow rendering only a sub-window
-## of that already-shifted result.
+## RiScreenWindow, RiCropWindow and RiFrameAspectRatio together, under
+## perspective. RiScreenWindow and RiCropWindow already have their own
+## defect-regression fixtures (orthowindow.rib/cropwindow_test.cpp); this
+## scene is the combination none of those isolated tests covers -- an
+## asymmetric ScreenWindow shifting the visible frustum off-centre, then
+## CropWindow rendering only a sub-window of that already-shifted result.
 ##
 ## RiFrameAspectRatio has no tokenizer entry at all -- included here to
 ## prove it is warned-and-skipped, not a parse-desync, and that

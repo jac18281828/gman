@@ -225,12 +225,10 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor
 
   png_write_end(png_ptr, info_ptr);
 
-  // clean up write struct. Passing info_ptr here (not NULL, as this
-  // used to) is what actually frees it -- png_create_info_struct and
-  // the png_set_text/tIME/gAMA/bKGD calls above all allocate through
-  // it, and passing NULL destroyed only png_ptr, leaking the rest.
-  // Unreachable before the segfault fix above (this line), so this
-  // leak was always here but never actually ran.
+  // clean up write struct. Passing info_ptr here (not NULL) is what frees
+  // it -- png_create_info_struct and the png_set_text/tIME/gAMA/bKGD calls
+  // above all allocate through it, and passing NULL would destroy only
+  // png_ptr, leaking the rest.
   png_destroy_write_struct(&png_ptr, &info_ptr);
   fclose(pngFile);
 }

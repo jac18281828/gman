@@ -1,4 +1,4 @@
-## Step 3: geometry straddling both the near and the far clip plane in one
+## Geometry straddling both the near and the far clip plane in one
 ## primitive. A cylinder parallel to the camera's z axis but offset in x
 ## (so the camera, offset the other way, sees it in profile rather than
 ## end-on through its open, uncapped aperture -- the same degenerate view
@@ -10,9 +10,10 @@
 ## a crash.
 ##
 ## Varying z along the cylinder's length (not a flat plate at one z) keeps
-## this clear of the near-clip precision defect (AGENTS.md's "Explicit
-## Clipping" note) -- that defect needs vertices
-## clustered at a single z, which a cylinder spanning [-10,10] never has.
+## this clear of the near-clip precision defect (AGENTS.md: flat or
+## z-narrow geometry needs an explicit Clipping) -- that defect needs
+## vertices clustered at a single z, which a cylinder spanning [-10,10]
+## never has.
 Display "clipping.tif" "file" "rgba"
 Format 400 400 1
 Projection "perspective" "fov" [45]
