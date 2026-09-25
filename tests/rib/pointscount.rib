@@ -1,0 +1,14 @@
+# Three Points requests, one per tests/pointscount_test.cpp check: a
+# 6-float "P" (two points), a "P"-less request carrying a 3-float "Cs" (a
+# multiple-of-three parameter under a different name), and a 4-float "P"
+# (not a multiple of three). A trailing Sphere follows AGENTS.md's "RIB
+# authoring" section, "The desync convention."
+Display "pointscount.tif" "file" "rgba"
+Format 16 16 1
+Projection "perspective" "fov" [30]
+WorldBegin
+Points "P" [0 0 0  1 1 1]
+Points "Cs" [1 0 0]
+Points "P" [0 0 0  1]
+Sphere 1 -1 1 360
+WorldEnd

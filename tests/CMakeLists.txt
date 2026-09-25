@@ -672,6 +672,23 @@ set_tests_properties(ribstringescape PROPERTIES
   LABELS render
   TIMEOUT 60)
 
+# GMANRIBParse::parsePoints left npoints at 0 for every Points request. See
+# tests/pointscount_test.cpp; its in-process check drives GMANRIBParse
+# directly against a CapturingRenderMan overriding RiPointsV, the same
+# technique tests/paramlistdeclaredtype_test.cpp's check 5 and
+# tests/ribstringescape_test.cpp use, hence the same
+# LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
+add_executable(gman_pointscount pointscount_test.cpp)
+target_link_libraries(gman_pointscount PRIVATE gman_core)
+
+add_test(NAME pointscount
+  COMMAND gman_pointscount "${CMAKE_CURRENT_SOURCE_DIR}/rib")
+set_tests_properties(pointscount PROPERTIES
+  WILL_FAIL TRUE
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Bilinear and bicubic Patch rasterization. See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
 target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)

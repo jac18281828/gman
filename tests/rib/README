@@ -311,6 +311,15 @@ which reads the decoded value back through a `GMANRenderManImpl` subclass
 overriding `RiAttributeV`, as well as running it end to end. Not
 third-party.
 
+## pointscount.rib
+
+Three `Points` requests for `tests/pointscount_test.cpp`: a 6-float `"P"`
+(two points), a `"P"`-less request carrying a 3-float `"Cs"` (a
+multiple-of-three parameter under a different name, guarding against a
+construction that matches the first parameter regardless of name), and a
+4-float `"P"` (not a multiple of three). A trailing `Sphere` follows. Not
+third-party.
+
 ## malformed/
 
 Hand-written fixtures for malformed RIB input. `gman` is expected to fail on
