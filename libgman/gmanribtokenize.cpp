@@ -36,10 +36,6 @@
 #include "gmanlog.h"
 #include "gmanribtokenize.h"
 #include "ri.h"
-/*
- * Global static data
- */
-const int GMANRIBTokenize::bufSz = 1024;
 
 /*
  * RenderMan API gmanribtokenize

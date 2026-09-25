@@ -750,17 +750,6 @@ set_tests_properties(partialsphere PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# Review finding: GMANVertex::calcNormal has no call site anywhere in this
-# tree (setFaceList is never called), so the phase-3 implementation of it
-# never executes. Direct unit test of its arithmetic, independent of any
-# tessellator.
-add_executable(gman_vertexnormal vertexnormal_test.cpp)
-target_link_libraries(gman_vertexnormal PRIVATE gman_core)
-add_test(NAME vertexnormal COMMAND gman_vertexnormal)
-set_tests_properties(vertexnormal PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
 # RISpec pixel-reconstruction filters (box, triangle, gaussian,
 # catmull-rom, sinc): a pure unit test on gmanfilters.cpp, no gman binary.
 # See tests/filters_test.cpp for which of the five were wrong and why.

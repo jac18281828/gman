@@ -55,15 +55,9 @@ private:
 
   GMANVertex* next; // next vertex
 
-  GMANFaceList* faceList;
-
 public:
   // default constructor
   GMANVertex();
-
-  GMANVertex(const GMANPoint& position, GMANFaceList& /*fl*/, const GMANColor& /*col*/ = DefaultBGColor,
-             const GMANAlpha& alp = DefaultAlpha)
-      : location(position), normal(0.0, 0.0, 0.0), alpha(alp), next(NULL), faceList(NULL) {};
 
   ~GMANVertex(); // default destructor
 
@@ -90,12 +84,4 @@ public:
   RtVoid setNext(GMANVertex* n) { next = n; };
   // return next vertex
   GMANVertex* getNext(RtVoid) { return next; };
-
-  // calculate the vertex normal
-  RtVoid calcNormal(RtVoid);
-
-  // set the face list
-  RtVoid setFaceList(GMANFaceList* fl) { faceList = fl; }
-  // return the face list
-  GMANFaceList* getFaceList(RtVoid) const { return faceList; }
 };

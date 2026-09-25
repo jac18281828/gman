@@ -24,7 +24,6 @@
  */
 
 #include "gmandefaults.h"
-#include "gmanface.h"
 #include "gmanlog.h"
 #include "gmanvertex.h"
 #include "ri.h"
@@ -43,34 +42,7 @@
 // clipper actually runs, turning the garbage into an out-of-range color
 // that later corrupts gamma/quantization.
 GMANVertex::GMANVertex()
-    : location(0.0, 0.0, 0.0), normal(0.0, 0.0, 0.0), color(DefaultBGColor), alpha(DefaultAlpha), next(NULL),
-      faceList(NULL) {};
+    : location(0.0, 0.0, 0.0), normal(0.0, 0.0, 0.0), color(DefaultBGColor), alpha(DefaultAlpha), next(NULL) {};
 
 // default destructor
 GMANVertex::~GMANVertex() {};
-
-// calculate vertex normal: the area-weighted average of the adjacent
-// faces' geometric normals, for polygonal input with no analytic normal.
-//
-// No primitive in this tree populates faceList -- setFaceList has no
-// caller anywhere -- so this fallback has no live call site today; the
-// quadrics createParametric tessellates all supply an analytic normal
-// from GMANParametric::getNormal instead (see createParametric). Written
-// and correct for whichever future polygon tessellator populates
-// adjacency, provided it also calls each face's calcArea() -- this
-// assumes a nonzero weight, same as GMANFace's own default-constructed
-// area of 0 assumes calcArea() runs before anything reads it. An empty or
-// absent list is not an error, just nothing to average, so the default
-// zero normal is left untouched.
-RtVoid GMANVertex::calcNormal() {
-  if (faceList == NULL || faceList->empty()) {
-    return;
-  }
-
-  GMANVector accum(0.0, 0.0, 0.0);
-  for (GMANFaceList::iterator face = faceList->begin(); face != faceList->end(); ++face) {
-    accum += (*face)->getNormal() * (*face)->getArea();
-  }
-  accum.normalize();
-  normal = accum;
-};

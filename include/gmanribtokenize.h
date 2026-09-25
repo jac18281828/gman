@@ -231,9 +231,6 @@ public:
  */
 
 class GMANRIBTokenize {
-public:
-  static const int bufSz;
-
 private:
   std::string buffer;
 
