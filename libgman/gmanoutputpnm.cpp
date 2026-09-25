@@ -57,16 +57,16 @@ RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANC
 
   // A short fprintf/fwrite, or a failed fclose (stdio's buffered data
   // flushes there, so a write can still fail at that point), all report
-  // the same way: close what is open, then throw naming the file.
-  auto fail = [this, ppmFile]() {
-    std::fclose(ppmFile);
+  // the same "Unable to write output file" error, built once here.
+  auto writeFailure = [this]() {
     std::string errorMsg("Unable to write output file: ");
     errorMsg.append(outputName);
-    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
+    return GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str());
   };
 
   if (std::fprintf(ppmFile, "P6\n%d %d\n255\n", xres, yres) < 0) {
-    fail();
+    std::fclose(ppmFile);
+    throw(writeFailure());
   }
 
   for (int row = 0; row < yres; row++) {
@@ -76,15 +76,14 @@ RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANC
       const unsigned char rgb[3] = {gman::narrowedByte(color.getRed()), gman::narrowedByte(color.getGreen()),
                                     gman::narrowedByte(color.getBlue())};
       if (std::fwrite(rgb, 1, sizeof(rgb), ppmFile) != sizeof(rgb)) {
-        fail();
+        std::fclose(ppmFile);
+        throw(writeFailure());
       }
     }
   }
 
   if (std::fclose(ppmFile) != 0) {
-    std::string errorMsg("Unable to write output file: ");
-    errorMsg.append(outputName);
-    throw(GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str()));
+    throw(writeFailure());
   }
 }
 
