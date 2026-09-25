@@ -2,9 +2,9 @@
 
 [![ci](https://github.com/jac18281828/gman/actions/workflows/ci.yml/badge.svg)](https://github.com/jac18281828/gman/actions/workflows/ci.yml)
 
-Begun in 1999, revived in 2026. [gman-toolkit.sourceforge.net](https://gman-toolkit.sourceforge.net)
+Begun in [1999](https://gman-toolkit.sourceforge.net), revived in [2026](https://2ad.com/gman.html).
 
-[![gman's ray-traced render of samples/vase.rib](samples/vase-raytraced.png)](https://gman-toolkit.sourceforge.net)
+[![gman's ray-traced render of samples/vase.rib](samples/vase-raytraced.png)](https://2ad.com/gman.html)
 
 ## Try it
 
@@ -226,6 +226,19 @@ doc/         the 1999 design document
 ```
 
 `tests/rib/` holds 81 more scenes, the test suite's own.
+
+## Related
+
+- [The RenderMan Interface Specification 3.2](https://paulbourke.net/dataformats/rib/RISpec3_2.pdf),
+  the RIB and C API gman implements.
+- Other RenderMan-compatible renderers: Pixar's
+  [RenderMan](https://renderman.pixar.com), [3Delight](https://www.3delight.com),
+  [Aqsis](https://github.com/aqsis/aqsis) and [Pixie](https://sourceforge.net/projects/pixie/).
+- [Physically Based Rendering](https://pbr-book.org), the reference for the path tracer gman is
+  growing, and [Veach's thesis](https://graphics.stanford.edu/papers/veach_thesis/), where
+  multiple importance sampling comes from.
+- [Open Shading Language](https://github.com/AcademySoftwareFoundation/OpenShadingLanguage), the
+  shading language production renderers adopted after RenderMan's own.
 
 ## Contributing
 
