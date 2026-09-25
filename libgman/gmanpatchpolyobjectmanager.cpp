@@ -270,7 +270,7 @@ RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10, RtFloat c01, 
 // practice: a clip-introduced vertex has no u,v of its own to shade with,
 // but it does get a color, because GMANClipEdge::intersect already
 // interpolates GMANVertex::color across a clipped edge (the same machinery
-// phase 1 wired up for the vertex alpha blend). Eye sits at the
+// wired up for the vertex alpha blend). Eye sits at the
 // camera-space origin (gman::VSPerspective::ray), so the incident
 // direction is just the normalized surface point.
 gman::SurfacePoint vertexSurfacePoint(const GMANPoint& location, const GMANNormal& normal, RtFloat u, RtFloat v,
@@ -348,7 +348,7 @@ bool pointInTriangle(const GMANPoint& a, const GMANPoint& b, const GMANPoint& c,
 
 // Ear clipping over a vertex ring: triangulates any simple planar polygon,
 // concave included, into exactly ring.size() - 2 triangles. GeneralPolygon
-// (a later task) bridges each hole into the outer loop and hands the
+// bridges each hole into the outer loop (bridgeHoles) and hands the
 // combined ring to this same function, so it takes points and a normal
 // rather than assuming any particular caller's vertex storage; the
 // returned triples index into that same ring.
@@ -687,9 +687,8 @@ bool inInteriorWedge(const GMANPoint& v, const GMANPoint& prev, const GMANPoint&
 // same polygon produces are the same bridges, not an artifact of whichever
 // way a fixed world axis happened to point.
 //
-// Free of GMANOptions/GMANAttributes/GMANParameterList/GMANTransform: the
-// 0.9 ray tracer will want this in its own translation unit, and nothing
-// here depends on the object manager to make that move mechanical.
+// Free of GMANOptions/GMANAttributes/GMANParameterList/GMANTransform, and
+// nothing here depends on the object manager despite living in this file.
 //
 // loopSlots mirrors loops' own shape, one flat "P"-order index per point --
 // plain provenance, not a texture coordinate, which is what keeps this
@@ -1000,7 +999,7 @@ bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vect
 // Appends one surviving face's body and vertex chain onto a mesh's own
 // running chains -- GMANObject's destructor already walks both
 // (getNext() on each), so one object can own every face's worth once
-// they are linked here (settled decision "One primitive, many bodies").
+// they are linked here: one primitive, many bodies.
 // A face contributes more than one vertex, unlike GMANBody's single node,
 // so its own chain's tail has to be found by walking.
 void appendFace(GMANBody* faceBody, GMANVertex* faceVert, GMANBody*& bodyHead, GMANBody*& bodyTail,
@@ -1182,11 +1181,10 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtIn
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
   RasterProjection const dicing = rasterProjectionFor(opt, attr);
 
-  // Faceted (settled decision "Faces"): every face gathers its own
-  // GMANVertex objects through "verts", one PointsPolygons face being a
-  // one-loop GeneralPolygon (buildFace). A degenerate face is skipped,
-  // not fatal; every surviving face's body and vertex chain joins one
-  // GMANObject (settled decision "One primitive, many bodies").
+  // Faceted: every face gathers its own GMANVertex objects through
+  // "verts", one PointsPolygons face being a one-loop GeneralPolygon
+  // (buildFace). A degenerate face is skipped, not fatal; every
+  // surviving face's body and vertex chain joins one GMANObject.
   GMANBody *bodyHead = NULL, *bodyTail = NULL;
   GMANVertex *vertHead = NULL, *vertTail = NULL;
 
@@ -1357,12 +1355,10 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPatchMesh(RtToken type, RtInt nu
   return create();
 };
 
-// Texture coordinates on NuPatch are out of scope (see the settled decision
-// above getRSPatchMesh): kIdentityCorners stands in for
-// resolveParametricCorners here too, for the same reason -- a NuPatch's
-// varying values form a (nusegments+1) x (nvsegments+1) grid, which
-// resolveParametricCorners' fixed four-corner shape only fits in the
-// bilinear-equivalent case.
+// kIdentityCorners stands in for resolveParametricCorners here, as it does
+// for getRSPatchMesh: a NuPatch's varying values form a (nusegments+1) x
+// (nvsegments+1) grid, which resolveParametricCorners' fixed four-corner
+// shape only fits in the bilinear-equivalent case.
 GMANPrimitive* GMANPatchPolyObjectManager::getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin,
                                                         RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
                                                         RtFloat vmin, RtFloat vmax, GMANParameterList pl,
@@ -1470,8 +1466,7 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   // does not get that gift: it needs the CTM's inverse transpose, computed
   // once per primitive rather than once per vertex. Row-vector convention
   // (p*M, translation in row 3) makes the inverse-transpose of M's linear
-  // part exactly Minv's own upper-left 3x3 block used as n*Minv -- see
-  // AGENTS.md's "Matrix convention" note and phase-3-REPORT.md.
+  // part exactly Minv's own upper-left 3x3 block used as n*Minv.
   GMANMatrix4 ctmInv = t->interpolate(0.0);
   ctmInv.invert();
 
@@ -1519,13 +1514,11 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   // location: face(i,j) touches vertices (i,j+1) and (i+1,*), which are
   // not visited yet when (i,j) is, so calcNormal() run in the same pass
   // as vertex creation would cross-product against up to three
-  // still-default-constructed (0,0,0) vertices -- a real, if invisible,
-  // pre-existing bug. Invisible because nothing before this phase used
-  // the resulting near-zero, direction-free normal for anything: the
-  // renderer's own rasterization always reads vertex positions fresh at
-  // render time, long after this function returns, so geometry was never
-  // affected -- only RiSides 1 culling, which silently culled and kept
-  // faces close to at random. See phase-3-REPORT.md.
+  // still-default-constructed (0,0,0) vertices. The renderer's own
+  // rasterization always reads vertex positions fresh at render time,
+  // long after this function returns, so geometry is unaffected either
+  // way -- only RiSides 1 culling would read the resulting near-zero,
+  // direction-free normal and cull or keep faces at random.
   for (i = 0; i < URES; i++) {
     for (j = 0; j < VRES; j++) {
       GMANVertex* faceVertices[4];

@@ -50,10 +50,10 @@ GMANBody::~GMANBody() {
 
   while (surface != NULL) // delete all
   {
-    // nextSurf must be read before delete: it used to be assigned
-    // `surface` itself, which reassigned the freed pointer right back to
-    // `surface`, so any body with more than one surface deleted the same
-    // freed GMANSurface forever -- a use-after-free on every teardown.
+    // nextSurf must be read before delete: reading it from the freed
+    // `surface` would reassign the freed pointer right back to `surface`,
+    // so any body with more than one surface would delete the same freed
+    // GMANSurface forever -- a use-after-free on every teardown.
     nextSurf = surface->getNext();
     delete surface;
     surface = nextSurf;

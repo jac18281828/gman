@@ -1050,7 +1050,7 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
   // Vertex count is nu*nv for both types; varying is per-axis corner
   // count (patches+1 on a nonperiodic axis, patches on a periodic one,
   // wrapping the last strip back to row/column 0), multiplied; uniform is
-  // the patch count outright. See the settled decision on sizing.
+  // the patch count outright.
   RtInt uVarying = uPeriodic ? nupatches : nupatches + 1;
   RtInt vVarying = vPeriodic ? nvpatches : nvpatches + 1;
 

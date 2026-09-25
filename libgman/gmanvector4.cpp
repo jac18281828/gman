@@ -39,9 +39,9 @@ GMANVector4::GMANVector4() : GMANVector() {};
 GMANVector4::~GMANVector4() {};
 
 GMANVector4& GMANVector4::operator*=(const GMANMatrix4& m) {
-  // Row-vector convention (p*M, AGENTS.md's "Matrix convention"):
-  // result[j] = sum_i vec[i]*m[i][j] over all four components -- the
-  // same formula GMANMatrix4::p4m implements. GMANVector::operator*=
+  // Row-vector convention (p*M): result[j] = sum_i vec[i]*m[i][j] over
+  // all four components -- the same formula GMANMatrix4::p4m
+  // implements. GMANVector::operator*=
   // is the opposite convention (column-vector, implicit w=1, no real w
   // out) and would silently leave w stale; a real 4-component multiply
   // belongs here, not delegated.

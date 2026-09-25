@@ -84,10 +84,10 @@ bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
   if (!gman::shiftIntoBoundingSphere(objOrigin, objDirection, boundingRadius, shifted))
     return false;
 
-  // GMANParaboloid::getLocation's radial factor is rmax*sqrt(v/zmax); the
-  // settled reading (see R5b's own prompt) substitutes v == (z - zmin) /
-  // (zmax - zmin) to give x^2 + y^2 == k*(z - zmin), k == rmax^2 /
-  // (zmax*(zmax - zmin)) -- quadratic in the ray parameter t.
+  // GMANParaboloid::getLocation's radial factor is rmax*sqrt(v/zmax);
+  // substituting v == (z - zmin) / (zmax - zmin) gives x^2 + y^2 ==
+  // k*(z - zmin), k == rmax^2 / (zmax*(zmax - zmin)) -- quadratic in the
+  // ray parameter t.
   double const k = (double)rmax * rmax / ((double)zmax * ((double)zmax - zmin));
 
   double const a = shifted.dx * shifted.dx + shifted.dy * shifted.dy;

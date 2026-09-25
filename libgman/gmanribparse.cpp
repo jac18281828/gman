@@ -190,9 +190,9 @@ RtVoid GMANRIBParse::parse(RtVoid) {
 
   parseStream();
 
-  // The set of requests recognized but never rendered, reported once here
-  // rather than as a warning per occurrence -- a RIB with 40,000
-  // PointsPolygons calls must not produce 40,000 warnings.
+  // The set of unrecognized request names, each reported once here rather
+  // than as a warning per occurrence -- a RIB with 40,000 calls to the
+  // same unrecognized request must not produce 40,000 warnings.
   if (!skippedRequests.empty()) {
     std::string list;
     for (std::set<std::string>::const_iterator it = skippedRequests.begin(); it != skippedRequests.end(); ++it) {
@@ -1452,7 +1452,7 @@ RtVoid GMANRIBParse::parseReadArchive(RtVoid) {
   // Resolve relative to the including file first, then fall back to the
   // path as given (relative to the process's working directory). There is
   // no wired RiOption "searchpath" "archive" to consult beyond that --
-  // RiOptionV is an unwired stub outside this phase's scope (gmanrendermanimpl.cpp).
+  // RiOptionV is an unwired stub (gmanrendermanimpl.cpp).
   std::string resolved;
   fs::path requestedPath(requested);
   if (requestedPath.is_absolute()) {
@@ -1649,8 +1649,7 @@ RtVoid GMANRIBParse::parseIlluminate(RtVoid) {
 // **************************************************************
 // RISpec 3.2 requests parsed and ignored. Each consumes exactly its own
 // grammar so the token stream stays in sync for whatever follows; none
-// calls into renderMan, since rendering these is out of scope for this
-// phase.
+// calls into renderMan, since rendering these is not implemented.
 // **************************************************************
 
 RtVoid GMANRIBParse::parseCurves(RtVoid) {

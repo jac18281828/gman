@@ -93,8 +93,8 @@ bool insideTriangle(RtFloat wa, RtFloat wb, RtFloat wc) {
 // Interpolates each vertex's own (s, t) across hitPoint, fan-triangulated
 // from vertex 0 ((v0, vi, vi+1) for i = 1..n-2) and projected the same way
 // insidePolygon is. Exact for a triangle; for a per-vertex (s, t) that is
-// itself affine in position -- every fixture this unit tests -- any
-// triangulation gives the identical result at any interior point.
+// itself affine in position, any triangulation gives the identical result
+// at any interior point.
 std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<GMANPoint> const& ring,
                                                 std::vector<std::pair<RtFloat, RtFloat>> const& texCoords, int axis,
                                                 GMANPoint const& hitPoint) {

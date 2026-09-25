@@ -35,11 +35,11 @@ namespace {
 // Every quadric here differentiates its own getLocation and returns
 // normalize(dP/du x dP/dv) -- the convention that makes the outward
 // direction agree across primitives (verified sphere, cylinder and torus
-// against their textbook closed forms; see phase-3-REPORT.md). A few
-// primitives hit a coordinate singularity at a pole (dP/du -> 0), where the
-// raw cross product degenerates to zero; guardTangent nudges the parameter
-// away from the singularity before differentiating so the limit, not a
-// division by zero, is what gets normalized.
+// against their textbook closed forms). A few primitives hit a coordinate
+// singularity at a pole (dP/du -> 0), where the raw cross product
+// degenerates to zero; guardTangent nudges the parameter away from the
+// singularity before differentiating so the limit, not a division by
+// zero, is what gets normalized.
 inline double guardTangent(double v, double eps = 1e-6) { return (v < eps) ? eps : ((v > 1.0 - eps) ? 1.0 - eps : v); }
 
 } // namespace
@@ -453,10 +453,12 @@ GMANVector GMANNuPatch::getNormal(double u, double v) {
 
   GMANVector n = Su.cross(Sv);
   // Divide by the cross product's own magnitude, never through
-  // GMANVector::normalize()'s absolute RI_EPSILON threshold -- a known
-  // scale defect (AGENTS.md's normal handling note; see also
-  // GMANPatch::getNormal's own comment). An exactly zero cross product
-  // returns the zero vector, as GMANPatch already does.
+  // GMANVector::normalize()'s absolute RI_EPSILON threshold: that
+  // threshold does not scale with the cross product's own magnitude, so
+  // a tiny but non-degenerate cross product would fall under it and come
+  // back unnormalized (see GMANPatch::getNormal's own comment for a case
+  // where this bites). An exactly zero cross product returns the zero
+  // vector, as GMANPatch already does.
   RtFloat mag = n.magnitude();
   if (mag != 0.0) {
     n /= mag;
