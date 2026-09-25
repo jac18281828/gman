@@ -44,8 +44,6 @@
 #include "gmanshader.h"
 #include "ri.h"
 
-class GMANRenderer;
-
 /*
  * RenderMan API camera, display and additional options.
  *
@@ -235,7 +233,7 @@ public:
   RtVoid setExposure(RtFloat gn, RtFloat gmm);
   const ExposureStruct& getExposure(RtVoid) const { return exposure; };
 
-  RtVoid setImager(std::string nm, GMANParameterList& p, GMANRenderer& rd);
+  RtVoid setImager(std::string nm, GMANParameterList const& p);
   const GMANImagerShader* getImager(RtVoid) const { return imager; };
 
   RtVoid setColorQuantize(RtInt one, RtInt min, RtInt max, RtFloat da);

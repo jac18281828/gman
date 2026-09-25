@@ -213,18 +213,15 @@ RtVoid GMANOptions::setExposure(RtFloat gn, RtFloat gmm) {
   exposure.gamma = gmm;
 }
 
-RtVoid GMANOptions::setImager(std::string name, GMANParameterList& pl, GMANRenderer& rd) {
+RtVoid GMANOptions::setImager(std::string name, GMANParameterList const& pl) {
   if (imagerModule)
     delete (imagerModule);
-  imagerModule = new GMANLoadableShader(name.c_str());
+  imagerModule = new GMANLoadableShader(name.c_str(), pl);
   if (imagerModule->getType() == GMANShader::IMAGER) {
     imager = imagerModule->getImager();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified imager shader is not an imager shader."));
   }
-
-  imager->set(pl);
-  imager->set(rd);
 }
 
 RtVoid GMANOptions::setColorQuantize(RtInt o, RtInt mn, RtInt mx, RtFloat da) {

@@ -49,10 +49,22 @@ namespace gmanshader {
 
 class shinymetal : public GMANSurfaceShader {
 public:
+  explicit shinymetal(GMANParameterList const& parameters)
+      : ka(getFloatParam(parameters, RI_KA, 1.0)), ks(getFloatParam(parameters, RI_KS, 1.0)),
+        kr(getFloatParam(parameters, RI_KR, 1.0)), roughness(getFloatParam(parameters, RI_ROUGHNESS, 0.1)),
+        texturename(getStringParam(parameters, RI_TEXTURENAME, std::string())) {}
+
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const;
   GMANColor computeOi(GMANSurfaceEnv const& se) const;
+
+private:
+  RtFloat const ka;
+  RtFloat const ks;
+  RtFloat const kr;
+  RtFloat const roughness;
+  std::string const texturename;
 };
 
 RtVoid shinymetal::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
@@ -61,12 +73,6 @@ RtVoid shinymetal::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, 
 }
 
 GMANColor shinymetal::computeCi(GMANSurfaceEnv const& se) const {
-  RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
-  RtFloat ks = getFloatParam(pl, RI_KS, 1.0);
-  RtFloat kr = getFloatParam(pl, RI_KR, 1.0);
-  RtFloat roughness = getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  std::string texturename = getStringParam(pl, RI_TEXTURENAME, std::string());
-
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
   GMANVector vf(-se.I.getX(), -se.I.getY(), -se.I.getZ());
   vf.normalize();
@@ -100,8 +106,10 @@ static GMANLoadableObjectInfo loadableInfo = {
     "response plus a world-space environment reflection.",
 };
 
-static gmanshader::shinymetal shader;
-
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(void) { return &shader; }
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& parameters) {
+  return new gmanshader::shinymetal(parameters);
+}
+
+extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }

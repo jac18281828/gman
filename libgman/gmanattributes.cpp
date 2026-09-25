@@ -29,7 +29,7 @@ constexpr auto NCOMPS = 3;
 }
 
 GMANAttributes::GMANAttributes()
-    : areaLight(NULL), surface(NULL), atmosphere(NULL), interior(NULL), exterior(NULL), displacement(NULL)
+    : areaLight(NULL), atmosphere(NULL), interior(NULL), exterior(NULL), displacement(NULL)
 
 { // Shading attributes
   for (int i = 0; i < NCOMPS; i++) {
@@ -93,23 +93,22 @@ RtVoid GMANAttributes::setIlluminate(RtLightHandle lh, RtBoolean onoff) {
     lightList.off(lh);
 }
 
-RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
+RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList const& pl) {
   std::string objectName = "lib";
   objectName += name;
   objectName += ".so";
 
   // A Surface that fails to load reports RIE_NOSHADER and leaves the
-  // default surface, with no module and no parameters: those parameters
-  // belong to a shader that never ran.
+  // default surface, with no module: those parameters belong to a shader
+  // that never ran.
   try {
-    surfaceModule = std::make_shared<GMANLoadableShader>(objectName.c_str());
+    surfaceModule = std::make_shared<GMANLoadableShader>(objectName.c_str(), pl);
     if (surfaceModule->getType() != GMANShader::SURFACE) {
       throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified surface shader is not a surface shader."));
     }
   } catch (GMANError const& loadError) {
     surfaceModule.reset();
-    surface = NULL;
-    surfaceParameters = GMANParameterList();
+    surface.reset();
     auto const message =
         "Surface \"" + name + "\" failed to load; the default surface shades instead: " + loadError.getMessage();
     GMANError fallback(RIE_NOSHADER, RIE_ERROR, message.c_str());
@@ -117,58 +116,43 @@ RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList& pl
     return;
   }
 
-  surface = surfaceModule->getSurface();
-  surface->set(pl);
-  surface->set(rd);
-  surfaceParameters = pl;
+  surface = std::shared_ptr<GMANSurfaceShader const>(surfaceModule, surfaceModule->getSurface());
 }
 
-RtVoid GMANAttributes::setDisplacement(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
-  displacementModule = std::make_shared<GMANLoadableShader>(name.c_str());
+RtVoid GMANAttributes::setDisplacement(const std::string& name, GMANParameterList const& pl) {
+  displacementModule = std::make_shared<GMANLoadableShader>(name.c_str(), pl);
   if (displacementModule->getType() == GMANShader::DISPLACEMENT) {
     displacement = displacementModule->getDisplacement();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified displacement shader is not a displacement shader."));
   }
-
-  displacement->set(pl);
-  displacement->set(rd);
 }
 
-RtVoid GMANAttributes::setAtmosphere(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
-  atmosphereModule = std::make_shared<GMANLoadableShader>(name.c_str());
+RtVoid GMANAttributes::setAtmosphere(const std::string& name, GMANParameterList const& pl) {
+  atmosphereModule = std::make_shared<GMANLoadableShader>(name.c_str(), pl);
   if (atmosphereModule->getType() == GMANShader::VOLUME) {
     atmosphere = atmosphereModule->getVolume();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified atmosphere shader is not a volume shader."));
   }
-
-  atmosphere->set(pl);
-  atmosphere->set(rd);
 }
 
-RtVoid GMANAttributes::setInterior(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
-  interiorModule = std::make_shared<GMANLoadableShader>(name.c_str());
+RtVoid GMANAttributes::setInterior(const std::string& name, GMANParameterList const& pl) {
+  interiorModule = std::make_shared<GMANLoadableShader>(name.c_str(), pl);
   if (interiorModule->getType() == GMANShader::VOLUME) {
     interior = interiorModule->getVolume();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified interior shader is not a volume shader."));
   }
-
-  interior->set(pl);
-  interior->set(rd);
 }
 
-RtVoid GMANAttributes::setExterior(const std::string& name, GMANParameterList& pl, GMANRenderer& rd) {
-  exteriorModule = std::make_shared<GMANLoadableShader>(name.c_str());
+RtVoid GMANAttributes::setExterior(const std::string& name, GMANParameterList const& pl) {
+  exteriorModule = std::make_shared<GMANLoadableShader>(name.c_str(), pl);
   if (exteriorModule->getType() == GMANShader::VOLUME) {
     exterior = exteriorModule->getVolume();
   } else {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Specified exterior shader is not a volume shader."));
   }
-
-  exterior->set(pl);
-  exterior->set(rd);
 }
 
 RtVoid GMANAttributes::setShadingRate(RtFloat sz) { shadingRate = sz; }

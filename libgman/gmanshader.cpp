@@ -30,10 +30,6 @@
  *
  */
 
-GMANShader::GMANShader() { renderer = NULL; };
+GMANShader::GMANShader() {};
 
 GMANShader::~GMANShader() {};
-
-RtVoid GMANShader::set(GMANParameterList& p) { pl = p; }
-
-RtVoid GMANShader::set(GMANRenderer& r) { renderer = &r; }

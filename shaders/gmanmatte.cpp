@@ -43,6 +43,9 @@ namespace gmanshader {
 
 class matte : public GMANSurfaceShader {
 public:
+  explicit matte(GMANParameterList const& parameters)
+      : ka(getFloatParam(parameters, RI_KA, 1.0)), kd(getFloatParam(parameters, RI_KD, 1.0)) {}
+
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
   /*
@@ -51,6 +54,10 @@ public:
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const;
   GMANColor computeOi(GMANSurfaceEnv const& se) const;
+
+private:
+  RtFloat const ka;
+  RtFloat const kd;
 };
 
 RtVoid matte::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
@@ -59,9 +66,6 @@ RtVoid matte::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANC
 }
 
 GMANColor matte::computeCi(GMANSurfaceEnv const& se) const {
-  RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
-  RtFloat kd = getFloatParam(pl, RI_KD, 1.0);
-
   GMANVector nf = se.faceforward(se.N, se.I, se.Ng);
 
   GMANColor lit = se.ambient();
@@ -84,8 +88,10 @@ static GMANLoadableObjectInfo loadableInfo = {
     "A GMAN SurfaceShader for matte surfaces.",
 };
 
-static gmanshader::matte shader;
-
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(void) { return &shader; }
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& parameters) {
+  return new gmanshader::matte(parameters);
+}
+
+extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }

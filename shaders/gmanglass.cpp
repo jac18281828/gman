@@ -90,8 +90,11 @@ static GMANLoadableObjectInfo loadableInfo = {
     "1.5.",
 };
 
-static gmanshader::glass shader;
-
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(void) { return &shader; }
+// glass reads no parameter (see its own header comment).
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& /*parameters*/) {
+  return new gmanshader::glass();
+}
+
+extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }

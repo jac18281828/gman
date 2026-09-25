@@ -43,11 +43,13 @@ Tracer::~Tracer() = default;
 namespace {
 
 // The RISpec's own default: a scene that never calls RiSurface still
-// shades, as matte. One instance, loaded on first use and reused -- dlopen
-// once, not once per primitive.
-GMANSurfaceShader* defaultSurfaceShader() {
-  static GMANLoadableShader loader("libmatte.so");
-  static GMANSurfaceShader* shader = loader.getSurface();
+// shades, as matte. One instance for the process, built from an empty
+// parameter list and shared by every Appearance that needs it -- module
+// keeps the plugin loaded, and the aliasing shared_ptr below keeps it
+// loaded for exactly as long as some Appearance still shares this shader.
+std::shared_ptr<GMANSurfaceShader const> defaultSurfaceShader() {
+  static auto const module = std::make_shared<GMANLoadableShader>("libmatte.so", GMANParameterList());
+  static std::shared_ptr<GMANSurfaceShader const> const shader(module, module->getSurface());
   return shader;
 }
 
@@ -56,13 +58,8 @@ GMANSurfaceShader* defaultSurfaceShader() {
 Appearance appearanceOf(GMANAttributes const& attributes) {
   Appearance appearance;
 
-  // getSurface's const pointer just reflects that GMANAttributes doesn't
-  // want its shader pointer reseated through it; computeCi/computeOi are
-  // not logically const on the shader instance itself, which is why this
-  // casts rather than threading const through shade() below.
-  GMANSurfaceShader const* constShader = attributes.getSurface(0.0);
-  appearance.shader = constShader ? const_cast<GMANSurfaceShader*>(constShader) : defaultSurfaceShader();
-  appearance.parameters = attributes.getSurfaceParameters();
+  std::shared_ptr<GMANSurfaceShader const> shader = attributes.getSurface(0.0);
+  appearance.shader = shader ? shader : defaultSurfaceShader();
 
   std::list<RtLightHandle> const& handles = attributes.getLightList().getHandles();
   for (RtLightHandle const handle : handles) {
@@ -96,19 +93,6 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
   env.cameraToWorld = cameraToWorld;
   env.occluder = occluder;
   env.tracer = tracer;
-
-  // GMANLoadShader returns one static instance per plugin, shared by every
-  // surface naming it, so each call rebinds this surface's own list before
-  // running the shader -- on every call, the empty list included, and
-  // whichever shader the Appearance holds, defaultSurfaceShader's included.
-  // A nested shade() call a shader's own trace() makes rebinds the same
-  // pl before it returns, and does not restore it afterward: sound only
-  // under the discipline a shader recursing through trace() must follow
-  // -- read every parameter before the first trace() call, write Ci
-  // after the last, and never read pl from computeOi, since a nested
-  // call may have already rebound it by the time computeOi runs.
-  GMANParameterList parameters = appearance.parameters;
-  appearance.shader->set(parameters);
 
   Shading shading;
   shading.Ci = appearance.shader->computeCi(env);

@@ -42,8 +42,6 @@
 #include "gmanvolumeshader.h"
 #include "ri.h"
 
-class GMANRenderer;
-
 struct GMANTextureCoordinates {
   RtFloat s1, t1, s2, t2;
   RtFloat s3, t3, s4, t4;
@@ -82,8 +80,7 @@ private:
   [[maybe_unused]] GMANLightSourceShader* areaLight;
 
   std::shared_ptr<GMANLoadableShader> surfaceModule;
-  GMANSurfaceShader* surface;
-  GMANParameterList surfaceParameters;
+  std::shared_ptr<GMANSurfaceShader const> surface;
 
   std::shared_ptr<GMANLoadableShader> atmosphereModule;
   GMANVolumeShader* atmosphere;
@@ -133,20 +130,19 @@ public:
   const GMANLightList& getLightList() const { return lightList; };
 
   /* SHADERS */
-  RtVoid setSurface(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
-  const GMANSurfaceShader* getSurface(RtFloat /*time*/) const { return surface; };
-  GMANParameterList const& getSurfaceParameters() const { return surfaceParameters; };
+  RtVoid setSurface(const std::string& name, GMANParameterList const& pl);
+  std::shared_ptr<GMANSurfaceShader const> getSurface(RtFloat /*time*/) const { return surface; };
 
-  RtVoid setAtmosphere(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  RtVoid setAtmosphere(const std::string& name, GMANParameterList const& pl);
   const GMANVolumeShader* getAtmosphere(RtFloat /*time*/) const { return atmosphere; };
 
-  RtVoid setInterior(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  RtVoid setInterior(const std::string& name, GMANParameterList const& pl);
   const GMANVolumeShader* getInterior(RtFloat /*time*/) const { return interior; };
 
-  RtVoid setExterior(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  RtVoid setExterior(const std::string& name, GMANParameterList const& pl);
   const GMANVolumeShader* getExterior(RtFloat /*time*/) const { return exterior; };
 
-  RtVoid setDisplacement(const std::string& name, GMANParameterList& pl, GMANRenderer& rd);
+  RtVoid setDisplacement(const std::string& name, GMANParameterList const& pl);
   const GMANDisplacementShader* getDisplacement(RtFloat /*time*/) const { return displacement; };
 
   RtVoid setShadingRate(RtFloat sz);

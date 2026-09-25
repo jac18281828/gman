@@ -33,6 +33,7 @@
  */
 
 #include <cmath>
+#include <memory>
 #include <string>
 
 #include "check.h"
@@ -220,8 +221,9 @@ private:
 
 // Check D.1: mirror's Ci at a non-normal incidence equals Os*Cs*Kr times
 // the recording tracer's return, for the hand-computed reflected
-// direction, at Kr's default (1) and at a non-default value.
-void checkMirrorCi(GMANSurfaceShader* mirrorShader) {
+// direction, at Kr's default (1) and at a non-default value -- two
+// instances, one per Kr, since Kr now binds at construction.
+void checkMirrorCi(std::string const& mirrorPath) {
   GMANSurfaceEnv se;
   se.Os = GMANColor(1.0f, 1.0f, 1.0f);
   se.Cs = GMANColor(0.4f, 0.6f, 0.8f);
@@ -238,9 +240,8 @@ void checkMirrorCi(GMANSurfaceShader* mirrorShader) {
   GMANVector const nf = handFaceforward(n, se.I, ng);
   GMANVector const expectedR = handReflect(se.I, nf);
 
-  GMANParameterList defaultParams;
-  mirrorShader->set(defaultParams);
-  GMANColor const ciDefault = mirrorShader->computeCi(se);
+  GMANLoadableShader defaultLoader(mirrorPath.c_str(), GMANParameterList());
+  GMANColor const ciDefault = defaultLoader.getSurface()->computeCi(se);
   GMANColor const wantDefault(se.Os.getRed() * se.Cs.getRed() * 1.0f * 0.2f,
                               se.Os.getGreen() * se.Cs.getGreen() * 1.0f * 0.3f,
                               se.Os.getBlue() * se.Cs.getBlue() * 1.0f * 0.4f);
@@ -249,9 +250,8 @@ void checkMirrorCi(GMANSurfaceShader* mirrorShader) {
   check(vectorNear(tracer.lastR(), expectedR, kTol), "D.1: mirror traces the hand-computed reflected direction");
 
   RtFloat const nonDefaultKr = 0.4f;
-  GMANParameterList params = krParams(nonDefaultKr);
-  mirrorShader->set(params);
-  GMANColor const ciNonDefault = mirrorShader->computeCi(se);
+  GMANLoadableShader nonDefaultLoader(mirrorPath.c_str(), krParams(nonDefaultKr));
+  GMANColor const ciNonDefault = nonDefaultLoader.getSurface()->computeCi(se);
   GMANColor const wantNonDefault(se.Os.getRed() * se.Cs.getRed() * nonDefaultKr * 0.2f,
                                  se.Os.getGreen() * se.Cs.getGreen() * nonDefaultKr * 0.3f,
                                  se.Os.getBlue() * se.Cs.getBlue() * nonDefaultKr * 0.4f);
@@ -260,9 +260,9 @@ void checkMirrorCi(GMANSurfaceShader* mirrorShader) {
 
 // Check D.2: glass's Ci, entering and exiting, both with hand-computed
 // expected directions, both scaled by Os alone (no Cs factor).
-void checkGlassCi(GMANSurfaceShader* glassShader) {
-  GMANParameterList noParams;
-  glassShader->set(noParams); // glass reads no parameter; hygiene only
+void checkGlassCi(std::string const& glassPath) {
+  GMANLoadableShader loader(glassPath.c_str(), GMANParameterList()); // glass reads no parameter; hygiene only
+  GMANSurfaceShader* glassShader = loader.getSurface();
 
   GMANNormal const N(0.0f, 0.0f, 1.0f);
   GMANNormal const Ng(0.0f, 0.0f, 1.0f);
@@ -329,7 +329,10 @@ void checkGlassCi(GMANSurfaceShader* glassShader) {
 
 // Check D.3: glass at a TIR angle matches the reflection-only prediction
 // (kr == 1), with no NaN or Inf anywhere in Ci.
-void checkGlassTIR(GMANSurfaceShader* glassShader) {
+void checkGlassTIR(std::string const& glassPath) {
+  GMANLoadableShader loader(glassPath.c_str(), GMANParameterList());
+  GMANSurfaceShader* glassShader = loader.getSurface();
+
   GMANSurfaceEnv se;
   se.Os = GMANColor(1.0f, 1.0f, 1.0f);
   se.P = GMANPoint(0.0f, 0.0f, 0.0f);
@@ -349,23 +352,24 @@ void checkGlassTIR(GMANSurfaceShader* glassShader) {
 }
 
 // Check D.4: both shaders' computeOi returns Os unchanged.
-void checkComputeOiUnchanged(GMANSurfaceShader* mirrorShader, GMANSurfaceShader* glassShader) {
+void checkComputeOiUnchanged(std::string const& mirrorPath, std::string const& glassPath) {
   GMANSurfaceEnv se;
   se.Os = GMANColor(0.3f, 0.6f, 0.9f);
 
-  GMANColor const mirrorOi = mirrorShader->computeOi(se);
+  GMANLoadableShader mirrorLoader(mirrorPath.c_str(), GMANParameterList());
+  GMANColor const mirrorOi = mirrorLoader.getSurface()->computeOi(se);
   check(colorExactly(mirrorOi, se.Os), "D.4: mirror's computeOi returns Os unchanged");
 
-  GMANColor const glassOi = glassShader->computeOi(se);
+  GMANLoadableShader glassLoader(glassPath.c_str(), GMANParameterList());
+  GMANColor const glassOi = glassLoader.getSurface()->computeOi(se);
   check(colorExactly(glassOi, se.Os), "D.4: glass's computeOi returns Os unchanged");
 }
 
-// Check D.5 (mirror): re-entrant shading through the same singleton stays
-// correct. The outer call's Ci uses the outer Kr (1), not the inner's
-// (0.25) -- gman::shade leaves pl at whatever it last bound, with no
-// restore, so a shader that reads Kr after its own trace() call returns
-// would see the inner's value instead.
-void checkMirrorReentrant(GMANSurfaceShader* mirrorShader) {
+// Check D.5 (mirror): re-entrant shading through two distinct instances
+// stays correct. The outer call's Ci uses the outer Kr (1), not the
+// inner's (0.25): each instance's own Kr comes from its own construction,
+// so nothing left to rebind can leak between them.
+void checkMirrorReentrant(std::string const& mirrorPath) {
   GMANColor const outerCs(0.5f, 0.25f, 0.125f);
   GMANColor const innerCs(0.25f, 0.5f, 0.125f);
   GMANColor const terminatingAnswer(0.5f, 0.25f, 0.5f);
@@ -377,15 +381,16 @@ void checkMirrorReentrant(GMANSurfaceShader* mirrorShader) {
   point.I = GMANVector(0.0f, 0.0f, -1.0f);
   point.E = GMANPoint(0.0f, 0.0f, 5.0f);
 
+  auto const outerLoader = std::make_shared<GMANLoadableShader>(mirrorPath.c_str(), krParams(1.0f));
+  auto const innerLoader = std::make_shared<GMANLoadableShader>(mirrorPath.c_str(), krParams(0.25f));
+
   gman::Appearance outerAppearance;
-  outerAppearance.shader = mirrorShader;
-  outerAppearance.parameters = krParams(1.0f);
+  outerAppearance.shader = std::shared_ptr<GMANSurfaceShader const>(outerLoader, outerLoader->getSurface());
   outerAppearance.Cs = outerCs;
   outerAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
   gman::Appearance innerAppearance;
-  innerAppearance.shader = mirrorShader; // the same singleton
-  innerAppearance.parameters = krParams(0.25f);
+  innerAppearance.shader = std::shared_ptr<GMANSurfaceShader const>(innerLoader, innerLoader->getSurface());
   innerAppearance.Cs = innerCs;
   innerAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
@@ -408,11 +413,13 @@ void checkMirrorReentrant(GMANSurfaceShader* mirrorShader) {
         "D.5 mirror: the outer call's Ci uses the outer Kr, not the inner's, exactly");
 }
 
-// Check D.5 (glass): re-entrant shading through the same singleton stays
+// Check D.5 (glass): re-entrant shading through one shared instance stays
 // correct, both of the outer call's trace() calls recursing into their
-// own inner SurfacePoint and their own terminating colour. Grazing
-// incidence at the outer call pins kr = 1, kt = 0 exactly (§1's own
-// guard), so the predicted composite is exactly representable.
+// own inner SurfacePoint and their own terminating colour. glass reads no
+// parameter, so inner and outer sharing one instance proves nothing about
+// per-instance state the way checkMirrorReentrant's two instances do;
+// grazing incidence at the outer call pins kr = 1, kt = 0 exactly (§1's
+// own guard), so the predicted composite is exactly representable.
 //
 // This pins only the reflected branch's own contribution to the outer
 // Ci: kt == 0 makes branch B's own composite value vanish from it
@@ -422,7 +429,7 @@ void checkMirrorReentrant(GMANSurfaceShader* mirrorShader) {
 // == 2 assertion below are what stand in for that; a genuinely oblique
 // outer angle, with both kr and kt nonzero and a tolerance instead of
 // an exact match, would pin it directly.
-void checkGlassReentrant(GMANSurfaceShader* glassShader) {
+void checkGlassReentrant(std::string const& glassPath) {
   GMANColor const answerA(0.5f, 0.25f, 0.75f);     // branch A: Rr
   GMANColor const answerB(0.125f, 0.625f, 0.375f); // branch B: Rt
 
@@ -435,8 +442,11 @@ void checkGlassReentrant(GMANSurfaceShader* glassShader) {
 
   gman::SurfacePoint innerPointB = innerPointA;
 
+  auto const loader = std::make_shared<GMANLoadableShader>(glassPath.c_str(), GMANParameterList());
+  std::shared_ptr<GMANSurfaceShader const> const glassShader(loader, loader->getSurface());
+
   gman::Appearance innerAppearance;
-  innerAppearance.shader = glassShader; // the same singleton, shared by both branches
+  innerAppearance.shader = glassShader;
   innerAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
   FixedAnswerTracer terminatingA(answerA);
@@ -472,18 +482,16 @@ void checkGlassReentrant(GMANSurfaceShader* glassShader) {
 } // namespace
 
 int main() {
-  GMANLoadableShader mirrorLoader("libmirror.so");
-  GMANSurfaceShader* mirrorShader = mirrorLoader.getSurface();
-  GMANLoadableShader glassLoader("libglass.so");
-  GMANSurfaceShader* glassShader = glassLoader.getSurface();
+  std::string const mirrorPath = "libmirror.so";
+  std::string const glassPath = "libglass.so";
 
-  checkMirrorCi(mirrorShader);
-  checkGlassCi(glassShader);
-  checkGlassTIR(glassShader);
-  checkComputeOiUnchanged(mirrorShader, glassShader);
-  checkMirrorReentrant(mirrorShader);
-  checkGlassReentrant(glassShader);
+  checkMirrorCi(mirrorPath);
+  checkGlassCi(glassPath);
+  checkGlassTIR(glassPath);
+  checkComputeOiUnchanged(mirrorPath, glassPath);
+  checkMirrorReentrant(mirrorPath);
+  checkGlassReentrant(glassPath);
 
   return checkSummary("mirror and glass: Ci matches the hand-computed prediction, computeOi passes Os through, "
-                      "and re-entrant shading through the same singleton stays correct");
+                      "and re-entrant shading through their own instances stays correct");
 }

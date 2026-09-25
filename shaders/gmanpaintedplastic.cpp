@@ -46,10 +46,24 @@ namespace gmanshader {
 
 class paintedplastic : public GMANSurfaceShader {
 public:
+  explicit paintedplastic(GMANParameterList const& parameters)
+      : ka(getFloatParam(parameters, RI_KA, 1.0)), kd(getFloatParam(parameters, RI_KD, 0.5)),
+        ks(getFloatParam(parameters, RI_KS, 0.5)), roughness(getFloatParam(parameters, RI_ROUGHNESS, 0.1)),
+        specularcolor(getColorParam(parameters, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0))),
+        texturename(getStringParam(parameters, RI_TEXTURENAME, std::string())) {}
+
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const;
   GMANColor computeOi(GMANSurfaceEnv const& se) const;
+
+private:
+  RtFloat const ka;
+  RtFloat const kd;
+  RtFloat const ks;
+  RtFloat const roughness;
+  GMANColor const specularcolor;
+  std::string const texturename;
 };
 
 RtVoid paintedplastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
@@ -58,13 +72,6 @@ RtVoid paintedplastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl
 }
 
 GMANColor paintedplastic::computeCi(GMANSurfaceEnv const& se) const {
-  RtFloat ka = getFloatParam(pl, RI_KA, 1.0);
-  RtFloat kd = getFloatParam(pl, RI_KD, 0.5);
-  RtFloat ks = getFloatParam(pl, RI_KS, 0.5);
-  RtFloat roughness = getFloatParam(pl, RI_ROUGHNESS, 0.1);
-  GMANColor specularcolor = getColorParam(pl, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0));
-  std::string texturename = getStringParam(pl, RI_TEXTURENAME, std::string());
-
   GMANColor tex =
       texturename.empty() ? GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0) : se.texture(texturename, se.s, se.t);
 
@@ -104,8 +111,10 @@ static GMANLoadableObjectInfo loadableInfo = {
     "colour: the RISpec's own paintedplastic.",
 };
 
-static gmanshader::paintedplastic shader;
-
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(void) { return &shader; }
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& parameters) {
+  return new gmanshader::paintedplastic(parameters);
+}
+
+extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }

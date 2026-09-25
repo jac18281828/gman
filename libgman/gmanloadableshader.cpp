@@ -33,9 +33,15 @@
  */
 
 const char* GMANLoadableShader::LoadShaderFncName = "GMANLoadShader";
+const char* GMANLoadableShader::DestroyShaderFncName = "GMANDestroyShader";
 
-// default constructor
-GMANLoadableShader::GMANLoadableShader(const char* path) : GMANShader(), GMANLoadable(path), shader(NULL) {
+// Resolves GMANLoadShader, then GMANDestroyShader, and only then calls
+// GMANLoadShader: a plugin built before GMANDestroyShader existed returns a
+// static from a no-argument GMANLoadShader, and calling that through this
+// signature, then destroying a static, is undefined behaviour, so a plugin
+// missing either symbol is refused before the load ever runs.
+GMANLoadableShader::GMANLoadableShader(const char* path, GMANParameterList const& parameters)
+    : GMANShader(), GMANLoadable(path), destroyShader(NULL), shader(NULL) {
 
   LoadShaderFnc loadShader = (LoadShaderFnc)loadSymbol(LoadShaderFncName);
 
@@ -43,15 +49,22 @@ GMANLoadableShader::GMANLoadableShader(const char* path) : GMANShader(), GMANLoa
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Loadable module missing shader."));
   }
 
-  shader = loadShader();
+  destroyShader = (DestroyShaderFnc)loadSymbol(DestroyShaderFncName);
+
+  if (destroyShader == NULL) {
+    throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Loadable module missing GMANDestroyShader."));
+  }
+
+  shader = loadShader(parameters);
 
   if (shader == NULL) {
     throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Loadable module missing shader."));
   }
 };
 
-// default destructor
-GMANLoadableShader::~GMANLoadableShader() {};
+// Reached only once construction finished without throwing, so
+// destroyShader and shader are both known good here.
+GMANLoadableShader::~GMANLoadableShader() { destroyShader(shader); }
 
 GMANShader::ShaderType GMANLoadableShader::getType(RtVoid) const
 

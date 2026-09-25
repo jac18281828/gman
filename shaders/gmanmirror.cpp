@@ -43,15 +43,16 @@ namespace gmanshader {
 
 class mirror : public GMANSurfaceShader {
 public:
+  explicit mirror(GMANParameterList const& parameters) : kr(getFloatParam(parameters, RI_KR, 1.0)) {}
+
   GMANColor computeCi(GMANSurfaceEnv const& se) const;
   GMANColor computeOi(GMANSurfaceEnv const& se) const;
+
+private:
+  RtFloat const kr;
 };
 
 GMANColor mirror::computeCi(GMANSurfaceEnv const& se) const {
-  // Read before the first (only) trace() call: a nested shade() call
-  // trace() makes may rebind pl before this call returns (gmanshading.cpp).
-  RtFloat const kr = getFloatParam(pl, RI_KR, 1.0);
-
   GMANVector n(se.N.getX(), se.N.getY(), se.N.getZ());
   n.normalize();
   GMANVector const nf = se.faceforward(n, se.I, se.Ng);
@@ -75,8 +76,10 @@ static GMANLoadableObjectInfo loadableInfo = {
     "texture environment-map lookup.",
 };
 
-static gmanshader::mirror shader;
-
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(void) { return &shader; }
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& parameters) {
+  return new gmanshader::mirror(parameters);
+}
+
+extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }

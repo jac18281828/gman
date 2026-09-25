@@ -53,7 +53,6 @@
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
-#include "gmanrenderer.h"
 #include "gmanshaderenvironment.h"
 #include "gmantexture.h"
 #include "gmantransform.h"
@@ -81,20 +80,6 @@ void checkColorNear(GMANColor const& got, GMANColor const& want, RtFloat tol, st
             std::to_string(got.getBlue()) + "), want (" + std::to_string(want.getRed()) + ", " +
             std::to_string(want.getGreen()) + ", " + std::to_string(want.getBlue()) + ")");
 }
-
-// A do-nothing GMANRenderer: GMANAttributes::setSurface needs one to pass
-// to GMANShader::set(GMANRenderer&), which only stores the reference
-// (gmanshader.cpp) -- no override below is ever actually called.
-class NullRenderer : public GMANRenderer {
-public:
-  RtVoid illuminance(RtInt, GMANPoint const&, GMANVector const&, RtFloat) override {}
-  RtVoid illuminate(RtInt, GMANPoint const&, GMANVector const&, RtFloat) override {}
-  RtVoid solar(RtInt, GMANVector const&, RtFloat) override {}
-  RtFloat getDepth(int, int) const override { return 0; }
-  RtVoid render(GMANFrameBuffer*, GMANViewingSystem*, const GMANOptions&, const GMANAttributes&) override {}
-  GMANWorldManager* getWorldManager(RtVoid) override { return nullptr; }
-  GMANObjectManager* getObjectManager(RtVoid) override { return nullptr; }
-};
 
 // ---- toWorld and the plumbing (commit 1) ----
 
@@ -130,9 +115,8 @@ void testMatrixReachesShader() {
   options.setCameraToWorld(m);
 
   GMANAttributes attr;
-  NullRenderer renderer;
   GMANParameterList emptyPl;
-  attr.setSurface("camerashader", emptyPl, renderer);
+  attr.setSurface("camerashader", emptyPl);
 
   GMANPatchPolyObjectManager mgr;
   GMANParameterList spherePl;

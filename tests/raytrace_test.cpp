@@ -30,6 +30,7 @@
  */
 
 #include <cmath>
+#include <memory>
 #include <string>
 
 #include "check.h"
@@ -83,6 +84,13 @@ GMANVector anyPerpendicular(GMANVector const& n) {
   GMANVector t = n.cross(arbitrary);
   t.normalize();
   return t;
+}
+
+// Wraps a stack- or member-owned shader for Appearance::shader, which now
+// owns whatever it holds: this alias shares the caller's own lifetime
+// instead, owning nothing and freeing nothing.
+std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader const& shader) {
+  return std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
 }
 
 // Always the same fixed colour, regardless of se -- a sentinel for
@@ -151,7 +159,7 @@ public:
       : occluder(bvh), light_(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), lightDirection) {
     GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
     gman::Appearance appearance;
-    appearance.shader = &shader;
+    appearance.shader = asAppearanceShader(shader);
     appearance.Cs = GMANColor(0.8f, 0.3f, 0.2f);
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {&light_};
@@ -200,7 +208,7 @@ void checkDepthLimitTermination() {
   GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
   FixedColorShader shader(GMANColor(0.9f, 0.1f, 0.1f));
   gman::Appearance appearance;
-  appearance.shader = &shader;
+  appearance.shader = asAppearanceShader(shader);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
   worldManager.add(sphere);
@@ -223,7 +231,7 @@ void checkEscapeReturnsBackground() {
   GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
   FixedColorShader shader(GMANColor(0.9f, 0.1f, 0.1f));
   gman::Appearance appearance;
-  appearance.shader = &shader;
+  appearance.shader = asAppearanceShader(shader);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
   worldManager.add(sphere);
@@ -295,7 +303,7 @@ void checkSelfShadowSweepAppliesOffset() {
   GMANRaySphere* sphere = sphereAt(radius, 0.0f, 0.0f, 0.0f);
   AmbientTestShader shader;
   gman::Appearance appearance;
-  appearance.shader = &shader;
+  appearance.shader = asAppearanceShader(shader);
   appearance.Cs = GMANColor(0.4f, 0.6f, 0.2f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   GMANLight const ambient(GMAN_LIGHT_AMBIENT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector());
@@ -368,7 +376,7 @@ void checkDepthCountsCorrectly() {
   GMANRaySphere* sphere = sphereAt(radius, 0.0f, 0.0f, 0.0f);
   RecursionCountingMirror shader;
   gman::Appearance appearance;
-  appearance.shader = &shader;
+  appearance.shader = asAppearanceShader(shader);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
   worldManager.add(sphere);
@@ -412,7 +420,7 @@ void checkNestedOccluderShadowsBlocker() {
   GMANRaySphere* blocker = sphereAt(1.0f, -4.0f, 0.0f, 1.0f);
   FixedColorShader blockerShader(GMANColor(0.0f, 0.0f, 0.0f));
   gman::Appearance blockerAppearance;
-  blockerAppearance.shader = &blockerShader;
+  blockerAppearance.shader = asAppearanceShader(blockerShader);
   blockerAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f); // fully opaque
   blocker->setAppearance(blockerAppearance);
   fixture.addPrimitive(blocker);
@@ -469,7 +477,7 @@ void checkLargeSphereRendererPathAppliesMagnitude() {
   GMANRaySphere* sphere = sphereAt(radius, 0.0f, 0.0f, centreZ);
   LambertianTestShader shader;
   gman::Appearance appearance;
-  appearance.shader = &shader;
+  appearance.shader = asAppearanceShader(shader);
   appearance.Cs = GMANColor(0.8f, 0.3f, 0.2f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 

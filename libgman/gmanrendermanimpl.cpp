@@ -383,7 +383,7 @@ RtVoid GMANRenderManImpl::RiExposure(RtFloat gain, RtFloat gamma) {
 RtVoid GMANRenderManImpl::RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   allowed(cmdImager);
   GMANParameterList p(dictionary, n, tokens, parms);
-  getOptions().setImager(name, p, *renderer);
+  getOptions().setImager(name, p);
 }
 RtVoid GMANRenderManImpl::RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
   allowed(cmdQuantize);
@@ -609,22 +609,22 @@ RtVoid GMANRenderManImpl::RiIlluminate(RtLightHandle light, RtBoolean onoff) {
 RtVoid GMANRenderManImpl::RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   allowed(cmdSurface);
   GMANParameterList p(dictionary, n, tokens, parms);
-  getAttributes().setSurface(name, p, *renderer);
+  getAttributes().setSurface(name, p);
 }
 RtVoid GMANRenderManImpl::RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   allowed(cmdAtmosphere);
   GMANParameterList p(dictionary, n, tokens, parms);
-  getAttributes().setAtmosphere(name, p, *renderer);
+  getAttributes().setAtmosphere(name, p);
 }
 RtVoid GMANRenderManImpl::RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   allowed(cmdInterior);
   GMANParameterList p(dictionary, n, tokens, parms);
-  getAttributes().setInterior(name, p, *renderer);
+  getAttributes().setInterior(name, p);
 }
 RtVoid GMANRenderManImpl::RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   allowed(cmdExterior);
   GMANParameterList p(dictionary, n, tokens, parms);
-  getAttributes().setExterior(name, p, *renderer);
+  getAttributes().setExterior(name, p);
 }
 RtVoid GMANRenderManImpl::RiShadingRate(RtFloat size) {
   allowed(cmdShadingRate);
@@ -701,7 +701,7 @@ RtVoid GMANRenderManImpl::RiSides(RtInt sides) {
 RtVoid GMANRenderManImpl::RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   allowed(cmdDisplacement);
   GMANParameterList p(dictionary, n, tokens, parms);
-  getAttributes().setDisplacement(name, p, *renderer);
+  getAttributes().setDisplacement(name, p);
 }
 
 // ***************************************************************

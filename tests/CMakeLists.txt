@@ -129,8 +129,8 @@ set_tests_properties(ribwriterfailure_cleanup PROPERTIES
   FIXTURES_CLEANUP gmanrib_hidden)
 
 # Two RiBegin/RiEnd cycles with a parameterized surface shader, plus process
-# exit: the three points where a dlopen'd, never-unloaded shader's static
-# instance is reached again. See tests/shaderoutlivesrenderer_test.c.
+# exit: the three points where a dlopen'd, never-unloaded plugin module is
+# reached again. See tests/shaderoutlivesrenderer_test.c.
 add_executable(gman_shaderoutlivesrenderer shaderoutlivesrenderer_test.c)
 target_link_libraries(gman_shaderoutlivesrenderer PRIVATE gman_core)
 # RiBegin(RI_NULL) dlopens the default renderer; RiSurface dlopens plastic.

@@ -32,8 +32,6 @@
 #include "gmanparameterlist.h"
 #include "ri.h"
 
-class GMANRenderer;
-
 struct GMANShaderParamInfo {
   char* name;
   GMANTokenEntry::TokenClass cls;
@@ -63,16 +61,18 @@ public:
   // enumerated shader types
   typedef enum { DISPLACEMENT, VOLUME, IMAGER, LIGHTSOURCE, SURFACE } ShaderType;
 
-protected:
-  GMANParameterList pl;
-  GMANRenderer* renderer;
-  /* load */
-public:
   GMANShader();
   virtual ~GMANShader();
 
-  virtual RtVoid set(GMANParameterList& p);
-  virtual RtVoid set(GMANRenderer& p);
-
   virtual ShaderType getType(RtVoid) const = 0;
 };
+
+// A plugin's own pair of entry points, defined with extern "C" linkage so a
+// mismatched definition fails to compile rather than silently overloading.
+// GMANLoadShader builds one instance from parameters, bound at
+// construction, or returns null on failure. GMANDestroyShader frees an
+// instance GMANLoadShader returned; every plugin must define both, so a
+// shader never outlives the Surface call that built it and never leaks the
+// one GMANAttributes released.
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& parameters);
+extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader);

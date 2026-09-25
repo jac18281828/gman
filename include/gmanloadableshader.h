@@ -49,18 +49,30 @@ class GMANLoadableShader : public GMANShader, GMANLoadable {
 
 public:
   // public types
-  typedef GMANShader* (*LoadShaderFnc)(RtVoid);
+  typedef GMANShader* (*LoadShaderFnc)(GMANParameterList const&);
+  typedef RtVoid (*DestroyShaderFnc)(GMANShader*);
 
   static const char* LoadShaderFncName;
+  static const char* DestroyShaderFncName;
 
 private:
+  DestroyShaderFnc destroyShader;
   GMANShader* shader;
 
 public:
-  // default constructor
-  GMANLoadableShader(const char* path);
+  // Builds one instance from parameters through the plugin's own
+  // GMANLoadShader.
+  GMANLoadableShader(const char* path, GMANParameterList const& parameters);
 
-  virtual ~GMANLoadableShader(); // default destructor
+  // Owns the one instance GMANLoadShader returned: frees it through the
+  // same plugin's own GMANDestroyShader, never through delete, since the
+  // plugin's own allocator built it.
+  virtual ~GMANLoadableShader();
+
+  GMANLoadableShader(GMANLoadableShader const&) = delete;
+  GMANLoadableShader& operator=(GMANLoadableShader const&) = delete;
+  GMANLoadableShader(GMANLoadableShader&&) = delete;
+  GMANLoadableShader& operator=(GMANLoadableShader&&) = delete;
 
   /*
    * shader interface.

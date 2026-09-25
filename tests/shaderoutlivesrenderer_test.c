@@ -19,12 +19,12 @@
  */
 
 /*
- * A plugin's static shader instance outlives the RenderMan context that
- * built its parameters: dlopen'd once, it is never unloaded, so a second
- * RiBegin/RiEnd cycle reaches it again through GMANShader::set's
- * assignment, and process exit reaches it once more after main returns.
- * Either path is a defect if it dies; the test's only assertion is that it
- * does not.
+ * A plugin's module outlives the RenderMan context that built an instance
+ * from it: dlopen'd once, it is never unloaded, so a second RiBegin/RiEnd
+ * cycle's own RiSurface resolves the same GMANLoadShader/GMANDestroyShader
+ * symbols again and builds a fresh instance through them, and process exit
+ * reaches the dlopen'd module once more after main returns. Either path is
+ * a defect if it dies; the test's only assertion is that it does not.
  */
 
 #include <stdio.h>

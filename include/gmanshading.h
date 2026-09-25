@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "gmancolor.h"
@@ -48,13 +49,14 @@ class GMANSurfaceShader;
 namespace gman {
 
 // What a primitive looks like, fixed when it is declared: its surface
-// shader (the RISpec's matte default when RiSurface was never called), the
-// parameter list that shader's own RiSurface passed (empty for the default
-// surface), the lights active in its attribute scope (RiIlluminate) and its
-// Cs/Os.
+// shader (the RISpec's matte default when RiSurface was never called,
+// already built from its own Surface call's parameters), the lights active
+// in its attribute scope (RiIlluminate) and its Cs/Os. Shared ownership,
+// not a raw pointer: the ray tracer stores an Appearance in every
+// primitive and shades after WorldEnd, when AttributeEnd may have released
+// the last GMANAttributes that loaded this shader.
 struct GMAN_EXPORT Appearance {
-  GMANSurfaceShader* shader = nullptr;
-  GMANParameterList parameters;
+  std::shared_ptr<GMANSurfaceShader const> shader;
   std::vector<GMANLight const*> lights;
   GMANColor Cs;
   GMANColor Os;

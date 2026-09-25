@@ -55,8 +55,10 @@ static GMANLoadableObjectInfo loadableInfo = {
     "Never dlopened outside the test suite.",
 };
 
-static gmanshader::notasurface shader;
-
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(void) { return &shader; }
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& /*parameters*/) {
+  return new gmanshader::notasurface();
+}
+
+extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }

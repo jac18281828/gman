@@ -26,6 +26,7 @@
  */
 
 #include <cmath>
+#include <memory>
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
@@ -76,6 +77,13 @@ private:
   mutable GMANVector lastNg_;
   mutable RtFloat lastSurfaceMagnitude_ = 0.0;
 };
+
+// Wraps a stack-owned shader for Appearance::shader, which now owns
+// whatever it holds: this alias shares the caller's own lifetime instead,
+// owning nothing and freeing nothing.
+std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader const& shader) {
+  return std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
+}
 
 // Calls se.trace() once, unconditionally, with a fixed direction, and
 // returns whatever it answers -- the minimum shader that lets a test
@@ -167,7 +175,7 @@ void checkShadeForwardsItsOwnTracer() {
 
   TraceProbeShader shader;
   gman::Appearance appearance;
-  appearance.shader = &shader;
+  appearance.shader = asAppearanceShader(shader);
   appearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
@@ -199,7 +207,7 @@ void checkShadeForwardsSurfaceMagnitude() {
 
   MagnitudeProbeShader shader;
   gman::Appearance appearance;
-  appearance.shader = &shader;
+  appearance.shader = asAppearanceShader(shader);
   appearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
