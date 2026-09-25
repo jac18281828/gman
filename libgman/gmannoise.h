@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <random>
+
 #include "gmanpoint.h"
 #include "ri.h"
 
@@ -38,6 +40,16 @@ private:
   /* Noise and pnoise */
   static constexpr RtInt kN = 256;
   static constexpr RtInt kMask = 0xff;
+
+  // Seeded (808) once per instance, so every instance's noise field is
+  // pinned to the same values independent of any other instance or of
+  // whatever else in the process draws random numbers. Never sampled
+  // through uniform_int_distribution/uniform_real_distribution: their
+  // output is implementation-defined per standard library even from an
+  // identical seeded engine, so a fixed seed would not draw the same
+  // values on every platform. mt19937's own operator() sequence is fully
+  // specified by the standard and portable.
+  std::mt19937 rng;
 
   RtInt* prn;
   RtInt prn1[kN]; /* 0 to kN in random order*/

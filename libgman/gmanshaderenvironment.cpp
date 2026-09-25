@@ -29,11 +29,10 @@
 namespace {
 
 // One generator for every GMANSurfaceEnv, matching real SL's noise()
-// being a pure function of its argument, not of shader instance.
-// Constructing a gman::Noise reseeds the process-global C rand()
-// (srand(808)); a fresh instance per shading call would be both wasteful
-// and non-deterministic with respect to whatever else in the process
-// calls rand().
+// being a pure function of its argument, not of shader instance. A fresh
+// instance per shading call would be wasteful: Noise's constructor does
+// real work -- shuffling the permutation tables, drawing gradient
+// vectors -- that only needs to happen once.
 gman::Noise& noiseGenerator() {
   static gman::Noise generator;
   return generator;

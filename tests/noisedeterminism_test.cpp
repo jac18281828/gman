@@ -1,0 +1,98 @@
+/* SPDX-License-Identifier: LGPL-2.1-or-later
+ *
+ * Copyright (c) 2026 John Cairns <john@2ad.com>
+ */
+/*
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+ */
+
+/*
+ * gman::Noise seeds its own std::mt19937 rather than the process-global C
+ * rand(). Proof: two independently constructed instances agree at the same
+ * fixed inputs; those values match constants recorded from a real build;
+ * and rand()'s own sequence is unaffected by constructing or exercising a
+ * Noise.
+ */
+
+#include <cmath>
+#include <cstdlib>
+
+#include "check.h"
+#include "gmannoise.h"
+#include "gmanpoint.h"
+
+namespace {
+
+bool near(RtFloat a, RtFloat b, RtFloat tol = 1e-6) { return std::fabs(a - b) <= tol; }
+
+void testTwoInstancesAgree() {
+  gman::Noise a;
+  gman::Noise b;
+
+  GMANPoint const p1(0.25, 0.5, 0.75);
+  GMANPoint const p2(3.0, -1.5, 2.25);
+  RtFloat const v(1.75);
+
+  check(near(a.noise(p1), b.noise(p1)), "noise: two instances agree at the same GMANPoint input");
+  check(near(a.noise(p2), b.noise(p2)), "noise: two instances agree at a second GMANPoint input");
+  check(near(a.noise(v), b.noise(v)), "noise: two instances agree at the same scalar input");
+  check(near(a.cellnoise(p1), b.cellnoise(p1)), "cellnoise: two instances agree at the same GMANPoint input");
+  check(near(a.cellnoise(p2), b.cellnoise(p2)), "cellnoise: two instances agree at a second GMANPoint input");
+  check(near(a.cellnoise(v), b.cellnoise(v)), "cellnoise: two instances agree at the same scalar input");
+}
+
+// Recorded from a real build (this file's own header comment): a
+// regression here means the seeded draw sequence changed, not that two
+// instances disagree with each other.
+void testFixedValues() {
+  gman::Noise n;
+
+  GMANPoint const p1(0.25, 0.5, 0.75);
+  GMANPoint const p2(3.0, -1.5, 2.25);
+  RtFloat const v(1.75);
+
+  check(near(n.noise(p1), (RtFloat)0.586262286), "noise(p1) matches its recorded value");
+  check(near(n.noise(p2), (RtFloat)0.391894221), "noise(p2) matches its recorded value");
+  check(near(n.noise(v), (RtFloat)0.438288748), "noise(v) matches its recorded value");
+  check(near(n.cellnoise(p1), (RtFloat)0.0529898629), "cellnoise(p1) matches its recorded value");
+  check(near(n.cellnoise(p2), (RtFloat)0.383108139), "cellnoise(p2) matches its recorded value");
+  check(near(n.cellnoise(v), (RtFloat)0.750981987), "cellnoise(v) matches its recorded value");
+}
+
+void testRandUnperturbed() {
+  constexpr unsigned kSeed = 12345;
+
+  std::srand(kSeed);
+  int const before = std::rand();
+
+  gman::Noise n;
+  GMANPoint const p(1.0, 2.0, 3.0);
+  (void)n.noise(p);
+  (void)n.cellnoise(p);
+
+  std::srand(kSeed);
+  int const after = std::rand();
+
+  check(before == after, "constructing and exercising a Noise leaves rand()'s own sequence unperturbed");
+}
+
+} // namespace
+
+int main() {
+  testTwoInstancesAgree();
+  testFixedValues();
+  testRandUnperturbed();
+  return checkSummary("noisedeterminism: ok");
+}

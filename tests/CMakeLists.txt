@@ -357,6 +357,13 @@ set_tests_properties(subdivisiontag PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_noisedeterminism noisedeterminism_test.cpp)
+target_link_libraries(gman_noisedeterminism PRIVATE gman_core gman_internal_headers)
+add_test(NAME noisedeterminism COMMAND gman_noisedeterminism)
+set_tests_properties(noisedeterminism PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_spacechain spacechain_test.cpp)
 target_link_libraries(gman_spacechain PRIVATE gman_core gman_internal_headers)
 add_test(NAME spacechain COMMAND gman_spacechain)

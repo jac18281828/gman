@@ -22,21 +22,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <stdlib.h>
-
 #include "gmanmath.h"
 #include "gmannoise.h"
 #include "gmanvector4.h"
 
 namespace gman {
 
-float Noise::rn() { return 1.0 - 2.0 * (rand() / (RAND_MAX + 0.0)); }
+float Noise::rn() { return 1.0 - 2.0 * (rng() / (rng.max() + 0.0)); }
 
-Noise::Noise() {
+Noise::Noise() : rng(808) {
   prn = prn1;
   cprn = cprn1;
 
-  srand(808);
   RtInt i, t, u;
   for (i = 0; i < kN; i++) {
     prn1[i] = i;
@@ -45,21 +42,21 @@ Noise::Noise() {
   }
   for (i = 0; i < kN; i++) {
     t = prn1[i];
-    u = (RtInt)(kN * (rand() / (RAND_MAX + 1.0)));
+    u = (RtInt)(kN * (rng() / (rng.max() + 1.0)));
     prn1[i] = prn1[u];
     prn1[u] = t;
   }
 
   for (i = 0; i < kN; i++) {
     t = prn2[i];
-    u = (RtInt)(kN * (rand() / (RAND_MAX + 1.0)));
+    u = (RtInt)(kN * (rng() / (rng.max() + 1.0)));
     prn2[i] = prn2[u];
     prn2[u] = t;
   }
 
   for (i = 0; i < kN; i++) {
     t = prn3[i];
-    u = (RtInt)(kN * (rand() / (RAND_MAX + 1.0)));
+    u = (RtInt)(kN * (rng() / (rng.max() + 1.0)));
     prn3[i] = prn3[u];
     prn3[u] = t;
   }
@@ -84,21 +81,21 @@ Noise::Noise() {
   }
   for (i = 0; i < CN; i++) {
     t = cprn1[i];
-    u = (RtInt)(CN * (rand() / (RAND_MAX + 1.0)));
+    u = (RtInt)(CN * (rng() / (rng.max() + 1.0)));
     cprn1[i] = cprn1[u];
     cprn1[u] = t;
   }
 
   for (i = 0; i < CN; i++) {
     t = cprn2[i];
-    u = (RtInt)(CN * (rand() / (RAND_MAX + 1.0)));
+    u = (RtInt)(CN * (rng() / (rng.max() + 1.0)));
     cprn2[i] = cprn2[u];
     cprn2[u] = t;
   }
 
   for (i = 0; i < CN; i++) {
     t = cprn3[i];
-    u = (RtInt)(CN * (rand() / (RAND_MAX + 1.0)));
+    u = (RtInt)(CN * (rng() / (rng.max() + 1.0)));
     cprn3[i] = cprn3[u];
     cprn3[u] = t;
   }
