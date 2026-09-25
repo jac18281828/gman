@@ -230,7 +230,7 @@ RtInt diceCountFor(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2
 GMANTextureCoordinates resolveParametricCorners(GMANParameterList& pl, GMANAttributes* attr) {
   GMANTextureCoordinates corners = attr->getTextureCoordinates();
 
-  RtFloat* st = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
+  RtFloat* st = gman::floatArray(pl, RI_ST);
   if (st) {
     corners.s1 = st[0];
     corners.t1 = st[1];
@@ -241,14 +241,14 @@ GMANTextureCoordinates resolveParametricCorners(GMANParameterList& pl, GMANAttri
     corners.s4 = st[6];
     corners.t4 = st[7];
   }
-  RtFloat* s = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
+  RtFloat* s = gman::floatArray(pl, RI_S);
   if (s) {
     corners.s1 = s[0];
     corners.s2 = s[1];
     corners.s3 = s[2];
     corners.s4 = s[3];
   }
-  RtFloat* tp = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
+  RtFloat* tp = gman::floatArray(pl, RI_T);
   if (tp) {
     corners.t1 = tp[0];
     corners.t2 = tp[1];
@@ -455,9 +455,9 @@ struct PolygonVertexTexCoord {
 // index i reads the same vertex from every one of them.
 std::vector<PolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParameterList& pl, RtInt nverts,
                                                                     const RtFloat* p) {
-  RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
-  RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
-  RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
+  RtFloat* sArr = gman::floatArray(pl, RI_S);
+  RtFloat* tArr = gman::floatArray(pl, RI_T);
+  RtFloat* stArr = gman::floatArray(pl, RI_ST);
 
   std::vector<PolygonVertexTexCoord> coords(nverts);
   for (RtInt i = 0; i < nverts; i++) {
@@ -1056,7 +1056,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParame
   if (nverts < 3) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -1101,7 +1101,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSGeneralPolygon(RtInt nloops, RtI
   if (nloops < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -1153,7 +1153,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtIn
   if (npolys < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -1226,7 +1226,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
   if (npolys < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -1298,7 +1298,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt,
                                                       GMANAttributes* attr, GMANTransform* t) {
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -1325,7 +1325,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPatch(RtToken type, GMANParamete
 GMANPrimitive* GMANPatchPolyObjectManager::getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv,
                                                           RtToken vwrap, GMANParameterList pl, GMANOptions* opt,
                                                           GMANAttributes* attr, GMANTransform* t) {
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -1368,9 +1368,9 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSNuPatch(RtInt nu, RtInt uorder, 
                                                         RtFloat vmin, RtFloat vmax, GMANParameterList pl,
                                                         GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
   // "Pw" wins over "P" when both are supplied; "P" alone means w = 1.
-  RtFloat* pw = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_PW));
+  RtFloat* pw = gman::floatArray(pl, RI_PW);
   bool rational = pw != NULL;
-  RtFloat* p = rational ? pw : (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = rational ? pw : gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }

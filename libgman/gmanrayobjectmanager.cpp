@@ -30,6 +30,7 @@
 
 #include "gmanobjectmanager.h"
 #include "gmanpolygon.h"
+#include "gmanpolygoninternal.h"
 #include "gmanprimitives.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
@@ -104,7 +105,7 @@ GMANPrimitive* GMANRayObjectManager::getRSPolygon(RtInt nverts, GMANParameterLis
   if (nverts < 3) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -129,7 +130,7 @@ GMANPrimitive* GMANRayObjectManager::getRSGeneralPolygon(RtInt nloops, RtInt nve
   if (nloops < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -170,7 +171,7 @@ GMANPrimitive* GMANRayObjectManager::getRSPointsPolygon(RtInt npolys, RtInt nver
   if (npolys < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }
@@ -226,7 +227,7 @@ GMANPrimitive* GMANRayObjectManager::getRSPointsGeneralPolygons(RtInt npolys, Rt
   if (npolys < 1) {
     return create();
   }
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
     return create();
   }

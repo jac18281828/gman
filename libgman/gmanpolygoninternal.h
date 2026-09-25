@@ -25,12 +25,15 @@
 
 #include <vector>
 
+#include "gmanparameterlist.h"
 #include "gmanpoint.h"
+#include "gmanpolygon.h"
 #include "ri.h"
 
-// Shared by gmanpolygon.cpp and gmanpatchpolyobjectmanager.cpp, both built
-// into gman_core: internal to libgman, not installed and not GMAN_EXPORT,
-// since nothing outside this library needs it.
+// Shared by gmanpolygon.cpp, gmanpatchpolyobjectmanager.cpp,
+// gmanraypolygon.cpp and gmanrayobjectmanager.cpp, all built into
+// gman_core: internal to libgman, not installed and not GMAN_EXPORT, since
+// nothing outside this library needs it.
 namespace gman {
 
 // The ring's largest bounding-box side, in whichever of x, y or z spans it
@@ -39,5 +42,13 @@ namespace gman {
 // this extent rather than against an absolute constant, so a sliver a
 // million times longer than it is wide reads the same way at any scale.
 RtFloat boundingBoxExtent(std::vector<GMANPoint> const& ring);
+
+// pl's token array for token, cast to RtFloat*: NULL when pl carries no
+// such token, non-NULL otherwise. token must be one standardDictionary()
+// pre-registers (RI_P, RI_PW, RI_S, RI_T, RI_ST), so getTokenId never
+// throws.
+inline RtFloat* floatArray(GMANParameterList const& pl, RtToken token) {
+  return (RtFloat*)pl.getPointer(standardDictionary().getTokenId(token));
+}
 
 } // namespace gman

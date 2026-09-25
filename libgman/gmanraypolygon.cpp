@@ -22,6 +22,7 @@
  */
 
 #include "gmanpolygon.h"
+#include "gmanpolygoninternal.h"
 #include "gmanraybbox.h"
 #include "gmanraypolygon.h"
 
@@ -166,13 +167,13 @@ namespace gman {
 // or (for a mesh) a request whose "P" is already known present.
 std::vector<std::pair<RtFloat, RtFloat>> resolvePointTexCoords(GMANParameterList const& pl, std::size_t count) {
   std::vector<std::pair<RtFloat, RtFloat>> texCoords(count, {(RtFloat)0.0, (RtFloat)0.0});
-  RtFloat* p = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_P));
+  RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p)
     return texCoords;
 
-  RtFloat* sArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_S));
-  RtFloat* tArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_T));
-  RtFloat* stArr = (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(RI_ST));
+  RtFloat* sArr = gman::floatArray(pl, RI_S);
+  RtFloat* tArr = gman::floatArray(pl, RI_T);
+  RtFloat* stArr = gman::floatArray(pl, RI_ST);
   for (std::size_t i = 0; i < count; i++) {
     RtFloat const objX = p[3 * i];
     RtFloat const objY = p[3 * i + 1];
