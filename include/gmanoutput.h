@@ -86,7 +86,7 @@ public:
   //
   // Runs gamma, then quantize, then a NaN-safe [0, 1] clamp on every pixel
   // in float, then hands the result to writeImage. A driver never narrows a
-  // value save has not already put through all three steps.
+  // colour value save has not already put through all three steps.
   RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma);
 
 protected:

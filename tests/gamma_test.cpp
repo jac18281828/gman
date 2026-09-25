@@ -20,9 +20,10 @@
 
 // The driver ordering -- correct in float, narrow afterwards -- needs no test
 // here. GMANOutput::save runs gamma, quantize and the output clamp itself,
-// in that order, before any driver ever narrows a pixel; no driver reaches
-// a pixel outside that order. tests/outputnarrowing_test.cpp pins it end to
-// end. Assertion 4 below pins the sub-byte arithmetic that order depends on.
+// in that order, and hands every driver pixels already in that order.
+// tests/outputnarrowing_test.cpp pins it end to end, and fails a driver
+// that reads the framebuffer instead. Assertion 4 below pins the sub-byte
+// arithmetic that order depends on.
 
 #include <cmath>
 

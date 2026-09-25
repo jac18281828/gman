@@ -50,7 +50,9 @@ inline GMANColor::ColorSampleType clampedChannel(GMANColor::ColorSampleType v) {
 // A channel narrowed to a byte: the clamp above, then the product of the
 // clamped value and GMAN_BYTEMAX truncated in float. Total -- every input,
 // NaN included, produces a byte in range -- since the clamp bounds the
-// value before the cast.
+// value before the cast. Truncating rather than rounding keeps every
+// in-range byte identical to the historical output; rounding belongs to a
+// real Quantize.
 inline GMANByte narrowedByte(GMANColor::ColorSampleType v) {
   static_assert(GMANColor::hasFloatingPointSamples, "narrowing designed for normalized floating point math");
 

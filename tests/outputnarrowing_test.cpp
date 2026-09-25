@@ -31,12 +31,23 @@
  * writes PNM, so PNM's byte identity rests on the checks here.
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <functional>
 #include <limits>
 #include <string>
 #include <vector>
+
+#ifdef GMAN_WITH_PNG
+extern "C" {
+#include <png.h>
+}
+#endif
+
+extern "C" {
+#include <tiffio.h>
+}
 
 #include "check.h"
 #include "gmancolor.h"
@@ -47,14 +58,7 @@
 
 #ifdef GMAN_WITH_PNG
 #include "gmanoutputpng.h"
-extern "C" {
-#include <png.h>
-}
 #endif
-
-extern "C" {
-#include <tiffio.h>
-}
 
 namespace {
 
@@ -88,6 +92,7 @@ void checkReceives() {
     RecordingOutput out(1, 1);
     out.setPixel(0, 0, GMANColor(0.8f, 0.8f, 0.8f));
     out.save(GMANOutput::RGB, 4.0f, 1.0f);
+    check(out.received.size() == 1, "receive 2: writeImage receives the pixel");
     check(out.received[0].getRed() == 1.0f, "receive 2: gain 4 clamps 0.8 to exactly 1");
   }
 
@@ -97,6 +102,7 @@ void checkReceives() {
     RecordingOutput out(1, 1);
     out.setPixel(0, 0, GMANColor(1.5f, 1.5f, 1.5f));
     out.save(GMANOutput::RGB, 0.5f, 1.0f);
+    check(out.received.size() == 1, "receive 3: writeImage receives the pixel");
     check(out.received[0].getRed() == 0.75f, "receive 3: gain 0.5 brings 1.5 down to 0.75");
   }
 
@@ -107,6 +113,7 @@ void checkReceives() {
     RtFloat const inf = std::numeric_limits<RtFloat>::infinity();
     out.setPixel(0, 0, GMANColor(-0.5f, nan, inf));
     out.save(GMANOutput::RGB, 1.0f, 1.0f);
+    check(out.received.size() == 1, "receive 4: writeImage receives the pixel");
     check(out.received[0].getRed() == 0.0f, "receive 4: -0.5 clamps to 0");
     check(out.received[0].getGreen() == 0.0f, "receive 4: NaN clamps to 0");
     check(out.received[0].getBlue() == 1.0f, "receive 4: +infinity clamps to 1");
@@ -119,6 +126,7 @@ void checkReceives() {
     out.setPixel(0, 0, GMANColor(0.002f, 0.002f, 0.002f));
     out.save(GMANOutput::RGB, 1.0f, 2.2f);
     GMANColor const expected = gman::gammaCorrected(GMANColor(0.002f, 0.002f, 0.002f), 1.0f, 2.2f);
+    check(out.received.size() == 1, "receive 5: writeImage receives the pixel");
     check(out.received[0].getRed() == expected.getRed(), "receive 5: matches gammaCorrected's own result");
     check(out.received[0].getRed() > 1.0f / 255.0f, "receive 5: 0.002 lifts above one byte step");
   }

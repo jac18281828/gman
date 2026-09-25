@@ -97,7 +97,6 @@ RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMAN
       for (int y = 0; y < yres; y++) {
         int colOff = 0;
         for (int x = 0; x < xres; x++) {
-          // get a pixel
           GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
 
           // default, (no reduction) is 24bit

@@ -20,15 +20,13 @@
 
 /*
  * GMANQuantize::doColor's "Color quantization not currently implemented."
- * message is genuine -- colour quantization really is unimplemented -- but
- * GMANOutput::save called it once per pixel with no once-per-process
- * guard, so tests/rib/shaders.rib (600x200) produced 120,000 lines of it.
- * Fixed to log once per process, matching GMANTransform::apply's own
- * static-bool idiom. shaders.rib still reaches the quantizer on every
- * pixel, through save's single doColor(GMANColor&) call; the message must
- * now appear exactly once in its output, not zero (the fix must not delete
- * the message) and not more than once (the fix must not merely reduce the
- * count).
+ * message is genuine -- colour quantization really is unimplemented.
+ * GMANOutput::save calls doColor once per pixel, through its single
+ * doColor(GMANColor&) call, and the guard warns once per process,
+ * matching GMANTransform::apply's own static-bool idiom. Rendering
+ * tests/rib/shaders.rib (600x200) must print the message exactly once, not
+ * zero (the guard must not delete the message) and not more than once (the
+ * guard must actually suppress repeats rather than merely reduce them).
  */
 
 #include <cstdio>
