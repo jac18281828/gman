@@ -1,0 +1,10 @@
+FrameBegin 1
+Option "limits" "constant integer bucketsize" [ 4 ]
+WorldBegin
+Surface "plastic" "Ka" [ 1 ] "Kd" [ 0.5 ]
+Sphere 1 -1 1 360 "constant float density" [ 2 ]
+Cone 1 1 360
+Polygon "P" [ 0 0 0 1 0 0 1 1 0 0 1 0 ]
+MakeShadow "shadow.tif" "shadow.shd" "constant float bias" [ 0.25 ]
+WorldEnd
+FrameEnd

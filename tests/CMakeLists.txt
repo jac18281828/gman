@@ -71,6 +71,27 @@ set_tests_properties(ribwriter PROPERTIES
   TIMEOUT 30
   RESOURCE_LOCK gmanrib_plugin_file)
 
+# Drives RiSurface, RiOption, RiPolygon, RiSphere and RiMakeShadow through
+# their ellipsis form (not *V), so each reads its own va_list through the
+# same RIB-writer seam as ribwriter above. See tests/capivalist.c.
+add_executable(gman_capivalist capivalist.c)
+target_link_libraries(gman_capivalist PRIVATE gman_core)
+set_target_properties(gman_capivalist PROPERTIES LINKER_LANGUAGE CXX)
+add_dependencies(gman_capivalist gman_rib)
+
+set(GMAN_CAPIVALIST_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/capivalist-run")
+file(MAKE_DIRECTORY "${GMAN_CAPIVALIST_WORKDIR}")
+
+add_test(NAME capivalist
+  COMMAND gman_capivalist
+          "${GMAN_CAPIVALIST_WORKDIR}/scene.rib"
+          "${CMAKE_CURRENT_SOURCE_DIR}/rib/golden/capivalist_scene.rib"
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(capivalist PROPERTIES
+  LABELS unit
+  TIMEOUT 30
+  RESOURCE_LOCK gmanrib_plugin_file)
+
 # A failed .rib load leaves no context current. See tests/ribwriterfailure.c,
 # which renames libgmanrib.so aside for the run and restores it whether it
 # passes or fails. libgmanrib.so is also read by gman_ribwriter and by the
