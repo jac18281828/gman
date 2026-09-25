@@ -32,6 +32,7 @@ extern "C" {
 
 #include "gmandefaults.h"
 #include "gmanerror.h"
+#include "gmanlog.h"
 #include "gmanoutput.h"
 #include "gmanoutputjpeg.h"
 #include "gmanoutputnarrow.h"
@@ -77,8 +78,14 @@ OutputJPEG::OutputJPEG(const char* path, int width, int height)
 // default destructor
 OutputJPEG::~OutputJPEG() {};
 
-RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANColor> const& image,
-                              RtFloat /*gamma*/) {
+RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat /*gamma*/) {
+  // JPEG has no alpha or depth channel in the format this driver targets:
+  // every mode but RGB loses something, so name it and write RGB anyway
+  // rather than fail a render over a lossy visual proxy.
+  if (mode != RGB) {
+    warning("JPEG cannot carry alpha or depth samples for this display mode; writing RGB only.");
+  }
+
   FILE* jpegFile = fopen(outputName.c_str(), "w");
   if (jpegFile) {
     struct jpeg_compress_struct cinfo; // jpeg compression params

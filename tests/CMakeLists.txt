@@ -898,8 +898,7 @@ set_tests_properties(jpegdriver PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 30
-  SKIP_RETURN_CODE 77
-  WILL_FAIL TRUE)
+  SKIP_RETURN_CODE 77)
 
 # The driver table's own contract: gman --version lists exactly the
 # drivers this configure actually compiled, in table order.
