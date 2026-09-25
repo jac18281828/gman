@@ -150,6 +150,10 @@ int main(int argc, char* argv[]) {
         case 'w':
           logObj.setLogLevel(LOGLVL_WARNING);
           break;
+        default:
+          std::cerr << argv[0] << ": unrecognized flag " << argv[arg] << std::endl;
+          usage(argv[0]);
+          return EXIT_FAILURE;
         }
         arg++;
       }

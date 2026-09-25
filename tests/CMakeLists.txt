@@ -296,6 +296,21 @@ set_tests_properties(rflag PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+add_executable(gman_unknownflag unknownflag_test.cpp)
+target_link_libraries(gman_unknownflag PRIVATE gman_core)
+
+set(GMAN_UNKNOWNFLAG_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/unknownflag-run")
+file(MAKE_DIRECTORY "${GMAN_UNKNOWNFLAG_WORKDIR}")
+
+add_test(NAME unknownflag
+  COMMAND gman_unknownflag $<TARGET_FILE:gman>
+                           "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
+  WORKING_DIRECTORY "${GMAN_UNKNOWNFLAG_WORKDIR}")
+set_tests_properties(unknownflag PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
 add_executable(gman_facevarying facevarying_test.cpp)
 target_link_libraries(gman_facevarying PRIVATE gman_core)
 
