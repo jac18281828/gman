@@ -2315,6 +2315,16 @@ set_tests_properties(sampler PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman's direction warps, their pdfs and the tangent frame, each warp
+# driven by gman::sample2D.
+add_executable(gman_samplewarp samplewarp_test.cpp)
+target_link_libraries(gman_samplewarp PRIVATE gman_core)
+
+add_test(NAME samplewarp COMMAND gman_samplewarp)
+set_tests_properties(samplewarp PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, and a second, unrelated CMake project finds

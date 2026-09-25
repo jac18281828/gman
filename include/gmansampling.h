@@ -25,17 +25,22 @@
 
 #include <cstdint>
 
+#include "gmanvector.h"
 #include "ri.h"
 
 /*
- * The renderer-facing sampling API: a counter-based sampler, public,
- * installed and GMAN_EXPORT, so a renderer plugin -- in this tree or
- * outside it -- draws every random number an integrator needs from one
- * place.
+ * The renderer-facing sampling API: a counter-based sampler and the
+ * direction warps it drives, public, installed and GMAN_EXPORT, so a
+ * renderer plugin -- in this tree or outside it -- draws every random
+ * number an integrator needs from one place.
  *
  * Every function here is a pure function of its arguments: nothing
  * carries state between calls, so an image reproduces however the caller
  * schedules its pixels and samples across tiles and workers.
+ *
+ * Warps take (u1, u2) in [0, 1)^2 and return a unit direction in a local
+ * frame whose +z is the normal; a pdf is always per unit solid angle, so a
+ * BSDF's and a light's combine under MIS with no conversion.
  */
 
 namespace gman {
@@ -44,6 +49,12 @@ namespace gman {
 struct GMAN_EXPORT Sample2D {
   RtFloat u1;
   RtFloat u2;
+};
+
+// One point in the plane, either a sample or a warp's output.
+struct GMAN_EXPORT Point2D {
+  RtFloat x;
+  RtFloat y;
 };
 
 // Chains seed, pixel (x, y), sampleIndex and dimension through a 32-bit
@@ -79,5 +90,48 @@ GMAN_EXPORT RtFloat sample1D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t
 // checked by assert.
 GMAN_EXPORT Sample2D sample2D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleIndex,
                               std::uint32_t sampleCount, std::uint32_t dimension);
+
+// Shirley and Chiu's concentric map: [0, 1)^2 onto the unit disk, uniform
+// by area.
+GMAN_EXPORT Point2D concentricDisk(RtFloat u1, RtFloat u2);
+
+// Malley's method: concentricDisk lifted to the hemisphere by z = sqrt(max(0,
+// 1 - x^2 - y^2)), so a rim point has z = 0. Preserves the disk's
+// stratification.
+GMAN_EXPORT GMANVector cosineHemisphere(RtFloat u1, RtFloat u2);
+
+// Per unit solid angle: cosTheta / pi for cosTheta > 0, 0 otherwise.
+GMAN_EXPORT RtFloat cosineHemispherePdf(RtFloat cosTheta);
+
+GMAN_EXPORT GMANVector uniformHemisphere(RtFloat u1, RtFloat u2);
+// Per unit solid angle: 1 / (2 * pi).
+GMAN_EXPORT RtFloat uniformHemispherePdf();
+
+GMAN_EXPORT GMANVector uniformSphere(RtFloat u1, RtFloat u2);
+// Per unit solid angle: 1 / (4 * pi).
+GMAN_EXPORT RtFloat uniformSpherePdf();
+
+// A cone about +z of half-angle acos(cosThetaMax), cosThetaMax in
+// [-1, 1); the returned direction has z >= cosThetaMax.
+GMAN_EXPORT GMANVector uniformCone(RtFloat u1, RtFloat u2, RtFloat cosThetaMax);
+// Per unit solid angle: 1 / (2 * pi * (1 - cosThetaMax)).
+GMAN_EXPORT RtFloat uniformConePdf(RtFloat cosThetaMax);
+
+// An orthonormal basis around a unit normal: t, b and n mutually
+// orthogonal unit vectors with t.cross(b) == n. Built by Duff et al.'s
+// branchless construction ("Building an Orthonormal Basis, Revisited",
+// JCGT 6(1), 2017), which holds for every unit normal, including
+// (0, 0, -1), where the usual cross-with-an-axis construction loses
+// precision.
+struct GMAN_EXPORT TangentFrame {
+  GMANVector t, b, n;
+
+  // v.x * t + v.y * b + v.z * n.
+  GMANVector toWorld(GMANVector const& local) const;
+  // The inverse of toWorld.
+  GMANVector toLocal(GMANVector const& world) const;
+};
+
+GMAN_EXPORT TangentFrame tangentFrame(GMANVector const& n);
 
 } // namespace gman

@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -43,6 +44,13 @@ constexpr std::uint32_t kSample2DColPurpose = 0x27d4eb2fu;
 constexpr std::uint32_t kSample2DRowPurpose = 0x165667b1u;
 constexpr std::uint32_t kSample2DJitterXSalt = 0xd3a2646cu;
 constexpr std::uint32_t kSample2DJitterYSalt = 0xfd7046c5u;
+
+constexpr RtFloat kPi = 3.14159265358979323846f;
+constexpr RtFloat kInvPi = 1.0f / kPi;
+constexpr RtFloat kInv2Pi = 1.0f / (2.0f * kPi);
+constexpr RtFloat kInv4Pi = 1.0f / (4.0f * kPi);
+constexpr RtFloat kPiOver4 = kPi / 4.0f;
+constexpr RtFloat kPiOver2 = kPi / 2.0f;
 
 // Chris Wellons' lowbias32 32-bit integer finalizer -- full avalanche,
 // low bias ("Prospecting for Hash Functions", nullprogram.com, 2018).
@@ -98,11 +106,11 @@ std::uint32_t isqrtFloor(std::uint32_t n) {
 // cycle-walking a bijection of the next power-of-two superset until it
 // lands back in range -- the technique behind Kensler's own permute()
 // ("Correlated Multi-Jittered Sampling"), with an independently chosen
-// round function. Each step of permuteRound() is invertible (XOR by a
-// fixed value, or multiply by an odd constant modulo the power-of-two
-// domain), so their composition is a bijection on the masked domain;
-// cycle-walking a bijection's orbit back into a subset of its domain is
-// itself a bijection on that subset.
+// round function. Each step of permuteRound() is invertible (XOR by a fixed
+// value, or multiply by an odd constant modulo the power-of-two domain),
+// so their composition is a bijection on the masked domain; cycle-walking
+// a bijection's orbit back into a subset of its domain is itself a
+// bijection on that subset.
 std::uint32_t permuteRound(std::uint32_t i, std::uint32_t mask, std::uint32_t seed) {
   i ^= seed & mask;
   i &= mask;
@@ -200,6 +208,78 @@ Sample2D sample2D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleInde
   RtFloat const u1 = clampBelowOne((static_cast<RtFloat>(subColumn) + jitterX) / static_cast<RtFloat>(gridSize));
   RtFloat const u2 = clampBelowOne((static_cast<RtFloat>(subRow) + jitterY) / static_cast<RtFloat>(gridSize));
   return {u1, u2};
+}
+
+Point2D concentricDisk(RtFloat u1, RtFloat u2) {
+  RtFloat const ox = 2.0f * u1 - 1.0f;
+  RtFloat const oy = 2.0f * u2 - 1.0f;
+  if (ox == 0.0f && oy == 0.0f) {
+    return {0.0f, 0.0f};
+  }
+
+  RtFloat r;
+  RtFloat theta;
+  if (std::fabs(ox) > std::fabs(oy)) {
+    r = ox;
+    theta = kPiOver4 * (oy / ox);
+  } else {
+    r = oy;
+    theta = kPiOver2 - kPiOver4 * (ox / oy);
+  }
+  return {r * std::cos(theta), r * std::sin(theta)};
+}
+
+GMANVector cosineHemisphere(RtFloat u1, RtFloat u2) {
+  Point2D const d = concentricDisk(u1, u2);
+  RtFloat const z = std::sqrt(std::max(0.0f, 1.0f - d.x * d.x - d.y * d.y));
+  return GMANVector(d.x, d.y, z);
+}
+
+RtFloat cosineHemispherePdf(RtFloat cosTheta) { return cosTheta > 0.0f ? cosTheta * kInvPi : 0.0f; }
+
+GMANVector uniformHemisphere(RtFloat u1, RtFloat u2) {
+  RtFloat const z = u1;
+  RtFloat const r = std::sqrt(std::max(0.0f, 1.0f - z * z));
+  RtFloat const phi = 2.0f * kPi * u2;
+  return GMANVector(r * std::cos(phi), r * std::sin(phi), z);
+}
+
+RtFloat uniformHemispherePdf() { return kInv2Pi; }
+
+GMANVector uniformSphere(RtFloat u1, RtFloat u2) {
+  RtFloat const z = 1.0f - 2.0f * u1;
+  RtFloat const r = std::sqrt(std::max(0.0f, 1.0f - z * z));
+  RtFloat const phi = 2.0f * kPi * u2;
+  return GMANVector(r * std::cos(phi), r * std::sin(phi), z);
+}
+
+RtFloat uniformSpherePdf() { return kInv4Pi; }
+
+GMANVector uniformCone(RtFloat u1, RtFloat u2, RtFloat cosThetaMax) {
+  RtFloat const cosTheta = (1.0f - u1) + u1 * cosThetaMax;
+  RtFloat const sinTheta = std::sqrt(std::max(0.0f, 1.0f - cosTheta * cosTheta));
+  RtFloat const phi = 2.0f * kPi * u2;
+  return GMANVector(sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta);
+}
+
+RtFloat uniformConePdf(RtFloat cosThetaMax) { return kInv2Pi / (1.0f - cosThetaMax); }
+
+GMANVector TangentFrame::toWorld(GMANVector const& local) const {
+  return t * local.getX() + b * local.getY() + n * local.getZ();
+}
+
+GMANVector TangentFrame::toLocal(GMANVector const& world) const {
+  return GMANVector(t.dot(world), b.dot(world), n.dot(world));
+}
+
+TangentFrame tangentFrame(GMANVector const& n) {
+  RtFloat const sign = std::copysign(1.0f, n.getZ());
+  RtFloat const a = -1.0f / (sign + n.getZ());
+  RtFloat const b = n.getX() * n.getY() * a;
+
+  GMANVector const t(1.0f + sign * n.getX() * n.getX() * a, sign * b, -sign * n.getX());
+  GMANVector const bt(b, sign + n.getY() * n.getY() * a, -n.getY());
+  return {t, bt, n};
 }
 
 } // namespace gman
