@@ -232,3 +232,11 @@ doc/         the 1999 design document
 ```
 
 `tests/rib/` holds 81 more scenes, the test suite's own.
+
+## Contributing
+
+Bug reports, fixes and scenes that render wrong are all welcome. For a rendering bug the `.rib`
+file is the reproduction: attach it and the image you got.
+[CONTRIBUTING.md](CONTRIBUTING.md) covers pull requests, the three checks to run before you push,
+Conventional Commits and the rebase-only history. `AGENTS.md` briefs an AI agent working in the
+tree.
