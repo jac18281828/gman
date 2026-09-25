@@ -29,6 +29,7 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <vector>
 
 #include "gmanlog.h"
 #include "gmanoutput.h"
@@ -54,12 +55,13 @@ public:
 
   ~OutputTIFF(); // default destructor
 
-  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
-
   // get/set the TIFF compression type
   RtVoid setCompression(Compression c);
 
   Compression getCompression(void) const;
+
+protected:
+  RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat gamma) override;
 };
 
 } // namespace gman

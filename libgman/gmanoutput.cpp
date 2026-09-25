@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <vector>
+
 #include "gmandefaults.h"
 #include "gmanlog.h"
 #include "gmanoutput.h"
@@ -58,4 +60,17 @@ RtVoid GMANOutput::setQuantization(DisplayMode mode, RtInt one, RtInt min, RtInt
   if (quantizer)
     delete quantizer;
   quantizer = new GMANQuantize((GMANQuantize::DisplayMode)mode, one, min, max, ditheramplitude);
+}
+
+RtVoid GMANOutput::save(DisplayMode mode, RtFloat gain, RtFloat gamma) {
+  std::vector<GMANColor> image(static_cast<std::size_t>(xres) * static_cast<std::size_t>(yres));
+  for (int y = 0; y < yres; y++) {
+    for (int x = 0; x < xres; x++) {
+      GMANColor color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
+      if (quantizer)
+        quantizer->doColor(color);
+      image[static_cast<std::size_t>(y) * static_cast<std::size_t>(xres) + static_cast<std::size_t>(x)] = color;
+    }
+  }
+  writeImage(mode, image, gamma);
 }

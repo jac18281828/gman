@@ -54,7 +54,8 @@ OutputJPEG::OutputJPEG(const char* path, int width, int height)
 // default destructor
 OutputJPEG::~OutputJPEG() {};
 
-RtVoid OutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
+RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANColor> const& image,
+                              RtFloat /*gamma*/) {
   FILE* jpegFile = fopen(outputName.c_str(), "w");
   if (jpegFile) {
     struct jpeg_compress_struct cinfo; // jpeg compression params
@@ -97,11 +98,7 @@ RtVoid OutputJPEG::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat 
         for (int x = 0; x < xres; x++) {
           // get a pixel
           GMANColorRGB color;
-          color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
-
-          if (quantizer) {
-            color = quantizer->doColor(color);
-          }
+          color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
 
           // default, (no reduction) is 24bit
 

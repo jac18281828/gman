@@ -47,7 +47,7 @@ OutputTIFF::OutputTIFF(const char* path, int width, int height) : GMANOutput(pat
 // default destructor
 OutputTIFF::~OutputTIFF() {};
 
-RtVoid OutputTIFF::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma) {
+RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat /*gamma*/) {
   const RtInt samplesperpixel = (mode == GMANOutput::RGB) ? 3 : 4;
 
   TIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, compression);
@@ -82,10 +82,7 @@ RtVoid OutputTIFF::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamm
     int colOff = 0, rowOff = y;
     for (int x = 0; x < xres; x++) {
       GMANColorRGB color;
-      color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
-
-      if (quantizer)
-        quantizer->doColor(color);
+      color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
 
       buf[colOff++] = color.getRed();
       buf[colOff++] = color.getGreen();

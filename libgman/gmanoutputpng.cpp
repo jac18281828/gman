@@ -47,7 +47,7 @@ OutputPNG::OutputPNG(const char* path, int width, int height) : GMANOutput(path,
 // default destructor
 OutputPNG::~OutputPNG() {};
 
-RtVoid OutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma) {
+RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat gamma) {
   // write a PNG file to 'fileName'
 
   // open jpeg output file for writing
@@ -204,11 +204,7 @@ RtVoid OutputPNG::save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma
         for (int x = 0; x < xres; x++) {
 
           GMANColorRGB color;
-          color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
-
-          // mask off appropriate bits for image generation
-          if (quantizer)
-            quantizer->doColor(color);
+          color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
 
           src[colOff++] = color.getRed();
           src[colOff++] = color.getGreen();

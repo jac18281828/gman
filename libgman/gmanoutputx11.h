@@ -29,6 +29,7 @@
 #include <map>
 #include <stack>
 #include <string>
+#include <vector>
 
 #include "gmanlog.h"
 #include "gmanwindowoutput.h"
@@ -47,7 +48,8 @@ public:
 
   ~OutputX11(); // default destructor
 
-  virtual RtVoid save(GMANOutput::DisplayMode mode, RtFloat gain, RtFloat gamma);
+protected:
+  RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat gamma) override;
 };
 
 } // namespace gman

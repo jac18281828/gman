@@ -47,7 +47,7 @@ OutputPNM::~OutputPNM() {};
 // Writes a binary P6 portable pixmap directly. This driver used to depend on
 // netpbm and its whole body was compiled out when libpnm was absent, which it
 // always was, so PNM output never produced a file.
-RtVoid OutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat gamma) {
+RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANColor> const& image, RtFloat /*gamma*/) {
 
   FILE* ppmFile = std::fopen(outputName.c_str(), "wb");
   if (!ppmFile) {
@@ -61,10 +61,7 @@ RtVoid OutputPNM::save(GMANOutput::DisplayMode /*mode*/, RtFloat gain, RtFloat g
   for (int row = 0; row < yres; row++) {
     for (int col = 0; col < xres; col++) {
       GMANColorRGB color;
-      color = gman::gammaCorrected(getPixel(col, row), gain, gamma);
-
-      if (quantizer)
-        quantizer->doColor(color);
+      color = image[(std::size_t)row * (std::size_t)xres + (std::size_t)col];
 
       const unsigned char rgb[3] = {static_cast<unsigned char>(color.getRed()),
                                     static_cast<unsigned char>(color.getGreen()),
