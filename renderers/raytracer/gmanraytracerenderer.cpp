@@ -44,28 +44,6 @@ constexpr int kMaxTraceDepth = 4;
 
 namespace {
 
-// The gman::SurfacePoint a ray hit implies: P and N/Ng already camera
-// space (GMANRayInterface::intersect's own contract), I the ray's own
-// direction and E its own origin, rather than both assumed at the
-// camera-space origin -- an orthographic ray, or a future secondary ray,
-// does not look from there. s and t default to u and v, the RISpec's own
-// default texture-coordinate mapping; texture-coordinate corners on a ray
-// primitive are not implemented.
-gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
-  gman::SurfacePoint point;
-  point.P = hit.point;
-  point.N = GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
-  point.Ng = point.N;
-  point.I = ray.getDirection();
-  point.E = ray.getOrigin();
-  point.u = hit.u;
-  point.v = hit.v;
-  point.s = hit.u;
-  point.t = hit.v;
-  point.surfaceMagnitude = gman::primitiveMagnitude(hit.primitive->getBBox());
-  return point;
-}
-
 // pass's irradiance at hit from dir, and the pointer gman::shade takes
 // for it: null when pass is null, so a call site needs one line instead
 // of a value-or-default plus a pointer-or-null pair.
@@ -100,8 +78,8 @@ GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVect
 
   GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1, indirectPass);
   PassIrradiance const indirect(indirectPass, hit, R);
-  gman::Shading const shading = gman::shade(hitPrimitive->getAppearance(), hitSurfacePoint(ray, hit), cameraToWorld,
-                                            &occluder, &child, nullptr, indirect.ptr);
+  gman::Shading const shading = gman::shade(hitPrimitive->getAppearance(), gman::hitSurfacePoint(ray, hit),
+                                            cameraToWorld, &occluder, &child, nullptr, indirect.ptr);
   return shading.Ci;
 }
 
@@ -156,8 +134,8 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
 
   for (int layer = 0; layer < gman::kMaxCompositeLayers && hit.appearance != nullptr; ++layer) {
     PassIrradiance const indirect(indirectPass, hit.hit, ray.getDirection());
-    gman::Shading const shading = gman::shade(*hit.appearance, hitSurfacePoint(ray, hit.hit), cameraToWorld, &occluder,
-                                              &tracer, nullptr, indirect.ptr);
+    gman::Shading const shading = gman::shade(*hit.appearance, gman::hitSurfacePoint(ray, hit.hit), cameraToWorld,
+                                              &occluder, &tracer, nullptr, indirect.ptr);
     accumulated += gman::multiplyChannels(transmission, shading.Ci);
     transmission = gman::multiplyChannels(transmission, gman::oneMinus(shading.Oi));
     if (gman::transmissionNegligible(transmission)) {

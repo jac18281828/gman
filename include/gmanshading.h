@@ -33,6 +33,8 @@
 #include "gmanocclude.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
+#include "gmanray.h"
+#include "gmanraybbox.h"
 #include "gmantrace.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -91,6 +93,17 @@ struct GMAN_EXPORT SurfacePoint {
   // offsets by its own size, not the camera distance alone.
   RtFloat surfaceMagnitude = 0.0;
 };
+
+// The SurfacePoint a ray hit implies: P and N/Ng already camera space
+// (GMANRayInterface::intersect's own contract), I the ray's own direction
+// and E its own origin, rather than both assumed at the camera-space
+// origin -- an orthographic ray, or a secondary ray, does not look from
+// there. s and t default to u and v, the RISpec's own default
+// texture-coordinate mapping. Precondition: a hit, hit.primitive
+// non-null. A host's own shading and gman::albedo share this one
+// mapping, so the day s and t stop defaulting to u and v, albedo follows
+// shading.
+GMAN_EXPORT SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit);
 
 // What shading a point produces: colour and opacity together, so a
 // front-to-back compositor reads both from one call rather than shading

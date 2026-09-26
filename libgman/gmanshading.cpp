@@ -25,6 +25,7 @@
 
 #include "gmanattributes.h"
 #include "gmanloadableshader.h"
+#include "gmanprimitive.h"
 #include "gmanshaderenvironment.h"
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
@@ -72,6 +73,21 @@ Appearance appearanceOf(GMANAttributes const& attributes) {
   appearance.Cs = attributes.getColor();
   appearance.Os = attributes.getOpacity();
   return appearance;
+}
+
+SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
+  SurfacePoint point;
+  point.P = hit.point;
+  point.N = GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
+  point.Ng = point.N;
+  point.I = ray.getDirection();
+  point.E = ray.getOrigin();
+  point.u = hit.u;
+  point.v = hit.v;
+  point.s = hit.u;
+  point.t = hit.v;
+  point.surfaceMagnitude = gman::primitiveMagnitude(hit.primitive->getBBox());
+  return point;
 }
 
 Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
