@@ -33,6 +33,7 @@
 
 #include "check.h"
 #include "gmanattributes.h"
+#include "gmanloadableshader.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "ri.h"
@@ -277,6 +278,21 @@ void checkKind(std::function<KindFixture()> const& makeFixture, std::string cons
   checkDotSoNotSniffed(makeFixture());
 }
 
+// No RI request resolves a light source through the shared resolver, so
+// the public entry point is called directly: a wrong-type module names the
+// light-source kind in its report.
+void checkLightSourceWrongType() {
+  resetRecorded();
+  auto const resolved = gman::resolveLoadableShader("LightSource", "no light shines", "matte", GMANParameterList(),
+                                                    GMANShader::LIGHTSOURCE);
+  check(resolved == nullptr, "LightSource wrong type: nothing resolves");
+  check(lastCode == RIE_NOSHADER && lastSeverity == RIE_ERROR, "LightSource wrong type: RIE_NOSHADER at RIE_ERROR");
+  std::string const ending = "is not a light source shader.";
+  check(lastMessage.size() >= ending.size() &&
+            lastMessage.compare(lastMessage.size() - ending.size(), ending.size(), ending) == 0,
+        "LightSource wrong type: the message names a light source");
+}
+
 } // namespace
 
 int main() {
@@ -292,6 +308,7 @@ int main() {
   checkKind(exteriorFixture);
   checkKind(imagerFixture, "Imager \"matte\" failed to load; the frame renders without an imager: Specified imager "
                            "shader is not an imager shader.");
+  checkLightSourceWrongType();
 
   return checkSummary("every shader kind resolves its name to lib<name>.so and falls back on failure");
 }
