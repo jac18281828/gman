@@ -189,6 +189,19 @@ void checkSphereFamily(std::string const& gman, std::string const& ribDir) {
         "sphere family: nosuchpass's own run names libnosuchpass.so");
 }
 
+// A token RiOptionV never declares, alongside indirect, must not reach
+// parameter-list construction or change the render.
+void checkExtraTokenIgnored(std::string const& gman, std::string const& ribDir) {
+  Rendered const constant = renderFixture(gman, ribDir, "indirectseam_constant.rib", "indirectseam_constant.tif");
+  Rendered const extraToken = renderFixture(gman, ribDir, "indirectseam_extratoken.rib", "indirectseam_extratoken.tif");
+
+  check(constant.result.exitStatus == 0, "extra token: indirectseam_constant.rib exits 0");
+  check(extraToken.result.exitStatus == 0, "extra token: indirectseam_extratoken.rib exits 0");
+  check(extraToken.result.output.find("RIE_BADTOKEN") == std::string::npos,
+        "extra token: an undeclared token beside indirect prints no RIE_BADTOKEN line");
+  checkPixelIdentical(extraToken.image, constant.image, "extra token: renders as the constant-pass variant does");
+}
+
 // The mirror family: none, constantindirect. Proof the pass reaches a
 // mirror's own reflected hit, not only a primary one.
 void checkMirrorFamily(std::string const& gman, std::string const& ribDir) {
@@ -254,9 +267,10 @@ int main(int argc, char* argv[]) {
   std::string const ribDir = argv[2];
 
   checkSphereFamily(gman, ribDir);
+  checkExtraTokenIgnored(gman, ribDir);
   checkMirrorFamily(gman, ribDir);
 
   return checkSummary("Option \"render\" \"string indirect\": a bound pass brightens ambient-lit pixels by exactly "
-                      "its own constant, a missing pass changes nothing, clearing the name undoes it, and the pass "
-                      "reaches a mirror's own reflected hit");
+                      "its own constant, a missing pass changes nothing, clearing the name undoes it, an undeclared "
+                      "token beside it changes nothing, and the pass reaches a mirror's own reflected hit");
 }

@@ -462,7 +462,7 @@ RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtP
     if (std::string(tokens[i]) != kIndirectPassToken) {
       continue;
     }
-    GMANParameterList const p(dictionary, n, tokens, parms);
+    GMANParameterList const p(dictionary, 1, &tokens[i], &parms[i]);
     std::string const* const value = (std::string const*)p.getPointer(dictionary.getTokenId(kIndirectPassToken));
     if (value != nullptr) {
       getOptions().setIndirectPass(value[0]);
