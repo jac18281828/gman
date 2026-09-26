@@ -59,10 +59,9 @@ constexpr float kAmbientIntensity = 0.3931372549019608f;
 const int kForegroundByte = static_cast<int>(std::floor(255.0f * kAmbientIntensity));
 const int kForegroundWithIndirectByte = static_cast<int>(std::floor(255.0f * (kAmbientIntensity + kConstantIndirect)));
 
-// round(255 * Kr * kConstantIndirect) with Kr = 1: the mirror fixture's
-// own reflected-pixel brightening. Within 1 per channel for antialiasing
-// and float rounding at the reflected ray's own hit.
-constexpr int kMirrorDeltaByte = 13;
+// The mirror's Kr = 1, Cs = Os = 1: a fully covered reflected pixel reads
+// kForegroundWithIndirectByte exactly, within 1 per channel for
+// antialiasing and float rounding at the reflected ray's hit.
 constexpr int kMirrorDeltaTol = 1;
 
 struct Result {
@@ -203,7 +202,10 @@ void checkExtraTokenIgnored(std::string const& gman, std::string const& ribDir) 
 }
 
 // The mirror family: none, constantindirect. Proof the pass reaches a
-// mirror's own reflected hit, not only a primary one.
+// mirror's reflected hit, not only a primary one. An interior reflection
+// pixel is classified by its bare value alone -- kForegroundByte on every
+// channel, the same fully lit value the sphere family reads directly --
+// independent of the bound delta the check below asserts.
 void checkMirrorFamily(std::string const& gman, std::string const& ribDir) {
   Rendered const bare = renderFixture(gman, ribDir, "indirectseam_mirror_none.rib", "indirectseam_mirror_none.tif");
   Rendered const bound =
@@ -217,7 +219,7 @@ void checkMirrorFamily(std::string const& gman, std::string const& ribDir) {
   }
 
   uint32_t const background = bare.image.at(0, 0);
-  long reflectionCount = 0;
+  long interiorCount = 0;
   long backgroundCount = 0;
   long otherCount = 0;
   long violations = 0;
@@ -228,29 +230,31 @@ void checkMirrorFamily(std::string const& gman, std::string const& ribDir) {
       uint32_t const boundP = bound.image.at(x, y);
       int const bareR = TIFFGetR(bareP), bareG = TIFFGetG(bareP), bareB = TIFFGetB(bareP);
       int const boundR = TIFFGetR(boundP), boundG = TIFFGetG(boundP), boundB = TIFFGetB(boundP);
-      int const deltaR = boundR - bareR, deltaG = boundG - bareG, deltaB = boundB - bareB;
 
       if (bareP == background) {
         ++backgroundCount;
         if (boundP != bareP) {
           ++violations;
         }
-      } else if (std::abs(deltaR - kMirrorDeltaByte) <= kMirrorDeltaTol &&
-                 std::abs(deltaG - kMirrorDeltaByte) <= kMirrorDeltaTol &&
-                 std::abs(deltaB - kMirrorDeltaByte) <= kMirrorDeltaTol) {
-        ++reflectionCount;
+      } else if (bareR == kForegroundByte && bareG == kForegroundByte && bareB == kForegroundByte) {
+        ++interiorCount;
+        if (std::abs(boundR - kForegroundWithIndirectByte) > kMirrorDeltaTol ||
+            std::abs(boundG - kForegroundWithIndirectByte) > kMirrorDeltaTol ||
+            std::abs(boundB - kForegroundWithIndirectByte) > kMirrorDeltaTol) {
+          ++violations;
+        }
       } else {
         ++otherCount;
-        if (deltaR < 0 || deltaG < 0 || deltaB < 0) {
+        if (boundR < bareR || boundG < bareG || boundB < bareB) {
           ++violations;
         }
       }
     }
   }
 
-  std::printf("mirror family: %ld reflection, %ld background, %ld other pixels\n", reflectionCount, backgroundCount,
+  std::printf("mirror family: %ld interior, %ld background, %ld other pixels\n", interiorCount, backgroundCount,
               otherCount);
-  check(reflectionCount > 0, "mirror family: at least one reflection-interior pixel exists");
+  check(interiorCount >= 4, "mirror family: at least four fully covered reflection pixels exist");
   check(backgroundCount > 0, "mirror family: at least one background pixel exists");
   check(otherCount > 0, "mirror family: at least one other (antialiased edge) pixel exists");
   check(violations == 0, "mirror family: every pixel's category holds (" + std::to_string(violations) + " violated)");

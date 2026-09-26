@@ -37,11 +37,18 @@
 
 namespace {
 
+// ambient() sums a default-constructed GMANColor with the lights and
+// indirect, each entering through one float addition: near float epsilon
+// covers that accumulation without masking a wrong term.
 constexpr RtFloat kTol = (RtFloat)1.0e-6;
 
 bool colorNear(GMANColor const& a, GMANColor const& b, RtFloat tol) {
   return std::fabs(a.getRed() - b.getRed()) <= tol && std::fabs(a.getGreen() - b.getGreen()) <= tol &&
          std::fabs(a.getBlue() - b.getBlue()) <= tol;
+}
+
+bool colorExactly(GMANColor const& a, GMANColor const& b) {
+  return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
 GMANParameterList kaKdParams(RtFloat ka, RtFloat kd) {
@@ -58,7 +65,7 @@ void checkBareEnvAddsIndirect() {
 
   GMANSurfaceEnv env;
   env.indirect = &c;
-  check(colorNear(env.ambient(), c, kTol), "no lights, indirect bound: ambient() returns indirect exactly");
+  check(colorExactly(env.ambient(), c), "no lights, indirect bound: ambient() returns indirect exactly");
 
   RtFloat const a = 0.4f;
   GMANLight const ambientLight(GMAN_LIGHT_AMBIENT, GMANColor(a, a, a), GMANPoint(), GMANVector());
@@ -100,9 +107,8 @@ void checkThroughShadeGatedByKa() {
   gman::Shading const withIndirect = gman::shade(appearance, point, cameraToWorld, nullptr, nullptr, nullptr, &c);
   gman::Shading const withoutIndirect = gman::shade(appearance, point, cameraToWorld);
 
-  GMANColor const delta(withIndirect.Ci.getRed() - withoutIndirect.Ci.getRed(),
-                        withIndirect.Ci.getGreen() - withoutIndirect.Ci.getGreen(),
-                        withIndirect.Ci.getBlue() - withoutIndirect.Ci.getBlue());
+  GMANColor delta = withIndirect.Ci;
+  delta -= withoutIndirect.Ci;
   GMANColor const want(ka * c.getRed(), ka * c.getGreen(), ka * c.getBlue());
   check(colorNear(delta, want, kTol),
         "matte through gman::shade: Ci's own indirect delta is Ka * indirect, entering through ambient() alone");

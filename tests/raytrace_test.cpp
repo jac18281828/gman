@@ -55,6 +55,11 @@ namespace {
 
 constexpr RtFloat kTol = (RtFloat)1.0e-5;
 
+// Checks 7 and 8: the pass's constant enters through one addition along a
+// path with no accumulated render error, so 1e-6 -- tighter than kTol's
+// 1e-5, sized for the longer chains the other checks trace -- still holds.
+constexpr RtFloat kIndirectPassTol = (RtFloat)1.0e-6;
+
 GMANTransform makeTransform(GMANMatrix4 matrix) {
   GMANOneMatrix storage(matrix);
   return GMANTransform(storage);
@@ -598,10 +603,9 @@ void checkIndirectPassReachesPrimaryHit() {
   GMANColor const unboundResult = unbound.trace(p0, r0, GMANVector(), 0.0f);
   GMANColor const boundResult = bound.trace(p0, r0, GMANVector(), 0.0f);
 
-  GMANColor const delta(boundResult.getRed() - unboundResult.getRed(),
-                        boundResult.getGreen() - unboundResult.getGreen(),
-                        boundResult.getBlue() - unboundResult.getBlue());
-  check(colorNear(delta, c, kTol),
+  GMANColor delta = boundResult;
+  delta -= unboundResult;
+  check(colorNear(delta, c, kIndirectPassTol),
         "check 7: a primary hit through a bound indirect-light pass differs from the unbound trace by exactly c");
 }
 
@@ -664,10 +668,9 @@ void checkIndirectPassReachesChildTracer() {
   GMANColor const unboundResult = unbound.trace(p0, r0, GMANVector(), 0.0f);
   GMANColor const boundResult = bound.trace(p0, r0, GMANVector(), 0.0f);
 
-  GMANColor const delta(boundResult.getRed() - unboundResult.getRed(),
-                        boundResult.getGreen() - unboundResult.getGreen(),
-                        boundResult.getBlue() - unboundResult.getBlue());
-  check(colorNear(delta, c, kTol),
+  GMANColor delta = boundResult;
+  delta -= unboundResult;
+  check(colorNear(delta, c, kIndirectPassTol),
         "check 8: a mirror's reflected hit, shaded by the child tracer, differs by exactly c -- the pass reaches "
         "through the child tracer");
 }

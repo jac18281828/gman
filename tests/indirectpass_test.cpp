@@ -62,15 +62,13 @@ bool isConstant(GMANColor const& c) {
   return c.getRed() == kConstantIndirect && c.getGreen() == kConstantIndirect && c.getBlue() == kConstantIndirect;
 }
 
-// A world holding exactly one sphere: what prepare() needs to see before
-// constantindirect stops answering black.
-GMANLinearWorldManager oneSpherWorld() {
-  GMANLinearWorldManager world;
+// Adds the one sphere prepare() needs to see before constantindirect stops
+// answering black.
+void buildOneSphereWorld(GMANLinearWorldManager& world) {
   GMANMatrix4 place;
   GMANOneMatrix storage(place);
   GMANTransform const transform(storage);
   world.add(new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform));
-  return world;
 }
 
 GMANHit centreHit() {
@@ -94,7 +92,8 @@ void checkLoadAndPrepare() {
   GMANVector const I(0.0f, 0.0f, -1.0f);
   check(isBlack(pass->irradiance(hit, I)), "before prepare(): irradiance() answers black");
 
-  GMANLinearWorldManager world = oneSpherWorld();
+  GMANLinearWorldManager world;
+  buildOneSphereWorld(world);
   GMANRayBVH bvh;
   bvh.build(world);
   GMANRayOccluder const occluder(bvh);
@@ -135,7 +134,8 @@ void checkReloadAfterRelease() {
   GMANVector const I(0.0f, 0.0f, -1.0f);
   check(isBlack(second->irradiance(hit, I)), "reload: the second instance answers black before its own prepare()");
 
-  GMANLinearWorldManager world = oneSpherWorld();
+  GMANLinearWorldManager world;
+  buildOneSphereWorld(world);
   GMANRayBVH bvh;
   bvh.build(world);
   GMANRayOccluder const occluder(bvh);
