@@ -98,34 +98,27 @@ namespace gman {
 
 namespace {
 
-std::string lowered(std::string s) {
-  for (char& c : s) {
-    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-  }
-  return s;
-}
-
-std::string nameOf(GMANShader::ShaderType type) {
+// The article-and-noun phrase for the wrong-type report. Only the types
+// resolveLoadableShader is ever asked to expect appear here; every other
+// GMANShader::ShaderType is unreachable through this function.
+std::string const& nounPhraseFor(GMANShader::ShaderType type) {
+  static std::string const surface = "a surface";
+  static std::string const displacement = "a displacement";
+  static std::string const volume = "a volume";
+  static std::string const imager = "an imager";
   switch (type) {
-  case GMANShader::DISPLACEMENT:
-    return "displacement";
-  case GMANShader::VOLUME:
-    return "volume";
-  case GMANShader::IMAGER:
-    return "imager";
-  case GMANShader::LIGHTSOURCE:
-    return "light source";
   case GMANShader::SURFACE:
-    return "surface";
+    return surface;
+  case GMANShader::DISPLACEMENT:
+    return displacement;
+  case GMANShader::VOLUME:
+    return volume;
+  case GMANShader::IMAGER:
+    return imager;
+  case GMANShader::LIGHTSOURCE:
+    break;
   }
-  return "shader";
-}
-
-std::string articleFor(std::string const& word) {
-  if (!word.empty() && std::string("aeiouAEIOU").find(word.front()) != std::string::npos) {
-    return "an";
-  }
-  return "a";
+  throw(GMANError(RIE_BUG, RIE_SEVERE, "resolveLoadableShader never expects a light source."));
 }
 
 } // namespace
@@ -138,9 +131,10 @@ std::unique_ptr<GMANLoadableShader> resolveLoadableShader(std::string const& req
   try {
     auto resolved = std::make_unique<GMANLoadableShader>(objectName.c_str(), parameters);
     if (resolved->getType() != expected) {
-      std::string const wantedType = nameOf(expected);
-      std::string const message = "Specified " + lowered(requestName) + " shader is not " + articleFor(wantedType) +
-                                  " " + wantedType + " shader.";
+      std::string requestedKind = requestName;
+      requestedKind.front() = static_cast<char>(std::tolower(static_cast<unsigned char>(requestedKind.front())));
+      std::string const message =
+          "Specified " + requestedKind + " shader is not " + nounPhraseFor(expected) + " shader.";
       throw(GMANError(RIE_NOSHADER, RIE_SEVERE, message.c_str()));
     }
     return resolved;

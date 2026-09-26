@@ -101,8 +101,8 @@ public:
 
 namespace gman {
 
-// Maps name to the file its own kind's loader would open, resolves it and
-// checks its type against expected. On success, returns the loaded
+// Maps name to "lib" + name + ".so", with no inspection of name, resolves
+// it and checks its type against expected. On success, returns the loaded
 // module. On any failure -- no module, no GMANLoadShader, no
 // GMANDestroyShader, a null shader, or the wrong type -- reports through
 // GMANHandleError, quoting name exactly as given, and returns null.

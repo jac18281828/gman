@@ -19,9 +19,9 @@
  */
 
 /*
- * Displacement, Atmosphere, Interior, Exterior and Imager each resolve
- * their token to lib<name>.so, exactly as Surface already does, and fall
- * back to a clean, unset state on any failure. Drives GMANAttributes and
+ * Every shader kind -- Surface, Displacement, Atmosphere, Interior,
+ * Exterior and Imager -- resolves its token to lib<name>.so and falls back
+ * to a clean, unset state on any failure. Drives GMANAttributes and
  * GMANOptions directly, with a recording RiErrorHandler installed once.
  */
 
@@ -71,8 +71,8 @@ int countingImagerLiveCount() {
   return fn ? fn() : -1;
 }
 
-// ---- Surface: today's setSurface already maps every name uniformly and
-// quotes it verbatim; nothing here changes that. ----
+// ---- Surface: setSurface maps every name uniformly and quotes it
+// verbatim in its report. ----
 
 void checkSurfaceUnchanged() {
   GMANParameterList const emptyPl;
@@ -242,11 +242,20 @@ void checkSuccessThenReset(KindFixture const& kind) {
   }
 }
 
-void checkKind(std::function<KindFixture()> const& makeFixture) {
+// wrongTypeExactMessage, when not empty, pins the wrong-type report's exact
+// text: a changed noun phrase for this kind's expected type turns this
+// check red.
+void checkKind(std::function<KindFixture()> const& makeFixture, std::string const& wrongTypeExactMessage = "") {
   checkFailure(makeFixture(), "nosuchshader", "no module");
   checkFailure(makeFixture(), "gmanzbuffer", "opens, no shader");
   checkFailure(makeFixture(), "nodestroyshader", "missing GMANDestroyShader", "GMANDestroyShader");
-  checkFailure(makeFixture(), RI_MATTE, "wrong type");
+  {
+    KindFixture const kind = makeFixture();
+    checkFailure(kind, RI_MATTE, "wrong type");
+    if (!wrongTypeExactMessage.empty()) {
+      check(lastMessage == wrongTypeExactMessage, kind.requestName + " wrong type: the message matches exactly");
+    }
+  }
   checkSuccessThenReset(makeFixture());
   checkDotSoNotSniffed(makeFixture());
 }
@@ -258,11 +267,14 @@ int main() {
 
   checkSurfaceUnchanged();
 
-  checkKind(displacementFixture);
-  checkKind(atmosphereFixture);
+  checkKind(displacementFixture, "Displacement \"matte\" failed to load; the surface renders undisplaced: Specified "
+                                 "displacement shader is not a displacement shader.");
+  checkKind(atmosphereFixture, "Atmosphere \"matte\" failed to load; no atmosphere shades the volume: Specified "
+                               "atmosphere shader is not a volume shader.");
   checkKind(interiorFixture);
   checkKind(exteriorFixture);
-  checkKind(imagerFixture);
+  checkKind(imagerFixture, "Imager \"matte\" failed to load; the frame renders without an imager: Specified imager "
+                           "shader is not an imager shader.");
 
   return checkSummary("every shader kind resolves its name to lib<name>.so and falls back on failure");
 }

@@ -1340,9 +1340,8 @@ set_target_properties(gman_identitydisplacement PROPERTIES OUTPUT_NAME "identity
 gman_add_plugin(gman_countingimager countingimager_test_plugin.cpp)
 set_target_properties(gman_countingimager PROPERTIES OUTPUT_NAME "countingimager")
 
-# Displacement, Atmosphere, Interior, Exterior and Imager each resolve their
-# token to lib<name>.so and fall back to a clean, unset state on failure,
-# exactly as Surface already does. See tests/shadermodulenames_test.cpp.
+# Every shader kind resolves its token to lib<name>.so and falls back to a
+# clean, unset state on failure. See tests/shadermodulenames_test.cpp.
 add_executable(gman_shadermodulenames shadermodulenames_test.cpp)
 target_link_libraries(gman_shadermodulenames PRIVATE gman_core)
 add_dependencies(gman_shadermodulenames gman_zbuffer gman_matte gman_notasurface gman_nodestroyshader
