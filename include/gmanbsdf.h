@@ -48,11 +48,12 @@
 
 namespace gman {
 
-enum class LobeKind { lambert };
+enum class LobeKind { lambert, ggx };
 
 struct GMAN_EXPORT Lobe {
   LobeKind kind;
   GMANColor weight;
+  RtFloat alpha; // GGX's width; 0 for a Lambert lobe
 };
 
 // One draw from BSDF::sample. A failed draw reports pdf 0 and black f; its
@@ -68,6 +69,9 @@ struct GMAN_EXPORT BSDFSample {
 class GMAN_EXPORT BSDF {
 public:
   static constexpr std::size_t kMaxLobes = 8;
+  // Below this, GGX is a mirror in effect, the perfect-specular lobe's
+  // territory; addGGX raises a lower alpha to it.
+  static constexpr RtFloat kMinGGXAlpha = 0.01f;
 
   // Normalizes shadingNormal; every lobe measures its angles against it.
   explicit BSDF(GMANVector const& shadingNormal);
@@ -78,14 +82,20 @@ public:
   // kMaxLobes, throws GMANError(RIE_LIMIT) and leaves the closure unchanged.
   void addLambert(GMANColor const& reflectance);
 
+  // A two-sided, height-correlated Smith GGX reflection lobe, sampled by
+  // visible normals. reflectance clamps as addLambert's does. alpha bounds
+  // to [kMinGGXAlpha, 1], a NaN mapped to kMinGGXAlpha. Past kMaxLobes,
+  // throws GMANError(RIE_LIMIT) and leaves the closure unchanged.
+  void addGGX(GMANColor const& reflectance, RtFloat alpha);
+
   std::size_t lobeCount() const;
   // index < lobeCount() is a precondition, checked by assert.
   Lobe const& lobe(std::size_t index) const;
 
-  // The sum of the Lambert lobes' weights, unclamped: the closure's
-  // directional reflectance, the integral of eval * |cos(theta_i)| over
-  // the sphere. It stays at or below 1 per channel when the weights sum to
-  // at most 1 per channel.
+  // The sum of the Lambert lobes' weights alone, unclamped: the closure's
+  // diffuse reflectance, a glossy lobe's contribution excluded. Stays at
+  // or below 1 per channel when the Lambert weights sum to at most 1 per
+  // channel.
   GMANColor rhoD() const;
 
   // The sum of every lobe's f.
