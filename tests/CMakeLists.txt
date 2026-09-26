@@ -1340,12 +1340,20 @@ set_target_properties(gman_identitydisplacement PROPERTIES OUTPUT_NAME "identity
 gman_add_plugin(gman_countingimager countingimager_test_plugin.cpp)
 set_target_properties(gman_countingimager PROPERTIES OUTPUT_NAME "countingimager")
 
+# Test-only volume shader (see its own comment): counts its own live
+# instances, read back through its own exported GMANCountingVolumeLiveCount,
+# so shadermodulenames_test.cpp can prove a failed setAtmosphere releases
+# the module it replaces. Never dlopened outside this test; not part of the
+# shipped renderer.
+gman_add_plugin(gman_countingvolume countingvolume_test_plugin.cpp)
+set_target_properties(gman_countingvolume PROPERTIES OUTPUT_NAME "countingvolume")
+
 # Every shader kind resolves its token to lib<name>.so and falls back to a
 # clean, unset state on failure. See tests/shadermodulenames_test.cpp.
 add_executable(gman_shadermodulenames shadermodulenames_test.cpp)
 target_link_libraries(gman_shadermodulenames PRIVATE gman_core)
 add_dependencies(gman_shadermodulenames gman_zbuffer gman_matte gman_notasurface gman_nodestroyshader
-  gman_identitydisplacement gman_plastic gman_countingimager)
+  gman_identitydisplacement gman_plastic gman_countingimager gman_countingvolume)
 
 add_test(NAME shadermodulenames COMMAND gman_shadermodulenames)
 set_tests_properties(shadermodulenames PROPERTIES

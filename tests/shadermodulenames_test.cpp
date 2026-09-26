@@ -71,6 +71,22 @@ int countingImagerLiveCount() {
   return fn ? fn() : -1;
 }
 
+// countingvolume is a plugin, dlopened at runtime by GMANAttributes::
+// setAtmosphere, never linked into this binary, so its own live-count
+// function is resolved the same way: dlopen (idempotent) then dlsym, once,
+// memoized here.
+int countingVolumeLiveCount() {
+  using LiveCountFn = int (*)();
+  static LiveCountFn const fn = []() -> LiveCountFn {
+    void* const handle = dlopen("libcountingvolume.so", RTLD_LAZY);
+    if (handle == nullptr) {
+      return nullptr;
+    }
+    return reinterpret_cast<LiveCountFn>(dlsym(handle, "GMANCountingVolumeLiveCount"));
+  }();
+  return fn ? fn() : -1;
+}
+
 // ---- Surface: setSurface maps every name uniformly and quotes it
 // verbatim in its report. ----
 
@@ -142,9 +158,10 @@ KindFixture atmosphereFixture() {
   auto attr = std::make_shared<GMANAttributes>();
   KindFixture kind;
   kind.requestName = "Atmosphere";
-  kind.successName = "notasurface";
+  kind.successName = "countingvolume";
   kind.setter = [attr](std::string const& name) { attr->setAtmosphere(name, GMANParameterList()); };
   kind.hasValue = [attr]() { return attr->getAtmosphere(0.0) != nullptr; };
+  kind.liveCount = countingVolumeLiveCount;
   return kind;
 }
 
