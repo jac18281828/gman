@@ -2501,6 +2501,18 @@ set_tests_properties(bsdf PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::BSDF's GGX lobe: a double-precision reference, reciprocity, energy
+# by quadrature and by sample(), sample() against pdf() by histogram,
+# sidedness, clamping, capacity, a two-lobe mixture and no heap allocation.
+# Links raybvhallocator.cpp as bsdf's own test does.
+add_executable(gman_bsdfggx bsdfggx_test.cpp raybvhallocator.cpp)
+target_link_libraries(gman_bsdfggx PRIVATE gman_core)
+
+add_test(NAME bsdfggx COMMAND gman_bsdfggx)
+set_tests_properties(bsdfggx PROPERTIES
+  LABELS unit
+  TIMEOUT 60)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, and matte's Lambert lobe of Kd * Cs, with matte and plastic loaded
 # through GMANAttributes::setSurface.
