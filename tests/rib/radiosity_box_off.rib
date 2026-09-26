@@ -1,0 +1,24 @@
+## radiosity_box.rib's own scene, naming no pass: the baseline
+## radiosity_box.rib's own indirect light brightens. Not third-party.
+Display "radiosity_box_off.tif" "file" "rgba"
+Format 24 24 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "pointlight" 1 "intensity" [4] "from" [0 2 -3]
+
+Surface "matte" "Ka" [1] "Kd" [1]
+Color [0.8 0.8 0.8]
+Opacity [1 1 1]
+
+Polygon "P" [-4 -4 -6  4 -4 -6  4 4 -6  -4 4 -6]
+Polygon "P" [-4 -4 6  -4 4 6  4 4 6  4 -4 6]
+Polygon "P" [-4 -4 -6  -4 -4 6  -4 4 6  -4 4 -6]
+Polygon "P" [4 -4 -6  4 4 -6  4 4 6  4 -4 6]
+Polygon "P" [-4 -4 -6  4 -4 -6  4 -4 6  -4 -4 6]
+Polygon "P" [-4 4 -6  -4 4 6  4 4 6  4 4 -6]
+
+Color [0.9 0.9 0.9]
+Sphere 1.2 -1.2 1.2 360
+WorldEnd

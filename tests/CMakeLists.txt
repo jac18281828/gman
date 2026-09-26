@@ -1933,6 +1933,22 @@ set_tests_properties(radiositymeshcost PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRadiosityPass against a reference built from the same public
+# functions it uses internally, over a right-triangle floor with a hole
+# and a square wall meeting one of its legs, plus a sphere. Needs only
+# gman_radiosity_objects, but solves several times; guarded by
+# GMAN_BUILD_RADIOSITY alone, off CI's default legs, to keep the
+# sanitizer leg inside its own timeouts.
+if(GMAN_BUILD_RADIOSITY)
+  add_executable(gman_radiositypass radiositypass_test.cpp)
+  target_link_libraries(gman_radiositypass PRIVATE gman_radiosity_objects)
+
+  add_test(NAME radiositypass COMMAND gman_radiositypass)
+  set_tests_properties(radiositypass PROPERTIES
+    LABELS unit
+    TIMEOUT 60)
+endif()
+
 # R5c deferral: the spindle and horn torus (minorradius >= majorradius), a
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
 # behavior; WILL_FAIL until the second inverse mapping is implemented.
@@ -2214,6 +2230,30 @@ if(GMAN_BUILD_RAYTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+
+  # `gman -r gmanraytracer` renders tests/rib/radiosity_box*.rib and
+  # tests/rib/radiosity_sphere*.rib: the radiosity pass brightens a closed
+  # box's own shadowed side without ever dimming a pixel, two renders of
+  # that scene are byte-identical, and a lone sphere renders exactly as it
+  # does with no pass at all. Needs the plugin itself, guarded by
+  # GMAN_BUILD_RADIOSITY alone. See tests/radiosityrender_test.cpp.
+  if(GMAN_BUILD_RADIOSITY)
+    add_executable(gman_radiosityrender radiosityrender_test.cpp)
+    target_link_libraries(gman_radiosityrender PRIVATE gman_core TIFF::TIFF)
+    add_dependencies(gman_radiosityrender gman_raytracer gman_radiosity gman_matte)
+
+    set(GMAN_RADIOSITYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/radiosityrender-run")
+    file(MAKE_DIRECTORY "${GMAN_RADIOSITYRENDER_WORKDIR}")
+
+    add_test(NAME radiosityrender
+      COMMAND gman_radiosityrender $<TARGET_FILE:gman>
+                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+      WORKING_DIRECTORY "${GMAN_RADIOSITYRENDER_WORKDIR}")
+    set_tests_properties(radiosityrender PROPERTIES
+      ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+      LABELS render
+      TIMEOUT 60)
+  endif()
 
   # `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib, a
   # full torus tilted so its hole shows and a partial torus, matching a

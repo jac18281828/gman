@@ -23,22 +23,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanindirectpass.h"
 #include "gmanloadable.h"
-#include "gmanloadablerenderer.h"
-#include "gmanradiosityrenderer.h"
-#include "gmanrenderer.h"
-#include "ri.h"
+#include "gmanradiositypass.h"
 
 /* Global static data */
 
 static GMANLoadableObjectInfo loadableInfo = {
-    "Radiosity Lighting Model",
+    "Radiosity indirect-light pass",
     "John Cairns <john@2ad.com>",
-    "A GMAN Renderer based on the radiosity lighting model simulation.",
+    "Dices the ray tracer's world into a radiosity mesh, solves once for each element's indirect "
+    "irradiance, and answers it at a hit through gman::IndirectPass.",
 };
-
-static GMANRadiosityRenderer renderer;
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANRenderer* GMANLoadRenderer(void) { return &renderer; }
+extern "C" GMAN_EXPORT gman::IndirectPass* GMANCreateIndirectPass(void) { return new GMANRadiosityPass(); }
+
+extern "C" GMAN_EXPORT void GMANDestroyIndirectPass(gman::IndirectPass* pass) { delete pass; }

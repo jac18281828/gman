@@ -59,12 +59,15 @@ find_package(TIFF REQUIRED)
 find_package(JPEG)
 find_package(Threads REQUIRED)
 
-# reyes and radiosity are non-functional and kept for the design intent a later
-# phase may want. reyes additionally does not link -- it has a declared virtual
-# with no definition -- so its option compiles but does not complete.
+# reyes is non-functional and kept for the design intent a later phase may
+# want; it additionally does not link -- it has a declared virtual with no
+# definition -- so its option compiles but does not complete. radiosity
+# builds the ray tracer's own indirect-light pass, loaded through Option
+# "render" "string indirect" ["radiosity"]; it defaults off until a later
+# unit ships it.
 option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
 option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin" ON)
-option(GMAN_BUILD_RADIOSITY "Build the (non-functional) radiosity plugin" OFF)
+option(GMAN_BUILD_RADIOSITY "Build the radiosity indirect-light pass plugin" OFF)
 
 # ---------------------------------------------------------------------------
 # Optional file-Display drivers -- one gman_add_file_driver(<name>) call per
@@ -306,14 +309,15 @@ if(GMAN_BUILD_RAYTRACER)
   set_target_properties(gman_raytracer PROPERTIES OUTPUT_NAME "gmanraytracer")
 endif()
 
-# The radiosity solver and its element mesh, gman_raytracer_objects' own
-# pattern above: built whenever GMAN_BUILD_RADIOSITY or BUILD_TESTING is
-# on, so their unit tests still build and run with the plugin off. The
-# gman_radiosity plugin below does not link it yet -- no shading change is
-# in scope until it does.
+# The radiosity solver, its element mesh and the ray tracer's indirect-
+# light pass over them, gman_raytracer_objects' own pattern above: built
+# whenever GMAN_BUILD_RADIOSITY or BUILD_TESTING is on, so their unit
+# tests still build and run with the plugin off. Every tests-on build
+# then compiles the pass, CI's included.
 if(GMAN_BUILD_RADIOSITY OR BUILD_TESTING)
   add_library(gman_radiosity_objects OBJECT
     renderers/radiosity/gmanradiositymesh.cpp
+    renderers/radiosity/gmanradiositypass.cpp
     renderers/radiosity/gmanradiositysolver.cpp)
   target_link_libraries(gman_radiosity_objects PUBLIC gman_core)
   target_include_directories(gman_radiosity_objects PUBLIC
@@ -322,11 +326,14 @@ if(GMAN_BUILD_RADIOSITY OR BUILD_TESTING)
     POSITION_INDEPENDENT_CODE ON)
 endif()
 
+# The token "radiosity" (Option "render" "string indirect" ["radiosity"])
+# opens "libradiosity.so" by gman::loadIndirectPass's own bare-name rule,
+# hence OUTPUT_NAME "radiosity" rather than this target's own name.
 if(GMAN_BUILD_RADIOSITY)
   gman_add_plugin(gman_radiosity
-    renderers/radiosity/gmanradiosityrenderer.cpp
     renderers/radiosity/radiosityloader.cpp)
-  set_target_properties(gman_radiosity PROPERTIES OUTPUT_NAME "gmanradiosity")
+  target_link_libraries(gman_radiosity PRIVATE gman_radiosity_objects)
+  set_target_properties(gman_radiosity PROPERTIES OUTPUT_NAME "radiosity")
 endif()
 
 gman_add_plugin(gman_matte shaders/gmanmatte.cpp)

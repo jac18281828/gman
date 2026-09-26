@@ -37,7 +37,7 @@
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMANParametric : public virtual GMANPrimitive {
+class GMAN_EXPORT GMANParametric : public virtual GMANPrimitive {
 public:
   virtual GMANPoint getLocation(double u, double v) = 0;
   virtual GMANVector getNormal(double u, double v) = 0;

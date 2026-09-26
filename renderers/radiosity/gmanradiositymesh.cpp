@@ -706,6 +706,9 @@ void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric&
   ParametricGrid const grid = chooseParametricResolution(parametric, objectToCamera, maxEdgeLength);
   std::size_t const nu = grid.nu;
   std::size_t const nv = grid.nv;
+  if (nu == kMaxDivisions || nv == kMaxDivisions) {
+    ++cappedCount;
+  }
   std::size_t const nodeOffset = nodes.size();
   std::size_t const elementOffset = elements.size();
   appendParametricNodes(parametric, cameraToObject, grid, nodes);
@@ -766,6 +769,9 @@ void GMANRadiosityMesh::dicePolygon(GMANRayPolygon const& polygon, RtFloat maxEd
   PolygonBasis const basis = computePolygonBasis(loop, normal);
   PolygonExtent const extent = projectPolygonExtent(loop, basis);
   PolygonGrid const grid = choosePolygonGrid(extent, maxEdgeLength);
+  if (grid.nu == kMaxDivisions || grid.nv == kMaxDivisions) {
+    ++cappedCount;
+  }
 
   std::vector<std::vector<Point2>> holesST(holes.size());
   for (std::size_t h = 0; h < holes.size(); ++h) {
@@ -832,6 +838,7 @@ void GMANRadiosityMesh::build(GMANWorldManager& worldManager, RtFloat maxEdgeLen
   elementCells.clear();
   nodeGroups.clear();
   skippedCount = 0;
+  cappedCount = 0;
 
   for (GMANPrimitive* primitive = worldManager.getFirst(); primitive; primitive = worldManager.getNext()) {
     if (!dynamic_cast<GMANRayInterface*>(primitive)) {
