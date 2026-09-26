@@ -1401,6 +1401,19 @@ set_tests_properties(indirectambient PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::hitSurfacePoint's own field mapping off a real BVH hit, and
+# gman::albedo's parity with gman::shade's own Ci at the same point for a
+# sphere and a polygon carrying "st". A null shader answers Cs clamped to
+# [0, 1]. See tests/albedoenv_test.cpp.
+add_executable(gman_albedoenv albedoenv_test.cpp)
+target_link_libraries(gman_albedoenv PRIVATE gman_core)
+
+add_test(NAME albedoenv COMMAND gman_albedoenv)
+set_tests_properties(albedoenv PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # gman::loadIndirectPass: a real module answers through its entry
 # points, a missing or wrong module answers null, a module whose create
 # function itself returns null warns and answers null too, and the

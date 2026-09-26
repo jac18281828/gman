@@ -133,4 +133,16 @@ GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& poin
                           Occluder const* occluder = nullptr, Tracer const* tracer = nullptr,
                           TextureCache* textureCache = nullptr, GMANColor const* indirect = nullptr);
 
+// A surface's diffuse reflectance where shade would shade point: fills a
+// GMANSurfaceEnv from appearance and point exactly as shade does, through
+// the same fill so the two can never drift, with no occluder, tracer or
+// indirect bound, and returns appearance.shader->albedo(env). A null
+// shader answers appearance.Cs clamped to [0, 1] per channel, a NaN
+// channel to 0 -- what the default surface, matte with Kd = 1, answers.
+// textureCache is shade's own argument; a caller running serially, ahead
+// of the first pixel, omits it and samples through
+// gman::textureCache()'s process cache.
+GMAN_EXPORT GMANColor albedo(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
+                             TextureCache* textureCache = nullptr);
+
 } // namespace gman
