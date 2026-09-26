@@ -32,6 +32,7 @@
  */
 
 #include <climits>
+#include <cmath>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -59,6 +60,10 @@ namespace {
 // included: RiOptionV matches it literally, so a scene that never names
 // it triggers no GMANParameterList construction at all.
 constexpr char const* kIndirectPassToken = "string indirect";
+
+// Option "radiosity" "float elementsize" ["<size>"]'s own declaration
+// token, matched the same literal way beside kIndirectPassToken.
+constexpr char const* kElementSizeToken = "float elementsize";
 
 } // namespace
 
@@ -449,24 +454,41 @@ RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
   allowed(cmdRelativeDetail);
   getOptions().setRelativeDetail(relativedetail);
 }
-// Handles Option "render" "string indirect" ["<name>"] alone: any other
-// name, or a "render" option not carrying that exact token, is ignored. No
+// Handles Option "render" "string indirect" ["<name>"] and Option
+// "radiosity" "float elementsize" ["<size>"] alone: any other name, or
+// either option not carrying its own exact token, is ignored. No
 // allowed(cmdOption) call: that mask is all zero, so it would reject every
 // Option the corpus already relies on.
 RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  if (std::string(name) != "render") {
-    return;
-  }
-  for (RtInt i = 0; i < n; ++i) {
-    if (std::string(tokens[i]) != kIndirectPassToken) {
-      continue;
+  std::string const optionName(name);
+  if (optionName == "render") {
+    for (RtInt i = 0; i < n; ++i) {
+      if (std::string(tokens[i]) != kIndirectPassToken) {
+        continue;
+      }
+      GMANParameterList const p(dictionary, 1, &tokens[i], &parms[i]);
+      std::string const* const value = (std::string const*)p.getPointer(dictionary.getTokenId(kIndirectPassToken));
+      if (value != nullptr) {
+        getOptions().setIndirectPass(value[0]);
+      }
+      return;
     }
-    GMANParameterList const p(dictionary, 1, &tokens[i], &parms[i]);
-    std::string const* const value = (std::string const*)p.getPointer(dictionary.getTokenId(kIndirectPassToken));
-    if (value != nullptr) {
-      getOptions().setIndirectPass(value[0]);
+  } else if (optionName == "radiosity") {
+    for (RtInt i = 0; i < n; ++i) {
+      if (std::string(tokens[i]) != kElementSizeToken) {
+        continue;
+      }
+      GMANParameterList const p(dictionary, 1, &tokens[i], &parms[i]);
+      RtFloat const* const value = (RtFloat const*)p.getPointer(dictionary.getTokenId(kElementSizeToken));
+      if (value != nullptr) {
+        if (std::isfinite(value[0]) && value[0] > 0) {
+          getOptions().setRadiosityElementSize(value[0]);
+        } else {
+          warning("Option \"radiosity\" \"float elementsize\": {} is not finite and positive; ignored.", value[0]);
+        }
+      }
+      return;
     }
-    return;
   }
 }
 

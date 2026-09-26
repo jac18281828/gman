@@ -1414,6 +1414,20 @@ set_tests_properties(albedoenv PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RiOptionV's own handling of Option "radiosity" "float elementsize":
+# unset reads 0, a later Option replaces an earlier one, a non-finite or
+# non-positive value leaves it unchanged, and an unrelated Option --
+# "render" "string indirect" included -- changes nothing. See
+# tests/radiosityoption_test.cpp.
+add_executable(gman_radiosityoption radiosityoption_test.cpp)
+target_link_libraries(gman_radiosityoption PRIVATE gman_core)
+
+add_test(NAME radiosityoption COMMAND gman_radiosityoption)
+set_tests_properties(radiosityoption PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # gman::loadIndirectPass: a real module answers through its entry
 # points, a missing or wrong module answers null, a module whose create
 # function itself returns null warns and answers null too, and the

@@ -183,6 +183,11 @@ private:
   // every member above keeps its offset. Empty when unset.
   std::string indirectPass;
 
+  // Option "radiosity" "float elementsize" ["<size>"]'s own camera-space
+  // length, appended after indirectPass so every member above keeps its
+  // offset. 0 when unset.
+  RtFloat radiosityElementSize = 0;
+
   /* default static data */
   static OutputDefaults outputDefaults;
 
@@ -269,6 +274,11 @@ public:
 
   RtVoid setIndirectPass(std::string const& name);
   std::string const& getIndirectPass(RtVoid) const { return indirectPass; };
+
+  // The camera-space length Option "radiosity" "float elementsize" set,
+  // or 0 when no such Option has run yet.
+  RtVoid setRadiosityElementSize(RtFloat size);
+  RtFloat getRadiosityElementSize(RtVoid) const { return radiosityElementSize; };
 
   const OutputDefaults& getOutputDefaults(RtVoid) const;
 };
