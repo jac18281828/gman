@@ -1319,6 +1319,12 @@ set_target_properties(gman_nodestroyshader PROPERTIES OUTPUT_NAME "nodestroyshad
 gman_add_plugin(gman_constantindirect constantindirect_test_plugin.cpp)
 set_target_properties(gman_constantindirect PROPERTIES OUTPUT_NAME "constantindirect")
 
+# Test-only indirect-light pass whose GMANCreateIndirectPass always
+# returns null, pinning loadIndirectPass's warning on that failure. Never
+# dlopened outside the test suite; not part of the shipped renderer.
+gman_add_plugin(gman_nullindirect nullindirect_test_plugin.cpp)
+set_target_properties(gman_nullindirect PROPERTIES OUTPUT_NAME "nullindirect")
+
 # One shader instance per Surface call: distinct instances, interleaved
 # shading with no cross-talk, correct lifetime and destruction, and a
 # plugin missing GMANDestroyShader refused. See tests/shaderinstance_test.cpp.
@@ -1397,12 +1403,13 @@ set_tests_properties(indirectambient PROPERTIES
   TIMEOUT 30)
 
 # gman::loadIndirectPass: a real module answers through its own entry
-# points, a missing or wrong module answers null, and the deleter frees
-# through the module rather than through a plain delete. See
-# tests/indirectpass_test.cpp.
+# points, a missing or wrong module answers null, a module whose create
+# function itself returns null warns and answers null too, and the
+# deleter frees through the module rather than through a plain delete.
+# See tests/indirectpass_test.cpp.
 add_executable(gman_indirectpass indirectpass_test.cpp)
 target_link_libraries(gman_indirectpass PRIVATE gman_core gman_internal_headers)
-add_dependencies(gman_indirectpass gman_constantindirect gman_matte)
+add_dependencies(gman_indirectpass gman_constantindirect gman_nullindirect gman_matte)
 
 add_test(NAME indirectpass COMMAND gman_indirectpass)
 set_tests_properties(indirectpass PROPERTIES

@@ -36,11 +36,10 @@
 namespace gman {
 
 /*
- * Indirect light at a hit, independent of the host that shades it -- the
- * ray tracer today, calling irradiance() through GMANSurfaceEnv::ambient();
- * the path tracer later, calling it directly. One instance holds one
- * frame's own solution, so a host loads a fresh one per render() rather
- * than keeping one across calls.
+ * Indirect light at a hit, independent of the host that shades it. A host
+ * calls irradiance() and hands the value to shading; ambient() adds it
+ * and calls nothing. One instance holds one frame's solution, so a host
+ * loads a fresh one per render() rather than keeping one across calls.
  *
  * irradiance() reports indirect light alone, since the host computes
  * direct light itself, in the shading units GMANSurfaceEnv::diffuse
@@ -56,8 +55,8 @@ public:
   // Readies this pass over world, ahead of any irradiance() call. world is
   // non-const: GMANWorldManager::getFirst/getNext iterate through a
   // cursor, and a pass adds, removes and reorders nothing there. occluder
-  // carries the host's BVH; options lets a pass read its own settings
-  // without a further interface change.
+  // carries the host's BVH; options lets a pass read its settings without
+  // a further interface change.
   virtual void prepare(GMANWorldManager& world, GMANRayOccluder const& occluder, GMANOptions const& options) = 0;
 
   // Indirect light reaching hit from the side I arrives on -- the side
@@ -71,13 +70,13 @@ public:
 using IndirectPassPtr = std::unique_ptr<IndirectPass, void (*)(IndirectPass*)>;
 
 // Loads name's module (lib<name>.so, as Surface "plastic" loads
-// libplastic.so) and returns a new IndirectPass through its own
-// GMANCreateIndirectPass, deleted through that same module's own
+// libplastic.so) and returns a new IndirectPass through its
+// GMANCreateIndirectPass, deleted through that same module's
 // GMANDestroyIndirectPass -- an instance, not a process singleton, freed
 // by the module that allocated it. Returns null, after logging one
 // warning naming the library and the reason, when the module fails to
-// open or lacks either entry point: a missing pass costs the indirect
-// light, never the frame.
+// open, lacks either entry point, or its GMANCreateIndirectPass itself
+// returns null: a missing pass costs the indirect light, never the frame.
 GMAN_EXPORT IndirectPassPtr loadIndirectPass(std::string const& name);
 
 } // namespace gman

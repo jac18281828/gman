@@ -30,10 +30,10 @@
 
 namespace gman {
 
-// Out of line, beside Occluder's and Tracer's own (gmanshading.cpp), for
-// the same reason: this header is included wherever a host binds a pass,
-// and every one of those translation units would otherwise emit its own
-// copy of the vtable and typeinfo.
+// Out of line, beside Occluder's and Tracer's (gmanshading.cpp), for the
+// same reason: this header is included wherever a host binds a pass, and
+// every one of those translation units would otherwise emit a copy of the
+// vtable and typeinfo.
 IndirectPass::~IndirectPass() = default;
 
 namespace {
@@ -46,10 +46,10 @@ constexpr char const* kDestroyFnName = "GMANDestroyIndirectPass";
 
 void noopDestroy(IndirectPass*) {}
 
-// GMANLoadable's own dlopen/dlsym plumbing, protected there for its two
+// GMANLoadable's dlopen/dlsym plumbing, protected there for its two
 // derived loaders (GMANLoadableRenderer, GMANLoadableShader); loadSymbol
-// is exposed here the same way, for an IndirectPass's own two entry
-// points instead of a shader's or renderer's.
+// is exposed here the same way, for an IndirectPass's two entry points
+// instead of a shader's or renderer's.
 class IndirectPassModule : public GMANLoadable {
 public:
   explicit IndirectPassModule(char const* path) : GMANLoadable(path) {}
@@ -58,16 +58,21 @@ public:
 
 } // namespace
 
-std::unique_ptr<IndirectPass, void (*)(IndirectPass*)> loadIndirectPass(std::string const& name) {
+IndirectPassPtr loadIndirectPass(std::string const& name) {
   std::string const path = "lib" + name + ".so";
   try {
     IndirectPassModule module(path.c_str());
     auto const create = reinterpret_cast<CreateFn>(module.loadSymbol(kCreateFnName));
     auto const destroy = reinterpret_cast<DestroyFn>(module.loadSymbol(kDestroyFnName));
-    if (create != nullptr && destroy != nullptr) {
-      return {create(), destroy};
+    if (create == nullptr) {
+      warning("Indirect-light pass \"{}\": {} is missing {}.", name, path, kCreateFnName);
+    } else if (destroy == nullptr) {
+      warning("Indirect-light pass \"{}\": {} is missing {}.", name, path, kDestroyFnName);
+    } else if (IndirectPass* const pass = create(); pass != nullptr) {
+      return {pass, destroy};
+    } else {
+      warning("Indirect-light pass \"{}\": {}'s {} returned null.", name, path, kCreateFnName);
     }
-    warning("Indirect-light pass \"{}\": {} is missing GMANCreateIndirectPass or GMANDestroyIndirectPass.", name, path);
   } catch (GMANError const& error) {
     warning("Indirect-light pass \"{}\": {} ({}).", name, path, error.getMessage());
   }

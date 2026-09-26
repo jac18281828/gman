@@ -55,9 +55,9 @@
 
 namespace {
 
-// Option "render" "string indirect" ["<name>"]'s own declaration token,
-// type included: RiOptionV matches it literally, so a scene that never
-// names it triggers no GMANParameterList construction at all.
+// Option "render" "string indirect" ["<name>"]'s declaration token, type
+// included: RiOptionV matches it literally, so a scene that never names
+// it triggers no GMANParameterList construction at all.
 constexpr char const* kIndirectPassToken = "string indirect";
 
 } // namespace
@@ -450,10 +450,9 @@ RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
   getOptions().setRelativeDetail(relativedetail);
 }
 // Handles Option "render" "string indirect" ["<name>"] alone: any other
-// name, or a "render" option not carrying that exact token, is ignored,
-// as every Option was before this method read anything. No
-// allowed(cmdOption) call: that mask is all zero, so it would reject
-// every Option the corpus already relies on.
+// name, or a "render" option not carrying that exact token, is ignored. No
+// allowed(cmdOption) call: that mask is all zero, so it would reject every
+// Option the corpus already relies on.
 RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   if (std::string(name) != "render") {
     return;

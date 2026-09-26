@@ -122,7 +122,7 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // (gman::shade's own comment says so).
   gman::TextureCache* textureCache = nullptr;
 
-  // The host's own answer for indirect light at this point, from
+  // The host's answer for indirect light at this point, from
   // gman::IndirectPass::irradiance -- null by default and last, after
   // textureCache, so existing field offsets hold. Non-owning, valid for
   // one gman::shade call. ambient() adds it when set; nothing else reads
@@ -208,7 +208,7 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // to the RISpec's own (more expensive) integral. ----
   // Sums the ambient lights, then adds indirect when it is set: a shader
   // weights the whole term by Ka, so a physically consistent scene sets
-  // Ka = Kd and needs no change of its own.
+  // Ka = Kd and needs no change.
   GMANColor ambient(RtVoid) const {
     GMANColor sum;
     for (std::size_t i = 0; i < lights.size(); ++i) {

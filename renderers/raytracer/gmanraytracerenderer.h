@@ -78,10 +78,10 @@ private:
   GMANColor background;
   int depth;
 
-  // Null when no Option named a pass: every hit this tracer shades then
-  // passes null indirect light on to gman::shade, same as before this
-  // member existed. Carried into every child GMANRayTracer trace()
-  // builds, so a reflected or refracted hit gets indirect light too.
+  // Null when no Option named a pass, in which case every hit this tracer
+  // shades passes null indirect light to gman::shade. Carried into every
+  // child GMANRayTracer trace() builds, so a reflected or refracted hit
+  // gets indirect light too.
   gman::IndirectPass const* indirectPass;
 };
 
@@ -126,10 +126,9 @@ private:
   RayHit nearestHit(GMANRay const& ray);
 
   // Traces, shades and stores one sample -- render()'s per-sample body.
-  // background is the sample buffer's own seed colour (frameBuffer's
-  // corner pixel), what remains after every layer's own transmission
-  // composites over. indirectPass is render()'s own, null when no Option
-  // named one.
+  // background is the sample buffer's seed colour (frameBuffer's corner
+  // pixel), what remains after every layer's transmission composites
+  // over. indirectPass is null when no Option named one.
   void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
                    RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY, gman::IndirectPass const* indirectPass);
 
