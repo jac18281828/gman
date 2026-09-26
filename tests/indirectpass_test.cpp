@@ -26,6 +26,7 @@
  * rather than through a plain delete.
  */
 
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -119,10 +120,9 @@ void checkMissingAndWrongModule() {
         "loadIndirectPass(\"matte\") returns null: a module lacking the entry points");
 }
 
-// nullindirect's own GMANCreateIndirectPass always returns null. The
-// warning is captured through setLogFile with the screen silenced, then
-// the log's previous destination is restored so later checks log to the
-// screen as before.
+// nullindirect's GMANCreateIndirectPass always returns null. The log API
+// cannot clear its file, so the check leaves the log on /dev/null with the
+// screen on, which prints what the default, no file and screen on, prints.
 void checkCreateReturningNullWarns() {
   std::string const logPath = "indirectpass_nullcreate.log";
   std::remove(logPath.c_str());
@@ -130,7 +130,7 @@ void checkCreateReturningNullWarns() {
   setScreenOutput(false);
 
   auto const pass = gman::loadIndirectPass("nullindirect");
-  check(pass == nullptr, "loadIndirectPass(\"nullindirect\") returns null: its own create function returns null");
+  check(pass == nullptr, "loadIndirectPass(\"nullindirect\") returns null: its create function returns null");
 
   setLogFile("/dev/null");
   setScreenOutput(true);
