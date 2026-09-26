@@ -26,7 +26,25 @@
 
 namespace {
 constexpr auto NCOMPS = 3;
+
+// Binds a resolved module and its already-checked typed accessor together:
+// on success module owns the loaded shader and typed points into it; on any
+// failure both reset to null, so a kind never carries a mismatched pair.
+template <typename Typed>
+void bindLoadableShader(std::shared_ptr<GMANLoadableShader>& module, Typed*& typed, std::string const& requestName,
+                        std::string const& fallbackPhrase, std::string const& name, GMANParameterList const& pl,
+                        GMANShader::ShaderType expected, Typed* (GMANLoadableShader::*getter)(RtVoid)) {
+  auto resolved = gman::resolveLoadableShader(requestName, fallbackPhrase, name, pl, expected);
+  if (!resolved) {
+    module.reset();
+    typed = nullptr;
+    return;
+  }
+  module = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
+  typed = (module.get()->*getter)();
 }
+
+} // namespace
 
 GMANAttributes::GMANAttributes()
     : areaLight(NULL), atmosphere(NULL), interior(NULL), exterior(NULL), displacement(NULL)
@@ -106,51 +124,23 @@ RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList con
 }
 
 RtVoid GMANAttributes::setDisplacement(const std::string& name, GMANParameterList const& pl) {
-  auto resolved = gman::resolveLoadableShader("Displacement", "the surface renders undisplaced", name, pl,
-                                              GMANShader::DISPLACEMENT);
-  if (!resolved) {
-    displacementModule.reset();
-    displacement = nullptr;
-    return;
-  }
-  displacementModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
-  displacement = displacementModule->getDisplacement();
+  bindLoadableShader(displacementModule, displacement, "Displacement", "the surface renders undisplaced", name, pl,
+                     GMANShader::DISPLACEMENT, &GMANLoadableShader::getDisplacement);
 }
 
 RtVoid GMANAttributes::setAtmosphere(const std::string& name, GMANParameterList const& pl) {
-  auto resolved =
-      gman::resolveLoadableShader("Atmosphere", "no atmosphere shades the volume", name, pl, GMANShader::VOLUME);
-  if (!resolved) {
-    atmosphereModule.reset();
-    atmosphere = nullptr;
-    return;
-  }
-  atmosphereModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
-  atmosphere = atmosphereModule->getVolume();
+  bindLoadableShader(atmosphereModule, atmosphere, "Atmosphere", "no atmosphere shades the volume", name, pl,
+                     GMANShader::VOLUME, &GMANLoadableShader::getVolume);
 }
 
 RtVoid GMANAttributes::setInterior(const std::string& name, GMANParameterList const& pl) {
-  auto resolved =
-      gman::resolveLoadableShader("Interior", "the volume shades without an interior", name, pl, GMANShader::VOLUME);
-  if (!resolved) {
-    interiorModule.reset();
-    interior = nullptr;
-    return;
-  }
-  interiorModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
-  interior = interiorModule->getVolume();
+  bindLoadableShader(interiorModule, interior, "Interior", "the volume shades without an interior", name, pl,
+                     GMANShader::VOLUME, &GMANLoadableShader::getVolume);
 }
 
 RtVoid GMANAttributes::setExterior(const std::string& name, GMANParameterList const& pl) {
-  auto resolved =
-      gman::resolveLoadableShader("Exterior", "the volume shades without an exterior", name, pl, GMANShader::VOLUME);
-  if (!resolved) {
-    exteriorModule.reset();
-    exterior = nullptr;
-    return;
-  }
-  exteriorModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
-  exterior = exteriorModule->getVolume();
+  bindLoadableShader(exteriorModule, exterior, "Exterior", "the volume shades without an exterior", name, pl,
+                     GMANShader::VOLUME, &GMANLoadableShader::getVolume);
 }
 
 RtVoid GMANAttributes::setShadingRate(RtFloat sz) { shadingRate = sz; }

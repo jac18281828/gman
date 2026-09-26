@@ -28,6 +28,27 @@
 #include "gmandefaults.h"
 #include "gmanoptions.h"
 
+namespace {
+
+// Binds a resolved module and its already-checked typed accessor together:
+// on success module owns the loaded shader and typed points into it; on any
+// failure both reset to null, so a kind never carries a mismatched pair.
+template <typename Typed>
+void bindLoadableShader(std::shared_ptr<GMANLoadableShader>& module, Typed*& typed, std::string const& requestName,
+                        std::string const& fallbackPhrase, std::string const& name, GMANParameterList const& pl,
+                        GMANShader::ShaderType expected, Typed* (GMANLoadableShader::*getter)(RtVoid)) {
+  auto resolved = gman::resolveLoadableShader(requestName, fallbackPhrase, name, pl, expected);
+  if (!resolved) {
+    module.reset();
+    typed = nullptr;
+    return;
+  }
+  module = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
+  typed = (module.get()->*getter)();
+}
+
+} // namespace
+
 GMANOptions::OutputDefaults GMANOptions::outputDefaults = {GMANDisplayXRES, GMANDisplayYRES, GMANDisplayPAR};
 
 /*
@@ -35,7 +56,7 @@ GMANOptions::OutputDefaults GMANOptions::outputDefaults = {GMANDisplayXRES, GMAN
  *
  */
 
-GMANOptions::GMANOptions() : imager(NULL) {
+GMANOptions::GMANOptions() : imager(nullptr) {
   // **** CAMERA OPTIONS ****
   format.xres = 640;
   format.yres = 480;
@@ -217,10 +238,8 @@ RtVoid GMANOptions::setExposure(RtFloat gn, RtFloat gmm) {
 }
 
 RtVoid GMANOptions::setImager(std::string name, GMANParameterList const& pl) {
-  auto resolved =
-      gman::resolveLoadableShader("Imager", "the frame renders without an imager", name, pl, GMANShader::IMAGER);
-  imagerModule = std::shared_ptr<GMANLoadableShader>(std::move(resolved));
-  imager = imagerModule ? imagerModule->getImager() : NULL;
+  bindLoadableShader(imagerModule, imager, "Imager", "the frame renders without an imager", name, pl,
+                     GMANShader::IMAGER, &GMANLoadableShader::getImager);
 }
 
 RtVoid GMANOptions::setColorQuantize(RtInt o, RtInt mn, RtInt mx, RtFloat da) {
