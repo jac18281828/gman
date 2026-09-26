@@ -206,9 +206,9 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // shader's own body stays the couple of lines matte/plastic/metal are
   // in the RISpec. Blinn-Phong for specular(), the common approximation
   // to the RISpec's own (more expensive) integral. ----
-  // Sums the ambient lights, then adds indirect when it is set: a shader
-  // weights the whole term by Ka, so a physically consistent scene sets
-  // Ka = Kd and needs no change.
+  // Sums the ambient lights, then adds indirect when it is set. A shader
+  // weights the whole term by Ka; a physically consistent scene sets
+  // Ka = Kd.
   GMANColor ambient(RtVoid) const {
     GMANColor sum;
     for (std::size_t i = 0; i < lights.size(); ++i) {
