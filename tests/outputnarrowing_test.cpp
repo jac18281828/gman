@@ -157,6 +157,28 @@ void checkReceives() {
     check(out.received[8] == 100, "receive 4: 1 clamps to the requested max 100");
   }
 
+  // 5. widest 16, 255 0 1023 0: 1.6 arrives as 408, at 16 bits. A [0, 1]
+  // clamp before quantizing gives 255.
+  {
+    RecordingOutput out(1, 1, 16);
+    out.setPixel(0, 0, GMANColor(1.6f, 1.6f, 1.6f));
+    out.save(GMANOutput::RGB, 1.0f, 1.0f, GMANQuantize{255, 0, 1023, 0});
+    check(out.receivedBitsPerSample == 16, "receive 5: 16 bits a sample");
+    check(out.received[0] == 408, "receive 5: 1.6 rounds to 408 (got " + std::to_string(out.received[0]) + ")");
+  }
+
+  // 6. widest 16, 65535 0 65535 0: 0.25 and 1 arrive as 16384 and 65535, at
+  // 16 bits. Widening the 8-bit 64 gives 16448.
+  {
+    RecordingOutput out(2, 1, 16);
+    out.setPixel(0, 0, GMANColor(0.25f, 0.25f, 0.25f));
+    out.setPixel(1, 0, GMANColor(1.0f, 1.0f, 1.0f));
+    out.save(GMANOutput::RGB, 1.0f, 1.0f, GMANQuantize{65535, 0, 65535, 0});
+    check(out.receivedBitsPerSample == 16, "receive 6: 16 bits a sample");
+    check(out.received[0] == 16384, "receive 6: 0.25 rounds to 16384 (got " + std::to_string(out.received[0]) + ")");
+    check(out.received[4] == 65535, "receive 6: 1 rounds to 65535");
+  }
+
   // 7. 255 0 255 0, gamma 2.2: 0.002 arrives as 15. Quantizing before gamma
   // gives 1.
   {
@@ -242,6 +264,7 @@ void checkReceives() {
   }
 
   // 11. 255 0 255 0.5: a 64x64 field of 0 arrives all 0, and of 1 all 255.
+  // Widest 16, 65534 0 65535 0.5: a 64x64 field of 0.5 arrives all 32767.
   {
     const int w = 64, h = 64;
     RecordingOutput zero(w, h);
@@ -260,6 +283,17 @@ void checkReceives() {
           "receive 11: a field of 0 arrives all 0 under dither");
     check(std::all_of(one.received.begin(), one.received.end(), [](std::uint16_t v) { return v == 255; }),
           "receive 11: a field of 1 arrives all 255 under dither");
+
+    RecordingOutput half(w, h, 16);
+    for (int y = 0; y < h; ++y) {
+      for (int x = 0; x < w; ++x) {
+        half.setPixel(x, y, GMANColor(0.5f, 0.5f, 0.5f));
+        half.setAlpha(x, y, GMANAlpha(0.5f, 0.5f, 0.5f));
+      }
+    }
+    half.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{65534, 0, 65535, 0.5});
+    check(std::all_of(half.received.begin(), half.received.end(), [](std::uint16_t v) { return v == 32767; }),
+          "receive 11: widest 16, one 65534, a field of 0.5 arrives all 32767");
   }
 
   // 12. Widest 8: 65535 0 65535 0, 0 0 0 0 and 255 200 100 0 each arrive at
@@ -458,8 +492,8 @@ void savePNG(std::string const& path, GMANColor const& colour, GMANQuantize cons
 #endif
 
 // 13. PNM, TIFF and PNG: 255 0 255 0 writes 0.25 as 64, and 65535 0 65535 0
-// writes it as 64 too -- none of the three can honour a 16-bit request, so
-// save falls back to 255 0 255 for each.
+// writes it as 64 at 8 bits in PNM and PNG. TIFF now honours that request
+// itself; checkTIFF16Bit proves it below.
 void checkFileRounding(std::string const& driverName,
                        std::function<void(std::string const&, GMANColor const&, GMANQuantize const&)> const& save,
                        std::function<ByteImage(std::string const&)> const& read, bool has16Bit) {
@@ -488,6 +522,28 @@ void checkFileRounding(std::string const& driverName,
   std::printf("checked driver: %s\n", driverName.c_str());
 }
 
+// 14. TIFF, 65535 0 65535 0, RGBA: BitsPerSample reads 16, 0.25 and 1 read
+// 16384 and 65535, and an alpha of 0.25 reads 16384.
+void checkTIFF16Bit() {
+  std::string const path = "narrow_tiff_16bit.tif";
+  gman::OutputTIFF output(path.c_str(), 2, 1);
+  output.setPixel(0, 0, GMANColor(0.25f, 0.25f, 0.25f));
+  output.setAlpha(0, 0, GMANAlpha(0.25f, 0.25f, 0.25f));
+  output.setPixel(1, 0, GMANColor(1.0f, 1.0f, 1.0f));
+  output.setAlpha(1, 0, GMANAlpha(1.0f, 1.0f, 1.0f));
+  output.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{65535, 0, 65535, 0});
+
+  ByteImage const img = readTIFFRaw(path);
+  check(img.ok, "tiff check14: file reads back");
+  if (img.ok) {
+    check(img.bitsPerSample == 16, "tiff check14: BitsPerSample reads 16");
+    check(img.at(0, 0, 0) == 16384, "tiff check14: 0.25 reads 16384 (got " + std::to_string(img.at(0, 0, 0)) + ")");
+    check(img.at(1, 0, 0) == 65535, "tiff check14: 1 reads 65535 (got " + std::to_string(img.at(1, 0, 0)) + ")");
+    check(img.at(0, 0, 3) == 16384,
+          "tiff check14: alpha 0.25 reads 16384 (got " + std::to_string(img.at(0, 0, 3)) + ")");
+  }
+}
+
 // 15. TIFF, RGBA: a NaN alpha writes 0, as today.
 void checkTIFFAlphaNaN() {
   RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
@@ -512,13 +568,14 @@ int main() {
   checkReceives();
 
   checkFileRounding("pnm", savePNM, readPNM, false);
-  checkFileRounding("tiff", saveTIFF, readTIFFRaw, false);
+  checkFileRounding("tiff", saveTIFF, readTIFFRaw, true);
 #ifdef GMAN_WITH_PNG
   checkFileRounding("png", savePNG, readPNGRaw, false);
 #else
   std::printf("checked driver: none (GMAN_WITH_PNG is off)\n");
 #endif
 
+  checkTIFF16Bit();
   checkTIFFAlphaNaN();
 
   return checkSummary("output narrowing holds");

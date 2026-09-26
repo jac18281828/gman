@@ -22,6 +22,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+#include <cstring>
 #include <vector>
 
 #include "gmandefaults.h"
@@ -47,11 +48,14 @@ OutputTIFF::OutputTIFF(const char* path, int width, int height) : GMANOutput(pat
 // default destructor
 OutputTIFF::~OutputTIFF() {};
 
+int OutputTIFF::maxBitsPerSample() const { return 16; }
+
 RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples,
-                              int /*bitsPerSample*/, RtFloat /*gamma*/) {
+                              int bitsPerSample, RtFloat /*gamma*/) {
   const RtInt samplesperpixel = (mode == GMANOutput::RGB) ? 3 : 4;
 
-  TIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, compression);
+  TIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, (uint16_t)bitsPerSample,
+                    compression);
   if (!writer.isOpen()) {
     std::string errorMsg("Unable to open output file: ");
     errorMsg.append(outputName);
@@ -67,7 +71,8 @@ RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uin
                              "Licensed under the GNU Lesser General Public License v2.1 or later.\n");
 
   // length in memory of one row of pixels in the image
-  const std::size_t linebytes = (std::size_t)samplesperpixel * (std::size_t)xres;
+  const std::size_t bytesPerSample = (bitsPerSample == 16) ? 2 : 1;
+  const std::size_t linebytes = (std::size_t)samplesperpixel * (std::size_t)xres * bytesPerSample;
   std::vector<unsigned char> buf;
   if (writer.scanlineSize() == linebytes) {
     buf.assign(linebytes, 0);
@@ -81,11 +86,17 @@ RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uin
   // Alpha comes from samples already: save resolved and quantized it
   // alongside colour, one draw per pixel, so this driver narrows nothing.
   for (int y = 0; y < yres; y++) {
-    int colOff = 0, rowOff = y;
+    int byteOff = 0, rowOff = y;
     for (int x = 0; x < xres; x++) {
       const std::size_t idx = 4 * ((std::size_t)y * (std::size_t)xres + (std::size_t)x);
       for (int channel = 0; channel < samplesperpixel; ++channel) {
-        buf[(std::size_t)colOff++] = static_cast<unsigned char>(samples[idx + (std::size_t)channel]);
+        const std::uint16_t sample = samples[idx + (std::size_t)channel];
+        if (bitsPerSample == 16) {
+          std::memcpy(&buf[(std::size_t)byteOff], &sample, sizeof(sample));
+          byteOff += (int)sizeof(sample);
+        } else {
+          buf[(std::size_t)byteOff++] = static_cast<unsigned char>(sample);
+        }
       }
     }
     // now write a scanline into the image

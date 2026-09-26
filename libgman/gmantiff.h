@@ -77,16 +77,16 @@ private:
   struct tiff* handle;
 };
 
-// Writes an 8-bit RGB or RGBA TIFF one scanline at a time. Construction
-// opens the file and sets the fields every gman TIFF shares: width,
-// height, 8 bits per sample, samplesPerPixel, top-left orientation, RGB
+// Writes an 8- or 16-bit RGB or RGBA TIFF one scanline at a time.
+// Construction opens the file and sets the fields every gman TIFF shares:
+// width, height, bitsPerSample, samplesPerPixel, top-left orientation, RGB
 // photometric, contiguous planar config and compression -- gman's own
 // six-way Compression, mapped to libtiff's constants by the seam's one
 // switch over it.
 class TIFFWriter {
 public:
   TIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height, std::uint16_t samplesPerPixel,
-             OutputTIFF::Compression compression);
+             std::uint16_t bitsPerSample, OutputTIFF::Compression compression);
   ~TIFFWriter();
 
   TIFFWriter(const TIFFWriter&) = delete;

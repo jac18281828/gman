@@ -60,6 +60,8 @@ public:
 
   Compression getCompression(void) const;
 
+  int maxBitsPerSample() const override;
+
 protected:
   RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
                     RtFloat gamma) override;
