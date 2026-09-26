@@ -94,14 +94,14 @@ bool TIFFReader::decode(std::uint32_t& width, std::uint32_t& height, std::vector
 }
 
 TIFFWriter::TIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height,
-                       std::uint16_t samplesPerPixel, OutputTIFF::Compression compression)
+                       std::uint16_t samplesPerPixel, std::uint16_t bitsPerSample, OutputTIFF::Compression compression)
     : handle(TIFFOpen(path.c_str(), "w")) {
   if (handle == nullptr) {
     return;
   }
   TIFFSetField(handle, TIFFTAG_IMAGEWIDTH, width);
   TIFFSetField(handle, TIFFTAG_IMAGELENGTH, height);
-  TIFFSetField(handle, TIFFTAG_BITSPERSAMPLE, 8);
+  TIFFSetField(handle, TIFFTAG_BITSPERSAMPLE, bitsPerSample);
   TIFFSetField(handle, TIFFTAG_SAMPLESPERPIXEL, samplesPerPixel);
   TIFFSetField(handle, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
   TIFFSetField(handle, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_RGB);

@@ -246,6 +246,32 @@ void checkQuantizeFallback(const std::string& gman, const std::string& ribDir) {
   check(everySampleIs64, "quantize_fallback: every sample reads 64");
 }
 
+// 3. quantize16.rib, TIFF, 65535 1000 65535 0, half plane: 16 bits a
+// sample, 4 samples a pixel; columns 0-7 read R, G and B 16384 and alpha
+// 65535; columns 8-15 read 1000 on all four.
+void checkQuantize16(const std::string& gman, const std::string& ribDir) {
+  std::remove("quantize16.tif");
+  Result const r = runGman(gman, ribDir + "/quantize16.rib");
+  check(r.exitStatus == 0, "quantize16: renders");
+
+  RawImage const img = readTIFFRaw("quantize16.tif");
+  check(img.ok, "quantize16: file reads back");
+  if (!img.ok) {
+    return;
+  }
+  check(img.bitsPerSample == 16, "quantize16: 16 bits a sample");
+  check(img.samplesPerPixel == 4, "quantize16: 4 samples a pixel");
+  for (int x = 0; x < 8; ++x) {
+    check(img.at(x, 8, 0) == 16384 && img.at(x, 8, 1) == 16384 && img.at(x, 8, 2) == 16384,
+          "quantize16: covered column " + std::to_string(x) + " reads R, G, B 16384");
+    check(img.at(x, 8, 3) == 65535, "quantize16: covered column " + std::to_string(x) + " reads alpha 65535");
+  }
+  for (int x = 8; x < 16; ++x) {
+    check(img.at(x, 8, 0) == 1000 && img.at(x, 8, 1) == 1000 && img.at(x, 8, 2) == 1000 && img.at(x, 8, 3) == 1000,
+          "quantize16: uncovered column " + std::to_string(x) + " reads 1000 on all four");
+  }
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -258,6 +284,7 @@ int main(int argc, char* argv[]) {
 
   checkQuantize8(gman, ribDir);
   checkQuantizeFallback(gman, ribDir);
+  checkQuantize16(gman, ribDir);
 
   return checkSummary("quantize holds");
 }

@@ -128,7 +128,7 @@ const char* wrapName(TextureWrap wrap) {
 // file, if the file cannot be opened or a scanline fails to write.
 bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::vector<unsigned char>& rgb,
                   TextureWrap sw, TextureWrap tw, const std::string& format) {
-  TIFFWriter writer(name, w, h, 3, OutputTIFF::NONE);
+  TIFFWriter writer(name, w, h, 3, 8, OutputTIFF::NONE);
   if (!writer.isOpen()) {
     return false;
   }
