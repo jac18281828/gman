@@ -1311,11 +1311,10 @@ set_target_properties(gman_countingshader PROPERTIES OUTPUT_NAME "countingshader
 gman_add_plugin(gman_nodestroyshader nodestroyshader_test_plugin.cpp)
 set_target_properties(gman_nodestroyshader PROPERTIES OUTPUT_NAME "nodestroyshader")
 
-# Test-only indirect-light pass (see its own comment): answers black
-# until prepare() has seen a primitive, kConstantIndirect after, and
-# counts its own live instances through its own exported
-# GMANConstantIndirectLiveCount. Never dlopened outside the test suite;
-# not part of the shipped renderer.
+# Test-only indirect-light pass (see its comment): answers black until
+# prepare() has seen a primitive, kConstantIndirect after, and counts its
+# live instances through its exported GMANConstantIndirectLiveCount. Never
+# dlopened outside the test suite; not part of the shipped renderer.
 gman_add_plugin(gman_constantindirect constantindirect_test_plugin.cpp)
 set_target_properties(gman_constantindirect PROPERTIES OUTPUT_NAME "constantindirect")
 
@@ -1402,7 +1401,7 @@ set_tests_properties(indirectambient PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# gman::loadIndirectPass: a real module answers through its own entry
+# gman::loadIndirectPass: a real module answers through its entry
 # points, a missing or wrong module answers null, a module whose create
 # function itself returns null warns and answers null too, and the
 # deleter frees through the module rather than through a plain delete.
@@ -2170,9 +2169,9 @@ if(GMAN_BUILD_RAYTRACER)
 
   # `gman -r gmanraytracer` renders tests/rib/indirectseam_*.rib: Option
   # "render" "string indirect" naming constantindirect brightens a matte
-  # sphere by exactly that module's own constant, a missing pass changes
+  # sphere by exactly that module's constant, a missing pass changes
   # nothing, clearing the name undoes it, and the pass reaches a mirror's
-  # own reflected hit too. See tests/indirectrender_test.cpp.
+  # reflected hit too. See tests/indirectrender_test.cpp.
   add_executable(gman_indirectrender indirectrender_test.cpp)
   target_link_libraries(gman_indirectrender PRIVATE gman_core TIFF::TIFF)
   add_dependencies(gman_indirectrender gman_raytracer gman_matte gman_mirror gman_constantindirect)
