@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanbsdf.h"
 #include "gmanloadable.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
@@ -54,7 +55,7 @@ public:
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const override;
   GMANColor computeOi(GMANSurfaceEnv const& se) const override;
-  GMANColor albedo(GMANSurfaceEnv const& se) const override;
+  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -95,10 +96,20 @@ GMANColor plastic::computeCi(GMANSurfaceEnv const& se) const {
 
 GMANColor plastic::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
-// Kd*Cs alone: the specular term is Ks/specularcolor's own contribution,
-// never diffuse, so it plays no part in the diffuse albedo.
-GMANColor plastic::albedo(GMANSurfaceEnv const& se) const {
-  return clampAlbedo(GMANColor(kd * se.Cs.getRed(), kd * se.Cs.getGreen(), kd * se.Cs.getBlue()));
+// A Lambert lobe of Kd*Cs plus a GGX lobe of the specular headroom that
+// leaves: the two never exceed 1 combined, so the highlight vanishes
+// rather than break energy conservation once Kd*Cs alone reaches 1 in a
+// channel. albedo (the base default's bsdf(se).rhoD()) therefore still
+// answers Kd*Cs exactly, unaffected by the specular term.
+gman::BSDF plastic::bsdf(GMANSurfaceEnv const& se) const {
+  gman::BSDF closure(se.N);
+  GMANColor const d = clampAlbedo(GMANColor(kd * se.Cs.getRed(), kd * se.Cs.getGreen(), kd * se.Cs.getBlue()));
+  GMANColor const s =
+      clampAlbedo(GMANColor(ks * specularcolor.getRed(), ks * specularcolor.getGreen(), ks * specularcolor.getBlue()));
+  RtFloat const k = ggxHeadroom(d, s);
+  closure.addLambert(d);
+  closure.addGGX(GMANColor(k * s.getRed(), k * s.getGreen(), k * s.getBlue()), alphaFromRoughness(roughness));
+  return closure;
 }
 
 } // namespace gmanshader

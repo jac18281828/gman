@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanbsdf.h"
 #include "gmanloadable.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
@@ -52,7 +53,7 @@ public:
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const override;
   GMANColor computeOi(GMANSurfaceEnv const& se) const override;
-  GMANColor albedo(GMANSurfaceEnv const& se) const override;
+  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -85,8 +86,16 @@ GMANColor metal::computeCi(GMANSurfaceEnv const& se) const {
 
 GMANColor metal::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
-// No diffuse term: metal's colour comes entirely from specular response.
-GMANColor metal::albedo(GMANSurfaceEnv const&) const { return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0); }
+// One GGX lobe of Ks*specularcolor*Cs, clamped: no diffuse term, so
+// albedo (the base default's bsdf(se).rhoD()) is exactly black.
+gman::BSDF metal::bsdf(GMANSurfaceEnv const& se) const {
+  gman::BSDF closure(se.N);
+  GMANColor const weight = clampAlbedo(GMANColor(ks * specularcolor.getRed() * se.Cs.getRed(),
+                                                 ks * specularcolor.getGreen() * se.Cs.getGreen(),
+                                                 ks * specularcolor.getBlue() * se.Cs.getBlue()));
+  closure.addGGX(weight, alphaFromRoughness(roughness));
+  return closure;
+}
 
 } // namespace gmanshader
 

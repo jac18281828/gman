@@ -2514,13 +2514,19 @@ set_tests_properties(bsdfggx PROPERTIES
   TIMEOUT 60)
 
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
-# rhoD, and matte's Lambert lobe of Kd * Cs, with matte and plastic loaded
-# through GMANAttributes::setSurface.
+# rhoD, matte's Lambert lobe of Kd * Cs, and the GGX closures of plastic,
+# paintedplastic, metal and shinymetal, with every shader loaded through
+# GMANAttributes::setSurface. Its own working directory, since the
+# paintedplastic case writes and reads a texture file relative to cwd.
 add_executable(gman_shaderbsdf shaderbsdf_test.cpp)
-target_link_libraries(gman_shaderbsdf PRIVATE gman_core)
-add_dependencies(gman_shaderbsdf gman_matte gman_plastic)
+target_link_libraries(gman_shaderbsdf PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_shaderbsdf gman_matte gman_plastic gman_paintedplastic gman_metal gman_shinymetal gman_mirror)
 
-add_test(NAME shaderbsdf COMMAND gman_shaderbsdf)
+set(GMAN_SHADERBSDF_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shaderbsdf-run")
+file(MAKE_DIRECTORY "${GMAN_SHADERBSDF_WORKDIR}")
+
+add_test(NAME shaderbsdf COMMAND gman_shaderbsdf
+  WORKING_DIRECTORY "${GMAN_SHADERBSDF_WORKDIR}")
 set_tests_properties(shaderbsdf PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit

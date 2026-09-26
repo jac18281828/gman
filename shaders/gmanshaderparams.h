@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <cmath>
+
 #include "gmancolor.h"
 #include "gmandictionary.h"
 #include "gmanerror.h"
@@ -80,6 +82,34 @@ inline std::string getStringParam(GMANParameterList const& pl, RtToken token, co
 inline GMANColor clampAlbedo(GMANColor const& c) {
   auto const clampChannel = [](RtFloat v) { return GMANMIN(GMANMAX(v, (RtFloat)0.0), (RtFloat)1.0); };
   return GMANColor(clampChannel(c.getRed()), clampChannel(c.getGreen()), clampChannel(c.getBlue()));
+}
+
+// GGX's alpha whose D falls to half where specular()'s Blinn-Phong
+// highlight does, for RenderMan roughness r: 0 for r <= 0 or NaN, which
+// BSDF::addGGX raises to kMinGGXAlpha.
+inline RtFloat alphaFromRoughness(RtFloat roughness) {
+  if (!(roughness > (RtFloat)0.0)) {
+    return (RtFloat)0.0;
+  }
+  double const halfLife = std::pow(4.0, -(double)roughness);
+  return (RtFloat)std::sqrt((1.0 - halfLife) / (std::sqrt(2.0) - halfLife));
+}
+
+// The scalar plastic's and paintedplastic's GGX lobe shares across
+// channels so the two lobes never exceed 1 combined: the least headroom
+// (1 - diffuse_c) / specular_c over channels with specular_c > 0, or 1
+// when every specular_c is 0. diffuse and specular are each already
+// clamped to [0, 1].
+inline RtFloat ggxHeadroom(GMANColor const& diffuse, GMANColor const& specular) {
+  RtFloat k = (RtFloat)1.0;
+  RtFloat const d[3] = {diffuse.getRed(), diffuse.getGreen(), diffuse.getBlue()};
+  RtFloat const s[3] = {specular.getRed(), specular.getGreen(), specular.getBlue()};
+  for (int c = 0; c < 3; ++c) {
+    if (s[c] > (RtFloat)0.0) {
+      k = GMANMIN(k, (1.0f - d[c]) / s[c]);
+    }
+  }
+  return k;
 }
 
 } // namespace gmanshader

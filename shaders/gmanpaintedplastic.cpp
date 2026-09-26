@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include "gmanbsdf.h"
 #include "gmanloadable.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
@@ -56,7 +57,7 @@ public:
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const override;
   GMANColor computeOi(GMANSurfaceEnv const& se) const override;
-  GMANColor albedo(GMANSurfaceEnv const& se) const override;
+  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -103,13 +104,22 @@ GMANColor paintedplastic::computeCi(GMANSurfaceEnv const& se) const {
 
 GMANColor paintedplastic::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
-// Kd*Cs*texture, white when texturename is empty: the texture tints the
-// diffuse base exactly as it does in computeCi.
-GMANColor paintedplastic::albedo(GMANSurfaceEnv const& se) const {
+// plastic's closure (gmanplastic.cpp) with the diffuse base tinted by the
+// texture, white when texturename is empty; the headroom the GGX lobe
+// takes is fitted to that textured diffuse, texel by texel.
+gman::BSDF paintedplastic::bsdf(GMANSurfaceEnv const& se) const {
   GMANColor const tex =
       texturename.empty() ? GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0) : se.texture(texturename, se.s, se.t);
-  return clampAlbedo(GMANColor(kd * se.Cs.getRed() * tex.getRed(), kd * se.Cs.getGreen() * tex.getGreen(),
-                               kd * se.Cs.getBlue() * tex.getBlue()));
+
+  gman::BSDF closure(se.N);
+  GMANColor const d = clampAlbedo(GMANColor(kd * se.Cs.getRed() * tex.getRed(), kd * se.Cs.getGreen() * tex.getGreen(),
+                                            kd * se.Cs.getBlue() * tex.getBlue()));
+  GMANColor const s =
+      clampAlbedo(GMANColor(ks * specularcolor.getRed(), ks * specularcolor.getGreen(), ks * specularcolor.getBlue()));
+  RtFloat const k = ggxHeadroom(d, s);
+  closure.addLambert(d);
+  closure.addGGX(GMANColor(k * s.getRed(), k * s.getGreen(), k * s.getBlue()), alphaFromRoughness(roughness));
+  return closure;
 }
 
 } // namespace gmanshader
