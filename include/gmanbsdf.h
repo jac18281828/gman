@@ -25,6 +25,7 @@
 
 #include <array>
 #include <cstddef>
+#include <utility>
 
 #include "gmancolor.h"
 #include "gmanvector.h"
@@ -83,7 +84,8 @@ public:
 
   // The sum of the Lambert lobes' weights, unclamped: the closure's
   // directional reflectance, the integral of eval * |cos(theta_i)| over
-  // the sphere. It stays at or below 1 per channel when the weights do.
+  // the sphere. It stays at or below 1 per channel when the weights sum to
+  // at most 1 per channel.
   GMANColor rhoD() const;
 
   // The sum of every lobe's f.
@@ -105,6 +107,12 @@ private:
   // probability of picking it.
   RtFloat selectionWeight(std::size_t index) const;
   RtFloat totalSelectionWeight() const;
+
+  // Picks a lobe by u1 * total against the lobes' selection-weight shares of
+  // [0, total), and remaps u1 into [0, 1) within the chosen lobe's share.
+  // Rounding that carries the target past the last share lands on the last
+  // lobe with a nonzero share. Precondition: total > 0.
+  std::pair<std::size_t, RtFloat> pickLobe(RtFloat u1, RtFloat total) const;
 
   GMANVector normal;
   std::array<Lobe, kMaxLobes> lobes{};

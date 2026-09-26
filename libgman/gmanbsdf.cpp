@@ -145,8 +145,26 @@ BSDFSample BSDF::sample(GMANVector const& wo, RtFloat u1, RtFloat u2) const {
     return failedSample();
   }
 
-  // Walks the lobes' shares of [0, total); rounding that carries target
-  // past the last share lands on the last lobe with a nonzero share.
+  auto const [chosen, lobeU1] = pickLobe(u1, total);
+
+  GMANVector wi;
+  switch (lobes[chosen].kind) {
+  case LobeKind::lambert:
+    wi = lambertSample(tangentFrame(normal), cosThetaO, lobeU1, u2);
+    break;
+  }
+
+  if (!sameSide(cosThetaO, normal.dot(wi))) {
+    return failedSample();
+  }
+  RtFloat const density = pdf(wo, wi);
+  if (!(density > 0.0f)) {
+    return failedSample();
+  }
+  return {wi, eval(wo, wi), density, false, chosen};
+}
+
+std::pair<std::size_t, RtFloat> BSDF::pickLobe(RtFloat u1, RtFloat total) const {
   RtFloat const target = u1 * total;
   std::size_t chosen = 0;
   RtFloat shareStart = 0.0f;
@@ -164,23 +182,7 @@ BSDFSample BSDF::sample(GMANVector const& wo, RtFloat u1, RtFloat u2) const {
     }
   }
   RtFloat const remapped = (target - shareStart) / selectionWeight(chosen);
-  RtFloat const lobeU1 = std::fmin(std::fmax(remapped, 0.0f), std::nextafter(1.0f, 0.0f));
-
-  GMANVector wi;
-  switch (lobes[chosen].kind) {
-  case LobeKind::lambert:
-    wi = lambertSample(tangentFrame(normal), cosThetaO, lobeU1, u2);
-    break;
-  }
-
-  if (!sameSide(cosThetaO, normal.dot(wi))) {
-    return failedSample();
-  }
-  RtFloat const density = pdf(wo, wi);
-  if (!(density > 0.0f)) {
-    return failedSample();
-  }
-  return {wi, eval(wo, wi), density, false, chosen};
+  return {chosen, std::fmin(std::fmax(remapped, 0.0f), std::nextafter(1.0f, 0.0f))};
 }
 
 RtFloat BSDF::selectionWeight(std::size_t index) const {
