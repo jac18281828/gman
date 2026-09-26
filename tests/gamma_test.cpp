@@ -18,9 +18,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-// The driver ordering -- correct in float, narrow afterwards -- needs no test
-// here. GMANOutput::save runs gamma, quantize and the output clamp itself,
-// in that order, and hands every driver pixels already in that order.
+// The driver ordering -- correct in float, quantize afterwards -- needs no
+// test here. GMANOutput::save runs gamma, then quantizes to the request's
+// range, and hands every driver integer samples already in that order;
 // tests/outputnarrowing_test.cpp pins it end to end, and fails a driver
 // that reads the framebuffer instead. Assertion 4 below pins the sub-byte
 // arithmetic that order depends on.

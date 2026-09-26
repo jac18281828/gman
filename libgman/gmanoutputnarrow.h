@@ -23,49 +23,31 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 #include "gmancolor.h"
+#include "gmanquantize.h"
 #include "gmantypes.h"
 
 namespace gman {
 
-// A channel clamped into [0, 1]: NaN, and anything at or below 0, maps to
-// 0; positive infinity, and anything at or above 1, maps to 1. This is the
-// clamp the output pipeline runs last, after gamma and quantize, so a
-// float-to-integer narrowing downstream never meets an out-of-range or NaN
-// value.
-inline GMANColor::ColorSampleType clampedChannel(GMANColor::ColorSampleType v) {
-  static_assert(GMANColor::hasFloatingPointSamples, "clamp designed for normalized floating point math");
+// RISpec 3.2's own rule: round(one * v + ditheramplitude * xi) then clamp
+// into [min, max], round as floor(x + 0.5). Runs in double -- at 16 bits,
+// the same arithmetic in float missed an exact integer by one at a
+// handful of pixels out of millions of draws, double none. A NaN v
+// quantizes as 0 does; positive infinity clamps to max and negative
+// infinity to min, both falling out of the clamp once floor(x + 0.5) has
+// carried the infinity through. save is this function's only caller.
+inline std::uint16_t quantizedSample(GMANColor::ColorSampleType v, GMANQuantize const& quantize, RtFloat xi) {
+  static_assert(GMANColor::hasFloatingPointSamples, "quantizing designed for normalized floating point math");
 
-  if (std::isnan(v) || v < 0) {
-    return 0;
-  }
-  if (v > 1) {
-    return 1;
-  }
-  return v;
-}
-
-// A channel narrowed to a byte: the clamp above, then the product of the
-// clamped value and GMAN_BYTEMAX truncated in float. Total -- every input,
-// NaN included, produces a byte in range -- since the clamp bounds the
-// value before the cast. Truncating rather than rounding keeps every
-// in-range byte identical to the historical output; rounding belongs to a
-// real Quantize.
-inline GMANByte narrowedByte(GMANColor::ColorSampleType v) {
-  static_assert(GMANColor::hasFloatingPointSamples, "narrowing designed for normalized floating point math");
-
-  return static_cast<GMANByte>(clampedChannel(v) * static_cast<GMANColor::ColorSampleType>(GMAN_BYTEMAX));
-}
-
-// Coverage narrowed from an alpha sample: the mean of its three channels,
-// through narrowedByte. Alpha is linear coverage, never gamma-corrected,
-// so this takes the raw sample rather than a colour already run through
-// the output pipeline's gamma step.
-inline GMANByte coverageByte(GMANAlpha const& alpha) {
-  return narrowedByte((alpha.getRed() + alpha.getGreen() + alpha.getBlue()) /
-                      static_cast<GMANColor::ColorSampleType>(3.0));
+  const double value = std::isnan(v) ? 0.0 : static_cast<double>(v);
+  const double rounded = std::floor(static_cast<double>(quantize.one) * value + 0.5 +
+                                    static_cast<double>(quantize.ditheramplitude) * static_cast<double>(xi));
+  const double clamped = std::clamp(rounded, static_cast<double>(quantize.min), static_cast<double>(quantize.max));
+  return static_cast<std::uint16_t>(clamped);
 }
 
 } // namespace gman

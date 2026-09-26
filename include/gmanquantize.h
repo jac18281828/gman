@@ -25,41 +25,20 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
-#include "gmancolor.h"
-#include "gmanlog.h"
 #include "ri.h"
 
 /*
  * RenderMan API GMANQuantize
  *
- * Color depth and alpha quantization
- *
+ * The Quantize request RiQuantize's "rgba" type carries: the value one
+ * maps to, the integer range every channel clamps into, and the dither
+ * amplitude drawn once per pixel. gmanoutput.h depends on this aggregate
+ * alone, never on gmanoptions.h, which is what lets gmanoptions.h include
+ * gmanoutput.h without a cycle.
  */
-
-class GMANQuantize {
-public:
-  // public types
-  typedef enum { RGB, RGBA, RGBAZ, A, AZ, Z } DisplayMode;
-
-private:
-  // private data
-  [[maybe_unused]] DisplayMode mode;
-  [[maybe_unused]] RtInt one;
-  [[maybe_unused]] RtInt minVal;
-  [[maybe_unused]] RtInt maxVal;
-  [[maybe_unused]] RtFloat ditherAmplitude;
-
-public:
-  GMANQuantize(DisplayMode md, RtInt oneMap, RtInt mn, RtInt mx,
-               RtFloat ditheramp); // default constructor
-
-  ~GMANQuantize(); // default destructor
-
-  // inline color reduction
-  GMANColor& doColor(GMANColor& col);
+struct GMANQuantize {
+  RtInt one;
+  RtInt min;
+  RtInt max;
+  RtFloat ditheramplitude;
 };

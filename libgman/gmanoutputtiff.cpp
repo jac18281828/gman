@@ -27,7 +27,6 @@
 #include "gmandefaults.h"
 #include "gmanerror.h"
 #include "gmanoutput.h"
-#include "gmanoutputnarrow.h"
 #include "gmanoutputtiff.h"
 #include "gmantiff.h"
 #include "ri.h"
@@ -48,7 +47,8 @@ OutputTIFF::OutputTIFF(const char* path, int width, int height) : GMANOutput(pat
 // default destructor
 OutputTIFF::~OutputTIFF() {};
 
-RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat /*gamma*/) {
+RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples,
+                              int /*bitsPerSample*/, RtFloat /*gamma*/) {
   const RtInt samplesperpixel = (mode == GMANOutput::RGB) ? 3 : 4;
 
   TIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, compression);
@@ -78,21 +78,14 @@ RtVoid OutputTIFF::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColo
   // We set the strip size of the file to be size of one row of pixels
   writer.setRowsPerStrip(writer.defaultStripSize((uint32_t)(xres * samplesperpixel)));
 
-  // copy frameBuffer to jpeg sample array
+  // Alpha comes from samples already: save resolved and quantized it
+  // alongside colour, one draw per pixel, so this driver narrows nothing.
   for (int y = 0; y < yres; y++) {
     int colOff = 0, rowOff = y;
     for (int x = 0; x < xres; x++) {
-      GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
-
-      buf[colOff++] = gman::narrowedByte(color.getRed());
-      buf[colOff++] = gman::narrowedByte(color.getGreen());
-      buf[colOff++] = gman::narrowedByte(color.getBlue());
-
-      if (samplesperpixel == 4) {
-        // Alpha is linear coverage, not a colour sample: never
-        // gamma-corrected or quantized. gman::coverageByte is the one
-        // formula every driver writing coverage alpha shares.
-        buf[colOff++] = gman::coverageByte(getAlpha(x, y));
+      const std::size_t idx = 4 * ((std::size_t)y * (std::size_t)xres + (std::size_t)x);
+      for (int channel = 0; channel < samplesperpixel; ++channel) {
+        buf[(std::size_t)colOff++] = static_cast<unsigned char>(samples[idx + (std::size_t)channel]);
       }
     }
     // now write a scanline into the image

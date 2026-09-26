@@ -31,7 +31,6 @@ extern "C" {
 #include "gmandefaults.h"
 #include "gmanerror.h"
 #include "gmanoutput.h"
-#include "gmanoutputnarrow.h"
 #include "gmanoutputpng.h"
 #include "ri.h"
 
@@ -48,7 +47,8 @@ OutputPNG::OutputPNG(const char* path, int width, int height) : GMANOutput(path,
 // default destructor
 OutputPNG::~OutputPNG() {};
 
-RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat gamma) {
+RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples,
+                             int /*bitsPerSample*/, RtFloat gamma) {
   // write a PNG file to 'fileName'
 
   // open jpeg output file for writing
@@ -183,20 +183,18 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor
         int colOff = 0;
 
         for (int x = 0; x < xres; x++) {
+          const std::size_t idx = 4 * ((std::size_t)y * (std::size_t)xres + (std::size_t)x);
 
           if (mode != A) {
-            GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
-
-            src[colOff++] = gman::narrowedByte(color.getRed());
-            src[colOff++] = gman::narrowedByte(color.getGreen());
-            src[colOff++] = gman::narrowedByte(color.getBlue());
+            src[colOff++] = static_cast<png_byte>(samples[idx + 0]);
+            src[colOff++] = static_cast<png_byte>(samples[idx + 1]);
+            src[colOff++] = static_cast<png_byte>(samples[idx + 2]);
           }
 
           if (mode != RGB) {
-            // Coverage, not colour: never gamma-corrected, read straight
-            // from the alpha buffer rather than the gamma-corrected image
-            // this loop uses above.
-            src[colOff++] = gman::coverageByte(getAlpha(x, y));
+            // Coverage, already quantized in save alongside colour with no
+            // gain or gamma, at index 3.
+            src[colOff++] = static_cast<png_byte>(samples[idx + 3]);
           }
         }
       }

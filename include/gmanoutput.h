@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -46,23 +47,13 @@
 class GMANOutput : public GMANFrameBuffer {
 public:
   // public types
-  typedef enum {
-    RGB = GMANQuantize::RGB,
-    RGBA = GMANQuantize::RGBA,
-    RGBAZ = GMANQuantize::RGBAZ,
-    A = GMANQuantize::A,
-    AZ = GMANQuantize::AZ,
-    Z = GMANQuantize::Z
-  } DisplayMode;
+  typedef enum { RGB, RGBA, RGBAZ, A, AZ, Z } DisplayMode;
 
 protected:
   std::string outputName;
 
-  GMANQuantize* quantizer;
-
 public:
-  GMANOutput();
-  ; // default constructor
+  GMANOutput(); // default constructor
 
   // name, width, height
   GMANOutput(const char* name, int width, int height);
@@ -76,23 +67,25 @@ public:
   // set the output name
   virtual RtVoid setName(const char* name) { outputName = name; };
 
-  // call this to set up the quantization
-  virtual RtVoid setQuantization(DisplayMode mode, RtInt one, RtInt min, RtInt max, RtFloat ditheramplitude);
+  // The widest bit depth a sample this driver writes can hold. 8 unless a
+  // subclass writes more.
+  virtual int maxBitsPerSample() const;
 
-  //
-  // Copy or swap the frame buffer bank so the
-  // buffer data becomes visible.
-  // or save the image data to the display device
-  //
-  // Runs gamma, then quantize, then a NaN-safe [0, 1] clamp on every pixel
-  // in float, then hands the result to writeImage. A driver never narrows a
-  // colour value save has not already put through all three steps.
-  RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma);
+  // Resolves quantize against maxBitsPerSample(): honoured, it bounds every
+  // channel; otherwise save logs one warning naming this output and
+  // quantizes with 255 0 255 and the requested amplitude instead. Colour
+  // runs through gain and gamma first; alpha, coverage, skips both. Every
+  // channel then rounds and dithers by RISpec's rule, one draw per pixel,
+  // and clamps into the resolved range, before writeImage receives it
+  // once, at the resolved bit depth.
+  RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma, GMANQuantize const& quantize);
 
 protected:
-  // Writes image, xres * yres colours in row-major order (index y * xres +
-  // x), already gamma-corrected, quantized and clamped into [0, 1] with no
-  // NaN. gamma is the exponent save already applied, passed through for a
+  // Writes image, 4 samples per pixel -- R, G, B, alpha -- in row-major
+  // order, index 4 * (y * xres + x) + channel, each already resolved into
+  // the request's [min, max] and packed into bitsPerSample bits (8 or 16).
+  // gamma is the exponent save already applied, passed through for a
   // format that records it rather than reapplies it.
-  virtual RtVoid writeImage(DisplayMode mode, std::vector<GMANColor> const& image, RtFloat gamma) = 0;
+  virtual RtVoid writeImage(DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
+                            RtFloat gamma) = 0;
 };

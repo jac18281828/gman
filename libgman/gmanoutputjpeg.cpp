@@ -35,7 +35,6 @@ extern "C" {
 #include "gmanlog.h"
 #include "gmanoutput.h"
 #include "gmanoutputjpeg.h"
-#include "gmanoutputnarrow.h"
 #include "ri.h"
 
 namespace gman {
@@ -78,7 +77,8 @@ OutputJPEG::OutputJPEG(const char* path, int width, int height)
 // default destructor
 OutputJPEG::~OutputJPEG() {};
 
-RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat /*gamma*/) {
+RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples,
+                              int /*bitsPerSample*/, RtFloat /*gamma*/) {
   // JPEG has no alpha or depth channel in the format this driver targets:
   // every mode but RGB loses something, so name it and write RGB anyway
   // rather than fail a render over a lossy visual proxy.
@@ -135,16 +135,16 @@ RtVoid OutputJPEG::writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColo
       for (int y = 0; y < yres; y++) {
         int colOff = 0;
         for (int x = 0; x < xres; x++) {
-          GMANColor const& color = image[(std::size_t)y * (std::size_t)xres + (std::size_t)x];
+          const std::size_t idx = 4 * ((std::size_t)y * (std::size_t)xres + (std::size_t)x);
 
           // default, (no reduction) is 24bit
 
           // write r, g, and b
 
           // use x*3 + [0,1,2] .. aRtVoid a multiply by summing.
-          row[colOff++] = gman::narrowedByte(color.getRed());
-          row[colOff++] = gman::narrowedByte(color.getGreen());
-          row[colOff++] = gman::narrowedByte(color.getBlue());
+          row[colOff++] = static_cast<JSAMPLE>(samples[idx + 0]);
+          row[colOff++] = static_cast<JSAMPLE>(samples[idx + 1]);
+          row[colOff++] = static_cast<JSAMPLE>(samples[idx + 2]);
         }
         // write jpeg scanline
         jpeg_write_scanlines(&cinfo, row_pointer, 1);
