@@ -20,10 +20,15 @@
 
 /*
  * gman::loadIndirectPass: a real module answers through its own
- * GMANCreateIndirectPass/GMANDestroyIndirectPass, a missing module or one
- * lacking either entry point answers null, and the deleter frees through
- * the module rather than through a plain delete.
+ * GMANCreateIndirectPass/GMANDestroyIndirectPass, a missing module, one
+ * lacking either entry point, or one whose create function itself returns
+ * null all answer null and warn, and the deleter frees through the module
+ * rather than through a plain delete.
  */
+
+#include <fstream>
+#include <sstream>
+#include <string>
 
 #include <dlfcn.h>
 
@@ -31,6 +36,7 @@
 #include "constantindirectconstants.h"
 #include "gmanindirectpass.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanlog.h"
 #include "gmanparameterlist.h"
 #include "gmanraybvh.h"
 #include "gmanrayoccluder.h"
@@ -113,6 +119,31 @@ void checkMissingAndWrongModule() {
         "loadIndirectPass(\"matte\") returns null: a module lacking the entry points");
 }
 
+// nullindirect's own GMANCreateIndirectPass always returns null. The
+// warning is captured through setLogFile with the screen silenced, then
+// the log's previous destination is restored so later checks log to the
+// screen as before.
+void checkCreateReturningNullWarns() {
+  std::string const logPath = "indirectpass_nullcreate.log";
+  std::remove(logPath.c_str());
+  setLogFile(logPath.c_str());
+  setScreenOutput(false);
+
+  auto const pass = gman::loadIndirectPass("nullindirect");
+  check(pass == nullptr, "loadIndirectPass(\"nullindirect\") returns null: its own create function returns null");
+
+  setLogFile("/dev/null");
+  setScreenOutput(true);
+
+  std::ifstream in(logPath, std::ios::binary);
+  std::ostringstream contents;
+  contents << in.rdbuf();
+  std::string const log = contents.str();
+  check(log.find("libnullindirect.so") != std::string::npos, "the warning names libnullindirect.so");
+  check(log.find("GMANCreateIndirectPass returned null") != std::string::npos,
+        "the warning says the create function returned null");
+}
+
 // Loaded, released, loaded again: each cycle answers black before its own
 // prepare() and kConstantIndirect after, and the live count returns to 1,
 // not 2 -- proof the first instance was actually freed, not merely
@@ -153,8 +184,10 @@ void checkReloadAfterRelease() {
 int main() {
   checkLoadAndPrepare();
   checkMissingAndWrongModule();
+  checkCreateReturningNullWarns();
   checkReloadAfterRelease();
 
-  return checkSummary("gman::loadIndirectPass: a real module answers through its own entry points, a missing or "
-                      "wrong module answers null, and the deleter frees through the module");
+  return checkSummary("gman::loadIndirectPass: a real module answers through its own entry points, a missing "
+                      "module, a wrong module, and a module whose create function returns null all answer null, "
+                      "and the deleter frees through the module");
 }
