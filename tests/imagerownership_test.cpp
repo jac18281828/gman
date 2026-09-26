@@ -64,11 +64,12 @@ int countingImagerLiveCount() {
   return fn ? fn() : -1;
 }
 
-// Only steps 4 and 6 discriminate a shallow-copied raw pointer from
-// shared_ptr ownership: at step 4, a shallow copy frees the outer scope's
-// instance when the nested RiImagerV replaces it; at step 6, a raw
-// imagerModule with an empty destructor never frees the outer's own
-// instance at all.
+// Only "the nested imager adds a second instance" and "ending the context
+// frees the outer's own instance" discriminate a shallow-copied raw pointer
+// from shared_ptr ownership: the former catches a shallow copy freeing the
+// outer scope's instance when the nested RiImagerV replaces it; the latter
+// catches a raw imagerModule with an empty destructor never freeing the
+// outer's own instance at all.
 void checkNestedOwnership() {
   int const base = countingImagerLiveCount();
 

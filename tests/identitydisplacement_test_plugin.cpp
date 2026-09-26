@@ -36,8 +36,8 @@ namespace gmanshader {
 class identitydisplacement : public GMANDisplacementShader {
 public:
   ShaderType getType(RtVoid) const override { return DISPLACEMENT; }
-  const GMANPoint& computeP(GMANDisplacementEnv& de) override { return de.P; }
-  const GMANNormal& computeN(GMANDisplacementEnv& de) override { return de.N; }
+  GMANPoint const& computeP(GMANDisplacementEnv& de) override { return de.P; }
+  GMANNormal const& computeN(GMANDisplacementEnv& de) override { return de.N; }
 };
 
 } // namespace gmanshader
