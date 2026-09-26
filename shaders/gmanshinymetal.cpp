@@ -23,6 +23,7 @@
 
 #include <string>
 
+#include "gmanbsdf.h"
 #include "gmanloadable.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
@@ -58,7 +59,7 @@ public:
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const override;
   GMANColor computeOi(GMANSurfaceEnv const& se) const override;
-  GMANColor albedo(GMANSurfaceEnv const& se) const override;
+  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const ka;
@@ -98,10 +99,15 @@ GMANColor shinymetal::computeCi(GMANSurfaceEnv const& se) const {
 
 GMANColor shinymetal::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
-// No diffuse term: shinymetal's colour comes from specular response and
-// its environment reflection.
-GMANColor shinymetal::albedo(GMANSurfaceEnv const&) const {
-  return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
+// One GGX lobe of Ks*Cs, clamped: Kr and texturename stay out, since
+// environment() lights the surface from a map the path tracer has none
+// of. No diffuse term, so albedo (the base default's bsdf(se).rhoD()) is
+// exactly black.
+gman::BSDF shinymetal::bsdf(GMANSurfaceEnv const& se) const {
+  gman::BSDF closure(se.N);
+  GMANColor const weight = clampAlbedo(GMANColor(ks * se.Cs.getRed(), ks * se.Cs.getGreen(), ks * se.Cs.getBlue()));
+  closure.addGGX(weight, alphaFromRoughness(roughness));
+  return closure;
 }
 
 } // namespace gmanshader

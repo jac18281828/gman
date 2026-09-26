@@ -144,8 +144,11 @@ given, and return a `GMANColor` by value. A shader may also override
 tracer samples, defaulting to a Lambert lobe of `Cs`; a `bsdf` override
 must not call the base `albedo`, since the two would recurse. A shader may
 override `albedo(GMANSurfaceEnv const&) const` to report its diffuse
-reflectance, defaulting to its BSDF's `rhoD()` clamped to [0, 1].
-`shaders/gmanmatte.cpp` is the model: it exports itself through three
+reflectance, defaulting to its BSDF's `rhoD()` clamped to [0, 1]. A
+closure combines libgman's own lobes -- `addLambert` and `addGGX` -- and
+never defines a new one; `rhoD` reports the Lambert lobes alone, so a
+glossy lobe never shows in `albedo`. `shaders/gmanmatte.cpp` is the model:
+it exports itself through three
 `extern "C"` entry points:
 
 ```cpp
