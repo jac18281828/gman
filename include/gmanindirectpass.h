@@ -66,6 +66,10 @@ public:
   virtual GMANColor irradiance(GMANHit const& hit, GMANVector const& I) const = 0;
 };
 
+// The owning pointer loadIndirectPass returns, named once so a host binds
+// one type instead of repeating the deleter's signature.
+using IndirectPassPtr = std::unique_ptr<IndirectPass, void (*)(IndirectPass*)>;
+
 // Loads name's module (lib<name>.so, as Surface "plastic" loads
 // libplastic.so) and returns a new IndirectPass through its own
 // GMANCreateIndirectPass, deleted through that same module's own
@@ -74,6 +78,6 @@ public:
 // warning naming the library and the reason, when the module fails to
 // open or lacks either entry point: a missing pass costs the indirect
 // light, never the frame.
-GMAN_EXPORT std::unique_ptr<IndirectPass, void (*)(IndirectPass*)> loadIndirectPass(std::string const& name);
+GMAN_EXPORT IndirectPassPtr loadIndirectPass(std::string const& name);
 
 } // namespace gman

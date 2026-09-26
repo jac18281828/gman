@@ -66,6 +66,21 @@ gman::SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   return point;
 }
 
+// pass's irradiance at hit from dir, and the pointer gman::shade takes
+// for it: null when pass is null, so a call site needs one line instead
+// of a value-or-default plus a pointer-or-null pair.
+struct PassIrradiance {
+  GMANColor value;
+  GMANColor const* ptr = nullptr;
+
+  PassIrradiance(gman::IndirectPass const* pass, GMANHit const& hit, GMANVector const& dir) {
+    if (pass != nullptr) {
+      value = pass->irradiance(hit, dir);
+      ptr = &value;
+    }
+  }
+};
+
 } // namespace
 
 GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
@@ -84,10 +99,9 @@ GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVect
   }
 
   GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1, indirectPass);
-  GMANColor const indirect = indirectPass != nullptr ? indirectPass->irradiance(hit, R) : GMANColor();
-  GMANColor const* const indirectPtr = indirectPass != nullptr ? &indirect : nullptr;
+  PassIrradiance const indirect(indirectPass, hit, R);
   gman::Shading const shading = gman::shade(hitPrimitive->getAppearance(), hitSurfacePoint(ray, hit), cameraToWorld,
-                                            &occluder, &child, nullptr, indirectPtr);
+                                            &occluder, &child, nullptr, indirect.ptr);
   return shading.Ci;
 }
 
@@ -141,11 +155,9 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
   GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0, indirectPass);
 
   for (int layer = 0; layer < gman::kMaxCompositeLayers && hit.appearance != nullptr; ++layer) {
-    GMANColor const indirect =
-        indirectPass != nullptr ? indirectPass->irradiance(hit.hit, ray.getDirection()) : GMANColor();
-    GMANColor const* const indirectPtr = indirectPass != nullptr ? &indirect : nullptr;
+    PassIrradiance const indirect(indirectPass, hit.hit, ray.getDirection());
     gman::Shading const shading = gman::shade(*hit.appearance, hitSurfacePoint(ray, hit.hit), cameraToWorld, &occluder,
-                                              &tracer, nullptr, indirectPtr);
+                                              &tracer, nullptr, indirect.ptr);
     accumulated += gman::multiplyChannels(transmission, shading.Ci);
     transmission = gman::multiplyChannels(transmission, gman::oneMinus(shading.Oi));
     if (gman::transmissionNegligible(transmission)) {
@@ -170,6 +182,26 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
   sampleBuffer->zTestAndSet(sampleX, sampleY, sampleDepth, accumulated, alpha);
 }
 
+namespace {
+
+// Loads the pass options names and prepares it over world, or returns an
+// empty owning pointer when no Option named one. The caller's BVH must
+// already be built into occluder: prepare() may query transmission
+// through it.
+gman::IndirectPassPtr loadAndPrepareIndirectPass(GMANOptions const& options, GMANWorldManager& world,
+                                                 GMANRayOccluder const& occluder) {
+  if (options.getIndirectPass().empty()) {
+    return {nullptr, [](gman::IndirectPass*) {}};
+  }
+  gman::IndirectPassPtr pass = gman::loadIndirectPass(options.getIndirectPass());
+  if (pass != nullptr) {
+    pass->prepare(world, occluder, options);
+  }
+  return pass;
+}
+
+} // namespace
+
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                   const GMANOptions& options, const GMANAttributes& /*attributes*/) {
   // Rebuilt every call, discarding any tree a prior call built: simpler
@@ -180,19 +212,9 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
 
   // Loaded, prepared and released here, once per render() call: a pass
   // kept across calls would answer for a scene that no longer exists,
-  // since bvh above is rebuilt every time too. No Option named one is the
-  // common case, so loadIndirectPass runs only when options.
-  // getIndirectPass() actually names something.
-  std::unique_ptr<gman::IndirectPass, void (*)(gman::IndirectPass*)> ownedIndirectPass(nullptr,
-                                                                                       [](gman::IndirectPass*) {});
-  gman::IndirectPass* indirectPass = nullptr;
-  if (!options.getIndirectPass().empty()) {
-    ownedIndirectPass = gman::loadIndirectPass(options.getIndirectPass());
-    indirectPass = ownedIndirectPass.get();
-  }
-  if (indirectPass != nullptr) {
-    indirectPass->prepare(worldManager, occluder, options);
-  }
+  // since bvh above is rebuilt every time too.
+  gman::IndirectPassPtr const ownedIndirectPass = loadAndPrepareIndirectPass(options, worldManager, occluder);
+  gman::IndirectPass* const indirectPass = ownedIndirectPass.get();
 
   RtInt const width = frameBuffer->getWidth();
   RtInt const height = frameBuffer->getHeight();
