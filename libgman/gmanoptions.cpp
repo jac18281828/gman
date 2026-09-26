@@ -278,4 +278,6 @@ RtVoid GMANOptions::setRelativeDetail(RtFloat rd) { relativeDetail = rd; }
 
 RtVoid GMANOptions::setIndirectPass(std::string const& name) { indirectPass = name; }
 
+RtVoid GMANOptions::setRadiosityElementSize(RtFloat size) { radiosityElementSize = size; }
+
 const GMANOptions::OutputDefaults& GMANOptions::getOutputDefaults(RtVoid) const { return outputDefaults; }
