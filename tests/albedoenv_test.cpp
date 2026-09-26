@@ -53,8 +53,8 @@
 namespace {
 
 // The parity check's own tolerance: both calls fill a GMANSurfaceEnv
-// through the identical helper (decision 6), so the two probes agree
-// exactly but for the float rounding one extra copy could introduce.
+// through the identical fillEnv() helper, so the two probes agree exactly
+// but for the float rounding one extra copy could introduce.
 constexpr RtFloat kParityTol = (RtFloat)1e-6;
 
 bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }

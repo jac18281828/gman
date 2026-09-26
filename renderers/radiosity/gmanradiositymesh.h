@@ -155,6 +155,11 @@ public:
   // supported classes, or a quadric singular under its own placement.
   std::size_t getSkippedCount() const { return skippedCount; }
 
+  // Primitives build() diced with nu or nv pinned at kMaxDivisions,
+  // rather than the count maxEdgeLength itself would call for: each face
+  // of a GMANRayPolygonMesh counts as its own primitive here.
+  std::size_t getCappedCount() const { return cappedCount; }
+
   bool locate(GMANHit const& hit, GMANRadiosityLocation& location) const;
 
   // The ray primitive element was diced from: for a GMANRayPolygonMesh,
@@ -246,4 +251,5 @@ private:
   // Per node, the lowest node index of its sameNode group.
   std::vector<std::size_t> nodeGroups;
   std::size_t skippedCount = 0;
+  std::size_t cappedCount = 0;
 };

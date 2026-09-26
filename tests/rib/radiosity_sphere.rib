@@ -1,0 +1,16 @@
+## One matte sphere lit by one point light, naming the radiosity pass: a
+## lone convex object has no other surface to bounce light off, so this
+## matches radiosity_sphere_off.rib pixel for pixel. Not third-party.
+Display "radiosity_sphere.tif" "file" "rgba"
+Format 48 48 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Option "render" "string indirect" ["radiosity"]
+Translate 0 0 5
+WorldBegin
+LightSource "pointlight" 1 "intensity" [20] "from" [2 2 2]
+Surface "matte" "Ka" [1] "Kd" [1]
+Color [0.8 0.8 0.8]
+Opacity [1 1 1]
+Sphere 1 -1 1 360
+WorldEnd
