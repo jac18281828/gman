@@ -21,9 +21,9 @@
 /*
  * A flat, fully-covered matte plane samples 1.6 everywhere -- above 1,
  * so the framebuffer must hold it unclamped for Exposure to recover it.
- * exposurerecovery_half.rib halves the gain before narrowing (0.8, byte
- * 204); exposurerecovery_unity.rib leaves it at 1.6, which only the end
- * clamp bounds to 1 (byte 255).
+ * exposurerecovery_half.rib halves the gain before quantizing (0.8, byte
+ * 204); exposurerecovery_unity.rib leaves it at 1.6, which only Quantize's
+ * clamp to its request's max, not an end clamp, bounds to 255.
  */
 
 #include <cstdio>

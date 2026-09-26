@@ -587,10 +587,11 @@ set_tests_properties(shaders PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# The per-pixel quantize log spam defect: GMANQuantize::doColor must warn
-# at most once per process, not once per pixel.
+# RIB's Quantize keyword, end to end: parsed, honoured by
+# GMANOutput::save and reflected in the bytes each driver writes, an
+# unhonoured 16-bit request falling back and warning.
 add_executable(gman_quantize quantize_test.cpp)
-target_link_libraries(gman_quantize PRIVATE gman_core)
+target_link_libraries(gman_quantize PRIVATE gman_core TIFF::TIFF)
 
 set(GMAN_QUANTIZE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quantize-run")
 file(MAKE_DIRECTORY "${GMAN_QUANTIZE_WORKDIR}")
@@ -2422,11 +2423,12 @@ if(GMAN_BUILD_RAYTRACER)
     TIMEOUT 30)
 endif()
 
-# GMANOutput::save's own pipeline -- gamma, then quantize, then a
-# NaN-safe [0, 1] clamp, all in float -- and what gman::OutputPNM,
-# gman::OutputTIFF and gman::OutputPNG do with the float image save hands
-# their writeImage. Direct unit test against those classes, no gman
-# binary. The PNG checks compile and link only under GMAN_WITH_PNG.
+# GMANOutput::save's own pipeline -- gain and gamma on colour, then every
+# channel rounded and dithered by RISpec's Quantize rule and clamped into
+# the resolved range -- and what gman::OutputPNM, gman::OutputTIFF and
+# gman::OutputPNG do with the integer samples save hands their writeImage.
+# Direct unit test against those classes, no gman binary. The PNG checks
+# compile and link only under GMAN_WITH_PNG.
 add_executable(gman_outputnarrowing outputnarrowing_test.cpp)
 target_link_libraries(gman_outputnarrowing PRIVATE gman_core TIFF::TIFF gman_internal_headers)
 if(GMAN_WITH_PNG)

@@ -58,7 +58,8 @@ public:
   int getQuality(RtVoid);
 
 protected:
-  RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<GMANColor> const& image, RtFloat gamma) override;
+  RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
+                    RtFloat gamma) override;
 };
 
 } // namespace gman

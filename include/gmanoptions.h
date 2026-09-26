@@ -111,12 +111,7 @@ public:
     RtFloat gamma;
   };
 
-  struct QuantizeStruct {
-    RtInt one;
-    RtInt min;
-    RtInt max;
-    RtFloat ditheramplitude;
-  };
+  using QuantizeStruct = GMANQuantize;
 
   struct DisplayStruct {
     std::string name;

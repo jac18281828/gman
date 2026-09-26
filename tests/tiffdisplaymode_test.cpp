@@ -38,7 +38,7 @@ namespace {
 
 void checkRGBFile(const char* path) {
   gman::OutputTIFF output(path, 2, 2);
-  output.save(GMANOutput::RGB, 1.0, 1.0);
+  output.save(GMANOutput::RGB, 1.0, 1.0, GMANQuantize{255, 0, 255, 0.5});
 
   TIFF* tif = TIFFOpen(path, "r");
   check(tif != nullptr, "rgb: file opens");
@@ -64,7 +64,7 @@ void checkRGBFile(const char* path) {
 
 void checkRGBAFile(const char* path) {
   gman::OutputTIFF output(path, 2, 2);
-  output.save(GMANOutput::RGBA, 1.0, 1.0);
+  output.save(GMANOutput::RGBA, 1.0, 1.0, GMANQuantize{255, 0, 255, 0.5});
 
   TIFF* tif = TIFFOpen(path, "r");
   check(tif != nullptr, "rgba: file opens");

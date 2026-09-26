@@ -206,6 +206,8 @@ const GMANToken GMANRIBTokenize::parseKeyword(std::istream& ribFile) {
     return GMANToken(GMANToken::RI_SHUTTER);
   } else if (!strcasecmp(tokenChars, "exposure")) {
     return GMANToken(GMANToken::RI_EXPOSURE);
+  } else if (!strcasecmp(tokenChars, "quantize")) {
+    return GMANToken(GMANToken::RI_QUANTIZE);
   } else if (!strcasecmp(tokenChars, "clipping")) {
     return GMANToken(GMANToken::RI_CLIPPING);
   } else if (!strcasecmp(tokenChars, "cropWindow")) {

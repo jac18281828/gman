@@ -41,8 +41,8 @@ OutputX11::OutputX11(const char* /*name*/, int /*width*/, int /*height*/) : Wind
 // default destructor
 OutputX11::~OutputX11() {};
 
-RtVoid OutputX11::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANColor> const& /*image*/,
-                             RtFloat /*gamma*/) {
+RtVoid OutputX11::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<std::uint16_t> const& /*samples*/,
+                             int /*bitsPerSample*/, RtFloat /*gamma*/) {
   debug("sorry framebuffer display is not currently supported");
 }
 

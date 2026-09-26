@@ -25,10 +25,8 @@
 
 #include <cstdio>
 
-#include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanoutput.h"
-#include "gmanoutputnarrow.h"
 #include "gmanoutputpnm.h"
 #include "ri.h"
 
@@ -46,7 +44,10 @@ OutputPNM::OutputPNM(const char* path, int width, int height) : GMANOutput(path,
 OutputPNM::~OutputPNM() {};
 
 // Writes a binary P6 portable pixmap directly, with no netpbm dependency.
-RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANColor> const& image, RtFloat /*gamma*/) {
+// PNM's own P6 format holds one byte a sample, so this driver's widest
+// sample stays 8 bits: GMANOutput::maxBitsPerSample's default.
+RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<std::uint16_t> const& samples,
+                             int /*bitsPerSample*/, RtFloat /*gamma*/) {
 
   FILE* ppmFile = std::fopen(outputName.c_str(), "wb");
   if (!ppmFile) {
@@ -71,10 +72,11 @@ RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<GMANC
 
   for (int row = 0; row < yres; row++) {
     for (int col = 0; col < xres; col++) {
-      GMANColor const& color = image[(std::size_t)row * (std::size_t)xres + (std::size_t)col];
+      const std::size_t idx = 4 * ((std::size_t)row * (std::size_t)xres + (std::size_t)col);
 
-      const unsigned char rgb[3] = {gman::narrowedByte(color.getRed()), gman::narrowedByte(color.getGreen()),
-                                    gman::narrowedByte(color.getBlue())};
+      const unsigned char rgb[3] = {static_cast<unsigned char>(samples[idx + 0]),
+                                    static_cast<unsigned char>(samples[idx + 1]),
+                                    static_cast<unsigned char>(samples[idx + 2])};
       if (std::fwrite(rgb, 1, sizeof(rgb), ppmFile) != sizeof(rgb)) {
         std::fclose(ppmFile);
         throw(writeFailure());

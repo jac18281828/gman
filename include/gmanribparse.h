@@ -220,6 +220,7 @@ private:
   RtVoid parseReverseOrientation(RtVoid);
   RtVoid parsePixelSamples(RtVoid);
   RtVoid parseExposure(RtVoid);
+  RtVoid parseQuantize(RtVoid);
   RtVoid parseDepthOfField(RtVoid);
   RtVoid parseShutter(RtVoid);
   RtVoid parseHider(RtVoid);

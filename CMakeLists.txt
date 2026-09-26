@@ -160,7 +160,6 @@ add_library(gman_core SHARED
   libgman/gmanpolygonclipper.cpp
   libgman/gmanprimitive.cpp
   libgman/gmanprimitives.cpp
-  libgman/gmanquantize.cpp
   libgman/gmanraybvh.cpp
   libgman/gmanraycone.cpp
   libgman/gmanraycylinder.cpp

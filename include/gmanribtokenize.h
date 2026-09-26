@@ -151,6 +151,7 @@ public:
     RI_ELSE,
     RI_IF_END,
     RI_PIXEL_FILTER,
+    RI_QUANTIZE,
 
   } TokenType;
 

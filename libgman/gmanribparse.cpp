@@ -284,6 +284,10 @@ RtVoid GMANRIBParse::parseStream(RtVoid) {
       debug("Keyword token: Exposure");
       parseExposure();
       break;
+    case GMANToken::RI_QUANTIZE:
+      debug("Keyword token: Quantize");
+      parseQuantize();
+      break;
     case GMANToken::RI_DEPTH_OF_FIELD:
       debug("Keyword token: DepthOfField");
       parseDepthOfField();
@@ -749,6 +753,17 @@ RtVoid GMANRIBParse::parseExposure(RtVoid) {
   RtFloat gamma = nextFloat();
 
   renderMan.RiExposure(gain, gamma);
+}
+
+RtVoid GMANRIBParse::parseQuantize(RtVoid) {
+
+  const auto type = copyStringToken();
+  RtInt one = nextInt();
+  RtInt min = nextInt();
+  RtInt max = nextInt();
+  RtFloat amplitude = nextFloat();
+
+  renderMan.RiQuantize(type.c_str(), one, min, max, amplitude);
 }
 
 RtVoid GMANRIBParse::parseDepthOfField(RtVoid) {

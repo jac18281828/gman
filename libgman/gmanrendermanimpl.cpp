@@ -211,32 +211,16 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
 
   if (getOptions().getDisplay().mode == RI_RGB) {
     dMode = GMANOutput::RGB;
-    output->setQuantization(dMode, getOptions().getColorQuantize().one, getOptions().getColorQuantize().min,
-                            getOptions().getColorQuantize().max, getOptions().getColorQuantize().ditheramplitude);
   } else if (getOptions().getDisplay().mode == RI_RGBA) {
     dMode = GMANOutput::RGBA;
-    output->setQuantization(dMode, getOptions().getColorQuantize().one, getOptions().getColorQuantize().min,
-                            getOptions().getColorQuantize().max, getOptions().getColorQuantize().ditheramplitude);
-
   } else if (getOptions().getDisplay().mode == RI_RGBAZ) {
     dMode = GMANOutput::RGBAZ;
-    output->setQuantization(dMode, getOptions().getColorQuantize().one, getOptions().getColorQuantize().min,
-                            getOptions().getColorQuantize().max, getOptions().getColorQuantize().ditheramplitude);
-
   } else if (getOptions().getDisplay().mode == RI_A) {
     dMode = GMANOutput::A;
-    output->setQuantization(dMode, getOptions().getColorQuantize().one, getOptions().getColorQuantize().min,
-                            getOptions().getColorQuantize().max, getOptions().getColorQuantize().ditheramplitude);
-
   } else if (getOptions().getDisplay().mode == RI_AZ) {
     dMode = GMANOutput::AZ;
-    output->setQuantization(dMode, getOptions().getColorQuantize().one, getOptions().getColorQuantize().min,
-                            getOptions().getColorQuantize().max, getOptions().getColorQuantize().ditheramplitude);
-
   } else if (getOptions().getDisplay().mode == RI_Z) {
     dMode = GMANOutput::Z;
-    output->setQuantization(dMode, getOptions().getDepthQuantize().one, getOptions().getDepthQuantize().min,
-                            getOptions().getDepthQuantize().max, getOptions().getDepthQuantize().ditheramplitude);
   } else {
     throw GMANError(RIE_ILLSTATE, RIE_ERROR, "Invalid token passed for display mode.");
   }
@@ -248,7 +232,9 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
             getOptions().getDisplay().mode.c_str());
   }
 
-  output->save(dMode, exposure.gain, exposure.gamma);
+  // Colour's own Quantize request serves every mode: no driver writes
+  // depth, so a "z" request stored by RiQuantize has nothing to reach.
+  output->save(dMode, exposure.gain, exposure.gamma, getOptions().getColorQuantize());
 
   delete output;
   output = NULL;
@@ -387,10 +373,13 @@ RtVoid GMANRenderManImpl::RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtP
 }
 RtVoid GMANRenderManImpl::RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
   allowed(cmdQuantize);
-  if (type == RI_RGBA) {
+  // strcmp, not pointer equality: type is a token parsed out of the RIB and
+  // is never the RI_RGBA/RI_Z globals themselves. RiGeometricApproximation
+  // compares the same kind of token with strcmp.
+  if (strcmp(type, RI_RGBA) == 0) {
     getOptions().setColorQuantize(one, min, max, ampl);
     return;
-  } else if (type == RI_Z) {
+  } else if (strcmp(type, RI_Z) == 0) {
     getOptions().setDepthQuantize(one, min, max, ampl);
     return;
   }
