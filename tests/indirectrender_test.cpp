@@ -27,11 +27,13 @@
  *
  * kAmbientIntensity (a, tests/rib/indirectseam_*.rib's own LightSource
  * intensity) and kConstantIndirect (c, constantindirectconstants.h) are
- * chosen so 255 * a and 255 * (a + c) each carry a fractional part in
- * [0.2, 0.3]: inside that window a float rounding error of a few parts in
- * 1e7 cannot cross an integer boundary, so gman::narrowedByte's own
- * truncation (libgman/gmanoutputnarrow.h truncates rather than rounds)
- * lands on the same integer this test computes by hand.
+ * chosen so 255 * a and 255 * (a + c) share a fractional part in
+ * [0.2, 0.3]. GMANOutput::save rounds and dithers from one draw per
+ * pixel, drawn from the pixel's own coordinates alone, so a bare and a
+ * bound render draw identically at the same pixel and cross save's
+ * rounding threshold together: a pixel that reads floor(255 * a) bare
+ * reads floor(255 * (a + c)) bound, and a dither-lifted pixel reads one
+ * step higher in both.
  */
 
 #include <cmath>
@@ -53,9 +55,8 @@ namespace {
 // tests/rib/indirectseam_*.rib literally.
 constexpr float kAmbientIntensity = 0.3931372549019608f;
 
-// The exact bytes a lit, ambient-only pixel narrows to without and with
-// the pass bound -- gman::narrowedByte's own truncation, matched here by
-// hand.
+// The bytes save rounds a lit, ambient-only pixel to with no dither
+// lift, without and with the pass bound, matched here by hand.
 const int kForegroundByte = static_cast<int>(std::floor(255.0f * kAmbientIntensity));
 const int kForegroundWithIndirectByte = static_cast<int>(std::floor(255.0f * (kAmbientIntensity + kConstantIndirect)));
 
