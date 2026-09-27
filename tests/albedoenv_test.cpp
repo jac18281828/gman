@@ -33,6 +33,7 @@
 
 #include "check.h"
 #include "gmancolor.h"
+#include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
@@ -196,10 +197,12 @@ ParityResult parityAt(gman::Appearance const& appearance, gman::SurfacePoint con
 // ---- check 2: albedo/shade parity on a sphere hit ----
 void testParityOnSphere() {
   EnvProbeShader const shader;
+  GMANLight const light(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, -6.0f), GMANVector());
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
   appearance.Cs = GMANColor(0.6f, 0.3f, 0.9f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  appearance.lights = {&light};
 
   GMANLinearWorldManager world;
   world.add(new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform()));
@@ -243,10 +246,12 @@ GMANRayPolygon* squareWithSt() {
 // ---- check 3: albedo/shade parity on a polygon hit carrying "st" ----
 void testParityOnTexturedPolygon() {
   EnvProbeShader const shader;
+  GMANLight const light(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, -6.0f), GMANVector());
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
   appearance.Cs = GMANColor(0.2f, 0.8f, 0.4f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  appearance.lights = {&light};
 
   GMANLinearWorldManager world;
   world.add(squareWithSt());
