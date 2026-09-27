@@ -32,6 +32,7 @@
 #include <sstream>
 #include <string>
 #include <system_error>
+#include <type_traits>
 
 #include <zlib.h>
 
@@ -1792,27 +1793,27 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList() {
   typedef std::map<RtToken, ParamValue> ParamMap;
   ParamMap paramMap;
 
-  // Stores values in pendingParamValues, owned by its floatStorage vector,
-  // and returns the pointer RI calls read: moving a vector preserves its
-  // buffer, so the pointer stays valid once this struct is in the
-  // (possibly reallocated) pendingParamValues vector.
-  auto pushFloatValue = [this](std::vector<RtFloat> values) -> RtPointer {
-    const unsigned int count = (unsigned int)values.size();
-    pendingParamValues.push_back({nullptr, false, count, std::move(values), {}});
-    RtFloat* data = pendingParamValues.back().floatStorage.data();
-    pendingParamValues.back().value = (RtPointer)data;
-    return (RtPointer)data;
-  };
-
-  // Same ownership as pushFloatValue, through intStorage instead: a
+  // Stores values in pendingParamValues, through intStorage for RtInt (a
   // parameter declared INTEGER must reach GMANParameterList's (RtInt*) read
-  // as RtInt, not as RtFloat bits reinterpreted.
-  auto pushIntValue = [this](std::vector<RtInt> values) -> RtPointer {
+  // as RtInt, not as RtFloat bits reinterpreted) or floatStorage for
+  // RtFloat, and returns the pointer RI calls read: moving a vector
+  // preserves its buffer, so the pointer stays valid once this struct is in
+  // the (possibly reallocated) pendingParamValues vector. String values
+  // take their own path below, never this one.
+  auto pushValue = [this](auto values) -> RtPointer {
+    using T = typename decltype(values)::value_type;
     const unsigned int count = (unsigned int)values.size();
-    pendingParamValues.push_back({nullptr, false, count, {}, std::move(values)});
-    RtInt* data = pendingParamValues.back().intStorage.data();
-    pendingParamValues.back().value = (RtPointer)data;
-    return (RtPointer)data;
+    if constexpr (std::is_same_v<T, RtInt>) {
+      pendingParamValues.push_back({nullptr, false, count, {}, std::move(values)});
+      RtInt* data = pendingParamValues.back().intStorage.data();
+      pendingParamValues.back().value = (RtPointer)data;
+      return (RtPointer)data;
+    } else {
+      pendingParamValues.push_back({nullptr, false, count, std::move(values), {}});
+      RtFloat* data = pendingParamValues.back().floatStorage.data();
+      pendingParamValues.back().value = (RtPointer)data;
+      return (RtPointer)data;
+    }
   };
 
   while (true) {
@@ -1857,22 +1858,23 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList() {
         paramMap[key] = {value, count};
         pendingParamValues.push_back({value, true, count, {}, {}});
       } else if (isDeclaredInteger) {
-        RtPointer value = pushIntValue(tokenVector.toRtIntVector());
+        RtPointer value = pushValue(tokenVector.toRtIntVector());
         paramMap[key] = {value, count};
       } else {
-        RtPointer value = pushFloatValue(tokenVector.toRtFloatVector());
+        RtPointer value = pushValue(tokenVector.toRtFloatVector());
         paramMap[key] = {value, count};
       }
     } else if (lookAhead.getType() == GMANToken::LONGINT) {
       GMANToken token = nextToken();
-      RtPointer value = isDeclaredInteger ? pushIntValue({token.getInt()}) : pushFloatValue({(RtFloat)token.getInt()});
+      RtPointer value = isDeclaredInteger ? pushValue(std::vector<RtInt>{token.getInt()})
+                                          : pushValue(std::vector<RtFloat>{(RtFloat)token.getInt()});
       paramMap[key] = {value, 1};
     } else if (lookAhead.getType() == GMANToken::REAL) {
       GMANToken token = nextToken();
       if (isDeclaredInteger) {
         throw(GMANError(RIE_SYNTAX, RIE_ERROR, "Non-integer in array."));
       }
-      RtPointer value = pushFloatValue({token.getReal()});
+      RtPointer value = pushValue(std::vector<RtFloat>{token.getReal()});
       paramMap[key] = {value, 1};
     } else {
       // This scalar string outlives the local, RAII-managed copyStringToken()
