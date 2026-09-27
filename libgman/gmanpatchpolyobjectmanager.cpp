@@ -351,16 +351,62 @@ bool pointInTriangle(const GMANPoint& a, const GMANPoint& b, const GMANPoint& c,
   return !(hasNeg && hasPos);
 }
 
+// The position in remaining to clip next: the first whose own orient is
+// non-reflex and either degenerate (a zero-area "ear" needs no containment
+// test -- clipping it changes neither the polygon's shape nor its area, and
+// skipping the test is what keeps a run of such vertices from stalling the
+// caller's loop) or whose own candidate triangle holds no vertex of reflex
+// besides its own three corners. Falls back to the position holding the
+// largest orient when no candidate qualifies -- only reachable from
+// malformed (self-intersecting) input, since a simple polygon always has a
+// true ear; clipping the least-reflex candidate anyway degrades rather than
+// hangs.
+//
+// Only a reflex vertex can lie inside a convex ear's triangle -- a
+// standard property of simple polygons -- so each candidate's containment
+// test runs against reflex alone, not every remaining position.
+std::size_t findEar(std::vector<GMANPoint> const& ring, std::vector<RtInt> const& remaining,
+                    std::vector<RtFloat> const& orient, std::vector<RtInt> const& reflex, GMANVector const& normal) {
+  const std::size_t m = remaining.size();
+  std::size_t fallbackAt = 0;
+  RtFloat fallbackOrient = orient[0];
+  for (std::size_t i = 0; i < m; i++) {
+    if (orient[i] > fallbackOrient) {
+      fallbackOrient = orient[i];
+      fallbackAt = i;
+    }
+    if (orient[i] < -kTriangulationTolerance) {
+      continue; // reflex: never an ear
+    }
+    const RtInt iPrev = remaining[(i + m - 1) % m];
+    const RtInt iCur = remaining[i];
+    const RtInt iNext = remaining[(i + 1) % m];
+
+    bool degenerate = orient[i] <= kTriangulationTolerance;
+    bool containsReflex = false;
+    for (std::vector<RtInt>::const_iterator it = reflex.begin(); !degenerate && !containsReflex && it != reflex.end();
+         ++it) {
+      RtInt idx = *it;
+      if (idx == iPrev || idx == iCur || idx == iNext) {
+        continue;
+      }
+      containsReflex = pointInTriangle(ring[iPrev], ring[iCur], ring[iNext], ring[idx], normal);
+    }
+    if (degenerate || !containsReflex) {
+      return i;
+    }
+  }
+  return fallbackAt;
+}
+
 // Ear clipping over a vertex ring: triangulates any simple planar polygon,
 // concave included, into exactly ring.size() - 2 triangles. GeneralPolygon
 // bridges each hole into the outer loop (bridgeHoles) and hands the
 // combined ring to this same function, so it takes points and a normal
 // rather than assuming any particular caller's vertex storage; the
-// returned triples index into that same ring.
-//
-// Only a reflex vertex can lie inside a convex ear's triangle -- a
-// standard property of simple polygons -- so each candidate's containment
-// test runs against the reflex set alone, not every remaining vertex.
+// returned triples index into that same ring. Each pass computes every
+// remaining position's own orientation and reflex set, then findEar picks
+// the position to clip.
 std::vector<std::array<RtInt, 3>> triangulateEarClipping(const std::vector<GMANPoint>& ring, const GMANVector& normal) {
   std::vector<std::array<RtInt, 3>> triangles;
   const RtInt n = (RtInt)ring.size();
@@ -387,51 +433,7 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(const std::vector<GMANP
       }
     }
 
-    bool foundEar = false;
-    std::size_t clipAt = 0;
-    std::size_t fallbackAt = 0;
-    RtFloat fallbackOrient = orient[0];
-    for (std::size_t i = 0; i < m; i++) {
-      if (orient[i] > fallbackOrient) {
-        fallbackOrient = orient[i];
-        fallbackAt = i;
-      }
-      if (orient[i] < -kTriangulationTolerance) {
-        continue; // reflex: never an ear
-      }
-      const RtInt iPrev = remaining[(i + m - 1) % m];
-      const RtInt iCur = remaining[i];
-      const RtInt iNext = remaining[(i + 1) % m];
-
-      // A collinear or duplicate vertex (orient ~ 0) lies on its own
-      // prev-next segment; clipping it changes neither the polygon's
-      // shape nor its area, so it needs no containment test -- skipping
-      // that test is what keeps a run of such vertices from stalling the
-      // loop, since a zero-area "ear" can otherwise appear to contain its
-      // own neighbors.
-      bool degenerate = orient[i] <= kTriangulationTolerance;
-      bool containsReflex = false;
-      for (std::vector<RtInt>::const_iterator it = reflex.begin(); !degenerate && !containsReflex && it != reflex.end();
-           ++it) {
-        RtInt idx = *it;
-        if (idx == iPrev || idx == iCur || idx == iNext) {
-          continue;
-        }
-        containsReflex = pointInTriangle(ring[iPrev], ring[iCur], ring[iNext], ring[idx], normal);
-      }
-      if (degenerate || !containsReflex) {
-        clipAt = i;
-        foundEar = true;
-        break;
-      }
-    }
-
-    // No true ear found: only reachable from malformed (self-intersecting)
-    // input, since a simple polygon always has one. Clip the
-    // least-reflex candidate anyway -- degrade, do not hang.
-    if (!foundEar) {
-      clipAt = fallbackAt;
-    }
+    const std::size_t clipAt = findEar(ring, remaining, orient, reflex, normal);
 
     const RtInt iPrev = remaining[(clipAt + m - 1) % m];
     const RtInt iCur = remaining[clipAt];
