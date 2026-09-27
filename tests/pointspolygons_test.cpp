@@ -620,6 +620,7 @@ void testMalformedFixtures(const std::string& gman, const std::string& malformed
       {"pointspolygons_negative_index.rib", "PointsPolygons: verts[2] = -1 is negative; ignoring."},
       {"pointsgeneralpolygons_zero_loops.rib", "PointsGeneralPolygons: nloops[0] = 0 is invalid; ignoring."},
       {"pointspolygons_short_p.rib", "Parameter \"P\": declared length 12, supplied length 9"},
+      {"pointsgeneralpolygons_short_p.rib", "Parameter \"P\": declared length 12, supplied length 9"},
       {"pointspolygons_nonint_verts.rib", "RIE_SYNTAX -- Non-integer in array.",
        /*expectedExit=*/1, /*expectsSphere=*/false},
       {"pointsgeneralpolygons_nonint_nverts.rib", "RIE_SYNTAX -- Non-integer in array.",

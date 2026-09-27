@@ -140,6 +140,15 @@ short-`"P"` case, `patchmesh_short_p.rib`'s counterpart. Registered in
 `tests/paramclamp_test.cpp`, asserting the same clamp-and-warn behaviour.
 A trailing `Sphere` follows the desync convention. Not third-party.
 
+## malformed/pointsgeneralpolygons_short_p.rib
+
+`verts`' own point count (1 + its max index) exceeds what `"P"` supplies --
+`PointsGeneralPolygons`' own short-`"P"` case, `pointspolygons_short_p.rib`'s
+counterpart. Registered in `tests/pointspolygons_test.cpp`, asserting the
+same clamp-and-warn behaviour: the one counts-aware request whose supplied
+counts no other fixture checked. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
 ## malformed/generalpolygon_negative_nverts.rib
 
 A negative `nverts` entry: `RiGeneralPolygonV` rejects it before sizing
