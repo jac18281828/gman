@@ -60,8 +60,13 @@ const RtFloat kTriangulationTolerance = (RtFloat)1.0e-6;
 // triangle's own raster-space extent and the current ShadingRate; this is
 // both the cap that sizing clamps against and the fallback when no
 // projection can be resolved -- the same fixed count createParametric's
-// own URES/VRES still use for a quadric.
+// own kParametricDiceU/kParametricDiceV still use for a quadric.
 const RtInt kPolygonDiceN = 16;
+
+// createParametric's own dicing resolution: divisions along u and v of the
+// vertex and face grid every quadric and patch shares.
+const RtInt kParametricDiceU = 16;
+const RtInt kParametricDiceV = 16;
 
 // getRSPatchMesh's own corners: RiTextureCoordinates spans a single
 // parametric surface's unit square, and a PatchMesh's sub-patches already
@@ -1454,8 +1459,6 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSSubdivisionMesh(RtToken /*mask*/
 GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMANTransform* t, GMANAttributes* attr,
                                                          const GMANTextureCoordinates& corners,
                                                          GMANOptions const* opt) {
-#define URES 16
-#define VRES 16
   int i, j;
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
@@ -1474,21 +1477,21 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
 
-  GMANVertex** vertices = new GMANVertex*[(URES + 1) * (VRES + 1)];
-  GMANFace** faces = new GMANFace*[URES * VRES];
+  std::vector<GMANVertex*> vertices((kParametricDiceU + 1) * (kParametricDiceV + 1));
+  std::vector<GMANFace*> faces(kParametricDiceU * kParametricDiceV);
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
   GMANSurface* surface = new GMANSurface(body);
   body->setSurface(surface);
 
-  for (i = 0; i < (URES + 1) * (VRES + 1); i++) {
+  for (i = 0; i < (kParametricDiceU + 1) * (kParametricDiceV + 1); i++) {
     vertices[i] = new GMANVertex();
   }
 
-  for (i = 0; i <= URES; i++) {
-    for (j = 0; j <= VRES; j++) {
+  for (i = 0; i <= kParametricDiceU; i++) {
+    for (j = 0; j <= kParametricDiceV; j++) {
       // Create a vertex
-      double u = i / (double)URES;
-      double v = j / (double)VRES;
+      double u = i / (double)kParametricDiceU;
+      double v = j / (double)kParametricDiceV;
       GMANPoint location = t->apply(p->getLocation(u, v));
       GMANVector objectNormal = p->getNormal(u, v);
       GMANVector normal(
@@ -1496,7 +1499,7 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
           ctmInv[1][0] * objectNormal.getX() + ctmInv[1][1] * objectNormal.getY() + ctmInv[1][2] * objectNormal.getZ(),
           ctmInv[2][0] * objectNormal.getX() + ctmInv[2][1] * objectNormal.getY() + ctmInv[2][2] * objectNormal.getZ());
       normal.normalize();
-      GMANVertex* vertex = vertices[(URES + 1) * i + j];
+      GMANVertex* vertex = vertices[(kParametricDiceU + 1) * i + j];
       vertex->setLocation(location);
       vertex->setNormal(normal);
 
@@ -1519,30 +1522,30 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   // long after this function returns, so geometry is unaffected either
   // way -- only RiSides 1 culling would read the resulting near-zero,
   // direction-free normal and cull or keep faces at random.
-  for (i = 0; i < URES; i++) {
-    for (j = 0; j < VRES; j++) {
+  for (i = 0; i < kParametricDiceU; i++) {
+    for (j = 0; j < kParametricDiceV; j++) {
       GMANVertex* faceVertices[4];
-      faceVertices[0] = vertices[(URES + 1) * i + j];
-      faceVertices[1] = vertices[(URES + 1) * i + (j + 1)];
-      faceVertices[2] = vertices[(URES + 1) * (i + 1) + (j + 1)];
-      faceVertices[3] = vertices[(URES + 1) * (i + 1) + j];
-      faces[URES * i + j] = new GMANFace(faceVertices, surface);
+      faceVertices[0] = vertices[(kParametricDiceU + 1) * i + j];
+      faceVertices[1] = vertices[(kParametricDiceU + 1) * i + (j + 1)];
+      faceVertices[2] = vertices[(kParametricDiceU + 1) * (i + 1) + (j + 1)];
+      faceVertices[3] = vertices[(kParametricDiceU + 1) * (i + 1) + j];
+      faces[kParametricDiceU * i + j] = new GMANFace(faceVertices, surface);
       // Geometric normal, computed from the already-transformed (camera
       // space) vertices: cross(e1', e2') for e'=e*M is proportional to
       // (e1 x e2) transformed by M's inverse transpose, so this needs no
       // separate normal transform. RiSides/RiOrientation travel with the
       // face so visible() can answer without depending on renderer-global
       // state that may differ across attribute blocks.
-      faces[URES * i + j]->calcNormal();
-      faces[URES * i + j]->setSides(sides);
-      faces[URES * i + j]->setOrientation(orientation);
+      faces[kParametricDiceU * i + j]->calcNormal();
+      faces[kParametricDiceU * i + j]->setSides(sides);
+      faces[kParametricDiceU * i + j]->setOrientation(orientation);
     }
   }
 
-  for (i = 0; i < (URES + 1) * (VRES + 1) - 1; i++) {
+  for (i = 0; i < (kParametricDiceU + 1) * (kParametricDiceV + 1) - 1; i++) {
     vertices[i]->setNext(vertices[i + 1]);
   }
-  for (i = 0; i < URES * VRES - 1; i++) {
+  for (i = 0; i < kParametricDiceU * kParametricDiceV - 1; i++) {
     faces[i]->setNext(faces[i + 1]);
   }
   surface->setFace(faces[0]);
@@ -1550,9 +1553,6 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   GMANObject* object = (GMANObject*)create();
   object->setVert(vertices[0]);
   object->setBody(body);
-
-  delete[] vertices;
-  delete[] faces;
 
   return object;
 }
