@@ -61,9 +61,57 @@ namespace {
 // it triggers no GMANParameterList construction at all.
 constexpr char const* kIndirectPassToken = "string indirect";
 
-// Option "radiosity" "float elementsize" ["<size>"]'s own declaration
+// Option "radiosity" "float elementsize" ["<size>"]'s declaration
 // token, matched the same literal way beside kIndirectPassToken.
 constexpr char const* kElementSizeToken = "float elementsize";
+
+// Scans an Option's (token, parm) pairs for the exact declaration token
+// and, on a match, wraps that one pair in a GMANParameterList. Returns
+// false, leaving matched untouched, when the token is absent.
+bool matchOptionToken(GMANDictionary& dictionary, RtInt n, RtToken tokens[], RtPointer parms[], char const* token,
+                      GMANParameterList& matched) {
+  for (RtInt i = 0; i < n; ++i) {
+    if (std::string(tokens[i]) == token) {
+      matched = GMANParameterList(dictionary, 1, &tokens[i], &parms[i]);
+      return true;
+    }
+  }
+  return false;
+}
+
+// Option "render" "string indirect" ["<name>"]: stores the name, ignoring
+// a parameter list lacking that exact token.
+void handleRenderOption(GMANDictionary& dictionary, RtInt n, RtToken tokens[], RtPointer parms[],
+                        GMANOptions& options) {
+  GMANParameterList p;
+  if (!matchOptionToken(dictionary, n, tokens, parms, kIndirectPassToken, p)) {
+    return;
+  }
+  std::string const* const value = (std::string const*)p.getPointer(dictionary.getTokenId(kIndirectPassToken));
+  if (value != nullptr) {
+    options.setIndirectPass(value[0]);
+  }
+}
+
+// Option "radiosity" "float elementsize" ["<size>"]: stores a finite,
+// positive size; a value failing that test logs one warning and changes
+// nothing.
+void handleRadiosityOption(GMANDictionary& dictionary, RtInt n, RtToken tokens[], RtPointer parms[],
+                           GMANOptions& options) {
+  GMANParameterList p;
+  if (!matchOptionToken(dictionary, n, tokens, parms, kElementSizeToken, p)) {
+    return;
+  }
+  RtFloat const* const value = (RtFloat const*)p.getPointer(dictionary.getTokenId(kElementSizeToken));
+  if (value == nullptr) {
+    return;
+  }
+  if (!std::isfinite(value[0]) || value[0] <= 0) {
+    warning("Option \"radiosity\" \"float elementsize\": {} is not finite and positive; ignored.", value[0]);
+    return;
+  }
+  options.setRadiosityElementSize(value[0]);
+}
 
 } // namespace
 
@@ -445,39 +493,15 @@ RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
 }
 // Handles Option "render" "string indirect" ["<name>"] and Option
 // "radiosity" "float elementsize" ["<size>"] alone: any other name, or
-// either option not carrying its own exact token, is ignored. No
+// either option not carrying its exact token, is ignored. No
 // allowed(cmdOption) call: that mask is all zero, so it would reject every
 // Option the corpus already relies on.
 RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   std::string const optionName(name);
   if (optionName == "render") {
-    for (RtInt i = 0; i < n; ++i) {
-      if (std::string(tokens[i]) != kIndirectPassToken) {
-        continue;
-      }
-      GMANParameterList const p(dictionary, 1, &tokens[i], &parms[i]);
-      std::string const* const value = (std::string const*)p.getPointer(dictionary.getTokenId(kIndirectPassToken));
-      if (value != nullptr) {
-        getOptions().setIndirectPass(value[0]);
-      }
-      return;
-    }
+    handleRenderOption(dictionary, n, tokens, parms, getOptions());
   } else if (optionName == "radiosity") {
-    for (RtInt i = 0; i < n; ++i) {
-      if (std::string(tokens[i]) != kElementSizeToken) {
-        continue;
-      }
-      GMANParameterList const p(dictionary, 1, &tokens[i], &parms[i]);
-      RtFloat const* const value = (RtFloat const*)p.getPointer(dictionary.getTokenId(kElementSizeToken));
-      if (value != nullptr) {
-        if (std::isfinite(value[0]) && value[0] > 0) {
-          getOptions().setRadiosityElementSize(value[0]);
-        } else {
-          warning("Option \"radiosity\" \"float elementsize\": {} is not finite and positive; ignored.", value[0]);
-        }
-      }
-      return;
-    }
+    handleRadiosityOption(dictionary, n, tokens, parms, getOptions());
   }
 }
 

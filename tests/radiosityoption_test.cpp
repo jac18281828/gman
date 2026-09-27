@@ -19,17 +19,22 @@
  */
 
 /*
- * RiOptionV's own handling of Option "radiosity" "float elementsize":
- * unset reads 0, a later Option replaces an earlier one, a non-finite or
- * non-positive value leaves the stored size unchanged, and an Option
- * naming neither "radiosity" nor "elementsize" changes nothing -- Option
- * "render" "string indirect" included.
+ * RiOptionV's handling of Option "radiosity" "float elementsize": unset
+ * reads 0, a later Option replaces an earlier one, a non-finite or
+ * non-positive value leaves the stored size unchanged but logs a warning,
+ * and an Option naming neither "radiosity" nor "elementsize" changes
+ * nothing -- Option "render" "string indirect" included.
  */
 
 #include <cmath>
+#include <cstdio>
+#include <fstream>
 #include <limits>
+#include <sstream>
+#include <string>
 
 #include "check.h"
+#include "gmanlog.h"
 #include "gmanrendermanimpl.h"
 #include "ri.h"
 
@@ -37,8 +42,8 @@ namespace {
 
 // GMANGraphicState's getOptions() reaches GMANRenderManImpl only
 // protected; a subclass reaches it, as tests/ribstringescape_test.cpp's
-// own subclass reaches an overridden Ri call, and re-exposes it here for
-// this file's own checks.
+// subclass reaches an overridden Ri call, and re-exposes it here for this
+// file's checks.
 class OptionReadingRenderMan : public GMANRenderManImpl {
 public:
   GMANOptions& options() { return getOptions(); }
@@ -128,6 +133,26 @@ void testIndirectPassOptionUnaffected() {
   check(impl.options().getRadiosityElementSize() == 0.6f, "indirect: the element size itself still reads back after");
 }
 
+// ---- check 6: an invalid value logs RiOptionV's warning ----
+void testInvalidValueWarns() {
+  std::string const logPath = "radiosityoption_invalid.log";
+  std::remove(logPath.c_str());
+  setLogFile(logPath.c_str());
+  setScreenOutput(false);
+
+  OptionReadingRenderMan impl;
+  setElementSize(impl, -1.0f);
+
+  setLogFile("/dev/null");
+  setScreenOutput(true);
+
+  std::ifstream in(logPath, std::ios::binary);
+  std::ostringstream contents;
+  contents << in.rdbuf();
+  std::string const log = contents.str();
+  check(log.find("elementsize") != std::string::npos, "invalid value: RiOptionV logs a warning naming elementsize");
+}
+
 } // namespace
 
 int main() {
@@ -136,8 +161,9 @@ int main() {
   testInvalidValuesIgnored();
   testUnrelatedOptionsIgnored();
   testIndirectPassOptionUnaffected();
+  testInvalidValueWarns();
 
   return checkSummary("Option \"radiosity\" \"float elementsize\": unset reads 0, a later Option replaces an "
-                      "earlier one, a non-finite or non-positive value leaves it unchanged, and an unrelated "
-                      "Option -- \"render\" \"string indirect\" included -- changes nothing");
+                      "earlier one, a non-finite or non-positive value leaves it unchanged but logs a warning, "
+                      "and an unrelated Option -- \"render\" \"string indirect\" included -- changes nothing");
 }
