@@ -722,6 +722,23 @@ set_tests_properties(pointscount PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRIBParse falls back to the RI-mandated overload of 14 requests when
+# renderMan is not a GMANRenderManImpl. See tests/ribparsefallback_test.cpp;
+# its in-process check hands the parser a GMANASCII, so gmanascii.cpp is
+# compiled directly into this executable rather than dlopened, the same
+# LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
+add_executable(gman_ribparsefallback ribparsefallback_test.cpp
+  "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
+target_include_directories(gman_ribparsefallback PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
+target_link_libraries(gman_ribparsefallback PRIVATE gman_core)
+
+add_test(NAME ribparsefallback
+  COMMAND gman_ribparsefallback "${CMAKE_CURRENT_SOURCE_DIR}/rib")
+set_tests_properties(ribparsefallback PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANRIBTokenize::consumeWhitespace, isKeyToken and isNumToken classify a
 # stream byte. See tests/ribctypeunsigned_test.cpp; it drives getNext
 # directly on an istringstream, so it dlopens nothing.

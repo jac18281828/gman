@@ -1,0 +1,27 @@
+# The 14 requests GMANRIBParse dispatches counts-aware on a
+# GMANRenderManImpl, issued here against a GMANRenderMan that is not one --
+# the RI-mandated overload of each. Every positional argument within a
+# request has its own distinct value, so a swapped pair fails; Polygon's
+# "P" is nine floats (three vertices). A trailing Sphere follows AGENTS.md's
+# "RIB authoring" section, "The desync convention."
+Display "ribparsefallback_out.tif" "file" "rgba"
+Format 64 64 1
+Projection "perspective" "fov" [30]
+Translate 0 0 5
+WorldBegin
+Sphere 10 11 12 13 "sphereData" [100 101]
+Cone 20 21 22 "coneData" [200]
+Cylinder 30 31 32 33 "cylinderData" [300 301]
+Hyperboloid 40 41 42 43 44 45 46 "hyperboloidData" [400]
+Paraboloid 50 51 52 53 "paraboloidData" [500]
+Torus 60 61 62 63 64 "torusData" [600]
+Disk 70 71 72 "diskData" [700]
+Polygon "P" [1 0 0  0 1 0  -1 0 0]
+GeneralPolygon [3 4] "generalPolygonData" [900]
+PointsPolygons [4] [0 1 2 3] "pointsPolygonsData" [1000]
+PointsGeneralPolygons [2] [3 4] [0 1 2 3 4 5 6] "pointsGeneralPolygonsData" [1100]
+Patch "bilinear" "patchData" [1200]
+NuPatch 5 2 [0 0 1 1 2 2 3] 10 11 6 3 [0 0 0 1 1 2 2 2 3] 12 13 "nuPatchData" [1400]
+PatchMesh "bicubic" 7 "nonperiodic" 8 "periodic" "patchMeshData" [1500]
+Sphere 0.5 -0.5 0.5 360
+WorldEnd

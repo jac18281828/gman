@@ -320,6 +320,14 @@ construction that matches the first parameter regardless of name), and a
 4-float `"P"` (not a multiple of three). A trailing `Sphere` follows. Not
 third-party.
 
+## ribparsefallback.rib
+
+The 14 requests `GMANRIBParse` dispatches counts-aware on a
+`GMANRenderManImpl`, issued against a renderer that is not one, for
+`tests/ribparsefallback_test.cpp`'s in-process check of the RI-mandated
+fallback overload each receives. `Polygon` carries a 9-float `"P"`. A
+trailing `Sphere` follows the desync convention. Not third-party.
+
 ## malformed/
 
 Hand-written fixtures for malformed RIB input. `gman` is expected to fail on
