@@ -44,8 +44,8 @@ OutputPNM::OutputPNM(const char* path, int width, int height) : GMANOutput(path,
 OutputPNM::~OutputPNM() {};
 
 // Writes a binary P6 portable pixmap directly, with no netpbm dependency.
-// PNM's own P6 format holds one byte a sample, so this driver's widest
-// sample stays 8 bits: GMANOutput::maxBitsPerSample's default.
+// P6 carries a 16-bit sample when maxval exceeds 255; this driver writes
+// 8, GMANOutput::maxBitsPerSample's default.
 RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<std::uint16_t> const& samples,
                              int /*bitsPerSample*/, RtFloat /*gamma*/) {
 

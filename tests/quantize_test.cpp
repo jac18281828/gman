@@ -21,9 +21,12 @@
 /*
  * RIB's Quantize keyword, end to end through gman: parsed, honoured by
  * GMANOutput::save and reflected in the file a driver writes. A request
- * TIFF's 16-bit range cannot hold, sent to PNM, falls back and warns.
+ * PNM's 8-bit range cannot hold falls back and warns.
  */
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -72,11 +75,9 @@ int countLines(const std::string& text) {
   return lines;
 }
 
-// gman's version banner prints unconditionally, ahead of argument parsing,
-// so no log level ever suppresses it; Projection "orthographic" always
-// defaults fov and warns about it, a pre-existing defect this unit does
-// not own. Neither line is Quantize's own output, so this strips both
-// before counting.
+// gman's license banner and Projection "orthographic"'s "FOV not set"
+// warning both print regardless of Quantize; this strips the two before
+// counting so only Quantize's own output remains.
 std::string withoutUnrelatedNoise(const std::string& text) {
   std::string result;
   std::size_t pos = 0;

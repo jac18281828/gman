@@ -588,7 +588,7 @@ set_tests_properties(shaders PROPERTIES
   TIMEOUT 30)
 
 # RIB's Quantize keyword, end to end: parsed, honoured by
-# GMANOutput::save and reflected in the bytes each driver writes, an
+# GMANOutput::save and reflected in the bytes TIFF and PNM write, an
 # unhonoured 16-bit request falling back and warning.
 add_executable(gman_quantize quantize_test.cpp)
 target_link_libraries(gman_quantize PRIVATE gman_core TIFF::TIFF)

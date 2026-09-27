@@ -48,8 +48,7 @@ namespace {
 // A non-uniform alpha, so a coverage computation that reads the wrong
 // channel or drops the divide cannot land on the right byte by accident.
 // (0.2 + 0.5 + 0.8) / 3 = 1.5 / 3 = 0.5 exactly; 0.5 * 255 = 127.5, which
-// rounds to 128. Measured: the mean is exactly 0.5 in float and
-// 0.500000005 in double, and both round to 128. Computed independently of
+// rounds to 128, in float and in double alike. Computed independently of
 // the quantizing this test's zero-amplitude requests drive.
 GMANAlpha const kPartialAlpha(0.2f, 0.5f, 0.8f);
 unsigned char const kExpectedCoverageByte = 128;

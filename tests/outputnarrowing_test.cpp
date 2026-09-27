@@ -328,6 +328,17 @@ void checkReceives() {
     check(std::fabs(share - 0.5) <= 0.039,
           "receive 12: the fallback keeps the requested amplitude (128's share got " + std::to_string(share) + ")");
   }
+
+  // A NaN colour channel quantizes as 0.0 does, so a request whose min
+  // sits above 0 clamps it there rather than letting it escape the range.
+  {
+    RecordingOutput out(1, 1);
+    RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
+    out.setPixel(0, 0, GMANColor(nan, nan, nan));
+    out.save(GMANOutput::RGB, 1.0f, 1.0f, GMANQuantize{255, 10, 200, 0});
+    check(out.received[0] == 10, "receive 13: a NaN colour channel clamps to the requested min 10 (got " +
+                                     std::to_string(out.received[0]) + ")");
+  }
 }
 
 // The narrowed bytes a saved file holds, independent of format: an
@@ -492,8 +503,8 @@ void savePNG(std::string const& path, GMANColor const& colour, GMANQuantize cons
 #endif
 
 // 13. PNM, TIFF and PNG: 255 0 255 0 writes 0.25 as 64, and 65535 0 65535 0
-// writes it as 64 at 8 bits in PNM and PNG. TIFF now honours that request
-// itself; checkTIFF16Bit proves it below.
+// writes it as 64 at 8 bits in PNM and PNG, which fall back; TIFF honours
+// that request, as checkTIFF16Bit proves below.
 void checkFileRounding(std::string const& driverName,
                        std::function<void(std::string const&, GMANColor const&, GMANQuantize const&)> const& save,
                        std::function<ByteImage(std::string const&)> const& read, bool has16Bit) {
@@ -544,7 +555,7 @@ void checkTIFF16Bit() {
   }
 }
 
-// 15. TIFF, RGBA: a NaN alpha writes 0, as today.
+// 15. TIFF, RGBA: a NaN alpha writes 0.
 void checkTIFFAlphaNaN() {
   RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
   std::string const path = "narrow_tiff_check15.tif";

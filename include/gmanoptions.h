@@ -42,6 +42,7 @@
 #include "gmanmatrix4.h"
 #include "gmanoutput.h"
 #include "gmanparameterlist.h"
+#include "gmanquantize.h"
 #include "gmanshader.h"
 #include "ri.h"
 

@@ -34,9 +34,9 @@
 namespace gman {
 
 // RISpec 3.2's own rule: round(one * v + ditheramplitude * xi) then clamp
-// into [min, max], round as floor(x + 0.5). Runs in double -- at 16 bits,
-// the same arithmetic in float missed an exact integer by one at a
-// handful of pixels out of millions of draws, double none. A NaN v
+// into [min, max], round as floor(x + 0.5). Runs in double: for 0 <= a <=
+// 0.5, an integer one * v inside [min, max] writes that integer at every
+// pixel, which double arithmetic guarantees and float does not. A NaN v
 // quantizes as 0 does; positive infinity clamps to max and negative
 // infinity to min, both falling out of the clamp once floor(x + 0.5) has
 // carried the infinity through. save is this function's only caller.
