@@ -78,6 +78,16 @@ GMANTransform identityTransform() {
   return GMANTransform(storage);
 }
 
+// A cameraToWorld standing in for the camera's world-to-camera inverse,
+// not the identity: envFeatures probes it, so a parity check that fills
+// gman::albedo's env from a different matrix than gman::shade's fails.
+GMANMatrix4 sampleCameraToWorld() {
+  GMANMatrix4 matrix;
+  matrix.rot(0.4f, 0.0f, 1.0f, 0.0f);
+  matrix.trans(2.0f, -1.0f, 3.0f);
+  return matrix;
+}
+
 // Wraps a stack- or member-owned shader for Appearance::shader, which owns
 // whatever it holds: this alias shares the caller's own lifetime instead,
 // owning nothing and freeing nothing.
@@ -85,31 +95,41 @@ std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader co
   return std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
 }
 
-// Every field gman::shade's own fill sets from a point and an appearance
-// (not the lights vector, cameraToWorld or textureCache, which shade holds
-// fixed regardless of the point): Cs, Os, P, N, Ng, I, E, u, v, s, t and
-// surfaceMagnitude, 26 scalars in all.
-std::array<double, 26> envFeatures(GMANSurfaceEnv const& se) {
-  return {se.Cs.getRed(),       se.Cs.getGreen(),
-          se.Cs.getBlue(),      se.Os.getRed(),
-          se.Os.getGreen(),     se.Os.getBlue(),
-          (double)se.P.getX(),  (double)se.P.getY(),
-          (double)se.P.getZ(),  (double)se.N.getX(),
-          (double)se.N.getY(),  (double)se.N.getZ(),
-          (double)se.Ng.getX(), (double)se.Ng.getY(),
-          (double)se.Ng.getZ(), (double)se.I.getX(),
-          (double)se.I.getY(),  (double)se.I.getZ(),
-          (double)se.E.getX(),  (double)se.E.getY(),
-          (double)se.E.getZ(),  (double)se.u,
-          (double)se.v,         (double)se.s,
-          (double)se.t,         (double)se.surfaceMagnitude};
+// Every field gman::shade's fill sets from a point, an appearance and a
+// camera transform: Cs, Os, P, N, Ng, I, E, u, v, s, t, surfaceMagnitude,
+// cameraToWorld's sixteen entries and the light count -- 43 scalars in
+// all.
+constexpr std::size_t kFeatureCount = 26 + 16 + 1;
+
+std::array<double, kFeatureCount> envFeatures(GMANSurfaceEnv const& se) {
+  std::array<double, kFeatureCount> f = {se.Cs.getRed(),       se.Cs.getGreen(),
+                                         se.Cs.getBlue(),      se.Os.getRed(),
+                                         se.Os.getGreen(),     se.Os.getBlue(),
+                                         (double)se.P.getX(),  (double)se.P.getY(),
+                                         (double)se.P.getZ(),  (double)se.N.getX(),
+                                         (double)se.N.getY(),  (double)se.N.getZ(),
+                                         (double)se.Ng.getX(), (double)se.Ng.getY(),
+                                         (double)se.Ng.getZ(), (double)se.I.getX(),
+                                         (double)se.I.getY(),  (double)se.I.getZ(),
+                                         (double)se.E.getX(),  (double)se.E.getY(),
+                                         (double)se.E.getZ(),  (double)se.u,
+                                         (double)se.v,         (double)se.s,
+                                         (double)se.t,         (double)se.surfaceMagnitude};
+  std::size_t index = 26;
+  for (std::size_t row = 0; row < 4; ++row) {
+    for (std::size_t col = 0; col < 4; ++col) {
+      f[index++] = (double)se.cameraToWorld[row][col];
+    }
+  }
+  f[index++] = (double)se.lights.size();
+  return f;
 }
 
 // Three independent linear combinations of every feature above, so a
 // mismatch in any single field -- s and t included -- moves at least one
 // channel.
 GMANColor probe(GMANSurfaceEnv const& se) {
-  std::array<double, 26> const f = envFeatures(se);
+  std::array<double, kFeatureCount> const f = envFeatures(se);
   double red = 0, green = 0, blue = 0;
   for (std::size_t i = 0; i < f.size(); ++i) {
     red += f[i] * (double)(i + 1);
@@ -195,7 +215,7 @@ void testParityOnSphere() {
   }
 
   gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
-  GMANMatrix4 const cameraToWorld;
+  GMANMatrix4 const cameraToWorld = sampleCameraToWorld();
   ParityResult const result = parityAt(appearance, point, cameraToWorld);
   check(colorNear(result.albedoAnswer, result.shadeCi, kParityTol),
         "sphere parity: gman::albedo equals gman::shade's own Ci within 1e-6 per channel");
@@ -243,7 +263,7 @@ void testParityOnTexturedPolygon() {
                         "cannot coincidentally match it");
 
   gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
-  GMANMatrix4 const cameraToWorld;
+  GMANMatrix4 const cameraToWorld = sampleCameraToWorld();
   ParityResult const result = parityAt(appearance, point, cameraToWorld);
   check(colorNear(result.albedoAnswer, result.shadeCi, kParityTol),
         "polygon parity: gman::albedo equals gman::shade's own Ci within 1e-6 per channel");

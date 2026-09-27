@@ -123,6 +123,13 @@ bool colorExactly(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
+// Shader identity, Cs, Os and lights, unchanged: prepare() must add,
+// remove or reorder no light and swap no shader or colour.
+bool appearanceUnchanged(gman::Appearance const& before, gman::Appearance const& after) {
+  return before.shader.get() == after.shader.get() && before.lights == after.lights &&
+         colorExactly(before.Cs, after.Cs) && colorExactly(before.Os, after.Os);
+}
+
 double relativeDeviation(double actual, double expected) {
   double const denom = GMANMax(std::fabs(expected), kAbsoluteFloor / kRelativeTol);
   return std::fabs(actual - expected) / denom;
@@ -629,6 +636,13 @@ void testPrepareChangesNothing(MainFixture& fixture) {
     before.push_back(p);
   }
 
+  auto const* floorRay = dynamic_cast<GMANRayInterface const*>(fixture.floor);
+  auto const* wallRay = dynamic_cast<GMANRayInterface const*>(fixture.wall);
+  auto const* sphereRay = dynamic_cast<GMANRayInterface const*>(fixture.sphere);
+  gman::Appearance const floorBefore = floorRay->getAppearance();
+  gman::Appearance const wallBefore = wallRay->getAppearance();
+  gman::Appearance const sphereBefore = sphereRay->getAppearance();
+
   GMANRadiosityPass pass;
   GMANOptions options;
   options.setRadiosityElementSize(kSizeUnderTest);
@@ -640,10 +654,12 @@ void testPrepareChangesNothing(MainFixture& fixture) {
   }
 
   check(before == after, "prepare unchanged: getFirst/getNext yields the same primitives in the same order");
-
-  auto const* floorRay = dynamic_cast<GMANRayInterface const*>(fixture.floor);
-  check(floorRay->getAppearance().shader != nullptr && floorRay->getAppearance().Os.getRed() == 1.0f,
-        "prepare unchanged: the floor's own appearance is intact");
+  check(appearanceUnchanged(floorBefore, floorRay->getAppearance()),
+        "prepare unchanged: the floor's appearance is intact");
+  check(appearanceUnchanged(wallBefore, wallRay->getAppearance()),
+        "prepare unchanged: the wall's appearance is intact");
+  check(appearanceUnchanged(sphereBefore, sphereRay->getAppearance()),
+        "prepare unchanged: the sphere's appearance is intact");
 }
 
 // ---- check 7: an out-of-range albedo makes prepare() answer black
