@@ -678,12 +678,7 @@ std::string GMANRIBParse::copyStringToken() {
 RtVoid GMANRIBParse::parseOption(RtVoid) {
   const auto name = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   renderMan.RiOptionV(name.c_str(), n, tokens, parms);
 }
@@ -693,12 +688,7 @@ RtVoid GMANRIBParse::parseDisplay(RtVoid) {
   const auto type = copyStringToken();
   const auto mode = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   // RiDisplayV's name parameter is char* rather than const char* for
   // historical reasons; it only reads through it.
@@ -716,12 +706,7 @@ RtVoid GMANRIBParse::parseFormat(RtVoid) {
 RtVoid GMANRIBParse::parseProjection(RtVoid) {
   const auto name = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   renderMan.RiProjectionV(name.c_str(), n, tokens, parms);
 }
@@ -802,12 +787,7 @@ RtVoid GMANRIBParse::parseHider(RtVoid) {
 
   const auto type = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   renderMan.RiHiderV(type.c_str(), n, tokens, parms);
 }
@@ -852,12 +832,7 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
   const auto name = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   renderMan.RiAttributeV(name.c_str(), n, tokens, parms);
 }
@@ -920,12 +895,7 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) {
   const auto shadername = copyStringToken();
   int sequence = nextInt();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   RtLightHandle handle = renderMan.RiLightSourceV(shadername.c_str(), n, tokens, parms);
 
@@ -935,12 +905,7 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) {
 RtVoid GMANRIBParse::parseSurface(RtVoid) {
   const auto shadername = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   // FIXME: Implement some surface shaders
   renderMan.RiSurfaceV(shadername.c_str(), n, tokens, parms);
@@ -1020,12 +985,7 @@ RtVoid GMANRIBParse::parseSphere(RtVoid) {
   RtFloat zmax = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms, supplied...);
@@ -1037,12 +997,7 @@ RtVoid GMANRIBParse::parseCone(RtVoid) {
   RtFloat radius = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiConeV(height, radius, thetamax, n, tokens, parms, supplied...);
@@ -1055,12 +1010,7 @@ RtVoid GMANRIBParse::parseCylinder(RtVoid) {
   RtFloat zmax = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms, supplied...);
@@ -1084,12 +1034,7 @@ RtVoid GMANRIBParse::parseHyperboloid(RtVoid) {
 
   RtFloat thetamax = nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiHyperboloidV(point1, point2, thetamax, n, tokens, parms, supplied...);
@@ -1102,12 +1047,7 @@ RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
   RtFloat zmax = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms, supplied...);
@@ -1121,12 +1061,7 @@ RtVoid GMANRIBParse::parseTorus(RtVoid) {
   RtFloat phimax = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms, supplied...);
@@ -1138,12 +1073,7 @@ RtVoid GMANRIBParse::parseDisk(RtVoid) {
   RtFloat radius = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiDiskV(height, radius, thetamax, n, tokens, parms, supplied...);
@@ -1152,12 +1082,7 @@ RtVoid GMANRIBParse::parseDisk(RtVoid) {
 
 RtVoid GMANRIBParse::parsePolygon(RtVoid) {
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   // "P" is a VERTEX/POINT array, 3 floats per vertex; nverts is derived from
   // its element count. pendingParamValues records that count per value
@@ -1191,12 +1116,7 @@ RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
   GMANRIBParse::TokenVector nvertsVector = parseArray();
   std::vector<RtInt> nverts = nvertsVector.toRtIntVector();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   RtInt nloops = (RtInt)nvertsVector.size();
 
@@ -1207,12 +1127,7 @@ RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
 
 RtVoid GMANRIBParse::parsePoints(RtVoid) {
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   // "P" is a POINT array, 3 floats per point; npoints is derived from its
   // element count. pendingParamValues records that count per value pointer
@@ -1246,12 +1161,7 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
   GMANRIBParse::TokenVector vertsVector = parseArray();
   std::vector<RtInt> verts = vertsVector.toRtIntVector();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   RtInt npolys = (RtInt)nvertsVector.size();
 
@@ -1288,12 +1198,7 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
   GMANRIBParse::TokenVector vertsVector = parseArray();
   std::vector<RtInt> verts = vertsVector.toRtIntVector();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   RtInt npolys = (RtInt)nloopsVector.size();
 
@@ -1331,12 +1236,7 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
   const auto type = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiPatchV(type.c_str(), n, tokens, parms, supplied...);
@@ -1358,12 +1258,7 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
   RtFloat vmin = nextFloat();
   RtFloat vmax = nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   // The RI signature carries no knot-array length; a RIB file is not a
   // trusted caller, so a uknot/vknot whose actual length disagrees with
@@ -1398,12 +1293,7 @@ RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
   RtInt nv = nextInt();
   const auto vwrap = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(), n, tokens, parms, supplied...);
@@ -1574,12 +1464,7 @@ RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
 
   const auto name = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 
   // FIXME: implement some atmosphere shaders
   //  renderMan.RiAtmosphereV(name.c_str(), n, tokens, parms);
@@ -1589,12 +1474,7 @@ RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
 
   const auto name = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 
   // FIXME: implement some displacement shaders
   //  renderMan.RiDisplacementV(name.c_str(), n, tokens, parms);
@@ -1604,12 +1484,7 @@ RtVoid GMANRIBParse::parseImager(RtVoid) {
 
   const auto name = copyStringToken();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 
   // FIXME: implement some imagers
   // renderMan.RiImagerV(name.c_str(), n, tokens, parms);
@@ -1636,11 +1511,7 @@ RtVoid GMANRIBParse::parseCurves(RtVoid) {
   GMANRIBParse::TokenVector ncurves = parseArray();
   (void)copyStringToken(); // wrap
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 }
 
 RtVoid GMANRIBParse::parseBlobby(RtVoid) {
@@ -1650,11 +1521,7 @@ RtVoid GMANRIBParse::parseBlobby(RtVoid) {
   GMANRIBParse::TokenVector floats = parseArray();
   GMANRIBParse::TokenVector strs = parseArray();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 }
 
 RtVoid GMANRIBParse::parseSubdivisionMesh(RtVoid) {
@@ -1667,11 +1534,7 @@ RtVoid GMANRIBParse::parseSubdivisionMesh(RtVoid) {
   GMANRIBParse::TokenVector intargs = parseArray();
   GMANRIBParse::TokenVector floatargs = parseArray();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 }
 
 RtVoid GMANRIBParse::parseProcedural(RtVoid) {
@@ -1762,11 +1625,7 @@ RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
     throw error;
   }
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   // RiMakeTextureV's pic/tex parameters are char* rather than const
   // char* for historical reasons; it only reads through them.
@@ -1784,11 +1643,7 @@ RtVoid GMANRIBParse::parseMakeBump(RtVoid) {
   nextFloat();
   nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 }
 
 RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
@@ -1806,11 +1661,7 @@ RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
     throw error;
   }
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-  parseParameterList(n, tokens, parms, counts);
+  auto [n, tokens, parms, counts] = parseParameterList();
 
   // RiMakeLatLongEnvironmentV's pic/tex parameters are char* rather than
   // const char* for historical reasons; it only reads through them.
@@ -1832,11 +1683,7 @@ RtVoid GMANRIBParse::parseMakeCubeFaceEnvironment(RtVoid) {
   nextFloat();
   nextFloat();
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 }
 
 RtVoid GMANRIBParse::parseMakeShadow(RtVoid) {
@@ -1844,11 +1691,7 @@ RtVoid GMANRIBParse::parseMakeShadow(RtVoid) {
   (void)copyStringToken(); // picture
   (void)copyStringToken(); // texture
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-  parseParameterList(n, tokens, parms, counts);
+  parseParameterList();
 }
 
 RtVoid GMANRIBParse::parseIfBegin(RtVoid) {
@@ -1938,7 +1781,7 @@ GMANRIBParse::TokenVector GMANRIBParse::parseArray(RtVoid) {
   return tokens;
 }
 
-RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& parms, RtInt*& counts) {
+GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList() {
   // The supplied element count travels with its value through the map:
   // paramMap emits in key order, not push order, so a counts array built
   // separately in push order would not line up with tokens/parms below.
@@ -2046,10 +1889,10 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
     }
   }
 
-  n = paramMap.size();
-  tokens = new RtToken[n];
-  parms = new RtPointer[n];
-  counts = new RtInt[n];
+  const RtInt n = (RtInt)paramMap.size();
+  RtToken* tokens = new RtToken[n];
+  RtPointer* parms = new RtPointer[n];
+  RtInt* counts = new RtInt[n];
   ParamMap::iterator cur = paramMap.begin();
   for (unsigned int i = 0; cur != paramMap.end(); i++, cur++) {
     tokens[i] = cur->first;
@@ -2059,6 +1902,7 @@ RtVoid GMANRIBParse::parseParameterList(RtInt& n, RtToken*& tokens, RtPointer*& 
   pendingTokenArrays.push_back(tokens);
   pendingParmArrays.push_back(parms);
   pendingCountArrays.push_back(counts);
+  return {n, tokens, parms, counts};
 }
 
 RtVoid GMANRIBParse::freePendingParams(RtVoid) {
