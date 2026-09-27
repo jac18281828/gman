@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "gmanparameterlist.h"
@@ -50,5 +52,13 @@ RtFloat boundingBoxExtent(std::vector<GMANPoint> const& ring);
 inline RtFloat* floatArray(GMANParameterList const& pl, RtToken token) {
   return (RtFloat*)pl.getPointer(standardDictionary().getTokenId(token));
 }
+
+// Each of count points' own resolved (s, t): entry i defaults to (p[3i],
+// p[3i+1]), overridden by "st" (both components), then by "s" and "t"
+// (each its own component). p is non-null and holds 3 * count floats. The
+// one definition of the rule every polygon and ray-polygon face resolves
+// its texture coordinates through.
+std::vector<std::pair<RtFloat, RtFloat>> polygonTexCoords(GMANParameterList const& pl, RtFloat const* p,
+                                                          std::size_t count);
 
 } // namespace gman

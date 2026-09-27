@@ -158,38 +158,17 @@ bool insidePolygon(std::vector<GMANPoint> const& ring, int axis, GMANPoint const
 
 namespace gman {
 
-// Each point's own resolved (s, t): default its object-space "P" -- the
-// same pre-CTM floats a request's own factory reads, not vertices, already
-// camera space by the time it reaches here -- "st" then "s"/"t"
-// overriding, GMANPatchPolyObjectManager's own polygon rule
-// (resolvePolygonTextureCoordinates). Returns count entries of (0, 0) when
-// pl carries no "P": a direct construction bypassing the object manager,
-// or (for a mesh) a request whose "P" is already known present.
+// Each point's own resolved (s, t), through polygonTexCoords, against its
+// object-space "P" -- the same pre-CTM floats a request's own factory
+// reads, not vertices, already camera space by the time it reaches here.
+// Returns count entries of (0, 0) when pl carries no "P": a direct
+// construction bypassing the object manager, or (for a mesh) a request
+// whose "P" is already known present.
 std::vector<std::pair<RtFloat, RtFloat>> resolvePointTexCoords(GMANParameterList const& pl, std::size_t count) {
-  std::vector<std::pair<RtFloat, RtFloat>> texCoords(count, {(RtFloat)0.0, (RtFloat)0.0});
   RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p)
-    return texCoords;
-
-  RtFloat* sArr = gman::floatArray(pl, RI_S);
-  RtFloat* tArr = gman::floatArray(pl, RI_T);
-  RtFloat* stArr = gman::floatArray(pl, RI_ST);
-  for (std::size_t i = 0; i < count; i++) {
-    RtFloat const objX = p[3 * i];
-    RtFloat const objY = p[3 * i + 1];
-    RtFloat s = objX;
-    RtFloat t = objY;
-    if (stArr) {
-      s = stArr[2 * i];
-      t = stArr[2 * i + 1];
-    }
-    if (sArr)
-      s = sArr[i];
-    if (tArr)
-      t = tArr[i];
-    texCoords[i] = {s, t};
-  }
-  return texCoords;
+    return std::vector<std::pair<RtFloat, RtFloat>>(count, {(RtFloat)0.0, (RtFloat)0.0});
+  return polygonTexCoords(pl, p, count);
 }
 
 } // namespace gman

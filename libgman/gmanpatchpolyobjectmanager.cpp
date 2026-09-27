@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "gmanobjectmanager.h"
@@ -459,30 +460,15 @@ struct PolygonVertexTexCoord {
 
 // p is the vertex's own flat "P" array (3 floats per vertex, object space,
 // before the CTM); nverts is also "s"/"t"/"st"'s own declared length, so
-// index i reads the same vertex from every one of them.
+// index i reads the same vertex from every one of them. s and t come from
+// polygonTexCoords, gman's one s/t rule.
 std::vector<PolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParameterList& pl, RtInt nverts,
                                                                     const RtFloat* p) {
-  RtFloat* sArr = gman::floatArray(pl, RI_S);
-  RtFloat* tArr = gman::floatArray(pl, RI_T);
-  RtFloat* stArr = gman::floatArray(pl, RI_ST);
+  std::vector<std::pair<RtFloat, RtFloat>> const st = gman::polygonTexCoords(pl, p, (std::size_t)nverts);
 
   std::vector<PolygonVertexTexCoord> coords(nverts);
   for (RtInt i = 0; i < nverts; i++) {
-    RtFloat objX = p[3 * i];
-    RtFloat objY = p[3 * i + 1];
-    RtFloat s = objX;
-    RtFloat t = objY;
-    if (stArr) {
-      s = stArr[2 * i];
-      t = stArr[2 * i + 1];
-    }
-    if (sArr) {
-      s = sArr[i];
-    }
-    if (tArr) {
-      t = tArr[i];
-    }
-    coords[i] = {objX, objY, s, t};
+    coords[i] = {p[3 * i], p[3 * i + 1], st[i].first, st[i].second};
   }
   return coords;
 }

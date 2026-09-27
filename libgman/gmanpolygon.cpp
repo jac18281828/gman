@@ -96,4 +96,29 @@ GMANDictionary& standardDictionary() {
   return d;
 }
 
+std::vector<std::pair<RtFloat, RtFloat>> polygonTexCoords(GMANParameterList const& pl, RtFloat const* p,
+                                                          std::size_t count) {
+  RtFloat* sArr = gman::floatArray(pl, RI_S);
+  RtFloat* tArr = gman::floatArray(pl, RI_T);
+  RtFloat* stArr = gman::floatArray(pl, RI_ST);
+
+  std::vector<std::pair<RtFloat, RtFloat>> coords(count);
+  for (std::size_t i = 0; i < count; i++) {
+    RtFloat s = p[3 * i];
+    RtFloat t = p[3 * i + 1];
+    if (stArr) {
+      s = stArr[2 * i];
+      t = stArr[2 * i + 1];
+    }
+    if (sArr) {
+      s = sArr[i];
+    }
+    if (tArr) {
+      t = tArr[i];
+    }
+    coords[i] = {s, t};
+  }
+  return coords;
+}
+
 } // namespace gman
