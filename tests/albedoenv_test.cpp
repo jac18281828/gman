@@ -19,10 +19,10 @@
  */
 
 /*
- * gman::hitSurfacePoint's own field mapping off a real BVH hit, and
- * gman::albedo's parity with gman::shade's own Ci at the same point, for a
+ * gman::hitSurfacePoint's field mapping off a real BVH hit, and
+ * gman::albedo's parity with gman::shade's Ci at the same point, for a
  * hit on a sphere and on a polygon carrying "st". A null shader answers
- * its own Cs clamped to [0, 1].
+ * its Cs clamped to [0, 1].
  */
 
 #include <array>
@@ -52,7 +52,7 @@
 
 namespace {
 
-// The parity check's own tolerance: both calls fill a GMANSurfaceEnv
+// The parity check's tolerance: both calls fill a GMANSurfaceEnv
 // through the identical fillEnv() helper, so the two probes agree exactly
 // but for the float rounding one extra copy could introduce.
 constexpr RtFloat kParityTol = (RtFloat)1e-6;
@@ -89,7 +89,7 @@ GMANMatrix4 sampleCameraToWorld() {
 }
 
 // Wraps a stack- or member-owned shader for Appearance::shader, which owns
-// whatever it holds: this alias shares the caller's own lifetime instead,
+// whatever it holds: this alias shares the caller's lifetime instead,
 // owning nothing and freeing nothing.
 std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader const& shader) {
   return std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
@@ -140,7 +140,7 @@ GMANColor probe(GMANSurfaceEnv const& se) {
 }
 
 // Answers probe(se) from both computeCi and albedo, so a hit's shaded Ci
-// and its own albedo are one function of every env field.
+// and its albedo are one function of every env field.
 class EnvProbeShader : public GMANSurfaceShader {
 public:
   GMANColor computeCi(GMANSurfaceEnv const& se) const override { return probe(se); }
@@ -148,7 +148,7 @@ public:
   GMANColor albedo(GMANSurfaceEnv const& se) const override { return probe(se); }
 };
 
-// ---- check 1: hitSurfacePoint's own field mapping off a real BVH hit ----
+// ---- check 1: hitSurfacePoint's field mapping off a real BVH hit ----
 void testHitSurfacePointFieldMapping() {
   GMANLinearWorldManager world;
   world.add(new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform()));
@@ -164,22 +164,22 @@ void testHitSurfacePointFieldMapping() {
   }
 
   gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
-  check(pointExactly(point.P, hit.point), "field mapping: P is the hit's own point");
+  check(pointExactly(point.P, hit.point), "field mapping: P is the hit's point");
   check(vectorExactly(GMANVector(point.N.getX(), point.N.getY(), point.N.getZ()), hit.normal),
-        "field mapping: N is the hit's own normal");
+        "field mapping: N is the hit's normal");
   check(point.N.getX() == point.Ng.getX() && point.N.getY() == point.Ng.getY() && point.N.getZ() == point.Ng.getZ(),
         "field mapping: Ng equals N");
-  check(point.u == hit.u && point.v == hit.v, "field mapping: u and v are the hit's own");
+  check(point.u == hit.u && point.v == hit.v, "field mapping: u and v equal the hit's u and v");
   check(point.s == hit.u && point.t == hit.v, "field mapping: s and t default to u and v");
-  check(vectorExactly(point.I, ray.getDirection()), "field mapping: I is the ray's own direction");
-  check(pointExactly(point.E, ray.getOrigin()), "field mapping: E is the ray's own origin");
+  check(vectorExactly(point.I, ray.getDirection()), "field mapping: I is the ray's direction");
+  check(pointExactly(point.E, ray.getOrigin()), "field mapping: E is the ray's origin");
   check(point.surfaceMagnitude == gman::primitiveMagnitude(hitPrimitive->getBBox()),
-        "field mapping: surfaceMagnitude is the hit primitive's own");
+        "field mapping: surfaceMagnitude is the hit primitive's magnitude");
 }
 
 // The two GMANColor answers gman::albedo and gman::shade give at the same
-// hit: albedo(appearance, point, cameraToWorld) and shade's own Ci called
-// with no occluder, tracer or indirect.
+// hit: albedo(appearance, point, cameraToWorld) and shade's Ci called with
+// no occluder, tracer or indirect.
 struct ParityResult {
   GMANColor albedoAnswer;
   GMANColor shadeCi;
@@ -218,20 +218,21 @@ void testParityOnSphere() {
   GMANMatrix4 const cameraToWorld = sampleCameraToWorld();
   ParityResult const result = parityAt(appearance, point, cameraToWorld);
   check(colorNear(result.albedoAnswer, result.shadeCi, kParityTol),
-        "sphere parity: gman::albedo equals gman::shade's own Ci within 1e-6 per channel");
+        "sphere parity: gman::albedo equals gman::shade's Ci within 1e-6 per channel");
 }
 
 // A unit square (object space == camera space here, an implicit identity
 // CTM) carrying "st", built the way RiPolygonV itself builds one
 // (gmanrendermanimpl.cpp): a real "P" and a real "st", not
-// GMANRayPolygon's own default-constructed, "P"-less parameter list.
+// GMANRayPolygon's default-constructed, "P"-less parameter list.
 GMANRayPolygon* squareWithSt() {
   std::vector<GMANPoint> verts = {GMANPoint(-1.0f, -1.0f, 0.0f), GMANPoint(1.0f, -1.0f, 0.0f),
                                   GMANPoint(1.0f, 1.0f, 0.0f), GMANPoint(-1.0f, 1.0f, 0.0f)};
   RtFloat p[] = {-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0};
-  // Each vertex's own default (x, y) transposed to (y, x), so a hit's (s,
-  // t) differs from its own (u, v) -- proof the parity check reads a real
-  // textured (s, t), not one that happens to equal (u, v).
+  // Each vertex's default (x, y) transposed to (y, x): plain "P" alone
+  // would set (s, t) to (x, y), so this "st" instead makes the hit's
+  // (s, t) equal (y, x) -- proof the parity check reads a real textured
+  // (s, t), not the value plain "P" would default to.
   RtFloat st[] = {-1, -1, -1, 1, 1, 1, 1, -1};
   RtToken tokens[] = {RI_P, RI_ST};
   RtPointer parms[] = {(RtPointer)p, (RtPointer)st};
@@ -259,14 +260,14 @@ void testParityOnTexturedPolygon() {
   if (hitPrimitive == nullptr) {
     return;
   }
-  check(hit.u != hit.v, "polygon parity fixture: the hit's own (u, v) is not symmetric, so a transposed (s, t) "
+  check(hit.u != hit.v, "polygon parity fixture: the hit's (u, v) is not symmetric, so a transposed (s, t) "
                         "cannot coincidentally match it");
 
   gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
   GMANMatrix4 const cameraToWorld = sampleCameraToWorld();
   ParityResult const result = parityAt(appearance, point, cameraToWorld);
   check(colorNear(result.albedoAnswer, result.shadeCi, kParityTol),
-        "polygon parity: gman::albedo equals gman::shade's own Ci within 1e-6 per channel");
+        "polygon parity: gman::albedo equals gman::shade's Ci within 1e-6 per channel");
 }
 
 // ---- check 4: a null shader answers Cs clamped to [0, 1] exactly ----
@@ -289,7 +290,7 @@ int main() {
   testParityOnTexturedPolygon();
   testNullShaderClampsCs();
 
-  return checkSummary("gman::hitSurfacePoint maps a BVH hit's own fields, gman::albedo agrees with gman::shade's "
-                      "own Ci at the same point for a sphere and a textured polygon, and a null shader answers Cs "
+  return checkSummary("gman::hitSurfacePoint maps a BVH hit's fields, gman::albedo agrees with gman::shade's Ci "
+                      "at the same point for a sphere and a textured polygon, and a null shader answers Cs "
                       "clamped to [0, 1]");
 }

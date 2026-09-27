@@ -28,11 +28,10 @@
 #include "gmanradiositysolver.h"
 
 /*
- * The ray tracer's own indirect-light pass, over a GMANRadiosityMesh and
- * one GMANRadiositySolver solve. Not GMAN_EXPORT, for the mesh's own
- * reason (gmanradiositymesh.h): compiled into gman_radiosity_objects and
- * linked into gman_radiosity's own module rather than an installed
- * library.
+ * The ray tracer's indirect-light pass, over a GMANRadiosityMesh and one
+ * GMANRadiositySolver solve. Not GMAN_EXPORT, for the mesh's reason
+ * (gmanradiositymesh.h): compiled into gman_radiosity_objects and linked
+ * into gman_radiosity's module rather than an installed library.
  *
  * prepare() dices world at the element size Option "radiosity" "float
  * elementsize" set, or, unset, the largest side of the box bounding every
@@ -41,13 +40,13 @@
  * hit answers black. Each element's reflectance is gman::albedo at the
  * point the ray tracer would shade its receiver, or, failing that, its
  * first form-factor sample that hits, or a synthetic hit at the receiver
- * with u = v = 0. One GMANRadiositySolver::solve, at its own default
- * sample count, then answers every element side's H_ind. A GMANError
- * anywhere in this -- the build, an albedo or the solve -- logs one
- * warning naming the cause and leaves this pass answering black; the
- * mesh's own skipped-primitive count, its capped-element count and a
- * shot-capped solve each log a warning of their own but keep their
- * answer. A second prepare() replaces the first's.
+ * with u = v = 0. One GMANRadiositySolver::solve, at its default sample
+ * count, then answers every element side's H_ind. A GMANError anywhere in
+ * this -- the build, an albedo or the solve -- logs one warning naming
+ * the cause and leaves this pass answering black; the mesh's
+ * skipped-primitive count, its capped-primitive count and a
+ * shot-capped solve each log a warning but keep their answer. A second
+ * prepare() replaces the first's.
  *
  * irradiance() locates hit's element and corner weights, picks the side
  * facing -I, and answers the weighted mean of that side's node H_ind --

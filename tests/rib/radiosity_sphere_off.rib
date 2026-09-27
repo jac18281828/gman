@@ -1,4 +1,4 @@
-## radiosity_sphere.rib's own scene, naming no pass. Not third-party.
+## radiosity_sphere.rib's scene, naming no pass. Not third-party.
 Display "radiosity_sphere_off.tif" "file" "rgba"
 Format 48 48 1
 Projection "perspective" "fov" [45]

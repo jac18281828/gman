@@ -34,7 +34,6 @@
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
-#include "gmanraybbox.h"
 #include "gmantrace.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -100,9 +99,8 @@ struct GMAN_EXPORT SurfacePoint {
 // origin -- an orthographic ray, or a secondary ray, does not look from
 // there. s and t default to u and v, the RISpec's own default
 // texture-coordinate mapping. Precondition: a hit, hit.primitive
-// non-null. A host's own shading and gman::albedo share this one
-// mapping, so the day s and t stop defaulting to u and v, albedo follows
-// shading.
+// non-null. A host's shading and gman::albedo share this one mapping, so
+// the day s and t stop defaulting to u and v, albedo follows shading.
 GMAN_EXPORT SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit);
 
 // What shading a point produces: colour and opacity together, so a
@@ -139,9 +137,9 @@ GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& poin
 // indirect bound, and returns appearance.shader->albedo(env). A null
 // shader answers appearance.Cs clamped to [0, 1] per channel, a NaN
 // channel to 0 -- what the default surface, matte with Kd = 1, answers.
-// textureCache is shade's own argument; a caller running serially, ahead
-// of the first pixel, omits it and samples through
-// gman::textureCache()'s process cache.
+// textureCache is shade's argument; a caller running serially, ahead of
+// the first pixel, omits it and samples through gman::textureCache()'s
+// process cache.
 GMAN_EXPORT GMANColor albedo(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
                              TextureCache* textureCache = nullptr);
 

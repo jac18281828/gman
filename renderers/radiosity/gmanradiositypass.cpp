@@ -36,18 +36,18 @@
 
 namespace {
 
-// The default element size divides the world's own largest bounding-box
-// side by this many divisions -- a scene-relative default, since an
-// absolute size would dice a large scene up to the mesh's own division
-// cap and the solve's cost grows with the square of the element count.
-// Eight gives a box wall about 8 x 8 elements.
+// The default element size divides the world's largest bounding-box side
+// by this many divisions -- a scene-relative default, since an absolute
+// size would dice a large scene up to the mesh's division cap and the
+// solve's cost grows with the square of the element count. Eight gives a
+// box wall about 8 x 8 elements.
 constexpr std::size_t kDefaultElementDivisions = 8;
 
 bool isFiniteBBoxCoordinate(RtFloat coord) { return std::fabs(coord) < RI_INFINITY; }
 
 // True when none of bbox's six coordinates sits at +/-RI_INFINITY: the
-// world's own default element size only counts a primitive whose extent
-// is real.
+// world's default element size only counts a primitive whose extent is
+// real.
 bool isFiniteBBox(GMANBBox const& bbox) {
   GMANPoint const lo = bbox.getMin();
   GMANPoint const hi = bbox.getMax();
@@ -92,20 +92,20 @@ RtFloat defaultElementSize(GMANWorldManager& world) {
   return largest / (RtFloat)kDefaultElementDivisions;
 }
 
-// options' own element size when set, defaultElementSize(world)
-// otherwise -- 0 either from an empty world or one whose every primitive
-// has an infinite bbox.
+// options' element size when set, defaultElementSize(world) otherwise --
+// 0 either from an empty world or one whose every primitive has an
+// infinite bbox.
 RtFloat resolveElementSize(GMANWorldManager& world, GMANOptions const& options) {
   RtFloat const configured = options.getRadiosityElementSize();
   return configured > (RtFloat)0 ? configured : defaultElementSize(world);
 }
 
-// The SurfacePoint the ray tracer would shade at element's own receiver:
-// a cast toward gman::radiosityReceiver's own point, then toward each of
-// the element's form-factor samples in turn, then a synthetic hit at the
+// The SurfacePoint the ray tracer would shade at the element's receiver:
+// a cast toward gman::radiosityReceiver's point, then toward each of the
+// element's form-factor samples in turn, then a synthetic hit at the
 // receiver with u = v = 0 when every cast misses. Each cast is tested
-// against the element's own primitive alone, through its own intersect,
-// along -N from just off the surface on N's side.
+// against the element's primitive alone, through its own intersect, along
+// -N from just off the surface on N's side.
 gman::SurfacePoint elementSurfacePoint(GMANRadiosityMesh const& mesh, std::size_t element) {
   GMANRayInterface const* primitive = mesh.getElementPrimitive(element);
   gman::RadiosityReceiver const receiver = gman::radiosityReceiver(mesh, element);
@@ -134,10 +134,10 @@ gman::SurfacePoint elementSurfacePoint(GMANRadiosityMesh const& mesh, std::size_
   return gman::hitSurfacePoint(receiverRay, fallback);
 }
 
-// Every element's own reflectance: gman::albedo at elementSurfacePoint,
-// through the element primitive's own appearance, unclamped -- the
-// albedo contract's own bound, so a shader breaking it surfaces through
-// GMANRadiositySolver::solve's own reflectance check rather than being
+// Every element's reflectance: gman::albedo at elementSurfacePoint,
+// through the element primitive's appearance, unclamped -- the albedo
+// contract's bound, so a shader breaking it surfaces through
+// GMANRadiositySolver::solve's reflectance check rather than being
 // silently clipped here.
 std::vector<GMANColor> elementReflectance(GMANRadiosityMesh const& mesh, GMANMatrix4 const& cameraToWorld) {
   std::vector<GMANColor> reflectance(mesh.getElementCount());

@@ -20,7 +20,7 @@
 
 /*
  * `gman -r gmanraytracer` renders tests/rib/radiosity_box*.rib and
- * tests/rib/radiosity_sphere*.rib: the pass brightens a closed box's own
+ * tests/rib/radiosity_sphere*.rib: the pass brightens a closed box's
  * shadowed side without ever dimming a pixel, two renders of the box
  * scene are byte-identical, and a lone sphere -- nothing to bounce light
  * off -- renders exactly as it does with no pass at all.
@@ -77,9 +77,9 @@ Rendered renderFixture(std::string const& gman, std::string const& ribDir, std::
   return rendered;
 }
 
-// The full file's own bytes, for a literal cmp -- distinct from decoding
+// The full file's bytes, for a literal cmp -- distinct from decoding
 // through libtiff, which would report two files equal on their decoded
-// raster even if their own encoded bytes differed.
+// raster even if their encoded bytes differed.
 std::vector<char> readWholeFile(std::string const& path) {
   std::ifstream in(path, std::ios::binary);
   return std::vector<char>((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
@@ -91,9 +91,9 @@ bool filesByteIdentical(std::string const& a, std::string const& b) {
   return !contentsA.empty() && contentsA == contentsB;
 }
 
-// Neither the pass's own prepare() warnings (a bad element size, a
-// skipped or capped primitive, an unconverged solve) nor the loader's own
-// failure line appear in output.
+// Neither the pass's prepare() warnings (a bad element size, a skipped or
+// capped primitive, an unconverged solve) nor the loader's failure line
+// appear in output.
 bool printsNoRadiosityWarning(std::string const& output) {
   return output.find("Indirect-light pass \"radiosity\"") == std::string::npos &&
          output.find("Radiosity:") == std::string::npos;
@@ -144,17 +144,18 @@ void checkBox(std::string const& gman, std::string const& ribDir) {
   check(lowerViolations == 0, "box: no pixel reads lower in any channel with the pass");
 
   // ---- check 3: two renders of radiosity_box.rib are byte-identical ----
-  // The RIB's own Display line always names "radiosity_box.tif", so the
-  // first render's own file is copied aside before the second overwrites
-  // it.
+  // The RIB's Display line always names "radiosity_box.tif", so the first
+  // render's file is copied aside before the second overwrites it.
   std::vector<char> const firstBytes = readWholeFile("radiosity_box.tif");
   Rendered const onAgain = renderFixture(gman, ribDir, "radiosity_box.rib", "radiosity_box.tif");
   check(onAgain.result.exitStatus == 0, "box: the second radiosity_box.rib render exits 0");
+  check(printsNoRadiosityWarning(onAgain.result.output),
+        "box: the second radiosity_box.rib render prints no radiosity warning");
   std::vector<char> const secondBytes = readWholeFile("radiosity_box.tif");
   check(!firstBytes.empty() && firstBytes == secondBytes, "box: two renders of radiosity_box.rib are byte-identical");
 }
 
-// ---- check 4: the lone-sphere scene matches its own pass-free twin ----
+// ---- check 4: the lone-sphere scene matches its pass-free twin ----
 void checkSphere(std::string const& gman, std::string const& ribDir) {
   Rendered const on = renderFixture(gman, ribDir, "radiosity_sphere.rib", "radiosity_sphere.tif");
   Rendered const off = renderFixture(gman, ribDir, "radiosity_sphere_off.rib", "radiosity_sphere_off.tif");
@@ -194,7 +195,7 @@ int main(int argc, char* argv[]) {
   checkBox(gman, ribDir);
   checkSphere(gman, ribDir);
 
-  return checkSummary("The radiosity pass brightens a closed box's own shadowed side without ever dimming a "
-                      "pixel, two renders of that scene are byte-identical, and a lone sphere renders exactly as "
-                      "it does with no pass at all");
+  return checkSummary("The radiosity pass brightens a closed box's shadowed side without ever dimming a pixel, "
+                      "two renders of that scene are byte-identical, and a lone sphere renders exactly as it does "
+                      "with no pass at all");
 }

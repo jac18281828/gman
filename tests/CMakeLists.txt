@@ -1402,8 +1402,8 @@ set_tests_properties(indirectambient PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# gman::hitSurfacePoint's own field mapping off a real BVH hit, and
-# gman::albedo's parity with gman::shade's own Ci at the same point for a
+# gman::hitSurfacePoint's field mapping off a real BVH hit, and
+# gman::albedo's parity with gman::shade's Ci at the same point for a
 # sphere and a polygon carrying "st". A null shader answers Cs clamped to
 # [0, 1]. See tests/albedoenv_test.cpp.
 add_executable(gman_albedoenv albedoenv_test.cpp)
@@ -1415,7 +1415,7 @@ set_tests_properties(albedoenv PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# RiOptionV's own handling of Option "radiosity" "float elementsize":
+# RiOptionV's handling of Option "radiosity" "float elementsize":
 # unset reads 0, a later Option replaces an earlier one, a non-finite or
 # non-positive value leaves it unchanged, and an unrelated Option --
 # "render" "string indirect" included -- changes nothing. See
@@ -1939,7 +1939,7 @@ set_tests_properties(radiositymeshcost PROPERTIES
 # and a square wall meeting one of its legs, plus a sphere. Needs only
 # gman_radiosity_objects, but solves several times; guarded by
 # GMAN_BUILD_RADIOSITY alone, off CI's default legs, to keep the
-# sanitizer leg inside its own timeouts.
+# sanitizer leg inside its timeouts.
 if(GMAN_BUILD_RADIOSITY)
   add_executable(gman_radiositypass radiositypass_test.cpp)
   target_link_libraries(gman_radiositypass PRIVATE gman_radiosity_objects)
@@ -2234,7 +2234,7 @@ if(GMAN_BUILD_RAYTRACER)
 
   # `gman -r gmanraytracer` renders tests/rib/radiosity_box*.rib and
   # tests/rib/radiosity_sphere*.rib: the radiosity pass brightens a closed
-  # box's own shadowed side without ever dimming a pixel, two renders of
+  # box's shadowed side without ever dimming a pixel, two renders of
   # that scene are byte-identical, and a lone sphere renders exactly as it
   # does with no pass at all. Needs the plugin itself, guarded by
   # GMAN_BUILD_RADIOSITY alone. See tests/radiosityrender_test.cpp.

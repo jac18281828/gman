@@ -179,7 +179,7 @@ private:
   // every member above keeps its offset. Empty when unset.
   std::string indirectPass;
 
-  // Option "radiosity" "float elementsize" ["<size>"]'s own camera-space
+  // Option "radiosity" "float elementsize" ["<size>"]'s camera-space
   // length, appended after indirectPass so every member above keeps its
   // offset. 0 when unset.
   RtFloat radiosityElementSize = 0;

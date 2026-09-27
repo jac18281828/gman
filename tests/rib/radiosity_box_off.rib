@@ -1,5 +1,5 @@
-## radiosity_box.rib's own scene, naming no pass: the baseline
-## radiosity_box.rib's own indirect light brightens. Not third-party.
+## radiosity_box.rib's scene, naming no pass: the baseline that
+## radiosity_box.rib's indirect light brightens. Not third-party.
 Display "radiosity_box_off.tif" "file" "rgba"
 Format 24 24 1
 Projection "perspective" "fov" [45]

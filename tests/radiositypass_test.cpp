@@ -65,23 +65,23 @@
 
 namespace {
 
-// ---- The main fixture's own geometry ----
+// ---- The main fixture's geometry ----
 
-// The floor's two legs' shared length, and the wall's own side (it shares
-// a leg, so its side equals the leg it shares).
+// The floor's two legs' shared length, and the wall's side (it shares a
+// leg, so its side equals the leg it shares).
 constexpr RtFloat kLegLength = 8.0f;
 
-// The element size under test: chosen so the world's own bbox-derived
+// The element size under test: chosen so the world's bbox-derived
 // default (kLegLength / 8 = 1.0) differs from it, proving prepare() reads
 // the option rather than always falling back to that default.
 constexpr RtFloat kSizeUnderTest = 2.0f;
 
-// The hole cell (i = 1, j = 0 at kSizeUnderTest's own step of 2): spans
+// The hole cell (i = 1, j = 0 at kSizeUnderTest's step of 2): spans
 // [2, 4] x [0, 2], centred at (3, 1), a cell whose far corner (4, 2) sits
-// well inside the triangle's own hypotenuse (x + y = 8).
+// well inside the triangle's hypotenuse (x + y = 8).
 constexpr RtFloat kHoleCentreS = 3.0f;
 constexpr RtFloat kHoleCentreT = 1.0f;
-constexpr RtFloat kHoleHalfWidth = 0.1f; // under the cell's own side (2) / 8 = 0.25
+constexpr RtFloat kHoleHalfWidth = 0.1f; // under the cell's side (2) / 8 = 0.25
 
 // The corner-variance cell (i = 0, j = 0): spans [0, 2] x [0, 2], no hole.
 constexpr RtFloat kCornerCellS = 1.0f;
@@ -104,12 +104,12 @@ constexpr RtFloat kLightY = 3.0f;
 constexpr RtFloat kLightZ = 4.0f;
 constexpr RtFloat kLightIntensity = 8.0f;
 
-// The comparison's own tolerance: relative, with an absolute floor for a
+// The comparison's tolerance: relative, with an absolute floor for a
 // channel near 0.
 constexpr double kRelativeTol = 1e-6;
 constexpr double kAbsoluteFloor = 1e-9;
 
-// ---- B.9's own fixtures ----
+// ---- Fixtures for the mesh's two cap paths ----
 
 constexpr RtFloat kCapElementSize = 0.5f;
 constexpr RtFloat kThinPolygonLength = 200.0f;
@@ -185,9 +185,9 @@ std::size_t countOccurrences(std::string const& haystack, std::string const& nee
 
 // ---- In-test shaders ----
 
-// Varies with (s, t) so a hit's own albedo depends on where it lands, in
+// Varies with (s, t) so a hit's albedo depends on where it lands, in
 // [kFloorAlbedoBase, kFloorAlbedoBase + slopeS * kLegLength + slopeT *
-// kLegLength] over the floor's own extent -- safely inside [0, 1].
+// kLegLength] over the floor's extent -- safely inside [0, 1].
 class FloorAlbedoShader : public GMANSurfaceShader {
 public:
   GMANColor computeCi(GMANSurfaceEnv const&) const override { return GMANColor(0.0f, 0.0f, 0.0f); }
@@ -209,8 +209,8 @@ private:
   RtFloat rho_;
 };
 
-// B.7: answers 1.5, outside [0, 1] -- a base bsdf() clamps, but an
-// override answering albedo() directly cannot be clamped by that base.
+// Answers 1.5, outside [0, 1]: a base bsdf() clamps, but an override
+// answering albedo() directly cannot be clamped by that base.
 class OutOfRangeAlbedoShader : public GMANSurfaceShader {
 public:
   GMANColor computeCi(GMANSurfaceEnv const&) const override { return GMANColor(0.0f, 0.0f, 0.0f); }
@@ -223,7 +223,7 @@ GMANLight makePointLight(GMANPoint const& position, RtFloat intensity) {
 }
 
 // ---- The main fixture: floor (holed right triangle) + wall (square,
-// sharing the floor's own X leg) + sphere, one point light in front of
+// sharing the floor's X leg) + sphere, one point light in front of
 // the wall (Y > 0). ----
 
 struct MainFixture {
@@ -237,8 +237,8 @@ struct MainFixture {
   MainFixture() : occluder(bvh) {}
 };
 
-// sphereShader lets B.7 swap in an out-of-range answer for the sphere
-// alone, keeping the floor and wall shaders in range.
+// sphereShader swaps in an out-of-range answer for the sphere alone,
+// keeping the floor and wall shaders in range.
 std::unique_ptr<MainFixture> buildMainFixture(FloorAlbedoShader const& floorShader,
                                               ConstantAlbedoShader const& wallShader,
                                               GMANSurfaceShader const& sphereShader, GMANLight const& light) {
@@ -252,10 +252,9 @@ std::unique_ptr<MainFixture> buildMainFixture(FloorAlbedoShader const& floorShad
       GMANPoint(kHoleCentreS + kHoleHalfWidth, kHoleCentreT + kHoleHalfWidth, 0.0f),
       GMANPoint(kHoleCentreS - kHoleHalfWidth, kHoleCentreT + kHoleHalfWidth, 0.0f),
   };
-  // Real "st" (s = x, t = y): plain "P" left every hit's (s, t) at (0, 0)
-  // (GMANRayPolygon's own default), so the floor's albedo never varied by
-  // position at all, and the hole cell's own reflectance lookup could
-  // never be told apart from a wrong one landing on (0, 0) instead.
+  // "st" pins the floor's (s, t) to its object-space (x, y): plain "P"
+  // already defaults there (GMANRayPolygon's resolvePointTexCoords), so
+  // this keeps the mapping explicit instead of relying on that default.
   RtFloat floorP[] = {0.0f, 0.0f, 0.0f, kLegLength, 0.0f, 0.0f, 0.0f, kLegLength, 0.0f};
   RtFloat floorSt[] = {0.0f, 0.0f, kLegLength, 0.0f, 0.0f, kLegLength};
   RtToken floorTokens[] = {RI_P, RI_ST};
@@ -270,7 +269,7 @@ std::unique_ptr<MainFixture> buildMainFixture(FloorAlbedoShader const& floorShad
   fx->world.add(fx->floor);
 
   // Front normal +Y (verified by construction order): shares the floor's
-  // own (0, 0, 0)-(kLegLength, 0, 0) leg, rising to Z = kLegLength.
+  // (0, 0, 0)-(kLegLength, 0, 0) leg, rising to Z = kLegLength.
   std::vector<GMANPoint> const wallOuter = {GMANPoint(0.0f, 0.0f, 0.0f), GMANPoint(0.0f, 0.0f, kLegLength),
                                             GMANPoint(kLegLength, 0.0f, kLegLength), GMANPoint(kLegLength, 0.0f, 0.0f)};
   fx->wall = new GMANRayPolygon(wallOuter, GMANParameterList());
@@ -296,7 +295,7 @@ std::unique_ptr<MainFixture> buildMainFixture(FloorAlbedoShader const& floorShad
 
 // ---- The reference: the same tiered reflectance lookup and bilinear
 // corner sum GMANRadiosityPass itself computes, built from the same
-// public functions it calls, tracking which tier each element's own
+// public functions it calls, tracking which tier each element's
 // reflectance came from. ----
 
 struct TierCounts {
@@ -421,8 +420,8 @@ std::vector<GMANRay> sphereGridRays() {
   return rays;
 }
 
-// Runs every ray in rays through fixture's own BVH, comparing pass's and
-// the reference's own irradiance at each real hit. Updates worstDeviation,
+// Runs every ray in rays through fixture's BVH, comparing pass's and the
+// reference's irradiance at each real hit. Updates worstDeviation,
 // sawNonzero and mismatches; returns the number of hits compared.
 std::size_t compareOverRays(std::vector<GMANRay> const& rays, MainFixture const& fixture, GMANRadiosityPass const& pass,
                             Reference const& ref, double& worstDeviation, bool& sawNonzero, long& mismatches) {
@@ -458,7 +457,7 @@ std::vector<GMANRay> allGridRays() {
 }
 
 // The element whose centre lies within tol of point -- used to find the
-// hole cell and the corner-variance cell by their own geometry.
+// hole cell and the corner-variance cell by their geometry.
 std::size_t findElementNear(GMANRadiosityMesh const& mesh, GMANPoint const& point, RtFloat tol) {
   for (std::size_t e = 0; e < mesh.getElementCount(); ++e) {
     GMANVector const delta(mesh.getElement(e).centre, point);
@@ -557,8 +556,8 @@ void testWallFrontAndBack(GMANRadiosityPass const& pass, Reference const& ref, M
 }
 
 // ---- check 4: with no size set, every answer equals the reference at
-// the world's own bbox-derived default, which differs from the size
-// under test ----
+// the world's bbox-derived default, which differs from the size under
+// test ----
 void testDefaultSizeMatchesReference(MainFixture& fixture) {
   RtFloat expectedDefault = 0;
   {
@@ -598,7 +597,7 @@ void testDefaultSizeMatchesReference(MainFixture& fixture) {
     }
   }
 
-  check(expectedDefault != kSizeUnderTest, "default size: the world's own default differs from the size under test");
+  check(expectedDefault != kSizeUnderTest, "default size: the world's default differs from the size under test");
 
   GMANOptions options; // radiosityElementSize left unset (0)
   GMANRadiosityPass pass;
@@ -760,7 +759,6 @@ void testCapWarnings(MainFixture& fixture) {
   {
     GMANLinearWorldManager world;
     ConstantAlbedoShader const shader(0.5f);
-    GMANLight const light = makePointLight(GMANPoint(0.0f, 0.0f, 100.0f), 0.0);
     for (RtFloat zOffset : {0.0f, 1.0f}) {
       std::vector<GMANPoint> const verts = {
           GMANPoint(0.0f, 0.0f, zOffset), GMANPoint(kThinPolygonLength, 0.0f, zOffset),
@@ -856,8 +854,8 @@ int main() {
 
   return checkSummary("GMANRadiosityPass matches a reference built from the same public functions, interpolates "
                       "bilinearly across an element's four corners, answers each side of a two-sided wall "
-                      "correctly, matches the reference at the world's own default element size, answers black for an "
+                      "correctly, matches the reference at the world's default element size, answers black for an "
                       "unknown primitive, changes nothing during prepare(), answers black after an out-of-range "
-                      "albedo, answers exactly black for a lone convex sphere, and logs the mesh's own cap "
-                      "warning exactly once per prepare()");
+                      "albedo, answers exactly black for a lone convex sphere, and logs the mesh's cap warning "
+                      "exactly once per prepare()");
 }

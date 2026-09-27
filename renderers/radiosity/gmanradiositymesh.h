@@ -155,9 +155,9 @@ public:
   // supported classes, or a quadric singular under its own placement.
   std::size_t getSkippedCount() const { return skippedCount; }
 
-  // Primitives build() diced with nu or nv pinned at kMaxDivisions,
-  // rather than the count maxEdgeLength itself would call for: each face
-  // of a GMANRayPolygonMesh counts as its own primitive here.
+  // Primitives build() diced with nu or nv at kMaxDivisions, whether that
+  // matches what maxEdgeLength would call for exactly or the cap reduced
+  // it: each face of a GMANRayPolygonMesh counts as one primitive here.
   std::size_t getCappedCount() const { return cappedCount; }
 
   bool locate(GMANHit const& hit, GMANRadiosityLocation& location) const;

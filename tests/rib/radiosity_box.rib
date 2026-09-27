@@ -1,6 +1,6 @@
 ## A matte sphere inside a closed, inward-facing box enclosing the camera
 ## too, lit by one point light and no ambient light, naming the radiosity
-## pass: brightens the box's own shadowed side relative to
+## pass: brightens the box's shadowed side relative to
 ## radiosity_box_off.rib, which names no pass. Not third-party.
 Display "radiosity_box.tif" "file" "rgba"
 Format 24 24 1
