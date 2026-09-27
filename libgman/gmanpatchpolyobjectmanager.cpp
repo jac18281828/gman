@@ -608,19 +608,27 @@ void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> co
   }
 }
 
+// One polygon face's own body and vertex chain, handed on as buildFace's
+// out-parameters pass them: body owns nothing here, and its surface holds
+// the face chain.
+struct FaceChains {
+  GMANBody* body;       // the face's body; its surface holds the face chain
+  GMANVertex* vertRoot; // the head of the face's vertex chain
+};
+
 // The tail shared by getRSPolygon and getRSGeneralPolygon: one GMANVertex
 // per entry in vertexLocations, triangulated over ring (which may repeat an
 // entry at a bridge -- triangulateEarClipping's own comment already covers
 // the resulting duplicate position and zero-area corner), each ear-clipped
-// triangle then diced and shaded across its own face (dicePolygonTriangle),
-// linked into a new GMANObject. ring indexes vertexLocations rather than a
-// face's own vertex array, so the two ring slots a bridge duplicates share
-// one GMANVertex and one shaded colour instead of splitting the surface.
-// texCoords is index-aligned with vertexLocations, not with ring.
-GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, const std::vector<RtInt>& ring,
-                               const GMANVector& normalVec, RtInt sides, RtToken orientation,
-                               gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
-                               const std::vector<PolygonVertexTexCoord>& texCoords, RasterProjection const& dicing) {
+// triangle then diced and shaded across its own face (dicePolygonTriangle).
+// ring indexes vertexLocations rather than a face's own vertex array, so the
+// two ring slots a bridge duplicates share one GMANVertex and one shaded
+// colour instead of splitting the surface. texCoords is index-aligned with
+// vertexLocations, not with ring.
+FaceChains buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, const std::vector<RtInt>& ring,
+                              const GMANVector& normalVec, RtInt sides, RtToken orientation,
+                              gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
+                              const std::vector<PolygonVertexTexCoord>& texCoords, RasterProjection const& dicing) {
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
@@ -671,11 +679,7 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
   }
   surface->setFace(faceList.empty() ? NULL : faceList[0]);
 
-  GMANObject* object = new GMANObject();
-  object->setVert(vertices.empty() ? NULL : vertices[0]);
-  object->setBody(body);
-
-  return object;
+  return FaceChains{body, vertices.empty() ? NULL : vertices[0]};
 }
 
 // Whether the ray from ring vertex v toward target enters the ring's
@@ -1071,13 +1075,10 @@ bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vect
     texCoords[i] = pointTexCoords[vertexSlots[i]];
   }
 
-  GMANObject* object = buildPolygonObject(vertexLocations, ring, normalVec, sides, orientation, appearance,
-                                          cameraToWorld, texCoords, dicing);
-  body = object->getBody();
-  vertRoot = object->getVert();
-  object->setBody(NULL);
-  object->setVert(NULL);
-  delete object;
+  FaceChains const chains = buildPolygonObject(vertexLocations, ring, normalVec, sides, orientation, appearance,
+                                               cameraToWorld, texCoords, dicing);
+  body = chains.body;
+  vertRoot = chains.vertRoot;
   return true;
 }
 
