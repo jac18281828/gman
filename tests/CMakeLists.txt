@@ -2632,15 +2632,25 @@ set_tests_properties(bsdf PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# gman::BSDF's GGX lobe: a double-precision reference, reciprocity, energy
-# by quadrature and by sample(), sample() against pdf() by histogram,
-# sidedness, clamping, capacity, a two-lobe mixture and no heap allocation.
-# Links raybvhallocator.cpp as bsdf's own test does.
+# gman::BSDF's GGX lobe: a double-precision reference, reciprocity,
+# sidedness, the eval underflow guard, clamping, capacity and no heap
+# allocation. Links raybvhallocator.cpp as bsdf's own test does.
 add_executable(gman_bsdfggx bsdfggx_test.cpp raybvhallocator.cpp)
 target_link_libraries(gman_bsdfggx PRIVATE gman_core)
 
 add_test(NAME bsdfggx COMMAND gman_bsdfggx)
 set_tests_properties(bsdfggx PROPERTIES
+  LABELS unit
+  TIMEOUT 60)
+
+# gman::BSDF's GGX lobe, the statistics bsdfggx split off to stay under its
+# time bound: energy by quadrature and by sample(), sample() against pdf()
+# by histogram, and a two-lobe mixture.
+add_executable(gman_bsdfggxstats bsdfggxstats_test.cpp)
+target_link_libraries(gman_bsdfggxstats PRIVATE gman_core)
+
+add_test(NAME bsdfggxstats COMMAND gman_bsdfggxstats)
+set_tests_properties(bsdfggxstats PROPERTIES
   LABELS unit
   TIMEOUT 60)
 
