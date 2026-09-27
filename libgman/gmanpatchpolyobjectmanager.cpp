@@ -492,6 +492,31 @@ std::vector<PolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParamete
 // starts right after every shorter row before it.
 RtInt dicedGridIndex(RtInt a, RtInt b, RtInt n) { return a * (n + 1) - a * (a - 1) / 2 + b; }
 
+// Shades vertex at its own stored location (the caller sets that first)
+// with normal and (u, v, s, t), through vertexSurfacePoint and gman::shade.
+// Stores the result's Ci and Oi (as a GMANAlpha) and touches nothing else.
+void shadeVertex(GMANVertex& vertex, GMANNormal const& normal, RtFloat u, RtFloat v, RtFloat s, RtFloat t,
+                 gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld) {
+  gman::SurfacePoint const point = vertexSurfacePoint(vertex.getLocation(), normal, u, v, s, t);
+  gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
+  vertex.setColor(shading.Ci);
+  vertex.setColor(vertexAlpha(shading.Oi));
+}
+
+// Appends one new GMANFace over corners on surface to faces, after
+// calcNormal(), setSides(sides) and setOrientation(orientation), in that
+// order. Contrast appendFace: this adds a single face to a face list;
+// appendFace joins a whole face's already-built body and vertex chains onto
+// a mesh.
+void addFace(std::vector<GMANFace*>& faces, GMANVertex* corners[GMAN_NFACE_VERTS], GMANSurface* surface, RtInt sides,
+             RtToken orientation) {
+  GMANFace* face = new GMANFace(corners, surface);
+  face->calcNormal();
+  face->setSides(sides);
+  face->setOrientation(orientation);
+  faces.push_back(face);
+}
+
 // One new, freshly shaded grid vertex at barycentric weights (w0, w1, w2)
 // against a diced triangle's own three corners -- P, u, v, s and t each the
 // same affine combination of those three corners' own values. The shading
@@ -510,10 +535,7 @@ GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
   const RtFloat v = tc0.v * w0 + tc1.v * w1 + tc2.v * w2;
   const RtFloat s = tc0.s * w0 + tc1.s * w1 + tc2.s * w2;
   const RtFloat t = tc0.t * w0 + tc1.t * w1 + tc2.t * w2;
-  gman::SurfacePoint const point = vertexSurfacePoint(vertex->getLocation(), normal, u, v, s, t);
-  gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
-  vertex->setColor(shading.Ci);
-  vertex->setColor(vertexAlpha(shading.Oi));
+  shadeVertex(*vertex, normal, u, v, s, t, appearance, cameraToWorld);
   return vertex;
 }
 
@@ -572,11 +594,7 @@ void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> co
       up[1] = grid[dicedGridIndex(a + 1, b, n)];
       up[2] = grid[dicedGridIndex(a, b + 1, n)];
       up[3] = up[2];
-      GMANFace* upFace = new GMANFace(up, surface);
-      upFace->calcNormal();
-      upFace->setSides(sides);
-      upFace->setOrientation(orientation);
-      faceList.push_back(upFace);
+      addFace(faceList, up, surface, sides, orientation);
 
       if (b < n - a - 1) {
         GMANVertex* down[4];
@@ -584,11 +602,7 @@ void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> co
         down[1] = grid[dicedGridIndex(a + 1, b + 1, n)];
         down[2] = grid[dicedGridIndex(a, b + 1, n)];
         down[3] = down[2];
-        GMANFace* downFace = new GMANFace(down, surface);
-        downFace->calcNormal();
-        downFace->setSides(sides);
-        downFace->setOrientation(orientation);
-        faceList.push_back(downFace);
+        addFace(faceList, down, surface, sides, orientation);
       }
     }
   }
@@ -621,10 +635,7 @@ GMANObject* buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, co
     vertices[i]->setNormal(normalVec);
 
     const PolygonVertexTexCoord& tc = texCoords[i];
-    gman::SurfacePoint const point = vertexSurfacePoint(vertexLocations[i], normal, tc.u, tc.v, tc.s, tc.t);
-    gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
-    vertices[i]->setColor(shading.Ci);
-    vertices[i]->setColor(vertexAlpha(shading.Oi));
+    shadeVertex(*vertices[i], normal, tc.u, tc.v, tc.s, tc.t, appearance, cameraToWorld);
   }
 
   std::vector<GMANPoint> ringPoints(ring.size());
@@ -1547,7 +1558,8 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
 
   std::vector<GMANVertex*> vertices((kParametricDiceU + 1) * (kParametricDiceV + 1));
-  std::vector<GMANFace*> faces(kParametricDiceU * kParametricDiceV);
+  std::vector<GMANFace*> faces;
+  faces.reserve((std::size_t)kParametricDiceU * (std::size_t)kParametricDiceV);
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
   GMANSurface* surface = new GMANSurface(body);
   body->setSurface(surface);
@@ -1575,10 +1587,7 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
       GMANNormal shadingNormal(normal.getX(), normal.getY(), normal.getZ());
       RtFloat s = bilerpCorner(u, v, corners.s1, corners.s2, corners.s3, corners.s4);
       RtFloat texT = bilerpCorner(u, v, corners.t1, corners.t2, corners.t3, corners.t4);
-      gman::SurfacePoint const point = vertexSurfacePoint(location, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT);
-      gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
-      vertex->setColor(shading.Ci);
-      vertex->setColor(vertexAlpha(shading.Oi));
+      shadeVertex(*vertex, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT, appearance, cameraToWorld);
     }
   }
 
@@ -1598,16 +1607,13 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
       faceVertices[1] = vertices[(kParametricDiceU + 1) * i + (j + 1)];
       faceVertices[2] = vertices[(kParametricDiceU + 1) * (i + 1) + (j + 1)];
       faceVertices[3] = vertices[(kParametricDiceU + 1) * (i + 1) + j];
-      faces[kParametricDiceU * i + j] = new GMANFace(faceVertices, surface);
       // Geometric normal, computed from the already-transformed (camera
       // space) vertices: cross(e1', e2') for e'=e*M is proportional to
       // (e1 x e2) transformed by M's inverse transpose, so this needs no
       // separate normal transform. RiSides/RiOrientation travel with the
       // face so visible() can answer without depending on renderer-global
       // state that may differ across attribute blocks.
-      faces[kParametricDiceU * i + j]->calcNormal();
-      faces[kParametricDiceU * i + j]->setSides(sides);
-      faces[kParametricDiceU * i + j]->setOrientation(orientation);
+      addFace(faces, faceVertices, surface, sides, orientation);
     }
   }
 
