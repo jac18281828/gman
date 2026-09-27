@@ -116,9 +116,7 @@ gman::BSDF paintedplastic::bsdf(GMANSurfaceEnv const& se) const {
                                             kd * se.Cs.getBlue() * tex.getBlue()));
   GMANColor const s =
       clampAlbedo(GMANColor(ks * specularcolor.getRed(), ks * specularcolor.getGreen(), ks * specularcolor.getBlue()));
-  RtFloat const k = ggxHeadroom(d, s);
-  closure.addLambert(d);
-  closure.addGGX(GMANColor(k * s.getRed(), k * s.getGreen(), k * s.getBlue()), alphaFromRoughness(roughness));
+  addPlasticLobes(closure, d, s, roughness);
   return closure;
 }
 

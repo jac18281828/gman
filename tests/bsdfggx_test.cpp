@@ -29,13 +29,15 @@
  * dimension per random number, so its 5-sigma bound uses the real standard
  * error. Two deterministic quadratures, independent of sample() and
  * pdf(), stand in for exact integrals: a directional-albedo estimate over
- * wo's whole hemisphere (energy) and a per-bin mass integral of the
- * closure's own pdf (the sampling-matches-pdf histogram). Both draw their
- * nodes from GGX's own distribution of visible normals (Heitz, "Sampling
- * the GGX Distribution of Visible Normals", JCGT 7(4), 2018) -- a
- * reimplementation local to this file, apart from libgman -- since a
- * uniform grid resolves the lobe far too slowly near a grazing wo; each
- * shows its own convergence by doubling resolution.
+ * wo's whole hemisphere (energy), which draws its nodes from GGX's own
+ * distribution of visible normals (Heitz, "Sampling the GGX Distribution
+ * of Visible Normals", JCGT 7(4), 2018, a reimplementation local to this
+ * file, apart from libgman) since a uniform grid resolves the lobe far
+ * too slowly near a grazing wo; and a per-bin mass integral of the
+ * closure's own pdf (the sampling-matches-pdf histogram), which
+ * sub-samples each bin on a plain (cosTheta, phi) grid, denser only for
+ * the 89-degree wo. Each quadrature shows its own convergence by doubling
+ * resolution.
  *
  * raybvhallocator.cpp's counting operator new brackets the allocation
  * check, as bsdf_test.cpp's does.
@@ -143,7 +145,9 @@ RtFloat uniform(std::uint32_t index, std::uint32_t dimension) {
 }
 
 // Dimension bases, one block per statistical draw so no two random numbers
-// in this file share one.
+// in this file share one, save A.7's dim: reused deliberately across its
+// lobe-selection, histogram and Monte Carlo passes, so all three read the
+// very same draws.
 constexpr std::uint32_t kDimReferencePairs = 0u;  // 3 alphas * 4
 constexpr std::uint32_t kDimReciprocity = 16u;    // 4
 constexpr std::uint32_t kDimEnergyMC = 24u;       // 3 alphas * 4 wo * 2
@@ -717,6 +721,19 @@ void checkSides() {
   check(grazingOk, "sides: wo in the tangent plane answers pdf 0 from 256 draws");
 }
 
+// Both cosines underflowing before Lambda diverges gives G2's reciprocal a
+// 0 numerator over a 0 denominator; eval answers black rather than NaN.
+void checkUnderflowGuard() {
+  gman::BSDF const closure = singleGgx(kAxisNormal, kR, kReferenceAlpha);
+  GMANVector wo(1.0f, 0.0f, 1e-30f);
+  wo.normalize();
+  GMANVector wi(0.0f, 1.0f, 1e-30f);
+  wi.normalize();
+  GMANColor const f = closure.eval(wo, wi);
+  bool const finite = std::isfinite(f.getRed()) && std::isfinite(f.getGreen()) && std::isfinite(f.getBlue());
+  check(finite && colorExactly(f, kBlack), "underflow: eval at cosThetaO and cosThetaI of 1e-30 is finite and black");
+}
+
 // Clamps, failed draws and capacity.
 void checkClampsAndCapacity() {
   RtFloat const nan = std::nanf("");
@@ -864,6 +881,15 @@ void checkTwoLobes() {
   }
 }
 
+void checkAllocationDelta(bool holds, char const* message) {
+#if GMAN_ADDRESS_SANITIZED
+  (void)holds;
+  std::printf("skip: %s (ASan-built)\n", message);
+#else
+  check(holds, message);
+#endif
+}
+
 // No heap allocation.
 void checkNoAllocation() {
   gman::BSDF full(n0());
@@ -898,11 +924,7 @@ void checkNoAllocation() {
   long const after = raybvhAllocationCount();
 
   check(sink >= 0.0, "the counted calls answered");
-#if GMAN_ADDRESS_SANITIZED
-  std::printf("skip: no-allocation check (ASan-built)\n");
-#else
-  check(after == before, "1000 calls each of eval, pdf and sample on a full closure allocate nothing");
-#endif
+  checkAllocationDelta(after == before, "1000 calls each of eval, pdf and sample on a full closure allocate nothing");
 }
 
 } // namespace
@@ -913,6 +935,7 @@ int main() {
   checkEnergy();
   checkSamplingMatchesPdf();
   checkSides();
+  checkUnderflowGuard();
   checkClampsAndCapacity();
   checkTwoLobes();
   checkNoAllocation();

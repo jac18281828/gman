@@ -99,16 +99,14 @@ GMANColor plastic::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 // A Lambert lobe of Kd*Cs plus a GGX lobe of the specular headroom that
 // leaves: the two never exceed 1 combined, so the highlight vanishes
 // rather than break energy conservation once Kd*Cs alone reaches 1 in a
-// channel. albedo (the base default's bsdf(se).rhoD()) therefore still
-// answers Kd*Cs exactly, unaffected by the specular term.
+// channel. albedo (the base default's bsdf(se).rhoD()) answers Kd*Cs
+// exactly, unaffected by the specular term.
 gman::BSDF plastic::bsdf(GMANSurfaceEnv const& se) const {
   gman::BSDF closure(se.N);
   GMANColor const d = clampAlbedo(GMANColor(kd * se.Cs.getRed(), kd * se.Cs.getGreen(), kd * se.Cs.getBlue()));
   GMANColor const s =
       clampAlbedo(GMANColor(ks * specularcolor.getRed(), ks * specularcolor.getGreen(), ks * specularcolor.getBlue()));
-  RtFloat const k = ggxHeadroom(d, s);
-  closure.addLambert(d);
-  closure.addGGX(GMANColor(k * s.getRed(), k * s.getGreen(), k * s.getBlue()), alphaFromRoughness(roughness));
+  addPlasticLobes(closure, d, s, roughness);
   return closure;
 }
 

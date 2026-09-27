@@ -94,8 +94,9 @@ GMANVector lambertSample(TangentFrame const& frame, RtFloat cosThetaO, RtFloat u
 // The height-correlated Smith Lambda of a direction expressed in the
 // lobe's own local frame (+z the flipped normal): tan^2(theta) from the
 // local x/y and z components directly, rather than through an explicit
-// tangent, so a grazing direction (z near 0) never divides by a value
-// smaller than its own square.
+// tangent. At extreme grazing incidence the squared cosine underflows
+// before the cosine itself does, sending Lambda to infinity; ggxEval
+// guards the resulting zero G2.
 RtFloat ggxLambda(RtFloat alpha, GMANVector const& local) {
   RtFloat const cosTheta = local.getZ();
   RtFloat const sinTheta2 = local.getX() * local.getX() + local.getY() * local.getY();
@@ -105,13 +106,13 @@ RtFloat ggxLambda(RtFloat alpha, GMANVector const& local) {
 
 // D(h) and both directions' Lambda, shared by ggxEval and ggxPdf. woLocal
 // and wiLocal are already known to lie strictly above the local horizon.
-struct GgxGeometry {
+struct GGXGeometry {
   RtFloat d;
   RtFloat lambdaO;
   RtFloat lambdaI;
 };
 
-GgxGeometry ggxGeometry(RtFloat alpha, GMANVector const& woLocal, GMANVector const& wiLocal) {
+GGXGeometry ggxGeometry(RtFloat alpha, GMANVector const& woLocal, GMANVector const& wiLocal) {
   GMANVector h = woLocal + wiLocal;
   h.normalize();
   RtFloat const cosThetaH = h.getZ();
@@ -127,8 +128,11 @@ GMANColor ggxEval(Lobe const& lobe, GMANVector const& woLocal, GMANVector const&
   if (!(cosThetaO > 0.0f) || !(cosThetaI > 0.0f)) {
     return GMANColor(0.0f, 0.0f, 0.0f);
   }
-  GgxGeometry const g = ggxGeometry(lobe.alpha, woLocal, wiLocal);
+  GGXGeometry const g = ggxGeometry(lobe.alpha, woLocal, wiLocal);
   RtFloat const g2 = 1.0f / (1.0f + g.lambdaO + g.lambdaI);
+  if (!(g2 > 0.0f)) {
+    return GMANColor(0.0f, 0.0f, 0.0f);
+  }
   RtFloat const factor = g.d * g2 / (4.0f * cosThetaO * cosThetaI);
   return GMANColor(lobe.weight.getRed() * factor, lobe.weight.getGreen() * factor, lobe.weight.getBlue() * factor);
 }
@@ -139,7 +143,7 @@ RtFloat ggxPdf(Lobe const& lobe, GMANVector const& woLocal, GMANVector const& wi
   if (!(cosThetaO > 0.0f) || !(cosThetaI > 0.0f)) {
     return 0.0f;
   }
-  GgxGeometry const g = ggxGeometry(lobe.alpha, woLocal, wiLocal);
+  GGXGeometry const g = ggxGeometry(lobe.alpha, woLocal, wiLocal);
   RtFloat const g1O = 1.0f / (1.0f + g.lambdaO);
   return g1O * g.d / (4.0f * cosThetaO);
 }
@@ -173,7 +177,7 @@ GMANVector ggxVisibleNormal(GMANVector const& woLocal, RtFloat alpha, RtFloat u1
 }
 
 // wo reflected about a visible-normal draw, in world space; may land below
-// wiLocal's own horizon, which BSDF::sample's generic side test catches.
+// wo's own horizon, which BSDF::sample's generic side test catches.
 GMANVector ggxSample(TangentFrame const& frame, GMANVector const& woLocal, RtFloat alpha, RtFloat u1, RtFloat u2) {
   GMANVector const hLocal = ggxVisibleNormal(woLocal, alpha, u1, u2);
   RtFloat const woDotH = woLocal.dot(hLocal);

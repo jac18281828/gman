@@ -192,8 +192,8 @@ RtFloat alphaFromRoughness(RtFloat roughness) {
   if (!(roughness > 0.0f)) {
     return 0.0f;
   }
-  double const halfLife = std::pow(4.0, -(double)roughness);
-  return (RtFloat)std::sqrt((1.0 - halfLife) / (std::sqrt(2.0) - halfLife));
+  double const cosSquaredHalfMax = std::pow(4.0, -(double)roughness);
+  return (RtFloat)std::sqrt((1.0 - cosSquaredHalfMax) / (std::sqrt(2.0) - cosSquaredHalfMax));
 }
 
 bool lobeNear(gman::Lobe const& lobe, gman::LobeKind kind, GMANColor const& weight, RtFloat alpha, double tol) {
@@ -275,8 +275,8 @@ void checkDefault() {
         "default: bsdf at Cs = (1.4, 0.2, -0.3) is one lambert lobe of weight exactly (1, 0.2, 0)");
   check(colorExactly(plain.albedo(se), kOutOfRangeClamped), "default: albedo at Cs = (1.4, 0.2, -0.3) is (1, 0.2, 0)");
 
-  // mirror stands in for a plugin without a bsdf override: plastic, once
-  // it had one, would no longer prove this case.
+  // mirror stands in for a plugin without a bsdf override; plastic holds
+  // one now, so it no longer proves this case.
   auto const mirror = loadSurface("mirror", GMANParameterList());
   check(mirror != nullptr, "default: mirror loads through setSurface");
   if (mirror != nullptr) {
@@ -415,6 +415,10 @@ void checkPlasticHeadroom() {
   check(namedOk, "plastic headroom: the two named cases' lambert and ggx weights match within 1e-6");
 
   auto const saturated = loadSurface("plastic", plasticParams(2.0f, 0.5f, kDefaultSpecularColor, kDefaultRoughness));
+  check(saturated != nullptr, "plastic headroom: the Kd = 2 saturation case loads through setSurface");
+  if (saturated == nullptr) {
+    return;
+  }
   gman::BSDF const saturatedClosure = saturated->bsdf(envWith(kHighCs, kOpaqueOs));
   check(colorExactly(saturatedClosure.lobe(0).weight, kWhite) && colorExactly(saturatedClosure.lobe(1).weight, kBlack),
         "plastic headroom: Kd = 2 at Cs = 0.9 clamps lambert to exactly (1, 1, 1) and zeroes ggx exactly");
@@ -451,6 +455,15 @@ void checkPlasticHeadroom() {
 // paintedplastic: an empty texturename degrades to plastic, and a real
 // texture sets the headroom texel by texel.
 void checkPaintedPlasticGGX() {
+  auto const paintedAtDefaults = loadSurface(
+      "paintedplastic", paintedplasticParams(0.5f, 0.5f, kDefaultSpecularColor, kDefaultRoughness, std::string()));
+  auto const plasticAtDefaults = loadSurface("plastic", plasticParams());
+  check(paintedAtDefaults != nullptr && plasticAtDefaults != nullptr &&
+            sameClosureWithAlpha(paintedAtDefaults->bsdf(envWith(kCs, kOpaqueOs)),
+                                 plasticAtDefaults->bsdf(envWith(kCs, kOpaqueOs))),
+        "paintedplastic: with texturename empty at plastic's default parameters, its closure equals plastic's lobe "
+        "for lobe, in kind, weight and alpha");
+
   RtFloat const kd = 0.8f;
   GMANColor const cs(1.0f, 0.0f, 0.0f);
   RtFloat const ks = 0.5f;

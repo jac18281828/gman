@@ -25,6 +25,7 @@
 
 #include <cmath>
 
+#include "gmanbsdf.h"
 #include "gmancolor.h"
 #include "gmandictionary.h"
 #include "gmanerror.h"
@@ -91,8 +92,8 @@ inline RtFloat alphaFromRoughness(RtFloat roughness) {
   if (!(roughness > (RtFloat)0.0)) {
     return (RtFloat)0.0;
   }
-  double const halfLife = std::pow(4.0, -(double)roughness);
-  return (RtFloat)std::sqrt((1.0 - halfLife) / (std::sqrt(2.0) - halfLife));
+  double const cosSquaredHalfMax = std::pow(4.0, -(double)roughness);
+  return (RtFloat)std::sqrt((1.0 - cosSquaredHalfMax) / (std::sqrt(2.0) - cosSquaredHalfMax));
 }
 
 // The scalar plastic's and paintedplastic's GGX lobe shares across
@@ -110,6 +111,15 @@ inline RtFloat ggxHeadroom(GMANColor const& diffuse, GMANColor const& specular) 
     }
   }
   return k;
+}
+
+// plastic's and paintedplastic's closure: a Lambert lobe of d plus a GGX
+// lobe of s scaled by the headroom d leaves it, at roughness's alpha. d
+// and s are each already clamped to [0, 1].
+inline void addPlasticLobes(gman::BSDF& closure, GMANColor const& d, GMANColor const& s, RtFloat roughness) {
+  RtFloat const k = ggxHeadroom(d, s);
+  closure.addLambert(d);
+  closure.addGGX(GMANColor(k * s.getRed(), k * s.getGreen(), k * s.getBlue()), alphaFromRoughness(roughness));
 }
 
 } // namespace gmanshader
