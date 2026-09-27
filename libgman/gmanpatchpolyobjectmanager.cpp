@@ -684,42 +684,45 @@ bool inInteriorWedge(const GMANPoint& v, const GMANPoint& prev, const GMANPoint&
   return convex ? (leftOfIncoming && leftOfOutgoing) : (leftOfIncoming || leftOfOutgoing);
 }
 
-// Bridges every non-degenerate loop in loops[1..] into loops[0], the outer
-// boundary, by Eberly's method ("Triangulation by Ear Clipping", Geometric
-// Tools S3-4): each hole becomes a doubled edge into the boundary (or an
-// already-bridged hole) it cuts out, so triangulateEarClipping needs no
-// change to consume the result. Judged entirely in the outer loop's own
-// (u, v) frame -- u the direction of its first edge of non-zero length, v
-// = normal x u -- so the bridges a rotated or rescaled placement of the
-// same polygon produces are the same bridges, not an artifact of whichever
-// way a fixed world axis happened to point.
-//
-// Free of GMANOptions/GMANAttributes/GMANParameterList/GMANTransform, and
-// nothing here depends on the object manager despite living in this file.
-//
-// loopSlots mirrors loops' own shape, one flat "P"-order index per point --
-// plain provenance, not a texture coordinate, which is what keeps this
-// function free of GMANParameterList (see above). loops[0] must already be
-// checked non-degenerate by the caller. On return, vertexPositions holds one
-// entry per kept vertex of every kept loop -- loops[0] first, then each
-// successfully bridged hole, each still in its own loop's "P" order -- ring
-// is the merged boundary as indices into vertexPositions, and vertexSlots
-// (index-aligned with vertexPositions) carries each kept vertex's original
-// loopSlots entry, since bridging commits holes in descending-rightmostU
-// order, not input order.
-void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::vector<std::vector<RtInt>>& loopSlots,
-                 const GMANVector& normalVec, RtFloat outerBboxSide, std::vector<GMANPoint>& vertexPositions,
-                 std::vector<RtInt>& vertexSlots, std::vector<RtInt>& ring) {
-  const std::vector<GMANPoint>& outer = loops[0];
+// The outer loop's own (u, v) frame every bridging computation below is
+// judged in: origin the outer loop's own first vertex, uDir the direction
+// of its first edge of non-zero length (or, failing that, its longest
+// edge), vDir = normal x uDir. projU and projV give a point's own
+// coordinate along each axis, measured from origin -- so the bridges a
+// rotated or rescaled placement of the same polygon produces are the same
+// bridges, not an artifact of whichever way a fixed world axis happened to
+// point.
+struct PlanarFrame {
+  GMANPoint origin;
+  GMANVector uDir;
+  GMANVector vDir;
+  RtFloat projU(GMANPoint const& pt) const { return GMANVector(origin, pt).dot(uDir); }
+  RtFloat projV(GMANPoint const& pt) const { return GMANVector(origin, pt).dot(vDir); }
+};
 
-  // u is the first edge of non-zero length, so the frame rotates with the
-  // polygon rather than sitting on a fixed world axis a rotated placement
-  // would then bridge differently. The longest edge seen is kept as a
-  // fallback only for an outer loop whose every edge falls under the
-  // tolerance floor relative to its own bounding box -- unreachable once
-  // the caller's own degeneracy guard has passed, since that guard already
-  // requires a non-negligible area, but cheap insurance against a zero
-  // uDir all the same.
+// A hole's own points stay in "P" order until it is actually bridged (see
+// spliceHole): assigning ids and appending to vertexPositions before
+// knowing whether the hole's ray meets the ring at all would strand an
+// unused GMANVertex for a dropped hole -- one no triangle ever references,
+// failing the coverage property every kept vertex must satisfy.
+struct Hole {
+  std::vector<GMANPoint> points;
+  std::vector<RtInt> slots;
+  bool reversed;
+  RtInt rightmostLocal;
+  RtFloat rightmostU;
+  RtInt loopIndex;
+};
+
+// The outer loop's own frame: uDir is the first edge of non-zero length, so
+// the frame rotates with the polygon rather than sitting on a fixed world
+// axis a rotated placement would then bridge differently. The longest edge
+// seen is kept as a fallback only for an outer loop whose every edge falls
+// under the tolerance floor relative to its own bounding box --
+// unreachable once the caller's own degeneracy guard has passed, since
+// that guard already requires a non-negligible area, but cheap insurance
+// against a zero uDir all the same.
+PlanarFrame outerFrame(std::vector<GMANPoint> const& outer, GMANVector const& normalVec, RtFloat outerBboxSide) {
   GMANVector uDir;
   bool foundEdge = false;
   RtFloat longestEdge = (RtFloat)0.0;
@@ -739,33 +742,17 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
     uDir /= longestEdge;
   }
   GMANVector vDir = normalVec.cross(uDir);
-  const GMANPoint& origin = outer[0];
+  return PlanarFrame{outer[0], uDir, vDir};
+}
 
-  auto projU = [&](const GMANPoint& pt) { return GMANVector(origin, pt).dot(uDir); };
-  auto projV = [&](const GMANPoint& pt) { return GMANVector(origin, pt).dot(vDir); };
-
-  // Outer vertices keep ids 0..outer.size()-1, in "P" order -- the mapping
-  // getRSPolygon's own vertex chain already relies on when nloops == 1.
-  vertexPositions = outer;
-  vertexSlots = loopSlots[0];
-  ring.resize(outer.size());
-  for (std::size_t i = 0; i < outer.size(); i++) {
-    ring[i] = (RtInt)i;
-  }
-
-  // A hole's own points stay in "P" order until it is actually bridged (see
-  // below): assigning ids and appending to vertexPositions before knowing
-  // whether the hole's ray meets the ring at all would strand an unused
-  // GMANVertex for a dropped hole -- one no triangle ever references,
-  // failing the coverage property every kept vertex must satisfy.
-  struct Hole {
-    std::vector<GMANPoint> points;
-    std::vector<RtInt> slots;
-    bool reversed;
-    RtInt rightmostLocal;
-    RtFloat rightmostU;
-    RtInt loopIndex;
-  };
+// One Hole for each loop after loops[0] that gman::isDegeneratePolygon
+// does not reject, sorted by descending rightmostU (rule 1: a ray cast
+// from a not-yet-bridged hole's rightmost vertex can then only meet the
+// boundary or a hole already bridged -- never one still to come, which it
+// could otherwise cross), ties by ascending loopIndex.
+std::vector<Hole> collectHoles(std::vector<std::vector<GMANPoint>> const& loops,
+                               std::vector<std::vector<RtInt>> const& loopSlots, GMANVector const& normalVec,
+                               PlanarFrame const& frame) {
   std::vector<Hole> holes;
 
   for (std::size_t loopIndex = 1; loopIndex < loops.size(); loopIndex++) {
@@ -785,9 +772,9 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
     hole.reversed = holeNewell.dot(normalVec) > (RtFloat)0.0;
 
     hole.rightmostLocal = 0;
-    hole.rightmostU = projU(loop[0]);
+    hole.rightmostU = frame.projU(loop[0]);
     for (std::size_t j = 1; j < loop.size(); j++) {
-      RtFloat u = projU(loop[j]);
+      RtFloat u = frame.projU(loop[j]);
       if (u > hole.rightmostU) {
         hole.rightmostU = u;
         hole.rightmostLocal = (RtInt)j;
@@ -796,152 +783,232 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
     holes.push_back(hole);
   }
 
-  // Rule 1: descending largest u, so a ray cast from a not-yet-bridged
-  // hole's rightmost vertex can only meet the boundary or a hole already
-  // bridged -- never one still to come, which it could otherwise cross.
   std::sort(holes.begin(), holes.end(), [](const Hole& a, const Hole& b) {
     if (a.rightmostU != b.rightmostU) {
       return a.rightmostU > b.rightmostU;
     }
     return a.loopIndex < b.loopIndex;
   });
+  return holes;
+}
 
-  for (const Hole& hole : holes) {
-    const RtInt n = (RtInt)hole.points.size();
-    const GMANPoint& M = hole.points[hole.rightmostLocal];
-    const RtFloat mu = projU(M);
-    const RtFloat mv = projV(M);
-
-    // Rule 2: the nearest ring edge the +u ray from M crosses.
-    RtInt edgeStart = -1;
-    RtFloat nearestU = 0;
-    const RtInt ringSize = (RtInt)ring.size();
-    for (RtInt e = 0; e < ringSize; e++) {
-      const GMANPoint& a = vertexPositions[ring[e]];
-      const GMANPoint& b = vertexPositions[ring[(e + 1) % ringSize]];
-      RtFloat av = projV(a), bv = projV(b);
-      if ((av > mv) == (bv > mv)) {
-        continue; // does not cross the ray's line
-      }
-      RtFloat au = projU(a), bu = projU(b);
-      RtFloat crossU = au + (mv - av) / (bv - av) * (bu - au);
-      if (crossU <= mu) {
-        continue; // behind the ray's origin
-      }
-      if (edgeStart < 0 || crossU < nearestU) {
-        edgeStart = e;
-        nearestU = crossU;
-      }
+// Rule 2: the ring position e whose edge, ring[e] to ring[(e + 1) %
+// size], the +u ray from m crosses nearest -- the smallest u strictly
+// greater than m's own. -1 when the ray crosses no ring edge.
+RtInt nearestCrossedEdge(std::vector<GMANPoint> const& vertexPositions, std::vector<RtInt> const& ring,
+                         PlanarFrame const& frame, GMANPoint const& m) {
+  const RtFloat mu = frame.projU(m);
+  const RtFloat mv = frame.projV(m);
+  RtInt edgeStart = -1;
+  RtFloat nearestU = 0;
+  const RtInt ringSize = (RtInt)ring.size();
+  for (RtInt e = 0; e < ringSize; e++) {
+    const GMANPoint& a = vertexPositions[ring[e]];
+    const GMANPoint& b = vertexPositions[ring[(e + 1) % ringSize]];
+    RtFloat av = frame.projV(a), bv = frame.projV(b);
+    if ((av > mv) == (bv > mv)) {
+      continue; // does not cross the ray's line
     }
+    RtFloat au = frame.projU(a), bu = frame.projU(b);
+    RtFloat crossU = au + (mv - av) / (bv - av) * (bu - au);
+    if (crossU <= mu) {
+      continue; // behind the ray's origin
+    }
+    if (edgeStart < 0 || crossU < nearestU) {
+      edgeStart = e;
+      nearestU = crossU;
+    }
+  }
+  return edgeStart;
+}
+
+// The vertex id, an index into vertexPositions, that m bridges to, given
+// the ring edge (edgeStart) its +u ray crosses. When the crossing point
+// lies within kTriangulationTolerance * outerBboxSide of that edge's
+// start, then of its end, that endpoint. Otherwise the reflex ring vertex
+// inside triangle (m, crossing point, P) -- the crossed edge's own
+// endpoints excluded -- with the largest cosine to uDir, the nearer on an
+// equal cosine: bridging straight to P past such a vertex would cross it.
+// Otherwise P itself: the crossed edge's endpoint with the larger u, the
+// end on a tie.
+RtInt chooseBridgeTarget(std::vector<GMANPoint> const& vertexPositions, std::vector<RtInt> const& ring, RtInt edgeStart,
+                         GMANPoint const& m, PlanarFrame const& frame, GMANVector const& normalVec,
+                         RtFloat outerBboxSide) {
+  const RtInt ringSize = (RtInt)ring.size();
+  const RtInt aId = ring[edgeStart];
+  const RtInt bId = ring[(edgeStart + 1) % ringSize];
+  const GMANPoint& a = vertexPositions[aId];
+  const GMANPoint& b = vertexPositions[bId];
+  const RtInt pId = (frame.projU(a) > frame.projU(b)) ? aId : bId;
+  const RtFloat mv = frame.projV(m);
+  const RtFloat tParam = (mv - frame.projV(a)) / (frame.projV(b) - frame.projV(a));
+  const GMANPoint iPoint = a + (GMANPoint)(GMANVector(a, b) * tParam);
+
+  const RtFloat coincideTol = kTriangulationTolerance * outerBboxSide;
+  GMANVector distToA(iPoint, a);
+  GMANVector distToB(iPoint, b);
+  if (distToA.magnitude() <= coincideTol) {
+    return aId;
+  }
+  if (distToB.magnitude() <= coincideTol) {
+    return bId;
+  }
+
+  const GMANPoint& pPoint = vertexPositions[pId];
+  RtInt best = -1;
+  RtFloat bestCos = 0;
+  RtFloat bestDist = 0;
+  for (RtInt e = 0; e < ringSize; e++) {
+    RtInt vId = ring[e];
+    if (vId == aId || vId == bId) {
+      continue; // the crossed edge's own endpoints, already considered
+    }
+    const GMANPoint& v = vertexPositions[vId];
+    const GMANPoint& prev = vertexPositions[ring[(e + ringSize - 1) % ringSize]];
+    const GMANPoint& next = vertexPositions[ring[(e + 1) % ringSize]];
+    if (turnOrientation(prev, v, next, normalVec) >= -kTriangulationTolerance) {
+      continue; // only a reflex vertex can lie inside a visibility ear
+    }
+    if (!pointInTriangle(m, iPoint, pPoint, v, normalVec)) {
+      continue;
+    }
+    GMANVector toV(m, v);
+    RtFloat dist = toV.magnitude();
+    if (dist == (RtFloat)0.0) {
+      continue;
+    }
+    RtFloat cosAngle = toV.dot(frame.uDir) / dist;
+    if (best < 0 || cosAngle > bestCos || (cosAngle == bestCos && dist < bestDist)) {
+      best = vId;
+      bestCos = cosAngle;
+      bestDist = dist;
+    }
+  }
+  return (best >= 0) ? best : pId;
+}
+
+// Rule 3: target may already occur twice in the ring (a previous hole's
+// own bridge point); the wrong occurrence's wedge does not contain m, and
+// bridging to it would cross into the wrong lobe. Returns the first ring
+// position holding target whose interior wedge (inInteriorWedge) contains
+// m, or the first position holding target when none does.
+RtInt chooseBridgeSlot(std::vector<GMANPoint> const& vertexPositions, std::vector<RtInt> const& ring, RtInt target,
+                       GMANPoint const& m, GMANVector const& normalVec) {
+  const RtInt ringSize = (RtInt)ring.size();
+  RtInt targetSlot = -1;
+  for (RtInt e = 0; e < ringSize; e++) {
+    if (ring[e] != target) {
+      continue;
+    }
+    if (targetSlot < 0) {
+      targetSlot = e; // first occurrence: the default if none matches
+    }
+    const GMANPoint& v = vertexPositions[ring[e]];
+    const GMANPoint& prev = vertexPositions[ring[(e + ringSize - 1) % ringSize]];
+    const GMANPoint& next = vertexPositions[ring[(e + 1) % ringSize]];
+    if (inInteriorWedge(v, prev, next, m, normalVec)) {
+      targetSlot = e;
+      break;
+    }
+  }
+  return targetSlot;
+}
+
+// Commits hole into the ring at targetSlot: its vertices get ids (from the
+// old vertexPositions.size() up) and join vertexPositions and vertexSlots
+// only on this call, once bridging is known to succeed -- a dropped hole
+// never reaches spliceHole and so never strands an id. ring becomes
+// ring[0..targetSlot],
+// the hole from its rightmost vertex (traversed backwards when reversed),
+// that vertex again, ring[targetSlot], then ring[targetSlot + 1..] -- a
+// doubled edge, not a split surface, since both occurrences of
+// ring[targetSlot] share the same GMANVertex.
+void spliceHole(Hole const& hole, RtInt targetSlot, std::vector<GMANPoint>& vertexPositions,
+                std::vector<RtInt>& vertexSlots, std::vector<RtInt>& ring) {
+  const RtInt n = (RtInt)hole.points.size();
+  const RtInt ringSize = (RtInt)ring.size();
+  const RtInt bridgeTarget = ring[targetSlot];
+
+  const RtInt base = (RtInt)vertexPositions.size();
+  std::vector<RtInt> ids(n);
+  for (RtInt j = 0; j < n; j++) {
+    ids[j] = base + j;
+  }
+  vertexPositions.insert(vertexPositions.end(), hole.points.begin(), hole.points.end());
+  vertexSlots.insert(vertexSlots.end(), hole.slots.begin(), hole.slots.end());
+  const RtInt mId = ids[hole.rightmostLocal];
+
+  std::vector<RtInt> bridged;
+  bridged.reserve(ringSize + n + 2);
+  for (RtInt e = 0; e <= targetSlot; e++) {
+    bridged.push_back(ring[e]);
+  }
+  const RtInt step = hole.reversed ? -1 : 1;
+  for (RtInt k = 0; k < n; k++) {
+    RtInt idx = ((hole.rightmostLocal + step * k) % n + n) % n;
+    bridged.push_back(ids[idx]);
+  }
+  bridged.push_back(mId);
+  bridged.push_back(bridgeTarget);
+  for (RtInt e = targetSlot + 1; e < ringSize; e++) {
+    bridged.push_back(ring[e]);
+  }
+  ring = bridged;
+}
+
+// Bridges every non-degenerate loop in loops[1..] into loops[0], the outer
+// boundary, by Eberly's method ("Triangulation by Ear Clipping", Geometric
+// Tools S3-4): each hole becomes a doubled edge into the boundary (or an
+// already-bridged hole) it cuts out, so triangulateEarClipping needs no
+// change to consume the result. Judged entirely in the outer loop's own
+// frame (outerFrame). collectHoles gathers and orders the holes to bridge;
+// each then finds its crossed ring edge (nearestCrossedEdge), its bridge
+// vertex (chooseBridgeTarget) and the ring occurrence to bridge to
+// (chooseBridgeSlot), then joins the ring (spliceHole).
+//
+// Free of GMANOptions/GMANAttributes/GMANParameterList/GMANTransform, and
+// nothing here depends on the object manager despite living in this file.
+//
+// loopSlots mirrors loops' own shape, one flat "P"-order index per point --
+// plain provenance, not a texture coordinate, which is what keeps this
+// function free of GMANParameterList (see above). loops[0] must already be
+// checked non-degenerate by the caller. On return, vertexPositions holds one
+// entry per kept vertex of every kept loop -- loops[0] first, then each
+// successfully bridged hole, each still in its own loop's "P" order -- ring
+// is the merged boundary as indices into vertexPositions, and vertexSlots
+// (index-aligned with vertexPositions) carries each kept vertex's original
+// loopSlots entry, since bridging commits holes in descending-rightmostU
+// order, not input order.
+void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::vector<std::vector<RtInt>>& loopSlots,
+                 const GMANVector& normalVec, RtFloat outerBboxSide, std::vector<GMANPoint>& vertexPositions,
+                 std::vector<RtInt>& vertexSlots, std::vector<RtInt>& ring) {
+  const std::vector<GMANPoint>& outer = loops[0];
+  PlanarFrame const frame = outerFrame(outer, normalVec, outerBboxSide);
+
+  // Outer vertices keep ids 0..outer.size()-1, in "P" order -- the mapping
+  // getRSPolygon's own vertex chain already relies on when nloops == 1.
+  vertexPositions = outer;
+  vertexSlots = loopSlots[0];
+  ring.resize(outer.size());
+  for (std::size_t i = 0; i < outer.size(); i++) {
+    ring[i] = (RtInt)i;
+  }
+
+  std::vector<Hole> const holes = collectHoles(loops, loopSlots, normalVec, frame);
+
+  for (Hole const& hole : holes) {
+    GMANPoint const& m = hole.points[hole.rightmostLocal];
+
+    RtInt const edgeStart = nearestCrossedEdge(vertexPositions, ring, frame, m);
     if (edgeStart < 0) {
       continue; // the hole's ray meets no ring edge: outside the outer
                 // loop, dropped
     }
 
-    const RtInt aId = ring[edgeStart];
-    const RtInt bId = ring[(edgeStart + 1) % ringSize];
-    const GMANPoint& a = vertexPositions[aId];
-    const GMANPoint& b = vertexPositions[bId];
-    const RtInt pId = (projU(a) > projU(b)) ? aId : bId;
-    const RtFloat tParam = (mv - projV(a)) / (projV(b) - projV(a));
-    const GMANPoint iPoint = a + (GMANPoint)(GMANVector(a, b) * tParam);
+    RtInt const bridgeTarget = chooseBridgeTarget(vertexPositions, ring, edgeStart, m, frame, normalVec, outerBboxSide);
+    RtInt const targetSlot = chooseBridgeSlot(vertexPositions, ring, bridgeTarget, m, normalVec);
 
-    const RtFloat coincideTol = kTriangulationTolerance * outerBboxSide;
-    RtInt bridgeTarget;
-    GMANVector distToA(iPoint, a);
-    GMANVector distToB(iPoint, b);
-    if (distToA.magnitude() <= coincideTol) {
-      bridgeTarget = aId;
-    } else if (distToB.magnitude() <= coincideTol) {
-      bridgeTarget = bId;
-    } else {
-      // No ring vertex sits at I: the target is P, unless a reflex ring
-      // vertex inside triangle (M, I, P) is a better -- nearer the ray --
-      // bridge; bridging straight to P past such a vertex would cross it.
-      const GMANPoint& pPoint = vertexPositions[pId];
-      RtInt best = -1;
-      RtFloat bestCos = 0;
-      RtFloat bestDist = 0;
-      for (RtInt e = 0; e < ringSize; e++) {
-        RtInt vId = ring[e];
-        if (vId == aId || vId == bId) {
-          continue; // the crossed edge's own endpoints, already considered
-        }
-        const GMANPoint& v = vertexPositions[vId];
-        const GMANPoint& prev = vertexPositions[ring[(e + ringSize - 1) % ringSize]];
-        const GMANPoint& next = vertexPositions[ring[(e + 1) % ringSize]];
-        if (turnOrientation(prev, v, next, normalVec) >= -kTriangulationTolerance) {
-          continue; // only a reflex vertex can lie inside a visibility ear
-        }
-        if (!pointInTriangle(M, iPoint, pPoint, v, normalVec)) {
-          continue;
-        }
-        GMANVector toV(M, v);
-        RtFloat dist = toV.magnitude();
-        if (dist == (RtFloat)0.0) {
-          continue;
-        }
-        RtFloat cosAngle = toV.dot(uDir) / dist;
-        if (best < 0 || cosAngle > bestCos || (cosAngle == bestCos && dist < bestDist)) {
-          best = vId;
-          bestCos = cosAngle;
-          bestDist = dist;
-        }
-      }
-      bridgeTarget = (best >= 0) ? best : pId;
-    }
-
-    // Rule 3: bridgeTarget may already occur twice in the ring (a previous
-    // hole's own bridge point); the wrong occurrence's wedge does not
-    // contain M, and bridging to it would cross into the wrong lobe.
-    RtInt targetSlot = -1;
-    for (RtInt e = 0; e < ringSize; e++) {
-      if (ring[e] != bridgeTarget) {
-        continue;
-      }
-      if (targetSlot < 0) {
-        targetSlot = e; // first occurrence: the default if none matches
-      }
-      const GMANPoint& v = vertexPositions[ring[e]];
-      const GMANPoint& prev = vertexPositions[ring[(e + ringSize - 1) % ringSize]];
-      const GMANPoint& next = vertexPositions[ring[(e + 1) % ringSize]];
-      if (inInteriorWedge(v, prev, next, M, normalVec)) {
-        targetSlot = e;
-        break;
-      }
-    }
-
-    // Commit the hole: only now, knowing it bridges, do its vertices get
-    // ids and join vertexPositions (see the Hole struct's own comment).
-    RtInt base = (RtInt)vertexPositions.size();
-    std::vector<RtInt> ids(n);
-    for (RtInt j = 0; j < n; j++) {
-      ids[j] = base + j;
-    }
-    vertexPositions.insert(vertexPositions.end(), hole.points.begin(), hole.points.end());
-    vertexSlots.insert(vertexSlots.end(), hole.slots.begin(), hole.slots.end());
-    const RtInt mId = ids[hole.rightmostLocal];
-
-    // The bridge: ring[targetSlot], then the hole starting at M (reversed
-    // traversal if the hole was wound the same way as the outer loop),
-    // then M and ring[targetSlot] again -- a doubled edge, not a split
-    // surface, since both occurrences share the same GMANVertex.
-    std::vector<RtInt> bridged;
-    bridged.reserve(ringSize + n + 2);
-    for (RtInt e = 0; e <= targetSlot; e++) {
-      bridged.push_back(ring[e]);
-    }
-    const RtInt step = hole.reversed ? -1 : 1;
-    for (RtInt k = 0; k < n; k++) {
-      RtInt idx = ((hole.rightmostLocal + step * k) % n + n) % n;
-      bridged.push_back(ids[idx]);
-    }
-    bridged.push_back(mId);
-    bridged.push_back(bridgeTarget);
-    for (RtInt e = targetSlot + 1; e < ringSize; e++) {
-      bridged.push_back(ring[e]);
-    }
-    ring = bridged;
+    spliceHole(hole, targetSlot, vertexPositions, vertexSlots, ring);
   }
 }
 
