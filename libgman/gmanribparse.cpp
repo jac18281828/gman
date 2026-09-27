@@ -39,8 +39,8 @@
 #include "gmanlog.h"
 #include "gmanribparse.h"
 #include "ri.h"
-// the concrete renderer: parsePatch/parsePatchMesh dynamic_cast to it to
-// reach the counts-aware RiPatchV/RiPatchMeshV overloads (see there)
+// the concrete renderer: dispatchWithCounts (below) dynamic_casts to it to
+// reach each request's counts-aware overload
 #include "gmanrendermanimpl.h"
 
 namespace {
@@ -122,6 +122,21 @@ std::unique_ptr<char[]> duplicateCString(const std::string& s) {
   std::unique_ptr<char[]> dup = std::make_unique<char[]>(s.size() + 1);
   std::memcpy(dup.get(), s.c_str(), s.size() + 1);
   return dup;
+}
+
+// A RIB file is an untrusted caller: the array lengths it actually supplied
+// for a request's parameter list ride beside the RI-mandated signature only
+// on GMANRenderManImpl, which clamps a parameter to its declared size
+// instead of reading past it. request is a generic lambda taking the
+// renderer reference and a trailing pack for those lengths; the pack holds
+// counts on the GMANRenderManImpl path and is empty otherwise, so the same
+// call expression resolves to either overload.
+template <typename Request> void dispatchWithCounts(GMANRenderMan& renderMan, RtInt const* counts, Request&& request) {
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    request(*impl, counts);
+  } else {
+    request(renderMan);
+  }
 }
 
 } // namespace
@@ -1012,12 +1027,9 @@ RtVoid GMANRIBParse::parseSphere(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // Dispatch mirrors parseGeneralPolygon's; see its comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms, counts);
-  } else {
-    renderMan.RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseCone(RtVoid) {
@@ -1032,12 +1044,9 @@ RtVoid GMANRIBParse::parseCone(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // Dispatch mirrors parseGeneralPolygon's; see its comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiConeV(height, radius, thetamax, n, tokens, parms, counts);
-  } else {
-    renderMan.RiConeV(height, radius, thetamax, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiConeV(height, radius, thetamax, n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseCylinder(RtVoid) {
@@ -1053,12 +1062,9 @@ RtVoid GMANRIBParse::parseCylinder(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // Dispatch mirrors parseGeneralPolygon's; see its comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms, counts);
-  } else {
-    renderMan.RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseSides(RtVoid) {
@@ -1085,12 +1091,9 @@ RtVoid GMANRIBParse::parseHyperboloid(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // Dispatch mirrors parseGeneralPolygon's; see its comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiHyperboloidV(point1, point2, thetamax, n, tokens, parms, counts);
-  } else {
-    renderMan.RiHyperboloidV(point1, point2, thetamax, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiHyperboloidV(point1, point2, thetamax, n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
@@ -1106,12 +1109,9 @@ RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // Dispatch mirrors parseGeneralPolygon's; see its comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms, counts);
-  } else {
-    renderMan.RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseTorus(RtVoid) {
@@ -1128,12 +1128,9 @@ RtVoid GMANRIBParse::parseTorus(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // Dispatch mirrors parseGeneralPolygon's; see its comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms, counts);
-  } else {
-    renderMan.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseDisk(RtVoid) {
@@ -1148,12 +1145,9 @@ RtVoid GMANRIBParse::parseDisk(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // Dispatch mirrors parseGeneralPolygon's; see its comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiDiskV(height, radius, thetamax, n, tokens, parms, counts);
-  } else {
-    renderMan.RiDiskV(height, radius, thetamax, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiDiskV(height, radius, thetamax, n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parsePolygon(RtVoid) {
@@ -1187,12 +1181,9 @@ RtVoid GMANRIBParse::parsePolygon(RtVoid) {
     }
   }
 
-  // Dispatch mirrors parseGeneralPolygon's; see its comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiPolygonV(nverts, n, tokens, parms, counts);
-  } else {
-    renderMan.RiPolygonV(nverts, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiPolygonV(nverts, n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
@@ -1209,15 +1200,9 @@ RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
 
   RtInt nloops = (RtInt)nvertsVector.size();
 
-  // Dispatch beside the RI-mandated RiGeneralPolygonV(5 args): a RIB file
-  // is not a trusted caller, so the array length parseParameterList
-  // already knows rides along outside that fixed signature. See
-  // gmanparameterlist.h.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiGeneralPolygonV(nloops, nverts.data(), n, tokens, parms, counts);
-  } else {
-    renderMan.RiGeneralPolygonV(nloops, nverts.data(), n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiGeneralPolygonV(nloops, nverts.data(), n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parsePoints(RtVoid) {
@@ -1287,15 +1272,9 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
     return;
   }
 
-  // Dispatch beside the RI-mandated RiPointsPolygonsV(6 args): a RIB file
-  // is not a trusted caller, so the array length parseParameterList
-  // already knows rides along outside that fixed signature. See
-  // parseGeneralPolygon's own comment.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n, tokens, parms, counts);
-  } else {
-    renderMan.RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiPointsPolygonsV(npolys, nverts.data(), verts.data(), n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
@@ -1343,11 +1322,9 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
     return;
   }
 
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(), verts.data(), n, tokens, parms, counts);
-  } else {
-    renderMan.RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(), verts.data(), n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiPointsGeneralPolygonsV(npolys, nloops.data(), nverts.data(), verts.data(), n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parsePatch(RtVoid) {
@@ -1361,14 +1338,9 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // Dispatch beside the RI-mandated RiPatchV(4 args): a RIB file is not a
-  // trusted caller, so the array length parseParameterList already knows
-  // rides along outside that fixed signature. See gmanparameterlist.h.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiPatchV(type.c_str(), n, tokens, parms, counts);
-  } else {
-    renderMan.RiPatchV(type.c_str(), n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiPatchV(type.c_str(), n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
@@ -1412,15 +1384,10 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
     return;
   }
 
-  // Dispatch beside the RI-mandated RiNuPatchV(13 args): a RIB file is not
-  // a trusted caller, so the array length parseParameterList already
-  // knows rides along outside that fixed signature. See parsePatch.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder, vknot.data(), vmin, vmax, n, tokens, parms,
-                     counts);
-  } else {
-    renderMan.RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder, vknot.data(), vmin, vmax, n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiNuPatchV(nu, uorder, uknot.data(), umin, umax, nv, vorder, vknot.data(), vmin, vmax, n, tokens, parms,
+                      supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
@@ -1438,13 +1405,9 @@ RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
 
   parseParameterList(n, tokens, parms, counts);
 
-  // See parsePatch: dispatch beside the RI-mandated RiPatchMeshV(7 args)
-  // when the concrete impl is available, carrying the supplied counts.
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    impl->RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(), n, tokens, parms, counts);
-  } else {
-    renderMan.RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(), n, tokens, parms);
-  }
+  dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
+    target.RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(), n, tokens, parms, supplied...);
+  });
 }
 
 RtVoid GMANRIBParse::parseTextureCoordinates(RtVoid) {
