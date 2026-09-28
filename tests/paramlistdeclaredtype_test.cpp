@@ -30,10 +30,10 @@
  * Checks 1 through 4 run gman out of process against a fixture, capturing
  * its combined output under a timeout (tests/rungman.h) --
  * tests/ribmalformed_test.cpp's own checks observe neither exit status nor
- * message, so nothing here belongs there. Check 4's baseline ("does not
- * abort") is exit 0, with
+ * message, so nothing here belongs there. Check 4's fixture reports
  * GMANParameterList's own "ERROR: RIE_BADTOKEN -- GMANDictionary:
- * TOKEN_NOT_FOUND" diagnostic, unrelated to declared-type resolution.
+ * TOKEN_NOT_FOUND", which stops the file with gman's own diagnostic;
+ * unrelated to declared-type resolution.
  *
  * Checks 1 through 4 assert only exit status and diagnostic text, so every
  * one of them would still pass if the parser stored a wrong-but-non-throwing
@@ -127,17 +127,18 @@ int main(int argc, char* argv[]) {
     check(r.output.find("ERROR") == std::string::npos, "float-regression: emits no diagnostic");
   }
 
-  // 4. The undeclared-token fallback: getTokenId's RIE_BADTOKEN must not
-  // abort the request. Matches the pre-fix baseline exactly: exit 0, with
-  // GMANParameterList's own (unrelated) RIE_BADTOKEN diagnostic still
-  // printed.
+  // 4. The undeclared-token report: getTokenId's RIE_BADTOKEN reaches
+  // gman's error handler, which prints it and stops the file. Exit
+  // failure, no crash, GMANParameterList's own diagnostic printed, and no
+  // RIE_SYNTAX from a parser that instead threw.
   {
     GMANRunResult r = runCapturingOutput(gman, dir + "/paramtype_undeclared_fallback.rib", 10);
-    check(!r.timedOut, "undeclared-token-fallback: does not hang (10s bound)");
-    check(!r.crashed, "undeclared-token-fallback: does not crash");
-    check(r.exitStatus == EXIT_SUCCESS, "undeclared-token-fallback: request is not aborted");
+    check(!r.timedOut, "undeclared-token-report: does not hang (10s bound)");
+    check(!r.crashed, "undeclared-token-report: does not crash");
+    check(r.exitStatus == EXIT_FAILURE, "undeclared-token-report: exits with failure");
     check(r.output.find("RIE_BADTOKEN") != std::string::npos,
-          "undeclared-token-fallback: GMANParameterList's own diagnostic is unchanged");
+          "undeclared-token-report: GMANParameterList's own diagnostic is printed");
+    check(r.output.find("RIE_SYNTAX") == std::string::npos, "undeclared-token-report: prints no RIE_SYNTAX");
   }
 
   // 5. The value arrives: a token declared uniform integer and given [4]

@@ -2548,7 +2548,6 @@ add_test(NAME unknownsurface_zbuffer
                               gmanzbuffer
   WORKING_DIRECTORY "${GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR}")
 set_tests_properties(unknownsurface_zbuffer PROPERTIES
-  WILL_FAIL TRUE
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 30)
@@ -2565,7 +2564,6 @@ if(GMAN_BUILD_RAYTRACER)
                                 gmanraytracer
     WORKING_DIRECTORY "${GMAN_UNKNOWNSURFACE_RAYTRACER_WORKDIR}")
   set_tests_properties(unknownsurface_raytracer PROPERTIES
-    WILL_FAIL TRUE
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
@@ -2587,7 +2585,6 @@ add_test(NAME reportederror
                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_REPORTEDERROR_WORKDIR}")
 set_tests_properties(reportederror PROPERTIES
-  WILL_FAIL TRUE
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 30)

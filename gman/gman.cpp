@@ -72,6 +72,24 @@ bool hasVersionFlag(int argc, char* argv[]) {
   return false;
 }
 
+// Thrown by handleReport once a report has already printed, so main's
+// catch sites can end the file without printing it again.
+class ReportedStop : public GMANError {
+public:
+  ReportedStop(RtInt code, RtInt severity, const char* message) : GMANError(code, severity, message) {}
+};
+
+// gman's own error handler: prints every report exactly as RiErrorPrint
+// does, then stops the file being parsed at RIE_ERROR or above by
+// throwing ReportedStop. The library's own default handler stays
+// RiErrorPrint, for an embedder to replace with its own policy.
+RtVoid handleReport(RtInt code, RtInt severity, const char* message) {
+  RiErrorPrint(code, severity, message);
+  if (severity >= RIE_ERROR) {
+    throw ReportedStop(code, severity, message);
+  }
+}
+
 } // namespace
 
 /* function prototypes */
@@ -92,6 +110,8 @@ int main(int argc, char* argv[]) {
     try {
       // artificial log object for log settings
       static GMANRenderManImpl renderMan;
+
+      renderMan.RiErrorHandler(handleReport);
 
       GMANLog logObj;
 
@@ -175,13 +195,17 @@ int main(int argc, char* argv[]) {
           // just parse it...
           parser->parse();
 
+        } catch (ReportedStop&) {
+          rc = EXIT_FAILURE;
         } catch (GMANError& e) {
-          GMANHandleError(e);
+          RiErrorPrint(e.getCode(), e.getSeverity(), e.getMessage());
           rc = EXIT_FAILURE;
         }
       }
+    } catch (ReportedStop&) {
+      rc = EXIT_FAILURE;
     } catch (GMANError& e) {
-      GMANHandleError(e);
+      RiErrorPrint(e.getCode(), e.getSeverity(), e.getMessage());
       rc = EXIT_FAILURE;
     }
   }
