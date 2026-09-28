@@ -196,14 +196,14 @@ namespace {
 // The twelve 2x2 cofactors shared by determinant() and invert(): a0..a5
 // pair rows 0-1, b0..b5 pair rows 2-3. determinant is their standard
 // pairing, a0*b5 - a1*b4 + a2*b3 + a3*b2 - a4*b1 + a5*b0.
-struct GMANMatrix4Cofactors {
+struct Cofactors {
   RtFloat a0, a1, a2, a3, a4, a5;
   RtFloat b0, b1, b2, b3, b4, b5;
   RtFloat determinant;
 };
 
-GMANMatrix4Cofactors cofactorsOf(RtFloat const (&m)[4][4]) {
-  GMANMatrix4Cofactors c;
+Cofactors cofactorsOf(RtFloat const (&m)[4][4]) {
+  Cofactors c;
   c.a0 = m[0][0] * m[1][1] - m[0][1] * m[1][0];
   c.a1 = m[0][0] * m[1][2] - m[0][2] * m[1][0];
   c.a2 = m[0][0] * m[1][3] - m[0][3] * m[1][0];
@@ -228,7 +228,7 @@ RtFloat GMANMatrix4::determinant() { return cofactorsOf(mtrx).determinant; }
 // uses. Throws on a singular matrix.
 RtVoid GMANMatrix4::invert() {
   RtFloat const(&m)[4][4] = mtrx;
-  GMANMatrix4Cofactors const c = cofactorsOf(m);
+  Cofactors const c = cofactorsOf(m);
 
   RtFloat d = c.determinant;
   if (d == 0.0) {

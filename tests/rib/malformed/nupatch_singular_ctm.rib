@@ -2,10 +2,9 @@
 # GMANPatchPolyObjectManager::createParametric inverts the CTM uncaught,
 # so a well-formed NuPatch throws RIE_MATH before it can render.
 #
-# Unlike every other malformed/nupatch_*.rib fixture, this one is not
-# followed by a Sphere: the throw unwinds out of GMANRIBParse::parse()
-# before one would parse, exactly as nupatch_illegal_block.rib's own
-# header explains.
+# Along with nupatch_illegal_block.rib, this is one of the two
+# malformed/nupatch_*.rib fixtures not followed by a Sphere: the throw
+# unwinds out of GMANRIBParse::parse() before one would parse.
 Display "malformed_out.tif" "file" "rgba"
 Format 200 200 1
 Projection "perspective" "fov" [45]

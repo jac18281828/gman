@@ -315,19 +315,19 @@ A `NuPatch` issued inside `FrameBegin`/`FrameEnd` before any
 `allowed(cmdNuPatch)` throws before this task's own validation runs,
 after `parseNuPatch`'s knot arrays are already owned and before its
 trailing `delete[]`s, proving that ownership survives the throw.
-Registered in `tests/nupatch_test.cpp`, asserting exit status 1 (not the
-exit-0 shape every other `malformed/nupatch_*.rib` fixture takes) and no
-trailing `Sphere`, since the throw unwinds before one would parse. Not
-third-party.
+Registered in `tests/nupatch_test.cpp`, asserting exit status 1 -- the
+exit code `nupatch_singular_ctm.rib` also takes, unlike every other
+`malformed/nupatch_*.rib` fixture -- and no trailing `Sphere`, since the
+throw unwinds before one would parse. Not third-party.
 
 ## malformed/nupatch_singular_ctm.rib
 
 `Scale 1 0 1` collapses the y axis, so `createParametric`'s own
 `invert()` throws `RIE_MATH` on a well-formed `NuPatch`. Registered in
 `tests/nupatch_test.cpp`, asserting exit status 1, `RIE_MATH` in the
-output, and (the fix this fixture proves) no `LeakSanitizer` report. No
-trailing `Sphere`, since the throw unwinds before one would parse. Not
-third-party.
+output, and no `LeakSanitizer` report, proving the primitive's stack
+transform survives the throw. No trailing `Sphere`, since the throw
+unwinds before one would parse. Not third-party.
 
 ## rotate.rib
 

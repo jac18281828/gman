@@ -1,7 +1,6 @@
-# umax > uknot[nu]: RiSpec 3.2 requires umax <= uknot[nu]. The existing
-# nupatch_empty_range.rib and nupatch_umin_below_knot.rib fixtures cover
-# umin < umax and umin >= uknot[uorder-1]; this covers the third u range
-# rule, which no earlier fixture reaches.
+# umax > uknot[nu]: RiSpec 3.2 requires umax <= uknot[nu].
+# nupatch_empty_range.rib and nupatch_umin_below_knot.rib cover umin <
+# umax and umin >= uknot[uorder-1]; this covers the third u range rule.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

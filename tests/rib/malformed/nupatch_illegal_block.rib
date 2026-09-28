@@ -7,9 +7,10 @@
 # already owned and before its trailing delete[]s -- the one fixture
 # proving that ownership.
 #
-# Unlike every other malformed/nupatch_*.rib fixture, this one is not
-# followed by a Sphere: the throw unwinds out of GMANRIBParse::parse()
-# before any trailing request would parse, and gman itself exits 1.
+# Along with nupatch_singular_ctm.rib, this is one of the two
+# malformed/nupatch_*.rib fixtures not followed by a Sphere: the throw
+# unwinds out of GMANRIBParse::parse() before any trailing request would
+# parse, and gman itself exits 1.
 FrameBegin 1
 NuPatch 2 2 [0 0 1 1] 0 1 2 2 [0 0 1 1] 0 1
 	"P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]

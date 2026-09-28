@@ -37,9 +37,10 @@
  *    out-of-scope decision that getRSNuPatch always passes
  *    kIdentityCorners.
  *  - Malformed requests and exception safety: tests/paramclamp_test.cpp's
- *    own Fixture{file, expectedWarning} shape, plus a dedicated
- *    illegal-block case proving parseNuPatch's knot arrays survive a
- *    throw.
+ *    own Fixture{file, expectedWarning} shape, an illegal-block case
+ *    proving parseNuPatch's knot arrays survive a throw, and a
+ *    singular-CTM case proving RiNuPatchV's stack transform survives
+ *    one too.
  */
 
 #include <algorithm>
@@ -447,10 +448,9 @@ void testIllegalBlockLeaksNothing(std::string const& gman, std::string const& ma
 }
 
 // A singular CTM (Scale 1 0 1) makes createParametric's own invert() throw
-// RIE_MATH past every primitive request's transform, proving each of the
-// 14 sites holds it on the stack rather than leaking a heap allocation
-// across the throw. On the Linux ASan leg, that leak would surface as a
-// LeakSanitizer report in the run's own output.
+// RIE_MATH past RiNuPatchV's transform lines, the same lines the other 13
+// primitive requests share. The check asserts the run's own output carries
+// no LeakSanitizer report, the proof that bites on the Linux ASan leg.
 void testSingularCtmLeaksNothing(std::string const& gman, std::string const& malformedDir) {
   const std::string rib = malformedDir + "/nupatch_singular_ctm.rib";
   GMANRunResult r = runCapturingOutput(gman, rib, 10);
