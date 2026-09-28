@@ -55,10 +55,10 @@ namespace {
 
 constexpr double kPi = 3.14159265358979323846;
 
-// C.1: no exemption at vertex 0 -- neither function takes a vertex index
-// at all, so there is nowhere for a hidden "return 1 at vertex 0" to hide;
-// C.3 below calls the identical emitter-hit case again, standing for a
-// deeper vertex, and finds the same value.
+// No exemption at vertex 0: neither function takes a vertex index at all,
+// so there is nowhere for a hidden "return 1 at vertex 0" to hide; a check
+// below calls the identical emitter-hit case again, standing for a deeper
+// vertex, and finds the same value.
 void testNoExemptionAtFirstVertex() {
   RtFloat const nextEvent = gman::nextEventWeight(false, true, 3.0f, 2.0f);
   check(std::fabs(nextEvent - 9.0f / 13.0f) <= 1e-6f,
@@ -69,7 +69,7 @@ void testNoExemptionAtFirstVertex() {
         "emitterHitWeight: a non-delta departure's weight at pBsdf=2, pLight=3 is 4/13, not fixed at 1");
 }
 
-// C.2: the two true exemptions, independent of every pdf argument.
+// The two true exemptions, independent of every pdf argument.
 void testTrueExemptions() {
   check(gman::nextEventWeight(true, true, 3.0f, 2.0f) == 1.0f,
         "nextEventWeight: a delta light keeps weight 1 whatever pLight and pBsdf are");
@@ -83,18 +83,18 @@ void testTrueExemptions() {
         "delta-lobe departure, whatever pBsdf and pLight are");
 }
 
-// C.3: the identical (pBsdf, pLight) pair, called again as if from a
-// deeper vertex -- matching C.1's own value rules out a hidden
-// vertex-0-only special case, since the function itself takes no vertex
-// index to special-case.
+// The identical (pBsdf, pLight) pair, called again as if from a deeper
+// vertex -- matching the earlier value rules out a hidden vertex-0-only
+// special case, since the function itself takes no vertex index to
+// special-case.
 void testSameWeightAtADeeperVertex() {
   RtFloat const deeper = gman::emitterHitWeight(false, true, 2.0f, 3.0f);
   check(std::fabs(deeper - 4.0f / 13.0f) <= 1e-6f,
         "emitterHitWeight: the same (pBsdf, pLight) pair gives the identical value at a deeper vertex");
 }
 
-// C.4: the light-choice probability, a hand-built world of one delta light
-// and one area emitter, enumerated through gman::emitters as the renderer
+// The light-choice probability, a hand-built world of one delta light and
+// one area emitter, enumerated through gman::emitters as the renderer
 // itself would.
 void testLightChoiceProbabilityTwoLights() {
   GMANPoint const p(0.0f, 0.0f, 0.0f);
@@ -153,12 +153,11 @@ void testLightChoiceProbabilityTwoLights() {
         "lightChoiceProbability: calling it twice for the area emitter at the same p returns the identical value");
 }
 
-// C.5: the off switch. multipleImportanceSamplingEnabled(false) fixes
+// The off switch. multipleImportanceSamplingEnabled(false) fixes
 // next-event estimation's weight at 1 and the emitter-hit's weighted
-// branch at 0, adding nothing at all for a non-delta departure -- exactly
-// unit 6's own corrected rule. Also exercises the renderer's own switch,
-// the sole production caller of setMultipleImportanceSampling besides
-// tests/pathtracermisveach_test.cpp.
+// branch at 0, adding nothing at all for a non-delta departure. Also
+// exercises the renderer's own switch, the sole production caller of
+// setMultipleImportanceSampling besides tests/pathtracermisveach_test.cpp.
 void testOffSwitch() {
   GMANPathtraceRenderer renderer;
   renderer.setMultipleImportanceSampling(false);
