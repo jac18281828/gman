@@ -442,10 +442,8 @@ void testIllegalBlockLeaksNothing(std::string const& gman, std::string const& ma
   GMANRunResult r = runCapturingOutput(gman, rib, 10);
   check(!r.timedOut, "nupatch_illegal_block.rib: does not hang (10s bound)");
   check(!r.crashed, "nupatch_illegal_block.rib: does not crash");
-  check(r.exitStatus == 1, "nupatch_illegal_block.rib: exits 1 (GMANHandleError, "
-                           "RIE_ILLSTATE) -- on Linux, a leak overrides this with LSan's own "
-                           "23, so this assertion doubles as the leak-freedom proof under "
-                           "ctest --test-dir build-debug");
+  check(r.exitStatus == 1, "nupatch_illegal_block.rib: exits 1 through GMANHandleError, RIE_ILLSTATE");
+  check(r.output.find("LeakSanitizer") == std::string::npos, "nupatch_illegal_block.rib: no LeakSanitizer report");
 }
 
 } // namespace
