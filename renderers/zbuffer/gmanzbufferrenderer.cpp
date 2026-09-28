@@ -72,6 +72,14 @@ GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPointsG
   return GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(npolys, nloops, nverts, verts, pl, opt, attr, t);
 }
 
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mesh,
+                                                                                     GMANOptions* opt,
+                                                                                     GMANAttributes* attr,
+                                                                                     GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSPolygonMesh(mesh, opt, attr, t);
+}
+
 GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPatch(RtToken type, GMANParameterList pl,
                                                                                GMANOptions* opt, GMANAttributes* attr,
                                                                                GMANTransform* t) {

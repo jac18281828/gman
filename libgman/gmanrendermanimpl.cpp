@@ -35,6 +35,7 @@
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "gmanfiledrivers.h"
@@ -44,7 +45,8 @@
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanoutputx11.h"
-#include "gmanpolygoninternal.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanrenderer.h"
 #include "gmanrendermanimpl.h"
 #include "gmantexture.h"
@@ -897,27 +899,8 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
 RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdPolygon);
 
-  // Polygon's own two rules, GeneralPolygon's nverts rules applied to its
-  // one loop: a negative nverts, then an nverts whose triple overflows
-  // RtInt.
-  if (nverts < 0) {
-    warning("Polygon: nverts[0] = {} is negative; ignoring.", nverts);
-    worldManager->add(objectManager->create());
-    return;
-  }
-  if (nverts > INT_MAX / 3) {
-    warning("Polygon: nverts sums to {}, times 3 overflows RtInt; ignoring.", nverts);
-    worldManager->add(objectManager->create());
-    return;
-  }
-
-  // "P" is sized by nverts, not a fixed 4x4 grid like a quadric: Polygon has
-  // no distinct varying count beyond its vertex count.
-  GMANParameterList paramList(dictionary, n, tokens, parms, nverts, nverts, 1, 1, counts);
-
-  // No "P": the empty stub, without reaching the object manager -- the
-  // z-buffer's area-light count must not see a request with no geometry.
-  if (gman::floatArray(paramList, RI_P) == nullptr) {
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, n, tokens, parms, counts);
+  if (!mesh) {
     worldManager->add(objectManager->create());
     return;
   }
@@ -925,7 +908,7 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
   GMANTransform transform(getTransform());
   GMANPrimitive* prim;
 
-  prim = objectManager->getRSPolygon(nverts, paramList, &(getOptions()), &(getAttributes()), &transform);
+  prim = objectManager->getRSPolygonMesh(*mesh, &(getOptions()), &(getAttributes()), &transform);
   worldManager->add(prim);
 }
 RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[],
@@ -936,41 +919,9 @@ RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt 
                                             const RtInt* counts) {
   allowed(cmdGeneralPolygon);
 
-  if (nloops < 1) {
-    warning("GeneralPolygon: nloops = {} is invalid; ignoring.", nloops);
-    worldManager->add(objectManager->create());
-    return;
-  }
-
-  // Vertex, varying and facevarying are all the sum of nverts -- the
-  // RISpec's GeneralPolygon sizing, the same shape RiPolygonV uses with a
-  // single loop; uniform is 1, the whole polygon being one shading grid.
-  // Accumulated as long long so an individual nverts[i] near RtInt's own
-  // range cannot overflow the running sum before the guard below ever
-  // sees it.
-  long long total = 0;
-  for (RtInt i = 0; i < nloops; i++) {
-    if (nverts[i] < 0) {
-      warning("GeneralPolygon: nverts[{}] = {} is negative; ignoring.", i, nverts[i]);
-      worldManager->add(objectManager->create());
-      return;
-    }
-    total += nverts[i];
-  }
-  if (total > (long long)INT_MAX / 3) {
-    warning("GeneralPolygon: nverts sums to {}, times 3 overflows RtInt; "
-            "ignoring.",
-            total);
-    worldManager->add(objectManager->create());
-    return;
-  }
-  RtInt vertex = (RtInt)total;
-
-  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex, 1, vertex, counts);
-
-  // No "P": the empty stub, without reaching the object manager -- the
-  // z-buffer's area-light count must not see a request with no geometry.
-  if (gman::floatArray(paramList, RI_P) == nullptr) {
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::generalPolygonMesh(nloops, nverts, dictionary, n, tokens, parms, counts);
+  if (!mesh) {
     worldManager->add(objectManager->create());
     return;
   }
@@ -978,67 +929,9 @@ RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt 
   GMANTransform transform(getTransform());
   GMANPrimitive* prim;
 
-  prim = objectManager->getRSGeneralPolygon(nloops, nverts, paramList, &(getOptions()), &(getAttributes()), &transform);
+  prim = objectManager->getRSPolygonMesh(*mesh, &(getOptions()), &(getAttributes()), &transform);
   worldManager->add(prim);
 }
-namespace {
-
-// Shared by RiPointsPolygonsV and RiPointsGeneralPolygonsV: nverts is the
-// flat per-loop vertex-count array -- length npolys for PointsPolygons,
-// which has no separate loop count, or the sum of nloops for
-// PointsGeneralPolygons -- and verts is the flat vertex-index array, whose
-// required length is nverts' own sum. Rejects a negative nverts or verts
-// entry and a vertex count or facevarying sum whose x3 overflows RtInt,
-// RiGeneralPolygonV's own overflow guard applied to both dimensions a
-// Points* request carries (vertex/varying and facevarying differ here,
-// where GeneralPolygon's do not). Accumulates every sum as long long, as
-// RiGeneralPolygonV does, so an individual entry near RtInt's own range
-// cannot overflow the running sum before the guard sees it.
-//
-// On success, returns true and sets facevarying (sum nverts) and vertex
-// (1 + max(verts), RiSpec's vertex/varying count for this request). On
-// failure, warns once naming the rule and value and returns false; the
-// caller adds objectManager->create() and returns.
-bool validatePointsIndices(const char* request, RtInt nvertsLen, const RtInt* nverts, const RtInt* verts,
-                           RtInt& facevarying, RtInt& vertex) {
-  long long total = 0;
-  for (RtInt i = 0; i < nvertsLen; i++) {
-    if (nverts[i] < 0) {
-      warning("{}: nverts[{}] = {} is negative; ignoring.", request, i, nverts[i]);
-      return false;
-    }
-    total += nverts[i];
-  }
-  if (total > (long long)INT_MAX / 3) {
-    warning("{}: nverts sums to {}, times 3 overflows RtInt; ignoring.", request, total);
-    return false;
-  }
-
-  long long maxVert = -1;
-  for (long long i = 0; i < total; i++) {
-    if (verts[i] < 0) {
-      warning("{}: verts[{}] = {} is negative; ignoring.", request, i, verts[i]);
-      return false;
-    }
-    if (verts[i] > maxVert) {
-      maxVert = verts[i];
-    }
-  }
-  long long vertexCount = maxVert + 1;
-  if (vertexCount * 3 > (long long)INT_MAX) {
-    warning("{}: vertex count {} (1 + max(verts)), times 3 overflows "
-            "RtInt; ignoring.",
-            request, vertexCount);
-    return false;
-  }
-
-  facevarying = (RtInt)total;
-  vertex = (RtInt)vertexCount;
-  return true;
-}
-
-} // namespace
-
 RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[],
                                             RtPointer parms[]) {
   RiPointsPolygonsV(npolys, nverts, verts, n, tokens, parms, NULL);
@@ -1047,26 +940,9 @@ RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt 
                                             RtPointer parms[], const RtInt* counts) {
   allowed(cmdPointsPolygon);
 
-  if (npolys < 0) {
-    warning("PointsPolygons: npolys = {} is invalid; ignoring.", npolys);
-    worldManager->add(objectManager->create());
-    return;
-  }
-
-  RtInt facevarying = 0, vertex = 0;
-  if (!validatePointsIndices("PointsPolygons", npolys, nverts, verts, facevarying, vertex)) {
-    worldManager->add(objectManager->create());
-    return;
-  }
-
-  // RiSpec's PointsPolygons sizing: vertex and varying are 1 + max(verts),
-  // uniform is npolys (one shading value per face), facevarying is
-  // sum(nverts).
-  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex, npolys, facevarying, counts);
-
-  // No "P": the empty stub, without reaching the object manager -- the
-  // z-buffer's area-light count must not see a request with no geometry.
-  if (gman::floatArray(paramList, RI_P) == nullptr) {
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::pointsPolygonsMesh(npolys, nverts, verts, dictionary, n, tokens, parms, counts);
+  if (!mesh) {
     worldManager->add(objectManager->create());
     return;
   }
@@ -1074,8 +950,7 @@ RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt 
   GMANTransform transform(getTransform());
   GMANPrimitive* prim;
 
-  prim = objectManager->getRSPointsPolygon(npolys, nverts, verts, paramList, &(getOptions()), &(getAttributes()),
-                                           &transform);
+  prim = objectManager->getRSPolygonMesh(*mesh, &(getOptions()), &(getAttributes()), &transform);
   worldManager->add(prim);
 }
 RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
@@ -1086,47 +961,9 @@ RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
                                                    RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdPointsGeneralPolygons);
 
-  if (npolys < 0) {
-    warning("PointsGeneralPolygons: npolys = {} is invalid; ignoring.", npolys);
-    worldManager->add(objectManager->create());
-    return;
-  }
-
-  // nloops[i] < 1 is rejected here, for the whole request, not skipped
-  // per face: unlike a degenerate face's own outer loop (a getRS*-level
-  // concern), a face with no loop array entry at all has no vertex count
-  // to read next, and desyncing that reading would corrupt every
-  // remaining face's own nverts/verts slice.
-  long long totalLoops = 0;
-  for (RtInt i = 0; i < npolys; i++) {
-    if (nloops[i] < 1) {
-      warning("PointsGeneralPolygons: nloops[{}] = {} is invalid; "
-              "ignoring.",
-              i, nloops[i]);
-      worldManager->add(objectManager->create());
-      return;
-    }
-    totalLoops += nloops[i];
-  }
-  if (totalLoops > (long long)INT_MAX) {
-    warning("PointsGeneralPolygons: nloops sums to {}, overflows RtInt; "
-            "ignoring.",
-            totalLoops);
-    worldManager->add(objectManager->create());
-    return;
-  }
-
-  RtInt facevarying = 0, vertex = 0;
-  if (!validatePointsIndices("PointsGeneralPolygons", (RtInt)totalLoops, nverts, verts, facevarying, vertex)) {
-    worldManager->add(objectManager->create());
-    return;
-  }
-
-  GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex, npolys, facevarying, counts);
-
-  // No "P": the empty stub, without reaching the object manager -- the
-  // z-buffer's area-light count must not see a request with no geometry.
-  if (gman::floatArray(paramList, RI_P) == nullptr) {
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::pointsGeneralPolygonsMesh(npolys, nloops, nverts, verts, dictionary, n, tokens, parms, counts);
+  if (!mesh) {
     worldManager->add(objectManager->create());
     return;
   }
@@ -1134,8 +971,7 @@ RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
   GMANTransform transform(getTransform());
   GMANPrimitive* prim;
 
-  prim = objectManager->getRSPointsGeneralPolygons(npolys, nloops, nverts, verts, paramList, &(getOptions()),
-                                                   &(getAttributes()), &transform);
+  prim = objectManager->getRSPolygonMesh(*mesh, &(getOptions()), &(getAttributes()), &transform);
   worldManager->add(prim);
 }
 RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {

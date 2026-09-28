@@ -35,6 +35,8 @@
 #include "gmanprimitives.h"
 #include "ri.h"
 
+class GMANPolygonMesh;
+
 /*
  * RenderMan API GMANObjectManager
  *
@@ -68,6 +70,15 @@ public:
   virtual GMANPrimitive* getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[],
                                                     GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                                     GMANTransform* t) = 0;
+
+  // One call per polygon request that yields a mesh: Polygon, GeneralPolygon,
+  // PointsPolygons and PointsGeneralPolygons all reach this one virtual,
+  // each normalised into mesh's faces and loops by the factory that built
+  // it. Every index mesh holds is valid, so an implementation need not
+  // guard against a null "P" or an empty face. Returns one primitive: the
+  // empty stub when no face survives, joined geometry otherwise.
+  virtual GMANPrimitive* getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
+                                          GMANTransform* t) = 0;
 
   virtual GMANPrimitive* getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                     GMANTransform* t) = 0;

@@ -26,8 +26,10 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstring>
 #include <memory>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -35,6 +37,7 @@
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygon.h"
 #include "gmanpolygoninternal.h"
+#include "gmanpolygonmesh.h"
 #include "gmanprimitives.h"
 #include "gmanshading.h"
 #include "gmanviewingsystem.h"
@@ -462,7 +465,7 @@ struct PolygonVertexTexCoord {
 // before the CTM); nverts is also "s"/"t"/"st"'s own declared length, so
 // index i reads the same vertex from every one of them. s and t come from
 // polygonTexCoords, gman's one s/t rule.
-std::vector<PolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParameterList& pl, RtInt nverts,
+std::vector<PolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParameterList const& pl, RtInt nverts,
                                                                     const RtFloat* p) {
   std::vector<std::pair<RtFloat, RtFloat>> const st = gman::polygonTexCoords(pl, p, (std::size_t)nverts);
 
@@ -1368,6 +1371,58 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npol
   object->setVert(vertHead);
   return object;
 };
+
+// One call for every polygon request: the mesh guarantees a non-null "P"
+// and at least one loop per face, so this reads straight through to
+// buildFace/appendFace, getRSPointsGeneralPolygons' own general case.
+GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt,
+                                                            GMANAttributes* attr, GMANTransform* t) {
+  std::span<RtFloat const> const p = mesh.points();
+  RtInt const pointCount = (RtInt)(p.size() / 3);
+
+  std::vector<PolygonVertexTexCoord> pointTexCoords =
+      resolvePolygonTextureCoordinates(mesh.parameters(), pointCount, p.data());
+
+  RtInt sides = attr->getSides();
+  RtToken orientation = attr->getOrientation();
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
+  RasterProjection const dicing = rasterProjectionFor(opt, attr);
+
+  GMANBody *bodyHead = NULL, *bodyTail = NULL;
+  GMANVertex *vertHead = NULL, *vertTail = NULL;
+
+  for (std::size_t i = 0; i < mesh.faceCount(); i++) {
+    std::span<RtInt const> const faceLoops = mesh.face(i);
+    std::vector<std::vector<GMANPoint>> loops(faceLoops.size());
+    std::vector<std::vector<RtInt>> loopSlots(faceLoops.size());
+    for (std::size_t li = 0; li < faceLoops.size(); li++) {
+      std::span<RtInt const> const indices = mesh.loop(i, li);
+      loops[li].resize(indices.size());
+      loopSlots[li].resize(indices.size());
+      for (std::size_t j = 0; j < indices.size(); j++) {
+        RtInt const pointIndex = indices[j];
+        loops[li][j] = t->apply(GMANPoint(p[3 * pointIndex], p[3 * pointIndex + 1], p[3 * pointIndex + 2]));
+        loopSlots[li][j] = pointIndex;
+      }
+    }
+
+    GMANBody* faceBody;
+    GMANVertex* faceVert;
+    if (buildFace(loops, loopSlots, pointTexCoords, sides, orientation, appearance, cameraToWorld, dicing, faceBody,
+                  faceVert)) {
+      appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
+    }
+  }
+
+  if (!bodyHead) {
+    return create();
+  }
+  GMANObject* object = new GMANObject();
+  object->setBody(bodyHead);
+  object->setVert(vertHead);
+  return object;
+}
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt,
                                                       GMANAttributes* attr, GMANTransform* t) {

@@ -67,6 +67,9 @@ public:
                                                     GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                                     GMANTransform* t);
 
+  virtual GMANPrimitive* getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
+                                          GMANTransform* t);
+
   virtual GMANPrimitive* getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                     GMANTransform* t);
 

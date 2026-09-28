@@ -25,12 +25,14 @@
 
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <utility>
 #include <vector>
 
 #include "gmanobjectmanager.h"
 #include "gmanpolygon.h"
 #include "gmanpolygoninternal.h"
+#include "gmanpolygonmesh.h"
 #include "gmanprimitives.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
@@ -288,6 +290,42 @@ GMANPrimitive* GMANRayObjectManager::getRSPointsGeneralPolygons(RtInt npolys, Rt
   mesh->setAppearance(appearance);
   return mesh;
 };
+
+// One call for every polygon request, a one-face Polygon included: always
+// one GMANRayPolygonMesh, never a bare GMANRayPolygon. GMANRayBVH::build
+// flattens a mesh into the same entries a bare polygon gives, so a one-face
+// mesh's box and appearance already equal its own face's.
+GMANPrimitive* GMANRayObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* /*opt*/,
+                                                      GMANAttributes* attr, GMANTransform* t) {
+  std::span<RtFloat const> const p = mesh.points();
+  std::size_t const pointCount = p.size() / 3;
+
+  std::vector<std::pair<RtFloat, RtFloat>> pointTexCoords = gman::resolvePointTexCoords(mesh.parameters(), pointCount);
+  gman::Appearance const appearance = gman::appearanceOf(*attr);
+
+  std::vector<std::unique_ptr<GMANRayPolygon>> faces;
+  for (std::size_t i = 0; i < mesh.faceCount(); i++) {
+    std::span<RtInt const> const faceLoops = mesh.face(i);
+    std::vector<std::vector<RtInt>> loopVerts(faceLoops.size());
+    for (std::size_t li = 0; li < faceLoops.size(); li++) {
+      std::span<RtInt const> const indices = mesh.loop(i, li);
+      loopVerts[li].assign(indices.begin(), indices.end());
+    }
+
+    std::unique_ptr<GMANRayPolygon> face;
+    if (buildMeshFace(loopVerts, p.data(), pointTexCoords, t, face)) {
+      face->setAppearance(appearance);
+      faces.push_back(std::move(face));
+    }
+  }
+
+  if (faces.empty()) {
+    return create();
+  }
+  GMANRayPolygonMesh* rayMesh = new GMANRayPolygonMesh(std::move(faces));
+  rayMesh->setAppearance(appearance);
+  return rayMesh;
+}
 
 GMANPrimitive* GMANRayObjectManager::getRSPatch(RtToken /*type*/, GMANParameterList /*pl*/, GMANOptions* /*opt*/,
                                                 GMANAttributes* /*attr*/, GMANTransform* /*t*/) {

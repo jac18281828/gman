@@ -167,6 +167,8 @@ private:
     GMANPrimitive* getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[],
                                               GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                               GMANTransform* t) override;
+    GMANPrimitive* getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
+                                    GMANTransform* t) override;
     GMANPrimitive* getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                               GMANTransform* t) override;
     GMANPrimitive* getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, GMANParameterList pl,
