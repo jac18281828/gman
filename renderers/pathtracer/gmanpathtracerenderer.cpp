@@ -295,10 +295,9 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<GMANLight const*> const&
   PathResult result;
   GMANColor beta = kWhite;
   RtFloat etaScale = 1.0f;
-  bool hasScattered = false;
+  bool hasScattered = false, escaped = false;
   int passThroughRun = 0;
   GMANRay ray = cameraRay;
-  // Next-event estimation's own buffers, sized once and reused per vertex.
   std::vector<GMANVector> lightVectors(lights.size());
   std::vector<RtFloat> lightWeight(lights.size());
   std::vector<GMANColor> lightCl(lights.size());
@@ -312,6 +311,7 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<GMANLight const*> const&
     }
     if (!hitFound) {
       result.L += gman::multiplyChannels(beta, background);
+      escaped = true;
       break;
     }
     gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
@@ -342,8 +342,10 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<GMANLight const*> const&
     GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, wi, surfaceMagnitude);
     ray = GMANRay(origin, wi);
   }
-  // The sole guard against a non-finite path entering a slot's sums.
-  result.alphaHat = hasScattered ? kWhite : gman::oneMinus(beta);
+  // 1 - beta only for a path escaping before its first scattering vertex;
+  // any other ending, the pass-through cap included, reads fully covered.
+  result.alphaHat = (escaped && !hasScattered) ? gman::oneMinus(beta) : kWhite;
+  // The sole guard keeping a non-finite path's channels out of a slot's sums.
   result.finite = result.finite && colorFinite(result.L) && colorFinite(result.alphaHat);
   return result;
 }

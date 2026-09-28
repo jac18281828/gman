@@ -49,6 +49,7 @@
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
+#include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanshaderenvironment.h"
@@ -371,6 +372,58 @@ void checkCoverageLitAndColoured() {
   GMANColor const expectedColor(0.4f * os.getRed(), 0.4f * os.getGreen(), 0.4f * os.getBlue());
   renderAndCheckCoverage(GMANColor(0.5f, 0.5f, 0.5f), os, lights, black, expectedColor, os, 1e-4,
                          "coverage lit and coloured");
+}
+
+// A camera path stacking more Os-0 layers than the pass-through cap allows
+// ends without ever scattering or escaping to the background; its coverage
+// estimate reads fully opaque, as every non-escaping ending does.
+void checkCappedCameraPath() {
+  constexpr RtInt kRes = 8;
+  constexpr int kLayers = gman::kMaxCompositeLayers + 1;
+
+  LambertShader const shader(GMANColor(0.5f, 0.5f, 0.5f));
+  GMANPathtraceRenderer renderer;
+  for (int layer = 0; layer < kLayers; ++layer) {
+    RtFloat const z = (RtFloat)(layer + 1);
+    std::vector<GMANPoint> const verts = {GMANPoint(-100.0f, -100.0f, z), GMANPoint(-100.0f, 100.0f, z),
+                                          GMANPoint(100.0f, 100.0f, z), GMANPoint(100.0f, -100.0f, z)};
+    GMANRayPolygon* wall = new GMANRayPolygon(verts, GMANParameterList());
+    gman::Appearance appearance;
+    appearance.shader = asAppearanceShader(shader);
+    appearance.Os = GMANColor(0.0f, 0.0f, 0.0f);
+    wall->setAppearance(appearance);
+    renderer.getWorldManager()->add(wall);
+  }
+
+  GMANOptions options;
+  options.setFormat(kRes, kRes, 1.0f);
+  options.setPixelSamples(1.0f, 1.0f);
+  options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
+  options.setPathtracerSamples(kDefaultSamples);
+
+  GMANMatrix4 const identity;
+  gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
+
+  GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
+  GMANAttributes const attr;
+  renderer.render(&frameBuffer, &viewingSys, options, attr);
+
+  GMANColor const black(0.0f, 0.0f, 0.0f);
+  bool everyAlphaOne = true;
+  bool everyPixelBlack = true;
+  for (int y = 0; y < kRes; ++y) {
+    for (int x = 0; x < kRes; ++x) {
+      GMANAlpha const a = frameBuffer.getAlpha(x, y);
+      if (a.getRed() != 1.0f || a.getGreen() != 1.0f || a.getBlue() != 1.0f) {
+        everyAlphaOne = false;
+      }
+      if (!colorExactly(frameBuffer.getPixel(x, y), black)) {
+        everyPixelBlack = false;
+      }
+    }
+  }
+  check(everyAlphaOne, "capped camera path: every alpha is 1");
+  check(everyPixelBlack, "capped camera path: every pixel is black");
 }
 
 // ---- D.4: Depth ----
@@ -724,6 +777,7 @@ int main() {
   checkEnvironment();
   checkCoverageUnlit();
   checkCoverageLitAndColoured();
+  checkCappedCameraPath();
   checkDepth();
   checkAntialiasing();
   checkRepeat();
@@ -731,6 +785,7 @@ int main() {
   checkNoIndirectPass();
   checkDrops();
 
-  return checkSummary("the path tracer's own frame: escape, environment, coverage, depth, antialiasing, repeat, "
-                      "crop, an unresolvable indirect pass and non-finite drops each hold their own invariant");
+  return checkSummary("the path tracer's own frame: escape, environment, coverage, a capped camera path, depth, "
+                      "antialiasing, repeat, crop, an unresolvable indirect pass and non-finite drops each hold "
+                      "their own invariant");
 }
