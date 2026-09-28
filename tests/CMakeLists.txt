@@ -3102,6 +3102,19 @@ set_tests_properties(pathtracermisweight PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Veach's plates: a sharp GGX lobe under a large area light. MIS-on and
+# light-only sampling must converge to the same high-sample reference
+# mean, and MIS-on's own residual variance must fall well below
+# light-only's -- the physically meaningful claim multiple importance
+# sampling exists to deliver. See tests/pathtracermisveach_test.cpp.
+add_executable(gman_pathtracermisveach pathtracermisveach_test.cpp)
+target_link_libraries(gman_pathtracermisveach PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+
+add_test(NAME pathtracermisveach COMMAND gman_pathtracermisveach)
+set_tests_properties(pathtracermisveach PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every
