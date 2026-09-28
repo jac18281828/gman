@@ -28,6 +28,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <set>
 #include <string>
 #include <tuple>
@@ -517,6 +518,218 @@ void checkClampBelowOne() {
   check(s2.u1 < 1.0f, "sample2D(12345, 13, 0, 41770753, 4294836225, 0).u1 stays below 1");
 }
 
+// sample2D's grid shape, recomputed here the way the implementation
+// derives it, so a per-pattern check can recover which cell a draw
+// landed in: m columns, n rows, one row short by m - r columns when
+// r != m.
+struct Sample2DGrid {
+  std::uint32_t m, n, r;
+};
+
+Sample2DGrid sample2DGridShape(std::uint32_t count) {
+  std::uint32_t m = 1;
+  while ((m + 1) * (m + 1) <= count) {
+    ++m;
+  }
+  std::uint32_t const n = (count + m - 1) / m;
+  std::uint32_t const r = count - m * (n - 1);
+  return {m, n, r};
+}
+
+// FNV-1a over sample2D's own (u1, u2) bit patterns at one fixed pattern
+// set: three seeds, an 8x8 pixel block, one dimension.
+std::uint64_t sample2DDigest(std::uint32_t sampleCount) {
+  constexpr std::uint64_t kFnvOffset = 1469598103934665603ull;
+  constexpr std::uint64_t kFnvPrime = 1099511628211ull;
+  static_assert(sizeof(RtFloat) == sizeof(std::uint32_t));
+
+  std::uint64_t digest = kFnvOffset;
+  for (std::uint32_t seed : {0u, 1u, 7u}) {
+    for (RtInt y = 0; y < 8; ++y) {
+      for (RtInt x = 0; x < 8; ++x) {
+        for (std::uint32_t s = 0; s < sampleCount; ++s) {
+          gman::Sample2D const draw = gman::sample2D(seed, x, y, s, sampleCount, 3u);
+          std::uint32_t bits[2];
+          std::memcpy(&bits[0], &draw.u1, sizeof(std::uint32_t));
+          std::memcpy(&bits[1], &draw.u2, sizeof(std::uint32_t));
+          auto const* p = reinterpret_cast<unsigned char const*>(bits);
+          for (std::size_t k = 0; k < sizeof(bits); ++k) {
+            digest ^= p[k];
+            digest *= kFnvPrime;
+          }
+        }
+      }
+    }
+  }
+  return digest;
+}
+
+// A full grid's draws stay bit-identical to before the partial-grid
+// unbiasing: the digest recomputed here matches the one recorded against
+// the unfixed sampler at every full-grid N this file also exercises.
+void checkSample2DFullGridDigestUnchanged() {
+  check(sample2DDigest(2u) == 0xba6af1756462eca3ull, "sample2D digest at N=2 (full grid) is unchanged");
+  check(sample2DDigest(3u) == 0x9b5e109097ba73a2ull, "sample2D digest at N=3 (full grid) is unchanged");
+  check(sample2DDigest(12u) == 0x14e14c4ef1dc9839ull, "sample2D digest at N=12 (full grid) is unchanged");
+  check(sample2DDigest(16u) == 0x9343324c925d6067ull, "sample2D digest at N=16 (full grid) is unchanged");
+  check(sample2DDigest(64u) == 0xc8797082dcdcc6a3ull, "sample2D digest at N=64 (full grid) is unchanged");
+  check(sample2DDigest(256u) == 0x976fce4eb95f0768ull, "sample2D digest at N=256 (full grid) is unchanged");
+}
+
+// A partial grid's u1 and u2 stay unbiased across patterns: at
+// N = 2, 3, 5, 32, 128 and 512, over at least 2^20 draws spread across
+// distinct pixels, the mean of each and a 4x4 joint histogram match a
+// uniform draw within 5 sigma.
+void checkSample2DPartialGridUnbiased() {
+  constexpr std::uint32_t kMinDraws = 1u << 20;
+  constexpr std::uint32_t kWidth = 4096u;
+  for (std::uint32_t n : {2u, 3u, 5u, 32u, 128u, 512u}) {
+    std::uint32_t const patterns = (kMinDraws + n - 1) / n;
+    std::vector<double> u1s;
+    std::vector<double> u2s;
+    std::size_t const total = static_cast<std::size_t>(patterns) * n;
+    u1s.reserve(total);
+    u2s.reserve(total);
+    int hist[4][4] = {};
+
+    for (std::uint32_t p = 0; p < patterns; ++p) {
+      auto const x = static_cast<RtInt>(p % kWidth);
+      auto const y = static_cast<RtInt>(p / kWidth);
+      for (std::uint32_t s = 0; s < n; ++s) {
+        gman::Sample2D const draw = gman::sample2D(kSeed, x, y, s, n, 40u);
+        u1s.push_back(static_cast<double>(draw.u1));
+        u2s.push_back(static_cast<double>(draw.u2));
+        int const hb1 = std::min(3, static_cast<int>(draw.u1 * 4.0f));
+        int const hb2 = std::min(3, static_cast<int>(draw.u2 * 4.0f));
+        hist[hb1][hb2]++;
+      }
+    }
+
+    GmanMeanStderr const u1Stat = meanStderr(u1s);
+    checkNear(u1Stat.mean, 0.5, u1Stat.stderrOfMean, 1e-4,
+              "sample2D u1 mean is unbiased across patterns at N=" + std::to_string(n));
+    GmanMeanStderr const u2Stat = meanStderr(u2s);
+    checkNear(u2Stat.mean, 0.5, u2Stat.stderrOfMean, 1e-4,
+              "sample2D u2 mean is unbiased across patterns at N=" + std::to_string(n));
+
+    bool histOk = true;
+    double const p = 1.0 / 16.0;
+    double const sigma = std::sqrt(p * (1.0 - p) / static_cast<double>(total));
+    for (int a = 0; a < 4; ++a) {
+      for (int b = 0; b < 4; ++b) {
+        double const fraction = static_cast<double>(hist[a][b]) / static_cast<double>(total);
+        histOk = histOk && std::fabs(fraction - p) <= std::max(5.0 * sigma, 1e-4);
+      }
+    }
+    check(histOk, "sample2D: 4x4 (u1, u2) histogram is flat within 5sigma at N=" + std::to_string(n));
+  }
+}
+
+// Per-pattern row and column counts against the grid's own layout: every
+// row full but one, every column holding n or n-1 samples. A draw within
+// one float ulp of a stratum boundary can land in either adjacent
+// stratum, so observed and expected counts, sorted and paired, are
+// compared within 1.
+bool sample2DPartialLayoutHolds(std::uint32_t sampleCount, RtInt x, RtInt y) {
+  Sample2DGrid const grid = sample2DGridShape(sampleCount);
+  std::vector<std::uint32_t> rowCounts(grid.n, 0);
+  std::vector<std::uint32_t> colCounts(grid.m, 0);
+  for (std::uint32_t s = 0; s < sampleCount; ++s) {
+    gman::Sample2D const draw = gman::sample2D(kSeed, x, y, s, sampleCount, 41u);
+    auto const col = std::min(grid.m - 1, static_cast<std::uint32_t>(draw.u1 * static_cast<RtFloat>(grid.m)));
+    auto const row = std::min(grid.n - 1, static_cast<std::uint32_t>(draw.u2 * static_cast<RtFloat>(grid.n)));
+    ++colCounts[col];
+    ++rowCounts[row];
+  }
+
+  auto pairedWithinOne = [](std::vector<std::uint32_t> observed, std::vector<std::uint32_t> expected) {
+    std::sort(observed.begin(), observed.end());
+    std::sort(expected.begin(), expected.end());
+    bool ok = true;
+    for (std::size_t i = 0; i < observed.size(); ++i) {
+      int const diff = static_cast<int>(observed[i]) - static_cast<int>(expected[i]);
+      ok = ok && (diff >= -1 && diff <= 1);
+    }
+    return ok;
+  };
+
+  std::vector<std::uint32_t> expectedRows(grid.n, grid.m);
+  if (grid.r != grid.m) {
+    expectedRows[0] = grid.r;
+  }
+  std::vector<std::uint32_t> expectedCols(grid.r, grid.n);
+  expectedCols.resize(grid.m, grid.n - 1);
+
+  return pairedWithinOne(rowCounts, expectedRows) && pairedWithinOne(colCounts, expectedCols);
+}
+
+void checkSample2DPartialGridLayout() {
+  std::vector<Pixel> const pixels = {{0, 0}, {17, 5}, {640, 480}, {99, 1}, {4000, 4000}};
+  for (std::uint32_t n : {2u, 3u, 5u, 32u, 128u, 512u}) {
+    bool ok = true;
+    for (Pixel const& px : pixels) {
+      ok = ok && sample2DPartialLayoutHolds(n, px.x, px.y);
+    }
+    check(ok, "sample2D: per-pattern row and column counts match the grid's own layout at N=" + std::to_string(n));
+  }
+}
+
+// The short row's own index, and which of its columns stay filled, are
+// chosen uniformly per pattern: over many patterns at N=32 (m=5, n=7,
+// r=2), each row index is short about 1/7 of the time and each column is
+// among the missing m-r about (m-r)/m of the time, both within 5 sigma.
+void checkSample2DShortRowAndColumnsUniform() {
+  constexpr std::uint32_t kN = 32u;
+  Sample2DGrid const grid = sample2DGridShape(kN);
+  constexpr int kPatterns = 1 << 13;
+  std::vector<int> shortRowFrequency(grid.n, 0);
+  std::vector<int> missingColumnFrequency(grid.m, 0);
+
+  for (int p = 0; p < kPatterns; ++p) {
+    auto const x = static_cast<RtInt>(p);
+    std::vector<std::uint32_t> rowCounts(grid.n, 0);
+    std::vector<std::uint32_t> colCounts(grid.m, 0);
+    for (std::uint32_t s = 0; s < kN; ++s) {
+      gman::Sample2D const draw = gman::sample2D(kSeed, x, 0, s, kN, 42u);
+      auto const col = std::min(grid.m - 1, static_cast<std::uint32_t>(draw.u1 * static_cast<RtFloat>(grid.m)));
+      auto const row = std::min(grid.n - 1, static_cast<std::uint32_t>(draw.u2 * static_cast<RtFloat>(grid.n)));
+      ++colCounts[col];
+      ++rowCounts[row];
+    }
+    for (std::uint32_t j = 0; j < grid.n; ++j) {
+      if (rowCounts[j] < grid.m) {
+        shortRowFrequency[static_cast<std::size_t>(j)]++;
+      }
+    }
+    for (std::uint32_t i = 0; i < grid.m; ++i) {
+      if (colCounts[i] < grid.n) {
+        missingColumnFrequency[static_cast<std::size_t>(i)]++;
+      }
+    }
+  }
+
+  bool rowUniform = true;
+  double const pRow = 1.0 / static_cast<double>(grid.n);
+  double const sigmaRow = std::sqrt(pRow * (1.0 - pRow) / static_cast<double>(kPatterns));
+  for (std::uint32_t j = 0; j < grid.n; ++j) {
+    double const fraction =
+        static_cast<double>(shortRowFrequency[static_cast<std::size_t>(j)]) / static_cast<double>(kPatterns);
+    rowUniform = rowUniform && std::fabs(fraction - pRow) <= 5.0 * sigmaRow;
+  }
+  check(rowUniform, "sample2D at N=32: the short row's index is uniform across patterns within 5sigma");
+
+  bool colUniform = true;
+  double const pCol = static_cast<double>(grid.m - grid.r) / static_cast<double>(grid.m);
+  double const sigmaCol = std::sqrt(pCol * (1.0 - pCol) / static_cast<double>(kPatterns));
+  for (std::uint32_t i = 0; i < grid.m; ++i) {
+    double const fraction =
+        static_cast<double>(missingColumnFrequency[static_cast<std::size_t>(i)]) / static_cast<double>(kPatterns);
+    colUniform = colUniform && std::fabs(fraction - pCol) <= 5.0 * sigmaCol;
+  }
+  check(colUniform,
+        "sample2D at N=32: the short row's missing columns are a uniform subset across patterns within 5sigma");
+}
+
 } // namespace
 
 int main() {
@@ -536,6 +749,10 @@ int main() {
   checkZeroSampleCount();
   checkLargeSampleCounts();
   checkClampBelowOne();
+  checkSample2DFullGridDigestUnchanged();
+  checkSample2DPartialGridUnbiased();
+  checkSample2DPartialGridLayout();
+  checkSample2DShortRowAndColumnsUniform();
 
   return checkSummary("gman's sampler holds its statistical and schedule contracts");
 }

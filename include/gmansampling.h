@@ -86,7 +86,11 @@ GMAN_EXPORT RtFloat sample1D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t
 // dimension. The grid is m = floor(sqrt(sampleCount)), n =
 // ceil(sampleCount / m); when sampleCount == m * n, the sampleCount
 // points fill every m*n grid cell once, every stratum of u1 once and
-// every stratum of u2 once. sampleIndex < sampleCount is a precondition,
+// every stratum of u2 once. When sampleCount < m * n, one row holds
+// fewer than m points; which row, and which of its columns it keeps, is
+// chosen uniformly per pattern and independent of the pattern's own row
+// and column shuffles, so u1 and u2 stay unbiased across patterns
+// despite the short row. sampleIndex < sampleCount is a precondition,
 // checked by assert; a sampleCount of 0 behaves as 1.
 GMAN_EXPORT Sample2D sample2D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleIndex,
                               std::uint32_t sampleCount, std::uint32_t dimension);

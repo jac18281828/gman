@@ -58,6 +58,12 @@ constexpr std::uint32_t kCmjIndexSalt = 0x51633e2du;
 constexpr std::uint32_t kCmjColSalt = 0xa511e9b3u;
 constexpr std::uint32_t kCmjRowSalt = 0x63d83595u;
 
+// A partial grid's short-row relabeling salts, distinct from the index
+// permutation and the shuffles above so the short row and its kept
+// columns vary independently of them.
+constexpr std::uint32_t kCmjColPickSalt = 0x8da6b343u;
+constexpr std::uint32_t kCmjRowPickSalt = 0xb15a4f09u;
+
 constexpr RtFloat kPi = 3.14159265358979323846f;
 constexpr RtFloat kInvPi = 1.0f / kPi;
 constexpr RtFloat kInv2Pi = 1.0f / (2.0f * kPi);
@@ -202,8 +208,19 @@ Sample2D sample2D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleInde
   // correlated multi-jittered sampling.
   std::uint32_t const pattern = structuralHash(seed, x, y, dimension, kSample2DPatternSalt);
   std::uint32_t const s = permute(sampleIndex, count, pattern * kCmjIndexSalt);
-  std::uint32_t const i = s % m;
-  std::uint32_t const j = s / m;
+  std::uint32_t const logicalCol = s % m;
+  std::uint32_t const logicalRow = s / m;
+
+  // A partial grid (m * n > count) leaves one row short by m minus the
+  // grid's own remainder; index order alone always shorts the same
+  // (highest) row and its lowest columns, biasing u1 and u2 low. An
+  // independent permutation of each axis relabels which physical row is
+  // short and which of its columns it keeps, uniformly per pattern; a
+  // full grid needs no relabeling and keeps today's cell exactly.
+  bool const partialGrid = static_cast<std::uint64_t>(m) * n != count;
+  std::uint32_t const i = partialGrid ? permute(logicalCol, m, pattern * kCmjColPickSalt) : logicalCol;
+  std::uint32_t const j = partialGrid ? permute(logicalRow, n, pattern * kCmjRowPickSalt) : logicalRow;
+
   std::uint32_t const colShuffle = permute(i, m, pattern * kCmjColSalt);
   std::uint32_t const rowShuffle = permute(j, n, pattern * kCmjRowSalt);
 
