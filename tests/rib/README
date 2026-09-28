@@ -295,10 +295,10 @@ convention. Not third-party.
 
 ## malformed/nupatch_umax_above_knot.rib
 
-`umax > uknot[nu]`: the third u range rule, which no earlier fixture
-reaches. Registered in `tests/nupatch_test.cpp`, asserting the same
-warn-and-`create()` fallback. A trailing `Sphere` follows the desync
-convention. Not third-party.
+`umax > uknot[nu]`: the third u range rule. Registered in
+`tests/nupatch_test.cpp`, asserting the same warn-and-`create()`
+fallback. A trailing `Sphere` follows the desync convention. Not
+third-party.
 
 ## malformed/nupatch_rule_order.rib
 
