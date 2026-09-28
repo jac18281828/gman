@@ -39,8 +39,6 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraypolygon.h"
-#include "gmanraysphere.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
 #include "pathtracerarealightscene.h"
@@ -85,19 +83,8 @@ void renderAreaLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
   floor->setAppearance(floorAppearance);
   renderer.getWorldManager()->add(floor);
 
-  GMANMatrix4 place;
-  place.trans(kSphereCentreX, kSphereCentreY, kSphereCentreZ);
-  GMANTransform const transform = makeTransform(place);
-  const auto sphere =
-      new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(), transform);
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
-  gman::Appearance sphereAppearance;
-  sphereAppearance.areaLight = &areaLight;
-  // Os 1, the RIB default: opaque, so a shadow ray that walked all the way
-  // to the sampled point would graze the emitter's own surface there.
-  sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
-  sphere->setAppearance(sphereAppearance);
-  renderer.getWorldManager()->add(sphere);
+  addEmittingSphere(renderer, areaLight, kSphereRadius, kSphereCentreX, kSphereCentreY, kSphereCentreZ);
 
   frameBufferOut.reset(new GMANFrameBuffer(kFloorRes, kFloorRes, options.getBackground()));
   GMANAttributes const attr;

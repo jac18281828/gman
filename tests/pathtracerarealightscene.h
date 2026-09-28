@@ -29,6 +29,8 @@
 
 #include "gmancolor.h"
 #include "gmanmatrix4.h"
+#include "gmanpathtracerenderer.h"
+#include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "gmanvsperspective.h"
 #include "maketransform.h"
@@ -37,6 +39,24 @@
 
 // An emitting sphere or disk's own radiance in a pathtracer area-light test.
 inline constexpr RtFloat kAreaLe = 10.0f;
+
+// A rigidly placed emitting sphere, added to renderer's world, opaque (Os
+// 1, the RIB default, so a shadow ray that walked all the way to the
+// sampled point would graze the emitter's own surface there). areaLight is
+// the caller's own, outliving renderer.render()'s own call.
+inline GMANRaySphere* addEmittingSphere(GMANPathtraceRenderer& renderer, GMANLight const& areaLight, RtFloat radius,
+                                        RtFloat centreX, RtFloat centreY, RtFloat centreZ) {
+  GMANMatrix4 place;
+  place.trans(centreX, centreY, centreZ);
+  GMANTransform const transform = makeTransform(place);
+  GMANRaySphere* sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+  gman::Appearance appearance;
+  appearance.areaLight = &areaLight;
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  sphere->setAppearance(appearance);
+  renderer.getWorldManager()->add(sphere);
+  return sphere;
+}
 
 // The mean, over a 16 x 16 midpoint grid of pixel (px, py)'s cell, of the
 // equivalent-point-source formula for a Lambertian sphere light: rho * le *

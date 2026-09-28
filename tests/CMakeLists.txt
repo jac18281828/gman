@@ -3115,6 +3115,21 @@ set_tests_properties(pathtracermisveach PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Two area lights of different power and distance over one floor: the
+# floor's own mean sums their analytic irradiance, guarding the one
+# mistake no single-light area-light scene here can catch -- the
+# light-choice probability read at the wrong vertex. See
+# tests/pathtracermistwolight_test.cpp.
+add_executable(gman_pathtracermistwolight pathtracermistwolight_test.cpp)
+target_link_libraries(gman_pathtracermistwolight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracermistwolight gman_matte)
+
+add_test(NAME pathtracermistwolight COMMAND gman_pathtracermistwolight)
+set_tests_properties(pathtracermistwolight PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every
