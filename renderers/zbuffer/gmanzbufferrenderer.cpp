@@ -26,7 +26,7 @@
 #include <cmath>
 #include <typeinfo>
 
-#include "gmanarealightcount.h"
+#include "gmanarealightwarning.h"
 #include "gmanattributes.h"
 #include "gmanmath.h"
 #include "gmanrenderer.h"

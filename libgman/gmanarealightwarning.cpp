@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include "gmanarealightcount.h"
+#include "gmanarealightwarning.h"
 #include "gmanlog.h"
 
 namespace gman {

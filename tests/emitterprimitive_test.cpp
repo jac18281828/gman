@@ -50,28 +50,17 @@ namespace {
 constexpr std::uint32_t kSeed = 0x51ed270bu;
 constexpr double kPi = 3.14159265358979323846;
 
-// Builds a one-primitive world tagging sphere as an area light and returns
+// Builds a one-primitive world tagging shape as an area light and returns
 // gman::emitters' own count for it -- the eligibility gman::emitters itself
 // applies, not a copy of it.
-std::size_t emittedCount(GMANRaySphere* sphere) {
+template <class Shape> std::size_t emittedCount(Shape* shape) {
   GMANLight light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
   gman::Appearance appearance;
   appearance.areaLight = &light;
-  sphere->setAppearance(appearance);
+  shape->setAppearance(appearance);
 
   GMANLinearWorldManager world;
-  world.add(sphere);
-  return gman::emitters(world).size();
-}
-
-std::size_t emittedCount(GMANRayDisk* disk) {
-  GMANLight light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
-  gman::Appearance appearance;
-  appearance.areaLight = &light;
-  disk->setAppearance(appearance);
-
-  GMANLinearWorldManager world;
-  world.add(disk);
+  world.add(shape);
   return gman::emitters(world).size();
 }
 

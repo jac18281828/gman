@@ -27,6 +27,7 @@
 #include "gmanemitter.h"
 #include "gmanerror.h"
 #include "gmanlog.h"
+#include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanraydisk.h"
 #include "gmanraysphere.h"

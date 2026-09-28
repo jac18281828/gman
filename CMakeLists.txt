@@ -113,7 +113,7 @@ endfunction()
 # ---------------------------------------------------------------------------
 
 add_library(gman_core SHARED
-  libgman/gmanarealightcount.cpp
+  libgman/gmanarealightwarning.cpp
   libgman/gmanattributes.cpp
   libgman/gmanbasis.cpp
   libgman/gmanbbox.cpp

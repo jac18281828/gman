@@ -26,7 +26,7 @@
 #include <cstddef>
 #include <memory>
 
-#include "gmanarealightcount.h"
+#include "gmanarealightwarning.h"
 #include "gmanindirectpass.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"

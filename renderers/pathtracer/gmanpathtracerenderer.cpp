@@ -324,46 +324,64 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
   return kBlack;
 }
 
+// One path's own mutable state as it walks its vertices: its accumulated
+// result, its throughput and eta-scale, whether it has scattered yet, the
+// current ray, its run of straight pass-through vertices, whether that ray
+// still qualifies for a direct emitter-hit credit, and the chooseLight
+// scratch buffer, sized once to emitters.size() and reused at every vertex.
+struct PathState {
+  PathResult result;
+  GMANColor beta = kWhite;
+  RtFloat etaScale = 1.0f;
+  bool hasScattered = false;
+  // The camera ray itself is eligible: it carries no earlier BSDF draw, so
+  // it has no earlier next-event estimate to double.
+  bool rayEligibleForEmitterHit = true;
+  int passThroughRun = 0;
+  GMANRay ray;
+  std::vector<RtFloat> lightWeight;
+
+  PathState(GMANRay const& cameraRay, std::size_t emitterCount) : ray(cameraRay), lightWeight(emitterCount) {}
+};
+
 // One vertex's own work, once a hit is known: an eligible emitter hit's own
 // Le, then coverage's pass-through or scattering with next-event
-// estimation and a BSDF-sampled bounce. Updates result and the path's own
-// running state in place; answers false to end the path here.
+// estimation and a BSDF-sampled bounce. Updates state in place; answers
+// false to end the path here.
 bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                      GMANMatrix4 const& cameraToWorld, gman::TextureCache* textureCache, GMANHit const& hit,
                      GMANRayInterface const* hitPrimitive, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
-                     std::uint32_t k, PathResult& result, GMANColor& beta, RtFloat& etaScale, bool& hasScattered,
-                     bool& rayEligibleForEmitterHit, int& passThroughRun, GMANRay& ray,
-                     std::vector<RtFloat>& lightWeight) {
-  gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
+                     std::uint32_t k, PathState& state) {
+  gman::SurfacePoint const point = gman::hitSurfacePoint(state.ray, hit);
   gman::Appearance const& appearance = hitPrimitive->getAppearance();
   RtFloat const surfaceMagnitude = point.surfaceMagnitude;
 
-  result.L +=
-      gman::multiplyChannels(beta, emitterHitLe(emitters, hitPrimitive, appearance, point, rayEligibleForEmitterHit));
+  state.result.L += gman::multiplyChannels(
+      state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point, state.rayEligibleForEmitterHit));
 
   GMANColor const os = clampCoverage(appearance.Os);
   RtFloat const qPass = meanChannel(gman::oneMinus(os));
   RtFloat const coverageU = gman::sample1D(kSeed, sx, sy, i, N, 1u + 5u * k);
   if (coverageU < qPass) {
-    return passThrough(hit, point, os, qPass, surfaceMagnitude, beta, passThroughRun, ray);
+    return passThrough(hit, point, os, qPass, surfaceMagnitude, state.beta, state.passThroughRun, state.ray);
   }
 
   // Coverage: scatter.
-  passThroughRun = 0;
-  hasScattered = true;
-  beta = gman::multiplyChannels(beta, divideColor(os, (RtFloat)1.0 - qPass));
+  state.passThroughRun = 0;
+  state.hasScattered = true;
+  state.beta = gman::multiplyChannels(state.beta, divideColor(os, (RtFloat)1.0 - qPass));
   gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
   GMANVector const wo = -point.I;
-  result.L += nextEventEstimation(bvh, emitters, hit, point, closure, wo, beta, surfaceMagnitude, cameraToWorld,
-                                  textureCache, sx, sy, i, N, k, lightWeight);
+  state.result.L += nextEventEstimation(bvh, emitters, hit, point, closure, wo, state.beta, surfaceMagnitude,
+                                        cameraToWorld, textureCache, sx, sy, i, N, k, state.lightWeight);
   std::optional<BSDFStepDraw> const draw =
-      bsdfStepAndRoulette(closure, wo, point, sx, sy, i, N, k, beta, etaScale, result.finite);
+      bsdfStepAndRoulette(closure, wo, point, sx, sy, i, N, k, state.beta, state.etaScale, state.result.finite);
   if (!draw) {
     return false;
   }
-  rayEligibleForEmitterHit = draw->isDelta;
+  state.rayEligibleForEmitterHit = draw->isDelta;
   GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, draw->wi, surfaceMagnitude);
-  ray = GMANRay(origin, draw->wi);
+  state.ray = GMANRay(origin, draw->wi);
   return true;
 }
 
@@ -378,41 +396,32 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
 PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                      GMANMatrix4 const& cameraToWorld, GMANColor const& background, gman::TextureCache* textureCache,
                      GMANRay cameraRay, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N) {
-  PathResult result;
-  GMANColor beta = kWhite;
-  RtFloat etaScale = 1.0f;
-  bool hasScattered = false, escaped = false;
-  // The camera ray itself is eligible: it carries no earlier BSDF draw, so
-  // it has no earlier next-event estimate to double.
-  bool rayEligibleForEmitterHit = true;
-  int passThroughRun = 0;
-  GMANRay ray = cameraRay;
-  std::vector<RtFloat> lightWeight(emitters.size());
+  PathState state(cameraRay, emitters.size());
+  bool escaped = false;
   for (std::uint32_t k = 0;; ++k) {
     GMANHit hit;
     GMANRayInterface const* hitPrimitive = nullptr;
-    bool const hitFound = bvh.nearestHit(ray, hit, hitPrimitive);
+    bool const hitFound = bvh.nearestHit(state.ray, hit, hitPrimitive);
     if (k == 0 && hitFound) {
-      result.hasFirstHit = true;
-      result.firstHitZ = hit.point.getZ();
+      state.result.hasFirstHit = true;
+      state.result.firstHitZ = hit.point.getZ();
     }
     if (!hitFound) {
-      result.L += gman::multiplyChannels(beta, background);
+      state.result.L += gman::multiplyChannels(state.beta, background);
       escaped = true;
       break;
     }
-    if (!tracePathVertex(bvh, emitters, cameraToWorld, textureCache, hit, hitPrimitive, sx, sy, i, N, k, result, beta,
-                         etaScale, hasScattered, rayEligibleForEmitterHit, passThroughRun, ray, lightWeight)) {
+    if (!tracePathVertex(bvh, emitters, cameraToWorld, textureCache, hit, hitPrimitive, sx, sy, i, N, k, state)) {
       break;
     }
   }
   // 1 - beta only for a path escaping before its first scattering vertex;
   // any other ending, the pass-through cap included, reads fully covered.
-  result.alphaHat = (escaped && !hasScattered) ? gman::oneMinus(beta) : kWhite;
+  state.result.alphaHat = (escaped && !state.hasScattered) ? gman::oneMinus(state.beta) : kWhite;
   // finite also fails here when L or alphaHat itself went non-finite, not
   // only when the BSDF step already cleared it.
-  result.finite = result.finite && colorFinite(result.L) && colorFinite(result.alphaHat);
-  return result;
+  state.result.finite = state.result.finite && colorFinite(state.result.L) && colorFinite(state.result.alphaHat);
+  return state.result;
 }
 
 // One slot's own N paths, summed for render(): the mean radiance and
