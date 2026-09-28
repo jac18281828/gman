@@ -316,9 +316,9 @@ struct FRef {
   bool tir;
 };
 
-// Decision 11's exact unpolarized Fresnel reflectance and Snell's
-// transmitted cosine, from the two sides' relative indices and wo's
-// cosine against the normal oriented onto wo's side.
+// The exact unpolarized Fresnel reflectance and Snell's transmitted
+// cosine, from the two sides' relative indices and wo's cosine against
+// the normal oriented onto wo's side.
 FRef refFresnelFromCos(double etaO, double etaI, double cosThetaO) {
   double const sinThetaO2 = std::max(0.0, 1.0 - cosThetaO * cosThetaO);
   double const ratio = etaO / etaI;

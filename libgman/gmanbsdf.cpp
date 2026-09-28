@@ -381,8 +381,8 @@ BSDFSample BSDF::sample(GMANVector const& wo, RtFloat u1, RtFloat u2) const {
   RtFloat const pChosen = selectionWeight(chosen) / total;
 
   // A non-delta draw's trailing report: the mixture's own eval and pdf at
-  // the drawn wi, failing where 4a's decision 10 (same-side) or a
-  // non-positive density does.
+  // the drawn wi, failing where wi lands off wo's side or the density is
+  // non-positive.
   auto const finishNonDelta = [&](GMANVector const& wi) -> BSDFSample {
     if (!sameSide(cosThetaO, normal.dot(wi))) {
       return failedSample();
