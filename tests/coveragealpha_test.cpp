@@ -41,18 +41,18 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
 int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag) {
-  const std::string command = "\"" + gman + "\" " + rendererFlag + " \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+  if (rendererFlag.empty()) {
+    return ::runGman(gman, {rib}).exitStatus;
+  }
+  return ::runGman(gman, {"-r", rendererFlag, rib}).exitStatus;
 }
 
 void writeFile(const std::string& path, const std::string& contents) {
@@ -303,13 +303,13 @@ int main(int argc, char* argv[]) {
   const std::string ribDir = argv[2];
 
   testExtremes(gman, "", "zbuffer");
-  testExtremes(gman, "-r gmanraytracer", "raytracer");
+  testExtremes(gman, "gmanraytracer", "raytracer");
 
   testPartialCoverage(gman, "", "zbuffer");
-  testPartialCoverage(gman, "-r gmanraytracer", "raytracer");
+  testPartialCoverage(gman, "gmanraytracer", "raytracer");
 
   testOsReflected(gman, ribDir, "", "zbuffer");
-  testOsReflected(gman, ribDir, "-r gmanraytracer", "raytracer");
+  testOsReflected(gman, ribDir, "gmanraytracer", "raytracer");
 
   return checkSummary("coverage alpha tracks real per-sample opacity under both renderers");
 }

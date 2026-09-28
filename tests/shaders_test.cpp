@@ -37,35 +37,13 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
-
-struct Result {
-  int exitStatus;
-  std::string output;
-};
-
-Result runGman(const std::string& gman, const std::string& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" 2>&1";
-  std::FILE* pipe = popen(command.c_str(), "r");
-  Result result{-1, ""};
-  if (pipe == nullptr) {
-    return result;
-  }
-  char buffer[512];
-  while (std::fgets(buffer, sizeof buffer, pipe) != nullptr) {
-    result.output += buffer;
-  }
-  const int status = pclose(pipe);
-  result.exitStatus = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-  return result;
-}
 
 int countSilhouetteRuns(const GmanImage& img, uint32_t y) {
   if (!img.ok) {
@@ -99,7 +77,7 @@ int main(int argc, char* argv[]) {
   const std::string ribDir = argv[2];
 
   const std::string rib = ribDir + "/shaders.rib";
-  Result r = runGman(gman, rib);
+  GMANRunResult r = runGman(gman, {rib});
 
   check(r.exitStatus == 0, "shaders.rib renders");
 

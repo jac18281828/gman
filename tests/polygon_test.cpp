@@ -78,8 +78,6 @@
 #include <utility>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
@@ -91,6 +89,7 @@
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
 #include "gmantransform.h"
+#include "rungman.h"
 
 namespace {
 
@@ -135,11 +134,7 @@ bool pointInPolygon(const std::vector<Point>& poly, double px, double py) {
   return inside;
 }
 
-int runGman(const std::string& gman, const std::string& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 struct Image {
   bool ok = false;

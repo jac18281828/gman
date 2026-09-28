@@ -30,19 +30,16 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
 int runGman(std::string const& gman, std::string const& renderer, std::string const& rib) {
-  const std::string command = "\"" + gman + "\" -r " + renderer + " \"" + rib + "\" >/dev/null 2>&1";
-  const int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+  return ::runGman(gman, {"-r", renderer, rib}).exitStatus;
 }
 
 // Every pixel's R, G and B read exactly value; the fixture covers the

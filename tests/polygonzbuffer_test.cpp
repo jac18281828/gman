@@ -46,18 +46,19 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag = "") {
+  if (rendererFlag.empty()) {
+    return ::runGman(gman, {rib}).exitStatus;
+  }
+  return ::runGman(gman, {"-r", rendererFlag, rib}).exitStatus;
 }
 
 // A covered pixel is one that differs from its own image's corner
@@ -143,12 +144,12 @@ int main(int argc, char* argv[]) {
   std::remove("r5a_polygon_zbuffer.tif");
   std::remove("r5a_polygon.tif");
 
-  int const rayStatus = runGman("\"" + gman + "\" -r gmanraytracer \"" + rib + "\" >/dev/null 2>&1");
+  int const rayStatus = runGman(gman, rib, "gmanraytracer");
   check(rayStatus == 0, "r5a_polygon.rib renders under -r gmanraytracer (exit " + std::to_string(rayStatus) + ")");
   check(std::rename("r5a_polygon.tif", "r5a_polygon_raytraced.tif") == 0,
         "r5a_polygon.tif renders and renames to r5a_polygon_raytraced.tif");
 
-  int const zStatus = runGman("\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1");
+  int const zStatus = runGman(gman, rib);
   check(zStatus == 0, "r5a_polygon.rib renders under the default z-buffer (exit " + std::to_string(zStatus) + ")");
   check(std::rename("r5a_polygon.tif", "r5a_polygon_zbuffer.tif") == 0,
         "r5a_polygon.tif renders and renames to r5a_polygon_zbuffer.tif");

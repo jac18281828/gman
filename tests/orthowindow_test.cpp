@@ -63,25 +63,14 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-// `output` is removed before the run. Every content assertion below would
-// otherwise be satisfied by an image an earlier run left behind: a build
-// directory is reused across ctest invocations, and a reverted fix that
-// throws before opening the display leaves the previous good file in place.
-// tests/baseline_test.cpp removes its target for the same reason.
-int runGman(const std::string& gman, const std::string& rib, const std::string& output) {
-  std::remove(output.c_str());
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
@@ -171,7 +160,11 @@ int main(int argc, char* argv[]) {
                       "Sphere 1 -1 1 360\n"
                       "WorldEnd\n";
   writeFile("repro.rib", repro);
-  check(runGman(gman, "repro.rib", "repro.tif") == 0, "the reproduction scene renders");
+  // Removed ahead of the run: a build directory is reused across ctest
+  // invocations, and a reverted fix that throws before opening the
+  // display would otherwise leave the previous good file in place.
+  std::remove("repro.tif");
+  check(runGman(gman, "repro.rib") == 0, "the reproduction scene renders");
 
   BBox b = findSilhouette("repro.tif");
   check(b.found, "the reproduction scene: a silhouette was found");
@@ -200,7 +193,8 @@ int main(int argc, char* argv[]) {
                          "Sphere 1 -1 1 360\n"
                          "WorldEnd\n";
   writeFile("vanished.rib", vanished);
-  check(runGman(gman, "vanished.rib", "vanished.tif") == 0, "the off-centre scene renders");
+  std::remove("vanished.tif");
+  check(runGman(gman, "vanished.rib") == 0, "the off-centre scene renders");
   BBox v = findSilhouette("vanished.tif");
   check(v.found, "a sphere beyond the pre-fix vanishing point still has a "
                  "silhouette (used to vanish entirely)");
@@ -217,7 +211,8 @@ int main(int argc, char* argv[]) {
                      "Sphere 1 -1 1 360\n"
                      "WorldEnd\n";
   writeFile("unit.rib", unit);
-  check(runGman(gman, "unit.rib", "unit.tif") == 0, "the default-window control scene renders");
+  std::remove("unit.tif");
+  check(runGman(gman, "unit.rib") == 0, "the default-window control scene renders");
   BBox u = findSilhouette("unit.tif");
   // The same sphere (camera-space x in [-2.5,-0.5]) under the *default*
   // screen window (aspect-derived, here [-2,2]x[-1,1] for a 2:1 Format)

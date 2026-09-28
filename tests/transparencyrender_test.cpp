@@ -41,12 +41,11 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -54,9 +53,8 @@ constexpr int kCentreX = 100;
 constexpr int kCentreY = 100;
 constexpr int kTolerance = 3;
 
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(const std::string& gman, const std::string& rib) {
+  return ::runGman(gman, {"-r", "gmanraytracer", rib}).exitStatus;
 }
 
 // front_alone's own prediction from front_opaque and bg, or composite's
@@ -87,7 +85,7 @@ int main(int argc, char* argv[]) {
   char const* const scenes[] = {"transparency_composite", "transparency_front_alone", "transparency_front_opaque",
                                 "transparency_back_alone"};
   for (char const* scene : scenes) {
-    check(runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/" + scene + ".rib\" >/dev/null 2>&1") == 0,
+    check(runGman(gman, ribDir + "/" + std::string(scene) + ".rib") == 0,
           std::string(scene) + ".rib renders under -r gmanraytracer");
   }
 

@@ -34,16 +34,14 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(std::string const& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(std::string const& gman, std::string const& rib) {
+  return ::runGman(gman, {"-r", "gmanraytracer", rib}).exitStatus;
 }
 
 // The reflected wall's own Color [0 1 0]: green well clear of red and
@@ -95,8 +93,7 @@ int main(int argc, char* argv[]) {
   std::string const ribDir = argv[2];
 
   std::remove("r8_mirror_matte.tif");
-  int const matteStatus =
-      runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/r8_mirror_matte.rib\" >/dev/null 2>&1");
+  int const matteStatus = runGman(gman, ribDir + "/r8_mirror_matte.rib");
   check(matteStatus == 0,
         "r8_mirror_matte.rib renders under -r gmanraytracer (exit " + std::to_string(matteStatus) + ")");
 
@@ -108,7 +105,7 @@ int main(int argc, char* argv[]) {
   }
 
   std::remove("r8_mirror.tif");
-  int const status = runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/r8_mirror.rib\" >/dev/null 2>&1");
+  int const status = runGman(gman, ribDir + "/r8_mirror.rib");
   check(status == 0, "r8_mirror.rib renders under -r gmanraytracer (exit " + std::to_string(status) + ")");
 
   checkGoldenImage("r8_mirror.tif", ribDir + "/r8_mirror_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,

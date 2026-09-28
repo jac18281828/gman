@@ -33,34 +33,14 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-struct Result {
-  int exitStatus;
-  std::string output;
-};
-
-Result runGman(const std::string& gman, const std::string& rib) {
-  const std::string command = "\"" + gman + "\" -w \"" + rib + "\" 2>&1";
-  std::FILE* pipe = popen(command.c_str(), "r");
-  Result result{-1, ""};
-  if (pipe == nullptr) {
-    return result;
-  }
-  char buffer[512];
-  while (std::fgets(buffer, sizeof buffer, pipe) != nullptr) {
-    result.output += buffer;
-  }
-  const int status = pclose(pipe);
-  result.exitStatus = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-  return result;
-}
+GMANRunResult runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {"-w", rib}); }
 
 int countLines(const std::string& text) {
   if (text.empty()) {
@@ -194,7 +174,7 @@ PNMImage readPNM(const std::string& path) {
 // and B 64 and alpha 200; columns 8-15 read 10 on all four.
 void checkQuantize8(const std::string& gman, const std::string& ribDir) {
   std::remove("quantize8.tif");
-  Result const r = runGman(gman, ribDir + "/quantize8.rib");
+  GMANRunResult const r = runGman(gman, ribDir + "/quantize8.rib");
   check(r.exitStatus == 0, "quantize8: renders");
   check(r.output.find("unrecognized request") == std::string::npos, "quantize8: Quantize parses, not skipped");
 
@@ -220,7 +200,7 @@ void checkQuantize8(const std::string& gman, const std::string& ribDir) {
 // 255 and every sample is 64.
 void checkQuantizeFallback(const std::string& gman, const std::string& ribDir) {
   std::remove("quantize_fallback.pnm");
-  Result const r = runGman(gman, ribDir + "/quantize_fallback.rib");
+  GMANRunResult const r = runGman(gman, ribDir + "/quantize_fallback.rib");
   check(r.exitStatus == 0, "quantize_fallback: renders");
   std::string const relevant = withoutUnrelatedNoise(r.output);
   check(countLines(relevant) == 1, "quantize_fallback: exactly one line of Quantize's own output (got " +
@@ -252,7 +232,7 @@ void checkQuantizeFallback(const std::string& gman, const std::string& ribDir) {
 // 65535; columns 8-15 read 1000 on all four.
 void checkQuantize16(const std::string& gman, const std::string& ribDir) {
   std::remove("quantize16.tif");
-  Result const r = runGman(gman, ribDir + "/quantize16.rib");
+  GMANRunResult const r = runGman(gman, ribDir + "/quantize16.rib");
   check(r.exitStatus == 0, "quantize16: renders");
 
   RawImage const img = readTIFFRaw("quantize16.tif");

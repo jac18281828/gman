@@ -30,16 +30,14 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(std::string const& gman, std::string const& rib) {
+  return ::runGman(gman, {"-r", "gmanraytracer", rib}).exitStatus;
 }
 
 } // namespace
@@ -55,7 +53,7 @@ int main(int argc, char* argv[]) {
 
   std::remove("r5a_disk.tif");
 
-  int const status = runGman("\"" + gman + "\" -r gmanraytracer \"" + rib + "\" >/dev/null 2>&1");
+  int const status = runGman(gman, rib);
   check(status == 0, "r5a_disk.rib renders under -r gmanraytracer (exit " + std::to_string(status) + ")");
 
   checkGoldenImage("r5a_disk.tif", ribDir + "/r5a_disk_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,

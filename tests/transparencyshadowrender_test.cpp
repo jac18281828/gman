@@ -42,12 +42,11 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -62,9 +61,8 @@ constexpr double kOneBlockerRatio = 0.36;
 constexpr double kTwoBlockerRatio = 0.1296;
 constexpr double kRatioTolerance = 0.02;
 
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(const std::string& gman, const std::string& rib) {
+  return ::runGman(gman, {"-r", "gmanraytracer", rib}).exitStatus;
 }
 
 } // namespace
@@ -85,7 +83,7 @@ int main(int argc, char* argv[]) {
   char const* const scenes[] = {"transparencyshadow_none", "transparencyshadow_one", "transparencyshadow_two",
                                 "transparencyshadow_opaque"};
   for (char const* scene : scenes) {
-    check(runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/" + scene + ".rib\" >/dev/null 2>&1") == 0,
+    check(runGman(gman, ribDir + "/" + std::string(scene) + ".rib") == 0,
           std::string(scene) + ".rib renders under -r gmanraytracer");
   }
 

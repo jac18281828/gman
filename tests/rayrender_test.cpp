@@ -45,18 +45,19 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag = "") {
+  if (rendererFlag.empty()) {
+    return ::runGman(gman, {rib}).exitStatus;
+  }
+  return ::runGman(gman, {"-r", rendererFlag, rib}).exitStatus;
 }
 
 // A covered pixel is one that differs from its own image's corner
@@ -95,13 +96,11 @@ int main(int argc, char* argv[]) {
   std::remove("r4_raytracer_raytraced.tif");
   std::remove("r4_raytracer_zbuffer.tif");
 
-  check(runGman("\"" + gman + "\" -r gmanraytracer \"" + rib + "\" >/dev/null 2>&1") == 0,
-        "r4_raytracer.rib renders under -r gmanraytracer");
+  check(runGman(gman, rib, "gmanraytracer") == 0, "r4_raytracer.rib renders under -r gmanraytracer");
   check(std::rename("r4_raytracer.tif", "r4_raytracer_raytraced.tif") == 0,
         "r4_raytracer.tif renders and renames to r4_raytracer_raytraced.tif");
 
-  check(runGman("\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1") == 0,
-        "r4_raytracer.rib renders under the default z-buffer");
+  check(runGman(gman, rib) == 0, "r4_raytracer.rib renders under the default z-buffer");
   check(std::rename("r4_raytracer.tif", "r4_raytracer_zbuffer.tif") == 0,
         "r4_raytracer.tif renders and renames to r4_raytracer_zbuffer.tif");
 

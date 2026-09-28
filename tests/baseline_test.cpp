@@ -55,11 +55,10 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
@@ -124,28 +123,13 @@ int main(int argc, char* argv[]) {
   // asks for would land beside us if it were ever written.
   std::remove(image);
 
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" 2>&1";
+  GMANRunResult const first = runGman(gman, {rib});
 
-  std::FILE* pipe = popen(command.c_str(), "r");
-  if (pipe == nullptr) {
-    std::fprintf(stderr, "FAIL: could not run %s\n", command.c_str());
-    return 1;
-  }
+  std::printf("--- gman output ---\n%s-------------------\n", first.output.c_str());
 
-  std::string output;
-  char buffer[512];
-  while (std::fgets(buffer, sizeof buffer, pipe) != nullptr) {
-    output += buffer;
-  }
-
-  const int closeStatus = pclose(pipe);
-  const int exitStatus = WIFEXITED(closeStatus) ? WEXITSTATUS(closeStatus) : -1;
-
-  std::printf("--- gman output ---\n%s-------------------\n", output.c_str());
-
-  check(exitStatus == 0, "gman exits 0");
-  check(output.find("Parsing") != std::string::npos, "the RIB was opened and parsing started");
-  check(output.find("TOKEN_NOT_FOUND") == std::string::npos,
+  check(first.exitStatus == 0, "gman exits 0");
+  check(first.output.find("Parsing") != std::string::npos, "the RIB was opened and parsing started");
+  check(first.output.find("TOKEN_NOT_FOUND") == std::string::npos,
         "the array-parameter bug that pinned exit 1 does not recur");
 
   // parseParameterList reaches the projection's "fov" [45]; WorldBegin
@@ -178,9 +162,8 @@ int main(int argc, char* argv[]) {
   check(readRaster(image, firstRaster), "first render's TIFF decodes");
 
   std::remove(image);
-  const int secondStatus = std::system(command.c_str());
-  const int secondExit = WIFEXITED(secondStatus) ? WEXITSTATUS(secondStatus) : -1;
-  check(secondExit == 0, "second render also exits 0");
+  GMANRunResult const second = runGman(gman, {rib});
+  check(second.exitStatus == 0, "second render also exits 0");
 
   std::vector<uint32_t> secondRaster;
   check(readRaster(image, secondRaster), "second render's TIFF decodes");

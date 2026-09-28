@@ -47,11 +47,10 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
@@ -99,9 +98,7 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string rib = argv[2];
 
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  check(WIFEXITED(status) && WEXITSTATUS(status) == 0, "wideframe.rib renders");
+  check(runGman(gman, {rib}).exitStatus == 0, "wideframe.rib renders");
 
   const char* tif = "wideframe.tif";
 

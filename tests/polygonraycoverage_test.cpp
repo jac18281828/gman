@@ -34,19 +34,19 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "checkertexture.h"
+#include "rungman.h"
 
 namespace {
 
 int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag) {
-  const std::string command = "\"" + gman + "\" " + rendererFlag + " \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+  if (rendererFlag.empty()) {
+    return ::runGman(gman, {rib}).exitStatus;
+  }
+  return ::runGman(gman, {"-r", rendererFlag, rib}).exitStatus;
 }
 
 struct RawImage {
@@ -123,7 +123,7 @@ void checkCoverageMatches(const std::string& gman, const std::string& ribDir, co
   check(runGman(gman, rib, "") == 0, fixture + ": renders under -r gmanzbuffer");
   check(std::rename((fixture + ".tif").c_str(), zbufferTif.c_str()) == 0, fixture + ": z-buffer output renames");
 
-  check(runGman(gman, rib, "-r gmanraytracer") == 0, fixture + ": renders under -r gmanraytracer");
+  check(runGman(gman, rib, "gmanraytracer") == 0, fixture + ": renders under -r gmanraytracer");
   check(std::rename((fixture + ".tif").c_str(), raytracerTif.c_str()) == 0, fixture + ": ray tracer output renames");
 
   RawImage const zImg = readRawTIFF(zbufferTif);

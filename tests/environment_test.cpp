@@ -40,8 +40,6 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
@@ -59,6 +57,7 @@
 #include "gmanvector.h"
 #include "gmanvertex.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -299,11 +298,7 @@ void testWriterTagsAndFailures(std::string const& picture, std::string const& ma
 
 // ---- the mirror (commit 3) ----
 
-int runGman(std::string const& gman, std::string const& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 const int kSixRegionWidth = 64;
 const int kSixRegionHeight = 32;

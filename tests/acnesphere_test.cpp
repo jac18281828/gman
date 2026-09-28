@@ -47,13 +47,12 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
 #include "ri.h"
+#include "rungman.h"
 
 namespace {
 
@@ -64,9 +63,8 @@ constexpr int kLocalDipTolerance = 2;
 // judge.
 constexpr int kBackgroundTolerance = 2;
 
-int runGman(std::string const& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(std::string const& gman, std::string const& rib) {
+  return ::runGman(gman, {"-r", "gmanraytracer", rib}).exitStatus;
 }
 
 int channelDelta(uint32_t a, uint32_t b) {
@@ -153,7 +151,7 @@ int main(int argc, char* argv[]) {
 
   char const* const scenes[] = {"acnesphere_x1", "acnesphere_x1000", "acnesphere_xsmall"};
   for (char const* scene : scenes) {
-    check(runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/" + scene + ".rib\" >/dev/null 2>&1") == 0,
+    check(runGman(gman, ribDir + "/" + std::string(scene) + ".rib") == 0,
           std::string(scene) + ".rib renders under -r gmanraytracer");
   }
 

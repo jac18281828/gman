@@ -32,16 +32,10 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include "check.h"
+#include "rungman.h"
 
 namespace {
-
-struct Result {
-  int exitStatus;
-  std::string output;
-};
 
 // Display writes relative to gman's cwd, which is this test's own
 // WORKING_DIRECTORY (see tests/CMakeLists.txt) -- so a plain relative open
@@ -52,23 +46,8 @@ bool nonEmptyFile(const std::string& path) {
   return in.good() && in.tellg() > 0;
 }
 
-Result run(const std::string& gman, const std::string& rib, bool debug) {
-  const std::string command = "\"" + gman + "\" " + (debug ? "-d " : "") + "\"" + rib + "\" 2>&1";
-
-  std::FILE* pipe = popen(command.c_str(), "r");
-  Result result{-1, ""};
-  if (pipe == nullptr) {
-    return result;
-  }
-
-  char buffer[512];
-  while (std::fgets(buffer, sizeof buffer, pipe) != nullptr) {
-    result.output += buffer;
-  }
-
-  const int closeStatus = pclose(pipe);
-  result.exitStatus = WIFEXITED(closeStatus) ? WEXITSTATUS(closeStatus) : -1;
-  return result;
+GMANRunResult run(const std::string& gman, const std::string& rib, bool debug) {
+  return debug ? runGman(gman, {"-d", rib}) : runGman(gman, {rib});
 }
 
 } // namespace
@@ -119,7 +98,7 @@ int main(int argc, char* argv[]) {
 
   for (const std::string& fixture : requestFixtures) {
     const std::string path = ribDir + "/requests/" + fixture;
-    Result r = run(gman, path, /*debug=*/true);
+    GMANRunResult r = run(gman, path, /*debug=*/true);
     check(r.exitStatus == 0, fixture + ": gman exits 0");
     check(r.output.find("Keyword token: Sphere") != std::string::npos,
           fixture + ": the Sphere after it still parses (no desync)");
@@ -139,7 +118,7 @@ int main(int argc, char* argv[]) {
   {
     const std::string path = ribDir + "/nonewline/top.rib";
     std::remove("nonewline_top.tif");
-    Result r = run(gman, path, /*debug=*/true);
+    GMANRunResult r = run(gman, path, /*debug=*/true);
     check(r.exitStatus == 0, "no trailing newline: top-level file exits 0");
     check(r.output.find("Unrecognized keyword") == std::string::npos,
           "no trailing newline: WorldEnd does not become WorldEndd");
@@ -147,7 +126,7 @@ int main(int argc, char* argv[]) {
   }
   {
     const std::string path = ribDir + "/nonewline/parent.rib";
-    Result r = run(gman, path, /*debug=*/true);
+    GMANRunResult r = run(gman, path, /*debug=*/true);
     check(r.exitStatus == 0, "no trailing newline: plain archive target exits 0");
     check(r.output.find("Unrecognized keyword") == std::string::npos,
           "no trailing newline: AttributeEnd does not become AttributeEndd "
@@ -157,7 +136,7 @@ int main(int argc, char* argv[]) {
   }
   {
     const std::string path = ribDir + "/nonewline/parent_gz.rib";
-    Result r = run(gman, path, /*debug=*/true);
+    GMANRunResult r = run(gman, path, /*debug=*/true);
     check(r.exitStatus == 0, "no trailing newline: gzip'd archive target exits 0");
     check(r.output.find("Unrecognized keyword") == std::string::npos,
           "no trailing newline: AttributeEnd does not become AttributeEndd "
@@ -185,7 +164,7 @@ int main(int argc, char* argv[]) {
   {
     const std::string corpus = ribDir + "/corpus/menger.rib";
     std::remove("menger.tif");
-    Result r = run(gman, corpus, /*debug=*/false);
+    GMANRunResult r = run(gman, corpus, /*debug=*/false);
     check(r.exitStatus == 0, "corpus: menger.rib parses to completion, exit 0");
     check(r.output.find("ERROR") == std::string::npos, "corpus: no error reported");
     check(nonEmptyFile("menger.tif"), "corpus: the file display survives the later framebuffer Display "
@@ -216,7 +195,7 @@ int main(int argc, char* argv[]) {
   {
     const std::string bike = ribDir + "/corpus/bike.rib";
     std::remove("bike.tif");
-    Result r = run(gman, bike, /*debug=*/true);
+    GMANRunResult r = run(gman, bike, /*debug=*/true);
     check(r.output.find("Keyword token: ReadArchive") != std::string::npos, "corpus: bike.rib reaches its ReadArchive");
     check(r.output.find("Keyword token: TransformBegin") != std::string::npos,
           "corpus: the gzip'd archive decompresses and its requests reach the "
@@ -231,7 +210,7 @@ int main(int argc, char* argv[]) {
   // continues past it.
   {
     const std::string path = ribDir + "/unknownrequest.rib";
-    Result r = run(gman, path, /*debug=*/false);
+    GMANRunResult r = run(gman, path, /*debug=*/false);
     check(r.exitStatus == 0, "unknown request: gman exits 0");
     check(r.output.find("skipping unrecognized request") != std::string::npos, "unknown request: warns once");
     check(r.output.find("Bxdf") != std::string::npos, "unknown request: names the request in the warning");
@@ -256,7 +235,7 @@ int main(int argc, char* argv[]) {
   // report them.
   {
     const std::string path = ribDir + "/malformed/stringarray.rib";
-    Result r = run(gman, path, /*debug=*/false);
+    GMANRunResult r = run(gman, path, /*debug=*/false);
     check(r.exitStatus != 0, "malformed: a non-string in a string array fails");
     check(r.output.find("Non-string in array") != std::string::npos, "malformed: the diagnostic names the fault");
     check(r.output.find("LeakSanitizer") == std::string::npos, "malformed: no LeakSanitizer report (stringarray.rib)");
@@ -268,7 +247,7 @@ int main(int argc, char* argv[]) {
   // so unwinding frees it before anything else has taken ownership.
   {
     const std::string path = ribDir + "/malformed/pointspolygons_nonint_nverts.rib";
-    Result r = run(gman, path, /*debug=*/false);
+    GMANRunResult r = run(gman, path, /*debug=*/false);
     check(r.exitStatus != 0, "malformed: a non-integer in nverts fails");
     check(r.output.find("Non-integer in array") != std::string::npos, "malformed: the diagnostic names the fault");
     check(r.output.find("LeakSanitizer") == std::string::npos,
@@ -287,7 +266,7 @@ int main(int argc, char* argv[]) {
   // preset or the CI sanitizer leg if this path leaks again.
   {
     const std::string path = ribDir + "/malformed/display_badtype.rib";
-    Result r = run(gman, path, /*debug=*/false);
+    GMANRunResult r = run(gman, path, /*debug=*/false);
     check(r.exitStatus != 0, "malformed: a non-string Display type fails");
     check(r.output.find("Expecting string token") != std::string::npos, "malformed: the diagnostic names the fault");
     check(r.output.find("LeakSanitizer") == std::string::npos,
@@ -300,7 +279,7 @@ int main(int argc, char* argv[]) {
   // WorldBegin, and gman is expected to exit 0.
   {
     const std::string path = ribDir + "/hider.rib";
-    Result r = run(gman, path, /*debug=*/false);
+    GMANRunResult r = run(gman, path, /*debug=*/false);
     check(r.exitStatus == 0, "hider: a well-formed Hider request parses");
     check(r.output.find("LeakSanitizer") == std::string::npos, "hider: no LeakSanitizer report (hider.rib)");
   }

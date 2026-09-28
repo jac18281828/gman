@@ -35,12 +35,12 @@
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(std::string const& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(std::string const& gman, std::string const& rib) {
+  return ::runGman(gman, {"-r", "gmanpathtracer", rib}).exitStatus;
 }
 
 } // namespace
@@ -55,8 +55,7 @@ int main(int argc, char* argv[]) {
   std::string const rib = ribDir + "/pathtracer_samples.rib";
 
   std::remove("pathtracer_samples.tif");
-  check(runGman("\"" + gman + "\" -r gmanpathtracer \"" + rib + "\" >/dev/null 2>&1") == 0,
-        "pathtracer_samples.rib renders under -r gmanpathtracer");
+  check(runGman(gman, rib) == 0, "pathtracer_samples.rib renders under -r gmanpathtracer");
 
   GmanImage first = readGmanTIFF("pathtracer_samples.tif");
   check(first.ok, "the first render reads back");
@@ -72,8 +71,7 @@ int main(int argc, char* argv[]) {
   check(cornerBlack, "the corner pixel is black");
 
   std::remove("pathtracer_samples.tif");
-  check(runGman("\"" + gman + "\" -r gmanpathtracer \"" + rib + "\" >/dev/null 2>&1") == 0,
-        "pathtracer_samples.rib renders a second time");
+  check(runGman(gman, rib) == 0, "pathtracer_samples.rib renders a second time");
   check(std::rename("pathtracer_samples.tif", "pathtracer_samples_second.tif") == 0,
         "the second render's output renames to pathtracer_samples_second.tif");
 

@@ -42,20 +42,15 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 // Number of distinct non-background runs along one horizontal scanline --
 // one run per primitive's silhouette, if all seven still rasterize.

@@ -59,20 +59,15 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);

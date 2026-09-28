@@ -31,16 +31,14 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(std::string const& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(std::string const& gman, std::string const& rib) {
+  return ::runGman(gman, {"-r", "gmanraytracer", rib}).exitStatus;
 }
 
 // The first raster x in [xStart, xEnd) at which the scanline's dominant
@@ -80,7 +78,7 @@ int main(int argc, char* argv[]) {
   std::string const ribDir = argv[2];
 
   std::remove("r8_glass.tif");
-  int const status = runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/r8_glass.rib\" >/dev/null 2>&1");
+  int const status = runGman(gman, ribDir + "/r8_glass.rib");
   check(status == 0, "r8_glass.rib renders under -r gmanraytracer (exit " + std::to_string(status) + ")");
 
   checkGoldenImage("r8_glass.tif", ribDir + "/r8_glass_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,

@@ -36,14 +36,13 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "checkertexture.h"
 #include "goldenimage.h"
 #include "gradienttexture.h"
+#include "rungman.h"
 
 namespace {
 
@@ -55,9 +54,11 @@ struct RGB {
 
 RGB scaled(const RGB& texel) { return {texel.r * kAmbient, texel.g * kAmbient, texel.b * kAmbient}; }
 
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag = "") {
+  if (rendererFlag.empty()) {
+    return ::runGman(gman, {rib}).exitStatus;
+  }
+  return ::runGman(gman, {"-r", rendererFlag, rib}).exitStatus;
 }
 
 void checkPixelColor(const GmanImage& img, uint32_t x, uint32_t y, const RGB& want, int tol, const std::string& what) {
@@ -115,11 +116,11 @@ void parityCheck(const std::string& gman, const std::string& rib, const std::str
   std::remove(zTif.c_str());
   std::remove((displayName + ".tif").c_str());
 
-  int const rayStatus = runGman("\"" + gman + "\" -r gmanraytracer \"" + rib + "\" >/dev/null 2>&1");
+  int const rayStatus = runGman(gman, rib, "gmanraytracer");
   check(rayStatus == 0, label + ": renders under -r gmanraytracer (exit " + std::to_string(rayStatus) + ")");
   check(std::rename((displayName + ".tif").c_str(), rayTif.c_str()) == 0, label + ": renames the ray-traced output");
 
-  int const zStatus = runGman("\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1");
+  int const zStatus = runGman(gman, rib);
   check(zStatus == 0, label + ": renders under the default z-buffer (exit " + std::to_string(zStatus) + ")");
   check(std::rename((displayName + ".tif").c_str(), zTif.c_str()) == 0, label + ": renames the z-buffer output");
 
@@ -159,7 +160,7 @@ int main(int argc, char* argv[]) {
   {
     const std::string rib = ribDir + "/texcoords/polygon_default.rib";
     std::remove("polygon_default.tif");
-    int const status = runGman("\"" + gman + "\" -r gmanraytracer \"" + rib + "\" >/dev/null 2>&1");
+    int const status = runGman(gman, rib, "gmanraytracer");
     check(status == 0, "polygon_default.rib renders under -r gmanraytracer (exit " + std::to_string(status) + ")");
     GmanImage img = readGmanTIFF("polygon_default.tif");
     check(img.ok, "polygon_default.tif (ray tracer) reads back");

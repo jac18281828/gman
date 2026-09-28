@@ -39,21 +39,19 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
 constexpr int kShadowPixelX = 197;
 constexpr int kShadowPixelY = 101;
 
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(const std::string& gman, const std::string& rib) {
+  return ::runGman(gman, {"-r", "gmanraytracer", rib}).exitStatus;
 }
 
 bool channelsNear(uint32_t a, uint32_t b, int tol) {
@@ -76,15 +74,12 @@ int main(int argc, char* argv[]) {
   std::remove("shadow_noblocker.tif");
 
   // 3. shadow.rib matches its golden.
-  check(runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/shadow.rib\" >/dev/null 2>&1") == 0,
-        "shadow.rib renders under -r gmanraytracer");
+  check(runGman(gman, ribDir + "/shadow.rib") == 0, "shadow.rib renders under -r gmanraytracer");
   checkGoldenImage("shadow.tif", ribDir + "/shadow_golden.tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION,
                    "shadow_diff.tif");
 
-  check(runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/shadow_nolight.rib\" >/dev/null 2>&1") == 0,
-        "shadow_nolight.rib renders under -r gmanraytracer");
-  check(runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/shadow_noblocker.rib\" >/dev/null 2>&1") == 0,
-        "shadow_noblocker.rib renders under -r gmanraytracer");
+  check(runGman(gman, ribDir + "/shadow_nolight.rib") == 0, "shadow_nolight.rib renders under -r gmanraytracer");
+  check(runGman(gman, ribDir + "/shadow_noblocker.rib") == 0, "shadow_noblocker.rib renders under -r gmanraytracer");
 
   GmanImage shadow = readGmanTIFF("shadow.tif");
   GmanImage nolight = readGmanTIFF("shadow_nolight.tif");

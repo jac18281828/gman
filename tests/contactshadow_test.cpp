@@ -43,12 +43,11 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -56,9 +55,8 @@ constexpr int kStripRow = 300;
 constexpr int kStripColFirst = 400;
 constexpr int kStripColLast = 415; // inclusive; 16 columns
 
-int runGman(std::string const& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(std::string const& gman, std::string const& rib) {
+  return ::runGman(gman, {"-r", "gmanraytracer", rib}).exitStatus;
 }
 
 int channelDelta(uint32_t a, uint32_t b) {
@@ -81,10 +79,8 @@ int main(int argc, char* argv[]) {
   std::remove("contactshadow.tif");
   std::remove("contactshadow_noblocker.tif");
 
-  check(runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/contactshadow.rib\" >/dev/null 2>&1") == 0,
-        "contactshadow.rib renders under -r gmanraytracer");
-  check(runGman("\"" + gman + "\" -r gmanraytracer \"" + ribDir + "/contactshadow_noblocker.rib\" >/dev/null 2>&1") ==
-            0,
+  check(runGman(gman, ribDir + "/contactshadow.rib") == 0, "contactshadow.rib renders under -r gmanraytracer");
+  check(runGman(gman, ribDir + "/contactshadow_noblocker.rib") == 0,
         "contactshadow_noblocker.rib renders under -r gmanraytracer");
 
   GmanImage const blocker = readGmanTIFF("contactshadow.tif");

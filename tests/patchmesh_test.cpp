@@ -43,8 +43,6 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
@@ -54,6 +52,7 @@
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -272,11 +271,7 @@ void testNonperiodicBicubicZeroStepRejected() {
 // ---- render-level: each fixture rasterizes, reverting getRSPatchMesh
 // falsifies every one of these ----
 
-int runGman(const std::string& gman, const std::string& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 bool regionHasContent(const GmanImage& img, uint32_t x0, uint32_t x1, uint32_t y0, uint32_t y1) {
   const uint32_t bg = img.at(0, 0);

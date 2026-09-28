@@ -39,12 +39,11 @@
 #include <string>
 #include <utility>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -71,9 +70,11 @@ Fixture const kFixtures[] = {
     {"surfaceparameters_default", "fixture 3 (the default surface)", false},
 };
 
-int runGman(std::string const& command) {
-  int const status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+int runGman(std::string const& gman, std::string const& rib, std::string const& rendererFlag = "") {
+  if (rendererFlag.empty()) {
+    return ::runGman(gman, {rib}).exitStatus;
+  }
+  return ::runGman(gman, {"-r", rendererFlag, rib}).exitStatus;
 }
 
 double averageRed(GmanImage const& img, int cx, int cy) {
@@ -122,13 +123,13 @@ int main(int argc, char* argv[]) {
     std::remove(rayTif.c_str());
     std::remove(zTif.c_str());
 
-    int const rayStatus = runGman("\"" + gman + "\" -r gmanraytracer \"" + rib + "\" >/dev/null 2>&1");
+    int const rayStatus = runGman(gman, rib, "gmanraytracer");
     check(rayStatus == 0,
           std::string(fx.label) + ": renders under -r gmanraytracer (exit " + std::to_string(rayStatus) + ")");
     check(std::rename(outTif.c_str(), rayTif.c_str()) == 0,
           std::string(fx.label) + ": raytracer output renames to " + rayTif);
 
-    int const zStatus = runGman("\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1");
+    int const zStatus = runGman(gman, rib);
     check(zStatus == 0,
           std::string(fx.label) + ": renders under the default z-buffer (exit " + std::to_string(zStatus) + ")");
     check(std::rename(outTif.c_str(), zTif.c_str()) == 0,

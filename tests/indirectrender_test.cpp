@@ -41,13 +41,12 @@
 #include <cstdlib>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "constantindirectconstants.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -65,29 +64,12 @@ const int kForegroundWithIndirectByte = static_cast<int>(std::floor(255.0f * (kA
 // antialiasing and float rounding at the reflected ray's hit.
 constexpr int kMirrorDeltaTol = 1;
 
-struct Result {
-  int exitStatus;
-  std::string output;
-};
-
-Result runGman(std::string const& gman, std::string const& renderer, std::string const& rib) {
-  std::string const command = "\"" + gman + "\" -r " + renderer + " \"" + rib + "\" 2>&1";
-  std::FILE* pipe = popen(command.c_str(), "r");
-  Result result{-1, ""};
-  if (pipe == nullptr) {
-    return result;
-  }
-  char buffer[512];
-  while (std::fgets(buffer, sizeof buffer, pipe) != nullptr) {
-    result.output += buffer;
-  }
-  int const status = pclose(pipe);
-  result.exitStatus = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-  return result;
+GMANRunResult runGman(std::string const& gman, std::string const& renderer, std::string const& rib) {
+  return ::runGman(gman, {"-r", renderer, rib});
 }
 
 struct Rendered {
-  Result result;
+  GMANRunResult result;
   GmanImage image;
 };
 

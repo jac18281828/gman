@@ -32,11 +32,10 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
@@ -52,11 +51,6 @@ const char* kSceneRib = "Display \"bg.tif\" \"file\" \"rgba\"\n"
                         "Surface \"matte\"\n"
                         "Sphere 0.4 -0.4 0.4 360\n"
                         "WorldEnd\n";
-
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
 
 void writeFile(const std::string& path, const std::string& contents) {
   std::FILE* f = std::fopen(path.c_str(), "w");
@@ -119,12 +113,11 @@ int main(int argc, char* argv[]) {
   std::remove("bg_raytracer.tif");
   std::remove("bg.tif");
 
-  check(runGman("\"" + gman + "\" \"bg_scene.rib\" >/dev/null 2>&1") == 0,
-        "background scene renders under the default z-buffer");
+  check(runGman(gman, {"bg_scene.rib"}).exitStatus == 0, "background scene renders under the default z-buffer");
   check(std::rename("bg.tif", "bg_zbuffer.tif") == 0, "z-buffer output renames to bg_zbuffer.tif");
   checkCornersBlack("bg_zbuffer.tif", "z-buffer");
 
-  check(runGman("\"" + gman + "\" -r gmanraytracer \"bg_scene.rib\" >/dev/null 2>&1") == 0,
+  check(runGman(gman, {"-r", "gmanraytracer", "bg_scene.rib"}).exitStatus == 0,
         "background scene renders under -r gmanraytracer");
   check(std::rename("bg.tif", "bg_raytracer.tif") == 0, "ray-traced output renames to bg_raytracer.tif");
   checkCornersBlack("bg_raytracer.tif", "ray tracer");

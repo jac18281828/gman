@@ -55,26 +55,16 @@
 #include <vector>
 
 #include <sys/stat.h>
-#include <sys/wait.h>
 
 #include <png.h>
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-// `output` is removed before the run. Every content assertion below would
-// otherwise be satisfied by an image an earlier run left behind: a build
-// directory is reused across ctest invocations, and a reverted fix that
-// throws before opening the display leaves the previous good file in place.
-// tests/baseline_test.cpp removes its target for the same reason.
-int runGman(const std::string& gman, const std::string& rib, const std::string& output) {
-  std::remove(output.c_str());
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
@@ -221,12 +211,17 @@ int main(int argc, char* argv[]) {
   char scene[1024];
   std::snprintf(scene, sizeof scene, sceneTemplate, "pngdriver.png");
   writeFile("pngdriver.rib", scene);
-  check(runGman(gman, "pngdriver.rib", "pngdriver.png") == 0, "PNG scene renders");
+  // Removed ahead of the run: a build directory is reused across ctest
+  // invocations, and a reverted fix that throws before opening the
+  // display would otherwise leave the previous good file in place.
+  std::remove("pngdriver.png");
+  check(runGman(gman, "pngdriver.rib") == 0, "PNG scene renders");
   check(nonEmptyFile("pngdriver.png"), "PNG file is non-empty");
 
   std::snprintf(scene, sizeof scene, sceneTemplate, "pngdriver.tif");
   writeFile("pngdriver_tif.rib", scene);
-  check(runGman(gman, "pngdriver_tif.rib", "pngdriver.tif") == 0, "equivalent TIFF scene renders");
+  std::remove("pngdriver.tif");
+  check(runGman(gman, "pngdriver_tif.rib") == 0, "equivalent TIFF scene renders");
 
   Image png = readPNG("pngdriver.png");
   check(png.ok, "PNG decodes as well-formed");

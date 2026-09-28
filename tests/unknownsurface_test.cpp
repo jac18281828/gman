@@ -31,41 +31,23 @@
 #include <cstdio>
 #include <string>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
-struct Result {
-  int exitStatus;
-  std::string output;
-};
-
-Result runGman(std::string const& gman, std::string const& renderer, std::string const& rib) {
-  const std::string command = "\"" + gman + "\" -r " + renderer + " \"" + rib + "\" 2>&1";
-  std::FILE* pipe = popen(command.c_str(), "r");
-  Result result{-1, ""};
-  if (pipe == nullptr) {
-    return result;
-  }
-  char buffer[512];
-  while (std::fgets(buffer, sizeof buffer, pipe) != nullptr) {
-    result.output += buffer;
-  }
-  const int status = pclose(pipe);
-  result.exitStatus = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-  return result;
+GMANRunResult runGman(std::string const& gman, std::string const& renderer, std::string const& rib) {
+  return ::runGman(gman, {"-r", renderer, rib});
 }
 
 // Runs one fixture, removing its own TIFF first so a stale image from an
 // earlier run cannot pass the render check. Returns the render result and
 // the freshly read TIFF, or an unread GmanImage if the render failed.
 struct Rendered {
-  Result result;
+  GMANRunResult result;
   GmanImage image;
 };
 
