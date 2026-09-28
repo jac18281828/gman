@@ -30,10 +30,12 @@
  * instead.
  */
 
+#include <cctype>
+#include <cstddef>
 #include <filesystem>
 #include <iostream>
-#include <regex>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "check.h"
@@ -43,11 +45,58 @@ namespace {
 
 namespace fs = std::filesystem;
 
-// (^|[^A-Za-z0-9_]) in a line-oriented grep is a word boundary at one
-// end; \b serves the same purpose scanning a whole file's text, and also
-// catches a call that opens a line with nothing before it.
-const std::regex kProcessSpawn(
-    R"(\b(system|popen|fork|vfork|execl|execlp|execle|execv|execvp|execve|posix_spawn[a-z_]*)\(|WIFEXITED)");
+constexpr std::string_view kSpawnCalls[] = {"system", "popen",  "fork",  "vfork",  "execl",
+                                            "execlp", "execle", "execv", "execvp", "execve"};
+
+bool isIdentifierChar(char c) { return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_'; }
+
+// True when text calls name as a function: name immediately followed by
+// '(', not itself preceded by an identifier character -- so "execve("
+// matches "execve" but not the "execv" prefix inside it, and "vfork("
+// matches "vfork" but not the "fork" suffix inside it.
+bool hasCallToken(std::string const& text, std::string_view name) {
+  std::size_t pos = 0;
+  while ((pos = text.find(name, pos)) != std::string::npos) {
+    std::size_t const end = pos + name.size();
+    bool const boundedLeft = pos == 0 || !isIdentifierChar(text[pos - 1]);
+    if (boundedLeft && end < text.size() && text[end] == '(') {
+      return true;
+    }
+    ++pos;
+  }
+  return false;
+}
+
+// True when text calls a posix_spawn* function: the literal prefix,
+// then any run of lowercase letters or underscores, then '('.
+bool hasPosixSpawnCall(std::string const& text) {
+  std::string_view const prefix = "posix_spawn";
+  std::size_t pos = 0;
+  while ((pos = text.find(prefix, pos)) != std::string::npos) {
+    bool const boundedLeft = pos == 0 || !isIdentifierChar(text[pos - 1]);
+    std::size_t end = pos + prefix.size();
+    while (end < text.size() && (std::islower(static_cast<unsigned char>(text[end])) != 0 || text[end] == '_')) {
+      ++end;
+    }
+    if (boundedLeft && end < text.size() && text[end] == '(') {
+      return true;
+    }
+    ++pos;
+  }
+  return false;
+}
+
+bool hasProcessSpawnToken(std::string const& text) {
+  if (text.find("WIFEXITED") != std::string::npos) {
+    return true;
+  }
+  for (std::string_view const name : kSpawnCalls) {
+    if (hasCallToken(text, name)) {
+      return true;
+    }
+  }
+  return hasPosixSpawnCall(text);
+}
 
 } // namespace
 
@@ -57,21 +106,22 @@ int main(int argc, char** argv) {
     return 2;
   }
 
-  const std::vector<std::string> dirs = {argv[1]};
+  const std::string testsDir = argv[1];
+  const std::vector<std::string> dirs = {testsDir};
   const std::vector<fs::path> files = collectSourceFiles(dirs);
   check(files.size() >= 100,
         "scanned at least 100 source files under tests/ (got " + std::to_string(files.size()) + ")");
 
-  for (const fs::path& file : files) {
-    const std::string name = file.filename().string();
+  for (fs::path const& file : files) {
+    const std::string relative = fs::relative(file, testsDir).generic_string();
     const std::string text = readFile(file);
 
-    if (name != "rungman.h" && name != "helperscan_test.cpp") {
-      check(!std::regex_search(text, kProcessSpawn),
+    if (relative != "rungman.h" && relative != "helperscan_test.cpp") {
+      check(!hasProcessSpawnToken(text),
             file.generic_string() + ": hand-rolled process spawn; call tests/rungman.h's runGman instead");
     }
 
-    if (name != "maketransform.h" && name != "helperscan_test.cpp") {
+    if (relative != "maketransform.h" && relative != "helperscan_test.cpp") {
       check(text.find("GMANOneMatrix") == std::string::npos,
             file.generic_string() + ": GMANOneMatrix; call tests/maketransform.h's makeTransform instead");
     }

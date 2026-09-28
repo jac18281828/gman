@@ -30,12 +30,12 @@
  * aligned with its value even though parseParameterList's std::map emits
  * in key order, not push order.
  *
- * Each fixture is run out-of-process (fork/exec, like
- * tests/ribmalformed_test.cpp) so a regression that reintroduces the
- * overflow shows up as a crash under this test's own bound, not just under
- * the debug preset's ASan build -- though ASan is what turns the overflow
- * into a deterministic abort rather than a read of whatever heap byte
- * happened to follow the allocation.
+ * Each fixture runs out of process under a timeout (tests/rungman.h), so
+ * a regression that reintroduces the overflow shows up as a crash under
+ * this test's own bound, not just under the debug preset's ASan build --
+ * though ASan is what turns the overflow into a deterministic abort
+ * rather than a read of whatever heap byte happened to follow the
+ * allocation.
  */
 
 #include <cstdio>

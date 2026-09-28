@@ -41,8 +41,8 @@
  * The requirement is narrower than "parses correctly": a clean, bounded
  * exit -- crash or hang either would defeat every other test's own
  * process-spawning assumption. Each fixture runs under a hard wall-clock
- * timeout, enforced by this test itself (fork/exec/waitpid, not ctest's
- * own TIMEOUT property, which bounds the whole binary, not one fixture).
+ * timeout of its own (tests/rungman.h), not ctest's own TIMEOUT
+ * property, which bounds the whole binary, not one fixture.
  */
 
 #include <cstdio>

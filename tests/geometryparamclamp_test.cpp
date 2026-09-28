@@ -27,9 +27,8 @@
  * once, naming the parameter and both lengths, and clamps and
  * zero-fills instead, for every one of the eight.
  *
- * Each fixture is run out-of-process (fork/exec, like
- * tests/ribmalformed_test.cpp and tests/paramclamp_test.cpp) so a
- * regression that reintroduces the overflow shows up as a crash under
+ * Each fixture runs out of process under a timeout (tests/rungman.h), so
+ * a regression that reintroduces the overflow shows up as a crash under
  * this test's own bound, not just under the debug preset's ASan build.
  */
 

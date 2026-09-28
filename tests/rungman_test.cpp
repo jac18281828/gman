@@ -19,12 +19,12 @@
  */
 
 /*
- * Drives tests/rungman.h's runGman through /bin/sh -c, the program every
- * std::system call in this tree already runs, so the contract below
- * reaches nothing a passing test has not already exercised: exit status,
- * the three capture modes, a signal kill, a timeout bounding both read and
- * wait, a working directory, a redirected stdin and an exec failure, each
- * leaving no child behind.
+ * Drives tests/rungman.h's runGman through /bin/sh -c: gman itself
+ * cannot be made to hang, crash or write to one chosen stream on
+ * demand, so the contract below runs the same runner against a program
+ * that can, covering exit status, the three capture modes, a signal
+ * kill, a timeout bounding both read and wait, a working directory, a
+ * redirected stdin and an exec failure, each leaving no child behind.
  */
 
 #include <cerrno>
@@ -127,23 +127,32 @@ void testMissingBinary() {
   check(r.exitStatus == 127, "missing binary: a failed exec exits 127");
 }
 
-void testNoChildLeftBehind() {
+// Checked after every case above: proves that case's own call left no
+// child running or unreaped, rather than one final check that a run
+// earlier in the file could pass by accident.
+void checkNoChildLeftBehind(std::string const& caseName) {
   errno = 0;
   pid_t const r = waitpid(-1, nullptr, WNOHANG);
-  check(r == -1 && errno == ECHILD, "no child left behind: every run reaped what it started");
+  check(r == -1 && errno == ECHILD, caseName + ": no child left running or unreaped");
 }
 
 } // namespace
 
 int main() {
   testExitStatus();
+  checkNoChildLeftBehind("exit status");
   testCaptureModes();
+  checkNoChildLeftBehind("capture modes");
   testSignalKill();
+  checkNoChildLeftBehind("signal kill");
   testTimeoutBoundsReadAndWait();
+  checkNoChildLeftBehind("timeout");
   testWorkingDirectory();
+  checkNoChildLeftBehind("working directory");
   testStdinIsDevNull();
+  checkNoChildLeftBehind("stdin");
   testMissingBinary();
-  testNoChildLeftBehind();
+  checkNoChildLeftBehind("missing binary");
 
   return checkSummary("runGman's contract holds");
 }

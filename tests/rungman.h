@@ -20,15 +20,15 @@
 
 /*
  * Runs the gman binary out of process: fork and exec, no shell and no
- * PATH search. The child's stdin is /dev/null; its stdout and stderr are
- * captured per GMANRunOptions::capture through one pipe (the uncaptured
- * stream goes to /dev/null, so combined output keeps the order the child
- * wrote), or run in workingDirectory when that is set.
+ * PATH search, in workingDirectory when that is set. The child's stdin
+ * is /dev/null; its stdout and stderr are captured per
+ * GMANRunOptions::capture through one pipe, the uncaptured stream going
+ * to /dev/null so combined output keeps the order the child wrote.
  *
  * exitStatus is WEXITSTATUS after a normal exit, else -1. A failed chdir
  * or exec in the child exits 127; a failed pipe or fork returns the
  * default result. crashed is true when a signal the runner did not send
- * ended the child.
+ * ended the child, or when reaping it failed outright.
  *
  * With timeoutSeconds > 0, one deadline measured from the fork bounds
  * both reading the pipe and waiting for exit; past it the runner sends
@@ -111,15 +111,15 @@ inline void redirectChildStreams(int pipeWriteFd, GMANRunOptions::Capture captur
   _exit(127);
 }
 
-using GMANClock = std::chrono::steady_clock;
+using Clock = std::chrono::steady_clock;
 
 // Reads the pipe until EOF or the deadline. Returns false on timeout.
-inline bool readUntilEofOrDeadline(int pipeReadFd, GMANClock::time_point deadline, bool bounded, std::string& output) {
+inline bool readUntilEofOrDeadline(int pipeReadFd, Clock::time_point deadline, bool bounded, std::string& output) {
   char buf[4096];
   for (;;) {
     if (bounded) {
-      auto const remaining = deadline - GMANClock::now();
-      if (remaining <= GMANClock::duration::zero()) {
+      auto const remaining = deadline - Clock::now();
+      if (remaining <= Clock::duration::zero()) {
         return false;
       }
       auto const remainingMs = std::chrono::duration_cast<std::chrono::milliseconds>(remaining).count();
@@ -150,24 +150,44 @@ inline bool readUntilEofOrDeadline(int pipeReadFd, GMANClock::time_point deadlin
   }
 }
 
+enum class WaitOutcome { exited, timedOut, failed };
+
 // Reaps the child, bounding the wait by the deadline when bounded.
-// Returns false on timeout, leaving the child unreaped for the caller to
-// kill and reap.
-inline bool waitUntilExitOrDeadline(pid_t pid, GMANClock::time_point deadline, bool bounded, int& status) {
+// Returns timedOut with the child unreaped, for the caller to kill and
+// reap; returns failed when waitpid itself could not reap the child
+// (ECHILD or another error surviving an EINTR retry).
+inline WaitOutcome waitUntilExitOrDeadline(pid_t pid, Clock::time_point deadline, bool bounded, int& status) {
   if (!bounded) {
-    waitpid(pid, &status, 0);
-    return true;
+    for (;;) {
+      pid_t const r = waitpid(pid, &status, 0);
+      if (r == pid) {
+        return WaitOutcome::exited;
+      }
+      if (r < 0 && errno == EINTR) {
+        continue;
+      }
+      return WaitOutcome::failed;
+    }
   }
   for (;;) {
     pid_t const r = waitpid(pid, &status, WNOHANG);
     if (r == pid) {
-      return true;
+      return WaitOutcome::exited;
     }
-    if (GMANClock::now() >= deadline) {
-      return false;
+    if (Clock::now() >= deadline) {
+      return WaitOutcome::timedOut;
     }
     usleep(1000);
   }
+}
+
+// Kills and reaps pid, marking result timed out.
+inline GMANRunResult killAndReportTimeout(pid_t pid, GMANRunResult result) {
+  kill(pid, SIGKILL);
+  int status = 0;
+  waitpid(pid, &status, 0);
+  result.timedOut = true;
+  return result;
 }
 
 } // namespace gmanrungmandetail
@@ -197,7 +217,7 @@ inline GMANRunResult runGman(std::string const& gman, std::vector<std::string> c
     return result;
   }
 
-  auto const deadline = GMANClock::now() + std::chrono::seconds(options.timeoutSeconds);
+  auto const deadline = Clock::now() + std::chrono::seconds(options.timeoutSeconds);
   bool const bounded = options.timeoutSeconds > 0;
 
   if (pid == 0) {
@@ -209,25 +229,23 @@ inline GMANRunResult runGman(std::string const& gman, std::vector<std::string> c
   close(pipeFds[0]);
 
   if (!readComplete) {
-    kill(pid, SIGKILL);
-    int status = 0;
-    waitpid(pid, &status, 0);
-    result.timedOut = true;
-    return result;
+    return killAndReportTimeout(pid, result);
   }
 
   int status = 0;
-  if (!waitUntilExitOrDeadline(pid, deadline, bounded, status)) {
-    kill(pid, SIGKILL);
-    waitpid(pid, &status, 0);
-    result.timedOut = true;
+  switch (waitUntilExitOrDeadline(pid, deadline, bounded, status)) {
+  case WaitOutcome::exited:
+    if (WIFEXITED(status)) {
+      result.exitStatus = WEXITSTATUS(status);
+    } else if (WIFSIGNALED(status)) {
+      result.crashed = true;
+    }
     return result;
-  }
-
-  if (WIFEXITED(status)) {
-    result.exitStatus = WEXITSTATUS(status);
-  } else if (WIFSIGNALED(status)) {
+  case WaitOutcome::timedOut:
+    return killAndReportTimeout(pid, result);
+  case WaitOutcome::failed:
     result.crashed = true;
+    return result;
   }
   return result;
 }
