@@ -147,4 +147,15 @@ GMANColor albedo(Appearance const& appearance, SurfacePoint const& point, GMANMa
   return appearance.shader->albedo(env);
 }
 
+BSDF bsdf(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
+          TextureCache* textureCache) {
+  if (!appearance.shader) {
+    BSDF closure(point.N);
+    closure.addLambert(appearance.Cs);
+    return closure;
+  }
+  GMANSurfaceEnv const env = fillEnv(appearance, point, cameraToWorld, textureCache);
+  return appearance.shader->bsdf(env);
+}
+
 } // namespace gman

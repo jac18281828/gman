@@ -26,6 +26,7 @@
 #include <memory>
 #include <vector>
 
+#include "gmanbsdf.h"
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
@@ -142,5 +143,16 @@ GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& poin
 // process cache.
 GMAN_EXPORT GMANColor albedo(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
                              TextureCache* textureCache = nullptr);
+
+// A surface's BSDF where shade would shade point: fills a GMANSurfaceEnv
+// from appearance and point exactly as shade and albedo do, through the
+// same fill, with no occluder, tracer or indirect bound, and returns
+// appearance.shader->bsdf(env). A null shader answers one Lambert lobe of
+// appearance.Cs at point.N, the base default's own answer.
+// textureCache is shade's argument; a caller running serially, ahead of
+// the first pixel, omits it and samples through gman::textureCache()'s
+// process cache.
+GMAN_EXPORT BSDF bsdf(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
+                      TextureCache* textureCache = nullptr);
 
 } // namespace gman

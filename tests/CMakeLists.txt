@@ -2667,6 +2667,20 @@ set_tests_properties(bsdfdelta PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::bsdf, the shading API's free function: plastic matches a hand-built
+# env, matte builds at the shading normal, a null shader answers Cs as one
+# Lambert lobe, and glass answers its dielectric lobe. Shaders load through
+# GMANAttributes::setSurface, as shaderbsdf_test.cpp's do.
+add_executable(gman_hitbsdf hitbsdf_test.cpp)
+target_link_libraries(gman_hitbsdf PRIVATE gman_core gman_internal_headers)
+add_dependencies(gman_hitbsdf gman_matte gman_plastic gman_glass)
+
+add_test(NAME hitbsdf COMMAND gman_hitbsdf)
+set_tests_properties(hitbsdf PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta
