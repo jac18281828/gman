@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanbsdf.h"
 #include "gmanloadable.h"
 #include "gmansurfaceshader.h"
 
@@ -51,7 +52,7 @@ class glass : public GMANSurfaceShader {
 public:
   GMANColor computeCi(GMANSurfaceEnv const& se) const override;
   GMANColor computeOi(GMANSurfaceEnv const& se) const override;
-  GMANColor albedo(GMANSurfaceEnv const& se) const override;
+  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override;
 };
 
 GMANColor glass::computeCi(GMANSurfaceEnv const& se) const {
@@ -80,9 +81,20 @@ GMANColor glass::computeCi(GMANSurfaceEnv const& se) const {
 
 GMANColor glass::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
-// No diffuse term: glass's colour comes entirely from reflection and
-// refraction.
-GMANColor glass::albedo(GMANSurfaceEnv const&) const { return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0); }
+// One dielectric lobe of weight white and eta kIor: glass reads no Cs and
+// no parameter, so the lobe carries no tint of its own. The normal faces
+// the outside, Ng's side, since computeCi enters when Ng . I < 0; negating
+// N where N and Ng disagree keeps the ray tracer and the path tracer
+// agreeing about which side is which. An env with Ng zero leaves N as it
+// is. albedo (the base default's bsdf(se).rhoD()) is exactly black, since
+// rhoD counts only Lambert lobes.
+gman::BSDF glass::bsdf(GMANSurfaceEnv const& se) const {
+  GMANVector const n(se.N.getX(), se.N.getY(), se.N.getZ());
+  GMANVector const ng(se.Ng.getX(), se.Ng.getY(), se.Ng.getZ());
+  gman::BSDF closure(n.dot(ng) < 0.0f ? -n : n);
+  closure.addDielectric(GMANColor(1.0f, 1.0f, 1.0f), kIor);
+  return closure;
+}
 
 } // namespace gmanshader
 

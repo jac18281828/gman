@@ -286,11 +286,11 @@ void checkPaintedPlastic() {
   }
 }
 
-// metal and shinymetal build a GGX-only closure with no Lambert lobe, so
-// the base default's bsdf(se).rhoD() is exactly black; mirror and glass
-// override albedo directly to the same effect. None has a diffuse
-// term, at Cs = (1, 1, 1) with every other parameter left at default, no
-// light and no tracer bound.
+// metal and shinymetal build a GGX-only closure with no Lambert lobe, and
+// mirror and glass a closure of one mirror or dielectric lobe, so none of
+// the four counts toward the base default's bsdf(se).rhoD(), exactly
+// black. None has a diffuse term, at Cs = (1, 1, 1) with every other
+// parameter left at default, no light and no tracer bound.
 void checkBlackShader(std::string const& path, std::string const& name) {
   GMANColor const cs((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
   GMANColor const black((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);

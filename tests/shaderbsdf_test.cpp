@@ -21,14 +21,17 @@
 /*
  * A surface shader's BSDF: the base default (one Lambert lobe of Cs, at
  * se.N), albedo answered from the BSDF's rhoD, matte's Lambert lobe of
- * Kd * Cs, and the GGX closures of plastic, paintedplastic, metal and
- * shinymetal: their headroom-fitted specular lobe, their roughness-to-
- * alpha mapping, and the inputs each reads. Plugins load through
- * GMANAttributes::setSurface, the path RiSurfaceV takes; two in-file
- * shaders stand in for out-of-tree ones.
+ * Kd * Cs, the GGX closures of plastic, paintedplastic, metal and
+ * shinymetal (their headroom-fitted specular lobe, their roughness-to-
+ * alpha mapping, and the inputs each reads), and mirror's and glass's
+ * delta closures, glass's orientation by Ng included. Plugins load through
+ * GMANAttributes::setSurface, the path RiSurfaceV takes; countingshader
+ * stands in for a plugin without a bsdf override, and Plain and TwoLobe
+ * in-file for out-of-tree ones.
  */
 
 #include <cmath>
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -40,6 +43,7 @@
 #include "gmandictionary.h"
 #include "gmannormal.h"
 #include "gmanparameterlist.h"
+#include "gmansampling.h"
 #include "gmanshaderenvironment.h"
 #include "gmansurfaceshader.h"
 #include "gmanvector.h"
@@ -49,6 +53,14 @@ namespace {
 
 constexpr double kPiD = 3.14159265358979323846;
 constexpr double kTol = 1e-6;
+
+constexpr std::uint32_t kSeed = 20260927u;
+constexpr std::uint32_t kOrientDraws = 256u;
+constexpr RtFloat kGlassIor = 1.5f;
+
+RtFloat uniform(std::uint32_t index, std::uint32_t dimension) {
+  return gman::unitFloat(gman::sampleHash(kSeed, 0, 0, index, dimension));
+}
 
 GMANNormal const kUpNormal(0.0f, 0.0f, 1.0f);
 GMANColor const kBlack(0.0f, 0.0f, 0.0f);
@@ -185,6 +197,37 @@ bool sameClosureWithAlpha(gman::BSDF const& a, gman::BSDF const& b) {
   return true;
 }
 
+// The same lobes, weights, alphas and etas exactly equal.
+bool sameClosureFull(gman::BSDF const& a, gman::BSDF const& b) {
+  if (a.lobeCount() != b.lobeCount()) {
+    return false;
+  }
+  for (std::size_t i = 0; i < a.lobeCount(); ++i) {
+    if (a.lobe(i).kind != b.lobe(i).kind || !colorExactly(a.lobe(i).weight, b.lobe(i).weight) ||
+        a.lobe(i).alpha != b.lobe(i).alpha || a.lobe(i).eta != b.lobe(i).eta) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// One mirror lobe of weight near, within tol.
+bool isMirrorOf(gman::BSDF const& closure, GMANColor const& weight, double tol) {
+  return closure.lobeCount() == 1 && closure.lobe(0).kind == gman::LobeKind::mirror &&
+         colorNear(closure.lobe(0).weight, weight, tol);
+}
+
+// One dielectric lobe of weight and eta exactly.
+bool isDielectricOf(gman::BSDF const& closure, GMANColor const& weight, RtFloat eta) {
+  return closure.lobeCount() == 1 && closure.lobe(0).kind == gman::LobeKind::dielectric &&
+         colorExactly(closure.lobe(0).weight, weight) && closure.lobe(0).eta == eta;
+}
+
+bool vectorNear(GMANVector const& a, GMANVector const& b, double tol) {
+  return std::fabs((double)a.getX() - (double)b.getX()) <= tol &&
+         std::fabs((double)a.getY() - (double)b.getY()) <= tol && std::fabs((double)a.getZ() - (double)b.getZ()) <= tol;
+}
+
 // The roughness-to-alpha mapping, the test's own copy of the one
 // shaders/gmanshaderparams.h defines: 0 for r <= 0 or NaN, which
 // BSDF::addGGX raises to kMinGGXAlpha.
@@ -274,14 +317,18 @@ void checkDefault() {
   check(isLambertOf(plain.bsdf(se), kOutOfRangeClamped),
         "default: bsdf at Cs = (1.4, 0.2, -0.3) is one lambert lobe of weight exactly (1, 0.2, 0)");
   check(colorExactly(plain.albedo(se), kOutOfRangeClamped), "default: albedo at Cs = (1.4, 0.2, -0.3) is (1, 0.2, 0)");
+}
 
-  // mirror stands in for a plugin without a bsdf override; plastic
-  // overrides bsdf, so it cannot prove this case.
-  auto const mirror = loadSurface("mirror", GMANParameterList());
-  check(mirror != nullptr, "default: mirror loads through setSurface");
-  if (mirror != nullptr) {
-    check(isLambertOf(mirror->bsdf(envWith(kCs, kOpaqueOs)), kCs),
-          "default: mirror at default parameters answers one lambert lobe of weight Cs");
+// countingshader stands in for a plugin without a bsdf override: every
+// shipped shader now overrides bsdf, so none of them can prove this case
+// across the .so boundary the way the in-binary Plain subclass never
+// crosses.
+void checkLoadedDefault() {
+  auto const counting = loadSurface("countingshader", GMANParameterList());
+  check(counting != nullptr, "default: countingshader loads through setSurface");
+  if (counting != nullptr) {
+    check(isLambertOf(counting->bsdf(envWith(kCs, kOpaqueOs)), kCs),
+          "default: countingshader at default parameters answers one lambert lobe of weight Cs");
   }
 }
 
@@ -553,9 +600,109 @@ void checkShinyMetalGGX() {
   check(colorExactly(shiny->albedo(se), kBlack), "shinymetal: albedo is black exactly");
 }
 
-// bsdf and albedo read only se.N, se.Cs and, for paintedplastic, se.s/se.t
-// through se.texture -- never se.I, se.Ng, se.Os, se.P, se.lights, the
-// occluder or the tracer.
+// mirror: one mirror lobe of Kr*Cs, clamped, and a black albedo.
+void checkMirrorBsdf() {
+  auto const mirror = loadSurface("mirror", GMANParameterList());
+  check(mirror != nullptr, "mirror: loads through setSurface");
+  if (mirror == nullptr) {
+    return;
+  }
+  check(isMirrorOf(mirror->bsdf(envWith(kCs, kOpaqueOs)), kCs, kTol),
+        "mirror: at Cs = (0.5, 0.4, 0.3) and default Kr, one mirror lobe of weight Cs within 1e-6");
+
+  auto const lowKr = loadSurface("mirror", floatParam(RI_KR, 0.4f));
+  check(lowKr != nullptr && isMirrorOf(lowKr->bsdf(envWith(kCs, kOpaqueOs)), GMANColor(0.2f, 0.16f, 0.12f), kTol),
+        "mirror: at Kr = 0.4, weight (0.2, 0.16, 0.12) within 1e-6");
+
+  auto const highKr = loadSurface("mirror", floatParam(RI_KR, 2.0f));
+  check(highKr != nullptr && isMirrorOf(highKr->bsdf(envWith(GMANColor(0.9f, 0.6f, 0.3f), kOpaqueOs)),
+                                        GMANColor(1.0f, 1.0f, 0.6f), kTol),
+        "mirror: at Kr = 2 and Cs = (0.9, 0.6, 0.3), weight (1, 1, 0.6) within 1e-6");
+
+  check(colorExactly(mirror->albedo(envWith(kCs, kOpaqueOs)), kBlack), "mirror: albedo is black exactly");
+
+  check(sameClosureFull(mirror->bsdf(envWith(kCs, kOpaqueOs)), mirror->bsdf(envWith(kCs, kTranslucentOs))),
+        "mirror: the closure at Os = (1, 1, 1) matches the one at Os = (0.2, 0.2, 0.2)");
+}
+
+// glass: one dielectric lobe of white weight and eta kGlassIor, and a
+// black albedo.
+void checkGlassBsdf() {
+  auto const glass = loadSurface("glass", GMANParameterList());
+  check(glass != nullptr, "glass: loads through setSurface");
+  if (glass == nullptr) {
+    return;
+  }
+  gman::BSDF const base = glass->bsdf(envWith(kCs, kOpaqueOs));
+  check(isDielectricOf(base, kWhite, kGlassIor),
+        "glass: at Cs = (0.5, 0.4, 0.3), one dielectric lobe of weight exactly (1, 1, 1) and eta exactly 1.5");
+
+  check(sameClosureFull(glass->bsdf(envWith(GMANColor(0.2f, 0.9f, 0.4f), kOpaqueOs)), base),
+        "glass: the closure at Cs = (0.2, 0.9, 0.4) matches the one at Cs = (0.5, 0.4, 0.3)");
+  check(sameClosureFull(glass->bsdf(envWith(kCs, kTranslucentOs)), base),
+        "glass: the closure at Os = (0.2, 0.2, 0.2) matches the one at Os = (1, 1, 1)");
+
+  check(colorExactly(glass->albedo(envWith(kCs, kOpaqueOs)), kBlack), "glass: albedo is black exactly");
+
+  check(colorNear(base.shadowTransmittance(GMANVector(0.0f, 0.0f, 1.0f)), GMANColor(0.96f, 0.96f, 0.96f), kTol),
+        "glass: at N = (0, 0, 1), shadowTransmittance((0, 0, 1)) is 0.96 per channel within 1e-6");
+}
+
+// glass orients its dielectric lobe's normal by Ng, negating N where N and
+// Ng disagree; Ng zero leaves N as it is.
+void checkGlassOrientsByNg() {
+  auto const glass = loadSurface("glass", GMANParameterList());
+  check(glass != nullptr, "glass orientation: loads through setSurface");
+  if (glass == nullptr) {
+    return;
+  }
+  GMANVector const wo(0.0f, 0.0f, 1.0f);
+  struct NgCase {
+    GMANNormal ng;
+    double expectedC;
+    char const* label;
+  };
+  NgCase const cases[] = {
+      {GMANNormal(0.0f, 0.0f, 1.0f), 0.4266667, "Ng up"},
+      {GMANNormal(0.0f, 0.0f, -1.0f), 2.16, "Ng down"},
+      {GMANNormal(), 0.4266667, "Ng zero"},
+  };
+  for (std::size_t idx = 0; idx < 3; ++idx) {
+    NgCase const& c = cases[idx];
+    GMANSurfaceEnv se = envWith(kCs, kOpaqueOs);
+    se.N = kUpNormal;
+    se.Ng = c.ng;
+    gman::BSDF const closure = glass->bsdf(se);
+
+    std::uint32_t const dim = 2u * static_cast<std::uint32_t>(idx);
+    bool transmitDirOk = true, transmitCOk = true, reflectPdfOk = true;
+    for (std::uint32_t i = 0; i < kOrientDraws; ++i) {
+      gman::BSDFSample const s = closure.sample(wo, uniform(i, dim), uniform(i, dim + 1u));
+      if (!(s.pdf > 0.0f)) {
+        continue;
+      }
+      if (s.wi.getZ() < 0.0f) {
+        transmitDirOk = transmitDirOk && vectorNear(s.wi, GMANVector(0.0f, 0.0f, -1.0f), 1e-5);
+        double const cVal = (double)s.f.getRed() * std::fabs((double)s.wi.getZ());
+        transmitCOk = transmitCOk && std::fabs(cVal - c.expectedC) <= 1e-5 * c.expectedC;
+      } else {
+        reflectPdfOk = reflectPdfOk && std::fabs((double)s.pdf - 0.04) <= 1e-5;
+      }
+    }
+    check(transmitDirOk,
+          std::string("glass orientation, ") + c.label + ": every transmitted draw has wi = (0, 0, -1) within 1e-5");
+    check(transmitCOk,
+          std::string("glass orientation, ") + c.label + ": every transmitted draw's c matches within 1e-5 relative");
+    check(reflectPdfOk,
+          std::string("glass orientation, ") + c.label + ": every reflected draw reports pdf 0.04 within 1e-5");
+  }
+}
+
+// bsdf and albedo read only se.N, se.Cs (and, for glass, se.Ng) and, for
+// paintedplastic, se.s/se.t through se.texture -- never se.I, se.Os, se.P,
+// se.lights, the occluder or the tracer. glass's own se.Ng, (1, 0, 0), is
+// perpendicular to N in both envs, so the orientation cannot differ
+// between them; checkGlassOrientsByNg pins the orientation itself.
 void checkInputsOnly() {
   GMANColor const cs(0.5f, 0.4f, 0.3f);
   GMANLight const light(GMAN_LIGHT_POINT, kWhite, GMANPoint(0.0f, 0.0f, 5.0f), GMANVector());
@@ -571,6 +718,8 @@ void checkInputsOnly() {
         {"paintedplastic", paintedplasticParams(0.5f, 0.5f, kDefaultSpecularColor, kDefaultRoughness, std::string())});
     v.push_back({"metal", metalParams()});
     v.push_back({"shinymetal", shinymetalParams()});
+    v.push_back({"mirror", GMANParameterList()});
+    v.push_back({"glass", GMANParameterList()});
     return v;
   }();
 
@@ -593,8 +742,9 @@ void checkInputsOnly() {
     full.P = GMANPoint(1.0f, 2.0f, 3.0f);
     full.lights = {&light};
 
-    check(sameClosureWithAlpha(shader->bsdf(minimal), shader->bsdf(full)),
-          std::string(c.name) + ": inputs only: bsdf matches lobe count, kind, weight and alpha across both envs");
+    check(sameClosureFull(shader->bsdf(minimal), shader->bsdf(full)),
+          std::string(c.name) + ": inputs only: bsdf matches lobe count, kind, weight, alpha and eta across both "
+                                "envs");
     check(colorExactly(shader->albedo(minimal), shader->albedo(full)),
           std::string(c.name) + ": inputs only: albedo matches across both envs");
   }
@@ -612,8 +762,12 @@ int main() {
   checkPaintedPlasticGGX();
   checkMetalGGX();
   checkShinyMetalGGX();
+  checkMirrorBsdf();
+  checkGlassBsdf();
+  checkGlassOrientsByNg();
   checkInputsOnly();
+  checkLoadedDefault();
 
-  return checkSummary("a surface's BSDF: the Lambert-of-Cs default, albedo from rhoD, matte's Kd * Cs, and the four "
-                      "GGX shaders' closures");
+  return checkSummary("a surface's BSDF: the Lambert-of-Cs default, albedo from rhoD, matte's Kd * Cs, the four GGX "
+                      "shaders' closures, and mirror's and glass's delta closures");
 }

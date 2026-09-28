@@ -1300,7 +1300,8 @@ set_target_properties(gman_notasurface PROPERTIES OUTPUT_NAME "notasurface")
 # Test-only surface shader (see its own comment): counts its own live
 # instances, read back through its own exported GMANCountingShaderLiveCount,
 # so shaderinstance_test.cpp can prove GMANLoadableShader's ownership from
-# outside. Never dlopened outside this test; not part of the shipped
+# outside; shaderbsdf_test.cpp also loads it, as the plugin without a bsdf
+# override its own loaded-default case needs. Not part of the shipped
 # renderer.
 gman_add_plugin(gman_countingshader countingshader_test_plugin.cpp)
 set_target_properties(gman_countingshader PROPERTIES OUTPUT_NAME "countingshader")
@@ -2667,13 +2668,17 @@ set_tests_properties(bsdfdelta PROPERTIES
   TIMEOUT 30)
 
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
-# rhoD, matte's Lambert lobe of Kd * Cs, and the GGX closures of plastic,
-# paintedplastic, metal and shinymetal, with every shader loaded through
-# GMANAttributes::setSurface. Its own working directory, since the
-# paintedplastic case writes and reads a texture file relative to cwd.
+# rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
+# paintedplastic, metal and shinymetal, and mirror's and glass's delta
+# closures, with every shader loaded through GMANAttributes::setSurface;
+# the loaded-default case loads countingshader, the last shipped plugin
+# without a bsdf override having gained one. Its own working directory,
+# since the paintedplastic case writes and reads a texture file relative
+# to cwd.
 add_executable(gman_shaderbsdf shaderbsdf_test.cpp)
 target_link_libraries(gman_shaderbsdf PRIVATE gman_core TIFF::TIFF)
-add_dependencies(gman_shaderbsdf gman_matte gman_plastic gman_paintedplastic gman_metal gman_shinymetal gman_mirror)
+add_dependencies(gman_shaderbsdf gman_matte gman_plastic gman_paintedplastic gman_metal gman_shinymetal gman_mirror
+  gman_glass gman_countingshader)
 
 set(GMAN_SHADERBSDF_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shaderbsdf-run")
 file(MAKE_DIRECTORY "${GMAN_SHADERBSDF_WORKDIR}")

@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanbsdf.h"
 #include "gmanloadable.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
@@ -47,7 +48,7 @@ public:
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const override;
   GMANColor computeOi(GMANSurfaceEnv const& se) const override;
-  GMANColor albedo(GMANSurfaceEnv const& se) const override;
+  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override;
 
 private:
   RtFloat const kr;
@@ -67,8 +68,15 @@ GMANColor mirror::computeCi(GMANSurfaceEnv const& se) const {
 
 GMANColor mirror::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
 
-// No diffuse term: mirror's colour comes entirely from trace().
-GMANColor mirror::albedo(GMANSurfaceEnv const&) const { return GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0); }
+// One mirror lobe of Kr*Cs, clamped by addMirror: RSL's mirror() scales
+// trace() by Kr alone, and Os stays out, as computeCi's own Os factor does
+// not reach the path tracer's closure. albedo (the base default's
+// bsdf(se).rhoD()) is exactly black, since rhoD counts only Lambert lobes.
+gman::BSDF mirror::bsdf(GMANSurfaceEnv const& se) const {
+  gman::BSDF closure(se.N);
+  closure.addMirror(GMANColor(kr * se.Cs.getRed(), kr * se.Cs.getGreen(), kr * se.Cs.getBlue()));
+  return closure;
+}
 
 } // namespace gmanshader
 
