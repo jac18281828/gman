@@ -153,6 +153,40 @@ void testInvertConcat() {
   check(threw, "invert: a singular matrix throws instead of dividing by zero");
 }
 
+void testDenseMatrixCofactors() {
+  // Dense and asymmetric, every one of the twelve shared 2x2 cofactors
+  // nonzero, so a sign error in any single one changes both determinant()
+  // and invert(). Determinant and inverse computed in exact arithmetic;
+  // every entry below is exact in RtFloat.
+  RtMatrix dense = {
+      {2, 1, -2, -3},
+      {-1, 3, 3, -2},
+      {2, -3, -2, -1},
+      {-2, -3, 3, 3},
+  };
+  GMANMatrix4 m(dense);
+  check(near(m.determinant(), -2.0), "determinant: a dense matrix exercising all twelve cofactors");
+
+  GMANMatrix4 inv(m);
+  inv.invert();
+
+  RtFloat const expect[4][4] = {
+      {-28.5, 9, 16.5, -17},
+      {-6.5, 2, 3.5, -4},
+      {-12, 4, 7, -7},
+      {-13.5, 4, 7.5, -8},
+  };
+  bool matches = true;
+  for (int i = 0; i < 4; ++i) {
+    for (int j = 0; j < 4; ++j) {
+      if (!near(inv[i][j], expect[i][j])) {
+        matches = false;
+      }
+    }
+  }
+  check(matches, "invert: the same dense matrix's adjugate/determinant, entry by entry");
+}
+
 void testP3mRowVectorConvention() {
   // p3m must consume the same row-vector, translation-in-row-3 layout
   // trans()/rot()/scale()/concat() already build (GMANTransform::apply's
@@ -232,6 +266,7 @@ int main() {
   testPrjOrtho();
   testDeterminant();
   testInvertConcat();
+  testDenseMatrixCofactors();
   testP3mRowVectorConvention();
   testP4mCarriesW();
   testVector4TimesEqualsMatrixRowVector();
