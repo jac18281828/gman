@@ -44,10 +44,9 @@
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
 #include "gmanraypolygon.h"
-#include "gmanshaderenvironment.h"
-#include "gmansurfaceshader.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "pathtracerscene.h"
 #include "ri.h"
 #include "samplingstats.h"
 
@@ -58,85 +57,6 @@ constexpr RtFloat kReflectance = 0.5f; // Kd = 1, Cs = 0.5
 constexpr RtInt kSamples = 64;
 constexpr int kMidGrid = 16;
 constexpr std::size_t kMinMeasuredPixels = 400;
-
-constexpr RtFloat kFloorXMin = -8.0f;
-constexpr RtFloat kFloorXMax = 8.0f;
-constexpr RtFloat kFloorY = -4.0f;
-constexpr RtFloat kFloorZMin = 1.0f;
-constexpr RtFloat kFloorZMax = 17.0f;
-
-class LambertShader : public GMANSurfaceShader {
-public:
-  explicit LambertShader(GMANColor const& reflectance) : reflectance(reflectance) {}
-  GMANColor computeCi(GMANSurfaceEnv const&) const override { return GMANColor(0.0f, 0.0f, 0.0f); }
-  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
-  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override {
-    gman::BSDF closure(se.N);
-    closure.addLambert(reflectance);
-    return closure;
-  }
-
-private:
-  GMANColor reflectance;
-};
-
-GMANOptions::ScreenWindowStruct squareScreenWindow() {
-  GMANOptions::ScreenWindowStruct sw;
-  sw.left = -1.0f;
-  sw.right = 1.0f;
-  sw.bottom = -1.0f;
-  sw.top = 1.0f;
-  return sw;
-}
-
-GMANRayPolygon* buildFloor() {
-  std::vector<GMANPoint> const verts = {
-      GMANPoint(kFloorXMin, kFloorY, kFloorZMin), GMANPoint(kFloorXMin, kFloorY, kFloorZMax),
-      GMANPoint(kFloorXMax, kFloorY, kFloorZMax), GMANPoint(kFloorXMax, kFloorY, kFloorZMin)};
-  return new GMANRayPolygon(verts, GMANParameterList());
-}
-
-// The ray-plane intersection with y = kFloorY, in double; false when the
-// ray is parallel to the floor or the plane lies behind its origin.
-bool intersectFloorPlane(GMANRay const& ray, double& outX, double& outZ) {
-  double const oy = (double)ray.getOrigin().getY();
-  double const dy = (double)ray.getDirection().getY();
-  if (dy == 0.0) {
-    return false;
-  }
-  double const t = ((double)kFloorY - oy) / dy;
-  if (!(t > 0.0)) {
-    return false;
-  }
-  outX = (double)ray.getOrigin().getX() + t * (double)ray.getDirection().getX();
-  outZ = (double)ray.getOrigin().getZ() + t * (double)ray.getDirection().getZ();
-  return true;
-}
-
-bool withinFloor(double x, double z, double margin) {
-  return x >= (double)kFloorXMin + margin && x <= (double)kFloorXMax - margin && z >= (double)kFloorZMin + margin &&
-         z <= (double)kFloorZMax - margin;
-}
-
-// A pixel is measured when its cell's four corner rays all hit the floor,
-// clear of its edge by kEdgeMargin: the ray tracer's own polygon
-// intersection carries its own float tolerance, so a corner within a
-// hair's width of the true boundary can miss where this test's own
-// double-precision plane intersection says it should hit.
-constexpr double kEdgeMargin = 1.0;
-
-bool pixelMeasured(gman::VSPerspective& viewingSys, int px, int py) {
-  for (int dy = 0; dy <= 1; ++dy) {
-    for (int dx = 0; dx <= 1; ++dx) {
-      GMANRay const corner = viewingSys.cameraRay((RtFloat)(px + dx), (RtFloat)(py + dy));
-      double x, z;
-      if (!intersectFloorPlane(corner, x, z) || !withinFloor(x, z, kEdgeMargin)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
 
 // The mean, over a kMidGrid x kMidGrid midpoint grid of pixel (px, py)'s
 // cell, of the analytic radiance summed over lights: rho * Cl(p) * |N . L|,
@@ -170,17 +90,6 @@ GMANColor analyticExpected(gman::VSPerspective& viewingSys, int px, int py,
   return GMANColor((RtFloat)(sum[0] / n), (RtFloat)(sum[1] / n), (RtFloat)(sum[2] / n));
 }
 
-double channel(GMANColor const& c, int i) {
-  if (i == 0) {
-    return c.getRed();
-  }
-  return i == 1 ? c.getGreen() : c.getBlue();
-}
-
-std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader const& shader) {
-  return std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
-}
-
 // Renders the floor lit by lights and reports each measured pixel's
 // residual (pixel - expected) per channel, plus the count measured.
 void renderAndCollectResiduals(std::vector<GMANLight const*> const& lights, std::vector<double> residuals[3],
@@ -195,11 +104,11 @@ void renderAndCollectResiduals(std::vector<GMANLight const*> const& lights, std:
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
-  LambertShader const shader(GMANColor(kReflectance, kReflectance, kReflectance));
   GMANPathtraceRenderer renderer;
   GMANRayPolygon* floor = buildFloor();
   gman::Appearance appearance;
-  appearance.shader = asAppearanceShader(shader);
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = lights;
   floor->setAppearance(appearance);
@@ -243,7 +152,18 @@ void checkResiduals(std::vector<double> residuals[3], std::vector<double> expect
   }
 }
 
-// ---- check 3: one light at a time ----
+// Counts non-overlapping occurrences of needle in haystack.
+std::size_t countOccurrences(std::string const& haystack, std::string const& needle) {
+  std::size_t count = 0;
+  std::size_t pos = 0;
+  while ((pos = haystack.find(needle, pos)) != std::string::npos) {
+    ++count;
+    pos += needle.size();
+  }
+  return count;
+}
+
+// One light at a time: a point, a spot and a distant light.
 void testOneLight() {
   struct Case {
     char const* name;
@@ -271,7 +191,7 @@ void testOneLight() {
   }
 }
 
-// ---- check 4: two lights ----
+// Two lights: the sum of both terms.
 void testTwoLights() {
   GMANLight const lightA(GMAN_LIGHT_POINT, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(-1.5f, -2.0f, 7.0f), GMANVector());
   GMANLight const lightB(GMAN_LIGHT_POINT, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(2.0f, -3.0f, 10.0f), GMANVector());
@@ -288,7 +208,7 @@ void testTwoLights() {
   checkResiduals(residuals, expected, 1e-4, "two lights");
 }
 
-// ---- check 5: ambientlight lights nothing ----
+// ambientlight lights nothing: one warning names it and the count skipped.
 void testAmbientLightsNothing() {
   std::string const logPath = "pathtracerdirect_ambient.log";
   std::remove(logPath.c_str());
@@ -307,11 +227,12 @@ void testAmbientLightsNothing() {
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSys(16, 16, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
-  LambertShader const shader(GMANColor(kReflectance, kReflectance, kReflectance));
+  std::shared_ptr<GMANSurfaceShader const> const shader = loadShader("matte", matteParams(1.0f));
   GMANPathtraceRenderer renderer;
   GMANRayPolygon* floor = buildFloor();
   gman::Appearance appearance;
-  appearance.shader = asAppearanceShader(shader);
+  appearance.shader = shader;
+  appearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = lights;
   floor->setAppearance(appearance);
@@ -340,8 +261,9 @@ void testAmbientLightsNothing() {
   std::ostringstream contents1;
   contents1 << in1.rdbuf();
   std::string const log1 = contents1.str();
-  check(log1.find("ambientlight") != std::string::npos && log1.find('1') != std::string::npos,
-        "ambientlight: the log holds one warning naming ambientlight and 1");
+  check(countOccurrences(log1, "ambientlight lights nothing") == 1 &&
+            log1.find("skipped 1 light(s)") != std::string::npos,
+        "ambientlight: exactly one warning logs, naming ambientlight and the count 1");
 
   // Two ambient lights: one warning naming 2.
   std::remove(logPath.c_str());
@@ -353,7 +275,8 @@ void testAmbientLightsNothing() {
   GMANPathtraceRenderer renderer2;
   GMANRayPolygon* floor2 = buildFloor();
   gman::Appearance appearance2;
-  appearance2.shader = asAppearanceShader(shader);
+  appearance2.shader = shader;
+  appearance2.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   appearance2.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance2.lights = twoAmbient;
   floor2->setAppearance(appearance2);
@@ -369,8 +292,9 @@ void testAmbientLightsNothing() {
   std::ostringstream contents2;
   contents2 << in2.rdbuf();
   std::string const log2 = contents2.str();
-  check(log2.find("ambientlight") != std::string::npos && log2.find('2') != std::string::npos,
-        "ambientlight: two ambient lights log one warning naming 2");
+  check(countOccurrences(log2, "ambientlight lights nothing") == 1 &&
+            log2.find("skipped 2 light(s)") != std::string::npos,
+        "ambientlight: two ambient lights log exactly one warning naming the count 2");
 }
 
 } // namespace

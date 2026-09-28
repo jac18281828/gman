@@ -27,7 +27,9 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "check.h"
@@ -39,10 +41,9 @@
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
 #include "gmanraysphere.h"
-#include "gmanshaderenvironment.h"
-#include "gmansurfaceshader.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "pathtracerscene.h"
 #include "ri.h"
 #include "samplingstats.h"
 
@@ -54,30 +55,6 @@ constexpr RtFloat kReflectance = 0.75f;
 constexpr RtFloat kIntensity = 100.0f;
 constexpr double kExpectedRadiance = 3.0; // rho * I / (R^2 * (1 - rho))
 constexpr double kFloor = 3e-4;
-
-class LambertShader : public GMANSurfaceShader {
-public:
-  explicit LambertShader(GMANColor const& reflectance) : reflectance(reflectance) {}
-  GMANColor computeCi(GMANSurfaceEnv const&) const override { return GMANColor(0.0f, 0.0f, 0.0f); }
-  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
-  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override {
-    gman::BSDF closure(se.N);
-    closure.addLambert(reflectance);
-    return closure;
-  }
-
-private:
-  GMANColor reflectance;
-};
-
-GMANOptions::ScreenWindowStruct squareScreenWindow() {
-  GMANOptions::ScreenWindowStruct sw;
-  sw.left = -1.0f;
-  sw.right = 1.0f;
-  sw.bottom = -1.0f;
-  sw.top = 1.0f;
-  return sw;
-}
 
 // Renders the furnace at samples paths per slot and appends every
 // pixel's colour into outChannels, red first, one vector per channel.
@@ -92,13 +69,13 @@ void renderFurnace(RtInt samples, std::vector<double> outChannels[3], std::size_
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
-  LambertShader const shader(GMANColor(kReflectance, kReflectance, kReflectance));
 
   GMANRaySphere* sphere = new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_POINT, GMANColor(kIntensity, kIntensity, kIntensity), GMANPoint(0.0f, 0.0f, 0.0f),
                         GMANVector());
   gman::Appearance appearance;
-  appearance.shader = std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = {&light};
   sphere->setAppearance(appearance);
@@ -122,7 +99,7 @@ void renderFurnace(RtInt samples, std::vector<double> outChannels[3], std::size_
   droppedOut = renderer.droppedPathCount();
 }
 
-// ---- check 1: the furnace's mean converges within 5 sigma of 3 ----
+// The furnace's mean converges within 5 sigma of 3.
 void testFurnaceMean() {
   std::vector<double> byChannel[3];
   std::size_t dropped = 0;
@@ -139,8 +116,7 @@ void testFurnaceMean() {
   }
 }
 
-// ---- check 2: convergence -- N = 4 and N = 64 both converge, and
-// stdev(64) <= stdev(4) / 3 ----
+// Convergence: N = 4 and N = 64 both converge, and stdev(64) <= stdev(4) / 3.
 void testFurnaceConvergence() {
   std::vector<double> low[3];
   std::vector<double> high[3];

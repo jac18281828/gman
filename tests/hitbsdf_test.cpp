@@ -42,6 +42,7 @@
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
 #include "gmanvector.h"
+#include "pathtracerscene.h"
 #include "ri.h"
 
 namespace {
@@ -69,12 +70,6 @@ GMANColor const kFreeClamped(1.0f, 0.2f, 0.0f);
 
 GMANColor const kOpaqueOs(1.0f, 1.0f, 1.0f);
 
-std::shared_ptr<GMANSurfaceShader const> loadSurface(std::string const& name, GMANParameterList const& params) {
-  GMANAttributes attributes;
-  attributes.setSurface(name, params);
-  return attributes.getSurface(0.0);
-}
-
 GMANParameterList plasticParams() {
   static GMANDictionary dictionary;
   RtToken tokens[4] = {RI_KD, RI_KS, RI_SPECULARCOLOR, RI_ROUGHNESS};
@@ -86,13 +81,6 @@ GMANParameterList plasticParams() {
   return GMANParameterList(dictionary, 4, tokens, parms);
 }
 
-GMANParameterList matteParams(RtFloat kd) {
-  static GMANDictionary dictionary;
-  RtToken tokens[1] = {RI_KD};
-  RtPointer parms[1] = {&kd};
-  return GMANParameterList(dictionary, 1, tokens, parms);
-}
-
 GMANVector normalized(GMANVector v) {
   v.normalize();
   return v;
@@ -100,13 +88,6 @@ GMANVector normalized(GMANVector v) {
 
 bool colorExactly(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
-}
-
-double channel(GMANColor const& c, int i) {
-  if (i == 0) {
-    return c.getRed();
-  }
-  return i == 1 ? c.getGreen() : c.getBlue();
 }
 
 bool nearRel(double value, double expected, double rel) {
@@ -153,10 +134,9 @@ gman::SurfacePoint pointAt(GMANNormal const& n, GMANNormal const& ng) {
   return point;
 }
 
-// ---- check 1: plastic matches a closure built by hand from the same env
-// ----
+// Plastic matches a closure built by hand from the same env.
 void checkPlasticMatchesHandBuilt() {
-  auto const plastic = loadSurface("plastic", plasticParams());
+  auto const plastic = loadShader("plastic", plasticParams());
   check(plastic != nullptr, "plastic: loads through setSurface");
   if (plastic == nullptr) {
     return;
@@ -177,10 +157,9 @@ void checkPlasticMatchesHandBuilt() {
         "plastic: gman::bsdf matches shader->bsdf(env) on an env filled by hand, lobe for lobe");
 }
 
-// ---- check 2: matte builds at the shading normal, never the geometric one
-// ----
+// Matte builds at the shading normal, never the geometric one.
 void checkMatteBuildsAtShadingNormal() {
-  auto const matte = loadSurface(RI_MATTE, matteParams(kMatteKd));
+  auto const matte = loadShader(RI_MATTE, matteParams(kMatteKd));
   check(matte != nullptr, "matte: loads through setSurface");
   if (matte == nullptr) {
     return;
@@ -201,8 +180,7 @@ void checkMatteBuildsAtShadingNormal() {
         "opposite sides of Ng");
 }
 
-// ---- check 3: an appearance with no shader answers one Lambert lobe of
-// Cs ----
+// An appearance with no shader answers one Lambert lobe of Cs.
 void checkNullShaderAnswersLambertOfCs() {
   gman::Appearance appearance;
   appearance.Cs = kFreeCs;
@@ -216,9 +194,9 @@ void checkNullShaderAnswersLambertOfCs() {
         "null shader: gman::bsdf at Cs = (1.4, 0.2, -0.3) answers one lambert lobe of weight exactly (1, 0.2, 0)");
 }
 
-// ---- check 4: glass answers one dielectric lobe ----
+// Glass answers one dielectric lobe.
 void checkGlassAnswersDielectric() {
-  auto const glass = loadSurface("glass", GMANParameterList());
+  auto const glass = loadShader("glass", GMANParameterList());
   check(glass != nullptr, "glass: loads through setSurface");
   if (glass == nullptr) {
     return;

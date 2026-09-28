@@ -22,9 +22,9 @@
  * `gman -r gmanpathtracer` renders tests/rib/pathtracer_samples.rib (a
  * matte unit sphere lit by one distant light from the eye's side) to a
  * non-black centre pixel and a black corner, and a second render of the
- * same fixture writes the same pixels: decision 28's stand-in for a
- * golden, a stochastic image's bytes pinning the sampler rather than the
- * estimator.
+ * same fixture writes the same pixels: a stochastic image's bytes pin the
+ * sampler, never the estimator, so this proves reproducibility in place of
+ * a golden.
  */
 
 #include <cstdio>

@@ -71,13 +71,13 @@ void setIndirectPassName(OptionReadingRenderMan& impl, char const* name) {
   impl.RiOptionV("render", 1, tokens, parms);
 }
 
-// ---- check 1: unset reads 4 ----
+// Unset reads 4.
 void testUnsetReadsFour() {
   OptionReadingRenderMan impl;
   check(impl.options().getPathtracerSamples() == 4, "unset: getPathtracerSamples() reads 4");
 }
 
-// ---- check 2: 64 reads back; a later 16 replaces it ----
+// 64 reads back; a later 16 replaces it.
 void testSetAndReplace() {
   OptionReadingRenderMan impl;
   setSamples(impl, 64);
@@ -87,8 +87,8 @@ void testSetAndReplace() {
   check(impl.options().getPathtracerSamples() == 16, "replace: a second Option with 16 replaces 64");
 }
 
-// ---- check 3: 0 and -3 each leave 16 and each log one warning naming
-// samples ----
+// 0 and -3 each leave 16 and each log its own warning naming samples and
+// the rejected value itself.
 void testInvalidValuesWarnAndLeaveUnchanged() {
   std::string const logPath = "pathtraceroption_invalid.log";
   std::remove(logPath.c_str());
@@ -112,12 +112,15 @@ void testInvalidValuesWarnAndLeaveUnchanged() {
   std::ostringstream contents;
   contents << in.rdbuf();
   std::string const log = contents.str();
-  std::size_t const firstHit = log.find("samples");
-  check(firstHit != std::string::npos, "invalid: 0 logs a warning naming samples");
-  check(log.find("samples", firstHit + 1) != std::string::npos, "invalid: -3 logs its own warning naming samples too");
+  std::size_t const zeroHit = log.find("samples");
+  check(zeroHit != std::string::npos && log.find("0 is below 1", zeroHit) != std::string::npos,
+        "invalid: 0's own warning names samples and the rejected value 0");
+  std::size_t const negativeHit = log.find("samples", zeroHit + 1);
+  check(negativeHit != std::string::npos && log.find("-3 is below 1", negativeHit) != std::string::npos,
+        "invalid: -3's own warning names samples and the rejected value -3");
 }
 
-// ---- check 4: "pathtracer" carrying "integer other" changes nothing ----
+// "pathtracer" carrying "integer other" changes nothing.
 void testUnrelatedTokenIgnored() {
   OptionReadingRenderMan impl;
   setSamples(impl, 8);
@@ -126,9 +129,9 @@ void testUnrelatedTokenIgnored() {
         "unrelated token: \"pathtracer\" \"integer other\" leaves the value at 8");
 }
 
-// ---- check 5: Option "render" "string indirect" and Option "radiosity"
-// "float elementsize" leave the samples value unchanged and still read
-// back themselves ----
+// Option "render" "string indirect" and Option "radiosity" "float
+// elementsize" leave the samples value unchanged and still read back
+// themselves.
 void testUnrelatedOptionNamesIgnored() {
   OptionReadingRenderMan impl;
   setSamples(impl, 32);

@@ -80,8 +80,8 @@ GMANColor clampCoverage(GMANColor const& os) {
                    clampCoverageChannel(os.getBlue()));
 }
 
-// The shadow walk (decision 10 in spirit, gmanrayoccluder.h's transmission
-// in shape): advances toward the light over [origin, origin + maxDistance)
+// The plugin's own shadow walk, in gmanrayoccluder.h's transmission's own
+// shape: advances toward the light over [origin, origin + maxDistance)
 // along wi, compositing each blocker's (1 - Os) + Os * shadowTransmittance
 // per channel with no early exit, and answers black past
 // gman::kMaxCompositeLayers blockers.

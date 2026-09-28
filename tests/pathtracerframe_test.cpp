@@ -23,11 +23,11 @@
  * the background at every pixel; the floor scene under no light reads its
  * reflectance times the background exactly, a zero-variance case for a
  * Lambert lobe under a constant environment; coverage weights color and
- * alpha by Os as decision 9 states; depth and antialiasing read the
- * geometric hit each pixel's cell carries; a repeat and a crop reproduce a
- * render bit for bit; an unresolvable indirect pass changes nothing but the
- * log; and a non-finite escape drops its own path without darkening the
- * image by more than its own share.
+ * alpha by Os; a camera path capped by pass-throughs alone reads opaque;
+ * depth and antialiasing read the geometric hit each pixel's cell carries; a
+ * repeat and a crop reproduce a render bit for bit; an unresolvable indirect
+ * pass changes nothing but the log; and a non-finite escape drops its own
+ * path without darkening the image by more than its own share.
  */
 
 #include <cmath>
@@ -52,10 +52,9 @@
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
-#include "gmanshaderenvironment.h"
-#include "gmansurfaceshader.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "pathtracerscene.h"
 #include "ri.h"
 #include "samplingstats.h"
 
@@ -64,104 +63,11 @@ namespace {
 constexpr RtInt kDefaultSamples = 16;
 GMANColor const kDefaultBackground(0.2f, 0.4f, 0.6f);
 
-constexpr RtFloat kFloorXMin = -8.0f;
-constexpr RtFloat kFloorXMax = 8.0f;
-constexpr RtFloat kFloorY = -4.0f;
-constexpr RtFloat kFloorZMin = 1.0f;
-constexpr RtFloat kFloorZMax = 17.0f;
 constexpr RtInt kFloorRes = 81;
 constexpr std::size_t kMinMeasuredPixels = 400;
 
-// The ray tracer's own polygon intersection carries its own float
-// tolerance, so a corner within a hair's width of the true boundary can
-// miss where this test's own double-precision plane intersection says it
-// should hit; matches pathtracerdirect_test.cpp's own margin.
-constexpr double kEdgeMargin = 1.0;
-
-class LambertShader : public GMANSurfaceShader {
-public:
-  explicit LambertShader(GMANColor const& reflectance) : reflectance(reflectance) {}
-  GMANColor computeCi(GMANSurfaceEnv const&) const override { return GMANColor(0.0f, 0.0f, 0.0f); }
-  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
-  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override {
-    gman::BSDF closure(se.N);
-    closure.addLambert(reflectance);
-    return closure;
-  }
-
-private:
-  GMANColor reflectance;
-};
-
-GMANOptions::ScreenWindowStruct squareScreenWindow() {
-  GMANOptions::ScreenWindowStruct sw;
-  sw.left = -1.0f;
-  sw.right = 1.0f;
-  sw.bottom = -1.0f;
-  sw.top = 1.0f;
-  return sw;
-}
-
-std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader const& shader) {
-  return std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
-}
-
 bool colorExactly(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
-}
-
-double channel(GMANColor const& c, int i) {
-  if (i == 0) {
-    return c.getRed();
-  }
-  return i == 1 ? c.getGreen() : c.getBlue();
-}
-
-double channel(GMANAlpha const& a, int i) {
-  if (i == 0) {
-    return a.getRed();
-  }
-  return i == 1 ? a.getGreen() : a.getBlue();
-}
-
-GMANRayPolygon* buildFloor() {
-  std::vector<GMANPoint> const verts = {
-      GMANPoint(kFloorXMin, kFloorY, kFloorZMin), GMANPoint(kFloorXMin, kFloorY, kFloorZMax),
-      GMANPoint(kFloorXMax, kFloorY, kFloorZMax), GMANPoint(kFloorXMax, kFloorY, kFloorZMin)};
-  return new GMANRayPolygon(verts, GMANParameterList());
-}
-
-bool intersectFloorPlane(GMANRay const& ray, double& outX, double& outZ) {
-  double const oy = (double)ray.getOrigin().getY();
-  double const dy = (double)ray.getDirection().getY();
-  if (dy == 0.0) {
-    return false;
-  }
-  double const t = ((double)kFloorY - oy) / dy;
-  if (!(t > 0.0)) {
-    return false;
-  }
-  outX = (double)ray.getOrigin().getX() + t * (double)ray.getDirection().getX();
-  outZ = (double)ray.getOrigin().getZ() + t * (double)ray.getDirection().getZ();
-  return true;
-}
-
-bool withinFloor(double x, double z, double margin) {
-  return x >= (double)kFloorXMin + margin && x <= (double)kFloorXMax - margin && z >= (double)kFloorZMin + margin &&
-         z <= (double)kFloorZMax - margin;
-}
-
-bool pixelMeasured(gman::VSPerspective& viewingSys, int px, int py) {
-  for (int dy = 0; dy <= 1; ++dy) {
-    for (int dx = 0; dx <= 1; ++dx) {
-      GMANRay const corner = viewingSys.cameraRay((RtFloat)(px + dx), (RtFloat)(py + dy));
-      double x, z;
-      if (!intersectFloorPlane(corner, x, z) || !withinFloor(x, z, kEdgeMargin)) {
-        return false;
-      }
-    }
-  }
-  return true;
 }
 
 // A pixel whose cell's four corner rays all point away from the floor
@@ -179,12 +85,13 @@ bool pixelClearsAbove(gman::VSPerspective& viewingSys, int px, int py) {
   return true;
 }
 
-GMANPathtraceRenderer* buildFloorRenderer(LambertShader const& shader, GMANColor const& os,
+GMANPathtraceRenderer* buildFloorRenderer(GMANColor const& cs, GMANColor const& os,
                                           std::vector<GMANLight const*> const& lights) {
   GMANPathtraceRenderer* renderer = new GMANPathtraceRenderer();
   GMANRayPolygon* floor = buildFloor();
   gman::Appearance appearance;
-  appearance.shader = asAppearanceShader(shader);
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = cs;
   appearance.Os = os;
   appearance.lights = lights;
   floor->setAppearance(appearance);
@@ -199,7 +106,7 @@ std::string readFile(std::string const& path) {
   return contents.str();
 }
 
-// ---- D.1: Escape ----
+// Escape: an empty scene.
 void checkEscape() {
   constexpr RtInt kRes = 16;
   GMANOptions options;
@@ -239,12 +146,12 @@ void checkEscape() {
   check(everyDepthInfinite, "escape: every depth is RI_INFINITY");
 }
 
-// ---- D.2: The environment ----
+// The environment: the floor scene under no light.
 void checkEnvironment() {
   RtFloat const reflectance = 0.5f;
-  LambertShader const shader(GMANColor(reflectance, reflectance, reflectance));
   std::vector<GMANLight const*> const noLights;
-  std::unique_ptr<GMANPathtraceRenderer> renderer(buildFloorRenderer(shader, GMANColor(1.0f, 1.0f, 1.0f), noLights));
+  std::unique_ptr<GMANPathtraceRenderer> renderer(
+      buildFloorRenderer(GMANColor(reflectance, reflectance, reflectance), GMANColor(1.0f, 1.0f, 1.0f), noLights));
 
   GMANOptions options;
   options.setFormat(kFloorRes, kFloorRes, 1.0f);
@@ -302,12 +209,11 @@ void checkEnvironment() {
   check(foundClearPixel, "environment setup: a pixel clearing the floor entirely exists");
 }
 
-// Shared coverage-case renderer and residual check, for D.3's two cases.
+// Shared coverage-case renderer and residual check.
 void renderAndCheckCoverage(GMANColor const& cs, GMANColor const& os, std::vector<GMANLight const*> const& lights,
                             GMANColor const& background, GMANColor const& expectedColor, GMANColor const& expectedAlpha,
                             double colorFloor, std::string const& label) {
-  LambertShader const shader(cs);
-  std::unique_ptr<GMANPathtraceRenderer> renderer(buildFloorRenderer(shader, os, lights));
+  std::unique_ptr<GMANPathtraceRenderer> renderer(buildFloorRenderer(cs, os, lights));
 
   GMANOptions options;
   options.setFormat(kFloorRes, kFloorRes, 1.0f);
@@ -354,7 +260,7 @@ void renderAndCheckCoverage(GMANColor const& cs, GMANColor const& os, std::vecto
   }
 }
 
-// ---- D.3: Coverage ----
+// Coverage: unlit, then lit and coloured.
 void checkCoverageUnlit() {
   std::vector<GMANLight const*> const noLights;
   GMANColor const os(0.25f, 0.25f, 0.25f);
@@ -381,7 +287,6 @@ void checkCappedCameraPath() {
   constexpr RtInt kRes = 8;
   constexpr int kLayers = gman::kMaxCompositeLayers + 1;
 
-  LambertShader const shader(GMANColor(0.5f, 0.5f, 0.5f));
   GMANPathtraceRenderer renderer;
   for (int layer = 0; layer < kLayers; ++layer) {
     RtFloat const z = (RtFloat)(layer + 1);
@@ -389,7 +294,8 @@ void checkCappedCameraPath() {
                                           GMANPoint(100.0f, 100.0f, z), GMANPoint(100.0f, -100.0f, z)};
     GMANRayPolygon* wall = new GMANRayPolygon(verts, GMANParameterList());
     gman::Appearance appearance;
-    appearance.shader = asAppearanceShader(shader);
+    appearance.shader = loadShader("matte", matteParams(1.0f));
+    appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
     appearance.Os = GMANColor(0.0f, 0.0f, 0.0f);
     wall->setAppearance(appearance);
     renderer.getWorldManager()->add(wall);
@@ -426,16 +332,16 @@ void checkCappedCameraPath() {
   check(everyPixelBlack, "capped camera path: every pixel is black");
 }
 
-// ---- D.4: Depth ----
+// Depth: a wall filling the frame.
 void checkDepth() {
   constexpr RtInt kRes = 16;
   constexpr RtFloat kZ = 5.0f;
   std::vector<GMANPoint> const verts = {GMANPoint(-10.0f, -10.0f, kZ), GMANPoint(-10.0f, 10.0f, kZ),
                                         GMANPoint(10.0f, 10.0f, kZ), GMANPoint(10.0f, -10.0f, kZ)};
   GMANRayPolygon* wall = new GMANRayPolygon(verts, GMANParameterList());
-  LambertShader const shader(GMANColor(0.5f, 0.5f, 0.5f));
   gman::Appearance appearance;
-  appearance.shader = asAppearanceShader(shader);
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   wall->setAppearance(appearance);
 
@@ -472,7 +378,7 @@ void checkDepth() {
   check(everyAlphaOne, "depth: every alpha is 1");
 }
 
-// ---- D.5: Antialiasing ----
+// Antialiasing: a slanted edge's own column.
 void checkAntialiasing() {
   constexpr RtInt kRes = 41;
   constexpr int kX0 = kRes / 2;
@@ -484,9 +390,9 @@ void checkAntialiasing() {
                                         GMANPoint(xEdge + 100.0f, 100.0f, kZ0),
                                         GMANPoint(xEdge + 100.0f, -100.0f, kZ0)};
   GMANRayPolygon* wall = new GMANRayPolygon(verts, GMANParameterList());
-  LambertShader const shader(GMANColor(0.5f, 0.5f, 0.5f));
   gman::Appearance appearance;
-  appearance.shader = asAppearanceShader(shader);
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   wall->setAppearance(appearance);
 
@@ -511,29 +417,30 @@ void checkAntialiasing() {
     GMANAlpha const a = frameBuffer.getAlpha(kX0, y);
     alphaValues.push_back((double)a.getRed());
   }
-  check(alphaValues.size() >= 16, "antialiasing: at least 16 pixels measured along the edge's own column");
+  check(alphaValues.size() == (std::size_t)kRes, "antialiasing: every row along the edge's own column is measured");
 
   GmanMeanStderr const stat = meanStderr(alphaValues);
   checkNear(stat.mean, 0.7, stat.stderrOfMean, 1.0 / (double)kDefaultSamples,
             "antialiasing: the edge column's mean alpha is within 5 sigma of 0.7");
 }
 
-// The two-point-light floor scene C.4 uses, at a smaller format so D.6 to
-// D.8 fit within the gate's own time bound; they compare renders with
-// each other, never with an analytic value.
+// The two-point-light floor scene several checks below share, at a smaller
+// format so they fit within the debug gate's own time bound; they compare
+// renders with each other, never with an analytic value.
 void buildTwoLightScene(GMANPathtraceRenderer& renderer, std::vector<GMANLight const*>& lightsOut,
                         GMANLight const*& firstLight, GMANLight const*& secondLight) {
   static GMANLight const light1(GMAN_LIGHT_POINT, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(-1.5f, -2.0f, 7.0f),
                                 GMANVector());
   static GMANLight const light2(GMAN_LIGHT_POINT, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(2.0f, -3.0f, 10.0f),
                                 GMANVector());
-  static LambertShader const shader(GMANColor(0.5f, 0.5f, 0.5f));
+  static std::shared_ptr<GMANSurfaceShader const> const shader = loadShader("matte", matteParams(1.0f));
   firstLight = &light1;
   secondLight = &light2;
   lightsOut = {&light1, &light2};
   GMANRayPolygon* floor = buildFloor();
   gman::Appearance appearance;
-  appearance.shader = asAppearanceShader(shader);
+  appearance.shader = shader;
+  appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = lightsOut;
   floor->setAppearance(appearance);
@@ -568,7 +475,7 @@ bool framesMatch(GMANFrameBuffer const& a, GMANFrameBuffer const& b, int width, 
   return true;
 }
 
-// ---- D.6: Repeat ----
+// Repeat: the same scene rendered twice.
 void checkRepeat() {
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSysA(kRepeatRes, kRepeatRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
@@ -595,7 +502,7 @@ void checkRepeat() {
         "repeat: two renders of the same scene match bit for bit, colour and alpha");
 }
 
-// ---- D.7: Crop ----
+// Crop: a cropped render matches the full one at the same raster positions.
 void checkCrop() {
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSysFull(kRepeatRes, kRepeatRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
@@ -645,14 +552,14 @@ void checkCrop() {
         "crop: every cropped pixel equals the full render's pixel at the same raster position bit for bit");
 }
 
-// ---- D.8: No indirect pass ----
+// No indirect pass: an unresolvable pass name changes nothing but the log.
 void checkNoIndirectPass() {
   std::string const logPath = "pathtracerframe_indirect.log";
   std::remove(logPath.c_str());
 
   GMANLight const point(GMAN_LIGHT_POINT, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(0.0f, -2.0f, 8.0f), GMANVector());
   std::vector<GMANLight const*> const lights = {&point};
-  LambertShader const shader(GMANColor(0.5f, 0.5f, 0.5f));
+  std::shared_ptr<GMANSurfaceShader const> const shader = loadShader("matte", matteParams(1.0f));
 
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSysA(kRepeatRes, kRepeatRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
@@ -661,7 +568,8 @@ void checkNoIndirectPass() {
   GMANPathtraceRenderer rendererA;
   GMANRayPolygon* floorA = buildFloor();
   gman::Appearance appearanceA;
-  appearanceA.shader = asAppearanceShader(shader);
+  appearanceA.shader = shader;
+  appearanceA.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   appearanceA.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearanceA.lights = lights;
   floorA->setAppearance(appearanceA);
@@ -698,7 +606,7 @@ void checkNoIndirectPass() {
         "no indirect pass: the log holds exactly one warning naming nosuchpass");
 }
 
-// ---- D.9: Drops ----
+// Drops: a non-finite background drops its own paths without spreading.
 void checkDrops() {
   constexpr RtInt kRes = 16;
   constexpr RtFloat kSphereRadius = 10.0f;
@@ -717,14 +625,14 @@ void checkDrops() {
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
-  LambertShader const shader(GMANColor(kReflectance, kReflectance, kReflectance));
   // zmin above -radius: the sphere's own missing cap opens behind the eye,
   // at negative z, where no camera ray ever looks.
   GMANRaySphere* sphere = new GMANRaySphere(kSphereRadius, -8.0f, kSphereRadius, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_POINT, GMANColor(kIntensity, kIntensity, kIntensity), GMANPoint(0.0f, 0.0f, 0.0f),
                         GMANVector());
   gman::Appearance appearance;
-  appearance.shader = asAppearanceShader(shader);
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = {&light};
   sphere->setAppearance(appearance);

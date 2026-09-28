@@ -2701,9 +2701,11 @@ set_tests_properties(pathtraceroption PROPERTIES
 # itself. See tests/pathtracerfurnace_test.cpp.
 add_executable(gman_pathtracerfurnace pathtracerfurnace_test.cpp)
 target_link_libraries(gman_pathtracerfurnace PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerfurnace gman_matte)
 
 add_test(NAME pathtracerfurnace COMMAND gman_pathtracerfurnace)
 set_tests_properties(pathtracerfurnace PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
@@ -2714,22 +2716,52 @@ set_tests_properties(pathtracerfurnace PROPERTIES
 # compiles GMANPathtraceRenderer itself. See tests/pathtracerdirect_test.cpp.
 add_executable(gman_pathtracerdirect pathtracerdirect_test.cpp)
 target_link_libraries(gman_pathtracerdirect PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerdirect gman_matte)
 
 add_test(NAME pathtracerdirect COMMAND gman_pathtracerdirect)
 set_tests_properties(pathtracerdirect PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
 # The path tracer's own shadow walk: a two-face glass pane passes
-# (1 - F)^2, a half-opaque matte blocker passes Os, an opaque blocker
-# passes nothing, and the composite-layer cap ends at 16 blockers. Linked
-# against gman_pathtracer_objects, which still compiles
-# GMANPathtraceRenderer itself. See tests/pathtracershadow_test.cpp.
+# (1 - F)^2, a half-opaque matte blocker passes Os, and an opaque blocker
+# passes nothing. Linked against gman_pathtracer_objects, which still
+# compiles GMANPathtraceRenderer itself. See tests/pathtracershadow_test.cpp.
 add_executable(gman_pathtracershadow pathtracershadow_test.cpp)
 target_link_libraries(gman_pathtracershadow PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracershadow gman_matte gman_glass)
 
 add_test(NAME pathtracershadow COMMAND gman_pathtracershadow)
 set_tests_properties(pathtracershadow PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# The shadow walk's own composite-layer cap, built twice from the same
+# source at PATHTRACER_SHADOW_CAP_COUNT 16 and 17: 16 zero-opacity blockers
+# stacked 0.1 apart still pass light, and a 17th -- past
+# gman::kMaxCompositeLayers -- reads opaque. See
+# tests/pathtracershadowcap_test.cpp.
+add_executable(gman_pathtracershadowcap16 pathtracershadowcap_test.cpp)
+target_compile_definitions(gman_pathtracershadowcap16 PRIVATE PATHTRACER_SHADOW_CAP_COUNT=16)
+target_link_libraries(gman_pathtracershadowcap16 PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracershadowcap16 gman_matte)
+
+add_test(NAME pathtracershadowcap16 COMMAND gman_pathtracershadowcap16)
+set_tests_properties(pathtracershadowcap16 PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+add_executable(gman_pathtracershadowcap17 pathtracershadowcap_test.cpp)
+target_compile_definitions(gman_pathtracershadowcap17 PRIVATE PATHTRACER_SHADOW_CAP_COUNT=17)
+target_link_libraries(gman_pathtracershadowcap17 PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracershadowcap17 gman_matte)
+
+add_test(NAME pathtracershadowcap17 COMMAND gman_pathtracershadowcap17)
+set_tests_properties(pathtracershadowcap17 PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
@@ -2742,9 +2774,11 @@ set_tests_properties(pathtracershadow PROPERTIES
 # itself. See tests/pathtracerframe_test.cpp.
 add_executable(gman_pathtracerframe pathtracerframe_test.cpp)
 target_link_libraries(gman_pathtracerframe PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerframe gman_matte)
 
 add_test(NAME pathtracerframe COMMAND gman_pathtracerframe)
 set_tests_properties(pathtracerframe PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
