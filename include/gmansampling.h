@@ -117,6 +117,15 @@ GMAN_EXPORT GMANVector uniformCone(RtFloat u1, RtFloat u2, RtFloat cosThetaMax);
 // Per unit solid angle: 1 / (2 * pi * (1 - cosThetaMax)).
 GMAN_EXPORT RtFloat uniformConePdf(RtFloat cosThetaMax);
 
+// Veach's power heuristic (beta = 2) for combining one sample from each of
+// two techniques whose densities at that sample are pdfSelf and pdfOther:
+// pdfSelf^2 / (pdfSelf^2 + pdfOther^2). 0 when both are at or below 0,
+// avoiding 0/0; a term this weight multiplies is already black in that
+// case, from its own f or pdf, so the convention affects no estimate.
+// Takes no sample counts: every caller here draws at most one sample per
+// technique per vertex.
+GMAN_EXPORT RtFloat powerHeuristic(RtFloat pdfSelf, RtFloat pdfOther);
+
 // An orthonormal basis around a unit normal: t, b and n mutually
 // orthogonal unit vectors with t.cross(b) == n. Built by Duff et al.'s
 // branchless construction ("Building an Orthonormal Basis, Revisited",

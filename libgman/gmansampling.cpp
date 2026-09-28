@@ -274,6 +274,15 @@ GMANVector uniformCone(RtFloat u1, RtFloat u2, RtFloat cosThetaMax) {
 
 RtFloat uniformConePdf(RtFloat cosThetaMax) { return kInv2Pi / (1.0f - cosThetaMax); }
 
+RtFloat powerHeuristic(RtFloat pdfSelf, RtFloat pdfOther) {
+  if (pdfSelf <= 0.0f && pdfOther <= 0.0f) {
+    return 0.0f;
+  }
+  RtFloat const selfSquared = pdfSelf * pdfSelf;
+  RtFloat const otherSquared = pdfOther * pdfOther;
+  return selfSquared / (selfSquared + otherSquared);
+}
+
 GMANVector TangentFrame::toWorld(GMANVector const& local) const {
   return t * local.getX() + b * local.getY() + n * local.getZ();
 }

@@ -263,6 +263,22 @@ void checkPdfValues() {
   }
 }
 
+// gman::powerHeuristic against its closed form, its two argument-order
+// exemptions, both-zero and the balance property at one pair -- 0.4 and
+// 0.6 (the balance heuristic's own weights at the same pair, per this
+// file's own mutation drill) would also sum to 1 but differ from either
+// power-heuristic value here by more than 1e-3.
+void checkPowerHeuristic() {
+  check(std::fabs(gman::powerHeuristic(2.0f, 3.0f) - 4.0f / 13.0f) <= 1e-6f, "powerHeuristic(2, 3) == 4/13");
+  check(std::fabs(gman::powerHeuristic(3.0f, 2.0f) - 9.0f / 13.0f) <= 1e-6f, "powerHeuristic(3, 2) == 9/13");
+  check(gman::powerHeuristic(1.0f, 1.0f) == 0.5f, "powerHeuristic(1, 1) == 0.5 exactly");
+  check(gman::powerHeuristic(1.0f, 0.0f) == 1.0f, "powerHeuristic(1, 0) == 1 exactly");
+  check(gman::powerHeuristic(0.0f, 1.0f) == 0.0f, "powerHeuristic(0, 1) == 0 exactly");
+  check(gman::powerHeuristic(0.0f, 0.0f) == 0.0f, "powerHeuristic(0, 0) == 0 exactly, avoiding 0/0");
+  RtFloat const sum = gman::powerHeuristic(2.0f, 3.0f) + gman::powerHeuristic(3.0f, 2.0f);
+  check(std::fabs(sum - 1.0f) <= 1e-6f, "powerHeuristic(2, 3) + powerHeuristic(3, 2) == 1 within 1e-6");
+}
+
 // The tangent frame over axis normals, sampled normals and near-pole
 // normals: t, b and n unit and orthogonal, t.cross(b) == n, and
 // toLocal(toWorld(v)) recovers v.
@@ -325,6 +341,7 @@ int main() {
 
   checkMonteCarloIdentities();
   checkPdfValues();
+  checkPowerHeuristic();
   checkTangentFrame();
 
   return checkSummary("gman's warps, pdfs and tangent frame hold their contracts");
