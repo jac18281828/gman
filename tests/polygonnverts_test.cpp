@@ -19,11 +19,13 @@
  */
 
 /*
- * The counts-aware RiPolygonV rejects a negative nverts, with or without a
- * "P" parameter, warning once and adding the empty stub rather than
- * throwing or dropping the request silently.
+ * The counts-aware RiPolygonV rejects a negative or overflowing nverts,
+ * with or without a "P" parameter, warning once and adding the empty stub
+ * rather than throwing, corrupting memory or dropping the request
+ * silently.
  */
 
+#include <climits>
 #include <cstdio>
 #include <exception>
 #include <fstream>
@@ -113,6 +115,23 @@ void testNegativeNvertsWithoutP(std::string const& logPath) {
   closeWorld(renderMan);
 }
 
+// nverts one above INT_MAX / 3, no parameter: the only case an overflowing
+// nverts can pin without triggering undefined behaviour in
+// GMANDictionary::allocSize (see the file's own comment).
+void testOverflowingNvertsWithoutP(std::string const& logPath) {
+  GMANRenderManImpl renderMan;
+  char displayName[] = "polygonnverts_overflow_nop.tif";
+  openWorld(renderMan, displayName);
+
+  RtInt const nverts = INT_MAX / 3 + 1;
+  std::string const log = captureLog(logPath, [&] { callPolygon(renderMan, nverts, /*withP=*/false); });
+  check(log.find("Polygon: nverts sums to " + std::to_string(nverts) + ", times 3 overflows RtInt; ignoring.") !=
+            std::string::npos,
+        "overflowing nverts, no parameter: the log holds the overflow message");
+
+  closeWorld(renderMan);
+}
+
 } // namespace
 
 int main() {
@@ -120,6 +139,7 @@ int main() {
 
   testNegativeNvertsWithP(logPath);
   testNegativeNvertsWithoutP(logPath);
+  testOverflowingNvertsWithoutP(logPath);
 
   return checkSummary("RiPolygonV rejects a negative or overflowing nverts");
 }

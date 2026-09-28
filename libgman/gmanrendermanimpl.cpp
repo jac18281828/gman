@@ -895,6 +895,21 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
 }
 RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdPolygon);
+
+  // Polygon's own two rules, GeneralPolygon's nverts rules applied to its
+  // one loop: a negative nverts, then an nverts whose triple overflows
+  // RtInt.
+  if (nverts < 0) {
+    warning("Polygon: nverts[0] = {} is negative; ignoring.", nverts);
+    worldManager->add(objectManager->create());
+    return;
+  }
+  if (nverts > INT_MAX / 3) {
+    warning("Polygon: nverts sums to {}, times 3 overflows RtInt; ignoring.", nverts);
+    worldManager->add(objectManager->create());
+    return;
+  }
+
   // "P" is sized by nverts, not a fixed 4x4 grid like a quadric: Polygon has
   // no distinct varying count beyond its vertex count.
   GMANParameterList paramList(dictionary, n, tokens, parms, nverts, nverts, 1, 1, counts);

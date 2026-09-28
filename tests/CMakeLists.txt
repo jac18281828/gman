@@ -2974,8 +2974,7 @@ add_test(NAME polygonnverts COMMAND gman_polygonnverts)
 set_tests_properties(polygonnverts PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
-  TIMEOUT 30
-  WILL_FAIL TRUE)
+  TIMEOUT 30)
 
 # GMANSphere's and GMANDisk's own uniform-area sampler: a closed-form area,
 # an independent finite-difference quadrature of the Jacobian, a
