@@ -156,23 +156,17 @@ bool passThrough(GMANHit const& hit, gman::SurfacePoint const& point, GMANColor 
   return true;
 }
 
-// Next-event estimation at a scattering vertex: chooses one light by its own
-// contribution at hit.point and, where the closure's response toward it is
-// non-black, returns its shadowed contribution to L; answers black where no
-// light has positive weight there or the closure is black toward the chosen
-// one. lightVectors, lightWeight and lightCl are the caller's own per-path
-// buffers, sized to lights.size() and overwritten here, never reallocated
-// per vertex.
-GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& lights, GMANHit const& hit,
-                              gman::SurfacePoint const& point, gman::BSDF const& closure, GMANVector const& wo,
-                              GMANColor const& beta, RtFloat surfaceMagnitude, GMANMatrix4 const& cameraToWorld,
-                              gman::TextureCache* textureCache, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
-                              std::uint32_t k, std::vector<GMANVector>& lightVectors, std::vector<RtFloat>& lightWeight,
-                              std::vector<GMANColor>& lightCl) {
-  if (lights.empty()) {
-    return kBlack;
-  }
-
+// Picks one light at hit.point by its own contribution there: light j's
+// weight is the mean of the Cl that GMANLight::sample reports, taken as 0
+// when it is not finite or not positive, and j is drawn with probability
+// its weight's share of the total. Fills lightVectors and lightCl for
+// every light and lightWeight with its own share; these are the caller's
+// own per-path buffers, sized to lights.size() and overwritten here, never
+// reallocated per vertex. Answers false, chosen and pj untouched, when no
+// light has positive weight there.
+bool chooseLight(std::vector<GMANLight const*> const& lights, GMANHit const& hit, RtInt sx, RtInt sy, std::uint32_t i,
+                 std::uint32_t N, std::uint32_t k, std::vector<GMANVector>& lightVectors,
+                 std::vector<RtFloat>& lightWeight, std::vector<GMANColor>& lightCl, std::size_t& chosen, RtFloat& pj) {
   RtFloat totalWeight = 0.0f;
   for (std::size_t j = 0; j < lights.size(); ++j) {
     GMANVector l;
@@ -187,15 +181,15 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<GMANLight const
   }
 
   if (!(totalWeight > 0.0f) || !std::isfinite(totalWeight)) {
-    return kBlack;
+    return false;
   }
 
   RtFloat const lightU = gman::sample1D(kSeed, sx, sy, i, N, 2u + 5u * k);
   RtFloat const target = lightU * totalWeight;
   RtFloat cumulative = 0.0f;
-  std::size_t chosen = 0;
   std::size_t lastPositive = 0;
   bool found = false;
+  chosen = 0;
   for (std::size_t j = 0; j < lights.size(); ++j) {
     if (lightWeight[j] > 0.0f) {
       lastPositive = j;
@@ -210,7 +204,33 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<GMANLight const
     chosen = lastPositive;
   }
 
-  RtFloat const pj = lightWeight[chosen] / totalWeight;
+  pj = lightWeight[chosen] / totalWeight;
+  return true;
+}
+
+// Next-event estimation at a scattering vertex: chooses one light through
+// chooseLight and, where the closure's response toward it is non-black,
+// returns its shadowed contribution to L; answers black where no light has
+// positive weight there or the closure is black toward the chosen one.
+// lightVectors, lightWeight and lightCl are the caller's own per-path
+// buffers, sized to lights.size() and overwritten here, never reallocated
+// per vertex.
+GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& lights, GMANHit const& hit,
+                              gman::SurfacePoint const& point, gman::BSDF const& closure, GMANVector const& wo,
+                              GMANColor const& beta, RtFloat surfaceMagnitude, GMANMatrix4 const& cameraToWorld,
+                              gman::TextureCache* textureCache, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
+                              std::uint32_t k, std::vector<GMANVector>& lightVectors, std::vector<RtFloat>& lightWeight,
+                              std::vector<GMANColor>& lightCl) {
+  if (lights.empty()) {
+    return kBlack;
+  }
+
+  std::size_t chosen = 0;
+  RtFloat pj = 0.0f;
+  if (!chooseLight(lights, hit, sx, sy, i, N, k, lightVectors, lightWeight, lightCl, chosen, pj)) {
+    return kBlack;
+  }
+
   GMANVector wi = lightVectors[chosen];
   wi.normalize();
   GMANColor const f = closure.eval(wo, wi);
@@ -345,7 +365,8 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<GMANLight const*> const&
   // 1 - beta only for a path escaping before its first scattering vertex;
   // any other ending, the pass-through cap included, reads fully covered.
   result.alphaHat = (escaped && !hasScattered) ? gman::oneMinus(beta) : kWhite;
-  // The sole guard keeping a non-finite path's channels out of a slot's sums.
+  // finite also fails here when L or alphaHat itself went non-finite, not
+  // only when the BSDF step already cleared it.
   result.finite = result.finite && colorFinite(result.L) && colorFinite(result.alphaHat);
   return result;
 }
@@ -379,6 +400,7 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<GMANLight const*> const
       result.anyHit = true;
     }
 
+    // The sole guard keeping a non-finite path's channels out of a slot's sums.
     if (!path.finite) {
       ++result.dropped;
       continue;
@@ -391,9 +413,9 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<GMANLight const*> const
 
 // One row's own unit of work: traces every one of its slots and writes
 // only its own slots of sampleBuffer and the dropped count it is handed,
-// reading the BVH, the light set, the options it is handed and the
-// background as const, so a later caller can shard rows across
-// gman::parallelFor workers unchanged.
+// reading the BVH, the light set and the raster data it is handed as
+// const, so a later caller can shard rows across gman::parallelFor workers
+// unchanged.
 void renderRow(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& lights, GMANViewingSystem* viewingSys,
                GMANMatrix4 const& cameraToWorld, GMANOptions::RasterInfo const& raster, RtInt width, int xsamples,
                int ysamples, std::uint32_t N, GMANColor const& background, gman::TextureCache& textureCache, int py,
