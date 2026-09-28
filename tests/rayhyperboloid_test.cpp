@@ -35,6 +35,7 @@
 #include "check.h"
 #include "gmanray.h"
 #include "gmanrayhyperboloid.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -46,11 +47,6 @@ GMANRayHyperboloid segmentHyperboloid(RtFloat thetamax) {
   RtPoint p1 = {1.0, 0.0, -1.0};
   RtPoint p2 = {0.0, 1.0, 1.0};
   return GMANRayHyperboloid(p1, p2, thetamax, GMANParameterList());
-}
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
 }
 
 // ---- check 1: aimed across the axis, at the segment's own midpoint

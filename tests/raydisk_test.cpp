@@ -29,6 +29,7 @@
 #include "check.h"
 #include "gmanray.h"
 #include "gmanraydisk.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -37,11 +38,6 @@ constexpr RtFloat kTolerance = 1e-3f;
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
 
 GMANRayDisk fullDisk() { return GMANRayDisk(0.0, 1.0, 360.0, GMANParameterList()); }
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // ---- check 1: a ray through the centre hits at an exact t ----
 void testCentreHit() {

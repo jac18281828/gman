@@ -42,7 +42,7 @@
 #include "gmanraybvh.h"
 #include "gmanrayoccluder.h"
 #include "gmanraysphere.h"
-#include "gmantransform.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
@@ -73,8 +73,7 @@ bool isConstant(GMANColor const& c) {
 // answering black.
 void buildOneSphereWorld(GMANLinearWorldManager& world) {
   GMANMatrix4 place;
-  GMANOneMatrix storage(place);
-  GMANTransform const transform(storage);
+  GMANTransform const transform = makeTransform(place);
   world.add(new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform));
 }
 

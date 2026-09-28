@@ -57,6 +57,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
@@ -65,11 +66,6 @@ constexpr RtInt kRes = 21;
 constexpr RtFloat kDiskRadius = 100.0f; // covers the whole frame at every z this stack reaches
 constexpr RtFloat kLayerSpacing = 1.0f; // well past the 0.1 composite-gap floor AGENTS.md's own fixtures rely on
 constexpr RtFloat kFirstLayerZ = 5.0f;
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 GMANOptions::ScreenWindowStruct squareScreenWindow() {
   GMANOptions::ScreenWindowStruct sw;

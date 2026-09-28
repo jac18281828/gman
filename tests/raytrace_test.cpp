@@ -49,6 +49,7 @@
 #include "gmansurfaceshader.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
@@ -59,11 +60,6 @@ constexpr RtFloat kTol = (RtFloat)1.0e-5;
 // path with no accumulated render error, so 1e-6 -- tighter than kTol's
 // 1e-5, sized for the longer chains the other checks trace -- still holds.
 constexpr RtFloat kIndirectPassTol = (RtFloat)1.0e-6;
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 bool colorNear(GMANColor const& a, GMANColor const& b, RtFloat tol) {
   return std::fabs(a.getRed() - b.getRed()) <= tol && std::fabs(a.getGreen() - b.getGreen()) <= tol &&

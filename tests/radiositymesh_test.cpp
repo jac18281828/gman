@@ -44,8 +44,8 @@
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -87,11 +87,6 @@ constexpr RtFloat kPolygonRoundTripTolerance = 1e-3f;
 RtFloat pointDistance(GMANPoint const& a, GMANPoint const& b) {
   GMANVector const v(a, b);
   return (RtFloat)std::sqrt(v.dot(v));
-}
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
 }
 
 // Translate, rotate about an oblique axis (no coordinate axis special) and

@@ -65,6 +65,7 @@
 #include "gmantransform.h"
 #include "gmanvertex.h"
 #include "gmanvsperspective.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -98,10 +99,8 @@ void testFullChain() {
   // before everything already accumulated, not after.
   GMANMatrix4 localTranslate;
   localTranslate.trans(1.0, 0.0, 0.0);
-  GMANOneMatrix w2cStorage(worldToCamera);
-  GMANTransform objectCTM(w2cStorage);
-  GMANOneMatrix localStorage(localTranslate);
-  GMANTransform localXform(localStorage);
+  GMANTransform objectCTM = makeTransform(worldToCamera);
+  GMANTransform localXform = makeTransform(localTranslate);
   localXform.concat(objectCTM);
   objectCTM = localXform;
 

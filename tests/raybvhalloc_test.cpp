@@ -64,6 +64,7 @@
 #include "gmanrayoccluder.h"
 #include "gmanraysphere.h"
 #include "gmantransform.h"
+#include "maketransform.h"
 
 #if defined(__SANITIZE_ADDRESS__)
 #define GMAN_ADDRESS_SANITIZED 1
@@ -99,11 +100,6 @@ constexpr std::size_t kStatedPeakStack = 4;
 
 // Calls per counted region, in each of the batch checks below.
 constexpr int kBatchCount = 3;
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
   GMANMatrix4 m;

@@ -45,14 +45,10 @@
 #include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
   GMANMatrix4 m;

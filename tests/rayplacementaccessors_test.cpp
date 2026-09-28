@@ -43,13 +43,9 @@
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmantransform.h"
+#include "maketransform.h"
 
 namespace {
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // Translate, rotate and a non-uniform scale, composed together: a
 // placement no accessor could satisfy by accident (e.g. by returning an

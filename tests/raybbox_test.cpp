@@ -51,15 +51,11 @@
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
+#include "maketransform.h"
 
 namespace {
 
 constexpr RtFloat kRelTolerance = 1e-5f;
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // translate, rotate (about two axes, so the tilt lands off every
 // coordinate axis) and a non-uniform scale, composed together.

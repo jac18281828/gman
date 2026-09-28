@@ -55,14 +55,10 @@
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // translated 3x the scale, no rotation or shear: the plain placement this
 // sweep contrasts against skewedPlacement below.

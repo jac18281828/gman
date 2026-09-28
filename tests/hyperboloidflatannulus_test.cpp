@@ -31,17 +31,13 @@
 #include "check.h"
 #include "gmanray.h"
 #include "gmanrayhyperboloid.h"
+#include "maketransform.h"
 
 namespace {
 
 constexpr RtFloat kTolerance = 1e-3f;
 
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // p0sq == 13, pDot == -8, dSq == 16: r(v)^2 == 13 - 16v + 16v^2, minimum
 // r == 3 at v == 0.5, r(0) == r(1) == sqrt(13) -- the two endpoint radii

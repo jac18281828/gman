@@ -65,17 +65,13 @@
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
+#include "maketransform.h"
 
 namespace {
 
 constexpr RtFloat kTolerance = 1e-3f;
 
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
   GMANMatrix4 m;

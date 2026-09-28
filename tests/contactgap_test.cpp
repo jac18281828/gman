@@ -49,8 +49,8 @@
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
@@ -59,11 +59,6 @@ constexpr RtFloat kUnitRoundoff = std::numeric_limits<RtFloat>::epsilon() / (RtF
 constexpr RtFloat kDerivedC = (RtFloat)16.0;
 constexpr RtFloat kScale = kDerivedC * kUnitRoundoff;
 constexpr RtFloat kCeiling = (RtFloat)3.0e-5;
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // A radius-scale sphere centred at (0, 0, centreZ), opaque white --
 // rayoccluder_test.cpp's own sphereAt convention.

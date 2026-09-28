@@ -32,6 +32,7 @@
 #include "check.h"
 #include "gmanray.h"
 #include "gmanraycone.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -40,11 +41,6 @@ constexpr RtFloat kTolerance = 1e-3f;
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
 
 GMANRayCone unitCone() { return GMANRayCone(1.0, 1.0, 360.0, GMANParameterList()); }
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // ---- check 1a: a ray down the axis grazes the apex ----
 void testAxialHit() {

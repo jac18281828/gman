@@ -30,6 +30,7 @@
 #include "check.h"
 #include "gmanray.h"
 #include "gmanrayparaboloid.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -38,11 +39,6 @@ constexpr RtFloat kTolerance = 1e-3f;
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
 
 GMANRayParaboloid unitParaboloid() { return GMANRayParaboloid(1.0, 0.0, 1.0, 360.0, GMANParameterList()); }
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // ---- check 1: the axial ray, the paraboloid's own a == 0 case: no
 // quadratic term is left to solve, only a linear one, and it hits the

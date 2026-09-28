@@ -46,14 +46,10 @@
 #include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // Opaque (Os = white): a bare GMANRayInterface's appearance defaults to
 // black, and the occluder attenuates by Os rather than by the hit

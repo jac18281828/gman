@@ -45,9 +45,9 @@
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvertex.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -208,8 +208,7 @@ void testInverseTransposeUnderNonUniformScale() {
   // to catch the bug.
   GMANMatrix4 scale;
   scale.scale(3.0, 1.0, 0.5);
-  GMANOneMatrix storage(scale);
-  GMANTransform transform(storage);
+  GMANTransform transform = makeTransform(scale);
 
   GMANPrimitive* prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, &options, &attr, &transform);
   // Nothing in this tree ever frees a tessellated primitive's face/vertex

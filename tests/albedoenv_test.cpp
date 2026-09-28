@@ -47,8 +47,8 @@
 #include "gmanshaderenvironment.h"
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
@@ -75,8 +75,7 @@ bool colorNear(GMANColor const& a, GMANColor const& b, RtFloat tol) {
 
 GMANTransform identityTransform() {
   GMANMatrix4 matrix;
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
+  return makeTransform(matrix);
 }
 
 // A cameraToWorld standing in for the camera's world-to-camera inverse,

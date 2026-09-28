@@ -59,8 +59,8 @@
 #include "gmanshaderenvironment.h"
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
@@ -151,15 +151,13 @@ bool colorWithinTolerance(GMANColor const& actual, GMANColor const& expected, do
 
 GMANTransform identityTransform() {
   GMANMatrix4 matrix;
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
+  return makeTransform(matrix);
 }
 
 GMANTransform translationTransform(RtFloat x, RtFloat y, RtFloat z) {
   GMANMatrix4 matrix;
   matrix.trans(x, y, z);
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
+  return makeTransform(matrix);
 }
 
 std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader const& shader) {

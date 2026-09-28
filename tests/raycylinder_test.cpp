@@ -30,6 +30,7 @@
 #include "check.h"
 #include "gmanray.h"
 #include "gmanraycylinder.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -38,11 +39,6 @@ constexpr RtFloat kTolerance = 1e-3f;
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
 
 GMANRayCylinder fullCylinder() { return GMANRayCylinder(1.0, -1.0, 1.0, 360.0, GMANParameterList()); }
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // ---- check 1: a ray aimed across the axis hits the wall. An unbounded
 // cylinder has no axial hit at all -- a ray down its axis has no x or y

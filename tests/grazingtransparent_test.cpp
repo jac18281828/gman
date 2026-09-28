@@ -60,6 +60,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
@@ -70,11 +71,6 @@ constexpr int kCheckColumn = 400;
 constexpr RtFloat kOpacity = 0.3f;
 constexpr RtFloat kSphereRadius = 5.0f;
 constexpr RtFloat kSphereZ = 50.0f;
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // A narrow, off-axis screen window: wide enough to carry the sphere's
 // silhouette edge (near world x=5 at z=50, screen x =~ 0.1) across

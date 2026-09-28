@@ -45,17 +45,13 @@
 #include "gmanmath.h"
 #include "gmanray.h"
 #include "gmanraytorus.h"
+#include "maketransform.h"
 
 namespace {
 
 constexpr RtFloat kTolerance = 1e-3f;
 
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // The same parametrization GMANTorus::getLocation uses, addressed directly
 // by (theta, phi) in degrees rather than by (u, v): lets a test aim at a

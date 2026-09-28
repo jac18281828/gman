@@ -47,17 +47,13 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
 
 constexpr RtInt kRes = 41;
 constexpr RtFloat kTolerance = 1e-3f;
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 GMANOptions::ScreenWindowStruct squareScreenWindow() {
   GMANOptions::ScreenWindowStruct sw;

@@ -44,8 +44,8 @@
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
 #include "gmanraysphere.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -73,11 +73,6 @@ double pointDistance(GMANPoint const& a, GMANPoint const& b) {
   double const dy = (double)b.getY() - (double)a.getY();
   double const dz = (double)b.getZ() - (double)a.getZ();
   return std::sqrt(dx * dx + dy * dy + dz * dz);
-}
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
 }
 
 // The point at (s, t) across element's own cell, from its corner nodes

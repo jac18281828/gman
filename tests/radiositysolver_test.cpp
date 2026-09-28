@@ -48,8 +48,8 @@
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanshading.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -126,8 +126,7 @@ double relativeError(double measured, double expected) { return std::fabs(measur
 GMANTransform translation(double x, double y, double z) {
   GMANMatrix4 matrix;
   matrix.trans((RtFloat)x, (RtFloat)y, (RtFloat)z);
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
+  return makeTransform(matrix);
 }
 
 gman::Appearance opaqueAppearance(std::vector<GMANLight const*> lights) {

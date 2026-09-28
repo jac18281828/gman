@@ -48,6 +48,7 @@
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
+#include "maketransform.h"
 #include "ri.h"
 
 namespace {
@@ -57,11 +58,6 @@ constexpr RtFloat kDiskRadius = 100.0f; // covers the whole frame at every z thi
 constexpr RtFloat kFirstLayerZ = 5.0f;
 constexpr RtFloat kGap = 0.01f; // under 1e-2 * kFirstLayerZ, the old bias at this depth
 constexpr RtFloat kOpacity = 0.4f;
-
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 GMANOptions::ScreenWindowStruct squareScreenWindow() {
   GMANOptions::ScreenWindowStruct sw;
