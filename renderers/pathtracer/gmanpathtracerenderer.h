@@ -56,10 +56,11 @@
  * light is what it faked. A non-finite path -- a NaN or infinite channel
  * anywhere in its throughput, radiance or coverage estimate -- is
  * dropped: it contributes zero to the slot's sums and is counted, never
- * filtered. render() is serial; its own unit of work reads the BVH, the
- * light set, the options and the background as const, and writes only
- * the sample buffer and the dropped-path count it is handed, so a later
- * caller can shard it across gman::parallelFor workers unchanged.
+ * filtered. render() is serial; each row is its own unit of work, reading
+ * the BVH, the light set, the options and the background as const and
+ * writing only its own slots of the sample buffer and the dropped-path
+ * count it is handed, so a later caller can shard rows across
+ * gman::parallelFor workers unchanged.
  */
 class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
