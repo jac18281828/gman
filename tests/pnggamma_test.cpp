@@ -19,11 +19,11 @@
  */
 
 /*
- * gman::OutputPNG writes no gAMA chunk, at the default gamma or any other:
- * PNG's chunk records the file gamma, sample = light^gAMA, while gman
- * encodes the inverse, so a value here would tell a gamma-aware viewer the
- * wrong exponent. Reads the produced files back with libpng directly
- * (tests/ is exempt from AGENTS.md's one-includer rule for png.h).
+ * gman::OutputPNG writes no gAMA chunk, at the default gamma or any other.
+ * gman's bytes are meant to display as written; any gAMA chunk tells a
+ * gamma-aware viewer to remap them, and gAMA 1.0, the default, declares
+ * them linear, so such a viewer brightens the image. Reads each file back
+ * with libpng.
  */
 
 #include "check.h"
@@ -42,7 +42,8 @@ extern "C" {
 
 namespace {
 
-void checkNoGAMA(const char* path, RtFloat gamma) {
+void checkNoGAMA(char const* path, RtFloat gamma) {
+  std::remove(path);
   gman::OutputPNG output(path, 2, 2);
   output.save(GMANOutput::RGB, 1.0f, gamma, GMANQuantize{255, 0, 255, 0});
 

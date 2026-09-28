@@ -2646,9 +2646,8 @@ set_tests_properties(pngdisplaymode PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# gman::OutputPNG writes no gAMA chunk at any Exposure gamma: PNG's chunk
-# records the file gamma, and gman encodes its inverse. No gman binary.
-# Compiles and links only under GMAN_WITH_PNG.
+# gman::OutputPNG writes no gAMA chunk at any Exposure gamma, so every
+# viewer displays its bytes as written.
 add_executable(gman_pnggamma pnggamma_test.cpp)
 target_link_libraries(gman_pnggamma PRIVATE gman_core gman_internal_headers)
 if(GMAN_WITH_PNG)
