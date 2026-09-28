@@ -64,16 +64,22 @@ std::string readFile(std::string const& path) {
 }
 
 // Builds the C.1 world: an eligible sphere emitter, an ineligible (wrong
-// shape) polygon tagged as an area light, and an ordinary sphere lit by a
-// hand-built point light. Returns the world and every hand-built object it
-// owns, all outliving it for the caller's own inspection.
+// shape) polygon and a degenerate (zero-radius) sphere, each tagged as an
+// area light, and two ordinary spheres sharing one hand-built point light
+// -- the second exercises emitters' own deduplication by pointer, since a
+// single primitive could never tell a missing dedup from a correct one.
+// Returns the world and every hand-built object it owns, all outliving it
+// for the caller's own inspection.
 struct EmitterWorld {
   GMANLinearWorldManager world;
   GMANRaySphere* sphere;
   GMANLight sphereLight{GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector()};
   GMANRayPolygon* polygon;
   GMANLight polygonLight{GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector()};
+  GMANRaySphere* degenerate;
+  GMANLight degenerateLight{GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector()};
   GMANRaySphere* ordinary;
+  GMANRaySphere* secondOrdinary;
   GMANLight pointLight{GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector()};
 };
 
@@ -94,17 +100,27 @@ EmitterWorld* buildEmitterWorld() {
   w->polygon->setAppearance(polygonAppearance);
   w->world.add(w->polygon);
 
+  w->degenerate = new GMANRaySphere(0.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  gman::Appearance degenerateAppearance;
+  degenerateAppearance.areaLight = &w->degenerateLight;
+  w->degenerate->setAppearance(degenerateAppearance);
+  w->world.add(w->degenerate);
+
   w->ordinary = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
   gman::Appearance ordinaryAppearance;
   ordinaryAppearance.lights = {&w->pointLight};
   w->ordinary->setAppearance(ordinaryAppearance);
   w->world.add(w->ordinary);
 
+  w->secondOrdinary = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  w->secondOrdinary->setAppearance(ordinaryAppearance);
+  w->world.add(w->secondOrdinary);
+
   return w;
 }
 
-// C.1: enumeration, and the one warning naming the one ineligible
-// primitive.
+// C.1: enumeration, and the one warning naming both ineligible
+// primitives.
 void testEnumeration() {
   std::string const logPath = "emitter_enumeration.log";
   std::remove(logPath.c_str());
@@ -117,7 +133,8 @@ void testEnumeration() {
   setLogFile("/dev/null");
   setScreenOutput(true);
 
-  check(list.size() == 2, "enumeration: exactly two emitters, the ineligible polygon excluded");
+  check(list.size() == 2, "enumeration: exactly two emitters, the ineligible polygon and degenerate sphere excluded "
+                          "and the shared point light deduplicated");
 
   bool foundDelta = false, foundArea = false;
   for (gman::Emitter const& e : list) {
@@ -132,7 +149,7 @@ void testEnumeration() {
   check(foundArea, "enumeration: the sphere is one area emitter naming its own light");
 
   std::string const log = readFile(logPath);
-  check(log.find("1") != std::string::npos, "enumeration: the warning names the count, 1");
+  check(log.find("2") != std::string::npos, "enumeration: the warning names the count, 2");
 }
 
 // C.2: power().

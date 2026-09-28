@@ -167,9 +167,17 @@ void testUniformByArea() {
   }
   check(zoneBinsOk, "uniform by area: the zone's 16 z-bins are each within 5 sigma of N/16");
 
+  // The half disk's own draws feed two independent histograms: theta,
+  // uniform on [0, thetaMax) regardless of radius, and r^2, uniform on
+  // [0, radius^2] under an area-uniform draw (the identity
+  // r = radius * sqrt(u1) itself rests on) -- theta alone never exercises
+  // that identity, since a bug confined to the radial draw changes no
+  // angle.
   GMANDisk halfDisk(0.0f, 3.0f, 180.0f, GMANParameterList());
+  double const diskRadius = 3.0;
   double const thetaMaxRadians = 180.0 / 360.0 * 2.0 * kPi;
   std::vector<std::uint32_t> thetaBins(kBins, 0);
+  std::vector<std::uint32_t> rSquaredBins(kBins, 0);
   for (std::uint32_t i = 0; i < kDraws; ++i) {
     gman::Sample2D const uv = gman::sample2D(kSeed, 1, 0, i, kDraws, 0u);
     GMANVector normal;
@@ -182,14 +190,25 @@ void testUniformByArea() {
     int bin = (int)(t * kBins);
     bin = bin < 0 ? 0 : (bin >= kBins ? kBins - 1 : bin);
     ++thetaBins[bin];
+
+    double const rSquared = (double)p.getX() * (double)p.getX() + (double)p.getY() * (double)p.getY();
+    double const tr = rSquared / (diskRadius * diskRadius);
+    int rBin = (int)(tr * kBins);
+    rBin = rBin < 0 ? 0 : (rBin >= kBins ? kBins - 1 : rBin);
+    ++rSquaredBins[rBin];
   }
   bool thetaBinsOk = true;
+  bool rSquaredBinsOk = true;
   for (int b = 0; b < kBins; ++b) {
     if (std::fabs((double)thetaBins[b] - expectedPerBin) > 5.0 * sigma) {
       thetaBinsOk = false;
     }
+    if (std::fabs((double)rSquaredBins[b] - expectedPerBin) > 5.0 * sigma) {
+      rSquaredBinsOk = false;
+    }
   }
   check(thetaBinsOk, "uniform by area: the half disk's 16 theta-bins are each within 5 sigma of N/16");
+  check(rSquaredBinsOk, "uniform by area: the half disk's 16 r^2-bins are each within 5 sigma of N/16");
 }
 
 // B.4: degenerate primitives are documented as ineligible.
