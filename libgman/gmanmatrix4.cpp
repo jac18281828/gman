@@ -191,44 +191,46 @@ RtVoid GMANMatrix4::prjOrtho(RtFloat nearDist, RtFloat farDist) {
   mtrx[2][3] = -(farDist + nearDist) / (farDist - nearDist);
 }
 
-RtFloat GMANMatrix4::determinant() {
-  RtFloat const(&m)[4][4] = mtrx;
+namespace {
 
-  RtFloat a0 = m[0][0] * m[1][1] - m[0][1] * m[1][0];
-  RtFloat a1 = m[0][0] * m[1][2] - m[0][2] * m[1][0];
-  RtFloat a2 = m[0][0] * m[1][3] - m[0][3] * m[1][0];
-  RtFloat a3 = m[0][1] * m[1][2] - m[0][2] * m[1][1];
-  RtFloat a4 = m[0][1] * m[1][3] - m[0][3] * m[1][1];
-  RtFloat a5 = m[0][2] * m[1][3] - m[0][3] * m[1][2];
-  RtFloat b0 = m[2][0] * m[3][1] - m[2][1] * m[3][0];
-  RtFloat b1 = m[2][0] * m[3][2] - m[2][2] * m[3][0];
-  RtFloat b2 = m[2][0] * m[3][3] - m[2][3] * m[3][0];
-  RtFloat b3 = m[2][1] * m[3][2] - m[2][2] * m[3][1];
-  RtFloat b4 = m[2][1] * m[3][3] - m[2][3] * m[3][1];
-  RtFloat b5 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
+// The twelve 2x2 cofactors shared by determinant() and invert(): a0..a5
+// pair rows 0-1, b0..b5 pair rows 2-3. determinant is their standard
+// pairing, a0*b5 - a1*b4 + a2*b3 + a3*b2 - a4*b1 + a5*b0.
+struct GMANMatrix4Cofactors {
+  RtFloat a0, a1, a2, a3, a4, a5;
+  RtFloat b0, b1, b2, b3, b4, b5;
+  RtFloat determinant;
+};
 
-  return a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
+GMANMatrix4Cofactors cofactorsOf(RtFloat const (&m)[4][4]) {
+  GMANMatrix4Cofactors c;
+  c.a0 = m[0][0] * m[1][1] - m[0][1] * m[1][0];
+  c.a1 = m[0][0] * m[1][2] - m[0][2] * m[1][0];
+  c.a2 = m[0][0] * m[1][3] - m[0][3] * m[1][0];
+  c.a3 = m[0][1] * m[1][2] - m[0][2] * m[1][1];
+  c.a4 = m[0][1] * m[1][3] - m[0][3] * m[1][1];
+  c.a5 = m[0][2] * m[1][3] - m[0][3] * m[1][2];
+  c.b0 = m[2][0] * m[3][1] - m[2][1] * m[3][0];
+  c.b1 = m[2][0] * m[3][2] - m[2][2] * m[3][0];
+  c.b2 = m[2][0] * m[3][3] - m[2][3] * m[3][0];
+  c.b3 = m[2][1] * m[3][2] - m[2][2] * m[3][1];
+  c.b4 = m[2][1] * m[3][3] - m[2][3] * m[3][1];
+  c.b5 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
+  c.determinant = c.a0 * c.b5 - c.a1 * c.b4 + c.a2 * c.b3 + c.a3 * c.b2 - c.a4 * c.b1 + c.a5 * c.b0;
+  return c;
 }
+
+} // namespace
+
+RtFloat GMANMatrix4::determinant() { return cofactorsOf(mtrx).determinant; }
 
 // Adjugate / determinant, via the same 2x2-cofactor pairing determinant()
 // uses. Throws on a singular matrix.
 RtVoid GMANMatrix4::invert() {
   RtFloat const(&m)[4][4] = mtrx;
+  GMANMatrix4Cofactors const c = cofactorsOf(m);
 
-  RtFloat a0 = m[0][0] * m[1][1] - m[0][1] * m[1][0];
-  RtFloat a1 = m[0][0] * m[1][2] - m[0][2] * m[1][0];
-  RtFloat a2 = m[0][0] * m[1][3] - m[0][3] * m[1][0];
-  RtFloat a3 = m[0][1] * m[1][2] - m[0][2] * m[1][1];
-  RtFloat a4 = m[0][1] * m[1][3] - m[0][3] * m[1][1];
-  RtFloat a5 = m[0][2] * m[1][3] - m[0][3] * m[1][2];
-  RtFloat b0 = m[2][0] * m[3][1] - m[2][1] * m[3][0];
-  RtFloat b1 = m[2][0] * m[3][2] - m[2][2] * m[3][0];
-  RtFloat b2 = m[2][0] * m[3][3] - m[2][3] * m[3][0];
-  RtFloat b3 = m[2][1] * m[3][2] - m[2][2] * m[3][1];
-  RtFloat b4 = m[2][1] * m[3][3] - m[2][3] * m[3][1];
-  RtFloat b5 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
-
-  RtFloat d = a0 * b5 - a1 * b4 + a2 * b3 + a3 * b2 - a4 * b1 + a5 * b0;
+  RtFloat d = c.determinant;
   if (d == 0.0) {
     GMANError error(RIE_MATH, RIE_ERROR, "Cannot invert matrix");
     throw error;
@@ -236,22 +238,22 @@ RtVoid GMANMatrix4::invert() {
   RtFloat id = 1.0 / d;
 
   GMANMatrix4 inv;
-  inv.mtrx[0][0] = (m[1][1] * b5 - m[1][2] * b4 + m[1][3] * b3) * id;
-  inv.mtrx[0][1] = (-m[0][1] * b5 + m[0][2] * b4 - m[0][3] * b3) * id;
-  inv.mtrx[0][2] = (m[3][1] * a5 - m[3][2] * a4 + m[3][3] * a3) * id;
-  inv.mtrx[0][3] = (-m[2][1] * a5 + m[2][2] * a4 - m[2][3] * a3) * id;
-  inv.mtrx[1][0] = (-m[1][0] * b5 + m[1][2] * b2 - m[1][3] * b1) * id;
-  inv.mtrx[1][1] = (m[0][0] * b5 - m[0][2] * b2 + m[0][3] * b1) * id;
-  inv.mtrx[1][2] = (-m[3][0] * a5 + m[3][2] * a2 - m[3][3] * a1) * id;
-  inv.mtrx[1][3] = (m[2][0] * a5 - m[2][2] * a2 + m[2][3] * a1) * id;
-  inv.mtrx[2][0] = (m[1][0] * b4 - m[1][1] * b2 + m[1][3] * b0) * id;
-  inv.mtrx[2][1] = (-m[0][0] * b4 + m[0][1] * b2 - m[0][3] * b0) * id;
-  inv.mtrx[2][2] = (m[3][0] * a4 - m[3][1] * a2 + m[3][3] * a0) * id;
-  inv.mtrx[2][3] = (-m[2][0] * a4 + m[2][1] * a2 - m[2][3] * a0) * id;
-  inv.mtrx[3][0] = (-m[1][0] * b3 + m[1][1] * b1 - m[1][2] * b0) * id;
-  inv.mtrx[3][1] = (m[0][0] * b3 - m[0][1] * b1 + m[0][2] * b0) * id;
-  inv.mtrx[3][2] = (-m[3][0] * a3 + m[3][1] * a1 - m[3][2] * a0) * id;
-  inv.mtrx[3][3] = (m[2][0] * a3 - m[2][1] * a1 + m[2][2] * a0) * id;
+  inv.mtrx[0][0] = (m[1][1] * c.b5 - m[1][2] * c.b4 + m[1][3] * c.b3) * id;
+  inv.mtrx[0][1] = (-m[0][1] * c.b5 + m[0][2] * c.b4 - m[0][3] * c.b3) * id;
+  inv.mtrx[0][2] = (m[3][1] * c.a5 - m[3][2] * c.a4 + m[3][3] * c.a3) * id;
+  inv.mtrx[0][3] = (-m[2][1] * c.a5 + m[2][2] * c.a4 - m[2][3] * c.a3) * id;
+  inv.mtrx[1][0] = (-m[1][0] * c.b5 + m[1][2] * c.b2 - m[1][3] * c.b1) * id;
+  inv.mtrx[1][1] = (m[0][0] * c.b5 - m[0][2] * c.b2 + m[0][3] * c.b1) * id;
+  inv.mtrx[1][2] = (-m[3][0] * c.a5 + m[3][2] * c.a2 - m[3][3] * c.a1) * id;
+  inv.mtrx[1][3] = (m[2][0] * c.a5 - m[2][2] * c.a2 + m[2][3] * c.a1) * id;
+  inv.mtrx[2][0] = (m[1][0] * c.b4 - m[1][1] * c.b2 + m[1][3] * c.b0) * id;
+  inv.mtrx[2][1] = (-m[0][0] * c.b4 + m[0][1] * c.b2 - m[0][3] * c.b0) * id;
+  inv.mtrx[2][2] = (m[3][0] * c.a4 - m[3][1] * c.a2 + m[3][3] * c.a0) * id;
+  inv.mtrx[2][3] = (-m[2][0] * c.a4 + m[2][1] * c.a2 - m[2][3] * c.a0) * id;
+  inv.mtrx[3][0] = (-m[1][0] * c.b3 + m[1][1] * c.b1 - m[1][2] * c.b0) * id;
+  inv.mtrx[3][1] = (m[0][0] * c.b3 - m[0][1] * c.b1 + m[0][2] * c.b0) * id;
+  inv.mtrx[3][2] = (-m[3][0] * c.a3 + m[3][1] * c.a1 - m[3][2] * c.a0) * id;
+  inv.mtrx[3][3] = (m[2][0] * c.a3 - m[2][1] * c.a1 + m[2][2] * c.a0) * id;
 
   *this = inv;
 }
