@@ -275,8 +275,8 @@ void checkDefault() {
         "default: bsdf at Cs = (1.4, 0.2, -0.3) is one lambert lobe of weight exactly (1, 0.2, 0)");
   check(colorExactly(plain.albedo(se), kOutOfRangeClamped), "default: albedo at Cs = (1.4, 0.2, -0.3) is (1, 0.2, 0)");
 
-  // mirror stands in for a plugin without a bsdf override; plastic holds
-  // one now, so it no longer proves this case.
+  // mirror stands in for a plugin without a bsdf override; plastic
+  // overrides bsdf, so it cannot prove this case.
   auto const mirror = loadSurface("mirror", GMANParameterList());
   check(mirror != nullptr, "default: mirror loads through setSurface");
   if (mirror != nullptr) {

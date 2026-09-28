@@ -19,21 +19,20 @@
  */
 
 /*
- * gman::BSDF's GGX lobe, the statistics bsdfggx_test.cpp split off to stay
- * under its time bound: energy by quadrature and by sample(), sample()
+ * gman::BSDF's GGX lobe: energy by quadrature and by sample(), sample()
  * against pdf() by histogram, and a two-lobe mixture.
  *
  * Every statistical check draws i.i.d. samples,
  * unitFloat(sampleHash(kSeed, 0, 0, i, dimension)) with a distinct
  * dimension per random number, so its 5-sigma bound uses the real standard
- * error. Two deterministic quadratures, independent of sample() and
- * pdf(), stand in for exact integrals: a directional-albedo estimate over
+ * error. Two deterministic quadratures, both independent of sample(),
+ * stand in for exact integrals: a directional-albedo estimate over
  * wo's whole hemisphere (energy), which draws its nodes from GGX's own
  * distribution of visible normals (Heitz, "Sampling the GGX Distribution
  * of Visible Normals", JCGT 7(4), 2018, a reimplementation local to this
  * file, apart from libgman) since a uniform grid resolves the lobe far
- * too slowly near a grazing wo; and a per-bin mass integral of the
- * closure's own pdf (the sampling-matches-pdf histogram), which
+ * too slowly near a grazing wo; and a per-bin mass integral that reads
+ * pdf() directly (the sampling-matches-pdf histogram), which
  * sub-samples each bin on a plain (cosTheta, phi) grid, denser only for
  * the 89-degree wo. Each quadrature shows its own convergence by doubling
  * resolution.

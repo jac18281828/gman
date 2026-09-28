@@ -22,8 +22,7 @@
  * gman::BSDF's GGX lobe: a double-precision reference for D, Lambda, G2
  * and f; reciprocity; sidedness; the eval underflow guard; clamping,
  * failed draws and capacity; and no heap allocation. bsdfggxstats_test.cpp
- * covers the energy, sample()-against-pdf() and two-lobe statistics this
- * file split off to stay under its time bound.
+ * covers the energy, sample()-against-pdf() and two-lobe statistics.
  *
  * Every statistical check draws i.i.d. samples,
  * unitFloat(sampleHash(kSeed, 0, 0, i, dimension)) with a distinct
@@ -320,8 +319,8 @@ void checkSides() {
   check(grazingOk, "sides: wo in the tangent plane answers pdf 0 from 256 draws");
 }
 
-// Both cosines underflowing before Lambda diverges gives G2's reciprocal a
-// 0 numerator over a 0 denominator; eval answers black rather than NaN.
+// At cosines of 1e-30, each Lambda is infinite, so G2 is 0, and the cosine
+// product underflows to 0; eval answers black instead of 0/0's NaN.
 void checkUnderflowGuard() {
   gman::BSDF const closure = singleGgx(kAxisNormal, kR, kReferenceAlpha);
   GMANVector wo(1.0f, 0.0f, 1e-30f);

@@ -2643,9 +2643,8 @@ set_tests_properties(bsdfggx PROPERTIES
   LABELS unit
   TIMEOUT 60)
 
-# gman::BSDF's GGX lobe, the statistics bsdfggx split off to stay under its
-# time bound: energy by quadrature and by sample(), sample() against pdf()
-# by histogram, and a two-lobe mixture.
+# gman::BSDF's GGX lobe's statistics: energy by quadrature and by sample(),
+# sample() against pdf() by histogram, and a two-lobe mixture.
 add_executable(gman_bsdfggxstats bsdfggxstats_test.cpp)
 target_link_libraries(gman_bsdfggxstats PRIVATE gman_core)
 
