@@ -3087,6 +3087,21 @@ set_tests_properties(pathtracerarealightpane PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The renderer's own multiple-importance-sampling weight computation,
+# called directly rather than through a render: next-event estimation's
+# weight, an emitter hit's weight, the light-choice probability the two
+# share and the off switch. Linked against gman_pathtracer_objects, which
+# still compiles GMANPathtraceRenderer itself, the same reachability
+# tests/hitbsdf_test.cpp has into gman_core via gman_internal_headers. See
+# tests/pathtracermisweight_test.cpp.
+add_executable(gman_pathtracermisweight pathtracermisweight_test.cpp)
+target_link_libraries(gman_pathtracermisweight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+
+add_test(NAME pathtracermisweight COMMAND gman_pathtracermisweight)
+set_tests_properties(pathtracermisweight PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every

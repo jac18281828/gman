@@ -37,6 +37,68 @@
 #include "gmansampling.h"
 #include "ri.h"
 
+/*
+ * The multiple-importance-sampling weight computation: external linkage,
+ * declared nowhere but here, so tests/pathtracermisweight_test.cpp can
+ * declare a matching prototype and call it directly, without rendering a
+ * frame, the same way tests/hitbsdf_test.cpp reaches gman_core's own
+ * internals through gman_internal_headers. Never installed: no header
+ * outside this file names any of the three.
+ */
+namespace gman {
+
+// emitters[index]'s own share of chooseLight's own weight sum at p: a
+// value read at a different vertex through this one function is provably
+// the probability next-event estimation would have drawn for that
+// emitter, had it drawn from p that round.
+RtFloat lightChoiceProbability(std::vector<gman::Emitter> const& emitters, GMANPoint const& p, std::size_t index) {
+  RtFloat totalWeight = 0.0f;
+  RtFloat indexWeight = 0.0f;
+  for (std::size_t j = 0; j < emitters.size(); ++j) {
+    RtFloat const w = gman::lightChoiceWeight(emitters[j], p);
+    totalWeight += w;
+    if (j == index) {
+      indexWeight = w;
+    }
+  }
+  return (totalWeight > 0.0f) ? indexWeight / totalWeight : 0.0f;
+}
+
+// Next-event estimation's own weight toward a chosen light: 1 for a delta
+// light at any vertex, since nothing can ever land on one by chance and no
+// competing technique exists; 1 also when misEnabled is false, light-only
+// sampling's own rule. Otherwise the power heuristic between the light's
+// own solid-angle density (pLight, pChoice(j) times the draw's own
+// EmitterSample::pdf) and the departing BSDF's own density toward the same
+// direction (pBsdf).
+RtFloat nextEventWeight(bool lightIsDelta, bool misEnabled, RtFloat pLight, RtFloat pBsdf) {
+  if (lightIsDelta || !misEnabled) {
+    return 1.0f;
+  }
+  return gman::powerHeuristic(pLight, pBsdf);
+}
+
+// An emitter hit's own weight: 1 whenever no BSDF draw produced the
+// arriving ray at all, or the most recent one was a delta lobe -- the one
+// case with no competing technique, and the one where next-event
+// estimation's own term at that vertex is already black, so nothing here
+// can double either. Otherwise the power heuristic between the departing
+// draw's own density (pBsdf) and the light-choice/solid-angle density
+// next-event estimation would have used for this same emitter from that
+// same vertex (pLight); 0, not 1, when misEnabled is false, since
+// light-only sampling never credits this case at all.
+RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat pBsdf, RtFloat pLight) {
+  if (rayEligibleForEmitterHit) {
+    return 1.0f;
+  }
+  if (!misEnabled) {
+    return 0.0f;
+  }
+  return gman::powerHeuristic(pBsdf, pLight);
+}
+
+} // namespace gman
+
 namespace {
 
 // Pins every image this plugin renders; changing it moves all of them.
@@ -214,7 +276,9 @@ bool chooseLight(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
     chosen = lastPositive;
   }
 
-  pj = lightWeight[chosen] / totalWeight;
+  // The same function an emitter-hit's own weight calls again at the
+  // arrival vertex, so the two sides provably agree on this probability.
+  pj = gman::lightChoiceProbability(emitters, p, chosen);
   return true;
 }
 
@@ -242,16 +306,19 @@ ShadowWalkStart shadowWalkStart(GMANPoint const& origin, gman::EmitterSample con
 // chooseLight, draws its own real (u1, u2) at dimension 3 + 5k -- reserved
 // for exactly this, distinct from chooseLight's own fixed preview draw --
 // and, where its solid-angle pdf is positive and the closure's response
-// toward it is non-black, returns its shadowed contribution to L. Answers
-// black where no emitter has positive weight there, the draw's pdf is 0 or
-// the closure is black toward it. lightWeight is the caller's own per-path
-// buffer, sized to emitters.size() and overwritten here, never reallocated
-// per vertex.
+// toward it is non-black, returns its shadowed contribution to L, weighted
+// against the closure's own density toward the same direction whenever
+// misEnabled and the chosen light is an area emitter (nextEventWeight): a
+// delta light keeps weight 1, since nothing can ever land on it by chance.
+// Answers black where no emitter has positive weight there, the draw's pdf
+// is 0 or the closure is black toward it. lightWeight is the caller's own
+// per-path buffer, sized to emitters.size() and overwritten here, never
+// reallocated per vertex.
 GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANHit const& hit,
                               gman::SurfacePoint const& point, gman::BSDF const& closure, GMANVector const& wo,
                               GMANColor const& beta, RtFloat surfaceMagnitude, GMANMatrix4 const& cameraToWorld,
                               gman::TextureCache* textureCache, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
-                              std::uint32_t k, std::vector<RtFloat>& lightWeight) {
+                              std::uint32_t k, std::vector<RtFloat>& lightWeight, bool misEnabled) {
   if (emitters.empty()) {
     return kBlack;
   }
@@ -273,6 +340,10 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
     return kBlack;
   }
 
+  RtFloat const pLight = pj * es.pdf;
+  RtFloat const pBsdf = closure.pdf(wo, es.wi);
+  RtFloat const weight = gman::nextEventWeight(es.isDelta, misEnabled, pLight, pBsdf);
+
   RtFloat const cosTerm = std::fabs(point.N.dot(es.wi));
   GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, es.wi, surfaceMagnitude);
   ShadowWalkStart const walkStart = shadowWalkStart(origin, es);
@@ -280,15 +351,15 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
                                  cameraToWorld, textureCache);
 
   GMANColor term = gman::multiplyChannels(beta, f);
-  term = scaleColor(term, cosTerm / (pj * es.pdf));
+  term = scaleColor(term, weight * cosTerm / pLight);
   term = gman::multiplyChannels(term, es.Cl);
   term = gman::multiplyChannels(term, v);
   return term;
 }
 
 // The BSDF draw that carries a path onward: its direction, its own
-// solid-angle pdf (a future multiple-importance-sampling weight reads
-// this), and whether the lobe sampled was a delta one.
+// solid-angle pdf (an emitter-hit's own MIS weight reads this, for a
+// non-delta departure), and whether the lobe sampled was a delta one.
 struct BSDFStepDraw {
   GMANVector wi;
   RtFloat pdf;
@@ -345,21 +416,38 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
 
 // The emitter-hit term at a hit, added once per vertex before anything else
 // there: black unless the hit primitive's own area light is eligible and
-// supported (present in emitters, which already filtered both), its placed
-// normal faces the incoming ray, and rayEligible says no non-delta BSDF
-// draw produced the ray since its own last vertex -- otherwise next-event
-// estimation at that earlier vertex already estimated this same
-// contribution, and adding it again here would double it.
+// supported (present in emitters, which already filtered both) and its
+// placed normal faces the incoming ray. rayEligible true (no BSDF draw
+// produced the ray at all, or the most recent one was a delta lobe) keeps
+// weight 1: the one case with no competing technique, or the one where
+// next-event estimation's own term at the departing vertex is already
+// black, so nothing here can double it. Otherwise the departure was a
+// non-delta draw, from departureP with its own reported density
+// departurePdf; the term is weighted by emitterHitWeight against the
+// light-choice/solid-angle density next-event estimation would have used
+// for this same emitter from that same departure, 0 outright when
+// misEnabled is false.
 GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterface const* hitPrimitive,
-                       gman::Appearance const& appearance, gman::SurfacePoint const& point, bool rayEligible) {
-  if (!rayEligible || appearance.areaLight == nullptr) {
+                       gman::Appearance const& appearance, gman::SurfacePoint const& point, bool rayEligible,
+                       bool misEnabled, GMANPoint const& departureP, RtFloat departurePdf) {
+  if (appearance.areaLight == nullptr) {
     return kBlack;
   }
-  for (gman::Emitter const& emitter : emitters) {
-    if (emitter.shape == hitPrimitive) {
-      RtFloat const cosTheta = point.N.dot(-point.I);
-      return (cosTheta > 0.0f) ? emitter.light->getCl() : kBlack;
+  for (std::size_t j = 0; j < emitters.size(); ++j) {
+    if (emitters[j].shape != hitPrimitive) {
+      continue;
     }
+    RtFloat const cosTheta = point.N.dot(-point.I);
+    if (!(cosTheta > 0.0f)) {
+      return kBlack;
+    }
+    RtFloat pLight = 0.0f;
+    if (misEnabled && !rayEligible) {
+      pLight = gman::lightChoiceProbability(emitters, departureP, j) *
+               gman::lightSolidAnglePdf(emitters[j], departureP, point.P, point.N);
+    }
+    RtFloat const weight = gman::emitterHitWeight(rayEligible, misEnabled, departurePdf, pLight);
+    return scaleColor(emitters[j].light->getCl(), weight);
   }
   return kBlack;
 }
@@ -367,7 +455,9 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
 // One path's own mutable state as it walks its vertices: its accumulated
 // result, its throughput and eta-scale, whether it has scattered yet, the
 // current ray, its run of straight pass-through vertices, whether that ray
-// still qualifies for a direct emitter-hit credit, and the chooseLight
+// still qualifies for a direct emitter-hit credit, the departing vertex's
+// own shading point and BSDF-sample density behind a non-delta departure
+// (read only when rayEligibleForEmitterHit is false), and the chooseLight
 // scratch buffer, sized once to emitters.size() and reused at every vertex.
 struct PathState {
   PathResult result;
@@ -377,6 +467,8 @@ struct PathState {
   // The camera ray itself is eligible: it carries no earlier BSDF draw, so
   // it has no earlier next-event estimate to double.
   bool rayEligibleForEmitterHit = true;
+  GMANPoint departureP;
+  RtFloat departurePdf = 0.0f;
   int passThroughRun = 0;
   GMANRay ray;
   std::vector<RtFloat> lightWeight;
@@ -391,13 +483,14 @@ struct PathState {
 bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                      GMANMatrix4 const& cameraToWorld, gman::TextureCache* textureCache, GMANHit const& hit,
                      GMANRayInterface const* hitPrimitive, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
-                     std::uint32_t k, PathState& state) {
+                     std::uint32_t k, bool misEnabled, PathState& state) {
   gman::SurfacePoint const point = gman::hitSurfacePoint(state.ray, hit);
   gman::Appearance const& appearance = hitPrimitive->getAppearance();
   RtFloat const surfaceMagnitude = point.surfaceMagnitude;
 
-  state.result.L += gman::multiplyChannels(
-      state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point, state.rayEligibleForEmitterHit));
+  state.result.L += gman::multiplyChannels(state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point,
+                                                                    state.rayEligibleForEmitterHit, misEnabled,
+                                                                    state.departureP, state.departurePdf));
 
   GMANColor const os = clampCoverage(appearance.Os);
   RtFloat const qPass = meanChannel(gman::oneMinus(os));
@@ -413,13 +506,17 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
   GMANVector const wo = -point.I;
   state.result.L += nextEventEstimation(bvh, emitters, hit, point, closure, wo, state.beta, surfaceMagnitude,
-                                        cameraToWorld, textureCache, sx, sy, i, N, k, state.lightWeight);
+                                        cameraToWorld, textureCache, sx, sy, i, N, k, state.lightWeight, misEnabled);
   std::optional<BSDFStepDraw> const draw =
       bsdfStepAndRoulette(closure, wo, point, sx, sy, i, N, k, state.beta, state.etaScale, state.result.finite);
   if (!draw) {
     return false;
   }
   state.rayEligibleForEmitterHit = draw->isDelta;
+  if (!draw->isDelta) {
+    state.departureP = hit.point;
+    state.departurePdf = draw->pdf;
+  }
   GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, draw->wi, surfaceMagnitude);
   state.ray = GMANRay(origin, draw->wi);
   return true;
@@ -435,7 +532,7 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
 // dimension, so no state passes between paths or slots.
 PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                      GMANMatrix4 const& cameraToWorld, GMANColor const& background, gman::TextureCache* textureCache,
-                     GMANRay cameraRay, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N) {
+                     GMANRay cameraRay, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N, bool misEnabled) {
   PathState state(cameraRay, emitters.size());
   bool escaped = false;
   for (std::uint32_t k = 0;; ++k) {
@@ -451,7 +548,8 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
       escaped = true;
       break;
     }
-    if (!tracePathVertex(bvh, emitters, cameraToWorld, textureCache, hit, hitPrimitive, sx, sy, i, N, k, state)) {
+    if (!tracePathVertex(bvh, emitters, cameraToWorld, textureCache, hit, hitPrimitive, sx, sy, i, N, k, misEnabled,
+                         state)) {
       break;
     }
   }
@@ -478,7 +576,7 @@ struct SlotResult {
 
 SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem* viewingSys,
                       GMANMatrix4 const& cameraToWorld, GMANColor const& background, gman::TextureCache* textureCache,
-                      RtInt sx, RtInt sy, int xsamples, int ysamples, std::uint32_t N) {
+                      RtInt sx, RtInt sy, int xsamples, int ysamples, std::uint32_t N, bool misEnabled) {
   SlotResult result;
   for (std::uint32_t i = 0; i < N; ++i) {
     gman::Sample2D const uv0 = gman::sample2D(kSeed, sx, sy, i, N, 0u);
@@ -486,7 +584,8 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& e
     RtFloat const rasterY = ((RtFloat)sy + uv0.u2) / (RtFloat)ysamples;
     GMANRay const cameraRay = viewingSys->cameraRay(rasterX, rasterY);
 
-    PathResult const path = tracePath(bvh, emitters, cameraToWorld, background, textureCache, cameraRay, sx, sy, i, N);
+    PathResult const path =
+        tracePath(bvh, emitters, cameraToWorld, background, textureCache, cameraRay, sx, sy, i, N, misEnabled);
 
     if (path.hasFirstHit && path.firstHitZ < result.minZ) {
       result.minZ = path.firstHitZ;
@@ -512,7 +611,7 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& e
 void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem* viewingSys,
                GMANMatrix4 const& cameraToWorld, GMANOptions::RasterInfo const& raster, RtInt width, int xsamples,
                int ysamples, std::uint32_t N, GMANColor const& background, gman::TextureCache& textureCache, int py,
-               GMANSampleBuffer& sampleBuffer, std::size_t& dropped) {
+               GMANSampleBuffer& sampleBuffer, std::size_t& dropped, bool misEnabled) {
   int const subsPerColumn = xsamples * ysamples;
   for (int px = 0; px < width; ++px) {
     for (int sub = 0; sub < subsPerColumn; ++sub) {
@@ -524,7 +623,7 @@ void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters
       RtInt const sy = raster.rymin * ysamples + sampleY;
 
       SlotResult const slot = renderSlot(bvh, emitters, viewingSys, cameraToWorld, background, &textureCache, sx, sy,
-                                         xsamples, ysamples, N);
+                                         xsamples, ysamples, N, misEnabled);
       dropped += slot.dropped;
       if (!slot.anyHit) {
         continue;
@@ -548,6 +647,8 @@ void GMANPathtraceRenderer::gatherLights() {
 GMANPathtraceRenderer::GMANPathtraceRenderer() : GMANRenderer() {};
 
 GMANPathtraceRenderer::~GMANPathtraceRenderer() {};
+
+void GMANPathtraceRenderer::setMultipleImportanceSampling(bool enabled) { multipleImportanceSamplingEnabled = enabled; }
 
 void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                    GMANOptions const& options, GMANAttributes const& /*attributes*/) {
@@ -573,7 +674,7 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   for (int py = 0; py < height; ++py) {
     std::size_t rowDropped = 0;
     renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, background, textureCache,
-              py, *sampleBuffer, rowDropped);
+              py, *sampleBuffer, rowDropped, multipleImportanceSamplingEnabled);
     droppedPaths += rowDropped;
   }
 

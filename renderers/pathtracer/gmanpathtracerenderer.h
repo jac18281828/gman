@@ -90,6 +90,13 @@ private:
   std::size_t droppedPaths = 0;
   std::size_t skippedAmbientLights = 0;
 
+  // Weights next-event estimation and an emitter hit by the power
+  // heuristic where both can reach the same area light; false is
+  // light-only sampling, next-event estimation alone at weight 1. Not a
+  // RIB option: a correctness/variance proof's own switch, set only
+  // through setMultipleImportanceSampling.
+  bool multipleImportanceSamplingEnabled = true;
+
   // Fills emitters from worldManager and skippedAmbientLights from its own
   // separate count -- gman::emitters excludes ambient lights silently,
   // with no count of its own to report.
@@ -114,6 +121,10 @@ public:
   // The last render() call's count of dropped paths, as getDepth reports
   // its resolved depth.
   std::size_t droppedPathCount() const { return droppedPaths; }
+
+  // Not GMAN_EXPORT: an internal correctness/variance switch, for a test
+  // that constructs this renderer by hand, never a RIB surface.
+  void setMultipleImportanceSampling(bool enabled);
 
   virtual GMANWorldManager* getWorldManager(void);
 
