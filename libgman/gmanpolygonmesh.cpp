@@ -120,7 +120,11 @@ GMANPolygonMesh::GMANPolygonMesh(GMANParameterList parameterList, std::size_t po
       loopOffsets(loopOffsetsFrom(this->faceLoopCounts)) {}
 
 std::span<RtFloat const> GMANPolygonMesh::points() const {
-  return std::span<RtFloat const>(gman::floatArray(parameterList, RI_P), 3 * pointCount);
+  RtFloat const* const p = gman::floatArray(parameterList, RI_P);
+  if (p == nullptr) {
+    return {};
+  }
+  return std::span<RtFloat const>(p, 3 * pointCount);
 }
 
 std::size_t GMANPolygonMesh::faceCount() const { return faceOffsets.empty() ? 0 : faceOffsets.size() - 1; }

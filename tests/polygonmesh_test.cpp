@@ -336,7 +336,7 @@ void checkRejections(std::string const& logPath) {
   }
   {
     std::vector<RtInt> const nverts = {kNvertsOverflow};
-    std::vector<RtInt> const verts = {};
+    std::vector<RtInt> const verts = {-1};
     checkRejection(
         logPath, "PointsPolygons nverts overflow",
         "PointsPolygons: nverts sums to " + std::to_string(kNvertsOverflow) + ", times 3 overflows RtInt; ignoring.",
@@ -415,12 +415,13 @@ void checkRejections(std::string const& logPath) {
   {
     std::vector<RtInt> const nloops = {1};
     std::vector<RtInt> const nverts = {kNvertsOverflow};
+    std::vector<RtInt> const verts = {-1};
     checkRejection(logPath, "PointsGeneralPolygons nverts overflow",
                    "PointsGeneralPolygons: nverts sums to " + std::to_string(kNvertsOverflow) +
                        ", times 3 overflows RtInt; ignoring.",
                    [&] {
-                     return gman::pointsGeneralPolygonsMesh(1, nloops.data(), nverts.data(), nullptr, dictionary, 0,
-                                                            nullptr, nullptr, nullptr);
+                     return gman::pointsGeneralPolygonsMesh(1, nloops.data(), nverts.data(), verts.data(), dictionary,
+                                                            0, nullptr, nullptr, nullptr);
                    });
   }
   {
@@ -455,11 +456,11 @@ void checkRejections(std::string const& logPath) {
 // overflow case above.
 //
 // PointsPolygons and PointsGeneralPolygons apply the same rule, pinned
-// by their own overflow cases above, but accepting it here cheaply is
-// not practical: past the boundary, validatePointsIndices reads verts
-// once per accepted nverts entry, so proving the rule accepted without
-// warning would need a "P"-free call over a real kNvertsBoundary-long
-// verts array.
+// by their own overflow cases above, which pass a negative verts[0] so
+// that a verts walk run ahead of the overflow rule fails a named check.
+// Their boundary case is left out: at the boundary, validatePointsIndices
+// reads one verts entry per index the nverts sum counts, so a case that
+// survives every mutation needs a real kNvertsBoundary-long verts array.
 void checkOverflowBoundary(std::string const& logPath) {
   GMANDictionary dictionary;
 
