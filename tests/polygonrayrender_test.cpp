@@ -22,8 +22,8 @@
  * `gman -r gmanraytracer` renders tests/rib/r5a_polygon.rib -- a
  * single matte, camera-facing pentagon under an ambient and a distant
  * light -- matching a checked-in golden image. Reverting
- * GMANRayObjectManager::getRSPolygon to `return create();` renders nothing
- * but the black background, failing this check.
+ * GMANRayObjectManager::getRSPolygonMesh to `return create();` renders
+ * nothing but the black background, failing this check.
  */
 
 #include <cstdio>

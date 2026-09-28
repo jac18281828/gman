@@ -99,8 +99,8 @@ private:
   // object-space "P", "st" then "s"/"t" overriding,
   // GMANPatchPolyObjectManager's own polygon rule -- computed once here
   // rather than per ray. Every entry is (0, 0) when pl carries no "P"
-  // (direct construction bypassing GMANRayObjectManager::getRSPolygon).
-  // Holes carry no texCoords: a hit never lands inside one.
+  // (direct construction bypassing the object manager). Holes carry no
+  // texCoords: a hit never lands inside one.
   std::vector<std::pair<RtFloat, RtFloat>> texCoords;
 
   // Computes bbox, degeneracy and the unit Newell normal from vertices --

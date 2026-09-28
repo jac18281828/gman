@@ -270,7 +270,8 @@ void checkFillPattern(const std::string& gman, const std::string& ribDir, const 
 
 // ---- white-box: n - 2 triangles, whatever ear clipping had to do ----
 //
-// Calls GMANPatchPolyObjectManager::getRSPolygon directly (mirroring
+// Builds its mesh through the factory and calls
+// GMANPatchPolyObjectManager::getRSPolygonMesh directly (mirroring
 // normals_test.cpp and patchmesh_test.cpp's own direct-instantiation
 // tests) so the triangle count is read straight off the returned face
 // chain, not inferred from a render. A stalled ear-clipping loop would

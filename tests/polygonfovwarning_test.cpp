@@ -21,14 +21,12 @@
 /*
  * GMANRenderManImpl::RiWorldBegin resolves fov once, before building
  * either projection branch, and warns there when it was absent or
- * explicitly zero. The z-buffer polygon dicer resolves the same inputs
- * per getRSPolygon/getRSGeneralPolygon/getRSPointsPolygon/
- * getRSPointsGeneralPolygons call, silently, through the very same
- * GMANOptions -- were the warning to live in that shared resolver instead
- * of staying in RiWorldBegin, it would fire once per polygon rather than
- * once per RiWorldBegin. tests/rib/polygonfov.rib's two Polygon requests
- * under one RiWorldBegin, no "fov" supplied, are what tells the two
- * apart.
+ * explicitly zero. The z-buffer polygon dicer resolves the same inputs per
+ * getRSPolygonMesh call, silently, through the very same GMANOptions --
+ * were the warning to live in that shared resolver instead of staying in
+ * RiWorldBegin, it would fire once per polygon rather than once per
+ * RiWorldBegin. tests/rib/polygonfov.rib's two Polygon requests under one
+ * RiWorldBegin, no "fov" supplied, are what tells the two apart.
  */
 
 #include <cstdio>

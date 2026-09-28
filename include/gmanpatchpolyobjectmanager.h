@@ -55,19 +55,6 @@ public:
    * object manager must provide its own primitives.
    *
    */
-  virtual GMANPrimitive* getRSPolygon(RtInt nverts, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                      GMANTransform* t);
-
-  virtual GMANPrimitive* getRSGeneralPolygon(RtInt nloops, RtInt nverts[], GMANParameterList pl, GMANOptions* opt,
-                                             GMANAttributes* attr, GMANTransform* t);
-
-  virtual GMANPrimitive* getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[], GMANParameterList pl,
-                                            GMANOptions* opt, GMANAttributes* attr, GMANTransform* t);
-
-  virtual GMANPrimitive* getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[],
-                                                    GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                                    GMANTransform* t);
-
   virtual GMANPrimitive* getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
                                           GMANTransform* t);
 

@@ -405,27 +405,28 @@ set_tests_properties(normals PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Scale- and placement-invariance of GMANPatchPolyObjectManager::getRSPolygon's
-# ear-clipping classification: nine hand-built rings at six scales in two
-# placements, a randomized star-shaped stress, and degenerate input.
+# Scale- and placement-invariance of
+# GMANPatchPolyObjectManager::getRSPolygonMesh's ear-clipping
+# classification: nine hand-built rings at six scales in two placements, a
+# randomized star-shaped stress, and degenerate input.
 add_executable(gman_triangulation triangulation_test.cpp)
 target_link_libraries(gman_triangulation PRIVATE gman_core gman_internal_headers)
 add_test(NAME triangulation COMMAND gman_triangulation)
-# getRSPolygon falls back to dlopen'ing "libmatte.so" when no RiSurface is
-# set, the same bare-name lookup gman itself relies on the build tree being
-# on the runtime search path for.
+# getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no RiSurface
+# is set, the same bare-name lookup gman itself relies on the build tree
+# being on the runtime search path for.
 set_tests_properties(triangulation PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
-# GeneralPolygon hole bridging: getRSGeneralPolygon merges each hole into
-# the outer loop by Eberly's method before handing the ring to the same
+# GeneralPolygon hole bridging: getRSPolygonMesh merges each hole into the
+# outer loop by Eberly's method before handing the ring to the same
 # triangulateEarClipping loop 1 already uses. See tests/generalpolygon_test.cpp.
 add_executable(gman_generalpolygon generalpolygon_test.cpp)
 target_link_libraries(gman_generalpolygon PRIVATE gman_core gman_internal_headers)
 add_test(NAME generalpolygon COMMAND gman_generalpolygon)
-# getRSGeneralPolygon falls back to dlopen'ing "libmatte.so" when no
+# getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no
 # RiSurface is set, the same bare-name lookup gman itself relies on the
 # build tree being on the runtime search path for.
 set_tests_properties(generalpolygon PROPERTIES
@@ -1023,8 +1024,8 @@ set_tests_properties(orthowindow PROPERTIES
 add_executable(gman_polygondicecount polygondicecount_test.cpp)
 target_link_libraries(gman_polygondicecount PRIVATE gman_core gman_internal_headers)
 add_test(NAME polygondicecount COMMAND gman_polygondicecount)
-# getRSPolygon falls back to dlopen'ing "libmatte.so" when no RiSurface is
-# set -- triangulation's own comment, same lookup.
+# getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no RiSurface
+# is set -- triangulation's own comment, same lookup.
 set_tests_properties(polygondicecount PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
@@ -1871,12 +1872,12 @@ set_tests_properties(raypolygondegenerate PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# GMANRayObjectManager::getRSPointsPolygon returns one internal mesh
-# primitive; GMANRayBVH::build flattens it into one entry per face. A ray
-# aimed at a face never reports the mesh as hitPrimitive, and a fan of
-# rays across a cube agrees, face by face, between the BVH, the mesh's own
-# linear intersect and the analytic nearest face. See
-# tests/polygonmeshbvh_test.cpp.
+# GMANRayObjectManager::getRSPolygonMesh returns one internal mesh
+# primitive for a PointsPolygons request; GMANRayBVH::build flattens it
+# into one entry per face. A ray aimed at a face never reports the mesh as
+# hitPrimitive, and a fan of rays across a cube agrees, face by face,
+# between the BVH, the mesh's own linear intersect and the analytic
+# nearest face. See tests/polygonmeshbvh_test.cpp.
 add_executable(gman_polygonmeshbvh polygonmeshbvh_test.cpp)
 target_link_libraries(gman_polygonmeshbvh PRIVATE gman_core gman_internal_headers)
 

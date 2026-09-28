@@ -142,12 +142,11 @@ struct RasterProjection {
   RtFloat shadingRate;
 };
 
-// Resolved once per getRSPolygon/getRSGeneralPolygon/getRSPointsPolygon/
-// getRSPointsGeneralPolygons call, not once per ear-clipped triangle: the
-// projection and ShadingRate are constant across every face one such call
-// dices. worldToCamera is left identity -- diceCountFor only ever calls
-// project(), which reads none of a GMANViewingSystem's world-to-camera or
-// camera-to-world state.
+// Resolved once per getRSPolygonMesh call, not once per ear-clipped
+// triangle: the projection and ShadingRate are constant across every face
+// one such call dices. worldToCamera is left identity -- diceCountFor only
+// ever calls project(), which reads none of a GMANViewingSystem's
+// world-to-camera or camera-to-world state.
 RasterProjection rasterProjectionFor(GMANOptions const* opt, GMANAttributes const* attr) {
   RtFloat const shadingRate = attr->getShadingRate();
   if (!opt) {
@@ -456,7 +455,7 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(const std::vector<GMANP
 // t default to that same x, y and take the highest-precedence varying value
 // supplied instead: "st" first, then "s"/"t" each overriding only its own
 // component. RiTextureCoordinates does not apply to a polygon (RISpec 3.2);
-// getRSPolygon and getRSGeneralPolygon never resolve it.
+// getRSPolygonMesh never resolves it.
 struct PolygonVertexTexCoord {
   RtFloat u, v, s, t;
 };
@@ -607,8 +606,8 @@ struct FaceChains {
   GMANVertex* vertRoot; // the head of the face's vertex chain
 };
 
-// The tail shared by getRSPolygon and getRSGeneralPolygon: one GMANVertex
-// per entry in vertexLocations, triangulated over ring (which may repeat an
+// buildFace's own tail, one face at a time: one GMANVertex per entry in
+// vertexLocations, triangulated over ring (which may repeat an
 // entry at a bridge -- triangulateEarClipping's own comment already covers
 // the resulting duplicate position and zero-area corner), each ear-clipped
 // triangle then diced and shaded across its own face (dicePolygonTriangle).
@@ -991,7 +990,7 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
   PlanarFrame const frame = outerFrame(outer, normalVec, outerBboxSide);
 
   // Outer vertices keep ids 0..outer.size()-1, in "P" order -- the mapping
-  // getRSPolygon's own vertex chain already relies on when nloops == 1.
+  // a one-loop face's own vertex chain relies on.
   vertexPositions = outer;
   vertexSlots = loopSlots[0];
   ring.resize(outer.size());
@@ -1017,13 +1016,11 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
   }
 }
 
-// The tail shared by getRSPolygon, getRSGeneralPolygon and every face of
-// getRSPointsPolygon/getRSPointsGeneralPolygons: loops[0] is the outer
+// getRSPolygonMesh's own tail, one face at a time: loops[0] is the outer
 // boundary, loops[1..] holes bridged into it, then triangulated and
 // shaded through buildPolygonObject. loopSlots (index-aligned with loops)
-// names each vertex's own entry in pointTexCoords -- flat "P" order for a
-// bare Polygon or GeneralPolygon, a face's own "verts" entries (indices
-// into the shared "P") for a Points* request.
+// names each vertex's own entry in pointTexCoords, the mesh's own point
+// index into the shared "P".
 //
 // Degeneracy (gman::isDegeneratePolygon) is judged by a ratio, not an
 // absolute area: twice the outer loop's area (its Newell normal's
@@ -1116,265 +1113,9 @@ GMANPatchPolyObjectManager::~GMANPatchPolyObjectManager() {};
 
 GMANPrimitive* GMANPatchPolyObjectManager::create(RtVoid) { return new GMANObject(); }
 
-GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygon(RtInt nverts, GMANParameterList pl, GMANOptions* opt,
-                                                        GMANAttributes* attr, GMANTransform* t) {
-  // A Polygon is required to be planar and simple, not necessarily convex.
-  // triangulateEarClipping below handles concave input correctly; a fan
-  // from vertex 0 would silently fill the wrong region the moment a
-  // reflex vertex's diagonal left the polygon (see triangulateEarClipping
-  // and newellNormal's own comments for why each is needed).
-  //
-  // nverts < 3 is degenerate input, and a "P" absent from this attribute
-  // scope's parameter list is malformed RiPolygon/RiPolygonV input (public
-  // API, callable with no "P" at all, bypassing whatever the RIB parser
-  // enforces): both degrade to the same empty stub every other malformed
-  // shape in this codebase falls back to, rather than indexing past data
-  // that was never there.
-  if (nverts < 3) {
-    return create();
-  }
-  RtFloat* p = gman::floatArray(pl, RI_P);
-  if (!p) {
-    return create();
-  }
-
-  RtInt sides = attr->getSides();
-  RtToken orientation = attr->getOrientation();
-  gman::Appearance const appearance = gman::appearanceOf(*attr);
-  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  RasterProjection const dicing = rasterProjectionFor(opt, attr);
-
-  std::vector<GMANPoint> location(nverts);
-  std::vector<RtInt> slots(nverts);
-  for (RtInt i = 0; i < nverts; i++) {
-    location[i] = t->apply(GMANPoint(p[3 * i], p[3 * i + 1], p[3 * i + 2]));
-    slots[i] = i;
-  }
-
-  // A Polygon is a one-loop GeneralPolygon: buildFace's own comment covers
-  // the degeneracy guard, the bridging (a no-op with one loop and no
-  // holes) and the triangulation this shares with every other polygon
-  // face.
-  std::vector<PolygonVertexTexCoord> texCoords = resolvePolygonTextureCoordinates(pl, nverts, p);
-
-  GMANBody* body;
-  GMANVertex* vertRoot;
-  if (!buildFace({location}, {slots}, texCoords, sides, orientation, appearance, cameraToWorld, dicing, body,
-                 vertRoot)) {
-    return create();
-  }
-  GMANObject* object = new GMANObject();
-  object->setBody(body);
-  object->setVert(vertRoot);
-  return object;
-};
-
-GMANPrimitive* GMANPatchPolyObjectManager::getRSGeneralPolygon(RtInt nloops, RtInt nverts[], GMANParameterList pl,
-                                                               GMANOptions* opt, GMANAttributes* attr,
-                                                               GMANTransform* t) {
-  // Loop 0 is the outer boundary; RiGeneralPolygonV rejects nloops < 1 and
-  // any negative nverts[i] before this ever runs (see its own comment), so
-  // this guard only matters to a direct, white-box caller.
-  if (nloops < 1) {
-    return create();
-  }
-  RtFloat* p = gman::floatArray(pl, RI_P);
-  if (!p) {
-    return create();
-  }
-
-  std::vector<std::vector<GMANPoint>> loops(nloops);
-  std::vector<std::vector<RtInt>> loopSlots(nloops);
-  RtInt offset = 0;
-  for (RtInt i = 0; i < nloops; i++) {
-    RtInt count = nverts[i] > 0 ? nverts[i] : 0;
-    loops[i].resize(count);
-    loopSlots[i].resize(count);
-    for (RtInt j = 0; j < count; j++) {
-      loops[i][j] = t->apply(GMANPoint(p[3 * (offset + j)], p[3 * (offset + j) + 1], p[3 * (offset + j) + 2]));
-      loopSlots[i][j] = offset + j;
-    }
-    offset += count;
-  }
-
-  // Resolved once, over the whole flat "P" order every loop was unpacked
-  // from above -- bridgeHoles (inside buildFace) then reports which of
-  // these slots each committed vertex carries, since it commits holes in
-  // descending-rightmostU order, not this order.
-  std::vector<PolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, offset, p);
-
-  RtInt sides = attr->getSides();
-  RtToken orientation = attr->getOrientation();
-  gman::Appearance const appearance = gman::appearanceOf(*attr);
-  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  RasterProjection const dicing = rasterProjectionFor(opt, attr);
-
-  GMANBody* body;
-  GMANVertex* vertRoot;
-  if (!buildFace(loops, loopSlots, pointTexCoords, sides, orientation, appearance, cameraToWorld, dicing, body,
-                 vertRoot)) {
-    return create();
-  }
-  GMANObject* object = new GMANObject();
-  object->setBody(body);
-  object->setVert(vertRoot);
-  return object;
-};
-
-GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[],
-                                                              GMANParameterList pl, GMANOptions* opt,
-                                                              GMANAttributes* attr, GMANTransform* t) {
-  // Direct, white-box caller guard, as getRSGeneralPolygon's own
-  // nloops < 1 guard is -- RiPointsPolygonsV rejects npolys < 0 before
-  // this ever runs, and npolys == 0 draws nothing either way.
-  if (npolys < 1) {
-    return create();
-  }
-  RtFloat* p = gman::floatArray(pl, RI_P);
-  if (!p) {
-    return create();
-  }
-
-  RtInt totalVerts = 0;
-  for (RtInt i = 0; i < npolys; i++) {
-    totalVerts += nverts[i] > 0 ? nverts[i] : 0;
-  }
-  // 1 + max(verts): RiSpec's own vertex/varying count for this request --
-  // one "P"/"s"/"t"/"st" entry per point the mesh actually references.
-  RtInt pointCount = 0;
-  for (RtInt i = 0; i < totalVerts; i++) {
-    if (verts[i] + 1 > pointCount) {
-      pointCount = verts[i] + 1;
-    }
-  }
-
-  // Resolved once, over the shared "P" a point at a time -- not per face,
-  // and not in "verts" order -- so a point three faces share still reads
-  // the same "s"/"t"/"st" wherever it is referenced from.
-  std::vector<PolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, pointCount, p);
-
-  RtInt sides = attr->getSides();
-  RtToken orientation = attr->getOrientation();
-  gman::Appearance const appearance = gman::appearanceOf(*attr);
-  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  RasterProjection const dicing = rasterProjectionFor(opt, attr);
-
-  // Faceted: every face gathers its own GMANVertex objects through
-  // "verts", one PointsPolygons face being a one-loop GeneralPolygon
-  // (buildFace). A degenerate face is skipped, not fatal; every
-  // surviving face's body and vertex chain joins one GMANObject.
-  GMANBody *bodyHead = NULL, *bodyTail = NULL;
-  GMANVertex *vertHead = NULL, *vertTail = NULL;
-
-  RtInt offset = 0;
-  for (RtInt i = 0; i < npolys; i++) {
-    RtInt count = nverts[i] > 0 ? nverts[i] : 0;
-    std::vector<GMANPoint> loop(count);
-    std::vector<RtInt> slots(count);
-    for (RtInt j = 0; j < count; j++) {
-      RtInt pointIndex = verts[offset + j];
-      loop[j] = t->apply(GMANPoint(p[3 * pointIndex], p[3 * pointIndex + 1], p[3 * pointIndex + 2]));
-      slots[j] = pointIndex;
-    }
-    offset += count;
-
-    GMANBody* faceBody;
-    GMANVertex* faceVert;
-    if (buildFace({loop}, {slots}, pointTexCoords, sides, orientation, appearance, cameraToWorld, dicing, faceBody,
-                  faceVert)) {
-      appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
-    }
-  }
-
-  if (!bodyHead) {
-    return create(); // no face survived: the whole mesh is the empty stub
-  }
-  GMANObject* object = new GMANObject();
-  object->setBody(bodyHead);
-  object->setVert(vertHead);
-  return object;
-};
-
-GMANPrimitive* GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[],
-                                                                      RtInt verts[], GMANParameterList pl,
-                                                                      GMANOptions* opt, GMANAttributes* attr,
-                                                                      GMANTransform* t) {
-  if (npolys < 1) {
-    return create();
-  }
-  RtFloat* p = gman::floatArray(pl, RI_P);
-  if (!p) {
-    return create();
-  }
-
-  RtInt sumNloops = 0;
-  for (RtInt i = 0; i < npolys; i++) {
-    sumNloops += nloops[i] > 0 ? nloops[i] : 0;
-  }
-  RtInt totalVerts = 0;
-  for (RtInt i = 0; i < sumNloops; i++) {
-    totalVerts += nverts[i] > 0 ? nverts[i] : 0;
-  }
-  RtInt pointCount = 0;
-  for (RtInt i = 0; i < totalVerts; i++) {
-    if (verts[i] + 1 > pointCount) {
-      pointCount = verts[i] + 1;
-    }
-  }
-
-  std::vector<PolygonVertexTexCoord> pointTexCoords = resolvePolygonTextureCoordinates(pl, pointCount, p);
-
-  RtInt sides = attr->getSides();
-  RtToken orientation = attr->getOrientation();
-  gman::Appearance const appearance = gman::appearanceOf(*attr);
-  GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
-  RasterProjection const dicing = rasterProjectionFor(opt, attr);
-
-  GMANBody *bodyHead = NULL, *bodyTail = NULL;
-  GMANVertex *vertHead = NULL, *vertTail = NULL;
-
-  RtInt loopOffset = 0, vertOffset = 0;
-  for (RtInt i = 0; i < npolys; i++) {
-    RtInt faceLoops = nloops[i] > 0 ? nloops[i] : 0;
-    if (faceLoops == 0) {
-      continue; // no outer loop at all: degenerate, skip
-    }
-
-    std::vector<std::vector<GMANPoint>> loops(faceLoops);
-    std::vector<std::vector<RtInt>> loopSlots(faceLoops);
-    for (RtInt li = 0; li < faceLoops; li++) {
-      RtInt count = nverts[loopOffset + li] > 0 ? nverts[loopOffset + li] : 0;
-      loops[li].resize(count);
-      loopSlots[li].resize(count);
-      for (RtInt j = 0; j < count; j++) {
-        RtInt pointIndex = verts[vertOffset + j];
-        loops[li][j] = t->apply(GMANPoint(p[3 * pointIndex], p[3 * pointIndex + 1], p[3 * pointIndex + 2]));
-        loopSlots[li][j] = pointIndex;
-      }
-      vertOffset += count;
-    }
-    loopOffset += faceLoops;
-
-    GMANBody* faceBody;
-    GMANVertex* faceVert;
-    if (buildFace(loops, loopSlots, pointTexCoords, sides, orientation, appearance, cameraToWorld, dicing, faceBody,
-                  faceVert)) {
-      appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
-    }
-  }
-
-  if (!bodyHead) {
-    return create();
-  }
-  GMANObject* object = new GMANObject();
-  object->setBody(bodyHead);
-  object->setVert(vertHead);
-  return object;
-};
-
 // One call for every polygon request: the mesh guarantees a non-null "P"
 // and at least one loop per face, so this reads straight through to
-// buildFace/appendFace, getRSPointsGeneralPolygons' own general case.
+// buildFace/appendFace over each of the mesh's own faces and loops.
 GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt,
                                                             GMANAttributes* attr, GMANTransform* t) {
   std::span<RtFloat const> const p = mesh.points();

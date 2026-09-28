@@ -49,7 +49,7 @@ std::vector<GMANPoint> collinearFour() {
 
 // Builds its mesh through the factory function Polygon calls, then calls
 // getRSPolygonMesh, as raypolygonhole_test.cpp's own runGetRSPolygonDirect
-// called getRSPolygon.
+// does.
 GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   RtInt const nverts = (RtInt)ring.size();
   std::vector<RtFloat> p(3 * nverts);

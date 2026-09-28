@@ -44,34 +44,6 @@ void GMANZBufferRenderer::AreaLightCountingObjectManager::countIfAreaLight(GMANA
   }
 }
 
-GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPolygon(RtInt nverts, GMANParameterList pl,
-                                                                                 GMANOptions* opt, GMANAttributes* attr,
-                                                                                 GMANTransform* t) {
-  countIfAreaLight(attr);
-  return GMANPatchPolyObjectManager::getRSPolygon(nverts, pl, opt, attr, t);
-}
-
-GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSGeneralPolygon(
-    RtInt nloops, RtInt nverts[], GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
-  countIfAreaLight(attr);
-  return GMANPatchPolyObjectManager::getRSGeneralPolygon(nloops, nverts, pl, opt, attr, t);
-}
-
-GMANPrimitive*
-GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[],
-                                                                        GMANParameterList pl, GMANOptions* opt,
-                                                                        GMANAttributes* attr, GMANTransform* t) {
-  countIfAreaLight(attr);
-  return GMANPatchPolyObjectManager::getRSPointsPolygon(npolys, nverts, verts, pl, opt, attr, t);
-}
-
-GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPointsGeneralPolygons(
-    RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], GMANParameterList pl, GMANOptions* opt,
-    GMANAttributes* attr, GMANTransform* t) {
-  countIfAreaLight(attr);
-  return GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(npolys, nloops, nverts, verts, pl, opt, attr, t);
-}
-
 GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mesh,
                                                                                      GMANOptions* opt,
                                                                                      GMANAttributes* attr,

@@ -158,15 +158,6 @@ private:
   // answer an empty placeholder, rendering no geometry to count.
   class AreaLightCountingObjectManager : public GMANPatchPolyObjectManager {
   public:
-    GMANPrimitive* getRSPolygon(RtInt nverts, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                GMANTransform* t) override;
-    GMANPrimitive* getRSGeneralPolygon(RtInt nloops, RtInt nverts[], GMANParameterList pl, GMANOptions* opt,
-                                       GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[], GMANParameterList pl,
-                                      GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[],
-                                              GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                              GMANTransform* t) override;
     GMANPrimitive* getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
                                     GMANTransform* t) override;
     GMANPrimitive* getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,

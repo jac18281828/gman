@@ -58,19 +58,6 @@ public:
    * object manager must provide its own primitives.
    *
    */
-  virtual GMANPrimitive* getRSPolygon(RtInt nverts, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                      GMANTransform* t) = 0;
-
-  virtual GMANPrimitive* getRSGeneralPolygon(RtInt nloops, RtInt nverts[], GMANParameterList pl, GMANOptions* opt,
-                                             GMANAttributes* attr, GMANTransform* t) = 0;
-
-  virtual GMANPrimitive* getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[], GMANParameterList pl,
-                                            GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
-
-  virtual GMANPrimitive* getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[],
-                                                    GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                                    GMANTransform* t) = 0;
-
   // One call per polygon request that yields a mesh: Polygon, GeneralPolygon,
   // PointsPolygons and PointsGeneralPolygons all reach this one virtual,
   // each normalised into mesh's faces and loops by the factory that built
