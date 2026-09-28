@@ -3068,3 +3068,12 @@ add_test(NAME rungman COMMAND gman_rungman)
 set_tests_properties(rungman PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# Fails on a hand-rolled process spawn outside tests/rungman.h or a
+# direct GMANOneMatrix outside tests/maketransform.h, anywhere under
+# tests/. See tests/helperscan_test.cpp.
+add_executable(gman_helperscan helperscan_test.cpp)
+add_test(NAME helperscan COMMAND gman_helperscan "${CMAKE_SOURCE_DIR}/tests")
+set_tests_properties(helperscan PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
