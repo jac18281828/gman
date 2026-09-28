@@ -2653,6 +2653,19 @@ set_tests_properties(bsdfggxstats PROPERTIES
   LABELS unit
   TIMEOUT 60)
 
+# gman::BSDF's mirror and dielectric delta lobes: a double-precision
+# reference for exact Fresnel, reflection and Snell refraction; direction,
+# Fresnel, energy and reciprocity; a three-lobe mixture; clamping, eta
+# bounds, capacity and failed draws; shadowTransmittance; and no heap
+# allocation. Links raybvhallocator.cpp as bsdf's own test does.
+add_executable(gman_bsdfdelta bsdfdelta_test.cpp raybvhallocator.cpp)
+target_link_libraries(gman_bsdfdelta PRIVATE gman_core)
+
+add_test(NAME bsdfdelta COMMAND gman_bsdfdelta)
+set_tests_properties(bsdfdelta PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, and the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, with every shader loaded through
