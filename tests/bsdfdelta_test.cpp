@@ -111,9 +111,9 @@ constexpr double kTirAngleDeg = 120.0;
 // Refracting back from this angle's transmission direction lands 9.1e-5
 // away in cosine from the critical angle, cos(theta_t) 0.74544680 against
 // 0.74535599; F's slope there, dF/d(cosine) about -498 against -1.2 at 60
-// degrees, turns a 1-4 ulp cosine error into 2.2e-5 to 8.9e-5 of F, past
-// the reciprocity check's own tolerance. checkDielectric excludes it, as
-// it excludes kTirAngleDeg, which never transmits.
+// degrees: one float ulp of cosine (about 6e-8) moves F by about 3e-5
+// there, past the reciprocity check's 1e-5 tolerance. checkDielectric
+// excludes it, as it excludes kTirAngleDeg, which never transmits.
 constexpr double kNearCriticalAngleDeg = 89.0;
 
 // Dimension bases, one block per statistical draw so no two random numbers

@@ -306,9 +306,9 @@ void checkDefault() {
 }
 
 // countingshader stands in for a plugin without a bsdf override. It is the
-// only loaded plugin that still inherits the base default, since every
-// shipped shader now overrides bsdf; the in-binary Plain subclass proves
-// the same default without crossing the shared-object boundary.
+// only loaded plugin that inherits the base default, since every shipped
+// shader overrides bsdf; the in-binary Plain subclass proves the same
+// default without crossing the shared-object boundary.
 void checkLoadedDefault() {
   auto const counting = loadSurface("countingshader", GMANParameterList());
   check(counting != nullptr, "default: countingshader loads through setSurface");

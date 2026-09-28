@@ -111,12 +111,13 @@ public:
   // index 1, eta the relative index of the side behind it. Reflects with
   // Fresnel probability F and transmits with 1 - F, both delta branches. A
   // transmitted draw's coefficient carries the radiance scale
-  // (eta_o / eta_i)^2, so f * |cos(theta_i)| can exceed weight: leaving a
-  // glass interface of index 1.5 at weight 1, it reaches 2.16. weight
-  // clamps as addLambert's reflectance does; eta clamps to [0.01, 100], a
-  // NaN, zero or negative eta stored as 1, an index-matched interface that
-  // transmits straight through. Past kMaxLobes, throws
-  // GMANError(RIE_LIMIT) and leaves the closure unchanged.
+  // (eta_o / eta_i)^2, eta_o the index on wo's side and eta_i the index on
+  // wi's side, so f * |cos(theta_i)| can exceed weight: leaving a glass
+  // interface of index 1.5 at weight 1, it reaches 2.16. weight clamps as
+  // addLambert's reflectance does; eta clamps to [0.01, 100], a NaN, zero
+  // or negative eta stored as 1, an index-matched interface that transmits
+  // straight through. Past kMaxLobes, throws GMANError(RIE_LIMIT) and
+  // leaves the closure unchanged.
   void addDielectric(GMANColor const& weight, RtFloat eta);
 
   std::size_t lobeCount() const;

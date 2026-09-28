@@ -2673,7 +2673,7 @@ set_tests_properties(bsdfdelta PROPERTIES
 # closures, with every shader loaded through GMANAttributes::setSurface.
 # add_dependencies below lists every plugin it loads, countingshader
 # included: the loaded-default case needs it, since every shipped plugin
-# now overrides bsdf. Its own working directory, since the paintedplastic
+# overrides bsdf. Its own working directory, since the paintedplastic
 # case writes and reads a texture file relative to cwd.
 add_executable(gman_shaderbsdf shaderbsdf_test.cpp)
 target_link_libraries(gman_shaderbsdf PRIVATE gman_core TIFF::TIFF)
