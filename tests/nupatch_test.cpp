@@ -399,6 +399,16 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
                                "clamping and zero-filling the remainder."},
       {"nupatch_zero_weight.rib", "NuPatch: control point 2 has non-positive \"Pw\" weight 0; "
                                   "ignoring."},
+      {"nupatch_v_order_exceeds_n.rib", "NuPatch: nv=2 vorder=3 violates nv >= vorder >= 1; "
+                                        "ignoring."},
+      {"nupatch_v_decreasing_knots.rib", "NuPatch: vknot[2]=0.25 is less than vknot[1]=0.5, not "
+                                         "non-decreasing; ignoring."},
+      {"nupatch_v_empty_range.rib", "NuPatch: vmin=0.5 vmax=0.5 violates vmin < vmax; ignoring."},
+      {"nupatch_vmin_below_knot.rib", "NuPatch: vmin=-0.1 is less than vknot[vorder-1]=0; "
+                                      "ignoring."},
+      {"nupatch_vmax_above_knot.rib", "NuPatch: vmax=1.5 exceeds vknot[nv]=1; ignoring."},
+      {"nupatch_umax_above_knot.rib", "NuPatch: umax=1.5 exceeds uknot[nu]=1; ignoring."},
+      {"nupatch_rule_order.rib", "NuPatch: nv=2 vorder=3 violates nv >= vorder >= 1; ignoring."},
   };
 
   for (Fixture const& fixture : fixtures) {
@@ -410,6 +420,18 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
     check(r.output.find(fixture.expectedWarning) != std::string::npos, std::string(fixture.file) +
                                                                            ": warns naming the rule and its "
                                                                            "values");
+  }
+
+  // nupatch_rule_order.rib breaks both a uknot and a vorder rule; the row
+  // above already pins that the vorder warning fires. This pins the other
+  // half: the uknot check never runs, so its warning never prints.
+  {
+    const std::string rib = malformedDir + "/nupatch_rule_order.rib";
+    GMANRunResult r = runCapturingOutput(gman, rib, 10);
+    check(!r.timedOut, "nupatch_rule_order.rib: does not hang (10s bound)");
+    check(!r.crashed, "nupatch_rule_order.rib: does not crash");
+    check(r.output.find("uknot") == std::string::npos,
+          "nupatch_rule_order.rib: the order check preempts the knot check, so no uknot warning prints");
   }
 }
 

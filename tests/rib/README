@@ -257,6 +257,57 @@ Registered in `tests/nupatch_test.cpp`, asserting the new
 weight-positivity warning. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
+## malformed/nupatch_v_order_exceeds_n.rib
+
+`vorder = nv + 1`: the v twin of `nupatch_order_exceeds_n.rib`'s own u
+rule. Registered in `tests/nupatch_test.cpp`, asserting the same
+warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/nupatch_v_decreasing_knots.rib
+
+`vknot` is the declared length but not non-decreasing: the v twin of
+`nupatch_decreasing_knots.rib`'s own u rule. Registered in
+`tests/nupatch_test.cpp`, asserting the same warn-and-`create()`
+fallback. A trailing `Sphere` follows the desync convention. Not
+third-party.
+
+## malformed/nupatch_v_empty_range.rib
+
+`vmin == vmax`: the v twin of `nupatch_empty_range.rib`'s own u rule.
+Registered in `tests/nupatch_test.cpp`, asserting the same
+warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/nupatch_vmin_below_knot.rib
+
+`vmin < vknot[vorder-1]`: the v twin of `nupatch_umin_below_knot.rib`'s
+own u rule. Registered in `tests/nupatch_test.cpp`, asserting the same
+warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/nupatch_vmax_above_knot.rib
+
+`vmax > vknot[nv]`, the v twin of `nupatch_umax_above_knot.rib`'s own u
+rule. Registered in `tests/nupatch_test.cpp`, asserting the same
+warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/nupatch_umax_above_knot.rib
+
+`umax > uknot[nu]`: the third u range rule, left unpinned until now.
+Registered in `tests/nupatch_test.cpp`, asserting the same
+warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/nupatch_rule_order.rib
+
+Breaks both a uknot non-decreasing rule and the vorder rule at once, so
+the request violates two rules that fire at different points in
+`validateNuPatch`'s own sequence. Registered in `tests/nupatch_test.cpp`,
+asserting the vorder warning fires and no uknot warning ever prints. A
+trailing `Sphere` follows the desync convention. Not third-party.
+
 ## malformed/nupatch_illegal_block.rib
 
 A `NuPatch` issued inside `FrameBegin`/`FrameEnd` before any
