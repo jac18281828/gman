@@ -118,6 +118,12 @@ GMANPrimitive* GMANRayObjectManager::getRSPolygon(RtInt nverts, GMANParameterLis
     vertices[i] = t->apply(GMANPoint(p[3 * i], p[3 * i + 1], p[3 * i + 2]));
   }
 
+  // A degenerate outer loop draws nothing, the same rejection
+  // getRSGeneralPolygon and the z-buffer's own getRSPolygon apply.
+  if (gman::isDegeneratePolygon(vertices)) {
+    return create();
+  }
+
   GMANRayPolygon* polygon = new GMANRayPolygon(std::move(vertices), pl);
   polygon->setAppearance(gman::appearanceOf(*attr));
   return polygon;

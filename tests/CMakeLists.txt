@@ -1871,8 +1871,7 @@ target_link_libraries(gman_raypolygondegenerate PRIVATE gman_core)
 add_test(NAME raypolygondegenerate COMMAND gman_raypolygondegenerate)
 set_tests_properties(raypolygondegenerate PROPERTIES
   LABELS unit
-  TIMEOUT 30
-  WILL_FAIL TRUE)
+  TIMEOUT 30)
 
 # GMANRayObjectManager::getRSPointsPolygon returns one internal mesh
 # primitive; GMANRayBVH::build flattens it into one entry per face. A ray
