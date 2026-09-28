@@ -61,14 +61,17 @@ struct GMAN_EXPORT Emitter {
 };
 
 // One next-event-estimation draw: the direction toward the emitter, its
-// distance (RI_INFINITY for a distant light), the radiance arriving along
-// wi already scaled for a delta emitter's own pi convention, and the
-// density that direction was drawn with, per unit solid angle at the
-// query point -- 1, by convention, for a delta emitter's own discrete
-// draw.
+// true distance to the sampled point (RI_INFINITY for a distant light),
+// the shadow walk's own end point for an area draw (off the emitter's own
+// surface, toward the query point; unset and never read for a delta
+// draw), the radiance arriving along wi already scaled for a delta
+// emitter's own pi convention, and the density that direction was drawn
+// with, per unit solid angle at the query point -- 1, by convention, for
+// a delta emitter's own discrete draw.
 struct GMAN_EXPORT EmitterSample {
   GMANVector wi;
   RtFloat distance;
+  GMANPoint shadowTarget;
   GMANColor Cl;
   RtFloat pdf;
   bool isDelta;

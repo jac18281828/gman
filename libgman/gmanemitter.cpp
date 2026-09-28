@@ -29,7 +29,9 @@
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmanraybbox.h"
 #include "gmanraydisk.h"
+#include "gmanrayoccluder.h"
 #include "gmanraysphere.h"
 #include "gmanshading.h"
 
@@ -38,16 +40,6 @@ namespace gman {
 namespace {
 
 constexpr RtFloat kPi = (RtFloat)3.14159265358979323846;
-
-// Scales the far-end self-shadow margin below by the square of the sampled
-// point's own coordinate magnitude: a quadric's ray-intersection solve
-// loses precision in proportion to the square of the coordinates it
-// solves over, since the quadratic formula itself squares them, so a
-// margin merely proportional to that magnitude (gman::offsetOrigin's own
-// convention, tuned for an adjacent surface a ray leaves rather than a
-// distant one it ends at) is not always enough to keep a shadow ray's own
-// target off the emitter's surface it was sampled from.
-constexpr RtFloat kAreaShadowMagnitudeCoefficient = (RtFloat)2.0e-5;
 
 RtFloat meanChannel(GMANColor const& c) { return (c.getRed() + c.getGreen() + c.getBlue()) / (RtFloat)3.0; }
 
@@ -220,13 +212,11 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
   result.pdf = (distance * distance) / (draw.area * std::fabs(cosTheta));
   result.Cl = (cosTheta > 0.0f) ? emitter.light->getCl() : black;
 
-  // A shadow ray walked all the way to distance would end exactly on the
-  // emitter's own surface, the point it was aimed at, and its own
-  // intersection there is only ever approximate; retreat by a small
-  // margin so the walk never reads the emitter as its own blocker.
-  RtFloat const maxP =
-      GMANMax(GMANMax(std::fabs(draw.point.getX()), std::fabs(draw.point.getY())), std::fabs(draw.point.getZ()));
-  result.distance = distance - kAreaShadowMagnitudeCoefficient * maxP * maxP;
+  // The shadow walk's own end point: the sampled point offset off the
+  // emitter's own surface, back toward p, so the walk ends short of that
+  // surface rather than on it.
+  result.shadowTarget =
+      gman::offsetOrigin(draw.point, draw.normal, -toEmitter, gman::primitiveMagnitude(emitter.shape->getBBox()));
   return result;
 }
 

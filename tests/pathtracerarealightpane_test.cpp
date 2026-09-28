@@ -19,13 +19,11 @@
  */
 
 /*
- * The path tracer's own area-light behaviour: a sphere light over the
- * shared floor scene checked against its closed-form irradiance, and a
- * smoke check that droppedPathCount and alpha still hold on that render.
+ * The unscaled sphere-over-floor scene with a flat, partly opaque pane
+ * between the sphere and the floor: a large blocker's own offset must not
+ * carry the shadow walk past the emitter's own small target.
  */
 
-#include <cmath>
-#include <memory>
 #include <vector>
 
 #include "check.h"
@@ -37,7 +35,7 @@
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
-#include "gmanray.h"
+#include "gmanraybbox.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmantransform.h"
@@ -58,13 +56,24 @@ constexpr RtInt kFloorRes = 81;
 constexpr RtInt kFloorSamples = 64;
 constexpr std::size_t kMinMeasuredPixels = 400;
 constexpr double kResidualFloor = 1e-4;
+// The pane's own transmittance: opaque enough to measure, transparent
+// enough that some light still crosses it.
+constexpr RtFloat kPaneOs = 0.5f;
+// Strictly between the floor's own x extent (at most kFloorXMax) and the
+// emitter's own nearest surface point (kSphereCentreX - kSphereRadius): every
+// segment from any point on the emitter's own surface to any floor point
+// crosses this plane exactly once.
+constexpr RtFloat kPaneX = 8.9f;
+constexpr RtFloat kPaneHalfExtent = 50.0f;
 
-// The floor under one emitting sphere, off to the side at a height and
-// distance no floor camera ray can pass within the sphere's own radius of
-// (a geometric argument on the sphere's own placement): renders once,
-// for both the residual check and the smoke check below to share.
-void renderAreaLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
-                          std::unique_ptr<gman::VSPerspective>& viewingSysOut, std::size_t& droppedOut) {
+GMANRayPolygon* buildPane() {
+  std::vector<GMANPoint> const verts = {
+      GMANPoint(kPaneX, -kPaneHalfExtent, -kPaneHalfExtent), GMANPoint(kPaneX, -kPaneHalfExtent, kPaneHalfExtent),
+      GMANPoint(kPaneX, kPaneHalfExtent, kPaneHalfExtent), GMANPoint(kPaneX, kPaneHalfExtent, -kPaneHalfExtent)};
+  return new GMANRayPolygon(verts, GMANParameterList());
+}
+
+void testPaneBetweenSphereAndFloor() {
   GMANOptions options;
   options.setFormat(kFloorRes, kFloorRes, 1.0f);
   options.setPixelSamples(1.0f, 1.0f);
@@ -73,8 +82,7 @@ void renderAreaLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
   options.setBackground(GMANColor(0.0f, 0.0f, 0.0f));
 
   GMANMatrix4 const identity;
-  viewingSysOut.reset(
-      new gman::VSPerspective(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f));
+  gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
   GMANRayPolygon* floor = buildFloor();
@@ -93,63 +101,54 @@ void renderAreaLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   gman::Appearance sphereAppearance;
   sphereAppearance.areaLight = &areaLight;
-  // Os 1, the RIB default: opaque, so a shadow ray that walked all the way
-  // to the sampled point would graze the emitter's own surface there.
   sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(sphereAppearance);
   renderer.getWorldManager()->add(sphere);
 
-  frameBufferOut.reset(new GMANFrameBuffer(kFloorRes, kFloorRes, options.getBackground()));
-  GMANAttributes const attr;
-  renderer.render(frameBufferOut.get(), viewingSysOut.get(), options, attr);
-  droppedOut = renderer.droppedPathCount();
-}
+  GMANRayPolygon* pane = buildPane();
+  gman::Appearance paneAppearance;
+  paneAppearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
+  paneAppearance.Os = GMANColor(kPaneOs, kPaneOs, kPaneOs);
+  pane->setAppearance(paneAppearance);
+  renderer.getWorldManager()->add(pane);
 
-void testSphereLightOverFloor() {
-  std::unique_ptr<GMANFrameBuffer> frameBuffer;
-  std::unique_ptr<gman::VSPerspective> viewingSys;
-  std::size_t dropped = 0;
-  renderAreaLightFloor(frameBuffer, viewingSys, dropped);
-  check(dropped == 0, "sphere light over floor: droppedPathCount() is 0");
+  check(gman::primitiveMagnitude(pane->getBBox()) >= 4.0f * gman::primitiveMagnitude(sphere->getBBox()),
+        "pane: primitiveMagnitude of its own bbox is at least 4x the emitter's");
+
+  GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
+  GMANAttributes const attr;
+  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  check(renderer.droppedPathCount() == 0, "pane between sphere and floor: droppedPathCount() is 0");
 
   std::vector<double> residuals[3];
   std::vector<double> expectedByChannel[3];
   std::size_t measuredCount = 0;
-  std::vector<double> alphaValues[3];
   for (int py = 0; py < kFloorRes; ++py) {
     for (int px = 0; px < kFloorRes; ++px) {
-      if (!pixelMeasured(*viewingSys, px, py)) {
+      if (!pixelMeasured(viewingSys, px, py)) {
         continue;
       }
       ++measuredCount;
-      GMANColor const expected = analyticSphereLightExpected(*viewingSys, px, py, kAreaLe, kSphereRadius,
-                                                             kSphereCentreX, kSphereCentreY, kSphereCentreZ);
-      GMANColor const actual = frameBuffer->getPixel(px, py);
-      GMANAlpha const alpha = frameBuffer->getAlpha(px, py);
+      GMANColor const unblocked = analyticSphereLightExpected(viewingSys, px, py, kAreaLe, kSphereRadius,
+                                                              kSphereCentreX, kSphereCentreY, kSphereCentreZ);
+      GMANColor const expected(unblocked.getRed() * kPaneOs, unblocked.getGreen() * kPaneOs,
+                               unblocked.getBlue() * kPaneOs);
+      GMANColor const actual = frameBuffer.getPixel(px, py);
       for (int c = 0; c < 3; ++c) {
         residuals[c].push_back(channel(actual, c) - channel(expected, c));
         expectedByChannel[c].push_back(channel(expected, c));
-        alphaValues[c].push_back(channel(alpha, c));
       }
     }
   }
-  check(measuredCount >= kMinMeasuredPixels, "sphere light over floor: at least 400 measured pixels");
-  checkResiduals(residuals, expectedByChannel, kResidualFloor, "sphere light over floor");
-
-  // The floor is opaque everywhere a camera ray measures it, so every
-  // measured pixel's alpha stays 1, unaffected by the area-light wiring.
-  for (int c = 0; c < 3; ++c) {
-    GmanMeanStderr const alphaStat = meanStderr(alphaValues[c]);
-    check(std::fabs(alphaStat.mean - 1.0) <= 1e-4, "sphere light over floor: alpha stays 1");
-  }
+  check(measuredCount >= kMinMeasuredPixels, "pane between sphere and floor: at least 400 measured pixels");
+  checkResiduals(residuals, expectedByChannel, kResidualFloor, "pane between sphere and floor");
 }
 
 } // namespace
 
 int main() {
-  testSphereLightOverFloor();
+  testPaneBetweenSphereAndFloor();
 
-  return checkSummary(
-      "the path tracer's own sphere light over the floor matches its closed form, and droppedPathCount and alpha "
-      "stay unaffected by the area-light wiring");
+  return checkSummary("a partly opaque pane between the sphere and the floor attenuates the floor's own irradiance "
+                      "by exactly its own transmittance");
 }

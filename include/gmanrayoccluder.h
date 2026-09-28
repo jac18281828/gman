@@ -38,9 +38,11 @@ inline constexpr int kMaxCompositeLayers = 16;
 // reference by the sign of Ng . reference -- Ng carries no orientation
 // guarantee of its own, and an offset on the wrong side would place the
 // new origin inside the surface. reference is towardLight for a shadow
-// ray (the offset lands toward the light) and the incoming ray's own
+// ray (the offset lands toward the light), the incoming ray's own
 // direction for a composite loop (the offset lands on the far side of
-// the surface the ray is continuing through), both unit length by
+// the surface the ray is continuing through), and an area emitter's own
+// sampled point offset back toward the query point (the shadow walk's own
+// end target, off the emitter's own surface), each unit length by
 // construction. surfaceMagnitude is hitPoint's own surface's camera-space
 // magnitude (0 for a free point), keying the offset to the surface's own
 // size rather than to the camera distance alone.

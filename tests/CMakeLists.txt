@@ -2920,6 +2920,44 @@ set_tests_properties(pathtracerarealighthit PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The sphere-over-floor scene scaled about the eye, small and large, and
+# with a translucent pane between the sphere and the floor: proofs that the
+# shadow walk's own margin off the emitter tracks the scene's own scale and
+# re-aims after a large blocker's own offset. See
+# tests/pathtracerarealightscale_test.cpp,
+# tests/pathtracerarealightscalelarge_test.cpp and
+# tests/pathtracerarealightpane_test.cpp.
+add_executable(gman_pathtracerarealightscale pathtracerarealightscale_test.cpp)
+target_link_libraries(gman_pathtracerarealightscale PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerarealightscale gman_matte)
+
+add_test(NAME pathtracerarealightscale COMMAND gman_pathtracerarealightscale)
+set_tests_properties(pathtracerarealightscale PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+add_executable(gman_pathtracerarealightscalelarge pathtracerarealightscalelarge_test.cpp)
+target_link_libraries(gman_pathtracerarealightscalelarge PRIVATE gman_core gman_internal_headers
+  gman_pathtracer_objects)
+add_dependencies(gman_pathtracerarealightscalelarge gman_matte)
+
+add_test(NAME pathtracerarealightscalelarge COMMAND gman_pathtracerarealightscalelarge)
+set_tests_properties(pathtracerarealightscalelarge PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+add_executable(gman_pathtracerarealightpane pathtracerarealightpane_test.cpp)
+target_link_libraries(gman_pathtracerarealightpane PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerarealightpane gman_matte)
+
+add_test(NAME pathtracerarealightpane COMMAND gman_pathtracerarealightpane)
+set_tests_properties(pathtracerarealightpane PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every

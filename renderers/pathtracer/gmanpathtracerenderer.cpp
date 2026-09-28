@@ -79,15 +79,19 @@ GMANColor clampCoverage(GMANColor const& os) {
 }
 
 // The plugin's own shadow walk, in gmanrayoccluder.h's transmission's own
-// shape: advances toward the light over [origin, origin + maxDistance)
-// along wi, compositing each blocker's (1 - Os) + Os * shadowTransmittance
-// per channel with no early exit, and answers black past
-// gman::kMaxCompositeLayers blockers.
-GMANColor shadowWalk(GMANRayBVH const& bvh, GMANPoint const& p, GMANVector const& ng, GMANVector const& wi,
-                     RtFloat surfaceMagnitude, RtFloat maxDistance, GMANMatrix4 const& cameraToWorld,
+// shape: advances from origin over [0, maxDistance) along wi, compositing
+// each blocker's (1 - Os) + Os * shadowTransmittance per channel with no
+// early exit, and answers black past gman::kMaxCompositeLayers blockers.
+// A delta draw keeps its own fixed wi, shortening remaining by each
+// blocker's own hit.t; an area draw re-aims at shadowTarget after every
+// blocker, since a blocker's own offset scales with its own size and could
+// otherwise push the walk's endpoint past a small emitter's own target --
+// ending unblocked once shadowTarget lies at or behind the walk's own new
+// origin.
+GMANColor shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtFloat maxDistance, bool isDelta,
+                     GMANPoint const& shadowTarget, GMANMatrix4 const& cameraToWorld,
                      gman::TextureCache* textureCache) {
   GMANColor v = kWhite;
-  GMANPoint origin = gman::offsetOrigin(p, ng, wi, surfaceMagnitude);
   RtFloat remaining = maxDistance;
 
   for (int layer = 0; layer < gman::kMaxCompositeLayers; ++layer) {
@@ -112,8 +116,22 @@ GMANColor shadowWalk(GMANRayBVH const& bvh, GMANPoint const& p, GMANVector const
     }
 
     RtFloat const magnitude = gman::primitiveMagnitude(hitPrimitive->getBBox());
-    origin = gman::offsetOrigin(hit.point, hit.normal, wi, magnitude);
-    remaining -= hit.t;
+    GMANPoint const newOrigin = gman::offsetOrigin(hit.point, hit.normal, wi, magnitude);
+
+    if (isDelta) {
+      origin = newOrigin;
+      remaining -= hit.t;
+      continue;
+    }
+
+    GMANVector toTarget(newOrigin, shadowTarget);
+    if (toTarget.dot(wi) <= 0.0f) {
+      return v;
+    }
+    remaining = toTarget.magnitude();
+    toTarget.normalize();
+    origin = newOrigin;
+    wi = toTarget;
   }
 
   // A (kMaxCompositeLayers + 1)th blocker reads as opaque, never as a leak
@@ -200,6 +218,26 @@ bool chooseLight(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
   return true;
 }
 
+// The shadow walk's own initial direction and distance from origin: a
+// delta draw's own fixed wi and true distance, unchanged; an area draw's
+// own unit direction to its shadowTarget and their distance, since
+// origin's own small offset off the shading point moves the true walk's
+// endpoint by a comparable amount.
+struct ShadowWalkStart {
+  GMANVector wi;
+  RtFloat distance;
+};
+
+ShadowWalkStart shadowWalkStart(GMANPoint const& origin, gman::EmitterSample const& es) {
+  if (es.isDelta) {
+    return {es.wi, es.distance};
+  }
+  GMANVector toTarget(origin, es.shadowTarget);
+  RtFloat const distance = toTarget.magnitude();
+  toTarget.normalize();
+  return {toTarget, distance};
+}
+
 // Next-event estimation at a scattering vertex: chooses one emitter through
 // chooseLight, draws its own real (u1, u2) at dimension 3 + 5k -- reserved
 // for exactly this, distinct from chooseLight's own fixed preview draw --
@@ -236,8 +274,10 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
   }
 
   RtFloat const cosTerm = std::fabs(point.N.dot(es.wi));
-  GMANColor const v =
-      shadowWalk(bvh, hit.point, point.Ng, es.wi, surfaceMagnitude, es.distance, cameraToWorld, textureCache);
+  GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, es.wi, surfaceMagnitude);
+  ShadowWalkStart const walkStart = shadowWalkStart(origin, es);
+  GMANColor const v = shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget,
+                                 cameraToWorld, textureCache);
 
   GMANColor term = gman::multiplyChannels(beta, f);
   term = scaleColor(term, cosTerm / (pj * es.pdf));

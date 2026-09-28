@@ -124,11 +124,7 @@ void testFarSideOfPreviewPoint() {
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kFarSideLe, kFarSideLe, kFarSideLe), GMANPoint(), GMANVector());
   gman::Appearance sphereAppearance;
   sphereAppearance.areaLight = &areaLight;
-  // Os 0: this check targets the light-choice weight, already proved
-  // opaque by the sphere light over the floor above; transparent keeps a
-  // shadow ray's own intersection precision at this closer range from
-  // ever entering the residual this check reads.
-  sphereAppearance.Os = GMANColor(0.0f, 0.0f, 0.0f);
+  sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(sphereAppearance);
   renderer.getWorldManager()->add(sphere);
 
