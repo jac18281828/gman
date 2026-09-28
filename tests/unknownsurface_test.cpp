@@ -21,11 +21,11 @@
 /*
  * A Surface naming a module that will not load -- missing entirely, opening
  * but exporting no shader, exporting a shader that is not a surface, or
- * missing GMANDestroyShader -- reports RIE_NOSHADER and renders on with the
- * default surface, matte, instead of losing the frame. Four fixtures each
- * reach one of those four failures; their renders must match a control
- * scene that never names the bad Surface, pixel for pixel, since the
- * failed request's parameters must not reach the default shader either.
+ * missing GMANDestroyShader -- reports RIE_NOSHADER at RIE_ERROR. gman's
+ * error handler prints that report and stops the file: exit 1, no image.
+ * Four fixtures each reach one of those four failures and name their own
+ * failing Surface in the report; a control scene that never names a bad
+ * Surface proves the renderer itself still works.
  */
 
 #include <cstdio>
@@ -60,35 +60,22 @@ Rendered renderFixture(std::string const& gman, std::string const& renderer, std
   return rendered;
 }
 
-// Every pixel's R, G, B and A match the control exactly.
-void checkPixelIdentical(GmanImage const& actual, GmanImage const& control, std::string const& tag) {
-  if (!actual.ok || !control.ok) {
-    check(false, tag + ": both images read back before comparing to the control");
-    return;
+// Counts non-overlapping occurrences of needle in haystack.
+int countOccurrences(std::string const& haystack, std::string const& needle) {
+  int count = 0;
+  std::size_t pos = 0;
+  while ((pos = haystack.find(needle, pos)) != std::string::npos) {
+    ++count;
+    pos += needle.size();
   }
-  check(actual.width == control.width && actual.height == control.height, tag + ": dimensions match the control");
-  if (actual.width != control.width || actual.height != control.height) {
-    return;
-  }
-  long mismatched = 0;
-  for (uint32_t y = 0; y < actual.height; ++y) {
-    for (uint32_t x = 0; x < actual.width; ++x) {
-      const uint32_t a = actual.at(x, y);
-      const uint32_t c = control.at(x, y);
-      if (TIFFGetR(a) != TIFFGetR(c) || TIFFGetG(a) != TIFFGetG(c) || TIFFGetB(a) != TIFFGetB(c) ||
-          TIFFGetA(a) != TIFFGetA(c)) {
-        ++mismatched;
-      }
-    }
-  }
-  check(mismatched == 0, tag + ": every pixel matches the control exactly, all four channels (" +
-                             std::to_string(mismatched) + " differed)");
+  return count;
 }
 
-// The report names RIE_NOSHADER and the failing Surface name, and carries
-// no SEVERE report -- the frame renders on, it does not abort.
+// The report names RIE_NOSHADER exactly once and the failing Surface
+// name, and carries no SEVERE report -- the stop is the handler's, not a
+// crash.
 void checkReport(std::string const& output, std::string const& failingName, std::string const& tag) {
-  check(output.find("ERROR: RIE_NOSHADER") != std::string::npos, tag + ": reports ERROR: RIE_NOSHADER");
+  check(countOccurrences(output, "ERROR: RIE_NOSHADER") == 1, tag + ": reports ERROR: RIE_NOSHADER exactly once");
   check(output.find("Surface \"" + failingName + "\"") != std::string::npos,
         tag + ": names Surface \"" + failingName + "\"");
   check(output.find("SEVERE:") == std::string::npos, tag + ": reports no SEVERE");
@@ -96,15 +83,14 @@ void checkReport(std::string const& output, std::string const& failingName, std:
 
 Rendered checkFallback(std::string const& gman, std::string const& renderer, std::string const& ribDir,
                        std::string const& ribName, std::string const& tifName, std::string const& failingName,
-                       GmanImage const& control, std::string const& tag) {
+                       std::string const& tag) {
   Rendered rendered = renderFixture(gman, renderer, ribDir, ribName, tifName);
 
-  // Exits 0 and writes its TIFF.
-  check(rendered.result.exitStatus == 0, tag + ": " + ribName + " exits 0");
-  check(rendered.image.ok, tag + ": " + ribName + " writes its TIFF");
+  // The report stops the file: exit 1, no image.
+  check(rendered.result.exitStatus == 1, tag + ": " + ribName + " exits 1");
+  check(!rendered.image.ok, tag + ": " + ribName + " writes no TIFF");
 
   checkReport(rendered.result.output, failingName, tag);
-  checkPixelIdentical(rendered.image, control, tag);
   return rendered;
 }
 
@@ -136,18 +122,16 @@ int main(int argc, char* argv[]) {
           "control: centre pixel has a colour channel above 0");
   }
 
-  checkFallback(gman, renderer, ribDir, "unknownsurface.rib", "unknownsurface.tif", "nosuchshader", control.image,
-                "no module");
+  checkFallback(gman, renderer, ribDir, "unknownsurface.rib", "unknownsurface.tif", "nosuchshader", "no module");
   checkFallback(gman, renderer, ribDir, "unknownsurface_noshader.rib", "unknownsurface_noshader.tif", "gmanzbuffer",
-                control.image, "no GMANLoadShader");
+                "no GMANLoadShader");
   checkFallback(gman, renderer, ribDir, "unknownsurface_volume.rib", "unknownsurface_volume.tif", "notasurface",
-                control.image, "not a surface");
+                "not a surface");
 
-  Rendered const nodestroy =
-      checkFallback(gman, renderer, ribDir, "unknownsurface_nodestroy.rib", "unknownsurface_nodestroy.tif",
-                    "nodestroyshader", control.image, "no GMANDestroyShader");
+  Rendered const nodestroy = checkFallback(gman, renderer, ribDir, "unknownsurface_nodestroy.rib",
+                                           "unknownsurface_nodestroy.tif", "nodestroyshader", "no GMANDestroyShader");
   check(nodestroy.result.output.find("GMANDestroyShader") != std::string::npos,
         "no GMANDestroyShader: names GMANDestroyShader");
 
-  return checkSummary("an unknown Surface reports RIE_NOSHADER and falls back to the default surface");
+  return checkSummary("an unknown Surface reports RIE_NOSHADER, which stops the file");
 }

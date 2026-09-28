@@ -2530,12 +2530,11 @@ endif()
 
 # A Surface naming a module that will not load -- missing entirely, opening
 # but exporting no shader, exporting a shader that is not a surface, or
-# missing GMANDestroyShader -- reports RIE_NOSHADER and renders on with the
-# default surface instead of aborting the frame. Four fixtures reach the
-# four failures; a fifth, undecorated control scene proves the fallback
-# renders identically to a scene that never named the bad Surface. See
-# unknownsurface_test.cpp's own comment. Both renderers write the same TIFF
-# names, so each gets its own WORKING_DIRECTORY.
+# missing GMANDestroyShader -- reports RIE_NOSHADER at RIE_ERROR, which
+# stops the file: exit 1, no image, the report naming the failing Surface.
+# A control scene without the bad Surface proves the renderer itself still
+# works. See unknownsurface_test.cpp's own comment. Both renderers write
+# the same TIFF names, so each gets its own WORKING_DIRECTORY.
 add_executable(gman_unknownsurface unknownsurface_test.cpp)
 target_link_libraries(gman_unknownsurface PRIVATE gman_core TIFF::TIFF)
 add_dependencies(gman_unknownsurface gman_zbuffer gman_matte gman_plastic gman_notasurface gman_nodestroyshader)
@@ -2549,6 +2548,7 @@ add_test(NAME unknownsurface_zbuffer
                               gmanzbuffer
   WORKING_DIRECTORY "${GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR}")
 set_tests_properties(unknownsurface_zbuffer PROPERTIES
+  WILL_FAIL TRUE
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 30)
@@ -2565,10 +2565,32 @@ if(GMAN_BUILD_RAYTRACER)
                                 gmanraytracer
     WORKING_DIRECTORY "${GMAN_UNKNOWNSURFACE_RAYTRACER_WORKDIR}")
   set_tests_properties(unknownsurface_raytracer PROPERTIES
+    WILL_FAIL TRUE
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
 endif()
+
+# gman's own error handler prints every report exactly as RiErrorPrint
+# does, then stops the file at RIE_ERROR or above: exit 1, no image, the
+# next file on the command line unaffected. See reportederror_test.cpp's
+# own comment.
+add_executable(gman_reportederror reportederror_test.cpp)
+target_link_libraries(gman_reportederror PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_reportederror gman_zbuffer gman_matte)
+
+set(GMAN_REPORTEDERROR_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/reportederror-run")
+file(MAKE_DIRECTORY "${GMAN_REPORTEDERROR_WORKDIR}")
+
+add_test(NAME reportederror
+  COMMAND gman_reportederror $<TARGET_FILE:gman>
+                             "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_REPORTEDERROR_WORKDIR}")
+set_tests_properties(reportederror PROPERTIES
+  WILL_FAIL TRUE
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
 
 # GMANOutput::save's own pipeline -- gain and gamma on colour, then every
 # channel rounded and dithered by RISpec's Quantize rule and clamped into
