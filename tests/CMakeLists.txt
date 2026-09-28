@@ -2694,6 +2694,82 @@ set_tests_properties(pathtraceroption PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The sphere furnace: a point light at the centre of a closed diffuse
+# sphere converges to rho * I / (R^2 * (1 - rho)), and the estimate's
+# standard deviation falls as more paths average per slot. Linked against
+# gman_pathtracer_objects, which still compiles GMANPathtraceRenderer
+# itself. See tests/pathtracerfurnace_test.cpp.
+add_executable(gman_pathtracerfurnace pathtracerfurnace_test.cpp)
+target_link_libraries(gman_pathtracerfurnace PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+
+add_test(NAME pathtracerfurnace COMMAND gman_pathtracerfurnace)
+set_tests_properties(pathtracerfurnace PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# Next-event estimation on the floor scene: a point, a spot and a distant
+# light each match rho * Cl(p) * cos(theta), two point lights sum their own
+# terms, and ambientlight lights nothing, with a warning naming it and the
+# count skipped. Linked against gman_pathtracer_objects, which still
+# compiles GMANPathtraceRenderer itself. See tests/pathtracerdirect_test.cpp.
+add_executable(gman_pathtracerdirect pathtracerdirect_test.cpp)
+target_link_libraries(gman_pathtracerdirect PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+
+add_test(NAME pathtracerdirect COMMAND gman_pathtracerdirect)
+set_tests_properties(pathtracerdirect PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# The path tracer's own shadow walk: a two-face glass pane passes
+# (1 - F)^2, a half-opaque matte blocker passes Os, an opaque blocker
+# passes nothing, and the composite-layer cap ends at 16 blockers. Linked
+# against gman_pathtracer_objects, which still compiles
+# GMANPathtraceRenderer itself. See tests/pathtracershadow_test.cpp.
+add_executable(gman_pathtracershadow pathtracershadow_test.cpp)
+target_link_libraries(gman_pathtracershadow PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+
+add_test(NAME pathtracershadow COMMAND gman_pathtracershadow)
+set_tests_properties(pathtracershadow PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# The sample buffer's own frame-level invariants: escape to background,
+# the environment term under no light, coverage weighting colour and
+# alpha, depth, antialiasing, a repeat and a crop matching bit for bit, an
+# unresolvable indirect pass changing nothing but the log, and a
+# non-finite escape dropping its own path. Linked against
+# gman_pathtracer_objects, which still compiles GMANPathtraceRenderer
+# itself. See tests/pathtracerframe_test.cpp.
+add_executable(gman_pathtracerframe pathtracerframe_test.cpp)
+target_link_libraries(gman_pathtracerframe PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+
+add_test(NAME pathtracerframe COMMAND gman_pathtracerframe)
+set_tests_properties(pathtracerframe PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# `gman -r gmanpathtracer` renders tests/rib/pathtracer_samples.rib to a
+# non-black centre pixel and a black corner, and a second render writes the
+# same pixels. Registered only when the plugin builds, since
+# `-r gmanpathtracer` has nothing to load otherwise.
+if(GMAN_BUILD_PATHTRACER)
+  add_executable(gman_pathtracerrender pathtracerrender_test.cpp)
+  target_link_libraries(gman_pathtracerrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_pathtracerrender gman_pathtracer)
+
+  set(GMAN_PATHTRACERRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pathtracerrender-run")
+  file(MAKE_DIRECTORY "${GMAN_PATHTRACERRENDER_WORKDIR}")
+
+  add_test(NAME pathtracerrender
+    COMMAND gman_pathtracerrender $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_PATHTRACERRENDER_WORKDIR}")
+  set_tests_properties(pathtracerrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta

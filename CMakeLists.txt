@@ -67,6 +67,7 @@ find_package(Threads REQUIRED)
 option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
 option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin" ON)
 option(GMAN_BUILD_RADIOSITY "Build the radiosity indirect-light pass plugin" OFF)
+option(GMAN_BUILD_PATHTRACER "Build the path tracer plugin" ON)
 
 # ---------------------------------------------------------------------------
 # Optional file-Display drivers -- one gman_add_file_driver(<name>) call per
@@ -307,6 +308,26 @@ if(GMAN_BUILD_RAYTRACER)
   set_target_properties(gman_raytracer PROPERTIES OUTPUT_NAME "gmanraytracer")
 endif()
 
+# GMANPathtraceRenderer, gman_raytracer_objects' pattern above: built
+# whenever GMAN_BUILD_PATHTRACER or BUILD_TESTING is ON, never inside the
+# GMAN_BUILD_PATHTRACER guard alone -- those unit tests must still build
+# and run with the plugin off.
+if(GMAN_BUILD_PATHTRACER OR BUILD_TESTING)
+  add_library(gman_pathtracer_objects OBJECT
+    renderers/pathtracer/gmanpathtracerenderer.cpp)
+  target_link_libraries(gman_pathtracer_objects PUBLIC gman_core)
+  target_include_directories(gman_pathtracer_objects PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderers/pathtracer")
+  set_target_properties(gman_pathtracer_objects PROPERTIES
+    POSITION_INDEPENDENT_CODE ON)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  gman_add_plugin(gman_pathtracer renderers/pathtracer/pathloader.cpp)
+  target_link_libraries(gman_pathtracer PRIVATE gman_pathtracer_objects)
+  set_target_properties(gman_pathtracer PROPERTIES OUTPUT_NAME "gmanpathtracer")
+endif()
+
 # The radiosity solver, its element mesh and the ray tracer's indirect-
 # light pass over them, gman_raytracer_objects' pattern above: built
 # whenever GMAN_BUILD_RADIOSITY or BUILD_TESTING is on, so their unit
@@ -414,6 +435,11 @@ install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_painte
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 if(GMAN_BUILD_RAYTRACER)
   install(TARGETS gman_raytracer
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+endif()
+if(GMAN_BUILD_PATHTRACER)
+  install(TARGETS gman_pathtracer
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 endif()
