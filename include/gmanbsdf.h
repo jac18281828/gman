@@ -109,10 +109,13 @@ public:
 
   // A smooth dielectric interface: the closure's normal faces the side of
   // index 1, eta the relative index of the side behind it. Reflects with
-  // Fresnel probability F and transmits with 1 - F, both delta branches.
-  // weight clamps as addLambert's reflectance does; eta clamps to
-  // [0.01, 100], a NaN, zero or negative eta stored as 1, an index-matched
-  // interface that transmits straight through. Past kMaxLobes, throws
+  // Fresnel probability F and transmits with 1 - F, both delta branches. A
+  // transmitted draw's coefficient carries the radiance scale
+  // (eta_o / eta_i)^2, so f * |cos(theta_i)| can exceed weight: leaving a
+  // glass interface of index 1.5 at weight 1, it reaches 2.16. weight
+  // clamps as addLambert's reflectance does; eta clamps to [0.01, 100], a
+  // NaN, zero or negative eta stored as 1, an index-matched interface that
+  // transmits straight through. Past kMaxLobes, throws
   // GMANError(RIE_LIMIT) and leaves the closure unchanged.
   void addDielectric(GMANColor const& weight, RtFloat eta);
 
@@ -137,9 +140,9 @@ public:
   // weight's channels, by u1; remaps u1 into [0, 1) within lobe i's share
   // and draws wi from lobe i with (u1, u2). A non-delta lobe reports
   // f = eval(wo, wi) and pdf = pdf(wo, wi) at that wi. A delta lobe
-  // (mirror or dielectric) reports its own branch's discrete probability
-  // as pdf and its coefficient over |cos(theta_i)| as f, with isDelta
-  // true; see this header's own comment for what that asks of an
+  // (mirror or dielectric) reports pdf equal to p_i times its branch's own
+  // probability, and its coefficient over |cos(theta_i)| as f, with
+  // isDelta true; see this header's own comment for what that asks of an
   // integrator. A draw fails for an empty or all-black closure, a wo in
   // the tangent plane, a reflection landing off wo's side, a transmission
   // landing off the far side, or a wi whose cos(theta_i) is 0.
