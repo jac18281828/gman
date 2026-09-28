@@ -33,19 +33,12 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
-#include <sstream>
 #include <string>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
-
-int runGman(const std::string& gman, const std::string& rib, const std::string& outPath) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" > \"" + outPath + "\" 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
 
 int countOccurrences(const std::string& haystack, const std::string& needle) {
   int count = 0;
@@ -67,14 +60,10 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  const std::string outPath = "polygonfov.out";
-  check(runGman(gman, ribDir + "/polygonfov.rib", outPath) == 0, "polygonfov.rib renders");
+  GMANRunResult const run = runGman(gman, {ribDir + "/polygonfov.rib"});
+  check(run.exitStatus == 0, "polygonfov.rib renders");
 
-  std::ifstream in(outPath);
-  std::ostringstream contents;
-  contents << in.rdbuf();
-
-  const int occurrences = countOccurrences(contents.str(), "FOV not set");
+  const int occurrences = countOccurrences(run.output, "FOV not set");
   check(occurrences == 1, "\"FOV not set\" prints exactly once for two Polygon requests under one "
                           "RiWorldBegin (got " +
                               std::to_string(occurrences) + ")");

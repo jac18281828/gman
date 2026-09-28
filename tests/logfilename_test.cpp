@@ -32,16 +32,15 @@
 #include <sstream>
 #include <string>
 
-#include <sys/wait.h>
-
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
 int runGmanLog(const std::string& gman, const std::string& ribPath, const std::string& workdir) {
-  const std::string command = "cd \"" + workdir + "\" && \"" + gman + "\" -l \"" + ribPath + "\" > run.log 2>&1";
-  const int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+  GMANRunOptions options;
+  options.workingDirectory = workdir;
+  return runGman(gman, {"-l", ribPath}, options).exitStatus;
 }
 
 std::string slurp(const std::string& path) {

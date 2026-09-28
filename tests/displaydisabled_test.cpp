@@ -36,61 +36,15 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-struct CapturedRun {
-  int exitStatus = -1;
-  std::string stdoutText;
-};
-
-// Spawns argv via fork/exec/waitpid, the technique
-// tests/ribmalformed_test.cpp uses, capturing stdout -- GMANHandleError
-// (gmanerror.cpp's print()) writes every diagnostic there. Output here is
-// a handful of short lines, well under a pipe's buffer, so reading it
-// after the child exits cannot deadlock.
-CapturedRun runCaptured(std::vector<std::string> const& argv) {
-  CapturedRun result;
-  int outPipe[2];
-  if (pipe(outPipe) != 0) {
-    return result;
-  }
-
-  pid_t pid = fork();
-  if (pid < 0) {
-    close(outPipe[0]);
-    close(outPipe[1]);
-    return result;
-  }
-  if (pid == 0) {
-    close(outPipe[0]);
-    dup2(outPipe[1], STDOUT_FILENO);
-    close(outPipe[1]);
-    std::vector<char*> cargv;
-    for (auto const& arg : argv) {
-      cargv.push_back(const_cast<char*>(arg.c_str()));
-    }
-    cargv.push_back(nullptr);
-    execv(cargv[0], cargv.data());
-    _exit(127);
-  }
-
-  close(outPipe[1]);
-  char buffer[4096];
-  ssize_t bytesRead;
-  while ((bytesRead = read(outPipe[0], buffer, sizeof buffer)) > 0) {
-    result.stdoutText.append(buffer, size_t(bytesRead));
-  }
-  close(outPipe[0]);
-
-  int status = 0;
-  waitpid(pid, &status, 0);
-  result.exitStatus = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-  return result;
+GMANRunResult runCaptured(std::string const& gman, std::vector<std::string> const& args) {
+  GMANRunOptions options;
+  options.capture = GMANRunOptions::Capture::stdoutOnly;
+  return runGman(gman, args, options);
 }
 
 // True when `name` appears as one of the space-separated tokens on
@@ -128,11 +82,11 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  const auto version = runCaptured({gman, "--version"});
+  GMANRunResult const version = runCaptured(gman, {"--version"});
   check(version.exitStatus == 0, "gman --version exits 0");
 
-  const auto pngCompiled = driverCompiled(version.stdoutText, "png");
-  const auto jpegCompiled = driverCompiled(version.stdoutText, "jpeg");
+  const auto pngCompiled = driverCompiled(version.output, "png");
+  const auto jpegCompiled = driverCompiled(version.output, "jpeg");
 
   if (pngCompiled && jpegCompiled) {
     // Nothing disabled to exercise in this build -- drivers-off runs it
@@ -143,9 +97,9 @@ int main(int argc, char* argv[]) {
   if (!pngCompiled) {
     const std::string output = "x.png";
     std::remove(output.c_str());
-    const auto run = runCaptured({gman, ribDir + "/displaydisabled_png.rib"});
+    GMANRunResult const run = runCaptured(gman, {ribDir + "/displaydisabled_png.rib"});
     check(run.exitStatus != 0, "a disabled PNG driver fails the render");
-    check(run.stdoutText.find("Display \"png\": built without libpng") != std::string::npos,
+    check(run.output.find("Display \"png\": built without libpng") != std::string::npos,
           "the failure names the disabled png driver");
     check(!fileExists(output), "a disabled PNG driver writes no file");
   }
@@ -153,9 +107,9 @@ int main(int argc, char* argv[]) {
   if (!jpegCompiled) {
     const std::string output = "x.jpg";
     std::remove(output.c_str());
-    const auto run = runCaptured({gman, ribDir + "/displaydisabled_jpg.rib"});
+    GMANRunResult const run = runCaptured(gman, {ribDir + "/displaydisabled_jpg.rib"});
     check(run.exitStatus != 0, "a disabled JPEG driver fails the render");
-    check(run.stdoutText.find("Display \"jpg\": built without libjpeg") != std::string::npos,
+    check(run.output.find("Display \"jpg\": built without libjpeg") != std::string::npos,
           "the failure names the disabled jpeg driver");
     check(!fileExists(output), "a disabled JPEG driver writes no file");
   }

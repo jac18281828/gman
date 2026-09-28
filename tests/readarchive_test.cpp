@@ -25,80 +25,25 @@
  * rather than trusting it to exit on its own.
  */
 
-#include <cerrno>
-#include <csignal>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <sstream>
 #include <string>
-#include <vector>
-
-#include <sys/wait.h>
-#include <unistd.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-struct Result {
-  bool timedOut;
-  int exitStatus; // valid only if !timedOut
-  std::string output;
-};
-
-std::string slurp(const std::string& path) {
-  std::ifstream in(path, std::ios::binary);
-  std::ostringstream ss;
-  ss << in.rdbuf();
-  return ss.str();
-}
-
 // Runs gman under -d with a hard wall-clock deadline. A cycle that is not
-// caught would otherwise hang this test (and the ctest run) forever.
-//
-// The child's output goes to logPath rather than /dev/null because an exit
-// status alone cannot distinguish "the archive was read" from "the archive
-// was ignored": a ReadArchive that silently does nothing still exits 0,
-// having rendered an empty world. The caller inspects the -d token trace to
-// prove the child's geometry actually arrived.
-Result runWithTimeout(const std::string& gman, const std::string& rib, int timeoutSeconds, const std::string& logPath) {
-  pid_t pid = fork();
-  if (pid == 0) {
-    // child: gman's own output goes to the log, not this test's stdout. If
-    // the redirect fails there is no way to report it from here without
-    // producing the noise it was meant to suppress, so fail the child
-    // instead -- 126 is distinct from the 127 exec-failure below.
-    if (freopen(logPath.c_str(), "w", stdout) == nullptr || dup2(fileno(stdout), fileno(stderr)) < 0) {
-      _exit(126);
-    }
-    execlp(gman.c_str(), gman.c_str(), "-d", rib.c_str(), (char*)nullptr);
-    _exit(127); // exec failed
-  }
-
-  if (pid < 0) {
-    return Result{false, -1, ""};
-  }
-
-  const int pollIntervalUs = 50000;
-  const int maxPolls = (timeoutSeconds * 1000000) / pollIntervalUs;
-  for (int i = 0; i < maxPolls; ++i) {
-    int status = 0;
-    pid_t reaped = waitpid(pid, &status, WNOHANG);
-    if (reaped == pid) {
-      const int exitStatus = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-      return Result{false, exitStatus, slurp(logPath)};
-    }
-    usleep(pollIntervalUs);
-  }
-
-  // Timed out: the child is treated as hung. Kill it and reap it so it does
-  // not outlive this test.
-  kill(pid, SIGKILL);
-  int status = 0;
-  waitpid(pid, &status, 0);
-  return Result{true, -1, slurp(logPath)};
+// caught would otherwise hang this test (and the ctest run) forever. The
+// caller inspects the -d token trace to prove the child's geometry
+// actually arrived: an exit status alone cannot distinguish "the archive
+// was read" from "the archive was ignored", since a ReadArchive that
+// silently does nothing still exits 0, having rendered an empty world.
+GMANRunResult runWithTimeout(const std::string& gman, const std::string& rib, int timeoutSeconds) {
+  GMANRunOptions options;
+  options.timeoutSeconds = timeoutSeconds;
+  return runGman(gman, {"-d", rib}, options);
 }
 
 } // namespace
@@ -114,7 +59,7 @@ int main(int argc, char* argv[]) {
 
   {
     const std::string parent = archiveDir + "/parent.rib";
-    Result r = runWithTimeout(gman, parent, 20, "parent.log");
+    GMANRunResult r = runWithTimeout(gman, parent, 20);
     check(!r.timedOut, "parent.rib: does not hang");
     check(!r.timedOut && r.exitStatus == 0, "parent.rib: exits 0");
 
@@ -130,7 +75,7 @@ int main(int argc, char* argv[]) {
 
   {
     const std::string selfInclude = archiveDir + "/selfinclude.rib";
-    Result r = runWithTimeout(gman, selfInclude, 20, "selfinclude.log");
+    GMANRunResult r = runWithTimeout(gman, selfInclude, 20);
     check(!r.timedOut, "selfinclude.rib: a self-including RIB does not hang");
     check(!r.timedOut && r.exitStatus != 0, "selfinclude.rib: errors cleanly instead of rendering garbage");
     check(r.output.find("ReadArchive") != std::string::npos || r.output.find("archive") != std::string::npos,

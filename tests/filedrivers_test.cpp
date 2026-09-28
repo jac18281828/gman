@@ -30,63 +30,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-#include <vector>
-
-#include <sys/wait.h>
-#include <unistd.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
-
-struct CapturedRun {
-  int exitStatus = -1;
-  std::string stdoutText;
-};
-
-// Spawns argv via fork/exec/waitpid, the technique
-// tests/ribmalformed_test.cpp uses, capturing stdout. --version's output
-// is two short lines, well under a pipe's buffer, so reading it after the
-// child exits cannot deadlock.
-CapturedRun runCaptured(std::vector<std::string> const& argv) {
-  CapturedRun result;
-  int outPipe[2];
-  if (pipe(outPipe) != 0) {
-    return result;
-  }
-
-  pid_t pid = fork();
-  if (pid < 0) {
-    close(outPipe[0]);
-    close(outPipe[1]);
-    return result;
-  }
-  if (pid == 0) {
-    close(outPipe[0]);
-    dup2(outPipe[1], STDOUT_FILENO);
-    close(outPipe[1]);
-    std::vector<char*> cargv;
-    for (auto const& arg : argv) {
-      cargv.push_back(const_cast<char*>(arg.c_str()));
-    }
-    cargv.push_back(nullptr);
-    execv(cargv[0], cargv.data());
-    _exit(127);
-  }
-
-  close(outPipe[1]);
-  char buffer[4096];
-  ssize_t bytesRead;
-  while ((bytesRead = read(outPipe[0], buffer, sizeof buffer)) > 0) {
-    result.stdoutText.append(buffer, size_t(bytesRead));
-  }
-  close(outPipe[0]);
-
-  int status = 0;
-  waitpid(pid, &status, 0);
-  result.exitStatus = WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-  return result;
-}
 
 // The line beginning "drivers:" among captured lines, or "" if absent.
 std::string driversLine(std::string const& text) {
@@ -115,10 +63,12 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string expected = "drivers: " + std::string(argv[2]);
 
-  const auto run = runCaptured({gman, "--version"});
+  GMANRunOptions options;
+  options.capture = GMANRunOptions::Capture::stdoutOnly;
+  GMANRunResult const run = runGman(gman, {"--version"}, options);
   check(run.exitStatus == 0, "gman --version exits 0");
-  check(run.stdoutText.rfind("gman ", 0) == 0, "gman --version's first line names the program");
-  check(driversLine(run.stdoutText) == expected,
+  check(run.output.rfind("gman ", 0) == 0, "gman --version's first line names the program");
+  check(driversLine(run.output) == expected,
         "gman --version's drivers: line matches this build (\"" + expected + "\")");
 
   return checkSummary("gman --version reports this build's file drivers");

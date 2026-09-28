@@ -40,10 +40,6 @@
 #include <string>
 #include <vector>
 
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include "check.h"
 #include "checkertexture.h"
 #include "gmanattributes.h"
@@ -55,6 +51,7 @@
 #include "gmanprimitives.h"
 #include "gmantransform.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -518,11 +515,7 @@ void testUnreferencedPoints() {
 
 // ---- Rendering (commit 2): twin RIBs compared pixel by pixel ----
 
-int runGman(const std::string& gman, const std::string& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 void renderAndCompare(const std::string& gman, const std::string& ribDir, const std::string& underTest,
                       const std::string& twin) {
@@ -533,72 +526,13 @@ void renderAndCompare(const std::string& gman, const std::string& ribDir, const 
 
 // ---- Requests and malformed input (commit 1) ----
 
-struct RunResult {
-  bool timedOut = false;
-  bool crashed = false;
-  int exitStatus = -1;
-  std::string output;
-};
-
-// Runs gman out-of-process with a hard wall-clock bound, capturing its
-// combined stdout/stderr -- tests/paramclamp_test.cpp's own shape, plus an
-// optional "-d" so the desync check below can read the debug keyword
+// An optional "-d" so the desync check below can read the debug keyword
 // trace.
-RunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds, bool debug = false) {
-  RunResult result;
-
-  int pipeFds[2];
-  if (pipe(pipeFds) != 0) {
-    return result;
-  }
-
-  pid_t pid = fork();
-  if (pid < 0) {
-    close(pipeFds[0]);
-    close(pipeFds[1]);
-    return result;
-  }
-  if (pid == 0) {
-    close(pipeFds[0]);
-    dup2(pipeFds[1], STDOUT_FILENO);
-    dup2(pipeFds[1], STDERR_FILENO);
-    close(pipeFds[1]);
-    if (debug) {
-      execl(gman.c_str(), gman.c_str(), "-d", rib.c_str(), (char*)nullptr);
-    } else {
-      execl(gman.c_str(), gman.c_str(), rib.c_str(), (char*)nullptr);
-    }
-    _exit(127);
-  }
-  close(pipeFds[1]);
-
-  char buf[4096];
-  ssize_t n;
-  while ((n = read(pipeFds[0], buf, sizeof(buf))) > 0) {
-    result.output.append(buf, (std::size_t)n);
-  }
-  close(pipeFds[0]);
-
-  const int pollIntervalUs = 50 * 1000;
-  const int maxPolls = (timeoutSeconds * 1000000) / pollIntervalUs;
-  int status = 0;
-  for (int i = 0; i < maxPolls; ++i) {
-    pid_t r = waitpid(pid, &status, WNOHANG);
-    if (r == pid) {
-      if (WIFEXITED(status)) {
-        result.exitStatus = WEXITSTATUS(status);
-      } else if (WIFSIGNALED(status)) {
-        result.crashed = true;
-      }
-      return result;
-    }
-    usleep(pollIntervalUs);
-  }
-
-  result.timedOut = true;
-  kill(pid, SIGKILL);
-  waitpid(pid, &status, 0);
-  return result;
+GMANRunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds,
+                                 bool debug = false) {
+  GMANRunOptions options;
+  options.timeoutSeconds = timeoutSeconds;
+  return debug ? ::runGman(gman, {"-d", rib}, options) : ::runGman(gman, {rib}, options);
 }
 
 void testMalformedFixtures(const std::string& gman, const std::string& malformedDir) {
@@ -630,7 +564,7 @@ void testMalformedFixtures(const std::string& gman, const std::string& malformed
   for (const Fixture& fixture : fixtures) {
     const std::string rib = malformedDir + "/" + fixture.file;
 
-    RunResult r = runCapturingOutput(gman, rib, 10);
+    GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
     check(!r.crashed, std::string(fixture.file) + ": does not crash");
     check(r.exitStatus == fixture.expectedExit,
@@ -639,7 +573,7 @@ void testMalformedFixtures(const std::string& gman, const std::string& malformed
           std::string(fixture.file) + ": warns naming the rule and both values");
 
     if (fixture.expectsSphere) {
-      RunResult debugRun = runCapturingOutput(gman, rib, 10, /*debug=*/true);
+      GMANRunResult debugRun = runCapturingOutput(gman, rib, 10, /*debug=*/true);
       check(debugRun.output.find("Keyword token: Sphere") != std::string::npos,
             std::string(fixture.file) + ": the Sphere after it still parses (no desync)");
     }

@@ -43,76 +43,15 @@
 #include <cstring>
 #include <string>
 
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-struct RunResult {
-  bool timedOut = false;
-  bool crashed = false; // terminated by a signal (SIGSEGV, SIGABRT, ...)
-  int exitStatus = -1;
-  std::string output;
-};
-
-// Runs gman on rib with a hard wall-clock bound, capturing its combined
-// stdout/stderr for the caller to inspect -- warning() (gmanlog.cpp) writes
-// to stdout, not stderr. Polls rather than SIGALRM, matching
-// ribmalformed_test.cpp's own reasoning.
-RunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
-  RunResult result;
-
-  int pipeFds[2];
-  if (pipe(pipeFds) != 0) {
-    return result;
-  }
-
-  pid_t pid = fork();
-  if (pid < 0) {
-    close(pipeFds[0]);
-    close(pipeFds[1]);
-    return result;
-  }
-  if (pid == 0) {
-    close(pipeFds[0]);
-    dup2(pipeFds[1], STDOUT_FILENO);
-    dup2(pipeFds[1], STDERR_FILENO);
-    close(pipeFds[1]);
-    execl(gman.c_str(), gman.c_str(), rib.c_str(), (char*)nullptr);
-    _exit(127);
-  }
-  close(pipeFds[1]);
-
-  char buf[4096];
-  ssize_t n;
-  while ((n = read(pipeFds[0], buf, sizeof(buf))) > 0) {
-    result.output.append(buf, (size_t)n);
-  }
-  close(pipeFds[0]);
-
-  const int pollIntervalUs = 50 * 1000;
-  const int maxPolls = (timeoutSeconds * 1000000) / pollIntervalUs;
-  int status = 0;
-  for (int i = 0; i < maxPolls; ++i) {
-    pid_t r = waitpid(pid, &status, WNOHANG);
-    if (r == pid) {
-      if (WIFEXITED(status)) {
-        result.exitStatus = WEXITSTATUS(status);
-      } else if (WIFSIGNALED(status)) {
-        result.crashed = true;
-      }
-      return result;
-    }
-    usleep(pollIntervalUs);
-  }
-
-  result.timedOut = true;
-  kill(pid, SIGKILL);
-  waitpid(pid, &status, 0);
-  return result;
+GMANRunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
+  GMANRunOptions options;
+  options.timeoutSeconds = timeoutSeconds;
+  return runGman(gman, {rib}, options);
 }
 
 // Counts non-overlapping occurrences of needle in haystack.
@@ -152,7 +91,7 @@ int main(int argc, char* argv[]) {
 
   for (const Fixture& fixture : fixtures) {
     const std::string rib = dir + "/" + fixture.file;
-    RunResult r = runCapturingOutput(gman, rib, 10);
+    GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
     check(!r.crashed, std::string(fixture.file) + ": does not crash -- a short array stays inside its own "
                                                   "allocation instead of reading past it");
@@ -167,7 +106,7 @@ int main(int argc, char* argv[]) {
   // counts array built in the wrong order lined a full-length value up
   // with a different key's short count.
   {
-    RunResult r = runCapturingOutput(gman, dir + "/patch_param_reorder.rib", 10);
+    GMANRunResult r = runCapturingOutput(gman, dir + "/patch_param_reorder.rib", 10);
     check(countOccurrences(r.output, "Parameter \"") == 1,
           "patch_param_reorder.rib: only the short parameter (\"P\") warns, "
           "not one of the fully-supplied ones a misaligned counts array "

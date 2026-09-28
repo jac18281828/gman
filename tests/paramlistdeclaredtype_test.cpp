@@ -27,10 +27,11 @@
  * uses, through GMANRenderMan::getDictionary, and stores a
  * declared-INTEGER value as RtInt.
  *
- * Checks 1 through 4 run gman out of process against a fixture, following
- * tests/paramclamp_test.cpp's runCapturingOutput -- tests/ribmalformed_test.cpp's
- * own harness observes neither exit status nor message, so nothing here
- * belongs there. Check 4's baseline ("does not abort") is exit 0, with
+ * Checks 1 through 4 run gman out of process against a fixture, capturing
+ * its combined output under a timeout (tests/rungman.h) --
+ * tests/ribmalformed_test.cpp's own checks observe neither exit status nor
+ * message, so nothing here belongs there. Check 4's baseline ("does not
+ * abort") is exit 0, with
  * GMANParameterList's own "ERROR: RIE_BADTOKEN -- GMANDictionary:
  * TOKEN_NOT_FOUND" diagnostic, unrelated to declared-type resolution.
  *
@@ -49,77 +50,18 @@
 #include <cstdlib>
 #include <string>
 
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include "check.h"
 #include "gmanrendermanimpl.h"
 #include "gmanribparse.h"
 #include "ri.h"
+#include "rungman.h"
 
 namespace {
 
-struct RunResult {
-  bool timedOut = false;
-  bool crashed = false; // terminated by a signal (SIGSEGV, SIGABRT, ...)
-  int exitStatus = -1;
-  std::string output;
-};
-
-// See tests/paramclamp_test.cpp's own runCapturingOutput: polls rather than
-// SIGALRM, captures the child's combined stdout/stderr for inspection.
-RunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
-  RunResult result;
-
-  int pipeFds[2];
-  if (pipe(pipeFds) != 0) {
-    return result;
-  }
-
-  pid_t pid = fork();
-  if (pid < 0) {
-    close(pipeFds[0]);
-    close(pipeFds[1]);
-    return result;
-  }
-  if (pid == 0) {
-    close(pipeFds[0]);
-    dup2(pipeFds[1], STDOUT_FILENO);
-    dup2(pipeFds[1], STDERR_FILENO);
-    close(pipeFds[1]);
-    execl(gman.c_str(), gman.c_str(), rib.c_str(), (char*)nullptr);
-    _exit(127);
-  }
-  close(pipeFds[1]);
-
-  char buf[4096];
-  ssize_t n;
-  while ((n = read(pipeFds[0], buf, sizeof(buf))) > 0) {
-    result.output.append(buf, (size_t)n);
-  }
-  close(pipeFds[0]);
-
-  const int pollIntervalUs = 50 * 1000;
-  const int maxPolls = (timeoutSeconds * 1000000) / pollIntervalUs;
-  int status = 0;
-  for (int i = 0; i < maxPolls; ++i) {
-    pid_t r = waitpid(pid, &status, WNOHANG);
-    if (r == pid) {
-      if (WIFEXITED(status)) {
-        result.exitStatus = WEXITSTATUS(status);
-      } else if (WIFSIGNALED(status)) {
-        result.crashed = true;
-      }
-      return result;
-    }
-    usleep(pollIntervalUs);
-  }
-
-  result.timedOut = true;
-  kill(pid, SIGKILL);
-  waitpid(pid, &status, 0);
-  return result;
+GMANRunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
+  GMANRunOptions options;
+  options.timeoutSeconds = timeoutSeconds;
+  return runGman(gman, {rib}, options);
 }
 
 // Records what RiSurfaceV actually received for "myint", without keeping
@@ -155,7 +97,7 @@ int main(int argc, char* argv[]) {
   // 1. The discriminator: a float literal in a declared-integer parameter
   // raises RIE_SYNTAX and exits non-zero.
   {
-    RunResult r = runCapturingOutput(gman, dir + "/paramtype_declared_int_float_literal.rib", 10);
+    GMANRunResult r = runCapturingOutput(gman, dir + "/paramtype_declared_int_float_literal.rib", 10);
     check(!r.timedOut, "float-literal-in-integer: does not hang (10s bound)");
     check(!r.crashed, "float-literal-in-integer: does not crash");
     check(r.exitStatus == EXIT_FAILURE, "float-literal-in-integer: exits with failure");
@@ -167,7 +109,7 @@ int main(int argc, char* argv[]) {
   // 2. The positive case: the same token given an integer literal parses,
   // exits 0, and emits no diagnostic.
   {
-    RunResult r = runCapturingOutput(gman, dir + "/paramtype_declared_int_positive.rib", 10);
+    GMANRunResult r = runCapturingOutput(gman, dir + "/paramtype_declared_int_positive.rib", 10);
     check(!r.timedOut, "declared-integer-positive: does not hang (10s bound)");
     check(!r.crashed, "declared-integer-positive: does not crash");
     check(r.exitStatus == EXIT_SUCCESS, "declared-integer-positive: exits cleanly");
@@ -178,7 +120,7 @@ int main(int argc, char* argv[]) {
   // int/real array, both in float-declared slots, keep working through the
   // float path unchanged.
   {
-    RunResult r = runCapturingOutput(gman, dir + "/paramtype_float_regression.rib", 10);
+    GMANRunResult r = runCapturingOutput(gman, dir + "/paramtype_float_regression.rib", 10);
     check(!r.timedOut, "float-regression: does not hang (10s bound)");
     check(!r.crashed, "float-regression: does not crash");
     check(r.exitStatus == EXIT_SUCCESS, "float-regression: exits cleanly");
@@ -190,7 +132,7 @@ int main(int argc, char* argv[]) {
   // GMANParameterList's own (unrelated) RIE_BADTOKEN diagnostic still
   // printed.
   {
-    RunResult r = runCapturingOutput(gman, dir + "/paramtype_undeclared_fallback.rib", 10);
+    GMANRunResult r = runCapturingOutput(gman, dir + "/paramtype_undeclared_fallback.rib", 10);
     check(!r.timedOut, "undeclared-token-fallback: does not hang (10s bound)");
     check(!r.crashed, "undeclared-token-fallback: does not crash");
     check(r.exitStatus == EXIT_SUCCESS, "undeclared-token-fallback: request is not aborted");

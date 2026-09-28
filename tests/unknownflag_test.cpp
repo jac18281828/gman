@@ -28,34 +28,8 @@
 #include <filesystem>
 #include <string>
 
-#include <sys/wait.h>
-
 #include "check.h"
-
-namespace {
-
-int runGman(const std::string& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
-
-// Reads the whole file at path, or "" if it cannot be opened.
-std::string readFile(const std::string& path) {
-  std::FILE* f = std::fopen(path.c_str(), "r");
-  if (!f) {
-    return "";
-  }
-  std::string output;
-  char buf[4096];
-  size_t n;
-  while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) {
-    output.append(buf, n);
-  }
-  std::fclose(f);
-  return output;
-}
-
-} // namespace
+#include "rungman.h"
 
 int main(int argc, char* argv[]) {
   if (argc < 3) {
@@ -64,20 +38,20 @@ int main(int argc, char* argv[]) {
   }
   std::string const gman = argv[1];
   std::string const rib = argv[2];
-  std::string const stderrPath = "unknownflag_stderr.txt";
 
   std::filesystem::remove("sphere.tif");
-  int const badFlagExit = runGman("\"" + gman + "\" -x \"" + rib + "\" 2>\"" + stderrPath + "\" >/dev/null");
-  std::string const stderrOutput = readFile(stderrPath);
-  check(badFlagExit != 0, "gman -x exits nonzero");
+  GMANRunOptions options;
+  options.capture = GMANRunOptions::Capture::stderrOnly;
+  GMANRunResult const badFlag = runGman(gman, {"-x", rib}, options);
+  check(badFlag.exitStatus != 0, "gman -x exits nonzero");
   check(!std::filesystem::exists("sphere.tif"), "gman -x writes no sphere.tif -- no file was parsed");
-  check(stderrOutput.find("-x") != std::string::npos, "stderr names the flag as invoked");
-  check(stderrOutput.find("Parse RIB input files.") != std::string::npos,
+  check(badFlag.output.find("-x") != std::string::npos, "stderr names the flag as invoked");
+  check(badFlag.output.find("Parse RIB input files.") != std::string::npos,
         "stderr shows a fragment of usage()'s fixed text");
 
   // Control: the same file with no bad flag still renders.
   std::filesystem::remove("sphere.tif");
-  int const controlExit = runGman("\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1");
+  int const controlExit = runGman(gman, {rib}).exitStatus;
   check(controlExit == 0, "gman with no bad flag exits 0");
   check(std::filesystem::exists("sphere.tif"),
         "gman with no bad flag renders sphere.tif -- the fix touches only the unrecognized-flag path");

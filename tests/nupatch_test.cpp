@@ -49,15 +49,12 @@
 #include <string>
 #include <vector>
 
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include "check.h"
 #include "checkertexture.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
 
@@ -323,11 +320,7 @@ void testSubRange() {
 
 // ---- Rendering and texture-coordinates helpers ----
 
-int runGman(std::string const& gman, std::string const& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 void testRenderTwin(std::string const& gman, std::string const& ribDir) {
   check(runGman(gman, ribDir + "/nupatch_bilinear.rib") == 0, "nupatch_bilinear.rib renders");
@@ -384,66 +377,10 @@ void testTextureCoordinatesNoOp(std::string const& gman, std::string const& ribD
 
 // ---- Malformed requests (commit 1) ----
 
-struct RunResult {
-  bool timedOut = false;
-  bool crashed = false;
-  int exitStatus = -1;
-  std::string output;
-};
-
-// tests/paramclamp_test.cpp's own shape: fork/exec, waitpid,
-// WIFEXITED/WEXITSTATUS, WIFSIGNALED crash detection.
-RunResult runCapturingOutput(std::string const& gman, std::string const& rib, int timeoutSeconds) {
-  RunResult result;
-
-  int pipeFds[2];
-  if (pipe(pipeFds) != 0) {
-    return result;
-  }
-
-  pid_t pid = fork();
-  if (pid < 0) {
-    close(pipeFds[0]);
-    close(pipeFds[1]);
-    return result;
-  }
-  if (pid == 0) {
-    close(pipeFds[0]);
-    dup2(pipeFds[1], STDOUT_FILENO);
-    dup2(pipeFds[1], STDERR_FILENO);
-    close(pipeFds[1]);
-    execl(gman.c_str(), gman.c_str(), rib.c_str(), (char*)nullptr);
-    _exit(127);
-  }
-  close(pipeFds[1]);
-
-  char buf[4096];
-  ssize_t n;
-  while ((n = read(pipeFds[0], buf, sizeof(buf))) > 0) {
-    result.output.append(buf, (std::size_t)n);
-  }
-  close(pipeFds[0]);
-
-  const int pollIntervalUs = 50 * 1000;
-  const int maxPolls = (timeoutSeconds * 1000000) / pollIntervalUs;
-  int status = 0;
-  for (int i = 0; i < maxPolls; ++i) {
-    pid_t r = waitpid(pid, &status, WNOHANG);
-    if (r == pid) {
-      if (WIFEXITED(status)) {
-        result.exitStatus = WEXITSTATUS(status);
-      } else if (WIFSIGNALED(status)) {
-        result.crashed = true;
-      }
-      return result;
-    }
-    usleep(pollIntervalUs);
-  }
-
-  result.timedOut = true;
-  kill(pid, SIGKILL);
-  waitpid(pid, &status, 0);
-  return result;
+GMANRunResult runCapturingOutput(std::string const& gman, std::string const& rib, int timeoutSeconds) {
+  GMANRunOptions options;
+  options.timeoutSeconds = timeoutSeconds;
+  return runGman(gman, {rib}, options);
 }
 
 void testMalformedFixtures(std::string const& gman, std::string const& malformedDir) {
@@ -466,7 +403,7 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
 
   for (Fixture const& fixture : fixtures) {
     const std::string rib = malformedDir + "/" + fixture.file;
-    RunResult r = runCapturingOutput(gman, rib, 10);
+    GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
     check(!r.crashed, std::string(fixture.file) + ": does not crash");
     check(r.exitStatus == 0, std::string(fixture.file) + ": exits 0 (degrade, don't abort)");
@@ -480,7 +417,7 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
 
 void testIllegalBlockLeaksNothing(std::string const& gman, std::string const& malformedDir) {
   const std::string rib = malformedDir + "/nupatch_illegal_block.rib";
-  RunResult r = runCapturingOutput(gman, rib, 10);
+  GMANRunResult r = runCapturingOutput(gman, rib, 10);
   check(!r.timedOut, "nupatch_illegal_block.rib: does not hang (10s bound)");
   check(!r.crashed, "nupatch_illegal_block.rib: does not crash");
   check(r.exitStatus == 1, "nupatch_illegal_block.rib: exits 1 (GMANHandleError, "

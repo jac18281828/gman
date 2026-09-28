@@ -49,64 +49,15 @@
 #include <cstdlib>
 #include <string>
 
-#include <signal.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-struct RunResult {
-  bool timedOut = false;
-  bool crashed = false; // terminated by a signal (SIGSEGV, SIGABRT, ...)
-  int exitStatus = -1;
-};
-
-// Polls rather than using SIGALRM: simpler to reason about across the two
-// platforms these tests run on, and 50ms resolution is more than tight
-// enough against a multi-second timeout.
-RunResult runWithTimeout(const std::string& gman, const std::string& rib, int timeoutSeconds) {
-  RunResult result;
-
-  pid_t pid = fork();
-  if (pid < 0) {
-    return result;
-  }
-  if (pid == 0) {
-    // A failed redirect just leaves the child's own stdout/stderr in
-    // place -- noisier test output, not a reason to change course.
-    // gcc's freopen is warn_unused_result; a plain (void) cast does not
-    // silence it, so the result is captured and then deliberately
-    // unused rather than left as an ignored return value.
-    FILE* outRedirect = std::freopen("/dev/null", "w", stdout);
-    FILE* errRedirect = std::freopen("/dev/null", "w", stderr);
-    (void)outRedirect;
-    (void)errRedirect;
-    execl(gman.c_str(), gman.c_str(), rib.c_str(), (char*)nullptr);
-    _exit(127);
-  }
-
-  const int pollIntervalUs = 50 * 1000;
-  const int maxPolls = (timeoutSeconds * 1000000) / pollIntervalUs;
-  int status = 0;
-  for (int i = 0; i < maxPolls; ++i) {
-    pid_t r = waitpid(pid, &status, WNOHANG);
-    if (r == pid) {
-      if (WIFEXITED(status)) {
-        result.exitStatus = WEXITSTATUS(status);
-      } else if (WIFSIGNALED(status)) {
-        result.crashed = true;
-      }
-      return result;
-    }
-    usleep(pollIntervalUs);
-  }
-
-  result.timedOut = true;
-  kill(pid, SIGKILL);
-  waitpid(pid, &status, 0);
-  return result;
+GMANRunResult runWithTimeout(const std::string& gman, const std::string& rib, int timeoutSeconds) {
+  GMANRunOptions options;
+  options.timeoutSeconds = timeoutSeconds;
+  return runGman(gman, {rib}, options);
 }
 
 } // namespace
@@ -126,7 +77,7 @@ int main(int argc, char* argv[]) {
 
   for (const char* fixture : fixtures) {
     const std::string rib = dir + "/" + fixture;
-    RunResult r = runWithTimeout(gman, rib, 10);
+    GMANRunResult r = runWithTimeout(gman, rib, 10);
     check(!r.timedOut, std::string(fixture) + ": does not hang (10s bound)");
     check(!r.crashed, std::string(fixture) + ": does not crash (no signal termination)");
   }

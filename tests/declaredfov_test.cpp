@@ -32,22 +32,11 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
-#include <sstream>
 #include <string>
 
 #include "check.h"
 #include "goldenimage.h"
-
-namespace {
-
-int runGman(const std::string& gman, const std::string& rib, const std::string& outPath) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" > \"" + outPath + "\" 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
-
-} // namespace
+#include "rungman.h"
 
 int main(int argc, char* argv[]) {
   if (argc < 3) {
@@ -57,17 +46,12 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string ribDir = argv[2];
 
-  const std::string declaredOut = "declaredfov.out";
-  check(runGman(gman, ribDir + "/declaredfov.rib", declaredOut) == 0, "declaredfov.rib renders");
-
-  std::ifstream in(declaredOut);
-  std::ostringstream contents;
-  contents << in.rdbuf();
-  check(contents.str().find("FOV not set") == std::string::npos,
+  GMANRunResult const declaredRun = runGman(gman, {ribDir + "/declaredfov.rib"});
+  check(declaredRun.exitStatus == 0, "declaredfov.rib renders");
+  check(declaredRun.output.find("FOV not set") == std::string::npos,
         "a declared, explicitly set fov prints no \"FOV not set\" warning");
 
-  const std::string controlOut = "declaredfov90.out";
-  check(runGman(gman, ribDir + "/declaredfov90.rib", controlOut) == 0, "declaredfov90.rib renders");
+  check(runGman(gman, {ribDir + "/declaredfov90.rib"}).exitStatus == 0, "declaredfov90.rib renders");
 
   GmanImage const declared = readGmanTIFF("declaredfov.tif");
   GmanImage const control = readGmanTIFF("declaredfov90.tif");

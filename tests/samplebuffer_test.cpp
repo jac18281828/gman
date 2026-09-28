@@ -57,19 +57,14 @@
 #include <string>
 #include <vector>
 
-#include <sys/wait.h>
-
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib) {
-  const std::string command = "\"" + gman + "\" \"" + rib + "\" >/dev/null 2>&1";
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
+int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
@@ -241,14 +236,12 @@ void testSampleCountCeiling(const std::string& gman) {
                                   "PixelSamples 16 16\n"
                                   "WorldBegin\n"
                                   "WorldEnd\n");
-  const int status = runGman(gman, "sample_ceiling.rib");
-  // A shell-mediated child that dies to a signal (abort, segv) reports
-  // through system(3) as an ordinary exit with status 128+signum, not a
-  // WIFSIGNALED system() itself -- so status alone, not runGman's -1
-  // sentinel, is what tells a diagnosed EXIT_FAILURE (1) apart from a
-  // crash (>=128).
-  check(status > 0 && status < 128, "a sample count past the renderer's ceiling exits with a "
-                                    "diagnostic (not a signal or abort)");
+  GMANRunResult const result = ::runGman(gman, {"sample_ceiling.rib"});
+  // crashed distinguishes a signal-killed child (abort, segv) from a
+  // diagnosed, ordinary exit, so a positive exitStatus with crashed false
+  // is what tells EXIT_FAILURE (1) apart from a crash.
+  check(!result.crashed && result.exitStatus > 0, "a sample count past the renderer's ceiling exits with a "
+                                                  "diagnostic (not a signal or abort)");
 }
 
 // A zero-width PixelFilter leaves the resolve's support box empty for

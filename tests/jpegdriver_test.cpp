@@ -42,34 +42,25 @@
 #include <cstdio> // jpeglib.h expects FILE already declared
 #include <cstdlib>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <vector>
 
 #include <sys/stat.h>
-#include <sys/wait.h>
 
 #include <jpeglib.h>
 #include <tiffio.h>
 
 #include "check.h"
+#include "rungman.h"
 
 namespace {
 
-// `output` is removed before the run. Every content assertion below would
-// otherwise be satisfied by an image an earlier run left behind: a build
-// directory is reused across ctest invocations, and a reverted fix that
-// throws before opening the display leaves the previous good file in place.
-// tests/baseline_test.cpp removes its target for the same reason.
 // GMANHandleError prints to stdout (gmanerror.cpp's print()), so a caller
-// after a diagnostic captures stdout, not stderr.
-int runGman(const std::string& gman, const std::string& rib, const std::string& output,
-            const std::string& stdoutCapturePath = "") {
-  std::remove(output.c_str());
-  std::string command = "\"" + gman + "\" \"" + rib + "\" 2>/dev/null";
-  command += stdoutCapturePath.empty() ? " >/dev/null" : (" >\"" + stdoutCapturePath + "\"");
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+// after a diagnostic reads the result's stdout-only output.
+GMANRunResult runGman(const std::string& gman, const std::string& rib) {
+  GMANRunOptions options;
+  options.capture = GMANRunOptions::Capture::stdoutOnly;
+  return ::runGman(gman, {rib}, options);
 }
 
 void writeFile(const std::string& path, const std::string& contents) {
@@ -85,13 +76,6 @@ bool nonEmptyFile(const std::string& path) {
 bool fileExists(const std::string& path) {
   struct stat st;
   return stat(path.c_str(), &st) == 0;
-}
-
-std::string readFile(const std::string& path) {
-  std::ifstream in(path);
-  std::ostringstream contents;
-  contents << in.rdbuf();
-  return contents.str();
 }
 
 struct Image {
@@ -205,12 +189,17 @@ int main(int argc, char* argv[]) {
   char scene[1024];
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.jpg");
   writeFile("jpegdriver.rib", scene);
-  check(runGman(gman, "jpegdriver.rib", "jpegdriver.jpg") == 0, "JPEG scene renders");
+  // Removed ahead of the run: a build directory is reused across ctest
+  // invocations, and a reverted fix that throws before opening the
+  // display would otherwise leave the previous good file in place.
+  std::remove("jpegdriver.jpg");
+  check(runGman(gman, "jpegdriver.rib").exitStatus == 0, "JPEG scene renders");
   check(nonEmptyFile("jpegdriver.jpg"), "JPEG file is non-empty");
 
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.tif");
   writeFile("jpegdriver_tif.rib", scene);
-  check(runGman(gman, "jpegdriver_tif.rib", "jpegdriver.tif") == 0, "equivalent TIFF scene renders");
+  std::remove("jpegdriver.tif");
+  check(runGman(gman, "jpegdriver_tif.rib").exitStatus == 0, "equivalent TIFF scene renders");
 
   Image jpg = readJPEG("jpegdriver.jpg");
   check(jpg.ok, "JPEG decodes as well-formed");
@@ -245,13 +234,13 @@ int main(int argc, char* argv[]) {
   // ---- a mode JPEG cannot carry warns and still writes RGB ----
   std::snprintf(scene, sizeof scene, rgbaSceneTemplate, "jpegdriver_rgba.jpg");
   writeFile("jpegdriver_rgba.rib", scene);
-  const std::string rgbaCapture = "jpegdriver_rgba.out";
-  int rgbaExit = runGman(gman, "jpegdriver_rgba.rib", "jpegdriver_rgba.jpg", rgbaCapture);
-  check(rgbaExit == 0, "a Display asking for \"rgba\" still exits 0");
+  std::remove("jpegdriver_rgba.jpg");
+  GMANRunResult const rgbaRun = runGman(gman, "jpegdriver_rgba.rib");
+  check(rgbaRun.exitStatus == 0, "a Display asking for \"rgba\" still exits 0");
   // gmanlog.cpp's screen sink writes a warning's raw text with no "GMAN
   // WARNING: " prefix (only its optional log file gets one), so this
   // checks for the warning's own wording rather than that prefix.
-  check(readFile(rgbaCapture).find("JPEG cannot carry alpha or depth samples") != std::string::npos,
+  check(rgbaRun.output.find("JPEG cannot carry alpha or depth samples") != std::string::npos,
         "stdout names the mode JPEG cannot fully carry");
 
   Image rgbaJpg = readJPEG("jpegdriver_rgba.jpg");
@@ -261,7 +250,8 @@ int main(int argc, char* argv[]) {
   // ---- a genuinely unknown extension must diagnose, not crash ----
   std::snprintf(scene, sizeof scene, sceneTemplate, "jpegdriver.bogus");
   writeFile("jpegdriver_bogus.rib", scene);
-  int bogusExit = runGman(gman, "jpegdriver_bogus.rib", "jpegdriver.bogus");
+  std::remove("jpegdriver.bogus");
+  int const bogusExit = runGman(gman, "jpegdriver_bogus.rib").exitStatus;
   check(bogusExit != 0 && bogusExit != -1, "an unrecognized Display extension fails cleanly (not a crash)");
   check(!fileExists("jpegdriver.bogus"), "an unrecognized Display extension writes no file");
 
@@ -269,10 +259,9 @@ int main(int argc, char* argv[]) {
   // not silently report success ----
   std::snprintf(scene, sizeof scene, sceneTemplate, "nonexistent-dir/jpegdriver.jpg");
   writeFile("jpegdriver_unwritable.rib", scene);
-  const std::string diagnosticCapture = "jpegdriver_unwritable.out";
-  int unwritableExit = runGman(gman, "jpegdriver_unwritable.rib", "nonexistent-dir/jpegdriver.jpg", diagnosticCapture);
-  check(unwritableExit != 0, "a Display path inside a nonexistent directory fails");
-  check(readFile(diagnosticCapture).find("Unable to open output file") != std::string::npos,
+  GMANRunResult const unwritableRun = runGman(gman, "jpegdriver_unwritable.rib");
+  check(unwritableRun.exitStatus != 0, "a Display path inside a nonexistent directory fails");
+  check(unwritableRun.output.find("Unable to open output file") != std::string::npos,
         "the failure names \"Unable to open output file\"");
 
   return checkSummary("jpeg driver holds");
