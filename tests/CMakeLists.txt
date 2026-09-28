@@ -2839,6 +2839,23 @@ if(GMAN_BUILD_PATHTRACER)
     TIMEOUT 30)
 endif()
 
+# AreaLightSource parses through GMANRIBParse and builds a GMAN_LIGHT_AREA
+# light; GMANAttributes' own pending area light scopes through
+# Illuminate/AttributeBegin/AttributeEnd like the light list already does.
+# Drives GMANRIBParse and GMANRenderManImpl directly, in process, following
+# tests/pointscount_test.cpp's own technique, hence the same
+# LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c. See
+# tests/arealightsource_test.cpp.
+add_executable(gman_arealightsource arealightsource_test.cpp)
+target_link_libraries(gman_arealightsource PRIVATE gman_core)
+
+add_test(NAME arealightsource
+  COMMAND gman_arealightsource "${CMAKE_CURRENT_SOURCE_DIR}/rib")
+set_tests_properties(arealightsource PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta

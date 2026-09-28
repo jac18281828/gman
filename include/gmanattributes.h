@@ -32,7 +32,6 @@
 #include "gmancolor.h"
 #include "gmandisplacementshader.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlightsourceshader.h"
 #include "gmanloadableshader.h"
 #include "gmanlog.h"
 #include "gmanparameterlist.h"
@@ -68,6 +67,15 @@ private:
   GMANTextureCoordinates textureCoordinates;
   GMANLightList lightList;
 
+  // The handle RiAreaLightSourceV most recently registered on this frame,
+  // 0 when none is pending. A plain RtLightHandle, not a shader module:
+  // "arealight" is a built-in name RiAreaLightSourceV matches directly,
+  // carrying no loadable shader of its own. Living here gives it RISpec's
+  // "up to the next AttributeEnd" scoping for free, through the same
+  // attribute-stack copy on AttributeBegin and pop on AttributeEnd every
+  // other member here relies on.
+  RtLightHandle pendingAreaLight = 0;
+
   // Shared, not deep-copied: a loaded module is immutable once dlopen'd, and
   // AttributeBegin/AttributeEnd (GMANGraphicState::attributesStack.push
   // (attributesStack.top())) copies GMANAttributes on every block entry --
@@ -76,9 +84,6 @@ private:
   // free: reassigning a block-local shared_ptr (RiSurface inside
   // AttributeBegin) never touches the parent's copy, and AttributeEnd
   // discards it along with the rest of the popped GMANAttributes.
-  std::shared_ptr<GMANLoadableShader> areaLightModule;
-  [[maybe_unused]] GMANLightSourceShader* areaLight;
-
   std::shared_ptr<GMANLoadableShader> surfaceModule;
   std::shared_ptr<GMANSurfaceShader const> surface;
 
@@ -125,9 +130,12 @@ public:
   GMANTextureCoordinates const getTextureCoordinates() const { return textureCoordinates; };
 
   // RiLightSource
-  // RtLightHandle setAreaLight (const string & name, GMANParameterList &pl);
   RtVoid setIlluminate(RtLightHandle lh, RtBoolean onoff);
   const GMANLightList& getLightList() const { return lightList; };
+
+  // RiAreaLightSource
+  RtVoid setAreaLight(RtLightHandle lh) { pendingAreaLight = lh; }
+  RtLightHandle getAreaLight() const { return pendingAreaLight; }
 
   /* SHADERS */
   RtVoid setSurface(const std::string& name, GMANParameterList const& pl);

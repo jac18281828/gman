@@ -395,6 +395,10 @@ RtVoid GMANRIBParse::parseStream(RtVoid) {
       debug("Keyword token: LightSource");
       parseLightSource();
       break;
+    case GMANToken::RI_AREA_LIGHT_SOURCE:
+      debug("Keyword token: AreaLightSource");
+      parseAreaLightSource();
+      break;
     case GMANToken::RI_SURFACE:
       debug("Keyword token: Surface");
       parseSurface();
@@ -899,6 +903,25 @@ RtVoid GMANRIBParse::parseLightSource(RtVoid) {
   auto [n, tokens, parms, counts] = parseParameterList();
 
   RtLightHandle handle = renderMan.RiLightSourceV(shadername.c_str(), n, tokens, parms);
+
+  lightHandleMap[sequence] = handle;
+}
+
+// Mirrors parseLightSource exactly: shader name, then a sequence int, then
+// a parameter list, so Illuminate <seq> addresses an area light the same
+// way it addresses any other.
+RtVoid GMANRIBParse::parseAreaLightSource(RtVoid) {
+  const auto shadername = copyStringToken();
+  int sequence = nextInt();
+
+  RtInt n = 0;
+  RtToken* tokens;
+  RtPointer* parms;
+  RtInt* counts;
+
+  parseParameterList(n, tokens, parms, counts);
+
+  RtLightHandle handle = renderMan.RiAreaLightSourceV(shadername.c_str(), n, tokens, parms);
 
   lightHandleMap[sequence] = handle;
 }

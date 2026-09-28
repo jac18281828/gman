@@ -47,7 +47,7 @@ void bindLoadableShader(std::shared_ptr<GMANLoadableShader>& module, Typed*& typ
 } // namespace
 
 GMANAttributes::GMANAttributes()
-    : areaLight(NULL), atmosphere(NULL), interior(NULL), exterior(NULL), displacement(NULL)
+    : atmosphere(NULL), interior(NULL), exterior(NULL), displacement(NULL)
 
 { // Shading attributes
   for (int i = 0; i < NCOMPS; i++) {

@@ -39,13 +39,15 @@
 #include "ri.h"
 
 /*
- * A built-in light: ambientlight, distantlight, pointlight or spotlight.
- * Position and direction are captured in camera space at RiLightSourceV
- * time (the CTM then in effect): shading happens entirely in camera
- * space, so a light declared in any other space would make every N.L
- * wrong.
+ * A built-in light: ambientlight, distantlight, pointlight, spotlight or
+ * arealight. Position and direction are captured in camera space at
+ * RiLightSourceV time (the CTM then in effect): shading happens entirely
+ * in camera space, so a light declared in any other space would make
+ * every N.L wrong. An arealight's placement comes from the geometry it
+ * lights instead (gmanemitter.h), so its position and direction stay at
+ * the constructor's own defaults, unused.
  */
-enum GMANLightType { GMAN_LIGHT_AMBIENT, GMAN_LIGHT_DISTANT, GMAN_LIGHT_POINT, GMAN_LIGHT_SPOT };
+enum GMANLightType { GMAN_LIGHT_AMBIENT, GMAN_LIGHT_DISTANT, GMAN_LIGHT_POINT, GMAN_LIGHT_SPOT, GMAN_LIGHT_AREA };
 
 class GMAN_EXPORT GMANLight {
 private:
@@ -65,6 +67,13 @@ public:
         beamDistribution(beamDist) {}
 
   GMANLightType getType(RtVoid) const { return type; }
+
+  // Read-only access to state that is otherwise private: gmanemitter.h is
+  // a different translation unit, and an arealight's own Cl, unlike the
+  // per-query Cl sample() computes, is read directly.
+  GMANColor const& getCl() const { return cl; }
+  GMANPoint const& getPosition() const { return position; }
+  GMANVector const& getDirection() const { return direction; }
 
   // The direction from a surface point toward this light and this
   // light's contribution there. Ambient has no direction -- illuminance

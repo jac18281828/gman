@@ -138,6 +138,8 @@ const GMANToken GMANRIBTokenize::parseKeyword(std::istream& ribFile) {
     return GMANToken(GMANToken::RI_FRAME_END);
   } else if (!strcasecmp(tokenChars, "lightSource")) {
     return GMANToken(GMANToken::RI_LIGHT_SOURCE);
+  } else if (!strcasecmp(tokenChars, "areaLightSource")) {
+    return GMANToken(GMANToken::RI_AREA_LIGHT_SOURCE);
   } else if (!strcasecmp(tokenChars, "attribute")) {
     return GMANToken(GMANToken::RI_ATTRIBUTE);
   } else if (!strcasecmp(tokenChars, "attributeBegin")) {

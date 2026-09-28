@@ -686,10 +686,37 @@ RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken t
 
   return handle;
 }
-RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken /*name*/, RtInt /*n*/, RtToken /*tokens*/[],
-                                                    RtPointer /*parms*/[]) {
+RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   allowed(cmdAreaLightSource);
-  return (RtLightHandle)0;
+  GMANParameterList paramList(dictionary, n, tokens, parms);
+
+  // Case-sensitive, unlike the AreaLightSource request keyword itself:
+  // RiLightSourceV's own four built-in names are matched the same way,
+  // never case-insensitively.
+  std::string lightName(name);
+  if (lightName != "arealight") {
+    warning("Unknown area light shader '{}'; ignoring RiAreaLightSource.", lightName.c_str());
+    return (RtLightHandle)0;
+  }
+
+  RtFloat intensity = 1.0;
+  GMANColor color((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
+  readCommonLightParams(dictionary, paramList, intensity, color);
+  GMANColor cl(color.getRed() * intensity, color.getGreen() * intensity, color.getBlue() * intensity);
+
+  // No position, direction or cone parameters: a sphere or disk emitter's
+  // placement comes from its own geometry, so this light's position and
+  // direction stay at GMANLight's own defaults, unused.
+  GMANLight* light = new GMANLight(GMAN_LIGHT_AREA, cl, GMANPoint(0.0, 0.0, 0.0), GMANVector(0.0, 0.0, 1.0));
+  RtLightHandle handle = gmanLightSourceMgr().add(light);
+
+  // Active the instant it is declared, exactly as RiLightSourceV's own
+  // handle is: getAttributes().getLightList() already gives RiIlluminate
+  // and AttributeBegin/AttributeEnd their scoping for free.
+  getAttributes().setIlluminate(handle, RI_TRUE);
+  getAttributes().setAreaLight(handle);
+
+  return handle;
 }
 RtVoid GMANRenderManImpl::RiIlluminate(RtLightHandle light, RtBoolean onoff) {
   allowed(cmdIlluminate);

@@ -240,6 +240,7 @@ private:
   RtVoid parseColor(RtVoid);
   RtVoid parseOpacity(RtVoid);
   RtVoid parseLightSource(RtVoid);
+  RtVoid parseAreaLightSource(RtVoid);
   RtVoid parseSurface(RtVoid);
   RtVoid parseCoordinateSystem(RtVoid);
   RtVoid parseIdentity(RtVoid);
