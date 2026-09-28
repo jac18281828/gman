@@ -30,6 +30,7 @@
  */
 
 #include <cmath>
+#include <optional>
 #include <vector>
 
 #include "check.h"
@@ -37,6 +38,8 @@
 #include "gmandictionary.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
 #include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
@@ -70,13 +73,13 @@ GMANPrimitive* buildTexturedMesh() {
   GMANDictionary dictionary;
   RtToken tokens[2] = {RI_P, RI_ST};
   RtPointer parms[2] = {(RtPointer)p.data(), (RtPointer)st};
-  GMANParameterList pl(dictionary, 2, tokens, parms, /*vertex=*/pointCount, /*varying=*/pointCount,
-                       /*uniform=*/(RtInt)nverts.size(), /*facevarying=*/(RtInt)verts.size());
+  std::optional<GMANPolygonMesh> const mesh = gman::pointsPolygonsMesh(
+      (RtInt)nverts.size(), nverts.data(), verts.data(), dictionary, 2, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSPointsPolygon((RtInt)nverts.size(), nverts.data(), verts.data(), pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 // A camera-space ray straight through world (x, y, 0).
@@ -85,7 +88,7 @@ GMANRay rayThrough(RtFloat x, RtFloat y) { return GMANRay(GMANPoint(x, y, -5.0),
 void testPerFaceStGatheredThroughVerts() {
   GMANPrimitive* meshPrim = buildTexturedMesh();
   GMANRayInterface* mesh = dynamic_cast<GMANRayInterface*>(meshPrim);
-  check(mesh != nullptr, "per-face st: getRSPointsPolygon returns a GMANRayInterface");
+  check(mesh != nullptr, "per-face st: getRSPolygonMesh returns a GMANRayInterface");
   if (mesh == nullptr) {
     delete meshPrim;
     return;

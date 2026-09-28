@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <optional>
 #include <vector>
 
 #include "check.h"
@@ -35,6 +36,8 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanradiositymesh.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
@@ -63,18 +66,9 @@ constexpr RtFloat kHoleHalfSide = 0.5f + 1e-5f;
 constexpr RtFloat kRoundTripTolerance = 1e-3f;
 
 // ---------------------------------------------------------------------
-// Fixture construction, through GMANRayObjectManager's own factories.
+// Fixture construction, through the factory and GMANRayObjectManager's own
+// getRSPolygonMesh.
 // ---------------------------------------------------------------------
-
-GMANParameterList makePointList(GMANDictionary& dictionary, std::vector<RtFloat> const& p, RtInt vertex, RtInt varying,
-                                RtInt uniform, RtInt facevarying = -1) {
-  RtToken tokens[1] = {RI_P};
-  RtPointer parms[1] = {(RtPointer)p.data()};
-  if (facevarying < 0) {
-    return GMANParameterList(dictionary, 1, tokens, parms, vertex, varying, uniform);
-  }
-  return GMANParameterList(dictionary, 1, tokens, parms, vertex, varying, uniform, facevarying);
-}
 
 std::vector<RtFloat> flattenPoints(std::vector<GMANPoint> const& points) {
   std::vector<RtFloat> p(3 * points.size());
@@ -90,36 +84,38 @@ GMANPrimitive* buildPolygon(std::vector<GMANPoint> const& outer) {
   RtInt const nverts = (RtInt)outer.size();
   std::vector<RtFloat> const p = flattenPoints(outer);
   GMANDictionary dictionary;
-  GMANParameterList pl = makePointList(dictionary, p, nverts, nverts, 1);
+  RtToken tokens[1] = {RI_P};
+  RtPointer parms[1] = {(RtPointer)p.data()};
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSPolygon(nverts, pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 GMANPrimitive* buildGeneralPolygon(std::vector<std::vector<GMANPoint>> const& loops) {
   RtInt const nloops = (RtInt)loops.size();
   std::vector<RtInt> nverts(nloops);
-  RtInt total = 0;
   std::vector<GMANPoint> flat;
   for (RtInt i = 0; i < nloops; ++i) {
     nverts[i] = (RtInt)loops[i].size();
-    total += nverts[i];
     flat.insert(flat.end(), loops[i].begin(), loops[i].end());
   }
   std::vector<RtFloat> const p = flattenPoints(flat);
   GMANDictionary dictionary;
-  GMANParameterList pl = makePointList(dictionary, p, total, total, 1);
+  RtToken tokens[1] = {RI_P};
+  RtPointer parms[1] = {(RtPointer)p.data()};
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::generalPolygonMesh(nloops, nverts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSGeneralPolygon(nloops, nverts.data(), pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 GMANPrimitive* buildPointsPolygon(std::vector<GMANPoint> const& points, std::vector<std::vector<RtInt>> const& faces) {
-  RtInt const pointCount = (RtInt)points.size();
   std::vector<RtFloat> const p = flattenPoints(points);
 
   RtInt const npolys = (RtInt)faces.size();
@@ -131,12 +127,15 @@ GMANPrimitive* buildPointsPolygon(std::vector<GMANPoint> const& points, std::vec
   }
 
   GMANDictionary dictionary;
-  GMANParameterList pl = makePointList(dictionary, p, pointCount, pointCount, npolys, (RtInt)verts.size());
+  RtToken tokens[1] = {RI_P};
+  RtPointer parms[1] = {(RtPointer)p.data()};
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::pointsPolygonsMesh(npolys, nverts.data(), verts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSPointsPolygon(npolys, nverts.data(), verts.data(), pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 // One PointsGeneralPolygons request: faces holds, per face, its own loops
@@ -144,7 +143,6 @@ GMANPrimitive* buildPointsPolygon(std::vector<GMANPoint> const& points, std::vec
 // of indices into points.
 GMANPrimitive* buildPointsGeneralPolygons(std::vector<GMANPoint> const& points,
                                           std::vector<std::vector<std::vector<RtInt>>> const& faces) {
-  RtInt const pointCount = (RtInt)points.size();
   std::vector<RtFloat> const p = flattenPoints(points);
 
   RtInt const npolys = (RtInt)faces.size();
@@ -160,13 +158,15 @@ GMANPrimitive* buildPointsGeneralPolygons(std::vector<GMANPoint> const& points,
   }
 
   GMANDictionary dictionary;
-  GMANParameterList pl = makePointList(dictionary, p, pointCount, pointCount, npolys, (RtInt)verts.size());
+  RtToken tokens[1] = {RI_P};
+  RtPointer parms[1] = {(RtPointer)p.data()};
+  std::optional<GMANPolygonMesh> const mesh = gman::pointsGeneralPolygonsMesh(
+      npolys, nloops.data(), nverts.data(), verts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSPointsGeneralPolygons(npolys, nloops.data(), nverts.data(), verts.data(), pl, &options, &attr,
-                                        &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 // ---------------------------------------------------------------------

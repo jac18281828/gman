@@ -409,7 +409,7 @@ set_tests_properties(normals PROPERTIES
 # ear-clipping classification: nine hand-built rings at six scales in two
 # placements, a randomized star-shaped stress, and degenerate input.
 add_executable(gman_triangulation triangulation_test.cpp)
-target_link_libraries(gman_triangulation PRIVATE gman_core)
+target_link_libraries(gman_triangulation PRIVATE gman_core gman_internal_headers)
 add_test(NAME triangulation COMMAND gman_triangulation)
 # getRSPolygon falls back to dlopen'ing "libmatte.so" when no RiSurface is
 # set, the same bare-name lookup gman itself relies on the build tree being
@@ -423,7 +423,7 @@ set_tests_properties(triangulation PROPERTIES
 # the outer loop by Eberly's method before handing the ring to the same
 # triangulateEarClipping loop 1 already uses. See tests/generalpolygon_test.cpp.
 add_executable(gman_generalpolygon generalpolygon_test.cpp)
-target_link_libraries(gman_generalpolygon PRIVATE gman_core)
+target_link_libraries(gman_generalpolygon PRIVATE gman_core gman_internal_headers)
 add_test(NAME generalpolygon COMMAND gman_generalpolygon)
 # getRSGeneralPolygon falls back to dlopen'ing "libmatte.so" when no
 # RiSurface is set, the same bare-name lookup gman itself relies on the
@@ -1021,7 +1021,7 @@ set_tests_properties(orthowindow PROPERTIES
 # clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L an ear-clipped triangle's
 # longest raster-space edge. See tests/polygondicecount_test.cpp.
 add_executable(gman_polygondicecount polygondicecount_test.cpp)
-target_link_libraries(gman_polygondicecount PRIVATE gman_core)
+target_link_libraries(gman_polygondicecount PRIVATE gman_core gman_internal_headers)
 add_test(NAME polygondicecount COMMAND gman_polygondicecount)
 # getRSPolygon falls back to dlopen'ing "libmatte.so" when no RiSurface is
 # set -- triangulation's own comment, same lookup.
@@ -1071,7 +1071,7 @@ set_tests_properties(declaredfov PROPERTIES
 # raster coverage and shaded colour both match an analytically computed
 # region and value.
 add_executable(gman_polygon polygon_test.cpp)
-target_link_libraries(gman_polygon PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_polygon PRIVATE gman_core TIFF::TIFF gman_internal_headers)
 
 set(GMAN_POLYGON_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygon-run")
 file(MAKE_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
@@ -1263,7 +1263,7 @@ set_tests_properties(polygondicing PROPERTIES
 # (tests/goldenimage.h) and malformed request fixtures. See
 # tests/pointspolygons_test.cpp.
 add_executable(gman_pointspolygons pointspolygons_test.cpp)
-target_link_libraries(gman_pointspolygons PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_pointspolygons PRIVATE gman_core TIFF::TIFF gman_internal_headers)
 
 set(GMAN_POINTSPOLYGONS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pointspolygons-run")
 file(MAKE_DIRECTORY "${GMAN_POINTSPOLYGONS_WORKDIR}")
@@ -1847,15 +1847,13 @@ set_tests_properties(raybvhalloc PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# GMANRayObjectManager::getRSGeneralPolygon builds a multi-loop
-# GMANRayPolygon -- a hole misses at its centre, the ring between hole and
-# edge hits, and a point outside the outer loop misses -- and
-# getRSPolygon's own one-loop case keeps today's hits on the same three
-# rays. Linked against gman_core alone: both factories return a bare
-# GMANRayInterface, no libgman/ header needed. See
-# tests/raypolygonhole_test.cpp.
+# GMANRayObjectManager::getRSPolygonMesh builds a multi-loop GMANRayPolygon
+# for a GeneralPolygon face -- a hole misses at its centre, the ring
+# between hole and edge hits, and a point outside the outer loop misses --
+# and a Polygon's one-loop case keeps the same hits on the same three rays.
+# See tests/raypolygonhole_test.cpp.
 add_executable(gman_raypolygonhole raypolygonhole_test.cpp)
-target_link_libraries(gman_raypolygonhole PRIVATE gman_core)
+target_link_libraries(gman_raypolygonhole PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raypolygonhole COMMAND gman_raypolygonhole)
 set_tests_properties(raypolygonhole PROPERTIES
@@ -1863,10 +1861,10 @@ set_tests_properties(raypolygonhole PROPERTIES
   TIMEOUT 30)
 
 # A degenerate Polygon (collinear points) traces as the empty stub, neither
-# a GMANRayPolygon nor a GMANRayPolygonMesh. Linked against gman_core
-# alone. See tests/raypolygondegenerate_test.cpp.
+# a GMANRayPolygon nor a GMANRayPolygonMesh. See
+# tests/raypolygondegenerate_test.cpp.
 add_executable(gman_raypolygondegenerate raypolygondegenerate_test.cpp)
-target_link_libraries(gman_raypolygondegenerate PRIVATE gman_core)
+target_link_libraries(gman_raypolygondegenerate PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME raypolygondegenerate COMMAND gman_raypolygondegenerate)
 set_tests_properties(raypolygondegenerate PROPERTIES
@@ -1880,7 +1878,7 @@ set_tests_properties(raypolygondegenerate PROPERTIES
 # linear intersect and the analytic nearest face. See
 # tests/polygonmeshbvh_test.cpp.
 add_executable(gman_polygonmeshbvh polygonmeshbvh_test.cpp)
-target_link_libraries(gman_polygonmeshbvh PRIVATE gman_core)
+target_link_libraries(gman_polygonmeshbvh PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME polygonmeshbvh COMMAND gman_polygonmeshbvh)
 set_tests_properties(polygonmeshbvh PROPERTIES
@@ -1894,7 +1892,7 @@ set_tests_properties(polygonmeshbvh PROPERTIES
 # mirrored (s, t) would still fail even though both faces' centroids alone
 # could not tell it apart. See tests/polygonmeshtexcoord_test.cpp.
 add_executable(gman_polygonmeshtexcoord polygonmeshtexcoord_test.cpp)
-target_link_libraries(gman_polygonmeshtexcoord PRIVATE gman_core)
+target_link_libraries(gman_polygonmeshtexcoord PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME polygonmeshtexcoord COMMAND gman_polygonmeshtexcoord)
 set_tests_properties(polygonmeshtexcoord PROPERTIES
@@ -1929,11 +1927,9 @@ set_tests_properties(radiositymesh PROPERTIES
 # GMANRadiosityMesh over a holed GeneralPolygon, a PointsPolygons mesh and
 # a PointsGeneralPolygons face with a hole: element areas against the
 # analytic outer-minus-hole area, node inside flags around a hole, and
-# locate() against hits a GMANRayBVH reports on a mesh face. Linked
-# against gman_radiosity_objects alone, with no gman_internal_headers:
-# every header it includes is public.
+# locate() against hits a GMANRayBVH reports on a mesh face.
 add_executable(gman_radiositypolygonmesh radiositypolygonmesh_test.cpp)
-target_link_libraries(gman_radiositypolygonmesh PRIVATE gman_radiosity_objects)
+target_link_libraries(gman_radiositypolygonmesh PRIVATE gman_radiosity_objects gman_internal_headers)
 
 add_test(NAME radiositypolygonmesh COMMAND gman_radiositypolygonmesh)
 set_tests_properties(radiositypolygonmesh PROPERTIES

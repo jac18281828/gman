@@ -49,31 +49,33 @@
  * coordinates below are hand-projected the same way as the pentagon's,
  * from each fixture's own "P".
  *
- * checkTriangleCount below calls GMANPatchPolyObjectManager::getRSPolygon
- * directly (white-box, mirroring normals_test.cpp and patchmesh_test.cpp)
- * to assert (nverts - 2) * 256 diced sub-triangles come out the other side
- * -- concave, reversed winding, collinear or duplicate vertices included --
+ * checkTriangleCount below builds its mesh through the factory and calls
+ * GMANPatchPolyObjectManager::getRSPolygonMesh directly (white-box,
+ * mirroring normals_test.cpp and patchmesh_test.cpp) to assert
+ * (nverts - 2) * 256 diced sub-triangles come out the other side --
+ * concave, reversed winding, collinear or duplicate vertices included --
  * which distinguishes a finished triangulation from a stalled one; a
  * stalled loop would time out under ctest rather than fail an assertion.
  *
  * Revert checks (verified by actually reverting, not asserted):
- *   - Restoring GMANPatchPolyObjectManager::getRSPolygon's triangulation
- *     to the fan-from-vertex-0 it replaced fails every notch-background
- *     assertion below (polygon_concave, polygon_concave_cw,
+ *   - Restoring GMANPatchPolyObjectManager::getRSPolygonMesh's
+ *     triangulation to the fan-from-vertex-0 it replaced fails every
+ *     notch-background assertion below (polygon_concave, polygon_concave_cw,
  *     polygon_concave_multi, polygon_collinear all go red) while the
  *     convex pentagon assertions stay green -- the fan is correct for
  *     convex input, wrong only for concave.
  *   - Reverting to a bare create() instead: the pentagon fixture renders
  *     pure background, failing every coverage and color assertion.
  *   - Revert step 1 alone (RiPolygonV's parameter-list sizing back to the
- *     literal 4, 4): a heap over-read in getRSPolygon reading "P" back out
- *     of a too-small allocation, not guaranteed to be observable as a
+ *     literal 4, 4): a heap over-read in getRSPolygonMesh reading "P" back
+ *     out of a too-small allocation, not guaranteed to be observable as a
  *     wrong render or a crash on its own.
  */
 
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -87,6 +89,8 @@
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
 #include "gmantransform.h"
 #include "rungman.h"
@@ -299,16 +303,15 @@ void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt 
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/nverts,
-                       /*varying=*/nverts, /*uniform=*/1);
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
 
-  GMANPrimitive* prim = mgr.getRSPolygon(nverts, pl, &options, &attr, &transform);
+  GMANPrimitive* prim = mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, label + ": getRSPolygon returns an object");
+  check(object != nullptr, label + ": getRSPolygonMesh returns an object");
 
   int faces = countFaces(object);
   const int expected = (nverts - 2) * kSubTrianglesPerEar;

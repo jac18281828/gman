@@ -19,17 +19,18 @@
  */
 
 /*
- * GMANRayObjectManager::getRSPointsPolygon returns one polygon mesh
- * primitive; GMANRayBVH::build flattens it into one entry per face rather
- * than one entry for the whole mesh. A ray aimed at a face never reports
- * the mesh as hitPrimitive -- it is a GMANRayPolygon, and it equals the
- * hit's own primitive -- and a fan of rays across
- * tests/rib/pointspolygons_cube.rib's own cube geometry agrees, face by
- * face, between the BVH's nearestHit, the mesh's own linear intersect,
- * and each face's analytic plane.
+ * GMANRayObjectManager::getRSPolygonMesh returns one polygon mesh
+ * primitive for a PointsPolygons request; GMANRayBVH::build flattens it
+ * into one entry per face rather than one entry for the whole mesh. A ray
+ * aimed at a face never reports the mesh as hitPrimitive -- it is a
+ * GMANRayPolygon, and it equals the hit's own primitive -- and a fan of
+ * rays across tests/rib/pointspolygons_cube.rib's own cube geometry
+ * agrees, face by face, between the BVH's nearestHit, the mesh's own
+ * linear intersect, and each face's analytic plane.
  */
 
 #include <cmath>
+#include <optional>
 #include <vector>
 
 #include "check.h"
@@ -39,6 +40,8 @@
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "gmanpolygon.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanrayobjectmanager.h"
@@ -93,13 +96,13 @@ GMANPrimitive* runGetRSPointsPolygonDirect(std::vector<GMANPoint> const& points,
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/pointCount, /*varying=*/pointCount,
-                       /*uniform=*/npolys, /*facevarying=*/(RtInt)verts.size());
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::pointsPolygonsMesh(npolys, nverts.data(), verts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSPointsPolygon(npolys, nverts.data(), verts.data(), pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 // A face's own analytic ring, independent of GMANRayPolygonMesh's own
@@ -176,7 +179,7 @@ void testFaceNotMesh() {
 
   GMANPrimitive* meshPrim = runGetRSPointsPolygonDirect(points, faces);
   GMANRayInterface* mesh = dynamic_cast<GMANRayInterface*>(meshPrim);
-  check(mesh != nullptr, "face k: getRSPointsPolygon returns a GMANRayInterface");
+  check(mesh != nullptr, "face k: getRSPolygonMesh returns a GMANRayInterface");
 
   GMANLinearWorldManager worldManager;
   worldManager.add(meshPrim);
@@ -226,7 +229,7 @@ void testFanAgreesWithMeshAndAnalytic() {
 
   GMANPrimitive* meshPrim = runGetRSPointsPolygonDirect(points, faces);
   GMANRayInterface* mesh = dynamic_cast<GMANRayInterface*>(meshPrim);
-  check(mesh != nullptr, "fan: getRSPointsPolygon returns a GMANRayInterface");
+  check(mesh != nullptr, "fan: getRSPolygonMesh returns a GMANRayInterface");
 
   GMANLinearWorldManager worldManager;
   GMANPrimitive* bvhMeshPrim = runGetRSPointsPolygonDirect(points, faces);

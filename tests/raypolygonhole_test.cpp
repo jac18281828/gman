@@ -19,15 +19,16 @@
  */
 
 /*
- * GMANRayObjectManager::getRSGeneralPolygon builds a multi-loop
- * GMANRayPolygon: loops[0] is the outer boundary, every later loop a
- * hole. A ray through the hole's centre misses, one through the ring
- * between hole and edge hits at the analytic t, and one outside the outer
- * loop misses. getRSPolygon's own one-loop case keeps today's hits on the
+ * GMANRayObjectManager::getRSPolygonMesh builds a multi-loop GMANRayPolygon
+ * for a GeneralPolygon face: loops[0] is the outer boundary, every later
+ * loop a hole. A ray through the hole's centre misses, one through the
+ * ring between hole and edge hits at the analytic t, and one outside the
+ * outer loop misses. A Polygon's one-loop case keeps the same hits on the
  * same three rays, with no hole to cut them short.
  */
 
 #include <cmath>
+#include <optional>
 #include <vector>
 
 #include "check.h"
@@ -35,6 +36,8 @@
 #include "gmandictionary.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
 #include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
@@ -78,12 +81,13 @@ GMANPrimitive* runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> 
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, total, total, 1, total);
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::generalPolygonMesh(nloops, nverts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSGeneralPolygon(nloops, nverts.data(), pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
@@ -97,12 +101,12 @@ GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, nverts, nverts, 1);
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSPolygon(nverts, pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 // A camera-space ray through object point (x, y, 0), the plane every
@@ -112,7 +116,7 @@ GMANRay rayThrough(RtFloat x, RtFloat y) { return GMANRay(GMANPoint(x, y, -5.0),
 void testHoleMissesFaceHitsEdgeMisses() {
   GMANPrimitive* prim = runGetRSGeneralPolygonDirect({outerSquare(), holeSquare()});
   GMANRayInterface* polygon = dynamic_cast<GMANRayInterface*>(prim);
-  check(polygon != nullptr, "hole: getRSGeneralPolygon returns a GMANRayInterface");
+  check(polygon != nullptr, "hole: getRSPolygonMesh returns a GMANRayInterface");
   if (polygon == nullptr) {
     delete prim;
     return;
@@ -134,7 +138,7 @@ void testHoleMissesFaceHitsEdgeMisses() {
 void testOneLoopPolygonUnchanged() {
   GMANPrimitive* prim = runGetRSPolygonDirect(outerSquare());
   GMANRayInterface* polygon = dynamic_cast<GMANRayInterface*>(prim);
-  check(polygon != nullptr, "one loop: getRSPolygon returns a GMANRayInterface");
+  check(polygon != nullptr, "one loop: getRSPolygonMesh returns a GMANRayInterface");
   if (polygon == nullptr) {
     delete prim;
     return;

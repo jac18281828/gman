@@ -19,12 +19,12 @@
  */
 
 /*
- * GMANPatchPolyObjectManager::getRSGeneralPolygon bridges every hole of a
- * GeneralPolygon into its outer loop, then hands the merged ring to the
- * same triangulateEarClipping loop 1 already uses. This suite calls
- * getRSGeneralPolygon directly (white-box, mirroring triangulation_test.cpp's
- * own calls to getRSPolygon), with identity transform and points placed in
- * the test.
+ * GMANPatchPolyObjectManager::getRSPolygonMesh bridges every hole of a
+ * GeneralPolygon face into its outer loop, then hands the merged ring to
+ * the same triangulateEarClipping loop 1 already uses. This suite builds
+ * its mesh through the factory and calls getRSPolygonMesh directly
+ * (white-box, mirroring triangulation_test.cpp's own calls), with identity
+ * transform and points placed in the test.
  *
  * The oracle (see checkPlacement below) never reimplements the bridging
  * under test: it reads triangle vertex positions back out of the returned
@@ -49,6 +49,7 @@
 #include <cmath>
 #include <cstdio>
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -60,6 +61,8 @@
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
 #include "gmantransform.h"
 
@@ -195,7 +198,8 @@ double ringArea(const std::vector<GMANPoint>& ring) {
 }
 
 // Builds "P" and nverts from loops (loop 0 the outer boundary, the rest
-// holes) and calls getRSGeneralPolygon directly, identity transform.
+// holes), builds its mesh through the factory and calls getRSPolygonMesh,
+// identity transform.
 GMANPrimitive* runGetRSGeneralPolygon(const std::vector<std::vector<GMANPoint>>& loops) {
   const RtInt nloops = (RtInt)loops.size();
   std::vector<RtInt> nverts(nloops);
@@ -219,14 +223,13 @@ GMANPrimitive* runGetRSGeneralPolygon(const std::vector<std::vector<GMANPoint>>&
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/total,
-                       /*varying=*/total, /*uniform=*/1,
-                       /*facevarying=*/total);
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::generalPolygonMesh(nloops, nverts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
-  return mgr.getRSGeneralPolygon(nloops, nverts.data(), pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 int countFaces(GMANObject* object) {
@@ -260,7 +263,7 @@ std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int chainLeng
 // (i >= 1) is the test's own expectation of whether hole i survives
 // bridging; kept[0] is unused (the outer loop is never dropped by a case
 // this function is called on). Returns an empty vector (with assertions
-// already recorded as failures) if getRSGeneralPolygon did not return a
+// already recorded as failures) if getRSPolygonMesh did not return a
 // usable object.
 //
 // Most sub-triangles are strictly interior -- none of their three vertices
@@ -282,7 +285,7 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label,
 
   GMANPrimitive* prim = runGetRSGeneralPolygon(loops);
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, label + ": getRSGeneralPolygon returns an object");
+  check(object != nullptr, label + ": getRSPolygonMesh returns an object");
   if (object == nullptr) {
     delete prim;
     return {};
@@ -494,15 +497,16 @@ void runOneLoopParity(const std::string& name, const std::vector<GMANPoint>& can
       GMANDictionary dict1, dict2;
       RtToken tokens[1] = {RI_P};
       RtPointer parms[1] = {p.data()};
-      GMANParameterList pl1(dict1, 1, tokens, parms, nverts, nverts, 1);
-      GMANParameterList pl2(dict2, 1, tokens, parms, nverts, nverts, 1, nverts);
+      std::optional<GMANPolygonMesh> const polyMesh = gman::polygonMesh(nverts, dict1, 1, tokens, parms, nullptr);
+      std::optional<GMANPolygonMesh> const generalMesh =
+          gman::generalPolygonMesh(1, &nverts, dict2, 1, tokens, parms, nullptr);
       GMANOptions options;
       GMANAttributes attr;
       GMANTransform transform;
       GMANPatchPolyObjectManager mgr;
 
-      GMANPrimitive* polyPrim = mgr.getRSPolygon(nverts, pl1, &options, &attr, &transform);
-      GMANPrimitive* generalPrim = mgr.getRSGeneralPolygon(1, &nverts, pl2, &options, &attr, &transform);
+      GMANPrimitive* polyPrim = mgr.getRSPolygonMesh(*polyMesh, &options, &attr, &transform);
+      GMANPrimitive* generalPrim = mgr.getRSPolygonMesh(*generalMesh, &options, &attr, &transform);
       GMANObject* polyObj = dynamic_cast<GMANObject*>(polyPrim);
       GMANObject* generalObj = dynamic_cast<GMANObject*>(generalPrim);
 
@@ -553,7 +557,7 @@ void runOneLoopParity(const std::string& name, const std::vector<GMANPoint>& can
         generalTriples.push_back(
             {generalIndex[f->getVertex(0)], generalIndex[f->getVertex(1)], generalIndex[f->getVertex(2)]});
       }
-      check(polyTriples == generalTriples, std::string(buf) + ": same index triples as getRSPolygon");
+      check(polyTriples == generalTriples, std::string(buf) + ": same index triples as the Polygon-shaped mesh");
 
       delete polyPrim;
       delete generalPrim;
@@ -602,13 +606,13 @@ void runTrivialHoles() {
           /*assertTripleIdentity=*/false);
 }
 
-// All outer vertices collinear: getRSGeneralPolygon returns the empty
-// stub, not a crash, exactly as getRSPolygon does for the same input.
+// All outer vertices collinear: getRSPolygonMesh returns the empty stub,
+// not a crash, for a GeneralPolygon face exactly as for a Polygon.
 void runDegenerateOuterLoop() {
   std::vector<std::vector<GMANPoint>> loops = {{{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}}};
   GMANPrimitive* prim = runGetRSGeneralPolygon(loops);
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, "degenerate outer loop: getRSGeneralPolygon returns an object");
+  check(object != nullptr, "degenerate outer loop: getRSPolygonMesh returns an object");
   check(object != nullptr && object->getBody() == nullptr,
         "degenerate outer loop: the returned object is the empty stub");
   delete prim;

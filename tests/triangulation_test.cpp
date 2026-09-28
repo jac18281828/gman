@@ -19,21 +19,22 @@
  */
 
 /*
- * getRSPolygon's triangulation classifies each vertex from an orientation
- * value compared against an absolute tolerance. That comparison is scale-
- * dependent unless the value it tests is dimensionless: a polygon authored
- * a million times smaller, or moved a million units from the origin, is
- * the same polygon and must triangulate the same way. This suite calls
- * GMANPatchPolyObjectManager::getRSPolygon directly (white-box, mirroring
- * polygon_test.cpp's checkTriangleCount and normals_test.cpp) and runs each
- * of nine hand-built rings at six scales (1e-6 .. 1e6) in two placements --
- * axis-aligned at z=0, and rotated 37 degrees about the normalized
- * (1,1,1) axis and translated off the origin -- asserting every placement
- * satisfies the same geometric oracle and every placement of the same ring
- * yields the identical sequence of triangle-index triples. The rotated
- * placement's translation scales with the ring's own scale rather than
- * sitting at a fixed offset: adding a fixed offset to a 1e-6-scale ring
- * would swamp the polygon's own extent in the offset's rounding error
+ * getRSPolygonMesh's triangulation classifies each vertex from an
+ * orientation value compared against an absolute tolerance. That comparison
+ * is scale-dependent unless the value it tests is dimensionless: a polygon
+ * authored a million times smaller, or moved a million units from the
+ * origin, is the same polygon and must triangulate the same way. This
+ * suite builds its mesh through the factory and calls
+ * GMANPatchPolyObjectManager::getRSPolygonMesh directly (white-box,
+ * mirroring polygon_test.cpp's checkTriangleCount and normals_test.cpp) and
+ * runs each of nine hand-built rings at six scales (1e-6 .. 1e6) in two
+ * placements -- axis-aligned at z=0, and rotated 37 degrees about the
+ * normalized (1,1,1) axis and translated off the origin -- asserting every
+ * placement satisfies the same geometric oracle and every placement of the
+ * same ring yields the identical sequence of triangle-index triples. The
+ * rotated placement's translation scales with the ring's own scale rather
+ * than sitting at a fixed offset: adding a fixed offset to a 1e-6-scale
+ * ring would swamp the polygon's own extent in the offset's rounding error
  * (float resolves ~1e-7 relative), collapsing distinct vertices into the
  * same representable float and turning a classification test into a
  * precision-loss test instead.
@@ -41,8 +42,8 @@
  * A 200-polygon randomized stress (star-shaped, 5-40 vertices) runs the
  * same oracle without the triple-identity check, since two candidate ears
  * can tie on a random ring. A collinear-only and an identical-vertex ring
- * exercise getRSPolygon's degeneracy guard; an asymmetric self-intersecting
- * bow-tie exercises ear clipping's clipAt<0 fallback.
+ * exercise getRSPolygonMesh's degeneracy guard; an asymmetric
+ * self-intersecting bow-tie exercises ear clipping's clipAt<0 fallback.
  *
  * The oracle (see checkPlacement below) never reimplements the
  * classification under test: it reads triangle vertex positions back out
@@ -54,9 +55,9 @@
  * happens to be right.
  *
  * Revert check (verified by actually reverting, not asserted): restoring
- * turnOrientation and getRSPolygon's degeneracy guard to their absolute-
+ * turnOrientation and getRSPolygonMesh's degeneracy guard to their absolute-
  * RI_EPSILON comparisons turns every one of the nine rings' scale=1e-6
- * placements red (the degeneracy guard fires and getRSPolygon returns the
+ * placements red (the degeneracy guard fires and getRSPolygonMesh returns the
  * empty stub) and turns the scale=1e-5 placements of four rings red with
  * a wrong (over-covering) triangulation instead: concave L, reversed
  * winding; concave L starting at the reflex vertex; comb; and comb with
@@ -73,6 +74,7 @@
 #include <cmath>
 #include <cstdio>
 #include <map>
+#include <optional>
 #include <random>
 #include <string>
 #include <utility>
@@ -85,12 +87,14 @@
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
 #include "gmantransform.h"
 
 namespace {
 
-// Six scales spanning the range getRSPolygon's degeneracy guard and
+// Six scales spanning the range getRSPolygonMesh's degeneracy guard and
 // turnOrientation's classification both stop being scale-invariant under
 // the absolute RI_EPSILON this suite falsifies (see the fix commit).
 const double kScales[] = {1e-6, 1e-5, 1e-4, 1.0, 1e4, 1e6};
@@ -227,13 +231,12 @@ GMANPrimitive* runGetRSPolygon(const std::vector<GMANPoint>& ring) {
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/nverts,
-                       /*varying=*/nverts, /*uniform=*/1);
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
-  return mgr.getRSPolygon(nverts, pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 int countFaces(GMANObject* object) {
@@ -289,7 +292,7 @@ long long sumExpectedDicedFaces(GMANObject* object, int nverts, const GMANOption
 // Runs the full oracle -- count, area, orientation, coverage -- against
 // one placed ring and returns the emitted triangles as ring-index triples
 // for the caller's own cross-placement identity check. Returns an empty
-// vector (with assertions already recorded as failures) if getRSPolygon
+// vector (with assertions already recorded as failures) if getRSPolygonMesh
 // did not return a usable object.
 //
 // Most sub-triangles are strictly interior -- none of their three vertices
@@ -310,7 +313,7 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
 
   GMANPrimitive* prim = runGetRSPolygon(ring);
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, label + ": getRSPolygon returns an object");
+  check(object != nullptr, label + ": getRSPolygonMesh returns an object");
   if (object == nullptr) {
     delete prim;
     return {};
@@ -598,12 +601,12 @@ void runRandomizedStress() {
 }
 
 void runDegenerateInput() {
-  // All vertices collinear: getRSPolygon returns an empty stub, not a
+  // All vertices collinear: getRSPolygonMesh returns an empty stub, not a
   // crash.
   std::vector<GMANPoint> collinear = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}};
   GMANPrimitive* prim = runGetRSPolygon(collinear);
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, "all-collinear input: getRSPolygon returns an object");
+  check(object != nullptr, "all-collinear input: getRSPolygonMesh returns an object");
   check(object != nullptr && object->getBody() == nullptr,
         "all-collinear input: the returned object is the empty stub");
   delete prim;
@@ -613,7 +616,7 @@ void runDegenerateInput() {
   std::vector<GMANPoint> identical = {{5, 5, 5}, {5, 5, 5}, {5, 5, 5}, {5, 5, 5}};
   prim = runGetRSPolygon(identical);
   object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, "all-identical input: getRSPolygon returns an object");
+  check(object != nullptr, "all-identical input: getRSPolygonMesh returns an object");
   check(object != nullptr && object->getBody() == nullptr,
         "all-identical input: the returned object is the empty stub");
   delete prim;
@@ -629,7 +632,7 @@ void runDegenerateInput() {
   std::vector<GMANPoint> sliver = {{0, 0, 0}, {1, 0, 0}, {1, 1e-8f, 0}, {0, 1e-8f, 0}};
   prim = runGetRSPolygon(sliver);
   object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, "sliver input: getRSPolygon returns an object");
+  check(object != nullptr, "sliver input: getRSPolygonMesh returns an object");
   check(object != nullptr && object->getBody() == nullptr, "sliver input: the area-to-extent ratio guard classifies it "
                                                            "degenerate");
   delete prim;
@@ -645,7 +648,7 @@ void runDegenerateInput() {
   GMANAttributes bowtieAttr; // ShadingRate = 1, runGetRSPolygon's own default
   prim = runGetRSPolygon(bowtie);
   object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, "asymmetric bow-tie: getRSPolygon returns an object");
+  check(object != nullptr, "asymmetric bow-tie: getRSPolygonMesh returns an object");
   if (object != nullptr) {
     int faces = countFaces(object);
     const long long expected =

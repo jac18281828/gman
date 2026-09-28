@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -48,6 +49,8 @@
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
 #include "gmantransform.h"
 #include "goldenimage.h"
@@ -109,12 +112,12 @@ GMANPrimitive* runGetRSPolygonDirect(const std::vector<GMANPoint>& ring) {
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, nverts, nverts, 1);
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
-  return mgr.getRSPolygon(nverts, pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 GMANPrimitive* runGetRSGeneralPolygonDirect(const std::vector<std::vector<GMANPoint>>& loops) {
@@ -138,12 +141,13 @@ GMANPrimitive* runGetRSGeneralPolygonDirect(const std::vector<std::vector<GMANPo
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, total, total, 1, total);
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::generalPolygonMesh(nloops, nverts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
-  return mgr.getRSGeneralPolygon(nloops, nverts.data(), pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 // points is the shared "P" -- point i lands at p[3*i..3*i+2] -- and verts
@@ -160,14 +164,13 @@ GMANPrimitive* runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt> nverts, st
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/pointCount,
-                       /*varying=*/pointCount, /*uniform=*/npolys,
-                       /*facevarying=*/(RtInt)verts.size());
+  std::optional<GMANPolygonMesh> const mesh =
+      gman::pointsPolygonsMesh(npolys, nverts.data(), verts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
-  return mgr.getRSPointsPolygon(npolys, nverts.data(), verts.data(), pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 GMANPrimitive* runGetRSPointsGeneralPolygons(RtInt npolys, std::vector<RtInt> nloops, std::vector<RtInt> nverts,
@@ -182,13 +185,13 @@ GMANPrimitive* runGetRSPointsGeneralPolygons(RtInt npolys, std::vector<RtInt> nl
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, pointCount, pointCount, npolys, (RtInt)verts.size());
+  std::optional<GMANPolygonMesh> const mesh = gman::pointsGeneralPolygonsMesh(
+      npolys, nloops.data(), nverts.data(), verts.data(), dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
-  return mgr.getRSPointsGeneralPolygons(npolys, nloops.data(), nverts.data(), verts.data(), pl, &options, &attr,
-                                        &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 // ---- object-chain readers ----
@@ -294,8 +297,9 @@ void checkFaceGeometry(const std::string& label, GMANBody* body, double expected
 
 // ---- Unit (commit 2) ----
 
-// getRSPointsPolygon with one face and verts = 0..n-1 produces the same
-// vertex positions, triangles and area as getRSPolygon on the same "P".
+// A PointsPolygons request with one face and verts = 0..n-1 produces the
+// same vertex positions, triangles and area as the equivalent Polygon on
+// the same "P".
 void testOneFaceIdentity() {
   const std::vector<std::pair<std::string, std::vector<GMANPoint>>> cases = {{"concave L", concaveL()},
                                                                              {"4-pointed star", fourPointedStar()}};
@@ -313,8 +317,8 @@ void testOneFaceIdentity() {
     GMANPrimitive* pointsPrim = runGetRSPointsPolygon(1, {n}, verts, ring);
     GMANObject* polyObj = dynamic_cast<GMANObject*>(polyPrim);
     GMANObject* pointsObj = dynamic_cast<GMANObject*>(pointsPrim);
-    check(polyObj != nullptr && pointsObj != nullptr, name + ": getRSPolygon and getRSPointsPolygon both return an "
-                                                             "object");
+    check(polyObj != nullptr && pointsObj != nullptr,
+          name + ": the Polygon and the PointsPolygons mesh both return an object");
     if (polyObj == nullptr || pointsObj == nullptr) {
       delete polyPrim;
       delete pointsPrim;
@@ -405,8 +409,8 @@ void testIndicesNotOrder() {
   delete prim;
 }
 
-// getRSPointsGeneralPolygons with one face of two loops matches
-// getRSGeneralPolygon on the gathered loops.
+// A PointsGeneralPolygons request with one face of two loops matches the
+// equivalent GeneralPolygon on the gathered loops.
 void testHoleThroughIndices() {
   const std::vector<GMANPoint> outer = {{0, 0, 0}, {4, 0, 0}, {4, 4, 0}, {0, 4, 0}};
   const std::vector<GMANPoint> hole = {{1, 1, 0}, {3, 1, 0}, {3, 3, 0}, {1, 3, 0}};
@@ -434,7 +438,7 @@ void testHoleThroughIndices() {
   std::map<const GMANVertex*, int> generalIndex = indexVertices(generalVerts);
   check(triangleTriples(pointsObj, pointsIndex) == triangleTriples(generalObj, generalIndex),
         "hole through indices: same triangle index triples as "
-        "getRSGeneralPolygon");
+        "the equivalent GeneralPolygon");
 
   delete pointsPrim;
   delete generalPrim;
@@ -488,19 +492,21 @@ void testOneBadFace() {
   delete degeneratePrim;
 }
 
-// Unreferenced points in "P" change nothing.
+// Unreferenced points in "P" change nothing. The extra points sit between
+// two referenced indices (1-3, verts {0, 4, 5}) rather than trailing every
+// referenced one: the factory sizes "P" to 1 + max(verts), so a trailing
+// extra past the largest referenced index never reaches the mesh at all.
 void testUnreferencedPoints() {
   const std::vector<GMANPoint> withoutExtra = {{0, 0, 0}, {2, 0, 0}, {1, 2, 0}};
-  std::vector<GMANPoint> withExtra = withoutExtra;
-  withExtra.push_back({99, 99, 99});
-  withExtra.push_back({-50, -50, -50});
-  withExtra.push_back({0, 0, -1});
+  const std::vector<GMANPoint> withExtra = {withoutExtra[0], {99, 99, 99},    {-50, -50, -50},
+                                            {0, 0, -1},      withoutExtra[1], withoutExtra[2]};
 
   const std::vector<RtInt> nverts = {3};
-  const std::vector<RtInt> verts = {0, 1, 2};
+  const std::vector<RtInt> vertsWithoutExtra = {0, 1, 2};
+  const std::vector<RtInt> vertsWithExtra = {0, 4, 5};
 
-  GMANPrimitive* basePrim = runGetRSPointsPolygon(1, nverts, verts, withoutExtra);
-  GMANPrimitive* extraPrim = runGetRSPointsPolygon(1, nverts, verts, withExtra);
+  GMANPrimitive* basePrim = runGetRSPointsPolygon(1, nverts, vertsWithoutExtra, withoutExtra);
+  GMANPrimitive* extraPrim = runGetRSPointsPolygon(1, nverts, vertsWithExtra, withExtra);
 
   GMANObject* baseObj = dynamic_cast<GMANObject*>(basePrim);
   GMANObject* extraObj = dynamic_cast<GMANObject*>(extraPrim);

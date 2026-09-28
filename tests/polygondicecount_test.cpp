@@ -22,12 +22,12 @@
  * gmanpatchpolyobjectmanager.cpp's diceCountFor: n =
  * clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L the longest of an
  * ear-clipped triangle's three raster-space edges, dicing into n*n faces.
- * This suite calls GMANPatchPolyObjectManager::getRSPolygon directly
- * (white-box, mirroring polygon_test.cpp's own checkTriangleCount) with a
- * three-vertex "P" -- one ear-clipped triangle, so its face count is
- * exactly n*n -- and a GMANOptions carrying a known perspective
- * projection (fov 60, never 90, so a stray hardcoded 90 fails loudly) and
- * resolution.
+ * This suite builds its mesh through the factory and calls
+ * GMANPatchPolyObjectManager::getRSPolygonMesh directly (white-box,
+ * mirroring polygon_test.cpp's own checkTriangleCount) with a three-vertex
+ * "P" -- one ear-clipped triangle, so its face count is exactly n*n -- and
+ * a GMANOptions carrying a known perspective projection (fov 60, never 90,
+ * so a stray hardcoded 90 fails loudly) and resolution.
  *
  * Every triangle is a right isosceles triangle at a fixed camera-space
  * depth (z=10), legs along x and y, so its longest edge is always the
@@ -41,6 +41,7 @@
 #include <array>
 #include <cmath>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -51,6 +52,8 @@
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
 #include "gmantransform.h"
 
@@ -116,12 +119,12 @@ GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, const GMANOptions& options, c
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/3, /*varying=*/3, /*uniform=*/1);
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(3, dictionary, 1, tokens, parms, nullptr);
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
   GMANOptions optionsCopy = options;
   GMANAttributes attrCopy = attr;
-  return mgr.getRSPolygon(3, pl, &optionsCopy, &attrCopy, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &optionsCopy, &attrCopy, &transform);
 }
 
 // nine world-space coordinates (three corners, x, y, z each) as-is: the
@@ -134,12 +137,12 @@ GMANPrimitive* runTriangleCorners(const std::array<RtFloat, 9>& p, const GMANOpt
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {pv.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, /*vertex=*/3, /*varying=*/3, /*uniform=*/1);
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(3, dictionary, 1, tokens, parms, nullptr);
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
   GMANOptions optionsCopy = options;
   GMANAttributes attrCopy = attr;
-  return mgr.getRSPolygon(3, pl, &optionsCopy, &attrCopy, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &optionsCopy, &attrCopy, &transform);
 }
 
 int countFaces(GMANObject* object) {
@@ -156,7 +159,7 @@ int countFaces(GMANObject* object) {
 
 void checkFaces(const std::string& label, GMANPrimitive* prim, int expected) {
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
-  check(object != nullptr, label + ": getRSPolygon returns an object");
+  check(object != nullptr, label + ": getRSPolygonMesh returns an object");
   if (object == nullptr) {
     delete prim;
     return;

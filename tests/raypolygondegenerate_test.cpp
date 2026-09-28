@@ -23,6 +23,7 @@
  * stub: neither a GMANRayPolygon nor a GMANRayPolygonMesh.
  */
 
+#include <optional>
 #include <vector>
 
 #include "check.h"
@@ -30,6 +31,8 @@
 #include "gmandictionary.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanraypolygon.h"
@@ -44,7 +47,9 @@ std::vector<GMANPoint> collinearFour() {
   return {GMANPoint(0, 0, 0), GMANPoint(1, 0, 0), GMANPoint(2, 0, 0), GMANPoint(3, 0, 0)};
 }
 
-// As raypolygonhole_test.cpp's own runGetRSPolygonDirect builds one.
+// Builds its mesh through the factory function Polygon calls, then calls
+// getRSPolygonMesh, as raypolygonhole_test.cpp's own runGetRSPolygonDirect
+// called getRSPolygon.
 GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   RtInt const nverts = (RtInt)ring.size();
   std::vector<RtFloat> p(3 * nverts);
@@ -56,12 +61,12 @@ GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  GMANParameterList pl(dictionary, 1, tokens, parms, nverts, nverts, 1);
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, 1, tokens, parms, nullptr);
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  return mgr.getRSPolygon(nverts, pl, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
 void testDegeneratePolygonTracesAsEmptyStub() {
