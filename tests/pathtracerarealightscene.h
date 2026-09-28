@@ -31,18 +31,12 @@
 #include "gmanmatrix4.h"
 #include "gmantransform.h"
 #include "gmanvsperspective.h"
+#include "maketransform.h"
 #include "pathtracerscene.h"
 #include "ri.h"
 
 // An emitting sphere or disk's own radiance in a pathtracer area-light test.
 inline constexpr RtFloat kAreaLe = 10.0f;
-
-// Wraps matrix as a shutter-open-only placement, for a hand-built
-// primitive's own object-to-camera transform.
-inline GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 // The mean, over a 16 x 16 midpoint grid of pixel (px, py)'s cell, of the
 // equivalent-point-source formula for a Lambertian sphere light: rho * le *

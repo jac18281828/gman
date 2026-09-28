@@ -32,22 +32,14 @@
  */
 
 #include <cstdio>
-#include <cstdlib>
 #include <fstream>
-#include <sstream>
 #include <string>
-
-#include <sys/wait.h>
 
 #include "check.h"
 #include "goldenimage.h"
+#include "rungman.h"
 
 namespace {
-
-int runGman(std::string const& command) {
-  int status = std::system(command.c_str());
-  return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-}
 
 std::size_t countOccurrences(std::string const& haystack, std::string const& needle) {
   std::size_t count = 0;
@@ -57,13 +49,6 @@ std::size_t countOccurrences(std::string const& haystack, std::string const& nee
     pos += needle.size();
   }
   return count;
-}
-
-std::string readWhole(std::string const& path) {
-  std::ifstream in(path, std::ios::binary);
-  std::ostringstream contents;
-  contents << in.rdbuf();
-  return contents.str();
 }
 
 // arealight_sphere.rib's own text with every AreaLightSource request's own
@@ -94,16 +79,21 @@ bool imagesIdentical(GmanImage const& a, GmanImage const& b) {
   return true;
 }
 
-// Renders ribPath under -r rendererFlag, its own fresh gman process, stdout
-// and stderr captured to logPath, arealight_sphere.rib's own Display target
-// read back from tifPath.
-GmanImage renderAndRead(std::string const& gman, std::string const& rendererFlag, std::string const& ribPath,
-                        std::string const& tifPath, std::string const& logPath) {
+struct RenderResult {
+  GmanImage image;
+  std::string output;
+};
+
+// Renders ribPath under -r rendererFlag, its own fresh gman process, its
+// combined stdout and stderr captured, arealight_sphere.rib's own Display
+// target read back from tifPath.
+RenderResult renderAndRead(std::string const& gman, std::string const& rendererFlag, std::string const& ribPath,
+                           std::string const& tifPath) {
   std::remove(tifPath.c_str());
-  std::string const command = "\"" + gman + "\" -r " + rendererFlag + " \"" + ribPath + "\" > \"" + logPath + "\" 2>&1";
-  int const status = runGman(command);
-  check(status == 0, ribPath + " renders under " + rendererFlag + " (exit " + std::to_string(status) + ")");
-  return readGmanTIFF(tifPath);
+  GMANRunResult const run = runGman(gman, {"-r", rendererFlag, ribPath});
+  check(run.exitStatus == 0,
+        ribPath + " renders under " + rendererFlag + " (exit " + std::to_string(run.exitStatus) + ")");
+  return {readGmanTIFF(tifPath), run.output};
 }
 
 // One renderer's own two checks: the tagged and stripped fixtures render
@@ -114,25 +104,21 @@ void testRenderer(std::string const& gman, std::string const& rendererFlag, std:
   // "arealight_sphere.tif": read back immediately after each render, before
   // the next one overwrites it.
   std::string const tifPath = "arealight_sphere.tif";
-  std::string const taggedLog = rendererFlag + "_tagged.log";
-  std::string const strippedLog = rendererFlag + "_stripped.log";
 
-  GmanImage const tagged = renderAndRead(gman, rendererFlag, taggedRib, tifPath, taggedLog);
-  check(tagged.ok, rendererFlag + ": the tagged fixture's TIFF reads back");
-  GmanImage const stripped = renderAndRead(gman, rendererFlag, strippedRib, tifPath, strippedLog);
-  check(stripped.ok, rendererFlag + ": the stripped fixture's TIFF reads back");
+  RenderResult const tagged = renderAndRead(gman, rendererFlag, taggedRib, tifPath);
+  check(tagged.image.ok, rendererFlag + ": the tagged fixture's TIFF reads back");
+  RenderResult const stripped = renderAndRead(gman, rendererFlag, strippedRib, tifPath);
+  check(stripped.image.ok, rendererFlag + ": the stripped fixture's TIFF reads back");
 
-  if (tagged.ok && stripped.ok) {
-    check(imagesIdentical(tagged, stripped),
+  if (tagged.image.ok && stripped.image.ok) {
+    check(imagesIdentical(tagged.image, stripped.image),
           rendererFlag + ": the tagged render is pixel for pixel identical to the stripped one");
   }
 
-  std::string const taggedContents = readWhole(taggedLog);
-  check(countOccurrences(taggedContents, "1 area-light primitive") == 1,
+  check(countOccurrences(tagged.output, "1 area-light primitive") == 1,
         rendererFlag + ": the tagged fixture logs exactly one warning naming the one area-light primitive found");
 
-  std::string const strippedContents = readWhole(strippedLog);
-  check(countOccurrences(strippedContents, "area-light primitive") == 0,
+  check(countOccurrences(stripped.output, "area-light primitive") == 0,
         rendererFlag + ": the stripped fixture, with no AreaLightSource at all, logs none");
 }
 

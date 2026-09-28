@@ -53,6 +53,7 @@
 #include "gmanshading.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 #include "samplingstats.h"
 
@@ -60,13 +61,6 @@ namespace {
 
 constexpr std::uint32_t kSeed = 0x8d1c8e21u;
 constexpr double kPi = 3.14159265358979323846;
-
-// Wraps matrix as a shutter-open-only placement, for a hand-built
-// primitive's own object-to-camera transform.
-GMANTransform makeTransform(GMANMatrix4 matrix) {
-  GMANOneMatrix storage(matrix);
-  return GMANTransform(storage);
-}
 
 std::string readFile(std::string const& path) {
   std::ifstream in(path, std::ios::binary);
