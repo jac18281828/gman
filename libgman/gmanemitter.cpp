@@ -144,6 +144,20 @@ void placeEmitterPoint(GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cam
   cameraNormal.normalize();
 }
 
+// The camera-space area element's own Jacobian at a point whose object-space
+// unit normal is objectNormal: |det L| * |n'|, L the linear part of
+// objectToCamera (an affine matrix's own 4x4 determinant already is det L,
+// its translation contributing nothing) and n' objectNormal transformed by
+// cameraToObject's own transpose, before normalizing. Exact for any
+// invertible affine placement; 1 within float rounding for a rigid one.
+RtFloat areaJacobian(GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cameraToObject,
+                     GMANVector const& objectNormal) {
+  GMANMatrix4 linear = objectToCamera; // determinant() is non-const
+  RtFloat const linearDet = linear.determinant();
+  GMANVector nPrime = gman::transformNormal(cameraToObject, objectNormal); // magnitude() is non-const
+  return std::fabs(linearDet) * nPrime.magnitude();
+}
+
 // shape's own placed centre (camera space) and bounding radius: the
 // sphere's own centre and radius, or the disk's own point at its height
 // and radius, each placed by shape's own object-to-camera transform.
@@ -161,13 +175,33 @@ void emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& cent
   centre = gman::transformPoint(emittingShapeObjectToCamera(shape), objectCentre);
 }
 
+// The camera-space area emitters() needs for power: exact for a disk,
+// whose area Jacobian is constant over its own plane and so needs no
+// sampled point, evaluated from its own fixed (0, 0, -1) normal; an
+// estimate for a sphere, whose Jacobian varies pointwise, via |det L|^(2/3)
+// -- the area factor a uniform scale of that same determinant would give,
+// exact under a rigid or uniformly scaled placement. Precondition: shape
+// is a GMANRaySphere or GMANRayDisk.
+RtFloat emittingShapeCameraArea(GMANRayInterface const& shape, GMANMatrix4 const& objectToCamera,
+                                GMANMatrix4 const& cameraToObject, RtFloat objectArea) {
+  EmittingShapeKind const kind = classifyEmittingShape(shape);
+  if (kind.disk != nullptr) {
+    GMANVector const diskNormal(0.0f, 0.0f, -1.0f);
+    return objectArea * areaJacobian(objectToCamera, cameraToObject, diskNormal);
+  }
+  GMANMatrix4 linear = objectToCamera; // determinant() is non-const
+  RtFloat const linearDet = std::fabs(linear.determinant());
+  return objectArea * std::pow(linearDet, (RtFloat)(2.0 / 3.0));
+}
+
 // One draw on an area emitter's shape, placed into camera space: sample(),
-// samplePoint() and drawEmitterPoint's own callers all need the same point,
-// normal and area from the same draw.
+// samplePoint() and drawEmitterPoint's own callers all need the same
+// point, normal, area and area Jacobian from the same draw.
 struct EmitterDraw {
   GMANPoint point;
   GMANVector normal;
   RtFloat area;
+  RtFloat jacobian;
 };
 
 EmitterDraw drawEmitterPoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
@@ -180,6 +214,7 @@ EmitterDraw drawEmitterPoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
   EmitterDraw draw;
   placeEmitterPoint(objectToCamera, cameraToObject, objectPoint, objectNormal, draw.point, draw.normal);
   emittingShapeArea(*emitter.shape, draw.area);
+  draw.jacobian = areaJacobian(objectToCamera, cameraToObject, objectNormal);
   return draw;
 }
 
@@ -201,15 +236,15 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
   RtFloat const cosTheta = draw.normal.dot(-toEmitter);
   GMANColor const black((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
 
-  // pdf uses the Jacobian's own abs(cosTheta), 0 only where that Jacobian
-  // is singular; Cl goes black separately, on the emitter's far side,
-  // per its one-sided emission.
+  // pdf uses the area-to-solid-angle Jacobian's own abs(cosTheta), 0 only
+  // where that Jacobian is singular; Cl goes black separately, on the
+  // emitter's far side, per its one-sided emission.
   if (cosTheta == 0.0f || !(distance > 0.0f)) {
     result.Cl = black;
     result.pdf = 0.0f;
     return result;
   }
-  result.pdf = (distance * distance) / (draw.area * std::fabs(cosTheta));
+  result.pdf = (distance * distance) / (draw.area * draw.jacobian * std::fabs(cosTheta));
   result.Cl = (cosTheta > 0.0f) ? emitter.light->getCl() : black;
 
   // The shadow walk's own end point: the sampled point offset off the
@@ -231,7 +266,7 @@ EmitterPoint samplePointArea(Emitter const& emitter, RtFloat u1, RtFloat u2) {
   result.point = draw.point;
   result.normal = GMANNormal(draw.normal.getX(), draw.normal.getY(), draw.normal.getZ());
   result.Le = emitter.light->getCl();
-  result.pdf = 1.0f / draw.area;
+  result.pdf = 1.0f / (draw.area * draw.jacobian);
   return result;
 }
 
@@ -267,13 +302,18 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
       continue;
     }
     RtFloat area = 0.0f;
-    GMANMatrix4 cameraToObject;
-    if (!emittingShapeArea(*rayPrimitive, area) ||
-        !invertiblePlacement(emittingShapeObjectToCamera(*rayPrimitive), cameraToObject)) {
+    if (!emittingShapeArea(*rayPrimitive, area)) {
       ++ineligibleCount;
       continue;
     }
-    RtFloat const power = meanChannel(appearance.areaLight->getCl()) * area * kPi;
+    GMANMatrix4 const objectToCamera = emittingShapeObjectToCamera(*rayPrimitive);
+    GMANMatrix4 cameraToObject;
+    if (!invertiblePlacement(objectToCamera, cameraToObject)) {
+      ++ineligibleCount;
+      continue;
+    }
+    RtFloat const cameraArea = emittingShapeCameraArea(*rayPrimitive, objectToCamera, cameraToObject, area);
+    RtFloat const power = kPi * meanChannel(appearance.areaLight->getCl()) * cameraArea;
     result.push_back({appearance.areaLight, rayPrimitive, power});
   }
 

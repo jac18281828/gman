@@ -57,7 +57,14 @@ namespace gman {
 struct GMAN_EXPORT Emitter {
   GMANLight const* light;
   GMANRayInterface const* shape;
-  RtFloat power; // Phi; 0 for a delta emitter, which has no finite one
+  // Phi, pi * mean(Le) * A_cam, A_cam the emitter's own placed area: exact
+  // for a disk, whose area Jacobian is constant over its own plane; an
+  // estimate for a sphere under a non-uniform placement, whose Jacobian
+  // varies pointwise. power feeds only the light-choice weight, where any
+  // positive weight keeps the estimator unbiased, so the estimate costs
+  // variance, never correctness. 0 for a delta emitter, which has no
+  // finite one.
+  RtFloat power;
 };
 
 // One next-event-estimation draw: the direction toward the emitter, its

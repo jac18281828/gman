@@ -42,12 +42,16 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
+#include "gmanmath.h"
+#include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
+#include "gmanraydisk.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmansampling.h"
 #include "gmanshading.h"
+#include "gmantransform.h"
 #include "gmanvector.h"
 #include "ri.h"
 #include "samplingstats.h"
@@ -56,6 +60,13 @@ namespace {
 
 constexpr std::uint32_t kSeed = 0x8d1c8e21u;
 constexpr double kPi = 3.14159265358979323846;
+
+// Wraps matrix as a shutter-open-only placement, for a hand-built
+// primitive's own object-to-camera transform.
+GMANTransform makeTransform(GMANMatrix4 matrix) {
+  GMANOneMatrix storage(matrix);
+  return GMANTransform(storage);
+}
 
 std::string readFile(std::string const& path) {
   std::ifstream in(path, std::ios::binary);
@@ -297,6 +308,120 @@ void testSampleArea() {
   check(allBlack, "sample area: a p on the non-emitting side reports Cl black on every draw");
 }
 
+// A sphere of object-space radius 1, uniformly scaled: its own irradiance
+// and power both track the placed radius scale*1, not the object-space
+// radius alone.
+void testScaledSphere(RtFloat scale, std::uint32_t dim) {
+  constexpr RtFloat kLe = 10.0f;
+  GMANMatrix4 place;
+  place.scale(scale, scale, scale);
+  GMANTransform const transform = makeTransform(place);
+  GMANRaySphere* sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  GMANLight const light(GMAN_LIGHT_AREA, GMANColor(kLe, kLe, kLe), GMANPoint(), GMANVector());
+  gman::Appearance appearance;
+  appearance.areaLight = &light;
+  sphere->setAppearance(appearance);
+
+  GMANLinearWorldManager world;
+  world.add(sphere);
+  std::vector<gman::Emitter> const list = gman::emitters(world);
+  check(list.size() == 1, "scaled sphere: one area emitter enumerated");
+
+  GMANPoint const p(0.0f, 0.0f, -10.0f);
+  GMANVector const receiverNormal(0.0f, 0.0f, 1.0f);
+  double const d = 10.0;
+
+  constexpr std::uint32_t kDraws = 1u << 16;
+  std::vector<double> terms;
+  terms.reserve(kDraws);
+  for (std::uint32_t i = 0; i < kDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
+    gman::EmitterSample const s = gman::sample(list[0], p, uv.u1, uv.u2);
+    double const term = (s.pdf > 0.0f)
+                            ? std::fabs((double)s.wi.dot(receiverNormal)) *
+                                  (double)((s.Cl.getRed() + s.Cl.getGreen() + s.Cl.getBlue()) / 3.0f) / (double)s.pdf
+                            : 0.0;
+    terms.push_back(term);
+  }
+  GmanMeanStderr const stat = meanStderr(terms);
+  double const placedRadius = (double)scale * 1.0;
+  double const expected = kPi * (double)kLe * placedRadius * placedRadius / (d * d);
+  std::printf("scaled sphere (x%.2f): irradiance mean %.6f (%.3f sigma from %.6f)\n", (double)scale, stat.mean,
+              stat.stderrOfMean > 0.0 ? (stat.mean - expected) / stat.stderrOfMean : 0.0, expected);
+  checkNear(stat.mean, expected, stat.stderrOfMean, 1e-6,
+            "scaled sphere: the cosine-weighted mean matches pi*Le*(scale*radius)^2/d^2 within 5 sigma");
+
+  double const expectedPower = (double)kPi * (double)kLe * 4.0 * kPi * placedRadius * placedRadius;
+  double const relPower = std::fabs((double)list[0].power - expectedPower) / expectedPower;
+  std::printf("scaled sphere (x%.2f): power %.6f, expected %.6f (%.2e relative)\n", (double)scale,
+              (double)list[0].power, expectedPower, relPower);
+  check(relPower < 1e-4, "scaled sphere: power is within 1e-4 relative of pi*Le*4*pi*(scale*radius)^2");
+}
+
+// A unit disk, rotated 45 degrees about y then scaled (2, 1, 1), both
+// post-multiplied so the scale acts across the tilted disk in camera
+// space rather than within the disk's own original plane: its own area
+// Jacobian's |n'| moves off 1, and its power and samplePoint's own pdf
+// both track the placed ellipse's true area, not the unit disk's own
+// object-space area alone.
+void testScaledDisk() {
+  constexpr RtFloat kLe = 10.0f;
+  GMANMatrix4 place;
+  place.rot(GMANRadians(45.0f), 0.0f, 1.0f, 0.0f);
+  place.scale(2.0f, 1.0f, 1.0f);
+  GMANTransform const transform = makeTransform(place);
+  GMANRayDisk* disk = new GMANRayDisk(0.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  GMANLight const light(GMAN_LIGHT_AREA, GMANColor(kLe, kLe, kLe), GMANPoint(), GMANVector());
+  gman::Appearance appearance;
+  appearance.areaLight = &light;
+  disk->setAppearance(appearance);
+
+  GMANLinearWorldManager world;
+  world.add(disk);
+  std::vector<gman::Emitter> const list = gman::emitters(world);
+  check(list.size() == 1, "scaled disk: one area emitter enumerated");
+
+  // A_cam: pi times the magnitude of the cross product of the disk's own
+  // placed object-space x and y axes -- the area of the ellipse the unit
+  // circle spanning those axes becomes under the same linear map.
+  GMANMatrix4 const& objectToCamera = disk->getObjectToCamera();
+  GMANPoint const origin = gman::transformPoint(objectToCamera, GMANPoint(0.0f, 0.0f, 0.0f));
+  GMANPoint const xTip = gman::transformPoint(objectToCamera, GMANPoint(1.0f, 0.0f, 0.0f));
+  GMANPoint const yTip = gman::transformPoint(objectToCamera, GMANPoint(0.0f, 1.0f, 0.0f));
+  GMANVector const placedX(origin, xTip);
+  GMANVector const placedY(origin, yTip);
+  GMANVector const crossed = placedX.cross(placedY);
+  double const aCam = kPi * std::sqrt((double)crossed.dot(crossed));
+
+  // |n'|: the disk's own fixed (0, 0, -1) normal transformed by
+  // transformNormal with the inverse placement, before normalizing.
+  GMANMatrix4 cameraToObject = objectToCamera;
+  cameraToObject.invert();
+  GMANVector nPrime = gman::transformNormal(cameraToObject, GMANVector(0.0f, 0.0f, -1.0f));
+  double const nPrimeMagnitude = (double)nPrime.magnitude();
+  std::printf("scaled disk: |n'| %.6f\n", nPrimeMagnitude);
+  checkNear(nPrimeMagnitude, 0.791, 0.0, 0.01, "scaled disk: |n'| is close to 0.791, off 1 by the tilt and scale");
+
+  double const expectedPower = (double)kPi * (double)kLe * aCam;
+  double const relPower = std::fabs((double)list[0].power - expectedPower) / expectedPower;
+  std::printf("scaled disk: power %.6f, expected %.6f (%.2e relative)\n", (double)list[0].power, expectedPower,
+              relPower);
+  check(relPower < 1e-4, "scaled disk: power is within 1e-4 relative of pi*Le*A_cam");
+
+  constexpr std::uint32_t kDraws = 1u << 16;
+  std::vector<double> inversePdf;
+  inversePdf.reserve(kDraws);
+  for (std::uint32_t i = 0; i < kDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, 6, 0, i, kDraws, 0u);
+    gman::EmitterPoint const ep = gman::samplePoint(list[0], uv.u1, uv.u2);
+    inversePdf.push_back((ep.pdf > 0.0f) ? 1.0 / (double)ep.pdf : 0.0);
+  }
+  GmanMeanStderr const stat = meanStderr(inversePdf);
+  double const relArea = std::fabs(stat.mean - aCam) / aCam;
+  std::printf("scaled disk: mean(1/pdf) %.6f, A_cam %.6f (%.2e relative)\n", stat.mean, aCam, relArea);
+  check(relArea < 1e-4, "scaled disk: mean(1/samplePoint pdf) is within 1e-4 relative of A_cam");
+}
+
 // samplePoint, delta.
 void testSamplePointDelta() {
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector());
@@ -345,6 +470,9 @@ int main() {
   testPower();
   testSampleDelta();
   testSampleArea();
+  testScaledSphere(2.0f, 4);
+  testScaledSphere(0.5f, 5);
+  testScaledDisk();
   testSamplePointDelta();
   testAppearanceExcludesAreaLight();
 
