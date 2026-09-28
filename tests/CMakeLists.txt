@@ -1862,6 +1862,18 @@ set_tests_properties(raypolygonhole PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A degenerate Polygon (collinear points) traces as the empty stub, neither
+# a GMANRayPolygon nor a GMANRayPolygonMesh. Linked against gman_core
+# alone. See tests/raypolygondegenerate_test.cpp.
+add_executable(gman_raypolygondegenerate raypolygondegenerate_test.cpp)
+target_link_libraries(gman_raypolygondegenerate PRIVATE gman_core)
+
+add_test(NAME raypolygondegenerate COMMAND gman_raypolygondegenerate)
+set_tests_properties(raypolygondegenerate PROPERTIES
+  LABELS unit
+  TIMEOUT 30
+  WILL_FAIL TRUE)
+
 # GMANRayObjectManager::getRSPointsPolygon returns one internal mesh
 # primitive; GMANRayBVH::build flattens it into one entry per face. A ray
 # aimed at a face never reports the mesh as hitPrimitive, and a fan of
