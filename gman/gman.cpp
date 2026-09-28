@@ -76,14 +76,14 @@ bool hasVersionFlag(int argc, char* argv[]) {
 // catch sites can end the file without printing it again.
 class ReportedStop : public GMANError {
 public:
-  ReportedStop(RtInt code, RtInt severity, const char* message) : GMANError(code, severity, message) {}
+  ReportedStop(RtInt code, RtInt severity, char const* message) : GMANError(code, severity, message) {}
 };
 
 // gman's own error handler: prints every report exactly as RiErrorPrint
 // does, then stops the file being parsed at RIE_ERROR or above by
 // throwing ReportedStop. The library's own default handler stays
 // RiErrorPrint, for an embedder to replace with its own policy.
-RtVoid handleReport(RtInt code, RtInt severity, const char* message) {
+RtVoid handleReport(RtInt code, RtInt severity, char const* message) {
   RiErrorPrint(code, severity, message);
   if (severity >= RIE_ERROR) {
     throw ReportedStop(code, severity, message);

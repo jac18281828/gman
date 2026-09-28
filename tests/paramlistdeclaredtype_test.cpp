@@ -32,8 +32,8 @@
  * tests/ribmalformed_test.cpp's own checks observe neither exit status nor
  * message, so nothing here belongs there. Check 4's fixture reports
  * GMANParameterList's own "ERROR: RIE_BADTOKEN -- GMANDictionary:
- * TOKEN_NOT_FOUND", which stops the file with gman's own diagnostic;
- * unrelated to declared-type resolution.
+ * TOKEN_NOT_FOUND", which stops the file; gman prints nothing of its
+ * own, and the diagnostic is unrelated to declared-type resolution.
  *
  * Checks 1 through 4 assert only exit status and diagnostic text, so every
  * one of them would still pass if the parser stored a wrong-but-non-throwing

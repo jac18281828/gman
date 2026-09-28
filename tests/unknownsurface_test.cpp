@@ -81,9 +81,9 @@ void checkReport(std::string const& output, std::string const& failingName, std:
   check(output.find("SEVERE:") == std::string::npos, tag + ": reports no SEVERE");
 }
 
-Rendered checkFallback(std::string const& gman, std::string const& renderer, std::string const& ribDir,
-                       std::string const& ribName, std::string const& tifName, std::string const& failingName,
-                       std::string const& tag) {
+Rendered checkStopped(std::string const& gman, std::string const& renderer, std::string const& ribDir,
+                      std::string const& ribName, std::string const& tifName, std::string const& failingName,
+                      std::string const& tag) {
   Rendered rendered = renderFixture(gman, renderer, ribDir, ribName, tifName);
 
   // The report stops the file: exit 1, no image.
@@ -105,8 +105,8 @@ int main(int argc, char* argv[]) {
   const std::string ribDir = argv[2];
   const std::string renderer = argv[3];
 
-  // Control: the same scene, no Surface call, so its render is the default
-  // surface's own, untainted baseline.
+  // Control: the same scene, no Surface call, proving the renderer draws
+  // the scene under the default surface.
   Rendered control = renderFixture(gman, renderer, ribDir, "unknownsurface_control.rib", "unknownsurface_control.tif");
   check(control.result.exitStatus == 0, "control: unknownsurface_control.rib exits 0");
   check(control.image.ok, "control: unknownsurface_control.rib writes its TIFF");
@@ -122,14 +122,14 @@ int main(int argc, char* argv[]) {
           "control: centre pixel has a colour channel above 0");
   }
 
-  checkFallback(gman, renderer, ribDir, "unknownsurface.rib", "unknownsurface.tif", "nosuchshader", "no module");
-  checkFallback(gman, renderer, ribDir, "unknownsurface_noshader.rib", "unknownsurface_noshader.tif", "gmanzbuffer",
-                "no GMANLoadShader");
-  checkFallback(gman, renderer, ribDir, "unknownsurface_volume.rib", "unknownsurface_volume.tif", "notasurface",
-                "not a surface");
+  checkStopped(gman, renderer, ribDir, "unknownsurface.rib", "unknownsurface.tif", "nosuchshader", "no module");
+  checkStopped(gman, renderer, ribDir, "unknownsurface_noshader.rib", "unknownsurface_noshader.tif", "gmanzbuffer",
+               "no GMANLoadShader");
+  checkStopped(gman, renderer, ribDir, "unknownsurface_volume.rib", "unknownsurface_volume.tif", "notasurface",
+               "not a surface");
 
-  Rendered const nodestroy = checkFallback(gman, renderer, ribDir, "unknownsurface_nodestroy.rib",
-                                           "unknownsurface_nodestroy.tif", "nodestroyshader", "no GMANDestroyShader");
+  Rendered const nodestroy = checkStopped(gman, renderer, ribDir, "unknownsurface_nodestroy.rib",
+                                          "unknownsurface_nodestroy.tif", "nodestroyshader", "no GMANDestroyShader");
   check(nodestroy.result.output.find("GMANDestroyShader") != std::string::npos,
         "no GMANDestroyShader: names GMANDestroyShader");
 

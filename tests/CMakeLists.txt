@@ -2571,7 +2571,7 @@ endif()
 
 # gman's own error handler prints every report exactly as RiErrorPrint
 # does, then stops the file at RIE_ERROR or above: exit 1, no image, the
-# next file on the command line unaffected. See reportederror_test.cpp's
+# next file on the command line still runs. See reportederror_test.cpp's
 # own comment.
 add_executable(gman_reportederror reportederror_test.cpp)
 target_link_libraries(gman_reportederror PRIVATE gman_core TIFF::TIFF)
