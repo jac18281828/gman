@@ -51,6 +51,11 @@ RtFloat clampToUnit(RtFloat value) {
   return value < 1.0f ? value : 1.0f;
 }
 
+// A lobe's weight, each channel clamped to [0, 1], a NaN channel to 0.
+GMANColor clampColor(GMANColor const& color) {
+  return GMANColor(clampToUnit(color.getRed()), clampToUnit(color.getGreen()), clampToUnit(color.getBlue()));
+}
+
 // A NaN, and anything at or below it, fails the comparison and maps to
 // BSDF::kMinGGXAlpha; anything above 1 maps to 1.
 RtFloat clampAlpha(RtFloat alpha) {
@@ -231,9 +236,10 @@ DielectricGeometry dielectricGeometry(GMANVector const& normal, GMANVector const
 
 // Fresnel's reflectance F and, unless total internal reflection, the
 // transmitted cosine, from Snell's law and the exact unpolarized formula.
-// Total internal reflection leaves cosThetaT at 0, unused since f is 1.
+// Total internal reflection leaves cosThetaT at 0, unused since reflectance
+// is 1.
 struct FresnelResult {
-  RtFloat f;
+  RtFloat reflectance;
   RtFloat cosThetaT;
 };
 
@@ -257,6 +263,47 @@ GMANVector refractAbout(GMANVector const& nOriented, GMANVector const& wo, RtFlo
   return wo * (-ratio) + nOriented * (ratio * cosThetaO - cosThetaT);
 }
 
+// A delta reflection about the normal: the mirror lobe's whole draw, and the
+// dielectric's reflection branch, share this fail check and this f = c /
+// |cosThetaI| report.
+BSDFSample deltaReflect(GMANVector const& normal, GMANVector const& wo, RtFloat cosThetaO, GMANColor const& c,
+                        RtFloat pdf, std::size_t lobeIndex) {
+  GMANVector const wi = reflectAbout(normal, wo, cosThetaO);
+  RtFloat const cosThetaI = normal.dot(wi);
+  if (!sameSide(cosThetaO, cosThetaI) || !(std::fabs(cosThetaI) > 0.0f)) {
+    return failedSample();
+  }
+  return {wi, overAbsCos(c, cosThetaI), pdf, true, lobeIndex};
+}
+
+BSDFSample mirrorSample(GMANVector const& normal, GMANVector const& wo, RtFloat cosThetaO, Lobe const& lobe,
+                        RtFloat pChosen, std::size_t lobeIndex) {
+  return deltaReflect(normal, wo, cosThetaO, lobe.weight, pChosen, lobeIndex);
+}
+
+// The dielectric's draw: reflects with probability F, sharing deltaReflect,
+// or transmits with probability 1 - F along Snell's law, its coefficient
+// scaled by the radiance factor (etaO / etaI)^2.
+BSDFSample dielectricSample(GMANVector const& normal, GMANVector const& wo, RtFloat cosThetaO, Lobe const& lobe,
+                            RtFloat lobeU1, RtFloat pChosen, std::size_t lobeIndex) {
+  DielectricGeometry const geo = dielectricGeometry(normal, wo, lobe.eta);
+  FresnelResult const fresnel = dielectricFresnel(geo.etaO, geo.etaI, geo.cosThetaO);
+  if (lobeU1 < fresnel.reflectance) {
+    return deltaReflect(normal, wo, cosThetaO, scaledColor(lobe.weight, fresnel.reflectance),
+                        pChosen * fresnel.reflectance, lobeIndex);
+  }
+  RtFloat const ratio = geo.etaO / geo.etaI;
+  GMANVector const wi = refractAbout(geo.nOriented, wo, ratio, geo.cosThetaO, fresnel.cosThetaT);
+  RtFloat const cosThetaI = normal.dot(wi);
+  if (!oppositeSide(cosThetaO, cosThetaI) || !(std::fabs(cosThetaI) > 0.0f)) {
+    return failedSample();
+  }
+  RtFloat const scale = ratio * ratio;
+  RtFloat const transmitted = 1.0f - fresnel.reflectance;
+  return {wi, overAbsCos(scaledColor(lobe.weight, transmitted * scale), cosThetaI), pChosen * transmitted, true,
+          lobeIndex};
+}
+
 } // namespace
 
 BSDF::BSDF(GMANVector const& shadingNormal) : normal(shadingNormal) { normal.normalize(); }
@@ -265,8 +312,7 @@ void BSDF::addLambert(GMANColor const& reflectance) {
   if (count == kMaxLobes) {
     throw GMANError(RIE_LIMIT, RIE_ERROR, "BSDF::addLambert: a closure holds at most kMaxLobes lobes");
   }
-  GMANColor const weight(clampToUnit(reflectance.getRed()), clampToUnit(reflectance.getGreen()),
-                         clampToUnit(reflectance.getBlue()));
+  const auto weight = clampColor(reflectance);
   lobes[count] = {LobeKind::lambert, weight, 0.0f, 0.0f};
   ++count;
 }
@@ -275,8 +321,7 @@ void BSDF::addGGX(GMANColor const& reflectance, RtFloat alpha) {
   if (count == kMaxLobes) {
     throw GMANError(RIE_LIMIT, RIE_ERROR, "BSDF::addGGX: a closure holds at most kMaxLobes lobes");
   }
-  GMANColor const weight(clampToUnit(reflectance.getRed()), clampToUnit(reflectance.getGreen()),
-                         clampToUnit(reflectance.getBlue()));
+  const auto weight = clampColor(reflectance);
   lobes[count] = {LobeKind::ggx, weight, clampAlpha(alpha), 0.0f};
   ++count;
 }
@@ -285,8 +330,7 @@ void BSDF::addMirror(GMANColor const& reflectance) {
   if (count == kMaxLobes) {
     throw GMANError(RIE_LIMIT, RIE_ERROR, "BSDF::addMirror: a closure holds at most kMaxLobes lobes");
   }
-  GMANColor const weight(clampToUnit(reflectance.getRed()), clampToUnit(reflectance.getGreen()),
-                         clampToUnit(reflectance.getBlue()));
+  const auto weight = clampColor(reflectance);
   lobes[count] = {LobeKind::mirror, weight, 0.0f, 0.0f};
   ++count;
 }
@@ -295,8 +339,7 @@ void BSDF::addDielectric(GMANColor const& weight, RtFloat eta) {
   if (count == kMaxLobes) {
     throw GMANError(RIE_LIMIT, RIE_ERROR, "BSDF::addDielectric: a closure holds at most kMaxLobes lobes");
   }
-  GMANColor const clampedWeight(clampToUnit(weight.getRed()), clampToUnit(weight.getGreen()),
-                                clampToUnit(weight.getBlue()));
+  const auto clampedWeight = clampColor(weight);
   lobes[count] = {LobeKind::dielectric, clampedWeight, 0.0f, clampEta(eta)};
   ++count;
 }
@@ -375,14 +418,11 @@ BSDFSample BSDF::sample(GMANVector const& wo, RtFloat u1, RtFloat u2) const {
   if (!(total > 0.0f) || !(std::fabs(cosThetaO) > 0.0f)) {
     return failedSample();
   }
-
   auto const [chosen, lobeU1] = pickLobe(u1, total);
   Lobe const& lobe = lobes[chosen];
   RtFloat const pChosen = selectionWeight(chosen) / total;
-
-  // A non-delta draw's trailing report: the mixture's own eval and pdf at
-  // the drawn wi, failing where wi lands off wo's side or the density is
-  // non-positive.
+  // A non-delta draw's trailing report: eval and pdf at the drawn wi,
+  // failing where wi lands off wo's side or the density is non-positive.
   auto const finishNonDelta = [&](GMANVector const& wi) -> BSDFSample {
     if (!sameSide(cosThetaO, normal.dot(wi))) {
       return failedSample();
@@ -393,7 +433,6 @@ BSDFSample BSDF::sample(GMANVector const& wo, RtFloat u1, RtFloat u2) const {
     }
     return {wi, eval(wo, wi), density, false, chosen};
   };
-
   switch (lobe.kind) {
   case LobeKind::lambert:
     return finishNonDelta(lambertSample(tangentFrame(normal), cosThetaO, lobeU1, u2));
@@ -401,36 +440,10 @@ BSDFSample BSDF::sample(GMANVector const& wo, RtFloat u1, RtFloat u2) const {
     TangentFrame const frame = tangentFrame(flipToSide(normal, wo));
     return finishNonDelta(ggxSample(frame, frame.toLocal(wo), lobe.alpha, lobeU1, u2));
   }
-  case LobeKind::mirror: {
-    GMANVector const wi = reflectAbout(normal, wo, cosThetaO);
-    RtFloat const cosThetaI = normal.dot(wi);
-    if (!sameSide(cosThetaO, cosThetaI) || !(std::fabs(cosThetaI) > 0.0f)) {
-      return failedSample();
-    }
-    return {wi, overAbsCos(lobe.weight, cosThetaI), pChosen, true, chosen};
-  }
-  case LobeKind::dielectric: {
-    DielectricGeometry const geo = dielectricGeometry(normal, wo, lobe.eta);
-    FresnelResult const fresnel = dielectricFresnel(geo.etaO, geo.etaI, geo.cosThetaO);
-    if (lobeU1 < fresnel.f) {
-      GMANVector const wi = reflectAbout(normal, wo, cosThetaO);
-      RtFloat const cosThetaI = normal.dot(wi);
-      if (!sameSide(cosThetaO, cosThetaI) || !(std::fabs(cosThetaI) > 0.0f)) {
-        return failedSample();
-      }
-      return {wi, overAbsCos(scaledColor(lobe.weight, fresnel.f), cosThetaI), pChosen * fresnel.f, true, chosen};
-    }
-    RtFloat const ratio = geo.etaO / geo.etaI;
-    GMANVector const wi = refractAbout(geo.nOriented, wo, ratio, geo.cosThetaO, fresnel.cosThetaT);
-    RtFloat const cosThetaI = normal.dot(wi);
-    if (!oppositeSide(cosThetaO, cosThetaI) || !(std::fabs(cosThetaI) > 0.0f)) {
-      return failedSample();
-    }
-    RtFloat const scale = ratio * ratio;
-    RtFloat const transmitted = 1.0f - fresnel.f;
-    return {wi, overAbsCos(scaledColor(lobe.weight, transmitted * scale), cosThetaI), pChosen * transmitted, true,
-            chosen};
-  }
+  case LobeKind::mirror:
+    return mirrorSample(normal, wo, cosThetaO, lobe, pChosen, chosen);
+  case LobeKind::dielectric:
+    return dielectricSample(normal, wo, cosThetaO, lobe, lobeU1, pChosen, chosen);
   }
   return failedSample();
 }
@@ -443,7 +456,7 @@ GMANColor BSDF::shadowTransmittance(GMANVector const& w) const {
       continue;
     }
     FresnelResult const fresnel = dielectricFresnel(1.0f, lobes[i].eta, cosTheta);
-    sum += scaledColor(lobes[i].weight, 1.0f - fresnel.f);
+    sum += scaledColor(lobes[i].weight, 1.0f - fresnel.reflectance);
   }
   return sum;
 }
