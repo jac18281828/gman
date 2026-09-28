@@ -1,0 +1,20 @@
+# Scale 1 0 1 collapses the y axis, making the CTM singular.
+# GMANPatchPolyObjectManager::createParametric inverts the CTM uncaught,
+# so a well-formed NuPatch throws RIE_MATH before it can render.
+#
+# Unlike every other malformed/nupatch_*.rib fixture, this one is not
+# followed by a Sphere: the throw unwinds out of GMANRIBParse::parse()
+# before one would parse, exactly as nupatch_illegal_block.rib's own
+# header explains.
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "matte" "Ka" [1] "Kd" [0]
+Scale 1 0 1
+NuPatch 2 2 [0 0 1 1] 0 1 2 2 [0 0 1 1] 0 1
+	"P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]
+WorldEnd

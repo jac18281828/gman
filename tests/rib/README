@@ -320,6 +320,15 @@ exit-0 shape every other `malformed/nupatch_*.rib` fixture takes) and no
 trailing `Sphere`, since the throw unwinds before one would parse. Not
 third-party.
 
+## malformed/nupatch_singular_ctm.rib
+
+`Scale 1 0 1` collapses the y axis, so `createParametric`'s own
+`invert()` throws `RIE_MATH` on a well-formed `NuPatch`. Registered in
+`tests/nupatch_test.cpp`, asserting exit status 1, `RIE_MATH` in the
+output, and (the fix this fixture proves) no `LeakSanitizer` report. No
+trailing `Sphere`, since the throw unwinds before one would parse. Not
+third-party.
+
 ## rotate.rib
 
 An in-world `Rotate` must compose ahead of the transforms declared after it,
