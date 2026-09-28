@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <list>
 #include <map>
 #include <memory>
@@ -145,7 +146,22 @@ private:
   // space via GMANViewingSystem::screenToRaster.
   GMANViewingSystem* viewingSys;
 
-  GMANPatchPolyObjectManager objectManager;
+  // GMANObject, this object manager's own tessellated primitive, carries
+  // no Appearance -- unlike a ray primitive, it has nowhere to hold one
+  // past RiSphereV/RiDiskV's own call, where attr is still the declaring
+  // GMANAttributes. Counting a pending area light here, before
+  // tessellation discards it, is this renderer's only chance to see one.
+  class AreaLightCountingObjectManager : public GMANPatchPolyObjectManager {
+  public:
+    GMANPrimitive* getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
+                               GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
+                             GMANAttributes* attr, GMANTransform* t) override;
+
+    std::size_t areaLightCount = 0;
+  };
+
+  AreaLightCountingObjectManager objectManager;
 
   GMANLinearWorldManager worldManager;
 

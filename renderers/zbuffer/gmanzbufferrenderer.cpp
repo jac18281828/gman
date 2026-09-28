@@ -26,10 +26,36 @@
 #include <cmath>
 #include <typeinfo>
 
+#include "gmanattributes.h"
 #include "gmanmath.h"
 #include "gmanrenderer.h"
+#include "gmanshading.h"
 #include "gmanzbufferrenderer.h"
 #include "ri.h"
+
+// A pending area light is tagged only when RiIlluminate leaves it on
+// (gman::appearanceOf's own rule); attr is null for a primitive declared
+// outside any RiAttributeBegin, which never carries one.
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSSphere(RtFloat radius, RtFloat zmin,
+                                                                                RtFloat zmax, RtFloat tmax,
+                                                                                GMANParameterList pl, GMANOptions* opt,
+                                                                                GMANAttributes* attr,
+                                                                                GMANTransform* t) {
+  if (attr != nullptr && gman::appearanceOf(*attr).areaLight != nullptr) {
+    ++areaLightCount;
+  }
+  return GMANPatchPolyObjectManager::getRSSphere(radius, zmin, zmax, tmax, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSDisk(RtFloat height, RtFloat radius,
+                                                                              RtFloat tmax, GMANParameterList pl,
+                                                                              GMANOptions* opt, GMANAttributes* attr,
+                                                                              GMANTransform* t) {
+  if (attr != nullptr && gman::appearanceOf(*attr).areaLight != nullptr) {
+    ++areaLightCount;
+  }
+  return GMANPatchPolyObjectManager::getRSDisk(height, radius, tmax, pl, opt, attr, t);
+}
 
 /*
  * RenderMan API GMANZBufferRenderer
@@ -517,6 +543,11 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
     for (int x = 0; x < width; x++) {
       setZBuffer(x, y, sampleBuffer->getResolvedDepth(x, y));
     }
+  }
+
+  if (objectManager.areaLightCount != 0) {
+    warning("gmanzbuffer: an AreaLightSource has no effect here; {} area-light primitive(s) rendered unchanged.",
+            objectManager.areaLightCount);
   }
 }
 

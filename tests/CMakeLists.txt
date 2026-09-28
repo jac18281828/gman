@@ -2929,6 +2929,48 @@ set_tests_properties(pathtracerarealightregressiononelight PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Neither the z-buffer nor the ray tracer calls gman::emitters or special-
+# cases an AreaLightSource-tagged primitive's own shading: each renders
+# tests/rib/arealight_sphere.rib pixel for pixel as it would with every
+# AreaLightSource request stripped out, warning once naming the one
+# area-light primitive it found. `gman -r` runs each fixture in its own
+# process: both loadable renderers keep their own object manager in one
+# process-lifetime static instance, so two parses sharing a process would
+# carry the first one's own tally into the second. LABELS render, since it
+# runs gman, unlike this unit's other five new tests. Registered twice, one
+# add_test per renderer flag, as tests/worldnodisplay_test.cpp's own
+# gman_worldnodisplay is. See tests/rendererarealightwarning_test.cpp.
+add_executable(gman_rendererarealightwarning rendererarealightwarning_test.cpp)
+target_link_libraries(gman_rendererarealightwarning PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_rendererarealightwarning gman_zbuffer gman_matte)
+
+set(GMAN_RENDERERAREALIGHTWARNING_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rendererarealightwarning-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_RENDERERAREALIGHTWARNING_ZBUFFER_WORKDIR}")
+
+add_test(NAME rendererarealightwarning_zbuffer
+  COMMAND gman_rendererarealightwarning $<TARGET_FILE:gman> gmanzbuffer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_RENDERERAREALIGHTWARNING_ZBUFFER_WORKDIR}")
+set_tests_properties(rendererarealightwarning_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_rendererarealightwarning gman_raytracer)
+
+  set(GMAN_RENDERERAREALIGHTWARNING_RAYTRACER_WORKDIR
+    "${CMAKE_CURRENT_BINARY_DIR}/rendererarealightwarning-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_RENDERERAREALIGHTWARNING_RAYTRACER_WORKDIR}")
+
+  add_test(NAME rendererarealightwarning_raytracer
+    COMMAND gman_rendererarealightwarning $<TARGET_FILE:gman> gmanraytracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_RENDERERAREALIGHTWARNING_RAYTRACER_WORKDIR}")
+  set_tests_properties(rendererarealightwarning_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta
