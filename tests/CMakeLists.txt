@@ -2961,6 +2961,22 @@ set_tests_properties(arealightsource PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The counts-aware RiPolygonV rejects a negative or overflowing nverts,
+# with or without a "P" parameter, warning once and adding the empty stub
+# rather than throwing or dropping the request silently. Drives
+# GMANRenderManImpl directly, in process, the same technique and
+# LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/arealightsource_test.cpp. See
+# tests/polygonnverts_test.cpp.
+add_executable(gman_polygonnverts polygonnverts_test.cpp)
+target_link_libraries(gman_polygonnverts PRIVATE gman_core)
+
+add_test(NAME polygonnverts COMMAND gman_polygonnverts)
+set_tests_properties(polygonnverts PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30
+  WILL_FAIL TRUE)
+
 # GMANSphere's and GMANDisk's own uniform-area sampler: a closed-form area,
 # an independent finite-difference quadrature of the Jacobian, a
 # uniform-by-area histogram, a degenerate primitive and the sampled normal.
