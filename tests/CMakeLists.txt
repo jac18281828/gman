@@ -2868,6 +2868,18 @@ set_tests_properties(emitterprimitive PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::emitters/sample/samplePoint over a hand-built world: enumeration,
+# power(), sample's delta and area branches and samplePoint's delta branch,
+# plus appearanceOf's own exclusion of an illuminated area light from
+# Appearance::lights. See tests/emitter_test.cpp.
+add_executable(gman_emitter emitter_test.cpp)
+target_link_libraries(gman_emitter PRIVATE gman_core)
+
+add_test(NAME emitter COMMAND gman_emitter)
+set_tests_properties(emitter PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta

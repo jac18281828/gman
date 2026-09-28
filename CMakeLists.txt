@@ -126,6 +126,7 @@ add_library(gman_core SHARED
   libgman/gmandefaults.cpp
   libgman/gmandictionary.cpp
   libgman/gmandisplacementshader.cpp
+  libgman/gmanemitter.cpp
   libgman/gmanerror.cpp
   libgman/gmanface.cpp
   libgman/gmanfilters.cpp

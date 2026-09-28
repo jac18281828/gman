@@ -64,6 +64,13 @@ struct GMAN_EXPORT Appearance {
   std::vector<GMANLight const*> lights;
   GMANColor Cs;
   GMANColor Os;
+
+  // The primitive's own pending RiAreaLightSource, non-owning, when one was
+  // both declared and illuminated at declaration time; null otherwise.
+  // Never in lights: gman::emitters reads it directly instead, and a
+  // shader's ambient()/diffuse()/specular() loops (lights alone) must never
+  // sample it as if it were a positioned light.
+  GMANLight const* areaLight = nullptr;
 };
 
 // Resolves attributes' current surface shader, active lights and Cs/Os

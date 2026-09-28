@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
 #include <list>
 
 #include "gmanattributes.h"
@@ -67,9 +68,21 @@ Appearance appearanceOf(GMANAttributes const& attributes) {
   std::list<RtLightHandle> const& handles = attributes.getLightList().getHandles();
   for (RtLightHandle const handle : handles) {
     GMANLight const* light = gmanLightSourceMgr().get(handle);
-    if (light) {
+    // An area light is read through appearance.areaLight, below, never
+    // through this list: a shader's ambient()/diffuse()/specular() loops
+    // have no notion of its shape, and must never sample it as if it were
+    // a positioned light.
+    if (light && light->getType() != GMAN_LIGHT_AREA) {
       appearance.lights.push_back(light);
     }
+  }
+
+  // The same "was it on when this primitive was declared" rule the light
+  // list above already applies: a pending area light counts only when it
+  // is also currently illuminated.
+  RtLightHandle const pendingAreaLight = attributes.getAreaLight();
+  if (pendingAreaLight != 0 && std::find(handles.begin(), handles.end(), pendingAreaLight) != handles.end()) {
+    appearance.areaLight = gmanLightSourceMgr().get(pendingAreaLight);
   }
 
   appearance.Cs = attributes.getColor();
