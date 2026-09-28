@@ -36,7 +36,9 @@ class GMANPolygonMesh;
 // The four factory functions, one per polygon request: the only functions
 // that can build a GMANPolygonMesh. Declared here, ahead of the class, so
 // the friend declarations below name them; libgman/gmanpolygonmeshfactory.h
-// declares them again for callers, with the same signatures.
+// declares them again for callers, with the same signatures. Internal to
+// libgman and not GMAN_EXPORT: an embedder linking against the release
+// library fails to link a call to any of the four.
 namespace gman {
 std::optional<GMANPolygonMesh> polygonMesh(RtInt nverts, GMANDictionary& dictionary, RtInt n, RtToken tokens[],
                                            RtPointer parms[], RtInt const* counts);
@@ -93,17 +95,21 @@ private:
                                                                         RtToken tokens[], RtPointer parms[],
                                                                         RtInt const* counts);
 
-  // faceLoopCounts holds every face's own loop sizes, concatenated in face
-  // order; faceOffsets (faceCount + 1 entries) marks where each face's run
-  // starts, the last entry its total length. loopIndices holds every
-  // loop's own point indices, concatenated in the same (face, loop) order.
-  GMANPolygonMesh(GMANParameterList params, std::size_t pointCount, std::vector<RtInt> faceLoopCounts,
+  // parameterList is the parameter list the factory built; pointCount is
+  // the number of points its "P" holds. faceLoopCounts holds every face's
+  // own loop sizes, concatenated in face order; faceOffsets (faceCount + 1
+  // entries) marks where each face's run starts in faceLoopCounts, the
+  // last entry its total length. loopIndices holds every loop's own point
+  // indices, concatenated in the same (face, loop) order; loopOffsets,
+  // indexed the same way as faceLoopCounts, marks where each loop's own
+  // run starts in loopIndices, the last entry its total length.
+  GMANPolygonMesh(GMANParameterList parameterList, std::size_t pointCount, std::vector<RtInt> faceLoopCounts,
                   std::vector<std::size_t> faceOffsets, std::vector<RtInt> loopIndices);
 
-  GMANParameterList params_;
-  std::size_t pointCount_;
-  std::vector<RtInt> faceLoopCounts_;
-  std::vector<std::size_t> faceOffsets_;
-  std::vector<RtInt> loopIndices_;
-  std::vector<std::size_t> loopOffsets_;
+  GMANParameterList parameterList;
+  std::size_t pointCount;
+  std::vector<RtInt> faceLoopCounts;
+  std::vector<std::size_t> faceOffsets;
+  std::vector<RtInt> loopIndices;
+  std::vector<std::size_t> loopOffsets;
 };

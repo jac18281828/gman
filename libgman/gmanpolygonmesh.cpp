@@ -23,6 +23,7 @@
 
 #include <climits>
 #include <cstddef>
+#include <numeric>
 #include <optional>
 #include <span>
 #include <utility>
@@ -51,6 +52,27 @@ std::vector<std::size_t> loopOffsetsFrom(std::vector<RtInt> const& faceLoopCount
   return offsets;
 }
 
+// The first negative nverts[i] in nverts[0, count), then an nverts sum
+// above INT_MAX / 3: the rule pair Polygon, GeneralPolygon and the two
+// Points requests each apply to their own nverts. Warns once naming
+// request and the broken rule and returns std::nullopt on failure; on
+// success returns the validated sum.
+std::optional<long long> validateNvertsSum(char const* request, RtInt count, RtInt const* nverts) {
+  long long total = 0;
+  for (RtInt i = 0; i < count; i++) {
+    if (nverts[i] < 0) {
+      warning("{}: nverts[{}] = {} is negative; ignoring.", request, i, nverts[i]);
+      return std::nullopt;
+    }
+    total += nverts[i];
+  }
+  if (total > (long long)INT_MAX / 3) {
+    warning("{}: nverts sums to {}, times 3 overflows RtInt; ignoring.", request, total);
+    return std::nullopt;
+  }
+  return total;
+}
+
 // PointsPolygons and PointsGeneralPolygons' shared rules, applied to
 // nverts[0, nvertsLen) and the verts it indexes: the first negative
 // nverts[i], an nverts sum above INT_MAX / 3, the first negative verts[i],
@@ -60,21 +82,13 @@ std::vector<std::size_t> loopOffsetsFrom(std::vector<RtInt> const& faceLoopCount
 // false.
 bool validatePointsIndices(char const* request, RtInt nvertsLen, RtInt const* nverts, RtInt const* verts,
                            RtInt& facevarying, RtInt& vertex) {
-  long long total = 0;
-  for (RtInt i = 0; i < nvertsLen; i++) {
-    if (nverts[i] < 0) {
-      warning("{}: nverts[{}] = {} is negative; ignoring.", request, i, nverts[i]);
-      return false;
-    }
-    total += nverts[i];
-  }
-  if (total > (long long)INT_MAX / 3) {
-    warning("{}: nverts sums to {}, times 3 overflows RtInt; ignoring.", request, total);
+  std::optional<long long> const total = validateNvertsSum(request, nvertsLen, nverts);
+  if (!total) {
     return false;
   }
 
   long long maxVert = -1;
-  for (long long i = 0; i < total; i++) {
+  for (long long i = 0; i < *total; i++) {
     if (verts[i] < 0) {
       warning("{}: verts[{}] = {} is negative; ignoring.", request, i, verts[i]);
       return false;
@@ -91,46 +105,42 @@ bool validatePointsIndices(char const* request, RtInt nvertsLen, RtInt const* nv
     return false;
   }
 
-  facevarying = (RtInt)total;
+  facevarying = (RtInt)*total;
   vertex = (RtInt)vertexCount;
   return true;
 }
 
 } // namespace
 
-GMANPolygonMesh::GMANPolygonMesh(GMANParameterList params, std::size_t pointCount, std::vector<RtInt> faceLoopCounts,
-                                 std::vector<std::size_t> faceOffsets, std::vector<RtInt> loopIndices)
-    : params_(std::move(params)), pointCount_(pointCount), faceLoopCounts_(std::move(faceLoopCounts)),
-      faceOffsets_(std::move(faceOffsets)), loopIndices_(std::move(loopIndices)),
-      loopOffsets_(loopOffsetsFrom(faceLoopCounts_)) {}
+GMANPolygonMesh::GMANPolygonMesh(GMANParameterList parameterList, std::size_t pointCount,
+                                 std::vector<RtInt> faceLoopCounts, std::vector<std::size_t> faceOffsets,
+                                 std::vector<RtInt> loopIndices)
+    : parameterList(std::move(parameterList)), pointCount(pointCount), faceLoopCounts(std::move(faceLoopCounts)),
+      faceOffsets(std::move(faceOffsets)), loopIndices(std::move(loopIndices)),
+      loopOffsets(loopOffsetsFrom(this->faceLoopCounts)) {}
 
 std::span<RtFloat const> GMANPolygonMesh::points() const {
-  return std::span<RtFloat const>(gman::floatArray(params_, RI_P), 3 * pointCount_);
+  return std::span<RtFloat const>(gman::floatArray(parameterList, RI_P), 3 * pointCount);
 }
 
-std::size_t GMANPolygonMesh::faceCount() const { return faceOffsets_.size() - 1; }
+std::size_t GMANPolygonMesh::faceCount() const { return faceOffsets.empty() ? 0 : faceOffsets.size() - 1; }
 
 std::span<RtInt const> GMANPolygonMesh::face(std::size_t i) const {
-  return std::span<RtInt const>(faceLoopCounts_.data() + faceOffsets_[i], faceOffsets_[i + 1] - faceOffsets_[i]);
+  return std::span<RtInt const>(faceLoopCounts.data() + faceOffsets[i], faceOffsets[i + 1] - faceOffsets[i]);
 }
 
 std::span<RtInt const> GMANPolygonMesh::loop(std::size_t i, std::size_t j) const {
-  std::size_t const k = faceOffsets_[i] + j;
-  return std::span<RtInt const>(loopIndices_.data() + loopOffsets_[k], loopOffsets_[k + 1] - loopOffsets_[k]);
+  std::size_t const k = faceOffsets[i] + j;
+  return std::span<RtInt const>(loopIndices.data() + loopOffsets[k], loopOffsets[k + 1] - loopOffsets[k]);
 }
 
-GMANParameterList const& GMANPolygonMesh::parameters() const { return params_; }
+GMANParameterList const& GMANPolygonMesh::parameters() const { return parameterList; }
 
 namespace gman {
 
 std::optional<GMANPolygonMesh> polygonMesh(RtInt nverts, GMANDictionary& dictionary, RtInt n, RtToken tokens[],
                                            RtPointer parms[], RtInt const* counts) {
-  if (nverts < 0) {
-    warning("Polygon: nverts[0] = {} is negative; ignoring.", nverts);
-    return std::nullopt;
-  }
-  if ((long long)nverts > (long long)INT_MAX / 3) {
-    warning("Polygon: nverts sums to {}, times 3 overflows RtInt; ignoring.", nverts);
+  if (!validateNvertsSum("Polygon", 1, &nverts)) {
     return std::nullopt;
   }
 
@@ -142,9 +152,7 @@ std::optional<GMANPolygonMesh> polygonMesh(RtInt nverts, GMANDictionary& diction
   std::vector<RtInt> faceLoopCounts{nverts};
   std::vector<std::size_t> faceOffsets{0, 1};
   std::vector<RtInt> loopIndices((std::size_t)nverts);
-  for (RtInt i = 0; i < nverts; i++) {
-    loopIndices[(std::size_t)i] = i;
-  }
+  std::iota(loopIndices.begin(), loopIndices.end(), RtInt{0});
 
   return GMANPolygonMesh(std::move(list), (std::size_t)nverts, std::move(faceLoopCounts), std::move(faceOffsets),
                          std::move(loopIndices));
@@ -157,19 +165,11 @@ std::optional<GMANPolygonMesh> generalPolygonMesh(RtInt nloops, RtInt const nver
     return std::nullopt;
   }
 
-  long long total = 0;
-  for (RtInt i = 0; i < nloops; i++) {
-    if (nverts[i] < 0) {
-      warning("GeneralPolygon: nverts[{}] = {} is negative; ignoring.", i, nverts[i]);
-      return std::nullopt;
-    }
-    total += nverts[i];
-  }
-  if (total > (long long)INT_MAX / 3) {
-    warning("GeneralPolygon: nverts sums to {}, times 3 overflows RtInt; ignoring.", total);
+  std::optional<long long> const total = validateNvertsSum("GeneralPolygon", nloops, nverts);
+  if (!total) {
     return std::nullopt;
   }
-  RtInt const vertex = (RtInt)total;
+  RtInt const vertex = (RtInt)*total;
 
   GMANParameterList list(dictionary, n, tokens, parms, vertex, vertex, 1, vertex, counts);
   if (floatArray(list, RI_P) == nullptr) {
@@ -179,9 +179,7 @@ std::optional<GMANPolygonMesh> generalPolygonMesh(RtInt nloops, RtInt const nver
   std::vector<RtInt> faceLoopCounts(nverts, nverts + nloops);
   std::vector<std::size_t> faceOffsets{0, (std::size_t)nloops};
   std::vector<RtInt> loopIndices((std::size_t)vertex);
-  for (RtInt i = 0; i < vertex; i++) {
-    loopIndices[(std::size_t)i] = i;
-  }
+  std::iota(loopIndices.begin(), loopIndices.end(), RtInt{0});
 
   return GMANPolygonMesh(std::move(list), (std::size_t)vertex, std::move(faceLoopCounts), std::move(faceOffsets),
                          std::move(loopIndices));
@@ -207,9 +205,7 @@ std::optional<GMANPolygonMesh> pointsPolygonsMesh(RtInt npolys, RtInt const nver
 
   std::vector<RtInt> faceLoopCounts(nverts, nverts + npolys);
   std::vector<std::size_t> faceOffsets((std::size_t)npolys + 1);
-  for (RtInt i = 0; i <= npolys; i++) {
-    faceOffsets[(std::size_t)i] = (std::size_t)i;
-  }
+  std::iota(faceOffsets.begin(), faceOffsets.end(), std::size_t{0});
   std::vector<RtInt> loopIndices(verts, verts + facevarying);
 
   return GMANPolygonMesh(std::move(list), (std::size_t)vertex, std::move(faceLoopCounts), std::move(faceOffsets),

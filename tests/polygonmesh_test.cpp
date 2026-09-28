@@ -50,6 +50,10 @@ namespace {
 // overflow rule fires here, never on the vertex count itself.
 constexpr RtInt kNvertsOverflow = INT_MAX / 3 + 1;
 
+// nverts (or an nverts sum) exactly at INT_MAX / 3, the boundary every
+// request's own overflow rule accepts. kNvertsOverflow sits one above it.
+constexpr RtInt kNvertsBoundary = kNvertsOverflow - 1;
+
 // A point index whose 1 + max(verts), times 3, overflows RtInt.
 constexpr RtInt kVertIndexOverflow = INT_MAX;
 
@@ -443,6 +447,52 @@ void checkRejections(std::string const& logPath) {
   }
 }
 
+// nverts sums to exactly kNvertsBoundary, the shared overflow rule's own
+// boundary: Polygon, GeneralPolygon and PointsPolygons must each accept
+// it. Counts only, n 0, so nothing is allocated; each still returns
+// std::nullopt, but never from the overflow rule, so the log holds no
+// overflow warning. kNvertsOverflow, one above the boundary, is already
+// each request's own overflow case above.
+void checkOverflowBoundary(std::string const& logPath) {
+  GMANDictionary dictionary;
+
+  {
+    std::optional<GMANPolygonMesh> result;
+    std::string const log = captureLog(
+        logPath, [&] { result = gman::polygonMesh(kNvertsBoundary, dictionary, 0, nullptr, nullptr, nullptr); });
+    check(!result.has_value(), "Rejections: Polygon nverts at the overflow boundary returns std::nullopt");
+    check(log.find("overflows RtInt") == std::string::npos,
+          "Rejections: Polygon nverts at the overflow boundary logs no overflow warning");
+  }
+  {
+    std::vector<RtInt> const nverts = {kNvertsBoundary};
+    std::optional<GMANPolygonMesh> result;
+    std::string const log = captureLog(logPath, [&] {
+      result = gman::generalPolygonMesh(1, nverts.data(), dictionary, 0, nullptr, nullptr, nullptr);
+    });
+    check(!result.has_value(), "Rejections: GeneralPolygon nverts at the overflow boundary returns std::nullopt");
+    check(log.find("overflows RtInt") == std::string::npos,
+          "Rejections: GeneralPolygon nverts at the overflow boundary logs no overflow warning");
+  }
+  {
+    // verts[0] negative is the very next rule after the shared nverts
+    // sum check, firing on its first read: accepting the boundary here
+    // costs one array entry, not the kNvertsBoundary points a real "P"
+    // would need.
+    std::vector<RtInt> const nverts = {kNvertsBoundary};
+    std::vector<RtInt> const verts = {-1};
+    std::optional<GMANPolygonMesh> result;
+    std::string const log = captureLog(logPath, [&] {
+      result = gman::pointsPolygonsMesh(1, nverts.data(), verts.data(), dictionary, 0, nullptr, nullptr, nullptr);
+    });
+    check(!result.has_value(), "Rejections: PointsPolygons nverts at the overflow boundary returns std::nullopt");
+    check(log.find("overflows RtInt") == std::string::npos,
+          "Rejections: PointsPolygons nverts at the overflow boundary logs no overflow warning");
+    check(log.find("PointsPolygons: verts[0] = -1 is negative; ignoring.") != std::string::npos,
+          "Rejections: PointsPolygons nverts at the overflow boundary reaches the verts rule");
+  }
+}
+
 void checkMissingP(std::string const& logPath) {
   GMANDictionary dictionary;
 
@@ -570,6 +620,7 @@ int main() {
   checkPointsGeneralPolygons(logPath);
   checkSizing(logPath);
   checkRejections(logPath);
+  checkOverflowBoundary(logPath);
   checkMissingP(logPath);
   checkDegenerate(logPath);
   checkCopies(logPath);
