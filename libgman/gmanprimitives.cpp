@@ -210,6 +210,19 @@ GMANVector GMANDisk::getNormal(double /*u*/, double /*v*/) {
   return n;
 }
 
+RtFloat GMANDisk::area() const {
+  double const thetaMaxRadians = thetamax / 360.0 * 2.0 * PI;
+  return (RtFloat)(0.5 * (double)radius * (double)radius * thetaMaxRadians);
+}
+
+GMANPoint GMANDisk::samplePoint(double u1, double u2, GMANVector& normal) const {
+  double const thetaMaxRadians = thetamax / 360.0 * 2.0 * PI;
+  double const r = (double)radius * sqrt(u1);
+  double const theta = u2 * thetaMaxRadians;
+  normal = GMANVector(0.0, 0.0, -1.0);
+  return GMANPoint((RtFloat)(r * cos(theta)), (RtFloat)(r * sin(theta)), height);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_GENERALPOLYGON.CPP
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -853,6 +866,23 @@ GMANVector GMANSphere::getNormal(double u, double v) {
   GMANVector n(p.getX(), p.getY(), p.getZ());
   n.normalize();
   return n;
+}
+
+RtFloat GMANSphere::area() const {
+  double const thetaMaxRadians = thetamax / 360.0 * 2.0 * PI;
+  return (RtFloat)((double)radius * ((double)zmax - (double)zmin) * thetaMaxRadians);
+}
+
+GMANPoint GMANSphere::samplePoint(double u1, double u2, GMANVector& normal) const {
+  double const thetaMaxRadians = thetamax / 360.0 * 2.0 * PI;
+  double const z = (double)zmin + u1 * ((double)zmax - (double)zmin);
+  double const theta = u2 * thetaMaxRadians;
+  double const r = sqrt(GMANMax(0.0, (double)radius * (double)radius - z * z));
+
+  GMANPoint const point((RtFloat)(r * cos(theta)), (RtFloat)(r * sin(theta)), (RtFloat)z);
+  normal = GMANVector(point.getX(), point.getY(), point.getZ());
+  normal.normalize();
+  return point;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

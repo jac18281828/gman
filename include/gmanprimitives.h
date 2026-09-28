@@ -147,6 +147,20 @@ public:
       : GMANPrimDatStorage(p), height(h), radius(rad), thetamax(theta) {}
   GMANPoint getLocation(double u, double v);
   GMANVector getNormal(double u, double v);
+
+  RtFloat getHeight() const { return height; }
+  RtFloat getRadius() const { return radius; }
+  RtFloat getThetaMax() const { return thetamax; }
+
+  // The sector's area: half the usual disk-sector formula, radius^2 times
+  // the swept angle, holding for a full disk or any thetamax partial one.
+  RtFloat area() const;
+
+  // A point uniform by area on the thetamax sector, in object space, and
+  // its outward normal -- always (0, 0, -1), the disk's own constant one.
+  // r = radius * sqrt(u1) draws uniform by area; theta = u2 * thetaMax
+  // draws uniform in angle.
+  GMANPoint samplePoint(double u1, double u2, GMANVector& normal) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -378,6 +392,22 @@ public:
       : GMANPrimDatStorage(p), radius(rad), zmin(zmn), zmax(zmx), thetamax(theta) {}
   GMANPoint getLocation(double u, double v);
   GMANVector getNormal(double u, double v);
+
+  RtFloat getRadius() const { return radius; }
+  RtFloat getZMin() const { return zmin; }
+  RtFloat getZMax() const { return zmax; }
+  RtFloat getThetaMax() const { return thetamax; }
+
+  // The zone's area, Archimedes' theorem: it depends only on height, so
+  // this closed form holds for a full sphere or any zmin/zmax/thetamax
+  // partial one alike.
+  RtFloat area() const;
+
+  // A point uniform by area on the zmin/zmax/thetamax zone, in object
+  // space, and its outward normal. Uniform in z is uniform by area on a
+  // sphere for any thetamax, so z and theta draw directly from u1/u2 with
+  // no rejection.
+  GMANPoint samplePoint(double u1, double u2, GMANVector& normal) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

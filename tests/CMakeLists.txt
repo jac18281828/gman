@@ -2856,6 +2856,18 @@ set_tests_properties(arealightsource PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANSphere's and GMANDisk's own uniform-area sampler: a closed-form area,
+# an independent finite-difference quadrature of the Jacobian, a
+# uniform-by-area histogram, a degenerate primitive and the sampled normal.
+# See tests/emitterprimitive_test.cpp.
+add_executable(gman_emitterprimitive emitterprimitive_test.cpp)
+target_link_libraries(gman_emitterprimitive PRIVATE gman_core)
+
+add_test(NAME emitterprimitive COMMAND gman_emitterprimitive)
+set_tests_properties(emitterprimitive PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta
