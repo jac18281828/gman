@@ -109,4 +109,12 @@ GMAN_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtF
 // emitter.
 GMAN_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2);
 
+// emitter's own weight for next-event estimation's light choice at p: a
+// delta emitter's fixed preview draw of its own sample(); an area emitter's
+// power divided by four times the greater of its placed centre's squared
+// distance from p and its own squared bounding radius -- strictly positive
+// wherever it contributes, unlike a fixed preview draw whose own
+// object-space point may face away from p.
+GMAN_EXPORT RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p);
+
 } // namespace gman

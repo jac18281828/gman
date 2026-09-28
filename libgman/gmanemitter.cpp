@@ -151,6 +151,23 @@ void placeEmitterPoint(GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cam
   cameraNormal.normalize();
 }
 
+// shape's own placed centre (camera space) and bounding radius: the
+// sphere's own centre and radius, or the disk's own point at its height
+// and radius, each placed by shape's own object-to-camera transform.
+// Precondition: shape is a GMANRaySphere or GMANRayDisk.
+void emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& centre, RtFloat& radius) {
+  EmittingShapeKind const kind = classifyEmittingShape(shape);
+  GMANPoint objectCentre;
+  if (kind.sphere != nullptr) {
+    radius = kind.sphere->getRadius();
+    objectCentre = GMANPoint(0.0f, 0.0f, 0.0f);
+  } else {
+    radius = kind.disk->getRadius();
+    objectCentre = GMANPoint(0.0f, 0.0f, kind.disk->getHeight());
+  }
+  centre = gman::transformPoint(emittingShapeObjectToCamera(shape), objectCentre);
+}
+
 // One draw on an area emitter's shape, placed into camera space: sample(),
 // samplePoint() and drawEmitterPoint's own callers all need the same point,
 // normal and area from the same draw.
@@ -317,6 +334,22 @@ EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
     break;
   }
   return result;
+}
+
+RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p) {
+  if (emitter.shape == nullptr) {
+    EmitterSample const preview = sample(emitter, p, 0.5f, 0.5f);
+    RtFloat const mean = meanChannel(preview.Cl);
+    return (std::isfinite(mean) && mean > 0.0f) ? mean : 0.0f;
+  }
+
+  GMANPoint centre;
+  RtFloat radius = 0.0f;
+  emittingShapeCentreAndRadius(*emitter.shape, centre, radius);
+  GMANVector const toCentre(p, centre);
+  RtFloat const dSquared = toCentre.dot(toCentre);
+  RtFloat const w = emitter.power / ((RtFloat)4.0 * GMANMax(dSquared, radius * radius));
+  return (std::isfinite(w) && w > 0.0f) ? w : 0.0f;
 }
 
 } // namespace gman

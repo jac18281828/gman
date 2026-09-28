@@ -154,12 +154,11 @@ bool passThrough(GMANHit const& hit, gman::SurfacePoint const& point, GMANColor 
   return true;
 }
 
-// Picks one emitter at p by its own contribution there: emitter j's weight
-// is the mean of gman::sample(emitters[j], p, 0.5f, 0.5f).Cl, a fixed
-// preview draw rather than the real next-event-estimation draw, taken as 0
-// when it is not finite or not positive; j is drawn with probability its
-// weight's share of the total. For a delta emitter this reproduces its own
-// GMANLight::sample exactly, since a delta ignores (u1, u2). lightWeight is
+// Picks one emitter at p by its own contribution there, gman::lightChoiceWeight's
+// own weight for each: a delta emitter's fixed preview draw, or an area
+// emitter's power over its own placed distance from p, floored at its own
+// bounding radius so it is never zero where it actually contributes; j is
+// drawn with probability its weight's share of the total. lightWeight is
 // the caller's own per-path buffer, sized to emitters.size() and
 // overwritten here, never reallocated per vertex. Answers false, chosen and
 // pj untouched, when no emitter has positive weight there.
@@ -168,9 +167,7 @@ bool chooseLight(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
                  RtFloat& pj) {
   RtFloat totalWeight = 0.0f;
   for (std::size_t j = 0; j < emitters.size(); ++j) {
-    gman::EmitterSample const preview = gman::sample(emitters[j], p, 0.5f, 0.5f);
-    RtFloat const mean = meanChannel(preview.Cl);
-    RtFloat const w = (std::isfinite(mean) && mean > 0.0f) ? mean : 0.0f;
+    RtFloat const w = gman::lightChoiceWeight(emitters[j], p);
     lightWeight[j] = w;
     totalWeight += w;
   }
