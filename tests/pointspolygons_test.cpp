@@ -605,7 +605,7 @@ void testMalformedFixtures(const std::string& gman, const std::string& malformed
   struct Fixture {
     const char* file;
     const char* expectedWarning;
-    // The five structural-check fixtures degrade: they warn, exit 0 and
+    // The six structural-check fixtures degrade: they warn, exit 0 and
     // keep parsing the trailing Sphere. A non-integer array entry is a
     // token-level syntax error instead (RIE_SYNTAX), fatal to the whole
     // file, so the two leak-regression fixtures below override both.

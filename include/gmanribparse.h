@@ -190,7 +190,7 @@ private:
   // same index space as tokens/parms -- index-aligned by construction
   // inside parseParameterList itself, since paramMap's own order is by
   // key, not push order. This struct is non-owning: the pending* members
-  // below own every array, valid until freePendingParams releases them.
+  // own every array, valid until freePendingParams releases them.
   struct ParsedParameterList {
     RtInt n;
     RtToken* tokens;

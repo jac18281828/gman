@@ -1803,17 +1803,18 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList() {
   auto pushValue = [this](auto values) -> RtPointer {
     using T = typename decltype(values)::value_type;
     const unsigned int count = (unsigned int)values.size();
-    if constexpr (std::is_same_v<T, RtInt>) {
-      pendingParamValues.push_back({nullptr, false, count, {}, std::move(values)});
-      RtInt* data = pendingParamValues.back().intStorage.data();
-      pendingParamValues.back().value = (RtPointer)data;
-      return (RtPointer)data;
-    } else {
-      pendingParamValues.push_back({nullptr, false, count, std::move(values), {}});
-      RtFloat* data = pendingParamValues.back().floatStorage.data();
-      pendingParamValues.back().value = (RtPointer)data;
-      return (RtPointer)data;
-    }
+    pendingParamValues.push_back({nullptr, false, count, {}, {}});
+    PendingParamValue& pending = pendingParamValues.back();
+    auto& storage = [&]() -> auto& {
+      if constexpr (std::is_same_v<T, RtInt>) {
+        return pending.intStorage;
+      } else {
+        return pending.floatStorage;
+      }
+    }();
+    storage = std::move(values);
+    pending.value = (RtPointer)storage.data();
+    return pending.value;
   };
 
   while (true) {

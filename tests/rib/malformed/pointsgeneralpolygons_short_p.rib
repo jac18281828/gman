@@ -2,8 +2,7 @@
 # supplies only three points (nine floats). gman is expected to warn,
 # clamp and keep going rather than read past "P"'s own allocation --
 # PointsGeneralPolygons' own counterpart to pointspolygons_short_p.rib,
-# since no existing fixture checked that its supplied counts reach the
-# renderer at all.
+# checking that its supplied counts reach the renderer.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

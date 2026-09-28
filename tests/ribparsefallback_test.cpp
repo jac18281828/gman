@@ -22,17 +22,17 @@
  * GMANRIBParse dispatches 14 requests through a dynamic_cast to
  * GMANRenderManImpl, calling the counts-aware overload when it succeeds and
  * the RI-mandated overload on the base GMANRenderMan reference otherwise.
- * Every in-process test in this tree hands the parser a GMANRenderManImpl,
- * so the fallback branch has never run under test. This one hands it a
- * GMANASCII, following tests/pointscount_test.cpp's in-process technique,
- * and reads back every positional argument and parameter the fallback
- * overload of each of the 14 requests received.
+ * This test hands the parser a GMANASCII, so every request takes the
+ * fallback branch, following tests/pointscount_test.cpp's in-process
+ * technique, and reads back every positional argument and parameter the
+ * fallback overload of each of the 14 requests received.
  */
 
+#include <cstddef>
 #include <cstdio>
-#include <cstdlib>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -44,7 +44,7 @@ namespace {
 
 std::string fmt(RtFloat v) { return std::to_string(v); }
 std::string fmt(RtInt v) { return std::to_string(v); }
-std::string fmt(const char* v) { return std::string(v); }
+std::string fmt(char const* v) { return std::string(v); }
 
 template <typename T> void appendArray(std::vector<std::string>& out, T* values, RtInt count) {
   for (RtInt i = 0; i < count; ++i) {
@@ -64,9 +64,10 @@ struct RecordedCall {
 // RI-mandated overload on this base. RiBegin/RiEnd are overridden to touch
 // no file; every other override records its own positional arguments
 // (arrays flattened in signature order) and, for each parameter, its token
-// and first value -- every parameter here is an undeclared token, so
-// GMANRIBParse's own dictionary lookup falls back to the float path for all
-// of them, tokens and "P" included.
+// and first value -- every custom token here is undeclared, so
+// GMANRIBParse's own dictionary lookup falls back to the float path;
+// Polygon's "P" is declared VERTEX POINT and takes the same float path,
+// since POINT is not INTEGER.
 class FallbackRenderMan : public GMANASCII {
 public:
   std::vector<RecordedCall> calls;
@@ -177,13 +178,13 @@ private:
 
 // Checks one recorded call against its expected shape, matching parameters
 // by token rather than by index.
-void checkCall(const std::vector<RecordedCall>& calls, std::size_t index, const std::string& request,
-               const std::vector<std::string>& positional, const std::map<std::string, std::string>& params) {
+void checkCall(std::vector<RecordedCall> const& calls, std::size_t index, std::string const& request,
+               std::vector<std::string> const& positional, std::map<std::string, std::string> const& params) {
   if (index >= calls.size()) {
     check(false, request + ": call " + std::to_string(index) + " arrived");
     return;
   }
-  const RecordedCall& call = calls[index];
+  RecordedCall const& call = calls[index];
   check(call.request == request, request + ": request name matches");
   check(call.positional == positional, request + ": positional arguments match, in order");
   check(call.n == (RtInt)params.size(), request + ": parameter count matches");

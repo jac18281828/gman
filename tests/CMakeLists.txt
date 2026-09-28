@@ -725,8 +725,8 @@ set_tests_properties(pointscount PROPERTIES
 # GMANRIBParse falls back to the RI-mandated overload of 14 requests when
 # renderMan is not a GMANRenderManImpl. See tests/ribparsefallback_test.cpp;
 # its in-process check hands the parser a GMANASCII, so gmanascii.cpp is
-# compiled directly into this executable rather than dlopened, the same
-# LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
+# compiled directly into this executable rather than dlopened, needing the
+# same LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
 add_executable(gman_ribparsefallback ribparsefallback_test.cpp
   "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
 target_include_directories(gman_ribparsefallback PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
