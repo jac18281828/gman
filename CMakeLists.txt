@@ -63,10 +63,10 @@ find_package(Threads REQUIRED)
 # want; it additionally does not link -- it has a declared virtual with no
 # definition -- so its option compiles but does not complete. radiosity
 # builds the ray tracer's indirect-light pass, loaded through Option
-# "render" "string indirect" ["radiosity"]; it defaults off.
+# "render" "string indirect" ["radiosity"]; it defaults on.
 option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
 option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin" ON)
-option(GMAN_BUILD_RADIOSITY "Build the radiosity indirect-light pass plugin" OFF)
+option(GMAN_BUILD_RADIOSITY "Build the radiosity indirect-light pass plugin" ON)
 option(GMAN_BUILD_PATHTRACER "Build the path tracer plugin" ON)
 
 # ---------------------------------------------------------------------------
@@ -438,6 +438,11 @@ install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_painte
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 if(GMAN_BUILD_RAYTRACER)
   install(TARGETS gman_raytracer
+    RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+endif()
+if(GMAN_BUILD_RADIOSITY)
+  install(TARGETS gman_radiosity
     RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 endif()

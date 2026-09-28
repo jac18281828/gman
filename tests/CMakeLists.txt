@@ -1969,8 +1969,8 @@ set_tests_properties(radiositymeshcost PROPERTIES
 # functions it uses internally, over a right-triangle floor with a hole
 # and a square wall meeting one of its legs, plus a sphere. Needs only
 # gman_radiosity_objects, but solves several times; guarded by
-# GMAN_BUILD_RADIOSITY alone, off CI's default legs, to keep the
-# sanitizer leg inside its timeouts.
+# GMAN_BUILD_RADIOSITY alone, which now defaults on, so this runs on
+# every CI leg that runs ctest, sanitizers included.
 if(GMAN_BUILD_RADIOSITY)
   add_executable(gman_radiositypass radiositypass_test.cpp)
   target_link_libraries(gman_radiositypass PRIVATE gman_radiosity_objects)
