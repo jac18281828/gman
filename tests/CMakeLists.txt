@@ -2670,9 +2670,13 @@ set_tests_properties(bsdfdelta PROPERTIES
 # gman::bsdf, the shading API's free function: plastic matches a hand-built
 # env, matte builds at the shading normal, a null shader answers Cs as one
 # Lambert lobe, and glass answers its dielectric lobe. Shaders load through
-# GMANAttributes::setSurface, as shaderbsdf_test.cpp's do.
+# GMANAttributes::setSurface, as shaderbsdf_test.cpp's do. Links no path
+# tracer code; the include path alone lets pathtracerscene.h's shared
+# helpers, unused here, still compile.
 add_executable(gman_hitbsdf hitbsdf_test.cpp)
 target_link_libraries(gman_hitbsdf PRIVATE gman_core gman_internal_headers)
+target_include_directories(gman_hitbsdf PRIVATE
+  $<TARGET_PROPERTY:gman_pathtracer_objects,INTERFACE_INCLUDE_DIRECTORIES>)
 add_dependencies(gman_hitbsdf gman_matte gman_plastic gman_glass)
 
 add_test(NAME hitbsdf COMMAND gman_hitbsdf)
@@ -2709,17 +2713,31 @@ set_tests_properties(pathtracerfurnace PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Next-event estimation on the floor scene: a point, a spot and a distant
-# light each match rho * Cl(p) * cos(theta), two point lights sum their own
-# terms, and ambientlight lights nothing, with a warning naming it and the
-# count skipped. Linked against gman_pathtracer_objects, which still
-# compiles GMANPathtraceRenderer itself. See tests/pathtracerdirect_test.cpp.
+# Next-event estimation on the floor scene, one light at a time: a point,
+# a spot and a distant light each match rho * Cl(p) * cos(theta). Linked
+# against gman_pathtracer_objects, which still compiles
+# GMANPathtraceRenderer itself. See tests/pathtracerdirect_test.cpp.
 add_executable(gman_pathtracerdirect pathtracerdirect_test.cpp)
 target_link_libraries(gman_pathtracerdirect PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerdirect gman_matte)
 
 add_test(NAME pathtracerdirect COMMAND gman_pathtracerdirect)
 set_tests_properties(pathtracerdirect PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# Next-event estimation on the floor scene: two point lights sum their own
+# terms, and ambientlight lights nothing, with a warning naming it and the
+# count skipped. Linked against gman_pathtracer_objects, which still
+# compiles GMANPathtraceRenderer itself. See
+# tests/pathtracerdirectsum_test.cpp.
+add_executable(gman_pathtracerdirectsum pathtracerdirectsum_test.cpp)
+target_link_libraries(gman_pathtracerdirectsum PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerdirectsum gman_matte)
+
+add_test(NAME pathtracerdirectsum COMMAND gman_pathtracerdirectsum)
+set_tests_properties(pathtracerdirectsum PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
@@ -2739,12 +2757,12 @@ set_tests_properties(pathtracershadow PROPERTIES
   TIMEOUT 30)
 
 # The shadow walk's own composite-layer cap, built twice from the same
-# source at PATHTRACER_SHADOW_CAP_COUNT 16 and 17: 16 zero-opacity blockers
-# stacked 0.1 apart still pass light, and a 17th -- past
-# gman::kMaxCompositeLayers -- reads opaque. See
-# tests/pathtracershadowcap_test.cpp.
+# source at PATHTRACER_SHADOW_CAP_COUNT 0 and 1, each an offset from
+# gman::kMaxCompositeLayers: at the cap, zero-opacity blockers stacked 0.1
+# apart still pass light, and one more -- past gman::kMaxCompositeLayers --
+# reads opaque. See tests/pathtracershadowcap_test.cpp.
 add_executable(gman_pathtracershadowcap16 pathtracershadowcap_test.cpp)
-target_compile_definitions(gman_pathtracershadowcap16 PRIVATE PATHTRACER_SHADOW_CAP_COUNT=16)
+target_compile_definitions(gman_pathtracershadowcap16 PRIVATE PATHTRACER_SHADOW_CAP_COUNT=0)
 target_link_libraries(gman_pathtracershadowcap16 PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracershadowcap16 gman_matte)
 
@@ -2755,7 +2773,7 @@ set_tests_properties(pathtracershadowcap16 PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_pathtracershadowcap17 pathtracershadowcap_test.cpp)
-target_compile_definitions(gman_pathtracershadowcap17 PRIVATE PATHTRACER_SHADOW_CAP_COUNT=17)
+target_compile_definitions(gman_pathtracershadowcap17 PRIVATE PATHTRACER_SHADOW_CAP_COUNT=1)
 target_link_libraries(gman_pathtracershadowcap17 PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracershadowcap17 gman_matte)
 

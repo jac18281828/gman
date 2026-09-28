@@ -26,24 +26,33 @@
  * [kFloorXMin, kFloorXMax] and z in [kFloorZMin, kFloorZMax], with a
  * double-precision plane intersection and a measured-pixel test to match.
  * Also the shipped-shader loader every integrator test uses in place of a
- * hand-written closure.
+ * hand-written closure, and the direct-lighting tests' own render, analytic
+ * expectation and residual check against it.
  */
 
+#include <cmath>
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "check.h"
 #include "gmanattributes.h"
 #include "gmancolor.h"
 #include "gmandictionary.h"
+#include "gmanframebuffer.h"
+#include "gmanlightsourcemgr.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
+#include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraypolygon.h"
 #include "gmansurfaceshader.h"
+#include "gmanvector.h"
 #include "gmanvsperspective.h"
 #include "ri.h"
+#include "samplingstats.h"
 
 inline constexpr RtFloat kFloorXMin = -8.0f;
 inline constexpr RtFloat kFloorXMax = 8.0f;
@@ -139,4 +148,107 @@ inline GMANParameterList matteParams(RtFloat kd) {
   RtToken tokens[1] = {RI_KD};
   RtPointer parms[1] = {&kd};
   return GMANParameterList(dictionary, 1, tokens, parms);
+}
+
+// The mean, over a 16 x 16 midpoint grid of pixel (px, py)'s cell, of the
+// analytic radiance summed over lights: rho * Cl(p) * |N . L|, Cl and L
+// from GMANLight::sample, N = (0, 1, 0), rho = 0.5 (Kd 1, Cs 0.5).
+inline GMANColor analyticExpected(gman::VSPerspective& viewingSys, int px, int py,
+                                  std::vector<GMANLight const*> const& lights) {
+  constexpr int kMidGrid = 16;
+  constexpr RtFloat kReflectance = 0.5f;
+  double sum[3] = {0.0, 0.0, 0.0};
+  for (int sy = 0; sy < kMidGrid; ++sy) {
+    for (int sx = 0; sx < kMidGrid; ++sx) {
+      RtFloat const rx = (RtFloat)px + ((RtFloat)sx + 0.5f) / (RtFloat)kMidGrid;
+      RtFloat const ry = (RtFloat)py + ((RtFloat)sy + 0.5f) / (RtFloat)kMidGrid;
+      GMANRay const ray = viewingSys.cameraRay(rx, ry);
+      double x, z;
+      if (!intersectFloorPlane(ray, x, z)) {
+        continue;
+      }
+      GMANPoint const p((RtFloat)x, kFloorY, (RtFloat)z);
+      for (GMANLight const* light : lights) {
+        GMANVector l;
+        GMANColor cl;
+        light->sample(p, l, cl);
+        l.normalize();
+        double const cosTheta = std::fabs((double)l.getY());
+        sum[0] += (double)kReflectance * (double)cl.getRed() * cosTheta;
+        sum[1] += (double)kReflectance * (double)cl.getGreen() * cosTheta;
+        sum[2] += (double)kReflectance * (double)cl.getBlue() * cosTheta;
+      }
+    }
+  }
+  double const n = (double)(kMidGrid * kMidGrid);
+  return GMANColor((RtFloat)(sum[0] / n), (RtFloat)(sum[1] / n), (RtFloat)(sum[2] / n));
+}
+
+// Renders the floor, Kd 1 and Cs 0.5 so rho = 0.5, lit by lights, at 81 x
+// 81 and N = 64, and reports each measured pixel's residual (pixel -
+// expected) per channel, plus the count measured.
+inline void renderAndCollectResiduals(std::vector<GMANLight const*> const& lights, std::vector<double> residuals[3],
+                                      std::vector<double> expectedByChannel[3], std::size_t& measuredCount,
+                                      std::size_t& droppedCount) {
+  constexpr RtInt kRes = 81;
+  constexpr RtFloat kReflectance = 0.5f;
+  constexpr RtInt kSamples = 64;
+
+  GMANOptions options;
+  options.setFormat(kRes, kRes, 1.0f);
+  options.setPixelSamples(1.0f, 1.0f);
+  options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
+  options.setPathtracerSamples(kSamples);
+
+  GMANMatrix4 const identity;
+  gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
+
+  GMANPathtraceRenderer renderer;
+  GMANRayPolygon* floor = buildFloor();
+  gman::Appearance appearance;
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  appearance.lights = lights;
+  floor->setAppearance(appearance);
+  renderer.getWorldManager()->add(floor);
+
+  GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
+  GMANAttributes const attr;
+  renderer.render(&frameBuffer, &viewingSys, options, attr);
+  droppedCount = renderer.droppedPathCount();
+
+  measuredCount = 0;
+  for (int py = 0; py < kRes; ++py) {
+    for (int px = 0; px < kRes; ++px) {
+      if (!pixelMeasured(viewingSys, px, py)) {
+        continue;
+      }
+      ++measuredCount;
+      GMANColor const expected = analyticExpected(viewingSys, px, py, lights);
+      GMANColor const actual = frameBuffer.getPixel(px, py);
+      for (int c = 0; c < 3; ++c) {
+        residuals[c].push_back(channel(actual, c) - channel(expected, c));
+        expectedByChannel[c].push_back(channel(expected, c));
+      }
+    }
+  }
+}
+
+// Prints and asserts each channel's residual mean against relativeFloor
+// times the expected mean's own magnitude, within 5 sigma of 0.
+inline void checkResiduals(std::vector<double> residuals[3], std::vector<double> expectedByChannel[3],
+                           double relativeFloor, std::string const& label) {
+  char const* const channelName[3] = {"red", "green", "blue"};
+  for (int c = 0; c < 3; ++c) {
+    GmanMeanStderr const residualStat = meanStderr(residuals[c]);
+    GmanMeanStderr const expectedStat = meanStderr(expectedByChannel[c]);
+    double const floorAbs = relativeFloor * std::fabs(expectedStat.mean);
+    std::printf("%s %s: residual mean %.6f (%.3f sigma), expected mean %.6f\n", label.c_str(), channelName[c],
+                residualStat.mean,
+                residualStat.stderrOfMean > 0.0 ? residualStat.mean / residualStat.stderrOfMean : 0.0,
+                expectedStat.mean);
+    checkNear(residualStat.mean, 0.0, residualStat.stderrOfMean, floorAbs,
+              label + ": the " + channelName[c] + " channel's residual mean is within 5 sigma of 0");
+  }
 }

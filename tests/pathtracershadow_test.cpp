@@ -25,7 +25,6 @@
  * composite-layer cap is tests/pathtracershadowcap_test.cpp's own.
  */
 
-#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <memory>
@@ -35,63 +34,16 @@
 #include "check.h"
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
-#include "gmanlightsourcemgr.h"
-#include "gmanoptions.h"
 #include "gmanparameterlist.h"
-#include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
-#include "gmanraypolygon.h"
-#include "gmanvector.h"
 #include "gmanvsperspective.h"
-#include "pathtracerscene.h"
+#include "pathtracershadowscene.h"
 #include "ri.h"
 #include "samplingstats.h"
 
 namespace {
 
-constexpr RtInt kRes = 81;
-constexpr RtFloat kReflectance = 0.5f; // Kd = 1, Cs = 0.5
-constexpr RtInt kSamples = 64;
-
-constexpr RtFloat kLightIntensity = 0.8f;
-constexpr double kExpectedLit = 0.4; // rho * I, cos(theta) = 1
-
-constexpr RtFloat kBlockerY = 12.0f;
-constexpr RtFloat kBlockerXMin = -2.0f;
-constexpr RtFloat kBlockerXMax = 2.0f;
-constexpr RtFloat kBlockerZMin = 5.0f;
-constexpr RtFloat kBlockerZMax = 9.0f;
-
-constexpr RtFloat kShadowedXMin = -1.8f;
-constexpr RtFloat kShadowedXMax = 1.8f;
-constexpr RtFloat kShadowedZMin = 5.2f;
-constexpr RtFloat kShadowedZMax = 8.8f;
-constexpr std::size_t kMinShadowedPixels = 100;
-
 constexpr double kFresnelNormal = 0.04; // exact Fresnel at normal incidence, index 1 -> 1.5
-
-bool withinRect(double x, double z, double xmin, double xmax, double zmin, double zmax, double margin) {
-  return x >= xmin + margin && x <= xmax - margin && z >= zmin + margin && z <= zmax - margin;
-}
-
-// A shadowed pixel: measured, and its four corner hits lie within the
-// shadowed rectangle, clear of its own edge.
-bool pixelShadowed(gman::VSPerspective& viewingSys, int px, int py) {
-  if (!pixelMeasured(viewingSys, px, py)) {
-    return false;
-  }
-  for (int dy = 0; dy <= 1; ++dy) {
-    for (int dx = 0; dx <= 1; ++dx) {
-      GMANRay const corner = viewingSys.cameraRay((RtFloat)(px + dx), (RtFloat)(py + dy));
-      double x, z;
-      if (!intersectFloorPlane(corner, x, z) ||
-          !withinRect(x, z, kShadowedXMin, kShadowedXMax, kShadowedZMin, kShadowedZMax, 0.05)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
 
 // Every measured pixel on the far side (x >= 3 on every corner) or near
 // side (x <= -3 on every corner): unshadowed, reading the lit value.
@@ -117,49 +69,6 @@ bool pixelClearSide(gman::VSPerspective& viewingSys, int px, int py) {
     }
   }
   return allFar || allNear;
-}
-
-// Renders the floor under the distant light, with blockerAppearances added
-// above it, once; the caller selects whichever pixel sets it needs from
-// the result.
-void renderScene(std::vector<gman::Appearance> const& blockerAppearances,
-                 std::vector<std::vector<GMANPoint>> const& blockerVerts,
-                 std::unique_ptr<GMANFrameBuffer>& frameBufferOut, std::unique_ptr<gman::VSPerspective>& viewingSysOut,
-                 std::size_t& droppedOut) {
-  GMANOptions options;
-  options.setFormat(kRes, kRes, 1.0f);
-  options.setPixelSamples(1.0f, 1.0f);
-  options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
-  options.setPathtracerSamples(kSamples);
-
-  GMANMatrix4 const identity;
-  viewingSysOut.reset(new gman::VSPerspective(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f));
-
-  GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(kLightIntensity, kLightIntensity, kLightIntensity), GMANPoint(),
-                        GMANVector(0.0f, -1.0f, 0.0f));
-
-  GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
-  gman::Appearance floorAppearance;
-  floorAppearance.shader = loadShader("matte", matteParams(1.0f));
-  floorAppearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
-  floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
-  floorAppearance.lights = {&light};
-  floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(floor);
-
-  for (std::size_t i = 0; i < blockerVerts.size(); ++i) {
-    GMANRayPolygon* blocker = new GMANRayPolygon(blockerVerts[i], GMANParameterList());
-    gman::Appearance appearance = blockerAppearances[i];
-    appearance.lights = {&light};
-    blocker->setAppearance(appearance);
-    renderer.getWorldManager()->add(blocker);
-  }
-
-  frameBufferOut.reset(new GMANFrameBuffer(kRes, kRes, options.getBackground()));
-  GMANAttributes const attr;
-  renderer.render(frameBufferOut.get(), viewingSysOut.get(), options, attr);
-  droppedOut = renderer.droppedPathCount();
 }
 
 // Selects pixels from a rendered scene, appending the finite value at each
@@ -191,15 +100,6 @@ void checkAgainstConstant(std::vector<double> values[3], double expected, double
     checkNear(stat.mean, expected, stat.stderrOfMean, relativeFloor * expected,
               label + ": the " + channelName[c] + " channel's mean is within 5 sigma of " + std::to_string(expected));
   }
-}
-
-std::vector<GMANPoint> rectAt(RtFloat y, bool reversedWinding) {
-  std::vector<GMANPoint> verts = {GMANPoint(kBlockerXMin, y, kBlockerZMin), GMANPoint(kBlockerXMin, y, kBlockerZMax),
-                                  GMANPoint(kBlockerXMax, y, kBlockerZMax), GMANPoint(kBlockerXMax, y, kBlockerZMin)};
-  if (reversedWinding) {
-    std::reverse(verts.begin(), verts.end());
-  }
-  return verts;
 }
 
 // The pane: two opposite-wound glass polygons, Os 1, rendered once; the

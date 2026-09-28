@@ -381,6 +381,7 @@ void checkDepth() {
 // Antialiasing: a slanted edge's own column.
 void checkAntialiasing() {
   constexpr RtInt kRes = 41;
+  static_assert(kRes >= 16, "the edge column must measure over at least 16 pixels");
   constexpr int kX0 = kRes / 2;
   constexpr RtFloat kZ0 = 10.0f;
   RtFloat const ndcEdge = -1.0f + 2.0f * ((RtFloat)kX0 + 0.3f) / (RtFloat)kRes;
@@ -417,7 +418,6 @@ void checkAntialiasing() {
     GMANAlpha const a = frameBuffer.getAlpha(kX0, y);
     alphaValues.push_back((double)a.getRed());
   }
-  check(alphaValues.size() == (std::size_t)kRes, "antialiasing: every row along the edge's own column is measured");
 
   GmanMeanStderr const stat = meanStderr(alphaValues);
   checkNear(stat.mean, 0.7, stat.stderrOfMean, 1.0 / (double)kDefaultSamples,

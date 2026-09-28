@@ -19,15 +19,16 @@
  */
 
 /*
- * The shadow walk's own composite-layer cap: PATHTRACER_SHADOW_CAP_COUNT
- * black, zero-opacity blockers stacked 0.1 apart still pass light at
- * gman::kMaxCompositeLayers of them, and read opaque one blocker past it.
- * Built twice, at 16 and at 17, into the pathtracershadowcap16 and
- * pathtracershadowcap17 executables.
+ * The shadow walk's own composite-layer cap: gman::kMaxCompositeLayers
+ * black, zero-opacity blockers stacked 0.1 apart still pass light, and one
+ * more reads opaque. PATHTRACER_SHADOW_CAP_COUNT is the offset from
+ * gman::kMaxCompositeLayers this build stacks: 0 or 1. Built twice into the
+ * pathtracershadowcap16 and pathtracershadowcap17 executables, so a change
+ * to gman::kMaxCompositeLayers moves both blocker counts with it.
  */
 
 #ifndef PATHTRACER_SHADOW_CAP_COUNT
-#error "PATHTRACER_SHADOW_CAP_COUNT must name this build's own blocker count"
+#error "PATHTRACER_SHADOW_CAP_COUNT must name this build's own offset, 0 or 1"
 #endif
 
 #include <cmath>
@@ -39,120 +40,51 @@
 #include "check.h"
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
-#include "gmanlightsourcemgr.h"
-#include "gmanoptions.h"
-#include "gmanparameterlist.h"
-#include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
 #include "gmanrayoccluder.h"
-#include "gmanraypolygon.h"
-#include "gmanvector.h"
+#include "gmansurfaceshader.h"
 #include "gmanvsperspective.h"
-#include "pathtracerscene.h"
+#include "pathtracershadowscene.h"
 #include "ri.h"
 #include "samplingstats.h"
 
 namespace {
 
-constexpr RtInt kRes = 81;
-constexpr RtFloat kReflectance = 0.5f; // Kd = 1, Cs = 0.5
-constexpr RtInt kSamples = 64;
-
-constexpr RtFloat kLightIntensity = 0.8f;
-constexpr double kExpectedLit = 0.4; // rho * I, cos(theta) = 1
-
-constexpr RtFloat kBlockerY = 12.0f;
-constexpr RtFloat kBlockerXMin = -2.0f;
-constexpr RtFloat kBlockerXMax = 2.0f;
-constexpr RtFloat kBlockerZMin = 5.0f;
-constexpr RtFloat kBlockerZMax = 9.0f;
 constexpr RtFloat kBlockerSpacing = 0.1f;
 
-constexpr RtFloat kShadowedXMin = -1.8f;
-constexpr RtFloat kShadowedXMax = 1.8f;
-constexpr RtFloat kShadowedZMin = 5.2f;
-constexpr RtFloat kShadowedZMax = 8.8f;
-constexpr std::size_t kMinShadowedPixels = 100;
+// This build's own blocker count: gman::kMaxCompositeLayers at offset 0,
+// one past it at offset 1.
+constexpr int kBlockerCount = gman::kMaxCompositeLayers + PATHTRACER_SHADOW_CAP_COUNT;
 
-bool withinRect(double x, double z, double xmin, double xmax, double zmin, double zmax, double margin) {
-  return x >= xmin + margin && x <= xmax - margin && z >= zmin + margin && z <= zmax - margin;
-}
-
-// A shadowed pixel: measured, and its four corner hits lie within the
-// shadowed rectangle, clear of its own edge.
-bool pixelShadowed(gman::VSPerspective& viewingSys, int px, int py) {
-  if (!pixelMeasured(viewingSys, px, py)) {
-    return false;
-  }
-  for (int dy = 0; dy <= 1; ++dy) {
-    for (int dx = 0; dx <= 1; ++dx) {
-      GMANRay const corner = viewingSys.cameraRay((RtFloat)(px + dx), (RtFloat)(py + dy));
-      double x, z;
-      if (!intersectFloorPlane(corner, x, z) ||
-          !withinRect(x, z, kShadowedXMin, kShadowedXMax, kShadowedZMin, kShadowedZMax, 0.05)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-std::vector<GMANPoint> rectAt(RtFloat y) {
-  return {GMANPoint(kBlockerXMin, y, kBlockerZMin), GMANPoint(kBlockerXMin, y, kBlockerZMax),
-          GMANPoint(kBlockerXMax, y, kBlockerZMax), GMANPoint(kBlockerXMax, y, kBlockerZMin)};
-}
-
-// Stacks PATHTRACER_SHADOW_CAP_COUNT black, zero-opacity blockers above the
-// floor, renders once under the distant light, and reports the shadowed
-// pixels' mean plus the dropped-path count.
+// Stacks kBlockerCount black, zero-opacity blockers above the floor,
+// renders once under the distant light, and reports the shadowed pixels'
+// mean plus the dropped-path count.
 void renderCap(std::vector<double> shadowed[3], std::size_t& shadowedCount, std::size_t& droppedOut) {
-  GMANOptions options;
-  options.setFormat(kRes, kRes, 1.0f);
-  options.setPixelSamples(1.0f, 1.0f);
-  options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
-  options.setPathtracerSamples(kSamples);
-
-  GMANMatrix4 const identity;
-  gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
-
-  GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(kLightIntensity, kLightIntensity, kLightIntensity), GMANPoint(),
-                        GMANVector(0.0f, -1.0f, 0.0f));
-
-  GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
-  gman::Appearance floorAppearance;
-  floorAppearance.shader = loadShader("matte", matteParams(1.0f));
-  floorAppearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
-  floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
-  floorAppearance.lights = {&light};
-  floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(floor);
-
   std::shared_ptr<GMANSurfaceShader const> const blockerShader = loadShader("matte", matteParams(1.0f));
-  for (int i = 0; i < PATHTRACER_SHADOW_CAP_COUNT; ++i) {
-    GMANRayPolygon* blocker = new GMANRayPolygon(rectAt(kBlockerY + (RtFloat)i * kBlockerSpacing), GMANParameterList());
-    gman::Appearance appearance;
-    appearance.shader = blockerShader;
-    appearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
-    appearance.Os = GMANColor(0.0f, 0.0f, 0.0f);
-    appearance.lights = {&light};
-    blocker->setAppearance(appearance);
-    renderer.getWorldManager()->add(blocker);
+  gman::Appearance blockerAppearance;
+  blockerAppearance.shader = blockerShader;
+  blockerAppearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
+  blockerAppearance.Os = GMANColor(0.0f, 0.0f, 0.0f);
+
+  std::vector<gman::Appearance> const appearances(kBlockerCount, blockerAppearance);
+  std::vector<std::vector<GMANPoint>> verts;
+  verts.reserve(kBlockerCount);
+  for (int i = 0; i < kBlockerCount; ++i) {
+    verts.push_back(rectAt(kBlockerY + (RtFloat)i * kBlockerSpacing));
   }
 
-  GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
-  GMANAttributes const attr;
-  renderer.render(&frameBuffer, &viewingSys, options, attr);
-  droppedOut = renderer.droppedPathCount();
+  std::unique_ptr<GMANFrameBuffer> frameBuffer;
+  std::unique_ptr<gman::VSPerspective> viewingSys;
+  renderScene(appearances, verts, frameBuffer, viewingSys, droppedOut);
 
   shadowedCount = 0;
   for (int py = 0; py < kRes; ++py) {
     for (int px = 0; px < kRes; ++px) {
-      if (!pixelShadowed(viewingSys, px, py)) {
+      if (!pixelShadowed(*viewingSys, px, py)) {
         continue;
       }
       ++shadowedCount;
-      GMANColor const p = frameBuffer.getPixel(px, py);
+      GMANColor const p = frameBuffer->getPixel(px, py);
       shadowed[0].push_back(p.getRed());
       shadowed[1].push_back(p.getGreen());
       shadowed[2].push_back(p.getBlue());
@@ -168,7 +100,7 @@ void testCap() {
   check(dropped == 0, "cap: droppedPathCount() is 0");
   check(shadowedCount >= kMinShadowedPixels, "cap: at least 100 shadowed pixels");
 
-  if (PATHTRACER_SHADOW_CAP_COUNT <= gman::kMaxCompositeLayers) {
+  if (kBlockerCount <= gman::kMaxCompositeLayers) {
     char const* const channelName[3] = {"red", "green", "blue"};
     for (int c = 0; c < 3; ++c) {
       GmanMeanStderr const stat = meanStderr(shadowed[c]);
@@ -191,6 +123,8 @@ void testCap() {
 int main() {
   testCap();
 
-  return checkSummary("the shadow walk's composite-layer cap: PATHTRACER_SHADOW_CAP_COUNT blockers still pass "
-                      "light at the cap and read opaque one blocker past it");
+  std::string const summary =
+      "the shadow walk's composite-layer cap: " + std::to_string(kBlockerCount) + " blockers " +
+      (kBlockerCount <= gman::kMaxCompositeLayers ? "still pass light" : "read opaque, past gman::kMaxCompositeLayers");
+  return checkSummary(summary.c_str());
 }
