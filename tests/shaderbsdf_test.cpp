@@ -183,22 +183,8 @@ bool sameClosure(gman::BSDF const& a, gman::BSDF const& b) {
   return true;
 }
 
-// The same lobes, weights and alphas exactly equal.
-bool sameClosureWithAlpha(gman::BSDF const& a, gman::BSDF const& b) {
-  if (a.lobeCount() != b.lobeCount()) {
-    return false;
-  }
-  for (std::size_t i = 0; i < a.lobeCount(); ++i) {
-    if (a.lobe(i).kind != b.lobe(i).kind || !colorExactly(a.lobe(i).weight, b.lobe(i).weight) ||
-        a.lobe(i).alpha != b.lobe(i).alpha) {
-      return false;
-    }
-  }
-  return true;
-}
-
 // The same lobes, weights, alphas and etas exactly equal.
-bool sameClosureFull(gman::BSDF const& a, gman::BSDF const& b) {
+bool sameClosureExactly(gman::BSDF const& a, gman::BSDF const& b) {
   if (a.lobeCount() != b.lobeCount()) {
     return false;
   }
@@ -319,10 +305,10 @@ void checkDefault() {
   check(colorExactly(plain.albedo(se), kOutOfRangeClamped), "default: albedo at Cs = (1.4, 0.2, -0.3) is (1, 0.2, 0)");
 }
 
-// countingshader stands in for a plugin without a bsdf override: every
-// shipped shader now overrides bsdf, so none of them can prove this case
-// across the .so boundary the way the in-binary Plain subclass never
-// crosses.
+// countingshader stands in for a plugin without a bsdf override. It is the
+// only loaded plugin that still inherits the base default, since every
+// shipped shader now overrides bsdf; the in-binary Plain subclass proves
+// the same default without crossing the shared-object boundary.
 void checkLoadedDefault() {
   auto const counting = loadSurface("countingshader", GMANParameterList());
   check(counting != nullptr, "default: countingshader loads through setSurface");
@@ -506,8 +492,8 @@ void checkPaintedPlasticGGX() {
       "paintedplastic", paintedplasticParams(0.5f, 0.5f, kDefaultSpecularColor, kDefaultRoughness, std::string()));
   auto const plasticAtDefaults = loadSurface("plastic", plasticParams());
   check(paintedAtDefaults != nullptr && plasticAtDefaults != nullptr &&
-            sameClosureWithAlpha(paintedAtDefaults->bsdf(envWith(kCs, kOpaqueOs)),
-                                 plasticAtDefaults->bsdf(envWith(kCs, kOpaqueOs))),
+            sameClosureExactly(paintedAtDefaults->bsdf(envWith(kCs, kOpaqueOs)),
+                               plasticAtDefaults->bsdf(envWith(kCs, kOpaqueOs))),
         "paintedplastic: with texturename empty at plastic's default parameters, its closure equals plastic's lobe "
         "for lobe, in kind, weight and alpha");
 
@@ -518,7 +504,7 @@ void checkPaintedPlasticGGX() {
       "paintedplastic", paintedplasticParams(kd, ks, kDefaultSpecularColor, kDefaultRoughness, std::string()));
   auto const plastic = loadSurface("plastic", plasticParams(kd, ks, kDefaultSpecularColor, kDefaultRoughness));
   check(painted != nullptr && plastic != nullptr &&
-            sameClosureWithAlpha(painted->bsdf(envWith(cs, kOpaqueOs)), plastic->bsdf(envWith(cs, kOpaqueOs))),
+            sameClosureExactly(painted->bsdf(envWith(cs, kOpaqueOs)), plastic->bsdf(envWith(cs, kOpaqueOs))),
         "paintedplastic: with texturename empty, its closure equals plastic's lobe for lobe, in kind, weight and "
         "alpha");
 
@@ -594,7 +580,7 @@ void checkShinyMetalGGX() {
 
   auto const krZero = loadSurface("shinymetal", shinymetalParams(1.0f, 0.0f, kDefaultRoughness));
   auto const krOne = loadSurface("shinymetal", shinymetalParams(1.0f, 1.0f, kDefaultRoughness));
-  check(krZero != nullptr && krOne != nullptr && sameClosureWithAlpha(krZero->bsdf(se), krOne->bsdf(se)),
+  check(krZero != nullptr && krOne != nullptr && sameClosureExactly(krZero->bsdf(se), krOne->bsdf(se)),
         "shinymetal: the closure is identical at Kr = 0 and Kr = 1");
 
   check(colorExactly(shiny->albedo(se), kBlack), "shinymetal: albedo is black exactly");
@@ -621,7 +607,7 @@ void checkMirrorBsdf() {
 
   check(colorExactly(mirror->albedo(envWith(kCs, kOpaqueOs)), kBlack), "mirror: albedo is black exactly");
 
-  check(sameClosureFull(mirror->bsdf(envWith(kCs, kOpaqueOs)), mirror->bsdf(envWith(kCs, kTranslucentOs))),
+  check(sameClosureExactly(mirror->bsdf(envWith(kCs, kOpaqueOs)), mirror->bsdf(envWith(kCs, kTranslucentOs))),
         "mirror: the closure at Os = (1, 1, 1) matches the one at Os = (0.2, 0.2, 0.2)");
 }
 
@@ -637,9 +623,9 @@ void checkGlassBsdf() {
   check(isDielectricOf(base, kWhite, kGlassIor),
         "glass: at Cs = (0.5, 0.4, 0.3), one dielectric lobe of weight exactly (1, 1, 1) and eta exactly 1.5");
 
-  check(sameClosureFull(glass->bsdf(envWith(GMANColor(0.2f, 0.9f, 0.4f), kOpaqueOs)), base),
+  check(sameClosureExactly(glass->bsdf(envWith(GMANColor(0.2f, 0.9f, 0.4f), kOpaqueOs)), base),
         "glass: the closure at Cs = (0.2, 0.9, 0.4) matches the one at Cs = (0.5, 0.4, 0.3)");
-  check(sameClosureFull(glass->bsdf(envWith(kCs, kTranslucentOs)), base),
+  check(sameClosureExactly(glass->bsdf(envWith(kCs, kTranslucentOs)), base),
         "glass: the closure at Os = (0.2, 0.2, 0.2) matches the one at Os = (1, 1, 1)");
 
   check(colorExactly(glass->albedo(envWith(kCs, kOpaqueOs)), kBlack), "glass: albedo is black exactly");
@@ -675,13 +661,14 @@ void checkGlassOrientsByNg() {
     gman::BSDF const closure = glass->bsdf(se);
 
     std::uint32_t const dim = 2u * static_cast<std::uint32_t>(idx);
-    bool transmitDirOk = true, transmitCOk = true, reflectPdfOk = true;
+    bool transmitOccurred = false, transmitDirOk = true, transmitCOk = true, reflectPdfOk = true;
     for (std::uint32_t i = 0; i < kOrientDraws; ++i) {
       gman::BSDFSample const s = closure.sample(wo, uniform(i, dim), uniform(i, dim + 1u));
       if (!(s.pdf > 0.0f)) {
         continue;
       }
       if (s.wi.getZ() < 0.0f) {
+        transmitOccurred = true;
         transmitDirOk = transmitDirOk && vectorNear(s.wi, GMANVector(0.0f, 0.0f, -1.0f), 1e-5);
         double const cVal = (double)s.f.getRed() * std::fabs((double)s.wi.getZ());
         transmitCOk = transmitCOk && std::fabs(cVal - c.expectedC) <= 1e-5 * c.expectedC;
@@ -689,6 +676,7 @@ void checkGlassOrientsByNg() {
         reflectPdfOk = reflectPdfOk && std::fabs((double)s.pdf - 0.04) <= 1e-5;
       }
     }
+    check(transmitOccurred, std::string("glass orientation, ") + c.label + ": a transmitted draw occurs");
     check(transmitDirOk,
           std::string("glass orientation, ") + c.label + ": every transmitted draw has wi = (0, 0, -1) within 1e-5");
     check(transmitCOk,
@@ -742,7 +730,7 @@ void checkInputsOnly() {
     full.P = GMANPoint(1.0f, 2.0f, 3.0f);
     full.lights = {&light};
 
-    check(sameClosureFull(shader->bsdf(minimal), shader->bsdf(full)),
+    check(sameClosureExactly(shader->bsdf(minimal), shader->bsdf(full)),
           std::string(c.name) + ": inputs only: bsdf matches lobe count, kind, weight, alpha and eta across both "
                                 "envs");
     check(colorExactly(shader->albedo(minimal), shader->albedo(full)),

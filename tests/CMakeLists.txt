@@ -2670,11 +2670,11 @@ set_tests_properties(bsdfdelta PROPERTIES
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta
-# closures, with every shader loaded through GMANAttributes::setSurface;
-# the loaded-default case loads countingshader, the last shipped plugin
-# without a bsdf override having gained one. Its own working directory,
-# since the paintedplastic case writes and reads a texture file relative
-# to cwd.
+# closures, with every shader loaded through GMANAttributes::setSurface.
+# add_dependencies below lists every plugin it loads, countingshader
+# included: the loaded-default case needs it, since every shipped plugin
+# now overrides bsdf. Its own working directory, since the paintedplastic
+# case writes and reads a texture file relative to cwd.
 add_executable(gman_shaderbsdf shaderbsdf_test.cpp)
 target_link_libraries(gman_shaderbsdf PRIVATE gman_core TIFF::TIFF)
 add_dependencies(gman_shaderbsdf gman_matte gman_plastic gman_paintedplastic gman_metal gman_shinymetal gman_mirror

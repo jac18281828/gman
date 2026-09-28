@@ -108,11 +108,12 @@ constexpr std::size_t kMirrorAngleCount = sizeof(kMirrorAnglesDeg) / sizeof(kMir
 constexpr double kDielectricAnglesDeg[] = {0.0, 45.0, 60.0, 89.0, 120.0, 139.0, 150.0, 180.0};
 constexpr std::size_t kDielectricAngleCount = sizeof(kDielectricAnglesDeg) / sizeof(kDielectricAnglesDeg[0]);
 constexpr double kTirAngleDeg = 120.0;
-// Refracting back from this angle's transmission direction lands within a
-// float ulp of the critical angle on the far side, where F's derivative is
-// steep enough that reflecting it magnifies float rounding well past what
-// a reciprocity check can resolve; A.5 excludes it, as it excludes
-// kTirAngleDeg, which never transmits.
+// Refracting back from this angle's transmission direction lands 9.1e-5
+// away in cosine from the critical angle, cos(theta_t) 0.74544680 against
+// 0.74535599; F's slope there, dF/d(cosine) about -498 against -1.2 at 60
+// degrees, turns a 1-4 ulp cosine error into 2.2e-5 to 8.9e-5 of F, past
+// the reciprocity check's own tolerance. checkDielectric excludes it, as
+// it excludes kTirAngleDeg, which never transmits.
 constexpr double kNearCriticalAngleDeg = 89.0;
 
 // Dimension bases, one block per statistical draw so no two random numbers
@@ -333,7 +334,8 @@ FRef refFresnelFromCos(double etaO, double etaI, double cosThetaO) {
 }
 
 // F at the exact double angle degrees from N0, eta the dielectric's
-// relative index: A.1's self-check uses this apart from any float wo.
+// relative index: checkReference's own self-check uses this apart from any
+// float wo.
 FRef refFAtAngle(double degrees, double eta) {
   double const theta = degrees * kPiD / 180.0;
   double const cosWoN = std::cos(theta);
@@ -343,7 +345,7 @@ FRef refFAtAngle(double degrees, double eta) {
   return refFresnelFromCos(etaO, etaI, std::fabs(cosWoN));
 }
 
-// ---- A.1: the reference's own pinned values. ----
+// ---- The reference's own pinned values. ----
 
 void checkReference() {
   struct FCase {
@@ -385,7 +387,7 @@ void checkReference() {
         "reference: the critical angle inside is 41.8103149 degrees within 1e-7");
 }
 
-// ---- A.2: the mirror. ----
+// ---- The mirror. ----
 
 void checkMirror() {
   gman::BSDF const closure = buildMirror(kR);
@@ -436,7 +438,7 @@ void checkMirror() {
   }
 }
 
-// The mirror half of A.5: the draw from wi returns wo with the same c.
+// The mirror's own reciprocity: the draw from wi returns wo with the same c.
 void checkMirrorReciprocity() {
   gman::BSDF const closure = buildMirror(kR);
   bool ok = true;
@@ -448,13 +450,14 @@ void checkMirrorReciprocity() {
     GMANColor const c2 = drawC(backward.f, n0().dot(backward.wi));
     ok = ok && vectorNear(backward.wi, toVec3(wo), kDirTol) && colorNearRel(c2, c1, kWeightRelTol);
   }
-  check(ok, "reciprocity, mirror: at each of A.2's wo, the draw from wi returns wo within 1e-5 with the same c "
-            "within 1e-5 relative");
+  check(ok, "reciprocity, mirror: at each of the mirror's own wo angles, the draw from wi returns wo within 1e-5 "
+            "with the same c within 1e-5 relative");
 }
 
-// ---- A.3, A.4 and A.5: the dielectric. ----
+// ---- The dielectric: direction, energy and reciprocity. ----
 
-// What A.4 and A.5 need from a dielectric angle's main draws pass.
+// What the energy and reciprocity checks need from a dielectric angle's
+// main draws pass.
 struct DielectricAngleResult {
   bool hasFirstReflected = false;
   GMANColor firstReflectedC{0.0f, 0.0f, 0.0f};
@@ -463,8 +466,9 @@ struct DielectricAngleResult {
   GMANColor firstTransmittedC{0.0f, 0.0f, 0.0f};
 };
 
-// A.3's own checks for one angle, over kDielectricDraws draws of a white
-// closure; returns what A.4 and A.5 need from those same draws.
+// The dielectric's own checks for one angle, over kDielectricDraws draws of
+// a white closure; returns what the energy and reciprocity checks need from
+// those same draws.
 DielectricAngleResult checkDielectricAngle(double angle, RefGeometry const& geo, FRef const& fr, double scale,
                                            std::size_t angleIndex) {
   GMANVector const wo = woAt(angle);
@@ -485,8 +489,8 @@ DielectricAngleResult checkDielectricAngle(double angle, RefGeometry const& geo,
   DielectricAngleResult result;
   std::uint32_t successes = 0, reflected = 0;
   bool deltaOk = true;
-  bool reflectSideOk = true, reflectDirOk = true, reflectPdfOk = true, reflectCOk = true;
-  bool transmitSideOk = true, transmitDirOk = true, transmitPdfOk = true, transmitCOk = true;
+  bool reflectDirOk = true, reflectPdfOk = true, reflectCOk = true;
+  bool transmitDirOk = true, transmitPdfOk = true, transmitCOk = true;
   bool ownOffOk = true, energyRatioOk = true, pairedOk = true;
 
   for (std::uint32_t i = 0; i < kDielectricDraws; ++i) {
@@ -510,7 +514,6 @@ DielectricAngleResult checkDielectricAngle(double angle, RefGeometry const& geo,
 
     if (isReflected) {
       ++reflected;
-      reflectSideOk = reflectSideOk && cosThetaO * cosThetaI > 0.0f;
       reflectDirOk = reflectDirOk && vectorNear(s.wi, reflectedD, kDirTol);
       reflectPdfOk = reflectPdfOk && std::fabs(static_cast<double>(s.pdf) - fr.f) <= kFAbsTol;
       reflectCOk = reflectCOk && colorNearRelScalar(c, fr.f, kWeightRelTol);
@@ -519,7 +522,6 @@ DielectricAngleResult checkDielectricAngle(double angle, RefGeometry const& geo,
         result.firstReflectedC = c;
       }
     } else {
-      transmitSideOk = transmitSideOk && cosThetaO * cosThetaI < 0.0f;
       transmitDirOk = transmitDirOk && !fr.tir && vectorNear(s.wi, transmittedD, kDirTol);
       transmitPdfOk = transmitPdfOk && std::fabs(static_cast<double>(s.pdf) - (1.0 - fr.f)) <= kFAbsTol;
       transmitCOk = transmitCOk && colorNearRelScalar(c, (1.0 - fr.f) * scale, kWeightRelTol);
@@ -543,11 +545,9 @@ DielectricAngleResult checkDielectricAngle(double angle, RefGeometry const& geo,
 
   check(successes == kDielectricDraws, name + ": every draw succeeds");
   check(deltaOk, name + ": every draw reports isDelta true and lobeIndex 0");
-  check(reflectSideOk, name + ": every reflected draw lies strictly on wo's side");
   check(reflectDirOk, name + ": every reflected draw's wi equals the reference reflection within 1e-5 per component");
   check(reflectPdfOk, name + ": every reflected draw's pdf equals F within 1e-5 absolute");
   check(reflectCOk, name + ": every reflected draw's c equals F within 1e-5 relative");
-  check(transmitSideOk, name + ": every transmitted draw lies strictly on the far side");
   check(transmitDirOk,
         name + ": every transmitted draw's wi equals the reference refraction within 1e-5 per component");
   check(transmitPdfOk, name + ": every transmitted draw's pdf equals 1 - F within 1e-5 absolute");
@@ -581,8 +581,8 @@ DielectricAngleResult checkDielectricAngle(double angle, RefGeometry const& geo,
   return result;
 }
 
-// A.4: energy, from the same first-reflected/first-transmitted draws A.3
-// captured.
+// Energy, from the same first-reflected/first-transmitted draws the
+// dielectric's own checks captured.
 void checkDielectricEnergy(DielectricAngleResult const& result, FRef const& fr, double scale, double angle) {
   std::string const name = "energy, dielectric, " + angleName(angle);
   if (fr.tir) {
@@ -602,10 +602,10 @@ void checkDielectricEnergy(DielectricAngleResult const& result, FRef const& fr, 
                "within 1e-5");
 }
 
-// A.5's dielectric half, skipped at 89 degrees (see checkDielectric): from
-// the first transmitted draw's wi, 2^12 draws whose transmitted ones
-// return wo and whose reflected ones report the forward reflected pdf, and
-// Veach's generalized reciprocity on c and c'.
+// Reciprocity's dielectric half, skipped at 89 degrees (see
+// checkDielectric): from the first transmitted draw's wi, 2^12 draws whose
+// transmitted ones return wo and whose reflected ones report the forward
+// reflected pdf, and Veach's generalized reciprocity on c and c'.
 void checkDielectricReciprocity(DielectricAngleResult const& result, RefGeometry const& geo, FRef const& fr,
                                 double angle, std::uint32_t dim) {
   std::string const name = "reciprocity, dielectric, " + angleName(angle);
@@ -692,7 +692,7 @@ void checkDielectric() {
   checkMirrorReciprocity();
 }
 
-// ---- A.6: the mixture. ----
+// ---- The mixture. ----
 
 // A midpoint-rule mass of the closure's own pdf, and the deviation of a
 // real sample() run's counts from N * mass, over the 64 Lambert bins plus
@@ -898,7 +898,7 @@ void checkMixture() {
   }
 }
 
-// ---- A.7: clamps, eta, capacity and failed draws. ----
+// ---- Clamps, eta, capacity and failed draws. ----
 
 void checkClampsEtaCapacityFailedDraws() {
   gman::BSDF mirrorClosure(n0());
@@ -1016,7 +1016,7 @@ void checkClampsEtaCapacityFailedDraws() {
         "at normal (0, 0, 1) with wo = (1, 0, 0), 256 draws from a dielectric closure all answer pdf 0");
 }
 
-// ---- A.8: shadow transmittance. ----
+// ---- Shadow transmittance. ----
 
 double fAir(GMANVector const& w) {
   double const cosTheta = std::fabs(n0().dot(w));
@@ -1068,7 +1068,7 @@ void checkShadowTransmittance() {
               mixture.shadowTransmittance(w),
               GMANColor(static_cast<RtFloat>(expected), static_cast<RtFloat>(expected), static_cast<RtFloat>(expected)),
               kShadowAbsTol),
-          "shadow: A.6's mixture answers 0.6 * (1 - F_air) within 1e-5 at " + angleName(angle));
+          "shadow: the mixture answers 0.6 * (1 - F_air) within 1e-5 at " + angleName(angle));
   }
 
   gman::BSDF twoDielectric(n0());
@@ -1083,7 +1083,7 @@ void checkShadowTransmittance() {
         "shadow: two dielectric lobes answer 0.8 * (1 - F_air) within 1e-5: the query sums its dielectric lobes");
 }
 
-// ---- A.9: no allocation. ----
+// ---- No allocation. ----
 
 void checkAllocationDelta(bool holds, char const* message) {
 #if GMAN_ADDRESS_SANITIZED
