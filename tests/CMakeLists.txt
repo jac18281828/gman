@@ -2880,17 +2880,42 @@ set_tests_properties(emitter PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# The path tracer's own area-light behaviour: a sphere light over the shared
-# floor scene against its closed-form irradiance, and emitter-hit accounting
-# covering a direct camera hit, a mirror bounce and a glass transmission.
-# Linked against gman_pathtracer_objects, which still compiles
-# GMANPathtraceRenderer itself. See tests/pathtracerarealight_test.cpp.
+# The path tracer's own area-light behaviour, split three ways so no one
+# binary crowds the sanitizer leg's own time budget: a sphere light over the
+# shared floor scene against its closed-form irradiance and a smoke check
+# that droppedPathCount and alpha still hold on that render; the same floor
+# on the far side of the sphere's own fixed preview point; and emitter-hit
+# accounting covering a direct camera hit, a mirror bounce and a glass
+# transmission. Each links against gman_pathtracer_objects, which still
+# compiles GMANPathtraceRenderer itself. See tests/pathtracerarealight_test.cpp,
+# tests/pathtracerarealightfarside_test.cpp and
+# tests/pathtracerarealighthit_test.cpp.
 add_executable(gman_pathtracerarealight pathtracerarealight_test.cpp)
 target_link_libraries(gman_pathtracerarealight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
-add_dependencies(gman_pathtracerarealight gman_matte gman_mirror gman_glass)
+add_dependencies(gman_pathtracerarealight gman_matte)
 
 add_test(NAME pathtracerarealight COMMAND gman_pathtracerarealight)
 set_tests_properties(pathtracerarealight PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+add_executable(gman_pathtracerarealightfarside pathtracerarealightfarside_test.cpp)
+target_link_libraries(gman_pathtracerarealightfarside PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerarealightfarside gman_matte)
+
+add_test(NAME pathtracerarealightfarside COMMAND gman_pathtracerarealightfarside)
+set_tests_properties(pathtracerarealightfarside PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+add_executable(gman_pathtracerarealighthit pathtracerarealighthit_test.cpp)
+target_link_libraries(gman_pathtracerarealighthit PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerarealighthit gman_mirror gman_glass)
+
+add_test(NAME pathtracerarealighthit COMMAND gman_pathtracerarealighthit)
+set_tests_properties(pathtracerarealighthit PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)

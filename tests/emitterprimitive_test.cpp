@@ -29,6 +29,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <limits>
 #include <vector>
 
 #include "check.h"
@@ -113,6 +114,73 @@ void testAreaClosedForm() {
 
   GMANDisk halfDisk(0.0f, 3.0f, 180.0f, GMANParameterList());
   check(std::fabs(halfDisk.area() - expectedFullDisk * 0.5) < 1e-5, "area: a half disk's area is half the full disk's");
+}
+
+// The thetamax clamp in area(): a value above 360 degrees reads as a full
+// sweep, never as extra surface.
+void testThetaMaxAreaClamp() {
+  GMANSphere sphere(1.0f, -1.0f, 1.0f, 720.0f, GMANParameterList());
+  double const expectedSphere = 4.0 * kPi;
+  check(std::fabs(sphere.area() - expectedSphere) / expectedSphere < 1e-5,
+        "thetamax clamp: a sphere at thetamax 720 still reads area 4*pi");
+
+  GMANDisk disk(0.0f, 1.0f, 720.0f, GMANParameterList());
+  double const expectedDisk = kPi;
+  check(std::fabs(disk.area() - expectedDisk) / expectedDisk < 1e-5,
+        "thetamax clamp: a unit disk at thetamax 720 still reads area pi");
+}
+
+// The thetamax clamp in samplePoint(): a raw 720 still wraps the circle
+// exactly twice and so still draws uniformly, hiding a missing clamp; 540
+// does not -- a raw 540 puts two thirds of its draws in the first half of
+// the circle, while the clamped value (360) draws four equal quadrants.
+void testThetaMaxSampleClamp() {
+  constexpr std::uint32_t kDraws = 1u << 16;
+  constexpr int kBins = 4;
+  double const expectedPerBin = (double)kDraws / (double)kBins;
+  double const sigma = std::sqrt(expectedPerBin * (1.0 - 1.0 / (double)kBins));
+
+  auto azimuthBin = [](GMANPoint const& p) {
+    double theta = std::atan2((double)p.getY(), (double)p.getX());
+    if (theta < 0.0) {
+      theta += 2.0 * kPi;
+    }
+    int bin = (int)(theta / (2.0 * kPi) * kBins);
+    return bin < 0 ? 0 : (bin >= kBins ? kBins - 1 : bin);
+  };
+
+  GMANSphere sphere(2.0f, -2.0f, 2.0f, 540.0f, GMANParameterList());
+  std::vector<std::uint32_t> sphereBins(kBins, 0);
+  for (std::uint32_t i = 0; i < kDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, 4, 0, i, kDraws, 0u);
+    GMANVector normal;
+    GMANPoint const p = sphere.samplePoint(uv.u1, uv.u2, normal);
+    ++sphereBins[azimuthBin(p)];
+  }
+  bool sphereBinsOk = true;
+  for (int b = 0; b < kBins; ++b) {
+    if (std::fabs((double)sphereBins[b] - expectedPerBin) > 5.0 * sigma) {
+      sphereBinsOk = false;
+    }
+  }
+  check(sphereBinsOk,
+        "thetamax clamp: a sphere at thetamax 540 draws four equal azimuth bins, each within 5 sigma of N/4");
+
+  GMANDisk disk(0.0f, 3.0f, 540.0f, GMANParameterList());
+  std::vector<std::uint32_t> diskBins(kBins, 0);
+  for (std::uint32_t i = 0; i < kDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, 5, 0, i, kDraws, 0u);
+    GMANVector normal;
+    GMANPoint const p = disk.samplePoint(uv.u1, uv.u2, normal);
+    ++diskBins[azimuthBin(p)];
+  }
+  bool diskBinsOk = true;
+  for (int b = 0; b < kBins; ++b) {
+    if (std::fabs((double)diskBins[b] - expectedPerBin) > 5.0 * sigma) {
+      diskBinsOk = false;
+    }
+  }
+  check(diskBinsOk, "thetamax clamp: a disk at thetamax 540 draws four equal azimuth bins, each within 5 sigma of N/4");
 }
 
 // An independent quadrature cross-check on the zone and half disk.
@@ -233,6 +301,12 @@ void testDegeneratePrimitives() {
         "degenerate: a negative disk thetamax is ineligible");
   check(emittedCount(new GMANRayDisk(0.0f, 3.0f, 360.0f, GMANParameterList())) == 1,
         "degenerate: a full disk stays eligible, as a control");
+
+  RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
+  check(emittedCount(new GMANRaySphere(nan, -1.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
+        "degenerate: a NaN sphere radius is ineligible");
+  check(emittedCount(new GMANRayDisk(0.0f, nan, 360.0f, GMANParameterList())) == 0,
+        "degenerate: a NaN disk radius is ineligible");
 }
 
 // The sampled normal.
@@ -271,8 +345,10 @@ void testSampledNormal() {
 
 int main() {
   testAreaClosedForm();
+  testThetaMaxAreaClamp();
   testQuadratureCrossCheck();
   testUniformByArea();
+  testThetaMaxSampleClamp();
   testDegeneratePrimitives();
   testSampledNormal();
 
