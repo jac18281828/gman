@@ -3058,3 +3058,13 @@ set_tests_properties(install PROPERTIES
   LABELS render
   TIMEOUT 300
   RESOURCE_LOCK gmanrib_plugin_file)
+
+# runGman's contract: exit status, the three capture modes, a signal kill,
+# a timeout bounding both read and wait, a working directory, a redirected
+# stdin and an exec failure, each leaving no child behind. See
+# tests/rungman_test.cpp.
+add_executable(gman_rungman rungman_test.cpp)
+add_test(NAME rungman COMMAND gman_rungman)
+set_tests_properties(rungman PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
