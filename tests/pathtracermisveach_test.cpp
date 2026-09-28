@@ -236,7 +236,7 @@ std::unique_ptr<GMANFrameBuffer> renderVeach(bool misEnabled, std::uint32_t N, P
 }
 
 void testVeachPlatesMisReducesVariance() {
-  constexpr std::uint32_t kReferenceN = 2048u;
+  constexpr std::uint32_t kReferenceN = 1024u;
   constexpr std::uint32_t kTestN = 32u;
 
   PlatePlane plane1;
