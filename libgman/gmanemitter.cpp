@@ -63,22 +63,37 @@ bool sphereEligible(GMANRaySphere const& sphere) {
 // A degenerate disk sector never emits: a non-positive radius or thetamax.
 bool diskEligible(GMANRayDisk const& disk) { return disk.getRadius() > 0.0f && disk.getThetaMax() > 0.0f; }
 
+// shape downcast once to whichever supported type it is: sphere non-null
+// xor disk non-null, both null for an unsupported primitive type.
+struct EmittingShapeKind {
+  GMANRaySphere const* sphere;
+  GMANRayDisk const* disk;
+};
+
+EmittingShapeKind classifyEmittingShape(GMANRayInterface const& shape) {
+  if (GMANRaySphere const* sphere = dynamic_cast<GMANRaySphere const*>(&shape)) {
+    return {sphere, nullptr};
+  }
+  return {nullptr, dynamic_cast<GMANRayDisk const*>(&shape)};
+}
+
 // True, and area filled, for a supported (sphere or disk), geometrically
 // eligible shape. False for any other primitive type or a degenerate one;
 // area is left untouched.
 bool emittingShapeArea(GMANRayInterface const& shape, RtFloat& area) {
-  if (GMANRaySphere const* sphere = dynamic_cast<GMANRaySphere const*>(&shape)) {
-    if (!sphereEligible(*sphere)) {
+  EmittingShapeKind const kind = classifyEmittingShape(shape);
+  if (kind.sphere != nullptr) {
+    if (!sphereEligible(*kind.sphere)) {
       return false;
     }
-    area = sphere->area();
+    area = kind.sphere->area();
     return true;
   }
-  if (GMANRayDisk const* disk = dynamic_cast<GMANRayDisk const*>(&shape)) {
-    if (!diskEligible(*disk)) {
+  if (kind.disk != nullptr) {
+    if (!diskEligible(*kind.disk)) {
       return false;
     }
-    area = disk->area();
+    area = kind.disk->area();
     return true;
   }
   return false;
@@ -87,19 +102,15 @@ bool emittingShapeArea(GMANRayInterface const& shape, RtFloat& area) {
 // shape's own shutter-open placement. Precondition: shape is a
 // GMANRaySphere or GMANRayDisk, the only two supported emitting types.
 GMANMatrix4 const& emittingShapeObjectToCamera(GMANRayInterface const& shape) {
-  if (GMANRaySphere const* sphere = dynamic_cast<GMANRaySphere const*>(&shape)) {
-    return sphere->getObjectToCamera();
-  }
-  return dynamic_cast<GMANRayDisk const&>(shape).getObjectToCamera();
+  EmittingShapeKind const kind = classifyEmittingShape(shape);
+  return (kind.sphere != nullptr) ? kind.sphere->getObjectToCamera() : kind.disk->getObjectToCamera();
 }
 
 // shape's own uniform-by-area draw, in object space. Precondition: shape is
 // a GMANRaySphere or GMANRayDisk.
 GMANPoint emittingShapeSamplePoint(GMANRayInterface const& shape, double u1, double u2, GMANVector& normal) {
-  if (GMANRaySphere const* sphere = dynamic_cast<GMANRaySphere const*>(&shape)) {
-    return sphere->samplePoint(u1, u2, normal);
-  }
-  return dynamic_cast<GMANRayDisk const&>(shape).samplePoint(u1, u2, normal);
+  EmittingShapeKind const kind = classifyEmittingShape(shape);
+  return (kind.sphere != nullptr) ? kind.sphere->samplePoint(u1, u2, normal) : kind.disk->samplePoint(u1, u2, normal);
 }
 
 // True when objectToCamera's own inverse exists -- a singular placement
@@ -130,6 +141,28 @@ void placeEmitterPoint(GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cam
   cameraNormal.normalize();
 }
 
+// One draw on an area emitter's shape, placed into camera space: sample(),
+// samplePoint() and drawEmitterPoint's own callers all need the same point,
+// normal and area from the same draw.
+struct EmitterDraw {
+  GMANPoint point;
+  GMANVector normal;
+  RtFloat area;
+};
+
+EmitterDraw drawEmitterPoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
+  GMANVector objectNormal;
+  GMANPoint const objectPoint = emittingShapeSamplePoint(*emitter.shape, u1, u2, objectNormal);
+  GMANMatrix4 const objectToCamera = emittingShapeObjectToCamera(*emitter.shape);
+  GMANMatrix4 cameraToObject;
+  invertiblePlacement(objectToCamera, cameraToObject); // precondition: emitter came from emitters()
+
+  EmitterDraw draw;
+  placeEmitterPoint(objectToCamera, cameraToObject, objectPoint, objectNormal, draw.point, draw.normal);
+  emittingShapeArea(*emitter.shape, draw.area);
+  return draw;
+}
+
 // The area branch of sample(): draws a point on emitter's shape, places
 // it, and reports the solid-angle pdf the area-to-solid-angle Jacobian
 // gives, black and 0 on the emitter's own non-emitting side.
@@ -137,25 +170,15 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
   EmitterSample result;
   result.isDelta = false;
 
-  GMANVector objectNormal;
-  GMANPoint const objectPoint = emittingShapeSamplePoint(*emitter.shape, u1, u2, objectNormal);
-  GMANMatrix4 const objectToCamera = emittingShapeObjectToCamera(*emitter.shape);
-  GMANMatrix4 cameraToObject;
-  invertiblePlacement(objectToCamera, cameraToObject); // precondition: emitter came from emitters()
+  EmitterDraw const draw = drawEmitterPoint(emitter, u1, u2);
 
-  GMANPoint cameraPoint;
-  GMANVector cameraNormal;
-  placeEmitterPoint(objectToCamera, cameraToObject, objectPoint, objectNormal, cameraPoint, cameraNormal);
-
-  GMANVector toEmitter(p, cameraPoint);
+  GMANVector toEmitter(p, draw.point);
   RtFloat const distance = toEmitter.magnitude();
   toEmitter.normalize();
   result.wi = toEmitter;
   result.distance = distance;
 
-  RtFloat area = 0.0f;
-  emittingShapeArea(*emitter.shape, area);
-  RtFloat const cosTheta = cameraNormal.dot(-toEmitter);
+  RtFloat const cosTheta = draw.normal.dot(-toEmitter);
   GMANColor const black((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
 
   // pdf uses the Jacobian's own abs(cosTheta), 0 only where that Jacobian
@@ -166,7 +189,7 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
     result.pdf = 0.0f;
     return result;
   }
-  result.pdf = (distance * distance) / (area * std::fabs(cosTheta));
+  result.pdf = (distance * distance) / (draw.area * std::fabs(cosTheta));
   result.Cl = (cosTheta > 0.0f) ? emitter.light->getCl() : black;
   return result;
 }
@@ -177,31 +200,21 @@ EmitterPoint samplePointArea(Emitter const& emitter, RtFloat u1, RtFloat u2) {
   EmitterPoint result;
   result.isDelta = false;
 
-  GMANVector objectNormal;
-  GMANPoint const objectPoint = emittingShapeSamplePoint(*emitter.shape, u1, u2, objectNormal);
-  GMANMatrix4 const objectToCamera = emittingShapeObjectToCamera(*emitter.shape);
-  GMANMatrix4 cameraToObject;
-  invertiblePlacement(objectToCamera, cameraToObject); // precondition: emitter came from emitters()
+  EmitterDraw const draw = drawEmitterPoint(emitter, u1, u2);
 
-  GMANPoint cameraPoint;
-  GMANVector cameraNormal;
-  placeEmitterPoint(objectToCamera, cameraToObject, objectPoint, objectNormal, cameraPoint, cameraNormal);
-
-  RtFloat area = 0.0f;
-  emittingShapeArea(*emitter.shape, area);
-
-  result.point = cameraPoint;
-  result.normal = GMANNormal(cameraNormal.getX(), cameraNormal.getY(), cameraNormal.getZ());
+  result.point = draw.point;
+  result.normal = GMANNormal(draw.normal.getX(), draw.normal.getY(), draw.normal.getZ());
   result.Le = emitter.light->getCl();
-  result.pdf = 1.0f / area;
+  result.pdf = 1.0f / draw.area;
   return result;
 }
 
 } // namespace
 
-std::vector<Emitter> emitters(GMANWorldManager& world) {
+std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount) {
   std::vector<Emitter> result;
   std::vector<GMANLight const*> deltaSeen;
+  std::vector<GMANLight const*> ambientSeen;
   std::size_t ineligibleCount = 0;
 
   for (GMANPrimitive* primitive = world.getFirst(); primitive != nullptr; primitive = world.getNext()) {
@@ -213,6 +226,9 @@ std::vector<Emitter> emitters(GMANWorldManager& world) {
 
     for (GMANLight const* light : appearance.lights) {
       if (light->getType() == GMAN_LIGHT_AMBIENT) {
+        if (ambientCount != nullptr && std::find(ambientSeen.begin(), ambientSeen.end(), light) == ambientSeen.end()) {
+          ambientSeen.push_back(light);
+        }
         continue;
       }
       if (std::find(deltaSeen.begin(), deltaSeen.end(), light) == deltaSeen.end()) {
@@ -235,6 +251,9 @@ std::vector<Emitter> emitters(GMANWorldManager& world) {
     result.push_back({appearance.areaLight, rayPrimitive, power});
   }
 
+  if (ambientCount != nullptr) {
+    *ambientCount = ambientSeen.size();
+  }
   if (ineligibleCount != 0) {
     warning("gman::emitters: {} area-light primitive(s) are ineligible or unsupported; skipped.", ineligibleCount);
   }

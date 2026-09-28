@@ -576,6 +576,15 @@ RtVoid readCommonLightParams(GMANDictionary& dictionary, GMANParameterList& pl, 
   }
 }
 
+// RiLightSourceV and RiAreaLightSourceV's own shared draw: lightcolor times
+// intensity, each defaulting to white and 1 where absent.
+GMANColor readLightCl(GMANDictionary& dictionary, GMANParameterList& pl) {
+  RtFloat intensity = 1.0;
+  GMANColor color((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
+  readCommonLightParams(dictionary, pl, intensity, color);
+  return GMANColor(color.getRed() * intensity, color.getGreen() * intensity, color.getBlue() * intensity);
+}
+
 // "from"/"to" (RtPoint), read with the RISpec's own defaults: from
 // (0,0,0), to (0,0,1) -- a distantlight or pointlight with no explicit
 // position or direction still declares something sane.
@@ -623,10 +632,7 @@ RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken t
   GMANTransform transform(getTransform());
 
   std::string lightName(name);
-  RtFloat intensity = 1.0;
-  GMANColor color((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
-  readCommonLightParams(dictionary, paramList, intensity, color);
-  GMANColor cl(color.getRed() * intensity, color.getGreen() * intensity, color.getBlue() * intensity);
+  GMANColor cl = readLightCl(dictionary, paramList);
 
   GMANLightType type;
   GMANPoint position(0.0, 0.0, 0.0);
@@ -699,10 +705,7 @@ RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken name, RtInt n, RtTok
     return (RtLightHandle)0;
   }
 
-  RtFloat intensity = 1.0;
-  GMANColor color((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0);
-  readCommonLightParams(dictionary, paramList, intensity, color);
-  GMANColor cl(color.getRed() * intensity, color.getGreen() * intensity, color.getBlue() * intensity);
+  GMANColor cl = readLightCl(dictionary, paramList);
 
   // No position, direction or cone parameters: a sphere or disk emitter's
   // placement comes from its own geometry, so this light's position and

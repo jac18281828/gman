@@ -239,6 +239,11 @@ private:
   RtVoid parseAttribute(RtVoid);
   RtVoid parseColor(RtVoid);
   RtVoid parseOpacity(RtVoid);
+  // shader name, then a sequence int, then a parameter list -- the shape
+  // parseLightSource and parseAreaLightSource both parse, differing only
+  // in which RenderMan call the parsed shader name and parameter list
+  // reach.
+  RtVoid parseLightRequest(RtLightHandle (GMANRenderMan::*call)(RtToken, RtInt, RtToken*, RtPointer*));
   RtVoid parseLightSource(RtVoid);
   RtVoid parseAreaLightSource(RtVoid);
   RtVoid parseSurface(RtVoid);

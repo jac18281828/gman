@@ -26,6 +26,7 @@
 #include <cmath>
 #include <typeinfo>
 
+#include "gmanarealightcount.h"
 #include "gmanattributes.h"
 #include "gmanmath.h"
 #include "gmanrenderer.h"
@@ -545,10 +546,7 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
     }
   }
 
-  if (objectManager.areaLightCount != 0) {
-    warning("gmanzbuffer: an AreaLightSource has no effect here; {} area-light primitive(s) rendered unchanged.",
-            objectManager.areaLightCount);
-  }
+  gman::warnAreaLightPrimitivesIgnored("gmanzbuffer", objectManager.areaLightCount);
 }
 
 // world manager

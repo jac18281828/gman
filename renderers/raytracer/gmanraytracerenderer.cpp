@@ -26,8 +26,8 @@
 #include <cstddef>
 #include <memory>
 
+#include "gmanarealightcount.h"
 #include "gmanindirectpass.h"
-#include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"
 #include "gmanrayinterface.h"
@@ -180,10 +180,6 @@ gman::IndirectPassPtr loadAndPrepareIndirectPass(GMANOptions const& options, GMA
   return pass;
 }
 
-} // namespace
-
-namespace {
-
 // How many of world's own primitives carry a pending area light: unlike
 // the z-buffer's own GMANObject, a ray primitive's Appearance survives
 // past its declaring RiSphereV/RiDiskV call, so this renderer counts it
@@ -203,11 +199,7 @@ std::size_t countAreaLightPrimitives(GMANWorldManager& world) {
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                   const GMANOptions& options, const GMANAttributes& /*attributes*/) {
-  std::size_t const areaLightCount = countAreaLightPrimitives(worldManager);
-  if (areaLightCount != 0) {
-    warning("gmanraytracer: an AreaLightSource has no effect here; {} area-light primitive(s) rendered unchanged.",
-            areaLightCount);
-  }
+  gman::warnAreaLightPrimitivesIgnored("gmanraytracer", countAreaLightPrimitives(worldManager));
 
   // Rebuilt every call, discarding any tree a prior call built: simpler
   // than tracking whether a stale tree needs invalidating, and a render

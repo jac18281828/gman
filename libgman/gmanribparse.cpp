@@ -896,35 +896,23 @@ RtVoid GMANRIBParse::parseOpacity(RtVoid) {
   renderMan.RiOpacity(color.data());
 }
 
-RtVoid GMANRIBParse::parseLightSource(RtVoid) {
+RtVoid GMANRIBParse::parseLightRequest(RtLightHandle (GMANRenderMan::*call)(RtToken, RtInt, RtToken*, RtPointer*)) {
   const auto shadername = copyStringToken();
   int sequence = nextInt();
 
   auto [n, tokens, parms, counts] = parseParameterList();
 
-  RtLightHandle handle = renderMan.RiLightSourceV(shadername.c_str(), n, tokens, parms);
+  RtLightHandle handle = (renderMan.*call)(shadername.c_str(), n, tokens, parms);
 
   lightHandleMap[sequence] = handle;
 }
 
-// Mirrors parseLightSource exactly: shader name, then a sequence int, then
-// a parameter list, so Illuminate <seq> addresses an area light the same
-// way it addresses any other.
-RtVoid GMANRIBParse::parseAreaLightSource(RtVoid) {
-  const auto shadername = copyStringToken();
-  int sequence = nextInt();
+RtVoid GMANRIBParse::parseLightSource(RtVoid) { parseLightRequest(&GMANRenderMan::RiLightSourceV); }
 
-  RtInt n = 0;
-  RtToken* tokens;
-  RtPointer* parms;
-  RtInt* counts;
-
-  parseParameterList(n, tokens, parms, counts);
-
-  RtLightHandle handle = renderMan.RiAreaLightSourceV(shadername.c_str(), n, tokens, parms);
-
-  lightHandleMap[sequence] = handle;
-}
+// Addresses an area light through Illuminate <seq> exactly as any other
+// light: the same shader-name, sequence and parameter-list shape, filling
+// the same lightHandleMap.
+RtVoid GMANRIBParse::parseAreaLightSource(RtVoid) { parseLightRequest(&GMANRenderMan::RiAreaLightSourceV); }
 
 RtVoid GMANRIBParse::parseSurface(RtVoid) {
   const auto shadername = copyStringToken();

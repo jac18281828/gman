@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <vector>
 
 #include "gmancolor.h"
@@ -92,8 +93,10 @@ struct GMAN_EXPORT EmitterPoint {
 // Appearance::areaLight is non-null and whose shape is an eligible,
 // supported (sphere or disk) primitive. Counts and warns once, naming the
 // count, when an Appearance::areaLight-tagged primitive is ineligible or
-// unsupported.
-GMAN_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world);
+// unsupported. ambientCount, when non-null, receives the same walk's own
+// count of distinct ambient lights -- a caller that also needs that count
+// takes it from this one pass over world rather than walking it again.
+GMAN_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount = nullptr);
 
 // A next-event-estimation draw toward emitter from p. A delta emitter
 // ignores u1/u2 and forwards to its own light->sample(); an area emitter

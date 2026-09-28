@@ -21,9 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <optional>
 
 #include "gmanattributes.h"
 #include "gmanbsdf.h"
@@ -229,7 +229,7 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
 
   gman::Sample2D const uv = gman::sample2D(kSeed, sx, sy, i, N, 3u + 5u * k);
   gman::EmitterSample const es = gman::sample(emitters[chosen], hit.point, uv.u1, uv.u2);
-  if (!(es.pdf > 0.0f)) {
+  if (!(es.pdf > 0.0f) || colorBlack(es.Cl)) {
     return kBlack;
   }
 
@@ -249,29 +249,35 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
   return term;
 }
 
-// Whether the BSDF step and the roulette it feeds let the path continue to
-// vertex k + 1, along wi, or end it here.
-enum class BSDFStepOutcome { Continue, End };
+// The BSDF draw that carries a path onward: its direction, its own
+// solid-angle pdf (a future multiple-importance-sampling weight reads
+// this), and whether the lobe sampled was a delta one.
+struct BSDFStepDraw {
+  GMANVector wi;
+  RtFloat pdf;
+  bool isDelta;
+};
 
-// The BSDF step: draws wi and updates beta by f*|wi.N|/pdf, tracking a
-// dielectric transmission's own etaScale; then, from the fourth vertex on,
-// Russian roulette. A pdf of 0 or a lost roulette draw ends the path; a beta
-// gone non-finite ends it and clears finite.
-BSDFStepOutcome bsdfStepAndRoulette(gman::BSDF const& closure, GMANVector const& wo, gman::SurfacePoint const& point,
-                                    RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N, std::uint32_t k,
-                                    GMANColor& beta, RtFloat& etaScale, bool& finite, GMANVector& wi, bool& isDelta) {
+// The BSDF step: draws a direction and updates beta by f*|wi.N|/pdf,
+// tracking a dielectric transmission's own etaScale; then, from the fourth
+// vertex on, Russian roulette. Answers nullopt, ending the path, on a pdf
+// of 0 or a lost roulette draw; a beta gone non-finite likewise ends it and
+// clears finite.
+std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANVector const& wo,
+                                                gman::SurfacePoint const& point, RtInt sx, RtInt sy, std::uint32_t i,
+                                                std::uint32_t N, std::uint32_t k, GMANColor& beta, RtFloat& etaScale,
+                                                bool& finite) {
   gman::Sample2D const uvBsdf = gman::sample2D(kSeed, sx, sy, i, N, 4u + 5u * k);
   gman::BSDFSample const sample = closure.sample(wo, uvBsdf.u1, uvBsdf.u2);
   if (!(sample.pdf > 0.0f)) {
-    return BSDFStepOutcome::End;
+    return std::nullopt;
   }
-  isDelta = sample.isDelta;
 
   RtFloat const cosI = std::fabs(point.N.dot(sample.wi));
   beta = gman::multiplyChannels(beta, scaleColor(sample.f, cosI / sample.pdf));
   if (!colorFinite(beta)) {
     finite = false;
-    return BSDFStepOutcome::End;
+    return std::nullopt;
   }
 
   if (sample.isDelta && closure.lobe(sample.lobeIndex).kind == gman::LobeKind::dielectric) {
@@ -292,13 +298,12 @@ BSDFStepOutcome bsdfStepAndRoulette(gman::BSDF const& closure, GMANVector const&
     RtFloat const q = GMANMin(kRouletteCap, maxChannel(scaleColor(beta, etaScale)));
     RtFloat const rouletteU = gman::sample1D(kSeed, sx, sy, i, N, 5u + 5u * k);
     if (!(rouletteU < q)) {
-      return BSDFStepOutcome::End;
+      return std::nullopt;
     }
     beta = divideColor(beta, q);
   }
 
-  wi = sample.wi;
-  return BSDFStepOutcome::Continue;
+  return BSDFStepDraw{sample.wi, sample.pdf, sample.isDelta};
 }
 
 // The emitter-hit term at a hit, added once per vertex before anything else
@@ -320,6 +325,49 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
     }
   }
   return kBlack;
+}
+
+// One vertex's own work, once a hit is known: an eligible emitter hit's own
+// Le, then coverage's pass-through or scattering with next-event
+// estimation and a BSDF-sampled bounce. Updates result and the path's own
+// running state in place; answers false to end the path here.
+bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
+                     GMANMatrix4 const& cameraToWorld, gman::TextureCache* textureCache, GMANHit const& hit,
+                     GMANRayInterface const* hitPrimitive, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
+                     std::uint32_t k, PathResult& result, GMANColor& beta, RtFloat& etaScale, bool& hasScattered,
+                     bool& rayEligibleForEmitterHit, int& passThroughRun, GMANRay& ray,
+                     std::vector<RtFloat>& lightWeight) {
+  gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
+  gman::Appearance const& appearance = hitPrimitive->getAppearance();
+  RtFloat const surfaceMagnitude = point.surfaceMagnitude;
+
+  result.L +=
+      gman::multiplyChannels(beta, emitterHitLe(emitters, hitPrimitive, appearance, point, rayEligibleForEmitterHit));
+
+  GMANColor const os = clampCoverage(appearance.Os);
+  RtFloat const qPass = meanChannel(gman::oneMinus(os));
+  RtFloat const coverageU = gman::sample1D(kSeed, sx, sy, i, N, 1u + 5u * k);
+  if (coverageU < qPass) {
+    return passThrough(hit, point, os, qPass, surfaceMagnitude, beta, passThroughRun, ray);
+  }
+
+  // Coverage: scatter.
+  passThroughRun = 0;
+  hasScattered = true;
+  beta = gman::multiplyChannels(beta, divideColor(os, (RtFloat)1.0 - qPass));
+  gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
+  GMANVector const wo = -point.I;
+  result.L += nextEventEstimation(bvh, emitters, hit, point, closure, wo, beta, surfaceMagnitude, cameraToWorld,
+                                  textureCache, sx, sy, i, N, k, lightWeight);
+  std::optional<BSDFStepDraw> const draw =
+      bsdfStepAndRoulette(closure, wo, point, sx, sy, i, N, k, beta, etaScale, result.finite);
+  if (!draw) {
+    return false;
+  }
+  rayEligibleForEmitterHit = draw->isDelta;
+  GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, draw->wi, surfaceMagnitude);
+  ray = GMANRay(origin, draw->wi);
+  return true;
 }
 
 // Traces one path from cameraRay: an eligible emitter hit's own Le,
@@ -356,39 +404,10 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
       escaped = true;
       break;
     }
-    gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
-    gman::Appearance const& appearance = hitPrimitive->getAppearance();
-    RtFloat const surfaceMagnitude = point.surfaceMagnitude;
-
-    result.L +=
-        gman::multiplyChannels(beta, emitterHitLe(emitters, hitPrimitive, appearance, point, rayEligibleForEmitterHit));
-
-    GMANColor const os = clampCoverage(appearance.Os);
-    RtFloat const qPass = meanChannel(gman::oneMinus(os));
-    RtFloat const coverageU = gman::sample1D(kSeed, sx, sy, i, N, 1u + 5u * k);
-    if (coverageU < qPass) {
-      if (!passThrough(hit, point, os, qPass, surfaceMagnitude, beta, passThroughRun, ray)) {
-        break;
-      }
-      continue;
-    }
-    // Coverage: scatter.
-    passThroughRun = 0;
-    hasScattered = true;
-    beta = gman::multiplyChannels(beta, divideColor(os, (RtFloat)1.0 - qPass));
-    gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
-    GMANVector const wo = -point.I;
-    result.L += nextEventEstimation(bvh, emitters, hit, point, closure, wo, beta, surfaceMagnitude, cameraToWorld,
-                                    textureCache, sx, sy, i, N, k, lightWeight);
-    GMANVector wi;
-    bool sampleIsDelta = false;
-    if (bsdfStepAndRoulette(closure, wo, point, sx, sy, i, N, k, beta, etaScale, result.finite, wi, sampleIsDelta) ==
-        BSDFStepOutcome::End) {
+    if (!tracePathVertex(bvh, emitters, cameraToWorld, textureCache, hit, hitPrimitive, sx, sy, i, N, k, result, beta,
+                         etaScale, hasScattered, rayEligibleForEmitterHit, passThroughRun, ray, lightWeight)) {
       break;
     }
-    rayEligibleForEmitterHit = sampleIsDelta;
-    GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, wi, surfaceMagnitude);
-    ray = GMANRay(origin, wi);
   }
   // 1 - beta only for a path escaping before its first scattering vertex;
   // any other ending, the pass-through cap included, reads fully covered.
@@ -475,25 +494,9 @@ void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters
 } // namespace
 
 void GMANPathtraceRenderer::gatherLights() {
-  emitters = gman::emitters(worldManager);
-
-  // gman::emitters already excludes ambientlight from its own walk, with
-  // no count of its own; a second, separate walk recovers exactly the
-  // count this renderer's own warning names.
-  std::vector<GMANLight const*> ambientSeen;
-  for (GMANPrimitive* primitive = worldManager.getFirst(); primitive != nullptr; primitive = worldManager.getNext()) {
-    GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
-    if (rayPrimitive == nullptr) {
-      continue;
-    }
-    for (GMANLight const* light : rayPrimitive->getAppearance().lights) {
-      if (light->getType() == GMAN_LIGHT_AMBIENT &&
-          std::find(ambientSeen.begin(), ambientSeen.end(), light) == ambientSeen.end()) {
-        ambientSeen.push_back(light);
-      }
-    }
-  }
-  skippedAmbientLights = ambientSeen.size();
+  std::size_t ambientCount = 0;
+  emitters = gman::emitters(worldManager, &ambientCount);
+  skippedAmbientLights = ambientCount;
 }
 
 GMANPathtraceRenderer::GMANPathtraceRenderer() : GMANRenderer() {};
