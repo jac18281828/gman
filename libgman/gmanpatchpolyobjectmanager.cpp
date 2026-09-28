@@ -61,7 +61,7 @@ const RtFloat kTriangulationTolerance = (RtFloat)1.0e-6;
 // triangle's own raster-space extent and the current ShadingRate; this is
 // both the cap that sizing clamps against and the fallback when no
 // projection can be resolved -- the same fixed count createParametric's
-// own kParametricDiceU/kParametricDiceV still use for a quadric.
+// own kParametricDiceU/kParametricDiceV use for a quadric.
 const RtInt kPolygonDiceN = 16;
 
 // createParametric's own dicing resolution: divisions along u and v of the
@@ -595,8 +595,10 @@ void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> co
 }
 
 // One polygon face's own body and vertex chain, handed on as buildFace's
-// out-parameters pass them: body owns nothing here, and its surface holds
-// the face chain.
+// out-parameters pass them. FaceChains itself owns nothing: buildFace hands
+// body and vertRoot to its own caller, and that caller's GMANObject frees
+// both -- GMANBody's destructor already walks and deletes its surface
+// chain, and that surface's own destructor deletes the face chain it holds.
 struct FaceChains {
   GMANBody* body;       // the face's body; its surface holds the face chain
   GMANVertex* vertRoot; // the head of the face's vertex chain
@@ -610,7 +612,8 @@ struct FaceChains {
 // ring indexes vertexLocations rather than a face's own vertex array, so the
 // two ring slots a bridge duplicates share one GMANVertex and one shaded
 // colour instead of splitting the surface. texCoords is index-aligned with
-// vertexLocations, not with ring.
+// vertexLocations, not with ring. Returns the face's body and its vertex
+// chain's head, as FaceChains.
 FaceChains buildPolygonObject(const std::vector<GMANPoint>& vertexLocations, const std::vector<RtInt>& ring,
                               const GMANVector& normalVec, RtInt sides, RtToken orientation,
                               gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
@@ -686,13 +689,12 @@ bool inInteriorWedge(const GMANPoint& v, const GMANPoint& prev, const GMANPoint&
 }
 
 // The outer loop's own (u, v) frame every bridging computation below is
-// judged in: origin the outer loop's own first vertex, uDir the direction
-// of its first edge of non-zero length (or, failing that, its longest
-// edge), vDir = normal x uDir. projU and projV give a point's own
-// coordinate along each axis, measured from origin -- so the bridges a
-// rotated or rescaled placement of the same polygon produces are the same
-// bridges, not an artifact of whichever way a fixed world axis happened to
-// point.
+// judged in: origin the outer loop's own first vertex, vDir = normal x
+// uDir -- outerFrame's own comment covers how uDir is chosen. projU and
+// projV give a point's own coordinate along each axis, measured from
+// origin -- so the bridges a rotated or rescaled placement of the same
+// polygon produces are the same bridges, not an artifact of whichever way
+// a fixed world axis happened to point.
 struct PlanarFrame {
   GMANPoint origin;
   GMANVector uDir;
@@ -768,8 +770,8 @@ std::vector<Hole> collectHoles(std::vector<std::vector<GMANPoint>> const& loops,
     hole.points = loop;
     hole.slots = loopSlots[loopIndex];
     // A hole wound the same way as the outer loop would add its area
-    // instead of removing it; reversing its traversal order below is what
-    // turns the bridge into a cut.
+    // instead of removing it; reversing its traversal order in spliceHole
+    // is what turns the bridge into a cut.
     hole.reversed = holeNewell.dot(normalVec) > (RtFloat)0.0;
 
     hole.rightmostLocal = 0;
@@ -919,18 +921,17 @@ RtInt chooseBridgeSlot(std::vector<GMANPoint> const& vertexPositions, std::vecto
 // old vertexPositions.size() up) and join vertexPositions and vertexSlots
 // only on this call, once bridging is known to succeed -- a dropped hole
 // never reaches spliceHole and so never strands an id. ring becomes
-// ring[0..targetSlot],
-// the hole from its rightmost vertex (traversed backwards when reversed),
-// that vertex again, ring[targetSlot], then ring[targetSlot + 1..] -- a
-// doubled edge, not a split surface, since both occurrences of
-// ring[targetSlot] share the same GMANVertex.
+// ring[0..targetSlot], the hole from its rightmost vertex (traversed
+// backwards when reversed), that vertex again, ring[targetSlot], then
+// ring[targetSlot + 1..] -- a doubled edge, not a split surface, since
+// both occurrences of ring[targetSlot] share the same GMANVertex.
 void spliceHole(Hole const& hole, RtInt targetSlot, std::vector<GMANPoint>& vertexPositions,
                 std::vector<RtInt>& vertexSlots, std::vector<RtInt>& ring) {
   const RtInt n = (RtInt)hole.points.size();
   const RtInt ringSize = (RtInt)ring.size();
-  const RtInt bridgeTarget = ring[targetSlot];
+  RtInt const bridgeTarget = ring[targetSlot];
 
-  const RtInt base = (RtInt)vertexPositions.size();
+  RtInt base = (RtInt)vertexPositions.size();
   std::vector<RtInt> ids(n);
   for (RtInt j = 0; j < n; j++) {
     ids[j] = base + j;
@@ -1071,7 +1072,9 @@ bool buildFace(const std::vector<std::vector<GMANPoint>>& loops, const std::vect
 // Appends one surviving face's body and vertex chain onto a mesh's own
 // running chains -- GMANObject's destructor already walks both
 // (getNext() on each), so one object can own every face's worth once
-// they are linked here: one primitive, many bodies.
+// they are linked here: one primitive, many bodies. Contrast addFace: that
+// adds a single face to a face list; appendFace joins a whole face's
+// already-built body and vertex chains onto a mesh.
 // A face contributes more than one vertex, unlike GMANBody's single node,
 // so its own chain's tail has to be found by walking.
 void appendFace(GMANBody* faceBody, GMANVertex* faceVert, GMANBody*& bodyHead, GMANBody*& bodyTail,
