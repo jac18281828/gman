@@ -164,6 +164,7 @@ add_library(gman_core SHARED
   libgman/gmanpoint.cpp
   libgman/gmanpolygon.cpp
   libgman/gmanpolygonclipper.cpp
+  libgman/gmanpolygonmesh.cpp
   libgman/gmanprimitive.cpp
   libgman/gmanprimitives.cpp
   libgman/gmanraybvh.cpp

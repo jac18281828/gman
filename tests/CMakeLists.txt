@@ -1890,6 +1890,19 @@ set_tests_properties(polygonmeshtexcoord PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANPolygonMesh and its four factory functions: each request's own
+# normalisation into faces and loops, its parameter-list sizing, every
+# rejection rule, a missing "P", the degenerate shapes the factory still
+# accepts, that a mesh owns its own copies, and the type's own
+# constructibility. See tests/polygonmesh_test.cpp.
+add_executable(gman_polygonmesh polygonmesh_test.cpp)
+target_link_libraries(gman_polygonmesh PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME polygonmesh COMMAND gman_polygonmesh)
+set_tests_properties(polygonmesh PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANRadiosityMesh: area (analytic and by convergence) and locate()'s own
 # round trip. Linked against gman_radiosity_objects alone, with no
 # gman_internal_headers: every header it includes is public, proving the
