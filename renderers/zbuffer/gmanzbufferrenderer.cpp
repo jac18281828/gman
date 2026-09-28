@@ -35,27 +35,121 @@
 #include "ri.h"
 
 // A pending area light is tagged only when RiIlluminate leaves it on
-// (gman::appearanceOf's own rule); attr is null for a primitive declared
-// outside any RiAttributeBegin, which never carries one.
+// (gman::appearanceOf's own rule); attr is always the current GMANAttributes
+// (gmanrendermanimpl.cpp's RiSphereV, RiDiskV and every other geometry
+// request all pass &getAttributes(), never null).
+void GMANZBufferRenderer::AreaLightCountingObjectManager::countIfAreaLight(GMANAttributes* attr) {
+  if (attr != nullptr && gman::appearanceOf(*attr).areaLight != nullptr) {
+    ++areaLightCount;
+  }
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPolygon(RtInt nverts, GMANParameterList pl,
+                                                                                 GMANOptions* opt, GMANAttributes* attr,
+                                                                                 GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSPolygon(nverts, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSGeneralPolygon(
+    RtInt nloops, RtInt nverts[], GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSGeneralPolygon(nloops, nverts, pl, opt, attr, t);
+}
+
+GMANPrimitive*
+GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[],
+                                                                        GMANParameterList pl, GMANOptions* opt,
+                                                                        GMANAttributes* attr, GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSPointsPolygon(npolys, nverts, verts, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPointsGeneralPolygons(
+    RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], GMANParameterList pl, GMANOptions* opt,
+    GMANAttributes* attr, GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSPointsGeneralPolygons(npolys, nloops, nverts, verts, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPatch(RtToken type, GMANParameterList pl,
+                                                                               GMANOptions* opt, GMANAttributes* attr,
+                                                                               GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSPatch(type, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSPatchMesh(
+    RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, GMANParameterList pl, GMANOptions* opt,
+    GMANAttributes* attr, GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSPatchMesh(type, nu, uwrap, nv, vwrap, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSNuPatch(
+    RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder, RtFloat vknot[],
+    RtFloat vmin, RtFloat vmax, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSNuPatch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, pl, opt,
+                                                  attr, t);
+}
+
 GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSSphere(RtFloat radius, RtFloat zmin,
                                                                                 RtFloat zmax, RtFloat tmax,
                                                                                 GMANParameterList pl, GMANOptions* opt,
                                                                                 GMANAttributes* attr,
                                                                                 GMANTransform* t) {
-  if (attr != nullptr && gman::appearanceOf(*attr).areaLight != nullptr) {
-    ++areaLightCount;
-  }
+  countIfAreaLight(attr);
   return GMANPatchPolyObjectManager::getRSSphere(radius, zmin, zmax, tmax, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSCone(RtFloat height, RtFloat radius,
+                                                                              RtFloat tmax, GMANParameterList pl,
+                                                                              GMANOptions* opt, GMANAttributes* attr,
+                                                                              GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSCone(height, radius, tmax, pl, opt, attr, t);
+}
+
+GMANPrimitive*
+GMANZBufferRenderer::AreaLightCountingObjectManager::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax,
+                                                                   RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
+                                                                   GMANAttributes* attr, GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSCylinder(radius, zmin, zmax, tmax, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSHyperboloid(RtPoint point1, RtPoint point2,
+                                                                                     RtFloat tmax, GMANParameterList pl,
+                                                                                     GMANOptions* opt,
+                                                                                     GMANAttributes* attr,
+                                                                                     GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSHyperboloid(point1, point2, tmax, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSParaboloid(
+    RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
+    GMANAttributes* attr, GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSParaboloid(rmax, zmin, zmax, tmax, pl, opt, attr, t);
 }
 
 GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSDisk(RtFloat height, RtFloat radius,
                                                                               RtFloat tmax, GMANParameterList pl,
                                                                               GMANOptions* opt, GMANAttributes* attr,
                                                                               GMANTransform* t) {
-  if (attr != nullptr && gman::appearanceOf(*attr).areaLight != nullptr) {
-    ++areaLightCount;
-  }
+  countIfAreaLight(attr);
   return GMANPatchPolyObjectManager::getRSDisk(height, radius, tmax, pl, opt, attr, t);
+}
+
+GMANPrimitive* GMANZBufferRenderer::AreaLightCountingObjectManager::getRSTorus(RtFloat majrad, RtFloat minrad,
+                                                                               RtFloat phimin, RtFloat phimax,
+                                                                               RtFloat tmax, GMANParameterList pl,
+                                                                               GMANOptions* opt, GMANAttributes* attr,
+                                                                               GMANTransform* t) {
+  countIfAreaLight(attr);
+  return GMANPatchPolyObjectManager::getRSTorus(majrad, minrad, phimin, phimax, tmax, pl, opt, attr, t);
 }
 
 /*

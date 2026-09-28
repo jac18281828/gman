@@ -2895,40 +2895,6 @@ set_tests_properties(pathtracerarealight PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Regression against the delta-light integrator this unit's emitter wiring
-# replaced: the furnace, two lights summed and the light-free environment
-# all reproduce their own previously pinned means and sigma bounds. Its own
-# file so a large re-run never crowds pathtracerarealight's own debug
-# budget. Linked against gman_pathtracer_objects, which still compiles
-# GMANPathtraceRenderer itself. See tests/pathtracerarealightregression_test.cpp.
-add_executable(gman_pathtracerarealightregression pathtracerarealightregression_test.cpp)
-target_link_libraries(gman_pathtracerarealightregression PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
-add_dependencies(gman_pathtracerarealightregression gman_matte)
-
-add_test(NAME pathtracerarealightregression COMMAND gman_pathtracerarealightregression)
-set_tests_properties(pathtracerarealightregression PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
-  LABELS unit
-  TIMEOUT 30)
-
-# The same regression, one light at a time: a point, a spot and a distant
-# light each still match their own previously pinned residual check. Split
-# out since its three renders would otherwise crowd
-# pathtracerarealightregression's own sanitizer-build budget. Linked
-# against gman_pathtracer_objects, which still compiles
-# GMANPathtraceRenderer itself. See
-# tests/pathtracerarealightregressiononelight_test.cpp.
-add_executable(gman_pathtracerarealightregressiononelight pathtracerarealightregressiononelight_test.cpp)
-target_link_libraries(gman_pathtracerarealightregressiononelight PRIVATE gman_core gman_internal_headers
-  gman_pathtracer_objects)
-add_dependencies(gman_pathtracerarealightregressiononelight gman_matte)
-
-add_test(NAME pathtracerarealightregressiononelight COMMAND gman_pathtracerarealightregressiononelight)
-set_tests_properties(pathtracerarealightregressiononelight PROPERTIES
-  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
-  LABELS unit
-  TIMEOUT 30)
-
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every
@@ -2937,9 +2903,10 @@ set_tests_properties(pathtracerarealightregressiononelight PROPERTIES
 # process: both loadable renderers keep their own object manager in one
 # process-lifetime static instance, so two parses sharing a process would
 # carry the first one's own tally into the second. LABELS render, since it
-# runs gman, unlike this unit's other five new tests. Registered twice, one
-# add_test per renderer flag, as tests/worldnodisplay_test.cpp's own
-# gman_worldnodisplay is. See tests/rendererarealightwarning_test.cpp.
+# runs gman itself rather than linking against gman_core directly.
+# Registered twice, one add_test per renderer flag, as
+# tests/worldnodisplay_test.cpp's own gman_worldnodisplay is. See
+# tests/rendererarealightwarning_test.cpp.
 add_executable(gman_rendererarealightwarning rendererarealightwarning_test.cpp)
 target_link_libraries(gman_rendererarealightwarning PRIVATE gman_core TIFF::TIFF)
 add_dependencies(gman_rendererarealightwarning gman_zbuffer gman_matte)

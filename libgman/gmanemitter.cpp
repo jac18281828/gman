@@ -329,8 +329,8 @@ EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
     break;
   default:
     // No position exists for a distant or ambient light; point and
-    // normal are left default-constructed, as nothing in this unit
-    // reads either for a delta emitter.
+    // normal are left default-constructed, as no caller reads either
+    // for a delta emitter.
     break;
   }
   return result;

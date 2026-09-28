@@ -148,17 +148,53 @@ private:
 
   // GMANObject, this object manager's own tessellated primitive, carries
   // no Appearance -- unlike a ray primitive, it has nowhere to hold one
-  // past RiSphereV/RiDiskV's own call, where attr is still the declaring
-  // GMANAttributes. Counting a pending area light here, before
-  // tessellation discards it, is this renderer's only chance to see one.
+  // past its own declaring RiXxxV call, where attr is always the current
+  // GMANAttributes (gmanrendermanimpl.cpp's RiSphereV, RiDiskV and every
+  // other geometry request all pass &getAttributes(), never null).
+  // Counting a pending area light here, before tessellation discards it,
+  // is this renderer's only chance to see one, so every geometry request
+  // that can carry one is overridden; GMANPatchPolyObjectManager's own
+  // getRSBlobby/getRSPoints/getRSCurves/getRSSubdivisionMesh already
+  // answer an empty placeholder, rendering no geometry to count.
   class AreaLightCountingObjectManager : public GMANPatchPolyObjectManager {
   public:
+    GMANPrimitive* getRSPolygon(RtInt nverts, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                GMANTransform* t) override;
+    GMANPrimitive* getRSGeneralPolygon(RtInt nloops, RtInt nverts[], GMANParameterList pl, GMANOptions* opt,
+                                       GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSPointsPolygon(RtInt npolys, RtInt nverts[], RtInt verts[], GMANParameterList pl,
+                                      GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSPointsGeneralPolygons(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[],
+                                              GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                              GMANTransform* t) override;
+    GMANPrimitive* getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                              GMANTransform* t) override;
+    GMANPrimitive* getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, GMANParameterList pl,
+                                  GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv,
+                                RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, GMANParameterList pl,
+                                GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
     GMANPrimitive* getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
                                GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
+                             GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
+                                 GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, GMANParameterList pl,
+                                    GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
+                                   GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
     GMANPrimitive* getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
                              GMANAttributes* attr, GMANTransform* t) override;
+    GMANPrimitive* getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
+                              GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
 
     std::size_t areaLightCount = 0;
+
+  private:
+    // Counts once when attr's own appearance carries a pending, illuminated
+    // area light -- every override above calls this before tessellating.
+    void countIfAreaLight(GMANAttributes* attr);
   };
 
   AreaLightCountingObjectManager objectManager;

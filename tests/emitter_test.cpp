@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -63,7 +64,7 @@ std::string readFile(std::string const& path) {
   return contents.str();
 }
 
-// Builds the C.1 world: an eligible sphere emitter, an ineligible (wrong
+// Builds a world: an eligible sphere emitter, an ineligible (wrong
 // shape) polygon and a degenerate (zero-radius) sphere, each tagged as an
 // area light, and two ordinary spheres sharing one hand-built point light
 // -- the second exercises emitters' own deduplication by pointer, since a
@@ -83,8 +84,8 @@ struct EmitterWorld {
   GMANLight pointLight{GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector()};
 };
 
-EmitterWorld* buildEmitterWorld() {
-  EmitterWorld* w = new EmitterWorld();
+std::unique_ptr<EmitterWorld> buildEmitterWorld() {
+  auto w = std::make_unique<EmitterWorld>();
 
   w->sphere = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
   gman::Appearance sphereAppearance;
@@ -119,15 +120,14 @@ EmitterWorld* buildEmitterWorld() {
   return w;
 }
 
-// C.1: enumeration, and the one warning naming both ineligible
-// primitives.
+// Enumeration, and the one warning naming both ineligible primitives.
 void testEnumeration() {
   std::string const logPath = "emitter_enumeration.log";
   std::remove(logPath.c_str());
   setLogFile(logPath.c_str());
   setScreenOutput(false);
 
-  EmitterWorld* w = buildEmitterWorld();
+  std::unique_ptr<EmitterWorld> const w = buildEmitterWorld();
   std::vector<gman::Emitter> const list = gman::emitters(w->world);
 
   setLogFile("/dev/null");
@@ -148,11 +148,16 @@ void testEnumeration() {
   check(foundDelta, "enumeration: the point light is one delta emitter");
   check(foundArea, "enumeration: the sphere is one area emitter naming its own light");
 
+  std::string const needle = "2 area-light primitive(s)";
   std::string const log = readFile(logPath);
-  check(log.find("2") != std::string::npos, "enumeration: the warning names the count, 2");
+  std::size_t occurrences = 0;
+  for (std::size_t pos = log.find(needle); pos != std::string::npos; pos = log.find(needle, pos + 1)) {
+    ++occurrences;
+  }
+  check(occurrences == 1, "enumeration: the warning names the count, 2 area-light primitive(s), exactly once");
 }
 
-// C.2: power().
+// power().
 void testPower() {
   // GMANLinearWorldManager owns and deletes what it is given, so the
   // sphere here -- unlike the others below, read but never added to a
@@ -189,17 +194,25 @@ void testPower() {
   }
   double const hemisphereIntegral = sum / (double)kDraws;
   double const quadraturePower = hemisphereIntegral * area;
-  double const relQuad = std::fabs(quadraturePower - expectedPower) / expectedPower;
-  std::printf("power: quadrature %.6f vs closed form %.6f (%.2e relative)\n", quadraturePower, expectedPower, relQuad);
+  double const relQuad = std::fabs(quadraturePower - actualPower) / actualPower;
+  std::printf("power: quadrature %.6f vs power() %.6f (%.2e relative)\n", quadraturePower, actualPower, relQuad);
   check(relQuad < 1e-3, "power: the quadrature integral agrees with power within 1e-3 relative");
 
-  // The delta emitter's own power is exactly 0.
+  // A delta emitter's power is exactly 0, from gman::emitters itself.
+  GMANRaySphere* deltaSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector());
-  gman::Emitter const deltaEmitter{&pointLight, nullptr, 0.0f};
-  check(deltaEmitter.power == 0.0f, "power: a delta emitter's power is exactly 0");
+  gman::Appearance deltaAppearance;
+  deltaAppearance.lights = {&pointLight};
+  deltaSphere->setAppearance(deltaAppearance);
+
+  GMANLinearWorldManager deltaWorld;
+  deltaWorld.add(deltaSphere);
+  std::vector<gman::Emitter> const deltaList = gman::emitters(deltaWorld);
+  check(deltaList.size() == 1, "power: one delta emitter enumerated");
+  check(deltaList[0].power == 0.0f, "power: a delta emitter's power is exactly 0");
 }
 
-// C.3: sample, delta.
+// sample, delta.
 void testSampleDelta() {
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector());
   gman::Emitter const emitter{&pointLight, nullptr, 0.0f};
@@ -228,7 +241,7 @@ void testSampleDelta() {
   check(allMatch, "sample delta: every draw matches light->sample scaled by pi, pdf 1, isDelta true");
 }
 
-// C.4: sample, area.
+// sample, area.
 void testSampleArea() {
   GMANRaySphere sphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
@@ -284,7 +297,7 @@ void testSampleArea() {
   check(allBlack, "sample area: a p on the non-emitting side reports Cl black on every draw");
 }
 
-// C.5: samplePoint, delta.
+// samplePoint, delta.
 void testSamplePointDelta() {
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector());
   gman::Emitter const emitter{&pointLight, nullptr, 0.0f};
@@ -298,9 +311,8 @@ void testSamplePointDelta() {
   check(ep.isDelta, "samplePoint delta: isDelta is true");
 }
 
-// A.5 (moved here: Appearance::areaLight is a member this unit's first
-// commit could not yet compile against): an illuminated area light never
-// reaches appearance.lights, whatever else illuminates the same primitive.
+// An illuminated area light never reaches appearance.lights, whatever else
+// illuminates the same primitive.
 void testAppearanceExcludesAreaLight() {
   GMANAttributes attributes;
   GMANLight* areaLight = new GMANLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());

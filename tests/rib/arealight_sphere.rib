@@ -10,6 +10,7 @@ Clipping 0.5 50
 Translate 0 0 5
 WorldBegin
 Surface "matte"
+LightSource "distantlight" 2 "intensity" [1.0] "lightcolor" [1 1 1]
 AttributeBegin
 AreaLightSource "arealight" 1 "intensity" [10] "lightcolor" [1 1 1]
 Sphere 1 -1 1 360

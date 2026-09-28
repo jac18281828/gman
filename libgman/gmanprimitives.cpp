@@ -211,12 +211,14 @@ GMANVector GMANDisk::getNormal(double /*u*/, double /*v*/) {
 }
 
 RtFloat GMANDisk::area() const {
-  double const thetaMaxRadians = thetamax / 360.0 * 2.0 * PI;
+  double const clampedThetaMax = GMANMin(GMANMax((double)thetamax, 0.0), 360.0);
+  double const thetaMaxRadians = clampedThetaMax / 360.0 * 2.0 * PI;
   return (RtFloat)(0.5 * (double)radius * (double)radius * thetaMaxRadians);
 }
 
 GMANPoint GMANDisk::samplePoint(double u1, double u2, GMANVector& normal) const {
-  double const thetaMaxRadians = thetamax / 360.0 * 2.0 * PI;
+  double const clampedThetaMax = GMANMin(GMANMax((double)thetamax, 0.0), 360.0);
+  double const thetaMaxRadians = clampedThetaMax / 360.0 * 2.0 * PI;
   double const r = (double)radius * sqrt(u1);
   double const theta = u2 * thetaMaxRadians;
   normal = GMANVector(0.0, 0.0, -1.0);
@@ -869,12 +871,14 @@ GMANVector GMANSphere::getNormal(double u, double v) {
 }
 
 RtFloat GMANSphere::area() const {
-  double const thetaMaxRadians = thetamax / 360.0 * 2.0 * PI;
+  double const clampedThetaMax = GMANMin(GMANMax((double)thetamax, 0.0), 360.0);
+  double const thetaMaxRadians = clampedThetaMax / 360.0 * 2.0 * PI;
   return (RtFloat)((double)radius * ((double)zmax - (double)zmin) * thetaMaxRadians);
 }
 
 GMANPoint GMANSphere::samplePoint(double u1, double u2, GMANVector& normal) const {
-  double const thetaMaxRadians = thetamax / 360.0 * 2.0 * PI;
+  double const clampedThetaMax = GMANMin(GMANMax((double)thetamax, 0.0), 360.0);
+  double const thetaMaxRadians = clampedThetaMax / 360.0 * 2.0 * PI;
   double const z = (double)zmin + u1 * ((double)zmax - (double)zmin);
   double const theta = u2 * thetaMaxRadians;
   double const r = sqrt(GMANMax(0.0, (double)radius * (double)radius - z * z));

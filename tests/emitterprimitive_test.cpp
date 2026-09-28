@@ -32,10 +32,15 @@
 #include <vector>
 
 #include "check.h"
+#include "gmanemitter.h"
+#include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
+#include "gmanraydisk.h"
+#include "gmanraysphere.h"
 #include "gmansampling.h"
+#include "gmanshading.h"
 #include "gmanvector.h"
 #include "ri.h"
 #include "samplingstats.h"
@@ -45,30 +50,29 @@ namespace {
 constexpr std::uint32_t kSeed = 0x51ed270bu;
 constexpr double kPi = 3.14159265358979323846;
 
-// A degenerate or unplaceable sphere never emits: a non-positive radius,
-// an empty or reversed z range, a z range reaching outside the sphere's
-// own surface, or a non-positive thetamax. Computed from GMANSphere's
-// public accessors alone -- the same state gman::emitters will read once
-// it exists, proving these accessors already carry what eligibility
-// needs.
-bool sphereEligible(GMANSphere const& sphere) {
-  RtFloat const radius = sphere.getRadius();
-  RtFloat const zmin = sphere.getZMin();
-  RtFloat const zmax = sphere.getZMax();
-  RtFloat const thetamax = sphere.getThetaMax();
-  if (!(radius > 0.0f)) {
-    return false;
-  }
-  if (!(zmax > zmin)) {
-    return false;
-  }
-  if (std::fabs(zmax) > radius || std::fabs(zmin) > radius) {
-    return false;
-  }
-  if (!(thetamax > 0.0f)) {
-    return false;
-  }
-  return true;
+// Builds a one-primitive world tagging sphere as an area light and returns
+// gman::emitters' own count for it -- the eligibility gman::emitters itself
+// applies, not a copy of it.
+std::size_t emittedCount(GMANRaySphere* sphere) {
+  GMANLight light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  gman::Appearance appearance;
+  appearance.areaLight = &light;
+  sphere->setAppearance(appearance);
+
+  GMANLinearWorldManager world;
+  world.add(sphere);
+  return gman::emitters(world).size();
+}
+
+std::size_t emittedCount(GMANRayDisk* disk) {
+  GMANLight light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  gman::Appearance appearance;
+  appearance.areaLight = &light;
+  disk->setAppearance(appearance);
+
+  GMANLinearWorldManager world;
+  world.add(disk);
+  return gman::emitters(world).size();
 }
 
 // Central-difference |dP/du x dP/dv| at (u, v), step h -- an
@@ -103,7 +107,7 @@ template <class Parametric> double quadratureArea(Parametric& shape, int n) {
   return sum / ((double)n * (double)n);
 }
 
-// B.1: closed-form area.
+// Closed-form area.
 void testAreaClosedForm() {
   GMANSphere fullSphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
   double const expectedFullSphere = 4.0 * kPi * 2.0 * 2.0;
@@ -122,7 +126,7 @@ void testAreaClosedForm() {
   check(std::fabs(halfDisk.area() - expectedFullDisk * 0.5) < 1e-5, "area: a half disk's area is half the full disk's");
 }
 
-// B.2: an independent quadrature cross-check on the zone and half disk.
+// An independent quadrature cross-check on the zone and half disk.
 void testQuadratureCrossCheck() {
   constexpr int kGrid = 512;
 
@@ -140,7 +144,7 @@ void testQuadratureCrossCheck() {
   check(relHalfDisk < 1e-3, "quadrature: the half disk's quadrature area is within 1e-3 relative of area()");
 }
 
-// B.3: uniform by area, proven by a 16-bin histogram against the binomial
+// Uniform by area, proven by a 16-bin histogram against the binomial
 // standard deviation.
 void testUniformByArea() {
   constexpr std::uint32_t kDraws = 1u << 16;
@@ -211,25 +215,38 @@ void testUniformByArea() {
   check(rSquaredBinsOk, "uniform by area: the half disk's 16 r^2-bins are each within 5 sigma of N/16");
 }
 
-// B.4: degenerate primitives are documented as ineligible.
+// Degenerate primitives never reach gman::emitters: a non-positive radius,
+// an empty or reversed z range, a z range reaching outside the sphere's own
+// surface, or a non-positive thetamax, for both a sphere and a disk.
 void testDegeneratePrimitives() {
-  check(!sphereEligible(GMANSphere(0.0f, -1.0f, 1.0f, 360.0f, GMANParameterList())),
-        "degenerate: radius 0 is ineligible");
-  check(!sphereEligible(GMANSphere(2.0f, 1.0f, -1.0f, 360.0f, GMANParameterList())),
-        "degenerate: zmax <= zmin is ineligible");
-  check(!sphereEligible(GMANSphere(2.0f, -1.0f, 3.0f, 360.0f, GMANParameterList())),
-        "degenerate: abs(zmax) > radius is ineligible");
-  check(!sphereEligible(GMANSphere(2.0f, -3.0f, 1.0f, 360.0f, GMANParameterList())),
-        "degenerate: abs(zmin) > radius is ineligible");
-  check(!sphereEligible(GMANSphere(2.0f, -1.0f, 1.0f, 0.0f, GMANParameterList())),
-        "degenerate: thetamax 0 is ineligible");
-  check(!sphereEligible(GMANSphere(2.0f, -1.0f, 1.0f, -10.0f, GMANParameterList())),
-        "degenerate: a negative thetamax is ineligible");
-  check(sphereEligible(GMANSphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList())),
+  check(emittedCount(new GMANRaySphere(0.0f, -1.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
+        "degenerate: sphere radius 0 is ineligible");
+  check(emittedCount(new GMANRaySphere(2.0f, 1.0f, -1.0f, 360.0f, GMANParameterList())) == 0,
+        "degenerate: sphere zmax <= zmin is ineligible");
+  check(emittedCount(new GMANRaySphere(2.0f, -1.0f, 3.0f, 360.0f, GMANParameterList())) == 0,
+        "degenerate: sphere abs(zmax) > radius is ineligible");
+  check(emittedCount(new GMANRaySphere(2.0f, -3.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
+        "degenerate: sphere abs(zmin) > radius is ineligible");
+  check(emittedCount(new GMANRaySphere(2.0f, -1.0f, 1.0f, 0.0f, GMANParameterList())) == 0,
+        "degenerate: sphere thetamax 0 is ineligible");
+  check(emittedCount(new GMANRaySphere(2.0f, -1.0f, 1.0f, -10.0f, GMANParameterList())) == 0,
+        "degenerate: a negative sphere thetamax is ineligible");
+  check(emittedCount(new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList())) == 1,
         "degenerate: a full sphere stays eligible, as a control");
+
+  check(emittedCount(new GMANRayDisk(0.0f, 0.0f, 360.0f, GMANParameterList())) == 0,
+        "degenerate: disk radius 0 is ineligible");
+  check(emittedCount(new GMANRayDisk(0.0f, -1.0f, 360.0f, GMANParameterList())) == 0,
+        "degenerate: a negative disk radius is ineligible");
+  check(emittedCount(new GMANRayDisk(0.0f, 3.0f, 0.0f, GMANParameterList())) == 0,
+        "degenerate: disk thetamax 0 is ineligible");
+  check(emittedCount(new GMANRayDisk(0.0f, 3.0f, -10.0f, GMANParameterList())) == 0,
+        "degenerate: a negative disk thetamax is ineligible");
+  check(emittedCount(new GMANRayDisk(0.0f, 3.0f, 360.0f, GMANParameterList())) == 1,
+        "degenerate: a full disk stays eligible, as a control");
 }
 
-// B.5: the sampled normal.
+// The sampled normal.
 void testSampledNormal() {
   constexpr std::uint32_t kDraws = 1u << 8;
 

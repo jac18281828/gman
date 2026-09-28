@@ -27,15 +27,18 @@
  * stay a smoke check over the floor scene's own render.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "check.h"
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
 #include "gmanlightsourcemgr.h"
+#include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
@@ -43,6 +46,7 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybbox.h"
+#include "gmanraydisk.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
@@ -60,7 +64,7 @@ GMANTransform makeTransform(GMANMatrix4 matrix) {
   return GMANTransform(storage);
 }
 
-// ---- D.1: the sphere light over the floor ----
+// ---- the sphere light over the floor ----
 
 constexpr RtFloat kAreaLe = 10.0f;
 constexpr RtFloat kSphereRadius = 1.0f;
@@ -105,8 +109,8 @@ GMANColor analyticAreaLightExpected(gman::VSPerspective& viewingSys, int px, int
 
 // The floor under one emitting sphere, off to the side at a height and
 // distance no floor camera ray can pass within the sphere's own radius of
-// (D.1's own geometric argument): renders once, for both the residual
-// check and D.3's smoke check to share.
+// (a geometric argument on the sphere's own placement): renders once,
+// for both the residual check and the smoke check below to share.
 void renderAreaLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
                           std::unique_ptr<gman::VSPerspective>& viewingSysOut, std::size_t& droppedOut) {
   GMANOptions options;
@@ -179,11 +183,11 @@ void testSphereLightOverFloor() {
   check(measuredCount >= kMinMeasuredPixels, "sphere light over floor: at least 400 measured pixels");
   checkResiduals(residuals, expectedByChannel, kResidualFloor, "sphere light over floor");
 
-  // D.3: the floor is opaque everywhere a camera ray measures it, so every
+  // The floor is opaque everywhere a camera ray measures it, so every
   // measured pixel's alpha stays 1, unaffected by the area-light wiring.
   for (int c = 0; c < 3; ++c) {
     GmanMeanStderr const alphaStat = meanStderr(alphaValues[c]);
-    check(std::fabs(alphaStat.mean - 1.0) <= 1e-4, "sphere light over floor: alpha stays 1 (unaffected by unit)");
+    check(std::fabs(alphaStat.mean - 1.0) <= 1e-4, "sphere light over floor: alpha stays 1");
   }
 }
 
@@ -298,7 +302,7 @@ void testFarSideOfPreviewPoint() {
   checkResiduals(residuals, expectedByChannel, kResidualFloor, "far side of the preview point");
 }
 
-// ---- D.2: emitter-hit accounting: direct, after a mirror, after glass ----
+// ---- emitter-hit accounting: direct, after a mirror, after glass ----
 
 constexpr RtFloat kEmitterCentreZ = 8.0f;
 constexpr RtFloat kEmitterRadius = 2.0f;
@@ -323,7 +327,7 @@ bool sphereHitDouble(GMANRay const& ray, double cx, double cy, double cz, double
   return t0 > 1e-6 || t1 > 1e-6;
 }
 
-// D.2's direct case.
+// The direct case.
 constexpr RtInt kDirectRes = 41;
 constexpr RtInt kDirectSamples = 4;
 
@@ -368,6 +372,57 @@ GMANRaySphere* addEmitterSphere(GMANPathtraceRenderer& renderer, GMANLight const
   return sphere;
 }
 
+// A disk beside the emitter sphere, rotated 180 degrees about the x-axis so
+// its own fixed (0, 0, -1) object-space normal places at (0, 0, 1) in camera
+// space -- away from the camera, its own back turned toward every camera
+// ray that reaches it -- while staying in the same camera-space z == height
+// plane a bare translation alone would have.
+constexpr RtFloat kBackDiskCentreX = 6.0f;
+constexpr RtFloat kBackDiskRadius = 1.0f;
+
+bool diskHitDouble(GMANRay const& ray, double cx, double planeZ, double radius) {
+  GMANVector const d = ray.getDirection();
+  double const dz = (double)d.getZ();
+  if (dz == 0.0) {
+    return false;
+  }
+  double const t = planeZ / dz; // ray origin is always the camera-space eye, (0, 0, 0)
+  if (t <= 0.0) {
+    return false;
+  }
+  double const x = t * (double)d.getX() - cx;
+  double const y = t * (double)d.getY();
+  return x * x + y * y <= radius * radius;
+}
+
+bool cornersAllOnBackDisk(gman::VSPerspective& viewingSys, int px, int py) {
+  for (int dy = 0; dy <= 1; ++dy) {
+    for (int dx = 0; dx <= 1; ++dx) {
+      GMANRay const corner = viewingSys.cameraRay((RtFloat)(px + dx), (RtFloat)(py + dy));
+      if (!diskHitDouble(corner, (double)kBackDiskCentreX, (double)kEmitterCentreZ,
+                         (double)kBackDiskRadius * (1.0 - kSelectionMargin))) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+GMANRayDisk* addBackFacingDisk(GMANPathtraceRenderer& renderer, GMANLight const& areaLight) {
+  GMANMatrix4 place;
+  place.rot(GMANRadians(180.0f), 1.0f, 0.0f, 0.0f);
+  place.trans(kBackDiskCentreX, 0.0f, kEmitterCentreZ);
+  GMANTransform const transform = makeTransform(place);
+  GMANRayDisk* disk = new GMANRayDisk(0.0f, kBackDiskRadius, 360.0f, GMANParameterList(), transform);
+  gman::Appearance appearance;
+  appearance.areaLight = &areaLight;
+  appearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  disk->setAppearance(appearance);
+  renderer.getWorldManager()->add(disk);
+  return disk;
+}
+
 void testDirectHit() {
   GMANOptions options;
   options.setFormat(kDirectRes, kDirectRes, 1.0f);
@@ -382,14 +437,16 @@ void testDirectHit() {
   GMANPathtraceRenderer renderer;
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   addEmitterSphere(renderer, areaLight);
+  GMANLight const backDiskLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
+  addBackFacingDisk(renderer, backDiskLight);
 
   GMANFrameBuffer frameBuffer(kDirectRes, kDirectRes, options.getBackground());
   GMANAttributes const attr;
   renderer.render(&frameBuffer, &viewingSys, options, attr);
   check(renderer.droppedPathCount() == 0, "direct hit: droppedPathCount() is 0");
 
-  std::size_t onCount = 0, offCount = 0;
-  bool onExact = true, offExact = true;
+  std::size_t onCount = 0, offCount = 0, backCount = 0;
+  bool onExact = true, offExact = true, backExact = true;
   for (int py = 0; py < kDirectRes; ++py) {
     for (int px = 0; px < kDirectRes; ++px) {
       GMANColor const actual = frameBuffer.getPixel(px, py);
@@ -405,15 +462,23 @@ void testDirectHit() {
           offExact = false;
         }
       }
+      if (cornersAllOnBackDisk(viewingSys, px, py)) {
+        ++backCount;
+        if (actual.getRed() != 0.0f || actual.getGreen() != 0.0f || actual.getBlue() != 0.0f) {
+          backExact = false;
+        }
+      }
     }
   }
   check(onCount >= 4, "direct hit: at least 4 pixels squarely on the emitter");
   check(offCount >= 4, "direct hit: at least 4 pixels squarely off the emitter");
   check(onExact, "direct hit: every on-emitter pixel reads Le exactly");
   check(offExact, "direct hit: every off-emitter pixel reads black exactly");
+  check(backCount >= 4, "direct hit: at least 4 pixels squarely on the back-facing disk");
+  check(backExact, "direct hit: every pixel on the back-facing disk reads black exactly");
 }
 
-// D.2's after-a-mirror case.
+// The after-a-mirror case.
 constexpr RtFloat kMirrorCentreX = 4.7f;
 constexpr RtFloat kMirrorCentreZ = 1.0f;
 constexpr RtFloat kMirrorRadius = 3.3f;
@@ -528,10 +593,10 @@ void testMirrorBounce() {
   }
 }
 
-// D.2's after-glass case.
+// The after-glass case.
 constexpr RtInt kGlassRes = 81;
 constexpr RtInt kGlassSamples = 64;
-constexpr double kGlassConeRadians = 0.05;
+constexpr double kGlassConeRadians = 0.12;
 constexpr double kFresnelNormal = 0.04; // exact Fresnel at normal incidence, index 1 -> 1.5
 constexpr double kGlassTolerance = 0.01;
 constexpr RtFloat kPaneZNear = 4.0f;
@@ -609,14 +674,19 @@ void testGlassTransmission() {
   check(transmittedCount >= 1, "glass transmission: at least one near-normal pixel measured");
   std::printf("glass transmission: %zu pixel(s) measured\n", transmittedCount);
 
-  double const expected = (double)kAreaLe * (1.0 - kFresnelNormal) * (1.0 - kFresnelNormal);
+  // The pane's own internal reflections sum to Le*(1-F)/(1+F): each of the
+  // infinitely many internal bounces between the near and far surface
+  // contributes Le*(1-F)^2*F^(2n), a geometric series in F^2 that sums to
+  // (1-F)^2/(1-F^2) = (1-F)/(1+F), the index-squared term cancelling across
+  // the slab.
+  double const expected = (double)kAreaLe * (1.0 - kFresnelNormal) / (1.0 + kFresnelNormal);
   char const* const channelName[3] = {"red", "green", "blue"};
   for (int c = 0; c < 3; ++c) {
     GmanMeanStderr const stat = meanStderr(transmittedValues[c]);
     std::printf("glass transmission %s: mean %.6f, expected %.6f\n", channelName[c], stat.mean, expected);
     checkNear(stat.mean, expected, stat.stderrOfMean, kGlassTolerance * expected,
               std::string("glass transmission: the ") + channelName[c] +
-                  " channel's mean is within 5 sigma of Le*(1-F)^2");
+                  " channel's mean is within 5 sigma of Le*(1-F)/(1+F)");
   }
 }
 

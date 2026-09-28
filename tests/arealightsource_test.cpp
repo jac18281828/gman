@@ -47,6 +47,7 @@
 #include "gmanlog.h"
 #include "gmanrendermanimpl.h"
 #include "gmanribparse.h"
+#include "gmanshading.h"
 #include "ri.h"
 
 namespace {
@@ -69,22 +70,9 @@ public:
   }
 };
 
-// True when attr's pending area light both exists and is currently
-// illuminated -- the exact condition appearanceOf (gmanshading.cpp) uses to
-// decide whether a primitive declared under attr carries a non-null
-// Appearance::areaLight.
-bool wouldTagPrimitive(GMANAttributes const& attr) {
-  RtLightHandle const handle = attr.getAreaLight();
-  if (handle == 0) {
-    return false;
-  }
-  for (RtLightHandle const h : attr.getLightList().getHandles()) {
-    if (h == handle) {
-      return true;
-    }
-  }
-  return false;
-}
+// True when a primitive declared under attr would carry a non-null
+// Appearance::areaLight, through the exported production function itself.
+bool wouldTagPrimitive(GMANAttributes const& attr) { return gman::appearanceOf(attr).areaLight != nullptr; }
 
 // Ends a minimal, otherwise-untouched world so RiEnd leaves no renderer or
 // pending parameter buffers behind; no test here inspects the frame this
@@ -113,10 +101,10 @@ void areaLightParams(RtToken tokens[2], RtPointer parms[2], RtFloat& intensity, 
   parms[1] = (RtPointer)color;
 }
 
-// A.1 (light identity) and the "builds and parses" half of the fixture
-// requirement: tests/rib/arealight_sphere.rib parses cleanly through
-// GMANRIBParse and its AreaLightSource request builds one GMAN_LIGHT_AREA
-// light whose cl is (10, 10, 10).
+// The "builds and parses" half of the fixture requirement:
+// tests/rib/arealight_sphere.rib parses cleanly through GMANRIBParse and its
+// AreaLightSource request builds one GMAN_LIGHT_AREA light whose cl is
+// (10, 10, 10).
 void testFixtureBuildsAreaLight(std::string const& ribDir) {
   TestRenderMan renderMan;
   std::string const rib = ribDir + "/arealight_sphere.rib";
@@ -136,8 +124,8 @@ void testFixtureBuildsAreaLight(std::string const& ribDir) {
   }
 }
 
-// A.1 (scoping), A.4 (Surface/Color and a nested block do not clear the
-// pending area light; the matching AttributeEnd does).
+// Surface/Color and a nested block do not clear the pending area light;
+// the matching AttributeEnd does.
 void testAttributeScoping() {
   TestRenderMan renderMan;
   char displayName[] = "arealightsource_scoping.tif";
@@ -153,31 +141,31 @@ void testAttributeScoping() {
   check(handle != 0, "scoping: a recognized arealight name returns a non-null handle");
   check(wouldTagPrimitive(renderMan.attributes()), "scoping: a primitive declared here would carry the area light");
 
-  // A.4: RiSurface/RiColor between AreaLightSource and the primitive leave
-  // the pending area light untouched.
+  // RiSurface/RiColor between AreaLightSource and the primitive leave the
+  // pending area light untouched.
   renderMan.RiSurfaceV("matte", 0, nullptr, nullptr);
   RtColor const grey = {0.5f, 0.5f, 0.5f};
   renderMan.RiColor(const_cast<RtFloat*>(grey));
   check(wouldTagPrimitive(renderMan.attributes()),
         "scoping: RiSurface/RiColor between AreaLightSource and a primitive do not clear it");
 
-  // A.4: a nested AttributeBegin/AttributeEnd, entered and exited before
-  // the primitive, does not clear the outer frame's pending area light --
-  // the inner frame is its own copy, discarded on its own AttributeEnd.
+  // A nested AttributeBegin/AttributeEnd, entered and exited before the
+  // primitive, does not clear the outer frame's pending area light -- the
+  // inner frame is its own copy, discarded on its own AttributeEnd.
   renderMan.RiAttributeBegin();
   check(wouldTagPrimitive(renderMan.attributes()), "scoping: a nested block inherits the pending area light");
   renderMan.RiAttributeEnd();
   check(wouldTagPrimitive(renderMan.attributes()), "scoping: exiting the nested block leaves the outer one tagged");
 
-  // A.1/A.4: the matching AttributeEnd clears it -- the pending area light
-  // lived only on the frame that popped.
+  // The matching AttributeEnd clears it -- the pending area light lived
+  // only on the frame that popped.
   renderMan.RiAttributeEnd();
   check(!wouldTagPrimitive(renderMan.attributes()), "scoping: AttributeEnd clears the pending area light");
 
   closeWorld(renderMan);
 }
 
-// A.2: Illuminate <seq> 0 immediately after AreaLightSource leaves the
+// Illuminate <seq> 0 immediately after AreaLightSource leaves the
 // handle pending but not illuminated, so a primitive declared there would
 // not be tagged.
 void testIlluminateOffLeavesUntagged() {
@@ -202,7 +190,7 @@ void testIlluminateOffLeavesUntagged() {
   closeWorld(renderMan);
 }
 
-// A.3: an unrecognized area light shader name logs one warning naming it,
+// An unrecognized area light shader name logs one warning naming it,
 // returns a null handle, and leaves a previously active area light, built
 // by hand, current.
 void testUnknownNameLeavesPriorLightCurrent() {
