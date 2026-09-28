@@ -3139,8 +3139,7 @@ add_test(NAME arealightpolygon
 set_tests_properties(arealightpolygon PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
-  TIMEOUT 30
-  WILL_FAIL TRUE)
+  TIMEOUT 30)
 
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,

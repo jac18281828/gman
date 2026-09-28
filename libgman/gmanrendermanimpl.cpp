@@ -44,6 +44,7 @@
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanoutputx11.h"
+#include "gmanpolygoninternal.h"
 #include "gmanrenderer.h"
 #include "gmanrendermanimpl.h"
 #include "gmantexture.h"
@@ -914,6 +915,13 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
   // no distinct varying count beyond its vertex count.
   GMANParameterList paramList(dictionary, n, tokens, parms, nverts, nverts, 1, 1, counts);
 
+  // No "P": the empty stub, without reaching the object manager -- the
+  // z-buffer's area-light count must not see a request with no geometry.
+  if (gman::floatArray(paramList, RI_P) == nullptr) {
+    worldManager->add(objectManager->create());
+    return;
+  }
+
   GMANTransform transform(getTransform());
   GMANPrimitive* prim;
 
@@ -959,6 +967,13 @@ RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt 
   RtInt vertex = (RtInt)total;
 
   GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex, 1, vertex, counts);
+
+  // No "P": the empty stub, without reaching the object manager -- the
+  // z-buffer's area-light count must not see a request with no geometry.
+  if (gman::floatArray(paramList, RI_P) == nullptr) {
+    worldManager->add(objectManager->create());
+    return;
+  }
 
   GMANTransform transform(getTransform());
   GMANPrimitive* prim;
@@ -1049,6 +1064,13 @@ RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt 
   // sum(nverts).
   GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex, npolys, facevarying, counts);
 
+  // No "P": the empty stub, without reaching the object manager -- the
+  // z-buffer's area-light count must not see a request with no geometry.
+  if (gman::floatArray(paramList, RI_P) == nullptr) {
+    worldManager->add(objectManager->create());
+    return;
+  }
+
   GMANTransform transform(getTransform());
   GMANPrimitive* prim;
 
@@ -1101,6 +1123,13 @@ RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
   }
 
   GMANParameterList paramList(dictionary, n, tokens, parms, vertex, vertex, npolys, facevarying, counts);
+
+  // No "P": the empty stub, without reaching the object manager -- the
+  // z-buffer's area-light count must not see a request with no geometry.
+  if (gman::floatArray(paramList, RI_P) == nullptr) {
+    worldManager->add(objectManager->create());
+    return;
+  }
 
   GMANTransform transform(getTransform());
   GMANPrimitive* prim;
