@@ -2285,6 +2285,49 @@ if(GMAN_BUILD_RAYTRACER)
       ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
       LABELS render
       TIMEOUT 60)
+
+    # `gman -r gmanraytracer` renders tests/rib/cornellbox.rib and
+    # tests/rib/cornellbox_direct.rib: the radiosity pass bleeds colour
+    # from each side wall onto the back wall beside it, naming no pass
+    # leaves the back wall symmetric, and two renders of the pass's own
+    # scene are byte-identical. See tests/cornellbox_test.cpp.
+    add_executable(gman_cornellbox cornellbox_test.cpp)
+    target_link_libraries(gman_cornellbox PRIVATE gman_core TIFF::TIFF)
+    add_dependencies(gman_cornellbox gman_raytracer gman_radiosity gman_matte)
+
+    set(GMAN_CORNELLBOX_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/cornellbox-run")
+    file(MAKE_DIRECTORY "${GMAN_CORNELLBOX_WORKDIR}")
+
+    add_test(NAME cornellbox
+      COMMAND gman_cornellbox $<TARGET_FILE:gman>
+                             "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+      WORKING_DIRECTORY "${GMAN_CORNELLBOX_WORKDIR}")
+    set_tests_properties(cornellbox PROPERTIES
+      ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+      LABELS render
+      TIMEOUT 30)
+
+    # `gman -r gmanraytracer` renders tests/rib/radiositywindow.rib,
+    # tests/rib/radiositywindow_opaque.rib and
+    # tests/rib/radiositywindow_direct.rib: the radiosity pass, not the
+    # ray tracer's own direct-light transmission through the window
+    # pane, brightens a ceiling a downward-aimed distantlight never
+    # reaches directly. See tests/radiositywindow_test.cpp.
+    add_executable(gman_radiositywindow radiositywindow_test.cpp)
+    target_link_libraries(gman_radiositywindow PRIVATE gman_core TIFF::TIFF)
+    add_dependencies(gman_radiositywindow gman_raytracer gman_radiosity gman_matte)
+
+    set(GMAN_RADIOSITYWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/radiositywindow-run")
+    file(MAKE_DIRECTORY "${GMAN_RADIOSITYWINDOW_WORKDIR}")
+
+    add_test(NAME radiositywindow
+      COMMAND gman_radiositywindow $<TARGET_FILE:gman>
+                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+      WORKING_DIRECTORY "${GMAN_RADIOSITYWINDOW_WORKDIR}")
+    set_tests_properties(radiositywindow PROPERTIES
+      ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+      LABELS render
+      TIMEOUT 30)
   endif()
 
   # `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib, a

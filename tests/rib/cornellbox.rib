@@ -1,0 +1,31 @@
+## A closed box enclosing the camera, red and green side walls placed
+## symmetrically about the camera's central vertical plane, one point
+## light near the ceiling, matte throughout with Ka = Kd, naming the
+## radiosity pass: colour bleeds from each side wall onto the back wall
+## near it. cornellbox_direct.rib is this scene naming no pass. Not
+## third-party.
+Display "cornellbox.tif" "file" "rgba"
+Format 64 64 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Option "render" "string indirect" ["radiosity"]
+Option "radiosity" "float elementsize" [2.5]
+Translate 0 0 5
+WorldBegin
+LightSource "pointlight" 1 "intensity" [4] "from" [0 2.5 -1]
+
+Surface "matte" "Ka" [1] "Kd" [1]
+Opacity [1 1 1]
+
+Color [0.75 0.1 0.1]
+Polygon "P" [-3 -3 -6  -3 -3 4  -3 3 4  -3 3 -6]
+
+Color [0.1 0.75 0.1]
+Polygon "P" [3 -3 -6  3 3 -6  3 3 4  3 -3 4]
+
+Color [0.75 0.75 0.75]
+Polygon "P" [-3 -3 -6  3 -3 -6  3 3 -6  -3 3 -6]
+Polygon "P" [-3 -3 4  -3 3 4  3 3 4  3 -3 4]
+Polygon "P" [-3 -3 -6  3 -3 -6  3 -3 4  -3 -3 4]
+Polygon "P" [-3 3 -6  -3 3 4  3 3 4  3 3 -6]
+WorldEnd

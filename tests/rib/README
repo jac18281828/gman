@@ -369,6 +369,33 @@ same scene with the distant light removed, and `shadow_noblocker.rib` the
 same scene with the small sphere removed; the test pins one pixel inside
 the shadow against both. Not third-party.
 
+## cornellbox.rib, cornellbox_direct.rib
+
+A closed box, red and green side walls placed symmetrically about the
+point light near its ceiling, matte throughout with `Ka` = `Kd`, naming
+the radiosity pass: colour bleeds from each side wall onto the back
+wall beside it, a bleed `tests/cornellbox_test.cpp` measures as a
+back-wall asymmetry rather than against a rendered reference, since the
+scene's own symmetry makes the two sides comparable directly.
+`cornellbox_direct.rib` is the same scene naming no pass, where that
+asymmetry disappears. Dimensions are this fixture's own, not the
+published Cornell Box's. Not third-party.
+
+## radiositywindow.rib, radiositywindow_opaque.rib, radiositywindow_direct.rib
+
+A closed room whose one glazed wall is four opaque polygon sections
+framing a polygon pane, lit by a distantlight outside aimed steeply
+downward: its rays can reach the floor through the pane but never the
+ceiling, whose inward normal faces away from any light arriving from
+above. Naming the radiosity pass, the lit floor's indirect bounce
+brightens the ceiling; `radiositywindow_opaque.rib` raises the pane's
+`Opacity` to fully opaque, admitting no light at all; naming no pass,
+`radiositywindow_direct.rib` shows the ceiling reading whatever ambient
+light alone gives. `tests/radiositywindow_test.cpp` samples one ceiling
+strip across all three, isolating the pass's own contribution from the
+pane's opacity and from the ray tracer's own direct-light transmission.
+Not third-party.
+
 ## string_escape.rib
 
 Written for the RIB string-escape task: an `Attribute "user" "note"` array

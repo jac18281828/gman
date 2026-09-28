@@ -1,0 +1,27 @@
+## cornellbox.rib's scene, naming no pass -- the baseline whose back wall
+## carries no colour bleed for tests/cornellbox_test.cpp to compare
+## against. Not third-party.
+Display "cornellbox_direct.tif" "file" "rgba"
+Format 64 64 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Option "radiosity" "float elementsize" [2.5]
+Translate 0 0 5
+WorldBegin
+LightSource "pointlight" 1 "intensity" [4] "from" [0 2.5 -1]
+
+Surface "matte" "Ka" [1] "Kd" [1]
+Opacity [1 1 1]
+
+Color [0.75 0.1 0.1]
+Polygon "P" [-3 -3 -6  -3 -3 4  -3 3 4  -3 3 -6]
+
+Color [0.1 0.75 0.1]
+Polygon "P" [3 -3 -6  3 3 -6  3 3 4  3 -3 4]
+
+Color [0.75 0.75 0.75]
+Polygon "P" [-3 -3 -6  3 -3 -6  3 3 -6  -3 3 -6]
+Polygon "P" [-3 -3 4  -3 3 4  3 3 4  3 -3 4]
+Polygon "P" [-3 -3 -6  3 -3 -6  3 -3 4  -3 -3 4]
+Polygon "P" [-3 3 -6  -3 3 4  3 3 4  3 3 -6]
+WorldEnd

@@ -1,0 +1,38 @@
+## A closed room, all matte grey, its x=3 wall built from four opaque
+## polygon sections framing a translucent polygon pane. A distantlight
+## outside the room aims steeply downward, so its direct rays can reach
+## the floor through the pane but never the ceiling, whose inward
+## normal faces away from any light above it. Naming the radiosity
+## pass: the floor patch the pane admits bounces light onto the
+## ceiling. radiositywindow_opaque.rib and radiositywindow_direct.rib
+## are this scene's own twins. Not third-party.
+Display "radiositywindow.tif" "file" "rgba"
+Format 64 64 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Option "render" "string indirect" ["radiosity"]
+Option "radiosity" "float elementsize" [3.0]
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [3] "lightcolor" [1 1 1] "from" [10 8 0] "to" [3 -3 0]
+
+Surface "matte" "Ka" [1] "Kd" [1]
+Color [0.8 0.8 0.8]
+
+Opacity [1 1 1]
+Polygon "P" [-3 -3 -6  -3 -3 4  -3 3 4  -3 3 -6]
+Polygon "P" [-3 -3 -6  3 -3 -6  3 3 -6  -3 3 -6]
+Polygon "P" [-3 -3 4  -3 3 4  3 3 4  3 -3 4]
+Polygon "P" [-3 -3 -6  3 -3 -6  3 -3 4  -3 -3 4]
+Polygon "P" [-3 3 -6  -3 3 4  3 3 4  3 3 -6]
+
+## The x=3 wall: bottom sill, top lintel, and the two jambs either side
+## of the window's z-span, framing the pane below.
+Polygon "P" [3 -3 -6  3 -2.5 -6  3 -2.5 4  3 -3 4]
+Polygon "P" [3 -0.5 -6  3 3 -6  3 3 4  3 -0.5 4]
+Polygon "P" [3 -2.5 -6  3 -0.5 -6  3 -0.5 -2  3 -2.5 -2]
+Polygon "P" [3 -2.5 2  3 -0.5 2  3 -0.5 4  3 -2.5 4]
+
+Opacity [0.3 0.3 0.3]
+Polygon "P" [3 -2.5 -2  3 -0.5 -2  3 -0.5 2  3 -2.5 2]
+WorldEnd
