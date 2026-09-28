@@ -2880,6 +2880,55 @@ set_tests_properties(emitter PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The path tracer's own area-light behaviour: a sphere light over the shared
+# floor scene against its closed-form irradiance, and emitter-hit accounting
+# covering a direct camera hit, a mirror bounce and a glass transmission.
+# Linked against gman_pathtracer_objects, which still compiles
+# GMANPathtraceRenderer itself. See tests/pathtracerarealight_test.cpp.
+add_executable(gman_pathtracerarealight pathtracerarealight_test.cpp)
+target_link_libraries(gman_pathtracerarealight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerarealight gman_matte gman_mirror gman_glass)
+
+add_test(NAME pathtracerarealight COMMAND gman_pathtracerarealight)
+set_tests_properties(pathtracerarealight PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# Regression against the delta-light integrator this unit's emitter wiring
+# replaced: the furnace, two lights summed and the light-free environment
+# all reproduce their own previously pinned means and sigma bounds. Its own
+# file so a large re-run never crowds pathtracerarealight's own debug
+# budget. Linked against gman_pathtracer_objects, which still compiles
+# GMANPathtraceRenderer itself. See tests/pathtracerarealightregression_test.cpp.
+add_executable(gman_pathtracerarealightregression pathtracerarealightregression_test.cpp)
+target_link_libraries(gman_pathtracerarealightregression PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerarealightregression gman_matte)
+
+add_test(NAME pathtracerarealightregression COMMAND gman_pathtracerarealightregression)
+set_tests_properties(pathtracerarealightregression PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# The same regression, one light at a time: a point, a spot and a distant
+# light each still match their own previously pinned residual check. Split
+# out since its three renders would otherwise crowd
+# pathtracerarealightregression's own sanitizer-build budget. Linked
+# against gman_pathtracer_objects, which still compiles
+# GMANPathtraceRenderer itself. See
+# tests/pathtracerarealightregressiononelight_test.cpp.
+add_executable(gman_pathtracerarealightregressiononelight pathtracerarealightregressiononelight_test.cpp)
+target_link_libraries(gman_pathtracerarealightregressiononelight PRIVATE gman_core gman_internal_headers
+  gman_pathtracer_objects)
+add_dependencies(gman_pathtracerarealightregressiononelight gman_matte)
+
+add_test(NAME pathtracerarealightregressiononelight COMMAND gman_pathtracerarealightregressiononelight)
+set_tests_properties(pathtracerarealightregressiononelight PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta

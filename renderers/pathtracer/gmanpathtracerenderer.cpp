@@ -27,6 +27,7 @@
 
 #include "gmanattributes.h"
 #include "gmanbsdf.h"
+#include "gmanemitter.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanpathtracerenderer.h"
@@ -40,9 +41,6 @@ namespace {
 
 // Pins every image this plugin renders; changing it moves all of them.
 constexpr std::uint32_t kSeed = 0x9e3779b9u;
-
-// pi, once, for next-event estimation's own scale.
-constexpr RtFloat kPi = (RtFloat)3.14159265358979323846;
 
 // Russian roulette's own survival cap: every path ends with probability 1.
 constexpr RtFloat kRouletteCap = (RtFloat)0.95;
@@ -156,25 +154,22 @@ bool passThrough(GMANHit const& hit, gman::SurfacePoint const& point, GMANColor 
   return true;
 }
 
-// Picks one light at hit.point by its own contribution there: light j's
-// weight is the mean of the Cl that GMANLight::sample reports, taken as 0
-// when it is not finite or not positive, and j is drawn with probability
-// its weight's share of the total. Fills lightVectors and lightCl for
-// every light and lightWeight with its own share; these are the caller's
-// own per-path buffers, sized to lights.size() and overwritten here, never
-// reallocated per vertex. Answers false, chosen and pj untouched, when no
-// light has positive weight there.
-bool chooseLight(std::vector<GMANLight const*> const& lights, GMANHit const& hit, RtInt sx, RtInt sy, std::uint32_t i,
-                 std::uint32_t N, std::uint32_t k, std::vector<GMANVector>& lightVectors,
-                 std::vector<RtFloat>& lightWeight, std::vector<GMANColor>& lightCl, std::size_t& chosen, RtFloat& pj) {
+// Picks one emitter at p by its own contribution there: emitter j's weight
+// is the mean of gman::sample(emitters[j], p, 0.5f, 0.5f).Cl, a fixed
+// preview draw rather than the real next-event-estimation draw, taken as 0
+// when it is not finite or not positive; j is drawn with probability its
+// weight's share of the total. For a delta emitter this reproduces its own
+// GMANLight::sample exactly, since a delta ignores (u1, u2). lightWeight is
+// the caller's own per-path buffer, sized to emitters.size() and
+// overwritten here, never reallocated per vertex. Answers false, chosen and
+// pj untouched, when no emitter has positive weight there.
+bool chooseLight(std::vector<gman::Emitter> const& emitters, GMANPoint const& p, RtInt sx, RtInt sy, std::uint32_t i,
+                 std::uint32_t N, std::uint32_t k, std::vector<RtFloat>& lightWeight, std::size_t& chosen,
+                 RtFloat& pj) {
   RtFloat totalWeight = 0.0f;
-  for (std::size_t j = 0; j < lights.size(); ++j) {
-    GMANVector l;
-    GMANColor cl;
-    lights[j]->sample(hit.point, l, cl);
-    lightVectors[j] = l;
-    lightCl[j] = cl;
-    RtFloat const mean = meanChannel(cl);
+  for (std::size_t j = 0; j < emitters.size(); ++j) {
+    gman::EmitterSample const preview = gman::sample(emitters[j], p, 0.5f, 0.5f);
+    RtFloat const mean = meanChannel(preview.Cl);
     RtFloat const w = (std::isfinite(mean) && mean > 0.0f) ? mean : 0.0f;
     lightWeight[j] = w;
     totalWeight += w;
@@ -190,7 +185,7 @@ bool chooseLight(std::vector<GMANLight const*> const& lights, GMANHit const& hit
   std::size_t lastPositive = 0;
   bool found = false;
   chosen = 0;
-  for (std::size_t j = 0; j < lights.size(); ++j) {
+  for (std::size_t j = 0; j < emitters.size(); ++j) {
     if (lightWeight[j] > 0.0f) {
       lastPositive = j;
     }
@@ -208,44 +203,48 @@ bool chooseLight(std::vector<GMANLight const*> const& lights, GMANHit const& hit
   return true;
 }
 
-// Next-event estimation at a scattering vertex: chooses one light through
-// chooseLight and, where the closure's response toward it is non-black,
-// returns its shadowed contribution to L; answers black where no light has
-// positive weight there or the closure is black toward the chosen one.
-// lightVectors, lightWeight and lightCl are the caller's own per-path
-// buffers, sized to lights.size() and overwritten here, never reallocated
+// Next-event estimation at a scattering vertex: chooses one emitter through
+// chooseLight, draws its own real (u1, u2) at dimension 3 + 5k -- reserved
+// for exactly this, distinct from chooseLight's own fixed preview draw --
+// and, where its solid-angle pdf is positive and the closure's response
+// toward it is non-black, returns its shadowed contribution to L. Answers
+// black where no emitter has positive weight there, the draw's pdf is 0 or
+// the closure is black toward it. lightWeight is the caller's own per-path
+// buffer, sized to emitters.size() and overwritten here, never reallocated
 // per vertex.
-GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& lights, GMANHit const& hit,
+GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANHit const& hit,
                               gman::SurfacePoint const& point, gman::BSDF const& closure, GMANVector const& wo,
                               GMANColor const& beta, RtFloat surfaceMagnitude, GMANMatrix4 const& cameraToWorld,
                               gman::TextureCache* textureCache, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
-                              std::uint32_t k, std::vector<GMANVector>& lightVectors, std::vector<RtFloat>& lightWeight,
-                              std::vector<GMANColor>& lightCl) {
-  if (lights.empty()) {
+                              std::uint32_t k, std::vector<RtFloat>& lightWeight) {
+  if (emitters.empty()) {
     return kBlack;
   }
 
   std::size_t chosen = 0;
   RtFloat pj = 0.0f;
-  if (!chooseLight(lights, hit, sx, sy, i, N, k, lightVectors, lightWeight, lightCl, chosen, pj)) {
+  if (!chooseLight(emitters, hit.point, sx, sy, i, N, k, lightWeight, chosen, pj)) {
     return kBlack;
   }
 
-  GMANVector wi = lightVectors[chosen];
-  wi.normalize();
-  GMANColor const f = closure.eval(wo, wi);
+  gman::Sample2D const uv = gman::sample2D(kSeed, sx, sy, i, N, 3u + 5u * k);
+  gman::EmitterSample const es = gman::sample(emitters[chosen], hit.point, uv.u1, uv.u2);
+  if (!(es.pdf > 0.0f)) {
+    return kBlack;
+  }
+
+  GMANColor const f = closure.eval(wo, es.wi);
   if (colorBlack(f)) {
     return kBlack;
   }
 
-  RtFloat const cosTerm = std::fabs(point.N.dot(wi));
-  RtFloat const distance =
-      (lights[chosen]->getType() == GMAN_LIGHT_DISTANT) ? RI_INFINITY : lightVectors[chosen].magnitude();
-  GMANColor const v = shadowWalk(bvh, hit.point, point.Ng, wi, surfaceMagnitude, distance, cameraToWorld, textureCache);
+  RtFloat const cosTerm = std::fabs(point.N.dot(es.wi));
+  GMANColor const v =
+      shadowWalk(bvh, hit.point, point.Ng, es.wi, surfaceMagnitude, es.distance, cameraToWorld, textureCache);
 
   GMANColor term = gman::multiplyChannels(beta, f);
-  term = scaleColor(term, cosTerm * kPi / pj);
-  term = gman::multiplyChannels(term, lightCl[chosen]);
+  term = scaleColor(term, cosTerm / (pj * es.pdf));
+  term = gman::multiplyChannels(term, es.Cl);
   term = gman::multiplyChannels(term, v);
   return term;
 }
@@ -260,12 +259,13 @@ enum class BSDFStepOutcome { Continue, End };
 // gone non-finite ends it and clears finite.
 BSDFStepOutcome bsdfStepAndRoulette(gman::BSDF const& closure, GMANVector const& wo, gman::SurfacePoint const& point,
                                     RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N, std::uint32_t k,
-                                    GMANColor& beta, RtFloat& etaScale, bool& finite, GMANVector& wi) {
+                                    GMANColor& beta, RtFloat& etaScale, bool& finite, GMANVector& wi, bool& isDelta) {
   gman::Sample2D const uvBsdf = gman::sample2D(kSeed, sx, sy, i, N, 4u + 5u * k);
   gman::BSDFSample const sample = closure.sample(wo, uvBsdf.u1, uvBsdf.u2);
   if (!(sample.pdf > 0.0f)) {
     return BSDFStepOutcome::End;
   }
+  isDelta = sample.isDelta;
 
   RtFloat const cosI = std::fabs(point.N.dot(sample.wi));
   beta = gman::multiplyChannels(beta, scaleColor(sample.f, cosI / sample.pdf));
@@ -301,26 +301,48 @@ BSDFStepOutcome bsdfStepAndRoulette(gman::BSDF const& closure, GMANVector const&
   return BSDFStepOutcome::Continue;
 }
 
-// Traces one path from cameraRay: coverage, next-event estimation over
-// lights, a BSDF-sampled bounce and Russian roulette at each scattering
-// vertex, until the path escapes, is rouletted out, fails a BSDF draw or
-// runs past the composite-layer cap on a straight run of pass-throughs.
-// (sx, sy) is the slot's absolute sample-grid coordinate and (i, N) the
-// path's own index among the slot's N; every random draw is a pure
-// function of these four plus a per-vertex dimension, so no state passes
-// between paths or slots.
-PathResult tracePath(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& lights,
+// The emitter-hit term at a hit, added once per vertex before anything else
+// there: black unless the hit primitive's own area light is eligible and
+// supported (present in emitters, which already filtered both), its placed
+// normal faces the incoming ray, and rayEligible says no non-delta BSDF
+// draw produced the ray since its own last vertex -- otherwise next-event
+// estimation at that earlier vertex already estimated this same
+// contribution, and adding it again here would double it.
+GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterface const* hitPrimitive,
+                       gman::Appearance const& appearance, gman::SurfacePoint const& point, bool rayEligible) {
+  if (!rayEligible || appearance.areaLight == nullptr) {
+    return kBlack;
+  }
+  for (gman::Emitter const& emitter : emitters) {
+    if (emitter.shape == hitPrimitive) {
+      RtFloat const cosTheta = point.N.dot(-point.I);
+      return (cosTheta > 0.0f) ? emitter.light->getCl() : kBlack;
+    }
+  }
+  return kBlack;
+}
+
+// Traces one path from cameraRay: an eligible emitter hit's own Le,
+// coverage, next-event estimation over emitters, a BSDF-sampled bounce and
+// Russian roulette at each scattering vertex, until the path escapes, is
+// rouletted out, fails a BSDF draw or runs past the composite-layer cap on
+// a straight run of pass-throughs. (sx, sy) is the slot's absolute
+// sample-grid coordinate and (i, N) the path's own index among the slot's
+// N; every random draw is a pure function of these four plus a per-vertex
+// dimension, so no state passes between paths or slots.
+PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                      GMANMatrix4 const& cameraToWorld, GMANColor const& background, gman::TextureCache* textureCache,
                      GMANRay cameraRay, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N) {
   PathResult result;
   GMANColor beta = kWhite;
   RtFloat etaScale = 1.0f;
   bool hasScattered = false, escaped = false;
+  // The camera ray itself is eligible: it carries no earlier BSDF draw, so
+  // it has no earlier next-event estimate to double.
+  bool rayEligibleForEmitterHit = true;
   int passThroughRun = 0;
   GMANRay ray = cameraRay;
-  std::vector<GMANVector> lightVectors(lights.size());
-  std::vector<RtFloat> lightWeight(lights.size());
-  std::vector<GMANColor> lightCl(lights.size());
+  std::vector<RtFloat> lightWeight(emitters.size());
   for (std::uint32_t k = 0;; ++k) {
     GMANHit hit;
     GMANRayInterface const* hitPrimitive = nullptr;
@@ -337,6 +359,10 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<GMANLight const*> const&
     gman::SurfacePoint const point = gman::hitSurfacePoint(ray, hit);
     gman::Appearance const& appearance = hitPrimitive->getAppearance();
     RtFloat const surfaceMagnitude = point.surfaceMagnitude;
+
+    result.L +=
+        gman::multiplyChannels(beta, emitterHitLe(emitters, hitPrimitive, appearance, point, rayEligibleForEmitterHit));
+
     GMANColor const os = clampCoverage(appearance.Os);
     RtFloat const qPass = meanChannel(gman::oneMinus(os));
     RtFloat const coverageU = gman::sample1D(kSeed, sx, sy, i, N, 1u + 5u * k);
@@ -352,13 +378,15 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<GMANLight const*> const&
     beta = gman::multiplyChannels(beta, divideColor(os, (RtFloat)1.0 - qPass));
     gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
     GMANVector const wo = -point.I;
-    result.L += nextEventEstimation(bvh, lights, hit, point, closure, wo, beta, surfaceMagnitude, cameraToWorld,
-                                    textureCache, sx, sy, i, N, k, lightVectors, lightWeight, lightCl);
+    result.L += nextEventEstimation(bvh, emitters, hit, point, closure, wo, beta, surfaceMagnitude, cameraToWorld,
+                                    textureCache, sx, sy, i, N, k, lightWeight);
     GMANVector wi;
-    if (bsdfStepAndRoulette(closure, wo, point, sx, sy, i, N, k, beta, etaScale, result.finite, wi) ==
+    bool sampleIsDelta = false;
+    if (bsdfStepAndRoulette(closure, wo, point, sx, sy, i, N, k, beta, etaScale, result.finite, wi, sampleIsDelta) ==
         BSDFStepOutcome::End) {
       break;
     }
+    rayEligibleForEmitterHit = sampleIsDelta;
     GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, wi, surfaceMagnitude);
     ray = GMANRay(origin, wi);
   }
@@ -383,7 +411,7 @@ struct SlotResult {
   std::size_t dropped = 0;
 };
 
-SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& lights, GMANViewingSystem* viewingSys,
+SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem* viewingSys,
                       GMANMatrix4 const& cameraToWorld, GMANColor const& background, gman::TextureCache* textureCache,
                       RtInt sx, RtInt sy, int xsamples, int ysamples, std::uint32_t N) {
   SlotResult result;
@@ -393,7 +421,7 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<GMANLight const*> const
     RtFloat const rasterY = ((RtFloat)sy + uv0.u2) / (RtFloat)ysamples;
     GMANRay const cameraRay = viewingSys->cameraRay(rasterX, rasterY);
 
-    PathResult const path = tracePath(bvh, lights, cameraToWorld, background, textureCache, cameraRay, sx, sy, i, N);
+    PathResult const path = tracePath(bvh, emitters, cameraToWorld, background, textureCache, cameraRay, sx, sy, i, N);
 
     if (path.hasFirstHit && path.firstHitZ < result.minZ) {
       result.minZ = path.firstHitZ;
@@ -416,7 +444,7 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<GMANLight const*> const
 // reading the BVH, the light set and the raster data it is handed as
 // const, so a later caller can shard rows across gman::parallelFor workers
 // unchanged.
-void renderRow(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& lights, GMANViewingSystem* viewingSys,
+void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem* viewingSys,
                GMANMatrix4 const& cameraToWorld, GMANOptions::RasterInfo const& raster, RtInt width, int xsamples,
                int ysamples, std::uint32_t N, GMANColor const& background, gman::TextureCache& textureCache, int py,
                GMANSampleBuffer& sampleBuffer, std::size_t& dropped) {
@@ -430,8 +458,8 @@ void renderRow(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& light
       RtInt const sx = raster.rxmin * xsamples + sampleX;
       RtInt const sy = raster.rymin * ysamples + sampleY;
 
-      SlotResult const slot =
-          renderSlot(bvh, lights, viewingSys, cameraToWorld, background, &textureCache, sx, sy, xsamples, ysamples, N);
+      SlotResult const slot = renderSlot(bvh, emitters, viewingSys, cameraToWorld, background, &textureCache, sx, sy,
+                                         xsamples, ysamples, N);
       dropped += slot.dropped;
       if (!slot.anyHit) {
         continue;
@@ -447,23 +475,21 @@ void renderRow(GMANRayBVH const& bvh, std::vector<GMANLight const*> const& light
 } // namespace
 
 void GMANPathtraceRenderer::gatherLights() {
-  lights.clear();
-  std::vector<GMANLight const*> ambientSeen;
+  emitters = gman::emitters(worldManager);
 
+  // gman::emitters already excludes ambientlight from its own walk, with
+  // no count of its own; a second, separate walk recovers exactly the
+  // count this renderer's own warning names.
+  std::vector<GMANLight const*> ambientSeen;
   for (GMANPrimitive* primitive = worldManager.getFirst(); primitive != nullptr; primitive = worldManager.getNext()) {
     GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
     if (rayPrimitive == nullptr) {
       continue;
     }
     for (GMANLight const* light : rayPrimitive->getAppearance().lights) {
-      if (light->getType() == GMAN_LIGHT_AMBIENT) {
-        if (std::find(ambientSeen.begin(), ambientSeen.end(), light) == ambientSeen.end()) {
-          ambientSeen.push_back(light);
-        }
-        continue;
-      }
-      if (std::find(lights.begin(), lights.end(), light) == lights.end()) {
-        lights.push_back(light);
+      if (light->getType() == GMAN_LIGHT_AMBIENT &&
+          std::find(ambientSeen.begin(), ambientSeen.end(), light) == ambientSeen.end()) {
+        ambientSeen.push_back(light);
       }
     }
   }
@@ -497,7 +523,7 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
 
   for (int py = 0; py < height; ++py) {
     std::size_t rowDropped = 0;
-    renderRow(bvh, lights, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, background, textureCache,
+    renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, background, textureCache,
               py, *sampleBuffer, rowDropped);
     droppedPaths += rowDropped;
   }

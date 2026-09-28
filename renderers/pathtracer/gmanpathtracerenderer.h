@@ -28,6 +28,7 @@
 #include <memory>
 #include <vector>
 
+#include "gmanemitter.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanray.h"
@@ -43,24 +44,25 @@
 /*
  * RenderMan API GMANPathtraceRenderer
  *
- * Unidirectional path tracing with next-event estimation over point,
- * spot and distant lights. Every path carries a throughput beta,
- * starting white, and a radiance L, starting black; at each hit it may
- * pass straight through (coverage), otherwise it evaluates next-event
- * estimation against one light chosen by its contribution, then samples
- * the surface's own BSDF (gman::bsdf) for its next direction, subject to
- * Russian roulette from its fourth vertex on. An escaped ray adds
- * beta times the background and ends the path. The light set is the
- * union of every primitive's own Appearance::lights, gathered once at
- * the top of render(); ambientlight contributes nothing, since bounce
- * light is what it faked. A non-finite path -- a NaN or infinite channel
- * anywhere in its throughput, radiance or coverage estimate -- is
- * dropped: it contributes zero to the slot's sums and is counted, never
- * filtered. render() is serial; each row is its own unit of work, reading
- * the BVH, the light set, the options and the background as const and
- * writing only its own slots of the sample buffer and the dropped-path
- * count it is handed, so a later caller can shard rows across
- * gman::parallelFor workers unchanged.
+ * Unidirectional path tracing with next-event estimation over every point,
+ * spot, distant and area light in the scene, through the shared
+ * gman::Emitter interface. Every path carries a throughput beta, starting
+ * white, and a radiance L, starting black; at each hit, before anything
+ * else, an eligible area-light primitive the ray may still credit adds its
+ * own Le, then the path may pass straight through (coverage), otherwise it
+ * evaluates next-event estimation against one emitter chosen by its
+ * contribution, then samples the surface's own BSDF (gman::bsdf) for its
+ * next direction, subject to Russian roulette from its fourth vertex on. An
+ * escaped ray adds beta times the background and ends the path. The
+ * emitter set is gman::emitters(worldManager), gathered once at the top of
+ * render(); ambientlight contributes nothing, since bounce light is what
+ * it faked. A non-finite path -- a NaN or infinite channel anywhere in its
+ * throughput, radiance or coverage estimate -- is dropped: it contributes
+ * zero to the slot's sums and is counted, never filtered. render() is
+ * serial; each row is its own unit of work, reading the BVH, the emitter
+ * set, the options and the background as const and writing only its own
+ * slots of the sample buffer and the dropped-path count it is handed, so a
+ * later caller can shard rows across gman::parallelFor workers unchanged.
  */
 class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
@@ -76,11 +78,11 @@ private:
   // at the end of render(). getDepth reads its resolved depth.
   std::unique_ptr<GMANSampleBuffer> sampleBuffer;
 
-  // The union of every primitive's own Appearance::lights, point, spot
-  // and distant alike, deduplicated by pointer in first-seen order.
-  // Gathered once at the top of render(); every vertex samples the whole
-  // set, whatever its own hit primitive's own list says.
-  std::vector<GMANLight const*> lights;
+  // gman::emitters(worldManager): every delta light and eligible area
+  // light in the scene. Gathered once at the top of render(); every vertex
+  // samples the whole set, whatever its own hit primitive's own
+  // appearance says.
+  std::vector<gman::Emitter> emitters;
 
   // The last render() call's count of paths dropped for a non-finite
   // channel, and of ambientlight lights its light-gathering walk
@@ -88,7 +90,9 @@ private:
   std::size_t droppedPaths = 0;
   std::size_t skippedAmbientLights = 0;
 
-  // Walks worldManager once, filling lights and skippedAmbientLights.
+  // Fills emitters from worldManager and skippedAmbientLights from its own
+  // separate count -- gman::emitters excludes ambient lights silently,
+  // with no count of its own to report.
   void gatherLights();
 
 public:
