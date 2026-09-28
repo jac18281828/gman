@@ -48,7 +48,7 @@ OutputPNG::OutputPNG(const char* path, int width, int height) : GMANOutput(path,
 OutputPNG::~OutputPNG() {};
 
 RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples,
-                             int /*bitsPerSample*/, RtFloat gamma) {
+                             int /*bitsPerSample*/, RtFloat /*gamma*/) {
   // write a PNG file to 'fileName'
 
   // open jpeg output file for writing
@@ -115,9 +115,6 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint
   png_time modtime;
   png_convert_from_time_t(&modtime, time(NULL));
   png_set_tIME(png_ptr, info_ptr, &modtime);
-
-  // set PNG gamma correction
-  png_set_gAMA(png_ptr, info_ptr, gamma);
 
   // set bgcolor black;
   png_color_16 bgcolor{};
@@ -208,7 +205,7 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint
   png_write_end(png_ptr, info_ptr);
 
   // clean up write struct. Passing info_ptr here (not NULL) is what frees
-  // it -- png_create_info_struct and the png_set_text/tIME/gAMA/bKGD calls
+  // it -- png_create_info_struct and the png_set_text/tIME/bKGD calls
   // above all allocate through it, and passing NULL would destroy only
   // png_ptr, leaking the rest.
   png_destroy_write_struct(&png_ptr, &info_ptr);

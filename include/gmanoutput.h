@@ -84,8 +84,8 @@ protected:
   // Writes image, 4 samples per pixel -- R, G, B, alpha -- in row-major
   // order, index 4 * (y * xres + x) + channel, each already resolved into
   // the request's [min, max] and packed into bitsPerSample bits (8 or 16).
-  // gamma is the exponent save already applied, passed through for a
-  // format that records it rather than reapplies it.
+  // gamma is the exponent save already applied; no shipped driver records
+  // it.
   virtual RtVoid writeImage(DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
                             RtFloat gamma) = 0;
 };
