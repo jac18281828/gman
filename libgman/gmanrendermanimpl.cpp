@@ -1192,21 +1192,45 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
 }
 namespace {
 
+// The predicates validateNuPatch shares between its u and v axes. Each
+// axis keeps its own full warning literal, so the text a violation
+// prints always names the axis that failed; only the test itself is
+// shared here.
+bool nuPatchOrderValid(RtInt n, RtInt order) { return order >= 1 && n >= order; }
+
+// Index of the first knot less than its predecessor, or -1 when the
+// length-(n+order) array is non-decreasing throughout.
+RtInt firstDecreasingKnot(RtInt n, RtInt order, RtFloat const* knot) {
+  for (RtInt i = 1; i < n + order; i++) {
+    if (knot[i] < knot[i - 1]) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+bool nuPatchRangeNonEmpty(RtFloat min, RtFloat max) { return min < max; }
+bool nuPatchRangeAboveFloor(RtFloat min, RtFloat const* knot, RtInt order) { return min >= knot[order - 1]; }
+bool nuPatchRangeBelowCeiling(RtFloat max, RtFloat const* knot, RtInt n) { return max <= knot[n]; }
+
 // RiSpec 3.2's RiNuPatch rules, checked once before the parameter list is
 // built: order positive and no greater than its own point count,
 // non-decreasing knots, both range rules, and nu*nv*4 (the "Pw" case's own
 // float count) fitting in RtInt. Warns once naming the rule and its values
 // on the first violation and returns false; the caller adds
 // objectManager->create() and returns, RiPatchMeshV's own "ignoring" shape.
+// The first violated rule decides the one warning, so the sequence below
+// -- order, overflow, knots, range -- each axis checked in turn, is part
+// of the contract, not an implementation detail free to reorder.
 bool validateNuPatch(RtInt nu, RtInt uorder, RtFloat const* uknot, RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
                      RtFloat const* vknot, RtFloat vmin, RtFloat vmax) {
-  if (uorder < 1 || nu < uorder) {
+  if (!nuPatchOrderValid(nu, uorder)) {
     warning("NuPatch: nu={} uorder={} violates nu >= uorder >= 1; "
             "ignoring.",
             nu, uorder);
     return false;
   }
-  if (vorder < 1 || nv < vorder) {
+  if (!nuPatchOrderValid(nv, vorder)) {
     warning("NuPatch: nv={} vorder={} violates nv >= vorder >= 1; "
             "ignoring.",
             nv, vorder);
@@ -1216,43 +1240,41 @@ bool validateNuPatch(RtInt nu, RtInt uorder, RtFloat const* uknot, RtFloat umin,
     warning("NuPatch: nu={} nv={}, times 4 overflows RtInt; ignoring.", nu, nv);
     return false;
   }
-  for (RtInt i = 1; i < nu + uorder; i++) {
-    if (uknot[i] < uknot[i - 1]) {
-      warning("NuPatch: uknot[{}]={} is less than uknot[{}]={}, not "
-              "non-decreasing; ignoring.",
-              i, uknot[i], i - 1, uknot[i - 1]);
-      return false;
-    }
+  RtInt uBadKnot = firstDecreasingKnot(nu, uorder, uknot);
+  if (uBadKnot >= 0) {
+    warning("NuPatch: uknot[{}]={} is less than uknot[{}]={}, not "
+            "non-decreasing; ignoring.",
+            uBadKnot, uknot[uBadKnot], uBadKnot - 1, uknot[uBadKnot - 1]);
+    return false;
   }
-  for (RtInt i = 1; i < nv + vorder; i++) {
-    if (vknot[i] < vknot[i - 1]) {
-      warning("NuPatch: vknot[{}]={} is less than vknot[{}]={}, not "
-              "non-decreasing; ignoring.",
-              i, vknot[i], i - 1, vknot[i - 1]);
-      return false;
-    }
+  RtInt vBadKnot = firstDecreasingKnot(nv, vorder, vknot);
+  if (vBadKnot >= 0) {
+    warning("NuPatch: vknot[{}]={} is less than vknot[{}]={}, not "
+            "non-decreasing; ignoring.",
+            vBadKnot, vknot[vBadKnot], vBadKnot - 1, vknot[vBadKnot - 1]);
+    return false;
   }
-  if (!(umin < umax)) {
+  if (!nuPatchRangeNonEmpty(umin, umax)) {
     warning("NuPatch: umin={} umax={} violates umin < umax; ignoring.", umin, umax);
     return false;
   }
-  if (!(umin >= uknot[uorder - 1])) {
+  if (!nuPatchRangeAboveFloor(umin, uknot, uorder)) {
     warning("NuPatch: umin={} is less than uknot[uorder-1]={}; ignoring.", umin, uknot[uorder - 1]);
     return false;
   }
-  if (!(umax <= uknot[nu])) {
+  if (!nuPatchRangeBelowCeiling(umax, uknot, nu)) {
     warning("NuPatch: umax={} exceeds uknot[nu]={}; ignoring.", umax, uknot[nu]);
     return false;
   }
-  if (!(vmin < vmax)) {
+  if (!nuPatchRangeNonEmpty(vmin, vmax)) {
     warning("NuPatch: vmin={} vmax={} violates vmin < vmax; ignoring.", vmin, vmax);
     return false;
   }
-  if (!(vmin >= vknot[vorder - 1])) {
+  if (!nuPatchRangeAboveFloor(vmin, vknot, vorder)) {
     warning("NuPatch: vmin={} is less than vknot[vorder-1]={}; ignoring.", vmin, vknot[vorder - 1]);
     return false;
   }
-  if (!(vmax <= vknot[nv])) {
+  if (!nuPatchRangeBelowCeiling(vmax, vknot, nv)) {
     warning("NuPatch: vmax={} exceeds vknot[nv]={}; ignoring.", vmax, vknot[nv]);
     return false;
   }
