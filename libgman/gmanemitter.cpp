@@ -22,6 +22,7 @@
  */
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 
 #include "gmanemitter.h"
@@ -342,6 +343,39 @@ EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtF
   result.pdf = 1.0f;
   result.isDelta = true;
   return result;
+}
+
+RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint const& hitPoint,
+                           GMANNormal const& hitNormal) {
+  assert(emitter.shape != nullptr);
+
+  GMANVector toHit(p, hitPoint);
+  RtFloat const distance = toHit.magnitude();
+  if (!(distance > 0.0f)) {
+    return 0.0f;
+  }
+  toHit.normalize();
+
+  RtFloat const cosTheta = hitNormal.dot(-toHit);
+  if (!(cosTheta > 0.0f)) {
+    return 0.0f;
+  }
+
+  RtFloat area = 0.0f;
+  emittingShapeArea(*emitter.shape, area);
+  GMANMatrix4 const objectToCamera = emittingShapeObjectToCamera(*emitter.shape);
+  GMANMatrix4 cameraToObject;
+  invertiblePlacement(objectToCamera, cameraToObject); // precondition: emitter came from emitters()
+
+  // hitPoint's own object-space normal, recovered by the inverse of the
+  // object-to-camera map placeEmitterPoint applies to a freshly drawn
+  // one -- exact for the point a real draw or a real ray hit actually
+  // placed, which hitPoint always is.
+  GMANVector objectNormal = gman::transformNormal(objectToCamera, hitNormal);
+  objectNormal.normalize();
+  RtFloat const jacobian = areaJacobian(objectToCamera, cameraToObject, objectNormal);
+
+  return (distance * distance) / (area * jacobian * cosTheta);
 }
 
 EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {

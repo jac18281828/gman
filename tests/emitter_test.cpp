@@ -416,6 +416,101 @@ void testScaledDisk() {
   check(relArea < 1e-4, "scaled disk: mean(1/samplePoint pdf) is within 1e-4 relative of A_cam");
 }
 
+// gman::lightSolidAnglePdf: a sphere of radius 2 at the camera-space
+// origin, rigidly placed -- the reference value and its own sidedness.
+void testLightSolidAnglePdfReference() {
+  GMANRaySphere sphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  GMANLight const light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  gman::Appearance appearance;
+  appearance.areaLight = &light;
+  sphere.setAppearance(appearance);
+  gman::Emitter const emitter{&light, &sphere, 0.0f};
+
+  // The near pole: hitNormal (0, 0, -1) faces p exactly, at distance 8 (p
+  // to hitPoint, not p to the sphere's own centre).
+  GMANPoint const p(0.0f, 0.0f, -10.0f);
+  GMANPoint const hitPoint(0.0f, 0.0f, -2.0f);
+  GMANNormal const hitNormal(0.0f, 0.0f, -1.0f);
+
+  RtFloat const pdf = gman::lightSolidAnglePdf(emitter, p, hitPoint, hitNormal);
+  double const expected = 4.0 / kPi;
+  double const relError = std::fabs((double)pdf - expected) / expected;
+  std::printf("lightSolidAnglePdf reference: %.10f, expected %.10f (%.2e relative)\n", (double)pdf, expected, relError);
+  check(relError < 1e-5, "lightSolidAnglePdf: the near-pole reference value matches 4/pi within 1e-5 relative");
+
+  GMANNormal const awayNormal(0.0f, 0.0f, 1.0f);
+  RtFloat const awayPdf = gman::lightSolidAnglePdf(emitter, p, hitPoint, awayNormal);
+  check(awayPdf == 0.0f, "lightSolidAnglePdf: a hitNormal facing away from p reports exactly 0");
+}
+
+// gman::lightSolidAnglePdf against sample()'s own EmitterSample::pdf, on
+// the same (u1, u2) draw's point and normal, filtered to the front-facing,
+// non-delta draws either technique ever counts: of kDraws draws, requires
+// at least kMinFrontFacing so the check cannot pass on an empty set.
+void checkLightSolidAnglePdfConsistency(gman::Emitter const& emitter, GMANPoint const& p, std::uint32_t dim,
+                                        std::string const& label) {
+  constexpr std::uint32_t kDraws = 1u << 12;
+  constexpr std::uint32_t kMinFrontFacing = 1u << 10;
+  std::uint32_t frontFacing = 0;
+  bool allMatch = true;
+  for (std::uint32_t i = 0; i < kDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
+    gman::EmitterSample const s = gman::sample(emitter, p, uv.u1, uv.u2);
+    bool const black = s.Cl.getRed() == 0.0f && s.Cl.getGreen() == 0.0f && s.Cl.getBlue() == 0.0f;
+    if (s.isDelta || black) {
+      continue;
+    }
+    ++frontFacing;
+
+    gman::EmitterPoint const ep = gman::samplePoint(emitter, uv.u1, uv.u2);
+    RtFloat const pdf = gman::lightSolidAnglePdf(emitter, p, ep.point, ep.normal);
+    double const relError = std::fabs((double)pdf - (double)s.pdf) / (double)s.pdf;
+    if (!(relError < 1e-5)) {
+      allMatch = false;
+    }
+  }
+  std::printf("%s: %u of %u draws front-facing\n", label.c_str(), frontFacing, kDraws);
+  check(frontFacing >= kMinFrontFacing, label + ": at least 2^10 of 2^12 draws land front-facing");
+  check(allMatch,
+        label + ": lightSolidAnglePdf matches sample()'s own pdf within 1e-5 relative on every front-facing draw");
+}
+
+void testLightSolidAnglePdfConsistency() {
+  GMANPoint const p(0.0f, 0.0f, -10.0f);
+
+  GMANRaySphere rigidSphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  GMANLight const rigidLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  gman::Appearance rigidAppearance;
+  rigidAppearance.areaLight = &rigidLight;
+  rigidSphere.setAppearance(rigidAppearance);
+  checkLightSolidAnglePdfConsistency({&rigidLight, &rigidSphere, 0.0f}, p, 10u, "lightSolidAnglePdf consistency");
+
+  // The same sphere, scaled non-uniformly: J varies pointwise over it.
+  GMANMatrix4 spherePlace;
+  spherePlace.scale(2.0f, 1.0f, 1.0f);
+  GMANTransform const sphereTransform = makeTransform(spherePlace);
+  GMANRaySphere scaledSphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList(), sphereTransform);
+  GMANLight const scaledSphereLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  gman::Appearance scaledSphereAppearance;
+  scaledSphereAppearance.areaLight = &scaledSphereLight;
+  scaledSphere.setAppearance(scaledSphereAppearance);
+  checkLightSolidAnglePdfConsistency({&scaledSphereLight, &scaledSphere, 0.0f}, p, 11u,
+                                     "lightSolidAnglePdf consistency, scaled sphere");
+
+  // A unit disk, rotated then scaled as testScaledDisk's own placement is:
+  // |n'| differs from 1.
+  GMANMatrix4 diskPlace;
+  diskPlace.rot(GMANRadians(45.0f), 0.0f, 1.0f, 0.0f);
+  diskPlace.scale(2.0f, 1.0f, 1.0f);
+  GMANTransform const diskTransform = makeTransform(diskPlace);
+  GMANRayDisk disk(0.0f, 1.0f, 360.0f, GMANParameterList(), diskTransform);
+  GMANLight const diskLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  gman::Appearance diskAppearance;
+  diskAppearance.areaLight = &diskLight;
+  disk.setAppearance(diskAppearance);
+  checkLightSolidAnglePdfConsistency({&diskLight, &disk, 0.0f}, p, 12u, "lightSolidAnglePdf consistency, scaled disk");
+}
+
 // samplePoint, delta.
 void testSamplePointDelta() {
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector());
@@ -467,6 +562,8 @@ int main() {
   testScaledSphere(2.0f, 4);
   testScaledSphere(0.5f, 5);
   testScaledDisk();
+  testLightSolidAnglePdfReference();
+  testLightSolidAnglePdfConsistency();
   testSamplePointDelta();
   testAppearanceExcludesAreaLight();
 

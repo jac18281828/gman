@@ -115,6 +115,21 @@ GMAN_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* 
 // emits away from p.
 GMAN_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2);
 
+// The solid-angle density sample() reports in EmitterSample::pdf for a
+// freshly drawn point on emitter, generalized to a point already known --
+// a BSDF-sampled bounce's own hit, which sample() never drew. p is the
+// receiving point, hitPoint the known point on emitter and hitNormal its
+// outward normal there, all camera space. 0 when hitNormal's cosine to the
+// direction from hitPoint back to p is at or below 0 (emitter's own
+// non-emitting side) or when p and hitPoint coincide -- unlike
+// EmitterSample::pdf, which a back-facing draw still reports nonzero,
+// since that draw's own Cl already goes black on that side and no weight
+// computed from either pdf ever multiplies it. Precondition: emitter.shape
+// != nullptr (an area emitter, which alone has a surface to place a known
+// point against); checked by assert.
+GMAN_EXPORT RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint const& hitPoint,
+                                       GMANNormal const& hitNormal);
+
 // A shooting-pass draw on emitter itself, ignoring u1/u2 for a delta
 // emitter.
 GMAN_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2);
