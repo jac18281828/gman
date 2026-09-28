@@ -137,6 +137,9 @@ void renderAreaLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   gman::Appearance sphereAppearance;
   sphereAppearance.areaLight = &areaLight;
+  // Os 1, the RIB default: opaque, so a shadow ray that walked all the way
+  // to the sampled point would graze the emitter's own surface there.
+  sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(sphereAppearance);
   renderer.getWorldManager()->add(sphere);
 
