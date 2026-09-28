@@ -25,18 +25,21 @@
  * ceiling's own inward normal faces away from any light arriving from
  * above, never the ceiling directly. Naming the radiosity pass, the lit
  * floor's own indirect bounce brightens the ceiling; with the pane opaque
- * (radiositywindow_opaque.rib) no light enters at all, so that brightening
- * disappears; with the pass named but the pane opaque or translucent
- * (radiositywindow_direct.rib), the ceiling reads whatever ambient light
- * alone gives -- here, with none, exactly zero.
+ * (radiositywindow_opaque.rib), still naming the pass, no light enters at
+ * all, so that brightening disappears; with the pane translucent but the
+ * pass omitted (radiositywindow_direct.rib), the ceiling reads whatever
+ * ambient light alone gives: here, with none, exactly zero, the same
+ * reading the opaque pane gives with the pass named.
  *
  * Two renders of radiositywindow.rib are also asserted byte-identical,
  * proving the solver's own determinism reaches the shipped image.
  */
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -49,27 +52,27 @@
 
 namespace {
 
-// The ceiling sampling strip: a row band just below the top image edge,
-// centred columns clear of the side walls and, per the fixture's own
-// window placement, clear of the window pane and anywhere its footprint
-// could appear through reflection or compositing.
-constexpr int kCeilingStripX = 20;
+// The ceiling sampling strip: rows 0 through 5 stay above the row where
+// the fixture's camera and geometry place the ceiling-back-wall seam, and
+// columns 22 through 41 sit on the 64-pixel frame's own vertical centre,
+// clear of the side walls and the window pane in every fixture.
+constexpr int kCeilingStripX = 22;
 constexpr int kCeilingStripWidth = 20;
-constexpr int kCeilingStripY = 1;
+constexpr int kCeilingStripY = 0;
 constexpr int kCeilingStripHeight = 6;
 
-// Measured on this fixture triple: with the pass on, the translucent
-// pane's ceiling strip reads about 39 counts brighter than the opaque
-// pane's; kWindowBleedDelta sits strictly between that and the opaque
-// pane's own (zero) contribution, comfortably more than two steps clear
-// of each, independent of GOLDEN_CHANNEL_TOL, which bounds a different
-// comparison (one render against its own golden).
+// kWindowBleedDelta sits strictly between the pass-on translucent pane's
+// ceiling brightening and the opaque pane's own zero contribution,
+// comfortably more than two steps clear of each, independent of
+// GOLDEN_CHANNEL_TOL, which bounds a different comparison: one render
+// against its own golden.
 constexpr double kWindowBleedDelta = 15.0;
 
 // tests/rib/radiositywindow.rib carries no ambient light, so Cs*Ka*ambient()
-// is exactly zero and every pixel in the pass-off ceiling strip must read
-// exactly zero (decision on GMANOutput::save's dither: a value of exactly
-// zero writes zero whatever the draw).
+// is exactly zero, and a value of exactly zero writes zero whatever
+// GMANOutput::save's dither draws: every pixel in the pass-off ceiling
+// strip must read exactly kPassOffCeilingBaseline.
+constexpr double kPassOffCeilingBaseline = 0.0;
 constexpr double kAmbientBaselineTolerance = 0.0;
 
 struct Result {
@@ -129,6 +132,66 @@ double ceilingStripMeanRed(GmanImage const& image) {
   return sum / (double)count;
 }
 
+// The window scene renders and matches its golden.
+void checkGolden(Rendered const& translucentOn, std::string const& ribDir) {
+  check(translucentOn.result.exitStatus == 0, "window: radiositywindow.rib exits 0");
+  check(printsNoRadiosityWarning(translucentOn.result.output),
+        "window: radiositywindow.rib prints no radiosity warning");
+  check(translucentOn.image.ok, "window: radiositywindow.rib's TIFF reads back");
+  if (!translucentOn.image.ok) {
+    return;
+  }
+
+  checkGoldenImage("radiositywindow.tif", ribDir + "/radiositywindow_golden.tif", GOLDEN_CHANNEL_TOL,
+                   GOLDEN_MAX_FRACTION, "radiositywindow_diff.tif");
+}
+
+// The pass, not direct-light transmission, lights the ceiling: with the
+// pass on, the translucent pane's ceiling strip reads brighter than the
+// opaque pane's; with the pass off, the translucent pane's ceiling strip
+// matches the fixture's zero ambient baseline.
+void checkCeiling(Rendered const& translucentOn, Rendered const& opaqueOn, Rendered const& translucentOff) {
+  check(opaqueOn.result.exitStatus == 0, "window: radiositywindow_opaque.rib exits 0");
+  check(printsNoRadiosityWarning(opaqueOn.result.output),
+        "window: radiositywindow_opaque.rib prints no radiosity warning");
+  check(translucentOff.result.exitStatus == 0, "window: radiositywindow_direct.rib exits 0");
+
+  check(translucentOn.image.ok && opaqueOn.image.ok && translucentOff.image.ok,
+        "window: all three renders' TIFFs read back");
+  if (!translucentOn.image.ok || !opaqueOn.image.ok || !translucentOff.image.ok) {
+    return;
+  }
+
+  double const translucentOnMean = ceilingStripMeanRed(translucentOn.image);
+  double const opaqueOnMean = ceilingStripMeanRed(opaqueOn.image);
+  double const translucentOffMean = ceilingStripMeanRed(translucentOff.image);
+  std::printf("window: ceiling strip mean: translucent+pass %.2f, opaque+pass %.2f, translucent+direct %.2f\n",
+              translucentOnMean, opaqueOnMean, translucentOffMean);
+
+  check(translucentOnMean - opaqueOnMean > kWindowBleedDelta,
+        "window: with the pass on, the translucent pane's ceiling strip exceeds the opaque pane's by more than "
+        "kWindowBleedDelta");
+  check(std::fabs(translucentOffMean - kPassOffCeilingBaseline) <= kAmbientBaselineTolerance,
+        "window: with the pass off, the translucent pane's ceiling strip matches the fixture's zero ambient "
+        "baseline");
+}
+
+// Two renders of radiositywindow.rib agree byte for byte: the solver draws
+// no random numbers, so determinism reaches the shipped image, not only
+// GMANRadiositySolver's own unit tests. Reads the first render's bytes,
+// already on disk from main's own render, before the second overwrites
+// the file the RIB's Display line always names.
+void checkDeterminism(std::string const& gman, std::string const& ribDir) {
+  std::vector<char> const firstBytes = readWholeFile("radiositywindow.tif");
+  Rendered const again = renderFixture(gman, ribDir, "radiositywindow.rib", "radiositywindow.tif");
+  check(again.result.exitStatus == 0, "window: the second radiositywindow.rib render exits 0");
+  check(printsNoRadiosityWarning(again.result.output),
+        "window: the second radiositywindow.rib render prints no radiosity warning");
+  std::vector<char> const secondBytes = readWholeFile("radiositywindow.tif");
+  check(!firstBytes.empty() && firstBytes == secondBytes,
+        "window: two renders of radiositywindow.rib are byte-identical");
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -144,47 +207,9 @@ int main(int argc, char* argv[]) {
   Rendered const translucentOff =
       renderFixture(gman, ribDir, "radiositywindow_direct.rib", "radiositywindow_direct.tif");
 
-  // ---- check D: the window scene renders and matches its golden ----
-  check(translucentOn.result.exitStatus == 0, "window: radiositywindow.rib exits 0");
-  check(printsNoRadiosityWarning(translucentOn.result.output),
-        "window: radiositywindow.rib prints no radiosity warning");
-  check(opaqueOn.result.exitStatus == 0, "window: radiositywindow_opaque.rib exits 0");
-  check(printsNoRadiosityWarning(opaqueOn.result.output),
-        "window: radiositywindow_opaque.rib prints no radiosity warning");
-  check(translucentOff.result.exitStatus == 0, "window: radiositywindow_direct.rib exits 0");
-
-  check(translucentOn.image.ok && opaqueOn.image.ok && translucentOff.image.ok,
-        "window: all three renders' TIFFs read back");
-  if (!translucentOn.image.ok || !opaqueOn.image.ok || !translucentOff.image.ok) {
-    return checkSummary("The radiosity pass, not direct-light transmission, brightens a window room's ceiling");
-  }
-
-  checkGoldenImage("radiositywindow.tif", ribDir + "/radiositywindow_golden.tif", GOLDEN_CHANNEL_TOL,
-                   GOLDEN_MAX_FRACTION, "radiositywindow_diff.tif");
-
-  // ---- check E: the pass, not direct transmission, lights the ceiling ----
-  double const translucentOnMean = ceilingStripMeanRed(translucentOn.image);
-  double const opaqueOnMean = ceilingStripMeanRed(opaqueOn.image);
-  double const translucentOffMean = ceilingStripMeanRed(translucentOff.image);
-  std::printf("window: ceiling strip mean -- translucent+pass %.2f, opaque+pass %.2f, translucent+direct %.2f\n",
-              translucentOnMean, opaqueOnMean, translucentOffMean);
-
-  check(translucentOnMean - opaqueOnMean > kWindowBleedDelta,
-        "window: with the pass on, the translucent pane's ceiling strip exceeds the opaque pane's by more than "
-        "kWindowBleedDelta");
-  check(std::fabs(translucentOffMean - 0.0) <= kAmbientBaselineTolerance,
-        "window: with the pass off, the translucent pane's ceiling strip matches the fixture's zero ambient "
-        "baseline");
-
-  // ---- check F: two renders of radiositywindow.rib are byte-identical ----
-  std::vector<char> const firstBytes = readWholeFile("radiositywindow.tif");
-  Rendered const onAgain = renderFixture(gman, ribDir, "radiositywindow.rib", "radiositywindow.tif");
-  check(onAgain.result.exitStatus == 0, "window: the second radiositywindow.rib render exits 0");
-  check(printsNoRadiosityWarning(onAgain.result.output),
-        "window: the second radiositywindow.rib render prints no radiosity warning");
-  std::vector<char> const secondBytes = readWholeFile("radiositywindow.tif");
-  check(!firstBytes.empty() && firstBytes == secondBytes,
-        "window: two renders of radiositywindow.rib are byte-identical");
+  checkGolden(translucentOn, ribDir);
+  checkCeiling(translucentOn, opaqueOn, translucentOff);
+  checkDeterminism(gman, ribDir);
 
   return checkSummary("The radiosity pass, not direct-light transmission, brightens a window room's ceiling");
 }

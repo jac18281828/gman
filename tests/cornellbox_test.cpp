@@ -31,8 +31,11 @@
  * the shipped image, not only GMANRadiositySolver's own unit tests.
  */
 
+#include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -46,24 +49,23 @@
 namespace {
 
 // The back-wall sampling strips: columns just inside the red and green
-// walls' own edges (verified against the fixture's render to fall on the
-// back wall itself, not the side walls), and a row band clear of the
-// floor and ceiling. Mirrored around the image's own centre column (63 -
-// (kNearRedStripX + kStripWidth - 1) == kNearGreenStripX), matching the
-// fixture's own light-and-wall symmetry about that centre.
+// walls' own edges, on the back wall itself rather than the side walls,
+// and a row band clear of the floor and ceiling. Mirrored around the
+// image's own centre column (63 - (kNearRedStripX + kStripWidth - 1) ==
+// kNearGreenStripX), matching the fixture's own light-and-wall symmetry
+// about that centre.
 constexpr int kNearRedStripX = 7;
 constexpr int kNearGreenStripX = 53;
 constexpr int kStripWidth = 4;
 constexpr int kStripY = 26;
 constexpr int kStripHeight = 13;
 
-// Measured on this fixture pair: the back wall's own colour-bleed
-// asymmetry (check B) is about 8.0 counts; cornellbox_direct.rib's own
-// residual, dither-only asymmetry (check C) is about 0.04. kBleedDelta
-// sits strictly between the two, comfortably more than two steps clear of
-// each, so it discriminates bleed from dither noise without relying on
-// GOLDEN_CHANNEL_TOL, which bounds a different comparison (one render
-// against its own golden, not two regions within one render).
+// kBleedDelta sits strictly between the back wall's own colour-bleed
+// asymmetry and cornellbox_direct.rib's residual, dither-only asymmetry,
+// comfortably more than two steps clear of each, so it discriminates
+// bleed from dither noise without relying on GOLDEN_CHANNEL_TOL, which
+// bounds a different comparison: one render against its own golden, not
+// two regions within one render.
 constexpr double kBleedDelta = 4.0;
 
 struct Result {
@@ -101,7 +103,7 @@ Rendered renderFixture(std::string const& gman, std::string const& ribDir, std::
   return rendered;
 }
 
-// The full file's bytes, for a literal cmp -- distinct from decoding
+// The full file's bytes, for a literal cmp: distinct from decoding
 // through libtiff, which would report two files equal on their decoded
 // raster even if their encoded bytes differed.
 std::vector<char> readWholeFile(std::string const& path) {
@@ -139,8 +141,9 @@ StripMeans stripMeans(GmanImage const& image, int x0) {
   return {sumR / (double)count, sumG / (double)count};
 }
 
-// Checks A, B and F: the box scene, its colour bleed, and two renders of
-// it agreeing byte for byte.
+// Renders cornellbox.rib, matches its golden, measures the colour bleed
+// this fixture pair is built to prove, and confirms two renders of the
+// scene agree byte for byte.
 void checkBox(std::string const& gman, std::string const& ribDir) {
   Rendered const on = renderFixture(gman, ribDir, "cornellbox.rib", "cornellbox.tif");
 
@@ -166,7 +169,6 @@ void checkBox(std::string const& gman, std::string const& ribDir) {
   check(greenDelta > kBleedDelta,
         "box: the near-green strip's mean green exceeds the near-red strip's by more than kBleedDelta");
 
-  // ---- check F: two renders of cornellbox.rib are byte-identical ----
   // The RIB's Display line always names "cornellbox.tif", so the first
   // render's file is copied aside before the second overwrites it.
   std::vector<char> const firstBytes = readWholeFile("cornellbox.tif");
@@ -178,8 +180,8 @@ void checkBox(std::string const& gman, std::string const& ribDir) {
   check(!firstBytes.empty() && firstBytes == secondBytes, "box: two renders of cornellbox.rib are byte-identical");
 }
 
-// Check C: naming no pass, the same two strip comparisons each fall under
-// kBleedDelta -- a small nonzero residual is still expected, since the
+// Naming no pass, the same two strip comparisons each fall under
+// kBleedDelta: a small nonzero residual is still expected, since the
 // strips sample different pixels and so draw different dither values.
 void checkDirect(std::string const& gman, std::string const& ribDir) {
   Rendered const off = renderFixture(gman, ribDir, "cornellbox_direct.rib", "cornellbox_direct.tif");
@@ -198,8 +200,10 @@ void checkDirect(std::string const& gman, std::string const& ribDir) {
   std::printf("direct: near-red strip mean R=%.2f G=%.2f; near-green strip mean R=%.2f G=%.2f; redDelta=%.2f "
               "greenDelta=%.2f\n",
               nearRed.meanR, nearRed.meanG, nearGreen.meanR, nearGreen.meanG, redDelta, greenDelta);
-  check(redDelta < kBleedDelta, "direct: the near-red/near-green mean red difference falls under kBleedDelta");
-  check(greenDelta < kBleedDelta, "direct: the near-green/near-red mean green difference falls under kBleedDelta");
+  check(std::fabs(redDelta) < kBleedDelta,
+        "direct: the near-red/near-green mean red difference's magnitude falls under kBleedDelta");
+  check(std::fabs(greenDelta) < kBleedDelta,
+        "direct: the near-green/near-red mean green difference's magnitude falls under kBleedDelta");
 }
 
 } // namespace
