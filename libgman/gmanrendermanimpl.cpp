@@ -65,6 +65,10 @@ constexpr char const* kIndirectPassToken = "string indirect";
 // token, matched the same literal way beside kIndirectPassToken.
 constexpr char const* kElementSizeToken = "float elementsize";
 
+// Option "pathtracer" "integer samples" ["<n>"]'s declaration token, matched
+// the same literal way beside kIndirectPassToken and kElementSizeToken.
+constexpr char const* kSamplesToken = "integer samples";
+
 // Scans an Option's (token, parm) pairs for the exact declaration token
 // and, on a match, wraps that one pair in a GMANParameterList. Returns
 // false, leaving matched untouched, when the token is absent.
@@ -111,6 +115,26 @@ void handleRadiosityOption(GMANDictionary& dictionary, RtInt n, RtToken tokens[]
     return;
   }
   options.setRadiosityElementSize(value[0]);
+}
+
+// Option "pathtracer" "integer samples" ["<n>"]: stores a count of at least
+// 1; a lower value logs one warning naming samples and the value and
+// changes nothing.
+void handlePathtracerOption(GMANDictionary& dictionary, RtInt n, RtToken tokens[], RtPointer parms[],
+                            GMANOptions& options) {
+  GMANParameterList p;
+  if (!matchOptionToken(dictionary, n, tokens, parms, kSamplesToken, p)) {
+    return;
+  }
+  RtInt const* const value = (RtInt const*)p.getPointer(dictionary.getTokenId(kSamplesToken));
+  if (value == nullptr) {
+    return;
+  }
+  if (value[0] < 1) {
+    warning("Option \"pathtracer\" \"integer samples\": {} is below 1; ignored.", value[0]);
+    return;
+  }
+  options.setPathtracerSamples(value[0]);
 }
 
 } // namespace
@@ -491,17 +515,19 @@ RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
   allowed(cmdRelativeDetail);
   getOptions().setRelativeDetail(relativedetail);
 }
-// Handles Option "render" "string indirect" ["<name>"] and Option
-// "radiosity" "float elementsize" ["<size>"] alone: any other name, or
-// either option not carrying its exact token, is ignored. No
-// allowed(cmdOption) call: that mask is all zero, so it would reject every
-// Option the corpus already relies on.
+// Handles Option "render" "string indirect" ["<name>"], Option "radiosity"
+// "float elementsize" ["<size>"] and Option "pathtracer" "integer samples"
+// ["<n>"] alone: any other name, or one of these three not carrying its
+// exact token, is ignored. No allowed(cmdOption) call: that mask is all
+// zero, so it would reject every Option the corpus already relies on.
 RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   std::string const optionName(name);
   if (optionName == "render") {
     handleRenderOption(dictionary, n, tokens, parms, getOptions());
   } else if (optionName == "radiosity") {
     handleRadiosityOption(dictionary, n, tokens, parms, getOptions());
+  } else if (optionName == "pathtracer") {
+    handlePathtracerOption(dictionary, n, tokens, parms, getOptions());
   }
 }
 

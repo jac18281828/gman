@@ -280,4 +280,6 @@ RtVoid GMANOptions::setIndirectPass(std::string const& name) { indirectPass = na
 
 RtVoid GMANOptions::setRadiosityElementSize(RtFloat size) { radiosityElementSize = size; }
 
+RtVoid GMANOptions::setPathtracerSamples(RtInt samples) { pathtracerSamples = samples; }
+
 const GMANOptions::OutputDefaults& GMANOptions::getOutputDefaults(RtVoid) const { return outputDefaults; }

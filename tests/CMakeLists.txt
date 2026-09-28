@@ -2681,6 +2681,19 @@ set_tests_properties(hitbsdf PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RiOptionV's handling of Option "pathtracer" "integer samples": unset reads 4,
+# a later Option replaces an earlier one, a value below 1 leaves it
+# unchanged but logs a warning, and an unrelated token or Option name --
+# "render" "string indirect" and "radiosity" "float elementsize" included --
+# changes nothing. See tests/pathtraceroption_test.cpp.
+add_executable(gman_pathtraceroption pathtraceroption_test.cpp)
+target_link_libraries(gman_pathtraceroption PRIVATE gman_core)
+
+add_test(NAME pathtraceroption COMMAND gman_pathtraceroption)
+set_tests_properties(pathtraceroption PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta

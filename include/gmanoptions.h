@@ -184,6 +184,12 @@ private:
   // offset. 0 when unset.
   RtFloat radiosityElementSize = 0;
 
+  // Option "pathtracer" "integer samples" ["<n>"]'s path count per slot,
+  // appended after radiosityElementSize so every member above keeps its
+  // offset. The default 2x2 PixelSamples grid then traces 16 paths a
+  // pixel.
+  RtInt pathtracerSamples = 4;
+
   /* default static data */
   static OutputDefaults outputDefaults;
 
@@ -275,6 +281,11 @@ public:
   // or 0 when no such Option has run yet.
   RtVoid setRadiosityElementSize(RtFloat size);
   RtFloat getRadiosityElementSize(RtVoid) const { return radiosityElementSize; };
+
+  // Paths per slot for the path tracer, Option "pathtracer" "integer samples"
+  // ["<n>"]; 4 until such an Option sets it.
+  RtVoid setPathtracerSamples(RtInt samples);
+  RtInt getPathtracerSamples(RtVoid) const { return pathtracerSamples; };
 
   const OutputDefaults& getOutputDefaults(RtVoid) const;
 };
