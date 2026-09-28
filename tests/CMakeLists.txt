@@ -3121,6 +3121,27 @@ if(GMAN_BUILD_RAYTRACER)
     TIMEOUT 30)
 endif()
 
+# tests/rib/arealight_polygon.rib tags two polygons with one
+# AreaLightSource: one with a "P", one with only a "Cs". The z-buffer's
+# area-light count names only the one that reaches the object manager. Its
+# own working directory, as rendererarealightwarning_zbuffer's is. See
+# tests/arealightpolygon_test.cpp.
+add_executable(gman_arealightpolygon arealightpolygon_test.cpp)
+target_link_libraries(gman_arealightpolygon PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_arealightpolygon gman_zbuffer gman_matte)
+
+set(GMAN_AREALIGHTPOLYGON_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/arealightpolygon-run")
+file(MAKE_DIRECTORY "${GMAN_AREALIGHTPOLYGON_WORKDIR}")
+
+add_test(NAME arealightpolygon
+  COMMAND gman_arealightpolygon $<TARGET_FILE:gman> "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_AREALIGHTPOLYGON_WORKDIR}")
+set_tests_properties(arealightpolygon PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30
+  WILL_FAIL TRUE)
+
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
 # paintedplastic, metal and shinymetal, and mirror's and glass's delta

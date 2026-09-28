@@ -1,0 +1,19 @@
+## Two polygons tagged by one AreaLightSource: one with a "P", one with
+## only a "Cs". AGENTS.md's desync convention: AreaLightSource immediately
+## precedes the polygons under test, and the block ends on a Sphere, so a
+## mis-parsed parameter list desyncs it. Not third-party.
+Display "arealight_polygon.tif" "file" "rgba"
+Format 64 64 1
+PixelSamples 1 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Surface "matte"
+AttributeBegin
+AreaLightSource "arealight" 1 "intensity" [10] "lightcolor" [1 1 1]
+Polygon "P" [-1 -1 0  1 -1 0  0 1 0]
+Polygon "Cs" [1 0 0]
+AttributeEnd
+Sphere 1 -1 1 360
+WorldEnd
