@@ -132,7 +132,7 @@ jobs:
       - name: Guard against a test build shipping
         run: grep -qx "BUILD_TESTING:BOOL=OFF" build-release/CMakeCache.txt
       # The tarball root is the cmake install tree plus install.sh and the
-      # sample scene. The samples stay out of the cmake install, which a
+      # sample scenes. The samples stay out of the cmake install, which a
       # distro packages.
       - name: Stage the install tree
         run: |
@@ -141,6 +141,7 @@ jobs:
           install -m 755 packaging/install.sh "$stage/install.sh"
           install -d "$stage/samples"
           install -m 644 samples/vase.rib "$stage/samples/vase.rib"
+          install -m 644 samples/materials.rib "$stage/samples/materials.rib"
       # The staged gman must find its own plugins from wherever it is
       # extracted -- that is what the relative INSTALL_RPATH buys, and
       # a tarball that cannot render is not worth publishing. The
@@ -179,7 +180,7 @@ jobs:
         run: |
           cd "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
           ./bin/gman --version | grep -qx "drivers: tiff pnm png jpeg"
-      # The stage folder ships whole, install.sh and samples/vase.rib with it.
+      # The stage folder ships whole, install.sh and samples/ with it.
       - name: Package
         run: |
           cd "${{ runner.temp }}/stage"
