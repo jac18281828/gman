@@ -3145,6 +3145,21 @@ set_tests_properties(pathtracerselfexclusion PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# An area light seen through a glass pane counts once: next-event
+# estimation's own shadow ray already carries it through the dielectric's
+# shadowTransmittance, so a refracting BSDF-sampled bounce that lands on
+# the same light must not add it again. See
+# tests/pathtracerglasscount_test.cpp.
+add_executable(gman_pathtracerglasscount pathtracerglasscount_test.cpp)
+target_link_libraries(gman_pathtracerglasscount PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerglasscount gman_matte gman_glass)
+
+add_test(NAME pathtracerglasscount COMMAND gman_pathtracerglasscount)
+set_tests_properties(pathtracerglasscount PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every

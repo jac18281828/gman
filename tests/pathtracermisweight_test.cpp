@@ -51,6 +51,8 @@ RtFloat lightChoiceProbability(std::vector<gman::Emitter> const& emitters, GMANP
                                GMANRayInterface const* primitive, std::size_t index);
 RtFloat nextEventWeight(bool lightIsDelta, bool misEnabled, RtFloat pLight, RtFloat pBsdf);
 RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat pBsdf, RtFloat pLight);
+enum class EmitterHitEligibility { eligible, weighted, suppressed };
+EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, bool isDelta, bool isTransmission);
 } // namespace gman
 
 namespace {
@@ -195,6 +197,43 @@ void testSelfExclusionZeroesOwnSurface() {
         "lightChoiceProbability: excluding the area emitter renormalizes the rest to sum to 1");
 }
 
+// Whether an emitter hit counts at all (anything but suppressed) and,
+// when it does, whether it is MIS weighted (weighted) or fixed at 1
+// (eligible) -- the two facts the chain rule's own table below pins.
+bool eligibilityCounts(gman::EmitterHitEligibility e) { return e != gman::EmitterHitEligibility::suppressed; }
+bool eligibilityIsWeighted(gman::EmitterHitEligibility e) { return e == gman::EmitterHitEligibility::weighted; }
+
+// The emitter-hit chain rule, one case per row: T is a delta transmission,
+// R a delta reflection; the sequence is the draws taken after the most
+// recent non-delta departure (state starts weighted), or, for the last
+// row, before any departure at all (state starts eligible, PathState's own
+// initial value).
+void testEmitterHitChainRule() {
+  using gman::EmitterHitEligibility;
+
+  EmitterHitEligibility state = gman::nextEmitterHitEligibility(EmitterHitEligibility::weighted, true, true);
+  check(!eligibilityCounts(state), "chain rule: T alone -- the hit adds nothing");
+
+  state = gman::nextEmitterHitEligibility(EmitterHitEligibility::weighted, true, false);
+  check(eligibilityCounts(state) && !eligibilityIsWeighted(state), "chain rule: R alone -- the hit counts, fixed at 1");
+
+  state = gman::nextEmitterHitEligibility(EmitterHitEligibility::weighted, true, true);
+  state = gman::nextEmitterHitEligibility(state, true, false);
+  check(eligibilityCounts(state) && !eligibilityIsWeighted(state), "chain rule: T, R -- the hit counts, fixed at 1");
+
+  state = gman::nextEmitterHitEligibility(EmitterHitEligibility::weighted, true, false);
+  state = gman::nextEmitterHitEligibility(state, true, true);
+  check(eligibilityCounts(state) && !eligibilityIsWeighted(state), "chain rule: R, T -- the hit counts, fixed at 1");
+
+  state = EmitterHitEligibility::weighted;
+  check(eligibilityCounts(state) && eligibilityIsWeighted(state),
+        "chain rule: no draw between -- the hit counts, MIS weighted");
+
+  state = gman::nextEmitterHitEligibility(EmitterHitEligibility::eligible, true, true);
+  check(eligibilityCounts(state) && !eligibilityIsWeighted(state),
+        "chain rule: camera ray, T (no non-delta departure yet) -- the hit counts, fixed at 1");
+}
+
 // The off switch. multipleImportanceSamplingEnabled(false) fixes
 // next-event estimation's weight at 1 and the emitter-hit's weighted
 // branch at 0, adding nothing at all for a non-delta departure. Also
@@ -222,6 +261,7 @@ int main() {
   testSameWeightAtADeeperVertex();
   testLightChoiceProbabilityTwoLights();
   testSelfExclusionZeroesOwnSurface();
+  testEmitterHitChainRule();
   testOffSwitch();
 
   return checkSummary("the path tracer's own MIS weight computation matches its hand-derived values, at every "

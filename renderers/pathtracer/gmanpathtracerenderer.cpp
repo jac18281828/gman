@@ -43,7 +43,7 @@
  * declare a matching prototype and call it directly, without rendering a
  * frame, the same way tests/hitbsdf_test.cpp reaches gman_core's own
  * internals through gman_internal_headers. Never installed: no header
- * outside this file names any of the four.
+ * outside this file names any of the five.
  */
 namespace gman {
 
@@ -110,6 +110,33 @@ RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat
   return gman::powerHeuristic(pBsdf, pLight);
 }
 
+// An emitter hit's own eligibility, tracked across delta draws since the
+// most recent non-delta departure: eligible (no departure yet, or a delta
+// reflection since restored today's rule), weighted (the immediate next
+// hit after a non-delta departure, MIS weighted against it) or suppressed
+// (every draw since a non-delta departure was a delta transmission, so
+// that departure's own shadow ray already carried the light through those
+// surfaces and the hit adds nothing).
+enum class EmitterHitEligibility { eligible, weighted, suppressed };
+
+// current is the eligibility before this draw; isDelta and isTransmission
+// describe the draw just taken (isTransmission meaningless unless
+// isDelta). A non-delta draw always departs afresh (weighted). A delta
+// reflection always restores eligible, whatever current was. A delta
+// transmission extends a suppressed or weighted chain into suppressed,
+// since a departure already exists to carry the light through; it leaves
+// an eligible chain eligible, since no departure exists yet to double.
+EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, bool isDelta, bool isTransmission) {
+  if (!isDelta) {
+    return EmitterHitEligibility::weighted;
+  }
+  if (!isTransmission) {
+    return EmitterHitEligibility::eligible;
+  }
+  return current == EmitterHitEligibility::eligible ? EmitterHitEligibility::eligible
+                                                    : EmitterHitEligibility::suppressed;
+}
+
 } // namespace gman
 
 namespace {
@@ -141,6 +168,14 @@ GMANColor divideColor(GMANColor const& c, RtFloat s) {
   return GMANColor(c.getRed() / s, c.getGreen() / s, c.getBlue() / s);
 }
 
+GMANColor subtractColor(GMANColor const& a, GMANColor const& b) {
+  return GMANColor(a.getRed() - b.getRed(), a.getGreen() - b.getGreen(), a.getBlue() - b.getBlue());
+}
+
+bool colorsBitwiseEqual(GMANColor const& a, GMANColor const& b) {
+  return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
+}
+
 // Os's own channel, clamped to [0, 1] with a NaN mapped to 1: order
 // matters here. GMANMin(v, 1) answers 1 for a NaN v, since a NaN
 // comparison is always false and the ternary then takes its second
@@ -153,20 +188,32 @@ GMANColor clampCoverage(GMANColor const& os) {
                    clampCoverageChannel(os.getBlue()));
 }
 
+// The shadow walk's own transmittance, split into v, the full product of
+// each blocker's (1 - Os) + Os * shadowTransmittance, and p, the product
+// of each blocker's own (1 - Os) alone -- the pure coverage pass-through
+// share a BSDF-sampled bounce can also reach through coverage's own
+// passThrough. v - p is every blocker's own dielectric shadowTransmittance
+// share, which next-event estimation's own weight (below) credits at
+// weight 1, since a suppressed emitter hit no longer does. p <= v always,
+// since each blocker's own factor is at least its (1 - Os) term.
+struct ShadowWalkResult {
+  GMANColor v = kWhite;
+  GMANColor p = kWhite;
+};
+
 // The plugin's own shadow walk, in gmanrayoccluder.h's transmission's own
 // shape: advances from origin over [0, maxDistance) along wi, compositing
-// each blocker's (1 - Os) + Os * shadowTransmittance per channel with no
-// early exit, and answers black past gman::kMaxCompositeLayers blockers.
-// A delta draw keeps its own fixed wi, shortening remaining by each
-// blocker's own hit.t; an area draw re-aims at shadowTarget after every
-// blocker, since a blocker's own offset scales with its own size and could
-// otherwise push the walk's endpoint past a small emitter's own target --
-// ending unblocked once shadowTarget lies at or behind the walk's own new
-// origin.
-GMANColor shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtFloat maxDistance, bool isDelta,
-                     GMANPoint const& shadowTarget, GMANMatrix4 const& cameraToWorld,
-                     gman::TextureCache* textureCache) {
-  GMANColor v = kWhite;
+// each blocker's own factor per channel with no early exit, and answers
+// black past gman::kMaxCompositeLayers blockers. A delta draw keeps its
+// own fixed wi, shortening remaining by each blocker's own hit.t; an area
+// draw re-aims at shadowTarget after every blocker, since a blocker's own
+// offset scales with its own size and could otherwise push the walk's
+// endpoint past a small emitter's own target -- ending unblocked once
+// shadowTarget lies at or behind the walk's own new origin.
+ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtFloat maxDistance, bool isDelta,
+                            GMANPoint const& shadowTarget, GMANMatrix4 const& cameraToWorld,
+                            gman::TextureCache* textureCache) {
+  ShadowWalkResult result;
   RtFloat remaining = maxDistance;
 
   for (int layer = 0; layer < gman::kMaxCompositeLayers; ++layer) {
@@ -174,7 +221,7 @@ GMANColor shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtF
     GMANHit hit;
     GMANRayInterface const* hitPrimitive = nullptr;
     if (!bvh.nearestHit(shadowRay, hit, hitPrimitive)) {
-      return v;
+      return result;
     }
 
     gman::Appearance const& appearance = hitPrimitive->getAppearance();
@@ -183,11 +230,13 @@ GMANColor shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtF
     gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
     GMANColor const t = closure.shadowTransmittance(wi);
 
-    GMANColor factor = gman::oneMinus(os);
+    GMANColor const passThroughShare = gman::oneMinus(os);
+    GMANColor factor = passThroughShare;
     factor += gman::multiplyChannels(os, t);
-    v = gman::multiplyChannels(v, factor);
-    if (colorBlack(v)) {
-      return kBlack;
+    result.v = gman::multiplyChannels(result.v, factor);
+    result.p = gman::multiplyChannels(result.p, passThroughShare);
+    if (colorBlack(result.v)) {
+      return result;
     }
 
     RtFloat const magnitude = gman::primitiveMagnitude(hitPrimitive->getBBox());
@@ -201,7 +250,7 @@ GMANColor shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtF
 
     GMANVector toTarget(newOrigin, shadowTarget);
     if (toTarget.dot(wi) <= 0.0f) {
-      return v;
+      return result;
     }
     remaining = toTarget.magnitude();
     toTarget.normalize();
@@ -215,9 +264,9 @@ GMANColor shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtF
   GMANHit capHit;
   GMANRayInterface const* capPrimitive = nullptr;
   if (bvh.nearestHit(capRay, capHit, capPrimitive)) {
-    return kBlack;
+    return {kBlack, kBlack};
   }
-  return v;
+  return result;
 }
 
 // A single path's own contribution to a slot: its radiance and coverage
@@ -359,23 +408,39 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
   RtFloat const cosTerm = std::fabs(point.N.dot(es.wi));
   GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, es.wi, surfaceMagnitude);
   ShadowWalkStart const walkStart = shadowWalkStart(origin, es);
-  GMANColor const v = shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget,
-                                 cameraToWorld, textureCache);
+  ShadowWalkResult const walk = shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget,
+                                           cameraToWorld, textureCache);
 
   GMANColor term = gman::multiplyChannels(beta, f);
-  term = scaleColor(term, weight * cosTerm / pLight);
+  if (weight == 1.0f || colorsBitwiseEqual(walk.v, walk.p)) {
+    term = scaleColor(term, weight * cosTerm / pLight);
+    term = gman::multiplyChannels(term, es.Cl);
+    term = gman::multiplyChannels(term, walk.v);
+    return term;
+  }
+
+  // The walk crossed a dielectric and weight is not 1: p's own share (what
+  // coverage's own passThrough could also reach) takes weight; v - p,
+  // every dielectric crossing, now the emitter-hit rule's own to leave
+  // alone, takes weight 1.
+  term = scaleColor(term, cosTerm / pLight);
   term = gman::multiplyChannels(term, es.Cl);
-  term = gman::multiplyChannels(term, v);
-  return term;
+  GMANColor combined = subtractColor(walk.v, walk.p);
+  combined += scaleColor(walk.p, weight);
+  return gman::multiplyChannels(term, combined);
 }
 
 // The BSDF draw that carries a path onward: its direction, its own
 // solid-angle pdf (an emitter-hit's own MIS weight reads this, for a
-// non-delta departure), and whether the lobe sampled was a delta one.
+// non-delta departure), whether the lobe sampled was a delta one, and
+// whether wi fell on the opposite side of the geometric normal from wo (a
+// delta transmission; meaningless unless isDelta) -- the emitter-hit
+// eligibility chain's own input.
 struct BSDFStepDraw {
   GMANVector wi;
   RtFloat pdf;
   bool isDelta;
+  bool isTransmission;
 };
 
 // The BSDF step: draws a direction and updates beta by f*|wi.N|/pdf,
@@ -423,27 +488,32 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
     beta = divideColor(beta, q);
   }
 
-  return BSDFStepDraw{sample.wi, sample.pdf, sample.isDelta};
+  // The geometric normal, not the shading one: the emitter-hit chain rule
+  // asks whether a crossing left the surface's own geometric side, not
+  // whether a bump-perturbed shading normal did.
+  bool const isTransmission = (point.Ng.dot(wo) > 0.0f) != (point.Ng.dot(sample.wi) > 0.0f);
+  return BSDFStepDraw{sample.wi, sample.pdf, sample.isDelta, isTransmission};
 }
 
 // The emitter-hit term at a hit, added once per vertex before anything else
 // there: black unless the hit primitive's own area light is eligible and
 // supported (present in emitters, which already filtered both) and its
-// placed normal faces the incoming ray. rayEligible true (no BSDF draw
-// produced the ray at all, or the most recent one was a delta lobe) keeps
-// weight 1: the one case with no competing technique, or the one where
-// next-event estimation's own term at the departing vertex is already
-// black, so nothing here can double it. Otherwise the departure was a
-// non-delta draw, from departureP on departurePrimitive with its own
-// reported density departurePdf; the term is weighted by emitterHitWeight
-// against the light-choice/solid-angle density next-event estimation would
-// have used for this same emitter from that same departure, 0 outright when
-// misEnabled is false.
+// placed normal faces the incoming ray, and eligibility is not suppressed
+// (a straight delta-transmission chain back to a non-delta departure,
+// whose own shadow ray already carried this light through those
+// surfaces). eligible keeps weight 1: the one case with no competing
+// technique, or the one where next-event estimation's own term at the
+// departing vertex is already black, so nothing here can double it.
+// Otherwise (weighted) the departure was a non-delta draw, from departureP
+// on departurePrimitive with its own reported density departurePdf; the
+// term is weighted by emitterHitWeight against the light-choice/solid-
+// angle density next-event estimation would have used for this same
+// emitter from that same departure, 0 outright when misEnabled is false.
 GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterface const* hitPrimitive,
-                       gman::Appearance const& appearance, gman::SurfacePoint const& point, bool rayEligible,
-                       bool misEnabled, GMANPoint const& departureP, GMANRayInterface const* departurePrimitive,
-                       RtFloat departurePdf) {
-  if (appearance.areaLight == nullptr) {
+                       gman::Appearance const& appearance, gman::SurfacePoint const& point,
+                       gman::EmitterHitEligibility eligibility, bool misEnabled, GMANPoint const& departureP,
+                       GMANRayInterface const* departurePrimitive, RtFloat departurePdf) {
+  if (appearance.areaLight == nullptr || eligibility == gman::EmitterHitEligibility::suppressed) {
     return kBlack;
   }
   for (std::size_t j = 0; j < emitters.size(); ++j) {
@@ -454,6 +524,7 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
     if (!(cosTheta > 0.0f)) {
       return kBlack;
     }
+    bool const rayEligible = eligibility == gman::EmitterHitEligibility::eligible;
     RtFloat pLight = 0.0f;
     if (misEnabled && !rayEligible) {
       pLight = gman::lightChoiceProbability(emitters, departureP, departurePrimitive, j) *
@@ -467,12 +538,11 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
 
 // One path's own mutable state as it walks its vertices: its accumulated
 // result, its throughput and eta-scale, whether it has scattered yet, the
-// current ray, its run of straight pass-through vertices, whether that ray
-// still qualifies for a direct emitter-hit credit, the departing vertex's
-// own shading point, primitive and BSDF-sample density behind a non-delta
-// departure (read only when rayEligibleForEmitterHit is false), and the
-// chooseLight scratch buffer, sized once to emitters.size() and reused at
-// every vertex.
+// current ray, its run of straight pass-through vertices, the current
+// emitter-hit eligibility, the departing vertex's own shading point,
+// primitive and BSDF-sample density behind a non-delta departure (read
+// only when eligibility is weighted), and the chooseLight scratch buffer,
+// sized once to emitters.size() and reused at every vertex.
 struct PathState {
   PathResult result;
   GMANColor beta = kWhite;
@@ -480,7 +550,7 @@ struct PathState {
   bool hasScattered = false;
   // The camera ray itself is eligible: it carries no earlier BSDF draw, so
   // it has no earlier next-event estimate to double.
-  bool rayEligibleForEmitterHit = true;
+  gman::EmitterHitEligibility eligibility = gman::EmitterHitEligibility::eligible;
   GMANPoint departureP;
   GMANRayInterface const* departurePrimitive = nullptr;
   RtFloat departurePdf = 0.0f;
@@ -503,9 +573,9 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   gman::Appearance const& appearance = hitPrimitive->getAppearance();
   RtFloat const surfaceMagnitude = point.surfaceMagnitude;
 
-  state.result.L += gman::multiplyChannels(
-      state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point, state.rayEligibleForEmitterHit, misEnabled,
-                               state.departureP, state.departurePrimitive, state.departurePdf));
+  state.result.L += gman::multiplyChannels(state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point,
+                                                                    state.eligibility, misEnabled, state.departureP,
+                                                                    state.departurePrimitive, state.departurePdf));
 
   GMANColor const os = clampCoverage(appearance.Os);
   RtFloat const qPass = meanChannel(gman::oneMinus(os));
@@ -528,7 +598,7 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   if (!draw) {
     return false;
   }
-  state.rayEligibleForEmitterHit = draw->isDelta;
+  state.eligibility = gman::nextEmitterHitEligibility(state.eligibility, draw->isDelta, draw->isTransmission);
   if (!draw->isDelta) {
     state.departureP = hit.point;
     state.departurePrimitive = hitPrimitive;
