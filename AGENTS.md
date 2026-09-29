@@ -110,8 +110,7 @@ ctest --test-dir build --output-on-failure
 cmake --build build --target format-check
 ```
 
-These three are the gates; CI is not one, and nothing waits on it. If a gate
-stays red after a genuine fix attempt, stop and report the error.
+If a gate stays red after a genuine fix attempt, stop and report the error.
 
 ## Commits
 - Conventional Commits, signed, lower-case `type(scope): subject`, wrapped at
