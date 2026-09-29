@@ -74,6 +74,28 @@ GMANRayPolygon* buildGlassPane(RtFloat os) {
   return pane;
 }
 
+// The render's own options: a square frame of res pixels a side, one
+// sample per pixel slot, a box filter and a black background, at samples
+// paths per slot.
+GMANOptions renderOptions(RtInt res, RtInt samples) {
+  GMANOptions options;
+  options.setFormat(res, res, 1.0f);
+  options.setPixelSamples(1.0f, 1.0f);
+  options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
+  options.setPathtracerSamples(samples);
+  options.setBackground(GMANColor(0.0f, 0.0f, 0.0f));
+  return options;
+}
+
+// The floor's own opaque matte surface, reflectance 0.5.
+gman::Appearance floorAppearance() {
+  gman::Appearance appearance;
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  return appearance;
+}
+
 // The pane's own shadowTransmittance along the direction from a known
 // point toward another, found by an actual intersection against pane:
 // the same quantity the shadow walk itself evaluates, read here as ground
@@ -145,23 +167,14 @@ void testGlassPaneCountsOnce() {
   constexpr std::size_t kMinMeasuredPixels = 400;
   constexpr double kResidualFloor = 1e-4;
 
-  GMANOptions options;
-  options.setFormat(kFloorRes, kFloorRes, 1.0f);
-  options.setPixelSamples(1.0f, 1.0f);
-  options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
-  options.setPathtracerSamples(kFloorSamples);
-  options.setBackground(GMANColor(0.0f, 0.0f, 0.0f));
+  GMANOptions const options = renderOptions(kFloorRes, kFloorSamples);
 
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
   GMANRayPolygon* floor = buildFloor();
-  gman::Appearance floorAppearance;
-  floorAppearance.shader = loadShader("matte", matteParams(1.0f));
-  floorAppearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
-  floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
-  floor->setAppearance(floorAppearance);
+  floor->setAppearance(floorAppearance());
   renderer.getWorldManager()->add(floor);
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
@@ -213,12 +226,7 @@ constexpr RtInt kPairRes = 41;
 constexpr std::uint32_t kPairSamples = 32u;
 
 std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
-  GMANOptions options;
-  options.setFormat(kPairRes, kPairRes, 1.0f);
-  options.setPixelSamples(1.0f, 1.0f);
-  options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
-  options.setPathtracerSamples((RtInt)kPairSamples);
-  options.setBackground(GMANColor(0.0f, 0.0f, 0.0f));
+  GMANOptions const options = renderOptions(kPairRes, (RtInt)kPairSamples);
 
   GMANMatrix4 const identity;
   gman::VSPerspective viewingSys(kPairRes, kPairRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
@@ -227,11 +235,7 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
   renderer->setMultipleImportanceSampling(misEnabled);
 
   GMANRayPolygon* floor = buildFloor();
-  gman::Appearance floorAppearance;
-  floorAppearance.shader = loadShader("matte", matteParams(1.0f));
-  floorAppearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
-  floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
-  floor->setAppearance(floorAppearance);
+  floor->setAppearance(floorAppearance());
   renderer->getWorldManager()->add(floor);
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kBigAreaLe, kBigAreaLe, kBigAreaLe), GMANPoint(), GMANVector());

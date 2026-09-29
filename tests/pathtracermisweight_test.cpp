@@ -207,9 +207,14 @@ void testEmitterHitChainRule() {
   state = gman::nextEmitterHitEligibility(state, true, true);
   check(eligibilityCounts(state) && !eligibilityIsWeighted(state), "chain rule: R, T -- the hit counts, fixed at 1");
 
-  state = EmitterHitEligibility::weighted;
-  check(eligibilityCounts(state) && eligibilityIsWeighted(state),
-        "chain rule: no draw between -- the hit counts, MIS weighted");
+  bool weightedFromEveryState = true;
+  for (EmitterHitEligibility start :
+       {EmitterHitEligibility::eligible, EmitterHitEligibility::weighted, EmitterHitEligibility::suppressed}) {
+    state = gman::nextEmitterHitEligibility(start, false, false);
+    weightedFromEveryState = weightedFromEveryState && eligibilityCounts(state) && eligibilityIsWeighted(state);
+  }
+  check(weightedFromEveryState,
+        "chain rule: no draw between -- a non-delta draw from any state, the hit counts, MIS weighted");
 
   state = gman::nextEmitterHitEligibility(EmitterHitEligibility::eligible, true, true);
   check(eligibilityCounts(state) && !eligibilityIsWeighted(state),

@@ -110,15 +110,6 @@ constexpr RtFloat kPairSphereZ = 2.0f;
 constexpr RtInt kPairRes = 9;
 constexpr std::uint32_t kPairSamples = 1024u;
 
-GMANOptions::ScreenWindowStruct squareWindow() {
-  GMANOptions::ScreenWindowStruct sw;
-  sw.left = -1.0f;
-  sw.right = 1.0f;
-  sw.bottom = -1.0f;
-  sw.top = 1.0f;
-  return sw;
-}
-
 // Renders the disk scene and collects each measured pixel's residual
 // against the analytic expectation Le + rho * Cl * cosTheta / pi, uniform
 // over the whole disk since it is flat and rigidly lit.
@@ -131,7 +122,7 @@ void renderAndCollectResiduals(std::vector<double> residuals[3], std::vector<dou
   options.setPathtracerSamples((RtInt)kSamples);
 
   GMANMatrix4 const identity;
-  gman::VSPerspective viewingSys(kRes, kRes, squareWindow(), identity, kFov, 0.5f, 50.0f);
+  gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, kFov, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
 
@@ -200,7 +191,7 @@ void testSelfExclusionResiduals() {
         "pathtracerselfexclusion: every pixel is measured, the disk fills the frame");
   check(droppedCount == 0, "pathtracerselfexclusion: no path dropped for a non-finite channel");
 
-  checkResiduals(residuals, expectedByChannel, 1e-3, "pathtracerselfexclusion");
+  checkResiduals(residuals, expectedByChannel, 1e-4, "pathtracerselfexclusion");
 
   for (int c = 0; c < 3; ++c) {
     GmanMeanStderr const stat = meanStderr(residuals[c]);
@@ -228,7 +219,7 @@ PairRender renderDiskAndSphere(bool misEnabled) {
   options.setPathtracerSamples((RtInt)kPairSamples);
 
   GMANMatrix4 const identity;
-  gman::VSPerspective viewingSys(kPairRes, kPairRes, squareWindow(), identity, kFov, 0.5f, 50.0f);
+  gman::VSPerspective viewingSys(kPairRes, kPairRes, squareScreenWindow(), identity, kFov, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
   renderer.setMultipleImportanceSampling(misEnabled);
