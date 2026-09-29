@@ -6,29 +6,67 @@ Begun in [1999](https://gman-toolkit.sourceforge.net), revived in [2026](https:/
 
 [![gman's ray-traced render of samples/vase.rib](samples/vase-raytraced.png)](https://2ad.com/gman.html)
 
-## Try it
+## Install
+
+GMAN 1.0.0 ships as a tarball for Linux x86_64, Linux arm64 and macOS arm64 on the
+[releases page](https://github.com/jac18281828/gman/releases). gman links libtiff, libpng, libjpeg
+and zlib at run time. On Linux:
 
 ```sh
-curl -sL https://github.com/jac18281828/gman/releases/download/1.0.0/gman-1.0.0-linux-x86_64.tar.gz | tar xz
-curl -sLO https://raw.githubusercontent.com/jac18281828/gman/1.0.0/samples/vase.rib
-export PATH="$PWD/gman-1.0.0-linux-x86_64/bin:$PATH"
-gman -r gmanraytracer vase.rib
+sudo apt-get install libtiff-dev libpng-dev libjpeg-dev zlib1g-dev
 ```
 
-That writes `vase.png`, the picture above, in a few seconds. It needs libtiff, libpng, libjpeg
-and zlib installed. Linux arm64 and macOS arm64 builds are on the
-[releases page](https://github.com/jac18281828/gman/releases).
+On macOS:
+
+```sh
+brew install libtiff libpng jpeg
+```
+
+Download the tarball for your platform, unpack it, `cd` into the folder and run the installer:
+
+```sh
+tar xzf gman-1.0.0-linux-x86_64.tar.gz
+cd gman-1.0.0-linux-x86_64
+sudo ./install.sh
+```
+
+`install.sh` installs `bin/`, `lib/` and `include/`, that is the `gman` program, its renderer and
+shader plugins, libgman and its headers, into `/usr/local`, which needs `sudo`. It then runs the
+installed `gman --version`, and on macOS clears the download quarantine from the files it wrote.
+
+- `./install.sh --prefix "$HOME/.local"` installs into a directory of your own, with no `sudo`.
+- `sudo ./install.sh --uninstall` removes exactly the files the install wrote, and each directory
+  it created that is now empty. `--prefix` names the same directory in both commands. The list of
+  files is `share/gman/install_manifest.txt` under the prefix, and installing over an earlier
+  install removes that one first.
+- `install.sh` leaves your `PATH` and shell profile alone. When the prefix's `bin` is not on
+  `PATH`, it says so and you add it.
+- `samples/` stays in the unpacked folder: `install.sh` does not install it, and the next section
+  renders from it.
+
+To build gman yourself and install it with CMake, see [Build from source](#build-from-source).
+
+## Try it
+
+From the unpacked folder:
+
+```sh
+gman -r gmanraytracer samples/vase.rib
+```
+
+That writes `vase.png` to the current directory, the picture at the top, in a few seconds.
 
 ## Path trace it
 
-Add one line to `vase.rib`, under `PixelSamples 2 2`, and render it through the path tracer:
+Add one line to `samples/vase.rib` in the unpacked folder, under `PixelSamples 2 2`, and render it
+through the path tracer:
 
 ```
 Option "pathtracer" "integer samples" [64]
 ```
 
 ```sh
-gman -r gmanpathtracer vase.rib
+gman -r gmanpathtracer samples/vase.rib
 ```
 
 [![gman's path-traced render of samples/vase.rib](samples/vase-pathtraced.png)](https://2ad.com/gman.html)
@@ -44,14 +82,14 @@ gmanpathtracer: ambientlight lights nothing under the path tracer; skipped 1 lig
 
 ## Poke it
 
-Change one line of `vase.rib` and render it again with `gman -r gmanraytracer vase.rib`. Each
-picture starts from the original scene.
+Change one line of `samples/vase.rib` in the unpacked folder and render it again with
+`gman -r gmanraytracer samples/vase.rib`. Each picture starts from the original scene.
 
 | | |
 |---|---|
 | <img src="samples/poke/glass.png" width="320" alt="the vase in glass"><br>**Glass vase.** In the `## Vase` block, make the surface `Surface "glass"` and delete the `Opacity`. | <img src="samples/poke/mirror.png" width="320" alt="the robot's dome as a mirror"><br>**Mirror dome.** Under `# head dome`, make the surface `Surface "mirror" "Kr" [1]`. |
 | <img src="samples/poke/sunlight.png" width="320" alt="the room lit by sunlight"><br>**Sunlight.** Swap the lamp for the sun: `LightSource "distantlight" 2 "intensity" [1.2] "lightcolor" [1 0.95 0.83] "from" [1 3 10] "to" [0 0 1]`. The walls now shadow the room. | <img src="samples/poke/widefov.png" width="320" alt="the room through a wider lens"><br>**Wider lens.** `Projection "perspective" "fov" [55]`. |
-| <img src="samples/poke/onesample.png" width="320" alt="the scene at one sample a pixel"><br>**One sample a pixel.** `PixelSamples 1 1`, and the edges go jagged. | <img src="samples/poke/zbuffer.png" width="320" alt="the scene through the z-buffer renderer"><br>**The z-buffer.** No edit: plain `gman vase.rib` renders the fast preview, without shadows, reflection or refraction. |
+| <img src="samples/poke/onesample.png" width="320" alt="the scene at one sample a pixel"><br>**One sample a pixel.** `PixelSamples 1 1`, and the edges go jagged. | <img src="samples/poke/zbuffer.png" width="320" alt="the scene through the z-buffer renderer"><br>**The z-buffer.** No edit: plain `gman samples/vase.rib` renders the fast preview, without shadows, reflection or refraction. |
 
 ### A first scene
 
@@ -159,6 +197,12 @@ The installed prefix carries `bin/gman` and a CMake package. A program
 links gman with `find_package(gman CONFIG REQUIRED)` and
 `target_link_libraries(app PRIVATE gman::gman_core)`, and includes
 `<gman/ri.h>`. Link libgman from C, below, walks through a full example.
+
+To remove what `cmake --install` wrote, delete the files CMake recorded:
+
+```sh
+xargs rm < build/install_manifest.txt
+```
 
 ### Development container
 
