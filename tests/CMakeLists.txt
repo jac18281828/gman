@@ -3284,6 +3284,25 @@ set_tests_properties(install PROPERTIES
   TIMEOUT 300
   RESOURCE_LOCK gmanrib_plugin_file)
 
+# Proves packaging/install.sh, the script a release tarball ships. It stages
+# a tarball tree as release.yml does, installs it beside an unrelated file,
+# renders samples/vase.rib with the installed gman, installs again, uninstalls
+# and refuses a bad flag. See tests/installscript_test.cmake.
+#
+# The staging cmake --install reads libgmanrib.so from the build tree, so this
+# carries the same RESOURCE_LOCK as install.
+add_test(NAME installscript
+  COMMAND "${CMAKE_COMMAND}"
+          -D "GMAN_BUILD_DIR=${CMAKE_BINARY_DIR}"
+          -D "GMAN_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
+          -D "GMAN_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/installscript-run"
+          -D "GMAN_HAS_RAYTRACER=${GMAN_BUILD_RAYTRACER}"
+          -P "${CMAKE_CURRENT_SOURCE_DIR}/installscript_test.cmake")
+set_tests_properties(installscript PROPERTIES
+  LABELS render
+  TIMEOUT 300
+  RESOURCE_LOCK gmanrib_plugin_file)
+
 # runGman's contract: exit status, the three capture modes, a signal kill,
 # a timeout bounding both read and wait, a working directory, a redirected
 # stdin and an exec failure, each leaving no child behind. See
