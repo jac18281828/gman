@@ -40,8 +40,8 @@
 
 namespace {
 
-// Four collinear points: the factory rejects only a negative or
-// overflowing nverts, so this reaches the manager, but the outer loop is
+// Four collinear points: the factory's nverts rules reject only a negative
+// or overflowing count, so this reaches the manager, but the outer loop is
 // degenerate.
 std::vector<GMANPoint> collinearFour() {
   return {GMANPoint(0, 0, 0), GMANPoint(1, 0, 0), GMANPoint(2, 0, 0), GMANPoint(3, 0, 0)};
@@ -66,7 +66,8 @@ GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
-  if (!check(mesh.has_value(), "runGetRSPolygonDirect: the factory builds a mesh")) {
+  check(mesh.has_value(), "runGetRSPolygonDirect: the factory builds a mesh");
+  if (!mesh.has_value()) {
     return nullptr;
   }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);

@@ -235,7 +235,8 @@ GMANPrimitive* runGetRSPolygon(const std::vector<GMANPoint>& ring) {
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
-  if (!check(mesh.has_value(), "runGetRSPolygon: the factory builds a mesh")) {
+  check(mesh.has_value(), "runGetRSPolygon: the factory builds a mesh");
+  if (!mesh.has_value()) {
     return nullptr;
   }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
