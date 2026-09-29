@@ -256,7 +256,7 @@ bool sameLocationOrder(std::vector<GMANVertex*> const& a, std::vector<GMANVertex
   return true;
 }
 
-std::vector<std::array<int, 3>> triangleTriples(GMANObject* object, std::map<const GMANVertex*, int> const& index) {
+std::vector<std::array<int, 3>> triangleTriples(GMANObject* object, std::map<GMANVertex const*, int> const& index) {
   std::vector<std::array<int, 3>> triples;
   for (GMANBody* body = object->getBody(); body != nullptr; body = body->getNext()) {
     GMANSurface* surface = body->getSurface();
