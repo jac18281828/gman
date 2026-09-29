@@ -64,7 +64,7 @@
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
@@ -115,7 +115,7 @@ std::string edgeRib(const std::string& display, const std::string& filterLine, c
 // GMANSampleBuffer::resolve's empty-support black" stay distinguishable
 // regardless of DefaultBGColor -- unlike edgeRib, whose uncovered half
 // would collide with a future black background.
-std::string fullFrameRib(const std::string& display, const std::string& filterLine, const std::string& samplesLine) {
+std::string fullFrameRib(std::string const& display, std::string const& filterLine, std::string const& samplesLine) {
   return "Display \"" + display +
          "\" \"file\" \"rgba\"\n"
          "Format 100 100 1\n"

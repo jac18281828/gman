@@ -42,7 +42,7 @@
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag) {
+int runGman(std::string const& gman, std::string const& rib, std::string const& rendererFlag) {
   if (rendererFlag.empty()) {
     return ::runGman(gman, {rib}).exitStatus;
   }
@@ -63,7 +63,7 @@ struct RawImage {
 // The raw bytes OutputTIFF::save wrote, read back through TIFFReadScanline
 // rather than TIFFReadRGBAImageOriented -- the latter may un-premultiply
 // associated alpha on decode, coveragealpha_test.cpp's own rationale.
-RawImage readRawTIFF(const std::string& path) {
+RawImage readRawTIFF(std::string const& path) {
   RawImage img;
   TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
@@ -115,7 +115,7 @@ std::size_t countCovered(RawImage const& img) {
 // account for.
 constexpr double kMaxDifferingFraction = 0.02;
 
-void checkCoverageMatches(const std::string& gman, const std::string& ribDir, const std::string& fixture) {
+void checkCoverageMatches(std::string const& gman, std::string const& ribDir, std::string const& fixture) {
   const std::string rib = ribDir + "/" + fixture + ".rib";
   const std::string zbufferTif = fixture + "_zbuffer.tif";
   const std::string raytracerTif = fixture + "_raytracer.tif";

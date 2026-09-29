@@ -54,7 +54,7 @@
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 struct Image {
   bool ok = false;

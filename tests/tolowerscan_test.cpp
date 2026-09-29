@@ -55,9 +55,9 @@ const std::string kOuterCastBare = "static_cast<char>(";
 // Every "tolower(" or "toupper(" call (qualified or not) missing either the
 // inner static_cast<unsigned char> that avoids UB or the outer
 // static_cast<char> that avoids narrowing tolower's int return.
-std::vector<std::string> callsMissingRequiredCasts(const std::string& text) {
+std::vector<std::string> callsMissingRequiredCasts(std::string const& text) {
   std::vector<std::string> found;
-  for (const std::string& name : {std::string("tolower"), std::string("toupper")}) {
+  for (std::string const& name : {std::string("tolower"), std::string("toupper")}) {
     const std::string callOpen = name + "(";
     std::string::size_type pos = 0;
     while ((pos = text.find(callOpen, pos)) != std::string::npos) {
@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
   const std::vector<fs::path> files = collectSourceFiles(dirs);
   check(files.size() > 10, "scanned a plausible number of source files (>10)");
 
-  for (const fs::path& file : files) {
+  for (fs::path const& file : files) {
     const std::string text = readFile(file);
     const std::vector<std::string> calls = callsMissingRequiredCasts(text);
     check(calls.empty(), file.generic_string() + ": tolower/toupper must be static_cast<char>(std::tolower("

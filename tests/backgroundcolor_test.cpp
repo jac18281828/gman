@@ -39,7 +39,7 @@
 
 namespace {
 
-const char* kSceneRib = "Display \"bg.tif\" \"file\" \"rgba\"\n"
+char const* kSceneRib = "Display \"bg.tif\" \"file\" \"rgba\"\n"
                         "Format 8 8 1\n"
                         "PixelSamples 1 1\n"
                         "Projection \"perspective\" \"fov\" [40]\n"
@@ -52,7 +52,7 @@ const char* kSceneRib = "Display \"bg.tif\" \"file\" \"rgba\"\n"
                         "Sphere 0.4 -0.4 0.4 360\n"
                         "WorldEnd\n";
 
-void writeFile(const std::string& path, const std::string& contents) {
+void writeFile(std::string const& path, std::string const& contents) {
   std::FILE* f = std::fopen(path.c_str(), "w");
   if (f == nullptr) {
     return;
@@ -63,7 +63,7 @@ void writeFile(const std::string& path, const std::string& contents) {
 
 // Every corner of an 8x8 frame the sphere never reaches: RGB must read
 // exactly (0, 0, 0) against the RISpec default, whatever the renderer.
-void checkCornersBlack(const std::string& path, const std::string& label) {
+void checkCornersBlack(std::string const& path, std::string const& label) {
   TIFF* tif = TIFFOpen(path.c_str(), "r");
   check(tif != nullptr, label + ": " + path + " opens");
   if (tif == nullptr) {
@@ -88,7 +88,7 @@ void checkCornersBlack(const std::string& path, const std::string& label) {
       raster[(height - 1) * width],             // (0, height-1)
       raster[(height - 1) * width + width - 1], // (width-1, height-1)
   };
-  const char* names[4] = {"top-left", "top-right", "bottom-left", "bottom-right"};
+  char const* names[4] = {"top-left", "top-right", "bottom-left", "bottom-right"};
 
   for (int i = 0; i < 4; ++i) {
     uint32_t const p = corners[i];

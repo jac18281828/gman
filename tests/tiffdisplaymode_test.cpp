@@ -36,7 +36,7 @@ extern "C" {
 
 namespace {
 
-void checkRGBFile(const char* path) {
+void checkRGBFile(char const* path) {
   gman::OutputTIFF output(path, 2, 2);
   output.save(GMANOutput::RGB, 1.0, 1.0, GMANQuantize{255, 0, 255, 0.5});
 
@@ -62,7 +62,7 @@ void checkRGBFile(const char* path) {
   TIFFClose(tif);
 }
 
-void checkRGBAFile(const char* path) {
+void checkRGBAFile(char const* path) {
   gman::OutputTIFF output(path, 2, 2);
   output.save(GMANOutput::RGBA, 1.0, 1.0, GMANQuantize{255, 0, 255, 0.5});
 

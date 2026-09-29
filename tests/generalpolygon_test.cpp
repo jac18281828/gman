@@ -90,11 +90,11 @@ const double kRotationDegrees = 37.0;
 // and raster x, y pass straight through a camera-space point's own x, y,
 // unaffected by z -- the perspective behind-the-eye fallback this file
 // never needs.
-int expectedDiceN(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2, const GMANOptions& options,
+int expectedDiceN(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2, GMANOptions const& options,
                   RtFloat shadingRate) {
   const GMANOptions::ScreenWindowStruct sw = options.getScreenWindow();
   const GMANOptions::RasterInfo ri = options.getRasterInfo();
-  auto raster = [&](const GMANPoint& p) {
+  auto raster = [&](GMANPoint const& p) {
     return std::make_pair(ri.xres * (p.getX() - sw.left) / (sw.right - sw.left),
                           ri.yres - ri.yres * (p.getY() - sw.bottom) / (sw.top - sw.bottom));
   };
@@ -251,7 +251,7 @@ int countFaces(GMANObject* object) {
 // GMANVertex per bridged-ring position. Every entry after that is a diced,
 // strictly interior or edge-interior vertex, not a bridged-ring position,
 // so bounding the walk here is what keeps this a 1:1 map.
-std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int chainLength) {
+std::map<GMANVertex const*, int> indexVertices(GMANObject* object, int chainLength) {
   std::map<const GMANVertex*, int> index;
   GMANVertex* v = object->getVert();
   for (int i = 0; i < chainLength && v != nullptr; ++i, v = v->getNext()) {
@@ -310,7 +310,7 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label,
 
   std::array<double, 3> outerNormal = newellNormal(loops[0]);
 
-  std::map<const GMANVertex*, int> index = indexVertices(object, chainLength);
+  std::map<GMANVertex const*, int> index = indexVertices(object, chainLength);
   std::vector<std::array<int, 3>> triples;
   std::vector<bool> covered(chainLength, false);
   double summedArea = 0.0;

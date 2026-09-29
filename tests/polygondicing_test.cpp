@@ -55,9 +55,9 @@ namespace {
 // refinement would move a rendered pixel.
 const int kGroundTruthGrid = 8;
 
-int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
-void writeFile(const std::string& path, const std::string& contents) {
+void writeFile(std::string const& path, std::string const& contents) {
   std::ofstream out(path);
   out << contents;
 }
@@ -69,7 +69,7 @@ void writeFile(const std::string& path, const std::string& contents) {
 // [-4,4] fills raster [20,180] of the 200x200 frame (texture.rib's own
 // raster = 20*x+100), most of the image, for a large enough sample to make
 // a coarse-dicing regression bite.
-std::string commonHeader(const std::string& displayName) {
+std::string commonHeader(std::string const& displayName) {
   return "Display \"" + displayName +
          ".tif\" \"file\" \"rgba\"\n"
          "Format 200 200 1\n"

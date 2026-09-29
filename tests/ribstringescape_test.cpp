@@ -63,7 +63,7 @@
 
 namespace {
 
-GMANRunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
+GMANRunResult runCapturingOutput(std::string const& gman, std::string const& rib, int timeoutSeconds) {
   GMANRunOptions options;
   options.timeoutSeconds = timeoutSeconds;
   return runGman(gman, {rib}, options);
@@ -91,7 +91,7 @@ public:
 };
 
 // Decodes one RIB string token through the tokenizer's public entry point.
-std::string decode(GMANRIBTokenize& tokenizer, const std::string& ribText) {
+std::string decode(GMANRIBTokenize& tokenizer, std::string const& ribText) {
   std::istringstream stream(ribText);
   return tokenizer.getNext(stream).getString();
 }
@@ -100,8 +100,8 @@ std::string decode(GMANRIBTokenize& tokenizer, const std::string& ribText) {
 // returns what it wrote. Used by check 4 to confirm an unknown escape
 // prints no diagnostic, the same bar checks 1-4 of
 // tests/paramlistdeclaredtype_test.cpp hold gman's own process output to.
-std::string captureStdout(void (*fn)(GMANRIBTokenize&, const std::string&), GMANRIBTokenize& tokenizer,
-                          const std::string& ribText) {
+std::string captureStdout(void (*fn)(GMANRIBTokenize&, std::string const&), GMANRIBTokenize& tokenizer,
+                          std::string const& ribText) {
   std::fflush(stdout);
   int savedStdout = dup(STDOUT_FILENO);
   int pipeFds[2];
@@ -191,7 +191,7 @@ int main(int argc, char* argv[]) {
   {
     GMANRIBTokenize tokenizer;
     std::string captured = captureStdout(
-        [](GMANRIBTokenize& t, const std::string& text) {
+        [](GMANRIBTokenize& t, std::string const& text) {
           std::istringstream stream(text);
           t.getNext(stream);
         },

@@ -59,7 +59,7 @@ namespace {
 
 // ---- geometry oracle, independent of the implementation under test ----
 
-std::array<double, 3> newellNormal(const std::vector<GMANPoint>& ring) {
+std::array<double, 3> newellNormal(std::vector<GMANPoint> const& ring) {
   double nx = 0.0, ny = 0.0, nz = 0.0;
   const std::size_t n = ring.size();
   for (std::size_t i = 0; i < n; ++i) {
@@ -74,12 +74,12 @@ std::array<double, 3> newellNormal(const std::vector<GMANPoint>& ring) {
   return {nx, ny, nz};
 }
 
-double ringArea(const std::vector<GMANPoint>& ring) {
+double ringArea(std::vector<GMANPoint> const& ring) {
   std::array<double, 3> n = newellNormal(ring);
   return 0.5 * std::sqrt(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
 }
 
-double triangleArea(const GMANPoint& a, const GMANPoint& b, const GMANPoint& c) {
+double triangleArea(GMANPoint const& a, GMANPoint const& b, GMANPoint const& c) {
   double e1x = b.getX() - a.getX(), e1y = b.getY() - a.getY(), e1z = b.getZ() - a.getZ();
   double e2x = c.getX() - a.getX(), e2y = c.getY() - a.getY(), e2z = c.getZ() - a.getZ();
   double cx = e1y * e2z - e1z * e2y;
@@ -100,7 +100,7 @@ std::vector<GMANPoint> fourPointedStar() {
 
 // ---- object-manager call helpers ----
 
-GMANPrimitive* runGetRSPolygonDirect(const std::vector<GMANPoint>& ring) {
+GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   const RtInt nverts = (RtInt)ring.size();
   std::vector<RtFloat> p(3 * nverts);
   for (RtInt i = 0; i < nverts; ++i) {
@@ -123,7 +123,7 @@ GMANPrimitive* runGetRSPolygonDirect(const std::vector<GMANPoint>& ring) {
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
-GMANPrimitive* runGetRSGeneralPolygonDirect(const std::vector<std::vector<GMANPoint>>& loops) {
+GMANPrimitive* runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> const& loops) {
   const RtInt nloops = (RtInt)loops.size();
   std::vector<RtInt> nverts(nloops);
   RtInt total = 0;
@@ -134,7 +134,7 @@ GMANPrimitive* runGetRSGeneralPolygonDirect(const std::vector<std::vector<GMANPo
   std::vector<RtFloat> p(3 * total);
   RtInt k = 0;
   for (RtInt i = 0; i < nloops; ++i) {
-    for (const GMANPoint& pt : loops[i]) {
+    for (GMANPoint const& pt : loops[i]) {
       p[3 * k] = pt.getX();
       p[3 * k + 1] = pt.getY();
       p[3 * k + 2] = pt.getZ();
@@ -160,7 +160,7 @@ GMANPrimitive* runGetRSGeneralPolygonDirect(const std::vector<std::vector<GMANPo
 // points is the shared "P" -- point i lands at p[3*i..3*i+2] -- and verts
 // indexes into it exactly as RiPointsPolygonsV's own "verts" does.
 GMANPrimitive* runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt> nverts, std::vector<RtInt> verts,
-                                     const std::vector<GMANPoint>& points) {
+                                     std::vector<GMANPoint> const& points) {
   const RtInt pointCount = (RtInt)points.size();
   std::vector<RtFloat> p(3 * pointCount);
   for (RtInt i = 0; i < pointCount; ++i) {
@@ -185,7 +185,7 @@ GMANPrimitive* runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt> nverts, st
 }
 
 GMANPrimitive* runGetRSPointsGeneralPolygons(RtInt npolys, std::vector<RtInt> nloops, std::vector<RtInt> nverts,
-                                             std::vector<RtInt> verts, const std::vector<GMANPoint>& points) {
+                                             std::vector<RtInt> verts, std::vector<GMANPoint> const& points) {
   const RtInt pointCount = (RtInt)points.size();
   std::vector<RtFloat> p(3 * pointCount);
   for (RtInt i = 0; i < pointCount; ++i) {
@@ -242,13 +242,13 @@ std::vector<GMANVertex*> vertexChain(GMANObject* object) {
   return chain;
 }
 
-bool sameLocationOrder(const std::vector<GMANVertex*>& a, const std::vector<GMANVertex*>& b) {
+bool sameLocationOrder(std::vector<GMANVertex*> const& a, std::vector<GMANVertex*> const& b) {
   if (a.size() != b.size()) {
     return false;
   }
   for (std::size_t i = 0; i < a.size(); ++i) {
-    const GMANPoint& pa = a[i]->getLocation();
-    const GMANPoint& pb = b[i]->getLocation();
+    GMANPoint const& pa = a[i]->getLocation();
+    GMANPoint const& pb = b[i]->getLocation();
     if (pa.getX() != pb.getX() || pa.getY() != pb.getY() || pa.getZ() != pb.getZ()) {
       return false;
     }
@@ -256,7 +256,7 @@ bool sameLocationOrder(const std::vector<GMANVertex*>& a, const std::vector<GMAN
   return true;
 }
 
-std::vector<std::array<int, 3>> triangleTriples(GMANObject* object, const std::map<const GMANVertex*, int>& index) {
+std::vector<std::array<int, 3>> triangleTriples(GMANObject* object, std::map<const GMANVertex*, int> const& index) {
   std::vector<std::array<int, 3>> triples;
   for (GMANBody* body = object->getBody(); body != nullptr; body = body->getNext()) {
     GMANSurface* surface = body->getSurface();
@@ -273,8 +273,8 @@ std::vector<std::array<int, 3>> triangleTriples(GMANObject* object, const std::m
   return triples;
 }
 
-std::map<const GMANVertex*, int> indexVertices(const std::vector<GMANVertex*>& chain) {
-  std::map<const GMANVertex*, int> index;
+std::map<GMANVertex const*, int> indexVertices(std::vector<GMANVertex*> const& chain) {
+  std::map<GMANVertex const*, int> index;
   for (std::size_t i = 0; i < chain.size(); ++i) {
     index[chain[i]] = (int)i;
   }
@@ -284,20 +284,20 @@ std::map<const GMANVertex*, int> indexVertices(const std::vector<GMANVertex*>& c
 // One body's own summed triangle area and every face normal, checked
 // against an independent oracle -- the ring's own Newell normal and half
 // its magnitude.
-void checkFaceGeometry(const std::string& label, GMANBody* body, double expectedArea,
-                       const std::array<double, 3>& expectedNormal) {
+void checkFaceGeometry(std::string const& label, GMANBody* body, double expectedArea,
+                       std::array<double, 3> const& expectedNormal) {
   const double expectedMag = std::sqrt(expectedNormal[0] * expectedNormal[0] + expectedNormal[1] * expectedNormal[1] +
                                        expectedNormal[2] * expectedNormal[2]);
   GMANSurface* surface = body->getSurface();
   double summedArea = 0.0;
   bool normalOk = true;
   for (GMANFace* face = surface ? surface->getFace() : nullptr; face != nullptr; face = face->getNext()) {
-    const GMANPoint& v0 = face->getVertex(0)->getLocation();
-    const GMANPoint& v1 = face->getVertex(1)->getLocation();
-    const GMANPoint& v2 = face->getVertex(2)->getLocation();
+    GMANPoint const& v0 = face->getVertex(0)->getLocation();
+    GMANPoint const& v1 = face->getVertex(1)->getLocation();
+    GMANPoint const& v2 = face->getVertex(2)->getLocation();
     summedArea += triangleArea(v0, v1, v2);
 
-    const GMANVector& n = face->getNormal();
+    GMANVector const& n = face->getNormal();
     double dot = n.getX() * expectedNormal[0] + n.getY() * expectedNormal[1] + n.getZ() * expectedNormal[2];
     double nMag = std::sqrt(n.getX() * n.getX() + n.getY() * n.getY() + n.getZ() * n.getZ());
     if (nMag > 0.0 && expectedMag > 0.0 && dot / (nMag * expectedMag) < 0.999) {
@@ -319,9 +319,9 @@ void testOneFaceIdentity() {
   const std::vector<std::pair<std::string, std::vector<GMANPoint>>> cases = {{"concave L", concaveL()},
                                                                              {"4-pointed star", fourPointedStar()}};
 
-  for (const auto& namedRing : cases) {
-    const std::string& name = namedRing.first;
-    const std::vector<GMANPoint>& ring = namedRing.second;
+  for (auto const& namedRing : cases) {
+    std::string const& name = namedRing.first;
+    std::vector<GMANPoint> const& ring = namedRing.second;
     const RtInt n = (RtInt)ring.size();
     std::vector<RtInt> verts(n);
     for (RtInt i = 0; i < n; ++i) {
@@ -344,18 +344,18 @@ void testOneFaceIdentity() {
     std::vector<GMANVertex*> pointsVerts = vertexChain(pointsObj);
     check(sameLocationOrder(polyVerts, pointsVerts), name + ": same vertex positions, same order");
 
-    std::map<const GMANVertex*, int> polyIndex = indexVertices(polyVerts);
-    std::map<const GMANVertex*, int> pointsIndex = indexVertices(pointsVerts);
+    std::map<GMANVertex const*, int> polyIndex = indexVertices(polyVerts);
+    std::map<GMANVertex const*, int> pointsIndex = indexVertices(pointsVerts);
     std::vector<std::array<int, 3>> polyTriples = triangleTriples(polyObj, polyIndex);
     std::vector<std::array<int, 3>> pointsTriples = triangleTriples(pointsObj, pointsIndex);
     check(polyTriples == pointsTriples, name + ": same triangle index triples");
 
     double polyArea = 0.0, pointsArea = 0.0;
-    for (const auto& t : polyTriples) {
+    for (auto const& t : polyTriples) {
       polyArea +=
           triangleArea(polyVerts[t[0]]->getLocation(), polyVerts[t[1]]->getLocation(), polyVerts[t[2]]->getLocation());
     }
-    for (const auto& t : pointsTriples) {
+    for (auto const& t : pointsTriples) {
       pointsArea += triangleArea(pointsVerts[t[0]]->getLocation(), pointsVerts[t[1]]->getLocation(),
                                  pointsVerts[t[2]]->getLocation());
     }
@@ -449,8 +449,8 @@ void testHoleThroughIndices() {
   std::vector<GMANVertex*> generalVerts = vertexChain(generalObj);
   check(sameLocationOrder(pointsVerts, generalVerts), "hole through indices: same vertex positions, same order");
 
-  std::map<const GMANVertex*, int> pointsIndex = indexVertices(pointsVerts);
-  std::map<const GMANVertex*, int> generalIndex = indexVertices(generalVerts);
+  std::map<GMANVertex const*, int> pointsIndex = indexVertices(pointsVerts);
+  std::map<GMANVertex const*, int> generalIndex = indexVertices(generalVerts);
   check(triangleTriples(pointsObj, pointsIndex) == triangleTriples(generalObj, generalIndex),
         "hole through indices: same triangle index triples as "
         "the equivalent GeneralPolygon");
@@ -536,10 +536,10 @@ void testUnreferencedPoints() {
 
 // ---- Rendering (commit 2): twin RIBs compared pixel by pixel ----
 
-int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
-void renderAndCompare(const std::string& gman, const std::string& ribDir, const std::string& underTest,
-                      const std::string& twin) {
+void renderAndCompare(std::string const& gman, std::string const& ribDir, std::string const& underTest,
+                      std::string const& twin) {
   check(runGman(gman, ribDir + "/" + underTest + ".rib") == 0, underTest + ".rib renders");
   check(runGman(gman, ribDir + "/" + twin + ".rib") == 0, twin + ".rib renders");
   checkGoldenImage(underTest + ".tif", twin + ".tif", GOLDEN_CHANNEL_TOL, GOLDEN_MAX_FRACTION, underTest + "_diff.tif");
@@ -549,17 +549,17 @@ void renderAndCompare(const std::string& gman, const std::string& ribDir, const 
 
 // An optional "-d" so the desync check below can read the debug keyword
 // trace.
-GMANRunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds,
+GMANRunResult runCapturingOutput(std::string const& gman, std::string const& rib, int timeoutSeconds,
                                  bool debug = false) {
   GMANRunOptions options;
   options.timeoutSeconds = timeoutSeconds;
   return debug ? ::runGman(gman, {"-d", rib}, options) : ::runGman(gman, {rib}, options);
 }
 
-void testMalformedFixtures(const std::string& gman, const std::string& malformedDir) {
+void testMalformedFixtures(std::string const& gman, std::string const& malformedDir) {
   struct Fixture {
-    const char* file;
-    const char* expectedWarning;
+    char const* file;
+    char const* expectedWarning;
     // The six structural-check fixtures degrade: they warn, exit 0 and
     // keep parsing the trailing Sphere. A non-integer array entry is a
     // token-level syntax error instead (RIE_SYNTAX), fatal to the whole
@@ -582,7 +582,7 @@ void testMalformedFixtures(const std::string& gman, const std::string& malformed
        /*expectedExit=*/1, /*expectsSphere=*/false},
   };
 
-  for (const Fixture& fixture : fixtures) {
+  for (Fixture const& fixture : fixtures) {
     const std::string rib = malformedDir + "/" + fixture.file;
 
     GMANRunResult r = runCapturingOutput(gman, rib, 10);

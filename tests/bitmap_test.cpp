@@ -36,7 +36,7 @@
 
 namespace {
 
-bool colorsEqual(const GMANColor& a, const GMANColor& b) {
+bool colorsEqual(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 

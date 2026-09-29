@@ -46,7 +46,7 @@ bool nonEmptyFile(const std::string& path) {
   return in.good() && in.tellg() > 0;
 }
 
-GMANRunResult run(const std::string& gman, const std::string& rib, bool debug) {
+GMANRunResult run(std::string const& gman, std::string const& rib, bool debug) {
   return debug ? runGman(gman, {"-d", rib}) : runGman(gman, {rib});
 }
 

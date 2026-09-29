@@ -54,7 +54,7 @@
 
 namespace {
 
-GMANRunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
+GMANRunResult runCapturingOutput(std::string const& gman, std::string const& rib, int timeoutSeconds) {
   GMANRunOptions options;
   options.timeoutSeconds = timeoutSeconds;
   return runGman(gman, {rib}, options);
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
   // long itself" former failure range; 4 is get_size's own Declare-array
   // bound, unrelated to parseNum; 5 is the newer rule that an
   // out-of-range integer literal is an error even in a float slot.
-  const char* rangeFixtures[] = {
+  char const* rangeFixtures[] = {
       "sides_overflow.rib",
       "generalpolygon_nverts_overflow.rib",
       "clipping_literal_overflow.rib",
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
       "clipping_float_slot_rtint_overflow.rib",
   };
 
-  for (const char* fixture : rangeFixtures) {
+  for (char const* fixture : rangeFixtures) {
     const std::string rib = dir + "/" + fixture;
     GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(!r.timedOut, std::string(fixture) + ": does not hang (10s bound)");

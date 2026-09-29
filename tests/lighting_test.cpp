@@ -67,7 +67,7 @@
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 void writeFile(const std::string& path, const std::string& contents) {
   std::ofstream out(path);
@@ -466,12 +466,12 @@ double interiorMeanR(const Image& img, uint32_t bg, int margin) {
   return sum / (double)values.size();
 }
 
-bool insideCircle(const AnalyticCircle& c, int x, int y) {
+bool insideCircle(AnalyticCircle const& c, int x, int y) {
   const double dx = x - c.centreX, dy = y - c.centreY;
   return dx * dx + dy * dy <= c.radius * c.radius;
 }
 
-SilhouetteStats analyticSilhouetteStats(const Image& img, int litThreshold, const AnalyticCircle& circle) {
+SilhouetteStats analyticSilhouetteStats(Image const& img, int litThreshold, AnalyticCircle const& circle) {
   SilhouetteStats stats;
   if (!img.ok) {
     return stats;
@@ -513,7 +513,7 @@ SilhouetteStats analyticSilhouetteStats(const Image& img, int litThreshold, cons
 // analytic circle's own edge rather than from a background-diff-detected
 // one -- the diff read has the same Ka=0-vs-black-background collision the
 // circle itself exists to avoid.
-double analyticInteriorLitFraction(const Image& img, const AnalyticCircle& circle, int margin, int litThreshold) {
+double analyticInteriorLitFraction(Image const& img, AnalyticCircle const& circle, int margin, int litThreshold) {
   const AnalyticCircle eroded{circle.centreX, circle.centreY, circle.radius - margin};
   long lit = 0, total = 0;
   for (uint32_t y = 0; y < img.height; ++y) {

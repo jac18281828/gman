@@ -38,7 +38,7 @@
 // TIFFTAG_PIXAR_WRAPMODES to "<swrap>,<twrap>" -- the tag RiMakeTexture
 // writes and gman::Texture reads back; the default leaves a plain, untagged
 // checker.
-inline bool writeCheckerTexture(const std::string& path, const std::string& swrap = "", const std::string& twrap = "") {
+inline bool writeCheckerTexture(std::string const& path, std::string const& swrap = "", std::string const& twrap = "") {
   TIFF* tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
     return false;

@@ -35,7 +35,7 @@
 
 inline int failures = 0;
 
-inline void check(bool ok, const std::string& what) {
+inline void check(bool ok, std::string const& what) {
   std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
   if (!ok) {
     ++failures;

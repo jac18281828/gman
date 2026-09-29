@@ -187,7 +187,7 @@ void testClipperNearPlane() {
 // output vertices (2 original + 2 new intersections), matching the near
 // plane test's own derivation.
 int clipQuad(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2, const GMANPoint& p3,
-             const gman::VSPerspective& vs) {
+             gman::VSPerspective const& vs) {
   GMANVertex v0, v1, v2, v3;
   v0.setLocation(p0);
   v1.setLocation(p1);

@@ -41,7 +41,7 @@
 // 64x64: fine enough that nearest-texel quantization (255/63 ~ 4 per step)
 // stays well under GOLDEN_CHANNEL_TOL (tests/goldenimage.h), so a parity
 // check does not fail on texel rounding rather than a real mismatch.
-inline bool writeGradientTexture(const std::string& path) {
+inline bool writeGradientTexture(std::string const& path) {
   const uint32_t size = 64;
 
   TIFF* tif = TIFFOpen(path.c_str(), "w");

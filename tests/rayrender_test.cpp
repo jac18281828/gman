@@ -53,7 +53,7 @@
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag = "") {
+int runGman(std::string const& gman, std::string const& rib, std::string const& rendererFlag = "") {
   if (rendererFlag.empty()) {
     return ::runGman(gman, {rib}).exitStatus;
   }

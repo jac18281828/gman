@@ -38,7 +38,7 @@
 
 namespace {
 
-int countOccurrences(const std::string& haystack, const std::string& needle) {
+int countOccurrences(std::string const& haystack, std::string const& needle) {
   int count = 0;
   std::size_t pos = 0;
   while ((pos = haystack.find(needle, pos)) != std::string::npos) {

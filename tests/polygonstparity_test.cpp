@@ -52,16 +52,16 @@ struct RGB {
   double r, g, b;
 };
 
-RGB scaled(const RGB& texel) { return {texel.r * kAmbient, texel.g * kAmbient, texel.b * kAmbient}; }
+RGB scaled(RGB const& texel) { return {texel.r * kAmbient, texel.g * kAmbient, texel.b * kAmbient}; }
 
-int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag = "") {
+int runGman(std::string const& gman, std::string const& rib, std::string const& rendererFlag = "") {
   if (rendererFlag.empty()) {
     return ::runGman(gman, {rib}).exitStatus;
   }
   return ::runGman(gman, {"-r", rendererFlag, rib}).exitStatus;
 }
 
-void checkPixelColor(const GmanImage& img, uint32_t x, uint32_t y, const RGB& want, int tol, const std::string& what) {
+void checkPixelColor(GmanImage const& img, uint32_t x, uint32_t y, RGB const& want, int tol, std::string const& what) {
   uint32_t const p = img.at(x, y);
   double const gotR = TIFFGetR(p), gotG = TIFFGetG(p), gotB = TIFFGetB(p);
   double const wantR = want.r * 255.0, wantG = want.g * 255.0, wantB = want.b * 255.0;
@@ -77,7 +77,7 @@ bool colorsMatch(uint32_t pa, uint32_t pb, int tol) {
          std::abs((int)TIFFGetB(pa) - (int)TIFFGetB(pb)) <= tol;
 }
 
-bool pixelsMatch(const GmanImage& a, const GmanImage& b, uint32_t x, uint32_t y, int tol) {
+bool pixelsMatch(GmanImage const& a, GmanImage const& b, uint32_t x, uint32_t y, int tol) {
   return colorsMatch(a.at(x, y), b.at(x, y), tol);
 }
 
@@ -93,7 +93,7 @@ const Sample kSamples[3] = {{90, 90}, {110, 90}, {90, 110}};
 // True when at least one pair of the three samples differs by more than
 // tol on some channel -- real spatial variation, not one constant colour
 // both renderers happen to share.
-bool samplesVary(const GmanImage& img, int tol) {
+bool samplesVary(GmanImage const& img, int tol) {
   for (int i = 0; i < 3; ++i) {
     for (int j = i + 1; j < 3; ++j) {
       if (!colorsMatch(img.at(kSamples[i].x, kSamples[i].y), img.at(kSamples[j].x, kSamples[j].y), tol)) {
@@ -108,8 +108,8 @@ bool samplesVary(const GmanImage& img, int tol) {
 // z-buffer, and reads back both -- tests/polygonzbuffer_test.cpp's own
 // render/rename/readback idiom, so the second render's Display output
 // does not clobber the first before it is read.
-void parityCheck(const std::string& gman, const std::string& rib, const std::string& displayName,
-                 const std::string& label) {
+void parityCheck(std::string const& gman, std::string const& rib, std::string const& displayName,
+                 std::string const& label) {
   const std::string rayTif = displayName + "_raytraced.tif";
   const std::string zTif = displayName + "_zbuffer.tif";
   std::remove(rayTif.c_str());
@@ -131,7 +131,7 @@ void parityCheck(const std::string& gman, const std::string& rib, const std::str
     return;
   }
 
-  for (const Sample& s : kSamples) {
+  for (Sample const& s : kSamples) {
     check(pixelsMatch(raytraced, zbuffer, s.x, s.y, GOLDEN_CHANNEL_TOL),
           label + ": ray tracer and z-buffer agree at (" + std::to_string(s.x) + "," + std::to_string(s.y) + ")");
   }

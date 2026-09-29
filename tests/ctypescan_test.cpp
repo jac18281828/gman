@@ -51,7 +51,7 @@ namespace fs = std::filesystem;
 
 const std::string kInnerCast = "static_cast<unsigned char>";
 
-const std::vector<std::string>& classifierNames() {
+std::vector<std::string> const& classifierNames() {
   static const std::vector<std::string> kNames = {"isalnum", "isalpha", "isblank", "iscntrl", "isdigit", "isgraph",
                                                   "islower", "isprint", "ispunct", "isspace", "isupper", "isxdigit"};
   return kNames;
@@ -59,9 +59,9 @@ const std::vector<std::string>& classifierNames() {
 
 // Every classifier call (qualified or not) whose argument is not prefixed
 // with the static_cast<unsigned char> that avoids UB on a negative char.
-std::vector<std::string> callsMissingUnsignedCharCast(const std::string& text) {
+std::vector<std::string> callsMissingUnsignedCharCast(std::string const& text) {
   std::vector<std::string> found;
-  for (const std::string& name : classifierNames()) {
+  for (std::string const& name : classifierNames()) {
     const std::string callOpen = name + "(";
     std::string::size_type pos = 0;
     while ((pos = text.find(callOpen, pos)) != std::string::npos) {
@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
   const std::vector<fs::path> files = collectSourceFiles(dirs);
   check(files.size() > 10, "scanned a plausible number of source files (>10)");
 
-  for (const fs::path& file : files) {
+  for (fs::path const& file : files) {
     const std::string text = readFile(file);
     const std::vector<std::string> calls = callsMissingUnsignedCharCast(text);
     check(calls.empty(), file.generic_string() + ": a <cctype> classifier must take static_cast<unsigned char>(...)");

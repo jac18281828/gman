@@ -61,7 +61,7 @@ struct DecodedPNG {
   std::vector<png_byte> pixels;
 };
 
-DecodedPNG readPNG(const char* path) {
+DecodedPNG readPNG(char const* path) {
   DecodedPNG img;
   std::FILE* fp = std::fopen(path, "rb");
   if (fp == nullptr) {
@@ -99,7 +99,7 @@ DecodedPNG readPNG(const char* path) {
 }
 
 void checkRGB() {
-  const char* path = "rgb.png";
+  char const* path = "rgb.png";
   gman::OutputPNG output(path, 2, 2);
   output.save(GMANOutput::RGB, 1.0f, 1.0f, GMANQuantize{255, 0, 255, 0});
 
@@ -113,7 +113,7 @@ void checkRGB() {
 }
 
 void checkRGBAZ() {
-  const char* path = "rgbaz.png";
+  char const* path = "rgbaz.png";
   gman::OutputPNG output(path, 2, 2);
   output.setAlpha(0, 0, kPartialAlpha);
   output.save(GMANOutput::RGBAZ, 1.0f, 1.0f, GMANQuantize{255, 0, 255, 0});
@@ -133,7 +133,7 @@ void checkRGBAZ() {
 }
 
 void checkA() {
-  const char* path = "a.png";
+  char const* path = "a.png";
   gman::OutputPNG output(path, 2, 2);
   output.setAlpha(0, 0, kPartialAlpha);
   output.save(GMANOutput::A, 1.0f, 1.0f, GMANQuantize{255, 0, 255, 0});

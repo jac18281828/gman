@@ -37,13 +37,13 @@
 
 namespace {
 
-int runGmanLog(const std::string& gman, const std::string& ribPath, const std::string& workdir) {
+int runGmanLog(std::string const& gman, std::string const& ribPath, std::string const& workdir) {
   GMANRunOptions options;
   options.workingDirectory = workdir;
   return runGman(gman, {"-l", ribPath}, options).exitStatus;
 }
 
-std::string slurp(const std::string& path) {
+std::string slurp(std::string const& path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream ss;
   ss << in.rdbuf();
@@ -72,8 +72,8 @@ int main(int argc, char* argv[]) {
   const std::string sphereContents = slurp(sphereRib);
 
   struct Case {
-    const char* name;
-    const char* logName;
+    char const* name;
+    char const* logName;
   };
   const Case cases[] = {
       {"ab", "ab.log"},
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
       {"sphere.ribx", "sphere.ribx.log"},
   };
 
-  for (const Case& c : cases) {
+  for (Case const& c : cases) {
     const std::string ribPath = scratch + "/" + c.name;
     const std::string logPath = scratch + "/" + c.logName;
 

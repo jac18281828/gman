@@ -119,11 +119,11 @@ const double kRotationDegrees = 37.0;
 // and raster x, y pass straight through a camera-space point's own x, y,
 // unaffected by z -- the perspective behind-the-eye fallback this file
 // never needs.
-int expectedDiceN(const GMANPoint& p0, const GMANPoint& p1, const GMANPoint& p2, const GMANOptions& options,
+int expectedDiceN(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2, GMANOptions const& options,
                   RtFloat shadingRate) {
   const GMANOptions::ScreenWindowStruct sw = options.getScreenWindow();
   const GMANOptions::RasterInfo ri = options.getRasterInfo();
-  auto raster = [&](const GMANPoint& p) {
+  auto raster = [&](GMANPoint const& p) {
     return std::make_pair(ri.xres * (p.getX() - sw.left) / (sw.right - sw.left),
                           ri.yres - ri.yres * (p.getY() - sw.bottom) / (sw.top - sw.bottom));
   };
@@ -258,7 +258,7 @@ int countFaces(GMANObject* object) {
 // per ring position, in ring order. Every entry after that is a diced,
 // strictly interior or edge-interior vertex, not a ring position, so
 // bounding the walk here is what keeps this a 1:1 ring-position map.
-std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int nverts) {
+std::map<GMANVertex const*, int> indexVertices(GMANObject* object, int nverts) {
   std::map<const GMANVertex*, int> index;
   GMANVertex* v = object->getVert();
   for (int i = 0; i < nverts && v != nullptr; ++i, v = v->getNext()) {
@@ -271,8 +271,8 @@ std::map<const GMANVertex*, int> indexVertices(GMANObject* object, int nverts) {
 // found the same way checkPlacement's own oracle finds them (see its
 // comment) -- used where only the aggregate diced face count matters, not
 // the full area/orientation/coverage oracle checkPlacement also runs.
-long long sumExpectedDicedFaces(GMANObject* object, int nverts, const GMANOptions& options, RtFloat shadingRate) {
-  std::map<const GMANVertex*, int> index = indexVertices(object, nverts);
+long long sumExpectedDicedFaces(GMANObject* object, int nverts, GMANOptions const& options, RtFloat shadingRate) {
+  std::map<GMANVertex const*, int> index = indexVertices(object, nverts);
   std::vector<GMANPoint> blockCornerLoc;
   long long total = 0;
 
@@ -328,7 +328,7 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
   const double polyArea =
       0.5 * std::sqrt(polyNormal[0] * polyNormal[0] + polyNormal[1] * polyNormal[1] + polyNormal[2] * polyNormal[2]);
 
-  std::map<const GMANVertex*, int> index = indexVertices(object, nverts);
+  std::map<GMANVertex const*, int> index = indexVertices(object, nverts);
   std::vector<std::array<int, 3>> triples;
   std::vector<bool> covered(nverts, false);
   double summedArea = 0.0;

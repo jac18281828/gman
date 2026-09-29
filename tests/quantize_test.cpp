@@ -40,9 +40,9 @@
 
 namespace {
 
-GMANRunResult runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {"-w", rib}); }
+GMANRunResult runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {"-w", rib}); }
 
-int countLines(const std::string& text) {
+int countLines(std::string const& text) {
   if (text.empty()) {
     return 0;
   }
@@ -58,7 +58,7 @@ int countLines(const std::string& text) {
 // gman's license banner and Projection "orthographic"'s "FOV not set"
 // warning both print regardless of Quantize; this strips the two before
 // counting so only Quantize's own output remains.
-std::string withoutUnrelatedNoise(const std::string& text) {
+std::string withoutUnrelatedNoise(std::string const& text) {
   std::string result;
   std::size_t pos = 0;
   while (pos < text.size()) {
@@ -98,7 +98,7 @@ struct RawImage {
   }
 };
 
-RawImage readTIFFRaw(const std::string& path) {
+RawImage readTIFFRaw(std::string const& path) {
   RawImage img;
   TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
@@ -147,7 +147,7 @@ struct PNMImage {
   }
 };
 
-PNMImage readPNM(const std::string& path) {
+PNMImage readPNM(std::string const& path) {
   PNMImage img;
   std::FILE* f = std::fopen(path.c_str(), "rb");
   if (f == nullptr) {
@@ -172,7 +172,7 @@ PNMImage readPNM(const std::string& path) {
 
 // 1. quantize8.rib, TIFF, 255 10 200 0, half plane: columns 0-7 read R, G
 // and B 64 and alpha 200; columns 8-15 read 10 on all four.
-void checkQuantize8(const std::string& gman, const std::string& ribDir) {
+void checkQuantize8(std::string const& gman, std::string const& ribDir) {
   std::remove("quantize8.tif");
   GMANRunResult const r = runGman(gman, ribDir + "/quantize8.rib");
   check(r.exitStatus == 0, "quantize8: renders");
@@ -198,7 +198,7 @@ void checkQuantize8(const std::string& gman, const std::string& ribDir) {
 // 2. quantize_fallback.rib, .pnm, 65535 0 65535 0, full plane: exactly one
 // line of output naming Quantize and the file; the P6 header's maxval is
 // 255 and every sample is 64.
-void checkQuantizeFallback(const std::string& gman, const std::string& ribDir) {
+void checkQuantizeFallback(std::string const& gman, std::string const& ribDir) {
   std::remove("quantize_fallback.pnm");
   GMANRunResult const r = runGman(gman, ribDir + "/quantize_fallback.rib");
   check(r.exitStatus == 0, "quantize_fallback: renders");
@@ -230,7 +230,7 @@ void checkQuantizeFallback(const std::string& gman, const std::string& ribDir) {
 // 3. quantize16.rib, TIFF, 65535 1000 65535 0, half plane: 16 bits a
 // sample, 4 samples a pixel; columns 0-7 read R, G and B 16384 and alpha
 // 65535; columns 8-15 read 1000 on all four.
-void checkQuantize16(const std::string& gman, const std::string& ribDir) {
+void checkQuantize16(std::string const& gman, std::string const& ribDir) {
   std::remove("quantize16.tif");
   GMANRunResult const r = runGman(gman, ribDir + "/quantize16.rib");
   check(r.exitStatus == 0, "quantize16: renders");

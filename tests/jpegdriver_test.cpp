@@ -57,7 +57,7 @@ namespace {
 
 // GMANHandleError prints to stdout (gmanerror.cpp's print()), so a caller
 // after a diagnostic reads the result's stdout-only output.
-GMANRunResult runGman(const std::string& gman, const std::string& rib) {
+GMANRunResult runGman(std::string const& gman, std::string const& rib) {
   GMANRunOptions options;
   options.capture = GMANRunOptions::Capture::stdoutOnly;
   return ::runGman(gman, {rib}, options);
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
                               "AttributeEnd\n"
                               "WorldEnd\n";
 
-  const char* rgbaSceneTemplate = "Display \"%s\" \"file\" \"rgba\"\n"
+  char const* rgbaSceneTemplate = "Display \"%s\" \"file\" \"rgba\"\n"
                                   "Format 64 64 1\n"
                                   "Projection \"perspective\" \"fov\" [45]\n"
                                   "WorldBegin\n"

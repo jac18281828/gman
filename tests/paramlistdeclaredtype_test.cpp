@@ -58,7 +58,7 @@
 
 namespace {
 
-GMANRunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
+GMANRunResult runCapturingOutput(std::string const& gman, std::string const& rib, int timeoutSeconds) {
   GMANRunOptions options;
   options.timeoutSeconds = timeoutSeconds;
   return runGman(gman, {rib}, options);

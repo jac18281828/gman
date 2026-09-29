@@ -40,7 +40,7 @@ namespace {
 // actually arrived: an exit status alone cannot distinguish "the archive
 // was read" from "the archive was ignored", since a ReadArchive that
 // silently does nothing still exits 0, having rendered an empty world.
-GMANRunResult runWithTimeout(const std::string& gman, const std::string& rib, int timeoutSeconds) {
+GMANRunResult runWithTimeout(std::string const& gman, std::string const& rib, int timeoutSeconds) {
   GMANRunOptions options;
   options.timeoutSeconds = timeoutSeconds;
   return runGman(gman, {"-d", rib}, options);

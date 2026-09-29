@@ -66,9 +66,9 @@ const RGB kWhite{1.0, 1.0, 1.0};
 // A texel's own colour, times the fixture's ambient intensity -- what the
 // paintedplastic surface (Ka=1, Kd=0, Ks=0) actually renders it as
 // (texture_test.cpp's own Ci = Os * texture() * Cs * Ka * ambient).
-RGB scaled(const RGB& texel) { return {texel.r * kAmbient, texel.g * kAmbient, texel.b * kAmbient}; }
+RGB scaled(RGB const& texel) { return {texel.r * kAmbient, texel.g * kAmbient, texel.b * kAmbient}; }
 
-int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 struct Image {
   bool ok = false;
@@ -78,7 +78,7 @@ struct Image {
   uint32_t at(int x, int y) const { return raster[y * width + x]; }
 };
 
-Image readTIFF(const std::string& path) {
+Image readTIFF(std::string const& path) {
   Image img;
   TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
@@ -92,7 +92,7 @@ Image readTIFF(const std::string& path) {
   return img;
 }
 
-void checkPixel(const Image& img, int x, int y, const RGB& want, const std::string& what) {
+void checkPixel(Image const& img, int x, int y, RGB const& want, std::string const& what) {
   uint32_t p = img.at(x, y);
   double gotR = TIFFGetR(p), gotG = TIFFGetG(p), gotB = TIFFGetB(p);
   double wantR = want.r * 255.0, wantG = want.g * 255.0, wantB = want.b * 255.0;
@@ -105,7 +105,7 @@ void checkPixel(const Image& img, int x, int y, const RGB& want, const std::stri
 
 // Renders rib and reads back its own Display target; every case shares
 // this shape, so it is not repeated per case.
-Image renderFixture(const std::string& gman, const std::string& ribDir, const std::string& name) {
+Image renderFixture(std::string const& gman, std::string const& ribDir, std::string const& name) {
   const std::string rib = ribDir + "/" + name + ".rib";
   check(runGman(gman, rib) == 0, name + ".rib renders");
   Image img = readTIFF(name + ".tif");
@@ -123,7 +123,7 @@ Image renderFixture(const std::string& gman, const std::string& ribDir, const st
 // this projection); transposing each (u,v) before sampling gives (s,t) =
 // (0.25,0.25), (0.25,0.75), (0.75,0.25), (0.75,0.75) -- red, blue, green,
 // white.
-void testPatchTextureCoordinates(const std::string& gman, const std::string& ribDir) {
+void testPatchTextureCoordinates(std::string const& gman, std::string const& ribDir) {
   Image img = renderFixture(gman, ribDir, "patch_texturecoordinates");
   if (!img.ok)
     return;
@@ -140,7 +140,7 @@ void testPatchTextureCoordinates(const std::string& gman, const std::string& rib
 // patch_texturecoordinates.rib's own RiTextureCoordinates, and outranks
 // the fixture's mirrored-s RiTextureCoordinates entirely, so the four
 // pixels read the same red, blue, green, white.
-void testPatchSt(const std::string& gman, const std::string& ribDir) {
+void testPatchSt(std::string const& gman, std::string const& ribDir) {
   Image img = renderFixture(gman, ribDir, "patch_st");
   if (!img.ok)
     return;
@@ -170,7 +170,7 @@ void testPatchSt(const std::string& gman, const std::string& ribDir) {
 // patch_texturecoordinates.rib reads -- red at (90,110), white at
 // (110,90). Revert "'s' is ignored" reads identically, since the
 // resolver would never look up "s" at all.
-void testPatchSOverSt(const std::string& gman, const std::string& ribDir) {
+void testPatchSOverSt(std::string const& gman, std::string const& ribDir) {
   Image img = renderFixture(gman, ribDir, "patch_s_over_st");
   if (!img.ok)
     return;
@@ -192,7 +192,7 @@ void testPatchSOverSt(const std::string& gman, const std::string& ribDir) {
 // Revert "createParametric shades with u, v again": this pixel's default
 // mapping is s=u=0.25, t=v=0.25 -- the texel centre (0.25,0.25), red, not
 // white.
-void testDiskTextureCoordinates(const std::string& gman, const std::string& ribDir) {
+void testDiskTextureCoordinates(std::string const& gman, std::string const& ribDir) {
   Image img = renderFixture(gman, ribDir, "disk_texturecoordinates");
   if (!img.ok)
     return;
@@ -244,7 +244,7 @@ void testDiskTextureCoordinates(const std::string& gman, const std::string& ribD
 // (80,120) [blue] to (-1,-1), clamping to (col 0, row 0) = red. Every pixel
 // above then samples a different quadrant's pure colour than the one
 // listed, differing by more than 3*kColorTol in some channel.
-void testPolygonDefault(const std::string& gman, const std::string& ribDir) {
+void testPolygonDefault(std::string const& gman, std::string const& ribDir) {
   Image img = renderFixture(gman, ribDir, "polygon_default");
   if (!img.ok)
     return;
@@ -275,7 +275,7 @@ void testPolygonDefault(const std::string& gman, const std::string& ribDir) {
 // Revert "'st' on polygons is ignored": every pixel reads its
 // polygon_default.rib colour instead -- (110,86) and (86,110) each
 // differ from this fixture's own expected colour, a full quadrant swap.
-void testPolygonSt(const std::string& gman, const std::string& ribDir) {
+void testPolygonSt(std::string const& gman, std::string const& ribDir) {
   Image img = renderFixture(gman, ribDir, "polygon_st");
   if (!img.ok)
     return;
@@ -310,7 +310,7 @@ void testPolygonSt(const std::string& gman, const std::string& ribDir) {
 // implementation indexing by commit position instead of original slot
 // reads loop 2's own "st" (red) at loop 1's vertices -- this pixel would
 // read red, not white.
-void testGeneralPolygonSt(const std::string& gman, const std::string& ribDir) {
+void testGeneralPolygonSt(std::string const& gman, std::string const& ribDir) {
   Image img = renderFixture(gman, ribDir, "generalpolygon_st");
   if (!img.ok)
     return;

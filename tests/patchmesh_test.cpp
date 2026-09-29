@@ -271,7 +271,7 @@ void testNonperiodicBicubicZeroStepRejected() {
 // ---- render-level: each fixture rasterizes, reverting getRSPatchMesh
 // falsifies every one of these ----
 
-int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
+int runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
 bool regionHasContent(const GmanImage& img, uint32_t x0, uint32_t x1, uint32_t y0, uint32_t y1) {
   const uint32_t bg = img.at(0, 0);

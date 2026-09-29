@@ -108,7 +108,7 @@ RtFloat legFor(double targetPixels, bool nonDefaultScreenWindow) {
 // at camera-space depth z: corners (0,0,z), (leg,0,z), (0,leg,z), unless
 // behindEyeCorner names one corner (0, 1 or 2) to move to camera-space
 // z=-1 instead -- diceCountFor's own fallback trigger.
-GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, const GMANOptions& options, const GMANAttributes& attr,
+GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, GMANOptions const& options, GMANAttributes const& attr,
                            int behindEyeCorner = -1) {
   RtFloat zs[3] = {z, z, z};
   if (behindEyeCorner >= 0) {
@@ -134,8 +134,8 @@ GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, const GMANOptions& options, c
 // nine world-space coordinates (three corners, x, y, z each) as-is: the
 // NaN-corner fallback case below needs an explicit y and z per corner,
 // which runTriangle's own shared leg/z parameters cannot express.
-GMANPrimitive* runTriangleCorners(const std::array<RtFloat, 9>& p, const GMANOptions& options,
-                                  const GMANAttributes& attr) {
+GMANPrimitive* runTriangleCorners(std::array<RtFloat, 9> const& p, GMANOptions const& options,
+                                  GMANAttributes const& attr) {
   std::vector<RtFloat> pv(p.begin(), p.end());
 
   GMANDictionary dictionary;
@@ -165,7 +165,7 @@ int countFaces(GMANObject* object) {
   return count;
 }
 
-void checkFaces(const std::string& label, GMANPrimitive* prim, int expected) {
+void checkFaces(std::string const& label, GMANPrimitive* prim, int expected) {
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, label + ": getRSPolygonMesh returns an object");
   if (object == nullptr) {

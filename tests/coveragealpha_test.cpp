@@ -48,14 +48,14 @@
 
 namespace {
 
-int runGman(const std::string& gman, const std::string& rib, const std::string& rendererFlag) {
+int runGman(std::string const& gman, std::string const& rib, std::string const& rendererFlag) {
   if (rendererFlag.empty()) {
     return ::runGman(gman, {rib}).exitStatus;
   }
   return ::runGman(gman, {"-r", rendererFlag, rib}).exitStatus;
 }
 
-void writeFile(const std::string& path, const std::string& contents) {
+void writeFile(std::string const& path, std::string const& contents) {
   std::ofstream out(path);
   out << contents;
 }
@@ -78,7 +78,7 @@ struct RawImage {
   unsigned char a(uint32_t x, uint32_t y) const { return at(x, y, 3); }
 };
 
-RawImage readRawTIFF(const std::string& path) {
+RawImage readRawTIFF(std::string const& path) {
   RawImage img;
   TIFF* tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
@@ -116,7 +116,7 @@ RawImage readRawTIFF(const std::string& path) {
 
 // Asserts R, G and B each stay at or below alpha at (x, y) -- the
 // associated-alpha invariant OutputTIFF's own tag promises.
-void checkPremultiplied(const RawImage& img, uint32_t x, uint32_t y, const std::string& label) {
+void checkPremultiplied(RawImage const& img, uint32_t x, uint32_t y, std::string const& label) {
   const int alpha = img.a(x, y);
   check(img.r(x, y) <= alpha, label + ": R at or below alpha");
   check(img.g(x, y) <= alpha, label + ": G at or below alpha");
@@ -125,7 +125,7 @@ void checkPremultiplied(const RawImage& img, uint32_t x, uint32_t y, const std::
 
 // backgroundcolor_test.cpp's own fixture: a small red matte sphere,
 // ambient-only, leaving every corner of the frame uncovered.
-std::string extremesRib(const std::string& display) {
+std::string extremesRib(std::string const& display) {
   return "Display \"" + display +
          "\" \"file\" \"rgba\"\n"
          "Format 8 8 1\n"
@@ -146,7 +146,7 @@ std::string extremesRib(const std::string& display) {
          "WorldEnd\n";
 }
 
-void testExtremes(const std::string& gman, const std::string& rendererFlag, const std::string& tag) {
+void testExtremes(std::string const& gman, std::string const& rendererFlag, std::string const& tag) {
   const std::string rib = "extremes_" + tag + ".rib";
   const std::string tif = "extremes_" + tag + ".tif";
   writeFile(rib, extremesRib(tif));
@@ -159,7 +159,7 @@ void testExtremes(const std::string& gman, const std::string& rendererFlag, cons
   }
 
   const uint32_t corners[4][2] = {{0, 0}, {img.width - 1, 0}, {0, img.height - 1}, {img.width - 1, img.height - 1}};
-  const char* names[4] = {"top-left", "top-right", "bottom-left", "bottom-right"};
+  char const* names[4] = {"top-left", "top-right", "bottom-left", "bottom-right"};
   for (int i = 0; i < 4; ++i) {
     check(img.a(corners[i][0], corners[i][1]) == 0,
           tag + ": " + names[i] + " corner reads alpha 0, got " + std::to_string(img.a(corners[i][0], corners[i][1])));
@@ -187,7 +187,7 @@ void testExtremes(const std::string& gman, const std::string& rendererFlag, cons
 
 // samplebuffer_test.cpp's own edgeRib fixture: a matte rectangle with one
 // hard vertical edge at world x=0.031, off any pixel or sample grid line.
-std::string edgeRib(const std::string& display) {
+std::string edgeRib(std::string const& display) {
   return "Display \"" + display +
          "\" \"file\" \"rgba\"\n"
          "Format 100 100 1\n"
@@ -221,7 +221,7 @@ bool isIntermediate(int coveredR, int backgroundR, int guard, int r) {
 // top of that shared sampling grid.
 constexpr double kFractionTolerance = 2.0 / 16.0;
 
-void testPartialCoverage(const std::string& gman, const std::string& rendererFlag, const std::string& tag) {
+void testPartialCoverage(std::string const& gman, std::string const& rendererFlag, std::string const& tag) {
   const std::string rib = "partial_" + tag + ".rib";
   const std::string tif = "partial_" + tag + ".tif";
   writeFile(rib, edgeRib(tif));
@@ -269,8 +269,8 @@ void testPartialCoverage(const std::string& gman, const std::string& rendererFla
 // tests/rib/transparency_front_alone.rib: a fully-covered, uniformly
 // semi-transparent square at Opacity 0.4 -- already proven under the ray
 // tracer by transparencyrender_test.cpp's own centre-pixel reference.
-void testOsReflected(const std::string& gman, const std::string& ribDir, const std::string& rendererFlag,
-                     const std::string& tag) {
+void testOsReflected(std::string const& gman, std::string const& ribDir, std::string const& rendererFlag,
+                     std::string const& tag) {
   const std::string rib = ribDir + "/transparency_front_alone.rib";
   const std::string tif = "os_" + tag + ".tif";
   std::remove("transparency_front_alone.tif");

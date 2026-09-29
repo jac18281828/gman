@@ -40,25 +40,25 @@
 #include <string>
 #include <vector>
 
-inline std::string readFile(const std::filesystem::path& path) {
+inline std::string readFile(std::filesystem::path const& path) {
   std::ifstream in(path, std::ios::binary);
   std::ostringstream contents;
   contents << in.rdbuf();
   return contents.str();
 }
 
-inline bool pathEndsWith(const std::filesystem::path& path, const std::string& suffix) {
+inline bool pathEndsWith(std::filesystem::path const& path, std::string const& suffix) {
   const std::string generic = path.generic_string();
   return generic.size() >= suffix.size() && generic.compare(generic.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-inline bool hasSourceExtension(const std::filesystem::path& path) {
+inline bool hasSourceExtension(std::filesystem::path const& path) {
   static const std::vector<std::string> kExtensions = {".h", ".hpp", ".c", ".cpp", ".y", ".l", ".yy", ".ll"};
   const std::string ext = path.extension().string();
   return std::find(kExtensions.begin(), kExtensions.end(), ext) != kExtensions.end();
 }
 
-inline std::vector<std::filesystem::path> collectSourceFiles(const std::vector<std::string>& dirs) {
+inline std::vector<std::filesystem::path> collectSourceFiles(std::vector<std::string> const& dirs) {
   namespace fs = std::filesystem;
   std::vector<fs::path> files;
   for (const auto& dir : dirs) {
