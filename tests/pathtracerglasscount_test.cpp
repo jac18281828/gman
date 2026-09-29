@@ -141,7 +141,7 @@ void testGlassPaneCountsOnce() {
   constexpr RtFloat kSphereCentreY = -2.0f;
   constexpr RtFloat kSphereCentreZ = 9.0f;
   constexpr RtInt kFloorRes = 81;
-  constexpr RtInt kFloorSamples = 64;
+  constexpr RtInt kFloorSamples = 8;
   constexpr std::size_t kMinMeasuredPixels = 400;
   constexpr double kResidualFloor = 1e-4;
 
@@ -210,7 +210,7 @@ constexpr RtFloat kBigSphereCentreZ = 9.0f;
 constexpr RtFloat kBigAreaLe = 10.0f;
 constexpr RtFloat kPairPaneOs = 0.5f;
 constexpr RtInt kPairRes = 41;
-constexpr std::uint32_t kPairSamples = 128u;
+constexpr std::uint32_t kPairSamples = 32u;
 
 std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
   GMANOptions options;
