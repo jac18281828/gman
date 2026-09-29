@@ -31,32 +31,15 @@
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanpathtracerenderer.h"
+#include "gmanpathtracerweights.h"
 #include "gmanraybbox.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmansampling.h"
 #include "ri.h"
 
-/*
- * The multiple-importance-sampling weight computation: external linkage,
- * declared nowhere but here, so tests/pathtracermisweight_test.cpp can
- * declare a matching prototype and call it directly, without rendering a
- * frame, the same way tests/hitbsdf_test.cpp reaches gman_core's own
- * internals through gman_internal_headers. Never installed: no header
- * outside this file names any of the five.
- */
 namespace gman {
 
-// One vertex's own light-choice weights at p: an emitter whose shape is
-// primitive gets weight 0, since a point on an emitter's own surface
-// cannot light itself, and the rest keep gman::lightChoiceWeight's own
-// value. lightWeight is the caller's own per-path buffer, sized to
-// emitters.size() and overwritten here, never reallocated per vertex.
-// Returns the weights' own sum. The one function chooseLight's draw and
-// every probability read below share, so a value read at a different
-// vertex through it is provably the probability next-event estimation
-// would have drawn for that emitter, had it drawn from p (excluding the
-// same primitive) that round.
 RtFloat lightChoiceWeights(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
                            GMANRayInterface const* primitive, std::vector<RtFloat>& lightWeight) {
   RtFloat totalWeight = 0.0f;
@@ -68,22 +51,13 @@ RtFloat lightChoiceWeights(std::vector<gman::Emitter> const& emitters, GMANPoint
   return totalWeight;
 }
 
-// emitters[index]'s own share of lightChoiceWeights' own sum at p,
-// excluding primitive.
 RtFloat lightChoiceProbability(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
-                               GMANRayInterface const* primitive, std::size_t index) {
-  std::vector<RtFloat> lightWeight(emitters.size());
+                               GMANRayInterface const* primitive, std::size_t index,
+                               std::vector<RtFloat>& lightWeight) {
   RtFloat const totalWeight = lightChoiceWeights(emitters, p, primitive, lightWeight);
   return (totalWeight > 0.0f) ? lightWeight[index] / totalWeight : 0.0f;
 }
 
-// Next-event estimation's own weight toward a chosen light: 1 for a delta
-// light at any vertex, since nothing can ever land on one by chance and no
-// competing technique exists; 1 also when misEnabled is false, light-only
-// sampling's own rule. Otherwise the power heuristic between the light's
-// own solid-angle density (pLight, pChoice(j) times the draw's own
-// EmitterSample::pdf) and the departing BSDF's own density toward the same
-// direction (pBsdf).
 RtFloat nextEventWeight(bool lightIsDelta, bool misEnabled, RtFloat pLight, RtFloat pBsdf) {
   if (lightIsDelta || !misEnabled) {
     return 1.0f;
@@ -91,15 +65,6 @@ RtFloat nextEventWeight(bool lightIsDelta, bool misEnabled, RtFloat pLight, RtFl
   return gman::powerHeuristic(pLight, pBsdf);
 }
 
-// An emitter hit's own weight: 1 whenever no BSDF draw produced the
-// arriving ray at all, or the most recent one was a delta lobe -- the one
-// case with no competing technique, and the one where next-event
-// estimation's own term at that vertex is already black, so nothing here
-// can double either. Otherwise the power heuristic between the departing
-// draw's own density (pBsdf) and the light-choice/solid-angle density
-// next-event estimation would have used for this same emitter from that
-// same vertex (pLight); 0, not 1, when misEnabled is false, since
-// light-only sampling never credits this case at all.
 RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat pBsdf, RtFloat pLight) {
   if (rayEligibleForEmitterHit) {
     return 1.0f;
@@ -110,22 +75,6 @@ RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat
   return gman::powerHeuristic(pBsdf, pLight);
 }
 
-// An emitter hit's own eligibility, tracked across delta draws since the
-// most recent non-delta departure: eligible (no departure yet, or a delta
-// reflection since restored today's rule), weighted (the immediate next
-// hit after a non-delta departure, MIS weighted against it) or suppressed
-// (every draw since a non-delta departure was a delta transmission, so
-// that departure's own shadow ray already carried the light through those
-// surfaces and the hit adds nothing).
-enum class EmitterHitEligibility { eligible, weighted, suppressed };
-
-// current is the eligibility before this draw; isDelta and isTransmission
-// describe the draw just taken (isTransmission meaningless unless
-// isDelta). A non-delta draw always departs afresh (weighted). A delta
-// reflection always restores eligible, whatever current was. A delta
-// transmission extends a suppressed or weighted chain into suppressed,
-// since a departure already exists to carry the light through; it leaves
-// an eligible chain eligible, since no departure exists yet to double.
 EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, bool isDelta, bool isTransmission) {
   if (!isDelta) {
     return EmitterHitEligibility::weighted;
@@ -509,10 +458,14 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
 // term is weighted by emitterHitWeight against the light-choice/solid-
 // angle density next-event estimation would have used for this same
 // emitter from that same departure, 0 outright when misEnabled is false.
+// lightWeight is the caller's own per-path buffer, sized to emitters.size()
+// and free at this point, since next-event estimation at the same vertex
+// runs after it.
 GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterface const* hitPrimitive,
                        gman::Appearance const& appearance, gman::SurfacePoint const& point,
                        gman::EmitterHitEligibility eligibility, bool misEnabled, GMANPoint const& departureP,
-                       GMANRayInterface const* departurePrimitive, RtFloat departurePdf) {
+                       GMANRayInterface const* departurePrimitive, RtFloat departurePdf,
+                       std::vector<RtFloat>& lightWeight) {
   if (appearance.areaLight == nullptr || eligibility == gman::EmitterHitEligibility::suppressed) {
     return kBlack;
   }
@@ -527,7 +480,7 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
     bool const rayEligible = eligibility == gman::EmitterHitEligibility::eligible;
     RtFloat pLight = 0.0f;
     if (misEnabled && !rayEligible) {
-      pLight = gman::lightChoiceProbability(emitters, departureP, departurePrimitive, j) *
+      pLight = gman::lightChoiceProbability(emitters, departureP, departurePrimitive, j, lightWeight) *
                gman::lightSolidAnglePdf(emitters[j], departureP, point.P, point.N);
     }
     RtFloat const weight = gman::emitterHitWeight(rayEligible, misEnabled, departurePdf, pLight);
@@ -573,9 +526,9 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   gman::Appearance const& appearance = hitPrimitive->getAppearance();
   RtFloat const surfaceMagnitude = point.surfaceMagnitude;
 
-  state.result.L += gman::multiplyChannels(state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point,
-                                                                    state.eligibility, misEnabled, state.departureP,
-                                                                    state.departurePrimitive, state.departurePdf));
+  state.result.L += gman::multiplyChannels(
+      state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point, state.eligibility, misEnabled,
+                               state.departureP, state.departurePrimitive, state.departurePdf, state.lightWeight));
 
   GMANColor const os = clampCoverage(appearance.Os);
   RtFloat const qPass = meanChannel(gman::oneMinus(os));

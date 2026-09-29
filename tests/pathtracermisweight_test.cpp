@@ -23,9 +23,9 @@
  * called directly against hand-computed values, without rendering a
  * frame: next-event estimation's weight, an emitter hit's weight, the
  * light-choice probability the two share and the off switch. The
- * functions under test carry external linkage in
- * renderers/pathtracer/gmanpathtracerenderer.cpp but no header declares
- * them; the prototypes below must match exactly.
+ * functions under test are declared in
+ * renderers/pathtracer/gmanpathtracerweights.h and defined in
+ * gmanpathtracerenderer.cpp.
  */
 
 #include <cmath>
@@ -38,21 +38,13 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
+#include "gmanpathtracerweights.h"
 #include "gmanpoint.h"
 #include "gmanrayinterface.h"
 #include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "maketransform.h"
 #include "ri.h"
-
-namespace gman {
-RtFloat lightChoiceProbability(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
-                               GMANRayInterface const* primitive, std::size_t index);
-RtFloat nextEventWeight(bool lightIsDelta, bool misEnabled, RtFloat pLight, RtFloat pBsdf);
-RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat pBsdf, RtFloat pLight);
-enum class EmitterHitEligibility { eligible, weighted, suppressed };
-EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, bool isDelta, bool isTransmission);
-} // namespace gman
 
 namespace {
 
@@ -139,8 +131,9 @@ void testLightChoiceProbabilityTwoLights() {
   std::size_t areaIndex = 0;
   findDeltaAndAreaIndex(emitters, deltaIndex, areaIndex);
 
-  RtFloat const areaProbability = gman::lightChoiceProbability(emitters, p, host, areaIndex);
-  RtFloat const deltaProbability = gman::lightChoiceProbability(emitters, p, host, deltaIndex);
+  std::vector<RtFloat> lightWeight(emitters.size());
+  RtFloat const areaProbability = gman::lightChoiceProbability(emitters, p, host, areaIndex, lightWeight);
+  RtFloat const deltaProbability = gman::lightChoiceProbability(emitters, p, host, deltaIndex, lightWeight);
   std::printf("lightChoiceProbability: area %.10f, delta %.10f\n", (double)areaProbability, (double)deltaProbability);
   check(std::fabs(areaProbability - 0.3889845296) <= 1e-6f,
         "lightChoiceProbability: the area emitter's own probability matches the hand computation within 1e-6");
@@ -152,7 +145,7 @@ void testLightChoiceProbabilityTwoLights() {
   // Calling it again for the area emitter, once as if from next-event
   // estimation's own draw and once as if from an emitter-hit's arrival,
   // returns the identical value: one function, one probability.
-  RtFloat const areaProbabilityAgain = gman::lightChoiceProbability(emitters, p, host, areaIndex);
+  RtFloat const areaProbabilityAgain = gman::lightChoiceProbability(emitters, p, host, areaIndex, lightWeight);
   check(areaProbability == areaProbabilityAgain,
         "lightChoiceProbability: calling it twice for the area emitter at the same p returns the identical value");
 }
@@ -173,13 +166,15 @@ void testSelfExclusionZeroesOwnSurface() {
   std::size_t areaIndex = 0;
   findDeltaAndAreaIndex(emitters, deltaIndex, areaIndex);
 
+  std::vector<RtFloat> lightWeight(emitters.size());
+
   // The area sphere is centred at (0, 0, -pi), radius 1; its pole nearest
   // the origin sits at (0, 0, -pi + 1).
   GMANPoint const pSelf(0.0f, 0.0f, -(RtFloat)kPi + 1.0f);
-  RtFloat const selfProbability = gman::lightChoiceProbability(emitters, pSelf, areaSphere, areaIndex);
+  RtFloat const selfProbability = gman::lightChoiceProbability(emitters, pSelf, areaSphere, areaIndex, lightWeight);
   check(selfProbability == 0.0f,
         "lightChoiceProbability: a point on the area emitter's own surface gives it probability exactly 0");
-  RtFloat const otherProbability = gman::lightChoiceProbability(emitters, pSelf, areaSphere, deltaIndex);
+  RtFloat const otherProbability = gman::lightChoiceProbability(emitters, pSelf, areaSphere, deltaIndex, lightWeight);
   check(std::fabs(otherProbability - 1.0f) <= 1e-6f,
         "lightChoiceProbability: excluding the area emitter renormalizes the rest to sum to 1");
 }
