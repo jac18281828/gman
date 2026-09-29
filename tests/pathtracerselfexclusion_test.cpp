@@ -73,7 +73,7 @@ namespace {
 
 // The disk's own placement and radiance: large enough relative to the
 // distant light that almost every next-event draw at a point on the
-// disk's own surface would, without the fix, pick the disk itself.
+// disk's own surface would, with no exclusion, pick the disk itself.
 constexpr RtFloat kDiskRadius = 10.0f;
 constexpr RtFloat kDiskZ = 5.0f;
 constexpr RtFloat kDiskLe = 100.0f;
@@ -198,7 +198,7 @@ void testSelfExclusionResiduals() {
     std::printf("pathtracerselfexclusion channel %d: pooled stderr %.9f (bound %.6f)\n", c, stat.stderrOfMean,
                 kStderrBound);
     check(stat.stderrOfMean < kStderrBound,
-          "pathtracerselfexclusion: the pooled standard error stays below its own bound, set from this fix");
+          "pathtracerselfexclusion: the pooled standard error stays below its own bound");
   }
 }
 

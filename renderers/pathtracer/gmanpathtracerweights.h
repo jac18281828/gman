@@ -81,11 +81,12 @@ RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat
 
 // An emitter hit's own eligibility, tracked across delta draws since the
 // most recent non-delta departure: eligible (no departure yet, or a delta
-// reflection since restored today's rule), weighted (the immediate next
-// hit after a non-delta departure, MIS weighted against it) or suppressed
-// (every draw since a non-delta departure was a delta transmission, so
-// that departure's own shadow ray already carried the light through those
-// surfaces and the hit adds nothing).
+// reflection since, which its departure's shadow ray cannot pass through),
+// weighted (the immediate next hit after a non-delta departure, MIS
+// weighted against it) or suppressed (every draw since a non-delta
+// departure was a delta transmission, so that departure's own shadow ray
+// already carried the light through those surfaces and the hit adds
+// nothing).
 enum class EmitterHitEligibility { eligible, weighted, suppressed };
 
 // current is the eligibility before this draw; isDelta and isTransmission

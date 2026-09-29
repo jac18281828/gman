@@ -143,7 +143,7 @@ GMANColor clampCoverage(GMANColor const& os) {
 // share a BSDF-sampled bounce can also reach through coverage's own
 // passThrough. v - p is every blocker's own dielectric shadowTransmittance
 // share, which next-event estimation's own weight (below) credits at
-// weight 1, since a suppressed emitter hit no longer does. p <= v always,
+// weight 1, since a suppressed emitter hit never adds it. p <= v always,
 // since each blocker's own factor is at least its (1 - Os) term.
 struct ShadowWalkResult {
   GMANColor v = kWhite;

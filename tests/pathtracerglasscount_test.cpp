@@ -256,8 +256,8 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
 // draws (the real estimator's own (u1, u2), never the fixed 0.5, 0.5
 // preview alone), sits well below 1 -- this scene actually exercises the
 // split-weight arithmetic between a pass-through share and a dielectric
-// share, not a case that trivially reduces to weight 1. A failed
-// assertion here is a STOP to fix the geometry, not the estimator.
+// share, not a case that trivially reduces to weight 1. A failure means
+// the geometry is wrong, not the estimator.
 void checkNextEventWeightWellBelowOne() {
   constexpr RtFloat kPi = 3.14159265358979323846f;
   constexpr std::uint32_t kDraws = 1024u;

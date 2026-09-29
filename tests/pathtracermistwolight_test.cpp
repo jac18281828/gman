@@ -21,10 +21,10 @@
 /*
  * Two area lights over one floor, comparable light-choice weight at the
  * floor: the mistake this guards is pChoice evaluated at the arrival on
- * the emitter instead of the departing vertex. Every other area-light
- * scene in this unit has one light, where pChoice is 1 regardless of
- * where it is read; this is the one scene where a departure-vertex
- * argument and an arrival-vertex argument to pChoice could disagree.
+ * the emitter instead of the departing vertex. A scene with one light
+ * has pChoice 1 wherever it is read; this scene has two, so a
+ * departure-vertex argument and an arrival-vertex argument to pChoice
+ * disagree.
  */
 
 #include <cmath>

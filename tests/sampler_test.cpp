@@ -564,9 +564,8 @@ std::uint64_t sample2DDigest(std::uint32_t sampleCount) {
   return digest;
 }
 
-// A full grid's draws stay bit-identical to before the partial-grid
-// unbiasing: the digest recomputed here matches the one recorded against
-// the unfixed sampler at every full-grid N this file also exercises.
+// A full grid has no short row to relabel, so its draws stay pinned by a
+// recorded digest at every full-grid N this file also exercises.
 void checkSample2DFullGridDigestUnchanged() {
   check(sample2DDigest(2u) == 0xba6af1756462eca3ull, "sample2D digest at N=2 (full grid) is unchanged");
   check(sample2DDigest(3u) == 0x9b5e109097ba73a2ull, "sample2D digest at N=3 (full grid) is unchanged");

@@ -212,11 +212,11 @@ Sample2D sample2D(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t sampleInde
   std::uint32_t const logicalRow = s / m;
 
   // A partial grid (m * n > count) leaves one row short by m minus the
-  // grid's own remainder; index order alone always shorts the same
-  // (highest) row and its lowest columns, biasing u1 and u2 low. An
+  // grid's own remainder. Index order alone always shorts the same
+  // (highest) row and its lowest columns, biasing u1 and u2 low, so an
   // independent permutation of each axis relabels which physical row is
-  // short and which of its columns it keeps, uniformly per pattern; a
-  // full grid needs no relabeling and keeps today's cell exactly.
+  // short and which of its columns it keeps, uniformly per pattern. A
+  // full grid has no short row and takes its cell from index order alone.
   bool const partialGrid = static_cast<std::uint64_t>(m) * n != count;
   std::uint32_t const i = partialGrid ? permute(logicalCol, m, pattern * kCmjColPickSalt) : logicalCol;
   std::uint32_t const j = partialGrid ? permute(logicalRow, n, pattern * kCmjRowPickSalt) : logicalRow;
