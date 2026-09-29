@@ -76,6 +76,12 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  // A prior run's image left in a reused directory would satisfy the image
+  // checks even if this run wrote nothing.
+  for (const std::string& dir : {plainWork, gzWork, misnamedWork}) {
+    std::remove((dir + "/gzip_out.tif").c_str());
+  }
+
   const int plainExit = runIn(gman, gzipDir + "/plain.rib", plainWork);
   const int gzExit = runIn(gman, gzipDir + "/plain_gz.rib.gz", gzWork);
   const int misnamedExit = runIn(gman, gzipDir + "/misnamed.rib", misnamedWork);
