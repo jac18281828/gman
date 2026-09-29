@@ -19,20 +19,34 @@
  */
 
 /*
- * A camera-facing emitting disk cannot choose itself as a next-event
- * light: without that exclusion, the disk's own light-choice weight
- * dominates every point on its own surface (it peaks exactly where an
- * emitter can least light itself), so almost every next-event draw picks
- * the disk, contributes nothing, and the rare draw that reaches the real
- * light divides by that draw's own tiny probability -- an unbiased mean
- * riding on huge, rare spikes. This file renders the fixed estimator once
- * and checks its pooled residual mean and standard error; the ratio
- * against the same measurement with the exclusion disabled is a manual,
- * uncommitted comparison.
+ * An emitter cannot light a point on its own surface, so a vertex on an
+ * emitter never chooses that emitter, as a next-event light or as the
+ * light an emitter hit's weight reads its choice probability for. Two
+ * scenes check it.
+ *
+ * A camera-facing emitting disk under one distant light: the disk's own
+ * light-choice weight peaks on its own surface, so without the exclusion
+ * almost every next-event draw there picks the disk, contributes nothing,
+ * and the rare draw that reaches the distant light divides by that draw's
+ * own tiny probability. The pooled residual mean matches the analytic
+ * value and its standard error stays below a bound a tenth of the
+ * exclusion-free error.
+ *
+ * A camera-facing emitting disk with a white matte surface, beside a
+ * second emitting sphere that its own BSDF draws often reach. A BSDF draw
+ * from a point on the disk that lands on the sphere weighs itself against
+ * the probability next-event estimation would have chosen the sphere from
+ * that same point, which excludes the disk. The paired per-pixel residual
+ * between the render with multiple importance sampling on and off, which
+ * share one seed, agrees with 0.
  */
 
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -47,9 +61,11 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraydisk.h"
+#include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "gmanvsperspective.h"
 #include "maketransform.h"
+#include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
 
@@ -80,6 +96,19 @@ constexpr std::uint32_t kSamples = 1024u;
 // same measurement with the exclusion disabled (the primitive argument
 // ignored).
 constexpr double kStderrBound = 0.0001;
+
+// The disk-and-sphere pairing: the disk's own radiance and the sphere's,
+// the sphere's placement (beside the camera's view of the disk, so no
+// measured pixel's ray reaches it, yet close enough that many of the
+// disk's own BSDF draws do) and the render's size.
+constexpr RtFloat kPairDiskLe = 100.0f;
+constexpr RtFloat kPairSphereLe = 10.0f;
+constexpr RtFloat kPairSphereRadius = 3.0f;
+constexpr RtFloat kPairSphereX = 7.0f;
+constexpr RtFloat kPairSphereY = 0.0f;
+constexpr RtFloat kPairSphereZ = 2.0f;
+constexpr RtInt kPairRes = 9;
+constexpr std::uint32_t kPairSamples = 1024u;
 
 GMANOptions::ScreenWindowStruct squareWindow() {
   GMANOptions::ScreenWindowStruct sw;
@@ -182,11 +211,119 @@ void testSelfExclusionResiduals() {
   }
 }
 
+// One render of the disk beside the sphere at the pairing's own seed and
+// counts, and the pixels whose four corner rays all reach the disk before
+// anything else.
+struct PairRender {
+  std::unique_ptr<GMANFrameBuffer> frameBuffer;
+  std::vector<std::pair<int, int>> measured;
+  std::size_t droppedCount = 0;
+};
+
+PairRender renderDiskAndSphere(bool misEnabled) {
+  GMANOptions options;
+  options.setFormat(kPairRes, kPairRes, 1.0f);
+  options.setPixelSamples(1.0f, 1.0f);
+  options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
+  options.setPathtracerSamples((RtInt)kPairSamples);
+
+  GMANMatrix4 const identity;
+  gman::VSPerspective viewingSys(kPairRes, kPairRes, squareWindow(), identity, kFov, 0.5f, 50.0f);
+
+  GMANPathtraceRenderer renderer;
+  renderer.setMultipleImportanceSampling(misEnabled);
+
+  GMANMatrix4 place;
+  place.trans(0.0f, 0.0f, kDiskZ);
+  GMANTransform const transform = makeTransform(place);
+  GMANRayDisk* disk = new GMANRayDisk(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
+
+  GMANLight const diskLight(GMAN_LIGHT_AREA, GMANColor(kPairDiskLe, kPairDiskLe, kPairDiskLe), GMANPoint(),
+                            GMANVector());
+  gman::Appearance appearance;
+  appearance.shader = loadShader("matte", matteParams(1.0f));
+  appearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  appearance.areaLight = &diskLight;
+  disk->setAppearance(appearance);
+  renderer.getWorldManager()->add(disk);
+
+  GMANLight const sphereLight(GMAN_LIGHT_AREA, GMANColor(kPairSphereLe, kPairSphereLe, kPairSphereLe), GMANPoint(),
+                              GMANVector());
+  GMANRaySphere* const sphere =
+      addEmittingSphere(renderer, sphereLight, kPairSphereRadius, kPairSphereX, kPairSphereY, kPairSphereZ);
+
+  PairRender result;
+  for (int py = 0; py < kPairRes; ++py) {
+    for (int px = 0; px < kPairRes; ++px) {
+      bool onDisk = true;
+      for (int dy = 0; dy <= 1 && onDisk; ++dy) {
+        for (int dx = 0; dx <= 1 && onDisk; ++dx) {
+          GMANRay const corner = viewingSys.cameraRay((RtFloat)(px + dx), (RtFloat)(py + dy));
+          GMANHit hit;
+          onDisk = disk->intersect(corner, hit) && !sphere->intersect(corner, hit);
+        }
+      }
+      if (onDisk) {
+        result.measured.emplace_back(px, py);
+      }
+    }
+  }
+
+  result.frameBuffer = std::make_unique<GMANFrameBuffer>(kPairRes, kPairRes, options.getBackground());
+  GMANAttributes const attr;
+  renderer.render(result.frameBuffer.get(), &viewingSys, options, attr);
+  result.droppedCount = renderer.droppedPathCount();
+  return result;
+}
+
+// MIS on and MIS off are each unbiased for the same radiance, so the paired
+// per-pixel residual (one seed, one sample count, differing only in which
+// weight formula applied) agrees with 0. A BSDF draw from the disk that
+// lands on the sphere weighs itself against a light-choice probability
+// that must exclude the disk, exactly as next-event estimation's own
+// choice from that point does; a probability that includes the disk
+// overweights those draws and the residual reads positive.
+void testDiskAndSphereMisPairing() {
+  PairRender const on = renderDiskAndSphere(true);
+  PairRender const off = renderDiskAndSphere(false);
+
+  check(on.measured.size() == (std::size_t)(kPairRes * kPairRes),
+        "pathtracerselfexclusion pair: every pixel is measured, the disk fills the frame clear of the sphere");
+  check(on.droppedCount == 0 && off.droppedCount == 0,
+        "pathtracerselfexclusion pair: no path dropped for a non-finite channel");
+
+  std::vector<double> paired[3];
+  double onSum = 0.0;
+  for (auto const& [px, py] : on.measured) {
+    GMANColor const onPixel = on.frameBuffer->getPixel(px, py);
+    GMANColor const offPixel = off.frameBuffer->getPixel(px, py);
+    onSum += onPixel.getRed();
+    for (int c = 0; c < 3; ++c) {
+      paired[c].push_back(channel(onPixel, c) - channel(offPixel, c));
+    }
+  }
+
+  // The sphere lights the disk: the mean sits above the disk's own radiance.
+  double const onMean = onSum / (double)on.measured.size();
+  std::printf("pathtracerselfexclusion pair: MIS-on mean red %.6f (disk Le %.1f)\n", onMean, (double)kPairDiskLe);
+  check(onMean > (double)kPairDiskLe + 0.1, "pathtracerselfexclusion pair: the sphere's light reaches the disk");
+
+  for (int c = 0; c < 3; ++c) {
+    GmanMeanStderr const stat = meanStderr(paired[c]);
+    std::printf("pathtracerselfexclusion pair channel %d: paired residual mean %.6f (%.3f sigma)\n", c, stat.mean,
+                stat.stderrOfMean > 0.0 ? stat.mean / stat.stderrOfMean : 0.0);
+    checkNear(stat.mean, 0.0, stat.stderrOfMean, 1e-4,
+              "pathtracerselfexclusion pair: MIS-on and MIS-off agree within 5 sigma, channel " + std::to_string(c));
+  }
+}
+
 } // namespace
 
 int main() {
   testSelfExclusionResiduals();
+  testDiskAndSphereMisPairing();
 
-  return checkSummary(
-      "a point on an emitter's own surface never chooses that emitter, keeping next-event estimation's variance low");
+  return checkSummary("a point on an emitter's own surface never chooses that emitter, as a next-event light or "
+                      "in an emitter hit's weight");
 }

@@ -3130,11 +3130,14 @@ set_tests_properties(pathtracermistwolight PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# A camera-facing emitting disk, lit by one distant light: the disk's own
-# light-choice weight peaks on its own surface, so without excluding an
-# emitter from lighting a point on itself, next-event estimation there
-# wastes almost every draw and divides the rare survivor by a tiny
-# probability. See tests/pathtracerselfexclusion_test.cpp.
+# An emitter never lights a point on its own surface. A camera-facing
+# emitting disk under one distant light: the disk's own light-choice weight
+# peaks on its own surface, so without the exclusion next-event estimation
+# there wastes almost every draw and divides the rare survivor by a tiny
+# probability. The same disk, matte, beside a second emitting sphere: a BSDF
+# draw from the disk that lands on the sphere weighs itself against a
+# light-choice probability that excludes the disk, so the MIS-on and MIS-off
+# renders agree. See tests/pathtracerselfexclusion_test.cpp.
 add_executable(gman_pathtracerselfexclusion pathtracerselfexclusion_test.cpp)
 target_link_libraries(gman_pathtracerselfexclusion PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerselfexclusion gman_matte)
