@@ -576,6 +576,26 @@ void checkSample2DFullGridDigestUnchanged() {
   check(sample2DDigest(256u) == 0x976fce4eb95f0768ull, "sample2D digest at N=256 (full grid) is unchanged");
 }
 
+// A mean and its standard error accumulated one value at a time
+// (Welford's update), so a check over millions of draws stores none.
+struct RunningMeanStderr {
+  std::uint64_t count = 0;
+  double mean = 0.0;
+  double sumSquaredDeviations = 0.0;
+
+  void add(double value) {
+    ++count;
+    double const delta = value - mean;
+    mean += delta / static_cast<double>(count);
+    sumSquaredDeviations += delta * (value - mean);
+  }
+
+  GmanMeanStderr result() const {
+    double const variance = sumSquaredDeviations / static_cast<double>(count - 1);
+    return {mean, std::sqrt(variance / static_cast<double>(count))};
+  }
+};
+
 // A partial grid's u1 and u2 stay unbiased across patterns: at
 // N = 2, 3, 5, 32, 128 and 512, over at least 2^20 draws spread across
 // distinct pixels, the mean of each and a 4x4 joint histogram match a
@@ -585,11 +605,8 @@ void checkSample2DPartialGridUnbiased() {
   constexpr std::uint32_t kWidth = 4096u;
   for (std::uint32_t n : {2u, 3u, 5u, 32u, 128u, 512u}) {
     std::uint32_t const patterns = (kMinDraws + n - 1) / n;
-    std::vector<double> u1s;
-    std::vector<double> u2s;
-    std::size_t const total = static_cast<std::size_t>(patterns) * n;
-    u1s.reserve(total);
-    u2s.reserve(total);
+    RunningMeanStderr u1Stat;
+    RunningMeanStderr u2Stat;
     int hist[4][4] = {};
 
     for (std::uint32_t p = 0; p < patterns; ++p) {
@@ -597,27 +614,28 @@ void checkSample2DPartialGridUnbiased() {
       auto const y = static_cast<RtInt>(p / kWidth);
       for (std::uint32_t s = 0; s < n; ++s) {
         gman::Sample2D const draw = gman::sample2D(kSeed, x, y, s, n, 40u);
-        u1s.push_back(static_cast<double>(draw.u1));
-        u2s.push_back(static_cast<double>(draw.u2));
+        u1Stat.add(static_cast<double>(draw.u1));
+        u2Stat.add(static_cast<double>(draw.u2));
         int const hb1 = std::min(3, static_cast<int>(draw.u1 * 4.0f));
         int const hb2 = std::min(3, static_cast<int>(draw.u2 * 4.0f));
         hist[hb1][hb2]++;
       }
     }
 
-    GmanMeanStderr const u1Stat = meanStderr(u1s);
-    checkNear(u1Stat.mean, 0.5, u1Stat.stderrOfMean, 1e-4,
+    GmanMeanStderr const u1 = u1Stat.result();
+    checkNear(u1.mean, 0.5, u1.stderrOfMean, 1e-4,
               "sample2D u1 mean is unbiased across patterns at N=" + std::to_string(n));
-    GmanMeanStderr const u2Stat = meanStderr(u2s);
-    checkNear(u2Stat.mean, 0.5, u2Stat.stderrOfMean, 1e-4,
+    GmanMeanStderr const u2 = u2Stat.result();
+    checkNear(u2.mean, 0.5, u2.stderrOfMean, 1e-4,
               "sample2D u2 mean is unbiased across patterns at N=" + std::to_string(n));
 
+    auto const total = static_cast<double>(u1Stat.count);
     bool histOk = true;
     double const p = 1.0 / 16.0;
-    double const sigma = std::sqrt(p * (1.0 - p) / static_cast<double>(total));
+    double const sigma = std::sqrt(p * (1.0 - p) / total);
     for (int a = 0; a < 4; ++a) {
       for (int b = 0; b < 4; ++b) {
-        double const fraction = static_cast<double>(hist[a][b]) / static_cast<double>(total);
+        double const fraction = static_cast<double>(hist[a][b]) / total;
         histOk = histOk && std::fabs(fraction - p) <= std::max(5.0 * sigma, 1e-4);
       }
     }
@@ -625,33 +643,66 @@ void checkSample2DPartialGridUnbiased() {
   }
 }
 
-// Per-pattern row and column counts against the grid's own layout: every
-// row full but one, every column holding n or n-1 samples. A draw within
-// one float ulp of a stratum boundary can land in either adjacent
-// stratum, so observed and expected counts, sorted and paired, are
-// compared within 1.
-bool sample2DPartialLayoutHolds(std::uint32_t sampleCount, RtInt x, RtInt y) {
-  Sample2DGrid const grid = sample2DGridShape(sampleCount);
-  std::vector<std::uint32_t> rowCounts(grid.n, 0);
-  std::vector<std::uint32_t> colCounts(grid.m, 0);
-  for (std::uint32_t s = 0; s < sampleCount; ++s) {
-    gman::Sample2D const draw = gman::sample2D(kSeed, x, y, s, sampleCount, 41u);
-    auto const col = std::min(grid.m - 1, static_cast<std::uint32_t>(draw.u1 * static_cast<RtFloat>(grid.m)));
-    auto const row = std::min(grid.n - 1, static_cast<std::uint32_t>(draw.u2 * static_cast<RtFloat>(grid.n)));
-    ++colCounts[col];
-    ++rowCounts[row];
+// The strata a draw u may fall in among count equal strata of [0, 1): one,
+// unless u sits within one float ulp of a stratum boundary, where float
+// rounding can place it in either adjacent stratum.
+struct StratumRange {
+  std::uint32_t lo, hi;
+};
+
+StratumRange stratumRange(RtFloat u, std::uint32_t count) {
+  auto const stratumOf = [count](RtFloat v) {
+    return std::min(count - 1, static_cast<std::uint32_t>(v * static_cast<RtFloat>(count)));
+  };
+  return {stratumOf(std::nextafter(u, 0.0f)), stratumOf(std::nextafter(u, 1.0f))};
+}
+
+// True when some assignment of each boundary draw to one of its two strata
+// makes the sorted per-stratum counts equal expected (sorted ascending). A
+// set with no boundary draw has exactly one assignment.
+bool stratumCountsMatch(std::vector<StratumRange> const& draws, std::uint32_t strata,
+                        std::vector<std::uint32_t> const& expected) {
+  constexpr std::size_t kMaxBoundaryDraws = 16;
+
+  std::vector<std::uint32_t> fixedCounts(strata, 0);
+  std::vector<StratumRange> boundary;
+  for (StratumRange const& draw : draws) {
+    if (draw.lo == draw.hi) {
+      ++fixedCounts[draw.lo];
+    } else {
+      boundary.push_back(draw);
+    }
+  }
+  if (boundary.size() > kMaxBoundaryDraws) {
+    return false;
   }
 
-  auto pairedWithinOne = [](std::vector<std::uint32_t> observed, std::vector<std::uint32_t> expected) {
-    std::sort(observed.begin(), observed.end());
-    std::sort(expected.begin(), expected.end());
-    bool ok = true;
-    for (std::size_t i = 0; i < observed.size(); ++i) {
-      int const diff = static_cast<int>(observed[i]) - static_cast<int>(expected[i]);
-      ok = ok && (diff >= -1 && diff <= 1);
+  for (std::uint32_t choice = 0; choice < (1u << boundary.size()); ++choice) {
+    std::vector<std::uint32_t> counts = fixedCounts;
+    for (std::size_t b = 0; b < boundary.size(); ++b) {
+      ++counts[(choice >> b) & 1u ? boundary[b].hi : boundary[b].lo];
     }
-    return ok;
-  };
+    std::sort(counts.begin(), counts.end());
+    if (counts == expected) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Per-pattern row and column counts against the grid's own layout: every
+// row full but one, every column holding n or n-1 samples. Each count
+// matches exactly, sorted; only a draw at a stratum boundary may count in
+// either adjacent stratum.
+bool sample2DPartialLayoutHolds(std::uint32_t sampleCount, RtInt x, RtInt y) {
+  Sample2DGrid const grid = sample2DGridShape(sampleCount);
+  std::vector<StratumRange> columns;
+  std::vector<StratumRange> rows;
+  for (std::uint32_t s = 0; s < sampleCount; ++s) {
+    gman::Sample2D const draw = gman::sample2D(kSeed, x, y, s, sampleCount, 41u);
+    columns.push_back(stratumRange(draw.u1, grid.m));
+    rows.push_back(stratumRange(draw.u2, grid.n));
+  }
 
   std::vector<std::uint32_t> expectedRows(grid.n, grid.m);
   if (grid.r != grid.m) {
@@ -659,8 +710,10 @@ bool sample2DPartialLayoutHolds(std::uint32_t sampleCount, RtInt x, RtInt y) {
   }
   std::vector<std::uint32_t> expectedCols(grid.r, grid.n);
   expectedCols.resize(grid.m, grid.n - 1);
+  std::sort(expectedRows.begin(), expectedRows.end());
+  std::sort(expectedCols.begin(), expectedCols.end());
 
-  return pairedWithinOne(rowCounts, expectedRows) && pairedWithinOne(colCounts, expectedCols);
+  return stratumCountsMatch(rows, grid.n, expectedRows) && stratumCountsMatch(columns, grid.m, expectedCols);
 }
 
 void checkSample2DPartialGridLayout() {
