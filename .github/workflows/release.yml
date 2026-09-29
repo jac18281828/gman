@@ -131,10 +131,16 @@ jobs:
       # configured with tests off.
       - name: Guard against a test build shipping
         run: grep -qx "BUILD_TESTING:BOOL=OFF" build-release/CMakeCache.txt
+      # The tarball root is the cmake install tree plus install.sh and the
+      # sample scene. The samples stay out of the cmake install, which a
+      # distro packages.
       - name: Stage the install tree
         run: |
-          cmake --install build-release \
-            --prefix "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
+          stage="${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
+          cmake --install build-release --prefix "$stage"
+          install -m 755 packaging/install.sh "$stage/install.sh"
+          install -d "$stage/samples"
+          install -m 644 samples/vase.rib "$stage/samples/vase.rib"
       # The staged gman must find its own plugins from wherever it is
       # extracted -- that is what the relative INSTALL_RPATH buys, and
       # a tarball that cannot render is not worth publishing. The
@@ -152,6 +158,20 @@ jobs:
             test -s "${scene}.tif"
             rm -f "${scene}.tif"
           done
+          # The tarball's own install.sh installs the tree, the installed gman
+          # renders the shipped sample, and uninstalling leaves no file behind.
+          prefix="${{ runner.temp }}/install-prefix"
+          ./install.sh --prefix "$prefix"
+          "$prefix/bin/gman" -r gmanraytracer samples/vase.rib
+          test -s vase.png
+          rm -f vase.png
+          ./install.sh --prefix "$prefix" --uninstall
+          left="$(find "$prefix" -type f 2>/dev/null || true)"
+          if [ -n "$left" ]; then
+            echo "uninstall left files behind:" >&2
+            echo "$left" >&2
+            exit 1
+          fi
       # The explicit ON configure above means a runner missing either
       # library fails configure instead of silently shipping a tarball
       # with a driver quietly missing.
@@ -159,6 +179,7 @@ jobs:
         run: |
           cd "${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
           ./bin/gman --version | grep -qx "drivers: tiff pnm png jpeg"
+      # The stage folder ships whole, install.sh and samples/vase.rib with it.
       - name: Package
         run: |
           cd "${{ runner.temp }}/stage"
