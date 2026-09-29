@@ -850,7 +850,7 @@ set_tests_properties(fovdefault PROPERTIES
 # Guards against Surface before AttributeBegin/FrameBegin double-freeing
 # a dlopen'd shader module on the attributesStack copy both requests make.
 add_executable(gman_attributescopy attributescopy_test.cpp)
-target_link_libraries(gman_attributescopy PRIVATE gman_core)
+target_link_libraries(gman_attributescopy PRIVATE gman_core TIFF::TIFF)
 
 set(GMAN_ATTRIBUTESCOPY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/attributescopy-run")
 file(MAKE_DIRECTORY "${GMAN_ATTRIBUTESCOPY_WORKDIR}")

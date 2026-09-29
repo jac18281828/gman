@@ -39,19 +39,35 @@
  * Revert check: reverting GMANAttributes back to raw GMANLoadableShader*
  * members (no explicit copy protection) reintroduces the double free --
  * both scenes below go back to a non-zero/signal exit status.
+ *
+ * The pixel checks prove the copy carries its state: the block and the
+ * frame each inherit the surface and its Kd, which the default matte
+ * would not reproduce. Each scene declares its light after the state
+ * under test, so a copy that loses only the surface reads differently
+ * from one that loses only the light. Under a unit distant light from
+ * behind the camera, Surface "matte" "Kd" [0.1] gives the sphere's
+ * centre a red of about 25; the default matte gives 254 and an unlit
+ * frame gives 0.
  */
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <string>
 
-#include <sys/stat.h>
+#include <tiffio.h>
 
 #include "check.h"
+#include "goldenimage.h"
 #include "rungman.h"
 
 namespace {
+
+// The centre red of a sphere shaded by Kd 0.1 under a unit light, about 25 of
+// 255. The default matte (254) and an unlit frame (0) both fall outside.
+constexpr uint32_t centreRedMin = 12;
+constexpr uint32_t centreRedMax = 50;
 
 int runGman(const std::string& gman, const std::string& rib) { return ::runGman(gman, {rib}).exitStatus; }
 
@@ -60,9 +76,21 @@ void writeFile(const std::string& path, const std::string& contents) {
   out << contents;
 }
 
-bool nonEmptyFile(const std::string& path) {
-  struct stat st;
-  return stat(path.c_str(), &st) == 0 && st.st_size > 0;
+// Checks the corner is background and the centre is the sphere shaded by the
+// inherited surface.
+void checkInheritedSurface(std::string const& image, std::string const& scene) {
+  GmanImage const img = readGmanTIFF(image);
+  check(img.ok, scene + ": TIFF reads back");
+  if (!img.ok) {
+    return;
+  }
+  check(TIFFGetA(img.at(0, 0)) == 0, scene + ": corner pixel is background");
+  uint32_t const centre = img.at(img.width / 2, img.height / 2);
+  uint32_t const red = TIFFGetR(centre);
+  check(TIFFGetA(centre) > 0, scene + ": centre pixel is covered");
+  check(red >= centreRedMin && red <= centreRedMax,
+        scene + ": centre red " + std::to_string(red) + " lies in the window the inherited Kd 0.1 gives (" +
+            std::to_string(centreRedMin) + " to " + std::to_string(centreRedMax) + ")");
 }
 
 } // namespace
@@ -74,14 +102,17 @@ int main(int argc, char* argv[]) {
   }
   const std::string gman = argv[1];
 
-  // ---- Surface declared once, then used inside AttributeBegin/End ----
-  const char* attrRib = "Display \"attr.tif\" \"file\" \"rgb\"\n"
+  // ---- Surface declared once, then used inside AttributeBegin/End. The
+  // light follows the state under test, inside the block ----
+  const char* attrRib = "Display \"attr.tif\" \"file\" \"rgba\"\n"
                         "Format 64 64 1\n"
                         "Projection \"perspective\" \"fov\" [45]\n"
+                        "Clipping 0.5 50\n"
+                        "Translate 0 0 5\n"
                         "WorldBegin\n"
-                        "Surface \"matte\"\n"
+                        "Surface \"matte\" \"Kd\" [0.1]\n"
                         "AttributeBegin\n"
-                        "  Translate 0 0 5\n"
+                        "  LightSource \"distantlight\" 1 \"intensity\" [1.0] \"from\" [0 0 -5] \"to\" [0 0 0]\n"
                         "  Sphere 1 -1 1 360\n"
                         "AttributeEnd\n"
                         "WorldEnd\n";
@@ -91,25 +122,28 @@ int main(int argc, char* argv[]) {
   // even if this run throws before opening the display.
   std::remove("attr.tif");
   check(runGman(gman, "attr.rib") == 0, "Surface before AttributeBegin runs to completion");
-  check(nonEmptyFile("attr.tif"), "AttributeBegin scene wrote a TIFF");
+  checkInheritedSurface("attr.tif", "AttributeBegin scene");
 
   // ---- Surface declared once, then a FrameBegin/FrameEnd pair (outside
   // WorldBegin, with a frame number -- nested inside WorldBegin fails on an
-  // unrelated RIE_ILLSTATE and would be a false negative here) ----
-  const char* frameRib = "Display \"frame.tif\" \"file\" \"rgb\"\n"
+  // unrelated RIE_ILLSTATE and would be a false negative here). The light
+  // follows WorldBegin ----
+  const char* frameRib = "Display \"frame.tif\" \"file\" \"rgba\"\n"
                          "Format 64 64 1\n"
                          "Projection \"perspective\" \"fov\" [45]\n"
-                         "Surface \"matte\"\n"
+                         "Clipping 0.5 50\n"
+                         "Translate 0 0 5\n"
+                         "Surface \"matte\" \"Kd\" [0.1]\n"
                          "FrameBegin 1\n"
                          "WorldBegin\n"
-                         "  Translate 0 0 5\n"
-                         "  Sphere 1 -1 1 360\n"
+                         "LightSource \"distantlight\" 1 \"intensity\" [1.0] \"from\" [0 0 -5] \"to\" [0 0 0]\n"
+                         "Sphere 1 -1 1 360\n"
                          "WorldEnd\n"
                          "FrameEnd\n";
   writeFile("frame.rib", frameRib);
   std::remove("frame.tif");
   check(runGman(gman, "frame.rib") == 0, "Surface before FrameBegin runs to completion");
-  check(nonEmptyFile("frame.tif"), "FrameBegin scene wrote a TIFF");
+  checkInheritedSurface("frame.tif", "FrameBegin scene");
 
   return checkSummary("attributes copy holds");
 }
