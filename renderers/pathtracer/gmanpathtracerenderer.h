@@ -122,8 +122,10 @@ public:
   // its resolved depth.
   std::size_t droppedPathCount() const { return droppedPaths; }
 
-  // Not GMAN_EXPORT: an internal correctness/variance switch, for a test
-  // that constructs this renderer by hand, never a RIB surface.
+  // Exported with GMANPathtraceRenderer itself, in every build: a
+  // correctness/variance switch, for a test that constructs this renderer
+  // by hand, never a RIB surface. This header is not installed, so no
+  // out-of-tree consumer reaches it regardless.
   void setMultipleImportanceSampling(bool enabled);
 
   virtual GMANWorldManager* getWorldManager(void);
