@@ -9,9 +9,9 @@ Begun in [1999](https://gman-toolkit.sourceforge.net), revived in [2026](https:/
 ## Try it
 
 ```sh
-curl -sL https://github.com/jac18281828/gman/releases/download/0.9.1/gman-0.9.1-linux-x86_64.tar.gz | tar xz
-curl -sLO https://raw.githubusercontent.com/jac18281828/gman/0.9.1/samples/vase.rib
-export PATH="$PWD/gman-0.9.1-linux-x86_64/bin:$PATH"
+curl -sL https://github.com/jac18281828/gman/releases/download/1.0.0/gman-1.0.0-linux-x86_64.tar.gz | tar xz
+curl -sLO https://raw.githubusercontent.com/jac18281828/gman/1.0.0/samples/vase.rib
+export PATH="$PWD/gman-1.0.0-linux-x86_64/bin:$PATH"
 gman -r gmanraytracer vase.rib
 ```
 
