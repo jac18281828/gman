@@ -19,6 +19,29 @@ That writes `vase.png`, the picture above, in a few seconds. It needs libtiff, l
 and zlib installed. Linux arm64 and macOS arm64 builds are on the
 [releases page](https://github.com/jac18281828/gman/releases).
 
+## Path trace it
+
+Add one line to `vase.rib`, under `PixelSamples 2 2`, and render it through the path tracer:
+
+```
+Option "pathtracer" "integer samples" [64]
+```
+
+```sh
+gman -r gmanpathtracer vase.rib
+```
+
+[![gman's path-traced render of samples/vase.rib](samples/vase-pathtraced.png)](https://2ad.com/gman.html)
+
+Sixty-four paths through each of the four subpixels follow the light as it bounces off the walls,
+floor and table. The render takes about three minutes on one core of an Apple M3 Max, where the ray
+tracer takes seconds. The path tracer computes the bounce light the scene's `ambientlight` stood in
+for, so it skips that light and says so:
+
+```
+gmanpathtracer: ambientlight lights nothing under the path tracer; skipped 1 light(s).
+```
+
 ## Poke it
 
 Change one line of `vase.rib` and render it again with `gman -r gmanraytracer vase.rib`. Each
@@ -58,12 +81,20 @@ gman -r gmanraytracer first.rib
 
 - **Geometry.** `Polygon`, `GeneralPolygon`, `PointsPolygons`, `PointsGeneralPolygons` and the seven
   quadrics, `Sphere`, `Cone`, `Cylinder`, `Hyperboloid`, `Paraboloid`, `Disk` and `Torus`, under
-  both renderers. `Patch` and `PatchMesh`, bilinear and bicubic, and `NuPatch` under the z-buffer.
-- **Surface shaders.** `matte`, `plastic`, `paintedplastic`, `metal` and `shinymetal` under both
-  renderers; `glass` and `mirror` trace rays, so they need the ray tracer.
-- **Light shaders.** `ambientlight`, `distantlight`, `pointlight` and `spotlight`.
-- **Two renderers.** `gmanzbuffer`, the default preview, and `gmanraytracer`, with shadows,
-  reflection, refraction and transparency.
+  every renderer. `Patch` and `PatchMesh`, bilinear and bicubic, and `NuPatch` under the z-buffer.
+- **Surface shaders.** `matte`, `plastic`, `paintedplastic`, `metal` and `shinymetal` under every
+  renderer; `glass` and `mirror` trace rays, so they need the ray tracer or the path tracer.
+- **Light shaders.** `ambientlight`, `distantlight`, `pointlight` and `spotlight`, and
+  `AreaLightSource "arealight"`, which makes the `Sphere` or `Disk` after it glow under the path
+  tracer.
+- **Three renderers.** `gmanzbuffer`, the default preview; `gmanraytracer`, with shadows,
+  reflection, refraction and transparency; and `gmanpathtracer`, which adds light bounced off every
+  surface, soft shadows from area lights and glossy reflection.
+- **Bounce light.** Under the ray tracer, `Option "render" "string indirect" ["radiosity"]` adds a
+  radiosity pass: it solves the diffuse light bouncing between surfaces, colour bleeding included,
+  and each surface picks it up through `ambient()`, weighted by its `Ka`.
+  `Option "radiosity" "float elementsize"` sets the solver's patch size, an eighth of the scene by
+  default. Set `Ka` equal to `Kd` and drop the `ambientlight`, which the pass replaces.
 - **Antialiasing.** `PixelSamples` supersamples; `PixelFilter` reconstructs through box, triangle,
   Gaussian, Catmull-Rom or sinc.
 - **Textures.** `texture()` and `environment()` read maps written by `MakeTexture` and
@@ -75,7 +106,9 @@ gman -r gmanraytracer first.rib
 
 `gman scene.rib` renders a RIB file through the default z-buffer renderer,
 `gmanzbuffer`. `-r gmanraytracer` renders the same file through the ray
-tracer instead, with real reflection, refraction and shadows. Output lands
+tracer instead, with real reflection, refraction and shadows, and
+`-r gmanpathtracer` through the path tracer, which traces
+`Option "pathtracer" "integer samples" [n]` paths per pixel. Output lands
 wherever the scene's own `Display` request names, relative to the current
 directory; `gman` takes no output flag of its own.
 
@@ -221,8 +254,9 @@ This writes `sphere.tif` in the current directory.
 include/     GMAN header files, including ri.h
 libgman/     the core library: RIB parser, RI state machine, image writers
 libgmanrib/  the RIB-writer plugin RiBegin("x.rib") loads, not yet trustworthy
-renderers/   loadable rendering modules -- zbuffer and raytracer, plus reyes and
-             radiosity, which are non-functional and build OFF by default
+renderers/   loadable rendering modules -- zbuffer, raytracer and pathtracer; radiosity,
+             the radiosity pass the ray tracer loads; and reyes, non-functional and
+             built OFF by default
 shaders/     loadable shading modules
 gmansl/      grammar and driver for a shading language compiler that was never
              finished; kept as a record, built by nothing
@@ -241,9 +275,9 @@ doc/         the 1999 design document
 - Other RenderMan-compatible renderers: Pixar's
   [RenderMan](https://renderman.pixar.com), [3Delight](https://www.3delight.com),
   [Aqsis](https://github.com/aqsis/aqsis) and [Pixie](https://sourceforge.net/projects/pixie/).
-- [Physically Based Rendering](https://pbr-book.org), the reference for the path tracer gman is
-  growing, and [Veach's thesis](https://graphics.stanford.edu/papers/veach_thesis/), where
-  multiple importance sampling comes from.
+- [Physically Based Rendering](https://pbr-book.org), the reference for gman's path tracer, and
+  [Veach's thesis](https://graphics.stanford.edu/papers/veach_thesis/), where multiple importance
+  sampling comes from.
 - [Open Shading Language](https://github.com/AcademySoftwareFoundation/OpenShadingLanguage), the
   shading language production renderers adopted after RenderMan's own.
 
