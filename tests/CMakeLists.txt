@@ -624,11 +624,15 @@ set_tests_properties(ribmalformed PROPERTIES
 # class reading past its own allocation instead of clamping. See
 # tests/paramclamp_test.cpp.
 add_executable(gman_paramclamp paramclamp_test.cpp)
-target_link_libraries(gman_paramclamp PRIVATE gman_core)
+target_link_libraries(gman_paramclamp PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_PARAMCLAMP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramclamp-run")
+file(MAKE_DIRECTORY "${GMAN_PARAMCLAMP_WORKDIR}")
 
 add_test(NAME paramclamp
   COMMAND gman_paramclamp $<TARGET_FILE:gman>
-                          "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
+                          "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
+  WORKING_DIRECTORY "${GMAN_PARAMCLAMP_WORKDIR}")
 set_tests_properties(paramclamp PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
@@ -652,11 +656,15 @@ set_tests_properties(ribintegerbounds PROPERTIES
 # suppliedCounts at all, so a short array read past its own allocation
 # instead of clamping. See tests/geometryparamclamp_test.cpp.
 add_executable(gman_geometryparamclamp geometryparamclamp_test.cpp)
-target_link_libraries(gman_geometryparamclamp PRIVATE gman_core)
+target_link_libraries(gman_geometryparamclamp PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_GEOMETRYPARAMCLAMP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/geometryparamclamp-run")
+file(MAKE_DIRECTORY "${GMAN_GEOMETRYPARAMCLAMP_WORKDIR}")
 
 add_test(NAME geometryparamclamp
   COMMAND gman_geometryparamclamp $<TARGET_FILE:gman>
-                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
+  WORKING_DIRECTORY "${GMAN_GEOMETRYPARAMCLAMP_WORKDIR}")
 set_tests_properties(geometryparamclamp PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
@@ -665,11 +673,15 @@ set_tests_properties(geometryparamclamp PROPERTIES
 # A RIB-supplied parameter array longer than its declared class warns and
 # truncates. See tests/paramoversupply_test.cpp.
 add_executable(gman_paramoversupply paramoversupply_test.cpp)
-target_link_libraries(gman_paramoversupply PRIVATE gman_core)
+target_link_libraries(gman_paramoversupply PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_PARAMOVERSUPPLY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramoversupply-run")
+file(MAKE_DIRECTORY "${GMAN_PARAMOVERSUPPLY_WORKDIR}")
 
 add_test(NAME paramoversupply
   COMMAND gman_paramoversupply $<TARGET_FILE:gman>
-                               "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
+                               "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
+  WORKING_DIRECTORY "${GMAN_PARAMOVERSUPPLY_WORKDIR}")
 set_tests_properties(paramoversupply PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render

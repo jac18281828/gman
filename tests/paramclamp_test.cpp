@@ -36,6 +36,11 @@
  * though ASan is what turns the overflow into a deterministic abort
  * rather than a read of whatever heap byte happened to follow the
  * allocation.
+ *
+ * A clamped request degrades instead of vanishing: each fixture that draws
+ * still covers pixels where its request lands, and the scene completes past
+ * it. The two rejected GeneralPolygon requests draw nothing by design and
+ * carry only the completion check.
  */
 
 #include <cstdio>
@@ -44,6 +49,7 @@
 #include <string>
 
 #include "check.h"
+#include "imagecoverage.h"
 #include "rungman.h"
 
 namespace {
@@ -78,19 +84,21 @@ int main(int argc, char* argv[]) {
   struct Fixture {
     const char* file;
     const char* expectedWarning;
+    long requestFloor; // 0: the request draws nothing
   };
   const Fixture fixtures[] = {
-      {"patch_short_p_bilinear.rib", "Parameter \"P\": declared length 12, supplied length 6"},
-      {"patch_short_p_bicubic.rib", "Parameter \"P\": declared length 48, supplied length 6"},
-      {"patchmesh_short_p.rib", "Parameter \"P\": declared length 18, supplied length 9"},
-      {"patch_param_reorder.rib", "Parameter \"P\": declared length 12, supplied length 6"},
-      {"generalpolygon_short_p.rib", "Parameter \"P\": declared length 24, supplied length 9"},
-      {"generalpolygon_negative_nverts.rib", "GeneralPolygon: nverts[1] = -1 is negative; ignoring."},
-      {"generalpolygon_empty_nverts.rib", "GeneralPolygon: nloops = 0 is invalid; ignoring."},
+      {"patch_short_p_bilinear.rib", "Parameter \"P\": declared length 12, supplied length 6", 1200},
+      {"patch_short_p_bicubic.rib", "Parameter \"P\": declared length 48, supplied length 6", 750},
+      {"patchmesh_short_p.rib", "Parameter \"P\": declared length 18, supplied length 9", 120},
+      {"patch_param_reorder.rib", "Parameter \"P\": declared length 12, supplied length 6", 1200},
+      {"generalpolygon_short_p.rib", "Parameter \"P\": declared length 24, supplied length 9", 120},
+      {"generalpolygon_negative_nverts.rib", "GeneralPolygon: nverts[1] = -1 is negative; ignoring.", 0},
+      {"generalpolygon_empty_nverts.rib", "GeneralPolygon: nloops = 0 is invalid; ignoring.", 0},
   };
 
   for (const Fixture& fixture : fixtures) {
     const std::string rib = dir + "/" + fixture.file;
+    std::remove(malformedImagePath);
     GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
     check(!r.crashed, std::string(fixture.file) + ": does not crash -- a short array stays inside its own "
@@ -98,6 +106,7 @@ int main(int argc, char* argv[]) {
     check(r.exitStatus == 0, std::string(fixture.file) + ": exits cleanly (degrade, don't abort)");
     check(r.output.find(fixture.expectedWarning) != std::string::npos,
           std::string(fixture.file) + ": warns naming the short parameter and both lengths");
+    checkDegradedRender(fixture.file, fixture.requestFloor);
   }
 
   // patch_param_reorder.rib's other three parameters ("N", "Cs", "st") are

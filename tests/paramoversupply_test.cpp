@@ -28,6 +28,9 @@
  *
  * The second fixture re-runs the existing under-supply warning verbatim,
  * proving the new over-supply branch leaves that message untouched.
+ *
+ * A truncated request still draws: each fixture covers pixels where its
+ * sphere lands, and the scene completes past it.
  */
 
 #include <cstdio>
@@ -36,6 +39,7 @@
 #include <string>
 
 #include "check.h"
+#include "imagecoverage.h"
 #include "rungman.h"
 
 namespace {
@@ -58,6 +62,7 @@ int main(int argc, char* argv[]) {
 
   {
     const std::string rib = dir + "/sphere_over_n.rib";
+    std::remove(malformedImagePath);
     GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(!r.timedOut, "sphere_over_n.rib: does not hang (10s bound)");
     check(!r.crashed, "sphere_over_n.rib: does not crash");
@@ -65,14 +70,17 @@ int main(int argc, char* argv[]) {
     check(r.output.find("\"N\"") != std::string::npos && r.output.find("declared length 12") != std::string::npos &&
               r.output.find("supplied length 18") != std::string::npos,
           "sphere_over_n.rib: warns naming the over-long parameter and both lengths");
+    checkDegradedRender("sphere_over_n.rib", 3500);
   }
 
   {
     const std::string rib = dir + "/sphere_short_n.rib";
+    std::remove(malformedImagePath);
     GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(r.output.find("Parameter \"N\": declared length 12, supplied length 3; "
                         "clamping and zero-filling the remainder.") != std::string::npos,
           "sphere_short_n.rib: the existing under-supply warning is unchanged");
+    checkDegradedRender("sphere_short_n.rib", 3500);
   }
 
   return checkSummary("GMANParameterList warns on an over-long RIB parameter array");

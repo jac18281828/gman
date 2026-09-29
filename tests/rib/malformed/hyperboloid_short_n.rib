@@ -14,7 +14,7 @@ WorldBegin
 LightSource "ambientlight" 1 "intensity" [0.6]
 Surface "matte" "Ka" [1] "Kd" [0]
 AttributeBegin
-	Hyperboloid 0 0 -1 0 0 1 360 "N" [0 0 1]
+	Hyperboloid 1 0 -1  0.5 0 1 360 "N" [0 0 1]
 AttributeEnd
 AttributeBegin
 	Translate 2 0 0
