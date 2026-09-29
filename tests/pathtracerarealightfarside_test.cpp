@@ -119,7 +119,7 @@ void testFarSideOfPreviewPoint() {
   GMANMatrix4 place;
   place.trans(kFarSideCentreX, kFarSideCentreY, kFarSideCentreZ);
   GMANTransform const transform = makeTransform(place);
-  GMANRaySphere* sphere =
+  const auto sphere =
       new GMANRaySphere(kFarSideRadius, -kFarSideRadius, kFarSideRadius, 360.0f, GMANParameterList(), transform);
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kFarSideLe, kFarSideLe, kFarSideLe), GMANPoint(), GMANVector());
   gman::Appearance sphereAppearance;

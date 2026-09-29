@@ -58,7 +58,7 @@ GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
   GMANMatrix4 place;
   place.trans(cx, cy, cz);
   GMANTransform const transform = makeTransform(place);
-  GMANRaySphere* sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+  const auto sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(opaque);

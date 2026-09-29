@@ -713,7 +713,7 @@ RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken name, RtInt n, RtTok
   // No position, direction or cone parameters: a sphere or disk emitter's
   // placement comes from its own geometry, so this light's position and
   // direction stay at GMANLight's own defaults, unused.
-  GMANLight* light = new GMANLight(GMAN_LIGHT_AREA, cl, GMANPoint(0.0, 0.0, 0.0), GMANVector(0.0, 0.0, 1.0));
+  const auto light = new GMANLight(GMAN_LIGHT_AREA, cl, GMANPoint(0.0, 0.0, 0.0), GMANVector(0.0, 0.0, 1.0));
   RtLightHandle handle = gmanLightSourceMgr().add(light);
 
   // Active the instant it is declared, exactly as RiLightSourceV's own

@@ -87,7 +87,7 @@ bool pixelClearsAbove(gman::VSPerspective& viewingSys, int px, int py) {
 
 GMANPathtraceRenderer* buildFloorRenderer(GMANColor const& cs, GMANColor const& os,
                                           std::vector<GMANLight const*> const& lights) {
-  GMANPathtraceRenderer* renderer = new GMANPathtraceRenderer();
+  const auto renderer = new GMANPathtraceRenderer();
   GMANRayPolygon* floor = buildFloor();
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
@@ -292,7 +292,7 @@ void checkCappedCameraPath() {
     RtFloat const z = (RtFloat)(layer + 1);
     std::vector<GMANPoint> const verts = {GMANPoint(-100.0f, -100.0f, z), GMANPoint(-100.0f, 100.0f, z),
                                           GMANPoint(100.0f, 100.0f, z), GMANPoint(100.0f, -100.0f, z)};
-    GMANRayPolygon* wall = new GMANRayPolygon(verts, GMANParameterList());
+    const auto wall = new GMANRayPolygon(verts, GMANParameterList());
     gman::Appearance appearance;
     appearance.shader = loadShader("matte", matteParams(1.0f));
     appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
@@ -338,7 +338,7 @@ void checkDepth() {
   constexpr RtFloat kZ = 5.0f;
   std::vector<GMANPoint> const verts = {GMANPoint(-10.0f, -10.0f, kZ), GMANPoint(-10.0f, 10.0f, kZ),
                                         GMANPoint(10.0f, 10.0f, kZ), GMANPoint(10.0f, -10.0f, kZ)};
-  GMANRayPolygon* wall = new GMANRayPolygon(verts, GMANParameterList());
+  const auto wall = new GMANRayPolygon(verts, GMANParameterList());
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
   appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
@@ -390,7 +390,7 @@ void checkAntialiasing() {
   std::vector<GMANPoint> const verts = {GMANPoint(xEdge, -100.0f, kZ0), GMANPoint(xEdge, 100.0f, kZ0),
                                         GMANPoint(xEdge + 100.0f, 100.0f, kZ0),
                                         GMANPoint(xEdge + 100.0f, -100.0f, kZ0)};
-  GMANRayPolygon* wall = new GMANRayPolygon(verts, GMANParameterList());
+  const auto wall = new GMANRayPolygon(verts, GMANParameterList());
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
   appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
@@ -627,7 +627,7 @@ void checkDrops() {
   GMANPathtraceRenderer renderer;
   // zmin above -radius: the sphere's own missing cap opens behind the eye,
   // at negative z, where no camera ray ever looks.
-  GMANRaySphere* sphere = new GMANRaySphere(kSphereRadius, -8.0f, kSphereRadius, 360.0f, GMANParameterList());
+  const auto sphere = new GMANRaySphere(kSphereRadius, -8.0f, kSphereRadius, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_POINT, GMANColor(kIntensity, kIntensity, kIntensity), GMANPoint(0.0f, 0.0f, 0.0f),
                         GMANVector());
   gman::Appearance appearance;

@@ -92,7 +92,7 @@ void testScaledSphereLightOverFloor() {
   place.trans(kSphereCentreX * kScale, kSphereCentreY * kScale, kSphereCentreZ * kScale);
   GMANTransform const transform = makeTransform(place);
   RtFloat const scaledRadius = kSphereRadius * kScale;
-  GMANRaySphere* sphere =
+  const auto sphere =
       new GMANRaySphere(scaledRadius, -scaledRadius, scaledRadius, 360.0f, GMANParameterList(), transform);
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   gman::Appearance sphereAppearance;

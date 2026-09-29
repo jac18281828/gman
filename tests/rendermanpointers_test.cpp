@@ -55,7 +55,7 @@ struct RawStorage {
 // not delete the stale pointer construction left there.
 void checkFailedLoadCleansUp() {
   RawStorage storage;
-  GMANRenderManImpl* impl = new (storage.bytes) GMANRenderManImpl();
+  const auto impl = new (storage.bytes) GMANRenderManImpl();
 
   bool beginThrew = false;
   try {
@@ -82,7 +82,7 @@ void checkFailedLoadCleansUp() {
 // not indeterminate.
 void checkFailedWorldBeginCleansUp() {
   RawStorage storage;
-  GMANRenderManImpl* impl = new (storage.bytes) GMANRenderManImpl();
+  const auto impl = new (storage.bytes) GMANRenderManImpl();
 
   impl->RiBegin(RI_NULL);
 
@@ -123,7 +123,7 @@ void checkFailedWorldBeginCleansUp() {
 // gman's sphere.rib-then-hider.rib crash, reproduced in one process.
 void checkSecondCycleCleansUp() {
   RawStorage storage;
-  GMANRenderManImpl* impl = new (storage.bytes) GMANRenderManImpl();
+  const auto impl = new (storage.bytes) GMANRenderManImpl();
 
   impl->RiBegin(RI_NULL);
   impl->RiWorldBegin();

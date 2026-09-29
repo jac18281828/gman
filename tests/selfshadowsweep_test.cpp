@@ -324,8 +324,7 @@ void sweepAllCells() {
 void sweepLargePrimitiveRow(RtFloat radius) {
   GMANMatrix4 placement;
   placement.trans(0.0, 0.0, (double)radius + 5.0);
-  GMANRaySphere* sphere =
-      new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(placement));
+  const auto sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(placement));
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(opaque);

@@ -128,7 +128,7 @@ GMANPrimitive* GMANRayObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mes
   if (faces.empty()) {
     return create();
   }
-  GMANRayPolygonMesh* rayMesh = new GMANRayPolygonMesh(std::move(faces));
+  const auto rayMesh = new GMANRayPolygonMesh(std::move(faces));
   rayMesh->setAppearance(appearance);
   return rayMesh;
 }
@@ -155,14 +155,14 @@ GMANPrimitive* GMANRayObjectManager::getRSNuPatch(RtInt /*nu*/, RtInt /*uorder*/
 GMANPrimitive* GMANRayObjectManager::getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
                                                  GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* attr,
                                                  GMANTransform* t) {
-  GMANRaySphere* sphere = new GMANRaySphere(radius, zmin, zmax, tmax, pl, *t);
+  const auto sphere = new GMANRaySphere(radius, zmin, zmax, tmax, pl, *t);
   sphere->setAppearance(gman::appearanceOf(*attr));
   return sphere;
 };
 
 GMANPrimitive* GMANRayObjectManager::getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
                                                GMANOptions* /*opt*/, GMANAttributes* attr, GMANTransform* t) {
-  GMANRayCone* cone = new GMANRayCone(height, radius, tmax, pl, *t);
+  const auto cone = new GMANRayCone(height, radius, tmax, pl, *t);
   cone->setAppearance(gman::appearanceOf(*attr));
   return cone;
 };
@@ -170,7 +170,7 @@ GMANPrimitive* GMANRayObjectManager::getRSCone(RtFloat height, RtFloat radius, R
 GMANPrimitive* GMANRayObjectManager::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
                                                    GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* attr,
                                                    GMANTransform* t) {
-  GMANRayCylinder* cylinder = new GMANRayCylinder(radius, zmin, zmax, tmax, pl, *t);
+  const auto cylinder = new GMANRayCylinder(radius, zmin, zmax, tmax, pl, *t);
   cylinder->setAppearance(gman::appearanceOf(*attr));
   return cylinder;
 };
@@ -178,7 +178,7 @@ GMANPrimitive* GMANRayObjectManager::getRSCylinder(RtFloat radius, RtFloat zmin,
 GMANPrimitive* GMANRayObjectManager::getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
                                                       GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* attr,
                                                       GMANTransform* t) {
-  GMANRayHyperboloid* hyperboloid = new GMANRayHyperboloid(point1, point2, tmax, pl, *t);
+  const auto hyperboloid = new GMANRayHyperboloid(point1, point2, tmax, pl, *t);
   hyperboloid->setAppearance(gman::appearanceOf(*attr));
   return hyperboloid;
 };
@@ -186,14 +186,14 @@ GMANPrimitive* GMANRayObjectManager::getRSHyperboloid(RtPoint point1, RtPoint po
 GMANPrimitive* GMANRayObjectManager::getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
                                                      GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* attr,
                                                      GMANTransform* t) {
-  GMANRayParaboloid* paraboloid = new GMANRayParaboloid(rmax, zmin, zmax, tmax, pl, *t);
+  const auto paraboloid = new GMANRayParaboloid(rmax, zmin, zmax, tmax, pl, *t);
   paraboloid->setAppearance(gman::appearanceOf(*attr));
   return paraboloid;
 };
 
 GMANPrimitive* GMANRayObjectManager::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
                                                GMANOptions* /*opt*/, GMANAttributes* attr, GMANTransform* t) {
-  GMANRayDisk* disk = new GMANRayDisk(height, radius, tmax, pl, *t);
+  const auto disk = new GMANRayDisk(height, radius, tmax, pl, *t);
   disk->setAppearance(gman::appearanceOf(*attr));
   return disk;
 };
@@ -201,7 +201,7 @@ GMANPrimitive* GMANRayObjectManager::getRSDisk(RtFloat height, RtFloat radius, R
 GMANPrimitive* GMANRayObjectManager::getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax,
                                                 RtFloat tmax, GMANParameterList pl, GMANOptions* /*opt*/,
                                                 GMANAttributes* attr, GMANTransform* t) {
-  GMANRayTorus* torus = new GMANRayTorus(majrad, minrad, phimin, phimax, tmax, pl, *t);
+  const auto torus = new GMANRayTorus(majrad, minrad, phimin, phimax, tmax, pl, *t);
   torus->setAppearance(gman::appearanceOf(*attr));
   return torus;
 };

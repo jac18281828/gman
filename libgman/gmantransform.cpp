@@ -178,7 +178,7 @@ RtVoid GMANTransform::concat(GMANTransform& t) {
     for (RtInt i = 0; i < t2->getSamplesQuantity(); i++)
       tm.push_back(t2->getTime(i));
 
-    GMANMovingMatrix* mm = new GMANMovingMatrix(tm);
+    const auto mm = new GMANMovingMatrix(tm);
     for (RtInt j = 0; j < mm->getSamplesQuantity(); j++) {
       mm->get(j) = t1->interpolate(mm->getTime(j));
       mm->get(j).concat(t2->interpolate(mm->getTime(j)));

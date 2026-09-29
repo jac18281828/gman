@@ -113,7 +113,7 @@ GMANRaySphere* addEmitterSphere(GMANPathtraceRenderer& renderer, GMANLight const
   GMANMatrix4 place;
   place.trans(0.0, 0.0, kEmitterCentreZ);
   GMANTransform const transform = makeTransform(place);
-  GMANRaySphere* sphere =
+  const auto sphere =
       new GMANRaySphere(kEmitterRadius, -kEmitterRadius, kEmitterRadius, 360.0f, GMANParameterList(), transform);
   gman::Appearance appearance;
   appearance.areaLight = &areaLight;
@@ -165,7 +165,7 @@ GMANRayDisk* addBackFacingDisk(GMANPathtraceRenderer& renderer, GMANLight const&
   place.rot(GMANRadians(180.0f), 1.0f, 0.0f, 0.0f);
   place.trans(kBackDiskCentreX, 0.0f, kEmitterCentreZ);
   GMANTransform const transform = makeTransform(place);
-  GMANRayDisk* disk = new GMANRayDisk(0.0f, kBackDiskRadius, 360.0f, GMANParameterList(), transform);
+  const auto disk = new GMANRayDisk(0.0f, kBackDiskRadius, 360.0f, GMANParameterList(), transform);
   gman::Appearance appearance;
   appearance.areaLight = &areaLight;
   appearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
@@ -302,7 +302,7 @@ void testMirrorBounce() {
   GMANMatrix4 mirrorPlace;
   mirrorPlace.trans(kMirrorCentreX, 0.0, kMirrorCentreZ);
   GMANTransform const mirrorTransform = makeTransform(mirrorPlace);
-  GMANRaySphere* mirror =
+  const auto mirror =
       new GMANRaySphere(kMirrorRadius, -kMirrorRadius, kMirrorRadius, 360.0f, GMANParameterList(), mirrorTransform);
   gman::Appearance mirrorAppearance;
   mirrorAppearance.shader = loadShader("mirror", GMANParameterList());
@@ -397,10 +397,10 @@ void testGlassTransmission() {
   glassAppearance.shader = loadShader("glass", GMANParameterList());
   glassAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
-  GMANRayPolygon* near = new GMANRayPolygon(paneAt(kPaneZNear, false), GMANParameterList());
+  const auto near = new GMANRayPolygon(paneAt(kPaneZNear, false), GMANParameterList());
   near->setAppearance(glassAppearance);
   renderer.getWorldManager()->add(near);
-  GMANRayPolygon* far = new GMANRayPolygon(paneAt(kPaneZFar, true), GMANParameterList());
+  const auto far = new GMANRayPolygon(paneAt(kPaneZFar, true), GMANParameterList());
   far->setAppearance(glassAppearance);
   renderer.getWorldManager()->add(far);
 

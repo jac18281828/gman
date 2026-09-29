@@ -204,7 +204,7 @@ void testUnknownNameLeavesPriorLightCurrent() {
   openWorld(renderMan, displayName);
   renderMan.RiAttributeBegin();
 
-  GMANLight* priorLight = new GMANLight(GMAN_LIGHT_AREA, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(), GMANVector());
+  const auto priorLight = new GMANLight(GMAN_LIGHT_AREA, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(), GMANVector());
   RtLightHandle const priorHandle = gmanLightSourceMgr().add(priorLight);
   renderMan.attributes().setIlluminate(priorHandle, RI_TRUE);
   renderMan.attributes().setAreaLight(priorHandle);

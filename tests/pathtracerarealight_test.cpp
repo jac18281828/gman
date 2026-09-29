@@ -88,7 +88,7 @@ void renderAreaLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
   GMANMatrix4 place;
   place.trans(kSphereCentreX, kSphereCentreY, kSphereCentreZ);
   GMANTransform const transform = makeTransform(place);
-  GMANRaySphere* sphere =
+  const auto sphere =
       new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(), transform);
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   gman::Appearance sphereAppearance;

@@ -498,7 +498,7 @@ void shadeVertex(GMANVertex& vertex, GMANNormal const& normal, RtFloat u, RtFloa
 // a mesh.
 void addFace(std::vector<GMANFace*>& faces, GMANVertex* corners[GMAN_NFACE_VERTS], GMANSurface* surface, RtInt sides,
              RtToken orientation) {
-  GMANFace* face = new GMANFace(corners, surface);
+  const auto face = new GMANFace(corners, surface);
   face->calcNormal();
   face->setSides(sides);
   face->setOrientation(orientation);
@@ -515,7 +515,7 @@ GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
                             PolygonVertexTexCoord const& tc2, RtFloat w0, RtFloat w1, RtFloat w2,
                             GMANNormal const& normal, GMANVector const& normalVec, gman::Appearance const& appearance,
                             GMANMatrix4 const& cameraToWorld) {
-  GMANVertex* vertex = new GMANVertex();
+  const auto vertex = new GMANVertex();
   vertex->setLocation(p0 * w0 + p1 * w1 + p2 * w2);
   vertex->setNormal(normalVec);
 

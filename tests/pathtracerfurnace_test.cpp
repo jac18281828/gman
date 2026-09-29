@@ -70,7 +70,7 @@ void renderFurnace(RtInt samples, std::vector<double> outChannels[3], std::size_
 
   GMANPathtraceRenderer renderer;
 
-  GMANRaySphere* sphere = new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList());
+  const auto sphere = new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_POINT, GMANColor(kIntensity, kIntensity, kIntensity), GMANPoint(0.0f, 0.0f, 0.0f),
                         GMANVector());
   gman::Appearance appearance;

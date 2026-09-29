@@ -65,7 +65,7 @@ constexpr RtFloat kCeiling = (RtFloat)3.0e-5;
 GMANRaySphere* sphereAt(RtFloat radius, RtFloat centreZ) {
   GMANMatrix4 place;
   place.trans(0.0, 0.0, (double)centreZ);
-  GMANRaySphere* sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(place));
+  const auto sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(place));
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(opaque);
@@ -83,7 +83,7 @@ GMANRayPolygon* squareAt(RtFloat z, RtFloat halfWidth) {
       GMANPoint(halfWidth, halfWidth, z),
       GMANPoint(halfWidth, -halfWidth, z),
   };
-  GMANRayPolygon* polygon = new GMANRayPolygon(verts, GMANParameterList());
+  const auto polygon = new GMANRayPolygon(verts, GMANParameterList());
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   polygon->setAppearance(opaque);

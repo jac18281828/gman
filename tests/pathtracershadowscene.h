@@ -128,7 +128,7 @@ inline void renderScene(std::vector<gman::Appearance> const& blockerAppearances,
   renderer.getWorldManager()->add(floor);
 
   for (std::size_t i = 0; i < blockerVerts.size(); ++i) {
-    GMANRayPolygon* blocker = new GMANRayPolygon(blockerVerts[i], GMANParameterList());
+    const auto blocker = new GMANRayPolygon(blockerVerts[i], GMANParameterList());
     gman::Appearance appearance = blockerAppearances[i];
     appearance.lights = {&light};
     blocker->setAppearance(appearance);

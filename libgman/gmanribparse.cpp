@@ -1904,9 +1904,9 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList() {
   }
 
   const RtInt n = (RtInt)paramMap.size();
-  RtToken* tokens = new RtToken[n];
-  RtPointer* parms = new RtPointer[n];
-  RtInt* counts = new RtInt[n];
+  const auto tokens = new RtToken[n];
+  const auto parms = new RtPointer[n];
+  const auto counts = new RtInt[n];
   ParamMap::iterator cur = paramMap.begin();
   for (unsigned int i = 0; cur != paramMap.end(); i++, cur++) {
     tokens[i] = cur->first;

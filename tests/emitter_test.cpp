@@ -167,7 +167,7 @@ void testPower() {
   // GMANLinearWorldManager owns and deletes what it is given, so the
   // sphere here -- unlike the others below, read but never added to a
   // world -- is heap-allocated.
-  GMANRaySphere* fullSphere = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  const auto fullSphere = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
   gman::Appearance appearance;
   appearance.areaLight = &light;
@@ -204,7 +204,7 @@ void testPower() {
   check(relQuad < 1e-3, "power: the quadrature integral agrees with power within 1e-3 relative");
 
   // A delta emitter's power is exactly 0, from gman::emitters itself.
-  GMANRaySphere* deltaSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  const auto deltaSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector());
   gman::Appearance deltaAppearance;
   deltaAppearance.lights = {&pointLight};
@@ -310,7 +310,7 @@ void testScaledSphere(RtFloat scale, std::uint32_t dim) {
   GMANMatrix4 place;
   place.scale(scale, scale, scale);
   GMANTransform const transform = makeTransform(place);
-  GMANRaySphere* sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  const auto sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(kLe, kLe, kLe), GMANPoint(), GMANVector());
   gman::Appearance appearance;
   appearance.areaLight = &light;
@@ -364,7 +364,7 @@ void testScaledDisk() {
   place.rot(GMANRadians(45.0f), 0.0f, 1.0f, 0.0f);
   place.scale(2.0f, 1.0f, 1.0f);
   GMANTransform const transform = makeTransform(place);
-  GMANRayDisk* disk = new GMANRayDisk(0.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  const auto disk = new GMANRayDisk(0.0f, 1.0f, 360.0f, GMANParameterList(), transform);
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(kLe, kLe, kLe), GMANPoint(), GMANVector());
   gman::Appearance appearance;
   appearance.areaLight = &light;
@@ -434,9 +434,9 @@ void testSamplePointDelta() {
 // illuminates the same primitive.
 void testAppearanceExcludesAreaLight() {
   GMANAttributes attributes;
-  GMANLight* areaLight = new GMANLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  const auto areaLight = new GMANLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
   RtLightHandle const areaHandle = gmanLightSourceMgr().add(areaLight);
-  GMANLight* pointLight = new GMANLight(GMAN_LIGHT_POINT, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
+  const auto pointLight = new GMANLight(GMAN_LIGHT_POINT, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
   RtLightHandle const pointHandle = gmanLightSourceMgr().add(pointLight);
 
   attributes.setIlluminate(areaHandle, RI_TRUE);

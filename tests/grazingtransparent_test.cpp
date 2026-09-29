@@ -104,7 +104,7 @@ int main() {
   GMANMatrix4 place;
   place.trans(0.0, 0.0, kSphereZ);
   GMANTransform transform = makeTransform(place);
-  GMANRaySphere* sphere =
+  const auto sphere =
       new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(), transform);
   sphere->setAppearance(gman::appearanceOf(attr));
   renderer.getWorldManager()->add(sphere);

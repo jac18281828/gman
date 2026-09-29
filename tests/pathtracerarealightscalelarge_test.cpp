@@ -128,7 +128,7 @@ void testScaledLargeOccludedFloor() {
   place.trans(kSphereCentreX * kScale, kSphereCentreY * kScale, kSphereCentreZ * kScale);
   GMANTransform const transform = makeTransform(place);
   RtFloat const scaledRadius = kSphereRadius * kScale;
-  GMANRaySphere* sphere =
+  const auto sphere =
       new GMANRaySphere(scaledRadius, -scaledRadius, scaledRadius, 360.0f, GMANParameterList(), transform);
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   gman::Appearance sphereAppearance;
@@ -140,7 +140,7 @@ void testScaledLargeOccludedFloor() {
   // Concentric with the emitter and just larger: every segment from the
   // emitter's own surface to any point outside this shell crosses it.
   RtFloat const occluderRadius = kOccluderRadius * kScale;
-  GMANRaySphere* occluder =
+  const auto occluder =
       new GMANRaySphere(occluderRadius, -occluderRadius, occluderRadius, 360.0f, GMANParameterList(), transform);
   gman::Appearance occluderAppearance;
   occluderAppearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);

@@ -68,7 +68,7 @@ GMANRayPolygon* squareAt(RtFloat z) {
       GMANPoint(10.0f, 10.0f, z),
       GMANPoint(10.0f, -10.0f, z),
   };
-  GMANRayPolygon* polygon = new GMANRayPolygon(verts, GMANParameterList());
+  const auto polygon = new GMANRayPolygon(verts, GMANParameterList());
   gman::Appearance transparent;
   transparent.Os = GMANColor(kOpacity, kOpacity, kOpacity);
   polygon->setAppearance(transparent);
