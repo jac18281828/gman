@@ -119,7 +119,7 @@ bool filterByName(const std::string& name, RtFilterFunc& filterfunc) {
 // unique_ptr's default deleter is delete[], matching the copy's allocation
 // exactly. A caller that needs a raw char* past this function's return
 // takes it with .release() and keeps releasing it with delete[] itself.
-std::unique_ptr<char[]> duplicateCString(const std::string& s) {
+std::unique_ptr<char[]> duplicateCString(std::string const& s) {
   std::unique_ptr<char[]> dup = std::make_unique<char[]>(s.size() + 1);
   std::memcpy(dup.get(), s.c_str(), s.size() + 1);
   return dup;
@@ -159,7 +159,7 @@ const int GMANRIBParse::maxArchiveDepth = 64;
  */
 
 // default constructor
-GMANRIBParse::GMANRIBParse(GMANRenderMan& renderman, const char* rib, RtToken name)
+GMANRIBParse::GMANRIBParse(GMANRenderMan& renderman, char const* rib, RtToken name)
     : handlersRegistered(false), renderMan(renderman), ribStream(openRibStream(rib)) {
   includeDirs.push_back(dirName(std::string(rib)));
   openArchives.push_back(canonicalOrSelf(std::string(rib)));

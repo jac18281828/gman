@@ -25,4 +25,4 @@
 
 // A primitive with no intersector of its own answers "no hit" rather than
 // failing to link.
-bool GMANRayInterface::intersect(const GMANRay& /*ray*/, GMANHit& /*hit*/) const { return false; }
+bool GMANRayInterface::intersect(GMANRay const& /*ray*/, GMANHit& /*hit*/) const { return false; }

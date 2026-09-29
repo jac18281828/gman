@@ -36,7 +36,7 @@ namespace gman {
  */
 
 // default constructor
-OutputX11::OutputX11(const char* /*name*/, int /*width*/, int /*height*/) : WindowOutput() {};
+OutputX11::OutputX11(char const* /*name*/, int /*width*/, int /*height*/) : WindowOutput() {};
 
 // default destructor
 OutputX11::~OutputX11() {};

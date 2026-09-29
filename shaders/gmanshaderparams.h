@@ -56,7 +56,7 @@ inline RtFloat getFloatParam(GMANParameterList const& pl, RtToken token, RtFloat
   return p ? p[0] : def;
 }
 
-inline GMANColor getColorParam(GMANParameterList const& pl, RtToken token, const GMANColor& def) {
+inline GMANColor getColorParam(GMANParameterList const& pl, RtToken token, GMANColor const& def) {
   RtFloat* p = tryGetFloatParam(pl, token);
   return p ? GMANColor(p[0], p[1], p[2]) : def;
 }
@@ -72,7 +72,7 @@ inline std::string* tryGetStringParam(GMANParameterList const& pl, RtToken token
   }
 }
 
-inline std::string getStringParam(GMANParameterList const& pl, RtToken token, const std::string& def) {
+inline std::string getStringParam(GMANParameterList const& pl, RtToken token, std::string const& def) {
   std::string* p = tryGetStringParam(pl, token);
   return p ? p[0] : def;
 }

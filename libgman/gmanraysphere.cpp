@@ -51,7 +51,7 @@ GMANRaySphere::GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat
   bbox = gman::revolutionBBox(objectToCamera, radius, zmin, zmax);
 }
 
-bool GMANRaySphere::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (singular)
     return false;
 

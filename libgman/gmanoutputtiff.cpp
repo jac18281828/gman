@@ -40,7 +40,7 @@ namespace gman {
  */
 
 // default constructor
-OutputTIFF::OutputTIFF(const char* path, int width, int height) : GMANOutput(path, width, height, DefaultBGColor) {
+OutputTIFF::OutputTIFF(char const* path, int width, int height) : GMANOutput(path, width, height, DefaultBGColor) {
   // damn the torpedoes and the patents
   compression = LZW;
 };

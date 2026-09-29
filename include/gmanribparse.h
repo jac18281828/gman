@@ -138,7 +138,7 @@ public:
   /**
    * open the file rib, where name is the parameter to RiBegin
    */
-  GMANRIBParse(GMANRenderMan& renderman, const char* rib,
+  GMANRIBParse(GMANRenderMan& renderman, char const* rib,
                RtToken name = "gmanzbuffer"); // default constructor
 
   virtual ~GMANRIBParse(); // default destructor

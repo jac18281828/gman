@@ -29,6 +29,6 @@ namespace gman {
 // Loads path as a GMANLoadable plugin exporting GMANLoadRenderMan and
 // returns the GMANRenderMan instance it constructs. The caller owns the
 // result; the plugin itself is never unloaded.
-GMANRenderMan* loadRenderMan(const char* path);
+GMANRenderMan* loadRenderMan(char const* path);
 
 } // namespace gman

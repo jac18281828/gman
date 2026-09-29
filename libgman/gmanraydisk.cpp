@@ -47,7 +47,7 @@ GMANRayDisk::GMANRayDisk(RtFloat height, RtFloat radius, RtFloat thetamax, GMANP
   bbox = gman::revolutionBBox(objectToCamera, radius, height, height);
 }
 
-bool GMANRayDisk::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (singular)
     return false;
 

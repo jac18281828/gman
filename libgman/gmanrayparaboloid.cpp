@@ -57,7 +57,7 @@ GMANRayParaboloid::GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, R
   bbox = gman::revolutionBBox(objectToCamera, r, zmin, zmax);
 }
 
-bool GMANRayParaboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (singular)
     return false;
 

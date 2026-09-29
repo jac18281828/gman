@@ -104,8 +104,8 @@ public:
   RtVoid illuminate(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
   RtVoid solar(RtInt /*i*/, GMANVector const& /*axis*/, RtFloat /*angle*/) {}
 
-  virtual void render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
-                      const GMANAttributes& attributes);
+  virtual void render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, GMANOptions const& options,
+                      GMANAttributes const& attributes);
 
   // Camera-space z of the nearest sample at (x, y), RI_INFINITY where no
   // path's camera ray ever hit anything.

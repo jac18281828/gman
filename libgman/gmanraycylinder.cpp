@@ -49,7 +49,7 @@ GMANRayCylinder::GMANRayCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtF
   bbox = gman::revolutionBBox(objectToCamera, radius, zmin, zmax);
 }
 
-bool GMANRayCylinder::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (singular)
     return false;
 

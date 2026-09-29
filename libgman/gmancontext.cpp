@@ -32,8 +32,8 @@ namespace gman {
 
 namespace {
 
-const char* const kRibSuffix = ".rib";
-const char* const kRibWriterPlugin = "libgmanrib.so";
+char const* const kRibSuffix = ".rib";
+char const* const kRibWriterPlugin = "libgmanrib.so";
 
 // A name ending in ".rib" selects the RIB-writer plugin; any other name,
 // RI_NULL included, keeps the renderer.

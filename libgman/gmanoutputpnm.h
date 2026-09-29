@@ -45,7 +45,7 @@ namespace gman {
 class OutputPNM : public GMANOutput {
 public:
   // default constructor
-  OutputPNM(const char* path, int width, int height);
+  OutputPNM(char const* path, int width, int height);
 
   ~OutputPNM(); // default destructor
 

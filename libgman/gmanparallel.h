@@ -58,6 +58,6 @@ RtInt parallelWorkers(RtInt count, RtInt workers = 0);
 // one at a time. count <= 0 calls nothing. When parallelWorkers
 // reports one worker, every body runs inline on the calling thread as
 // worker 0 and no thread is created.
-void parallelFor(RtInt count, const std::function<void(RtInt index, RtInt worker)>& body, RtInt workers = 0);
+void parallelFor(RtInt count, std::function<void(RtInt index, RtInt worker)> const& body, RtInt workers = 0);
 
 } // namespace gman

@@ -44,7 +44,7 @@ namespace gman {
 
 class OutputPNG : public GMANOutput {
 public:
-  OutputPNG(const char* path, int width, int height); // default constructor
+  OutputPNG(char const* path, int width, int height); // default constructor
 
   ~OutputPNG(); // default destructor
 

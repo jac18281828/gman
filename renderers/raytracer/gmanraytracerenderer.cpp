@@ -198,7 +198,7 @@ std::size_t countAreaLightPrimitives(GMANWorldManager& world) {
 } // namespace
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
-                                  const GMANOptions& options, const GMANAttributes& /*attributes*/) {
+                                  GMANOptions const& options, GMANAttributes const& /*attributes*/) {
   gman::warnAreaLightPrimitivesIgnored("gmanraytracer", countAreaLightPrimitives(worldManager));
 
   // Rebuilt every call, discarding any tree a prior call built: simpler

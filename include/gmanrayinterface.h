@@ -36,7 +36,7 @@
  */
 class GMAN_EXPORT GMANRayInterface : virtual public GMANPrimitive {
 public:
-  virtual bool intersect(const GMANRay& ray, GMANHit& hit) const;
+  virtual bool intersect(GMANRay const& ray, GMANHit& hit) const;
 
   // The appearance this primitive was declared under -- its surface
   // shader, active lights and Cs/Os -- so the render loop can shade any

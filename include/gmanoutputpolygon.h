@@ -60,7 +60,7 @@ public:
 
   const GMANPoint& getPosn(RtVoid) const { return posn; }
   const GMANColor& getColor(RtVoid) const { return color; }
-  const GMANAlpha& getAlpha(RtVoid) const { return alpha; }
+  GMANAlpha const& getAlpha(RtVoid) const { return alpha; }
 
   RtVoid set(const GMANVertex4& v) {
     GMANVector4 c = v.getCoord();
@@ -85,7 +85,7 @@ public:
 
   const GMANColor& getVertexColor(int n) { return vertexVec[n].getColor(); };
 
-  const GMANAlpha& getVertexAlpha(int n) { return vertexVec[n].getAlpha(); };
+  GMANAlpha const& getVertexAlpha(int n) { return vertexVec[n].getAlpha(); };
 
   RtVoid addVertex(const GMANVertex4& v) {
     GMANOutVertex vert;

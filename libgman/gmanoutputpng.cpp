@@ -42,7 +42,7 @@ namespace gman {
  */
 
 // default constructor
-OutputPNG::OutputPNG(const char* path, int width, int height) : GMANOutput(path, width, height, DefaultBGColor) {};
+OutputPNG::OutputPNG(char const* path, int width, int height) : GMANOutput(path, width, height, DefaultBGColor) {};
 
 // default destructor
 OutputPNG::~OutputPNG() {};

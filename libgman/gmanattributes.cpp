@@ -111,7 +111,7 @@ RtVoid GMANAttributes::setIlluminate(RtLightHandle lh, RtBoolean onoff) {
     lightList.off(lh);
 }
 
-RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList const& pl) {
+RtVoid GMANAttributes::setSurface(std::string const& name, GMANParameterList const& pl) {
   auto resolved =
       gman::resolveLoadableShader("Surface", "the default surface shades instead", name, pl, GMANShader::SURFACE);
   if (!resolved) {
@@ -123,22 +123,22 @@ RtVoid GMANAttributes::setSurface(const std::string& name, GMANParameterList con
   surface = std::shared_ptr<GMANSurfaceShader const>(surfaceModule, surfaceModule->getSurface());
 }
 
-RtVoid GMANAttributes::setDisplacement(const std::string& name, GMANParameterList const& pl) {
+RtVoid GMANAttributes::setDisplacement(std::string const& name, GMANParameterList const& pl) {
   bindLoadableShader(displacementModule, displacement, "Displacement", "the surface renders undisplaced", name, pl,
                      GMANShader::DISPLACEMENT, &GMANLoadableShader::getDisplacement);
 }
 
-RtVoid GMANAttributes::setAtmosphere(const std::string& name, GMANParameterList const& pl) {
+RtVoid GMANAttributes::setAtmosphere(std::string const& name, GMANParameterList const& pl) {
   bindLoadableShader(atmosphereModule, atmosphere, "Atmosphere", "no atmosphere shades the volume", name, pl,
                      GMANShader::VOLUME, &GMANLoadableShader::getVolume);
 }
 
-RtVoid GMANAttributes::setInterior(const std::string& name, GMANParameterList const& pl) {
+RtVoid GMANAttributes::setInterior(std::string const& name, GMANParameterList const& pl) {
   bindLoadableShader(interiorModule, interior, "Interior", "the volume shades without an interior", name, pl,
                      GMANShader::VOLUME, &GMANLoadableShader::getVolume);
 }
 
-RtVoid GMANAttributes::setExterior(const std::string& name, GMANParameterList const& pl) {
+RtVoid GMANAttributes::setExterior(std::string const& name, GMANParameterList const& pl) {
   bindLoadableShader(exteriorModule, exterior, "Exterior", "the volume shades without an exterior", name, pl,
                      GMANShader::VOLUME, &GMANLoadableShader::getVolume);
 }

@@ -106,5 +106,5 @@ public:
 
 protected:
   GMANObject* createParametric(GMANParametric* p, GMANTransform* t, GMANAttributes* attr,
-                               const GMANTextureCoordinates& corners, GMANOptions const* opt);
+                               GMANTextureCoordinates const& corners, GMANOptions const* opt);
 };

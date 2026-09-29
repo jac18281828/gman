@@ -101,7 +101,7 @@ GMANRayTorus::GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phi
   bbox = gman::revolutionBBox(objectToCamera, majorAbs + minorAbs, -minorAbs, minorAbs);
 }
 
-bool GMANRayTorus::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (singular)
     return false;
 

@@ -44,7 +44,7 @@ class GMANRay {
   RtFloat tmax;
 
 public:
-  GMANRay(const GMANPoint& o, const GMANVector& d, RtFloat tMin = RI_EPSILON, RtFloat tMax = RI_INFINITY)
+  GMANRay(GMANPoint const& o, GMANVector const& d, RtFloat tMin = RI_EPSILON, RtFloat tMax = RI_INFINITY)
       : origin(o), direction(d), tmin(tMin), tmax(tMax) {
     // GMANVector::normalize leaves a vector below RI_EPSILON in
     // magnitude unchanged, so a zero-length direction survives
@@ -52,8 +52,8 @@ public:
     direction.normalize();
   }
 
-  const GMANPoint& getOrigin(RtVoid) const { return origin; }
-  const GMANVector& getDirection(RtVoid) const { return direction; }
+  GMANPoint const& getOrigin(RtVoid) const { return origin; }
+  GMANVector const& getDirection(RtVoid) const { return direction; }
   RtFloat getTMin(RtVoid) const { return tmin; }
   RtFloat getTMax(RtVoid) const { return tmax; }
 

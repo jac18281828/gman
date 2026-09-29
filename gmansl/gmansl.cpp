@@ -136,7 +136,7 @@ RtBoolean compile(char* shader) {
 
 void yyerror(char* s) { fprintf(logFile, "%s, %d: %s", slSourceFile, lineNumber, s); }
 
-FILE* initHeader(const std::string& headerName) {
+FILE* initHeader(std::string const& headerName) {
 
   /* open the header file, give it some comments and get it
    * generally ready to become a DSO shader.
@@ -183,8 +183,8 @@ FILE* initHeader(const std::string& headerName) {
   return headerFile;
 }
 
-FILE* initSource(const std::string& headerName, const std::string& srcName) {
+FILE* initSource(std::string const& headerName, std::string const& srcName) {
   yyerror("Opening shader output source.");
 }
 
-RtVoid build(const std::string& srcName) {}
+RtVoid build(std::string const& srcName) {}

@@ -550,7 +550,7 @@ GMANPathtraceRenderer::GMANPathtraceRenderer() : GMANRenderer() {};
 GMANPathtraceRenderer::~GMANPathtraceRenderer() {};
 
 void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
-                                   const GMANOptions& options, const GMANAttributes& /*attributes*/) {
+                                   GMANOptions const& options, GMANAttributes const& /*attributes*/) {
   bvh.build(worldManager);
   gatherLights();
   droppedPaths = 0;

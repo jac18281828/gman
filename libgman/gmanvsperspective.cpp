@@ -28,7 +28,7 @@
 
 namespace gman {
 
-VSPerspective::VSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s,
+VSPerspective::VSPerspective(RtInt xr, RtInt yr, GMANOptions::ScreenWindowStruct const& s,
                              const GMANMatrix4& worldToCamera, RtFloat fov, RtFloat nearDist, RtFloat farDist)
     : GMANViewingSystem(xr, yr, s, worldToCamera) {
   mtrx.prjPersp(fov, nearDist, farDist);
@@ -78,7 +78,7 @@ GMANRay VSPerspective::cameraRay(RtFloat x, RtFloat y) {
  * deliberately. The two agree on-axis and diverge only near the
  * silhouette.
  */
-bool VSPerspective::visible(const GMANFace* face) {
+bool VSPerspective::visible(GMANFace const* face) {
   if (face->getSides() != 1) {
     return true;
   }
@@ -100,6 +100,6 @@ bool VSPerspective::visible(const GMANFace* face) {
   return facingCamera;
 }
 
-const RtMatrix& VSPerspective::getProjMatrix(RtVoid) const { return mtrx.get(); }
+RtMatrix const& VSPerspective::getProjMatrix(RtVoid) const { return mtrx.get(); }
 
 } // namespace gman

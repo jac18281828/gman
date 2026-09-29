@@ -34,7 +34,7 @@ private:
   GMANMatrix4 mtrx;
 
 public:
-  VSPerspective(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
+  VSPerspective(RtInt xr, RtInt yr, GMANOptions::ScreenWindowStruct const& s, GMANMatrix4 const& worldToCamera,
                 RtFloat fov, RtFloat nearDist, RtFloat farDist);
   ~VSPerspective() {}
 

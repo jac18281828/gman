@@ -54,7 +54,7 @@ public:
   typedef RtVoid (*DestroyShaderFnc)(GMANShader*);
 
   static const char* LoadShaderFncName;
-  static const char* DestroyShaderFncName;
+  static char const* DestroyShaderFncName;
 
 private:
   DestroyShaderFnc destroyShader;
@@ -63,7 +63,7 @@ private:
 public:
   // Builds one instance from parameters through the plugin's own
   // GMANLoadShader.
-  GMANLoadableShader(const char* path, GMANParameterList const& parameters);
+  GMANLoadableShader(char const* path, GMANParameterList const& parameters);
 
   // Owns the one instance GMANLoadShader returned: frees it through the
   // same plugin's own GMANDestroyShader, never through delete, since the

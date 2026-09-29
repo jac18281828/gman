@@ -47,7 +47,7 @@ private:
   int quality;
 
 public:
-  OutputJPEG(const char* path, int width, int height); // default constructor
+  OutputJPEG(char const* path, int width, int height); // default constructor
 
   ~OutputJPEG(); // default destructor
 

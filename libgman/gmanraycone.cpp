@@ -50,7 +50,7 @@ GMANRayCone::GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANP
   bbox = gman::revolutionBBox(objectToCamera, radius, (RtFloat)0.0, height);
 }
 
-bool GMANRayCone::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (singular)
     return false;
 

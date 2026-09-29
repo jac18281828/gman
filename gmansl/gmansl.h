@@ -42,12 +42,12 @@ RtVoid usage(char* myname);
 RtBoolean compile(char* shader);
 
 // create a new header
-FILE* initHeader(const std::string& headerName);
+FILE* initHeader(std::string const& headerName);
 // create a new source
-FILE* initSource(const std::string& headerName, const std::string& srcName);
+FILE* initSource(std::string const& headerName, std::string const& srcName);
 
 // build a shading language source
 // into a dynamic loadable module
-RtVoid build(const std::string& srcName);
+RtVoid build(std::string const& srcName);
 
 void yyerror(char* s);

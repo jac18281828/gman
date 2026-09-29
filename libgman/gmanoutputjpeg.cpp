@@ -71,7 +71,7 @@ void jpegErrorExit(j_common_ptr cinfo) {
 // ever actually instantiated via RIB, which happened for the first time
 // once RiWorldBegin gained its jpg/jpeg dispatch branch. 75 matches
 // libjpeg's own conventional default quality.
-OutputJPEG::OutputJPEG(const char* path, int width, int height)
+OutputJPEG::OutputJPEG(char const* path, int width, int height)
     : GMANOutput(path, width, height, DefaultBGColor), quality(75) {};
 
 // default destructor

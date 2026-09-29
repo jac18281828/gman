@@ -56,7 +56,7 @@ uint16_t libtiffCompression(OutputTIFF::Compression compression) {
 
 } // namespace
 
-TIFFReader::TIFFReader(const std::string& path) : handle(TIFFOpen(path.c_str(), "r")) {}
+TIFFReader::TIFFReader(std::string const& path) : handle(TIFFOpen(path.c_str(), "r")) {}
 
 TIFFReader::~TIFFReader() {
   if (handle != nullptr) {
@@ -93,7 +93,7 @@ bool TIFFReader::decode(std::uint32_t& width, std::uint32_t& height, std::vector
   return true;
 }
 
-TIFFWriter::TIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height,
+TIFFWriter::TIFFWriter(std::string const& path, std::uint32_t width, std::uint32_t height,
                        std::uint16_t samplesPerPixel, std::uint16_t bitsPerSample, OutputTIFF::Compression compression)
     : handle(TIFFOpen(path.c_str(), "w")) {
   if (handle == nullptr) {
@@ -125,15 +125,15 @@ std::uint32_t TIFFWriter::defaultStripSize(std::uint32_t hint) const {
   return (std::uint32_t)TIFFDefaultStripSize(handle, hint);
 }
 
-void TIFFWriter::setImageDescription(const std::string& text) {
+void TIFFWriter::setImageDescription(std::string const& text) {
   TIFFSetField(handle, TIFFTAG_IMAGEDESCRIPTION, text.c_str());
 }
 
-void TIFFWriter::setWrapModes(const std::string& modes) {
+void TIFFWriter::setWrapModes(std::string const& modes) {
   TIFFSetField(handle, TIFFTAG_PIXAR_WRAPMODES, modes.c_str());
 }
 
-void TIFFWriter::setTextureFormat(const std::string& format) {
+void TIFFWriter::setTextureFormat(std::string const& format) {
   TIFFSetField(handle, TIFFTAG_PIXAR_TEXTUREFORMAT, format.c_str());
 }
 

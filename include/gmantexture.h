@@ -52,7 +52,7 @@ enum TextureWrap { TEXTURE_CLAMP, TEXTURE_PERIODIC, TEXTURE_BLACK };
  */
 class Texture {
 public:
-  explicit Texture(const std::string& name);
+  explicit Texture(std::string const& name);
 
   // Bilinear sample at (s, t); t=0 is the image's top row. wrap resolves
   // both s and t identically outside [0, 1].
@@ -96,7 +96,7 @@ class GMAN_EXPORT TextureCache {
 public:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file.
-  GMANColor sample(const std::string& name, RtFloat s, RtFloat t, TextureWrap wrap);
+  GMANColor sample(std::string const& name, RtFloat s, RtFloat t, TextureWrap wrap);
 
   // Samples with the texture's own recorded wrap modes.
   GMANColor sample(const std::string& name, RtFloat s, RtFloat t);
@@ -108,7 +108,7 @@ private:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file. Both sample overloads route
   // through this.
-  Texture& entry(const std::string& name);
+  Texture& entry(std::string const& name);
 
   std::map<std::string, Texture> textures;
 };
@@ -127,7 +127,7 @@ TextureCache& textureCache(RtVoid);
 // decoded, or an output that cannot be opened or fully written. A
 // successful write forgets texture from textureCache(), so the next
 // lookup reads what was just written.
-bool makeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap);
+bool makeTexture(char const* picture, char const* texture, char const* swrap, char const* twrap);
 
 // RiMakeLatLongEnvironment's implementation: decodes picture and writes
 // texture as a latitude-longitude environment map, RISpec 3.2 Sec 7.1.2 --
@@ -139,6 +139,6 @@ bool makeTexture(const char* picture, const char* texture, const char* swrap, co
 // name, a picture that cannot be opened or decoded, or an output that
 // cannot be opened or fully written. A successful write forgets texture
 // from textureCache(), so the next lookup reads what was just written.
-bool makeLatLongEnvironment(const char* picture, const char* texture);
+bool makeLatLongEnvironment(char const* picture, char const* texture);
 
 } // namespace gman

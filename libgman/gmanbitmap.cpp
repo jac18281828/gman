@@ -71,7 +71,7 @@ RtVoid GMANBitmap::set(int width, int height, const GMANColor& bgcolor) {
 }
 
 // copy operation
-GMANBitmap& GMANBitmap::operator=(const GMANBitmap& amap) = default;
+GMANBitmap& GMANBitmap::operator=(GMANBitmap const& amap) = default;
 
 RtVoid GMANBitmap::freeMemory(RtVoid) {
   pixels.clear();

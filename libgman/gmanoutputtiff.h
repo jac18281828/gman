@@ -51,7 +51,7 @@ private:
   Compression compression;
 
 public:
-  OutputTIFF(const char* path, int width, int height); // default constructor
+  OutputTIFF(char const* path, int width, int height); // default constructor
 
   ~OutputTIFF(); // default destructor
 

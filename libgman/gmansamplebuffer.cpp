@@ -86,7 +86,7 @@ GMANSampleBuffer::~GMANSampleBuffer() {
   delete[] resolvedDepth;
 }
 
-bool GMANSampleBuffer::zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor& color, const GMANAlpha& alpha) {
+bool GMANSampleBuffer::zTestAndSet(int sx, int sy, RtFloat depth, GMANColor const& color, GMANAlpha const& alpha) {
   const int idx = sampleIndex(sx, sy);
   if (depth < sampleDepth[idx]) {
     sampleDepth[idx] = depth;

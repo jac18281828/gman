@@ -34,7 +34,7 @@ private:
   GMANMatrix4 mtrx;
 
 public:
-  VSOrthographic(RtInt xres, RtInt yres, const GMANOptions::ScreenWindowStruct& s, const GMANMatrix4& worldToCamera,
+  VSOrthographic(RtInt xres, RtInt yres, GMANOptions::ScreenWindowStruct const& s, GMANMatrix4 const& worldToCamera,
                  RtFloat nearDist, RtFloat farDist);
   ~VSOrthographic() {}
 

@@ -65,7 +65,7 @@ public:
   GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holes,
                  std::vector<std::pair<RtFloat, RtFloat>> outerTexCoords);
 
-  bool intersect(const GMANRay& ray, GMANHit& hit) const;
+  bool intersect(GMANRay const& ray, GMANHit& hit) const;
 
   // vertices, the camera-space outer loop a renderer dices, in RiPolygonV's
   // own winding.

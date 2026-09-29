@@ -38,7 +38,7 @@ namespace gman {
  */
 
 // default constructor
-OutputPNM::OutputPNM(const char* path, int width, int height) : GMANOutput(path, width, height) {};
+OutputPNM::OutputPNM(char const* path, int width, int height) : GMANOutput(path, width, height) {};
 
 // default destructor
 OutputPNM::~OutputPNM() {};

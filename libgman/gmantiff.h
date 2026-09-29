@@ -53,11 +53,11 @@ namespace gman {
 // reader needs.
 class TIFFReader {
 public:
-  explicit TIFFReader(const std::string& path);
+  explicit TIFFReader(std::string const& path);
   ~TIFFReader();
 
-  TIFFReader(const TIFFReader&) = delete;
-  TIFFReader& operator=(const TIFFReader&) = delete;
+  TIFFReader(TIFFReader const&) = delete;
+  TIFFReader& operator=(TIFFReader const&) = delete;
   TIFFReader(TIFFReader&&) = delete;
   TIFFReader& operator=(TIFFReader&&) = delete;
 
@@ -85,12 +85,12 @@ private:
 // switch over it.
 class TIFFWriter {
 public:
-  TIFFWriter(const std::string& path, std::uint32_t width, std::uint32_t height, std::uint16_t samplesPerPixel,
+  TIFFWriter(std::string const& path, std::uint32_t width, std::uint32_t height, std::uint16_t samplesPerPixel,
              std::uint16_t bitsPerSample, OutputTIFF::Compression compression);
   ~TIFFWriter();
 
-  TIFFWriter(const TIFFWriter&) = delete;
-  TIFFWriter& operator=(const TIFFWriter&) = delete;
+  TIFFWriter(TIFFWriter const&) = delete;
+  TIFFWriter& operator=(TIFFWriter const&) = delete;
   TIFFWriter(TIFFWriter&&) = delete;
   TIFFWriter& operator=(TIFFWriter&&) = delete;
 
@@ -102,9 +102,9 @@ public:
   // libtiff's own default strip size for a row of hint bytes.
   std::uint32_t defaultStripSize(std::uint32_t hint) const;
 
-  void setImageDescription(const std::string& text);
-  void setWrapModes(const std::string& modes);
-  void setTextureFormat(const std::string& format);
+  void setImageDescription(std::string const& text);
+  void setWrapModes(std::string const& modes);
+  void setTextureFormat(std::string const& format);
 
   // Tags the fourth of a 4-sample-per-pixel file as associated alpha.
   // Call before the first writeScanline.

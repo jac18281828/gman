@@ -77,7 +77,7 @@ public:
   // current depth, stores color, alpha and depth and returns true. sx/sy
   // address the full sample grid (pixel index * samples-per-pixel + local
   // sample index), not a single pixel's own samples.
-  bool zTestAndSet(int sx, int sy, RtFloat depth, const GMANColor& color, const GMANAlpha& alpha);
+  bool zTestAndSet(int sx, int sy, RtFloat depth, GMANColor const& color, GMANAlpha const& alpha);
 
   // Filters every pixel's covering samples through filterfunc and writes
   // the result to frameBuffer, alpha filtered by the same weights in the

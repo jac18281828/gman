@@ -246,7 +246,7 @@ GMANRayHyperboloid::GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat t
   bbox = gman::revolutionBBox(objectToCamera, r, this->point1.getZ(), this->point2.getZ());
 }
 
-bool GMANRayHyperboloid::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRayHyperboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (singular)
     return false;
 

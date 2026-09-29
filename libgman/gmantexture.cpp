@@ -71,7 +71,7 @@ RtInt wrapIndex(RtInt i, RtInt dim, TextureWrap wrap, bool& valid) {
 
 // Matches a wrap name case-insensitively, the way gmanribparse.cpp's
 // filterByName matches a pixel filter.
-bool wrapByName(const std::string& name, TextureWrap& wrap) {
+bool wrapByName(std::string const& name, TextureWrap& wrap) {
   std::string lower = name;
   for (std::string::size_type i = 0; i < lower.size(); ++i) {
     lower[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lower[i])));
@@ -94,7 +94,7 @@ bool wrapByName(const std::string& name, TextureWrap& wrap) {
 // Parses libtiff's Pixar wrap-modes tag's "<swrap>,<twrap>" -- the form
 // libtiff's own texture tools write. False, leaving swrap/twrap
 // untouched, unless both halves name a known wrap mode.
-bool parseWrapModes(const char* tag, TextureWrap& swrap, TextureWrap& twrap) {
+bool parseWrapModes(char const* tag, TextureWrap& swrap, TextureWrap& twrap) {
   const auto joined = std::string(tag);
   const auto comma = joined.find(',');
   if (comma == std::string::npos) {
@@ -110,7 +110,7 @@ bool parseWrapModes(const char* tag, TextureWrap& swrap, TextureWrap& twrap) {
 }
 
 // RISpec's wrap names, written lower-case -- the inverse of wrapByName.
-const char* wrapName(TextureWrap wrap) {
+char const* wrapName(TextureWrap wrap) {
   switch (wrap) {
   case TEXTURE_PERIODIC:
     return "periodic";
@@ -127,7 +127,7 @@ const char* wrapName(TextureWrap wrap) {
 // and format in the Pixar texture-format tag. False, removing any partial
 // file, if the file cannot be opened or a scanline fails to write.
 bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::vector<unsigned char>& rgb,
-                  TextureWrap sw, TextureWrap tw, const std::string& format) {
+                  TextureWrap sw, TextureWrap tw, std::string const& format) {
   TIFFWriter writer(name, w, h, 3, 8, OutputTIFF::NONE);
   if (!writer.isOpen()) {
     return false;
@@ -156,7 +156,7 @@ bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::ve
 // "MakeLatLongEnvironment") in a failure's warning; each keeps its own
 // exact message text otherwise. False, w/h/rgb left as decode leaves them,
 // on either failure.
-bool openAndDecodePicture(const char* who, const std::string& pictureName, const std::string& textureName, uint32_t& w,
+bool openAndDecodePicture(char const* who, std::string const& pictureName, std::string const& textureName, uint32_t& w,
                           uint32_t& h, std::vector<unsigned char>& rgb) {
   TIFFReader reader(pictureName);
   if (!reader.isOpen()) {
@@ -174,7 +174,7 @@ bool openAndDecodePicture(const char* who, const std::string& pictureName, const
 
 } // namespace
 
-Texture::Texture(const std::string& name) : width(1), height(1) {
+Texture::Texture(std::string const& name) : width(1), height(1) {
   TIFFReader reader(name);
   if (!reader.isOpen()) {
     warning("texture \"{}\": cannot open, using opaque black", name.c_str());
@@ -246,7 +246,7 @@ GMANColor Texture::sample(RtFloat s, RtFloat t, TextureWrap swrap, TextureWrap t
                    w00 * c00.getBlue() + w10 * c10.getBlue() + w01 * c01.getBlue() + w11 * c11.getBlue());
 }
 
-Texture& TextureCache::entry(const std::string& name) {
+Texture& TextureCache::entry(std::string const& name) {
   std::map<std::string, Texture>::iterator it = textures.find(name);
   if (it == textures.end()) {
     it = textures.emplace(name, Texture(name)).first;
@@ -254,23 +254,23 @@ Texture& TextureCache::entry(const std::string& name) {
   return it->second;
 }
 
-GMANColor TextureCache::sample(const std::string& name, RtFloat s, RtFloat t, TextureWrap wrap) {
+GMANColor TextureCache::sample(std::string const& name, RtFloat s, RtFloat t, TextureWrap wrap) {
   return entry(name).sample(s, t, wrap);
 }
 
-GMANColor TextureCache::sample(const std::string& name, RtFloat s, RtFloat t) {
+GMANColor TextureCache::sample(std::string const& name, RtFloat s, RtFloat t) {
   Texture& tex = entry(name);
   return tex.sample(s, t, tex.swrap, tex.twrap);
 }
 
-void TextureCache::forget(const std::string& name) { textures.erase(name); }
+void TextureCache::forget(std::string const& name) { textures.erase(name); }
 
 TextureCache& textureCache(RtVoid) {
   static TextureCache cache;
   return cache;
 }
 
-bool makeTexture(const char* picture, const char* texture, const char* swrap, const char* twrap) {
+bool makeTexture(char const* picture, char const* texture, char const* swrap, char const* twrap) {
   const std::string textureName = texture != nullptr ? texture : "";
   if (textureName.empty()) {
     warning("MakeTexture: empty texture name, nothing written");
@@ -303,7 +303,7 @@ bool makeTexture(const char* picture, const char* texture, const char* swrap, co
   return true;
 }
 
-bool makeLatLongEnvironment(const char* picture, const char* texture) {
+bool makeLatLongEnvironment(char const* picture, char const* texture) {
   const std::string textureName = texture != nullptr ? texture : "";
   if (textureName.empty()) {
     warning("MakeLatLongEnvironment: empty texture name, nothing written");

@@ -38,14 +38,14 @@
  */
 
 const char* GMANLoadableShader::LoadShaderFncName = "GMANLoadShader";
-const char* GMANLoadableShader::DestroyShaderFncName = "GMANDestroyShader";
+char const* GMANLoadableShader::DestroyShaderFncName = "GMANDestroyShader";
 
 // Resolves GMANLoadShader, then GMANDestroyShader, and only then calls
 // GMANLoadShader: a plugin missing either symbol is refused before its own
 // GMANLoadShader ever runs, since calling a single-instance GMANLoadShader
 // through this signature and then destroying its static would be
 // undefined behaviour.
-GMANLoadableShader::GMANLoadableShader(const char* path, GMANParameterList const& parameters)
+GMANLoadableShader::GMANLoadableShader(char const* path, GMANParameterList const& parameters)
     : GMANShader(), GMANLoadable(path), destroyShader(NULL), shader(NULL) {
 
   LoadShaderFnc loadShader = (LoadShaderFnc)loadSymbol(LoadShaderFncName);

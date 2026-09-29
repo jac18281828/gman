@@ -138,19 +138,19 @@ public:
   RtLightHandle getAreaLight() const { return pendingAreaLight; }
 
   /* SHADERS */
-  RtVoid setSurface(const std::string& name, GMANParameterList const& pl);
+  RtVoid setSurface(std::string const& name, GMANParameterList const& pl);
   std::shared_ptr<GMANSurfaceShader const> getSurface(RtFloat /*time*/) const { return surface; };
 
-  RtVoid setAtmosphere(const std::string& name, GMANParameterList const& pl);
+  RtVoid setAtmosphere(std::string const& name, GMANParameterList const& pl);
   const GMANVolumeShader* getAtmosphere(RtFloat /*time*/) const { return atmosphere; };
 
-  RtVoid setInterior(const std::string& name, GMANParameterList const& pl);
+  RtVoid setInterior(std::string const& name, GMANParameterList const& pl);
   const GMANVolumeShader* getInterior(RtFloat /*time*/) const { return interior; };
 
-  RtVoid setExterior(const std::string& name, GMANParameterList const& pl);
+  RtVoid setExterior(std::string const& name, GMANParameterList const& pl);
   const GMANVolumeShader* getExterior(RtFloat /*time*/) const { return exterior; };
 
-  RtVoid setDisplacement(const std::string& name, GMANParameterList const& pl);
+  RtVoid setDisplacement(std::string const& name, GMANParameterList const& pl);
   const GMANDisplacementShader* getDisplacement(RtFloat /*time*/) const { return displacement; };
 
   RtVoid setShadingRate(RtFloat sz);

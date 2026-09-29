@@ -48,7 +48,7 @@ RtInt parallelWorkers(RtInt count, RtInt workers) {
   return result;
 }
 
-void parallelFor(RtInt count, const std::function<void(RtInt, RtInt)>& body, RtInt workers) {
+void parallelFor(RtInt count, std::function<void(RtInt, RtInt)> const& body, RtInt workers) {
   if (count <= 0) {
     return;
   }

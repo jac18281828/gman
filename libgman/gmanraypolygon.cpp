@@ -222,7 +222,7 @@ void GMANRayPolygon::initGeometry() {
   normal = n / magnitude;
 }
 
-bool GMANRayPolygon::intersect(const GMANRay& ray, GMANHit& hit) const {
+bool GMANRayPolygon::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (degenerate)
     return false;
 

@@ -44,7 +44,7 @@ namespace gman {
 
 class OutputX11 : public WindowOutput {
 public:
-  OutputX11(const char* name, int width, int height); // default constructor
+  OutputX11(char const* name, int width, int height); // default constructor
 
   ~OutputX11(); // default destructor
 

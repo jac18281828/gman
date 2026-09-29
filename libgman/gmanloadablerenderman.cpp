@@ -54,7 +54,7 @@ public:
 
 } // namespace
 
-GMANRenderMan* loadRenderMan(const char* path) {
+GMANRenderMan* loadRenderMan(char const* path) {
   RenderManLoader loader(path);
   return loader.load();
 }

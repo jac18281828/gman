@@ -37,7 +37,7 @@ public:
   GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat thetamax, GMANParameterList pl,
                      GMANTransform const& transform);
 
-  bool intersect(const GMANRay& ray, GMANHit& hit) const;
+  bool intersect(GMANRay const& ray, GMANHit& hit) const;
 
   // The shutter-open matrix placing the hyperboloid, for a renderer that
   // needs to reproduce its own placement (e.g. dicing it into camera

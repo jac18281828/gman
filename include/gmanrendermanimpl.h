@@ -186,16 +186,16 @@ public:
   // the RIB-parsed path calls these directly, with its own supplied-length
   // count per array, so a short "P" clamps instead of reading past its
   // allocation. The public overloads forward NULL, trusting the caller.
-  RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[], const RtInt* counts);
+  RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[], RtInt const* counts);
   RtVoid RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[], const RtInt* counts);
   RtVoid RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[],
                       RtPointer parms[], const RtInt* counts);
   RtVoid RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[], RtPointer parms[],
                            const RtInt* counts);
   RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[],
-                           const RtInt* counts);
+                           RtInt const* counts);
   RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
-                                  RtToken tokens[], RtPointer parms[], const RtInt* counts);
+                                  RtToken tokens[], RtPointer parms[], RtInt const* counts);
   RtVoid RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
                     RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtInt n, RtToken tokens[], RtPointer parms[]);
   RtVoid RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
@@ -219,17 +219,17 @@ public:
   RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
                    RtPointer parms[], const RtInt* counts);
   RtVoid RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[],
-                 const RtInt* counts);
+                 RtInt const* counts);
   RtVoid RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
                      RtPointer parms[], const RtInt* counts);
   RtVoid RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[],
-                        const RtInt* counts);
+                        RtInt const* counts);
   RtVoid RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
                        RtPointer parms[], const RtInt* counts);
   RtVoid RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[],
-                 const RtInt* counts);
+                 RtInt const* counts);
   RtVoid RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, RtInt n,
-                  RtToken tokens[], RtPointer parms[], const RtInt* counts);
+                  RtToken tokens[], RtPointer parms[], RtInt const* counts);
 
   RtVoid RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr, RtToken str[],
                    RtInt n, RtToken tokens[], RtPointer parms[]);

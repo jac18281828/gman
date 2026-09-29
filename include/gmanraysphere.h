@@ -38,7 +38,7 @@ public:
   GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
                 GMANTransform const& transform);
 
-  bool intersect(const GMANRay& ray, GMANHit& hit) const;
+  bool intersect(GMANRay const& ray, GMANHit& hit) const;
 
   // The shutter-open matrix placing the sphere, for a renderer that needs
   // to reproduce its own placement (e.g. dicing it into camera space).

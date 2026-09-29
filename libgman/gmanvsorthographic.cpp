@@ -28,7 +28,7 @@
 
 namespace gman {
 
-VSOrthographic::VSOrthographic(RtInt xr, RtInt yr, const GMANOptions::ScreenWindowStruct& s,
+VSOrthographic::VSOrthographic(RtInt xr, RtInt yr, GMANOptions::ScreenWindowStruct const& s,
                                const GMANMatrix4& worldToCamera, RtFloat nearDist, RtFloat farDist)
     : GMANViewingSystem(xr, yr, s, worldToCamera) {
   mtrx.prjOrtho(nearDist, farDist);
@@ -58,7 +58,7 @@ GMANRay VSOrthographic::cameraRay(RtFloat x, RtFloat y) {
  * return true if the face is visible from this perspective. See
  * VSPerspective::visible for the RiSides/RiOrientation rationale.
  */
-bool VSOrthographic::visible(const GMANFace* face) {
+bool VSOrthographic::visible(GMANFace const* face) {
   if (face->getSides() != 1) {
     return true;
   }
@@ -70,6 +70,6 @@ bool VSOrthographic::visible(const GMANFace* face) {
   return facingCamera;
 }
 
-const RtMatrix& VSOrthographic::getProjMatrix(RtVoid) const { return mtrx.get(); }
+RtMatrix const& VSOrthographic::getProjMatrix(RtVoid) const { return mtrx.get(); }
 
 } // namespace gman

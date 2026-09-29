@@ -80,10 +80,10 @@ public:
   virtual RtVoid setPixel(int x, int y, const GMANColor& color) { pixels[y * xres + x] = color; };
 
   // what is the alpha value of a specific pixel
-  virtual const GMANAlpha& getAlpha(int x, int y) const { return alphas[y * xres + x]; };
+  virtual GMANAlpha const& getAlpha(int x, int y) const { return alphas[y * xres + x]; };
 
   // set the alpha value of a specific pixel
-  virtual RtVoid setAlpha(int x, int y, const GMANAlpha& alpha) { alphas[y * xres + x] = alpha; };
+  virtual RtVoid setAlpha(int x, int y, GMANAlpha const& alpha) { alphas[y * xres + x] = alpha; };
 
   // set a specific row in the frame buffer
   virtual RtVoid setRow(int y, const GMANColor* row) {
