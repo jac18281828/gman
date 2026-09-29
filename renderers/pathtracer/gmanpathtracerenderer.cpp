@@ -310,6 +310,28 @@ ShadowWalkStart shadowWalkStart(GMANPoint const& origin, gman::EmitterSample con
   return {toTarget, distance};
 }
 
+// One light sample's shadowed contribution: betaF (throughput times the
+// closure's response) scaled by cosTerm / pLight, the light's Cl and the
+// walk's transmittance, weighted. The walk's pass-through share p (what
+// coverage's own passThrough can also reach) takes weight; the remainder
+// v - p, every crossing of a dielectric's shadowTransmittance, takes weight
+// 1, since an emitter hit through a delta-transmission chain adds nothing.
+// A weight of 1, or a walk with no dielectric crossing (v equal to p
+// bitwise), weights the whole transmittance v at once.
+GMANColor weightedShadowedTerm(GMANColor const& betaF, RtFloat cosTerm, RtFloat pLight, RtFloat weight,
+                               GMANColor const& cl, ShadowWalkResult const& walk) {
+  if (weight == 1.0f || colorsBitwiseEqual(walk.v, walk.p)) {
+    GMANColor term = scaleColor(betaF, weight * cosTerm / pLight);
+    term = gman::multiplyChannels(term, cl);
+    return gman::multiplyChannels(term, walk.v);
+  }
+
+  GMANColor const term = gman::multiplyChannels(scaleColor(betaF, cosTerm / pLight), cl);
+  GMANColor combined = subtractColor(walk.v, walk.p);
+  combined += scaleColor(walk.p, weight);
+  return gman::multiplyChannels(term, combined);
+}
+
 // Next-event estimation at a scattering vertex: chooses one emitter through
 // chooseLight, draws its own real (u1, u2) at dimension 3 + 5k -- reserved
 // for exactly this, distinct from chooseLight's own fixed preview draw --
@@ -360,23 +382,7 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
   ShadowWalkResult const walk = shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget,
                                            cameraToWorld, textureCache);
 
-  GMANColor term = gman::multiplyChannels(beta, f);
-  if (weight == 1.0f || colorsBitwiseEqual(walk.v, walk.p)) {
-    term = scaleColor(term, weight * cosTerm / pLight);
-    term = gman::multiplyChannels(term, es.Cl);
-    term = gman::multiplyChannels(term, walk.v);
-    return term;
-  }
-
-  // The walk crossed a dielectric and weight is not 1: p's own share (what
-  // coverage's own passThrough could also reach) takes weight; v - p,
-  // every dielectric crossing, now the emitter-hit rule's own to leave
-  // alone, takes weight 1.
-  term = scaleColor(term, cosTerm / pLight);
-  term = gman::multiplyChannels(term, es.Cl);
-  GMANColor combined = subtractColor(walk.v, walk.p);
-  combined += scaleColor(walk.p, weight);
-  return gman::multiplyChannels(term, combined);
+  return weightedShadowedTerm(gman::multiplyChannels(beta, f), cosTerm, pLight, weight, es.Cl, walk);
 }
 
 // The BSDF draw that carries a path onward: its direction, its own
