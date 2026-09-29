@@ -22,7 +22,7 @@
  * The path tracer's own multiple-importance-sampling weight computation,
  * called directly against hand-computed values, without rendering a
  * frame: next-event estimation's weight, an emitter hit's weight, the
- * light-choice probability the two share and the off switch. The three
+ * light-choice probability the two share and the off switch. The
  * functions under test carry external linkage in
  * renderers/pathtracer/gmanpathtracerenderer.cpp but no header declares
  * them; the prototypes below must match exactly.
@@ -40,13 +40,15 @@
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
+#include "gmanrayinterface.h"
 #include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "maketransform.h"
 #include "ri.h"
 
 namespace gman {
-RtFloat lightChoiceProbability(std::vector<gman::Emitter> const& emitters, GMANPoint const& p, std::size_t index);
+RtFloat lightChoiceProbability(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
+                               GMANRayInterface const* primitive, std::size_t index);
 RtFloat nextEventWeight(bool lightIsDelta, bool misEnabled, RtFloat pLight, RtFloat pBsdf);
 RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat pBsdf, RtFloat pLight);
 } // namespace gman
@@ -93,40 +95,34 @@ void testSameWeightAtADeeperVertex() {
         "emitterHitWeight: the same (pBsdf, pLight) pair gives the identical value at a deeper vertex");
 }
 
-// The light-choice probability, a hand-built world of one delta light and
-// one area emitter, enumerated through gman::emitters as the renderer
-// itself would.
-void testLightChoiceProbabilityTwoLights() {
-  GMANPoint const p(0.0f, 0.0f, 0.0f);
-
-  GMANLinearWorldManager world;
-
-  // The delta light: cl (1, 1, 1), at distance 1 from p, hosted on an
-  // otherwise unrelated primitive, as gman::emitters requires.
-  GMANRaySphere* host = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
-  GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, -1.0f), GMANVector());
+// Builds the two-light world both light-choice checks below share: a
+// point light at distance 1 from p and a rigidly placed area emitter at
+// distance pi from p, enumerated through gman::emitters as the renderer
+// itself would. pointLight and areaLight must outlive the returned
+// emitters; host and areaSphere receive the two hosting primitives.
+std::vector<gman::Emitter> buildTwoLightEmitters(GMANLinearWorldManager& world, GMANLight const& pointLight,
+                                                 GMANLight const& areaLight, GMANRaySphere*& host,
+                                                 GMANRaySphere*& areaSphere) {
+  host = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
   gman::Appearance hostAppearance;
   hostAppearance.lights = {&pointLight};
   host->setAppearance(hostAppearance);
   world.add(host);
 
-  // The area emitter: a rigidly placed sphere of radius 1, Le (2, 2, 2),
-  // its centre at distance pi from p.
   GMANMatrix4 place;
   place.trans(0.0f, 0.0f, -(RtFloat)kPi);
   GMANTransform const transform = makeTransform(place);
-  GMANRaySphere* areaSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
-  GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
+  areaSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
   gman::Appearance areaAppearance;
   areaAppearance.areaLight = &areaLight;
   areaSphere->setAppearance(areaAppearance);
   world.add(areaSphere);
 
-  std::vector<gman::Emitter> const emitters = gman::emitters(world);
-  check(emitters.size() == 2, "lightChoiceProbability: the hand-built world enumerates exactly two emitters");
+  return gman::emitters(world);
+}
 
-  std::size_t deltaIndex = 0;
-  std::size_t areaIndex = 0;
+void findDeltaAndAreaIndex(std::vector<gman::Emitter> const& emitters, std::size_t& deltaIndex,
+                           std::size_t& areaIndex) {
   for (std::size_t j = 0; j < emitters.size(); ++j) {
     if (emitters[j].shape == nullptr) {
       deltaIndex = j;
@@ -134,9 +130,28 @@ void testLightChoiceProbabilityTwoLights() {
       areaIndex = j;
     }
   }
+}
 
-  RtFloat const areaProbability = gman::lightChoiceProbability(emitters, p, areaIndex);
-  RtFloat const deltaProbability = gman::lightChoiceProbability(emitters, p, deltaIndex);
+// The light-choice probability, a hand-built world of one delta light and
+// one area emitter. host, an unrelated primitive, stands for the shading
+// point's own primitive: neither emitter sits on it, so nothing here is
+// excluded.
+void testLightChoiceProbabilityTwoLights() {
+  GMANPoint const p(0.0f, 0.0f, 0.0f);
+  GMANLinearWorldManager world;
+  GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, -1.0f), GMANVector());
+  GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
+  GMANRaySphere* host = nullptr;
+  GMANRaySphere* areaSphere = nullptr;
+  std::vector<gman::Emitter> const emitters = buildTwoLightEmitters(world, pointLight, areaLight, host, areaSphere);
+  check(emitters.size() == 2, "lightChoiceProbability: the hand-built world enumerates exactly two emitters");
+
+  std::size_t deltaIndex = 0;
+  std::size_t areaIndex = 0;
+  findDeltaAndAreaIndex(emitters, deltaIndex, areaIndex);
+
+  RtFloat const areaProbability = gman::lightChoiceProbability(emitters, p, host, areaIndex);
+  RtFloat const deltaProbability = gman::lightChoiceProbability(emitters, p, host, deltaIndex);
   std::printf("lightChoiceProbability: area %.10f, delta %.10f\n", (double)areaProbability, (double)deltaProbability);
   check(std::fabs(areaProbability - 0.3889845296) <= 1e-6f,
         "lightChoiceProbability: the area emitter's own probability matches the hand computation within 1e-6");
@@ -148,9 +163,36 @@ void testLightChoiceProbabilityTwoLights() {
   // Calling it again for the area emitter, once as if from next-event
   // estimation's own draw and once as if from an emitter-hit's arrival,
   // returns the identical value: one function, one probability.
-  RtFloat const areaProbabilityAgain = gman::lightChoiceProbability(emitters, p, areaIndex);
+  RtFloat const areaProbabilityAgain = gman::lightChoiceProbability(emitters, p, host, areaIndex);
   check(areaProbability == areaProbabilityAgain,
         "lightChoiceProbability: calling it twice for the area emitter at the same p returns the identical value");
+}
+
+// Self-exclusion: at a point on the area emitter's own surface (its pole
+// nearest the world origin), excluding that emitter's own primitive gives
+// it probability exactly 0, and the sole remaining light renormalizes to
+// probability 1.
+void testSelfExclusionZeroesOwnSurface() {
+  GMANLinearWorldManager world;
+  GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, -1.0f), GMANVector());
+  GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
+  GMANRaySphere* host = nullptr;
+  GMANRaySphere* areaSphere = nullptr;
+  std::vector<gman::Emitter> const emitters = buildTwoLightEmitters(world, pointLight, areaLight, host, areaSphere);
+
+  std::size_t deltaIndex = 0;
+  std::size_t areaIndex = 0;
+  findDeltaAndAreaIndex(emitters, deltaIndex, areaIndex);
+
+  // The area sphere is centred at (0, 0, -pi), radius 1; its pole nearest
+  // the origin sits at (0, 0, -pi + 1).
+  GMANPoint const pSelf(0.0f, 0.0f, -(RtFloat)kPi + 1.0f);
+  RtFloat const selfProbability = gman::lightChoiceProbability(emitters, pSelf, areaSphere, areaIndex);
+  check(selfProbability == 0.0f,
+        "lightChoiceProbability: a point on the area emitter's own surface gives it probability exactly 0");
+  RtFloat const otherProbability = gman::lightChoiceProbability(emitters, pSelf, areaSphere, deltaIndex);
+  check(std::fabs(otherProbability - 1.0f) <= 1e-6f,
+        "lightChoiceProbability: excluding the area emitter renormalizes the rest to sum to 1");
 }
 
 // The off switch. multipleImportanceSamplingEnabled(false) fixes
@@ -179,6 +221,7 @@ int main() {
   testTrueExemptions();
   testSameWeightAtADeeperVertex();
   testLightChoiceProbabilityTwoLights();
+  testSelfExclusionZeroesOwnSurface();
   testOffSwitch();
 
   return checkSummary("the path tracer's own MIS weight computation matches its hand-derived values, at every "

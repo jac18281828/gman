@@ -3130,6 +3130,21 @@ set_tests_properties(pathtracermistwolight PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A camera-facing emitting disk, lit by one distant light: the disk's own
+# light-choice weight peaks on its own surface, so without excluding an
+# emitter from lighting a point on itself, next-event estimation there
+# wastes almost every draw and divides the rare survivor by a tiny
+# probability. See tests/pathtracerselfexclusion_test.cpp.
+add_executable(gman_pathtracerselfexclusion pathtracerselfexclusion_test.cpp)
+target_link_libraries(gman_pathtracerselfexclusion PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerselfexclusion gman_matte)
+
+add_test(NAME pathtracerselfexclusion COMMAND gman_pathtracerselfexclusion)
+set_tests_properties(pathtracerselfexclusion PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every
