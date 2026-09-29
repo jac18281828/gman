@@ -1,0 +1,59 @@
+##
+## materials.rib -- four materials on a floor before a clay wall, lit by
+## two area lights: a warm disk overhead, out of frame, and a small blue
+## sphere lamp at the left. From left, a gold shinymetal ball, a glass
+## ball, a mirror ball and a blue plastic torus. Y is up; the camera
+## looks down +z. Area lights glow only under the path tracer:
+##
+##   gman -r gmanpathtracer samples/materials.rib
+##
+
+Display "materials.png" "file" "rgba"
+Format 640 400 1
+PixelSamples 2 2
+Option "pathtracer" "integer samples" [64]
+Projection "perspective" "fov" [40]
+Clipping 0.5 50
+Translate 0 -0.3 6
+Rotate -15 1 0 0
+WorldBegin
+Sides 2
+AttributeBegin
+	AreaLightSource "arealight" 1 "intensity" [12] "lightcolor" [1 0.95 0.85]
+	Translate 0 2.5 0
+	Rotate -90 1 0 0
+	Disk 0 1.2 360
+AttributeEnd
+AttributeBegin
+	AreaLightSource "arealight" 2 "intensity" [60] "lightcolor" [0.6 0.8 1]
+	Translate -2.2 1.2 1
+	Sphere 0.12 -0.12 0.12 360
+AttributeEnd
+Surface "matte"
+Color [0.8 0.78 0.74]
+Polygon "P" [-10 -1 -6  10 -1 -6  10 -1 4  -10 -1 4]
+Color [0.72 0.3 0.22]
+Polygon "P" [-10 -1 3  10 -1 3  10 8 3  -10 8 3]
+AttributeBegin
+	Surface "shinymetal" "roughness" [0.05]
+	Color [0.9 0.75 0.4]
+	Translate -1.3 -0.4 0.5
+	Sphere 0.6 -0.6 0.6 360
+AttributeEnd
+AttributeBegin
+	Surface "glass"
+	Translate 0 -0.4 0
+	Sphere 0.6 -0.6 0.6 360
+AttributeEnd
+AttributeBegin
+	Surface "mirror" "Kr" [1]
+	Translate 1.3 -0.4 0.5
+	Sphere 0.6 -0.6 0.6 360
+AttributeEnd
+AttributeBegin
+	Surface "plastic" "roughness" [0.1]
+	Color [0.2 0.4 0.9]
+	Translate 0.6 -0.75 -0.9
+	Torus 0.2 0.08 0 360 360
+AttributeEnd
+WorldEnd
