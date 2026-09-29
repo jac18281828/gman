@@ -214,11 +214,10 @@ jobs:
           clang-format --version
           cmake --build build --target format-check
   drivers-off:
-    # Proves the optional drivers are actually optional: no libpng-dev or
-    # libjpeg-dev installed at all, both options forced OFF, full suite
-    # green. The build job above proves the opposite shape (both ON,
-    # required); this is the one CI leg where neither library ever exists
-    # on the runner.
+    # Proves the optional drivers are optional: with no libpng-dev or
+    # libjpeg-dev on the runner and both options OFF, gman builds, renders
+    # a TIFF, and refuses a PNG or JPEG Display by name. The full suite runs
+    # in the jobs above, where both libraries exist.
     name: ubuntu / gcc / png+jpeg off
     runs-on: ubuntu-latest
     env:
@@ -245,5 +244,9 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
         run: cmake --build build --parallel
-      - name: Test
-        run: ctest --test-dir build --output-on-failure
+      - name: Render a TIFF without the optional drivers
+        run: |
+          ./build/gman tests/rib/sphere.rib
+          test -s sphere.tif
+      - name: A disabled driver fails loudly
+        run: ctest --test-dir build -R '^displaydisabled$' --output-on-failure
