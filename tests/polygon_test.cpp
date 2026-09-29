@@ -57,7 +57,8 @@
  * which distinguishes a finished triangulation from a stalled one; a
  * stalled loop would time out under ctest rather than fail an assertion.
  *
- * Revert checks (verified by actually reverting, not asserted):
+ * What each of these reverts breaks, traced by hand rather than asserted
+ * below:
  *   - Restoring GMANPatchPolyObjectManager::getRSPolygonMesh's
  *     triangulation to the fan-from-vertex-0 it replaced fails every
  *     notch-background assertion below (polygon_concave, polygon_concave_cw,
@@ -66,10 +67,10 @@
  *     convex input, wrong only for concave.
  *   - Reverting to a bare create() instead: the pentagon fixture renders
  *     pure background, failing every coverage and color assertion.
- *   - Revert step 1 alone (RiPolygonV's parameter-list sizing back to the
- *     literal 4, 4): a heap over-read in getRSPolygonMesh reading "P" back
- *     out of a too-small allocation, not guaranteed to be observable as a
- *     wrong render or a crash on its own.
+ *   - Reverting the factory's own parameter-list sizing to the literal
+ *     4, 4: a heap over-read in getRSPolygonMesh reading "P" back out of
+ *     a too-small allocation, not guaranteed to be observable as a wrong
+ *     render or a crash on its own.
  */
 
 #include <cmath>
@@ -87,7 +88,6 @@
 #include "gmandictionary.h"
 #include "gmanobject.h"
 #include "gmanoptions.h"
-#include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"

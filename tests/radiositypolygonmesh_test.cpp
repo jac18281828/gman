@@ -35,7 +35,6 @@
 #include "gmandictionary.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanoptions.h"
-#include "gmanparameterlist.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanradiositymesh.h"

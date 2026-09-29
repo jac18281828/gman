@@ -43,25 +43,25 @@ std::vector<std::pair<RtFloat, RtFloat>> resolvePointTexCoords(GMANParameterList
 
 class GMAN_EXPORT GMANRayPolygon : public GMANRayInterface, public GMANPolygon {
 public:
-  // outer's vertices are already in camera space (the CTM at RiPolygonV's
-  // own call, applied once per vertex by the factory): a polygon is flat,
-  // so its transformed vertices are its whole geometry and no per-ray
-  // matrix work is needed. Captured by value -- RiPolygonV deletes its
-  // transform right after the factory returns, so there is nothing to hold
-  // a reference to. A Polygon (the one-loop case) constructs this way,
-  // with no holes.
+  // outer's vertices are already in camera space, transformed once per
+  // vertex by the caller: a polygon is flat, so its transformed vertices
+  // are its whole geometry and no per-ray matrix work is needed. Captured
+  // by value, so a caller need not keep its transform alive past the call.
+  // Direct construction only, with no holes -- every polygon request's
+  // face builds through the texCoords constructor below.
   GMANRayPolygon(std::vector<GMANPoint> outer, GMANParameterList pl);
 
-  // A GeneralPolygon: outer is the boundary loop, each entry of holes a
-  // loop cut out of it. Each loop is tested even-odd on its own; a hit
-  // point is inside when it lands inside the outer loop and in no hole.
-  // texCoords resolve from pl's own leading entries, the outer loop's flat
-  // "P" slots -- the same rule the one-loop constructor uses.
+  // outer is the boundary loop, each entry of holes a loop cut out of it.
+  // Each loop is tested even-odd on its own; a hit point is inside when it
+  // lands inside the outer loop and in no hole. texCoords resolve from
+  // pl's own leading entries, the outer loop's flat "P" slots -- the same
+  // rule the one-loop constructor uses. Direct construction only, as
+  // above.
   GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holes, GMANParameterList pl);
 
-  // A Points*/PointsGeneralPolygons face: outerTexCoords is already
-  // gathered per vertex, through the request's own "verts", since no flat
-  // pl indexes this face's vertices by local slot.
+  // Every polygon request's face builds this way: outerTexCoords is
+  // already gathered per vertex, since no flat pl indexes this face's
+  // vertices by local slot.
   GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holes,
                  std::vector<std::pair<RtFloat, RtFloat>> outerTexCoords);
 

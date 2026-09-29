@@ -35,7 +35,6 @@
 #include "gmanattributes.h"
 #include "gmandictionary.h"
 #include "gmanoptions.h"
-#include "gmanparameterlist.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"

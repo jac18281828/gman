@@ -115,9 +115,9 @@ void testNegativeNvertsWithoutP(std::string const& logPath) {
   closeWorld(renderMan);
 }
 
-// nverts one above INT_MAX / 3, no parameter: the only case an overflowing
-// nverts can pin without triggering undefined behaviour in
-// GMANDictionary::allocSize (see the file's own comment).
+// nverts one above INT_MAX / 3, no parameter: with a "P" parameter the
+// same overflow is undefined behaviour inside GMANDictionary::allocSize,
+// not one a pin can assert on.
 void testOverflowingNvertsWithoutP(std::string const& logPath) {
   GMANRenderManImpl renderMan;
   char displayName[] = "polygonnverts_overflow_nop.tif";

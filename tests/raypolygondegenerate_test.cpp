@@ -30,7 +30,6 @@
 #include "gmanattributes.h"
 #include "gmandictionary.h"
 #include "gmanoptions.h"
-#include "gmanparameterlist.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanrayinterface.h"
@@ -41,8 +40,9 @@
 
 namespace {
 
-// Four collinear points: nverts >= 3, so the request reaches the manager,
-// but the outer loop is degenerate.
+// Four collinear points: the factory rejects only a negative or
+// overflowing nverts, so this reaches the manager, but the outer loop is
+// degenerate.
 std::vector<GMANPoint> collinearFour() {
   return {GMANPoint(0, 0, 0), GMANPoint(1, 0, 0), GMANPoint(2, 0, 0), GMANPoint(3, 0, 0)};
 }

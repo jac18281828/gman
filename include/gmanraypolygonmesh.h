@@ -28,10 +28,10 @@
 
 #include "gmanraypolygon.h"
 
-// One PointsPolygons/PointsGeneralPolygons request's own faces, each a
-// GMANRayPolygon in camera space, joined under one GMANPrimitive so
-// RiPointsPolygonsV/RiPointsGeneralPolygonsV add exactly one primitive to
-// the world. GMANRayBVH::build recognizes this type by dynamic_cast and
+// Every polygon request's own faces, each a GMANRayPolygon in camera
+// space, joined under one GMANPrimitive so the RI layer adds exactly one
+// primitive to the world, a one-face Polygon or GeneralPolygon included.
+// GMANRayBVH::build recognizes this type by dynamic_cast and
 // adds each face as its own entry instead of the mesh itself, through
 // getFaceCount()/getFace(), so a house-sized mesh culls per face;
 // intersect below tests every face linearly, for any caller that reaches
