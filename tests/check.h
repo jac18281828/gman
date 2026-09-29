@@ -35,11 +35,12 @@
 
 inline int failures = 0;
 
-inline void check(bool ok, const std::string& what) {
+inline bool check(bool ok, const std::string& what) {
   std::printf("%s: %s\n", ok ? "ok" : "FAIL", what.c_str());
   if (!ok) {
     ++failures;
   }
+  return ok;
 }
 
 // Prints the pass/fail summary and returns the test binary's exit code.

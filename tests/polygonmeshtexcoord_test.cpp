@@ -78,6 +78,9 @@ GMANPrimitive* buildTexturedMesh() {
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
+  if (!check(mesh.has_value(), "buildTexturedMesh: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 

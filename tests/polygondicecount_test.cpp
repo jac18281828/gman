@@ -124,6 +124,9 @@ GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, const GMANOptions& options, c
   GMANPatchPolyObjectManager mgr;
   GMANOptions optionsCopy = options;
   GMANAttributes attrCopy = attr;
+  if (!check(mesh.has_value(), "runTriangle: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &optionsCopy, &attrCopy, &transform);
 }
 
@@ -142,6 +145,9 @@ GMANPrimitive* runTriangleCorners(const std::array<RtFloat, 9>& p, const GMANOpt
   GMANPatchPolyObjectManager mgr;
   GMANOptions optionsCopy = options;
   GMANAttributes attrCopy = attr;
+  if (!check(mesh.has_value(), "runTriangleCorners: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &optionsCopy, &attrCopy, &transform);
 }
 

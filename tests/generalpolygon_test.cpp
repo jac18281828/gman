@@ -228,6 +228,9 @@ GMANPrimitive* runGetRSGeneralPolygon(const std::vector<std::vector<GMANPoint>>&
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
+  if (!check(mesh.has_value(), "runGetRSGeneralPolygon: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
@@ -504,6 +507,10 @@ void runOneLoopParity(const std::string& name, const std::vector<GMANPoint>& can
       GMANTransform transform;
       GMANPatchPolyObjectManager mgr;
 
+      if (!check(polyMesh.has_value() && generalMesh.has_value(),
+                 std::string(buf) + ": the factory builds both meshes")) {
+        continue;
+      }
       GMANPrimitive* polyPrim = mgr.getRSPolygonMesh(*polyMesh, &options, &attr, &transform);
       GMANPrimitive* generalPrim = mgr.getRSPolygonMesh(*generalMesh, &options, &attr, &transform);
       GMANObject* polyObj = dynamic_cast<GMANObject*>(polyPrim);

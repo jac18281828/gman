@@ -116,6 +116,9 @@ GMANPrimitive* runGetRSPolygonDirect(const std::vector<GMANPoint>& ring) {
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
+  if (!check(mesh.has_value(), "runGetRSPolygonDirect: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
@@ -146,6 +149,9 @@ GMANPrimitive* runGetRSGeneralPolygonDirect(const std::vector<std::vector<GMANPo
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
+  if (!check(mesh.has_value(), "runGetRSGeneralPolygonDirect: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
@@ -169,6 +175,9 @@ GMANPrimitive* runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt> nverts, st
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
+  if (!check(mesh.has_value(), "runGetRSPointsPolygon: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
@@ -190,6 +199,9 @@ GMANPrimitive* runGetRSPointsGeneralPolygons(RtInt npolys, std::vector<RtInt> nl
   GMANAttributes attr;
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
+  if (!check(mesh.has_value(), "runGetRSPointsGeneralPolygons: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 

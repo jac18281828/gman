@@ -310,6 +310,9 @@ void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt 
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
 
+  if (!check(mesh.has_value(), label + ": the factory builds a mesh")) {
+    return;
+  }
   GMANPrimitive* prim = mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
   GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, label + ": getRSPolygonMesh returns an object");

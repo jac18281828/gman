@@ -101,6 +101,9 @@ GMANPrimitive* runGetRSPointsPolygonDirect(std::vector<GMANPoint> const& points,
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
+  if (!check(mesh.has_value(), "runGetRSPointsPolygonDirect: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 

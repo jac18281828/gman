@@ -90,6 +90,9 @@ GMANPrimitive* buildPolygon(std::vector<GMANPoint> const& outer) {
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
+  if (!check(mesh.has_value(), "buildPolygon: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
@@ -111,6 +114,9 @@ GMANPrimitive* buildGeneralPolygon(std::vector<std::vector<GMANPoint>> const& lo
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
+  if (!check(mesh.has_value(), "buildGeneralPolygon: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
@@ -134,6 +140,9 @@ GMANPrimitive* buildPointsPolygon(std::vector<GMANPoint> const& points, std::vec
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
+  if (!check(mesh.has_value(), "buildPointsPolygon: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
@@ -165,6 +174,9 @@ GMANPrimitive* buildPointsGeneralPolygons(std::vector<GMANPoint> const& points,
   GMANAttributes attr;
   GMANTransform transform;
   GMANRayObjectManager mgr;
+  if (!check(mesh.has_value(), "buildPointsGeneralPolygons: the factory builds a mesh")) {
+    return nullptr;
+  }
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 

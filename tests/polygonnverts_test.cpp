@@ -76,8 +76,8 @@ template <typename Fn> std::string captureLog(std::string const& path, Fn&& fn) 
 // A negative or overflowing nverts, sent through the counts-aware
 // RiPolygonV with or without a "P" parameter. Catches std::exception around
 // the call so an unfixed throw fails the check below rather than crashing
-// the test binary.
-void callPolygon(GMANRenderManImpl& renderMan, RtInt nverts, bool withP) {
+// the test binary. Returns whether the call returned rather than throwing.
+bool callPolygon(GMANRenderManImpl& renderMan, RtInt nverts, bool withP) {
   RtFloat p[3] = {0, 0, 0};
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p};
@@ -87,7 +87,9 @@ void callPolygon(GMANRenderManImpl& renderMan, RtInt nverts, bool withP) {
     } else {
       renderMan.RiPolygonV(nverts, 0, nullptr, nullptr, nullptr);
     }
+    return true;
   } catch (std::exception const&) {
+    return false;
   }
 }
 
@@ -96,7 +98,9 @@ void testNegativeNvertsWithP(std::string const& logPath) {
   char displayName[] = "polygonnverts_negative_p.tif";
   openWorld(renderMan, displayName);
 
-  std::string const log = captureLog(logPath, [&] { callPolygon(renderMan, -1, /*withP=*/true); });
+  bool returned = false;
+  std::string const log = captureLog(logPath, [&] { returned = callPolygon(renderMan, -1, /*withP=*/true); });
+  check(returned, "negative nverts, with \"P\": RiPolygonV returns rather than throwing");
   check(log.find("Polygon: nverts[0] = -1 is negative; ignoring.") != std::string::npos,
         "negative nverts, with \"P\": the log holds the negative-nverts message");
 
@@ -108,7 +112,9 @@ void testNegativeNvertsWithoutP(std::string const& logPath) {
   char displayName[] = "polygonnverts_negative_nop.tif";
   openWorld(renderMan, displayName);
 
-  std::string const log = captureLog(logPath, [&] { callPolygon(renderMan, -1, /*withP=*/false); });
+  bool returned = false;
+  std::string const log = captureLog(logPath, [&] { returned = callPolygon(renderMan, -1, /*withP=*/false); });
+  check(returned, "negative nverts, no parameter: RiPolygonV returns rather than throwing");
   check(log.find("Polygon: nverts[0] = -1 is negative; ignoring.") != std::string::npos,
         "negative nverts, no parameter: the log holds the negative-nverts message");
 
@@ -124,7 +130,9 @@ void testOverflowingNvertsWithoutP(std::string const& logPath) {
   openWorld(renderMan, displayName);
 
   RtInt const nverts = INT_MAX / 3 + 1;
-  std::string const log = captureLog(logPath, [&] { callPolygon(renderMan, nverts, /*withP=*/false); });
+  bool returned = false;
+  std::string const log = captureLog(logPath, [&] { returned = callPolygon(renderMan, nverts, /*withP=*/false); });
+  check(returned, "overflowing nverts, no parameter: RiPolygonV returns rather than throwing");
   check(log.find("Polygon: nverts sums to " + std::to_string(nverts) + ", times 3 overflows RtInt; ignoring.") !=
             std::string::npos,
         "overflowing nverts, no parameter: the log holds the overflow message");
