@@ -265,9 +265,9 @@ void checkPdfValues() {
 
 // gman::powerHeuristic against its closed form, its two argument-order
 // exemptions, both-zero and the balance property at one pair -- 0.4 and
-// 0.6 (the balance heuristic's own weights at the same pair, per this
-// file's own mutation drill) would also sum to 1 but differ from either
-// power-heuristic value here by more than 1e-3.
+// 0.6, the balance heuristic's own weights at the same pair, would also
+// sum to 1 but differ from either power-heuristic value here by more
+// than 1e-3.
 void checkPowerHeuristic() {
   check(std::fabs(gman::powerHeuristic(2.0f, 3.0f) - 4.0f / 13.0f) <= 1e-6f, "powerHeuristic(2, 3) == 4/13");
   check(std::fabs(gman::powerHeuristic(3.0f, 2.0f) - 9.0f / 13.0f) <= 1e-6f, "powerHeuristic(3, 2) == 9/13");

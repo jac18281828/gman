@@ -116,7 +116,9 @@ double closestApproachDistance(GMANPoint const& origin, GMANPoint const& target,
 // sphere's own radius, with margin.
 void checkNoOcclusion() {
   GMANPoint const origin(0.0f, 0.0f, 0.0f);
-  GMANPoint const floorPoint(0.0f, kFloorY, 9.0f);
+  // x = -6 sits inside the measured set (x < kNearSphere2XBound), not the
+  // far half the residual/variance check never reads.
+  GMANPoint const floorPoint(-6.0f, kFloorY, 9.0f);
   GMANPoint const centre1(kSphere1CentreX, kSphere1CentreY, kSphere1CentreZ);
   GMANPoint const centre2(kSphere2CentreX, kSphere2CentreY, kSphere2CentreZ);
 

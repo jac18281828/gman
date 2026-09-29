@@ -38,7 +38,6 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
-#include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
 #include "gmanrayinterface.h"
 #include "gmanraysphere.h"
@@ -60,9 +59,7 @@ namespace {
 constexpr double kPi = 3.14159265358979323846;
 
 // No exemption at vertex 0: neither function takes a vertex index at all,
-// so there is nowhere for a hidden "return 1 at vertex 0" to hide; a check
-// below calls the identical emitter-hit case again, standing for a deeper
-// vertex, and finds the same value.
+// so there is nowhere for a hidden "return 1 at vertex 0" to hide.
 void testNoExemptionAtFirstVertex() {
   RtFloat const nextEvent = gman::nextEventWeight(false, true, 3.0f, 2.0f);
   check(std::fabs(nextEvent - 9.0f / 13.0f) <= 1e-6f,
@@ -85,16 +82,6 @@ void testTrueExemptions() {
   check(gman::emitterHitWeight(true, true, 2.0f, 3.0f) == 1.0f,
         "emitterHitWeight: rayEligible true keeps weight 1 -- covers both the camera ray's own direct hit and a "
         "delta-lobe departure, whatever pBsdf and pLight are");
-}
-
-// The identical (pBsdf, pLight) pair, called again as if from a deeper
-// vertex -- matching the earlier value rules out a hidden vertex-0-only
-// special case, since the function itself takes no vertex index to
-// special-case.
-void testSameWeightAtADeeperVertex() {
-  RtFloat const deeper = gman::emitterHitWeight(false, true, 2.0f, 3.0f);
-  check(std::fabs(deeper - 4.0f / 13.0f) <= 1e-6f,
-        "emitterHitWeight: the same (pBsdf, pLight) pair gives the identical value at a deeper vertex");
 }
 
 // Builds the two-light world both light-choice checks below share: a
@@ -234,15 +221,12 @@ void testEmitterHitChainRule() {
         "chain rule: camera ray, T (no non-delta departure yet) -- the hit counts, fixed at 1");
 }
 
-// The off switch. multipleImportanceSamplingEnabled(false) fixes
-// next-event estimation's weight at 1 and the emitter-hit's weighted
-// branch at 0, adding nothing at all for a non-delta departure. Also
-// exercises the renderer's own switch, the sole production caller of
-// setMultipleImportanceSampling besides tests/pathtracermisveach_test.cpp.
+// The off switch. GMANPathtraceRenderer's own setMultipleImportanceSampling
+// sets exactly the misEnabled flag both functions below take directly;
+// multipleImportanceSamplingEnabled(false) fixes next-event estimation's
+// weight at 1 and the emitter-hit's weighted branch at 0, adding nothing
+// at all for a non-delta departure.
 void testOffSwitch() {
-  GMANPathtraceRenderer renderer;
-  renderer.setMultipleImportanceSampling(false);
-
   RtFloat const nextEvent = gman::nextEventWeight(/*lightIsDelta=*/false, /*misEnabled=*/false, 3.0f, 2.0f);
   check(nextEvent == 1.0f, "nextEventWeight: MIS off fixes an area light's weight at 1 regardless of pLight/pBsdf");
 
@@ -258,7 +242,6 @@ void testOffSwitch() {
 int main() {
   testNoExemptionAtFirstVertex();
   testTrueExemptions();
-  testSameWeightAtADeeperVertex();
   testLightChoiceProbabilityTwoLights();
   testSelfExclusionZeroesOwnSurface();
   testEmitterHitChainRule();

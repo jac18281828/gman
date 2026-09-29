@@ -46,13 +46,11 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraypolygon.h"
-#include "gmanraysphere.h"
 #include "gmanshaderenvironment.h"
 #include "gmansurfaceshader.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
-#include "maketransform.h"
+#include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
 #include "samplingstats.h"
@@ -109,8 +107,6 @@ std::vector<GMANPoint> platePoints(GMANVector const& u, GMANVector const& v, GMA
           GMANPoint(centre.getX() + hu.getX() - hv.getX(), centre.getY() + hu.getY() - hv.getY(),
                     centre.getZ() + hu.getZ() - hv.getZ())};
 }
-
-GMANOptions::ScreenWindowStruct squareWindow() { return squareScreenWindow(); }
 
 // A pixel is measured when its cell's four corner rays all hit the plate,
 // found by the same ray-plane-then-bounds test gmanraypolygon.cpp's own
@@ -186,23 +182,12 @@ VeachScene buildVeachScene(GMANPathtraceRenderer& renderer, GMANLight const& are
   RtFloat const cosIn = boresight.dot(normal);
   GMANVector const reflected = boresight - normal * ((RtFloat)2.0 * cosIn);
 
-  GMANMatrix4 place;
-  place.trans(centre.getX() + reflected.getX() * kLightDistance, centre.getY() + reflected.getY() * kLightDistance,
-              centre.getZ() + reflected.getZ() * kLightDistance);
-  GMANTransform const transform = makeTransform(place);
-  GMANRaySphere* lightSphere =
-      new GMANRaySphere(kLightRadius, -kLightRadius, kLightRadius, 360.0f, GMANParameterList(), transform);
-  gman::Appearance lightAppearance;
-  lightAppearance.areaLight = &areaLight;
-  lightAppearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
-  lightAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
-  lightSphere->setAppearance(lightAppearance);
-  renderer.getWorldManager()->add(lightSphere);
-
-  PlatePlane plane{normal, u, v, centre};
   GMANPoint const lightCentre(centre.getX() + reflected.getX() * kLightDistance,
                               centre.getY() + reflected.getY() * kLightDistance,
                               centre.getZ() + reflected.getZ() * kLightDistance);
+  addEmittingSphere(renderer, areaLight, kLightRadius, lightCentre.getX(), lightCentre.getY(), lightCentre.getZ());
+
+  PlatePlane plane{normal, u, v, centre};
   return {plane, lightCentre};
 }
 
@@ -219,7 +204,7 @@ std::unique_ptr<GMANFrameBuffer> renderVeach(bool misEnabled, std::uint32_t N, P
   options.setBackground(GMANColor(0.0f, 0.0f, 0.0f));
 
   GMANMatrix4 const identity;
-  gman::VSPerspective viewingSys(kRes, kRes, squareWindow(), identity, kFovDegrees, 0.5f, 50.0f);
+  gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, kFovDegrees, 0.5f, 50.0f);
 
   auto renderer = std::make_unique<GMANPathtraceRenderer>();
   renderer->setMultipleImportanceSampling(misEnabled);
@@ -254,7 +239,7 @@ void testVeachPlatesMisReducesVariance() {
   // The alignment contract: the boresight's own reflection direction
   // points within kMaxAlignmentDegrees of the light's true centre.
   GMANMatrix4 const identity;
-  gman::VSPerspective viewingSys(kRes, kRes, squareWindow(), identity, kFovDegrees, 0.5f, 50.0f);
+  gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, kFovDegrees, 0.5f, 50.0f);
   GMANRay const boresightRay = viewingSys.cameraRay((RtFloat)kRes / 2.0f, (RtFloat)kRes / 2.0f);
   GMANPoint hit;
   bool const boresightHits = intersectPlate(plane1, boresightRay.getDirection(), hit);
