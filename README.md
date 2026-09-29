@@ -80,6 +80,22 @@ for, so it skips that light and says so:
 gmanpathtracer: ambientlight lights nothing under the path tracer; skipped 1 light(s).
 ```
 
+## Light it with area lights
+
+`samples/materials.rib` sets four materials before a clay wall and lights them with two area
+lights, a warm disk overhead and a small blue sphere lamp at the left:
+
+```sh
+gman -r gmanpathtracer samples/materials.rib
+```
+
+[![gman's path-traced render of samples/materials.rib](samples/materials-pathtraced.png)](https://2ad.com/gman.html)
+
+From the left: gold `shinymetal`, `glass`, a `mirror` that takes the wall's clay colour, and a
+`plastic` torus. The overhead disk pools a soft shadow under each one. The scene traces 64 paths a
+subpixel, about two minutes on one core of an Apple M3 Max; the picture traces 256, set by
+`Option "pathtracer" "integer samples"` at the top of the file.
+
 ## Poke it
 
 Change one line of `samples/vase.rib` in the unpacked folder and render it again with
