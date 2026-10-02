@@ -53,12 +53,8 @@ constexpr RtFloat tolerance = 1e-3;
 
 bool near(RtFloat a, RtFloat b) { return std::fabs(a - b) <= tolerance; }
 
-bool colorIs(GMANColor const& c, RtFloat v) {
+template <class Channel> bool channelIs(Channel const& c, RtFloat v) {
   return near(c.getRed(), v) && near(c.getGreen(), v) && near(c.getBlue(), v);
-}
-
-bool alphaIs(GMANAlpha const& a, RtFloat v) {
-  return near(a.getRed(), v) && near(a.getGreen(), v) && near(a.getBlue(), v);
 }
 
 GMANOptions::ScreenWindowStruct squareWindow() {
@@ -99,14 +95,16 @@ void testClipVertexInterpolation() {
   int onPlane = 0;
   int inside = 0;
   for (int i = 0; i < n; ++i) {
-    if (near(out.getVertexPosn(i).getX(), -1.0)) {
+    const RtFloat x = out.getVertexPosn(i).getX();
+    if (near(x, -1.0)) {
       ++onPlane;
-      check(colorIs(out.getVertexColor(i), 2.0 / 3.0), "clip: a clip vertex reads the colour interpolated at t=2/3");
-      check(alphaIs(out.getVertexAlpha(i), 0.6), "clip: a clip vertex reads the alpha interpolated at t=2/3");
+      check(channelIs(out.getVertexColor(i), 2.0 / 3.0), "clip: a clip vertex reads the colour interpolated at t=2/3");
+      check(channelIs(out.getVertexAlpha(i), 0.6), "clip: a clip vertex reads the alpha interpolated at t=2/3");
     } else {
       ++inside;
-      check(colorIs(out.getVertexColor(i), 1.0), "clip: an inside vertex keeps its colour");
-      check(alphaIs(out.getVertexAlpha(i), 0.8), "clip: an inside vertex keeps its alpha");
+      check(near(x, -0.8), "clip: the inside vertex at x=-4 projects to NDC x=-0.8");
+      check(channelIs(out.getVertexColor(i), 1.0), "clip: an inside vertex keeps its colour");
+      check(channelIs(out.getVertexAlpha(i), 0.8), "clip: an inside vertex keeps its alpha");
     }
   }
   check(onPlane == 2 && inside == 2, "clip: two vertices land on the LEFT plane and two stay inside");

@@ -35,7 +35,7 @@
 
 // default constructor
 //
-// alpha defaults to DefaultAlpha, as in the other constructor:
+// alpha defaults to DefaultAlpha:
 // GMANClipEdge::intersect's alpha blend interpolates the endpoints' alpha,
 // so an uninitialized alpha would corrupt a clipped vertex's alpha.
 GMANVertex::GMANVertex()

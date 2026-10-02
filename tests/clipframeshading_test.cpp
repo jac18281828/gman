@@ -50,6 +50,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <format>
 #include <string>
 
 #include <tiffio.h>
@@ -73,7 +74,7 @@ constexpr int regionY1 = 299;
 constexpr int backgroundMargin = 8;
 constexpr int agreeTolerance = 16;
 
-int channelDifference(uint32_t a, uint32_t b) {
+int channelDifference(std::uint32_t a, std::uint32_t b) {
   return std::max({std::abs(int(TIFFGetR(a)) - int(TIFFGetR(b))), std::abs(int(TIFFGetG(a)) - int(TIFFGetG(b))),
                    std::abs(int(TIFFGetB(a)) - int(TIFFGetB(b)))});
 }
@@ -92,31 +93,31 @@ int main(int argc, char* argv[]) {
 
   const GmanImage narrow = readGmanTIFF("clipframe_narrow.tif");
   const GmanImage wide = readGmanTIFF("clipframe_wide.tif");
-  check(narrow.ok && narrow.width == narrowWidth && narrow.height == narrowHeight,
-        "the narrow frame reads back at 640x400");
-  check(wide.ok && wide.width == wideWidth && wide.height == wideHeight, "the wide frame reads back at 960x600");
-  if (!narrow.ok || !wide.ok || narrow.width != narrowWidth || narrow.height != narrowHeight ||
-      wide.width != wideWidth || wide.height != wideHeight) {
+  const bool narrowReads = narrow.ok && narrow.width == narrowWidth && narrow.height == narrowHeight;
+  const bool wideReads = wide.ok && wide.width == wideWidth && wide.height == wideHeight;
+  check(narrowReads, "the narrow frame reads back at 640x400");
+  check(wideReads, "the wide frame reads back at 960x600");
+  if (!narrowReads || !wideReads) {
     return checkSummary("clipframeshading holds");
   }
 
-  const uint32_t background = narrow.at(narrowWidth - 1, 0);
+  const std::uint32_t background = narrow.at(narrowWidth - 1, 0);
   int minFromBackground = 255;
   int largest = 0;
   for (int y = regionY0; y <= regionY1; ++y) {
     for (int x = regionX0; x <= regionX1; ++x) {
-      const uint32_t n = narrow.at(x, y);
+      const std::uint32_t n = narrow.at(x, y);
       minFromBackground = std::min(minFromBackground, channelDifference(n, background));
       largest = std::max(largest, channelDifference(n, wide.at(x + offsetX, y + offsetY)));
     }
   }
 
   check(minFromBackground > backgroundMargin,
-        "every compared narrow pixel differs from the background by more than 8 (least " +
-            std::to_string(minFromBackground) + ")");
-  check(largest <= agreeTolerance, "narrow columns 0-119, rows 100-299 agree with the wide frame within 16 levels "
-                                   "(largest " +
-                                       std::to_string(largest) + ")");
+        std::format("every compared narrow pixel differs from the background by more than 8 (least {})",
+                    minFromBackground));
+  check(largest <= agreeTolerance,
+        std::format("narrow columns 0-119, rows 100-299 agree with the wide frame within 16 levels (largest {})",
+                    largest));
 
   return checkSummary("clipframeshading holds");
 }
