@@ -72,13 +72,15 @@ GMANVertex4 GMANClipEdge::intersect(const GMANVertex4& s, const GMANVertex4& e) 
   // the clip-plane intersection point, in homogeneous clip space
   p = s.getCoord() + r * t;
 
-  // linearly interpolate vertex color
+  // interpolate colour and alpha by the crossing's fraction along the edge
+  GMANAlpha const weight(t);
+
   GMANCombine colorCombine;
-  color = colorCombine(s.getColor(), e.getColor(), e.getAlpha());
+  color = colorCombine(s.getColor(), e.getColor(), weight);
 
   GMANAlphaCombine alphaCombine;
 
-  GMANAlpha alpha = alphaCombine(s.getAlpha(), e.getAlpha(), e.getAlpha());
+  GMANAlpha alpha = alphaCombine(s.getAlpha(), e.getAlpha(), weight);
   v.set(p, color, alpha);
 
   return v;

@@ -1,0 +1,20 @@
+## The reference frame for clipframe_narrow.rib: the same scene at the same
+## 200 pixels per unit, widened to 960x600 by ScreenWindow -2.4 2.4 -1.5 1.5.
+## Narrow pixel (x, y) is this frame's pixel (x + 160, y + 100). This frame
+## clips the wall at its own left edge, narrow column -160, so inside the
+## compared region its pixels do not depend on how the clipper colours a
+## clip vertex.
+Display "clipframe_wide.tif" "file" "rgba"
+Format 960 600 1
+ScreenWindow -2.4 2.4 -1.5 1.5
+Projection "perspective" "fov" [40]
+Clipping 0.5 60
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "pointlight" 2 "intensity" [30] "from" [-1 0.5 4]
+Sides 2
+Color [0.5 0.7 0.9]
+Surface "matte" "Ka" [1] "Kd" [1]
+Polygon "P" [-2.5 -1.5 -4  -2.5 -1.5 20  -2.5 1.5 20  -2.5 1.5 -4]
+WorldEnd

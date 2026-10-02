@@ -1,0 +1,19 @@
+## A wall crossing the left frame edge, the frame clipping it there. A vertex
+## the clipper adds at the crossing takes the colour interpolated along the
+## edge, so this frame's left columns match the same pixels of
+## clipframe_wide.rib, whose own clip edge lies 160 columns beyond them.
+## Format 640x400 with the default window [-1.6,1.6]x[-1,1] is 200 pixels
+## per unit; tests/clipframeshading_test.cpp compares columns 0-119.
+Display "clipframe_narrow.tif" "file" "rgba"
+Format 640 400 1
+Projection "perspective" "fov" [40]
+Clipping 0.5 60
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "pointlight" 2 "intensity" [30] "from" [-1 0.5 4]
+Sides 2
+Color [0.5 0.7 0.9]
+Surface "matte" "Ka" [1] "Kd" [1]
+Polygon "P" [-2.5 -1.5 -4  -2.5 -1.5 20  -2.5 1.5 20  -2.5 1.5 -4]
+WorldEnd

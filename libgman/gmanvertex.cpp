@@ -35,12 +35,9 @@
 
 // default constructor
 //
-// alpha was never initialized here (unlike the other constructor, which
-// defaults it to DefaultAlpha) -- harmless while nothing read a
-// newly-tessellated vertex's alpha, but GMANClipEdge::intersect's color
-// blend (GMANCombine, weighted by e.getAlpha()) reads it as soon as the
-// clipper actually runs, turning the garbage into an out-of-range color
-// that later corrupts gamma/quantization.
+// alpha defaults to DefaultAlpha, as in the other constructor:
+// GMANClipEdge::intersect's alpha blend interpolates the endpoints' alpha,
+// so an uninitialized alpha would corrupt a clipped vertex's alpha.
 GMANVertex::GMANVertex()
     : location(0.0, 0.0, 0.0), normal(0.0, 0.0, 0.0), color(DefaultBGColor), alpha(DefaultAlpha), next(NULL) {};
 

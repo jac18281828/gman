@@ -383,6 +383,15 @@ set_tests_properties(noisedeterminism PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A vertex the clipper introduces at a plane crossing carries the colour and
+# alpha interpolated at the crossing, at hand-derived values.
+add_executable(gman_clipcolor clipcolor_test.cpp)
+target_link_libraries(gman_clipcolor PRIVATE gman_core gman_internal_headers)
+add_test(NAME clipcolor COMMAND gman_clipcolor)
+set_tests_properties(clipcolor PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_spacechain spacechain_test.cpp)
 target_link_libraries(gman_spacechain PRIVATE gman_core gman_internal_headers)
 add_test(NAME spacechain COMMAND gman_spacechain)
@@ -1190,6 +1199,25 @@ add_test(NAME wideframe
                          "${CMAKE_CURRENT_SOURCE_DIR}/rib/wideframe.rib"
   WORKING_DIRECTORY "${GMAN_WIDEFRAME_WORKDIR}")
 set_tests_properties(wideframe PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+# A wall crossing the frame edge shades as it does unclipped:
+# tests/rib/clipframe_narrow.rib's left columns against the same pixels of
+# tests/rib/clipframe_wide.rib, a frame whose own clip edge lies beyond them.
+add_executable(gman_clipframeshading clipframeshading_test.cpp)
+target_link_libraries(gman_clipframeshading PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_CLIPFRAMESHADING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/clipframeshading-run")
+file(MAKE_DIRECTORY "${GMAN_CLIPFRAMESHADING_WORKDIR}")
+
+add_test(NAME clipframeshading
+  COMMAND gman_clipframeshading $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib/clipframe_narrow.rib"
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib/clipframe_wide.rib"
+  WORKING_DIRECTORY "${GMAN_CLIPFRAMESHADING_WORKDIR}")
+set_tests_properties(clipframeshading PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 30)
