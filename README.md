@@ -366,5 +366,6 @@ programs first: a competing build slows a run by a third.
 | Machine | Cores | Renders a minute |
 |---|---|---|
 | Apple M5 Max | 12 performance + 6 efficiency | 32 |
+| Apple M3 Max | 12 performance + 4 efficiency | 24 |
 
 Add a row for your machine with a pull request.
