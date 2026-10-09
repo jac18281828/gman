@@ -1,3 +1,8 @@
+1.0.1 (2026-10-09)
+
+* **The z-buffer no longer draws spikes at the frame edge.** A polygon crossing a frustum plane took its clipped vertex's colour and alpha from the edge's end vertex instead of blending along the edge, so each diced facet of a wall that left the frame drew a wedge of the wrong colour, a dagger across the picture. `GMANClipEdge::intersect` blends both by the clip parameter. `samples/vase.png` and `samples/poke/zbuffer.png` are re-rendered without the spikes
+* **A materials sample.** `samples/materials.rib` sets a gold ball, a glass ball, a mirror ball and a plastic torus before a clay wall, lit by two area lights; `samples/materials-pathtraced.png` is its path-traced render, and the release tarball carries the `.rib`
+
 1.0.0 (2026-09-29)
 
 * **gman path-traces: `gman -r gmanpathtracer scene.rib`.** A unidirectional path tracer with next-event estimation renders every primitive the ray tracer does, samples each surface's BSDF, and ends a path by Russian roulette from its third vertex. `Option "pathtracer" "integer samples" [n]` sets the paths per pixel. It renders on one thread. An `ambientlight` lights nothing under it and is skipped with one warning; a point, distant or spot light casts a shadow ray from every vertex. A camera path through a surface with `Opacity` below 1 passes through it as the ray tracer does, and a path that reaches the pass-through cap stays opaque
