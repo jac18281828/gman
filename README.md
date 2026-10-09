@@ -348,3 +348,23 @@ file is the reproduction: attach it and the image you got.
 [CONTRIBUTING.md](CONTRIBUTING.md) covers pull requests, the three checks to run before you push,
 Conventional Commits and the rebase-only history. `AGENTS.md` briefs an AI agent working in the
 tree.
+
+## Benchmark
+
+`bench/bench.sh` times the whole machine on `samples/materials.rib`. The path tracer runs on one
+core, so the script renders a queue of independent copies, one per core at a time, and reports
+renders a minute. Build the release preset first, then run it:
+
+```sh
+cmake --preset release && cmake --build --preset release
+bench/bench.sh
+```
+
+It prints the median of three runs and a pixel checksum that every render must share. Close heavy
+programs first: a competing build slows a run by a third.
+
+| Machine | Cores | Renders a minute |
+|---|---|---|
+| Apple M5 Max | 12 performance + 6 efficiency | 32 |
+
+Add a row for your machine with a pull request.
