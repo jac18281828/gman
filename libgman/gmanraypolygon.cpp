@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
+
 #include "gmanpolygon.h"
 #include "gmanpolygoninternal.h"
 #include "gmanraybbox.h"
@@ -34,6 +36,12 @@ namespace {
 // gmanpatchpolyobjectmanager.cpp's kTriangulationTolerance uses for the
 // same reason.
 constexpr RtFloat kParallelTolerance = (RtFloat)1.0e-6;
+
+// A hit within this fraction of the outer ring's extent of its boundary
+// counts as on it. A ratio, so it reads the same at any scale: about 25
+// times the float error a hit point carries a few extents from the camera,
+// and far under the gap of a real miss.
+constexpr RtFloat kBoundaryTolerance = (RtFloat)1.0e-5;
 
 // The axis the normal's own largest component names: projecting the ring
 // and the hit point onto the other two keeps the even-odd test below from
@@ -134,7 +142,8 @@ std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<GMANPoint> const& ri
 // Even-odd (crossing number) test on the ring's projection to the plane
 // dominantAxis names: correct for the convex polygon RiPolygon promises
 // and, matching the z-buffer's own ear-clipped fill rule, for a concave or
-// self-inconsistent one too.
+// self-inconsistent one too. Half-open: a point on the ring's max side is
+// outside and one on its min side inside; onBoundary closes the outer ring.
 bool insidePolygon(std::vector<GMANPoint> const& ring, int axis, GMANPoint const& p) {
   RtFloat px, py;
   project(p, axis, px, py);
@@ -152,6 +161,40 @@ bool insidePolygon(std::vector<GMANPoint> const& ring, int axis, GMANPoint const
     }
   }
   return inside;
+}
+
+// The squared distance from (px, py) to the segment (ax, ay)-(bx, by); a
+// zero-length segment is the point (ax, ay).
+RtFloat squaredDistanceToSegment(RtFloat px, RtFloat py, RtFloat ax, RtFloat ay, RtFloat bx, RtFloat by) {
+  RtFloat const dx = bx - ax;
+  RtFloat const dy = by - ay;
+  RtFloat const lengthSquared = dx * dx + dy * dy;
+  RtFloat along = (RtFloat)0.0;
+  if (lengthSquared > (RtFloat)0.0)
+    along = std::clamp(((px - ax) * dx + (py - ay) * dy) / lengthSquared, (RtFloat)0.0, (RtFloat)1.0);
+  RtFloat const ex = px - (ax + along * dx);
+  RtFloat const ey = py - (ay + along * dy);
+  return ex * ex + ey * ey;
+}
+
+// Whether p's projection lies within kBoundaryTolerance times the ring's
+// extent of any segment of the ring's own projection. Two polygons that
+// share an edge each admit a point on it, so no ray between them escapes.
+bool onBoundary(std::vector<GMANPoint> const& ring, int axis, GMANPoint const& p) {
+  RtFloat px, py;
+  project(p, axis, px, py);
+
+  RtFloat const tolerance = kBoundaryTolerance * gman::boundingBoxExtent(ring);
+  RtFloat const toleranceSquared = tolerance * tolerance;
+  std::size_t const n = ring.size();
+  for (std::size_t i = 0, j = n - 1; i < n; j = i++) {
+    RtFloat xi, yi, xj, yj;
+    project(ring[i], axis, xi, yi);
+    project(ring[j], axis, xj, yj);
+    if (squaredDistanceToSegment(px, py, xi, yi, xj, yj) <= toleranceSquared)
+      return true;
+  }
+  return false;
 }
 
 } // namespace
@@ -236,12 +279,13 @@ bool GMANRayPolygon::intersect(GMANRay const& ray, GMANHit& hit) const {
 
   GMANPoint const hitPoint = ray.pointAt(t);
   int const axis = dominantAxis(normal);
-  if (!insidePolygon(vertices, axis, hitPoint))
-    return false;
-  // Inside the outer loop and outside every hole, each tested on its own:
+  // On or inside the outer loop, whose boundary closes (insidePolygon alone
+  // is half-open), and outside every hole, each tested on its own:
   // overlapping holes stay empty rather than refilled by a combined
   // crossing count, and a hole reaching outside the outer loop adds
-  // nothing.
+  // nothing. A hole's rim stays strict.
+  if (!insidePolygon(vertices, axis, hitPoint) && !onBoundary(vertices, axis, hitPoint))
+    return false;
   for (std::vector<GMANPoint> const& hole : holes) {
     if (insidePolygon(hole, axis, hitPoint))
       return false;

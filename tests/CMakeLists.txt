@@ -1901,6 +1901,19 @@ set_tests_properties(raypolygonhole PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A ray through the boundary of a polygon's outer ring hits it, so a ceiling
+# and two walls meeting at shared edges leave no gap, on any side of the
+# ring's projected axes; a ray 1e-3 past an edge still misses, and the
+# closure's tolerance sits between 1e-5 and 5e-5 past. See
+# tests/raypolygonseam_test.cpp.
+add_executable(gman_raypolygonseam raypolygonseam_test.cpp)
+target_link_libraries(gman_raypolygonseam PRIVATE gman_core)
+
+add_test(NAME raypolygonseam COMMAND gman_raypolygonseam)
+set_tests_properties(raypolygonseam PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A degenerate Polygon (collinear points) traces as the empty stub, neither
 # a GMANRayPolygon nor a GMANRayPolygonMesh. See
 # tests/raypolygondegenerate_test.cpp.
@@ -2412,6 +2425,26 @@ if(GMAN_BUILD_RAYTRACER)
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_POLYGONRAYRENDER_WORKDIR}")
   set_tests_properties(polygonrayrender PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+
+  # `gman -r gmanraytracer` renders tests/rib/raypolygonseam.rib, an
+  # open-front box whose ceiling and right wall share an edge on the screen
+  # diagonal, with every pixel opaque. See
+  # tests/raypolygonseamrender_test.cpp.
+  add_executable(gman_raypolygonseamrender raypolygonseamrender_test.cpp)
+  target_link_libraries(gman_raypolygonseamrender PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_raypolygonseamrender gman_raytracer)
+
+  set(GMAN_RAYPOLYGONSEAMRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/raypolygonseamrender-run")
+  file(MAKE_DIRECTORY "${GMAN_RAYPOLYGONSEAMRENDER_WORKDIR}")
+
+  add_test(NAME raypolygonseamrender
+    COMMAND gman_raypolygonseamrender $<TARGET_FILE:gman>
+                                      "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_RAYPOLYGONSEAMRENDER_WORKDIR}")
+  set_tests_properties(raypolygonseamrender PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)

@@ -1,0 +1,19 @@
+## An open-front box of five Polygons, each neighbour sharing an edge with
+## the next: the ceiling meets the right wall along x = 1, y = 1, which
+## projects onto the screen diagonal, so one pixel centre per row lands
+## exactly on the shared edge. Under -r gmanraytracer every pixel reads
+## opaque only when a ray on that edge hits one of the two neighbours
+## (tests/raypolygonseamrender_test.cpp). The camera at Translate 0 0 3.8,
+## with no Clipping line, is the scene that exposed the seam; leave both.
+Display "raypolygonseam.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [39]
+Translate 0 0 3.8
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [1]
+Polygon "P" [-1 -1 -1  1 -1 -1  1 -1 1  -1 -1 1]
+Polygon "P" [-1 1 -1  1 1 -1  1 1 1  -1 1 1]
+Polygon "P" [-1 -1 1  1 -1 1  1 1 1  -1 1 1]
+Polygon "P" [-1 -1 -1  -1 -1 1  -1 1 1  -1 1 -1]
+Polygon "P" [1 -1 -1  1 -1 1  1 1 1  1 1 -1]
+WorldEnd
