@@ -49,11 +49,12 @@
  * prepare() replaces the first's.
  *
  * irradiance() locates hit's element and corner weights, picks the side
- * facing -I, and answers the weighted mean of that side's node H_ind --
- * black before prepare(), after a failed one, or where locate() finds
- * nothing. const and re-entrant: it reads only what prepare() built, and
- * holds no mutable member. Nothing here reads a clock, a random number or
- * an address order, so two renders of one scene answer byte-identical.
+ * facing -I by hit's own normal, and answers the weighted mean of that
+ * side's node H_ind -- black before prepare(), after a failed one, or where
+ * locate() finds nothing. const and re-entrant: it reads only what
+ * prepare() built, and holds no mutable member. Nothing here reads a clock,
+ * a random number or an address order, so two renders of one scene answer
+ * byte-identical.
  */
 class GMANRadiosityPass : public gman::IndirectPass {
 public:

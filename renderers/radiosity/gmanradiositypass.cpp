@@ -195,7 +195,9 @@ GMANColor GMANRadiosityPass::irradiance(GMANHit const& hit, GMANVector const& I)
     return black;
   }
 
-  RtFloat const facing = mesh.getElement(location.element).normal.dot(I);
+  // The side is judged against the surface's normal at the hit: a diced
+  // facet's chord normal can fall on the other side of I at a silhouette.
+  RtFloat const facing = hit.normal.dot(I);
   GMANRadiositySide const side = facing <= (RtFloat)0 ? GMANRadiositySide::front : GMANRadiositySide::back;
 
   GMANColor sum;

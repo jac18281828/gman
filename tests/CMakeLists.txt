@@ -2389,6 +2389,27 @@ if(GMAN_BUILD_RAYTRACER)
       ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
       LABELS render
       TIMEOUT 30)
+
+    # `gman -r gmanraytracer` renders tests/rib/radiosity_rim.rib, the
+    # lower-left rim of a matte sphere in a lit room: the pass picks each
+    # element's side from the hit's own normal, so the rim shows no black
+    # arc where the diced facet's chord normal falls across the ray. See
+    # tests/radiosityrim_test.cpp.
+    add_executable(gman_radiosityrim radiosityrim_test.cpp)
+    target_link_libraries(gman_radiosityrim PRIVATE gman_core TIFF::TIFF)
+    add_dependencies(gman_radiosityrim gman_raytracer gman_radiosity gman_matte)
+
+    set(GMAN_RADIOSITYRIM_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/radiosityrim-run")
+    file(MAKE_DIRECTORY "${GMAN_RADIOSITYRIM_WORKDIR}")
+
+    add_test(NAME radiosityrim
+      COMMAND gman_radiosityrim $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+      WORKING_DIRECTORY "${GMAN_RADIOSITYRIM_WORKDIR}")
+    set_tests_properties(radiosityrim PROPERTIES
+      ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+      LABELS render
+      TIMEOUT 30)
   endif()
 
   # `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib, a

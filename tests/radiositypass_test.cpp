@@ -117,6 +117,30 @@ constexpr RtFloat kThinPolygonWidth = 0.01f;
 constexpr RtFloat kWideCylinderRadius = 25.0f;
 constexpr RtFloat kWideCylinderHeight = 0.5f;
 
+// ---- The rim fixture: a sphere resting on a lit floor ----
+
+// The element size is 5/8 of the radius, the ratio at which the diced
+// facets are coarse enough for a facet's chord normal to cross a
+// silhouette's tangent plane.
+constexpr RtFloat kRimSphereRadius = 0.4f;
+constexpr RtFloat kRimElementSize = 0.25f;
+constexpr RtFloat kRimFloorHalfWidth = 1.0f;
+constexpr RtFloat kRimFloorAlbedo = 0.8f;
+constexpr RtFloat kRimSphereAlbedo = 0.5f;
+constexpr RtFloat kRimLightX = 0.6f;
+constexpr RtFloat kRimLightY = 0.4f;
+constexpr RtFloat kRimLightZ = 1.8f;
+constexpr RtFloat kRimLightIntensity = 6.0f;
+
+// Rays graze the sphere at these fractions of its radius.
+constexpr RtFloat kRimImpactParameters[] = {0.9f, 0.95f, 0.98f, 0.999f};
+constexpr int kRimAzimuthStepDeg = 45;
+constexpr int kRimPolarStepDeg = 45;
+constexpr int kRimOffsetStepDeg = 60;
+
+// The fewest grazing hits that make the rim check meaningful.
+constexpr std::size_t kRimMinSelected = 20;
+
 bool isBlack(GMANColor const& c) { return c.getRed() == 0.0f && c.getGreen() == 0.0f && c.getBlue() == 0.0f; }
 
 bool colorExactly(GMANColor const& a, GMANColor const& b) {
@@ -363,7 +387,7 @@ GMANColor referenceIrradiance(Reference const& ref, GMANHit const& hit, GMANVect
   if (!ref.mesh.locate(hit, location)) {
     return GMANColor(0.0f, 0.0f, 0.0f);
   }
-  RtFloat const facing = ref.mesh.getElement(location.element).normal.dot(I);
+  RtFloat const facing = hit.normal.dot(I);
   GMANRadiositySide const side = facing <= (RtFloat)0 ? GMANRadiositySide::front : GMANRadiositySide::back;
   GMANColor sum;
   for (std::size_t k = 0; k < location.corners.size(); ++k) {
@@ -732,6 +756,112 @@ void testLoneSphereAnswersExactlyBlack() {
   check(checked > 10, "lone sphere: enough hits were checked to be meaningful");
 }
 
+// A direction on the sphere of directions, polar angle phiDeg from +z.
+GMANVector directionAt(int thetaDeg, int phiDeg) {
+  double const theta = thetaDeg * PI / 180.0;
+  double const phi = phiDeg * PI / 180.0;
+  return GMANVector((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),
+                    (RtFloat)std::cos(phi));
+}
+
+// ---- check 8b: at a sphere's silhouette, where a diced facet's chord normal
+// can fall on the far side of the ray from the surface's own normal, the
+// pass answers the front side's value whenever the hit's own normal faces
+// the ray ----
+void testSilhouetteSideFollowsHitNormal() {
+  ConstantAlbedoShader const floorShader(kRimFloorAlbedo);
+  ConstantAlbedoShader const sphereShader(kRimSphereAlbedo);
+  GMANLight const light = makePointLight(GMANPoint(kRimLightX, kRimLightY, kRimLightZ), kRimLightIntensity);
+
+  MainFixture fixture;
+  RtFloat const h = kRimFloorHalfWidth;
+  std::vector<GMANPoint> const floorOuter = {GMANPoint(-h, -h, 0.0f), GMANPoint(h, -h, 0.0f), GMANPoint(h, h, 0.0f),
+                                             GMANPoint(-h, h, 0.0f)};
+  fixture.floor = new GMANRayPolygon(floorOuter, GMANParameterList());
+  gman::Appearance floorAppearance;
+  floorAppearance.shader = asAppearanceShader(floorShader);
+  floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  floorAppearance.lights = {&light};
+  fixture.floor->setAppearance(floorAppearance);
+  fixture.world.add(fixture.floor);
+
+  GMANPoint const centre(0.0f, 0.0f, kRimSphereRadius);
+  fixture.sphere = new GMANRaySphere(kRimSphereRadius, -kRimSphereRadius, kRimSphereRadius, 360.0f, GMANParameterList(),
+                                     translationTransform(0.0f, 0.0f, kRimSphereRadius));
+  gman::Appearance sphereAppearance;
+  sphereAppearance.shader = asAppearanceShader(sphereShader);
+  sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  sphereAppearance.lights = {&light};
+  fixture.sphere->setAppearance(sphereAppearance);
+  fixture.world.add(fixture.sphere);
+  fixture.bvh.build(fixture.world);
+
+  GMANRadiosityPass pass;
+  GMANOptions options;
+  options.setRadiosityElementSize(kRimElementSize);
+  pass.prepare(fixture.world, fixture.occluder, options);
+  Reference const ref = buildReference(fixture.world, fixture.occluder, kRimElementSize);
+
+  std::size_t selected = 0;
+  long mismatches = 0;
+  long blackAnswers = 0;
+  for (int thetaDeg = 0; thetaDeg < 360; thetaDeg += kRimAzimuthStepDeg) {
+    for (int phiDeg = kRimPolarStepDeg; phiDeg < 180; phiDeg += kRimPolarStepDeg) {
+      GMANVector const dir = directionAt(thetaDeg, phiDeg);
+      GMANVector const across = dir.cross(GMANVector(0.0f, 0.0f, 1.0f)).normalize();
+      GMANVector const up = dir.cross(across);
+      for (int offsetDeg = 0; offsetDeg < 360; offsetDeg += kRimOffsetStepDeg) {
+        double const offset = offsetDeg * PI / 180.0;
+        GMANVector const perpendicular = across * (RtFloat)std::cos(offset) + up * (RtFloat)std::sin(offset);
+        for (RtFloat const impact : kRimImpactParameters) {
+          GMANVector const toOrigin = perpendicular * (impact * kRimSphereRadius) - dir * 5.0f;
+          GMANPoint const origin(centre.getX() + toOrigin.getX(), centre.getY() + toOrigin.getY(),
+                                 centre.getZ() + toOrigin.getZ());
+          GMANRay const ray(origin, dir);
+          GMANHit hit;
+          GMANRayInterface const* hitPrimitive = nullptr;
+          if (!fixture.bvh.nearestHit(ray, hit, hitPrimitive) || hit.primitive != fixture.sphere) {
+            continue;
+          }
+          GMANRadiosityLocation location;
+          if (!ref.mesh.locate(hit, location)) {
+            continue;
+          }
+          bool const hitSaysFront = hit.normal.dot(dir) < 0.0f;
+          bool const facetSaysBack = ref.mesh.getElement(location.element).normal.dot(dir) > 0.0f;
+          if (!hitSaysFront || !facetSaysBack) {
+            continue;
+          }
+          ++selected;
+
+          GMANColor expected;
+          for (std::size_t k = 0; k < location.corners.size(); ++k) {
+            GMANColor term = ref.solution.getNodeIndirect(location.corners[k], GMANRadiositySide::front);
+            term.scale(location.weights[k]);
+            expected += term;
+          }
+          GMANColor const actual = pass.irradiance(hit, dir);
+          double worst = 0;
+          if (!colorWithinTolerance(actual, expected, worst)) {
+            ++mismatches;
+          }
+          if (isBlack(actual)) {
+            ++blackAnswers;
+          }
+        }
+      }
+    }
+  }
+
+  std::printf("radiositypass: silhouette: %zu hits where the hit's normal faces the ray and the facet's does not, "
+              "%ld mismatched, %ld black\n",
+              selected, mismatches, blackAnswers);
+  check(selected >= kRimMinSelected, "silhouette: enough grazing hits disagree between the hit's and the facet's "
+                                     "normal to be meaningful");
+  check(mismatches == 0, "silhouette: every such hit answers the front side's value");
+  check(blackAnswers == 0, "silhouette: no such hit answers black");
+}
+
 // ---- check 9: the mesh's two cap paths, each reached alone, each log
 // exactly one warning naming elementsize; the size-set fixture logs none
 // ----
@@ -848,12 +978,14 @@ int main() {
   testPrimitiveOutsideWorldIsBlack(pass);
   testOutOfRangeAlbedoAnswersBlack(floorShader, wallShader, light);
   testLoneSphereAnswersExactlyBlack();
+  testSilhouetteSideFollowsHitNormal();
   testCapWarnings(*fixture);
 
   return checkSummary("GMANRadiosityPass matches a reference built from the same public functions, interpolates "
                       "bilinearly across an element's four corners, answers each side of a two-sided wall "
                       "correctly, matches the reference at the world's default element size, answers black for an "
                       "unknown primitive, changes nothing during prepare(), answers black after an out-of-range "
-                      "albedo, answers exactly black for a lone convex sphere, and logs the mesh's cap warning "
+                      "albedo, answers exactly black for a lone convex sphere, answers the front side at a sphere's "
+                      "silhouette whenever the hit's own normal faces the ray, and logs the mesh's cap warning "
                       "exactly once per prepare()");
 }
