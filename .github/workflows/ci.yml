@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: true
 # Caps build parallelism: a bare `--parallel` runs an unbounded `make -j`.
 env:
-  NPROC: 4
+  BUILD_JOBS: 4
 jobs:
   build:
     name: ${{ matrix.os }} / ${{ matrix.compiler }}
@@ -64,7 +64,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
-        run: cmake --build build --parallel "$NPROC"
+        run: cmake --build build --parallel "$BUILD_JOBS"
       - name: Test
         run: ctest --test-dir build --output-on-failure
       # An observation, not a pass/fail. The assertions live in the baseline
@@ -116,7 +116,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
-        run: cmake --build build-debug --parallel "$NPROC"
+        run: cmake --build build-debug --parallel "$BUILD_JOBS"
       - name: Test
         run: ctest --test-dir build-debug --output-on-failure
       - name: Upload golden-image diffs
@@ -158,7 +158,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
-        run: cmake --build build --parallel "$NPROC"
+        run: cmake --build build --parallel "$BUILD_JOBS"
       # Direct invocation, not ctest: gzip_test, readarchive_test and
       # ribdialect_test each run gman as a child process -- std::system,
       # execlp and popen respectively -- so valgrinding ctest traces the
@@ -246,7 +246,7 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       - name: Build
-        run: cmake --build build --parallel "$NPROC"
+        run: cmake --build build --parallel "$BUILD_JOBS"
       - name: Render a TIFF without the optional drivers
         run: |
           ./build/gman tests/rib/sphere.rib
