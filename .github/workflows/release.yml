@@ -13,6 +13,9 @@ permissions:
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
+# Caps build parallelism: a bare `--parallel` runs an unbounded `make -j`.
+env:
+  NPROC: 4
 jobs:
   # A build with tests off exports only what GMAN_EXPORT tags. --no-undefined
   # turns a hidden symbol a plugin calls into a link failure instead of a
@@ -39,7 +42,7 @@ jobs:
             -DCMAKE_MODULE_LINKER_FLAGS=-Wl,--no-undefined \
             -DCMAKE_SHARED_LINKER_FLAGS=-Wl,--no-undefined
       - name: Build
-        run: cmake --build build-release --parallel
+        run: cmake --build build-release --parallel "$NPROC"
       - name: Guard against a test build shipping
         run: grep -qx "BUILD_TESTING:BOOL=OFF" build-release/CMakeCache.txt
   # The release is created first and empty, so every matrix leg has something
@@ -120,13 +123,13 @@ jobs:
           cmake --preset release -B build-release-test \
             -DBUILD_TESTING=ON -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
       - name: Build the test build
-        run: cmake --build build-release-test --parallel
+        run: cmake --build build-release-test --parallel "$NPROC"
       - name: Test
         run: ctest --test-dir build-release-test --output-on-failure
       - name: Configure the package build
         run: cmake --preset release -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
       - name: Build the package build
-        run: cmake --build build-release --parallel
+        run: cmake --build build-release --parallel "$NPROC"
       # A package built with tests on exports internals; refuse any tree not
       # configured with tests off.
       - name: Guard against a test build shipping
