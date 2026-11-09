@@ -28,7 +28,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -53,7 +53,7 @@ jobs:
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # CHANGELOG.md carries every version back to 1999. The release body is
       # this version's section alone -- from its own "X.Y.Z (date)" heading to
       # the next one. An unmatched tag yields an empty body rather than the
@@ -105,7 +105,7 @@ jobs:
           - os: macos-latest
             target: macos-arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |

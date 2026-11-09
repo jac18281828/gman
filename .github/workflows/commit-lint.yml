@@ -7,6 +7,8 @@ on:
       - main
   push:
     branches: ["**"]
+permissions:
+  contents: read
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -14,15 +16,15 @@ jobs:
   commitlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22.16.0
       - name: Install dependencies
-        run: npm install -g @commitlint/{cli,config-conventional}
+        run: npm install -g @commitlint/cli@21.2.4 @commitlint/config-conventional@21.2.4
       # On a pull request, validate the commits between the base and head SHAs
       # the event reports: checkout builds a synthetic merge commit, so counting
       # back from HEAD would walk the base branch instead. A push to main is a
