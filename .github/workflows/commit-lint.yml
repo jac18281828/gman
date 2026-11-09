@@ -23,8 +23,9 @@ jobs:
           node-version: 22.16.0
       - name: Install dependencies
         run: npm install -g @commitlint/{cli,config-conventional}
-      # On a pull request, validate every commit the PR contributes. On a
-      # bare push the PR commit count is absent. A push to main is a
+      # On a pull request, validate the commits between the base and head SHAs
+      # the event reports: checkout builds a synthetic merge commit, so counting
+      # back from HEAD would walk the base branch instead. A push to main is a
       # fast-forward, so the range the push reported is exactly the landed
       # commits; fall back to the tip commit when `before` is unavailable
       # (all zeros). A push to any other branch cannot trust `before`: a
@@ -39,10 +40,13 @@ jobs:
         env:
           REF_NAME: ${{ github.ref_name }}
           BEFORE: ${{ github.event.before }}
-          PR_COMMITS: ${{ github.event.pull_request.commits }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if [ -n "$PR_COMMITS" ]; then
-            from="HEAD~${PR_COMMITS}"
+          to=HEAD
+          if [ -n "$HEAD_SHA" ]; then
+            from="$BASE_SHA"
+            to="$HEAD_SHA"
           elif [ "$REF_NAME" = "main" ]; then
             if git rev-parse --verify --quiet "${BEFORE}^{commit}" > /dev/null; then
               from="$BEFORE"
@@ -52,8 +56,8 @@ jobs:
           else
             from="$(git merge-base origin/main HEAD)" || from="HEAD~1"
           fi
-          if [ "$(git rev-parse "$from")" = "$(git rev-parse HEAD)" ]; then
-            echo "No commits to lint: HEAD adds nothing to origin/main."
+          if [ "$(git rev-parse "$from")" = "$(git rev-parse "$to")" ]; then
+            echo "No commits to lint: $to adds nothing to origin/main."
             exit 0
           fi
-          npx commitlint --from "$from" --to HEAD --verbose
+          npx commitlint --from "$from" --to "$to" --verbose
