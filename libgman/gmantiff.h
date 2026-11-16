@@ -72,17 +72,18 @@ public:
   // comes back at 8.
   std::uint16_t storedBitsPerSample() const;
 
-  // Sizes rgb from the image's own width and height, decodes into it, then
-  // reports whether the read succeeded and both dimensions are nonzero --
-  // in that order, so a failed read is never masked by checking the
-  // dimensions first. rgb holds three samples per pixel, each in
-  // [0, 2^bitsPerSample - 1], and bitsPerSample is 8 or 16.
+  // Decodes the image into rgb, three samples per pixel, each in
+  // [0, 2^bitsPerSample - 1], and reports whether the read succeeded and
+  // both dimensions are nonzero. bitsPerSample is 8 or 16.
   //
   // A strip-organised, top-left, contiguous 16-bit unsigned file -- RGB,
-  // RGB with one associated-alpha sample, or one-sample greyscale -- reads
-  // at 16 bits, the alpha sample dropped and a grey sample replicated to R,
-  // G and B. Every other file reads through libtiff's own 8-bit RGBA
-  // conversion and reports 8, its samples unscaled.
+  // RGB with one associated-alpha sample, or one-sample greyscale, with no
+  // other extra samples -- reads at 16 bits, the alpha sample dropped and a grey sample replicated to R,
+  // G and B; width and height are checked before the read. Every other file
+  // reads through libtiff's own 8-bit RGBA conversion and reports 8, its
+  // samples unscaled: rgb is sized from the image's own width and height,
+  // the read runs, and only then are both dimensions checked, so a failed
+  // read is never masked by checking the dimensions first.
   bool decode(std::uint32_t& width, std::uint32_t& height, std::uint16_t& bitsPerSample,
               std::vector<std::uint16_t>& rgb);
 

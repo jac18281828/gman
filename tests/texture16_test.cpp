@@ -32,10 +32,14 @@
  *   d  8-bit RGB checker          texel = v / 255 to 1e-6, no warning
  *   e  16-bit RGB, bottom-left    decodes at 8 bits (within 1/255 of
  *                                 v / 65535) and warns once, naming the
- *                                 file
+ *                                 file; makeTexture on it warns once too,
+ *                                 naming MakeTexture and the file
  *   f  makeTexture on a           the written file is 16-bit, samples exact
  *   g  makeTexture on d           the written file is 8-bit, samples exact
  *   h  makeLatLongEnvironment on a  the written file is 16-bit, samples exact
+ *   i  16-bit RGB + one extra     libtiff cannot convert it: the texture is
+ *      sample (alpha read as      opaque black with a cannot-decode warning,
+ *      blue)                      and makeTexture fails and writes no file
  *
  * The 8-bit rounding of the sample set is off from v / 65535 by up to
  * 1.95e-3, three orders of magnitude over the 1e-6 tolerance, so a reader
@@ -85,6 +89,7 @@ const Layout16 kRgb = {3, PHOTOMETRIC_RGB, ORIENTATION_TOPLEFT, false};
 const Layout16 kGrey = {1, PHOTOMETRIC_MINISBLACK, ORIENTATION_TOPLEFT, false};
 const Layout16 kRgba = {4, PHOTOMETRIC_RGB, ORIENTATION_TOPLEFT, true};
 const Layout16 kRgbBottomLeft = {3, PHOTOMETRIC_RGB, ORIENTATION_BOTLEFT, false};
+const Layout16 kRgbExtraSample = {3, PHOTOMETRIC_RGB, ORIENTATION_TOPLEFT, true};
 
 // Writes a 16-bit, one-row image of row.size() / samplesPerPixel pixels.
 bool writeTiff16(std::string const& path, Layout16 const& layout, std::vector<std::uint16_t> const& row) {
@@ -207,25 +212,25 @@ int countOccurrences(std::string const& haystack, std::string const& needle) {
 
 void testRgb16() {
   const std::string name = "texture16_rgb.tif";
-  check(writeTiff16(name, kRgb, kRgbRow), name + " writes");
+  check(writeTiff16(name, kRgb, kRgbRow), "a: " + name + " writes");
   checkTexels(name, 2, 1, kRgbRow, 65535.0, kExactTol, "a (16-bit RGB)");
 }
 
 void testGrey16() {
   const std::string name = "texture16_grey.tif";
-  check(writeTiff16(name, kGrey, kGreyRow), name + " writes");
+  check(writeTiff16(name, kGrey, kGreyRow), "b: " + name + " writes");
   checkTexels(name, 2, 1, kGreyAsRgb, 65535.0, kExactTol, "b (16-bit greyscale)");
 }
 
 void testRgba16() {
   const std::string name = "texture16_rgba.tif";
-  check(writeTiff16(name, kRgba, kRgbaRow), name + " writes");
+  check(writeTiff16(name, kRgba, kRgbaRow), "c: " + name + " writes");
   checkTexels(name, 2, 1, kRgbRow, 65535.0, kExactTol, "c (16-bit RGB, associated alpha)");
 }
 
 void testRgb8() {
   const std::string name = "texture16_checker.tif";
-  check(writeCheckerTexture(name), name + " writes");
+  check(writeCheckerTexture(name), "d: " + name + " writes");
   const std::string log = captureLog("texture16_checker.log",
                                      [&] { checkTexels(name, 2, 2, kChecker, 255.0, kExactTol, "d (8-bit RGB)"); });
   check(countOccurrences(log, kWarningPrefix) == 0, "d (8-bit RGB): no warning, log holds \"" + log + "\"");
@@ -233,19 +238,48 @@ void testRgb8() {
 
 void testBottomLeft16() {
   const std::string name = "texture16_botleft.tif";
-  check(writeTiff16(name, kRgbBottomLeft, kRgbRow), name + " writes");
+  check(writeTiff16(name, kRgbBottomLeft, kRgbRow), "e: " + name + " writes");
   const std::string log = captureLog("texture16_botleft.log", [&] {
     checkTexels(name, 2, 1, kRgbRow, 65535.0, kEightBitTol, "e (16-bit RGB, bottom-left)");
   });
   check(countOccurrences(log, kWarningPrefix) == 1, "e (16-bit RGB, bottom-left): exactly one warning");
   check(countOccurrences(log, name) == 1, "e (16-bit RGB, bottom-left): the warning names " + name);
   check(countOccurrences(log, "8 bits") == 1, "e (16-bit RGB, bottom-left): the warning says 8 bits");
+
+  const std::string texture = "texture16_botleft_out.tif";
+  bool made = false;
+  const std::string makeLog = captureLog(
+      "texture16_botleft_make.log", [&] { made = gman::makeTexture(name.c_str(), texture.c_str(), "clamp", "clamp"); });
+  check(made, "e (16-bit RGB, bottom-left): makeTexture succeeds");
+  check(countOccurrences(makeLog, kWarningPrefix) == 1, "e (16-bit RGB, bottom-left): makeTexture warns once");
+  check(countOccurrences(makeLog, "MakeTexture") == 1, "e (16-bit RGB, bottom-left): the warning names MakeTexture");
+  check(countOccurrences(makeLog, name) == 1, "e (16-bit RGB, bottom-left): makeTexture's warning names " + name);
+  check(countOccurrences(makeLog, "8 bits") == 1, "e (16-bit RGB, bottom-left): makeTexture's warning says 8 bits");
+}
+
+void testExtraSampleRgb16() {
+  const std::string name = "texture16_extra.tif";
+  const std::string texture = "texture16_extra_out.tif";
+  std::remove(texture.c_str());
+  check(writeTiff16(name, kRgbExtraSample, kRgbRow), "i: " + name + " writes");
+
+  const std::string log = captureLog("texture16_extra.log", [&] {
+    checkTexels(name, 2, 1, std::vector<std::uint16_t>(6, 0), 1.0, kExactTol, "i (16-bit RGB, extra sample)");
+  });
+  check(countOccurrences(log, kWarningPrefix) == 1 && countOccurrences(log, "cannot decode") == 1,
+        "i (16-bit RGB, extra sample): one cannot-decode warning, log holds \"" + log + "\"");
+
+  bool made = true;
+  captureLog("texture16_extra_make.log",
+             [&] { made = gman::makeTexture(name.c_str(), texture.c_str(), "clamp", "clamp"); });
+  check(!made, "i (16-bit RGB, extra sample): makeTexture fails");
+  check(!std::ifstream(texture).good(), "i (16-bit RGB, extra sample): makeTexture leaves no file");
 }
 
 void testMakeTexture16() {
   const std::string picture = "texture16_make_in.tif";
   const std::string texture = "texture16_make_out.tif";
-  check(writeTiff16(picture, kRgb, kRgbRow), picture + " writes");
+  check(writeTiff16(picture, kRgb, kRgbRow), "f: " + picture + " writes");
   check(gman::makeTexture(picture.c_str(), texture.c_str(), "clamp", "clamp"), "f: makeTexture succeeds");
   checkReadback(texture, 16, kRgbRow, "f (makeTexture, 16-bit)");
 }
@@ -253,7 +287,7 @@ void testMakeTexture16() {
 void testMakeTexture8() {
   const std::string picture = "texture16_make8_in.tif";
   const std::string texture = "texture16_make8_out.tif";
-  check(writeCheckerTexture(picture), picture + " writes");
+  check(writeCheckerTexture(picture), "g: " + picture + " writes");
   check(gman::makeTexture(picture.c_str(), texture.c_str(), "clamp", "clamp"), "g: makeTexture succeeds");
   checkReadback(texture, 8, kChecker, "g (makeTexture, 8-bit)");
 }
@@ -261,7 +295,7 @@ void testMakeTexture8() {
 void testMakeLatLongEnvironment16() {
   const std::string picture = "texture16_latlong_in.tif";
   const std::string texture = "texture16_latlong_out.tif";
-  check(writeTiff16(picture, kRgb, kRgbRow), picture + " writes");
+  check(writeTiff16(picture, kRgb, kRgbRow), "h: " + picture + " writes");
   check(gman::makeLatLongEnvironment(picture.c_str(), texture.c_str()), "h: makeLatLongEnvironment succeeds");
   checkReadback(texture, 16, kRgbRow, "h (makeLatLongEnvironment, 16-bit)");
 }
@@ -274,6 +308,7 @@ int main() {
   testRgba16();
   testRgb8();
   testBottomLeft16();
+  testExtraSampleRgb16();
   testMakeTexture16();
   testMakeTexture8();
   testMakeLatLongEnvironment16();

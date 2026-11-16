@@ -62,10 +62,18 @@ bool hasOnlyAssociatedAlpha(TIFF* handle) {
          types[0] == EXTRASAMPLE_ASSOCALPHA;
 }
 
+// Whether the file carries no extra samples.
+bool hasNoExtraSamples(TIFF* handle) {
+  std::uint16_t count = 0;
+  std::uint16_t const* types = nullptr;
+  return TIFFGetField(handle, TIFFTAG_EXTRASAMPLES, &count, &types) == 0 || count == 0;
+}
+
 // The samples per pixel of a file readable at full 16-bit depth, or 0 when
 // the file is not one: unsigned 16-bit samples in strips, one contiguous
-// plane, top-left oriented, and either RGB (with at most an associated-alpha
-// fourth sample) or one-sample greyscale.
+// plane, top-left oriented, and either three-sample RGB, RGB with exactly one
+// associated-alpha fourth sample, or one-sample greyscale, the first and last
+// with no extra samples.
 std::uint16_t fullDepthSamplesPerPixel(TIFF* handle) {
   std::uint16_t bitsPerSample = 0, sampleFormat = 0, planarConfig = 0, orientation = 0, samplesPerPixel = 0,
                 photometric = 0;
@@ -81,10 +89,10 @@ std::uint16_t fullDepthSamplesPerPixel(TIFF* handle) {
   if (TIFFGetField(handle, TIFFTAG_PHOTOMETRIC, &photometric) == 0) {
     return 0;
   }
-  if (photometric == PHOTOMETRIC_MINISBLACK && samplesPerPixel == 1) {
+  if (photometric == PHOTOMETRIC_MINISBLACK && samplesPerPixel == 1 && hasNoExtraSamples(handle)) {
     return samplesPerPixel;
   }
-  if (photometric == PHOTOMETRIC_RGB && samplesPerPixel == 3) {
+  if (photometric == PHOTOMETRIC_RGB && samplesPerPixel == 3 && hasNoExtraSamples(handle)) {
     return samplesPerPixel;
   }
   if (photometric == PHOTOMETRIC_RGB && samplesPerPixel == 4 && hasOnlyAssociatedAlpha(handle)) {

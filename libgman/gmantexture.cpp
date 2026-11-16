@@ -21,7 +21,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
@@ -133,10 +132,10 @@ bool readNarrowed(TIFFReader const& reader, std::uint16_t bitsPerSample) {
 // Row y of rgb (w pixels, three samples each) as the bytes libtiff expects
 // for a bitsPerSample-bit scanline: one byte per sample at 8 bits, one
 // host-order uint16 per sample at 16.
-std::vector<unsigned char> scanlineBytes(std::vector<std::uint16_t> const& rgb, uint32_t w, uint32_t y,
+std::vector<unsigned char> scanlineBytes(std::vector<std::uint16_t> const& rgb, std::uint32_t w, std::uint32_t y,
                                          std::uint16_t bitsPerSample) {
   const std::size_t samples = (std::size_t)w * 3;
-  std::vector<std::uint16_t>::const_iterator const first = rgb.begin() + (std::size_t)y * samples;
+  const auto first = rgb.begin() + (std::size_t)y * samples;
   if (bitsPerSample == 16) {
     std::vector<unsigned char> row(samples * sizeof(std::uint16_t));
     std::memcpy(row.data(), &*first, row.size());
@@ -151,7 +150,7 @@ std::vector<unsigned char> scanlineBytes(std::vector<std::uint16_t> const& rgb, 
 // and format in the Pixar texture-format tag. False, removing any partial
 // file, if the file cannot be opened or a scanline fails to write.
 bool writeTexture(const std::string& name, uint32_t w, uint32_t h, std::uint16_t bitsPerSample,
-                  const std::vector<std::uint16_t>& rgb, TextureWrap sw, TextureWrap tw, std::string const& format) {
+                  std::vector<std::uint16_t> const& rgb, TextureWrap sw, TextureWrap tw, std::string const& format) {
   TIFFWriter writer(name, w, h, 3, bitsPerSample, OutputTIFF::NONE);
   if (!writer.isOpen()) {
     return false;
