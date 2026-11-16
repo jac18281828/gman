@@ -24,7 +24,9 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <cstring>
 
 #include "gmanlog.h"
 #include "gmantexture.h"
@@ -122,13 +124,35 @@ char const* wrapName(TextureWrap wrap) {
   }
 }
 
-// Writes rgb (w*h pixels, three bytes each, top-left oriented) to name as
-// a single-level 8-bit RGB TIFF carrying sw/tw in the Pixar wrap-modes tag
+// Whether the file stores 16 bits per sample but decoded at 8, so its
+// texture carries less precision than the file holds.
+bool readNarrowed(TIFFReader const& reader, std::uint16_t bitsPerSample) {
+  return reader.storedBitsPerSample() == 16 && bitsPerSample == 8;
+}
+
+// Row y of rgb (w pixels, three samples each) as the bytes libtiff expects
+// for a bitsPerSample-bit scanline: one byte per sample at 8 bits, one
+// host-order uint16 per sample at 16.
+std::vector<unsigned char> scanlineBytes(std::vector<std::uint16_t> const& rgb, uint32_t w, uint32_t y,
+                                         std::uint16_t bitsPerSample) {
+  const std::size_t samples = (std::size_t)w * 3;
+  std::vector<std::uint16_t>::const_iterator const first = rgb.begin() + (std::size_t)y * samples;
+  if (bitsPerSample == 16) {
+    std::vector<unsigned char> row(samples * sizeof(std::uint16_t));
+    std::memcpy(row.data(), &*first, row.size());
+    return row;
+  }
+  return std::vector<unsigned char>(first, first + samples);
+}
+
+// Writes rgb (w*h pixels, three samples each, top-left oriented, each in
+// [0, 2^bitsPerSample - 1]) to name as a single-level RGB TIFF of
+// bitsPerSample bits, 8 or 16, carrying sw/tw in the Pixar wrap-modes tag
 // and format in the Pixar texture-format tag. False, removing any partial
 // file, if the file cannot be opened or a scanline fails to write.
-bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::vector<unsigned char>& rgb,
-                  TextureWrap sw, TextureWrap tw, std::string const& format) {
-  TIFFWriter writer(name, w, h, 3, 8, OutputTIFF::NONE);
+bool writeTexture(const std::string& name, uint32_t w, uint32_t h, std::uint16_t bitsPerSample,
+                  const std::vector<std::uint16_t>& rgb, TextureWrap sw, TextureWrap tw, std::string const& format) {
+  TIFFWriter writer(name, w, h, 3, bitsPerSample, OutputTIFF::NONE);
   if (!writer.isOpen()) {
     return false;
   }
@@ -138,10 +162,9 @@ bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::ve
   writer.setWrapModes(wrapModes);
   writer.setTextureFormat(format);
 
-  std::vector<unsigned char> row(w * 3);
   bool writeOk = true;
   for (uint32_t y = 0; y < h && writeOk; ++y) {
-    std::copy(rgb.begin() + (std::size_t)y * w * 3, rgb.begin() + (std::size_t)(y + 1) * w * 3, row.begin());
+    std::vector<unsigned char> row = scanlineBytes(rgb, w, y, bitsPerSample);
     writeOk = writer.writeScanline(row.data(), y);
   }
 
@@ -151,22 +174,27 @@ bool writeTexture(const std::string& name, uint32_t w, uint32_t h, const std::ve
   return writeOk;
 }
 
-// Opens pictureName and decodes it into w/h/rgb, the shape makeTexture and
-// makeLatLongEnvironment share. who names the caller ("MakeTexture",
-// "MakeLatLongEnvironment") in a failure's warning; each keeps its own
-// exact message text otherwise. False, w/h/rgb left as decode leaves them,
-// on either failure.
+// Opens pictureName and decodes it into w/h/bitsPerSample/rgb, the shape
+// makeTexture and makeLatLongEnvironment share. who names the caller
+// ("MakeTexture", "MakeLatLongEnvironment") in a warning; each keeps its own
+// exact message text otherwise. A 16-bit picture decoded at 8 bits warns
+// that it was narrowed. False, w/h/rgb left as decode leaves them, on either
+// failure.
 bool openAndDecodePicture(char const* who, std::string const& pictureName, std::string const& textureName, uint32_t& w,
-                          uint32_t& h, std::vector<unsigned char>& rgb) {
+                          uint32_t& h, std::uint16_t& bitsPerSample, std::vector<std::uint16_t>& rgb) {
   TIFFReader reader(pictureName);
   if (!reader.isOpen()) {
     warning("{} \"{}\": cannot open picture \"{}\"", who, textureName.c_str(), pictureName.c_str());
     return false;
   }
 
-  if (!reader.decode(w, h, rgb)) {
+  if (!reader.decode(w, h, bitsPerSample, rgb)) {
     warning("{} \"{}\": cannot decode picture \"{}\"", who, textureName.c_str(), pictureName.c_str());
     return false;
+  }
+
+  if (readNarrowed(reader, bitsPerSample)) {
+    warning("{} \"{}\": 16-bit picture \"{}\" read at 8 bits", who, textureName.c_str(), pictureName.c_str());
   }
 
   return true;
@@ -188,12 +216,14 @@ Texture::Texture(std::string const& name) : width(1), height(1) {
   }
 
   uint32_t w = 0, h = 0;
-  std::vector<unsigned char> rgb;
-  // One path for every photometric layout libtiff knows -- greyscale,
-  // palette, RGB, RGBA -- instead of a switch over the photometric tag.
+  std::uint16_t bitsPerSample = 0;
+  std::vector<std::uint16_t> rgb;
+  // A 16-bit RGB or greyscale file reads at full depth; every other layout
+  // libtiff knows -- greyscale, palette, RGB, RGBA -- reads through its
+  // 8-bit conversion instead of a switch over the photometric tag.
   // Top-left oriented: row 0 comes back as the image's top row, which is
   // texture space's own convention -- t=0 is the top, with no flip.
-  bool ok = reader.decode(w, h, rgb);
+  bool ok = reader.decode(w, h, bitsPerSample, rgb);
 
   if (!ok) {
     warning("texture \"{}\": cannot decode, using opaque black", name.c_str());
@@ -201,12 +231,17 @@ Texture::Texture(std::string const& name) : width(1), height(1) {
     return;
   }
 
+  if (readNarrowed(reader, bitsPerSample)) {
+    warning("texture \"{}\": 16-bit file read at 8 bits", name.c_str());
+  }
+
   width = (RtInt)w;
   height = (RtInt)h;
+  const RtFloat maxSample = (RtFloat)((1u << bitsPerSample) - 1u);
   texels.reserve((std::size_t)width * (std::size_t)height);
   for (std::size_t i = 0; i < rgb.size(); i += 3) {
-    texels.push_back(GMANColor((RtFloat)rgb[i + 0] / (RtFloat)255.0, (RtFloat)rgb[i + 1] / (RtFloat)255.0,
-                               (RtFloat)rgb[i + 2] / (RtFloat)255.0));
+    texels.push_back(
+        GMANColor((RtFloat)rgb[i + 0] / maxSample, (RtFloat)rgb[i + 1] / maxSample, (RtFloat)rgb[i + 2] / maxSample));
   }
 }
 
@@ -286,15 +321,16 @@ bool makeTexture(char const* picture, char const* texture, char const* swrap, ch
 
   const std::string pictureName = picture != nullptr ? picture : "";
   uint32_t w = 0, h = 0;
-  std::vector<unsigned char> rgb;
+  std::uint16_t bitsPerSample = 0;
+  std::vector<std::uint16_t> rgb;
   // Same decode call Texture's own constructor uses: a texture made
   // from a picture samples identically to that picture at every texel
   // centre.
-  if (!openAndDecodePicture("MakeTexture", pictureName, textureName, w, h, rgb)) {
+  if (!openAndDecodePicture("MakeTexture", pictureName, textureName, w, h, bitsPerSample, rgb)) {
     return false;
   }
 
-  if (!writeTexture(textureName, w, h, rgb, sw, tw, "Plain Texture")) {
+  if (!writeTexture(textureName, w, h, bitsPerSample, rgb, sw, tw, "Plain Texture")) {
     warning("MakeTexture \"{}\": failed to write", textureName.c_str());
     return false;
   }
@@ -312,14 +348,15 @@ bool makeLatLongEnvironment(char const* picture, char const* texture) {
 
   const std::string pictureName = picture != nullptr ? picture : "";
   uint32_t w = 0, h = 0;
-  std::vector<unsigned char> rgb;
-  if (!openAndDecodePicture("MakeLatLongEnvironment", pictureName, textureName, w, h, rgb)) {
+  std::uint16_t bitsPerSample = 0;
+  std::vector<std::uint16_t> rgb;
+  if (!openAndDecodePicture("MakeLatLongEnvironment", pictureName, textureName, w, h, bitsPerSample, rgb)) {
     return false;
   }
 
   // RISpec 3.2 Sec 7.1.2: periodic in s so longitude 0 and 360 meet
   // without a seam, clamp in t so the poles hold their edge row/texel.
-  if (!writeTexture(textureName, w, h, rgb, TEXTURE_PERIODIC, TEXTURE_CLAMP, "LatLong Environment")) {
+  if (!writeTexture(textureName, w, h, bitsPerSample, rgb, TEXTURE_PERIODIC, TEXTURE_CLAMP, "LatLong Environment")) {
     warning("MakeLatLongEnvironment \"{}\": failed to write", textureName.c_str());
     return false;
   }

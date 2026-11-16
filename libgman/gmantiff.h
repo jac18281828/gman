@@ -48,9 +48,9 @@ namespace gman {
  * its own invariant instead of a runtime flag re-asserting it.
  */
 
-// Reads a TIFF's pixels as unpacked, top-left-oriented RGB -- three bytes
-// per pixel -- and its Pixar wrap-modes tag, the only tag gman's texture
-// reader needs.
+// Reads a TIFF's pixels as unpacked, top-left-oriented RGB -- three integer
+// samples per pixel -- and its Pixar wrap-modes tag, the only tag gman's
+// texture reader needs.
 class TIFFReader {
 public:
   explicit TIFFReader(std::string const& path);
@@ -67,11 +67,24 @@ public:
   // The Pixar wrap-modes tag's value, or nullopt when the tag is absent.
   std::optional<std::string> wrapModes() const;
 
+  // The bits per sample the file stores, which decode's bitsPerSample may
+  // undercut: a 16-bit file outside the layouts decode reads at full depth
+  // comes back at 8.
+  std::uint16_t storedBitsPerSample() const;
+
   // Sizes rgb from the image's own width and height, decodes into it, then
   // reports whether the read succeeded and both dimensions are nonzero --
   // in that order, so a failed read is never masked by checking the
-  // dimensions first.
-  bool decode(std::uint32_t& width, std::uint32_t& height, std::vector<unsigned char>& rgb);
+  // dimensions first. rgb holds three samples per pixel, each in
+  // [0, 2^bitsPerSample - 1], and bitsPerSample is 8 or 16.
+  //
+  // A strip-organised, top-left, contiguous 16-bit unsigned file -- RGB,
+  // RGB with one associated-alpha sample, or one-sample greyscale -- reads
+  // at 16 bits, the alpha sample dropped and a grey sample replicated to R,
+  // G and B. Every other file reads through libtiff's own 8-bit RGBA
+  // conversion and reports 8, its samples unscaled.
+  bool decode(std::uint32_t& width, std::uint32_t& height, std::uint16_t& bitsPerSample,
+              std::vector<std::uint16_t>& rgb);
 
 private:
   struct tiff* handle;

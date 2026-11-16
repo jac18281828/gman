@@ -54,6 +54,84 @@ uint16_t libtiffCompression(OutputTIFF::Compression compression) {
   return COMPRESSION_NONE;
 }
 
+// Whether the file carries exactly one associated-alpha extra sample.
+bool hasOnlyAssociatedAlpha(TIFF* handle) {
+  std::uint16_t count = 0;
+  std::uint16_t const* types = nullptr;
+  return TIFFGetField(handle, TIFFTAG_EXTRASAMPLES, &count, &types) != 0 && count == 1 && types != nullptr &&
+         types[0] == EXTRASAMPLE_ASSOCALPHA;
+}
+
+// The samples per pixel of a file readable at full 16-bit depth, or 0 when
+// the file is not one: unsigned 16-bit samples in strips, one contiguous
+// plane, top-left oriented, and either RGB (with at most an associated-alpha
+// fourth sample) or one-sample greyscale.
+std::uint16_t fullDepthSamplesPerPixel(TIFF* handle) {
+  std::uint16_t bitsPerSample = 0, sampleFormat = 0, planarConfig = 0, orientation = 0, samplesPerPixel = 0,
+                photometric = 0;
+  TIFFGetFieldDefaulted(handle, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+  TIFFGetFieldDefaulted(handle, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
+  TIFFGetFieldDefaulted(handle, TIFFTAG_PLANARCONFIG, &planarConfig);
+  TIFFGetFieldDefaulted(handle, TIFFTAG_ORIENTATION, &orientation);
+  TIFFGetFieldDefaulted(handle, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
+  if (bitsPerSample != 16 || sampleFormat != SAMPLEFORMAT_UINT || planarConfig != PLANARCONFIG_CONTIG ||
+      orientation != ORIENTATION_TOPLEFT || TIFFIsTiled(handle) != 0) {
+    return 0;
+  }
+  if (TIFFGetField(handle, TIFFTAG_PHOTOMETRIC, &photometric) == 0) {
+    return 0;
+  }
+  if (photometric == PHOTOMETRIC_MINISBLACK && samplesPerPixel == 1) {
+    return samplesPerPixel;
+  }
+  if (photometric == PHOTOMETRIC_RGB && samplesPerPixel == 3) {
+    return samplesPerPixel;
+  }
+  if (photometric == PHOTOMETRIC_RGB && samplesPerPixel == 4 && hasOnlyAssociatedAlpha(handle)) {
+    return samplesPerPixel;
+  }
+  return 0;
+}
+
+// Reads a file fullDepthSamplesPerPixel accepted, one scanline at a time.
+// False on a scanline error.
+bool decodeFullDepth(TIFF* handle, std::uint32_t width, std::uint32_t height, std::uint16_t samplesPerPixel,
+                     std::vector<std::uint16_t>& rgb) {
+  std::vector<std::uint16_t> scanline(((std::size_t)TIFFScanlineSize(handle) + 1) / 2);
+  rgb.resize((std::size_t)width * (std::size_t)height * 3);
+  for (std::uint32_t y = 0; y < height; ++y) {
+    if (TIFFReadScanline(handle, scanline.data(), y, 0) < 0) {
+      return false;
+    }
+    std::uint16_t* out = rgb.data() + (std::size_t)y * (std::size_t)width * 3;
+    for (std::size_t x = 0; x < width; ++x) {
+      std::uint16_t const* in = scanline.data() + x * samplesPerPixel;
+      const bool grey = samplesPerPixel == 1;
+      out[x * 3 + 0] = in[0];
+      out[x * 3 + 1] = grey ? in[0] : in[1];
+      out[x * 3 + 2] = grey ? in[0] : in[2];
+    }
+  }
+  return true;
+}
+
+// Reads any file through libtiff's own 8-bit RGBA conversion.
+bool decodeEightBit(TIFF* handle, std::uint32_t width, std::uint32_t height, std::vector<std::uint16_t>& rgb) {
+  std::vector<std::uint32_t> raster((std::size_t)width * (std::size_t)height, 0);
+  const int ok = TIFFReadRGBAImageOriented(handle, width, height, raster.data(), ORIENTATION_TOPLEFT, 0);
+  if (ok == 0 || width == 0 || height == 0) {
+    return false;
+  }
+
+  rgb.resize((std::size_t)width * (std::size_t)height * 3);
+  for (std::size_t i = 0; i < raster.size(); ++i) {
+    rgb[i * 3 + 0] = TIFFGetR(raster[i]);
+    rgb[i * 3 + 1] = TIFFGetG(raster[i]);
+    rgb[i * 3 + 2] = TIFFGetB(raster[i]);
+  }
+  return true;
+}
+
 } // namespace
 
 TIFFReader::TIFFReader(std::string const& path) : handle(TIFFOpen(path.c_str(), "r")) {}
@@ -74,23 +152,25 @@ std::optional<std::string> TIFFReader::wrapModes() const {
   return std::nullopt;
 }
 
-bool TIFFReader::decode(std::uint32_t& width, std::uint32_t& height, std::vector<unsigned char>& rgb) {
+std::uint16_t TIFFReader::storedBitsPerSample() const {
+  std::uint16_t bitsPerSample = 0;
+  TIFFGetFieldDefaulted(handle, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+  return bitsPerSample;
+}
+
+bool TIFFReader::decode(std::uint32_t& width, std::uint32_t& height, std::uint16_t& bitsPerSample,
+                        std::vector<std::uint16_t>& rgb) {
   TIFFGetField(handle, TIFFTAG_IMAGEWIDTH, &width);
   TIFFGetField(handle, TIFFTAG_IMAGELENGTH, &height);
 
-  std::vector<std::uint32_t> raster((std::size_t)width * (std::size_t)height, 0);
-  const int ok = TIFFReadRGBAImageOriented(handle, width, height, raster.data(), ORIENTATION_TOPLEFT, 0);
-  if (ok == 0 || width == 0 || height == 0) {
-    return false;
+  const std::uint16_t samplesPerPixel = fullDepthSamplesPerPixel(handle);
+  if (samplesPerPixel == 0) {
+    bitsPerSample = 8;
+    return decodeEightBit(handle, width, height, rgb);
   }
 
-  rgb.resize((std::size_t)width * (std::size_t)height * 3);
-  for (std::size_t i = 0; i < raster.size(); ++i) {
-    rgb[i * 3 + 0] = TIFFGetR(raster[i]);
-    rgb[i * 3 + 1] = TIFFGetG(raster[i]);
-    rgb[i * 3 + 2] = TIFFGetB(raster[i]);
-  }
-  return true;
+  bitsPerSample = 16;
+  return width != 0 && height != 0 && decodeFullDepth(handle, width, height, samplesPerPixel, rgb);
 }
 
 TIFFWriter::TIFFWriter(std::string const& path, std::uint32_t width, std::uint32_t height,

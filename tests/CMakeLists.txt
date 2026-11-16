@@ -1261,6 +1261,25 @@ set_tests_properties(texturecache PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# 16-bit TIFF textures at full depth: RGB, greyscale and associated-alpha
+# files sampled at v / 65535, a 16-bit file the reader can take only at 8 bits
+# warning once, 8-bit files sampling as before, and makeTexture and
+# makeLatLongEnvironment writing the picture's own depth. See
+# tests/texture16_test.cpp.
+add_executable(gman_texture16 texture16_test.cpp)
+target_link_libraries(gman_texture16 PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+
+set(GMAN_TEXTURE16_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texture16-run")
+file(MAKE_DIRECTORY "${GMAN_TEXTURE16_WORKDIR}")
+
+add_test(NAME texture16
+  COMMAND gman_texture16
+  WORKING_DIRECTORY "${GMAN_TEXTURE16_WORKDIR}")
+set_tests_properties(texture16 PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
 # (General)Polygon: RiTextureCoordinates and the "s"/"t"/"st" primvars, over
 # tests/rib/texcoords/*.rib -- each fixture copies tests/rib/texture.rib's

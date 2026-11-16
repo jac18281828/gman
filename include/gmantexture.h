@@ -120,13 +120,13 @@ private:
 TextureCache& textureCache(RtVoid);
 
 // RiMakeTexture's implementation: decodes picture the way Texture does
-// and writes texture as a single-level 8-bit RGB TIFF carrying swrap and
-// twrap in libtiff's Pixar wrap-modes tag. Never throws -- warns once,
-// naming texture and the cause, and leaves no file at texture, on a null or
-// empty name, an unknown wrap name, a picture that cannot be opened or
-// decoded, or an output that cannot be opened or fully written. A
-// successful write forgets texture from textureCache(), so the next
-// lookup reads what was just written.
+// and writes texture as a single-level RGB TIFF carrying swrap and twrap in
+// libtiff's Pixar wrap-modes tag. The texture keeps the picture's depth, 8
+// or 16 bits. Never throws -- warns once, naming texture and the cause, and
+// leaves no file at texture, on a null or empty name, an unknown wrap name,
+// a picture that cannot be opened or decoded, or an output that cannot be
+// opened or fully written. A successful write forgets texture from
+// textureCache(), so the next lookup reads what was just written.
 bool makeTexture(char const* picture, char const* texture, char const* swrap, char const* twrap);
 
 // RiMakeLatLongEnvironment's implementation: decodes picture and writes
@@ -134,6 +134,7 @@ bool makeTexture(char const* picture, char const* texture, char const* swrap, ch
 // "periodic,clamp" in the Pixar wrap-modes tag (longitude 0 and 360 meet
 // without a seam; latitude clamps at the poles) and "LatLong Environment"
 // in the Pixar texture-format tag, RenderMan tools' value for this format.
+// The texture keeps the picture's depth, 8 or 16 bits.
 // Same failure shape as makeTexture: never throws, warns once naming
 // texture and the cause, and leaves no file at texture on a null or empty
 // name, a picture that cannot be opened or decoded, or an output that
