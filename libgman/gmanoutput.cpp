@@ -48,6 +48,27 @@ constexpr std::uint32_t kDitherSeed = 0x5eed;
 
 float floatSample(GMANColor::ColorSampleType v) { return std::isnan(v) ? 0.0f : static_cast<float>(v); }
 
+std::vector<float> floatSamples(GMANBitmap const& image, RtFloat gain, RtFloat gamma) {
+  std::size_t const width = static_cast<std::size_t>(image.getWidth());
+  std::size_t const height = static_cast<std::size_t>(image.getHeight());
+  std::vector<float> floats(4 * width * height);
+  for (std::size_t y = 0; y < height; y++) {
+    for (std::size_t x = 0; x < width; x++) {
+      GMANColor const color =
+          gman::gammaCorrected(image.getPixel(static_cast<int>(x), static_cast<int>(y)), gain, gamma);
+      GMANAlpha const& alpha = image.getAlpha(static_cast<int>(x), static_cast<int>(y));
+      GMANColor::ColorSampleType const coverage =
+          (alpha.getRed() + alpha.getGreen() + alpha.getBlue()) / static_cast<GMANColor::ColorSampleType>(3.0);
+      std::size_t const idx = 4 * (y * width + x);
+      floats[idx + 0] = floatSample(color.getRed());
+      floats[idx + 1] = floatSample(color.getGreen());
+      floats[idx + 2] = floatSample(color.getBlue());
+      floats[idx + 3] = floatSample(coverage);
+    }
+  }
+  return floats;
+}
+
 } // namespace
 
 // default constructor
@@ -72,22 +93,7 @@ RtVoid GMANOutput::writeFloatImage(DisplayMode /*mode*/, std::vector<float> cons
 
 RtVoid GMANOutput::save(DisplayMode mode, RtFloat gain, RtFloat gamma, GMANQuantize const& quantize) {
   if (quantize.one == 0 && writesFloat()) {
-    std::vector<float> floats(4 * static_cast<std::size_t>(xres) * static_cast<std::size_t>(yres));
-    for (int y = 0; y < yres; y++) {
-      for (int x = 0; x < xres; x++) {
-        GMANColor const color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
-        GMANAlpha const& alpha = getAlpha(x, y);
-        GMANColor::ColorSampleType const coverage =
-            (alpha.getRed() + alpha.getGreen() + alpha.getBlue()) / static_cast<GMANColor::ColorSampleType>(3.0);
-        std::size_t const idx =
-            4 * (static_cast<std::size_t>(y) * static_cast<std::size_t>(xres) + static_cast<std::size_t>(x));
-        floats[idx + 0] = floatSample(color.getRed());
-        floats[idx + 1] = floatSample(color.getGreen());
-        floats[idx + 2] = floatSample(color.getBlue());
-        floats[idx + 3] = floatSample(coverage);
-      }
-    }
-    writeFloatImage(mode, floats, gamma);
+    writeFloatImage(mode, floatSamples(*this, gain, gamma), gamma);
     return;
   }
 

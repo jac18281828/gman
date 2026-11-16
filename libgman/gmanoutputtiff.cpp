@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "gmandefaults.h"
@@ -58,14 +59,15 @@ std::size_t storeSample(unsigned char* out, float sample, int /*bitsPerSample*/)
 }
 
 // Writes samples, 4 per pixel, as a TIFF of xres by yres pixels with 3 or 4
-// of them kept by mode. bitsPerSample of 32 writes IEEE float samples.
+// of them kept by mode. A float Sample writes 32-bit IEEE float samples;
+// otherwise bitsPerSample is the integer sample's width.
 template <typename Sample>
 void writeTIFF(std::string const& outputName, OutputTIFF::Compression compression, int xres, int yres,
                GMANOutput::DisplayMode mode, int bitsPerSample, std::vector<Sample> const& samples) {
   const RtInt samplesperpixel = (mode == GMANOutput::RGB) ? 3 : 4;
+  int const bits = std::is_same_v<Sample, float> ? kFloatBitsPerSample : bitsPerSample;
 
-  TIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, (uint16_t)bitsPerSample,
-                    compression);
+  TIFFWriter writer(outputName, (uint32_t)xres, (uint32_t)yres, (uint16_t)samplesperpixel, (uint16_t)bits, compression);
   if (!writer.isOpen()) {
     std::string errorMsg("Unable to open output file: ");
     errorMsg.append(outputName);
@@ -75,7 +77,7 @@ void writeTIFF(std::string const& outputName, OutputTIFF::Compression compressio
   if (samplesperpixel == 4) {
     writer.tagAlphaAssociated();
   }
-  if (bitsPerSample == kFloatBitsPerSample) {
+  if (bits == kFloatBitsPerSample) {
     writer.tagIEEEFloat();
   }
 
@@ -84,7 +86,7 @@ void writeTIFF(std::string const& outputName, OutputTIFF::Compression compressio
                              "Licensed under the GNU Lesser General Public License v2.1 or later.\n");
 
   // length in memory of one row of pixels in the image
-  const std::size_t bytesPerSample = (std::size_t)bitsPerSample / 8;
+  const std::size_t bytesPerSample = (std::size_t)bits / 8;
   const std::size_t linebytes = (std::size_t)samplesperpixel * (std::size_t)xres * bytesPerSample;
   std::vector<unsigned char> buf;
   if (writer.scanlineSize() == linebytes) {

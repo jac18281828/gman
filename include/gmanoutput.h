@@ -77,10 +77,10 @@ public:
 
   // A quantize.one of 0 asks for unquantized output. A driver whose
   // writesFloat() is true then receives, once, through writeFloatImage,
-  // every channel after gain and gamma and before any rounding, dithering
-  // or clamping: min, max and the dither amplitude do not apply, and a NaN
-  // reads 0. Any other driver, and any other quantize.one, takes the
-  // integer path.
+  // colour after gain and gamma and alpha, the coverage, all before any
+  // rounding, dithering or clamping: min, max and the dither amplitude do
+  // not apply, and a NaN reads 0. Any other driver, and any other
+  // quantize.one, takes the integer path.
   //
   // The integer path resolves quantize against maxBitsPerSample(): honoured,
   // it bounds every channel; otherwise save logs one warning naming this
