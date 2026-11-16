@@ -91,7 +91,7 @@ private:
   struct tiff* handle;
 };
 
-// Writes an 8- or 16-bit RGB or RGBA TIFF one scanline at a time.
+// Writes an 8-, 16- or 32-bit RGB or RGBA TIFF one scanline at a time.
 // Construction opens the file and sets the fields every gman TIFF shares:
 // width, height, bitsPerSample, samplesPerPixel, top-left orientation, RGB
 // photometric, contiguous planar config and compression -- gman's own
@@ -123,6 +123,10 @@ public:
   // Tags the fourth of a 4-sample-per-pixel file as associated alpha.
   // Call before the first writeScanline.
   void tagAlphaAssociated();
+
+  // Tags every sample as an IEEE floating-point value; the file's
+  // bitsPerSample must be 32. Call before the first writeScanline.
+  void tagIEEEFloat();
 
   // The byte length libtiff expects for one scanline of this file -- a
   // caller sizes its row buffer against this rather than trusting

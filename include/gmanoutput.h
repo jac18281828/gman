@@ -71,16 +71,34 @@ public:
   // subclass writes more.
   virtual int maxBitsPerSample() const;
 
-  // Resolves quantize against maxBitsPerSample(): honoured, it bounds every
-  // channel; otherwise save logs one warning naming this output and
-  // quantizes with 255 0 255 and the requested amplitude instead. Colour
-  // runs through gain and gamma first; alpha, coverage, skips both. Every
-  // channel then rounds and dithers by RISpec's rule, one draw per pixel,
-  // and clamps into the resolved range, before writeImage receives it
-  // once, at the resolved bit depth.
+  // Whether this driver writes unquantized floating-point samples. False
+  // unless a subclass does.
+  virtual bool writesFloat() const;
+
+  // A quantize.one of 0 asks for unquantized output. A driver whose
+  // writesFloat() is true then receives, once, through writeFloatImage,
+  // every channel after gain and gamma and before any rounding, dithering
+  // or clamping: min, max and the dither amplitude do not apply, and a NaN
+  // reads 0. Any other driver, and any other quantize.one, takes the
+  // integer path.
+  //
+  // The integer path resolves quantize against maxBitsPerSample(): honoured,
+  // it bounds every channel; otherwise save logs one warning naming this
+  // output and quantizes with 255 0 255 and the requested amplitude
+  // instead. Colour runs through gain and gamma first; alpha, coverage,
+  // skips both. Every channel then rounds and dithers by RISpec's rule, one
+  // draw per pixel, and clamps into the resolved range, before writeImage
+  // receives it once, at the resolved bit depth.
   RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma, GMANQuantize const& quantize);
 
 protected:
+  // Writes image, 4 samples per pixel -- R, G, B, alpha -- in row-major
+  // order, index 4 * (y * xres + x) + channel, as floats: colour after gain
+  // and gamma, alpha the coverage, none of them rounded, dithered or
+  // clamped. gamma is the exponent save already applied. Called only when
+  // writesFloat() is true; the default writes nothing.
+  virtual RtVoid writeFloatImage(DisplayMode mode, std::vector<float> const& samples, RtFloat gamma);
+
   // Writes image, 4 samples per pixel -- R, G, B, alpha -- in row-major
   // order, index 4 * (y * xres + x) + channel, each already resolved into
   // the request's [min, max] and packed into bitsPerSample bits (8 or 16).

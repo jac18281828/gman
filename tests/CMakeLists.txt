@@ -599,7 +599,8 @@ set_tests_properties(shaders PROPERTIES
 
 # RIB's Quantize keyword, end to end: parsed, honoured by
 # GMANOutput::save and reflected in the bytes TIFF and PNM write, an
-# unhonoured 16-bit request falling back and warning.
+# unhonoured 16-bit request falling back and warning, and a zero "one"
+# writing unclamped 32-bit float to TIFF and falling back for PNM.
 add_executable(gman_quantize quantize_test.cpp)
 target_link_libraries(gman_quantize PRIVATE gman_core TIFF::TIFF)
 

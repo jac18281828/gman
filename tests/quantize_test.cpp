@@ -137,6 +137,65 @@ RawImage readTIFFRaw(std::string const& path) {
   return img;
 }
 
+// A 32-bit IEEE float TIFF's samples, as libtiff decodes them, with the tags
+// that say how they are stored.
+struct FloatImage {
+  bool ok = false;
+  int width = 0, height = 0;
+  int samplesPerPixel = 0;
+  int bitsPerSample = 0;
+  int sampleFormat = SAMPLEFORMAT_UINT;
+  std::vector<float> data;
+
+  float at(int x, int y, int channel) const {
+    return data[(std::size_t)(y * width + x) * (std::size_t)samplesPerPixel + (std::size_t)channel];
+  }
+};
+
+FloatImage readTIFFFloat(std::string const& path) {
+  FloatImage img;
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
+  if (tif == nullptr) {
+    return img;
+  }
+
+  uint32_t width = 0, height = 0;
+  uint16_t samplesPerPixel = 0;
+  uint16_t bitsPerSample = 0;
+  uint16_t sampleFormat = SAMPLEFORMAT_UINT;
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+  TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
+  TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+  TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLEFORMAT, &sampleFormat);
+
+  img.width = (int)width;
+  img.height = (int)height;
+  img.samplesPerPixel = samplesPerPixel;
+  img.bitsPerSample = bitsPerSample;
+  img.sampleFormat = sampleFormat;
+  if (bitsPerSample != 32 || sampleFormat != SAMPLEFORMAT_IEEEFP) {
+    TIFFClose(tif);
+    return img;
+  }
+
+  const std::size_t rowSamples = (std::size_t)width * (std::size_t)samplesPerPixel;
+  std::vector<float> scanline(rowSamples);
+  img.data.resize((std::size_t)height * rowSamples);
+  bool ok = (std::size_t)TIFFScanlineSize(tif) == rowSamples * sizeof(float);
+  for (uint32_t y = 0; ok && y < height; ++y) {
+    if (TIFFReadScanline(tif, scanline.data(), y) < 0) {
+      ok = false;
+      break;
+    }
+    std::copy(scanline.begin(), scanline.end(), img.data.begin() + (std::ptrdiff_t)((std::size_t)y * rowSamples));
+  }
+  TIFFClose(tif);
+
+  img.ok = ok;
+  return img;
+}
+
 struct PNMImage {
   bool ok = false;
   int width = 0, height = 0, maxval = 0;
@@ -195,25 +254,26 @@ void checkQuantize8(std::string const& gman, std::string const& ribDir) {
   }
 }
 
-// 2. quantize_fallback.rib, .pnm, 65535 0 65535 0, full plane: exactly one
-// line of output naming Quantize and the file; the P6 header's maxval is
-// 255 and every sample is 64.
-void checkQuantizeFallback(std::string const& gman, std::string const& ribDir) {
-  std::remove("quantize_fallback.pnm");
-  GMANRunResult const r = runGman(gman, ribDir + "/quantize_fallback.rib");
-  check(r.exitStatus == 0, "quantize_fallback: renders");
+// Renders ribDir/name.rib to name.pnm: exactly one line of output naming
+// Quantize and the file; the P6 header's maxval is 255 and every sample is
+// 64.
+void checkPNMFallback(std::string const& gman, std::string const& ribDir, std::string const& name) {
+  std::string const file = name + ".pnm";
+  std::remove(file.c_str());
+  GMANRunResult const r = runGman(gman, ribDir + "/" + name + ".rib");
+  check(r.exitStatus == 0, name + ": renders");
   std::string const relevant = withoutUnrelatedNoise(r.output);
-  check(countLines(relevant) == 1, "quantize_fallback: exactly one line of Quantize's own output (got " +
-                                       std::to_string(countLines(relevant)) + ")");
-  check(relevant.find("Quantize") != std::string::npos, "quantize_fallback: names Quantize");
-  check(relevant.find("quantize_fallback.pnm") != std::string::npos, "quantize_fallback: names the output file");
+  check(countLines(relevant) == 1,
+        name + ": exactly one line of Quantize's own output (got " + std::to_string(countLines(relevant)) + ")");
+  check(relevant.find("Quantize") != std::string::npos, name + ": names Quantize");
+  check(relevant.find(file) != std::string::npos, name + ": names the output file");
 
-  PNMImage const img = readPNM("quantize_fallback.pnm");
-  check(img.ok, "quantize_fallback: file reads back");
+  PNMImage const img = readPNM(file);
+  check(img.ok, name + ": file reads back");
   if (!img.ok) {
     return;
   }
-  check(img.maxval == 255, "quantize_fallback: P6 maxval is 255");
+  check(img.maxval == 255, name + ": P6 maxval is 255");
   bool everySampleIs64 = true;
   for (int y = 0; y < img.height && everySampleIs64; ++y) {
     for (int x = 0; x < img.width && everySampleIs64; ++x) {
@@ -224,7 +284,12 @@ void checkQuantizeFallback(std::string const& gman, std::string const& ribDir) {
       }
     }
   }
-  check(everySampleIs64, "quantize_fallback: every sample reads 64");
+  check(everySampleIs64, name + ": every sample reads 64");
+}
+
+// 2. quantize_fallback.rib, .pnm, 65535 0 65535 0, full plane: the fallback.
+void checkQuantizeFallback(std::string const& gman, std::string const& ribDir) {
+  checkPNMFallback(gman, ribDir, "quantize_fallback");
 }
 
 // 3. quantize16.rib, TIFF, 65535 1000 65535 0, half plane: 16 bits a
@@ -253,6 +318,41 @@ void checkQuantize16(std::string const& gman, std::string const& ribDir) {
   }
 }
 
+// 4. quantizefloat.rib, TIFF, 0 0 0 0, half plane lit to 3.0: 32-bit IEEE
+// float, 4 samples a pixel, no Quantize output; columns 0-7 read R, G and B
+// exactly 3.0 and alpha exactly 1.0; columns 8-15 read 0.0 on all four.
+void checkQuantizeFloat(std::string const& gman, std::string const& ribDir) {
+  std::remove("quantizefloat.tif");
+  GMANRunResult const r = runGman(gman, ribDir + "/quantizefloat.rib");
+  check(r.exitStatus == 0, "quantizefloat: renders");
+  std::string const relevant = withoutUnrelatedNoise(r.output);
+  check(relevant.empty(), "quantizefloat: prints no Quantize line (got \"" + relevant + "\")");
+
+  FloatImage const img = readTIFFFloat("quantizefloat.tif");
+  check(img.bitsPerSample == 32, "quantizefloat: 32 bits a sample");
+  check(img.sampleFormat == SAMPLEFORMAT_IEEEFP, "quantizefloat: IEEE float sample format");
+  check(img.samplesPerPixel == 4, "quantizefloat: 4 samples a pixel");
+  check(img.ok, "quantizefloat: file reads back");
+  if (!img.ok) {
+    return;
+  }
+  for (int x = 0; x < 8; ++x) {
+    check(img.at(x, 8, 0) == 3.0f && img.at(x, 8, 1) == 3.0f && img.at(x, 8, 2) == 3.0f,
+          "quantizefloat: covered column " + std::to_string(x) + " reads R, G, B 3.0");
+    check(img.at(x, 8, 3) == 1.0f, "quantizefloat: covered column " + std::to_string(x) + " reads alpha 1.0");
+  }
+  for (int x = 8; x < 16; ++x) {
+    check(img.at(x, 8, 0) == 0.0f && img.at(x, 8, 1) == 0.0f && img.at(x, 8, 2) == 0.0f && img.at(x, 8, 3) == 0.0f,
+          "quantizefloat: uncovered column " + std::to_string(x) + " reads 0.0 on all four");
+  }
+}
+
+// 5. quantizefloat_fallback.rib, .pnm, 0 0 0 0, full plane: PNM declines
+// float, so the one warning and the 8-bit fallback stay.
+void checkQuantizeFloatFallback(std::string const& gman, std::string const& ribDir) {
+  checkPNMFallback(gman, ribDir, "quantizefloat_fallback");
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -266,6 +366,8 @@ int main(int argc, char* argv[]) {
   checkQuantize8(gman, ribDir);
   checkQuantizeFallback(gman, ribDir);
   checkQuantize16(gman, ribDir);
+  checkQuantizeFloat(gman, ribDir);
+  checkQuantizeFloatFallback(gman, ribDir);
 
   return checkSummary("quantize holds");
 }

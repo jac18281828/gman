@@ -1,0 +1,17 @@
+## Quantize "rgba" 0 writes unquantized floating-point samples. An
+## ambient light of 0.75 x 4 shades the covered half plane at exactly 3.0,
+## above 1, so the test reads back a value an integer range would clamp.
+Display "quantizefloat.tif" "file" "rgba"
+Format 16 16 1
+Projection "orthographic"
+Clipping 0.5 50
+PixelFilter "box" 1 1
+PixelSamples 1 1
+Quantize "rgba" 0 0 0 0
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [4]
+Color [0.75 0.75 0.75]
+Surface "matte" "Ka" [1] "Kd" [0]
+Polygon "P" [ -10 -10 0  -0.03 -10 0  -0.03 10 0  -10 10 0 ]
+WorldEnd

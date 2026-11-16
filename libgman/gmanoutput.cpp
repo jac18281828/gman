@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
 #include <cstdint>
 #include <vector>
 
@@ -45,6 +46,8 @@ namespace {
 // its shading draws.
 constexpr std::uint32_t kDitherSeed = 0x5eed;
 
+float floatSample(GMANColor::ColorSampleType v) { return std::isnan(v) ? 0.0f : static_cast<float>(v); }
+
 } // namespace
 
 // default constructor
@@ -63,7 +66,31 @@ GMANOutput::~GMANOutput() {};
 
 int GMANOutput::maxBitsPerSample() const { return 8; }
 
+bool GMANOutput::writesFloat() const { return false; }
+
+RtVoid GMANOutput::writeFloatImage(DisplayMode /*mode*/, std::vector<float> const& /*samples*/, RtFloat /*gamma*/) {}
+
 RtVoid GMANOutput::save(DisplayMode mode, RtFloat gain, RtFloat gamma, GMANQuantize const& quantize) {
+  if (quantize.one == 0 && writesFloat()) {
+    std::vector<float> floats(4 * static_cast<std::size_t>(xres) * static_cast<std::size_t>(yres));
+    for (int y = 0; y < yres; y++) {
+      for (int x = 0; x < xres; x++) {
+        GMANColor const color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
+        GMANAlpha const& alpha = getAlpha(x, y);
+        GMANColor::ColorSampleType const coverage =
+            (alpha.getRed() + alpha.getGreen() + alpha.getBlue()) / static_cast<GMANColor::ColorSampleType>(3.0);
+        std::size_t const idx =
+            4 * (static_cast<std::size_t>(y) * static_cast<std::size_t>(xres) + static_cast<std::size_t>(x));
+        floats[idx + 0] = floatSample(color.getRed());
+        floats[idx + 1] = floatSample(color.getGreen());
+        floats[idx + 2] = floatSample(color.getBlue());
+        floats[idx + 3] = floatSample(coverage);
+      }
+    }
+    writeFloatImage(mode, floats, gamma);
+    return;
+  }
+
   const RtInt widest = (1 << maxBitsPerSample()) - 1;
   const bool honoured = quantize.one > 0 && quantize.min >= 0 && quantize.min <= quantize.max && quantize.max <= widest;
 

@@ -230,6 +230,8 @@ void TIFFWriter::tagAlphaAssociated() {
   TIFFSetField(handle, TIFFTAG_EXTRASAMPLES, 1, &extraSample);
 }
 
+void TIFFWriter::tagIEEEFloat() { TIFFSetField(handle, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP); }
+
 std::size_t TIFFWriter::scanlineSize() const { return (std::size_t)TIFFScanlineSize(handle); }
 
 bool TIFFWriter::writeScanline(unsigned char* data, std::uint32_t row) {

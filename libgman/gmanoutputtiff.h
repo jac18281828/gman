@@ -62,7 +62,12 @@ public:
 
   int maxBitsPerSample() const override;
 
+  // Writes 32-bit IEEE float samples.
+  bool writesFloat() const override;
+
 protected:
+  RtVoid writeFloatImage(GMANOutput::DisplayMode mode, std::vector<float> const& samples, RtFloat gamma) override;
+
   RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
                     RtFloat gamma) override;
 };
