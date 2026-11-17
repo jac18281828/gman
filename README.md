@@ -57,6 +57,11 @@ gman -r gmanraytracer samples/vase.rib
 That writes `vase.png` to the current directory, the picture at the top, in a few seconds. The floor
 tiles come from `samples/floor16.tif`, a 16-bit TIFF that gman reads at full depth.
 
+The scene sets its own render, so the picture reproduces exactly: `Format 1280 800`,
+`PixelSamples 2 2`, `PixelFilter "catmull-rom" 3 3` and `Quantize "rgba" 255 0 255 0`.
+Catmull-Rom keeps edges sharper than gman's default Gaussian filter, and the zero dither amplitude
+keeps the PNG small.
+
 ## Path trace it
 
 Add one line to `samples/vase.rib` in the unpacked folder, under `PixelSamples 2 2`, and render it
