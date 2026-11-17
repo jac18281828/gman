@@ -105,7 +105,7 @@ void testUnrelatedOptionsIgnored() {
   setElementSize(impl, 0.3f);
 
   // Another name entirely.
-  RtFloat other = 9.0f;
+  char* other = const_cast<char*>("other");
   RtToken hiderTokens[1] = {"string type"};
   RtPointer hiderParms[1] = {&other};
   impl.RiOptionV("hider", 1, hiderTokens, hiderParms);
