@@ -1647,6 +1647,16 @@ set_tests_properties(ctypescan PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Library layering: every include in the production tree points down a layer,
+# a private header stays in its library, and a file names only its library's
+# export macro. See tests/librarylayering_test.cpp for the table.
+add_executable(gman_librarylayering librarylayering_test.cpp)
+add_test(NAME librarylayering
+  COMMAND gman_librarylayering "${CMAKE_SOURCE_DIR}" ${GMAN_SOURCE_PATHS})
+set_tests_properties(librarylayering PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # gman::gammaCorrected: identity at gain 1/gamma 1 (no golden image moves), the
 # pow(gain * channel, 1/gamma) shape, and the sub-byte precision case the
 # deleted byte lookup table could never produce.
