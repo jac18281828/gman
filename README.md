@@ -8,7 +8,7 @@ Begun in [1999](https://gman-toolkit.sourceforge.net), revived in [2026](https:/
 
 ## Install
 
-GMAN 1.0.0 ships as a tarball for Linux x86_64, Linux arm64 and macOS arm64 on the
+GMAN 1.2.0 ships as a tarball for Linux x86_64, Linux arm64 and macOS arm64 on the
 [releases page](https://github.com/jac18281828/gman/releases). gman links libtiff, libpng, libjpeg
 and zlib at run time. On Linux:
 
@@ -25,14 +25,15 @@ brew install libtiff libpng jpeg
 Download the tarball for your platform, unpack it, `cd` into the folder and run the installer:
 
 ```sh
-tar xzf gman-1.0.0-linux-x86_64.tar.gz
-cd gman-1.0.0-linux-x86_64
+tar xzf gman-1.2.0-linux-x86_64.tar.gz
+cd gman-1.2.0-linux-x86_64
 sudo ./install.sh
 ```
 
 `install.sh` installs `bin/`, `lib/` and `include/`, that is the `gman` program, its renderer and
-shader plugins, libgman and its headers, into `/usr/local`, which needs `sudo`. It then runs the
-installed `gman --version`, and on macOS clears the download quarantine from the files it wrote.
+shader plugins, the three libraries below and their headers, into `/usr/local`, which needs `sudo`.
+It then runs the installed `gman --version`, and on macOS clears the download quarantine from the
+files it wrote.
 
 - `./install.sh --prefix "$HOME/.local"` installs into a directory of your own, with no `sudo`.
 - `sudo ./install.sh --uninstall` removes exactly the files the install wrote, and each directory
@@ -43,6 +44,19 @@ installed `gman --version`, and on macOS clears the download quarantine from the
   `PATH`, it says so and you add it.
 - `samples/` stays in the unpacked folder: `install.sh` does not install it, and the next section
   renders from it.
+
+`lib/` holds three shared libraries; `libgman_ray` and `libgman_raster` build on `libgman_core`:
+
+- `libgman_core`, the RenderMan interface, the RIB parser, the shader and renderer contracts and the
+  image writers. Every program that links gman needs it.
+- `libgman_ray`, the ray geometry, the BVH, the emitters and the indirect-light pass that the ray
+  tracer, the path tracer and the radiosity pass share.
+- `libgman_raster`, the body, face and vertex model, the patch and polygon object manager and the
+  polygon clipper that the z-buffer renderer uses.
+
+The renderers and shaders sit beside them as `lib<name>.so` plugins. `gman` loads a plugin by its
+bare name, so a `lib<name>.so` in the directory you run `gman` from wins over the installed one. Run
+`gman` from a folder that holds no older gman `lib*.so`.
 
 To build gman yourself and install it with CMake, see [Build from source](#build-from-source).
 
@@ -98,8 +112,8 @@ gman -r gmanpathtracer samples/materials.rib
 
 From the left: gold `shinymetal`, `glass`, a `mirror` that takes the wall's clay colour, and a
 `plastic` torus. The overhead disk pools a soft shadow under each one. The scene traces 64 paths a
-subpixel, about two minutes on one core of an Apple M3 Max; the picture traces 256, set by
-`Option "pathtracer" "integer samples"` at the top of the file.
+subpixel; the picture traces 256, set by `Option "pathtracer" "integer samples"` at the top of the
+file.
 
 ## Poke it
 
@@ -214,10 +228,13 @@ To install into a prefix:
 cmake --install build --prefix /usr/local
 ```
 
-The installed prefix carries `bin/gman` and a CMake package. A program
+The installed prefix carries `bin/gman`, the three libraries and a CMake package. A program
 links gman with `find_package(gman CONFIG REQUIRED)` and
 `target_link_libraries(app PRIVATE gman::gman_core)`, and includes
-`<gman/ri.h>`. Link libgman from C, below, walks through a full example.
+`<gman/ri.h>`. It adds `gman::gman_ray` when it uses the ray geometry, the BVH, the emitters or the
+indirect-light pass, and `gman::gman_raster` when it uses the body, face and vertex model, the
+patch and polygon object manager or the polygon clipper. Link gman from C, below, walks through a
+full example.
 
 To remove what `cmake --install` wrote, delete the files CMake recorded:
 
@@ -243,7 +260,7 @@ tracer samples, defaulting to a Lambert lobe of `Cs`; a `bsdf` override
 must not call the base `albedo`, since the two would recurse. A shader may
 override `albedo(GMANSurfaceEnv const&) const` to report its diffuse
 reflectance, defaulting to its BSDF's `rhoD()` clamped to [0, 1]. A
-closure combines libgman's own lobes — `addLambert`, `addGGX`, `addMirror`
+closure combines gman_core's own lobes — `addLambert`, `addGGX`, `addMirror`
 and `addDielectric` — and never defines a new one; `rhoD` reports the
 Lambert lobes alone, so a glossy or delta lobe never shows in `albedo`.
 `shaders/gmanmatte.cpp` is the model:
@@ -270,7 +287,7 @@ set_target_properties(gman_myshader PROPERTIES OUTPUT_NAME "myshader")
 gives it. The installed package exports no `gman_add_plugin`: a new shader
 builds only inside a gman checkout.
 
-## Link libgman from C
+## Link gman from C
 
 A C program calls the same RenderMan interface through `<gman/ri.h>`. This
 one renders a lit sphere:
@@ -316,22 +333,24 @@ This writes `sphere.tif` in the current directory.
 ## The GMAN project
 
 ```
-include/     GMAN header files, including ri.h
-libgman/     the core library: RIB parser, RI state machine, image writers
-libgmanrib/  the RIB-writer plugin RiBegin("x.rib") loads, not yet trustworthy
-renderers/   loadable rendering modules -- zbuffer, raytracer and pathtracer; radiosity,
-             the radiosity pass the ray tracer loads; and reyes, non-functional and
-             built OFF by default
-shaders/     loadable shading modules
-gmansl/      grammar and driver for a shading language compiler that was never
-             finished; kept as a record, built by nothing
-gman/        the gman command line utility
-samples/     demo scenes and their renders
-tests/       the test suite and its RIB corpus
-doc/         the 1999 design document
+include/       gman_core's header files, including ri.h
+libgman/       the core library, gman_core: RIB parser, RI state machine, image writers
+libgmanray/    gman_ray: ray geometry, BVH, emitters and the indirect-light pass
+libgmanraster/ gman_raster: the body, face and vertex model, the polygon clipper
+libgmanrib/    the RIB-writer plugin RiBegin("x.rib") loads, not yet trustworthy
+renderers/     loadable rendering modules -- zbuffer, raytracer and pathtracer; radiosity,
+               the radiosity pass the ray tracer loads; and reyes, non-functional and
+               built OFF by default
+shaders/       loadable shading modules
+gmansl/        grammar and driver for a shading language compiler that was never
+               finished; kept as a record, built by nothing
+gman/          the gman command line utility
+samples/       demo scenes and their renders
+tests/         the test suite and its RIB corpus
+doc/           the 1999 design document
 ```
 
-`tests/rib/` holds 81 more scenes, the test suite's own.
+`tests/rib/` holds 226 more scenes, the test suite's own and its corpus.
 
 ## Related
 
@@ -356,9 +375,9 @@ tree.
 
 ## Benchmark
 
-`bench/bench.sh` times the whole machine on `samples/materials.rib`. The path tracer runs on one
-core, so the script renders a queue of independent copies, one per core at a time, and reports
-renders a minute. Build the release preset first, then run it:
+`bench/bench.sh` times the whole machine on `samples/materials.rib`. The script renders a queue of
+independent copies, one per core at a time, and reports renders a minute. Build the release preset
+first, then run it:
 
 ```sh
 cmake --preset release && cmake --build --preset release
