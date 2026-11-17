@@ -21,7 +21,9 @@ foreach(var
     GMAN_BUILD_TYPE
     GMAN_CXX_FLAGS
     GMAN_EXE_LINKER_FLAGS
-    GMAN_HAS_RAYTRACER)
+    GMAN_HAS_RAYTRACER
+    GMAN_HAS_PATHTRACER
+    GMAN_HAS_RADIOSITY)
   if(NOT DEFINED ${var})
     message(FATAL_ERROR "install_test.cmake: ${var} is required")
   endif()
@@ -108,6 +110,57 @@ if(GMAN_HAS_RAYTRACER)
   endif()
 endif()
 
+# Renders tests/rib/<rib_name> under -r <renderer> from the prefix and checks
+# the exit status, then that <image_name> exists and is non-empty. With
+# CHECK_PASS_WARNING, a render whose output carries gman::loadIndirectPass's
+# warning prefix fails too: a missing or unloadable pass costs the indirect
+# light, never the frame, so an image proves nothing about whether the pass
+# loaded.
+function(gman_render_ray_scene rib_name image_name renderer)
+  cmake_parse_arguments(GMAN_SCENE "CHECK_PASS_WARNING" "" "" ${ARGN})
+  execute_process(
+    COMMAND "${GMAN_INSTALLED_EXE}" -r "${renderer}" "${GMAN_SOURCE_DIR}/tests/rib/${rib_name}"
+    WORKING_DIRECTORY "${GMAN_RENDER_DIR}"
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE output
+    ERROR_VARIABLE errors)
+  if(NOT result EQUAL 0)
+    message(FATAL_ERROR
+      "step 2 (render): rendering ${rib_name} under -r ${renderer} exited ${result}\n${output}${errors}")
+  endif()
+
+  if(GMAN_SCENE_CHECK_PASS_WARNING)
+    string(FIND "${output}${errors}" "Indirect-light pass \"" warning_at)
+    if(NOT warning_at EQUAL -1)
+      message(FATAL_ERROR
+        "step 2 (render): ${rib_name} under -r ${renderer} warned that its indirect-light pass did not load\n${output}${errors}")
+    endif()
+  endif()
+
+  set(image "${GMAN_RENDER_DIR}/${image_name}")
+  if(NOT EXISTS "${image}")
+    message(FATAL_ERROR "step 2 (render): ${rib_name} did not write ${image_name}")
+  endif()
+  file(SIZE "${image}" size)
+  if(size EQUAL 0)
+    message(FATAL_ERROR "step 2 (render): ${image_name} is empty")
+  endif()
+endfunction()
+
+# The path tracer from an install prefix. pathtracer_samples.rib names no
+# indirect pass. Only when the plugin was built -- GMAN_HAS_PATHTRACER
+# reflects GMAN_BUILD_PATHTRACER.
+if(GMAN_HAS_PATHTRACER)
+  gman_render_ray_scene(pathtracer_samples.rib pathtracer_samples.tif gmanpathtracer)
+endif()
+
+# The radiosity pass from an install prefix: the ray tracer hosts it, and
+# radiosity_box.rib selects it with Option "render" "string indirect".
+# GMAN_HAS_RADIOSITY reflects GMAN_BUILD_RADIOSITY.
+if(GMAN_HAS_RADIOSITY AND GMAN_HAS_RAYTRACER)
+  gman_render_ray_scene(radiosity_box.rib radiosity_box.tif gmanraytracer CHECK_PASS_WARNING)
+endif()
+
 # --- Step 3: configure, build and run a consumer against the prefix --------
 
 file(REMOVE_RECURSE "${GMAN_CONSUMER_BUILD_DIR}")
@@ -149,3 +202,11 @@ endif()
 
 gman_run_or_fail("step 3 (consumer): running consumer"
   COMMAND "${GMAN_CONSUMER_EXE}")
+
+set(GMAN_CONSUMER_RAY_EXE "${GMAN_CONSUMER_BUILD_DIR}/consumer_ray")
+if(NOT EXISTS "${GMAN_CONSUMER_RAY_EXE}")
+  message(FATAL_ERROR "step 3 (consumer): ${GMAN_CONSUMER_RAY_EXE} was not built")
+endif()
+
+gman_run_or_fail("step 3 (consumer): running consumer_ray"
+  COMMAND "${GMAN_CONSUMER_RAY_EXE}")

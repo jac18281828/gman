@@ -14,3 +14,6 @@ find_package(gman ${GMAN_CONSUMER_VERSION} CONFIG REQUIRED)
 
 add_executable(consumer consumer.cpp)
 target_link_libraries(consumer PRIVATE gman::gman_core)
+
+add_executable(consumer_ray consumer_ray.cpp)
+target_link_libraries(consumer_ray PRIVATE gman::gman_ray)

@@ -3410,10 +3410,14 @@ set_tests_properties(shaderbsdf PROPERTIES
 
 # Proves both halves of an installed gman. bin/gman renders every
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
-# fresh cmake --install prefix, and a second, unrelated CMake project finds
-# it with find_package(gman), links gman::gman_core, compiles <gman/ri.h>
-# and runs. See tests/install_test.cmake for the three steps and
-# tests/install/ for the consumer project it builds.
+# fresh cmake --install prefix, then the ray tracer, the path tracer and the
+# ray tracer's radiosity pass, each from the plugin that loads it by bare
+# name. Two unrelated CMake projects then find the prefix with
+# find_package(gman): one links gman::gman_core alone and compiles <gman/ri.h>,
+# the other links gman::gman_ray alone and calls into libgman_ray, whose
+# include path and core link reach it through gman::gman_ray's public
+# dependency. See tests/install_test.cmake for the steps and tests/install/
+# for the consumer project it builds.
 #
 # cmake --install (step 1) reads libgmanrib.so from the build tree, so this
 # carries the same RESOURCE_LOCK as the ribwriter tests above.
@@ -3437,6 +3441,8 @@ add_test(NAME install
           -D "GMAN_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
           -D "GMAN_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
           -D "GMAN_HAS_RAYTRACER=${GMAN_BUILD_RAYTRACER}"
+          -D "GMAN_HAS_PATHTRACER=${GMAN_BUILD_PATHTRACER}"
+          -D "GMAN_HAS_RADIOSITY=${GMAN_BUILD_RADIOSITY}"
           -P "${CMAKE_CURRENT_SOURCE_DIR}/install_test.cmake")
 set_tests_properties(install PROPERTIES
   LABELS render
