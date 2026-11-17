@@ -3432,7 +3432,11 @@ set_tests_properties(shaderbsdf PROPERTIES
 # alone and compiles <gman/ri.h>, one links gman::gman_ray alone and calls
 # into libgman_ray, and one links gman::gman_raster alone and calls into
 # libgman_raster; the include path and core link of the last two reach them
-# through the library's public dependency. See tests/install_test.cmake for
+# through the library's public dependency. It also builds, without loading,
+# a shader plugin against gman_core and a renderer plugin against gman_core
+# and gman_ray. The parent's CMAKE_MODULE_LINKER_FLAGS reach that project
+# because a sanitizer build compiles the plugins with -fsanitize, and macOS
+# rejects a module link without it. See tests/install_test.cmake for
 # the steps and tests/install/ for the consumer project it builds.
 #
 # cmake --install (step 1) reads libgmanrib.so from the build tree, so this
@@ -3456,6 +3460,7 @@ add_test(NAME install
           -D "GMAN_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
           -D "GMAN_CXX_FLAGS=${CMAKE_CXX_FLAGS}"
           -D "GMAN_EXE_LINKER_FLAGS=${CMAKE_EXE_LINKER_FLAGS}"
+          -D "GMAN_MODULE_LINKER_FLAGS=${CMAKE_MODULE_LINKER_FLAGS}"
           -D "GMAN_HAS_RAYTRACER=${GMAN_BUILD_RAYTRACER}"
           -D "GMAN_HAS_PATHTRACER=${GMAN_BUILD_PATHTRACER}"
           -D "GMAN_HAS_RADIOSITY=${GMAN_BUILD_RADIOSITY}"

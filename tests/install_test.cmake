@@ -21,6 +21,7 @@ foreach(var
     GMAN_BUILD_TYPE
     GMAN_CXX_FLAGS
     GMAN_EXE_LINKER_FLAGS
+    GMAN_MODULE_LINKER_FLAGS
     GMAN_HAS_RAYTRACER
     GMAN_HAS_PATHTRACER
     GMAN_HAS_RADIOSITY
@@ -202,6 +203,7 @@ gman_run_or_fail("step 3 (consumer): configure"
           -D "CMAKE_BUILD_TYPE=${GMAN_BUILD_TYPE}"
           -D "CMAKE_CXX_FLAGS=${GMAN_CXX_FLAGS}"
           -D "CMAKE_EXE_LINKER_FLAGS=${GMAN_EXE_LINKER_FLAGS}"
+          -D "CMAKE_MODULE_LINKER_FLAGS=${GMAN_MODULE_LINKER_FLAGS}"
           -D "GMAN_CONSUMER_VERSION=${GMAN_VERSION}")
 
 # A system gman on the loader's own default search path must not stand in
@@ -244,3 +246,10 @@ endif()
 
 gman_run_or_fail("step 3 (consumer): running consumer_raster"
   COMMAND "${GMAN_CONSUMER_RASTER_EXE}")
+
+foreach(plugin shader_plugin renderer_plugin)
+  set(GMAN_PLUGIN_FILE "${GMAN_CONSUMER_BUILD_DIR}/lib${plugin}.so")
+  if(NOT EXISTS "${GMAN_PLUGIN_FILE}")
+    message(FATAL_ERROR "step 3 (consumer): ${GMAN_PLUGIN_FILE} was not built")
+  endif()
+endforeach()
