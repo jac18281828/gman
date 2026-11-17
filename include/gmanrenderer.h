@@ -40,7 +40,6 @@
 #include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpoint.h"
 #include "gmanprimitives.h"
 #include "gmantransform.h"

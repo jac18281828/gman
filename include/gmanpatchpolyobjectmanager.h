@@ -32,6 +32,7 @@
 
 #include "gmanattributes.h"
 #include "gmanlog.h"
+#include "gmanobject.h"
 #include "gmanobjectmanager.h"
 #include "ri.h"
 

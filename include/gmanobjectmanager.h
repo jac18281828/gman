@@ -31,7 +31,6 @@
 #include <string>
 
 #include "gmanlog.h"
-#include "gmanobject.h"
 #include "gmanprimitives.h"
 #include "ri.h"
 
