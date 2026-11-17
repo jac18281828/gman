@@ -146,6 +146,7 @@ jobs:
           install -m 644 samples/vase.rib "$stage/samples/vase.rib"
           install -m 644 samples/materials.rib "$stage/samples/materials.rib"
           install -m 644 samples/floor16.tif "$stage/samples/floor16.tif"
+          install -m 644 samples/vasewater.rib "$stage/samples/vasewater.rib"
       # The staged gman must find its own plugins from wherever it is
       # extracted -- that is what the relative INSTALL_RPATH buys, and
       # a tarball that cannot render is not worth publishing. The
