@@ -138,7 +138,6 @@ add_library(gman_core SHARED
   libgman/gmanimagershader.cpp
   libgman/gmanindirectpass.cpp
   libgman/gmaninlineparse.cpp
-  libgman/gmanisoa.cpp
   libgman/gmanlightsourcemgr.cpp
   libgman/gmanlightsourceshader.cpp
   libgman/gmanlinearworldmanager.cpp
@@ -188,17 +187,14 @@ add_library(gman_core SHARED
   libgman/gmanribtokenize.cpp
   libgman/gmansamplebuffer.cpp
   libgman/gmansampling.cpp
-  libgman/gmansegment.cpp
   libgman/gmanshader.cpp
   libgman/gmanshaderenvironment.cpp
   libgman/gmanshading.cpp
   libgman/gmanslapi.cpp
-  libgman/gmansolidobject.cpp
   libgman/gmansurfaceshader.cpp
   libgman/gmantexture.cpp
   libgman/gmantiff.cpp
   libgman/gmantoken.cpp
-  libgman/gmantools.cpp
   libgman/gmantransform.cpp
   libgman/gmantrimcurve.cpp
   libgman/gmanvector.cpp

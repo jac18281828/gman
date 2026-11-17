@@ -33,7 +33,6 @@
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanprimitive.h"
-#include "gmansegment.h"
 #include "gmantransform.h"
 #include "ri.h"
 

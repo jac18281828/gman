@@ -34,6 +34,8 @@
 #include "gmanlog.h"
 #include "ri.h"
 
+class GMANSurface;
+
 /*
  * RenderMan API GMANBody
  *

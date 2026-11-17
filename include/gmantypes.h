@@ -25,8 +25,6 @@
 
 #pragma once
 
-#include <list>
-
 #include "ri.h"
 
 /* useful values */
@@ -41,13 +39,3 @@ using GMANInt = int;
 
 /* Color sample type */
 using GMANColorSample = RtFloat;
-
-/* forward declarations for lists */
-class GMANFace;
-class GMANSurface;
-
-using GMANFacePtr = GMANFace*;
-using GMANSurfacePtr = GMANSurface*;
-
-using GMANFaceList = std::list<GMANFacePtr>;
-using GMANSurfaceList = std::list<GMANSurfacePtr>;

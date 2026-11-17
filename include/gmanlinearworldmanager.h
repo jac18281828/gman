@@ -31,7 +31,6 @@
 #include <string>
 
 #include "gmanlog.h"
-#include "gmansegment.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 
