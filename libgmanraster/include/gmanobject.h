@@ -30,6 +30,7 @@
 #include <stack>
 #include <string>
 
+#include "gman/rasterexport.h"
 #include "gmanbody.h"
 #include "gmanface.h"
 #include "gmanlog.h"
@@ -45,7 +46,7 @@
  *
  */
 
-class GMAN_EXPORT GMANObject : public GMANPrimitive {
+class GMANRASTER_EXPORT GMANObject : public GMANPrimitive {
 private:
   GMANBody* bodyRoot; // body's
 

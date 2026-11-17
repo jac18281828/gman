@@ -3425,12 +3425,13 @@ set_tests_properties(shaderbsdf PROPERTIES
 # shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
 # fresh cmake --install prefix, then the ray tracer, the path tracer and the
 # ray tracer's radiosity pass, each from the plugin that loads it by bare
-# name. Two unrelated CMake projects then find the prefix with
-# find_package(gman): one links gman::gman_core alone and compiles <gman/ri.h>,
-# the other links gman::gman_ray alone and calls into libgman_ray, whose
-# include path and core link reach it through gman::gman_ray's public
-# dependency. See tests/install_test.cmake for the steps and tests/install/
-# for the consumer project it builds.
+# name. An unrelated CMake project then finds the prefix with
+# find_package(gman) and builds three programs: one links gman::gman_core
+# alone and compiles <gman/ri.h>, one links gman::gman_ray alone and calls
+# into libgman_ray, and one links gman::gman_raster alone and calls into
+# libgman_raster; the include path and core link of the last two reach them
+# through the library's public dependency. See tests/install_test.cmake for
+# the steps and tests/install/ for the consumer project it builds.
 #
 # cmake --install (step 1) reads libgmanrib.so from the build tree, so this
 # carries the same RESOURCE_LOCK as the ribwriter tests above.

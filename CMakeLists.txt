@@ -87,10 +87,10 @@ option(GMAN_BUILD_PATHTRACER "Build the path tracer plugin" ON)
 
 # The production source directories, relative to the source root. format-check
 # and every test that scans source read this one list, so a new directory is
-# added here once. Every consumer scans recursively, so libgmanray/include
-# needs no entry of its own.
+# added here once. Every consumer scans recursively, so libgmanray/include and
+# libgmanraster/include need no entry of their own.
 set(GMAN_SOURCE_DIRS
-  include libgman libgmanray libgmanrib shaders renderers gman gmansl)
+  include libgman libgmanray libgmanraster libgmanrib shaders renderers gman gmansl)
 
 # ---------------------------------------------------------------------------
 # Optional file-Display drivers -- one gman_add_file_driver(<name>) call per
@@ -300,17 +300,30 @@ target_include_directories(gman_ray PUBLIC
 # ---------------------------------------------------------------------------
 
 add_library(gman_raster SHARED
-  libgman/gmanbody.cpp
-  libgman/gmanclipedge.cpp
-  libgman/gmanface.cpp
-  libgman/gmanobject.cpp
-  libgman/gmanoutputpolygon.cpp
-  libgman/gmanpatchpolyobjectmanager.cpp
-  libgman/gmanpolygonclipper.cpp
-  libgman/gmanvertex.cpp
-  libgman/gmanvertex4.cpp)
+  libgmanraster/gmanbody.cpp
+  libgmanraster/gmanclipedge.cpp
+  libgmanraster/gmanface.cpp
+  libgmanraster/gmanobject.cpp
+  libgmanraster/gmanoutputpolygon.cpp
+  libgmanraster/gmanpatchpolyobjectmanager.cpp
+  libgmanraster/gmanpolygonclipper.cpp
+  libgmanraster/gmanvertex.cpp
+  libgmanraster/gmanvertex4.cpp)
 
+# GMANRASTER_EXPORT tags what the raster headers declare; the plugin entry
+# points keep GMAN_EXPORT. Beside gman/export.h, so gman_core's public include
+# directories reach it.
+generate_export_header(gman_raster
+  BASE_NAME GMANRASTER
+  EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/gman/rasterexport.h")
+
+# Raster's public headers sit in libgmanraster/include, and every raster source
+# includes public headers alone. The installed headers land flat beside core's,
+# so the install interface needs no entry of its own: gman_core's install
+# include root, which this link carries, serves them.
 target_link_libraries(gman_raster PUBLIC gman_core)
+target_include_directories(gman_raster PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libgmanraster/include>")
 
 # ---------------------------------------------------------------------------
 # Renderer plugins
@@ -497,10 +510,13 @@ install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
   FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY libgmanray/include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
   FILES_MATCHING PATTERN "*.h")
-# generate_export_header writes export.h and rayexport.h into the build
-# tree; the source tree they sit beside above never carries them.
+install(DIRECTORY libgmanraster/include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
+  FILES_MATCHING PATTERN "*.h")
+# generate_export_header writes export.h, rayexport.h and rasterexport.h into
+# the build tree; the source tree they sit beside above never carries them.
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/gman/export.h"
               "${CMAKE_CURRENT_BINARY_DIR}/include/gman/rayexport.h"
+              "${CMAKE_CURRENT_BINARY_DIR}/include/gman/rasterexport.h"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman")
 
 install(EXPORT gmanTargets

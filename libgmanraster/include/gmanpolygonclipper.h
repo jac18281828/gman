@@ -30,6 +30,7 @@
 #include <stack>
 #include <string>
 
+#include "gman/rasterexport.h"
 #include "gmanclipedge.h"
 #include "gmanlog.h"
 #include "ri.h"
@@ -39,7 +40,7 @@
  *
  */
 
-class GMAN_EXPORT GMANPolygonClipper {
+class GMANRASTER_EXPORT GMANPolygonClipper {
 private:
   [[maybe_unused]] int nOutputVertices;
   GMANClipEdge clipper[6]; // clipper array

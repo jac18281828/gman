@@ -30,6 +30,7 @@
 #include <stack>
 #include <string>
 
+#include "gman/rasterexport.h"
 #include "gmanlog.h"
 #include "gmanray.h"
 #include "gmantypes.h"
@@ -117,6 +118,6 @@ namespace gman {
 // normal faces the camera at the centroid of its four vertices, as
 // GMANViewingSystem::facesCamera answers, and RiOrientation "inside" inverts
 // that answer.
-GMAN_EXPORT bool faceVisible(GMANViewingSystem const& camera, GMANFace const& face);
+GMANRASTER_EXPORT bool faceVisible(GMANViewingSystem const& camera, GMANFace const& face);
 
 } // namespace gman

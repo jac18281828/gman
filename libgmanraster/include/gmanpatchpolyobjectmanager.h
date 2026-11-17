@@ -30,6 +30,7 @@
 #include <stack>
 #include <string>
 
+#include "gman/rasterexport.h"
 #include "gmanattributes.h"
 #include "gmanlog.h"
 #include "gmanobject.h"
@@ -41,7 +42,7 @@
  *
  */
 
-class GMAN_EXPORT GMANPatchPolyObjectManager : public GMANObjectManager {
+class GMANRASTER_EXPORT GMANPatchPolyObjectManager : public GMANObjectManager {
 public:
   GMANPatchPolyObjectManager(); // default constructor
 

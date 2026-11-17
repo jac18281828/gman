@@ -71,7 +71,7 @@ jobs:
               '.[].file
                | select(startswith($root))
                | ltrimstr($root)
-               | select(test("^(libgman|libgmanray|libgmanrib|shaders|renderers|gman)/"))' \
+               | select(test("^(libgman|libgmanray|libgmanraster|libgmanrib|shaders|renderers|gman)/"))' \
               build/compile_commands.json)
           count="${#files[@]}"
           echo "production translation units: $count"
@@ -81,6 +81,6 @@ jobs:
           }
           printf '%s\n' "${files[@]}" | sed "s#^#$root#" |
             xargs -P "$(nproc)" -I{} clang-tidy -p build \
-              --header-filter="^${root}(include|libgman|libgmanray|libgmanrib|shaders|renderers|gman)/" \
+              --header-filter="^${root}(include|libgman|libgmanray|libgmanraster|libgmanrib|shaders|renderers|gman)/" \
               --exclude-header-filter="^${root}(build|tests)/" \
               {}

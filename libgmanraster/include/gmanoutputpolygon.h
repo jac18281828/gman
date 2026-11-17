@@ -32,6 +32,7 @@
 
 #include <vector>
 
+#include "gman/rasterexport.h"
 #include "gmancolor.h"
 #include "gmanlog.h"
 #include "gmanpoint.h"
@@ -70,7 +71,7 @@ public:
   }
 };
 
-class GMAN_EXPORT GMANOutputPolygon {
+class GMANRASTER_EXPORT GMANOutputPolygon {
 private:
   std::vector<GMANOutVertex> vertexVec; // output array
 

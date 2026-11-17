@@ -64,8 +64,9 @@ const std::vector<LibraryRow> kRows = {
     {"include", "core", {"core"}, "GMAN_EXPORT"},
     {"libgman", "core", {"core"}, "GMAN_EXPORT"},
     {"libgmanray", "ray", {"ray", "core"}, "GMANRAY_EXPORT"},
-    {"renderers/zbuffer", "renderers/zbuffer", {"renderers/zbuffer", "core"}, "GMAN_EXPORT"},
-    {"renderers/reyes", "renderers/reyes", {"renderers/reyes", "core"}, "GMAN_EXPORT"},
+    {"libgmanraster", "raster", {"raster", "core"}, "GMANRASTER_EXPORT"},
+    {"renderers/zbuffer", "renderers/zbuffer", {"renderers/zbuffer", "raster", "core"}, "GMAN_EXPORT"},
+    {"renderers/reyes", "renderers/reyes", {"renderers/reyes", "raster", "core"}, "GMAN_EXPORT"},
     {"renderers/raytracer", "renderers/raytracer", {"renderers/raytracer", "ray", "core"}, "GMAN_EXPORT"},
     {"renderers/pathtracer", "renderers/pathtracer", {"renderers/pathtracer", "ray", "core"}, "GMAN_EXPORT"},
     {"renderers/radiosity", "renderers/radiosity", {"renderers/radiosity", "ray", "core"}, "GMAN_EXPORT"},
@@ -83,6 +84,7 @@ struct GeneratedHeader {
 const std::vector<GeneratedHeader> kGeneratedHeaders = {
     {"gman/export.h", "core"},
     {"gman/rayexport.h", "ray"},
+    {"gman/rasterexport.h", "raster"},
     {"gmanslgrammar.h", "gmansl"},
 };
 
@@ -95,7 +97,7 @@ const std::vector<PrivateHeaderException> kPrivateHeaderExceptions = {
     {"gman/gman.cpp", "libgman/gmanfiledrivers.h"},
 };
 
-const std::vector<std::string> kExportMacros = {"GMAN_EXPORT", "GMANRAY_EXPORT"};
+const std::vector<std::string> kExportMacros = {"GMAN_EXPORT", "GMANRAY_EXPORT", "GMANRASTER_EXPORT"};
 
 const std::string kPublicDirectory = "include";
 const std::size_t kMinimumFiles = 200;
