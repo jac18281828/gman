@@ -63,19 +63,19 @@ gman_run_or_fail("step 1 (install): cmake --install"
 # lists. A header that appears or disappears is a change to the installed
 # interface, so the difference fails the step, each name carrying its sign:
 # "+" installed and not listed, "-" listed and not installed.
-file(GLOB GMAN_INSTALLED_HEADER_PATHS LIST_DIRECTORIES false
+file(GLOB GMAN_INSTALLED_HEADERS LIST_DIRECTORIES false
   RELATIVE "${GMAN_PREFIX}/include/gman"
   "${GMAN_PREFIX}/include/gman/*")
 file(STRINGS "${GMAN_INSTALLED_HEADERS_MANIFEST}" GMAN_LISTED_HEADERS REGEX ".")
 
 set(GMAN_HEADER_DIFFERENCES "")
-foreach(header IN LISTS GMAN_INSTALLED_HEADER_PATHS)
+foreach(header IN LISTS GMAN_INSTALLED_HEADERS)
   if(NOT header IN_LIST GMAN_LISTED_HEADERS)
     string(APPEND GMAN_HEADER_DIFFERENCES "\n  +${header} is installed and not listed")
   endif()
 endforeach()
 foreach(header IN LISTS GMAN_LISTED_HEADERS)
-  if(NOT header IN_LIST GMAN_INSTALLED_HEADER_PATHS)
+  if(NOT header IN_LIST GMAN_INSTALLED_HEADERS)
     string(APPEND GMAN_HEADER_DIFFERENCES "\n  -${header} is listed and not installed")
   endif()
 endforeach()

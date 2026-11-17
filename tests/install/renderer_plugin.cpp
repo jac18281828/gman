@@ -35,7 +35,7 @@
 
 namespace {
 
-class invertingRenderer : public GMANRenderer {
+class InvertingRenderer : public GMANRenderer {
 public:
   RtVoid illuminance(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) override {}
   RtVoid illuminate(RtInt /*i*/, GMANPoint const& /*p*/, GMANVector const& /*axis*/, RtFloat /*angle*/) override {}
@@ -63,7 +63,7 @@ GMANLoadableObjectInfo loadableInfo = {
     "A renderer built against an installed gman.",
 };
 
-invertingRenderer renderer;
+InvertingRenderer renderer;
 
 } // namespace
 

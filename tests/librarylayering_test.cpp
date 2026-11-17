@@ -43,6 +43,7 @@
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -160,12 +161,23 @@ bool namesWord(std::string const& text, std::string const& word) {
   return false;
 }
 
-std::ptrdiff_t exceptionIndex(std::string const& includer, std::string const& header) {
+std::optional<std::size_t> exceptionIndex(std::string const& includer, std::string const& header) {
   const std::string directory = fs::path(includer).parent_path().generic_string();
   const auto found = std::find_if(
       kPrivateHeaderExceptions.begin(), kPrivateHeaderExceptions.end(),
       [&](PrivateHeaderException const& e) { return e.includerDirectory == directory && e.header == header; });
-  return found == kPrivateHeaderExceptions.end() ? -1 : found - kPrivateHeaderExceptions.begin();
+  if (found == kPrivateHeaderExceptions.end()) {
+    return std::nullopt;
+  }
+  return static_cast<std::size_t>(found - kPrivateHeaderExceptions.begin());
+}
+
+void checkExceptionsExercised(std::vector<bool> const& exercised) {
+  for (std::size_t i = 0; i < kPrivateHeaderExceptions.size(); ++i) {
+    PrivateHeaderException const& exception = kPrivateHeaderExceptions[i];
+    check(exercised[i], "private header exception (" + exception.includerDirectory + ", " + exception.header +
+                            ") is exercised by a file");
+  }
 }
 
 struct ResolvedHeader {
@@ -253,12 +265,12 @@ int main(int argc, char** argv) {
         clean = false;
       }
       if (header.isPrivate && header.library != row->library) {
-        const std::ptrdiff_t exception = exceptionIndex(relative, header.path);
-        if (exception < 0) {
+        const std::optional<std::size_t> exception = exceptionIndex(relative, header.path);
+        if (exception) {
+          exercised[*exception] = true;
+        } else {
           check(false, relative + ": includes \"" + quoted + "\", a private header of " + header.library);
           clean = false;
-        } else {
-          exercised[static_cast<std::size_t>(exception)] = true;
         }
       }
     }
@@ -275,11 +287,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  for (std::size_t i = 0; i < kPrivateHeaderExceptions.size(); ++i) {
-    PrivateHeaderException const& exception = kPrivateHeaderExceptions[i];
-    check(exercised[i], "private header exception (" + exception.includerDirectory + ", " + exception.header +
-                            ") is exercised by a file");
-  }
+  checkExceptionsExercised(exercised);
 
   return checkSummary("every include points down a layer");
 }
