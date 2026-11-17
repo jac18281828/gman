@@ -45,7 +45,7 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - No universal base class; logging is the free functions in `gmanlog.h`.
 
 ## Seams
-- Threads: only `gman::parallelFor` (`libgman/gmanparallel.h`).
+- Threads: only `gman::parallelFor` (`include/gmanparallel.h`).
   `libgman/gmanparallel.cpp` and `libgman/gmanlog.cpp` alone may name a thread
   primitive; `tests/threadcontainment_test.cpp` enforces it.
 - libtiff: only `libgman/gmantiff.cpp` includes `<tiffio.h>` (`tests/` exempt).

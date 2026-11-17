@@ -114,7 +114,7 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   RtFloat surfaceMagnitude = 0.0;
 
   // The cache texture() and environment() sample through when set -- one
-  // per gman::parallelFor worker (libgman/gmanparallel.h), never shared
+  // per gman::parallelFor worker (gmanparallel.h), never shared
   // between threads. Null, the default, means gman::textureCache()'s
   // single process cache, which serves the z-buffer and the ray tracer's
   // own single shading thread. Non-owning, valid for one shading call. A
