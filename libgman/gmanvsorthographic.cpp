@@ -55,20 +55,11 @@ GMANRay VSOrthographic::cameraRay(RtFloat x, RtFloat y) const {
 }
 
 /*
- * return true if the face is visible from this perspective. See
- * VSPerspective::visible for the RiSides/RiOrientation rationale.
+ * Every ray points down +z, so the view direction is the same at every
+ * position and only the normal's z component decides. See
+ * VSPerspective::facesCamera for the perspective measure.
  */
-bool VSOrthographic::visible(GMANFace const* face) {
-  if (face->getSides() != 1) {
-    return true;
-  }
-
-  bool facingCamera = (face->getNormal().getZ() > 0);
-  if (face->getOrientation() == RI_INSIDE) {
-    facingCamera = !facingCamera;
-  }
-  return facingCamera;
-}
+bool VSOrthographic::facesCamera(GMANPoint const&, GMANVector const& normal) const { return normal.getZ() > 0; }
 
 RtMatrix const& VSOrthographic::getProjMatrix(RtVoid) const { return mtrx.get(); }
 

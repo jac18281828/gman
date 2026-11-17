@@ -410,6 +410,13 @@ set_tests_properties(spacechain PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_facescamera facescamera_test.cpp)
+target_link_libraries(gman_facescamera PRIVATE gman_core gman_internal_headers)
+add_test(NAME facescamera COMMAND gman_facescamera)
+set_tests_properties(facescamera PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Analytic primitive normals: finite-difference agreement,
 # cross-primitive orientation consistency, inverse-transpose under a
 # non-uniform scale.

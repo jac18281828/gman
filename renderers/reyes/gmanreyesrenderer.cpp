@@ -25,6 +25,7 @@
 
 #include <typeinfo>
 
+#include "gmanface.h"
 #include "gmanpolygonclipper.h"
 #include "gmanrenderer.h"
 #include "gmanreyesrenderer.h"
@@ -67,7 +68,7 @@ void GMANReyesRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* 
       while (surf) {
         face = surf->getFace();
         while (face) {
-          if (viewingSys->visible(face)) {
+          if (gman::faceVisible(*viewingSys, *face)) {
             outPoly.reset();
             for (int i = 0; i < face->getNumVerts(); i++) {
               const GMANVertex* fv = face->getVertex(i);

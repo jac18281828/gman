@@ -27,6 +27,7 @@
 #include "gmanlog.h"
 #include "gmansurface.h"
 #include "gmanvector.h"
+#include "gmanviewingsystem.h"
 #include "ri.h"
 
 /*
@@ -76,3 +77,41 @@ RtVoid GMANFace::calcNormal(RtVoid) {
 
   normal.normalize();
 }
+
+namespace gman {
+
+/*
+ * RiSides 2 (the RenderMan default) means both sides are visible: no
+ * culling. Only a single-sided face is culled, and then only by whether
+ * its normal -- already in camera space, since it was computed from
+ * already-transformed vertex positions at tessellation time -- faces the
+ * camera. RiOrientation "inside" inverts which winding counts as facing
+ * out.
+ *
+ * The centroid of the face's four vertices approximates the point on the
+ * face the camera's view direction is measured to. Which direction counts
+ * as facing is the camera's to say: the real per-face view vector under
+ * perspective, a fixed +z axis under orthographic, where the two agree
+ * on-axis and diverge only near the silhouette. GMANFace::getNumVerts
+ * isn't const-qualified, so this uses the same GMAN_NFACE_VERTS it always
+ * returns.
+ */
+bool faceVisible(GMANViewingSystem const& camera, GMANFace const& face) {
+  if (face.getSides() != 1) {
+    return true;
+  }
+
+  GMANVector centroid(0.0, 0.0, 0.0);
+  for (int i = 0; i < GMAN_NFACE_VERTS; ++i) {
+    centroid += GMANVector(face.getVertex(i)->getLocation());
+  }
+  centroid *= (1.0 / GMAN_NFACE_VERTS);
+
+  bool facingCamera = camera.facesCamera(centroid, face.getNormal());
+  if (face.getOrientation() == RI_INSIDE) {
+    facingCamera = !facingCamera;
+  }
+  return facingCamera;
+}
+
+} // namespace gman

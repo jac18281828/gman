@@ -28,6 +28,7 @@
 
 #include "gmanarealightwarning.h"
 #include "gmanattributes.h"
+#include "gmanface.h"
 #include "gmanmath.h"
 #include "gmanrenderer.h"
 #include "gmanshading.h"
@@ -582,7 +583,7 @@ RtVoid GMANZBufferRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
         face = surf->getFace();
         while (face) {
           // do back face culling
-          if (viewingSys->visible(face)) {
+          if (gman::faceVisible(*viewingSys, *face)) {
             outPoly.reset();
             // Projects each vertex through viewingSys->getProjMatrix(),
             // clips in homogeneous space against the 6-plane frustum,

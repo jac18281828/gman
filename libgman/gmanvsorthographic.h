@@ -41,7 +41,7 @@ public:
   virtual GMANPoint project(GMANPoint const& p);
   virtual GMANRay cameraRay(RtFloat x, RtFloat y) const;
 
-  virtual bool visible(const GMANFace* face);
+  virtual bool facesCamera(GMANPoint const& position, GMANVector const& normal) const;
 
   virtual const RtMatrix& getProjMatrix(RtVoid) const;
 };

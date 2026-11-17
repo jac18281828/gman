@@ -25,12 +25,12 @@
 
 #pragma once
 
-#include "gmanface.h"
 #include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
+#include "gmanvector.h"
 #include "ri.h"
 
 class GMAN_EXPORT GMANViewingSystem {
@@ -82,10 +82,14 @@ public:
    */
   GMANRay ray(RtFloat x, RtFloat y) const;
 
-  /* return true if the face is visible from the
-   * current perspective.
+  /* Return true if normal faces the camera at position. Both arguments are
+   * camera-space. The test is strict: a normal with a positive component
+   * along the view direction faces the camera, and a perpendicular normal
+   * does not. gman::VSPerspective measures against the vector from the eye
+   * at the camera-space origin to position, so the answer varies across the
+   * frame; gman::VSOrthographic measures against +z and ignores position.
    */
-  virtual bool visible(const GMANFace* face) = 0;
+  virtual bool facesCamera(GMANPoint const& position, GMANVector const& normal) const = 0;
 
   /*
    * return the current projective transformation

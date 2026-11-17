@@ -25,7 +25,7 @@
  * Sphere 1 -0.5 1 360, and checks a geometric consequence only the
  * correct GMANSphere::getLocation zmin/zmax parameterization produces.
  *
- * With Sides 1 (single-sided), gman::VSPerspective::visible keeps a face
+ * With Sides 1 (single-sided), gman::faceVisible keeps a face
  * whose geometric normal has a positive dot product with the (eye-at-
  * origin) view vector to its centroid -- for this sphere (radius 1,
  * centred at world z=5) that works out to "keep the face where 1 + 5*z >

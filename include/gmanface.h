@@ -41,8 +41,9 @@
 // quad surface (four vertices)
 #define GMAN_NFACE_VERTS 4
 
-// forward declaration of surface
+// forward declarations
 class GMANSurface;
+class GMANViewingSystem;
 
 /*
  * RenderMan API GMANFace
@@ -58,7 +59,7 @@ protected:
                            // vertices were in when calcNormal() ran
 
   // RiSides/RiOrientation active when this face was tessellated, so
-  // visible() can answer honestly without depending on renderer-global
+  // gman::faceVisible can answer honestly without depending on renderer-global
   // state that may differ per attribute block.
   RtInt sides;
   RtToken orientation;
@@ -108,3 +109,14 @@ public:
   // set next face
   RtVoid setNext(GMANFace* face) { next = face; };
 };
+
+namespace gman {
+
+// True when face is visible from camera. A face tessellated under RiSides 2,
+// the default, is always visible; a single-sided face is visible when its
+// normal faces the camera at the centroid of its four vertices, as
+// GMANViewingSystem::facesCamera answers, and RiOrientation "inside" inverts
+// that answer.
+GMAN_EXPORT bool faceVisible(GMANViewingSystem const& camera, GMANFace const& face);
+
+} // namespace gman

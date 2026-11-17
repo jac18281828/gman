@@ -37,7 +37,7 @@
  *     `output(current, out)`: the near-plane intersection assertion goes
  *     red because no output vertex has NDC z near -1.
  *   - Revert GMANFace::calcNormal's call site in createParametric, or make
- *     gman::VSPerspective::visible() unconditional again: the backface test
+ *     gman::faceVisible unconditional again: the backface test
  *     goes red for both winding orders (see the backface culling section).
  *
  * Step 4: the clipper's other five planes (LEFT, RIGHT, TOP, BOTTOM, and
@@ -45,8 +45,8 @@
  *
  * The perspective culling term: a face near the
  * silhouette, off-axis enough that the true eye-to-face view vector and
- * the z axis disagree on sign. Revert gman::VSPerspective::visible to
- * `getNormal().getZ() > 0` and testPerspectiveCullingNearSilhouette goes
+ * the z axis disagree on sign. Revert gman::VSPerspective::facesCamera to
+ * `normal.getZ() > 0` and testPerspectiveCullingNearSilhouette goes
  * red -- the orthographic approximation culls a face the real view vector
  * says is visible.
  */
@@ -253,7 +253,7 @@ void testBackfaceCulling() {
   facing.setSides(1);
   facing.setOrientation(RI_OUTSIDE);
   check(near(facing.getNormal().getZ(), 1.0, 1e-4), "backface: sanity check, this winding's normal is +z");
-  check(vs.visible(&facing), "backface: a face whose normal faces the camera is visible");
+  check(gman::faceVisible(vs, facing), "backface: a face whose normal faces the camera is visible");
 
   // Reverse winding -- normal flips to -z, facing away.
   GMANVertex* windingAway[4] = {&p0, &p3, &p2, &p1};
@@ -262,19 +262,19 @@ void testBackfaceCulling() {
   away.setSides(1);
   away.setOrientation(RI_OUTSIDE);
   check(near(away.getNormal().getZ(), -1.0, 1e-4), "backface: sanity check, the reversed winding's normal is -z");
-  check(!vs.visible(&away), "backface: a face whose normal faces away from the camera is culled");
+  check(!gman::faceVisible(vs, away), "backface: a face whose normal faces away from the camera is culled");
 
   // RiSides 2: both windings stay visible -- the case that catches an
   // unconditional single-sided cull.
   away.setSides(2);
-  check(vs.visible(&away), "backface: RiSides 2 keeps a face facing away from the camera");
+  check(gman::faceVisible(vs, away), "backface: RiSides 2 keeps a face facing away from the camera");
   facing.setSides(2);
-  check(vs.visible(&facing), "backface: RiSides 2 keeps a face facing the camera too");
+  check(gman::faceVisible(vs, facing), "backface: RiSides 2 keeps a face facing the camera too");
 
   // RiOrientation "inside" inverts which winding counts as facing out.
   away.setSides(1);
   away.setOrientation(RI_INSIDE);
-  check(vs.visible(&away), "backface: RiOrientation inside flips a culled face to visible");
+  check(gman::faceVisible(vs, away), "backface: RiOrientation inside flips a culled face to visible");
 }
 
 // ---- the perspective culling term ----
@@ -301,7 +301,7 @@ void testPerspectiveCullingNearSilhouette() {
   face.calcNormal();
 
   // Confirms the hand derivation above landed where intended before
-  // trusting the visible() result below: almost pure +x, tiny negative z.
+  // trusting the gman::faceVisible result below: almost pure +x, tiny negative z.
   check(face.getNormal().getX() > 0.99 && face.getNormal().getZ() < 0.0 && face.getNormal().getZ() > -0.01,
         "perspective culling: hand-built near-silhouette quad's own "
         "geometric normal is +x with a hairline-negative z");
@@ -316,9 +316,9 @@ void testPerspectiveCullingNearSilhouette() {
   // disagreement step 3 exists to fix.
   check(!(face.getNormal().getZ() > 0.0), "perspective culling: sanity check, the orthographic "
                                           "approximation would have culled this face");
-  check(vs.visible(&face), "perspective culling: the real per-face view vector keeps this "
-                           "near-silhouette face visible where the orthographic "
-                           "approximation would have culled it");
+  check(gman::faceVisible(vs, face), "perspective culling: the real per-face view vector keeps this "
+                                     "near-silhouette face visible where the orthographic "
+                                     "approximation would have culled it");
 }
 
 } // namespace

@@ -1396,7 +1396,7 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
       // space) vertices: cross(e1', e2') for e'=e*M is proportional to
       // (e1 x e2) transformed by M's inverse transpose, so this needs no
       // separate normal transform. RiSides/RiOrientation travel with the
-      // face so visible() can answer without depending on renderer-global
+      // face so gman::faceVisible can answer without depending on renderer-global
       // state that may differ across attribute blocks.
       addFace(faces, faceVertices, surface, sides, orientation);
     }

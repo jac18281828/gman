@@ -61,43 +61,14 @@ GMANRay VSPerspective::cameraRay(RtFloat x, RtFloat y) const {
 }
 
 /*
- * return true if the face is visible from this perspective.
- *
- * RiSides 2 (the RenderMan default) means both sides are visible: no
- * culling. Only a single-sided face is culled, and then only by whether
- * its normal -- already in camera space, since it was computed from
- * already-transformed vertex positions at tessellation time -- faces the
- * camera. RiOrientation "inside" inverts which winding counts as facing
- * out.
- *
- * "Faces the camera" means the real per-face view vector -- eye to face,
- * which varies across the frame under perspective -- not the z axis. The
- * eye sits at the camera-space origin, so that vector is just the face's
- * own (unnormalized) position; comparing against a fixed +z axis is the
- * orthographic approximation VSOrthographic::visible keeps
- * deliberately. The two agree on-axis and diverge only near the
- * silhouette.
+ * The eye sits at the camera-space origin, so the view vector to position
+ * is position itself, unnormalized. It varies across the frame; comparing
+ * against a fixed +z axis is the orthographic approximation
+ * VSOrthographic::facesCamera keeps deliberately. The two agree on-axis and
+ * diverge only near the silhouette.
  */
-bool VSPerspective::visible(GMANFace const* face) {
-  if (face->getSides() != 1) {
-    return true;
-  }
-
-  // Centroid of the face's four vertices approximates the point on the
-  // face the view vector is measured to; camera-space, so no further
-  // transform is needed. GMANFace::getNumVerts isn't const-qualified,
-  // so this uses the same GMAN_NFACE_VERTS it always returns.
-  GMANVector toFace(0.0, 0.0, 0.0);
-  for (int i = 0; i < GMAN_NFACE_VERTS; ++i) {
-    toFace += GMANVector(face->getVertex(i)->getLocation());
-  }
-  toFace *= (1.0 / GMAN_NFACE_VERTS);
-
-  bool facingCamera = (face->getNormal().dot(toFace) > 0);
-  if (face->getOrientation() == RI_INSIDE) {
-    facingCamera = !facingCamera;
-  }
-  return facingCamera;
+bool VSPerspective::facesCamera(GMANPoint const& position, GMANVector const& normal) const {
+  return normal.dot(GMANVector(position)) > 0;
 }
 
 RtMatrix const& VSPerspective::getProjMatrix(RtVoid) const { return mtrx.get(); }
