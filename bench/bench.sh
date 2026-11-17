@@ -3,8 +3,7 @@
 #
 # Renders samples/materials.rib through gmanpathtracer as a pool of
 # independent jobs, one per slot, and reports throughput in renders per
-# minute. The path tracer is single-threaded, so the pool is what loads the
-# machine; a fixed job queue keeps fast and slow cores both busy.
+# minute. A fixed job queue keeps fast and slow cores both busy.
 #
 #   bench/bench.sh [-g gman] [-j slots] [-n jobs] [-s samples] [-r runs]
 
