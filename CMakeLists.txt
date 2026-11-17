@@ -262,22 +262,22 @@ target_sources(gman_core PRIVATE
 # ---------------------------------------------------------------------------
 
 add_library(gman_ray SHARED
-  libgman/gmanemitter.cpp
-  libgman/gmanindirectpass.cpp
-  libgman/gmanraybvh.cpp
-  libgman/gmanraycone.cpp
-  libgman/gmanraycylinder.cpp
-  libgman/gmanraydisk.cpp
-  libgman/gmanrayhyperboloid.cpp
-  libgman/gmanrayinterface.cpp
-  libgman/gmanrayobjectmanager.cpp
-  libgman/gmanrayoccluder.cpp
-  libgman/gmanrayparaboloid.cpp
-  libgman/gmanraypolygon.cpp
-  libgman/gmanraypolygonmesh.cpp
-  libgman/gmanrayquartic.cpp
-  libgman/gmanraysphere.cpp
-  libgman/gmanraytorus.cpp)
+  libgmanray/gmanemitter.cpp
+  libgmanray/gmanindirectpass.cpp
+  libgmanray/gmanraybvh.cpp
+  libgmanray/gmanraycone.cpp
+  libgmanray/gmanraycylinder.cpp
+  libgmanray/gmanraydisk.cpp
+  libgmanray/gmanrayhyperboloid.cpp
+  libgmanray/gmanrayinterface.cpp
+  libgmanray/gmanrayobjectmanager.cpp
+  libgmanray/gmanrayoccluder.cpp
+  libgmanray/gmanrayparaboloid.cpp
+  libgmanray/gmanraypolygon.cpp
+  libgmanray/gmanraypolygonmesh.cpp
+  libgmanray/gmanrayquartic.cpp
+  libgmanray/gmanraysphere.cpp
+  libgmanray/gmanraytorus.cpp)
 
 # GMANRAY_EXPORT tags what the ray headers declare; the plugin entry points
 # keep GMAN_EXPORT. Beside gman/export.h, so gman_core's public include
@@ -286,12 +286,14 @@ generate_export_header(gman_ray
   BASE_NAME GMANRAY
   EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/gman/rayexport.h")
 
-# Ray's public headers stay in include/, which gman_core's own public include
-# directories supply through this link. gmanrayquadratic.h and
-# gmanrayquartic.h are private headers of libgman/.
+# Ray's public headers sit in libgmanray/include; gmanrayquadratic.h and
+# gmanrayquartic.h are private headers beside the sources. The installed
+# headers land flat beside core's, so the install interface needs no entry of
+# its own: gman_core's install include root, which this link carries, serves
+# them.
 target_link_libraries(gman_ray PUBLIC gman_core)
-target_include_directories(gman_ray PRIVATE
-  "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
+target_include_directories(gman_ray PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libgmanray/include>")
 
 # ---------------------------------------------------------------------------
 # Renderer plugins
@@ -474,6 +476,8 @@ if(GMAN_BUILD_PATHTRACER)
 endif()
 install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
   FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY libgmanray/include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
+  FILES_MATCHING PATTERN "*.h")
 # generate_export_header writes export.h and rayexport.h into the build
 # tree; the source tree they sit beside above never carries them.
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/gman/export.h"
@@ -512,13 +516,13 @@ endif()
 # Format check
 # ---------------------------------------------------------------------------
 
-# Every .c, .cpp and .h under the eight source directories, gathered with
+# Every .c, .cpp and .h under the nine source directories, gathered with
 # CONFIGURE_DEPENDS so a new file is checked without anyone widening a list.
 # gmanfiledrivers.cpp.in is a template, not a C++ source: its .cpp.in
 # extension already leaves it out. Check only -- never reformats the tree.
 set(GMAN_CLANG_FORMAT_VERSION "22.1.8")
 set(GMAN_FORMAT_CHECK_DIRS
-  include libgman libgmanrib shaders renderers gman gmansl tests)
+  include libgman libgmanray libgmanrib shaders renderers gman gmansl tests)
 set(GMAN_FORMAT_CHECK_GLOBS "")
 foreach(dir ${GMAN_FORMAT_CHECK_DIRS})
   list(APPEND GMAN_FORMAT_CHECK_GLOBS

@@ -6,6 +6,11 @@ add_library(gman_internal_headers INTERFACE)
 target_include_directories(gman_internal_headers INTERFACE
   "${CMAKE_SOURCE_DIR}/libgman")
 
+# The same for a test that includes a private libgmanray/ header.
+add_library(gman_ray_internal_headers INTERFACE)
+target_include_directories(gman_ray_internal_headers INTERFACE
+  "${CMAKE_SOURCE_DIR}/libgmanray")
+
 # The runtime baseline: exit status, message and image output for a minimal
 # scene. See tests/baseline_test.cpp for the full invariant.
 add_executable(gman_baseline baseline_test.cpp)
@@ -1617,6 +1622,7 @@ add_test(NAME threadcontainment
   COMMAND gman_threadcontainment
           "${CMAKE_SOURCE_DIR}/include"
           "${CMAKE_SOURCE_DIR}/libgman"
+          "${CMAKE_SOURCE_DIR}/libgmanray"
           "${CMAKE_SOURCE_DIR}/libgmanrib"
           "${CMAKE_SOURCE_DIR}/shaders"
           "${CMAKE_SOURCE_DIR}/renderers"
@@ -1630,7 +1636,7 @@ set_tests_properties(threadcontainment PROPERTIES
 # cast through unsigned char first. See tests/tolowerscan_test.cpp.
 add_executable(gman_tolowerscan tolowerscan_test.cpp)
 add_test(NAME tolowerscan
-  COMMAND gman_tolowerscan "${CMAKE_SOURCE_DIR}/libgman")
+  COMMAND gman_tolowerscan "${CMAKE_SOURCE_DIR}/libgman" "${CMAKE_SOURCE_DIR}/libgmanray")
 set_tests_properties(tolowerscan PROPERTIES
   LABELS unit
   TIMEOUT 30)
@@ -1639,7 +1645,8 @@ set_tests_properties(tolowerscan PROPERTIES
 # carry the same unsigned-char precondition. See tests/ctypescan_test.cpp.
 add_executable(gman_ctypescan ctypescan_test.cpp)
 add_test(NAME ctypescan
-  COMMAND gman_ctypescan "${CMAKE_SOURCE_DIR}/libgman" "${CMAKE_SOURCE_DIR}/include")
+  COMMAND gman_ctypescan "${CMAKE_SOURCE_DIR}/libgman" "${CMAKE_SOURCE_DIR}/libgmanray"
+                         "${CMAKE_SOURCE_DIR}/include")
 set_tests_properties(ctypescan PROPERTIES
   LABELS unit
   TIMEOUT 30)
@@ -1747,7 +1754,7 @@ set_tests_properties(quadratic PROPERTIES
 # sphere and the four swept quadrics' intersectors share, its linear
 # branch exact and its quadratic branch stable under cancellation.
 add_executable(gman_rayquadratic rayquadratic_test.cpp)
-target_link_libraries(gman_rayquadratic PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_rayquadratic PRIVATE gman_core gman_ray gman_ray_internal_headers)
 
 add_test(NAME rayquadratic COMMAND gman_rayquadratic)
 set_tests_properties(rayquadratic PROPERTIES
@@ -1756,9 +1763,9 @@ set_tests_properties(rayquadratic PROPERTIES
 
 # gman::solveQuartic against quartics built from known
 # dyadic roots. The compiled solver lives in gman_ray; gmanrayquartic.h
-# is a libgman/ header, reached through gman_internal_headers.
+# is a libgmanray/ header, reached through gman_ray_internal_headers.
 add_executable(gman_rayquartic rayquartic_test.cpp)
-target_link_libraries(gman_rayquartic PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_rayquartic PRIVATE gman_core gman_ray gman_ray_internal_headers)
 
 add_test(NAME rayquartic COMMAND gman_rayquartic)
 set_tests_properties(rayquartic PROPERTIES

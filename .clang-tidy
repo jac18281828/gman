@@ -22,7 +22,7 @@ WarningsAsErrors: '*'
 # (named after the repo), which is why clang-tidy.yml passes
 # --header-filter/--exclude-header-filter built from $PWD instead of
 # relying on this file for the workflow's own run.
-HeaderFilterRegex: '(^|/)(include|libgman|libgmanrib|shaders|renderers|gman)/'
+HeaderFilterRegex: '(^|/)(include|libgman|libgmanray|libgmanrib|shaders|renderers|gman)/'
 ExcludeHeaderFilterRegex: '(^|/)(build|tests)/'
 CheckOptions:
   # AGENTS.md bans the sprintf/strcpy/strcat family, bounded or not --
