@@ -54,8 +54,6 @@
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
 #include "gmanviewingsysteminputs.h"
-#include "gmanvsorthographic.h"
-#include "gmanvsperspective.h"
 #include "ri.h"
 
 namespace {
@@ -324,13 +322,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
     warning("FOV not set, defaulting to 90.0.");
   }
 
-  if (vsi.projectionName == "orthographic") {
-    viewingSystem = new gman::VSOrthographic(vsi.xres, vsi.yres, vsi.screenWindow, worldToCamera, vsi.clipping.nearDist,
-                                             vsi.clipping.farDist);
-  } else {
-    viewingSystem = new gman::VSPerspective(vsi.xres, vsi.yres, vsi.screenWindow, worldToCamera, vsi.fov,
-                                            vsi.clipping.nearDist, vsi.clipping.farDist);
-  }
+  viewingSystem = gman::makeViewingSystem(vsi, worldToCamera).release();
 
   // The shading path's only route to camera-to-world (this task's own
   // goal, AGENTS.md's "Handedness and matrix convention"): the same

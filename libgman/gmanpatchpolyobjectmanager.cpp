@@ -41,8 +41,6 @@
 #include "gmanshading.h"
 #include "gmanviewingsystem.h"
 #include "gmanviewingsysteminputs.h"
-#include "gmanvsorthographic.h"
-#include "gmanvsperspective.h"
 #include "ri.h"
 
 namespace {
@@ -159,15 +157,7 @@ RasterProjection rasterProjectionFor(GMANOptions const* opt, GMANAttributes cons
   gman::ViewingSystemInputs const vsi = gman::resolveViewingSystemInputs(*opt, gman::standardDictionary());
   bool const perspective = vsi.projectionName != "orthographic";
   GMANMatrix4 const worldToCamera;
-  std::unique_ptr<GMANViewingSystem> projector;
-  if (perspective) {
-    projector = std::make_unique<gman::VSPerspective>(vsi.xres, vsi.yres, vsi.screenWindow, worldToCamera, vsi.fov,
-                                                      vsi.clipping.nearDist, vsi.clipping.farDist);
-  } else {
-    projector = std::make_unique<gman::VSOrthographic>(vsi.xres, vsi.yres, vsi.screenWindow, worldToCamera,
-                                                       vsi.clipping.nearDist, vsi.clipping.farDist);
-  }
-  return RasterProjection{std::move(projector), perspective, shadingRate};
+  return RasterProjection{gman::makeViewingSystem(vsi, worldToCamera), perspective, shadingRate};
 }
 
 // The raster-space distance between two of project()'s own return points --

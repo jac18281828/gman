@@ -417,6 +417,13 @@ set_tests_properties(facescamera PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_viewingsystemfactory viewingsystemfactory_test.cpp)
+target_link_libraries(gman_viewingsystemfactory PRIVATE gman_core gman_internal_headers)
+add_test(NAME viewingsystemfactory COMMAND gman_viewingsystemfactory)
+set_tests_properties(viewingsystemfactory PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Analytic primitive normals: finite-difference agreement,
 # cross-primitive orientation consistency, inverse-transpose under a
 # non-uniform scale.

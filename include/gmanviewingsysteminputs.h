@@ -23,19 +23,22 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "gmandictionary.h"
+#include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanviewingsystem.h"
 #include "ri.h"
 
 namespace gman {
 
 // The inputs GMANRenderManImpl::RiWorldBegin resolves before building its
-// gman::VSPerspective or gman::VSOrthographic: the projection name, fov,
-// screen window, clipping and raster resolution. A second caller building
-// its own viewing system from the same GMANOptions gets the same inputs,
-// and so projects exactly as RiWorldBegin's own viewing system does.
+// viewing system: the projection name, fov, screen window, clipping and
+// raster resolution. A second caller building its own viewing system from
+// the same GMANOptions gets the same inputs, and so projects exactly as
+// RiWorldBegin's own viewing system does.
 struct ViewingSystemInputs {
   std::string projectionName;
   RtFloat fov;
@@ -52,6 +55,12 @@ struct ViewingSystemInputs {
 // dictionary, and looking it up through a different instance misses it.
 // GMANDictionary::getTokenId is not const, so dictionary is not const
 // either.
-ViewingSystemInputs resolveViewingSystemInputs(GMANOptions const& opt, GMANDictionary& dictionary);
+GMAN_EXPORT ViewingSystemInputs resolveViewingSystemInputs(GMANOptions const& opt, GMANDictionary& dictionary);
+
+// The viewing system for inputs: orthographic when projectionName is
+// "orthographic", perspective otherwise. worldToCamera is the CTM at
+// RiWorldBegin.
+GMAN_EXPORT std::unique_ptr<GMANViewingSystem> makeViewingSystem(ViewingSystemInputs const& inputs,
+                                                                 GMANMatrix4 const& worldToCamera);
 
 } // namespace gman

@@ -22,6 +22,8 @@
  */
 
 #include "gmanviewingsysteminputs.h"
+#include "gmanvsorthographic.h"
+#include "gmanvsperspective.h"
 
 namespace gman {
 
@@ -45,6 +47,16 @@ ViewingSystemInputs resolveViewingSystemInputs(GMANOptions const& opt, GMANDicti
   vsi.yres = ri.yres;
 
   return vsi;
+}
+
+std::unique_ptr<GMANViewingSystem> makeViewingSystem(ViewingSystemInputs const& inputs,
+                                                     GMANMatrix4 const& worldToCamera) {
+  if (inputs.projectionName == "orthographic") {
+    return std::make_unique<VSOrthographic>(inputs.xres, inputs.yres, inputs.screenWindow, worldToCamera,
+                                            inputs.clipping.nearDist, inputs.clipping.farDist);
+  }
+  return std::make_unique<VSPerspective>(inputs.xres, inputs.yres, inputs.screenWindow, worldToCamera, inputs.fov,
+                                         inputs.clipping.nearDist, inputs.clipping.farDist);
 }
 
 } // namespace gman
