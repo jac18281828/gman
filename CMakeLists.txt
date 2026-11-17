@@ -141,17 +141,14 @@ add_library(gman_core SHARED
   libgman/gmanbasis.cpp
   libgman/gmanbbox.cpp
   libgman/gmanbitmap.cpp
-  libgman/gmanbody.cpp
   libgman/gmanbsdf.cpp
   libgman/gmancapi.cpp
-  libgman/gmanclipedge.cpp
   libgman/gmancolorsamples.cpp
   libgman/gmancontext.cpp
   libgman/gmandefaults.cpp
   libgman/gmandictionary.cpp
   libgman/gmandisplacementshader.cpp
   libgman/gmanerror.cpp
-  libgman/gmanface.cpp
   libgman/gmanfilters.cpp
   libgman/gmanframebuffer.cpp
   libgman/gmangetarguments.cpp
@@ -170,20 +167,16 @@ add_library(gman_core SHARED
   libgman/gmanmatrix4.cpp
   libgman/gmannoise.cpp
   libgman/gmannormal.cpp
-  libgman/gmanobject.cpp
   libgman/gmanobjectmanager.cpp
   libgman/gmanoptions.cpp
   libgman/gmanoutput.cpp
   libgman/gmanoutputpnm.cpp
-  libgman/gmanoutputpolygon.cpp
   libgman/gmanoutputtiff.cpp
   libgman/gmanoutputx11.cpp
   libgman/gmanparallel.cpp
   libgman/gmanparameterlist.cpp
-  libgman/gmanpatchpolyobjectmanager.cpp
   libgman/gmanpoint.cpp
   libgman/gmanpolygon.cpp
-  libgman/gmanpolygonclipper.cpp
   libgman/gmanpolygonmesh.cpp
   libgman/gmanprimitive.cpp
   libgman/gmanprimitives.cpp
@@ -206,8 +199,6 @@ add_library(gman_core SHARED
   libgman/gmantrimcurve.cpp
   libgman/gmanvector.cpp
   libgman/gmanvector4.cpp
-  libgman/gmanvertex.cpp
-  libgman/gmanvertex4.cpp
   libgman/gmanviewingsystem.cpp
   libgman/gmanviewingsysteminputs.cpp
   libgman/gmanvolumeshader.cpp
@@ -303,6 +294,25 @@ target_include_directories(gman_ray PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libgmanray/include>")
 
 # ---------------------------------------------------------------------------
+# gman_raster — what the rasterizing renderers share: the body, face and
+# vertex model, the patch and polygon object manager that tessellates into
+# it, and the polygon clipper
+# ---------------------------------------------------------------------------
+
+add_library(gman_raster SHARED
+  libgman/gmanbody.cpp
+  libgman/gmanclipedge.cpp
+  libgman/gmanface.cpp
+  libgman/gmanobject.cpp
+  libgman/gmanoutputpolygon.cpp
+  libgman/gmanpatchpolyobjectmanager.cpp
+  libgman/gmanpolygonclipper.cpp
+  libgman/gmanvertex.cpp
+  libgman/gmanvertex4.cpp)
+
+target_link_libraries(gman_raster PUBLIC gman_core)
+
+# ---------------------------------------------------------------------------
 # Renderer plugins
 # ---------------------------------------------------------------------------
 
@@ -317,12 +327,14 @@ endfunction()
 gman_add_plugin(gman_zbuffer
   renderers/zbuffer/gmanzbufferrenderer.cpp
   renderers/zbuffer/zbufferloader.cpp)
+target_link_libraries(gman_zbuffer PRIVATE gman_raster)
 set_target_properties(gman_zbuffer PROPERTIES OUTPUT_NAME "gmanzbuffer")
 
 if(GMAN_BUILD_REYES)
   gman_add_plugin(gman_reyes
     renderers/reyes/gmanreyesrenderer.cpp
     renderers/reyes/reyesloader.cpp)
+  target_link_libraries(gman_reyes PRIVATE gman_raster)
   set_target_properties(gman_reyes PROPERTIES OUTPUT_NAME "gmanreyes")
 endif()
 
@@ -455,10 +467,10 @@ add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paint
 # Install
 # ---------------------------------------------------------------------------
 
-# gman_core and gman_ray join the export set: they are what a programmer
-# links. gman_rib is a plugin, dlopen'd like gman_zbuffer, and installs beside
-# the other plugins below.
-install(TARGETS gman_core gman_ray
+# gman_core, gman_ray and gman_raster join the export set: they are what a
+# programmer links. gman_rib is a plugin, dlopen'd like gman_zbuffer, and
+# installs beside the other plugins below.
+install(TARGETS gman_core gman_ray gman_raster
   EXPORT gmanTargets
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")

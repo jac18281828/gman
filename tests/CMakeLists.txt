@@ -407,14 +407,14 @@ set_tests_properties(noisedeterminism PROPERTIES
 # A vertex the clipper introduces at a plane crossing carries the colour and
 # alpha interpolated at the crossing, at hand-derived values.
 add_executable(gman_clipcolor clipcolor_test.cpp)
-target_link_libraries(gman_clipcolor PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_clipcolor PRIVATE gman_core gman_raster gman_internal_headers)
 add_test(NAME clipcolor COMMAND gman_clipcolor)
 set_tests_properties(clipcolor PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
 add_executable(gman_spacechain spacechain_test.cpp)
-target_link_libraries(gman_spacechain PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_spacechain PRIVATE gman_core gman_raster gman_internal_headers)
 add_test(NAME spacechain COMMAND gman_spacechain)
 set_tests_properties(spacechain PROPERTIES
   LABELS unit
@@ -438,7 +438,7 @@ set_tests_properties(viewingsystemfactory PROPERTIES
 # cross-primitive orientation consistency, inverse-transpose under a
 # non-uniform scale.
 add_executable(gman_normals normals_test.cpp)
-target_link_libraries(gman_normals PRIVATE gman_core)
+target_link_libraries(gman_normals PRIVATE gman_core gman_raster)
 add_test(NAME normals COMMAND gman_normals)
 # The inverse-transpose proof (item 3) tessellates a real sphere through
 # GMANPatchPolyObjectManager, which falls back to dlopen'ing "libmatte.so"
@@ -454,7 +454,7 @@ set_tests_properties(normals PROPERTIES
 # classification: nine hand-built rings at six scales in two placements, a
 # randomized star-shaped stress, and degenerate input.
 add_executable(gman_triangulation triangulation_test.cpp)
-target_link_libraries(gman_triangulation PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_triangulation PRIVATE gman_core gman_raster gman_internal_headers)
 add_test(NAME triangulation COMMAND gman_triangulation)
 # getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no RiSurface
 # is set, the same bare-name lookup gman itself relies on the build tree
@@ -468,7 +468,7 @@ set_tests_properties(triangulation PROPERTIES
 # outer loop by Eberly's method before handing the ring to the same
 # triangulateEarClipping loop 1 already uses. See tests/generalpolygon_test.cpp.
 add_executable(gman_generalpolygon generalpolygon_test.cpp)
-target_link_libraries(gman_generalpolygon PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_generalpolygon PRIVATE gman_core gman_raster gman_internal_headers)
 add_test(NAME generalpolygon COMMAND gman_generalpolygon)
 # getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no
 # RiSurface is set, the same bare-name lookup gman itself relies on the
@@ -827,7 +827,7 @@ set_tests_properties(patchnorender PROPERTIES
 # nonperiodic, mixed wrap) checked against GMANPatchMesh directly, plus
 # every tests/rib/patchmesh_*.rib fixture rendered and read back.
 add_executable(gman_patchmesh patchmesh_test.cpp)
-target_link_libraries(gman_patchmesh PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_patchmesh PRIVATE gman_core gman_raster TIFF::TIFF)
 
 set(GMAN_PATCHMESH_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchmesh-run")
 file(MAKE_DIRECTORY "${GMAN_PATCHMESH_WORKDIR}")
@@ -1079,7 +1079,7 @@ set_tests_properties(orthowindow PROPERTIES
 # clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L an ear-clipped triangle's
 # longest raster-space edge. See tests/polygondicecount_test.cpp.
 add_executable(gman_polygondicecount polygondicecount_test.cpp)
-target_link_libraries(gman_polygondicecount PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_polygondicecount PRIVATE gman_core gman_raster gman_internal_headers)
 add_test(NAME polygondicecount COMMAND gman_polygondicecount)
 # getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no RiSurface
 # is set -- triangulation's own comment, same lookup.
@@ -1129,7 +1129,7 @@ set_tests_properties(declaredfov PROPERTIES
 # raster coverage and shaded colour both match an analytically computed
 # region and value.
 add_executable(gman_polygon polygon_test.cpp)
-target_link_libraries(gman_polygon PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_polygon PRIVATE gman_core gman_raster TIFF::TIFF gman_internal_headers)
 
 set(GMAN_POLYGON_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygon-run")
 file(MAKE_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
@@ -1359,7 +1359,7 @@ set_tests_properties(polygondicing PROPERTIES
 # (tests/goldenimage.h) and malformed request fixtures. See
 # tests/pointspolygons_test.cpp.
 add_executable(gman_pointspolygons pointspolygons_test.cpp)
-target_link_libraries(gman_pointspolygons PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_pointspolygons PRIVATE gman_core gman_raster TIFF::TIFF gman_internal_headers)
 
 set(GMAN_POINTSPOLYGONS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pointspolygons-run")
 file(MAKE_DIRECTORY "${GMAN_POINTSPOLYGONS_WORKDIR}")
@@ -1575,7 +1575,7 @@ set_tests_properties(shaderstatics PROPERTIES
 # path, the writer and lookup, and shinymetal rendered under three camera
 # orientations. See tests/environment_test.cpp.
 add_executable(gman_environment environment_test.cpp)
-target_link_libraries(gman_environment PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_environment PRIVATE gman_core gman_raster TIFF::TIFF gman_internal_headers)
 add_dependencies(gman_environment gman_camerashader gman_shinymetal)
 
 set(GMAN_ENVIRONMENT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/environment-run")
