@@ -54,7 +54,8 @@ From the unpacked folder:
 gman -r gmanraytracer samples/vase.rib
 ```
 
-That writes `vase.png` to the current directory, the picture at the top, in a few seconds.
+That writes `vase.png` to the current directory, the picture at the top, in a few seconds. The floor
+tiles come from `samples/floor16.tif`, a 16-bit TIFF that gman reads at full depth.
 
 ## Path trace it
 
