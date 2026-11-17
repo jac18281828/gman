@@ -96,6 +96,15 @@ file(COPY "${GMAN_SOURCE_DIR}/samples/vase.rib" "${GMAN_SOURCE_DIR}/samples/floo
   "${GMAN_SOURCE_DIR}/samples/vasewater.rib"
   DESTINATION "${GMAN_STAGE}/samples")
 
+# The test checks the install, not the picture: render the staged scene at a fifth of its
+# width so the sanitizer build, about twenty times slower than dev, stays inside the timeout.
+file(READ "${GMAN_STAGE}/samples/vase.rib" GMAN_VASE_RIB)
+string(REPLACE "Format 1280 800 1" "Format 256 160 1" GMAN_VASE_SMALL "${GMAN_VASE_RIB}")
+if(GMAN_VASE_SMALL STREQUAL GMAN_VASE_RIB)
+  message(FATAL_ERROR "step 1 (stage): vase.rib has no 'Format 1280 800 1' line to shrink")
+endif()
+file(WRITE "${GMAN_STAGE}/samples/vase.rib" "${GMAN_VASE_SMALL}")
+
 # --- Step 2: install beside an unrelated file, render, read the manifest -----
 
 set(GMAN_SEED "${GMAN_PREFIX}/bin/unrelated")
