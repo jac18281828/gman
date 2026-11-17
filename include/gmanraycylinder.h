@@ -23,10 +23,11 @@
 
 #pragma once
 
+#include "gman/rayexport.h"
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT GMANRayCylinder : public GMANRayInterface, public GMANCylinder {
+class GMANRAY_EXPORT GMANRayCylinder : public GMANRayInterface, public GMANCylinder {
 public:
   GMANRayCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl)
       : GMANCylinder(radius, zmin, zmax, thetamax, pl) {}

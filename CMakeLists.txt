@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(gman
-  VERSION 1.1.1
+  VERSION 1.2.0
   DESCRIPTION "GMAN — a RenderMan-compatible renderer"
   LANGUAGES C CXX)
 
@@ -28,6 +28,22 @@ include(CMakePackageConfigHelpers)
 if(NOT BUILD_TESTING)
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 endif()
+
+# Every installed library and plugin carries the same run path, relative to
+# itself: a release tarball is extracted wherever the user puts it, and a path
+# naming the prefix it was configured with would send the loader somewhere
+# that does not exist on their machine. A prefix install still resolves,
+# because the relative path lands in the same libdir either way. A plugin
+# needs it as much as the driver does: the loader resolves a dependency
+# through the run path of the object that names it, and a ray renderer names
+# libgman_ray, which the driver never loaded. Set before the first target, so
+# every target created below starts from it.
+if(APPLE)
+  set(GMAN_INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
+else()
+  set(GMAN_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
+endif()
+set(CMAKE_INSTALL_RPATH "${GMAN_INSTALL_RPATH}")
 
 # A compiler that accepts -std=c++20 with an older standard library fails
 # deep in a template error instead of at configure time. Check both features
@@ -127,7 +143,6 @@ add_library(gman_core SHARED
   libgman/gmandefaults.cpp
   libgman/gmandictionary.cpp
   libgman/gmandisplacementshader.cpp
-  libgman/gmanemitter.cpp
   libgman/gmanerror.cpp
   libgman/gmanface.cpp
   libgman/gmanfilters.cpp
@@ -136,7 +151,6 @@ add_library(gman_core SHARED
   libgman/gmangraphicstate.cpp
   libgman/gmanhpoint.cpp
   libgman/gmanimagershader.cpp
-  libgman/gmanindirectpass.cpp
   libgman/gmaninlineparse.cpp
   libgman/gmanlightsourcemgr.cpp
   libgman/gmanlightsourceshader.cpp
@@ -166,20 +180,6 @@ add_library(gman_core SHARED
   libgman/gmanpolygonmesh.cpp
   libgman/gmanprimitive.cpp
   libgman/gmanprimitives.cpp
-  libgman/gmanraybvh.cpp
-  libgman/gmanraycone.cpp
-  libgman/gmanraycylinder.cpp
-  libgman/gmanraydisk.cpp
-  libgman/gmanrayhyperboloid.cpp
-  libgman/gmanrayinterface.cpp
-  libgman/gmanrayobjectmanager.cpp
-  libgman/gmanrayoccluder.cpp
-  libgman/gmanrayparaboloid.cpp
-  libgman/gmanraypolygon.cpp
-  libgman/gmanraypolygonmesh.cpp
-  libgman/gmanrayquartic.cpp
-  libgman/gmanraysphere.cpp
-  libgman/gmanraytorus.cpp
   libgman/gmanrenderer.cpp
   libgman/gmanrenderman.cpp
   libgman/gmanrendermanimpl.cpp
@@ -209,7 +209,7 @@ add_library(gman_core SHARED
   libgman/gmanwindowoutput.cpp
   libgman/gmanworldmanager.cpp)
 
-# One export header for the whole project; GMAN_EXPORT replaces the MSVC-era
+# gman_core's export header; GMAN_EXPORT replaces the MSVC-era
 # GMANDLL/NOTGMANDLL macro maze.
 # Under include/ rather than directly in the binary dir: a bare "gman"
 # directory there would collide with the gman executable.
@@ -257,6 +257,43 @@ target_sources(gman_core PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp")
 
 # ---------------------------------------------------------------------------
+# gman_ray — what every ray renderer shares: intersection, traversal,
+# occlusion, emitters and the indirect-light pass seam
+# ---------------------------------------------------------------------------
+
+add_library(gman_ray SHARED
+  libgman/gmanemitter.cpp
+  libgman/gmanindirectpass.cpp
+  libgman/gmanraybvh.cpp
+  libgman/gmanraycone.cpp
+  libgman/gmanraycylinder.cpp
+  libgman/gmanraydisk.cpp
+  libgman/gmanrayhyperboloid.cpp
+  libgman/gmanrayinterface.cpp
+  libgman/gmanrayobjectmanager.cpp
+  libgman/gmanrayoccluder.cpp
+  libgman/gmanrayparaboloid.cpp
+  libgman/gmanraypolygon.cpp
+  libgman/gmanraypolygonmesh.cpp
+  libgman/gmanrayquartic.cpp
+  libgman/gmanraysphere.cpp
+  libgman/gmanraytorus.cpp)
+
+# GMANRAY_EXPORT tags what the ray headers declare; the plugin entry points
+# keep GMAN_EXPORT. Beside gman/export.h, so gman_core's public include
+# directories reach it.
+generate_export_header(gman_ray
+  BASE_NAME GMANRAY
+  EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/gman/rayexport.h")
+
+# Ray's public headers stay in include/, which gman_core's own public include
+# directories supply through this link. gmanrayquadratic.h and
+# gmanrayquartic.h are private headers of libgman/.
+target_link_libraries(gman_ray PUBLIC gman_core)
+target_include_directories(gman_ray PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
+
+# ---------------------------------------------------------------------------
 # Renderer plugins
 # ---------------------------------------------------------------------------
 
@@ -283,7 +320,7 @@ endif()
 # The ray tracer's own render loop -- GMANRayTracer and GMANRaytraceRenderer
 # -- shared by the gman_raytracer plugin below and by the unit tests that
 # exercise them in tests/CMakeLists.txt. Ray geometry, the BVH and the
-# transmission walk compile into gman_core instead, unconditionally; this
+# transmission walk compile into gman_ray instead, unconditionally; this
 # object library holds only what stays specific to the ray tracer plugin.
 # Built whenever GMAN_BUILD_RAYTRACER or BUILD_TESTING is ON, never inside
 # the GMAN_BUILD_RAYTRACER guard alone -- those unit tests must still build
@@ -291,7 +328,7 @@ endif()
 if(GMAN_BUILD_RAYTRACER OR BUILD_TESTING)
   add_library(gman_raytracer_objects OBJECT
     renderers/raytracer/gmanraytracerenderer.cpp)
-  target_link_libraries(gman_raytracer_objects PUBLIC gman_core)
+  target_link_libraries(gman_raytracer_objects PUBLIC gman_core gman_ray)
   target_include_directories(gman_raytracer_objects PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/renderers/raytracer")
   # OBJECT libraries do not get PIC automatically the way SHARED and MODULE
@@ -314,7 +351,7 @@ endif()
 if(GMAN_BUILD_PATHTRACER OR BUILD_TESTING)
   add_library(gman_pathtracer_objects OBJECT
     renderers/pathtracer/gmanpathtracerenderer.cpp)
-  target_link_libraries(gman_pathtracer_objects PUBLIC gman_core)
+  target_link_libraries(gman_pathtracer_objects PUBLIC gman_core gman_ray)
   target_include_directories(gman_pathtracer_objects PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/renderers/pathtracer")
   set_target_properties(gman_pathtracer_objects PROPERTIES
@@ -337,7 +374,7 @@ if(GMAN_BUILD_RADIOSITY OR BUILD_TESTING)
     renderers/radiosity/gmanradiositymesh.cpp
     renderers/radiosity/gmanradiositypass.cpp
     renderers/radiosity/gmanradiositysolver.cpp)
-  target_link_libraries(gman_radiosity_objects PUBLIC gman_core)
+  target_link_libraries(gman_radiosity_objects PUBLIC gman_core gman_ray)
   target_include_directories(gman_radiosity_objects PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/renderers/radiosity")
   set_target_properties(gman_radiosity_objects PROPERTIES
@@ -399,20 +436,8 @@ target_compile_definitions(gman PRIVATE
 
 # RiBegin dlopen's "lib<renderer>.so" by bare name, so the build tree itself
 # has to be on the runtime search path or no renderer ever loads.
-#
-# The install rpath is relative to the executable, not absolute: a release
-# tarball is extracted wherever the user puts it, and an rpath naming the
-# prefix it was configured with would send the loader somewhere that does not
-# exist on their machine. A prefix install still resolves, because the
-# relative path lands in the same libdir either way.
-if(APPLE)
-  set(GMAN_INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
-else()
-  set(GMAN_INSTALL_RPATH "$ORIGIN/../${CMAKE_INSTALL_LIBDIR}")
-endif()
 set_target_properties(gman gman_core PROPERTIES
-  BUILD_RPATH "${CMAKE_BINARY_DIR}"
-  INSTALL_RPATH "${GMAN_INSTALL_RPATH}")
+  BUILD_RPATH "${CMAKE_BINARY_DIR}")
 
 add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_mirror
                  gman_glass gman_rib)
@@ -421,10 +446,10 @@ add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paint
 # Install
 # ---------------------------------------------------------------------------
 
-# gman_core alone joins the export set: it is what a programmer links.
-# gman_rib is a plugin, dlopen'd like gman_zbuffer, and installs beside the
-# other plugins below.
-install(TARGETS gman_core
+# gman_core and gman_ray join the export set: they are what a programmer
+# links. gman_rib is a plugin, dlopen'd like gman_zbuffer, and installs beside
+# the other plugins below.
+install(TARGETS gman_core gman_ray
   EXPORT gmanTargets
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
@@ -449,9 +474,10 @@ if(GMAN_BUILD_PATHTRACER)
 endif()
 install(DIRECTORY include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
   FILES_MATCHING PATTERN "*.h")
-# generate_export_header writes export.h into the build tree; the source
-# tree it sits beside above never carries it.
+# generate_export_header writes export.h and rayexport.h into the build
+# tree; the source tree they sit beside above never carries them.
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/gman/export.h"
+              "${CMAKE_CURRENT_BINARY_DIR}/include/gman/rayexport.h"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman")
 
 install(EXPORT gmanTargets

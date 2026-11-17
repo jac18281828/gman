@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "gman/rayexport.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
 #include "gmanshading.h"
@@ -34,7 +35,7 @@
  * GMANRayOccluder::transmission keep -- so a caller can invoke it from
  * concurrent gman::parallelFor workers.
  */
-class GMAN_EXPORT GMANRayInterface : virtual public GMANPrimitive {
+class GMANRAY_EXPORT GMANRayInterface : virtual public GMANPrimitive {
 public:
   virtual bool intersect(GMANRay const& ray, GMANHit& hit) const;
 

@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include "gman/rayexport.h"
 #include "gmanocclude.h"
 #include "gmanraybvh.h"
 
@@ -46,19 +47,19 @@ inline constexpr int kMaxCompositeLayers = 16;
 // construction. surfaceMagnitude is hitPoint's own surface's camera-space
 // magnitude (0 for a free point), keying the offset to the surface's own
 // size rather than to the camera distance alone.
-GMAN_EXPORT GMANPoint offsetOrigin(GMANPoint const& hitPoint, GMANVector const& Ng, GMANVector const& reference,
-                                   RtFloat surfaceMagnitude);
+GMANRAY_EXPORT GMANPoint offsetOrigin(GMANPoint const& hitPoint, GMANVector const& Ng, GMANVector const& reference,
+                                      RtFloat surfaceMagnitude);
 
 // 1 - c per channel: what a surface of opacity c leaves for whatever lies
 // behind it.
-GMAN_EXPORT GMANColor oneMinus(GMANColor const& c);
+GMANRAY_EXPORT GMANColor oneMinus(GMANColor const& c);
 
 // Channel-wise product: how an attenuation composes with a colour or with
 // another attenuation.
-GMAN_EXPORT GMANColor multiplyChannels(GMANColor const& a, GMANColor const& b);
+GMANRAY_EXPORT GMANColor multiplyChannels(GMANColor const& a, GMANColor const& b);
 
 // True once transmission is invisible in an 8-bit image on every channel.
-GMAN_EXPORT bool transmissionNegligible(GMANColor const& transmission);
+GMANRAY_EXPORT bool transmissionNegligible(GMANColor const& transmission);
 
 } // namespace gman
 
@@ -70,11 +71,11 @@ GMAN_EXPORT bool transmissionNegligible(GMANColor const& transmission);
  * or transmission is negligible -- the nearest hit at each step is what
  * lets the walk advance past exactly one blocker per call. A public,
  * standalone class so a unit test can probe transmission() directly
- * against a GMANRayBVH it controls. GMAN_EXPORT, along with GMANRayBVH:
+ * against a GMANRayBVH it controls. GMANRAY_EXPORT, along with GMANRayBVH:
  * the path tracer's own API; const and re-entrant, the same contract
  * GMANRayBVH's own class comment states.
  */
-class GMAN_EXPORT GMANRayOccluder : public gman::Occluder {
+class GMANRAY_EXPORT GMANRayOccluder : public gman::Occluder {
 public:
   explicit GMANRayOccluder(GMANRayBVH const& bvh) : bvh(bvh) {}
 

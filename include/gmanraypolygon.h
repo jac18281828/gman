@@ -27,6 +27,7 @@
 #include <utility>
 #include <vector>
 
+#include "gman/rayexport.h"
 #include "gmanrayinterface.h"
 
 namespace gman {
@@ -41,7 +42,7 @@ std::vector<std::pair<RtFloat, RtFloat>> resolvePointTexCoords(GMANParameterList
 
 } // namespace gman
 
-class GMAN_EXPORT GMANRayPolygon : public GMANRayInterface, public GMANPolygon {
+class GMANRAY_EXPORT GMANRayPolygon : public GMANRayInterface, public GMANPolygon {
 public:
   // outer's vertices are already in camera space, transformed once per
   // vertex by the caller: a polygon is flat, so its transformed vertices

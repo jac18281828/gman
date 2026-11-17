@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "gman/rayexport.h"
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
 #include "gmannormal.h"
@@ -38,7 +39,7 @@
 /*
  * The renderer-facing emitter API: what radiates light, one interface a
  * path tracer's next-event estimation and a radiosity solver's own
- * shooting pass both read, public, installed and GMAN_EXPORT.
+ * shooting pass both read, public, installed and GMANRAY_EXPORT.
  *
  * Two queries only: sample draws a direction and its arriving radiance from
  * a receiving point, for next-event estimation; samplePoint draws a point
@@ -54,7 +55,7 @@ namespace gman {
 // disk primitive carrying an area light (shape non-null). light is never
 // null -- the enumerated GMANLight itself for a delta emitter, the
 // arealight's own GMANLight for an area one.
-struct GMAN_EXPORT Emitter {
+struct GMANRAY_EXPORT Emitter {
   GMANLight const* light;
   GMANRayInterface const* shape;
   // Phi, pi * mean(Le) * A_cam, A_cam the emitter's own placed area: exact
@@ -75,7 +76,7 @@ struct GMAN_EXPORT Emitter {
 // emitter's own pi convention, and the density that direction was drawn
 // with, per unit solid angle at the query point -- 1, by convention, for
 // a delta emitter's own discrete draw.
-struct GMAN_EXPORT EmitterSample {
+struct GMANRAY_EXPORT EmitterSample {
   GMANVector wi;
   RtFloat distance;
   GMANPoint shadowTarget;
@@ -89,7 +90,7 @@ struct GMAN_EXPORT EmitterSample {
 // emits there (undoubled -- no pi scale, unlike EmitterSample's Cl), and
 // the density that point was drawn with, per unit area for an area
 // emitter.
-struct GMAN_EXPORT EmitterPoint {
+struct GMANRAY_EXPORT EmitterPoint {
   GMANPoint point;
   GMANNormal normal;
   GMANColor Le;
@@ -106,14 +107,14 @@ struct GMAN_EXPORT EmitterPoint {
 // unsupported. ambientCount, when non-null, receives the same walk's own
 // count of distinct ambient lights -- a caller that also needs that count
 // takes it from this one pass over world rather than walking it again.
-GMAN_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount = nullptr);
+GMANRAY_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount = nullptr);
 
 // A next-event-estimation draw toward emitter from p. A delta emitter
 // ignores u1/u2 and forwards to its own light->sample(); an area emitter
 // draws a point on its shape, places it by the shape's own
 // object-to-camera transform, and reports Cl black when that placed point
 // emits away from p.
-GMAN_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2);
+GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2);
 
 // The solid-angle density sample() reports in EmitterSample::pdf for a
 // freshly drawn point on emitter, generalized to a point already known --
@@ -127,12 +128,12 @@ GMAN_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtF
 // computed from either pdf ever multiplies it. Precondition: emitter.shape
 // != nullptr (an area emitter, which alone has a surface to place a known
 // point against); checked by assert.
-GMAN_EXPORT RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint const& hitPoint,
-                                       GMANNormal const& hitNormal);
+GMANRAY_EXPORT RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint const& hitPoint,
+                                          GMANNormal const& hitNormal);
 
 // A shooting-pass draw on emitter itself, ignoring u1/u2 for a delta
 // emitter.
-GMAN_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2);
+GMANRAY_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2);
 
 // emitter's own weight for next-event estimation's light choice at p: a
 // delta emitter's fixed preview draw of its own sample(); an area emitter's
@@ -140,6 +141,6 @@ GMAN_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat
 // distance from p and its own squared bounding radius -- strictly positive
 // wherever it contributes, unlike a fixed preview draw whose own
 // object-space point may face away from p.
-GMAN_EXPORT RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p);
+GMANRAY_EXPORT RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p);
 
 } // namespace gman

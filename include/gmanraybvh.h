@@ -28,6 +28,7 @@
 #include <limits>
 #include <vector>
 
+#include "gman/rayexport.h"
 #include "gmanbbox.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
@@ -44,10 +45,10 @@
  * that tree and a local stack -- const, re-entrant, no shared mutable
  * state of its own, the same contract GMANRayInterface::intersect and
  * GMANRayOccluder::transmission keep, which is what lets a caller invoke
- * any of the three from concurrent gman::parallelFor workers. GMAN_EXPORT,
+ * any of the three from concurrent gman::parallelFor workers. GMANRAY_EXPORT,
  * along with GMANRayOccluder: the path tracer's own API.
  */
-class GMAN_EXPORT GMANRayBVH {
+class GMANRAY_EXPORT GMANRayBVH {
 public:
   // Discards any tree a prior call built, then walks worldManager
   // (getFirst/getNext) once, keeping each GMANRayInterface primitive by

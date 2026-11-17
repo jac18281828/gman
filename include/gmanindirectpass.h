@@ -26,6 +26,7 @@
 #include <memory>
 #include <string>
 
+#include "gman/rayexport.h"
 #include "gmancolor.h"
 #include "gmanoptions.h"
 #include "gmanray.h"
@@ -46,9 +47,9 @@ namespace gman {
  * returns -- the units a GMANRadiositySolver reports H_ind in. It is
  * const and safe to call concurrently once prepare() has returned.
  */
-class GMAN_EXPORT IndirectPass {
+class GMANRAY_EXPORT IndirectPass {
 public:
-  // Defined out of line, in libgman/gmanindirectpass.cpp, so libgman
+  // Defined out of line, in libgman/gmanindirectpass.cpp, so libgman_ray
   // emits this class's vtable and typeinfo.
   virtual ~IndirectPass();
 
@@ -77,6 +78,6 @@ using IndirectPassPtr = std::unique_ptr<IndirectPass, void (*)(IndirectPass*)>;
 // warning naming the library and the reason, when the module fails to
 // open, lacks either entry point, or its GMANCreateIndirectPass itself
 // returns null: a missing pass costs the indirect light, never the frame.
-GMAN_EXPORT IndirectPassPtr loadIndirectPass(std::string const& name);
+GMANRAY_EXPORT IndirectPassPtr loadIndirectPass(std::string const& name);
 
 } // namespace gman

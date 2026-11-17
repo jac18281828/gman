@@ -23,10 +23,11 @@
 
 #pragma once
 
+#include "gman/rayexport.h"
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT GMANRayCone : public GMANRayInterface, public GMANCone {
+class GMANRAY_EXPORT GMANRayCone : public GMANRayInterface, public GMANCone {
 public:
   GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl)
       : GMANCone(height, radius, thetamax, pl) {}

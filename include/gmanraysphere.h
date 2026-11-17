@@ -24,10 +24,11 @@
 
 #pragma once
 
+#include "gman/rayexport.h"
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT GMANRaySphere : public GMANRayInterface, public GMANSphere {
+class GMANRAY_EXPORT GMANRaySphere : public GMANRayInterface, public GMANSphere {
 public:
   GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl)
       : GMANSphere(radius, zmin, zmax, tmax, pl) {}

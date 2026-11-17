@@ -23,10 +23,11 @@
 
 #pragma once
 
+#include "gman/rayexport.h"
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT GMANRayParaboloid : public GMANRayInterface, public GMANParaboloid {
+class GMANRAY_EXPORT GMANRayParaboloid : public GMANRayInterface, public GMANParaboloid {
 public:
   GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl)
       : GMANParaboloid(rmax, zmin, zmax, thetamax, pl) {}

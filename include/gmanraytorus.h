@@ -23,10 +23,11 @@
 
 #pragma once
 
+#include "gman/rayexport.h"
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT GMANRayTorus : public GMANRayInterface, public GMANTorus {
+class GMANRAY_EXPORT GMANRayTorus : public GMANRayInterface, public GMANTorus {
 public:
   GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phimin, RtFloat phimax, RtFloat thetamax,
                GMANParameterList pl)

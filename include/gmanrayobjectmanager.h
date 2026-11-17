@@ -30,6 +30,7 @@
 #include <stack>
 #include <string>
 
+#include "gman/rayexport.h"
 #include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "ri.h"
@@ -39,7 +40,7 @@
  *
  */
 
-class GMAN_EXPORT GMANRayObjectManager : public GMANObjectManager {
+class GMANRAY_EXPORT GMANRayObjectManager : public GMANObjectManager {
 public:
   GMANRayObjectManager(); // default constructor
 

@@ -23,10 +23,11 @@
 
 #pragma once
 
+#include "gman/rayexport.h"
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
 
-class GMAN_EXPORT GMANRayDisk : public GMANRayInterface, public GMANDisk {
+class GMANRAY_EXPORT GMANRayDisk : public GMANRayInterface, public GMANDisk {
 public:
   GMANRayDisk(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl)
       : GMANDisk(height, radius, thetamax, pl) {}
