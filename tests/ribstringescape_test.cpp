@@ -39,9 +39,9 @@
  * Checks 2 through 4b drive GMANRIBTokenize::getNext directly on a
  * std::istringstream, reading each result with getString(). parseString
  * itself is private and stays private; getNext is the tokenizer's public
- * entry point and include/gmanribtokenize.h is on gman_core's PUBLIC
- * include path, so this needs no internal header and no test-only access
- * widening. getRtToken() is never used here: it returns a pointer that ends
+ * entry point and the test reaches libgman/gmanribtokenize.h through
+ * gman_internal_headers, so it needs no test-only access widening.
+ * getRtToken() is never used here: it returns a pointer that ends
  * at the first NUL, which would hide exactly the byte-level decoding bugs
  * these checks exist to catch.
  */

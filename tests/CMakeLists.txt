@@ -3434,9 +3434,8 @@ set_tests_properties(shaderbsdf PROPERTIES
 # libgman_raster; the include path and core link of the last two reach them
 # through the library's public dependency. It also builds, without loading,
 # a shader plugin against gman_core and a renderer plugin against gman_core
-# and gman_ray. The parent's CMAKE_MODULE_LINKER_FLAGS reach that project
-# because a sanitizer build compiles the plugins with -fsanitize, and macOS
-# rejects a module link without it. See tests/install_test.cmake for
+# and gman_ray. The parent's CMAKE_MODULE_LINKER_FLAGS reach that project, so
+# its plugins link as the parent's own do. See tests/install_test.cmake for
 # the steps and tests/install/ for the consumer project it builds.
 #
 # cmake --install (step 1) reads libgmanrib.so from the build tree, so this
