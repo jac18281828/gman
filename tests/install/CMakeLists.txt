@@ -17,3 +17,6 @@ target_link_libraries(consumer PRIVATE gman::gman_core)
 
 add_executable(consumer_ray consumer_ray.cpp)
 target_link_libraries(consumer_ray PRIVATE gman::gman_ray)
+
+add_executable(consumer_raster consumer_raster.cpp)
+target_link_libraries(consumer_raster PRIVATE gman::gman_raster)

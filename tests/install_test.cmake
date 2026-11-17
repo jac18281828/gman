@@ -210,3 +210,11 @@ endif()
 
 gman_run_or_fail("step 3 (consumer): running consumer_ray"
   COMMAND "${GMAN_CONSUMER_RAY_EXE}")
+
+set(GMAN_CONSUMER_RASTER_EXE "${GMAN_CONSUMER_BUILD_DIR}/consumer_raster")
+if(NOT EXISTS "${GMAN_CONSUMER_RASTER_EXE}")
+  message(FATAL_ERROR "step 3 (consumer): ${GMAN_CONSUMER_RASTER_EXE} was not built")
+endif()
+
+gman_run_or_fail("step 3 (consumer): running consumer_raster"
+  COMMAND "${GMAN_CONSUMER_RASTER_EXE}")
