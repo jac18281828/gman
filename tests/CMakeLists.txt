@@ -11,6 +11,11 @@ add_library(gman_ray_internal_headers INTERFACE)
 target_include_directories(gman_ray_internal_headers INTERFACE
   "${CMAKE_SOURCE_DIR}/libgmanray")
 
+# GMAN_SOURCE_DIRS as absolute paths, the arguments every source-scanning test
+# takes.
+list(TRANSFORM GMAN_SOURCE_DIRS PREPEND "${CMAKE_SOURCE_DIR}/"
+  OUTPUT_VARIABLE GMAN_SOURCE_PATHS)
+
 # The runtime baseline: exit status, message and image output for a minimal
 # scene. See tests/baseline_test.cpp for the full invariant.
 add_executable(gman_baseline baseline_test.cpp)
@@ -1619,15 +1624,7 @@ set_tests_properties(parallel PROPERTIES
 # name a thread primitive.
 add_executable(gman_threadcontainment threadcontainment_test.cpp)
 add_test(NAME threadcontainment
-  COMMAND gman_threadcontainment
-          "${CMAKE_SOURCE_DIR}/include"
-          "${CMAKE_SOURCE_DIR}/libgman"
-          "${CMAKE_SOURCE_DIR}/libgmanray"
-          "${CMAKE_SOURCE_DIR}/libgmanrib"
-          "${CMAKE_SOURCE_DIR}/shaders"
-          "${CMAKE_SOURCE_DIR}/renderers"
-          "${CMAKE_SOURCE_DIR}/gman"
-          "${CMAKE_SOURCE_DIR}/gmansl")
+  COMMAND gman_threadcontainment ${GMAN_SOURCE_PATHS})
 set_tests_properties(threadcontainment PROPERTIES
   LABELS unit
   TIMEOUT 30)
@@ -1636,7 +1633,7 @@ set_tests_properties(threadcontainment PROPERTIES
 # cast through unsigned char first. See tests/tolowerscan_test.cpp.
 add_executable(gman_tolowerscan tolowerscan_test.cpp)
 add_test(NAME tolowerscan
-  COMMAND gman_tolowerscan "${CMAKE_SOURCE_DIR}/libgman" "${CMAKE_SOURCE_DIR}/libgmanray")
+  COMMAND gman_tolowerscan ${GMAN_SOURCE_PATHS})
 set_tests_properties(tolowerscan PROPERTIES
   LABELS unit
   TIMEOUT 30)
@@ -1645,8 +1642,7 @@ set_tests_properties(tolowerscan PROPERTIES
 # carry the same unsigned-char precondition. See tests/ctypescan_test.cpp.
 add_executable(gman_ctypescan ctypescan_test.cpp)
 add_test(NAME ctypescan
-  COMMAND gman_ctypescan "${CMAKE_SOURCE_DIR}/libgman" "${CMAKE_SOURCE_DIR}/libgmanray"
-                         "${CMAKE_SOURCE_DIR}/include")
+  COMMAND gman_ctypescan ${GMAN_SOURCE_PATHS})
 set_tests_properties(ctypescan PROPERTIES
   LABELS unit
   TIMEOUT 30)

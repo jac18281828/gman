@@ -26,7 +26,7 @@
  * ispunct, isspace, isupper and isxdigit are defined only for EOF and for
  * values representable as unsigned char; passing a plain (signed, on x86
  * and ARM) char is undefined behaviour for any byte above 127. This scans
- * every source file under libgman/ and include/ for a call whose argument
+ * every source file under the production source directories for a call whose argument
  * is not static_cast<unsigned char>(...). Unlike tolower/toupper, these
  * return an int consumed as a boolean, never narrowed back into a char, so
  * no outer cast applies here.
@@ -98,5 +98,5 @@ int main(int argc, char** argv) {
     check(calls.empty(), file.generic_string() + ": a <cctype> classifier must take static_cast<unsigned char>(...)");
   }
 
-  return checkSummary("no ctype classifier in libgman/ or include/ takes an unqualified char");
+  return checkSummary("no ctype classifier in the production source takes an unqualified char");
 }

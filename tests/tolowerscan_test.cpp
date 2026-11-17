@@ -28,8 +28,9 @@
  * static_cast<char>(std::tolower(static_cast<unsigned char>(c))): the inner
  * cast avoids the UB, the outer cast avoids the implicit int-to-char
  * narrowing tolower's return then triggers. This scans every source file
- * under libgman/ for a call missing either half -- gman::InlineParse::lc was
- * the one outlier; three other call sites already spell it correctly.
+ * under the production source directories for a call missing either half --
+ * gman::InlineParse::lc was the one outlier; three other call sites already
+ * spell it correctly.
  *
  * Neither ASan nor UBSan instruments a libc domain precondition, so this
  * source scan is the only thing that fails under plain ctest when a cast is
@@ -81,7 +82,7 @@ std::vector<std::string> callsMissingRequiredCasts(std::string const& text) {
 
 int main(int argc, char** argv) {
   if (argc < 2) {
-    std::cerr << "usage: " << argv[0] << " <libgman-dir>\n";
+    std::cerr << "usage: " << argv[0] << " <source-dir>...\n";
     return 2;
   }
 
@@ -100,5 +101,5 @@ int main(int argc, char** argv) {
                                                  "static_cast<unsigned char>(...)))");
   }
 
-  return checkSummary("no tolower/toupper in libgman/ takes an unqualified char");
+  return checkSummary("no tolower/toupper in the production source takes an unqualified char");
 }

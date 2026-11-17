@@ -85,6 +85,13 @@ option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin" ON)
 option(GMAN_BUILD_RADIOSITY "Build the radiosity indirect-light pass plugin" ON)
 option(GMAN_BUILD_PATHTRACER "Build the path tracer plugin" ON)
 
+# The production source directories, relative to the source root. format-check
+# and every test that scans source read this one list, so a new directory is
+# added here once. Every consumer scans recursively, so libgmanray/include
+# needs no entry of its own.
+set(GMAN_SOURCE_DIRS
+  include libgman libgmanray libgmanrib shaders renderers gman gmansl)
+
 # ---------------------------------------------------------------------------
 # Optional file-Display drivers -- one gman_add_file_driver(<name>) call per
 # driver. It declares GMAN_WITH_<NAME>, defaulting to whether <name>'s
@@ -516,15 +523,13 @@ endif()
 # Format check
 # ---------------------------------------------------------------------------
 
-# Every .c, .cpp and .h under the nine source directories, gathered with
+# Every .c, .cpp and .h under GMAN_SOURCE_DIRS and tests, gathered with
 # CONFIGURE_DEPENDS so a new file is checked without anyone widening a list.
 # gmanfiledrivers.cpp.in is a template, not a C++ source: its .cpp.in
 # extension already leaves it out. Check only -- never reformats the tree.
 set(GMAN_CLANG_FORMAT_VERSION "22.1.8")
-set(GMAN_FORMAT_CHECK_DIRS
-  include libgman libgmanray libgmanrib shaders renderers gman gmansl tests)
 set(GMAN_FORMAT_CHECK_GLOBS "")
-foreach(dir ${GMAN_FORMAT_CHECK_DIRS})
+foreach(dir ${GMAN_SOURCE_DIRS} tests)
   list(APPEND GMAN_FORMAT_CHECK_GLOBS
     "${CMAKE_SOURCE_DIR}/${dir}/*.c"
     "${CMAKE_SOURCE_DIR}/${dir}/*.cpp"
