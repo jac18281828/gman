@@ -49,8 +49,8 @@ files it wrote.
 
 - `libgman_core`, the RenderMan interface, the RIB parser, the shader and renderer contracts and the
   image writers. Every program that links gman needs it.
-- `libgman_ray`, the ray geometry, the BVH, the emitters and the indirect-light pass that the ray
-  tracer, the path tracer and the radiosity pass share.
+- `libgman_ray`, the ray geometry, the BVH, the emitters and the indirect-light pass seam that the
+  ray tracer, the path tracer and the radiosity pass share.
 - `libgman_raster`, the body, face and vertex model, the patch and polygon object manager and the
   polygon clipper that the z-buffer renderer uses.
 
@@ -232,7 +232,7 @@ The installed prefix carries `bin/gman`, the three libraries and a CMake package
 links gman with `find_package(gman CONFIG REQUIRED)` and
 `target_link_libraries(app PRIVATE gman::gman_core)`, and includes
 `<gman/ri.h>`. It adds `gman::gman_ray` when it uses the ray geometry, the BVH, the emitters or the
-indirect-light pass, and `gman::gman_raster` when it uses the body, face and vertex model, the
+indirect-light pass seam, and `gman::gman_raster` when it uses the body, face and vertex model, the
 patch and polygon object manager or the polygon clipper. Link gman from C, below, walks through a
 full example.
 
@@ -335,7 +335,7 @@ This writes `sphere.tif` in the current directory.
 ```
 include/       gman_core's header files, including ri.h
 libgman/       the core library, gman_core: RIB parser, RI state machine, image writers
-libgmanray/    gman_ray: ray geometry, BVH, emitters and the indirect-light pass
+libgmanray/    gman_ray: ray geometry, BVH, emitters and the indirect-light pass seam
 libgmanraster/ gman_raster: the body, face and vertex model, the polygon clipper
 libgmanrib/    the RIB-writer plugin RiBegin("x.rib") loads, not yet trustworthy
 renderers/     loadable rendering modules -- zbuffer, raytracer and pathtracer; radiosity,
@@ -350,7 +350,7 @@ tests/         the test suite and its RIB corpus
 doc/           the 1999 design document
 ```
 
-`tests/rib/` holds 226 more scenes, the test suite's own and its corpus.
+`tests/rib/` holds 242 more scenes, the test suite's own and its corpus.
 
 ## Related
 
