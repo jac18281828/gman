@@ -22,7 +22,6 @@
  */
 
 #include "gmanpolygon.h"
-#include "gmanpolygoninternal.h"
 
 namespace {
 

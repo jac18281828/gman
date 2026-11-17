@@ -36,7 +36,6 @@
 #include "gmanobjectmanager.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygon.h"
-#include "gmanpolygoninternal.h"
 #include "gmanpolygonmesh.h"
 #include "gmanprimitives.h"
 #include "gmanshading.h"

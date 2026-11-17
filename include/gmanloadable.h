@@ -52,7 +52,7 @@ typedef struct {
  *
  */
 
-class GMANLoadable {
+class GMAN_EXPORT GMANLoadable {
 public:
   // a required function for every loadable object.
   // The function returning the loadable object info struct

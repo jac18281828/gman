@@ -25,10 +25,10 @@
 #include <list>
 
 #include "gmanattributes.h"
+#include "gmanbbox.h"
 #include "gmanloadableshader.h"
 #include "gmanmath.h"
 #include "gmanprimitive.h"
-#include "gmanraybbox.h"
 #include "gmanshaderenvironment.h"
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"

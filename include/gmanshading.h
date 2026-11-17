@@ -94,7 +94,7 @@ struct GMAN_EXPORT SurfacePoint {
   RtFloat t = 0.0;
 
   // The hit primitive's own camera-space magnitude
-  // (gman::primitiveMagnitude, gmanraybbox.h), 0 when
+  // (gman::primitiveMagnitude, gmanbbox.h), 0 when
   // P names no real surface -- a renderer's self-shadow offset keys on
   // this alongside |P| itself, so a large primitive near the camera
   // offsets by its own size, not the camera distance alone.

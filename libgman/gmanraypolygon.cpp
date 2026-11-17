@@ -24,7 +24,6 @@
 #include <algorithm>
 
 #include "gmanpolygon.h"
-#include "gmanpolygoninternal.h"
 #include "gmanraybbox.h"
 #include "gmanraypolygon.h"
 

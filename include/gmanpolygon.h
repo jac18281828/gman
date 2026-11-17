@@ -23,9 +23,12 @@
 
 #pragma once
 
+#include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "gmandictionary.h"
+#include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -49,5 +52,28 @@ GMAN_EXPORT bool isDegeneratePolygon(std::vector<GMANPoint> const& ring);
 // token IDs it was built with. Must not be mutated concurrently: callers
 // only look tokens up, never declare new ones through this instance.
 GMAN_EXPORT GMANDictionary& standardDictionary();
+
+// The ring's largest bounding-box side, in whichever of x, y or z spans it
+// widest. isDegeneratePolygon and gmanpatchpolyobjectmanager.cpp's own
+// coincidence tolerances judge a ring's area or an edge length against
+// this extent rather than against an absolute constant, so a sliver a
+// million times longer than it is wide reads the same way at any scale.
+GMAN_EXPORT RtFloat boundingBoxExtent(std::vector<GMANPoint> const& ring);
+
+// pl's token array for token, cast to RtFloat*: NULL when pl carries no
+// such token, non-NULL otherwise. token must be one standardDictionary()
+// pre-registers (RI_P, RI_PW, RI_S, RI_T, RI_ST), so getTokenId never
+// throws.
+inline RtFloat* floatArray(GMANParameterList const& pl, RtToken token) {
+  return (RtFloat*)pl.getPointer(standardDictionary().getTokenId(token));
+}
+
+// Each of count points' own resolved (s, t): entry i defaults to (p[3i],
+// p[3i+1]), overridden by "st" (both components), then by "s" and "t"
+// (each its own component). p is non-null and holds 3 * count floats. The
+// one definition of the rule every polygon and ray-polygon face resolves
+// its texture coordinates through.
+GMAN_EXPORT std::vector<std::pair<RtFloat, RtFloat>> polygonTexCoords(GMANParameterList const& pl, RtFloat const* p,
+                                                                      std::size_t count);
 
 } // namespace gman

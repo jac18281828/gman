@@ -20,7 +20,8 @@
 
 /*
  * GMANBBox's two-point constructor and its getMin()/getMax() accessors
- * -- the min/max prerequisite a BVH needs.
+ * -- the min/max prerequisite a BVH needs -- and gman::primitiveMagnitude,
+ * the largest absolute coordinate of a box.
  */
 
 #include "check.h"
@@ -57,11 +58,40 @@ void testDefaultBoxIsUnbounded() {
         "default ctor: getMax() == RI_INFINITY on every axis");
 }
 
+// ---- check 3: a default-constructed box has magnitude 0 ----
+void testMagnitudeOfDefaultBoxIsZero() {
+  GMANBBox const box;
+  check(gman::primitiveMagnitude(box) == 0.0, "magnitude: a default-constructed box reads 0");
+}
+
+// ---- check 4: one coordinate at +/-RI_INFINITY makes the magnitude 0
+// however large the finite ones are ----
+void testMagnitudeWithOneInfiniteCoordinateIsZero() {
+  GMANBBox const infiniteMax(GMANPoint(-1.0, -2.0, -3.0), GMANPoint(4.0, RI_INFINITY, 6.0));
+  check(gman::primitiveMagnitude(infiniteMax) == 0.0, "magnitude: one max coordinate at RI_INFINITY reads 0");
+
+  GMANBBox const infiniteMin(GMANPoint(-1.0, -2.0, -RI_INFINITY), GMANPoint(4.0, 5.0, 6.0));
+  check(gman::primitiveMagnitude(infiniteMin) == 0.0, "magnitude: one min coordinate at -RI_INFINITY reads 0");
+}
+
+// ---- check 5: a finite box reads the largest absolute coordinate, whether
+// that coordinate is positive or negative ----
+void testMagnitudeIsLargestAbsoluteCoordinate() {
+  GMANBBox const positiveLargest(GMANPoint(-1.0, -2.0, -3.0), GMANPoint(4.0, 5.0, 6.0));
+  check(gman::primitiveMagnitude(positiveLargest) == 6.0, "magnitude: a positive largest coordinate (6) is read");
+
+  GMANBBox const negativeLargest(GMANPoint(-8.0, -2.0, -3.0), GMANPoint(4.0, 5.0, 6.0));
+  check(gman::primitiveMagnitude(negativeLargest) == 8.0, "magnitude: a negative largest coordinate (-8) reads 8");
+}
+
 } // namespace
 
 int main() {
   testTwoPointConstructorRoundTrips();
   testDefaultBoxIsUnbounded();
+  testMagnitudeOfDefaultBoxIsZero();
+  testMagnitudeWithOneInfiniteCoordinateIsZero();
+  testMagnitudeIsLargestAbsoluteCoordinate();
 
-  return checkSummary("GMANBBox: the two-point constructor and its getMin()/getMax() accessors");
+  return checkSummary("GMANBBox: the two-point constructor, the getMin()/getMax() accessors and primitiveMagnitude");
 }

@@ -168,6 +168,17 @@ set_tests_properties(bbox PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::boundingBoxExtent, gman::floatArray and gman::polygonTexCoords, as
+# gmanpolygon.h declares them. See tests/polygonhelpers_test.cpp.
+add_executable(gman_polygonhelpers polygonhelpers_test.cpp)
+target_link_libraries(gman_polygonhelpers PRIVATE gman_core)
+
+add_test(NAME polygonhelpers COMMAND gman_polygonhelpers)
+set_tests_properties(polygonhelpers PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANDictionary::getTypeSize's default: arm reports an unknown token type
 # truthfully. See tests/dictionaryerror_test.cpp.
 add_executable(gman_dictionaryerror dictionaryerror_test.cpp)

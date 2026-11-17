@@ -32,7 +32,7 @@
 #include "gmandictionary.h"
 #include "gmanlog.h"
 #include "gmanparameterlist.h"
-#include "gmanpolygoninternal.h"
+#include "gmanpolygon.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "ri.h"

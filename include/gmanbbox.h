@@ -25,7 +25,10 @@
 
 #pragma once
 
+#include <cmath>
+
 #include "gmanlog.h"
+#include "gmanmath.h"
 #include "gmanpoint.h"
 #include "ri.h"
 
@@ -58,3 +61,25 @@ public:
   GMANPoint getMin() const;
   GMANPoint getMax() const;
 };
+
+namespace gman {
+
+// The largest absolute coordinate over box's own six coordinates, 0 for a box
+// still at its default +/-RI_INFINITY (a primitive whose own bbox was
+// never assigned) -- hitSurfacePoint's own M, gman::SurfacePoint's
+// surfaceMagnitude field.
+inline RtFloat primitiveMagnitude(GMANBBox const& box) {
+  GMANPoint const boxMin = box.getMin();
+  GMANPoint const boxMax = box.getMax();
+  RtFloat const coords[6] = {boxMin.getX(), boxMin.getY(), boxMin.getZ(), boxMax.getX(), boxMax.getY(), boxMax.getZ()};
+  RtFloat magnitude = 0.0;
+  for (RtFloat const coord : coords) {
+    if (std::fabs(coord) >= RI_INFINITY) {
+      return 0.0;
+    }
+    magnitude = GMANMax(magnitude, (RtFloat)std::fabs(coord));
+  }
+  return magnitude;
+}
+
+} // namespace gman
