@@ -54,9 +54,9 @@ files it wrote.
 - `libgman_raster`, the body, face and vertex model, the patch and polygon object manager and the
   polygon clipper that the z-buffer renderer uses.
 
-The renderers and shaders sit beside them as `lib<name>.so` plugins. `gman` loads a plugin by its
-bare name, so a `lib<name>.so` in the directory you run `gman` from wins over the installed one. Run
-`gman` from a folder that holds no older gman `lib*.so`.
+The renderers and shaders sit beside them as `lib<name>.so` plugins, which `gman` loads by bare
+name. On macOS a `lib<name>.so` in the directory you run `gman` from wins over the installed one, so
+run `gman` from a folder that holds no older gman `lib*.so`.
 
 To build gman yourself and install it with CMake, see [Build from source](#build-from-source).
 
