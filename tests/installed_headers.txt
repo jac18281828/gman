@@ -36,6 +36,7 @@ gmanocclude.h
 gmanoptions.h
 gmanoutput.h
 gmanoutputpolygon.h
+gmanparallel.h
 gmanparameterlist.h
 gmanpatchpolyobjectmanager.h
 gmanpoint.h
