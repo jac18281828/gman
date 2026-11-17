@@ -112,8 +112,8 @@ gman -r gmanpathtracer samples/materials.rib
 
 From the left: gold `shinymetal`, `glass`, a `mirror` that takes the wall's clay colour, and a
 `plastic` torus. The overhead disk pools a soft shadow under each one. The scene traces 64 paths a
-subpixel; the picture traces 256, set by `Option "pathtracer" "integer samples"` at the top of the
-file.
+subpixel at 640 by 400. The picture traces 512 at 1920 by 1200, set by `Format` and
+`Option "pathtracer" "integer samples"` at the top of the file, and is shown at 1280 by 800.
 
 ## Poke it
 
