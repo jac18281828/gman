@@ -30,6 +30,7 @@
 #include "gmanemitter.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
+#include "gmanparallel.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpathtracerweights.h"
 #include "gmanraybbox.h"
@@ -620,9 +621,10 @@ struct SlotResult {
   std::size_t dropped = 0;
 };
 
-SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem* viewingSys,
-                      GMANMatrix4 const& cameraToWorld, GMANColor const& background, gman::TextureCache* textureCache,
-                      RtInt sx, RtInt sy, int xsamples, int ysamples, std::uint32_t N, bool misEnabled) {
+SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
+                      GMANViewingSystem const* viewingSys, GMANMatrix4 const& cameraToWorld,
+                      GMANColor const& background, gman::TextureCache* textureCache, RtInt sx, RtInt sy, int xsamples,
+                      int ysamples, std::uint32_t N, bool misEnabled) {
   SlotResult result;
   for (std::uint32_t i = 0; i < N; ++i) {
     gman::Sample2D const uv0 = gman::sample2D(kSeed, sx, sy, i, N, 0u);
@@ -650,11 +652,12 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& e
 }
 
 // One row's own unit of work: traces every one of its slots and writes
-// only its own slots of sampleBuffer and the dropped count it is handed,
-// reading the BVH, the light set and the raster data it is handed as
-// const, so a later caller can shard rows across gman::parallelFor workers
-// unchanged.
-void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem* viewingSys,
+// only its own slots of sampleBuffer, the dropped count and the texture
+// cache it is handed, reading the BVH, the light set, the viewing system
+// and the raster data it is handed as const. render() runs one row per
+// gman::parallelFor body, handing each row the cache of the worker that
+// runs it.
+void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem const* viewingSys,
                GMANMatrix4 const& cameraToWorld, GMANOptions::RasterInfo const& raster, RtInt width, int xsamples,
                int ysamples, std::uint32_t N, GMANColor const& background, gman::TextureCache& textureCache, int py,
                GMANSampleBuffer& sampleBuffer, std::size_t& dropped, bool misEnabled) {
@@ -696,6 +699,8 @@ GMANPathtraceRenderer::~GMANPathtraceRenderer() {};
 
 void GMANPathtraceRenderer::setMultipleImportanceSampling(bool enabled) { multipleImportanceSamplingEnabled = enabled; }
 
+void GMANPathtraceRenderer::setWorkers(RtInt workers) { requestedWorkers = workers; }
+
 void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
                                    GMANOptions const& options, GMANAttributes const& /*attributes*/) {
   bvh.build(worldManager);
@@ -715,12 +720,25 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, background));
 
   GMANMatrix4 const& cameraToWorld = options.getCameraToWorld();
-  gman::TextureCache textureCache;
+  bool const misEnabled = multipleImportanceSamplingEnabled;
 
-  for (int py = 0; py < height; ++py) {
-    std::size_t rowDropped = 0;
-    renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, background, textureCache,
-              py, *sampleBuffer, rowDropped, multipleImportanceSamplingEnabled);
+  std::vector<gman::TextureCache> textureCaches(
+      static_cast<std::size_t>(gman::parallelWorkers(height, requestedWorkers)));
+  std::vector<std::size_t> droppedPerRow(static_cast<std::size_t>(height), 0);
+  rowWorker.assign(static_cast<std::size_t>(height), 0);
+
+  gman::parallelFor(
+      height,
+      [&](RtInt row, RtInt worker) {
+        auto const rowIndex = static_cast<std::size_t>(row);
+        rowWorker[rowIndex] = worker;
+        renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, background,
+                  textureCaches[static_cast<std::size_t>(worker)], row, *sampleBuffer, droppedPerRow[rowIndex],
+                  misEnabled);
+      },
+      requestedWorkers);
+
+  for (std::size_t const rowDropped : droppedPerRow) {
     droppedPaths += rowDropped;
   }
 

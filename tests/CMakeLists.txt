@@ -3264,6 +3264,23 @@ set_tests_properties(pathtracerglasscount PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The path tracer renders its rows through gman::parallelFor, one texture
+# cache per worker: an image byte-identical at one and at eight workers,
+# the worker each row ran on, an equal dropped-path count at one, three and
+# eight workers, one missing-texture warning per worker's cache, and a
+# viewing system's camera calls through a const reference. The argument
+# --scaling times the floor scene at one and at eight workers and asserts
+# nothing. See tests/pathtracerthreads_test.cpp.
+add_executable(gman_pathtracerthreads pathtracerthreads_test.cpp)
+target_link_libraries(gman_pathtracerthreads PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerthreads gman_matte gman_paintedplastic)
+
+add_test(NAME pathtracerthreads COMMAND gman_pathtracerthreads)
+set_tests_properties(pathtracerthreads PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every

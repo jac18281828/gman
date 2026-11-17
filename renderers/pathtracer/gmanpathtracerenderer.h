@@ -58,11 +58,14 @@
  * render(); ambientlight contributes nothing, since bounce light is what
  * it faked. A non-finite path -- a NaN or infinite channel anywhere in its
  * throughput, radiance or coverage estimate -- is dropped: it contributes
- * zero to the slot's sums and is counted, never filtered. render() is
- * serial; each row is its own unit of work, reading the BVH, the emitter
- * set, the options and the background as const and writing only its own
- * slots of the sample buffer and the dropped-path count it is handed, so a
- * later caller can shard rows across gman::parallelFor workers unchanged.
+ * zero to the slot's sums and is counted, never filtered. render() runs its
+ * rows through gman::parallelFor; each row is its own unit of work, reading
+ * the BVH, the emitter set, the viewing system, the options and the
+ * background as const and writing only its own slots of the sample buffer,
+ * its own dropped-path count and the gman::TextureCache of the worker that
+ * runs it. Every random draw is a pure function of its slot, so the image,
+ * its alpha, its depth and droppedPathCount() are the same at every worker
+ * count.
  */
 class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
@@ -97,6 +100,18 @@ private:
   // through setMultipleImportanceSampling.
   bool multipleImportanceSamplingEnabled = true;
 
+  // The worker count render() requests from gman::parallelFor; 0 lets it
+  // choose the hardware's concurrency. Not a RIB option or an environment
+  // variable: a determinism proof's own switch, set only through
+  // setWorkers.
+  RtInt requestedWorkers = 0;
+
+  // The worker that rendered each row of the last render() call, indexed
+  // by row. render() sizes it to the frame's height before its rows run
+  // and each row writes only its own element, so no two threads write one
+  // location.
+  std::vector<RtInt> rowWorker;
+
   // Fills emitters from worldManager and skippedAmbientLights from its own
   // separate count -- gman::emitters excludes ambient lights silently,
   // with no count of its own to report.
@@ -127,6 +142,18 @@ public:
   // by hand, never a RIB surface. This header is not installed, so no
   // out-of-tree consumer reaches it regardless.
   void setMultipleImportanceSampling(bool enabled);
+
+  // Exported with GMANPathtraceRenderer itself, in every build: the worker
+  // count for the next render() call, 0 for the hardware's concurrency. For
+  // a test that constructs this renderer by hand, never a RIB surface. This
+  // header is not installed, so no out-of-tree consumer reaches it
+  // regardless.
+  void setWorkers(RtInt workers);
+
+  // The last render() call's worker for each row, one entry per row of the
+  // frame; every entry is 0 when one worker ran them all. Exported as
+  // setWorkers is, and for the same tests.
+  std::vector<RtInt> const& rowWorkers() const { return rowWorker; }
 
   virtual GMANWorldManager* getWorldManager(void);
 
