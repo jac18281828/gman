@@ -9,8 +9,11 @@
 ##
 
 Display "vase.png" "file" "rgba"
-Format 640 400 1
+Format 1280 800 1
 PixelSamples 2 2
+# Catmull-Rom keeps edges sharper than the default Gaussian; no dither keeps the PNG small.
+PixelFilter "catmull-rom" 3 3
+Quantize "rgba" 255 0 255 0
 Projection "perspective" "fov" [40]
 Clipping 0.5 60
 
