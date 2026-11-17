@@ -34,13 +34,17 @@ namespace gman {
  *
  * One seam: parallelFor runs a body once per index, spread over a
  * bounded set of workers, and returns only once every body has returned.
- * A caller partitions its own state by worker index -- each worker's
- * indices run on one thread, one at a time, so state a worker owns
- * outright needs no lock. Anything a body reads that it does not own
+ * Each worker takes the next unclaimed index when it finishes its last,
+ * so a slow body delays only itself: the other workers carry on with the
+ * remaining indices. A worker may therefore run no index, or most of
+ * them. A caller partitions its own state by worker index -- each
+ * worker's indices run on one thread, one at a time, so state a worker
+ * owns outright needs no lock. Anything a body reads that it does not own
  * outright must already be read-only for the call; logging is the one
  * sanctioned exception. parallelWorkers reports the worker count a
- * call with the same arguments would use, so a caller can size its
- * per-worker state before making the call.
+ * call with the same arguments would use, so a caller sizes its
+ * per-worker state by it before making the call; state no worker
+ * touched stays as the caller left it.
  *
  * A body that throws requests every worker to stop before starting
  * another index; once every worker has returned, the first exception

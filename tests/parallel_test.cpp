@@ -35,6 +35,9 @@
 
 namespace {
 
+constexpr std::chrono::seconds kWaitDeadline{5};
+constexpr std::chrono::milliseconds kPollInterval{1};
+
 // One run's bookkeeping: which index landed in which worker's slot, and
 // which thread ran each worker. Each vector entry belongs to exactly one
 // worker for the whole call, so writing it from inside the body needs no
@@ -130,35 +133,44 @@ void testWorkerIndices() {
   }
 }
 
+template <typename Done> bool waitUntil(Done const& done, std::chrono::steady_clock::time_point deadline) {
+  while (!done()) {
+    if (std::chrono::steady_clock::now() >= deadline) {
+      return false;
+    }
+    std::this_thread::sleep_for(kPollInterval);
+  }
+  return true;
+}
+
 // A body that throws stops every worker from starting another index;
 // after every worker returns, the exception is rethrown on the calling
 // thread and the process survives.
 void testExceptionsStopTheCall() {
   const RtInt count = 400;
   const RtInt workers = 4;
-  const RtInt numWorkers = gman::parallelWorkers(count, workers);
 
-  // Disjoint per-worker slots: each is only ever incremented by the one
-  // thread that owns that worker index, so no lock is needed here either.
-  std::vector<int> perWorkerCount(static_cast<std::size_t>(numWorkers), 0);
+  std::atomic<int> started{0};
+  std::atomic<int> completed{0};
   bool threw = false;
   bool rightType = false;
 
   try {
     gman::parallelFor(
         count,
-        [&](RtInt index, RtInt worker) {
-          // index 0 throws before doing any work, so the stop request
-          // goes out as close to immediately as this thread can manage.
-          // Every other index sleeps first: on an empty loop body, a
-          // worker with no exception can race through its entire share
-          // before the stop request becomes visible, which is not what
-          // this test means to measure.
+        [&](RtInt index, RtInt /*worker*/) {
+          ++started;
+          // The first index claimed throws before doing any work, so the
+          // stop request goes out as close to immediately as this thread
+          // can manage. Every other index sleeps first: on an empty loop
+          // body, a worker with no exception can race through the whole
+          // range before the stop request becomes visible, which is not
+          // what this test means to measure.
           if (index == 0) {
             throw GMANError(RIE_BUG, RIE_SEVERE, "parallel_test probe");
           }
-          std::this_thread::sleep_for(std::chrono::milliseconds(1));
-          perWorkerCount[static_cast<std::size_t>(worker)]++;
+          std::this_thread::sleep_for(kPollInterval);
+          ++completed;
         },
         workers);
   } catch (GMANError&) {
@@ -168,27 +180,80 @@ void testExceptionsStopTheCall() {
     threw = true;
   }
 
-  int total = 0;
-  for (int c : perWorkerCount) {
-    total += c;
-  }
-
-  // Worker 0 throws on its first index; every other worker's fair share
-  // is count/numWorkers. If the stop request actually reaches them, at
-  // least one stops before finishing that share.
-  const int fairShare = static_cast<int>(count / numWorkers);
-  bool someWorkerStoppedEarly = false;
-  for (std::size_t w = 1; w < perWorkerCount.size(); ++w) {
-    if (perWorkerCount[w] < fairShare) {
-      someWorkerStoppedEarly = true;
-      break;
-    }
-  }
-
   check(threw, "a throwing body's exception reaches the calling thread");
   check(rightType, "the rethrown exception is the GMANError the body threw");
-  check(total < static_cast<int>(count), "fewer than every index ran after the throw requested a stop");
-  check(someWorkerStoppedEarly, "a worker that never threw also stopped before finishing its share");
+  check(started.load() < count, "fewer than every index started after the throw requested a stop");
+  check(completed.load() < count / 2, "the workers that never threw stopped well short of the full range (" +
+                                          std::to_string(completed.load()) + " of " + std::to_string(count) +
+                                          " completed)");
+}
+
+// A body stuck on index 0 holds back only itself: the other workers claim
+// every remaining index while it waits.
+void testSlowIndexHoldsNothingBack() {
+  const RtInt count = 64;
+  const RtInt workers = 4;
+
+  std::vector<std::atomic<int>> hits(static_cast<std::size_t>(count));
+  std::atomic<int> finishedOthers{0};
+  bool waitEndedOnCompletion = false;
+
+  gman::parallelFor(
+      count,
+      [&](RtInt index, RtInt /*worker*/) {
+        if (index == 0) {
+          const auto deadline = std::chrono::steady_clock::now() + kWaitDeadline;
+          waitEndedOnCompletion = waitUntil([&] { return finishedOthers.load() == count - 1; }, deadline);
+          ++hits[0];
+          return;
+        }
+        ++hits[static_cast<std::size_t>(index)];
+        ++finishedOthers;
+      },
+      workers);
+
+  bool allOnce = true;
+  for (auto const& h : hits) {
+    allOnce = allOnce && h.load() == 1;
+  }
+  check(waitEndedOnCompletion, "a blocked index 0 saw every other index finish before its deadline");
+  check(allOnce, "with index 0 blocked, every index still ran exactly once");
+}
+
+// With as many indices as workers and every body waiting for all the
+// others to start, the call completes only if every worker really runs at
+// once, each on its own thread.
+void testEveryWorkerRunsAtOnce() {
+  const RtInt workers = 4;
+  const RtInt count = workers;
+
+  std::atomic<int> started{0};
+  std::vector<int> sawEveryStart(static_cast<std::size_t>(count), 0);
+  std::vector<RtInt> workerOfIndex(static_cast<std::size_t>(count), -1);
+  std::vector<std::thread::id> threadOfIndex(static_cast<std::size_t>(count));
+
+  const auto deadline = std::chrono::steady_clock::now() + kWaitDeadline;
+  gman::parallelFor(
+      count,
+      [&](RtInt index, RtInt worker) {
+        const auto slot = static_cast<std::size_t>(index);
+        workerOfIndex[slot] = worker;
+        threadOfIndex[slot] = std::this_thread::get_id();
+        ++started;
+        sawEveryStart[slot] = waitUntil([&] { return started.load() == count; }, deadline) ? 1 : 0;
+      },
+      workers);
+
+  bool allSawEveryStart = true;
+  for (int saw : sawEveryStart) {
+    allSawEveryStart = allSawEveryStart && saw == 1;
+  }
+  const std::set<RtInt> distinctWorkers(workerOfIndex.begin(), workerOfIndex.end());
+  const std::set<std::thread::id> distinctThreads(threadOfIndex.begin(), threadOfIndex.end());
+
+  check(allSawEveryStart, "every body saw all four bodies started before the deadline");
+  check(distinctWorkers == std::set<RtInt>({0, 1, 2, 3}), "the four bodies ran as worker ids 0, 1, 2 and 3");
+  check(distinctThreads.size() == static_cast<std::size_t>(count), "the four bodies ran on four distinct threads");
 }
 
 // count <= 0 calls nothing, at all.
@@ -206,6 +271,8 @@ int main() {
   testSerialPath();
   testWorkerIndices();
   testExceptionsStopTheCall();
+  testSlowIndexHoldsNothingBack();
+  testEveryWorkerRunsAtOnce();
   testCountZeroOrNegative();
 
   return checkSummary("gman::parallelFor holds its contract");

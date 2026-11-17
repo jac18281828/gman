@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <atomic>
 #include <exception>
 #include <mutex>
 #include <stop_token>
@@ -31,6 +32,25 @@
 #include "ri.h"
 
 namespace gman {
+
+namespace {
+
+constexpr RtInt kNoIndexLeft = -1;
+
+// Takes the next unclaimed index in [0, count), or kNoIndexLeft once all are
+// claimed. The counter only advances while it is below count, so it never
+// exceeds count and cannot overflow RtInt.
+RtInt claimIndex(std::atomic<RtInt>& next, RtInt count) {
+  RtInt index = next.load(std::memory_order_relaxed);
+  while (index < count) {
+    if (next.compare_exchange_weak(index, index + 1, std::memory_order_relaxed)) {
+      return index;
+    }
+  }
+  return kNoIndexLeft;
+}
+
+} // namespace
 
 RtInt parallelWorkers(RtInt count, RtInt workers) {
   if (count <= 0) {
@@ -58,13 +78,15 @@ void parallelFor(RtInt count, std::function<void(RtInt, RtInt)> const& body, RtI
   // One shared stop_source: any worker's exception stops every worker, not
   // only the one that threw.
   std::stop_source stopSource;
+  std::atomic<RtInt> nextIndex{0};
   std::mutex exceptionMutex;
   std::exception_ptr firstException;
 
   auto runWorker = [&](RtInt worker) {
     std::stop_token token = stopSource.get_token();
-    for (RtInt i = worker; i < count; i += numWorkers) {
-      if (token.stop_requested()) {
+    while (!token.stop_requested()) {
+      const RtInt i = claimIndex(nextIndex, count);
+      if (i == kNoIndexLeft) {
         break;
       }
       try {
