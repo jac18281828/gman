@@ -1,0 +1,19 @@
+# Hider branch: "mode" is declared string and supplied the number 1. gman is
+# expected to name the parameter, drop it and still select the hider.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+Hider "hidden" "string mode" [1]
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	Translate 2 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

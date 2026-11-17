@@ -749,6 +749,60 @@ set_tests_properties(paramlistdeclaredtype PROPERTIES
   LABELS render
   TIMEOUT 60)
 
+# A RIB parameter whose literal kind contradicts its declared type is dropped
+# with a logged error; the request and the file carry on. See
+# tests/paramliteraltype_test.cpp and tests/paramrejection.h; its own final
+# check drives GMANRIBParse in process, hence gman_internal_headers and the
+# same LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
+add_executable(gman_paramliteraltype paramliteraltype_test.cpp)
+target_link_libraries(gman_paramliteraltype PRIVATE gman_core gman_internal_headers TIFF::TIFF)
+
+set(GMAN_PARAMLITERALTYPE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramliteraltype-run")
+file(MAKE_DIRECTORY "${GMAN_PARAMLITERALTYPE_WORKDIR}")
+
+add_test(NAME paramliteraltype
+  COMMAND gman_paramliteraltype $<TARGET_FILE:gman>
+                      "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
+  WORKING_DIRECTORY "${GMAN_PARAMLITERALTYPE_WORKDIR}")
+set_tests_properties(paramliteraltype PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+# A RIB parameter supplied with fewer values than one element of its declared
+# type is dropped with a logged error. See tests/paramshortcount_test.cpp.
+add_executable(gman_paramshortcount paramshortcount_test.cpp)
+target_link_libraries(gman_paramshortcount PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_PARAMSHORTCOUNT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramshortcount-run")
+file(MAKE_DIRECTORY "${GMAN_PARAMSHORTCOUNT_WORKDIR}")
+
+add_test(NAME paramshortcount
+  COMMAND gman_paramshortcount $<TARGET_FILE:gman>
+                      "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
+  WORKING_DIRECTORY "${GMAN_PARAMSHORTCOUNT_WORKDIR}")
+set_tests_properties(paramshortcount PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+# A RIB parameter declaring more values than an int can count is dropped with
+# a logged error. See tests/paramhugecount_test.cpp.
+add_executable(gman_paramhugecount paramhugecount_test.cpp)
+target_link_libraries(gman_paramhugecount PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_PARAMHUGECOUNT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramhugecount-run")
+file(MAKE_DIRECTORY "${GMAN_PARAMHUGECOUNT_WORKDIR}")
+
+add_test(NAME paramhugecount
+  COMMAND gman_paramhugecount $<TARGET_FILE:gman>
+                      "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
+  WORKING_DIRECTORY "${GMAN_PARAMHUGECOUNT_WORKDIR}")
+set_tests_properties(paramhugecount PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
 # GMANRIBTokenize::parseString gained escape decoding so an embedded \"
 # stops desyncing the parse. See tests/ribstringescape_test.cpp; its own
 # in-process check drives GMANRIBParse directly, hence the same

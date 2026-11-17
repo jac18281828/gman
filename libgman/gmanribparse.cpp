@@ -24,11 +24,13 @@
  */
 
 #include <cctype>
+#include <cstdint>
 #include <cstring> /* strcmp, memcpy -- libstdc++ does not pull these in
                       * transitively the way libc++ does */
 #include <filesystem>
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <system_error>
@@ -138,6 +140,40 @@ template <typename Request> void dispatchWithCounts(GMANRenderMan& renderMan, Rt
   } else {
     request(renderMan);
   }
+}
+
+enum class LiteralKind { empty, string, number };
+
+struct Declaration {
+  GMANTokenEntry::TokenType type;
+  std::int64_t minimumCount;
+};
+
+std::optional<Declaration> declarationOf(GMANDictionary& dictionary, std::string const& token) {
+  try {
+    const GMANTokenId id = dictionary.getTokenId(token);
+    const GMANTokenEntry::TokenType type = dictionary.getType(id);
+    const std::int64_t width = dictionary.getTypeSize(type);
+    return Declaration{type, width * dictionary.getQuantity(id)};
+  } catch (GMANError&) {
+    return std::nullopt;
+  }
+}
+
+std::string contradiction(Declaration const& declaration, LiteralKind literal, std::int64_t supplied) {
+  const bool declaredString = declaration.type == GMANTokenEntry::STRING;
+  if (literal == LiteralKind::string && !declaredString) {
+    return "a string was supplied for a numeric parameter";
+  }
+  if (literal == LiteralKind::number && declaredString) {
+    return "a number was supplied for a string parameter";
+  }
+  // The request owns the vertex, varying and uniform counts that size the
+  // full array, so the parser can require only one element of the type.
+  if (supplied < declaration.minimumCount) {
+    return std::format("{} of the {} declared values supplied", supplied, declaration.minimumCount);
+  }
+  return {};
 }
 
 } // namespace
@@ -683,7 +719,7 @@ std::string GMANRIBParse::copyStringToken() {
 RtVoid GMANRIBParse::parseOption(RtVoid) {
   const auto name = copyStringToken();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Option");
 
   renderMan.RiOptionV(name.c_str(), n, tokens, parms);
 }
@@ -693,7 +729,7 @@ RtVoid GMANRIBParse::parseDisplay(RtVoid) {
   const auto type = copyStringToken();
   const auto mode = copyStringToken();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Display");
 
   // RiDisplayV's name parameter is char* rather than const char* for
   // historical reasons; it only reads through it.
@@ -711,7 +747,7 @@ RtVoid GMANRIBParse::parseFormat(RtVoid) {
 RtVoid GMANRIBParse::parseProjection(RtVoid) {
   const auto name = copyStringToken();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Projection");
 
   renderMan.RiProjectionV(name.c_str(), n, tokens, parms);
 }
@@ -792,7 +828,7 @@ RtVoid GMANRIBParse::parseHider(RtVoid) {
 
   const auto type = copyStringToken();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Hider");
 
   renderMan.RiHiderV(type.c_str(), n, tokens, parms);
 }
@@ -837,7 +873,7 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
   const auto name = copyStringToken();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Attribute");
 
   renderMan.RiAttributeV(name.c_str(), n, tokens, parms);
 }
@@ -896,28 +932,31 @@ RtVoid GMANRIBParse::parseOpacity(RtVoid) {
   renderMan.RiOpacity(color.data());
 }
 
-RtVoid GMANRIBParse::parseLightRequest(RtLightHandle (GMANRenderMan::*call)(RtToken, RtInt, RtToken*, RtPointer*)) {
+RtVoid GMANRIBParse::parseLightRequest(std::string const& request,
+                                       RtLightHandle (GMANRenderMan::*call)(RtToken, RtInt, RtToken*, RtPointer*)) {
   const auto shadername = copyStringToken();
   int sequence = nextInt();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList(request);
 
   RtLightHandle handle = (renderMan.*call)(shadername.c_str(), n, tokens, parms);
 
   lightHandleMap[sequence] = handle;
 }
 
-RtVoid GMANRIBParse::parseLightSource(RtVoid) { parseLightRequest(&GMANRenderMan::RiLightSourceV); }
+RtVoid GMANRIBParse::parseLightSource(RtVoid) { parseLightRequest("LightSource", &GMANRenderMan::RiLightSourceV); }
 
 // Addresses an area light through Illuminate <seq> exactly as any other
 // light: the same shader-name, sequence and parameter-list shape, filling
 // the same lightHandleMap.
-RtVoid GMANRIBParse::parseAreaLightSource(RtVoid) { parseLightRequest(&GMANRenderMan::RiAreaLightSourceV); }
+RtVoid GMANRIBParse::parseAreaLightSource(RtVoid) {
+  parseLightRequest("AreaLightSource", &GMANRenderMan::RiAreaLightSourceV);
+}
 
 RtVoid GMANRIBParse::parseSurface(RtVoid) {
   const auto shadername = copyStringToken();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Surface");
 
   // FIXME: Implement some surface shaders
   renderMan.RiSurfaceV(shadername.c_str(), n, tokens, parms);
@@ -997,7 +1036,7 @@ RtVoid GMANRIBParse::parseSphere(RtVoid) {
   RtFloat zmax = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Sphere");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiSphereV(radius, zmin, zmax, thetamax, n, tokens, parms, supplied...);
@@ -1009,7 +1048,7 @@ RtVoid GMANRIBParse::parseCone(RtVoid) {
   RtFloat radius = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Cone");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiConeV(height, radius, thetamax, n, tokens, parms, supplied...);
@@ -1022,7 +1061,7 @@ RtVoid GMANRIBParse::parseCylinder(RtVoid) {
   RtFloat zmax = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Cylinder");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiCylinderV(radius, zmin, zmax, thetamax, n, tokens, parms, supplied...);
@@ -1046,7 +1085,7 @@ RtVoid GMANRIBParse::parseHyperboloid(RtVoid) {
 
   RtFloat thetamax = nextFloat();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Hyperboloid");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiHyperboloidV(point1, point2, thetamax, n, tokens, parms, supplied...);
@@ -1059,7 +1098,7 @@ RtVoid GMANRIBParse::parseParaboloid(RtVoid) {
   RtFloat zmax = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Paraboloid");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiParaboloidV(rmax, zmin, zmax, thetamax, n, tokens, parms, supplied...);
@@ -1073,7 +1112,7 @@ RtVoid GMANRIBParse::parseTorus(RtVoid) {
   RtFloat phimax = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Torus");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiTorusV(majorradius, minorradius, phimin, phimax, thetamax, n, tokens, parms, supplied...);
@@ -1085,7 +1124,7 @@ RtVoid GMANRIBParse::parseDisk(RtVoid) {
   RtFloat radius = nextFloat();
   RtFloat thetamax = nextFloat();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Disk");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiDiskV(height, radius, thetamax, n, tokens, parms, supplied...);
@@ -1094,7 +1133,7 @@ RtVoid GMANRIBParse::parseDisk(RtVoid) {
 
 RtVoid GMANRIBParse::parsePolygon(RtVoid) {
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Polygon");
 
   // "P" is a VERTEX/POINT array, 3 floats per vertex; nverts is derived from
   // its element count. pendingParamValues records that count per value
@@ -1128,7 +1167,7 @@ RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
   GMANRIBParse::TokenVector nvertsVector = parseArray();
   std::vector<RtInt> nverts = nvertsVector.toRtIntVector();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("GeneralPolygon");
 
   RtInt nloops = (RtInt)nvertsVector.size();
 
@@ -1139,7 +1178,7 @@ RtVoid GMANRIBParse::parseGeneralPolygon(RtVoid) {
 
 RtVoid GMANRIBParse::parsePoints(RtVoid) {
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Points");
 
   // "P" is a POINT array, 3 floats per point; npoints is derived from its
   // element count. pendingParamValues records that count per value pointer
@@ -1173,7 +1212,7 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
   GMANRIBParse::TokenVector vertsVector = parseArray();
   std::vector<RtInt> verts = vertsVector.toRtIntVector();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("PointsPolygons");
 
   RtInt npolys = (RtInt)nvertsVector.size();
 
@@ -1210,7 +1249,7 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
   GMANRIBParse::TokenVector vertsVector = parseArray();
   std::vector<RtInt> verts = vertsVector.toRtIntVector();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("PointsGeneralPolygons");
 
   RtInt npolys = (RtInt)nloopsVector.size();
 
@@ -1248,7 +1287,7 @@ RtVoid GMANRIBParse::parsePatch(RtVoid) {
 
   const auto type = copyStringToken();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("Patch");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiPatchV(type.c_str(), n, tokens, parms, supplied...);
@@ -1270,7 +1309,7 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
   RtFloat vmin = nextFloat();
   RtFloat vmax = nextFloat();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("NuPatch");
 
   // The RI signature carries no knot-array length; a RIB file is not a
   // trusted caller, so a uknot/vknot whose actual length disagrees with
@@ -1305,7 +1344,7 @@ RtVoid GMANRIBParse::parsePatchMesh(RtVoid) {
   RtInt nv = nextInt();
   const auto vwrap = copyStringToken();
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("PatchMesh");
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
     target.RiPatchMeshV(type.c_str(), nu, uwrap.c_str(), nv, vwrap.c_str(), n, tokens, parms, supplied...);
@@ -1476,7 +1515,7 @@ RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
 
   const auto name = copyStringToken();
 
-  parseParameterList();
+  parseParameterList("Atmosphere");
 
   // FIXME: implement some atmosphere shaders
   //  renderMan.RiAtmosphereV(name.c_str(), n, tokens, parms);
@@ -1486,7 +1525,7 @@ RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
 
   const auto name = copyStringToken();
 
-  parseParameterList();
+  parseParameterList("Displacement");
 
   // FIXME: implement some displacement shaders
   //  renderMan.RiDisplacementV(name.c_str(), n, tokens, parms);
@@ -1496,7 +1535,7 @@ RtVoid GMANRIBParse::parseImager(RtVoid) {
 
   const auto name = copyStringToken();
 
-  parseParameterList();
+  parseParameterList("Imager");
 
   // FIXME: implement some imagers
   // renderMan.RiImagerV(name.c_str(), n, tokens, parms);
@@ -1523,7 +1562,7 @@ RtVoid GMANRIBParse::parseCurves(RtVoid) {
   GMANRIBParse::TokenVector ncurves = parseArray();
   (void)copyStringToken(); // wrap
 
-  parseParameterList();
+  parseParameterList("Curves");
 }
 
 RtVoid GMANRIBParse::parseBlobby(RtVoid) {
@@ -1533,7 +1572,7 @@ RtVoid GMANRIBParse::parseBlobby(RtVoid) {
   GMANRIBParse::TokenVector floats = parseArray();
   GMANRIBParse::TokenVector strs = parseArray();
 
-  parseParameterList();
+  parseParameterList("Blobby");
 }
 
 RtVoid GMANRIBParse::parseSubdivisionMesh(RtVoid) {
@@ -1546,7 +1585,7 @@ RtVoid GMANRIBParse::parseSubdivisionMesh(RtVoid) {
   GMANRIBParse::TokenVector intargs = parseArray();
   GMANRIBParse::TokenVector floatargs = parseArray();
 
-  parseParameterList();
+  parseParameterList("SubdivisionMesh");
 }
 
 RtVoid GMANRIBParse::parseProcedural(RtVoid) {
@@ -1637,7 +1676,7 @@ RtVoid GMANRIBParse::parseMakeTexture(RtVoid) {
     throw error;
   }
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("MakeTexture");
 
   // RiMakeTextureV's pic/tex parameters are char* rather than const
   // char* for historical reasons; it only reads through them.
@@ -1655,7 +1694,7 @@ RtVoid GMANRIBParse::parseMakeBump(RtVoid) {
   nextFloat();
   nextFloat();
 
-  parseParameterList();
+  parseParameterList("MakeBump");
 }
 
 RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
@@ -1673,7 +1712,7 @@ RtVoid GMANRIBParse::parseMakeLatLongEnvironment(RtVoid) {
     throw error;
   }
 
-  auto [n, tokens, parms, counts] = parseParameterList();
+  auto [n, tokens, parms, counts] = parseParameterList("MakeLatLongEnvironment");
 
   // RiMakeLatLongEnvironmentV's pic/tex parameters are char* rather than
   // const char* for historical reasons; it only reads through them.
@@ -1695,7 +1734,7 @@ RtVoid GMANRIBParse::parseMakeCubeFaceEnvironment(RtVoid) {
   nextFloat();
   nextFloat();
 
-  parseParameterList();
+  parseParameterList("MakeCubeFaceEnvironment");
 }
 
 RtVoid GMANRIBParse::parseMakeShadow(RtVoid) {
@@ -1703,7 +1742,7 @@ RtVoid GMANRIBParse::parseMakeShadow(RtVoid) {
   (void)copyStringToken(); // picture
   (void)copyStringToken(); // texture
 
-  parseParameterList();
+  parseParameterList("MakeShadow");
 }
 
 RtVoid GMANRIBParse::parseIfBegin(RtVoid) {
@@ -1793,7 +1832,7 @@ GMANRIBParse::TokenVector GMANRIBParse::parseArray(RtVoid) {
   return tokens;
 }
 
-GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList() {
+GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList(std::string const& request) {
   // The supplied element count travels with its value through the map:
   // paramMap emits in key order, not push order, so a counts array built
   // separately in push order would not line up with tokens/parms below.
@@ -1853,18 +1892,20 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList() {
     // key. An undeclared token -- getTokenId throws RIE_BADTOKEN -- falls
     // back to the float path; GMANParameterList already treats an unknown
     // token as "skip this parameter," so the request must not abort here.
-    bool isDeclaredInteger = false;
-    try {
-      const GMANTokenId tid = renderMan.getDictionary().getTokenId(keyStr);
-      isDeclaredInteger = renderMan.getDictionary().getType(tid) == GMANTokenEntry::INTEGER;
-    } catch (GMANError&) {
-    }
+    const std::optional<Declaration> declaration = declarationOf(renderMan.getDictionary(), keyStr);
+    const bool isDeclaredInteger = declaration && declaration->type == GMANTokenEntry::INTEGER;
+    LiteralKind literal = LiteralKind::number;
 
     const GMANToken& lookAhead = peekToken();
     if (lookAhead.getType() == GMANToken::LEFT_BRACKET) {
       GMANRIBParse::TokenVector tokenVector = parseArray();
       const bool isStringArray = !tokenVector.empty() && tokenVector[0].getType() == GMANToken::STRING;
       const unsigned int count = (unsigned int)tokenVector.size();
+      if (tokenVector.empty()) {
+        literal = LiteralKind::empty;
+      } else if (isStringArray) {
+        literal = LiteralKind::string;
+      }
       if (isStringArray) {
         RtPointer value = (RtPointer)tokenVector.toRtTokenArray();
         paramMap[key] = {value, count};
@@ -1894,12 +1935,22 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList() {
       // list has been collected -- so it is duplicated onto the heap and
       // registered with pendingParamValues the same way parseArray's string
       // arrays are, rather than kept as a std::string here.
+      literal = LiteralKind::string;
       const auto str = copyStringToken();
       char* dup = duplicateCString(str).release();
       RtToken* value = new RtToken[1];
       value[0] = dup;
       paramMap[key] = {(RtPointer)value, 1};
       pendingParamValues.push_back({(RtPointer)value, true, 1, {}, {}});
+    }
+
+    if (!declaration) {
+      continue;
+    }
+    const std::string reason = contradiction(*declaration, literal, paramMap.at(key).count);
+    if (!reason.empty()) {
+      error("{} \"{}\": {}; parameter ignored.", request, keyStr, reason);
+      paramMap.erase(key);
     }
   }
 

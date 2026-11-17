@@ -198,7 +198,12 @@ private:
     RtInt* counts;
   };
 
-  ParsedParameterList parseParameterList();
+  // Reads a request's parameter list and returns it without any parameter
+  // that contradicts its declaration: a string literal for a numeric type or
+  // a number for a string, or fewer values than one element of the type. Each
+  // rejected parameter logs one error naming the request; its storage is
+  // still released with the request's.
+  ParsedParameterList parseParameterList(std::string const& request);
 
   // the token-dispatch loop, run once for the top-level file and once more,
   // re-entrantly, for each nested ReadArchive
@@ -243,7 +248,8 @@ private:
   // parseLightSource and parseAreaLightSource both parse, differing only
   // in which RenderMan call the parsed shader name and parameter list
   // reach.
-  RtVoid parseLightRequest(RtLightHandle (GMANRenderMan::*call)(RtToken, RtInt, RtToken*, RtPointer*));
+  RtVoid parseLightRequest(std::string const& request,
+                           RtLightHandle (GMANRenderMan::*call)(RtToken, RtInt, RtToken*, RtPointer*));
   RtVoid parseLightSource(RtVoid);
   RtVoid parseAreaLightSource(RtVoid);
   RtVoid parseSurface(RtVoid);
