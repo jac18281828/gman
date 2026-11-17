@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -76,13 +77,7 @@ void testExactlyOnce() {
   for (RtInt count : counts) {
     for (RtInt workers : workerCounts) {
       RunRecord record = runRecording(count, workers);
-      bool allOnce = true;
-      for (int hits : record.indexHits) {
-        if (hits != 1) {
-          allOnce = false;
-          break;
-        }
-      }
+      const bool allOnce = std::ranges::all_of(record.indexHits, [](int hits) { return hits == 1; });
       check(allOnce, "count=" + std::to_string(count) + " workers=" + std::to_string(workers) +
                          ": every index ran exactly once");
     }
@@ -169,7 +164,7 @@ void testExceptionsStopTheCall() {
           if (index == 0) {
             throw GMANError(RIE_BUG, RIE_SEVERE, "parallel_test probe");
           }
-          std::this_thread::sleep_for(kPollInterval);
+          std::this_thread::sleep_for(std::chrono::milliseconds(1));
           ++completed;
         },
         workers);
@@ -212,17 +207,14 @@ void testSlowIndexHoldsNothingBack() {
       },
       workers);
 
-  bool allOnce = true;
-  for (auto const& h : hits) {
-    allOnce = allOnce && h.load() == 1;
-  }
+  const bool allOnce = std::ranges::all_of(hits, [](auto const& h) { return h.load() == 1; });
   check(waitEndedOnCompletion, "a blocked index 0 saw every other index finish before its deadline");
   check(allOnce, "with index 0 blocked, every index still ran exactly once");
 }
 
 // With as many indices as workers and every body waiting for all the
-// others to start, the call completes only if every worker really runs at
-// once, each on its own thread.
+// others to start, each body sees all four bodies start before the deadline
+// only when the four workers run at once, each on its own thread.
 void testEveryWorkerRunsAtOnce() {
   const RtInt workers = 4;
   const RtInt count = workers;
@@ -244,10 +236,7 @@ void testEveryWorkerRunsAtOnce() {
       },
       workers);
 
-  bool allSawEveryStart = true;
-  for (int saw : sawEveryStart) {
-    allSawEveryStart = allSawEveryStart && saw == 1;
-  }
+  const bool allSawEveryStart = std::ranges::all_of(sawEveryStart, [](int saw) { return saw == 1; });
   const std::set<RtInt> distinctWorkers(workerOfIndex.begin(), workerOfIndex.end());
   const std::set<std::thread::id> distinctThreads(threadOfIndex.begin(), threadOfIndex.end());
 

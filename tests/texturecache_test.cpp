@@ -34,6 +34,7 @@
  * never cross checks.
  */
 
+#include <atomic>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -256,13 +257,20 @@ void testOneCachePerWorker() {
   setScreenOutput(false);
 
   std::vector<int> workerHits(static_cast<std::size_t>(numWorkers), 0);
+  std::atomic<bool> workerOutOfRange{false};
   gman::parallelFor(
       count,
       [&](RtInt /*index*/, RtInt worker) {
+        if (worker < 0 || worker >= numWorkers) {
+          workerOutOfRange = true;
+          return;
+        }
         workerHits[static_cast<std::size_t>(worker)]++;
         gman::shade(appearance, point, cameraToWorld, nullptr, nullptr, &caches[static_cast<std::size_t>(worker)]);
       },
       requestedWorkers);
+
+  check(!workerOutOfRange.load(), "every worker id the body receives lies in [0, numWorkers)");
 
   int workersThatRan = 0;
   for (int hits : workerHits) {
