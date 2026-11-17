@@ -242,7 +242,7 @@ endif()
 # pointers stay null from construction, and RiEnd leaves null every one it
 # releases. See tests/rendermanpointers_test.cpp.
 add_executable(gman_rendermanpointers rendermanpointers_test.cpp)
-target_link_libraries(gman_rendermanpointers PRIVATE gman_core)
+target_link_libraries(gman_rendermanpointers PRIVATE gman_core gman_internal_headers)
 add_dependencies(gman_rendermanpointers gman_zbuffer)
 
 add_test(NAME rendermanpointers
@@ -739,7 +739,7 @@ set_tests_properties(paramoversupply PROPERTIES
 # default renderer by bare name, hence the same
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c).
 add_executable(gman_paramlistdeclaredtype paramlistdeclaredtype_test.cpp)
-target_link_libraries(gman_paramlistdeclaredtype PRIVATE gman_core)
+target_link_libraries(gman_paramlistdeclaredtype PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME paramlistdeclaredtype
   COMMAND gman_paramlistdeclaredtype $<TARGET_FILE:gman>
@@ -754,7 +754,7 @@ set_tests_properties(paramlistdeclaredtype PROPERTIES
 # in-process check drives GMANRIBParse directly, hence the same
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
 add_executable(gman_ribstringescape ribstringescape_test.cpp)
-target_link_libraries(gman_ribstringescape PRIVATE gman_core)
+target_link_libraries(gman_ribstringescape PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME ribstringescape
   COMMAND gman_ribstringescape $<TARGET_FILE:gman>
@@ -771,7 +771,7 @@ set_tests_properties(ribstringescape PROPERTIES
 # tests/ribstringescape_test.cpp use, hence the same
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
 add_executable(gman_pointscount pointscount_test.cpp)
-target_link_libraries(gman_pointscount PRIVATE gman_core)
+target_link_libraries(gman_pointscount PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME pointscount
   COMMAND gman_pointscount "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -788,7 +788,7 @@ set_tests_properties(pointscount PROPERTIES
 add_executable(gman_ribparsefallback ribparsefallback_test.cpp
   "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
 target_include_directories(gman_ribparsefallback PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
-target_link_libraries(gman_ribparsefallback PRIVATE gman_core)
+target_link_libraries(gman_ribparsefallback PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME ribparsefallback
   COMMAND gman_ribparsefallback "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -801,7 +801,7 @@ set_tests_properties(ribparsefallback PROPERTIES
 # stream byte. See tests/ribctypeunsigned_test.cpp; it drives getNext
 # directly on an istringstream, so it dlopens nothing.
 add_executable(gman_ribctypeunsigned ribctypeunsigned_test.cpp)
-target_link_libraries(gman_ribctypeunsigned PRIVATE gman_core)
+target_link_libraries(gman_ribctypeunsigned PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME ribctypeunsigned COMMAND gman_ribctypeunsigned)
 set_tests_properties(ribctypeunsigned PROPERTIES LABELS unit TIMEOUT 30)
@@ -1537,7 +1537,7 @@ set_tests_properties(albedoenv PROPERTIES
 # "render" "string indirect" included -- changes nothing. See
 # tests/radiosityoption_test.cpp.
 add_executable(gman_radiosityoption radiosityoption_test.cpp)
-target_link_libraries(gman_radiosityoption PRIVATE gman_core)
+target_link_libraries(gman_radiosityoption PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME radiosityoption COMMAND gman_radiosityoption)
 set_tests_properties(radiosityoption PROPERTIES
@@ -2963,7 +2963,7 @@ set_tests_properties(hitbsdf PROPERTIES
 # "render" "string indirect" and "radiosity" "float elementsize" included --
 # changes nothing. See tests/pathtraceroption_test.cpp.
 add_executable(gman_pathtraceroption pathtraceroption_test.cpp)
-target_link_libraries(gman_pathtraceroption PRIVATE gman_core)
+target_link_libraries(gman_pathtraceroption PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME pathtraceroption COMMAND gman_pathtraceroption)
 set_tests_properties(pathtraceroption PROPERTIES
@@ -2977,7 +2977,7 @@ set_tests_properties(pathtraceroption PROPERTIES
 # handlers read stay out, an unresolvable token drops silently, and a
 # frame's Options end with it. See tests/optionstore_test.cpp.
 add_executable(gman_optionstore optionstore_test.cpp)
-target_link_libraries(gman_optionstore PRIVATE gman_core)
+target_link_libraries(gman_optionstore PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME optionstore COMMAND gman_optionstore)
 set_tests_properties(optionstore PROPERTIES
@@ -3116,7 +3116,7 @@ endif()
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c. See
 # tests/arealightsource_test.cpp.
 add_executable(gman_arealightsource arealightsource_test.cpp)
-target_link_libraries(gman_arealightsource PRIVATE gman_core)
+target_link_libraries(gman_arealightsource PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME arealightsource
   COMMAND gman_arealightsource "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -3132,7 +3132,7 @@ set_tests_properties(arealightsource PROPERTIES
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/arealightsource_test.cpp. See
 # tests/polygonnverts_test.cpp.
 add_executable(gman_polygonnverts polygonnverts_test.cpp)
-target_link_libraries(gman_polygonnverts PRIVATE gman_core)
+target_link_libraries(gman_polygonnverts PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME polygonnverts COMMAND gman_polygonnverts)
 set_tests_properties(polygonnverts PROPERTIES

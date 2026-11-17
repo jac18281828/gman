@@ -17,7 +17,6 @@ gmanerror.h
 gmanface.h
 gmanframebuffer.h
 gmangamma.h
-gmangraphicstate.h
 gmanhpoint.h
 gmanimagershader.h
 gmanindirectpass.h
@@ -63,9 +62,6 @@ gmanraysphere.h
 gmanraytorus.h
 gmanrenderer.h
 gmanrenderman.h
-gmanrendermanimpl.h
-gmanribparse.h
-gmanribtokenize.h
 gmansamplebuffer.h
 gmansampling.h
 gmanshader.h

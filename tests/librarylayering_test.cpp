@@ -33,7 +33,9 @@
  * carry no directory component; kGeneratedHeaders names the headers the
  * build writes and no tracked file supplies. A header outside every
  * include/ directory is private to its library, and kPrivateHeaderExceptions
- * names the one include that crosses that line. tests/ is not scanned.
+ * names each (includer directory, header) pair that crosses that line; a pair
+ * no file exercises fails the test, so the table stays minimal. tests/ is not
+ * scanned.
  */
 
 #include <algorithm>
@@ -89,12 +91,14 @@ const std::vector<GeneratedHeader> kGeneratedHeaders = {
 };
 
 struct PrivateHeaderException {
-  std::string includer;
+  std::string includerDirectory;
   std::string header;
 };
 
 const std::vector<PrivateHeaderException> kPrivateHeaderExceptions = {
-    {"gman/gman.cpp", "libgman/gmanfiledrivers.h"},
+    {"gman", "libgman/gmanfiledrivers.h"},
+    {"gman", "libgman/gmanribparse.h"},
+    {"gman", "libgman/gmanrendermanimpl.h"},
 };
 
 const std::vector<std::string> kExportMacros = {"GMAN_EXPORT", "GMANRAY_EXPORT", "GMANRASTER_EXPORT"};
@@ -156,9 +160,12 @@ bool namesWord(std::string const& text, std::string const& word) {
   return false;
 }
 
-bool isException(std::string const& includer, std::string const& header) {
-  return std::any_of(kPrivateHeaderExceptions.begin(), kPrivateHeaderExceptions.end(),
-                     [&](PrivateHeaderException const& e) { return e.includer == includer && e.header == header; });
+std::ptrdiff_t exceptionIndex(std::string const& includer, std::string const& header) {
+  const std::string directory = fs::path(includer).parent_path().generic_string();
+  const auto found = std::find_if(
+      kPrivateHeaderExceptions.begin(), kPrivateHeaderExceptions.end(),
+      [&](PrivateHeaderException const& e) { return e.includerDirectory == directory && e.header == header; });
+  return found == kPrivateHeaderExceptions.end() ? -1 : found - kPrivateHeaderExceptions.begin();
 }
 
 struct ResolvedHeader {
@@ -218,6 +225,8 @@ int main(int argc, char** argv) {
     return {path, row == nullptr ? std::string() : row->library, isPrivateHeader(path)};
   };
 
+  std::vector<bool> exercised(kPrivateHeaderExceptions.size(), false);
+
   for (std::size_t i = 0; i < files.size(); ++i) {
     const std::string& relative = relatives[i];
     LibraryRow const* row = rowOf(relative);
@@ -243,9 +252,14 @@ int main(int argc, char** argv) {
                          row->library + " may not include");
         clean = false;
       }
-      if (header.isPrivate && header.library != row->library && !isException(relative, header.path)) {
-        check(false, relative + ": includes \"" + quoted + "\", a private header of " + header.library);
-        clean = false;
+      if (header.isPrivate && header.library != row->library) {
+        const std::ptrdiff_t exception = exceptionIndex(relative, header.path);
+        if (exception < 0) {
+          check(false, relative + ": includes \"" + quoted + "\", a private header of " + header.library);
+          clean = false;
+        } else {
+          exercised[static_cast<std::size_t>(exception)] = true;
+        }
       }
     }
 
@@ -259,6 +273,12 @@ int main(int argc, char** argv) {
     if (clean) {
       check(true, relative + ": includes and names only what " + row->library + " may");
     }
+  }
+
+  for (std::size_t i = 0; i < kPrivateHeaderExceptions.size(); ++i) {
+    PrivateHeaderException const& exception = kPrivateHeaderExceptions[i];
+    check(exercised[i], "private header exception (" + exception.includerDirectory + ", " + exception.header +
+                            ") is exercised by a file");
   }
 
   return checkSummary("every include points down a layer");
