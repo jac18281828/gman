@@ -4,7 +4,7 @@
 
 Begun in [1999](https://gman-toolkit.sourceforge.net), revived in [2026](https://2ad.com/gman.html).
 
-[![gman's ray-traced render of samples/vase.rib](samples/vase-raytraced.png)](https://2ad.com/gman.html)
+[![gman's path-traced render of samples/vase.rib](samples/vase.png)](https://2ad.com/gman.html)
 
 ## Install
 
@@ -54,13 +54,13 @@ From the unpacked folder:
 gman -r gmanraytracer samples/vase.rib
 ```
 
-That writes `vase.png` to the current directory, the picture at the top, in a few seconds. The floor
-tiles come from `samples/floor16.tif`, a 16-bit TIFF that gman reads at full depth.
+That writes `vase.png` to the current directory, a quick ray-traced preview of the picture at the
+top, in a few seconds. The floor tiles come from `samples/floor16.tif`, a 16-bit TIFF that gman
+reads at full depth.
 
-The scene sets its own render, so the picture reproduces exactly: `Format 1280 800`,
-`PixelSamples 2 2`, `PixelFilter "catmull-rom" 3 3` and `Quantize "rgba" 255 0 255 0`.
-Catmull-Rom keeps edges sharper than gman's default Gaussian filter, and the zero dither amplitude
-keeps the PNG small.
+The scene sets its own render: `Format 1280 800`, `PixelSamples 2 2`,
+`PixelFilter "catmull-rom" 3 3` and `Quantize "rgba" 255 0 255 0`. Catmull-Rom keeps edges sharper
+than gman's default Gaussian filter, and the zero dither amplitude keeps the PNG small.
 
 ## Path trace it
 
@@ -75,12 +75,11 @@ Option "pathtracer" "integer samples" [64]
 gman -r gmanpathtracer samples/vase.rib
 ```
 
-[![gman's path-traced render of samples/vase.rib](samples/vase-pathtraced.png)](https://2ad.com/gman.html)
-
-Sixty-four paths through each of the four subpixels follow the light as it bounces off the walls,
-floor and table. The render takes about three minutes on one core of an Apple M3 Max, where the ray
-tracer takes seconds. The path tracer computes the bounce light the scene's `ambientlight` stood in
-for, so it skips that light and says so:
+That overwrites `vase.png` with the picture at the top. Sixty-four paths through each of the four
+subpixels follow the light as it bounces off the walls, floor and table. The path tracer renders
+rows on every core, about two minutes on an Apple M3 Max, where the ray tracer takes seconds. It
+computes the bounce light the scene's `ambientlight` stood in for, so it skips that light and says
+so:
 
 ```
 gmanpathtracer: ambientlight lights nothing under the path tracer; skipped 1 light(s).
