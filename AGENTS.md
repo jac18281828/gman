@@ -53,8 +53,9 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   symbol, so tests reach internals; a build with tests off exports only what
   an export macro tags, and `release.yml` ships that build. A declaration
   production code uses outside its own library carries that library's export
-  macro: `GMAN_EXPORT` for core, `GMANRAY_EXPORT` for ray. A plugin's entry
-  points keep `GMAN_EXPORT`; a test's use needs none.
+  macro: `GMAN_EXPORT` for core, `GMANRAY_EXPORT` for ray, `GMANRASTER_EXPORT`
+  for raster. A plugin's entry points keep `GMAN_EXPORT`; a test's use needs
+  none.
 
 ## Placement
 - A file's directory names its library. A library includes and links only
