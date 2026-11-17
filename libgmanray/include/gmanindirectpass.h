@@ -49,7 +49,7 @@ namespace gman {
  */
 class GMANRAY_EXPORT IndirectPass {
 public:
-  // Defined out of line, in libgman/gmanindirectpass.cpp, so libgman_ray
+  // Defined out of line, in libgmanray/gmanindirectpass.cpp, so gman_ray
   // emits this class's vtable and typeinfo.
   virtual ~IndirectPass();
 
