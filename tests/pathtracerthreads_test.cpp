@@ -82,6 +82,10 @@ constexpr SceneSize kScalingSize{256, 192, 32};
 constexpr SceneSize kDropSize{16, 16, 16};
 constexpr SceneSize kTextureSize{16, 16, 2};
 
+constexpr RtFloat kSceneNear = 0.5f;
+constexpr RtFloat kSceneFar = 50.0f;
+constexpr RtFloat kFilterWidth = 1.0f;
+
 constexpr RtFloat kPixelSamples = 2.0f;
 constexpr RtInt kSerialWorkers = 1;
 constexpr RtInt kThreeWorkers = 3;
@@ -116,6 +120,15 @@ constexpr RtFloat kViewFov = 90.0f;
 constexpr RtFloat kViewNear = 1.0f;
 constexpr RtFloat kViewFar = 100.0f;
 constexpr RtFloat kRoundTripTolerance = 1.0e-3f;
+constexpr RtFloat kQueryX = 17.0f;
+constexpr RtFloat kQueryY = 41.0f;
+constexpr RtFloat kViewRotateAngle = 0.4f;
+constexpr RtFloat kViewRotateAxisX = 1.0f;
+constexpr RtFloat kViewRotateAxisY = 0.3f;
+constexpr RtFloat kViewRotateAxisZ = 0.0f;
+constexpr RtFloat kViewTranslateX = 2.0f;
+constexpr RtFloat kViewTranslateY = -1.5f;
+constexpr RtFloat kViewTranslateZ = 4.0f;
 
 std::string readFile(std::string const& path) {
   std::ifstream in(path, std::ios::binary);
@@ -151,7 +164,19 @@ GMANOptions pathtracerOptions(SceneSize const& size, GMANColor const& background
   options.setFormat(size.width, size.height, 1.0f);
   options.setPathtracerSamples(size.samples);
   options.setBackground(background);
+  options.setPixelFilter(RiBoxFilter, kFilterWidth, kFilterWidth);
   return options;
+}
+
+gman::VSPerspective sceneViewingSystem(SceneSize const& size, GMANMatrix4 const& worldToCamera) {
+  return gman::VSPerspective(size.width, size.height, squareScreenWindow(), worldToCamera, kViewFov, kSceneNear,
+                             kSceneFar);
+}
+
+void renderScene(GMANPathtraceRenderer& renderer, GMANFrameBuffer& frameBuffer, GMANViewingSystem& viewingSys,
+                 GMANOptions const& options) {
+  GMANAttributes const attributes;
+  renderer.render(&frameBuffer, &viewingSys, options, attributes);
 }
 
 // A floor lit by one point light, under an emitting sphere off to its side
@@ -172,11 +197,9 @@ struct SphereLitFloor {
       : pointLight(GMAN_LIGHT_POINT, GMANColor(kPointIntensity, kPointIntensity, kPointIntensity),
                    GMANPoint(kPointX, kPointY, kPointZ), GMANVector()),
         areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector()),
-        options(pathtracerOptions(size, kFloorBackground)),
-        viewingSys(size.width, size.height, squareScreenWindow(), identity, kViewFov, 0.5f, 50.0f),
+        options(pathtracerOptions(size, kFloorBackground)), viewingSys(sceneViewingSystem(size, identity)),
         frameBuffer(size.width, size.height, kFloorBackground) {
     options.setPixelSamples(kPixelSamples, kPixelSamples);
-    options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
 
     GMANRayPolygon* floor = buildFloor();
     gman::Appearance appearance;
@@ -191,10 +214,7 @@ struct SphereLitFloor {
     renderer.setWorkers(workers);
   }
 
-  void render() {
-    GMANAttributes const attributes;
-    renderer.render(&frameBuffer, &viewingSys, options, attributes);
-  }
+  void render() { renderScene(renderer, frameBuffer, viewingSys, options); }
 };
 
 bool colorsEqual(GMANColor const& a, GMANColor const& b) {
@@ -205,7 +225,7 @@ bool alphasEqual(GMANAlpha const& a, GMANAlpha const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
-std::size_t differingPixels(SphereLitFloor& a, SphereLitFloor& b, SceneSize const& size) {
+std::size_t differingPixels(SphereLitFloor const& a, SphereLitFloor const& b, SceneSize const& size) {
   std::size_t differing = 0;
   for (RtInt y = 0; y < size.height; ++y) {
     for (RtInt x = 0; x < size.width; ++x) {
@@ -220,7 +240,7 @@ std::size_t differingPixels(SphereLitFloor& a, SphereLitFloor& b, SceneSize cons
   return differing;
 }
 
-std::size_t pixelsWithGeometry(SphereLitFloor& scene, SceneSize const& size) {
+std::size_t pixelsWithGeometry(SphereLitFloor const& scene, SceneSize const& size) {
   std::size_t covered = 0;
   for (RtInt y = 0; y < size.height; ++y) {
     for (RtInt x = 0; x < size.width; ++x) {
@@ -295,11 +315,9 @@ struct DropScene {
   explicit DropScene(RtInt workers)
       : light(GMAN_LIGHT_POINT, GMANColor(kDropIntensity, kDropIntensity, kDropIntensity), GMANPoint(0.0f, 0.0f, 0.0f),
               GMANVector()),
-        options(pathtracerOptions(kDropSize, nanBackground())),
-        viewingSys(kDropSize.width, kDropSize.height, squareScreenWindow(), identity, kViewFov, 0.5f, 50.0f),
+        options(pathtracerOptions(kDropSize, nanBackground())), viewingSys(sceneViewingSystem(kDropSize, identity)),
         frameBuffer(kDropSize.width, kDropSize.height, nanBackground()) {
     options.setPixelSamples(1.0f, 1.0f);
-    options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
 
     auto const sphere =
         new GMANRaySphere(kDropSphereRadius, kDropSphereZMin, kDropSphereRadius, 360.0f, GMANParameterList());
@@ -318,12 +336,9 @@ struct DropScene {
     return GMANColor(nan, nan, nan);
   }
 
-  void render() {
-    GMANAttributes const attributes;
-    renderer.render(&frameBuffer, &viewingSys, options, attributes);
-  }
+  void render() { renderScene(renderer, frameBuffer, viewingSys, options); }
 
-  double alphaSum() {
+  double alphaSum() const {
     double sum = 0.0;
     for (RtInt y = 0; y < kDropSize.height; ++y) {
       for (RtInt x = 0; x < kDropSize.width; ++x) {
@@ -396,10 +411,9 @@ struct MissingTextureQuad {
 
   explicit MissingTextureQuad(RtInt workers)
       : options(pathtracerOptions(kTextureSize, GMANColor(0.0f, 0.0f, 0.0f))),
-        viewingSys(kTextureSize.width, kTextureSize.height, squareScreenWindow(), identity, kViewFov, 0.5f, 50.0f),
+        viewingSys(sceneViewingSystem(kTextureSize, identity)),
         frameBuffer(kTextureSize.width, kTextureSize.height, GMANColor(0.0f, 0.0f, 0.0f)) {
     options.setPixelSamples(1.0f, 1.0f);
-    options.setPixelFilter(RiBoxFilter, 1.0f, 1.0f);
 
     std::vector<GMANPoint> const verts = {GMANPoint(-kQuadHalfExtent, -kQuadHalfExtent, kQuadDepth),
                                           GMANPoint(-kQuadHalfExtent, kQuadHalfExtent, kQuadDepth),
@@ -411,10 +425,7 @@ struct MissingTextureQuad {
     renderer.setWorkers(workers);
   }
 
-  void render() {
-    GMANAttributes const attributes;
-    renderer.render(&frameBuffer, &viewingSys, options, attributes);
-  }
+  void render() { renderScene(renderer, frameBuffer, viewingSys, options); }
 };
 
 int missingTextureWarnings(RtInt workers, char const* logPath) {
@@ -441,8 +452,8 @@ void checkOneCachePerWorker() {
 
 GMANMatrix4 offAxisWorldToCamera() {
   GMANMatrix4 m;
-  m.rot(0.4f, 1.0f, 0.3f, 0.0f);
-  m.trans(2.0f, -1.5f, 4.0f);
+  m.rot(kViewRotateAngle, kViewRotateAxisX, kViewRotateAxisY, kViewRotateAxisZ);
+  m.trans(kViewTranslateX, kViewTranslateY, kViewTranslateZ);
   return m;
 }
 
@@ -477,7 +488,7 @@ void checkConstViewingSystem() {
   gman::VSPerspective constSide(kViewRes, kViewRes, squareScreenWindow(), worldToCamera, kViewFov, kViewNear, kViewFar);
   gman::VSPerspective mutableSide(kViewRes, kViewRes, squareScreenWindow(), worldToCamera, kViewFov, kViewNear,
                                   kViewFar);
-  checkCameraCallsThrough(constSide, mutableSide, 17.0f, 41.0f);
+  checkCameraCallsThrough(constSide, mutableSide, kQueryX, kQueryY);
 }
 
 int runChecks() {
