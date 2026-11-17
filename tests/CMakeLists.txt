@@ -2930,6 +2930,20 @@ set_tests_properties(pathtraceroption PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The option store: RiOptionV keeps every Option parameter the typed
+# handlers do not read, readable by Option name and parameter identifier.
+# Each storage type round-trips, a later value replaces and another
+# parameter accumulates, values are owned, the three pairs the typed
+# handlers read stay out, an unresolvable token drops silently, and a
+# frame's Options end with it. See tests/optionstore_test.cpp.
+add_executable(gman_optionstore optionstore_test.cpp)
+target_link_libraries(gman_optionstore PRIVATE gman_core)
+
+add_test(NAME optionstore COMMAND gman_optionstore)
+set_tests_properties(optionstore PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # The sphere furnace: a point light at the centre of a closed diffuse
 # sphere converges to rho * I / (R^2 * (1 - rho)), and the estimate's
 # standard deviation falls as more paths average per slot. Linked against

@@ -27,8 +27,11 @@
 
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
+#include <variant>
+#include <vector>
 
 #include <math.h>
 
@@ -139,6 +142,11 @@ public:
     RtFloat par;
   };
 
+  // The value of one Option parameter: floats for float, point, vector,
+  // normal, color, matrix and hpoint tokens, ints for integer tokens, strings
+  // for string tokens. The vector holds the token's declared length.
+  using NamedOptionValue = std::variant<std::vector<RtFloat>, std::vector<RtInt>, std::vector<std::string>>;
+
 private:
   /******* CAMERA OPTIONS *******/
   FormatStruct format;
@@ -189,6 +197,8 @@ private:
   // offset. The default 2x2 PixelSamples grid then traces 16 paths a
   // pixel.
   RtInt pathtracerSamples = 4;
+
+  std::map<std::string, std::map<std::string, NamedOptionValue>> namedOptions;
 
   /* default static data */
   static OutputDefaults outputDefaults;
@@ -286,6 +296,22 @@ public:
   // ["<n>"]; 4 until such an Option sets it.
   RtVoid setPathtracerSamples(RtInt samples);
   RtInt getPathtracerSamples(RtVoid) const { return pathtracerSamples; };
+
+  // Stores one Option parameter under the Option's name and the parameter's
+  // identifier: the token without class, type or quantity, so "integer
+  // finalgather" and "float finalgather" share the key "finalgather". The
+  // value is owned. A later call for the same option and parameter replaces
+  // the earlier value; a different parameter under the same option
+  // accumulates beside it. RiOptionV feeds this with every pair except the
+  // ones the typed accessors above read: "indirect" under "render",
+  // "elementsize" under "radiosity" and "samples" under "pathtracer".
+  RtVoid setNamedOption(std::string const& option, std::string const& parameter, NamedOptionValue value);
+
+  // The value stored for the option and parameter, or null when either is
+  // absent. The pointer stays valid until the next setNamedOption for the
+  // same option and parameter or the destruction of this GMANOptions. The
+  // parameters the typed accessors above read never appear here.
+  NamedOptionValue const* getNamedOption(std::string const& option, std::string const& parameter) const;
 
   const OutputDefaults& getOutputDefaults(RtVoid) const;
 };

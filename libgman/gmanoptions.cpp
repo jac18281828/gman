@@ -282,4 +282,21 @@ RtVoid GMANOptions::setRadiosityElementSize(RtFloat size) { radiosityElementSize
 
 RtVoid GMANOptions::setPathtracerSamples(RtInt samples) { pathtracerSamples = samples; }
 
+RtVoid GMANOptions::setNamedOption(std::string const& option, std::string const& parameter, NamedOptionValue value) {
+  namedOptions[option].insert_or_assign(parameter, std::move(value));
+}
+
+GMANOptions::NamedOptionValue const* GMANOptions::getNamedOption(std::string const& option,
+                                                                 std::string const& parameter) const {
+  const auto byOption = namedOptions.find(option);
+  if (byOption == namedOptions.end()) {
+    return nullptr;
+  }
+  const auto byParameter = byOption->second.find(parameter);
+  if (byParameter == byOption->second.end()) {
+    return nullptr;
+  }
+  return &byParameter->second;
+}
+
 const GMANOptions::OutputDefaults& GMANOptions::getOutputDefaults(RtVoid) const { return outputDefaults; }

@@ -37,6 +37,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "gmanfiledrivers.h"
 #include "gmaninlineparse.h"
@@ -138,6 +139,68 @@ void handlePathtracerOption(GMANDictionary& dictionary, RtInt n, RtToken tokens[
     return;
   }
   options.setPathtracerSamples(value[0]);
+}
+
+// True for the three pairs the typed handlers above read: "indirect" under
+// "render", "elementsize" under "radiosity" and "samples" under "pathtracer",
+// whatever type the token declares.
+bool isTypedOption(std::string const& option, std::string const& identifier) {
+  return (option == "render" && identifier == "indirect") || (option == "radiosity" && identifier == "elementsize") ||
+         (option == "pathtracer" && identifier == "samples");
+}
+
+// The token's name without class, type or quantity.
+std::string optionParameterIdentifier(std::string const& token) {
+  gman::InlineParse parse;
+  parse.parse(token);
+  return parse.isInline() ? parse.getIdentifier() : token;
+}
+
+// Copies the declared number of elements out of the caller's array into a
+// value of the declared storage type.
+GMANOptions::NamedOptionValue copyOptionValue(GMANDictionary& dictionary, GMANTokenId id, RtPointer parm) {
+  const auto count = static_cast<std::size_t>(dictionary.allocSize(id, 1, 1, 1, 1));
+  switch (dictionary.getType(id)) {
+  case GMANTokenEntry::STRING: {
+    auto const* const source = static_cast<char const* const*>(parm);
+    std::vector<std::string> strings;
+    strings.reserve(count);
+    for (std::size_t i = 0; i < count; ++i) {
+      strings.emplace_back(source[i] != nullptr ? source[i] : "");
+    }
+    return strings;
+  }
+  case GMANTokenEntry::INTEGER: {
+    auto const* const source = static_cast<RtInt const*>(parm);
+    return std::vector<RtInt>(source, source + count);
+  }
+  default: {
+    auto const* const source = static_cast<RtFloat const*>(parm);
+    return std::vector<RtFloat>(source, source + count);
+  }
+  }
+}
+
+// Stores every (token, parm) pair under the Option name except the pairs the
+// typed handlers read. A pair whose token the dictionary cannot resolve, or
+// whose value is null, is dropped without a report.
+void storeNamedOptions(GMANDictionary& dictionary, std::string const& option, RtInt n, RtToken tokens[],
+                       RtPointer parms[], GMANOptions& options) {
+  for (RtInt i = 0; i < n; ++i) {
+    if (parms[i] == nullptr) {
+      continue;
+    }
+    try {
+      std::string const identifier = optionParameterIdentifier(tokens[i]);
+      if (isTypedOption(option, identifier)) {
+        continue;
+      }
+      const auto id = dictionary.getTokenId(tokens[i]);
+      options.setNamedOption(option, identifier, copyOptionValue(dictionary, id, parms[i]));
+    } catch (GMANError&) {
+      continue;
+    }
+  }
 }
 
 } // namespace
@@ -518,10 +581,13 @@ RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
   allowed(cmdRelativeDetail);
   getOptions().setRelativeDetail(relativedetail);
 }
-// Handles Option "render" "string indirect" ["<name>"], Option "radiosity"
-// "float elementsize" ["<size>"] and Option "pathtracer" "integer samples"
-// ["<n>"] alone: any other name, or one of these three not carrying its
-// exact token, is ignored. No allowed(cmdOption) call: that mask is all
+// Option "render" "string indirect" ["<name>"], Option "radiosity" "float
+// elementsize" ["<size>"] and Option "pathtracer" "integer samples" ["<n>"]
+// set their typed options, each only when it carries its exact token. Every
+// other pair under any name, those three names included, is copied into the
+// options' named store, keyed by Option name and parameter identifier, and
+// read back through GMANOptions::getNamedOption. A token the dictionary cannot
+// resolve is dropped silently. No allowed(cmdOption) call: that mask is all
 // zero, so it would reject every Option the corpus already relies on.
 RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
   std::string const optionName(name);
@@ -532,6 +598,7 @@ RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtP
   } else if (optionName == "pathtracer") {
     handlePathtracerOption(dictionary, n, tokens, parms, getOptions());
   }
+  storeNamedOptions(dictionary, optionName, n, tokens, parms, getOptions());
 }
 
 // ******************************************************************
