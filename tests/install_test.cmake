@@ -5,6 +5,9 @@
 # cmake -P; gman_run_or_fail's FATAL_ERROR stops the script at the first
 # failing step, so the steps run strictly in order.
 
+# cmake -P sets no policies; this one makes if(IN_LIST) available on CMake 3.
+cmake_minimum_required(VERSION 3.21)
+
 foreach(var
     GMAN_BUILD_DIR
     GMAN_SOURCE_DIR
