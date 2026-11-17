@@ -45,7 +45,7 @@ GMANPoint VSOrthographic::project(GMANPoint const& p) {
   a.setY(y);
   return a;
 }
-GMANRay VSOrthographic::cameraRay(RtFloat x, RtFloat y) {
+GMANRay VSOrthographic::cameraRay(RtFloat x, RtFloat y) const {
   rasterToScreen(x, y);
 
   // Every ray points down the view axis; the screen point sets the

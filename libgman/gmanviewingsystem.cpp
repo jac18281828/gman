@@ -25,16 +25,16 @@
 
 #include "gmanviewingsystem.h"
 
-RtVoid GMANViewingSystem::screenToRaster(RtFloat& x, RtFloat& y) {
+RtVoid GMANViewingSystem::screenToRaster(RtFloat& x, RtFloat& y) const {
   x = xres * (x - sw.left) / (sw.right - sw.left);
   y = yres - yres * (y - sw.bottom) / (sw.top - sw.bottom);
 }
-RtVoid GMANViewingSystem::rasterToScreen(RtFloat& x, RtFloat& y) {
+RtVoid GMANViewingSystem::rasterToScreen(RtFloat& x, RtFloat& y) const {
   x = sw.left + (sw.right - sw.left) * x / xres;
   y = sw.bottom + (sw.top - sw.bottom) * (yres - y) / yres;
 }
 
-GMANRay GMANViewingSystem::ray(RtFloat x, RtFloat y) {
+GMANRay GMANViewingSystem::ray(RtFloat x, RtFloat y) const {
   GMANRay cam = cameraRay(x, y);
   GMANPoint const origin = cam.getOrigin();
   GMANPoint const through = cam.pointAt(1.0);

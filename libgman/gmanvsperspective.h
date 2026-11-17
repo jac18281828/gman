@@ -39,7 +39,7 @@ public:
   ~VSPerspective() {}
 
   GMANPoint project(GMANPoint const& p);
-  GMANRay cameraRay(RtFloat x, RtFloat y);
+  GMANRay cameraRay(RtFloat x, RtFloat y) const;
 
   bool visible(const GMANFace* face);
 

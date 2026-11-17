@@ -64,8 +64,8 @@ public:
   const GMANOptions::ScreenWindowStruct& getScreenWindow(RtVoid) const { return sw; }
 
   /* LJL February 2001 + project & ray */
-  RtVoid screenToRaster(RtFloat& x, RtFloat& y);
-  RtVoid rasterToScreen(RtFloat& x, RtFloat& y);
+  RtVoid screenToRaster(RtFloat& x, RtFloat& y) const;
+  RtVoid rasterToScreen(RtFloat& x, RtFloat& y) const;
 
   /* Project a point on screen (raster space coords) */
   virtual GMANPoint project(GMANPoint const& p) = 0;
@@ -74,13 +74,13 @@ public:
    * through it -- origin and direction as gman::VSPerspective and
    * gman::VSOrthographic each build them, before any transform.
    */
-  virtual GMANRay cameraRay(RtFloat x, RtFloat y) = 0;
+  virtual GMANRay cameraRay(RtFloat x, RtFloat y) const = 0;
 
   /* Given an x y coordinate in raster space, return the world-space ray
    * through it: cameraRay carried into world space through
    * getCameraToWorld().
    */
-  GMANRay ray(RtFloat x, RtFloat y);
+  GMANRay ray(RtFloat x, RtFloat y) const;
 
   /* return true if the face is visible from the
    * current perspective.

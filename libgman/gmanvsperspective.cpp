@@ -46,7 +46,7 @@ GMANPoint VSPerspective::project(GMANPoint const& p) {
   a.setY(y);
   return a;
 }
-GMANRay VSPerspective::cameraRay(RtFloat x, RtFloat y) {
+GMANRay VSPerspective::cameraRay(RtFloat x, RtFloat y) const {
   rasterToScreen(x, y);
 
   // project() divides camera-space x/y by z and then by tan(fov/2)
