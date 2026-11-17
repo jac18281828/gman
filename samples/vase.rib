@@ -123,7 +123,9 @@ AttributeBegin
 		Opacity [0.7 0.7 0.7]
 		Translate 0 0 0.26
 		Rotate -40 0 1 0
-		Disk 0 0.215 360
+		Disk 0 0.2 360
+		Opacity [0.45 0.45 0.45]
+		Sphere 0.2 -0.2 0 360
 	AttributeEnd
 AttributeEnd
 
