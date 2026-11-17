@@ -51,9 +51,28 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - libtiff: only `libgman/gmantiff.cpp` includes `<tiffio.h>` (`tests/` exempt).
 - Symbol visibility follows `BUILD_TESTING`. A test build exports every
   symbol, so tests reach internals; a build with tests off exports only what
-  `GMAN_EXPORT` tags, and `release.yml` ships that build. A declaration
-  production code uses outside its own library carries `GMAN_EXPORT`; a
-  test's use does not.
+  an export macro tags, and `release.yml` ships that build. A declaration
+  production code uses outside its own library carries that library's export
+  macro: `GMAN_EXPORT` for core, `GMANRAY_EXPORT` for ray. A plugin's entry
+  points keep `GMAN_EXPORT`; a test's use needs none.
+
+## Placement
+- A file's directory names its library. A library includes and links only
+  libraries below it; `tests/librarylayering_test.cpp` and the linker enforce
+  it, so placement is no matter of opinion.
+- Code lives with its only user. On a second user it moves to the lowest
+  library every user already links, and no lower: a second user is no reason
+  to load code into a process that never runs it.
+- Core holds contracts and RI state. An algorithm only some renderers run
+  belongs above it: every process loads core, and every plugin's ABI depends
+  on it.
+- An interface names only types from its own library or below. Where a lower
+  layer needs an answer from above it, the lower layer declares the interface
+  and the upper layer implements it, as `gman::Occluder`, `gman::Tracer` and
+  `GMANObjectManager` do.
+- A new library needs two linkers, one export macro and one public include
+  directory: each library is an ABI to keep and, under the LGPL, a surface an
+  outside renderer may link.
 
 ## Dependencies and Includes
 - Prefer the standard library. Qualify `std::`; no `using` of `std` names.
