@@ -23,7 +23,8 @@ foreach(var
     GMAN_EXE_LINKER_FLAGS
     GMAN_HAS_RAYTRACER
     GMAN_HAS_PATHTRACER
-    GMAN_HAS_RADIOSITY)
+    GMAN_HAS_RADIOSITY
+    GMAN_INSTALLED_HEADERS_MANIFEST)
   if(NOT DEFINED ${var})
     message(FATAL_ERROR "install_test.cmake: ${var} is required")
   endif()
@@ -53,6 +54,31 @@ endfunction()
 file(REMOVE_RECURSE "${GMAN_PREFIX}")
 gman_run_or_fail("step 1 (install): cmake --install"
   COMMAND "${CMAKE_COMMAND}" --install "${GMAN_BUILD_DIR}" --prefix "${GMAN_PREFIX}")
+
+# The headers directly under include/gman are exactly the ones the manifest
+# lists. A header that appears or disappears is a change to the installed
+# interface, so the difference fails the step, each name carrying its sign:
+# "+" installed and not listed, "-" listed and not installed.
+file(GLOB GMAN_INSTALLED_HEADER_PATHS LIST_DIRECTORIES false
+  RELATIVE "${GMAN_PREFIX}/include/gman"
+  "${GMAN_PREFIX}/include/gman/*")
+file(STRINGS "${GMAN_INSTALLED_HEADERS_MANIFEST}" GMAN_LISTED_HEADERS REGEX ".")
+
+set(GMAN_HEADER_DIFFERENCES "")
+foreach(header IN LISTS GMAN_INSTALLED_HEADER_PATHS)
+  if(NOT header IN_LIST GMAN_LISTED_HEADERS)
+    string(APPEND GMAN_HEADER_DIFFERENCES "\n  +${header} is installed and not listed")
+  endif()
+endforeach()
+foreach(header IN LISTS GMAN_LISTED_HEADERS)
+  if(NOT header IN_LIST GMAN_INSTALLED_HEADER_PATHS)
+    string(APPEND GMAN_HEADER_DIFFERENCES "\n  -${header} is listed and not installed")
+  endif()
+endforeach()
+if(GMAN_HEADER_DIFFERENCES)
+  message(FATAL_ERROR
+    "step 1 (install): include/gman differs from ${GMAN_INSTALLED_HEADERS_MANIFEST}:${GMAN_HEADER_DIFFERENCES}")
+endif()
 
 # --- Step 2: render every shipped shader from the installed bin/gman -------
 #

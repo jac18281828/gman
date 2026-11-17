@@ -3421,11 +3421,13 @@ set_tests_properties(shaderbsdf PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Proves both halves of an installed gman. bin/gman renders every
-# shipped shader (matte, plastic, metal, paintedplastic, shinymetal) from a
-# fresh cmake --install prefix, then the ray tracer, the path tracer and the
-# ray tracer's radiosity pass, each from the plugin that loads it by bare
-# name. An unrelated CMake project then finds the prefix with
+# Proves both halves of an installed gman. The headers the install writes
+# directly under include/gman are exactly the ones tests/installed_headers.txt
+# lists, so a header that appears or disappears fails the test by name.
+# bin/gman renders every shipped shader (matte, plastic, metal, paintedplastic,
+# shinymetal) from a fresh cmake --install prefix, then the ray tracer, the
+# path tracer and the ray tracer's radiosity pass, each from the plugin that
+# loads it by bare name. An unrelated CMake project then finds the prefix with
 # find_package(gman) and builds three programs: one links gman::gman_core
 # alone and compiles <gman/ri.h>, one links gman::gman_ray alone and calls
 # into libgman_ray, and one links gman::gman_raster alone and calls into
@@ -3457,6 +3459,7 @@ add_test(NAME install
           -D "GMAN_HAS_RAYTRACER=${GMAN_BUILD_RAYTRACER}"
           -D "GMAN_HAS_PATHTRACER=${GMAN_BUILD_PATHTRACER}"
           -D "GMAN_HAS_RADIOSITY=${GMAN_BUILD_RADIOSITY}"
+          -D "GMAN_INSTALLED_HEADERS_MANIFEST=${CMAKE_CURRENT_SOURCE_DIR}/installed_headers.txt"
           -P "${CMAKE_CURRENT_SOURCE_DIR}/install_test.cmake")
 set_tests_properties(install PROPERTIES
   LABELS render
