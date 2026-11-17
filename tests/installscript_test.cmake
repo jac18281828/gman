@@ -92,7 +92,7 @@ gman_expect_exit("step 1 (stage): cmake --install" 0
           --prefix "${GMAN_STAGE}")
 file(COPY "${GMAN_SOURCE_DIR}/packaging/install.sh"
   DESTINATION "${GMAN_STAGE}")
-file(COPY "${GMAN_SOURCE_DIR}/samples/vase.rib"
+file(COPY "${GMAN_SOURCE_DIR}/samples/vase.rib" "${GMAN_SOURCE_DIR}/samples/floor16.tif"
   DESTINATION "${GMAN_STAGE}/samples")
 
 # --- Step 2: install beside an unrelated file, render, read the manifest -----
@@ -113,6 +113,9 @@ set(GMAN_RENDER_ARGS "")
 if(GMAN_HAS_RAYTRACER)
   set(GMAN_RENDER_ARGS -r gmanraytracer)
 endif()
+# vase.rib names its texture relative to the working directory.
+file(COPY "${GMAN_STAGE}/samples/floor16.tif"
+  DESTINATION "${GMAN_RENDER_DIR}/samples")
 gman_expect_exit("step 2 (render): vase.rib" 0
   COMMAND "${GMAN_PREFIX}/bin/gman" ${GMAN_RENDER_ARGS}
           "${GMAN_STAGE}/samples/vase.rib"
