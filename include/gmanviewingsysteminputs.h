@@ -34,11 +34,11 @@
 
 namespace gman {
 
-// The inputs GMANRenderManImpl::RiWorldBegin resolves before building its
+// The inputs the renderer resolves from a GMANOptions before building a
 // viewing system: the projection name, fov, screen window, clipping and
-// raster resolution. A second caller building its own viewing system from
-// the same GMANOptions gets the same inputs, and so projects exactly as
-// RiWorldBegin's own viewing system does.
+// raster resolution. A caller building its own viewing system from the same
+// GMANOptions gets the same inputs, and so projects exactly as the
+// renderer's own viewing system does.
 struct ViewingSystemInputs {
   std::string projectionName;
   RtFloat fov;

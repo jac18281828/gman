@@ -54,10 +54,10 @@ GMAN_EXPORT bool isDegeneratePolygon(std::vector<GMANPoint> const& ring);
 GMAN_EXPORT GMANDictionary& standardDictionary();
 
 // The ring's largest bounding-box side, in whichever of x, y or z spans it
-// widest. isDegeneratePolygon and gmanpatchpolyobjectmanager.cpp's own
-// coincidence tolerances judge a ring's area or an edge length against
-// this extent rather than against an absolute constant, so a sliver a
-// million times longer than it is wide reads the same way at any scale.
+// widest. A coincidence tolerance that judges a ring's area or an edge
+// length against this extent, rather than against an absolute constant,
+// reads a sliver a million times longer than it is wide the same way at any
+// scale.
 GMAN_EXPORT RtFloat boundingBoxExtent(std::vector<GMANPoint> const& ring);
 
 // pl's token array for token, cast to RtFloat*: NULL when pl carries no
