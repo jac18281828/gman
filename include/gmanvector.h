@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <cmath>
+
 #include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmantypes.h"
@@ -49,8 +51,17 @@ protected:
   RtVector vec;
 
 public:
-  GMANVector();
-  GMANVector(RtFloat x, RtFloat y, RtFloat z);
+  GMANVector() {
+    for (RtInt i = 0; i < NCOORDS; i++) {
+      vec[i] = 0.0;
+    }
+  }
+
+  GMANVector(RtFloat x, RtFloat y, RtFloat z) {
+    setX(x);
+    setY(y);
+    setZ(z);
+  }
 
   GMANVector(const RtFloat* pts) {
     for (int i = 0; i < NCOORDS; i++) {
@@ -58,12 +69,17 @@ public:
     }
   }
 
-  GMANVector(const GMANPoint& p);
+  GMANVector(const GMANPoint& p) { *this = p; }
 
   /* construct a vector from two points V = b - a */
-  GMANVector(const GMANPoint& a, const GMANPoint& b);
+  GMANVector(const GMANPoint& a, const GMANPoint& b) {
+    setX(b.getX() - a.getX());
+    setY(b.getY() - a.getY());
+    setZ(b.getZ() - a.getZ());
+  }
+
   // dtor
-  ~GMANVector();
+  ~GMANVector() {}
 
   /* The user-declared destructor above deprecates the implicit copy
    * constructor (C++11 [depr.impldec]); gcc rejects it under
@@ -91,12 +107,38 @@ public:
     return res;
   }
 
-  GMANVector& operator=(const GMANPoint& p);
+  GMANVector& operator=(const GMANPoint& p) {
+    setX(p.getX());
+    setY(p.getY());
+    setZ(p.getZ());
 
-  RtFloat magnitude(RtVoid);
-  GMANVector& normalize(RtVoid);
-  RtFloat dot(const GMANVector& v) const;
-  GMANVector cross(const GMANVector& v) const;
+    return *this;
+  }
+
+  RtFloat magnitude(RtVoid) { return std::sqrt(vec[X] * vec[X] + vec[Y] * vec[Y] + vec[Z] * vec[Z]); }
+
+  GMANVector& normalize(RtVoid) {
+    RtFloat mag = magnitude();
+    if (mag < RI_EPSILON) {
+      return *this;
+    }
+    *this /= mag;
+    return *this;
+  }
+
+  RtFloat dot(const GMANVector& v) const {
+    RtFloat rc = 0.0;
+    for (RtInt i = 0; i < NCOORDS; i++) {
+      rc += vec[i] * v.vec[i];
+    }
+    return rc;
+  }
+
+  GMANVector cross(const GMANVector& v) const {
+    GMANVector result(vec[Y] * v.vec[Z] - vec[Z] * v.vec[Y], vec[Z] * v.vec[X] - vec[X] * v.vec[Z],
+                      vec[X] * v.vec[Y] - vec[Y] * v.vec[X]);
+    return result;
+  }
 
   /* operators */
   GMANVector operator+(GMANVector const& v) const {
@@ -120,7 +162,13 @@ public:
   }
 
   // assign a GMANVector
-  GMANVector& operator=(const GMANVector& v);
+  GMANVector& operator=(const GMANVector& v) {
+    setX(v.getX());
+    setY(v.getY());
+    setZ(v.getZ());
+
+    return *this;
+  }
 
   GMANVector& operator+=(GMANVector const& v) {
     vec[X] += v.vec[X];
