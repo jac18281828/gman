@@ -90,6 +90,22 @@ void checkStringAndTypeCheck() {
   check(pl.floats("mapname").empty(), "floats of a string parameter is empty");
 }
 
+void checkFirstMatchOfType() {
+  GMANDictionary dictionary;
+
+  char const* label[1] = {"wood.tx"};
+  RtFloat x = 2.5f;
+  RtToken tokens[2] = {"string x", "float x"};
+  RtPointer parms[2] = {label, &x};
+  GMANParameterList const pl(dictionary, 2, tokens, parms);
+
+  auto const floats = pl.floats("x");
+  check(floats.size() == 1 && floats[0] == 2.5f,
+        "a float lookup skips an earlier entry of the same name and another type");
+  auto const strings = pl.strings("x");
+  check(strings.size() == 1 && strings[0] == "wood.tx", "a string lookup finds its entry beside one of another type");
+}
+
 void checkStandardToken() {
   GMANDictionary dictionary;
 
@@ -143,6 +159,7 @@ int main() {
   checkDeclaredAndInlineFloats();
   checkColor();
   checkStringAndTypeCheck();
+  checkFirstMatchOfType();
   checkStandardToken();
   checkAbsentName();
   checkIntegerArray();

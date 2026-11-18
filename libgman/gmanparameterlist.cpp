@@ -94,8 +94,8 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
 
 // Absence of a token is the routine case: every caller asks "did the user
 // pass this optional parameter," not "is this parameter list well-formed."
-// Every call site in the tree (RiWorldBegin's fov lookup, and the shader/
-// light "tryGet" wrappers) already treats a missing token as NULL and either
+// Every call site in the tree (RiWorldBegin's fov lookup, and the light
+// "tryGetPointer" wrapper) already treats a missing token as NULL and either
 // falls back to a spec default or wraps this call in try/catch to force
 // that meaning by hand. Returning NULL directly makes that the only meaning
 // there is to get.
