@@ -47,55 +47,59 @@ GMANPoint boxCentroid(GMANBBox const& box) {
                    centroidAxis(lo.getZ(), hi.getZ()));
 }
 
-// The ray's own ray-box slab test, clamped to [tMinLimit, tMaxLimit]:
-// entry/exit narrow to the box's own intersection with that interval, and
-// the box overlaps it exactly when entry <= exit on return. A direction
-// component of exactly 0 -- +0.0 and -0.0 alike -- skips the division
-// (1.0/-0.0 is -infinity, which would fold an origin exactly on that
-// axis's near face into the wrong sign and reject a ray intersect()
-// would accept) and instead tests the ray's fixed coordinate on that
-// axis against [lo, hi] directly: outside it, the box is missed
-// regardless of the other axes; inside it (the on-a-face-plane case
-// included), the axis imposes no constraint, the same conservative
-// outcome the settled NaN-counts-as-overlap rule names, reached here
-// without ever producing a NaN.
-bool slabIntersect(GMANBBox const& box, GMANRay const& ray, RtFloat tMinLimit, RtFloat tMaxLimit, RtFloat& entryOut,
-                   RtFloat& exitOut) {
-  GMANPoint const lo = box.getMin();
-  GMANPoint const hi = box.getMax();
-  GMANPoint const& origin = ray.getOrigin();
-  GMANVector const& direction = ray.getDirection();
+} // namespace
 
-  RtFloat const originArr[3] = {origin.getX(), origin.getY(), origin.getZ()};
-  RtFloat const dirArr[3] = {direction.getX(), direction.getY(), direction.getZ()};
-  RtFloat const loArr[3] = {lo.getX(), lo.getY(), lo.getZ()};
-  RtFloat const hiArr[3] = {hi.getX(), hi.getY(), hi.getZ()};
+void GMANRayBVH::Node::setBounds(GMANBBox const& bounds) {
+  bbox = bounds;
+  GMANPoint const min = bounds.getMin();
+  GMANPoint const max = bounds.getMax();
+  lo = {min.getX(), min.getY(), min.getZ()};
+  hi = {max.getX(), max.getY(), max.getZ()};
+}
 
-  RtFloat entry = tMinLimit;
-  RtFloat exit = tMaxLimit;
-  for (int axis = 0; axis < 3; ++axis) {
-    if (dirArr[axis] == (RtFloat)0.0) {
-      if (originArr[axis] < loArr[axis] || originArr[axis] > hiArr[axis]) {
+GMANRayBVH::PreparedRay::PreparedRay(GMANRay const& ray)
+    : origin{ray.getOrigin().getX(), ray.getOrigin().getY(), ray.getOrigin().getZ()}, inverseDirection{},
+      parallel{ray.getDirection().getX() == (RtFloat)0.0, ray.getDirection().getY() == (RtFloat)0.0,
+               ray.getDirection().getZ() == (RtFloat)0.0},
+      tMin(ray.getTMin()), tMax(ray.getTMax()) {
+  RtFloat const direction[3] = {ray.getDirection().getX(), ray.getDirection().getY(), ray.getDirection().getZ()};
+  for (std::size_t axis = 0; axis < 3; ++axis) {
+    if (!parallel[axis]) {
+      inverseDirection[axis] = (RtFloat)1.0 / direction[axis];
+    }
+  }
+}
+
+bool GMANRayBVH::PreparedRay::overlaps(Node const& node, RtFloat limit, RtFloat& entryOut) const {
+  RtFloat entry = tMin;
+  RtFloat exit = limit;
+  for (std::size_t axis = 0; axis < 3; ++axis) {
+    if (parallel[axis]) {
+      if (origin[axis] < node.lo[axis] || origin[axis] > node.hi[axis]) {
         entryOut = entry;
-        exitOut = exit;
         return false;
       }
       continue;
     }
-    RtFloat const invD = (RtFloat)1.0 / dirArr[axis];
-    RtFloat t0 = (loArr[axis] - originArr[axis]) * invD;
-    RtFloat t1 = (hiArr[axis] - originArr[axis]) * invD;
+    RtFloat t0 = (node.lo[axis] - origin[axis]) * inverseDirection[axis];
+    RtFloat t1 = (node.hi[axis] - origin[axis]) * inverseDirection[axis];
     if (t0 > t1)
       std::swap(t0, t1);
     entry = GMANMax(entry, t0);
     exit = GMANMin(exit, t1);
   }
   entryOut = entry;
-  exitOut = exit;
   return entry <= exit;
 }
 
-} // namespace
+RtFloat GMANRayBVH::Search::limit(PreparedRay const& ray) const { return found ? GMANMin(ray.tMax, hit.t) : ray.tMax; }
+
+bool GMANRayBVH::Search::entersBox(PreparedRay const& ray, Node const& node, RtFloat& entry) const {
+  if (boxTests) {
+    ++*boxTests;
+  }
+  return ray.overlaps(node, limit(ray), entry);
+}
 
 void GMANRayBVH::build(GMANWorldManager& worldManager) {
   primitives.clear();
@@ -172,7 +176,7 @@ int GMANRayBVH::splitAxis(std::size_t start, std::size_t count) const {
 
 int GMANRayBVH::buildRange(std::size_t start, std::size_t count) {
   Node node;
-  node.bbox = rangeBounds(start, count);
+  node.setBounds(rangeBounds(start, count));
 
   if (count <= kLeafSize) {
     node.leaf = true;
@@ -225,65 +229,71 @@ void GMANRayBVH::testLeaf(Node const& node, GMANRay const& ray, Search& search) 
   }
 }
 
-void GMANRayBVH::pushChildren(Node const& node, GMANRay const& ray, Search const& search,
-                              std::array<int, kMaxStackCapacity>& stack, std::size_t& stackSize) const {
-  Node const& leftNode = nodes[(std::size_t)node.left];
-  Node const& rightNode = nodes[(std::size_t)node.right];
-  RtFloat const limit = search.found ? GMANMin(ray.getTMax(), search.hit.t) : ray.getTMax();
-  RtFloat leftEntry = 0.0, leftExit = 0.0, rightEntry = 0.0, rightExit = 0.0;
-  bool const leftHit = slabIntersect(leftNode.bbox, ray, ray.getTMin(), limit, leftEntry, leftExit);
-  bool const rightHit = slabIntersect(rightNode.bbox, ray, ray.getTMin(), limit, rightEntry, rightExit);
+void GMANRayBVH::pushChildren(Node const& node, PreparedRay const& ray, Search const& search,
+                              std::array<StackEntry, kMaxStackCapacity>& stack, std::size_t& stackSize) const {
+  RtFloat leftEntry = 0.0, rightEntry = 0.0;
+  bool const leftHit = search.entersBox(ray, nodes[(std::size_t)node.left], leftEntry);
+  bool const rightHit = search.entersBox(ray, nodes[(std::size_t)node.right], rightEntry);
 
   // The nearer child -- by actual box-entry distance, not tree
   // structure -- goes on top of the (LIFO) stack, so it pops, and so is
   // visited, first.
   if (leftHit && rightHit) {
     if (leftEntry <= rightEntry) {
-      stack[stackSize++] = node.right;
-      stack[stackSize++] = node.left;
+      stack[stackSize++] = {node.right, rightEntry};
+      stack[stackSize++] = {node.left, leftEntry};
     } else {
-      stack[stackSize++] = node.left;
-      stack[stackSize++] = node.right;
+      stack[stackSize++] = {node.left, leftEntry};
+      stack[stackSize++] = {node.right, rightEntry};
     }
   } else if (leftHit) {
-    stack[stackSize++] = node.left;
+    stack[stackSize++] = {node.left, leftEntry};
   } else if (rightHit) {
-    stack[stackSize++] = node.right;
+    stack[stackSize++] = {node.right, rightEntry};
   }
 }
 
 bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
                             std::size_t* primitiveTests) const {
+  return nearestHit(ray, hit, hitPrimitive, primitiveTests, nullptr);
+}
+
+bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
+                            std::size_t* primitiveTests, std::size_t* boxTests) const {
   if (rootIndex < 0) {
     return false;
   }
 
+  PreparedRay const prepared(ray);
   Search search;
   search.primitiveTests = primitiveTests;
+  search.boxTests = boxTests;
+
+  RtFloat rootEntry = 0.0;
+  if (!search.entersBox(prepared, nodes[(std::size_t)rootIndex], rootEntry)) {
+    return false;
+  }
 
   // A local, fixed-capacity stack: nearestHit's whole traversal state
   // lives here, so two calls against the same tree never interfere --
   // re-entrant, with no shared mutable state of its own, and no heap
   // allocation. kMaxStackCapacity's own comment proves no tree build()
   // makes ever needs more room than this holds.
-  std::array<int, kMaxStackCapacity> stack;
+  std::array<StackEntry, kMaxStackCapacity> stack;
   std::size_t stackSize = 0;
-  stack[stackSize++] = rootIndex;
+  stack[stackSize++] = {rootIndex, rootEntry};
 
   while (stackSize > 0) {
-    int const nodeIndex = stack[--stackSize];
-    Node const& node = nodes[(std::size_t)nodeIndex];
-
-    RtFloat const limit = search.found ? GMANMin(ray.getTMax(), search.hit.t) : ray.getTMax();
-    RtFloat entry = 0.0, exit = 0.0;
-    if (!slabIntersect(node.bbox, ray, ray.getTMin(), limit, entry, exit)) {
+    StackEntry const pending = stack[--stackSize];
+    if (pending.entry > search.limit(prepared)) {
       continue;
     }
 
+    Node const& node = nodes[(std::size_t)pending.node];
     if (node.leaf) {
       testLeaf(node, ray, search);
     } else {
-      pushChildren(node, ray, search, stack, stackSize);
+      pushChildren(node, prepared, search, stack, stackSize);
     }
   }
 

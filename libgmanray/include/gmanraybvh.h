@@ -71,6 +71,12 @@ public:
   bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
                   std::size_t* primitiveTests = nullptr) const;
 
+  // The same search, also incrementing boxTests, when non-null, once per
+  // node-box test the traversal makes, the root's included. Each node's
+  // box is tested once per ray, when its parent is expanded.
+  bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive, std::size_t* primitiveTests,
+                  std::size_t* boxTests) const;
+
 private:
   // One primitive, its own camera-space bbox and centroid cached at
   // build() time, and the order it was added in.
@@ -84,14 +90,49 @@ private:
   // A leaf (leaf true) holds [primStart, primStart + primCount) of
   // primitives, tested directly against intersect() with no further box
   // test; an internal node (leaf false) holds two child indices into
-  // nodes. bbox is always the union of what the node holds.
+  // nodes. bbox is always the union of what the node holds; lo and hi are
+  // its corners as the axis arrays the box test reads.
   struct Node {
     GMANBBox bbox;
+    std::array<RtFloat, 3> lo = {};
+    std::array<RtFloat, 3> hi = {};
     bool leaf = false;
     int left = -1;
     int right = -1;
     std::size_t primStart = 0;
     std::size_t primCount = 0;
+
+    void setBounds(GMANBBox const& bounds);
+  };
+
+  // A ray's origin and per-axis reciprocal direction, taken once per
+  // nearestHit call. An axis whose direction component is exactly 0 --
+  // +0.0 and -0.0 alike -- is parallel and has no reciprocal.
+  struct PreparedRay {
+    std::array<RtFloat, 3> origin;
+    std::array<RtFloat, 3> inverseDirection;
+    std::array<bool, 3> parallel;
+    RtFloat tMin;
+    RtFloat tMax;
+
+    explicit PreparedRay(GMANRay const& ray);
+
+    // The ray's slab test against node's box, clamped to [tMin, limit]:
+    // entry narrows to the box's own intersection with that interval, and
+    // the box overlaps it exactly when entry <= exit. A parallel axis skips
+    // the division (1.0/-0.0 is -infinity, which would fold an origin
+    // exactly on that axis's near face into the wrong sign) and instead
+    // tests the origin's fixed coordinate against [lo, hi] directly: outside
+    // it, the box is missed regardless of the other axes; inside it, the
+    // axis imposes no constraint.
+    bool overlaps(Node const& node, RtFloat limit, RtFloat& entry) const;
+  };
+
+  // A node awaiting expansion and the distance at which the ray enters its
+  // box.
+  struct StackEntry {
+    int node = -1;
+    RtFloat entry = 0.0;
   };
 
   // nearestHit's own running state, threaded through testLeaf and
@@ -103,6 +144,14 @@ private:
     GMANRayInterface const* hitPrimitive = nullptr;
     std::size_t bestInsertionIndex = 0;
     std::size_t* primitiveTests = nullptr;
+    std::size_t* boxTests = nullptr;
+
+    // The farthest t still worth visiting: the ray's tMax, or the best hit
+    // so far when that is nearer.
+    RtFloat limit(PreparedRay const& ray) const;
+
+    // Counts and runs one box test against node, clamped to limit(ray).
+    bool entersBox(PreparedRay const& ray, Node const& node, RtFloat& entry) const;
   };
 
   // Every leaf holds at most this many primitives -- pinned, not left to
@@ -146,11 +195,11 @@ private:
 
   // Tests node's two children against ray (clamped to search's own best
   // hit so far) and pushes whichever overlap onto stack (stack[0,
-  // stackSize) already held, stackSize entries), farther-entry child
-  // first so the nearer one -- by actual box-entry distance, not tree
-  // structure -- pops, and so is visited, first. Writes past stackSize
-  // with no bounds check: kMaxStackCapacity's own comment proves a write
-  // here never reaches the array's end.
-  void pushChildren(Node const& node, GMANRay const& ray, Search const& search,
-                    std::array<int, kMaxStackCapacity>& stack, std::size_t& stackSize) const;
+  // stackSize) already held, stackSize entries) with their box-entry
+  // distances, farther-entry child first so the nearer one -- by actual
+  // box-entry distance, not tree structure -- pops, and so is visited,
+  // first. Writes past stackSize with no bounds check: kMaxStackCapacity's
+  // own comment proves a write here never reaches the array's end.
+  void pushChildren(Node const& node, PreparedRay const& ray, Search const& search,
+                    std::array<StackEntry, kMaxStackCapacity>& stack, std::size_t& stackSize) const;
 };
