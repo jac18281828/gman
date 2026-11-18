@@ -40,8 +40,13 @@
  * holds, so nearestHit finds the nearest ray-primitive hit by pruning
  * subtrees a ray's own interval clears, rather than testing every
  * primitive in turn. build() discards any tree a prior call built and
- * walks worldManager once, an object-median split over each primitive's
- * own bbox; nearestHit then traverses the tree it built, touching only
+ * walks worldManager once, splitting each range of primitives by binned
+ * surface-area heuristic over their own bboxes: 16 bins over the range's
+ * centroid extent on each axis, the cheapest split by box area times
+ * primitive count winning, the lower axis then the lower bin on a tie. A
+ * range with no centroid extent, or no split of finite cost, splits at the
+ * object median instead, and no tree grows deeper than the traversal stack
+ * holds. nearestHit then traverses the tree it built, touching only
  * that tree and a local stack -- const, re-entrant, no shared mutable
  * state of its own, the same contract GMANRayInterface::intersect and
  * GMANRayOccluder::transmission keep, which is what lets a caller invoke
@@ -75,6 +80,10 @@ public:
   // node-box test the traversal makes, the root's included.
   bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive, std::size_t* primitiveTests,
                   std::size_t* boxTests) const;
+
+  // The depth of the deepest leaf, the root at 0; an empty tree reports 0.
+  // Always below the bit width of std::size_t.
+  std::size_t treeDepth() const { return deepestLeaf; }
 
 private:
   // One primitive, its own camera-space bbox and centroid cached at
@@ -148,33 +157,51 @@ private:
   // is exact rather than approximate.
   static constexpr std::size_t kLeafSize = 4;
 
+  // No leaf lies deeper than this: buildRange lets a split take a child
+  // only when the child holds few enough primitives for a median split to
+  // finish within the levels left (see childCapacity), so a depth-d node
+  // never holds more than kLeafSize << (kMaxTreeDepth - d) primitives, and
+  // the root, with at most what a std::size_t holds, fits.
+  static constexpr std::size_t kMaxTreeDepth = std::numeric_limits<std::size_t>::digits - 1;
+
   // nearestHit's own local traversal stack never holds more entries than
-  // this. buildRange only recurses past a node whose own primitive count
-  // exceeds kLeafSize, so a node at depth d splits only if it holds at
-  // least 2 primitives -- which needs N > 2^d, where N is the primitive
-  // count build() started with. N is at most what a std::size_t holds,
-  // so N < 2^digits(std::size_t), and therefore d < digits: no node
-  // build() makes is ever more than digits levels deep. The traversal
-  // holds at most one pending sibling per level above the deepest node
-  // reached, plus the two children just pushed there, so the stack
-  // itself peaks at digits + 1 entries -- this capacity.
+  // this. A node at depth d is popped with at most one pending sibling
+  // per level above it, d in all, and pushes two children, so the stack
+  // peaks at d + 2 entries. An internal node lies above a leaf, so d is
+  // at most kMaxTreeDepth - 1 = digits - 2, and the stack never needs more
+  // than digits entries; the capacity of digits + 1 leaves one to spare.
   static constexpr std::size_t kMaxStackCapacity = std::numeric_limits<std::size_t>::digits + 1;
 
   std::vector<Entry> primitives;
   std::vector<Node> nodes;
   int rootIndex = -1;
+  std::size_t deepestLeaf = 0;
 
   // Builds the subtree over primitives[start, start + count), reordering
-  // that range in place (nth_element's own partition) around an
-  // object-median split on the axis of greatest centroid extent, and
-  // returns its node's index in nodes.
-  int buildRange(std::size_t start, std::size_t count);
+  // that range in place around the split splitBySurfaceArea or, failing
+  // that, splitAtMedian picks, and returns its node's index in nodes. depth
+  // is the subtree root's depth below the tree's root.
+  int buildRange(std::size_t start, std::size_t count, std::size_t depth);
+
+  // The most primitives a child of a node at depth may hold and still
+  // finish, split at medians, within kMaxTreeDepth levels.
+  static std::size_t childCapacity(std::size_t depth);
+
+  // Partitions primitives[start, start + count) around the cheapest binned
+  // surface-area split whose children both fit childCapacity(depth), and
+  // writes the first index of the upper half to mid. Returns false, leaving
+  // mid alone, when no axis has centroid extent or no split has finite cost.
+  bool splitBySurfaceArea(std::size_t start, std::size_t count, std::size_t depth, std::size_t& mid);
+
+  // Partitions primitives[start, start + count) at the object median along
+  // splitAxis and returns the first index of the upper half.
+  std::size_t splitAtMedian(std::size_t start, std::size_t count);
 
   // The union of primitives[start, start + count)'s own boxes.
   GMANBBox rangeBounds(std::size_t start, std::size_t count) const;
 
   // The axis along which primitives[start, start + count)'s own
-  // centroids have the greatest extent -- buildRange's split axis.
+  // centroids have the greatest extent -- splitAtMedian's split axis.
   int splitAxis(std::size_t start, std::size_t count) const;
 
   // Tests every primitive node (a leaf) holds against ray, updating

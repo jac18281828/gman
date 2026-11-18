@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "gmanmath.h"
 #include "gmanraybbox.h"
@@ -30,6 +31,8 @@
 #include "gmanraypolygonmesh.h"
 
 namespace {
+
+constexpr std::size_t kBinCount = 16;
 
 // A camera-space axis coordinate too close to +/-RI_INFINITY (the
 // default box's own bound) to average safely is not expected -- every
@@ -47,7 +50,84 @@ GMANPoint boxCentroid(GMANBBox const& box) {
                    centroidAxis(lo.getZ(), hi.getZ()));
 }
 
+RtFloat axisValue(GMANPoint const& p, int axis) { return axis == 0 ? p.getX() : axis == 1 ? p.getY() : p.getZ(); }
+
+RtFloat surfaceArea(GMANBBox const& box) {
+  GMANPoint const lo = box.getMin();
+  GMANPoint const hi = box.getMax();
+  RtFloat const dx = hi.getX() - lo.getX();
+  RtFloat const dy = hi.getY() - lo.getY();
+  RtFloat const dz = hi.getZ() - lo.getZ();
+  return (RtFloat)2.0 * (dx * dy + dy * dz + dz * dx);
+}
+
+GMANBBox unionOf(GMANBBox const& a, GMANBBox const& b) {
+  return GMANBBox(gman::pointMin(a.getMin(), b.getMin()), gman::pointMax(a.getMax(), b.getMax()));
+}
+
+std::size_t binOf(RtFloat centroid, RtFloat low, RtFloat extent) {
+  RtFloat const scaled = (centroid - low) / extent * (RtFloat)kBinCount;
+  return (std::size_t)GMANMin(GMANMax(scaled, (RtFloat)0.0), (RtFloat)(kBinCount - 1));
+}
+
+struct Bin {
+  std::size_t count = 0;
+  GMANBBox bounds;
+
+  void merge(std::size_t otherCount, GMANBBox const& otherBounds) {
+    if (otherCount == 0) {
+      return;
+    }
+    bounds = count == 0 ? otherBounds : unionOf(bounds, otherBounds);
+    count += otherCount;
+  }
+
+  RtFloat weightedArea() const { return count == 0 ? (RtFloat)0.0 : surfaceArea(bounds) * (RtFloat)count; }
+};
+
+struct BinSplit {
+  bool valid = false;
+  std::size_t bin = 0;
+  RtFloat cost = 0.0;
+};
+
+BinSplit cheapestBinSplit(std::array<Bin, kBinCount> const& bins, std::size_t childCapacity) {
+  std::array<std::size_t, kBinCount> rightCount = {};
+  std::array<RtFloat, kBinCount> rightCost = {};
+  Bin right;
+  for (std::size_t bin = kBinCount - 1; bin > 0; --bin) {
+    right.merge(bins[bin].count, bins[bin].bounds);
+    rightCount[bin - 1] = right.count;
+    rightCost[bin - 1] = right.weightedArea();
+  }
+
+  BinSplit best;
+  Bin left;
+  for (std::size_t bin = 0; bin + 1 < kBinCount; ++bin) {
+    left.merge(bins[bin].count, bins[bin].bounds);
+    if (left.count == 0 || rightCount[bin] == 0 || left.count > childCapacity || rightCount[bin] > childCapacity) {
+      continue;
+    }
+    RtFloat const cost = left.weightedArea() + rightCost[bin];
+    if (!std::isfinite(cost)) {
+      continue;
+    }
+    if (!best.valid || cost < best.cost) {
+      best = {true, bin, cost};
+    }
+  }
+  return best;
+}
+
 } // namespace
+
+std::size_t GMANRayBVH::childCapacity(std::size_t depth) {
+  std::size_t const levelsBelowChild = kMaxTreeDepth - depth - 1;
+  if (levelsBelowChild + 2 >= std::numeric_limits<std::size_t>::digits) {
+    return std::numeric_limits<std::size_t>::max();
+  }
+  return kLeafSize << levelsBelowChild;
+}
 
 void GMANRayBVH::Node::setBounds(GMANBBox const& bounds) {
   bbox = bounds;
@@ -105,6 +185,7 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
   primitives.clear();
   nodes.clear();
   rootIndex = -1;
+  deepestLeaf = 0;
 
   std::size_t index = 0;
   // Builds one Entry from a ray primitive and appends it, keeping the
@@ -143,7 +224,7 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
   if (primitives.empty()) {
     return;
   }
-  rootIndex = buildRange(0, primitives.size());
+  rootIndex = buildRange(0, primitives.size(), 0);
 }
 
 GMANBBox GMANRayBVH::rangeBounds(std::size_t start, std::size_t count) const {
@@ -174,7 +255,58 @@ int GMANRayBVH::splitAxis(std::size_t start, std::size_t count) const {
   return axis;
 }
 
-int GMANRayBVH::buildRange(std::size_t start, std::size_t count) {
+std::size_t GMANRayBVH::splitAtMedian(std::size_t start, std::size_t count) {
+  int const axis = splitAxis(start, count);
+  std::size_t const mid = start + count / 2;
+  std::nth_element(
+      primitives.begin() + (long)start, primitives.begin() + (long)mid, primitives.begin() + (long)(start + count),
+      [axis](Entry const& a, Entry const& b) { return axisValue(a.centroid, axis) < axisValue(b.centroid, axis); });
+  return mid;
+}
+
+bool GMANRayBVH::splitBySurfaceArea(std::size_t start, std::size_t count, std::size_t depth, std::size_t& mid) {
+  GMANPoint centroidMin = primitives[start].centroid;
+  GMANPoint centroidMax = centroidMin;
+  for (std::size_t i = start + 1; i < start + count; ++i) {
+    centroidMin = gman::pointMin(centroidMin, primitives[i].centroid);
+    centroidMax = gman::pointMax(centroidMax, primitives[i].centroid);
+  }
+
+  std::size_t const capacity = childCapacity(depth);
+  BinSplit best;
+  int bestAxis = 0;
+  RtFloat bestLow = 0.0;
+  RtFloat bestExtent = 0.0;
+  for (int axis = 0; axis < 3; ++axis) {
+    RtFloat const low = axisValue(centroidMin, axis);
+    RtFloat const extent = axisValue(centroidMax, axis) - low;
+    if (!(extent > (RtFloat)0.0) || !std::isfinite(extent)) {
+      continue;
+    }
+    std::array<Bin, kBinCount> bins;
+    for (std::size_t i = start; i < start + count; ++i) {
+      bins[binOf(axisValue(primitives[i].centroid, axis), low, extent)].merge(1, primitives[i].bbox);
+    }
+    BinSplit const candidate = cheapestBinSplit(bins, capacity);
+    if (candidate.valid && (!best.valid || candidate.cost < best.cost)) {
+      best = candidate;
+      bestAxis = axis;
+      bestLow = low;
+      bestExtent = extent;
+    }
+  }
+  if (!best.valid) {
+    return false;
+  }
+
+  auto const middle = std::partition(
+      primitives.begin() + (long)start, primitives.begin() + (long)(start + count),
+      [&](Entry const& entry) { return binOf(axisValue(entry.centroid, bestAxis), bestLow, bestExtent) <= best.bin; });
+  mid = (std::size_t)(middle - primitives.begin());
+  return true;
+}
+
+int GMANRayBVH::buildRange(std::size_t start, std::size_t count, std::size_t depth) {
   Node node;
   node.setBounds(rangeBounds(start, count));
 
@@ -182,24 +314,18 @@ int GMANRayBVH::buildRange(std::size_t start, std::size_t count) {
     node.leaf = true;
     node.primStart = start;
     node.primCount = count;
+    deepestLeaf = std::max(deepestLeaf, depth);
     nodes.push_back(node);
     return (int)nodes.size() - 1;
   }
 
-  // The split axis is the one along which this range's own centroids have
-  // the greatest extent -- not the box's spatial midpoint, the object
-  // median along that axis (std::nth_element's own partition).
-  int const axis = splitAxis(start, count);
-  auto centroidOnAxis = [axis](GMANPoint const& p) { return axis == 0 ? p.getX() : axis == 1 ? p.getY() : p.getZ(); };
+  std::size_t mid = 0;
+  if (!splitBySurfaceArea(start, count, depth, mid)) {
+    mid = splitAtMedian(start, count);
+  }
 
-  std::size_t const mid = start + count / 2;
-  std::nth_element(primitives.begin() + (long)start, primitives.begin() + (long)mid,
-                   primitives.begin() + (long)(start + count), [&centroidOnAxis](Entry const& a, Entry const& b) {
-                     return centroidOnAxis(a.centroid) < centroidOnAxis(b.centroid);
-                   });
-
-  int const left = buildRange(start, mid - start);
-  int const right = buildRange(mid, start + count - mid);
+  int const left = buildRange(start, mid - start, depth + 1);
+  int const right = buildRange(mid, start + count - mid, depth + 1);
 
   node.leaf = false;
   node.left = left;

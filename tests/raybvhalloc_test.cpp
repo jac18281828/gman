@@ -29,27 +29,27 @@
  * so the counting checks skip (and print so) under it; the nearestHit and
  * transmission calls themselves still run either way.
  *
- * The fixture: 20 spheres at x = 0, 10, ..., 190 (alternating y = +2/-2,
+ * The fixture: 20 spheres at x = 0, 10, ..., 190 (alternating y = +1.2/-1.2,
  * radius 1), plus 3 more overlapping spheres isolated at x = -1000 (used
- * for the hit and transmission checks below). nth_element's own median
- * split always sends the smaller half of a range's own split-axis values
- * left and the larger half right; every node along this path splits on
- * x, so the smaller-x half goes left there. A node's right child is
- * always sized ceil(count / 2) -- at least as large, hence at least as
- * tall, as its left. A ray travelling in -x visits the larger-x (right)
- * child of every node first, its own box's near face being closer that
- * way, so taking the nearer child at every level reaches one of the
- * tree's eight depth-3 leaves. Over these 23 spheres that path runs
- * root(23) -> right(12) -> right(6) -> a 3-primitive leaf, three levels
- * below the root, so the traversal's own stack peaks at 4 entries: the
- * pending siblings left at depths 1 and 2, plus the two children just
- * pushed at the deepest internal node. testPeakStack's own probe ray starts
- * past every one of the 20 spheres' own x and travels toward -x
- * across their whole span at y = 0, z = 0: every node's box along that
- * path still includes y = 0 (the alternation), but no individual sphere
- * does (each one offset past its own radius), so the ray reaches that
- * full depth without ever finding a hit that would shrink its own
- * remaining interval.
+ * for the hit and transmission checks below). The surface-area build
+ * parts the three isolated spheres from the row, then halves the row on x
+ * at every level, the alternation's y offset being too small to make a y
+ * split the cheaper one: 20 -> 10 + 10 -> 5 + 5 -> 3 + 2, so the tree is
+ * four levels deep (kStatedTreeDepth). A ray travelling in -x visits the
+ * larger-x child of every node first, its own box's near face being closer
+ * that way, so taking the nearer child at every level reaches a leaf at the
+ * tree's full depth. testPeakStack's own probe ray starts past every one
+ * of the 20 spheres' own x and travels toward -x across their whole span
+ * at y = 0, z = 0, with tmax short of the isolated spheres. Every node's
+ * box along that path still includes y = 0 (the alternation), but no
+ * individual sphere does (each one offset past its own radius), so the ray
+ * tests every node of the row's subtree without ever finding a hit that
+ * would shrink its own remaining interval: 17 box tests, the root, its
+ * two children and the two children of each of the row's seven internal
+ * nodes (kStatedProbeBoxTests). At the deepest internal node, depth 3, the
+ * traversal's own stack holds the pending siblings left at depths 2 and 3,
+ * plus the two leaves just pushed there: a peak of 4 entries
+ * (kStatedPeakStack).
  */
 
 #include <cstdio>
@@ -85,7 +85,7 @@ namespace {
 
 constexpr std::size_t kStackSphereCount = 20;
 constexpr RtFloat kStackSpacing = 10.0f;
-constexpr RtFloat kStackOffset = 2.0f;
+constexpr RtFloat kStackOffset = 1.2f;
 constexpr RtFloat kStackRadius = 1.0f;
 
 constexpr std::size_t kOverlapSphereCount = 3;
@@ -94,9 +94,11 @@ constexpr RtFloat kOverlapSpacing = 3.0f;
 constexpr RtFloat kOverlapRadius = 2.0f;
 constexpr RtFloat kOverlapZStart = 10.0f;
 
-// The stated peak: see this file's own leading comment for how the fixture
-// forces it.
+// The stated peak and the tree shape it follows from: see this file's own
+// leading comment.
 constexpr std::size_t kStatedPeakStack = 4;
+constexpr std::size_t kStatedTreeDepth = 4;
+constexpr std::size_t kStatedProbeBoxTests = 17;
 
 // Calls per counted region, in each of the batch checks below.
 constexpr int kBatchCount = 3;
@@ -169,8 +171,13 @@ void testPeakStack(GMANRayBVH const& bvh) {
   GMANRay const ray = peakStackRay();
   GMANHit hit;
   GMANRayInterface const* prim = nullptr;
-  bool const found = bvh.nearestHit(ray, hit, prim);
+  std::size_t primitiveTests = 0;
+  std::size_t boxTests = 0;
+  bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests, &boxTests);
   check(!found, "peak stack: the probe ray clears every x-spread sphere, as its own construction requires");
+  check(bvh.treeDepth() == kStatedTreeDepth,
+        "peak stack: the fixture's tree is as deep as its stated peak follows from");
+  check(boxTests == kStatedProbeBoxTests, "peak stack: the probe ray tests every node of the row's subtree");
   std::printf("peak stack: fixture states k=%zu (see this file's own leading comment for how it is forced)\n",
               kStatedPeakStack);
 }

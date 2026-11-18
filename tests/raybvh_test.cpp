@@ -41,6 +41,19 @@
  * tmax ends short of every primitive, and the leaf size or less again for
  * a perpendicular ray -- the case a poor split axis actually exposes.
  *
+ * Check 4: on a fixture the object-median split serves badly (wall-sized
+ * polygons around a cluster of small polygons packed in one corner),
+ * the surface-area build keeps the total boxTests of a fixed ray set
+ * under a bound (testSurfaceAreaFewerBoxTests), and every hit still
+ * matches the linear scan. The bound sits between this build's total
+ * and the object-median build's.
+ *
+ * Check 5: a fixture of 120 nested plates, on alternating sides, makes
+ * an unbounded surface-area build peel one plate per level to a depth
+ * past the traversal stack; treeDepth() must stay below the width of
+ * std::size_t (testDepthFitsTheStack), with every ray along the axis
+ * still matching the linear scan.
+ *
  * testSignedZeroFacePlane probes GMANRayBVH::nearestHit's own box test
  * with a direction component of +0.0 and of -0.0, origin on each face in
  * turn: a leaf's own primitive must still be tested regardless of the
@@ -49,7 +62,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdio>
+#include <initializer_list>
+#include <limits>
 #include <random>
 #include <string>
 #include <vector>
@@ -71,8 +87,6 @@
 namespace {
 
 constexpr RtFloat kTolerance = 1e-3f;
-
-constexpr std::size_t kLeafSize = 4;
 
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
 
@@ -304,10 +318,10 @@ void testCheck1() {
 // sets the running best to 24.005, B's own box clamps its exit to
 // exactly that limit; "exit >= hit.t" then reads as true and would skip
 // B's leaf outright, even though B's entry is still in range and its
-// surface is the true nearest. Six spheres spread along z put A and B in
-// separate leaves (leaf size 4): two filler spheres on each side keep
-// each of A/B's own 3-primitive group under the leaf size, so the
-// median split parts them instead of grouping them together. ----
+// surface is the true nearest. Each of A and B carries three small
+// spheres spread through its own box, off the ray's path, so the
+// surface-area split parts them into two four-primitive leaves rather
+// than grouping the two large spheres together. ----
 void testExitPruningPair() {
   GMANLinearWorldManager worldManager;
   std::vector<GMANRayInterface*> prims;
@@ -315,15 +329,20 @@ void testExitPruningPair() {
     worldManager.add(p);
     prims.push_back(p);
   };
+  auto addInside = [&](RtFloat x, RtFloat y, RtFloat z) {
+    add(new GMANRaySphere(0.5, -0.5, 0.5, 360.0, GMANParameterList(), translated(x, y, z)));
+  };
 
-  add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, -50.0)));
-  add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, -20.0)));
   auto* primA = new GMANRaySphere(5.0, -5.0, 5.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 20.0));
   auto* primB = new GMANRaySphere(9.0, -9.0, 9.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 26.0));
   add(primA);
   add(primB);
-  add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 50.0)));
-  add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 80.0)));
+  addInside(4.0, 4.0, 19.0);
+  addInside(-4.0, -4.0, 20.0);
+  addInside(4.0, -4.0, 21.0);
+  addInside(8.0, 8.0, 25.0);
+  addInside(-8.0, -8.0, 26.0);
+  addInside(8.0, -8.0, 27.0);
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -333,17 +352,14 @@ void testExitPruningPair() {
 
   GMANHit hit;
   GMANRayInterface const* prim = nullptr;
-  bool const found = bvh.nearestHit(ray, hit, prim);
+  std::size_t primitiveTests = 0;
+  bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
   check(found && prim == primB,
         "exit-pruning pair: the nearer sphere (B) wins, not the one entered first but hit late (A)");
+  check(primitiveTests == 8, "exit-pruning pair: A and B sit in separate four-primitive leaves, both visited");
 }
 
-std::size_t expectedNodeCount(std::size_t count) {
-  if (count <= kLeafSize) {
-    return 1;
-  }
-  return 1 + expectedNodeCount(count / 2) + expectedNodeCount(count - count / 2);
-}
+std::size_t maxNodeCount(std::size_t primitiveCount) { return 2 * primitiveCount - 1; }
 
 bool missesBox(GMANRay const& ray, GMANPoint const& boxMin, GMANPoint const& boxMax) {
   RtFloat const origin[3] = {ray.getOrigin().getX(), ray.getOrigin().getY(), ray.getOrigin().getZ()};
@@ -434,7 +450,7 @@ void runRandomSweep(bool includeSingular) {
   bvh.build(worldManager);
 
   BoxTestBounds bounds;
-  bounds.nodeCount = expectedNodeCount(prims.size());
+  bounds.nodeCount = maxNodeCount(prims.size());
   unionBounds(prims, bounds.rootMin, bounds.rootMax);
   int rootMisses = 0;
 
@@ -539,7 +555,7 @@ void testBoxTestsPerNode() {
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
-  check(expectedNodeCount(kCount) == 3, "box tests: five primitives make a root and two leaves");
+  check(bvh.treeDepth() == 1, "box tests: five primitives make a root and two leaves");
 
   GMANRay const ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
@@ -552,26 +568,31 @@ void testBoxTestsPerNode() {
   check(boxTests == 3, "box tests: a ray entering both leaves tests the root and each leaf once");
 }
 
+void addSpheresInPlane(GMANLinearWorldManager& worldManager, std::initializer_list<RtFloat> const& xs) {
+  for (RtFloat const x : xs) {
+    worldManager.add(new GMANRaySphere(0.4, -0.4, 0.4, 360.0, GMANParameterList(), translated(x, 0.0, 0.0)));
+  }
+}
+
+std::vector<GMANPoint> quadInPlane(RtFloat minX, RtFloat maxX) {
+  return {GMANPoint(minX, -1.0, 0.0), GMANPoint(maxX, -1.0, 0.0), GMANPoint(maxX, 1.0, 0.0), GMANPoint(minX, 1.0, 0.0)};
+}
+
 void testTieAtClampedEntry() {
   constexpr RtFloat kOriginZ = -5.0f;
   RtFloat const hitT = -kOriginZ;
 
   for (bool swapOrder : {false, true}) {
     GMANLinearWorldManager worldManager;
-    std::vector<GMANPoint> const leftQuad = {GMANPoint(-3.0, -1.0, 0.0), GMANPoint(1.0, -1.0, 0.0),
-                                             GMANPoint(1.0, 1.0, 0.0), GMANPoint(-3.0, 1.0, 0.0)};
-    std::vector<GMANPoint> const rightQuad = {GMANPoint(-1.0, -1.0, 0.0), GMANPoint(3.0, -1.0, 0.0),
-                                              GMANPoint(3.0, 1.0, 0.0), GMANPoint(-1.0, 1.0, 0.0)};
-    auto* leftPolygon = new GMANRayPolygon(leftQuad, GMANParameterList());
-    auto* rightPolygon = new GMANRayPolygon(rightQuad, GMANParameterList());
+    auto* leftPolygon = new GMANRayPolygon(quadInPlane(-12.0, 1.0), GMANParameterList());
+    auto* rightPolygon = new GMANRayPolygon(quadInPlane(-1.0, 12.0), GMANParameterList());
 
-    worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(-20.0, 0.0, 0.0)));
+    addSpheresInPlane(worldManager, {-9.0, -6.0});
     GMANRayInterface* first = swapOrder ? static_cast<GMANRayInterface*>(rightPolygon) : leftPolygon;
     GMANRayInterface* second = swapOrder ? static_cast<GMANRayInterface*>(leftPolygon) : rightPolygon;
     worldManager.add(first);
     worldManager.add(second);
-    worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(20.0, 0.0, 0.0)));
-    worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(21.0, 0.0, 0.0)));
+    addSpheresInPlane(worldManager, {6.0, 9.0});
 
     GMANRayBVH bvh;
     bvh.build(worldManager);
@@ -589,38 +610,27 @@ void testTieAtClampedEntry() {
     bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
     std::string const order = swapOrder ? "right polygon inserted first" : "left polygon inserted first";
     check(found && prim == first, "clamped-entry tie: resolves to the earlier-inserted polygon (" + order + ")");
-    check(primitiveTests == 5,
-          "clamped-entry tie: both leaves are visited, so the tie is decided by insertion index (" + order + ")");
+    check(primitiveTests == 6,
+          "clamped-entry tie: both three-primitive leaves are visited, so the tie is decided by insertion index (" +
+              order + ")");
   }
 }
 
 void testTieUnderBestHitLimit() {
-  constexpr std::size_t kHalf = kLeafSize + 1;
   constexpr RtFloat kOriginZ = -5.0f;
-  constexpr RtFloat kFillerSpacing = 10.0f;
   RtFloat const hitT = -kOriginZ;
 
   for (bool swapOrder : {false, true}) {
     GMANLinearWorldManager worldManager;
-    std::vector<GMANPoint> const leftQuad = {GMANPoint(-3.0, -1.0, 0.0), GMANPoint(1.0, -1.0, 0.0),
-                                             GMANPoint(1.0, 1.0, 0.0), GMANPoint(-3.0, 1.0, 0.0)};
-    std::vector<GMANPoint> const rightQuad = {GMANPoint(-1.0, -1.0, 0.0), GMANPoint(3.0, -1.0, 0.0),
-                                              GMANPoint(3.0, 1.0, 0.0), GMANPoint(-1.0, 1.0, 0.0)};
-    auto* leftPolygon = new GMANRayPolygon(leftQuad, GMANParameterList());
-    auto* rightPolygon = new GMANRayPolygon(rightQuad, GMANParameterList());
+    auto* leftPolygon = new GMANRayPolygon(quadInPlane(-12.0, 1.0), GMANParameterList());
+    auto* rightPolygon = new GMANRayPolygon(quadInPlane(-1.0, 12.0), GMANParameterList());
     GMANRayInterface* first = swapOrder ? static_cast<GMANRayInterface*>(rightPolygon) : leftPolygon;
     GMANRayInterface* second = swapOrder ? static_cast<GMANRayInterface*>(leftPolygon) : rightPolygon;
 
-    for (std::size_t i = 1; i < kHalf; ++i) {
-      worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(),
-                                         translated(-kFillerSpacing * (RtFloat)i, 0.0, 0.0)));
-    }
+    addSpheresInPlane(worldManager, {-9.0, -6.0});
     worldManager.add(first);
     worldManager.add(second);
-    for (std::size_t i = 1; i < kHalf; ++i) {
-      worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(),
-                                         translated(kFillerSpacing * (RtFloat)i, 0.0, 0.0)));
-    }
+    addSpheresInPlane(worldManager, {6.0, 9.0, 10.0, 11.0});
 
     GMANRayBVH bvh;
     bvh.build(worldManager);
@@ -638,8 +648,124 @@ void testTieUnderBestHitLimit() {
     bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
     std::string const order = swapOrder ? "right polygon inserted first" : "left polygon inserted first";
     check(found && prim == first, "push-time tie: resolves to the earlier-inserted polygon (" + order + ")");
-    check(primitiveTests == (kHalf - kHalf / 2) + kHalf / 2,
-          "push-time tie: both polygons' leaves are visited, and no other (" + order + ")");
+  }
+}
+
+constexpr RtFloat kRoomHalfSize = 100.0f;
+constexpr std::size_t kBoxTestBound = 7300;
+constexpr std::ptrdiff_t kWallCount = 6;
+
+void addWall(GMANLinearWorldManager& worldManager, std::vector<GMANRayInterface*>& prims, int axis, RtFloat side) {
+  RtFloat const h = kRoomHalfSize;
+  auto corner = [&](RtFloat u, RtFloat v) {
+    RtFloat c[3];
+    int const a1 = (axis + 1) % 3;
+    int const a2 = (axis + 2) % 3;
+    c[axis] = side * h;
+    c[a1] = u;
+    c[a2] = v;
+    return GMANPoint(c[0], c[1], c[2]);
+  };
+  std::vector<GMANPoint> const quad = {corner(-h, -h), corner(h, -h), corner(h, h), corner(-h, h)};
+  auto* wall = new GMANRayPolygon(quad, GMANParameterList());
+  worldManager.add(wall);
+  prims.push_back(wall);
+}
+
+void addCornerCluster(GMANLinearWorldManager& worldManager, std::vector<GMANRayInterface*>& prims) {
+  constexpr int kSide = 7;
+  constexpr RtFloat kPitch = 1.5f;
+  constexpr RtFloat kHalf = 0.4f;
+  for (int ix = 0; ix < kSide; ++ix) {
+    for (int iy = 0; iy < kSide; ++iy) {
+      for (int iz = 0; iz < kSide; ++iz) {
+        RtFloat const x = 60.0f + kPitch * (RtFloat)ix + 0.013f * (RtFloat)iy + 0.0071f * (RtFloat)iz;
+        RtFloat const y = 60.0f + kPitch * (RtFloat)iy + 0.011f * (RtFloat)iz + 0.0059f * (RtFloat)ix;
+        RtFloat const z = 60.0f + kPitch * (RtFloat)iz + 0.017f * (RtFloat)ix + 0.0047f * (RtFloat)iy;
+        int const plane = (ix + iy + iz) % 3;
+        std::vector<GMANPoint> quad;
+        if (plane == 0) {
+          quad = {GMANPoint(x - kHalf, y - kHalf, z), GMANPoint(x + kHalf, y - kHalf, z),
+                  GMANPoint(x + kHalf, y + kHalf, z), GMANPoint(x - kHalf, y + kHalf, z)};
+        } else if (plane == 1) {
+          quad = {GMANPoint(x, y - kHalf, z - kHalf), GMANPoint(x, y + kHalf, z - kHalf),
+                  GMANPoint(x, y + kHalf, z + kHalf), GMANPoint(x, y - kHalf, z + kHalf)};
+        } else {
+          quad = {GMANPoint(x - kHalf, y, z - kHalf), GMANPoint(x + kHalf, y, z - kHalf),
+                  GMANPoint(x + kHalf, y, z + kHalf), GMANPoint(x - kHalf, y, z + kHalf)};
+        }
+        auto* polygon = new GMANRayPolygon(quad, GMANParameterList());
+        worldManager.add(polygon);
+        prims.push_back(polygon);
+      }
+    }
+  }
+}
+
+void testSurfaceAreaFewerBoxTests() {
+  GMANLinearWorldManager worldManager;
+  std::vector<GMANRayInterface*> prims;
+  for (int axis = 0; axis < 3; ++axis) {
+    addWall(worldManager, prims, axis, -1.0f);
+    addWall(worldManager, prims, axis, 1.0f);
+  }
+  addCornerCluster(worldManager, prims);
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+
+  std::size_t boxTests = 0;
+  std::size_t clusterHits = 0;
+  constexpr int kRaysPerAxis = 6;
+  for (int i = 0; i < kRaysPerAxis; ++i) {
+    for (int j = 0; j < kRaysPerAxis; ++j) {
+      for (int k = 0; k < kRaysPerAxis; ++k) {
+        GMANPoint const origin(-60.0 + 7.0 * i, -60.0 + 9.0 * j, -60.0 + 11.0 * k);
+        GMANPoint const target(60.0 + 1.5 * ((i * 3 + j) % 7) + 0.3, 60.0 + 1.5 * ((j * 2 + k) % 7) + 0.2,
+                               60.0 + 1.5 * ((k * 5 + i) % 7) + 0.1);
+        GMANRay const ray(origin, GMANVector(target.getX() - origin.getX(), target.getY() - origin.getY(),
+                                             target.getZ() - origin.getZ()));
+        GMANHit hit;
+        GMANRayInterface const* prim = nullptr;
+        std::size_t primitiveTests = 0;
+        bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests, &boxTests);
+        GMANHit linearHit;
+        GMANRayInterface const* linearPrim = nullptr;
+        bool const foundLinear = linearScan(prims, ray, linearHit, linearPrim);
+        clusterHits += found && std::find(prims.begin() + kWallCount, prims.end(), prim) != prims.end();
+        check(hitsMatch(found, hit, prim, foundLinear, linearHit, linearPrim),
+              "surface area: a ray at the corner cluster matches the linear scan");
+      }
+    }
+  }
+  check(clusterHits > 0, "surface area: the rays reach the corner cluster");
+  check(boxTests <= kBoxTestBound, "surface area: the rays at the corner cluster test few boxes");
+}
+
+void testDepthFitsTheStack() {
+  constexpr int kPlateCount = 120;
+  GMANLinearWorldManager worldManager;
+  std::vector<GMANRayInterface*> prims;
+  for (int j = 0; j < kPlateCount; ++j) {
+    RtFloat const x = (j % 2 == 0 ? 1.0f : -1.0f) * std::pow(0.9f, (RtFloat)j);
+    RtFloat const half = 100.0f * std::pow(0.999f, (RtFloat)j);
+    std::vector<GMANPoint> const plate = {GMANPoint(x, -half, -half), GMANPoint(x, half, -half),
+                                          GMANPoint(x, half, half), GMANPoint(x, -half, half)};
+    auto* polygon = new GMANRayPolygon(plate, GMANParameterList());
+    worldManager.add(polygon);
+    prims.push_back(polygon);
+  }
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  check(bvh.treeDepth() < (std::size_t)std::numeric_limits<std::size_t>::digits,
+        "depth: a tree over nested plates stays inside the traversal stack");
+
+  for (RtFloat const y : {0.0f, 3.0f, -40.0f}) {
+    checkAgreement(bvh, prims, GMANRay(GMANPoint(-5.0, y, 0.0), GMANVector(1.0, 0.0, 0.0)),
+                   "nested plates from the near end, y = " + std::to_string(y));
+    checkAgreement(bvh, prims, GMANRay(GMANPoint(5.0, y, 0.0), GMANVector(-1.0, 0.0, 0.0)),
+                   "nested plates from the far end, y = " + std::to_string(y));
   }
 }
 
@@ -800,6 +926,8 @@ int main() {
   testBoxTestsPerNode();
   testTieAtClampedEntry();
   testTieUnderBestHitLimit();
+  testSurfaceAreaFewerBoxTests();
+  testDepthFitsTheStack();
   testMissLeavesHitUntouched();
 
   return checkSummary("GMANRayBVH: identical hits against a linear scan, and a bounded primitive-test count");
