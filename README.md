@@ -108,12 +108,19 @@ lights, a warm disk overhead and a small blue sphere lamp at the left:
 gman -r gmanpathtracer samples/materials.rib
 ```
 
-[![gman's path-traced render of samples/materials.rib](samples/materials-pathtraced.png)](https://2ad.com/gman.html)
-
 From the left: gold `shinymetal`, `glass`, a `mirror` that takes the wall's clay colour, and a
 `plastic` torus. The overhead disk pools a soft shadow under each one. The scene traces 64 paths a
-subpixel at 640 by 400. The picture traces 512 at 1920 by 1200, set by `Format` and
-`Option "pathtracer" "integer samples"` at the top of the file, and is shown at 1280 by 800.
+subpixel at 640 by 400, set by `Format` and `Option "pathtracer" "integer samples"` at the top of
+the file.
+
+The same materials make a still life in its own repository,
+[still-life-material](https://github.com/jac18281828/still-life-material), with a marble floor, a
+generated cactus and a glass ball that lenses it:
+
+[![gman's path-traced still life: a gold ball, a glass ball, a potted cactus, a mirror ball and a blue torus on a marble floor](samples/still-life.png)](https://github.com/jac18281828/still-life-material)
+
+The picture traces 2,048 paths a pixel at 1280 by 800; `make hq` in that repository renders it at
+1920 by 1200.
 
 ## Poke it
 
