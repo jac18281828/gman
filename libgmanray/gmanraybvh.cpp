@@ -58,12 +58,12 @@ void GMANRayBVH::Node::setBounds(GMANBBox const& bounds) {
 }
 
 GMANRayBVH::PreparedRay::PreparedRay(GMANRay const& ray)
-    : origin{ray.getOrigin().getX(), ray.getOrigin().getY(), ray.getOrigin().getZ()}, inverseDirection{},
-      parallel{ray.getDirection().getX() == (RtFloat)0.0, ray.getDirection().getY() == (RtFloat)0.0,
-               ray.getDirection().getZ() == (RtFloat)0.0},
+    : origin{ray.getOrigin().getX(), ray.getOrigin().getY(), ray.getOrigin().getZ()}, inverseDirection{}, parallel{},
       tMin(ray.getTMin()), tMax(ray.getTMax()) {
-  RtFloat const direction[3] = {ray.getDirection().getX(), ray.getDirection().getY(), ray.getDirection().getZ()};
+  GMANVector const& rayDirection = ray.getDirection();
+  RtFloat const direction[3] = {rayDirection.getX(), rayDirection.getY(), rayDirection.getZ()};
   for (std::size_t axis = 0; axis < 3; ++axis) {
+    parallel[axis] = direction[axis] == (RtFloat)0.0;
     if (!parallel[axis]) {
       inverseDirection[axis] = (RtFloat)1.0 / direction[axis];
     }

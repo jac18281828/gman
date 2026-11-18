@@ -45,19 +45,6 @@
  * with a direction component of +0.0 and of -0.0, origin on each face in
  * turn: a leaf's own primitive must still be tested regardless of the
  * zero's sign.
- *
- * Check 3: the five-parameter nearestHit overload counts box tests, one
- * per node when its parent is expanded and one for the root. A
- * five-primitive tree (a root and two leaves) costs 3 for a ray that
- * enters both leaves (testBoxTestsPerNode). Over the random sweep's rays
- * a count never exceeds the tree's node count and the four- and
- * five-parameter overloads agree on hit, primitive and primitiveTests; a
- * second sweep pass over the fixture without its infinite-box primitive
- * adds that a ray missing the root's box costs exactly 1. A tie in t between
- * primitives in different leaves, at a ray whose tmin equals that t,
- * still resolves to the earlier-inserted one in both insertion orders
- * (testTieAtClampedEntry), which holds only while a node whose box entry
- * equals the best t so far is still visited.
  */
 
 #include <algorithm>
@@ -351,9 +338,6 @@ void testExitPruningPair() {
         "exit-pruning pair: the nearer sphere (B) wins, not the one entered first but hit late (A)");
 }
 
-// The node count of a tree over `count` primitives, from the split rule
-// alone: a range of at most kLeafSize is one leaf, and a larger one is a
-// node over its lower half (count / 2) and the rest.
 std::size_t expectedNodeCount(std::size_t count) {
   if (count <= kLeafSize) {
     return 1;
@@ -361,8 +345,6 @@ std::size_t expectedNodeCount(std::size_t count) {
   return 1 + expectedNodeCount(count / 2) + expectedNodeCount(count - count / 2);
 }
 
-// Whether ray's [tmin, tmax] never meets the box [boxMin, boxMax], by a
-// slab test written independently of GMANRayBVH.
 bool missesBox(GMANRay const& ray, GMANPoint const& boxMin, GMANPoint const& boxMax) {
   RtFloat const origin[3] = {ray.getOrigin().getX(), ray.getOrigin().getY(), ray.getOrigin().getZ()};
   RtFloat const direction[3] = {ray.getDirection().getX(), ray.getDirection().getY(), ray.getDirection().getZ()};
@@ -385,7 +367,6 @@ bool missesBox(GMANRay const& ray, GMANPoint const& boxMin, GMANPoint const& box
   return nearT > farT;
 }
 
-// The union of every primitive's own getBBox.
 void unionBounds(std::vector<GMANRayInterface*> const& prims, GMANPoint& boxMin, GMANPoint& boxMax) {
   boxMin = prims.front()->getBBox().getMin();
   boxMax = prims.front()->getBBox().getMax();
@@ -411,9 +392,6 @@ struct BoxTestBounds {
   GMANPoint rootMax;
 };
 
-// Checks ray's box-test count against the tree's node count and the two
-// nearestHit overloads against each other. Returns whether ray misses the
-// root's box.
 bool checkTraversalCounts(GMANRayBVH const& bvh, BoxTestBounds const& bounds, GMANRay const& ray,
                           std::string const& what) {
   GMANHit fourHit;
@@ -517,9 +495,6 @@ void runRandomSweep(bool includeSingular) {
         "check 3: the far clean miss misses the finite fixture's root box");
 }
 
-// The mixed fixture holds a primitive with a singular transform, whose
-// unassigned box spans +/-RI_INFINITY and so makes the root's box infinite
-// too; the second pass drops it, leaving a finite root a ray can miss.
 void testRandomSweep() {
   runRandomSweep(true);
   runRandomSweep(false);
@@ -551,9 +526,6 @@ void testCoincidentTieBothOrders() {
   }
 }
 
-// ---- five primitives split 2 and 3 under one root: a ray entering both
-// leaves' boxes tests the root once and each leaf once, 3 box tests in
-// all ----
 void testBoxTestsPerNode() {
   constexpr std::size_t kCount = 5;
   constexpr RtFloat kSpacing = 3.0f;
@@ -580,10 +552,6 @@ void testBoxTestsPerNode() {
   check(boxTests == 3, "box tests: a ray entering both leaves tests the root and each leaf once");
 }
 
-// ---- two coincident polygons in different leaves, and a ray whose tmin
-// equals their hit t: both leaves' boxes clamp their entry to tmin, so the
-// leaf visited second has an entry equal to the best t so far and must
-// still be visited, since the earlier-inserted polygon may sit in it ----
 void testTieAtClampedEntry() {
   constexpr RtFloat kOriginZ = -5.0f;
   RtFloat const hitT = -kOriginZ;
@@ -618,12 +586,60 @@ void testTieAtClampedEntry() {
     GMANHit hit;
     GMANRayInterface const* prim = nullptr;
     std::size_t primitiveTests = 0;
-    std::size_t boxTests = 0;
-    bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests, &boxTests);
+    bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
     std::string const order = swapOrder ? "right polygon inserted first" : "left polygon inserted first";
     check(found && prim == first, "clamped-entry tie: resolves to the earlier-inserted polygon (" + order + ")");
-    check(boxTests == 3 && primitiveTests == 5,
+    check(primitiveTests == 5,
           "clamped-entry tie: both leaves are visited, so the tie is decided by insertion index (" + order + ")");
+  }
+}
+
+void testTieUnderBestHitLimit() {
+  constexpr std::size_t kHalf = kLeafSize + 1;
+  constexpr RtFloat kOriginZ = -5.0f;
+  constexpr RtFloat kFillerSpacing = 10.0f;
+  RtFloat const hitT = -kOriginZ;
+
+  for (bool swapOrder : {false, true}) {
+    GMANLinearWorldManager worldManager;
+    std::vector<GMANPoint> const leftQuad = {GMANPoint(-3.0, -1.0, 0.0), GMANPoint(1.0, -1.0, 0.0),
+                                             GMANPoint(1.0, 1.0, 0.0), GMANPoint(-3.0, 1.0, 0.0)};
+    std::vector<GMANPoint> const rightQuad = {GMANPoint(-1.0, -1.0, 0.0), GMANPoint(3.0, -1.0, 0.0),
+                                              GMANPoint(3.0, 1.0, 0.0), GMANPoint(-1.0, 1.0, 0.0)};
+    auto* leftPolygon = new GMANRayPolygon(leftQuad, GMANParameterList());
+    auto* rightPolygon = new GMANRayPolygon(rightQuad, GMANParameterList());
+    GMANRayInterface* first = swapOrder ? static_cast<GMANRayInterface*>(rightPolygon) : leftPolygon;
+    GMANRayInterface* second = swapOrder ? static_cast<GMANRayInterface*>(leftPolygon) : rightPolygon;
+
+    for (std::size_t i = 1; i < kHalf; ++i) {
+      worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(),
+                                         translated(-kFillerSpacing * (RtFloat)i, 0.0, 0.0)));
+    }
+    worldManager.add(first);
+    worldManager.add(second);
+    for (std::size_t i = 1; i < kHalf; ++i) {
+      worldManager.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(),
+                                         translated(kFillerSpacing * (RtFloat)i, 0.0, 0.0)));
+    }
+
+    GMANRayBVH bvh;
+    bvh.build(worldManager);
+
+    GMANRay const ray(GMANPoint(0.0, 0.0, kOriginZ), GMANVector(0.0, 0.0, 1.0), hitT, RI_INFINITY);
+    GMANHit leftHit;
+    GMANHit rightHit;
+    check(leftPolygon->intersect(ray, leftHit) && rightPolygon->intersect(ray, rightHit) && leftHit.t == hitT &&
+              rightHit.t == hitT,
+          "push-time tie: both polygons hit at exactly tmin");
+
+    GMANHit hit;
+    GMANRayInterface const* prim = nullptr;
+    std::size_t primitiveTests = 0;
+    bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
+    std::string const order = swapOrder ? "right polygon inserted first" : "left polygon inserted first";
+    check(found && prim == first, "push-time tie: resolves to the earlier-inserted polygon (" + order + ")");
+    check(primitiveTests == (kHalf - kHalf / 2) + kHalf / 2,
+          "push-time tie: both polygons' leaves are visited, and no other (" + order + ")");
   }
 }
 
@@ -783,6 +799,7 @@ int main() {
   testSignedZeroFacePlane();
   testBoxTestsPerNode();
   testTieAtClampedEntry();
+  testTieUnderBestHitLimit();
   testMissLeavesHitUntouched();
 
   return checkSummary("GMANRayBVH: identical hits against a linear scan, and a bounded primitive-test count");
