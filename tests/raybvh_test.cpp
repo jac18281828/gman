@@ -88,6 +88,10 @@ namespace {
 
 constexpr RtFloat kTolerance = 1e-3f;
 
+constexpr RtFloat kRoomHalfSize = 100.0f;
+constexpr std::size_t kBoxTestBound = 7300;
+constexpr std::ptrdiff_t kWallCount = 6;
+
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
 
 GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
@@ -648,12 +652,11 @@ void testTieUnderBestHitLimit() {
     bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
     std::string const order = swapOrder ? "right polygon inserted first" : "left polygon inserted first";
     check(found && prim == first, "push-time tie: resolves to the earlier-inserted polygon (" + order + ")");
+    check(primitiveTests == 4,
+          "push-time tie: the first polygon's three-primitive leaf and the second's own are visited, and no other (" +
+              order + ")");
   }
 }
-
-constexpr RtFloat kRoomHalfSize = 100.0f;
-constexpr std::size_t kBoxTestBound = 7300;
-constexpr std::ptrdiff_t kWallCount = 6;
 
 void addWall(GMANLinearWorldManager& worldManager, std::vector<GMANRayInterface*>& prims, int axis, RtFloat side) {
   RtFloat const h = kRoomHalfSize;
