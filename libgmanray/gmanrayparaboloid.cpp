@@ -32,12 +32,12 @@
 
 namespace {
 
-void paraboloidTangents(RtFloat zSpan, RtFloat thetamaxRad, RtFloat theta, double radial, RtFloat v, GMANVector& dPdu,
-                        GMANVector& dPdv) {
+void paraboloidTangents(RtFloat zSpan, RtFloat thetamaxRad, RtFloat theta, double px, double py, double radial,
+                        RtFloat v, GMANVector& dPdu, GMANVector& dPdv) {
   double const cosTheta = std::cos((double)theta), sinTheta = std::sin((double)theta);
-  double const alongU = (double)thetamaxRad * radial;
+  double const alongU = (double)thetamaxRad;
   double const radialRate = radial / (2.0 * (double)v);
-  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  dPdu = GMANVector((RtFloat)(-alongU * py), (RtFloat)(alongU * px), 0.0);
   dPdv = GMANVector((RtFloat)(radialRate * cosTheta), (RtFloat)(radialRate * sinTheta), zSpan);
 }
 
@@ -147,8 +147,8 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector objDPdu;
     GMANVector objDPdv;
     if (((RtFloat)root.px != 0.0 || (RtFloat)root.py != 0.0) && v > 0.0)
-      paraboloidTangents(zmax - zmin, thetamaxRad, theta, std::sqrt(root.px * root.px + root.py * root.py), v, objDPdu,
-                         objDPdv);
+      paraboloidTangents(zmax - zmin, thetamaxRad, theta, root.px, root.py,
+                         std::sqrt(root.px * root.px + root.py * root.py), v, objDPdu, objDPdv);
 
     hit.t = root.t;
     hit.point = root.point;

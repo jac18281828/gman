@@ -34,14 +34,14 @@
 
 namespace {
 
-void sphereTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat phiSpan, RtFloat theta, RtFloat phi, GMANVector& dPdu,
-                    GMANVector& dPdv) {
+void sphereTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat phiSpan, RtFloat theta, RtFloat phi, double px,
+                    double py, GMANVector& dPdu, GMANVector& dPdv) {
   double const cosTheta = std::cos((double)theta), sinTheta = std::sin((double)theta);
   double const cosPhi = std::cos((double)phi), sinPhi = std::sin((double)phi);
   double const absRadius = std::fabs((double)radius);
-  double const alongU = (double)thetamaxRad * absRadius * cosPhi;
+  double const alongU = (double)thetamaxRad;
   double const alongV = (double)phiSpan;
-  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  dPdu = GMANVector((RtFloat)(-alongU * py), (RtFloat)(alongU * px), 0.0);
   dPdv = GMANVector((RtFloat)(-alongV * absRadius * sinPhi * cosTheta),
                     (RtFloat)(-alongV * absRadius * sinPhi * sinTheta), (RtFloat)(alongV * (double)radius * cosPhi));
 }
@@ -148,7 +148,7 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector objDPdu;
     GMANVector objDPdv;
     if ((RtFloat)root.px != 0.0 || (RtFloat)root.py != 0.0)
-      sphereTangents(radius, thetamaxRad, phimax - phimin, theta, phi, objDPdu, objDPdv);
+      sphereTangents(radius, thetamaxRad, phimax - phimin, theta, phi, root.px, root.py, objDPdu, objDPdv);
 
     hit.t = root.t;
     hit.point = root.point;

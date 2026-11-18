@@ -80,9 +80,8 @@ void torusTangents(double R, double r, double thetamaxRad, double phiSpanDeg, do
                    double radial, GMANVector& dPdu, GMANVector& dPdv) {
   double const cosTheta = px / radial, sinTheta = py / radial;
   double const cosPhi = (radial - R) / r, sinPhi = pz / r;
-  double const alongU = thetamaxRad * radial;
   double const alongV = phiSpanDeg * DEGTORAD * r;
-  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  dPdu = GMANVector((RtFloat)(-thetamaxRad * py), (RtFloat)(thetamaxRad * px), 0.0);
   dPdv = GMANVector((RtFloat)(-alongV * sinPhi * cosTheta), (RtFloat)(-alongV * sinPhi * sinTheta),
                     (RtFloat)(alongV * cosPhi));
 }

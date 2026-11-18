@@ -32,12 +32,12 @@
 
 namespace {
 
-void coneTangents(RtFloat height, RtFloat radius, RtFloat thetamaxRad, RtFloat theta, RtFloat v, GMANVector& dPdu,
-                  GMANVector& dPdv) {
+void coneTangents(RtFloat height, RtFloat radius, RtFloat thetamaxRad, RtFloat theta, double px, double py,
+                  GMANVector& dPdu, GMANVector& dPdv) {
   double const cosTheta = std::cos((double)theta), sinTheta = std::sin((double)theta);
   double const absRadius = std::fabs((double)radius);
-  double const alongU = (double)thetamaxRad * absRadius * (1.0 - (double)v);
-  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  double const alongU = (double)thetamaxRad;
+  dPdu = GMANVector((RtFloat)(-alongU * py), (RtFloat)(alongU * px), 0.0);
   dPdv = GMANVector((RtFloat)(-absRadius * cosTheta), (RtFloat)(-absRadius * sinTheta), height);
 }
 
@@ -132,7 +132,7 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector objDPdu;
     GMANVector objDPdv;
     if ((RtFloat)root.px != 0.0 || (RtFloat)root.py != 0.0)
-      coneTangents(height, radius, thetamaxRad, theta, z / height, objDPdu, objDPdv);
+      coneTangents(height, radius, thetamaxRad, theta, root.px, root.py, objDPdu, objDPdv);
 
     hit.t = root.t;
     hit.point = root.point;

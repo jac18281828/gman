@@ -32,10 +32,9 @@
 
 namespace {
 
-void cylinderTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat zSpan, RtFloat theta, GMANVector& dPdu,
-                      GMANVector& dPdv) {
-  double const alongU = (double)thetamaxRad * std::fabs((double)radius);
-  dPdu = GMANVector((RtFloat)(-alongU * std::sin((double)theta)), (RtFloat)(alongU * std::cos((double)theta)), 0.0);
+void cylinderTangents(RtFloat thetamaxRad, RtFloat zSpan, double px, double py, GMANVector& dPdu, GMANVector& dPdv) {
+  double const alongU = (double)thetamaxRad;
+  dPdu = GMANVector((RtFloat)(-alongU * py), (RtFloat)(alongU * px), 0.0);
   dPdv = GMANVector(0.0, 0.0, zSpan);
 }
 
@@ -122,7 +121,7 @@ bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
 
     GMANVector objDPdu;
     GMANVector objDPdv;
-    cylinderTangents(radius, thetamaxRad, zmax - zmin, theta, objDPdu, objDPdv);
+    cylinderTangents(thetamaxRad, zmax - zmin, root.px, root.py, objDPdu, objDPdv);
 
     hit.t = root.t;
     hit.point = root.point;

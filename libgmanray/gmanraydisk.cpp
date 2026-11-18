@@ -31,10 +31,11 @@
 
 namespace {
 
-void diskTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat theta, double r, GMANVector& dPdu, GMANVector& dPdv) {
+void diskTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat theta, double x, double y, GMANVector& dPdu,
+                  GMANVector& dPdv) {
   double const cosTheta = std::cos((double)theta), sinTheta = std::sin((double)theta);
-  double const alongU = (double)thetamaxRad * r;
-  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  double const alongU = (double)thetamaxRad;
+  dPdu = GMANVector((RtFloat)(-alongU * y), (RtFloat)(alongU * x), 0.0);
   dPdv = GMANVector((RtFloat)((double)radius * cosTheta), (RtFloat)((double)radius * sinTheta), 0.0);
 }
 
@@ -116,7 +117,7 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   GMANVector objDPdu;
   GMANVector objDPdv;
   if ((RtFloat)x != 0.0 || (RtFloat)y != 0.0)
-    diskTangents(radius, thetamaxRad, theta, r, objDPdu, objDPdv);
+    diskTangents(radius, thetamaxRad, theta, x, y, objDPdu, objDPdv);
 
   hit.t = t;
   hit.point = gman::transformPoint(objectToCamera, objPoint);

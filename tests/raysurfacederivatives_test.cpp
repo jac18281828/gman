@@ -24,11 +24,12 @@
  * reports. The proof observes them: a second ray aimed at P + h*dPdu hits
  * at (u + h, v) and at P + h*dPdu to first order, and likewise for dPdv, so
  * no derivative formula is repeated here. The tangents are perpendicular to
- * the normal, zero where u is undefined, and reach a shader through
- * gman::hitSurfacePoint and gman::shade.
+ * the normal, zero where u is undefined or the parameterization is singular,
+ * and reach a shader through gman::hitSurfacePoint and gman::shade.
  */
 
 #include <cmath>
+#include <cstdio>
 #include <memory>
 #include <string>
 #include <vector>
@@ -210,18 +211,19 @@ std::vector<GMANPoint> quadAt(GMANPoint const& corner, GMANVector const& edgeA, 
   return {vertex(0.0f, 0.0f), vertex(1.0f, 0.0f), vertex(1.0f, 1.0f), vertex(0.0f, 1.0f)};
 }
 
-GMANRayPolygon* quadWithSt(RtFloat const* p, RtFloat const* st, std::vector<GMANPoint> const& vertices) {
+std::unique_ptr<GMANRayPolygon> quadWithSt(RtFloat const* p, RtFloat const* st,
+                                           std::vector<GMANPoint> const& vertices) {
   RtToken tokens[] = {RI_P, RI_ST};
   RtPointer parms[] = {(RtPointer)p, (RtPointer)st};
   GMANParameterList pl(gman::standardDictionary(), 2, tokens, parms, 4, 4, 1, 1);
-  return new GMANRayPolygon(vertices, pl);
+  return std::make_unique<GMANRayPolygon>(vertices, pl);
 }
 
-GMANRayPolygon* quadWithoutSt(RtFloat const* p, std::vector<GMANPoint> const& vertices) {
+std::unique_ptr<GMANRayPolygon> quadWithoutSt(RtFloat const* p, std::vector<GMANPoint> const& vertices) {
   RtToken tokens[] = {RI_P};
   RtPointer parms[] = {(RtPointer)p};
   GMANParameterList pl(gman::standardDictionary(), 1, tokens, parms, 4, 4, 1, 1);
-  return new GMANRayPolygon(vertices, pl);
+  return std::make_unique<GMANRayPolygon>(vertices, pl);
 }
 
 GMANVector const kEdgeA(1.0f, 0.1f, 0.3f);
@@ -240,7 +242,7 @@ GMANPoint pointOnQuad(RtFloat a, RtFloat b) {
 
 void checkPolygons() {
   std::vector<GMANPoint> const vertices = quadAt(kQuadCorner, kEdgeA, kEdgeB, kQuadSize);
-  std::unique_ptr<GMANRayPolygon> const polygon(quadWithSt(kSquareP, kBentSt, vertices));
+  auto const polygon = quadWithSt(kSquareP, kBentSt, vertices);
   GMANPoint const upperLeft = pointOnQuad(0.25f, 0.75f);
   GMANHit hit;
   bool const hitPolygon = polygon->intersect(rayTo(upperLeft), hit);
@@ -298,13 +300,42 @@ void checkUndefinedAxisPoints() {
   std::vector<GMANPoint> const vertices =
       quadAt(kQuadCorner, GMANVector(1.0f, 0.2f, 0.5f), GMANVector(-0.1f, 1.0f, 0.1f), kQuadSize);
   RtFloat const parallelToZ[] = {0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f};
-  std::unique_ptr<GMANRayPolygon> const polygon(quadWithoutSt(parallelToZ, vertices));
+  auto const polygon = quadWithoutSt(parallelToZ, vertices);
   GMANHit polygonHit;
   bool const hitPolygon = polygon->intersect(rayTo(pointOnQuad(0.5f, 0.5f)), polygonHit);
   check(hitPolygon, "polygon without st, parallel to z: the ray hits");
   if (hitPolygon) {
     checkZero("polygon without st, parallel to z", polygonHit);
   }
+
+  RtFloat const nearlyCollinear[] = {0.0f, 0.0f, 0.0f, 3.0f, 0.3f, 0.0f, 3.0f, 0.3f, 1.0f, 1.0f, 0.1f, 1.0f};
+  auto const collapsed = quadWithoutSt(nearlyCollinear, quadAt(kQuadCorner, kEdgeA, kEdgeB, kQuadSize));
+  GMANHit collapsedHit;
+  bool const hitCollapsed = collapsed->intersect(rayTo(pointOnQuad(0.25f, 0.75f)), collapsedHit);
+  check(hitCollapsed, "polygon without st, collapsing in float: the ray hits");
+  if (hitCollapsed) {
+    check(
+        std::fabs(collapsedHit.u - 1.25f) < 1.0e-4 && std::fabs(collapsedHit.v - 0.125f) < 1.0e-4,
+        "polygon without st, collapsing in float: the hit's (s, t) interpolates the fan triangle on the first, third and fourth vertices");
+    checkZero("polygon without st, collapsing in float", collapsedHit);
+  }
+
+  GMANRayParaboloid const nearApex(2.0f, 0.5f, 1.0f, kThetamax, none, transform);
+  GMANHit nearApexHit;
+  bool const hitNearApex = nearApex.intersect(rayTo(GMANPoint(1.0e-4f, 0.0f, 5.5f)), nearApexHit);
+  check(hitNearApex, "paraboloid near its apex: the ray hits");
+  if (hitNearApex) {
+    check(nearApexHit.v == 0.0f && std::fabs(nearApexHit.point.getX()) > 5.0e-5f,
+          "paraboloid near its apex: z rounds to zmin away from the axis");
+    checkZero("paraboloid near its apex", nearApexHit);
+  }
+
+  RtPoint crossingStart = {-1.0f, 0.0f, 0.3f};
+  RtPoint crossingEnd = {1.0f, 0.0f, 0.3f};
+  GMANRayHyperboloid const crossing(crossingStart, crossingEnd, kThetamax, none, transform);
+  hit = axisHit("hyperboloid annulus crossing the axis", crossing);
+  check(std::fabs(hit.v - 0.5f) < 1.0e-6f, "hyperboloid annulus crossing the axis: the ray reaches v = 0.5");
+  checkZero("hyperboloid annulus crossing the axis", hit);
 }
 
 class TangentShader : public GMANSurfaceShader {
