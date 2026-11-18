@@ -144,6 +144,9 @@ FanTriangle fanTriangleAt(std::vector<GMANPoint> const& ring, int axis, GMANPoin
   return fan;
 }
 
+// Interpolates each vertex's own (s, t) across fan. Exact for a triangle; for
+// a per-vertex (s, t) that is itself affine in position, any triangulation
+// gives the identical result at any interior point.
 std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<std::pair<RtFloat, RtFloat>> const& texCoords,
                                                 FanTriangle const& fan) {
   RtFloat const s = fan.wa * texCoords[0].first + fan.wb * texCoords[fan.b].first + fan.wc * texCoords[fan.c].first;
