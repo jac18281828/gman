@@ -117,10 +117,10 @@ The same materials make a still life in its own repository,
 [still-life-material](https://github.com/jac18281828/still-life-material), with a marble floor, a
 generated cactus and a glass ball that lenses it:
 
-[![gman's path-traced still life: a gold ball, a glass ball, a potted cactus, a mirror ball and a blue torus on a marble floor](samples/still-life.png)](https://github.com/jac18281828/still-life-material)
+[![gman's path-traced still life: a gold-leaf ball, a glass ball, a potted cactus, a mirror ball and a blue torus on a marble floor](samples/still-life.png)](https://github.com/jac18281828/still-life-material)
 
-The picture traces 2,048 paths a pixel at 1280 by 800; `make hq` in that repository renders it at
-1920 by 1200.
+The picture is `make hq`'s render in that repository, 2,048 paths a pixel at 1920 by 1200, scaled to
+1280 by 800. A shader built there turns the gold ball to gold leaf.
 
 ## Poke it
 
