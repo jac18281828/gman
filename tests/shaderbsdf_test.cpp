@@ -215,7 +215,7 @@ bool vectorNear(GMANVector const& a, GMANVector const& b, double tol) {
 }
 
 // The roughness-to-alpha mapping, the test's own copy of the one
-// shaders/gmanshaderparams.h defines: 0 for r <= 0 or NaN, which
+// include/gmanshaderparams.h defines: 0 for r <= 0 or NaN, which
 // BSDF::addGGX raises to kMinGGXAlpha.
 RtFloat alphaFromRoughness(RtFloat roughness) {
   if (!(roughness > 0.0f)) {

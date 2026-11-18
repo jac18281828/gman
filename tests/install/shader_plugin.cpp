@@ -20,28 +20,35 @@
 
 /*
  * A surface shader built outside the gman tree from the installed headers
- * alone, linking gman::gman_core and nothing else. It overrides computeCi and
- * bsdf, builds a Lambert lobe and exports the three entry points a shader
- * plugin defines. The module is built and linked, never loaded.
+ * alone, linking gman::gman_core and nothing else. It reads Kd through the
+ * installed parameter helpers, overrides computeCi and bsdf, builds a Lambert
+ * lobe and exports the three entry points a shader plugin defines. The module
+ * is built and linked, never loaded.
  */
 
 #include <gman/gmanbsdf.h>
 #include <gman/gmanloadable.h>
 #include <gman/gmanshader.h>
+#include <gman/gmanshaderparams.h>
 #include <gman/gmansurfaceshader.h>
 
 namespace gmanshader {
 
 class flat : public GMANSurfaceShader {
 public:
+  explicit flat(GMANParameterList const& parameters) : kd(getFloatParam(parameters, RI_KD, 1.0f)) {}
+
   GMANColor computeCi(GMANSurfaceEnv const& se) const override { return se.Cs; }
   GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
 
   gman::BSDF bsdf(GMANSurfaceEnv const& se) const override {
     gman::BSDF closure(se.N);
-    closure.addLambert(se.Cs);
+    closure.addLambert(GMANColor(kd * se.Cs.getRed(), kd * se.Cs.getGreen(), kd * se.Cs.getBlue()));
     return closure;
   }
+
+private:
+  RtFloat const kd;
 };
 
 } // namespace gmanshader
@@ -54,8 +61,8 @@ static GMANLoadableObjectInfo loadableInfo = {
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
 
-extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& /*parameters*/) {
-  return new gmanshader::flat();
+extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& parameters) {
+  return new gmanshader::flat(parameters);
 }
 
 extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }

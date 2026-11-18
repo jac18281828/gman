@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
   }
 
   std::vector<std::filesystem::path> const files = collectSourceFiles(dirs);
-  check(files.size() >= 8, "scanned at least eight files");
+  check(files.size() >= 7, "scanned at least seven files");
 
   for (std::filesystem::path const& file : files) {
     std::string const generic = file.generic_string();

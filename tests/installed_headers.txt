@@ -67,6 +67,7 @@ gmansamplebuffer.h
 gmansampling.h
 gmanshader.h
 gmanshaderenvironment.h
+gmanshaderparams.h
 gmanshading.h
 gmanslapi.h
 gmansurface.h
