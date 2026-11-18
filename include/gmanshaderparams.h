@@ -24,57 +24,33 @@
 #pragma once
 
 #include <cmath>
+#include <string>
+#include <string_view>
 
 #include "gmanbsdf.h"
 #include "gmancolor.h"
-#include "gmandictionary.h"
-#include "gmanerror.h"
 #include "gmanparameterlist.h"
-#include "gmanpolygon.h"
 
 namespace gmanshader {
 
-// Every shader parameter here is optional (RiSurface "matte" may pass none
-// of them), so probing for one is routine, not exceptional.
-// GMANParameterList::getPointer returns NULL for a token this parameter
-// list doesn't carry. The try/catch is still load-bearing, for the other
-// call: GMANDictionary::getTokenId throws RIE_BADTOKEN for a name the
-// dictionary has never seen, which is what a shader asking for a parameter
-// nobody ever declared does. getTokenId resolves against
-// gman::standardDictionary() rather than pl's own dictionary; both agree
-// on a standard token's ID.
-inline RtFloat* tryGetFloatParam(GMANParameterList const& pl, RtToken token) {
-  try {
-    return (RtFloat*)pl.getPointer(gman::standardDictionary().getTokenId(token));
-  } catch (GMANError&) {
-    return NULL;
-  }
+// Every shader parameter is optional (RiSurface "matte" may pass none of
+// them), so each helper answers its default for a name the list does not
+// carry. A name matches a parameter declared by RiDeclare or inline, in any
+// dictionary; a parameter of the wrong type or too short for the helper
+// answers the default too.
+inline RtFloat getFloatParam(GMANParameterList const& pl, std::string_view name, RtFloat def) {
+  auto const values = pl.floats(name);
+  return values.empty() ? def : values[0];
 }
 
-inline RtFloat getFloatParam(GMANParameterList const& pl, RtToken token, RtFloat def) {
-  RtFloat* p = tryGetFloatParam(pl, token);
-  return p ? p[0] : def;
+inline GMANColor getColorParam(GMANParameterList const& pl, std::string_view name, GMANColor const& def) {
+  auto const values = pl.floats(name);
+  return values.size() < 3 ? def : GMANColor(values[0], values[1], values[2]);
 }
 
-inline GMANColor getColorParam(GMANParameterList const& pl, RtToken token, GMANColor const& def) {
-  RtFloat* p = tryGetFloatParam(pl, token);
-  return p ? GMANColor(p[0], p[1], p[2]) : def;
-}
-
-// GMANParameterList stores a STRING parameter as std::string[], not
-// RtFloat[] -- getPointer's void* still needs the caller's own cast, same
-// as tryGetFloatParam above, just to std::string rather than RtFloat.
-inline std::string* tryGetStringParam(GMANParameterList const& pl, RtToken token) {
-  try {
-    return (std::string*)pl.getPointer(gman::standardDictionary().getTokenId(token));
-  } catch (GMANError&) {
-    return NULL;
-  }
-}
-
-inline std::string getStringParam(GMANParameterList const& pl, RtToken token, std::string const& def) {
-  std::string* p = tryGetStringParam(pl, token);
-  return p ? p[0] : def;
+inline std::string getStringParam(GMANParameterList const& pl, std::string_view name, std::string const& def) {
+  auto const values = pl.strings(name);
+  return values.empty() ? def : values[0];
 }
 
 // Clamps an albedo() answer's channels to [0, 1], the range every override

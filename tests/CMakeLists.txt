@@ -167,6 +167,17 @@ set_tests_properties(paramlist PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A shader reads a declared or inline parameter by name from a list built on
+# a dictionary of its own, and each accessor answers only its own type and
+# length. See tests/shaderparameters_test.cpp.
+add_executable(gman_shaderparameters shaderparameters_test.cpp)
+target_link_libraries(gman_shaderparameters PRIVATE gman_core)
+
+add_test(NAME shaderparameters COMMAND gman_shaderparameters)
+set_tests_properties(shaderparameters PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANBBox's two-point constructor and its getMin()/getMax() accessors.
 # See tests/bbox_test.cpp.
 add_executable(gman_bbox bbox_test.cpp)

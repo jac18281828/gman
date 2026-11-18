@@ -22,16 +22,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmaninlineparse.h"
 #include "gmanparameterlist.h"
+
+namespace {
+
+std::string parameterName(std::string const& token) {
+  gman::InlineParse parse;
+  parse.parse(token);
+  return parse.isInline() ? parse.getIdentifier() : token;
+}
+
+} // namespace
 
 // Allocates one entry's array, fills it with copy, and appends it to block;
 // copy takes the array to fill and applies whichever of copy_float/
 // copy_integer/copy_string matches T.
 template <typename T, typename CopyFn>
-RtVoid GMANParameterList::appendEntry(std::vector<Entry>& block, GMANTokenId id, RtInt size, CopyFn copy) {
+RtVoid GMANParameterList::appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name, RtInt size,
+                                      CopyFn copy) {
   auto data = std::make_unique<T[]>(size);
   copy(data.get());
-  block.push_back(Entry{id, std::move(data)});
+  block.push_back(Entry{id, std::move(name), size, std::move(data)});
 }
 
 GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, RtPointer* dt, RtInt vertex,
@@ -41,8 +53,9 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
 
   for (int i = 0; i < n; i++) { // convert token to id
     GMANTokenId tid;
+    std::string const token(tk[i]);
     try {
-      tid = di.getTokenId(std::string(tk[i]));
+      tid = di.getTokenId(token);
     } catch (GMANError& r) {
       GMANHandleError(r);
       continue;
@@ -59,16 +72,18 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
               "truncating the excess.",
               tk[i], size, supplied);
     }
+    auto name = parameterName(token);
     switch (di.getType(tid)) {
     case GMANTokenEntry::STRING:
-      appendEntry<std::string>(*block, tid, size,
+      appendEntry<std::string>(*block, tid, std::move(name), size,
                                [&](std::string* dest) { copy_string(size, (char**)dt[i], dest, supplied); });
       break;
     case GMANTokenEntry::INTEGER:
-      appendEntry<RtInt>(*block, tid, size, [&](RtInt* dest) { copy_integer(size, (RtInt*)dt[i], dest, supplied); });
+      appendEntry<RtInt>(*block, tid, std::move(name), size,
+                         [&](RtInt* dest) { copy_integer(size, (RtInt*)dt[i], dest, supplied); });
       break;
     default:
-      appendEntry<RtFloat>(*block, tid, size,
+      appendEntry<RtFloat>(*block, tid, std::move(name), size,
                            [&](RtFloat* dest) { copy_float(size, (RtFloat*)dt[i], dest, supplied); });
       break;
     }
@@ -94,6 +109,29 @@ RtPointer GMANParameterList::getPointer(GMANTokenId tid) const {
     }
   }
   return NULL;
+}
+
+template <typename T> std::span<T const> GMANParameterList::valuesOf(std::string_view name) const {
+  if (!entries) {
+    return {};
+  }
+  for (auto const& entry : *entries) {
+    if (entry.name != name) {
+      continue;
+    }
+    if (auto const* data = std::get_if<std::unique_ptr<T[]>>(&entry.data)) {
+      return {data->get(), static_cast<std::size_t>(entry.count)};
+    }
+  }
+  return {};
+}
+
+std::span<RtFloat const> GMANParameterList::floats(std::string_view name) const { return valuesOf<RtFloat>(name); }
+
+std::span<RtInt const> GMANParameterList::integers(std::string_view name) const { return valuesOf<RtInt>(name); }
+
+std::span<std::string const> GMANParameterList::strings(std::string_view name) const {
+  return valuesOf<std::string>(name);
 }
 
 RtVoid GMANParameterList::copy_float(RtInt n, RtFloat* source, RtFloat* dest, RtInt supplied) {

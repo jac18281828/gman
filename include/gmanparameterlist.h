@@ -25,7 +25,9 @@
 #pragma once
 
 #include <memory>
+#include <span>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -39,6 +41,8 @@ private:
   // Owns one parameter's array; the active alternative matches its type.
   struct Entry {
     GMANTokenId id;
+    std::string name;
+    RtInt count;
     std::variant<std::unique_ptr<RtFloat[]>, std::unique_ptr<RtInt[]>, std::unique_ptr<std::string[]>> data;
   };
 
@@ -50,7 +54,9 @@ private:
   RtVoid copy_string(RtInt number, char** source, std::string* dest, RtInt supplied);
 
   template <typename T, typename CopyFn>
-  static RtVoid appendEntry(std::vector<Entry>& block, GMANTokenId id, RtInt size, CopyFn copy);
+  static RtVoid appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name, RtInt size, CopyFn copy);
+
+  template <typename T> std::span<T const> valuesOf(std::string_view name) const;
 
 public:
   GMANParameterList() = default;
@@ -74,4 +80,13 @@ public:
   // from list's shared_ptr is left null instead of still owning its data.
 
   RtPointer getPointer(GMANTokenId tid) const;
+
+  // The values of the first parameter named name whose stored type matches,
+  // or an empty span when none does. A parameter's name is its token with any
+  // inline declaration removed: "float ior" answers to "ior". The span is as
+  // long as the parameter's allocated element count and stays valid while
+  // this list or any copy of it lives.
+  std::span<RtFloat const> floats(std::string_view name) const;
+  std::span<RtInt const> integers(std::string_view name) const;
+  std::span<std::string const> strings(std::string_view name) const;
 };

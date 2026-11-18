@@ -44,8 +44,7 @@
  */
 namespace gmanshader {
 
-// A RIB-side "ior" parameter would need a standard dictionary token
-// that does not exist yet (gmanshaderparams.h).
+// glass reads no "ior" parameter yet, so the index of refraction is fixed.
 constexpr RtFloat kIor = (RtFloat)1.5;
 
 class glass : public GMANSurfaceShader {

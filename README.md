@@ -291,8 +291,11 @@ set_target_properties(gman_myshader PROPERTIES OUTPUT_NAME "myshader")
 ```
 
 `Surface "myshader"` then loads `libmyshader.so`, the name `OUTPUT_NAME`
-gives it. The installed package exports no `gman_add_plugin`: a new shader
-builds only inside a gman checkout.
+gives it. The installed package exports no `gman_add_plugin`, but it ships
+`<gman/gmanshaderparams.h>`, whose helpers read a parameter by name, declared
+or inline. An out-of-tree shader builds as a `MODULE` library linking
+`gman::gman_core`, with prefix `lib` and suffix `.so`, as
+`tests/install/CMakeLists.txt` does.
 
 ## Link gman from C
 

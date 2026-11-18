@@ -37,8 +37,7 @@
  *
  * A real reflection, through trace() (gmantrace.h), rather than
  * shinymetal's texture environment-map lookup. Kr reuses the existing
- * standard token; see gmanshaderparams.h's own note on why a RIB-side
- * "ior" is not similarly free for glass alongside this shader.
+ * standard token.
  */
 namespace gmanshader {
 
