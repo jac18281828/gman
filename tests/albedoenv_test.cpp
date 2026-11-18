@@ -98,7 +98,7 @@ std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader co
 // Every field gman::shade's fill sets from a point, an appearance and a
 // camera transform: Cs, Os, P, N, Ng, I, E, u, v, s, t, surfaceMagnitude,
 // cameraToWorld's sixteen entries and the light count -- 43 scalars in
-// all.
+// all. The fill also sets dPdu and dPdv, which this list omits.
 constexpr std::size_t kFeatureCount = 26 + 16 + 1;
 
 std::array<double, kFeatureCount> envFeatures(GMANSurfaceEnv const& se) {

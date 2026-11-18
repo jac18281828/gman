@@ -109,7 +109,23 @@ struct SweepHit {
   GMANVector objNormal;
   RtFloat theta;
   double v;
+  double px, py;
 };
+
+void sweepTangents(Sweep const& sweep, SweepHit const& found, GMANVector& dPdu, GMANVector& dPdv) {
+  RtFloat const xv = (RtFloat)(sweep.p1x + found.v * sweep.dxSeg);
+  RtFloat const yv = (RtFloat)(sweep.p1y + found.v * sweep.dySeg);
+  bool const pointOnAxis = (RtFloat)found.px == 0.0 && (RtFloat)found.py == 0.0;
+  bool const segmentOnAxis = xv == 0.0 && yv == 0.0;
+  if (pointOnAxis || segmentOnAxis)
+    return;
+
+  double const cosTheta = std::cos((double)found.theta), sinTheta = std::sin((double)found.theta);
+  double const alongU = (double)sweep.thetamaxRad;
+  dPdu = GMANVector((RtFloat)(-alongU * found.py), (RtFloat)(alongU * found.px), 0.0);
+  dPdv = GMANVector((RtFloat)(cosTheta * sweep.dxSeg - sinTheta * sweep.dySeg),
+                    (RtFloat)(sinTheta * sweep.dxSeg + cosTheta * sweep.dySeg), (RtFloat)sweep.dzSeg);
+}
 
 // A segment with point1.z == point2.z sweeps a flat annulus: z is
 // constant across it, so it carries no information about v, unlike
@@ -158,6 +174,8 @@ bool annulusHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector const
     found.objNormal = objNormal;
     found.theta = theta;
     found.v = v;
+    found.px = x;
+    found.py = y;
     return true;
   }
 
@@ -212,6 +230,8 @@ bool spanningHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector cons
     found.objNormal = objNormal;
     found.theta = theta;
     found.v = v;
+    found.px = root.px;
+    found.py = root.py;
     return true;
   }
 
@@ -269,11 +289,17 @@ bool GMANRayHyperboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
   GMANVector normal = gman::transformNormal(cameraToObject, found.objNormal);
   normal.normalize();
 
+  GMANVector objDPdu;
+  GMANVector objDPdv;
+  sweepTangents(sweep, found, objDPdu, objDPdv);
+
   hit.t = found.t;
   hit.point = found.point;
   hit.normal = normal;
   hit.u = found.theta / sweep.thetamaxRad;
   hit.v = (RtFloat)found.v;
+  hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+  hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
   hit.primitive = this;
   return true;
 }

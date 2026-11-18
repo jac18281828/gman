@@ -76,6 +76,17 @@ bool torusBandParameter(double phiDeg, double loBound, double hiBound, double ph
   return true;
 }
 
+void torusTangents(double R, double r, double thetamaxRad, double phiSpanDeg, double px, double py, double pz,
+                   double radial, GMANVector& dPdu, GMANVector& dPdv) {
+  double const cosTheta = px / radial, sinTheta = py / radial;
+  double const cosPhi = (radial - R) / r, sinPhi = pz / r;
+  double const alongU = thetamaxRad * radial;
+  double const alongV = phiSpanDeg * DEGTORAD * r;
+  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  dPdv = GMANVector((RtFloat)(-alongV * sinPhi * cosTheta), (RtFloat)(-alongV * sinPhi * sinTheta),
+                    (RtFloat)(alongV * cosPhi));
+}
+
 } // namespace
 
 GMANRayTorus::GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phimin, RtFloat phimax, RtFloat thetamax,
@@ -186,11 +197,17 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    GMANVector objDPdu;
+    GMANVector objDPdv;
+    torusTangents(R, r, thetamaxRad, (double)phimax - phimin, root.px, root.py, root.pz, radial, objDPdu, objDPdv);
+
     hit.t = root.t;
     hit.point = root.point;
     hit.normal = normal;
     hit.u = (RtFloat)(rawTheta / thetamaxRad);
     hit.v = (RtFloat)v;
+    hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+    hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
     hit.primitive = this;
     return true;
   }

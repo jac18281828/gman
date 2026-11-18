@@ -32,6 +32,22 @@
 #include "gmanraysphere.h"
 #include "gmanvector.h"
 
+namespace {
+
+void sphereTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat phiSpan, RtFloat theta, RtFloat phi, GMANVector& dPdu,
+                    GMANVector& dPdv) {
+  double const cosTheta = std::cos((double)theta), sinTheta = std::sin((double)theta);
+  double const cosPhi = std::cos((double)phi), sinPhi = std::sin((double)phi);
+  double const absRadius = std::fabs((double)radius);
+  double const alongU = (double)thetamaxRad * absRadius * cosPhi;
+  double const alongV = (double)phiSpan;
+  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  dPdv = GMANVector((RtFloat)(-alongV * absRadius * sinPhi * cosTheta),
+                    (RtFloat)(-alongV * absRadius * sinPhi * sinTheta), (RtFloat)(alongV * (double)radius * cosPhi));
+}
+
+} // namespace
+
 GMANRaySphere::GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
                              GMANTransform const& transform)
     : GMANSphere(radius, zmin, zmax, tmax, pl), objectToCamera(transform.interpolate(0.0)),
@@ -129,11 +145,18 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    GMANVector objDPdu;
+    GMANVector objDPdv;
+    if ((RtFloat)root.px != 0.0 || (RtFloat)root.py != 0.0)
+      sphereTangents(radius, thetamaxRad, phimax - phimin, theta, phi, objDPdu, objDPdv);
+
     hit.t = root.t;
     hit.point = root.point;
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = (phi - phimin) / (phimax - phimin);
+    hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+    hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
     hit.primitive = this;
     return true;
   }

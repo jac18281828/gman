@@ -101,6 +101,8 @@ SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   point.v = hit.v;
   point.s = hit.u;
   point.t = hit.v;
+  point.dPdu = hit.dPdu;
+  point.dPdv = hit.dPdv;
   point.surfaceMagnitude = gman::primitiveMagnitude(hit.primitive->getBBox());
   return point;
 }
@@ -124,6 +126,8 @@ GMANSurfaceEnv fillEnv(Appearance const& appearance, SurfacePoint const& point, 
   env.v = point.v;
   env.s = point.s;
   env.t = point.t;
+  env.dPdu = point.dPdu;
+  env.dPdv = point.dPdv;
   env.surfaceMagnitude = point.surfaceMagnitude;
   env.lights = appearance.lights;
   env.cameraToWorld = cameraToWorld;

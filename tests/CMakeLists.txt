@@ -1974,6 +1974,18 @@ set_tests_properties(raybvh PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANHit's dPdu and dPdv for every ray primitive, by finite differences on
+# the intersector's own hits, and through gman::shade to a shader. See
+# tests/raysurfacederivatives_test.cpp.
+add_executable(gman_raysurfacederivatives raysurfacederivatives_test.cpp)
+target_link_libraries(gman_raysurfacederivatives PRIVATE gman_core gman_ray)
+
+add_test(NAME raysurfacederivatives COMMAND gman_raysurfacederivatives)
+set_tests_properties(raysurfacederivatives PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Proves GMANRayBVH::nearestHit and GMANRayOccluder::transmission
 # re-entrant: a probe primitive nests a second call, on the same tree, mid-
 # traversal, and both the nested and the outer result must match their own

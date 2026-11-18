@@ -30,6 +30,17 @@
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
 
+namespace {
+
+void cylinderTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat zSpan, RtFloat theta, GMANVector& dPdu,
+                      GMANVector& dPdv) {
+  double const alongU = (double)thetamaxRad * std::fabs((double)radius);
+  dPdu = GMANVector((RtFloat)(-alongU * std::sin((double)theta)), (RtFloat)(alongU * std::cos((double)theta)), 0.0);
+  dPdv = GMANVector(0.0, 0.0, zSpan);
+}
+
+} // namespace
+
 GMANRayCylinder::GMANRayCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl,
                                  GMANTransform const& transform)
     : GMANCylinder(radius, zmin, zmax, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
@@ -109,11 +120,17 @@ bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    GMANVector objDPdu;
+    GMANVector objDPdv;
+    cylinderTangents(radius, thetamaxRad, zmax - zmin, theta, objDPdu, objDPdv);
+
     hit.t = root.t;
     hit.point = root.point;
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = (z - zmin) / (zmax - zmin);
+    hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+    hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
     hit.primitive = this;
     return true;
   }

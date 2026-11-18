@@ -22,6 +22,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 
 #include "gmanpolygon.h"
 #include "gmanraybbox.h"
@@ -41,6 +42,8 @@ constexpr RtFloat kParallelTolerance = (RtFloat)1.0e-6;
 // times the float error a hit point carries a few extents from the camera,
 // and far under the gap of a real miss.
 constexpr RtFloat kBoundaryTolerance = (RtFloat)1.0e-5;
+
+constexpr double kCollapseTolerance = 1.0e-6;
 
 // The axis the normal's own largest component names: projecting the ring
 // and the hit point onto the other two keeps the even-odd test below from
@@ -97,21 +100,26 @@ bool insideTriangle(RtFloat wa, RtFloat wb, RtFloat wc) {
   return wa >= -kBaryTolerance && wb >= -kBaryTolerance && wc >= -kBaryTolerance;
 }
 
-// Interpolates each vertex's own (s, t) across hitPoint, fan-triangulated
+// The fan triangle (v0, vb, vc) of ring that holds hitPoint, fan-triangulated
 // from vertex 0 ((v0, vi, vi+1) for i = 1..n-2) and projected the same way
-// insidePolygon is. Exact for a triangle; for a per-vertex (s, t) that is
-// itself affine in position, any triangulation gives the identical result
-// at any interior point.
-std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<GMANPoint> const& ring,
-                                                std::vector<std::pair<RtFloat, RtFloat>> const& texCoords, int axis,
-                                                GMANPoint const& hitPoint) {
+// insidePolygon is, with hitPoint's barycentric weights in it. valid is
+// false when every fan triangle is degenerate.
+struct FanTriangle {
+  std::size_t b = 1;
+  std::size_t c = 2;
+  RtFloat wa = 0.0;
+  RtFloat wb = 0.0;
+  RtFloat wc = 0.0;
+  bool valid = false;
+};
+
+FanTriangle fanTriangleAt(std::vector<GMANPoint> const& ring, int axis, GMANPoint const& hitPoint) {
   RtFloat px, py;
   project(hitPoint, axis, px, py);
   RtFloat ax, ay;
   project(ring[0], axis, ax, ay);
 
-  RtFloat wa = 0.0, wb = 0.0, wc = 0.0;
-  std::size_t bi = 1, ci = 2;
+  FanTriangle fan;
   std::size_t const n = ring.size();
   for (std::size_t i = 1; i + 1 < n; i++) {
     RtFloat bx, by, cx, cy;
@@ -124,18 +132,46 @@ std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<GMANPoint> const& ri
     // leftover weights as containment.
     if (!barycentric2D(px, py, ax, ay, bx, by, cx, cy, triWa, triWb, triWc))
       continue;
-    wa = triWa;
-    wb = triWb;
-    wc = triWc;
-    bi = i;
-    ci = i + 1;
-    if (insideTriangle(wa, wb, wc))
+    fan.wa = triWa;
+    fan.wb = triWb;
+    fan.wc = triWc;
+    fan.b = i;
+    fan.c = i + 1;
+    fan.valid = true;
+    if (insideTriangle(fan.wa, fan.wb, fan.wc))
       break;
   }
+  return fan;
+}
 
-  RtFloat const s = wa * texCoords[0].first + wb * texCoords[bi].first + wc * texCoords[ci].first;
-  RtFloat const t = wa * texCoords[0].second + wb * texCoords[bi].second + wc * texCoords[ci].second;
+std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<std::pair<RtFloat, RtFloat>> const& texCoords,
+                                                FanTriangle const& fan) {
+  RtFloat const s = fan.wa * texCoords[0].first + fan.wb * texCoords[fan.b].first + fan.wc * texCoords[fan.c].first;
+  RtFloat const t = fan.wa * texCoords[0].second + fan.wb * texCoords[fan.b].second + fan.wc * texCoords[fan.c].second;
   return {s, t};
+}
+
+void fanTangents(std::vector<GMANPoint> const& ring, std::vector<std::pair<RtFloat, RtFloat>> const& texCoords,
+                 FanTriangle const& fan, GMANVector& dPds, GMANVector& dPdt) {
+  dPds = GMANVector();
+  dPdt = GMANVector();
+  if (!fan.valid)
+    return;
+
+  double const ds1 = (double)texCoords[fan.b].first - texCoords[0].first;
+  double const dt1 = (double)texCoords[fan.b].second - texCoords[0].second;
+  double const ds2 = (double)texCoords[fan.c].first - texCoords[0].first;
+  double const dt2 = (double)texCoords[fan.c].second - texCoords[0].second;
+  double const determinant = ds1 * dt2 - ds2 * dt1;
+  if (std::fabs(determinant) <= kCollapseTolerance * (std::fabs(ds1 * dt2) + std::fabs(ds2 * dt1)))
+    return;
+
+  GMANVector const edge1(ring[0], ring[fan.b]);
+  GMANVector const edge2(ring[0], ring[fan.c]);
+  for (std::size_t axis = 0; axis < GMANVector::NCOORDS; ++axis) {
+    dPds[axis] = (RtFloat)((dt2 * edge1[axis] - dt1 * edge2[axis]) / determinant);
+    dPdt[axis] = (RtFloat)((ds1 * edge2[axis] - ds2 * edge1[axis]) / determinant);
+  }
 }
 
 // Even-odd (crossing number) test on the ring's projection to the plane
@@ -295,9 +331,11 @@ bool GMANRayPolygon::intersect(GMANRay const& ray, GMANHit& hit) const {
   hit.normal = normal;
   // Each vertex's own resolved (s, t) (see the constructor), interpolated
   // across the hit.
-  std::pair<RtFloat, RtFloat> const uv = interpolateTexCoord(vertices, texCoords, axis, hitPoint);
+  FanTriangle const fan = fanTriangleAt(vertices, axis, hitPoint);
+  std::pair<RtFloat, RtFloat> const uv = interpolateTexCoord(texCoords, fan);
   hit.u = uv.first;
   hit.v = uv.second;
+  fanTangents(vertices, texCoords, fan, hit.dPdu, hit.dPdv);
   hit.primitive = this;
   return true;
 }

@@ -92,6 +92,8 @@ struct GMAN_EXPORT SurfacePoint {
   RtFloat v = 0.0;
   RtFloat s = 0.0;
   RtFloat t = 0.0;
+  GMANVector dPdu;
+  GMANVector dPdv;
 
   // The hit primitive's own camera-space magnitude
   // (gman::primitiveMagnitude, gmanbbox.h), 0 when
@@ -105,8 +107,8 @@ struct GMAN_EXPORT SurfacePoint {
 // (GMANRayInterface::intersect's own contract), I the ray's own direction
 // and E its own origin, rather than both assumed at the camera-space
 // origin -- an orthographic ray, or a secondary ray, does not look from
-// there. s and t default to u and v, the RISpec's own default
-// texture-coordinate mapping. Precondition: a hit, hit.primitive
+// there. dPdu and dPdv are the hit's own. s and t default to u and v, the
+// RISpec's own default texture-coordinate mapping. Precondition: a hit, hit.primitive
 // non-null. A host's shading and gman::albedo share this one mapping, so
 // the day s and t stop defaulting to u and v, albedo follows shading.
 GMAN_EXPORT SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit);

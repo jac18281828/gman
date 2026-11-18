@@ -30,6 +30,19 @@
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
 
+namespace {
+
+void coneTangents(RtFloat height, RtFloat radius, RtFloat thetamaxRad, RtFloat theta, RtFloat v, GMANVector& dPdu,
+                  GMANVector& dPdv) {
+  double const cosTheta = std::cos((double)theta), sinTheta = std::sin((double)theta);
+  double const absRadius = std::fabs((double)radius);
+  double const alongU = (double)thetamaxRad * absRadius * (1.0 - (double)v);
+  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  dPdv = GMANVector((RtFloat)(-absRadius * cosTheta), (RtFloat)(-absRadius * sinTheta), height);
+}
+
+} // namespace
+
 GMANRayCone::GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl,
                          GMANTransform const& transform)
     : GMANCone(height, radius, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
@@ -116,11 +129,18 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    GMANVector objDPdu;
+    GMANVector objDPdv;
+    if ((RtFloat)root.px != 0.0 || (RtFloat)root.py != 0.0)
+      coneTangents(height, radius, thetamaxRad, theta, z / height, objDPdu, objDPdv);
+
     hit.t = root.t;
     hit.point = root.point;
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
     hit.v = z / height;
+    hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+    hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
     hit.primitive = this;
     return true;
   }

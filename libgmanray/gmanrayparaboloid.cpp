@@ -30,6 +30,19 @@
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
 
+namespace {
+
+void paraboloidTangents(RtFloat zSpan, RtFloat thetamaxRad, RtFloat theta, double radial, RtFloat v, GMANVector& dPdu,
+                        GMANVector& dPdv) {
+  double const cosTheta = std::cos((double)theta), sinTheta = std::sin((double)theta);
+  double const alongU = (double)thetamaxRad * radial;
+  double const radialRate = radial / (2.0 * (double)v);
+  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  dPdv = GMANVector((RtFloat)(radialRate * cosTheta), (RtFloat)(radialRate * sinTheta), zSpan);
+}
+
+} // namespace
+
 GMANRayParaboloid::GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl,
                                      GMANTransform const& transform)
     : GMANParaboloid(rmax, zmin, zmax, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
@@ -130,11 +143,20 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
     normal.normalize();
 
+    RtFloat const v = (z - zmin) / (zmax - zmin);
+    GMANVector objDPdu;
+    GMANVector objDPdv;
+    if (((RtFloat)root.px != 0.0 || (RtFloat)root.py != 0.0) && v > 0.0)
+      paraboloidTangents(zmax - zmin, thetamaxRad, theta, std::sqrt(root.px * root.px + root.py * root.py), v, objDPdu,
+                         objDPdv);
+
     hit.t = root.t;
     hit.point = root.point;
     hit.normal = normal;
     hit.u = theta / thetamaxRad;
-    hit.v = (z - zmin) / (zmax - zmin);
+    hit.v = v;
+    hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+    hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
     hit.primitive = this;
     return true;
   }

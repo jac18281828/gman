@@ -29,6 +29,17 @@
 #include "gmanraydisk.h"
 #include "gmanvector.h"
 
+namespace {
+
+void diskTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat theta, double r, GMANVector& dPdu, GMANVector& dPdv) {
+  double const cosTheta = std::cos((double)theta), sinTheta = std::sin((double)theta);
+  double const alongU = (double)thetamaxRad * r;
+  dPdu = GMANVector((RtFloat)(-alongU * sinTheta), (RtFloat)(alongU * cosTheta), 0.0);
+  dPdv = GMANVector((RtFloat)((double)radius * cosTheta), (RtFloat)((double)radius * sinTheta), 0.0);
+}
+
+} // namespace
+
 GMANRayDisk::GMANRayDisk(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl,
                          GMANTransform const& transform)
     : GMANDisk(height, radius, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
@@ -102,11 +113,18 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
 
   GMANPoint const objPoint((RtFloat)x, (RtFloat)y, height);
 
+  GMANVector objDPdu;
+  GMANVector objDPdv;
+  if ((RtFloat)x != 0.0 || (RtFloat)y != 0.0)
+    diskTangents(radius, thetamaxRad, theta, r, objDPdu, objDPdv);
+
   hit.t = t;
   hit.point = gman::transformPoint(objectToCamera, objPoint);
   hit.normal = normal;
   hit.u = theta / thetamaxRad;
   hit.v = (RtFloat)(r / (double)radius);
+  hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+  hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
   hit.primitive = this;
   return true;
 }
