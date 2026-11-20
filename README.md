@@ -387,7 +387,8 @@ tree.
 
 `bench/bench.sh` times the whole machine on `samples/materials.rib`. The script renders a queue of
 independent copies, one per core at a time, and reports renders a minute. Build the release preset
-first, then run it:
+first, which links with link-time optimization where the toolchain supports it (`-DGMAN_LTO=OFF`
+turns it off), then run it:
 
 ```sh
 cmake --preset release && cmake --build --preset release

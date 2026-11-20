@@ -85,6 +85,21 @@ option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin" ON)
 option(GMAN_BUILD_RADIOSITY "Build the radiosity indirect-light pass plugin" ON)
 option(GMAN_BUILD_PATHTRACER "Build the path tracer plugin" ON)
 
+# GMAN_LTO links every target with link-time optimization when the toolchain
+# supports it and configures without it otherwise; the release preset sets it.
+option(GMAN_LTO "Link with link-time optimization where the toolchain supports it" OFF)
+if(GMAN_LTO)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT GMAN_IPO_SUPPORTED OUTPUT GMAN_IPO_OUTPUT
+    LANGUAGES C CXX)
+  if(GMAN_IPO_SUPPORTED)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+  else()
+    string(REPLACE "\n" " " GMAN_IPO_REASON "${GMAN_IPO_OUTPUT}")
+    message(STATUS "GMAN_LTO is ON; building without LTO, IPO unsupported: ${GMAN_IPO_REASON}")
+  endif()
+endif()
+
 # The production source directories, relative to the source root. format-check
 # and every test that scans source read this one list, so a new directory is
 # added here once. Every consumer scans recursively, so libgmanray/include and
