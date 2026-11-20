@@ -202,6 +202,17 @@ void storeNamedOptions(GMANDictionary& dictionary, std::string const& option, Rt
   }
 }
 
+void requireRgbColorSamples(GMANOptions const& options, char const* request) {
+  const RtInt samples = options.getColorSamples().getNumber();
+  if (samples == DefaultColorSamples) {
+    return;
+  }
+  throw GMANError(RIE_UNIMPLEMENT, RIE_ERROR,
+                  std::format("{} with {} color samples is unsupported: GMAN shades in {}-component RGB.", request,
+                              samples, DefaultColorSamples)
+                      .c_str());
+}
+
 } // namespace
 
 /*
@@ -598,10 +609,12 @@ RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtP
 // ******************************************************************
 RtVoid GMANRenderManImpl::RiColor(RtColor color) {
   allowed(cmdColor);
+  requireRgbColorSamples(getOptions(), "Color");
   getAttributes().setColor(color);
 }
 RtVoid GMANRenderManImpl::RiOpacity(RtColor color) {
   allowed(cmdOpacity);
+  requireRgbColorSamples(getOptions(), "Opacity");
   getAttributes().setOpacity(color);
 }
 RtVoid GMANRenderManImpl::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3,
