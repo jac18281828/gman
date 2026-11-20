@@ -3028,6 +3028,15 @@ set_tests_properties(bsdfdelta PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Each executable that replaces the global operator new exports it, so the
+# libraries it links bind the replacement under link-time optimization on
+# Mach-O; ELF exports it already.
+foreach(counting_allocator_test
+    gman_paramlist gman_raybvhalloc gman_bsdf gman_bsdfggx gman_bsdfdelta)
+  target_link_options(${counting_allocator_test} PRIVATE
+    "$<$<PLATFORM_ID:Darwin>:LINKER:-export_dynamic>")
+endforeach()
+
 # gman::bsdf, the shading API's free function: plastic matches a hand-built
 # env, matte builds at the shading normal, a null shader answers Cs as one
 # Lambert lobe, and glass answers its dielectric lobe. Shaders load through
