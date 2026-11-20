@@ -74,50 +74,18 @@ struct Bin {
   std::size_t count = 0;
   GMANBBox bounds;
 
-  void merge(std::size_t otherCount, GMANBBox const& otherBounds) {
-    if (otherCount == 0) {
+  void add(GMANBBox const& box) { merge({1, box}); }
+
+  void merge(Bin const& other) {
+    if (other.count == 0) {
       return;
     }
-    bounds = count == 0 ? otherBounds : unionOf(bounds, otherBounds);
-    count += otherCount;
+    bounds = count == 0 ? other.bounds : unionOf(bounds, other.bounds);
+    count += other.count;
   }
 
   RtFloat weightedArea() const { return count == 0 ? (RtFloat)0.0 : surfaceArea(bounds) * (RtFloat)count; }
 };
-
-struct BinSplit {
-  bool valid = false;
-  std::size_t bin = 0;
-  RtFloat cost = 0.0;
-};
-
-BinSplit cheapestBinSplit(std::array<Bin, kBinCount> const& bins, std::size_t childCapacity) {
-  std::array<std::size_t, kBinCount> rightCount = {};
-  std::array<RtFloat, kBinCount> rightCost = {};
-  Bin right;
-  for (std::size_t bin = kBinCount - 1; bin > 0; --bin) {
-    right.merge(bins[bin].count, bins[bin].bounds);
-    rightCount[bin - 1] = right.count;
-    rightCost[bin - 1] = right.weightedArea();
-  }
-
-  BinSplit best;
-  Bin left;
-  for (std::size_t bin = 0; bin + 1 < kBinCount; ++bin) {
-    left.merge(bins[bin].count, bins[bin].bounds);
-    if (left.count == 0 || rightCount[bin] == 0 || left.count > childCapacity || rightCount[bin] > childCapacity) {
-      continue;
-    }
-    RtFloat const cost = left.weightedArea() + rightCost[bin];
-    if (!std::isfinite(cost)) {
-      continue;
-    }
-    if (!best.valid || cost < best.cost) {
-      best = {true, bin, cost};
-    }
-  }
-  return best;
-}
 
 } // namespace
 
@@ -273,8 +241,9 @@ bool GMANRayBVH::splitBySurfaceArea(std::size_t start, std::size_t count, std::s
   }
 
   std::size_t const capacity = childCapacity(depth);
-  BinSplit best;
-  int bestAxis = 0;
+  RtFloat bestCost = std::numeric_limits<RtFloat>::infinity();
+  int bestAxis = -1;
+  std::size_t bestBin = 0;
   RtFloat bestLow = 0.0;
   RtFloat bestExtent = 0.0;
   for (int axis = 0; axis < 3; ++axis) {
@@ -285,23 +254,42 @@ bool GMANRayBVH::splitBySurfaceArea(std::size_t start, std::size_t count, std::s
     }
     std::array<Bin, kBinCount> bins;
     for (std::size_t i = start; i < start + count; ++i) {
-      bins[binOf(axisValue(primitives[i].centroid, axis), low, extent)].merge(1, primitives[i].bbox);
+      bins[binOf(axisValue(primitives[i].centroid, axis), low, extent)].add(primitives[i].bbox);
     }
-    BinSplit const candidate = cheapestBinSplit(bins, capacity);
-    if (candidate.valid && (!best.valid || candidate.cost < best.cost)) {
-      best = candidate;
-      bestAxis = axis;
-      bestLow = low;
-      bestExtent = extent;
+
+    // upperCost[plane] prices the bins above plane, the one between bin
+    // plane and bin plane + 1.
+    std::array<RtFloat, kBinCount - 1> upperCost;
+    Bin upper;
+    for (std::size_t plane = kBinCount - 1; plane-- > 0;) {
+      upper.merge(bins[plane + 1]);
+      upperCost[plane] = upper.weightedArea();
+    }
+
+    Bin lower;
+    for (std::size_t plane = 0; plane + 1 < kBinCount; ++plane) {
+      lower.merge(bins[plane]);
+      std::size_t const upperCount = count - lower.count;
+      if (lower.count == 0 || upperCount == 0 || GMANMax(lower.count, upperCount) > capacity) {
+        continue;
+      }
+      RtFloat const cost = lower.weightedArea() + upperCost[plane];
+      if (std::isfinite(cost) && cost < bestCost) {
+        bestCost = cost;
+        bestAxis = axis;
+        bestBin = plane;
+        bestLow = low;
+        bestExtent = extent;
+      }
     }
   }
-  if (!best.valid) {
+  if (bestAxis < 0) {
     return false;
   }
 
   auto const middle = std::partition(
       primitives.begin() + (long)start, primitives.begin() + (long)(start + count),
-      [&](Entry const& entry) { return binOf(axisValue(entry.centroid, bestAxis), bestLow, bestExtent) <= best.bin; });
+      [&](Entry const& entry) { return binOf(axisValue(entry.centroid, bestAxis), bestLow, bestExtent) <= bestBin; });
   mid = (std::size_t)(middle - primitives.begin());
   return true;
 }
