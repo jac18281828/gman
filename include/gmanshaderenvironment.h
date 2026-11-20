@@ -28,9 +28,11 @@
 #pragma once
 
 #include <cmath>
+#include <format>
 #include <vector>
 
 #include "gmancolor.h"
+#include "gmanerror.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
@@ -190,15 +192,17 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   RtFloat smoothstep(RtFloat min, RtFloat max, RtFloat value) const { return GMANSmoothStep(min, max, value); }
 
   template <class T> T spline(const std::string& basis, RtFloat value, RtInt nvals, T fvals[]) const {
+    if (basis == "catmull-rom")
+      return GMANCatmullSpline<T>(value, nvals, fvals);
     if (basis == "bezier")
       return GMANBezierSpline<T>(value, nvals, fvals);
-    if (basis == "bspline")
+    if (basis == "b-spline" || basis == "bspline")
       return GMANBsplineSpline<T>(value, nvals, fvals);
     if (basis == "hermite")
       return GMANHermiteSpline<T>(value, nvals, fvals);
     if (basis == "linear")
       return GMANLinearSpline<T>(value, nvals, fvals);
-    return GMANCatmullSpline<T>(value, nvals, fvals); // "catmull-rom", default
+    throw GMANError(RIE_BADTOKEN, RIE_ERROR, std::format("spline: unknown basis \"{}\"", basis).c_str());
   }
 
   // ---- illuminance loop, RiSL's own shape: ambient()/diffuse()/
