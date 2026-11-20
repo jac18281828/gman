@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <format>
 #include <string>
 
 #include "check.h"
@@ -128,6 +129,38 @@ void testNearZeroResolventRootNarrower() {
              -5.3644181718937034e-07, -1.0000002384185791, expected, 2, 1e-6);
 }
 
+void checkTinyCubicTerm(double b) {
+  std::string const label = std::format("tiny cubic term, b == {:.17g}", b);
+  double roots[4];
+  int const count = gman::solveQuartic(1.0, b, 0.0, 0.0, 0.0, roots);
+  check(count >= 1, label + ": at least one root (got " + std::to_string(count) + ")");
+
+  double const scale = std::fabs(b);
+  bool simpleRootFound = false;
+  for (int i = 0; i < count; ++i) {
+    bool const finite = std::isfinite(roots[i]);
+    check(finite, std::format("{}: root {} is finite", label, i));
+    if (!finite)
+      continue;
+    double const nearest = std::min(std::fabs(roots[i]), std::fabs(roots[i] + b));
+    check(nearest <= 1e-5 * scale,
+          std::format("{}: root {} == {:.17g} lies within 1e-5*|b| of 0 or -b", label, i, roots[i]));
+    simpleRootFound = simpleRootFound || std::fabs(roots[i] + b) <= 1e-6 * scale;
+  }
+  check(simpleRootFound, label + ": a root lies within 1e-6*|b| of -b");
+}
+
+void testTinyCubicTermScaleSweep() {
+  for (int k = 0; k <= 60; ++k) {
+    double const magnitude = 4.0 * std::pow(10.0, -k);
+    checkTinyCubicTerm(magnitude);
+    checkTinyCubicTerm(-magnitude);
+  }
+  double const torusGrazing = 4.0000000781659255e-25;
+  checkTinyCubicTerm(torusGrazing);
+  checkTinyCubicTerm(-torusGrazing);
+}
+
 } // namespace
 
 int main() {
@@ -141,6 +174,7 @@ int main() {
   testFerrariNoRealRoots();
   testNearZeroResolventRoot();
   testNearZeroResolventRootNarrower();
+  testTinyCubicTermScaleSweep();
 
   return checkSummary("gman::solveQuartic solves a ray's quartic at every discriminant shape");
 }

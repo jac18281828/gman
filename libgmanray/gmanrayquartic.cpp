@@ -36,6 +36,8 @@ namespace {
 // free fraction of p rather than an absolute floor.
 constexpr double kResolventSeedFloor = 1e-8;
 
+constexpr double kTinyQuarticScale = 0x1p-64;
+
 // The largest real root of the depressed cubic n^3 + aa*n + bb == 0,
 // Cardano's method with the trigonometric form when it has three real
 // roots. Ferrari's resolvent cubic always has a root with the sign this
@@ -146,13 +148,7 @@ int solveFerrari(double p, double q, double r, double yRoots[4]) {
   return nY;
 }
 
-} // namespace
-
-namespace gman {
-
-int solveQuartic(double a, double b, double c, double d, double e, double roots[4]) {
-  double const bb = b / a, cc = c / a, dd = d / a, ee = e / a;
-
+int solveMonicQuartic(double bb, double cc, double dd, double ee, double roots[4]) {
   // Depress: t == y - bb/4 removes the cubic term, leaving
   // y^4 + p*y^2 + q*y + r == 0.
   double const p = cc - 3.0 * bb * bb / 8.0;
@@ -168,6 +164,34 @@ int solveQuartic(double a, double b, double c, double d, double e, double roots[
     roots[nT++] = yRoots[i] + shift;
 
   std::sort(roots, roots + nT);
+  return nT;
+}
+
+int tinyScaleExponent(double bb, double cc, double dd, double ee) {
+  double const scale =
+      std::max({std::abs(bb), std::sqrt(std::abs(cc)), std::cbrt(std::abs(dd)), std::sqrt(std::sqrt(std::abs(ee)))});
+  if (!(scale > 0.0 && scale < kTinyQuarticScale))
+    return 0;
+  int exponent = 0;
+  std::frexp(scale, &exponent);
+  return exponent;
+}
+
+} // namespace
+
+namespace gman {
+
+int solveQuartic(double a, double b, double c, double d, double e, double roots[4]) {
+  double const bb = b / a, cc = c / a, dd = d / a, ee = e / a;
+
+  int const exponent = tinyScaleExponent(bb, cc, dd, ee);
+  if (exponent == 0)
+    return solveMonicQuartic(bb, cc, dd, ee, roots);
+
+  int const nT = solveMonicQuartic(std::ldexp(bb, -exponent), std::ldexp(cc, -2 * exponent),
+                                   std::ldexp(dd, -3 * exponent), std::ldexp(ee, -4 * exponent), roots);
+  for (int i = 0; i < nT; ++i)
+    roots[i] = std::ldexp(roots[i], exponent);
   return nT;
 }
 
