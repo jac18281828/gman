@@ -34,6 +34,8 @@ namespace {
 
 constexpr std::size_t kBinCount = 16;
 
+constexpr RtFloat kMinDirectionLength = (RtFloat)0.5;
+
 // A camera-space axis coordinate too close to +/-RI_INFINITY (the
 // default box's own bound) to average safely is not expected -- every
 // assigned box is finite -- but the fallback to 0 costs nothing and
@@ -48,6 +50,36 @@ GMANPoint boxCentroid(GMANBBox const& box) {
   GMANPoint const hi = box.getMax();
   return GMANPoint(centroidAxis(lo.getX(), hi.getX()), centroidAxis(lo.getY(), hi.getY()),
                    centroidAxis(lo.getZ(), hi.getZ()));
+}
+
+bool traceable(GMANRay const& ray) {
+  GMANPoint const& origin = ray.getOrigin();
+  GMANVector const& direction = ray.getDirection();
+  RtFloat const components[6] = {origin.getX(),    origin.getY(),    origin.getZ(),
+                                 direction.getX(), direction.getY(), direction.getZ()};
+  for (RtFloat const component : components) {
+    if (!std::isfinite(component)) {
+      return false;
+    }
+  }
+  RtFloat const lengthSquared =
+      direction.getX() * direction.getX() + direction.getY() * direction.getY() + direction.getZ() * direction.getZ();
+  if (!(lengthSquared >= kMinDirectionLength * kMinDirectionLength)) {
+    return false;
+  }
+  return ray.getTMin() <= ray.getTMax();
+}
+
+bool hasNaNBound(GMANBBox const& box) {
+  GMANPoint const lo = box.getMin();
+  GMANPoint const hi = box.getMax();
+  RtFloat const bounds[6] = {lo.getX(), lo.getY(), lo.getZ(), hi.getX(), hi.getY(), hi.getZ()};
+  for (RtFloat const bound : bounds) {
+    if (std::isnan(bound)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 RtFloat axisValue(GMANPoint const& p, int axis) { return axis == 0 ? p.getX() : axis == 1 ? p.getY() : p.getZ(); }
@@ -111,9 +143,10 @@ GMANRayBVH::PreparedRay::PreparedRay(GMANRay const& ray)
   GMANVector const& rayDirection = ray.getDirection();
   RtFloat const direction[3] = {rayDirection.getX(), rayDirection.getY(), rayDirection.getZ()};
   for (std::size_t axis = 0; axis < 3; ++axis) {
-    parallel[axis] = direction[axis] == (RtFloat)0.0;
+    RtFloat const inverse = (RtFloat)1.0 / direction[axis];
+    parallel[axis] = !std::isfinite(inverse);
     if (!parallel[axis]) {
-      inverseDirection[axis] = (RtFloat)1.0 / direction[axis];
+      inverseDirection[axis] = inverse;
     }
   }
 }
@@ -156,15 +189,18 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
   deepestLeaf = 0;
 
   std::size_t index = 0;
-  // Builds one Entry from a ray primitive and appends it, keeping the
-  // insertion order build()'s own tie-break in testLeaf relies on. A
-  // lambda local to build() rather than a free function: Entry is private,
-  // and a member function's own scope is what gives this the access it
-  // needs.
+  // Builds one Entry from a ray primitive and appends it, unless its box
+  // carries a NaN bound, keeping the insertion order build()'s own
+  // tie-break in testLeaf relies on. A lambda local to build() rather than
+  // a free function: Entry is private, and a member function's own scope is
+  // what gives this the access it needs.
   auto addEntry = [this, &index](GMANRayInterface const* primitive) {
     Entry entry;
     entry.primitive = primitive;
     entry.bbox = primitive->getBBox();
+    if (hasNaNBound(entry.bbox)) {
+      return;
+    }
     entry.centroid = boxCentroid(entry.bbox);
     entry.insertionIndex = index++;
     primitives.push_back(entry);
@@ -374,7 +410,7 @@ bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface c
 
 bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
                             std::size_t* primitiveTests, std::size_t* boxTests) const {
-  if (rootIndex < 0) {
+  if (rootIndex < 0 || !traceable(ray)) {
     return false;
   }
 

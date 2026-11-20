@@ -1985,6 +1985,18 @@ set_tests_properties(raybvh PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# No NaN enters, crosses or leaves the ray kernel: untraceable rays, a
+# denormal direction component and a NaN box through GMANRayBVH. See
+# tests/raykernelnan_test.cpp.
+add_executable(gman_raykernelnan raykernelnan_test.cpp)
+target_link_libraries(gman_raykernelnan PRIVATE gman_core gman_ray)
+
+add_test(NAME raykernelnan COMMAND gman_raykernelnan)
+set_tests_properties(raykernelnan PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANHit's dPdu and dPdv for every ray primitive, by finite differences on
 # the intersector's own hits, and through gman::shade to a shader. See
 # tests/raysurfacederivatives_test.cpp.

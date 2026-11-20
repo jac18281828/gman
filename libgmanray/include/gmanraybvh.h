@@ -69,12 +69,14 @@ public:
 
   // Finds the nearest hit within ray's own [tmin, tmax]. On a hit,
   // writes it through hit/hitPrimitive and returns true; on a miss,
-  // leaves both untouched and returns false. On an exact t tie between
-  // two candidates, the earlier-inserted primitive wins, regardless of
-  // traversal order. primitiveTests, when non-null, is incremented once
-  // per primitive-level intersect() call this traversal makes (hit or
-  // miss) -- an out-parameter rather than a member, so two calls stay
-  // re-entrant.
+  // leaves both untouched and returns false. An untraceable ray misses:
+  // one with a non-finite origin or direction component, a direction
+  // shorter than half a unit, a NaN tmin or tmax, or tmin above tmax. On an
+  // exact t tie between two candidates, the earlier-inserted primitive wins,
+  // regardless of traversal order. primitiveTests, when non-null, is
+  // incremented once per primitive-level intersect() call this traversal
+  // makes (hit or miss) -- an out-parameter rather than a member, so two
+  // calls stay re-entrant.
   bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
                   std::size_t* primitiveTests = nullptr) const;
 
@@ -125,12 +127,13 @@ private:
 
     // The ray's slab test against node's box, clamped to [tMin, limit]:
     // entry narrows to the box's own intersection with that interval, and
-    // the box overlaps it exactly when entry <= exit. A parallel axis skips
-    // the division (1.0/-0.0 is -infinity, which would fold an origin
-    // exactly on that axis's near face into the wrong sign) and instead
-    // tests the origin's fixed coordinate against [lo, hi] directly: outside
-    // it, the box is missed regardless of the other axes; inside it, the
-    // axis imposes no constraint.
+    // the box overlaps it exactly when entry <= exit. A parallel axis, one
+    // whose direction component has no finite reciprocal (zero of either
+    // sign, or a denormal under about 2.9e-39), takes no reciprocal (an
+    // infinite one would fold an origin exactly on that axis's near face
+    // into 0 * infinity) and instead tests the origin's fixed coordinate
+    // against [lo, hi] directly: outside it, the box is missed regardless of
+    // the other axes; inside it, the axis imposes no constraint.
     bool overlaps(Node const& node, RtFloat limit, RtFloat& entry) const;
   };
 
