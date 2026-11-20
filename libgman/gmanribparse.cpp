@@ -1511,30 +1511,27 @@ RtVoid GMANRIBParse::parseAtmosphere(RtVoid) {
 
   const auto name = copyStringToken();
 
-  parseParameterList("Atmosphere");
+  auto [n, tokens, parms, counts] = parseParameterList("Atmosphere");
 
-  // FIXME: implement some atmosphere shaders
-  //  renderMan.RiAtmosphereV(name.c_str(), n, tokens, parms);
+  renderMan.RiAtmosphereV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseDisplacement(RtVoid) {
 
   const auto name = copyStringToken();
 
-  parseParameterList("Displacement");
+  auto [n, tokens, parms, counts] = parseParameterList("Displacement");
 
-  // FIXME: implement some displacement shaders
-  //  renderMan.RiDisplacementV(name.c_str(), n, tokens, parms);
+  renderMan.RiDisplacementV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseImager(RtVoid) {
 
   const auto name = copyStringToken();
 
-  parseParameterList("Imager");
+  auto [n, tokens, parms, counts] = parseParameterList("Imager");
 
-  // FIXME: implement some imagers
-  // renderMan.RiImagerV(name.c_str(), n, tokens, parms);
+  renderMan.RiImagerV(name.c_str(), n, tokens, parms);
 }
 
 RtVoid GMANRIBParse::parseIlluminate(RtVoid) {

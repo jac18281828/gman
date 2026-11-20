@@ -467,6 +467,18 @@ ending `WorldEnd` with no trailing newline; `parent.rib`/`child.rib` and
 gzip'd `ReadArchive` target, `child.rib` itself ending `AttributeEnd` with no
 trailing newline.
 
+## ribshaderrequests_*.rib
+
+`tests/ribshaderrequests_test.cpp`'s fixtures: one scene (a sphere under an
+ambient and a distant light), varied by one `Atmosphere`, `Displacement` or
+`Imager` request. `ribshaderrequests_control.rib` carries no such request.
+Each `_missing.rib` names a shader no plugin provides, so the request stops
+the file with `RIE_NOSHADER`; each `_loaded.rib` names a test plugin
+(`countingvolume`, `identitydisplacement`, `countingimager`) with a one-entry
+parameter list and renders the control's pixels. `Atmosphere` and
+`Displacement` sit in the world block before the `Sphere`; `Imager` sits
+before `Projection`. Not third-party.
+
 ## corpus/
 
 Real RIB from third-party software, fetched once and checked in so tests are

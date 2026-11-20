@@ -2876,6 +2876,46 @@ if(GMAN_BUILD_RAYTRACER)
     TIMEOUT 30)
 endif()
 
+# A RIB Atmosphere, Displacement or Imager reaches the renderer as the C
+# API's call does: a missing shader stops the file with RIE_NOSHADER, a
+# loadable one renders the control scene's pixels. See
+# ribshaderrequests_test.cpp's own comment. Both renderers write the same
+# TIFF names, so each gets its own WORKING_DIRECTORY.
+add_executable(gman_ribshaderrequests ribshaderrequests_test.cpp)
+target_link_libraries(gman_ribshaderrequests PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_ribshaderrequests gman_zbuffer gman_countingvolume gman_identitydisplacement
+  gman_countingimager)
+
+set(GMAN_RIBSHADERREQUESTS_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribshaderrequests-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_RIBSHADERREQUESTS_ZBUFFER_WORKDIR}")
+
+add_test(NAME ribshaderrequests_zbuffer
+  COMMAND gman_ribshaderrequests $<TARGET_FILE:gman>
+                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                 gmanzbuffer
+  WORKING_DIRECTORY "${GMAN_RIBSHADERREQUESTS_ZBUFFER_WORKDIR}")
+set_tests_properties(ribshaderrequests_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_ribshaderrequests gman_raytracer)
+
+  set(GMAN_RIBSHADERREQUESTS_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribshaderrequests-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_RIBSHADERREQUESTS_RAYTRACER_WORKDIR}")
+
+  add_test(NAME ribshaderrequests_raytracer
+    COMMAND gman_ribshaderrequests $<TARGET_FILE:gman>
+                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                   gmanraytracer
+    WORKING_DIRECTORY "${GMAN_RIBSHADERREQUESTS_RAYTRACER_WORKDIR}")
+  set_tests_properties(ribshaderrequests_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
 # gman's own error handler prints every report exactly as RiErrorPrint
 # does, then stops the file at RIE_ERROR or above: exit 1, no image, the
 # next file on the command line still runs. See reportederror_test.cpp's
