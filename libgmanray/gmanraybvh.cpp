@@ -248,14 +248,20 @@ GMANBBox GMANRayBVH::rangeBounds(std::size_t start, std::size_t count) const {
   return GMANBBox(boxMin, boxMax);
 }
 
-int GMANRayBVH::splitAxis(std::size_t start, std::size_t count) const {
+GMANBBox GMANRayBVH::centroidBounds(std::size_t start, std::size_t count) const {
   GMANPoint centroidMin = primitives[start].centroid;
   GMANPoint centroidMax = centroidMin;
   for (std::size_t i = start + 1; i < start + count; ++i) {
-    GMANPoint const& c = primitives[i].centroid;
-    centroidMin = gman::pointMin(centroidMin, c);
-    centroidMax = gman::pointMax(centroidMax, c);
+    centroidMin = gman::pointMin(centroidMin, primitives[i].centroid);
+    centroidMax = gman::pointMax(centroidMax, primitives[i].centroid);
   }
+  return GMANBBox(centroidMin, centroidMax);
+}
+
+int GMANRayBVH::splitAxis(std::size_t start, std::size_t count) const {
+  GMANBBox const centroids = centroidBounds(start, count);
+  GMANPoint const centroidMin = centroids.getMin();
+  GMANPoint const centroidMax = centroids.getMax();
   RtFloat const extent[3] = {centroidMax.getX() - centroidMin.getX(), centroidMax.getY() - centroidMin.getY(),
                              centroidMax.getZ() - centroidMin.getZ()};
   int axis = 0;
@@ -275,64 +281,61 @@ std::size_t GMANRayBVH::splitAtMedian(std::size_t start, std::size_t count) {
   return mid;
 }
 
-bool GMANRayBVH::splitBySurfaceArea(std::size_t start, std::size_t count, std::size_t depth, std::size_t& mid) {
-  GMANPoint centroidMin = primitives[start].centroid;
-  GMANPoint centroidMax = centroidMin;
-  for (std::size_t i = start + 1; i < start + count; ++i) {
-    centroidMin = gman::pointMin(centroidMin, primitives[i].centroid);
-    centroidMax = gman::pointMax(centroidMax, primitives[i].centroid);
+GMANRayBVH::SplitPlane GMANRayBVH::cheapestPlane(int axis, GMANBBox const& centroids, std::size_t start,
+                                                 std::size_t count, std::size_t capacity) const {
+  RtFloat const low = axisValue(centroids.getMin(), axis);
+  RtFloat const extent = axisValue(centroids.getMax(), axis) - low;
+  SplitPlane best;
+  if (!(extent > (RtFloat)0.0) || !std::isfinite(extent)) {
+    return best;
+  }
+  std::array<Bin, kBinCount> bins;
+  for (std::size_t i = start; i < start + count; ++i) {
+    bins[binOf(axisValue(primitives[i].centroid, axis), low, extent)].add(primitives[i].bbox);
   }
 
-  std::size_t const capacity = childCapacity(depth);
-  RtFloat bestCost = std::numeric_limits<RtFloat>::infinity();
-  int bestAxis = -1;
-  std::size_t bestBin = 0;
-  RtFloat bestLow = 0.0;
-  RtFloat bestExtent = 0.0;
-  for (int axis = 0; axis < 3; ++axis) {
-    RtFloat const low = axisValue(centroidMin, axis);
-    RtFloat const extent = axisValue(centroidMax, axis) - low;
-    if (!(extent > (RtFloat)0.0) || !std::isfinite(extent)) {
+  // upperCost[plane] prices the bins above plane, the one between bin
+  // plane and bin plane + 1.
+  std::array<RtFloat, kBinCount - 1> upperCost;
+  Bin upper;
+  for (std::size_t plane = kBinCount - 1; plane-- > 0;) {
+    upper.merge(bins[plane + 1]);
+    upperCost[plane] = upper.weightedArea();
+  }
+
+  Bin lower;
+  for (std::size_t plane = 0; plane + 1 < kBinCount; ++plane) {
+    lower.merge(bins[plane]);
+    std::size_t const upperCount = count - lower.count;
+    if (lower.count == 0 || upperCount == 0 || GMANMax(lower.count, upperCount) > capacity) {
       continue;
     }
-    std::array<Bin, kBinCount> bins;
-    for (std::size_t i = start; i < start + count; ++i) {
-      bins[binOf(axisValue(primitives[i].centroid, axis), low, extent)].add(primitives[i].bbox);
-    }
-
-    // upperCost[plane] prices the bins above plane, the one between bin
-    // plane and bin plane + 1.
-    std::array<RtFloat, kBinCount - 1> upperCost;
-    Bin upper;
-    for (std::size_t plane = kBinCount - 1; plane-- > 0;) {
-      upper.merge(bins[plane + 1]);
-      upperCost[plane] = upper.weightedArea();
-    }
-
-    Bin lower;
-    for (std::size_t plane = 0; plane + 1 < kBinCount; ++plane) {
-      lower.merge(bins[plane]);
-      std::size_t const upperCount = count - lower.count;
-      if (lower.count == 0 || upperCount == 0 || GMANMax(lower.count, upperCount) > capacity) {
-        continue;
-      }
-      RtFloat const cost = lower.weightedArea() + upperCost[plane];
-      if (std::isfinite(cost) && cost < bestCost) {
-        bestCost = cost;
-        bestAxis = axis;
-        bestBin = plane;
-        bestLow = low;
-        bestExtent = extent;
-      }
+    RtFloat const cost = lower.weightedArea() + upperCost[plane];
+    if (std::isfinite(cost) && cost < best.cost) {
+      best = {cost, axis, plane, low, extent};
     }
   }
-  if (bestAxis < 0) {
+  return best;
+}
+
+bool GMANRayBVH::splitBySurfaceArea(std::size_t start, std::size_t count, std::size_t depth, std::size_t& mid) {
+  GMANBBox const centroids = centroidBounds(start, count);
+  std::size_t const capacity = childCapacity(depth);
+  SplitPlane best;
+  for (int axis = 0; axis < 3; ++axis) {
+    SplitPlane const candidate = cheapestPlane(axis, centroids, start, count, capacity);
+    if (candidate.cost < best.cost) {
+      best = candidate;
+    }
+  }
+  if (best.axis < 0) {
     return false;
   }
 
   auto const middle = std::partition(
-      primitives.begin() + (long)start, primitives.begin() + (long)(start + count),
-      [&](Entry const& entry) { return binOf(axisValue(entry.centroid, bestAxis), bestLow, bestExtent) <= bestBin; });
+      primitives.begin() + (long)start, primitives.begin() + (long)(start + count), [&](Entry const& entry) {
+        return binOf(axisValue(entry.centroid, best.axis), best.low, best.extent) <= best.bin;
+      });
   mid = (std::size_t)(middle - primitives.begin());
   return true;
 }

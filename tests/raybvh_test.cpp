@@ -75,6 +75,7 @@
 #include <limits>
 #include <random>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -665,6 +666,45 @@ void testTieUnderBestHitLimit() {
   }
 }
 
+std::vector<GMANPoint> unitSquareAt(RtFloat centreX, RtFloat centreY) {
+  return {GMANPoint(centreX - 0.5, centreY - 0.5, 0.0), GMANPoint(centreX + 0.5, centreY - 0.5, 0.0),
+          GMANPoint(centreX + 0.5, centreY + 0.5, 0.0), GMANPoint(centreX - 0.5, centreY + 0.5, 0.0)};
+}
+
+std::size_t primitiveTestsAlongZ(GMANRayBVH const& bvh, RtFloat x, RtFloat y) {
+  GMANRay const ray(GMANPoint(x, y, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANHit hit;
+  GMANRayInterface const* prim = nullptr;
+  std::size_t primitiveTests = 0;
+  check(bvh.nearestHit(ray, hit, prim, &primitiveTests), "tie rule: the ray hits a quad");
+  return primitiveTests;
+}
+
+void testTieWithinAxisTakesLowestPlane() {
+  GMANLinearWorldManager worldManager;
+  for (RtFloat const x : {-4.0f, -2.0f, 0.0f, 2.0f, 4.0f}) {
+    worldManager.add(new GMANRayPolygon(quadInPlane(x - 0.5f, x + 0.5f), GMANParameterList()));
+  }
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  check(primitiveTestsAlongZ(bvh, -4.0f, 0.0f) == 2,
+        "tie within an axis: the lowest of the equally cheap planes splits two quads from three");
+}
+
+void testTieAcrossAxesTakesLowestAxis() {
+  GMANLinearWorldManager worldManager;
+  for (auto const& centre :
+       {std::pair<RtFloat, RtFloat>{-2.0f, 0.0f}, {2.0f, 0.0f}, {0.0f, -2.0f}, {0.0f, 2.0f}, {0.0f, 0.0f}}) {
+    worldManager.add(new GMANRayPolygon(unitSquareAt(centre.first, centre.second), GMANParameterList()));
+  }
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  check(primitiveTestsAlongZ(bvh, -2.0f, 0.0f) == 1,
+        "tie across axes: the x sweep, the lower axis, isolates the quad at x = -2 in a leaf of one");
+}
+
 void addWall(GMANLinearWorldManager& worldManager, std::vector<GMANRayInterface*>& prims, int axis, RtFloat side) {
   RtFloat const h = kRoomHalfSize;
   auto corner = [&](RtFloat u, RtFloat v) {
@@ -924,9 +964,8 @@ void testMissLeavesHitUntouched() {
   check(emptyPrim == &sentinelPrimitive, "empty tree: nearestHit leaves the caller's own hitPrimitive untouched");
 }
 
-// ---- nine concentric spheres share one centroid, leaving the bins no
-// extent to span: the build falls back to the object median, halving
-// nine into a leaf of four and a five that halves again. ----
+// ---- nine concentric spheres share one centroid: the build falls back to
+// the object median, to a depth of exactly 2. ----
 void testCoincidentCentroids() {
   constexpr int kCount = 9;
 
@@ -996,6 +1035,8 @@ int main() {
   testBoxTestsPerNode();
   testTieAtClampedEntry();
   testTieUnderBestHitLimit();
+  testTieWithinAxisTakesLowestPlane();
+  testTieAcrossAxesTakesLowestAxis();
   testSurfaceAreaFewerBoxTests();
   testDepthFitsTheStack();
   testMissLeavesHitUntouched();

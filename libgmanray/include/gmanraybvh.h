@@ -44,14 +44,13 @@
  * surface-area heuristic over their own bboxes: 16 bins over the range's
  * centroid extent on each axis, the cheapest split by box area times
  * primitive count winning, the lower axis then the lower bin on a tie. A
- * range with no centroid extent, or no split of finite cost, splits at the
- * object median instead, and no tree grows deeper than the traversal stack
- * holds. nearestHit then traverses the tree it built, touching only
- * that tree and a local stack -- const, re-entrant, no shared mutable
- * state of its own, the same contract GMANRayInterface::intersect and
- * GMANRayOccluder::transmission keep, which is what lets a caller invoke
- * any of the three from concurrent gman::parallelFor workers. GMANRAY_EXPORT,
- * along with GMANRayOccluder: the path tracer's own API.
+ * range with no centroid extent, no split of finite cost, or no split whose
+ * children both fit within the levels left, splits at the object median
+ * instead, and no tree grows deeper than the traversal stack holds. nearestHit then traverses the tree it built,
+ * touching only that tree and a local stack -- const, re-entrant, no shared mutable state of its own, the same contract
+ * GMANRayInterface::intersect and GMANRayOccluder::transmission keep, which is what lets a caller invoke any of the
+ * three from concurrent gman::parallelFor workers. GMANRAY_EXPORT, along with GMANRayOccluder: the path tracer's own
+ * API.
  */
 class GMANRAY_EXPORT GMANRayBVH {
 public:
@@ -192,15 +191,36 @@ private:
   // finish, split at medians, within kMaxTreeDepth levels.
   static std::size_t childCapacity(std::size_t depth);
 
+  // One candidate binned split: the plane after bin, on axis, over the
+  // centroid extent [low, low + extent]. An axis of -1 and an infinite cost
+  // mean no candidate.
+  struct SplitPlane {
+    RtFloat cost = std::numeric_limits<RtFloat>::infinity();
+    int axis = -1;
+    std::size_t bin = 0;
+    RtFloat low = 0.0;
+    RtFloat extent = 0.0;
+  };
+
   // Partitions primitives[start, start + count) around the cheapest binned
   // surface-area split whose children both fit childCapacity(depth), and
   // writes the first index of the upper half to mid. Returns false, leaving
-  // mid alone, when no axis has centroid extent or no split has finite cost.
+  // mid alone, when no axis has centroid extent, no split has finite cost, or
+  // no split leaves both children within childCapacity(depth).
   bool splitBySurfaceArea(std::size_t start, std::size_t count, std::size_t depth, std::size_t& mid);
+
+  // The cheapest plane on axis, the lowest on a tie, whose children both
+  // hold at most capacity primitives; no candidate when the centroids have
+  // no finite extent along axis or no plane has finite cost.
+  SplitPlane cheapestPlane(int axis, GMANBBox const& centroids, std::size_t start, std::size_t count,
+                           std::size_t capacity) const;
 
   // Partitions primitives[start, start + count) at the object median along
   // splitAxis and returns the first index of the upper half.
   std::size_t splitAtMedian(std::size_t start, std::size_t count);
+
+  // The box spanning primitives[start, start + count)'s own centroids.
+  GMANBBox centroidBounds(std::size_t start, std::size_t count) const;
 
   // The union of primitives[start, start + count)'s own boxes.
   GMANBBox rangeBounds(std::size_t start, std::size_t count) const;
