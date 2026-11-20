@@ -142,6 +142,13 @@ template <typename Request> void dispatchWithCounts(GMANRenderMan& renderMan, Rt
   }
 }
 
+RtInt colorSampleCount(GMANRenderMan& renderMan) {
+  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
+    return impl->colorSampleCount();
+  }
+  return DefaultColorSamples;
+}
+
 enum class LiteralKind { empty, string, number };
 
 struct Declaration {
@@ -879,7 +886,7 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseColor(RtVoid) {
-  int number = DefaultColorSamples;
+  const int number = colorSampleCount(renderMan);
 
   std::vector<RtFloat> color(number);
   const GMANToken& lookAhead = peekToken();
@@ -904,7 +911,7 @@ RtVoid GMANRIBParse::parseColor(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseOpacity(RtVoid) {
-  int number = DefaultColorSamples;
+  const int number = colorSampleCount(renderMan);
 
   std::vector<RtFloat> color(number);
   const GMANToken& lookAhead = peekToken();

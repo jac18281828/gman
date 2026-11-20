@@ -1,0 +1,18 @@
+## Color and Opacity at a ColorSamples count of 2, bare then bracketed, each followed by
+## a Sphere so a mis-counted read desyncs the next parse. Not third-party.
+Display "colorsamples_2.tif" "file" "rgba"
+Format 16 16 1
+PixelSamples 1 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Color 0.125 0.25
+Sphere 1 -1 1 360
+Color [ 0.375 0.5 ]
+Sphere 1 -1 1 360
+Opacity 0.625 0.75
+Sphere 1 -1 1 360
+Opacity [ 0.875 1 ]
+Sphere 1 -1 1 360
+WorldEnd

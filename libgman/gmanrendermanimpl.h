@@ -123,6 +123,7 @@ public:
   /* ADDITIONAL OPTIONS */
   RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]);
   RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]);
+  RtInt colorSampleCount();
   RtVoid RiRelativeDetail(RtFloat relativedetail);
   RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
 

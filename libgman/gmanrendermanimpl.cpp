@@ -580,6 +580,7 @@ RtVoid GMANRenderManImpl::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]
   }
   getOptions().setColorSamples(n, nRGB, RGBn);
 }
+RtInt GMANRenderManImpl::colorSampleCount() { return getOptions().getColorSamples().getNumber(); }
 RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
   allowed(cmdRelativeDetail);
   getOptions().setRelativeDetail(relativedetail);

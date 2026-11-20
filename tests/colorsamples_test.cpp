@@ -20,15 +20,18 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdio>
 #include <string>
 #include <vector>
 
 #include "check.h"
+#include "gmanascii.h"
 #include "gmanattributes.h"
 #include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanoptions.h"
 #include "gmanrendermanimpl.h"
+#include "gmanribparse.h"
 #include "ri.h"
 
 namespace {
@@ -80,7 +83,7 @@ void testCountBelowOneIsRejected() {
   renderMan.RiEnd();
 }
 
-void setColorSamples(ColorSamplesRenderMan& renderMan, RtInt count) {
+void setColorSamples(GMANRenderManImpl& renderMan, RtInt count) {
   std::vector<RtFloat> matrix(3 * static_cast<std::size_t>(count), 0.0f);
   renderMan.RiColorSamples(count, matrix.data(), matrix.data());
 }
@@ -129,11 +132,98 @@ void testColorAndOpacityNeedThreeSamples() {
   renderMan.RiEnd();
 }
 
+class RecordingRenderMan : public GMANRenderManImpl {
+public:
+  std::vector<std::vector<RtFloat>> colors;
+  std::vector<std::vector<RtFloat>> opacities;
+
+  RtVoid RiColor(RtColor color) override { colors.emplace_back(color, color + colorSampleCount()); }
+  RtVoid RiOpacity(RtColor opacity) override { opacities.emplace_back(opacity, opacity + colorSampleCount()); }
+};
+
+class FallbackRenderMan : public GMANASCII {
+public:
+  std::vector<RtFloat> color;
+  std::vector<RtFloat> opacity;
+  int spheres = 0;
+
+  RtVoid RiBegin(RtToken) override {}
+  RtVoid RiEnd() override {}
+  RtVoid RiColor(RtColor value) override { color.assign(value, value + DefaultColorSamples); }
+  RtVoid RiOpacity(RtColor value) override { opacity.assign(value, value + DefaultColorSamples); }
+  RtVoid RiSphereV(RtFloat, RtFloat, RtFloat, RtFloat, RtInt, RtToken[], RtPointer[]) override { ++spheres; }
+};
+
+std::vector<RtFloat> run(RtInt count, int firstStep) {
+  std::vector<RtFloat> values;
+  for (RtInt i = 0; i < count; ++i) {
+    values.push_back(0.125f * static_cast<RtFloat>(firstStep + i + 1));
+  }
+  return values;
+}
+
+bool parses(GMANRIBParse& parser) {
+  try {
+    parser.parse();
+  } catch (GMANError const&) {
+    return false;
+  }
+  return true;
+}
+
+void testParserReadsAtColorSampleCount(std::string const& ribDir, RtInt count) {
+  const std::string label = "ColorSamples " + std::to_string(count) + ": ";
+  const std::string rib = ribDir + "/colorsamples_" + std::to_string(count) + ".rib";
+  RecordingRenderMan renderMan;
+  bool parsed = false;
+  {
+    GMANRIBParse parser(renderMan, rib.c_str());
+    setColorSamples(renderMan, count);
+    parsed = parses(parser);
+  }
+
+  check(parsed, label + "the fixture parses to its end");
+  check(renderMan.colors.size() == 2, label + "two Color requests arrive");
+  check(renderMan.opacities.size() == 2, label + "two Opacity requests arrive");
+  if (renderMan.colors.size() != 2 || renderMan.opacities.size() != 2) {
+    return;
+  }
+  check(renderMan.colors[0] == run(count, 0), label + "bare Color reads its samples in order");
+  check(renderMan.colors[1] == run(count, count), label + "bracketed Color reads its samples in order");
+  check(renderMan.opacities[0] == run(count, 2 * count), label + "bare Opacity reads its samples in order");
+  check(renderMan.opacities[1] == run(count, 3 * count), label + "bracketed Opacity reads its samples in order");
+}
+
+void testRendererWithoutColorSamplesReadsThree(std::string const& ribDir) {
+  const std::string rib = ribDir + "/colorsamples_fallback.rib";
+  FallbackRenderMan renderMan;
+  bool parsed = false;
+  {
+    GMANRIBParse parser(renderMan, rib.c_str());
+    parsed = parses(parser);
+  }
+
+  check(parsed, "fallback: the fixture parses to its end");
+  check(renderMan.color == std::vector<RtFloat>({0.25f, 0.5f, 0.75f}), "fallback: Color reads three samples");
+  check(renderMan.opacity == std::vector<RtFloat>({1.0f, 1.0f, 1.0f}), "fallback: Opacity reads three samples");
+  check(renderMan.spheres == 2, "fallback: each request is followed by its Sphere");
+}
+
 } // namespace
 
-int main() {
+int main(int argc, char* argv[]) {
+  if (argc < 2) {
+    std::fprintf(stderr, "usage: %s <tests/rib dir>\n", argv[0]);
+    return 2;
+  }
+  const std::string ribDir = argv[1];
+
   testCountBelowOneIsRejected();
   testColorAndOpacityNeedThreeSamples();
+  for (const RtInt count : {1, 2, 5}) {
+    testParserReadsAtColorSampleCount(ribDir, count);
+  }
+  testRendererWithoutColorSamplesReadsThree(ribDir);
 
   return checkSummary("ColorSamples is honored by the parser and refused by the renderer where it cannot shade");
 }

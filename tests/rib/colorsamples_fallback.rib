@@ -1,0 +1,14 @@
+## Color and Opacity read three floats on a renderer that records no ColorSamples, each
+## followed by a Sphere so a mis-counted read desyncs the next parse. Not third-party.
+Display "colorsamples_fallback.tif" "file" "rgba"
+Format 16 16 1
+PixelSamples 1 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Color 0.25 0.5 0.75
+Sphere 1 -1 1 360
+Opacity 1 1 1
+Sphere 1 -1 1 360
+WorldEnd

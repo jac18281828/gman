@@ -864,10 +864,13 @@ set_tests_properties(ribparsefallback PROPERTIES
 
 # ColorSamples sets the number of floats Color and Opacity carry; GMAN shades
 # in three-component RGB only. See tests/colorsamples_test.cpp.
-add_executable(gman_colorsamples colorsamples_test.cpp)
+add_executable(gman_colorsamples colorsamples_test.cpp
+  "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
+target_include_directories(gman_colorsamples PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
 target_link_libraries(gman_colorsamples PRIVATE gman_core gman_internal_headers)
 
-add_test(NAME colorsamples COMMAND gman_colorsamples)
+add_test(NAME colorsamples
+  COMMAND gman_colorsamples "${CMAKE_CURRENT_SOURCE_DIR}/rib")
 set_tests_properties(colorsamples PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
