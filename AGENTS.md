@@ -20,6 +20,7 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   `strcat` family, no `new char[`, no `PATH_MAX` outside `tests/`.
 - Prefer RAII. A class owning a raw pointer declares or deletes all five
   special members.
+- No commented-out code: delete it; git history keeps it.
 - Comments document the code, not the change. No expository or 'my way'
   comments.
 - clang-format 23 keeps the tree formatted to `.clang-format`; a change
