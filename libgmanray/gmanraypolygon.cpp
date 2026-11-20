@@ -26,6 +26,7 @@
 
 #include "gmanpolygon.h"
 #include "gmanraybbox.h"
+#include "gmanrayfinitehit.h"
 #include "gmanraypolygon.h"
 
 namespace {
@@ -84,7 +85,7 @@ void project(GMANPoint const& p, int axis, RtFloat& a, RtFloat& b) {
 bool barycentric2D(RtFloat px, RtFloat py, RtFloat ax, RtFloat ay, RtFloat bx, RtFloat by, RtFloat cx, RtFloat cy,
                    RtFloat& wa, RtFloat& wb, RtFloat& wc) {
   RtFloat const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
-  if ((RtFloat)fabs(d) < kParallelTolerance) {
+  if (!((RtFloat)fabs(d) >= kParallelTolerance)) {
     return false;
   }
   wa = ((by - cy) * (px - cx) + (cx - bx) * (py - cy)) / d;
@@ -308,11 +309,11 @@ bool GMANRayPolygon::intersect(GMANRay const& ray, GMANHit& hit) const {
     return false;
 
   RtFloat const denom = ray.getDirection().dot(normal);
-  if ((RtFloat)fabs(denom) < kParallelTolerance)
+  if (!((RtFloat)fabs(denom) >= kParallelTolerance))
     return false;
 
   RtFloat const t = GMANVector(ray.getOrigin(), vertices[0]).dot(normal) / denom;
-  if (t < ray.getTMin() || t > ray.getTMax())
+  if (!(ray.getTMin() <= t && t <= ray.getTMax()))
     return false;
 
   GMANPoint const hitPoint = ray.pointAt(t);
@@ -329,16 +330,20 @@ bool GMANRayPolygon::intersect(GMANRay const& ray, GMANHit& hit) const {
       return false;
   }
 
-  hit.t = t;
-  hit.point = hitPoint;
-  hit.normal = normal;
+  GMANHit candidate;
+  candidate.t = t;
+  candidate.point = hitPoint;
+  candidate.normal = normal;
   // Each vertex's own resolved (s, t) (see the constructor), interpolated
   // across the hit.
   FanTriangle const fan = fanTriangleAt(vertices, axis, hitPoint);
   std::pair<RtFloat, RtFloat> const uv = interpolateTexCoord(texCoords, fan);
-  hit.u = uv.first;
-  hit.v = uv.second;
-  fanTangents(vertices, texCoords, fan, hit.dPdu, hit.dPdv);
-  hit.primitive = this;
+  candidate.u = uv.first;
+  candidate.v = uv.second;
+  fanTangents(vertices, texCoords, fan, candidate.dPdu, candidate.dPdv);
+  candidate.primitive = this;
+  if (!gman::isFiniteHit(candidate))
+    return false;
+  hit = candidate;
   return true;
 }

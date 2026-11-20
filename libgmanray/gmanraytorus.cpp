@@ -26,6 +26,7 @@
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"
+#include "gmanrayfinitehit.h"
 #include "gmanrayquartic.h"
 #include "gmanraytorus.h"
 #include "gmanvector.h"
@@ -70,7 +71,7 @@ void torusQuarticCoefficients(double sox, double soy, double soz, double dx, dou
 // GMANTorus::getLocation's own inverse (phimin and phimax unsorted).
 bool torusBandParameter(double phiDeg, double loBound, double hiBound, double phimin, double phimax, double& v) {
   double const candidate = loBound + std::fmod(std::fmod(phiDeg - loBound, 360.0) + 360.0, 360.0);
-  if (candidate > hiBound)
+  if (!(candidate <= hiBound))
     return false;
   v = (candidate - phimin) / (phimax - phimin);
   return true;
@@ -168,13 +169,13 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = localRoots[i];
     gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
-    if (root.t < ray.getTMin() || root.t > ray.getTMax())
+    if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
     double rawTheta = std::atan2(root.py, root.px);
     if (rawTheta < 0.0)
       rawTheta += 2.0 * PI;
-    if (rawTheta > thetamaxRad)
+    if (!(rawTheta <= thetamaxRad))
       continue;
 
     double const radial =
@@ -200,14 +201,18 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector objDPdv;
     torusTangents(R, r, thetamaxRad, (double)phimax - phimin, root.px, root.py, root.pz, radial, objDPdu, objDPdv);
 
-    hit.t = root.t;
-    hit.point = root.point;
-    hit.normal = normal;
-    hit.u = (RtFloat)(rawTheta / thetamaxRad);
-    hit.v = (RtFloat)v;
-    hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-    hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
-    hit.primitive = this;
+    GMANHit candidate;
+    candidate.t = root.t;
+    candidate.point = root.point;
+    candidate.normal = normal;
+    candidate.u = (RtFloat)(rawTheta / thetamaxRad);
+    candidate.v = (RtFloat)v;
+    candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+    candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+    candidate.primitive = this;
+    if (!gman::isFiniteHit(candidate))
+      continue;
+    hit = candidate;
     return true;
   }
 

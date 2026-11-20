@@ -27,6 +27,7 @@
 #include "gmanmath.h"
 #include "gmanraybbox.h"
 #include "gmanraydisk.h"
+#include "gmanrayfinitehit.h"
 #include "gmanvector.h"
 
 namespace {
@@ -92,18 +93,18 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   // from the unshifted origin: no bounding-sphere shift applies here.
   double const tLocal = ((double)height - oz) / dz;
   RtFloat const t = (RtFloat)tLocal;
-  if (t < ray.getTMin() || t > ray.getTMax())
+  if (!(ray.getTMin() <= t && t <= ray.getTMax()))
     return false;
 
   double const x = ox + dx * tLocal;
   double const y = oy + dy * tLocal;
   double const r = std::sqrt(x * x + y * y);
-  if (r > (double)radius)
+  if (!(r <= (double)radius))
     return false;
 
   RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
   RtFloat const theta = GMANMod(GMANAtan((RtFloat)y, (RtFloat)x), (RtFloat)(2.0 * PI));
-  if (theta > thetamaxRad)
+  if (!(theta <= thetamaxRad))
     return false;
 
   // (0, 0, -1), GMANDisk::getNormal's own value: this flat plate's normal
@@ -119,13 +120,17 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   if ((RtFloat)x != 0.0 || (RtFloat)y != 0.0)
     diskTangents(radius, thetamaxRad, theta, x, y, objDPdu, objDPdv);
 
-  hit.t = t;
-  hit.point = gman::transformPoint(objectToCamera, objPoint);
-  hit.normal = normal;
-  hit.u = theta / thetamaxRad;
-  hit.v = (RtFloat)(r / (double)radius);
-  hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-  hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
-  hit.primitive = this;
+  GMANHit candidate;
+  candidate.t = t;
+  candidate.point = gman::transformPoint(objectToCamera, objPoint);
+  candidate.normal = normal;
+  candidate.u = theta / thetamaxRad;
+  candidate.v = (RtFloat)(r / (double)radius);
+  candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+  candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+  candidate.primitive = this;
+  if (!gman::isFiniteHit(candidate))
+    return false;
+  hit = candidate;
   return true;
 }

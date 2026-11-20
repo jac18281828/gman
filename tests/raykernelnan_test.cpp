@@ -31,6 +31,12 @@
  *
  * NaN boxes: a primitive whose box carries a NaN bound stays out of the
  * tree, and every other primitive's hits are unchanged.
+ *
+ * Finite hits: a fixed-seed family of rays with direction components of
+ * 1e-25, 1e-38, 1e-40 and 0, from origins on and beside each primitive's
+ * box, reaches each of the eight intersectors, directly and through the
+ * tree, and no hit carries a non-finite t, point, normal, u, v, dPdu or
+ * dPdv.
  */
 
 #include <cmath>
@@ -46,8 +52,14 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
+#include "gmanraycone.h"
 #include "gmanraycylinder.h"
+#include "gmanraydisk.h"
+#include "gmanrayhyperboloid.h"
+#include "gmanrayparaboloid.h"
+#include "gmanraypolygon.h"
 #include "gmanraysphere.h"
+#include "gmanraytorus.h"
 #include "maketransform.h"
 
 namespace {
@@ -331,11 +343,128 @@ void testNaNBoxStaysOut() {
   check(nanBoxHits == 0, "NaN box: no ray returns the NaN-boxed primitive");
 }
 
+bool finiteHit(GMANHit const& hit) {
+  RtFloat const fields[] = {hit.t,
+                            hit.point.getX(),
+                            hit.point.getY(),
+                            hit.point.getZ(),
+                            hit.normal.getX(),
+                            hit.normal.getY(),
+                            hit.normal.getZ(),
+                            hit.u,
+                            hit.v,
+                            hit.dPdu.getX(),
+                            hit.dPdu.getY(),
+                            hit.dPdu.getZ(),
+                            hit.dPdv.getX(),
+                            hit.dPdv.getY(),
+                            hit.dPdv.getZ()};
+  for (RtFloat const field : fields) {
+    if (!std::isfinite(field)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+struct Placed {
+  std::string name;
+  GMANRayInterface* primitive;
+};
+
+std::vector<Placed> placeEveryIntersector(GMANLinearWorldManager& worldManager) {
+  std::vector<Placed> placed;
+  auto add = [&](std::string const& name, GMANRayInterface* primitive) {
+    worldManager.add(primitive);
+    placed.push_back({name, primitive});
+  };
+  RtPoint spanningFrom = {1.0f, 0.0f, -1.0f};
+  RtPoint spanningTo = {0.5f, 0.5f, 1.0f};
+  RtPoint annulusFrom = {0.25f, 0.0f, 0.5f};
+  RtPoint annulusTo = {1.0f, 0.25f, 0.5f};
+  std::vector<GMANPoint> const quad = {GMANPoint(79.0, -1.0, 0.0), GMANPoint(81.0, -1.0, 0.0),
+                                       GMANPoint(81.0, 1.0, 0.0), GMANPoint(79.0, 1.0, 0.0)};
+
+  add("torus", new GMANRayTorus(1.0, 0.25, 0.0, 360.0, 360.0, GMANParameterList(), GMANTransform()));
+  add("torus band and wedge",
+      new GMANRayTorus(1.0, 0.25, -90.0, 90.0, 270.0, GMANParameterList(), translated(5.0, 0.0, 0.0)));
+  add("sphere", new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(10.0, 0.0, 0.0)));
+  add("sphere zone and wedge",
+      new GMANRaySphere(1.0, -0.5, 0.8, 270.0, GMANParameterList(), translated(15.0, 0.0, 0.0)));
+  add("cylinder", new GMANRayCylinder(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(20.0, 0.0, 0.0)));
+  add("cylinder wedge", new GMANRayCylinder(1.0, -1.0, 1.0, 180.0, GMANParameterList(), translated(25.0, 0.0, 0.0)));
+  add("cone", new GMANRayCone(2.0, 1.0, 360.0, GMANParameterList(), translated(30.0, 0.0, 0.0)));
+  add("cone wedge", new GMANRayCone(2.0, 1.0, 180.0, GMANParameterList(), translated(35.0, 0.0, 0.0)));
+  add("disk", new GMANRayDisk(0.5, 1.0, 360.0, GMANParameterList(), translated(40.0, 0.0, 0.0)));
+  add("disk wedge", new GMANRayDisk(0.5, 1.0, 180.0, GMANParameterList(), translated(45.0, 0.0, 0.0)));
+  add("hyperboloid",
+      new GMANRayHyperboloid(spanningFrom, spanningTo, 360.0, GMANParameterList(), translated(50.0, 0.0, 0.0)));
+  add("hyperboloid wedge",
+      new GMANRayHyperboloid(spanningFrom, spanningTo, 180.0, GMANParameterList(), translated(55.0, 0.0, 0.0)));
+  add("hyperboloid annulus",
+      new GMANRayHyperboloid(annulusFrom, annulusTo, 360.0, GMANParameterList(), translated(60.0, 0.0, 0.0)));
+  add("hyperboloid annulus wedge",
+      new GMANRayHyperboloid(annulusFrom, annulusTo, 180.0, GMANParameterList(), translated(65.0, 0.0, 0.0)));
+  add("paraboloid", new GMANRayParaboloid(1.0, 0.0, 2.0, 360.0, GMANParameterList(), translated(70.0, 0.0, 0.0)));
+  add("paraboloid wedge", new GMANRayParaboloid(1.0, 0.5, 2.0, 180.0, GMANParameterList(), translated(75.0, 0.0, 0.0)));
+  add("polygon", new GMANRayPolygon(quad, GMANParameterList()));
+  return placed;
+}
+
+// ---- no hit carries a non-finite field ----
+void testNoHitCarriesNonFiniteField() {
+  GMANLinearWorldManager worldManager;
+  std::vector<Placed> const placed = placeEveryIntersector(worldManager);
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+
+  GMANRay const torusProbe(GMANPoint(-1.0, -1.5, -0.25), GMANVector(1e-25f, 1.0f, 0.0f));
+  GMANHit probeHit;
+  probeHit.t = kSentinelT;
+  bool const probeFound = placed.front().primitive->intersect(torusProbe, probeHit);
+  std::printf("torus probe ray: found=%d t=%g\n", (int)probeFound, probeHit.t);
+  check(!probeFound || finiteHit(probeHit),
+        "torus: the ray from (-1, -1.5, -0.25) along (1e-25, 1, 0) hits finitely or not at all");
+
+  std::mt19937 rng(kSeed);
+  for (Placed const& entry : placed) {
+    std::vector<GMANRay> const rays = extremeRays(entry.primitive->getBBox(), rng);
+    std::size_t direct = 0;
+    std::size_t directNonFinite = 0;
+    std::size_t viaTree = 0;
+    std::size_t viaTreeNonFinite = 0;
+    for (GMANRay const& ray : rays) {
+      GMANHit hit;
+      if (entry.primitive->intersect(ray, hit)) {
+        ++direct;
+        if (!finiteHit(hit)) {
+          if (directNonFinite++ == 0) {
+            std::printf("%s: non-finite hit t=%g from origin (%g, %g, %g) direction (%g, %g, %g)\n", entry.name.c_str(),
+                        hit.t, ray.getOrigin().getX(), ray.getOrigin().getY(), ray.getOrigin().getZ(),
+                        ray.getDirection().getX(), ray.getDirection().getY(), ray.getDirection().getZ());
+          }
+        }
+      }
+      Probe const tree = probe(bvh, ray);
+      if (tree.found) {
+        ++viaTree;
+        viaTreeNonFinite += finiteHit(tree.hit) ? 0 : 1;
+      }
+    }
+    std::printf("%s: %zu rays, %zu direct hits, %zu non-finite, %zu tree hits, %zu non-finite\n", entry.name.c_str(),
+                rays.size(), direct, directNonFinite, viaTree, viaTreeNonFinite);
+    check(direct > 0, entry.name + ": the family hits the primitive");
+    check(directNonFinite == 0, entry.name + ": no intersect hit carries a non-finite field");
+    check(viaTreeNonFinite == 0, entry.name + ": no nearestHit hit carries a non-finite field");
+  }
+}
+
 } // namespace
 
 int main() {
   testUntraceableRaysMiss();
   testDenormalComponentIsParallel();
   testNaNBoxStaysOut();
+  testNoHitCarriesNonFiniteField();
   return checkSummary("raykernelnan: ok");
 }

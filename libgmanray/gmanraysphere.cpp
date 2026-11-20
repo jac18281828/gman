@@ -28,6 +28,7 @@
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"
+#include "gmanrayfinitehit.h"
 #include "gmanrayquadratic.h"
 #include "gmanraysphere.h"
 #include "gmanvector.h"
@@ -122,15 +123,15 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
     gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
-    if (root.t < ray.getTMin() || root.t > ray.getTMax())
+    if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
     RtFloat const z = (RtFloat)root.pz;
-    if (z < zmin || z > zmax)
+    if (!(zmin <= z && z <= zmax))
       continue;
 
     RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), (RtFloat)(2.0 * PI));
-    if (theta > thetamaxRad)
+    if (!(theta <= thetamaxRad))
       continue;
 
     RtFloat const phi = (RtFloat)asin(GMANClamp<double>(root.pz / radius, -1.0, 1.0));
@@ -150,14 +151,18 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
     if ((RtFloat)root.px != 0.0 || (RtFloat)root.py != 0.0)
       sphereTangents(radius, thetamaxRad, phimax - phimin, theta, phi, root.px, root.py, objDPdu, objDPdv);
 
-    hit.t = root.t;
-    hit.point = root.point;
-    hit.normal = normal;
-    hit.u = theta / thetamaxRad;
-    hit.v = (phi - phimin) / (phimax - phimin);
-    hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-    hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
-    hit.primitive = this;
+    GMANHit candidate;
+    candidate.t = root.t;
+    candidate.point = root.point;
+    candidate.normal = normal;
+    candidate.u = theta / thetamaxRad;
+    candidate.v = (phi - phimin) / (phimax - phimin);
+    candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+    candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+    candidate.primitive = this;
+    if (!gman::isFiniteHit(candidate))
+      continue;
+    hit = candidate;
     return true;
   }
 

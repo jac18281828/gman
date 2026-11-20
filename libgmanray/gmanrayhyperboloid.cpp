@@ -26,6 +26,7 @@
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"
+#include "gmanrayfinitehit.h"
 #include "gmanrayhyperboloid.h"
 #include "gmanrayquadratic.h"
 #include "gmanvector.h"
@@ -139,7 +140,7 @@ bool annulusHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector const
   // from the unshifted origin: no bounding-sphere shift applies here.
   double const tLocal = (sweep.p1z - (double)objOrigin.getZ()) / dzPlane;
   RtFloat const t = (RtFloat)tLocal;
-  if (t < ray.getTMin() || t > ray.getTMax())
+  if (!(ray.getTMin() <= t && t <= ray.getTMax()))
     return false;
 
   double const x = (double)objOrigin.getX() + (double)objDirection.getX() * tLocal;
@@ -156,12 +157,12 @@ bool annulusHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector const
   double const vRoots[2] = {vRoot0, vRoot1};
   for (int i = 0; i < numVRoots; ++i) {
     double const v = vRoots[i];
-    // Rejects NaN, the only place a NaN from a degenerate ray is caught: NaN fails every comparison.
+    // Rejects NaN: NaN fails every comparison.
     if (!(v >= 0.0 && v <= 1.0))
       continue;
 
     RtFloat const theta = wedgeTheta(sweep, v, x, y);
-    if (theta > sweep.thetamaxRad)
+    if (!(theta <= sweep.thetamaxRad))
       continue;
 
     // The fold, pDot + dSq*v == 0, is measure-zero: the formula and getNormal both vanish there in exact arithmetic.
@@ -206,15 +207,15 @@ bool spanningHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector cons
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
     gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
-    if (root.t < ray.getTMin() || root.t > ray.getTMax())
+    if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
     double const v = (root.pz - sweep.p1z) / sweep.dzSeg;
-    if (v < 0.0 || v > 1.0)
+    if (!(0.0 <= v && v <= 1.0))
       continue;
 
     RtFloat const theta = wedgeTheta(sweep, v, root.px, root.py);
-    if (theta > sweep.thetamaxRad)
+    if (!(theta <= sweep.thetamaxRad))
       continue;
 
     // GMANHyperboloid::getNormal's cross product dPdu x dPdv reduces to
@@ -293,13 +294,17 @@ bool GMANRayHyperboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
   GMANVector objDPdv;
   sweepTangents(sweep, found, objDPdu, objDPdv);
 
-  hit.t = found.t;
-  hit.point = found.point;
-  hit.normal = normal;
-  hit.u = found.theta / sweep.thetamaxRad;
-  hit.v = (RtFloat)found.v;
-  hit.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-  hit.dPdv = gman::transformDirection(objectToCamera, objDPdv);
-  hit.primitive = this;
+  GMANHit candidate;
+  candidate.t = found.t;
+  candidate.point = found.point;
+  candidate.normal = normal;
+  candidate.u = found.theta / sweep.thetamaxRad;
+  candidate.v = (RtFloat)found.v;
+  candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
+  candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+  candidate.primitive = this;
+  if (!gman::isFiniteHit(candidate))
+    return false;
+  hit = candidate;
   return true;
 }
