@@ -48,5 +48,5 @@ public:
   ~GMANColorSamples();
   GMANColorSamples const& operator=(GMANColorSamples const&);
 
-  int getNumber() { return number; }
+  int getNumber() const { return number; }
 };
