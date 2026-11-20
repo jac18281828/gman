@@ -58,6 +58,13 @@
  * with a direction component of +0.0 and of -0.0, origin on each face in
  * turn: a leaf's own primitive must still be tested regardless of the
  * zero's sign.
+ *
+ * testCoincidentCentroids: nine concentric spheres share one centroid,
+ * leaving the bins no extent to span, so the build halves them at the
+ * object median, to a depth of exactly 2.
+ *
+ * testBuildIsDeterministic: two builds of check 1's fixture agree on
+ * depth and on every ray's box and primitive tests.
  */
 
 #include <algorithm>
@@ -917,6 +924,66 @@ void testMissLeavesHitUntouched() {
   check(emptyPrim == &sentinelPrimitive, "empty tree: nearestHit leaves the caller's own hitPrimitive untouched");
 }
 
+// ---- nine concentric spheres share one centroid, leaving the bins no
+// extent to span: the build falls back to the object median, halving
+// nine into a leaf of four and a five that halves again. ----
+void testCoincidentCentroids() {
+  constexpr int kCount = 9;
+
+  GMANLinearWorldManager worldManager;
+  std::vector<GMANRayInterface*> prims;
+  for (int i = 1; i <= kCount; ++i) {
+    RtFloat const radius = (RtFloat)i;
+    auto* sphere = new GMANRaySphere(radius, -radius, radius, 360.0, GMANParameterList(), translated(0.0, 0.0, 20.0));
+    worldManager.add(sphere);
+    prims.push_back(sphere);
+  }
+
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  check(bvh.treeDepth() == 2, "coincident centroids: nine primitives split at the object median");
+
+  for (int i = 0; i <= kCount; ++i) {
+    GMANRay const ray(GMANPoint((RtFloat)i + 0.5f, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+    checkAgreement(bvh, prims, ray, "coincident centroids ray " + std::to_string(i));
+  }
+}
+
+// ---- the same primitives in the same order build the same tree: two
+// builds of check 1's fixture agree on depth and every sweep ray's box
+// and primitive tests. ----
+void testBuildIsDeterministic() {
+  GMANLinearWorldManager firstWorld;
+  GMANLinearWorldManager secondWorld;
+  std::vector<GMANRayInterface*> firstPrims;
+  std::vector<GMANRayInterface*> secondPrims;
+  buildCheck1Fixture(false, firstWorld, firstPrims, false);
+  buildCheck1Fixture(false, secondWorld, secondPrims, false);
+
+  GMANRayBVH first;
+  GMANRayBVH second;
+  first.build(firstWorld);
+  second.build(secondWorld);
+  check(first.treeDepth() == second.treeDepth(), "deterministic: two builds agree on depth");
+
+  std::mt19937 rng(0xB0C5u); // fixed seed: the rays are reproducible; the build draws none
+  std::uniform_real_distribution<float> dirDist(-1.0f, 1.0f);
+  std::uniform_real_distribution<float> originDist(-10.0f, 150.0f);
+  bool same = true;
+  for (int i = 0; i < 500; ++i) {
+    GMANPoint const origin(originDist(rng), dirDist(rng), dirDist(rng));
+    GMANRay const ray(origin, GMANVector(dirDist(rng), dirDist(rng), 0.25f));
+    std::size_t firstCounts[2] = {0, 0};
+    std::size_t secondCounts[2] = {0, 0};
+    GMANHit hit;
+    GMANRayInterface const* prim = nullptr;
+    first.nearestHit(ray, hit, prim, &firstCounts[0], &firstCounts[1]);
+    second.nearestHit(ray, hit, prim, &secondCounts[0], &secondCounts[1]);
+    same = same && firstCounts[0] == secondCounts[0] && firstCounts[1] == secondCounts[1];
+  }
+  check(same, "deterministic: two builds cost every ray the same box and primitive tests");
+}
+
 } // namespace
 
 int main() {
@@ -932,6 +999,8 @@ int main() {
   testSurfaceAreaFewerBoxTests();
   testDepthFitsTheStack();
   testMissLeavesHitUntouched();
+  testCoincidentCentroids();
+  testBuildIsDeterministic();
 
   return checkSummary("GMANRayBVH: identical hits against a linear scan, and a bounded primitive-test count");
 }

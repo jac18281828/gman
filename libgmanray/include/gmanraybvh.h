@@ -62,7 +62,9 @@ public:
   // its own entry instead of the mesh itself, so a mesh culls per face.
   // The dynamic_cast is defensive -- GMANRayObjectManager's factories
   // guarantee every primitive this renderer's world manager holds is
-  // already a GMANRayInterface, the polygon mesh type included.
+  // already a GMANRayInterface, the polygon mesh type included. The
+  // build is serial and draws no random number: the same primitives in
+  // the same order give the same tree.
   void build(GMANWorldManager& worldManager);
 
   // Finds the nearest hit within ray's own [tmin, tmax]. On a hit,
