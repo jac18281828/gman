@@ -161,6 +161,24 @@ void testTinyCubicTermScaleSweep() {
   checkTinyCubicTerm(-torusGrazing);
 }
 
+void checkScaleExponent(char const* name, double bb, double cc, double dd, double ee, int expected) {
+  int const exponent = gman::quarticScaleExponent(bb, cc, dd, ee);
+  check(exponent == expected, std::format("{}: scale exponent == {} (got {})", name, expected, exponent));
+}
+
+void testQuarticScaleSelector() {
+  constexpr double kThreshold = 0x1p-64;
+  checkScaleExponent("ordinary quartic", -1.0, -6.25, 0.25, 1.5, 0);
+  checkScaleExponent("unit root scale", 1.0, 0.0, 0.0, 0.0, 0);
+  checkScaleExponent("all-zero coefficients", 0.0, 0.0, 0.0, 0.0, 0);
+  checkScaleExponent("cubic term at exactly 2^-64", kThreshold, 0.0, 0.0, 0.0, 0);
+  checkScaleExponent("quadratic term at exactly 2^-64", 0.0, 0x1p-128, 0.0, 0.0, 0);
+  checkScaleExponent("constant term at exactly 2^-64", 0.0, 0.0, 0.0, 0x1p-256, 0);
+  checkScaleExponent("cubic term just below 2^-64", std::nextafter(kThreshold, 0.0), 0.0, 0.0, 0.0, -64);
+  checkScaleExponent("cubic term at 2^-70", 0x1p-70, 0.0, 0.0, 0.0, -69);
+  checkScaleExponent("largest of the four scales sets the exponent", 0x1p-100, 0x1p-250, 0x1p-303, 0x1p-500, -99);
+}
+
 } // namespace
 
 int main() {
@@ -175,6 +193,7 @@ int main() {
   testNearZeroResolventRoot();
   testNearZeroResolventRootNarrower();
   testTinyCubicTermScaleSweep();
+  testQuarticScaleSelector();
 
   return checkSummary("gman::solveQuartic solves a ray's quartic at every discriminant shape");
 }

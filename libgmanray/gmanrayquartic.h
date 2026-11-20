@@ -25,6 +25,13 @@
 
 namespace gman {
 
+// The power-of-two exponent solveQuartic divides the monic quartic
+// t^4 + bb*t^3 + cc*t^2 + dd*t + ee by before solving: its root scale, the
+// largest of |bb|, sqrt|cc|, cbrt|dd| and the fourth root of |ee|, lies in
+// [2^(exponent - 1), 2^exponent). Returns 0, the unscaled path, unless that
+// scale is nonzero and below 2^-64.
+int quarticScaleExponent(double bb, double cc, double dd, double ee);
+
 // Solves a*t^4 + b*t^3 + c*t^2 + d*t + e == 0 for real t, a != 0 a
 // precondition -- a zero-length ray direction is the only way a caller
 // reaches a == 0, and should check for it before calling. Closed form

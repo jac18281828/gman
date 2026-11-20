@@ -167,7 +167,11 @@ int solveMonicQuartic(double bb, double cc, double dd, double ee, double roots[4
   return nT;
 }
 
-int tinyScaleExponent(double bb, double cc, double dd, double ee) {
+} // namespace
+
+namespace gman {
+
+int quarticScaleExponent(double bb, double cc, double dd, double ee) {
   double const scale =
       std::max({std::abs(bb), std::sqrt(std::abs(cc)), std::cbrt(std::abs(dd)), std::sqrt(std::sqrt(std::abs(ee)))});
   if (!(scale > 0.0 && scale < kTinyQuarticScale))
@@ -177,14 +181,10 @@ int tinyScaleExponent(double bb, double cc, double dd, double ee) {
   return exponent;
 }
 
-} // namespace
-
-namespace gman {
-
 int solveQuartic(double a, double b, double c, double d, double e, double roots[4]) {
   double const bb = b / a, cc = c / a, dd = d / a, ee = e / a;
 
-  int const exponent = tinyScaleExponent(bb, cc, dd, ee);
+  int const exponent = quarticScaleExponent(bb, cc, dd, ee);
   if (exponent == 0)
     return solveMonicQuartic(bb, cc, dd, ee, roots);
 
