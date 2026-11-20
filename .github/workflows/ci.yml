@@ -193,7 +193,7 @@ jobs:
           done
   format-check:
     # Checks every .c, .cpp and .h under the eight source directories
-    # against the pinned clang-format version (.clang-format's own header
+    # against clang-format 23 (.clang-format's own header
     # names it) -- a whole-tree gate.
     name: clang-format
     runs-on: ubuntu-latest
@@ -210,7 +210,7 @@ jobs:
       - name: Install clang-format
         run: |
           python3 -m venv .venv-format
-          .venv-format/bin/pip install clang-format==22.1.8
+          .venv-format/bin/pip install clang-format==23.1.5
           echo "$PWD/.venv-format/bin" >> "$GITHUB_PATH"
       - name: Configure
         run: cmake --preset dev

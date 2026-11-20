@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
 # LLVM-based style at 120 columns. The whole tree is formatted to this file
-# by clang-format 22.1.8. `format-check` (CMakeLists.txt) checks every
+# by clang-format 23. `format-check` (CMakeLists.txt) checks every
 # `.c`, `.cpp` and `.h` under the eight source directories on every push.
 # Includes sort by the categories below.
 Language: Cpp

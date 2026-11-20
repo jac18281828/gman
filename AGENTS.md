@@ -22,9 +22,9 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   special members.
 - Comments document the code, not the change. No expository or 'my way'
   comments.
-- clang-format 22.1.8 keeps the tree formatted to `.clang-format`; a change
-  keeps it so. `format-check` names `pip install clang-format==22.1.8` for a
-  local run and fails on any other version.
+- clang-format 23 keeps the tree formatted to `.clang-format`; a change
+  keeps it so. `format-check` names `pip install clang-format==23.1.5` for a
+  local run and fails on any other major version.
 
 ## Naming
 - Semantic, not pattern-based. Avoid `State`, `Context`, `Manager` without a

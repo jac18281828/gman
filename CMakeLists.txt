@@ -570,7 +570,7 @@ endif()
 # CONFIGURE_DEPENDS so a new file is checked without anyone widening a list.
 # gmanfiledrivers.cpp.in is a template, not a C++ source: its .cpp.in
 # extension already leaves it out. Check only -- never reformats the tree.
-set(GMAN_CLANG_FORMAT_VERSION "22.1.8")
+set(GMAN_CLANG_FORMAT_MAJOR "23")
 set(GMAN_FORMAT_CHECK_GLOBS "")
 foreach(dir ${GMAN_SOURCE_DIRS} tests)
   list(APPEND GMAN_FORMAT_CHECK_GLOBS
@@ -583,20 +583,22 @@ file(GLOB_RECURSE GMAN_FORMAT_CHECK_SOURCES CONFIGURE_DEPENDS
 
 find_program(CLANG_FORMAT_EXECUTABLE NAMES clang-format)
 if(CLANG_FORMAT_EXECUTABLE)
-  # The pin in CI and the dev container would otherwise leave a
-  # contributor's local run on another version, disagreeing with CI while
-  # the gate reads green.
+  # A contributor's clang-format of another major version formats differently
+  # from CI and the dev container, so the gate would disagree with CI while
+  # reading green. Patch releases within a major format alike.
   execute_process(
     COMMAND "${CLANG_FORMAT_EXECUTABLE}" --version
     OUTPUT_VARIABLE GMAN_CLANG_FORMAT_FOUND_VERSION_RAW
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+"
     GMAN_CLANG_FORMAT_FOUND_VERSION "${GMAN_CLANG_FORMAT_FOUND_VERSION_RAW}")
+  string(REGEX MATCH "^[0-9]+"
+    GMAN_CLANG_FORMAT_FOUND_MAJOR "${GMAN_CLANG_FORMAT_FOUND_VERSION}")
 
-  if(NOT GMAN_CLANG_FORMAT_FOUND_VERSION STREQUAL GMAN_CLANG_FORMAT_VERSION)
+  if(NOT GMAN_CLANG_FORMAT_FOUND_MAJOR STREQUAL GMAN_CLANG_FORMAT_MAJOR)
     add_custom_target(format-check
       COMMAND "${CMAKE_COMMAND}" -E echo
-        "format-check requires clang-format ${GMAN_CLANG_FORMAT_VERSION}, found ${GMAN_CLANG_FORMAT_FOUND_VERSION}"
+        "format-check requires clang-format ${GMAN_CLANG_FORMAT_MAJOR}, found ${GMAN_CLANG_FORMAT_FOUND_VERSION}; pip install clang-format==23.1.5"
       COMMAND "${CMAKE_COMMAND}" -E false
       COMMENT "Checking the clang-format version format-check requires"
       VERBATIM)

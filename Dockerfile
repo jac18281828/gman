@@ -50,7 +50,7 @@ ENV CLANG_TOOLS_VENV=/opt/clang-tools-venv
 # link must be made in this layer: a later RUN would only copy the target,
 # and the image is rebuilt rather than patched, so it cannot go stale.
 RUN python3 -m venv ${CLANG_TOOLS_VENV} && \
-    ${CLANG_TOOLS_VENV}/bin/pip install clang-tidy==22.1.8 clang-format==22.1.8 && \
+    ${CLANG_TOOLS_VENV}/bin/pip install clang-tidy==22.1.8 clang-format==23.1.5 && \
     ln ${CLANG_TOOLS_VENV}/bin/clang-tidy /usr/local/bin/clang-tidy && \
     ln ${CLANG_TOOLS_VENV}/bin/clang-format /usr/local/bin/clang-format
 ENV PATH=${CLANG_TOOLS_VENV}/bin:${PATH}

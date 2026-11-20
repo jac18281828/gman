@@ -46,8 +46,8 @@ rather than reading a list here.
 
 ## Style
 
-The tree is clang-format clean, pinned to 22.1.8
-(`pip install clang-format==22.1.8`); format before you commit. Otherwise
+The tree is clang-format clean under clang-format 23
+(`pip install clang-format==23.1.5`); format before you commit. Otherwise
 match the file you are in: lower-case filenames, `GMAN`-prefixed globals,
 `methodName` and `SymbolName`, implementation in `.cpp`, RenderMan API
 types, guarded headers.
