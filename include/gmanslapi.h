@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <list>
 #include <map>
 #include <stack>
@@ -76,13 +77,18 @@ GMAN_EXPORT RtFloat GMANSmoothStep(RtFloat min, RtFloat max, RtFloat value);
 // filterstep provides an analytically antialiased step function
 GMAN_EXPORT RtFloat GMANFilterStep(RtFloat edge, RtFloat s1...);
 
+inline RtFloat GMANSplineSegment(RtFloat value, RtInt nbSeg, RtInt& ptr) {
+  const RtFloat position = std::clamp(value, 0.0f, 1.0f) * nbSeg;
+  ptr = std::min((RtInt)position, nbSeg - 1);
+  return position - ptr;
+}
+
 // the spline family fits a spline to the control points given
 // LJL - spline functions added - February 2001
 template <class T> T GMANCatmullSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = nvals - 3;
-  RtFloat temp = value * nbSeg;
-  RtInt ptr = (RtInt)temp;
-  value = temp - ptr;
+  RtInt ptr;
+  value = GMANSplineSegment(value, nbSeg, ptr);
   RtFloat vv = value * value;
   RtFloat vvv = vv * value;
 
@@ -97,9 +103,8 @@ template <class T> T GMANCatmullSpline(RtFloat value, RtInt nvals, T fvals[]) {
 
 template <class T> T GMANBezierSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = 1 + (nvals - 4) / 3;
-  RtFloat temp = value * nbSeg;
-  RtInt ptr = (RtInt)temp;
-  value = temp - ptr;
+  RtInt ptr;
+  value = GMANSplineSegment(value, nbSeg, ptr);
   RtFloat vv = value * value;
   RtFloat vvv = vv * value;
 
@@ -114,9 +119,8 @@ template <class T> T GMANBezierSpline(RtFloat value, RtInt nvals, T fvals[]) {
 
 template <class T> T GMANBsplineSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = nvals - 3;
-  RtFloat temp = value * nbSeg;
-  RtInt ptr = (RtInt)temp;
-  value = temp - ptr;
+  RtInt ptr;
+  value = GMANSplineSegment(value, nbSeg, ptr);
   RtFloat vv = value * value;
   RtFloat vvv = vv * value;
 
@@ -131,9 +135,8 @@ template <class T> T GMANBsplineSpline(RtFloat value, RtInt nvals, T fvals[]) {
 
 template <class T> T GMANHermiteSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = 1 + (nvals - 4) / 2;
-  RtFloat temp = value * nbSeg;
-  RtInt ptr = (RtInt)temp;
-  value = temp - ptr;
+  RtInt ptr;
+  value = GMANSplineSegment(value, nbSeg, ptr);
   RtFloat vv = value * value;
   RtFloat vvv = vv * value;
 
@@ -148,9 +151,8 @@ template <class T> T GMANHermiteSpline(RtFloat value, RtInt nvals, T fvals[]) {
 
 template <class T> T GMANLinearSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = 1 + (nvals - 4);
-  RtFloat temp = value * nbSeg;
-  RtInt ptr = (RtInt)temp;
-  value = temp - ptr;
+  RtInt ptr;
+  value = GMANSplineSegment(value, nbSeg, ptr);
 
   return (fvals[ptr + 1] * (1 - value) + fvals[ptr + 2] * value);
 }
