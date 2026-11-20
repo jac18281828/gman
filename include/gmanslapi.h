@@ -121,10 +121,10 @@ template <class T> T GMANBsplineSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtFloat vvv = vv * value;
 
   RtFloat c0, c1, c2, c3;
-  c0 = -1.0 / 6 * vvv + 0.5 * vv - 0.5 * value + 1 / 6;
-  c1 = 0.5 * vvv - vv + 2 / 3;
-  c2 = -0.5 * vvv + 0.5 * vv + 0.5 * value + 1 / 6;
-  c3 = 1 / 6 * vvv;
+  c0 = -1.0 / 6 * vvv + 0.5 * vv - 0.5 * value + 1.0 / 6;
+  c1 = 0.5 * vvv - vv + 2.0 / 3;
+  c2 = -0.5 * vvv + 0.5 * vv + 0.5 * value + 1.0 / 6;
+  c3 = 1.0 / 6 * vvv;
 
   return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
 }
