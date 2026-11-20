@@ -389,15 +389,11 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
 // create a new object
 RtObjectHandle GMANRenderManImpl::RiObjectBegin(RtVoid) {
   enterMode(O);
-  // return GetObjectManager()->Create()->GetHandle();
   return (RtObjectHandle)0;
 }
 
 // commit the most recently created object
-RtVoid GMANRenderManImpl::RiObjectEnd(RtVoid) {
-  leaveMode(O);
-  // objectManagerStack.top().Commit();
-}
+RtVoid GMANRenderManImpl::RiObjectEnd(RtVoid) { leaveMode(O); }
 
 RtVoid GMANRenderManImpl::RiObjectInstance(RtObjectHandle /*handle*/) { allowed(cmdObjectInstance); }
 

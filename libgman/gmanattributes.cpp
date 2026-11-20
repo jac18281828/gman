@@ -64,16 +64,6 @@ GMANAttributes::GMANAttributes()
   orientation = RI_OUTSIDE;
   sides = 2;
   objectFlag = false;
-
-  // attempt to load default shaders
-  /*
-    surfaceModule = new GMANLoadableShader("defaultsurface");
-    if(surfaceModule->getType() == GMANShader::SURFACE) {
-      surface = surfaceModule->getSurface();
-    } else {
-      throw(GMANError(RIE_NOSHADER, RIE_SEVERE, "Default surface shader is not a surface shader."));
-    }
-  */
 }
 
 // The six *Module members are shared_ptr now; each releases its reference

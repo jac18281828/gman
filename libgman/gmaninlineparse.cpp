@@ -203,7 +203,6 @@ GMANTokenEntry::TokenClass InlineParse::get_class(std::string str) {
   if (str == "facevarying")
     return GMANTokenEntry::FACEVARYING;
 
-  // if (str=="vertex")
   return GMANTokenEntry::VERTEX;
 }
 
@@ -224,7 +223,6 @@ GMANTokenEntry::TokenType InlineParse::get_type(std::string str) {
     return GMANTokenEntry::MATRIX;
   if (str == "hpoint")
     return GMANTokenEntry::HPOINT;
-  // if (str=="integer")
   return GMANTokenEntry::INTEGER;
 }
 

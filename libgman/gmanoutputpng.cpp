@@ -96,8 +96,6 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint
   // set compression level
   png_set_compression_level(png_ptr, Z_BEST_COMPRESSION);
 
-  // png_set_invert_mono(png_ptr); // reverse video black->white
-
   /* setup image information... */
 
   // "A" writes coverage alone, one sample, no colour. "RGB" writes colour

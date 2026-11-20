@@ -78,11 +78,6 @@ GMAN_EXPORT RtFloat GMANFilterStep(RtFloat edge, RtFloat s1...);
 
 // the spline family fits a spline to the control points given
 // LJL - spline functions added - February 2001
-//  #define RI_CATMULLROMSTEP              ((RtInt)1)
-//  RtBasis RiCatmullRomBasis = { {-1.0/2,  3.0/2, -3.0/2,  1.0/2},
-//                                { 2.0/2, -5.0/2,  4.0/2, -1.0/2},
-//                                {-1.0/2,  0.0/2,  1.0/2,  0.0/2},
-//                                { 0.0/2,  2.0/2,  0.0/2,  0.0/2} };
 template <class T> T GMANCatmullSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = nvals - 3;
   RtFloat temp = value * nbSeg;
@@ -100,11 +95,6 @@ template <class T> T GMANCatmullSpline(RtFloat value, RtInt nvals, T fvals[]) {
   return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
 }
 
-//  #define RI_BEZIERSTEP              ((RtInt)3)
-//  RtBasis RiBezierBasis= { {-1,  3, -3,  1},
-//                           { 3, -6,  3,  0},
-//                           {-3,  3,  0,  0},
-//                           { 1,  0,  0,  0} };
 template <class T> T GMANBezierSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = 1 + (nvals - 4) / 3;
   RtFloat temp = value * nbSeg;
@@ -122,11 +112,6 @@ template <class T> T GMANBezierSpline(RtFloat value, RtInt nvals, T fvals[]) {
   return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
 }
 
-//  #define RI_BSPLINESTEP              ((RtInt)1)
-//  RtBasis RiBSplineBasis = { {-1.0/6,  3.0/6, -3.0/6,  1.0/6},
-//                             { 3.0/6, -6.0/6,  3.0/6,  0.0/6},
-//                             {-3.0/6,  0.0/6,  3.0/6,  0.0/6},
-//                             { 1.0/6,  4.0/6,  1.0/6,  0.0/6} };
 template <class T> T GMANBsplineSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = nvals - 3;
   RtFloat temp = value * nbSeg;
@@ -144,11 +129,6 @@ template <class T> T GMANBsplineSpline(RtFloat value, RtInt nvals, T fvals[]) {
   return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
 }
 
-//  #define RI_HERMITESTEP              ((RtInt)2)
-//  RtBasis RiHermiteBasis = { { 2,  1, -2,  1},
-//                             {-3, -2,  3, -1},
-//                             { 0,  1,  0,  0},
-//                             { 1,  0,  0,  0} };
 template <class T> T GMANHermiteSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = 1 + (nvals - 4) / 2;
   RtFloat temp = value * nbSeg;

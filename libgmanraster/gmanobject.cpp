@@ -67,10 +67,6 @@ GMANObject::~GMANObject() {
   }
 }
 
-// intersection test
-// return the surface that intersects the ray or NULL
-// const GMANSurface *GMANObject::intersects(const GMANRay &ray)
-
 GMANObject* GMANObject::clone(RtVoid) {
   // FIXME FIXME FIXME
   return NULL;

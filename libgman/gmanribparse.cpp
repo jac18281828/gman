@@ -880,8 +880,6 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 
 RtVoid GMANRIBParse::parseColor(RtVoid) {
   int number = DefaultColorSamples;
-  // FIXME: Should actually get number from options
-  // renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
 
   std::vector<RtFloat> color(number);
   const GMANToken& lookAhead = peekToken();
@@ -907,8 +905,6 @@ RtVoid GMANRIBParse::parseColor(RtVoid) {
 
 RtVoid GMANRIBParse::parseOpacity(RtVoid) {
   int number = DefaultColorSamples;
-  // FIXME: Should actually get number from options
-  // renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
 
   std::vector<RtFloat> color(number);
   const GMANToken& lookAhead = peekToken();
@@ -1870,8 +1866,6 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList(std::string c
   while (true) {
     const GMANToken& tok = peekToken();
     if (tok.getType() != GMANToken::STRING) {
-      // debug("While parsing parameter list, got token type: "
-      //      << tok.getType());
       break;
     }
 

@@ -316,7 +316,6 @@ private:
   RtVoid parseElse(RtVoid);
   RtVoid parseIfEnd(RtVoid);
   RtVoid parsePixelFilter(RtVoid);
-  //  RtVoid parse(RtVoid);
 
 protected:
   RIBHandler defaultHandler;

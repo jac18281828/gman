@@ -91,13 +91,7 @@ public:
   };
 
   // return unsent flux
-  RtFloat getUnsentFlux(RtVoid) {
-    /* FIXME: Should loop through faces and sum unsent flux
-    return (color.getRed() + color.getGreen() +
-            color.getBlue()) * (RtFloat)area;
-    */
-    throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented");
-  }
+  RtFloat getUnsentFlux(RtVoid) { throw GMANError(RIE_SYSTEM, RIE_ERROR, "Not implemented"); }
 
   // return face pointer
   GMANFace* getFace(RtVoid) { return faceRoot; };
@@ -113,22 +107,4 @@ public:
   GMANBody* getParent(RtVoid) { return parentBody; };
 
   const GMANPoint& getCenter(RtVoid) const { return center; };
-
-  /*
-  RtVoid calcCenter(RtVoid) {
-    // initialize center
-    GMANVector centerV = vertices[0]->getLocation();
-
-    // find centroid
-    for(int i=1; i<GMAN_NFACE_VERTS; i++)
-      centerV += vertices[i]->getLocation();
-
-    centerV /= GMAN_NFACE_VERTS;
-
-    center.setX(centerV.getX());
-    center.setY(centerV.getY());
-    center.setZ(centerV.getZ());
-
-  }
-  */
 };

@@ -424,14 +424,12 @@ RtVoid GMANGraphicState::allowed(RtInt mode) {
 }
 RtVoid GMANGraphicState::push(CurrentState mode) {
   nest.push(mode);
-  // if ((mode!=T)&&(mode!=A)) block=mode;
   block = mode;
 }
 RtVoid GMANGraphicState::pop() {
   if (nest.size() == 0)
     return;
   nest.pop();
-  // if ((nest.top()!=T)&&(nest.top()!=A)) block=nest.top();
   block = nest.top();
 }
 RtVoid GMANGraphicState::overlap(CurrentState mode, CurrentState current) {
