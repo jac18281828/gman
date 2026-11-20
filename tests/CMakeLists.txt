@@ -862,6 +862,17 @@ set_tests_properties(ribparsefallback PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# ColorSamples sets the number of floats Color and Opacity carry; GMAN shades
+# in three-component RGB only. See tests/colorsamples_test.cpp.
+add_executable(gman_colorsamples colorsamples_test.cpp)
+target_link_libraries(gman_colorsamples PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME colorsamples COMMAND gman_colorsamples)
+set_tests_properties(colorsamples PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANRIBTokenize::consumeWhitespace, isKeyToken and isNumToken classify a
 # stream byte. See tests/ribctypeunsigned_test.cpp; it drives getNext
 # directly on an istringstream, so it dlopens nothing.

@@ -34,6 +34,7 @@
 #include <climits>
 #include <cmath>
 #include <cstring>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -563,6 +564,9 @@ RtVoid GMANRenderManImpl::RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPo
 }
 RtVoid GMANRenderManImpl::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
   allowed(cmdColorSamples);
+  if (n < 1) {
+    throw GMANError(RIE_RANGE, RIE_ERROR, std::format("ColorSamples needs at least one sample, got {}.", n).c_str());
+  }
   getOptions().setColorSamples(n, nRGB, RGBn);
 }
 RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
