@@ -58,8 +58,8 @@ public:
 
   operator RtBound&() { return box; };
 
-  GMANPoint getMin() const;
-  GMANPoint getMax() const;
+  GMANPoint getMin() const { return GMANPoint(box[0], box[2], box[4]); }
+  GMANPoint getMax() const { return GMANPoint(box[1], box[3], box[5]); }
 };
 
 namespace gman {

@@ -44,10 +44,6 @@ GMANBBox::GMANBBox(GMANPoint const& min, GMANPoint const& max) {
   *this = bb;
 }
 
-GMANPoint GMANBBox::getMin() const { return GMANPoint(box[0], box[2], box[4]); }
-
-GMANPoint GMANBBox::getMax() const { return GMANPoint(box[1], box[3], box[5]); }
-
 GMANBBox& GMANBBox::operator=(const RtBound bb) {
 
   for (unsigned int i = 0; i < sizeof(RtBound) / sizeof(RtFloat); i++) {
