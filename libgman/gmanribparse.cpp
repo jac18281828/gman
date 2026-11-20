@@ -879,7 +879,7 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseColor(RtVoid) {
-  int number = 3;
+  int number = DefaultColorSamples;
   // FIXME: Should actually get number from options
   // renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
 
@@ -906,7 +906,7 @@ RtVoid GMANRIBParse::parseColor(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseOpacity(RtVoid) {
-  int number = 3;
+  int number = DefaultColorSamples;
   // FIXME: Should actually get number from options
   // renderMan.getGraphicsState().getOptions().getColorSamples().getNumber();
 
