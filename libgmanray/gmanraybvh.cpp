@@ -25,6 +25,7 @@
 #include <cmath>
 #include <limits>
 
+#include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanraybbox.h"
 #include "gmanraybvh.h"
@@ -189,16 +190,18 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
   deepestLeaf = 0;
 
   std::size_t index = 0;
+  std::size_t nanBoxCount = 0;
   // Builds one Entry from a ray primitive and appends it, unless its box
   // carries a NaN bound, keeping the insertion order build()'s own
   // tie-break in testLeaf relies on. A lambda local to build() rather than
   // a free function: Entry is private, and a member function's own scope is
   // what gives this the access it needs.
-  auto addEntry = [this, &index](GMANRayInterface const* primitive) {
+  auto addEntry = [this, &index, &nanBoxCount](GMANRayInterface const* primitive) {
     Entry entry;
     entry.primitive = primitive;
     entry.bbox = primitive->getBBox();
     if (hasNaNBound(entry.bbox)) {
+      ++nanBoxCount;
       return;
     }
     entry.centroid = boxCentroid(entry.bbox);
@@ -223,6 +226,10 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
       continue;
     }
     addEntry(rayPrimitive);
+  }
+
+  if (nanBoxCount > 0) {
+    warning("GMANRayBVH::build: {} primitive(s) with a NaN bounding box left out of the tree.", nanBoxCount);
   }
 
   if (primitives.empty()) {

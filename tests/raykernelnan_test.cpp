@@ -30,7 +30,8 @@
  * face of a box the origin sits on.
  *
  * NaN boxes: a primitive whose box carries a NaN bound stays out of the
- * tree, and every other primitive's hits are unchanged.
+ * tree, and every other primitive's hits are unchanged. Each build that
+ * leaves one or more out logs one warning naming the count.
  *
  * Finite hits: a fixed-seed family of rays with direction components of
  * 1e-25, 1e-38, 1e-40 and 0, from origins on and beside each primitive's
@@ -42,6 +43,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <fstream>
 #include <limits>
 #include <random>
 #include <string>
@@ -50,6 +52,7 @@
 
 #include "check.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanlog.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanraycone.h"
@@ -343,6 +346,51 @@ void testNaNBoxStaysOut() {
   check(nanBoxHits == 0, "NaN box: no ray returns the NaN-boxed primitive");
 }
 
+std::size_t countWarnings(std::string const& logPath, std::string const& needle) {
+  std::ifstream log(logPath);
+  std::string line;
+  std::size_t count = 0;
+  while (std::getline(log, line)) {
+    count += line.find(needle) != std::string::npos ? 1 : 0;
+  }
+  return count;
+}
+
+// ---- a build that leaves a NaN box out says so ----
+void testNaNBoxWarning() {
+  std::string const logPath = "raykernelnan_warning.log";
+  std::remove(logPath.c_str());
+  setLogFile(logPath.c_str());
+  setScreenOutput(false);
+
+  GMANLinearWorldManager withNaN;
+  withNaN.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
+  withNaN.add(new NaNBoxPrimitive());
+  withNaN.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
+  withNaN.add(new NaNBoxPrimitive());
+
+  GMANRayBVH bvh;
+  bvh.build(withNaN);
+  std::string const anyCount = "primitive(s) with a NaN bounding box";
+  std::size_t const afterFirst = countWarnings(logPath, anyCount);
+  std::size_t const namedTwo = countWarnings(logPath, "2 " + anyCount);
+  bvh.build(withNaN);
+  std::size_t const afterSecond = countWarnings(logPath, anyCount);
+
+  GMANLinearWorldManager valid;
+  valid.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
+  valid.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
+  bvh.build(valid);
+  std::size_t const afterValid = countWarnings(logPath, anyCount);
+
+  setLogFile("/dev/null");
+  setScreenOutput(true);
+
+  check(afterFirst == 1 && namedTwo == 1, "NaN box warning: one build logs one line naming two primitives");
+  check(afterSecond == 2, "NaN box warning: a second build logs a second line");
+  check(afterValid == afterSecond, "NaN box warning: a build over valid primitives logs none");
+}
+
 bool finiteHit(GMANHit const& hit) {
   RtFloat const fields[] = {hit.t,
                             hit.point.getX(),
@@ -465,6 +513,7 @@ int main() {
   testUntraceableRaysMiss();
   testDenormalComponentIsParallel();
   testNaNBoxStaysOut();
+  testNaNBoxWarning();
   testNoHitCarriesNonFiniteField();
   return checkSummary("raykernelnan: ok");
 }
