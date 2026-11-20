@@ -133,10 +133,8 @@ bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
     candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
     candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
     candidate.primitive = this;
-    if (!gman::isFiniteHit(candidate))
-      continue;
-    hit = candidate;
-    return true;
+    if (gman::acceptFiniteHit(candidate, hit))
+      return true;
   }
 
   return false;

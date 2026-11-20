@@ -303,8 +303,5 @@ bool GMANRayHyperboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
   candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
   candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
   candidate.primitive = this;
-  if (!gman::isFiniteHit(candidate))
-    return false;
-  hit = candidate;
-  return true;
+  return gman::acceptFiniteHit(candidate, hit);
 }

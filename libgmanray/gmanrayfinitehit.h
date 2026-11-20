@@ -32,9 +32,6 @@
 
 namespace gman {
 
-// Whether every field an intersector fills in is finite. An intersector
-// returns a hit only when this holds: a root whose normal or derivative
-// overflowed through a near-singular inverse is no hit.
 inline bool isFiniteHit(GMANHit const& hit) {
   RtFloat const fields[] = {hit.t,
                             hit.point.getX(),
@@ -56,6 +53,16 @@ inline bool isFiniteHit(GMANHit const& hit) {
       return false;
     }
   }
+  return true;
+}
+
+// Copies candidate into hit only when every field the intersector fills in is
+// finite; otherwise leaves hit alone and returns false.
+inline bool acceptFiniteHit(GMANHit const& candidate, GMANHit& hit) {
+  if (!isFiniteHit(candidate)) {
+    return false;
+  }
+  hit = candidate;
   return true;
 }
 

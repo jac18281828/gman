@@ -238,7 +238,7 @@ void testDenormalComponentIsParallel() {
   expectSameWork(bvh, GMANPoint(-5.0, 0.0, rootMax.getZ()), GMANVector(1.0, 0.0, -kDenormal), GMANVector(1.0, 0.0, 0.0),
                  "denormal: origin on the root's maximum z face");
   expectSameWork(bvh, GMANPoint(rootMin.getX(), 0.0, -5.0), GMANVector(kDenormal, 0.0, 1.0), GMANVector(0.0, 0.0, 1.0),
-                 "denormal: origin on a leaf's minimum x face");
+                 "denormal: matches the exact-zero ray from the root's minimum x face");
   expectSameWork(bvh, GMANPoint(rootMax.getX(), 0.0, -5.0), GMANVector(-kDenormal, 0.0, 1.0), GMANVector(0.0, 0.0, 1.0),
                  "denormal: origin on a leaf's maximum x face");
 }

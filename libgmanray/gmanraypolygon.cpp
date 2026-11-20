@@ -342,8 +342,5 @@ bool GMANRayPolygon::intersect(GMANRay const& ray, GMANHit& hit) const {
   candidate.v = uv.second;
   fanTangents(vertices, texCoords, fan, candidate.dPdu, candidate.dPdv);
   candidate.primitive = this;
-  if (!gman::isFiniteHit(candidate))
-    return false;
-  hit = candidate;
-  return true;
+  return gman::acceptFiniteHit(candidate, hit);
 }
