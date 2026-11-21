@@ -1,8 +1,12 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Security plus high-signal defect checks; each fires on a real bug, not a
-# style preference. No modernize-*, readability-* or cppcoreguidelines-*:
-# their volume on this tree would bury the findings that are bugs.
+# Security plus high-signal defect checks, each firing on a real bug, not a
+# style preference, and one hygiene check, misc-include-cleaner: a missing
+# direct include is a latent build break, since a header that drops a
+# transitive include stops an unrelated file compiling. No modernize-*,
+# readability-* or cppcoreguidelines-*: their volume on this tree would bury
+# the findings that are bugs. tidy-check runs this file over every production
+# source and header; tests/ goes unchecked.
 Checks: >
   -*,
   bugprone-unsafe-functions,
@@ -13,7 +17,8 @@ Checks: >
   clang-analyzer-security.*,
   clang-analyzer-core.*,
   clang-analyzer-cplusplus.*,
-  clang-analyzer-unix.*
+  clang-analyzer-unix.*,
+  misc-include-cleaner
 # Every finding fails the job; that red is what the operator watches.
 WarningsAsErrors: '*'
 # Directory-name match only -- a static file cannot anchor to the checkout
@@ -52,3 +57,8 @@ CheckOptions:
     hand-sized buffer;
     ^::gets$,,build strings with std::string and std::format, not a
     hand-sized buffer
+  # A file includes a library's public header, never its configuration
+  # header: <png.h>, not <pngconf.h>. strcasecmp is POSIX with no std:: form,
+  # and macOS and Linux declare it in different headers. Each entry anchors at
+  # a / because clang-tidy matches it as a path suffix.
+  misc-include-cleaner.IgnoreHeaders: '/pngconf\.h;/pnglibconf\.h;/tiff\.h;/tiffconf\.h;/tiffvers\.h;/jconfig\.h;/jmorecfg\.h;/zconf\.h;/_?strings\.h'
