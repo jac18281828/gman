@@ -624,17 +624,6 @@ endif()
 # bare directory-name search also matches a checkout directory named after the
 # repo (e.g. /home/runner/work/gman/gman/...), which would let every tests/
 # entry through too.
-#
-# The check reads only a translation unit's main file, so each production
-# header is also analysed as its own translation unit; a header whose
-# directory holds sources this build does not compile is skipped as they are.
-# A header analysed as a main file trips -Werror on its #pragma once, and on a
-# constant only its includers use.
-#
-# The tree's .clang-tidy governs; no --checks override. A clang-tidy of
-# another major version judges differently from CI's pinned one, so the gate
-# would disagree with it while reading green. macOS ships no standard library
-# clang-tidy can find without the SDK sysroot.
 set(GMAN_CLANG_TIDY_MAJOR "22")
 set(GMAN_TIDY_HEADER_DIRS ${GMAN_SOURCE_DIRS})
 list(REMOVE_ITEM GMAN_TIDY_HEADER_DIRS gmansl)
