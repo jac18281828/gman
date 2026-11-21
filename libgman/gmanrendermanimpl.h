@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "gmandictionary.h"
 #include "gmanframebuffer.h"
 #include "gmangraphicstate.h"
@@ -60,7 +62,7 @@ private:
   // Viewing system
   GMANViewingSystem* viewingSystem;
 
-  GMANOutput* output;
+  std::unique_ptr<GMANOutput> output;
 
 public:
   GMANRenderManImpl();  // default constructor

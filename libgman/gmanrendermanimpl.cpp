@@ -40,6 +40,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "gmanfiledrivers.h"
@@ -233,7 +234,6 @@ GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState() {
   objectManager = NULL;
   worldManager = NULL;
   viewingSystem = NULL;
-  output = NULL;
 };
 
 // default destructor
@@ -352,7 +352,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
   // GMANOptions this sets.
   getOptions().setCameraToWorld(viewingSystem->getCameraToWorld());
 
-  output = newOutput.release();
+  output = std::move(newOutput);
 }
 
 RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
@@ -360,15 +360,14 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   // frame buffer with at least one pixel. With no Display, or a framebuffer
   // one, RiWorldBegin builds gman::OutputX11's 0x0 stub; report that instead
   // of handing it to the renderer.
-  if (output == NULL || output->getWidth() == 0 || output->getHeight() == 0) {
-    delete output;
-    output = NULL;
+  if (output == nullptr || output->getWidth() == 0 || output->getHeight() == 0) {
+    output.reset();
     leaveMode(W);
     throw GMANError(RIE_ILLSTATE, RIE_ERROR, "No display output to render into.");
   }
 
   const GMANOptions::ExposureStruct& exposure = getOptions().getExposure();
-  renderer->render(output, viewingSystem, getOptions(), getAttributes());
+  renderer->render(output.get(), viewingSystem, getOptions(), getAttributes());
 
   GMANOutput::DisplayMode dMode;
 
@@ -399,8 +398,7 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   // depth, so a "z" request stored by RiQuantize has nothing to reach.
   output->save(dMode, exposure.gain, exposure.gamma, getOptions().getColorQuantize());
 
-  delete output;
-  output = NULL;
+  output.reset();
 
   leaveMode(W);
 }
