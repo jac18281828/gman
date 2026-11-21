@@ -1,7 +1,6 @@
-# PatchMesh branch: nu and nv of 65536 multiply to 2^32, which wrapped RtInt
-# to zero and sized "P" as an empty array. The vertex count no longer wraps; it
-# saturates at INT_MAX, so "P"'s element count exceeds RtInt's range and gman
-# stops the file with RIE_RANGE, naming "P".
+# PatchMesh branch: nu and nv of 65536 multiply to 2^32, past RtInt's range.
+# The vertex count saturates at INT_MAX, so "P"'s element count exceeds
+# RtInt's range and gman stops the file with RIE_RANGE, naming "P".
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

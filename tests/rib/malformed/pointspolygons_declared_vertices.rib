@@ -1,7 +1,6 @@
 # PointsPolygons branch: verts reaches vertex 2000000, so the request declares
 # 2000001 points (6000003 floats) for "P", which supplies three points (nine
-# floats). A file this small once held 76 MB and rendered the remainder as
-# zeros; gman now stops it with RIE_CONSISTENCY before "P" allocates.
+# floats). gman stops the file with RIE_CONSISTENCY before "P" allocates.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

@@ -176,17 +176,15 @@ desync convention. Not third-party.
 
 ## malformed/patchmesh_dimensions_overflow.rib
 
-A bilinear `PatchMesh` of 65536 by 65536 points: `nu * nv` is 2^32, which
-wrapped `RtInt` to zero and sized `"P"` as an empty array. The count now
-saturates at `INT_MAX`, so `"P"`'s element count exceeds `RtInt`'s range and
-the file stops with `RIE_RANGE`. Registered in `tests/ribcountbounds_test.cpp`.
+A bilinear `PatchMesh` of 65536 by 65536 points: `nu * nv` is 2^32, past
+`RtInt`'s range. The count saturates at `INT_MAX`, so `"P"`'s element count
+exceeds `RtInt`'s range and the file stops with `RIE_RANGE`. Registered in `tests/ribcountbounds_test.cpp`.
 A trailing `Sphere` follows the desync convention. Not third-party.
 
 ## malformed/pointspolygons_declared_vertices.rib
 
 `verts` reaches vertex 2000000, so `"P"` declares 6000003 floats and supplies
-nine. A file this small once held 76 MB and rendered the remainder as zeros;
-it now stops with `RIE_CONSISTENCY` before `"P"` allocates. Registered in
+nine. The file stops with `RIE_CONSISTENCY` before `"P"` allocates. Registered in
 `tests/ribcountbounds_test.cpp`. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
