@@ -3562,9 +3562,12 @@ set_tests_properties(pathtracerthreads PROPERTIES
 
 # The path tracer stops a slot once its paths' standard error falls below
 # PixelVariance, at a check every minsamples-th path. See
-# tests/pathtraceradaptive_test.cpp.
+# tests/pathtraceradaptive_test.cpp. The argument --measure times
+# samples/materials.rib under several path counts and PixelVariance values
+# and asserts nothing.
 add_executable(gman_pathtraceradaptive pathtraceradaptive_test.cpp)
-target_link_libraries(gman_pathtraceradaptive PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtraceradaptive PRIVATE gman_core gman_internal_headers gman_pathtracer_objects
+                      TIFF::TIFF)
 add_dependencies(gman_pathtraceradaptive gman_matte)
 
 add_test(NAME pathtraceradaptive COMMAND gman_pathtraceradaptive)

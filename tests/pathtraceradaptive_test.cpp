@@ -32,6 +32,12 @@
  * maximum; a bad minsamples warns once and takes the default. One info
  * line reports the paths traced against the paths allowed. The metric is
  * called directly on hand-computed paths.
+ *
+ * With the argument --measure <gman> <materials.rib> <outdir> the program
+ * does none of that. It renders samples/materials.rib through gman at
+ * several path counts and PixelVariance values, each into <outdir> as a
+ * 32-bit float TIFF, and prints each run's wall time, paths traced and RMSE
+ * against a high-count reference, asserting nothing.
  */
 
 #include <chrono>
@@ -39,6 +45,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <format>
 #include <fstream>
 #include <limits>
@@ -49,6 +57,8 @@
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include <tiffio.h>
 
 #include "check.h"
 #include "gmanattributes.h"
@@ -73,6 +83,7 @@
 #include "pathtracerarealightscene.h"
 #include "pathtracerscene.h"
 #include "ri.h"
+#include "rungman.h"
 
 namespace {
 
@@ -114,6 +125,25 @@ constexpr double kJustAboveHalfError = 0.5001;
 constexpr double kJustBelowHalfError = 0.49;
 constexpr double kHugeThreshold = 1.0e30;
 constexpr double kTinyThreshold = 1.0e-30;
+
+constexpr std::uint32_t kMeasureSamplesPerAxis = 2;
+constexpr std::uint16_t kFloatBits = 32;
+constexpr std::uint16_t kRgbaSamples = 4;
+char const* const kMeasureDisplayLine = "Display \"materials.png\" \"file\" \"rgba\"";
+char const* const kMeasureSamplesLine = "Option \"pathtracer\" \"integer samples\" [64]";
+char const* const kMeasurePixelSamplesLine = "PixelSamples 2 2";
+constexpr char const* kMeasureReference = "reference";
+
+struct MeasureRun {
+  char const* name;
+  RtInt samples;
+  double variance;
+};
+
+constexpr MeasureRun kMeasureRuns[] = {
+    {kMeasureReference, 4096, 0.0}, {"baseline", 512, 0.0},     {"a512-003", 512, 0.003}, {"a512-01", 512, 0.01},
+    {"a512-03", 512, 0.03},         {"a1024-003", 1024, 0.003}, {"a1024-01", 1024, 0.01},
+};
 
 char const* const kRenderLog = "pathtraceradaptive_render.log";
 char const* const kInfoPrefix = "gmanpathtracer: traced ";
@@ -534,6 +564,125 @@ void checkMetric() {
         "G: nor at a NaN threshold");
 }
 
+struct FloatImage {
+  std::uint32_t width = 0;
+  std::uint32_t height = 0;
+  std::vector<float> rgb;
+};
+
+std::optional<FloatImage> readFloatTIFF(std::string const& path) {
+  TIFF* const tif = TIFFOpen(path.c_str(), "r");
+  if (tif == nullptr) {
+    return std::nullopt;
+  }
+  FloatImage image;
+  std::uint16_t bits = 0;
+  std::uint16_t samples = 0;
+  std::uint16_t format = 0;
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &image.width);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &image.height);
+  TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bits);
+  TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samples);
+  TIFFGetFieldDefaulted(tif, TIFFTAG_SAMPLEFORMAT, &format);
+  if (bits != kFloatBits || samples != kRgbaSamples || format != SAMPLEFORMAT_IEEEFP) {
+    TIFFClose(tif);
+    return std::nullopt;
+  }
+  std::vector<float> scanline(static_cast<std::size_t>(image.width) * kRgbaSamples);
+  for (std::uint32_t y = 0; y < image.height; ++y) {
+    if (TIFFReadScanline(tif, scanline.data(), y) < 0) {
+      TIFFClose(tif);
+      return std::nullopt;
+    }
+    for (std::uint32_t x = 0; x < image.width; ++x) {
+      for (std::uint32_t c = 0; c < 3; ++c) {
+        image.rgb.push_back(scanline[static_cast<std::size_t>(x) * kRgbaSamples + c]);
+      }
+    }
+  }
+  TIFFClose(tif);
+  return image;
+}
+
+double rmse(FloatImage const& image, FloatImage const& reference) {
+  double sum = 0.0;
+  for (std::size_t i = 0; i < image.rgb.size(); ++i) {
+    double const difference = static_cast<double>(image.rgb[i]) - static_cast<double>(reference.rgb[i]);
+    sum += difference * difference;
+  }
+  return std::sqrt(sum / static_cast<double>(image.rgb.size()));
+}
+
+std::optional<std::string> replaceOnce(std::string text, std::string const& from, std::string const& to) {
+  std::string::size_type const at = text.find(from);
+  if (at == std::string::npos) {
+    return std::nullopt;
+  }
+  return text.replace(at, from.size(), to);
+}
+
+std::optional<std::string> measureRib(std::string const& materials, MeasureRun const& run) {
+  std::optional<std::string> rib =
+      replaceOnce(materials, kMeasureDisplayLine,
+                  std::format("Display \"{}.tif\" \"file\" \"rgba\"\nQuantize \"rgba\" 0 0 0 0", run.name));
+  if (rib) {
+    rib = replaceOnce(*rib, kMeasureSamplesLine,
+                      std::format("Option \"pathtracer\" \"integer samples\" [{}]", run.samples));
+  }
+  if (rib) {
+    rib = replaceOnce(*rib, kMeasurePixelSamplesLine,
+                      std::format("{}\nPixelVariance {}", kMeasurePixelSamplesLine, run.variance));
+  }
+  return rib;
+}
+
+std::optional<std::size_t> tracedPaths(std::string const& output) {
+  std::string::size_type const at = output.find(kInfoPrefix);
+  if (at == std::string::npos) {
+    return std::nullopt;
+  }
+  return static_cast<std::size_t>(std::strtoull(output.c_str() + at + std::strlen(kInfoPrefix), nullptr, 10));
+}
+
+int runMeasure(std::string const& gman, std::string const& materialsPath, std::string const& outdir) {
+  std::string const materials = readFile(materialsPath);
+  std::optional<FloatImage> reference;
+
+  for (MeasureRun const& run : kMeasureRuns) {
+    std::optional<std::string> const rib = measureRib(materials, run);
+    if (!rib) {
+      std::fprintf(stderr, "measure: %s lacks a line the runs rewrite\n", materialsPath.c_str());
+      return 1;
+    }
+    std::string const ribName = std::string(run.name) + ".rib";
+    std::ofstream(outdir + "/" + ribName, std::ios::binary) << *rib;
+
+    GMANRunOptions options;
+    options.workingDirectory = outdir;
+    auto const start = std::chrono::steady_clock::now();
+    GMANRunResult const result = runGman(gman, {"-r", "gmanpathtracer", ribName}, options);
+    double const seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+
+    std::optional<FloatImage> image = readFloatTIFF(outdir + "/" + run.name + ".tif");
+    if (result.exitStatus != 0 || !image) {
+      std::fprintf(stderr, "measure: %s failed (exit %d)\n%s\n", run.name, result.exitStatus, result.output.c_str());
+      return 1;
+    }
+    if (!reference) {
+      reference = image;
+    }
+
+    std::size_t const slots =
+        static_cast<std::size_t>(image->width) * image->height * kMeasureSamplesPerAxis * kMeasureSamplesPerAxis;
+    std::size_t const allowed = static_cast<std::size_t>(run.samples) * slots;
+    std::size_t const traced = tracedPaths(result.output).value_or(allowed);
+    std::printf("%-10s samples %4d variance %-6g wall %8.1f s paths %11zu of %11zu rmse %.6f\n", run.name, run.samples,
+                run.variance, seconds, traced, allowed, rmse(*image, *reference));
+    std::fflush(stdout);
+  }
+  return 0;
+}
+
 int runChecks() {
   FloorScene flat(Lighting::distant);
   FloorScene noisy(Lighting::emittingDisk);
@@ -553,4 +702,13 @@ int runChecks() {
 
 } // namespace
 
-int main() { return runChecks(); }
+int main(int argc, char** argv) {
+  if (argc == 1) {
+    return runChecks();
+  }
+  if (argc == 5 && std::strcmp(argv[1], "--measure") == 0) {
+    return runMeasure(argv[2], argv[3], argv[4]);
+  }
+  std::fprintf(stderr, "usage: %s [--measure <gman> <materials.rib> <outdir>]\n", argv[0]);
+  return 2;
+}
