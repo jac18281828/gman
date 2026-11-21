@@ -321,9 +321,7 @@ add_library(gman_raster SHARED
   libgmanraster/gmanobject.cpp
   libgmanraster/gmanoutputpolygon.cpp
   libgmanraster/gmanpatchpolyobjectmanager.cpp
-  libgmanraster/gmanpolygonclipper.cpp
-  libgmanraster/gmanvertex.cpp
-  libgmanraster/gmanvertex4.cpp)
+  libgmanraster/gmanpolygonclipper.cpp)
 
 # GMANRASTER_EXPORT tags what the raster headers declare; the plugin entry
 # points keep GMAN_EXPORT. Beside gman/export.h, so gman_core's public include

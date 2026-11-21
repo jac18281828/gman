@@ -32,6 +32,7 @@
 
 #include "gman/rasterexport.h"
 #include "gmanclipedge.h"
+#include "gmanface.h"
 #include "gmanlog.h"
 #include "ri.h"
 

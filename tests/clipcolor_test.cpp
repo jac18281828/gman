@@ -32,12 +32,23 @@
  *
  * Revert check: restore GMANClipEdge::intersect's colour and alpha weights
  * to e.getAlpha() and the clip-vertex colour and alpha assertions go red.
+ *
+ * A default-constructed GMANVertex holds location and normal (0, 0, 0), colour
+ * DefaultBGColor, alpha DefaultAlpha and no next vertex. Alpha must default
+ * to opaque because GMANClipEdge::intersect blends the two end vertices' alpha
+ * by the clip parameter, so a vertex whose alpha was never set must not
+ * corrupt a clipped vertex's alpha.
+ *
+ * Revert check: change a GMANVertex member's default initializer, such as
+ * alpha to GMANAlpha(0.0), colour to GMANColor(1.0) or location to (1, 0, 0),
+ * and the vertex-defaults assertions go red.
  */
 
 #include <cmath>
 
 #include "check.h"
 #include "gmancolor.h"
+#include "gmandefaults.h"
 #include "gmanface.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
@@ -70,6 +81,24 @@ void setVertex(GMANVertex& v, GMANPoint const& p, RtFloat color, RtFloat alpha) 
   v.setLocation(p);
   v.setColor(GMANColor(color));
   v.setColor(GMANAlpha(alpha));
+}
+
+void testVertexDefaults() {
+  GMANVertex v;
+  GMANPoint const& location = v.getLocation();
+  GMANVector const& normal = v.getNormal();
+  check(near(location.getX(), 0.0) && near(location.getY(), 0.0) && near(location.getZ(), 0.0),
+        "vertex: a default location is (0, 0, 0)");
+  check(near(normal.getX(), 0.0) && near(normal.getY(), 0.0) && near(normal.getZ(), 0.0),
+        "vertex: a default normal is (0, 0, 0)");
+  check(near(v.getColor().getRed(), DefaultBGColor.getRed()) &&
+            near(v.getColor().getGreen(), DefaultBGColor.getGreen()) &&
+            near(v.getColor().getBlue(), DefaultBGColor.getBlue()),
+        "vertex: a default colour is DefaultBGColor");
+  check(near(v.getAlpha().getRed(), DefaultAlpha.getRed()) && near(v.getAlpha().getGreen(), DefaultAlpha.getGreen()) &&
+            near(v.getAlpha().getBlue(), DefaultAlpha.getBlue()),
+        "vertex: a default alpha is DefaultAlpha");
+  check(v.getNext() == nullptr, "vertex: a default next vertex is null");
 }
 
 void testClipVertexInterpolation() {
@@ -113,6 +142,7 @@ void testClipVertexInterpolation() {
 } // namespace
 
 int main() {
+  testVertexDefaults();
   testClipVertexInterpolation();
 
   return checkSummary("clip colour holds");

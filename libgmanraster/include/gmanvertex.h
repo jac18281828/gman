@@ -25,63 +25,39 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gmancolor.h"
 #include "gmandefaults.h"
-#include "gmanlog.h"
 #include "gmanpoint.h"
-#include "gmantypes.h"
 #include "gmanvector.h"
 #include "ri.h"
 
-/*
- * RenderMan API GMANVertex
- *
- */
-
 class GMANVertex {
 private:
-  GMANPoint location;
+  GMANPoint location{0.0, 0.0, 0.0};
 
-  GMANVector normal;
+  GMANVector normal{0.0, 0.0, 0.0};
 
-  GMANColor color;
+  GMANColor color = DefaultBGColor;
 
-  GMANAlpha alpha;
+  // Defaults to DefaultAlpha, opaque: GMANClipEdge::intersect blends the two endpoints' alpha by the clip
+  // parameter, so a vertex whose alpha was never set must still hold opaque.
+  GMANAlpha alpha = DefaultAlpha;
 
-  GMANVertex* next; // next vertex
+  GMANVertex* next = nullptr;
 
 public:
-  // default constructor
-  GMANVertex();
+  RtVoid setLocation(GMANPoint const& p) { location = p; }
+  GMANPoint const& getLocation() const { return location; }
 
-  ~GMANVertex(); // default destructor
+  RtVoid setColor(GMANColor const& c) { color = c; }
+  GMANColor const& getColor() const { return color; }
 
-  // set location
-  RtVoid setLocation(const GMANPoint& p) { location = p; };
-  // get location
-  const GMANPoint& getLocation(RtVoid) const { return location; };
+  RtVoid setColor(GMANAlpha const& a) { alpha = a; }
+  GMANAlpha const& getAlpha() const { return alpha; }
 
-  // set color
-  RtVoid setColor(const GMANColor& c) { color = c; };
-  // get color
-  const GMANColor& getColor(RtVoid) const { return color; };
+  RtVoid setNormal(GMANVector const& n) { normal = n; }
+  GMANVector const& getNormal() const { return normal; }
 
-  // set alpha
-  RtVoid setColor(const GMANAlpha& a) { alpha = a; };
-  // get alpha
-  const GMANAlpha& getAlpha(RtVoid) const { return alpha; };
-
-  // set the shading normal
-  RtVoid setNormal(const GMANVector& n) { normal = n; };
-  // return the normal
-  const GMANVector& getNormal(RtVoid) const { return normal; };
-  // set next vertex
-  RtVoid setNext(GMANVertex* n) { next = n; };
-  // return next vertex
-  GMANVertex* getNext(RtVoid) { return next; };
+  RtVoid setNext(GMANVertex* n) { next = n; }
+  GMANVertex* getNext() { return next; }
 };

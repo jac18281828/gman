@@ -25,47 +25,32 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gmancolor.h"
-#include "gmanlog.h"
-#include "gmansurface.h"
+#include "gmanpoint.h"
 #include "gmanvector4.h"
 #include "ri.h"
-
-/*
- * RenderMan API GMANVertex4
- *
- */
 
 class GMANVertex4 {
 private:
   GMANColor color;
   GMANAlpha alpha;
-  GMANVector4 coord; // 4-d homogeneous coordinate
+  GMANVector4 coord;
 
 public:
-  GMANVertex4(); // default constructor
+  GMANColor const& getColor() const { return color; }
 
-  ~GMANVertex4(); // default destructor
+  GMANAlpha const& getAlpha() const { return alpha; }
 
-  const GMANColor& getColor(RtVoid) const { return color; }
+  GMANVector4 const& getCoord() const { return coord; }
 
-  const GMANAlpha& getAlpha(RtVoid) const { return alpha; }
-
-  const GMANVector4& getCoord(RtVoid) const { return coord; }
-
-  RtVoid set(const GMANPoint& p, const GMANColor& c, const GMANAlpha& a, const RtMatrix& ptm) {
+  RtVoid set(GMANPoint const& p, GMANColor const& c, GMANAlpha const& a, RtMatrix const& ptm) {
     coord.projTransform(p, ptm);
 
     color = c;
     alpha = a;
   }
 
-  RtVoid set(const GMANVector4& v, const GMANColor& c, const GMANAlpha& a) {
+  RtVoid set(GMANVector4 const& v, GMANColor const& c, GMANAlpha const& a) {
     coord = v;
     color = c;
     alpha = a;
