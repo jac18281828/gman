@@ -380,7 +380,7 @@ void checkMatteNormal() {
   gman::BSDF const closure = matte->bsdf(se);
 
   GMANColor expectedEval = kdCs(kMatteKd, kCs);
-  expectedEval.scale(static_cast<RtFloat>(std::numbers::inv_pi));
+  expectedEval.scale(std::numbers::inv_pi_v<RtFloat>);
   double const expectedPdf = unitN.dot(wi) / std::numbers::pi;
 
   check(colorNearRel(closure.eval(wo, wi), expectedEval, kTol),

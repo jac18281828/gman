@@ -173,7 +173,7 @@ void checkMatteBuildsAtShadingNormal() {
   GMANVector const wi = normalized(kWiUnnormalized);
 
   GMANColor expectedEval(kMatteKd * kMatteCs.getRed(), kMatteKd * kMatteCs.getGreen(), kMatteKd * kMatteCs.getBlue());
-  expectedEval.scale(static_cast<RtFloat>(std::numbers::inv_pi));
+  expectedEval.scale(std::numbers::inv_pi_v<RtFloat>);
 
   check(colorNearRel(closure.eval(wo, wi), expectedEval, kTol),
         "matte: eval at N = (0, 0, 1), Ng = (1, 0, 0) is Kd * Cs / pi within 1e-6 relative, on one side of N and "

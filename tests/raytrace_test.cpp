@@ -354,9 +354,9 @@ void checkSelfShadowSweepAppliesOffset() {
   int notOutwardCount = 0;
 
   for (int ti = 0; ti < kThetaSteps; ++ti) {
-    RtFloat const theta = (RtFloat)ti / (RtFloat)kThetaSteps * 2.0f * (RtFloat)std::numbers::pi;
+    RtFloat const theta = (RtFloat)ti / (RtFloat)kThetaSteps * 2.0f * std::numbers::pi_v<RtFloat>;
     for (int pi = 1; pi < kPhiSteps; ++pi) { // skip the poles: theta is undefined there
-      RtFloat const phi = (RtFloat)pi / (RtFloat)kPhiSteps * (RtFloat)std::numbers::pi;
+      RtFloat const phi = (RtFloat)pi / (RtFloat)kPhiSteps * std::numbers::pi_v<RtFloat>;
       GMANVector const dir((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),
                            (RtFloat)std::cos(phi));
       GMANPoint const origin(dir.getX() * 5.0f * radius, dir.getY() * 5.0f * radius, dir.getZ() * 5.0f * radius);
@@ -537,7 +537,7 @@ void checkLargeSphereRendererPathAppliesMagnitude() {
   int checked = 0;
   int mismatched = 0;
   for (int ti = 0; ti < kThetaSteps; ++ti) {
-    RtFloat const theta = (RtFloat)ti / (RtFloat)kThetaSteps * 2.0f * (RtFloat)std::numbers::pi;
+    RtFloat const theta = (RtFloat)ti / (RtFloat)kThetaSteps * 2.0f * std::numbers::pi_v<RtFloat>;
     for (int ci = 1; ci <= kConeSteps; ++ci) {
       RtFloat const phi = (RtFloat)ci / (RtFloat)kConeSteps * kMaxConeAngle;
       GMANVector const r0((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),

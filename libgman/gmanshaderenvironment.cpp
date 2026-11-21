@@ -95,6 +95,6 @@ GMANColor GMANSurfaceEnv::environment(std::string const& name, GMANVector const&
     lon += (RtFloat)(2.0 * std::numbers::pi);
   }
   RtFloat s = lon / (RtFloat)(2.0 * std::numbers::pi);
-  RtFloat t = ((RtFloat)(std::numbers::pi / 2.0) - lat) / (RtFloat)std::numbers::pi;
+  RtFloat t = ((RtFloat)(std::numbers::pi / 2.0) - lat) / std::numbers::pi_v<RtFloat>;
   return (textureCache ? *textureCache : gman::textureCache()).sample(name, s, t);
 }

@@ -83,7 +83,7 @@ static RtFloat sinc1D(RtFloat x) {
   if (fabs(x) < RI_EPSILON) {
     return 1.0;
   }
-  RtFloat px = (RtFloat)std::numbers::pi * x;
+  RtFloat px = std::numbers::pi_v<RtFloat> * x;
   return sin(px) / px;
 }
 

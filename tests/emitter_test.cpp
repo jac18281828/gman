@@ -236,9 +236,9 @@ void testSampleDelta() {
     bool const wiMatches = std::fabs(s.wi.getX() - directL.getX()) < 1e-6 &&
                            std::fabs(s.wi.getY() - directL.getY()) < 1e-6 &&
                            std::fabs(s.wi.getZ() - directL.getZ()) < 1e-6;
-    bool const clMatches = std::fabs(s.Cl.getRed() - directCl.getRed() * (RtFloat)std::numbers::pi) < 1e-4 &&
-                           std::fabs(s.Cl.getGreen() - directCl.getGreen() * (RtFloat)std::numbers::pi) < 1e-4 &&
-                           std::fabs(s.Cl.getBlue() - directCl.getBlue() * (RtFloat)std::numbers::pi) < 1e-4;
+    bool const clMatches = std::fabs(s.Cl.getRed() - directCl.getRed() * std::numbers::pi_v<RtFloat>) < 1e-4 &&
+                           std::fabs(s.Cl.getGreen() - directCl.getGreen() * std::numbers::pi_v<RtFloat>) < 1e-4 &&
+                           std::fabs(s.Cl.getBlue() - directCl.getBlue() * std::numbers::pi_v<RtFloat>) < 1e-4;
     if (!wiMatches || !clMatches || s.pdf != 1.0f || !s.isDelta) {
       allMatch = false;
     }

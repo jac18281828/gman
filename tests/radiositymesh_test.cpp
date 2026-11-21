@@ -268,7 +268,7 @@ void testConeArea() {
   mesh.build(worldManager, maxEdgeLength);
 
   RtFloat const slant = (RtFloat)std::sqrt((double)(radius * radius + height * height));
-  RtFloat const analytic = (RtFloat)std::numbers::pi * radius * slant;
+  RtFloat const analytic = std::numbers::pi_v<RtFloat> * radius * slant;
   RtFloat const diced = sumElementAreas(mesh);
   RtFloat const relError = std::fabs(diced - analytic) / analytic;
   std::printf("area: cone maxEdge=%.4f elements=%zu analytic=%.6f diced=%.6f relError=%.6g\n", maxEdgeLength,
@@ -286,7 +286,7 @@ void testDiskArea() {
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, maxEdgeLength);
 
-  RtFloat const analytic = (RtFloat)std::numbers::pi * radius * radius;
+  RtFloat const analytic = std::numbers::pi_v<RtFloat> * radius * radius;
   RtFloat const diced = sumElementAreas(mesh);
   RtFloat const relError = std::fabs(diced - analytic) / analytic;
   std::printf("area: disk maxEdge=%.4f elements=%zu analytic=%.6f diced=%.6f relError=%.6g\n", maxEdgeLength,
