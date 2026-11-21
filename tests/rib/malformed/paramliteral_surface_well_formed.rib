@@ -1,0 +1,23 @@
+# Surface branch, the control for paramliteral_surface_string_number.rib:
+# "mode" is declared string and supplied a string. gman binds the shader with
+# all three parameters, logs no error and renders.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention."
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Surface "matte" "Ka" [1] "Kd" [0]
+AttributeBegin
+	Surface "matte" "Ka" [1] "Kd" [0] "string mode" ["fast"]
+	Sphere 1 -1 1 360
+AttributeEnd
+AttributeBegin
+	Translate 2 0 0
+	Sphere 0.5 -0.5 0.5 360
+AttributeEnd
+WorldEnd

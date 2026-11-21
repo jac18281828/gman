@@ -24,13 +24,10 @@
  * directory under a time bound, then checks the exit status, the console
  * output and the rendered image.
  *
- * checkRejectedParameter expects the parser to drop one parameter: a clean
- * exit, exactly one "parameter ignored" line, that line naming the request
- * and the token as written, and a completed scene. checkStoppedParameter
- * expects the parser to stop the file at one parameter: failure exit, an
- * RIE_CONSISTENCY line naming the request and the token as written, and no
- * image. checkAcceptedParameter expects the same fixture shape to pass
- * without a word.
+ * checkStoppedParameter expects the parser to stop the file at one
+ * parameter: failure exit, an RIE_CONSISTENCY line naming the request and the
+ * token as written, and no image. checkAcceptedParameter expects the same
+ * fixture shape to pass without an ERROR line.
  */
 
 #pragma once
@@ -47,7 +44,6 @@
 namespace paramrejection {
 
 constexpr int runBoundSeconds = 20;
-constexpr char const* rejectionMarker = "parameter ignored";
 
 inline GMANRunResult runFixture(std::string const& gman, std::string const& path) {
   std::remove(malformedImagePath);
@@ -56,36 +52,15 @@ inline GMANRunResult runFixture(std::string const& gman, std::string const& path
   return runGman(gman, {path}, options);
 }
 
-inline std::string markerLines(std::string const& output, int& count) {
-  std::string firstLine;
+inline bool hasErrorLine(std::string const& output) {
   std::istringstream lines(output);
   std::string line;
-  count = 0;
   while (std::getline(lines, line)) {
-    if (line.find(rejectionMarker) == std::string::npos) {
-      continue;
+    if (line.rfind("ERROR", 0) == 0) {
+      return true;
     }
-    if (count == 0) {
-      firstLine = line;
-    }
-    ++count;
   }
-  return firstLine;
-}
-
-inline void checkRejectedParameter(std::string const& gman, std::string const& dir, std::string const& fixture,
-                                   std::string const& request, std::string const& token) {
-  GMANRunResult const r = runFixture(gman, dir + "/" + fixture);
-  check(!r.timedOut, fixture + ": does not hang (" + std::to_string(runBoundSeconds) + "s bound)");
-  check(!r.crashed, fixture + ": does not crash");
-  check(r.exitStatus == EXIT_SUCCESS, fixture + ": exits cleanly (drop the parameter, not the request)");
-
-  int count = 0;
-  std::string const line = markerLines(r.output, count);
-  check(count == 1, fixture + ": logs exactly one rejection (" + std::to_string(count) + " found)");
-  check(line.find(request + " \"" + token + "\"") != std::string::npos,
-        fixture + ": the rejection names " + request + " and \"" + token + "\"");
-  checkDegradedRender(fixture, 0);
+  return false;
 }
 
 // True when the working directory holds the image a fixture renders.
@@ -128,7 +103,7 @@ inline void checkAcceptedParameter(std::string const& gman, std::string const& d
   check(!r.timedOut, fixture + ": does not hang (" + std::to_string(runBoundSeconds) + "s bound)");
   check(!r.crashed, fixture + ": does not crash");
   check(r.exitStatus == EXIT_SUCCESS, fixture + ": exits cleanly");
-  check(r.output.find(rejectionMarker) == std::string::npos, fixture + ": logs no rejection");
+  check(!hasErrorLine(r.output), fixture + ": logs no ERROR");
   checkDegradedRender(fixture, 0);
 }
 

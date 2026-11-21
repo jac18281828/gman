@@ -211,6 +211,14 @@ error, as a shortfall of millions is. Stops with `RIE_CONSISTENCY`.
 Registered in `tests/ribcountbounds_test.cpp`. A trailing `Sphere` follows the
 desync convention. Not third-party.
 
+## malformed/paramliteral_surface_well_formed.rib
+
+The control for `paramliteral_surface_string_number.rib`: the same `Surface`
+with `"string mode" ["fast"]`, a string for a string declaration. It renders,
+logs no error and carries all three parameters to the shader. Registered in
+`tests/paramliteraltype_test.cpp`. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
 ## nupatch_bilinear.rib
 
 An order-2x2 `NuPatch` (`nu = nv = 2`, knots `[0 0 1 1]` on both axes) --

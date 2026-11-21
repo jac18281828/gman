@@ -83,28 +83,48 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string dir = argv[2];
 
-  paramrejection::checkRejectedParameter(gman, dir, "paramliteral_option_string_number.rib", "Option", "string mode");
-  paramrejection::checkRejectedParameter(gman, dir, "paramliteral_option_declared_string.rib", "Option", "mode");
-  paramrejection::checkRejectedParameter(gman, dir, "paramliteral_option_float_string.rib", "Option", "float weight");
-  paramrejection::checkRejectedParameter(gman, dir, "paramliteral_hider_string_number.rib", "Hider", "string mode");
-  paramrejection::checkRejectedParameter(gman, dir, "paramliteral_display_string_number.rib", "Display", "string mode");
-  paramrejection::checkRejectedParameter(gman, dir, "paramliteral_surface_string_number.rib", "Surface", "string mode");
+  paramrejection::checkStoppedParameter(gman, dir, "paramliteral_option_string_number.rib", "Option", "string mode");
+  paramrejection::checkStoppedParameter(gman, dir, "paramliteral_option_declared_string.rib", "Option", "mode");
+  paramrejection::checkStoppedParameter(gman, dir, "paramliteral_option_float_string.rib", "Option", "float weight");
+  paramrejection::checkStoppedParameter(gman, dir, "paramliteral_hider_string_number.rib", "Hider", "string mode");
+  paramrejection::checkStoppedParameter(gman, dir, "paramliteral_display_string_number.rib", "Display", "string mode");
+  paramrejection::checkStoppedParameter(gman, dir, "paramliteral_surface_string_number.rib", "Surface", "string mode");
 
   {
     RecordingRenderMan renderMan;
     const std::string rib = dir + "/paramliteral_surface_string_number.rib";
+    bool stopped = false;
+    {
+      GMANRIBParse parser(renderMan, rib.c_str());
+      try {
+        parser.parse();
+      } catch (GMANError const& error) {
+        stopped = error.getCode() == RIE_CONSISTENCY;
+      }
+    }
+    check(stopped, "surface: the request with the bad parameter stops the parse with RIE_CONSISTENCY");
+    check(renderMan.surfaceCalls.size() == 1, "surface: only the Surface before the bad request dispatches (" +
+                                                  std::to_string(renderMan.surfaceCalls.size()) +
+                                                  " Surface calls, expected 1)");
+  }
+
+  paramrejection::checkAcceptedParameter(gman, dir, "paramliteral_surface_well_formed.rib");
+
+  {
+    RecordingRenderMan renderMan;
+    const std::string rib = dir + "/paramliteral_surface_well_formed.rib";
     {
       GMANRIBParse parser(renderMan, rib.c_str());
       parser.parse();
     }
     const bool twoCalls = renderMan.surfaceCalls.size() == 2;
-    check(twoCalls, "surface: the request with the bad parameter still dispatches (" +
-                        std::to_string(renderMan.surfaceCalls.size()) + " Surface calls, expected 2)");
+    check(twoCalls, "surface control: both requests dispatch (" + std::to_string(renderMan.surfaceCalls.size()) +
+                        " Surface calls, expected 2)");
     if (twoCalls) {
       SurfaceCall const& second = renderMan.surfaceCalls[1];
-      check(second.n == 2, "surface: the dispatched request carries two parameters");
-      check(carries(second, "Ka") && carries(second, "Kd"), "surface: the dispatched request keeps Ka and Kd");
-      check(!carries(second, "string mode"), "surface: the dispatched request omits the rejected parameter");
+      check(second.n == 3, "surface control: the dispatched request carries three parameters");
+      check(carries(second, "Ka") && carries(second, "Kd") && carries(second, "string mode"),
+            "surface control: the dispatched request keeps Ka, Kd and string mode");
     }
   }
 

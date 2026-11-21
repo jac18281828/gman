@@ -198,11 +198,11 @@ private:
     RtInt* counts;
   };
 
-  // Reads a request's parameter list and returns it without any parameter
-  // that contradicts its declaration: a string literal for a numeric type or
-  // a number for a string, or fewer values than one element of the type. Each
-  // rejected parameter logs one error naming the request; its storage is
-  // still released with the request's.
+  // Reads a request's parameter list and returns it. Throws GMANError
+  // RIE_CONSISTENCY at RIE_ERROR, naming the request and the token, at the
+  // first parameter that contradicts its declaration: a string literal for a
+  // numeric type or a number for a string, or fewer values than one element
+  // of the type. The storage already read is released with the request's.
   ParsedParameterList parseParameterList(std::string const& request);
 
   // the token-dispatch loop, run once for the top-level file and once more,

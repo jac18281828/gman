@@ -1949,15 +1949,9 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList(std::string c
       continue;
     }
     const std::string reason = contradiction(*declaration, literal, paramMap.at(key).count);
-    if (reason.empty()) {
-      continue;
+    if (!reason.empty()) {
+      throw GMANError(RIE_CONSISTENCY, RIE_ERROR, std::format("{} \"{}\": {}.", request, keyStr, reason).c_str());
     }
-    if (kindContradicts(*declaration, literal)) {
-      error("{} \"{}\": {}; parameter ignored.", request, keyStr, reason);
-      paramMap.erase(key);
-      continue;
-    }
-    throw GMANError(RIE_CONSISTENCY, RIE_ERROR, std::format("{} \"{}\": {}.", request, keyStr, reason).c_str());
   }
 
   const RtInt n = (RtInt)paramMap.size();
