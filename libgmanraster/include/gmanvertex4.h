@@ -43,14 +43,14 @@ public:
 
   GMANVector4 const& getCoord() const { return coord; }
 
-  RtVoid set(GMANPoint const& p, GMANColor const& c, GMANAlpha const& a, RtMatrix const& ptm) {
+  RtVoid set(const GMANPoint& p, const GMANColor& c, const GMANAlpha& a, const RtMatrix& ptm) {
     coord.projTransform(p, ptm);
 
     color = c;
     alpha = a;
   }
 
-  RtVoid set(GMANVector4 const& v, GMANColor const& c, GMANAlpha const& a) {
+  RtVoid set(const GMANVector4& v, const GMANColor& c, const GMANAlpha& a) {
     coord = v;
     color = c;
     alpha = a;
