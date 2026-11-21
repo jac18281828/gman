@@ -119,7 +119,7 @@ void testNoReadPastTheArray() {
 void testBsplineNames() {
   GMANSurfaceEnv env;
   std::vector<RtFloat> points{0.0f, 1.0f, 0.0f, 0.0f};
-  for (const char* name : {"b-spline", "bspline"}) {
+  for (char const* name : {"b-spline", "bspline"}) {
     check(near(env.spline<RtFloat>(name, 0.0f, 4, points.data()), 2.0f / 3.0f),
           std::string(name) + " selects the uniform cubic B-spline");
   }
@@ -152,7 +152,7 @@ void testEachNameMatchesItsTemplate() {
 void testUnknownBasisThrows() {
   GMANSurfaceEnv env;
   std::vector<RtFloat> points = controlValues(4);
-  for (const char* name : {"nonesuch", ""}) {
+  for (char const* name : {"nonesuch", ""}) {
     bool threw = false;
     bool codeOk = false;
     bool severityOk = false;
