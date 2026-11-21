@@ -54,9 +54,9 @@ RtVoid GMANSurfaceShader::illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANC
 }
 
 namespace {
-// GMANMAX(NaN, 0) takes its right operand, since a NaN comparison is
+// GMANMax(NaN, 0) takes its right operand, since a NaN comparison is
 // always false, so a NaN channel maps to exactly 0.
-RtFloat clampToUnit(RtFloat value) { return GMANMIN(GMANMAX(value, (RtFloat)0.0), (RtFloat)1.0); }
+RtFloat clampToUnit(RtFloat value) { return GMANMin(GMANMax(value, (RtFloat)0.0), (RtFloat)1.0); }
 } // namespace
 
 GMANColor GMANSurfaceShader::albedo(GMANSurfaceEnv const& se) const {

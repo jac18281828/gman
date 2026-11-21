@@ -35,9 +35,6 @@
 // GMan constants
 inline constexpr double DEGTORAD = std::numbers::pi / 180.0;
 
-#define GMANMAX(x, y) (x > y ? x : y)
-#define GMANMIN(x, y) (x < y ? x : y)
-
 #if 0
 inline  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
 {

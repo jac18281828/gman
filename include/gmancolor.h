@@ -122,9 +122,9 @@ public:
   SampleType maxSampleValue(RtVoid) {
     SampleType maxval;
 
-    maxval = GMANMAX(r, g);
+    maxval = GMANMax(r, g);
 
-    maxval = GMANMAX(maxval, b);
+    maxval = GMANMax(maxval, b);
 
     return maxval;
   };
