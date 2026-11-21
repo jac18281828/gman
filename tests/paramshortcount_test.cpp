@@ -43,10 +43,10 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string dir = argv[2];
 
-  paramrejection::checkRejectedParameter(gman, dir, "paramshort_option_float4.rib", "Option", "float[4] weights");
-  paramrejection::checkRejectedParameter(gman, dir, "paramshort_hider_float4.rib", "Hider", "float[4] weights");
-  paramrejection::checkRejectedParameter(gman, dir, "paramshort_display_float4.rib", "Display", "float[4] weights");
-  paramrejection::checkRejectedParameter(gman, dir, "paramshort_surface_color2.rib", "Surface", "color tint");
+  paramrejection::checkStoppedParameter(gman, dir, "paramshort_option_float4.rib", "Option", "float[4] weights");
+  paramrejection::checkStoppedParameter(gman, dir, "paramshort_hider_float4.rib", "Hider", "float[4] weights");
+  paramrejection::checkStoppedParameter(gman, dir, "paramshort_display_float4.rib", "Display", "float[4] weights");
+  paramrejection::checkStoppedParameter(gman, dir, "paramshort_surface_color2.rib", "Surface", "color tint");
 
   paramrejection::checkAcceptedParameter(gman, dir, "paramshort_option_pair_exact.rib");
   paramrejection::checkAcceptedParameter(gman, dir, "paramshort_option_pair_over.rib");

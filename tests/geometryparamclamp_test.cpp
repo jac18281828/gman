@@ -42,6 +42,7 @@
 
 #include "check.h"
 #include "imagecoverage.h"
+#include "paramrejection.h"
 #include "rungman.h"
 
 namespace {
@@ -64,18 +65,17 @@ int main(int argc, char* argv[]) {
 
   struct Fixture {
     const char* file;
-    const char* expectedWarning;
-    long requestFloor;
+    const char* expectedError;
   };
   const Fixture fixtures[] = {
-      {"polygon_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3", 300},
-      {"sphere_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3", 3500},
-      {"cone_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3", 3500},
-      {"cylinder_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3", 3000},
-      {"hyperboloid_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3", 5000},
-      {"paraboloid_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3", 2500},
-      {"disk_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3", 3500},
-      {"torus_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3", 3500},
+      {"polygon_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
+      {"sphere_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
+      {"cone_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
+      {"cylinder_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
+      {"hyperboloid_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
+      {"paraboloid_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
+      {"disk_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
+      {"torus_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
   };
 
   for (const Fixture& fixture : fixtures) {
@@ -83,12 +83,14 @@ int main(int argc, char* argv[]) {
     std::remove(malformedImagePath);
     GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
-    check(!r.crashed, std::string(fixture.file) + ": does not crash -- a short array stays inside its own "
-                                                  "allocation instead of reading past it");
-    check(r.exitStatus == 0, std::string(fixture.file) + ": exits cleanly (degrade, don't abort)");
-    check(r.output.find(fixture.expectedWarning) != std::string::npos,
-          std::string(fixture.file) + ": warns naming the short parameter and both lengths");
-    checkDegradedRender(fixture.file, fixture.requestFloor);
+    check(!r.crashed, std::string(fixture.file) + ": does not crash -- a short array stops the file instead of "
+                                                  "reading past its own allocation");
+    check(r.exitStatus == EXIT_FAILURE, std::string(fixture.file) + ": exits with failure (the file stops)");
+    check(r.output.find(fixture.expectedError) != std::string::npos,
+          std::string(fixture.file) + ": names the short parameter and both lengths");
+    check(r.output.find("RIE_CONSISTENCY") != std::string::npos,
+          std::string(fixture.file) + ": reports RIE_CONSISTENCY");
+    paramrejection::checkNoImageWritten(fixture.file);
   }
 
   return checkSummary("Polygon and the seven quadrics clamp a short RIB-supplied parameter array");

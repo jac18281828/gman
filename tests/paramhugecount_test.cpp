@@ -43,10 +43,10 @@ int main(int argc, char* argv[]) {
   const std::string gman = argv[1];
   const std::string dir = argv[2];
 
-  paramrejection::checkRejectedParameter(gman, dir, "paramhuge_option.rib", "Option", "point[1000000000] cloud");
-  paramrejection::checkRejectedParameter(gman, dir, "paramhuge_hider.rib", "Hider", "point[1000000000] cloud");
-  paramrejection::checkRejectedParameter(gman, dir, "paramhuge_display.rib", "Display", "point[1000000000] cloud");
-  paramrejection::checkRejectedParameter(gman, dir, "paramhuge_surface.rib", "Surface", "point[1000000000] cloud");
+  paramrejection::checkStoppedParameter(gman, dir, "paramhuge_option.rib", "Option", "point[1000000000] cloud");
+  paramrejection::checkStoppedParameter(gman, dir, "paramhuge_hider.rib", "Hider", "point[1000000000] cloud");
+  paramrejection::checkStoppedParameter(gman, dir, "paramhuge_display.rib", "Display", "point[1000000000] cloud");
+  paramrejection::checkStoppedParameter(gman, dir, "paramhuge_surface.rib", "Surface", "point[1000000000] cloud");
 
   return checkSummary("A parameter declaring more than an int can count is dropped");
 }

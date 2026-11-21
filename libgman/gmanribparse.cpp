@@ -129,11 +129,11 @@ std::unique_ptr<char[]> duplicateCString(std::string const& s) {
 
 // A RIB file is an untrusted caller: the array lengths it actually supplied
 // for a request's parameter list ride beside the RI-mandated signature only
-// on GMANRenderManImpl, which clamps a parameter to its declared size
-// instead of reading past it. request is a generic lambda taking the
-// renderer reference and a trailing pack for those lengths; the pack holds
-// counts on the GMANRenderManImpl path and is empty otherwise, so the same
-// call expression resolves to either overload.
+// on GMANRenderManImpl, whose parameter list stops the file when an array is
+// shorter than its declared size instead of reading past it. request is a
+// generic lambda taking the renderer reference and a trailing pack for those
+// lengths; the pack holds counts on the GMANRenderManImpl path and is empty
+// otherwise, so the same call expression resolves to either overload.
 template <typename Request> void dispatchWithCounts(GMANRenderMan& renderMan, RtInt const* counts, Request&& request) {
   if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
     request(*impl, counts);
@@ -167,18 +167,21 @@ std::optional<Declaration> declarationOf(GMANDictionary& dictionary, std::string
   }
 }
 
-std::string contradiction(Declaration const& declaration, LiteralKind literal, std::int64_t supplied) {
+bool kindContradicts(Declaration const& declaration, LiteralKind literal) {
   const bool declaredString = declaration.type == GMANTokenEntry::STRING;
-  if (literal == LiteralKind::string && !declaredString) {
-    return "a string was supplied for a numeric parameter";
-  }
-  if (literal == LiteralKind::number && declaredString) {
-    return "a number was supplied for a string parameter";
+  return (literal == LiteralKind::string && !declaredString) || (literal == LiteralKind::number && declaredString);
+}
+
+std::string contradiction(Declaration const& declaration, LiteralKind literal, std::int64_t supplied) {
+  if (kindContradicts(declaration, literal)) {
+    return literal == LiteralKind::string ? "a string was supplied for a numeric parameter"
+                                          : "a number was supplied for a string parameter";
   }
   // The request owns the vertex, varying and uniform counts that size the
   // full array, so the parser can require only one element of the type.
   if (supplied < declaration.minimumCount) {
-    return std::format("{} of the {} declared values supplied", supplied, declaration.minimumCount);
+    return std::format("{} of the {} declared values supplied; the array is shorter than the request requires",
+                       supplied, declaration.minimumCount);
   }
   return {};
 }
@@ -1946,10 +1949,15 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList(std::string c
       continue;
     }
     const std::string reason = contradiction(*declaration, literal, paramMap.at(key).count);
-    if (!reason.empty()) {
+    if (reason.empty()) {
+      continue;
+    }
+    if (kindContradicts(*declaration, literal)) {
       error("{} \"{}\": {}; parameter ignored.", request, keyStr, reason);
       paramMap.erase(key);
+      continue;
     }
+    throw GMANError(RIE_CONSISTENCY, RIE_ERROR, std::format("{} \"{}\": {}.", request, keyStr, reason).c_str());
   }
 
   const RtInt n = (RtInt)paramMap.size();

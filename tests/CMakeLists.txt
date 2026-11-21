@@ -719,9 +719,10 @@ set_tests_properties(ribintegerbounds PROPERTIES
   LABELS render
   TIMEOUT 60)
 
-# A RIB request whose declared counts no RtInt holds stops the file instead of
-# allocating for it. Each run writes malformed_out.tif into its working
-# directory. See tests/ribcountbounds_test.cpp.
+# A RIB request whose declared counts no RtInt holds, or whose arrays fall
+# short of them, stops the file instead of allocating for it. Each run writes
+# malformed_out.tif into its working directory. See
+# tests/ribcountbounds_test.cpp.
 add_executable(gman_ribcountbounds ribcountbounds_test.cpp)
 target_link_libraries(gman_ribcountbounds PRIVATE gman_core TIFF::TIFF)
 

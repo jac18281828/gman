@@ -80,11 +80,14 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
       throw GMANError(RIE_RANGE, RIE_ERROR,
                       std::format("Parameter \"{}\": supplied length {} is negative", tk[i], supplied).c_str());
     }
-    if (supplied < size) {
-      warning("Parameter \"{}\": declared length {}, supplied length {}; "
-              "clamping and zero-filling the remainder.",
-              tk[i], size, supplied);
-    } else if (supplied > size) {
+    if (suppliedCounts && supplied < size) {
+      throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
+                      std::format("Parameter \"{}\": declared length {}, supplied length {}; the array is shorter than "
+                                  "the request requires.",
+                                  tk[i], size, supplied)
+                          .c_str());
+    }
+    if (supplied > size) {
       warning("Parameter \"{}\": declared length {}, supplied length {}; "
               "truncating the excess.",
               tk[i], size, supplied);
@@ -93,15 +96,15 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
     switch (di.getType(tid)) {
     case GMANTokenEntry::STRING:
       appendEntry<std::string>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
-                               [&](std::string* dest) { copy_string(size, (char**)dt[i], dest, supplied); });
+                               [&](std::string* dest) { copy_string(size, (char**)dt[i], dest); });
       break;
     case GMANTokenEntry::INTEGER:
       appendEntry<RtInt>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
-                         [&](RtInt* dest) { copy_integer(size, (RtInt*)dt[i], dest, supplied); });
+                         [&](RtInt* dest) { copy_integer(size, (RtInt*)dt[i], dest); });
       break;
     default:
       appendEntry<RtFloat>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
-                           [&](RtFloat* dest) { copy_float(size, (RtFloat*)dt[i], dest, supplied); });
+                           [&](RtFloat* dest) { copy_float(size, (RtFloat*)dt[i], dest); });
       break;
     }
   }
@@ -151,27 +154,15 @@ std::span<std::string const> GMANParameterList::strings(std::string_view name) c
   return valuesOf<std::string>(name);
 }
 
-RtVoid GMANParameterList::copy_float(RtInt n, RtFloat* source, RtFloat* dest, RtInt supplied) {
-  int count = supplied < n ? supplied : n;
-  int i;
-  for (i = 0; i < count; i++)
+RtVoid GMANParameterList::copy_float(RtInt n, RtFloat* source, RtFloat* dest) {
+  for (RtInt i = 0; i < n; i++)
     dest[i] = source[i];
-  for (; i < n; i++)
-    dest[i] = 0.0;
 }
-RtVoid GMANParameterList::copy_integer(RtInt n, RtInt* source, RtInt* dest, RtInt supplied) {
-  int count = supplied < n ? supplied : n;
-  int i;
-  for (i = 0; i < count; i++)
+RtVoid GMANParameterList::copy_integer(RtInt n, RtInt* source, RtInt* dest) {
+  for (RtInt i = 0; i < n; i++)
     dest[i] = source[i];
-  for (; i < n; i++)
-    dest[i] = 0;
 }
-RtVoid GMANParameterList::copy_string(RtInt n, char** source, std::string* dest, RtInt supplied) {
-  int count = supplied < n ? supplied : n;
-  int i;
-  for (i = 0; i < count; i++)
+RtVoid GMANParameterList::copy_string(RtInt n, char** source, std::string* dest) {
+  for (RtInt i = 0; i < n; i++)
     dest[i] = std::string(source[i]);
-  for (; i < n; i++)
-    dest[i] = std::string();
 }

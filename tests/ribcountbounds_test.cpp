@@ -20,10 +20,12 @@
 
 /*
  * A RIB request sizes each parameter array from the counts it declares. A
- * count that no RtInt holds stops the file with RIE_RANGE, and the file never
- * allocates for a request it will not run. Each fixture runs out of process
- * under a timeout (tests/rungman.h) and must neither hang nor crash, exit
- * with failure, report its code against the parameter "P", and leave no image
+ * count that no RtInt holds stops the file with RIE_RANGE, and an array
+ * shorter than its declaration stops it with RIE_CONSISTENCY, by one value or
+ * by millions: the file pays for every element it declares, and a few bytes
+ * of RIB never allocate megabytes. Each fixture runs out of process under a
+ * timeout (tests/rungman.h) and must neither hang nor crash, exit with
+ * failure, report its code against the parameter "P", and leave no image
  * behind.
  */
 
@@ -33,20 +35,12 @@
 
 #include "check.h"
 #include "imagecoverage.h"
+#include "paramrejection.h"
 #include "rungman.h"
 
 namespace {
 
 constexpr int runBoundSeconds = 10;
-
-bool imageWritten() {
-  std::FILE* const file = std::fopen(malformedImagePath, "rb");
-  if (file == nullptr) {
-    return false;
-  }
-  std::fclose(file);
-  return true;
-}
 
 } // namespace
 
@@ -64,6 +58,10 @@ int main(int argc, char* argv[]) {
   };
   Fixture const fixtures[] = {
       {"patchmesh_dimensions_overflow.rib", "RIE_RANGE"},
+      {"pointspolygons_declared_vertices.rib", "RIE_CONSISTENCY"},
+      {"generalpolygon_declared_nverts.rib", "RIE_CONSISTENCY"},
+      {"patchmesh_declared_dimensions.rib", "RIE_CONSISTENCY"},
+      {"pointspolygons_short_p_by_one.rib", "RIE_CONSISTENCY"},
   };
 
   for (Fixture const& fixture : fixtures) {
@@ -77,7 +75,7 @@ int main(int argc, char* argv[]) {
     check(r.exitStatus == EXIT_FAILURE, name + ": exits with failure");
     check(r.output.find(fixture.code) != std::string::npos, name + ": reports " + fixture.code);
     check(r.output.find("\"P\"") != std::string::npos, name + ": names the parameter \"P\"");
-    check(!imageWritten(), name + ": writes no image");
+    paramrejection::checkNoImageWritten(name);
   }
 
   return checkSummary("RIB-declared counts stop the file");

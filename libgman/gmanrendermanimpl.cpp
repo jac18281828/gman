@@ -1090,11 +1090,11 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
   // the same way. nupatches/nvpatches mirror the sub-patch count that
   // evaluator actually iterates over -- getRSPatchMesh rejects an nu/nv
   // its own arithmetic cannot align to the current basis step, but that
-  // check is over nu/nv alone; it does not, and cannot from here, confirm
-  // the RIB-supplied "P" array below actually holds nu*nv points (the same
-  // unvalidated-length pattern RiPolygonV's nverts has). Clamping a
-  // negative count to zero here only keeps this sizing arithmetic itself
-  // from going negative, never anyone else's.
+  // check is over nu/nv alone; the parameter list below confirms the
+  // RIB-supplied "P" array actually holds nu*nv points, and stops the file
+  // with RIE_CONSISTENCY when it holds fewer. Clamping a negative count to
+  // zero here only keeps this sizing arithmetic itself from going negative,
+  // never anyone else's.
   RtInt uStep = 1, vStep = 1;
   if (bicubicType) {
     GMANBasis basis = getAttributes().getUVBasis();
@@ -1267,9 +1267,9 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
 
   // A non-positive "Pw" weight is not itself an RISpec rule; it closes the
   // 0/0 a zero weight would otherwise hand the evaluator's rational
-  // division. The clamp above always sizes "Pw" to vertex*4 regardless of
-  // what was supplied, zero-filling any shortfall, so this loop is
-  // memory-safe even against a short "Pw".
+  // division. "Pw" exists only when the parameter list accepted its
+  // vertex*4 size, a shorter supplied "Pw" having stopped the file, so this
+  // loop is memory-safe.
   RtFloat* pw = (RtFloat*)paramList.getPointer(dictionary.getTokenId(RI_PW));
   if (pw) {
     for (RtInt i = 0; i < vertex; i++) {

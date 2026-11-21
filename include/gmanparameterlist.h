@@ -50,9 +50,9 @@ private:
   // Shared by every copy of this list; the last one to go frees the block.
   std::shared_ptr<std::vector<Entry>> entries;
 
-  RtVoid copy_float(RtInt number, RtFloat* source, RtFloat* dest, RtInt supplied);
-  RtVoid copy_integer(RtInt number, RtInt* source, RtInt* dest, RtInt supplied);
-  RtVoid copy_string(RtInt number, char** source, std::string* dest, RtInt supplied);
+  RtVoid copy_float(RtInt number, RtFloat* source, RtFloat* dest);
+  RtVoid copy_integer(RtInt number, RtInt* source, RtInt* dest);
+  RtVoid copy_string(RtInt number, char** source, std::string* dest);
 
   template <typename T, typename CopyFn>
   static RtVoid appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name, std::string const& token,
@@ -66,20 +66,21 @@ public:
   // suppliedCounts, when present, is index-aligned with tk/dt: element i is
   // the length the caller actually supplied for dt[i], as opposed to
   // vertex/varying/uniform/facevarying, which say how long it is supposed
-  // to be. A short supplied[i] clamps the copy and zero-fills the rest,
-  // once, with a warning naming the parameter and both lengths -- reading
-  // past dt[i]'s own allocation is the defect this parameter exists to
-  // close. NULL (the default) means the caller's arrays are trusted at
-  // their declared length, exactly as before this parameter existed: the
+  // to be. A supplied length below the declared one stops the request with
+  // RIE_CONSISTENCY, naming the parameter and both lengths, before that
+  // parameter allocates; a longer one keeps the first declared-length
+  // values and warns that it truncates the excess. NULL (the default) means
+  // the caller's arrays are trusted at their declared length: the
   // RIB-parsed path, which does not control what a scene file supplies,
   // passes real counts; a program calling the public RI API directly is
   // trusted with its own memory, and the RISpec gives no way to describe
   // an RtPointer's length regardless.
   //
-  // Throws GMANError at RIE_ERROR: RIE_RANGE for a negative n, a negative
-  // supplied length, or a parameter whose element count GMANDictionary::
-  // allocSize rejects; RIE_NOMEM, naming the token, when an entry's
-  // allocation fails, the entries already built being released.
+  // Throws GMANError at RIE_ERROR: RIE_CONSISTENCY for a supplied length
+  // below the declared one; RIE_RANGE for a negative n, a negative supplied
+  // length, or a parameter whose element count GMANDictionary::allocSize
+  // rejects; RIE_NOMEM, naming the token, when an entry's allocation fails.
+  // An entry already built when one of them is thrown is released.
   GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, RtPointer* dt, RtInt vertex = 1, RtInt varying = 1,
                     RtInt uniform = 1, RtInt facevarying = 1, const RtInt* suppliedCounts = NULL);
 

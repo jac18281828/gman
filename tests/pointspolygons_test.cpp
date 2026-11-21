@@ -560,10 +560,11 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
   struct Fixture {
     char const* file;
     char const* expectedWarning;
-    // The six structural-check fixtures degrade: they warn, exit 0 and
-    // keep parsing the trailing Sphere. A non-integer array entry is a
-    // token-level syntax error instead (RIE_SYNTAX), fatal to the whole
-    // file, so the two leak-regression fixtures below override both.
+    // The four structural-check fixtures degrade: they warn, exit 0 and
+    // keep parsing the trailing Sphere. A short "P" is a RIE_CONSISTENCY
+    // error and a non-integer array entry a token-level syntax error
+    // (RIE_SYNTAX), each fatal to the whole file, so the fixtures for
+    // those override both.
     int expectedExit = 0;
     bool expectsSphere = true;
   };
@@ -574,8 +575,11 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
                                                  "2; ignoring."},
       {"pointspolygons_negative_index.rib", "PointsPolygons: verts[2] = -1 is negative; ignoring."},
       {"pointsgeneralpolygons_zero_loops.rib", "PointsGeneralPolygons: nloops[0] = 0 is invalid; ignoring."},
-      {"pointspolygons_short_p.rib", "Parameter \"P\": declared length 12, supplied length 9"},
-      {"pointsgeneralpolygons_short_p.rib", "Parameter \"P\": declared length 12, supplied length 9"},
+      {"pointspolygons_short_p.rib", "RIE_CONSISTENCY -- Parameter \"P\": declared length 12, supplied length 9",
+       /*expectedExit=*/1, /*expectsSphere=*/false},
+      {"pointsgeneralpolygons_short_p.rib", "RIE_CONSISTENCY -- Parameter \"P\": declared length 12, supplied length 9",
+       /*expectedExit=*/1,
+       /*expectsSphere=*/false},
       {"pointspolygons_nonint_verts.rib", "RIE_SYNTAX -- Non-integer in array.",
        /*expectedExit=*/1, /*expectsSphere=*/false},
       {"pointsgeneralpolygons_nonint_nverts.rib", "RIE_SYNTAX -- Non-integer in array.",

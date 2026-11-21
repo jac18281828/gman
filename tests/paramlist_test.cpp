@@ -171,6 +171,31 @@ void checkThrowingConstructionLeaksNothing() {
   check(after == before, "a construction that throws partway leaks nothing");
 }
 
+// A supplied length below the declared one stops the construction with
+// RIE_CONSISTENCY at the short entry, after the entry before it was built;
+// nothing may remain live once the exception propagates.
+void checkShortfallPartwayLeaksNothing() {
+  GMANDictionary dictionary;
+
+  RtFloat ka = 1.0f;
+  RtFloat points[6] = {0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
+  RtToken tokens[2] = {RI_KA, RI_P};
+  RtPointer parms[2] = {&ka, points};
+  const RtInt supplied[2] = {1, 3};
+
+  const auto before = liveAllocations.load();
+  bool threw = false;
+  try {
+    GMANParameterList pl(dictionary, 2, tokens, parms, /*vertex=*/2, 1, 1, 1, supplied);
+  } catch (GMANError const& error) {
+    threw = error.getCode() == RIE_CONSISTENCY;
+  }
+  const auto after = liveAllocations.load();
+
+  check(threw, "a short P after an allocated Ka is rejected with RIE_CONSISTENCY");
+  check(after == before, "a shortfall partway through leaks nothing");
+}
+
 // A failed entry allocation becomes RIE_NOMEM naming the token, with the
 // entry built before it released.
 void checkFailedAllocationReportsNoMemory() {
@@ -222,6 +247,7 @@ int main() {
   checkZeroLengthEntry();
   checkCopyOutlivesSource();
   checkThrowingConstructionLeaksNothing();
+  checkShortfallPartwayLeaksNothing();
   checkFailedAllocationReportsNoMemory();
 
   return checkSummary("GMANParameterList's contract holds");

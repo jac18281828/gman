@@ -182,6 +182,35 @@ saturates at `INT_MAX`, so `"P"`'s element count exceeds `RtInt`'s range and
 the file stops with `RIE_RANGE`. Registered in `tests/ribcountbounds_test.cpp`.
 A trailing `Sphere` follows the desync convention. Not third-party.
 
+## malformed/pointspolygons_declared_vertices.rib
+
+`verts` reaches vertex 2000000, so `"P"` declares 6000003 floats and supplies
+nine. A file this small once held 76 MB and rendered the remainder as zeros;
+it now stops with `RIE_CONSISTENCY` before `"P"` allocates. Registered in
+`tests/ribcountbounds_test.cpp`. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/generalpolygon_declared_nverts.rib
+
+`nverts [4 1500000]` declares a hole loop of 1500000 vertices for a `"P"` of
+four points -- `GeneralPolygon`'s sum-of-`nverts` count against a short array.
+Stops with `RIE_CONSISTENCY`. Registered in `tests/ribcountbounds_test.cpp`. A
+trailing `Sphere` follows the desync convention. Not third-party.
+
+## malformed/patchmesh_declared_dimensions.rib
+
+A bilinear `PatchMesh` of 2000 by 1500 points, whose product fits `RtInt`,
+over a `"P"` of four points. Stops with `RIE_CONSISTENCY`. Registered in
+`tests/ribcountbounds_test.cpp`. A trailing `Sphere` follows the desync
+convention. Not third-party.
+
+## malformed/pointspolygons_short_p_by_one.rib
+
+`"P"` declares nine floats and supplies eight: a shortfall of one value is an
+error, as a shortfall of millions is. Stops with `RIE_CONSISTENCY`.
+Registered in `tests/ribcountbounds_test.cpp`. A trailing `Sphere` follows the
+desync convention. Not third-party.
+
 ## nupatch_bilinear.rib
 
 An order-2x2 `NuPatch` (`nu = nv = 2`, knots `[0 0 1 1]` on both axes) --

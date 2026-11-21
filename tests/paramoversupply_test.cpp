@@ -40,6 +40,7 @@
 
 #include "check.h"
 #include "imagecoverage.h"
+#include "paramrejection.h"
 #include "rungman.h"
 
 namespace {
@@ -78,9 +79,10 @@ int main(int argc, char* argv[]) {
     std::remove(malformedImagePath);
     GMANRunResult r = runCapturingOutput(gman, rib, 10);
     check(r.output.find("Parameter \"N\": declared length 12, supplied length 3; "
-                        "clamping and zero-filling the remainder.") != std::string::npos,
-          "sphere_short_n.rib: the existing under-supply warning is unchanged");
-    checkDegradedRender("sphere_short_n.rib", 3500);
+                        "the array is shorter than the request requires.") != std::string::npos,
+          "sphere_short_n.rib: the under-supply stops the file with the shortfall error");
+    check(r.output.find("RIE_CONSISTENCY") != std::string::npos, "sphere_short_n.rib: reports RIE_CONSISTENCY");
+    paramrejection::checkNoImageWritten("sphere_short_n.rib");
   }
 
   return checkSummary("GMANParameterList warns on an over-long RIB parameter array");

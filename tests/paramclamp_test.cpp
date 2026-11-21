@@ -50,6 +50,7 @@
 
 #include "check.h"
 #include "imagecoverage.h"
+#include "paramrejection.h"
 #include "rungman.h"
 
 namespace {
@@ -86,15 +87,36 @@ int main(int argc, char* argv[]) {
     const char* expectedWarning;
     long requestFloor; // 0: the request draws nothing
   };
+  struct ShortFixture {
+    const char* file;
+    const char* expectedError;
+  };
+  const ShortFixture shortFixtures[] = {
+      {"patch_short_p_bilinear.rib", "Parameter \"P\": declared length 12, supplied length 6"},
+      {"patch_short_p_bicubic.rib", "Parameter \"P\": declared length 48, supplied length 6"},
+      {"patchmesh_short_p.rib", "Parameter \"P\": declared length 18, supplied length 9"},
+      {"patch_param_reorder.rib", "Parameter \"P\": declared length 12, supplied length 6"},
+      {"generalpolygon_short_p.rib", "Parameter \"P\": declared length 24, supplied length 9"},
+  };
   const Fixture fixtures[] = {
-      {"patch_short_p_bilinear.rib", "Parameter \"P\": declared length 12, supplied length 6", 1200},
-      {"patch_short_p_bicubic.rib", "Parameter \"P\": declared length 48, supplied length 6", 750},
-      {"patchmesh_short_p.rib", "Parameter \"P\": declared length 18, supplied length 9", 120},
-      {"patch_param_reorder.rib", "Parameter \"P\": declared length 12, supplied length 6", 1200},
-      {"generalpolygon_short_p.rib", "Parameter \"P\": declared length 24, supplied length 9", 120},
       {"generalpolygon_negative_nverts.rib", "GeneralPolygon: nverts[1] = -1 is negative; ignoring.", 0},
       {"generalpolygon_empty_nverts.rib", "GeneralPolygon: nloops = 0 is invalid; ignoring.", 0},
   };
+
+  for (const ShortFixture& fixture : shortFixtures) {
+    const std::string rib = dir + "/" + fixture.file;
+    std::remove(malformedImagePath);
+    GMANRunResult r = runCapturingOutput(gman, rib, 10);
+    check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
+    check(!r.crashed, std::string(fixture.file) + ": does not crash -- a short array stops the file instead of "
+                                                  "reading past its own allocation");
+    check(r.exitStatus == EXIT_FAILURE, std::string(fixture.file) + ": exits with failure (the file stops)");
+    check(r.output.find(fixture.expectedError) != std::string::npos,
+          std::string(fixture.file) + ": names the short parameter and both lengths");
+    check(r.output.find("RIE_CONSISTENCY") != std::string::npos,
+          std::string(fixture.file) + ": reports RIE_CONSISTENCY");
+    paramrejection::checkNoImageWritten(fixture.file);
+  }
 
   for (const Fixture& fixture : fixtures) {
     const std::string rib = dir + "/" + fixture.file;

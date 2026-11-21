@@ -26,8 +26,11 @@
  *
  * checkRejectedParameter expects the parser to drop one parameter: a clean
  * exit, exactly one "parameter ignored" line, that line naming the request
- * and the token as written, and a completed scene. checkAcceptedParameter
- * expects the same fixture shape to pass without a word.
+ * and the token as written, and a completed scene. checkStoppedParameter
+ * expects the parser to stop the file at one parameter: failure exit, an
+ * RIE_CONSISTENCY line naming the request and the token as written, and no
+ * image. checkAcceptedParameter expects the same fixture shape to pass
+ * without a word.
  */
 
 #pragma once
@@ -83,6 +86,41 @@ inline void checkRejectedParameter(std::string const& gman, std::string const& d
   check(line.find(request + " \"" + token + "\"") != std::string::npos,
         fixture + ": the rejection names " + request + " and \"" + token + "\"");
   checkDegradedRender(fixture, 0);
+}
+
+// True when the working directory holds the image a fixture renders.
+inline bool imageWritten() {
+  std::FILE* const file = std::fopen(malformedImagePath, "rb");
+  if (file == nullptr) {
+    return false;
+  }
+  std::fclose(file);
+  return true;
+}
+
+inline void checkNoImageWritten(std::string const& fixture) { check(!imageWritten(), fixture + ": writes no image"); }
+
+// Runs fixture and checks that gman stopped the file at the parameter token of
+// request: no hang, no crash, exit EXIT_FAILURE, one line carrying
+// RIE_CONSISTENCY and `<request> "<token>"`, and no image.
+inline void checkStoppedParameter(std::string const& gman, std::string const& dir, std::string const& fixture,
+                                  std::string const& request, std::string const& token) {
+  GMANRunResult const r = runFixture(gman, dir + "/" + fixture);
+  check(!r.timedOut, fixture + ": does not hang (" + std::to_string(runBoundSeconds) + "s bound)");
+  check(!r.crashed, fixture + ": does not crash");
+  check(r.exitStatus == EXIT_FAILURE, fixture + ": exits with failure (the file stops)");
+
+  bool named = false;
+  std::istringstream lines(r.output);
+  std::string line;
+  while (std::getline(lines, line)) {
+    if (line.find("RIE_CONSISTENCY") != std::string::npos &&
+        line.find(request + " \"" + token + "\"") != std::string::npos) {
+      named = true;
+    }
+  }
+  check(named, fixture + ": reports RIE_CONSISTENCY naming " + request + " and \"" + token + "\"");
+  checkNoImageWritten(fixture);
 }
 
 inline void checkAcceptedParameter(std::string const& gman, std::string const& dir, std::string const& fixture) {
