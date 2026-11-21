@@ -45,16 +45,6 @@
 #include "paramrejection.h"
 #include "rungman.h"
 
-namespace {
-
-GMANRunResult runCapturingOutput(const std::string& gman, const std::string& rib, int timeoutSeconds) {
-  GMANRunOptions options;
-  options.timeoutSeconds = timeoutSeconds;
-  return runGman(gman, {rib}, options);
-}
-
-} // namespace
-
 int main(int argc, char* argv[]) {
   if (argc < 3) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib/malformed dir>\n", argv[0]);
@@ -65,7 +55,7 @@ int main(int argc, char* argv[]) {
 
   struct Fixture {
     const char* file;
-    const char* expectedError;
+    char const* expectedError;
   };
   const Fixture fixtures[] = {
       {"polygon_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
@@ -78,19 +68,8 @@ int main(int argc, char* argv[]) {
       {"torus_short_n.rib", "Parameter \"N\": declared length 12, supplied length 3"},
   };
 
-  for (const Fixture& fixture : fixtures) {
-    const std::string rib = dir + "/" + fixture.file;
-    std::remove(malformedImagePath);
-    GMANRunResult r = runCapturingOutput(gman, rib, 10);
-    check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
-    check(!r.crashed, std::string(fixture.file) + ": does not crash -- a short array stops the file instead of "
-                                                  "reading past its own allocation");
-    check(r.exitStatus == EXIT_FAILURE, std::string(fixture.file) + ": exits with failure (the file stops)");
-    check(r.output.find(fixture.expectedError) != std::string::npos,
-          std::string(fixture.file) + ": names the short parameter and both lengths");
-    check(r.output.find("RIE_CONSISTENCY") != std::string::npos,
-          std::string(fixture.file) + ": reports RIE_CONSISTENCY");
-    paramrejection::checkNoImageWritten(fixture.file);
+  for (Fixture const& fixture : fixtures) {
+    paramrejection::checkStoppedShortArray(gman, dir, fixture.file, fixture.expectedError);
   }
 
   return checkSummary("Polygon and the seven quadrics clamp a short RIB-supplied parameter array");

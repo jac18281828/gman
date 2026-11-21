@@ -98,6 +98,22 @@ inline void checkStoppedParameter(std::string const& gman, std::string const& di
   checkNoImageWritten(fixture);
 }
 
+// Runs fixture and checks that gman stopped the file at a parameter array
+// shorter than its declared length: no hang, no crash, exit EXIT_FAILURE, the
+// expected text naming the parameter and both lengths, RIE_CONSISTENCY, and no
+// image.
+inline void checkStoppedShortArray(std::string const& gman, std::string const& dir, std::string const& fixture,
+                                   std::string const& expectedText) {
+  GMANRunResult const r = runFixture(gman, dir + "/" + fixture);
+  check(!r.timedOut, fixture + ": does not hang (" + std::to_string(runBoundSeconds) + "s bound)");
+  check(!r.crashed, fixture + ": does not crash -- a short array stops the file instead of reading past its own "
+                              "allocation");
+  check(r.exitStatus == EXIT_FAILURE, fixture + ": exits with failure (the file stops)");
+  check(r.output.find(expectedText) != std::string::npos, fixture + ": names the short parameter and both lengths");
+  check(r.output.find("RIE_CONSISTENCY") != std::string::npos, fixture + ": reports RIE_CONSISTENCY");
+  checkNoImageWritten(fixture);
+}
+
 inline void checkAcceptedParameter(std::string const& gman, std::string const& dir, std::string const& fixture) {
   GMANRunResult const r = runFixture(gman, dir + "/" + fixture);
   check(!r.timedOut, fixture + ": does not hang (" + std::to_string(runBoundSeconds) + "s bound)");

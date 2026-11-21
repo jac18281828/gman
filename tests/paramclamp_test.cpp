@@ -88,10 +88,10 @@ int main(int argc, char* argv[]) {
     long requestFloor; // 0: the request draws nothing
   };
   struct ShortFixture {
-    const char* file;
-    const char* expectedError;
+    char const* file;
+    char const* expectedError;
   };
-  const ShortFixture shortFixtures[] = {
+  ShortFixture const shortFixtures[] = {
       {"patch_short_p_bilinear.rib", "Parameter \"P\": declared length 12, supplied length 6"},
       {"patch_short_p_bicubic.rib", "Parameter \"P\": declared length 48, supplied length 6"},
       {"patchmesh_short_p.rib", "Parameter \"P\": declared length 18, supplied length 9"},
@@ -103,19 +103,8 @@ int main(int argc, char* argv[]) {
       {"generalpolygon_empty_nverts.rib", "GeneralPolygon: nloops = 0 is invalid; ignoring.", 0},
   };
 
-  for (const ShortFixture& fixture : shortFixtures) {
-    const std::string rib = dir + "/" + fixture.file;
-    std::remove(malformedImagePath);
-    GMANRunResult r = runCapturingOutput(gman, rib, 10);
-    check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
-    check(!r.crashed, std::string(fixture.file) + ": does not crash -- a short array stops the file instead of "
-                                                  "reading past its own allocation");
-    check(r.exitStatus == EXIT_FAILURE, std::string(fixture.file) + ": exits with failure (the file stops)");
-    check(r.output.find(fixture.expectedError) != std::string::npos,
-          std::string(fixture.file) + ": names the short parameter and both lengths");
-    check(r.output.find("RIE_CONSISTENCY") != std::string::npos,
-          std::string(fixture.file) + ": reports RIE_CONSISTENCY");
-    paramrejection::checkNoImageWritten(fixture.file);
+  for (ShortFixture const& fixture : shortFixtures) {
+    paramrejection::checkStoppedShortArray(gman, dir, fixture.file, fixture.expectedError);
   }
 
   for (const Fixture& fixture : fixtures) {

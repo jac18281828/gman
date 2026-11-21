@@ -398,7 +398,8 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
       {"nupatch_empty_range.rib", "NuPatch: umin=0.5 umax=0.5 violates umin < umax; ignoring."},
       {"nupatch_umin_below_knot.rib", "NuPatch: umin=-0.1 is less than uknot[uorder-1]=0; ignoring."},
       {"nupatch_short_pw.rib",
-       "Parameter \"Pw\": declared length 16, supplied length 14; the array is shorter than the request requires.",
+       "RIE_CONSISTENCY -- Parameter \"Pw\": declared length 16, supplied length 14; the array is shorter than the "
+       "request requires.",
        true},
       {"nupatch_zero_weight.rib", "NuPatch: control point 2 has non-positive \"Pw\" weight 0; "
                                   "ignoring."},
@@ -422,9 +423,10 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
     check(r.exitStatus == (fixture.stopsFile ? EXIT_FAILURE : 0),
           std::string(fixture.file) + (fixture.stopsFile ? ": exits with failure (the short array stops the file)"
                                                          : ": exits 0 (degrade, don't abort)"));
-    check(r.output.find(fixture.expectedWarning) != std::string::npos, std::string(fixture.file) +
-                                                                           ": warns naming the rule and its "
-                                                                           "values");
+    check(r.output.find(fixture.expectedWarning) != std::string::npos,
+          std::string(fixture.file) + (fixture.stopsFile ? ": stops with RIE_CONSISTENCY naming the parameter and "
+                                                           "both lengths"
+                                                         : ": warns naming the rule and its values"));
   }
 
   // nupatch_rule_order.rib breaks both a uknot and a vorder rule; the row
