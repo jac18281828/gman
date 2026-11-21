@@ -68,6 +68,10 @@ template <class Channel> bool channelIs(Channel const& c, RtFloat v) {
   return near(c.getRed(), v) && near(c.getGreen(), v) && near(c.getBlue(), v);
 }
 
+template <class Channel> bool channelsMatch(Channel const& a, Channel const& b) {
+  return near(a.getRed(), b.getRed()) && near(a.getGreen(), b.getGreen()) && near(a.getBlue(), b.getBlue());
+}
+
 GMANOptions::ScreenWindowStruct squareWindow() {
   GMANOptions::ScreenWindowStruct sw;
   sw.left = -1.0;
@@ -91,13 +95,8 @@ void testVertexDefaults() {
         "vertex: a default location is (0, 0, 0)");
   check(near(normal.getX(), 0.0) && near(normal.getY(), 0.0) && near(normal.getZ(), 0.0),
         "vertex: a default normal is (0, 0, 0)");
-  check(near(v.getColor().getRed(), DefaultBGColor.getRed()) &&
-            near(v.getColor().getGreen(), DefaultBGColor.getGreen()) &&
-            near(v.getColor().getBlue(), DefaultBGColor.getBlue()),
-        "vertex: a default colour is DefaultBGColor");
-  check(near(v.getAlpha().getRed(), DefaultAlpha.getRed()) && near(v.getAlpha().getGreen(), DefaultAlpha.getGreen()) &&
-            near(v.getAlpha().getBlue(), DefaultAlpha.getBlue()),
-        "vertex: a default alpha is DefaultAlpha");
+  check(channelsMatch(v.getColor(), DefaultBGColor), "vertex: a default colour is DefaultBGColor");
+  check(channelsMatch(v.getAlpha(), DefaultAlpha), "vertex: a default alpha is DefaultAlpha");
   check(v.getNext() == nullptr, "vertex: a default next vertex is null");
 }
 
