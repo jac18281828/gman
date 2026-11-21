@@ -26,6 +26,10 @@
  * and the shader clamps depend on gman's order: GMANMin(GMANMax(NaN, 0), 1)
  * maps a NaN channel to +0, where the std templates would pass NaN through.
  * That is why gman keeps its own templates over std::max and std::min.
+ *
+ * The arithmetic helpers GMANRadians, GMANDegrees, GMANSign, GMANMin,
+ * GMANMax, GMANClamp and GMANMix are constexpr. The static_asserts below
+ * pin that: removing constexpr from one fails the build.
  */
 
 #include <cmath>
@@ -58,6 +62,14 @@ template <class T> void checkMinMax(std::string const& type) {
 }
 
 } // namespace
+
+static_assert(GMANRadians(0.0f) == 0.0f);
+static_assert(GMANDegrees(0.0f) == 0.0f);
+static_assert(GMANSign(-2.0f) == -1.0f);
+static_assert(GMANMin(1.0f, 2.0f) == 1.0f);
+static_assert(GMANMax(1.0f, 2.0f) == 2.0f);
+static_assert(GMANClamp(3.0f, 0.0f, 1.0f) == 1.0f);
+static_assert(GMANMix(2.0f, 4.0f, 0.5f) == 3.0f);
 
 int main() {
   checkMinMax<float>("float");

@@ -35,19 +35,10 @@
 // GMan constants
 inline constexpr double DEGTORAD = std::numbers::pi / 180.0;
 
-#if 0
-inline  RtFloat GMANClamp(RtFloat value, RtFloat min, RtFloat max)
-{
-  if(value < min) return min;
-  if(value > max) return max;
-  return value;
-}
-#endif
-
 // Trigonometric functions - asandro
-inline RtFloat GMANRadians(RtFloat degrees) { return (RtFloat)(degrees * DEGTORAD); }
+constexpr RtFloat GMANRadians(RtFloat degrees) { return (RtFloat)(degrees * DEGTORAD); }
 
-inline RtFloat GMANDegrees(RtFloat radians) { return (RtFloat)(radians / DEGTORAD); }
+constexpr RtFloat GMANDegrees(RtFloat radians) { return (RtFloat)(radians / DEGTORAD); }
 
 inline RtFloat GMANAtan(RtFloat y, RtFloat x) { return (RtFloat)atan2(y, x); }
 
@@ -72,17 +63,17 @@ inline RtFloat GMANMod(RtFloat a, RtFloat b) {
     return (RtFloat)fmod(a, b);
 }
 
-inline RtFloat GMANSign(RtFloat x) { return (RtFloat)(x < 0.0 ? -1.0 : x > 0.0 ? 1.0 : 0.0); }
+constexpr RtFloat GMANSign(RtFloat x) { return (RtFloat)(x < 0.0 ? -1.0 : x > 0.0 ? 1.0 : 0.0); }
 
 // Comparison functions - asandro
-template <class T> inline T GMANMin(T a, T b) { return a < b ? a : b; }
+template <class T> constexpr T GMANMin(T a, T b) { return a < b ? a : b; }
 
-template <class T> inline T GMANMax(T a, T b) { return a > b ? a : b; }
+template <class T> constexpr T GMANMax(T a, T b) { return a > b ? a : b; }
 
-template <class T> inline T GMANClamp(T a, T min, T max) { return a < min ? min : a > max ? max : a; }
+template <class T> constexpr T GMANClamp(T a, T min, T max) { return a < min ? min : a > max ? max : a; }
 
 // Mixing values - asandro
-template <class T> inline T GMANMix(T a, T b, RtFloat alpha) { return a * (1 - alpha) + b * alpha; }
+template <class T> constexpr T GMANMix(T a, T b, RtFloat alpha) { return a * (1 - alpha) + b * alpha; }
 
 // Rounding - asandro
 inline RtFloat GMANRound(RtFloat x) { return (RtFloat)floor(x + .5); }
