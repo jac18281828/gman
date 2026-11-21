@@ -35,6 +35,11 @@
 #include "gmanlog.h"
 #include "gmanobject.h"
 #include "gmanobjectmanager.h"
+#include "gmanoptions.h"
+#include "gmanparameterlist.h"
+#include "gmanprimitive.h"
+#include "gmanprimitives.h"
+#include "gmantransform.h"
 #include "ri.h"
 
 /*

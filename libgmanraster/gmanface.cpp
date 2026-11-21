@@ -23,10 +23,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
+
 #include "gmanface.h"
 #include "gmanlog.h"
 #include "gmansurface.h"
 #include "gmanvector.h"
+#include "gmanvertex.h"
 #include "gmanviewingsystem.h"
 #include "ri.h"
 

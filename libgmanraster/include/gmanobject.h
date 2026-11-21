@@ -37,6 +37,7 @@
 #include "gmanprimitive.h"
 #include "gmanray.h"
 #include "gmansurface.h"
+#include "gmanvertex.h"
 #include "ri.h"
 
 /*
