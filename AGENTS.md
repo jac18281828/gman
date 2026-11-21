@@ -20,12 +20,19 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   `strcat` family, no `new char[`, no `PATH_MAX` outside `tests/`.
 - Prefer RAII. A class owning a raw pointer declares or deletes all five
   special members.
-- No commented-out code: delete it; git history keeps it.
 - Comments document the code, not the change. No expository or 'my way'
   comments.
 - clang-format 23 keeps the tree formatted to `.clang-format`; a change
   keeps it so. `format-check` names `pip install clang-format==23.1.5` for a
   local run and fails on any other major version.
+
+## House Rules
+These rules bind every change. Never enforce one with a test that scans the
+tree.
+- No commented-out code: delete it; git history keeps it.
+- No manifest constant numerics: write a constant `<numbers>` names by its
+  standard name, never as a literal, a formula such as `std::sqrt(2.0)` or a
+  local alias.
 
 ## Naming
 - Semantic, not pattern-based. Avoid `State`, `Context`, `Manager` without a
