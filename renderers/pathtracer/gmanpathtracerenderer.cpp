@@ -21,9 +21,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <numeric>
 #include <optional>
+#include <variant>
 
 #include "gmanattributes.h"
 #include "gmanbsdf.h"
@@ -85,6 +89,31 @@ EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, b
   }
   return current == EmitterHitEligibility::eligible ? EmitterHitEligibility::eligible
                                                     : EmitterHitEligibility::suppressed;
+}
+
+void addPath(SlotStatistics& stats, GMANColor const& L, GMANColor const& alphaHat) {
+  std::array<double, SlotStatistics::kQuantities> const values = {
+      L.getRed(), L.getGreen(), L.getBlue(), alphaHat.getRed(), alphaHat.getGreen(), alphaHat.getBlue()};
+  ++stats.paths;
+  double const count = static_cast<double>(stats.paths);
+  for (std::size_t q = 0; q < SlotStatistics::kQuantities; ++q) {
+    double const delta = values[q] - stats.mean[q];
+    stats.mean[q] += delta / count;
+    stats.sumSquaredDeviation[q] += delta * (values[q] - stats.mean[q]);
+  }
+}
+
+bool slotConverged(SlotStatistics const& stats, RtFloat pixelVariance) {
+  if (stats.paths < 2) {
+    return false;
+  }
+  double const count = static_cast<double>(stats.paths);
+  double largestError = 0.0;
+  for (double const deviation : stats.sumSquaredDeviation) {
+    double const variance = deviation / (count - 1.0);
+    largestError = std::fmax(largestError, std::sqrt(variance / count));
+  }
+  return largestError < static_cast<double>(pixelVariance);
 }
 
 } // namespace gman
@@ -609,23 +638,74 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   return state.result;
 }
 
-// One slot's own N paths, summed for render(): the mean radiance and
+// One slot's own paths, summed for render(): the mean radiance and
 // coverage estimate go to the row's call to zTestAndSet once the row knows
 // whether any path's camera ray ever hit anything; a dropped path
-// contributes zero to both sums and is counted.
+// contributes zero to both sums and is counted. paths is how many the slot
+// traced, at most N.
 struct SlotResult {
   GMANColor sumL = kBlack;
   GMANColor sumAlpha = kBlack;
   RtFloat minZ = RI_INFINITY;
   bool anyHit = false;
   std::size_t dropped = 0;
+  std::uint32_t paths = 0;
 };
+
+// When a slot stops: it checks gman::slotConverged against pixelVariance
+// after every interval-th path while fewer than N have run. An interval of
+// N or more never checks.
+struct StopSchedule {
+  RtFloat pixelVariance;
+  std::uint32_t interval;
+};
+
+bool checkDue(std::uint32_t traced, std::uint32_t N, StopSchedule const& stop) {
+  return traced < N && traced % stop.interval == 0;
+}
+
+void tally(SlotResult& result, gman::SlotStatistics& stats, PathResult const& path) {
+  ++result.paths;
+  // The sole guard keeping a non-finite path's channels out of a slot's sums.
+  if (!path.finite) {
+    ++result.dropped;
+    gman::addPath(stats, kBlack, kBlack);
+    return;
+  }
+  result.sumL += path.L;
+  result.sumAlpha += path.alphaHat;
+  gman::addPath(stats, path.L, path.alphaHat);
+}
+
+std::uint32_t defaultCheckInterval(std::uint32_t N) {
+  std::uint32_t root = static_cast<std::uint32_t>(std::sqrt(static_cast<double>(N)));
+  while (static_cast<std::uint64_t>(root) * root < N) {
+    ++root;
+  }
+  return GMANMax(root, 2u);
+}
+
+std::uint32_t checkInterval(GMANOptions const& options, std::uint32_t N) {
+  GMANOptions::NamedOptionValue const* const named = options.getNamedOption("pathtracer", "minsamples");
+  std::uint32_t const fallback = defaultCheckInterval(N);
+  if (named == nullptr) {
+    return fallback;
+  }
+  auto const* const integers = std::get_if<std::vector<RtInt>>(named);
+  if (integers == nullptr || integers->empty() || integers->front() < 2) {
+    warning("gmanpathtracer: Option \"pathtracer\" \"minsamples\" must be an integer of at least 2; using {}.",
+            fallback);
+    return fallback;
+  }
+  return static_cast<std::uint32_t>(integers->front());
+}
 
 SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                       GMANViewingSystem const* viewingSys, GMANMatrix4 const& cameraToWorld,
                       GMANColor const& background, gman::TextureCache* textureCache, RtInt sx, RtInt sy, int xsamples,
-                      int ysamples, std::uint32_t N, bool misEnabled) {
+                      int ysamples, std::uint32_t N, StopSchedule const& stop, bool misEnabled) {
   SlotResult result;
+  gman::SlotStatistics stats;
   for (std::uint32_t i = 0; i < N; ++i) {
     gman::Sample2D const uv0 = gman::sample2D(kSeed, sx, sy, i, N, 0u);
     RtFloat const rasterX = ((RtFloat)sx + uv0.u1) / (RtFloat)xsamples;
@@ -640,27 +720,25 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& e
       result.anyHit = true;
     }
 
-    // The sole guard keeping a non-finite path's channels out of a slot's sums.
-    if (!path.finite) {
-      ++result.dropped;
-      continue;
+    tally(result, stats, path);
+    if (checkDue(result.paths, N, stop) && gman::slotConverged(stats, stop.pixelVariance)) {
+      break;
     }
-    result.sumL += path.L;
-    result.sumAlpha += path.alphaHat;
   }
   return result;
 }
 
 // One row's own unit of work: traces every one of its slots and writes
-// only its own slots of sampleBuffer, the dropped count and the texture
-// cache it is handed, reading the BVH, the light set, the viewing system
-// and the raster data it is handed as const. render() runs one row per
-// gman::parallelFor body, handing each row the cache of the worker that
-// runs it.
+// only its own slots of sampleBuffer and slotPaths, the dropped count and
+// the texture cache it is handed, reading the BVH, the light set, the
+// viewing system and the raster data it is handed as const. render() runs
+// one row per gman::parallelFor body, handing each row the cache of the
+// worker that runs it.
 void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem const* viewingSys,
                GMANMatrix4 const& cameraToWorld, GMANOptions::RasterInfo const& raster, RtInt width, int xsamples,
-               int ysamples, std::uint32_t N, GMANColor const& background, gman::TextureCache& textureCache, int py,
-               GMANSampleBuffer& sampleBuffer, std::size_t& dropped, bool misEnabled) {
+               int ysamples, std::uint32_t N, StopSchedule const& stop, GMANColor const& background,
+               gman::TextureCache& textureCache, int py, GMANSampleBuffer& sampleBuffer,
+               std::vector<std::uint32_t>& slotPaths, std::size_t& dropped, bool misEnabled) {
   int const subsPerColumn = xsamples * ysamples;
   for (int px = 0; px < width; ++px) {
     for (int sub = 0; sub < subsPerColumn; ++sub) {
@@ -672,13 +750,15 @@ void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters
       RtInt const sy = raster.rymin * ysamples + sampleY;
 
       SlotResult const slot = renderSlot(bvh, emitters, viewingSys, cameraToWorld, background, &textureCache, sx, sy,
-                                         xsamples, ysamples, N, misEnabled);
+                                         xsamples, ysamples, N, stop, misEnabled);
+      slotPaths[static_cast<std::size_t>(sampleY) * static_cast<std::size_t>(width * xsamples) +
+                static_cast<std::size_t>(sampleX)] = slot.paths;
       dropped += slot.dropped;
       if (!slot.anyHit) {
         continue;
       }
-      GMANColor const meanL = divideColor(slot.sumL, (RtFloat)N);
-      GMANColor const meanAlpha = divideColor(slot.sumAlpha, (RtFloat)N);
+      GMANColor const meanL = divideColor(slot.sumL, (RtFloat)slot.paths);
+      GMANColor const meanAlpha = divideColor(slot.sumAlpha, (RtFloat)slot.paths);
       GMANAlpha const alpha(meanAlpha.getRed(), meanAlpha.getGreen(), meanAlpha.getBlue());
       sampleBuffer.zTestAndSet(sampleX, sampleY, slot.minZ, meanL, alpha);
     }
@@ -715,6 +795,8 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   int const xsamples = GMANMax(1, (int)GMANRound(ps.xsamples));
   int const ysamples = GMANMax(1, (int)GMANRound(ps.ysamples));
   std::uint32_t const N = (std::uint32_t)GMANMax(1, options.getPathtracerSamples());
+  RtFloat const pixelVariance = options.getPixelVariance();
+  StopSchedule const stop{pixelVariance, checkInterval(options, N)};
 
   GMANColor const background = options.getBackground();
   sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, background));
@@ -726,15 +808,18 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
       static_cast<std::size_t>(gman::parallelWorkers(height, requestedWorkers)));
   std::vector<std::size_t> droppedPerRow(static_cast<std::size_t>(height), 0);
   rowWorker.assign(static_cast<std::size_t>(height), 0);
+  std::size_t const slotCount =
+      static_cast<std::size_t>(width * xsamples) * static_cast<std::size_t>(height * ysamples);
+  slotPaths.assign(slotCount, 0);
 
   gman::parallelFor(
       height,
       [&](RtInt row, RtInt worker) {
         auto const rowIndex = static_cast<std::size_t>(row);
         rowWorker[rowIndex] = worker;
-        renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, background,
-                  textureCaches[static_cast<std::size_t>(worker)], row, *sampleBuffer, droppedPerRow[rowIndex],
-                  misEnabled);
+        renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, stop, background,
+                  textureCaches[static_cast<std::size_t>(worker)], row, *sampleBuffer, slotPaths,
+                  droppedPerRow[rowIndex], misEnabled);
       },
       requestedWorkers);
 
@@ -744,6 +829,10 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
 
   if (droppedPaths != 0) {
     warning("gmanpathtracer: dropped {} path(s) for a non-finite channel.", droppedPaths);
+  }
+  if (pixelVariance > 0.0f) {
+    std::size_t const traced = std::accumulate(slotPaths.begin(), slotPaths.end(), std::size_t{0});
+    info("gmanpathtracer: traced {} of {} paths.", traced, static_cast<std::size_t>(N) * slotCount);
   }
   if (skippedAmbientLights != 0) {
     warning("gmanpathtracer: ambientlight lights nothing under the path tracer; skipped {} light(s).",

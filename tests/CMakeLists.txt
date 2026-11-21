@@ -3560,6 +3560,19 @@ set_tests_properties(pathtracerthreads PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The path tracer stops a slot once its paths' standard error falls below
+# PixelVariance, at a check every minsamples-th path. See
+# tests/pathtraceradaptive_test.cpp.
+add_executable(gman_pathtraceradaptive pathtraceradaptive_test.cpp)
+target_link_libraries(gman_pathtraceradaptive PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtraceradaptive gman_matte)
+
+add_test(NAME pathtraceradaptive COMMAND gman_pathtraceradaptive)
+set_tests_properties(pathtraceradaptive PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every

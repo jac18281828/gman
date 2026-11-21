@@ -66,6 +66,18 @@
  * runs it. Every random draw is a pure function of its slot, so the image,
  * its alpha, its depth and droppedPathCount() are the same at every worker
  * count.
+ *
+ * Option "pathtracer" "integer samples" is each slot's pattern size and its
+ * maximum path count. Under a positive PixelVariance a slot stops at the
+ * first scheduled check where gman::slotConverged holds: its paths so far
+ * estimate the radiance and the coverage with a standard error, per channel
+ * and absolute, strictly below PixelVariance. The checks fall after every
+ * m-th path while fewer than the maximum have run; m is Option "pathtracer"
+ * "integer minsamples" when that is an integer of at least 2, otherwise the
+ * smallest integer whose square reaches the maximum, but not below 2. A slot
+ * that reaches the maximum has drawn exactly what a PixelVariance of 0
+ * draws. Each slot decides from its own paths alone, so the image and every
+ * slot's path count stay the same at every worker count.
  */
 class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
@@ -112,6 +124,11 @@ private:
   // location.
   std::vector<RtInt> rowWorker;
 
+  // The paths each slot traced in the last render() call, indexed by
+  // sampleY * (width * xsamples) + sampleX. render() sizes it before its
+  // rows run and each row writes only its own slots.
+  std::vector<std::uint32_t> slotPaths;
+
   // Fills emitters from worldManager and skippedAmbientLights from its own
   // separate count -- gman::emitters excludes ambient lights silently,
   // with no count of its own to report.
@@ -154,6 +171,12 @@ public:
   // frame; every entry is 0 when one worker ran them all. Exported as
   // setWorkers is, and for the same tests.
   std::vector<RtInt> const& rowWorkers() const { return rowWorker; }
+
+  // The last render() call's path count for each slot of the sample grid,
+  // indexed by sampleY * (width * xsamples) + sampleX, the coordinates a
+  // slot is stored under. Exported as setWorkers is, and for the same
+  // tests.
+  std::vector<std::uint32_t> const& slotPathCounts() const { return slotPaths; }
 
   virtual GMANWorldManager* getWorldManager(void);
 

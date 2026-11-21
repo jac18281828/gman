@@ -24,6 +24,9 @@
  * the worker count never changes a pixel. A floor lit by a point light
  * and an emitting sphere renders byte-identically, colour, alpha and
  * depth, from one worker and from eight, with the same dropped-path count;
+ * under a PixelVariance the same scene stops some slots early and runs
+ * others to the maximum, and its colour, alpha, depth and every slot's
+ * path count still match at one, three and eight workers;
  * the renderer reports which worker rendered each row; a scene that drops
  * paths drops the same count, matching an independent tally of the alpha
  * channel, at one, three and eight workers; a texture no file carries
@@ -38,6 +41,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -87,6 +91,7 @@ constexpr RtFloat kSceneNear = 0.5f;
 constexpr RtFloat kSceneFar = 50.0f;
 constexpr RtFloat kFilterWidth = 1.0f;
 
+constexpr RtFloat kAdaptiveVariance = 0.05f;
 constexpr RtFloat kPixelSamples = 2.0f;
 constexpr RtInt kSerialWorkers = 1;
 constexpr RtInt kThreeWorkers = 3;
@@ -300,6 +305,48 @@ void checkImagesAndWorkerIds() {
         "B: the 8-worker render runs every row as a worker id in [0, 8)");
 }
 
+std::size_t slotsBelow(std::vector<std::uint32_t> const& counts, std::uint32_t limit) {
+  std::size_t below = 0;
+  for (std::uint32_t const count : counts) {
+    if (count < limit) {
+      ++below;
+    }
+  }
+  return below;
+}
+
+std::size_t slotsAt(std::vector<std::uint32_t> const& counts, std::uint32_t limit) {
+  std::size_t at = 0;
+  for (std::uint32_t const count : counts) {
+    if (count == limit) {
+      ++at;
+    }
+  }
+  return at;
+}
+
+void checkAdaptiveSamplingAcrossWorkers() {
+  SphereLitFloor serial(kFloorSize, kSerialWorkers);
+  SphereLitFloor three(kFloorSize, kThreeWorkers);
+  SphereLitFloor parallel(kFloorSize, kParallelWorkers);
+  for (SphereLitFloor* scene : {&serial, &three, &parallel}) {
+    scene->options.setPixelVariance(kAdaptiveVariance);
+    scene->render();
+  }
+
+  std::uint32_t const maximum = static_cast<std::uint32_t>(kFloorSize.samples);
+  std::vector<std::uint32_t> const& counts = serial.renderer.slotPathCounts();
+  check(slotsBelow(counts, maximum) > 0, "F setup: some slots stop below the maximum");
+  check(slotsAt(counts, maximum) > 0, "F setup: some slots reach the maximum");
+
+  check(differingPixels(serial, three, kFloorSize) == 0,
+        "F: colour, alpha and depth match between 1 and 3 workers under a PixelVariance");
+  check(differingPixels(serial, parallel, kFloorSize) == 0,
+        "F: colour, alpha and depth match between 1 and 8 workers under a PixelVariance");
+  check(three.renderer.slotPathCounts() == counts, "F: every slot's path count matches between 1 and 3 workers");
+  check(parallel.renderer.slotPathCounts() == counts, "F: every slot's path count matches between 1 and 8 workers");
+}
+
 // A sphere around the camera with an opening behind it, under a NaN
 // background: every path that escapes through the opening is dropped.
 struct DropScene {
@@ -497,6 +544,7 @@ void checkConstViewingSystem() {
 
 int runChecks() {
   checkImagesAndWorkerIds();
+  checkAdaptiveSamplingAcrossWorkers();
   checkDropCounts();
   checkOneCachePerWorker();
   checkConstViewingSystem();

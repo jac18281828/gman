@@ -23,20 +23,22 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <vector>
 
+#include "gmancolor.h"
 #include "gmanemitter.h"
 #include "gmanpoint.h"
 #include "gmanrayinterface.h"
 #include "ri.h"
 
 /*
- * The path tracer's multiple-importance-sampling weight computation,
- * defined in gmanpathtracerenderer.cpp. Private to renderers/pathtracer:
- * never installed and never exported, so tests reach it through the
- * gman_pathtracer_objects include directory and call it without rendering
- * a frame.
+ * The path tracer's multiple-importance-sampling weight computation and
+ * its adaptive stop check, defined in gmanpathtracerenderer.cpp. Private to
+ * renderers/pathtracer: never installed and never exported, so tests reach
+ * them through the gman_pathtracer_objects include directory and call them
+ * without rendering a frame.
  */
 namespace gman {
 
@@ -97,5 +99,30 @@ enum class EmitterHitEligibility { eligible, weighted, suppressed };
 // since a departure already exists to carry the light through; it leaves
 // an eligible chain eligible, since no departure exists yet to double.
 EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, bool isDelta, bool isTransmission);
+
+// The running mean and sum of squared deviations, in double, of the six
+// quantities one slot's paths estimate: the radiance's red, green and blue,
+// then the coverage estimate's. Empty when default-constructed; addPath
+// extends it one path at a time, in path order.
+struct SlotStatistics {
+  static constexpr std::size_t kQuantities = 6;
+
+  std::size_t paths = 0;
+  std::array<double, kQuantities> mean{};
+  std::array<double, kQuantities> sumSquaredDeviation{};
+};
+
+// Adds one path's radiance L and coverage estimate alphaHat to stats. A
+// dropped path enters as black L and black alphaHat, as it counts as a zero
+// sample in the slot's mean.
+void addPath(SlotStatistics& stats, GMANColor const& L, GMANColor const& alphaHat);
+
+// True exactly when stats holds at least two paths and the largest of the
+// six quantities' standard errors is strictly below pixelVariance. A
+// quantity's standard error is sqrt(s^2 / n) for its unbiased sample
+// variance s^2 over the n paths added, so it is absolute, in the output's
+// own linear units. The comparison is strict, so a pixelVariance of 0, a
+// negative one and NaN are never met.
+bool slotConverged(SlotStatistics const& stats, RtFloat pixelVariance);
 
 } // namespace gman
