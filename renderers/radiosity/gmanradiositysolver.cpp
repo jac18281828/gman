@@ -33,6 +33,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmath.h"
 #include "gmannormal.h"
+#include "gmanparallel.h"
 #include "gmanradiositygrouping.h"
 #include "gmanradiositymesh.h"
 #include "gmanradiositysolver.h"
@@ -404,23 +405,27 @@ void GMANRadiositySolver::fireShot(GMANRadiosityMesh const& mesh, GMANRayOcclude
                                    std::vector<gman::RadiosityReceiver> const& receivers,
                                    std::vector<bool> const& shootsItself, std::vector<GMANColor> const& reflectance,
                                    std::size_t samples, std::size_t shooterSide, GMANColor const& shot,
-                                   GMANRadiositySolution& solution, std::vector<GMANColor>& unshot) {
+                                   GMANRadiositySolution& solution, std::vector<GMANColor>& unshot, RtInt workers) {
   std::size_t const element = shooterSide / 2;
   auto const shootingSide = static_cast<GMANRadiositySide>(shooterSide % 2);
   std::vector<gman::RadiositySample> const shooterSamples =
       gman::placeRadiositySamples(mesh, element, solution.areas[element], samples);
-  for (std::size_t receiver = 0; receiver < receivers.size(); ++receiver) {
-    if (receiver == element && !shootsItself[element]) {
-      continue;
-    }
-    std::array<GMANColor, 2> const factors =
-        gman::radiosityFormFactors(occluder, receivers[receiver], shooterSamples, shootingSide);
-    for (std::size_t arrival = 0; arrival < 2; ++arrival) {
-      GMANColor const gained = gman::multiplyChannels(shot, factors[arrival]);
-      solution.irradiance[2 * receiver + arrival] += gained;
-      unshot[2 * receiver + arrival] += gman::multiplyChannels(reflectance[receiver], gained);
-    }
-  }
+  gman::parallelFor(
+      static_cast<RtInt>(receivers.size()),
+      [&](RtInt index, RtInt) {
+        auto const receiver = static_cast<std::size_t>(index);
+        if (receiver == element && !shootsItself[element]) {
+          return;
+        }
+        std::array<GMANColor, 2> const factors =
+            gman::radiosityFormFactors(occluder, receivers[receiver], shooterSamples, shootingSide);
+        for (std::size_t arrival = 0; arrival < 2; ++arrival) {
+          GMANColor const gained = gman::multiplyChannels(shot, factors[arrival]);
+          solution.irradiance[2 * receiver + arrival] += gained;
+          unshot[2 * receiver + arrival] += gman::multiplyChannels(reflectance[receiver], gained);
+        }
+      },
+      workers);
 }
 
 void GMANRadiositySolver::finalizeIndirect(GMANRadiosityMesh const& mesh, double largestMagnitude,
@@ -431,7 +436,8 @@ void GMANRadiositySolver::finalizeIndirect(GMANRadiosityMesh const& mesh, double
 }
 
 GMANRadiositySolution GMANRadiositySolver::solve(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
-                                                 std::vector<GMANColor> const& reflectance, std::size_t samples) const {
+                                                 std::vector<GMANColor> const& reflectance, std::size_t samples,
+                                                 RtInt workers) const {
   checkReflectance(mesh, reflectance);
   sampleRoot(samples);
 
@@ -464,7 +470,7 @@ GMANRadiositySolution GMANRadiositySolver::solve(GMANRadiosityMesh const& mesh, 
 
     GMANColor const shot = unshot[pick.side];
     unshot[pick.side] = GMANColor();
-    fireShot(mesh, occluder, receivers, shootsItself, reflectance, samples, pick.side, shot, solution, unshot);
+    fireShot(mesh, occluder, receivers, shootsItself, reflectance, samples, pick.side, shot, solution, unshot, workers);
     ++solution.shotCount;
   }
 

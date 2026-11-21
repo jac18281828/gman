@@ -22,10 +22,13 @@
  * GMANRadiositySolver against analytic answers: a closed sphere lit from
  * inside, form-factor closure in a cube, transmission through a
  * translucent square, two-sided squares, a sphere lit from outside beside
- * a floor, and determinism.
+ * a floor, determinism, and bitwise identity across worker counts. With
+ * --scaling it skips every check and times a solve at one and eight
+ * workers.
  */
 
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -40,6 +43,7 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmanparallel.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanradiositymesh.h"
@@ -121,6 +125,28 @@ constexpr double kSeamTolerance = 1e-5;
 // ---- No direct power ----
 
 constexpr RtFloat kNoDirectPowerMaxEdge = 0.5f;
+
+// ---- Worker-count identity ----
+
+// An enclosing box of edge kEnclosureEdge centred at depth kEnclosureCentreZ,
+// a quadric sphere inside, and a half-transparent wall between the light and
+// part of the box.
+constexpr double kEnclosureEdge = 4.0;
+constexpr double kEnclosureCentreZ = 5.0;
+constexpr double kEnclosureSphereRadius = 0.7;
+constexpr double kEnclosureIntensity = 8.0;
+constexpr double kEnclosureBlockerOs = 0.5;
+constexpr double kEnclosureReflectance = 0.5;
+
+// The element edges of the identity check and the scaling run: at least 64
+// elements, and about 800 or more.
+constexpr RtFloat kIdentityMaxEdge = 1.4f;
+constexpr RtFloat kScalingMaxEdge = 0.36f;
+constexpr std::size_t kIdentityMinElements = 64;
+
+// The worker counts compared against one worker.
+constexpr RtInt kIdentityWorkers[] = {3, 8};
+constexpr RtInt kScalingWorkers[] = {1, 8, 0};
 
 double relativeError(double measured, double expected) { return std::fabs(measured - expected) / std::fabs(expected); }
 
@@ -637,9 +663,127 @@ void testRejectsBadInput() {
         "bad input: a sample count that is not a square of an even root throws");
 }
 
+// A closed box of polygons lit by a point light inside it, a sphere that
+// shoots to itself, and a polygon of Os kEnclosureBlockerOs between the
+// light and part of the box. Every element reflects kEnclosureReflectance.
+class Enclosure {
+public:
+  explicit Enclosure(RtFloat maxEdge)
+      : light(pointLight(GMANPoint(0.0f, 1.2f, (RtFloat)kEnclosureCentreZ), kEnclosureIntensity)), occluder(bvh) {
+    double const h = kEnclosureEdge / 2;
+    gman::Appearance const lit = opaqueAppearance({&light});
+    auto const at = [](double x, double y, double z) {
+      return GMANPoint((RtFloat)x, (RtFloat)y, (RtFloat)(kEnclosureCentreZ + z));
+    };
+    worldManager.add(polygon({at(-h, -h, -h), at(h, -h, -h), at(h, h, -h), at(-h, h, -h)}, lit));
+    worldManager.add(polygon({at(-h, -h, h), at(-h, h, h), at(h, h, h), at(h, -h, h)}, lit));
+    worldManager.add(polygon({at(-h, -h, -h), at(-h, h, -h), at(-h, h, h), at(-h, -h, h)}, lit));
+    worldManager.add(polygon({at(h, -h, -h), at(h, -h, h), at(h, h, h), at(h, h, -h)}, lit));
+    worldManager.add(polygon({at(-h, -h, -h), at(-h, -h, h), at(h, -h, h), at(h, -h, -h)}, lit));
+    worldManager.add(polygon({at(-h, h, -h), at(h, h, -h), at(h, h, h), at(-h, h, h)}, lit));
+
+    auto* sphere = new GMANRaySphere((RtFloat)kEnclosureSphereRadius, (RtFloat)-kEnclosureSphereRadius,
+                                     (RtFloat)kEnclosureSphereRadius, 360.0f, GMANParameterList(),
+                                     translation(-0.8, -1.0, kEnclosureCentreZ));
+    sphere->setAppearance(lit);
+    worldManager.add(sphere);
+
+    gman::Appearance blocker = opaqueAppearance({});
+    blocker.Os = GMANColor((RtFloat)kEnclosureBlockerOs, (RtFloat)kEnclosureBlockerOs, (RtFloat)kEnclosureBlockerOs);
+    worldManager.add(
+        polygon({at(1.0, -0.5, -1.0), at(1.0, -0.5, 1.0), at(1.0, 1.8, 1.0), at(1.0, 1.8, -1.0)}, blocker));
+
+    bvh.build(worldManager);
+    mesh.build(worldManager, maxEdge);
+    reflectance = uniformReflectance(mesh.getElementCount(), kEnclosureReflectance);
+  }
+
+  GMANRadiositySolution solve(RtInt workers) const {
+    return GMANRadiositySolver().solve(mesh, occluder, reflectance, GMANRadiositySolver::kDefaultSamples, workers);
+  }
+
+  std::size_t elementCount() const { return mesh.getElementCount(); }
+
+private:
+  GMANLight light;
+  GMANLinearWorldManager worldManager;
+  GMANRayBVH bvh;
+  GMANRayOccluder occluder;
+  GMANRadiosityMesh mesh;
+  std::vector<GMANColor> reflectance;
+};
+
+struct TimedSolve {
+  GMANRadiositySolution solution;
+  double seconds = 0;
+};
+
+TimedSolve timedSolve(Enclosure const& enclosure, RtInt workers) {
+  auto const start = std::chrono::steady_clock::now();
+  GMANRadiositySolution solution = enclosure.solve(workers);
+  auto const stop = std::chrono::steady_clock::now();
+  return {std::move(solution), std::chrono::duration<double>(stop - start).count()};
+}
+
+bool hasNonzeroIndirect(GMANRadiositySolution const& solution) {
+  for (std::size_t e = 0; e < solution.getElementCount(); ++e) {
+    for (GMANRadiositySide const side : {GMANRadiositySide::front, GMANRadiositySide::back}) {
+      GMANColor const& indirect = solution.getIndirect(e, side);
+      if (indirect.getRed() != 0 || indirect.getGreen() != 0 || indirect.getBlue() != 0) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+void testWorkerCountIdentity() {
+  Enclosure const enclosure(kIdentityMaxEdge);
+  TimedSolve const serial = timedSolve(enclosure, 1);
+  std::printf("worker identity: elements=%zu shots=%zu workers=1 seconds=%.3f\n", enclosure.elementCount(),
+              serial.solution.getShotCount(), serial.seconds);
+  check(enclosure.elementCount() >= kIdentityMinElements, "worker identity: the mesh has at least 64 elements");
+  check(serial.solution.getShotCount() > enclosure.elementCount(),
+        "worker identity: the solve fires more shots than elements");
+  check(hasNonzeroIndirect(serial.solution), "worker identity: some element side has nonzero indirect irradiance");
+
+  for (RtInt const workers : kIdentityWorkers) {
+    TimedSolve const parallel = timedSolve(enclosure, workers);
+    std::printf("worker identity: workers=%d shots=%zu seconds=%.3f\n", (int)workers, parallel.solution.getShotCount(),
+                parallel.seconds);
+    check(parallel.solution.getShotCount() == serial.solution.getShotCount(),
+          "worker identity: " + std::to_string(workers) + " workers fire as many shots as one");
+    check(solutionsBitwiseEqual(serial.solution, parallel.solution),
+          "worker identity: " + std::to_string(workers) + " workers match one bit for bit");
+  }
+}
+
+// One solve per worker count after a discarded one, the hardware default
+// beside the fixed counts.
+void runScaling() {
+  Enclosure const enclosure(kScalingMaxEdge);
+  std::printf("scaling: elements=%zu hardwareWorkers=%d\n", enclosure.elementCount(),
+              (int)gman::parallelWorkers((RtInt)enclosure.elementCount(), 0));
+  double serialSeconds = 0;
+  for (RtInt const workers : kScalingWorkers) {
+    timedSolve(enclosure, workers);
+    TimedSolve const timed = timedSolve(enclosure, workers);
+    if (workers == 1) {
+      serialSeconds = timed.seconds;
+    }
+    std::printf("scaling: workers=%d shots=%zu seconds=%.3f ratio=%.2f\n", (int)workers, timed.solution.getShotCount(),
+                timed.seconds, serialSeconds / timed.seconds);
+  }
+}
+
 } // namespace
 
-int main() {
+int main(int argc, char** argv) {
+  if (argc > 1 && std::strcmp(argv[1], "--scaling") == 0) {
+    runScaling();
+    return 0;
+  }
+
   testClosedSphere();
   testCubeClosure();
   testTransmission();
@@ -647,6 +791,7 @@ int main() {
   testLitFromOutside();
   testNoDirectPower();
   testRejectsBadInput();
+  testWorkerCountIdentity();
 
   return checkSummary("GMANRadiositySolver matches its analytic fixtures");
 }

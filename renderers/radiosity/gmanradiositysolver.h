@@ -178,8 +178,11 @@ private:
  * group, so a closed quadric's seam and poles carry one value while
  * separate primitives, and separate faces of one mesh, keep their own.
  *
- * The solve is serial and deterministic: it depends only on the mesh's
- * element and node order. GMANError on a reflectance count other than the
+ * Shots run in sequence and each shot's receivers run in parallel through
+ * gman::parallelFor. A receiver's body writes only its own two sides' H
+ * and unshot, once per shot, and sums its samples in a fixed order, so the
+ * solution depends only on the mesh's element and node order, never on the
+ * worker count. GMANError on a reflectance count other than the
  * mesh's element count, a channel outside [0, 1], or a sample count that
  * is not a perfect square with an even root.
  */
@@ -191,8 +194,11 @@ public:
   static constexpr double kConvergence = 1e-3;
   static constexpr std::size_t kMaxShotsPerSide = 64;
 
+  // workers is gman::parallelFor's worker count for each shot's receivers;
+  // 0, the default, means the hardware's concurrency.
   GMANRadiositySolution solve(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
-                              std::vector<GMANColor> const& reflectance, std::size_t samples = kDefaultSamples) const;
+                              std::vector<GMANColor> const& reflectance, std::size_t samples = kDefaultSamples,
+                              RtInt workers = 0) const;
 
 private:
   // A fresh result sized for elementCount elements and nodeCount nodes,
@@ -213,7 +219,8 @@ private:
   static void fireShot(GMANRadiosityMesh const& mesh, GMANRayOccluder const& occluder,
                        std::vector<gman::RadiosityReceiver> const& receivers, std::vector<bool> const& shootsItself,
                        std::vector<GMANColor> const& reflectance, std::size_t samples, std::size_t shooterSide,
-                       GMANColor const& shot, GMANRadiositySolution& solution, std::vector<GMANColor>& unshot);
+                       GMANColor const& shot, GMANRadiositySolution& solution, std::vector<GMANColor>& unshot,
+                       RtInt workers);
 
   // H_ind = H - H_d per side, and each node side's A_i-weighted mean
   // H_ind, once the solve is complete.
