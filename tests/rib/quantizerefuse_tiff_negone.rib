@@ -1,0 +1,9 @@
+## A negative Quantize one stops the file for any driver.
+Display "quantizerefuse_tiff_negone.tif" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [45]
+Quantize "rgba" -1 0 255 0
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

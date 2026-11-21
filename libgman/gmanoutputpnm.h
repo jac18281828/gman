@@ -49,9 +49,16 @@ public:
 
   ~OutputPNM(); // default destructor
 
+  // The header's maxval, at least 1: the largest sample the request allows.
+  // 255 until a request sets it.
+  void setMaxval(int value);
+
 protected:
   RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
                     RtFloat gamma) override;
+
+private:
+  int maxval = 255;
 };
 
 } // namespace gman

@@ -20,8 +20,9 @@
 
 /*
  * RIB's Quantize keyword, end to end through gman: parsed, honoured by
- * GMANOutput::save and reflected in the file a driver writes. A request
- * PNM's 8-bit range cannot hold falls back and warns.
+ * GMANOutput::save and reflected in the file a driver writes. A request the
+ * driver cannot store stops the file at WorldBegin with one error, before
+ * the frame renders and with nothing written.
  */
 
 #include <algorithm>
@@ -42,19 +43,6 @@
 namespace {
 
 GMANRunResult runGman(std::string const& gman, std::string const& rib) { return ::runGman(gman, {"-w", rib}); }
-
-int countLines(std::string const& text) {
-  if (text.empty()) {
-    return 0;
-  }
-  int lines = 0;
-  for (char c : text) {
-    if (c == '\n') {
-      ++lines;
-    }
-  }
-  return lines;
-}
 
 // gman's license banner and Projection "orthographic"'s "FOV not set"
 // warning both print regardless of Quantize; this strips the two before
@@ -255,45 +243,7 @@ void checkQuantize8(std::string const& gman, std::string const& ribDir) {
   }
 }
 
-// Renders ribDir/name.rib to name.pnm: exactly one line of output naming
-// Quantize and the file; the P6 header's maxval is 255 and every sample is
-// 64.
-void checkPNMFallback(std::string const& gman, std::string const& ribDir, std::string const& name) {
-  std::string const file = name + ".pnm";
-  std::remove(file.c_str());
-  GMANRunResult const r = runGman(gman, ribDir + "/" + name + ".rib");
-  check(r.exitStatus == 0, name + ": renders");
-  std::string const relevant = withoutUnrelatedNoise(r.output);
-  check(countLines(relevant) == 1,
-        name + ": exactly one line of Quantize's own output (got " + std::to_string(countLines(relevant)) + ")");
-  check(relevant.find("Quantize") != std::string::npos, name + ": names Quantize");
-  check(relevant.find(file) != std::string::npos, name + ": names the output file");
-
-  PNMImage const img = readPNM(file);
-  check(img.ok, name + ": file reads back");
-  if (!img.ok) {
-    return;
-  }
-  check(img.maxval == 255, name + ": P6 maxval is 255");
-  bool everySampleIs64 = true;
-  for (int y = 0; y < img.height && everySampleIs64; ++y) {
-    for (int x = 0; x < img.width && everySampleIs64; ++x) {
-      for (int c = 0; c < 3; ++c) {
-        if (img.at(x, y, c) != 64) {
-          everySampleIs64 = false;
-        }
-      }
-    }
-  }
-  check(everySampleIs64, name + ": every sample reads 64");
-}
-
-// 2. quantize_fallback.rib, .pnm, 65535 0 65535 0, full plane: the fallback.
-void checkQuantizeFallback(std::string const& gman, std::string const& ribDir) {
-  checkPNMFallback(gman, ribDir, "quantize_fallback");
-}
-
-// 3. quantize16.rib, TIFF, 65535 1000 65535 0, half plane: 16 bits a
+// 2. quantize16.rib, TIFF, 65535 1000 65535 0, half plane: 16 bits a
 // sample, 4 samples a pixel; columns 0-7 read R, G and B 16384 and alpha
 // 65535; columns 8-15 read 1000 on all four.
 void checkQuantize16(std::string const& gman, std::string const& ribDir) {
@@ -319,7 +269,7 @@ void checkQuantize16(std::string const& gman, std::string const& ribDir) {
   }
 }
 
-// 4. quantizefloat.rib, TIFF, 0 0 0 0, half plane lit to 3.0: 32-bit IEEE
+// 3. quantizefloat.rib, TIFF, 0 0 0 0, half plane lit to 3.0: 32-bit IEEE
 // float, 4 samples a pixel, no Quantize output; columns 0-7 read R, G and B
 // exactly 3.0 and alpha exactly 1.0; columns 8-15 read 0.0 on all four.
 void checkQuantizeFloat(std::string const& gman, std::string const& ribDir) {
@@ -348,12 +298,6 @@ void checkQuantizeFloat(std::string const& gman, std::string const& ribDir) {
   }
 }
 
-// 5. quantizefloat_fallback.rib, .pnm, 0 0 0 0, full plane: PNM declines
-// float, so the one warning and the 8-bit fallback stay.
-void checkQuantizeFloatFallback(std::string const& gman, std::string const& ribDir) {
-  checkPNMFallback(gman, ribDir, "quantizefloat_fallback");
-}
-
 // True when `name` is one of the tokens on gman --version's "drivers:" line.
 bool driverCompiled(std::string const& gman, std::string const& name) {
   GMANRunOptions options;
@@ -376,8 +320,8 @@ bool driverCompiled(std::string const& gman, std::string const& name) {
   return false;
 }
 
-// 6. quantize15_pnm.rib, .pnm, 15 0 15 0.5, half plane lit to 1: columns
-// 0-7 read R, G and B 15; columns 8-15 read 0.
+// 4. quantize15_pnm.rib, .pnm, 15 0 15 0.5, half plane lit to 1: columns
+// 0-7 read R, G and B 15; columns 8-15 read 0; the P6 maxval reads 15.
 void checkQuantize15PNM(std::string const& gman, std::string const& ribDir) {
   std::remove("quantize15_pnm.pnm");
   GMANRunResult const r = runGman(gman, ribDir + "/quantize15_pnm.rib");
@@ -388,6 +332,7 @@ void checkQuantize15PNM(std::string const& gman, std::string const& ribDir) {
   if (!img.ok) {
     return;
   }
+  check(img.maxval == 15, "quantize15_pnm: P6 maxval is 15 (got " + std::to_string(img.maxval) + ")");
   for (int x = 0; x < 8; ++x) {
     check(img.at(x, 8, 0) == 15 && img.at(x, 8, 1) == 15 && img.at(x, 8, 2) == 15,
           "quantize15_pnm: covered column " + std::to_string(x) + " reads R, G, B 15");
@@ -398,7 +343,7 @@ void checkQuantize15PNM(std::string const& gman, std::string const& ribDir) {
   }
 }
 
-// 7. quantize15_tiff.rib, TIFF, 15 0 15 0.5, half plane lit to 1: 8 bits a
+// 5. quantize15_tiff.rib, TIFF, 15 0 15 0.5, half plane lit to 1: 8 bits a
 // sample, 4 samples a pixel; columns 0-7 read R, G, B and alpha 15; columns
 // 8-15 read 0 on all four.
 void checkQuantize15TIFF(std::string const& gman, std::string const& ribDir) {
@@ -423,7 +368,7 @@ void checkQuantize15TIFF(std::string const& gman, std::string const& ribDir) {
   }
 }
 
-// 8. quantize15_jpg.rib, JPEG, 15 0 15 0.5: renders and writes the file. The
+// 6. quantize15_jpg.rib, JPEG, 15 0 15 0.5: renders and writes the file. The
 // encoder is lossy, so no decoded value is asserted.
 void checkQuantize15JPEG(std::string const& gman, std::string const& ribDir) {
   if (!driverCompiled(gman, "jpeg")) {
@@ -440,6 +385,78 @@ void checkQuantize15JPEG(std::string const& gman, std::string const& ribDir) {
   }
 }
 
+// Counts non-overlapping occurrences of needle in haystack.
+int countOccurrences(std::string const& haystack, std::string const& needle) {
+  int count = 0;
+  std::size_t pos = 0;
+  while ((pos = haystack.find(needle, pos)) != std::string::npos) {
+    ++count;
+    pos += needle.size();
+  }
+  return count;
+}
+
+bool fileExists(std::string const& path) {
+  std::FILE* f = std::fopen(path.c_str(), "rb");
+  if (f == nullptr) {
+    return false;
+  }
+  std::fclose(f);
+  return true;
+}
+
+struct Refusal {
+  std::string name;
+  std::string extension;
+  std::string driver;
+  std::string code;
+  std::string message;
+};
+
+// 7. quantizerefuse_<name>.rib: each request its driver cannot store stops
+// the file at WorldBegin -- exit 1, one error naming the code and the
+// request, no file, and a trace that reaches Quantize but never Sphere.
+void checkRefusal(std::string const& gman, std::string const& ribDir, Refusal const& refusal) {
+  std::string const label = "quantizerefuse_" + refusal.name;
+  if (!driverCompiled(gman, refusal.driver)) {
+    std::printf("skipped %s: gman is built without %s\n", label.c_str(), refusal.driver.c_str());
+    return;
+  }
+  std::string const file = label + "." + refusal.extension;
+  std::remove(file.c_str());
+
+  GMANRunOptions options;
+  options.timeoutSeconds = 20;
+  GMANRunResult const r = ::runGman(gman, {"-d", ribDir + "/" + label + ".rib"}, options);
+  check(!r.crashed && !r.timedOut, label + ": does not crash or hang");
+  check(r.exitStatus == EXIT_FAILURE, label + ": exits 1");
+  std::string const report = "ERROR: " + refusal.code + " -- " + refusal.message;
+  check(countOccurrences(r.output, report) == 1, label + ": prints \"" + report + "\" exactly once");
+  check(!fileExists(file), label + ": writes no " + file);
+  check(r.output.find("Keyword token: Quantize") != std::string::npos, label + ": parses Quantize");
+  check(r.output.find("Keyword token: Sphere") == std::string::npos, label + ": stops before the world block parses");
+}
+
+void checkRefusals(std::string const& gman, std::string const& ribDir) {
+  std::vector<Refusal> const refusals = {
+      {"pnm_max", "pnm", "pnm", "RIE_INCAPABLE", "PNM writes 8-bit samples; Quantize max 65535 cannot be honoured"},
+      {"pnm_float", "pnm", "pnm", "RIE_INCAPABLE", "PNM writes integer samples; Quantize one 0 cannot be honoured"},
+      {"png_max", "png", "png", "RIE_INCAPABLE", "PNG writes 8-bit samples; Quantize max 65535 cannot be honoured"},
+      {"png_float", "png", "png", "RIE_INCAPABLE", "PNG writes integer samples; Quantize one 0 cannot be honoured"},
+      {"jpeg_max", "jpg", "jpeg", "RIE_INCAPABLE", "JPEG writes 8-bit samples; Quantize max 65535 cannot be honoured"},
+      {"jpeg_float", "jpg", "jpeg", "RIE_INCAPABLE", "JPEG writes integer samples; Quantize one 0 cannot be honoured"},
+      {"tiff_max", "tif", "tiff", "RIE_INCAPABLE", "TIFF writes 16-bit samples; Quantize max 65536 cannot be honoured"},
+      {"tiff_minmax", "tif", "tiff", "RIE_RANGE", "Quantize min 200 exceeds max 100"},
+      {"pnm_negmin", "pnm", "pnm", "RIE_RANGE", "Quantize min -1 must not be negative"},
+      {"tiff_negone", "tif", "tiff", "RIE_RANGE", "Quantize one -1 must not be negative"},
+      {"tiff_negdither", "tif", "tiff", "RIE_RANGE",
+       "Quantize dither amplitude -0.5 must be a finite number of 0 or greater"},
+  };
+  for (Refusal const& refusal : refusals) {
+    checkRefusal(gman, ribDir, refusal);
+  }
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -451,13 +468,12 @@ int main(int argc, char* argv[]) {
   const std::string ribDir = argv[2];
 
   checkQuantize8(gman, ribDir);
-  checkQuantizeFallback(gman, ribDir);
   checkQuantize16(gman, ribDir);
   checkQuantizeFloat(gman, ribDir);
-  checkQuantizeFloatFallback(gman, ribDir);
   checkQuantize15PNM(gman, ribDir);
   checkQuantize15TIFF(gman, ribDir);
   checkQuantize15JPEG(gman, ribDir);
+  checkRefusals(gman, ribDir);
 
   return checkSummary("quantize holds");
 }

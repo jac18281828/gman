@@ -82,13 +82,15 @@ public:
   // not apply, and a NaN reads 0. Any other driver, and any other
   // quantize.one, takes the integer path.
   //
-  // The integer path resolves quantize against maxBitsPerSample(): honoured,
-  // it bounds every channel; otherwise save logs one warning naming this
-  // output and quantizes with 255 0 255 and the requested amplitude
-  // instead. Colour runs through gain and gamma first; alpha, coverage,
-  // skips both. Every channel then rounds and dithers by RISpec's rule, one
-  // draw per pixel, and clamps into the resolved range, before writeImage
-  // receives it once, at the resolved bit depth.
+  // The integer path honours an explicit request the driver can store, and
+  // stops the file with GMANError at RIE_ERROR, before anything is written,
+  // for one it cannot: a negative one or min, a min above max, a dither
+  // amplitude that is negative or not finite, a max above what
+  // maxBitsPerSample() holds, or a one of 0 from a driver that writes no
+  // float. Colour runs through gain and gamma first; alpha, coverage, skips
+  // both. Every channel then rounds and dithers by RISpec's rule, one draw
+  // per pixel, and clamps into [min, max], before writeImage receives it
+  // once, at 16 bits when max exceeds 255 and 8 otherwise.
   RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma, GMANQuantize const& quantize);
 
 protected:

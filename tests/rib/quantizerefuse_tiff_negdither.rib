@@ -1,0 +1,9 @@
+## A negative Quantize dither amplitude stops the file for any driver.
+Display "quantizerefuse_tiff_negdither.tif" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [45]
+Quantize "rgba" 255 0 255 -0.5
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

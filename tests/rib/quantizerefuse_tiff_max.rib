@@ -1,0 +1,9 @@
+## TIFF writes 16-bit samples at most, so a Quantize max of 65536 stops the file.
+Display "quantizerefuse_tiff_max.tif" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [45]
+Quantize "rgba" 255 0 65536 0
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

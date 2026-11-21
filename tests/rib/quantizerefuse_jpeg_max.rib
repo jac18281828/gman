@@ -1,0 +1,9 @@
+## JPEG writes 8-bit samples, so a Quantize max of 65535 stops the file.
+Display "quantizerefuse_jpeg_max.jpg" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [45]
+Quantize "rgba" 65535 0 65535 0
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

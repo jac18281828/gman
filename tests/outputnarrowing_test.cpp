@@ -23,8 +23,8 @@
  * every channel -- R, G, B and coverage alpha -- rounded and dithered by
  * RISpec's Quantize rule from one draw per pixel, clamped into the
  * request's resolved range and handed to writeImage as integers at 8 or 16
- * bits. A request maxBitsPerSample() cannot honour falls back to RISpec's
- * default range with the requested amplitude, and warns.
+ * bits. A request the driver cannot store throws GMANError at RIE_ERROR
+ * before anything is written.
  *
  * Two halves: what a driver receives, proven directly against a
  * test-local GMANOutput subclass that records the samples and bit depth
@@ -56,6 +56,7 @@ extern "C" {
 
 #include "check.h"
 #include "gmancolor.h"
+#include "gmanerror.h"
 #include "gmanoutput.h"
 #include "gmanoutputpnm.h"
 #include "gmanoutputtiff.h"
@@ -69,7 +70,7 @@ namespace {
 
 // Records the samples and bit depth writeImage receives, instead of
 // writing a file. widestBits stands in for a driver's own
-// maxBitsPerSample(), so save's fallback logic is provable directly.
+// maxBitsPerSample(), so the refusal rule is provable directly.
 class RecordingOutput : public GMANOutput {
 public:
   RecordingOutput(int width, int height, int widestBits = 8)
@@ -77,6 +78,7 @@ public:
 
   std::vector<std::uint16_t> received;
   int receivedBitsPerSample = 0;
+  int writes = 0;
 
   int maxBitsPerSample() const override { return widestBits; }
 
@@ -85,6 +87,7 @@ protected:
                     RtFloat /*gamma*/) override {
     received = samples;
     receivedBitsPerSample = bitsPerSample;
+    ++writes;
   }
 
 private:
@@ -296,69 +299,47 @@ void checkReceives() {
           "receive 11: widest 16, one 65534, a field of 0.5 arrives all 32767");
   }
 
-  // 12. Widest 8: 65535 0 65535 0, 0 0 0 0 and 255 200 100 0 each arrive at
-  // 8 bits with 0.25 as 64. Widest 8, 65535 0 65535 0.5: a 64x64 field of
-  // 0.5 arrives at 8 bits, and 128's share lies within 0.5 +/- 0.039, so
-  // the fallback keeps the requested amplitude.
+  // 12. Each request below stops save with GMANError at RIE_ERROR, the
+  // table's code and message, before writeImage is called. A recording
+  // output is in no driver table, so a message that names a driver reads
+  // "output".
   {
-    GMANQuantize const invalid[] = {
-        {65535, 0, 65535, 0},
-        {0, 0, 0, 0},
-        {255, 200, 100, 0},
+    RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
+    RtFloat const inf = std::numeric_limits<RtFloat>::infinity();
+    struct Case {
+      int widest;
+      GMANQuantize request;
+      RtInt code;
+      std::string message;
     };
-    for (GMANQuantize const& request : invalid) {
-      RecordingOutput out(1, 1);
+    std::string const dither = "Quantize dither amplitude ";
+    Case const cases[] = {
+        {8, {65535, 0, 65535, 0}, RIE_INCAPABLE, "output writes 8-bit samples; Quantize max 65535 cannot be honoured"},
+        {8, {0, 0, 0, 0}, RIE_INCAPABLE, "output writes integer samples; Quantize one 0 cannot be honoured"},
+        {8, {255, 200, 100, 0}, RIE_RANGE, "Quantize min 200 exceeds max 100"},
+        {8, {255, -1, 255, 0}, RIE_RANGE, "Quantize min -1 must not be negative"},
+        {8, {-1, 0, 255, 0}, RIE_RANGE, "Quantize one -1 must not be negative"},
+        {8, {255, 0, 255, -0.5f}, RIE_RANGE, dither + "-0.5 must be a finite number of 0 or greater"},
+        {8, {255, 0, 255, nan}, RIE_RANGE, dither + "nan must be a finite number of 0 or greater"},
+        {8, {255, 0, 255, inf}, RIE_RANGE, dither + "inf must be a finite number of 0 or greater"},
+        {16, {255, 0, 65536, 0}, RIE_INCAPABLE, "output writes 16-bit samples; Quantize max 65536 cannot be honoured"},
+    };
+    for (Case const& c : cases) {
+      RecordingOutput out(1, 1, c.widest);
       out.setPixel(0, 0, GMANColor(0.25f, 0.25f, 0.25f));
-      out.save(GMANOutput::RGB, 1.0f, 1.0f, request);
-      check(out.receivedBitsPerSample == 8, "receive 12: an unhonoured request still falls back to 8 bits");
-      check(out.received[0] == 64,
-            "receive 12: the fallback rounds 0.25 to 64 (got " + std::to_string(out.received[0]) + ")");
-    }
-
-    const int w = 64, h = 64;
-    RecordingOutput out(w, h);
-    for (int y = 0; y < h; ++y) {
-      for (int x = 0; x < w; ++x) {
-        out.setPixel(x, y, GMANColor(0.5f, 0.5f, 0.5f));
+      bool threw = false;
+      try {
+        out.save(GMANOutput::RGB, 1.0f, 1.0f, c.request);
+      } catch (GMANError const& error) {
+        threw = true;
+        check(error.getCode() == c.code, "receive 12: \"" + c.message + "\" carries its code");
+        check(error.getSeverity() == RIE_ERROR, "receive 12: \"" + c.message + "\" is RIE_ERROR");
+        check(c.message == error.getMessage(),
+              "receive 12: message reads \"" + c.message + "\" (got \"" + error.getMessage() + "\")");
       }
+      check(threw, "receive 12: \"" + c.message + "\" throws");
+      check(out.writes == 0, "receive 12: \"" + c.message + "\" never reaches writeImage");
     }
-    out.save(GMANOutput::RGB, 1.0f, 1.0f, GMANQuantize{65535, 0, 65535, 0.5});
-    check(out.receivedBitsPerSample == 8, "receive 12: the fallback for an invalid amplitude request is 8 bits");
-    const double share = shareEqualTo(out.received, w, h, 128);
-    check(std::fabs(share - 0.5) <= 0.039,
-          "receive 12: the fallback keeps the requested amplitude (128's share got " + std::to_string(share) + ")");
-  }
-
-  // 14. Widest 8, 15 0 15 0: 0, 0.4 and 1 arrive as 0, 6 and 15, at 8 bits.
-  // 15 0 15 0.5: a 64x64 field of 0 arrives all 0, and of 1 all 15.
-  {
-    RecordingOutput out(3, 1);
-    out.setPixel(0, 0, GMANColor(0.0f, 0.0f, 0.0f));
-    out.setPixel(1, 0, GMANColor(0.4f, 0.4f, 0.4f));
-    out.setPixel(2, 0, GMANColor(1.0f, 1.0f, 1.0f));
-    out.save(GMANOutput::RGB, 1.0f, 1.0f, GMANQuantize{15, 0, 15, 0});
-    check(out.receivedBitsPerSample == 8, "receive 14: 8 bits a sample");
-    check(out.received[0] == 0, "receive 14: 0 rounds to 0");
-    check(out.received[4] == 6, "receive 14: 0.4 rounds to 6 (got " + std::to_string(out.received[4]) + ")");
-    check(out.received[8] == 15, "receive 14: 1 rounds to 15");
-
-    const int w = 64, h = 64;
-    RecordingOutput zero(w, h);
-    RecordingOutput one(w, h);
-    for (int y = 0; y < h; ++y) {
-      for (int x = 0; x < w; ++x) {
-        zero.setPixel(x, y, GMANColor(0.0f, 0.0f, 0.0f));
-        zero.setAlpha(x, y, GMANAlpha(0.0f, 0.0f, 0.0f));
-        one.setPixel(x, y, GMANColor(1.0f, 1.0f, 1.0f));
-        one.setAlpha(x, y, GMANAlpha(1.0f, 1.0f, 1.0f));
-      }
-    }
-    zero.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{15, 0, 15, 0.5});
-    one.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{15, 0, 15, 0.5});
-    check(std::all_of(zero.received.begin(), zero.received.end(), [](std::uint16_t v) { return v == 0; }),
-          "receive 14: a field of 0 arrives all 0 under dither");
-    check(std::all_of(one.received.begin(), one.received.end(), [](std::uint16_t v) { return v == 15; }),
-          "receive 14: a field of 1 arrives all 15 under dither");
   }
 
   // A NaN colour channel quantizes as 0.0 does, so a request whose min
@@ -380,6 +361,7 @@ struct ByteImage {
   int width = 0, height = 0;
   int samplesPerPixel = 0;
   int bitsPerSample = 8;
+  int maxval = 0;
   std::vector<unsigned char> data;
 
   unsigned int at(int x, int y, int channel) const {
@@ -412,6 +394,7 @@ ByteImage readPNM(std::string const& path) {
   img.width = width;
   img.height = height;
   img.samplesPerPixel = 3;
+  img.maxval = maxval;
   img.data.resize((std::size_t)width * (std::size_t)height * 3);
   img.ok = std::fread(img.data.data(), 1, img.data.size(), f) == img.data.size();
   std::fclose(f);
@@ -534,12 +517,11 @@ void savePNG(std::string const& path, GMANColor const& colour, GMANQuantize cons
 }
 #endif
 
-// 13. PNM, TIFF and PNG: 255 0 255 0 writes 0.25 as 64, and 65535 0 65535 0
-// writes it as 64 at 8 bits in PNM and PNG, which fall back; TIFF honours
-// that request, as checkTIFF16Bit proves below.
+// 13. PNM, TIFF and PNG: 255 0 255 0 writes 0.25 as 64, and 15 0 15 0 writes
+// 0.4 as 6.
 void checkFileRounding(std::string const& driverName,
                        std::function<void(std::string const&, GMANColor const&, GMANQuantize const&)> const& save,
-                       std::function<ByteImage(std::string const&)> const& read, bool has16Bit) {
+                       std::function<ByteImage(std::string const&)> const& read) {
   {
     std::string const path = "narrow_" + driverName + "_255.out";
     save(path, GMANColor(0.25f, 0.25f, 0.25f), GMANQuantize{255, 0, 255, 0});
@@ -558,18 +540,6 @@ void checkFileRounding(std::string const& driverName,
     if (img.ok) {
       check(img.at(0, 0, 0) == 6,
             driverName + " check13: 15 0 15 0 rounds 0.4 to 6 (got " + std::to_string(img.at(0, 0, 0)) + ")");
-    }
-  }
-  if (!has16Bit) {
-    std::string const path = "narrow_" + driverName + "_fallback.out";
-    save(path, GMANColor(0.25f, 0.25f, 0.25f), GMANQuantize{65535, 0, 65535, 0});
-    ByteImage const img = read(path);
-    check(img.ok, driverName + " check13: fallback file reads back");
-    if (img.ok) {
-      check(img.at(0, 0, 0) == 64, driverName +
-                                       " check13: an unhonoured 16-bit request falls back to 8 bits, "
-                                       "rounding 0.25 to 64 (got " +
-                                       std::to_string(img.at(0, 0, 0)) + ")");
     }
   }
   std::printf("checked driver: %s\n", driverName.c_str());
@@ -615,21 +585,109 @@ void checkTIFFAlphaNaN() {
   }
 }
 
+bool fileExists(std::string const& path) {
+  std::FILE* f = std::fopen(path.c_str(), "rb");
+  if (f == nullptr) {
+    return false;
+  }
+  std::fclose(f);
+  return true;
+}
+
+// 16. A real driver refuses a request it cannot store with RIE_INCAPABLE and
+// the table's message, and writes nothing.
+void checkFileRefusal(std::string const& driverName,
+                      std::function<void(std::string const&, GMANColor const&, GMANQuantize const&)> const& save,
+                      GMANQuantize const& request, std::string const& message) {
+  std::string const path = "narrow_" + driverName + "_refused.out";
+  std::remove(path.c_str());
+  bool threw = false;
+  try {
+    save(path, GMANColor(0.25f, 0.25f, 0.25f), request);
+  } catch (GMANError const& error) {
+    threw = true;
+    check(error.getCode() == RIE_INCAPABLE, driverName + " check16: carries RIE_INCAPABLE");
+    check(error.getSeverity() == RIE_ERROR, driverName + " check16: is RIE_ERROR");
+    check(message == error.getMessage(),
+          driverName + " check16: message reads \"" + message + "\" (got \"" + error.getMessage() + "\")");
+  }
+  check(threw, driverName + " check16: throws");
+  check(!fileExists(path), driverName + " check16: writes no file");
+}
+
+// 17. TIFF, 0 200 100 -1: one 0 asks for float, which TIFF writes, so min,
+// max and the dither amplitude are ignored.
+void checkTIFFFloatIgnoresRange() {
+  std::string const path = "narrow_tiff_check17.tif";
+  std::remove(path.c_str());
+  bool threw = false;
+  try {
+    saveTIFF(path, GMANColor(0.25f, 0.25f, 0.25f), GMANQuantize{0, 200, 100, -1});
+  } catch (GMANError const&) {
+    threw = true;
+  }
+  check(!threw, "tiff check17: one 0 with an inverted range and a negative dither does not throw");
+  check(fileExists(path), "tiff check17: writes the file");
+}
+
+// 18. PNM's header maxval is the request's max: 255 by default, 15 for 15 0
+// 15 0, and 1 for a max of 0, where every sample reads 0.
+void checkPNMMaxval() {
+  struct Case {
+    GMANQuantize request;
+    int maxval;
+    int sample; // negative: not asserted
+  };
+  Case const cases[] = {
+      {{255, 0, 255, 0.5f}, 255, -1},
+      {{15, 0, 15, 0}, 15, 4},
+      {{255, 0, 0, 0}, 1, 0},
+  };
+  for (Case const& c : cases) {
+    std::string const label = "pnm check18: " + std::to_string(c.request.one) + " " + std::to_string(c.request.min) +
+                              " " + std::to_string(c.request.max);
+    std::string const path = "narrow_pnm_check18.out";
+    savePNM(path, GMANColor(0.25f, 0.25f, 0.25f), c.request);
+    ByteImage const img = readPNM(path);
+    check(img.ok, label + " file reads back");
+    if (!img.ok) {
+      continue;
+    }
+    check(img.maxval == c.maxval,
+          label + " writes maxval " + std::to_string(c.maxval) + " (got " + std::to_string(img.maxval) + ")");
+    if (c.sample >= 0) {
+      check(img.at(0, 0, 0) == static_cast<unsigned int>(c.sample),
+            label + " reads 0.25 as " + std::to_string(c.sample) + " (got " + std::to_string(img.at(0, 0, 0)) + ")");
+    }
+  }
+}
+
 } // namespace
 
 int main() {
   checkReceives();
 
-  checkFileRounding("pnm", savePNM, readPNM, false);
-  checkFileRounding("tiff", saveTIFF, readTIFFRaw, true);
+  checkFileRounding("pnm", savePNM, readPNM);
+  checkFileRounding("tiff", saveTIFF, readTIFFRaw);
 #ifdef GMAN_WITH_PNG
-  checkFileRounding("png", savePNG, readPNGRaw, false);
+  checkFileRounding("png", savePNG, readPNGRaw);
 #else
   std::printf("checked driver: none (GMAN_WITH_PNG is off)\n");
 #endif
 
   checkTIFF16Bit();
   checkTIFFAlphaNaN();
+
+  checkFileRefusal("pnm", savePNM, GMANQuantize{65535, 0, 65535, 0},
+                   "PNM writes 8-bit samples; Quantize max 65535 cannot be honoured");
+#ifdef GMAN_WITH_PNG
+  checkFileRefusal("png", savePNG, GMANQuantize{65535, 0, 65535, 0},
+                   "PNG writes 8-bit samples; Quantize max 65535 cannot be honoured");
+#endif
+  checkFileRefusal("tiff", saveTIFF, GMANQuantize{255, 0, 65536, 0},
+                   "TIFF writes 16-bit samples; Quantize max 65536 cannot be honoured");
+  checkTIFFFloatIgnoresRange();
+  checkPNMMaxval();
 
   return checkSummary("output narrowing holds");
 }

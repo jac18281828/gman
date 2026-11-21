@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "gmanoutput.h"
+#include "gmanquantize.h"
 
 /*
  * The file-Display driver table, generated at configure time from
@@ -40,6 +41,18 @@
 
 namespace gman {
 
+using FileDriverFactory = std::unique_ptr<GMANOutput> (*)(char const*, int, int);
+using FileDriverMatcher = bool (*)(GMANOutput const&);
+
+struct FileDriverEntry {
+  std::string name;
+  std::vector<std::string> extensions;
+  std::string library;       // empty when the driver needs no library
+  std::string driver;        // how an error names the driver
+  FileDriverFactory factory; // null when not compiled into this build
+  FileDriverMatcher matches; // null when not compiled into this build
+};
+
 // Returns the driver for `extension` (compared case-sensitively). Throws
 // GMANError(RIE_BADFILE, ...) for a known but disabled extension, naming
 // the extension and the missing library, or for an unrecognized one.
@@ -47,5 +60,16 @@ std::unique_ptr<GMANOutput> makeFileOutput(std::string const& extension, char co
 
 // The compiled file drivers' names, in table order.
 GMAN_EXPORT std::vector<std::string> fileDrivers();
+
+// The table entry whose driver class `output` is, or null for an object no
+// compiled entry matches.
+FileDriverEntry const* fileDriverEntry(GMANOutput const& output);
+
+// Throws GMANError at RIE_ERROR, naming the driver and the request, when
+// `output` cannot store `quantize` exactly: RIE_RANGE for a value no driver
+// could mean, RIE_INCAPABLE for a valid request the driver's sample width
+// or integer-only samples cannot hold. Returns for a request `output`
+// honours.
+void checkQuantize(GMANOutput const& output, GMANQuantize const& quantize);
 
 } // namespace gman

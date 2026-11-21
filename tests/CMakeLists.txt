@@ -655,9 +655,9 @@ set_tests_properties(shaders PROPERTIES
   TIMEOUT 30)
 
 # RIB's Quantize keyword, end to end: parsed, honoured by
-# GMANOutput::save and reflected in the bytes TIFF and PNM write, an
-# unhonoured 16-bit request falling back and warning, and a zero "one"
-# writing unclamped 32-bit float to TIFF and falling back for PNM.
+# GMANOutput::save and reflected in the bytes TIFF and PNM write, a request
+# a driver cannot store stopping the file with an error, and a zero "one"
+# writing unclamped 32-bit float to TIFF and stopping the file for PNM.
 add_executable(gman_quantize quantize_test.cpp)
 target_link_libraries(gman_quantize PRIVATE gman_core TIFF::TIFF)
 
@@ -3013,7 +3013,7 @@ set_tests_properties(reportederror PROPERTIES
 
 # GMANOutput::save's own pipeline -- gain and gamma on colour, then every
 # channel rounded and dithered by RISpec's Quantize rule and clamped into
-# the resolved range -- and what gman::OutputPNM, gman::OutputTIFF and
+# the request's range -- and what gman::OutputPNM, gman::OutputTIFF and
 # gman::OutputPNG do with the integer samples save hands their writeImage.
 # Direct unit test against those classes, no gman binary. The PNG checks
 # compile and link only under GMAN_WITH_PNG.

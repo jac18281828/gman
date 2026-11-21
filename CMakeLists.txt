@@ -113,10 +113,11 @@ set(GMAN_SOURCE_DIRS
 # library was found; a FATAL_ERROR names that library when the option is
 # forced ON without it; once enabled, it adds the driver's source and links
 # its library PRIVATE on gman_core. It also sets the
-# GMAN_<NAME>_INCLUDE/FACTORY_DEFINITION/FACTORY_REF variables
+# GMAN_<NAME>_INCLUDE/FACTORY_DEFINITION/FACTORY_REF/MATCHER variables
 # gmanfiledrivers.cpp.in's configure_file below substitutes -- empty and
 # "nullptr" when disabled, so the generated table never has to preprocess a
-# choice CMake already made. Requires gman_core to already exist.
+# choice CMake already made. MATCHER is the type test the table reads to
+# name a driver from its object. Requires gman_core to already exist.
 # ---------------------------------------------------------------------------
 
 function(gman_add_file_driver name)
@@ -130,6 +131,7 @@ function(gman_add_file_driver name)
   set(GMAN_${upper}_INCLUDE "" PARENT_SCOPE)
   set(GMAN_${upper}_FACTORY_DEFINITION "" PARENT_SCOPE)
   set(GMAN_${upper}_FACTORY_REF "nullptr" PARENT_SCOPE)
+  set(GMAN_${upper}_MATCHER "nullptr" PARENT_SCOPE)
   if(NOT GMAN_WITH_${upper})
     return()
   endif()
@@ -141,6 +143,7 @@ function(gman_add_file_driver name)
   return std::make_unique<gman::Output${upper}>(path, width, height);
 }" PARENT_SCOPE)
   set(GMAN_${upper}_FACTORY_REF "&gmanMake${upper}Output" PARENT_SCOPE)
+  set(GMAN_${upper}_MATCHER "&isOutputOf<gman::Output${upper}>" PARENT_SCOPE)
 
   target_sources(gman_core PRIVATE "libgman/gmanoutput${name}.cpp")
   target_link_libraries(gman_core PRIVATE ${upper}::${upper})

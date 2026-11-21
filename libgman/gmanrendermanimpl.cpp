@@ -323,6 +323,9 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
                                      ri.rxmax - ri.rxmin + 1, // if the user use RiCropWindow
                                      ri.rymax - ri.rymin + 1);
 
+    // Stops a request the driver cannot store here, before the frame renders.
+    gman::checkQuantize(*newOutput, getOptions().getColorQuantize());
+
   } else { // type == framebuffer
     // our frame buffer
     newOutput.reset(new gman::OutputX11(getOptions().getDisplay().name.c_str(),

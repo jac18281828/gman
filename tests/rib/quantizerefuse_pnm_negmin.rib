@@ -1,0 +1,9 @@
+## A negative Quantize min stops the file for any driver.
+Display "quantizerefuse_pnm_negmin.pnm" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [45]
+Quantize "rgba" 255 -1 255 0
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

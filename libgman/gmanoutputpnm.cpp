@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
 #include <cstdio>
 
 #include "gmanerror.h"
@@ -43,9 +44,11 @@ OutputPNM::OutputPNM(char const* path, int width, int height) : GMANOutput(path,
 // default destructor
 OutputPNM::~OutputPNM() {};
 
+void OutputPNM::setMaxval(int value) { maxval = std::max(value, 1); }
+
 // Writes a binary P6 portable pixmap directly, with no netpbm dependency.
 // P6 carries a 16-bit sample when maxval exceeds 255; this driver writes
-// 8, GMANOutput::maxBitsPerSample's default.
+// 8, GMANOutput::maxBitsPerSample's default, so maxval never exceeds 255.
 RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<std::uint16_t> const& samples,
                              int /*bitsPerSample*/, RtFloat /*gamma*/) {
 
@@ -65,7 +68,7 @@ RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<std::
     return GMANError(RIE_SYSTEM, RIE_SEVERE, errorMsg.c_str());
   };
 
-  if (std::fprintf(ppmFile, "P6\n%d %d\n255\n", xres, yres) < 0) {
+  if (std::fprintf(ppmFile, "P6\n%d %d\n%d\n", xres, yres, maxval) < 0) {
     std::fclose(ppmFile);
     throw(writeFailure());
   }
