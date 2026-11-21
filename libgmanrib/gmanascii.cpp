@@ -23,9 +23,12 @@
  */
 #include <cstdint>
 #include <iostream>
+#include <string>
 
 #include "gmanascii.h"
+#include "gmandictionary.h"
 #include "gmanerror.h"
+#include "ri.h"
 
 // **************************************************************
 // ******* ******* ******* PRINTING TOOLS ******* ******* *******
