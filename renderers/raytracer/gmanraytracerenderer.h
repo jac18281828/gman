@@ -64,9 +64,10 @@ class IndirectPass;
 class GMANRayTracer : public gman::Tracer {
 public:
   GMANRayTracer(GMANRayBVH const& bvh, GMANRayOccluder const& occluder, GMANMatrix4 const& cameraToWorld,
-                GMANColor const& background, int depth, gman::IndirectPass const* indirectPass = nullptr)
+                GMANColor const& background, int depth, gman::IndirectPass const* indirectPass = nullptr,
+                gman::TextureCache* textureCache = nullptr)
       : bvh(bvh), occluder(occluder), cameraToWorld(cameraToWorld), background(background), depth(depth),
-        indirectPass(indirectPass) {}
+        indirectPass(indirectPass), textureCache(textureCache) {}
 
   GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
                   RtFloat surfaceMagnitude) const override;
@@ -83,6 +84,13 @@ private:
   // child GMANRayTracer trace() builds, so a reflected or refracted hit
   // gets indirect light too.
   gman::IndirectPass const* indirectPass;
+
+  // The cache this tracer's own hit samples textures through; null means
+  // gman::textureCache()'s process cache. Carried into every child
+  // GMANRayTracer trace() builds, so a reflected or refracted hit samples
+  // through the cache of the tracer that cast it, and never through a
+  // cache another thread owns. Non-owning; the caller keeps it alive.
+  gman::TextureCache* textureCache;
 };
 
 /*

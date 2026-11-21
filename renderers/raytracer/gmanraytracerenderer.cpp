@@ -78,10 +78,10 @@ GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVect
     return background;
   }
 
-  GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1, indirectPass);
+  GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1, indirectPass, textureCache);
   PassIrradiance const indirect(indirectPass, hit, R);
   gman::Shading const shading = gman::shade(hitPrimitive->getAppearance(), gman::hitSurfacePoint(ray, hit),
-                                            cameraToWorld, &occluder, &child, nullptr, indirect.ptr);
+                                            cameraToWorld, &occluder, &child, textureCache, indirect.ptr);
   return shading.Ci;
 }
 
