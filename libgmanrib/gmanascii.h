@@ -25,7 +25,9 @@
 
 #include <fstream>
 
+#include "gman/export.h"
 #include "gmanrenderman.h"
+#include "ri.h"
 
 class GMAN_EXPORT GMANASCII : public GMANRenderMan {
 protected:
