@@ -84,7 +84,6 @@ std::string endLogCapture(std::string const& path) {
 void testFixtureReachesOptions(std::string const& ribDir) {
   std::string const rib = ribDir + "/pixelvariance.rib";
   VarianceReadingRenderMan renderMan;
-  renderMan.RiBegin("gmanzbuffer");
 
   beginLogCapture(kParseLog);
   {
@@ -99,8 +98,6 @@ void testFixtureReachesOptions(std::string const& ribDir) {
   check(clippingIntact, "the Clipping after PixelVariance still parses");
   check(log.find("skipping unrecognized request") == std::string::npos,
         "the log holds no skipped request for PixelVariance");
-
-  renderMan.RiEnd();
 }
 
 void testInitializerZeroesPixelVariance() {
