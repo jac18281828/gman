@@ -609,3 +609,146 @@ if(CLANG_FORMAT_EXECUTABLE)
       VERBATIM)
   endif()
 endif()
+
+# ---------------------------------------------------------------------------
+# Tidy check
+# ---------------------------------------------------------------------------
+
+# clang-tidy over every production translation unit, run in parallel; any
+# finding fails the target. tests/ is exempt (AGENTS.md) and gmansl/ builds no
+# compile_commands.json entry to run against. compile_commands.json paths are
+# absolute, so filtering must strip the source root first and anchor at ^ -- a
+# bare directory-name search also matches a checkout directory named after the
+# repo (e.g. /home/runner/work/gman/gman/...), which would let every tests/
+# entry through too.
+#
+# The check reads only a translation unit's main file, so each production
+# header is also analysed as its own translation unit; a header whose
+# directory holds sources this build does not compile is skipped as they are.
+# A header analysed as a main file trips -Werror on its #pragma once, and on a
+# constant only its includers use.
+#
+# The tree's .clang-tidy governs; no --checks override. A clang-tidy of
+# another major version judges differently from CI's pinned one, so the gate
+# would disagree with it while reading green. macOS ships no standard library
+# clang-tidy can find without the SDK sysroot.
+set(GMAN_CLANG_TIDY_MAJOR "22")
+set(GMAN_TIDY_HEADER_DIRS ${GMAN_SOURCE_DIRS})
+list(REMOVE_ITEM GMAN_TIDY_HEADER_DIRS gmansl)
+set(GMAN_TIDY_SOURCE_DIRS ${GMAN_TIDY_HEADER_DIRS})
+list(REMOVE_ITEM GMAN_TIDY_SOURCE_DIRS include)
+string(JOIN "|" GMAN_TIDY_SOURCE_DIR_REGEX ${GMAN_TIDY_SOURCE_DIRS})
+string(JOIN "|" GMAN_TIDY_HEADER_DIR_REGEX ${GMAN_TIDY_HEADER_DIRS})
+
+find_program(CLANG_TIDY_EXECUTABLE NAMES clang-tidy)
+find_program(GMAN_JQ_EXECUTABLE NAMES jq)
+
+set(GMAN_CLANG_TIDY_FOUND_VERSION "none")
+set(GMAN_CLANG_TIDY_FOUND_MAJOR "")
+if(CLANG_TIDY_EXECUTABLE)
+  execute_process(
+    COMMAND "${CLANG_TIDY_EXECUTABLE}" --version
+    OUTPUT_VARIABLE GMAN_CLANG_TIDY_FOUND_VERSION_RAW
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  string(REGEX MATCH "[0-9]+\\.[0-9]+\\.[0-9]+"
+    GMAN_CLANG_TIDY_FOUND_VERSION "${GMAN_CLANG_TIDY_FOUND_VERSION_RAW}")
+  string(REGEX MATCH "^[0-9]+"
+    GMAN_CLANG_TIDY_FOUND_MAJOR "${GMAN_CLANG_TIDY_FOUND_VERSION}")
+endif()
+
+set(GMAN_TIDY_SYSROOT "")
+if(APPLE)
+  if(CMAKE_OSX_SYSROOT)
+    set(GMAN_TIDY_SYSROOT "${CMAKE_OSX_SYSROOT}")
+  else()
+    execute_process(
+      COMMAND xcrun --show-sdk-path
+      OUTPUT_VARIABLE GMAN_TIDY_SYSROOT
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
+endif()
+
+if(NOT GMAN_CLANG_TIDY_FOUND_MAJOR STREQUAL GMAN_CLANG_TIDY_MAJOR)
+  add_custom_target(tidy-check
+    COMMAND "${CMAKE_COMMAND}" -E echo
+      "tidy-check requires clang-tidy ${GMAN_CLANG_TIDY_MAJOR}, found ${GMAN_CLANG_TIDY_FOUND_VERSION}; uv tool install clang-tidy==22.1.8"
+    COMMAND "${CMAKE_COMMAND}" -E false
+    COMMENT "Checking the clang-tidy version tidy-check requires"
+    VERBATIM)
+elseif(NOT GMAN_JQ_EXECUTABLE)
+  add_custom_target(tidy-check
+    COMMAND "${CMAKE_COMMAND}" -E echo "tidy-check requires jq on PATH"
+    COMMAND "${CMAKE_COMMAND}" -E false
+    COMMENT "Checking the jq tidy-check requires"
+    VERBATIM)
+else()
+  file(WRITE "${CMAKE_BINARY_DIR}/tidy-check.sh" [==[
+set -eu
+root=$1/
+build=$2
+tidy=$3
+jq=$4
+sysroot=$5
+source_re=$6
+header_re=$7
+shift 7
+db=$build/compile_commands.json
+if [ ! -f "$db" ]; then
+  echo "tidy-check needs $db; configure with cmake --preset dev" >&2
+  exit 1
+fi
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+"$jq" -r --arg root "$root" --arg re "^($source_re)/" \
+  '.[].file | select(startswith($root)) | ltrimstr($root) | select(test($re))' \
+  "$db" | sort -u > "$work/sources"
+count=$(wc -l < "$work/sources")
+echo "production translation units: $count"
+if [ "$count" -eq 0 ]; then
+  echo "no production translation units matched the filter" >&2
+  exit 1
+fi
+sed 's#/[^/]*$##' "$work/sources" | sort -u > "$work/compiled"
+cd "$root"
+find "$@" -name '*.h' | sort | while read -r header; do
+  dir=${header%/*}
+  set -- "$dir"/*.cpp
+  if [ -e "$1" ] && ! grep -qxF "$dir" "$work/compiled"; then
+    echo "skipping $header: $dir compiles no source in this build" >&2
+    continue
+  fi
+  echo "$header"
+done > "$work/headers"
+echo "production headers: $(wc -l < "$work/headers")"
+if [ -n "$sysroot" ]; then
+  set -- --extra-arg=-isysroot "--extra-arg=$sysroot"
+else
+  set --
+fi
+jobs=$(getconf _NPROCESSORS_ONLN)
+status=0
+sed "s#^#$root#" "$work/sources" |
+  xargs -P "$jobs" -I{} "$tidy" -p "$build" \
+    "--header-filter=^$root($header_re)/" \
+    "--exclude-header-filter=^${root}(build|tests)/" \
+    "$@" {} || status=1
+sed "s#^#$root#" "$work/headers" |
+  xargs -P "$jobs" -I{} "$tidy" -p "$build" \
+    "--header-filter=^$root($header_re)/" \
+    "--exclude-header-filter=^${root}(build|tests)/" \
+    --extra-arg=-xc++ \
+    --extra-arg=-Wno-pragma-once-outside-header \
+    --extra-arg=-Wno-unused-const-variable \
+    "$@" {} || status=1
+exit $status
+]==])
+  add_custom_target(tidy-check
+    COMMAND sh "${CMAKE_BINARY_DIR}/tidy-check.sh"
+      "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${CLANG_TIDY_EXECUTABLE}"
+      "${GMAN_JQ_EXECUTABLE}" "${GMAN_TIDY_SYSROOT}"
+      "${GMAN_TIDY_SOURCE_DIR_REGEX}" "${GMAN_TIDY_HEADER_DIR_REGEX}"
+      ${GMAN_TIDY_HEADER_DIRS}
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    COMMENT "Running clang-tidy over every production source and header"
+    VERBATIM)
+endif()

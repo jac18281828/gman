@@ -136,7 +136,11 @@ Before marking work complete, run and report:
 cmake --preset dev && cmake --build build --parallel
 ctest --test-dir build --output-on-failure
 cmake --build build --target format-check
+cmake --build build --target tidy-check
 ```
+
+`tidy-check` needs clang-tidy 22.1.8 on `PATH`, installed with `uv tool install
+clang-tidy==22.1.8`, as `format-check` needs clang-format 23.
 
 If a gate stays red after a genuine fix attempt, stop and report the error.
 
