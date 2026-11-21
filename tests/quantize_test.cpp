@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -353,6 +354,92 @@ void checkQuantizeFloatFallback(std::string const& gman, std::string const& ribD
   checkPNMFallback(gman, ribDir, "quantizefloat_fallback");
 }
 
+// True when `name` is one of the tokens on gman --version's "drivers:" line.
+bool driverCompiled(std::string const& gman, std::string const& name) {
+  GMANRunOptions options;
+  options.capture = GMANRunOptions::Capture::stdoutOnly;
+  GMANRunResult const version = ::runGman(gman, {"--version"}, options);
+  std::istringstream lines(version.output);
+  std::string line;
+  while (std::getline(lines, line)) {
+    if (line.rfind("drivers:", 0) != 0) {
+      continue;
+    }
+    std::istringstream tokens(line.substr(std::string("drivers:").size()));
+    std::string token;
+    while (tokens >> token) {
+      if (token == name) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// 6. quantize15_pnm.rib, .pnm, 15 0 15 0.5, half plane lit to 1: columns
+// 0-7 read R, G and B 15; columns 8-15 read 0.
+void checkQuantize15PNM(std::string const& gman, std::string const& ribDir) {
+  std::remove("quantize15_pnm.pnm");
+  GMANRunResult const r = runGman(gman, ribDir + "/quantize15_pnm.rib");
+  check(r.exitStatus == 0, "quantize15_pnm: renders");
+
+  PNMImage const img = readPNM("quantize15_pnm.pnm");
+  check(img.ok, "quantize15_pnm: file reads back");
+  if (!img.ok) {
+    return;
+  }
+  for (int x = 0; x < 8; ++x) {
+    check(img.at(x, 8, 0) == 15 && img.at(x, 8, 1) == 15 && img.at(x, 8, 2) == 15,
+          "quantize15_pnm: covered column " + std::to_string(x) + " reads R, G, B 15");
+  }
+  for (int x = 8; x < 16; ++x) {
+    check(img.at(x, 8, 0) == 0 && img.at(x, 8, 1) == 0 && img.at(x, 8, 2) == 0,
+          "quantize15_pnm: uncovered column " + std::to_string(x) + " reads 0");
+  }
+}
+
+// 7. quantize15_tiff.rib, TIFF, 15 0 15 0.5, half plane lit to 1: 8 bits a
+// sample, 4 samples a pixel; columns 0-7 read R, G, B and alpha 15; columns
+// 8-15 read 0 on all four.
+void checkQuantize15TIFF(std::string const& gman, std::string const& ribDir) {
+  std::remove("quantize15_tiff.tif");
+  GMANRunResult const r = runGman(gman, ribDir + "/quantize15_tiff.rib");
+  check(r.exitStatus == 0, "quantize15_tiff: renders");
+
+  RawImage const img = readTIFFRaw("quantize15_tiff.tif");
+  check(img.ok, "quantize15_tiff: file reads back");
+  if (!img.ok) {
+    return;
+  }
+  check(img.bitsPerSample == 8, "quantize15_tiff: 8 bits a sample");
+  check(img.samplesPerPixel == 4, "quantize15_tiff: 4 samples a pixel");
+  for (int x = 0; x < 8; ++x) {
+    check(img.at(x, 8, 0) == 15 && img.at(x, 8, 1) == 15 && img.at(x, 8, 2) == 15 && img.at(x, 8, 3) == 15,
+          "quantize15_tiff: covered column " + std::to_string(x) + " reads R, G, B and alpha 15");
+  }
+  for (int x = 8; x < 16; ++x) {
+    check(img.at(x, 8, 0) == 0 && img.at(x, 8, 1) == 0 && img.at(x, 8, 2) == 0 && img.at(x, 8, 3) == 0,
+          "quantize15_tiff: uncovered column " + std::to_string(x) + " reads 0 on all four");
+  }
+}
+
+// 8. quantize15_jpg.rib, JPEG, 15 0 15 0.5: renders and writes the file. The
+// encoder is lossy, so no decoded value is asserted.
+void checkQuantize15JPEG(std::string const& gman, std::string const& ribDir) {
+  if (!driverCompiled(gman, "jpeg")) {
+    std::printf("skipped quantize15_jpg: gman is built without libjpeg\n");
+    return;
+  }
+  std::remove("quantize15_jpg.jpg");
+  GMANRunResult const r = runGman(gman, ribDir + "/quantize15_jpg.rib");
+  check(r.exitStatus == 0, "quantize15_jpg: renders");
+  std::FILE* f = std::fopen("quantize15_jpg.jpg", "rb");
+  check(f != nullptr, "quantize15_jpg: writes the file");
+  if (f != nullptr) {
+    std::fclose(f);
+  }
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -368,6 +455,9 @@ int main(int argc, char* argv[]) {
   checkQuantize16(gman, ribDir);
   checkQuantizeFloat(gman, ribDir);
   checkQuantizeFloatFallback(gman, ribDir);
+  checkQuantize15PNM(gman, ribDir);
+  checkQuantize15TIFF(gman, ribDir);
+  checkQuantize15JPEG(gman, ribDir);
 
   return checkSummary("quantize holds");
 }
