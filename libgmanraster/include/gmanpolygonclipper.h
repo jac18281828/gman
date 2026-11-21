@@ -34,6 +34,7 @@
 #include "gmanclipedge.h"
 #include "gmanface.h"
 #include "gmanlog.h"
+#include "gmanoutputpolygon.h"
 #include "ri.h"
 
 /*

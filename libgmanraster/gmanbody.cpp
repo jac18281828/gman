@@ -23,7 +23,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
+
 #include "gmanbody.h"
+#include "gmancolor.h"
 #include "gmanlog.h"
 #include "gmansurface.h"
 #include "ri.h"

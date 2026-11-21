@@ -23,10 +23,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
+
 #include <math.h>
 
 #include "gmanclipedge.h"
+#include "gmancolor.h"
 #include "gmanlog.h"
+#include "gmanoutputpolygon.h"
+#include "gmanvector4.h"
+#include "gmanvertex4.h"
 #include "ri.h"
 
 /*
