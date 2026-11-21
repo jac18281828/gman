@@ -27,9 +27,7 @@
 
 #include "gmanbody.h"
 #include "gmancolor.h"
-#include "gmanlog.h"
 #include "gmansurface.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANBody

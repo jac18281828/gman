@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "gman/export.h"
-#include "gmanlog.h"
 #include "gmantypes.h"
 #include "ri.h"
 

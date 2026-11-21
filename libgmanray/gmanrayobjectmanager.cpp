@@ -37,7 +37,6 @@
 #include "gmanpolygon.h"
 #include "gmanpolygonmesh.h"
 #include "gmanprimitive.h"
-#include "gmanprimitives.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"

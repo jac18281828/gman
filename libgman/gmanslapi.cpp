@@ -25,7 +25,6 @@
 
 #include <cmath>
 
-#include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanslapi.h"

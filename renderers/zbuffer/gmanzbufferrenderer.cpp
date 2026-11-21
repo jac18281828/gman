@@ -25,7 +25,6 @@
 
 #include <cmath>
 #include <cstddef>
-#include <typeinfo>
 
 #include "gmanarealightwarning.h"
 #include "gmanattributes.h"

@@ -37,7 +37,6 @@
 #include "gmanradiositygrouping.h"
 #include "gmanradiositymesh.h"
 #include "gmanray.h"
-#include "gmanraybbox.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"

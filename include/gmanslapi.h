@@ -26,14 +26,9 @@
 #pragma once
 
 #include <algorithm>
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
 
 #include "gman/export.h"
 #include "gmancolor.h"
-#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "ri.h"

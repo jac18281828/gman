@@ -38,16 +38,11 @@
 #include "gman/export.h"
 #include "gmancolor.h"
 #include "gmancolorsamples.h"
-#include "gmandefaults.h"
 #include "gmanimagershader.h"
 #include "gmanloadableshader.h"
-#include "gmanlog.h"
-#include "gmanmath.h"
 #include "gmanmatrix4.h"
-#include "gmanoutput.h"
 #include "gmanparameterlist.h"
 #include "gmanquantize.h"
-#include "gmanshader.h"
 #include "ri.h"
 
 /*

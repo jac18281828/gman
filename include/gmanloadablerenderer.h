@@ -25,15 +25,9 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
 #include "gmanloadable.h"
-#include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"

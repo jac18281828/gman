@@ -36,6 +36,7 @@
 
 #include "check.h"
 #include "gmandictionary.h"
+#include "gmanerror.h"
 #include "gmanparameterlist.h"
 
 #if defined(__SANITIZE_ADDRESS__)

@@ -25,10 +25,7 @@
 
 #pragma once
 
-#include <list>
-#include <map>
 #include <memory>
-#include <stack>
 #include <string>
 
 #include "gman/export.h"
@@ -36,7 +33,6 @@
 #include "gmanimagershader.h"
 #include "gmanlightsourceshader.h"
 #include "gmanloadable.h"
-#include "gmanlog.h"
 #include "gmanparameterlist.h"
 #include "gmanshader.h"
 #include "gmansurfaceshader.h"

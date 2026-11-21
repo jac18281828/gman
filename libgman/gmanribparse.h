@@ -25,7 +25,6 @@
 
 #pragma once
 
-#include <fstream>
 #include <istream>
 #include <map>
 #include <memory>
@@ -34,8 +33,6 @@
 #include <vector>
 
 #include "gman/export.h"
-#include "gmanerror.h"
-#include "gmanlog.h"
 #include "gmanrenderman.h"
 #include "gmanribtokenize.h"
 #include "ri.h"

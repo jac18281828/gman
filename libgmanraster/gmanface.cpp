@@ -26,7 +26,6 @@
 #include <cstddef>
 
 #include "gmanface.h"
-#include "gmanlog.h"
 #include "gmansurface.h"
 #include "gmanvector.h"
 #include "gmanvertex.h"

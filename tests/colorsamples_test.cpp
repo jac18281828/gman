@@ -28,6 +28,7 @@
 #include "gmanascii.h"
 #include "gmanattributes.h"
 #include "gmancolor.h"
+#include "gmandefaults.h"
 #include "gmanerror.h"
 #include "gmanoptions.h"
 #include "gmanrendermanimpl.h"

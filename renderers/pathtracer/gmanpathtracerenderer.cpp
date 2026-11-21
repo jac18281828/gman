@@ -43,7 +43,6 @@
 #include "gmanpathtracerweights.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
-#include "gmanraybbox.h"
 #include "gmanraybvh.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"

@@ -25,7 +25,6 @@
 
 #include "gmandisplacementshader.h"
 #include "gmanshader.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANDisplacementShader

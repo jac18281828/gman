@@ -34,11 +34,9 @@
 
 #include "gman/rasterexport.h"
 #include "gmancolor.h"
-#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "gmanvector4.h"
-#include "gmanvertex.h"
 #include "gmanvertex4.h"
 #include "ri.h"
 

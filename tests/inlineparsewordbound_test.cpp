@@ -34,6 +34,7 @@
 
 #include "check.h"
 #include "gmandictionary.h"
+#include "gmanerror.h"
 #include "gmaninlineparse.h"
 
 namespace {

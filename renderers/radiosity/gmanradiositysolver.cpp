@@ -39,7 +39,6 @@
 #include "gmanradiositygrouping.h"
 #include "gmanradiositymesh.h"
 #include "gmanradiositysolver.h"
-#include "gmanraybbox.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"

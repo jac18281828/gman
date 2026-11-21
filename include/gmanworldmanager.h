@@ -25,15 +25,8 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/export.h"
-#include "gmanlog.h"
 #include "gmanprimitive.h"
-#include "gmanprimitives.h"
 #include "ri.h"
 
 /*

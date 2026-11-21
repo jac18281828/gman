@@ -26,17 +26,12 @@
 #pragma once
 
 #include <cstddef>
-#include <list>
-#include <map>
 #include <memory>
-#include <stack>
-#include <string>
 
 #include "gman/export.h"
 #include "gmanattributes.h"
 #include "gmancolor.h"
 #include "gmanlinearworldmanager.h"
-#include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanoutputpolygon.h"

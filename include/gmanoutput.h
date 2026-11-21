@@ -31,8 +31,6 @@
 
 #include "gmancolor.h"
 #include "gmanframebuffer.h"
-#include "gmangamma.h"
-#include "gmanlog.h"
 #include "gmanquantize.h"
 #include "ri.h"
 

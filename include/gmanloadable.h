@@ -25,14 +25,7 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/export.h"
-#include "gmanerror.h"
-#include "gmanlog.h"
 #include "ri.h"
 
 /* Global loadable object types */

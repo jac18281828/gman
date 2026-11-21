@@ -28,10 +28,7 @@
 #include <memory>
 
 #include "gman/export.h"
-#include "gmandictionary.h"
-#include "gmanframebuffer.h"
 #include "gmangraphicstate.h"
-#include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "gmanoutput.h"
 #include "gmanrenderer.h"

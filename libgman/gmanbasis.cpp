@@ -26,7 +26,6 @@
 #include <cmath>
 
 #include "gmanbasis.h"
-#include "gmanmath.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "gmanvector4.h"

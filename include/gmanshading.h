@@ -33,7 +33,6 @@
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
 #include "gmanocclude.h"
-#include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmantrace.h"

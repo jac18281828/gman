@@ -26,11 +26,9 @@
 #include <cstddef>
 
 #include "gmanbody.h"
-#include "gmanlog.h"
 #include "gmanobject.h"
 #include "gmanprimitive.h"
 #include "gmanvertex.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANObject

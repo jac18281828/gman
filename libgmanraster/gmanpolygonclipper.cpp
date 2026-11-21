@@ -27,7 +27,6 @@
 
 #include "gmanclipedge.h"
 #include "gmanface.h"
-#include "gmanlog.h"
 #include "gmanoptions.h"
 #include "gmanoutputpolygon.h"
 #include "gmanpolygonclipper.h"
@@ -35,7 +34,6 @@
 #include "gmanvertex.h"
 #include "gmanvertex4.h"
 #include "gmanviewingsystem.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANPolygonClipper

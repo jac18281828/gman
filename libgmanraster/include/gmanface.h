@@ -25,16 +25,9 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/rasterexport.h"
 #include "gmancolor.h"
-#include "gmanlog.h"
 #include "gmanray.h"
-#include "gmantypes.h"
 #include "gmanvector.h"
 #include "gmanvertex.h"
 #include "ri.h"

@@ -26,8 +26,6 @@
 
 #include <list>
 
-#include "gmanerror.h"
-#include "gmanlog.h"
 #include "gmanrenderman.h"
 #include "ri.h"
 

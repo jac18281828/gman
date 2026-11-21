@@ -26,12 +26,7 @@
 
 #include <string>
 
-#include <ctype.h>
-#include <stdio.h>
-
 #include "gmandictionary.h"
-#include "gmanerror.h"
-#include "gmanlog.h"
 #include "ri.h"
 
 namespace gman {

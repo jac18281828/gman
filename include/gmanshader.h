@@ -25,11 +25,8 @@
 
 #pragma once
 
-#include <string>
-
 #include "gman/export.h"
 #include "gmandictionary.h"
-#include "gmanlog.h"
 #include "gmanparameterlist.h"
 #include "ri.h"
 

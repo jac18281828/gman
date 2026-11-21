@@ -26,8 +26,6 @@
 #pragma once
 
 #include "gman/export.h"
-#include "gmanhpoint.h"
-#include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "ri.h"

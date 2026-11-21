@@ -25,11 +25,6 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gmanbitmap.h"
 #include "gmancolor.h"
 

@@ -29,13 +29,10 @@
 
 #pragma once
 
-#include <iostream>
 #include <stack>
 #include <vector>
 
 #include "gmanattributes.h"
-#include "gmanerror.h"
-#include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmantransform.h"

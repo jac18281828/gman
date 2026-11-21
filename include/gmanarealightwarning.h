@@ -26,7 +26,6 @@
 #include <cstddef>
 
 #include "gman/export.h"
-#include "ri.h"
 
 namespace gman {
 

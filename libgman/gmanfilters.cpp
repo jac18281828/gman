@@ -27,7 +27,6 @@
 
 #include <math.h>
 
-#include "gmanmath.h"
 #include "ri.h"
 
 /*

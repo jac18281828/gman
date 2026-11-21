@@ -29,7 +29,6 @@
 
 #include "gmanclipedge.h"
 #include "gmancolor.h"
-#include "gmanlog.h"
 #include "gmanoutputpolygon.h"
 #include "gmanvector4.h"
 #include "gmanvertex4.h"

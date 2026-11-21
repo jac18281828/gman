@@ -52,7 +52,6 @@
 #include "gmangraphicstate.h"
 #include "gmaninlineparse.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanloadablerenderer.h"
 #include "gmanlog.h"
 #include "gmanmath.h"

@@ -25,10 +25,8 @@
 
 #include "gman/export.h"
 #include "gmanloadable.h"
-#include "gmanloadablerenderer.h"
 #include "gmanraytracerenderer.h"
 #include "gmanrenderer.h"
-#include "ri.h"
 
 /* Global static data */
 
