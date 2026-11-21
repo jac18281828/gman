@@ -562,6 +562,16 @@ void checkMetric() {
   check(!converges(identical, -1.0), "G: nor at a negative threshold");
   check(!gman::slotConverged(statisticsOf(identical), std::numeric_limits<RtFloat>::quiet_NaN()),
         "G: nor at a NaN threshold");
+
+  RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
+  RtFloat const infinity = std::numeric_limits<RtFloat>::infinity();
+  std::vector<PathSample> const nanRed = {redPath(0.0f), redPath(nan), redPath(0.0f)};
+  std::vector<PathSample> const infiniteRed = {redPath(0.0f), redPath(infinity), redPath(0.0f)};
+  std::vector<PathSample> const nanAlpha = {{GMANColor(0.0f, 0.0f, 0.0f), GMANColor(nan, 0.0f, 0.0f)},
+                                            {GMANColor(0.0f, 0.0f, 0.0f), GMANColor(0.0f, 0.0f, 0.0f)}};
+  check(!converges(nanRed, kHugeThreshold), "G: a NaN radiance sample never converges");
+  check(!converges(infiniteRed, kHugeThreshold), "G: an infinite radiance sample never converges");
+  check(!converges(nanAlpha, kHugeThreshold), "G: a NaN coverage sample never converges");
 }
 
 struct FloatImage {

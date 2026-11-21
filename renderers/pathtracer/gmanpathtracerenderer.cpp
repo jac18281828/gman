@@ -108,12 +108,13 @@ bool slotConverged(SlotStatistics const& stats, RtFloat pixelVariance) {
     return false;
   }
   double const count = static_cast<double>(stats.paths);
-  double largestError = 0.0;
   for (double const deviation : stats.sumSquaredDeviation) {
     double const variance = deviation / (count - 1.0);
-    largestError = std::fmax(largestError, std::sqrt(variance / count));
+    if (!(std::sqrt(variance / count) < static_cast<double>(pixelVariance))) {
+      return false;
+    }
   }
-  return largestError < static_cast<double>(pixelVariance);
+  return true;
 }
 
 } // namespace gman
