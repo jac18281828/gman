@@ -245,7 +245,7 @@ int GMANDictionary::allocSize(GMANTokenId id, RtInt vertex, RtInt varying, RtInt
   requireNonNegative("uniform", uniform);
   requireNonNegative("facevarying", facevarying);
 
-  const auto& entry = te[id - 1];
+  auto const& entry = te[id - 1];
   const auto reject = [&entry] {
     return GMANError(
         RIE_RANGE, RIE_ERROR,

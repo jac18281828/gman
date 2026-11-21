@@ -37,6 +37,25 @@ std::string parameterName(std::string const& token) {
   return parse.isInline() ? parse.getIdentifier() : token;
 }
 
+void checkSuppliedLength(std::string const& token, RtInt size, RtInt supplied, bool counted) {
+  if (supplied < 0) {
+    throw GMANError(RIE_RANGE, RIE_ERROR,
+                    std::format("Parameter \"{}\": supplied length {} is negative", token, supplied).c_str());
+  }
+  if (counted && supplied < size) {
+    throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
+                    std::format("Parameter \"{}\": declared length {}, supplied length {}; the array is shorter than "
+                                "the request requires.",
+                                token, size, supplied)
+                        .c_str());
+  }
+  if (supplied > size) {
+    warning("Parameter \"{}\": declared length {}, supplied length {}; "
+            "truncating the excess.",
+            token, size, supplied);
+  }
+}
+
 } // namespace
 
 // Allocates one entry's array, fills it with copy, and appends it to block;
@@ -76,22 +95,7 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
 
     const auto size = di.allocSize(tid, vertex, varying, uniform, facevarying);
     const auto supplied = suppliedCounts ? suppliedCounts[i] : size;
-    if (supplied < 0) {
-      throw GMANError(RIE_RANGE, RIE_ERROR,
-                      std::format("Parameter \"{}\": supplied length {} is negative", tk[i], supplied).c_str());
-    }
-    if (suppliedCounts && supplied < size) {
-      throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
-                      std::format("Parameter \"{}\": declared length {}, supplied length {}; the array is shorter than "
-                                  "the request requires.",
-                                  tk[i], size, supplied)
-                          .c_str());
-    }
-    if (supplied > size) {
-      warning("Parameter \"{}\": declared length {}, supplied length {}; "
-              "truncating the excess.",
-              tk[i], size, supplied);
-    }
+    checkSuppliedLength(token, size, supplied, suppliedCounts != nullptr);
     auto name = parameterName(token);
     switch (di.getType(tid)) {
     case GMANTokenEntry::STRING:

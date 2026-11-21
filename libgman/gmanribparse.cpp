@@ -167,15 +167,13 @@ std::optional<Declaration> declarationOf(GMANDictionary& dictionary, std::string
   }
 }
 
-bool kindContradicts(Declaration const& declaration, LiteralKind literal) {
-  const bool declaredString = declaration.type == GMANTokenEntry::STRING;
-  return (literal == LiteralKind::string && !declaredString) || (literal == LiteralKind::number && declaredString);
-}
-
 std::string contradiction(Declaration const& declaration, LiteralKind literal, std::int64_t supplied) {
-  if (kindContradicts(declaration, literal)) {
-    return literal == LiteralKind::string ? "a string was supplied for a numeric parameter"
-                                          : "a number was supplied for a string parameter";
+  const bool declaredString = declaration.type == GMANTokenEntry::STRING;
+  if (literal == LiteralKind::string && !declaredString) {
+    return "a string was supplied for a numeric parameter";
+  }
+  if (literal == LiteralKind::number && declaredString) {
+    return "a number was supplied for a string parameter";
   }
   // The request owns the vertex, varying and uniform counts that size the
   // full array, so the parser can require only one element of the type.
