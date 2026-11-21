@@ -34,6 +34,7 @@
 #include "gmanray.h"
 #include "gmanrayinterface.h"
 #include "gmanworldmanager.h"
+#include "ri.h"
 
 /*
  * A bounding volume hierarchy over every GMANRayInterface worldManager

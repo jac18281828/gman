@@ -24,8 +24,13 @@
 #pragma once
 
 #include "gman/rayexport.h"
+#include "gmanmatrix4.h"
+#include "gmanparameterlist.h"
+#include "gmanprimitives.h"
+#include "gmanray.h"
 #include "gmanrayinterface.h"
 #include "gmantransform.h"
+#include "ri.h"
 
 class GMANRAY_EXPORT GMANRayCylinder : public GMANRayInterface, public GMANCylinder {
 public:

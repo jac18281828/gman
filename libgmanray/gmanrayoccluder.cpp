@@ -24,11 +24,17 @@
 #include <cmath>
 #include <limits>
 
+#include "gmanbbox.h"
+#include "gmancolor.h"
+#include "gmanlightsourcemgr.h"
 #include "gmanmath.h"
+#include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybbox.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 namespace {
 

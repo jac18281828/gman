@@ -23,10 +23,13 @@
 
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
 #include "gman/rayexport.h"
+#include "gmanray.h"
+#include "gmanrayinterface.h"
 #include "gmanraypolygon.h"
 
 // Every polygon request's own faces, each a GMANRayPolygon in camera

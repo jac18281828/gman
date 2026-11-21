@@ -21,7 +21,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <memory>
+#include <utility>
+#include <vector>
+
+#include "gmanpoint.h"
+#include "gmanray.h"
 #include "gmanraybbox.h"
+#include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
 
 GMANRayPolygonMesh::GMANRayPolygonMesh(std::vector<std::unique_ptr<GMANRayPolygon>> polygons)

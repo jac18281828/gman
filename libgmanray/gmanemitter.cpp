@@ -24,18 +24,27 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <numbers>
+#include <vector>
 
+#include "gmanbbox.h"
+#include "gmancolor.h"
 #include "gmanemitter.h"
 #include "gmanerror.h"
+#include "gmanlightsourcemgr.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmanprimitive.h"
 #include "gmanraybbox.h"
 #include "gmanraydisk.h"
+#include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraysphere.h"
 #include "gmanshading.h"
+#include "gmanworldmanager.h"
+#include "ri.h"
 
 namespace gman {
 

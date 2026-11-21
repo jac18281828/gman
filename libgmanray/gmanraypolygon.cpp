@@ -23,11 +23,20 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
+#include <utility>
+#include <vector>
 
+#include "gmanparameterlist.h"
+#include "gmanpoint.h"
 #include "gmanpolygon.h"
+#include "gmanprimitives.h"
+#include "gmanray.h"
 #include "gmanraybbox.h"
 #include "gmanrayfinitehit.h"
 #include "gmanraypolygon.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 namespace {
 

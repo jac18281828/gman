@@ -22,14 +22,24 @@
  */
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstddef>
 #include <limits>
 
+#include "gmanbbox.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
+#include "gmanpoint.h"
+#include "gmanprimitive.h"
+#include "gmanray.h"
 #include "gmanraybbox.h"
 #include "gmanraybvh.h"
+#include "gmanrayinterface.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanvector.h"
+#include "gmanworldmanager.h"
+#include "ri.h"
 
 namespace {
 

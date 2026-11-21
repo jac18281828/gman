@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanray.h"
 #include "gmanrayinterface.h"
 
 // A primitive with no intersector of its own answers "no hit" rather than
