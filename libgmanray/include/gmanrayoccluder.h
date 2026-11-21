@@ -24,8 +24,13 @@
 #pragma once
 
 #include "gman/rayexport.h"
+#include "gmancolor.h"
+#include "gmanlightsourcemgr.h"
 #include "gmanocclude.h"
+#include "gmanpoint.h"
 #include "gmanraybvh.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 namespace gman {
 

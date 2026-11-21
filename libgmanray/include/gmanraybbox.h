@@ -30,6 +30,7 @@
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
+#include "ri.h"
 
 namespace gman {
 

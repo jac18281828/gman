@@ -24,14 +24,19 @@
  */
 
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <span>
 #include <utility>
 #include <vector>
 
 #include "gmanobjectmanager.h"
+#include "gmanoptions.h"
+#include "gmanparameterlist.h"
+#include "gmanpoint.h"
 #include "gmanpolygon.h"
 #include "gmanpolygonmesh.h"
+#include "gmanprimitive.h"
 #include "gmanprimitives.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
@@ -45,6 +50,7 @@
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanshading.h"
+#include "gmantransform.h"
 #include "ri.h"
 
 namespace {

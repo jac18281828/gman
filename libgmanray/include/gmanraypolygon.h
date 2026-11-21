@@ -28,7 +28,13 @@
 #include <vector>
 
 #include "gman/rayexport.h"
+#include "gmanparameterlist.h"
+#include "gmanpoint.h"
+#include "gmanprimitives.h"
+#include "gmanray.h"
 #include "gmanrayinterface.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 namespace gman {
 

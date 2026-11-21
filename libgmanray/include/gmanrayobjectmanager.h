@@ -31,8 +31,13 @@
 #include <string>
 
 #include "gman/rayexport.h"
+#include "gmanattributes.h"
 #include "gmanlog.h"
 #include "gmanobjectmanager.h"
+#include "gmanoptions.h"
+#include "gmanparameterlist.h"
+#include "gmanprimitive.h"
+#include "gmantransform.h"
 #include "ri.h"
 
 /*

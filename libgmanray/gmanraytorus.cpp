@@ -26,11 +26,18 @@
 
 #include "gmanerror.h"
 #include "gmanmath.h"
+#include "gmanmatrix4.h"
+#include "gmanparameterlist.h"
+#include "gmanpoint.h"
+#include "gmanprimitives.h"
+#include "gmanray.h"
 #include "gmanraybbox.h"
 #include "gmanrayfinitehit.h"
 #include "gmanrayquartic.h"
 #include "gmanraytorus.h"
+#include "gmantransform.h"
 #include "gmanvector.h"
+#include "ri.h"
 
 namespace {
 
