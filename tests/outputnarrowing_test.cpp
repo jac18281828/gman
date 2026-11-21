@@ -22,7 +22,7 @@
  * GMANOutput::save's own pipeline: gain and gamma on colour alone, then
  * every channel -- R, G, B and coverage alpha -- rounded and dithered by
  * RISpec's Quantize rule from one draw per pixel, clamped into the
- * request's resolved range and handed to writeImage as integers at 8 or 16
+ * request's range and handed to writeImage as integers at 8 or 16
  * bits. A request the driver cannot store throws GMANError at RIE_ERROR
  * before anything is written.
  *
@@ -41,6 +41,7 @@
 #include <cstring>
 #include <functional>
 #include <limits>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -342,6 +343,38 @@ void checkReceives() {
     }
   }
 
+  // 14. Widest 8, 15 0 15 0: 0, 0.4 and 1 arrive as 0, 6 and 15, at 8 bits.
+  // 15 0 15 0.5: a 64x64 field of 0 arrives all 0, and of 1 all 15.
+  {
+    RecordingOutput out(3, 1);
+    out.setPixel(0, 0, GMANColor(0.0f, 0.0f, 0.0f));
+    out.setPixel(1, 0, GMANColor(0.4f, 0.4f, 0.4f));
+    out.setPixel(2, 0, GMANColor(1.0f, 1.0f, 1.0f));
+    out.save(GMANOutput::RGB, 1.0f, 1.0f, GMANQuantize{15, 0, 15, 0});
+    check(out.receivedBitsPerSample == 8, "receive 14: 8 bits a sample");
+    check(out.received[0] == 0, "receive 14: 0 rounds to 0");
+    check(out.received[4] == 6, "receive 14: 0.4 rounds to 6 (got " + std::to_string(out.received[4]) + ")");
+    check(out.received[8] == 15, "receive 14: 1 rounds to 15");
+
+    const int w = 64, h = 64;
+    RecordingOutput zero(w, h);
+    RecordingOutput one(w, h);
+    for (int y = 0; y < h; ++y) {
+      for (int x = 0; x < w; ++x) {
+        zero.setPixel(x, y, GMANColor(0.0f, 0.0f, 0.0f));
+        zero.setAlpha(x, y, GMANAlpha(0.0f, 0.0f, 0.0f));
+        one.setPixel(x, y, GMANColor(1.0f, 1.0f, 1.0f));
+        one.setAlpha(x, y, GMANAlpha(1.0f, 1.0f, 1.0f));
+      }
+    }
+    zero.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{15, 0, 15, 0.5});
+    one.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{15, 0, 15, 0.5});
+    check(std::all_of(zero.received.begin(), zero.received.end(), [](std::uint16_t v) { return v == 0; }),
+          "receive 14: a field of 0 arrives all 0 under dither");
+    check(std::all_of(one.received.begin(), one.received.end(), [](std::uint16_t v) { return v == 15; }),
+          "receive 14: a field of 1 arrives all 15 under dither");
+  }
+
   // A NaN colour channel quantizes as 0.0 does, so a request whose min
   // sits above 0 clamps it there rather than letting it escape the range.
   {
@@ -628,6 +661,17 @@ void checkTIFFFloatIgnoresRange() {
   }
   check(!threw, "tiff check17: one 0 with an inverted range and a negative dither does not throw");
   check(fileExists(path), "tiff check17: writes the file");
+
+  std::string const widePath = "narrow_tiff_check17_wide.tif";
+  std::remove(widePath.c_str());
+  threw = false;
+  try {
+    saveTIFF(widePath, GMANColor(0.25f, 0.25f, 0.25f), GMANQuantize{0, -1, 70000, -1});
+  } catch (GMANError const&) {
+    threw = true;
+  }
+  check(!threw, "tiff check17: one 0 with a negative min and a max past 16 bits does not throw");
+  check(fileExists(widePath), "tiff check17: writes the file for the negative min and wide max");
 }
 
 // 18. PNM's header maxval is the request's max: 255 by default, 15 for 15 0
@@ -636,10 +680,10 @@ void checkPNMMaxval() {
   struct Case {
     GMANQuantize request;
     int maxval;
-    int sample; // negative: not asserted
+    std::optional<unsigned int> sample;
   };
   Case const cases[] = {
-      {{255, 0, 255, 0.5f}, 255, -1},
+      {{255, 0, 255, 0.5f}, 255, std::nullopt},
       {{15, 0, 15, 0}, 15, 4},
       {{255, 0, 0, 0}, 1, 0},
   };
@@ -655,9 +699,9 @@ void checkPNMMaxval() {
     }
     check(img.maxval == c.maxval,
           label + " writes maxval " + std::to_string(c.maxval) + " (got " + std::to_string(img.maxval) + ")");
-    if (c.sample >= 0) {
-      check(img.at(0, 0, 0) == static_cast<unsigned int>(c.sample),
-            label + " reads 0.25 as " + std::to_string(c.sample) + " (got " + std::to_string(img.at(0, 0, 0)) + ")");
+    if (c.sample) {
+      check(img.at(0, 0, 0) == *c.sample,
+            label + " reads 0.25 as " + std::to_string(*c.sample) + " (got " + std::to_string(img.at(0, 0, 0)) + ")");
     }
   }
 }
