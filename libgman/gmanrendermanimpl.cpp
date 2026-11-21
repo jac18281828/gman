@@ -31,8 +31,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
 #include <climits>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <format>
 #include <memory>
@@ -212,6 +214,11 @@ void requireRgbColorSamples(GMANOptions const& options, char const* request) {
                               samples, DefaultColorSamples)
                       .c_str());
 }
+
+// count clamped into [0, INT_MAX]: a count too large for RtInt reaches the
+// parameter list as INT_MAX, which its sizing rejects when a parameter
+// depends on it.
+RtInt saturatedCount(std::int64_t count) { return static_cast<RtInt>(std::clamp<std::int64_t>(count, 0, INT_MAX)); }
 
 } // namespace
 
@@ -1105,8 +1112,13 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
     }
   }
 
-  RtInt nupatches = bicubicType ? (uPeriodic ? nu / uStep : 1 + (nu - 4) / uStep) : (uPeriodic ? nu : nu - 1);
-  RtInt nvpatches = bicubicType ? (vPeriodic ? nv / vStep : 1 + (nv - 4) / vStep) : (vPeriodic ? nv : nv - 1);
+  // The counts below run in 64 bits and saturate at INT_MAX when they reach
+  // the parameter list, so a mesh too large to count never wraps: the
+  // list's sizing rejects any parameter that count sizes.
+  const std::int64_t u = nu;
+  const std::int64_t v = nv;
+  std::int64_t nupatches = bicubicType ? (uPeriodic ? u / uStep : 1 + (u - 4) / uStep) : (uPeriodic ? u : u - 1);
+  std::int64_t nvpatches = bicubicType ? (vPeriodic ? v / vStep : 1 + (v - 4) / vStep) : (vPeriodic ? v : v - 1);
   if (nupatches < 0) {
     nupatches = 0;
   }
@@ -1118,15 +1130,12 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
   // count (patches+1 on a nonperiodic axis, patches on a periodic one,
   // wrapping the last strip back to row/column 0), multiplied; uniform is
   // the patch count outright.
-  RtInt uVarying = uPeriodic ? nupatches : nupatches + 1;
-  RtInt vVarying = vPeriodic ? nvpatches : nvpatches + 1;
+  const std::int64_t uVarying = uPeriodic ? nupatches : nupatches + 1;
+  const std::int64_t vVarying = vPeriodic ? nvpatches : nvpatches + 1;
 
-  RtInt vertex = nu * nv;
-  if (vertex < 0) {
-    vertex = 0;
-  }
-  RtInt varying = uVarying * vVarying;
-  RtInt uniform = nupatches * nvpatches;
+  const RtInt vertex = saturatedCount(u * v);
+  const RtInt varying = saturatedCount(uVarying * vVarying);
+  const RtInt uniform = saturatedCount(nupatches * nvpatches);
 
   GMANParameterList paramList(dictionary, n, tokens, parms, vertex, varying, uniform, 1, counts);
 
@@ -1248,11 +1257,11 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
   // RiSpec's NuPatch sizing: vertex nu*nv; with nusegments = nu-uorder+1
   // and nvsegments = nv-vorder+1, varying (nusegments+1)*(nvsegments+1),
   // uniform nusegments*nvsegments, facevarying 1.
-  const RtInt nusegments = nu - uorder + 1;
-  const RtInt nvsegments = nv - vorder + 1;
-  const RtInt vertex = nu * nv;
-  const RtInt varying = (nusegments + 1) * (nvsegments + 1);
-  const RtInt uniform = nusegments * nvsegments;
+  const std::int64_t nusegments = std::int64_t{nu} - uorder + 1;
+  const std::int64_t nvsegments = std::int64_t{nv} - vorder + 1;
+  const RtInt vertex = saturatedCount(std::int64_t{nu} * nv);
+  const RtInt varying = saturatedCount((nusegments + 1) * (nvsegments + 1));
+  const RtInt uniform = saturatedCount(nusegments * nvsegments);
 
   GMANParameterList paramList(dictionary, n, tokens, parms, vertex, varying, uniform, 1, counts);
 

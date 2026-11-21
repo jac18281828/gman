@@ -88,8 +88,12 @@ public:
 #endif
   GMANTokenEntry::TokenClass getClass(GMANTokenId id);
   GMANTokenEntry::TokenType getType(GMANTokenId id);
-  // facevarying defaults to 1 -- only PointsPolygons/PointsGeneralPolygons
-  // meshes have a real facevarying count.
+  // The element count of token id's array: its type's width times the count
+  // of its class times its quantity. facevarying defaults to 1 -- only
+  // PointsPolygons/PointsGeneralPolygons meshes have a real facevarying
+  // count. Throws GMANError RIE_RANGE at RIE_ERROR for a negative vertex,
+  // varying, uniform or facevarying, and for a result above INT_MAX, the
+  // largest count RtInt holds; a result of exactly INT_MAX is returned.
   RtInt allocSize(GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying = 1);
   RtInt getTypeSize(GMANTokenEntry::TokenType);
   RtInt getQuantity(GMANTokenId id);

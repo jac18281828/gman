@@ -23,6 +23,7 @@
  */
 
 #include <cstring>
+#include <format>
 
 #include <math.h>
 
@@ -41,6 +42,12 @@ namespace {
 // singularity before differentiating so the limit, not a division by
 // zero, is what gets normalized.
 inline double guardTangent(double v, double eps = 1e-6) { return (v < eps) ? eps : ((v > 1.0 - eps) ? 1.0 - eps : v); }
+
+void requireNonNegative(char const* name, RtInt count) {
+  if (count < 0) {
+    throw GMANError(RIE_RANGE, RIE_ERROR, std::format("Blobby: {} {} is negative", name, count).c_str());
+  }
+}
 
 } // namespace
 
@@ -69,6 +76,11 @@ RtVoid GMANBlobby::destroy() {
 GMANBlobby::GMANBlobby(RtInt nlf, RtInt ncd, RtInt cd[], RtInt nf, RtFloat f[], RtInt ns, RtString s[],
                        GMANParameterList p)
     : GMANPrimDatStorage(p) {
+  requireNonNegative("nleaf", nlf);
+  requireNonNegative("ncode", ncd);
+  requireNonNegative("nfloat", nf);
+  requireNonNegative("nstrings", ns);
+
   int i;
   counter = new int;
   *counter = 1;

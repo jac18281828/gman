@@ -23,10 +23,11 @@
  * every lookup with NULL, a present zero-length entry still answers
  * non-NULL, a copy shares its source's storage and outlives it, and a
  * construction that throws partway through frees what it had already
- * allocated.
+ * allocated. A failed allocation reports RIE_NOMEM.
  */
 
 #include <atomic>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <new>
@@ -54,9 +55,15 @@ namespace {
 // check below can tell a leak from a false pass.
 std::atomic<long> liveAllocations{0};
 
+// A request above this many bytes fails with bad_alloc without allocating.
+std::atomic<std::size_t> failAllocationsAbove{static_cast<std::size_t>(-1)};
+
 } // namespace
 
 void* operator new(std::size_t n) {
+  if (n > failAllocationsAbove.load()) {
+    throw std::bad_alloc();
+  }
   void* p = std::malloc(n != 0 ? n : 1);
   if (p == nullptr) {
     throw std::bad_alloc();
@@ -139,22 +146,11 @@ void checkCopyOutlivesSource() {
 }
 
 // RI_P is a VERTEX POINT: allocSize multiplies its type size by vertex, so
-// vertex=-1 yields a negative element count, converted to an enormous
-// size_t by the second entry's array new. Whether the library rejects it as
-// bad_array_new_length or as a failed bad_alloc is implementation-defined --
-// the former derives from the latter, so catching bad_alloc covers both.
-// The first entry's array is already allocated at that point; nothing must
-// remain live once the exception propagates.
+// vertex=-1 yields a negative element count, which allocSize rejects with
+// RIE_RANGE before P's array is allocated. The first entry's array is
+// already allocated at that point; nothing must remain live once the
+// exception propagates.
 void checkThrowingConstructionLeaksNothing() {
-#if GMAN_ADDRESS_SANITIZED
-  // AddressSanitizer instruments gman_core's own allocations directly, so
-  // this test's operator new override never runs for them; ASan's
-  // allocator hits its own maximum-request-size abort first, which no
-  // catch clause observes. The plain (non-ASan) build runs this exact
-  // check; skip the unreachable one here rather than report a false pass
-  // or bring down the whole test binary.
-  std::printf("skip: a construction that throws partway leaks nothing (ASan-built)\n");
-#else
   GMANDictionary dictionary;
 
   RtFloat ka = 1.0f;
@@ -166,13 +162,56 @@ void checkThrowingConstructionLeaksNothing() {
   bool threw = false;
   try {
     GMANParameterList pl(dictionary, 2, tokens, parms, /*vertex=*/-1);
-  } catch (std::bad_alloc const&) {
-    threw = true;
+  } catch (GMANError const& error) {
+    threw = error.getCode() == RIE_RANGE;
   }
   const auto after = liveAllocations.load();
 
-  check(threw, "a negative vertex count fails the allocation instead of succeeding");
+  check(threw, "a negative vertex count is rejected with RIE_RANGE");
   check(after == before, "a construction that throws partway leaks nothing");
+}
+
+// A failed entry allocation becomes RIE_NOMEM naming the token, with the
+// entry built before it released.
+void checkFailedAllocationReportsNoMemory() {
+#if GMAN_ADDRESS_SANITIZED
+  // AddressSanitizer instruments gman_core's own allocations directly, so
+  // this test's operator new override never runs for them. The plain
+  // (non-ASan) build runs this exact check; skip the unreachable one here
+  // rather than report a false pass.
+  std::printf("skip: a failed allocation reports RIE_NOMEM (ASan-built)\n");
+#else
+  GMANDictionary dictionary;
+
+  RtFloat ka = 1.0f;
+  RtFloat point[3] = {0.0f, 0.0f, 0.0f};
+  RtToken tokens[2] = {RI_KA, RI_P};
+  RtPointer parms[2] = {&ka, point};
+  constexpr std::size_t threshold = 1 << 20;
+  constexpr RtInt vertices = 1 << 20;
+
+  const auto before = liveAllocations.load();
+  bool threw = false;
+  RtInt code = RIE_NOERROR;
+  RtInt severity = RIE_INFO;
+  bool namesToken = false;
+  failAllocationsAbove = threshold;
+  try {
+    GMANParameterList pl(dictionary, 2, tokens, parms, vertices);
+  } catch (GMANError const& error) {
+    threw = true;
+    code = error.getCode();
+    severity = error.getSeverity();
+    namesToken = std::string(error.getMessage()).find("\"P\"") != std::string::npos;
+  }
+  failAllocationsAbove = static_cast<std::size_t>(-1);
+  const auto after = liveAllocations.load();
+
+  check(threw, "an allocation that fails throws");
+  check(code == RIE_NOMEM, "a failed allocation reports RIE_NOMEM");
+  check(severity == RIE_ERROR, "a failed allocation reports at RIE_ERROR");
+  check(namesToken, "a failed allocation names the token");
+  check(after == before, "a failed allocation leaks nothing");
 #endif
 }
 
@@ -183,6 +222,7 @@ int main() {
   checkZeroLengthEntry();
   checkCopyOutlivesSource();
   checkThrowingConstructionLeaksNothing();
+  checkFailedAllocationReportsNoMemory();
 
   return checkSummary("GMANParameterList's contract holds");
 }

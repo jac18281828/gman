@@ -167,6 +167,17 @@ set_tests_properties(paramlist PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The counts that size a parameter list: allocSize and the constructors reject
+# a negative count and one RtInt cannot hold. See
+# tests/parametercountbounds_test.cpp.
+add_executable(gman_parametercountbounds parametercountbounds_test.cpp)
+target_link_libraries(gman_parametercountbounds PRIVATE gman_core)
+
+add_test(NAME parametercountbounds COMMAND gman_parametercountbounds)
+set_tests_properties(parametercountbounds PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A shader reads a declared or inline parameter by name from a list built on
 # a dictionary of its own, and each accessor answers only its own type and
 # length. See tests/shaderparameters_test.cpp.
@@ -704,6 +715,24 @@ add_test(NAME ribintegerbounds
   COMMAND gman_ribintegerbounds $<TARGET_FILE:gman>
                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
 set_tests_properties(ribintegerbounds PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 60)
+
+# A RIB request whose declared counts no RtInt holds stops the file instead of
+# allocating for it. Each run writes malformed_out.tif into its working
+# directory. See tests/ribcountbounds_test.cpp.
+add_executable(gman_ribcountbounds ribcountbounds_test.cpp)
+target_link_libraries(gman_ribcountbounds PRIVATE gman_core TIFF::TIFF)
+
+set(GMAN_RIBCOUNTBOUNDS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribcountbounds-run")
+file(MAKE_DIRECTORY "${GMAN_RIBCOUNTBOUNDS_WORKDIR}")
+
+add_test(NAME ribcountbounds
+  COMMAND gman_ribcountbounds $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
+  WORKING_DIRECTORY "${GMAN_RIBCOUNTBOUNDS_WORKDIR}")
+set_tests_properties(ribcountbounds PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 60)

@@ -22,6 +22,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
+#include <format>
+#include <new>
+
 #include "gmaninlineparse.h"
 #include "gmanparameterlist.h"
 
@@ -37,17 +41,26 @@ std::string parameterName(std::string const& token) {
 
 // Allocates one entry's array, fills it with copy, and appends it to block;
 // copy takes the array to fill and applies whichever of copy_float/
-// copy_integer/copy_string matches T.
+// copy_integer/copy_string matches T. A failed allocation throws RIE_NOMEM
+// naming token and leaves block as it was.
 template <typename T, typename CopyFn>
-RtVoid GMANParameterList::appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name, RtInt size,
-                                      CopyFn copy) {
-  auto data = std::make_unique<T[]>(size);
-  copy(data.get());
-  block.push_back(Entry{id, std::move(name), size, std::move(data)});
+RtVoid GMANParameterList::appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name,
+                                      std::string const& token, std::size_t size, CopyFn copy) {
+  try {
+    auto data = std::make_unique<T[]>(size);
+    copy(data.get());
+    block.push_back(Entry{id, std::move(name), static_cast<RtInt>(size), std::move(data)});
+  } catch (std::bad_alloc const&) {
+    throw GMANError(RIE_NOMEM, RIE_ERROR,
+                    std::format("Parameter \"{}\": cannot allocate {} elements.", token, size).c_str());
+  }
 }
 
 GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, RtPointer* dt, RtInt vertex,
                                      RtInt varying, RtInt uniform, RtInt facevarying, const RtInt* suppliedCounts) {
+  if (n < 0) {
+    throw GMANError(RIE_RANGE, RIE_ERROR, std::format("GMANParameterList: parameter count {} is negative", n).c_str());
+  }
   auto block = std::make_shared<std::vector<Entry>>();
   block->reserve(n);
 
@@ -63,6 +76,10 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
 
     const auto size = di.allocSize(tid, vertex, varying, uniform, facevarying);
     const auto supplied = suppliedCounts ? suppliedCounts[i] : size;
+    if (supplied < 0) {
+      throw GMANError(RIE_RANGE, RIE_ERROR,
+                      std::format("Parameter \"{}\": supplied length {} is negative", tk[i], supplied).c_str());
+    }
     if (supplied < size) {
       warning("Parameter \"{}\": declared length {}, supplied length {}; "
               "clamping and zero-filling the remainder.",
@@ -75,15 +92,15 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
     auto name = parameterName(token);
     switch (di.getType(tid)) {
     case GMANTokenEntry::STRING:
-      appendEntry<std::string>(*block, tid, std::move(name), size,
+      appendEntry<std::string>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
                                [&](std::string* dest) { copy_string(size, (char**)dt[i], dest, supplied); });
       break;
     case GMANTokenEntry::INTEGER:
-      appendEntry<RtInt>(*block, tid, std::move(name), size,
+      appendEntry<RtInt>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
                          [&](RtInt* dest) { copy_integer(size, (RtInt*)dt[i], dest, supplied); });
       break;
     default:
-      appendEntry<RtFloat>(*block, tid, std::move(name), size,
+      appendEntry<RtFloat>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
                            [&](RtFloat* dest) { copy_float(size, (RtFloat*)dt[i], dest, supplied); });
       break;
     }

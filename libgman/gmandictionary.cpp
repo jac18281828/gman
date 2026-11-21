@@ -22,6 +22,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+#include <climits>
+#include <cstdint>
+#include <format>
 #ifdef DEBUG
 #include <iomanip>
 #include <iostream>
@@ -226,12 +229,33 @@ GMANTokenEntry::TokenType GMANDictionary::getType(GMANTokenId id) {
   std::vector<GMANTokenEntry>::iterator first = te.begin();
   return ((first + id - 1)->getType());
 }
+namespace {
+
+void requireNonNegative(char const* name, RtInt count) {
+  if (count < 0) {
+    throw GMANError(RIE_RANGE, RIE_ERROR, std::format("GMANDictionary: {} count {} is negative", name, count).c_str());
+  }
+}
+
+} // namespace
+
 int GMANDictionary::allocSize(GMANTokenId id, RtInt vertex, RtInt varying, RtInt uniform, RtInt facevarying) {
-  int size;
-  std::vector<GMANTokenEntry>::iterator first = te.begin();
-  first += id - 1;
-  size = getTypeSize(first->getType());
-  switch (first->getClass()) {
+  requireNonNegative("vertex", vertex);
+  requireNonNegative("varying", varying);
+  requireNonNegative("uniform", uniform);
+  requireNonNegative("facevarying", facevarying);
+
+  const auto& entry = te[id - 1];
+  const auto reject = [&entry] {
+    return GMANError(
+        RIE_RANGE, RIE_ERROR,
+        std::format("GMANDictionary: parameter \"{}\" holds more than {} elements, exceeding RtInt's range",
+                    entry.getName(), INT_MAX)
+            .c_str());
+  };
+
+  std::int64_t size = getTypeSize(entry.getType());
+  switch (entry.getClass()) {
   case GMANTokenEntry::VERTEX:
     size *= vertex;
     break;
@@ -247,8 +271,14 @@ int GMANDictionary::allocSize(GMANTokenId id, RtInt vertex, RtInt varying, RtInt
   case GMANTokenEntry::CONSTANT:
     break;
   }
-  size *= (first->getQuantity());
-  return size;
+  if (size > INT_MAX) {
+    throw reject();
+  }
+  size *= entry.getQuantity();
+  if (size > INT_MAX) {
+    throw reject();
+  }
+  return static_cast<int>(size);
 }
 int GMANDictionary::getTypeSize(GMANTokenEntry::TokenType t) {
   switch (t) {

@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <span>
 #include <string>
@@ -54,7 +55,8 @@ private:
   RtVoid copy_string(RtInt number, char** source, std::string* dest, RtInt supplied);
 
   template <typename T, typename CopyFn>
-  static RtVoid appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name, RtInt size, CopyFn copy);
+  static RtVoid appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name, std::string const& token,
+                            std::size_t size, CopyFn copy);
 
   template <typename T> std::span<T const> valuesOf(std::string_view name) const;
 
@@ -73,6 +75,11 @@ public:
   // passes real counts; a program calling the public RI API directly is
   // trusted with its own memory, and the RISpec gives no way to describe
   // an RtPointer's length regardless.
+  //
+  // Throws GMANError at RIE_ERROR: RIE_RANGE for a negative n, a negative
+  // supplied length, or a parameter whose element count GMANDictionary::
+  // allocSize rejects; RIE_NOMEM, naming the token, when an entry's
+  // allocation fails, the entries already built being released.
   GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, RtPointer* dt, RtInt vertex = 1, RtInt varying = 1,
                     RtInt uniform = 1, RtInt facevarying = 1, const RtInt* suppliedCounts = NULL);
 
