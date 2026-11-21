@@ -25,6 +25,7 @@
 
 #include <iostream>
 
+#include "gman/export.h"
 #include "gmanloadable.h"
 #include "gmanloadablerenderer.h"
 #include "gmanrenderer.h"

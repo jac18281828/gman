@@ -32,9 +32,14 @@
 #include <string>
 #include <vector>
 
+#include "gman/export.h"
+#include "gmancolor.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
+#include "gmanmatrix4.h"
 #include "gmanobjectmanager.h"
+#include "gmanoptions.h"
+#include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanrayobjectmanager.h"
@@ -43,6 +48,8 @@
 #include "gmansamplebuffer.h"
 #include "gmanshading.h"
 #include "gmantrace.h"
+#include "gmanvector.h"
+#include "gmanviewingsystem.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 

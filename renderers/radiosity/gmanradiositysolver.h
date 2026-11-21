@@ -32,6 +32,7 @@
 #include "gmanradiositymesh.h"
 #include "gmanrayoccluder.h"
 #include "gmanvector.h"
+#include "ri.h"
 
 // An element's two faces: front along its normal, back against it.
 enum class GMANRadiositySide : std::size_t { front = 0, back = 1 };

@@ -23,9 +23,15 @@
 
 #pragma once
 
+#include "gmancolor.h"
 #include "gmanindirectpass.h"
+#include "gmanoptions.h"
 #include "gmanradiositymesh.h"
 #include "gmanradiositysolver.h"
+#include "gmanray.h"
+#include "gmanrayoccluder.h"
+#include "gmanvector.h"
+#include "gmanworldmanager.h"
 
 /*
  * The ray tracer's indirect-light pass, over a GMANRadiosityMesh and one
