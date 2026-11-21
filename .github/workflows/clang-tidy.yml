@@ -54,33 +54,5 @@ jobs:
             grep -q "function '$fn'.*\[bugprone-unsafe-functions" <<< "$out" \
               || { echo "no bugprone-unsafe-functions diagnostic for $fn"; exit 1; }
           done
-      # Every production translation unit, run in parallel; any finding
-      # fails the job. tests/ is exempt (AGENTS.md) and gmansl/ builds no
-      # compile_commands.json entry to run against. compile_commands.json
-      # paths are absolute, so filtering must strip the checkout root
-      # first and anchor at ^ -- a bare directory-name search also matches
-      # this repo's own checkout directory (named after the repo, e.g.
-      # /home/runner/work/gman/gman/...), which would let every tests/
-      # entry through too.
       - name: clang-tidy over the tree
-        run: |
-          set -o pipefail
-          root="$PWD/"
-          mapfile -t files < <(
-            jq -r --arg root "$root" \
-              '.[].file
-               | select(startswith($root))
-               | ltrimstr($root)
-               | select(test("^(libgman|libgmanray|libgmanraster|libgmanrib|shaders|renderers|gman)/"))' \
-              build/compile_commands.json)
-          count="${#files[@]}"
-          echo "production translation units: $count"
-          test "$count" -gt 0 || {
-            echo "no production translation units matched the filter"
-            exit 1
-          }
-          printf '%s\n' "${files[@]}" | sed "s#^#$root#" |
-            xargs -P "$(nproc)" -I{} clang-tidy -p build \
-              --header-filter="^${root}(include|libgman|libgmanray|libgmanraster|libgmanrib|shaders|renderers|gman)/" \
-              --exclude-header-filter="^${root}(build|tests)/" \
-              {}
+        run: cmake --build build --target tidy-check
