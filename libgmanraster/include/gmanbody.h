@@ -25,13 +25,7 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gmancolor.h"
-#include "gmanlog.h"
 #include "ri.h"
 
 class GMANSurface;

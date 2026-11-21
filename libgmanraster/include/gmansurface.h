@@ -26,17 +26,11 @@
 #pragma once
 
 #include <cstddef>
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
 
+#include "gmanerror.h"
 #include "gmanface.h"
-#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
-#include "gmanvector.h"
-#include "gmanvertex.h"
 #include "ri.h"
 
 // forward declaration of body

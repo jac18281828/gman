@@ -31,15 +31,8 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/export.h"
 #include "gmanbbox.h"
-#include "gmanlog.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANPrimitive

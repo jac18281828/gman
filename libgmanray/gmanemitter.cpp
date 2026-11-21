@@ -37,7 +37,6 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanprimitive.h"
-#include "gmanraybbox.h"
 #include "gmanraydisk.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"

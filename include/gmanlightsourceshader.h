@@ -27,15 +27,10 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
 #include <vector>
 
 #include "gman/export.h"
 #include "gmancolor.h"
-#include "gmanlog.h"
 #include "gmanshader.h"
 #include "gmanshaderenvironment.h"
 #include "gmanvector.h"

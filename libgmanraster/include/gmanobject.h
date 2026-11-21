@@ -25,15 +25,9 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/rasterexport.h"
 #include "gmanbody.h"
 #include "gmanface.h"
-#include "gmanlog.h"
 #include "gmanprimitive.h"
 #include "gmanray.h"
 #include "gmansurface.h"

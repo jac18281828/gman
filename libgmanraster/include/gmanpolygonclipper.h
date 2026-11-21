@@ -25,17 +25,10 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/rasterexport.h"
 #include "gmanclipedge.h"
 #include "gmanface.h"
-#include "gmanlog.h"
 #include "gmanoutputpolygon.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANPolygonClipper

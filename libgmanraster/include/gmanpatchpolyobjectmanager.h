@@ -25,14 +25,8 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/rasterexport.h"
 #include "gmanattributes.h"
-#include "gmanlog.h"
 #include "gmanobject.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"

@@ -25,18 +25,11 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/export.h"
 #include "gmanattributes.h"
-#include "gmanlog.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitive.h"
-#include "gmanprimitives.h"
 #include "gmantransform.h"
 #include "ri.h"
 

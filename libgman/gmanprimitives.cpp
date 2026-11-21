@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include "gmanbasis.h"
+#include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"

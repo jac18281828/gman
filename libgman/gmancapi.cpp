@@ -24,7 +24,6 @@
  */
 
 #include <cstddef>
-#include <stack>
 
 #include <stdarg.h>
 

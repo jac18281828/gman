@@ -25,7 +25,6 @@
 
 #include "gmanshader.h"
 #include "gmanvolumeshader.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANVolumeShader

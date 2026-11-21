@@ -33,7 +33,6 @@
 
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
-#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanslapi.h"
 #include "gmanvector.h"

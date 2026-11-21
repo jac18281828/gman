@@ -24,7 +24,6 @@
  */
 #pragma once
 
-#include <iostream>
 #include <string>
 
 #include "gman/export.h"

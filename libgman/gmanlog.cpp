@@ -28,7 +28,6 @@
 #include <string_view>
 
 #include "gmanlog.h"
-#include "ri.h"
 
 /* log state */
 static GMANLogLevel logLevel = LOGLVL_INFO;

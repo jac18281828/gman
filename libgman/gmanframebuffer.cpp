@@ -26,7 +26,6 @@
 #include "gmanbitmap.h"
 #include "gmancolor.h"
 #include "gmanframebuffer.h"
-#include "gmanlog.h"
 
 /*
  * RenderMan API GMANFrameBuffer

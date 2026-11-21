@@ -29,8 +29,8 @@
 #include <map>
 #include <string>
 
+#include "gmanerror.h"
 #include "gmanloadable.h"
-#include "gmanlog.h"
 #include "ri.h"
 
 /*

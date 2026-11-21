@@ -25,13 +25,8 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
 #include <type_traits>
 
-#include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmantypes.h"
 #include "ri.h"

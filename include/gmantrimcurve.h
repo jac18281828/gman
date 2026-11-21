@@ -25,7 +25,6 @@
 #pragma once
 
 #include "gman/export.h"
-#include "gmanlog.h"
 #include "ri.h"
 
 class GMAN_EXPORT GMANTrimCurve {

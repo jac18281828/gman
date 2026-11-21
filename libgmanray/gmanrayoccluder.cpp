@@ -30,7 +30,6 @@
 #include "gmanmath.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
-#include "gmanraybbox.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanvector.h"

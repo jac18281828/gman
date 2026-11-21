@@ -25,7 +25,6 @@
 
 #include "gmanimagershader.h"
 #include "gmanshader.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANImagerShader

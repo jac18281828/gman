@@ -41,6 +41,7 @@
 #include "check.h"
 #include "gmandictionary.h"
 #include "gmanerror.h"
+#include "gmanlog.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 

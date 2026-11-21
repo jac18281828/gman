@@ -26,7 +26,6 @@
 #include <string>
 
 #include "gmancolor.h"
-#include "gmanmath.h"
 #include "gmannoise.h"
 #include "gmanpoint.h"
 #include "gmanshaderenvironment.h"

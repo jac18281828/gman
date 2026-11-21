@@ -27,7 +27,6 @@
 
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
-#include "gmanlinearworldmanager.h"
 #include "gmanloadable.h"
 #include "gmanloadablerenderer.h"
 #include "gmanobjectmanager.h"

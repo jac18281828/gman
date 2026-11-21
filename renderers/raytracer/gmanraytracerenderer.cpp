@@ -39,7 +39,6 @@
 #include "gmanparallel.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
-#include "gmanraybbox.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraytracerenderer.h"

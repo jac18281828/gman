@@ -25,12 +25,6 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
-#include "gmanlog.h"
 #include "gmanoutputpolygon.h"
 #include "gmanvector4.h"
 #include "gmanvertex4.h"

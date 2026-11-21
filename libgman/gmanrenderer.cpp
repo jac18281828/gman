@@ -28,7 +28,6 @@
 #include <cmath>
 #include <numbers>
 
-#include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmanrenderer.h"
 #include "gmanvector.h"

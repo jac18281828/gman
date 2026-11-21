@@ -25,7 +25,6 @@
 #include "gmanascii.h"
 #include "gmanloadable.h"
 #include "gmanrenderman.h"
-#include "ri.h"
 
 /* Global static data */
 

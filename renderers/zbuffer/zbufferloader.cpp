@@ -23,14 +23,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <iostream>
-
 #include "gman/export.h"
 #include "gmanloadable.h"
-#include "gmanloadablerenderer.h"
 #include "gmanrenderer.h"
 #include "gmanzbufferrenderer.h"
-#include "ri.h"
 
 /* Global static data */
 

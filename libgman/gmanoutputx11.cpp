@@ -26,7 +26,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "gmandefaults.h"
 #include "gmanlog.h"
 #include "gmanoutput.h"
 #include "gmanoutputx11.h"

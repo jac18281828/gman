@@ -29,21 +29,12 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
 #include "gman/export.h"
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
-#include "gmanlinearworldmanager.h"
-#include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
-#include "gmanprimitives.h"
-#include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
 #include "gmanworldmanager.h"

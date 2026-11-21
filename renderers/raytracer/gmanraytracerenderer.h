@@ -25,17 +25,12 @@
 
 #pragma once
 
-#include <list>
-#include <map>
 #include <memory>
-#include <stack>
-#include <string>
 #include <vector>
 
 #include "gman/export.h"
 #include "gmancolor.h"
 #include "gmanlinearworldmanager.h"
-#include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"

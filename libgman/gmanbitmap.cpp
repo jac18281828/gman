@@ -30,7 +30,6 @@
 #include "gmancolor.h"
 #include "gmandefaults.h"
 #include "gmanerror.h"
-#include "gmanlog.h"
 #include "ri.h"
 
 /*

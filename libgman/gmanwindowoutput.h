@@ -25,14 +25,7 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <stack>
-#include <string>
-
-#include "gmanlog.h"
 #include "gmanoutput.h"
-#include "ri.h"
 
 namespace gman {
 

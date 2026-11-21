@@ -23,9 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include "gmanlog.h"
 #include "gmanworldmanager.h"
-#include "ri.h"
 
 /*
  * RenderMan API GMANWorldManager

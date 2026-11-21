@@ -29,7 +29,6 @@
 
 #include "gmancolor.h"
 #include "gmanquantize.h"
-#include "gmantypes.h"
 #include "ri.h"
 
 namespace gman {

@@ -25,7 +25,7 @@
 #pragma once
 
 #include "gman/rayexport.h"
-#include "gmanprimitives.h"
+#include "gmanprimitive.h"
 #include "gmanray.h"
 #include "gmanshading.h"
 

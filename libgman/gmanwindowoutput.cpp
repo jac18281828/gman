@@ -25,7 +25,6 @@
 
 #include "gmanoutput.h"
 #include "gmanwindowoutput.h"
-#include "ri.h"
 
 namespace gman {
 

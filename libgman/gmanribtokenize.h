@@ -26,11 +26,9 @@
 #pragma once
 
 #include <cctype>
-#include <fstream>
 #include <istream>
 #include <string>
 
-#include "gmanlog.h"
 #include "ri.h"
 
 // jac 03/31/2002
