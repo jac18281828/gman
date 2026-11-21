@@ -77,11 +77,11 @@ struct FrameSize {
   RtInt height;
 };
 
-constexpr FrameSize kDirectSize{48, 32};
+constexpr FrameSize kDirectSize{32, 24};
 constexpr FrameSize kScalingSize{384, 256};
-constexpr FrameSize kBoxSize{32, 32};
+constexpr FrameSize kBoxSize{24, 24};
 constexpr FrameSize kTextureSize{24, 16};
-constexpr FrameSize kReflectionSize{32, 32};
+constexpr FrameSize kReflectionSize{24, 24};
 
 constexpr RtFloat kDirectPixelSamples = 2.0f;
 constexpr RtFloat kScalingPixelSamples = 8.0f;
