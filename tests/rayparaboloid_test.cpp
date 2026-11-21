@@ -26,6 +26,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "check.h"
 #include "gmanray.h"
@@ -117,7 +118,7 @@ void testFarRootFromInside() {
   GMANRay ray(GMANPoint(0.0, 0.0, 0.5), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   bool const hitFound = paraboloid.intersect(ray, hit);
   check(hitFound && near(hit.t, invSqrt2), "far root: a ray from inside the paraboloid hits the far wall");
   check(near(hit.point.getX(), invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.5),
@@ -136,15 +137,13 @@ void testRotatingTransform() {
   GMANRay ray(GMANPoint(0.5, 0.0, 0.0), GMANVector(0.0, 0.0, -1.0));
   GMANHit hit;
 
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   bool const hitFound = paraboloid.intersect(ray, hit);
   check(hitFound && near(hit.t, invSqrt2), "rotation: t == 1/sqrt(2)");
   check(near(hit.point.getX(), 0.5) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), -invSqrt2),
         "rotation: point == (0.5, 0, -1/sqrt(2))");
-  RtFloat const sqrt3 = (RtFloat)std::sqrt(3.0);
-  RtFloat const sqrt2 = (RtFloat)std::sqrt(2.0);
-  check(near(hit.normal.getX(), -1.0 / sqrt3) && near(hit.normal.getY(), 0.0) &&
-            near(hit.normal.getZ(), -sqrt2 / sqrt3),
+  check(near(hit.normal.getX(), -1.0 / std::numbers::sqrt3_v<RtFloat>) && near(hit.normal.getY(), 0.0) &&
+            near(hit.normal.getZ(), -std::numbers::sqrt2_v<RtFloat> / std::numbers::sqrt3_v<RtFloat>),
         "rotation: normal == (-1, 0, -sqrt(2))/sqrt(3)");
 }
 
@@ -159,7 +158,7 @@ void testShearTransform() {
   GMANRay ray(GMANPoint(1.0, 0.0, 0.5), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   bool const hitFound = paraboloid.intersect(ray, hit);
   check(hitFound && near(hit.t, invSqrt2), "shear: t == 1/sqrt(2)");
   check(near(hit.point.getX(), 1.0 + invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.5),

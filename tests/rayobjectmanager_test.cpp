@@ -26,6 +26,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "check.h"
 #include "gmanattributes.h"
@@ -94,13 +95,13 @@ void testNonUniformScaleNormal() {
   if (sphere == nullptr)
     return;
 
-  RtFloat const sqrt2 = (RtFloat)std::sqrt(2.0);
   RtFloat const sqrt5 = (RtFloat)std::sqrt(5.0);
-  GMANRay ray(GMANPoint(sqrt2, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
+  GMANRay ray(GMANPoint(std::numbers::sqrt2_v<RtFloat>, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit hit;
   bool const hitFound = sphere->intersect(ray, hit);
-  check(hitFound && near(hit.t, 5.0 - sqrt2 / 2.0), "non-uniform scale: t == 5 - sqrt(2)/2");
-  check(near(hit.point.getX(), sqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), -sqrt2 / 2.0),
+  check(hitFound && near(hit.t, 5.0 - std::numbers::sqrt2_v<RtFloat> / 2.0), "non-uniform scale: t == 5 - sqrt(2)/2");
+  check(near(hit.point.getX(), std::numbers::sqrt2_v<RtFloat>) && near(hit.point.getY(), 0.0) &&
+            near(hit.point.getZ(), -std::numbers::sqrt2_v<RtFloat> / 2.0),
         "non-uniform scale: point == (sqrt(2), 0, -sqrt(2)/2)");
   check(near(hit.normal.getX(), 1.0 / sqrt5) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), -2.0 / sqrt5),
         "non-uniform scale: normal == (1/sqrt(5), 0, -2/sqrt(5)), not the forward-transformed "

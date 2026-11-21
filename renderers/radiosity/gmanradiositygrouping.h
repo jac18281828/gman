@@ -25,6 +25,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <numbers>
 #include <vector>
 
 #include "gmanmath.h"
@@ -40,8 +41,8 @@ namespace gman {
 // 6: irrational ratios keep a regular grid's own projections apart, so a
 // window near the tolerance holds little besides truly coincident points.
 inline double const kNodeGroupSweepX = 1 / std::sqrt(6.0);
-inline double const kNodeGroupSweepY = 1 / std::sqrt(3.0);
-inline double const kNodeGroupSweepZ = 1 / std::sqrt(2.0);
+inline double const kNodeGroupSweepY = std::numbers::inv_sqrt3;
+inline double const kNodeGroupSweepZ = 1 / std::numbers::sqrt2;
 
 inline double nodeGroupSweepProjection(GMANPoint const& p) {
   return kNodeGroupSweepX * (double)p.getX() + kNodeGroupSweepY * (double)p.getY() +

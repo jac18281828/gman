@@ -31,6 +31,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "check.h"
 #include "gmanray.h"
@@ -56,7 +57,7 @@ void testAcrossAxisHit() {
   GMANRay ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   bool const hitFound = hyperboloid.intersect(ray, hit);
   check(hitFound, "across axis: a ray toward the axis hits the segment's midpoint radius");
   check(near(hit.t, 5.0 - invSqrt2), "across axis: t == 5 - 1/sqrt(2)");
@@ -137,7 +138,7 @@ void testFarRootFromInside() {
   GMANRay ray(GMANPoint(0.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   bool const hitFound = hyperboloid.intersect(ray, hit);
   check(hitFound && near(hit.t, invSqrt2), "far root: a ray from inside the segment's radius hits the far wall");
   check(near(hit.point.getX(), invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
@@ -155,7 +156,7 @@ void testDescendingSegment() {
   GMANRay ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   bool const hitFound = hyperboloid.intersect(ray, hit);
   check(hitFound && near(hit.t, 5.0 - invSqrt2), "descending: t == 5 - 1/sqrt(2), the same physical wall");
   check(near(hit.point.getX(), -invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
@@ -176,7 +177,7 @@ void testRotatingTransform() {
   GMANRay ray(GMANPoint(0.0, 0.0, 5.0), GMANVector(0.0, 0.0, -1.0));
   GMANHit hit;
 
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   bool const hitFound = hyperboloid.intersect(ray, hit);
   check(hitFound && near(hit.t, 5.0 - invSqrt2), "rotation: t == 5 - 1/sqrt(2)");
   check(near(hit.point.getX(), 0.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), invSqrt2),
@@ -201,7 +202,7 @@ void testShearTransform() {
   GMANRay ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   bool const hitFound = hyperboloid.intersect(ray, hit);
   check(hitFound && near(hit.t, 5.0 - invSqrt2), "shear: t == 5 - 1/sqrt(2)");
   check(near(hit.point.getX(), -invSqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
@@ -226,10 +227,11 @@ void testUniformScale() {
   GMANRay ray(GMANPoint(-10.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  RtFloat const sqrt2 = (RtFloat)std::sqrt(2.0);
   bool const hitFound = hyperboloid.intersect(ray, hit);
-  check(hitFound && near(hit.t, 10.0 - sqrt2), "uniform scale: t == 10 - sqrt(2), the camera-space distance");
-  check(near(hit.point.getX(), -sqrt2) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
+  check(hitFound && near(hit.t, 10.0 - std::numbers::sqrt2_v<RtFloat>),
+        "uniform scale: t == 10 - sqrt(2), the camera-space distance");
+  check(near(hit.point.getX(), -std::numbers::sqrt2_v<RtFloat>) && near(hit.point.getY(), 0.0) &&
+            near(hit.point.getZ(), 0.0),
         "uniform scale: point == (-sqrt(2), 0, 0)");
   check(near(hit.normal.getX(), -1.0) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), 0.0),
         "uniform scale: normal == (-1, 0, 0), unchanged by a uniform scale");

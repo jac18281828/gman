@@ -26,6 +26,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "check.h"
 #include "gmanray.h"
@@ -68,8 +69,8 @@ void testOffAxisRoundTrip() {
   check(hitFound, "off-axis: the ray hits the radius-2 cylinder");
   // theta == 150 degrees: sqrt(4 - 1) == sqrt(3), so the wall sits at
   // x == -sqrt(3), y == 1.
-  RtFloat const sqrt3 = (RtFloat)std::sqrt(3.0);
-  check(near(hit.point.getX(), -sqrt3) && near(hit.point.getY(), 1.0) && near(hit.point.getZ(), 1.0),
+  check(near(hit.point.getX(), -std::numbers::sqrt3_v<RtFloat>) && near(hit.point.getY(), 1.0) &&
+            near(hit.point.getZ(), 1.0),
         "off-axis: point == (-sqrt(3), 1, 1)");
 
   GMANPoint const roundTrip = cylinder.getLocation(hit.u, hit.v);

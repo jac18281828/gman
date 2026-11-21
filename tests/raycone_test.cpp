@@ -28,6 +28,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "check.h"
 #include "gmanray.h"
@@ -53,7 +54,7 @@ void testAxialHit() {
   check(near(hit.t, 6.0), "axial: t == 6");
   check(near(hit.point.getX(), 0.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 1.0),
         "axial: point == (0, 0, 1), the apex");
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   check(near(hit.normal.getX(), invSqrt2) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), invSqrt2),
         "axial: normal == (1, 0, 1)/sqrt(2)");
 }
@@ -70,7 +71,7 @@ void testGeneratrixParallelHit() {
 
   bool const hitFound = cone.intersect(ray, hit);
   check(hitFound, "generatrix-parallel: a ray parallel to the theta == 0 generatrix hits");
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   check(near(hit.t, invSqrt2), "generatrix-parallel: t == 1/sqrt(2)");
   check(near(hit.point.getX(), -0.5) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.5),
         "generatrix-parallel: point == (-0.5, 0, 0.5)");
@@ -162,7 +163,7 @@ void testRotatingTransform() {
   check(hitFound && near(hit.t, 4.5), "rotation: t == 4.5");
   check(near(hit.point.getX(), 0.5) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.5),
         "rotation: point == (0.5, 0, 0.5)");
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   check(near(hit.normal.getX(), invSqrt2) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), invSqrt2),
         "rotation: normal == (1, 0, 1)/sqrt(2)");
 }
@@ -204,7 +205,7 @@ void testUniformScale() {
   check(hitFound && near(hit.t, 12.0), "uniform scale: t == 12, the camera-space distance to the doubled apex");
   check(near(hit.point.getX(), 0.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 2.0),
         "uniform scale: point == (0, 0, 2)");
-  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::sqrt(2.0));
+  RtFloat const invSqrt2 = (RtFloat)(1.0 / std::numbers::sqrt2);
   check(near(hit.normal.getX(), invSqrt2) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), invSqrt2),
         "uniform scale: normal == (1, 0, 1)/sqrt(2)");
 }

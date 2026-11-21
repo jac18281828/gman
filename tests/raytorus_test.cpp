@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <numbers>
 #include <string>
 
 #include "check.h"
@@ -514,7 +515,6 @@ void testNoSpeckle() {
   double const majorradius = 1.0, minorradius = 0.3;
   GMANRayTorus torus(majorradius, minorradius, 0.0, 360.0, 360.0, GMANParameterList());
 
-  double const invSqrt3 = 1.0 / std::sqrt(3.0);
   struct Viewpoint {
     char const* name;
     GMANPoint point;
@@ -525,9 +525,13 @@ void testNoSpeckle() {
       {"edge on, 5 major radii in the xy-plane", GMANPoint(5.0, 0.0, 0.0), true},
       {"level with the tube's top, 5 major radii out", GMANPoint(5.0, 0.0, (RtFloat)minorradius), false},
       {"300 major radii away, off-axis",
-       GMANPoint((RtFloat)(300.0 * invSqrt3), (RtFloat)(300.0 * invSqrt3), (RtFloat)(300.0 * invSqrt3)), false},
+       GMANPoint((RtFloat)(300.0 * std::numbers::inv_sqrt3), (RtFloat)(300.0 * std::numbers::inv_sqrt3),
+                 (RtFloat)(300.0 * std::numbers::inv_sqrt3)),
+       false},
       {"10,000 major radii away, off-axis",
-       GMANPoint((RtFloat)(10000.0 * invSqrt3), (RtFloat)(10000.0 * invSqrt3), (RtFloat)(10000.0 * invSqrt3)), false},
+       GMANPoint((RtFloat)(10000.0 * std::numbers::inv_sqrt3), (RtFloat)(10000.0 * std::numbers::inv_sqrt3),
+                 (RtFloat)(10000.0 * std::numbers::inv_sqrt3)),
+       false},
   };
 
   for (auto const& vp : viewpoints) {
