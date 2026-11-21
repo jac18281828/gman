@@ -46,11 +46,13 @@
  * primitive count winning, the lower axis then the lower bin on a tie. A
  * range with no centroid extent, no split of finite cost, or no split whose
  * children both fit within the levels left, splits at the object median
- * instead, and no tree grows deeper than the traversal stack holds. nearestHit then traverses the tree it built,
- * touching only that tree and a local stack -- const, re-entrant, no shared mutable state of its own, the same contract
- * GMANRayInterface::intersect and GMANRayOccluder::transmission keep, which is what lets a caller invoke any of the
- * three from concurrent gman::parallelFor workers. GMANRAY_EXPORT, along with GMANRayOccluder: the path tracer's own
- * API.
+ * instead, and no tree grows deeper than the traversal stack holds.
+ * nearestHit then traverses the tree it built, touching only that tree and
+ * a local stack -- const, re-entrant, no shared mutable state of its own,
+ * the same contract GMANRayInterface::intersect and
+ * GMANRayOccluder::transmission keep, which is what lets a caller invoke
+ * any of the three from concurrent gman::parallelFor workers.
+ * GMANRAY_EXPORT, along with GMANRayOccluder: the path tracer's own API.
  */
 class GMANRAY_EXPORT GMANRayBVH {
 public:
