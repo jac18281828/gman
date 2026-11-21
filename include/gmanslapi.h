@@ -105,6 +105,7 @@ template <class T> T GMANBezierSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = 1 + (nvals - 4) / 3;
   RtInt ptr;
   value = GMANSplineSegment(value, nbSeg, ptr);
+  const RtInt first = ptr * RI_BEZIERSTEP;
   RtFloat vv = value * value;
   RtFloat vvv = vv * value;
 
@@ -114,7 +115,7 @@ template <class T> T GMANBezierSpline(RtFloat value, RtInt nvals, T fvals[]) {
   c2 = -3.0 * vvv + 3.0 * vv;
   c3 = vvv;
 
-  return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
+  return (fvals[first] * c0 + fvals[first + 1] * c1 + fvals[first + 2] * c2 + fvals[first + 3] * c3);
 }
 
 template <class T> T GMANBsplineSpline(RtFloat value, RtInt nvals, T fvals[]) {
@@ -137,6 +138,7 @@ template <class T> T GMANHermiteSpline(RtFloat value, RtInt nvals, T fvals[]) {
   RtInt nbSeg = 1 + (nvals - 4) / 2;
   RtInt ptr;
   value = GMANSplineSegment(value, nbSeg, ptr);
+  const RtInt first = ptr * RI_HERMITESTEP;
   RtFloat vv = value * value;
   RtFloat vvv = vv * value;
 
@@ -146,7 +148,7 @@ template <class T> T GMANHermiteSpline(RtFloat value, RtInt nvals, T fvals[]) {
   c2 = -2.0 * vvv + 3.0 * vv;
   c3 = vvv - vv;
 
-  return (fvals[ptr] * c0 + fvals[ptr + 1] * c1 + fvals[ptr + 2] * c2 + fvals[ptr + 3] * c3);
+  return (fvals[first] * c0 + fvals[first + 1] * c1 + fvals[first + 2] * c2 + fvals[first + 3] * c3);
 }
 
 template <class T> T GMANLinearSpline(RtFloat value, RtInt nvals, T fvals[]) {

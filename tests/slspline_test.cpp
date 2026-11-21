@@ -21,7 +21,8 @@
 /*
  * The shading-language spline family: the uniform cubic B-spline's values, and
  * each basis reading only its control values at and beyond the ends of [0, 1],
- * and GMANSurfaceEnv::spline's dispatch on the basis name.
+ * GMANSurfaceEnv::spline's dispatch on the basis name, and the Bezier and Hermite
+ * segments starting at their basis's step.
  */
 
 #include <cmath>
@@ -172,6 +173,23 @@ void testUnknownBasisThrows() {
   }
 }
 
+void checkSegmentWalk(char const* name, SplineFunction spline, std::vector<RtFloat> const& values,
+                      std::vector<RtFloat> const& expected) {
+  const std::vector<RtFloat> positions{0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    std::vector<RtFloat> exact = values;
+    check(near(spline(positions[i], static_cast<RtInt>(exact.size()), exact.data()), expected[i]),
+          std::string(name) + " at value " + std::to_string(positions[i]) + " is " + std::to_string(expected[i]));
+  }
+}
+
+void testSegmentsStartAtTheirStep() {
+  checkSegmentWalk("bezier", GMANBezierSpline<RtFloat>, {0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f},
+                   {0.0f, 1.5f, 3.0f, 4.5f, 6.0f});
+  checkSegmentWalk("hermite", GMANHermiteSpline<RtFloat>, {0.0f, 0.0f, 1.0f, 0.0f, 3.0f, 0.0f},
+                   {0.0f, 0.5f, 1.0f, 2.0f, 3.0f});
+}
+
 } // namespace
 
 int main() {
@@ -181,8 +199,9 @@ int main() {
   testBsplineNames();
   testEachNameMatchesItsTemplate();
   testUnknownBasisThrows();
+  testSegmentsStartAtTheirStep();
 
   return checkSummary("the shading-language spline family evaluates the uniform cubic B-spline and stays within its "
                       "control values at and beyond the ends of [0, 1], and spline() accepts the six basis names and "
-                      "throws on any other");
+                      "throws on any other, and Bezier and Hermite segments start at their step");
 }
