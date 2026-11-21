@@ -27,7 +27,10 @@
 #include <limits>
 #include <string>
 
+#include "gmandictionary.h"
+#include "gmanerror.h"
 #include "gmaninlineparse.h"
+#include "ri.h"
 
 namespace gman {
 

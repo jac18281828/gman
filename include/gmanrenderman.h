@@ -29,6 +29,7 @@
 
 #include <stack>
 
+#include "gman/export.h"
 #include "gmandictionary.h"
 #include "ri.h"
 

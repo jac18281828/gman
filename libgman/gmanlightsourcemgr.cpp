@@ -26,11 +26,17 @@
  */
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <list>
+#include <map>
 
+#include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlog.h"
+#include "gmanpoint.h"
 #include "gmanslapi.h"
+#include "gmanvector.h"
 #include "ri.h"
 
 namespace {

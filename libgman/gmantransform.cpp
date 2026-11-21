@@ -60,10 +60,16 @@
   Anyway, this is not a problem, since samples are not limited.
 */
 
+#include <cstddef>
 #include <utility>
 #include <vector>
 
+#include "gmanlog.h"
+#include "gmanmatrix4.h"
+#include "gmanpoint.h"
 #include "gmantransform.h"
+#include "gmanvector4.h"
+#include "ri.h"
 
 // MATRIX STORAGE
 GMANMatrixStorage::~GMANMatrixStorage() {};

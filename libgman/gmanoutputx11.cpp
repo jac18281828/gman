@@ -23,9 +23,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstdint>
+#include <vector>
+
 #include "gmandefaults.h"
+#include "gmanlog.h"
 #include "gmanoutput.h"
 #include "gmanoutputx11.h"
+#include "gmanwindowoutput.h"
 #include "ri.h"
 
 namespace gman {

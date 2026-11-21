@@ -21,9 +21,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <memory>
+
+#include "gmandictionary.h"
+#include "gmanmatrix4.h"
+#include "gmanoptions.h"
+#include "gmanviewingsystem.h"
 #include "gmanviewingsysteminputs.h"
 #include "gmanvsorthographic.h"
 #include "gmanvsperspective.h"
+#include "ri.h"
 
 namespace gman {
 

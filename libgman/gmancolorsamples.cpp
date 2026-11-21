@@ -24,6 +24,8 @@
  */
 
 #include "gmancolorsamples.h"
+#include "gmandefaults.h"
+#include "ri.h"
 
 RtVoid GMANColorSamples::copy(RtInt n, RtFloat* ncolor, RtFloat* colorn) {
   for (int i = 0; i < n; i++) {

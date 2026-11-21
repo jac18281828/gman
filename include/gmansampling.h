@@ -25,6 +25,7 @@
 
 #include <cstdint>
 
+#include "gman/export.h"
 #include "gmanvector.h"
 #include "ri.h"
 

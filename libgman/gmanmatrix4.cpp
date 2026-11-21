@@ -25,9 +25,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
+#include "gmanerror.h"
+#include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
+#include "ri.h"
 
 GMANMatrix4::GMANMatrix4() { identity(); }
 

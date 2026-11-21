@@ -32,6 +32,7 @@
 #include <stack>
 #include <string>
 
+#include "gman/export.h"
 #include "gmancolor.h"
 #include "gmanlog.h"
 #include "gmanpoint.h"

@@ -24,6 +24,9 @@
  */
 
 #include <csetjmp>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include <stdio.h>
 extern "C" {

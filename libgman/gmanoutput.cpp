@@ -25,18 +25,24 @@
 
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "gmanbitmap.h"
+#include "gmancolor.h"
 #include "gmandefaults.h"
 #include "gmanerror.h"
 #include "gmanfiledrivers.h"
+#include "gmanframebuffer.h"
+#include "gmangamma.h"
 #include "gmanoutput.h"
 #include "gmanoutputnarrow.h"
 #include "gmanoutputpnm.h"
+#include "gmanquantize.h"
 #include "gmansampling.h"
 #include "ri.h"
 

@@ -26,8 +26,12 @@
  */
 
 #include "gmanbsdf.h"
+#include "gmancolor.h"
+#include "gmanmath.h"
 #include "gmanshader.h"
+#include "gmanshaderenvironment.h"
 #include "gmansurfaceshader.h"
+#include "gmanvector.h"
 #include "ri.h"
 #ifdef DEBUG
 #include "gmanerror.h"

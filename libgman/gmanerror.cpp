@@ -27,9 +27,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 #include "gmanerror.h"
+#include "ri.h"
 
 // Global variable
 RtErrorHandler GMANErrorHandler = (*RiErrorPrint);
@@ -155,7 +158,7 @@ RtVoid RiErrorPrint(RtInt cd, RtInt sev, const char* msg) {
 RtVoid RiErrorAbort(RtInt cd, RtInt sev, const char* msg) {
   RiLastError = cd;
   print(cd, sev, msg);
-  abort();
+  std::abort();
 }
 #ifdef __cplusplus
 }

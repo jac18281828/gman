@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include "gman/export.h"
 #include "gmancolor.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"

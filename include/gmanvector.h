@@ -26,8 +26,11 @@
 #pragma once
 
 #include <cmath>
+#include <cstddef>
 
+#include "gman/export.h"
 #include "gmanlog.h"
+#include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmantypes.h"
 #include "ri.h"

@@ -32,6 +32,7 @@
 #include <variant>
 #include <vector>
 
+#include "gman/export.h"
 #include "gmandictionary.h"
 #include "gmanerror.h"
 #include "gmanlog.h"

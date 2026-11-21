@@ -23,6 +23,7 @@
 
 #include <atomic>
 #include <exception>
+#include <functional>
 #include <mutex>
 #include <stop_token>
 #include <thread>

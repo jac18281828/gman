@@ -26,6 +26,7 @@
 #include <memory>
 #include <vector>
 
+#include "gman/export.h"
 #include "gmanbsdf.h"
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"

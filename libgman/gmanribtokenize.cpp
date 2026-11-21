@@ -25,6 +25,8 @@
 
 #include <cctype>
 #include <climits> /* INT_MAX -- not transitive via libstdc++ */
+#include <cstdlib>
+#include <istream>
 #include <limits>
 #include <string>
 

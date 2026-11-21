@@ -30,7 +30,10 @@
 #include <stack>
 #include <string>
 
+#include "gman/export.h"
 #include "gmanlog.h"
+#include "gmannormal.h"
+#include "gmanpoint.h"
 #include "gmanshader.h"
 #include "gmanshaderenvironment.h"
 #include "ri.h"

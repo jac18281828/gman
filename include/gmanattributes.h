@@ -27,6 +27,7 @@
 #include <memory>
 #include <string>
 
+#include "gman/export.h"
 #include "gmanbasis.h"
 #include "gmanbbox.h"
 #include "gmancolor.h"

@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 
+#include "gman/export.h"
 #include "gmanerror.h"
 #include "gmanlog.h"
 #include "gmanrenderman.h"

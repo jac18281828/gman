@@ -27,6 +27,7 @@
 
 #include <math.h>
 
+#include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "ri.h"

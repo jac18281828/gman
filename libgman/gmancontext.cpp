@@ -22,11 +22,15 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+#include <list>
 #include <string_view>
 
 #include "gmancontext.h"
+#include "gmanerror.h"
 #include "gmanloadablerenderman.h"
+#include "gmanrenderman.h"
 #include "gmanrendermanimpl.h"
+#include "ri.h"
 
 namespace gman {
 

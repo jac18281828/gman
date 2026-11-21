@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "gman/export.h"
 #include "gmanlog.h"
 #include "gmanpoint.h"
 #include "gmantypes.h"

@@ -27,6 +27,7 @@
 
 #include "gmanlightsourceshader.h"
 #include "gmanshader.h"
+#include "gmanvector.h"
 #include "ri.h"
 #ifdef DEBUG
 #include "gmanerror.h"

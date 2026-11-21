@@ -24,10 +24,12 @@
 #include <cmath>
 #include <cstddef>
 
+#include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanframebuffer.h"
 #include "gmanmath.h"
 #include "gmansamplebuffer.h"
+#include "gmantypes.h"
 #include "ri.h"
 
 /*

@@ -25,6 +25,10 @@
 #include <climits>
 #include <cstdint>
 #include <format>
+#include <string>
+#include <vector>
+
+#include "ri.h"
 #ifdef DEBUG
 #include <iomanip>
 #include <iostream>

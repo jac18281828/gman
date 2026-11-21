@@ -23,7 +23,10 @@
  */
 
 #include "gmanhpoint.h"
+#include "gmanmatrix4.h"
+#include "gmanpoint.h"
 #include "gmanvector4.h"
+#include "ri.h"
 
 RtVoid GMANHPoint::wToOne() {
   w = 1.0 / w;

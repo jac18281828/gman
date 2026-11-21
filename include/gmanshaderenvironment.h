@@ -28,9 +28,12 @@
 #pragma once
 
 #include <cmath>
+#include <cstddef>
 #include <format>
+#include <string>
 #include <vector>
 
+#include "gman/export.h"
 #include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanlightsourcemgr.h"

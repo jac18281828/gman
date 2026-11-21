@@ -24,7 +24,9 @@
  */
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
+#include <vector>
 
 #include "gmanerror.h"
 #include "gmanoutput.h"

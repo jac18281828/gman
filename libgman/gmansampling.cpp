@@ -28,6 +28,7 @@
 #include <numbers>
 
 #include "gmansampling.h"
+#include "gmanvector.h"
 #include "ri.h"
 
 namespace gman {

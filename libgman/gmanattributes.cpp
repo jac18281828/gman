@@ -22,7 +22,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <utility>
+
 #include "gmanattributes.h"
+#include "gmanloadableshader.h"
+#include "gmanmatrix4.h"
+#include "gmanparameterlist.h"
+#include "gmanshader.h"
+#include "gmansurfaceshader.h"
+#include "gmantrimcurve.h"
+#include "ri.h"
 
 namespace {
 constexpr auto NCOMPS = 3;

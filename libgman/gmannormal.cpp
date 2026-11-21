@@ -28,6 +28,8 @@
 #include <math.h>
 
 #include "gmannormal.h"
+#include "gmanpoint.h"
+#include "gmanvector.h"
 #include "ri.h"
 
 /*

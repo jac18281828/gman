@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "gman/export.h"
 #include "gmanlog.h"
 #include "ri.h"
 

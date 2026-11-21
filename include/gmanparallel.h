@@ -25,6 +25,7 @@
 
 #include <functional>
 
+#include "gman/export.h"
 #include "ri.h"
 
 namespace gman {

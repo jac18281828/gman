@@ -25,12 +25,17 @@
 #include <cstring>
 #include <format>
 #include <numbers>
+#include <vector>
 
 #include <math.h>
 
+#include "gmanbasis.h"
 #include "gmanmath.h"
+#include "gmanparameterlist.h"
+#include "gmanpoint.h"
 #include "gmanprimitives.h"
 #include "gmanvector.h"
+#include "ri.h"
 
 namespace {
 

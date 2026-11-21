@@ -25,8 +25,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+#include <memory>
+#include <string>
+#include <utility>
+
+#include "gmancolorsamples.h"
 #include "gmandefaults.h"
+#include "gmanloadableshader.h"
+#include "gmanmath.h"
+#include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanparameterlist.h"
+#include "gmanshader.h"
+#include "ri.h"
 
 namespace {
 

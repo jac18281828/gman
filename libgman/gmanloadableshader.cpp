@@ -24,12 +24,20 @@
  */
 
 #include <cctype>
+#include <cstddef>
 #include <memory>
 #include <string>
 
+#include "gmandisplacementshader.h"
 #include "gmanerror.h"
+#include "gmanimagershader.h"
+#include "gmanlightsourceshader.h"
+#include "gmanloadable.h"
 #include "gmanloadableshader.h"
+#include "gmanparameterlist.h"
 #include "gmanshader.h"
+#include "gmansurfaceshader.h"
+#include "gmanvolumeshader.h"
 #include "ri.h"
 
 /*
