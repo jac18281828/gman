@@ -1,0 +1,12 @@
+## PixelVariance, then Clipping and a Sphere, so a mis-counted read
+## desyncs the next parse. Not third-party.
+Display "pixelvariance.tif" "file" "rgba"
+Format 16 16 1
+PixelSamples 1 1
+Projection "perspective" "fov" [45]
+PixelVariance 0.05
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

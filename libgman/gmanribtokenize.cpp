@@ -202,6 +202,8 @@ const GMANToken GMANRIBTokenize::parseKeyword(std::istream& ribFile) {
     return GMANToken(GMANToken::RI_SCREEN_WINDOW);
   } else if (!strcasecmp(tokenChars, "pixelSamples")) {
     return GMANToken(GMANToken::RI_PIXEL_SAMPLES);
+  } else if (!strcasecmp(tokenChars, "pixelVariance")) {
+    return GMANToken(GMANToken::RI_PIXEL_VARIANCE);
   } else if (!strcasecmp(tokenChars, "depthOfField")) {
     return GMANToken(GMANToken::RI_DEPTH_OF_FIELD);
   } else if (!strcasecmp(tokenChars, "shutter")) {

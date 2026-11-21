@@ -232,6 +232,7 @@ private:
   RtVoid parseOrientation(RtVoid);
   RtVoid parseReverseOrientation(RtVoid);
   RtVoid parsePixelSamples(RtVoid);
+  RtVoid parsePixelVariance(RtVoid);
   RtVoid parseExposure(RtVoid);
   RtVoid parseQuantize(RtVoid);
   RtVoid parseDepthOfField(RtVoid);

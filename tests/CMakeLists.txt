@@ -810,6 +810,18 @@ set_tests_properties(paramliteraltype PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# RIB's PixelVariance reaches GMANOptions, which reads 0 when none is set. See
+# tests/ribpixelvariance_test.cpp.
+add_executable(gman_ribpixelvariance ribpixelvariance_test.cpp)
+target_link_libraries(gman_ribpixelvariance PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME ribpixelvariance
+  COMMAND gman_ribpixelvariance "${CMAKE_CURRENT_SOURCE_DIR}/rib")
+set_tests_properties(ribpixelvariance PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A RIB parameter supplied with fewer values than one element of its declared
 # type is dropped with a logged error. See tests/paramshortcount_test.cpp.
 add_executable(gman_paramshortcount paramshortcount_test.cpp)

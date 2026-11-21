@@ -164,7 +164,7 @@ private:
   GMANMatrix4 cameraToWorld;
 
   /******* DISPLAY OPTIONS *******/
-  RtFloat pixelVariance;
+  RtFloat pixelVariance = 0;
   PixelSamplesStruct pixelSamples;
   PixelFilterStruct pixelFilter;
   ExposureStruct exposure;
@@ -244,6 +244,8 @@ public:
 
   /******* DISPLAY OPTIONS *******/
   RtVoid setPixelVariance(RtFloat var);
+  // The allowed error of a pixel's estimate, absolute and in linear output;
+  // 0 until RiPixelVariance sets it, which asks for no early stop.
   RtFloat getPixelVariance(RtVoid) const { return pixelVariance; };
 
   RtVoid setPixelSamples(RtFloat xsamples, RtFloat ysamples);

@@ -340,6 +340,10 @@ RtVoid GMANRIBParse::parseStream(RtVoid) {
       debug("Keyword token: PixelSamples");
       parsePixelSamples();
       break;
+    case GMANToken::RI_PIXEL_VARIANCE:
+      debug("Keyword token: PixelVariance");
+      parsePixelVariance();
+      break;
     case GMANToken::RI_EXPOSURE:
       debug("Keyword token: Exposure");
       parseExposure();
@@ -794,6 +798,13 @@ RtVoid GMANRIBParse::parsePixelSamples(RtVoid) {
   RtFloat ysamples = nextFloat();
 
   renderMan.RiPixelSamples(xsamples, ysamples);
+}
+
+RtVoid GMANRIBParse::parsePixelVariance(RtVoid) {
+
+  RtFloat variance = nextFloat();
+
+  renderMan.RiPixelVariance(variance);
 }
 
 RtVoid GMANRIBParse::parseExposure(RtVoid) {
