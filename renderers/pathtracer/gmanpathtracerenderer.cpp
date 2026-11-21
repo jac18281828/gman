@@ -92,25 +92,25 @@ EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, b
 }
 
 void addPath(SlotStatistics& stats, GMANColor const& L, GMANColor const& alphaHat) {
-  std::array<double, SlotStatistics::kQuantities> const values = {
+  std::array<double, SlotStatistics::kChannels> const values = {
       L.getRed(), L.getGreen(), L.getBlue(), alphaHat.getRed(), alphaHat.getGreen(), alphaHat.getBlue()};
   ++stats.paths;
   double const count = static_cast<double>(stats.paths);
-  for (std::size_t q = 0; q < SlotStatistics::kQuantities; ++q) {
+  for (std::size_t q = 0; q < SlotStatistics::kChannels; ++q) {
     double const delta = values[q] - stats.mean[q];
     stats.mean[q] += delta / count;
-    stats.sumSquaredDeviation[q] += delta * (values[q] - stats.mean[q]);
+    stats.sumSquaredDeviations[q] += delta * (values[q] - stats.mean[q]);
   }
 }
 
-bool slotConverged(SlotStatistics const& stats, RtFloat pixelVariance) {
+bool slotConverged(SlotStatistics const& stats, RtFloat tolerance) {
   if (stats.paths < 2) {
     return false;
   }
   double const count = static_cast<double>(stats.paths);
-  for (double const deviation : stats.sumSquaredDeviation) {
-    double const variance = deviation / (count - 1.0);
-    if (!(std::sqrt(variance / count) < static_cast<double>(pixelVariance))) {
+  for (double const sumSquares : stats.sumSquaredDeviations) {
+    double const variance = sumSquares / (count - 1.0);
+    if (!(std::sqrt(variance / count) < static_cast<double>(tolerance))) {
       return false;
     }
   }
@@ -653,19 +653,19 @@ struct SlotResult {
   std::uint32_t paths = 0;
 };
 
-// When a slot stops: it checks gman::slotConverged against pixelVariance
-// after every interval-th path while fewer than N have run. An interval of
-// N or more never checks.
-struct StopSchedule {
-  RtFloat pixelVariance;
-  std::uint32_t interval;
+// When a slot stops: it checks gman::slotConverged against tolerance after
+// every batchSize-th path while fewer than N have run. A batchSize of N or
+// more never checks.
+struct StoppingRule {
+  RtFloat tolerance;
+  std::uint32_t batchSize;
 };
 
-bool checkDue(std::uint32_t traced, std::uint32_t N, StopSchedule const& stop) {
-  return traced < N && traced % stop.interval == 0;
+bool atBatchEnd(std::uint32_t traced, std::uint32_t N, StoppingRule const& stop) {
+  return traced < N && traced % stop.batchSize == 0;
 }
 
-void tally(SlotResult& result, gman::SlotStatistics& stats, PathResult const& path) {
+void accumulatePath(SlotResult& result, gman::SlotStatistics& stats, PathResult const& path) {
   ++result.paths;
   // The sole guard keeping a non-finite path's channels out of a slot's sums.
   if (!path.finite) {
@@ -678,7 +678,7 @@ void tally(SlotResult& result, gman::SlotStatistics& stats, PathResult const& pa
   gman::addPath(stats, path.L, path.alphaHat);
 }
 
-std::uint32_t defaultCheckInterval(std::uint32_t N) {
+std::uint32_t defaultBatchSize(std::uint32_t N) {
   std::uint32_t root = static_cast<std::uint32_t>(std::sqrt(static_cast<double>(N)));
   while (static_cast<std::uint64_t>(root) * root < N) {
     ++root;
@@ -686,9 +686,9 @@ std::uint32_t defaultCheckInterval(std::uint32_t N) {
   return GMANMax(root, 2u);
 }
 
-std::uint32_t checkInterval(GMANOptions const& options, std::uint32_t N) {
+std::uint32_t batchSize(GMANOptions const& options, std::uint32_t N) {
   GMANOptions::NamedOptionValue const* const named = options.getNamedOption("pathtracer", "minsamples");
-  std::uint32_t const fallback = defaultCheckInterval(N);
+  std::uint32_t const fallback = defaultBatchSize(N);
   if (named == nullptr) {
     return fallback;
   }
@@ -704,7 +704,7 @@ std::uint32_t checkInterval(GMANOptions const& options, std::uint32_t N) {
 SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                       GMANViewingSystem const* viewingSys, GMANMatrix4 const& cameraToWorld,
                       GMANColor const& background, gman::TextureCache* textureCache, RtInt sx, RtInt sy, int xsamples,
-                      int ysamples, std::uint32_t N, StopSchedule const& stop, bool misEnabled) {
+                      int ysamples, std::uint32_t N, StoppingRule const& stop, bool misEnabled) {
   SlotResult result;
   gman::SlotStatistics stats;
   for (std::uint32_t i = 0; i < N; ++i) {
@@ -721,8 +721,8 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& e
       result.anyHit = true;
     }
 
-    tally(result, stats, path);
-    if (checkDue(result.paths, N, stop) && gman::slotConverged(stats, stop.pixelVariance)) {
+    accumulatePath(result, stats, path);
+    if (atBatchEnd(result.paths, N, stop) && gman::slotConverged(stats, stop.tolerance)) {
       break;
     }
   }
@@ -737,7 +737,7 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& e
 // worker that runs it.
 void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem const* viewingSys,
                GMANMatrix4 const& cameraToWorld, GMANOptions::RasterInfo const& raster, RtInt width, int xsamples,
-               int ysamples, std::uint32_t N, StopSchedule const& stop, GMANColor const& background,
+               int ysamples, std::uint32_t N, StoppingRule const& stop, GMANColor const& background,
                gman::TextureCache& textureCache, int py, GMANSampleBuffer& sampleBuffer,
                std::vector<std::uint32_t>& slotPaths, std::size_t& dropped, bool misEnabled) {
   int const subsPerColumn = xsamples * ysamples;
@@ -797,7 +797,7 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   int const ysamples = GMANMax(1, (int)GMANRound(ps.ysamples));
   std::uint32_t const N = (std::uint32_t)GMANMax(1, options.getPathtracerSamples());
   RtFloat const pixelVariance = options.getPixelVariance();
-  StopSchedule const stop{pixelVariance, checkInterval(options, N)};
+  StoppingRule const stop{pixelVariance, batchSize(options, N)};
 
   GMANColor const background = options.getBackground();
   sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, background));

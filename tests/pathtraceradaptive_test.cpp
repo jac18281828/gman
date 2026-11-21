@@ -91,11 +91,11 @@ constexpr RtInt kWidth = 24;
 constexpr RtInt kHeight = 16;
 constexpr RtInt kMaximum = 16;
 constexpr RtInt kShortMaximum = 10;
-constexpr RtInt kScheduleEvery = 3;
-constexpr RtInt kExplicitEvery = 5;
+constexpr RtInt kScheduleBatch = 3;
+constexpr RtInt kExplicitBatch = 5;
 constexpr RtInt kBelowTwo = 1;
 constexpr RtInt kBeyondMaximum = 20;
-constexpr std::uint32_t kDefaultInterval = 4;
+constexpr std::uint32_t kDefaultBatch = 4;
 constexpr std::uint32_t kFlatProbeCounts[] = {1, 2, 4};
 
 constexpr RtFloat kPositiveVariance = 0.01f;
@@ -404,14 +404,14 @@ void checkFlatStopsEarly(FloorScene& flat) {
   std::vector<std::size_t> const backgroundSlots = flat.backgroundSlots();
 
   Frame const byDefault = flat.render(kMaximum, kPositiveVariance);
-  check(allCountsAre(byDefault, floorSlots, kDefaultInterval), "B: flat slots trace exactly the default minimum");
-  check(allCountsAre(byDefault, backgroundSlots, kDefaultInterval),
+  check(allCountsAre(byDefault, floorSlots, kDefaultBatch), "B: flat slots trace exactly the default minimum");
+  check(allCountsAre(byDefault, backgroundSlots, kDefaultBatch),
         "B: background slots trace exactly the default minimum");
 
-  Frame const explicitMinimum = flat.render(kMaximum, kPositiveVariance, integerOption(kExplicitEvery));
-  check(allCountsAre(explicitMinimum, floorSlots, kExplicitEvery),
+  Frame const explicitMinimum = flat.render(kMaximum, kPositiveVariance, integerOption(kExplicitBatch));
+  check(allCountsAre(explicitMinimum, floorSlots, kExplicitBatch),
         "B: flat slots trace exactly an explicit minsamples");
-  check(allCountsAre(explicitMinimum, backgroundSlots, kExplicitEvery),
+  check(allCountsAre(explicitMinimum, backgroundSlots, kExplicitBatch),
         "B: background slots trace exactly an explicit minsamples");
 }
 
@@ -444,13 +444,13 @@ void checkDivisor(FloorScene& flat) {
     stoppedMean = stoppedMean && colorsClose(stopped.pixels[slot], single.pixels[slot], kMeanTolerance);
     fullMean = fullMean && colorsClose(full.pixels[slot], single.pixels[slot], kMeanTolerance);
   }
-  check(allCountsAre(stopped, floorSlots, kDefaultInterval), "D setup: the flat slots stopped early");
+  check(allCountsAre(stopped, floorSlots, kDefaultBatch), "D setup: the flat slots stopped early");
   check(stoppedMean, "D: a flat slot that stopped early reads its path's radiance");
   check(fullMean, "D: the same slot at PixelVariance 0 agrees");
 }
 
-void checkSchedule(FloorScene& flat, FloorScene& noisy) {
-  Frame const scheduled = noisy.render(kMaximum, kScheduleVariance, integerOption(kScheduleEvery));
+void checkStopsFallOnBatchEnds(FloorScene& noisy) {
+  Frame const scheduled = noisy.render(kMaximum, kScheduleVariance, integerOption(kScheduleBatch));
   std::set<std::uint32_t> const allowed = {3, 6, 9, 12, 15, 16};
   std::set<std::uint32_t> seen;
   for (std::uint32_t const count : scheduled.counts) {
@@ -465,29 +465,34 @@ void checkSchedule(FloorScene& flat, FloorScene& noisy) {
   check(onSchedule, "E: with minsamples 3 and N 16 every count lies in {3, 6, 9, 12, 15, 16}");
   check(seen.contains(3) && seen.contains(kMaximum), "E setup: counts of 3 and 16 both occur");
   check(midway, "E setup: some slot stops at a count of 9 or more below 16, between two checks");
+}
 
+void checkDefaultBatchSize(FloorScene& flat) {
   flat.render(kMaximum, 0.0f);
   std::vector<std::size_t> const floorSlots = flat.floorSlots();
   Frame const shortRun = flat.render(kShortMaximum, kPositiveVariance);
-  check(allCountsAre(shortRun, floorSlots, kDefaultInterval), "E: unset minsamples at N 10 stops flat slots at 4");
+  check(allCountsAre(shortRun, floorSlots, kDefaultBatch), "E: unset minsamples at N 10 stops flat slots at 4");
   check(!shortRun.log.empty() && shortRun.log.find("minsamples") == std::string::npos,
         "E: an unset minsamples warns of nothing");
   Frame const longRun = flat.render(kMaximum, kPositiveVariance);
-  check(allCountsAre(longRun, floorSlots, kDefaultInterval), "E: unset minsamples at N 16 stops flat slots at 4");
+  check(allCountsAre(longRun, floorSlots, kDefaultBatch), "E: unset minsamples at N 16 stops flat slots at 4");
+}
 
+void checkBadMinsamplesWarns(FloorScene& flat) {
+  flat.render(kMaximum, 0.0f);
+  std::vector<std::size_t> const floorSlots = flat.floorSlots();
   Frame const belowTwo = flat.render(kMaximum, kPositiveVariance, integerOption(kBelowTwo));
-  check(countOccurrences(belowTwo.log, minsamplesWarning(kDefaultInterval)) == 1,
+  check(countOccurrences(belowTwo.log, minsamplesWarning(kDefaultBatch)) == 1,
         "E: minsamples 1 warns once, naming the default");
-  check(allCountsAre(belowTwo, floorSlots, kDefaultInterval), "E: minsamples 1 takes the default");
+  check(allCountsAre(belowTwo, floorSlots, kDefaultBatch), "E: minsamples 1 takes the default");
 
   Minsamples const floats = GMANOptions::NamedOptionValue{std::vector<RtFloat>{3.0f}};
   Frame const wrongType = flat.render(kMaximum, kPositiveVariance, floats);
-  check(countOccurrences(wrongType.log, minsamplesWarning(kDefaultInterval)) == 1,
+  check(countOccurrences(wrongType.log, minsamplesWarning(kDefaultBatch)) == 1,
         "E: a minsamples that is not an integer warns once");
-  check(allCountsAre(wrongType, floorSlots, kDefaultInterval),
-        "E: a minsamples that is not an integer takes the default");
+  check(allCountsAre(wrongType, floorSlots, kDefaultBatch), "E: a minsamples that is not an integer takes the default");
 
-  Frame const valid = flat.render(kMaximum, kPositiveVariance, integerOption(kScheduleEvery));
+  Frame const valid = flat.render(kMaximum, kPositiveVariance, integerOption(kScheduleBatch));
   check(valid.log.find("minsamples") == std::string::npos, "E: a valid minsamples warns of nothing");
 
   Frame const atMaximum = flat.render(kMaximum, kPositiveVariance, integerOption(kMaximum));
@@ -702,7 +707,9 @@ int runChecks() {
   checkFlatStopsEarly(flat);
   checkNoisyRunsToMaximum(noisy);
   checkDivisor(flat);
-  checkSchedule(flat, noisy);
+  checkStopsFallOnBatchEnds(noisy);
+  checkDefaultBatchSize(flat);
+  checkBadMinsamplesWarns(flat);
   checkInfoLine(noisy);
   checkMetric();
 

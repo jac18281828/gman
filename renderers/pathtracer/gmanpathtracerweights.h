@@ -101,15 +101,15 @@ enum class EmitterHitEligibility { eligible, weighted, suppressed };
 EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, bool isDelta, bool isTransmission);
 
 // The running mean and sum of squared deviations, in double, of the six
-// quantities one slot's paths estimate: the radiance's red, green and blue,
+// channels one slot's paths estimate: the radiance's red, green and blue,
 // then the coverage estimate's. Empty when default-constructed; addPath
 // extends it one path at a time, in path order.
 struct SlotStatistics {
-  static constexpr std::size_t kQuantities = 6;
+  static constexpr std::size_t kChannels = 6;
 
   std::size_t paths = 0;
-  std::array<double, kQuantities> mean{};
-  std::array<double, kQuantities> sumSquaredDeviation{};
+  std::array<double, kChannels> mean{};
+  std::array<double, kChannels> sumSquaredDeviations{};
 };
 
 // Adds one path's radiance L and coverage estimate alphaHat to stats. A
@@ -118,11 +118,11 @@ struct SlotStatistics {
 void addPath(SlotStatistics& stats, GMANColor const& L, GMANColor const& alphaHat);
 
 // True exactly when stats holds at least two paths and the largest of the
-// six quantities' standard errors is strictly below pixelVariance. A
-// quantity's standard error is sqrt(s^2 / n) for its unbiased sample
-// variance s^2 over the n paths added, so it is absolute, in the output's
-// own linear units. The comparison is strict, so a pixelVariance of 0, a
-// negative one and NaN are never met.
-bool slotConverged(SlotStatistics const& stats, RtFloat pixelVariance);
+// six channels' standard errors is strictly below tolerance. A channel's
+// standard error is sqrt(s^2 / n) for its unbiased sample variance s^2 over
+// the n paths added, so it is absolute, in the output's own linear units.
+// The comparison is strict, so a tolerance of 0, a negative one and NaN are
+// never met, and a non-finite statistic is never converged.
+bool slotConverged(SlotStatistics const& stats, RtFloat tolerance);
 
 } // namespace gman
