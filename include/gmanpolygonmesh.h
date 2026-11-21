@@ -28,6 +28,8 @@
 #include <span>
 #include <vector>
 
+#include "gman/export.h"
+#include "gmandictionary.h"
 #include "gmanparameterlist.h"
 #include "ri.h"
 

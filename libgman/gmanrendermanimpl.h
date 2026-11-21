@@ -27,6 +27,7 @@
 
 #include <memory>
 
+#include "gman/export.h"
 #include "gmandictionary.h"
 #include "gmanframebuffer.h"
 #include "gmangraphicstate.h"
@@ -36,6 +37,7 @@
 #include "gmanrenderer.h"
 #include "gmanrenderman.h"
 #include "gmanviewingsystem.h"
+#include "gmanworldmanager.h"
 #include "ri.h"
 
 /*

@@ -27,7 +27,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <vector>
+
+#include "gmanerror.h"
 #include "gmangraphicstate.h"
+#include "gmanmatrix4.h"
+#include "gmantransform.h"
+#include "ri.h"
 
 // OPTIONS
 GMANGraphicState::CommandIdentity GMANGraphicState::cmdFormat = {B | F, 0, 0, 0};

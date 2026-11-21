@@ -23,10 +23,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
 #include <stack>
 
 #include <stdarg.h>
 
+#include "gman/export.h"
 #include "gmancontext.h"
 #include "gmanerror.h"
 #include "gmangetarguments.h"

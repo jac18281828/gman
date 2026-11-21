@@ -24,8 +24,10 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
+#include "gman/export.h"
 #include "gmanattributes.h"
 #include "gmanbasis.h"
 #include "gmanlog.h"
@@ -34,6 +36,7 @@
 #include "gmanpoint.h"
 #include "gmanprimitive.h"
 #include "gmantransform.h"
+#include "gmanvector.h"
 #include "ri.h"
 
 class GMAN_EXPORT GMANParametric : public virtual GMANPrimitive {

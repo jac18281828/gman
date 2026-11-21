@@ -30,9 +30,17 @@
 #include <stack>
 #include <string>
 
+#include "gmanattributes.h"
+#include "gmanframebuffer.h"
 #include "gmanloadable.h"
 #include "gmanlog.h"
+#include "gmanobjectmanager.h"
+#include "gmanoptions.h"
+#include "gmanpoint.h"
 #include "gmanrenderer.h"
+#include "gmanvector.h"
+#include "gmanviewingsystem.h"
+#include "gmanworldmanager.h"
 #include "ri.h"
 
 /*

@@ -26,10 +26,16 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <map>
+#include <string>
+#include <vector>
 
+#include "gmancolor.h"
 #include "gmanlog.h"
+#include "gmanoutputtiff.h"
 #include "gmantexture.h"
 #include "gmantiff.h"
+#include "ri.h"
 
 namespace gman {
 

@@ -25,6 +25,7 @@
 
 #include <cstdio>
 #include <mutex>
+#include <string_view>
 
 #include "gmanlog.h"
 #include "ri.h"

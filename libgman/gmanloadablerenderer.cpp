@@ -23,9 +23,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
+
+#include "gmanattributes.h"
+#include "gmanframebuffer.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanloadable.h"
 #include "gmanloadablerenderer.h"
+#include "gmanobjectmanager.h"
+#include "gmanoptions.h"
 #include "gmanrenderer.h"
+#include "gmanviewingsystem.h"
+#include "gmanworldmanager.h"
 #include "ri.h"
 
 /*

@@ -25,10 +25,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
 #include <numbers>
 
 #include "gmanlog.h"
+#include "gmanpoint.h"
 #include "gmanrenderer.h"
+#include "gmanvector.h"
 #include "ri.h"
 
 /*

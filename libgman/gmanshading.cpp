@@ -23,15 +23,23 @@
 
 #include <algorithm>
 #include <list>
+#include <memory>
 
 #include "gmanattributes.h"
 #include "gmanbbox.h"
+#include "gmanbsdf.h"
+#include "gmanlightsourcemgr.h"
 #include "gmanloadableshader.h"
 #include "gmanmath.h"
+#include "gmanmatrix4.h"
+#include "gmanocclude.h"
 #include "gmanprimitive.h"
+#include "gmanray.h"
 #include "gmanshaderenvironment.h"
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
+#include "gmantrace.h"
+#include "ri.h"
 
 namespace gman {
 

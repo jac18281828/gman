@@ -35,6 +35,7 @@
 
 #include <math.h>
 
+#include "gman/export.h"
 #include "gmancolor.h"
 #include "gmancolorsamples.h"
 #include "gmandefaults.h"

@@ -34,6 +34,7 @@
 #include <stack>
 #include <string>
 
+#include "gman/export.h"
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
 #include "gmanlinearworldmanager.h"

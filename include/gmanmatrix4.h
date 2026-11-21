@@ -26,6 +26,9 @@
 
 #pragma once
 
+#include <cstddef>
+
+#include "gman/export.h"
 #include "gmanerror.h"
 #include "gmanlog.h"
 #include "gmanmath.h"

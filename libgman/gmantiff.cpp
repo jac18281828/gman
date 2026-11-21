@@ -21,6 +21,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
+
+#include "gmanoutputtiff.h"
 #include "gmantiff.h"
 
 // The tree's one <tiffio.h>. Every other production file reaches a TIFF only

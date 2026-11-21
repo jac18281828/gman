@@ -36,6 +36,7 @@
 #include "gmanattributes.h"
 #include "gmanerror.h"
 #include "gmanlog.h"
+#include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmantransform.h"
 #include "ri.h"

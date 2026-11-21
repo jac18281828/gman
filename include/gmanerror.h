@@ -27,6 +27,7 @@
 #include <iostream>
 #include <string>
 
+#include "gman/export.h"
 #include "ri.h"
 
 class GMAN_EXPORT GMANError {

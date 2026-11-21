@@ -31,6 +31,7 @@
 #include <string>
 
 #include "gmanbitmap.h"
+#include "gmancolor.h"
 
 // the filter object forward declaration
 class GMANFilter;

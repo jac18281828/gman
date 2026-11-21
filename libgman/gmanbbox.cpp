@@ -25,6 +25,8 @@
 
 #include "gmanbbox.h"
 #include "gmanmath.h"
+#include "gmanpoint.h"
+#include "ri.h"
 
 /*
  * RenderMan API GMANBBox

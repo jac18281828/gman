@@ -21,7 +21,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
+#include <utility>
+#include <vector>
+
+#include "gmandictionary.h"
+#include "gmanparameterlist.h"
+#include "gmanpoint.h"
 #include "gmanpolygon.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 namespace {
 

@@ -21,12 +21,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
 #include <numbers>
+#include <string>
 
+#include "gmancolor.h"
 #include "gmanmath.h"
 #include "gmannoise.h"
+#include "gmanpoint.h"
 #include "gmanshaderenvironment.h"
 #include "gmantexture.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 namespace {
 

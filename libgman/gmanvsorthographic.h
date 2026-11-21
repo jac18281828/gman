@@ -25,7 +25,10 @@
 #pragma once
 
 #include "gmanmatrix4.h"
+#include "gmanoptions.h"
+#include "gmanray.h"
 #include "gmanviewingsystem.h"
+#include "ri.h"
 
 namespace gman {
 

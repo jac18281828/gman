@@ -24,13 +24,19 @@
  */
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
+#include "gmanbitmap.h"
+#include "gmancolor.h"
 #include "gmandefaults.h"
+#include "gmanframebuffer.h"
+#include "gmangamma.h"
 #include "gmanlog.h"
 #include "gmanoutput.h"
 #include "gmanoutputnarrow.h"
+#include "gmanquantize.h"
 #include "gmansampling.h"
 #include "ri.h"
 

@@ -18,7 +18,9 @@
  */
 
 #include "gmanhpoint.h"
+#include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "ri.h"
 
 GMANPoint::GMANPoint(GMANHPoint& p) {
   p.wToOne();

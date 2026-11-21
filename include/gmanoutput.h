@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 
+#include "gmancolor.h"
 #include "gmanframebuffer.h"
 #include "gmangamma.h"
 #include "gmanlog.h"

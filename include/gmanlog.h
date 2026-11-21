@@ -29,6 +29,7 @@
 #include <string_view>
 #include <utility>
 
+#include "gman/export.h"
 #include "ri.h"
 
 /*

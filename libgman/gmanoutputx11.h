@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <list>
 #include <map>
 #include <stack>
@@ -32,6 +33,7 @@
 #include <vector>
 
 #include "gmanlog.h"
+#include "gmanoutput.h"
 #include "gmanwindowoutput.h"
 #include "ri.h"
 

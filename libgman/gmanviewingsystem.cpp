@@ -23,7 +23,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gmanmatrix4.h"
+#include "gmanpoint.h"
+#include "gmanray.h"
 #include "gmanviewingsystem.h"
+#include "ri.h"
 
 RtVoid GMANViewingSystem::screenToRaster(RtFloat& x, RtFloat& y) const {
   x = xres * (x - sw.left) / (sw.right - sw.left);

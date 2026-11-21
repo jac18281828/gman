@@ -23,6 +23,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <csetjmp>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <ctime>
+#include <vector>
 extern "C" {
 #include <png.h>
 #include <zlib.h>

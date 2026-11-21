@@ -29,7 +29,9 @@
 
 #include "gmanbsdf.h"
 #include "gmancolor.h"
+#include "gmanmath.h"
 #include "gmanparameterlist.h"
+#include "ri.h"
 
 namespace gmanshader {
 

@@ -27,6 +27,7 @@
 
 #include <cmath>
 
+#include "gman/export.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanpoint.h"

@@ -28,19 +28,30 @@
 #include <cstring> /* strcmp, memcpy -- libstdc++ does not pull these in
                       * transitively the way libc++ does */
 #include <filesystem>
+#include <format>
 #include <fstream>
+#include <ios>
+#include <istream>
+#include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <string>
 #include <system_error>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 #include <zlib.h>
 
+#include "gmandefaults.h"
 #include "gmandictionary.h"
+#include "gmanerror.h"
 #include "gmanlog.h"
+#include "gmanrenderman.h"
 #include "gmanribparse.h"
+#include "gmanribtokenize.h"
 #include "ri.h"
 // the concrete renderer: dispatchWithCounts (below) dynamic_casts to it to
 // reach each request's counts-aware overload

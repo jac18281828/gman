@@ -23,9 +23,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
+
 #include "gmanbasis.h"
 #include "gmanmath.h"
+#include "gmanpoint.h"
+#include "gmanvector.h"
 #include "gmanvector4.h"
+#include "ri.h"
 
 RtBasis RiBezierBasis = {{-1, 3, -3, 1}, {3, -6, 3, 0}, {-3, 3, 0, 0}, {1, 0, 0, 0}};
 

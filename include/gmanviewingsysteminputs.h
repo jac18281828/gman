@@ -26,6 +26,7 @@
 #include <memory>
 #include <string>
 
+#include "gman/export.h"
 #include "gmandictionary.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"

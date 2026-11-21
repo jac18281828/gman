@@ -24,10 +24,21 @@
 
 #include <cstddef>
 #include <format>
+#include <memory>
 #include <new>
+#include <span>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <variant>
+#include <vector>
 
+#include "gmandictionary.h"
+#include "gmanerror.h"
 #include "gmaninlineparse.h"
+#include "gmanlog.h"
 #include "gmanparameterlist.h"
+#include "ri.h"
 
 namespace {
 

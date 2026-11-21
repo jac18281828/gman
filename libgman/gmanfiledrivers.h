@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 
+#include "gman/export.h"
 #include "gmanoutput.h"
 
 /*

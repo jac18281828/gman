@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <utility>
 
+#include "gman/export.h"
 #include "gmancolor.h"
 #include "gmanvector.h"
 #include "ri.h"

@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstddef>
 #include <numbers>
+#include <utility>
 
 #include "gmanbsdf.h"
 #include "gmancolor.h"
