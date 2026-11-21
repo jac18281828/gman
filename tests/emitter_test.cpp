@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <fstream>
 #include <memory>
+#include <numbers>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -60,7 +61,6 @@
 namespace {
 
 constexpr std::uint32_t kSeed = 0x8d1c8e21u;
-constexpr double kPi = 3.14159265358979323846;
 
 std::string readFile(std::string const& path) {
   std::ifstream in(path, std::ios::binary);
@@ -178,8 +178,8 @@ void testPower() {
   std::vector<gman::Emitter> const list = gman::emitters(world);
   check(list.size() == 1, "power: one area emitter enumerated");
 
-  double const area = 4.0 * kPi * 2.0 * 2.0;
-  double const expectedPower = 4.0 * area * kPi;
+  double const area = 4.0 * std::numbers::pi * 2.0 * 2.0;
+  double const expectedPower = 4.0 * area * std::numbers::pi;
   double const actualPower = (double)list[0].power;
   double const relPower = std::fabs(actualPower - expectedPower) / expectedPower;
   std::printf("power: closed form %.6f, mean(Le)*area()*pi %.6f (%.2e relative)\n", actualPower, expectedPower,
@@ -236,9 +236,9 @@ void testSampleDelta() {
     bool const wiMatches = std::fabs(s.wi.getX() - directL.getX()) < 1e-6 &&
                            std::fabs(s.wi.getY() - directL.getY()) < 1e-6 &&
                            std::fabs(s.wi.getZ() - directL.getZ()) < 1e-6;
-    bool const clMatches = std::fabs(s.Cl.getRed() - directCl.getRed() * (RtFloat)kPi) < 1e-4 &&
-                           std::fabs(s.Cl.getGreen() - directCl.getGreen() * (RtFloat)kPi) < 1e-4 &&
-                           std::fabs(s.Cl.getBlue() - directCl.getBlue() * (RtFloat)kPi) < 1e-4;
+    bool const clMatches = std::fabs(s.Cl.getRed() - directCl.getRed() * (RtFloat)std::numbers::pi) < 1e-4 &&
+                           std::fabs(s.Cl.getGreen() - directCl.getGreen() * (RtFloat)std::numbers::pi) < 1e-4 &&
+                           std::fabs(s.Cl.getBlue() - directCl.getBlue() * (RtFloat)std::numbers::pi) < 1e-4;
     if (!wiMatches || !clMatches || s.pdf != 1.0f || !s.isDelta) {
       allMatch = false;
     }
@@ -281,7 +281,7 @@ void testSampleArea() {
   check(wiWithinBoundingRegion, "sample area: every draw's distance lies within the sphere's bounding region");
 
   GmanMeanStderr const stat = meanStderr(terms);
-  double const expected = 4.0 * kPi * (radius / d) * (radius / d);
+  double const expected = 4.0 * std::numbers::pi * (radius / d) * (radius / d);
   std::printf("sample area: mean %.6f (%.3f sigma from %.6f)\n", stat.mean,
               stat.stderrOfMean > 0.0 ? (stat.mean - expected) / stat.stderrOfMean : 0.0, expected);
   checkNear(stat.mean, expected, stat.stderrOfMean, 1e-4,
@@ -339,13 +339,14 @@ void testScaledSphere(RtFloat scale, std::uint32_t dim) {
   }
   GmanMeanStderr const stat = meanStderr(terms);
   double const placedRadius = (double)scale * 1.0;
-  double const expected = kPi * (double)kLe * placedRadius * placedRadius / (d * d);
+  double const expected = std::numbers::pi * (double)kLe * placedRadius * placedRadius / (d * d);
   std::printf("scaled sphere (x%.2f): irradiance mean %.6f (%.3f sigma from %.6f)\n", (double)scale, stat.mean,
               stat.stderrOfMean > 0.0 ? (stat.mean - expected) / stat.stderrOfMean : 0.0, expected);
   checkNear(stat.mean, expected, stat.stderrOfMean, 1e-6,
             "scaled sphere: the cosine-weighted mean matches pi*Le*(scale*radius)^2/d^2 within 5 sigma");
 
-  double const expectedPower = (double)kPi * (double)kLe * 4.0 * kPi * placedRadius * placedRadius;
+  double const expectedPower =
+      (double)std::numbers::pi * (double)kLe * 4.0 * std::numbers::pi * placedRadius * placedRadius;
   double const relPower = std::fabs((double)list[0].power - expectedPower) / expectedPower;
   std::printf("scaled sphere (x%.2f): power %.6f, expected %.6f (%.2e relative)\n", (double)scale,
               (double)list[0].power, expectedPower, relPower);
@@ -385,7 +386,7 @@ void testScaledDisk() {
   GMANVector const placedX(origin, xTip);
   GMANVector const placedY(origin, yTip);
   GMANVector const crossed = placedX.cross(placedY);
-  double const aCam = kPi * std::sqrt((double)crossed.dot(crossed));
+  double const aCam = std::numbers::pi * std::sqrt((double)crossed.dot(crossed));
 
   // |n'|: the disk's own fixed (0, 0, -1) normal transformed by
   // transformNormal with the inverse placement, before normalizing.
@@ -396,7 +397,7 @@ void testScaledDisk() {
   std::printf("scaled disk: |n'| %.6f\n", nPrimeMagnitude);
   checkNear(nPrimeMagnitude, 0.791, 0.0, 0.01, "scaled disk: |n'| is close to 0.791, off 1 by the tilt and scale");
 
-  double const expectedPower = (double)kPi * (double)kLe * aCam;
+  double const expectedPower = (double)std::numbers::pi * (double)kLe * aCam;
   double const relPower = std::fabs((double)list[0].power - expectedPower) / expectedPower;
   std::printf("scaled disk: power %.6f, expected %.6f (%.2e relative)\n", (double)list[0].power, expectedPower,
               relPower);
@@ -433,7 +434,7 @@ void testLightSolidAnglePdfReference() {
   GMANNormal const hitNormal(0.0f, 0.0f, -1.0f);
 
   RtFloat const pdf = gman::lightSolidAnglePdf(emitter, p, hitPoint, hitNormal);
-  double const expected = 4.0 / kPi;
+  double const expected = 4.0 / std::numbers::pi;
   double const relError = std::fabs((double)pdf - expected) / expected;
   std::printf("lightSolidAnglePdf reference: %.10f, expected %.10f (%.2e relative)\n", (double)pdf, expected, relError);
   check(relError < 1e-5, "lightSolidAnglePdf: the near-pole reference value matches 4/pi within 1e-5 relative");

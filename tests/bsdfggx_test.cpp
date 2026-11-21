@@ -38,6 +38,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <numbers>
 #include <string>
 
 #include "check.h"
@@ -66,7 +67,6 @@ extern long raybvhAllocationCount();
 namespace {
 
 constexpr std::uint32_t kSeed = 20260925u;
-constexpr double kPiD = 3.14159265358979323846;
 
 constexpr std::uint32_t kPairs = 1u << 12;
 constexpr std::uint32_t kReferencePairs = 1u << 10;
@@ -119,7 +119,7 @@ GMANVector normalized(GMANVector v) {
 GMANVector n0() { return normalized(kN0Unnormalized); }
 
 GMANVector woAt(double degrees) {
-  double const theta = degrees * kPiD / 180.0;
+  double const theta = degrees * std::numbers::pi / 180.0;
   GMANVector const local(static_cast<RtFloat>(std::sin(theta)), 0.0f, static_cast<RtFloat>(std::cos(theta)));
   return gman::tangentFrame(n0()).toWorld(local);
 }
@@ -196,7 +196,7 @@ Vec3 toVec3(GMANVector const& v) { return {v.getX(), v.getY(), v.getZ()}; }
 double refD(double alpha, double cosThetaH) {
   double const alpha2 = alpha * alpha;
   double const denom = cosThetaH * cosThetaH * (alpha2 - 1.0) + 1.0;
-  return alpha2 / (kPiD * denom * denom);
+  return alpha2 / (std::numbers::pi * denom * denom);
 }
 
 double refLambda(double alpha, double cosTheta) {
@@ -229,7 +229,7 @@ RefFactor refFactor(double alpha, Vec3 n, Vec3 wo, Vec3 wi) {
 void checkReference() {
   GMANVector const wo = n0();
   gman::BSDF const bsdf = singleGgx(wo, kR, kReferenceAlpha);
-  double const expectedFactor = 1.0 / (4.0 * kPiD * kReferenceAlpha * kReferenceAlpha);
+  double const expectedFactor = 1.0 / (4.0 * std::numbers::pi * kReferenceAlpha * kReferenceAlpha);
 
   GMANColor const evalResult = bsdf.eval(wo, wo);
   RtFloat const pdfResult = bsdf.pdf(wo, wo);

@@ -23,6 +23,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <numbers>
+
 #include <math.h>
 
 #include "gmanmath.h"
@@ -81,7 +83,7 @@ static RtFloat sinc1D(RtFloat x) {
   if (fabs(x) < RI_EPSILON) {
     return 1.0;
   }
-  RtFloat px = (RtFloat)PI * x;
+  RtFloat px = (RtFloat)std::numbers::pi * x;
   return sin(px) / px;
 }
 

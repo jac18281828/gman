@@ -22,6 +22,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "gmanerror.h"
 #include "gmanmath.h"
@@ -159,7 +160,7 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (numRoots == 0)
     return false;
 
-  double const thetamaxRad = thetamax / 360.0 * 2.0 * PI;
+  double const thetamaxRad = thetamax / 360.0 * 2.0 * std::numbers::pi;
   double const loBound = GMANMin<double>(phimin, phimax);
   double const hiBound = GMANMax<double>(phimin, phimax);
 
@@ -174,7 +175,7 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
 
     double rawTheta = std::atan2(root.py, root.px);
     if (rawTheta < 0.0)
-      rawTheta += 2.0 * PI;
+      rawTheta += 2.0 * std::numbers::pi;
     if (!(rawTheta <= thetamaxRad))
       continue;
 

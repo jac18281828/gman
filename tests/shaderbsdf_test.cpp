@@ -33,6 +33,7 @@
 #include <cmath>
 #include <cstdint>
 #include <memory>
+#include <numbers>
 #include <string>
 
 #include "check.h"
@@ -51,7 +52,6 @@
 
 namespace {
 
-constexpr double kPiD = 3.14159265358979323846;
 constexpr double kTol = 1e-6;
 
 constexpr std::uint32_t kSeed = 20260927u;
@@ -222,7 +222,7 @@ RtFloat alphaFromRoughness(RtFloat roughness) {
     return 0.0f;
   }
   double const cosSquaredHalfMax = std::pow(4.0, -(double)roughness);
-  return (RtFloat)std::sqrt((1.0 - cosSquaredHalfMax) / (std::sqrt(2.0) - cosSquaredHalfMax));
+  return (RtFloat)std::sqrt((1.0 - cosSquaredHalfMax) / (std::numbers::sqrt2 - cosSquaredHalfMax));
 }
 
 bool lobeNear(gman::Lobe const& lobe, gman::LobeKind kind, GMANColor const& weight, RtFloat alpha, double tol) {
@@ -380,8 +380,8 @@ void checkMatteNormal() {
   gman::BSDF const closure = matte->bsdf(se);
 
   GMANColor expectedEval = kdCs(kMatteKd, kCs);
-  expectedEval.scale(static_cast<RtFloat>(1.0 / kPiD));
-  double const expectedPdf = unitN.dot(wi) / kPiD;
+  expectedEval.scale(static_cast<RtFloat>(std::numbers::inv_pi));
+  double const expectedPdf = unitN.dot(wi) / std::numbers::pi;
 
   check(colorNearRel(closure.eval(wo, wi), expectedEval, kTol),
         "matte normal: eval is Kd * Cs / pi within 1e-6 relative, wo and wi straddling Ng");

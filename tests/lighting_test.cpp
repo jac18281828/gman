@@ -56,6 +56,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -108,7 +109,7 @@ struct AnalyticCircle {
 // silhouette_test.cpp's own formula predicts instead: centred at (100,
 // 100), radius = tan(asin(r/d)) / tan(fov/2) * (width/2), r=1, d=5.
 const AnalyticCircle kMetalSpecularCircle{100.0, 100.0,
-                                          std::tan(std::asin(0.2)) / std::tan(22.5 * M_PI / 180.0) * 100.0};
+                                          std::tan(std::asin(0.2)) / std::tan(22.5 * std::numbers::pi / 180.0) * 100.0};
 
 // ---- proof item 4: lighting, brightest pixel and the N.L=0 terminator ----
 void testTerminator(const std::string& gman) {

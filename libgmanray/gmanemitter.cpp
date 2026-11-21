@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <numbers>
 
 #include "gmanemitter.h"
 #include "gmanerror.h"
@@ -39,8 +40,6 @@
 namespace gman {
 
 namespace {
-
-constexpr RtFloat kPi = (RtFloat)3.14159265358979323846;
 
 RtFloat meanChannel(GMANColor const& c) { return (c.getRed() + c.getGreen() + c.getBlue()) / (RtFloat)3.0; }
 
@@ -314,7 +313,7 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
       continue;
     }
     RtFloat const cameraArea = emittingShapeCameraArea(*rayPrimitive, objectToCamera, cameraToObject, area);
-    RtFloat const power = kPi * meanChannel(appearance.areaLight->getCl()) * cameraArea;
+    RtFloat const power = std::numbers::pi_v<RtFloat> * meanChannel(appearance.areaLight->getCl()) * cameraArea;
     result.push_back({appearance.areaLight, rayPrimitive, power});
   }
 
@@ -339,7 +338,8 @@ EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtF
   result.distance = (emitter.light->getType() == GMAN_LIGHT_DISTANT) ? RI_INFINITY : l.magnitude();
   l.normalize();
   result.wi = l;
-  result.Cl = GMANColor(cl.getRed() * kPi, cl.getGreen() * kPi, cl.getBlue() * kPi);
+  result.Cl = GMANColor(cl.getRed() * std::numbers::pi_v<RtFloat>, cl.getGreen() * std::numbers::pi_v<RtFloat>,
+                        cl.getBlue() * std::numbers::pi_v<RtFloat>);
   result.pdf = 1.0f;
   result.isDelta = true;
   return result;

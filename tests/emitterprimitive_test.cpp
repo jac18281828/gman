@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <numbers>
 #include <vector>
 
 #include "check.h"
@@ -49,7 +50,6 @@
 namespace {
 
 constexpr std::uint32_t kSeed = 0x51ed270bu;
-constexpr double kPi = 3.14159265358979323846;
 
 // Builds a one-primitive world tagging shape as an area light and returns
 // gman::emitters' own count for it -- the eligibility gman::emitters itself
@@ -100,16 +100,16 @@ template <class Parametric> double quadratureArea(Parametric& shape, int n) {
 // Closed-form area.
 void testAreaClosedForm() {
   GMANSphere fullSphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
-  double const expectedFullSphere = 4.0 * kPi * 2.0 * 2.0;
+  double const expectedFullSphere = 4.0 * std::numbers::pi * 2.0 * 2.0;
   check(std::fabs(fullSphere.area() - expectedFullSphere) < 1e-5,
         "area: a full sphere's area is within 1e-5 of 4*pi*radius^2");
 
   GMANSphere zone(2.0f, -1.0f, 1.0f, 180.0f, GMANParameterList());
-  double const expectedZone = 2.0 * (1.0 - (-1.0)) * kPi;
+  double const expectedZone = 2.0 * (1.0 - (-1.0)) * std::numbers::pi;
   check(std::fabs(zone.area() - expectedZone) < 1e-5, "area: a zone's area is exactly radius*(zmax-zmin)*pi");
 
   GMANDisk fullDisk(0.0f, 3.0f, 360.0f, GMANParameterList());
-  double const expectedFullDisk = kPi * 3.0 * 3.0;
+  double const expectedFullDisk = std::numbers::pi * 3.0 * 3.0;
   check(std::fabs(fullDisk.area() - expectedFullDisk) < 1e-5, "area: a full disk's area is within 1e-5 of pi*radius^2");
 
   GMANDisk halfDisk(0.0f, 3.0f, 180.0f, GMANParameterList());
@@ -120,12 +120,12 @@ void testAreaClosedForm() {
 // sweep, never as extra surface.
 void testThetaMaxAreaClamp() {
   GMANSphere sphere(1.0f, -1.0f, 1.0f, 720.0f, GMANParameterList());
-  double const expectedSphere = 4.0 * kPi;
+  double const expectedSphere = 4.0 * std::numbers::pi;
   check(std::fabs(sphere.area() - expectedSphere) / expectedSphere < 1e-5,
         "thetamax clamp: a sphere at thetamax 720 still reads area 4*pi");
 
   GMANDisk disk(0.0f, 1.0f, 720.0f, GMANParameterList());
-  double const expectedDisk = kPi;
+  double const expectedDisk = std::numbers::pi;
   check(std::fabs(disk.area() - expectedDisk) / expectedDisk < 1e-5,
         "thetamax clamp: a unit disk at thetamax 720 still reads area pi");
 }
@@ -143,9 +143,9 @@ void testThetaMaxSampleClamp() {
   auto azimuthBin = [](GMANPoint const& p) {
     double theta = std::atan2((double)p.getY(), (double)p.getX());
     if (theta < 0.0) {
-      theta += 2.0 * kPi;
+      theta += 2.0 * std::numbers::pi;
     }
-    int bin = (int)(theta / (2.0 * kPi) * kBins);
+    int bin = (int)(theta / (2.0 * std::numbers::pi) * kBins);
     return bin < 0 ? 0 : (bin >= kBins ? kBins - 1 : bin);
   };
 
@@ -236,7 +236,7 @@ void testUniformByArea() {
   // angle.
   GMANDisk halfDisk(0.0f, 3.0f, 180.0f, GMANParameterList());
   double const diskRadius = 3.0;
-  double const thetaMaxRadians = 180.0 / 360.0 * 2.0 * kPi;
+  double const thetaMaxRadians = 180.0 / 360.0 * 2.0 * std::numbers::pi;
   std::vector<std::uint32_t> thetaBins(kBins, 0);
   std::vector<std::uint32_t> rSquaredBins(kBins, 0);
   for (std::uint32_t i = 0; i < kDraws; ++i) {
@@ -245,7 +245,7 @@ void testUniformByArea() {
     GMANPoint const p = halfDisk.samplePoint(uv.u1, uv.u2, normal);
     double theta = std::atan2((double)p.getY(), (double)p.getX());
     if (theta < 0.0) {
-      theta += 2.0 * kPi;
+      theta += 2.0 * std::numbers::pi;
     }
     double const t = theta / thetaMaxRadians;
     int bin = (int)(t * kBins);

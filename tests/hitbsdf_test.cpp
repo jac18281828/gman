@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <memory>
+#include <numbers>
 
 #include "check.h"
 #include "gmanattributes.h"
@@ -47,7 +48,6 @@
 
 namespace {
 
-constexpr double kPiD = 3.14159265358979323846;
 constexpr double kTol = 1e-6;
 constexpr RtFloat kGlassIor = 1.5f;
 
@@ -173,7 +173,7 @@ void checkMatteBuildsAtShadingNormal() {
   GMANVector const wi = normalized(kWiUnnormalized);
 
   GMANColor expectedEval(kMatteKd * kMatteCs.getRed(), kMatteKd * kMatteCs.getGreen(), kMatteKd * kMatteCs.getBlue());
-  expectedEval.scale(static_cast<RtFloat>(1.0 / kPiD));
+  expectedEval.scale(static_cast<RtFloat>(std::numbers::inv_pi));
 
   check(colorNearRel(closure.eval(wo, wi), expectedEval, kTol),
         "matte: eval at N = (0, 0, 1), Ng = (1, 0, 0) is Kd * Cs / pi within 1e-6 relative, on one side of N and "

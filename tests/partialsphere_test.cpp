@@ -42,8 +42,8 @@
  * control.
  *
  * Revert check (verified by actually reverting, not asserted): restoring
- * GMANSphere::getLocation's original bug (phimin/phimax always -PI/2/
- * PI/2, ignoring zmin/zmax) makes Sphere 1 -0.5 1 360 sweep the same full
+ * GMANSphere::getLocation's original bug (phimin/phimax always -pi/2/
+ * pi/2, ignoring zmin/zmax) makes Sphere 1 -0.5 1 360 sweep the same full
  * latitude range as Sphere 1 -1 1 360 -- the background gap closes, and
  * testAsymmetricPartialSphere's mid-radius "still background" assertions
  * fail.

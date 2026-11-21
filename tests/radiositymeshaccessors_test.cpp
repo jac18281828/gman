@@ -29,6 +29,7 @@
 #include <cmath>
 #include <cstdio>
 #include <memory>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -234,8 +235,9 @@ void testSphereDensity() {
           worstDensity = 1;
           continue;
         }
-        double const phi = -PI / 2 + PI * ((double)j + st[1]) / (double)grid.nv;
-        double const analytic = radius * radius * (2 * PI / (double)grid.nu) * (PI / (double)grid.nv) * std::cos(phi);
+        double const phi = -std::numbers::pi / 2 + std::numbers::pi * ((double)j + st[1]) / (double)grid.nv;
+        double const analytic = radius * radius * (2 * std::numbers::pi / (double)grid.nu) *
+                                (std::numbers::pi / (double)grid.nv) * std::cos(phi);
         worstDensity = GMANMax(worstDensity, std::fabs((double)point.density - analytic) / analytic);
         worstRadius = GMANMax(worstRadius, std::fabs(pointDistance(point.P, centre) - radius) / radius);
 

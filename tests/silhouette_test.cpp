@@ -55,6 +55,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -166,7 +167,7 @@ int main(int argc, char* argv[]) {
   BBox base = findSilhouette(baseTif);
   check(base.found, "base scene: a silhouette was found");
 
-  const double halfFovBase = 45.0 / 2.0 * M_PI / 180.0;
+  const double halfFovBase = 45.0 / 2.0 * std::numbers::pi / 180.0;
   const double expectedHalfExtent = tanAngularRadius / std::tan(halfFovBase) * 100.0; // 200px / 2
   const double tol = 16.0;
 

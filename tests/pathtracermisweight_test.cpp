@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <numbers>
 #include <vector>
 
 #include "check.h"
@@ -47,8 +48,6 @@
 #include "ri.h"
 
 namespace {
-
-constexpr double kPi = 3.14159265358979323846;
 
 // No exemption at vertex 0: neither function takes a vertex index at all,
 // so there is nowhere for a hidden "return 1 at vertex 0" to hide.
@@ -91,7 +90,7 @@ std::vector<gman::Emitter> buildTwoLightEmitters(GMANLinearWorldManager& world, 
   world.add(host);
 
   GMANMatrix4 place;
-  place.trans(0.0f, 0.0f, -(RtFloat)kPi);
+  place.trans(0.0f, 0.0f, -(RtFloat)std::numbers::pi);
   GMANTransform const transform = makeTransform(place);
   areaSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
   gman::Appearance areaAppearance;
@@ -170,7 +169,7 @@ void testSelfExclusionZeroesOwnSurface() {
 
   // The area sphere is centred at (0, 0, -pi), radius 1; its pole nearest
   // the origin sits at (0, 0, -pi + 1).
-  GMANPoint const pSelf(0.0f, 0.0f, -(RtFloat)kPi + 1.0f);
+  GMANPoint const pSelf(0.0f, 0.0f, -(RtFloat)std::numbers::pi + 1.0f);
   RtFloat const selfProbability = gman::lightChoiceProbability(emitters, pSelf, areaSphere, areaIndex, lightWeight);
   check(selfProbability == 0.0f,
         "lightChoiceProbability: a point on the area emitter's own surface gives it probability exactly 0");

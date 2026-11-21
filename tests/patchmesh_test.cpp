@@ -41,6 +41,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <numbers>
 #include <string>
 
 #include <tiffio.h>
@@ -92,7 +93,7 @@ void testBilinearPeriodicClosure() {
   RtFloat p[18];
   for (int j = 0; j < 2; ++j) {
     for (int i = 0; i < 3; ++i) {
-      double angle = 2.0 * M_PI * i / 3.0;
+      double angle = 2.0 * std::numbers::pi * i / 3.0;
       RtFloat* dst = &p[3 * (i + 3 * j)];
       dst[0] = (RtFloat)std::cos(angle);
       dst[1] = (RtFloat)std::sin(angle);

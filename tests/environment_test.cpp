@@ -37,6 +37,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -90,7 +91,7 @@ void checkColorNear(GMANColor const& got, GMANColor const& want, RtFloat tol, st
 void testToWorldRotatesDirection() {
   GMANSurfaceEnv env;
   GMANMatrix4 m;
-  m.rot((RtFloat)(PI / 2.0), 0, 1, 0);
+  m.rot((RtFloat)(std::numbers::pi / 2.0), 0, 1, 0);
   // A translation must not move a direction: toWorld is RSL's
   // vtransform("current", "world", v), which reads only cameraToWorld's
   // upper-left 3x3. Folded in here to prove exactly that.
@@ -110,7 +111,7 @@ void testToWorldRotatesDirection() {
 void testMatrixReachesShader() {
   GMANOptions options;
   GMANMatrix4 m;
-  m.rot((RtFloat)(PI / 2.0), 0, 1, 0);
+  m.rot((RtFloat)(std::numbers::pi / 2.0), 0, 1, 0);
   options.setCameraToWorld(m);
 
   GMANAttributes attr;
@@ -211,8 +212,8 @@ GMANVector directionAt(RtFloat lon, RtFloat lat) {
 // 0 at the left, 360 at the right; latitude -90 at the bottom, 90 at the
 // top.
 GMANVector texelCentreDirection(int i, int j) {
-  RtFloat lon = (RtFloat)(2.0 * PI * (i + 0.5) / kLatLongWidth);
-  RtFloat lat = (RtFloat)(PI / 2.0 - PI * (j + 0.5) / kLatLongHeight);
+  RtFloat lon = (RtFloat)(2.0 * std::numbers::pi * (i + 0.5) / kLatLongWidth);
+  RtFloat lat = (RtFloat)(std::numbers::pi / 2.0 - std::numbers::pi * (j + 0.5) / kLatLongHeight);
   return directionAt(lon, lat);
 }
 
@@ -251,7 +252,7 @@ void testDirectLookups(std::string const& map) {
                  "environment: R=0 returns black");
 }
 
-// A direction at lon just below 2*PI blends texel (7, j) with (0, j) --
+// A direction at lon just below 2*pi blends texel (7, j) with (0, j) --
 // periodic wrap, not clamp holding (7, j) alone. s = 31/32 sits a quarter
 // texel short of the wrap (texel 7's own centre is at s=7.5/8=0.9375), so
 // gman::Texture::sample's bilinear weights are exactly 0.75 on texel 7 and
@@ -259,8 +260,8 @@ void testDirectLookups(std::string const& map) {
 void testLongitudeWraps(std::string const& map) {
   GMANSurfaceEnv env;
   const int j = 1;
-  RtFloat lat = (RtFloat)(PI / 2.0 - PI * (j + 0.5) / kLatLongHeight);
-  RtFloat lon = (RtFloat)(2.0 * PI * (31.0 / 32.0));
+  RtFloat lat = (RtFloat)(std::numbers::pi / 2.0 - std::numbers::pi * (j + 0.5) / kLatLongHeight);
+  RtFloat lon = (RtFloat)(2.0 * std::numbers::pi * (31.0 / 32.0));
   GMANVector r = directionAt(lon, lat);
 
   GMANColor c7 = latLongTexel(kLatLongWidth - 1, j);
@@ -269,7 +270,7 @@ void testLongitudeWraps(std::string const& map) {
                  (RtFloat)0.75 * c7.getGreen() + (RtFloat)0.25 * c0.getGreen(),
                  (RtFloat)0.75 * c7.getBlue() + (RtFloat)0.25 * c0.getBlue());
   checkColorNear(env.environment(map, r), want, (RtFloat)1.0e-3,
-                 "environment: longitude just below 2*PI blends texel "
+                 "environment: longitude just below 2*pi blends texel "
                  "(7, j) with (0, j)");
 }
 
@@ -364,8 +365,8 @@ bool writeSixRegionPicture(std::string const& path) {
   for (int j = 0; j < kSixRegionHeight && ok; ++j) {
     std::vector<unsigned char> row((std::size_t)kSixRegionWidth * 3);
     for (int i = 0; i < kSixRegionWidth; ++i) {
-      RtFloat lon = (RtFloat)(2.0 * PI * (i + 0.5) / kSixRegionWidth);
-      RtFloat lat = (RtFloat)(PI / 2.0 - PI * (j + 0.5) / kSixRegionHeight);
+      RtFloat lon = (RtFloat)(2.0 * std::numbers::pi * (i + 0.5) / kSixRegionWidth);
+      RtFloat lat = (RtFloat)(std::numbers::pi / 2.0 - std::numbers::pi * (j + 0.5) / kSixRegionHeight);
       GMANColor c = regionColor(regionAt(directionAt(lon, lat)));
       row[(std::size_t)i * 3 + 0] = (unsigned char)(c.getRed() * 255.0);
       row[(std::size_t)i * 3 + 1] = (unsigned char)(c.getGreen() * 255.0);

@@ -34,6 +34,7 @@
 
 #include <cmath>
 #include <memory>
+#include <numbers>
 #include <string>
 
 #include "check.h"
@@ -51,7 +52,7 @@
 namespace {
 
 constexpr RtFloat kTol = (RtFloat)1.0e-4;
-constexpr RtFloat kDegToRad = (RtFloat)(3.14159265358979323846 / 180.0);
+constexpr RtFloat kDegToRad = (RtFloat)(std::numbers::pi / 180.0);
 
 bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }
 

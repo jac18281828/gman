@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <numbers>
 #include <string>
 
 #include "check.h"
@@ -202,7 +203,7 @@ void testP3mRowVectorConvention() {
   // for GMANMatrix4::rot()'s sign convention (hand-derived from rot()'s
   // own [row][col] layout, independent of p3m).
   GMANMatrix4 r;
-  r.rot(M_PI / 2.0, 0.0, 0.0, 1.0);
+  r.rot(std::numbers::pi / 2.0, 0.0, 0.0, 1.0);
   RtFloat srcR[] = {1.0, 0.0, 0.0};
   RtFloat dstR[3];
   r.p3m(1, srcR, dstR);

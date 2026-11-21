@@ -28,6 +28,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -40,7 +41,7 @@
 namespace {
 
 constexpr RtFloat kTol = (RtFloat)1.0e-4;
-constexpr RtFloat kDegToRad = (RtFloat)(3.14159265358979323846 / 180.0);
+constexpr RtFloat kDegToRad = (RtFloat)(std::numbers::pi / 180.0);
 
 bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }
 
@@ -160,7 +161,7 @@ void checkReflectPins() {
   // I at 45 degrees off -N in the x-z plane; the hand-computed mirror of
   // (sin45, 0, -cos45) about n = (0,0,1) is (sin45, 0, cos45) -- the x
   // component unchanged, the z component flipped.
-  RtFloat const s45 = (RtFloat)(std::sqrt(2.0) / 2.0);
+  RtFloat const s45 = (RtFloat)(std::numbers::sqrt2 / 2.0);
   GMANVector const i45(s45, 0.0f, -s45);
   GMANVector const got45 = env.reflect(i45, n);
   GMANVector const want45(s45, 0.0f, s45);

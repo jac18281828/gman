@@ -23,6 +23,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
 
 #include "gmanmath.h"
 #include "gmanrayquadratic.h"
@@ -57,7 +58,7 @@ double largestRealCubicRoot(double aa, double bb) {
 
   double largest = -radius; // a lower bound: every root has magnitude <= radius.
   for (int k = 0; k < 3; ++k) {
-    double const root = radius * std::cos(theta - 2.0 * PI * k / 3.0);
+    double const root = radius * std::cos(theta - 2.0 * std::numbers::pi * k / 3.0);
     largest = std::max(largest, root);
   }
   return largest;

@@ -29,6 +29,7 @@
 #include <cstdio>
 #include <fstream>
 #include <memory>
+#include <numbers>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -430,8 +431,8 @@ std::vector<GMANRay> sphereGridRays() {
   GMANPoint const centre(kSphereCentreX, kSphereCentreY, kSphereCentreZ);
   for (int thetaDeg = 0; thetaDeg < 360; thetaDeg += 30) {
     for (int phiDeg = 30; phiDeg < 180; phiDeg += 60) {
-      double const theta = thetaDeg * PI / 180.0;
-      double const phi = phiDeg * PI / 180.0;
+      double const theta = thetaDeg * std::numbers::pi / 180.0;
+      double const phi = phiDeg * std::numbers::pi / 180.0;
       GMANVector const dir((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),
                            (RtFloat)std::cos(phi));
       GMANPoint const origin(centre.getX() - dir.getX() * 5.0f, centre.getY() - dir.getY() * 5.0f,
@@ -738,8 +739,8 @@ void testLoneSphereAnswersExactlyBlack() {
   long checked = 0;
   for (int thetaDeg = 0; thetaDeg < 360; thetaDeg += 20) {
     for (int phiDeg = 20; phiDeg < 180; phiDeg += 40) {
-      double const theta = thetaDeg * PI / 180.0;
-      double const phi = phiDeg * PI / 180.0;
+      double const theta = thetaDeg * std::numbers::pi / 180.0;
+      double const phi = phiDeg * std::numbers::pi / 180.0;
       GMANVector const dir((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),
                            (RtFloat)std::cos(phi));
       GMANPoint const origin(-dir.getX() * 5.0f, -dir.getY() * 5.0f, -dir.getZ() * 5.0f);
@@ -758,8 +759,8 @@ void testLoneSphereAnswersExactlyBlack() {
 
 // A direction on the sphere of directions, polar angle phiDeg from +z.
 GMANVector directionAt(int thetaDeg, int phiDeg) {
-  double const theta = thetaDeg * PI / 180.0;
-  double const phi = phiDeg * PI / 180.0;
+  double const theta = thetaDeg * std::numbers::pi / 180.0;
+  double const phi = phiDeg * std::numbers::pi / 180.0;
   return GMANVector((RtFloat)(std::sin(phi) * std::cos(theta)), (RtFloat)(std::sin(phi) * std::sin(theta)),
                     (RtFloat)std::cos(phi));
 }
@@ -811,7 +812,7 @@ void testSilhouetteSideFollowsHitNormal() {
       GMANVector const across = dir.cross(GMANVector(0.0f, 0.0f, 1.0f)).normalize();
       GMANVector const up = dir.cross(across);
       for (int offsetDeg = 0; offsetDeg < 360; offsetDeg += kRimOffsetStepDeg) {
-        double const offset = offsetDeg * PI / 180.0;
+        double const offset = offsetDeg * std::numbers::pi / 180.0;
         GMANVector const perpendicular = across * (RtFloat)std::cos(offset) + up * (RtFloat)std::sin(offset);
         for (RtFloat const impact : kRimImpactParameters) {
           GMANVector const toOrigin = perpendicular * (impact * kRimSphereRadius) - dir * 5.0f;

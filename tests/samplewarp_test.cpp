@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -40,8 +41,6 @@
 namespace {
 
 constexpr std::uint32_t kSeed = 98765u;
-constexpr RtFloat kPi = 3.14159265358979323846f;
-constexpr double kPiD = 3.14159265358979323846;
 constexpr int kBins = 8;
 
 // An independent (u1, u2) draw for sample index: unitFloat(sampleHash(...))
@@ -55,7 +54,7 @@ gman::Sample2D independentSample(std::uint32_t index, std::uint32_t dimU1, std::
 RtFloat wrapAzimuth(RtFloat y, RtFloat x) {
   RtFloat phi = std::atan2(y, x);
   if (phi < 0.0f) {
-    phi += 2.0f * kPi;
+    phi += 2.0f * std::numbers::pi_v<RtFloat>;
   }
   return phi;
 }
@@ -138,7 +137,7 @@ void checkJointHistogram(std::string const& name, Warp warp, RtFloat cosMin, RtF
 
     int cosBin = static_cast<int>((cosTheta - cosMin) / (cosMax - cosMin) * kBins);
     cosBin = std::min(std::max(cosBin, 0), kBins - 1);
-    int phiBin = static_cast<int>(phi / (2.0f * kPi) * kBins);
+    int phiBin = static_cast<int>(phi / (2.0f * std::numbers::pi_v<RtFloat>)*kBins);
     phiBin = std::min(std::max(phiBin, 0), kBins - 1);
     hist[cosBin][phiBin]++;
   }
@@ -169,7 +168,7 @@ void checkMarginalAzimuthHistogram(std::string const& name, Warp warp, std::uint
     gman::Sample2D const u = independentSample(s, dimU1, dimU2);
     GMANVector const d = warp(u.u1, u.u2);
     RtFloat const phi = azimuth(d);
-    int phiBin = static_cast<int>(phi / (2.0f * kPi) * kBins);
+    int phiBin = static_cast<int>(phi / (2.0f * std::numbers::pi_v<RtFloat>)*kBins);
     phiBin = std::min(std::max(phiBin, 0), kBins - 1);
     hist[phiBin]++;
   }
@@ -195,7 +194,8 @@ void checkConcentricDiskHistogram() {
     RtFloat const phi = wrapAzimuth(d.y, d.x);
 
     int const r2Bin = std::min(std::max(static_cast<int>(r2 * kBins), 0), kBins - 1);
-    int const phiBin = std::min(std::max(static_cast<int>(phi / (2.0f * kPi) * kBins), 0), kBins - 1);
+    int const phiBin =
+        std::min(std::max(static_cast<int>(phi / (2.0f * std::numbers::pi_v<RtFloat>)*kBins), 0), kBins - 1);
     hist[r2Bin][phiBin]++;
   }
 
@@ -235,29 +235,35 @@ void checkMonteCarloIdentities() {
   }
 
   GmanMeanStderr const hemi = meanStderr(hemiTerms);
-  checkNear(hemi.mean, kPiD, hemi.stderrOfMean, 1e-3, "mean of cosTheta/pdf over the uniform hemisphere is pi");
+  checkNear(hemi.mean, std::numbers::pi, hemi.stderrOfMean, 1e-3,
+            "mean of cosTheta/pdf over the uniform hemisphere is pi");
 
   GmanMeanStderr const sphere = meanStderr(sphereTerms);
-  checkNear(sphere.mean, kPiD, sphere.stderrOfMean, 1e-3, "mean of max(0,cosTheta)/pdf over the sphere is pi");
+  checkNear(sphere.mean, std::numbers::pi, sphere.stderrOfMean, 1e-3,
+            "mean of max(0,cosTheta)/pdf over the sphere is pi");
 
   GmanMeanStderr const cone = meanStderr(coneTerms);
-  double const expectedCone = kPiD * (1.0 - static_cast<double>(kConeC) * static_cast<double>(kConeC));
+  double const expectedCone = std::numbers::pi * (1.0 - static_cast<double>(kConeC) * static_cast<double>(kConeC));
   checkNear(cone.mean, expectedCone, cone.stderrOfMean, 1e-3,
             "mean of cosTheta/pdf over the cone at cosThetaMax=0.5 is pi(1-c^2)");
 }
 
 // Pdf values against their closed forms.
 void checkPdfValues() {
-  check(std::fabs(gman::cosineHemispherePdf(1.0f) - 1.0f / kPi) <= 1e-6f, "cosineHemispherePdf(1) == 1/pi");
-  check(std::fabs(gman::cosineHemispherePdf(0.5f) - 0.5f / kPi) <= 1e-6f, "cosineHemispherePdf(0.5) == 0.5/pi");
+  check(std::fabs(gman::cosineHemispherePdf(1.0f) - std::numbers::inv_pi_v<RtFloat>) <= 1e-6f,
+        "cosineHemispherePdf(1) == 1/pi");
+  check(std::fabs(gman::cosineHemispherePdf(0.5f) - 0.5f / std::numbers::pi_v<RtFloat>) <= 1e-6f,
+        "cosineHemispherePdf(0.5) == 0.5/pi");
   check(gman::cosineHemispherePdf(0.0f) == 0.0f, "cosineHemispherePdf(0) == 0");
   check(gman::cosineHemispherePdf(-0.5f) == 0.0f, "cosineHemispherePdf(-0.5) == 0");
 
-  check(std::fabs(gman::uniformHemispherePdf() - 1.0f / (2.0f * kPi)) <= 1e-6f, "uniformHemispherePdf() == 1/(2pi)");
-  check(std::fabs(gman::uniformSpherePdf() - 1.0f / (4.0f * kPi)) <= 1e-6f, "uniformSpherePdf() == 1/(4pi)");
+  check(std::fabs(gman::uniformHemispherePdf() - 1.0f / (2.0f * std::numbers::pi_v<RtFloat>)) <= 1e-6f,
+        "uniformHemispherePdf() == 1/(2pi)");
+  check(std::fabs(gman::uniformSpherePdf() - 1.0f / (4.0f * std::numbers::pi_v<RtFloat>)) <= 1e-6f,
+        "uniformSpherePdf() == 1/(4pi)");
 
   for (RtFloat cosThetaMax : {0.9f, 0.0f, -0.5f}) {
-    RtFloat const expected = 1.0f / (2.0f * kPi * (1.0f - cosThetaMax));
+    RtFloat const expected = 1.0f / (2.0f * std::numbers::pi_v<RtFloat> * (1.0f - cosThetaMax));
     check(std::fabs(gman::uniformConePdf(cosThetaMax) - expected) <= 1e-6f,
           "uniformConePdf(" + std::to_string(cosThetaMax) + ") matches its closed form");
   }

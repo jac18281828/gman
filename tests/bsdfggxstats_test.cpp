@@ -43,6 +43,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -57,7 +58,6 @@
 namespace {
 
 constexpr std::uint32_t kSeed = 20260925u;
-constexpr double kPiD = 3.14159265358979323846;
 
 constexpr std::uint32_t kDraws = 1u << 16;
 
@@ -126,7 +126,7 @@ GMANVector normalized(GMANVector v) {
 GMANVector n0() { return normalized(kN0Unnormalized); }
 
 GMANVector woAt(double degrees) {
-  double const theta = degrees * kPiD / 180.0;
+  double const theta = degrees * std::numbers::pi / 180.0;
   GMANVector const local(static_cast<RtFloat>(std::sin(theta)), 0.0f, static_cast<RtFloat>(std::cos(theta)));
   return gman::tangentFrame(n0()).toWorld(local);
 }
@@ -227,7 +227,7 @@ Vec3 toWorld(Basis const& frame, Vec3 n, Vec3 v) {
 double refD(double alpha, double cosThetaH) {
   double const alpha2 = alpha * alpha;
   double const denom = cosThetaH * cosThetaH * (alpha2 - 1.0) + 1.0;
-  return alpha2 / (kPiD * denom * denom);
+  return alpha2 / (std::numbers::pi * denom * denom);
 }
 
 double refLambda(double alpha, double cosTheta) {
@@ -247,7 +247,7 @@ Vec3 visibleNormalLocal(Vec3 woLocal, double alpha, double u1, double u2) {
   Vec3 const t2 = vCross(vh, t1);
 
   double const r = std::sqrt(u1);
-  double const phi = 2.0 * kPiD * u2;
+  double const phi = 2.0 * std::numbers::pi * u2;
   double const t1Coord = r * std::cos(phi);
   double t2Coord = r * std::sin(phi);
   double const s = 0.5 * (1.0 + vh.z);
@@ -328,7 +328,7 @@ BinMasses computeBinMasses(gman::BSDF const& bsdf, GMANVector const& wo, int mas
   GMANVector const normal = woNormal(wo);
   gman::TangentFrame const frame = gman::tangentFrame(normal);
   double const dCos = 1.0 / kBins;
-  double const dPhi = 2.0 * kPiD / kBins;
+  double const dPhi = 2.0 * std::numbers::pi / kBins;
   double const cellArea = (dCos / massPoints) * (dPhi / massPoints);
 
   BinMasses result{};
@@ -408,7 +408,7 @@ void checkHistogramAgainstMasses(gman::BSDF const& bsdf, GMANVector const& wo, B
   GMANVector const normal = woNormal(wo);
   gman::TangentFrame const frame = gman::tangentFrame(normal);
   double const dCos = 1.0 / kBins;
-  double const dPhi = 2.0 * kPiD / kBins;
+  double const dPhi = 2.0 * std::numbers::pi / kBins;
 
   std::vector<double> counts(kBins * kBins, 0.0);
   std::uint32_t successes = 0;
@@ -424,7 +424,7 @@ void checkHistogramAgainstMasses(gman::BSDF const& bsdf, GMANVector const& wo, B
     double cosTheta = static_cast<double>(local.getZ());
     double phi = std::atan2(static_cast<double>(local.getY()), static_cast<double>(local.getX()));
     if (phi < 0.0) {
-      phi += 2.0 * kPiD;
+      phi += 2.0 * std::numbers::pi;
     }
     int const cosBin = std::clamp(static_cast<int>(cosTheta / dCos), 0, kBins - 1);
     int const phiBin = std::clamp(static_cast<int>(phi / dPhi), 0, kBins - 1);

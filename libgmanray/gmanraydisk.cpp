@@ -22,6 +22,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "gmanerror.h"
 #include "gmanmath.h"
@@ -70,7 +71,7 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   //
   // Open question, the same one GMANRaySphere's own intersect leaves open:
   // a negative thetamax hits nothing here (thetamaxRad goes negative, and
-  // theta -- always in [0, 2*PI) -- can never be less than it), and a
+  // theta -- always in [0, 2*pi) -- can never be less than it), and a
   // negative radius likewise hits nothing (r is never negative, so
   // r > radius is always true), while GMANDisk::getLocation sweeps or
   // mirrors a real shape for either. Which behavior is right is undecided.
@@ -102,8 +103,8 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (!(r <= (double)radius))
     return false;
 
-  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
-  RtFloat const theta = GMANMod(GMANAtan((RtFloat)y, (RtFloat)x), (RtFloat)(2.0 * PI));
+  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * std::numbers::pi);
+  RtFloat const theta = GMANMod(GMANAtan((RtFloat)y, (RtFloat)x), (RtFloat)(2.0 * std::numbers::pi));
   if (!(theta <= thetamaxRad))
     return false;
 

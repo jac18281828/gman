@@ -41,6 +41,7 @@
 #include <array>
 #include <cmath>
 #include <limits>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <vector>
@@ -93,7 +94,7 @@ GMANOptions makeOptions(bool nonDefaultScreenWindow) {
 // depth. windowWidth is 2 at the default screen window, 1 when halved.
 double rasterScale(bool nonDefaultScreenWindow) {
   const double windowWidth = nonDefaultScreenWindow ? 1.0 : 2.0;
-  const double invT = 1.0 / std::tan((kFov / 2.0) * M_PI / 180.0);
+  const double invT = 1.0 / std::tan((kFov / 2.0) * std::numbers::pi / 180.0);
   return (kXres / windowWidth) * invT / kDepth;
 }
 
@@ -101,7 +102,7 @@ double rasterScale(bool nonDefaultScreenWindow) {
 // y, apex at the origin) whose hypotenuse projects to targetPixels at
 // kDepth, under this suite's own rasterScale.
 RtFloat legFor(double targetPixels, bool nonDefaultScreenWindow) {
-  return (RtFloat)(targetPixels / (rasterScale(nonDefaultScreenWindow) * std::sqrt(2.0)));
+  return (RtFloat)(targetPixels / (rasterScale(nonDefaultScreenWindow) * std::numbers::sqrt2));
 }
 
 // A right isosceles triangle (apex at object origin, legs along x and y)

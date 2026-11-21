@@ -49,6 +49,7 @@
 #include <cmath>
 #include <cstdio>
 #include <map>
+#include <numbers>
 #include <optional>
 #include <string>
 #include <utility>
@@ -148,8 +149,8 @@ GMANPoint place(const GMANPoint& canonical, double scale, bool rotated) {
   double y = canonical.getY() * scale;
   double z = canonical.getZ() * scale;
   if (rotated) {
-    const double invSqrt3 = 1.0 / std::sqrt(3.0);
-    std::array<double, 3> r = rotate(x, y, z, invSqrt3, invSqrt3, invSqrt3, kRotationDegrees * M_PI / 180.0);
+    std::array<double, 3> r = rotate(x, y, z, std::numbers::inv_sqrt3, std::numbers::inv_sqrt3, std::numbers::inv_sqrt3,
+                                     kRotationDegrees * std::numbers::pi / 180.0);
     x = r[0] + scale * 2.0;
     y = r[1] + scale * -1.5;
     z = r[2] + scale * 3.0;

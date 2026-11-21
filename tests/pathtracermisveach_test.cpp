@@ -30,6 +30,7 @@
 #include <cmath>
 #include <cstdio>
 #include <memory>
+#include <numbers>
 #include <vector>
 
 #include "check.h"
@@ -160,7 +161,7 @@ struct VeachScene {
 };
 
 VeachScene buildVeachScene(GMANPathtraceRenderer& renderer, GMANLight const& areaLight) {
-  double const phi = M_PI / 4.0; // 45 degrees
+  double const phi = std::numbers::pi / 4.0; // 45 degrees
   GMANVector const u(1.0f, 0.0f, 0.0f);
   GMANVector const v(0.0f, (RtFloat)std::cos(phi), (RtFloat)std::sin(phi));
   GMANPoint const centre(0.0f, 0.0f, kPlateZ);
@@ -253,7 +254,7 @@ void testVeachPlatesMisReducesVariance() {
   GMANVector toLight(hit, lightCentre1);
   toLight.normalize();
   double const cosAngle = GMANMax((RtFloat)-1.0, GMANMin((RtFloat)1.0, reflected.dot(toLight)));
-  double const angleDegrees = std::acos(cosAngle) * 180.0 / M_PI;
+  double const angleDegrees = std::acos(cosAngle) * 180.0 / std::numbers::pi;
   std::printf("Veach's plates: alignment angle %.4f degrees\n", angleDegrees);
   check(angleDegrees <= kMaxAlignmentDegrees,
         "Veach's plates: the light's centre lies within 5 degrees of the plate's own reflection direction");

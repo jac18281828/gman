@@ -37,6 +37,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -67,7 +68,6 @@ extern long raybvhAllocationCount();
 namespace {
 
 constexpr std::uint32_t kSeed = 20260925u;
-constexpr double kPiD = 3.14159265358979323846;
 
 constexpr std::uint32_t kDraws = 1u << 16;
 constexpr std::uint32_t kPairs = 1u << 12;
@@ -128,7 +128,7 @@ GMANVector n0() { return normalized(kN0Unnormalized); }
 
 // tangentFrame(N0).toWorld((sin(theta), 0, cos(theta))).
 GMANVector woAt(double degrees) {
-  double const theta = degrees * kPiD / 180.0;
+  double const theta = degrees * std::numbers::pi / 180.0;
   GMANVector const local(static_cast<RtFloat>(std::sin(theta)), 0.0f, static_cast<RtFloat>(std::cos(theta)));
   return gman::tangentFrame(n0()).toWorld(local);
 }
@@ -288,7 +288,7 @@ void checkReciprocity() {
 void checkSides() {
   gman::BSDF const atN0 = singleLobe(n0(), kR);
   gman::BSDF const atTwiceN0 = singleLobe(n0() * 2.0f, kR);
-  GMANColor const expected = scaled(kR, 1.0 / kPiD);
+  GMANColor const expected = scaled(kR, std::numbers::inv_pi);
 
   for (std::size_t k = 0; k < kWoCount; ++k) {
     GMANVector const wo = woAt(kWoAnglesDegrees[k]);
@@ -330,14 +330,14 @@ struct HistogramResult {
 HistogramResult histogram(gman::BSDF const& bsdf, GMANVector const& wo, std::vector<GMANVector> const& wis) {
   gman::TangentFrame const frame = gman::tangentFrame(woNormal(wo));
   double const dCos = 1.0 / kBins;
-  double const dPhi = 2.0 * kPiD / kBins;
+  double const dPhi = 2.0 * std::numbers::pi / kBins;
 
   std::vector<double> counts(kBins * kBins, 0.0);
   for (GMANVector const& wi : wis) {
     GMANVector const local = frame.toLocal(wi);
     double phi = std::atan2(static_cast<double>(local.getY()), static_cast<double>(local.getX()));
     if (phi < 0.0) {
-      phi += 2.0 * kPiD;
+      phi += 2.0 * std::numbers::pi;
     }
     int const cosBin = std::clamp(static_cast<int>(local.getZ() / dCos), 0, kBins - 1);
     int const phiBin = std::clamp(static_cast<int>(phi / dPhi), 0, kBins - 1);
@@ -424,7 +424,7 @@ void checkTwoLobes() {
   gman::BSDF const bsdf = twoLobe();
   GMANVector const wo = woAt(kWoAnglesDegrees[kTwoLobeWoIndex]);
   GMANColor const sum = summed(kR1, kR2);
-  GMANColor const expectedEval = scaled(sum, 1.0 / kPiD);
+  GMANColor const expectedEval = scaled(sum, std::numbers::inv_pi);
 
   check(colorExactly(bsdf.rhoD(), sum), "two lobes: rhoD is R1 + R2");
   check(bsdf.lobeCount() == 2, "two lobes: lobeCount is 2");

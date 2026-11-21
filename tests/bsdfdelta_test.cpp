@@ -39,6 +39,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -69,7 +70,6 @@ extern long raybvhAllocationCount();
 namespace {
 
 constexpr std::uint32_t kSeed = 20260927u;
-constexpr double kPiD = 3.14159265358979323846;
 
 constexpr std::uint32_t kMirrorDraws = 1u << 12;
 constexpr std::uint32_t kDielectricDraws = 1u << 16;
@@ -163,7 +163,7 @@ GMANVector n0() { return normalized(kN0Unnormalized); }
 
 // tangentFrame(N0).toWorld((sin(theta), 0, cos(theta))).
 GMANVector woAt(double degrees) {
-  double const theta = degrees * kPiD / 180.0;
+  double const theta = degrees * std::numbers::pi / 180.0;
   GMANVector const local(static_cast<RtFloat>(std::sin(theta)), 0.0f, static_cast<RtFloat>(std::cos(theta)));
   return gman::tangentFrame(n0()).toWorld(local);
 }
@@ -337,7 +337,7 @@ FRef refFresnelFromCos(double etaO, double etaI, double cosThetaO) {
 // relative index: checkReference's own self-check uses this apart from any
 // float wo.
 FRef refFAtAngle(double degrees, double eta) {
-  double const theta = degrees * kPiD / 180.0;
+  double const theta = degrees * std::numbers::pi / 180.0;
   double const cosWoN = std::cos(theta);
   bool const entering = cosWoN > 0.0;
   double const etaO = entering ? 1.0 : eta;
@@ -365,8 +365,8 @@ void checkReference() {
   FRef const tir = refFAtAngle(kTirAngleDeg, kEta);
   check(tir.tir && tir.f == 1.0, "reference: F at 120 degrees is total internal reflection, F exactly 1");
 
-  FRef const enter41 = refFresnelFromCos(1.0, kEta, std::cos(41.0 * kPiD / 180.0));
-  FRef const enter30 = refFresnelFromCos(1.0, kEta, std::cos(30.0 * kPiD / 180.0));
+  FRef const enter41 = refFresnelFromCos(1.0, kEta, std::cos(41.0 * std::numbers::pi / 180.0));
+  FRef const enter30 = refFresnelFromCos(1.0, kEta, std::cos(30.0 * std::numbers::pi / 180.0));
   check(std::fabs(enter41.f - 0.04646058) <= kReferenceTol,
         "reference: F entering from index 1 at 41 degrees incidence matches 0.04646058 within 1e-7");
   check(std::fabs(enter30.f - 0.04152263) <= kReferenceTol,
@@ -382,7 +382,7 @@ void checkReference() {
   check(std::fabs((1.0 - 0.04) * scaleAt180 - 2.16) <= kReferenceTol,
         "reference: a white transmission's c at 180 degrees is 2.16 within 1e-7");
 
-  double const criticalAngleDeg = std::asin(1.0 / static_cast<double>(kEta)) * 180.0 / kPiD;
+  double const criticalAngleDeg = std::asin(1.0 / static_cast<double>(kEta)) * 180.0 / std::numbers::pi;
   check(std::fabs(criticalAngleDeg - 41.8103149) <= kReferenceTol,
         "reference: the critical angle inside is 41.8103149 degrees within 1e-7");
 }
@@ -712,10 +712,10 @@ void checkMixtureAngle(double angle, std::uint32_t dim) {
 
   check(colorExactly(closure.rhoD(), kMixtureLambert), name + ": rhoD is exactly (0.3, 0.2, 0.1)");
   check(closure.lobeCount() == 3, name + ": lobeCount is 3");
-  GMANColor const expectedEval = scaled(kMixtureLambert, 1.0 / kPiD);
+  GMANColor const expectedEval = scaled(kMixtureLambert, std::numbers::inv_pi);
   check(colorNearRel(closure.eval(wo, wo), expectedEval, kTightRelTol),
         name + ": eval on wo's side is (0.3, 0.2, 0.1)/pi within 1e-6 relative");
-  double const expectedPdf = 0.2 * std::fabs(static_cast<double>(cosThetaO)) / kPiD;
+  double const expectedPdf = 0.2 * std::fabs(static_cast<double>(cosThetaO)) / std::numbers::pi;
   check(nearRel(static_cast<double>(closure.pdf(wo, wo)), expectedPdf, kTightRelTol),
         name + ": pdf is 0.2 * |cos(theta_i)| / pi within 1e-6 relative");
 
@@ -802,7 +802,7 @@ void checkMixtureAngle(double angle, std::uint32_t dim) {
   GMANVector const normal = woNormal(wo);
   gman::TangentFrame const frame = gman::tangentFrame(normal);
   double const dCos = 1.0 / kBins;
-  double const dPhi = 2.0 * kPiD / kBins;
+  double const dPhi = 2.0 * std::numbers::pi / kBins;
   double const cellArea = (dCos / kMassPoints) * (dPhi / kMassPoints);
 
   std::vector<double> counts(static_cast<std::size_t>(kBins) * static_cast<std::size_t>(kBins), 0.0);
@@ -810,7 +810,7 @@ void checkMixtureAngle(double angle, std::uint32_t dim) {
     GMANVector const local = frame.toLocal(wi);
     double phi = std::atan2(static_cast<double>(local.getY()), static_cast<double>(local.getX()));
     if (phi < 0.0) {
-      phi += 2.0 * kPiD;
+      phi += 2.0 * std::numbers::pi;
     }
     int const cosBin = std::clamp(static_cast<int>(static_cast<double>(local.getZ()) / dCos), 0, kBins - 1);
     int const phiBin = std::clamp(static_cast<int>(phi / dPhi), 0, kBins - 1);

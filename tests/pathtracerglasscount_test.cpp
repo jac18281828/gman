@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstdio>
 #include <memory>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -259,7 +260,6 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
 // share, not a case that trivially reduces to weight 1. A failure means
 // the geometry is wrong, not the estimator.
 void checkNextEventWeightWellBelowOne() {
-  constexpr RtFloat kPi = 3.14159265358979323846f;
   constexpr std::uint32_t kDraws = 1024u;
 
   GMANPathtraceRenderer renderer;
@@ -278,7 +278,7 @@ void checkNextEventWeightWellBelowOne() {
     }
     RtFloat const pLight = es.pdf;                    // pChoice is 1: the validity check's only light.
     RtFloat const cosTheta = std::fabs(es.wi.getY()); // the floor's own normal is (0, 1, 0).
-    RtFloat const pBsdf = cosTheta / kPi;
+    RtFloat const pBsdf = cosTheta / std::numbers::pi_v<RtFloat>;
     weightSum += (double)gman::powerHeuristic(pLight, pBsdf);
   }
   double const meanWeight = weightSum / (double)kDraws;

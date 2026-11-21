@@ -22,6 +22,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "gmanerror.h"
 #include "gmanmath.h"
@@ -108,7 +109,7 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
     return false;
 
   double const roots[2] = {t0, t1};
-  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * PI);
+  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * std::numbers::pi);
 
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
@@ -120,7 +121,7 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
     if (!(0.0 <= z && z <= height))
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), (RtFloat)(2.0 * PI));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), (RtFloat)(2.0 * std::numbers::pi));
     if (!(theta <= thetamaxRad))
       continue;
 

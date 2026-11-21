@@ -25,6 +25,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <numbers>
+
 #include "gmanlog.h"
 #include "gmanrenderer.h"
 #include "ri.h"
@@ -67,8 +69,8 @@ bool GMANRenderer::lightBeams(GMANPoint pos1, GMANVector axis1, RtFloat angle1, 
 // from a solar lightsource.
 bool GMANRenderer::solarBeams(GMANVector axis1, RtFloat angle1, GMANVector axis2, RtFloat angle2) {
   RtFloat angle = angle1 + angle2;
-  if (angle > PI)
-    angle = PI;
+  if (angle > std::numbers::pi)
+    angle = std::numbers::pi;
 
   axis1.normalize();
   axis2.normalize();

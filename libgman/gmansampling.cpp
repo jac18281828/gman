@@ -25,6 +25,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <numbers>
 
 #include "gmansampling.h"
 #include "ri.h"
@@ -64,12 +65,10 @@ constexpr std::uint32_t kCmjRowSalt = 0x63d83595u;
 constexpr std::uint32_t kCmjColPickSalt = 0x8da6b343u;
 constexpr std::uint32_t kCmjRowPickSalt = 0xb15a4f09u;
 
-constexpr RtFloat kPi = 3.14159265358979323846f;
-constexpr RtFloat kInvPi = 1.0f / kPi;
-constexpr RtFloat kInv2Pi = 1.0f / (2.0f * kPi);
-constexpr RtFloat kInv4Pi = 1.0f / (4.0f * kPi);
-constexpr RtFloat kPiOver4 = kPi / 4.0f;
-constexpr RtFloat kPiOver2 = kPi / 2.0f;
+constexpr RtFloat kInv2Pi = 1.0f / (2.0f * std::numbers::pi_v<RtFloat>);
+constexpr RtFloat kInv4Pi = 1.0f / (4.0f * std::numbers::pi_v<RtFloat>);
+constexpr RtFloat kPiOver4 = std::numbers::pi_v<RtFloat> / 4.0f;
+constexpr RtFloat kPiOver2 = std::numbers::pi_v<RtFloat> / 2.0f;
 
 // Chris Wellons' lowbias32 32-bit integer finalizer -- full avalanche,
 // low bias ("Prospecting for Hash Functions", nullprogram.com, 2018).
@@ -262,12 +261,14 @@ GMANVector cosineHemisphere(RtFloat u1, RtFloat u2) {
   return GMANVector(d.x, d.y, z);
 }
 
-RtFloat cosineHemispherePdf(RtFloat cosTheta) { return cosTheta > 0.0f ? cosTheta * kInvPi : 0.0f; }
+RtFloat cosineHemispherePdf(RtFloat cosTheta) {
+  return cosTheta > 0.0f ? cosTheta * std::numbers::inv_pi_v<RtFloat> : 0.0f;
+}
 
 GMANVector uniformHemisphere(RtFloat u1, RtFloat u2) {
   RtFloat const z = u1;
   RtFloat const r = std::sqrt(std::max(0.0f, 1.0f - z * z));
-  RtFloat const phi = 2.0f * kPi * u2;
+  RtFloat const phi = 2.0f * std::numbers::pi_v<RtFloat> * u2;
   return GMANVector(r * std::cos(phi), r * std::sin(phi), z);
 }
 
@@ -276,7 +277,7 @@ RtFloat uniformHemispherePdf() { return kInv2Pi; }
 GMANVector uniformSphere(RtFloat u1, RtFloat u2) {
   RtFloat const z = 1.0f - 2.0f * u1;
   RtFloat const r = std::sqrt(std::max(0.0f, 1.0f - z * z));
-  RtFloat const phi = 2.0f * kPi * u2;
+  RtFloat const phi = 2.0f * std::numbers::pi_v<RtFloat> * u2;
   return GMANVector(r * std::cos(phi), r * std::sin(phi), z);
 }
 
@@ -285,7 +286,7 @@ RtFloat uniformSpherePdf() { return kInv4Pi; }
 GMANVector uniformCone(RtFloat u1, RtFloat u2, RtFloat cosThetaMax) {
   RtFloat const cosTheta = (1.0f - u1) + u1 * cosThetaMax;
   RtFloat const sinTheta = std::sqrt(std::max(0.0f, 1.0f - cosTheta * cosTheta));
-  RtFloat const phi = 2.0f * kPi * u2;
+  RtFloat const phi = 2.0f * std::numbers::pi_v<RtFloat> * u2;
   return GMANVector(sinTheta * std::cos(phi), sinTheta * std::sin(phi), std::max(cosTheta, cosThetaMax));
 }
 

@@ -26,6 +26,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -152,7 +153,7 @@ void testSphereArea() {
     GMANRadiosityMesh mesh;
     mesh.build(worldManager, maxEdgeLength);
 
-    RtFloat const analytic = (RtFloat)(4.0 * PI * radius * radius);
+    RtFloat const analytic = (RtFloat)(4.0 * std::numbers::pi * radius * radius);
     RtFloat const diced = sumElementAreas(mesh);
     RtFloat const relError = std::fabs(diced - analytic) / analytic;
     std::printf("area: sphere (full) maxEdge=%.4f elements=%zu analytic=%.6f diced=%.6f relError=%.6g\n", maxEdgeLength,
@@ -172,7 +173,7 @@ void testSphereArea() {
     // A sphere's own lateral zone area is 2*pi*r*(zmax - zmin) regardless
     // of where the band sits (Archimedes' hat-box theorem), times the
     // wedge fraction.
-    RtFloat const analytic = (RtFloat)(2.0 * PI * radius * (zmax - zmin) * (thetamax / 360.0));
+    RtFloat const analytic = (RtFloat)(2.0 * std::numbers::pi * radius * (zmax - zmin) * (thetamax / 360.0));
     RtFloat const diced = sumElementAreas(mesh);
     RtFloat const relError = std::fabs(diced - analytic) / analytic;
     std::printf("area: sphere (partial) maxEdge=%.4f elements=%zu analytic=%.6f diced=%.6f relError=%.6g\n",
@@ -195,7 +196,7 @@ void testSphereArea() {
     GMANRadiosityMesh mesh;
     mesh.build(worldManager, 0.08f);
 
-    RtFloat const unitArea = (RtFloat)(4.0 * PI);
+    RtFloat const unitArea = (RtFloat)(4.0 * std::numbers::pi);
     RtFloat const diced = sumElementAreas(mesh);
     RtFloat const relError = std::fabs(diced - 9.0f * unitArea) / (9.0f * unitArea);
     std::printf("area: sphere (Translate+Scale3) elements=%zu expected=%.6f diced=%.6f relError=%.6g\n",
@@ -222,7 +223,7 @@ void testSphereArea() {
 
     check(mesh.getSkippedCount() == 2,
           "singular sphere + bare GMANPrimitive: skipped count is exactly the 2 undiceable primitives");
-    RtFloat const analytic = (RtFloat)(4.0 * PI * radius * radius);
+    RtFloat const analytic = (RtFloat)(4.0 * std::numbers::pi * radius * radius);
     RtFloat const diced = sumElementAreas(mesh);
     check(std::fabs(diced - analytic) / analytic < kAreaRelTolerance,
           "build still dices the good sphere beside the two undiceable primitives");
@@ -248,7 +249,7 @@ void testCylinderArea() {
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, maxEdgeLength);
 
-  RtFloat const analytic = (RtFloat)(2.0 * PI * radius * (zmax - zmin));
+  RtFloat const analytic = (RtFloat)(2.0 * std::numbers::pi * radius * (zmax - zmin));
   RtFloat const diced = sumElementAreas(mesh);
   RtFloat const relError = std::fabs(diced - analytic) / analytic;
   std::printf("area: cylinder maxEdge=%.4f elements=%zu analytic=%.6f diced=%.6f relError=%.6g\n", maxEdgeLength,
@@ -267,7 +268,7 @@ void testConeArea() {
   mesh.build(worldManager, maxEdgeLength);
 
   RtFloat const slant = (RtFloat)std::sqrt((double)(radius * radius + height * height));
-  RtFloat const analytic = (RtFloat)PI * radius * slant;
+  RtFloat const analytic = (RtFloat)std::numbers::pi * radius * slant;
   RtFloat const diced = sumElementAreas(mesh);
   RtFloat const relError = std::fabs(diced - analytic) / analytic;
   std::printf("area: cone maxEdge=%.4f elements=%zu analytic=%.6f diced=%.6f relError=%.6g\n", maxEdgeLength,
@@ -285,7 +286,7 @@ void testDiskArea() {
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, maxEdgeLength);
 
-  RtFloat const analytic = (RtFloat)PI * radius * radius;
+  RtFloat const analytic = (RtFloat)std::numbers::pi * radius * radius;
   RtFloat const diced = sumElementAreas(mesh);
   RtFloat const relError = std::fabs(diced - analytic) / analytic;
   std::printf("area: disk maxEdge=%.4f elements=%zu analytic=%.6f diced=%.6f relError=%.6g\n", maxEdgeLength,
@@ -306,7 +307,7 @@ void testTorusArea() {
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, maxEdgeLength);
 
-  RtFloat const analytic = (RtFloat)(4.0 * PI * PI * majorradius * minorradius);
+  RtFloat const analytic = (RtFloat)(4.0 * std::numbers::pi * std::numbers::pi * majorradius * minorradius);
   RtFloat const diced = sumElementAreas(mesh);
   RtFloat const relError = std::fabs(diced - analytic) / analytic;
   std::printf("area: torus maxEdge=%.4f elements=%zu analytic=%.6f diced=%.6f relError=%.6g\n", maxEdgeLength,
@@ -385,7 +386,7 @@ void testPolygonArea() {
     std::vector<std::pair<double, double>> localXY;
     for (int k = 0; k < 5; ++k) {
       double const angleDeg = 90.0 + 72.0 * (double)k;
-      double const angle = angleDeg * PI / 180.0;
+      double const angle = angleDeg * std::numbers::pi / 180.0;
       localXY.push_back({2.0 * std::cos(angle), 2.0 * std::sin(angle)});
       local.push_back(GMANPoint((RtFloat)localXY.back().first, (RtFloat)localXY.back().second, 0.0));
     }

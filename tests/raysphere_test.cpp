@@ -169,7 +169,7 @@ void testNormalIsNormalized() {
 
 // ---- hit.u's thetamax scaling pins on a partial wedge ----
 // The full-sphere round trip above runs only at thetamax 360, where
-// theta/thetamaxRad and theta/(2*PI) agree, and the wedge check runs only
+// theta/thetamaxRad and theta/(2*pi) agree, and the wedge check runs only
 // a miss, so u is never read there. A thetamax-90 sphere, hit by the same
 // off-axis ray, survives the wedge and rounds trip through a scaling that
 // depends on thetamax.

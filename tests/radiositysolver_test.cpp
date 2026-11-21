@@ -29,6 +29,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -299,7 +300,7 @@ void testClosedSphere() {
     GMANRadiositySide const inner = sideFacing(mesh, e, centre);
     worstDirect = GMANMax(worstDirect, relativeError(half.getDirect(e, inner).getRed(), expectedDirect));
   }
-  double const analyticArea = 4 * PI * kSphereRadius * kSphereRadius;
+  double const analyticArea = 4 * std::numbers::pi * kSphereRadius * kSphereRadius;
   double const areaError = relativeError(areaSum, analyticArea);
   std::printf("closed sphere: elements=%zu nodes=%zu sum A_i=%.6f 4piR^2=%.6f areaError=%.4g worstDirect=%.4g\n",
               elementCount, mesh.getNodeCount(), areaSum, analyticArea, areaError, worstDirect);

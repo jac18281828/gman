@@ -39,6 +39,7 @@
  */
 
 #include <cmath>
+#include <numbers>
 
 #include "check.h"
 #include "gmanmatrix4.h"
@@ -198,7 +199,7 @@ void testFovScalesDirection() {
   RtFloat sx = (RtFloat)kXRes, sy = (RtFloat)kYRes / 2.0f; // an edge point, not the centre (unscaled there too)
   vs.rasterToScreen(sx, sy);
 
-  RtFloat const tanHalfFov = (RtFloat)std::tan(fov / 2.0 * M_PI / 180.0);
+  RtFloat const tanHalfFov = (RtFloat)std::tan(fov / 2.0 * std::numbers::pi / 180.0);
   GMANVector expected(sx * tanHalfFov, sy * tanHalfFov, 1.0);
   expected.normalize();
 

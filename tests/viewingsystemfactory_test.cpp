@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <memory>
+#include <numbers>
 #include <string>
 
 #include "check.h"
@@ -41,7 +42,6 @@
 namespace {
 
 constexpr RtInt kRes = 100;
-constexpr double kPi = 3.14159265358979323846;
 
 gman::ViewingSystemInputs inputsFor(std::string const& projectionName, RtFloat fov) {
   gman::ViewingSystemInputs inputs;
@@ -105,7 +105,7 @@ void testFovReachesProjection() {
   GMANVector const narrowDir = narrowCamera->cameraRay(75.0, 25.0).getDirection();
   GMANVector const wideDir = wideCamera->cameraRay(75.0, 25.0).getDirection();
 
-  double const expected = std::tan(narrow * kPi / 360.0) / std::tan(wide * kPi / 360.0);
+  double const expected = std::tan(narrow * std::numbers::pi / 360.0) / std::tan(wide * std::numbers::pi / 360.0);
   double const xRatio = (narrowDir.getX() / narrowDir.getZ()) / (wideDir.getX() / wideDir.getZ());
   double const yRatio = (narrowDir.getY() / narrowDir.getZ()) / (wideDir.getY() / wideDir.getZ());
   check(std::fabs(xRatio - expected) < 1e-5, "factory: fov reaches the projection's x slope as tan(fov/2)");

@@ -21,6 +21,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <numbers>
+
 #include "gmanmath.h"
 #include "gmannoise.h"
 #include "gmanshaderenvironment.h"
@@ -76,8 +78,8 @@ GMANVector GMANSurfaceEnv::toWorld(GMANVector const& v) const {
 // 0 degrees at the left, and 360 degrees at the right. The latitude at the
 // bottom is -90 degrees and at the top is 90 degrees," with
 // x=cos(lon)cos(lat), y=sin(lon)cos(lat), z=sin(lat). lat = asin(z);
-// lon = atan2(y, x) wrapped into [0, 2*PI). s = lon / 2*PI, and
-// t = (PI/2 - lat) / PI, since t=0 is gman::Texture's own top row and the
+// lon = atan2(y, x) wrapped into [0, 2*pi). s = lon / 2*pi, and
+// t = (pi/2 - lat) / pi, since t=0 is gman::Texture's own top row and the
 // top of the picture is the north pole. environment() does no space
 // conversion; the shader picks the space R is given in, as RSL's does.
 GMANColor GMANSurfaceEnv::environment(std::string const& name, GMANVector const& R) const {
@@ -90,9 +92,9 @@ GMANColor GMANSurfaceEnv::environment(std::string const& name, GMANVector const&
   RtFloat lat = (RtFloat)std::asin(r.getZ());
   RtFloat lon = (RtFloat)std::atan2(r.getY(), r.getX());
   if (lon < 0) {
-    lon += (RtFloat)(2.0 * PI);
+    lon += (RtFloat)(2.0 * std::numbers::pi);
   }
-  RtFloat s = lon / (RtFloat)(2.0 * PI);
-  RtFloat t = ((RtFloat)(PI / 2.0) - lat) / (RtFloat)PI;
+  RtFloat s = lon / (RtFloat)(2.0 * std::numbers::pi);
+  RtFloat t = ((RtFloat)(std::numbers::pi / 2.0) - lat) / (RtFloat)std::numbers::pi;
   return (textureCache ? *textureCache : gman::textureCache()).sample(name, s, t);
 }

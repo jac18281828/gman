@@ -26,13 +26,14 @@
 #pragma once
 
 // Make this file self-contained - asandro
+#include <numbers>
+
 #include <math.h>
 
 #include "ri.h"
 
 // GMan constants
-const double PI = 3.1415926535898;
-const double DEGTORAD = PI / 180.0;
+inline constexpr double DEGTORAD = std::numbers::pi / 180.0;
 
 #define GMANMAX(x, y) (x > y ? x : y)
 #define GMANMIN(x, y) (x < y ? x : y)

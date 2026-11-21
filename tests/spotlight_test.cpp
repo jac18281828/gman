@@ -44,6 +44,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -95,7 +96,7 @@ struct DiskSilhouette {
 // cone-unlit region, so a background-diff read would find the disk's full
 // radius today but only the lit cone once the background turns black.
 DiskSilhouette analyticDiskSilhouette(uint32_t width, double fovDegrees, double radius, double depth) {
-  const double halfFov = fovDegrees / 2.0 * M_PI / 180.0;
+  const double halfFov = fovDegrees / 2.0 * std::numbers::pi / 180.0;
   const double halfExtent = (radius / depth) / std::tan(halfFov) * (width / 2.0);
   const double centre = width / 2.0;
   return {centre - halfExtent, centre + halfExtent, centre};

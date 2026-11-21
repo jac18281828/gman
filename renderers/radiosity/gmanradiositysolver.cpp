@@ -25,6 +25,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <numbers>
 #include <utility>
 #include <vector>
 
@@ -338,7 +339,7 @@ bool sampleFormFactorContribution(GMANRayOccluder const& occluder, gman::Radiosi
                             receiver.surfaceMagnitude);
 
   double const weight = sample.weight;
-  double const geometric = weight * std::fabs(cosReceiver) * cosShooter / (PI * distanceSquared + weight);
+  double const geometric = weight * std::fabs(cosReceiver) * cosShooter / (std::numbers::pi * distanceSquared + weight);
   contribution.red = geometric * transmission.getRed();
   contribution.green = geometric * transmission.getGreen();
   contribution.blue = geometric * transmission.getBlue();

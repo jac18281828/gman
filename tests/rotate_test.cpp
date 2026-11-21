@@ -61,6 +61,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -157,7 +158,7 @@ int main(int argc, char* argv[]) {
 
   // asin(0.5/3.5) = 8.213deg; tan(8.213deg) = 0.144332.
   const double tanAngularRadius = std::tan(std::asin(0.5 / 3.5));
-  const double halfFov = 45.0 / 2.0 * M_PI / 180.0;
+  const double halfFov = 45.0 / 2.0 * std::numbers::pi / 180.0;
   const double expectedHalfExtent = tanAngularRadius / std::tan(halfFov) * 100.0; // ~34.8px, 200px/2
 
   check(box.found && std::fabs(box.halfWidth() - expectedHalfExtent) <= tol,

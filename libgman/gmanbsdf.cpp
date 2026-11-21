@@ -24,6 +24,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <numbers>
 
 #include "gmanbsdf.h"
 #include "gmancolor.h"
@@ -36,9 +37,7 @@ namespace gman {
 
 namespace {
 
-constexpr RtFloat kPi = 3.14159265358979323846f;
-constexpr RtFloat kTwoPi = 2.0f * kPi;
-constexpr RtFloat kInvPi = 1.0f / kPi;
+constexpr RtFloat kTwoPi = 2.0f * std::numbers::pi_v<RtFloat>;
 
 constexpr RtFloat kMinEta = 0.01f;
 constexpr RtFloat kMaxEta = 100.0f;
@@ -92,14 +91,16 @@ GMANColor lambertEval(Lobe const& lobe, RtFloat cosThetaO, RtFloat cosThetaI) {
   if (!sameSide(cosThetaO, cosThetaI)) {
     return GMANColor(0.0f, 0.0f, 0.0f);
   }
-  return GMANColor(lobe.weight.getRed() * kInvPi, lobe.weight.getGreen() * kInvPi, lobe.weight.getBlue() * kInvPi);
+  return GMANColor(lobe.weight.getRed() * std::numbers::inv_pi_v<RtFloat>,
+                   lobe.weight.getGreen() * std::numbers::inv_pi_v<RtFloat>,
+                   lobe.weight.getBlue() * std::numbers::inv_pi_v<RtFloat>);
 }
 
 RtFloat lambertPdf(RtFloat cosThetaO, RtFloat cosThetaI) {
   if (!sameSide(cosThetaO, cosThetaI)) {
     return 0.0f;
   }
-  return std::fabs(cosThetaI) * kInvPi;
+  return std::fabs(cosThetaI) * std::numbers::inv_pi_v<RtFloat>;
 }
 
 // A cosine-weighted direction about the normal, mirrored to wo's side.
@@ -138,7 +139,7 @@ GGXGeometry ggxGeometry(RtFloat alpha, GMANVector const& woLocal, GMANVector con
   RtFloat const cosThetaH = h.getZ();
   RtFloat const alpha2 = alpha * alpha;
   RtFloat const denom = cosThetaH * cosThetaH * (alpha2 - 1.0f) + 1.0f;
-  RtFloat const d = alpha2 * kInvPi / (denom * denom);
+  RtFloat const d = alpha2 * std::numbers::inv_pi_v<RtFloat> / (denom * denom);
   return {d, ggxLambda(alpha, woLocal), ggxLambda(alpha, wiLocal)};
 }
 

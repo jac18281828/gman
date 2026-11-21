@@ -47,6 +47,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <numbers>
 #include <string>
 #include <vector>
 
@@ -231,10 +232,10 @@ Cylinder buildCylinder(double r, double h) {
   c.r = r;
   c.h = h;
   c.pw.resize(9 * 2 * 4);
-  const double sqrt2over2 = std::sqrt(2.0) / 2.0;
+  const double sqrt2over2 = std::numbers::sqrt2 / 2.0;
   for (int j = 0; j < 2; j++) {
     for (int i = 0; i < 9; i++) {
-      const double theta = i * 45.0 * M_PI / 180.0;
+      const double theta = i * 45.0 * std::numbers::pi / 180.0;
       const double w = (i % 2 == 0) ? 1.0 : sqrt2over2;
       const int idx = i + 9 * j;
       c.pw[4 * idx + 0] = (RtFloat)(r * std::cos(theta));
