@@ -24,6 +24,7 @@
 #pragma once
 
 #include <cmath>
+#include <numbers>
 #include <string>
 #include <string_view>
 
@@ -69,7 +70,7 @@ inline RtFloat alphaFromRoughness(RtFloat roughness) {
     return (RtFloat)0.0;
   }
   double const cosSquaredHalfMax = std::pow(4.0, -(double)roughness);
-  return (RtFloat)std::sqrt((1.0 - cosSquaredHalfMax) / (std::sqrt(2.0) - cosSquaredHalfMax));
+  return (RtFloat)std::sqrt((1.0 - cosSquaredHalfMax) / (std::numbers::sqrt2 - cosSquaredHalfMax));
 }
 
 // The scalar plastic's and paintedplastic's GGX lobe shares across
