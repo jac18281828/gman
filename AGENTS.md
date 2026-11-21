@@ -87,6 +87,8 @@ tree.
 - Prefer the standard library. Qualify `std::`; no `using` of `std` names.
 - Four include blocks, sorted: standard library, system, libraries, gman.
   `.clang-format` encodes it.
+- Each production source and header includes the header that declares every
+  name it uses and no header it does not use; `tidy-check` enforces it.
 
 ## Tests
 - Test behavior and contracts, not language or library internals.
