@@ -55,7 +55,7 @@ constexpr std::uint32_t kDitherSeed = 0x5eed;
 // What a refusal rule may ask of the output: the name an error gives it and
 // the widest sample and the float it writes.
 struct QuantizeTraits {
-  std::string_view driver;
+  std::string_view displayName;
   int bits;
   bool writesFloat;
 };
@@ -69,14 +69,14 @@ struct QuantizeRefusal {
 bool ditherUnusable(RtFloat dither) { return !(std::isfinite(dither) && dither >= 0); }
 
 // Evaluated in order; the first row that applies stops the request.
-std::array<QuantizeRefusal, 6> const kQuantizeRefusals = {{
+auto const kQuantizeRefusals = std::to_array<QuantizeRefusal>({
     {[](QuantizeTraits const&, GMANQuantize const& q) { return q.one < 0; }, RIE_RANGE,
      [](QuantizeTraits const&, GMANQuantize const& q) {
        return std::format("Quantize one {} must not be negative", q.one);
      }},
     {[](QuantizeTraits const& t, GMANQuantize const& q) { return q.one == 0 && !t.writesFloat; }, RIE_INCAPABLE,
      [](QuantizeTraits const& t, GMANQuantize const&) {
-       return std::format("{} writes integer samples; Quantize one 0 cannot be honoured", t.driver);
+       return std::format("{} writes integer samples; Quantize one 0 cannot be honoured", t.displayName);
      }},
     {[](QuantizeTraits const&, GMANQuantize const& q) { return q.one > 0 && q.min < 0; }, RIE_RANGE,
      [](QuantizeTraits const&, GMANQuantize const& q) {
@@ -96,9 +96,9 @@ std::array<QuantizeRefusal, 6> const kQuantizeRefusals = {{
      },
      RIE_INCAPABLE,
      [](QuantizeTraits const& t, GMANQuantize const& q) {
-       return std::format("{} writes {}-bit samples; Quantize max {} cannot be honoured", t.driver, t.bits, q.max);
+       return std::format("{} writes {}-bit samples; Quantize max {} cannot be honoured", t.displayName, t.bits, q.max);
      }},
-}};
+});
 
 float floatSample(GMANColor::ColorSampleType v) { return std::isnan(v) ? 0.0f : static_cast<float>(v); }
 
@@ -149,8 +149,8 @@ namespace gman {
 
 void checkQuantize(GMANOutput const& output, GMANQuantize const& quantize) {
   FileDriverEntry const* const entry = fileDriverEntry(output);
-  QuantizeTraits const traits{entry != nullptr ? std::string_view(entry->driver) : "output", output.maxBitsPerSample(),
-                              output.writesFloat()};
+  QuantizeTraits const traits{entry != nullptr ? std::string_view(entry->displayName) : "output",
+                              output.maxBitsPerSample(), output.writesFloat()};
   for (QuantizeRefusal const& refusal : kQuantizeRefusals) {
     if (refusal.applies(traits, quantize)) {
       throw GMANError(refusal.code, RIE_ERROR, refusal.message(traits, quantize).c_str());

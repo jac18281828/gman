@@ -47,8 +47,8 @@ using FileDriverMatcher = bool (*)(GMANOutput const&);
 struct FileDriverEntry {
   std::string name;
   std::vector<std::string> extensions;
-  std::string library;       // empty when the driver needs no library
-  std::string driver;        // how an error names the driver
+  std::string library; // empty when the driver needs no library
+  std::string displayName;
   FileDriverFactory factory; // null when not compiled into this build
   FileDriverMatcher matches; // null when not compiled into this build
 };
