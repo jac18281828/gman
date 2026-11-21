@@ -114,9 +114,10 @@ private:
 };
 
 // One cache per process, like gmanLightSourceMgr(). Serves single-threaded
-// shading: the z-buffer and the ray tracer, and any GMANSurfaceEnv whose
-// textureCache member is null, all sample through this one cache. A
-// threaded caller that forgets its own cache races here instead.
+// shading: the z-buffer, and any GMANSurfaceEnv whose textureCache member
+// is null, sample through this one cache. The ray tracer samples through
+// one cache per worker instead. A threaded caller that forgets its own
+// cache races here.
 TextureCache& textureCache(RtVoid);
 
 // RiMakeTexture's implementation: decodes picture the way Texture does

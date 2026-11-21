@@ -30,6 +30,7 @@
 #include <memory>
 #include <stack>
 #include <string>
+#include <vector>
 
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
@@ -130,15 +131,35 @@ private:
     gman::Appearance const* appearance = nullptr;
   };
 
-  // Finds the ray primitive nearest ray's origin, through bvh.
-  RayHit nearestHit(GMANRay const& ray);
+  // The worker count render() requests from gman::parallelFor; 0 lets it
+  // choose the hardware's concurrency. Set only through setWorkers.
+  RtInt requestedWorkers = 0;
+
+  // The worker that rendered each pixel row of the last render(), one entry
+  // per row. Each row's body writes its own element, so no two workers
+  // touch the same one.
+  std::vector<RtInt> rowWorker;
+
+  // Finds the ray primitive nearest ray's origin, through bvh. Reads only
+  // state no render() call changes after it builds bvh.
+  RayHit nearestHit(GMANRay const& ray) const;
 
   // Traces, shades and stores one sample -- render()'s per-sample body.
   // background is the sample buffer's seed colour (frameBuffer's corner
   // pixel), what remains after every layer's transmission composites
-  // over. indirectPass is null when no Option named one.
+  // over. indirectPass is null when no Option named one. textureCache is
+  // the calling worker's own cache; the sample writes only its own slot of
+  // sampleBuffer, so rows shaded on different workers never share state.
   void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
-                   RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY, gman::IndirectPass const* indirectPass);
+                   RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY, gman::IndirectPass const* indirectPass,
+                   gman::TextureCache* textureCache) const;
+
+  // Shades every sample of pixel row py, in raster order, through
+  // textureCache -- one gman::parallelFor body. Writes only the sample rows
+  // py owns.
+  void shadeRow(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
+                GMANOptions::RasterInfo const& raster, int width, int xsamples, int ysamples, int py,
+                gman::IndirectPass const* indirectPass, gman::TextureCache* textureCache) const;
 
 public:
   GMANRaytraceRenderer(); // default constructor
@@ -151,10 +172,23 @@ public:
 
   /*
    * Apply a ray-tracing environment to the objects in object manager
-   * to generate a frameBuffer output.
+   * to generate a frameBuffer output. Pixel rows render through
+   * gman::parallelFor, one gman::TextureCache per worker; every sample's
+   * value depends on the scene alone, so the image is byte-identical at
+   * any worker count.
    */
   virtual void render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
                       const GMANAttributes& attributes);
+
+  // The worker count render() requests from gman::parallelFor; 0, the
+  // default, lets it choose the hardware's concurrency. Takes effect on the
+  // next render() and never changes a pixel.
+  void setWorkers(RtInt workers);
+
+  // The worker that rendered each pixel row of the last render(), one entry
+  // per row; empty before the first. Lets a test see how rows spread over
+  // workers.
+  std::vector<RtInt> const& rowWorkers() const { return rowWorker; }
 
   // Camera-space z of the nearest sample at (x, y), RI_INFINITY where none
   // hit -- the sample buffer's own uncovered value. Unlike the z-buffer's

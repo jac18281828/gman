@@ -118,10 +118,10 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // The cache texture() and environment() sample through when set -- one
   // per gman::parallelFor worker (gmanparallel.h), never shared
   // between threads. Null, the default, means gman::textureCache()'s
-  // single process cache, which serves the z-buffer and the ray tracer's
-  // own single shading thread. Non-owning, valid for one shading call. A
-  // shade re-entered through a Tracer forwards its caller's own cache
-  // (gman::shade's own comment says so).
+  // single process cache, which serves the z-buffer's single shading
+  // thread; the ray tracer passes one cache per worker. Non-owning, valid
+  // for one shading call. A shade re-entered through a Tracer forwards its
+  // caller's own cache (gman::shade's own comment says so).
   gman::TextureCache* textureCache = nullptr;
 
   // The host's answer for indirect light at this point, from

@@ -2246,6 +2246,24 @@ if(GMAN_BUILD_RADIOSITY)
   set_tests_properties(radiositypass PROPERTIES
     LABELS unit
     TIMEOUT 60)
+
+  # The ray tracer renders its rows through gman::parallelFor, one texture
+  # cache per worker: an image byte-identical at one, three and eight
+  # workers, direct and through the radiosity pass, the worker each row ran
+  # on, one missing-texture warning per worker's cache and a texture only a
+  # second reflection reaches warning in each of two renders. Loads
+  # libradiosity.so, so it sits in this block. The argument --scaling times
+  # the direct scene at one and at eight workers and asserts nothing. See
+  # tests/raytracerthreads_test.cpp.
+  add_executable(gman_raytracerthreads raytracerthreads_test.cpp)
+  target_link_libraries(gman_raytracerthreads PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+  add_dependencies(gman_raytracerthreads gman_radiosity gman_matte gman_mirror gman_paintedplastic)
+
+  add_test(NAME raytracerthreads COMMAND gman_raytracerthreads)
+  set_tests_properties(raytracerthreads PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS unit
+    TIMEOUT 30)
 endif()
 
 # R5c deferral: the spindle and horn torus (minorradius >= majorradius), a

@@ -2,9 +2,8 @@
 
 Contributions are welcome: a bug report, a fix, a scene that renders wrong or
 a whole subsystem. Plenty is open — shadows, trimmed `NuPatch`, `Points` and
-`Curves`, a ray tracer that threads through `gman::parallelFor` as the path
-tracer does, and most of the RISpec beyond the primitives CHANGELOG.md records
-as rendering.
+`Curves`, and most of the RISpec beyond the primitives CHANGELOG.md records as
+rendering.
 
 ## Pull requests
 

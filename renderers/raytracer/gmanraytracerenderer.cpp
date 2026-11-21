@@ -25,15 +25,18 @@
 
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 #include "gmanarealightwarning.h"
 #include "gmanindirectpass.h"
 #include "gmanmath.h"
+#include "gmanparallel.h"
 #include "gmanraybbox.h"
 #include "gmanrayinterface.h"
 #include "gmanraytracerenderer.h"
 #include "gmanrenderer.h"
 #include "gmanshading.h"
+#include "gmantexture.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 
@@ -96,7 +99,7 @@ GMANRaytraceRenderer::GMANRaytraceRenderer() : GMANRenderer(), occluder(bvh) {};
 // default destructor
 GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
 
-GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray) {
+GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray) const {
   RayHit result;
   GMANRayInterface const* hitPrimitive = nullptr;
   if (bvh.nearestHit(ray, result.hit, hitPrimitive)) {
@@ -107,7 +110,8 @@ GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray
 
 void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld,
                                        GMANColor const& background, RtFloat rasterX, RtFloat rasterY, int sampleX,
-                                       int sampleY, gman::IndirectPass const* indirectPass) {
+                                       int sampleY, gman::IndirectPass const* indirectPass,
+                                       gman::TextureCache* textureCache) const {
   GMANRay ray = viewingSys->cameraRay(rasterX, rasterY);
   RayHit hit = nearestHit(ray);
   if (hit.appearance == nullptr) {
@@ -130,14 +134,15 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
 
   // Depth 0: a primary ray's own hit. A shader's trace() call recurses
   // into a child GMANRayTracer at depth 1 (see GMANRayTracer::trace()),
-  // carrying indirectPass forward so a reflected or refracted hit gets
-  // indirect light too.
-  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0, indirectPass);
+  // carrying indirectPass and textureCache forward so a reflected or
+  // refracted hit gets indirect light too and samples through this
+  // worker's cache.
+  GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0, indirectPass, textureCache);
 
   for (int layer = 0; layer < gman::kMaxCompositeLayers && hit.appearance != nullptr; ++layer) {
     PassIrradiance const indirect(indirectPass, hit.hit, ray.getDirection());
     gman::Shading const shading = gman::shade(*hit.appearance, gman::hitSurfacePoint(ray, hit.hit), cameraToWorld,
-                                              &occluder, &tracer, nullptr, indirect.ptr);
+                                              &occluder, &tracer, textureCache, indirect.ptr);
     accumulated += gman::multiplyChannels(transmission, shading.Ci);
     transmission = gman::multiplyChannels(transmission, gman::oneMinus(shading.Oi));
     if (gman::transmissionNegligible(transmission)) {
@@ -160,6 +165,29 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
   GMANAlpha const alpha(coverage.getRed(), coverage.getGreen(), coverage.getBlue());
   accumulated += gman::multiplyChannels(transmission, background);
   sampleBuffer->zTestAndSet(sampleX, sampleY, sampleDepth, accumulated, alpha);
+}
+
+void GMANRaytraceRenderer::shadeRow(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld,
+                                    GMANColor const& background, GMANOptions::RasterInfo const& raster, int width,
+                                    int xsamples, int ysamples, int py, gman::IndirectPass const* indirectPass,
+                                    gman::TextureCache* textureCache) const {
+  for (int px = 0; px < width; px++) {
+    for (int subY = 0; subY < ysamples; subY++) {
+      for (int subX = 0; subX < xsamples; subX++) {
+        // The raster point at this sample's centre, in the full
+        // (uncropped) raster grid GMANViewingSystem::cameraRay expects --
+        // raster.rxmin/rymin place this (possibly cropped) buffer's
+        // local (px, py) there, the same origin the z-buffer's render
+        // reads.
+        int const sampleX = px * xsamples + subX;
+        int const sampleY = py * ysamples + subY;
+        RtFloat const rasterX = gman::sampleCentre(raster.rxmin, sampleX, xsamples);
+        RtFloat const rasterY = gman::sampleCentre(raster.rymin, sampleY, ysamples);
+        shadeSample(viewingSys, cameraToWorld, background, rasterX, rasterY, sampleX, sampleY, indirectPass,
+                    textureCache);
+      }
+    }
+  }
 }
 
 namespace {
@@ -235,28 +263,26 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
 
   GMANMatrix4 const& cameraToWorld = options.getCameraToWorld();
 
-  for (int py = 0; py < height; py++) {
-    for (int px = 0; px < width; px++) {
-      for (int subY = 0; subY < ysamples; subY++) {
-        for (int subX = 0; subX < xsamples; subX++) {
-          // The raster point at this sample's centre, in the full
-          // (uncropped) raster grid GMANViewingSystem::cameraRay expects --
-          // raster.rxmin/rymin place this (possibly cropped) buffer's
-          // local (px, py) there, the same origin the z-buffer's render
-          // reads.
-          int const sampleX = px * xsamples + subX;
-          int const sampleY = py * ysamples + subY;
-          RtFloat const rasterX = gman::sampleCentre(raster.rxmin, sampleX, xsamples);
-          RtFloat const rasterY = gman::sampleCentre(raster.rymin, sampleY, ysamples);
-          shadeSample(viewingSys, cameraToWorld, background, rasterX, rasterY, sampleX, sampleY, indirectPass);
-        }
-      }
-    }
-  }
+  // One cache per worker, cold at the start of every render: a worker's
+  // rows are the only code that touches its cache.
+  std::vector<gman::TextureCache> textureCaches(
+      static_cast<std::size_t>(gman::parallelWorkers(height, requestedWorkers)));
+  rowWorker.assign(static_cast<std::size_t>(height), 0);
+
+  gman::parallelFor(
+      height,
+      [&](RtInt row, RtInt worker) {
+        rowWorker[static_cast<std::size_t>(row)] = worker;
+        shadeRow(viewingSys, cameraToWorld, background, raster, width, xsamples, ysamples, row, indirectPass,
+                 &textureCaches[static_cast<std::size_t>(worker)]);
+      },
+      requestedWorkers);
 
   GMANOptions::PixelFilterStruct const& pf = options.getPixelFilter();
   sampleBuffer->resolve(frameBuffer, pf.filterfunc, pf.xwidth, pf.ywidth);
 }
+
+void GMANRaytraceRenderer::setWorkers(RtInt workers) { requestedWorkers = workers; }
 
 GMANWorldManager* GMANRaytraceRenderer::getWorldManager(void) { return &worldManager; }
 
