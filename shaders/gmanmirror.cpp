@@ -21,10 +21,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include "gman/export.h"
 #include "gmanbsdf.h"
+#include "gmancolor.h"
 #include "gmanloadable.h"
+#include "gmanparameterlist.h"
+#include "gmanshader.h"
+#include "gmanshaderenvironment.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 /*
  * surface mirror(float Kr=1)

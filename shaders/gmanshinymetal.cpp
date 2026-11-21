@@ -23,10 +23,17 @@
 
 #include <string>
 
+#include "gman/export.h"
 #include "gmanbsdf.h"
+#include "gmancolor.h"
 #include "gmanloadable.h"
+#include "gmanparameterlist.h"
+#include "gmanshader.h"
+#include "gmanshaderenvironment.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 /*
  * surface shinymetal(float Ka=1, Ks=1, Kr=1, roughness=.1;

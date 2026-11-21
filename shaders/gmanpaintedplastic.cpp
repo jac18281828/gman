@@ -23,10 +23,16 @@
 
 #include <string>
 
+#include "gman/export.h"
 #include "gmanbsdf.h"
 #include "gmanloadable.h"
+#include "gmanparameterlist.h"
+#include "gmanshader.h"
+#include "gmanshaderenvironment.h"
 #include "gmanshaderparams.h"
 #include "gmansurfaceshader.h"
+#include "gmanvector.h"
+#include "ri.h"
 
 /*
  * surface paintedplastic(float Ka=1, Kd=.5, Ks=.5, roughness=.1;
