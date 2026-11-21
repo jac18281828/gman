@@ -78,6 +78,12 @@
  * that reaches the maximum has drawn exactly what a PixelVariance of 0
  * draws. Each slot decides from its own paths alone, so the image and every
  * slot's path count stay the same at every worker count.
+ *
+ * Stopping early on a low sample variance biases the stopped mean low, since
+ * path radiance is non-negative and a low variance goes with a low mean. The
+ * bias grows with PixelVariance and shrinks as minsamples grows, and thin
+ * geometry or a rare bright path can lose coverage at any positive
+ * PixelVariance when its first minsamples paths all miss it.
  */
 class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
