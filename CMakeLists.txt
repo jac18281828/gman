@@ -719,19 +719,18 @@ else
 fi
 jobs=$(getconf _NPROCESSORS_ONLN)
 status=0
-sed "s#^#$root#" "$work/sources" |
+run_tidy() {
   xargs -P "$jobs" -I{} "$tidy" -p "$build" \
     "--header-filter=^$root($header_re)/" \
     "--exclude-header-filter=^${root}(build|tests)/" \
-    "$@" {} || status=1
-sed "s#^#$root#" "$work/headers" |
-  xargs -P "$jobs" -I{} "$tidy" -p "$build" \
-    "--header-filter=^$root($header_re)/" \
-    "--exclude-header-filter=^${root}(build|tests)/" \
-    --extra-arg=-xc++ \
-    --extra-arg=-Wno-pragma-once-outside-header \
-    --extra-arg=-Wno-unused-const-variable \
-    "$@" {} || status=1
+    "$@" {}
+}
+sed "s#^#$root#" "$work/sources" | run_tidy "$@" || status=1
+sed "s#^#$root#" "$work/headers" | run_tidy \
+  --extra-arg=-xc++ \
+  --extra-arg=-Wno-pragma-once-outside-header \
+  --extra-arg=-Wno-unused-const-variable \
+  "$@" || status=1
 exit $status
 ]==])
   add_custom_target(tidy-check
