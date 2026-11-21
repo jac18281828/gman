@@ -28,9 +28,13 @@
 #include <memory>
 #include <vector>
 
+#include "gman/export.h"
 #include "gmanemitter.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanobjectmanager.h"
+#include "gmanoptions.h"
+#include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanrayobjectmanager.h"
@@ -38,6 +42,8 @@
 #include "gmansamplebuffer.h"
 #include "gmanshading.h"
 #include "gmantexture.h"
+#include "gmanvector.h"
+#include "gmanviewingsystem.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 

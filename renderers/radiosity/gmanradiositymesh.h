@@ -27,10 +27,12 @@
 #include <cstddef>
 #include <vector>
 
+#include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanvector.h"
 #include "gmanworldmanager.h"
+#include "ri.h"
 
 class GMANParametric;
 class GMANRayInterface;

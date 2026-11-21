@@ -28,6 +28,7 @@
 #include <utility>
 #include <vector>
 
+#include "gmanbbox.h"
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
@@ -49,6 +50,7 @@
 #include "gmanraytorus.h"
 #include "gmanvector.h"
 #include "gmanworldmanager.h"
+#include "ri.h"
 
 namespace {
 

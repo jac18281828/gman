@@ -22,21 +22,39 @@
  */
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 #include "gmanattributes.h"
+#include "gmanbbox.h"
 #include "gmanbsdf.h"
+#include "gmancolor.h"
 #include "gmanemitter.h"
+#include "gmanframebuffer.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
+#include "gmanmatrix4.h"
+#include "gmanobjectmanager.h"
+#include "gmanoptions.h"
 #include "gmanparallel.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpathtracerweights.h"
+#include "gmanpoint.h"
+#include "gmanray.h"
 #include "gmanraybbox.h"
+#include "gmanraybvh.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
+#include "gmanrenderer.h"
+#include "gmansamplebuffer.h"
 #include "gmansampling.h"
+#include "gmanshading.h"
+#include "gmantexture.h"
+#include "gmanvector.h"
+#include "gmanviewingsystem.h"
+#include "gmanworldmanager.h"
 #include "ri.h"
 
 namespace gman {

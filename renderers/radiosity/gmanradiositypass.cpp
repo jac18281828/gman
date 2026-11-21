@@ -25,13 +25,24 @@
 #include <cstddef>
 #include <vector>
 
+#include "gmanbbox.h"
+#include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
+#include "gmanmatrix4.h"
+#include "gmanoptions.h"
+#include "gmanpoint.h"
+#include "gmanprimitive.h"
+#include "gmanradiositymesh.h"
 #include "gmanradiositypass.h"
+#include "gmanradiositysolver.h"
+#include "gmanray.h"
 #include "gmanraybbox.h"
 #include "gmanrayinterface.h"
+#include "gmanrayoccluder.h"
 #include "gmanshading.h"
+#include "gmanworldmanager.h"
 #include "ri.h"
 
 namespace {

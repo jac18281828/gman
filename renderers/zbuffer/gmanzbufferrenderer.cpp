@@ -24,14 +24,29 @@
  */
 
 #include <cmath>
+#include <cstddef>
 #include <typeinfo>
 
 #include "gmanarealightwarning.h"
 #include "gmanattributes.h"
+#include "gmanbody.h"
 #include "gmanface.h"
+#include "gmanframebuffer.h"
+#include "gmanlog.h"
 #include "gmanmath.h"
+#include "gmanobject.h"
+#include "gmanobjectmanager.h"
+#include "gmanoptions.h"
+#include "gmanoutputpolygon.h"
+#include "gmanparameterlist.h"
+#include "gmanpatchpolyobjectmanager.h"
+#include "gmanpoint.h"
+#include "gmanprimitive.h"
 #include "gmanrenderer.h"
 #include "gmanshading.h"
+#include "gmantransform.h"
+#include "gmantypes.h"
+#include "gmanworldmanager.h"
 #include "gmanzbufferrenderer.h"
 #include "ri.h"
 

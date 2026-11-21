@@ -29,6 +29,8 @@
 #include <utility>
 #include <vector>
 
+#include "gmanbbox.h"
+#include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanmath.h"
@@ -42,6 +44,7 @@
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
 #include "gmanshaderenvironment.h"
+#include "ri.h"
 
 namespace {
 

@@ -32,13 +32,25 @@
 #include <stack>
 #include <string>
 
+#include "gman/export.h"
+#include "gmanattributes.h"
+#include "gmancolor.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanobjectmanager.h"
+#include "gmanoptions.h"
+#include "gmanoutputpolygon.h"
+#include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpoint.h"
 #include "gmanpolygonclipper.h"
+#include "gmanprimitive.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
+#include "gmantransform.h"
+#include "gmanvector.h"
+#include "gmanviewingsystem.h"
+#include "gmanworldmanager.h"
 #include "ri.h"
 
 /*
