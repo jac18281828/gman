@@ -52,7 +52,7 @@ public:
   RtVoid setColor(GMANColor const& c) { color = c; }
   GMANColor const& getColor() const { return color; }
 
-  RtVoid setColor(GMANAlpha const& a) { alpha = a; }
+  RtVoid setAlpha(GMANAlpha const& a) { alpha = a; }
   GMANAlpha const& getAlpha() const { return alpha; }
 
   RtVoid setNormal(GMANVector const& n) { normal = n; }

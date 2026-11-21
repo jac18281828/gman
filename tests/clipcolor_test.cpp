@@ -80,7 +80,7 @@ GMANOptions::ScreenWindowStruct squareWindow() {
 void setVertex(GMANVertex& v, GMANPoint const& p, RtFloat color, RtFloat alpha) {
   v.setLocation(p);
   v.setColor(GMANColor(color));
-  v.setColor(GMANAlpha(alpha));
+  v.setAlpha(GMANAlpha(alpha));
 }
 
 void testVertexDefaults() {

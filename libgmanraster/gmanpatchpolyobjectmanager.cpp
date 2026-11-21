@@ -477,7 +477,7 @@ void shadeVertex(GMANVertex& vertex, GMANNormal const& normal, RtFloat u, RtFloa
   gman::SurfacePoint const point = vertexSurfacePoint(vertex.getLocation(), normal, u, v, s, t);
   gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
   vertex.setColor(shading.Ci);
-  vertex.setColor(vertexAlpha(shading.Oi));
+  vertex.setAlpha(vertexAlpha(shading.Oi));
 }
 
 // Appends one new GMANFace over corners on surface to faces, after
