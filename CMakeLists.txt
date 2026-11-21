@@ -633,7 +633,6 @@ string(JOIN "|" GMAN_TIDY_SOURCE_DIR_REGEX ${GMAN_TIDY_SOURCE_DIRS})
 string(JOIN "|" GMAN_TIDY_HEADER_DIR_REGEX ${GMAN_TIDY_HEADER_DIRS})
 
 find_program(CLANG_TIDY_EXECUTABLE NAMES clang-tidy)
-find_program(GMAN_JQ_EXECUTABLE NAMES jq)
 
 set(GMAN_CLANG_TIDY_FOUND_VERSION "none")
 set(GMAN_CLANG_TIDY_FOUND_MAJOR "")
@@ -667,19 +666,39 @@ if(NOT GMAN_CLANG_TIDY_FOUND_MAJOR STREQUAL GMAN_CLANG_TIDY_MAJOR)
     COMMAND "${CMAKE_COMMAND}" -E false
     COMMENT "Checking the clang-tidy version tidy-check requires"
     VERBATIM)
-elseif(NOT GMAN_JQ_EXECUTABLE)
-  add_custom_target(tidy-check
-    COMMAND "${CMAKE_COMMAND}" -E echo "tidy-check requires jq on PATH"
-    COMMAND "${CMAKE_COMMAND}" -E false
-    COMMENT "Checking the jq tidy-check requires"
-    VERBATIM)
 else()
+  file(WRITE "${CMAKE_BINARY_DIR}/tidy-sources.cmake" [==[
+file(READ "${DB}" database)
+string(JSON entries LENGTH "${database}")
+set(sources "")
+if(entries GREATER 0)
+  math(EXPR last "${entries} - 1")
+  foreach(index RANGE ${last})
+    string(JSON path GET "${database}" ${index} file)
+    string(FIND "${path}" "${ROOT}" at)
+    if(NOT at EQUAL 0)
+      continue()
+    endif()
+    string(LENGTH "${ROOT}" root_length)
+    string(SUBSTRING "${path}" ${root_length} -1 relative)
+    if(relative MATCHES "^(${SOURCE_RE})/")
+      list(APPEND sources "${relative}")
+    endif()
+  endforeach()
+endif()
+list(REMOVE_DUPLICATES sources)
+list(SORT sources)
+file(WRITE "${OUT}" "")
+foreach(source IN LISTS sources)
+  file(APPEND "${OUT}" "${source}\n")
+endforeach()
+]==])
   file(WRITE "${CMAKE_BINARY_DIR}/tidy-check.sh" [==[
 set -eu
 root=$1/
 build=$2
 tidy=$3
-jq=$4
+cmake=$4
 sysroot=$5
 source_re=$6
 header_re=$7
@@ -691,9 +710,8 @@ if [ ! -f "$db" ]; then
 fi
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-"$jq" -r --arg root "$root" --arg re "^($source_re)/" \
-  '.[].file | select(startswith($root)) | ltrimstr($root) | select(test($re))' \
-  "$db" | sort -u > "$work/sources"
+"$cmake" "-DDB=$db" "-DROOT=$root" "-DSOURCE_RE=$source_re" "-DOUT=$work/sources" \
+  -P "$build/tidy-sources.cmake"
 count=$(wc -l < "$work/sources")
 echo "production translation units: $count"
 if [ "$count" -eq 0 ]; then
@@ -736,7 +754,7 @@ exit $status
   add_custom_target(tidy-check
     COMMAND sh "${CMAKE_BINARY_DIR}/tidy-check.sh"
       "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" "${CLANG_TIDY_EXECUTABLE}"
-      "${GMAN_JQ_EXECUTABLE}" "${GMAN_TIDY_SYSROOT}"
+      "${CMAKE_COMMAND}" "${GMAN_TIDY_SYSROOT}"
       "${GMAN_TIDY_SOURCE_DIR_REGEX}" "${GMAN_TIDY_HEADER_DIR_REGEX}"
       ${GMAN_TIDY_HEADER_DIRS}
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
