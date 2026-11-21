@@ -3749,3 +3749,13 @@ add_test(NAME helperscan COMMAND gman_helperscan "${CMAKE_SOURCE_DIR}/tests")
 set_tests_properties(helperscan PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# GMANMax and GMANMin's NaN contract, which the shader clamps rely on. See
+# tests/gmanmathminmax_test.cpp.
+add_executable(gman_gmanmathminmax gmanmathminmax_test.cpp)
+target_link_libraries(gman_gmanmathminmax PRIVATE gman_core)
+
+add_test(NAME gmanmathminmax COMMAND gman_gmanmathminmax)
+set_tests_properties(gmanmathminmax PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
