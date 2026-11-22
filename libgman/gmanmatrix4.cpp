@@ -381,10 +381,4 @@ GMANVector transformDirection(GMANMatrix4 const& m, GMANVector const& v) {
                     x * m[0][2] + y * m[1][2] + z * m[2][2]);
 }
 
-GMANVector transformNormal(GMANMatrix4 const& m, GMANVector const& v) {
-  RtFloat const x = v.getX(), y = v.getY(), z = v.getZ();
-  return GMANVector(m[0][0] * x + m[0][1] * y + m[0][2] * z, m[1][0] * x + m[1][1] * y + m[1][2] * z,
-                    m[2][0] * x + m[2][1] * y + m[2][2] * z);
-}
-
 } // namespace gman
