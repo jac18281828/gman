@@ -26,7 +26,11 @@
 #pragma once
 
 // Make this file self-contained - asandro
+#include <algorithm>
+#include <cmath>
+#include <concepts>
 #include <numbers>
+#include <type_traits>
 
 #include <math.h>
 
@@ -66,11 +70,46 @@ inline RtFloat GMANMod(RtFloat a, RtFloat b) {
 constexpr RtFloat GMANSign(RtFloat x) { return (RtFloat)(x < 0.0 ? -1.0 : x > 0.0 ? 1.0 : 0.0); }
 
 // Comparison functions - asandro
-template <class T> constexpr T GMANMin(T a, T b) { return a < b ? a : b; }
+//
+// GMANMin, GMANMax and GMANClamp drop a NaN operand. For a floating type,
+// GMANMin and GMANMax answer the number when one operand is NaN and NaN only
+// when both are, as C's fmin and fmax (IEEE 754-2008 minNum and maxNum) do,
+// and GMANClamp(v, lo, hi) is GMANMin(GMANMax(v, lo), hi): a NaN v answers lo
+// and a NaN bound is ignored. Every other type follows std::min, std::max and
+// std::clamp. All three are constexpr.
+template <class T> constexpr T GMANMin(T a, T b) {
+  if constexpr (std::floating_point<T>) {
+    if (std::is_constant_evaluated()) {
+      if (a != a)
+        return b;
+      return b < a ? b : a;
+    }
+    return std::fmin(a, b);
+  } else {
+    return std::min(a, b);
+  }
+}
 
-template <class T> constexpr T GMANMax(T a, T b) { return a > b ? a : b; }
+template <class T> constexpr T GMANMax(T a, T b) {
+  if constexpr (std::floating_point<T>) {
+    if (std::is_constant_evaluated()) {
+      if (a != a)
+        return b;
+      return b > a ? b : a;
+    }
+    return std::fmax(a, b);
+  } else {
+    return std::max(a, b);
+  }
+}
 
-template <class T> constexpr T GMANClamp(T a, T min, T max) { return a < min ? min : a > max ? max : a; }
+template <class T> constexpr T GMANClamp(T a, T min, T max) {
+  if constexpr (std::floating_point<T>) {
+    return GMANMin(GMANMax(a, min), max);
+  } else {
+    return std::clamp(a, min, max);
+  }
+}
 
 // Mixing values - asandro
 template <class T> constexpr T GMANMix(T a, T b, RtFloat alpha) { return a * (1 - alpha) + b * alpha; }

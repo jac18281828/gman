@@ -3750,7 +3750,8 @@ set_tests_properties(helperscan PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# GMANMax and GMANMin's NaN contract, which the shader clamps rely on. See
+# GMANMin, GMANMax and GMANClamp drop a NaN operand for float and double, as
+# fmin and fmax do, and follow the standard library for every other type. See
 # tests/gmanmathminmax_test.cpp.
 add_executable(gman_gmanmathminmax gmanmathminmax_test.cpp)
 target_link_libraries(gman_gmanmathminmax PRIVATE gman_core)
