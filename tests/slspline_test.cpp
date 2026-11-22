@@ -21,8 +21,8 @@
 /*
  * The shading-language spline family: the uniform cubic B-spline's values, and
  * each basis reading only its control values at and beyond the ends of [0, 1],
- * GMANSurfaceEnv::spline's dispatch on the basis name, and the Bezier and Hermite
- * segments starting at their basis's step.
+ * GMANSurfaceEnv::spline's dispatch on the basis name, the Bezier and Hermite
+ * segments starting at their basis's step, and a NaN value evaluating as value 0.
  */
 
 #include <cmath>
@@ -116,6 +116,19 @@ void testNoReadPastTheArray() {
   }
 }
 
+void testNanValueEvaluatesAsZero() {
+  const RtFloat nan = std::numeric_limits<RtFloat>::quiet_NaN();
+  for (Basis const& basis : bases()) {
+    for (const RtInt nvals : basis.sizes) {
+      std::vector<RtFloat> atNan = controlValues(nvals);
+      std::vector<RtFloat> atZero = controlValues(nvals);
+      const RtFloat result = basis.spline(nan, nvals, atNan.data());
+      check(std::isfinite(result) && near(result, basis.spline(0.0f, nvals, atZero.data())),
+            std::string(basis.name) + " nvals " + std::to_string(nvals) + ": a NaN value evaluates as value 0");
+    }
+  }
+}
+
 void testBsplineNames() {
   GMANSurfaceEnv env;
   std::vector<RtFloat> points{0.0f, 1.0f, 0.0f, 0.0f};
@@ -196,12 +209,15 @@ int main() {
   testBsplineConstantCurve();
   testBsplineSegmentStart();
   testNoReadPastTheArray();
+  testNanValueEvaluatesAsZero();
   testBsplineNames();
   testEachNameMatchesItsTemplate();
   testUnknownBasisThrows();
   testSegmentsStartAtTheirStep();
 
-  return checkSummary("the shading-language spline family evaluates the uniform cubic B-spline and stays within its "
-                      "control values at and beyond the ends of [0, 1], and spline() accepts the six basis names and "
-                      "throws on any other, and Bezier and Hermite segments start at their step");
+  return checkSummary(
+      "the shading-language spline family evaluates the uniform cubic B-spline and stays within its "
+      "control values at and beyond the ends of [0, 1], and spline() accepts the six basis names and "
+      "throws on any other, and Bezier and Hermite segments start at their step, and a NaN value evaluates as "
+      "value 0");
 }

@@ -1655,7 +1655,8 @@ set_tests_properties(albedoenv PROPERTIES
 # The shading-language spline family in include/gmanslapi.h and
 # GMANSurfaceEnv::spline's basis dispatch: each basis evaluates its own curve,
 # reads only its control values at and beyond the ends of [0, 1], and an
-# unknown basis name throws. See tests/slspline_test.cpp.
+# unknown basis name throws, and a NaN value evaluates as value 0. See
+# tests/slspline_test.cpp.
 add_executable(gman_slspline slspline_test.cpp)
 target_link_libraries(gman_slspline PRIVATE gman_core)
 
