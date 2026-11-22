@@ -24,7 +24,7 @@
 #include <cmath>
 #include <numbers>
 
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
@@ -142,7 +142,7 @@ void sweepTangents(Sweep const& sweep, SweepHit const& found, GMANVector& dPdu, 
 // plane hit's own radius, and the wedge is a spiral sector since phi(v)
 // varies with v.
 bool annulusHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector const& objDirection, GMANRay const& ray,
-                GMANMatrix4 const& objectToCamera, SweepHit& found) {
+                gman::InvertibleMatrix const& placement, SweepHit& found) {
   double const dzPlane = objDirection.getZ();
   // A plane solve has no discriminant to cancel, so it runs in double
   // from the unshifted origin: no bounding-sphere shift applies here.
@@ -179,7 +179,7 @@ bool annulusHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector const
     GMANPoint const objPoint((RtFloat)x, (RtFloat)y, (RtFloat)sweep.p1z);
 
     found.t = t;
-    found.point = gman::transformPoint(objectToCamera, objPoint);
+    found.point = gman::transformPoint(placement, objPoint);
     found.objNormal = objNormal;
     found.theta = theta;
     found.v = v;
@@ -195,7 +195,7 @@ bool annulusHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector const
 // z and so in t; x(t)^2 + y(t)^2 - r(v(t))^2 is then an ordinary
 // quadratic in t.
 bool spanningHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector const& objDirection, GMANRay const& ray,
-                 GMANMatrix4 const& objectToCamera, SweepHit& found) {
+                 gman::InvertibleMatrix const& placement, SweepHit& found) {
   gman::ShiftedRay shifted;
   if (!gman::shiftIntoBoundingSphere(objOrigin, objDirection, boundingRadius(sweep), shifted))
     return false;
@@ -214,7 +214,7 @@ bool spanningHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector cons
 
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
-    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, placement.forward());
     if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
@@ -251,15 +251,9 @@ bool spanningHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector cons
 
 GMANRayHyperboloid::GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat thetamax, GMANParameterList pl,
                                        GMANTransform const& transform)
-    : GMANHyperboloid(point1, point2, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
-      cameraToObject(objectToCamera) {
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
-    singular = true;
-  }
-
-  if (singular)
+    : GMANHyperboloid(point1, point2, thetamax, pl),
+      objectToCamera(gman::InvertibleMatrix::of(transform.interpolate(0.0))) {
+  if (!objectToCamera)
     return;
 
   // r(v)^2 (sweepOf's own p0sq + 2*pDot*v + dSq*v^2) is convex in v
@@ -272,30 +266,31 @@ GMANRayHyperboloid::GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat t
   RtFloat const r1 = (RtFloat)std::sqrt(
       (double)(this->point2.getX() * this->point2.getX() + this->point2.getY() * this->point2.getY()));
   RtFloat const r = GMANMax(r0, r1);
-  bbox = gman::revolutionBBox(objectToCamera, r, this->point1.getZ(), this->point2.getZ());
+  bbox = gman::revolutionBBox(objectToCamera->forward(), r, this->point1.getZ(), this->point2.getZ());
 }
 
 bool GMANRayHyperboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
-  if (singular)
+  if (!objectToCamera)
     return false;
+  gman::InvertibleMatrix const& placement = *objectToCamera;
 
   // A null wedge leaves no surface to hit, the sphere's own guard; it
   // covers both annulusHit and spanningHit.
   if (thetamax == 0.0)
     return false;
 
-  GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
-  GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
+  GMANPoint const objOrigin = gman::transformPoint(placement.backward(), ray.getOrigin());
+  GMANVector const objDirection = gman::transformDirection(placement.backward(), ray.getDirection());
 
   Sweep const sweep = sweepOf(point1, point2, thetamax);
 
   SweepHit found;
-  bool const isHit = sweep.dzSeg == 0.0 ? annulusHit(sweep, objOrigin, objDirection, ray, objectToCamera, found)
-                                        : spanningHit(sweep, objOrigin, objDirection, ray, objectToCamera, found);
+  bool const isHit = sweep.dzSeg == 0.0 ? annulusHit(sweep, objOrigin, objDirection, ray, placement, found)
+                                        : spanningHit(sweep, objOrigin, objDirection, ray, placement, found);
   if (!isHit)
     return false;
 
-  GMANVector normal = gman::transformNormal(cameraToObject, found.objNormal);
+  GMANVector normal = gman::transformNormal(placement, found.objNormal);
   normal.normalize();
 
   GMANVector objDPdu;
@@ -308,8 +303,8 @@ bool GMANRayHyperboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
   candidate.normal = normal;
   candidate.u = found.theta / sweep.thetamaxRad;
   candidate.v = (RtFloat)found.v;
-  candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-  candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+  candidate.dPdu = gman::transformDirection(placement, objDPdu);
+  candidate.dPdv = gman::transformDirection(placement, objDPdv);
   candidate.primitive = this;
   return gman::acceptFiniteHit(candidate, hit);
 }

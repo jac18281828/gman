@@ -27,7 +27,7 @@
 #include <cstddef>
 #include <vector>
 
-#include "gmanmatrix4.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanvector.h"
@@ -212,8 +212,8 @@ private:
   // quadric whose placement will not invert).
   bool diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength);
 
-  void diceParametric(GMANPrimitive* primitive, GMANParametric& parametric, GMANMatrix4 const& objectToCamera,
-                      GMANMatrix4 const& cameraToObject, RtFloat maxEdgeLength);
+  void diceParametric(GMANPrimitive* primitive, GMANParametric& parametric,
+                      gman::InvertibleMatrix const& objectToCamera, RtFloat maxEdgeLength);
 
   // Appends a parametric primitive's own nu x nv facet elements over its
   // freshly appended node grid, recording each cell's index in

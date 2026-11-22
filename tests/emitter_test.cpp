@@ -33,6 +33,7 @@
 #include <fstream>
 #include <memory>
 #include <numbers>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -40,6 +41,7 @@
 #include "check.h"
 #include "gmanattributes.h"
 #include "gmanemitter.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
@@ -379,7 +381,12 @@ void testScaledDisk() {
   // A_cam: pi times the magnitude of the cross product of the disk's own
   // placed object-space x and y axes -- the area of the ellipse the unit
   // circle spanning those axes becomes under the same linear map.
-  GMANMatrix4 const& objectToCamera = disk->getObjectToCamera();
+  std::optional<gman::InvertibleMatrix> const& placement = disk->getObjectToCamera();
+  check(placement.has_value(), "scaled disk: the placement inverts");
+  if (!placement) {
+    return;
+  }
+  gman::InvertibleMatrix const& objectToCamera = *placement;
   GMANPoint const origin = gman::transformPoint(objectToCamera, GMANPoint(0.0f, 0.0f, 0.0f));
   GMANPoint const xTip = gman::transformPoint(objectToCamera, GMANPoint(1.0f, 0.0f, 0.0f));
   GMANPoint const yTip = gman::transformPoint(objectToCamera, GMANPoint(0.0f, 1.0f, 0.0f));
@@ -389,10 +396,8 @@ void testScaledDisk() {
   double const aCam = std::numbers::pi * std::sqrt((double)crossed.dot(crossed));
 
   // |n'|: the disk's own fixed (0, 0, -1) normal transformed by
-  // transformNormal with the inverse placement, before normalizing.
-  GMANMatrix4 cameraToObject = objectToCamera;
-  cameraToObject.invert();
-  GMANVector nPrime = gman::transformNormal(cameraToObject, GMANVector(0.0f, 0.0f, -1.0f));
+  // transformNormal by the placement, before normalizing.
+  GMANVector nPrime = gman::transformNormal(objectToCamera, GMANVector(0.0f, 0.0f, -1.0f));
   double const nPrimeMagnitude = (double)nPrime.magnitude();
   std::printf("scaled disk: |n'| %.6f\n", nPrimeMagnitude);
   checkNear(nPrimeMagnitude, 0.791, 0.0, 0.01, "scaled disk: |n'| is close to 0.791, off 1 by the tilt and scale");

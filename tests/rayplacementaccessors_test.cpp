@@ -26,10 +26,12 @@
  */
 
 #include <cmath>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "check.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
@@ -73,34 +75,65 @@ bool matricesEqual(GMANMatrix4 const& a, GMANMatrix4 const& b) {
   return true;
 }
 
+bool placementEquals(std::optional<gman::InvertibleMatrix> const& held, GMANMatrix4 const& placement) {
+  return held.has_value() && matricesEqual(held->forward(), placement);
+}
+
+void testSingularPlacement() {
+  GMANMatrix4 flat;
+  flat.scale(1.0, 1.0, 0.0);
+  GMANTransform const transform = makeTransform(flat);
+
+  GMANRaySphere const sphere(2.0, -2.0, 2.0, 360.0, GMANParameterList(), transform);
+  check(!sphere.getObjectToCamera().has_value(), "sphere: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  GMANRayCone const cone(3.0, 1.5, 360.0, GMANParameterList(), transform);
+  check(!cone.getObjectToCamera().has_value(), "cone: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  GMANRayCylinder const cylinder(1.2, -1.0, 2.5, 360.0, GMANParameterList(), transform);
+  check(!cylinder.getObjectToCamera().has_value(),
+        "cylinder: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  GMANRayDisk const disk(1.0, 1.0, 360.0, GMANParameterList(), transform);
+  check(!disk.getObjectToCamera().has_value(), "disk: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  GMANRayParaboloid const paraboloid(1.0, 0.0, 0.5, 360.0, GMANParameterList(), transform);
+  check(!paraboloid.getObjectToCamera().has_value(),
+        "paraboloid: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  RtPoint point1 = {0.5, 0.0, -1.0};
+  RtPoint point2 = {1.2, 0.0, 2.0};
+  GMANRayHyperboloid const hyperboloid(point1, point2, 360.0, GMANParameterList(), transform);
+  check(!hyperboloid.getObjectToCamera().has_value(),
+        "hyperboloid: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  GMANRayTorus const torus(2.0, 0.5, -180.0, 180.0, 360.0, GMANParameterList(), transform);
+  check(!torus.getObjectToCamera().has_value(), "torus: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+}
+
 void testQuadrics() {
   GMANMatrix4 const placement = representativePlacement();
   GMANTransform const transform = makeTransform(placement);
 
   GMANRaySphere const sphere(2.0, -2.0, 2.0, 360.0, GMANParameterList(), transform);
-  check(matricesEqual(sphere.getObjectToCamera(), placement), "sphere: getObjectToCamera() is the built transform");
+  check(placementEquals(sphere.getObjectToCamera(), placement), "sphere: getObjectToCamera() is the built transform");
 
   GMANRayCone const cone(3.0, 1.5, 360.0, GMANParameterList(), transform);
-  check(matricesEqual(cone.getObjectToCamera(), placement), "cone: getObjectToCamera() is the built transform");
+  check(placementEquals(cone.getObjectToCamera(), placement), "cone: getObjectToCamera() is the built transform");
 
   GMANRayCylinder const cylinder(1.2, -1.0, 2.5, 360.0, GMANParameterList(), transform);
-  check(matricesEqual(cylinder.getObjectToCamera(), placement), "cylinder: getObjectToCamera() is the built transform");
+  check(placementEquals(cylinder.getObjectToCamera(), placement),
+        "cylinder: getObjectToCamera() is the built transform");
 
   GMANRayDisk const disk(1.0, 1.0, 360.0, GMANParameterList(), transform);
-  check(matricesEqual(disk.getObjectToCamera(), placement), "disk: getObjectToCamera() is the built transform");
+  check(placementEquals(disk.getObjectToCamera(), placement), "disk: getObjectToCamera() is the built transform");
 
   GMANRayParaboloid const paraboloid(1.0, 0.0, 0.5, 360.0, GMANParameterList(), transform);
-  check(matricesEqual(paraboloid.getObjectToCamera(), placement),
+  check(placementEquals(paraboloid.getObjectToCamera(), placement),
         "paraboloid: getObjectToCamera() is the built transform");
 
   RtPoint point1 = {0.5, 0.0, -1.0};
   RtPoint point2 = {1.2, 0.0, 2.0};
   GMANRayHyperboloid const hyperboloid(point1, point2, 360.0, GMANParameterList(), transform);
-  check(matricesEqual(hyperboloid.getObjectToCamera(), placement),
+  check(placementEquals(hyperboloid.getObjectToCamera(), placement),
         "hyperboloid: getObjectToCamera() is the built transform");
 
   GMANRayTorus const torus(2.0, 0.5, -180.0, 180.0, 360.0, GMANParameterList(), transform);
-  check(matricesEqual(torus.getObjectToCamera(), placement), "torus: getObjectToCamera() is the built transform");
+  check(placementEquals(torus.getObjectToCamera(), placement), "torus: getObjectToCamera() is the built transform");
 }
 
 void testPolygon() {
@@ -146,6 +179,7 @@ void testPolygon() {
 
 int main() {
   testQuadrics();
+  testSingularPlacement();
   testPolygon();
 
   return checkSummary("Ray primitive placement accessors return what each primitive was built with");

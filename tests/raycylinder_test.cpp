@@ -144,7 +144,7 @@ void testRotatingTransform() {
         "rotation: normal == (0, -1, 0)");
 }
 
-// ---- check 5b: a shear tells transformNormal(cameraToObject, n) apart
+// ---- check 5b: a shear tells transformNormal(objectToCamera, n) apart
 // from transformDirection(objectToCamera, n), which the rotation above
 // cannot -- tests/raydisk_test.cpp's own testShearTransform is the model.
 // ----
@@ -163,7 +163,7 @@ void testShearTransform() {
         "shear: point == (1, 0, 1)");
   // The correct inverse transpose gives (-1, 0, 2)/sqrt(5): the shear mixes
   // the object normal's x == -1 into the camera normal's z, through
-  // cameraToObject's own [2][0] == -2. transformDirection(objectToCamera,
+  // objectToCamera.backward()'s own [2][0] == -2. transformDirection(objectToCamera,
   // ...) -- the naive substitute -- would instead leave it (-1, 0, 0).
   RtFloat const sqrt5 = (RtFloat)std::sqrt(5.0);
   check(near(hit.normal.getX(), -1.0 / sqrt5) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), 2.0 / sqrt5),

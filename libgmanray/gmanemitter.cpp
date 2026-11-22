@@ -26,12 +26,13 @@
 #include <cmath>
 #include <cstddef>
 #include <numbers>
+#include <optional>
 #include <vector>
 
 #include "gmanbbox.h"
 #include "gmancolor.h"
 #include "gmanemitter.h"
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
@@ -110,9 +111,10 @@ bool emittingShapeArea(GMANRayInterface const& shape, RtFloat& area) {
   return false;
 }
 
-// shape's own shutter-open placement. Precondition: shape is a
-// GMANRaySphere or GMANRayDisk, the only two supported emitting types.
-GMANMatrix4 const& emittingShapeObjectToCamera(GMANRayInterface const& shape) {
+// shape's own shutter-open placement, empty for a singular one. Precondition:
+// shape is a GMANRaySphere or GMANRayDisk, the only two supported emitting
+// types.
+std::optional<InvertibleMatrix> const& emittingShapeObjectToCamera(GMANRayInterface const& shape) {
   EmittingShapeKind const kind = classifyEmittingShape(shape);
   return (kind.sphere != nullptr) ? kind.sphere->getObjectToCamera() : kind.disk->getObjectToCamera();
 }
@@ -124,31 +126,14 @@ GMANPoint emittingShapeSamplePoint(GMANRayInterface const& shape, double u1, dou
   return (kind.sphere != nullptr) ? kind.sphere->samplePoint(u1, u2, normal) : kind.disk->samplePoint(u1, u2, normal);
 }
 
-// True when objectToCamera's own inverse exists -- a singular placement
-// (e.g. Scale 1 1 0) counts as skipped, the same rule
-// renderers/radiosity/gmanradiositymesh.cpp already applies to a quadric's
-// own placement. cameraToObject is filled either way; a caller that
-// ignores a false return must not read it.
-bool invertiblePlacement(GMANMatrix4 const& objectToCamera, GMANMatrix4& cameraToObject) {
-  cameraToObject = objectToCamera;
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
-    return false;
-  }
-  return true;
-}
-
-// Places an object-space point and normal by objectToCamera and its own
-// inverse cameraToObject, the normal through cameraToObject's transpose,
-// then normalized -- renderers/radiosity/gmanradiositymesh.cpp's own
-// pattern, reused exactly. RiOrientation/RiSides are not consulted,
-// matching that file's own choice.
-void placeEmitterPoint(GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cameraToObject,
-                       GMANPoint const& objectPoint, GMANVector const& objectNormal, GMANPoint& cameraPoint,
-                       GMANVector& cameraNormal) {
+// Places an object-space point and normal by objectToCamera, the normal
+// through its inverse transpose, then normalized --
+// renderers/radiosity/gmanradiositymesh.cpp's own pattern, reused exactly.
+// RiOrientation/RiSides are not consulted, matching that file's own choice.
+void placeEmitterPoint(InvertibleMatrix const& objectToCamera, GMANPoint const& objectPoint,
+                       GMANVector const& objectNormal, GMANPoint& cameraPoint, GMANVector& cameraNormal) {
   cameraPoint = gman::transformPoint(objectToCamera, objectPoint);
-  cameraNormal = gman::transformNormal(cameraToObject, objectNormal);
+  cameraNormal = gman::transformNormal(objectToCamera, objectNormal);
   cameraNormal.normalize();
 }
 
@@ -156,13 +141,12 @@ void placeEmitterPoint(GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cam
 // unit normal is objectNormal: |det L| * |n'|, L the linear part of
 // objectToCamera (an affine matrix's own 4x4 determinant already is det L,
 // its translation contributing nothing) and n' objectNormal transformed by
-// cameraToObject's own transpose, before normalizing. Exact for any
+// objectToCamera's inverse transpose, before normalizing. Exact for any
 // invertible affine placement; 1 within float rounding for a rigid one.
-RtFloat areaJacobian(GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cameraToObject,
-                     GMANVector const& objectNormal) {
-  GMANMatrix4 linear = objectToCamera; // determinant() is non-const
+RtFloat areaJacobian(InvertibleMatrix const& objectToCamera, GMANVector const& objectNormal) {
+  GMANMatrix4 linear = objectToCamera.forward(); // determinant() is non-const
   RtFloat const linearDet = linear.determinant();
-  GMANVector nPrime = gman::transformNormal(cameraToObject, objectNormal); // magnitude() is non-const
+  GMANVector nPrime = gman::transformNormal(objectToCamera, objectNormal); // magnitude() is non-const
   return std::fabs(linearDet) * nPrime.magnitude();
 }
 
@@ -180,7 +164,7 @@ void emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& cent
     radius = kind.disk->getRadius();
     objectCentre = GMANPoint(0.0f, 0.0f, kind.disk->getHeight());
   }
-  centre = gman::transformPoint(emittingShapeObjectToCamera(shape), objectCentre);
+  centre = gman::transformPoint(*emittingShapeObjectToCamera(shape), objectCentre);
 }
 
 // The camera-space area emitters() needs for power: exact for a disk,
@@ -190,14 +174,14 @@ void emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& cent
 // -- the area factor a uniform scale of that same determinant would give,
 // exact under a rigid or uniformly scaled placement. Precondition: shape
 // is a GMANRaySphere or GMANRayDisk.
-RtFloat emittingShapeCameraArea(GMANRayInterface const& shape, GMANMatrix4 const& objectToCamera,
-                                GMANMatrix4 const& cameraToObject, RtFloat objectArea) {
+RtFloat emittingShapeCameraArea(GMANRayInterface const& shape, InvertibleMatrix const& objectToCamera,
+                                RtFloat objectArea) {
   EmittingShapeKind const kind = classifyEmittingShape(shape);
   if (kind.disk != nullptr) {
     GMANVector const diskNormal(0.0f, 0.0f, -1.0f);
-    return objectArea * areaJacobian(objectToCamera, cameraToObject, diskNormal);
+    return objectArea * areaJacobian(objectToCamera, diskNormal);
   }
-  GMANMatrix4 linear = objectToCamera; // determinant() is non-const
+  GMANMatrix4 linear = objectToCamera.forward(); // determinant() is non-const
   RtFloat const linearDet = std::fabs(linear.determinant());
   return objectArea * std::pow(linearDet, (RtFloat)(2.0 / 3.0));
 }
@@ -215,14 +199,13 @@ struct EmitterDraw {
 EmitterDraw drawEmitterPoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
   GMANVector objectNormal;
   GMANPoint const objectPoint = emittingShapeSamplePoint(*emitter.shape, u1, u2, objectNormal);
-  GMANMatrix4 const objectToCamera = emittingShapeObjectToCamera(*emitter.shape);
-  GMANMatrix4 cameraToObject;
-  invertiblePlacement(objectToCamera, cameraToObject); // precondition: emitter came from emitters()
+  // Precondition: emitter came from emitters(), so its placement inverts.
+  InvertibleMatrix const& objectToCamera = *emittingShapeObjectToCamera(*emitter.shape);
 
   EmitterDraw draw;
-  placeEmitterPoint(objectToCamera, cameraToObject, objectPoint, objectNormal, draw.point, draw.normal);
+  placeEmitterPoint(objectToCamera, objectPoint, objectNormal, draw.point, draw.normal);
   emittingShapeArea(*emitter.shape, draw.area);
-  draw.jacobian = areaJacobian(objectToCamera, cameraToObject, objectNormal);
+  draw.jacobian = areaJacobian(objectToCamera, objectNormal);
   return draw;
 }
 
@@ -314,13 +297,12 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
       ++ineligibleCount;
       continue;
     }
-    GMANMatrix4 const objectToCamera = emittingShapeObjectToCamera(*rayPrimitive);
-    GMANMatrix4 cameraToObject;
-    if (!invertiblePlacement(objectToCamera, cameraToObject)) {
+    std::optional<InvertibleMatrix> const& objectToCamera = emittingShapeObjectToCamera(*rayPrimitive);
+    if (!objectToCamera) {
       ++ineligibleCount;
       continue;
     }
-    RtFloat const cameraArea = emittingShapeCameraArea(*rayPrimitive, objectToCamera, cameraToObject, area);
+    RtFloat const cameraArea = emittingShapeCameraArea(*rayPrimitive, *objectToCamera, area);
     RtFloat const power = std::numbers::pi_v<RtFloat> * meanChannel(appearance.areaLight->getCl()) * cameraArea;
     result.push_back({appearance.areaLight, rayPrimitive, power});
   }
@@ -371,17 +353,16 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
 
   RtFloat area = 0.0f;
   emittingShapeArea(*emitter.shape, area);
-  GMANMatrix4 const objectToCamera = emittingShapeObjectToCamera(*emitter.shape);
-  GMANMatrix4 cameraToObject;
-  invertiblePlacement(objectToCamera, cameraToObject); // precondition: emitter came from emitters()
+  // Precondition: emitter came from emitters(), so its placement inverts.
+  InvertibleMatrix const& objectToCamera = *emittingShapeObjectToCamera(*emitter.shape);
 
   // hitPoint's own object-space normal, recovered by the inverse of the
   // object-to-camera map placeEmitterPoint applies to a freshly drawn
   // one -- exact for the point a real draw or a real ray hit actually
   // placed, which hitPoint always is.
-  GMANVector objectNormal = gman::transformNormal(objectToCamera, hitNormal);
+  GMANVector objectNormal = gman::transformNormal(objectToCamera.inverse(), hitNormal);
   objectNormal.normalize();
-  RtFloat const jacobian = areaJacobian(objectToCamera, cameraToObject, objectNormal);
+  RtFloat const jacobian = areaJacobian(objectToCamera, objectNormal);
 
   return (distance * distance) / (area * jacobian * cosTheta);
 }

@@ -34,6 +34,7 @@
 #include <numbers>
 
 #include "check.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanray.h"
 #include "gmanrayhyperboloid.h"
 #include "maketransform.h"
@@ -87,7 +88,7 @@ void testOffAxisRoundTrip() {
   check(hit.u >= 0.0 && hit.u <= 1.0, "off-axis: 0 <= u <= 1");
   check(hit.v >= 0.0 && hit.v <= 1.0, "off-axis: 0 <= v <= 1");
 
-  GMANVector expectedNormal = gman::transformNormal(GMANMatrix4(), hyperboloid.getNormal(hit.u, hit.v));
+  GMANVector expectedNormal = gman::transformNormal(gman::InvertibleMatrix(), hyperboloid.getNormal(hit.u, hit.v));
   expectedNormal.normalize();
   check(near(hit.normal.getX(), expectedNormal.getX()) && near(hit.normal.getY(), expectedNormal.getY()) &&
             near(hit.normal.getZ(), expectedNormal.getZ()),
@@ -186,7 +187,7 @@ void testRotatingTransform() {
         "rotation: normal == (0, 0, 1)");
 }
 
-// ---- check 5b: a shear tells transformNormal(cameraToObject, n) apart
+// ---- check 5b: a shear tells transformNormal(objectToCamera, n) apart
 // from transformDirection(objectToCamera, n). The ray's own geometry sits
 // entirely at object z == 0, so the shear leaves the hit point and t
 // unchanged; only the normal, which carries a nonzero z component after

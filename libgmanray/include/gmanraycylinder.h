@@ -23,8 +23,10 @@
 
 #pragma once
 
+#include <optional>
+
 #include "gman/rayexport.h"
-#include "gmanmatrix4.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
@@ -48,10 +50,11 @@ public:
   // The shutter-open matrix placing the cylinder, for a renderer that
   // needs to reproduce its own placement (e.g. dicing it into camera
   // space).
-  GMANMatrix4 const& getObjectToCamera() const { return objectToCamera; }
+  // Empty for a singular matrix.
+  std::optional<gman::InvertibleMatrix> const& getObjectToCamera() const { return objectToCamera; }
 
 private:
-  GMANMatrix4 objectToCamera;
-  GMANMatrix4 cameraToObject;
-  bool singular = false;
+  // The shutter-open matrix and its inverse: motion blur is out of scope
+  // here.
+  std::optional<gman::InvertibleMatrix> objectToCamera = gman::InvertibleMatrix();
 };

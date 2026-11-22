@@ -24,7 +24,7 @@
 #include <cmath>
 #include <numbers>
 
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
@@ -54,15 +54,9 @@ void paraboloidTangents(RtFloat zSpan, RtFloat thetamaxRad, RtFloat theta, doubl
 
 GMANRayParaboloid::GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl,
                                      GMANTransform const& transform)
-    : GMANParaboloid(rmax, zmin, zmax, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
-      cameraToObject(objectToCamera) {
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
-    singular = true;
-  }
-
-  if (singular)
+    : GMANParaboloid(rmax, zmin, zmax, thetamax, pl),
+      objectToCamera(gman::InvertibleMatrix::of(transform.interpolate(0.0))) {
+  if (!objectToCamera)
     return;
 
   // x^2 + y^2 == k*(z - zmin), k == rmax^2 / (zmax*(zmax - zmin))
@@ -76,12 +70,13 @@ GMANRayParaboloid::GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, R
     return;
 
   RtFloat const r = (RtFloat)(std::fabs(rmax) / std::sqrt((double)zmax));
-  bbox = gman::revolutionBBox(objectToCamera, r, zmin, zmax);
+  bbox = gman::revolutionBBox(objectToCamera->forward(), r, zmin, zmax);
 }
 
 bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
-  if (singular)
+  if (!objectToCamera)
     return false;
+  gman::InvertibleMatrix const& placement = *objectToCamera;
 
   // A null wedge, a null z-band, a zero rmax or a zero zmax leaves no
   // surface to hit, the sphere's own guard against a NaN-filled hit: zmax
@@ -90,8 +85,8 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (thetamax == 0.0 || rmax == 0.0 || zmax == 0.0 || zmin == zmax)
     return false;
 
-  GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
-  GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
+  GMANPoint const objOrigin = gman::transformPoint(placement.backward(), ray.getOrigin());
+  GMANVector const objDirection = gman::transformDirection(placement.backward(), ray.getDirection());
 
   // Every surface point satisfies x^2+y^2+z^2 <= r^2 + max(zmin^2,
   // zmax^2), r == |rmax|/sqrt(|zmax|) (gmanraybbox.h's revolutionBBox's
@@ -129,7 +124,7 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
 
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
-    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, placement.forward());
     if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
@@ -150,7 +145,7 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
     // theta, sin theta) that (2x, 2y, -k) carries -- so no division by r
     // is needed, and the apex (r == 0) is not a special case here.
     GMANVector objNormal((RtFloat)(2.0 * root.px), (RtFloat)(2.0 * root.py), (RtFloat)(-k));
-    GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
+    GMANVector normal = gman::transformNormal(placement, objNormal);
     normal.normalize();
 
     RtFloat const v = (z - zmin) / (zmax - zmin);
@@ -166,8 +161,8 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
     candidate.normal = normal;
     candidate.u = theta / thetamaxRad;
     candidate.v = v;
-    candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-    candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+    candidate.dPdu = gman::transformDirection(placement, objDPdu);
+    candidate.dPdv = gman::transformDirection(placement, objDPdv);
     candidate.primitive = this;
     if (gman::acceptFiniteHit(candidate, hit))
       return true;

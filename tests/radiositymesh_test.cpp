@@ -27,10 +27,12 @@
 #include <cmath>
 #include <cstdio>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "check.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
@@ -440,8 +442,8 @@ void testPolygonArea() {
 // along the outward normal reversed, and returns the resulting hit
 // (primitive->intersect having already been asserted to succeed).
 template <class RayPrimitive>
-GMANHit castAt(RayPrimitive& primitive, GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cameraToObject,
-               RtFloat scale, double u, double v) {
+GMANHit castAt(RayPrimitive& primitive, gman::InvertibleMatrix const& objectToCamera, RtFloat scale, double u,
+               double v) {
   // A small fraction of the shape's own scale: far enough outside the
   // surface for a clean approach from outside, close enough that
   // curvature does not measurably shift the intersection's own (u, v)
@@ -451,7 +453,7 @@ GMANHit castAt(RayPrimitive& primitive, GMANMatrix4 const& objectToCamera, GMANM
   GMANPoint const objPoint = primitive.getLocation(u, v);
   GMANVector objNormal = primitive.getNormal(u, v);
   GMANPoint const camPoint = gman::transformPoint(objectToCamera, objPoint);
-  GMANVector camNormal = gman::transformNormal(cameraToObject, objNormal);
+  GMANVector camNormal = gman::transformNormal(objectToCamera, objNormal);
   camNormal.normalize();
 
   GMANPoint const origin(camPoint.getX() + camNormal.getX() * offset, camPoint.getY() + camNormal.getY() * offset,
@@ -471,9 +473,12 @@ GMANHit castAt(RayPrimitive& primitive, GMANMatrix4 const& objectToCamera, GMANM
 template <class RayPrimitive>
 void checkQuadricLookup(char const* name, RayPrimitive& primitive, GMANRadiosityMesh const& mesh, RtFloat scale,
                         RtFloat sagBound) {
-  GMANMatrix4 const objectToCamera = primitive.getObjectToCamera();
-  GMANMatrix4 cameraToObject = objectToCamera;
-  cameraToObject.invert();
+  std::optional<gman::InvertibleMatrix> const& placement = primitive.getObjectToCamera();
+  if (!placement) {
+    check(false, std::string(name) + ": the placement inverts");
+    return;
+  }
+  gman::InvertibleMatrix const& objectToCamera = *placement;
 
   RtFloat maxUError = 0, maxVError = 0;
   bool allElementsFound = true;
@@ -501,7 +506,7 @@ void checkQuadricLookup(char const* name, RayPrimitive& primitive, GMANRadiosity
   };
 
   for (Sample const& sample : samples) {
-    GMANHit const hit = castAt(primitive, objectToCamera, cameraToObject, scale, sample.u, sample.v);
+    GMANHit const hit = castAt(primitive, objectToCamera, scale, sample.u, sample.v);
 
     if (sample.checkAgreement) {
       maxUError = GMANMax(maxUError, (RtFloat)std::fabs(hit.u - (RtFloat)sample.u));
@@ -784,7 +789,7 @@ void testSpherePoleSeam() {
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, radius * 0.1f);
 
-  GMANMatrix4 const identity;
+  gman::InvertibleMatrix const identity;
   // A hair inside [0, 1]: see checkQuadricLookup's own comment on
   // intersect()'s exact-boundary sensitivity, sharper still at a pole
   // (atan2 of a point with x == y == 0 is not well-defined).
@@ -793,7 +798,7 @@ void testSpherePoleSeam() {
       {0.5, kEdgeEpsilon}, {0.5, 1.0 - kEdgeEpsilon}, {kEdgeEpsilon, 0.5}, {1.0 - kEdgeEpsilon, 0.5}};
   bool allFound = true;
   for (auto const& sample : uv) {
-    GMANHit const hit = castAt(*sphere, identity, identity, radius, sample[0], sample[1]);
+    GMANHit const hit = castAt(*sphere, identity, radius, sample[0], sample[1]);
     GMANRadiosityLocation location;
     if (!mesh.locate(hit, location)) {
       allFound = false;
@@ -823,12 +828,15 @@ void testNonUniformScaleNormal() {
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, radius * 0.05f);
 
-  GMANMatrix4 const objectToCamera = sphere->getObjectToCamera();
-  GMANMatrix4 cameraToObject = objectToCamera;
-  cameraToObject.invert();
+  std::optional<gman::InvertibleMatrix> const& placement = sphere->getObjectToCamera();
+  check(placement.has_value(), "non-uniform scale: the placement inverts");
+  if (!placement) {
+    return;
+  }
+  gman::InvertibleMatrix const& objectToCamera = *placement;
 
   double const u = 0.2, v = 0.35; // away from every principal axis
-  GMANHit const hit = castAt(*sphere, objectToCamera, cameraToObject, radius, u, v);
+  GMANHit const hit = castAt(*sphere, objectToCamera, radius, u, v);
 
   GMANRadiosityLocation location;
   bool const located = mesh.locate(hit, location);
@@ -849,7 +857,7 @@ void testNonUniformScaleNormal() {
   }
 
   GMANVector objNormal = sphere->getNormal(u, v);
-  GMANVector expectedNormal = gman::transformNormal(cameraToObject, objNormal);
+  GMANVector expectedNormal = gman::transformNormal(objectToCamera, objNormal);
   expectedNormal.normalize();
 
   RtFloat const dot = blendedNormal.dot(expectedNormal);

@@ -24,7 +24,7 @@
 #include <cmath>
 #include <numbers>
 
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
@@ -51,26 +51,21 @@ void cylinderTangents(RtFloat thetamaxRad, RtFloat zSpan, double px, double py, 
 
 GMANRayCylinder::GMANRayCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl,
                                  GMANTransform const& transform)
-    : GMANCylinder(radius, zmin, zmax, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
-      cameraToObject(objectToCamera) {
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
-    singular = true;
-  }
-
-  if (singular)
+    : GMANCylinder(radius, zmin, zmax, thetamax, pl),
+      objectToCamera(gman::InvertibleMatrix::of(transform.interpolate(0.0))) {
+  if (!objectToCamera)
     return;
 
   // The wall's radius is constant across z, so x and y bound in
   // +/-radius; z takes zmin/zmax exactly, the parameters that directly
   // clip the shape.
-  bbox = gman::revolutionBBox(objectToCamera, radius, zmin, zmax);
+  bbox = gman::revolutionBBox(objectToCamera->forward(), radius, zmin, zmax);
 }
 
 bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
-  if (singular)
+  if (!objectToCamera)
     return false;
+  gman::InvertibleMatrix const& placement = *objectToCamera;
 
   // A null z-band, a null wedge or a zero radius leaves no surface to hit,
   // the sphere's own guard against a NaN-filled hit. Its open question
@@ -78,8 +73,8 @@ bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (zmin == zmax || thetamax == 0.0 || radius == 0.0)
     return false;
 
-  GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
-  GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
+  GMANPoint const objOrigin = gman::transformPoint(placement.backward(), ray.getOrigin());
+  GMANVector const objDirection = gman::transformDirection(placement.backward(), ray.getDirection());
 
   // Every surface point satisfies x^2+y^2+z^2 <= radius^2 + max(zmin^2,
   // zmax^2), gmanraybbox.h's revolutionBBox's own r, z0, z1 bound
@@ -109,7 +104,7 @@ bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
 
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
-    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, placement.forward());
     if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
@@ -126,7 +121,7 @@ bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
     // matching GMANCylinder::getNormal's (cos theta, sin theta, 0)
     // exactly: both are the same outward radial direction.
     GMANVector const objNormal((RtFloat)root.px, (RtFloat)root.py, 0.0);
-    GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
+    GMANVector normal = gman::transformNormal(placement, objNormal);
     normal.normalize();
 
     GMANVector objDPdu;
@@ -139,8 +134,8 @@ bool GMANRayCylinder::intersect(GMANRay const& ray, GMANHit& hit) const {
     candidate.normal = normal;
     candidate.u = theta / thetamaxRad;
     candidate.v = (z - zmin) / (zmax - zmin);
-    candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-    candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+    candidate.dPdu = gman::transformDirection(placement, objDPdu);
+    candidate.dPdv = gman::transformDirection(placement, objDPdv);
     candidate.primitive = this;
     if (gman::acceptFiniteHit(candidate, hit))
       return true;

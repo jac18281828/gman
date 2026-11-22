@@ -26,7 +26,7 @@
 #include <cmath>
 #include <numbers>
 
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
@@ -59,26 +59,20 @@ void sphereTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat phiSpan, RtFloa
 
 GMANRaySphere::GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
                              GMANTransform const& transform)
-    : GMANSphere(radius, zmin, zmax, tmax, pl), objectToCamera(transform.interpolate(0.0)),
-      cameraToObject(objectToCamera) {
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
-    singular = true;
-  }
-
-  if (singular)
+    : GMANSphere(radius, zmin, zmax, tmax, pl), objectToCamera(gman::InvertibleMatrix::of(transform.interpolate(0.0))) {
+  if (!objectToCamera)
     return;
 
   // The full sphere's revolution bounds x and y in +/-radius regardless of
   // thetamax (conservative when the wedge is narrower); z takes zmin/zmax
   // exactly, the parameters that directly clip the shape.
-  bbox = gman::revolutionBBox(objectToCamera, radius, zmin, zmax);
+  bbox = gman::revolutionBBox(objectToCamera->forward(), radius, zmin, zmax);
 }
 
 bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
-  if (singular)
+  if (!objectToCamera)
     return false;
+  gman::InvertibleMatrix const& placement = *objectToCamera;
 
   // A null z-band, a null wedge or a zero radius leaves no surface to hit;
   // without this guard, phi's z/radius division and u's theta/thetamaxRad
@@ -91,11 +85,11 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
     return false;
 
   // Move the ray into the sphere's object space, centred at the origin,
-  // through cameraToObject. transformDirection keeps the length
-  // cameraToObject gives it, so a root along objDirection is already a
+  // through placement.backward(). transformDirection keeps the length
+  // placement.backward() gives it, so a root along objDirection is already a
   // camera-space distance, with no rescaling needed for hit.t.
-  GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
-  GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
+  GMANPoint const objOrigin = gman::transformPoint(placement.backward(), ray.getOrigin());
+  GMANVector const objDirection = gman::transformDirection(placement.backward(), ray.getDirection());
 
   // Every surface point satisfies x^2+y^2+z^2 <= radius^2 + max(zmin^2,
   // zmax^2), gmanraybbox.h's revolutionBBox's own r, z0, z1 bound
@@ -130,7 +124,7 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
   // sphere or one grazing a clipped cap can still hit on its far root.
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
-    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, placement.forward());
     if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
@@ -152,7 +146,7 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
     GMANVector objNormal((RtFloat)root.px, (RtFloat)root.py, (RtFloat)root.pz);
     objNormal.normalize();
 
-    GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
+    GMANVector normal = gman::transformNormal(placement, objNormal);
     normal.normalize();
 
     GMANVector objDPdu;
@@ -166,8 +160,8 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
     candidate.normal = normal;
     candidate.u = theta / thetamaxRad;
     candidate.v = (phi - phimin) / (phimax - phimin);
-    candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-    candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+    candidate.dPdu = gman::transformDirection(placement, objDPdu);
+    candidate.dPdv = gman::transformDirection(placement, objDPdv);
     candidate.primitive = this;
     if (gman::acceptFiniteHit(candidate, hit))
       return true;

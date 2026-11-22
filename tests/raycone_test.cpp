@@ -31,6 +31,7 @@
 #include <numbers>
 
 #include "check.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanray.h"
 #include "gmanraycone.h"
 #include "maketransform.h"
@@ -98,7 +99,7 @@ void testOffAxisRoundTrip() {
   check(hit.u >= 0.0 && hit.u <= 1.0, "off-axis: 0 <= u <= 1");
   check(hit.v >= 0.0 && hit.v <= 1.0, "off-axis: 0 <= v <= 1");
 
-  GMANVector expectedNormal = gman::transformNormal(GMANMatrix4(), cone.getNormal(hit.u, hit.v));
+  GMANVector expectedNormal = gman::transformNormal(gman::InvertibleMatrix(), cone.getNormal(hit.u, hit.v));
   expectedNormal.normalize();
   check(near(hit.normal.getX(), expectedNormal.getX()) && near(hit.normal.getY(), expectedNormal.getY()) &&
             near(hit.normal.getZ(), expectedNormal.getZ()),
@@ -168,7 +169,7 @@ void testRotatingTransform() {
         "rotation: normal == (1, 0, 1)/sqrt(2)");
 }
 
-// ---- check 5b: a shear tells transformNormal(cameraToObject, n) apart
+// ---- check 5b: a shear tells transformNormal(objectToCamera, n) apart
 // from transformDirection(objectToCamera, n) ----
 void testShearTransform() {
   GMANMatrix4 matrix; // identity, then sheared

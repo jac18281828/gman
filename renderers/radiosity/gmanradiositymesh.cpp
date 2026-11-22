@@ -25,11 +25,12 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include "gmanbbox.h"
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
@@ -233,9 +234,9 @@ ParametricGrid chooseParametricResolution(GMANParametric& parametric, GMANMatrix
 }
 
 // Appends grid's own (nu + 1) x (nv + 1) node positions to nodes, each
-// node's normal from getNormal through cameraToObject's inverse transpose.
-void appendParametricNodes(GMANParametric& parametric, GMANMatrix4 const& cameraToObject, ParametricGrid const& grid,
-                           std::vector<GMANRadiosityNode>& nodes) {
+// node's normal from getNormal through objectToCamera's inverse transpose.
+void appendParametricNodes(GMANParametric& parametric, gman::InvertibleMatrix const& objectToCamera,
+                           ParametricGrid const& grid, std::vector<GMANRadiosityNode>& nodes) {
   std::size_t const nu = grid.nu;
   std::size_t const nv = grid.nv;
   for (std::size_t j = 0; j <= nv; ++j) {
@@ -243,7 +244,7 @@ void appendParametricNodes(GMANParametric& parametric, GMANMatrix4 const& camera
     for (std::size_t i = 0; i <= nu; ++i) {
       double const u = (double)i / (double)nu;
       GMANVector const objNormal = parametric.getNormal(u, v);
-      GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
+      GMANVector normal = gman::transformNormal(objectToCamera, objNormal);
       normal.normalize();
 
       GMANRadiosityNode node;
@@ -256,26 +257,28 @@ void appendParametricNodes(GMANParametric& parametric, GMANMatrix4 const& camera
 }
 
 // Tries one quadric class's own getObjectToCamera, false for anything else.
-template <class Quadric> bool tryQuadricObjectToCamera(GMANPrimitive* primitive, GMANMatrix4& matrix) {
+template <class Quadric>
+bool tryQuadricObjectToCamera(GMANPrimitive* primitive, std::optional<gman::InvertibleMatrix>& placement) {
   auto* p = dynamic_cast<Quadric*>(primitive);
   if (!p) {
     return false;
   }
-  matrix = p->getObjectToCamera();
+  placement = p->getObjectToCamera();
   return true;
 }
 
 // Fetches the shutter-open placement from whichever of the seven quadric
 // classes primitive actually is, tried once per type. Returns false for
 // anything else, including a GMANRayPolygon, which has no such matrix.
-bool getQuadricObjectToCamera(GMANPrimitive* primitive, GMANMatrix4& matrix) {
-  return tryQuadricObjectToCamera<GMANRaySphere>(primitive, matrix) ||
-         tryQuadricObjectToCamera<GMANRayCylinder>(primitive, matrix) ||
-         tryQuadricObjectToCamera<GMANRayCone>(primitive, matrix) ||
-         tryQuadricObjectToCamera<GMANRayDisk>(primitive, matrix) ||
-         tryQuadricObjectToCamera<GMANRayParaboloid>(primitive, matrix) ||
-         tryQuadricObjectToCamera<GMANRayHyperboloid>(primitive, matrix) ||
-         tryQuadricObjectToCamera<GMANRayTorus>(primitive, matrix);
+// placement is empty for a quadric whose placement will not invert.
+bool getQuadricObjectToCamera(GMANPrimitive* primitive, std::optional<gman::InvertibleMatrix>& placement) {
+  return tryQuadricObjectToCamera<GMANRaySphere>(primitive, placement) ||
+         tryQuadricObjectToCamera<GMANRayCylinder>(primitive, placement) ||
+         tryQuadricObjectToCamera<GMANRayCone>(primitive, placement) ||
+         tryQuadricObjectToCamera<GMANRayDisk>(primitive, placement) ||
+         tryQuadricObjectToCamera<GMANRayParaboloid>(primitive, placement) ||
+         tryQuadricObjectToCamera<GMANRayHyperboloid>(primitive, placement) ||
+         tryQuadricObjectToCamera<GMANRayTorus>(primitive, placement);
 }
 
 // The first edge long enough to define a direction -- isDegenerate()
@@ -622,8 +625,7 @@ struct GMANRadiosityMesh::PrimitiveMesh {
   // Quadric only: the surface and its placement surfacePoint evaluates.
   // getLocation and getNormal are non-const, hence the non-const pointer.
   GMANParametric* parametric = nullptr;
-  GMANMatrix4 objectToCamera;
-  GMANMatrix4 cameraToObject;
+  gman::InvertibleMatrix objectToCamera;
 };
 
 struct GMANRadiosityMesh::ElementCell {
@@ -702,9 +704,8 @@ void GMANRadiosityMesh::appendParametricElements(std::size_t nu, std::size_t nv,
 }
 
 void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric& parametric,
-                                       GMANMatrix4 const& objectToCamera, GMANMatrix4 const& cameraToObject,
-                                       RtFloat maxEdgeLength) {
-  ParametricGrid const grid = chooseParametricResolution(parametric, objectToCamera, maxEdgeLength);
+                                       gman::InvertibleMatrix const& objectToCamera, RtFloat maxEdgeLength) {
+  ParametricGrid const grid = chooseParametricResolution(parametric, objectToCamera.forward(), maxEdgeLength);
   std::size_t const nu = grid.nu;
   std::size_t const nv = grid.nv;
   if (nu == kMaxDivisions || nv == kMaxDivisions) {
@@ -712,7 +713,7 @@ void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric&
   }
   std::size_t const nodeOffset = nodes.size();
   std::size_t const elementOffset = elements.size();
-  appendParametricNodes(parametric, cameraToObject, grid, nodes);
+  appendParametricNodes(parametric, objectToCamera, grid, nodes);
 
   PrimitiveMesh mesh;
   mesh.primitive = primitive;
@@ -725,7 +726,6 @@ void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric&
   mesh.cellToElement.resize(nu * nv);
   mesh.parametric = &parametric;
   mesh.objectToCamera = objectToCamera;
-  mesh.cameraToObject = cameraToObject;
 
   appendParametricElements(nu, nv, nodeOffset, mesh.cellToElement);
 
@@ -810,7 +810,7 @@ bool GMANRadiosityMesh::diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength)
     return true;
   }
 
-  GMANMatrix4 objectToCamera;
+  std::optional<gman::InvertibleMatrix> objectToCamera;
   if (!getQuadricObjectToCamera(primitive, objectToCamera)) {
     return false;
   }
@@ -819,16 +819,13 @@ bool GMANRadiosityMesh::diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength)
     return false; // every quadric above is also GMANParametric; defensive
   }
 
-  GMANMatrix4 cameraToObject = objectToCamera;
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
+  if (!objectToCamera) {
     // Its own intersect() never hits it either (the same object-space
     // round trip fails there), so it has no surface left to dice.
     return false;
   }
 
-  diceParametric(primitive, *parametric, objectToCamera, cameraToObject, maxEdgeLength);
+  diceParametric(primitive, *parametric, *objectToCamera, maxEdgeLength);
   return true;
 }
 
@@ -939,7 +936,7 @@ GMANRadiositySurfacePoint GMANRadiosityMesh::quadricSurfacePoint(PrimitiveMesh c
 
   GMANRadiositySurfacePoint found;
   found.P = location(u, v);
-  found.N = gman::transformNormal(mesh.cameraToObject, mesh.parametric->getNormal(u, v));
+  found.N = gman::transformNormal(mesh.objectToCamera, mesh.parametric->getNormal(u, v));
   found.N.normalize();
 
   // The stencil stays inside the primitive's own [0, 1]^2, one-sided at

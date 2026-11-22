@@ -43,6 +43,7 @@
 #include <string>
 
 #include "check.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanray.h"
 #include "gmanraytorus.h"
@@ -123,7 +124,7 @@ void testRoundTrip() {
             near(roundTrip.getZ(), hit.point.getZ()),
         "round trip: getLocation(hit.u, hit.v) reproduces hit.point");
 
-  GMANVector expectedNormal = gman::transformNormal(GMANMatrix4(), torus.getNormal(hit.u, hit.v));
+  GMANVector expectedNormal = gman::transformNormal(gman::InvertibleMatrix(), torus.getNormal(hit.u, hit.v));
   expectedNormal.normalize();
   check(near(hit.normal.getX(), expectedNormal.getX()) && near(hit.normal.getY(), expectedNormal.getY()) &&
             near(hit.normal.getZ(), expectedNormal.getZ()),
@@ -326,7 +327,7 @@ void testRotatingTransform() {
         "rotation: normal == (0, 0, -1)");
 }
 
-// ---- B6b: a shear tells transformNormal(cameraToObject, n) apart from
+// ---- B6b: a shear tells transformNormal(objectToCamera, n) apart from
 // transformDirection(objectToCamera, n). The ray stays at object z == 0
 // throughout, where this shear (mtrx[2][0] == 2) leaves the point and t
 // unchanged; only the normal, which picks up a z component, exposes it. ----
@@ -344,7 +345,7 @@ void testShearTransform() {
   check(hitFound && near(hit.t, 7.5f), "shear: t == 7.5, unchanged (the ray stays at object z == 0)");
   check(hitFound && near(hit.point.getX(), 2.5f) && near(hit.point.getY(), 0.0f) && near(hit.point.getZ(), 0.0f),
         "shear: point == (2.5, 0, 0), unchanged");
-  // The object normal is (1, 0, 0); transformNormal(cameraToObject, ...)
+  // The object normal is (1, 0, 0); transformNormal(objectToCamera, ...)
   // gives (1, 0, -2), normalized below. transformDirection(objectToCamera,
   // ...) -- the naive substitute -- would instead leave (1, 0, 0)
   // unchanged, since the shear only modifies the z row.

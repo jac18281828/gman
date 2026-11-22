@@ -24,7 +24,7 @@
 #include <cmath>
 #include <numbers>
 
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
@@ -54,27 +54,21 @@ void coneTangents(RtFloat height, RtFloat radius, RtFloat thetamaxRad, RtFloat t
 
 GMANRayCone::GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl,
                          GMANTransform const& transform)
-    : GMANCone(height, radius, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
-      cameraToObject(objectToCamera) {
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
-    singular = true;
-  }
-
-  if (singular)
+    : GMANCone(height, radius, thetamax, pl), objectToCamera(gman::InvertibleMatrix::of(transform.interpolate(0.0))) {
+  if (!objectToCamera)
     return;
 
   // r(z) == radius*(1 - z/height) (GMANCone::intersect's own radial
   // factor) is linear from radius at z == 0 to 0 at z == height, so its
   // magnitude over [0, height] never exceeds |radius|; z spans 0..height
   // exactly, the parameter that directly clips the shape.
-  bbox = gman::revolutionBBox(objectToCamera, radius, (RtFloat)0.0, height);
+  bbox = gman::revolutionBBox(objectToCamera->forward(), radius, (RtFloat)0.0, height);
 }
 
 bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
-  if (singular)
+  if (!objectToCamera)
     return false;
+  gman::InvertibleMatrix const& placement = *objectToCamera;
 
   // A null wedge, a zero radius or a zero height leaves no surface to hit,
   // the sphere's own guard against a NaN-filled hit: height also divides
@@ -84,8 +78,8 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (thetamax == 0.0 || radius == 0.0 || height == 0.0)
     return false;
 
-  GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
-  GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
+  GMANPoint const objOrigin = gman::transformPoint(placement.backward(), ray.getOrigin());
+  GMANVector const objDirection = gman::transformDirection(placement.backward(), ray.getDirection());
 
   // Every surface point satisfies x^2+y^2+z^2 <= radius^2 + height^2,
   // gmanraybbox.h's revolutionBBox's own r, z0, z1 bound (radius, 0,
@@ -120,7 +114,7 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
 
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
-    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, placement.forward());
     if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
@@ -136,7 +130,7 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
     // GMANCone::getNormal's own closed form: independent of the radial
     // coordinate, so well-defined at the apex too.
     GMANVector objNormal((RtFloat)cos(theta), (RtFloat)sin(theta), radius / height);
-    GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
+    GMANVector normal = gman::transformNormal(placement, objNormal);
     normal.normalize();
 
     GMANVector objDPdu;
@@ -150,8 +144,8 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
     candidate.normal = normal;
     candidate.u = theta / thetamaxRad;
     candidate.v = z / height;
-    candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-    candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+    candidate.dPdu = gman::transformDirection(placement, objDPdu);
+    candidate.dPdv = gman::transformDirection(placement, objDPdv);
     candidate.primitive = this;
     if (gman::acceptFiniteHit(candidate, hit))
       return true;

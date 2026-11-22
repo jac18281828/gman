@@ -24,7 +24,7 @@
 #include <cmath>
 #include <numbers>
 
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
@@ -52,25 +52,19 @@ void diskTangents(RtFloat radius, RtFloat thetamaxRad, RtFloat theta, double x, 
 
 GMANRayDisk::GMANRayDisk(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl,
                          GMANTransform const& transform)
-    : GMANDisk(height, radius, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
-      cameraToObject(objectToCamera) {
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
-    singular = true;
-  }
-
-  if (singular)
+    : GMANDisk(height, radius, thetamax, pl), objectToCamera(gman::InvertibleMatrix::of(transform.interpolate(0.0))) {
+  if (!objectToCamera)
     return;
 
   // The flat plate's z is height exactly, the parameter that directly
   // clips the shape; x and y bound in +/-radius, the full revolution.
-  bbox = gman::revolutionBBox(objectToCamera, radius, height, height);
+  bbox = gman::revolutionBBox(objectToCamera->forward(), radius, height, height);
 }
 
 bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
-  if (singular)
+  if (!objectToCamera)
     return false;
+  gman::InvertibleMatrix const& placement = *objectToCamera;
 
   // A null wedge or a zero radius leaves no surface to hit; without this
   // guard, u's theta/thetamaxRad division below fills the hit with NaN
@@ -85,8 +79,8 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   if (thetamax == 0.0 || radius == 0.0)
     return false;
 
-  GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
-  GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
+  GMANPoint const objOrigin = gman::transformPoint(placement.backward(), ray.getOrigin());
+  GMANVector const objDirection = gman::transformDirection(placement.backward(), ray.getDirection());
 
   double const dz = objDirection.getZ();
   // The plane z == height, in object space. A ray exactly parallel to it
@@ -118,7 +112,7 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   // (0, 0, -1), GMANDisk::getNormal's own value: this flat plate's normal
   // does not depend on u or v, so there is no per-hit case to compute.
   GMANVector const objNormal(0.0, 0.0, -1.0);
-  GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
+  GMANVector normal = gman::transformNormal(placement, objNormal);
   normal.normalize();
 
   GMANPoint const objPoint((RtFloat)x, (RtFloat)y, height);
@@ -130,12 +124,12 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
 
   GMANHit candidate;
   candidate.t = t;
-  candidate.point = gman::transformPoint(objectToCamera, objPoint);
+  candidate.point = gman::transformPoint(placement, objPoint);
   candidate.normal = normal;
   candidate.u = theta / thetamaxRad;
   candidate.v = (RtFloat)(r / (double)radius);
-  candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-  candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+  candidate.dPdu = gman::transformDirection(placement, objDPdu);
+  candidate.dPdv = gman::transformDirection(placement, objDPdv);
   candidate.primitive = this;
   return gman::acceptFiniteHit(candidate, hit);
 }

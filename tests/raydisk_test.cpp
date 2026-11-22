@@ -116,7 +116,7 @@ void testUVRoundTrip() {
 // ---- check 6: a rotation exercises the transform's placement of the
 // disk and its hit normal -- but not the inverse-transpose itself, since a
 // rotation matrix is orthogonal (its inverse is its own transpose), so
-// cameraToObject's inverse-transpose and a naive forward transform give
+// objectToCamera's inverse-transpose and a naive forward transform give
 // the same answer here. testShearTransform below is the one that can tell
 // them apart. ----
 void testRotatingTransform() {
@@ -141,7 +141,7 @@ void testRotatingTransform() {
 
 // ---- a shear is the one transform here that is not its own transpose
 // under inversion, so it is the one that can tell
-// transformNormal(cameraToObject, ...) (correct) apart from
+// transformNormal(objectToCamera, ...) (correct) apart from
 // transformDirection(objectToCamera, ...) (the naive substitute) ----
 void testShearTransform() {
   GMANMatrix4 matrix; // identity, then sheared
@@ -160,7 +160,7 @@ void testShearTransform() {
   check(hitFound && near(hit.t, 5.0), "shear: t == 5, the axial ray's own z geometry is unaffected by the shear");
   check(near(hit.point.getX(), 0.0) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
         "shear: point == (0, 0, 0)");
-  // The correct inverse-transpose gives (0, 0, -1) here (cameraToObject's
+  // The correct inverse-transpose gives (0, 0, -1) here (objectToCamera.backward()'s
   // z row is untouched by the shear); transformDirection(objectToCamera,
   // (0, 0, -1)) -- the naive substitute -- would instead give (-2, 0, -1)'s
   // direction, so this tells the two apart.

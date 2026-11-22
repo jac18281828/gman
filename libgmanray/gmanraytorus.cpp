@@ -24,7 +24,7 @@
 #include <cmath>
 #include <numbers>
 
-#include "gmanerror.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
@@ -99,15 +99,9 @@ void torusTangents(double R, double r, double thetamaxRad, double phiSpanDeg, do
 
 GMANRayTorus::GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phimin, RtFloat phimax, RtFloat thetamax,
                            GMANParameterList pl, GMANTransform const& transform)
-    : GMANTorus(majorradius, minorradius, phimin, phimax, thetamax, pl), objectToCamera(transform.interpolate(0.0)),
-      cameraToObject(objectToCamera) {
-  try {
-    cameraToObject.invert();
-  } catch (GMANError const&) {
-    singular = true;
-  }
-
-  if (singular)
+    : GMANTorus(majorradius, minorradius, phimin, phimax, thetamax, pl),
+      objectToCamera(gman::InvertibleMatrix::of(transform.interpolate(0.0))) {
+  if (!objectToCamera)
     return;
 
   // majorradius/minorradius are the shape's own named extrema: x and y
@@ -117,12 +111,13 @@ GMANRayTorus::GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phi
   // (the spindle/horn torus, a negative radius).
   RtFloat const majorAbs = (RtFloat)std::fabs(majorradius);
   RtFloat const minorAbs = (RtFloat)std::fabs(minorradius);
-  bbox = gman::revolutionBBox(objectToCamera, majorAbs + minorAbs, -minorAbs, minorAbs);
+  bbox = gman::revolutionBBox(objectToCamera->forward(), majorAbs + minorAbs, -minorAbs, minorAbs);
 }
 
 bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
-  if (singular)
+  if (!objectToCamera)
     return false;
+  gman::InvertibleMatrix const& placement = *objectToCamera;
 
   // Degenerate parameters leave no surface to hit; without this guard,
   // dividing by them below fills the hit with NaN instead of reporting a
@@ -150,8 +145,8 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
   // hits nothing here, while GMANTorus::getLocation sweeps a real
   // clockwise wedge for one. Which behavior is right is undecided.
 
-  GMANPoint const objOrigin = gman::transformPoint(cameraToObject, ray.getOrigin());
-  GMANVector const objDirection = gman::transformDirection(cameraToObject, ray.getDirection());
+  GMANPoint const objOrigin = gman::transformPoint(placement.backward(), ray.getOrigin());
+  GMANVector const objDirection = gman::transformDirection(placement.backward(), ray.getDirection());
 
   gman::ShiftedRay shifted;
   if (!gman::shiftIntoBoundingSphere(objOrigin, objDirection, majorradius + minorradius, shifted))
@@ -176,7 +171,7 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
   // hit (GMANRaySphere's own pattern).
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = localRoots[i];
-    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, objectToCamera);
+    gman::ShiftedRootPoint const root = gman::shiftedRootPoint(shifted, tLocal, placement.forward());
     if (!(ray.getTMin() <= root.t && root.t <= ray.getTMax()))
       continue;
 
@@ -202,7 +197,7 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
     double const cosPhi = (radial - R) / r;
     GMANVector objNormal((RtFloat)(cosPhi * root.px / radial), (RtFloat)(cosPhi * root.py / radial),
                          (RtFloat)(root.pz / r));
-    GMANVector normal = gman::transformNormal(cameraToObject, objNormal);
+    GMANVector normal = gman::transformNormal(placement, objNormal);
     normal.normalize();
 
     GMANVector objDPdu;
@@ -215,8 +210,8 @@ bool GMANRayTorus::intersect(GMANRay const& ray, GMANHit& hit) const {
     candidate.normal = normal;
     candidate.u = (RtFloat)(rawTheta / thetamaxRad);
     candidate.v = (RtFloat)v;
-    candidate.dPdu = gman::transformDirection(objectToCamera, objDPdu);
-    candidate.dPdv = gman::transformDirection(objectToCamera, objDPdv);
+    candidate.dPdu = gman::transformDirection(placement, objDPdu);
+    candidate.dPdv = gman::transformDirection(placement, objDPdv);
     candidate.primitive = this;
     if (gman::acceptFiniteHit(candidate, hit))
       return true;

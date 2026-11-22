@@ -29,6 +29,7 @@
 #include <cmath>
 
 #include "check.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanray.h"
 #include "gmanrayhyperboloid.h"
 #include "maketransform.h"
@@ -220,7 +221,7 @@ void testFlatRoundTrip() {
   check(hit.u >= 0.0 && hit.u <= 1.0, "flat round trip: 0 <= u <= 1");
   check(hit.v >= 0.0 && hit.v <= 1.0, "flat round trip: 0 <= v <= 1");
 
-  GMANVector expectedNormal = gman::transformNormal(GMANMatrix4(), hyperboloid.getNormal(hit.u, hit.v));
+  GMANVector expectedNormal = gman::transformNormal(gman::InvertibleMatrix(), hyperboloid.getNormal(hit.u, hit.v));
   expectedNormal.normalize();
   check(near(hit.normal.getX(), expectedNormal.getX()) && near(hit.normal.getY(), expectedNormal.getY()) &&
             near(hit.normal.getZ(), expectedNormal.getZ()),

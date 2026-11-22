@@ -24,8 +24,10 @@
 
 #pragma once
 
+#include <optional>
+
 #include "gman/rayexport.h"
-#include "gmanmatrix4.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
@@ -48,13 +50,11 @@ public:
 
   // The shutter-open matrix placing the sphere, for a renderer that needs
   // to reproduce its own placement (e.g. dicing it into camera space).
-  GMANMatrix4 const& getObjectToCamera() const { return objectToCamera; }
+  // Empty for a singular matrix.
+  std::optional<gman::InvertibleMatrix> const& getObjectToCamera() const { return objectToCamera; }
 
 private:
-  // objectToCamera places the sphere; cameraToObject is its inverse, used
-  // to bring a ray into the object space GMANSphere's parameters describe.
-  // Both are the shutter-open matrix: motion blur is out of scope here.
-  GMANMatrix4 objectToCamera;
-  GMANMatrix4 cameraToObject;
-  bool singular = false;
+  // The shutter-open matrix and its inverse: motion blur is out of scope
+  // here.
+  std::optional<gman::InvertibleMatrix> objectToCamera = gman::InvertibleMatrix();
 };
