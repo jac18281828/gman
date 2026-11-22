@@ -172,11 +172,10 @@ bool colorsBitwiseEqual(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
-// Os's own channel, clamped to [0, 1] with a NaN mapped to 1: order
-// matters here. GMANMin(v, 1) answers 1 for a NaN v, since a NaN
-// comparison is always false and the ternary then takes its second
-// operand; GMANMax then floors a finite value at 0 as an ordinary clamp
-// would.
+// Os's own channel, clamped to [0, 1] with a NaN mapped to 1, RISpec's default
+// Opacity, so a NaN never makes a surface transparent. GMANMin and GMANMax
+// drop a NaN operand, so GMANMin(NaN, 1) is 1 and GMANMax then leaves it at 1;
+// GMANClamp would map a NaN to 0.
 RtFloat clampCoverageChannel(RtFloat v) { return GMANMax(GMANMin(v, (RtFloat)1.0), (RtFloat)0.0); }
 
 GMANColor clampCoverage(GMANColor const& os) {

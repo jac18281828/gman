@@ -143,10 +143,6 @@ GMANSurfaceEnv fillEnv(Appearance const& appearance, SurfacePoint const& point, 
   return env;
 }
 
-// GMANMax(NaN, 0) takes its right operand, since a NaN comparison is
-// always false, so a NaN channel maps to exactly 0.
-RtFloat clampToUnit(RtFloat value) { return GMANMin(GMANMax(value, (RtFloat)0.0), (RtFloat)1.0); }
-
 } // namespace
 
 Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
@@ -165,8 +161,8 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
 GMANColor albedo(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
                  TextureCache* textureCache) {
   if (!appearance.shader) {
-    return GMANColor(clampToUnit(appearance.Cs.getRed()), clampToUnit(appearance.Cs.getGreen()),
-                     clampToUnit(appearance.Cs.getBlue()));
+    return GMANColor(GMANClamp(appearance.Cs.getRed(), 0.0f, 1.0f), GMANClamp(appearance.Cs.getGreen(), 0.0f, 1.0f),
+                     GMANClamp(appearance.Cs.getBlue(), 0.0f, 1.0f));
   }
   GMANSurfaceEnv const env = fillEnv(appearance, point, cameraToWorld, textureCache);
   return appearance.shader->albedo(env);
