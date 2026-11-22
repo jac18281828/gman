@@ -86,7 +86,7 @@ RtFloat wedgeTheta(Sweep const& sweep, double v, double px, double py) {
   RtFloat const yv = (RtFloat)(sweep.p1y + v * sweep.dySeg);
   RtFloat const phi = GMANAtan(yv, xv);
   RtFloat const pointPhi = GMANAtan((RtFloat)py, (RtFloat)px);
-  return GMANMod(pointPhi - phi, 2 * std::numbers::pi_v<RtFloat>);
+  return GMANMod(pointPhi - phi, RtFloat(2.0) * std::numbers::pi_v<RtFloat>);
 }
 
 // Every surface point satisfies x^2+y^2+z^2 <= r^2 + max(point1.z^2,

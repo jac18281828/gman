@@ -111,7 +111,7 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
     return false;
 
   RtFloat const thetamaxRad = GMANRadians(thetamax);
-  RtFloat const theta = GMANMod(GMANAtan((RtFloat)y, (RtFloat)x), 2 * std::numbers::pi_v<RtFloat>);
+  RtFloat const theta = GMANMod(GMANAtan((RtFloat)y, (RtFloat)x), RtFloat(2.0) * std::numbers::pi_v<RtFloat>);
   if (!(theta <= thetamaxRad))
     return false;
 

@@ -128,7 +128,8 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
     if (!(0.0 <= z && z <= height))
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), 2 * std::numbers::pi_v<RtFloat>);
+    RtFloat const theta =
+        GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), RtFloat(2.0) * std::numbers::pi_v<RtFloat>);
     if (!(theta <= thetamaxRad))
       continue;
 
