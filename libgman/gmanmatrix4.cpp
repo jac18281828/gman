@@ -87,7 +87,7 @@ RtVoid GMANMatrix4::rot(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
   RtFloat s, c, omc, xx, xy, xz, yy, yz, zz;
 
   // Normalize the axis
-  float mag = sqrt(dx * dx + dy * dy + dz * dz);
+  RtFloat mag = sqrt(dx * dx + dy * dy + dz * dz);
   dx /= mag;
   dy /= mag;
   dz /= mag;

@@ -32,7 +32,7 @@
 
 namespace gman {
 
-float Noise::rn() { return 1.0 - 2.0 * (rng() / (rng.max() + 0.0)); }
+RtFloat Noise::rn() { return 1.0 - 2.0 * (rng() / (rng.max() + 0.0)); }
 
 Noise::Noise() : rng(808) {
   prn = prn1;

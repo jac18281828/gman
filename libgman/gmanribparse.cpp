@@ -703,12 +703,12 @@ RtVoid GMANRIBParse::parseStream(RtVoid) {
 RtFloat GMANRIBParse::nextFloat() {
   const GMANToken& tok = nextToken();
 
-  float real;
+  RtFloat real;
 
   if (tok.getType() == GMANToken::REAL) {
     real = tok.getReal();
   } else if (tok.getType() == GMANToken::LONGINT) {
-    real = (float)tok.getInt();
+    real = (RtFloat)tok.getInt();
   } else {
     GMANError error(RIE_BADFILE, RIE_ERROR, "Expecting float token");
     throw(error);

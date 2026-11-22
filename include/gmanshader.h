@@ -36,7 +36,7 @@ struct GMANShaderParamInfo {
   GMANTokenEntry::TokenType type;
   RtInt quantity;
   union {
-    float* f;
+    RtFloat* f;
     int* i;
     char* c;
   } def;

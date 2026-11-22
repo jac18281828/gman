@@ -106,7 +106,7 @@ const GMANToken GMANRIBTokenize::parseKeyword(std::istream& ribFile) {
   const char* tokenChars = buffer.c_str();
 
   if (!strcmp(tokenChars, "NaN")) {
-    return GMANToken((float)sqrt(-1));
+    return GMANToken((RtFloat)sqrt(-1));
   } else if (!strcasecmp(tokenChars, "display")) {
     return GMANToken(GMANToken::RI_DISPLAY);
   } else if (!strcasecmp(tokenChars, "projection")) {
@@ -436,7 +436,7 @@ const GMANToken GMANRIBTokenize::parseNum(std::istream& ribFile) {
     return GMANToken(static_cast<RtInt>(longIntValue));
   } else {
     char* floatEndPtr;
-    float floatValue = strtof(buffer.c_str(), &floatEndPtr);
+    RtFloat floatValue = strtof(buffer.c_str(), &floatEndPtr);
     if (floatEndPtr != buffer.c_str()) {
       return GMANToken(floatValue);
     } else {

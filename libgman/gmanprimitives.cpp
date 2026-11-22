@@ -123,12 +123,12 @@ GMANBlobby const& GMANBlobby::operator=(GMANBlobby const& b) {
 ////  GMAN_CONE.CPP
 ///////////////////////////////////////////////////////////////////////////////
 GMANPoint GMANCone::getLocation(double u, double v) {
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
-  float r = (1.0 - v) * radius;
-  float x = r * cos(theta);
-  float y = r * sin(theta);
-  float z = v * height;
+  RtFloat r = (1.0 - v) * radius;
+  RtFloat x = r * cos(theta);
+  RtFloat y = r * sin(theta);
+  RtFloat z = v * height;
 
   return GMANPoint(x, y, z);
 }
@@ -140,7 +140,7 @@ GMANVector GMANCone::getNormal(double u, double /*v*/) {
   // radius/height) -- independent of the radial coordinate, so unlike the
   // parametric cross product dP/du x dP/dv it stays well-defined at the
   // apex (r=0), where du no longer moves the surface.
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
   GMANVector n(cos(theta), sin(theta), radius / height);
   n.normalize();
@@ -187,11 +187,11 @@ GMANCurves::~GMANCurves() { delete[] nvertices; }
 ////  GMAN_CYLINDER.CPP
 ///////////////////////////////////////////////////////////////////////////////
 GMANPoint GMANCylinder::getLocation(double u, double v) {
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
-  float x = radius * cos(theta);
-  float y = radius * sin(theta);
-  float z = zmin + (zmax - zmin) * v;
+  RtFloat x = radius * cos(theta);
+  RtFloat y = radius * sin(theta);
+  RtFloat z = zmin + (zmax - zmin) * v;
 
   return GMANPoint(x, y, z);
 }
@@ -199,7 +199,7 @@ GMANPoint GMANCylinder::getLocation(double u, double v) {
 GMANVector GMANCylinder::getNormal(double u, double /*v*/) {
   // A cylinder wall's outward normal is radial from the axis and does not
   // depend on z, so it is the same at every v: (cos theta, sin theta, 0).
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
   GMANVector n(cos(theta), sin(theta), 0.0);
   n.normalize();
@@ -213,10 +213,10 @@ GMANPoint GMANDisk::getLocation(double u, double v) {
   // A flat plate at z=height: u sweeps the angle, v sweeps the radius out
   // from the center (v=0) to the rim (v=1), matching the theta convention
   // every other quadric here uses.
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
-  float r = v * radius;
-  float x = r * cos(theta);
-  float y = r * sin(theta);
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat r = v * radius;
+  RtFloat x = r * cos(theta);
+  RtFloat y = r * sin(theta);
 
   return GMANPoint(x, y, height);
 }
@@ -285,37 +285,37 @@ GMANGeneralPolygon::~GMANGeneralPolygon() { delete[] nvert; }
 // phi(v), not to a fixed 0: P(u,v) = ( r(v)*cos(phi(v)+theta),
 // r(v)*sin(phi(v)+theta), z(v) ), r(v)=dist to axis, phi(v)=atan2(y,x).
 GMANPoint GMANHyperboloid::getLocation(double u, double v) {
-  float xv = point1.getX() + v * (point2.getX() - point1.getX());
-  float yv = point1.getY() + v * (point2.getY() - point1.getY());
-  float zv = point1.getZ() + v * (point2.getZ() - point1.getZ());
+  RtFloat xv = point1.getX() + v * (point2.getX() - point1.getX());
+  RtFloat yv = point1.getY() + v * (point2.getY() - point1.getY());
+  RtFloat zv = point1.getZ() + v * (point2.getZ() - point1.getZ());
 
-  float r = sqrt(xv * xv + yv * yv);
-  float phi = atan2(yv, xv);
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat r = sqrt(xv * xv + yv * yv);
+  RtFloat phi = atan2(yv, xv);
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
   return GMANPoint(r * cos(phi + theta), r * sin(phi + theta), zv);
 }
 
 GMANVector GMANHyperboloid::getNormal(double u, double v) {
-  float dx = point2.getX() - point1.getX();
-  float dy = point2.getY() - point1.getY();
-  float dz = point2.getZ() - point1.getZ();
+  RtFloat dx = point2.getX() - point1.getX();
+  RtFloat dy = point2.getY() - point1.getY();
+  RtFloat dz = point2.getZ() - point1.getZ();
 
-  float xv = point1.getX() + v * dx;
-  float yv = point1.getY() + v * dy;
+  RtFloat xv = point1.getX() + v * dx;
+  RtFloat yv = point1.getY() + v * dy;
 
-  float r = sqrt(xv * xv + yv * yv);
-  float phi = atan2(yv, xv);
+  RtFloat r = sqrt(xv * xv + yv * yv);
+  RtFloat phi = atan2(yv, xv);
   // Guard against the segment crossing the axis (r=0), where phi and its
   // derivative are undefined; a hyperboloid degenerate enough to do that
   // mid-surface is a malformed scene, not a case worth failing hard on.
-  float rSafe = (r < (float)RI_EPSILON) ? (float)RI_EPSILON : r;
+  RtFloat rSafe = (r < (RtFloat)RI_EPSILON) ? (RtFloat)RI_EPSILON : r;
 
-  float rPrime = (xv * dx + yv * dy) / rSafe;
-  float phiPrime = (xv * dy - yv * dx) / (rSafe * rSafe);
+  RtFloat rPrime = (xv * dx + yv * dy) / rSafe;
+  RtFloat phiPrime = (xv * dy - yv * dx) / (rSafe * rSafe);
 
-  float kt = thetamax / 360.0 * 2.0 * std::numbers::pi;
-  float angle = phi + u * kt;
+  RtFloat kt = thetamax / 360.0 * 2.0 * std::numbers::pi;
+  RtFloat angle = phi + u * kt;
 
   GMANVector dPdu(-r * sin(angle) * kt, r * cos(angle) * kt, 0.0);
   GMANVector dPdv(rPrime * cos(angle) - r * sin(angle) * phiPrime, rPrime * sin(angle) + r * cos(angle) * phiPrime, dz);
@@ -504,12 +504,12 @@ GMANVector GMANNuPatch::getNormal(double u, double v) {
 ////  GMAN_PARABOLOID.CPP
 ///////////////////////////////////////////////////////////////////////////////
 GMANPoint GMANParaboloid::getLocation(double u, double v) {
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
-  float factor = rmax * sqrt(v / zmax);
-  float x = factor * cos(theta);
-  float y = factor * sin(theta);
-  float z = zmin + (zmax - zmin) * v;
+  RtFloat factor = rmax * sqrt(v / zmax);
+  RtFloat x = factor * cos(theta);
+  RtFloat y = factor * sin(theta);
+  RtFloat z = zmin + (zmax - zmin) * v;
 
   return GMANPoint(x, y, z);
 }
@@ -521,8 +521,8 @@ GMANVector GMANParaboloid::getNormal(double u, double v) {
   // a well-defined limit there -- (0,0,-+1), the axis -- so guardTangent
   // keeps the division finite rather than branching on the singularity.
   double vg = guardTangent(v);
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
-  float fPrime = (float)(rmax / (2.0 * sqrt(zmax * vg)));
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat fPrime = (RtFloat)(rmax / (2.0 * sqrt(zmax * vg)));
 
   GMANVector n(cos(theta), sin(theta), -fPrime / (zmax - zmin));
   n.normalize();
@@ -866,16 +866,16 @@ GMANPoint GMANSphere::getLocation(double u, double v) {
   // the two poles; RiSphere 1 -0.5 1 360 (a partial sphere) is why this
   // can't just be "phi = v*2*pi" -- that always swept a full latitude
   // circle regardless of zmin/zmax.
-  float phimin = (float)asin(GMANClamp<double>(zmin / radius, -1.0, 1.0));
-  float phimax = (float)asin(GMANClamp<double>(zmax / radius, -1.0, 1.0));
+  RtFloat phimin = (RtFloat)asin(GMANClamp<double>(zmin / radius, -1.0, 1.0));
+  RtFloat phimax = (RtFloat)asin(GMANClamp<double>(zmax / radius, -1.0, 1.0));
 
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
-  float phi = phimin + v * (phimax - phimin);
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat phi = phimin + v * (phimax - phimin);
 
-  float cosPhi = cos(phi);
-  float x = radius * cosPhi * cos(theta);
-  float y = radius * cosPhi * sin(theta);
-  float z = radius * sin(phi);
+  RtFloat cosPhi = cos(phi);
+  RtFloat x = radius * cosPhi * cos(theta);
+  RtFloat y = radius * cosPhi * sin(theta);
+  RtFloat z = radius * sin(phi);
 
   return GMANPoint(x, y, z);
 }
@@ -983,13 +983,13 @@ RtVoid GMANSubdivisionMesh::destroy() {
 ////  GMAN_TORUS.CPP
 ///////////////////////////////////////////////////////////////////////////////
 GMANPoint GMANTorus::getLocation(double u, double v) {
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
-  float phi = (phimin + (phimax - phimin) * v) / 360.0 * 2.0 * std::numbers::pi;
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat phi = (phimin + (phimax - phimin) * v) / 360.0 * 2.0 * std::numbers::pi;
 
-  float factor = majorradius + minorradius * cos(phi);
-  float x = factor * cos(theta);
-  float y = factor * sin(theta);
-  float z = minorradius * sin(phi);
+  RtFloat factor = majorradius + minorradius * cos(phi);
+  RtFloat x = factor * cos(theta);
+  RtFloat y = factor * sin(theta);
+  RtFloat z = minorradius * sin(phi);
 
   return GMANPoint(x, y, z);
 }
@@ -998,9 +998,9 @@ GMANVector GMANTorus::getNormal(double u, double v) {
   // The tube cross-section is itself a circle, so the outward normal only
   // depends on phi (position around the tube) and theta (position around
   // the major radius) -- not on majorradius/minorradius's magnitudes.
-  float theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
-  float phi = (phimin + (phimax - phimin) * v) / 360.0 * 2.0 * std::numbers::pi;
-  float cosPhi = cos(phi);
+  RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
+  RtFloat phi = (phimin + (phimax - phimin) * v) / 360.0 * 2.0 * std::numbers::pi;
+  RtFloat cosPhi = cos(phi);
 
   GMANVector n(cosPhi * cos(theta), cosPhi * sin(theta), sin(phi));
   n.normalize();
