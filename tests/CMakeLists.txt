@@ -3761,3 +3761,13 @@ add_test(NAME gmanmathminmax COMMAND gman_gmanmathminmax)
 set_tests_properties(gmanmathminmax PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# gman::InvertibleMatrix pairs a placement with its inverse; its transformNormal
+# applies the inverse transpose. See tests/invertiblematrix_test.cpp.
+add_executable(gman_invertiblematrix invertiblematrix_test.cpp)
+target_link_libraries(gman_invertiblematrix PRIVATE gman_core)
+
+add_test(NAME invertiblematrix COMMAND gman_invertiblematrix)
+set_tests_properties(invertiblematrix PROPERTIES
+  LABELS unit
+  TIMEOUT 30)

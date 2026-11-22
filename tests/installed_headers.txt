@@ -20,6 +20,7 @@ gmangamma.h
 gmanhpoint.h
 gmanimagershader.h
 gmanindirectpass.h
+gmaninvertiblematrix.h
 gmanlightsourcemgr.h
 gmanlightsourceshader.h
 gmanlinearworldmanager.h
