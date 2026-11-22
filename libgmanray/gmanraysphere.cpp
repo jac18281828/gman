@@ -122,7 +122,7 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
   double const roots[2] = {t0, t1};
   RtFloat const phimin = (RtFloat)asin(GMANClamp<double>(zmin / radius, -1.0, 1.0));
   RtFloat const phimax = (RtFloat)asin(GMANClamp<double>(zmax / radius, -1.0, 1.0));
-  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * std::numbers::pi);
+  RtFloat const thetamaxRad = GMANRadians(thetamax);
 
   // Test the near root first and fall through to the far one rather than
   // choosing a root and then validating it: a root can fail on the ray's
@@ -138,7 +138,7 @@ bool GMANRaySphere::intersect(GMANRay const& ray, GMANHit& hit) const {
     if (!(zmin <= z && z <= zmax))
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), (RtFloat)(2.0 * std::numbers::pi));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), 2 * std::numbers::pi_v<RtFloat>);
     if (!(theta <= thetamaxRad))
       continue;
 

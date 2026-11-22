@@ -97,9 +97,9 @@ GMANColor GMANSurfaceEnv::environment(std::string const& name, GMANVector const&
   RtFloat lat = (RtFloat)std::asin(r.getZ());
   RtFloat lon = (RtFloat)std::atan2(r.getY(), r.getX());
   if (lon < 0) {
-    lon += (RtFloat)(2.0 * std::numbers::pi);
+    lon += 2 * std::numbers::pi_v<RtFloat>;
   }
-  RtFloat s = lon / (RtFloat)(2.0 * std::numbers::pi);
-  RtFloat t = ((RtFloat)(std::numbers::pi / 2.0) - lat) / std::numbers::pi_v<RtFloat>;
+  RtFloat s = lon / (2 * std::numbers::pi_v<RtFloat>);
+  RtFloat t = (std::numbers::pi_v<RtFloat> / 2 - lat) / std::numbers::pi_v<RtFloat>;
   return (textureCache ? *textureCache : gman::textureCache()).sample(name, s, t);
 }

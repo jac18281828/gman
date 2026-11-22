@@ -125,7 +125,7 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
     return false;
 
   double const roots[2] = {t0, t1};
-  RtFloat const thetamaxRad = (RtFloat)(thetamax / 360.0 * 2.0 * std::numbers::pi);
+  RtFloat const thetamaxRad = GMANRadians(thetamax);
 
   for (int i = 0; i < numRoots; ++i) {
     double const tLocal = roots[i];
@@ -137,7 +137,7 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
     if (!(zmin <= z && z <= zmax))
       continue;
 
-    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), (RtFloat)(2.0 * std::numbers::pi));
+    RtFloat const theta = GMANMod(GMANAtan((RtFloat)root.py, (RtFloat)root.px), 2 * std::numbers::pi_v<RtFloat>);
     if (!(theta <= thetamaxRad))
       continue;
 
