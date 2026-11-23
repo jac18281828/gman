@@ -3663,6 +3663,21 @@ set_tests_properties(pathtraceradaptive PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A slot the path tracer stops under a positive PixelVariance averages to
+# the fixed-count mean, shown on a hairline torus whose paths rarely hit it.
+# WILL_FAIL pins the per-slot stopping rule's low bias. See
+# tests/pathtracerunbiased_test.cpp.
+add_executable(gman_pathtracerunbiased pathtracerunbiased_test.cpp)
+target_link_libraries(gman_pathtracerunbiased PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerunbiased gman_matte)
+
+add_test(NAME pathtracerunbiased COMMAND gman_pathtracerunbiased)
+set_tests_properties(pathtracerunbiased PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30
+  WILL_FAIL TRUE)
+
 # Neither the z-buffer nor the ray tracer calls gman::emitters or special-
 # cases an AreaLightSource-tagged primitive's own shading: each renders
 # tests/rib/arealight_sphere.rib pixel for pixel as it would with every
