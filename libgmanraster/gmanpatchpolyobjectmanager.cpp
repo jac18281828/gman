@@ -554,14 +554,14 @@ GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
 }
 
 // Dices one ear-clipped triangle (corners i0, i1, i2, indexing
-// vertexLocations/texCoords/vertexNormals/vertices) into its own n-per-edge barycentric
-// grid -- n the caller's own diceCountFor result for this triangle --
-// appending every newly shaded interior or edge-interior vertex to vertices
-// and every sub-triangle's face to faceList. Reuses the triangle's three
-// corners' own GMANVertex objects unchanged at the grid's three corners
-// rather than duplicating them; two ear-clipped triangles never share a
-// diced grid vertex, even along a common diagonal -- each dices
-// independently.
+// vertexLocations/texCoords/vertexNormals/vertices) into its own
+// n-per-edge barycentric grid -- n the caller's own diceCountFor result for
+// this triangle -- appending every newly shaded interior or edge-interior
+// vertex to vertices and every sub-triangle's face to faceList. Reuses the
+// triangle's three corners' own GMANVertex objects unchanged at the grid's
+// three corners rather than duplicating them; two ear-clipped triangles
+// never share a diced grid vertex, even along a common diagonal -- each
+// dices independently.
 void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> const& vertexLocations,
                          std::vector<PolygonVertexTexCoord> const& texCoords,
                          std::vector<GMANVector> const& vertexNormals, GMANNormal const& normal,
@@ -1052,6 +1052,18 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
   }
 }
 
+std::vector<GMANVector> vertexNormalsAt(std::vector<GMANVector> const& pointNormals,
+                                        std::vector<RtInt> const& vertexSlots) {
+  std::vector<GMANVector> vertexNormals;
+  if (!pointNormals.empty()) {
+    vertexNormals.reserve(vertexSlots.size());
+    for (RtInt const slot : vertexSlots) {
+      vertexNormals.push_back(pointNormals[slot]);
+    }
+  }
+  return vertexNormals;
+}
+
 // getRSPolygonMesh's own tail, one face at a time: loops[0] is the outer
 // boundary, loops[1..] holes bridged into it, then triangulated and
 // shaded through buildPolygonObject. loopSlots (index-aligned with loops)
@@ -1100,16 +1112,9 @@ bool buildFace(std::vector<std::vector<GMANPoint>> const& loops, std::vector<std
     texCoords[i] = pointTexCoords[vertexSlots[i]];
   }
 
-  std::vector<GMANVector> vertexNormals;
-  if (!pointNormals.empty()) {
-    vertexNormals.reserve(vertexSlots.size());
-    for (RtInt const slot : vertexSlots) {
-      vertexNormals.push_back(pointNormals[slot]);
-    }
-  }
-
-  FaceChains const chains = buildPolygonObject(vertexLocations, ring, normalVec, sides, orientation, appearance,
-                                               cameraToWorld, texCoords, vertexNormals, dicing);
+  FaceChains const chains =
+      buildPolygonObject(vertexLocations, ring, normalVec, sides, orientation, appearance, cameraToWorld, texCoords,
+                         vertexNormalsAt(pointNormals, vertexSlots), dicing);
   body = chains.body;
   vertRoot = chains.vertRoot;
   return true;

@@ -1603,7 +1603,7 @@ if(GMAN_BUILD_PATHTRACER)
     TIMEOUT 120)
 endif()
 
-# A polygon's per-vertex "N" shades it smoothly, wound either way, under the z-buffer and the ray tracer.
+# A polygon's per-vertex "N" shades it smoothly, wound either way, under the z-buffer and the ray tracer, and a hole's vertices take their own under the z-buffer.
 add_executable(gman_zbuffervertexnormals zbuffervertexnormals_test.cpp)
 target_link_libraries(gman_zbuffervertexnormals PRIVATE gman_core TIFF::TIFF)
 add_dependencies(gman_zbuffervertexnormals gman_matte gman_zbuffer)

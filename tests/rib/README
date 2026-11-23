@@ -599,9 +599,10 @@ face normal points into the prism while its vertex normals still point out
 
 A square face with a square hole, every vertex normal, the hole's included,
 tilted 60 degrees away from the light axis of one distant light along the
-camera axis (`tests/zbuffervertexnormals_test.cpp`). A hole vertex shaded with
-the face's normal instead of its own brightens the pixels beside the hole. Not
-third-party.
+camera axis, under a `ShadingRate` so coarse that every triangle dices once and
+every shaded vertex is a corner (`tests/zbuffervertexnormals_test.cpp`). A
+corner or hole vertex shaded with the face's normal instead of its own
+brightens the pixels beside the hole. Not third-party.
 
 ## normalmap_card.rib
 

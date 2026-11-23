@@ -78,12 +78,13 @@ inline RtFloat* floatArray(GMANParameterList const& pl, RtToken token) {
 GMAN_EXPORT std::vector<std::pair<RtFloat, RtFloat>> polygonTexCoords(GMANParameterList const& pl, RtFloat const* p,
                                                                       std::size_t count);
 
-// Each of pointCount points' own "N" in camera space, unit length: entry i
-// is point i's normal, turned by the inverse transpose of t's transform. The
-// one definition of which "N" a polygon request's renderers read. Empty when
-// the request carries no "N", when its "N" is neither vertex nor varying or
-// does not hold 3 * pointCount floats (each of the last two warns, and the
-// request shades flat), and when t's transform has no inverse.
+// Each of pointCount points' own "N" in camera space, unit length, or zero
+// where a point's "N" is zero: entry i is point i's normal, turned by the
+// inverse transpose of t's transform. The one definition of which "N" a
+// polygon request's renderers read. Empty when the request carries no "N",
+// when its "N" is neither vertex nor varying or does not hold 3 * pointCount
+// floats (each of the last two warns, and the request shades flat), and when
+// t's transform has no inverse.
 GMAN_EXPORT std::vector<GMANVector> cameraSpacePointNormals(GMANParameterList const& parameters, std::size_t pointCount,
                                                             GMANTransform* t);
 
