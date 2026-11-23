@@ -1,0 +1,20 @@
+## The fold of creasestreak.rib with every face wound against its normals
+## (tests/creasestreak_test.cpp). Not third-party.
+Display "creasestreak_reversed.tif" "file" "rgba"
+Format 64 64 1
+Projection "orthographic"
+ScreenWindow -1 1 -1 1
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [1] "from" [1 0 0] "to" [0 0 0]
+Surface "matte" "Ka" [0] "Kd" [1]
+PointsPolygons [4 4]
+	[3 2 1 0 7 6 5 4]
+	"P" [-0.75 -0.75 0.0656164976 -0.75 0.75 0.0656164976 0 0.75 0 0 -0.75 0 0 -0.75 0 0 0.75 0 0.5 0.75 0.866025404 0.5 -0.75 0.866025404]
+	"N" [-0.0871557427 0 -0.996194698 -0.0871557427 0 -0.996194698 0.149104625 -0.700533936 -0.697868193 0.149104625 0.700533936 -0.697868193 0.866025404 0 -0.5 0.866025404 0 -0.5 0.866025404 0 -0.5 0.866025404 0 -0.5]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+WorldEnd

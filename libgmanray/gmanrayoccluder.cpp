@@ -32,6 +32,8 @@
 #include "gmanray.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
+#include "gmanraypolygon.h"
+#include "gmanraypolygonmesh.h"
 #include "gmanvector.h"
 #include "ri.h"
 
@@ -102,10 +104,38 @@ bool transmissionNegligible(GMANColor const& transmission) {
          transmission.getBlue() < kTransmissionCutoff;
 }
 
+bool passesTerminatorExit(GMANHit const& hit, GMANRayInterface const& hitPrimitive, GMANVector const& towardLight,
+                          GMANPrimitive const& origin) {
+  GMANRayPolygon const* const hitPolygon = dynamic_cast<GMANRayPolygon const*>(&hitPrimitive);
+  GMANRayPolygon const* const originPolygon = dynamic_cast<GMANRayPolygon const*>(&origin);
+  if (hitPolygon == nullptr || originPolygon == nullptr || hitPolygon->getMesh() == nullptr ||
+      hitPolygon->getMesh() != originPolygon->getMesh()) {
+    return false;
+  }
+  if (!hit.shadingNormal || !(hit.shadingNormal->dot(towardLight) > (RtFloat)0.0)) {
+    return false;
+  }
+  GMANBBox const& box = origin.getBBox();
+  return hit.t <= GMANVector(box.getMin(), box.getMax()).magnitude();
+}
+
 } // namespace gman
 
 GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint const& P, GMANVector const& towardLight,
                                         GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const {
+  return walk(P, towardLight, Ng, distance, surfaceMagnitude, nullptr);
+}
+
+GMANColor GMANRayOccluder::transmissionFromTerminator(GMANLight const& /*light*/, GMANPoint const& P,
+                                                      GMANVector const& towardLight, GMANVector const& Ng,
+                                                      RtFloat distance, RtFloat surfaceMagnitude,
+                                                      GMANPrimitive const& origin) const {
+  return walk(P, towardLight, Ng, distance, surfaceMagnitude, &origin);
+}
+
+GMANColor GMANRayOccluder::walk(GMANPoint const& P, GMANVector const& towardLight, GMANVector const& Ng,
+                                RtFloat distance, RtFloat surfaceMagnitude,
+                                GMANPrimitive const* terminatorOrigin) const {
   GMANColor transmission(1.0f, 1.0f, 1.0f);
   GMANPoint origin = gman::offsetOrigin(P, Ng, towardLight, surfaceMagnitude);
   RtFloat remaining = distance;
@@ -135,9 +165,13 @@ GMANColor GMANRayOccluder::transmission(GMANLight const& /*light*/, GMANPoint co
     if (!bvh.nearestHit(shadowRay, hit, hitPrimitive)) {
       break;
     }
-    transmission = gman::multiplyChannels(transmission, gman::oneMinus(hitPrimitive->getAppearance().Os));
-    if (gman::transmissionNegligible(transmission)) {
-      return GMANColor(0.0f, 0.0f, 0.0f);
+    bool const passesTerminator = layer == 0 && terminatorOrigin != nullptr &&
+                                  gman::passesTerminatorExit(hit, *hitPrimitive, towardLight, *terminatorOrigin);
+    if (!passesTerminator) {
+      transmission = gman::multiplyChannels(transmission, gman::oneMinus(hitPrimitive->getAppearance().Os));
+      if (gman::transmissionNegligible(transmission)) {
+        return GMANColor(0.0f, 0.0f, 0.0f);
+      }
     }
     // The surface this iteration is leaving, not the Ng the caller
     // passed: that one belongs to the first hit only, a different

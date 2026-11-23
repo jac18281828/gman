@@ -44,6 +44,11 @@ class GMANRAY_EXPORT GMANRayPolygonMesh : public GMANRayInterface {
 public:
   explicit GMANRayPolygonMesh(std::vector<std::unique_ptr<GMANRayPolygon>> polygons);
 
+  GMANRayPolygonMesh(GMANRayPolygonMesh const&) = delete;
+  GMANRayPolygonMesh& operator=(GMANRayPolygonMesh const&) = delete;
+  GMANRayPolygonMesh(GMANRayPolygonMesh&&) = delete;
+  GMANRayPolygonMesh& operator=(GMANRayPolygonMesh&&) = delete;
+
   bool intersect(GMANRay const& ray, GMANHit& hit) const;
 
   // The mesh's own faces, in construction order -- what GMANRayBVH::build

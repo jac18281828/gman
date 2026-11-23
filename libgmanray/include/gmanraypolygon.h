@@ -48,7 +48,11 @@ std::vector<std::pair<RtFloat, RtFloat>> resolvePointTexCoords(GMANParameterList
 
 } // namespace gman
 
+class GMANRayPolygonMesh;
+
 class GMANRAY_EXPORT GMANRayPolygon : public GMANRayInterface, public GMANPolygon {
+  friend class GMANRayPolygonMesh;
+
 public:
   // outer's vertices are already in camera space, transformed once per
   // vertex by the caller: a polygon is flat, so its transformed vertices
@@ -92,7 +96,14 @@ public:
   // describe no real face.
   bool isDegenerate() const { return degenerate; }
 
+  // The mesh whose constructor took this face, or null for a face built
+  // outside a mesh. Two faces of one polygon request share it, so it is the
+  // identity a hit's face and the face a shading point lies on compare by.
+  GMANRayPolygonMesh const* getMesh() const { return mesh; }
+
 private:
+  GMANRayPolygonMesh const* mesh = nullptr;
+
   // The plane, the Newell normal and the degeneracy test all come from
   // this loop alone. A hit lands inside it and outside every loop in
   // holes, each loop tested on its own -- no bridging, no combined

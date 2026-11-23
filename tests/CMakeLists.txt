@@ -1564,6 +1564,46 @@ if(GMAN_BUILD_PATHTRACER)
     TIMEOUT 120)
 endif()
 
+# A smooth fold's terminator renders lit under both renderers, while a blocker, a wall's far side and a
+# surface lit from behind its normals keep their shadows.
+add_executable(gman_creasestreak creasestreak_test.cpp)
+target_link_libraries(gman_creasestreak PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_creasestreak gman_matte)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_creasestreak gman_raytracer)
+
+  set(GMAN_CREASESTREAK_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/creasestreak-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_CREASESTREAK_RAYTRACER_WORKDIR}")
+
+  add_test(NAME creasestreak_raytracer
+    COMMAND gman_creasestreak $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                              gmanraytracer
+    WORKING_DIRECTORY "${GMAN_CREASESTREAK_RAYTRACER_WORKDIR}")
+  set_tests_properties(creasestreak_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_creasestreak gman_pathtracer)
+
+  set(GMAN_CREASESTREAK_PATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/creasestreak-pathtracer-run")
+  file(MAKE_DIRECTORY "${GMAN_CREASESTREAK_PATHTRACER_WORKDIR}")
+
+  add_test(NAME creasestreak_pathtracer
+    COMMAND gman_creasestreak $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                              gmanpathtracer
+    WORKING_DIRECTORY "${GMAN_CREASESTREAK_PATHTRACER_WORKDIR}")
+  set_tests_properties(creasestreak_pathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 120)
+endif()
+
 # A smooth prism's terminator renders lit, its back side stays lit and a wall still shadows it.
 add_executable(gman_shadowterminator shadowterminator_test.cpp)
 target_link_libraries(gman_shadowterminator PRIVATE gman_core TIFF::TIFF)

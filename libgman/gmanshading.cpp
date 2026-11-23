@@ -48,6 +48,12 @@ namespace gman {
 // gmanocclude.h, emits Occluder's vtable and typeinfo.
 Occluder::~Occluder() = default;
 
+GMANColor Occluder::transmissionFromTerminator(GMANLight const& light, GMANPoint const& P,
+                                               GMANVector const& towardLight, GMANVector const& Ng, RtFloat distance,
+                                               RtFloat surfaceMagnitude, GMANPrimitive const& /*origin*/) const {
+  return transmission(light, P, towardLight, Ng, distance, surfaceMagnitude);
+}
+
 // Out-of-line beside Occluder's, for the same reason: gmantrace.h is
 // included by gmanshaderenvironment.h, which every shading translation
 // unit pulls in.
@@ -116,6 +122,7 @@ SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   point.dPdv = hit.dPdv;
   point.surfaceMagnitude = gman::primitiveMagnitude(hit.primitive->getBBox());
   point.shadowOrigin = hit.shadowOrigin;
+  point.primitive = hit.primitive;
   return point;
 }
 
@@ -149,12 +156,18 @@ GMANSurfaceEnv fillEnv(Appearance const& appearance, SurfacePoint const& point, 
 
 class ShadowOriginOccluder : public Occluder {
 public:
-  ShadowOriginOccluder(Occluder const* answering, GMANPoint const& shadowOrigin, GMANNormal const& N)
-      : answering(answering), shadowOrigin(shadowOrigin), N(N) {}
+  ShadowOriginOccluder(Occluder const* answering, GMANPoint const& shadowOrigin, GMANNormal const& N,
+                       GMANPrimitive const* primitive)
+      : answering(answering), shadowOrigin(shadowOrigin), N(N), primitive(primitive) {}
 
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
                          GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const override {
-    GMANPoint const& origin = towardLight.dot(N) > (RtFloat)0.0 ? shadowOrigin : P;
+    bool const facesLight = towardLight.dot(N) > (RtFloat)0.0;
+    GMANPoint const& origin = facesLight ? shadowOrigin : P;
+    if (facesLight && towardLight.dot(Ng) < (RtFloat)0.0 && primitive != nullptr) {
+      return answering->transmissionFromTerminator(light, origin, towardLight, Ng, distance, surfaceMagnitude,
+                                                   *primitive);
+    }
     return answering->transmission(light, origin, towardLight, Ng, distance, surfaceMagnitude);
   }
 
@@ -162,6 +175,7 @@ private:
   Occluder const* answering;
   GMANPoint shadowOrigin;
   GMANNormal N;
+  GMANPrimitive const* primitive;
 };
 
 } // namespace
@@ -172,7 +186,7 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
   std::optional<ShadowOriginOccluder> shadowOriginOccluder;
   env.occluder = occluder;
   if (occluder != nullptr && point.shadowOrigin) {
-    shadowOriginOccluder.emplace(occluder, *point.shadowOrigin, point.N);
+    shadowOriginOccluder.emplace(occluder, *point.shadowOrigin, point.N, point.primitive);
     env.occluder = &*shadowOriginOccluder;
   }
   env.tracer = tracer;

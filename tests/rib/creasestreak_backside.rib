@@ -1,0 +1,20 @@
+## A smooth quad seen and lit from behind its normals, a card of its own mesh between it and the light
+## (tests/creasestreak_test.cpp). Not third-party.
+Display "creasestreak_backside.tif" "file" "rgba"
+Format 64 64 1
+Projection "orthographic"
+ScreenWindow -1 1 -1 1
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [1] "from" [-0.980580676 0 -0.196116135] "to" [0 0 0]
+Surface "matte" "Ka" [0] "Kd" [1]
+PointsPolygons [4 4]
+	[0 1 2 3 4 5 6 7]
+	"P" [-0.5 -0.75 0 0.5 -0.75 0 0.5 0.75 0 -0.5 0.75 0 -0.6 -1 -0.5 -0.6 -1 0 -0.6 1 0 -0.6 1 -0.5]
+	"N" [0 0 1 0 0 1 0 0 1 0 0 1 -1 0 0 -1 0 0 -1 0 0 -1 0 0]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+WorldEnd

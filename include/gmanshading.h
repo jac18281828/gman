@@ -108,6 +108,12 @@ struct GMAN_EXPORT SurfacePoint {
   // leaves from; any other shadow ray, and every one when it is empty,
   // leaves from P.
   std::optional<GMANPoint> shadowOrigin;
+
+  // The primitive P lies on (GMANHit::primitive), non-owning and valid as
+  // long as the hit's; null for a point built without one. A shadow ray
+  // that starts inside its mesh's facets names it to the occluder
+  // (Occluder::transmissionFromTerminator).
+  GMANPrimitive const* primitive = nullptr;
 };
 
 // The SurfacePoint a ray hit implies: P and N/Ng already camera space
@@ -119,7 +125,7 @@ struct GMAN_EXPORT SurfacePoint {
 // and v, albedo follows shading. A hit carrying a shadingNormal shades with it as N, and Ng is the
 // hit's normal negated where it faces away from N, so a shader's faceforward(N, I, Ng) agrees with
 // the supplied normal whatever the polygon's winding; a hit without one gives N and Ng the hit's
-// normal. The point carries the hit's shadowOrigin.
+// normal. The point carries the hit's shadowOrigin and primitive.
 GMAN_EXPORT SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit);
 
 // What shading a point produces: colour and opacity together, so a
@@ -138,7 +144,9 @@ struct GMAN_EXPORT Shading {
 // light reach P?" (gmanocclude.h); a caller that omits it keeps every
 // light visible. When the point carries a shadowOrigin, the occluder
 // receives it in place of P for every light direction with a positive dot
-// product with N, with the direction and distance measured from P. tracer
+// product with N, with the direction and distance measured from P; where the
+// point's facet faces away from that light, the occluder's
+// transmissionFromTerminator answers in place of transmission. tracer
 // answers a shader's own trace() calls (gmantrace.h); a caller that omits
 // it leaves trace() returning black.
 // textureCache is what texture() and environment() sample through; a

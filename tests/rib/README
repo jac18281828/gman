@@ -604,6 +604,59 @@ every shaded vertex is a corner (`tests/zbuffervertexnormals_test.cpp`). A
 corner or hole vertex shaded with the face's normal instead of its own
 brightens the pixels beside the hole. Not third-party.
 
+## creasestreak.rib
+
+One `PointsPolygons` of two faces under one distant light along +x: face A,
+facing a little away from the light, whose vertex normals tilt toward it and
+converge along the ridge, and face B, folded back from the ridge and facing the
+light. A band of A has its shading normal facing the light across the fold
+(`tests/creasestreak_test.cpp`). Not third-party.
+
+## creasestreak_open.rib
+
+`creasestreak.rib`'s face A alone, the unoccluded reference for its terminator
+band (`tests/creasestreak_test.cpp`). Not third-party.
+
+## creasestreak_reversed.rib
+
+`creasestreak.rib` with every face wound against its normals
+(`tests/creasestreak_test.cpp`). Not third-party.
+
+## creasestreak_blocked.rib
+
+`creasestreak.rib` plus, in the same mesh, a wall at x = 1.2 with normal +x,
+outside the frame. The wall is the second crossing from face A's band and the
+first from face B's (`tests/creasestreak_test.cpp`). Not third-party.
+
+## creasestreak_far.rib
+
+`creasestreak_open.rib`'s face A plus, in the same mesh, a card at x = 3 that a
+shadow ray crosses from behind, farther than face A's own size
+(`tests/creasestreak_test.cpp`). Not third-party.
+
+## creasestreak_facing.rib
+
+`creasestreak_open.rib`'s face A plus, in the same mesh, a card at x = 0.3
+facing -x, which a shadow ray crosses from the front
+(`tests/creasestreak_test.cpp`). Not third-party.
+
+## creasestreak_other.rib
+
+`creasestreak_open.rib`'s face A plus a separate smooth `Polygon` card at
+x = 0.3 facing +x, which a shadow ray crosses from behind within face A's own
+size (`tests/creasestreak_test.cpp`). Not third-party.
+
+## creasestreak_backside.rib
+
+One mesh of two faces: a quad seen and lit from behind its normals, and a card
+between the quad and the light that a shadow ray crosses from behind
+(`tests/creasestreak_test.cpp`). Not third-party.
+
+## creasestreak_backside_open.rib
+
+`creasestreak_backside.rib`'s quad alone, the reference for the card's shadow
+(`tests/creasestreak_test.cpp`). Not third-party.
+
 ## normalmap_card.rib
 
 A `paintedplastic` card facing the camera under one distant light tilted along

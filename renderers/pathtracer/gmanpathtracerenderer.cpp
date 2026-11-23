@@ -213,10 +213,13 @@ struct ShadowWalkResult {
 // draw re-aims at shadowTarget after every blocker, since a blocker's own
 // offset scales with its own size and could otherwise push the walk's
 // endpoint past a small emitter's own target -- ending unblocked once
-// shadowTarget lies at or behind the walk's own new origin.
+// shadowTarget lies at or behind the walk's own new origin. A non-null
+// terminatorOrigin names the primitive a shadow ray starts inside the facets
+// of: the walk's first hit then passes without compositing when
+// gman::passesTerminatorExit accepts it.
 ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtFloat maxDistance, bool isDelta,
                             GMANPoint const& shadowTarget, GMANMatrix4 const& cameraToWorld,
-                            gman::TextureCache* textureCache) {
+                            gman::TextureCache* textureCache, GMANPrimitive const* terminatorOrigin) {
   ShadowWalkResult result;
   RtFloat remaining = maxDistance;
 
@@ -228,19 +231,23 @@ ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector 
       return result;
     }
 
-    gman::Appearance const& appearance = hitPrimitive->getAppearance();
-    gman::SurfacePoint const point = gman::hitSurfacePoint(shadowRay, hit);
-    GMANColor const os = clampCoverage(gman::opacity(appearance, point, cameraToWorld, textureCache));
-    gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
-    GMANColor const t = closure.shadowTransmittance(wi);
+    bool const passesTerminator = layer == 0 && terminatorOrigin != nullptr &&
+                                  gman::passesTerminatorExit(hit, *hitPrimitive, wi, *terminatorOrigin);
+    if (!passesTerminator) {
+      gman::Appearance const& appearance = hitPrimitive->getAppearance();
+      gman::SurfacePoint const point = gman::hitSurfacePoint(shadowRay, hit);
+      GMANColor const os = clampCoverage(gman::opacity(appearance, point, cameraToWorld, textureCache));
+      gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
+      GMANColor const t = closure.shadowTransmittance(wi);
 
-    GMANColor const passThroughShare = gman::oneMinus(os);
-    GMANColor factor = passThroughShare;
-    factor += gman::multiplyChannels(os, t);
-    result.v = gman::multiplyChannels(result.v, factor);
-    result.p = gman::multiplyChannels(result.p, passThroughShare);
-    if (colorBlack(result.v)) {
-      return result;
+      GMANColor const passThroughShare = gman::oneMinus(os);
+      GMANColor factor = passThroughShare;
+      factor += gman::multiplyChannels(os, t);
+      result.v = gman::multiplyChannels(result.v, factor);
+      result.p = gman::multiplyChannels(result.p, passThroughShare);
+      if (colorBlack(result.v)) {
+        return result;
+      }
     }
 
     RtFloat const magnitude = gman::primitiveMagnitude(hitPrimitive->getBBox());
@@ -432,12 +439,14 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
   RtFloat const weight = gman::nextEventWeight(es.isDelta, misEnabled, pLight, pBsdf);
 
   RtFloat const cosTerm = std::fabs(closure.shadingNormal().dot(es.wi));
-  GMANPoint const shadowStart =
-      point.shadowOrigin && es.wi.dot(point.N) > (RtFloat)0.0 ? *point.shadowOrigin : hit.point;
+  bool const shadowStartsAtOrigin = point.shadowOrigin && es.wi.dot(point.N) > (RtFloat)0.0;
+  GMANPoint const shadowStart = shadowStartsAtOrigin ? *point.shadowOrigin : hit.point;
   GMANPoint const origin = gman::offsetOrigin(shadowStart, point.Ng, es.wi, surfaceMagnitude);
   ShadowWalkStart const walkStart = shadowWalkStart(origin, es);
+  bool const startsInsideFacets =
+      shadowStartsAtOrigin && es.wi.dot(point.Ng) < (RtFloat)0.0 && point.primitive != nullptr;
   ShadowWalkResult const walk = shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget,
-                                           cameraToWorld, textureCache);
+                                           cameraToWorld, textureCache, startsInsideFacets ? point.primitive : nullptr);
 
   return weightedShadowedTerm(gman::multiplyChannels(beta, f), cosTerm, pLight, weight, es.Cl, walk);
 }

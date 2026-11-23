@@ -28,7 +28,10 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanocclude.h"
 #include "gmanpoint.h"
+#include "gmanprimitive.h"
+#include "gmanray.h"
 #include "gmanraybvh.h"
+#include "gmanrayinterface.h"
 #include "gmanvector.h"
 #include "ri.h"
 
@@ -66,6 +69,17 @@ GMANRAY_EXPORT GMANColor multiplyChannels(GMANColor const& a, GMANColor const& b
 // True once transmission is invisible in an 8-bit image on every channel.
 GMANRAY_EXPORT bool transmissionNegligible(GMANColor const& transmission);
 
+// Whether a shadow ray that starts inside its mesh's facets passes hit, the
+// first surface it crosses. origin is the primitive the shadow ray starts
+// from and hitPrimitive the one hit names. True when all three hold:
+// hitPrimitive and origin are polygons of one mesh; hit's shading normal
+// faces towardLight, so the crossing is from behind the mesh's own normals,
+// whatever the polygon's winding; and hit.t is at most the diagonal of
+// origin's bounding box, so only the ray leaving the solid near its origin
+// passes.
+GMANRAY_EXPORT bool passesTerminatorExit(GMANHit const& hit, GMANRayInterface const& hitPrimitive,
+                                         GMANVector const& towardLight, GMANPrimitive const& origin);
+
 } // namespace gman
 
 /*
@@ -87,6 +101,16 @@ public:
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
                          GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const override;
 
+  // transmission, except that the walk's first hit contributes nothing,
+  // and the walk continues past it, when gman::passesTerminatorExit passes
+  // it for origin.
+  GMANColor transmissionFromTerminator(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
+                                       GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude,
+                                       GMANPrimitive const& origin) const override;
+
 private:
+  GMANColor walk(GMANPoint const& P, GMANVector const& towardLight, GMANVector const& Ng, RtFloat distance,
+                 RtFloat surfaceMagnitude, GMANPrimitive const* terminatorOrigin) const;
+
   GMANRayBVH const& bvh;
 };

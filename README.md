@@ -165,7 +165,8 @@ gman -r gmanraytracer first.rib
   A polygon request's per-vertex `"N"` shades it smoothly under the z-buffer, the ray tracer and the
   path tracer. Under the ray tracer and the path tracer, the polygon's shadows toward lights on its
   normals' side leave from the smooth surface those normals imply, keeping a coarse mesh's
-  terminator off its facets.
+  terminator off its facets, and a shadow ray from a facet turned from the light passes the facet
+  of its own mesh it leaves through.
 - **Surface shaders.** `matte`, `plastic`, `paintedplastic`, `metal` and `shinymetal` under every
   renderer; `glass` and `mirror` trace rays, so they need the ray tracer or the path tracer.
   `paintedplastic`'s `"string opacityname"` names a map that cuts a surface out under the ray

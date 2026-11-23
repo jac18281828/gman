@@ -33,6 +33,9 @@
 
 GMANRayPolygonMesh::GMANRayPolygonMesh(std::vector<std::unique_ptr<GMANRayPolygon>> polygons)
     : faces(std::move(polygons)) {
+  for (std::unique_ptr<GMANRayPolygon> const& face : faces) {
+    face->mesh = this;
+  }
   if (faces.empty()) {
     return;
   }

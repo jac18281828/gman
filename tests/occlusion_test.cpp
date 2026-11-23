@@ -40,6 +40,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanocclude.h"
 #include "gmanpoint.h"
+#include "gmanprimitive.h"
 #include "gmanshaderenvironment.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -154,6 +155,27 @@ void checkOccluderReceivesNg() {
         "check 4: the received normal differs from env.N -- N and Ng were set apart for this reason");
 }
 
+// The base transmissionFromTerminator answers transmission: called through
+// the base class, a RecordingOccluder returns its fixed colour and records
+// the Ng and distance it received.
+void checkTerminatorCallDefaultsToTransmission() {
+  GMANLight point(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, 5.0f), GMANVector());
+  GMANColor const fixed(0.25f, 0.5f, 0.75f);
+  RecordingOccluder occluder(fixed);
+  gman::Occluder const& base = occluder;
+  GMANPrimitive const origin;
+  GMANVector const ng(0.0f, 1.0f, 0.0f);
+
+  GMANColor const result = base.transmissionFromTerminator(point, GMANPoint(0.0f, 0.0f, 0.0f),
+                                                           GMANVector(0.0f, 0.0f, 1.0f), ng, 7.0f, 3.0f, origin);
+
+  RecordingOccluder::Record const& record = occluder.diffuseRecord();
+  check(colorNear(result, fixed, kTol), "transmissionFromTerminator's default returns the occluder's transmission");
+  check(std::fabs(record.ng.getY() - ng.getY()) <= kTol && std::fabs(record.ng.getX() - ng.getX()) <= kTol &&
+            std::fabs(record.ng.getZ() - ng.getZ()) <= kTol && std::fabs(record.pointDistance - 7.0f) <= kTol,
+        "transmissionFromTerminator's default passes transmission the Ng and distance it received");
+}
+
 } // namespace
 
 int main() {
@@ -218,6 +240,7 @@ int main() {
         "point light: specular()'s transmission() call receives a unit towardLight");
 
   checkOccluderReceivesNg();
+  checkTerminatorCallDefaultsToTransmission();
 
   return checkSummary(
       "GMANSurfaceEnv's occlusion hook: diffuse()/specular() consult it per channel, ambient() does not");

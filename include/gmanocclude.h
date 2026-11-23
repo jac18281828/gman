@@ -30,6 +30,8 @@
 #include "gmanvector.h"
 #include "ri.h"
 
+class GMANPrimitive;
+
 namespace gman {
 
 /*
@@ -72,6 +74,18 @@ public:
   // virtual binds by static type, not the override actually called.
   virtual GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
                                  GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const = 0;
+
+  // transmission's twin for a shadow ray that starts inside its mesh's
+  // facets: gman::shade calls it where the point's shading normal faces the
+  // light while its facet, Ng, faces away. origin is the primitive P lies
+  // on. The default returns transmission called with the first six
+  // arguments. An override may let the ray pass the first surface it crosses
+  // from behind when that surface belongs to origin's own mesh, since that
+  // crossing is the ray leaving the faceted solid it started in; it still
+  // shadows for every other blocker.
+  virtual GMANColor transmissionFromTerminator(GMANLight const& light, GMANPoint const& P,
+                                               GMANVector const& towardLight, GMANVector const& Ng, RtFloat distance,
+                                               RtFloat surfaceMagnitude, GMANPrimitive const& origin) const;
 };
 
 } // namespace gman
