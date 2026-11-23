@@ -59,8 +59,9 @@ RtVoid GMANSurfaceShader::illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANC
 
 GMANColor GMANSurfaceShader::albedo(GMANSurfaceEnv const& se) const {
   GMANColor const rho = bsdf(se).rhoD();
-  return GMANColor(GMANClamp(rho.getRed(), 0.0f, 1.0f), GMANClamp(rho.getGreen(), 0.0f, 1.0f),
-                   GMANClamp(rho.getBlue(), 0.0f, 1.0f));
+  return GMANColor(GMANClamp(rho.getRed(), RtFloat(0.0), RtFloat(1.0)),
+                   GMANClamp(rho.getGreen(), RtFloat(0.0), RtFloat(1.0)),
+                   GMANClamp(rho.getBlue(), RtFloat(0.0), RtFloat(1.0)));
 }
 
 gman::BSDF GMANSurfaceShader::bsdf(GMANSurfaceEnv const& se) const {

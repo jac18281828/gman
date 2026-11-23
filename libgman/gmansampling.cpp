@@ -258,7 +258,7 @@ Point2D concentricDisk(RtFloat u1, RtFloat u2) {
 
 GMANVector cosineHemisphere(RtFloat u1, RtFloat u2) {
   Point2D const d = concentricDisk(u1, u2);
-  RtFloat const z = std::sqrt(std::max(0.0f, 1.0f - d.x * d.x - d.y * d.y));
+  RtFloat const z = std::sqrt(std::max(RtFloat(0.0), 1.0f - d.x * d.x - d.y * d.y));
   return GMANVector(d.x, d.y, z);
 }
 
@@ -268,7 +268,7 @@ RtFloat cosineHemispherePdf(RtFloat cosTheta) {
 
 GMANVector uniformHemisphere(RtFloat u1, RtFloat u2) {
   RtFloat const z = u1;
-  RtFloat const r = std::sqrt(std::max(0.0f, 1.0f - z * z));
+  RtFloat const r = std::sqrt(std::max(RtFloat(0.0), 1.0f - z * z));
   RtFloat const phi = 2.0f * std::numbers::pi_v<RtFloat> * u2;
   return GMANVector(r * std::cos(phi), r * std::sin(phi), z);
 }
@@ -277,7 +277,7 @@ RtFloat uniformHemispherePdf() { return kInv2Pi; }
 
 GMANVector uniformSphere(RtFloat u1, RtFloat u2) {
   RtFloat const z = 1.0f - 2.0f * u1;
-  RtFloat const r = std::sqrt(std::max(0.0f, 1.0f - z * z));
+  RtFloat const r = std::sqrt(std::max(RtFloat(0.0), 1.0f - z * z));
   RtFloat const phi = 2.0f * std::numbers::pi_v<RtFloat> * u2;
   return GMANVector(r * std::cos(phi), r * std::sin(phi), z);
 }
@@ -286,7 +286,7 @@ RtFloat uniformSpherePdf() { return kInv4Pi; }
 
 GMANVector uniformCone(RtFloat u1, RtFloat u2, RtFloat cosThetaMax) {
   RtFloat const cosTheta = (1.0f - u1) + u1 * cosThetaMax;
-  RtFloat const sinTheta = std::sqrt(std::max(0.0f, 1.0f - cosTheta * cosTheta));
+  RtFloat const sinTheta = std::sqrt(std::max(RtFloat(0.0), 1.0f - cosTheta * cosTheta));
   RtFloat const phi = 2.0f * std::numbers::pi_v<RtFloat> * u2;
   return GMANVector(sinTheta * std::cos(phi), sinTheta * std::sin(phi), std::max(cosTheta, cosThetaMax));
 }

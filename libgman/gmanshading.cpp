@@ -161,8 +161,9 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
 GMANColor albedo(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
                  TextureCache* textureCache) {
   if (!appearance.shader) {
-    return GMANColor(GMANClamp(appearance.Cs.getRed(), 0.0f, 1.0f), GMANClamp(appearance.Cs.getGreen(), 0.0f, 1.0f),
-                     GMANClamp(appearance.Cs.getBlue(), 0.0f, 1.0f));
+    return GMANColor(GMANClamp(appearance.Cs.getRed(), RtFloat(0.0), RtFloat(1.0)),
+                     GMANClamp(appearance.Cs.getGreen(), RtFloat(0.0), RtFloat(1.0)),
+                     GMANClamp(appearance.Cs.getBlue(), RtFloat(0.0), RtFloat(1.0)));
   }
   GMANSurfaceEnv const env = fillEnv(appearance, point, cameraToWorld, textureCache);
   return appearance.shader->albedo(env);

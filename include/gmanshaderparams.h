@@ -59,8 +59,9 @@ inline std::string getStringParam(GMANParameterList const& pl, std::string_view 
 // Clamps an albedo() answer's channels to [0, 1], the range every override
 // answers in; a NaN channel maps to 0.
 inline GMANColor clampAlbedo(GMANColor const& c) {
-  return GMANColor(GMANClamp(c.getRed(), 0.0f, 1.0f), GMANClamp(c.getGreen(), 0.0f, 1.0f),
-                   GMANClamp(c.getBlue(), 0.0f, 1.0f));
+  return GMANColor(GMANClamp(c.getRed(), RtFloat(0.0), RtFloat(1.0)),
+                   GMANClamp(c.getGreen(), RtFloat(0.0), RtFloat(1.0)),
+                   GMANClamp(c.getBlue(), RtFloat(0.0), RtFloat(1.0)));
 }
 
 // GGX's alpha whose D falls to half where specular()'s Blinn-Phong

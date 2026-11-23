@@ -75,7 +75,7 @@ GMAN_EXPORT RtFloat GMANSmoothStep(RtFloat min, RtFloat max, RtFloat value);
 GMAN_EXPORT RtFloat GMANFilterStep(RtFloat edge, RtFloat s1...);
 
 inline RtFloat GMANSplineSegment(RtFloat value, RtInt nbSeg, RtInt& ptr) {
-  const RtFloat position = GMANClamp(value, 0.0f, 1.0f) * nbSeg;
+  const RtFloat position = GMANClamp(value, RtFloat(0.0), RtFloat(1.0)) * nbSeg;
   ptr = std::min((RtInt)position, nbSeg - 1);
   return position - ptr;
 }
