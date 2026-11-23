@@ -26,11 +26,28 @@
 
 #include "check.h"
 #include "gmanascii.h"
+#include "gmanerror.h"
 #include "ri.h"
 
 namespace {
 
 constexpr char const* outputName = "ribwritercolorcount.rib";
+constexpr int acceptedColorSamplesRequests = 3;
+
+struct Thrown {
+  bool threw = false;
+  RtInt code = 0;
+  RtInt severity = 0;
+};
+
+template <typename Call> Thrown thrownBy(Call&& call) {
+  try {
+    call();
+  } catch (GMANError const& error) {
+    return {true, error.getCode(), error.getSeverity()};
+  }
+  return {};
+}
 
 struct ColorRequest {
   std::string name;
@@ -109,6 +126,14 @@ WrittenFile readWrittenFile(std::string const& path) {
   return file;
 }
 
+void checkRefusedBelowOne(GMANASCII& writer, RtInt count) {
+  const Thrown thrown = thrownBy([&] { writer.RiColorSamples(count, nullptr, nullptr); });
+  const std::string label = "ColorSamples " + std::to_string(count);
+  check(thrown.threw, label + " throws");
+  check(thrown.code == RIE_RANGE, label + " throws RIE_RANGE");
+  check(thrown.severity == RIE_ERROR, label + " throws at RIE_ERROR");
+}
+
 void checkWritten(WrittenFile const& file, std::vector<ColorRequest> const& expected) {
   check(file.colorRequests.size() == expected.size(), "the file holds every Color and Opacity request");
   if (file.colorRequests.size() != expected.size()) {
@@ -148,9 +173,15 @@ int main() {
   writer.RiFrameEnd();
   script.color(5, "a FrameEnd after the frame leaves the restored count");
 
+  checkRefusedBelowOne(writer, 0);
+  checkRefusedBelowOne(writer, -1);
+  script.color(5, "after a refused count: Color keeps its five values");
+
   writer.RiEnd();
 
-  checkWritten(readWrittenFile(outputName), script.requests());
+  const WrittenFile file = readWrittenFile(outputName);
+  checkWritten(file, script.requests());
+  check(file.colorSamplesLines == acceptedColorSamplesRequests, "a refused count writes no ColorSamples line");
 
   return checkSummary("GMANASCII writes Color and Opacity at the ColorSamples count");
 }

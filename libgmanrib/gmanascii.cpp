@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 #include <cstdint>
+#include <format>
 #include <iostream>
 #include <string>
 
@@ -226,6 +227,9 @@ RtVoid GMANASCII::RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer pa
   printPL(n, tokens, parms);
 }
 RtVoid GMANASCII::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
+  if (n < 1) {
+    throw GMANError(RIE_RANGE, RIE_ERROR, std::format("ColorSamples needs at least one sample, got {}.", n).c_str());
+  }
   out << "ColorSamples";
   printArray(n * 3, nRGB);
   printArray(n * 3, RGBn);
