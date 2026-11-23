@@ -21,7 +21,7 @@
 /*
  * The contact gap. A small receiver (M ~ max|P|) shadows at a gap the
  * old, unkeyed 3e-5*max|P| offset hid; a large receiver (M >> max|P|, a
- * radius-1000 sphere) keeps its own contact shadow, since
+ * sphere of kLargeReceiverRadius) keeps its own contact shadow, since
  * kSelfShadowOffsetCeiling caps the magnitude-keyed offset at what the
  * old constant already gave. Both fixtures use an open, single-sided
  * polygon blocker: a closed solid would put even the old offset's origin
@@ -59,6 +59,8 @@ constexpr RtFloat kUnitRoundoff = std::numeric_limits<RtFloat>::epsilon() / (RtF
 constexpr RtFloat kDerivedC = (RtFloat)16.0;
 constexpr RtFloat kScale = kDerivedC * kUnitRoundoff;
 constexpr RtFloat kCeiling = (RtFloat)3.0e-5;
+constexpr RtFloat kLargeReceiverRadius =
+    (RtFloat)1000.0 * (RtFloat)(std::numeric_limits<float>::epsilon() / std::numeric_limits<RtFloat>::epsilon());
 
 // A radius-scale sphere centred at (0, 0, centreZ), opaque white --
 // rayoccluder_test.cpp's own sphereAt convention.
@@ -155,12 +157,14 @@ void checkSmallReceiver() {
   }
 }
 
-// The large receiver: M >> max|P|, a radius-1000 sphere placed so its own
-// near pole sits at max|P| == 5 (centre (0,0,1005)), M ~ 2005. g ==
+// The large receiver: M >> max|P|, a sphere of kLargeReceiverRadius placed
+// so its own near pole sits at max|P| == 5 (centre (0,0,radius + 5)), M ~
+// 2*radius. The radius is 1000 where RtFloat is float and scales with
+// 1/epsilon, so kScale*M keeps exceeding g at any width. g ==
 // 4*kCeiling*max|P|, the same gap the small receiver's own third check
 // uses; Ng.L == 1 comfortably clears Ng.L > g / (kScale*M).
 void checkLargeReceiver() {
-  RtFloat const radius = 1000.0f;
+  RtFloat const radius = kLargeReceiverRadius;
   RtFloat const maxP = 5.0f;
   RtFloat const centreZ = radius + maxP;
   GMANPoint const hitPoint(0.0f, 0.0f, maxP);

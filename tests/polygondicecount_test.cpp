@@ -223,11 +223,12 @@ int main() {
   // suite's own raster scale, so a triangle whose default-window
   // hypotenuse would be 20px (comfortably capped either way) proves the
   // window is actually read, not a fov/format-only shortcut, by landing
-  // at exactly the ceil(10)=10-per-edge count instead of staying at the
-  // cap.
+  // at the ceil(9.5)=10-per-edge count instead of staying at the cap. The
+  // target sits half a pixel off an integer so the ceil does not depend on
+  // how RtFloat rounds the leg.
   GMANOptions windowedOptions = makeOptions(/*nonDefaultScreenWindow=*/true);
-  const RtFloat legWindowed = legFor(10.0, true);
-  checkFaces("10px longest edge under a halved ScreenWindow, n=10",
+  const RtFloat legWindowed = legFor(9.5, true);
+  checkFaces("9.5px longest edge under a halved ScreenWindow, n=10",
              runTriangle(legWindowed, kDepth, windowedOptions, defaultAttr), 100);
 
   // A finite longest edge past INT_MAX pixels (a huge but legitimate

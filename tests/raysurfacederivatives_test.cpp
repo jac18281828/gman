@@ -30,6 +30,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -322,10 +323,11 @@ void checkUndefinedAxisPoints() {
 
   GMANRayParaboloid const nearApex(2.0f, 0.5f, 1.0f, kThetamax, none, transform);
   GMANHit nearApexHit;
-  bool const hitNearApex = nearApex.intersect(rayTo(GMANPoint(1.0e-4f, 0.0f, 5.5f)), nearApexHit);
+  RtFloat const nearApexOffset = std::sqrt(RtFloat(0.1) * std::numeric_limits<RtFloat>::epsilon());
+  bool const hitNearApex = nearApex.intersect(rayTo(GMANPoint(nearApexOffset, 0.0f, 5.5f)), nearApexHit);
   check(hitNearApex, "paraboloid near its apex: the ray hits");
   if (hitNearApex) {
-    check(nearApexHit.v == 0.0f && std::fabs(nearApexHit.point.getX()) > 5.0e-5f,
+    check(nearApexHit.v == 0.0f && std::fabs(nearApexHit.point.getX()) > nearApexOffset / 2,
           "paraboloid near its apex: z rounds to zmin away from the axis");
     checkZero("paraboloid near its apex", nearApexHit);
   }

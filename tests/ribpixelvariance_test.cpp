@@ -44,7 +44,7 @@
 
 namespace {
 
-constexpr RtFloat kFixtureVariance = 0.05f;
+constexpr RtFloat kFixtureVariance = RtFloat(0.05);
 constexpr RtFloat kFixtureHither = 0.5f;
 constexpr RtFloat kFixtureYon = 50.0f;
 constexpr unsigned char kFill = 0xFF;

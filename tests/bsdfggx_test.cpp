@@ -38,6 +38,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <limits>
 #include <numbers>
 #include <string>
 
@@ -83,6 +84,7 @@ constexpr double kWoAnglesDegrees[] = {0.0, 60.0, 89.0, 120.0};
 constexpr std::size_t kWoCount = sizeof(kWoAnglesDegrees) / sizeof(kWoAnglesDegrees[0]);
 
 constexpr RtFloat kReferenceAlpha = 0.3f;
+RtFloat const kUnderflowingCosine = std::sqrt(std::numeric_limits<RtFloat>::denorm_min()) / (RtFloat)1000.0;
 constexpr RtFloat kEnergyAlphas[] = {0.05f, 0.3f, 1.0f};
 
 GMANVector const kN0Unnormalized(0.3f, -0.5f, 0.8f);
@@ -319,17 +321,19 @@ void checkSides() {
   check(grazingOk, "sides: wo in the tangent plane answers pdf 0 from 256 draws");
 }
 
-// At cosines of 1e-30, each Lambda is infinite, so G2 is 0, and the cosine
-// product underflows to 0; eval answers black instead of 0/0's NaN.
+// At cosines a thousandth of the one whose square is RtFloat's smallest
+// subnormal, each Lambda is infinite, so G2 is 0, and the cosine product
+// underflows to 0; eval answers black instead of 0/0's NaN.
 void checkUnderflowGuard() {
   gman::BSDF const closure = singleGgx(kAxisNormal, kR, kReferenceAlpha);
-  GMANVector wo(1.0f, 0.0f, 1e-30f);
+  GMANVector wo(1.0f, 0.0f, kUnderflowingCosine);
   wo.normalize();
-  GMANVector wi(0.0f, 1.0f, 1e-30f);
+  GMANVector wi(0.0f, 1.0f, kUnderflowingCosine);
   wi.normalize();
   GMANColor const f = closure.eval(wo, wi);
   bool const finite = std::isfinite(f.getRed()) && std::isfinite(f.getGreen()) && std::isfinite(f.getBlue());
-  check(finite && colorExactly(f, kBlack), "underflow: eval at cosThetaO and cosThetaI of 1e-30 is finite and black");
+  check(finite && colorExactly(f, kBlack),
+        "underflow: eval at cosThetaO and cosThetaI whose squares underflow is finite and black");
 }
 
 // Clamps, failed draws and capacity.
