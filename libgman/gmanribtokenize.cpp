@@ -404,6 +404,18 @@ bool GMANRIBTokenize::decodeEscape(std::istream& ribFile) {
   return true;
 }
 
+namespace {
+
+RtFloat parseReal(char const* text, char** end) {
+  if constexpr (std::is_same_v<RtFloat, float>) {
+    return strtof(text, end);
+  } else {
+    return strtod(text, end);
+  }
+}
+
+} // namespace
+
 const GMANToken GMANRIBTokenize::parseNum(std::istream& ribFile) {
   char c;
 
@@ -437,12 +449,7 @@ const GMANToken GMANRIBTokenize::parseNum(std::istream& ribFile) {
     return GMANToken(static_cast<RtInt>(longIntValue));
   } else {
     char* floatEndPtr;
-    RtFloat floatValue;
-    if constexpr (std::is_same_v<RtFloat, float>) {
-      floatValue = strtof(buffer.c_str(), &floatEndPtr);
-    } else {
-      floatValue = strtod(buffer.c_str(), &floatEndPtr);
-    }
+    RtFloat const floatValue = parseReal(buffer.c_str(), &floatEndPtr);
     if (floatEndPtr != buffer.c_str()) {
       return GMANToken(floatValue);
     } else {
