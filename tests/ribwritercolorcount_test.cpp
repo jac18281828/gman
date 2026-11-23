@@ -32,7 +32,7 @@
 namespace {
 
 constexpr char const* outputName = "ribwritercolorcount.rib";
-constexpr int acceptedColorSamplesRequests = 3;
+constexpr int acceptedColorSamplesRequests = 5;
 
 struct Thrown {
   bool threw = false;
@@ -140,7 +140,7 @@ void checkWritten(WrittenFile const& file, std::vector<ColorRequest> const& expe
     return;
   }
   for (std::size_t i = 0; i < expected.size(); ++i) {
-    const ColorRequest& written = file.colorRequests[i];
+    ColorRequest const& written = file.colorRequests[i];
     check(written.name == expected[i].name && written.values == expected[i].values, expected[i].label);
   }
 }
@@ -170,9 +170,11 @@ int main() {
   writer.RiFrameEnd();
   script.color(5, "after FrameEnd: Color carries the restored count");
 
+  script.colorSamples(2);
   writer.RiFrameEnd();
-  script.color(5, "a FrameEnd after the frame leaves the restored count");
+  script.color(2, "a FrameEnd after the frame leaves the count");
 
+  script.colorSamples(5);
   checkRefusedBelowOne(writer, 0);
   checkRefusedBelowOne(writer, -1);
   script.color(5, "after a refused count: Color keeps its five values");
