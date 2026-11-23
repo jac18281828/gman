@@ -581,6 +581,28 @@ The far half of such a prism, seen by the camera and lit by a distant light
 from the side opposite its vertex normals
 (`tests/shadowterminator_test.cpp`). Not third-party.
 
+## zbuffervertexnormals.rib
+
+A coarse eight-sided prism, open at both ends, its vertices on a circle with
+radial vertex normals, under one distant light along the camera axis
+(`tests/zbuffervertexnormals_test.cpp`). The interpolated normal at every point
+of a face is radial, so each pixel's brightness is exact arithmetic. Not
+third-party.
+
+## zbuffervertexnormals_reversed.rib
+
+`zbuffervertexnormals.rib`'s prism with each quad's indices reversed, so every
+face normal points into the prism while its vertex normals still point out
+(`tests/zbuffervertexnormals_test.cpp`). Not third-party.
+
+## zbuffervertexnormals_hole.rib
+
+A square face with a square hole, every vertex normal, the hole's included,
+tilted 60 degrees away from the light axis of one distant light along the
+camera axis (`tests/zbuffervertexnormals_test.cpp`). A hole vertex shaded with
+the face's normal instead of its own brightens the pixels beside the hole. Not
+third-party.
+
 ## normalmap_card.rib
 
 A `paintedplastic` card facing the camera under one distant light tilted along

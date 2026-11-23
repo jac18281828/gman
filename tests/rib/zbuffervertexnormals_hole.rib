@@ -1,0 +1,19 @@
+## A square face with a square hole, every vertex normal tilted 60 degrees away from the light axis, under one
+## distant light along the camera axis (tests/zbuffervertexnormals_test.cpp). Not third-party.
+Display "zbuffervertexnormals_hole.tif" "file" "rgba"
+Format 64 64 1
+Projection "orthographic"
+ScreenWindow -1 1 -1 1
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [1] "from" [0 0 -1] "to" [0 0 0]
+Surface "matte" "Ka" [0] "Kd" [1]
+PointsGeneralPolygons [2] [4 4] [0 1 2 3 4 5 6 7]
+	"P" [-0.8 -0.8 0 0.8 -0.8 0 0.8 0.8 0 -0.8 0.8 0 -0.3 -0.3 0 -0.3 0.3 0 0.3 0.3 0 0.3 -0.3 0]
+	"N" [0.866025404 0 -0.5 0.866025404 0 -0.5 0.866025404 0 -0.5 0.866025404 0 -0.5 0.866025404 0 -0.5 0.866025404 0 -0.5 0.866025404 0 -0.5 0.866025404 0 -0.5]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+WorldEnd

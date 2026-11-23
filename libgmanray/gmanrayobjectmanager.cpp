@@ -26,15 +26,11 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
-#include <optional>
 #include <span>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 #include "gmandictionary.h"
-#include "gmaninvertiblematrix.h"
-#include "gmanlog.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
@@ -59,51 +55,6 @@
 #include "ri.h"
 
 namespace {
-
-std::string_view storageClassName(GMANTokenEntry::TokenClass storage) {
-  switch (storage) {
-  case GMANTokenEntry::CONSTANT:
-    return "constant";
-  case GMANTokenEntry::UNIFORM:
-    return "uniform";
-  case GMANTokenEntry::VARYING:
-    return "varying";
-  case GMANTokenEntry::VERTEX:
-    return "vertex";
-  case GMANTokenEntry::FACEVARYING:
-    return "facevarying";
-  }
-  return "unknown";
-}
-
-std::vector<GMANVector> cameraSpacePointNormals(GMANParameterList const& parameters, std::size_t pointCount,
-                                                GMANTransform* t) {
-  std::optional<GMANTokenEntry::TokenClass> const storage = parameters.storageClass(RI_N);
-  if (!storage) {
-    return {};
-  }
-  if (*storage != GMANTokenEntry::VERTEX && *storage != GMANTokenEntry::VARYING) {
-    warning("Polygon \"N\" is {}, not vertex or varying: shading flat.", storageClassName(*storage));
-    return {};
-  }
-  std::span<RtFloat const> const n = parameters.floats(RI_N);
-  if (n.size() != 3 * pointCount) {
-    warning("Polygon \"N\" holds {} floats, {} expected for {} points: shading flat.", n.size(), 3 * pointCount,
-            pointCount);
-    return {};
-  }
-  std::optional<gman::InvertibleMatrix> const placement = gman::InvertibleMatrix::of(t->interpolate(0.0));
-  if (!placement) {
-    return {};
-  }
-
-  std::vector<GMANVector> normals(pointCount);
-  for (std::size_t i = 0; i < pointCount; i++) {
-    normals[i] = gman::transformNormal(*placement, GMANVector(n[3 * i], n[3 * i + 1], n[3 * i + 2]));
-    normals[i].normalize();
-  }
-  return normals;
-}
 
 // One polygon request's face: loopVerts[0] the outer boundary, loopVerts[1..]
 // holes, each a run of indices into the mesh's shared point pool. Rejects a
@@ -172,7 +123,7 @@ GMANPrimitive* GMANRayObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mes
   std::size_t const pointCount = p.size() / 3;
 
   std::vector<std::pair<RtFloat, RtFloat>> pointTexCoords = gman::resolvePointTexCoords(mesh.parameters(), pointCount);
-  std::vector<GMANVector> const normals = cameraSpacePointNormals(mesh.parameters(), pointCount, t);
+  std::vector<GMANVector> const normals = gman::cameraSpacePointNormals(mesh.parameters(), pointCount, t);
   gman::Appearance const appearance = gman::appearanceOf(*attr);
 
   std::vector<std::unique_ptr<GMANRayPolygon>> faces;

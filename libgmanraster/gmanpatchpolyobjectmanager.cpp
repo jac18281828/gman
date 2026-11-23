@@ -29,6 +29,7 @@
 #include <cstddef>
 #include <cstring>
 #include <memory>
+#include <optional>
 #include <span>
 #include <utility>
 #include <vector>
@@ -54,6 +55,7 @@
 #include "gmanshading.h"
 #include "gmansurface.h"
 #include "gmantransform.h"
+#include "gmanvector.h"
 #include "gmanvertex.h"
 #include "gmanviewingsystem.h"
 #include "gmanviewingsysteminputs.h"
@@ -285,13 +287,16 @@ RtFloat bilerpCorner(double u, double v, RtFloat c00, RtFloat c10, RtFloat c01, 
 // interpolates GMANVertex::color across a clipped edge (the same machinery
 // wired up for the vertex alpha blend). Eye sits at the
 // camera-space origin (gman::VSPerspective::ray), so the incident
-// direction is just the normalized surface point.
-gman::SurfacePoint vertexSurfacePoint(GMANPoint const& location, GMANNormal const& normal, RtFloat u, RtFloat v,
-                                      RtFloat s, RtFloat t) {
+// direction is just the normalized surface point. N is shadingNormal; Ng is
+// faceNormal turned to N's side, as gman::hitSurfacePoint turns a ray hit's.
+gman::SurfacePoint vertexSurfacePoint(GMANPoint const& location, GMANNormal const& shadingNormal,
+                                      GMANNormal const& faceNormal, RtFloat u, RtFloat v, RtFloat s, RtFloat t) {
+  GMANVector const& face = faceNormal;
+  GMANVector const geometric = face.dot(shadingNormal) < (RtFloat)0.0 ? -face : face;
   gman::SurfacePoint point;
   point.P = location;
-  point.N = normal;
-  point.Ng = normal; // no displacement this phase; the two never diverge
+  point.N = shadingNormal;
+  point.Ng = GMANNormal(geometric.getX(), geometric.getY(), geometric.getZ());
   point.I = GMANVector(location.getX(), location.getY(), location.getZ());
   point.I.normalize();
   point.E = GMANPoint(0.0, 0.0, 0.0);
@@ -486,14 +491,25 @@ std::vector<PolygonVertexTexCoord> resolvePolygonTextureCoordinates(GMANParamete
 RtInt dicedGridIndex(RtInt a, RtInt b, RtInt n) { return a * (n + 1) - a * (a - 1) / 2 + b; }
 
 // Shades vertex at its own stored location (the caller sets that first)
-// with normal and (u, v, s, t), through vertexSurfacePoint and gman::shade.
-// Stores the result's Ci and Oi (as a GMANAlpha) and touches nothing else.
-void shadeVertex(GMANVertex& vertex, GMANNormal const& normal, RtFloat u, RtFloat v, RtFloat s, RtFloat t,
-                 gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld) {
-  gman::SurfacePoint const point = vertexSurfacePoint(vertex.getLocation(), normal, u, v, s, t);
+// with shadingNormal, faceNormal and (u, v, s, t), through vertexSurfacePoint
+// and gman::shade. Stores the result's Ci and Oi (as a GMANAlpha) and touches
+// nothing else.
+void shadeVertex(GMANVertex& vertex, GMANNormal const& shadingNormal, GMANNormal const& faceNormal, RtFloat u,
+                 RtFloat v, RtFloat s, RtFloat t, gman::Appearance const& appearance,
+                 GMANMatrix4 const& cameraToWorld) {
+  gman::SurfacePoint const point = vertexSurfacePoint(vertex.getLocation(), shadingNormal, faceNormal, u, v, s, t);
   gman::Shading const shading = gman::shade(appearance, point, cameraToWorld);
   vertex.setColor(shading.Ci);
   vertex.setAlpha(vertexAlpha(shading.Oi));
+}
+
+GMANNormal shadingNormalOf(GMANVector blend, GMANNormal const& faceNormal) {
+  RtFloat const magnitude = blend.magnitude();
+  if (!(magnitude > (RtFloat)0.0) || !std::isfinite(magnitude)) {
+    return faceNormal;
+  }
+  GMANVector const unit = blend / magnitude;
+  return GMANNormal(unit.getX(), unit.getY(), unit.getZ());
 }
 
 // Appends one new GMANFace over corners on surface to faces, after
@@ -513,12 +529,13 @@ void addFace(std::vector<GMANFace*>& faces, GMANVertex* corners[GMAN_NFACE_VERTS
 // One new, freshly shaded grid vertex at barycentric weights (w0, w1, w2)
 // against a diced triangle's own three corners -- P, u, v, s and t each the
 // same affine combination of those three corners' own values. The shading
-// normal is not interpolated: normalVec is already the one planar normal
-// every vertex of a Polygon/GeneralPolygon shares.
+// normal is the normalised blend of cornerNormals by the same weights, or the
+// face's own normal when cornerNormals is empty or the blend fails.
 GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2,
                             PolygonVertexTexCoord const& tc0, PolygonVertexTexCoord const& tc1,
                             PolygonVertexTexCoord const& tc2, RtFloat w0, RtFloat w1, RtFloat w2,
-                            GMANNormal const& normal, GMANVector const& normalVec, gman::Appearance const& appearance,
+                            std::optional<std::array<GMANVector, 3>> const& cornerNormals, GMANNormal const& normal,
+                            GMANVector const& normalVec, gman::Appearance const& appearance,
                             GMANMatrix4 const& cameraToWorld) {
   const auto vertex = new GMANVertex();
   vertex->setLocation(p0 * w0 + p1 * w1 + p2 * w2);
@@ -528,12 +545,16 @@ GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
   const RtFloat v = tc0.v * w0 + tc1.v * w1 + tc2.v * w2;
   const RtFloat s = tc0.s * w0 + tc1.s * w1 + tc2.s * w2;
   const RtFloat t = tc0.t * w0 + tc1.t * w1 + tc2.t * w2;
-  shadeVertex(*vertex, normal, u, v, s, t, appearance, cameraToWorld);
+  GMANNormal const shadingNormal =
+      cornerNormals
+          ? shadingNormalOf((*cornerNormals)[0] * w0 + (*cornerNormals)[1] * w1 + (*cornerNormals)[2] * w2, normal)
+          : normal;
+  shadeVertex(*vertex, shadingNormal, normal, u, v, s, t, appearance, cameraToWorld);
   return vertex;
 }
 
 // Dices one ear-clipped triangle (corners i0, i1, i2, indexing
-// vertexLocations/texCoords/vertices) into its own n-per-edge barycentric
+// vertexLocations/texCoords/vertexNormals/vertices) into its own n-per-edge barycentric
 // grid -- n the caller's own diceCountFor result for this triangle --
 // appending every newly shaded interior or edge-interior vertex to vertices
 // and every sub-triangle's face to faceList. Reuses the triangle's three
@@ -542,7 +563,8 @@ GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
 // diced grid vertex, even along a common diagonal -- each dices
 // independently.
 void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> const& vertexLocations,
-                         std::vector<PolygonVertexTexCoord> const& texCoords, GMANNormal const& normal,
+                         std::vector<PolygonVertexTexCoord> const& texCoords,
+                         std::vector<GMANVector> const& vertexNormals, GMANNormal const& normal,
                          GMANVector const& normalVec, gman::Appearance const& appearance,
                          GMANMatrix4 const& cameraToWorld, RtInt sides, RtToken orientation, GMANSurface* surface,
                          std::vector<GMANVertex*>& vertices, std::vector<GMANFace*>& faceList, RtInt n) {
@@ -552,6 +574,10 @@ void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> co
   PolygonVertexTexCoord const& tc0 = texCoords[i0];
   PolygonVertexTexCoord const& tc1 = texCoords[i1];
   PolygonVertexTexCoord const& tc2 = texCoords[i2];
+  std::optional<std::array<GMANVector, 3>> cornerNormals;
+  if (!vertexNormals.empty()) {
+    cornerNormals = std::array<GMANVector, 3>{vertexNormals[i0], vertexNormals[i1], vertexNormals[i2]};
+  }
 
   std::vector<GMANVertex*> grid((n + 1) * (n + 2) / 2);
   for (RtInt a = 0; a <= n; a++) {
@@ -567,8 +593,8 @@ void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> co
         const RtFloat w1 = (RtFloat)a / (RtFloat)n;
         const RtFloat w2 = (RtFloat)b / (RtFloat)n;
         const RtFloat w0 = (RtFloat)1.0 - w1 - w2;
-        grid[idx] =
-            dicedGridVertex(p0, p1, p2, tc0, tc1, tc2, w0, w1, w2, normal, normalVec, appearance, cameraToWorld);
+        grid[idx] = dicedGridVertex(p0, p1, p2, tc0, tc1, tc2, w0, w1, w2, cornerNormals, normal, normalVec, appearance,
+                                    cameraToWorld);
         vertices.push_back(grid[idx]);
       }
     }
@@ -619,12 +645,15 @@ struct FaceChains {
 // ring indexes vertexLocations rather than a face's own vertex array, so the
 // two ring slots a bridge duplicates share one GMANVertex and one shaded
 // colour instead of splitting the surface. texCoords is index-aligned with
-// vertexLocations, not with ring. Returns the face's body and its vertex
-// chain's head, as FaceChains.
+// vertexLocations, not with ring. vertexNormals, index-aligned the same way,
+// holds each vertex's own "N" and shades it; empty, every vertex shades with
+// normalVec. Returns the face's body and its vertex chain's head, as
+// FaceChains.
 FaceChains buildPolygonObject(std::vector<GMANPoint> const& vertexLocations, std::vector<RtInt> const& ring,
                               GMANVector const& normalVec, RtInt sides, RtToken orientation,
                               gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
-                              std::vector<PolygonVertexTexCoord> const& texCoords, RasterProjection const& dicing) {
+                              std::vector<PolygonVertexTexCoord> const& texCoords,
+                              std::vector<GMANVector> const& vertexNormals, RasterProjection const& dicing) {
   GMANNormal normal(normalVec.getX(), normalVec.getY(), normalVec.getZ());
 
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
@@ -639,7 +668,8 @@ FaceChains buildPolygonObject(std::vector<GMANPoint> const& vertexLocations, std
     vertices[i]->setNormal(normalVec);
 
     PolygonVertexTexCoord const& tc = texCoords[i];
-    shadeVertex(*vertices[i], normal, tc.u, tc.v, tc.s, tc.t, appearance, cameraToWorld);
+    GMANNormal const shadingNormal = vertexNormals.empty() ? normal : shadingNormalOf(vertexNormals[i], normal);
+    shadeVertex(*vertices[i], shadingNormal, normal, tc.u, tc.v, tc.s, tc.t, appearance, cameraToWorld);
   }
 
   std::vector<GMANPoint> ringPoints(ring.size());
@@ -663,8 +693,9 @@ FaceChains buildPolygonObject(std::vector<GMANPoint> const& vertexLocations, std
   faceList.reserve(totalFaces);
   for (std::size_t i = 0; i < triangles.size(); i++) {
     std::array<RtInt, 3> const& tri = triangles[i];
-    dicePolygonTriangle(ring[tri[0]], ring[tri[1]], ring[tri[2]], vertexLocations, texCoords, normal, normalVec,
-                        appearance, cameraToWorld, sides, orientation, surface, vertices, faceList, diceCounts[i]);
+    dicePolygonTriangle(ring[tri[0]], ring[tri[1]], ring[tri[2]], vertexLocations, texCoords, vertexNormals, normal,
+                        normalVec, appearance, cameraToWorld, sides, orientation, surface, vertices, faceList,
+                        diceCounts[i]);
   }
 
   for (std::size_t i = 0; i + 1 < vertices.size(); i++) {
@@ -1024,8 +1055,10 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
 // getRSPolygonMesh's own tail, one face at a time: loops[0] is the outer
 // boundary, loops[1..] holes bridged into it, then triangulated and
 // shaded through buildPolygonObject. loopSlots (index-aligned with loops)
-// names each vertex's own entry in pointTexCoords, the mesh's own point
-// index into the shared "P".
+// names each vertex's own entry in pointTexCoords and pointNormals, the
+// mesh's own point index into the shared "P"; every kept vertex, a hole's
+// included, shades with its own point's pointNormals entry. pointNormals
+// empty, the face shades flat.
 //
 // Degeneracy (gman::isDegeneratePolygon) is judged by a ratio, not an
 // absolute area: twice the outer loop's area (its Newell normal's
@@ -1037,9 +1070,9 @@ void bridgeHoles(const std::vector<std::vector<GMANPoint>>& loops, const std::ve
 // under-three-point outer loop -- the caller skips the face rather than
 // treating it as fatal.
 bool buildFace(std::vector<std::vector<GMANPoint>> const& loops, std::vector<std::vector<RtInt>> const& loopSlots,
-               std::vector<PolygonVertexTexCoord> const& pointTexCoords, RtInt sides, RtToken orientation,
-               gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld, RasterProjection const& dicing,
-               GMANBody*& body, GMANVertex*& vertRoot) {
+               std::vector<PolygonVertexTexCoord> const& pointTexCoords, std::vector<GMANVector> const& pointNormals,
+               RtInt sides, RtToken orientation, gman::Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
+               RasterProjection const& dicing, GMANBody*& body, GMANVertex*& vertRoot) {
   const std::vector<GMANPoint>& outer = loops[0];
   if (gman::isDegeneratePolygon(outer)) {
     return false; // fully degenerate: no plane worth shading or filling
@@ -1067,8 +1100,16 @@ bool buildFace(std::vector<std::vector<GMANPoint>> const& loops, std::vector<std
     texCoords[i] = pointTexCoords[vertexSlots[i]];
   }
 
+  std::vector<GMANVector> vertexNormals;
+  if (!pointNormals.empty()) {
+    vertexNormals.reserve(vertexSlots.size());
+    for (RtInt const slot : vertexSlots) {
+      vertexNormals.push_back(pointNormals[slot]);
+    }
+  }
+
   FaceChains const chains = buildPolygonObject(vertexLocations, ring, normalVec, sides, orientation, appearance,
-                                               cameraToWorld, texCoords, dicing);
+                                               cameraToWorld, texCoords, vertexNormals, dicing);
   body = chains.body;
   vertRoot = chains.vertRoot;
   return true;
@@ -1128,6 +1169,8 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygonMesh(GMANPolygonMesh cons
 
   std::vector<PolygonVertexTexCoord> pointTexCoords =
       resolvePolygonTextureCoordinates(mesh.parameters(), pointCount, p.data());
+  std::vector<GMANVector> const pointNormals =
+      gman::cameraSpacePointNormals(mesh.parameters(), (std::size_t)pointCount, t);
 
   RtInt sides = attr->getSides();
   RtToken orientation = attr->getOrientation();
@@ -1155,8 +1198,8 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPolygonMesh(GMANPolygonMesh cons
 
     GMANBody* faceBody;
     GMANVertex* faceVert;
-    if (buildFace(loops, loopSlots, pointTexCoords, sides, orientation, appearance, cameraToWorld, dicing, faceBody,
-                  faceVert)) {
+    if (buildFace(loops, loopSlots, pointTexCoords, pointNormals, sides, orientation, appearance, cameraToWorld, dicing,
+                  faceBody, faceVert)) {
       appendFace(faceBody, faceVert, bodyHead, bodyTail, vertHead, vertTail);
     }
   }
@@ -1378,7 +1421,7 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
       GMANNormal shadingNormal(normal.getX(), normal.getY(), normal.getZ());
       RtFloat s = bilerpCorner(u, v, corners.s1, corners.s2, corners.s3, corners.s4);
       RtFloat texT = bilerpCorner(u, v, corners.t1, corners.t2, corners.t3, corners.t4);
-      shadeVertex(*vertex, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT, appearance, cameraToWorld);
+      shadeVertex(*vertex, shadingNormal, shadingNormal, (RtFloat)u, (RtFloat)v, s, texT, appearance, cameraToWorld);
     }
   }
 

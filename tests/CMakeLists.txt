@@ -1603,6 +1603,41 @@ if(GMAN_BUILD_PATHTRACER)
     TIMEOUT 120)
 endif()
 
+# A polygon's per-vertex "N" shades it smoothly, wound either way, under the z-buffer and the ray tracer.
+add_executable(gman_zbuffervertexnormals zbuffervertexnormals_test.cpp)
+target_link_libraries(gman_zbuffervertexnormals PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_zbuffervertexnormals gman_matte gman_zbuffer)
+
+set(GMAN_ZBUFFERVERTEXNORMALS_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/zbuffervertexnormals-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_ZBUFFERVERTEXNORMALS_ZBUFFER_WORKDIR}")
+
+add_test(NAME zbuffervertexnormals_zbuffer
+  COMMAND gman_zbuffervertexnormals $<TARGET_FILE:gman>
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                    gmanzbuffer
+  WORKING_DIRECTORY "${GMAN_ZBUFFERVERTEXNORMALS_ZBUFFER_WORKDIR}")
+set_tests_properties(zbuffervertexnormals_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_zbuffervertexnormals gman_raytracer)
+
+  set(GMAN_ZBUFFERVERTEXNORMALS_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/zbuffervertexnormals-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_ZBUFFERVERTEXNORMALS_RAYTRACER_WORKDIR}")
+
+  add_test(NAME zbuffervertexnormals_raytracer
+    COMMAND gman_zbuffervertexnormals $<TARGET_FILE:gman>
+                                      "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                      gmanraytracer
+    WORKING_DIRECTORY "${GMAN_ZBUFFERVERTEXNORMALS_RAYTRACER_WORKDIR}")
+  set_tests_properties(zbuffervertexnormals_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
 # s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
 # (General)Polygon: RiTextureCoordinates and the "s"/"t"/"st" primvars, over
 # tests/rib/texcoords/*.rib -- each fixture copies tests/rib/texture.rib's
