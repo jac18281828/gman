@@ -708,6 +708,74 @@ void checkBumpDegenerate() {
         "bumpShadowing: a base perpendicular to the shading normal is 0");
 }
 
+constexpr double kReflectionFloor = 0.01;
+constexpr double kPlaneTol = 1e-6;
+
+Vec3 reflected(Vec3 const& wo, Vec3 const& n) { return sum3(scaled3(n, 2.0 * dot3(n, wo)), scaled3(wo, -1.0)); }
+
+bool sameVector(GMANVector const& a, GMANVector const& b) {
+  return a.getX() == b.getX() && a.getY() == b.getY() && a.getZ() == b.getZ();
+}
+
+void checkValidReflectionUnchanged() {
+  Vec3 const up{0.0, 0.0, 1.0};
+  Vec3 const wo = inPlane(20.0, up, {1.0, 0.0, 0.0});
+  Vec3 const bent = inPlane(30.0, up, {1.0, 0.0, 0.0});
+  check(dot3(reflected(wo, bent), up) > kReflectionFloor,
+        "ensureValidReflection: the valid triple's reflection lies above Ng");
+  GMANVector const n = toVector(bent);
+  check(sameVector(gman::ensureValidReflection(toVector(up), toVector(wo), n), n),
+        "ensureValidReflection: a valid normal comes back bit-identical");
+  GMANVector const unnormalized = n * 3.0f;
+  check(sameVector(gman::ensureValidReflection(toVector(up) * 2.0f, toVector(wo) * 5.0f, unnormalized), unnormalized),
+        "ensureValidReflection: a valid normal of any length comes back bit-identical");
+}
+
+void checkValidReflectionBent() {
+  Vec3 const up{0.0, 0.0, 1.0};
+  Vec3 const across{1.0, 0.0, 0.0};
+  Vec3 const wo = unit3(sum3(inPlane(-50.0, up, across), {0.0, 0.3, 0.0}));
+  Vec3 const bent = inPlane(80.0, up, across);
+  check(dot3(bent, wo) < 0.0, "ensureValidReflection: the invalid normal faces away from the viewer");
+
+  Vec3 const result = toVec3(gman::ensureValidReflection(toVector(up), toVector(wo), toVector(bent)));
+  check(dot3(result, wo) > 0.0, "ensureValidReflection: the bent normal faces the viewer");
+  check(std::fabs(dot3(result, result) - 1.0) <= kPlaneTol, "ensureValidReflection: the result has unit length");
+  check(std::fabs(dot3(result, cross3(bent, up))) <= kPlaneTol,
+        "ensureValidReflection: the result stays in the plane of the normal and Ng");
+  check(dot3(result, up) > dot3(bent, up), "ensureValidReflection: the result turns toward Ng");
+  double const floor = std::fmin(0.9 * dot3(wo, up), kReflectionFloor);
+  check(std::fabs(dot3(reflected(wo, result), up) - floor) <= 1e-5,
+        "ensureValidReflection: the reflection sits at the floor above Ng, the least turn that clears it");
+}
+
+void checkValidReflectionSides() {
+  Vec3 const up{0.0, 0.0, 1.0};
+  Vec3 const across{1.0, 0.0, 0.0};
+  Vec3 const wo = inPlane(-50.0, up, across);
+  Vec3 const bent = inPlane(80.0, up, across);
+  Vec3 const result = toVec3(gman::ensureValidReflection(toVector(up), toVector(wo), toVector(bent)));
+
+  Vec3 const flippedNormal =
+      toVec3(gman::ensureValidReflection(toVector(up), toVector(wo), toVector(scaled3(bent, -1.0))));
+  check(std::fabs(flippedNormal.x + result.x) <= kPlaneTol && std::fabs(flippedNormal.z + result.z) <= kPlaneTol,
+        "ensureValidReflection: a normal on the far side of Ng keeps its side");
+
+  Vec3 const behind =
+      toVec3(gman::ensureValidReflection(toVector(scaled3(up, -1.0)), toVector(wo), toVector(scaled3(bent, -1.0))));
+  check(std::fabs(behind.x + result.x) <= kPlaneTol && std::fabs(behind.z + result.z) <= kPlaneTol,
+        "ensureValidReflection: a wo behind Ng bends the normal on that side");
+
+  GMANVector const zero(0.0f, 0.0f, 0.0f);
+  GMANVector const n = toVector(bent);
+  check(sameVector(gman::ensureValidReflection(zero, toVector(wo), n), n),
+        "ensureValidReflection: a zero Ng returns N");
+  check(sameVector(gman::ensureValidReflection(toVector(up), zero, n), n),
+        "ensureValidReflection: a zero wo returns N");
+  check(sameVector(gman::ensureValidReflection(toVector(up), toVector(wo), zero), zero),
+        "ensureValidReflection: a zero N returns N");
+}
+
 } // namespace
 
 int main() {
@@ -724,6 +792,9 @@ int main() {
   checkBumpTiltedAway();
   checkBumpTurnedBase();
   checkBumpDegenerate();
+  checkValidReflectionUnchanged();
+  checkValidReflectionBent();
+  checkValidReflectionSides();
 
   return checkSummary("gman::BSDF's Lambert closure conserves energy, is reciprocal and samples its own pdf");
 }

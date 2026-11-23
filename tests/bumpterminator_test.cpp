@@ -29,7 +29,10 @@
 #include <tiffio.h>
 
 #include "check.h"
+#include "gmanbsdf.h"
+#include "gmanvector.h"
 #include "goldenimage.h"
+#include "ri.h"
 #include "rungman.h"
 
 namespace {
@@ -62,7 +65,7 @@ struct Band {
 };
 
 constexpr Band kBeyondTerminatorBand{26, 30, 16, 47};
-constexpr Band kLitFaceBand{44, 49, 16, 47};
+constexpr Band kLitFaceBand{44, 53, 16, 47};
 
 struct Vertex {
   double x;
@@ -72,6 +75,11 @@ struct Vertex {
 struct Direction {
   double x;
   double z;
+};
+
+struct FaceHit {
+  Direction radial;
+  Direction flat;
 };
 
 double decode(unsigned char channel) { return 2.0 * (channel / 255.0) - 1.0; }
@@ -89,8 +97,9 @@ std::vector<Vertex> prismRing() {
   return ring;
 }
 
-Direction radialThroughNearestFace(std::vector<Vertex> const& ring, double x) {
+FaceHit hitNearestFace(std::vector<Vertex> const& ring, double x) {
   Vertex nearest{0.0, 0.0};
+  Direction flat{0.0, 0.0};
   bool found = false;
   for (std::size_t i = 0; i + 1 < ring.size(); ++i) {
     Vertex const& a = ring[i];
@@ -102,11 +111,14 @@ Direction radialThroughNearestFace(std::vector<Vertex> const& ring, double x) {
     Vertex const hit{x, a.z + along * (b.z - a.z)};
     if (!found || hit.z < nearest.z) {
       nearest = hit;
+      double const chordLength = std::hypot(b.x - a.x, b.z - a.z);
+      double const towardCamera = (b.x - a.x) > 0.0 ? 1.0 : -1.0;
+      flat = {towardCamera * (b.z - a.z) / chordLength, -towardCamera * (b.x - a.x) / chordLength};
       found = true;
     }
   }
   double const length = std::hypot(nearest.x, nearest.z);
-  return {nearest.x / length, nearest.z / length};
+  return {{nearest.x / length, nearest.z / length}, flat};
 }
 
 double bumpTerm(double baseDotLight, double bentDotLight, double baseDotBent) {
@@ -121,16 +133,21 @@ double bumpTerm(double baseDotLight, double bentDotLight, double baseDotBent) {
 }
 
 double predictedMapped(double x) {
-  Direction const normal = radialThroughNearestFace(prismRing(), x);
+  FaceHit const hit = hitNearestFace(prismRing(), x);
+  Direction const normal = hit.radial;
   double const tilt = std::atan2(decode(kTexelRed), decode(kTexelBlue));
   Direction const tangent{-normal.z, normal.x};
-  Direction const bent{std::cos(tilt) * normal.x + std::sin(tilt) * tangent.x,
-                       std::cos(tilt) * normal.z + std::sin(tilt) * tangent.z};
-  double const bentDotLight = bent.x;
-  return std::fmax(0.0, bentDotLight) * bumpTerm(normal.x, bentDotLight, std::cos(tilt));
+  GMANVector const tilted(static_cast<RtFloat>(std::cos(tilt) * normal.x + std::sin(tilt) * tangent.x), 0.0f,
+                          static_cast<RtFloat>(std::cos(tilt) * normal.z + std::sin(tilt) * tangent.z));
+  GMANVector const bent =
+      gman::ensureValidReflection(GMANVector(static_cast<RtFloat>(hit.flat.x), 0.0f, static_cast<RtFloat>(hit.flat.z)),
+                                  GMANVector(0.0f, 0.0f, -1.0f), tilted);
+  double const bentDotLight = bent.getX();
+  double const bentDotNormal = bent.getX() * normal.x + bent.getZ() * normal.z;
+  return std::fmax(0.0, bentDotLight) * bumpTerm(normal.x, bentDotLight, bentDotNormal);
 }
 
-double predictedUnmapped(double x) { return std::fmax(0.0, radialThroughNearestFace(prismRing(), x).x); }
+double predictedUnmapped(double x) { return std::fmax(0.0, hitNearestFace(prismRing(), x).radial.x); }
 
 template <typename Predict> double predictedMean(Band const& band, Predict predict) {
   double sum = 0.0;

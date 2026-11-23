@@ -501,6 +501,7 @@ RtFloat BSDF::totalSelectionWeight() const {
 namespace {
 
 constexpr double kParallelNormals = 1.0 - 1.0e-6;
+constexpr double kMinReflectionElevation = 0.01;
 
 struct UnitVector {
   double x;
@@ -509,16 +510,15 @@ struct UnitVector {
   bool valid;
 };
 
-UnitVector unitOf(GMANVector const& v) {
-  double const x = v.getX();
-  double const y = v.getY();
-  double const z = v.getZ();
+UnitVector unitOf(double x, double y, double z) {
   double const length = std::sqrt(x * x + y * y + z * z);
   if (!(length >= std::numeric_limits<double>::min())) {
     return {0.0, 0.0, 0.0, false};
   }
   return {x / length, y / length, z / length, true};
 }
+
+UnitVector unitOf(GMANVector const& v) { return unitOf(v.getX(), v.getY(), v.getZ()); }
 
 double dotOf(UnitVector const& a, GMANVector const& b) {
   return a.x * static_cast<double>(b.getX()) + a.y * static_cast<double>(b.getY()) +
@@ -559,6 +559,45 @@ RtFloat bumpShadowing(GMANVector const& baseNormal, GMANVector const& shadingNor
     return 1.0f;
   }
   return static_cast<RtFloat>(-g * g * g + g * g + g);
+}
+
+GMANVector ensureValidReflection(GMANVector const& Ng, GMANVector const& wo, GMANVector const& N) {
+  UnitVector const geometric = unitOf(Ng);
+  UnitVector const toViewer = unitOf(wo);
+  UnitVector const shading = unitOf(N);
+  if (!geometric.valid || !toViewer.valid || !shading.valid) {
+    return N;
+  }
+
+  double const viewerSide = dotOf(geometric, toViewer) < 0.0 ? -1.0 : 1.0;
+  UnitVector const up{viewerSide * geometric.x, viewerSide * geometric.y, viewerSide * geometric.z, true};
+  double const shadingSide = dotOf(up, shading) < 0.0 ? -1.0 : 1.0;
+  UnitVector const n{shadingSide * shading.x, shadingSide * shading.y, shadingSide * shading.z, true};
+
+  double const viewElevation = dotOf(up, toViewer);
+  double const threshold = std::fmin(0.9 * viewElevation, kMinReflectionElevation);
+  double const reflectedElevation = 2.0 * dotOf(n, toViewer) * dotOf(n, up) - viewElevation;
+  if (reflectedElevation >= threshold) {
+    return N;
+  }
+
+  double const tilt = dotOf(n, up);
+  UnitVector const across = unitOf(n.x - tilt * up.x, n.y - tilt * up.y, n.z - tilt * up.z);
+  if (!across.valid) {
+    return N;
+  }
+
+  double const viewAcross = dotOf(across, toViewer);
+  double const viewAngle = std::atan2(viewAcross, viewElevation);
+  double const reach = std::acos(std::fmin(1.0, threshold / std::hypot(viewAcross, viewElevation)));
+  double const bend = std::atan2(dotOf(n, across), tilt);
+  double const valid = std::fmin(std::fmax(bend, 0.5 * (viewAngle - reach)), 0.5 * (viewAngle + reach));
+
+  double const alongAcross = shadingSide * std::sin(valid);
+  double const alongUp = shadingSide * std::cos(valid);
+  return GMANVector(static_cast<RtFloat>(alongAcross * across.x + alongUp * up.x),
+                    static_cast<RtFloat>(alongAcross * across.y + alongUp * up.y),
+                    static_cast<RtFloat>(alongAcross * across.z + alongUp * up.z));
 }
 
 } // namespace gman

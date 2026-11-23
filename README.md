@@ -173,7 +173,9 @@ gman -r gmanraytracer first.rib
   `paintedplastic`'s `"string normalname"` names a tangent-space normal map that bends its shading
   normal under the ray tracer and the path tracer, with `"float normalgreendown" [1]` for a
   DirectX-convention map. A light the map tilts toward from beyond the surface's smooth horizon
-  fades to zero at the smooth terminator rather than leaking through.
+  fades to zero at the smooth terminator rather than leaking through, and a bent normal that faces
+  away from the viewer turns toward the viewer by the least amount that keeps its reflection above
+  the geometric surface.
 - **Light shaders.** `ambientlight`, `distantlight`, `pointlight` and `spotlight`, and
   `AreaLightSource "arealight"`, which makes the `Sphere` or `Disk` after it glow under the path
   tracer.

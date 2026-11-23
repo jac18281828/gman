@@ -193,4 +193,15 @@ private:
 // on either side of the surface.
 GMAN_EXPORT RtFloat bumpShadowing(GMANVector const& baseNormal, GMANVector const& shadingNormal, GMANVector const& w);
 
+// The shading normal a bent normal becomes where it faces away from the
+// viewer: N unchanged when the reflection of wo about it lies above the
+// geometric normal Ng by at least min(0.9 * (wo . Ng), 0.01), else the
+// nearest normal in the plane of N and Ng that does (Cycles'
+// ensure_valid_reflection). The result has wo . N > 0 on wo's side, so a
+// two-sided lobe built on it sees wo and a light there on one side. Ng, wo
+// and N need not be unit length. A wo behind Ng is handled on that side of
+// the surface, and N on either side of Ng keeps its side. A zero-length
+// argument returns N. A valid N comes back bit-identical.
+GMAN_EXPORT GMANVector ensureValidReflection(GMANVector const& Ng, GMANVector const& wo, GMANVector const& N);
+
 } // namespace gman

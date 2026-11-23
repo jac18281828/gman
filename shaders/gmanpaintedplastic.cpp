@@ -61,7 +61,10 @@
  * each made perpendicular to N and the earlier axis. Green points up the
  * image, along -dPdv; a nonzero normalgreendown reads a DirectX map, green
  * along +dPdv. A degenerate dPdu or dPdv leaves N unbent, as an empty
- * normalname, the default, does.
+ * normalname, the default, does. A bent normal that faces away from the
+ * viewer turns toward the viewer by the least amount that puts the
+ * reflection of the view direction above Ng (gman::ensureValidReflection),
+ * so both renderers shade it from the viewer's side.
  */
 namespace gmanshader {
 
@@ -138,7 +141,8 @@ GMANVector paintedplastic::shadingNormal(GMANSurfaceEnv const& se) const {
   RtFloat const alongBitangent = normalgreendown ? alongGreen : -alongGreen;
 
   GMANVector bent = *tangent * alongTangent + *bitangent * alongBitangent + n * alongNormal;
-  return bent.normalize();
+  bent.normalize();
+  return gman::ensureValidReflection(se.Ng, -se.I, bent);
 }
 
 RtVoid paintedplastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
