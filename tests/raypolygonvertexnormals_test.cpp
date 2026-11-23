@@ -45,6 +45,7 @@
 #include "gmanshading.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 
 namespace {
 
@@ -292,8 +293,7 @@ void testNonUniformScaleUsesInverseTranspose() {
   constexpr double scaleX = 2.0;
   GMANMatrix4 matrix;
   matrix.scale((RtFloat)scaleX, 1.0f, 1.0f);
-  GMANOneMatrix storage(matrix);
-  GMANTransform transform(storage);
+  GMANTransform transform = makeTransform(matrix);
 
   std::array<Vec3, 4> const normals = tiltedNormals();
   Built const built = buildMesh(square(), vertexNormals(normals), transform);
