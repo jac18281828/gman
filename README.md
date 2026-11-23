@@ -167,6 +167,9 @@ gman -r gmanraytracer first.rib
   renderer; `glass` and `mirror` trace rays, so they need the ray tracer or the path tracer.
   `paintedplastic`'s `"string opacityname"` names a map that cuts a surface out under the ray
   tracer and the path tracer.
+  `paintedplastic`'s `"string normalname"` names a tangent-space normal map that bends its shading
+  normal under the ray tracer and the path tracer, with `"float normalgreendown" [1]` for a
+  DirectX-convention map.
 - **Light shaders.** `ambientlight`, `distantlight`, `pointlight` and `spotlight`, and
   `AreaLightSource "arealight"`, which makes the `Sphere` or `Disk` after it glow under the path
   tracer.

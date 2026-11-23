@@ -1956,6 +1956,24 @@ set_tests_properties(shaderalbedo PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# paintedplastic's "normalname" bends its shading normal by a tangent-space
+# map in computeCi and in bsdf: the decode, the green convention, mirrored
+# frames and the degenerate fallback. Its own working directory, since it
+# writes its maps relative to cwd.
+add_executable(gman_normalmap normalmap_test.cpp)
+target_link_libraries(gman_normalmap PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_normalmap gman_paintedplastic)
+
+set(GMAN_NORMALMAP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/normalmap-run")
+file(MAKE_DIRECTORY "${GMAN_NORMALMAP_WORKDIR}")
+
+add_test(NAME normalmap COMMAND gman_normalmap
+  WORKING_DIRECTORY "${GMAN_NORMALMAP_WORKDIR}")
+set_tests_properties(normalmap PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Ray tracer core, unit 1: GMANViewingSystem answers a camera-space ray
 # (cameraRay) as well as a world-space one (ray), and pins the [tmin,
 # tmax] interval every GMANRay defaults to.
@@ -3432,6 +3450,28 @@ if(GMAN_BUILD_PATHTRACER)
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)
+endif()
+
+# `gman -r gmanpathtracer` renders a paintedplastic card with and without a
+# normal map: lit by a distant light, the mapped card's mean over the card
+# moves by the bent normal's cosine, and lit by a matte wall alone, by the
+# bounce light that cosine weights. Registered only when the plugin builds.
+if(GMAN_BUILD_PATHTRACER)
+  add_executable(gman_normalmappathtracer normalmappathtracer_test.cpp)
+  target_link_libraries(gman_normalmappathtracer PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_normalmappathtracer gman_pathtracer gman_paintedplastic)
+
+  set(GMAN_NORMALMAPPATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/normalmappathtracer-run")
+  file(MAKE_DIRECTORY "${GMAN_NORMALMAPPATHTRACER_WORKDIR}")
+
+  add_test(NAME normalmappathtracer
+    COMMAND gman_normalmappathtracer $<TARGET_FILE:gman>
+                                     "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_NORMALMAPPATHTRACER_WORKDIR}")
+  set_tests_properties(normalmappathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 120)
 endif()
 
 # AreaLightSource parses through GMANRIBParse and builds a GMAN_LIGHT_AREA

@@ -1,0 +1,24 @@
+## A paintedplastic card facing the camera, its "normalname" map tilting the
+## shading normal along dPdu, lit by bounce light alone
+## (tests/normalmappathtracer_test.cpp). A distant light shines on a matte wall
+## beside the camera and reaches the card's back, so the card's light sample
+## is black and all the light it shows arrives by a BSDF-sampled bounce off
+## the wall. Not third-party.
+Display "normalmap_bounce.tif" "file" "rgba"
+Format 48 48 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [2] "from" [0 0 0] "to" [-0.6 0 -0.8]
+Surface "matte" "Ka" [0] "Kd" [1]
+Polygon "P" [2 -10 -4  10 -10 -4  10 10 -4  2 10 -4]
+Surface "paintedplastic" "Ka" [0] "Kd" [1] "Ks" [0]
+	"string normalname" ["normalmap_pt_tilt.tif"]
+Polygon "P" [-1 -1 0  -1 1 0  1 1 0  1 -1 0]
+	"st" [0 0  0 1  1 1  1 0]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+WorldEnd

@@ -561,6 +561,31 @@ card is opaque and shadows the receiver. Not third-party.
 `textureopacity_shadow.rib`'s scene with the card removed: the receiver
 unshadowed. Not third-party.
 
+## normalmap_card.rib
+
+A `paintedplastic` card facing the camera under one distant light tilted along
+the card's `dPdu` (`tests/normalmappathtracer_test.cpp`). The card names a
+normal map, written by the test, whose texel tilts the shading normal along
+`dPdu`. The card is the only geometry in view, so the path tracer's estimate
+there is its light sample alone. Not third-party.
+
+## normalmap_card_nomap.rib
+
+`normalmap_card.rib`'s scene with the card naming no normal map. Not
+third-party.
+
+## normalmap_bounce.rib
+
+A `paintedplastic` card naming the same normal map, lit by bounce light alone
+(`tests/normalmappathtracer_test.cpp`). A distant light shines on a matte wall
+beside the camera and reaches only the card's back, so every ray of light the
+card shows is a BSDF-sampled bounce off the wall. Not third-party.
+
+## normalmap_bounce_nomap.rib
+
+`normalmap_bounce.rib`'s scene with the card naming no normal map. Not
+third-party.
+
 ## corpus/
 
 Real RIB from third-party software, fetched once and checked in so tests are

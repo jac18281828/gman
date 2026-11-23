@@ -1,0 +1,17 @@
+## normalmap_card.rib's scene with the card naming no normal map
+## (tests/normalmappathtracer_test.cpp). Not third-party.
+Display "normalmap_card_nomap.tif" "file" "rgba"
+Format 48 48 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [1] "from" [0 0 0] "to" [-1 0 1]
+Surface "paintedplastic" "Ka" [0] "Kd" [1] "Ks" [0]
+Polygon "P" [-1 -1 0  -1 1 0  1 1 0  1 -1 0]
+	"st" [0 0  0 1  1 1  1 0]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+WorldEnd
