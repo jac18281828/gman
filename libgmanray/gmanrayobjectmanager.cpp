@@ -30,7 +30,6 @@
 #include <utility>
 #include <vector>
 
-#include "gmandictionary.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
