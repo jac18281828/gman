@@ -70,13 +70,13 @@ std::unique_ptr<GMANOutput> gmanMakePNMOutput(char const *path, int width,
 // whether an output is that driver's class.
 const std::vector<gman::FileDriverEntry> kFileDrivers = {
     {"tiff", {"tif", "tiff"}, "", "TIFF", &gmanMakeTIFFOutput,
-     &isOutputOf<gman::OutputTIFF>},
+     &isOutputOf<gman::OutputTIFF>, false},
     {"pnm", {"pnm"}, "", "PNM", &gmanMakePNMOutput,
-     &isOutputOf<gman::OutputPNM>},
+     &isOutputOf<gman::OutputPNM>, false},
     {"png", {"png"}, "libpng", "PNG", @GMAN_PNG_FACTORY_REF@,
-     @GMAN_PNG_MATCHER@},
+     @GMAN_PNG_MATCHER@, true},
     {"jpeg", {"jpg", "jpeg"}, "libjpeg", "JPEG", @GMAN_JPEG_FACTORY_REF@,
-     @GMAN_JPEG_MATCHER@},
+     @GMAN_JPEG_MATCHER@, false},
 };
 
 } // namespace

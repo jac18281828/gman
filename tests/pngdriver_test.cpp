@@ -40,6 +40,13 @@
  * check while writing an image that is visibly wrong past its first
  * column.
  *
+ * Straight alpha: an "rgba" render of the same scene to PNG and to TIFF
+ * must carry the same alpha bytes, and at every pixel whose alpha lies
+ * strictly between 0 and 255 the PNG's straight colour times its alpha
+ * must reconstruct the premultiplied colour the TIFF holds, read raw so
+ * no reader un-premultiplies it. At least one such pixel must hold PNG
+ * colour well above the TIFF's, so a premultiplied PNG cannot pass.
+ *
  * Revert check: reverting any of the three closes coverage differently --
  * (1) makes both "renders" checks go red (back to exit 139); (2) does not
  * reproduce on this test's square Format, which is why (3) matters too;
@@ -48,6 +55,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -80,10 +88,11 @@ struct Image {
   bool ok = false;
   int width = 0, height = 0;
   std::vector<unsigned char> rgb; // 3 bytes/pixel, row-major, top to bottom
+  std::vector<unsigned char> alpha;
 };
 
-// Decodes a PNG to top-down 8-bit RGB, dropping alpha -- gman::OutputPNG
-// always writes PNG_COLOR_TYPE_RGB_ALPHA, so this expects exactly that.
+// Decodes a PNG to top-down 8-bit RGB and alpha, the alpha 255 for a file
+// that carries none.
 Image readPNG(const std::string& path) {
   Image img;
   FILE* fp = std::fopen(path.c_str(), "rb");
@@ -147,6 +156,7 @@ Image readPNG(const std::string& path) {
   img.width = int(width);
   img.height = int(height);
   img.rgb.resize(size_t(width) * height * 3);
+  img.alpha.resize(size_t(width) * height);
   for (png_uint_32 y = 0; y < height; ++y) {
     for (png_uint_32 x = 0; x < width; ++x) {
       png_bytep px = rows[y] + x * 4;
@@ -154,6 +164,7 @@ Image readPNG(const std::string& path) {
       img.rgb[dst + 0] = px[0];
       img.rgb[dst + 1] = px[1];
       img.rgb[dst + 2] = px[2];
+      img.alpha[size_t(y) * width + x] = px[3];
     }
   }
   return img;
@@ -185,6 +196,44 @@ Image readTIFF(const std::string& path) {
     img.rgb[i * 3 + 1] = TIFFGetG(raster[i]);
     img.rgb[i * 3 + 2] = TIFFGetB(raster[i]);
   }
+  return img;
+}
+
+Image readRawRGBATIFF(std::string const& path) {
+  Image img;
+  TIFF* tif = TIFFOpen(path.c_str(), "r");
+  if (tif == nullptr) {
+    return img;
+  }
+  uint32_t width = 0, height = 0;
+  uint16_t samplesPerPixel = 0;
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+  TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
+  if (samplesPerPixel != 4) {
+    TIFFClose(tif);
+    return img;
+  }
+
+  std::vector<unsigned char> scanline(size_t(TIFFScanlineSize(tif)));
+  img.width = int(width);
+  img.height = int(height);
+  img.rgb.resize(size_t(width) * height * 3);
+  img.alpha.resize(size_t(width) * height);
+  for (uint32_t y = 0; y < height; ++y) {
+    if (TIFFReadScanline(tif, scanline.data(), y) < 0) {
+      TIFFClose(tif);
+      return Image();
+    }
+    for (uint32_t x = 0; x < width; ++x) {
+      for (size_t c = 0; c < 3; ++c) {
+        img.rgb[(size_t(y) * width + x) * 3 + c] = scanline[size_t(x) * 4 + c];
+      }
+      img.alpha[size_t(y) * width + x] = scanline[size_t(x) * 4 + 3];
+    }
+  }
+  TIFFClose(tif);
+  img.ok = true;
   return img;
 }
 
@@ -249,6 +298,63 @@ int main(int argc, char* argv[]) {
       }
     }
     check(nonFirstColumnDiffers, "PNG has non-background content past column 0");
+  }
+
+  char const* alphaSceneTemplate = "Display \"%s\" \"file\" \"rgba\"\n"
+                                   "Format 64 64 1\n"
+                                   "Projection \"perspective\" \"fov\" [45]\n"
+                                   "Quantize \"rgba\" 255 0 255 0\n"
+                                   "WorldBegin\n"
+                                   "LightSource \"ambientlight\" 1 \"intensity\" [0.5]\n"
+                                   "AttributeBegin\n"
+                                   "  Translate 0 0 5\n"
+                                   "  Sphere 1 -1 1 360\n"
+                                   "AttributeEnd\n"
+                                   "WorldEnd\n";
+
+  std::snprintf(scene, sizeof scene, alphaSceneTemplate, "pngdriver_rgba.png");
+  writeFile("pngdriver_rgba_png.rib", scene);
+  std::remove("pngdriver_rgba.png");
+  check(runGman(gman, "pngdriver_rgba_png.rib") == 0, "rgba PNG scene renders");
+
+  std::snprintf(scene, sizeof scene, alphaSceneTemplate, "pngdriver_rgba.tif");
+  writeFile("pngdriver_rgba_tif.rib", scene);
+  std::remove("pngdriver_rgba.tif");
+  check(runGman(gman, "pngdriver_rgba_tif.rib") == 0, "rgba TIFF scene renders");
+
+  Image rgbaPNG = readPNG("pngdriver_rgba.png");
+  Image rgbaTIFF = readRawRGBATIFF("pngdriver_rgba.tif");
+  check(rgbaPNG.ok, "rgba PNG decodes as well-formed");
+  check(rgbaTIFF.ok, "rgba TIFF reads back raw");
+
+  check(rgbaPNG.width == rgbaTIFF.width && rgbaPNG.height == rgbaTIFF.height, "rgba PNG and TIFF share dimensions");
+
+  if (rgbaPNG.ok && rgbaTIFF.ok && rgbaPNG.width == rgbaTIFF.width && rgbaPNG.height == rgbaTIFF.height) {
+    check(rgbaPNG.alpha == rgbaTIFF.alpha, "rgba PNG alpha bytes match the TIFF's exactly");
+
+    int partialPixels = 0;
+    int mismatches = 0;
+    int largestExcess = 0;
+    for (size_t i = 0; i < rgbaPNG.alpha.size(); ++i) {
+      const int alpha = rgbaPNG.alpha[i];
+      if (alpha == 0 || alpha == 255) {
+        continue;
+      }
+      ++partialPixels;
+      for (size_t c = 0; c < 3; ++c) {
+        const int straight = rgbaPNG.rgb[i * 3 + c];
+        const int premultiplied = rgbaTIFF.rgb[i * 3 + c];
+        if (std::abs(straight * alpha / 255.0 - premultiplied) > 2.0) {
+          ++mismatches;
+        }
+        largestExcess = std::max(largestExcess, straight - premultiplied);
+      }
+    }
+    std::printf("partial pixels: %d, largest PNG-over-TIFF excess: %d\n", partialPixels, largestExcess);
+    check(partialPixels > 0, "the rgba scene has partial-coverage pixels");
+    check(mismatches == 0, "rgba PNG colour times alpha reconstructs the TIFF's premultiplied colour (" +
+                               std::to_string(mismatches) + " channel mismatches)");
+    check(largestExcess > 2, "a partial pixel's PNG colour exceeds the TIFF's, so premultiplied colour cannot pass");
   }
 
   return checkSummary("png driver holds");

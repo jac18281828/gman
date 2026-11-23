@@ -107,7 +107,8 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint
   // "A" writes coverage alone, one sample, no colour. "RGB" writes colour
   // alone, no alpha. Every other mode -- RGBA and everything this driver
   // has no channel for -- writes RGB plus one coverage sample, the same
-  // not-RGB bucket OutputTIFF uses.
+  // not-RGB bucket OutputTIFF uses; that colour is straight, divided by
+  // coverage where coverage lies strictly between 0 and 1.
   const int colorType = (mode == RGB) ? PNG_COLOR_TYPE_RGB
                         : (mode == A) ? PNG_COLOR_TYPE_GRAY
                                       : PNG_COLOR_TYPE_RGB_ALPHA;

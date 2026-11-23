@@ -89,7 +89,9 @@ public:
   // float. Colour runs through gain and gamma first; alpha, coverage, skips
   // both. Every channel then rounds and dithers by RISpec's rule, one draw
   // per pixel, and clamps into [min, max], before writeImage receives it
-  // once, at 16 bits when max exceeds 255 and 8 otherwise.
+  // once, at 16 bits when max exceeds 255 and 8 otherwise. For a format that
+  // stores straight alpha, colour divides by coverage before gain and gamma
+  // wherever coverage lies strictly between 0 and 1.
   RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma, GMANQuantize const& quantize);
 
 protected:

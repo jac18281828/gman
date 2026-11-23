@@ -52,6 +52,7 @@ struct FileDriverEntry {
   std::string displayName;
   FileDriverFactory factory; // null when not compiled into this build
   FileDriverMatcher matches; // null when not compiled into this build
+  bool straightAlpha;        // stores colour unassociated from alpha
 };
 
 // Returns the driver for `extension` (compared case-sensitively). Throws

@@ -31,7 +31,9 @@
  * writeImage is called with; and what the file holds, proven by saving a
  * small image through gman::OutputPNM, gman::OutputTIFF and, where built,
  * gman::OutputPNG, then reading the written bytes back. No suite test
- * writes PNM, so PNM's byte identity rests on the checks here.
+ * writes PNM, so PNM's byte identity rests on the checks here. TIFF keeps
+ * colour associated with alpha, the bytes save narrows, where PNG alone
+ * stores straight alpha.
  */
 
 #include <algorithm>
@@ -618,6 +620,25 @@ void checkTIFFAlphaNaN() {
   }
 }
 
+void checkTIFFAssociatedAlpha() {
+  std::string const path = "narrow_tiff_associated.tif";
+
+  gman::OutputTIFF output(path.c_str(), 1, 1);
+  output.setPixel(0, 0, GMANColor(0.2f, 0.3f, 0.4f));
+  output.setAlpha(0, 0, GMANAlpha(0.2f, 0.5f, 0.8f));
+  output.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{255, 0, 255, 0});
+
+  ByteImage const img = readTIFFRaw(path);
+  check(img.ok, "tiff associated: file reads back");
+  if (img.ok) {
+    check(img.samplesPerPixel == 4, "tiff associated: RGBA writes 4 samples");
+    check(img.at(0, 0, 0) == 51 && img.at(0, 0, 1) == 77 && img.at(0, 0, 2) == 102 && img.at(0, 0, 3) == 128,
+          "tiff associated: colour stays premultiplied (expected 51 77 102 128, got " +
+              std::to_string(img.at(0, 0, 0)) + " " + std::to_string(img.at(0, 0, 1)) + " " +
+              std::to_string(img.at(0, 0, 2)) + " " + std::to_string(img.at(0, 0, 3)) + ")");
+  }
+}
+
 bool fileExists(std::string const& path) {
   std::FILE* f = std::fopen(path.c_str(), "rb");
   if (f == nullptr) {
@@ -721,6 +742,7 @@ int main() {
 
   checkTIFF16Bit();
   checkTIFFAlphaNaN();
+  checkTIFFAssociatedAlpha();
 
   checkFileRefusal("pnm", savePNM, GMANQuantize{65535, 0, 65535, 0},
                    "PNM writes 8-bit samples; Quantize max 65535 cannot be honoured");

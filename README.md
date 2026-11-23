@@ -186,7 +186,8 @@ gman -r gmanraytracer first.rib
 - **Textures.** `texture()` and `environment()` read maps written by `MakeTexture` and
   `MakeLatLongEnvironment`.
 - **RIB.** Plain or gzip'd, with `ReadArchive`. An unrecognized request warns once and is skipped.
-- **Image drivers.** TIFF, PNM, PNG and JPEG; `gman --version` lists the ones built in.
+- **Image drivers.** TIFF, PNM, PNG and JPEG; `gman --version` lists the ones built in. PNG stores
+  straight alpha, TIFF associated alpha, and JPEG and PNM the colour over black.
 
 ## Render
 

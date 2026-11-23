@@ -1129,7 +1129,9 @@ set_tests_properties(attributescopy PROPERTIES
 
 # Guards against the PNG output driver segfaulting: a read-side libpng
 # call on a write struct, a mis-sized pixel buffer, or a loop that only
-# ever writes column 0. The binary needs libpng to link, so it stays
+# ever writes column 0; and against PNG colour that is not straight alpha,
+# whose colour times its alpha must reconstruct the premultiplied colour a
+# TIFF of the same scene holds. The binary needs libpng to link, so it stays
 # guarded; the test itself registers unconditionally so a build without
 # libpng reports the gap as Skipped rather than making the PNG driver
 # invisible to ctest.
@@ -3164,8 +3166,9 @@ set_tests_properties(outputnarrowing PROPERTIES
 
 # gman::OutputPNG's own DisplayMode contract: "rgb" writes three samples
 # with no alpha, "rgbaz" keeps four with coverage in the fourth, "a"
-# writes the coverage byte alone. Direct unit test against gman::OutputPNG,
-# no gman binary. Compiles and links only under GMAN_WITH_PNG.
+# writes the coverage byte alone, and every mode but "rgb" writes straight
+# alpha. Direct unit test against gman::OutputPNG, no gman binary.
+# Compiles and links only under GMAN_WITH_PNG.
 add_executable(gman_pngdisplaymode pngdisplaymode_test.cpp)
 target_link_libraries(gman_pngdisplaymode PRIVATE gman_core gman_internal_headers)
 if(GMAN_WITH_PNG)

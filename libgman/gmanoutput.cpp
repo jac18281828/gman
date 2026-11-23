@@ -176,13 +176,20 @@ RtVoid GMANOutput::save(DisplayMode mode, RtFloat gain, RtFloat gamma, GMANQuant
 
   const int bitsPerSample = quantize.max > 255 ? 16 : 8;
 
+  gman::FileDriverEntry const* const entry = gman::fileDriverEntry(*this);
+  bool const straightColor = entry != nullptr && entry->straightAlpha && mode != RGB;
+
   std::vector<std::uint16_t> samples(4 * static_cast<std::size_t>(xres) * static_cast<std::size_t>(yres));
   for (int y = 0; y < yres; y++) {
     for (int x = 0; x < xres; x++) {
-      GMANColor const color = gman::gammaCorrected(getPixel(x, y), gain, gamma);
       GMANAlpha const& alpha = getAlpha(x, y);
       GMANColor::ColorSampleType const coverage =
           (alpha.getRed() + alpha.getGreen() + alpha.getBlue()) / static_cast<GMANColor::ColorSampleType>(3.0);
+      GMANColor linear = getPixel(x, y);
+      if (straightColor && coverage > 0 && coverage < 1) {
+        linear /= coverage;
+      }
+      GMANColor const color = gman::gammaCorrected(linear, gain, gamma);
 
       // One draw per pixel serves R, G, B and alpha: the rule is monotone
       // in v for a fixed draw, so equal channels in stay equal out.
