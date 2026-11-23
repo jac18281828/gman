@@ -1,0 +1,14 @@
+# ColorSamples with an empty nRGB and a NaN in RGBn: the lengths disagree, which
+# the consistency rule reports before the empty-pair and finiteness rules.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention." Not third-party.
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+ColorSamples [ ] [ NaN 0 0 ]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

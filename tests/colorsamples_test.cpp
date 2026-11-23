@@ -140,6 +140,11 @@ struct ColorSamplesCall {
   std::vector<RtFloat> RGBn;
 };
 
+ColorSamplesCall colorSamplesCall(RtInt n, RtFloat const* nRGB, RtFloat const* RGBn) {
+  const auto length = 3 * static_cast<std::size_t>(n);
+  return {n, {nRGB, nRGB + length}, {RGBn, RGBn + length}};
+}
+
 class RecordingRenderMan : public GMANRenderManImpl {
 public:
   std::vector<ColorSamplesCall> colorSamples;
@@ -147,8 +152,7 @@ public:
   std::vector<std::vector<RtFloat>> opacities;
 
   RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override {
-    const auto length = 3 * static_cast<std::size_t>(n);
-    colorSamples.push_back({n, {nRGB, nRGB + length}, {RGBn, RGBn + length}});
+    colorSamples.push_back(colorSamplesCall(n, nRGB, RGBn));
     GMANRenderManImpl::RiColorSamples(n, nRGB, RGBn);
   }
 
@@ -232,8 +236,7 @@ public:
   RtVoid RiBegin(RtToken) override {}
   RtVoid RiEnd() override {}
   RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override {
-    const auto length = 3 * static_cast<std::size_t>(n);
-    colorSamples.push_back({n, {nRGB, nRGB + length}, {RGBn, RGBn + length}});
+    colorSamples.push_back(colorSamplesCall(n, nRGB, RGBn));
   }
   RtVoid RiSphereV(RtFloat, RtFloat, RtFloat, RtFloat, RtInt, RtToken[], RtPointer[]) override { ++spheres; }
 };
@@ -250,7 +253,7 @@ void testRequestReachesTheRenderer(std::string const& ribDir) {
   check(!thrown.threw, "request: the fixture parses to its end");
   check(renderMan.colorSamples.size() == 1, "request: one ColorSamples call arrives");
   if (renderMan.colorSamples.size() == 1) {
-    const ColorSamplesCall& call = renderMan.colorSamples[0];
+    ColorSamplesCall const& call = renderMan.colorSamples[0];
     check(call.n == 2, "request: the count is derived from the array lengths");
     check(call.nRGB == run(6, 0), "request: nRGB arrives intact and in order");
     check(call.RGBn == run(6, 6), "request: RGBn arrives intact and in order");
@@ -283,6 +286,7 @@ void checkPairRejected(std::string const& ribDir, std::string const& name, RtInt
 
 void testMalformedPairsAreRejected(std::string const& ribDir) {
   checkPairRejected(ribDir, "unequal", RIE_CONSISTENCY);
+  checkPairRejected(ribDir, "oneempty", RIE_CONSISTENCY);
   checkPairRejected(ribDir, "notriple", RIE_CONSISTENCY);
   checkPairRejected(ribDir, "empty", RIE_RANGE);
   checkPairRejected(ribDir, "nan", RIE_RANGE);
@@ -311,7 +315,7 @@ void testWrittenColorSamplesReadBack() {
   check(!thrown.threw, "write-back: the written file parses to its end");
   check(reader.colorSamples.size() == 1, "write-back: one ColorSamples call arrives");
   if (reader.colorSamples.size() == 1) {
-    const ColorSamplesCall& call = reader.colorSamples[0];
+    ColorSamplesCall const& call = reader.colorSamples[0];
     check(call.n == count, "write-back: the count survives");
     check(call.nRGB == nRGB, "write-back: nRGB survives in order");
     check(call.RGBn == RGBn, "write-back: RGBn survives in order");
