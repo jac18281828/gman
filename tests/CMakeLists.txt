@@ -1523,6 +1523,45 @@ set_tests_properties(texture16 PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# paintedplastic's opacityname cuts a card out; the path tracer's shadows follow it.
+add_executable(gman_textureopacity textureopacity_test.cpp)
+target_link_libraries(gman_textureopacity PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_textureopacity gman_paintedplastic gman_matte)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_textureopacity gman_raytracer)
+
+  set(GMAN_TEXTUREOPACITY_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/textureopacity-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_TEXTUREOPACITY_RAYTRACER_WORKDIR}")
+
+  add_test(NAME textureopacity_raytracer
+    COMMAND gman_textureopacity $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                gmanraytracer
+    WORKING_DIRECTORY "${GMAN_TEXTUREOPACITY_RAYTRACER_WORKDIR}")
+  set_tests_properties(textureopacity_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_textureopacity gman_pathtracer)
+
+  set(GMAN_TEXTUREOPACITY_PATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/textureopacity-pathtracer-run")
+  file(MAKE_DIRECTORY "${GMAN_TEXTUREOPACITY_PATHTRACER_WORKDIR}")
+
+  add_test(NAME textureopacity_pathtracer
+    COMMAND gman_textureopacity $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                gmanpathtracer
+    WORKING_DIRECTORY "${GMAN_TEXTUREOPACITY_PATHTRACER_WORKDIR}")
+  set_tests_properties(textureopacity_pathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
 # s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
 # (General)Polygon: RiTextureCoordinates and the "s"/"t"/"st" primvars, over
 # tests/rib/texcoords/*.rib -- each fixture copies tests/rib/texture.rib's

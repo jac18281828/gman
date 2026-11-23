@@ -36,18 +36,21 @@
 
 /**
  * surface paintedplastic(float Ka=1, Kd=.5, Ks=.5, roughness=.1;
- *                        color specularcolor=1; string texturename="")
+ *                        color specularcolor=1; string texturename="";
+ *                        string opacityname="")
  * {
  *   normal Nf = faceforward(normalize(N), I);
- *   Oi = Os;
- *   Ci = Os * (color texture(texturename) * Cs *
+ *   Oi = (opacityname == "") ? Os : Os * float texture(opacityname);
+ *   Ci = Oi * (color texture(texturename) * Cs *
  *              (Ka*ambient() + Kd*diffuse(Nf))
  *              + specularcolor*Ks*specular(Nf, -normalize(I), roughness));
  * }
  *
  * plastic (gmanplastic.cpp) with texturename tinting the diffuse base. An
  * empty texturename multiplies by white, degrading to plastic rather than
- * to black.
+ * to black. A named opacityname cuts the surface out: the map's first
+ * channel scales Os, and Ci scales with it. An empty opacityname, the
+ * default, leaves Oi = Os.
  */
 namespace gmanshader {
 
@@ -57,7 +60,8 @@ public:
       : ka(getFloatParam(parameters, RI_KA, 1.0)), kd(getFloatParam(parameters, RI_KD, 0.5)),
         ks(getFloatParam(parameters, RI_KS, 0.5)), roughness(getFloatParam(parameters, RI_ROUGHNESS, 0.1)),
         specularcolor(getColorParam(parameters, RI_SPECULARCOLOR, GMANColor((RtFloat)1.0, (RtFloat)1.0, (RtFloat)1.0))),
-        texturename(getStringParam(parameters, RI_TEXTURENAME, std::string())) {}
+        texturename(getStringParam(parameters, RI_TEXTURENAME, std::string())),
+        opacityname(getStringParam(parameters, "opacityname", std::string())) {}
 
   RtVoid illuminance(RtInt i, GMANVector L, GMANColor Cl, GMANColor Ol);
 
@@ -72,6 +76,7 @@ private:
   RtFloat const roughness;
   GMANColor const specularcolor;
   std::string const texturename;
+  std::string const opacityname;
 };
 
 RtVoid paintedplastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
@@ -105,10 +110,17 @@ GMANColor paintedplastic::computeCi(GMANSurfaceEnv const& se) const {
                 paint.getGreen() * diffuseTerm.getGreen() + tintedSpecular.getGreen(),
                 paint.getBlue() * diffuseTerm.getBlue() + tintedSpecular.getBlue());
 
-  return GMANColor(se.Os.getRed() * lit.getRed(), se.Os.getGreen() * lit.getGreen(), se.Os.getBlue() * lit.getBlue());
+  GMANColor const oi = computeOi(se);
+  return GMANColor(oi.getRed() * lit.getRed(), oi.getGreen() * lit.getGreen(), oi.getBlue() * lit.getBlue());
 }
 
-GMANColor paintedplastic::computeOi(GMANSurfaceEnv const& se) const { return se.Os; }
+GMANColor paintedplastic::computeOi(GMANSurfaceEnv const& se) const {
+  if (opacityname.empty()) {
+    return se.Os;
+  }
+  RtFloat const coverage = se.texture(opacityname, se.s, se.t).getRed();
+  return GMANColor(se.Os.getRed() * coverage, se.Os.getGreen() * coverage, se.Os.getBlue() * coverage);
+}
 
 // plastic's closure (gmanplastic.cpp) with the diffuse base tinted by the
 // texture, white when texturename is empty; the headroom the GGX lobe

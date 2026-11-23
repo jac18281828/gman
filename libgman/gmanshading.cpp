@@ -182,4 +182,13 @@ BSDF bsdf(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 c
   return appearance.shader->bsdf(env);
 }
 
+GMANColor opacity(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
+                  TextureCache* textureCache) {
+  if (!appearance.shader) {
+    return appearance.Os;
+  }
+  GMANSurfaceEnv const env = fillEnv(appearance, point, cameraToWorld, textureCache);
+  return appearance.shader->computeOi(env);
+}
+
 } // namespace gman

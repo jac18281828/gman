@@ -1,0 +1,27 @@
+## A matte receiver lit by a distant light, and a paintedplastic card outside
+## the frame whose "opacityname" map is 0 everywhere. The card stands where it
+## would shadow the receiver's pixels left of centre were it opaque.
+## textureopacity_shadow_nomap.rib names no map and textureopacity_shadow_nocard.rib
+## removes the card. Not third-party.
+Display "textureopacity_shadow.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [90]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [2.0] "lightcolor" [1 1 1]
+	"from" [-2 0 -1] "to" [0 0 0]
+Sides 2
+Color [1 0 0]
+Surface "paintedplastic" "Ka" [0] "Kd" [0.8] "Ks" [0]
+	"string opacityname" ["textureopacity_zero.tif"]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+Polygon "P" [-8 -1 0  -6 -1 0  -6 1 0  -8 1 0]
+	"st" [0 0  1 0  1 1  0 1]
+Color [0 1 0]
+Surface "matte" "Ka" [0] "Kd" [0.8]
+Polygon "P" [-30 -30 3  30 -30 3  30 30 3  -30 30 3]
+WorldEnd

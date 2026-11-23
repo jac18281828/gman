@@ -530,6 +530,37 @@ parameter list and renders the control's pixels. `Atmosphere` and
 `Displacement` sit in the world block before the `Sphere`; `Imager` sits
 before `Projection`. Not third-party.
 
+## textureopacity_cutout.rib
+
+A red `paintedplastic` card in front of a green matte backdrop
+(`tests/textureopacity_test.cpp`). The card names an opacity map, written by
+the test, that is 0 over its left half and 1 over its right, so the backdrop
+shows through the left half. A distant light aimed along +x and +z lands the
+card's shadow clear of the backdrop pixels behind the left half. Not
+third-party.
+
+## textureopacity_nomap.rib
+
+`textureopacity_cutout.rib`'s scene with the card naming no opacity map: both
+halves of the card stay red. Not third-party.
+
+## textureopacity_shadow.rib
+
+A green matte receiver lit by a distant light, and a `paintedplastic` card
+outside the frame, placed to shadow the receiver left of centre were it opaque
+(`tests/textureopacity_test.cpp`). The card names an opacity map that is 0
+everywhere. Not third-party.
+
+## textureopacity_shadow_nomap.rib
+
+`textureopacity_shadow.rib`'s scene with the card naming no opacity map: the
+card is opaque and shadows the receiver. Not third-party.
+
+## textureopacity_shadow_nocard.rib
+
+`textureopacity_shadow.rib`'s scene with the card removed: the receiver
+unshadowed. Not third-party.
+
 ## corpus/
 
 Real RIB from third-party software, fetched once and checked in so tests are

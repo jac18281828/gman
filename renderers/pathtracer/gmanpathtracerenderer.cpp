@@ -229,8 +229,8 @@ ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector 
     }
 
     gman::Appearance const& appearance = hitPrimitive->getAppearance();
-    GMANColor const os = clampCoverage(appearance.Os);
     gman::SurfacePoint const point = gman::hitSurfacePoint(shadowRay, hit);
+    GMANColor const os = clampCoverage(gman::opacity(appearance, point, cameraToWorld, textureCache));
     gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
     GMANColor const t = closure.shadowTransmittance(wi);
 
@@ -591,7 +591,7 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
       state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point, state.eligibility, misEnabled,
                                state.departureP, state.departurePrimitive, state.departurePdf, state.lightWeight));
 
-  GMANColor const os = clampCoverage(appearance.Os);
+  GMANColor const os = clampCoverage(gman::opacity(appearance, point, cameraToWorld, textureCache));
   RtFloat const qPass = meanChannel(gman::oneMinus(os));
   RtFloat const coverageU = gman::sample1D(seed, sx, sy, i, N, 1u + 5u * k);
   if (coverageU < qPass) {

@@ -166,4 +166,15 @@ GMAN_EXPORT GMANColor albedo(Appearance const& appearance, SurfacePoint const& p
 GMAN_EXPORT BSDF bsdf(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
                       TextureCache* textureCache = nullptr);
 
+// A surface's opacity where shade would shade point: fills a
+// GMANSurfaceEnv from appearance and point exactly as shade, albedo and
+// bsdf do, through the same fill, with no occluder, tracer or indirect
+// bound, and returns appearance.shader->computeOi(env). A null shader
+// answers appearance.Os, the opacity the default surface, matte, answers.
+// textureCache is shade's argument; a caller running serially, ahead of
+// the first pixel, omits it and samples through gman::textureCache()'s
+// process cache.
+GMAN_EXPORT GMANColor opacity(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
+                              TextureCache* textureCache = nullptr);
+
 } // namespace gman

@@ -1,0 +1,23 @@
+## textureopacity_shadow.rib's scene with the card naming no "opacityname":
+## the opaque card shadows the receiver. Not third-party.
+Display "textureopacity_shadow_nomap.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [90]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [2.0] "lightcolor" [1 1 1]
+	"from" [-2 0 -1] "to" [0 0 0]
+Sides 2
+Color [1 0 0]
+Surface "paintedplastic" "Ka" [0] "Kd" [0.8] "Ks" [0]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+Polygon "P" [-8 -1 0  -6 -1 0  -6 1 0  -8 1 0]
+	"st" [0 0  1 0  1 1  0 1]
+Color [0 1 0]
+Surface "matte" "Ka" [0] "Kd" [0.8]
+Polygon "P" [-30 -30 3  30 -30 3  30 30 3  -30 30 3]
+WorldEnd

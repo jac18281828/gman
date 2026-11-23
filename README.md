@@ -165,6 +165,8 @@ gman -r gmanraytracer first.rib
   Under the ray tracer and the path tracer, a polygon request's per-vertex `"N"` shades it smoothly.
 - **Surface shaders.** `matte`, `plastic`, `paintedplastic`, `metal` and `shinymetal` under every
   renderer; `glass` and `mirror` trace rays, so they need the ray tracer or the path tracer.
+  `paintedplastic`'s `"string opacityname"` names a map that cuts a surface out under the ray
+  tracer and the path tracer.
 - **Light shaders.** `ambientlight`, `distantlight`, `pointlight` and `spotlight`, and
   `AreaLightSource "arealight"`, which makes the `Sphere` or `Disk` after it glow under the path
   tracer.
