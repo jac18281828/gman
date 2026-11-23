@@ -60,7 +60,7 @@ constexpr RtFloat kDerivedC = (RtFloat)16.0;
 constexpr RtFloat kScale = kDerivedC * kUnitRoundoff;
 constexpr RtFloat kCeiling = (RtFloat)3.0e-5;
 constexpr RtFloat kLargeReceiverRadius =
-    (RtFloat)1000.0 * (RtFloat)(std::numeric_limits<float>::epsilon() / std::numeric_limits<RtFloat>::epsilon());
+    RtFloat(1000.0) * RtFloat(std::numeric_limits<float>::epsilon() / std::numeric_limits<RtFloat>::epsilon());
 
 // A radius-scale sphere centred at (0, 0, centreZ), opaque white --
 // rayoccluder_test.cpp's own sphereAt convention.

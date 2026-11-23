@@ -84,7 +84,7 @@ constexpr double kWoAnglesDegrees[] = {0.0, 60.0, 89.0, 120.0};
 constexpr std::size_t kWoCount = sizeof(kWoAnglesDegrees) / sizeof(kWoAnglesDegrees[0]);
 
 constexpr RtFloat kReferenceAlpha = 0.3f;
-RtFloat const kUnderflowingCosine = std::sqrt(std::numeric_limits<RtFloat>::denorm_min()) / (RtFloat)1000.0;
+RtFloat const kUnderflowingCosine = std::sqrt(std::numeric_limits<RtFloat>::denorm_min()) / RtFloat(1000.0);
 constexpr RtFloat kEnergyAlphas[] = {0.05f, 0.3f, 1.0f};
 
 GMANVector const kN0Unnormalized(0.3f, -0.5f, 0.8f);

@@ -221,7 +221,7 @@ int main() {
   // A non-default ScreenWindow, halving the window without touching the
   // raster resolution GMANOptions derives from format alone: doubles this
   // suite's own raster scale, so a triangle whose default-window
-  // hypotenuse would be 20px (comfortably capped either way) proves the
+  // hypotenuse would be 19px (comfortably capped either way) proves the
   // window is actually read, not a fov/format-only shortcut, by landing
   // at the ceil(9.5)=10-per-edge count instead of staying at the cap. The
   // target sits half a pixel off an integer so the ceil does not depend on
