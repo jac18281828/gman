@@ -365,19 +365,20 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
   output = std::move(newOutput);
 }
 
+RtVoid GMANRenderManImpl::abandonWorld() {
+  output.reset();
+  leaveMode(W);
+}
+
 RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   // Every renderer reads pixel (0, 0) as its background, so it needs a
   // frame buffer with at least one pixel. With no Display, or a framebuffer
   // one, RiWorldBegin builds gman::OutputX11's 0x0 stub; report that instead
   // of handing it to the renderer.
   if (output == nullptr || output->getWidth() == 0 || output->getHeight() == 0) {
-    output.reset();
-    leaveMode(W);
+    abandonWorld();
     throw GMANError(RIE_ILLSTATE, RIE_ERROR, "No display output to render into.");
   }
-
-  const GMANOptions::ExposureStruct& exposure = getOptions().getExposure();
-  renderer->render(output.get(), viewingSystem.get(), getOptions(), getAttributes());
 
   GMANOutput::DisplayMode dMode;
 
@@ -394,8 +395,12 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   } else if (getOptions().getDisplay().mode == RI_Z) {
     dMode = GMANOutput::Z;
   } else {
+    abandonWorld();
     throw GMANError(RIE_ILLSTATE, RIE_ERROR, "Invalid token passed for display mode.");
   }
+
+  const GMANOptions::ExposureStruct& exposure = getOptions().getExposure();
+  renderer->render(output.get(), viewingSystem.get(), getOptions(), getAttributes());
 
   // renderer must be copied to support depth
   if (dMode != GMANOutput::RGBA) {
@@ -408,9 +413,7 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   // depth, so a "z" request stored by RiQuantize has nothing to reach.
   output->save(dMode, exposure.gain, exposure.gamma, getOptions().getColorQuantize());
 
-  output.reset();
-
-  leaveMode(W);
+  abandonWorld();
 }
 
 // create a new object

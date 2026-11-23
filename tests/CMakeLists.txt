@@ -290,6 +290,20 @@ set_tests_properties(rendermanlifetime PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RiWorldEnd rejects a display mode it does not know and closes the world on
+# the error. See tests/invaliddisplaymode_test.cpp.
+add_executable(gman_invaliddisplaymode invaliddisplaymode_test.cpp)
+target_link_libraries(gman_invaliddisplaymode PRIVATE gman_core gman_internal_headers)
+add_dependencies(gman_invaliddisplaymode gman_zbuffer)
+
+add_test(NAME invaliddisplaymode
+  COMMAND gman_invaliddisplaymode
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(invaliddisplaymode PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # RIB dialect coverage. Each spawns the real gman binary, which dlopens
 # its renderer by bare name, so each needs the same library path as the
 # baseline test above.

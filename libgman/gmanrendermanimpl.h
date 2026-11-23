@@ -64,6 +64,10 @@ private:
 
   std::unique_ptr<GMANOutput> output;
 
+  // drops the frame's output and leaves the world, as every way out of
+  // RiWorldEnd does
+  RtVoid abandonWorld();
+
 public:
   GMANRenderManImpl();  // default constructor
   ~GMANRenderManImpl(); // default destructor
