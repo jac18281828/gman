@@ -561,6 +561,26 @@ card is opaque and shadows the receiver. Not third-party.
 `textureopacity_shadow.rib`'s scene with the card removed: the receiver
 unshadowed. Not third-party.
 
+## shadowterminator.rib
+
+A coarse eight-sided prism, open at both ends, its vertices on a circle with
+radial vertex normals, under one distant light that grazes the face nearest the
+camera from the side it turns away from
+(`tests/shadowterminator_test.cpp`). The shading normal faces the light across
+a band of that face while the flat face does not. Not third-party.
+
+## shadowterminator_blocked.rib
+
+`shadowterminator.rib`'s prism with a wall at x = 1.2, outside the frame and
+edge-on to the camera, between the light and the prism. The wall shades the
+whole prism (`tests/shadowterminator_test.cpp`). Not third-party.
+
+## shadowterminator_backside.rib
+
+The far half of such a prism, seen by the camera and lit by a distant light
+from the side opposite its vertex normals
+(`tests/shadowterminator_test.cpp`). Not third-party.
+
 ## normalmap_card.rib
 
 A `paintedplastic` card facing the camera under one distant light tilted along

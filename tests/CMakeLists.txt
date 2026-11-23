@@ -1564,6 +1564,45 @@ if(GMAN_BUILD_PATHTRACER)
     TIMEOUT 120)
 endif()
 
+# A smooth prism's terminator renders lit, its back side stays lit and a wall still shadows it.
+add_executable(gman_shadowterminator shadowterminator_test.cpp)
+target_link_libraries(gman_shadowterminator PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_shadowterminator gman_matte)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_shadowterminator gman_raytracer)
+
+  set(GMAN_SHADOWTERMINATOR_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shadowterminator-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_SHADOWTERMINATOR_RAYTRACER_WORKDIR}")
+
+  add_test(NAME shadowterminator_raytracer
+    COMMAND gman_shadowterminator $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                  gmanraytracer
+    WORKING_DIRECTORY "${GMAN_SHADOWTERMINATOR_RAYTRACER_WORKDIR}")
+  set_tests_properties(shadowterminator_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_shadowterminator gman_pathtracer)
+
+  set(GMAN_SHADOWTERMINATOR_PATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shadowterminator-pathtracer-run")
+  file(MAKE_DIRECTORY "${GMAN_SHADOWTERMINATOR_PATHTRACER_WORKDIR}")
+
+  add_test(NAME shadowterminator_pathtracer
+    COMMAND gman_shadowterminator $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                  gmanpathtracer
+    WORKING_DIRECTORY "${GMAN_SHADOWTERMINATOR_PATHTRACER_WORKDIR}")
+  set_tests_properties(shadowterminator_pathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 120)
+endif()
+
 # s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
 # (General)Polygon: RiTextureCoordinates and the "s"/"t"/"st" primvars, over
 # tests/rib/texcoords/*.rib -- each fixture copies tests/rib/texture.rib's

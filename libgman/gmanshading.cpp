@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <list>
 #include <memory>
+#include <optional>
 
 #include "gmanattributes.h"
 #include "gmanbbox.h"
@@ -114,6 +115,7 @@ SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   point.dPdu = hit.dPdu;
   point.dPdv = hit.dPdv;
   point.surfaceMagnitude = gman::primitiveMagnitude(hit.primitive->getBBox());
+  point.shadowOrigin = hit.shadowOrigin;
   return point;
 }
 
@@ -145,12 +147,34 @@ GMANSurfaceEnv fillEnv(Appearance const& appearance, SurfacePoint const& point, 
   return env;
 }
 
+class ShadowOriginOccluder : public Occluder {
+public:
+  ShadowOriginOccluder(Occluder const* answering, GMANPoint const& shadowOrigin, GMANNormal const& N)
+      : answering(answering), shadowOrigin(shadowOrigin), N(N) {}
+
+  GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
+                         GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const override {
+    GMANPoint const& origin = towardLight.dot(N) > (RtFloat)0.0 ? shadowOrigin : P;
+    return answering->transmission(light, origin, towardLight, Ng, distance, surfaceMagnitude);
+  }
+
+private:
+  Occluder const* answering;
+  GMANPoint shadowOrigin;
+  GMANNormal N;
+};
+
 } // namespace
 
 Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
               Occluder const* occluder, Tracer const* tracer, TextureCache* textureCache, GMANColor const* indirect) {
   GMANSurfaceEnv env = fillEnv(appearance, point, cameraToWorld, textureCache);
+  std::optional<ShadowOriginOccluder> shadowOriginOccluder;
   env.occluder = occluder;
+  if (occluder != nullptr && point.shadowOrigin) {
+    shadowOriginOccluder.emplace(occluder, *point.shadowOrigin, point.N);
+    env.occluder = &*shadowOriginOccluder;
+  }
   env.tracer = tracer;
   env.indirect = indirect;
 

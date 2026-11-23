@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -37,11 +38,13 @@
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
 #include "gmanoptions.h"
+#include "gmanpoint.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
 #include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
+#include "gmanraypolygon.h"
 #include "gmanshading.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
@@ -92,6 +95,39 @@ Vec3 normalizedBlend(std::array<Vec3, 4> const& normals, std::size_t triangle, d
   return unit(blend[0], blend[1], blend[2]);
 }
 
+std::array<Vec3, 4> normalsTiltedFromCentre(double sign) {
+  std::array<Vec3, 4> normals;
+  for (std::size_t i = 0; i < normals.size(); ++i) {
+    normals[i] = unit(sign * (kCorners[i][0] - 0.5), sign * (kCorners[i][1] - 0.5), -1.0);
+  }
+  return normals;
+}
+
+std::array<Vec3, 4> domeNormals() { return normalsTiltedFromCentre(1.0); }
+
+std::array<Vec3, 4> bowlNormals() { return normalsTiltedFromCentre(-1.0); }
+
+Weights signedOffsets(std::array<Vec3, 4> const& normals, std::size_t triangle, double x, double y) {
+  Weights offsets;
+  for (std::size_t corner = 0; corner < 3; ++corner) {
+    std::size_t const index = kTriangles[triangle][corner];
+    offsets[corner] = (kCorners[index][0] - x) * normals[index][0] + (kCorners[index][1] - y) * normals[index][1];
+  }
+  return offsets;
+}
+
+Vec3 expectedShadowOrigin(std::array<Vec3, 4> const& normals, std::size_t triangle, double x, double y) {
+  Weights const weights = barycentricWeights(triangle, x, y);
+  Weights const offsets = signedOffsets(normals, triangle, x, y);
+  Vec3 origin = {x, y, 0.0};
+  for (std::size_t corner = 0; corner < 3; ++corner) {
+    for (std::size_t axis = 0; axis < 3; ++axis) {
+      origin[axis] += weights[corner] * std::max(0.0, offsets[corner]) * normals[kTriangles[triangle][corner]][axis];
+    }
+  }
+  return origin;
+}
+
 std::array<Vec3, 4> inverseTransposeImages(std::array<Vec3, 4> const& normals, double scaleX) {
   std::array<Vec3, 4> images;
   for (std::size_t i = 0; i < normals.size(); ++i) {
@@ -128,6 +164,11 @@ std::vector<RtFloat> flatten(std::array<Vec3, 4> const& normals) {
 }
 
 bool near(double a, double b, double tolerance = kTolerance) { return std::fabs(a - b) <= tolerance; }
+
+bool near(GMANPoint const& p, Vec3 const& expected, double tolerance = kTolerance) {
+  return near(p.getX(), expected[0], tolerance) && near(p.getY(), expected[1], tolerance) &&
+         near(p.getZ(), expected[2], tolerance);
+}
 
 bool near(GMANVector const& v, Vec3 const& expected, double tolerance = kTolerance) {
   return near(v.getX(), expected[0], tolerance) && near(v.getY(), expected[1], tolerance) &&
@@ -461,6 +502,126 @@ void testCancellingNormalsLeaveNoShadingNormal() {
   }
 }
 
+void testDomeLiftsTheShadowOrigin() {
+  std::array<Vec3, 4> const normals = domeNormals();
+  Built const built = buildMesh(square(), vertexNormals(normals));
+  std::optional<GMANHit> const hit = castAt(built, kInteriorXFirst, kInteriorYFirst);
+  check(hit.has_value() && hit->shadowOrigin.has_value(), "dome: the hit carries a shadow origin");
+  if (!hit || !hit->shadowOrigin) {
+    return;
+  }
+  check(near(*hit->shadowOrigin, expectedShadowOrigin(normals, 0, kInteriorXFirst, kInteriorYFirst)),
+        "dome: the shadow origin is the hit lifted to each vertex's tangent plane");
+  check(hit->shadowOrigin->getZ() < hit->point.getZ(), "dome: the shadow origin lies on the normals' side");
+  constexpr double minimumLift = 0.01;
+  check(distance(*hit->shadowOrigin, hit->point) >= minimumLift,
+        "dome: the shadow origin sits at least " + std::to_string(minimumLift) + " from the hit point");
+}
+
+void testBowlLeavesTheShadowOriginOnTheHitPoint() {
+  std::array<Vec3, 4> const normals = bowlNormals();
+  Weights const offsets = signedOffsets(normals, 0, kInteriorXFirst, kInteriorYFirst);
+  check(offsets[0] < 0.0 && offsets[1] < 0.0 && offsets[2] < 0.0,
+        "bowl: every vertex's tangent plane lies below the hit");
+  Built const built = buildMesh(square(), vertexNormals(normals));
+  std::optional<GMANHit> const hit = castAt(built, kInteriorXFirst, kInteriorYFirst);
+  check(hit.has_value() && hit->shadowOrigin.has_value(), "bowl: the hit carries a shadow origin");
+  if (hit && hit->shadowOrigin) {
+    check(near(*hit->shadowOrigin, {hit->point.getX(), hit->point.getY(), hit->point.getZ()}),
+          "bowl: the shadow origin is the hit point");
+  }
+}
+
+void testMixedCurvatureLiftsOnlyAbovePlanes() {
+  std::array<Vec3, 4> const normals = tiltedNormals();
+  struct Probe {
+    std::size_t triangle;
+    double x;
+    double y;
+  };
+  for (Probe const& probe :
+       {Probe{0, kInteriorXFirst, kInteriorYFirst}, Probe{1, kInteriorXSecond, kInteriorYSecond}}) {
+    std::string const name = "mixed triangle " + std::to_string(probe.triangle) + ": ";
+    Weights const offsets = signedOffsets(normals, probe.triangle, probe.x, probe.y);
+    bool const above = offsets[0] > 0.0 || offsets[1] > 0.0 || offsets[2] > 0.0;
+    bool const below = offsets[0] < 0.0 || offsets[1] < 0.0 || offsets[2] < 0.0;
+    check(above && below, name + "a tangent plane lies above the hit and another below");
+    Built const built = buildMesh(square(), vertexNormals(normals));
+    std::optional<GMANHit> const hit = castAt(built, probe.x, probe.y);
+    check(hit.has_value() && hit->shadowOrigin.has_value(), name + "the hit carries a shadow origin");
+    if (hit && hit->shadowOrigin) {
+      check(near(*hit->shadowOrigin, expectedShadowOrigin(normals, probe.triangle, probe.x, probe.y)),
+            name + "the shadow origin lifts by the planes above the hit alone");
+    }
+  }
+}
+
+void testNoShadowOriginWithoutAShadingNormal() {
+  Built const plain = buildMesh(square(), std::nullopt);
+  std::optional<GMANHit> const plainHit = castAt(plain, kInteriorXFirst, kInteriorYFirst);
+  check(plainHit.has_value(), "no N: the ray hits");
+  if (plainHit) {
+    check(!plainHit->shadowOrigin.has_value(), "no N: the hit carries no shadow origin");
+  }
+
+  std::array<Vec3, 4> const cancelling = {Vec3{0.0, 0.0, 1.0}, Vec3{0.0, 0.0, -1.0}, Vec3{0.0, 0.0, -1.0},
+                                          Vec3{0.0, 0.0, -1.0}};
+  Built const cancelled = buildMesh(square(), vertexNormals(cancelling));
+  std::optional<GMANHit> const cancelledHit = castAt(cancelled, kInteriorXFirst, kInteriorYFirst);
+  check(cancelledHit.has_value(), "cancelling normals: the ray hits");
+  if (cancelledHit) {
+    check(!cancelledHit->shadowOrigin.has_value(), "cancelling normals: the hit carries no shadow origin");
+  }
+}
+
+void testSurfacePointCarriesTheShadowOrigin() {
+  GMANRay const ray = rayThrough(kInteriorXFirst, kInteriorYFirst);
+  Built const dome = buildMesh(square(), vertexNormals(domeNormals()));
+  std::optional<GMANHit> const domeHit = castAt(dome, kInteriorXFirst, kInteriorYFirst);
+  check(domeHit.has_value() && domeHit->shadowOrigin.has_value(), "carried: the dome hit carries a shadow origin");
+  if (domeHit && domeHit->shadowOrigin) {
+    gman::SurfacePoint const point = gman::hitSurfacePoint(ray, *domeHit);
+    check(point.shadowOrigin.has_value(), "carried: the surface point carries a shadow origin");
+    if (point.shadowOrigin) {
+      check(near(*point.shadowOrigin,
+                 {domeHit->shadowOrigin->getX(), domeHit->shadowOrigin->getY(), domeHit->shadowOrigin->getZ()}, 0.0),
+            "carried: the surface point's shadow origin is the hit's");
+    }
+  }
+
+  Built const plain = buildMesh(square(), std::nullopt);
+  std::optional<GMANHit> const plainHit = castAt(plain, kInteriorXFirst, kInteriorYFirst);
+  check(plainHit.has_value(), "carried: the plain ray hits");
+  if (plainHit) {
+    check(!gman::hitSurfacePoint(ray, *plainHit).shadowOrigin.has_value(),
+          "carried: a hit without N gives a surface point no shadow origin");
+  }
+}
+
+void testNonFiniteLiftLeavesNoShadowOrigin() {
+  constexpr double extent = 1e5;
+  constexpr double normalLength = 1e18;
+  std::vector<GMANPoint> outer;
+  std::vector<std::pair<RtFloat, RtFloat>> texCoords;
+  std::vector<GMANVector> normals;
+  std::array<Vec3, 4> const unitNormals = domeNormals();
+  for (std::size_t i = 0; i < kCorners.size(); ++i) {
+    outer.emplace_back((RtFloat)(extent * kCorners[i][0]), (RtFloat)(extent * kCorners[i][1]), 0.0f);
+    texCoords.emplace_back((RtFloat)kCorners[i][0], (RtFloat)kCorners[i][1]);
+    normals.emplace_back((RtFloat)(normalLength * unitNormals[i][0]), (RtFloat)(normalLength * unitNormals[i][1]),
+                         (RtFloat)(normalLength * unitNormals[i][2]));
+  }
+  GMANRayPolygon const polygon(outer, {}, texCoords, normals);
+  GMANHit hit;
+  bool const found = polygon.intersect(rayThrough(extent * kInteriorXFirst, extent * kInteriorYFirst), hit);
+  check(found, "non-finite lift: the ray hits");
+  if (!found) {
+    return;
+  }
+  check(hit.shadingNormal.has_value(), "non-finite lift: the hit carries a shading normal");
+  check(!hit.shadowOrigin.has_value(), "non-finite lift: the hit carries no shadow origin");
+}
+
 void testSingularTransformShadesFlat() {
   GMANMatrix4 matrix;
   matrix.scale(1.0f, 1.0f, 0.0f);
@@ -489,6 +650,12 @@ int main() {
   testWarnings();
   testCancellingNormalsLeaveNoShadingNormal();
   testSingularTransformShadesFlat();
+  testDomeLiftsTheShadowOrigin();
+  testBowlLeavesTheShadowOriginOnTheHitPoint();
+  testMixedCurvatureLiftsOnlyAbovePlanes();
+  testNoShadowOriginWithoutAShadingNormal();
+  testSurfacePointCarriesTheShadowOrigin();
+  testNonFiniteLiftLeavesNoShadowOrigin();
 
   return checkSummary("a polygon's vertex normals interpolate across each hit and orient into the shader's hemisphere");
 }

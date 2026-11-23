@@ -432,7 +432,9 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
   RtFloat const weight = gman::nextEventWeight(es.isDelta, misEnabled, pLight, pBsdf);
 
   RtFloat const cosTerm = std::fabs(closure.shadingNormal().dot(es.wi));
-  GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, es.wi, surfaceMagnitude);
+  GMANPoint const shadowStart =
+      point.shadowOrigin && es.wi.dot(point.N) > (RtFloat)0.0 ? *point.shadowOrigin : hit.point;
+  GMANPoint const origin = gman::offsetOrigin(shadowStart, point.Ng, es.wi, surfaceMagnitude);
   ShadowWalkStart const walkStart = shadowWalkStart(origin, es);
   ShadowWalkResult const walk = shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget,
                                            cameraToWorld, textureCache);

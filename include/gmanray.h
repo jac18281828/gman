@@ -74,8 +74,11 @@ public:
  * the hit point along them (dPdu, dPdv: exact for the u and v the hit
  * reports, unnormalized, zero where u is undefined or the parameterization
  * is singular), the unit camera-space normal a shader sees as N
- * (shadingNormal, empty when it equals normal) and the primitive hit.
- * intersect returns bool and writes this record only on a hit, so a
+ * (shadingNormal, empty when it equals normal), the camera-space point on
+ * the smooth surface the hit's vertex normals imply that a shadow ray into
+ * shadingNormal's hemisphere leaves from (shadowOrigin; any other shadow
+ * ray, and every one when it is empty, leaves from point) and the primitive
+ * hit. intersect returns bool and writes this record only on a hit, so a
  * default-constructed GMANHit -- primitive null -- is a miss.
  */
 struct GMANHit {
@@ -87,6 +90,7 @@ struct GMANHit {
   GMANVector dPdu;
   GMANVector dPdv;
   std::optional<GMANVector> shadingNormal;
+  std::optional<GMANPoint> shadowOrigin;
   // Null means no primitive was hit. The primitive outlives any hit
   // against it, so this pointer is non-owning.
   GMANPrimitive const* primitive = nullptr;

@@ -22,6 +22,7 @@
  */
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <optional>
@@ -174,6 +175,22 @@ std::optional<GMANVector> interpolateNormal(std::vector<GMANVector> const& norma
   if (!(magnitude > (RtFloat)0.0) || !std::isfinite(magnitude))
     return std::nullopt;
   return blend / magnitude;
+}
+
+std::optional<GMANPoint> smoothSurfaceOrigin(std::vector<GMANPoint> const& ring, std::vector<GMANVector> const& normals,
+                                             FanTriangle const& fan, GMANPoint const& hitPoint) {
+  std::array<std::size_t, 3> const corners = {0, fan.b, fan.c};
+  std::array<RtFloat, 3> const weights = {fan.wa, fan.wb, fan.wc};
+  GMANVector lift;
+  for (std::size_t i = 0; i < corners.size(); ++i) {
+    GMANVector const& normal = normals[corners[i]];
+    RtFloat const above = std::max((RtFloat)0.0, GMANVector(hitPoint, ring[corners[i]]).dot(normal));
+    lift += normal * (weights[i] * above);
+  }
+  GMANPoint const origin(hitPoint.getX() + lift.getX(), hitPoint.getY() + lift.getY(), hitPoint.getZ() + lift.getZ());
+  if (!std::isfinite(origin.getX()) || !std::isfinite(origin.getY()) || !std::isfinite(origin.getZ()))
+    return std::nullopt;
+  return origin;
 }
 
 void fanTangents(std::vector<GMANPoint> const& ring, std::vector<std::pair<RtFloat, RtFloat>> const& texCoords,
@@ -364,6 +381,8 @@ bool GMANRayPolygon::intersect(GMANRay const& ray, GMANHit& hit) const {
   candidate.v = uv.second;
   fanTangents(vertices, texCoords, fan, candidate.dPdu, candidate.dPdv);
   candidate.shadingNormal = interpolateNormal(vertexNormals, fan);
+  if (candidate.shadingNormal)
+    candidate.shadowOrigin = smoothSurfaceOrigin(vertices, vertexNormals, fan, hitPoint);
   candidate.primitive = this;
   return gman::acceptFiniteHit(candidate, hit);
 }

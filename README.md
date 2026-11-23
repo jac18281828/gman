@@ -162,7 +162,9 @@ gman -r gmanraytracer first.rib
 - **Geometry.** `Polygon`, `GeneralPolygon`, `PointsPolygons`, `PointsGeneralPolygons` and the seven
   quadrics, `Sphere`, `Cone`, `Cylinder`, `Hyperboloid`, `Paraboloid`, `Disk` and `Torus`, under
   every renderer. `Patch` and `PatchMesh`, bilinear and bicubic, and `NuPatch` under the z-buffer.
-  Under the ray tracer and the path tracer, a polygon request's per-vertex `"N"` shades it smoothly.
+  Under the ray tracer and the path tracer, a polygon request's per-vertex `"N"` shades it smoothly,
+  and the polygon's shadows toward lights on its normals' side leave from the smooth surface those
+  normals imply, keeping a coarse mesh's terminator off its facets.
 - **Surface shaders.** `matte`, `plastic`, `paintedplastic`, `metal` and `shinymetal` under every
   renderer; `glass` and `mirror` trace rays, so they need the ray tracer or the path tracer.
   `paintedplastic`'s `"string opacityname"` names a map that cuts a surface out under the ray

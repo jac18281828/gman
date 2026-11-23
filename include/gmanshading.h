@@ -24,6 +24,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "gman/export.h"
@@ -101,6 +102,12 @@ struct GMAN_EXPORT SurfacePoint {
   // this alongside |P| itself, so a large primitive near the camera
   // offsets by its own size, not the camera distance alone.
   RtFloat surfaceMagnitude = 0.0;
+
+  // The camera-space point on the smooth surface the hit's vertex normals
+  // imply (GMANHit::shadowOrigin) that a shadow ray into N's hemisphere
+  // leaves from; any other shadow ray, and every one when it is empty,
+  // leaves from P.
+  std::optional<GMANPoint> shadowOrigin;
 };
 
 // The SurfacePoint a ray hit implies: P and N/Ng already camera space
@@ -112,7 +119,7 @@ struct GMAN_EXPORT SurfacePoint {
 // and v, albedo follows shading. A hit carrying a shadingNormal shades with it as N, and Ng is the
 // hit's normal negated where it faces away from N, so a shader's faceforward(N, I, Ng) agrees with
 // the supplied normal whatever the polygon's winding; a hit without one gives N and Ng the hit's
-// normal.
+// normal. The point carries the hit's shadowOrigin.
 GMAN_EXPORT SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit);
 
 // What shading a point produces: colour and opacity together, so a
@@ -129,8 +136,11 @@ struct GMAN_EXPORT Shading {
 // member of Appearance, since it belongs to the camera, not to what a
 // primitive looks like. occluder answers the illuminance loop's "does
 // light reach P?" (gmanocclude.h); a caller that omits it keeps every
-// light visible. tracer answers a shader's own trace() calls
-// (gmantrace.h); a caller that omits it leaves trace() returning black.
+// light visible. When the point carries a shadowOrigin, the occluder
+// receives it in place of P for every light direction with a positive dot
+// product with N, with the direction and distance measured from P. tracer
+// answers a shader's own trace() calls (gmantrace.h); a caller that omits
+// it leaves trace() returning black.
 // textureCache is what texture() and environment() sample through; a
 // caller that omits it leaves them reading gman::textureCache()'s single
 // process cache. A shade re-entered through a Tracer forwards its
