@@ -86,7 +86,9 @@ tree.
   outside renderer may link.
 
 ## Dependencies and Includes
-- Prefer the standard library. Qualify `std::`; no `using` of `std` names.
+- Prefer the standard library. Qualify standard names with `std::`, which
+  avoids ambiguity and namespace collisions. Avoid `using namespace std;`;
+  `using namespace gman;` is fine.
 - Four include blocks, sorted: standard library, system, libraries, gman.
   `.clang-format` encodes it.
 - Each production source and header includes the header that declares every
