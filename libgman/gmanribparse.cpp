@@ -1290,17 +1290,16 @@ RtVoid GMANRIBParse::parsePointsPolygons(RtVoid) {
   // trusted caller -- gets its own structural check here: a verts array
   // whose actual length disagrees with nverts' own sum would read past
   // (or short of) its own allocation inside RiPointsPolygonsV, which has
-  // no way to know that length either. Every array is already consumed
-  // above, so the token stream stays in sync either way.
+  // no way to know that length either.
   long long expectedVerts = 0;
   for (RtInt i = 0; i < npolys; i++) {
     expectedVerts += nverts[i];
   }
   if ((long long)vertsVector.size() != expectedVerts) {
-    warning("PointsPolygons: verts length {} does not match nverts sum "
-            "{}; ignoring.",
-            vertsVector.size(), expectedVerts);
-    return;
+    throw GMANError(
+        RIE_CONSISTENCY, RIE_ERROR,
+        std::format("PointsPolygons: verts length {} does not match nverts sum {}.", vertsVector.size(), expectedVerts)
+            .c_str());
   }
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
@@ -1331,10 +1330,10 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
     expectedNverts += nloops[i];
   }
   if ((long long)nvertsVector.size() != expectedNverts) {
-    warning("PointsGeneralPolygons: nverts length {} does not match "
-            "nloops sum {}; ignoring.",
-            nvertsVector.size(), expectedNverts);
-    return;
+    throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
+                    std::format("PointsGeneralPolygons: nverts length {} does not match nloops sum {}.",
+                                nvertsVector.size(), expectedNverts)
+                        .c_str());
   }
 
   long long expectedVerts = 0;
@@ -1342,10 +1341,10 @@ RtVoid GMANRIBParse::parsePointsGeneralPolygons(RtVoid) {
     expectedVerts += nverts[i];
   }
   if ((long long)vertsVector.size() != expectedVerts) {
-    warning("PointsGeneralPolygons: verts length {} does not match "
-            "nverts sum {}; ignoring.",
-            vertsVector.size(), expectedVerts);
-    return;
+    throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
+                    std::format("PointsGeneralPolygons: verts length {} does not match nverts sum {}.",
+                                vertsVector.size(), expectedVerts)
+                        .c_str());
   }
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {
@@ -1384,20 +1383,18 @@ RtVoid GMANRIBParse::parseNuPatch(RtVoid) {
   // The RI signature carries no knot-array length; a RIB file is not a
   // trusted caller, so a uknot/vknot whose actual length disagrees with
   // the nu+uorder/nv+vorder the request itself declares gets its own
-  // check here -- RiNuPatchV has no way to know that length either. Every
-  // array is already consumed above, so the token stream stays in sync
-  // either way.
+  // check here -- RiNuPatchV has no way to know that length either.
   if ((long long)uknotVector.size() != (long long)nu + uorder) {
-    warning("NuPatch: uknot length {} does not match nu + uorder = {}; "
-            "ignoring.",
-            uknotVector.size(), (long long)nu + uorder);
-    return;
+    throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
+                    std::format("NuPatch: uknot length {} does not match nu + uorder = {}.", uknotVector.size(),
+                                (long long)nu + uorder)
+                        .c_str());
   }
   if ((long long)vknotVector.size() != (long long)nv + vorder) {
-    warning("NuPatch: vknot length {} does not match nv + vorder = {}; "
-            "ignoring.",
-            vknotVector.size(), (long long)nv + vorder);
-    return;
+    throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
+                    std::format("NuPatch: vknot length {} does not match nv + vorder = {}.", vknotVector.size(),
+                                (long long)nv + vorder)
+                        .c_str());
   }
 
   dispatchWithCounts(renderMan, counts, [&](auto& target, auto&&... supplied) {

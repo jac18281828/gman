@@ -560,19 +560,26 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
   struct Fixture {
     char const* file;
     char const* expectedWarning;
-    // The four structural-check fixtures degrade: they warn, exit 0 and
-    // keep parsing the trailing Sphere. A short "P" is a RIE_CONSISTENCY
-    // error and a non-integer array entry a token-level syntax error
-    // (RIE_SYNTAX), each fatal to the whole file, so the fixtures for
-    // those override both.
+    // The two value-rule fixtures degrade: they warn, exit 0 and keep
+    // parsing the trailing Sphere. An index array whose length disagrees
+    // with its count and a short "P" are RIE_CONSISTENCY errors, and a
+    // non-integer array entry a token-level syntax error (RIE_SYNTAX),
+    // each fatal to the whole file, so the fixtures for those override
+    // both.
     int expectedExit = 0;
     bool expectsSphere = true;
   };
   const Fixture fixtures[] = {
-      {"pointspolygons_short_verts.rib", "PointsPolygons: verts length 7 does not match nverts sum 8; "
-                                         "ignoring."},
-      {"pointsgeneralpolygons_short_nverts.rib", "PointsGeneralPolygons: nverts length 1 does not match nloops sum "
-                                                 "2; ignoring."},
+      {"pointspolygons_short_verts.rib",
+       "ERROR: RIE_CONSISTENCY -- PointsPolygons: verts length 7 does not match "
+       "nverts sum 8.",
+       /*expectedExit=*/1, /*expectsSphere=*/false},
+      {"pointsgeneralpolygons_short_nverts.rib",
+       "ERROR: RIE_CONSISTENCY -- PointsGeneralPolygons: nverts length 1 does not match nloops sum 2.",
+       /*expectedExit=*/1, /*expectsSphere=*/false},
+      {"pointsgeneralpolygons_long_verts.rib",
+       "ERROR: RIE_CONSISTENCY -- PointsGeneralPolygons: verts length 5 does not match nverts sum 4.",
+       /*expectedExit=*/1, /*expectsSphere=*/false},
       {"pointspolygons_negative_index.rib", "PointsPolygons: verts[2] = -1 is negative; ignoring."},
       {"pointsgeneralpolygons_zero_loops.rib", "PointsGeneralPolygons: nloops[0] = 0 is invalid; ignoring."},
       {"pointspolygons_short_p.rib", "RIE_CONSISTENCY -- Parameter \"P\": declared length 12, supplied length 9",
@@ -595,12 +602,14 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
     check(r.exitStatus == fixture.expectedExit,
           std::string(fixture.file) + ": exits " + std::to_string(fixture.expectedExit));
     check(r.output.find(fixture.expectedWarning) != std::string::npos,
-          std::string(fixture.file) + ": warns naming the rule and both values");
+          std::string(fixture.file) + ": reports the rule and both values");
 
+    GMANRunResult debugRun = runCapturingOutput(gman, rib, 10, /*debug=*/true);
+    const bool sphereParsed = debugRun.output.find("Keyword token: Sphere") != std::string::npos;
     if (fixture.expectsSphere) {
-      GMANRunResult debugRun = runCapturingOutput(gman, rib, 10, /*debug=*/true);
-      check(debugRun.output.find("Keyword token: Sphere") != std::string::npos,
-            std::string(fixture.file) + ": the Sphere after it still parses (no desync)");
+      check(sphereParsed, std::string(fixture.file) + ": the Sphere after it still parses (no desync)");
+    } else {
+      check(!sphereParsed, std::string(fixture.file) + ": the Sphere after it never parses (the file stops)");
     }
   }
 }

@@ -256,15 +256,23 @@ Not third-party.
 `uknot` one value short of the declared `nu + uorder`. The RI signature
 carries no knot-array length, so `parseNuPatch` checks it itself and
 calls nothing rather than handing `RiNuPatchV` a short array. Registered
-in `tests/nupatch_test.cpp`, asserting the warn-and-return fallback. A
-trailing `Sphere` follows the desync convention. Not third-party.
+in `tests/nupatch_test.cpp`, asserting the stop: `RIE_CONSISTENCY` at
+`RIE_ERROR`, exit 1, and a trailing `Sphere` that never parses. Not
+third-party.
+
+## malformed/nupatch_long_vknot.rib
+
+`vknot` one value past the declared `nv + vorder`, with a correct `uknot`:
+the long, v-side twin of `nupatch_short_uknot.rib`. `parseNuPatch` stops
+the file rather than handing `RiNuPatchV` a long array. Registered in
+`tests/nupatch_test.cpp`, asserting the same stop. A trailing `Sphere`
+follows the desync convention. Not third-party.
 
 ## malformed/nupatch_decreasing_knots.rib
 
 `uknot` is the declared length but not non-decreasing. Registered in
-`tests/nupatch_test.cpp`, asserting the same warn-and-`create()`
-fallback as `nupatch_short_uknot.rib`. A trailing `Sphere` follows the
-desync convention. Not third-party.
+`tests/nupatch_test.cpp`, asserting the warn-and-`create()` fallback. A
+trailing `Sphere` follows the desync convention. Not third-party.
 
 ## malformed/nupatch_order_exceeds_n.rib
 

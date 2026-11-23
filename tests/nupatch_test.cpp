@@ -379,10 +379,11 @@ void testTextureCoordinatesNoOp(std::string const& gman, std::string const& ribD
 
 // ---- Malformed requests (commit 1) ----
 
-GMANRunResult runCapturingOutput(std::string const& gman, std::string const& rib, int timeoutSeconds) {
+GMANRunResult runCapturingOutput(std::string const& gman, std::string const& rib, int timeoutSeconds,
+                                 bool debug = false) {
   GMANRunOptions options;
   options.timeoutSeconds = timeoutSeconds;
-  return runGman(gman, {rib}, options);
+  return debug ? runGman(gman, {"-d", rib}, options) : runGman(gman, {rib}, options);
 }
 
 void testMalformedFixtures(std::string const& gman, std::string const& malformedDir) {
@@ -392,7 +393,10 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
     bool stopsFile = false;
   };
   const Fixture fixtures[] = {
-      {"nupatch_short_uknot.rib", "NuPatch: uknot length 3 does not match nu + uorder = 4; ignoring."},
+      {"nupatch_short_uknot.rib", "ERROR: RIE_CONSISTENCY -- NuPatch: uknot length 3 does not match nu + uorder = 4.",
+       true},
+      {"nupatch_long_vknot.rib", "ERROR: RIE_CONSISTENCY -- NuPatch: vknot length 5 does not match nv + vorder = 4.",
+       true},
       {"nupatch_decreasing_knots.rib", "NuPatch: uknot[2]=0.25 is less than uknot[1]=0.5, not "
                                        "non-decreasing; ignoring."},
       {"nupatch_order_exceeds_n.rib", "NuPatch: nu=2 uorder=3 violates nu >= uorder >= 1; ignoring."},
@@ -422,12 +426,17 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
     check(!r.timedOut, std::string(fixture.file) + ": does not hang (10s bound)");
     check(!r.crashed, std::string(fixture.file) + ": does not crash");
     check(r.exitStatus == (fixture.stopsFile ? EXIT_FAILURE : 0),
-          std::string(fixture.file) + (fixture.stopsFile ? ": exits with failure (the short array stops the file)"
+          std::string(fixture.file) + (fixture.stopsFile ? ": exits with failure (the array stops the file)"
                                                          : ": exits 0 (degrade, don't abort)"));
     check(r.output.find(fixture.expectedWarning) != std::string::npos,
-          std::string(fixture.file) + (fixture.stopsFile ? ": stops with RIE_CONSISTENCY naming the parameter and "
+          std::string(fixture.file) + (fixture.stopsFile ? ": stops with RIE_CONSISTENCY naming the rule and "
                                                            "both lengths"
                                                          : ": warns naming the rule and its values"));
+    if (fixture.stopsFile) {
+      GMANRunResult debugRun = runCapturingOutput(gman, rib, 10, /*debug=*/true);
+      check(debugRun.output.find("Keyword token: Sphere") == std::string::npos,
+            std::string(fixture.file) + ": the Sphere after it never parses (the file stops)");
+    }
   }
 
   // nupatch_rule_order.rib breaks both a uknot and a vorder rule; the row
