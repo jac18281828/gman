@@ -24,6 +24,8 @@
  */
 
 #include <cctype>
+#include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstring> /* strcmp, memcpy -- libstdc++ does not pull these in
                       * transitively the way libc++ does */
@@ -58,6 +60,8 @@
 #include "gmanrendermanimpl.h"
 
 namespace {
+
+constexpr std::size_t RgbComponents = 3;
 
 namespace fs = std::filesystem;
 
@@ -158,6 +162,27 @@ RtInt colorSampleCount(GMANRenderMan& renderMan) {
     return impl->colorSampleCount();
   }
   return DefaultColorSamples;
+}
+
+void requireConsistentColorSamples(std::vector<RtFloat> const& nRGB, std::vector<RtFloat> const& RGBn) {
+  if (nRGB.size() != RGBn.size() || nRGB.size() % RgbComponents != 0) {
+    throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
+                    std::format("ColorSamples: nRGB holds {} values and RGBn holds {}; both must hold the same "
+                                "multiple of {}",
+                                nRGB.size(), RGBn.size(), RgbComponents)
+                        .c_str());
+  }
+  if (nRGB.empty()) {
+    throw GMANError(RIE_RANGE, RIE_ERROR, "ColorSamples: nRGB and RGBn are empty; at least one sample is required");
+  }
+}
+
+void requireFiniteColorSamples(std::vector<RtFloat> const& matrix, char const* name) {
+  for (std::size_t i = 0; i < matrix.size(); ++i) {
+    if (!std::isfinite(matrix[i])) {
+      throw GMANError(RIE_RANGE, RIE_ERROR, std::format("ColorSamples: {} element {} is not finite", name, i).c_str());
+    }
+  }
 }
 
 enum class LiteralKind { empty, string, number };
@@ -374,6 +399,10 @@ RtVoid GMANRIBParse::parseStream(RtVoid) {
     case GMANToken::RI_HIDER:
       debug("Keyword token: Hider");
       parseHider();
+      break;
+    case GMANToken::RI_COLOR_SAMPLES:
+      debug("Keyword token: ColorSamples");
+      parseColorSamples();
       break;
     case GMANToken::RI_CROP_WINDOW:
       debug("Keyword token: CropWindow");
@@ -861,6 +890,17 @@ RtVoid GMANRIBParse::parseHider(RtVoid) {
   auto [n, tokens, parms, counts] = parseParameterList("Hider");
 
   renderMan.RiHiderV(type.c_str(), n, tokens, parms);
+}
+
+RtVoid GMANRIBParse::parseColorSamples(RtVoid) {
+  std::vector<RtFloat> nRGB = parseArray().toRtFloatVector();
+  std::vector<RtFloat> RGBn = parseArray().toRtFloatVector();
+
+  requireConsistentColorSamples(nRGB, RGBn);
+  requireFiniteColorSamples(nRGB, "nRGB");
+  requireFiniteColorSamples(RGBn, "RGBn");
+
+  renderMan.RiColorSamples(static_cast<RtInt>(nRGB.size() / RgbComponents), nRGB.data(), RGBn.data());
 }
 
 RtVoid GMANRIBParse::parseCropWindow(RtVoid) {

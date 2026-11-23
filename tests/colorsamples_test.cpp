@@ -133,10 +133,23 @@ void testColorAndOpacityNeedThreeSamples() {
   renderMan.RiEnd();
 }
 
+struct ColorSamplesCall {
+  RtInt n = 0;
+  std::vector<RtFloat> nRGB;
+  std::vector<RtFloat> RGBn;
+};
+
 class RecordingRenderMan : public GMANRenderManImpl {
 public:
+  std::vector<ColorSamplesCall> colorSamples;
   std::vector<std::vector<RtFloat>> colors;
   std::vector<std::vector<RtFloat>> opacities;
+
+  RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override {
+    const auto length = 3 * static_cast<std::size_t>(n);
+    colorSamples.push_back({n, {nRGB, nRGB + length}, {RGBn, RGBn + length}});
+    GMANRenderManImpl::RiColorSamples(n, nRGB, RGBn);
+  }
 
   RtVoid RiColor(RtColor color) override { colors.emplace_back(color, color + colorSampleCount()); }
   RtVoid RiOpacity(RtColor opacity) override { opacities.emplace_back(opacity, opacity + colorSampleCount()); }
@@ -210,6 +223,57 @@ void testRendererWithoutColorSamplesReadsThree(std::string const& ribDir) {
   check(renderMan.spheres == 2, "fallback: each request is followed by its Sphere");
 }
 
+Thrown parseThrown(GMANRenderManImpl& renderMan, std::string const& rib) {
+  GMANRIBParse parser(renderMan, rib.c_str());
+  return thrownBy([&] { parser.parse(); });
+}
+
+void testRequestReachesTheRenderer(std::string const& ribDir) {
+  RecordingRenderMan renderMan;
+  const Thrown thrown = parseThrown(renderMan, ribDir + "/colorsamples_request.rib");
+
+  check(!thrown.threw, "request: the fixture parses to its end");
+  check(renderMan.colorSamples.size() == 1, "request: one ColorSamples call arrives");
+  if (renderMan.colorSamples.size() == 1) {
+    const ColorSamplesCall& call = renderMan.colorSamples[0];
+    check(call.n == 2, "request: the count is derived from the array lengths");
+    check(call.nRGB == run(6, 0), "request: nRGB arrives intact and in order");
+    check(call.RGBn == run(6, 6), "request: RGBn arrives intact and in order");
+  }
+  check(renderMan.colors.size() == 1, "request: one Color arrives");
+  if (renderMan.colors.size() == 1) {
+    check(renderMan.colors[0] == run(2, 12), "request: Color reads two samples after the request");
+  }
+}
+
+void testRequestAtOneSampleStopsAtColor(std::string const& ribDir) {
+  ColorSamplesRenderMan renderMan;
+  const Thrown thrown = parseThrown(renderMan, ribDir + "/colorsamples_refused.rib");
+
+  check(thrown.threw, "refused: the fixture stops the file");
+  check(thrown.code == RIE_UNIMPLEMENT, "refused: the stop is RIE_UNIMPLEMENT");
+  check(thrown.severity == RIE_ERROR, "refused: the stop is at RIE_ERROR");
+}
+
+void checkPairRejected(std::string const& ribDir, std::string const& name, RtInt code) {
+  const std::string label = "malformed " + name + ": ";
+  RecordingRenderMan renderMan;
+  const Thrown thrown = parseThrown(renderMan, ribDir + "/malformed/colorsamples_" + name + ".rib");
+
+  check(thrown.threw, label + "the file stops");
+  check(thrown.code == code, label + "the stop carries the expected class");
+  check(thrown.severity == RIE_ERROR, label + "the stop is at RIE_ERROR");
+  check(renderMan.colorSamples.empty(), label + "no ColorSamples call arrives");
+}
+
+void testMalformedPairsAreRejected(std::string const& ribDir) {
+  checkPairRejected(ribDir, "unequal", RIE_CONSISTENCY);
+  checkPairRejected(ribDir, "notriple", RIE_CONSISTENCY);
+  checkPairRejected(ribDir, "empty", RIE_RANGE);
+  checkPairRejected(ribDir, "nan", RIE_RANGE);
+  checkPairRejected(ribDir, "infinite", RIE_RANGE);
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -225,6 +289,9 @@ int main(int argc, char* argv[]) {
     testParserReadsAtColorSampleCount(ribDir, count);
   }
   testRendererWithoutColorSamplesReadsThree(ribDir);
+  testRequestReachesTheRenderer(ribDir);
+  testRequestAtOneSampleStopsAtColor(ribDir);
+  testMalformedPairsAreRejected(ribDir);
 
   return checkSummary("ColorSamples is honored by the parser and refused by the renderer where it cannot shade");
 }

@@ -236,6 +236,7 @@ private:
   RtVoid parseDepthOfField(RtVoid);
   RtVoid parseShutter(RtVoid);
   RtVoid parseHider(RtVoid);
+  RtVoid parseColorSamples(RtVoid);
   RtVoid parseCropWindow(RtVoid);
   RtVoid parseScreenWindow(RtVoid);
   RtVoid parseClipping(RtVoid);

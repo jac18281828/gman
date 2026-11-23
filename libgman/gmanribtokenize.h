@@ -152,6 +152,7 @@ public:
     RI_IF_END,
     RI_PIXEL_FILTER,
     RI_QUANTIZE,
+    RI_COLOR_SAMPLES,
 
   } TokenType;
 

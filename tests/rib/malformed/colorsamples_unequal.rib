@@ -1,0 +1,13 @@
+# ColorSamples with nRGB of 3 values and RGBn of 6: the arrays disagree in length.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention." Not third-party.
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+ColorSamples [ 1 0 0 ] [ 1 0 0 0 1 0 ]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd
