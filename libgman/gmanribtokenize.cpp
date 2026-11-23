@@ -29,6 +29,7 @@
 #include <istream>
 #include <limits>
 #include <string>
+#include <type_traits>
 
 #include <math.h>
 #include <string.h>
@@ -436,7 +437,12 @@ const GMANToken GMANRIBTokenize::parseNum(std::istream& ribFile) {
     return GMANToken(static_cast<RtInt>(longIntValue));
   } else {
     char* floatEndPtr;
-    RtFloat floatValue = strtof(buffer.c_str(), &floatEndPtr);
+    RtFloat floatValue;
+    if constexpr (std::is_same_v<RtFloat, float>) {
+      floatValue = strtof(buffer.c_str(), &floatEndPtr);
+    } else {
+      floatValue = strtod(buffer.c_str(), &floatEndPtr);
+    }
     if (floatEndPtr != buffer.c_str()) {
       return GMANToken(floatValue);
     } else {
