@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <numbers>
 #include <optional>
 #include <string>
 
@@ -38,7 +39,6 @@ constexpr unsigned char kTexelBlue = 238;
 
 constexpr uint32_t kInteriorHalfWidth = 9;
 
-constexpr double kHalfSqrt = 0.70710678118654752440;
 constexpr double kDirectTolerance = 0.01;
 
 constexpr double kWallZ = -4.0;
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
 
   Direction const bent = bentNormal();
 
-  Direction const lightDirection{kHalfSqrt, 0.0, -kHalfSqrt};
+  Direction const lightDirection{std::numbers::sqrt2 / 2.0, 0.0, -std::numbers::sqrt2 / 2.0};
   double const directPredicted = dot(bent, lightDirection) / dot(kCardNormal, lightDirection);
   checkRatio(cardMean(gman, ribDir, "normalmap_card"), cardMean(gman, ribDir, "normalmap_card_nomap"), directPredicted,
              kDirectTolerance, "light sample");

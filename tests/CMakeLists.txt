@@ -1956,10 +1956,7 @@ set_tests_properties(shaderalbedo PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# paintedplastic's "normalname" bends its shading normal by a tangent-space
-# map in computeCi and in bsdf: the decode, the green convention, mirrored
-# frames and the degenerate fallback. Its own working directory, since it
-# writes its maps relative to cwd.
+# paintedplastic's "normalname" bends its shading normal in computeCi and bsdf.
 add_executable(gman_normalmap normalmap_test.cpp)
 target_link_libraries(gman_normalmap PRIVATE gman_core TIFF::TIFF)
 add_dependencies(gman_normalmap gman_paintedplastic)
@@ -3452,10 +3449,7 @@ if(GMAN_BUILD_PATHTRACER)
     TIMEOUT 30)
 endif()
 
-# `gman -r gmanpathtracer` renders a paintedplastic card with and without a
-# normal map: lit by a distant light, the mapped card's mean over the card
-# moves by the bent normal's cosine, and lit by a matte wall alone, by the
-# bounce light that cosine weights. Registered only when the plugin builds.
+# `gman -r gmanpathtracer` weights light and BSDF samples by a mapped card's bent normal.
 if(GMAN_BUILD_PATHTRACER)
   add_executable(gman_normalmappathtracer normalmappathtracer_test.cpp)
   target_link_libraries(gman_normalmappathtracer PRIVATE gman_core TIFF::TIFF)
