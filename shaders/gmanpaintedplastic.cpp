@@ -138,11 +138,7 @@ GMANVector paintedplastic::shadingNormal(GMANSurfaceEnv const& se) const {
   RtFloat const alongBitangent = normalgreendown ? alongGreen : -alongGreen;
 
   GMANVector bent = *tangent * alongTangent + *bitangent * alongBitangent + n * alongNormal;
-  RtFloat const length = bent.magnitude();
-  if (!(length > (RtFloat)0.0)) {
-    return se.N;
-  }
-  return bent / length;
+  return bent.normalize();
 }
 
 RtVoid paintedplastic::illuminance(RtInt /*i*/, GMANVector /*L*/, GMANColor /*Cl*/, GMANColor /*Ol*/) {
