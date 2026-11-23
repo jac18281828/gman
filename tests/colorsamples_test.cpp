@@ -31,6 +31,7 @@
 #include "gmandefaults.h"
 #include "gmanerror.h"
 #include "gmanoptions.h"
+#include "gmanrenderman.h"
 #include "gmanrendermanimpl.h"
 #include "gmanribparse.h"
 #include "ri.h"
@@ -223,7 +224,21 @@ void testRendererWithoutColorSamplesReadsThree(std::string const& ribDir) {
   check(renderMan.spheres == 2, "fallback: each request is followed by its Sphere");
 }
 
-Thrown parseThrown(GMANRenderManImpl& renderMan, std::string const& rib) {
+class WritebackReader : public GMANASCII {
+public:
+  std::vector<ColorSamplesCall> colorSamples;
+  int spheres = 0;
+
+  RtVoid RiBegin(RtToken) override {}
+  RtVoid RiEnd() override {}
+  RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override {
+    const auto length = 3 * static_cast<std::size_t>(n);
+    colorSamples.push_back({n, {nRGB, nRGB + length}, {RGBn, RGBn + length}});
+  }
+  RtVoid RiSphereV(RtFloat, RtFloat, RtFloat, RtFloat, RtInt, RtToken[], RtPointer[]) override { ++spheres; }
+};
+
+Thrown parseThrown(GMANRenderMan& renderMan, std::string const& rib) {
   GMANRIBParse parser(renderMan, rib.c_str());
   return thrownBy([&] { parser.parse(); });
 }
@@ -274,6 +289,36 @@ void testMalformedPairsAreRejected(std::string const& ribDir) {
   checkPairRejected(ribDir, "infinite", RIE_RANGE);
 }
 
+void testWrittenColorSamplesReadBack() {
+  const std::string rib = "colorsamples_writeback.rib";
+  constexpr RtInt count = 4;
+  std::vector<RtFloat> nRGB = run(3 * count, 0);
+  std::vector<RtFloat> RGBn = run(3 * count, 3 * count);
+
+  {
+    GMANASCII writer;
+    writer.RiBegin(rib.c_str());
+    writer.RiColorSamples(count, nRGB.data(), RGBn.data());
+    writer.RiWorldBegin();
+    writer.RiSphereV(1, -1, 1, 360, 0, nullptr, nullptr);
+    writer.RiWorldEnd();
+    writer.RiEnd();
+  }
+
+  WritebackReader reader;
+  const Thrown thrown = parseThrown(reader, rib);
+
+  check(!thrown.threw, "write-back: the written file parses to its end");
+  check(reader.colorSamples.size() == 1, "write-back: one ColorSamples call arrives");
+  if (reader.colorSamples.size() == 1) {
+    const ColorSamplesCall& call = reader.colorSamples[0];
+    check(call.n == count, "write-back: the count survives");
+    check(call.nRGB == nRGB, "write-back: nRGB survives in order");
+    check(call.RGBn == RGBn, "write-back: RGBn survives in order");
+  }
+  check(reader.spheres == 1, "write-back: the Sphere after the request is read");
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -292,6 +337,7 @@ int main(int argc, char* argv[]) {
   testRequestReachesTheRenderer(ribDir);
   testRequestAtOneSampleStopsAtColor(ribDir);
   testMalformedPairsAreRejected(ribDir);
+  testWrittenColorSamplesReadBack();
 
   return checkSummary("ColorSamples is honored by the parser and refused by the renderer where it cannot shade");
 }
