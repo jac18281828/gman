@@ -172,6 +172,9 @@ void requireConsistentColorSamples(std::vector<RtFloat> const& nRGB, std::vector
                                 nRGB.size(), RGBn.size(), RgbComponents)
                         .c_str());
   }
+}
+
+void requireOneColorSample(std::vector<RtFloat> const& nRGB) {
   if (nRGB.empty()) {
     throw GMANError(RIE_RANGE, RIE_ERROR, "ColorSamples: nRGB and RGBn are empty; at least one sample is required");
   }
@@ -897,6 +900,7 @@ RtVoid GMANRIBParse::parseColorSamples(RtVoid) {
   std::vector<RtFloat> RGBn = parseArray().toRtFloatVector();
 
   requireConsistentColorSamples(nRGB, RGBn);
+  requireOneColorSample(nRGB);
   requireFiniteColorSamples(nRGB, "nRGB");
   requireFiniteColorSamples(RGBn, "RGBn");
 
