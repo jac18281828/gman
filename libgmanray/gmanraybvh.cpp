@@ -101,7 +101,7 @@ RtFloat surfaceArea(GMANBBox const& box) {
   RtFloat const dx = hi.getX() - lo.getX();
   RtFloat const dy = hi.getY() - lo.getY();
   RtFloat const dz = hi.getZ() - lo.getZ();
-  return (RtFloat)2.0 * (dx * dy + dy * dz + dz * dx);
+  return RtFloat(2.0) * (dx * dy + dz * (dx + dy));
 }
 
 GMANBBox unionOf(GMANBBox const& a, GMANBBox const& b) {
