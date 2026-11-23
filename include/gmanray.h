@@ -73,10 +73,10 @@ public:
  * surface normal and parameters, the camera-space partial derivatives of
  * the hit point along them (dPdu, dPdv: exact for the u and v the hit
  * reports, unnormalized, zero where u is undefined or the parameterization
- * is singular), the unit camera-space normal a shader sees as N (shadingNormal,
- * empty when it equals normal) and the primitive hit. intersect returns bool and writes this
- * record only on a hit, so a default-constructed GMANHit -- primitive null --
- * is a miss.
+ * is singular), the unit camera-space normal a shader sees as N
+ * (shadingNormal, empty when it equals normal) and the primitive hit.
+ * intersect returns bool and writes this record only on a hit, so a
+ * default-constructed GMANHit -- primitive null -- is a miss.
  */
 struct GMANHit {
   RtFloat t = 0.0;

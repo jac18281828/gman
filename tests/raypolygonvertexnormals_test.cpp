@@ -461,6 +461,22 @@ void testCancellingNormalsLeaveNoShadingNormal() {
   }
 }
 
+void testSingularTransformShadesFlat() {
+  GMANMatrix4 matrix;
+  matrix.scale(1.0f, 1.0f, 0.0f);
+  GMANTransform transform = makeTransform(matrix);
+  Built built;
+  std::string const log = capturedWarnings("raypolygonvertexnormals_singular.log", [&] {
+    built = buildMesh(square(), vertexNormals(tiltedNormals()), transform);
+  });
+  std::optional<GMANHit> const hit = castAt(built, kInteriorXFirst, kInteriorYFirst);
+  check(hit.has_value(), "singular transform: the ray hits");
+  if (hit) {
+    check(!hit->shadingNormal.has_value(), "singular transform: the hit carries no shading normal");
+  }
+  check(occurrences(log, "GMAN WARNING:") == 0, "singular transform: no warning");
+}
+
 } // namespace
 
 int main() {
@@ -472,6 +488,7 @@ int main() {
   testUniformNormalOnTetrahedronShadesFlat();
   testWarnings();
   testCancellingNormalsLeaveNoShadingNormal();
+  testSingularTransformShadesFlat();
 
   return checkSummary("a polygon's vertex normals interpolate across each hit and orient into the shader's hemisphere");
 }

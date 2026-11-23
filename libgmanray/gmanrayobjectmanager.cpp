@@ -109,7 +109,6 @@ std::vector<GMANVector> cameraSpacePointNormals(GMANParameterList const& paramet
 // holes, each a run of indices into the mesh's shared point pool. Rejects a
 // degenerate outer loop exactly as the z-buffer's buildFace does; a hole
 // needs no texCoords or normals, so only the outer loop's are gathered.
-// pointNormals is empty for a request with no usable "N".
 bool buildMeshFace(std::vector<std::vector<RtInt>> const& loopVerts, RtFloat const* p,
                    std::vector<std::pair<RtFloat, RtFloat>> const& pointTexCoords,
                    std::vector<GMANVector> const& pointNormals, GMANTransform* t,
