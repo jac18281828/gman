@@ -161,23 +161,21 @@ public:
   RtVoid RiOpacity(RtColor opacity) override { opacities.emplace_back(opacity, opacity + colorSampleCount()); }
 };
 
-class FallbackRenderMan : public GMANASCII {
+class FilelessASCII : public GMANASCII {
+public:
+  RtVoid RiBegin(RtToken) override {}
+  RtVoid RiEnd() override {}
+};
+
+class FallbackRenderMan : public FilelessASCII {
 public:
   std::vector<RtFloat> color;
   std::vector<RtFloat> opacity;
   int spheres = 0;
 
-  RtVoid RiBegin(RtToken) override {}
-  RtVoid RiEnd() override {}
   RtVoid RiColor(RtColor value) override { color.assign(value, value + DefaultColorSamples); }
   RtVoid RiOpacity(RtColor value) override { opacity.assign(value, value + DefaultColorSamples); }
   RtVoid RiSphereV(RtFloat, RtFloat, RtFloat, RtFloat, RtInt, RtToken[], RtPointer[]) override { ++spheres; }
-};
-
-class FilelessASCII : public GMANASCII {
-public:
-  RtVoid RiBegin(RtToken) override {}
-  RtVoid RiEnd() override {}
 };
 
 void checkCountThroughBase(GMANRenderMan& renderMan, std::string const& label) {
@@ -260,28 +258,24 @@ void testRendererWithoutColorSamplesReadsThree(std::string const& ribDir) {
   check(renderMan.spheres == 2, "inherited count: each request is followed by its Sphere");
 }
 
-class WritebackReader : public GMANASCII {
+class WritebackReader : public FilelessASCII {
 public:
   std::vector<ColorSamplesCall> colorSamples;
   int spheres = 0;
 
-  RtVoid RiBegin(RtToken) override {}
-  RtVoid RiEnd() override {}
   RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override {
     colorSamples.push_back(colorSamplesCall(n, nRGB, RGBn));
   }
   RtVoid RiSphereV(RtFloat, RtFloat, RtFloat, RtFloat, RtInt, RtToken[], RtPointer[]) override { ++spheres; }
 };
 
-class ColorCountReader : public GMANASCII {
+class ColorCountReader : public FilelessASCII {
 public:
   std::vector<ColorSamplesCall> colorSamples;
   std::vector<std::vector<RtFloat>> colors;
   std::vector<std::vector<RtFloat>> opacities;
   int spheres = 0;
 
-  RtVoid RiBegin(RtToken) override {}
-  RtVoid RiEnd() override {}
   RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override {
     colorSamples.push_back(colorSamplesCall(n, nRGB, RGBn));
     ColorSamples(n);
