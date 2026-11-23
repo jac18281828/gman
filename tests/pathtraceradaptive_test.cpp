@@ -387,7 +387,7 @@ void checkSetup(FloorScene& flat, FloorScene& noisy) {
 
 void checkOffIsToday(FloorScene& flat, FloorScene& noisy) {
   RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
-  for (RtFloat const variance : {0.0f, -1.0f, nan}) {
+  for (RtFloat const variance : {RtFloat(0.0), RtFloat(-1.0), nan}) {
     std::string const label = "A: a PixelVariance of " + std::to_string(variance) + " ";
     Frame const flatFrame = flat.render(kMaximum, variance);
     Frame const noisyFrame = noisy.render(kMaximum, variance);

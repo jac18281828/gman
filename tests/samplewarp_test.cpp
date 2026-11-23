@@ -227,7 +227,8 @@ void checkMonteCarloIdentities() {
 
     gman::Sample2D const us = independentSample(s, 22u, 23u);
     GMANVector const sp = gman::uniformSphere(us.u1, us.u2);
-    sphereTerms[s] = static_cast<double>(std::max(0.0f, sp.getZ())) / static_cast<double>(gman::uniformSpherePdf());
+    sphereTerms[s] =
+        static_cast<double>(std::max(RtFloat(0.0), sp.getZ())) / static_cast<double>(gman::uniformSpherePdf());
 
     gman::Sample2D const uc = independentSample(s, 24u, 25u);
     GMANVector const co = gman::uniformCone(uc.u1, uc.u2, kConeC);
