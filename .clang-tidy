@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
 # Security plus high-signal defect checks, each firing on a real bug, not a
-# style preference, and one hygiene check, misc-include-cleaner: a missing
+# style preference, and two hygiene checks. misc-include-cleaner: a missing
 # direct include is a latent build break, since a header that drops a
-# transitive include stops an unrelated file compiling. No modernize-*,
-# readability-* or cppcoreguidelines-*: their volume on this tree would bury
-# the findings that are bugs. tidy-check runs this file over every production
-# source and header; tests/ goes unchecked.
+# transitive include stops an unrelated file compiling.
+# modernize-use-std-numbers: one wrong hand-typed constant is a wrong
+# calculation. No other modernize-*, readability-* or cppcoreguidelines-*:
+# their volume on this tree would bury the findings that are bugs. tidy-check
+# runs this file over every production source and header; tests/ goes
+# unchecked.
 Checks: >
   -*,
   bugprone-unsafe-functions,
@@ -18,7 +20,8 @@ Checks: >
   clang-analyzer-core.*,
   clang-analyzer-cplusplus.*,
   clang-analyzer-unix.*,
-  misc-include-cleaner
+  misc-include-cleaner,
+  modernize-use-std-numbers
 # Every finding fails the job; that red is what the operator watches.
 WarningsAsErrors: '*'
 # Directory-name match only -- a static file cannot anchor to the checkout
