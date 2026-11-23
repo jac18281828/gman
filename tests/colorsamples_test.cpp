@@ -86,7 +86,7 @@ void testCountBelowOneIsRejected() {
   renderMan.RiEnd();
 }
 
-void setColorSamples(GMANRenderManImpl& renderMan, RtInt count) {
+void setColorSamples(GMANRenderMan& renderMan, RtInt count) {
   std::vector<RtFloat> matrix(3 * static_cast<std::size_t>(count), 0.0f);
   renderMan.RiColorSamples(count, matrix.data(), matrix.data());
 }
@@ -173,6 +173,35 @@ public:
   RtVoid RiOpacity(RtColor value) override { opacity.assign(value, value + DefaultColorSamples); }
   RtVoid RiSphereV(RtFloat, RtFloat, RtFloat, RtFloat, RtInt, RtToken[], RtPointer[]) override { ++spheres; }
 };
+
+class FilelessASCII : public GMANASCII {
+public:
+  RtVoid RiBegin(RtToken) override {}
+  RtVoid RiEnd() override {}
+};
+
+void checkCountThroughBase(GMANRenderMan& renderMan, std::string const& label) {
+  renderMan.RiBegin("gmanzbuffer");
+  check(renderMan.colorSampleCount() == DefaultColorSamples, label + "the count starts at three");
+
+  setColorSamples(renderMan, 5);
+  check(renderMan.colorSampleCount() == 5, label + "ColorSamples 5 sets the count");
+
+  renderMan.RiFrameBegin(1);
+  setColorSamples(renderMan, 2);
+  check(renderMan.colorSampleCount() == 2, label + "ColorSamples 2 inside a frame sets the count");
+  renderMan.RiFrameEnd();
+  check(renderMan.colorSampleCount() == 5, label + "the frame's end restores the count");
+
+  renderMan.RiEnd();
+}
+
+void testCountAnswersThroughTheBase() {
+  FilelessASCII ascii;
+  checkCountThroughBase(ascii, "GMANASCII: ");
+  ColorSamplesRenderMan impl;
+  checkCountThroughBase(impl, "GMANRenderManImpl: ");
+}
 
 std::vector<RtFloat> run(RtInt count, int firstStep) {
   std::vector<RtFloat> values;
@@ -358,6 +387,7 @@ int main(int argc, char* argv[]) {
 
   testCountBelowOneIsRejected();
   testColorAndOpacityNeedThreeSamples();
+  testCountAnswersThroughTheBase();
   for (const RtInt count : {1, 2, 5}) {
     testParserReadsAtColorSampleCount(ribDir, count);
   }

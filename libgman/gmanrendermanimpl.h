@@ -140,7 +140,7 @@ public:
   /* ADDITIONAL OPTIONS */
   RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) override;
   RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override;
-  RtInt colorSampleCount();
+  RtInt colorSampleCount() const override;
   RtVoid RiRelativeDetail(RtFloat relativedetail) override;
   RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
 

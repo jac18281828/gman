@@ -186,6 +186,7 @@ public:
   GMANGraphicState();
 
   GMANOptions& getOptions();
+  GMANOptions const& getOptions() const;
   GMANAttributes& getAttributes();
   const GMANTransform& getTransform() const;
 

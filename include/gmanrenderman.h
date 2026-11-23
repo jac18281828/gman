@@ -226,4 +226,10 @@ public:
 
   /* ERROR HANDLER */
   virtual RtVoid RiErrorHandler(RtErrorHandler handler) = 0;
+
+  // The number of samples in a Color or Opacity: what the last ColorSamples
+  // request set, or three before one. The RIB parser sizes every Color and
+  // Opacity read by it. The default answers colorNComps; a renderer that
+  // keeps the count elsewhere overrides it to answer from there.
+  virtual RtInt colorSampleCount() const;
 };

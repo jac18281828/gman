@@ -227,6 +227,7 @@ GMANGraphicState::GMANGraphicState() : mm(std::vector<RtFloat>{0}) {
   transformStack.push(GMANTransform());
 }
 GMANOptions& GMANGraphicState::getOptions() { return optionsStack.top(); }
+GMANOptions const& GMANGraphicState::getOptions() const { return optionsStack.top(); }
 GMANAttributes& GMANGraphicState::getAttributes() { return attributesStack.top(); }
 RtVoid GMANGraphicState::enterMode(CurrentState mode) {
   switch (mode) {

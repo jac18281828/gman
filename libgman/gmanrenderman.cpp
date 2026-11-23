@@ -85,6 +85,7 @@ RtObjectHandle GMANRenderMan::ObjectBegin(RtVoid) {
 // ******* ******* ******* ADDITIONAL OPTIONS ******* ******* *******
 // ******************************************************************
 RtVoid GMANRenderMan::ColorSamples(RtInt n) { colorNComps = n; }
+RtInt GMANRenderMan::colorSampleCount() const { return colorNComps; }
 
 // ******************************************************************
 // ******* ******* ******* SHADING ATTRIBUTES ******* ******* *******
