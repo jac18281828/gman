@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "gman/export.h"
+#include "gmanbsdf.h"
 #include "gmancolor.h"
 #include "gmanerror.h"
 #include "gmanlightsourcemgr.h"
@@ -212,7 +213,9 @@ struct GMAN_EXPORT GMANSurfaceEnv {
   // specular() sum every currently-active light's contribution at P, so a
   // shader's own body stays the couple of lines matte/plastic/metal are
   // in the RISpec. Blinn-Phong for specular(), the common approximation
-  // to the RISpec's own (more expensive) integral. ----
+  // to the RISpec's own (more expensive) integral. Each light is scaled by
+  // gman::bumpShadowing against N, so a normal bent toward a light beyond
+  // N's horizon receives none of it. ----
   // Sums the ambient lights, then adds indirect when it is set. A shader
   // weights the whole term by Ka; a physically consistent scene sets
   // Ka = Kd.
@@ -248,8 +251,12 @@ struct GMAN_EXPORT GMANSurfaceEnv {
       l.normalize();
       RtFloat nDotL = nn.dot(l);
       if (nDotL > 0.0) {
+        RtFloat const bump = gman::bumpShadowing(N, nn, l);
+        if (!(bump > 0.0)) {
+          continue;
+        }
         cl = occludedContribution(*lights[i], l, distance, cl);
-        cl.scale(nDotL);
+        cl.scale(nDotL * bump);
         sum += cl;
       }
     }
@@ -275,9 +282,13 @@ struct GMAN_EXPORT GMANSurfaceEnv {
       h.normalize();
       RtFloat nDotH = nn.dot(h);
       if (nDotH > 0.0) {
+        RtFloat const bump = gman::bumpShadowing(N, nn, l);
+        if (!(bump > 0.0)) {
+          continue;
+        }
         cl = occludedContribution(*lights[i], l, distance, cl);
         RtFloat exponent = (roughness > RI_EPSILON) ? (1.0 / roughness) : (1.0 / RI_EPSILON);
-        cl.scale((RtFloat)pow(nDotH, exponent));
+        cl.scale((RtFloat)pow(nDotH, exponent) * bump);
         sum += cl;
       }
     }

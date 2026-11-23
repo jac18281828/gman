@@ -422,7 +422,7 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
     return kBlack;
   }
 
-  GMANColor const f = closure.eval(wo, es.wi);
+  GMANColor const f = scaleColor(closure.eval(wo, es.wi), gman::bumpShadowing(point.N, closure.shadingNormal(), es.wi));
   if (colorBlack(f)) {
     return kBlack;
   }
@@ -471,7 +471,8 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
   }
 
   RtFloat const cosI = std::fabs(closure.shadingNormal().dot(sample.wi));
-  beta = gman::multiplyChannels(beta, scaleColor(sample.f, cosI / sample.pdf));
+  GMANColor const f = scaleColor(sample.f, gman::bumpShadowing(point.N, closure.shadingNormal(), sample.wi));
+  beta = gman::multiplyChannels(beta, scaleColor(f, cosI / sample.pdf));
   if (!colorFinite(beta)) {
     finite = false;
     return std::nullopt;

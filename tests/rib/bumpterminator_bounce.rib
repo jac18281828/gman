@@ -1,0 +1,20 @@
+## A paintedplastic card facing the camera, its "normalname" map tilting the shading normal toward a
+## wall it cannot see directly, lit by bounce light alone (tests/bumpterminator_test.cpp). Not third-party.
+Display "bumpterminator_bounce.tif" "file" "rgba"
+Format 48 48 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [2] "from" [0 0 0] "to" [1 0 0]
+Surface "matte" "Ka" [0] "Kd" [1]
+Polygon "P" [3 -10 0.25  3 10 0.25  3 10 2  3 -10 2]
+Surface "paintedplastic" "Ka" [0] "Kd" [1] "Ks" [0]
+	"string normalname" ["bumpterminator_tilt.tif"]
+Polygon "P" [-1 -1 0  -1 1 0  1 1 0  1 -1 0]
+	"st" [0 0  0 1  1 1  1 0]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+WorldEnd

@@ -181,4 +181,16 @@ private:
   std::size_t count = 0;
 };
 
+// The factor that scales the response a bent shading normal gives light or
+// a draw toward w: 1 across most of the lit side, falling continuously to 0
+// as w passes below baseNormal's horizon, the smooth surface's own
+// terminator (Chiang, Li and Burley, "Taming the Shadow Terminator",
+// SIGGRAPH 2019). baseNormal is the surface's interpolated normal and
+// shadingNormal the bent one; neither needs unit length, nor w. A
+// shadingNormal parallel to baseNormal, either way round, returns exactly
+// 1, as does a zero-length normal or a w perpendicular to shadingNormal;
+// a baseNormal perpendicular to shadingNormal returns exactly 0. w may lie
+// on either side of the surface.
+GMAN_EXPORT RtFloat bumpShadowing(GMANVector const& baseNormal, GMANVector const& shadingNormal, GMANVector const& w);
+
 } // namespace gman

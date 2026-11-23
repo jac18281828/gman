@@ -66,6 +66,17 @@ Direction bentNormal() {
 
 Direction const kCardNormal{0.0, 0.0, -1.0};
 
+double bumpTerm(Direction const& base, Direction const& bent, Direction const& toLight) {
+  double const g = dot(base, toLight) / (dot(bent, toLight) * dot(base, bent));
+  if (g <= 0.0) {
+    return 0.0;
+  }
+  if (g >= 1.0) {
+    return 1.0;
+  }
+  return -g * g * g + g * g + g;
+}
+
 bool writeTiltMap(std::string const& path) {
   TIFF* tif = TIFFOpen(path.c_str(), "w");
   if (tif == nullptr) {
@@ -106,7 +117,7 @@ std::optional<double> cardMean(std::string const& gman, std::string const& ribDi
   return sum / ((last - first) * (last - first));
 }
 
-double wallCosineIntegral(Direction const& n) {
+double wallCosineIntegral(Direction const& n, Direction const& base) {
   double const cellWidth = (kWallXMax - kWallXMin) / kWallGrid;
   double const cellHeight = 2.0 * kWallHalfHeight / kWallGrid;
   double sum = 0.0;
@@ -116,7 +127,7 @@ double wallCosineIntegral(Direction const& n) {
       double const distance = std::sqrt(dot(point, point));
       Direction const toPoint{point.x / distance, point.y / distance, point.z / distance};
       double const solidAngle = std::fabs(kWallZ) / distance * cellWidth * cellHeight / (distance * distance);
-      sum += std::fmax(0.0, dot(n, toPoint)) * solidAngle;
+      sum += std::fmax(0.0, dot(n, toPoint)) * bumpTerm(base, n, toPoint) * solidAngle;
     }
   }
   return sum;
@@ -152,11 +163,12 @@ int main(int argc, char* argv[]) {
   Direction const bent = bentNormal();
 
   Direction const lightDirection{std::numbers::sqrt2 / 2.0, 0.0, -std::numbers::sqrt2 / 2.0};
-  double const directPredicted = dot(bent, lightDirection) / dot(kCardNormal, lightDirection);
+  double const directPredicted =
+      dot(bent, lightDirection) * bumpTerm(kCardNormal, bent, lightDirection) / dot(kCardNormal, lightDirection);
   checkRatio(cardMean(gman, ribDir, "normalmap_card"), cardMean(gman, ribDir, "normalmap_card_nomap"), directPredicted,
              kDirectTolerance, "light sample");
 
-  double const bouncePredicted = wallCosineIntegral(bent) / wallCosineIntegral(kCardNormal);
+  double const bouncePredicted = wallCosineIntegral(bent, kCardNormal) / wallCosineIntegral(kCardNormal, kCardNormal);
   checkRatio(cardMean(gman, ribDir, "normalmap_bounce"), cardMean(gman, ribDir, "normalmap_bounce_nomap"),
              bouncePredicted, kBounceTolerance, "BSDF bounce");
 

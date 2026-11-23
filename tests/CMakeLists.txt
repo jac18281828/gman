@@ -1638,6 +1638,45 @@ if(GMAN_BUILD_RAYTRACER)
     TIMEOUT 30)
 endif()
 
+# A normal map's light fades to zero at the smooth terminator under both renderers, and the lit face keeps its light.
+add_executable(gman_bumpterminator bumpterminator_test.cpp)
+target_link_libraries(gman_bumpterminator PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_bumpterminator gman_paintedplastic gman_matte)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_bumpterminator gman_raytracer)
+
+  set(GMAN_BUMPTERMINATOR_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/bumpterminator-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_BUMPTERMINATOR_RAYTRACER_WORKDIR}")
+
+  add_test(NAME bumpterminator_raytracer
+    COMMAND gman_bumpterminator $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                gmanraytracer
+    WORKING_DIRECTORY "${GMAN_BUMPTERMINATOR_RAYTRACER_WORKDIR}")
+  set_tests_properties(bumpterminator_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_bumpterminator gman_pathtracer)
+
+  set(GMAN_BUMPTERMINATOR_PATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/bumpterminator-pathtracer-run")
+  file(MAKE_DIRECTORY "${GMAN_BUMPTERMINATOR_PATHTRACER_WORKDIR}")
+
+  add_test(NAME bumpterminator_pathtracer
+    COMMAND gman_bumpterminator $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                gmanpathtracer
+    WORKING_DIRECTORY "${GMAN_BUMPTERMINATOR_PATHTRACER_WORKDIR}")
+  set_tests_properties(bumpterminator_pathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 120)
+endif()
+
 # s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
 # (General)Polygon: RiTextureCoordinates and the "s"/"t"/"st" primvars, over
 # tests/rib/texcoords/*.rib -- each fixture copies tests/rib/texture.rib's

@@ -629,6 +629,28 @@ card shows is a BSDF-sampled bounce off the wall. Not third-party.
 `normalmap_bounce.rib`'s scene with the card naming no normal map. Not
 third-party.
 
+## bumpterminator.rib
+
+A half-prism of five vertical quads, open, its vertices on a circle with radial
+vertex normals, under one distant light that grazes the face nearest the camera
+(`tests/bumpterminator_test.cpp`). The surface is `paintedplastic` naming a
+normal map, written by the test, whose texel tilts the shading normal toward +x
+along `dPdu`. The shading normal faces the light across a band of that face
+where the interpolated normal does not. Not third-party.
+
+## bumpterminator_nomap.rib
+
+`bumpterminator.rib`'s scene with the prism naming no normal map. Not
+third-party.
+
+## bumpterminator_bounce.rib
+
+A `paintedplastic` card facing the camera, its normal map tilting the shading
+normal toward a wall behind the card's plane, with a distant light travelling
+along +x parallel to the card (`tests/bumpterminator_test.cpp`). The wall lies
+outside the frame; no light reaches the card directly, so every ray of light
+the card shows arrives by a BSDF-sampled bounce off the wall. Not third-party.
+
 ## corpus/
 
 Real RIB from third-party software, fetched once and checked in so tests are

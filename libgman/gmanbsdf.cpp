@@ -24,6 +24,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <numbers>
 #include <utility>
 
@@ -495,6 +496,69 @@ RtFloat BSDF::totalSelectionWeight() const {
     total += selectionWeight(i);
   }
   return total;
+}
+
+namespace {
+
+constexpr double kParallelNormals = 1.0 - 1.0e-6;
+
+struct UnitVector {
+  double x;
+  double y;
+  double z;
+  bool valid;
+};
+
+UnitVector unitOf(GMANVector const& v) {
+  double const x = v.getX();
+  double const y = v.getY();
+  double const z = v.getZ();
+  double const length = std::sqrt(x * x + y * y + z * z);
+  if (!(length >= std::numeric_limits<double>::min())) {
+    return {0.0, 0.0, 0.0, false};
+  }
+  return {x / length, y / length, z / length, true};
+}
+
+double dotOf(UnitVector const& a, GMANVector const& b) {
+  return a.x * static_cast<double>(b.getX()) + a.y * static_cast<double>(b.getY()) +
+         a.z * static_cast<double>(b.getZ());
+}
+
+double dotOf(UnitVector const& a, UnitVector const& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+} // namespace
+
+RtFloat bumpShadowing(GMANVector const& baseNormal, GMANVector const& shadingNormal, GMANVector const& w) {
+  UnitVector const base = unitOf(baseNormal);
+  UnitVector const shading = unitOf(shadingNormal);
+  if (!base.valid || !shading.valid) {
+    return 1.0f;
+  }
+
+  double const baseDotShading = dotOf(base, shading);
+  double const turn = baseDotShading < 0.0 ? -1.0 : 1.0;
+  double const alignment = turn * baseDotShading;
+  if (alignment >= kParallelNormals) {
+    return 1.0f;
+  }
+  if (alignment == 0.0) {
+    return 0.0f;
+  }
+
+  double const shadingDotW = dotOf(shading, w);
+  if (shadingDotW == 0.0) {
+    return 1.0f;
+  }
+
+  double const g = turn * dotOf(base, w) / (shadingDotW * alignment);
+  if (!(g > 0.0)) {
+    return 0.0f;
+  }
+  if (g >= 1.0) {
+    return 1.0f;
+  }
+  return static_cast<RtFloat>(-g * g * g + g * g + g);
 }
 
 } // namespace gman

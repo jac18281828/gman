@@ -59,6 +59,8 @@ struct Setup {
   std::optional<RtFloat> normalgreendown;
   Frame frame;
   GMANVector toLight;
+  RtFloat kd = (RtFloat)1.0;
+  RtFloat ks = (RtFloat)0.0;
 };
 
 GMANVector vec(double x, double y, double z) { return GMANVector((RtFloat)x, (RtFloat)y, (RtFloat)z); }
@@ -88,8 +90,13 @@ bool writeMap(std::string const& path, Texel texel) {
 
 double decode(unsigned char channel) { return 2.0 * (channel / 255.0) - 1.0; }
 
-double predictedRed(Texel texel, GMANVector const& tangent, GMANVector const& greenAxis, GMANVector const& normal,
-                    GMANVector const& toLight) {
+struct Direction {
+  double x;
+  double y;
+  double z;
+};
+
+Direction bentNormal(Texel texel, GMANVector const& tangent, GMANVector const& greenAxis, GMANVector const& normal) {
   double const x = decode(texel.r);
   double const y = decode(texel.g);
   double const z = decode(texel.b);
@@ -97,15 +104,36 @@ double predictedRed(Texel texel, GMANVector const& tangent, GMANVector const& gr
   double const ny = x * tangent.getY() + y * greenAxis.getY() + z * normal.getY();
   double const nz = x * tangent.getZ() + y * greenAxis.getZ() + z * normal.getZ();
   double const length = std::sqrt(nx * nx + ny * ny + nz * nz);
-  double const cosine = (nx * toLight.getX() + ny * toLight.getY() + nz * toLight.getZ()) / length;
-  return std::max(0.0, cosine);
+  return {nx / length, ny / length, nz / length};
+}
+
+double dot(Direction const& a, GMANVector const& b) { return a.x * b.getX() + a.y * b.getY() + a.z * b.getZ(); }
+
+double bumpTerm(GMANVector const& base, Direction const& bent, GMANVector const& toLight) {
+  double const baseDotLight = dot(Direction{base.getX(), base.getY(), base.getZ()}, toLight);
+  double const bentDotLight = dot(bent, toLight);
+  double const baseDotBent = dot(bent, base);
+  double const g = baseDotLight / (bentDotLight * baseDotBent);
+  if (g <= 0.0) {
+    return 0.0;
+  }
+  if (g >= 1.0) {
+    return 1.0;
+  }
+  return -g * g * g + g * g + g;
+}
+
+double predictedRed(Texel texel, GMANVector const& tangent, GMANVector const& greenAxis, GMANVector const& normal,
+                    GMANVector const& toLight) {
+  Direction const bent = bentNormal(texel, tangent, greenAxis, normal);
+  return std::max(0.0, dot(bent, toLight)) * bumpTerm(normal, bent, toLight);
 }
 
 GMANParameterList paintedParams(Setup const& setup) {
   static GMANDictionary dictionary;
   RtFloat ka = (RtFloat)0.0;
-  RtFloat kd = (RtFloat)1.0;
-  RtFloat ks = (RtFloat)0.0;
+  RtFloat kd = setup.kd;
+  RtFloat ks = setup.ks;
   char emptyName[1] = {'\0'};
   char* texturename = emptyName;
   char* normalname = const_cast<char*>(setup.normalname.c_str());
@@ -167,6 +195,10 @@ GMANVector plusY() { return vec(0.0, 1.0, 0.0); }
 GMANVector minusY() { return vec(0.0, -1.0, 0.0); }
 GMANVector alongX() { return vec(1.0, 0.0, 1.0) * (RtFloat)(std::numbers::sqrt2 / 2.0); }
 GMANVector alongY() { return vec(0.0, 1.0, 1.0) * (RtFloat)(std::numbers::sqrt2 / 2.0); }
+GMANVector towardDegrees(double degrees) {
+  double const radians = degrees * std::numbers::pi / 180.0;
+  return vec(std::sin(radians), 0.0, std::cos(radians));
+}
 
 bool sameColor(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
@@ -188,7 +220,7 @@ void testRedTilt() {
   Card card(Setup{"normalmap_redtilt.tif", std::nullopt, Frame{}, alongX()});
   double const want = predictedRed(kRedTilt, plusX(), minusY(), normalAxis(), alongX());
   checkNear(card.ci().getRed(), want, "red tilt: computeCi follows the bent normal");
-  check(want > 0.95 && want < 0.97, "red tilt: the prediction is about 0.9654");
+  check(want > 0.92 && want < 0.925, "red tilt: the prediction is about 0.9225");
 }
 
 void testMirroredTangent() {
@@ -211,7 +243,7 @@ void testGreenDirectX() {
   Card card(Setup{"normalmap_greentilt.tif", (RtFloat)1.0, Frame{}, alongY()});
   double const want = predictedRed(kGreenTilt, plusX(), plusY(), normalAxis(), alongY());
   checkNear(card.ci().getRed(), want, "green, DirectX: green bends toward +dPdv");
-  check(want > 0.95 && want < 0.97, "green, DirectX: the prediction is about 0.9654");
+  check(want > 0.92 && want < 0.925, "green, DirectX: the prediction is about 0.9225");
 
   Card nonzero(Setup{"normalmap_greentilt.tif", (RtFloat)7.0, Frame{}, alongY()});
   checkNear(nonzero.ci().getRed(), want, "green, DirectX: any nonzero normalgreendown counts as 1");
@@ -223,7 +255,41 @@ void testMirroredBitangent() {
   Card card(Setup{"normalmap_greentilt.tif", std::nullopt, frame, alongY()});
   double const want = predictedRed(kGreenTilt, plusX(), plusY(), normalAxis(), alongY());
   checkNear(card.ci().getRed(), want, "mirrored bitangent: green bends toward the mirrored -dPdv");
-  check(want > 0.95 && want < 0.97, "mirrored bitangent: the prediction is about 0.9654");
+  check(want > 0.92 && want < 0.925, "mirrored bitangent: the prediction is about 0.9225");
+}
+
+void testBeyondTerminatorDiffuse() {
+  GMANVector const toLight = towardDegrees(100.0);
+  Direction const bent = bentNormal(kRedTilt, plusX(), minusY(), normalAxis());
+  check(dot(bent, toLight) > 0.3, "beyond the terminator, diffuse: the bent normal faces the light");
+  check(dot(Direction{0.0, 0.0, 1.0}, toLight) < 0.0, "beyond the terminator, diffuse: N faces away from it");
+
+  Card card(Setup{"normalmap_redtilt.tif", std::nullopt, Frame{}, toLight});
+  check(card.ci().getRed() == 0.0f,
+        "beyond the terminator, diffuse: computeCi is exactly 0, got " + std::to_string(card.ci().getRed()));
+}
+
+void testBeyondTerminatorSpecular() {
+  GMANVector const toLight = towardDegrees(100.0);
+  GMANVector halfway = toLight + vec(0.0, 0.0, 1.0);
+  halfway.normalize();
+  Direction const bent = bentNormal(kRedTilt, plusX(), minusY(), normalAxis());
+  check(dot(bent, halfway) > 0.0, "beyond the terminator, specular: the bent normal faces the half vector");
+
+  Card card(Setup{"normalmap_redtilt.tif", std::nullopt, Frame{}, toLight, (RtFloat)0.0, (RtFloat)1.0});
+  check(card.ci().getRed() == 0.0f,
+        "beyond the terminator, specular: computeCi is exactly 0, got " + std::to_string(card.ci().getRed()));
+}
+
+void testFadeNearTerminator() {
+  GMANVector const toLight = towardDegrees(80.0);
+  Direction const bent = bentNormal(kRedTilt, plusX(), minusY(), normalAxis());
+  double const term = bumpTerm(normalAxis(), bent, toLight);
+  check(term > 0.0 && term < 1.0, "fade: the term lies strictly between 0 and 1, got " + std::to_string(term));
+
+  Card card(Setup{"normalmap_redtilt.tif", std::nullopt, Frame{}, toLight});
+  checkNear(card.ci().getRed(), dot(bent, toLight) * term, "fade: computeCi is s . L times the term");
+  check(card.ci().getRed() < dot(bent, toLight) - kTol, "fade: computeCi sits below the unscaled s . L");
 }
 
 void testFlatMap() {
@@ -269,6 +335,9 @@ int main() {
   testGreenDefault();
   testGreenDirectX();
   testMirroredBitangent();
+  testBeyondTerminatorDiffuse();
+  testBeyondTerminatorSpecular();
+  testFadeNearTerminator();
   testFlatMap();
   testDegenerateFrame();
   testClosure();

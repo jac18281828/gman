@@ -577,6 +577,137 @@ void checkNoAllocation() {
                        "building a kMaxLobes closure and 1000 calls each of eval, pdf and sample allocate nothing");
 }
 
+struct Vec3 {
+  double x;
+  double y;
+  double z;
+};
+
+Vec3 toVec3(GMANVector const& v) { return {v.getX(), v.getY(), v.getZ()}; }
+
+GMANVector toVector(Vec3 const& v) {
+  return GMANVector(static_cast<RtFloat>(v.x), static_cast<RtFloat>(v.y), static_cast<RtFloat>(v.z));
+}
+
+double dot3(Vec3 const& a, Vec3 const& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+Vec3 unit3(Vec3 const& v) {
+  double const length = std::sqrt(dot3(v, v));
+  return {v.x / length, v.y / length, v.z / length};
+}
+
+Vec3 scaled3(Vec3 const& v, double factor) { return {v.x * factor, v.y * factor, v.z * factor}; }
+
+Vec3 sum3(Vec3 const& a, Vec3 const& b) { return {a.x + b.x, a.y + b.y, a.z + b.z}; }
+
+Vec3 cross3(Vec3 const& a, Vec3 const& b) {
+  return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
+Vec3 inPlane(double degrees, Vec3 const& along, Vec3 const& across) {
+  double const radians = degrees * std::numbers::pi / 180.0;
+  return sum3(scaled3(along, std::cos(radians)), scaled3(across, std::sin(radians)));
+}
+
+double unclampedRatio(Vec3 const& base, Vec3 const& shading, Vec3 const& w) {
+  Vec3 const b = unit3(base);
+  Vec3 const s = unit3(shading);
+  return dot3(b, w) / (dot3(s, w) * dot3(b, s));
+}
+
+double chiangTerm(double g) {
+  if (g <= 0.0) {
+    return 0.0;
+  }
+  if (g >= 1.0) {
+    return 1.0;
+  }
+  return -g * g * g + g * g + g;
+}
+
+constexpr double kBumpTol = 1e-5;
+
+Vec3 const kBumpBase{0.0, 0.0, 1.0};
+
+void checkBumpParallel() {
+  GMANVector const shading = n0();
+  GMANVector const w = woAt(70.0);
+  check(gman::bumpShadowing(shading, shading, w) == 1.0f, "bumpShadowing: a base equal to the shading normal is 1");
+  check(gman::bumpShadowing(-shading, shading, w) == 1.0f, "bumpShadowing: a base opposite the shading normal is 1");
+  check(gman::bumpShadowing(shading * 3.0f, shading, w) == 1.0f,
+        "bumpShadowing: a base three times the shading normal's length is 1");
+
+  GMANVector const v(0.235638216f, -0.264468938f, 0.935163498f);
+  GMANVector twiceNormalized = v;
+  twiceNormalized.normalize();
+  twiceNormalized.normalize();
+  check(twiceNormalized.getX() != v.getX() || twiceNormalized.getY() != v.getY() || twiceNormalized.getZ() != v.getZ(),
+        "bumpShadowing: normalize(normalize(v)) differs from v in float");
+  GMANVector const grazing(-0.00667813374f, -0.962686181f, -0.270537734f);
+  check(unclampedRatio(toVec3(v), toVec3(twiceNormalized), toVec3(grazing)) < 1.0 - 1e-7,
+        "bumpShadowing: the unclamped ratio of that pair at the grazing direction falls below 1");
+  check(gman::bumpShadowing(v, twiceNormalized, grazing) == 1.0f,
+        "bumpShadowing: a base and its twice-normalized shading normal give 1 at a grazing direction");
+}
+
+void checkBumpBeyondHorizon() {
+  Vec3 const shading = inPlane(30.0, {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0});
+  Vec3 const w = inPlane(100.0, {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0});
+  check(dot3(kBumpBase, w) < 0.0 && dot3(shading, w) > 0.0, "bumpShadowing: w lies beyond the base's horizon only");
+  check(gman::bumpShadowing(toVector(kBumpBase), toVector(shading), toVector(w)) == 0.0f,
+        "bumpShadowing: a w beyond the base's horizon is 0");
+}
+
+void checkBumpFade() {
+  Vec3 const shading = inPlane(30.0, {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0});
+  Vec3 const w = inPlane(60.0, {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0});
+  double const g = unclampedRatio(kBumpBase, shading, w);
+  check(g > 0.0 && g < 1.0, "bumpShadowing: the fade triple's ratio lies in (0, 1), got " + std::to_string(g));
+  double const got = gman::bumpShadowing(toVector(kBumpBase), toVector(shading), toVector(w));
+  check(std::fabs(got - chiangTerm(g)) <= kBumpTol, "bumpShadowing: the fade follows -G^3 + G^2 + G, got " +
+                                                        std::to_string(got) + " vs " + std::to_string(chiangTerm(g)));
+  check(got > 0.0f && got < 1.0f, "bumpShadowing: the fade lies strictly between 0 and 1");
+
+  Vec3 const scaledW = scaled3(w, 7.5);
+  double const gotScaled = gman::bumpShadowing(toVector(kBumpBase), toVector(shading), toVector(scaledW));
+  check(std::fabs(gotScaled - got) <= kBumpTol, "bumpShadowing: a w of any length gives the same term");
+}
+
+void checkBumpTiltedAway() {
+  Vec3 const shading = inPlane(-30.0, {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0});
+  Vec3 const w = inPlane(45.0, {0.0, 0.0, 1.0}, {1.0, 0.0, 0.0});
+  check(unclampedRatio(kBumpBase, shading, w) >= 1.0, "bumpShadowing: the tilted-away triple's ratio reaches 1");
+  check(gman::bumpShadowing(toVector(kBumpBase), toVector(shading), toVector(w)) == 1.0f,
+        "bumpShadowing: a shading normal tilted away from w is 1");
+}
+
+void checkBumpTurnedBase() {
+  Vec3 const shading = unit3({0.3, -0.5, 0.8});
+  Vec3 const across = unit3(cross3(shading, {0.0, 0.0, 1.0}));
+  Vec3 const out = unit3(cross3(shading, across));
+  Vec3 const base = scaled3(inPlane(0.05, shading, across), -1.0);
+  Vec3 const w = sum3(sum3(scaled3(shading, 0.01), scaled3(across, -0.5)), scaled3(out, 0.8));
+
+  check(dot3(base, shading) < -(1.0 - 1e-6) && dot3(base, shading) > -1.0,
+        "bumpShadowing: the turned base lies within 0.08 degrees of the shading normal's opposite");
+  check(unclampedRatio(base, shading, w) < 1.0 - 1e-3,
+        "bumpShadowing: the turned base's unclamped ratio at the grazing w falls below 1");
+  check(gman::bumpShadowing(toVector(base), toVector(shading), toVector(w)) == 1.0f,
+        "bumpShadowing: a base within 0.08 degrees of the shading normal's opposite is 1");
+}
+
+void checkBumpDegenerate() {
+  GMANVector const zero(0.0f, 0.0f, 0.0f);
+  GMANVector const tilted(0.3f, 0.0f, 1.0f);
+  GMANVector const w(0.6f, 0.2f, 0.7f);
+  check(gman::bumpShadowing(zero, tilted, w) == 1.0f, "bumpShadowing: a zero base is 1");
+  check(gman::bumpShadowing(tilted, zero, w) == 1.0f, "bumpShadowing: a zero shading normal is 1");
+  check(gman::bumpShadowing(tilted, kAxisNormal, GMANVector(1.0f, 0.0f, 0.0f)) == 1.0f,
+        "bumpShadowing: a w perpendicular to the shading normal is 1");
+  check(gman::bumpShadowing(GMANVector(1.0f, 0.0f, 0.0f), kAxisNormal, GMANVector(0.2f, 0.0f, 0.9f)) == 0.0f,
+        "bumpShadowing: a base perpendicular to the shading normal is 0");
+}
+
 } // namespace
 
 int main() {
@@ -587,6 +718,12 @@ int main() {
   checkTwoLobes();
   checkClampFailuresCapacity();
   checkNoAllocation();
+  checkBumpParallel();
+  checkBumpBeyondHorizon();
+  checkBumpFade();
+  checkBumpTiltedAway();
+  checkBumpTurnedBase();
+  checkBumpDegenerate();
 
   return checkSummary("gman::BSDF's Lambert closure conserves energy, is reciprocal and samples its own pdf");
 }
