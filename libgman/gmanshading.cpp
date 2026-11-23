@@ -101,8 +101,10 @@ Appearance appearanceOf(GMANAttributes const& attributes) {
 SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
   SurfacePoint point;
   point.P = hit.point;
-  point.N = GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
-  point.Ng = point.N;
+  GMANVector const shading = hit.shadingNormal.value_or(hit.normal);
+  GMANVector const geometric = hit.shadingNormal && hit.normal.dot(shading) < (RtFloat)0.0 ? -hit.normal : hit.normal;
+  point.N = GMANNormal(shading.getX(), shading.getY(), shading.getZ());
+  point.Ng = GMANNormal(geometric.getX(), geometric.getY(), geometric.getZ());
   point.I = ray.getDirection();
   point.E = ray.getOrigin();
   point.u = hit.u;

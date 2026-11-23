@@ -109,7 +109,10 @@ struct GMAN_EXPORT SurfacePoint {
 // does not look from there. dPdu and dPdv are the hit's own. s and t default to u and v, the
 // RISpec's own default texture-coordinate mapping. Precondition: a hit, hit.primitive non-null. A
 // host's shading and gman::albedo share this one mapping, so the day s and t stop defaulting to u
-// and v, albedo follows shading.
+// and v, albedo follows shading. A hit carrying a shadingNormal shades with it as N, and Ng is the
+// hit's normal negated where it faces away from N, so a shader's faceforward(N, I, Ng) agrees with
+// the supplied normal whatever the polygon's winding; a hit without one gives N and Ng the hit's
+// normal.
 GMAN_EXPORT SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit);
 
 // What shading a point produces: colour and opacity together, so a

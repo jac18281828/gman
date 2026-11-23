@@ -2220,6 +2220,19 @@ set_tests_properties(polygonmeshtexcoord PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A polygon request's vertex or varying "N" shades each hit smoothly: blended
+# across the hit's fan triangle, carried to camera space by the inverse
+# transpose, oriented into the shader's hemisphere, and refused with one
+# warning when its class or length is wrong. See
+# tests/raypolygonvertexnormals_test.cpp.
+add_executable(gman_raypolygonvertexnormals raypolygonvertexnormals_test.cpp)
+target_link_libraries(gman_raypolygonvertexnormals PRIVATE gman_core gman_ray gman_internal_headers)
+
+add_test(NAME raypolygonvertexnormals COMMAND gman_raypolygonvertexnormals)
+set_tests_properties(raypolygonvertexnormals PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANPolygonMesh and its four factory functions: each request's own
 # normalisation into faces and loops, its parameter-list sizing, every
 # rejection rule, a missing "P", the degenerate shapes the factory still

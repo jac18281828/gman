@@ -26,6 +26,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -42,6 +43,7 @@ private:
   struct Entry {
     GMANTokenId id;
     std::string name;
+    GMANTokenEntry::TokenClass storage;
     RtInt count;
     std::variant<std::unique_ptr<RtFloat[]>, std::unique_ptr<RtInt[]>, std::unique_ptr<std::string[]>> data;
   };
@@ -54,8 +56,9 @@ private:
   RtVoid copy_string(RtInt number, char** source, std::string* dest);
 
   template <typename T, typename CopyFn>
-  static RtVoid appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name, std::string const& token,
-                            std::size_t size, CopyFn copy);
+  static RtVoid appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name,
+                            GMANTokenEntry::TokenClass storage, std::string const& token, std::size_t size,
+                            CopyFn copy);
 
   template <typename T> std::span<T const> valuesOf(std::string_view name) const;
 
@@ -96,4 +99,11 @@ public:
   std::span<RtFloat const> floats(std::string_view name) const;
   std::span<RtInt const> integers(std::string_view name) const;
   std::span<std::string const> strings(std::string_view name) const;
+
+  // The storage class of the first parameter named name, whatever its type:
+  // the class it was declared with, inline or in the dictionary. "uniform
+  // normal N" answers UNIFORM and a bare "N" the dictionary's VARYING. Empty
+  // when no parameter carries that name, which follows the rule floats
+  // states. Copies of this list answer alike.
+  std::optional<GMANTokenEntry::TokenClass> storageClass(std::string_view name) const;
 };

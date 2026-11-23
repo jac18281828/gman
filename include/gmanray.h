@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -71,7 +73,8 @@ public:
  * surface normal and parameters, the camera-space partial derivatives of
  * the hit point along them (dPdu, dPdv: exact for the u and v the hit
  * reports, unnormalized, zero where u is undefined or the parameterization
- * is singular) and the primitive hit. intersect returns bool and writes this
+ * is singular), the unit camera-space normal a shader sees as N (shadingNormal,
+ * empty when it equals normal) and the primitive hit. intersect returns bool and writes this
  * record only on a hit, so a default-constructed GMANHit -- primitive null --
  * is a miss.
  */
@@ -83,6 +86,7 @@ struct GMANHit {
   RtFloat v = 0.0;
   GMANVector dPdu;
   GMANVector dPdv;
+  std::optional<GMANVector> shadingNormal;
   // Null means no primitive was hit. The primitive outlives any hit
   // against it, so this pointer is non-owning.
   GMANPrimitive const* primitive = nullptr;

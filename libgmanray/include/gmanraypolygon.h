@@ -66,11 +66,14 @@ public:
   // above.
   GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holes, GMANParameterList pl);
 
-  // Every polygon request's face builds this way: outerTexCoords is
-  // already gathered per vertex, since no flat pl indexes this face's
-  // vertices by local slot.
+  // Every polygon request's face builds this way: outerTexCoords and
+  // outerNormals are already gathered per vertex, since no flat pl indexes
+  // this face's vertices by local slot. outerNormals are camera-space unit
+  // normals, one per outer-loop vertex, or empty for a face with none; a hit
+  // then reports their barycentric blend across its fan triangle as
+  // GMANHit::shadingNormal, and normal stays the face's own.
   GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holes,
-                 std::vector<std::pair<RtFloat, RtFloat>> outerTexCoords);
+                 std::vector<std::pair<RtFloat, RtFloat>> outerTexCoords, std::vector<GMANVector> outerNormals = {});
 
   bool intersect(GMANRay const& ray, GMANHit& hit) const;
 
@@ -109,6 +112,8 @@ private:
   // (direct construction bypassing the object manager). Holes carry no
   // texCoords: a hit never lands inside one.
   std::vector<std::pair<RtFloat, RtFloat>> texCoords;
+
+  std::vector<GMANVector> vertexNormals;
 
   // Computes bbox, degeneracy and the unit Newell normal from vertices --
   // the outer loop alone, regardless of how many holes it carries. Shared

@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -164,6 +165,17 @@ std::pair<RtFloat, RtFloat> interpolateTexCoord(std::vector<std::pair<RtFloat, R
   return {s, t};
 }
 
+std::optional<GMANVector> interpolateNormal(std::vector<GMANVector> const& normals, FanTriangle const& fan) {
+  if (normals.empty() || !fan.valid)
+    return std::nullopt;
+
+  GMANVector blend = normals[0] * fan.wa + normals[fan.b] * fan.wb + normals[fan.c] * fan.wc;
+  RtFloat const magnitude = blend.magnitude();
+  if (!(magnitude > (RtFloat)0.0) || !std::isfinite(magnitude))
+    return std::nullopt;
+  return blend / magnitude;
+}
+
 void fanTangents(std::vector<GMANPoint> const& ring, std::vector<std::pair<RtFloat, RtFloat>> const& texCoords,
                  FanTriangle const& fan, GMANVector& dPds, GMANVector& dPdt) {
   dPds = GMANVector();
@@ -275,9 +287,10 @@ GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::ve
 }
 
 GMANRayPolygon::GMANRayPolygon(std::vector<GMANPoint> outer, std::vector<std::vector<GMANPoint>> holeLoops,
-                               std::vector<std::pair<RtFloat, RtFloat>> outerTexCoords)
+                               std::vector<std::pair<RtFloat, RtFloat>> outerTexCoords,
+                               std::vector<GMANVector> outerNormals)
     : GMANPolygon((RtInt)outer.size(), GMANParameterList()), vertices(std::move(outer)), holes(std::move(holeLoops)),
-      texCoords(std::move(outerTexCoords)) {
+      texCoords(std::move(outerTexCoords)), vertexNormals(std::move(outerNormals)) {
   initGeometry();
 }
 
@@ -350,6 +363,7 @@ bool GMANRayPolygon::intersect(GMANRay const& ray, GMANHit& hit) const {
   candidate.u = uv.first;
   candidate.v = uv.second;
   fanTangents(vertices, texCoords, fan, candidate.dPdu, candidate.dPdv);
+  candidate.shadingNormal = interpolateNormal(vertexNormals, fan);
   candidate.primitive = this;
   return gman::acceptFiniteHit(candidate, hit);
 }

@@ -26,6 +26,7 @@
 #include <format>
 #include <memory>
 #include <new>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -75,11 +76,12 @@ void checkSuppliedLength(std::string const& token, RtInt size, RtInt supplied, b
 // naming token and leaves block as it was.
 template <typename T, typename CopyFn>
 RtVoid GMANParameterList::appendEntry(std::vector<Entry>& block, GMANTokenId id, std::string name,
-                                      std::string const& token, std::size_t size, CopyFn copy) {
+                                      GMANTokenEntry::TokenClass storage, std::string const& token, std::size_t size,
+                                      CopyFn copy) {
   try {
     auto data = std::make_unique<T[]>(size);
     copy(data.get());
-    block.push_back(Entry{id, std::move(name), static_cast<RtInt>(size), std::move(data)});
+    block.push_back(Entry{id, std::move(name), storage, static_cast<RtInt>(size), std::move(data)});
   } catch (std::bad_alloc const&) {
     throw GMANError(RIE_NOMEM, RIE_ERROR,
                     std::format("Parameter \"{}\": cannot allocate {} elements.", token, size).c_str());
@@ -108,17 +110,18 @@ GMANParameterList::GMANParameterList(GMANDictionary& di, RtInt n, RtToken* tk, R
     const auto supplied = suppliedCounts ? suppliedCounts[i] : size;
     checkSuppliedLength(token, size, supplied, suppliedCounts != nullptr);
     auto name = parameterName(token);
+    const auto storage = di.getClass(tid);
     switch (di.getType(tid)) {
     case GMANTokenEntry::STRING:
-      appendEntry<std::string>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
+      appendEntry<std::string>(*block, tid, std::move(name), storage, token, static_cast<std::size_t>(size),
                                [&](std::string* dest) { copy_string(size, (char**)dt[i], dest); });
       break;
     case GMANTokenEntry::INTEGER:
-      appendEntry<RtInt>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
+      appendEntry<RtInt>(*block, tid, std::move(name), storage, token, static_cast<std::size_t>(size),
                          [&](RtInt* dest) { copy_integer(size, (RtInt*)dt[i], dest); });
       break;
     default:
-      appendEntry<RtFloat>(*block, tid, std::move(name), token, static_cast<std::size_t>(size),
+      appendEntry<RtFloat>(*block, tid, std::move(name), storage, token, static_cast<std::size_t>(size),
                            [&](RtFloat* dest) { copy_float(size, (RtFloat*)dt[i], dest); });
       break;
     }
@@ -167,6 +170,18 @@ std::span<RtInt const> GMANParameterList::integers(std::string_view name) const 
 
 std::span<std::string const> GMANParameterList::strings(std::string_view name) const {
   return valuesOf<std::string>(name);
+}
+
+std::optional<GMANTokenEntry::TokenClass> GMANParameterList::storageClass(std::string_view name) const {
+  if (!entries) {
+    return std::nullopt;
+  }
+  for (auto const& entry : *entries) {
+    if (entry.name == name) {
+      return entry.storage;
+    }
+  }
+  return std::nullopt;
 }
 
 RtVoid GMANParameterList::copy_float(RtInt n, RtFloat* source, RtFloat* dest) {

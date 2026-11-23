@@ -241,6 +241,32 @@ void checkFailedAllocationReportsNoMemory() {
 #endif
 }
 
+GMANParameterList singleNormal(GMANDictionary& dictionary, RtToken token) {
+  RtFloat normal[3] = {0.0f, 0.0f, 1.0f};
+  RtToken tokens[1] = {token};
+  RtPointer parms[1] = {normal};
+  return GMANParameterList(dictionary, 1, tokens, parms);
+}
+
+void checkStorageClassRecord() {
+  GMANDictionary dictionary;
+  GMANParameterList const uniform = singleNormal(dictionary, "uniform normal N");
+  GMANParameterList const facevarying = singleNormal(dictionary, "facevarying normal N");
+  GMANParameterList const vertex = singleNormal(dictionary, "vertex normal N");
+  GMANParameterList const predeclared = singleNormal(dictionary, RI_N);
+
+  check(uniform.storageClass("N") == GMANTokenEntry::UNIFORM, "an inline uniform normal N records UNIFORM");
+  check(facevarying.storageClass("N") == GMANTokenEntry::FACEVARYING,
+        "an inline facevarying normal N records FACEVARYING");
+  check(vertex.storageClass("N") == GMANTokenEntry::VERTEX, "an inline vertex normal N records VERTEX");
+  check(predeclared.storageClass("N") == GMANTokenEntry::VARYING, "the predeclared N records VARYING");
+  check(!uniform.storageClass("Cs").has_value(), "a name the list lacks answers empty");
+  check(!GMANParameterList().storageClass("N").has_value(), "a default list answers empty");
+
+  GMANParameterList const copy = uniform;
+  check(copy.storageClass("N") == GMANTokenEntry::UNIFORM, "a copy of the uniform list records UNIFORM");
+}
+
 } // namespace
 
 int main() {
@@ -250,6 +276,7 @@ int main() {
   checkThrowingConstructionLeaksNothing();
   checkShortfallPartwayLeaksNothing();
   checkFailedAllocationReportsNoMemory();
+  checkStorageClassRecord();
 
   return checkSummary("GMANParameterList's contract holds");
 }
