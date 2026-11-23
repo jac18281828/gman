@@ -50,16 +50,17 @@ class GMAN_EXPORT GMANRenderManImpl : public GMANRenderMan, protected GMANGraphi
 private:
   // the renderer that computes the lighting model and
   // simulates the environment
-  GMANRenderer* renderer;
+  std::unique_ptr<GMANRenderer> renderer;
 
-  // the object manager that stores the objects in the environment
+  // the object manager that stores the objects in the environment; borrowed
+  // from renderer, valid exactly while renderer holds a value
   GMANObjectManager* objectManager;
 
-  // world manager
+  // world manager; borrowed from renderer like objectManager
   GMANWorldManager* worldManager;
 
   // Viewing system
-  GMANViewingSystem* viewingSystem;
+  std::unique_ptr<GMANViewingSystem> viewingSystem;
 
   std::unique_ptr<GMANOutput> output;
 

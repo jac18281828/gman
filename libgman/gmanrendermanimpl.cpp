@@ -243,10 +243,8 @@ RtInt saturatedCount(std::int64_t count) { return static_cast<RtInt>(std::clamp<
 
 // default constructor
 GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState() {
-  renderer = NULL;
   objectManager = NULL;
   worldManager = NULL;
-  viewingSystem = NULL;
 };
 
 // default destructor
@@ -279,23 +277,19 @@ RtVoid GMANRenderManImpl::RiBegin(RtToken name) {
   std::string objectName = "lib";
   objectName += name;
   objectName += ".so";
-  GMANLoadableRenderer* loadedRenderer = new GMANLoadableRenderer(objectName.c_str());
-  renderer = loadedRenderer;
+  renderer = std::make_unique<GMANLoadableRenderer>(objectName.c_str());
   worldManager = renderer->getWorldManager();
 
   objectManager = renderer->getObjectManager();
 }
 
 RtVoid GMANRenderManImpl::RiEnd(RtVoid) {
-  delete renderer;
-  renderer = NULL;
+  renderer.reset();
   // worldManager and objectManager belong to renderer, not to this object;
   // deleting it invalidates them too.
   worldManager = NULL;
   objectManager = NULL;
-  if (viewingSystem)
-    delete viewingSystem;
-  viewingSystem = NULL;
+  viewingSystem.reset();
 }
 
 RtVoid GMANRenderManImpl::RiFrameBegin(RtInt /*frame*/) { enterMode(F); }
@@ -357,7 +351,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
     warning("FOV not set, defaulting to 90.0.");
   }
 
-  viewingSystem = gman::makeViewingSystem(vsi, worldToCamera).release();
+  viewingSystem = gman::makeViewingSystem(vsi, worldToCamera);
 
   // The shading path's only route to camera-to-world (this task's own
   // goal, AGENTS.md's "Handedness and matrix convention"): the same
@@ -383,7 +377,7 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   }
 
   const GMANOptions::ExposureStruct& exposure = getOptions().getExposure();
-  renderer->render(output.get(), viewingSystem, getOptions(), getAttributes());
+  renderer->render(output.get(), viewingSystem.get(), getOptions(), getAttributes());
 
   GMANOutput::DisplayMode dMode;
 

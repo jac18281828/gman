@@ -260,9 +260,9 @@ if(GMAN_BUILD_RAYTRACER)
     TIMEOUT 30)
 endif()
 
-# GMANRenderManImpl's renderer/objectManager/worldManager/viewingSystem/output
-# pointers stay null from construction, and RiEnd leaves null every one it
-# releases. See tests/rendermanpointers_test.cpp.
+# GMANRenderManImpl's renderer, viewingSystem and output own nothing, and its
+# borrowed objectManager and worldManager point nowhere, from construction;
+# RiEnd leaves them so. See tests/rendermanpointers_test.cpp.
 add_executable(gman_rendermanpointers rendermanpointers_test.cpp)
 target_link_libraries(gman_rendermanpointers PRIVATE gman_core gman_internal_headers)
 add_dependencies(gman_rendermanpointers gman_zbuffer)
@@ -271,6 +271,21 @@ add_test(NAME rendermanpointers
   COMMAND gman_rendermanpointers
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
 set_tests_properties(rendermanpointers PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# Two worlds in one cycle, two RiBegins and an impl destroyed before RiEnd each
+# return the live heap to its starting size. The test counts the heap itself,
+# so it is its own executable. See tests/rendermanlifetime_test.cpp.
+add_executable(gman_rendermanlifetime rendermanlifetime_test.cpp)
+target_link_libraries(gman_rendermanlifetime PRIVATE gman_core gman_internal_headers)
+add_dependencies(gman_rendermanlifetime gman_zbuffer)
+
+add_test(NAME rendermanlifetime
+  COMMAND gman_rendermanlifetime
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(rendermanlifetime PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
