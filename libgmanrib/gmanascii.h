@@ -24,6 +24,7 @@
 #pragma once
 
 #include <fstream>
+#include <optional>
 
 #include "gman/export.h"
 #include "gmanrenderman.h"
@@ -189,4 +190,7 @@ public:
 
   /* ERROR HANDLER */
   RtVoid RiErrorHandler(RtErrorHandler handler);
+
+private:
+  std::optional<RtInt> frameColorNComps;
 };

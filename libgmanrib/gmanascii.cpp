@@ -113,8 +113,18 @@ RtVoid GMANASCII::RiBegin(RtToken name) {
   }
 }
 RtVoid GMANASCII::RiEnd(RtVoid) { out.close(); }
-RtVoid GMANASCII::RiFrameBegin(RtInt frame) { out << "FrameBegin " << frame << std::endl; }
-RtVoid GMANASCII::RiFrameEnd(RtVoid) { out << "FrameEnd" << std::endl; }
+RtVoid GMANASCII::RiFrameBegin(RtInt frame) {
+  out << "FrameBegin " << frame << std::endl;
+  frameColorNComps = colorNComps;
+}
+RtVoid GMANASCII::RiFrameEnd(RtVoid) {
+  out << "FrameEnd" << std::endl;
+  if (!frameColorNComps) {
+    return;
+  }
+  ColorSamples(*frameColorNComps);
+  frameColorNComps.reset();
+}
 RtVoid GMANASCII::RiWorldBegin(RtVoid) { out << "WorldBegin" << std::endl; }
 RtVoid GMANASCII::RiWorldEnd(RtVoid) { out << "WorldEnd" << std::endl; }
 RtObjectHandle GMANASCII::RiObjectBegin(RtVoid) {
@@ -220,6 +230,7 @@ RtVoid GMANASCII::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
   printArray(n * 3, nRGB);
   printArray(n * 3, RGBn);
   out << std::endl;
+  ColorSamples(n);
 }
 RtVoid GMANASCII::RiRelativeDetail(RtFloat relativedetail) { out << "RelativeDetail " << relativedetail << std::endl; }
 RtVoid GMANASCII::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {

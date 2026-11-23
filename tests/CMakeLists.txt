@@ -918,6 +918,18 @@ set_tests_properties(colorsamples PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANASCII writes Color and Opacity at the ColorSamples count. See tests/ribwritercolorcount_test.cpp.
+add_executable(gman_ribwritercolorcount ribwritercolorcount_test.cpp
+  "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
+target_include_directories(gman_ribwritercolorcount PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
+target_link_libraries(gman_ribwritercolorcount PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME ribwritercolorcount COMMAND gman_ribwritercolorcount)
+set_tests_properties(ribwritercolorcount PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANRIBTokenize::consumeWhitespace, isKeyToken and isNumToken classify a
 # stream byte. See tests/ribctypeunsigned_test.cpp; it drives getNext
 # directly on an istringstream, so it dlopens nothing.
