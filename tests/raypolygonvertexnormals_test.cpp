@@ -234,14 +234,25 @@ std::size_t occurrences(std::string const& haystack, std::string const& needle) 
   return count;
 }
 
-std::string capturedLog(std::string const& path, std::function<void()> const& action) {
+std::string warningLines(std::string const& log) {
+  std::istringstream lines(log);
+  std::string warnings;
+  for (std::string line; std::getline(lines, line);) {
+    if (line.find("GMAN WARNING:") != std::string::npos) {
+      warnings += line + "\n";
+    }
+  }
+  return warnings;
+}
+
+std::string capturedWarnings(std::string const& path, std::function<void()> const& action) {
   std::remove(path.c_str());
   setLogFile(path.c_str());
   setScreenOutput(false);
   action();
   setLogFile("/dev/null");
   setScreenOutput(true);
-  return readFile(path);
+  return warningLines(readFile(path));
 }
 
 void testInterpolation() {
@@ -398,7 +409,7 @@ void testWarnings() {
   std::vector<RtFloat> const wrongLength(18, 0.25f);
 
   {
-    std::string const log = capturedLog("raypolygonvertexnormals_facevarying.log", [&] {
+    std::string const log = capturedWarnings("raypolygonvertexnormals_facevarying.log", [&] {
       Built const built = buildMesh(square(), NormalInput{"facevarying normal N", wrongLength});
     });
     check(occurrences(log, needle) == 1, "facevarying N: exactly one warning");
@@ -406,7 +417,7 @@ void testWarnings() {
   }
 
   {
-    std::string const log = capturedLog("raypolygonvertexnormals_uniform.log", [&] {
+    std::string const log = capturedWarnings("raypolygonvertexnormals_uniform.log", [&] {
       Built const built = buildMesh(tetrahedron(), NormalInput{"uniform normal N", std::vector<RtFloat>(12, 0.5f)});
     });
     check(occurrences(log, needle) == 1, "uniform N on a tetrahedron: exactly one warning");
@@ -415,7 +426,7 @@ void testWarnings() {
 
   {
     Built built;
-    std::string const log = capturedLog("raypolygonvertexnormals_length.log", [&] {
+    std::string const log = capturedWarnings("raypolygonvertexnormals_length.log", [&] {
       built = buildMesh(square(), NormalInput{"varying float N", std::vector<RtFloat>(4, 0.5f)});
     });
     check(occurrences(log, needle) == 1, "varying float N: exactly one warning");
@@ -426,13 +437,13 @@ void testWarnings() {
   }
 
   {
-    std::string const log = capturedLog("raypolygonvertexnormals_absent.log",
-                                        [&] { Built const built = buildMesh(square(), std::nullopt); });
+    std::string const log = capturedWarnings("raypolygonvertexnormals_absent.log",
+                                             [&] { Built const built = buildMesh(square(), std::nullopt); });
     check(occurrences(log, needle) == 0, "no N: no warning");
   }
 
   {
-    std::string const log = capturedLog("raypolygonvertexnormals_usable.log", [&] {
+    std::string const log = capturedWarnings("raypolygonvertexnormals_usable.log", [&] {
       Built const built = buildMesh(square(), vertexNormals(tiltedNormals()));
     });
     check(occurrences(log, needle) == 0, "a usable vertex N: no warning");
