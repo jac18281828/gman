@@ -252,10 +252,12 @@ void testRendererWithoutColorSamplesReadsThree(std::string const& ribDir) {
     parsed = parses(parser);
   }
 
-  check(parsed, "fallback: the fixture parses to its end");
-  check(renderMan.color == std::vector<RtFloat>({0.25f, 0.5f, 0.75f}), "fallback: Color reads three samples");
-  check(renderMan.opacity == std::vector<RtFloat>({1.0f, 1.0f, 1.0f}), "fallback: Opacity reads three samples");
-  check(renderMan.spheres == 2, "fallback: each request is followed by its Sphere");
+  check(parsed, "inherited count: the fixture parses to its end");
+  check(renderMan.color == std::vector<RtFloat>({0.25f, 0.5f, 0.75f}),
+        "inherited count: Color reads three samples with no ColorSamples request");
+  check(renderMan.opacity == std::vector<RtFloat>({1.0f, 1.0f, 1.0f}),
+        "inherited count: Opacity reads three samples with no ColorSamples request");
+  check(renderMan.spheres == 2, "inherited count: each request is followed by its Sphere");
 }
 
 class WritebackReader : public GMANASCII {
@@ -271,9 +273,57 @@ public:
   RtVoid RiSphereV(RtFloat, RtFloat, RtFloat, RtFloat, RtInt, RtToken[], RtPointer[]) override { ++spheres; }
 };
 
+class ColorCountReader : public GMANASCII {
+public:
+  std::vector<ColorSamplesCall> colorSamples;
+  std::vector<std::vector<RtFloat>> colors;
+  std::vector<std::vector<RtFloat>> opacities;
+  int spheres = 0;
+
+  RtVoid RiBegin(RtToken) override {}
+  RtVoid RiEnd() override {}
+  RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override {
+    colorSamples.push_back(colorSamplesCall(n, nRGB, RGBn));
+    ColorSamples(n);
+  }
+  RtVoid RiColor(RtColor value) override { colors.emplace_back(value, value + colorSampleCount()); }
+  RtVoid RiOpacity(RtColor value) override { opacities.emplace_back(value, value + colorSampleCount()); }
+  RtVoid RiSphereV(RtFloat, RtFloat, RtFloat, RtFloat, RtInt, RtToken[], RtPointer[]) override { ++spheres; }
+};
+
 Thrown parseThrown(GMANRenderMan& renderMan, std::string const& rib) {
   GMANRIBParse parser(renderMan, rib.c_str());
   return thrownBy([&] { parser.parse(); });
+}
+
+void testColorsWriteBackAtTheirCount(std::string const& ribDir, RtInt count) {
+  const std::string label = "write-back at " + std::to_string(count) + ": ";
+  const std::string source = ribDir + "/colorcount_" + std::to_string(count) + ".rib";
+  const std::string written = "colorcount_" + std::to_string(count) + "_writeback.rib";
+
+  GMANASCII writer;
+  bool wrote = false;
+  {
+    GMANRIBParse parser(writer, source.c_str(), written.c_str());
+    wrote = parses(parser);
+  }
+  check(wrote, label + "the fixture parses into a GMANASCII to its end");
+
+  ColorCountReader reader;
+  const Thrown thrown = parseThrown(reader, written);
+  check(!thrown.threw, label + "the written file parses to its end");
+  check(reader.colorSamples.size() == 1 && reader.colorSamples[0].n == count,
+        label + "one ColorSamples call arrives with the count");
+  check(reader.colors.size() == 2, label + "two Color calls arrive");
+  check(reader.opacities.size() == 2, label + "two Opacity calls arrive");
+  check(reader.spheres == 4, label + "four spheres follow");
+  if (reader.colors.size() != 2 || reader.opacities.size() != 2) {
+    return;
+  }
+  check(reader.colors[0] == run(count, 6 * count), label + "bare Color survives in order");
+  check(reader.colors[1] == run(count, 7 * count), label + "bracketed Color survives in order");
+  check(reader.opacities[0] == run(count, 8 * count), label + "bare Opacity survives in order");
+  check(reader.opacities[1] == run(count, 9 * count), label + "bracketed Opacity survives in order");
 }
 
 void testRequestReachesTheRenderer(std::string const& ribDir) {
@@ -397,6 +447,9 @@ int main(int argc, char* argv[]) {
   testMalformedPairsAreRejected(ribDir);
   testBracketedArrayMustHoldTheSampleCount(ribDir);
   testWrittenColorSamplesReadBack();
+  for (const RtInt count : {1, 5}) {
+    testColorsWriteBackAtTheirCount(ribDir, count);
+  }
 
   return checkSummary("ColorSamples is honored by the parser and refused by the renderer where it cannot shade");
 }

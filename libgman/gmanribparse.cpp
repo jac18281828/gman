@@ -47,7 +47,6 @@
 
 #include <zlib.h>
 
-#include "gmandefaults.h"
 #include "gmandictionary.h"
 #include "gmanerror.h"
 #include "gmanlog.h"
@@ -155,13 +154,6 @@ template <typename Request> void dispatchWithCounts(GMANRenderMan& renderMan, Rt
   } else {
     request(renderMan);
   }
-}
-
-RtInt colorSampleCount(GMANRenderMan& renderMan) {
-  if (GMANRenderManImpl* impl = dynamic_cast<GMANRenderManImpl*>(&renderMan)) {
-    return impl->colorSampleCount();
-  }
-  return DefaultColorSamples;
 }
 
 void requireColorSampleCount(char const* request, std::size_t length, RtInt count) {
@@ -961,7 +953,7 @@ RtVoid GMANRIBParse::parseAttribute(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseColor(RtVoid) {
-  const int number = colorSampleCount(renderMan);
+  const int number = renderMan.colorSampleCount();
 
   std::vector<RtFloat> color(number);
   const GMANToken& lookAhead = peekToken();
@@ -979,7 +971,7 @@ RtVoid GMANRIBParse::parseColor(RtVoid) {
 }
 
 RtVoid GMANRIBParse::parseOpacity(RtVoid) {
-  const int number = colorSampleCount(renderMan);
+  const int number = renderMan.colorSampleCount();
 
   std::vector<RtFloat> color(number);
   const GMANToken& lookAhead = peekToken();
