@@ -84,121 +84,122 @@ public:
   ~GMANRenderManImpl(); // default destructor
 
   /* Declare Shading Language variable */
-  RtToken RiDeclare(const char* name, const char* declaration);
+  RtToken RiDeclare(const char* name, const char* declaration) override;
 
   /* RenderMan State machine */
-  RtVoid RiBegin(RtToken name);
-  RtVoid RiEnd(RtVoid);
+  RtVoid RiBegin(RtToken name) override;
+  RtVoid RiEnd(RtVoid) override;
 
   // begin single frame, number frame
-  RtVoid RiFrameBegin(RtInt frame);
-  RtVoid RiFrameEnd(RtVoid);
+  RtVoid RiFrameBegin(RtInt frame) override;
+  RtVoid RiFrameEnd(RtVoid) override;
 
   // begin world (declaration of objects)
-  RtVoid RiWorldBegin(RtVoid);
-  RtVoid RiWorldEnd(RtVoid);
+  RtVoid RiWorldBegin(RtVoid) override;
+  RtVoid RiWorldEnd(RtVoid) override;
 
   // create a new object
-  RtObjectHandle RiObjectBegin(RtVoid);
+  RtObjectHandle RiObjectBegin(RtVoid) override;
 
   // commit the most recently created object
-  RtVoid RiObjectEnd(RtVoid);
+  RtVoid RiObjectEnd(RtVoid) override;
 
-  RtVoid RiObjectInstance(RtObjectHandle handle);
+  RtVoid RiObjectInstance(RtObjectHandle handle) override;
 
-  RtVoid RiAttributeBegin(RtVoid);
-  RtVoid RiAttributeEnd(RtVoid);
+  RtVoid RiAttributeBegin(RtVoid) override;
+  RtVoid RiAttributeEnd(RtVoid) override;
 
-  RtVoid RiTransformBegin(RtVoid);
-  RtVoid RiTransformEnd(RtVoid);
+  RtVoid RiTransformBegin(RtVoid) override;
+  RtVoid RiTransformEnd(RtVoid) override;
 
-  RtVoid RiSolidBegin(RtToken operation);
-  RtVoid RiSolidEnd(RtVoid);
+  RtVoid RiSolidBegin(RtToken operation) override;
+  RtVoid RiSolidEnd(RtVoid) override;
 
-  RtVoid RiMotionBeginV(RtInt n, RtFloat times[]);
-  RtVoid RiMotionEnd(RtVoid);
+  RtVoid RiMotionBeginV(RtInt n, RtFloat times[]) override;
+  RtVoid RiMotionEnd(RtVoid) override;
 
   /* CAMERA OPTIONS */
-  RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect);
-  RtVoid RiFrameAspectRatio(RtFloat aspect);
-  RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top);
-  RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax);
-  RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiClipping(RtFloat hither, RtFloat yon);
-  RtVoid RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance);
-  RtVoid RiShutter(RtFloat min, RtFloat max);
+  RtVoid RiFormat(RtInt xres, RtInt yres, RtFloat aspect) override;
+  RtVoid RiFrameAspectRatio(RtFloat aspect) override;
+  RtVoid RiScreenWindow(RtFloat left, RtFloat right, RtFloat bot, RtFloat top) override;
+  RtVoid RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) override;
+  RtVoid RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiClipping(RtFloat hither, RtFloat yon) override;
+  RtVoid RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) override;
+  RtVoid RiShutter(RtFloat min, RtFloat max) override;
 
   /* DISPLAY OPTIONS */
-  RtVoid RiPixelVariance(RtFloat variation);
-  RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples);
-  RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth);
-  RtVoid RiExposure(RtFloat gain, RtFloat gamma);
-  RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl);
-  RtVoid RiDisplayV(char* name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]);
+  RtVoid RiPixelVariance(RtFloat variation) override;
+  RtVoid RiPixelSamples(RtFloat xsamples, RtFloat ysamples) override;
+  RtVoid RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) override;
+  RtVoid RiExposure(RtFloat gain, RtFloat gamma) override;
+  RtVoid RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) override;
+  RtVoid RiDisplayV(char* name, RtToken type, RtToken mode, RtInt n, RtToken tokens[], RtPointer parms[]) override;
 
   /* ADDITIONAL OPTIONS */
-  RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]);
+  RtVoid RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) override;
   RtInt colorSampleCount();
-  RtVoid RiRelativeDetail(RtFloat relativedetail);
-  RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
+  RtVoid RiRelativeDetail(RtFloat relativedetail) override;
+  RtVoid RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
 
   /* SHADING ATTRIBUTES */
-  RtVoid RiColor(RtColor color);
-  RtVoid RiOpacity(RtColor color);
+  RtVoid RiColor(RtColor color) override;
+  RtVoid RiOpacity(RtColor color) override;
   RtVoid RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3, RtFloat s4,
-                              RtFloat t4);
-  RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff);
-  RtVoid RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiShadingRate(RtFloat size);
-  RtVoid RiShadingInterpolation(RtToken type);
-  RtVoid RiMatte(RtBoolean onoff);
+                              RtFloat t4) override;
+  RtLightHandle RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtLightHandle RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiIlluminate(RtLightHandle light, RtBoolean onoff) override;
+  RtVoid RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiShadingRate(RtFloat size) override;
+  RtVoid RiShadingInterpolation(RtToken type) override;
+  RtVoid RiMatte(RtBoolean onoff) override;
 
   /* GEOMETRY ATTRIBUTES */
-  RtVoid RiBound(RtBound);
-  RtVoid RiDetail(RtBound);
-  RtVoid RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis);
-  RtVoid RiGeometricApproximation(RtToken type, RtFloat value);
-  RtVoid RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep);
+  RtVoid RiBound(RtBound) override;
+  RtVoid RiDetail(RtBound) override;
+  RtVoid RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis) override;
+  RtVoid RiGeometricApproximation(RtToken type, RtFloat value) override;
+  RtVoid RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) override;
   RtVoid RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[], RtFloat knot[], RtFloat min[], RtFloat max[],
-                     RtInt n[], RtFloat u[], RtFloat v[], RtFloat w[]);
-  RtVoid RiOrientation(RtToken orientation);
-  RtVoid RiReverseOrientation(RtVoid);
-  RtVoid RiSides(RtInt sides);
-  RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
+                     RtInt n[], RtFloat u[], RtFloat v[], RtFloat w[]) override;
+  RtVoid RiOrientation(RtToken orientation) override;
+  RtVoid RiReverseOrientation(RtVoid) override;
+  RtVoid RiSides(RtInt sides) override;
+  RtVoid RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
 
   /* TRANSFORMATIONS */
-  RtVoid RiIdentity(RtVoid);
-  RtVoid RiTransform(RtMatrix transform);
-  RtVoid RiConcatTransform(RtMatrix transform);
-  RtVoid RiPerspective(RtFloat fov);
-  RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz);
-  RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz);
-  RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz);
-  RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2);
-  RtVoid RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiCoordinateSystem(RtToken space);
-  RtVoid RiCoordSysTransform(RtToken space);
+  RtVoid RiIdentity(RtVoid) override;
+  RtVoid RiTransform(RtMatrix transform) override;
+  RtVoid RiConcatTransform(RtMatrix transform) override;
+  RtVoid RiPerspective(RtFloat fov) override;
+  RtVoid RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) override;
+  RtVoid RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) override;
+  RtVoid RiScale(RtFloat sx, RtFloat sy, RtFloat sz) override;
+  RtVoid RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2, RtFloat dz2) override;
+  RtVoid RiDeformationV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiCoordinateSystem(RtToken space) override;
+  RtVoid RiCoordSysTransform(RtToken space) override;
 
-  RtPoint* RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n, RtPoint points[]);
+  RtPoint* RiTransformPoints(RtToken fromspace, RtToken tospace, RtInt n, RtPoint points[]) override;
 
-  RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]);
+  RtVoid RiAttributeV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) override;
 
   /* PRIMITIVES */
-  RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[], RtPointer parms[]);
+  RtVoid RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[],
+                           RtPointer parms[]) override;
   RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
-                                  RtToken tokens[], RtPointer parms[]);
-  RtVoid RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]);
+                                  RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) override;
   RtVoid RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n, RtToken tokens[],
-                      RtPointer parms[]);
+                      RtPointer parms[]) override;
 
   // Beside the two RI-mandated overloads above, not reachable through them:
   // the RIB-parsed path calls these directly, with its own supplied-length
@@ -215,22 +216,23 @@ public:
   RtVoid RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
                                   RtToken tokens[], RtPointer parms[], RtInt const* counts);
   RtVoid RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
-                    RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtInt n, RtToken tokens[], RtPointer parms[]);
+                    RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtInt n, RtToken tokens[], RtPointer parms[]) override;
   RtVoid RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
                     RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtInt n, RtToken tokens[], RtPointer parms[],
                     RtInt const* counts);
 
   RtVoid RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
-                   RtPointer parms[]);
-  RtVoid RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]);
+                   RtPointer parms[]) override;
+  RtVoid RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) override;
   RtVoid RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
-                     RtPointer parms[]);
-  RtVoid RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]);
+                     RtPointer parms[]) override;
+  RtVoid RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
+                        RtPointer parms[]) override;
   RtVoid RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
-                       RtPointer parms[]);
-  RtVoid RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]);
+                       RtPointer parms[]) override;
+  RtVoid RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[], RtPointer parms[]) override;
   RtVoid RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax, RtInt n,
-                  RtToken tokens[], RtPointer parms[]);
+                  RtToken tokens[], RtPointer parms[]) override;
 
   // Counts-aware, mirroring RiPatchV and the polygon requests above -- see
   // their comment.
@@ -250,30 +252,30 @@ public:
                   RtToken tokens[], RtPointer parms[], RtInt const* counts);
 
   RtVoid RiBlobbyV(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr, RtToken str[],
-                   RtInt n, RtToken tokens[], RtPointer parms[]);
-  RtVoid RiPointsV(RtInt npoints, RtInt n, RtToken tokens[], RtPointer parms[]);
+                   RtInt n, RtToken tokens[], RtPointer parms[]) override;
+  RtVoid RiPointsV(RtInt npoints, RtInt n, RtToken tokens[], RtPointer parms[]) override;
   RtVoid RiCurvesV(RtToken type, RtInt ncurves, RtInt nvertices[], RtToken wrap, RtInt n, RtToken tokens[],
-                   RtPointer parms[]);
+                   RtPointer parms[]) override;
   RtVoid RiSubdivisionMeshV(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags, RtToken tags[],
                             RtInt numargs[], RtInt intargs[], RtFloat floatargs[], RtInt n, RtToken tokens[],
-                            RtPointer parms[]);
+                            RtPointer parms[]) override;
 
   RtVoid RiProcedural(RtPointer data, RtBound bound, RtVoid (*subdivfunc)(RtPointer, RtFloat),
-                      RtVoid (*freefunc)(RtPointer));
-  RtVoid RiGeometryV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]);
+                      RtVoid (*freefunc)(RtPointer)) override;
+  RtVoid RiGeometryV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) override;
 
   /* MISC */
   RtVoid RiMakeTextureV(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth,
-                        RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]);
+                        RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) override;
   /* ERROR HANDLER */
-  RtVoid RiErrorHandler(RtErrorHandler handler);
+  RtVoid RiErrorHandler(RtErrorHandler handler) override;
 
   RtVoid RiMakeBumpV(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc, RtFloat swidth,
-                     RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]);
+                     RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) override;
   RtVoid RiMakeLatLongEnvironmentV(char* pic, char* tex, RtFilterFunc filterfunc, RtFloat swidth, RtFloat twidth,
-                                   RtInt n, RtToken tokens[], RtPointer parms[]);
+                                   RtInt n, RtToken tokens[], RtPointer parms[]) override;
   RtVoid RiMakeCubeFaceEnvironmentV(char* px, char* nx, char* py, char* ny, char* pz, char* nz, char* tex, RtFloat fov,
                                     RtFilterFunc filterfunc, RtFloat swidth, RtFloat ywidth, RtInt n, RtToken tokens[],
-                                    RtPointer parms[]);
-  RtVoid RiMakeShadowV(char* pic, char* tex, RtInt n, RtToken tokens[], RtPointer parms[]);
+                                    RtPointer parms[]) override;
+  RtVoid RiMakeShadowV(char* pic, char* tex, RtInt n, RtToken tokens[], RtPointer parms[]) override;
 };
