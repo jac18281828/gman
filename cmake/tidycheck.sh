@@ -46,7 +46,7 @@ fi
 jobs=$(getconf _NPROCESSORS_ONLN)
 status=0
 run_tidy() {
-  xargs -P "$jobs" -I{} "$tidy" -p "$build" \
+  xargs -P "$jobs" -I{} "$tidy" -p "$build" --experimental-custom-checks \
     "--header-filter=^$root($header_re)/" \
     "--exclude-header-filter=^${root}(build|tests)/" \
     "$@" {}

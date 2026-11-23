@@ -1,14 +1,21 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
 # Security plus high-signal defect checks, each firing on a real bug, not a
-# style preference, and two hygiene checks. misc-include-cleaner: a missing
-# direct include is a latent build break, since a header that drops a
-# transitive include stops an unrelated file compiling.
+# style preference, two hygiene checks and gman's house rules. misc-include-
+# cleaner: a missing direct include is a latent build break, since a header
+# that drops a transitive include stops an unrelated file compiling.
 # modernize-use-std-numbers: one wrong hand-typed constant is a wrong
 # calculation. No other modernize-*, readability-* or cppcoreguidelines-*:
 # their volume on this tree would bury the findings that are bugs. tidy-check
 # runs this file over every production source and header; tests/ goes
 # unchecked.
+#
+# The house rules are the custom-gman-* checks under CustomChecks, each a
+# clang-query matcher. clang-tidy 22.1.8 registers a custom check only under
+# --experimental-custom-checks, which tidy-check passes; without the flag it
+# drops them without a word. A std::lock_guard or std::scoped_lock built by
+# class template argument deduction escapes custom-gman-thread-seam, which
+# flags the mutex it names where declared.
 Checks: >
   -*,
   bugprone-unsafe-functions,
@@ -21,7 +28,93 @@ Checks: >
   clang-analyzer-cplusplus.*,
   clang-analyzer-unix.*,
   misc-include-cleaner,
-  modernize-use-std-numbers
+  modernize-use-std-numbers,
+  custom-*
+CustomChecks:
+  # Types come through typeLoc and functions through declRefExpr; an
+  # exemption names the file at the use, never the declaration.
+  - Name: gman-thread-seam
+    Query: |
+      let threading namedDecl(matchesName("^::std::(thread|jthread|this_thread|stop_token|stop_source|stop_callback|async|future|shared_future|promise|packaged_task|once_flag|call_once|latch|barrier|counting_semaphore|binary_semaphore)(::|$)"))
+      let locking namedDecl(matchesName("^::std::(mutex|timed_mutex|recursive_mutex|recursive_timed_mutex|shared_mutex|shared_timed_mutex|lock_guard|scoped_lock|unique_lock|shared_lock|lock|try_lock|condition_variable|condition_variable_any)(::|$)"))
+      let atomics namedDecl(matchesName("^::std::atomic(_[a-z0-9_]+)?(::|$)"))
+      let posix namedDecl(matchesName("^::pthread_"))
+      let threadName anyOf(threading, locking, atomics, posix)
+      let outsideSeam unless(anyOf(isExpansionInSystemHeader(), isExpansionInFileMatching("/libgman/gmanparallel[.]cpp$")))
+      let gmanlogLock allOf(isExpansionInFileMatching("/libgman/gmanlog[.]cpp$"), loc(qualType(hasDeclaration(namedDecl(matchesName("^::std::(mutex|lock_guard)$"))))))
+      match typeLoc(outsideSeam, loc(qualType(hasDeclaration(threadName))), unless(gmanlogLock)).bind("site")
+      match declRefExpr(outsideSeam, to(threadName)).bind("site")
+    Diagnostic:
+      - BindName: site
+        Message: "name no thread primitive outside libgman/gmanparallel.cpp; run the work through gman::parallelFor"
+        Level: Warning
+  - Name: gman-tiff-seam
+    Query: |
+      let tiffDecl namedDecl(isExpansionInFileMatching("/tiff(io|conf|vers)?[.]h$"))
+      let outsideSeam unless(anyOf(isExpansionInSystemHeader(), isExpansionInFileMatching("/libgman/gmantiff[.]cpp$")))
+      match typeLoc(outsideSeam, loc(qualType(hasDeclaration(tiffDecl)))).bind("site")
+      match declRefExpr(outsideSeam, to(tiffDecl)).bind("site")
+    Diagnostic:
+      - BindName: site
+        Message: "name no libtiff declaration outside libgman/gmantiff.cpp; go through libgman/gmantiff.h"
+        Level: Warning
+  # asString compares the type as written, which prints s[0] on a std::string
+  # as const value_type; the canonical type is char.
+  - Name: gman-cctype-argument
+    Query: |
+      match callExpr(callee(functionDecl(hasAnyName("::tolower", "::toupper", "::isalnum", "::isalpha", "::isblank", "::iscntrl", "::isdigit", "::isgraph", "::islower", "::isprint", "::ispunct", "::isspace", "::isupper", "::isxdigit"))), hasArgument(0, ignoringImpCasts(expr(hasType(hasCanonicalType(anyOf(asString("char"), asString("const char"), asString("signed char"), asString("const signed char")))))))).bind("site")
+    Diagnostic:
+      - BindName: site
+        Message: "pass a <cctype> function static_cast<unsigned char>(c); a char above 127 is undefined behavior"
+        Level: Warning
+  # static_cast<char>(...) holds an implicit cast as its child, so the cast to
+  # a character type counts only outside an explicit cast.
+  - Name: gman-tolower-narrowing
+    Query: |
+      match implicitCastExpr(hasType(isAnyCharacter()), unless(hasParent(explicitCastExpr())), hasSourceExpression(ignoringParens(callExpr(callee(functionDecl(hasAnyName("::tolower", "::toupper"))))))).bind("site")
+    Diagnostic:
+      - BindName: site
+        Message: "tolower and toupper return an int; narrow it with static_cast<char>(...)"
+        Level: Warning
+  - Name: gman-new-char-array
+    Query: |
+      match cxxNewExpr(isArray(), hasType(pointerType(pointee(hasCanonicalType(anyOf(asString("char"), asString("const char"))))))).bind("site")
+    Diagnostic:
+      - BindName: site
+        Message: "build strings with std::string and std::format, not new char[]"
+        Level: Warning
+  # PATH_MAX expands to a literal spelled in a system header, where a
+  # diagnostic is dropped, so the check binds the nearest enclosing statement
+  # or, outside any statement, declaration.
+  - Name: gman-path-max
+    Query: |
+      match integerLiteral(isExpandedFromMacro("PATH_MAX"), hasAncestor(stmt(unless(implicitCastExpr())).bind("site")))
+      match integerLiteral(isExpandedFromMacro("PATH_MAX"), unless(hasAncestor(stmt())), hasAncestor(namedDecl().bind("site")))
+    Diagnostic:
+      - BindName: site
+        Message: "PATH_MAX is no bound for a path; use std::filesystem::path or std::string"
+        Level: Warning
+  - Name: gman-global-prefix
+    Query: |
+      match cxxRecordDecl(isDefinition(), unless(isImplicit()), unless(isTemplateInstantiation()), anyOf(isClass(), isStruct()), hasDeclContext(translationUnitDecl()), unless(matchesName("^::GMAN"))).bind("site")
+    Diagnostic:
+      - BindName: site
+        Message: "a class at global scope carries the GMAN prefix; put it in a namespace to drop it"
+        Level: Warning
+  - Name: gman-namespace-prefix
+    Query: |
+      match cxxRecordDecl(isDefinition(), unless(isImplicit()), anyOf(isClass(), isStruct()), hasDeclContext(namespaceDecl(hasAnyName("::gman", "::gmanshader"))), matchesName("^::gman(shader)?::GMAN")).bind("site")
+    Diagnostic:
+      - BindName: site
+        Message: "a class in namespace gman or gmanshader sheds the GMAN prefix"
+        Level: Warning
+  - Name: gman-shader-state
+    Query: |
+      match varDecl(unless(isExpansionInSystemHeader()), isExpansionInFileMatching("/shaders/"), anyOf(isStaticLocal(), hasDeclContext(recordDecl()))).bind("site")
+    Diagnostic:
+      - BindName: site
+        Message: "a shader holds no state: no function-local static and no static data member"
+        Level: Warning
 # Every finding fails the job; that red is what the operator watches.
 WarningsAsErrors: '*'
 # Directory-name match only -- a static file cannot anchor to the checkout
