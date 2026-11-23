@@ -32,7 +32,7 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-/*
+/**
  * surface glass()
  * {
  *   normal Nf = faceforward(normalize(N), I);

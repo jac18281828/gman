@@ -35,7 +35,7 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-/*
+/**
  * surface shinymetal(float Ka=1, Ks=1, Kr=1, roughness=.1;
  *                     string texturename="")
  * {

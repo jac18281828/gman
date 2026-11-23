@@ -33,7 +33,7 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-/*
+/**
  * surface mirror(float Kr=1)
  * {
  *   normal Nf = faceforward(normalize(N), I);

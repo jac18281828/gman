@@ -35,7 +35,7 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-/*
+/**
  * surface matte(float Ka = 1, Kd = 1)
  * {
  *   normal Nf = faceforward(normalize(N), I);

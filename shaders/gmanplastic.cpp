@@ -32,7 +32,7 @@
 #include "gmanvector.h"
 #include "ri.h"
 
-/*
+/**
  * surface plastic(float Ka=1, Kd=.5, Ks=.5, roughness=.1;
  *                 color specularcolor=1)
  * {
