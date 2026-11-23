@@ -48,13 +48,14 @@ struct Thrown {
   bool threw = false;
   RtInt code = 0;
   RtInt severity = 0;
+  std::string message;
 };
 
 template <typename Call> Thrown thrownBy(Call&& call) {
   try {
     call();
   } catch (GMANError const& error) {
-    return {true, error.getCode(), error.getSeverity()};
+    return {true, error.getCode(), error.getSeverity(), error.getMessage()};
   }
   return {};
 }
@@ -293,6 +294,29 @@ void testMalformedPairsAreRejected(std::string const& ribDir) {
   checkPairRejected(ribDir, "infinite", RIE_RANGE);
 }
 
+void checkBracketRejected(std::string const& ribDir, std::string const& name, std::string const& message) {
+  const std::string label = "malformed " + name + ": ";
+  RecordingRenderMan renderMan;
+  const Thrown thrown = parseThrown(renderMan, ribDir + "/malformed/" + name + ".rib");
+
+  check(thrown.threw, label + "the file stops");
+  check(thrown.code == RIE_CONSISTENCY, label + "the stop is RIE_CONSISTENCY");
+  check(thrown.severity == RIE_ERROR, label + "the stop is at RIE_ERROR");
+  check(thrown.message == message, label + "the message names the request, the length and the count");
+  check(renderMan.colors.empty(), label + "no Color call arrives");
+  check(renderMan.opacities.empty(), label + "no Opacity call arrives");
+}
+
+void testBracketedArrayMustHoldTheSampleCount(std::string const& ribDir) {
+  checkBracketRejected(ribDir, "color_bracket_short", "Color: array length 2 does not match the color sample count 3.");
+  checkBracketRejected(ribDir, "color_bracket_samplecount",
+                       "Color: array length 3 does not match the color sample count 2.");
+  checkBracketRejected(ribDir, "opacity_bracket_short",
+                       "Opacity: array length 2 does not match the color sample count 3.");
+  checkBracketRejected(ribDir, "opacity_bracket_long",
+                       "Opacity: array length 4 does not match the color sample count 3.");
+}
+
 void testWrittenColorSamplesReadBack() {
   const std::string rib = "colorsamples_writeback.rib";
   constexpr RtInt count = 4;
@@ -341,6 +365,7 @@ int main(int argc, char* argv[]) {
   testRequestReachesTheRenderer(ribDir);
   testRequestAtOneSampleStopsAtColor(ribDir);
   testMalformedPairsAreRejected(ribDir);
+  testBracketedArrayMustHoldTheSampleCount(ribDir);
   testWrittenColorSamplesReadBack();
 
   return checkSummary("ColorSamples is honored by the parser and refused by the renderer where it cannot shade");

@@ -1,0 +1,16 @@
+# ColorSamples sets two samples, then a bracketed Color supplies three
+# values: the array disagrees with the count the file itself set, not with
+# the default.
+#
+# A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+# desync convention." Not third-party.
+Display "malformed_out.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+ColorSamples [0.125 0.25 0.375 0.5 0.625 0.75] [0.875 1 1.125 1.25 1.375 1.5]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+Color [1 0 0]
+Sphere 1 -1 1 360
+WorldEnd

@@ -164,6 +164,14 @@ RtInt colorSampleCount(GMANRenderMan& renderMan) {
   return DefaultColorSamples;
 }
 
+void requireColorSampleCount(char const* request, std::size_t length, RtInt count) {
+  if (length != static_cast<std::size_t>(count)) {
+    throw GMANError(
+        RIE_CONSISTENCY, RIE_ERROR,
+        std::format("{}: array length {} does not match the color sample count {}.", request, length, count).c_str());
+  }
+}
+
 void requireConsistentColorSamples(std::vector<RtFloat> const& nRGB, std::vector<RtFloat> const& RGBn) {
   if (nRGB.size() != RGBn.size() || nRGB.size() % RgbComponents != 0) {
     throw GMANError(RIE_CONSISTENCY, RIE_ERROR,
@@ -959,15 +967,8 @@ RtVoid GMANRIBParse::parseColor(RtVoid) {
   const GMANToken& lookAhead = peekToken();
   if (lookAhead.getType() == GMANToken::LEFT_BRACKET) {
     GMANRIBParse::TokenVector tokenVector = parseArray();
-    std::vector<RtFloat> values = tokenVector.toRtFloatVector();
-    int count = number < (int)tokenVector.size() ? number : (int)tokenVector.size();
-    int i;
-    for (i = 0; i < count; i++) {
-      color[i] = values[i];
-    }
-    for (; i < number; i++) {
-      color[i] = 0.0;
-    }
+    requireColorSampleCount("Color", tokenVector.size(), number);
+    color = tokenVector.toRtFloatVector();
   } else {
     for (int i = 0; i < number; i++) {
       color[i] = nextFloat();
@@ -984,15 +985,8 @@ RtVoid GMANRIBParse::parseOpacity(RtVoid) {
   const GMANToken& lookAhead = peekToken();
   if (lookAhead.getType() == GMANToken::LEFT_BRACKET) {
     GMANRIBParse::TokenVector tokenVector = parseArray();
-    std::vector<RtFloat> values = tokenVector.toRtFloatVector();
-    int count = number < (int)tokenVector.size() ? number : (int)tokenVector.size();
-    int i;
-    for (i = 0; i < count; i++) {
-      color[i] = values[i];
-    }
-    for (; i < number; i++) {
-      color[i] = 0.0;
-    }
+    requireColorSampleCount("Opacity", tokenVector.size(), number);
+    color = tokenVector.toRtFloatVector();
   } else {
     for (int i = 0; i < number; i++) {
       color[i] = nextFloat();
