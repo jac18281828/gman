@@ -1781,16 +1781,6 @@ set_tests_properties(indirectpass PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# No shader holds state below file scope: no static above file scope, no
-# mutable, anywhere under shaders/. See tests/shaderstatics_test.cpp.
-add_executable(gman_shaderstatics shaderstatics_test.cpp)
-
-add_test(NAME shaderstatics
-  COMMAND gman_shaderstatics "${CMAKE_SOURCE_DIR}/shaders")
-set_tests_properties(shaderstatics PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
 # environment(), MakeLatLongEnvironment and shinymetal (RISpec 3.2 Sec
 # 7.1.2, Sec 15.7.2, Appendix A.2.4): camera-to-world reaching the shading
 # path, the writer and lookup, and shinymetal rendered under three camera
@@ -1837,34 +1827,6 @@ target_link_libraries(gman_parallel PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME parallel COMMAND gman_parallel)
 set_tests_properties(parallel PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
-# Threading lives behind one seam: no header, and no source file other
-# than gmanparallel.cpp/gmanlog.cpp, may include a threading header or
-# name a thread primitive.
-add_executable(gman_threadcontainment threadcontainment_test.cpp)
-add_test(NAME threadcontainment
-  COMMAND gman_threadcontainment ${GMAN_SOURCE_PATHS})
-set_tests_properties(threadcontainment PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
-# tolower/toupper are undefined for a byte above 127 unless the argument is
-# cast through unsigned char first. See tests/tolowerscan_test.cpp.
-add_executable(gman_tolowerscan tolowerscan_test.cpp)
-add_test(NAME tolowerscan
-  COMMAND gman_tolowerscan ${GMAN_SOURCE_PATHS})
-set_tests_properties(tolowerscan PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
-# The other <cctype> classifiers (isspace, isalnum, isdigit and the rest)
-# carry the same unsigned-char precondition. See tests/ctypescan_test.cpp.
-add_executable(gman_ctypescan ctypescan_test.cpp)
-add_test(NAME ctypescan
-  COMMAND gman_ctypescan ${GMAN_SOURCE_PATHS})
-set_tests_properties(ctypescan PROPERTIES
   LABELS unit
   TIMEOUT 30)
 

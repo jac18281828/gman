@@ -33,6 +33,8 @@ tree.
 - No manifest constant numerics: write a constant `<numbers>` names by its
   standard name, never as a literal, a formula such as `std::sqrt(2.0)` or a
   local alias.
+- A shader holds no state: no function-local or class `static`
+  (`custom-gman-shader-state`) and no `mutable` member (review).
 
 ## Naming
 - Semantic, not pattern-based. Avoid `State`, `Context`, `Manager` without a
@@ -55,7 +57,7 @@ tree.
 ## Seams
 - Threads: only `gman::parallelFor` (`include/gmanparallel.h`).
   `libgman/gmanparallel.cpp` and `libgman/gmanlog.cpp` alone may name a thread
-  primitive; `tests/threadcontainment_test.cpp` enforces it.
+  primitive; `custom-gman-thread-seam` enforces it.
 - libtiff: only `libgman/gmantiff.cpp` includes `<tiffio.h>` (`tests/` exempt).
 - Symbol visibility follows `BUILD_TESTING`. A test build exports every
   symbol, so tests reach internals; a build with tests off exports only what
