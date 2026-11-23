@@ -304,6 +304,21 @@ set_tests_properties(invaliddisplaymode PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# After a RiBegin whose renderer fails to load, the first request that needs
+# one raises RIE_NOTSTARTED once and later requests return quietly. See
+# tests/failedbegin_test.cpp.
+add_executable(gman_failedbegin failedbegin_test.cpp)
+target_link_libraries(gman_failedbegin PRIVATE gman_core gman_internal_headers)
+add_dependencies(gman_failedbegin gman_zbuffer)
+
+add_test(NAME failedbegin
+  COMMAND gman_failedbegin
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(failedbegin PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # RIB dialect coverage. Each spawns the real gman binary, which dlopens
 # its renderer by bare name, so each needs the same library path as the
 # baseline test above.
@@ -383,6 +398,21 @@ add_test(NAME rflag
                      "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
   WORKING_DIRECTORY "${GMAN_RFLAG_WORKDIR}")
 set_tests_properties(rflag PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 30)
+
+add_executable(gman_failedbegincli failedbegincli_test.cpp)
+target_link_libraries(gman_failedbegincli PRIVATE gman_core)
+
+set(GMAN_FAILEDBEGINCLI_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/failedbegincli-run")
+file(MAKE_DIRECTORY "${GMAN_FAILEDBEGINCLI_WORKDIR}")
+
+add_test(NAME failedbegincli
+  COMMAND gman_failedbegincli $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
+  WORKING_DIRECTORY "${GMAN_FAILEDBEGINCLI_WORKDIR}")
+set_tests_properties(failedbegincli PROPERTIES
   ENVIRONMENT "${GMAN_PHASE2_ENV}"
   LABELS render
   TIMEOUT 30)

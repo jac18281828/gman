@@ -64,6 +64,17 @@ private:
 
   std::unique_ptr<GMANOutput> output;
 
+  // true once the missing-renderer report has been raised for the current
+  // RiBegin, so a failed load reports once
+  bool noRendererReported = false;
+
+  // frees the renderer and everything borrowed from or built for it
+  RtVoid releaseRenderer();
+
+  // raises RIE_NOTSTARTED the first time it is called while no renderer is
+  // loaded, and returns quietly thereafter
+  RtVoid reportNoRendererOnce();
+
   // drops the frame's output and leaves the world, as every way out of
   // RiWorldEnd does
   RtVoid abandonWorld();

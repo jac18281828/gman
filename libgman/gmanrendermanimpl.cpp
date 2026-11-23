@@ -267,6 +267,8 @@ RtToken GMANRenderManImpl::RiDeclare(const char* name, const char* declaration) 
 
 // begin new renderman rendering instance
 RtVoid GMANRenderManImpl::RiBegin(RtToken name) {
+  noRendererReported = false;
+  releaseRenderer();
 
   if (name == NULL) {
     name = "gmanzbuffer";
@@ -284,12 +286,25 @@ RtVoid GMANRenderManImpl::RiBegin(RtToken name) {
 }
 
 RtVoid GMANRenderManImpl::RiEnd(RtVoid) {
+  noRendererReported = false;
+  releaseRenderer();
+}
+
+RtVoid GMANRenderManImpl::releaseRenderer() {
   renderer.reset();
   // worldManager and objectManager belong to renderer, not to this object;
   // deleting it invalidates them too.
   worldManager = NULL;
   objectManager = NULL;
   viewingSystem.reset();
+}
+
+RtVoid GMANRenderManImpl::reportNoRendererOnce() {
+  if (noRendererReported) {
+    return;
+  }
+  noRendererReported = true;
+  throw GMANError(RIE_NOTSTARTED, RIE_SEVERE, "No renderer loaded.");
 }
 
 RtVoid GMANRenderManImpl::RiFrameBegin(RtInt /*frame*/) { enterMode(F); }
@@ -371,6 +386,12 @@ RtVoid GMANRenderManImpl::abandonWorld() {
 }
 
 RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
+  if (!renderer) {
+    abandonWorld();
+    reportNoRendererOnce();
+    return;
+  }
+
   // Every renderer reads pixel (0, 0) as its background, so it needs a
   // frame buffer with at least one pixel. With no Display, or a framebuffer
   // one, RiWorldBegin builds gman::OutputX11's 0x0 stub; report that instead
@@ -989,6 +1010,10 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
 }
 RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[], RtInt const* counts) {
   allowed(cmdPolygon);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
 
   std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, n, tokens, parms, counts);
   if (!mesh) {
@@ -1009,6 +1034,10 @@ RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt 
 RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[], RtPointer parms[],
                                             const RtInt* counts) {
   allowed(cmdGeneralPolygon);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
 
   std::optional<GMANPolygonMesh> const mesh =
       gman::generalPolygonMesh(nloops, nverts, dictionary, n, tokens, parms, counts);
@@ -1030,6 +1059,10 @@ RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt 
 RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[],
                                             RtPointer parms[], RtInt const* counts) {
   allowed(cmdPointsPolygon);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
 
   std::optional<GMANPolygonMesh> const mesh =
       gman::pointsPolygonsMesh(npolys, nverts, verts, dictionary, n, tokens, parms, counts);
@@ -1051,6 +1084,10 @@ RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
 RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
                                                    RtToken tokens[], RtPointer parms[], RtInt const* counts) {
   allowed(cmdPointsGeneralPolygons);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
 
   std::optional<GMANPolygonMesh> const mesh =
       gman::pointsGeneralPolygonsMesh(npolys, nloops, nverts, verts, dictionary, n, tokens, parms, counts);
@@ -1070,6 +1107,10 @@ RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPo
 }
 RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdPatch);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
 
   // A bicubic patch carries sixteen vertex-class "P" values, not four;
   // sizing this for every type as bilinear's four truncates "P" and reads
@@ -1091,6 +1132,10 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
 RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n,
                                        RtToken tokens[], RtPointer parms[], const RtInt* counts) {
   allowed(cmdPatchMesh);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
 
   bool uPeriodic = strcmp(uwrap, RI_PERIODIC) == 0;
   bool vPeriodic = strcmp(vwrap, RI_PERIODIC) == 0;
@@ -1259,6 +1304,10 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
                                      RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtInt n,
                                      RtToken tokens[], RtPointer parms[], RtInt const* counts) {
   allowed(cmdNuPatch);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
 
   if (!validateNuPatch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax)) {
     worldManager->add(objectManager->create());
@@ -1310,6 +1359,10 @@ RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, 
 RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
                                     RtPointer parms[], RtInt const* counts) {
   allowed(cmdSphere);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform transform(getTransform());
@@ -1326,6 +1379,10 @@ RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, 
 RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
                                   RtPointer parms[], RtInt const* counts) {
   allowed(cmdCone);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform transform(getTransform());
@@ -1341,6 +1398,10 @@ RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax
 RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
                                       RtToken tokens[], RtPointer parms[], RtInt const* counts) {
   allowed(cmdCylinder);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform transform(getTransform());
@@ -1357,6 +1418,10 @@ RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat
 RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
                                          RtPointer parms[], RtInt const* counts) {
   allowed(cmdHyperboloid);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform transform(getTransform());
@@ -1373,6 +1438,10 @@ RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax
 RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
                                         RtToken tokens[], RtPointer parms[], RtInt const* counts) {
   allowed(cmdParaboloid);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform transform(getTransform());
@@ -1389,6 +1458,10 @@ RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, 
 RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
                                   RtPointer parms[], RtInt const* counts) {
   allowed(cmdDisk);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform transform(getTransform());
@@ -1404,6 +1477,10 @@ RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimi
 RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
                                    RtInt n, RtToken tokens[], RtPointer parms[], RtInt const* counts) {
   allowed(cmdTorus);
+  if (!renderer) {
+    reportNoRendererOnce();
+    return;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms, 4, 4, 1, 1, counts);
 
   GMANTransform transform(getTransform());
