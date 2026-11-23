@@ -637,14 +637,14 @@ void checkBumpParallel() {
   check(gman::bumpShadowing(shading * 3.0f, shading, w) == 1.0f,
         "bumpShadowing: a base three times the shading normal's length is 1");
 
-  GMANVector const v(0.235638216f, -0.264468938f, 0.935163498f);
+  GMANVector const v(-0.00430628425f, -0.961476743f, 0.274852514f);
   GMANVector twiceNormalized = v;
   twiceNormalized.normalize();
   twiceNormalized.normalize();
   check(twiceNormalized.getX() != v.getX() || twiceNormalized.getY() != v.getY() || twiceNormalized.getZ() != v.getZ(),
         "bumpShadowing: normalize(normalize(v)) differs from v in float");
-  GMANVector const grazing(-0.00667813374f, -0.962686181f, -0.270537734f);
-  check(unclampedRatio(toVec3(v), toVec3(twiceNormalized), toVec3(grazing)) < 1.0 - 1e-7,
+  GMANVector const grazing(-4.30628475e-08f, 0.274845451f, 0.961488426f);
+  check(unclampedRatio(toVec3(v), toVec3(twiceNormalized), toVec3(grazing)) < 1.0 - 1e-3,
         "bumpShadowing: the unclamped ratio of that pair at the grazing direction falls below 1");
   check(gman::bumpShadowing(v, twiceNormalized, grazing) == 1.0f,
         "bumpShadowing: a base and its twice-normalized shading normal give 1 at a grazing direction");

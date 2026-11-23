@@ -18,7 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -39,7 +38,7 @@ constexpr double kRadius = 0.75;
 constexpr std::size_t kImageSize = 64;
 constexpr double kHalfWidth = 1.0;
 constexpr double kFacetAngle = std::numbers::pi / 4.0;
-constexpr double kTiltAngle = std::numbers::pi / 32.0;
+constexpr double kPrismRotation = std::numbers::pi / 32.0;
 constexpr int kVertexColumns = 6;
 
 constexpr unsigned char kTexelRed = 191;
@@ -84,7 +83,7 @@ double columnX(uint32_t column) {
 std::vector<Vertex> prismRing() {
   std::vector<Vertex> ring;
   for (int k = 0; k < kVertexColumns; ++k) {
-    double const angle = kTiltAngle + (k - 2.5) * kFacetAngle;
+    double const angle = kPrismRotation + (k - 2.5) * kFacetAngle;
     ring.push_back({kRadius * std::sin(angle), -kRadius * std::cos(angle)});
   }
   return ring;
