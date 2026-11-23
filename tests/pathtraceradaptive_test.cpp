@@ -33,13 +33,20 @@
  * line reports the paths traced against the paths allowed. The metric is
  * called directly on hand-computed paths.
  *
- * With the argument --measure <gman> <materials.rib> <outdir> the program
- * does none of that. It renders samples/materials.rib through gman at
- * several path counts and PixelVariance values, each into <outdir> as a
- * 32-bit float TIFF, and prints each run's wall time, paths traced and RMSE
- * against a high-count reference, asserting nothing.
+ * With the argument --measure <gman> <materials.rib> <outdir> [run ...] the
+ * program does none of that. It renders samples/materials.rib through gman
+ * at several path counts and PixelVariance values, each into <outdir> as a
+ * 32-bit float TIFF, and asserts nothing. Named runs render alone, in table
+ * order; with none named every run renders. Once all have ended it prints
+ * each run's wall time, paths traced and RMSE against the reference run,
+ * and, against the baseline run, the signed difference of each channel's
+ * image mean in percent, the paired z of that difference over 8 x 8 pixel
+ * blocks, and the percent of changed red pixels that fell. A figure whose
+ * run did not render prints "-".
  */
 
+#include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -129,10 +136,14 @@ constexpr double kTinyThreshold = 1.0e-30;
 constexpr std::uint32_t kMeasureSamplesPerAxis = 2;
 constexpr std::uint16_t kFloatBits = 32;
 constexpr std::uint16_t kRgbaSamples = 4;
+constexpr std::uint32_t kBlockSize = 8;
+constexpr std::size_t kColourChannels = 3;
+constexpr double kPercent = 100.0;
 char const* const kMeasureDisplayLine = "Display \"materials.png\" \"file\" \"rgba\"";
 char const* const kMeasureSamplesLine = "Option \"pathtracer\" \"integer samples\" [64]";
 char const* const kMeasurePixelSamplesLine = "PixelSamples 2 2";
 constexpr char const* kMeasureReference = "reference";
+constexpr char const* kMeasureBaseline = "baseline";
 
 struct MeasureRun {
   char const* name;
@@ -141,8 +152,8 @@ struct MeasureRun {
 };
 
 constexpr MeasureRun kMeasureRuns[] = {
-    {kMeasureReference, 4096, 0.0}, {"baseline", 512, 0.0},     {"a512-003", 512, 0.003}, {"a512-01", 512, 0.01},
-    {"a512-03", 512, 0.03},         {"a1024-003", 1024, 0.003}, {"a1024-01", 1024, 0.01},
+    {kMeasureReference, 4096, 0.0}, {kMeasureBaseline, 512, 0.0}, {"a512-003", 512, 0.003}, {"a512-01", 512, 0.01},
+    {"a512-03", 512, 0.03},         {"a1024-003", 1024, 0.003},   {"a1024-01", 1024, 0.01},
 };
 
 char const* const kRenderLog = "pathtraceradaptive_render.log";
@@ -659,11 +670,168 @@ std::optional<std::size_t> tracedPaths(std::string const& output) {
   return static_cast<std::size_t>(std::strtoull(output.c_str() + at + std::strlen(kInfoPrefix), nullptr, 10));
 }
 
-int runMeasure(std::string const& gman, std::string const& materialsPath, std::string const& outdir) {
+struct MeasureOutcome {
+  MeasureRun const* run;
+  double seconds;
+  std::size_t traced;
+  std::size_t allowed;
+  FloatImage image;
+};
+
+using ChannelTriple = std::array<double, kColourChannels>;
+
+struct Bias {
+  ChannelTriple percent;
+  ChannelTriple z;
+  std::optional<double> fellPercent;
+};
+
+ChannelTriple channelMeans(FloatImage const& image) {
+  ChannelTriple sums{};
+  for (std::size_t i = 0; i < image.rgb.size(); ++i) {
+    sums[i % kColourChannels] += image.rgb[i];
+  }
+  double const pixels = static_cast<double>(image.rgb.size() / kColourChannels);
+  for (double& sum : sums) {
+    sum /= pixels;
+  }
+  return sums;
+}
+
+std::vector<double> blockMeans(FloatImage const& image, std::size_t channelIndex) {
+  std::vector<double> means;
+  for (std::uint32_t top = 0; top + kBlockSize <= image.height; top += kBlockSize) {
+    for (std::uint32_t left = 0; left + kBlockSize <= image.width; left += kBlockSize) {
+      double sum = 0.0;
+      for (std::uint32_t y = top; y < top + kBlockSize; ++y) {
+        for (std::uint32_t x = left; x < left + kBlockSize; ++x) {
+          sum += image.rgb[(static_cast<std::size_t>(y) * image.width + x) * kColourChannels + channelIndex];
+        }
+      }
+      means.push_back(sum / static_cast<double>(kBlockSize * kBlockSize));
+    }
+  }
+  return means;
+}
+
+double pairedZ(std::vector<double> const& image, std::vector<double> const& baseline) {
+  double const count = static_cast<double>(image.size());
+  double mean = 0.0;
+  for (std::size_t i = 0; i < image.size(); ++i) {
+    mean += (image[i] - baseline[i]) / count;
+  }
+  double sumSquares = 0.0;
+  for (std::size_t i = 0; i < image.size(); ++i) {
+    double const deviation = image[i] - baseline[i] - mean;
+    sumSquares += deviation * deviation;
+  }
+  double const standardDeviation = std::sqrt(sumSquares / (count - 1.0));
+  if (standardDeviation > 0.0) {
+    return mean / (standardDeviation / std::sqrt(count));
+  }
+  return mean == 0.0 ? 0.0 : std::copysign(std::numeric_limits<double>::infinity(), mean);
+}
+
+std::optional<double> fellPercent(FloatImage const& image, FloatImage const& baseline) {
+  std::size_t changed = 0;
+  std::size_t fell = 0;
+  for (std::size_t i = 0; i < image.rgb.size(); i += kColourChannels) {
+    if (image.rgb[i] != baseline.rgb[i]) {
+      ++changed;
+      fell += image.rgb[i] < baseline.rgb[i] ? 1 : 0;
+    }
+  }
+  if (changed == 0) {
+    return std::nullopt;
+  }
+  return kPercent * static_cast<double>(fell) / static_cast<double>(changed);
+}
+
+Bias biasAgainst(FloatImage const& image, FloatImage const& baseline) {
+  Bias bias{};
+  ChannelTriple const imageMeans = channelMeans(image);
+  ChannelTriple const baselineMeans = channelMeans(baseline);
+  for (std::size_t c = 0; c < kColourChannels; ++c) {
+    bias.percent[c] = kPercent * (imageMeans[c] - baselineMeans[c]) / baselineMeans[c];
+    bias.z[c] = pairedZ(blockMeans(image, c), blockMeans(baseline, c));
+  }
+  bias.fellPercent = fellPercent(image, baseline);
+  return bias;
+}
+
+std::string figure(std::optional<double> value, int precision) {
+  return value ? std::format("{:.{}f}", *value, precision) : std::string("-");
+}
+
+std::string biasColumns(std::optional<Bias> const& bias) {
+  if (!bias) {
+    return "bias % R - G - B - z R - G - B - fell % -";
+  }
+  return std::format("bias % R {:+.3f} G {:+.3f} B {:+.3f} z R {:+.2f} G {:+.2f} B {:+.2f} fell % {}", bias->percent[0],
+                     bias->percent[1], bias->percent[2], bias->z[0], bias->z[1], bias->z[2],
+                     figure(bias->fellPercent, 1));
+}
+
+MeasureOutcome const* findOutcome(std::vector<MeasureOutcome> const& outcomes, char const* name) {
+  for (MeasureOutcome const& outcome : outcomes) {
+    if (std::strcmp(outcome.run->name, name) == 0) {
+      return &outcome;
+    }
+  }
+  return nullptr;
+}
+
+void printOutcomes(std::vector<MeasureOutcome> const& outcomes) {
+  MeasureOutcome const* const reference = findOutcome(outcomes, kMeasureReference);
+  MeasureOutcome const* const baseline = findOutcome(outcomes, kMeasureBaseline);
+  for (MeasureOutcome const& outcome : outcomes) {
+    std::optional<double> const error =
+        reference != nullptr ? std::optional<double>(rmse(outcome.image, reference->image)) : std::nullopt;
+    std::optional<Bias> bias;
+    if (baseline != nullptr && &outcome != baseline) {
+      bias = biasAgainst(outcome.image, baseline->image);
+    }
+    std::printf("%-10s samples %4d variance %-6g wall %8.1f s paths %11zu of %11zu rmse %s %s\n", outcome.run->name,
+                outcome.run->samples, outcome.run->variance, outcome.seconds, outcome.traced, outcome.allowed,
+                figure(error, 6).c_str(), biasColumns(bias).c_str());
+  }
+  std::fflush(stdout);
+}
+
+bool isRunName(std::string const& name) {
+  for (MeasureRun const& run : kMeasureRuns) {
+    if (name == run.name) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool wanted(std::vector<std::string> const& names, MeasureRun const& run) {
+  return names.empty() || std::find(names.begin(), names.end(), run.name) != names.end();
+}
+
+int runMeasure(std::string const& gman, std::string const& materialsPath, std::string const& outdir,
+               std::vector<std::string> const& names) {
+  for (std::string const& name : names) {
+    if (isRunName(name)) {
+      continue;
+    }
+    std::fprintf(stderr, "measure: unknown run \"%s\"; the runs are", name.c_str());
+    for (MeasureRun const& run : kMeasureRuns) {
+      std::fprintf(stderr, " %s", run.name);
+    }
+    std::fprintf(stderr, "\n");
+    return 2;
+  }
+
   std::string const materials = readFile(materialsPath);
-  std::optional<FloatImage> reference;
+  std::vector<MeasureOutcome> outcomes;
 
   for (MeasureRun const& run : kMeasureRuns) {
+    if (!wanted(names, run)) {
+      continue;
+    }
     std::optional<std::string> const rib = measureRib(materials, run);
     if (!rib) {
       std::fprintf(stderr, "measure: %s lacks a line the runs rewrite\n", materialsPath.c_str());
@@ -683,18 +851,14 @@ int runMeasure(std::string const& gman, std::string const& materialsPath, std::s
       std::fprintf(stderr, "measure: %s failed (exit %d)\n%s\n", run.name, result.exitStatus, result.output.c_str());
       return 1;
     }
-    if (!reference) {
-      reference = image;
-    }
 
     std::size_t const slots =
         static_cast<std::size_t>(image->width) * image->height * kMeasureSamplesPerAxis * kMeasureSamplesPerAxis;
     std::size_t const allowed = static_cast<std::size_t>(run.samples) * slots;
     std::size_t const traced = tracedPaths(result.output).value_or(allowed);
-    std::printf("%-10s samples %4d variance %-6g wall %8.1f s paths %11zu of %11zu rmse %.6f\n", run.name, run.samples,
-                run.variance, seconds, traced, allowed, rmse(*image, *reference));
-    std::fflush(stdout);
+    outcomes.push_back({&run, seconds, traced, allowed, std::move(*image)});
   }
+  printOutcomes(outcomes);
   return 0;
 }
 
@@ -723,9 +887,9 @@ int main(int argc, char** argv) {
   if (argc == 1) {
     return runChecks();
   }
-  if (argc == 5 && std::strcmp(argv[1], "--measure") == 0) {
-    return runMeasure(argv[2], argv[3], argv[4]);
+  if (argc >= 5 && std::strcmp(argv[1], "--measure") == 0) {
+    return runMeasure(argv[2], argv[3], argv[4], std::vector<std::string>(argv + 5, argv + argc));
   }
-  std::fprintf(stderr, "usage: %s [--measure <gman> <materials.rib> <outdir>]\n", argv[0]);
+  std::fprintf(stderr, "usage: %s [--measure <gman> <materials.rib> <outdir> [run ...]]\n", argv[0]);
   return 2;
 }
