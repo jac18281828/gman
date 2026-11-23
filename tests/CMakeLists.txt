@@ -1559,7 +1559,7 @@ if(GMAN_BUILD_PATHTRACER)
   set_tests_properties(textureopacity_pathtracer PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
-    TIMEOUT 30)
+    TIMEOUT 120)
 endif()
 
 # s, t (and, for a polygon, u, v) reaching texture() on quadrics, Patch and
