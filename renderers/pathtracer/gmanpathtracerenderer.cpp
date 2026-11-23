@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -119,18 +120,23 @@ void addPath(SlotStatistics& stats, GMANColor const& L, GMANColor const& alphaHa
   }
 }
 
-bool slotConverged(SlotStatistics const& stats, RtFloat tolerance) {
-  if (stats.paths < 2) {
-    return false;
+std::uint32_t requiredPaths(SlotStatistics const& pilot, RtFloat tolerance, std::uint32_t minPaths,
+                            std::uint32_t maxPaths) {
+  if (pilot.paths < 2 || !(tolerance > 0.0f)) {
+    return maxPaths;
   }
-  double const count = static_cast<double>(stats.paths);
-  for (double const sumSquares : stats.sumSquaredDeviations) {
-    double const variance = sumSquares / (count - 1.0);
-    if (!(std::sqrt(variance / count) < static_cast<double>(tolerance))) {
-      return false;
+  double const degrees = static_cast<double>(pilot.paths) - 1.0;
+  double variance = 0.0;
+  for (double const sumSquares : pilot.sumSquaredDeviations) {
+    double const channelVariance = sumSquares / degrees;
+    if (!std::isfinite(channelVariance)) {
+      return maxPaths;
     }
+    variance = std::max(variance, channelVariance);
   }
-  return true;
+  double const squaredTolerance = static_cast<double>(tolerance) * static_cast<double>(tolerance);
+  double const required = std::floor(variance / squaredTolerance) + 1.0;
+  return static_cast<std::uint32_t>(std::clamp(required, static_cast<double>(minPaths), static_cast<double>(maxPaths)));
 }
 
 } // namespace gman
@@ -139,6 +145,9 @@ namespace {
 
 // Pins every image this plugin renders; changing it moves all of them.
 constexpr std::uint32_t kSeed = 0x9e3779b9u;
+
+// Seeds the fresh batch's own pattern, an independent hash stream from kSeed's.
+constexpr std::uint32_t kFreshSeed = 0x7f4a7c15u;
 
 // Russian roulette's own survival cap: every path ends with probability 1.
 constexpr RtFloat kRouletteCap = (RtFloat)0.95;
@@ -301,14 +310,14 @@ bool passThrough(GMANHit const& hit, gman::SurfacePoint const& point, GMANColor 
 // and overwritten here, never reallocated per vertex. Answers false, chosen
 // and pj untouched, when no emitter has positive weight there.
 bool chooseLight(std::vector<gman::Emitter> const& emitters, GMANPoint const& p, GMANRayInterface const* primitive,
-                 RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N, std::uint32_t k,
+                 std::uint32_t seed, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N, std::uint32_t k,
                  std::vector<RtFloat>& lightWeight, std::size_t& chosen, RtFloat& pj) {
   RtFloat const totalWeight = lightChoiceWeights(emitters, p, primitive, lightWeight);
   if (!(totalWeight > 0.0f) || !std::isfinite(totalWeight)) {
     return false;
   }
 
-  RtFloat const lightU = gman::sample1D(kSeed, sx, sy, i, N, 2u + 5u * k);
+  RtFloat const lightU = gman::sample1D(seed, sx, sy, i, N, 2u + 5u * k);
   RtFloat const target = lightU * totalWeight;
   RtFloat cumulative = 0.0f;
   std::size_t lastPositive = 0;
@@ -395,19 +404,19 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
                               GMANRayInterface const* hitPrimitive, gman::SurfacePoint const& point,
                               gman::BSDF const& closure, GMANVector const& wo, GMANColor const& beta,
                               RtFloat surfaceMagnitude, GMANMatrix4 const& cameraToWorld,
-                              gman::TextureCache* textureCache, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
-                              std::uint32_t k, std::vector<RtFloat>& lightWeight, bool misEnabled) {
+                              gman::TextureCache* textureCache, std::uint32_t seed, RtInt sx, RtInt sy, std::uint32_t i,
+                              std::uint32_t N, std::uint32_t k, std::vector<RtFloat>& lightWeight, bool misEnabled) {
   if (emitters.empty()) {
     return kBlack;
   }
 
   std::size_t chosen = 0;
   RtFloat pj = 0.0f;
-  if (!chooseLight(emitters, hit.point, hitPrimitive, sx, sy, i, N, k, lightWeight, chosen, pj)) {
+  if (!chooseLight(emitters, hit.point, hitPrimitive, seed, sx, sy, i, N, k, lightWeight, chosen, pj)) {
     return kBlack;
   }
 
-  gman::Sample2D const uv = gman::sample2D(kSeed, sx, sy, i, N, 3u + 5u * k);
+  gman::Sample2D const uv = gman::sample2D(seed, sx, sy, i, N, 3u + 5u * k);
   gman::EmitterSample const es = gman::sample(emitters[chosen], hit.point, uv.u1, uv.u2);
   if (!(es.pdf > 0.0f) || colorBlack(es.Cl)) {
     return kBlack;
@@ -450,10 +459,10 @@ struct BSDFStepDraw {
 // of 0 or a lost roulette draw; a beta gone non-finite likewise ends it and
 // clears finite.
 std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANVector const& wo,
-                                                gman::SurfacePoint const& point, RtInt sx, RtInt sy, std::uint32_t i,
-                                                std::uint32_t N, std::uint32_t k, GMANColor& beta, RtFloat& etaScale,
-                                                bool& finite) {
-  gman::Sample2D const uvBsdf = gman::sample2D(kSeed, sx, sy, i, N, 4u + 5u * k);
+                                                gman::SurfacePoint const& point, std::uint32_t seed, RtInt sx, RtInt sy,
+                                                std::uint32_t i, std::uint32_t N, std::uint32_t k, GMANColor& beta,
+                                                RtFloat& etaScale, bool& finite) {
+  gman::Sample2D const uvBsdf = gman::sample2D(seed, sx, sy, i, N, 4u + 5u * k);
   gman::BSDFSample const sample = closure.sample(wo, uvBsdf.u1, uvBsdf.u2);
   if (!(sample.pdf > 0.0f)) {
     return std::nullopt;
@@ -482,7 +491,7 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
 
   if (k >= 3) {
     RtFloat const q = GMANMin(kRouletteCap, maxChannel(scaleColor(beta, etaScale)));
-    RtFloat const rouletteU = gman::sample1D(kSeed, sx, sy, i, N, 5u + 5u * k);
+    RtFloat const rouletteU = gman::sample1D(seed, sx, sy, i, N, 5u + 5u * k);
     if (!(rouletteU < q)) {
       return std::nullopt;
     }
@@ -572,8 +581,8 @@ struct PathState {
 // false to end the path here.
 bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                      GMANMatrix4 const& cameraToWorld, gman::TextureCache* textureCache, GMANHit const& hit,
-                     GMANRayInterface const* hitPrimitive, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
-                     std::uint32_t k, bool misEnabled, PathState& state) {
+                     GMANRayInterface const* hitPrimitive, std::uint32_t seed, RtInt sx, RtInt sy, std::uint32_t i,
+                     std::uint32_t N, std::uint32_t k, bool misEnabled, PathState& state) {
   gman::SurfacePoint const point = gman::hitSurfacePoint(state.ray, hit);
   gman::Appearance const& appearance = hitPrimitive->getAppearance();
   RtFloat const surfaceMagnitude = point.surfaceMagnitude;
@@ -584,7 +593,7 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
 
   GMANColor const os = clampCoverage(appearance.Os);
   RtFloat const qPass = meanChannel(gman::oneMinus(os));
-  RtFloat const coverageU = gman::sample1D(kSeed, sx, sy, i, N, 1u + 5u * k);
+  RtFloat const coverageU = gman::sample1D(seed, sx, sy, i, N, 1u + 5u * k);
   if (coverageU < qPass) {
     return passThrough(hit, point, os, qPass, surfaceMagnitude, state.beta, state.passThroughRun, state.ray);
   }
@@ -597,9 +606,9 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   GMANVector const wo = -point.I;
   state.result.L +=
       nextEventEstimation(bvh, emitters, hit, hitPrimitive, point, closure, wo, state.beta, surfaceMagnitude,
-                          cameraToWorld, textureCache, sx, sy, i, N, k, state.lightWeight, misEnabled);
+                          cameraToWorld, textureCache, seed, sx, sy, i, N, k, state.lightWeight, misEnabled);
   std::optional<BSDFStepDraw> const draw =
-      bsdfStepAndRoulette(closure, wo, point, sx, sy, i, N, k, state.beta, state.etaScale, state.result.finite);
+      bsdfStepAndRoulette(closure, wo, point, seed, sx, sy, i, N, k, state.beta, state.etaScale, state.result.finite);
   if (!draw) {
     return false;
   }
@@ -619,12 +628,13 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
 // Russian roulette at each scattering vertex, until the path escapes, is
 // rouletted out, fails a BSDF draw or runs past the composite-layer cap on
 // a straight run of pass-throughs. (sx, sy) is the slot's absolute
-// sample-grid coordinate and (i, N) the path's own index among the slot's
-// N; every random draw is a pure function of these four plus a per-vertex
-// dimension, so no state passes between paths or slots.
+// sample-grid coordinate and (i, N) the path's own index among the N of its
+// pattern; every random draw is a pure function of seed, these four and a
+// per-vertex dimension, so no state passes between paths or slots.
 PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                      GMANMatrix4 const& cameraToWorld, GMANColor const& background, gman::TextureCache* textureCache,
-                     GMANRay cameraRay, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N, bool misEnabled) {
+                     GMANRay cameraRay, std::uint32_t seed, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
+                     bool misEnabled) {
   PathState state(cameraRay, emitters.size());
   bool escaped = false;
   for (std::uint32_t k = 0;; ++k) {
@@ -640,8 +650,8 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
       escaped = true;
       break;
     }
-    if (!tracePathVertex(bvh, emitters, cameraToWorld, textureCache, hit, hitPrimitive, sx, sy, i, N, k, misEnabled,
-                         state)) {
+    if (!tracePathVertex(bvh, emitters, cameraToWorld, textureCache, hit, hitPrimitive, seed, sx, sy, i, N, k,
+                         misEnabled, state)) {
       break;
     }
   }
@@ -654,11 +664,12 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   return state.result;
 }
 
-// One slot's own paths, summed for render(): the mean radiance and
+// One slot's own estimate, summed for render(): the mean radiance and
 // coverage estimate go to the row's call to zTestAndSet once the row knows
-// whether any path's camera ray ever hit anything; a dropped path
-// contributes zero to both sums and is counted. paths is how many the slot
-// traced, at most N.
+// whether any averaged path's camera ray ever hit anything; a dropped path
+// contributes zero to both sums and is counted. estimatePaths is how many
+// paths the sums average, and paths how many the slot traced in all, a
+// pilot's included.
 struct SlotResult {
   GMANColor sumL = kBlack;
   GMANColor sumAlpha = kBlack;
@@ -666,34 +677,83 @@ struct SlotResult {
   bool anyHit = false;
   std::size_t dropped = 0;
   std::uint32_t paths = 0;
+  std::uint32_t estimatePaths = 0;
 };
 
-// When a slot stops: it checks gman::slotConverged against tolerance after
-// every batchSize-th path while fewer than N have run. A batchSize of N or
-// more never checks.
-struct StoppingRule {
-  RtFloat tolerance;
-  std::uint32_t batchSize;
+// How a slot spends its paths: under a positive pixelVariance a pilot of
+// pilotSize paths sizes a fresh batch, unless two pilots would reach the
+// maximum.
+struct SamplingPlan {
+  RtFloat pixelVariance;
+  std::uint32_t pilotSize;
 };
 
-bool atBatchEnd(std::uint32_t traced, std::uint32_t N, StoppingRule const& stop) {
-  return traced < N && traced % stop.batchSize == 0;
+bool usesPilot(SamplingPlan const& plan, std::uint32_t N) {
+  return plan.pixelVariance > 0.0f && static_cast<std::uint64_t>(plan.pilotSize) * 2 < N;
 }
 
-void accumulatePath(SlotResult& result, gman::SlotStatistics& stats, PathResult const& path) {
+// Everything one slot's paths share: the scene they trace, the slot's own
+// absolute sample-grid coordinate (sx, sy) and the pixel's sample layout.
+struct SlotTrace {
+  GMANRayBVH const& bvh;
+  std::vector<gman::Emitter> const& emitters;
+  GMANViewingSystem const* viewingSys;
+  GMANMatrix4 const& cameraToWorld;
+  GMANColor const& background;
+  gman::TextureCache* textureCache;
+  RtInt sx;
+  RtInt sy;
+  int xsamples;
+  int ysamples;
+  bool misEnabled;
+};
+
+PathResult tracePathInSlot(SlotTrace const& slot, std::uint32_t seed, std::uint32_t i, std::uint32_t patternSize) {
+  gman::Sample2D const uv0 = gman::sample2D(seed, slot.sx, slot.sy, i, patternSize, 0u);
+  RtFloat const rasterX = ((RtFloat)slot.sx + uv0.u1) / (RtFloat)slot.xsamples;
+  RtFloat const rasterY = ((RtFloat)slot.sy + uv0.u2) / (RtFloat)slot.ysamples;
+  GMANRay const cameraRay = slot.viewingSys->cameraRay(rasterX, rasterY);
+  return tracePath(slot.bvh, slot.emitters, slot.cameraToWorld, slot.background, slot.textureCache, cameraRay, seed,
+                   slot.sx, slot.sy, i, patternSize, slot.misEnabled);
+}
+
+void accumulateEstimate(SlotResult& result, PathResult const& path) {
   ++result.paths;
-  // The sole guard keeping a non-finite path's channels out of a slot's sums.
+  ++result.estimatePaths;
+  if (path.hasFirstHit && path.firstHitZ < result.minZ) {
+    result.minZ = path.firstHitZ;
+    result.anyHit = true;
+  }
   if (!path.finite) {
     ++result.dropped;
-    gman::addPath(stats, kBlack, kBlack);
     return;
   }
   result.sumL += path.L;
   result.sumAlpha += path.alphaHat;
-  gman::addPath(stats, path.L, path.alphaHat);
 }
 
-std::uint32_t defaultBatchSize(std::uint32_t N) {
+void traceEstimate(SlotTrace const& slot, std::uint32_t seed, std::uint32_t count, SlotResult& result) {
+  for (std::uint32_t i = 0; i < count; ++i) {
+    accumulateEstimate(result, tracePathInSlot(slot, seed, i, count));
+  }
+}
+
+gman::SlotStatistics tracePilot(SlotTrace const& slot, std::uint32_t pilotSize, std::uint32_t N, SlotResult& result) {
+  gman::SlotStatistics pilot;
+  for (std::uint32_t i = 0; i < pilotSize; ++i) {
+    PathResult const path = tracePathInSlot(slot, kSeed, i, N);
+    ++result.paths;
+    if (!path.finite) {
+      ++result.dropped;
+      gman::addPath(pilot, kBlack, kBlack);
+      continue;
+    }
+    gman::addPath(pilot, path.L, path.alphaHat);
+  }
+  return pilot;
+}
+
+std::uint32_t defaultPilotSize(std::uint32_t N) {
   std::uint32_t root = static_cast<std::uint32_t>(std::sqrt(static_cast<double>(N)));
   while (static_cast<std::uint64_t>(root) * root < N) {
     ++root;
@@ -701,9 +761,9 @@ std::uint32_t defaultBatchSize(std::uint32_t N) {
   return GMANMax(root, 2u);
 }
 
-std::uint32_t batchSize(GMANOptions const& options, std::uint32_t N) {
+std::uint32_t pilotSize(GMANOptions const& options, std::uint32_t N) {
   GMANOptions::NamedOptionValue const* const named = options.getNamedOption("pathtracer", "minsamples");
-  std::uint32_t const fallback = defaultBatchSize(N);
+  std::uint32_t const fallback = defaultPilotSize(N);
   if (named == nullptr) {
     return fallback;
   }
@@ -716,31 +776,15 @@ std::uint32_t batchSize(GMANOptions const& options, std::uint32_t N) {
   return static_cast<std::uint32_t>(integers->front());
 }
 
-SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
-                      GMANViewingSystem const* viewingSys, GMANMatrix4 const& cameraToWorld,
-                      GMANColor const& background, gman::TextureCache* textureCache, RtInt sx, RtInt sy, int xsamples,
-                      int ysamples, std::uint32_t N, StoppingRule const& stop, bool misEnabled) {
+SlotResult renderSlot(SlotTrace const& slot, std::uint32_t N, SamplingPlan const& plan) {
   SlotResult result;
-  gman::SlotStatistics stats;
-  for (std::uint32_t i = 0; i < N; ++i) {
-    gman::Sample2D const uv0 = gman::sample2D(kSeed, sx, sy, i, N, 0u);
-    RtFloat const rasterX = ((RtFloat)sx + uv0.u1) / (RtFloat)xsamples;
-    RtFloat const rasterY = ((RtFloat)sy + uv0.u2) / (RtFloat)ysamples;
-    GMANRay const cameraRay = viewingSys->cameraRay(rasterX, rasterY);
-
-    PathResult const path =
-        tracePath(bvh, emitters, cameraToWorld, background, textureCache, cameraRay, sx, sy, i, N, misEnabled);
-
-    if (path.hasFirstHit && path.firstHitZ < result.minZ) {
-      result.minZ = path.firstHitZ;
-      result.anyHit = true;
-    }
-
-    accumulatePath(result, stats, path);
-    if (atBatchEnd(result.paths, N, stop) && gman::slotConverged(stats, stop.tolerance)) {
-      break;
-    }
+  if (!usesPilot(plan, N)) {
+    traceEstimate(slot, kSeed, N, result);
+    return result;
   }
+  gman::SlotStatistics const pilot = tracePilot(slot, plan.pilotSize, N, result);
+  std::uint32_t const fresh = gman::requiredPaths(pilot, plan.pixelVariance, plan.pilotSize, N - plan.pilotSize);
+  traceEstimate(slot, kFreshSeed, fresh, result);
   return result;
 }
 
@@ -752,7 +796,7 @@ SlotResult renderSlot(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& e
 // worker that runs it.
 void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem const* viewingSys,
                GMANMatrix4 const& cameraToWorld, GMANOptions::RasterInfo const& raster, RtInt width, int xsamples,
-               int ysamples, std::uint32_t N, StoppingRule const& stop, GMANColor const& background,
+               int ysamples, std::uint32_t N, SamplingPlan const& plan, GMANColor const& background,
                gman::TextureCache& textureCache, int py, GMANSampleBuffer& sampleBuffer,
                std::vector<std::uint32_t>& slotPaths, std::size_t& dropped, bool misEnabled) {
   int const subsPerColumn = xsamples * ysamples;
@@ -765,16 +809,17 @@ void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters
       RtInt const sx = raster.rxmin * xsamples + sampleX;
       RtInt const sy = raster.rymin * ysamples + sampleY;
 
-      SlotResult const slot = renderSlot(bvh, emitters, viewingSys, cameraToWorld, background, &textureCache, sx, sy,
-                                         xsamples, ysamples, N, stop, misEnabled);
+      SlotTrace const trace{bvh, emitters, viewingSys, cameraToWorld, background, &textureCache,
+                            sx,  sy,       xsamples,   ysamples,      misEnabled};
+      SlotResult const slot = renderSlot(trace, N, plan);
       slotPaths[static_cast<std::size_t>(sampleY) * static_cast<std::size_t>(width * xsamples) +
                 static_cast<std::size_t>(sampleX)] = slot.paths;
       dropped += slot.dropped;
       if (!slot.anyHit) {
         continue;
       }
-      GMANColor const meanL = divideColor(slot.sumL, (RtFloat)slot.paths);
-      GMANColor const meanAlpha = divideColor(slot.sumAlpha, (RtFloat)slot.paths);
+      GMANColor const meanL = divideColor(slot.sumL, (RtFloat)slot.estimatePaths);
+      GMANColor const meanAlpha = divideColor(slot.sumAlpha, (RtFloat)slot.estimatePaths);
       GMANAlpha const alpha(meanAlpha.getRed(), meanAlpha.getGreen(), meanAlpha.getBlue());
       sampleBuffer.zTestAndSet(sampleX, sampleY, slot.minZ, meanL, alpha);
     }
@@ -812,7 +857,7 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   int const ysamples = GMANMax(1, (int)GMANRound(ps.ysamples));
   std::uint32_t const N = (std::uint32_t)GMANMax(1, options.getPathtracerSamples());
   RtFloat const pixelVariance = options.getPixelVariance();
-  StoppingRule const stop{pixelVariance, batchSize(options, N)};
+  SamplingPlan const plan{pixelVariance, pilotSize(options, N)};
 
   GMANColor const background = options.getBackground();
   sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, background));
@@ -833,7 +878,7 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
       [&](RtInt row, RtInt worker) {
         auto const rowIndex = static_cast<std::size_t>(row);
         rowWorker[rowIndex] = worker;
-        renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, stop, background,
+        renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, plan, background,
                   textureCaches[static_cast<std::size_t>(worker)], row, *sampleBuffer, slotPaths,
                   droppedPerRow[rowIndex], misEnabled);
       },

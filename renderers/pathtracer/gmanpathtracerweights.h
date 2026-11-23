@@ -25,6 +25,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include "gmancolor.h"
@@ -35,7 +36,8 @@
 
 /*
  * The path tracer's multiple-importance-sampling weight computation and
- * its adaptive stop check, defined in gmanpathtracerenderer.cpp. Private to
+ * its adaptive sizing of a slot's fresh batch from a pilot, defined in
+ * gmanpathtracerenderer.cpp. Private to
  * renderers/pathtracer: never installed and never exported, so tests reach
  * them through the gman_pathtracer_objects include directory and call them
  * without rendering a frame.
@@ -101,7 +103,7 @@ enum class EmitterHitEligibility { eligible, weighted, suppressed };
 EmitterHitEligibility nextEmitterHitEligibility(EmitterHitEligibility current, bool isDelta, bool isTransmission);
 
 // The running mean and sum of squared deviations, in double, of the six
-// channels one slot's paths estimate: the radiance's red, green and blue,
+// channels one slot's pilot paths estimate: the radiance's red, green and blue,
 // then the coverage estimate's. Empty when default-constructed; addPath
 // extends it one path at a time, in path order.
 struct SlotStatistics {
@@ -114,15 +116,20 @@ struct SlotStatistics {
 
 // Adds one path's radiance L and coverage estimate alphaHat to stats. A
 // dropped path enters as black L and black alphaHat, as it counts as a zero
-// sample in the slot's mean.
+// sample in the pilot's variance.
 void addPath(SlotStatistics& stats, GMANColor const& L, GMANColor const& alphaHat);
 
-// True exactly when stats holds at least two paths and the largest of the
-// six channels' standard errors is strictly below tolerance. A channel's
-// standard error is sqrt(s^2 / n) for its unbiased sample variance s^2 over
-// the n paths added, so it is absolute, in the output's own linear units.
-// The comparison is strict, so a tolerance of 0, a negative one and NaN are
-// never met, and a non-finite statistic is never converged.
-bool slotConverged(SlotStatistics const& stats, RtFloat tolerance);
+// The number of fresh paths a slot needs, sized from its pilot: with v the
+// largest of the six channels' unbiased sample variances (denominator
+// pilot.paths - 1, in double) and t the tolerance, floor(v / (t * t)) + 1,
+// the least count whose variance of the mean, v / n, falls strictly below
+// t * t, clamped to [minPaths, maxPaths]. The clamp precedes the conversion
+// to an integer, so a tolerance far below the variance saturates at
+// maxPaths rather than overflowing. A pilot of fewer than two paths, a
+// non-finite variance and a tolerance that is not positive (zero, negative
+// or NaN) answer maxPaths. minPaths <= maxPaths is the caller's
+// precondition.
+std::uint32_t requiredPaths(SlotStatistics const& pilot, RtFloat tolerance, std::uint32_t minPaths,
+                            std::uint32_t maxPaths);
 
 } // namespace gman

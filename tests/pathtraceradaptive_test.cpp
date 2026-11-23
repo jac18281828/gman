@@ -19,19 +19,22 @@
  */
 
 /*
- * The path tracer stops a slot once its paths' standard error falls below
- * PixelVariance. Rendered in process at one slot per pixel, so a pixel
- * reads its slot bit-equal, over three kinds of slot: background-only
+ * The path tracer samples a slot in two stages under a positive PixelVariance:
+ * a pilot of minsamples paths sizes a fresh batch, and only the fresh batch
+ * is the slot's estimate. Rendered in process at one slot per pixel, so a
+ * pixel reads its slot bit-equal, over three kinds of slot: background-only
  * slots, flat slots whose every path returns the same radiance, and noisy
  * slots under an emitting sphere. Off is today: a PixelVariance of 0, a
- * negative one and NaN trace every slot to the maximum. Flat and
- * background slots stop at the first scheduled check, and the slot's mean
- * divides by the paths it traced. A noisy slot that cannot meet the
- * threshold traces the maximum and reads what a PixelVariance of 0 reads.
- * The checks fall at every minsamples-th path, by default the root of the
- * maximum; a bad minsamples warns once and takes the default. One info
- * line reports the paths traced against the paths allowed. The metric is
- * called directly on hand-computed paths.
+ * negative one and NaN trace every slot to the maximum. Flat and background
+ * slots trace the pilot and the floor of the fresh batch, twice minsamples,
+ * and the slot's mean divides by the fresh batch's paths. A noisy slot that
+ * cannot meet the threshold traces the maximum, pilot included, and never
+ * more. With minsamples 3 and a maximum of 16 every count lies in [6, 16].
+ * Minsamples is by default the root of the maximum; a bad one warns once and
+ * takes the default; a pilot that would reach the maximum is skipped, and
+ * the slot renders as at PixelVariance 0. One info line reports the paths
+ * traced against the paths allowed. The sizing function is called directly
+ * on hand-computed pilots.
  *
  * With the argument --measure <gman> <materials.rib> <outdir> [run ...] the
  * program does none of that. It renders samples/materials.rib through gman
@@ -98,16 +101,18 @@ constexpr RtInt kWidth = 24;
 constexpr RtInt kHeight = 16;
 constexpr RtInt kMaximum = 16;
 constexpr RtInt kShortMaximum = 10;
-constexpr RtInt kScheduleBatch = 3;
-constexpr RtInt kExplicitBatch = 5;
+constexpr RtInt kTinyMaximum = 4;
+constexpr RtInt kSizingPilot = 3;
+constexpr RtInt kExplicitPilot = 5;
 constexpr RtInt kBelowTwo = 1;
 constexpr RtInt kBeyondMaximum = 20;
-constexpr std::uint32_t kDefaultBatch = 4;
+constexpr std::uint32_t kDefaultPilot = 4;
+constexpr std::uint32_t kTinyDefaultPilot = 2;
 constexpr std::uint32_t kFlatProbeCounts[] = {1, 2, 4};
 
 constexpr RtFloat kPositiveVariance = 0.01f;
 constexpr RtFloat kUnmeetableVariance = 1.0e-9f;
-constexpr RtFloat kScheduleVariance = 0.02f;
+constexpr RtFloat kSizingVariance = 0.02f;
 constexpr double kMeanTolerance = 1.0e-6;
 
 constexpr RtFloat kFlatReflectance = 0.5f;
@@ -125,13 +130,15 @@ constexpr RtFloat kSceneFar = 50.0f;
 constexpr RtFloat kViewFov = 90.0f;
 constexpr RtFloat kFilterWidth = 1.0f;
 
-constexpr double kJustAboveSqrtOneThird = 0.5774;
-constexpr double kJustBelowSqrtOneThird = 0.5773;
-constexpr double kHalfError = 0.5;
-constexpr double kJustAboveHalfError = 0.5001;
-constexpr double kJustBelowHalfError = 0.49;
-constexpr double kHugeThreshold = 1.0e30;
-constexpr double kTinyThreshold = 1.0e-30;
+constexpr RtFloat kExactTolerance = 0.5f;
+constexpr RtFloat kTinyTolerance = 1.0e-6f;
+constexpr std::uint32_t kFewest = 2;
+constexpr std::uint32_t kLowerBound = 20;
+constexpr std::uint32_t kUpperBound = 100;
+constexpr std::uint32_t kNarrowUpperBound = 10;
+constexpr std::uint32_t kFarLowerBound = 3;
+constexpr std::uint32_t kSpreadPaths = 17;
+constexpr std::uint32_t kUnitSpreadPaths = 5;
 
 constexpr std::uint32_t kMeasureSamplesPerAxis = 2;
 constexpr std::uint16_t kFloatBits = 32;
@@ -409,37 +416,32 @@ void checkOffIsToday(FloorScene& flat, FloorScene& noisy) {
   }
 }
 
-void checkFlatStopsEarly(FloorScene& flat) {
+std::uint32_t pilotAndFloor(std::uint32_t pilot) { return 2 * pilot; }
+
+void checkFlatAndBackgroundCounts(FloorScene& flat) {
   flat.render(kMaximum, 0.0f);
   std::vector<std::size_t> const floorSlots = flat.floorSlots();
   std::vector<std::size_t> const backgroundSlots = flat.backgroundSlots();
 
   Frame const byDefault = flat.render(kMaximum, kPositiveVariance);
-  check(allCountsAre(byDefault, floorSlots, kDefaultBatch), "B: flat slots trace exactly the default minimum");
-  check(allCountsAre(byDefault, backgroundSlots, kDefaultBatch),
-        "B: background slots trace exactly the default minimum");
+  check(allCountsAre(byDefault, floorSlots, pilotAndFloor(kDefaultPilot)),
+        "B: flat slots trace exactly twice the default minimum, a pilot and the floor of the fresh batch");
+  check(allCountsAre(byDefault, backgroundSlots, pilotAndFloor(kDefaultPilot)),
+        "B: background slots trace exactly twice the default minimum");
 
-  Frame const explicitMinimum = flat.render(kMaximum, kPositiveVariance, integerOption(kExplicitBatch));
-  check(allCountsAre(explicitMinimum, floorSlots, kExplicitBatch),
-        "B: flat slots trace exactly an explicit minsamples");
-  check(allCountsAre(explicitMinimum, backgroundSlots, kExplicitBatch),
-        "B: background slots trace exactly an explicit minsamples");
+  Frame const explicitMinimum = flat.render(kMaximum, kPositiveVariance, integerOption(kExplicitPilot));
+  check(allCountsAre(explicitMinimum, floorSlots, pilotAndFloor(kExplicitPilot)),
+        "B: flat slots trace exactly twice an explicit minsamples");
+  check(allCountsAre(explicitMinimum, backgroundSlots, pilotAndFloor(kExplicitPilot)),
+        "B: background slots trace exactly twice an explicit minsamples");
 }
 
 void checkNoisyRunsToMaximum(FloorScene& noisy) {
-  Frame const reference = noisy.render(kMaximum, 0.0f);
+  noisy.render(kMaximum, 0.0f);
   std::vector<std::size_t> const floorSlots = noisy.floorSlots();
   Frame const strict = noisy.render(kMaximum, kUnmeetableVariance);
   check(allCountsAre(strict, floorSlots, kMaximum),
-        "C: noisy slots trace the maximum at a PixelVariance they cannot meet");
-
-  bool identical = true;
-  for (std::size_t slot = 0; slot < strict.counts.size(); ++slot) {
-    if (strict.counts[slot] == kMaximum) {
-      identical = identical && colorsEqual(strict.pixels[slot], reference.pixels[slot]);
-    }
-  }
-  check(identical, "C: every slot that ran to the maximum equals the PixelVariance 0 render bit for bit");
+        "C: noisy slots trace exactly the maximum, pilot included, at a PixelVariance they cannot meet");
 }
 
 void checkDivisor(FloorScene& flat) {
@@ -455,55 +457,80 @@ void checkDivisor(FloorScene& flat) {
     stoppedMean = stoppedMean && colorsClose(stopped.pixels[slot], single.pixels[slot], kMeanTolerance);
     fullMean = fullMean && colorsClose(full.pixels[slot], single.pixels[slot], kMeanTolerance);
   }
-  check(allCountsAre(stopped, floorSlots, kDefaultBatch), "D setup: the flat slots stopped early");
-  check(stoppedMean, "D: a flat slot that stopped early reads its path's radiance");
+  check(allCountsAre(stopped, floorSlots, pilotAndFloor(kDefaultPilot)), "D setup: the flat slots sized a fresh batch");
+  check(stoppedMean, "D: a flat slot that sized a fresh batch reads its path's radiance");
   check(fullMean, "D: the same slot at PixelVariance 0 agrees");
 }
 
-void checkStopsFallOnBatchEnds(FloorScene& noisy) {
-  Frame const scheduled = noisy.render(kMaximum, kScheduleVariance, integerOption(kScheduleBatch));
-  std::set<std::uint32_t> const allowed = {3, 6, 9, 12, 15, 16};
-  std::set<std::uint32_t> seen;
-  for (std::uint32_t const count : scheduled.counts) {
-    seen.insert(count);
+bool countsWithin(Frame const& frame, std::uint32_t lowest, std::uint32_t highest) {
+  for (std::uint32_t const count : frame.counts) {
+    if (count < lowest || count > highest) {
+      return false;
+    }
   }
-  bool onSchedule = true;
-  bool midway = false;
-  for (std::uint32_t const count : seen) {
-    onSchedule = onSchedule && allowed.contains(count);
-    midway = midway || (count >= 9 && count < kMaximum);
-  }
-  check(onSchedule, "E: with minsamples 3 and N 16 every count lies in {3, 6, 9, 12, 15, 16}");
-  check(seen.contains(3) && seen.contains(kMaximum), "E setup: counts of 3 and 16 both occur");
-  check(midway, "E setup: some slot stops at a count of 9 or more below 16, between two checks");
+  return !frame.counts.empty();
 }
 
-void checkDefaultBatchSize(FloorScene& flat) {
+void checkSizingInRender(FloorScene& noisy) {
+  Frame const sized = noisy.render(kMaximum, kSizingVariance, integerOption(kSizingPilot));
+  std::set<std::uint32_t> seen;
+  for (std::uint32_t const count : sized.counts) {
+    seen.insert(count);
+  }
+  std::uint32_t const floor = pilotAndFloor(kSizingPilot);
+  bool between = false;
+  for (std::uint32_t const count : seen) {
+    between = between || (count > floor && count < kMaximum);
+  }
+  check(countsWithin(sized, floor, kMaximum), "E: with minsamples 3 and N 16 every count lies in [6, 16]");
+  check(seen.contains(floor) && seen.contains(kMaximum), "E setup: counts of 6 and 16 both occur");
+  check(between, "E setup: some slot's count lies strictly between 6 and 16");
+}
+
+void checkDefaultPilotSize(FloorScene& flat) {
   flat.render(kMaximum, 0.0f);
   std::vector<std::size_t> const floorSlots = flat.floorSlots();
   Frame const shortRun = flat.render(kShortMaximum, kPositiveVariance);
-  check(allCountsAre(shortRun, floorSlots, kDefaultBatch), "E: unset minsamples at N 10 stops flat slots at 4");
+  check(allCountsAre(shortRun, floorSlots, pilotAndFloor(kDefaultPilot)),
+        "E: unset minsamples at N 10 sizes flat slots to 8");
   check(!shortRun.log.empty() && shortRun.log.find("minsamples") == std::string::npos,
         "E: an unset minsamples warns of nothing");
   Frame const longRun = flat.render(kMaximum, kPositiveVariance);
-  check(allCountsAre(longRun, floorSlots, kDefaultBatch), "E: unset minsamples at N 16 stops flat slots at 4");
+  check(allCountsAre(longRun, floorSlots, pilotAndFloor(kDefaultPilot)),
+        "E: unset minsamples at N 16 sizes flat slots to 8");
+}
+
+void checkPilotSkippedWhenTwiceReachesMaximum(FloorScene& noisy) {
+  Frame const fixed = noisy.render(kShortMaximum, 0.0f);
+  Frame const skipped = noisy.render(kShortMaximum, kPositiveVariance, integerOption(kExplicitPilot));
+  check(allCountsAre(skipped, kShortMaximum), "E: minsamples 5 at N 10 traces every slot's N paths");
+  bool identical = skipped.pixels.size() == fixed.pixels.size();
+  for (std::size_t slot = 0; identical && slot < fixed.pixels.size(); ++slot) {
+    identical = colorsEqual(skipped.pixels[slot], fixed.pixels[slot]);
+  }
+  check(identical, "E: every pixel equals the PixelVariance 0 render bit for bit when twice minsamples is N");
+
+  Frame const tiny = noisy.render(kTinyMaximum, kPositiveVariance);
+  check(allCountsAre(tiny, kTinyMaximum), "E: the default minsamples of 2 at N 4 traces every slot's N paths");
+  check(kTinyDefaultPilot * 2 == static_cast<std::uint32_t>(kTinyMaximum), "E setup: twice the default is N at N 4");
 }
 
 void checkBadMinsamplesWarns(FloorScene& flat) {
   flat.render(kMaximum, 0.0f);
   std::vector<std::size_t> const floorSlots = flat.floorSlots();
   Frame const belowTwo = flat.render(kMaximum, kPositiveVariance, integerOption(kBelowTwo));
-  check(countOccurrences(belowTwo.log, minsamplesWarning(kDefaultBatch)) == 1,
+  check(countOccurrences(belowTwo.log, minsamplesWarning(kDefaultPilot)) == 1,
         "E: minsamples 1 warns once, naming the default");
-  check(allCountsAre(belowTwo, floorSlots, kDefaultBatch), "E: minsamples 1 takes the default");
+  check(allCountsAre(belowTwo, floorSlots, pilotAndFloor(kDefaultPilot)), "E: minsamples 1 takes the default");
 
   Minsamples const floats = GMANOptions::NamedOptionValue{std::vector<RtFloat>{3.0f}};
   Frame const wrongType = flat.render(kMaximum, kPositiveVariance, floats);
-  check(countOccurrences(wrongType.log, minsamplesWarning(kDefaultBatch)) == 1,
+  check(countOccurrences(wrongType.log, minsamplesWarning(kDefaultPilot)) == 1,
         "E: a minsamples that is not an integer warns once");
-  check(allCountsAre(wrongType, floorSlots, kDefaultBatch), "E: a minsamples that is not an integer takes the default");
+  check(allCountsAre(wrongType, floorSlots, pilotAndFloor(kDefaultPilot)),
+        "E: a minsamples that is not an integer takes the default");
 
-  Frame const valid = flat.render(kMaximum, kPositiveVariance, integerOption(kScheduleBatch));
+  Frame const valid = flat.render(kMaximum, kPositiveVariance, integerOption(kSizingPilot));
   check(valid.log.find("minsamples") == std::string::npos, "E: a valid minsamples warns of nothing");
 
   Frame const atMaximum = flat.render(kMaximum, kPositiveVariance, integerOption(kMaximum));
@@ -513,7 +540,7 @@ void checkBadMinsamplesWarns(FloorScene& flat) {
 }
 
 void checkInfoLine(FloorScene& noisy) {
-  Frame const frame = noisy.render(kMaximum, kScheduleVariance);
+  Frame const frame = noisy.render(kMaximum, kSizingVariance);
   std::size_t const slots = static_cast<std::size_t>(kWidth) * static_cast<std::size_t>(kHeight);
   std::size_t const allowed = static_cast<std::size_t>(kMaximum) * slots;
   std::size_t const traced = totalPaths(frame);
@@ -522,6 +549,7 @@ void checkInfoLine(FloorScene& noisy) {
   check(countOccurrences(frame.log, kInfoPrefix) == 1, "F: the info line prints once");
   check(countOccurrences(frame.log, infoLine(traced, allowed)) == 1,
         "F: its two numbers are the sum of slotPathCounts() and N times the slot count");
+  check(traced <= allowed, "F: the paths traced never exceed the paths allowed");
 }
 
 struct PathSample {
@@ -537,57 +565,58 @@ gman::SlotStatistics statisticsOf(std::vector<PathSample> const& paths) {
   return stats;
 }
 
-bool converges(std::vector<PathSample> const& paths, double threshold) {
-  return gman::slotConverged(statisticsOf(paths), static_cast<RtFloat>(threshold));
+std::uint32_t sizeOf(std::vector<PathSample> const& pilot, RtFloat tolerance, std::uint32_t lowest,
+                     std::uint32_t highest) {
+  return gman::requiredPaths(statisticsOf(pilot), tolerance, lowest, highest);
 }
 
 GMANColor const kOpaque(1.0f, 1.0f, 1.0f);
 
 PathSample redPath(RtFloat red) { return {GMANColor(red, 0.0f, 0.0f), kOpaque}; }
 
-void checkMetric() {
-  std::vector<PathSample> const threePaths = {{GMANColor(0.0f, 0.0f, 0.0f), kOpaque},
-                                              {GMANColor(1.0f, 0.5f, 0.0f), kOpaque},
-                                              {GMANColor(2.0f, 1.0f, 0.0f), kOpaque}};
-  check(converges(threePaths, kJustAboveSqrtOneThird),
-        "G: red 0, 1, 2 has a standard error of sqrt(1/3) and converges at a threshold just above it");
-  check(!converges(threePaths, kJustBelowSqrtOneThird),
-        "G: red 0, 1, 2 does not converge at a threshold just below its standard error");
+PathSample colourPath(RtFloat red, RtFloat green) { return {GMANColor(red, green, 0.0f), kOpaque}; }
 
-  std::vector<PathSample> const redHalf = {redPath(0.0f), redPath(1.0f)};
-  check(!converges(redHalf, kHalfError), "G: an exactly representable error of 0.5 is not below a threshold of 0.5");
-  check(converges(redHalf, kJustAboveHalfError), "G: that error converges at a threshold just above it");
+PathSample coveragePath(RtFloat green) { return {GMANColor(0.0f, 0.0f, 0.0f), GMANColor(1.0f, green, 1.0f)}; }
 
-  std::vector<PathSample> const alphaOnly = {{GMANColor(0.0f, 0.0f, 0.0f), GMANColor(0.0f, 0.0f, 0.0f)},
-                                             {GMANColor(0.0f, 0.0f, 0.0f), GMANColor(1.0f, 0.0f, 0.0f)}};
-  check(!converges(alphaOnly, kJustBelowHalfError), "G: a coverage estimate that alone varies does not converge");
-  check(converges(alphaOnly, kJustAboveHalfError), "G: that coverage estimate converges above its error");
+void checkRequiredPaths() {
+  std::vector<PathSample> const redSpread = {redPath(0.0f), redPath(2.0f), redPath(4.0f)};
+  check(sizeOf(redSpread, kExactTolerance, kFewest, kUpperBound) == kSpreadPaths,
+        "G: red 0, 2, 4, variance 4, at a tolerance of 0.5 needs 17 paths");
+  check(sizeOf(redSpread, kExactTolerance, kLowerBound, kUpperBound) == kLowerBound,
+        "G: the same pilot is raised to a lower bound of 20");
+  check(sizeOf(redSpread, kExactTolerance, kFewest, kNarrowUpperBound) == kNarrowUpperBound,
+        "G: the same pilot is held to an upper bound of 10");
+  check(sizeOf(redSpread, kTinyTolerance, kFewest, kUpperBound) == kUpperBound,
+        "G: a tolerance of 1e-6 saturates at the upper bound");
 
-  std::vector<PathSample> const opposed = {{GMANColor(0.0f, 1.0f, 0.0f), kOpaque},
-                                           {GMANColor(1.0f, 0.0f, 0.0f), kOpaque}};
-  check(!converges(opposed, kJustBelowHalfError),
-        "G: red and green moving in opposite directions, their mean constant, do not converge below either error");
-  check(converges(opposed, kJustAboveHalfError), "G: they converge above it");
+  std::vector<PathSample> const redUnit = {redPath(0.0f), redPath(1.0f), redPath(2.0f)};
+  check(sizeOf(redUnit, kExactTolerance, kFewest, kUpperBound) == kUnitSpreadPaths,
+        "G: red 0, 1, 2, variance 1, at a tolerance of 0.5 needs 5 paths");
 
-  std::vector<PathSample> const lone = {redPath(1.0f)};
-  check(!converges(lone, kHugeThreshold) && !converges({}, kHugeThreshold), "G: fewer than two paths never converge");
+  std::vector<PathSample> const greenSpread = {colourPath(0.0f, 0.0f), colourPath(0.0f, 2.0f), colourPath(0.0f, 4.0f)};
+  check(sizeOf(greenSpread, kExactTolerance, kFewest, kUpperBound) == kSpreadPaths,
+        "G: green 0, 2, 4 with red constant needs 17 paths");
+  std::vector<PathSample> const opposed = {colourPath(0.0f, 0.0f), colourPath(1.0f, 2.0f), colourPath(2.0f, 4.0f)};
+  check(sizeOf(opposed, kExactTolerance, kFewest, kUpperBound) == kSpreadPaths,
+        "G: red 0, 1, 2 with green 0, 2, 4 needs 17 paths, the largest variance governing");
+  std::vector<PathSample> const alphaOnly = {coveragePath(0.0f), coveragePath(2.0f), coveragePath(4.0f)};
+  check(sizeOf(alphaOnly, kExactTolerance, kFewest, kUpperBound) == kSpreadPaths,
+        "G: a coverage estimate that alone varies sizes the batch");
 
-  std::vector<PathSample> const identical = {redPath(0.75f), redPath(0.75f)};
-  check(converges(identical, kTinyThreshold), "G: two identical paths converge at any positive threshold");
-  check(!converges(identical, 0.0), "G: two identical paths do not converge at a threshold of 0");
-  check(!converges(identical, -1.0), "G: nor at a negative threshold");
-  check(!gman::slotConverged(statisticsOf(identical), std::numeric_limits<RtFloat>::quiet_NaN()),
-        "G: nor at a NaN threshold");
+  std::vector<PathSample> const identical = {redPath(0.75f), redPath(0.75f), redPath(0.75f)};
+  check(sizeOf(identical, kExactTolerance, kFarLowerBound, kUpperBound) == kFarLowerBound,
+        "G: paths that all agree need the lower bound");
 
   RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
-  RtFloat const infinity = std::numeric_limits<RtFloat>::infinity();
-  std::vector<PathSample> const nanRed = {redPath(0.0f), redPath(nan), redPath(0.0f)};
-  std::vector<PathSample> const infiniteRed = {redPath(0.0f), redPath(infinity), redPath(0.0f)};
-  std::vector<PathSample> const nanAlpha = {{GMANColor(0.0f, 0.0f, 0.0f), GMANColor(nan, 0.0f, 0.0f)},
-                                            {GMANColor(0.0f, 0.0f, 0.0f), GMANColor(0.0f, 0.0f, 0.0f)}};
-  check(!converges(nanRed, kHugeThreshold), "G: a NaN radiance sample never converges");
-  check(!converges(infiniteRed, kHugeThreshold), "G: an infinite radiance sample never converges");
-  check(!converges(nanAlpha, kHugeThreshold), "G: a NaN coverage sample never converges");
+  check(sizeOf({redPath(1.0f)}, kExactTolerance, kFewest, kUpperBound) == kUpperBound,
+        "G: one path answers the upper bound");
+  check(sizeOf({}, kExactTolerance, kFewest, kUpperBound) == kUpperBound, "G: no path answers the upper bound");
+  check(sizeOf({redPath(0.0f), redPath(nan), redPath(0.0f)}, kExactTolerance, kFewest, kUpperBound) == kUpperBound,
+        "G: a NaN path answers the upper bound");
+  check(sizeOf(redSpread, 0.0f, kFewest, kUpperBound) == kUpperBound, "G: a tolerance of 0 answers the upper bound");
+  check(sizeOf(redSpread, -kExactTolerance, kFewest, kUpperBound) == kUpperBound,
+        "G: a negative tolerance answers the upper bound");
+  check(sizeOf(redSpread, nan, kFewest, kUpperBound) == kUpperBound, "G: a NaN tolerance answers the upper bound");
 }
 
 struct FloatImage {
@@ -868,17 +897,18 @@ int runChecks() {
 
   checkSetup(flat, noisy);
   checkOffIsToday(flat, noisy);
-  checkFlatStopsEarly(flat);
+  checkFlatAndBackgroundCounts(flat);
   checkNoisyRunsToMaximum(noisy);
   checkDivisor(flat);
-  checkStopsFallOnBatchEnds(noisy);
-  checkDefaultBatchSize(flat);
+  checkSizingInRender(noisy);
+  checkDefaultPilotSize(flat);
+  checkPilotSkippedWhenTwiceReachesMaximum(noisy);
   checkBadMinsamplesWarns(flat);
   checkInfoLine(noisy);
-  checkMetric();
+  checkRequiredPaths();
 
-  return checkSummary("the path tracer stops a slot at the first scheduled check where its standard error falls "
-                      "below PixelVariance, and traces the maximum otherwise");
+  return checkSummary("the path tracer sizes a slot's fresh batch from a pilot under PixelVariance, bounded by the "
+                      "maximum, and traces the maximum otherwise");
 }
 
 } // namespace

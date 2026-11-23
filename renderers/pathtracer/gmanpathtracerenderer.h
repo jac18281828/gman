@@ -71,22 +71,20 @@
  * count.
  *
  * Option "pathtracer" "integer samples" is each slot's pattern size and its
- * maximum path count. Under a positive PixelVariance a slot stops at the
- * first scheduled check where gman::slotConverged holds: its paths so far
- * estimate the radiance and the coverage with a standard error, per channel
- * and absolute, strictly below PixelVariance. The checks fall after every
- * m-th path while fewer than the maximum have run; m is Option "pathtracer"
- * "integer minsamples" when that is an integer of at least 2, otherwise the
- * smallest integer whose square reaches the maximum, but not below 2. A slot
- * that reaches the maximum has drawn exactly what a PixelVariance of 0
- * draws. Each slot decides from its own paths alone, so the image and every
- * slot's path count stay the same at every worker count.
- *
- * Stopping early on a low sample variance biases the stopped mean low, since
- * path radiance is non-negative and a low variance goes with a low mean. The
- * bias grows with PixelVariance and shrinks as minsamples grows, and thin
- * geometry or a rare bright path can lose coverage at any positive
- * PixelVariance when its first minsamples paths all miss it.
+ * maximum path count. With PixelVariance 0 every slot traces that many
+ * paths. Under a positive PixelVariance a slot samples in two stages: a
+ * pilot of m paths estimates the largest per-channel variance of the
+ * radiance and the coverage, which sizes a fresh batch of n paths with a
+ * standard error, per channel and absolute, strictly below PixelVariance,
+ * from m to the maximum less m; the fresh batch is the slot's whole
+ * estimate and the pilot contributes nothing to its colour, alpha or depth.
+ * The estimate is unbiased because n is fixed before the fresh paths are
+ * drawn. m is Option "pathtracer" "integer minsamples" when that is an
+ * integer of at least 2, otherwise the smallest integer whose square
+ * reaches the maximum, but not below 2. The samples option bounds the paths
+ * a slot traces, the pilot included, and the pilot is skipped when 2m
+ * reaches it: the slot then draws what a PixelVariance of 0 draws. The
+ * image and each slot's path count stay the same at every worker count.
  */
 class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
@@ -183,8 +181,8 @@ public:
 
   // The last render() call's path count for each slot of the sample grid,
   // indexed by sampleY * (width * xsamples) + sampleX, the coordinates a
-  // slot is stored under. Exported as setWorkers is, and for the same
-  // tests.
+  // slot is stored under. A count includes the slot's pilot. Exported as
+  // setWorkers is, and for the same tests.
   std::vector<std::uint32_t> const& slotPathCounts() const { return slotPaths; }
 
   virtual GMANWorldManager* getWorldManager(void);

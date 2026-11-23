@@ -27,7 +27,9 @@
  * bit-equal, with minsamples 4 so a pilot often misses the ring. For the red
  * coverage and each radiance channel the per-slot difference between a
  * stopped render and the fixed-count render has a mean within four standard
- * errors of 0, the paired z of its slots.
+ * errors of 0, the paired z of its slots. With minsamples 2 a slot has a
+ * depth exactly where its coverage is nonzero, so a pilot that hit the ring
+ * leaves no depth behind when the fresh batch missed it.
  */
 
 #include <array>
@@ -64,6 +66,7 @@ namespace {
 constexpr RtInt kFrameSize = 160;
 constexpr RtInt kSamples = 64;
 constexpr RtInt kMinSamples = 4;
+constexpr RtInt kDepthMinSamples = 2;
 constexpr RtFloat kSceneNear = 0.5f;
 constexpr RtFloat kSceneFar = 50.0f;
 constexpr RtFloat kViewFov = 90.0f;
@@ -90,6 +93,7 @@ GMANColor const kBlack(0.0f, 0.0f, 0.0f);
 
 struct Frame {
   std::array<std::vector<double>, kQuantities> quantities;
+  std::vector<RtFloat> depths;
   std::vector<std::uint32_t> counts;
 };
 
@@ -119,7 +123,7 @@ struct HairlineScene {
     renderer.getWorldManager()->add(ring);
   }
 
-  Frame render(RtFloat variance) {
+  Frame render(RtFloat variance, RtInt minsamples = kMinSamples) {
     GMANOptions options;
     options.setFormat(kFrameSize, kFrameSize, 1.0f);
     options.setPathtracerSamples(kSamples);
@@ -127,7 +131,7 @@ struct HairlineScene {
     options.setPixelFilter(RiBoxFilter, kFilterWidth, kFilterWidth);
     options.setPixelSamples(1.0f, 1.0f);
     options.setPixelVariance(variance);
-    options.setNamedOption("pathtracer", "minsamples", std::vector<RtInt>{kMinSamples});
+    options.setNamedOption("pathtracer", "minsamples", std::vector<RtInt>{minsamples});
 
     GMANFrameBuffer frameBuffer(kFrameSize, kFrameSize, kBlack);
     GMANAttributes const attributes;
@@ -142,6 +146,7 @@ struct HairlineScene {
         frame.quantities[1].push_back(colour.getRed());
         frame.quantities[2].push_back(colour.getGreen());
         frame.quantities[3].push_back(colour.getBlue());
+        frame.depths.push_back(renderer.getDepth(x, y));
       }
     }
     return frame;
@@ -204,6 +209,17 @@ void checkUnbiased(Frame const& stopped, Frame const& fixed, RtFloat variance) {
   }
 }
 
+void checkDepthFollowsCoverage(HairlineScene& scene) {
+  Frame const sized = scene.render(kModerateVariance, kDepthMinSamples);
+  bool consistent = true;
+  for (std::size_t slot = 0; slot < sized.depths.size(); ++slot) {
+    bool const hasDepth = sized.depths[slot] != RI_INFINITY;
+    bool const hasCoverage = sized.quantities[0][slot] > 0.0;
+    consistent = consistent && hasDepth == hasCoverage;
+  }
+  check(consistent, "a slot has a depth exactly where its fresh batch gives it coverage");
+}
+
 int runChecks() {
   HairlineScene scene;
   Frame const fixed = scene.render(0.0f);
@@ -217,6 +233,7 @@ int runChecks() {
 
   checkUnbiased(moderate, fixed, kModerateVariance);
   checkUnbiased(tight, fixed, kTightVariance);
+  checkDepthFollowsCoverage(scene);
   return checkSummary("a slot stopped under a positive PixelVariance has the fixed-count mean");
 }
 
