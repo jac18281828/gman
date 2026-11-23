@@ -998,7 +998,7 @@ RtVoid GMANRIBParse::parseCoordinateSystem(RtVoid) {
 RtVoid GMANRIBParse::parseTransform(RtVoid) {
   GMANRIBParse::TokenVector tokenVector = parseArray();
   if (tokenVector.size() != 16) {
-    GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: Transform matrix must have 16 elements");
+    GMANError error(RIE_CONSISTENCY, RIE_ERROR, "GMANRIBParse: Transform matrix must have 16 elements");
     throw error;
   }
   std::vector<RtFloat> values = tokenVector.toRtFloatVector();
@@ -1016,7 +1016,7 @@ RtVoid GMANRIBParse::parseTransform(RtVoid) {
 RtVoid GMANRIBParse::parseConcatTransform(RtVoid) {
   GMANRIBParse::TokenVector tokenVector = parseArray();
   if (tokenVector.size() != 16) {
-    GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: ConcatTransform matrix must have 16 elements");
+    GMANError error(RIE_CONSISTENCY, RIE_ERROR, "GMANRIBParse: ConcatTransform matrix must have 16 elements");
     throw error;
   }
   std::vector<RtFloat> values = tokenVector.toRtFloatVector();
@@ -1490,7 +1490,7 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
   if (uLook.getType() == GMANToken::LEFT_BRACKET) {
     GMANRIBParse::TokenVector tokenVector = parseArray();
     if (tokenVector.size() != 16) {
-      GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: inline basis matrix must have 16 elements");
+      GMANError error(RIE_CONSISTENCY, RIE_ERROR, "GMANRIBParse: inline basis matrix must have 16 elements");
       throw error;
     }
     std::vector<RtFloat> values = tokenVector.toRtFloatVector();
@@ -1514,7 +1514,7 @@ RtVoid GMANRIBParse::parseBasis(RtVoid) {
   if (vLook.getType() == GMANToken::LEFT_BRACKET) {
     GMANRIBParse::TokenVector tokenVector = parseArray();
     if (tokenVector.size() != 16) {
-      GMANError error(RIE_SYNTAX, RIE_ERROR, "GMANRIBParse: inline basis matrix must have 16 elements");
+      GMANError error(RIE_CONSISTENCY, RIE_ERROR, "GMANRIBParse: inline basis matrix must have 16 elements");
       throw error;
     }
     std::vector<RtFloat> values = tokenVector.toRtFloatVector();

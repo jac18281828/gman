@@ -930,6 +930,21 @@ set_tests_properties(ribwritercolorcount PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A Transform, ConcatTransform or inline Basis matrix of other than 16 values
+# is RIE_CONSISTENCY; a non-number in one is RIE_SYNTAX. See
+# tests/ribmatrixlength_test.cpp.
+add_executable(gman_ribmatrixlength ribmatrixlength_test.cpp
+  "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
+target_include_directories(gman_ribmatrixlength PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
+target_link_libraries(gman_ribmatrixlength PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME ribmatrixlength
+  COMMAND gman_ribmatrixlength "${CMAKE_CURRENT_SOURCE_DIR}/rib")
+set_tests_properties(ribmatrixlength PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANRIBTokenize::consumeWhitespace, isKeyToken and isNumToken classify a
 # stream byte. See tests/ribctypeunsigned_test.cpp; it drives getNext
 # directly on an istringstream, so it dlopens nothing.
