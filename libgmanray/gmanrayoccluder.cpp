@@ -33,7 +33,6 @@
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
-#include "gmanraypolygonmesh.h"
 #include "gmanvector.h"
 #include "ri.h"
 

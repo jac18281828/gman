@@ -29,6 +29,7 @@
 #include "gmanattributes.h"
 #include "gmanbbox.h"
 #include "gmanbsdf.h"
+#include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanloadableshader.h"
 #include "gmanmath.h"
