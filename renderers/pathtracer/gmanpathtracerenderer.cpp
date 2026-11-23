@@ -431,7 +431,7 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
   RtFloat const pBsdf = closure.pdf(wo, es.wi);
   RtFloat const weight = gman::nextEventWeight(es.isDelta, misEnabled, pLight, pBsdf);
 
-  RtFloat const cosTerm = std::fabs(point.N.dot(es.wi));
+  RtFloat const cosTerm = std::fabs(closure.shadingNormal().dot(es.wi));
   GMANPoint const origin = gman::offsetOrigin(hit.point, point.Ng, es.wi, surfaceMagnitude);
   ShadowWalkStart const walkStart = shadowWalkStart(origin, es);
   ShadowWalkResult const walk = shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget,
@@ -468,7 +468,7 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
     return std::nullopt;
   }
 
-  RtFloat const cosI = std::fabs(point.N.dot(sample.wi));
+  RtFloat const cosI = std::fabs(closure.shadingNormal().dot(sample.wi));
   beta = gman::multiplyChannels(beta, scaleColor(sample.f, cosI / sample.pdf));
   if (!colorFinite(beta)) {
     finite = false;

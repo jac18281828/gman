@@ -90,6 +90,11 @@ public:
   // Normalizes shadingNormal; every lobe measures its angles against it.
   explicit BSDF(GMANVector const& shadingNormal);
 
+  // The normal every lobe measures its angles against, the constructor's
+  // argument normalized. An integrator weights a sample by |wi . n| of this
+  // normal, not of the geometry's.
+  GMANVector const& shadingNormal() const { return normal; }
+
   // A two-sided Lambert lobe: reflectance / pi wherever wo and wi lie
   // strictly on one side of the normal. Each channel of reflectance clamps
   // to [0, 1], a NaN channel to 0, so the lobe creates no energy. Past
