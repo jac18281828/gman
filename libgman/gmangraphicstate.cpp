@@ -402,8 +402,12 @@ RtVoid GMANGraphicState::leaveMode(CurrentState mode) {
   }
 }
 
-RtVoid GMANGraphicState::allowed(CommandIdentity& cid) {
-  allowed(cid.allowedBlocks);
+bool GMANGraphicState::allowed(CommandIdentity& cid) {
+  if ((block & cid.allowedBlocks) == 0) {
+    GMANError r(RIE_ILLSTATE, RIE_WARNING, "Invalid mode for procedure; the request is ignored.");
+    GMANHandleError(r);
+    return false;
+  }
   if (cid.isAttribute == true)
     attribsChangedFlag = true;
   if (cid.isTransform == true)
@@ -422,6 +426,7 @@ RtVoid GMANGraphicState::allowed(CommandIdentity& cid) {
       throw error;
     }
   }
+  return true;
 }
 RtVoid GMANGraphicState::allowed(RtInt mode) {
   if ((block & mode) == 0) {

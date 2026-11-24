@@ -23,13 +23,14 @@
  * does, then stops the file being parsed at RIE_ERROR or above: no image
  * written, exit 1, and the next file on the command line still runs.
  * Below that threshold nothing stops the file -- reportederror_warning.rib
- * only ever warns, through gmanlog's PixelSamples clamp, since no RIB
- * request in this tree reaches the handler below RIE_ERROR. Three
- * fixtures cover the three paths: reportederror.rib reports RIE_BADTOKEN
- * parsing Projection, before WorldBegin; reportederror_thrown.rib throws
- * RIE_SYNTAX declaring a bad type. Each runs alone and paired with a file
- * that still renders, out of process through tests/rungman.h's runGman,
- * every exit-status check requiring crashed and timedOut false.
+ * only ever warns, through gmanlog's PixelSamples clamp, though a request
+ * issued out of mode also reaches the handler at RIE_WARNING and is ignored
+ * (tests/outofmode_test.cpp). Three fixtures cover the three paths:
+ * reportederror.rib reports RIE_BADTOKEN parsing Projection, before
+ * WorldBegin; reportederror_thrown.rib throws RIE_SYNTAX declaring a bad
+ * type. Each runs alone and paired with a file that still renders, out of
+ * process through tests/rungman.h's runGman, every exit-status check
+ * requiring crashed and timedOut false.
  */
 
 #include <cstdio>

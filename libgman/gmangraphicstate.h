@@ -194,7 +194,10 @@ public:
   RtVoid enterMotion(RtInt n, RtFloat* s);
   RtVoid leaveMode(CurrentState m);
 
-  RtVoid allowed(CommandIdentity& cid);
+  // Returns whether the request may run. Issued outside the blocks it is legal
+  // in, it reports RIE_ILLSTATE at RIE_WARNING through GMANHandleError, changes
+  // no state and returns false; the caller ignores the request.
+  bool allowed(CommandIdentity& cid);
 
   /* Attributes and transform state */
   bool sameAttribs(RtVoid);

@@ -2,15 +2,14 @@
 # the "F"-only block state cmdNuPatch's W|A|T|S|O|M mask excludes
 # (gmangraphicstate.cpp). uknot/vknot are well-formed (the declared
 # nu+uorder/nv+vorder lengths) so parseNuPatch's own knot-length check
-# does not intercept this first; allowed(cmdNuPatch) throws before this
-# task's own validation ever runs, after parseNuPatch's knot arrays are
-# already owned and before its trailing delete[]s -- the one fixture
-# proving that ownership.
+# does not intercept this first; allowed(cmdNuPatch) reports RIE_ILLSTATE
+# and RiNuPatchV returns before its own validation runs, after
+# parseNuPatch's knot arrays are already owned: the one fixture proving
+# the parser frees them when the request is ignored.
 #
 # Along with nupatch_singular_ctm.rib, this is one of the two
-# malformed/nupatch_*.rib fixtures not followed by a Sphere: the throw
-# unwinds out of GMANRIBParse::parse() before any trailing request would
-# parse, and gman itself exits 1.
+# malformed/nupatch_*.rib fixtures not followed by a Sphere: the file has
+# nothing to render and gman exits 0 after the one warning.
 FrameBegin 1
 NuPatch 2 2 [0 0 1 1] 0 1 2 2 [0 0 1 1] 0 1
 	"P" [-1 -1 0  1 -1 0  -1 1 0  1 1 0]

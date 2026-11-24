@@ -38,9 +38,9 @@
  *    kIdentityCorners.
  *  - Malformed requests and exception safety: tests/paramclamp_test.cpp's
  *    own Fixture{file, expectedWarning} shape, an illegal-block case
- *    proving parseNuPatch's knot arrays survive a throw, and a
- *    singular-CTM case proving RiNuPatchV's stack transform survives
- *    one too.
+ *    proving parseNuPatch's knot arrays are freed when RiNuPatchV ignores
+ *    the request, and a singular-CTM case proving RiNuPatchV's stack
+ *    transform survives a throw.
  */
 
 #include <algorithm>
@@ -459,7 +459,10 @@ void testIllegalBlockLeaksNothing(std::string const& gman, std::string const& ma
   GMANRunResult r = runCapturingOutput(gman, rib, 10);
   check(!r.timedOut, "nupatch_illegal_block.rib: does not hang (10s bound)");
   check(!r.crashed, "nupatch_illegal_block.rib: does not crash");
-  check(r.exitStatus == 1, "nupatch_illegal_block.rib: exits 1 through GMANHandleError, RIE_ILLSTATE");
+  check(r.exitStatus == 0, "nupatch_illegal_block.rib: exits 0, the request ignored");
+  const std::size_t warning = r.output.find("WARNING: RIE_ILLSTATE");
+  check(warning != std::string::npos && r.output.rfind("WARNING: RIE_ILLSTATE") == warning,
+        "nupatch_illegal_block.rib: reports WARNING: RIE_ILLSTATE exactly once");
   check(r.output.find("LeakSanitizer") == std::string::npos, "nupatch_illegal_block.rib: no LeakSanitizer report");
 }
 

@@ -446,7 +446,11 @@ RtObjectHandle GMANRenderManImpl::RiObjectBegin(RtVoid) {
 // commit the most recently created object
 RtVoid GMANRenderManImpl::RiObjectEnd(RtVoid) { leaveMode(O); }
 
-RtVoid GMANRenderManImpl::RiObjectInstance(RtObjectHandle /*handle*/) { allowed(cmdObjectInstance); }
+RtVoid GMANRenderManImpl::RiObjectInstance(RtObjectHandle /*handle*/) {
+  if (!allowed(cmdObjectInstance)) {
+    return;
+  }
+}
 
 RtVoid GMANRenderManImpl::RiAttributeBegin(RtVoid) { enterMode(A); }
 RtVoid GMANRenderManImpl::RiAttributeEnd(RtVoid) { leaveMode(A); }
@@ -464,36 +468,52 @@ RtVoid GMANRenderManImpl::RiMotionEnd(RtVoid) { leaveMode(M); }
 // ******* ******* ******* CAMERA OPTIONS ******* ******* *******
 // **************************************************************
 RtVoid GMANRenderManImpl::RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
-  allowed(cmdFormat);
+  if (!allowed(cmdFormat)) {
+    return;
+  }
   getOptions().setFormat(xres, yres, aspect);
 }
 RtVoid GMANRenderManImpl::RiFrameAspectRatio(RtFloat aspect) {
-  allowed(cmdFrameAspectRatio);
+  if (!allowed(cmdFrameAspectRatio)) {
+    return;
+  }
   getOptions().setFrameAspectRatio(aspect);
 }
 RtVoid GMANRenderManImpl::RiScreenWindow(RtFloat left, RtFloat right, RtFloat bottom, RtFloat top) {
-  allowed(cmdScreenWindow);
+  if (!allowed(cmdScreenWindow)) {
+    return;
+  }
   getOptions().setScreenWindow(left, right, bottom, top);
 }
 RtVoid GMANRenderManImpl::RiCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax) {
-  allowed(cmdCropWindow);
+  if (!allowed(cmdCropWindow)) {
+    return;
+  }
   getOptions().setCropWindow(xmin, xmax, ymin, ymax);
 }
 RtVoid GMANRenderManImpl::RiProjectionV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdProjection);
+  if (!allowed(cmdProjection)) {
+    return;
+  }
   GMANParameterList p(dictionary, n, tokens, parms);
   getOptions().setProjection(name, p);
 }
 RtVoid GMANRenderManImpl::RiClipping(RtFloat hither, RtFloat yon) {
-  allowed(cmdClipping);
+  if (!allowed(cmdClipping)) {
+    return;
+  }
   getOptions().setClipping(hither, yon);
 }
 RtVoid GMANRenderManImpl::RiDepthOfField(RtFloat fstop, RtFloat focallength, RtFloat focaldistance) {
-  allowed(cmdDepthOfField);
+  if (!allowed(cmdDepthOfField)) {
+    return;
+  }
   getOptions().setDepthOfField(fstop, focallength, focaldistance);
 }
 RtVoid GMANRenderManImpl::RiShutter(RtFloat min, RtFloat max) {
-  allowed(cmdShutter);
+  if (!allowed(cmdShutter)) {
+    return;
+  }
   getOptions().setShutter(min, max);
 }
 
@@ -501,11 +521,15 @@ RtVoid GMANRenderManImpl::RiShutter(RtFloat min, RtFloat max) {
 // ******* ******* ******* DISPLAY OPTIONS ******* ******* *******
 // ***************************************************************
 RtVoid GMANRenderManImpl::RiPixelVariance(RtFloat variation) {
-  allowed(cmdPixelVariance);
+  if (!allowed(cmdPixelVariance)) {
+    return;
+  }
   getOptions().setPixelVariance(variation);
 }
 RtVoid GMANRenderManImpl::RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
-  allowed(cmdPixelSamples);
+  if (!allowed(cmdPixelSamples)) {
+    return;
+  }
 
   // A RIB-supplied count has no defense of its own against a fractional
   // value or an enormous allocation. Round to the nearest integer sample
@@ -525,7 +549,9 @@ RtVoid GMANRenderManImpl::RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
   getOptions().setPixelSamples(xsamples, ysamples);
 }
 RtVoid GMANRenderManImpl::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth) {
-  allowed(cmdPixelFilter);
+  if (!allowed(cmdPixelFilter)) {
+    return;
+  }
 
   // The resolve's support box (GMANSampleBuffer::resolve) tests each
   // sample's offset from the pixel center against half the filter
@@ -554,16 +580,22 @@ RtVoid GMANRenderManImpl::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth,
   getOptions().setPixelFilter(filterfunc, xwidth, ywidth);
 }
 RtVoid GMANRenderManImpl::RiExposure(RtFloat gain, RtFloat gamma) {
-  allowed(cmdExposure);
+  if (!allowed(cmdExposure)) {
+    return;
+  }
   getOptions().setExposure(gain, gamma);
 }
 RtVoid GMANRenderManImpl::RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdImager);
+  if (!allowed(cmdImager)) {
+    return;
+  }
   GMANParameterList p(dictionary, n, tokens, parms);
   getOptions().setImager(name, p);
 }
 RtVoid GMANRenderManImpl::RiQuantize(RtToken type, RtInt one, RtInt min, RtInt max, RtFloat ampl) {
-  allowed(cmdQuantize);
+  if (!allowed(cmdQuantize)) {
+    return;
+  }
   // strcmp, not pointer equality: type is a token parsed out of the RIB and
   // is never the RI_RGBA/RI_Z globals themselves. RiGeometricApproximation
   // compares the same kind of token with strcmp.
@@ -579,7 +611,9 @@ RtVoid GMANRenderManImpl::RiQuantize(RtToken type, RtInt one, RtInt min, RtInt m
 }
 RtVoid GMANRenderManImpl::RiDisplayV(char* name, RtToken type, RtToken mode, RtInt n, RtToken tokens[],
                                      RtPointer parms[]) {
-  allowed(cmdDisplay);
+  if (!allowed(cmdDisplay)) {
+    return;
+  }
 
   // RISpec: a name with no leading '+' replaces the display set; one
   // with a leading '+' adds to it. GMAN renders through a single active
@@ -608,12 +642,16 @@ RtVoid GMANRenderManImpl::RiDisplayV(char* name, RtToken type, RtToken mode, RtI
 // ******* ******* ******* ADDITIONAL OPTIONS ******* ******* *******
 // ******************************************************************
 RtVoid GMANRenderManImpl::RiHiderV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdHider);
+  if (!allowed(cmdHider)) {
+    return;
+  }
   GMANParameterList p(dictionary, n, tokens, parms);
   getOptions().setHider(type, p);
 }
 RtVoid GMANRenderManImpl::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]) {
-  allowed(cmdColorSamples);
+  if (!allowed(cmdColorSamples)) {
+    return;
+  }
   if (n < 1) {
     throw GMANError(RIE_RANGE, RIE_ERROR, std::format("ColorSamples needs at least one sample, got {}.", n).c_str());
   }
@@ -621,7 +659,9 @@ RtVoid GMANRenderManImpl::RiColorSamples(RtInt n, RtFloat nRGB[], RtFloat RGBn[]
 }
 RtInt GMANRenderManImpl::colorSampleCount() const { return getOptions().getColorSamples().getNumber(); }
 RtVoid GMANRenderManImpl::RiRelativeDetail(RtFloat relativedetail) {
-  allowed(cmdRelativeDetail);
+  if (!allowed(cmdRelativeDetail)) {
+    return;
+  }
   getOptions().setRelativeDetail(relativedetail);
 }
 // Option "render" "string indirect" ["<name>"], Option "radiosity" "float
@@ -648,18 +688,24 @@ RtVoid GMANRenderManImpl::RiOptionV(RtToken name, RtInt n, RtToken tokens[], RtP
 // ******* ******* ******* SHADING ATTRIBUTES ******* ******* *******
 // ******************************************************************
 RtVoid GMANRenderManImpl::RiColor(RtColor color) {
-  allowed(cmdColor);
+  if (!allowed(cmdColor)) {
+    return;
+  }
   requireRgbColorSamples(getOptions(), "Color");
   getAttributes().setColor(color);
 }
 RtVoid GMANRenderManImpl::RiOpacity(RtColor color) {
-  allowed(cmdOpacity);
+  if (!allowed(cmdOpacity)) {
+    return;
+  }
   requireRgbColorSamples(getOptions(), "Opacity");
   getAttributes().setOpacity(color);
 }
 RtVoid GMANRenderManImpl::RiTextureCoordinates(RtFloat s1, RtFloat t1, RtFloat s2, RtFloat t2, RtFloat s3, RtFloat t3,
                                                RtFloat s4, RtFloat t4) {
-  allowed(cmdTextureCoordinates);
+  if (!allowed(cmdTextureCoordinates)) {
+    return;
+  }
   getAttributes().setTextureCoordinates(s1, t1, s2, t2, s3, t3, s4, t4);
 }
 namespace {
@@ -735,7 +781,9 @@ RtVoid readSpotConeParams(GMANDictionary& dictionary, GMANParameterList& pl, RtF
 } // namespace
 
 RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdLightSource);
+  if (!allowed(cmdLightSource)) {
+    return (RtLightHandle)0;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms);
 
   // Captured at declaration time, exactly the mechanism every primitive
@@ -808,7 +856,9 @@ RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken t
   return handle;
 }
 RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdAreaLightSource);
+  if (!allowed(cmdAreaLightSource)) {
+    return (RtLightHandle)0;
+  }
   GMANParameterList paramList(dictionary, n, tokens, parms);
 
   // Case-sensitive, unlike the AreaLightSource request keyword itself:
@@ -837,35 +887,49 @@ RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken name, RtInt n, RtTok
   return handle;
 }
 RtVoid GMANRenderManImpl::RiIlluminate(RtLightHandle light, RtBoolean onoff) {
-  allowed(cmdIlluminate);
+  if (!allowed(cmdIlluminate)) {
+    return;
+  }
   getAttributes().setIlluminate(light, onoff);
 }
 RtVoid GMANRenderManImpl::RiSurfaceV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdSurface);
+  if (!allowed(cmdSurface)) {
+    return;
+  }
   GMANParameterList p(dictionary, n, tokens, parms);
   getAttributes().setSurface(name, p);
 }
 RtVoid GMANRenderManImpl::RiAtmosphereV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdAtmosphere);
+  if (!allowed(cmdAtmosphere)) {
+    return;
+  }
   GMANParameterList p(dictionary, n, tokens, parms);
   getAttributes().setAtmosphere(name, p);
 }
 RtVoid GMANRenderManImpl::RiInteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdInterior);
+  if (!allowed(cmdInterior)) {
+    return;
+  }
   GMANParameterList p(dictionary, n, tokens, parms);
   getAttributes().setInterior(name, p);
 }
 RtVoid GMANRenderManImpl::RiExteriorV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdExterior);
+  if (!allowed(cmdExterior)) {
+    return;
+  }
   GMANParameterList p(dictionary, n, tokens, parms);
   getAttributes().setExterior(name, p);
 }
 RtVoid GMANRenderManImpl::RiShadingRate(RtFloat size) {
-  allowed(cmdShadingRate);
+  if (!allowed(cmdShadingRate)) {
+    return;
+  }
   getAttributes().setShadingRate(size);
 }
 RtVoid GMANRenderManImpl::RiShadingInterpolation(RtToken type) {
-  allowed(cmdShadingInterpolation);
+  if (!allowed(cmdShadingInterpolation)) {
+    return;
+  }
   if (strcmp(type, RI_CONSTANT) && strcmp(type, RI_SMOOTH)) {
     GMANError error(RIE_UNIMPLEMENT, RIE_WARNING, "Unknown shading interpolation type");
     throw error;
@@ -873,7 +937,9 @@ RtVoid GMANRenderManImpl::RiShadingInterpolation(RtToken type) {
   getAttributes().setShadingInterpolation(type);
 }
 RtVoid GMANRenderManImpl::RiMatte(RtBoolean onoff) {
-  allowed(cmdMatte);
+  if (!allowed(cmdMatte)) {
+    return;
+  }
   getAttributes().setMatte(onoff);
 }
 
@@ -881,19 +947,27 @@ RtVoid GMANRenderManImpl::RiMatte(RtBoolean onoff) {
 // ******* ******* ******* GEOMETRY ATTRIBUTES ******* ******* *******
 // *******************************************************************
 RtVoid GMANRenderManImpl::RiBound(RtBound b) {
-  allowed(cmdBound);
+  if (!allowed(cmdBound)) {
+    return;
+  }
   getAttributes().setBound(b);
 }
 RtVoid GMANRenderManImpl::RiDetail(RtBound d) {
-  allowed(cmdDetail);
+  if (!allowed(cmdDetail)) {
+    return;
+  }
   getAttributes().setDetail(d);
 }
 RtVoid GMANRenderManImpl::RiDetailRange(RtFloat minvis, RtFloat lowtran, RtFloat uptran, RtFloat maxvis) {
-  allowed(cmdDetailRange);
+  if (!allowed(cmdDetailRange)) {
+    return;
+  }
   getAttributes().setDetailRange(minvis, lowtran, uptran, maxvis);
 }
 RtVoid GMANRenderManImpl::RiGeometricApproximation(RtToken type, RtFloat value) {
-  allowed(cmdGeometricApproximation);
+  if (!allowed(cmdGeometricApproximation)) {
+    return;
+  }
   // strcmp, not pointer equality: type is a token parsed out of the RIB and
   // is never the RI_FLATNESS global itself, so the pointer test rejected
   // every value including the only legal one. RiShadingInterpolation and
@@ -905,17 +979,23 @@ RtVoid GMANRenderManImpl::RiGeometricApproximation(RtToken type, RtFloat value) 
   getAttributes().setGeometricApproximation(type, value);
 }
 RtVoid GMANRenderManImpl::RiBasis(RtBasis ubasis, RtInt ustep, RtBasis vbasis, RtInt vstep) {
-  allowed(cmdBasis);
+  if (!allowed(cmdBasis)) {
+    return;
+  }
   getAttributes().setUVBasis(ubasis, ustep, vbasis, vstep);
 }
 RtVoid GMANRenderManImpl::RiTrimCurve(RtInt nloops, RtInt ncurves[], RtInt order[], RtFloat knot[], RtFloat min[],
                                       RtFloat max[], RtInt n[], RtFloat u[], RtFloat v[], RtFloat w[]) {
-  allowed(cmdTrimCurve);
+  if (!allowed(cmdTrimCurve)) {
+    return;
+  }
   GMANTrimCurve tc(nloops, ncurves, order, knot, min, max, n, u, v, w);
   getAttributes().setTrimCurves(tc);
 }
 RtVoid GMANRenderManImpl::RiOrientation(RtToken o) {
-  allowed(cmdOrientation);
+  if (!allowed(cmdOrientation)) {
+    return;
+  }
   if (strcmp(o, RI_INSIDE) && strcmp(o, RI_OUTSIDE) && strcmp(o, RI_LH) && strcmp(o, RI_RH)) {
     GMANError error(RIE_UNIMPLEMENT, RIE_WARNING, "Unknown orientation type");
     throw error;
@@ -924,16 +1004,22 @@ RtVoid GMANRenderManImpl::RiOrientation(RtToken o) {
 }
 
 RtVoid GMANRenderManImpl::RiReverseOrientation(RtVoid) {
-  allowed(cmdReverseOrientation);
+  if (!allowed(cmdReverseOrientation)) {
+    return;
+  }
   getAttributes().toggleOrientation();
 }
 
 RtVoid GMANRenderManImpl::RiSides(RtInt sides) {
-  allowed(cmdSides);
+  if (!allowed(cmdSides)) {
+    return;
+  }
   getAttributes().setSides(sides);
 }
 RtVoid GMANRenderManImpl::RiDisplacementV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {
-  allowed(cmdDisplacement);
+  if (!allowed(cmdDisplacement)) {
+    return;
+  }
   GMANParameterList p(dictionary, n, tokens, parms);
   getAttributes().setDisplacement(name, p);
 }
@@ -942,47 +1028,63 @@ RtVoid GMANRenderManImpl::RiDisplacementV(RtToken name, RtInt n, RtToken tokens[
 // ******* ******* ******* TRANSFORMATIONS ******* ******* *******
 // ***************************************************************
 RtVoid GMANRenderManImpl::RiIdentity(RtVoid) {
-  allowed(cmdIdentity);
+  if (!allowed(cmdIdentity)) {
+    return;
+  }
   GMANMatrix4 m;
   setTransform(m);
 }
 RtVoid GMANRenderManImpl::RiTransform(RtMatrix transform) {
-  allowed(cmdTransform);
+  if (!allowed(cmdTransform)) {
+    return;
+  }
   GMANMatrix4 m(transform);
   setTransform(m);
 }
 RtVoid GMANRenderManImpl::RiConcatTransform(RtMatrix transform) {
-  allowed(cmdConcatTransform);
+  if (!allowed(cmdConcatTransform)) {
+    return;
+  }
   GMANMatrix4 m(transform);
   buildTransform(m);
 }
 RtVoid GMANRenderManImpl::RiPerspective(RtFloat fov) {
-  allowed(cmdPerspective);
+  if (!allowed(cmdPerspective)) {
+    return;
+  }
   GMANMatrix4 m;
   m.persp(fov);
   buildTransform(m);
 }
 RtVoid GMANRenderManImpl::RiTranslate(RtFloat dx, RtFloat dy, RtFloat dz) {
-  allowed(cmdTranslate);
+  if (!allowed(cmdTranslate)) {
+    return;
+  }
   GMANMatrix4 m;
   m.trans(dx, dy, dz);
   buildTransform(m);
 }
 RtVoid GMANRenderManImpl::RiRotate(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
-  allowed(cmdRotate);
+  if (!allowed(cmdRotate)) {
+    return;
+  }
   GMANMatrix4 m;
   m.rot(angle * DEGTORAD, dx, dy, dz);
   buildTransform(m);
 }
 RtVoid GMANRenderManImpl::RiScale(RtFloat sx, RtFloat sy, RtFloat sz) {
-  allowed(cmdScale);
+  if (!allowed(cmdScale)) {
+    return;
+  }
   GMANMatrix4 m;
   m.scale(sx, sy, sz);
   buildTransform(m);
 }
 RtVoid GMANRenderManImpl::RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloat dz1, RtFloat dx2, RtFloat dy2,
                                  RtFloat dz2) {
-  allowed(cmdSkew);
+  if (!allowed(cmdSkew)) {
+    return;
+  }
   GMANMatrix4 m;
   GMANVector a(dx1, dy1, dz1);
   GMANVector b(dx2, dy2, dz2);
@@ -990,12 +1092,22 @@ RtVoid GMANRenderManImpl::RiSkew(RtFloat angle, RtFloat dx1, RtFloat dy1, RtFloa
   buildTransform(m);
 }
 RtVoid GMANRenderManImpl::RiDeformationV(RtToken /*name*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[]) {}
-RtVoid GMANRenderManImpl::RiCoordinateSystem(RtToken /*space*/) { allowed(cmdCoordinateSystem); }
-RtVoid GMANRenderManImpl::RiCoordSysTransform(RtToken /*space*/) { allowed(cmdCoordSysTransform); }
+RtVoid GMANRenderManImpl::RiCoordinateSystem(RtToken /*space*/) {
+  if (!allowed(cmdCoordinateSystem)) {
+    return;
+  }
+}
+RtVoid GMANRenderManImpl::RiCoordSysTransform(RtToken /*space*/) {
+  if (!allowed(cmdCoordSysTransform)) {
+    return;
+  }
+}
 
 RtPoint* GMANRenderManImpl::RiTransformPoints(RtToken /*fromspace*/, RtToken /*tospace*/, RtInt /*n*/,
                                               RtPoint /*points*/[]) {
-  allowed(cmdTransformPoints);
+  if (!allowed(cmdTransformPoints)) {
+    return nullptr;
+  }
   return (RtPoint*)0;
 }
 
@@ -1009,7 +1121,9 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
   RiPolygonV(nverts, n, tokens, parms, NULL);
 }
 RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], RtPointer parms[], RtInt const* counts) {
-  allowed(cmdPolygon);
+  if (!allowed(cmdPolygon)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1033,7 +1147,9 @@ RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt 
 }
 RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[], RtPointer parms[],
                                             const RtInt* counts) {
-  allowed(cmdGeneralPolygon);
+  if (!allowed(cmdGeneralPolygon)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1058,7 +1174,9 @@ RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt 
 }
 RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[],
                                             RtPointer parms[], RtInt const* counts) {
-  allowed(cmdPointsPolygon);
+  if (!allowed(cmdPointsPolygon)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1083,7 +1201,9 @@ RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
 }
 RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
                                                    RtToken tokens[], RtPointer parms[], RtInt const* counts) {
-  allowed(cmdPointsGeneralPolygons);
+  if (!allowed(cmdPointsGeneralPolygons)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1106,7 +1226,9 @@ RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPo
   RiPatchV(type, n, tokens, parms, NULL);
 }
 RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[], const RtInt* counts) {
-  allowed(cmdPatch);
+  if (!allowed(cmdPatch)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1131,7 +1253,9 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
 }
 RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n,
                                        RtToken tokens[], RtPointer parms[], const RtInt* counts) {
-  allowed(cmdPatchMesh);
+  if (!allowed(cmdPatchMesh)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1303,7 +1427,9 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
 RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv,
                                      RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtInt n,
                                      RtToken tokens[], RtPointer parms[], RtInt const* counts) {
-  allowed(cmdNuPatch);
+  if (!allowed(cmdNuPatch)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1358,7 +1484,9 @@ RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, 
 }
 RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
                                     RtPointer parms[], RtInt const* counts) {
-  allowed(cmdSphere);
+  if (!allowed(cmdSphere)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1378,7 +1506,9 @@ RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, 
 }
 RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
                                   RtPointer parms[], RtInt const* counts) {
-  allowed(cmdCone);
+  if (!allowed(cmdCone)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1397,7 +1527,9 @@ RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax
 }
 RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
                                       RtToken tokens[], RtPointer parms[], RtInt const* counts) {
-  allowed(cmdCylinder);
+  if (!allowed(cmdCylinder)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1417,7 +1549,9 @@ RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat
 }
 RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
                                          RtPointer parms[], RtInt const* counts) {
-  allowed(cmdHyperboloid);
+  if (!allowed(cmdHyperboloid)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1437,7 +1571,9 @@ RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax
 }
 RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
                                         RtToken tokens[], RtPointer parms[], RtInt const* counts) {
-  allowed(cmdParaboloid);
+  if (!allowed(cmdParaboloid)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1457,7 +1593,9 @@ RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, 
 }
 RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
                                   RtPointer parms[], RtInt const* counts) {
-  allowed(cmdDisk);
+  if (!allowed(cmdDisk)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1476,7 +1614,9 @@ RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimi
 }
 RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
                                    RtInt n, RtToken tokens[], RtPointer parms[], RtInt const* counts) {
-  allowed(cmdTorus);
+  if (!allowed(cmdTorus)) {
+    return;
+  }
   if (!renderer) {
     reportNoRendererOnce();
     return;
@@ -1494,29 +1634,41 @@ RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimi
 RtVoid GMANRenderManImpl::RiBlobbyV(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[], RtInt /*nflt*/,
                                     RtFloat /*flt*/[], RtInt /*nstr*/, RtToken /*str*/[], RtInt /*n*/,
                                     RtToken /*tokens*/[], RtPointer /*parms*/[]) {
-  allowed(cmdBlobby);
+  if (!allowed(cmdBlobby)) {
+    return;
+  }
 }
 RtVoid GMANRenderManImpl::RiPointsV(RtInt /*npoints*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[]) {
-  allowed(cmdPoints);
+  if (!allowed(cmdPoints)) {
+    return;
+  }
 }
 RtVoid GMANRenderManImpl::RiCurvesV(RtToken /*type*/, RtInt /*ncurves*/, RtInt /*nvertices*/[], RtToken /*wrap*/,
                                     RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[]) {
-  allowed(cmdCurves);
+  if (!allowed(cmdCurves)) {
+    return;
+  }
 }
 RtVoid GMANRenderManImpl::RiSubdivisionMeshV(RtToken /*mask*/, RtInt /*nf*/, RtInt /*nverts*/[], RtInt /*verts*/[],
                                              RtInt /*ntags*/, RtToken /*tags*/[], RtInt /*numargs*/[],
                                              RtInt /*intargs*/[], RtFloat /*floatargs*/[], RtInt /*n*/,
                                              RtToken /*tokens*/[], RtPointer /*parms*/[]) {
-  allowed(cmdSubdivisionMesh);
+  if (!allowed(cmdSubdivisionMesh)) {
+    return;
+  }
 }
 
 RtVoid GMANRenderManImpl::RiProcedural(RtPointer /*data*/, RtBound /*bound*/,
                                        RtVoid (* /*subdivfunc*/)(RtPointer, RtFloat),
                                        RtVoid (* /*freefunc*/)(RtPointer)) {
-  allowed(cmdProcedural);
+  if (!allowed(cmdProcedural)) {
+    return;
+  }
 }
 RtVoid GMANRenderManImpl::RiGeometryV(RtToken /*type*/, RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[]) {
-  allowed(cmdGeometry);
+  if (!allowed(cmdGeometry)) {
+    return;
+  }
 }
 
 // ****************************************************
@@ -1525,18 +1677,24 @@ RtVoid GMANRenderManImpl::RiGeometryV(RtToken /*type*/, RtInt /*n*/, RtToken /*t
 RtVoid GMANRenderManImpl::RiMakeTextureV(char* pic, char* tex, RtToken swrap, RtToken twrap,
                                          RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, RtFloat /*twidth*/,
                                          RtInt /*n*/, RtToken /*tokens*/[], RtPointer /*parms*/[]) {
-  allowed(cmdMakeTexture);
+  if (!allowed(cmdMakeTexture)) {
+    return;
+  }
   gman::makeTexture(pic, tex, swrap, twrap);
 }
 RtVoid GMANRenderManImpl::RiMakeBumpV(char* /*pic*/, char* /*tex*/, RtToken /*swrap*/, RtToken /*twrap*/,
                                       RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/, RtFloat /*twidth*/, RtInt /*n*/,
                                       RtToken /*tokens*/[], RtPointer /*parms*/[]) {
-  allowed(cmdMakeBump);
+  if (!allowed(cmdMakeBump)) {
+    return;
+  }
 }
 RtVoid GMANRenderManImpl::RiMakeLatLongEnvironmentV(char* pic, char* tex, RtFilterFunc /*filterfunc*/,
                                                     RtFloat /*swidth*/, RtFloat /*twidth*/, RtInt /*n*/,
                                                     RtToken /*tokens*/[], RtPointer /*parms*/[]) {
-  allowed(cmdMakeLatLongEnvironment);
+  if (!allowed(cmdMakeLatLongEnvironment)) {
+    return;
+  }
   gman::makeLatLongEnvironment(pic, tex);
 }
 RtVoid GMANRenderManImpl::RiMakeCubeFaceEnvironmentV(char* /*px*/, char* /*nx*/, char* /*py*/, char* /*ny*/,
@@ -1544,11 +1702,15 @@ RtVoid GMANRenderManImpl::RiMakeCubeFaceEnvironmentV(char* /*px*/, char* /*nx*/,
                                                      RtFilterFunc /*filterfunc*/, RtFloat /*swidth*/,
                                                      RtFloat /*ywidth*/, RtInt /*n*/, RtToken /*tokens*/[],
                                                      RtPointer /*parms*/[]) {
-  allowed(cmdMakeCubeFaceEnvironment);
+  if (!allowed(cmdMakeCubeFaceEnvironment)) {
+    return;
+  }
 }
 RtVoid GMANRenderManImpl::RiMakeShadowV(char* /*pic*/, char* /*tex*/, RtInt /*n*/, RtToken /*tokens*/[],
                                         RtPointer /*parms*/[]) {
-  allowed(cmdMakeShadow);
+  if (!allowed(cmdMakeShadow)) {
+    return;
+  }
 }
 
 // ******************************************************************

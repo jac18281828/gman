@@ -1,0 +1,16 @@
+# An AttributeBegin inside ObjectBegin: a block request out of place, which stops the file.
+# Read by tests/outofmode_test.cpp.
+Display "outofmode_block.tif" "file" "rgba"
+Format 32 32 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [1.0] "from" [5 3 0] "to" [0 0 0]
+ObjectBegin 1
+AttributeBegin
+Sphere 1 -1 1 360
+AttributeEnd
+ObjectEnd
+WorldEnd

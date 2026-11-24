@@ -363,13 +363,12 @@ trailing `Sphere` follows the desync convention. Not third-party.
 
 A `NuPatch` issued inside `FrameBegin`/`FrameEnd` before any
 `WorldBegin` -- the "F"-only block state `cmdNuPatch`'s mask excludes.
-`allowed(cmdNuPatch)` throws before this task's own validation runs,
-after `parseNuPatch`'s knot arrays are already owned and before its
-trailing `delete[]`s, proving that ownership survives the throw.
-Registered in `tests/nupatch_test.cpp`, asserting exit status 1 -- the
-exit code `nupatch_singular_ctm.rib` also takes, unlike every other
-`malformed/nupatch_*.rib` fixture -- and no trailing `Sphere`, since the
-throw unwinds before one would parse. Not third-party.
+`allowed(cmdNuPatch)` reports `RIE_ILLSTATE` at `RIE_WARNING` and
+`RiNuPatchV` returns before this task's own validation runs, after
+`parseNuPatch`'s knot arrays are already owned, proving the parser frees
+them when the request is ignored. Registered in `tests/nupatch_test.cpp`,
+asserting exit status 0 and one `WARNING: RIE_ILLSTATE`. No trailing
+`Sphere`, since the file has nothing to render. Not third-party.
 
 ## malformed/nupatch_singular_ctm.rib
 
@@ -703,6 +702,35 @@ normal toward a wall behind the card's plane, with a distant light travelling
 along +x parallel to the card (`tests/bumpterminator_test.cpp`). The wall lies
 outside the frame; no light reaches the card directly, so every ray of light
 the card shows arrives by a BSDF-sampled bounce off the wall. Not third-party.
+
+## outofmode_control.rib
+
+A lit sphere, 32x32, and no request out of mode: the image `outofmode_imager.rib`
+and `outofmode_option.rib` must match pixel for pixel. Registered in
+`tests/outofmode_test.cpp`. Not third-party.
+
+## outofmode_imager.rib
+
+The control with `Imager "background" "background" [1 1 1]` after `WorldBegin`,
+the shape the Aqsis Blobby examples take. `Imager` is legal only outside the world
+block, so it reports `RIE_ILLSTATE` at `RIE_WARNING` and is ignored; the file
+renders the control's exact pixels under one warning. The `Sphere` that follows
+the request follows the desync convention. Registered in `tests/outofmode_test.cpp`.
+Not third-party.
+
+## outofmode_option.rib
+
+The control with `Exposure 0.5 1` after `WorldBegin`. The output reads the gain
+when it writes, so an applied `Exposure` would halve every channel of the control's
+pixels; ignored, it leaves them exact, under one `RIE_ILLSTATE` warning. The
+`Sphere` that follows the request follows the desync convention. Registered in
+`tests/outofmode_test.cpp`. Not third-party.
+
+## outofmode_block.rib
+
+An `AttributeBegin` inside `ObjectBegin`, which `enterMode(A)` excludes. A block
+request out of place still stops the file: one `WARNING: RIE_ILLSTATE`, exit 1, no
+image. Registered in `tests/outofmode_test.cpp`. Not third-party.
 
 ## corpus/
 

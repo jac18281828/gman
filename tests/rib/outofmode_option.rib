@@ -1,0 +1,13 @@
+# The control with an Exposure after WorldBegin, whose gain would reach the written pixels.
+# Read by tests/outofmode_test.cpp.
+Display "outofmode_option.tif" "file" "rgba"
+Format 32 32 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.2]
+LightSource "distantlight" 2 "intensity" [1.0] "from" [5 3 0] "to" [0 0 0]
+Exposure 0.5 1
+Sphere 1 -1 1 360
+WorldEnd

@@ -4074,3 +4074,40 @@ add_test(NAME invertiblematrix COMMAND gman_invertiblematrix)
 set_tests_properties(invertiblematrix PROPERTIES
   LABELS unit
   TIMEOUT 30)
+
+# A request issued outside the blocks it is legal in reports RIE_ILLSTATE at
+# RIE_WARNING and is ignored, so the file renders on; a block request out of
+# place still stops it. See outofmode_test.cpp's own comment.
+add_executable(gman_outofmode outofmode_test.cpp)
+target_link_libraries(gman_outofmode PRIVATE gman_core gman_internal_headers TIFF::TIFF)
+add_dependencies(gman_outofmode gman_zbuffer)
+
+set(GMAN_OUTOFMODE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/outofmode-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_OUTOFMODE_ZBUFFER_WORKDIR}")
+
+add_test(NAME outofmode_zbuffer
+  COMMAND gman_outofmode $<TARGET_FILE:gman>
+                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                         gmanzbuffer
+  WORKING_DIRECTORY "${GMAN_OUTOFMODE_ZBUFFER_WORKDIR}")
+set_tests_properties(outofmode_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_outofmode gman_raytracer)
+
+  set(GMAN_OUTOFMODE_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/outofmode-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_OUTOFMODE_RAYTRACER_WORKDIR}")
+
+  add_test(NAME outofmode_raytracer
+    COMMAND gman_outofmode $<TARGET_FILE:gman>
+                           "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                           gmanraytracer
+    WORKING_DIRECTORY "${GMAN_OUTOFMODE_RAYTRACER_WORKDIR}")
+  set_tests_properties(outofmode_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
