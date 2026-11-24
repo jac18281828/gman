@@ -22,7 +22,7 @@
  * A RIB Atmosphere, Displacement or Imager reaches the renderer as the C
  * API's call does. Naming a shader with no plugin reports RIE_NOSHADER at
  * RIE_ERROR, which stops the file: exit 1, no image, the report naming the
- * request, the shader and the request's fallback. Naming a loadable shader
+ * request, the shader and the loader's reason. Naming a loadable shader
  * with a one-entry parameter list renders the control scene's exact image,
  * since no renderer runs these shaders; a miscounted list would desync the
  * next request and change the image.
@@ -43,15 +43,12 @@ struct ShaderRequest {
   std::string fixtureStem;
   std::string missingShader;
   std::string loadableShader;
-  std::string fallback;
 };
 
 std::vector<ShaderRequest> const requests = {
-    {"Atmosphere", "ribshaderrequests_atmosphere", "nosuchatmosphere", "countingvolume",
-     "no atmosphere shades the volume"},
-    {"Displacement", "ribshaderrequests_displacement", "nosuchdisplacement", "identitydisplacement",
-     "the surface renders undisplaced"},
-    {"Imager", "ribshaderrequests_imager", "nosuchimager", "countingimager", "the frame renders without an imager"},
+    {"Atmosphere", "ribshaderrequests_atmosphere", "nosuchatmosphere", "countingvolume"},
+    {"Displacement", "ribshaderrequests_displacement", "nosuchdisplacement", "identitydisplacement"},
+    {"Imager", "ribshaderrequests_imager", "nosuchimager", "countingimager"},
 };
 
 struct Rendered {
@@ -91,8 +88,9 @@ void checkMissingShader(std::string const& gman, std::string const& renderer, st
   check(countOccurrences(output, "ERROR: RIE_NOSHADER") == 1, tag + ": reports ERROR: RIE_NOSHADER exactly once");
   check(output.find(request.request + " \"" + request.missingShader + "\"") != std::string::npos,
         tag + ": names " + request.request + " \"" + request.missingShader + "\"");
-  check(output.find("failed to load") != std::string::npos, tag + ": reports failed to load");
-  check(output.find(request.fallback) != std::string::npos, tag + ": reports \"" + request.fallback + "\"");
+  std::string const failure = request.request + " \"" + request.missingShader + "\" failed to load";
+  check(output.find(failure + ": ") != std::string::npos, tag + ": reports failed to load with its reason");
+  check(output.find(failure + ";") == std::string::npos, tag + ": follows failed to load with no ; clause");
   check(output.find("SEVERE:") == std::string::npos, tag + ": reports no SEVERE");
 }
 

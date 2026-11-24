@@ -103,11 +103,13 @@ namespace gman {
 // it and checks its type against expected. On success, returns the loaded
 // module. On any failure -- no module, no GMANLoadShader, no
 // GMANDestroyShader, a null shader, or the wrong type -- reports through
-// GMANHandleError, quoting name exactly as given, and returns null.
-// requestName names the request in the report (for example "Surface");
-// fallbackPhrase names what renders in the shader's place.
-GMAN_EXPORT std::unique_ptr<GMANLoadableShader>
-resolveLoadableShader(std::string const& requestName, std::string const& fallbackPhrase, std::string const& name,
-                      GMANParameterList const& parameters, GMANShader::ShaderType expected);
+// GMANHandleError at RIE_ERROR as `<requestName> "<name>" failed to load:
+// <reason>`, quoting name exactly as given, and returns null. requestName
+// names the request in the report (for example "Surface"); the caller
+// decides what binds on a null return.
+GMAN_EXPORT std::unique_ptr<GMANLoadableShader> resolveLoadableShader(std::string const& requestName,
+                                                                      std::string const& name,
+                                                                      GMANParameterList const& parameters,
+                                                                      GMANShader::ShaderType expected);
 
 } // namespace gman

@@ -131,8 +131,7 @@ std::string const& nounPhraseFor(GMANShader::ShaderType type) {
 
 } // namespace
 
-std::unique_ptr<GMANLoadableShader> resolveLoadableShader(std::string const& requestName,
-                                                          std::string const& fallbackPhrase, std::string const& name,
+std::unique_ptr<GMANLoadableShader> resolveLoadableShader(std::string const& requestName, std::string const& name,
                                                           GMANParameterList const& parameters,
                                                           GMANShader::ShaderType expected) {
   std::string const objectName = "lib" + name + ".so";
@@ -149,10 +148,9 @@ std::unique_ptr<GMANLoadableShader> resolveLoadableShader(std::string const& req
     }
     return resolved;
   } catch (GMANError const& loadError) {
-    std::string const message =
-        requestName + " \"" + name + "\" failed to load; " + fallbackPhrase + ": " + loadError.getMessage();
-    GMANError fallback(RIE_NOSHADER, RIE_ERROR, message.c_str());
-    GMANHandleError(fallback);
+    std::string const message = requestName + " \"" + name + "\" failed to load: " + loadError.getMessage();
+    GMANError report(RIE_NOSHADER, RIE_ERROR, message.c_str());
+    GMANHandleError(report);
     return nullptr;
   }
 }

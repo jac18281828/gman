@@ -98,7 +98,7 @@ void checkSurfaceUnchanged() {
     GMANAttributes attr;
     resetRecorded();
     attr.setSurface("nosuchshader", emptyPl);
-    check(lastMessage.rfind("Surface \"nosuchshader\" failed to load; the default surface shades instead: ", 0) == 0,
+    check(lastMessage.rfind("Surface \"nosuchshader\" failed to load: ", 0) == 0,
           "Surface \"nosuchshader\": the message starts with the expected prefix");
     check(attr.getSurface(0.0) == nullptr, "Surface \"nosuchshader\": getSurface is null");
   }
@@ -106,8 +106,7 @@ void checkSurfaceUnchanged() {
     GMANAttributes attr;
     resetRecorded();
     attr.setSurface("gmanzbuffer", emptyPl);
-    check(lastMessage == "Surface \"gmanzbuffer\" failed to load; the default surface shades instead: "
-                         "Loadable module missing shader.",
+    check(lastMessage == "Surface \"gmanzbuffer\" failed to load: Loadable module missing shader.",
           "Surface \"gmanzbuffer\": the message matches exactly");
     check(attr.getSurface(0.0) == nullptr, "Surface \"gmanzbuffer\": getSurface is null");
   }
@@ -115,8 +114,7 @@ void checkSurfaceUnchanged() {
     GMANAttributes attr;
     resetRecorded();
     attr.setSurface("notasurface", emptyPl);
-    check(lastMessage == "Surface \"notasurface\" failed to load; the default surface shades instead: "
-                         "Specified surface shader is not a surface shader.",
+    check(lastMessage == "Surface \"notasurface\" failed to load: Specified surface shader is not a surface shader.",
           "Surface \"notasurface\": the message matches exactly");
     check(attr.getSurface(0.0) == nullptr, "Surface \"notasurface\": getSurface is null");
   }
@@ -124,7 +122,7 @@ void checkSurfaceUnchanged() {
     GMANAttributes attr;
     resetRecorded();
     attr.setSurface("plastic.so", emptyPl);
-    check(lastMessage.rfind("Surface \"plastic.so\" failed to load; the default surface shades instead: ", 0) == 0,
+    check(lastMessage.rfind("Surface \"plastic.so\" failed to load: ", 0) == 0,
           "Surface \"plastic.so\": the message starts with the expected prefix");
     check(lastMessage.find("\"plastic\"") == std::string::npos,
           "Surface \"plastic.so\": the message never quotes the stripped name");
@@ -283,8 +281,8 @@ void checkKind(std::function<KindFixture()> const& makeFixture, std::string cons
 // light-source kind in its report.
 void checkLightSourceWrongType() {
   resetRecorded();
-  auto const resolved = gman::resolveLoadableShader("LightSource", "no light shines", "matte", GMANParameterList(),
-                                                    GMANShader::LIGHTSOURCE);
+  auto const resolved =
+      gman::resolveLoadableShader("LightSource", "matte", GMANParameterList(), GMANShader::LIGHTSOURCE);
   check(resolved == nullptr, "LightSource wrong type: nothing resolves");
   check(lastCode == RIE_NOSHADER && lastSeverity == RIE_ERROR, "LightSource wrong type: RIE_NOSHADER at RIE_ERROR");
   std::string const ending = "is not a light source shader.";
@@ -300,14 +298,13 @@ int main() {
 
   checkSurfaceUnchanged();
 
-  checkKind(displacementFixture, "Displacement \"matte\" failed to load; the surface renders undisplaced: Specified "
-                                 "displacement shader is not a displacement shader.");
-  checkKind(atmosphereFixture, "Atmosphere \"matte\" failed to load; no atmosphere shades the volume: Specified "
-                               "atmosphere shader is not a volume shader.");
+  checkKind(displacementFixture,
+            "Displacement \"matte\" failed to load: Specified displacement shader is not a displacement shader.");
+  checkKind(atmosphereFixture,
+            "Atmosphere \"matte\" failed to load: Specified atmosphere shader is not a volume shader.");
   checkKind(interiorFixture);
   checkKind(exteriorFixture);
-  checkKind(imagerFixture, "Imager \"matte\" failed to load; the frame renders without an imager: Specified imager "
-                           "shader is not an imager shader.");
+  checkKind(imagerFixture, "Imager \"matte\" failed to load: Specified imager shader is not an imager shader.");
   checkLightSourceWrongType();
 
   return checkSummary("every shader kind resolves its name to lib<name>.so and falls back on failure");

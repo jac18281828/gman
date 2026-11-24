@@ -44,9 +44,9 @@ constexpr auto NCOMPS = 3;
 // failure both reset to null, so a kind never carries a mismatched pair.
 template <typename Typed>
 void bindLoadableShader(std::shared_ptr<GMANLoadableShader>& module, Typed*& typed, std::string const& requestName,
-                        std::string const& fallbackPhrase, std::string const& name, GMANParameterList const& pl,
-                        GMANShader::ShaderType expected, Typed* (GMANLoadableShader::*getter)(RtVoid)) {
-  auto resolved = gman::resolveLoadableShader(requestName, fallbackPhrase, name, pl, expected);
+                        std::string const& name, GMANParameterList const& pl, GMANShader::ShaderType expected,
+                        Typed* (GMANLoadableShader::*getter)(RtVoid)) {
+  auto resolved = gman::resolveLoadableShader(requestName, name, pl, expected);
   if (!resolved) {
     module.reset();
     typed = nullptr;
@@ -114,8 +114,7 @@ RtVoid GMANAttributes::setIlluminate(RtLightHandle lh, RtBoolean onoff) {
 }
 
 RtVoid GMANAttributes::setSurface(std::string const& name, GMANParameterList const& pl) {
-  auto resolved =
-      gman::resolveLoadableShader("Surface", "the default surface shades instead", name, pl, GMANShader::SURFACE);
+  auto resolved = gman::resolveLoadableShader("Surface", name, pl, GMANShader::SURFACE);
   if (!resolved) {
     surfaceModule.reset();
     surface.reset();
@@ -126,23 +125,23 @@ RtVoid GMANAttributes::setSurface(std::string const& name, GMANParameterList con
 }
 
 RtVoid GMANAttributes::setDisplacement(std::string const& name, GMANParameterList const& pl) {
-  bindLoadableShader(displacementModule, displacement, "Displacement", "the surface renders undisplaced", name, pl,
-                     GMANShader::DISPLACEMENT, &GMANLoadableShader::getDisplacement);
+  bindLoadableShader(displacementModule, displacement, "Displacement", name, pl, GMANShader::DISPLACEMENT,
+                     &GMANLoadableShader::getDisplacement);
 }
 
 RtVoid GMANAttributes::setAtmosphere(std::string const& name, GMANParameterList const& pl) {
-  bindLoadableShader(atmosphereModule, atmosphere, "Atmosphere", "no atmosphere shades the volume", name, pl,
-                     GMANShader::VOLUME, &GMANLoadableShader::getVolume);
+  bindLoadableShader(atmosphereModule, atmosphere, "Atmosphere", name, pl, GMANShader::VOLUME,
+                     &GMANLoadableShader::getVolume);
 }
 
 RtVoid GMANAttributes::setInterior(std::string const& name, GMANParameterList const& pl) {
-  bindLoadableShader(interiorModule, interior, "Interior", "the volume shades without an interior", name, pl,
-                     GMANShader::VOLUME, &GMANLoadableShader::getVolume);
+  bindLoadableShader(interiorModule, interior, "Interior", name, pl, GMANShader::VOLUME,
+                     &GMANLoadableShader::getVolume);
 }
 
 RtVoid GMANAttributes::setExterior(std::string const& name, GMANParameterList const& pl) {
-  bindLoadableShader(exteriorModule, exterior, "Exterior", "the volume shades without an exterior", name, pl,
-                     GMANShader::VOLUME, &GMANLoadableShader::getVolume);
+  bindLoadableShader(exteriorModule, exterior, "Exterior", name, pl, GMANShader::VOLUME,
+                     &GMANLoadableShader::getVolume);
 }
 
 RtVoid GMANAttributes::setShadingRate(RtFloat sz) { shadingRate = sz; }

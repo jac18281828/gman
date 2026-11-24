@@ -47,9 +47,9 @@ namespace {
 // failure both reset to null, so a kind never carries a mismatched pair.
 template <typename Typed>
 void bindLoadableShader(std::shared_ptr<GMANLoadableShader>& module, Typed*& typed, std::string const& requestName,
-                        std::string const& fallbackPhrase, std::string const& name, GMANParameterList const& pl,
-                        GMANShader::ShaderType expected, Typed* (GMANLoadableShader::*getter)(RtVoid)) {
-  auto resolved = gman::resolveLoadableShader(requestName, fallbackPhrase, name, pl, expected);
+                        std::string const& name, GMANParameterList const& pl, GMANShader::ShaderType expected,
+                        Typed* (GMANLoadableShader::*getter)(RtVoid)) {
+  auto resolved = gman::resolveLoadableShader(requestName, name, pl, expected);
   if (!resolved) {
     module.reset();
     typed = nullptr;
@@ -250,8 +250,7 @@ RtVoid GMANOptions::setExposure(RtFloat gn, RtFloat gmm) {
 }
 
 RtVoid GMANOptions::setImager(std::string name, GMANParameterList const& pl) {
-  bindLoadableShader(imagerModule, imager, "Imager", "the frame renders without an imager", name, pl,
-                     GMANShader::IMAGER, &GMANLoadableShader::getImager);
+  bindLoadableShader(imagerModule, imager, "Imager", name, pl, GMANShader::IMAGER, &GMANLoadableShader::getImager);
 }
 
 RtVoid GMANOptions::setColorQuantize(RtInt o, RtInt mn, RtInt mx, RtFloat da) {
