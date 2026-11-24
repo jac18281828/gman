@@ -2639,7 +2639,7 @@ if(GMAN_BUILD_RADIOSITY)
   # The ray tracer renders its rows through gman::parallelFor, one texture
   # cache per worker: an image byte-identical at one, three and eight
   # workers, direct and through the radiosity pass, the worker each row ran
-  # on, one missing-texture warning per worker's cache and a texture only a
+  # on, one missing-texture warning however many workers ran and a texture only a
   # second reflection reaches warning in each of two renders. Loads
   # libradiosity.so, so it sits in this block. The argument --scaling times
   # the direct scene at one and at eight workers and asserts nothing. See
@@ -3943,7 +3943,7 @@ set_tests_properties(pathtracerglasscount PROPERTIES
 # The path tracer renders its rows through gman::parallelFor, one texture
 # cache per worker: an image byte-identical at one and at eight workers,
 # the worker each row ran on, an equal dropped-path count at one, three and
-# eight workers, one missing-texture warning per worker's cache, and a
+# eight workers, one missing-texture warning however many workers ran, and a
 # viewing system's camera calls through a const reference. The argument
 # --scaling times the floor scene at one and at eight workers and asserts
 # nothing. See tests/pathtracerthreads_test.cpp.

@@ -149,7 +149,7 @@ void testIndependentCaches() {
              "cache A still holds its own miss, taken before the file existed");
 }
 
-void testMissingNameWarnsOncePerWorld() {
+void testMissingNameWarnsOnceAcrossCaches() {
   const std::string logPath = "texturecache_independent_missing.log";
   std::remove(logPath.c_str());
   setLogFile(logPath.c_str());
@@ -159,8 +159,10 @@ void testMissingNameWarnsOncePerWorld() {
   std::remove(missingName.c_str());
   gman::TextureCache cacheA;
   gman::TextureCache cacheB;
+  gman::TextureCache cacheC;
   cacheA.sample(missingName, 0.5, 0.5, gman::TEXTURE_CLAMP);
   cacheA.sample(missingName, 0.1, 0.1, gman::TEXTURE_CLAMP);
+  cacheC.sample(missingName, 0.5, 0.5, gman::TEXTURE_CLAMP);
 
   check(writeCheckerTexture(missingName), missingName + " writes");
 
@@ -169,7 +171,7 @@ void testMissingNameWarnsOncePerWorld() {
   checkColor(cacheA.sample(missingName, 0.25, 0.25, gman::TEXTURE_CLAMP), kBlack, "cache A still holds its own miss");
 
   check(countOccurrences(readFile(logPath), missingName) == 1,
-        "a name no file carried when its first cache looked, looked up several times, logs exactly one warning");
+        "a name no file carried when two caches looked, one of them several times, logs exactly one warning");
 }
 
 // ---- the env routes ----
@@ -306,7 +308,7 @@ void testOneCachePerWorker() {
 
 int main() {
   testIndependentCaches();
-  testMissingNameWarnsOncePerWorld();
+  testMissingNameWarnsOnceAcrossCaches();
   testEnvRoutesTexture();
   testEnvRoutesEnvironment();
   testShadeForwardsCache();

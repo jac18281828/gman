@@ -30,7 +30,7 @@
  * the renderer reports which worker rendered each row; a scene that drops
  * paths drops the same count, matching an independent tally of the alpha
  * channel, at one, three and eight workers; a texture no file carries
- * warns once per worker's cache; and a viewing system answers its four
+ * warns once however many workers ran; and a viewing system answers its four
  * camera calls through a const reference.
  *
  * With the argument --scaling the program does none of that. It times the
@@ -486,7 +486,7 @@ MissingTextureRun missingTextureRun(RtInt workers, char const* logPath) {
   return {countOccurrences(endLogCapture(logPath), kMissingTexture), distinctWorkerIds(scene.renderer.rowWorkers())};
 }
 
-void checkOneCachePerWorker() {
+void checkMissingTextureWarnsOnce() {
   std::ifstream const existing(kMissingTexture);
   check(!existing.good(), "D setup: no file carries the missing texture's name");
 
@@ -547,11 +547,11 @@ int runChecks() {
   checkImagesAndWorkerIds();
   checkAdaptiveSamplingAcrossWorkers();
   checkDropCounts();
-  checkOneCachePerWorker();
+  checkMissingTextureWarnsOnce();
   checkConstViewingSystem();
 
   return checkSummary("the path tracer's rows render through gman::parallelFor: the image, its worker ids, its dropped "
-                      "paths and its per-worker texture caches hold at every worker count, and a viewing system "
+                      "paths and its missing-texture warning hold at every worker count, and a viewing system "
                       "answers its camera calls through a const reference");
 }
 

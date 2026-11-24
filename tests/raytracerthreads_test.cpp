@@ -25,7 +25,7 @@
  * renders byte-identically, colour, alpha and depth, from one, three and
  * eight workers, and so does a closed box lit through the radiosity pass;
  * the renderer reports which worker rendered each row; a texture no file
- * carries warns once per worker's cache; and a texture reached only through
+ * carries warns once however many workers ran; and a texture reached only through
  * a second reflection warns once in each of two consecutive renders, which
  * a tracer sampling through the process cache instead warns about in the
  * first render alone.
@@ -495,7 +495,7 @@ MissingTextureRun missingTextureRun(RtInt workers, char const* logPath) {
           distinctWorkerIds(scene->renderer.rowWorkers()).size()};
 }
 
-void checkOneCachePerWorker() {
+void checkMissingTextureWarnsOnce() {
   std::ifstream const existing(kMissingTexture);
   check(!existing.good(), "C setup: no file carries the missing texture's name");
   check(gman::parallelWorkers(kTextureSize.height, kParallelWorkers) == kParallelWorkers,
@@ -554,11 +554,11 @@ void checkSecondReflectionCache() {
 int runChecks() {
   checkDirectScene();
   checkIndirectScene();
-  checkOneCachePerWorker();
+  checkMissingTextureWarnsOnce();
   checkSecondReflectionCache();
 
   return checkSummary("the ray tracer's rows render through gman::parallelFor: the image, its worker ids and its "
-                      "per-worker texture caches hold at every worker count, and a texture reached through a second "
+                      "missing-texture warning hold at every worker count, and a texture reached through a second "
                       "reflection samples through the cache of the tracer that cast it");
 }
 

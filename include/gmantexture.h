@@ -121,7 +121,7 @@ private:
 // single-threaded shading: the z-buffer, and any GMANSurfaceEnv whose
 // textureCache member is null, sample through this one cache. The ray
 // tracer samples through one cache per worker instead. A threaded caller
-// that forgets or clears its own cache races here.
+// that forgets its own cache races here.
 TextureCache& textureCache(RtVoid);
 
 // RiMakeTexture's implementation: decodes picture the way Texture does

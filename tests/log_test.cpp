@@ -49,6 +49,14 @@ std::string readFile(const std::string& path) {
   return contents.str();
 }
 
+int countOccurrences(const std::string& haystack, const std::string& needle) {
+  int count = 0;
+  for (auto at = haystack.find(needle); at != std::string::npos; at = haystack.find(needle, at + needle.size())) {
+    ++count;
+  }
+  return count;
+}
+
 // setLogFile opens its target with "a", so a file left over from a
 // previous run of this binary in the same WORKING_DIRECTORY would carry
 // stale lines into a fresh count. Each test starts from no file at all.
@@ -181,6 +189,27 @@ void testConcurrentLinesStayWhole() {
   check(malformed == 0, "every line is well-formed; none interleaved");
 }
 
+// A warningOnce below the current level records nothing, so the same text
+// reports when the level admits it; forgetWarningsOnce lets it report again.
+void testWarningOnceRecordsOnlyWhatItWrites() {
+  removeIfExists("log_once.log");
+  setLogFile("log_once.log");
+  setScreenOutput(false);
+
+  setLogLevel(LOGLVL_ERROR);
+  warningOnce("once-text");
+  setLogLevel(LOGLVL_WARNING);
+  warningOnce("once-text");
+  warningOnce("once-text");
+  check(countOccurrences(readFile("log_once.log"), "GMAN WARNING: once-text\n") == 1,
+        "a warningOnce suppressed by the level does not use up the text");
+
+  forgetWarningsOnce();
+  warningOnce("once-text");
+  check(countOccurrences(readFile("log_once.log"), "GMAN WARNING: once-text\n") == 2,
+        "forgetWarningsOnce lets the text report again");
+}
+
 } // namespace
 
 int main() {
@@ -189,7 +218,9 @@ int main() {
   testOneNewline();
   testSuppressedLevelsNeverFormat();
   testConcurrentLinesStayWhole();
+  testWarningOnceRecordsOnlyWhatItWrites();
 
   return checkSummary("gmanlog holds: no deadlock, both outputs, one "
-                      "newline, suppressed levels, concurrent writers");
+                      "newline, suppressed levels, concurrent writers, warnings "
+                      "reported once");
 }
