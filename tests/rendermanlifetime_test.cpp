@@ -37,8 +37,11 @@
  * and reads ASan's allocated-byte total.
  *
  * On macOS without AddressSanitizer the test replaces nothing and reads
- * malloc_zone_statistics' blocks in use, because a replaced operator new misses
- * one free per cycle under the release preset and fails with no leak.
+ * malloc_zone_statistics' blocks in use. Under the release preset's link-time
+ * optimization Apple's linker hides an executable's replaced operator new and
+ * delete unless it links with -export_dynamic, so the library's allocations
+ * and frees bypass the counter and the net imbalance fails with no leak. The
+ * zone count needs no link flag and also counts C malloc blocks.
  *
  * Elsewhere the test replaces the global allocation functions and counts live
  * blocks.
