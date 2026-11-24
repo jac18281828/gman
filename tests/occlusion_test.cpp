@@ -155,9 +155,6 @@ void checkOccluderReceivesNg() {
         "check 4: the received normal differs from env.N -- N and Ng were set apart for this reason");
 }
 
-// The base transmissionFromTerminator answers transmission: called through
-// the base class, a RecordingOccluder returns its fixed colour and records
-// the Ng and distance it received.
 void checkTerminatorCallDefaultsToTransmission() {
   GMANLight point(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(0.0f, 0.0f, 5.0f), GMANVector());
   GMANColor const fixed(0.25f, 0.5f, 0.75f);

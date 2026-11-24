@@ -1564,8 +1564,7 @@ if(GMAN_BUILD_PATHTRACER)
     TIMEOUT 120)
 endif()
 
-# A smooth fold's terminator renders lit under both renderers, while a blocker, a wall's far side and a
-# surface lit from behind its normals keep their shadows.
+# A smooth fold's terminator renders lit under both renderers, while every other blocker still shadows.
 add_executable(gman_creasestreak creasestreak_test.cpp)
 target_link_libraries(gman_creasestreak PRIVATE gman_core TIFF::TIFF)
 add_dependencies(gman_creasestreak gman_matte)

@@ -80,9 +80,9 @@ public:
   // light while its facet, Ng, faces away. origin is the primitive P lies
   // on. The default returns transmission called with the first six
   // arguments. An override may let the ray pass the first surface it crosses
-  // from behind when that surface belongs to origin's own mesh, since that
-  // crossing is the ray leaving the faceted solid it started in; it still
-  // shadows for every other blocker.
+  // from behind when that surface belongs to origin's own mesh and lies
+  // within origin's own size, since that crossing is the ray leaving the
+  // faceted solid it started in; it still shadows for every other blocker.
   virtual GMANColor transmissionFromTerminator(GMANLight const& light, GMANPoint const& P,
                                                GMANVector const& towardLight, GMANVector const& Ng, RtFloat distance,
                                                RtFloat surfaceMagnitude, GMANPrimitive const& origin) const;
