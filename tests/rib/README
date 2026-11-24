@@ -603,6 +603,42 @@ every shaded vertex is a corner (`tests/zbuffervertexnormals_test.cpp`). A
 corner or hole vertex shaded with the face's normal instead of its own
 brightens the pixels beside the hole. Not third-party.
 
+## imagerbackground_control.rib
+
+A camera-facing `Disk` of radius 1 under one distant light along the camera
+axis, shaded uniformly by `matte` to its silhouette, with no imager. The
+reference image for every `imagerbackground` fixture, whose edge pixels hold a
+bright premultiplied colour at partial coverage
+(`tests/imagerbackground_test.cpp`). Not third-party.
+
+## imagerbackground.rib
+
+`imagerbackground_control.rib` under `Imager "background" "background" [0.2 0.3
+0.4]` (`tests/imagerbackground_test.cpp`). Not third-party.
+
+## imagerbackground_default.rib
+
+`imagerbackground_control.rib` under `Imager "background"` with no parameters,
+whose backdrop is white (`tests/imagerbackground_test.cpp`). Not third-party.
+
+## imagerbackground_exposure_control.rib
+
+`imagerbackground_control.rib` under `Exposure 2 1`, with no imager
+(`tests/imagerbackground_test.cpp`). Not third-party.
+
+## imagerbackground_exposure.rib
+
+`imagerbackground.rib` under `Exposure 2 1`, which exposes the covered colour
+and leaves the backdrop as the imager sets it
+(`tests/imagerbackground_test.cpp`). Not third-party.
+
+## imagerbackground_bgcolor.rib
+
+`imagerbackground_control.rib` under `Imager "background" "color bgcolor" [0.5
+0.5 0.5] "background" [0.4 0.6 0.8]`, the form Aqsis's scenes pass, whose
+backdrop is the product of the two colours (`tests/imagerbackground_test.cpp`).
+Not third-party.
+
 ## creasestreak.rib
 
 One `PointsPolygons` of two faces under one distant light along +x: face A,

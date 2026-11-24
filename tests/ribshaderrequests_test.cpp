@@ -24,7 +24,8 @@
  * RIE_ERROR, which stops the file: exit 1, no image, the report naming the
  * request, the shader and the loader's reason. Naming a loadable shader
  * with a one-entry parameter list renders the control scene's exact image,
- * since no renderer runs these shaders; a miscounted list would desync the
+ * since Atmosphere and Displacement are not run and countingimager returns its
+ * input unchanged; a miscounted list would desync the
  * next request and change the image.
  */
 

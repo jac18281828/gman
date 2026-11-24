@@ -50,6 +50,8 @@
 #include "gmanerror.h"
 #include "gmanfiledrivers.h"
 #include "gmangraphicstate.h"
+#include "gmanimagerpass.h"
+#include "gmanimagershader.h"
 #include "gmaninlineparse.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanloadablerenderer.h"
@@ -432,7 +434,12 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
 
   // Colour's own Quantize request serves every mode: no driver writes
   // depth, so a "z" request stored by RiQuantize has nothing to reach.
-  output->save(dMode, exposure.gain, exposure.gamma, getOptions().getColorQuantize());
+  if (GMANImagerShader const* const imager = getOptions().getImager()) {
+    gman::runImager(*output, *imager, getOptions());
+    output->save(dMode, 1.0f, 1.0f, getOptions().getColorQuantize());
+  } else {
+    output->save(dMode, exposure.gain, exposure.gamma, getOptions().getColorQuantize());
+  }
 
   abandonWorld();
 }

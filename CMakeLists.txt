@@ -172,6 +172,7 @@ add_library(gman_core SHARED
   libgman/gmangetarguments.cpp
   libgman/gmangraphicstate.cpp
   libgman/gmanhpoint.cpp
+  libgman/gmanimagerpass.cpp
   libgman/gmanimagershader.cpp
   libgman/gmaninlineparse.cpp
   libgman/gmanlightsourcemgr.cpp
@@ -462,6 +463,9 @@ set_target_properties(gman_mirror PROPERTIES OUTPUT_NAME "mirror")
 gman_add_plugin(gman_glass shaders/gmanglass.cpp)
 set_target_properties(gman_glass PROPERTIES OUTPUT_NAME "glass")
 
+gman_add_plugin(gman_background shaders/gmanbackground.cpp)
+set_target_properties(gman_background PROPERTIES OUTPUT_NAME "background")
+
 # ---------------------------------------------------------------------------
 # gman_rib — the RIB writer, loaded the way a renderer is
 # ---------------------------------------------------------------------------
@@ -490,7 +494,7 @@ set_target_properties(gman gman_core PROPERTIES
   BUILD_RPATH "${CMAKE_BINARY_DIR}")
 
 add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_mirror
-                 gman_glass gman_rib)
+                 gman_glass gman_background gman_rib)
 
 # ---------------------------------------------------------------------------
 # Install
@@ -504,7 +508,7 @@ install(TARGETS gman_core gman_ray gman_raster
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_mirror
-                gman_glass gman_rib
+                gman_glass gman_background gman_rib
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 if(GMAN_BUILD_RAYTRACER)

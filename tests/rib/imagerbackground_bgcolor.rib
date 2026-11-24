@@ -1,0 +1,13 @@
+## The control disk under the Aqsis inline form of the imager, bgcolor times background.
+## Not third-party; tests/imagerbackground_test.cpp.
+Display "imagerbackground_bgcolor.tif" "file" "rgba"
+Format 32 32 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Imager "background" "color bgcolor" [0.5 0.5 0.5] "background" [0.4 0.6 0.8]
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [1] "from" [0 0 0] "to" [0 0 1]
+Surface "matte" "Kd" [0.4]
+Disk 0 1 360
+WorldEnd

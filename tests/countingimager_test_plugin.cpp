@@ -42,8 +42,8 @@ public:
   ~countingimager() override { --countingImagerLiveCount(); }
 
   ShaderType getType(RtVoid) const override { return IMAGER; }
-  GMANColor const& computeCi(GMANImagerEnv& ie) override { return ie.Ci; }
-  GMANColor const& computeOi(GMANImagerEnv& ie) override { return ie.Oi; }
+  GMANColor const& computeCi(GMANImagerEnv& ie) const override { return ie.Ci; }
+  GMANColor const& computeOi(GMANImagerEnv& ie) const override { return ie.Oi; }
 };
 
 } // namespace gmanshader

@@ -180,6 +180,9 @@ gman -r gmanraytracer first.rib
 - **Light shaders.** `ambientlight`, `distantlight`, `pointlight` and `spotlight`, and
   `AreaLightSource "arealight"`, which makes the `Sphere` or `Disk` after it glow under the path
   tracer.
+- **Imager shaders.** `Imager "background" "background" [r g b]` places a colour, white by default,
+  behind every pixel's uncovered part under every renderer, after `Exposure` and before `Quantize`;
+  BMRT's `"color bgcolor"` multiplies it.
 - **Three renderers.** `gmanzbuffer`, the default preview; `gmanraytracer`, with shadows,
   reflection, refraction and transparency; and `gmanpathtracer`, which adds light bounced off every
   surface, soft shadows from area lights and glossy reflection.

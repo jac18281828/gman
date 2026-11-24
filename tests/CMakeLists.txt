@@ -1905,6 +1905,61 @@ set_tests_properties(imagerownership PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Imager "background" places its colour behind each pixel's uncovered part under
+# every renderer, after exposure and before quantization, and writes alpha 1.
+# See imagerbackground_test.cpp's own comment. Each renderer writes the same
+# TIFF names, so each gets its own WORKING_DIRECTORY.
+add_executable(gman_imagerbackground imagerbackground_test.cpp)
+target_link_libraries(gman_imagerbackground PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_imagerbackground gman_background gman_matte gman_zbuffer)
+
+set(GMAN_IMAGERBACKGROUND_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/imagerbackground-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_IMAGERBACKGROUND_ZBUFFER_WORKDIR}")
+
+add_test(NAME imagerbackground_zbuffer
+  COMMAND gman_imagerbackground $<TARGET_FILE:gman>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                gmanzbuffer
+  WORKING_DIRECTORY "${GMAN_IMAGERBACKGROUND_ZBUFFER_WORKDIR}")
+set_tests_properties(imagerbackground_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_imagerbackground gman_raytracer)
+
+  set(GMAN_IMAGERBACKGROUND_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/imagerbackground-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_IMAGERBACKGROUND_RAYTRACER_WORKDIR}")
+
+  add_test(NAME imagerbackground_raytracer
+    COMMAND gman_imagerbackground $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                  gmanraytracer
+    WORKING_DIRECTORY "${GMAN_IMAGERBACKGROUND_RAYTRACER_WORKDIR}")
+  set_tests_properties(imagerbackground_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_imagerbackground gman_pathtracer)
+
+  set(GMAN_IMAGERBACKGROUND_PATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/imagerbackground-pathtracer-run")
+  file(MAKE_DIRECTORY "${GMAN_IMAGERBACKGROUND_PATHTRACER_WORKDIR}")
+
+  add_test(NAME imagerbackground_pathtracer
+    COMMAND gman_imagerbackground $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                  gmanpathtracer
+    WORKING_DIRECTORY "${GMAN_IMAGERBACKGROUND_PATHTRACER_WORKDIR}")
+  set_tests_properties(imagerbackground_pathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
 # GMANSurfaceEnv::ambient() adds indirect when it is bound, directly and
 # through gman::shade against a matte appearance loaded the same factory
 # way. See tests/indirectambient_test.cpp.
