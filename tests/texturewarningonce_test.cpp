@@ -30,9 +30,12 @@
 
 #include "check.h"
 #include "gmanparallel.h"
+#include "ri.h"
 #include "rungman.h"
 
 namespace {
+
+const RtInt kFixtureRows = 128;
 
 const std::string kWarning = "cannot open, using opaque black";
 
@@ -74,8 +77,9 @@ int main(int argc, char* argv[]) {
   const std::string ribDir = argv[2];
   const std::string renderer = argv[3];
 
-  check(gman::parallelWorkers(32, 0) > 1,
-        "precondition: more than one worker shades a 32-row frame, or the per-worker warning cannot show");
+  check(gman::parallelWorkers(kFixtureRows, 0) > 1, "precondition: more than one worker shades a " +
+                                                        std::to_string(kFixtureRows) +
+                                                        "-row frame, or the per-worker warning cannot show");
 
   checkWorldBlocks(gman, renderer, ribDir, "texturewarningonce", 1);
   checkWorldBlocks(gman, renderer, ribDir, "texturewarningonce_frames", 2);

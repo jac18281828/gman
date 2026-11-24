@@ -2,7 +2,7 @@
 ## (tests/texturewarningonce_test.cpp).
 FrameBegin 1
 Display "texturewarningonce_frames_1.tif" "file" "rgba"
-Format 32 32 1
+Format 128 128 1
 Projection "perspective" "fov" [90]
 Clipping 0.5 50
 Translate 0 0 5
@@ -18,7 +18,7 @@ WorldEnd
 FrameEnd
 FrameBegin 2
 Display "texturewarningonce_frames_2.tif" "file" "rgba"
-Format 32 32 1
+Format 128 128 1
 Projection "perspective" "fov" [90]
 Clipping 0.5 50
 Translate 0 0 5

@@ -531,7 +531,7 @@ before `Projection`. Not third-party.
 
 ## texturewarningonce.rib
 
-A `paintedplastic` square filling a 32x32 frame, naming a texture no file
+A `paintedplastic` square filling a 128x128 frame, naming a texture no file
 carries (`tests/texturewarningonce_test.cpp`), in one world block, then a
 trailing `Sphere` out of frame. Not third-party.
 
