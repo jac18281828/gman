@@ -89,7 +89,9 @@ void checkMissingShader(std::string const& gman, std::string const& renderer, st
   check(output.find(request.request + " \"" + request.missingShader + "\"") != std::string::npos,
         tag + ": names " + request.request + " \"" + request.missingShader + "\"");
   std::string const failure = request.request + " \"" + request.missingShader + "\" failed to load";
-  check(output.find(failure + ": ") != std::string::npos, tag + ": reports failed to load with its reason");
+  std::string const reason =
+      failure + ": Unable to open shared object specified by: lib" + request.missingShader + ".so";
+  check(output.find(reason) != std::string::npos, tag + ": reports failed to load with its reason");
   check(output.find(failure + ";") == std::string::npos, tag + ": follows failed to load with no ; clause");
   check(output.find("SEVERE:") == std::string::npos, tag + ": reports no SEVERE");
 }
