@@ -749,6 +749,32 @@ void checkValidReflectionBent() {
         "ensureValidReflection: the reflection sits at the floor above Ng, the least turn that clears it");
 }
 
+void checkValidReflectionGrazing() {
+  Vec3 const up{0.0, 0.0, 1.0};
+  Vec3 const across{1.0, 0.0, 0.0};
+  double const elevation = 0.005;
+  Vec3 const wo{-std::sqrt(1.0 - elevation * elevation), 0.0, elevation};
+  Vec3 const bent = inPlane(40.0, up, across);
+  double const floor = 0.9 * dot3(wo, up);
+  check(floor < kReflectionFloor, "ensureValidReflection: the grazing wo's floor lies below the fixed floor");
+  check(dot3(reflected(wo, bent), up) < floor, "ensureValidReflection: the grazing normal is invalid");
+
+  double const viewAngle = std::atan2(dot3(wo, across), dot3(wo, up));
+  double const reach = std::acos(floor);
+  double const nearTilt = 0.5 * (viewAngle + reach);
+  double const farTilt = 0.5 * (viewAngle - reach);
+  Vec3 const farSolution = sum3(scaled3(up, std::cos(farTilt)), scaled3(across, std::sin(farTilt)));
+
+  Vec3 const result = toVec3(gman::ensureValidReflection(toVector(up), toVector(wo), toVector(bent)));
+  check(std::fabs(dot3(reflected(wo, result), up) - floor) <= 1e-5,
+        "ensureValidReflection: a grazing wo puts the reflection at 0.9 (wo . Ng) above Ng");
+  check(dot3(result, wo) > 0.0, "ensureValidReflection: the grazing result faces the viewer");
+  check(std::fabs(std::atan2(dot3(result, across), dot3(result, up)) - nearTilt) <= 1e-5,
+        "ensureValidReflection: the result is the floor solution nearer the input");
+  check(dot3(result, up) > dot3(farSolution, up) && dot3(result, bent) > dot3(farSolution, bent),
+        "ensureValidReflection: the result turns less than the other floor solution");
+}
+
 void checkValidReflectionSides() {
   Vec3 const up{0.0, 0.0, 1.0};
   Vec3 const across{1.0, 0.0, 0.0};
@@ -794,6 +820,7 @@ int main() {
   checkBumpDegenerate();
   checkValidReflectionUnchanged();
   checkValidReflectionBent();
+  checkValidReflectionGrazing();
   checkValidReflectionSides();
 
   return checkSummary("gman::BSDF's Lambert closure conserves energy, is reciprocal and samples its own pdf");

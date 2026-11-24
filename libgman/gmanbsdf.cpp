@@ -591,10 +591,10 @@ GMANVector ensureValidReflection(GMANVector const& Ng, GMANVector const& wo, GMA
   double const viewAngle = std::atan2(viewAcross, viewElevation);
   double const reach = std::acos(std::fmin(1.0, threshold / std::hypot(viewAcross, viewElevation)));
   double const bend = std::atan2(dotOf(n, across), tilt);
-  double const valid = std::fmin(std::fmax(bend, 0.5 * (viewAngle - reach)), 0.5 * (viewAngle + reach));
+  double const validBend = std::fmin(std::fmax(bend, 0.5 * (viewAngle - reach)), 0.5 * (viewAngle + reach));
 
-  double const alongAcross = shadingSide * std::sin(valid);
-  double const alongUp = shadingSide * std::cos(valid);
+  double const alongAcross = shadingSide * std::sin(validBend);
+  double const alongUp = shadingSide * std::cos(validBend);
   return GMANVector(static_cast<RtFloat>(alongAcross * across.x + alongUp * up.x),
                     static_cast<RtFloat>(alongAcross * across.y + alongUp * up.y),
                     static_cast<RtFloat>(alongAcross * across.z + alongUp * up.z));
