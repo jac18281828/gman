@@ -4075,9 +4075,7 @@ set_tests_properties(invertiblematrix PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# A request issued outside the blocks it is legal in reports RIE_ILLSTATE at
-# RIE_WARNING and is ignored, so the file renders on; a block request out of
-# place still stops it. See outofmode_test.cpp's own comment.
+# A request out of mode is reported and ignored; a block request out of place stops the file.
 add_executable(gman_outofmode outofmode_test.cpp)
 target_link_libraries(gman_outofmode PRIVATE gman_core gman_internal_headers TIFF::TIFF)
 add_dependencies(gman_outofmode gman_zbuffer)

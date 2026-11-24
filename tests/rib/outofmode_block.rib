@@ -1,5 +1,5 @@
-# An AttributeBegin inside ObjectBegin: a block request out of place, which stops the file.
-# Read by tests/outofmode_test.cpp.
+## An AttributeBegin inside ObjectBegin: a block request out of place, which stops the file.
+## Read by tests/outofmode_test.cpp.
 Display "outofmode_block.tif" "file" "rgba"
 Format 32 32 1
 Projection "perspective" "fov" [45]

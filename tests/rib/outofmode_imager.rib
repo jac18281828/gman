@@ -1,5 +1,5 @@
-# The control with an Imager after WorldBegin, outside the blocks it is legal in.
-# Read by tests/outofmode_test.cpp.
+## The control with an Imager after WorldBegin, outside the blocks it is legal in.
+## Read by tests/outofmode_test.cpp.
 Display "outofmode_imager.tif" "file" "rgba"
 Format 32 32 1
 Projection "perspective" "fov" [45]

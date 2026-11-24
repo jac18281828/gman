@@ -364,7 +364,7 @@ trailing `Sphere` follows the desync convention. Not third-party.
 A `NuPatch` issued inside `FrameBegin`/`FrameEnd` before any
 `WorldBegin` -- the "F"-only block state `cmdNuPatch`'s mask excludes.
 `allowed(cmdNuPatch)` reports `RIE_ILLSTATE` at `RIE_WARNING` and
-`RiNuPatchV` returns before this task's own validation runs, after
+`RiNuPatchV` returns before its own validation runs, after
 `parseNuPatch`'s knot arrays are already owned, proving the parser frees
 them when the request is ignored. Registered in `tests/nupatch_test.cpp`,
 asserting exit status 0 and one `WARNING: RIE_ILLSTATE`. No trailing

@@ -123,7 +123,9 @@ void checkImplFailedLoadSecond() {
         "a second sphere returns quietly");
   check(!raisedBy([&impl] { impl.RiWorldEnd(); }).raised, "RiWorldEnd returns quietly");
   check(!std::filesystem::exists(image), "RiWorldEnd writes no image");
-  check(!raisedBy([&impl] { impl.RiFormat(8, 8, 1); }).raised, "RiFormat after RiWorldEnd reports nothing");
+  recorded.clear();
+  impl.RiFormat(8, 8, 1);
+  check(recorded.empty(), "RiFormat after RiWorldEnd reports nothing");
   check(!raisedBy([&impl] { impl.RiEnd(); }).raised, "RiEnd reports nothing");
 
   Raised const third = raisedBy([&impl] { impl.RiBegin("gmannosuchrenderer"); });

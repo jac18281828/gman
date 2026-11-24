@@ -1,5 +1,5 @@
-# A lit sphere with no request out of mode: the image the other fixtures must match.
-# Read by tests/outofmode_test.cpp.
+## A lit sphere with no request out of mode: the image the other fixtures must match.
+## Read by tests/outofmode_test.cpp.
 Display "outofmode_control.tif" "file" "rgba"
 Format 32 32 1
 Projection "perspective" "fov" [45]

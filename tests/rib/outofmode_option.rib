@@ -1,5 +1,5 @@
-# The control with an Exposure after WorldBegin, whose gain would reach the written pixels.
-# Read by tests/outofmode_test.cpp.
+## The control with an Exposure after WorldBegin, whose gain would reach the written pixels.
+## Read by tests/outofmode_test.cpp.
 Display "outofmode_option.tif" "file" "rgba"
 Format 32 32 1
 Projection "perspective" "fov" [45]

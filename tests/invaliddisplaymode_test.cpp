@@ -29,6 +29,7 @@
  */
 
 #include <string>
+#include <vector>
 
 #include "check.h"
 #include "gmanerror.h"
@@ -53,6 +54,12 @@ template <typename Request> Raised raisedBy(Request request) {
   return {};
 }
 
+std::vector<Raised> recorded;
+
+RtVoid recordingErrorHandler(RtInt code, RtInt severity, char const* message) {
+  recorded.push_back({true, code, severity, message});
+}
+
 } // namespace
 
 int main() {
@@ -71,8 +78,11 @@ int main() {
   check(worldEnd.message == "Invalid token passed for display mode.",
         "the message is exactly \"Invalid token passed for display mode.\"");
 
-  check(!raisedBy([&impl] { impl.RiFormat(8, 8, 1); }).raised,
-        "RiFormat after RiWorldEnd reports nothing, proving the world closed");
+  recorded.clear();
+  impl.RiErrorHandler(recordingErrorHandler);
+  impl.RiFormat(8, 8, 1);
+  impl.RiErrorHandler(RiErrorPrint);
+  check(recorded.empty(), "RiFormat after RiWorldEnd reports nothing, proving the world closed");
   check(!raisedBy([&impl] { impl.RiEnd(); }).raised, "RiEnd reports nothing");
 
   return checkSummary("RiWorldEnd closes the world when it rejects the display mode");
