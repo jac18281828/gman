@@ -1,3 +1,27 @@
+1.3.0 (2026-11-24)
+
+* 1.3 breaks the binary interface, so every plugin and every program that links gman rebuilds; `SameMinorVersion` refuses 1.3 to a consumer asking for 1.2
+* PNG writes straight alpha, so a tool that divides gman PNG colour by alpha must stop; TIFF stays premultiplied
+* The ray tracer and the radiosity pass run on every core, and the BVH builds by binned surface area
+* The vase ray-traces 9× faster than in 1.2.0 and the bike scene 23× faster
+* Imagers run, and gman ships the standard `background` imager
+* A request issued out of mode warns and is ignored, and the file renders on
+* A shader that fails to load reports `<Request> "<name>" failed to load: <reason>` and still stops the file
+* A missing texture warns once per world instead of once per worker
+* A polygon's per-vertex `"N"` shades smoothly under all three renderers, and its shadows lose the dark wedges along triangle edges
+* `paintedplastic` takes an opacity map and a tangent-space normal map
+* `PixelVariance` stops a path-traced pixel early without biasing it
+* RIB `ColorSamples` sets the colour sample count, and `Color` and `Opacity` read at it
+* The RIB parser stops the file on an array that is short, mistyped or at odds with its count
+* A `Quantize` the output driver cannot store stops the file
+* Shaders read declared parameters by name through `gmanshaderparams.h`, which now installs
+* Ray-traced shading points carry `dPdu` and `dPdv`
+* Shading splines evaluate the basis they name
+* The ray kernel never returns a NaN
+* `GMANMAX`, `GMANMIN` and `PI` are gone, and `GMANMin`, `GMANMax` and `GMANClamp` drop a NaN operand
+* The release preset links with LTO
+* Contributors gate on `tidy-check` and clang-format 23
+
 1.2.0 (2026-11-17)
 
 * **1.2 splits gman into three shared libraries; a program or plugin that uses ray or raster code relinks.** `libgman_core` keeps the RenderMan interface, its state and the contracts every renderer shares. The ray geometry, the BVH, the occluder, the emitters and the indirect-light pass seam move to `libgman_ray`, and the z-buffer's raster sources (faces, vertices, clipping and the patch-to-polygon object manager) move to `libgman_raster`. Each links `libgman_core` publicly. A consumer built against 1.1 that uses a moved symbol links `gman::gman_ray` or `gman::gman_raster` from the CMake package, and the package's `SameMinorVersion` compatibility refuses 1.2 to a consumer asking for 1.1. Ray headers tag their exports with `GMANRAY_EXPORT` from `<gman/rayexport.h>` and raster headers with `GMANRASTER_EXPORT`; on POSIX each expands as `GMAN_EXPORT` does. Every installed library and plugin carries the install run path, so a plugin finds the library it names beside `libgman_core`. No image changes
