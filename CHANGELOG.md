@@ -1,3 +1,7 @@
+1.3.1 (2026-11-24)
+
+* The macOS arm64 tarball ships; 1.3.0's macOS release build failed a heap-counting test that misread its LTO link, and no library code changes
+
 1.3.0 (2026-11-24)
 
 * 1.3 breaks the binary interface, so every plugin and every program that links gman rebuilds; `SameMinorVersion` refuses 1.3 to a consumer asking for 1.2
