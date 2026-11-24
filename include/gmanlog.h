@@ -75,6 +75,20 @@ template <class... Args> void warning(std::format_string<Args...> fmt, Args&&...
   }
 }
 
+// write an already-formatted warning unless the same text has been written since the last
+// forgetWarningsOnce, and record nothing when warnings are disabled
+GMAN_EXPORT void logWarningOnce(std::string_view message);
+
+// log a warning message the first time its formatted text appears since the last forgetWarningsOnce
+template <class... Args> void warningOnce(std::format_string<Args...> fmt, Args&&... args) {
+  if (logEnabled(LOGLVL_WARNING)) {
+    logWarningOnce(std::format(fmt, std::forward<Args>(args)...));
+  }
+}
+
+// make every text warningOnce has written report again
+GMAN_EXPORT void forgetWarningsOnce();
+
 // log an error message
 template <class... Args> void error(std::format_string<Args...> fmt, Args&&... args) {
   if (logEnabled(LOGLVL_ERROR)) {

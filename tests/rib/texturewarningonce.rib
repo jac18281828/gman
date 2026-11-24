@@ -1,0 +1,16 @@
+## A paintedplastic square filling the frame, naming a texture no file carries, in one world
+## block (tests/texturewarningonce_test.cpp).
+Display "texturewarningonce.tif" "file" "rgba"
+Format 32 32 1
+Projection "perspective" "fov" [90]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.3]
+Surface "paintedplastic" "texturename" ["texturewarningonce_missing.tif"]
+Polygon "P" [-6 -6 0  6 -6 0  6 6 0  -6 6 0]
+TransformBegin
+	Translate 100 100 0
+	Sphere 1 -1 1 360
+TransformEnd
+WorldEnd

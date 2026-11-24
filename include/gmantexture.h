@@ -42,10 +42,9 @@ enum TextureWrap { TEXTURE_CLAMP, TEXTURE_PERIODIC, TEXTURE_BLACK };
 /*
  * One decoded texture: the RGBA pixels of a single named file, and the
  * bilinear sampler over them. A missing, unreadable or unsupported file
- * decodes to a single opaque black texel and warns once, at construction
- * -- a TextureCache builds exactly one of these per filename, so the
- * warning fires exactly once per cache no matter how many lookups the
- * name gets there.
+ * decodes to a single opaque black texel and warns at construction, through
+ * warningOnce, so the same warning reaches the log once per world block no
+ * matter how many caches, or how many lookups in each, build it.
  *
  * Owns its texels in a std::vector, never a raw pointer: AGENTS.md's Rule
  * of Five is then satisfied by owning nothing raw, and the compiler's
@@ -105,6 +104,9 @@ public:
   // Drops name from the cache, so the next lookup reads the file again.
   void forget(const std::string& name);
 
+  // Drops every entry, so the next lookup of any name reads its file again.
+  void clear();
+
 private:
   // Loads and decodes name on first request; every later request for the
   // same name, hit or miss, reads no file. Both sample overloads route
@@ -114,11 +116,12 @@ private:
   std::map<std::string, Texture> textures;
 };
 
-// One cache per process, like gmanLightSourceMgr(). Serves single-threaded
-// shading: the z-buffer, and any GMANSurfaceEnv whose textureCache member
-// is null, sample through this one cache. The ray tracer samples through
-// one cache per worker instead. A threaded caller that forgets its own
-// cache races here.
+// One cache per process, like gmanLightSourceMgr(), emptied at every
+// RiWorldBegin so each world block reads its textures anew. Serves
+// single-threaded shading: the z-buffer, and any GMANSurfaceEnv whose
+// textureCache member is null, sample through this one cache. The ray
+// tracer samples through one cache per worker instead. A threaded caller
+// that forgets or clears its own cache races here.
 TextureCache& textureCache(RtVoid);
 
 // RiMakeTexture's implementation: decodes picture the way Texture does

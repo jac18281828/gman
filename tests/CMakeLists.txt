@@ -1506,6 +1506,58 @@ set_tests_properties(texturecache PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A missing texture warns once per world block under every renderer; libtiff stays silent.
+add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
+target_link_libraries(gman_texturewarningonce PRIVATE gman_core)
+add_dependencies(gman_texturewarningonce gman_zbuffer gman_paintedplastic)
+
+set(GMAN_TEXTUREWARNINGONCE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texturewarningonce-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_ZBUFFER_WORKDIR}")
+
+add_test(NAME texturewarningonce_zbuffer
+  COMMAND gman_texturewarningonce $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                  gmanzbuffer
+  WORKING_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_ZBUFFER_WORKDIR}")
+set_tests_properties(texturewarningonce_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_texturewarningonce gman_raytracer)
+
+  set(GMAN_TEXTUREWARNINGONCE_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texturewarningonce-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_RAYTRACER_WORKDIR}")
+
+  add_test(NAME texturewarningonce_raytracer
+    COMMAND gman_texturewarningonce $<TARGET_FILE:gman>
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                    gmanraytracer
+    WORKING_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_RAYTRACER_WORKDIR}")
+  set_tests_properties(texturewarningonce_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_texturewarningonce gman_pathtracer)
+
+  set(GMAN_TEXTUREWARNINGONCE_PATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texturewarningonce-pathtracer-run")
+  file(MAKE_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_PATHTRACER_WORKDIR}")
+
+  add_test(NAME texturewarningonce_pathtracer
+    COMMAND gman_texturewarningonce $<TARGET_FILE:gman>
+                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                    gmanpathtracer
+    WORKING_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_PATHTRACER_WORKDIR}")
+  set_tests_properties(texturewarningonce_pathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
 # 16-bit TIFF textures at full depth: RGB, greyscale and associated-alpha
 # files sampled at v / 65535, a 16-bit file the reader can take only at 8 bits
 # warning once, 8-bit files sampling as before, and makeTexture and

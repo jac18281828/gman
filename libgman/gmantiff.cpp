@@ -147,9 +147,18 @@ bool decodeEightBit(TIFF* handle, std::uint32_t width, std::uint32_t height, std
   return true;
 }
 
+TIFF* openSilently(char const* path, char const* mode) {
+  [[maybe_unused]] static const bool handlersSilenced = [] {
+    TIFFSetErrorHandler(nullptr);
+    TIFFSetWarningHandler(nullptr);
+    return true;
+  }();
+  return TIFFOpen(path, mode);
+}
+
 } // namespace
 
-TIFFReader::TIFFReader(std::string const& path) : handle(TIFFOpen(path.c_str(), "r")) {}
+TIFFReader::TIFFReader(std::string const& path) : handle(openSilently(path.c_str(), "r")) {}
 
 TIFFReader::~TIFFReader() {
   if (handle != nullptr) {
@@ -190,7 +199,7 @@ bool TIFFReader::decode(std::uint32_t& width, std::uint32_t& height, std::uint16
 
 TIFFWriter::TIFFWriter(std::string const& path, std::uint32_t width, std::uint32_t height,
                        std::uint16_t samplesPerPixel, std::uint16_t bitsPerSample, OutputTIFF::Compression compression)
-    : handle(TIFFOpen(path.c_str(), "w")) {
+    : handle(openSilently(path.c_str(), "w")) {
   if (handle == nullptr) {
     return;
   }

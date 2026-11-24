@@ -149,22 +149,27 @@ void testIndependentCaches() {
              "cache A still holds its own miss, taken before the file existed");
 }
 
-void testMissingNameWarnsOncePerCache() {
+void testMissingNameWarnsOncePerWorld() {
   const std::string logPath = "texturecache_independent_missing.log";
   std::remove(logPath.c_str());
   setLogFile(logPath.c_str());
   setScreenOutput(false);
 
   const std::string missingName = "texturecache_missing_1a2b3c.tif";
+  std::remove(missingName.c_str());
   gman::TextureCache cacheA;
   gman::TextureCache cacheB;
   cacheA.sample(missingName, 0.5, 0.5, gman::TEXTURE_CLAMP);
   cacheA.sample(missingName, 0.1, 0.1, gman::TEXTURE_CLAMP);
-  cacheB.sample(missingName, 0.9, 0.9, gman::TEXTURE_CLAMP);
-  cacheB.sample(missingName, 0.2, 0.2, gman::TEXTURE_CLAMP);
 
-  check(countOccurrences(readFile(logPath), missingName) == 2,
-        "a name no file carries, looked up several times through two caches, logs exactly two warnings");
+  check(writeCheckerTexture(missingName), missingName + " writes");
+
+  checkColor(cacheB.sample(missingName, 0.25, 0.25, gman::TEXTURE_CLAMP), kRed,
+             "cache B reads the file cache A found missing, so it decodes on its own");
+  checkColor(cacheA.sample(missingName, 0.25, 0.25, gman::TEXTURE_CLAMP), kBlack, "cache A still holds its own miss");
+
+  check(countOccurrences(readFile(logPath), missingName) == 1,
+        "a name no file carried when its first cache looked, looked up several times, logs exactly one warning");
 }
 
 // ---- the env routes ----
@@ -279,8 +284,8 @@ void testOneCachePerWorker() {
     }
   }
   check(workersThatRan >= 1, "at least one worker ran a body");
-  check(countOccurrences(readFile(logPath), name) == workersThatRan,
-        "the log holds one warning naming the missing texture per worker that ran a body");
+  check(countOccurrences(readFile(logPath), name) == 1,
+        "the log holds one warning naming the missing texture, however many workers ran a body");
 
   check(writeCheckerTexture(name), name + " writes");
 
@@ -301,7 +306,7 @@ void testOneCachePerWorker() {
 
 int main() {
   testIndependentCaches();
-  testMissingNameWarnsOncePerCache();
+  testMissingNameWarnsOncePerWorld();
   testEnvRoutesTexture();
   testEnvRoutesEnvironment();
   testShadeForwardsCache();

@@ -157,6 +157,7 @@ void beginLogCapture(std::string const& path) {
   std::remove(path.c_str());
   setLogFile(path.c_str());
   setScreenOutput(false);
+  forgetWarningsOnce();
 }
 
 std::string endLogCapture(std::string const& path) {
@@ -496,9 +497,9 @@ void checkOneCachePerWorker() {
         "D: the 1-worker render warns once about the missing texture");
   MissingTextureRun const parallel = missingTextureRun(kParallelWorkers, kParallelLog);
   check(parallel.workersThatRan >= 1, "D: the 8-worker render ran its rows on at least one worker");
-  check(static_cast<std::size_t>(parallel.warnings) == parallel.workersThatRan,
-        "D: the 8-worker render warns once per cache a worker used (" + std::to_string(parallel.warnings) + " of " +
-            std::to_string(parallel.workersThatRan) + ")");
+  check(parallel.warnings == 1, "D: the 8-worker render warns once however many workers ran (" +
+                                    std::to_string(parallel.warnings) + " from " +
+                                    std::to_string(parallel.workersThatRan) + " workers)");
 }
 
 GMANMatrix4 offAxisWorldToCamera() {

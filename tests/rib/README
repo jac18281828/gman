@@ -529,6 +529,17 @@ parameter list and renders the control's pixels. `Atmosphere` and
 `Displacement` sit in the world block before the `Sphere`; `Imager` sits
 before `Projection`. Not third-party.
 
+## texturewarningonce.rib
+
+A `paintedplastic` square filling a 32x32 frame, naming a texture no file
+carries (`tests/texturewarningonce_test.cpp`), in one world block, then a
+trailing `Sphere` out of frame. Not third-party.
+
+## texturewarningonce_frames.rib
+
+The same scene twice, in two `FrameBegin`/`FrameEnd` blocks, each writing its
+own `Display` name (`tests/texturewarningonce_test.cpp`). Not third-party.
+
 ## textureopacity_cutout.rib
 
 A red `paintedplastic` card in front of a green matte backdrop

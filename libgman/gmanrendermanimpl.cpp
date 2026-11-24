@@ -315,6 +315,8 @@ RtVoid GMANRenderManImpl::RiFrameEnd(RtVoid) { leaveMode(F); }
 
 RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
   enterMode(W);
+  forgetWarningsOnce();
+  gman::textureCache().clear();
 
   // RiProjection is legal only before RiWorldBegin, so the CTM right here
   // *is* the world-to-camera transform -- nothing after this point can

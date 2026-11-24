@@ -210,14 +210,14 @@ bool openAndDecodePicture(char const* who, std::string const& pictureName, std::
 Texture::Texture(std::string const& name) : width(1), height(1) {
   TIFFReader reader(name);
   if (!reader.isOpen()) {
-    warning("texture \"{}\": cannot open, using opaque black", name.c_str());
+    warningOnce("texture \"{}\": cannot open, using opaque black", name.c_str());
     texels = blackTexel();
     return;
   }
 
   const auto wrapModes = reader.wrapModes();
   if (wrapModes && !parseWrapModes(wrapModes->c_str(), swrap, twrap)) {
-    warning("texture \"{}\": unrecognized wrap modes \"{}\", using clamp", name.c_str(), wrapModes->c_str());
+    warningOnce("texture \"{}\": unrecognized wrap modes \"{}\", using clamp", name.c_str(), wrapModes->c_str());
   }
 
   uint32_t w = 0, h = 0;
@@ -231,13 +231,13 @@ Texture::Texture(std::string const& name) : width(1), height(1) {
   bool ok = reader.decode(w, h, bitsPerSample, rgb);
 
   if (!ok) {
-    warning("texture \"{}\": cannot decode, using opaque black", name.c_str());
+    warningOnce("texture \"{}\": cannot decode, using opaque black", name.c_str());
     texels = blackTexel();
     return;
   }
 
   if (readNarrowed(reader, bitsPerSample)) {
-    warning("texture \"{}\": 16-bit file read at 8 bits", name.c_str());
+    warningOnce("texture \"{}\": 16-bit file read at 8 bits", name.c_str());
   }
 
   width = (RtInt)w;
@@ -304,6 +304,8 @@ GMANColor TextureCache::sample(std::string const& name, RtFloat s, RtFloat t) {
 }
 
 void TextureCache::forget(std::string const& name) { textures.erase(name); }
+
+void TextureCache::clear() { textures.clear(); }
 
 TextureCache& textureCache(RtVoid) {
   static TextureCache cache;

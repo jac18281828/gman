@@ -24,7 +24,10 @@
  */
 
 #include <cstdio>
+#include <functional>
 #include <mutex>
+#include <set>
+#include <string>
 #include <string_view>
 
 #include "gmanlog.h"
@@ -34,15 +37,14 @@ static GMANLogLevel logLevel = LOGLVL_INFO;
 static FILE* logFile = NULL;
 static bool screenOutput = true;
 static std::mutex logMutex;
+static std::set<std::string, std::less<>> warnedOnce;
 
 bool logEnabled(GMANLogLevel lvl) {
   std::lock_guard<std::mutex> guard(logMutex);
   return lvl >= logLevel;
 }
 
-void logWrite(GMANLogLevel lvl, std::string_view message) {
-  std::lock_guard<std::mutex> guard(logMutex);
-
+static void writeLocked(GMANLogLevel lvl, std::string_view message) {
   const char* dispMsg = "";
   switch (lvl) {
   case LOGLVL_DEBUG:
@@ -75,6 +77,25 @@ void logWrite(GMANLogLevel lvl, std::string_view message) {
       std::fputc('\n', stdout);
     std::fflush(stdout);
   }
+}
+
+void logWrite(GMANLogLevel lvl, std::string_view message) {
+  std::lock_guard<std::mutex> guard(logMutex);
+  writeLocked(lvl, message);
+}
+
+void logWarningOnce(std::string_view message) {
+  std::lock_guard<std::mutex> guard(logMutex);
+  if (LOGLVL_WARNING < logLevel || warnedOnce.find(message) != warnedOnce.end()) {
+    return;
+  }
+  warnedOnce.emplace(message);
+  writeLocked(LOGLVL_WARNING, message);
+}
+
+void forgetWarningsOnce() {
+  std::lock_guard<std::mutex> guard(logMutex);
+  warnedOnce.clear();
 }
 
 // set an output file for logging
