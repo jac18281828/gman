@@ -28,12 +28,20 @@
  * once to fill the process-lifetime caches, then measures a second run.
  *
  * The count is the heap's own, taken in process, because LeakSanitizer aborts
- * every test on arm64 macOS. Without AddressSanitizer the test replaces the global allocation functions and
- * counts live blocks. Under it ASan's allocator answers every call, the
- * library's included, so a replaced operator new would count the executable's
- * allocations and miss the library's matching frees; the test replaces
- * nothing and reads ASan's allocated-byte total instead. Both counters are
+ * every test on arm64 macOS. Three counters serve three builds, and each is
  * process-wide, so this test is its own executable.
+ *
+ * Under AddressSanitizer the allocator answers every call, the library's
+ * included, so a replaced operator new would count the executable's
+ * allocations and miss the library's matching frees; the test replaces nothing
+ * and reads ASan's allocated-byte total.
+ *
+ * On macOS without AddressSanitizer the test replaces nothing and reads
+ * malloc_zone_statistics' blocks in use, because a replaced operator new misses
+ * one free per cycle under the release preset and fails with no leak.
+ *
+ * Elsewhere the test replaces the global allocation functions and counts live
+ * blocks.
  */
 
 #include <cstddef>
@@ -50,8 +58,14 @@
 #define GMAN_LIFETIME_TEST_ASAN 1
 #endif
 
+#if !defined(GMAN_LIFETIME_TEST_ASAN) && defined(__APPLE__)
+#define GMAN_LIFETIME_TEST_ZONES 1
+#endif
+
 #if defined(GMAN_LIFETIME_TEST_ASAN)
 #include <sanitizer/allocator_interface.h>
+#elif defined(GMAN_LIFETIME_TEST_ZONES)
+#include <malloc/malloc.h>
 #else
 #include <atomic>
 #include <cstdlib>
@@ -71,6 +85,20 @@ namespace {
 constexpr char const* kHeapUnit = "bytes";
 
 std::ptrdiff_t liveHeap() { return static_cast<std::ptrdiff_t>(__sanitizer_get_current_allocated_bytes()); }
+
+} // namespace
+
+#elif defined(GMAN_LIFETIME_TEST_ZONES)
+
+namespace {
+
+constexpr char const* kHeapUnit = "blocks";
+
+std::ptrdiff_t liveHeap() {
+  malloc_statistics_t stats{};
+  malloc_zone_statistics(nullptr, &stats);
+  return static_cast<std::ptrdiff_t>(stats.blocks_in_use);
+}
 
 } // namespace
 
