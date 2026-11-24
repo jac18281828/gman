@@ -8,7 +8,7 @@ Begun in [1999](https://gman-toolkit.sourceforge.net), revived in [2026](https:/
 
 ## Install
 
-GMAN 1.2.0 ships as a tarball for Linux x86_64, Linux arm64 and macOS arm64 on the
+GMAN 1.3.0 ships as a tarball for Linux x86_64, Linux arm64 and macOS arm64 on the
 [releases page](https://github.com/jac18281828/gman/releases). gman links libtiff, libpng, libjpeg
 and zlib at run time. On Linux:
 
@@ -25,8 +25,8 @@ brew install libtiff libpng jpeg
 Download the tarball for your platform, unpack it, `cd` into the folder and run the installer:
 
 ```sh
-tar xzf gman-1.2.0-linux-x86_64.tar.gz
-cd gman-1.2.0-linux-x86_64
+tar xzf gman-1.3.0-linux-x86_64.tar.gz
+cd gman-1.3.0-linux-x86_64
 sudo ./install.sh
 ```
 
@@ -91,7 +91,7 @@ gman -r gmanpathtracer samples/vase.rib
 
 That overwrites `vase.png` with the picture at the top. Sixty-four paths through each of the four
 subpixels follow the light as it bounces off the walls, floor and table. The path tracer renders
-rows on every core, about two minutes on an Apple M3 Max, where the ray tracer takes seconds. It
+rows on every core, about 40 seconds on an Apple M3 Max, where the ray tracer takes two. It
 computes the bounce light the scene's `ambientlight` stood in for, so it skips that light and says
 so:
 
@@ -418,6 +418,6 @@ programs first: a competing build slows a run by a third.
 | Machine | Cores | Renders a minute |
 |---|---|---|
 | Apple M5 Max | 12 performance + 6 efficiency | 32 |
-| Apple M3 Max | 12 performance + 4 efficiency | 24 |
+| Apple M3 Max | 12 performance + 4 efficiency | 28 |
 
 Add a row for your machine with a pull request.
