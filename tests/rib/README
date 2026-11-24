@@ -623,12 +623,12 @@ whose backdrop is white (`tests/imagerbackground_test.cpp`). Not third-party.
 
 ## imagerbackground_exposure_control.rib
 
-`imagerbackground_control.rib` under `Exposure 2 1`, with no imager
+`imagerbackground_control.rib` under `Exposure 2 1.8`, with no imager
 (`tests/imagerbackground_test.cpp`). Not third-party.
 
 ## imagerbackground_exposure.rib
 
-`imagerbackground.rib` under `Exposure 2 1`, which exposes the covered colour
+`imagerbackground.rib` under `Exposure 2 1.8`, which exposes the covered colour
 and leaves the backdrop as the imager sets it
 (`tests/imagerbackground_test.cpp`). Not third-party.
 

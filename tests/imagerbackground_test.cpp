@@ -53,8 +53,8 @@ struct Rgba {
 };
 
 struct Pixel {
-  uint32_t x;
-  uint32_t y;
+  std::uint32_t x;
+  std::uint32_t y;
 };
 
 struct Rendered {
@@ -79,8 +79,8 @@ constexpr std::size_t kLeastEdgePixels = 4;
 constexpr int kBackdrop[3] = {51, 77, 102};
 constexpr float kBackdropColor[3] = {0.2f, 0.3f, 0.4f};
 
-Rgba at(GmanImage const& image, uint32_t x, uint32_t y) {
-  uint32_t const p = image.at(x, y);
+Rgba at(GmanImage const& image, std::uint32_t x, std::uint32_t y) {
+  std::uint32_t const p = image.at(x, y);
   return {static_cast<int>(TIFFGetR(p)), static_cast<int>(TIFFGetG(p)), static_cast<int>(TIFFGetB(p)),
           static_cast<int>(TIFFGetA(p))};
 }
@@ -95,12 +95,12 @@ Rendered renderFixture(std::string const& gman, std::string const& renderer, std
   return rendered;
 }
 
-bool neighbourhoodAlpha(GmanImage const& control, uint32_t x, uint32_t y, int alpha) {
+bool neighbourhoodAlpha(GmanImage const& control, std::uint32_t x, std::uint32_t y, int alpha) {
   if (x == 0 || y == 0 || x + 1 >= control.width || y + 1 >= control.height) {
     return false;
   }
-  for (uint32_t ny = y - 1; ny <= y + 1; ++ny) {
-    for (uint32_t nx = x - 1; nx <= x + 1; ++nx) {
+  for (std::uint32_t ny = y - 1; ny <= y + 1; ++ny) {
+    for (std::uint32_t nx = x - 1; nx <= x + 1; ++nx) {
       if (at(control, nx, ny).a != alpha) {
         return false;
       }
@@ -111,8 +111,8 @@ bool neighbourhoodAlpha(GmanImage const& control, uint32_t x, uint32_t y, int al
 
 Classes classify(GmanImage const& control) {
   Classes classes;
-  for (uint32_t y = 0; y < control.height; ++y) {
-    for (uint32_t x = 0; x < control.width; ++x) {
+  for (std::uint32_t y = 0; y < control.height; ++y) {
+    for (std::uint32_t x = 0; x < control.width; ++x) {
       int const alpha = at(control, x, y).a;
       if (neighbourhoodAlpha(control, x, y, kOpaque)) {
         classes.interior.push_back({x, y});
@@ -184,8 +184,8 @@ void checkEdge(std::string const& tag, GmanImage const& image, GmanImage const& 
 
 void checkAlpha(std::string const& tag, std::string const& stem, GmanImage const& image) {
   std::size_t notOpaque = 0;
-  for (uint32_t y = 0; y < image.height; ++y) {
-    for (uint32_t x = 0; x < image.width; ++x) {
+  for (std::uint32_t y = 0; y < image.height; ++y) {
+    for (std::uint32_t x = 0; x < image.width; ++x) {
       if (at(image, x, y).a != kOpaque) {
         ++notOpaque;
       }

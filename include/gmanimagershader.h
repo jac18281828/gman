@@ -37,9 +37,9 @@
  *
  * The renderer runs a bound imager once per pixel after exposure and before
  * quantization. Ci arrives premultiplied by coverage and exposed, Oi is the
- * pixel's stored opacity and alpha its coverage. It calls computeCi, then
- * computeOi, so computeCi sees the alpha the pixel arrived with; the alpha the
- * env holds after both calls becomes the pixel's coverage. Both methods are
+ * pixel's stored opacity and alpha its coverage. The renderer calls computeCi,
+ * then computeOi, so computeCi sees the alpha the pixel arrived with; the alpha
+ * the env holds after both calls becomes the pixel's coverage. Both methods are
  * const: a shader holds no state, and the env is how a result comes back.
  *
  */
