@@ -1262,6 +1262,14 @@ set_tests_properties(banner PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+add_executable(gman_commandline commandline_test.cpp)
+target_link_libraries(gman_commandline PRIVATE gman_commandline_module)
+
+add_test(NAME commandline COMMAND gman_commandline)
+set_tests_properties(commandline PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A known but disabled driver's extension must fail loudly (RIE_BADFILE,
 # naming the missing library), not silently. Registered unconditionally
 # and always compiled -- it reads which drivers exist from gman --version
