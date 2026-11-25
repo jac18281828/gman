@@ -269,7 +269,7 @@ xargs rm < build/install_manifest.txt
 
 ### Build with OpenEXR
 
-OpenEXR is opt-in. Install OpenEXR 3.1 or newer (`libopenexr-dev` with apt, `openexr` with Homebrew)
+OpenEXR is opt-in. Install OpenEXR 3.1 or a later 3.x (`libopenexr-dev` with apt, `openexr` with Homebrew)
 and configure with it on:
 
 ```sh

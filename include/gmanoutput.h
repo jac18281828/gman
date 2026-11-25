@@ -85,11 +85,12 @@ public:
   // stops the file with GMANError at RIE_ERROR, before anything is written,
   // for one it cannot: a negative one or min, a min above max, a dither
   // amplitude that is negative or not finite, a max above what
-  // maxBitsPerSample() holds, or a one of 0 from a driver that writes no
-  // float. Colour runs through gain and gamma first; alpha, coverage, skips
-  // both. Every channel then rounds and dithers by RISpec's rule, one draw
-  // per pixel, and clamps into [min, max], before writeImage receives it
-  // once, at 16 bits when max exceeds 255 and 8 otherwise. For a format that
+  // maxBitsPerSample() holds, a one of 0 from a driver that writes no float,
+  // or a one above 0 from a driver that does not quantize. Colour runs
+  // through gain and gamma first; alpha, coverage, skips both. Every channel
+  // then rounds and dithers by RISpec's rule, one draw per pixel, and clamps
+  // into [min, max], before writeImage receives it once, at 16 bits when max
+  // exceeds 255 and 8 otherwise. For a format that
   // stores straight alpha, colour divides by coverage before gain and gamma
   // wherever coverage lies strictly between 0 and 1.
   RtVoid save(DisplayMode mode, RtFloat gain, RtFloat gamma, GMANQuantize const& quantize);

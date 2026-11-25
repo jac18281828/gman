@@ -24,9 +24,10 @@
  * drivers are disabled is a runtime fact of this build, read back from
  * gman --version, rather than a compile-time #ifdef in this test -- the
  * same binary runs unchanged across the ON, OFF and mixed configurations.
- * With every optional driver compiled there is nothing disabled to exercise, so
- * this test exits 77 (SKIP_RETURN_CODE); the drivers-off CI job is where
- * it actually renders.
+ * It exercises each driver the build left out, so the default configure runs
+ * the EXR case and the drivers-off CI job runs all three. With every optional
+ * driver compiled there is nothing disabled to exercise, so this test exits 77
+ * (SKIP_RETURN_CODE).
  */
 
 #include <cstdio>

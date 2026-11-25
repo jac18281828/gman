@@ -59,8 +59,7 @@ namespace {
 constexpr std::uint32_t kDitherSeed = 0x5eed;
 
 // What a refusal rule may ask of the output: the name an error gives it and
-// the widest sample, the float it writes and whether it ignores a nonzero
-// request.
+// the widest sample, the float it writes and whether it refuses a nonzero one.
 struct QuantizeTraits {
   std::string_view displayName;
   int bits;

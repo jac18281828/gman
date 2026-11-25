@@ -351,6 +351,29 @@ void checkQuantizedRequestRefused() {
   check(!fileExists(path), "refused: writes no file");
 }
 
+void checkWideRequestRefusedAsNotQuantizing() {
+  char const* const path = "refusedwide.exr";
+  std::remove(path);
+  gman::OutputEXR output(path, kWidth, kHeight);
+  fill(output);
+  bool threw = false;
+  RtInt code = 0;
+  std::string message;
+  try {
+    output.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{65535, 0, 65535, 0.5f});
+  } catch (GMANError const& error) {
+    threw = true;
+    code = error.getCode();
+    message = error.getMessage();
+  }
+  std::string const expected =
+      "OpenEXR does not quantize; Quantize one 65535 cannot be honoured; use Quantize \"rgba\" 0 0 0 0 or omit it";
+  check(threw && code == RIE_INCAPABLE, "refusedwide: a wide request throws RIE_INCAPABLE");
+  check(message == expected,
+        "refusedwide: the message says OpenEXR does not quantize, not a sample width (got \"" + message + "\")");
+  check(!fileExists(path), "refusedwide: writes no file");
+}
+
 int countOccurrences(std::string const& haystack, std::string const& needle) {
   int count = 0;
   std::size_t pos = 0;
@@ -436,6 +459,7 @@ int main(int argc, char* argv[]) {
   checkNoThreads();
   checkUnwritablePath();
   checkQuantizedRequestRefused();
+  checkWideRequestRefusedAsNotQuantizing();
 
   checkRenders(gman, ribDir, "exrfloat", true);
   checkRenders(gman, ribDir, "exrdither", true);

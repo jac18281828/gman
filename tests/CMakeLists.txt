@@ -1266,9 +1266,10 @@ set_tests_properties(banner PROPERTIES
 # naming the missing library), not silently. Registered unconditionally
 # and always compiled -- it reads which drivers exist from gman --version
 # at runtime instead of a compile-time #ifdef, so it runs unchanged across
-# the ON, OFF and mixed configurations. With every optional driver enabled
-# there is nothing disabled to exercise, so it self-skips (exit 77);
-# drivers-off is where it runs for real.
+# the ON, OFF and mixed configurations. It exercises each driver the build
+# left out, so the default configure runs the EXR case and drivers-off runs
+# all three; with every optional driver enabled there is nothing disabled to
+# exercise, so it self-skips (exit 77).
 add_executable(gman_displaydisabled displaydisabled_test.cpp)
 target_link_libraries(gman_displaydisabled PRIVATE gman_core)
 
