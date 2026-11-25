@@ -210,7 +210,9 @@ CommandLine parseCommandLine(int argc, char* argv[]) {
   }
 
   if (std::any_of(argv + 1, argv + flagsEnd, [](char const* arg) { return arg == emptyInlineRenderer; })) {
-    return CommandLine{.outcome = Outcome::emptyRenderer};
+    CommandLine commandLine;
+    commandLine.outcome = Outcome::emptyRenderer;
+    return commandLine;
   }
   CommandLine commandLine = readParseOrder(app, declared, flagsEnd);
   if (commandLine.outcome == Outcome::run && renderNameMissing) {
