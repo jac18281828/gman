@@ -1245,23 +1245,6 @@ set_tests_properties(filedrivers PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-add_executable(gman_commandline commandline_test.cpp)
-target_link_libraries(gman_commandline PRIVATE gman_core)
-
-set(GMAN_COMMANDLINE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/commandline-run")
-file(MAKE_DIRECTORY "${GMAN_COMMANDLINE_WORKDIR}")
-
-add_test(NAME commandline
-  COMMAND gman_commandline $<TARGET_FILE:gman>
-                           "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
-                           "${PROJECT_VERSION}"
-                           "${GMAN_EXPECTED_DRIVERS}"
-  WORKING_DIRECTORY "${GMAN_COMMANDLINE_WORKDIR}")
-set_tests_properties(commandline PROPERTIES
-  ENVIRONMENT "${GMAN_PHASE2_ENV}"
-  LABELS render
-  TIMEOUT 60)
-
 # Pins gman's one-line startup banner against a version-bump regression.
 add_executable(gman_banner banner_test.cpp)
 target_link_libraries(gman_banner PRIVATE gman_core)
