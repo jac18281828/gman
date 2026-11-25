@@ -514,6 +514,7 @@ set_target_properties(gman_rib PROPERTIES OUTPUT_NAME "gmanrib")
 
 add_executable(gman gman/gman.cpp)
 target_link_libraries(gman PRIVATE gman_core CLI11::CLI11)
+target_compile_options(gman PRIVATE "SHELL:-include CLI/CLI.hpp")
 
 # gman --version reports gman::fileDrivers(), the driver table's own private
 # contract, and PROJECT_VERSION -- neither is part of gman_core's public API.

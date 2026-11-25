@@ -24,11 +24,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
+#include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
+
+#include <CLI/App.hpp>
+#include <CLI/Error.hpp>
+#include <CLI/Option.hpp>
 
 #include "gmanerror.h"
 #include "gmanfiledrivers.h"
@@ -71,6 +80,154 @@ bool hasVersionFlag(int argc, char* argv[]) {
     }
   }
   return false;
+}
+
+struct DeclaredOptions {
+  CLI::Option* help;
+  CLI::Option* debug;
+  CLI::Option* info;
+  CLI::Option* warning;
+  CLI::Option* error;
+  CLI::Option* quiet;
+  CLI::Option* logFile;
+  CLI::Option* renderer;
+};
+
+CLI::Option* declareFlag(CLI::App& app, std::string const& names, std::string const& description) {
+  return app.add_flag(names)->description(description);
+}
+
+CLI::Option* declareRenderer(CLI::App& app, std::string const& names, std::string const& description) {
+  return app.add_option(names)
+      ->description(description)
+      ->type_name("renderer")
+      ->multi_option_policy(CLI::MultiOptionPolicy::TakeLast);
+}
+
+DeclaredOptions declareOptions(CLI::App& app) {
+  app.set_help_flag();
+  app.prefix_command();
+  return DeclaredOptions{
+      declareFlag(app, "-h", "print this help message."),
+      declareFlag(app, "-d", "set logging to: debug output."),
+      declareFlag(app, "-i", "set logging to: information output."),
+      declareFlag(app, "-w", "set logging to: warning output."),
+      declareFlag(app, "-e", "set logging to: error output."),
+      declareFlag(app, "-q", "set logging to: quiet, only report disasters."),
+      declareFlag(app, "-l", "enable a log based on the filename of the rib."),
+      declareRenderer(app, "-r", "choose the renderer plugin (default: gmanzbuffer)."),
+  };
+}
+
+std::optional<GMANLogLevel> levelOf(DeclaredOptions const& declared, CLI::Option const* option) {
+  if (option == declared.debug) {
+    return LOGLVL_DEBUG;
+  }
+  if (option == declared.info) {
+    return LOGLVL_INFO;
+  }
+  if (option == declared.warning) {
+    return LOGLVL_WARNING;
+  }
+  if (option == declared.error) {
+    return LOGLVL_ERROR;
+  }
+  if (option == declared.quiet) {
+    return LOGLVL_DISASTER;
+  }
+  return std::nullopt;
+}
+
+enum class Outcome { run, help, unrecognized, missingRenderer, emptyRenderer };
+
+struct CommandLine {
+  Outcome outcome = Outcome::run;
+  std::string unrecognized;
+  std::optional<GMANLogLevel> level;
+  bool writeLog = false;
+  std::optional<std::string> renderer;
+  int firstFile = 0;
+};
+
+CommandLine unrecognizedFlag(std::string token) {
+  CommandLine commandLine;
+  commandLine.outcome = Outcome::unrecognized;
+  commandLine.unrecognized = std::move(token);
+  return commandLine;
+}
+
+CommandLine parseCommandLine(int argc, char* argv[]) {
+  CLI::App app;
+  DeclaredOptions const declared = declareOptions(app);
+
+  std::vector<std::string> args(std::make_reverse_iterator(argv + argc), std::make_reverse_iterator(argv + 1));
+  bool renderNameMissing = false;
+  try {
+    app.parse(args);
+  } catch (CLI::ArgumentMismatch const&) {
+    renderNameMissing = true;
+  }
+
+  std::vector<std::string> const leftover = app.remaining();
+  if (!leftover.empty() && leftover.front().starts_with('-')) {
+    return unrecognizedFlag(leftover.front());
+  }
+
+  CommandLine commandLine;
+  commandLine.firstFile = argc - static_cast<int>(leftover.size());
+  std::size_t renderers = 0;
+  for (CLI::Option const* occurrence : app.parse_order()) {
+    if (occurrence == declared.help) {
+      commandLine.outcome = Outcome::help;
+      return commandLine;
+    }
+    if (occurrence == declared.logFile) {
+      commandLine.writeLog = true;
+    } else if (occurrence == declared.renderer) {
+      std::string const& name = declared.renderer->results()[renderers++];
+      if (name.empty()) {
+        commandLine.outcome = Outcome::emptyRenderer;
+        return commandLine;
+      }
+      commandLine.renderer = name;
+    } else {
+      commandLine.level = levelOf(declared, occurrence);
+    }
+  }
+  if (renderNameMissing) {
+    commandLine.outcome = Outcome::missingRenderer;
+  }
+  return commandLine;
+}
+
+bool takesValue(CLI::Option const& option) { return option.get_items_expected_max() > 0; }
+
+std::string optionNames(CLI::Option const& option) {
+  std::string names;
+  for (std::string const& name : option.get_snames()) {
+    names += (names.empty() ? "-" : ", -") + name;
+  }
+  for (std::string const& name : option.get_lnames()) {
+    names += (names.empty() ? "--" : ", --") + name;
+  }
+  if (takesValue(option)) {
+    names += " " + option.get_type_name();
+  }
+  return names;
+}
+
+std::string synopsis(CLI::App const& app) {
+  std::string flags;
+  std::string valued;
+  for (CLI::Option const* option : app.get_options()) {
+    std::string const& letter = option->get_snames().front();
+    if (takesValue(*option)) {
+      valued += " [-" + letter + " " + option->get_type_name() + "]";
+    } else {
+      flags += letter;
+    }
+  }
+  return "-[" + flags + "]" + valued + " [--version] files ...";
 }
 
 // Thrown by handleReport once a report has already printed, so main's
@@ -121,77 +278,41 @@ int main(int argc, char* argv[]) {
       // announce the banner
       info("gman {} -- LGPL-2.1-or-later, see COPYING\n", GMAN_PROJECT_VERSION);
 
-      bool writeLog = false;
-      // Empty means -r was never given; GMANRIBParse's own default
-      // ("gmanzbuffer") applies by omitting the argument entirely below,
-      // not by repeating that name here.
-      std::string rendererName;
-      bool rendererNameGiven = false;
-
-      int arg = 1;
-
-      while ((arg < argc) && (argv[arg][0] == '-')) {
-        switch (argv[arg][1]) {
-        case 'd':
-          logObj.setLogLevel(LOGLVL_DEBUG);
-          break;
-        case 'e':
-          logObj.setLogLevel(LOGLVL_ERROR);
-          break;
-        case 'h':
-          usage(argv[0]);
-          exit(EXIT_SUCCESS);
-        case 'i':
-          logObj.setLogLevel(LOGLVL_INFO);
-          break;
-        case 'l':
-          writeLog = true;
-          break;
-        case 'q':
-          logObj.setLogLevel(LOGLVL_DISASTER);
-          break;
-        case 'r':
-          // -rNAME (glued, the getopt convention) or -r NAME (the next
-          // argv); either way, an empty name is a usage error, not a
-          // silent fall-through to the default.
-          if (argv[arg][2] != '\0') {
-            rendererName = argv[arg] + 2;
-          } else if (arg + 1 < argc) {
-            rendererName = argv[++arg];
-          } else {
-            std::cerr << argv[0] << ": -r requires a renderer name" << std::endl;
-            return EXIT_FAILURE;
-          }
-          if (rendererName.empty()) {
-            std::cerr << argv[0] << ": -r requires a non-empty renderer name" << std::endl;
-            return EXIT_FAILURE;
-          }
-          rendererNameGiven = true;
-          break;
-        case 'w':
-          logObj.setLogLevel(LOGLVL_WARNING);
-          break;
-        default:
-          std::cerr << argv[0] << ": unrecognized flag " << argv[arg] << std::endl;
-          usage(argv[0]);
-          return EXIT_FAILURE;
-        }
-        arg++;
+      CommandLine const commandLine = parseCommandLine(argc, argv);
+      switch (commandLine.outcome) {
+      case Outcome::help:
+        usage(argv[0]);
+        exit(EXIT_SUCCESS);
+      case Outcome::unrecognized:
+        std::cerr << argv[0] << ": unrecognized flag " << commandLine.unrecognized << std::endl;
+        usage(argv[0]);
+        return EXIT_FAILURE;
+      case Outcome::missingRenderer:
+        std::cerr << argv[0] << ": -r requires a renderer name" << std::endl;
+        return EXIT_FAILURE;
+      case Outcome::emptyRenderer:
+        std::cerr << argv[0] << ": -r requires a non-empty renderer name" << std::endl;
+        return EXIT_FAILURE;
+      case Outcome::run:
+        break;
+      }
+      if (commandLine.level) {
+        logObj.setLogLevel(*commandLine.level);
       }
 
-      for (int i = arg; i < argc; i++) {
+      for (int i = commandLine.firstFile; i < argc; i++) {
         try {
           const char* ribFile = argv[i];
           info("Parsing {}", argv[i]);
 
-          if (writeLog) {
+          if (commandLine.writeLog) {
             const std::string fileName = logFileNameFor(ribFile);
             logObj.setLogFile(fileName.c_str());
           }
 
           std::unique_ptr<GMANRIBParse> const parser =
-              rendererNameGiven ? std::make_unique<GMANRIBParse>(renderMan, argv[i], rendererName.c_str())
-                                : std::make_unique<GMANRIBParse>(renderMan, argv[i]);
+              commandLine.renderer ? std::make_unique<GMANRIBParse>(renderMan, argv[i], commandLine.renderer->c_str())
+                                   : std::make_unique<GMANRIBParse>(renderMan, argv[i]);
 
           // just parse it...
           parser->parse();
@@ -214,16 +335,13 @@ int main(int argc, char* argv[]) {
 }
 
 RtVoid usage(char* myname) {
+  CLI::App app;
+  declareOptions(app);
 
-  std::cerr << myname << ": -[hdiweql] [-r renderer] [--version] files ..." << std::endl;
+  std::cerr << myname << ": " << synopsis(app) << std::endl;
   std::cerr << "\tParse RIB input files." << std::endl << std::endl;
-  std::cerr << "\t-h - print this help message." << std::endl;
-  std::cerr << "\t-d - set logging to: debug output." << std::endl;
-  std::cerr << "\t-i - set logging to: information output." << std::endl;
-  std::cerr << "\t-w - set logging to: warning output." << std::endl;
-  std::cerr << "\t-e - set logging to: error output." << std::endl;
-  std::cerr << "\t-q - set logging to: quiet, only report disasters." << std::endl;
-  std::cerr << "\t-l - enable a log based on the filename of the rib." << std::endl;
-  std::cerr << "\t-r renderer - choose the renderer plugin (default: gmanzbuffer)." << std::endl;
+  for (CLI::Option const* option : app.get_options()) {
+    std::cerr << '\t' << optionNames(*option) << " - " << option->get_description() << std::endl;
+  }
   std::cerr << "\t--version - print the version and compiled drivers, then exit." << std::endl;
 }
