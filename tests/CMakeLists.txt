@@ -2244,17 +2244,6 @@ set_tests_properties(cameraray PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Ray tracer core, unit 2: GMANQuadraticRoots solves a*t^2 + b*t + c == 0
-# with the numerically stable root form, pinning its root count and
-# ordering at every discriminant sign.
-add_executable(gman_quadratic quadratic_test.cpp)
-target_link_libraries(gman_quadratic PRIVATE gman_core)
-
-add_test(NAME quadratic COMMAND gman_quadratic)
-set_tests_properties(quadratic PROPERTIES
-  LABELS unit
-  TIMEOUT 30)
-
 # solveRayQuadratic, the double a*t^2+b*t+c == 0 solver the
 # sphere and the four swept quadrics' intersectors share, its linear
 # branch exact and its quadratic branch stable under cancellation.

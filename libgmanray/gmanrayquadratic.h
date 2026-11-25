@@ -38,13 +38,12 @@ namespace gman {
 // the quadratic term -- parallel to a generatrix or a ruling, or down an
 // axis -- leaving at most a linear equation: b == 0 too has no equation
 // left to solve, a miss; otherwise the single root is -c/b. A nonzero a
-// solves in the stable q form itself, rather than delegating to
-// GMANQuadraticRoots (public, RtFloat only): a negative discriminant
-// returns no roots, a zero discriminant returns one, and two roots come
-// back ascending, the smaller one recovered through c/q rather than a
-// cancelling subtraction. A merely near-zero a needs no separate case:
-// q's sign matches b's, so q itself never cancels, and c/q already
-// converges to -c/b, the linear root, as a shrinks toward it.
+// solves in the stable q form: a negative discriminant returns no roots,
+// a zero discriminant returns one, and two roots come back ascending, the
+// smaller one recovered through c/q rather than a cancelling subtraction.
+// A merely near-zero a needs no separate case: q's sign matches b's, so q
+// itself never cancels, and c/q already converges to -c/b, the linear
+// root, as a shrinks toward it.
 inline int solveRayQuadratic(double a, double b, double c, double& t0, double& t1) {
   if (a == 0.0) {
     if (b == 0.0)
