@@ -147,11 +147,20 @@ std::string pointName(char const* what, std::string const& channel, int x, int y
   return std::string(what) + ": " + channel + " at (" + std::to_string(x) + ", " + std::to_string(y) + ")";
 }
 
+void saveFloat(std::string const& label, GMANOutput& output, GMANOutput::DisplayMode mode, RtFloat gain = 1.0f,
+               RtFloat gamma = 1.0f) {
+  try {
+    output.save(mode, gain, gamma, kFloatRequest);
+  } catch (GMANError const& error) {
+    check(false, label + ": save throws \"" + error.getMessage() + "\"");
+  }
+}
+
 void checkChannelSet(char const* label, GMANOutput::DisplayMode mode, std::set<std::string> const& expected) {
   std::string const path = std::string("channels_") + label + ".exr";
   gman::OutputEXR output(path.c_str(), kWidth, kHeight);
   fill(output);
-  output.save(mode, 1.0f, 1.0f, kFloatRequest);
+  saveFloat(label, output, mode);
 
   DecodedEXR const image = readEXR(path);
   check(image.ok, std::string(label) + ": file reads back");
@@ -166,7 +175,7 @@ void checkValues() {
   char const* const path = "values.exr";
   gman::OutputEXR output(path, kWidth, kHeight);
   fill(output);
-  output.save(GMANOutput::RGBA, 1.0f, 1.0f, kFloatRequest);
+  saveFloat("values", output, GMANOutput::RGBA);
 
   DecodedEXR const image = readEXR(path);
   check(image.ok, "values: file reads back");
@@ -202,7 +211,7 @@ void checkAlphaOnlyValues() {
   char const* const path = "alphaonly.exr";
   gman::OutputEXR output(path, kWidth, kHeight);
   fill(output);
-  output.save(GMANOutput::A, 1.0f, 1.0f, kFloatRequest);
+  saveFloat("alphaonly", output, GMANOutput::A);
 
   DecodedEXR const image = readEXR(path);
   check(image.ok, "alphaonly: file reads back");
@@ -220,7 +229,7 @@ void checkGainAndGamma() {
   char const* const gainPath = "gain.exr";
   gman::OutputEXR gained(gainPath, kWidth, kHeight);
   fill(gained);
-  gained.save(GMANOutput::RGBA, 2.0f, 1.0f, kFloatRequest);
+  saveFloat("gain", gained, GMANOutput::RGBA, 2.0f, 1.0f);
   DecodedEXR const gainImage = readEXR(gainPath);
   check(gainImage.ok, "gain: file reads back");
   if (gainImage.ok) {
@@ -234,7 +243,7 @@ void checkGainAndGamma() {
   fill(corrected);
   float const gain = 1.5f;
   float const gamma = 2.0f;
-  corrected.save(GMANOutput::RGBA, gain, gamma, kFloatRequest);
+  saveFloat("gamma", corrected, GMANOutput::RGBA, gain, gamma);
   DecodedEXR const gammaImage = readEXR(gammaPath);
   check(gammaImage.ok, "gamma: file reads back");
   if (gammaImage.ok) {
@@ -253,7 +262,7 @@ void checkNaNReadsZero() {
   fill(output);
   output.setPixel(1, 0, GMANColor(nan, greenAt(1, 0), blueAt(1, 0)));
   output.setAlpha(2, 1, GMANAlpha(nan, nan, nan));
-  output.save(GMANOutput::RGBA, 1.0f, 1.0f, kFloatRequest);
+  saveFloat("nan", output, GMANOutput::RGBA);
 
   DecodedEXR const image = readEXR(path);
   check(image.ok, "nan: file reads back");
@@ -271,7 +280,7 @@ void checkInfinityPassesThrough() {
   gman::OutputEXR output(path, kWidth, kHeight);
   fill(output);
   output.setPixel(1, 0, GMANColor(infinity, -infinity, blueAt(1, 0)));
-  output.save(GMANOutput::RGBA, 1.0f, 1.0f, kFloatRequest);
+  saveFloat("inf", output, GMANOutput::RGBA);
 
   DecodedEXR const image = readEXR(path);
   check(image.ok, "inf: file reads back");
@@ -286,7 +295,7 @@ void checkNoThreads() {
   Imf::setGlobalThreadCount(2);
   gman::OutputEXR output("threads.exr", kWidth, kHeight);
   fill(output);
-  output.save(GMANOutput::RGBA, 1.0f, 1.0f, kFloatRequest);
+  saveFloat("threads", output, GMANOutput::RGBA);
   check(Imf::globalThreadCount() == 0, "threads: a save leaves OpenEXR's pool at zero threads");
 }
 
