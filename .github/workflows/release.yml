@@ -143,7 +143,7 @@ jobs:
       - name: Stage the install tree
         run: |
           stage="${{ runner.temp }}/stage/gman-${{ github.ref_name }}-${{ matrix.target }}"
-          cmake --install build-release --prefix "$stage"
+          cmake --install build-release --prefix "$stage" --strip
           install -m 755 packaging/install.sh "$stage/install.sh"
           install -d "$stage/samples"
           install -m 644 samples/vase.rib "$stage/samples/vase.rib"
