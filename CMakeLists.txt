@@ -2,7 +2,7 @@
 #
 # GMAN — a RenderMan-compatible renderer.
 
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.24)
 
 project(gman
   VERSION 1.3.2
@@ -74,6 +74,13 @@ find_package(PNG)
 find_package(TIFF REQUIRED)
 find_package(JPEG)
 find_package(Threads REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(CLI11
+  URL https://github.com/CLIUtils/CLI11/archive/refs/tags/v2.7.2.tar.gz
+  URL_HASH SHA256=46eef3101da70852ec7af026e09d485ccee81813331c8c6052d39344443b83da
+  FIND_PACKAGE_ARGS 2.4 CONFIG)
+FetchContent_MakeAvailable(CLI11)
 
 # reyes is non-functional and kept for the design intent a later phase may
 # want; it additionally does not link -- it has a declared virtual with no
@@ -506,7 +513,7 @@ set_target_properties(gman_rib PROPERTIES OUTPUT_NAME "gmanrib")
 # ---------------------------------------------------------------------------
 
 add_executable(gman gman/gman.cpp)
-target_link_libraries(gman PRIVATE gman_core)
+target_link_libraries(gman PRIVATE gman_core CLI11::CLI11)
 
 # gman --version reports gman::fileDrivers(), the driver table's own private
 # contract, and PROJECT_VERSION -- neither is part of gman_core's public API.
