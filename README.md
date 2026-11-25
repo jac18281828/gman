@@ -196,8 +196,9 @@ gman -r gmanraytracer first.rib
 - **Textures.** `texture()` and `environment()` read maps written by `MakeTexture` and
   `MakeLatLongEnvironment`.
 - **RIB.** Plain or gzip'd, with `ReadArchive`. An unrecognized request warns once and is skipped.
-- **Image drivers.** TIFF, PNM, PNG and JPEG; `gman --version` lists the ones built in. PNG stores
-  straight alpha, TIFF associated alpha, and JPEG and PNM the colour over black.
+- **Image drivers.** TIFF, PNM, PNG and JPEG, and OpenEXR as an opt-in build option;
+  `gman --version` lists the ones built in. PNG stores straight alpha, TIFF associated alpha, and JPEG
+  and PNM the colour over black.
 
 ## Render
 
@@ -265,6 +266,20 @@ To remove what `cmake --install` wrote, delete the files CMake recorded:
 ```sh
 xargs rm < build/install_manifest.txt
 ```
+
+### Build with OpenEXR
+
+OpenEXR is opt-in. Install OpenEXR 3.1 or newer (`libopenexr-dev` with apt, `openexr` with Homebrew)
+and configure with it on:
+
+```sh
+cmake --preset dev -DGMAN_WITH_EXR=ON
+```
+
+Such a build writes `Display "x.exr"` as 32-bit float RGBA when `Quantize` is omitted or its `one` is
+0, so a path-traced image keeps radiance above 1. Any other `one` stops the file at `WorldBegin` with
+`RIE_INCAPABLE`, since EXR does not quantize. The build needs OpenEXR at run time, and release
+tarballs carry no EXR driver.
 
 ### Development container
 
