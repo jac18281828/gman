@@ -4173,6 +4173,55 @@ set_tests_properties(gmanmath PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANMod(-4, 2) answers 2: a negative multiple of b is congruent to 0
+# under RSL mod(a, b) = a - b * floor(a / b). Pins the wanted behavior;
+# WILL_FAIL until GMANMod follows the definition for a negative dividend.
+add_executable(gman_gmanmathmodmultiple gmanmathmodmultiple_test.cpp)
+target_link_libraries(gman_gmanmathmodmultiple PRIVATE gman_core)
+
+add_test(NAME gmanmathmodmultiple COMMAND gman_gmanmathmodmultiple)
+set_tests_properties(gmanmathmodmultiple PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
+# GMANMod(5, -3) and GMANMod(-5, -3) answer 2 and -5 where RSL mod(a, b) =
+# a - b * floor(a / b) gives -1 and -2: a negative divisor is treated as
+# positive. Pins the wanted behavior; WILL_FAIL until GMANMod follows the
+# definition for a negative divisor.
+add_executable(gman_gmanmathmodnegativedivisor gmanmathmodnegativedivisor_test.cpp)
+target_link_libraries(gman_gmanmathmodnegativedivisor PRIVATE gman_core)
+
+add_test(NAME gmanmathmodnegativedivisor COMMAND gman_gmanmathmodnegativedivisor)
+set_tests_properties(gmanmathmodnegativedivisor PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
+# GMANInversesqrt answers RI_INFINITY for every x whose square root is at
+# most RI_EPSILON, and for NaN, where IEEE 754 gives 1 / sqrt(x): 2e10 at
+# RI_EPSILON^2 / 4, +infinity at +0, -infinity at -0 and NaN below 0 or for NaN.
+# Pins the wanted behavior; WILL_FAIL until GMANInversesqrt follows IEEE there.
+add_executable(gman_gmanmathinversesqrtclamp gmanmathinversesqrtclamp_test.cpp)
+target_link_libraries(gman_gmanmathinversesqrtclamp PRIVATE gman_core)
+
+add_test(NAME gmanmathinversesqrtclamp COMMAND gman_gmanmathinversesqrtclamp)
+set_tests_properties(gmanmathinversesqrtclamp PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
+# GMANSign(NaN) answers 0 where IEEE 754 gives NaN for a NaN operand. Pins
+# the wanted behavior; WILL_FAIL until GMANSign returns NaN for NaN.
+add_executable(gman_gmanmathsignnan gmanmathsignnan_test.cpp)
+target_link_libraries(gman_gmanmathsignnan PRIVATE gman_core)
+
+add_test(NAME gmanmathsignnan COMMAND gman_gmanmathsignnan)
+set_tests_properties(gmanmathsignnan PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
 # gman::InvertibleMatrix pairs a placement with its inverse; its transformNormal
 # applies the inverse transpose. See tests/invertiblematrix_test.cpp.
 add_executable(gman_invertiblematrix invertiblematrix_test.cpp)
