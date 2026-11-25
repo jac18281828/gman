@@ -1,8 +1,9 @@
 # verts' own point count is 1 + max(verts) = 4 (twelve floats); "P"
-# supplies only three points (nine floats). gman is expected to warn,
-# clamp and keep going rather than read past "P"'s own allocation --
-# PointsGeneralPolygons' own counterpart to pointspolygons_short_p.rib,
-# checking that its supplied counts reach the renderer.
+# supplies only three points (nine floats). gman is expected to stop the
+# file with RIE_CONSISTENCY, naming the parameter and both lengths, and to
+# write no image -- PointsGeneralPolygons' own counterpart to
+# pointspolygons_short_p.rib, checking that its supplied counts reach the
+# renderer.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

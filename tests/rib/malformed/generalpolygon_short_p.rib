@@ -1,6 +1,7 @@
 # F6, GeneralPolygon branch: nverts [4 4] declares eight vertices (24
 # floats) but "P" supplies only three points (9 floats). gman is expected
-# to warn, clamp and keep going rather than read past "P"'s own allocation.
+# to stop the file with RIE_CONSISTENCY, naming the parameter and both
+# lengths, and to write no image.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

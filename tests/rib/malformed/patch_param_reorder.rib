@@ -1,11 +1,12 @@
 # The map-ordering trap: parseParameterList collects into a
-# std::map<RtToken, ...>, which emits in
-# key order, not push order -- "st", "N", "P", "Cs" here (in that push
-# order) come back out as "P", "Cs", "N", "st" (verified against this
-# tree). A counts array built in push order would clamp the wrong
-# parameter; only "P" is short here (two points, not bilinear's four), so
-# a misaligned implementation would warn about the wrong name or the wrong
-# lengths, or clamp "N"/"Cs"/"st" despite each being fully supplied.
+# std::map<RtToken, ...>, which emits in key order, not push order -- "st",
+# "N", "P", "Cs" here (in that push order) come back out as "P", "Cs", "N",
+# "st" (verified against this tree). A counts array built in push order
+# would reject the wrong parameter; only "P" is short here (two points, not
+# bilinear's four), so a misaligned implementation would name the wrong
+# parameter or the wrong lengths in the error, or reject "N"/"Cs"/"st"
+# although each is fully supplied. gman is expected to stop the file with
+# RIE_CONSISTENCY, naming "P" and both lengths, and to write no image.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

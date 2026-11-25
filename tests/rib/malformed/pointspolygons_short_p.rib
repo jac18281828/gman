@@ -1,6 +1,7 @@
 # verts' own point count is 1 + max(verts) = 4 (twelve floats); "P"
-# supplies only three points (nine floats). gman is expected to warn,
-# clamp and keep going rather than read past "P"'s own allocation.
+# supplies only three points (nine floats). gman is expected to stop the
+# file with RIE_CONSISTENCY, naming the parameter and both lengths, and to
+# write no image.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

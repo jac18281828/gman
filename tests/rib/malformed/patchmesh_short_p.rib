@@ -1,7 +1,7 @@
 # PatchMesh branch: "P" on a nu=3 nv=2 nonperiodic bilinear mesh carries
 # six vertex-class points (eighteen floats). This supplies three; gman is
-# expected to warn, clamp and keep going rather than read past "P"'s own
-# allocation.
+# expected to stop the file with RIE_CONSISTENCY, naming the parameter and
+# both lengths, and to write no image.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

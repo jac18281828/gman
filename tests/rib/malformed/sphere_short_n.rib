@@ -1,7 +1,8 @@
 # Sphere branch: a quadric declares a varying "N" as its 4x3 = 12 floats;
 # this Sphere's "N" supplies one normal (3 floats). gman is expected to
-# warn, clamp and keep going rather than read past "N"'s own allocation --
-# this is the RIB from the audit that first exposed the defect.
+# stop the file with RIE_CONSISTENCY, naming the parameter and both
+# lengths, and to write no image -- this is the RIB from the audit that
+# first exposed the defect.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

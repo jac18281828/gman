@@ -1,8 +1,8 @@
 # Polygon branch: "P" fixes the vertex/varying count at 4 (nverts derived
 # from "P"'s own length); this Polygon's "N" supplies one normal (3
 # floats) against the 4x3 = 12 floats that count implies. gman is expected
-# to warn, clamp and keep going rather than read past "N"'s own
-# allocation.
+# to stop the file with RIE_CONSISTENCY, naming the parameter and both
+# lengths, and to write no image.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

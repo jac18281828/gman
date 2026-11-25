@@ -1,8 +1,9 @@
 # F6, bicubic branch: a bicubic Patch's "P" carries sixteen vertex-class
 # points (forty-eight floats), not bilinear's four -- RiPatchV derives the
 # required count from the patch type, so a fix correct for bilinear can
-# still be wrong here. This supplies two points; gman is expected to warn,
-# clamp against forty-eight (not twelve) and keep going.
+# still be wrong here. This supplies two points; gman is expected to stop
+# the file with RIE_CONSISTENCY, naming "P" and forty-eight, not twelve, as
+# its declared length, and to write no image.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

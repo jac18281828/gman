@@ -1,9 +1,9 @@
 # "Pw" two values short: nu=2 nv=2 declares 4 control points, 4 floats
 # each (16 total), but only 14 are supplied. GMANParameterList's own
-# clamp fires first, when the parameter list is built -- before
-# RiNuPatchV's own weight-positivity check ever runs -- warning and
-# zero-filling the remainder. The zero-filled last weight is then also
-# non-positive, but the clamp warning is the one this fixture asserts.
+# shortfall check fires first, when the parameter list is built and before
+# RiNuPatchV's weight-positivity check runs. gman is expected to stop the
+# file with RIE_CONSISTENCY, naming the parameter and both lengths, and to
+# write no image; the test asserts that error.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."
