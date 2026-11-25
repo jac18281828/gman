@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "gman/export.h"
+#include "gmanoptions.h"
 #include "gmanoutput.h"
 #include "gmanquantize.h"
 
@@ -53,6 +54,7 @@ struct FileDriverEntry {
   FileDriverFactory factory; // null when not compiled into this build
   FileDriverMatcher matches; // null when not compiled into this build
   bool straightAlpha;        // stores colour unassociated from alpha
+  bool doesNotQuantize;      // writes float and refuses a nonzero Quantize one
 };
 
 // Returns the driver for `extension` (compared case-sensitively). Throws
@@ -69,9 +71,14 @@ FileDriverEntry const* fileDriverEntry(GMANOutput const& output);
 
 // Throws GMANError at RIE_ERROR, naming the driver and the request, when
 // `output` cannot store `quantize` exactly: RIE_RANGE for a value no driver
-// could mean, RIE_INCAPABLE for a valid request the driver's sample width
-// or integer-only samples cannot hold. Returns for a request `output`
-// honours.
+// could mean, RIE_INCAPABLE for a valid request the driver's sample width,
+// integer-only samples or lack of quantizing cannot hold. Returns for a
+// request `output` honours.
 void checkQuantize(GMANOutput const& output, GMANQuantize const& quantize);
+
+// The Quantize "rgba" request `output` receives: the one `options` stores,
+// except that an unset request resolves to one 0 for a driver that does not
+// quantize, so a scene that omits Quantize gets float samples from it.
+GMANQuantize quantizeRequest(GMANOutput const& output, GMANOptions const& options);
 
 } // namespace gman

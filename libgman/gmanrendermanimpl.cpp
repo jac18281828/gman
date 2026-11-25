@@ -350,7 +350,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
                                      ri.rymax - ri.rymin + 1);
 
     // Stops a request the driver cannot store here, before the frame renders.
-    gman::checkQuantize(*newOutput, getOptions().getColorQuantize());
+    gman::checkQuantize(*newOutput, gman::quantizeRequest(*newOutput, getOptions()));
 
   } else { // type == framebuffer
     // our frame buffer
@@ -438,9 +438,9 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   // depth, so a "z" request stored by RiQuantize has nothing to reach.
   if (GMANImagerShader const* const imager = getOptions().getImager()) {
     gman::runImager(*output, *imager, getOptions());
-    output->save(dMode, 1.0f, 1.0f, getOptions().getColorQuantize());
+    output->save(dMode, 1.0f, 1.0f, gman::quantizeRequest(*output, getOptions()));
   } else {
-    output->save(dMode, exposure.gain, exposure.gamma, getOptions().getColorQuantize());
+    output->save(dMode, exposure.gain, exposure.gamma, gman::quantizeRequest(*output, getOptions()));
   }
 
   abandonWorld();

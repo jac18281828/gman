@@ -1195,6 +1195,29 @@ set_tests_properties(jpegdriver PROPERTIES
   TIMEOUT 30
   SKIP_RETURN_CODE 77)
 
+if(GMAN_WITH_EXR)
+  add_executable(gman_exrdriver exrdriver_test.cpp)
+  target_link_libraries(gman_exrdriver PRIVATE gman_core gman_internal_headers OpenEXR::OpenEXR)
+  add_dependencies(gman_exrdriver gman_background gman_matte gman_zbuffer)
+
+  set(GMAN_EXRDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/exrdriver-run")
+  file(MAKE_DIRECTORY "${GMAN_EXRDRIVER_WORKDIR}")
+
+  set(GMAN_EXRDRIVER_COMMAND gman_exrdriver $<TARGET_FILE:gman> "${CMAKE_CURRENT_SOURCE_DIR}/rib")
+else()
+  set(GMAN_EXRDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}")
+  set(GMAN_EXRDRIVER_COMMAND sh -c "exit 77")
+endif()
+
+add_test(NAME exrdriver
+  COMMAND ${GMAN_EXRDRIVER_COMMAND}
+  WORKING_DIRECTORY "${GMAN_EXRDRIVER_WORKDIR}")
+set_tests_properties(exrdriver PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30
+  SKIP_RETURN_CODE 77)
+
 # The driver table's own contract: gman --version lists exactly the
 # drivers this configure actually compiled, in table order.
 set(GMAN_EXPECTED_DRIVERS "tiff pnm")
@@ -1203,6 +1226,9 @@ if(GMAN_WITH_PNG)
 endif()
 if(GMAN_WITH_JPEG)
   string(APPEND GMAN_EXPECTED_DRIVERS " jpeg")
+endif()
+if(GMAN_WITH_EXR)
+  string(APPEND GMAN_EXPECTED_DRIVERS " exr")
 endif()
 
 add_executable(gman_filedrivers filedrivers_test.cpp)
@@ -1240,9 +1266,9 @@ set_tests_properties(banner PROPERTIES
 # naming the missing library), not silently. Registered unconditionally
 # and always compiled -- it reads which drivers exist from gman --version
 # at runtime instead of a compile-time #ifdef, so it runs unchanged across
-# the ON, OFF and mixed configurations. With both drivers enabled there is
-# nothing disabled to exercise, so it self-skips (exit 77); drivers-off is
-# where it runs for real.
+# the ON, OFF and mixed configurations. With every optional driver enabled
+# there is nothing disabled to exercise, so it self-skips (exit 77);
+# drivers-off is where it runs for real.
 add_executable(gman_displaydisabled displaydisabled_test.cpp)
 target_link_libraries(gman_displaydisabled PRIVATE gman_core)
 

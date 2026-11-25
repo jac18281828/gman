@@ -11,7 +11,8 @@
 include(CMakeFindDependencyMacro)
 
 # gman_core's PUBLIC link dependencies; PRIVATE ones (libtiff, libpng,
-# libjpeg) stay internal to the shared library and need no find_dependency.
+# libjpeg, OpenEXR) stay internal to the shared library and need no
+# find_dependency.
 find_dependency(ZLIB)
 find_dependency(Threads)
 

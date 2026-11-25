@@ -24,7 +24,7 @@
  * drivers are disabled is a runtime fact of this build, read back from
  * gman --version, rather than a compile-time #ifdef in this test -- the
  * same binary runs unchanged across the ON, OFF and mixed configurations.
- * With both drivers compiled there is nothing disabled to exercise, so
+ * With every optional driver compiled there is nothing disabled to exercise, so
  * this test exits 77 (SKIP_RETURN_CODE); the drivers-off CI job is where
  * it actually renders.
  */
@@ -87,8 +87,9 @@ int main(int argc, char* argv[]) {
 
   const auto pngCompiled = driverCompiled(version.output, "png");
   const auto jpegCompiled = driverCompiled(version.output, "jpeg");
+  const auto exrCompiled = driverCompiled(version.output, "exr");
 
-  if (pngCompiled && jpegCompiled) {
+  if (pngCompiled && jpegCompiled && exrCompiled) {
     // Nothing disabled to exercise in this build -- drivers-off runs it
     // for real.
     return 77;
@@ -112,6 +113,16 @@ int main(int argc, char* argv[]) {
     check(run.output.find("Display \"jpg\": built without libjpeg") != std::string::npos,
           "the failure names the disabled jpeg driver");
     check(!fileExists(output), "a disabled JPEG driver writes no file");
+  }
+
+  if (!exrCompiled) {
+    const std::string output = "x.exr";
+    std::remove(output.c_str());
+    GMANRunResult const run = runCaptured(gman, {ribDir + "/displaydisabled_exr.rib"});
+    check(run.exitStatus != 0, "a disabled OpenEXR driver fails the render");
+    check(run.output.find("Display \"exr\": built without OpenEXR") != std::string::npos,
+          "the failure names the disabled exr driver");
+    check(!fileExists(output), "a disabled OpenEXR driver writes no file");
   }
 
   return checkSummary("disabled file drivers fail loudly");

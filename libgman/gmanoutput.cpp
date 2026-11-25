@@ -59,11 +59,13 @@ namespace {
 constexpr std::uint32_t kDitherSeed = 0x5eed;
 
 // What a refusal rule may ask of the output: the name an error gives it and
-// the widest sample and the float it writes.
+// the widest sample, the float it writes and whether it ignores a nonzero
+// request.
 struct QuantizeTraits {
   std::string_view displayName;
   int bits;
   bool writesFloat;
+  bool doesNotQuantize;
 };
 
 struct QuantizeRefusal {
@@ -83,6 +85,12 @@ auto const kQuantizeRefusals = std::to_array<QuantizeRefusal>({
     {[](QuantizeTraits const& t, GMANQuantize const& q) { return q.one == 0 && !t.writesFloat; }, RIE_INCAPABLE,
      [](QuantizeTraits const& t, GMANQuantize const&) {
        return std::format("{} writes integer samples; Quantize one 0 cannot be honoured", t.displayName);
+     }},
+    {[](QuantizeTraits const& t, GMANQuantize const& q) { return q.one > 0 && t.doesNotQuantize; }, RIE_INCAPABLE,
+     [](QuantizeTraits const& t, GMANQuantize const& q) {
+       return std::format("{} does not quantize; Quantize one {} cannot be honoured; use Quantize \"rgba\" 0 0 0 0 or "
+                          "omit it",
+                          t.displayName, q.one);
      }},
     {[](QuantizeTraits const&, GMANQuantize const& q) { return q.one > 0 && q.min < 0; }, RIE_RANGE,
      [](QuantizeTraits const&, GMANQuantize const& q) {
@@ -156,7 +164,8 @@ namespace gman {
 void checkQuantize(GMANOutput const& output, GMANQuantize const& quantize) {
   FileDriverEntry const* const entry = fileDriverEntry(output);
   QuantizeTraits const traits{entry != nullptr ? std::string_view(entry->displayName) : "output",
-                              output.maxBitsPerSample(), output.writesFloat()};
+                              output.maxBitsPerSample(), output.writesFloat(),
+                              entry != nullptr && entry->doesNotQuantize};
   for (QuantizeRefusal const& refusal : kQuantizeRefusals) {
     if (refusal.applies(traits, quantize)) {
       throw GMANError(refusal.code, RIE_ERROR, refusal.message(traits, quantize).c_str());

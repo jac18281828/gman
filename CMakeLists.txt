@@ -112,7 +112,11 @@ set(GMAN_SOURCE_DIRS
 # driver. It declares GMAN_WITH_<NAME>, defaulting to whether <name>'s
 # library was found; a FATAL_ERROR names that library when the option is
 # forced ON without it; once enabled, it adds the driver's source and links
-# its library PRIVATE on gman_core. It also sets the
+# its library PRIVATE on gman_core. OPT_IN instead defaults the option OFF
+# and looks for the library, with the FIND_PACKAGE arguments, only when the
+# option is ON, so a default configure never reads that library's CMake
+# files; LIBRARY names the library in the FATAL_ERROR and TARGET is the
+# imported target to link. It also sets the
 # GMAN_<NAME>_INCLUDE/FACTORY_DEFINITION/FACTORY_REF/MATCHER variables
 # gmanfiledrivers.cpp.in's configure_file below substitutes -- empty and
 # "nullptr" when disabled, so the generated table never has to preprocess a
@@ -121,11 +125,32 @@ set(GMAN_SOURCE_DIRS
 # ---------------------------------------------------------------------------
 
 function(gman_add_file_driver name)
+  cmake_parse_arguments(PARSE_ARGV 1 driver "OPT_IN" "LIBRARY;TARGET" "FIND_PACKAGE")
   string(TOUPPER "${name}" upper)
+  set(libraryName "lib${name}")
+  set(linkTarget "${upper}::${upper}")
+  if(driver_LIBRARY)
+    set(libraryName "${driver_LIBRARY}")
+  endif()
+  if(driver_TARGET)
+    set(linkTarget "${driver_TARGET}")
+  endif()
 
-  option(GMAN_WITH_${upper} "Build the ${upper} display driver" ${${upper}_FOUND})
-  if(GMAN_WITH_${upper} AND NOT ${upper}_FOUND)
-    message(FATAL_ERROR "GMAN_WITH_${upper} is ON but lib${name} was not found")
+  if(driver_OPT_IN)
+    option(GMAN_WITH_${upper} "Build the ${upper} display driver" OFF)
+    if(GMAN_WITH_${upper})
+      find_package(${driver_FIND_PACKAGE})
+    endif()
+    set(libraryFound FALSE)
+    if(TARGET ${linkTarget})
+      set(libraryFound TRUE)
+    endif()
+  else()
+    option(GMAN_WITH_${upper} "Build the ${upper} display driver" ${${upper}_FOUND})
+    set(libraryFound ${${upper}_FOUND})
+  endif()
+  if(GMAN_WITH_${upper} AND NOT libraryFound)
+    message(FATAL_ERROR "GMAN_WITH_${upper} is ON but ${libraryName} was not found")
   endif()
 
   set(GMAN_${upper}_INCLUDE "" PARENT_SCOPE)
@@ -146,7 +171,7 @@ function(gman_add_file_driver name)
   set(GMAN_${upper}_MATCHER "&isOutputOf<gman::Output${upper}>" PARENT_SCOPE)
 
   target_sources(gman_core PRIVATE "libgman/gmanoutput${name}.cpp")
-  target_link_libraries(gman_core PRIVATE ${upper}::${upper})
+  target_link_libraries(gman_core PRIVATE ${linkTarget})
 endfunction()
 
 # ---------------------------------------------------------------------------
@@ -263,9 +288,10 @@ target_link_libraries(gman_core PRIVATE TIFF::TIFF)
 
 gman_add_file_driver(png)
 gman_add_file_driver(jpeg)
+gman_add_file_driver(exr OPT_IN LIBRARY OpenEXR TARGET OpenEXR::OpenEXR FIND_PACKAGE OpenEXR 3.1 CONFIG)
 
 # The file-Display driver table -- see libgman/gmanfiledrivers.cpp.in for
-# the design; fixed order tiff, pnm, png, jpeg.
+# the design; fixed order tiff, pnm, png, jpeg, exr.
 configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/libgman/gmanfiledrivers.cpp.in"
   "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp"
