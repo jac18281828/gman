@@ -21,8 +21,7 @@
 /*
  * A RIB parameter supplied with fewer values than one element of its
  * declared type makes a consumer read past the array. The parser is expected
- * to drop that one parameter with a logged error naming the request and the
- * token, and to carry on with the request and the file.
+ * to stop the file with RIE_CONSISTENCY, naming the request and the token.
  *
  * The two controls bound the rule: exactly one element's worth of values and
  * more than that are both accepted without a word, since a consumer reads
@@ -51,5 +50,5 @@ int main(int argc, char* argv[]) {
   paramrejection::checkAcceptedParameter(gman, dir, "paramshort_option_pair_exact.rib");
   paramrejection::checkAcceptedParameter(gman, dir, "paramshort_option_pair_over.rib");
 
-  return checkSummary("A parameter shorter than one element of its type is dropped");
+  return checkSummary("A parameter shorter than one element of its type stops the file");
 }

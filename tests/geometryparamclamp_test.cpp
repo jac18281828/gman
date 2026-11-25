@@ -22,17 +22,16 @@
  * Guards against Polygon and the seven quadrics building their
  * GMANParameterList with no suppliedCounts: without it, a short
  * RIB-supplied array would read past its own allocation (ASan
- * heap-buffer-overflow in copy_float) instead of clamping the way
- * tests/paramclamp_test.cpp's six protected requests do. gman warns
- * once, naming the parameter and both lengths, and clamps and
- * zero-fills instead, for every one of the eight.
+ * heap-buffer-overflow in copy_float) instead of stopping the file the way
+ * tests/paramclamp_test.cpp's six protected requests do. gman stops the
+ * file with RIE_CONSISTENCY, naming the parameter and both lengths, and
+ * writes no image, for every one of the eight.
  *
  * Each fixture runs out of process under a timeout (tests/rungman.h), so
  * a regression that reintroduces the overflow shows up as a crash under
  * this test's own bound, not just under the debug preset's ASan build.
  *
- * A clamped request degrades instead of vanishing: each fixture still
- * covers pixels where its primitive lands, and the scene completes past it.
+ * All eight fixtures stop the file and write no image.
  */
 
 #include <cstdio>
@@ -72,5 +71,5 @@ int main(int argc, char* argv[]) {
     paramrejection::checkStoppedShortArray(gman, dir, fixture.file, fixture.expectedError);
   }
 
-  return checkSummary("Polygon and the seven quadrics clamp a short RIB-supplied parameter array");
+  return checkSummary("Polygon and the seven quadrics stop the file on a short RIB-supplied parameter array");
 }

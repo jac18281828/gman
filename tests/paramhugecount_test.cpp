@@ -22,9 +22,9 @@
  * A RIB parameter declaring more values than an int can count, such as
  * "point[1000000000]", multiplies out past INT_MAX in the dictionary's
  * allocation arithmetic. The parser is expected to compare the supplied
- * count with the declared minimum in 64 bits and drop the parameter with a
- * logged error naming the request and the token, so no consumer reads the
- * overflowed size.
+ * count with the declared minimum in 64 bits and stop the file with
+ * RIE_CONSISTENCY, naming the request and the token, so no consumer reads
+ * the overflowed size.
  *
  * Each fixture supplies one point; none allocates the declared size.
  */
@@ -48,5 +48,5 @@ int main(int argc, char* argv[]) {
   paramrejection::checkStoppedParameter(gman, dir, "paramhuge_display.rib", "Display", "point[1000000000] cloud");
   paramrejection::checkStoppedParameter(gman, dir, "paramhuge_surface.rib", "Surface", "point[1000000000] cloud");
 
-  return checkSummary("A parameter declaring more than an int can count is dropped");
+  return checkSummary("A parameter declaring more than an int can count stops the file");
 }

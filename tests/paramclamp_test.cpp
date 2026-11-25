@@ -22,8 +22,8 @@
  * Guards against a RIB-supplied parameter array shorter than its
  * declared class making GMANParameterList::copy_float/copy_integer/
  * copy_string read past the array's own allocation (ASan
- * heap-buffer-overflow). gman warns once, naming the parameter and both
- * lengths, and clamps and zero-fills instead. Bicubic is covered
+ * heap-buffer-overflow). gman stops the file with RIE_CONSISTENCY, naming
+ * the parameter and both lengths, and writes no image. Bicubic is covered
  * separately from bilinear because
  * RiPatchV derives a different required count from the same code path (16
  * versus 4); patch_param_reorder.rib additionally proves the count stays
@@ -37,10 +37,9 @@
  * rather than a read of whatever heap byte happened to follow the
  * allocation.
  *
- * A clamped request degrades instead of vanishing: each fixture that draws
- * still covers pixels where its request lands, and the scene completes past
- * it. The two rejected GeneralPolygon requests draw nothing by design and
- * carry only the completion check.
+ * A short array stops the file: each of those fixtures writes no image. The
+ * two GeneralPolygon requests with a bad nverts still warn and exit 0; they
+ * draw nothing by design and carry only the completion check.
  */
 
 #include <cstdio>
@@ -122,9 +121,9 @@ int main(int argc, char* argv[]) {
 
   // patch_param_reorder.rib's other three parameters ("N", "Cs", "st") are
   // each fully supplied; the map reordering parseParameterList's own
-  // std::map performs must not spuriously clamp one of them because a
-  // counts array built in the wrong order lined a full-length value up
-  // with a different key's short count.
+  // std::map performs must not spuriously stop the file on one of them
+  // because a counts array built in the wrong order lined a full-length
+  // value up with a different key's short count.
   {
     GMANRunResult r = runCapturingOutput(gman, dir + "/patch_param_reorder.rib", 10);
     check(countOccurrences(r.output, "Parameter \"") == 1,
@@ -133,5 +132,5 @@ int main(int argc, char* argv[]) {
           "would have named instead");
   }
 
-  return checkSummary("RIB-supplied parameter array clamp holds");
+  return checkSummary("A RIB-supplied parameter array shorter than its declaration stops the file");
 }

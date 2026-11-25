@@ -22,16 +22,17 @@
  * A RIB parameter whose value is a string where its token declares a number,
  * or a number where it declares a string, is stored by its literal and read
  * by its declaration, so a consumer reads memory as the wrong type. The
- * parser is expected to drop that one parameter with a logged error naming
- * the request and the token, and to dispatch the rest of the request and
- * carry on with the file.
+ * parser is expected to stop the file with RIE_CONSISTENCY, naming the
+ * request and the token, before any image is written.
  *
- * The Display fixture proves the request survives: dropping the whole
- * request would leave no display, and the render would fail.
+ * The Display fixture shows the stop holds for a Display request as well as
+ * an Option, Hider or Surface one: the file ends at the bad parameter.
  *
- * The final check parses the Surface fixture in process against a
- * GMANRenderManImpl subclass overriding RiSurfaceV, to see the parameters
- * the dispatched request actually carries.
+ * The final checks parse the Surface fixture in process against a
+ * GMANRenderManImpl subclass overriding RiSurfaceV. The parse throws
+ * RIE_CONSISTENCY at the bad request after the Surface before it has
+ * dispatched; a well-formed control dispatches both requests and the second
+ * carries its three parameters.
  */
 
 #include <cstdio>
@@ -128,5 +129,5 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  return checkSummary("A parameter whose literal kind contradicts its declaration is dropped");
+  return checkSummary("A parameter whose literal kind contradicts its declaration stops the file");
 }

@@ -26,7 +26,10 @@
  *
  * checkStoppedParameter expects the parser to stop the file at one
  * parameter: failure exit, an RIE_CONSISTENCY line naming the request and the
- * token as written, and no image. checkAcceptedParameter expects the same
+ * token as written, and no image. checkStoppedShortArray expects the parser
+ * to stop the file at a parameter array shorter than its declared length:
+ * failure exit, the expected text naming the parameter and both lengths,
+ * RIE_CONSISTENCY, and no image. checkAcceptedParameter expects the same
  * fixture shape to pass without an ERROR line.
  */
 

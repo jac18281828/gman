@@ -26,11 +26,12 @@
  * expected to warn once, naming the parameter and both lengths, and still
  * truncate exactly as before.
  *
- * The second fixture re-runs the existing under-supply warning verbatim,
- * proving the new over-supply branch leaves that message untouched.
+ * The second fixture checks the under-supply error verbatim, proving the
+ * new over-supply branch leaves that message untouched: the short array
+ * stops the file and writes no image.
  *
- * A truncated request still draws: each fixture covers pixels where its
- * sphere lands, and the scene completes past it.
+ * A truncated request still draws: the oversupply fixture covers pixels
+ * where its sphere lands, and the scene completes past it.
  */
 
 #include <cstdio>
