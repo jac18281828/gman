@@ -152,7 +152,10 @@ CheckOptions:
     ^::gets$,,build strings with std::string and std::format, not a
     hand-sized buffer
   # A file includes a library's public header, never its configuration
-  # header: <png.h>, not <pngconf.h>. strcasecmp is POSIX with no std:: form,
-  # and macOS and Linux declare it in different headers. Each entry anchors at
-  # a / because clang-tidy matches it as a path suffix.
-  misc-include-cleaner.IgnoreHeaders: '/pngconf\.h;/pnglibconf\.h;/tiff\.h;/tiffconf\.h;/tiffvers\.h;/jconfig\.h;/jmorecfg\.h;/zconf\.h;/_?strings\.h'
+  # header: <png.h>, not <pngconf.h>. CLI11 is the same: a file includes the
+  # umbrella <CLI/CLI.hpp>, which carries the inline definitions CLI11 links
+  # against, while 2.4.1 names a component header as each symbol's provider.
+  # strcasecmp is POSIX with no std:: form, and macOS and Linux declare it in
+  # different headers. Each entry anchors at a / because clang-tidy matches it
+  # as a path suffix.
+  misc-include-cleaner.IgnoreHeaders: '/pngconf\.h;/pnglibconf\.h;/tiff\.h;/tiffconf\.h;/tiffvers\.h;/jconfig\.h;/jmorecfg\.h;/zconf\.h;/_?strings\.h;/CLI/[A-Za-z]+\.hpp'

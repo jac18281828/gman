@@ -36,9 +36,7 @@
 #include <utility>
 #include <vector>
 
-#include <CLI/App.hpp>
-#include <CLI/Error.hpp>
-#include <CLI/Option.hpp>
+#include <CLI/CLI.hpp>
 
 #include "gmanerror.h"
 #include "gmanfiledrivers.h"
