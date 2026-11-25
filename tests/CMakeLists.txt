@@ -1270,6 +1270,21 @@ set_tests_properties(commandline PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_commandlinerun commandlinerun_test.cpp)
+target_link_libraries(gman_commandlinerun PRIVATE gman_commandline_module)
+
+set(GMAN_COMMANDLINERUN_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/commandlinerun-run")
+file(MAKE_DIRECTORY "${GMAN_COMMANDLINERUN_WORKDIR}")
+
+add_test(NAME commandlinerun
+  COMMAND gman_commandlinerun $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
+  WORKING_DIRECTORY "${GMAN_COMMANDLINERUN_WORKDIR}")
+set_tests_properties(commandlinerun PROPERTIES
+  ENVIRONMENT "${GMAN_PHASE2_ENV}"
+  LABELS render
+  TIMEOUT 120)
+
 # A known but disabled driver's extension must fail loudly (RIE_BADFILE,
 # naming the missing library), not silently. Registered unconditionally
 # and always compiled -- it reads which drivers exist from gman --version
