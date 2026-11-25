@@ -159,46 +159,20 @@ gman -r gmanraytracer first.rib
 
 ## What GMAN renders
 
-- **Geometry.** `Polygon`, `GeneralPolygon`, `PointsPolygons`, `PointsGeneralPolygons` and the seven
-  quadrics, `Sphere`, `Cone`, `Cylinder`, `Hyperboloid`, `Paraboloid`, `Disk` and `Torus`, under
-  every renderer. `Patch` and `PatchMesh`, bilinear and bicubic, and `NuPatch` under the z-buffer.
-  A polygon request's per-vertex `"N"` shades it smoothly under the z-buffer, the ray tracer and the
-  path tracer. Under the ray tracer and the path tracer, the polygon's shadows toward lights on its
-  normals' side leave from the smooth surface those normals imply, keeping a coarse mesh's
-  terminator off its facets, and a shadow ray from a facet turned from the light passes the facet
-  of its own mesh it leaves through.
-- **Surface shaders.** `matte`, `plastic`, `paintedplastic`, `metal` and `shinymetal` under every
-  renderer; `glass` and `mirror` trace rays, so they need the ray tracer or the path tracer.
-  `paintedplastic`'s `"string opacityname"` names a map that cuts a surface out under the ray
-  tracer and the path tracer.
-  `paintedplastic`'s `"string normalname"` names a tangent-space normal map that bends its shading
-  normal under the ray tracer and the path tracer, with `"float normalgreendown" [1]` for a
-  DirectX-convention map. A light the map tilts toward from beyond the surface's smooth horizon
-  fades to zero at the smooth terminator rather than leaking through, and a bent normal that faces
-  away from the viewer turns toward the viewer by the least amount that keeps its reflection above
-  the geometric surface.
-- **Light shaders.** `ambientlight`, `distantlight`, `pointlight` and `spotlight`, and
-  `AreaLightSource "arealight"`, which makes the `Sphere` or `Disk` after it glow under the path
-  tracer.
-- **Imager shaders.** `Imager "background" "background" [r g b]` places a colour, white by default,
-  behind every pixel's uncovered part under every renderer, after `Exposure` and before `Quantize`;
-  BMRT's `"color bgcolor"` multiplies it.
-- **Three renderers.** `gmanzbuffer`, the default preview; `gmanraytracer`, with shadows,
-  reflection, refraction and transparency; and `gmanpathtracer`, which adds light bounced off every
-  surface, soft shadows from area lights and glossy reflection.
-- **Bounce light.** Under the ray tracer, `Option "render" "string indirect" ["radiosity"]` adds a
-  radiosity pass: it solves the diffuse light bouncing between surfaces, colour bleeding included,
-  and each surface picks it up through `ambient()`, weighted by its `Ka`.
-  `Option "radiosity" "float elementsize"` sets the solver's patch size, an eighth of the scene by
-  default. Set `Ka` equal to `Kd` and drop the `ambientlight`, which the pass replaces.
-- **Antialiasing.** `PixelSamples` supersamples; `PixelFilter` reconstructs through box, triangle,
-  Gaussian, Catmull-Rom or sinc.
-- **Textures.** `texture()` and `environment()` read maps written by `MakeTexture` and
-  `MakeLatLongEnvironment`.
-- **RIB.** Plain or gzip'd, with `ReadArchive`. An unrecognized request warns once and is skipped.
-- **Image drivers.** TIFF, PNM, PNG and JPEG, and OpenEXR as an opt-in build option;
-  `gman --version` lists the ones built in. PNG stores straight alpha, TIFF associated alpha, and JPEG
-  and PNM the colour over black.
+- **Renderers.** The default `gmanzbuffer`, `gmanraytracer` and `gmanpathtracer`.
+- **Geometry.** Polygons, the seven quadrics and, under the z-buffer, bilinear, bicubic and NURBS
+  patches. Per-vertex `"N"` shades smoothly.
+- **Surfaces.** `matte`, `plastic`, `metal`, `shinymetal`, `glass`, `mirror` and `paintedplastic`,
+  which takes texture, opacity and normal maps.
+- **Lights.** Ambient, distant, point, spot and area lights.
+- **Imager.** `background`, which fills each pixel's uncovered part.
+- **Bounce light.** The path tracer, or a radiosity pass under the ray tracer:
+  `Option "render" "string indirect" ["radiosity"]`.
+- **Antialiasing.** `PixelSamples` through a box, triangle, Gaussian, Catmull-Rom or sinc filter.
+- **Textures.** Maps written by `MakeTexture` and `MakeLatLongEnvironment`.
+- **RIB.** Plain or gzip'd, with `ReadArchive`.
+- **Output.** TIFF at 8 bits, 16 bits or float, PNG, JPEG and PNM, and OpenEXR as an opt-in build
+  option.
 
 ## Render
 
