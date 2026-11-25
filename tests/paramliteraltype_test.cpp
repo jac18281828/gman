@@ -25,14 +25,11 @@
  * parser is expected to stop the file with RIE_CONSISTENCY, naming the
  * request and the token, before any image is written.
  *
- * The Display fixture shows the stop holds for a Display request as well as
- * an Option, Hider or Surface one: the file ends at the bad parameter.
- *
  * The final checks parse the Surface fixture in process against a
- * GMANRenderManImpl subclass overriding RiSurfaceV. The parse throws
- * RIE_CONSISTENCY at the bad request after the Surface before it has
- * dispatched; a well-formed control dispatches both requests and the second
- * carries its three parameters.
+ * GMANRenderManImpl subclass overriding RiSurfaceV. The Surface before the
+ * bad request dispatches, then the parse throws RIE_CONSISTENCY at the bad
+ * one; a well-formed control dispatches both requests and the second carries
+ * its three parameters.
  */
 
 #include <cstdio>

@@ -30,8 +30,6 @@
  * Each fixture runs out of process under a timeout (tests/rungman.h), so
  * a regression that reintroduces the overflow shows up as a crash under
  * this test's own bound, not just under the debug preset's ASan build.
- *
- * All eight fixtures stop the file and write no image.
  */
 
 #include <cstdio>

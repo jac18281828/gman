@@ -37,9 +37,8 @@
  * rather than a read of whatever heap byte happened to follow the
  * allocation.
  *
- * A short array stops the file: each of those fixtures writes no image. The
- * two GeneralPolygon requests with a bad nverts still warn and exit 0; they
- * draw nothing by design and carry only the completion check.
+ * The two GeneralPolygon requests with a bad nverts warn and exit 0 instead:
+ * they draw nothing by design and carry only the completion check.
  */
 
 #include <cstdio>
