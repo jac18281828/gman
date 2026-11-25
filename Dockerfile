@@ -30,7 +30,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     build-essential clang lld cmake ninja-build \
     gdb python3 python3-venv \
     valgrind \
-    libtiff-dev libpng-dev libjpeg-dev zlib1g-dev \
+    libtiff-dev libpng-dev libjpeg-dev libopenexr-dev zlib1g-dev \
     nodejs npm \
     && \
     apt clean && \
