@@ -512,8 +512,12 @@ set_target_properties(gman_rib PROPERTIES OUTPUT_NAME "gmanrib")
 # gman — the driver
 # ---------------------------------------------------------------------------
 
+add_library(gman_commandline_module STATIC gman/gmancommandline.cpp)
+target_include_directories(gman_commandline_module PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/gman")
+target_link_libraries(gman_commandline_module PUBLIC gman_core PRIVATE CLI11::CLI11)
+
 add_executable(gman gman/gman.cpp)
-target_link_libraries(gman PRIVATE gman_core CLI11::CLI11)
+target_link_libraries(gman PRIVATE gman_core gman_commandline_module)
 
 # gman --version reports gman::fileDrivers(), the driver table's own private
 # contract, and PROJECT_VERSION -- neither is part of gman_core's public API.

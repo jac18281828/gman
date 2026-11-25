@@ -24,20 +24,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include <algorithm>
-#include <cstddef>
 #include <cstdlib>
 #include <iostream>
-#include <iterator>
 #include <memory>
-#include <optional>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
-#include <CLI/CLI.hpp>
-
+#include "gmancommandline.h"
 #include "gmanerror.h"
 #include "gmanfiledrivers.h"
 #include "gmanlog.h"
@@ -46,9 +40,6 @@
 #include "ri.h"
 
 namespace {
-
-std::string const valuelessFlagDefault = "{}";
-std::string_view const emptyInlineRenderer = "--renderer=";
 
 // A path of four or more characters whose fourth-from-last character is
 // '.' has those four characters replaced with ".log"; every other path
@@ -72,197 +63,6 @@ int printVersion() {
   return EXIT_SUCCESS;
 }
 
-// True when --version appears anywhere in argv[1..argc), ahead of the
-// banner and every other flag: version reporting parses no files and
-// touches nothing else main sets up.
-bool hasVersionFlag(int argc, char* argv[]) {
-  for (int i = 1; i < argc; ++i) {
-    if (std::string_view(argv[i]) == "--version") {
-      return true;
-    }
-  }
-  return false;
-}
-
-struct DeclaredOptions {
-  CLI::Option* help;
-  CLI::Option* debug;
-  CLI::Option* info;
-  CLI::Option* warning;
-  CLI::Option* error;
-  CLI::Option* quiet;
-  CLI::Option* logFile;
-  CLI::Option* renderer;
-};
-
-CLI::Option* declareValuelessFlag(CLI::App& app, std::string const& names, std::string const& description) {
-  return app.add_flag(names + valuelessFlagDefault)->description(description)->disable_flag_override();
-}
-
-CLI::Option* declareRenderer(CLI::App& app, std::string const& names, std::string const& description) {
-  return app.add_option(names)
-      ->description(description)
-      ->type_name("renderer")
-      ->multi_option_policy(CLI::MultiOptionPolicy::TakeLast);
-}
-
-DeclaredOptions declareOptions(CLI::App& app) {
-  app.set_help_flag();
-  app.prefix_command();
-  return DeclaredOptions{
-      declareValuelessFlag(app, "-h,--help", "print this help message."),
-      declareValuelessFlag(app, "-d,--debug", "set logging to: debug output."),
-      declareValuelessFlag(app, "-i,--info", "set logging to: information output."),
-      declareValuelessFlag(app, "-w,--warning", "set logging to: warning output."),
-      declareValuelessFlag(app, "-e,--error", "set logging to: error output."),
-      declareValuelessFlag(app, "-q,--quiet", "set logging to: quiet, only report disasters."),
-      declareValuelessFlag(app, "-l,--log-file", "enable a log based on the filename of the rib."),
-      declareRenderer(app, "-r,--renderer", "choose the renderer plugin (default: gmanzbuffer)."),
-  };
-}
-
-std::optional<GMANLogLevel> levelOf(DeclaredOptions const& declared, CLI::Option const* option) {
-  if (option == declared.debug) {
-    return LOGLVL_DEBUG;
-  }
-  if (option == declared.info) {
-    return LOGLVL_INFO;
-  }
-  if (option == declared.warning) {
-    return LOGLVL_WARNING;
-  }
-  if (option == declared.error) {
-    return LOGLVL_ERROR;
-  }
-  if (option == declared.quiet) {
-    return LOGLVL_DISASTER;
-  }
-  return std::nullopt;
-}
-
-enum class Outcome { run, help, unrecognized, missingRenderer, emptyRenderer };
-
-struct CommandLine {
-  Outcome outcome = Outcome::run;
-  std::string unrecognized;
-  std::optional<GMANLogLevel> level;
-  bool writeLog = false;
-  std::optional<std::string> renderer;
-  int firstFile = 0;
-};
-
-bool givesFlagAValue(CLI::ArgumentMismatch const& error) {
-  return std::string_view(error.what()).ends_with("disallowed flag override");
-}
-
-CommandLine unrecognizedFlag(std::string token) {
-  CommandLine commandLine;
-  commandLine.outcome = Outcome::unrecognized;
-  commandLine.unrecognized = std::move(token);
-  return commandLine;
-}
-
-CommandLine readParseOrder(CLI::App const& app, DeclaredOptions const& declared, int firstFile) {
-  CommandLine commandLine;
-  commandLine.firstFile = firstFile;
-  std::size_t renderers = 0;
-  for (CLI::Option const* occurrence : app.parse_order()) {
-    if (occurrence == declared.help) {
-      commandLine.outcome = Outcome::help;
-      return commandLine;
-    }
-    if (occurrence == declared.logFile) {
-      commandLine.writeLog = true;
-    } else if (occurrence == declared.renderer) {
-      std::string const& name = declared.renderer->results()[renderers++];
-      if (name.empty()) {
-        commandLine.outcome = Outcome::emptyRenderer;
-        return commandLine;
-      }
-      commandLine.renderer = name;
-    } else {
-      commandLine.level = levelOf(declared, occurrence);
-    }
-  }
-  return commandLine;
-}
-
-CommandLine parseCommandLine(int argc, char* argv[]) {
-  CLI::App app;
-  DeclaredOptions const declared = declareOptions(app);
-
-  std::vector<std::string> args(std::make_reverse_iterator(argv + argc), std::make_reverse_iterator(argv + 1));
-  bool renderNameMissing = false;
-  bool flagGivenValue = false;
-  try {
-    app.parse(args);
-  } catch (CLI::ArgumentMismatch const& error) {
-    (givesFlagAValue(error) ? flagGivenValue : renderNameMissing) = true;
-  }
-  int const flagsEnd = argc - static_cast<int>(args.size());
-
-  std::vector<std::string> const leftover = app.remaining();
-  if (!leftover.empty() && leftover.front().starts_with('-')) {
-    return unrecognizedFlag(leftover.front());
-  }
-  if (flagGivenValue) {
-    return unrecognizedFlag(argv[flagsEnd - 1]);
-  }
-
-  if (std::any_of(argv + 1, argv + flagsEnd, [](char const* arg) { return arg == emptyInlineRenderer; })) {
-    CommandLine commandLine;
-    commandLine.outcome = Outcome::emptyRenderer;
-    return commandLine;
-  }
-  CommandLine commandLine = readParseOrder(app, declared, flagsEnd);
-  if (commandLine.outcome == Outcome::run && renderNameMissing) {
-    commandLine.outcome = Outcome::missingRenderer;
-  }
-  return commandLine;
-}
-
-bool takesValue(CLI::Option const& option) { return option.get_items_expected_max() > 0; }
-
-std::string optionNames(CLI::Option const& option) {
-  std::string names;
-  for (std::string const& name : option.get_snames()) {
-    names += (names.empty() ? "-" : ", -") + name;
-  }
-  for (std::string const& name : option.get_lnames()) {
-    names += (names.empty() ? "--" : ", --") + name;
-  }
-  if (takesValue(option)) {
-    names += " " + option.get_type_name();
-  }
-  return names;
-}
-
-std::string synopsis(CLI::App const& app) {
-  std::string flags;
-  std::string valued;
-  for (CLI::Option const* option : app.get_options()) {
-    std::string const& letter = option->get_snames().front();
-    if (takesValue(*option)) {
-      valued += " [-" + letter + " " + option->get_type_name() + "]";
-    } else {
-      flags += letter;
-    }
-  }
-  return "-[" + flags + "]" + valued + " [--version] files ...";
-}
-
-void usage(char const* myname) {
-  CLI::App app;
-  declareOptions(app);
-
-  std::cerr << myname << ": " << synopsis(app) << std::endl;
-  std::cerr << "\tParse RIB input files." << std::endl << std::endl;
-  for (CLI::Option const* option : app.get_options()) {
-    std::cerr << '\t' << optionNames(*option) << " - " << option->get_description() << std::endl;
-  }
-  std::cerr << "\t--version - print the version and compiled drivers, then exit." << std::endl;
-}
-
 // Thrown by handleReport once a report has already printed, so main's
 // catch sites can end the file without printing it again.
 class ReportedStop : public GMANError {
@@ -284,81 +84,79 @@ RtVoid handleReport(RtInt code, RtInt severity, char const* message) {
 } // namespace
 
 int main(int argc, char* argv[]) {
+  using Outcome = gman::CommandLine::Outcome;
 
-  if (hasVersionFlag(argc, argv)) {
+  std::vector<std::string> const arguments(argv + 1, argv + argc);
+  gman::CommandLine const commandLine = gman::parseCommandLine(arguments);
+  if (commandLine.outcome == Outcome::version) {
     return printVersion();
+  }
+  if (commandLine.outcome == Outcome::noArguments) {
+    std::cerr << gman::usageText(argv[0]);
+    return EXIT_SUCCESS;
   }
 
   int rc = EXIT_SUCCESS;
-  // handle command line arguments
-  if (argc < 2) {
-    usage(argv[0]);
-  } else {
-    try {
-      // artificial log object for log settings
-      static GMANRenderManImpl renderMan;
+  try {
+    // artificial log object for log settings
+    static GMANRenderManImpl renderMan;
 
-      renderMan.RiErrorHandler(handleReport);
+    renderMan.RiErrorHandler(handleReport);
 
-      GMANLog logObj;
+    GMANLog logObj;
 
-      // info on by default
-      logObj.setLogLevel(LOGLVL_INFO);
-      // announce the banner
-      info("gman {} -- LGPL-2.1-or-later, see COPYING\n", GMAN_PROJECT_VERSION);
+    // info on by default
+    logObj.setLogLevel(LOGLVL_INFO);
+    // announce the banner
+    info("gman {} -- LGPL-2.1-or-later, see COPYING\n", GMAN_PROJECT_VERSION);
 
-      CommandLine const commandLine = parseCommandLine(argc, argv);
-      switch (commandLine.outcome) {
-      case Outcome::help:
-        usage(argv[0]);
-        exit(EXIT_SUCCESS);
-      case Outcome::unrecognized:
-        std::cerr << argv[0] << ": unrecognized flag " << commandLine.unrecognized << std::endl;
-        usage(argv[0]);
-        return EXIT_FAILURE;
-      case Outcome::missingRenderer:
-        std::cerr << argv[0] << ": -r requires a renderer name" << std::endl;
-        return EXIT_FAILURE;
-      case Outcome::emptyRenderer:
-        std::cerr << argv[0] << ": -r requires a non-empty renderer name" << std::endl;
-        return EXIT_FAILURE;
-      case Outcome::run:
-        break;
-      }
-      if (commandLine.level) {
-        logObj.setLogLevel(*commandLine.level);
-      }
-
-      for (int i = commandLine.firstFile; i < argc; i++) {
-        try {
-          const char* ribFile = argv[i];
-          info("Parsing {}", argv[i]);
-
-          if (commandLine.writeLog) {
-            const std::string fileName = logFileNameFor(ribFile);
-            logObj.setLogFile(fileName.c_str());
-          }
-
-          std::unique_ptr<GMANRIBParse> const parser =
-              commandLine.renderer ? std::make_unique<GMANRIBParse>(renderMan, argv[i], commandLine.renderer->c_str())
-                                   : std::make_unique<GMANRIBParse>(renderMan, argv[i]);
-
-          // just parse it...
-          parser->parse();
-
-        } catch (ReportedStop&) {
-          rc = EXIT_FAILURE;
-        } catch (GMANError& e) {
-          RiErrorPrint(e.getCode(), e.getSeverity(), e.getMessage());
-          rc = EXIT_FAILURE;
-        }
-      }
-    } catch (ReportedStop&) {
-      rc = EXIT_FAILURE;
-    } catch (GMANError& e) {
-      RiErrorPrint(e.getCode(), e.getSeverity(), e.getMessage());
-      rc = EXIT_FAILURE;
+    switch (commandLine.outcome) {
+    case Outcome::help:
+      std::cerr << gman::usageText(argv[0]);
+      exit(EXIT_SUCCESS);
+    case Outcome::unrecognized:
+    case Outcome::missingRenderer:
+    case Outcome::emptyRenderer:
+      std::cerr << gman::errorText(commandLine, argv[0]);
+      return EXIT_FAILURE;
+    case Outcome::run:
+    case Outcome::version:
+    case Outcome::noArguments:
+      break;
     }
+    if (commandLine.level) {
+      logObj.setLogLevel(*commandLine.level);
+    }
+
+    for (std::string const& ribFile : commandLine.files) {
+      try {
+        info("Parsing {}", ribFile);
+
+        if (commandLine.writeLog) {
+          const std::string fileName = logFileNameFor(ribFile);
+          logObj.setLogFile(fileName.c_str());
+        }
+
+        std::unique_ptr<GMANRIBParse> const parser =
+            commandLine.renderer
+                ? std::make_unique<GMANRIBParse>(renderMan, ribFile.c_str(), commandLine.renderer->c_str())
+                : std::make_unique<GMANRIBParse>(renderMan, ribFile.c_str());
+
+        // just parse it...
+        parser->parse();
+
+      } catch (ReportedStop&) {
+        rc = EXIT_FAILURE;
+      } catch (GMANError& e) {
+        RiErrorPrint(e.getCode(), e.getSeverity(), e.getMessage());
+        rc = EXIT_FAILURE;
+      }
+    }
+  } catch (ReportedStop&) {
+    rc = EXIT_FAILURE;
+  } catch (GMANError& e) {
+    RiErrorPrint(e.getCode(), e.getSeverity(), e.getMessage());
+    rc = EXIT_FAILURE;
   }
   return rc;
 }
