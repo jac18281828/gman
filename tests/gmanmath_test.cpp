@@ -47,7 +47,6 @@ constexpr RtFloat kNaN = std::numeric_limits<RtFloat>::quiet_NaN();
 constexpr RtFloat kInf = std::numeric_limits<RtFloat>::infinity();
 constexpr RtFloat kMax = std::numeric_limits<RtFloat>::max();
 constexpr RtFloat kDenormMin = std::numeric_limits<RtFloat>::denorm_min();
-constexpr RtFloat kPi = std::numbers::pi_v<RtFloat>;
 constexpr double kTolerance = 1e-6;
 
 template <class... Args> std::string describe(std::string const& name, Args... args) {
@@ -90,8 +89,10 @@ void checkRadiansAndDegrees() {
     RtFloat degrees;
     RtFloat radians;
   };
-  const std::array angles = {Angle{45, kPi / 4},   Angle{90, kPi / 2}, Angle{180, kPi},    Angle{360, 2 * kPi},
-                             Angle{-90, -kPi / 2}, Angle{-180, -kPi},  Angle{1, kPi / 180}};
+  const std::array angles = {Angle{45, std::numbers::pi_v<RtFloat> / 4},   Angle{90, std::numbers::pi_v<RtFloat> / 2},
+                             Angle{180, std::numbers::pi_v<RtFloat>},      Angle{360, 2 * std::numbers::pi_v<RtFloat>},
+                             Angle{-90, -std::numbers::pi_v<RtFloat> / 2}, Angle{-180, -std::numbers::pi_v<RtFloat>},
+                             Angle{1, std::numbers::pi_v<RtFloat> / 180}};
   for (auto const& [degrees, radians] : angles) {
     expectNear(describe("GMANRadians", degrees), GMANRadians(degrees), radians);
     expectNear(describe("GMANDegrees", radians), GMANDegrees(radians), degrees);
@@ -116,26 +117,26 @@ void checkAtan() {
     RtFloat x;
     RtFloat expected;
   };
-  const std::array quadrants = {Quadrant{1, 1, kPi / 4},
-                                Quadrant{1, -1, 3 * kPi / 4},
-                                Quadrant{-1, -1, -3 * kPi / 4},
-                                Quadrant{-1, 1, -kPi / 4},
-                                Quadrant{1, 0, kPi / 2},
-                                Quadrant{-1, 0, -kPi / 2},
-                                Quadrant{0, -1, kPi},
-                                Quadrant{-0.0f, -1, -kPi},
+  const std::array quadrants = {Quadrant{1, 1, std::numbers::pi_v<RtFloat> / 4},
+                                Quadrant{1, -1, 3 * std::numbers::pi_v<RtFloat> / 4},
+                                Quadrant{-1, -1, -3 * std::numbers::pi_v<RtFloat> / 4},
+                                Quadrant{-1, 1, -std::numbers::pi_v<RtFloat> / 4},
+                                Quadrant{1, 0, std::numbers::pi_v<RtFloat> / 2},
+                                Quadrant{-1, 0, -std::numbers::pi_v<RtFloat> / 2},
+                                Quadrant{0, -1, std::numbers::pi_v<RtFloat>},
+                                Quadrant{-0.0f, -1, -std::numbers::pi_v<RtFloat>},
                                 Quadrant{3, 4, angle345},
-                                Quadrant{3, -4, kPi - angle345},
-                                Quadrant{-3, -4, angle345 - kPi},
+                                Quadrant{3, -4, std::numbers::pi_v<RtFloat> - angle345},
+                                Quadrant{-3, -4, angle345 - std::numbers::pi_v<RtFloat>},
                                 Quadrant{-3, 4, -angle345},
-                                Quadrant{kInf, 1, kPi / 2},
-                                Quadrant{-kInf, 1, -kPi / 2},
-                                Quadrant{1, -kInf, kPi},
-                                Quadrant{-1, -kInf, -kPi},
-                                Quadrant{kInf, kInf, kPi / 4},
-                                Quadrant{kInf, -kInf, 3 * kPi / 4},
-                                Quadrant{0, -0.0f, kPi},
-                                Quadrant{-0.0f, -0.0f, -kPi}};
+                                Quadrant{kInf, 1, std::numbers::pi_v<RtFloat> / 2},
+                                Quadrant{-kInf, 1, -std::numbers::pi_v<RtFloat> / 2},
+                                Quadrant{1, -kInf, std::numbers::pi_v<RtFloat>},
+                                Quadrant{-1, -kInf, -std::numbers::pi_v<RtFloat>},
+                                Quadrant{kInf, kInf, std::numbers::pi_v<RtFloat> / 4},
+                                Quadrant{kInf, -kInf, 3 * std::numbers::pi_v<RtFloat> / 4},
+                                Quadrant{0, -0.0f, std::numbers::pi_v<RtFloat>},
+                                Quadrant{-0.0f, -0.0f, -std::numbers::pi_v<RtFloat>}};
   for (auto const& [y, x, expected] : quadrants) {
     expectNear(describe("GMANAtan", y, x), GMANAtan(y, x), expected);
   }
@@ -165,8 +166,12 @@ void checkInversesqrt() {
     RtFloat x;
     double expected;
   };
-  const std::array inexact = {Inexact{2, 0.70710678},        Inexact{4e-20f, 5e9},        Inexact{1.0000001e-20f, 1e10},
-                              Inexact{1e-19f, 3.16227766e9}, Inexact{RI_INFINITY, 1e-19}, Inexact{kMax, 0x1p-64}};
+  const std::array inexact = {Inexact{2, std::numbers::sqrt2_v<RtFloat> / 2},
+                              Inexact{4e-20f, 5e9},
+                              Inexact{1.0000001e-20f, 1e10},
+                              Inexact{1e-19f, 3.16227766e9},
+                              Inexact{RI_INFINITY, 1e-19},
+                              Inexact{kMax, 0x1p-64}};
   for (auto const& [x, expected] : inexact) {
     expectRelative(describe("GMANInversesqrt", x), GMANInversesqrt(x), expected);
   }
