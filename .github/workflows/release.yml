@@ -38,7 +38,7 @@ jobs:
         run: |
           cmake --preset release \
             -DGMAN_BUILD_RAYTRACER=ON -DGMAN_BUILD_RADIOSITY=ON \
-            -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON \
+            -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON -DGMAN_WITH_EXR=OFF \
             -DCMAKE_MODULE_LINKER_FLAGS=-Wl,--no-undefined \
             -DCMAKE_SHARED_LINKER_FLAGS=-Wl,--no-undefined
       - name: Build
@@ -121,13 +121,16 @@ jobs:
       - name: Configure the test build
         run: |
           cmake --preset release -B build-release-test \
-            -DBUILD_TESTING=ON -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
+            -DBUILD_TESTING=ON -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON \
+            -DGMAN_WITH_EXR=OFF
       - name: Build the test build
         run: cmake --build build-release-test --parallel "$BUILD_JOBS"
       - name: Test
         run: ctest --test-dir build-release-test --output-on-failure
       - name: Configure the package build
-        run: cmake --preset release -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON
+        run: |
+          cmake --preset release \
+            -DGMAN_WITH_PNG=ON -DGMAN_WITH_JPEG=ON -DGMAN_WITH_EXR=OFF
       - name: Build the package build
         run: cmake --build build-release --parallel "$BUILD_JOBS"
       # A package built with tests on exports internals; refuse any tree not

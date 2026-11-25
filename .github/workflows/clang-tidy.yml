@@ -22,7 +22,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake ninja-build ccache \
-            libtiff-dev libpng-dev zlib1g-dev libjpeg-dev
+            libtiff-dev libpng-dev zlib1g-dev libjpeg-dev libopenexr-dev
       # Pinned so a regex verified against one clang-tidy version keeps
       # matching on the next run -- CustomFunctions first appears in 20.
       - name: Install clang-tidy
@@ -36,7 +36,7 @@ jobs:
         env:
           CC: clang
           CXX: clang++
-        run: cmake --preset dev
+        run: cmake --preset dev -DGMAN_WITH_EXR=ON
       # A regex typo in .clang-tidy's CustomFunctions would silently turn
       # the ban off and leave the tree run below green. Check each of the
       # 8 names individually instead of trusting clang-tidy's exit code
