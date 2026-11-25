@@ -213,24 +213,29 @@ directory; `gman` takes no output flag of its own.
 `-d`, `-i`, `-w`, `-e` and `-q` set the log level to debug, info (the
 default), warning, error or disaster-only; `-l` also writes a log file named
 for the RIB; `-h` prints usage; `--version` prints the version and the
-drivers built in.
+drivers built in. Each flag has a long name: `--help`, `--debug`, `--info`,
+`--warning`, `--error`, `--quiet`, `--log-file` and `--renderer`, which also
+takes `--renderer=NAME`.
 
 At the default `Clipping`, flat or narrow-z-range geometry renders
 corrupted or blank; pair it with an explicit `Clipping <near> <far>`.
 
 ## Build from source
 
-Requires CMake 3.21 or newer, a C++20 compiler with `<format>` (GCC 13 or
-Clang 17 or newer), libtiff and zlib. libpng and libjpeg are optional: a
-build without one rejects that `Display` extension with `RIE_BADFILE`, and
-`gman --version` lists the drivers compiled in. POSIX only: macOS and
-Linux.
+Requires CMake 3.24 or newer, a C++20 compiler with `<format>` (GCC 13 or
+Clang 17 or newer), libtiff, zlib and CLI11 2.4 or newer. CMake uses an
+installed CLI11 and otherwise downloads a pinned release at configure time,
+checked by its SHA-256. libpng and libjpeg are optional: a build without one
+rejects that `Display` extension with `RIE_BADFILE`, and `gman --version`
+lists the drivers compiled in. POSIX only: macOS and Linux.
 
 On Linux, install the libraries first:
 
 ```sh
-sudo apt-get install cmake libtiff-dev libpng-dev libjpeg-dev zlib1g-dev
+sudo apt-get install cmake libtiff-dev libpng-dev libjpeg-dev zlib1g-dev libcli11-dev
 ```
+
+On macOS, `brew install cli11` installs CLI11.
 
 ```sh
 cmake --preset dev
