@@ -229,9 +229,10 @@ fix it.
 To install into a prefix:
 
 ```sh
-cmake --install build --prefix /usr/local
+cmake --install build --prefix /usr/local --strip
 ```
 
+`--strip` drops the symbol table and any debug information from the installed binaries and plugins.
 The installed prefix carries `bin/gman`, the three libraries and a CMake package. A program
 links gman with `find_package(gman CONFIG REQUIRED)` and
 `target_link_libraries(app PRIVATE gman::gman_core)`, and includes
