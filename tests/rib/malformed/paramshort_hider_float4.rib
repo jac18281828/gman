@@ -1,5 +1,6 @@
 # Hider branch: "weights" is declared float[4] and supplied one value. gman is
-# expected to name the parameter, drop it and still select the hider.
+# expected to stop the file with RIE_CONSISTENCY, naming the request and the
+# parameter, and to write no image.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

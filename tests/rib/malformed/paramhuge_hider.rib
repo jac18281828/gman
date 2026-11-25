@@ -1,6 +1,7 @@
-# Hider branch: "cloud" declares three billion floats and supplies three. gman
-# is expected to name the parameter and drop it without allocating the
-# declared size.
+# Hider branch: "cloud" declares three billion floats and supplies three.
+# gman is expected to stop the file with RIE_CONSISTENCY, naming the request
+# and the parameter, without allocating the declared size and without writing
+# an image.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

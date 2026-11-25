@@ -747,8 +747,8 @@ set_tests_properties(ribmalformed PROPERTIES
   TIMEOUT 60)
 
 # Guards against a RIB-supplied parameter array shorter than its declared
-# class reading past its own allocation instead of clamping. See
-# tests/paramclamp_test.cpp.
+# class reading past its own allocation instead of stopping the file with
+# RIE_CONSISTENCY. See tests/paramclamp_test.cpp.
 add_executable(gman_paramclamp paramclamp_test.cpp)
 target_link_libraries(gman_paramclamp PRIVATE gman_core TIFF::TIFF)
 
@@ -799,7 +799,8 @@ set_tests_properties(ribcountbounds PROPERTIES
 
 # Polygon and the seven quadrics built their GMANParameterList with no
 # suppliedCounts at all, so a short array read past its own allocation
-# instead of clamping. See tests/geometryparamclamp_test.cpp.
+# instead of stopping the file with RIE_CONSISTENCY. See
+# tests/geometryparamclamp_test.cpp.
 add_executable(gman_geometryparamclamp geometryparamclamp_test.cpp)
 target_link_libraries(gman_geometryparamclamp PRIVATE gman_core TIFF::TIFF)
 
@@ -849,9 +850,9 @@ set_tests_properties(paramlistdeclaredtype PROPERTIES
   LABELS render
   TIMEOUT 60)
 
-# A RIB parameter whose literal kind contradicts its declared type is dropped
-# with a logged error; the request and the file carry on. See
-# tests/paramliteraltype_test.cpp and tests/paramrejection.h; its own final
+# A RIB parameter whose literal kind contradicts its declared type stops the
+# file with RIE_CONSISTENCY. See tests/paramliteraltype_test.cpp and
+# tests/paramrejection.h; its own final
 # check drives GMANRIBParse in process, hence gman_internal_headers and the
 # same LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
 add_executable(gman_paramliteraltype paramliteraltype_test.cpp)
@@ -882,7 +883,7 @@ set_tests_properties(ribpixelvariance PROPERTIES
   TIMEOUT 30)
 
 # A RIB parameter supplied with fewer values than one element of its declared
-# type is dropped with a logged error. See tests/paramshortcount_test.cpp.
+# type stops the file with RIE_CONSISTENCY. See tests/paramshortcount_test.cpp.
 add_executable(gman_paramshortcount paramshortcount_test.cpp)
 target_link_libraries(gman_paramshortcount PRIVATE gman_core TIFF::TIFF)
 
@@ -898,8 +899,8 @@ set_tests_properties(paramshortcount PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# A RIB parameter declaring more values than an int can count is dropped with
-# a logged error. See tests/paramhugecount_test.cpp.
+# A RIB parameter declaring more values than an int can count stops the file
+# with RIE_CONSISTENCY. See tests/paramhugecount_test.cpp.
 add_executable(gman_paramhugecount paramhugecount_test.cpp)
 target_link_libraries(gman_paramhugecount PRIVATE gman_core TIFF::TIFF)
 

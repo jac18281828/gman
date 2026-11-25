@@ -137,7 +137,7 @@ warn-and-`create()` fallback as `patchmesh_baddim.rib`. A trailing
 
 `nverts` sums to more vertices than `"P"` holds -- `GeneralPolygon`'s own
 short-`"P"` case, `patchmesh_short_p.rib`'s counterpart. Registered in
-`tests/paramclamp_test.cpp`, asserting the same clamp-and-warn behaviour.
+`tests/paramclamp_test.cpp`, asserting the same RIE_CONSISTENCY stop.
 A trailing `Sphere` follows the desync convention. Not third-party.
 
 ## malformed/pointsgeneralpolygons_short_p.rib
@@ -145,7 +145,7 @@ A trailing `Sphere` follows the desync convention. Not third-party.
 `verts`' own point count (1 + its max index) exceeds what `"P"` supplies --
 `PointsGeneralPolygons`' own short-`"P"` case, `pointspolygons_short_p.rib`'s
 counterpart. Registered in `tests/pointspolygons_test.cpp`, asserting the
-same clamp-and-warn behaviour for `PointsGeneralPolygons`' own supplied
+same RIE_CONSISTENCY stop for `PointsGeneralPolygons`' own supplied
 counts, which no other fixture checks. A trailing `Sphere` follows the
 desync convention. Not third-party.
 
@@ -178,14 +178,15 @@ desync convention. Not third-party.
 
 A bilinear `PatchMesh` of 65536 by 65536 points: `nu * nv` is 2^32, past
 `RtInt`'s range. The count saturates at `INT_MAX`, so `"P"`'s element count
-exceeds `RtInt`'s range and the file stops with `RIE_RANGE`. Registered in `tests/ribcountbounds_test.cpp`.
-A trailing `Sphere` follows the desync convention. Not third-party.
+exceeds `RtInt`'s range and the file stops with `RIE_RANGE`. Registered in
+`tests/ribcountbounds_test.cpp`. A trailing `Sphere` follows the desync
+convention. Not third-party.
 
 ## malformed/pointspolygons_declared_vertices.rib
 
 `verts` reaches vertex 2000000, so `"P"` declares 6000003 floats and supplies
-nine. The file stops with `RIE_CONSISTENCY` before `"P"` allocates. Registered in
-`tests/ribcountbounds_test.cpp`. A trailing `Sphere` follows the desync
+nine. The file stops with `RIE_CONSISTENCY` before `"P"` allocates. Registered
+in `tests/ribcountbounds_test.cpp`. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
 ## malformed/generalpolygon_declared_nverts.rib
@@ -296,10 +297,10 @@ follows the desync convention. Not third-party.
 ## malformed/nupatch_short_pw.rib
 
 `"Pw"` two values short of its declared `nu*nv*4`. Registered in
-`tests/nupatch_test.cpp`, asserting the existing `GMANParameterList`
-clamp warning fires (before `RiNuPatchV`'s own weight-positivity check
-ever runs). A trailing `Sphere` follows the desync convention. Not
-third-party.
+`tests/nupatch_test.cpp`, asserting `GMANParameterList`'s shortfall error,
+`RIE_CONSISTENCY`, fires and stops the file (before `RiNuPatchV`'s own
+weight-positivity check ever runs). A trailing `Sphere` follows the desync
+convention. Not third-party.
 
 ## malformed/nupatch_zero_weight.rib
 
