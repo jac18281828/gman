@@ -852,9 +852,9 @@ set_tests_properties(paramlistdeclaredtype PROPERTIES
 
 # A RIB parameter whose literal kind contradicts its declared type stops the
 # file with RIE_CONSISTENCY. See tests/paramliteraltype_test.cpp and
-# tests/paramrejection.h; its own final
-# check drives GMANRIBParse in process, hence gman_internal_headers and the
-# same LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
+# tests/paramrejection.h; its own final check drives GMANRIBParse in process,
+# hence gman_internal_headers and the same LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as
+# tests/basicstate.c.
 add_executable(gman_paramliteraltype paramliteraltype_test.cpp)
 target_link_libraries(gman_paramliteraltype PRIVATE gman_core gman_internal_headers TIFF::TIFF)
 
