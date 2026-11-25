@@ -22,8 +22,11 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
+#include <algorithm>
 #include <list>
+#include <memory>
 #include <string_view>
+#include <utility>
 
 #include "gmancontext.h"
 #include "gmanerror.h"
@@ -57,13 +60,15 @@ Context::Context() { active = (GMANRenderMan*)RI_NULL; }
 // this call is untouched here, so it survives for RiContext to return to;
 // nothing falls back to rendering.
 RtVoid Context::activateRibWriter() {
+  std::unique_ptr<GMANRenderMan> loaded;
   try {
-    active = loadRenderMan(kRibWriterPlugin);
+    loaded.reset(loadRenderMan(kRibWriterPlugin));
   } catch (GMANError&) {
     active = (GMANRenderMan*)RI_NULL;
     throw;
   }
-  chl.push_back(active);
+  active = loaded.get();
+  chl.push_back(std::move(loaded));
 }
 
 RtVoid Context::addContext(RtToken name) {
@@ -71,8 +76,9 @@ RtVoid Context::addContext(RtToken name) {
     activateRibWriter();
     return;
   }
-  active = new GMANRenderManImpl;
-  chl.push_back(active);
+  auto renderer = std::make_unique<GMANRenderManImpl>();
+  active = renderer.get();
+  chl.push_back(std::move(renderer));
 }
 
 RtContextHandle Context::getContext() { return (RtContextHandle)active; }
@@ -85,11 +91,9 @@ GMANRenderMan& Context::current() {
   return *active;
 }
 RtVoid Context::switchTo(RtContextHandle ch) {
-  std::list<GMANRenderMan*>::iterator first = chl.begin();
-  std::list<GMANRenderMan*>::iterator last = chl.end();
   GMANRenderMan* r = (GMANRenderMan*)ch;
-  for (; first != last; first++) {
-    if (*first == r) {
+  for (auto const& owned : chl) {
+    if (owned.get() == r) {
       active = r;
       return;
     }
@@ -98,16 +102,12 @@ RtVoid Context::switchTo(RtContextHandle ch) {
   throw(error);
 }
 RtVoid Context::removeCurrent(RtVoid) {
-  std::list<GMANRenderMan*>::iterator first = chl.begin();
-  std::list<GMANRenderMan*>::iterator last = chl.end();
-  for (; first != last; first++) {
-    if (*first == active) {
-      delete *first;
-      chl.erase(first);
-      active = (GMANRenderMan*)RI_NULL;
-      return;
-    }
+  auto const owned = std::ranges::find_if(chl, [this](auto const& context) { return context.get() == active; });
+  if (owned == chl.end()) {
+    return;
   }
+  chl.erase(owned);
+  active = (GMANRenderMan*)RI_NULL;
 }
 
 } // namespace gman

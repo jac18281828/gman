@@ -25,6 +25,7 @@
 #pragma once
 
 #include <list>
+#include <memory>
 
 #include "gmanrenderman.h"
 #include "ri.h"
@@ -33,7 +34,7 @@ namespace gman {
 
 class Context {
 private:
-  std::list<GMANRenderMan*> chl;
+  std::list<std::unique_ptr<GMANRenderMan>> chl;
   GMANRenderMan* active;
 
   // Loads the RIB-writer plugin and makes it current; clears current and

@@ -24,8 +24,11 @@
 /*
  * GMANRenderManImpl frees everything it owns: two RiWorldBegins in one
  * RiBegin/RiEnd cycle, two RiBegins and an impl destroyed before RiEnd each
- * return the live heap to its starting size. Each case runs its sequence
- * once to fill the process-lifetime caches, then measures a second run.
+ * return the live heap to its starting size. So does the C API: a
+ * RiBegin/RiEnd cycle frees its context on RiEnd, and a context still open
+ * when the process exits is freed by the C API's static destructor. Each case
+ * runs its sequence once to fill the process-lifetime caches, then measures a
+ * second run.
  *
  * The count is the heap's own, taken in process, because LeakSanitizer aborts
  * every test on arm64 macOS. Three counters serve three builds, and each is
@@ -218,6 +221,18 @@ void noEnd() {
   delete impl;
 }
 
+void capiBeginEnd() {
+  RiBegin(RI_NULL);
+  RiEnd();
+}
+
+void openContextAtExit() {
+  RiBegin(RI_NULL);
+  RiSurface("plastic", RI_NULL);
+  RiWorldBegin();
+  RiSphere(1, -1, 1, 360, RI_NULL);
+}
+
 template <typename Sequence> void checkReturnsHeap(std::string const& name, Sequence sequence) {
   sequence();
   std::ptrdiff_t const before = liveHeap();
@@ -229,9 +244,14 @@ template <typename Sequence> void checkReturnsHeap(std::string const& name, Sequ
 } // namespace
 
 int main() {
+  RiErrorHandler(RiErrorIgnore);
+
   checkReturnsHeap("two RiWorldBegins in one cycle", twoWorlds);
   checkReturnsHeap("two RiBegins", twoBegins);
   checkReturnsHeap("an impl destroyed before RiEnd", noEnd);
+  checkReturnsHeap("a C API RiBegin and RiEnd", capiBeginEnd);
+
+  openContextAtExit();
 
   return checkSummary("GMANRenderManImpl frees what it owns");
 }

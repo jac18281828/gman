@@ -280,7 +280,7 @@ set_tests_properties(rendermanpointers PROPERTIES
 # so it is its own executable. See tests/rendermanlifetime_test.cpp.
 add_executable(gman_rendermanlifetime rendermanlifetime_test.cpp)
 target_link_libraries(gman_rendermanlifetime PRIVATE gman_core gman_internal_headers)
-add_dependencies(gman_rendermanlifetime gman_zbuffer)
+add_dependencies(gman_rendermanlifetime gman_zbuffer gman_plastic)
 
 add_test(NAME rendermanlifetime
   COMMAND gman_rendermanlifetime
