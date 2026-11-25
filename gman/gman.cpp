@@ -24,6 +24,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <iostream>
@@ -47,6 +48,9 @@
 #include "ri.h"
 
 namespace {
+
+std::string const valuelessFlagDefault = "{}";
+std::string_view const emptyInlineRenderer = "--renderer=";
 
 // A path of four or more characters whose fourth-from-last character is
 // '.' has those four characters replaced with ".log"; every other path
@@ -93,8 +97,8 @@ struct DeclaredOptions {
   CLI::Option* renderer;
 };
 
-CLI::Option* declareFlag(CLI::App& app, std::string const& names, std::string const& description) {
-  return app.add_flag(names)->description(description);
+CLI::Option* declareValuelessFlag(CLI::App& app, std::string const& names, std::string const& description) {
+  return app.add_flag(names + valuelessFlagDefault)->description(description)->disable_flag_override();
 }
 
 CLI::Option* declareRenderer(CLI::App& app, std::string const& names, std::string const& description) {
@@ -108,14 +112,14 @@ DeclaredOptions declareOptions(CLI::App& app) {
   app.set_help_flag();
   app.prefix_command();
   return DeclaredOptions{
-      declareFlag(app, "-h", "print this help message."),
-      declareFlag(app, "-d", "set logging to: debug output."),
-      declareFlag(app, "-i", "set logging to: information output."),
-      declareFlag(app, "-w", "set logging to: warning output."),
-      declareFlag(app, "-e", "set logging to: error output."),
-      declareFlag(app, "-q", "set logging to: quiet, only report disasters."),
-      declareFlag(app, "-l", "enable a log based on the filename of the rib."),
-      declareRenderer(app, "-r", "choose the renderer plugin (default: gmanzbuffer)."),
+      declareValuelessFlag(app, "-h,--help", "print this help message."),
+      declareValuelessFlag(app, "-d,--debug", "set logging to: debug output."),
+      declareValuelessFlag(app, "-i,--info", "set logging to: information output."),
+      declareValuelessFlag(app, "-w,--warning", "set logging to: warning output."),
+      declareValuelessFlag(app, "-e,--error", "set logging to: error output."),
+      declareValuelessFlag(app, "-q,--quiet", "set logging to: quiet, only report disasters."),
+      declareValuelessFlag(app, "-l,--log-file", "enable a log based on the filename of the rib."),
+      declareRenderer(app, "-r,--renderer", "choose the renderer plugin (default: gmanzbuffer)."),
   };
 }
 
@@ -149,6 +153,10 @@ struct CommandLine {
   int firstFile = 0;
 };
 
+bool givesFlagAValue(CLI::ArgumentMismatch const& error) {
+  return std::string_view(error.what()).ends_with("disallowed flag override");
+}
+
 CommandLine unrecognizedFlag(std::string token) {
   CommandLine commandLine;
   commandLine.outcome = Outcome::unrecognized;
@@ -162,19 +170,28 @@ CommandLine parseCommandLine(int argc, char* argv[]) {
 
   std::vector<std::string> args(std::make_reverse_iterator(argv + argc), std::make_reverse_iterator(argv + 1));
   bool renderNameMissing = false;
+  bool flagGivenValue = false;
   try {
     app.parse(args);
-  } catch (CLI::ArgumentMismatch const&) {
-    renderNameMissing = true;
+  } catch (CLI::ArgumentMismatch const& error) {
+    (givesFlagAValue(error) ? flagGivenValue : renderNameMissing) = true;
   }
+  int const flagsEnd = argc - static_cast<int>(args.size());
 
   std::vector<std::string> const leftover = app.remaining();
   if (!leftover.empty() && leftover.front().starts_with('-')) {
     return unrecognizedFlag(leftover.front());
   }
+  if (flagGivenValue) {
+    return unrecognizedFlag(argv[flagsEnd - 1]);
+  }
 
   CommandLine commandLine;
-  commandLine.firstFile = argc - static_cast<int>(leftover.size());
+  commandLine.firstFile = flagsEnd;
+  if (std::any_of(argv + 1, argv + flagsEnd, [](char const* arg) { return arg == emptyInlineRenderer; })) {
+    commandLine.outcome = Outcome::emptyRenderer;
+    return commandLine;
+  }
   std::size_t renderers = 0;
   for (CLI::Option const* occurrence : app.parse_order()) {
     if (occurrence == declared.help) {

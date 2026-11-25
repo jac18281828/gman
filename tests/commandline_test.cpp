@@ -46,19 +46,20 @@ std::string const sphereLog = "sphere.log";
 std::string gman;
 std::string banner;
 std::string versionText;
+std::string driverList;
 
 std::string usageText(std::string const& name) {
   return name + ": -[hdiweql] [-r renderer] [--version] files ...\n"
                 "\tParse RIB input files.\n"
                 "\n"
-                "\t-h - print this help message.\n"
-                "\t-d - set logging to: debug output.\n"
-                "\t-i - set logging to: information output.\n"
-                "\t-w - set logging to: warning output.\n"
-                "\t-e - set logging to: error output.\n"
-                "\t-q - set logging to: quiet, only report disasters.\n"
-                "\t-l - enable a log based on the filename of the rib.\n"
-                "\t-r renderer - choose the renderer plugin (default: gmanzbuffer).\n"
+                "\t-h, --help - print this help message.\n"
+                "\t-d, --debug - set logging to: debug output.\n"
+                "\t-i, --info - set logging to: information output.\n"
+                "\t-w, --warning - set logging to: warning output.\n"
+                "\t-e, --error - set logging to: error output.\n"
+                "\t-q, --quiet - set logging to: quiet, only report disasters.\n"
+                "\t-l, --log-file - enable a log based on the filename of the rib.\n"
+                "\t-r, --renderer renderer - choose the renderer plugin (default: gmanzbuffer).\n"
                 "\t--version - print the version and compiled drivers, then exit.\n";
 }
 
@@ -125,8 +126,8 @@ void expectUnrecognizedAnyToken(Args const& args) {
   check(!exists(sphereImage), label + " parses no file");
 }
 
-void expectVersion(Args const& args, std::string const& drivers) {
-  expectExact(args, 0, "gman " + versionText + "\ndrivers: " + drivers + "\n", "");
+void expectVersion(Args const& args) {
+  expectExact(args, 0, "gman " + versionText + "\ndrivers: " + driverList + "\n", "");
   check(!exists(sphereImage), describe(args) + " parses no file");
 }
 
@@ -157,13 +158,13 @@ void expectLevel(Args const& args, Level level) {
   check(exists(sphereImage), label + " renders " + sphereImage);
 }
 
-void checkUsageAndVersionRows(std::string const& drivers) {
+void checkUsageAndVersionRows() {
   expectExact({}, 0, "", usageText(gman));
-  expectVersion({"--version"}, drivers);
-  expectVersion({"-x", "--version"}, drivers);
-  expectVersion({"-r", "--version"}, drivers);
-  expectVersion({sphereRib, "--version"}, drivers);
-  expectVersion({"-h", "--version"}, drivers);
+  expectVersion({"--version"});
+  expectVersion({"-x", "--version"});
+  expectVersion({"-r", "--version"});
+  expectVersion({sphereRib, "--version"});
+  expectVersion({"-h", "--version"});
   expectExact({"-h"}, 0, banner, usageText(gman));
   expectExact({"-h", sphereRib}, 0, banner, usageText(gman));
   check(!exists(sphereImage), "-h parses no file after it");
@@ -236,6 +237,60 @@ void checkClusterRows() {
   expectLevel({"-dq", sphereRib}, Level::quiet);
 }
 
+void checkLongNameRows() {
+  std::string const usage = usageText(gman);
+  expectExact({"--help"}, 0, banner, usage);
+  expectExact({"-h", "--help"}, 0, banner, usage);
+  expectExact({"--help", sphereRib}, 0, banner, usage);
+  check(!exists(sphereImage), "--help parses no file after it");
+
+  expectLevel({"--info", sphereRib}, Level::info);
+  expectLevel({"--debug", sphereRib}, Level::debug);
+  expectLevel({"--warning", sphereRib}, Level::warning);
+  expectLevel({"--error", sphereRib}, Level::error);
+  expectLevel({"--quiet", sphereRib}, Level::quiet);
+  expectLevel({"--quiet", "--debug", sphereRib}, Level::debug);
+  expectLevel({"-q", "--debug", sphereRib}, Level::debug);
+  expectLevel({"--debug", "--quiet", sphereRib}, Level::quiet);
+  expectLevel({"--debug", "-q", sphereRib}, Level::quiet);
+
+  Outcome const logged = run({"--log-file", sphereRib});
+  check(logged.exitStatus == 0, "--log-file sphere.rib exits 0");
+  check(exists(sphereLog), "--log-file sphere.rib writes " + sphereLog);
+
+  expectRenders({"--renderer", "gmanzbuffer", sphereRib});
+  expectRenders({"--renderer=gmanzbuffer", sphereRib});
+  expectRenders({"-r", "nosuchrenderer", "--renderer", "gmanzbuffer", sphereRib});
+  expectRenders({"--renderer", "nosuchrenderer", "-r", "gmanzbuffer", sphereRib});
+  expectNoImage({"--renderer", "-x", sphereRib});
+  expectNoImage({"--renderer=x=y", sphereRib});
+
+  std::string const missing = gman + ": -r requires a renderer name\n";
+  std::string const empty = gman + ": -r requires a non-empty renderer name\n";
+  expectExact({"--renderer"}, 1, banner, missing);
+  expectExact({"--renderer", ""}, 1, banner, empty);
+  expectExact({"--renderer="}, 1, banner, empty);
+  expectExact({"--renderer=", sphereRib}, 1, banner, empty);
+  check(!exists(sphereImage), "--renderer= sphere.rib leaves no image");
+  expectExact({"-r", "--renderer=", sphereRib}, 1, banner, empty);
+  expectExact({"-h", "--renderer="}, 1, banner, empty);
+
+  expectUnrecognized({"--debug=1", sphereRib}, "--debug=1");
+  expectUnrecognized({"--debug=true", sphereRib}, "--debug=true");
+  expectUnrecognized({"--help=x"}, "--help=x");
+  expectUnrecognized({"--log-file=x"}, "--log-file=x");
+  expectUnrecognized({"--deb"}, "--deb");
+  expectUnrecognized({"--Debug"}, "--Debug");
+  expectUnrecognized({"-h", "--debug=1"}, "--debug=1");
+
+  Outcome const flagAfterFile = run({sphereRib, "--debug"});
+  check(flagAfterFile.exitStatus != 0, "sphere.rib --debug exits nonzero");
+  check(exists(sphereImage), "sphere.rib --debug renders " + sphereImage);
+  check(contains(flagAfterFile.out, "Parsing --debug"), "sphere.rib --debug tries a file named --debug");
+
+  expectVersion({"--renderer", "--version"});
+}
+
 void checkLeftoverAndPrecedenceRows() {
   expectUnrecognizedAnyToken({"-dx", sphereRib});
   expectUnrecognizedAnyToken({"-hx"});
@@ -255,7 +310,7 @@ int main(int argc, char* argv[]) {
   gman = argv[1];
   versionText = argv[3];
   banner = "gman " + versionText + " -- LGPL-2.1-or-later, see COPYING\n";
-  std::string const drivers = argv[4];
+  driverList = argv[4];
 
   std::error_code ec;
   std::filesystem::copy_file(argv[2], sphereRib, std::filesystem::copy_options::overwrite_existing, ec);
@@ -264,13 +319,14 @@ int main(int argc, char* argv[]) {
     return 2;
   }
 
-  checkUsageAndVersionRows(drivers);
+  checkUsageAndVersionRows();
   checkUnrecognizedRows();
   checkRendererRows();
   checkLevelRows();
   checkFileRows();
   checkClusterRows();
   checkLeftoverAndPrecedenceRows();
+  checkLongNameRows();
 
   return checkSummary("gman's command line: every flag, error path and precedence rule");
 }
