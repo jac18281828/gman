@@ -196,6 +196,10 @@ private:
 
   std::map<std::string, std::map<std::string, NamedOptionValue>> namedOptions;
 
+  // Whether Quantize "rgba" has run, appended after namedOptions so every
+  // member above keeps its offset. False until setColorQuantize runs.
+  bool colorQuantizeSet = false;
+
   /* default static data */
   static OutputDefaults outputDefaults;
 
@@ -259,6 +263,11 @@ public:
   RtVoid setColorQuantize(RtInt one, RtInt min, RtInt max, RtFloat da);
 
   const QuantizeStruct& getColorQuantize(RtVoid) const { return colorQuantize; };
+
+  // Whether Quantize "rgba" set the request getColorQuantize returns, as
+  // opposed to its defaults. Quantize "z" leaves it unchanged. A copy of
+  // this GMANOptions carries it.
+  bool isColorQuantizeSet(RtVoid) const { return colorQuantizeSet; };
 
   RtVoid setDepthQuantize(RtInt one, RtInt min, RtInt max, RtFloat da);
 

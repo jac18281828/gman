@@ -732,6 +732,15 @@ set_tests_properties(quantize PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+add_executable(gman_colorquantizeset colorquantizeset_test.cpp)
+target_link_libraries(gman_colorquantizeset PRIVATE gman_core)
+
+add_test(NAME colorquantizeset COMMAND gman_colorquantizeset)
+set_tests_properties(colorquantizeset PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Step 4: RIB tokenizer robustness on malformed input -- an unterminated
 # string, an unbalanced bracket, a file truncated mid-keyword -- each
 # under its own hard timeout (see tests/ribmalformed_test.cpp).

@@ -258,6 +258,7 @@ RtVoid GMANOptions::setColorQuantize(RtInt o, RtInt mn, RtInt mx, RtFloat da) {
   colorQuantize.min = mn;
   colorQuantize.max = mx;
   colorQuantize.ditheramplitude = da;
+  colorQuantizeSet = true;
 }
 
 RtVoid GMANOptions::setDepthQuantize(RtInt o, RtInt mn, RtInt mx, RtFloat da) {
