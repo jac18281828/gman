@@ -4162,6 +4162,17 @@ set_tests_properties(gmanmathminmax PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gmanmath.h's shading language functions -- radians, degrees, atan,
+# inversesqrt, log, mod, sign, mix and round -- meet their definitions and
+# IEEE 754 edges. See tests/gmanmath_test.cpp.
+add_executable(gman_gmanmath gmanmath_test.cpp)
+target_link_libraries(gman_gmanmath PRIVATE gman_core)
+
+add_test(NAME gmanmath COMMAND gman_gmanmath)
+set_tests_properties(gmanmath PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # gman::InvertibleMatrix pairs a placement with its inverse; its transformNormal
 # applies the inverse transpose. See tests/invertiblematrix_test.cpp.
 add_executable(gman_invertiblematrix invertiblematrix_test.cpp)
