@@ -162,6 +162,31 @@ CommandLine unrecognizedFlag(std::string token) {
   return commandLine;
 }
 
+CommandLine readParseOrder(CLI::App const& app, DeclaredOptions const& declared, int firstFile) {
+  CommandLine commandLine;
+  commandLine.firstFile = firstFile;
+  std::size_t renderers = 0;
+  for (CLI::Option const* occurrence : app.parse_order()) {
+    if (occurrence == declared.help) {
+      commandLine.outcome = Outcome::help;
+      return commandLine;
+    }
+    if (occurrence == declared.logFile) {
+      commandLine.writeLog = true;
+    } else if (occurrence == declared.renderer) {
+      std::string const& name = declared.renderer->results()[renderers++];
+      if (name.empty()) {
+        commandLine.outcome = Outcome::emptyRenderer;
+        return commandLine;
+      }
+      commandLine.renderer = name;
+    } else {
+      commandLine.level = levelOf(declared, occurrence);
+    }
+  }
+  return commandLine;
+}
+
 CommandLine parseCommandLine(int argc, char* argv[]) {
   CLI::App app;
   DeclaredOptions const declared = declareOptions(app);
@@ -184,32 +209,11 @@ CommandLine parseCommandLine(int argc, char* argv[]) {
     return unrecognizedFlag(argv[flagsEnd - 1]);
   }
 
-  CommandLine commandLine;
-  commandLine.firstFile = flagsEnd;
   if (std::any_of(argv + 1, argv + flagsEnd, [](char const* arg) { return arg == emptyInlineRenderer; })) {
-    commandLine.outcome = Outcome::emptyRenderer;
-    return commandLine;
+    return CommandLine{.outcome = Outcome::emptyRenderer};
   }
-  std::size_t renderers = 0;
-  for (CLI::Option const* occurrence : app.parse_order()) {
-    if (occurrence == declared.help) {
-      commandLine.outcome = Outcome::help;
-      return commandLine;
-    }
-    if (occurrence == declared.logFile) {
-      commandLine.writeLog = true;
-    } else if (occurrence == declared.renderer) {
-      std::string const& name = declared.renderer->results()[renderers++];
-      if (name.empty()) {
-        commandLine.outcome = Outcome::emptyRenderer;
-        return commandLine;
-      }
-      commandLine.renderer = name;
-    } else {
-      commandLine.level = levelOf(declared, occurrence);
-    }
-  }
-  if (renderNameMissing) {
+  CommandLine commandLine = readParseOrder(app, declared, flagsEnd);
+  if (commandLine.outcome == Outcome::run && renderNameMissing) {
     commandLine.outcome = Outcome::missingRenderer;
   }
   return commandLine;
@@ -245,6 +249,18 @@ std::string synopsis(CLI::App const& app) {
   return "-[" + flags + "]" + valued + " [--version] files ...";
 }
 
+void usage(char const* myname) {
+  CLI::App app;
+  declareOptions(app);
+
+  std::cerr << myname << ": " << synopsis(app) << std::endl;
+  std::cerr << "\tParse RIB input files." << std::endl << std::endl;
+  for (CLI::Option const* option : app.get_options()) {
+    std::cerr << '\t' << optionNames(*option) << " - " << option->get_description() << std::endl;
+  }
+  std::cerr << "\t--version - print the version and compiled drivers, then exit." << std::endl;
+}
+
 // Thrown by handleReport once a report has already printed, so main's
 // catch sites can end the file without printing it again.
 class ReportedStop : public GMANError {
@@ -264,10 +280,6 @@ RtVoid handleReport(RtInt code, RtInt severity, char const* message) {
 }
 
 } // namespace
-
-/* function prototypes */
-
-RtVoid usage(char* myname);
 
 int main(int argc, char* argv[]) {
 
@@ -347,16 +359,4 @@ int main(int argc, char* argv[]) {
     }
   }
   return rc;
-}
-
-RtVoid usage(char* myname) {
-  CLI::App app;
-  declareOptions(app);
-
-  std::cerr << myname << ": " << synopsis(app) << std::endl;
-  std::cerr << "\tParse RIB input files." << std::endl << std::endl;
-  for (CLI::Option const* option : app.get_options()) {
-    std::cerr << '\t' << optionNames(*option) << " - " << option->get_description() << std::endl;
-  }
-  std::cerr << "\t--version - print the version and compiled drivers, then exit." << std::endl;
 }
