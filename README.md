@@ -113,7 +113,7 @@ From the left: gold `shinymetal`, `glass`, a `mirror` that takes the wall's clay
 subpixel at 640 by 400, set by `Format` and `Option "pathtracer" "integer samples"` at the top of
 the file.
 
-The same materials make a still life in its own repository,
+The same materials make a still life in 
 [still-life-material](https://github.com/jac18281828/still-life-material), with a marble floor, a
 generated cactus and a glass ball that lenses it:
 
