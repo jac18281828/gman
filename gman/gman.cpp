@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -61,6 +62,14 @@ int printVersion() {
   }
   std::cout << "\n";
   return EXIT_SUCCESS;
+}
+
+std::unique_ptr<GMANRIBParse> makeParser(GMANRenderManImpl& renderMan, std::string const& ribFile,
+                                         std::optional<std::string> const& renderer) {
+  if (renderer) {
+    return std::make_unique<GMANRIBParse>(renderMan, ribFile.c_str(), renderer->c_str());
+  }
+  return std::make_unique<GMANRIBParse>(renderMan, ribFile.c_str());
 }
 
 // Thrown by handleReport once a report has already printed, so main's
@@ -113,7 +122,7 @@ int main(int argc, char* argv[]) {
     switch (commandLine.outcome) {
     case Outcome::help:
       std::cerr << gman::usageText(argv[0]);
-      exit(EXIT_SUCCESS);
+      std::exit(EXIT_SUCCESS);
     case Outcome::unrecognized:
     case Outcome::missingRenderer:
     case Outcome::emptyRenderer:
@@ -137,10 +146,7 @@ int main(int argc, char* argv[]) {
           logObj.setLogFile(fileName.c_str());
         }
 
-        std::unique_ptr<GMANRIBParse> const parser =
-            commandLine.renderer
-                ? std::make_unique<GMANRIBParse>(renderMan, ribFile.c_str(), commandLine.renderer->c_str())
-                : std::make_unique<GMANRIBParse>(renderMan, ribFile.c_str());
+        std::unique_ptr<GMANRIBParse> const parser = makeParser(renderMan, ribFile, commandLine.renderer);
 
         // just parse it...
         parser->parse();
