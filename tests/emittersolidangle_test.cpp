@@ -336,9 +336,12 @@ struct Case {
   std::function<Vec(Vec const&)> normalAt;
 };
 
-// Draws from c's receiving point and checks a to d.
-void runCase(Case const& c, std::uint32_t dim) {
-  auto counts = std::vector<std::uint32_t>(c.regionIntegrals.size(), 0);
+// What c's accepted draws gathered: how many there were and how many landed
+// in each region, the rays that missed the shape, beyond and at a tangent,
+// the range of the pdfs, and each check's worst reading, b's and f's by
+// area as a share of their allowances.
+struct Tally {
+  std::vector<std::uint32_t> counts;
   std::uint32_t acceptedCount = 0;
   std::uint32_t missed = 0;
   std::uint32_t tangentMisses = 0;
@@ -346,109 +349,165 @@ void runCase(Case const& c, std::uint32_t dim) {
   double worstHit = 0.0;
   double worstSolidAngle = 0.0;
   double worstStrategy = 0.0;
-  auto lowestPdf = std::numeric_limits<double>::max();
+  double lowestPdf = std::numeric_limits<double>::max();
   double highestPdf = 0.0;
+};
+
+// Tallies b and f by area for an accepted draw s that lands at drawn, from
+// the first hit of its ray on the shape, or counts the ray's miss.
+void tallyHit(Case const& c, gman::EmitterSample const& s, Vec const& drawn, Tally& tally) {
+  const auto distance = (double)s.distance;
+  const auto rounding = kWiRounding * (distance + kRoundings * c.scale);
+  GMANHit hit;
+  if (!c.emitter.shape->intersect(GMANRay(c.p, s.wi), hit)) {
+    double grazing = 1.0;
+    if (c.normalAt) {
+      grazing = std::fabs(dot(c.normalAt(drawn), toVec(s.wi)));
+    }
+    if (grazing * grazing <= 2.0 * c.curvature * rounding) {
+      ++tally.tangentMisses;
+    } else {
+      ++tally.missed;
+    }
+    return;
+  }
+  const auto incidence = std::fabs(dot(normalized(toVec(hit.normal)), toVec(s.wi)));
+  const auto bend = 2.0 + distance * c.curvature / incidence;
+  if (c.strategy == Strategy::area) {
+    const auto density = c.areaDensity(s);
+    const auto allowed = kPdfTolerance + kMargin * rounding / distance * bend;
+    tally.worstStrategy = std::max(tally.worstStrategy, std::fabs((double)s.pdf - density) / density / allowed);
+  }
+  const auto offset = length(toVec(hit.point) - drawn);
+  const auto offsetAllowed = kHitTolerance * distance + kMargin * rounding * (1.0 + 1.0 / incidence);
+  tally.worstHit = std::max(tally.worstHit, offset / offsetAllowed);
+  const auto pdf = gman::lightSolidAnglePdf(c.emitter, c.p, hit.point, toNormal(toVec(hit.normal)));
+  const auto pdfAllowed = kPdfTolerance + kMargin * (offset + rounding) / distance * bend;
+  tally.worstPdf = std::max(tally.worstPdf, std::fabs((double)pdf - (double)s.pdf) / (double)s.pdf / pdfAllowed);
+}
+
+// Draws 2^14 times from c's receiving point and tallies the accepted draws.
+Tally drawCase(Case const& c, std::uint32_t dim) {
+  Tally tally;
+  tally.counts.assign(c.regionIntegrals.size(), 0);
   for (std::uint32_t i = 0; i < kDraws; ++i) {
     const auto uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
     const auto s = gman::sample(c.emitter, c.p, uv.u1, uv.u2);
     if (!accepted(s)) {
       continue;
     }
-    ++acceptedCount;
+    ++tally.acceptedCount;
     if (c.triangleSolidAngle) {
-      worstSolidAngle = std::max(worstSolidAngle, std::fabs(s.pdf * *c.triangleSolidAngle - 1.0));
+      tally.worstSolidAngle = std::max(tally.worstSolidAngle, std::fabs(s.pdf * *c.triangleSolidAngle - 1.0));
     }
-    lowestPdf = std::min(lowestPdf, (double)s.pdf);
-    highestPdf = std::max(highestPdf, (double)s.pdf);
+    tally.lowestPdf = std::min(tally.lowestPdf, (double)s.pdf);
+    tally.highestPdf = std::max(tally.highestPdf, (double)s.pdf);
     if (c.strategy == Strategy::solidAngle && c.solidAngle) {
-      worstStrategy = std::max(worstStrategy, std::fabs(s.pdf * *c.solidAngle - 1.0));
+      tally.worstStrategy = std::max(tally.worstStrategy, std::fabs(s.pdf * *c.solidAngle - 1.0));
     }
-    const auto distance = (double)s.distance;
-    const auto drawn = toVec(c.p) + distance * toVec(s.wi);
-    const auto rounding = kWiRounding * (distance + kRoundings * c.scale);
+    const auto drawn = toVec(c.p) + (double)s.distance * toVec(s.wi);
     const auto region = c.regionOf(drawn);
-    if (region < counts.size()) {
-      ++counts[region];
+    if (region < tally.counts.size()) {
+      ++tally.counts[region];
     }
-    GMANHit hit;
-    if (!c.emitter.shape->intersect(GMANRay(c.p, s.wi), hit)) {
-      double grazing = 1.0;
-      if (c.normalAt) {
-        grazing = std::fabs(dot(c.normalAt(drawn), toVec(s.wi)));
-      }
-      if (grazing * grazing <= 2.0 * c.curvature * rounding) {
-        ++tangentMisses;
-      } else {
-        ++missed;
-      }
-      continue;
-    }
-    const auto incidence = std::fabs(dot(normalized(toVec(hit.normal)), toVec(s.wi)));
-    const auto bend = 2.0 + distance * c.curvature / incidence;
-    if (c.strategy == Strategy::area) {
-      const auto density = c.areaDensity(s);
-      const auto allowed = kPdfTolerance + kMargin * rounding / distance * bend;
-      worstStrategy = std::max(worstStrategy, std::fabs((double)s.pdf - density) / density / allowed);
-    }
-    const auto offset = length(toVec(hit.point) - drawn);
-    const auto offsetAllowed = kHitTolerance * distance + kMargin * rounding * (1.0 + 1.0 / incidence);
-    worstHit = std::max(worstHit, offset / offsetAllowed);
-    const auto pdf = gman::lightSolidAnglePdf(c.emitter, c.p, hit.point, toNormal(toVec(hit.normal)));
-    const auto pdfAllowed = kPdfTolerance + kMargin * (offset + rounding) / distance * bend;
-    worstPdf = std::max(worstPdf, std::fabs((double)pdf - (double)s.pdf) / (double)s.pdf / pdfAllowed);
+    tallyHit(c, s, drawn, tally);
   }
+  return tally;
+}
 
-  const auto acceptance = (double)acceptedCount / kDraws;
+double acceptanceOf(Tally const& tally) { return (double)tally.acceptedCount / kDraws; }
+
+double integralOf(Case const& c) {
   double integral = 0.0;
   for (double const regionValue : c.regionIntegrals) {
     integral += regionValue;
   }
-  const auto binomial = std::sqrt(acceptance * (1.0 - acceptance) / kDraws);
+  return integral;
+}
+
+void printSummary(Case const& c, Tally const& tally) {
   std::printf("%s: A %.6f, integral %.6f, worst b pdf %.2f and hit %.2f of their allowances, %u missed, %u at a "
               "tangent",
-              c.label.c_str(), acceptance, integral, worstPdf, worstHit, missed, tangentMisses);
+              c.label.c_str(), acceptanceOf(tally), integralOf(c), tally.worstPdf, tally.worstHit, tally.missed,
+              tally.tangentMisses);
   if (c.triangleSolidAngle) {
-    std::printf(", worst d %.2e", worstSolidAngle);
+    std::printf(", worst d %.2e", tally.worstSolidAngle);
   }
   std::printf("\n");
+}
 
+// a: A is 1 where c accepts every draw, and the pdf integrates to A.
+void checkIntegral(Case const& c, Tally const& tally) {
+  const auto acceptance = acceptanceOf(tally);
+  const auto binomial = std::sqrt(acceptance * (1.0 - acceptance) / kDraws);
   if (c.acceptsEvery) {
-    check(acceptedCount == kDraws, c.label + " a: every draw is accepted");
+    check(tally.acceptedCount == kDraws, c.label + " a: every draw is accepted");
   }
-  check(acceptedCount > 0, c.label + ": some draw is accepted");
-  check(std::fabs(integral - acceptance) <= kIntegralFloor + kSigmas * binomial,
+  check(tally.acceptedCount > 0, c.label + ": some draw is accepted");
+  check(std::fabs(integralOf(c) - acceptance) <= kIntegralFloor + kSigmas * binomial,
         c.label + " a: the pdf integrates to A within 1e-3 plus five binomial sigma");
-  check(missed == 0, c.label + " b: every accepted draw's ray meets the shape, but one rounding left of a tangent");
-  check(worstPdf <= 1.0, c.label + " b: lightSolidAnglePdf at each hit equals the draw's pdf within 1e-5 plus the "
-                                   "change the hit's offset carries");
-  check(worstHit <= 1.0, c.label + " b: each hit lies within 1e-4 of the distance plus wi's rounding at its incidence "
-                                   "from the drawn point");
+}
+
+// b: every ray meets the shape, at the drawn point, where
+// lightSolidAnglePdf answers the draw's pdf.
+void checkHits(Case const& c, Tally const& tally) {
+  check(tally.missed == 0,
+        c.label + " b: every accepted draw's ray meets the shape, but one rounding left of a tangent");
+  check(tally.worstPdf <= 1.0, c.label + " b: lightSolidAnglePdf at each hit equals the draw's pdf within 1e-5 plus "
+                                         "the change the hit's offset carries");
+  check(tally.worstHit <= 1.0, c.label + " b: each hit lies within 1e-4 of the distance plus wi's rounding at its "
+                                         "incidence from the drawn point");
+}
+
+// d: a single triangle's pdf times its solid angle is 1.
+void checkTriangleSolidAngle(Case const& c, Tally const& tally) {
   if (c.triangleSolidAngle) {
-    check(worstSolidAngle <= kPdfTolerance, c.label + " d: pdf times the triangle's solid angle is 1 within 1e-5");
+    check(tally.worstSolidAngle <= kPdfTolerance,
+          c.label + " d: pdf times the triangle's solid angle is 1 within 1e-5");
   }
+}
+
+// f: the strategy c's receiving point selects reports its density.
+void checkStrategy(Case const& c, Tally const& tally) {
   if (c.strategy == Strategy::solidAngle) {
-    std::printf("  f: by solid angle, pdf spread %.2e, worst against 1 / solid angle %.2e\n",
-                (highestPdf - lowestPdf) / lowestPdf, worstStrategy);
-    check((highestPdf - lowestPdf) / lowestPdf <= kPdfTolerance,
-          c.label + " f: every accepted draw reports one pdf within 1e-5");
-    check(worstStrategy <= kPdfTolerance, c.label + " f: that pdf is 1 / the solid angle drawn over within 1e-5");
+    const auto spread = (tally.highestPdf - tally.lowestPdf) / tally.lowestPdf;
+    std::printf("  f: by solid angle, pdf spread %.2e, worst against 1 / solid angle %.2e\n", spread,
+                tally.worstStrategy);
+    check(spread <= kPdfTolerance, c.label + " f: every accepted draw reports one pdf within 1e-5");
+    check(tally.worstStrategy <= kPdfTolerance, c.label + " f: that pdf is 1 / the solid angle drawn over within 1e-5");
   }
   if (c.strategy == Strategy::area) {
-    std::printf("  f: by area, worst against the area density %.2f of its allowance\n", worstStrategy);
-    check(worstStrategy <= 1.0, c.label + " f: each pdf equals the area density at its point within 1e-5 plus "
-                                          "wi's rounding at its incidence");
+    std::printf("  f: by area, worst against the area density %.2f of its allowance\n", tally.worstStrategy);
+    check(tally.worstStrategy <= 1.0, c.label + " f: each pdf equals the area density at its point within 1e-5 plus "
+                                                "wi's rounding at its incidence");
   }
-  if (acceptedCount == 0 || counts.size() < 2) {
+}
+
+// c: each region's share of the accepted draws matches its integral over A.
+void checkRegions(Case const& c, Tally const& tally) {
+  if (tally.acceptedCount == 0 || tally.counts.size() < 2) {
     return;
   }
-  for (std::size_t r = 0; r < counts.size(); ++r) {
-    const auto share = (double)counts[r] / acceptedCount;
+  const auto acceptance = acceptanceOf(tally);
+  for (std::size_t r = 0; r < tally.counts.size(); ++r) {
+    const auto share = (double)tally.counts[r] / tally.acceptedCount;
     const auto expected = c.regionIntegrals[r] / acceptance;
-    const auto sigma = std::sqrt(expected * (1.0 - expected) / acceptedCount);
+    const auto sigma = std::sqrt(expected * (1.0 - expected) / tally.acceptedCount);
     std::printf("  region %zu: share %.5f, expected %.5f, sigma %.5f\n", r, share, expected, sigma);
     check(std::fabs(share - expected) <= kIntegralFloor + kSigmas * sigma,
           c.label + " c: region " + std::to_string(r) + "'s share of the draws matches its integral");
   }
+}
+
+// Draws from c's receiving point and checks a, b, d, f and c.
+void runCase(Case const& c, std::uint32_t dim) {
+  const auto tally = drawCase(c, dim);
+  printSummary(c, tally);
+  checkIntegral(c, tally);
+  checkHits(c, tally);
+  checkTriangleSolidAngle(c, tally);
+  checkStrategy(c, tally);
+  checkRegions(c, tally);
 }
 
 // e: every field of every draw from p is finite, every pdf is 0 or more, and
