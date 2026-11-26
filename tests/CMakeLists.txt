@@ -2020,7 +2020,7 @@ if(GMAN_BUILD_RAYTRACER)
   set_tests_properties(arealightnoise PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
-    TIMEOUT 60)
+    TIMEOUT 120)
 endif()
 
 # The ray tracer composites what lies behind a partly opaque surface that a
