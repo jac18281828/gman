@@ -843,6 +843,49 @@ fixture's under each renderer (two faces at index 1.5 pass 0.9216 at normal
 incidence), and the ray tracer's lit block agrees with the path tracer's within 1.5%.
 Registered in `tests/rayarealight_test.cpp`. Not third-party.
 
+## raycomposite_glass.rib
+
+A matte wall lit by a distant light, a black matte panel of `Opacity` 0.5 in front of
+it, and a clear glass slab of two `Polygon` faces in front of the panel's left half. The
+panel reads on the right of the frame directly and on the left through the slab, so the
+ray tracer's block through the slab (columns 6-21, rows 12-35) must read half of its
+bare twin's and agree with the path tracer's within 1.5%, while the direct block (columns
+42-57, rows 12-35) reads half of the twin's. The light sits where no shadow ray from the
+wall crosses the panel or the slab. Registered in `tests/raycomposite_test.cpp`. Not
+third-party.
+
+## raycomposite_glass_bare.rib
+
+The glass fixture without the panel: the wall alone, seen directly and through the slab.
+Its through-slab block reads about 0.92 of its direct block (two faces at index 1.5),
+and each block of the panel fixture reads against it. Registered in
+`tests/raycomposite_test.cpp`. Not third-party.
+
+## raycomposite_mirror.rib
+
+A matte wall lit by a distant light, the same black `Opacity` 0.5 panel in front of it
+and a 45 degree mirror, so the camera sees the panel and the wall in the reflection. The
+ray tracer's block (columns 54-61, rows 14-33) must read half of the bare twin's and
+agree with the path tracer's within 1.5%; the block starts at column 54, where the path
+tracer's wall-mirror interreflection no longer lifts its reading. Registered in
+`tests/raycomposite_test.cpp`. Not third-party.
+
+## raycomposite_mirror_bare.rib
+
+The mirror fixture without the panel: the wall alone in the mirror, the reference the
+panel's block reads against. Registered in `tests/raycomposite_test.cpp`. Not
+third-party.
+
+## raycomposite_ambient.rib
+
+A green wall and a translucent red `Opacity` 0.5 sphere before it, lit by an ambient
+light, seen directly and in a `Kr` 0.8 mirror. The ray tracer alone renders it, since the
+path tracer reads no `ambientlight`. The sphere's front face, back face and the wall
+read together in the direct block (columns 16-19, rows 22-25), and the mirrored block
+(columns 48-51, rows 22-25) reads 0.8 times it in every channel, within 1.5 levels, so a
+wrong `Kr` and a wrong `Cs` read apart. Registered in `tests/raycomposite_test.cpp`. Not
+third-party.
+
 ## corpus/
 
 Real RIB from third-party software, fetched once and checked in so tests are

@@ -2000,6 +2000,30 @@ if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
     TIMEOUT 300)
 endif()
 
+# A partly opaque surface that a glass or mirror ray reaches no longer hides what
+# lies behind it: on a panel of Opacity 0.5 seen through a glass slab and in a
+# mirror, the ray tracer's block means agree with the path tracer's within 1.5%
+# and read half of the bare twins'; an ambient-lit scene, under the ray tracer
+# alone, reads its mirrored block at Kr times its direct block. Needs both
+# renderers. See tests/raycomposite_test.cpp.
+if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
+  add_executable(gman_raycomposite raycomposite_test.cpp)
+  target_link_libraries(gman_raycomposite PRIVATE gman TIFF::TIFF)
+  add_dependencies(gman_raycomposite gman_raytracer gman_pathtracer gman_matte gman_glass gman_mirror)
+
+  set(GMAN_RAYCOMPOSITE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/raycomposite-run")
+  file(MAKE_DIRECTORY "${GMAN_RAYCOMPOSITE_WORKDIR}")
+
+  add_test(NAME raycomposite
+    COMMAND gman_raycomposite $<TARGET_FILE:gman_cli>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_RAYCOMPOSITE_WORKDIR}")
+  set_tests_properties(raycomposite PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 300)
+endif()
+
 # A smooth fold's terminator renders lit under both renderers, while every other blocker still shadows.
 add_executable(gman_creasestreak creasestreak_test.cpp)
 target_link_libraries(gman_creasestreak PRIVATE gman TIFF::TIFF)
@@ -3135,8 +3159,9 @@ set_tests_properties(contactgap PROPERTIES
 # GMANRayTracer -- depth-limit termination, background on a miss or at
 # the depth limit, single-hit shading matching gman::shade directly,
 # the self-shadow offset applied to a traced ray and recursion depth
-# counted correctly. Linked and carries the ENVIRONMENT rayoccluder
-# above does, for the same reasons.
+# counted correctly, and partly opaque layers along a traced ray composited
+# front to back. Linked and carries the ENVIRONMENT rayoccluder above does, for
+# the same reasons.
 add_executable(gman_raytrace raytrace_test.cpp)
 target_link_libraries(gman_raytrace PRIVATE gman gman_internal_headers gman_raytracer_objects)
 
@@ -3146,7 +3171,8 @@ set_tests_properties(raytrace PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R-transparency proof, check 5: the composite loop's own layer cap, linked
+# R-transparency proof, check 5: the composite's own layer cap and the depth and
+# alpha a composited sample keeps, linked
 # against gman_raytracer_objects, which still compiles GMANRaytraceRenderer
 # itself; carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_compositelayercap compositelayercap_test.cpp)

@@ -1,0 +1,19 @@
+## The raycomposite_glass scene without the panel: the lit wall alone, seen directly and through the glass slab, the
+## reference the panel's two blocks read against. Not third-party.
+Display "raycomposite_glass_bare.tif" "file" "rgba"
+Format 64 48 1
+PixelSamples 2 2
+Option "pathtracer" "integer samples" [64]
+Projection "perspective" "fov" [40]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "from" [-6 0 -2] "to" [0 0 0] "intensity" [3]
+Surface "matte" "Kd" [0.8]
+Polygon "P" [-8 -6 4  -8 6 4  8 6 4  8 -6 4]
+AttributeBegin
+Surface "glass"
+Polygon "P" [-4 -3 -2  -4 3 -2  0 3 -2  0 -3 -2]
+Polygon "P" [-4 -3 -1.9  0 -3 -1.9  0 3 -1.9  -4 3 -1.9]
+AttributeEnd
+WorldEnd

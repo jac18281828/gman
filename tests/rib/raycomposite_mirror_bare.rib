@@ -1,0 +1,18 @@
+## The raycomposite_mirror scene without the panel: the lit wall alone in the 45 degree mirror, the reference the
+## panel's block reads against. Not third-party.
+Display "raycomposite_mirror_bare.tif" "file" "rgba"
+Format 64 48 1
+PixelSamples 2 2
+Option "pathtracer" "integer samples" [64]
+Projection "perspective" "fov" [40]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "from" [-1 0 3] "to" [0 0 0] "intensity" [3]
+Surface "matte" "Kd" [0.8]
+Polygon "P" [9 -8 -4  9 8 -4  9 8 10  9 -8 10]
+AttributeBegin
+Surface "mirror"
+Polygon "P" [0.2 -6 1.2  0.2 6 1.2  6 6 7  6 -6 7]
+AttributeEnd
+WorldEnd
