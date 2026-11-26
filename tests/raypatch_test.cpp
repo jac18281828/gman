@@ -375,6 +375,11 @@ SurfaceDef flatMeshDef(RtInt nu, RtInt nv) {
   return s;
 }
 
+Vec3 outsideOf(Vec3 const& target) {
+  double const radius = std::hypot(target[0], target[1]);
+  return {target[0] + 3 * target[0] / radius, target[1] + 3 * target[1] / radius, target[2]};
+}
+
 Vec3 frontOf(Vec3 const& target) { return {target[0], target[1], -5.0}; }
 
 void testBilinearPatch() {
@@ -541,9 +546,7 @@ bool seamRaysHit(GMANRayPolygonMesh const& mesh, SurfaceDef const& s, std::initi
   for (RtInt j : rows) {
     for (double u : {0.0, 0.004, 0.996}) {
       Vec3 const target = evaluate(s, u, gridU(j));
-      double const radius = std::hypot(target[0], target[1]);
-      Vec3 const origin = {target[0] + 3 * target[0] / radius, target[1] + 3 * target[1] / radius, target[2]};
-      allHit = allHit && hits(mesh, rayAt(origin, target));
+      allHit = allHit && hits(mesh, rayAt(outsideOf(target), target));
     }
   }
   return allHit;
@@ -798,12 +801,23 @@ void testPatchMeshTexCoords() {
       double const s = bilerp(local, v, st[2 * 3], st[2 * 0], st[2 * 7], st[2 * 4]);
       double const t = bilerp(local, v, st[2 * 3 + 1], st[2 * 0 + 1], st[2 * 7 + 1], st[2 * 4 + 1]);
       Vec3 const target = evaluate(box, u, v);
-      double const radius = std::hypot(target[0], target[1]);
-      Vec3 const origin = {target[0] + 3 * target[0] / radius, target[1] + 3 * target[1] / radius, target[2]};
-      wrapped = wrapped && hitTexCoordNear(*mesh, target, origin, s, t);
+      wrapped = wrapped && hitTexCoordNear(*mesh, target, outsideOf(target), s, t);
     }
   }
   check(wrapped, "periodic PatchMesh: the last sub-patch blends corner 3 with corner 0");
+
+  Request cornerMapped;
+  cornerMapped.patchMesh("bilinear", 4, true, 2, false, {{RI_P, box.p}}, {8, 8, 4});
+  GMANRayPolygonMesh const* cornerMesh = cornerMapped.mesh();
+  check(cornerMesh != nullptr, "periodic PatchMesh without \"st\": a triangle mesh");
+  if (cornerMesh != nullptr) {
+    bool followsU = true;
+    for (double u : {0.95, 0.97, 0.99}) {
+      Vec3 const target = evaluate(box, u, 0.5);
+      followsU = followsU && hitTexCoordNear(*cornerMesh, target, outsideOf(target), u, 0.5);
+    }
+    check(followsU, "periodic PatchMesh without \"st\": s = u across the last strip");
+  }
 }
 
 void testNonFiniteAndDegenerate() {

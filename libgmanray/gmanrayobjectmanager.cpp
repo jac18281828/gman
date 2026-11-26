@@ -66,6 +66,8 @@
 
 namespace {
 
+constexpr RtInt kGridLines = gman::kParametricDiceCount + 1;
+
 // One polygon request's face: loopVerts[0] the outer boundary, loopVerts[1..]
 // holes, each a run of indices into the mesh's shared point pool. Rejects a
 // degenerate outer loop exactly as the z-buffer's buildFace does; a hole
@@ -237,8 +239,6 @@ bool hasControlPoints(std::string_view request, GMANParameterList const& pl, std
   return true;
 }
 
-RtInt gridLines(bool periodic) { return periodic ? gman::kParametricDiceCount : gman::kParametricDiceCount + 1; }
-
 std::unique_ptr<GMANRayPolygon> triangleFace(GridVertex const& a, GridVertex const& b, GridVertex const& c) {
   std::vector<GMANPoint> ring = {a.position, b.position, c.position};
   if (gman::isDegeneratePolygon(ring)) {
@@ -257,15 +257,27 @@ template <typename TexCoordAt>
 std::optional<std::vector<GridVertex>> gridVertices(std::string_view request, GMANParametric& surface, Wrap wrap,
                                                     TexCoordAt const& texCoordAt, GMANTransform* t) {
   std::optional<gman::InvertibleMatrix> const placement = gman::InvertibleMatrix::of(t->interpolate(0.0));
-  RtInt const columns = gridLines(wrap.u);
-  RtInt const rows = gridLines(wrap.v);
 
   std::vector<GridVertex> grid;
-  grid.reserve((std::size_t)columns * (std::size_t)rows);
-  for (RtInt i = 0; i < columns; i++) {
-    for (RtInt j = 0; j < rows; j++) {
+  grid.reserve((std::size_t)kGridLines * (std::size_t)kGridLines);
+  for (RtInt i = 0; i < kGridLines; i++) {
+    for (RtInt j = 0; j < kGridLines; j++) {
       double const u = i / (double)gman::kParametricDiceCount;
       double const v = j / (double)gman::kParametricDiceCount;
+      RtInt firstI = i;
+      RtInt firstJ = j;
+      if (wrap.u && i == gman::kParametricDiceCount) {
+        firstI = 0;
+      }
+      if (wrap.v && j == gman::kParametricDiceCount) {
+        firstJ = 0;
+      }
+      if (firstI != i || firstJ != j) {
+        GridVertex closing = grid[(std::size_t)firstI * (std::size_t)kGridLines + (std::size_t)firstJ];
+        closing.texCoord = texCoordAt(u, v);
+        grid.push_back(closing);
+        continue;
+      }
       GMANPoint const position = t->apply(surface.getLocation(u, v));
       if (!isFinite(position)) {
         warning("{}: the surface holds a non-finite point; ignoring.", request);
@@ -290,10 +302,8 @@ std::unique_ptr<GMANRayPolygonMesh> tessellate(std::string_view request, GMANPar
   if (!grid) {
     return nullptr;
   }
-  RtInt const columns = gridLines(wrap.u);
-  RtInt const rows = gridLines(wrap.v);
   auto const vertexAt = [&](RtInt i, RtInt j) -> GridVertex const& {
-    return (*grid)[(std::size_t)(i % columns) * (std::size_t)rows + (std::size_t)(j % rows)];
+    return (*grid)[(std::size_t)i * (std::size_t)kGridLines + (std::size_t)j];
   };
 
   gman::Appearance const appearance = gman::appearanceOf(attr);
