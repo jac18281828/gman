@@ -92,14 +92,14 @@ struct Scene {
 };
 
 struct Settings {
-  std::optional<double> eta;
-  std::optional<double> kr;
-  std::optional<double> kt;
+  std::optional<double> eta{};
+  std::optional<double> kr{};
+  std::optional<double> kt{};
 };
 
 struct Variant {
-  Settings settings;
-  std::vector<std::string> without;
+  Settings settings{};
+  std::vector<std::string> without{};
 };
 
 struct Reading {
