@@ -189,17 +189,6 @@ bool colorsBitwiseEqual(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
-// Os's own channel, clamped to [0, 1] with a NaN mapped to 1, RISpec's default
-// Opacity, so a NaN never makes a surface transparent. GMANMin and GMANMax
-// drop a NaN operand, so GMANMin(NaN, 1) is 1 and GMANMax then leaves it at 1;
-// GMANClamp would map a NaN to 0.
-RtFloat clampCoverageChannel(RtFloat v) { return GMANMax(GMANMin(v, (RtFloat)1.0), (RtFloat)0.0); }
-
-GMANColor clampCoverage(GMANColor const& os) {
-  return GMANColor(clampCoverageChannel(os.getRed()), clampCoverageChannel(os.getGreen()),
-                   clampCoverageChannel(os.getBlue()));
-}
-
 // The shadow walk's own transmittance, split into v, the full product of
 // each blocker's (1 - Os) + Os * shadowTransmittance, and p, the product
 // of each blocker's own (1 - Os) alone -- the pure coverage pass-through
@@ -242,17 +231,10 @@ ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector 
     bool const passesTerminator = layer == 0 && terminatorOrigin != nullptr &&
                                   gman::passesTerminatorExit(hit, *hitPrimitive, wi, *terminatorOrigin);
     if (!passesTerminator) {
-      gman::Appearance const& appearance = hitPrimitive->getAppearance();
-      gman::SurfacePoint const point = gman::hitSurfacePoint(shadowRay, hit);
-      GMANColor const os = clampCoverage(gman::opacity(appearance, point, cameraToWorld, textureCache));
-      gman::BSDF const closure = gman::bsdf(appearance, point, cameraToWorld, textureCache);
-      GMANColor const t = closure.shadowTransmittance(wi);
-
-      GMANColor const passThroughShare = gman::oneMinus(os);
-      GMANColor factor = passThroughShare;
-      factor += gman::multiplyChannels(os, t);
-      result.v = gman::multiplyChannels(result.v, factor);
-      result.p = gman::multiplyChannels(result.p, passThroughShare);
+      gman::BlockerTransmittance const blocker =
+          gman::blockerTransmittance(shadowRay, hit, hitPrimitive->getAppearance(), cameraToWorld, textureCache);
+      result.v = gman::multiplyChannels(result.v, blocker.transmittance);
+      result.p = gman::multiplyChannels(result.p, gman::oneMinus(blocker.coverage));
       if (colorBlack(result.v)) {
         return result;
       }
@@ -635,7 +617,7 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
       state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point, state.eligibility, misEnabled,
                                state.departureP, state.departurePrimitive, state.departurePdf, state.lightWeight));
 
-  GMANColor const os = clampCoverage(gman::opacity(appearance, point, cameraToWorld, textureCache));
+  GMANColor const os = gman::clampCoverage(gman::opacity(appearance, point, cameraToWorld, textureCache));
   RtFloat const qPass = meanChannel(gman::oneMinus(os));
   RtFloat const coverageU = gman::sample1D(seed, sx, sy, i, N, 1u + 5u * k);
   if (coverageU < qPass) {

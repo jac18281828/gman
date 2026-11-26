@@ -26,12 +26,14 @@
 #include "gman/rayexport.h"
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
+#include "gmanmatrix4.h"
 #include "gmanocclude.h"
 #include "gmanpoint.h"
 #include "gmanprimitive.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanrayinterface.h"
+#include "gmanshading.h"
 #include "gmanvector.h"
 #include "ri.h"
 
@@ -68,6 +70,33 @@ GMANRAY_EXPORT GMANColor multiplyChannels(GMANColor const& a, GMANColor const& b
 
 // True once transmission is invisible in an 8-bit image on every channel.
 GMANRAY_EXPORT bool transmissionNegligible(GMANColor const& transmission);
+
+// Each channel of os clamped to [0, 1], a NaN channel read as 1, RISpec's
+// default Opacity, so a NaN never makes a surface clear: GMANMin and GMANMax
+// drop a NaN operand, so GMANMin(NaN, 1) is 1 and GMANMax then leaves it at
+// 1, where GMANClamp would map a NaN to 0.
+GMANRAY_EXPORT GMANColor clampCoverage(GMANColor const& os);
+
+// What one blocker does to a shadow ray: coverage is the blocker's opacity
+// at the hit, clamped by clampCoverage, and transmittance the factor the
+// ray's running transmission is multiplied by.
+struct GMANRAY_EXPORT BlockerTransmittance {
+  GMANColor coverage;
+  GMANColor transmittance;
+};
+
+// A blocker's factor on a shadow ray: per channel (1 - c) + c * T, c the
+// coverage, from gman::opacity at the shadow ray's hit, and T the
+// closure's straight-through thin transmittance along the ray's direction,
+// from gman::bsdf at that hit (BSDF::shadowTransmittance). A null-shader
+// appearance gives c = Os and a Lambert lobe, so T is black and the factor
+// 1 - Os. hit is shadowRay's own hit on the blocker whose appearance is
+// appearance. textureCache is gman::opacity's and gman::bsdf's argument: a
+// caller running threads passes the calling thread's own, and a null one
+// samples through gman::textureCache()'s process cache.
+GMANRAY_EXPORT BlockerTransmittance blockerTransmittance(GMANRay const& shadowRay, GMANHit const& hit,
+                                                         Appearance const& appearance, GMANMatrix4 const& cameraToWorld,
+                                                         TextureCache* textureCache);
 
 // Whether a shadow ray that starts inside its mesh's facets passes hit, the
 // first surface it crosses. origin is the primitive the shadow ray starts

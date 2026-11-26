@@ -25,14 +25,17 @@
 #include <limits>
 
 #include "gmanbbox.h"
+#include "gmanbsdf.h"
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanmath.h"
+#include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
+#include "gmanshading.h"
 #include "gmanvector.h"
 #include "ri.h"
 
@@ -80,6 +83,10 @@ RtFloat selfShadowOffsetMagnitude(GMANPoint const& hitPoint, RtFloat surfaceMagn
   return GMANMax(kSelfShadowOffsetFloor, scaled);
 }
 
+GMANColor::ColorSampleType clampCoverageChannel(GMANColor::ColorSampleType v) {
+  return GMANMax(GMANMin(v, (GMANColor::ColorSampleType)1.0), (GMANColor::ColorSampleType)0.0);
+}
+
 } // namespace
 
 namespace gman {
@@ -101,6 +108,23 @@ GMANColor oneMinus(GMANColor const& c) { return GMANColor(1.0f - c.getRed(), 1.0
 bool transmissionNegligible(GMANColor const& transmission) {
   return transmission.getRed() < kTransmissionCutoff && transmission.getGreen() < kTransmissionCutoff &&
          transmission.getBlue() < kTransmissionCutoff;
+}
+
+GMANColor clampCoverage(GMANColor const& os) {
+  return GMANColor(clampCoverageChannel(os.getRed()), clampCoverageChannel(os.getGreen()),
+                   clampCoverageChannel(os.getBlue()));
+}
+
+BlockerTransmittance blockerTransmittance(GMANRay const& shadowRay, GMANHit const& hit, Appearance const& appearance,
+                                          GMANMatrix4 const& cameraToWorld, TextureCache* textureCache) {
+  SurfacePoint const point = hitSurfacePoint(shadowRay, hit);
+  BlockerTransmittance result;
+  result.coverage = clampCoverage(opacity(appearance, point, cameraToWorld, textureCache));
+  BSDF const closure = bsdf(appearance, point, cameraToWorld, textureCache);
+  GMANColor const t = closure.shadowTransmittance(shadowRay.getDirection());
+  result.transmittance = oneMinus(result.coverage);
+  result.transmittance += multiplyChannels(result.coverage, t);
+  return result;
 }
 
 bool passesTerminatorExit(GMANHit const& hit, GMANRayInterface const& hitPrimitive, GMANVector const& towardLight,

@@ -3042,6 +3042,19 @@ set_tests_properties(rayoccluder PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::blockerTransmittance's factor (1 - c) + c * T per channel off a real
+# hit, c from the shader's opacity and T from its dielectric lobe; a
+# null-shader appearance gives 1 - Os, gman::clampCoverage reads a NaN as
+# opaque. See tests/blockertransmittance_test.cpp.
+add_executable(gman_blockertransmittance blockertransmittance_test.cpp)
+target_link_libraries(gman_blockertransmittance PRIVATE gman_core gman_ray)
+
+add_test(NAME blockertransmittance COMMAND gman_blockertransmittance)
+set_tests_properties(blockertransmittance PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # The self-shadow sweep -- every ray primitive, at every scale and
 # placement, through its own real intersect() and
 # GMANRayOccluder::transmission, linked against gman_ray, where both
