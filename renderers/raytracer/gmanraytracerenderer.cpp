@@ -245,6 +245,19 @@ std::size_t countAreaLightPrimitives(GMANWorldManager& world) {
   return count;
 }
 
+// One shading occluder per worker, each built on that worker's own cache and
+// in the same order as textureCaches, so a blocker's shader samples its
+// textures through the cache of the worker whose shadow ray crossed it.
+std::vector<GMANRayOccluder> shadingOccludersFor(GMANRayBVH const& bvh, GMANMatrix4 const& cameraToWorld,
+                                                 std::vector<gman::TextureCache>& textureCaches) {
+  std::vector<GMANRayOccluder> shadingOccluders;
+  shadingOccluders.reserve(textureCaches.size());
+  for (gman::TextureCache& textureCache : textureCaches) {
+    shadingOccluders.emplace_back(bvh, cameraToWorld, textureCache);
+  }
+  return shadingOccluders;
+}
+
 } // namespace
 
 void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys,
@@ -287,16 +300,10 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
 
   // One cache per worker, cold at the start of every render: a worker's
   // rows are the only code that touches its cache. Each worker shades
-  // through an occluder built on its own cache, so a blocker's shader
-  // samples its textures through the cache of the worker whose shadow ray
-  // crossed it.
+  // through an occluder built on its own cache.
   std::vector<gman::TextureCache> textureCaches(
       static_cast<std::size_t>(gman::parallelWorkers(height, requestedWorkers)));
-  std::vector<GMANRayOccluder> shadingOccluders;
-  shadingOccluders.reserve(textureCaches.size());
-  for (gman::TextureCache& textureCache : textureCaches) {
-    shadingOccluders.emplace_back(bvh, cameraToWorld, textureCache);
-  }
+  std::vector<GMANRayOccluder> const shadingOccluders = shadingOccludersFor(bvh, cameraToWorld, textureCaches);
   rowWorker.assign(static_cast<std::size_t>(height), 0);
 
   gman::parallelFor(
