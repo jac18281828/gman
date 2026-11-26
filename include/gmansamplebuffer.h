@@ -75,7 +75,9 @@ public:
   int getSampleHeight(void) const { return sampleHeight; }
 
   // The per-sample visibility test: if depth is closer than the sample's
-  // current depth, stores color, alpha and depth and returns true. sx/sy
+  // current depth, stores color, alpha and depth and returns true. A NaN
+  // depth is never closer; a NaN or infinite channel of color is stored as
+  // 0, a finite channel as it is. sx/sy
   // address the full sample grid (pixel index * samples-per-pixel + local
   // sample index), not a single pixel's own samples.
   bool zTestAndSet(int sx, int sy, RtFloat depth, GMANColor const& color, GMANAlpha const& alpha);

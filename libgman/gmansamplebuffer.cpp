@@ -26,6 +26,7 @@
 
 #include "gmancolor.h"
 #include "gmanerror.h"
+#include "gmanfinitecolor.h"
 #include "gmanframebuffer.h"
 #include "gmanmath.h"
 #include "gmansamplebuffer.h"
@@ -108,7 +109,7 @@ bool GMANSampleBuffer::zTestAndSet(int sx, int sy, RtFloat depth, GMANColor cons
   const int idx = sampleIndex(sx, sy);
   if (depth < sampleDepth[idx]) {
     sampleDepth[idx] = depth;
-    sampleColor[idx] = color;
+    sampleColor[idx] = gman::finiteChannels(color);
     sampleAlpha[idx] = alpha;
     return true;
   }

@@ -21,8 +21,9 @@
 /*
  * GMANSampleBuffer resolves one sample per pixel through a box filter, so a
  * pixel is the sample as written. Its alpha reads a NaN as 1, +inf as 1 and
- * -inf as 0, never the transparent a NaN clamped to 0 reads as, and passes a
- * finite coverage unchanged.
+ * -inf as 0, never the transparent a NaN clamped to 0 reads as, and clamps a
+ * finite coverage as before. A sample's colour stores a NaN or infinite
+ * channel as 0 and a finite channel as it is.
  */
 
 #include <cmath>
@@ -60,6 +61,11 @@ bool alphaIs(GMANAlpha const& alpha, RtFloat red, RtFloat green, RtFloat blue) {
   return alpha.getRed() == red && alpha.getGreen() == green && alpha.getBlue() == blue;
 }
 
+std::string describe(GMANColor const& color) {
+  return "(" + std::to_string(color.getRed()) + ", " + std::to_string(color.getGreen()) + ", " +
+         std::to_string(color.getBlue()) + ")";
+}
+
 std::string describe(GMANAlpha const& alpha) {
   return "(" + std::to_string(alpha.getRed()) + ", " + std::to_string(alpha.getGreen()) + ", " +
          std::to_string(alpha.getBlue()) + ")";
@@ -76,6 +82,25 @@ void testNonFiniteCoverage() {
   check(alphaIs(mixed, 1.0f, 0.5f, 0.0f), "coverage (NaN, 0.5, -inf) resolves to (1, 0.5, 0), got " + describe(mixed));
 }
 
+void testNonFiniteColourIsStoredAsZero() {
+  GMANAlpha const opaque(1.0f, 1.0f, 1.0f);
+  GMANColor const mixed = resolveOne(GMANColor(kNaN, 0.25f, kInfinity), opaque).color;
+  check(mixed.getRed() == 0.0f && mixed.getGreen() == 0.25f && mixed.getBlue() == 0.0f,
+        "a sample colour (NaN, 0.25, inf) resolves to (0, 0.25, 0), got " + describe(mixed));
+  GMANColor const negative = resolveOne(GMANColor(-kInfinity, kNaN, 1.5f), opaque).color;
+  check(negative.getRed() == 0.0f && negative.getGreen() == 0.0f && negative.getBlue() == 1.5f,
+        "a sample colour (-inf, NaN, 1.5) resolves to (0, 0, 1.5), got " + describe(negative));
+  GMANColor const finite = resolveOne(GMANColor(-0.5f, 2.0f, 0.75f), opaque).color;
+  check(finite.getRed() == -0.5f && finite.getGreen() == 2.0f && finite.getBlue() == 0.75f,
+        "a finite sample colour, out of [0, 1] included, resolves unchanged, got " + describe(finite));
+}
+
+void testNaNDepthNeverWins() {
+  GMANSampleBuffer buffer(1, 1, 1, 1, kBackground);
+  check(!buffer.zTestAndSet(0, 0, kNaN, kGrey, GMANAlpha(1.0f, 1.0f, 1.0f)), "a NaN depth is never closer");
+  check(buffer.zTestAndSet(0, 0, 2.0f, kGrey, GMANAlpha(1.0f, 1.0f, 1.0f)), "a finite depth passes after a NaN one");
+}
+
 void testFiniteCoverageIsClampedAsBefore() {
   GMANAlpha const inRange = resolveOne(kGrey, GMANAlpha(0.25f, 0.5f, 1.0f)).alpha;
   check(alphaIs(inRange, 0.25f, 0.5f, 1.0f), "a coverage in [0, 1] passes through, got " + describe(inRange));
@@ -87,6 +112,8 @@ void testFiniteCoverageIsClampedAsBefore() {
 
 int main() {
   testNonFiniteCoverage();
+  testNonFiniteColourIsStoredAsZero();
+  testNaNDepthNeverWins();
   testFiniteCoverageIsClampedAsBefore();
   return checkSummary("samplebuffernonfinite: all checks passed");
 }
