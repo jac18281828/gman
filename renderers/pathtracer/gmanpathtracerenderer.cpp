@@ -195,8 +195,10 @@ bool colorsBitwiseEqual(GMANColor const& a, GMANColor const& b) {
 // share a BSDF-sampled bounce can also reach through coverage's own
 // passThrough. v - p is every blocker's own dielectric shadowTransmittance
 // share, which next-event estimation's own weight (below) credits at
-// weight 1, since a suppressed emitter hit never adds it. p <= v always,
-// since each blocker's own factor is at least its (1 - Os) term.
+// weight 1, since a suppressed emitter hit never adds it. p <= v, since each
+// blocker's own factor is at least its (1 - Os) term, save where
+// gman::blockerTransmittance blocks a non-finite channel: v's factor is then
+// 0 while p's stays (1 - Os).
 struct ShadowWalkResult {
   GMANColor v = kWhite;
   GMANColor p = kWhite;

@@ -1,5 +1,5 @@
-## A matte sphere under a clear glass slab, lit by one distant light from above. Each face
-## of the slab passes 0.96 of the light at normal incidence. Not third-party.
+## A matte sphere lit by one distant light from above, with no slab over it: the unshadowed
+## reference for rayshadow_glass.rib. Not third-party.
 Display "rayshadow_glass_bare.tif" "file" "rgba"
 Format 320 240 1
 PixelSamples 2 2

@@ -1,6 +1,5 @@
-## A green matte receiver lit by a distant light, and a paintedplastic card outside the frame
-## shadowing it. The test writes the card's opacity map, red 128, green 255 and blue 0 in every
-## texel, so the card covers 128/255 of the light. Not third-party.
+## A green matte receiver lit by a distant light, with no card shadowing it: the unshadowed
+## reference for rayshadow_cutout.rib. Not third-party.
 Display "rayshadow_cutout_bare.tif" "file" "rgba"
 Format 200 200 1
 PixelSamples 2 2
