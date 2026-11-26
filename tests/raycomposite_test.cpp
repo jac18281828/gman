@@ -127,10 +127,10 @@ struct Twin {
 
 struct Scene {
   Twin panel;
-  Twin bare;
+  GmanImage bare;
 };
 
-bool usable(Twin const& twin) { return twin.ray.ok && twin.path.ok; }
+bool usable(Scene const& scene) { return scene.panel.ray.ok && scene.panel.path.ok && scene.bare.ok; }
 
 Twin renderTwin(std::string const& gman, std::string const& ribDir, std::string const& name) {
   Twin twin;
@@ -175,14 +175,14 @@ void checkHalfOfBare(std::string const& what, Mean const& panel, Mean const& bar
 void checkGlass(std::string const& gman, std::string const& ribDir) {
   Scene scene;
   scene.panel = renderTwin(gman, ribDir, "raycomposite_glass");
-  scene.bare = renderTwin(gman, ribDir, "raycomposite_glass_bare");
-  if (!usable(scene.panel) || !usable(scene.bare)) {
+  scene.bare = render(gman, ribDir, kRayTracer, "raycomposite_glass_bare");
+  if (!usable(scene)) {
     return;
   }
 
   const auto panelDirect = blockMean(scene.panel.ray, kGlassDirect);
-  const auto bareDirect = blockMean(scene.bare.ray, kGlassDirect);
-  const auto bareThroughSlab = blockMean(scene.bare.ray, kGlassThroughSlab);
+  const auto bareDirect = blockMean(scene.bare, kGlassDirect);
+  const auto bareThroughSlab = blockMean(scene.bare, kGlassThroughSlab);
   const auto panelRay = blockMean(scene.panel.ray, kGlassThroughSlab);
   const auto panelPath = blockMean(scene.panel.path, kGlassThroughSlab);
 
@@ -202,12 +202,12 @@ void checkGlass(std::string const& gman, std::string const& ribDir) {
 void checkMirror(std::string const& gman, std::string const& ribDir) {
   Scene scene;
   scene.panel = renderTwin(gman, ribDir, "raycomposite_mirror");
-  scene.bare = renderTwin(gman, ribDir, "raycomposite_mirror_bare");
-  if (!usable(scene.panel) || !usable(scene.bare)) {
+  scene.bare = render(gman, ribDir, kRayTracer, "raycomposite_mirror_bare");
+  if (!usable(scene)) {
     return;
   }
 
-  const auto bareRay = blockMean(scene.bare.ray, kMirrorBlock);
+  const auto bareRay = blockMean(scene.bare, kMirrorBlock);
   const auto panelRay = blockMean(scene.panel.ray, kMirrorBlock);
   const auto panelPath = blockMean(scene.panel.path, kMirrorBlock);
 
