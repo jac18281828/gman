@@ -68,11 +68,15 @@
 #include "maketransform.h"
 #include "ri.h"
 #include "samplingstats.h"
+#include "taggedmesh.h"
 
 namespace {
 
+using namespace taggedmesh;
+
 constexpr std::uint32_t kSeed = 0x8d1c8e21u;
 constexpr std::uint32_t kPanelDraws = 1u << 16;
+const GMANColor kPanelRadiance(2.0f, 4.0f, 6.0f);
 
 std::string readFile(std::string const& path) {
   std::ifstream in(path, std::ios::binary);
@@ -637,30 +641,6 @@ void testLightSolidAnglePdfConsistency() {
   checkLightSolidAnglePdfConsistency({&diskLight, &disk, 0.0f}, p, 12u, "lightSolidAnglePdf consistency, scaled disk");
 }
 
-// A mesh built as getRSPolygonMesh builds one: the appearance sits on the mesh
-// and on each face.
-std::unique_ptr<GMANRayPolygonMesh> buildTaggedMesh(std::vector<std::vector<GMANPoint>> const& loops,
-                                                    GMANLight const& light) {
-  gman::Appearance appearance;
-  appearance.areaLight = &light;
-  std::vector<std::unique_ptr<GMANRayPolygon>> faces;
-  for (std::vector<GMANPoint> const& loop : loops) {
-    std::vector<std::pair<RtFloat, RtFloat>> const texCoords(loop.size(), std::pair<RtFloat, RtFloat>(0.0f, 0.0f));
-    auto face = std::make_unique<GMANRayPolygon>(loop, std::vector<std::vector<GMANPoint>>{}, texCoords);
-    face->setAppearance(appearance);
-    faces.push_back(std::move(face));
-  }
-  auto mesh = std::make_unique<GMANRayPolygonMesh>(std::move(faces));
-  mesh->setAppearance(appearance);
-  return mesh;
-}
-
-// The rectangle [x0, x1] x [z0, z1] at height y, wound (x0, y, z0) (x0, y, z1)
-// (x1, y, z1) (x1, y, z0), so its plane normal is +y.
-std::vector<GMANPoint> upRectangle(RtFloat x0, RtFloat x1, RtFloat z0, RtFloat z1, RtFloat y) {
-  return {GMANPoint(x0, y, z0), GMANPoint(x0, y, z1), GMANPoint(x1, y, z1), GMANPoint(x1, y, z0)};
-}
-
 // upRectangle wound the other way: its plane normal is -y.
 std::vector<GMANPoint> downRectangle(RtFloat x0, RtFloat x1, RtFloat z0, RtFloat z1, RtFloat y) {
   std::vector<GMANPoint> loop = upRectangle(x0, x1, z0, z1, y);
@@ -673,32 +653,6 @@ std::vector<std::vector<GMANPoint>> unevenPanel(RtFloat y) {
   return {upRectangle(-2.0f, -1.0f, -1.0f, 0.0f, y), upRectangle(1.0f, 2.0f, -1.0f, 2.0f, y)};
 }
 
-// A one-mesh world, the mesh tagged as one area light of radiance (2, 4, 6).
-// The world owns the mesh.
-struct PanelWorld {
-  GMANLight light{GMAN_LIGHT_AREA, GMANColor(2.0f, 4.0f, 6.0f), GMANPoint(), GMANVector()};
-  GMANLinearWorldManager world;
-  GMANRayPolygonMesh const* mesh = nullptr;
-
-  explicit PanelWorld(std::vector<std::vector<GMANPoint>> const& loops) {
-    auto owned = buildTaggedMesh(loops, light);
-    mesh = owned.get();
-    world.add(owned.release());
-  }
-};
-
-// The one emitter gman::emitters enumerates for w, empty, and a failed check,
-// when it enumerates any other count.
-std::optional<gman::Emitter> panelEmitter(PanelWorld& w, std::string const& label) {
-  std::vector<gman::Emitter> const list = gman::emitters(w.world);
-  check(list.size() == 1 && list[0].shape == w.mesh && list[0].light == &w.light,
-        label + ": the mesh is one area emitter naming its own light");
-  if (list.size() != 1) {
-    return std::nullopt;
-  }
-  return list[0];
-}
-
 // A tagged two-face mesh beside a world's other emitters is one area emitter,
 // and the warning still names only the bare polygon and degenerate sphere.
 void testPolygonEnumeration() {
@@ -709,7 +663,8 @@ void testPolygonEnumeration() {
 
   GMANLight const meshLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
   std::unique_ptr<EmitterWorld> const w = buildEmitterWorld();
-  std::unique_ptr<GMANRayPolygonMesh> mesh = buildTaggedMesh(unevenPanel(0.0f), meshLight);
+  std::unique_ptr<GMANRayPolygonMesh> mesh =
+      buildTaggedMesh(solidFaces(unevenPanel(0.0f)), areaLightAppearance(meshLight));
   GMANRayPolygonMesh const* const meshShape = mesh.get();
   w->world.add(mesh.release());
   std::vector<gman::Emitter> const list = gman::emitters(w->world);
@@ -730,8 +685,8 @@ void testPolygonEnumeration() {
 }
 
 void testPolygonPower() {
-  PanelWorld w(unevenPanel(0.0f));
-  std::optional<gman::Emitter> const emitter = panelEmitter(w, "polygon power");
+  MeshWorld w(solidFaces(unevenPanel(0.0f)), kPanelRadiance);
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon power");
   if (!emitter) {
     return;
   }
@@ -743,8 +698,8 @@ void testPolygonPower() {
 }
 
 void testPolygonFaceChoice() {
-  PanelWorld w(unevenPanel(0.0f));
-  std::optional<gman::Emitter> const emitter = panelEmitter(w, "polygon face choice");
+  MeshWorld w(solidFaces(unevenPanel(0.0f)), kPanelRadiance);
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon face choice");
   if (!emitter) {
     return;
   }
@@ -764,8 +719,8 @@ void testPolygonFaceChoice() {
 // The pdf over the solid angle a panel subtends integrates to 1: a midpoint
 // quadrature of lightSolidAnglePdf * cos / d^2 over the panel's own area.
 void testPolygonPdfIntegratesToOne() {
-  PanelWorld w({downRectangle(-1.0f, 1.0f, -1.0f, 1.0f, 2.0f)});
-  std::optional<gman::Emitter> const emitter = panelEmitter(w, "polygon pdf integral");
+  MeshWorld w(solidFaces({downRectangle(-1.0f, 1.0f, -1.0f, 1.0f, 2.0f)}), kPanelRadiance);
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon pdf integral");
   if (!emitter) {
     return;
   }
@@ -794,8 +749,10 @@ void testPolygonPdfIntegratesToOne() {
 }
 
 void testPolygonPdfConsistency() {
-  PanelWorld w({downRectangle(-2.0f, -1.0f, -1.0f, 0.0f, 2.0f), downRectangle(1.0f, 2.0f, -1.0f, 2.0f, 2.0f)});
-  std::optional<gman::Emitter> const emitter = panelEmitter(w, "polygon lightSolidAnglePdf consistency");
+  MeshWorld w(
+      solidFaces({downRectangle(-2.0f, -1.0f, -1.0f, 0.0f, 2.0f), downRectangle(1.0f, 2.0f, -1.0f, 2.0f, 2.0f)}),
+      kPanelRadiance);
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon lightSolidAnglePdf consistency");
   if (!emitter) {
     return;
   }
@@ -810,8 +767,8 @@ bool colorsEqual(GMANColor const& a, GMANColor const& b) {
 // A polygon lights the side its plane normal faces and no other: sample
 // reports Le there and black behind, and lightSolidAnglePdf is 0 behind.
 void testPolygonOneSided() {
-  PanelWorld w({downRectangle(-1.0f, 1.0f, -1.0f, 1.0f, 2.0f)});
-  std::optional<gman::Emitter> const emitter = panelEmitter(w, "polygon one-sided");
+  MeshWorld w(solidFaces({downRectangle(-1.0f, 1.0f, -1.0f, 1.0f, 2.0f)}), kPanelRadiance);
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon one-sided");
   if (!emitter) {
     return;
   }
@@ -840,8 +797,8 @@ void testPolygonOneSided() {
 }
 
 void testPolygonLightChoiceWeight() {
-  PanelWorld w(unevenPanel(2.0f));
-  std::optional<gman::Emitter> const emitter = panelEmitter(w, "polygon light choice");
+  MeshWorld w(solidFaces(unevenPanel(2.0f)), kPanelRadiance);
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon light choice");
   if (!emitter) {
     return;
   }

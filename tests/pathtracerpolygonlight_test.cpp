@@ -27,9 +27,7 @@
 
 #include <cmath>
 #include <cstddef>
-#include <memory>
 #include <numbers>
-#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -45,7 +43,6 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraypolygon.h"
-#include "gmanraypolygonmesh.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
@@ -53,6 +50,7 @@
 #include "pathtracerscene.h"
 #include "ri.h"
 #include "samplingstats.h"
+#include "taggedmesh.h"
 
 namespace {
 
@@ -89,13 +87,7 @@ void addPanel(GMANPathtraceRenderer& renderer, GMANLight const& light, std::vect
   appearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
-  std::vector<std::pair<RtFloat, RtFloat>> const texCoords(loop.size(), std::pair<RtFloat, RtFloat>(0.0f, 0.0f));
-  auto face = std::make_unique<GMANRayPolygon>(loop, std::vector<std::vector<GMANPoint>>{}, texCoords, vertexNormals);
-  face->setAppearance(appearance);
-  std::vector<std::unique_ptr<GMANRayPolygon>> faces;
-  faces.push_back(std::move(face));
-  auto mesh = std::make_unique<GMANRayPolygonMesh>(std::move(faces));
-  mesh->setAppearance(appearance);
+  auto mesh = taggedmesh::buildTaggedMesh({taggedmesh::FaceSpec{loop, {}, vertexNormals}}, appearance);
   renderer.getWorldManager()->add(mesh.release());
 }
 

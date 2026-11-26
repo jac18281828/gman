@@ -33,11 +33,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
-#include <memory>
 #include <numbers>
 #include <optional>
-#include <string>
-#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -49,16 +46,17 @@
 #include "gmanpoint.h"
 #include "gmanprimitives.h"
 #include "gmanraydisk.h"
-#include "gmanraypolygon.h"
-#include "gmanraypolygonmesh.h"
 #include "gmanraysphere.h"
 #include "gmansampling.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
 #include "ri.h"
 #include "samplingstats.h"
+#include "taggedmesh.h"
 
 namespace {
+
+using namespace taggedmesh;
 
 constexpr std::uint32_t kSeed = 0x51ed270bu;
 constexpr std::uint32_t kMeshDraws = 1u << 16;
@@ -354,61 +352,10 @@ void testSampledNormal() {
   check(diskNormalOk, "normal: a full disk's sampled normal is exactly (0, 0, -1) at every draw");
 }
 
-struct FaceSpec {
-  std::vector<GMANPoint> outer;
-  std::vector<std::vector<GMANPoint>> holes;
-};
-
-// A one-mesh world tagged as one area light, built as getRSPolygonMesh builds
-// one: the appearance sits on the mesh and on each face. The world owns the
-// mesh, which owns its faces.
-struct MeshWorld {
-  GMANLight light{GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector()};
-  GMANLinearWorldManager world;
-  GMANRayPolygonMesh const* mesh = nullptr;
-
-  explicit MeshWorld(std::vector<FaceSpec> const& specs) {
-    gman::Appearance appearance;
-    appearance.areaLight = &light;
-    std::vector<std::unique_ptr<GMANRayPolygon>> faces;
-    for (FaceSpec const& spec : specs) {
-      std::vector<std::pair<RtFloat, RtFloat>> const texCoords(spec.outer.size(),
-                                                               std::pair<RtFloat, RtFloat>(0.0f, 0.0f));
-      auto face = std::make_unique<GMANRayPolygon>(spec.outer, spec.holes, texCoords);
-      face->setAppearance(appearance);
-      faces.push_back(std::move(face));
-    }
-    auto owned = std::make_unique<GMANRayPolygonMesh>(std::move(faces));
-    owned->setAppearance(appearance);
-    mesh = owned.get();
-    world.add(owned.release());
-  }
-};
-
-// The one emitter gman::emitters enumerates for w; empty, and a failed check,
-// when it enumerates any other count.
-std::optional<gman::Emitter> soleEmitter(MeshWorld& w, std::string const& label) {
-  std::vector<gman::Emitter> const list = gman::emitters(w.world);
-  check(list.size() == 1 && list[0].shape == w.mesh && list[0].light == &w.light,
-        label + ": the mesh is one area emitter naming its own light");
-  if (list.size() != 1) {
-    return std::nullopt;
-  }
-  return list[0];
-}
-
 std::size_t meshEmitterCount(std::vector<FaceSpec> const& specs) {
   MeshWorld w(specs);
   return gman::emitters(w.world).size();
 }
-
-// The square of half-width half at height y, wound (-half, y, -half) (-half,
-// y, half) (half, y, half) (half, y, -half): its plane normal is +y.
-std::vector<GMANPoint> squareLoop(RtFloat half, RtFloat y) {
-  return {GMANPoint(-half, y, -half), GMANPoint(-half, y, half), GMANPoint(half, y, half), GMANPoint(half, y, -half)};
-}
-
-FaceSpec solidFace(std::vector<GMANPoint> outer) { return FaceSpec{std::move(outer), {}}; }
 
 void testPolygonArea() {
   MeshWorld w({solidFace({GMANPoint(-1.0f, 0.0f, -1.5f), GMANPoint(-1.0f, 0.0f, 1.5f), GMANPoint(1.0f, 0.0f, 1.5f),
@@ -571,7 +518,7 @@ void testPolygonEligibility() {
   RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
   RtFloat const infinity = std::numeric_limits<RtFloat>::infinity();
 
-  FaceSpec const holed{squareLoop(2.0f, 0.0f), {squareLoop(0.5f, 0.0f)}};
+  FaceSpec const holed{squareLoop(2.0f, 0.0f), {squareLoop(0.5f, 0.0f)}, {}};
   check(meshEmitterCount({holed}) == 0, "polygon eligibility: a face with a hole is ineligible");
 
   FaceSpec const concave = solidFace({GMANPoint(4.0f, 0.0f, 0.0f), GMANPoint(1.0f, 0.0f, 1.0f),
