@@ -204,9 +204,11 @@ public:
                      GMANPoint(), GMANVector(kDistantDirectionX, kDistantDirectionY, kDistantDirectionZ)),
         areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector()),
         viewingSys(kWidth, kHeight, squareScreenWindow(), identity, kViewFov, kSceneNear, kSceneFar) {
-    GMANRayPolygon* floor = buildFloor();
+    GMANRayPolygon* floor = nullptr;
     if (winding == Winding::reversed) {
       floor = buildReversedFloor();
+    } else {
+      floor = buildFloor();
     }
     gman::Appearance appearance;
     appearance.shader = loadShader("matte", matteParams(1.0f));
