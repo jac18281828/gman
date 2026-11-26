@@ -513,14 +513,14 @@ void runCase(Case const& c, std::uint32_t dim) {
 // e: every field of every draw from p is finite, every pdf is 0 or more, and
 // lightSolidAnglePdf at each accepted draw's hit is finite.
 void checkDegenerate(gman::Emitter const& emitter, GMANPoint const& p, std::string const& label, std::uint32_t dim) {
-  bool finiteFields = true;
-  bool pdfNotNegative = true;
-  bool finiteHitPdf = true;
+  auto finiteFields = true;
+  auto pdfNotNegative = true;
+  auto finiteHitPdf = true;
   std::uint32_t acceptedCount = 0;
   for (std::uint32_t i = 0; i < kDraws; ++i) {
     const auto uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
     const auto s = gman::sample(emitter, p, uv.u1, uv.u2);
-    std::initializer_list<RtFloat> const fields = {s.wi.getX(),
+    const std::initializer_list<RtFloat> fields = {s.wi.getX(),
                                                    s.wi.getY(),
                                                    s.wi.getZ(),
                                                    s.distance,
@@ -622,7 +622,7 @@ void runTriangleCase(std::vector<GMANPoint> const& loop, GMANPoint const& p, std
   const auto m01 = midpoint(v[0], v[1]);
   const auto m12 = midpoint(v[1], v[2]);
   const auto m20 = midpoint(v[2], v[0]);
-  std::vector<Region> const regions = {
+  const std::vector<Region> regions = {
       {{v[0], m01, m20}, normal}, {{m01, v[1], m12}, normal}, {{m20, m12, v[2]}, normal}, {{m01, m12, m20}, normal}};
 
   Case c;

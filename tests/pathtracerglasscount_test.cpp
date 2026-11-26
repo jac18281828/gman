@@ -84,7 +84,7 @@ GMANRayPolygon* buildGlassPane(RtFloat os) {
 // either side of the floor's centre in x and z.
 GMANRayPolygon* buildHorizontalGlassPane(RtFloat os) {
   const auto zMid = (kFloorZMin + kFloorZMax) / 2.0f;
-  std::vector<GMANPoint> const verts = {GMANPoint(-kPaneHalfExtent, kHorizontalPaneY, zMid - kPaneHalfExtent),
+  const std::vector<GMANPoint> verts = {GMANPoint(-kPaneHalfExtent, kHorizontalPaneY, zMid - kPaneHalfExtent),
                                         GMANPoint(-kPaneHalfExtent, kHorizontalPaneY, zMid + kPaneHalfExtent),
                                         GMANPoint(kPaneHalfExtent, kHorizontalPaneY, zMid + kPaneHalfExtent),
                                         GMANPoint(kPaneHalfExtent, kHorizontalPaneY, zMid - kPaneHalfExtent)};

@@ -118,9 +118,9 @@ std::string variantText(std::string const& ribDir, NoiseCase const& c, std::uint
   auto in = std::istringstream(readFile(ribDir + "/" + c.fixture + ".rib"));
   std::ostringstream out;
   std::map<std::string, bool> found;
-  bool display = false;
-  bool count = false;
-  bool blockerDropped = false;
+  auto display = false;
+  auto count = false;
+  auto blockerDropped = false;
   std::vector<std::string> attributeBlock;
   std::string line;
   while (std::getline(in, line)) {
@@ -130,7 +130,7 @@ std::string variantText(std::string const& ribDir, NoiseCase const& c, std::uint
     } else if (startsWith(line, kDrawsPrefix)) {
       line = std::string(kDrawsPrefix) + " [" + std::to_string(draws) + "]";
       count = true;
-    } else if (auto const edit = c.edits.find(line); edit != c.edits.end()) {
+    } else if (const auto edit = c.edits.find(line); edit != c.edits.end()) {
       found[line] = true;
       line = edit->second;
     }
@@ -139,7 +139,7 @@ std::string variantText(std::string const& ribDir, NoiseCase const& c, std::uint
       if (line != "AttributeEnd") {
         continue;
       }
-      bool blocker = false;
+      auto blocker = false;
       for (std::string const& held : attributeBlock) {
         blocker = blocker || held == kBlockerLine;
       }
@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
   const auto gman = std::string(argv[1]);
   const auto ribDir = std::string(argv[2]);
 
-  std::vector<NoiseCase> const cases = {
+  const std::vector<NoiseCase> cases = {
       {"nearfield_panel", kNearFixture, {}, false, kUnderside, kNearDraws, kNearBound},
       {"nearfield_disk", kNearFixture, {{kPanelLine, kDiskLines}}, false, kUnderside, kNearDraws, kNearBound},
       {"nearfield_sphere",
