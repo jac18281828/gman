@@ -1638,6 +1638,58 @@ if(GMAN_BUILD_PATHTRACER)
     TIMEOUT 30)
 endif()
 
+# A ray renderer draws Patch and PatchMesh with the z-buffer's coverage, and
+# the ray tracer with its flat colour where ambientlight alone lights the
+# fixture. See tests/patchraycoverage_test.cpp.
+add_executable(gman_patchraycoverage patchraycoverage_test.cpp)
+target_link_libraries(gman_patchraycoverage PRIVATE gman_core TIFF::TIFF)
+add_dependencies(gman_patchraycoverage gman_zbuffer gman_matte gman_plastic)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_patchraycoverage gman_raytracer)
+
+  set(GMAN_PATCHRAYCOVERAGE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchraycoverage-run")
+  file(MAKE_DIRECTORY "${GMAN_PATCHRAYCOVERAGE_WORKDIR}")
+
+  add_test(NAME patchraycoverage
+    COMMAND gman_patchraycoverage $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                  gmanraytracer
+                                  patch_norender
+                                  patch_bicubic
+                                  patch_bilinear_twin
+                                  patchmesh_bilinear
+                                  patchmesh_bilinear_periodic
+                                  patchmesh_bicubic
+                                  patch_bicubic_curved
+                                  patchmesh_bspline_tube
+    WORKING_DIRECTORY "${GMAN_PATCHRAYCOVERAGE_WORKDIR}")
+  set_tests_properties(patchraycoverage PROPERTIES
+    ENVIRONMENT "${GMAN_PHASE2_ENV}"
+    LABELS render
+    TIMEOUT 120)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_patchraycoverage gman_pathtracer)
+
+  set(GMAN_PATCHPATHCOVERAGE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchpathcoverage-run")
+  file(MAKE_DIRECTORY "${GMAN_PATCHPATHCOVERAGE_WORKDIR}")
+
+  add_test(NAME patchpathcoverage
+    COMMAND gman_patchraycoverage $<TARGET_FILE:gman>
+                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                  gmanpathtracer
+                                  patch_bicubic
+                                  patch_bicubic_curved
+                                  patchmesh_bspline_tube
+    WORKING_DIRECTORY "${GMAN_PATCHPATHCOVERAGE_WORKDIR}")
+  set_tests_properties(patchpathcoverage PROPERTIES
+    ENVIRONMENT "${GMAN_PHASE2_ENV}"
+    LABELS render
+    TIMEOUT 120)
+endif()
+
 # 16-bit TIFF textures at full depth: RGB, greyscale and associated-alpha
 # files sampled at v / 65535, a 16-bit file the reader can take only at 8 bits
 # warning once, 8-bit files sampling as before, and makeTexture and

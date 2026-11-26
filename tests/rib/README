@@ -235,6 +235,26 @@ same order, issued as a plain `Patch "bilinear"`. Registered in
 `tests/nupatch_test.cpp`. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
+## patch_bicubic_curved.rib
+
+One curved `Patch "bicubic"` under the default Bezier basis, the sixteen
+control points bulging at the corners and sagging in the middle, lit by
+`ambientlight` and `distantlight` under `plastic` and filling about a quarter
+of the frame. `tests/patchraycoverage_test.cpp` renders it under the
+z-buffer and the ray renderers and compares the pixels each covers; a
+renderer that draws no `Patch` fails every one. A trailing `Sphere` follows
+the desync convention. Not third-party.
+
+## patchmesh_bspline_tube.rib
+
+`PatchMesh "bicubic"` under a `Basis "b-spline" 1 "b-spline" 1`, periodic on
+u (nu=4) and nonperiodic on v (nv=5): a four-sided tube rotated 55 degrees
+about x so its inside and outside both show. Lit by `ambientlight` alone with
+`"Ka" [1] "Kd" [0]`, so every fully covered pixel has one flat colour in
+every renderer, which `tests/patchraycoverage_test.cpp` compares as well as
+coverage. The periodic seam must close without a gap. A trailing `Sphere`
+follows the desync convention. Not third-party.
+
 ## nupatch_texturecoordinates.rib
 
 Pins the out-of-scope decision that `RiTextureCoordinates` never changes

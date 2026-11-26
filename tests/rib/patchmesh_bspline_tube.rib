@@ -1,0 +1,32 @@
+## A bicubic B-spline PatchMesh, periodic around u and nonperiodic along v: a
+## tube tilted so its inside and outside both show, under ambient light alone
+## (Ka 1, Kd 0) so a ray renderer's flat colour equals the z-buffer's.
+##
+## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
+## desync convention."
+Display "patchmesh_bspline_tube.tif" "file" "rgba"
+Format 200 200 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "ambientlight" 1 "intensity" [0.6]
+Sides 2
+Surface "matte" "Ka" [1] "Kd" [0]
+Basis "b-spline" 1 "b-spline" 1
+AttributeBegin
+	Translate -0.4 0 0
+	Rotate -55 1 0 0
+	PatchMesh "bicubic" 4 "periodic" 5 "nonperiodic" "P" [
+		0.8 0.0 -1.0   0.0 0.8 -1.0   -0.8 0.0 -1.0   0.0 -0.8 -1.0
+		0.8 0.0 -0.5   0.0 0.8 -0.5   -0.8 0.0 -0.5   0.0 -0.8 -0.5
+		0.8 0.0  0.0   0.0 0.8  0.0   -0.8 0.0  0.0   0.0 -0.8  0.0
+		0.8 0.0  0.5   0.0 0.8  0.5   -0.8 0.0  0.5   0.0 -0.8  0.5
+		0.8 0.0  1.0   0.0 0.8  1.0   -0.8 0.0  1.0   0.0 -0.8  1.0
+	]
+AttributeEnd
+AttributeBegin
+	Translate 1.5 -1.5 0
+	Sphere 0.3 -0.3 0.3 360
+AttributeEnd
+WorldEnd
