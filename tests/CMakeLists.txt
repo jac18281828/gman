@@ -4556,22 +4556,33 @@ set_tests_properties(shaderbsdf PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Checks one image the install test's renders write: it opens as a TIFF of the
+# width and height given and, with a fourth argument `lit`, carries a pixel
+# with a nonzero colour channel. See tests/installimage_test.cpp.
+add_executable(gman_installimage installimage_test.cpp)
+target_link_libraries(gman_installimage PRIVATE TIFF::TIFF)
+
 # Proves both halves of an installed gman. The headers the install writes
 # directly under include/gman are exactly the ones tests/installed_headers.txt
 # lists, so a header that appears or disappears fails the test by name.
 # bin/gman renders every shipped shader (matte, plastic, metal, paintedplastic,
 # shinymetal) from a fresh cmake --install prefix, then the ray tracer, the
 # path tracer and the ray tracer's radiosity pass, each from the plugin that
-# loads it by bare name. An unrelated CMake project then finds the prefix with
-# find_package(gman) and builds three programs: one links gman::gman_core
-# alone and compiles <gman/ri.h>, one links gman::gman_ray alone and calls
-# into libgman_ray, and one links gman::gman_raster alone and calls into
-# libgman_raster; the include path and core link of the last two reach them
-# through the library's public dependency. It also builds, without loading,
-# a shader plugin against gman_core and a renderer plugin against gman_core
-# and gman_ray. The parent's CMAKE_MODULE_LINKER_FLAGS reach that project, so
-# its plugins link as the parent's own do. See tests/install_test.cmake for
-# the steps and tests/install/ for the consumer project it builds.
+# loads it by bare name. gman_installimage checks every one of those images
+# at the size its fixture gives. tests/rib/smoke.rib then renders under every
+# installed renderer, each image the size of its Format and carrying a lit
+# pixel, and a guard fails when the prefix installs a renderer no row renders.
+# An unrelated CMake project then finds the prefix with find_package(gman) and
+# builds four programs: one links gman::gman_core alone and compiles
+# <gman/ri.h>, one links gman::gman_ray alone and calls into libgman_ray, one
+# links gman::gman_raster alone and calls into libgman_raster, and one links
+# all three, renders a lit sphere and calls into each library; the include
+# path and core link of the ray and raster programs reach them through the
+# library's public dependency. It also builds, without loading, a shader
+# plugin against gman_core and a renderer plugin against gman_core and
+# gman_ray. The parent's CMAKE_MODULE_LINKER_FLAGS reach that project, so its
+# plugins link as the parent's own do. See tests/install_test.cmake for the
+# steps and tests/install/ for the consumer project it builds.
 #
 # cmake --install (step 1) reads libgmanrib.so from the build tree, so this
 # carries the same RESOURCE_LOCK as the ribwriter tests above.
@@ -4599,6 +4610,7 @@ add_test(NAME install
           -D "GMAN_HAS_PATHTRACER=${GMAN_BUILD_PATHTRACER}"
           -D "GMAN_HAS_RADIOSITY=${GMAN_BUILD_RADIOSITY}"
           -D "GMAN_INSTALLED_HEADERS_MANIFEST=${CMAKE_CURRENT_SOURCE_DIR}/installed_headers.txt"
+          -D "GMAN_IMAGECHECK=$<TARGET_FILE:gman_installimage>"
           -P "${CMAKE_CURRENT_SOURCE_DIR}/install_test.cmake")
 set_tests_properties(install PROPERTIES
   LABELS render

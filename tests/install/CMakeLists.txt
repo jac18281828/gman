@@ -21,6 +21,9 @@ target_link_libraries(consumer_ray PRIVATE gman::gman_ray)
 add_executable(consumer_raster consumer_raster.cpp)
 target_link_libraries(consumer_raster PRIVATE gman::gman_raster)
 
+add_executable(consumer_all consumer_all.cpp)
+target_link_libraries(consumer_all PRIVATE gman::gman_core gman::gman_ray gman::gman_raster)
+
 # Plugins are built and linked here, never loaded: the installed headers and
 # exported symbols are all an out-of-tree shader or renderer needs.
 add_library(shader_plugin MODULE shader_plugin.cpp)

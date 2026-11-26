@@ -28,11 +28,17 @@ foreach(var
     GMAN_HAS_RAYTRACER
     GMAN_HAS_PATHTRACER
     GMAN_HAS_RADIOSITY
-    GMAN_INSTALLED_HEADERS_MANIFEST)
+    GMAN_INSTALLED_HEADERS_MANIFEST
+    GMAN_IMAGECHECK)
   if(NOT DEFINED ${var})
     message(FATAL_ERROR "install_test.cmake: ${var} is required")
   endif()
 endforeach()
+
+# The size, in pixels, of tests/rib/smoke.rib and of the image consumer_all
+# writes.
+set(GMAN_SMOKE_WIDTH 40)
+set(GMAN_SMOKE_HEIGHT 30)
 
 # Runs one COMMAND, with an optional WORKING_DIRECTORY, and stops the whole
 # script with a labelled FATAL_ERROR naming the exit code on nonzero.
@@ -51,6 +57,19 @@ function(gman_run_or_fail label)
   if(NOT GMAN_RUN_RESULT EQUAL 0)
     message(FATAL_ERROR "${label} exited ${GMAN_RUN_RESULT}")
   endif()
+endfunction()
+
+# Stops the script unless GMAN_IMAGECHECK accepts image as a TIFF of width by
+# height; with LIT it also wants a pixel with a nonzero colour channel. The
+# checker's one-line report reaches the test's output.
+function(gman_check_image label image width height)
+  cmake_parse_arguments(GMAN_IMAGE "LIT" "" "" ${ARGN})
+  set(checker_arguments "${image}" "${width}" "${height}")
+  if(GMAN_IMAGE_LIT)
+    list(APPEND checker_arguments lit)
+  endif()
+  gman_run_or_fail("${label}: checking ${image}"
+    COMMAND "${GMAN_IMAGECHECK}" ${checker_arguments})
 endfunction()
 
 # --- Step 1: install into a fresh prefix ------------------------------------
@@ -84,7 +103,7 @@ if(GMAN_HEADER_DIFFERENCES)
     "step 1 (install): include/gman differs from ${GMAN_INSTALLED_HEADERS_MANIFEST}:${GMAN_HEADER_DIFFERENCES}")
 endif()
 
-# --- Step 2: render every shipped shader from the installed bin/gman -------
+# --- Step 2: render from the installed bin/gman: shaders, then renderers ---
 #
 # No LD_LIBRARY_PATH/DYLD_LIBRARY_PATH is set here or on the "install" test
 # itself: the build-tree loader path the other tests set would hand the
@@ -99,28 +118,20 @@ if(NOT EXISTS "${GMAN_INSTALLED_EXE}")
   message(FATAL_ERROR "step 2 (render): ${GMAN_INSTALLED_EXE} does not exist")
 endif()
 
-function(gman_render_shader rib_name image_name)
+function(gman_render_shader rib_name image_name width height)
   gman_run_or_fail("step 2 (render): rendering ${rib_name}"
     COMMAND "${GMAN_INSTALLED_EXE}" "${GMAN_SOURCE_DIR}/tests/rib/${rib_name}"
     WORKING_DIRECTORY "${GMAN_RENDER_DIR}")
-
-  set(image "${GMAN_RENDER_DIR}/${image_name}")
-  if(NOT EXISTS "${image}")
-    message(FATAL_ERROR "step 2 (render): ${rib_name} did not write ${image_name}")
-  endif()
-  file(SIZE "${image}" size)
-  if(size EQUAL 0)
-    message(FATAL_ERROR "step 2 (render): ${image_name} is empty")
-  endif()
+  gman_check_image("step 2 (render): ${rib_name}" "${GMAN_RENDER_DIR}/${image_name}" ${width} ${height})
 endfunction()
 
 # matte, plastic, metal.
-gman_render_shader(shaders.rib shaders.tif)
+gman_render_shader(shaders.rib shaders.tif 600 200)
 # paintedplastic; warns "cannot open, using opaque black" for the texture
 # texture_test alone writes, and still exits 0.
-gman_render_shader(texture.rib texture.tif)
+gman_render_shader(texture.rib texture.tif 200 200)
 # shinymetal.
-gman_render_shader(shinymetal_degrades.rib shinymetal_degrades.tif)
+gman_render_shader(shinymetal_degrades.rib shinymetal_degrades.tif 200 200)
 
 # R4: `-r gmanraytracer` from an install prefix, on the one fixture step 2
 # above does not already render. Only when the plugin was built -- GMAN_HAS_RAYTRACER
@@ -129,24 +140,16 @@ if(GMAN_HAS_RAYTRACER)
   gman_run_or_fail("step 2 (render): rendering r4_raytracer.rib under -r gmanraytracer"
     COMMAND "${GMAN_INSTALLED_EXE}" -r gmanraytracer "${GMAN_SOURCE_DIR}/tests/rib/r4_raytracer.rib"
     WORKING_DIRECTORY "${GMAN_RENDER_DIR}")
-
-  set(GMAN_RAYTRACER_IMAGE "${GMAN_RENDER_DIR}/r4_raytracer.tif")
-  if(NOT EXISTS "${GMAN_RAYTRACER_IMAGE}")
-    message(FATAL_ERROR "step 2 (render): r4_raytracer.rib did not write r4_raytracer.tif")
-  endif()
-  file(SIZE "${GMAN_RAYTRACER_IMAGE}" GMAN_RAYTRACER_IMAGE_SIZE)
-  if(GMAN_RAYTRACER_IMAGE_SIZE EQUAL 0)
-    message(FATAL_ERROR "step 2 (render): r4_raytracer.tif is empty")
-  endif()
+  gman_check_image("step 2 (render): r4_raytracer.rib" "${GMAN_RENDER_DIR}/r4_raytracer.tif" 640 480)
 endif()
 
 # Renders tests/rib/<rib_name> under -r <renderer> from the prefix and checks
-# the exit status, then that <image_name> exists and is non-empty. With
+# the exit status, then that <image_name> is a TIFF of width by height. With
 # CHECK_PASS_WARNING, a render whose output carries gman::loadIndirectPass's
 # warning prefix fails too: a missing or unloadable pass costs the indirect
 # light, never the frame, so an image proves nothing about whether the pass
 # loaded.
-function(gman_render_ray_scene rib_name image_name renderer)
+function(gman_render_ray_scene rib_name image_name width height renderer)
   cmake_parse_arguments(GMAN_SCENE "CHECK_PASS_WARNING" "" "" ${ARGN})
   execute_process(
     COMMAND "${GMAN_INSTALLED_EXE}" -r "${renderer}" "${GMAN_SOURCE_DIR}/tests/rib/${rib_name}"
@@ -167,28 +170,82 @@ function(gman_render_ray_scene rib_name image_name renderer)
     endif()
   endif()
 
-  set(image "${GMAN_RENDER_DIR}/${image_name}")
-  if(NOT EXISTS "${image}")
-    message(FATAL_ERROR "step 2 (render): ${rib_name} did not write ${image_name}")
-  endif()
-  file(SIZE "${image}" size)
-  if(size EQUAL 0)
-    message(FATAL_ERROR "step 2 (render): ${image_name} is empty")
-  endif()
+  gman_check_image("step 2 (render): ${rib_name} under -r ${renderer}"
+    "${GMAN_RENDER_DIR}/${image_name}" ${width} ${height})
 endfunction()
 
 # The path tracer from an install prefix. pathtracer_samples.rib names no
 # indirect pass. Only when the plugin was built -- GMAN_HAS_PATHTRACER
 # reflects GMAN_BUILD_PATHTRACER.
 if(GMAN_HAS_PATHTRACER)
-  gman_render_ray_scene(pathtracer_samples.rib pathtracer_samples.tif gmanpathtracer)
+  gman_render_ray_scene(pathtracer_samples.rib pathtracer_samples.tif 32 32 gmanpathtracer)
 endif()
 
 # The radiosity pass from an install prefix: the ray tracer hosts it, and
 # radiosity_box.rib selects it with Option "render" "string indirect".
 # GMAN_HAS_RADIOSITY reflects GMAN_BUILD_RADIOSITY.
 if(GMAN_HAS_RADIOSITY AND GMAN_HAS_RAYTRACER)
-  gman_render_ray_scene(radiosity_box.rib radiosity_box.tif gmanraytracer CHECK_PASS_WARNING)
+  gman_render_ray_scene(radiosity_box.rib radiosity_box.tif 24 24 gmanraytracer CHECK_PASS_WARNING)
+endif()
+
+# One scene under every installed renderer: tests/rib/smoke.rib renders at
+# GMAN_SMOKE_WIDTH by GMAN_SMOKE_HEIGHT in a directory of its own, and the
+# image carries a lit pixel. A shader that fails to load stops the file, so
+# each row also proves matte and plastic load from the prefix.
+function(gman_render_smoke renderer)
+  set(smoke_dir "${GMAN_RENDER_DIR}/smoke-${renderer}")
+  file(MAKE_DIRECTORY "${smoke_dir}")
+  gman_run_or_fail("step 2 (smoke): rendering smoke.rib under -r ${renderer}"
+    COMMAND "${GMAN_INSTALLED_EXE}" -r "${renderer}" "${GMAN_SOURCE_DIR}/tests/rib/smoke.rib"
+    WORKING_DIRECTORY "${smoke_dir}")
+  gman_check_image("step 2 (smoke): smoke.rib under -r ${renderer}"
+    "${smoke_dir}/smoke.tif" ${GMAN_SMOKE_WIDTH} ${GMAN_SMOKE_HEIGHT} LIT)
+endfunction()
+
+set(GMAN_SMOKE_RENDERERS gmanzbuffer)
+if(GMAN_HAS_RAYTRACER)
+  list(APPEND GMAN_SMOKE_RENDERERS gmanraytracer)
+endif()
+if(GMAN_HAS_PATHTRACER)
+  list(APPEND GMAN_SMOKE_RENDERERS gmanpathtracer)
+endif()
+foreach(renderer IN LISTS GMAN_SMOKE_RENDERERS)
+  gman_render_smoke(${renderer})
+endforeach()
+
+# The prefix installs exactly the renderers the smoke rows render. A
+# renderer's file is libgman and a lower-case letter, then the rest
+# (libgmanzbuffer.so, libgmanraytracer.so, libgmanpathtracer.so); the RIB
+# writer, libgmanrib.so, is the one other file of that form and no renderer.
+# A renderer named otherwise escapes this check. A difference fails the step,
+# each name carrying its sign: "+" installed and no row renders it, "-" a row
+# names it and it is not installed.
+file(GLOB GMAN_INSTALLED_RENDERER_FILES LIST_DIRECTORIES false
+  RELATIVE "${GMAN_PREFIX}/${GMAN_LIBDIR}"
+  "${GMAN_PREFIX}/${GMAN_LIBDIR}/libgman[a-z]*.so")
+list(REMOVE_ITEM GMAN_INSTALLED_RENDERER_FILES libgmanrib.so)
+
+set(GMAN_SMOKE_RENDERER_FILES "")
+foreach(renderer IN LISTS GMAN_SMOKE_RENDERERS)
+  list(APPEND GMAN_SMOKE_RENDERER_FILES "lib${renderer}.so")
+endforeach()
+
+set(GMAN_RENDERER_DIFFERENCES "")
+foreach(renderer_file IN LISTS GMAN_INSTALLED_RENDERER_FILES)
+  if(NOT renderer_file IN_LIST GMAN_SMOKE_RENDERER_FILES)
+    string(APPEND GMAN_RENDERER_DIFFERENCES "\n  +${renderer_file} is installed and no smoke row renders it")
+  endif()
+endforeach()
+foreach(renderer_file IN LISTS GMAN_SMOKE_RENDERER_FILES)
+  if(NOT renderer_file IN_LIST GMAN_INSTALLED_RENDERER_FILES)
+    string(APPEND GMAN_RENDERER_DIFFERENCES "\n  -${renderer_file} has a smoke row and is not installed")
+  endif()
+endforeach()
+if(GMAN_RENDERER_DIFFERENCES)
+  message(FATAL_ERROR
+    "step 2 (smoke): the installed renderers differ from the smoke rows:${GMAN_RENDERER_DIFFERENCES}\n"
+    "A renderer's file is libgman followed by a lower-case letter, as in libgmanzbuffer.so; "
+    "this check finds renderers by that name, so a renderer named otherwise escapes it.")
 endif()
 
 # --- Step 3: configure, build and run a consumer against the prefix --------
@@ -249,6 +306,19 @@ endif()
 
 gman_run_or_fail("step 3 (consumer): running consumer_raster"
   COMMAND "${GMAN_CONSUMER_RASTER_EXE}")
+
+set(GMAN_CONSUMER_ALL_EXE "${GMAN_CONSUMER_BUILD_DIR}/consumer_all")
+if(NOT EXISTS "${GMAN_CONSUMER_ALL_EXE}")
+  message(FATAL_ERROR "step 3 (consumer): ${GMAN_CONSUMER_ALL_EXE} was not built")
+endif()
+
+set(GMAN_CONSUMER_ALL_DIR "${GMAN_RENDER_DIR}/consumer_all")
+file(MAKE_DIRECTORY "${GMAN_CONSUMER_ALL_DIR}")
+gman_run_or_fail("step 3 (consumer): running consumer_all"
+  COMMAND "${GMAN_CONSUMER_ALL_EXE}"
+  WORKING_DIRECTORY "${GMAN_CONSUMER_ALL_DIR}")
+gman_check_image("step 3 (consumer): consumer_all"
+  "${GMAN_CONSUMER_ALL_DIR}/consumer_all.tif" ${GMAN_SMOKE_WIDTH} ${GMAN_SMOKE_HEIGHT} LIT)
 
 foreach(plugin shader_plugin renderer_plugin)
   set(GMAN_PLUGIN_FILE "${GMAN_CONSUMER_BUILD_DIR}/lib${plugin}.so")
