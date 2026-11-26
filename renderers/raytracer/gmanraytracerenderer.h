@@ -104,15 +104,18 @@ private:
 
 /*
  * The ray tracer's own gman::Tracer: casts R from P (offset off Ng, the
- * same self-shadow discipline shadeSample's composite loop and
- * GMANRayOccluder::transmission already take), shades the nearest hit at
- * depth + 1, and returns background on a miss or once depth reaches
- * kMaxTraceDepth (gmanraytracerenderer.cpp) -- without casting a ray or
- * touching bvh at all in that last case. A public, standalone class so a
- * unit test builds one directly, against a GMANRayBVH and GMANRayOccluder
- * it controls. Not GMAN_EXPORT: only its own tests use it, and they
- * compile the plugin's own sources directly rather than linking the
- * installed library.
+ * same self-shadow discipline compositeLayers and
+ * GMANRayOccluder::transmission already take), composites the layers along
+ * the ray front to back, each shaded at depth + 1, and returns that colour
+ * plus the transmission left over background -- the colour a miss returns, so
+ * a ray crossing partly opaque surfaces and leaving the scene reads them over
+ * the background a camera ray sees. Returns background alone on a miss or
+ * once depth reaches kMaxTraceDepth (gmanraytracerenderer.cpp), without
+ * casting a ray or touching bvh at all in that last case. A public,
+ * standalone class so a unit test builds one directly, against a GMANRayBVH
+ * and GMANRayOccluder it controls. Not GMAN_EXPORT: only its own tests use
+ * it, and they compile the plugin's own sources directly rather than linking
+ * the installed library.
  *
  * Bound to a GMANAreaLightSample, it lights every hit it shades from that
  * sample's area emitters through the hit's own shader: each draw is one more

@@ -228,7 +228,10 @@ GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVect
 
   GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1, indirectPass, textureCache,
                             areaSample);
-  return child.shadeHit(*hitPrimitive, ray, hit).Ci;
+  const auto composited = child.compositeLayers(ray, hit, *hitPrimitive);
+  GMANColor result = composited.colour;
+  result += gman::multiplyChannels(composited.transmission, background);
+  return result;
 }
 
 gman::Shading GMANRayTracer::shadeLit(GMANRayInterface const& hitPrimitive, gman::SurfacePoint const& point,

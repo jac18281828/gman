@@ -26,7 +26,11 @@
  * never black; a single hit's shading matches gman::shade called
  * directly; the self-shadow offset applies to a traced ray exactly as it
  * does to a shadow ray (tests/rayoccluder_test.cpp's own model); and
- * recursion depth is counted correctly.
+ * recursion depth is counted correctly. Checks 9 to 13 pin the composite of
+ * partly opaque layers along a traced ray: each layer adds its colour through
+ * the transmission left, the background shows through what remains, a
+ * per-channel opacity passes each channel by its own, the composite stops at
+ * gman::kMaxCompositeLayers, and an opaque layer casts no ray behind it.
  */
 
 #include <cmath>
@@ -43,6 +47,8 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybbox.h"
+#include "gmanraydisk.h"
+#include "gmanrayoccluder.h"
 #include "gmanraysphere.h"
 #include "gmanraytracerenderer.h"
 #include "gmanshaderenvironment.h"
@@ -61,6 +67,16 @@ constexpr RtFloat kTol = (RtFloat)1.0e-5;
 // path with no accumulated render error, so 1e-6 -- tighter than kTol's
 // 1e-5, sized for the longer chains the other checks trace -- still holds.
 constexpr RtFloat kIndirectPassTol = (RtFloat)1.0e-6;
+
+// Checks 9 to 13: every layer is one flat disk wide enough to cover the ray
+// at every z the stack reaches, spaced well past the composite's gap.
+constexpr RtFloat kLayerRadius = 100.0f;
+constexpr RtFloat kLayerSpacing = 1.0f;
+constexpr RtFloat kFirstLayerZ = 2.0f;
+constexpr RtFloat kThinLayerOpacity = 0.05f;
+constexpr int kShallowStackDepth = 8;
+constexpr int kDeepStackDepth = 20;
+constexpr RtFloat kStackSeparation = 0.01f;
 
 bool colorNear(GMANColor const& a, GMANColor const& b, RtFloat tol) {
   return std::fabs(a.getRed() - b.getRed()) <= tol && std::fabs(a.getGreen() - b.getGreen()) <= tol &&
@@ -163,6 +179,23 @@ public:
   GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
 };
 
+// Fixed colour, counting its own computeCi invocations: lets check 13 see
+// whether a layer behind another was ever shaded.
+class CountingColorShader : public GMANSurfaceShader {
+public:
+  explicit CountingColorShader(GMANColor color) : color_(color) {}
+  mutable int computeCiCallCount = 0;
+
+  GMANColor computeCi(GMANSurfaceEnv const& /*se*/) const override {
+    ++computeCiCallCount;
+    return color_;
+  }
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
+
+private:
+  GMANColor color_;
+};
+
 // Answers c unconditionally: proves the indirect-light wiring itself,
 // independent of any host's own prepare()/irradiance() contract.
 class ConstantIndirectPassFixture : public gman::IndirectPass {
@@ -225,6 +258,43 @@ gman::SurfacePoint surfacePointFromHit(GMANHit const& hit, GMANVector const& r0,
   point.s = hit.u;
   point.t = hit.v;
   return point;
+}
+
+// Single-hit layers along +z from the origin, each a disk of Os os shaded
+// by shader, which the caller keeps alive: what a trace() down +z crosses.
+class LayerStack {
+public:
+  void addLayer(RtFloat z, GMANSurfaceShader const& shader, GMANColor const& os) {
+    GMANMatrix4 place;
+    place.trans(0.0f, 0.0f, z);
+    const auto transform = makeTransform(place);
+    const auto disk = new GMANRayDisk(0.0f, kLayerRadius, 360.0f, GMANParameterList(), transform);
+    gman::Appearance appearance;
+    appearance.shader = asAppearanceShader(shader);
+    appearance.Os = os;
+    disk->setAppearance(appearance);
+    worldManager_.add(disk);
+  }
+
+  GMANColor trace(GMANColor const& background) {
+    GMANRayBVH bvh;
+    bvh.build(worldManager_);
+    GMANRayOccluder const occluder(bvh);
+    GMANMatrix4 const cameraToWorld;
+    GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
+    return tracer.trace(GMANPoint(0.0f, 0.0f, 0.0f), GMANVector(0.0f, 0.0f, 1.0f), GMANVector(), 0.0f);
+  }
+
+private:
+  GMANLinearWorldManager worldManager_;
+};
+
+GMANColor channelScaled(GMANColor const& a, GMANColor const& b) {
+  return GMANColor(a.getRed() * b.getRed(), a.getGreen() * b.getGreen(), a.getBlue() * b.getBlue());
+}
+
+GMANColor sum(GMANColor const& a, GMANColor const& b) {
+  return GMANColor(a.getRed() + b.getRed(), a.getGreen() + b.getGreen(), a.getBlue() + b.getBlue());
 }
 
 // Check 1: a GMANRayTracer built at depth == kMaxTraceDepth (4), trace()ing
@@ -296,7 +366,7 @@ void checkRealHitMatchesDirectShade() {
 
   GMANPoint const p0(0.0f, 0.0f, 0.0f);
   GMANVector const r0(0.0f, 0.0f, 1.0f);
-  GMANColor const traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
+  const auto traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
 
   GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
@@ -460,7 +530,7 @@ void checkNestedOccluderShadowsBlocker() {
 
   GMANPoint const p0(0.0f, 0.0f, 0.0f);
   GMANVector const r0(0.0f, 0.0f, 1.0f);
-  GMANColor const traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
+  const auto traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
 
   GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
@@ -550,7 +620,7 @@ void checkLargeSphereRendererPathAppliesMagnitude() {
 
       // Ng == zero: p0 is a free camera-space point, not on any surface
       // (GMANRayTracer::trace's own contract), so this offsets nothing.
-      GMANColor const traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
+      const auto traced = tracer.trace(p0, r0, GMANVector(), 0.0f);
 
       gman::SurfacePoint const point = surfacePointFromHit(hit, r0, p0);
       gman::Shading const withoutOccluder =
@@ -672,6 +742,99 @@ void checkIndirectPassReachesChildTracer() {
         "through the child tracer");
 }
 
+// Check 9: a layer of Os 0.5 and colour C before an opaque wall of colour W
+// returns C + 0.5 W: the layer no longer hides what lies behind it.
+void checkPartlyOpaqueLayerShowsWallBehind() {
+  GMANColor const layerColor(0.3f, 0.2f, 0.1f);
+  GMANColor const wallColor(0.2f, 0.4f, 0.6f);
+  FixedColorShader layerShader(layerColor);
+  FixedColorShader wallShader(wallColor);
+  LayerStack stack;
+  stack.addLayer(kFirstLayerZ, layerShader, GMANColor(0.5f, 0.5f, 0.5f));
+  stack.addLayer(kFirstLayerZ + kLayerSpacing, wallShader, GMANColor(1.0f, 1.0f, 1.0f));
+
+  const auto traced = stack.trace(GMANColor(0.1f, 0.1f, 0.1f));
+  const auto expected = sum(layerColor, channelScaled(GMANColor(0.5f, 0.5f, 0.5f), wallColor));
+  check(colorNear(traced, expected, kTol), "check 9: a layer of Os 0.5 before an opaque wall returns C + 0.5 W");
+}
+
+// Check 10: the same layer before nothing returns C + 0.5 background: the
+// ray that leaves the scene reads the layer over the background a miss
+// returns.
+void checkPartlyOpaqueLayerOverBackground() {
+  GMANColor const layerColor(0.3f, 0.2f, 0.1f);
+  GMANColor const background(0.1f, 0.5f, 0.9f);
+  FixedColorShader layerShader(layerColor);
+  LayerStack stack;
+  stack.addLayer(kFirstLayerZ, layerShader, GMANColor(0.5f, 0.5f, 0.5f));
+
+  const auto traced = stack.trace(background);
+  const auto expected = sum(layerColor, channelScaled(GMANColor(0.5f, 0.5f, 0.5f), background));
+  check(colorNear(traced, expected, kTol), "check 10: a layer of Os 0.5 before nothing returns C + 0.5 background");
+}
+
+// Check 11: a layer of per-channel Os (0.5, 0.25, 0.75) before the wall
+// returns C + (0.5, 0.75, 0.25) W channel by channel.
+void checkPerChannelOpacityComposites() {
+  GMANColor const layerColor(0.3f, 0.2f, 0.1f);
+  GMANColor const wallColor(0.2f, 0.4f, 0.6f);
+  GMANColor const passed(0.5f, 0.75f, 0.25f);
+  FixedColorShader layerShader(layerColor);
+  FixedColorShader wallShader(wallColor);
+  LayerStack stack;
+  stack.addLayer(kFirstLayerZ, layerShader, GMANColor(0.5f, 0.25f, 0.75f));
+  stack.addLayer(kFirstLayerZ + kLayerSpacing, wallShader, GMANColor(1.0f, 1.0f, 1.0f));
+
+  const auto traced = stack.trace(GMANColor(0.1f, 0.1f, 0.1f));
+  const auto expected = sum(layerColor, channelScaled(passed, wallColor));
+  check(colorNear(traced, expected, kTol),
+        "check 11: a layer of per-channel Os (0.5, 0.25, 0.75) returns C + (0.5, 0.75, 0.25) W channel by channel");
+}
+
+GMANColor traceThinStack(int layerCount) {
+  FixedColorShader shader(GMANColor(0.1f, 0.05f, 0.02f));
+  LayerStack stack;
+  for (int layer = 0; layer < layerCount; ++layer) {
+    stack.addLayer(kFirstLayerZ + static_cast<RtFloat>(layer) * kLayerSpacing, shader,
+                   GMANColor(kThinLayerOpacity, kThinLayerOpacity, kThinLayerOpacity));
+  }
+  return stack.trace(GMANColor(0.1f, 0.2f, 0.3f));
+}
+
+// Check 12: a stack of Os 0.05 layers 20 deep returns what a stack 16 deep
+// returns and differs from a stack 8 deep, so trace() composites no more
+// than gman::kMaxCompositeLayers layers and no fewer.
+void checkTraceObeysLayerCap() {
+  const auto shallow = traceThinStack(kShallowStackDepth);
+  const auto atCap = traceThinStack(gman::kMaxCompositeLayers);
+  const auto deep = traceThinStack(kDeepStackDepth);
+  check(colorNear(deep, atCap, kTol), "check 12: a 20-layer stack returns what a 16-layer stack returns");
+  check(!colorNear(shallow, atCap, kStackSeparation), "check 12: an 8-layer stack differs from a 16-layer one");
+}
+
+// Check 13: a counting shader behind an opaque layer is never shaded, and
+// behind a layer of Os 0.5 is shaded once.
+void checkOpaqueLayerStopsTheComposite() {
+  GMANColor const white(1.0f, 1.0f, 1.0f);
+  FixedColorShader frontShader(GMANColor(0.3f, 0.2f, 0.1f));
+
+  CountingColorShader behindOpaque(GMANColor(0.2f, 0.4f, 0.6f));
+  LayerStack opaqueStack;
+  opaqueStack.addLayer(kFirstLayerZ, frontShader, white);
+  opaqueStack.addLayer(kFirstLayerZ + kLayerSpacing, behindOpaque, white);
+  opaqueStack.trace(GMANColor(0.1f, 0.1f, 0.1f));
+  check(behindOpaque.computeCiCallCount == 0, "check 13: a shader behind an opaque layer is never shaded, got " +
+                                                  std::to_string(behindOpaque.computeCiCallCount));
+
+  CountingColorShader behindPartlyOpaque(GMANColor(0.2f, 0.4f, 0.6f));
+  LayerStack partlyOpaqueStack;
+  partlyOpaqueStack.addLayer(kFirstLayerZ, frontShader, GMANColor(0.5f, 0.5f, 0.5f));
+  partlyOpaqueStack.addLayer(kFirstLayerZ + kLayerSpacing, behindPartlyOpaque, white);
+  partlyOpaqueStack.trace(GMANColor(0.1f, 0.1f, 0.1f));
+  check(behindPartlyOpaque.computeCiCallCount == 1, "check 13: a shader behind a layer of Os 0.5 is shaded once, got " +
+                                                        std::to_string(behindPartlyOpaque.computeCiCallCount));
+}
+
 } // namespace
 
 int main() {
@@ -684,9 +847,15 @@ int main() {
   checkLargeSphereRendererPathAppliesMagnitude();
   checkIndirectPassReachesPrimaryHit();
   checkIndirectPassReachesChildTracer();
+  checkPartlyOpaqueLayerShowsWallBehind();
+  checkPartlyOpaqueLayerOverBackground();
+  checkPerChannelOpacityComposites();
+  checkTraceObeysLayerCap();
+  checkOpaqueLayerStopsTheComposite();
 
   return checkSummary("GMANRayTracer: depth-limit termination, background on miss, single-hit shading matches "
                       "gman::shade, self-shadow swept clean, recursion depth counted correctly, the nested "
-                      "shade() call applies the occluder, and a bound indirect-light pass reaches both a primary "
-                      "hit and a child tracer's own reflected hit");
+                      "shade() call applies the occluder, a bound indirect-light pass reaches both a primary "
+                      "hit and a child tracer's own reflected hit, and partly opaque layers composite front to "
+                      "back over the background up to the layer cap");
 }
