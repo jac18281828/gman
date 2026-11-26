@@ -166,7 +166,8 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
           // The kernel has no notion of its own support (RiBoxFilter
           // returns 1.0 unconditionally) -- the dx/dy bounds above are
           // what give every filter a support region, not the call below.
-          const RtFloat weight = filterfunc(dx, dy, xwidth, ywidth);
+          const RtFloat filtered = filterfunc(dx, dy, xwidth, ywidth);
+          const RtFloat weight = std::isfinite(filtered) ? filtered : 0.0f;
           GMANColor weighted = sampleColor[sampleIndex(gx, gy)];
           weighted.scale(weight);
           sum += weighted;

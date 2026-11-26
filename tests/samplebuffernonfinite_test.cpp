@@ -23,7 +23,8 @@
  * pixel is the sample as written. Its alpha reads a NaN as 1, +inf as 1 and
  * -inf as 0, never the transparent a NaN clamped to 0 reads as, and clamps a
  * finite coverage as before. A sample's colour stores a NaN or infinite
- * channel as 0 and a finite channel as it is.
+ * channel as 0 and a finite channel as it is, and a filter weight that is NaN
+ * or infinite counts as 0.
  */
 
 #include <cmath>
@@ -101,6 +102,29 @@ void testNaNDepthNeverWins() {
   check(buffer.zTestAndSet(0, 0, 2.0f, kGrey, GMANAlpha(1.0f, 1.0f, 1.0f)), "a finite depth passes after a NaN one");
 }
 
+RtFloat nanOnTheLeft(RtFloat x, RtFloat, RtFloat, RtFloat) { return x < 0.0f ? kNaN : 1.0f; }
+
+RtFloat infinityOnTheLeft(RtFloat x, RtFloat, RtFloat, RtFloat) { return x < 0.0f ? kInfinity : 1.0f; }
+
+GMANColor resolveTwoSamples(RtFilterFunc filter) {
+  GMANSampleBuffer buffer(1, 1, 2, 1, kBackground);
+  GMANAlpha const opaque(1.0f, 1.0f, 1.0f);
+  buffer.zTestAndSet(0, 0, 1.0f, GMANColor(1.0f, 0.0f, 0.0f), opaque);
+  buffer.zTestAndSet(1, 0, 1.0f, GMANColor(0.0f, 1.0f, 0.0f), opaque);
+  GMANFrameBuffer frame(1, 1, kBackground);
+  buffer.resolve(&frame, filter, 2.0f, 2.0f);
+  return frame.getPixel(0, 0);
+}
+
+void testNonFiniteFilterWeightCountsAsZero() {
+  GMANColor const nan = resolveTwoSamples(nanOnTheLeft);
+  check(nan.getRed() == 0.0f && nan.getGreen() == 1.0f && nan.getBlue() == 0.0f,
+        "a NaN filter weight drops its sample, got " + describe(nan));
+  GMANColor const infinite = resolveTwoSamples(infinityOnTheLeft);
+  check(infinite.getRed() == 0.0f && infinite.getGreen() == 1.0f && infinite.getBlue() == 0.0f,
+        "an infinite filter weight drops its sample, got " + describe(infinite));
+}
+
 void testFiniteCoverageIsClampedAsBefore() {
   GMANAlpha const inRange = resolveOne(kGrey, GMANAlpha(0.25f, 0.5f, 1.0f)).alpha;
   check(alphaIs(inRange, 0.25f, 0.5f, 1.0f), "a coverage in [0, 1] passes through, got " + describe(inRange));
@@ -114,6 +138,7 @@ int main() {
   testNonFiniteCoverage();
   testNonFiniteColourIsStoredAsZero();
   testNaNDepthNeverWins();
+  testNonFiniteFilterWeightCountsAsZero();
   testFiniteCoverageIsClampedAsBefore();
   return checkSummary("samplebuffernonfinite: all checks passed");
 }
