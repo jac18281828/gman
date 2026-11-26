@@ -28,12 +28,13 @@
  * again at the default colour sigma, the filter removes the noise and keeps
  * each edge, and removing any one weight, holding the colour sigma at its
  * first level, reading the paper's shader's normal weight or defaulting the
- * colour sigma to the largest norm breaks a named check. An impulse maps the kernel: its footprint, its holes and its
- * reach after one, two and three levels. A constant image is a fixed point,
- * a non-finite pixel is excluded without disturbing a neighbour, a black
- * image returns unchanged, a level past the image's size changes nothing,
- * the worker count changes no bit, and a sigma of 1e-30 neither makes a NaN
- * nor leaves the input's range. A bad argument throws a GMANError.
+ * colour sigma to the largest norm breaks a named check. An impulse maps the
+ * kernel: its footprint, its holes and its reach after one, two and three
+ * levels. A constant image is a fixed point, a non-finite pixel is excluded
+ * without disturbing a neighbour, a black image returns unchanged, a level
+ * past the image's size changes nothing, the worker count changes no bit,
+ * and a sigma of 1e-30 neither makes a NaN nor leaves the input's range. A
+ * bad argument throws a GMANError.
  */
 
 #include <algorithm>
@@ -239,7 +240,11 @@ double largestDifference(std::vector<GMANColor> const& a, std::vector<GMANColor>
   double largest = 0.0;
   for (std::size_t i = 0; i < a.size(); ++i) {
     for (int c = 0; c < 3; ++c) {
-      largest = std::max(largest, std::fabs(channelOf(a[i], c) - channelOf(b[i], c)));
+      double const difference = std::fabs(channelOf(a[i], c) - channelOf(b[i], c));
+      if (!std::isfinite(difference)) {
+        return std::numeric_limits<double>::infinity();
+      }
+      largest = std::max(largest, difference);
     }
   }
   return largest;

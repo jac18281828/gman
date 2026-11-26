@@ -34,7 +34,8 @@
  * the floor's error against a 256-path reference and asserts nothing on it.
  * One info line reports the filter's parameters, the colour sigma included;
  * a bad parameter warns once and takes its default; a black frame returns
- * unchanged. The denoised image is bitwise identical at one worker and at
+ * unchanged. A shader whose albedo throws shows that the guide is computed
+ * only when the option asks. The denoised image is bitwise identical at one worker and at
  * three, leaves alpha as the sampling resolved it and holds, in
  * guidedImage(), the colour as it resolved before the filter.
  */
@@ -42,12 +43,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
-#include <cstdint>
 #include <cstdio>
 #include <format>
 #include <fstream>
 #include <limits>
+#include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <variant>
@@ -68,6 +70,7 @@
 #include "gmanpoint.h"
 #include "gmanraydisk.h"
 #include "gmanraypolygon.h"
+#include "gmansurfaceshader.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "gmanvsperspective.h"
@@ -171,7 +174,6 @@ struct Frame {
   std::vector<GMANColor> pixels;
   std::vector<GMANAlpha> alphas;
   gman::GuidedImage guided;
-  std::vector<std::uint32_t> counts;
 };
 
 struct Settings {
@@ -179,6 +181,13 @@ struct Settings {
   RtFloat variance = 0.0f;
   RtInt workers = kWorkersMany;
   NamedOptions named;
+};
+
+class ThrowingAlbedoShader : public GMANSurfaceShader {
+public:
+  GMANColor computeCi(GMANSurfaceEnv const& se) const override { return se.Cs; }
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return se.Os; }
+  GMANColor albedo(GMANSurfaceEnv const&) const override { throw std::logic_error("albedo reached"); }
 };
 
 class FloorScene {
@@ -189,7 +198,8 @@ public:
   gman::VSPerspective viewingSys;
   GMANPathtraceRenderer renderer;
 
-  explicit FloorScene(Lighting lighting, Winding winding = Winding::forward)
+  explicit FloorScene(Lighting lighting, Winding winding = Winding::forward,
+                      std::shared_ptr<GMANSurfaceShader const> shader = nullptr)
       : distantLight(GMAN_LIGHT_DISTANT, GMANColor(kDistantIntensity, kDistantIntensity, kDistantIntensity),
                      GMANPoint(), GMANVector(kDistantDirectionX, kDistantDirectionY, kDistantDirectionZ)),
         areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector()),
@@ -200,6 +210,9 @@ public:
     }
     gman::Appearance appearance;
     appearance.shader = loadShader("matte", matteParams(1.0f));
+    if (shader != nullptr) {
+      appearance.shader = std::move(shader);
+    }
     appearance.Cs = GMANColor(kFloorReflectance, kFloorReflectance, kFloorReflectance);
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     if (lighting == Lighting::distant) {
@@ -232,7 +245,6 @@ public:
     Frame frame;
     frame.log = endLogCapture(kRenderLog);
     frame.guided = renderer.guidedImage();
-    frame.counts = renderer.slotPathCounts();
     for (RtInt y = 0; y < kHeight; ++y) {
       for (RtInt x = 0; x < kWidth; ++x) {
         frame.pixels.push_back(frameBuffer.getPixel(x, y));
@@ -268,21 +280,7 @@ private:
 
 std::size_t pixelIndex(int x, int y) { return static_cast<std::size_t>(y) * static_cast<std::size_t>(kWidth) + x; }
 
-bool bitwiseEqual(std::vector<GMANColor> const& a, std::vector<GMANColor> const& b) {
-  if (a.size() != b.size()) {
-    return false;
-  }
-  for (std::size_t i = 0; i < a.size(); ++i) {
-    for (int c = 0; c < 3; ++c) {
-      if (channel(a[i], c) != channel(b[i], c)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-bool alphasEqual(std::vector<GMANAlpha> const& a, std::vector<GMANAlpha> const& b) {
+template <class T> bool bitwiseEqual(std::vector<T> const& a, std::vector<T> const& b) {
   if (a.size() != b.size()) {
     return false;
   }
@@ -401,6 +399,27 @@ void checkOff() {
   check(guideEmpty(numberFrame.guided), "an integer for the filter name renders without the stage");
 }
 
+bool rendersReachAlbedo(NamedOptions const& named) {
+  FloorScene scene(Lighting::distant, Winding::forward, std::make_shared<ThrowingAlbedoShader>());
+  Settings settings;
+  settings.workers = kWorkersFew;
+  settings.named = named;
+  try {
+    scene.render(settings);
+  } catch (std::logic_error const&) {
+    endLogCapture(kRenderLog);
+    return true;
+  }
+  return false;
+}
+
+void checkAlbedoOnlyWhenOn() {
+  NamedOptions const none = {{"denoise", text("none")}};
+  check(!rendersReachAlbedo(NamedOptions()), "a render without the option computes no albedo");
+  check(!rendersReachAlbedo(none), "a render with \"none\" computes no albedo");
+  check(rendersReachAlbedo(atrous()), "a denoised render computes the albedo guide");
+}
+
 void checkGuides() {
   FloorScene scene(Lighting::distant);
   Settings settings;
@@ -426,11 +445,7 @@ void checkGuides() {
   Frame const adaptiveFrame = scene.render(adaptive);
   bool adaptiveMeasured = false;
   bool adaptiveSky = false;
-  bool pilotRan = false;
-  for (std::uint32_t const count : adaptiveFrame.counts) {
-    pilotRan = pilotRan || count > 0;
-  }
-  check(pilotRan && guidesMatchFloor(scene, adaptiveFrame, adaptiveMeasured, adaptiveSky),
+  check(guidesMatchFloor(scene, adaptiveFrame, adaptiveMeasured, adaptiveSky),
         "a pilot's paths add nothing to the guides under a positive PixelVariance");
 }
 
@@ -451,7 +466,7 @@ void checkWiring() {
   check(bitwiseEqual(denoisedFrame.pixels, filtered), "the frame holds atrousDenoise of guidedImage()");
   check(bitwiseEqual(denoisedFrame.guided.color, noisyFrame.pixels),
         "guidedImage() holds the colour as it resolved before the filter");
-  check(alphasEqual(denoisedFrame.alphas, noisyFrame.alphas), "the filter leaves alpha as sampling resolved it");
+  check(bitwiseEqual(denoisedFrame.alphas, noisyFrame.alphas), "the filter leaves alpha as sampling resolved it");
 
   bool changed = false;
   for (int y = 0; y < kHeight; ++y) {
@@ -550,6 +565,7 @@ void checkWorkers() {
 
 int main() {
   checkOff();
+  checkAlbedoOnlyWhenOn();
   checkGuides();
   checkWiring();
   checkInfoLine();
