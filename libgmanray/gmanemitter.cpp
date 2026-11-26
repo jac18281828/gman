@@ -102,6 +102,20 @@ EmittingShapeKind classifyEmittingShape(GMANRayInterface const& shape) {
   return {nullptr, nullptr, dynamic_cast<GMANRayPolygonMesh const*>(&shape)};
 }
 
+// The mesh a face of a polygon mesh belongs to, else primitive itself: the
+// shape an emitter names for that hit.
+GMANRayInterface const* emittingShapeOf(GMANRayInterface const* primitive) {
+  GMANRayPolygon const* face = dynamic_cast<GMANRayPolygon const*>(primitive);
+  if (face == nullptr) {
+    return primitive;
+  }
+  GMANRayPolygonMesh const* mesh = face->getMesh();
+  if (mesh == nullptr) {
+    return primitive;
+  }
+  return mesh;
+}
+
 // True, and the object-space area filled, for a geometrically eligible sphere
 // or disk. False for any other primitive type, a polygon mesh included, or a
 // degenerate one; area is left untouched.
@@ -564,6 +578,19 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
     warning("gman::emitters: {} area-light primitive(s) are ineligible or unsupported; skipped.", ineligibleCount);
   }
   return result;
+}
+
+std::optional<std::size_t> emitterIndex(std::vector<Emitter> const& emitters, GMANRayInterface const* hitPrimitive) {
+  if (hitPrimitive == nullptr) {
+    return std::nullopt;
+  }
+  GMANRayInterface const* const hitShape = emittingShapeOf(hitPrimitive);
+  for (std::size_t j = 0; j < emitters.size(); ++j) {
+    if (emitters[j].shape == hitShape) {
+      return j;
+    }
+  }
+  return std::nullopt;
 }
 
 EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {

@@ -35,7 +35,6 @@
 #include <vector>
 
 #include "gmanattributes.h"
-#include "gmanbbox.h"
 #include "gmanbsdf.h"
 #include "gmancolor.h"
 #include "gmandenoise.h"
@@ -55,8 +54,6 @@
 #include "gmanraybvh.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
-#include "gmanraypolygon.h"
-#include "gmanraypolygonmesh.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
 #include "gmansampling.h"
@@ -191,89 +188,6 @@ bool colorsBitwiseEqual(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
-// The shadow walk's own transmittance, split into v, the full product of
-// each blocker's (1 - Os) + Os * shadowTransmittance, and p, the product
-// of each blocker's own (1 - Os) alone -- the pure coverage pass-through
-// share a BSDF-sampled bounce can also reach through coverage's own
-// passThrough. v - p is every blocker's own dielectric shadowTransmittance
-// share, which next-event estimation's own weight (below) credits at
-// weight 1, since a suppressed emitter hit never adds it. p <= v, since each
-// blocker's own factor is at least its (1 - Os) term, save where
-// gman::blockerTransmittance blocks a non-finite channel: v's factor is then
-// 0 while p's stays (1 - Os).
-struct ShadowWalkResult {
-  GMANColor v = kWhite;
-  GMANColor p = kWhite;
-};
-
-// The plugin's own shadow walk, in gmanrayoccluder.h's transmission's own
-// shape: advances from origin over [0, maxDistance) along wi, compositing
-// each blocker's own factor per channel with no early exit, and answers
-// black past gman::kMaxCompositeLayers blockers. A delta draw keeps its
-// own fixed wi, shortening remaining by each blocker's own hit.t; an area
-// draw re-aims at shadowTarget after every blocker, since a blocker's own
-// offset scales with its own size and could otherwise push the walk's
-// endpoint past a small emitter's own target -- ending unblocked once
-// shadowTarget lies at or behind the walk's own new origin. A non-null
-// terminatorOrigin names the primitive a shadow ray starts inside the facets
-// of: the walk's first hit then passes without compositing when
-// gman::passesTerminatorExit accepts it.
-ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtFloat maxDistance, bool isDelta,
-                            GMANPoint const& shadowTarget, GMANMatrix4 const& cameraToWorld,
-                            gman::TextureCache* textureCache, GMANPrimitive const* terminatorOrigin) {
-  ShadowWalkResult result;
-  RtFloat remaining = maxDistance;
-
-  for (int layer = 0; layer < gman::kMaxCompositeLayers; ++layer) {
-    GMANRay const shadowRay(origin, wi, RI_EPSILON, remaining);
-    GMANHit hit;
-    GMANRayInterface const* hitPrimitive = nullptr;
-    if (!bvh.nearestHit(shadowRay, hit, hitPrimitive)) {
-      return result;
-    }
-
-    bool const passesTerminator = layer == 0 && terminatorOrigin != nullptr &&
-                                  gman::passesTerminatorExit(hit, *hitPrimitive, wi, *terminatorOrigin);
-    if (!passesTerminator) {
-      gman::BlockerTransmittance const blocker =
-          gman::blockerTransmittance(shadowRay, hit, hitPrimitive->getAppearance(), cameraToWorld, textureCache);
-      result.v = gman::multiplyChannels(result.v, blocker.transmittance);
-      result.p = gman::multiplyChannels(result.p, gman::oneMinus(blocker.coverage));
-      if (colorBlack(result.v)) {
-        return result;
-      }
-    }
-
-    RtFloat const magnitude = gman::primitiveMagnitude(hitPrimitive->getBBox());
-    GMANPoint const newOrigin = gman::offsetOrigin(hit.point, hit.normal, wi, magnitude);
-
-    if (isDelta) {
-      origin = newOrigin;
-      remaining -= hit.t;
-      continue;
-    }
-
-    GMANVector toTarget(newOrigin, shadowTarget);
-    if (toTarget.dot(wi) <= 0.0f) {
-      return result;
-    }
-    remaining = toTarget.magnitude();
-    toTarget.normalize();
-    origin = newOrigin;
-    wi = toTarget;
-  }
-
-  // A (kMaxCompositeLayers + 1)th blocker reads as opaque, never as a leak
-  // of light through a wall deeper than the cap.
-  GMANRay const capRay(origin, wi, RI_EPSILON, remaining);
-  GMANHit capHit;
-  GMANRayInterface const* capPrimitive = nullptr;
-  if (bvh.nearestHit(capRay, capHit, capPrimitive)) {
-    return {kBlack, kBlack};
-  }
-  return result;
-}
-
 // A single path's own contribution to a slot: its radiance and coverage
 // estimate, whether its camera ray ever hit anything and, if so, that
 // first hit's own camera-space z, and whether every channel it touched
@@ -392,7 +306,7 @@ ShadowWalkStart shadowWalkStart(GMANPoint const& origin, gman::EmitterSample con
 // A weight of 1, or a walk with no dielectric crossing (v equal to p
 // bitwise), weights the whole transmittance v at once.
 GMANColor weightedShadowedTerm(GMANColor const& betaF, RtFloat cosTerm, RtFloat pLight, RtFloat weight,
-                               GMANColor const& cl, ShadowWalkResult const& walk) {
+                               GMANColor const& cl, gman::ShadowWalkResult const& walk) {
   if (weight == 1.0f || colorsBitwiseEqual(walk.v, walk.p)) {
     GMANColor term = scaleColor(betaF, weight * cosTerm / pLight);
     term = gman::multiplyChannels(term, cl);
@@ -456,8 +370,9 @@ GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> 
   ShadowWalkStart const walkStart = shadowWalkStart(origin, es);
   bool const startsInsideFacets =
       shadowStartsAtOrigin && es.wi.dot(point.Ng) < (RtFloat)0.0 && point.primitive != nullptr;
-  ShadowWalkResult const walk = shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget,
-                                           cameraToWorld, textureCache, startsInsideFacets ? point.primitive : nullptr);
+  gman::ShadowWalkResult const walk =
+      gman::shadowWalk(bvh, origin, walkStart.wi, walkStart.distance, es.isDelta, es.shadowTarget, cameraToWorld,
+                       textureCache, startsInsideFacets ? point.primitive : nullptr);
 
   return weightedShadowedTerm(gman::multiplyChannels(beta, f), cosTerm, pLight, weight, es.Cl, walk);
 }
@@ -528,20 +443,6 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
   return BSDFStepDraw{sample.wi, sample.pdf, sample.isDelta, isTransmission};
 }
 
-// The mesh a face of a polygon mesh belongs to, else primitive itself: the
-// shape an emitter names for that hit.
-GMANRayInterface const* emittingShapeOf(GMANRayInterface const* primitive) {
-  GMANRayPolygon const* face = dynamic_cast<GMANRayPolygon const*>(primitive);
-  if (face == nullptr) {
-    return primitive;
-  }
-  GMANRayPolygonMesh const* mesh = face->getMesh();
-  if (mesh == nullptr) {
-    return primitive;
-  }
-  return mesh;
-}
-
 // The emitter-hit term at a hit, added once per vertex before anything else
 // there: black unless the hit's own area light is eligible and supported
 // (present in emitters, which already filtered both; a face of a polygon
@@ -568,26 +469,24 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
   if (appearance.areaLight == nullptr || eligibility == gman::EmitterHitEligibility::suppressed) {
     return kBlack;
   }
-  GMANRayInterface const* const hitShape = emittingShapeOf(hitPrimitive);
-  GMANNormal const geometricNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
-  for (std::size_t j = 0; j < emitters.size(); ++j) {
-    if (emitters[j].shape != hitShape) {
-      continue;
-    }
-    RtFloat const cosTheta = geometricNormal.dot(-point.I);
-    if (!(cosTheta > 0.0f)) {
-      return kBlack;
-    }
-    bool const rayEligible = eligibility == gman::EmitterHitEligibility::eligible;
-    RtFloat pLight = 0.0f;
-    if (misEnabled && !rayEligible) {
-      pLight = gman::lightChoiceProbability(emitters, departureP, departurePrimitive, j, lightWeight) *
-               gman::lightSolidAnglePdf(emitters[j], departureP, point.P, geometricNormal);
-    }
-    RtFloat const weight = gman::emitterHitWeight(rayEligible, misEnabled, departurePdf, pLight);
-    return scaleColor(emitters[j].light->getCl(), weight);
+  std::optional<std::size_t> const emitter = gman::emitterIndex(emitters, hitPrimitive);
+  if (!emitter) {
+    return kBlack;
   }
-  return kBlack;
+  std::size_t const j = *emitter;
+  GMANNormal const geometricNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
+  RtFloat const cosTheta = geometricNormal.dot(-point.I);
+  if (!(cosTheta > 0.0f)) {
+    return kBlack;
+  }
+  bool const rayEligible = eligibility == gman::EmitterHitEligibility::eligible;
+  RtFloat pLight = 0.0f;
+  if (misEnabled && !rayEligible) {
+    pLight = gman::lightChoiceProbability(emitters, departureP, departurePrimitive, j, lightWeight) *
+             gman::lightSolidAnglePdf(emitters[j], departureP, point.P, geometricNormal);
+  }
+  RtFloat const weight = gman::emitterHitWeight(rayEligible, misEnabled, departurePdf, pLight);
+  return scaleColor(emitters[j].light->getCl(), weight);
 }
 
 // One path's own mutable state as it walks its vertices: its accumulated

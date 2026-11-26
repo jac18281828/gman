@@ -32,6 +32,7 @@
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
+#include "gmanraybvh.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
@@ -91,6 +92,8 @@ GMANColor::ColorSampleType blockedIfNotFinite(GMANColor::ColorSampleType v) {
   return std::isfinite(v) ? v : (GMANColor::ColorSampleType)0.0;
 }
 
+bool colorBlack(GMANColor const& c) { return c.getRed() == 0.0f && c.getGreen() == 0.0f && c.getBlue() == 0.0f; }
+
 } // namespace
 
 namespace gman {
@@ -147,6 +150,63 @@ bool passesTerminatorExit(GMANHit const& hit, GMANRayInterface const& hitPrimiti
   }
   GMANBBox const& box = origin.getBBox();
   return hit.t <= GMANVector(box.getMin(), box.getMax()).magnitude();
+}
+
+ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtFloat maxDistance, bool isDelta,
+                            GMANPoint const& shadowTarget, GMANMatrix4 const& cameraToWorld, TextureCache* textureCache,
+                            GMANPrimitive const* terminatorOrigin) {
+  ShadowWalkResult result;
+  RtFloat remaining = maxDistance;
+
+  for (int layer = 0; layer < kMaxCompositeLayers; ++layer) {
+    GMANRay const shadowRay(origin, wi, RI_EPSILON, remaining);
+    GMANHit hit;
+    GMANRayInterface const* hitPrimitive = nullptr;
+    if (!bvh.nearestHit(shadowRay, hit, hitPrimitive)) {
+      return result;
+    }
+
+    bool const passesTerminator =
+        layer == 0 && terminatorOrigin != nullptr && passesTerminatorExit(hit, *hitPrimitive, wi, *terminatorOrigin);
+    if (!passesTerminator) {
+      BlockerTransmittance const blocker =
+          blockerTransmittance(shadowRay, hit, hitPrimitive->getAppearance(), cameraToWorld, textureCache);
+      result.v = multiplyChannels(result.v, blocker.transmittance);
+      result.p = multiplyChannels(result.p, oneMinus(blocker.coverage));
+      if (colorBlack(result.v)) {
+        return result;
+      }
+    }
+
+    RtFloat const magnitude = primitiveMagnitude(hitPrimitive->getBBox());
+    GMANPoint const newOrigin = offsetOrigin(hit.point, hit.normal, wi, magnitude);
+
+    if (isDelta) {
+      origin = newOrigin;
+      remaining -= hit.t;
+      continue;
+    }
+
+    GMANVector toTarget(newOrigin, shadowTarget);
+    if (toTarget.dot(wi) <= 0.0f) {
+      return result;
+    }
+    remaining = toTarget.magnitude();
+    toTarget.normalize();
+    origin = newOrigin;
+    wi = toTarget;
+  }
+
+  // A (kMaxCompositeLayers + 1)th blocker reads as opaque, never as a leak
+  // of light through a wall deeper than the cap.
+  GMANRay const capRay(origin, wi, RI_EPSILON, remaining);
+  GMANHit capHit;
+  GMANRayInterface const* capPrimitive = nullptr;
+  if (bvh.nearestHit(capRay, capHit, capPrimitive)) {
+    GMANColor const black(0.0f, 0.0f, 0.0f);
+    return {black, black};
+  }
+  return result;
 }
 
 } // namespace gman

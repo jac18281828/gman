@@ -24,6 +24,7 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include "gman/rayexport.h"
@@ -124,6 +125,13 @@ struct GMANRAY_EXPORT EmitterPoint {
 // count of distinct ambient lights -- a caller that also needs that count
 // takes it from this one pass over world rather than walking it again.
 GMANRAY_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount = nullptr);
+
+// The index in emitters of the first emitter a ray that hit hitPrimitive has
+// met: the one whose shape is hitPrimitive itself or, when hitPrimitive is a
+// polygon of a mesh, that mesh. Empty when none matches, and for a null
+// hitPrimitive, which no area emitter's shape names.
+GMANRAY_EXPORT std::optional<std::size_t> emitterIndex(std::vector<Emitter> const& emitters,
+                                                       GMANRayInterface const* hitPrimitive);
 
 // A next-event-estimation draw toward emitter from p. A delta emitter
 // ignores u1/u2 and forwards to its own light->sample(); an area emitter

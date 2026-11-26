@@ -110,6 +110,39 @@ GMANRAY_EXPORT BlockerTransmittance blockerTransmittance(GMANRay const& shadowRa
 GMANRAY_EXPORT bool passesTerminatorExit(GMANHit const& hit, GMANRayInterface const& hitPrimitive,
                                          GMANVector const& towardLight, GMANPrimitive const& origin);
 
+// A shadow walk's own transmittance, split into v, the full product of each
+// blocker's (1 - Os) + Os * shadowTransmittance, and p, the product of each
+// blocker's own (1 - Os) alone -- the pure coverage pass-through share a
+// BSDF-sampled bounce can also reach through coverage's own passThrough.
+// v - p is every blocker's own dielectric shadowTransmittance share, which a
+// next-event estimate's weight credits at weight 1, since a suppressed
+// emitter hit never adds it. p <= v, since each blocker's own factor is at
+// least its (1 - Os) term, save where gman::blockerTransmittance blocks a
+// non-finite channel: v's factor is then 0 while p's stays (1 - Os).
+struct GMANRAY_EXPORT ShadowWalkResult {
+  GMANColor v = GMANColor(1.0f, 1.0f, 1.0f);
+  GMANColor p = GMANColor(1.0f, 1.0f, 1.0f);
+};
+
+// A shadow walk in GMANRayOccluder::transmission's own shape, for a caller
+// whose light has a position to aim at: advances from origin over
+// [0, maxDistance) along wi, compositing
+// each blocker's own factor per channel with no early exit, and answers
+// black past gman::kMaxCompositeLayers blockers. A delta draw keeps its own
+// fixed wi, shortening remaining by each blocker's own hit.t; an area draw
+// re-aims at shadowTarget after every blocker, since a blocker's own offset
+// scales with its own size and could otherwise push the walk's endpoint past
+// a small emitter's own target -- ending unblocked once shadowTarget lies at
+// or behind the walk's own new origin. A non-null terminatorOrigin names the
+// primitive a shadow ray starts inside the facets of: the walk's first hit
+// then passes without compositing when gman::passesTerminatorExit accepts
+// it. cameraToWorld and textureCache are gman::blockerTransmittance's
+// arguments.
+GMANRAY_EXPORT ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtFloat maxDistance,
+                                           bool isDelta, GMANPoint const& shadowTarget,
+                                           GMANMatrix4 const& cameraToWorld, TextureCache* textureCache,
+                                           GMANPrimitive const* terminatorOrigin);
+
 } // namespace gman
 
 /*

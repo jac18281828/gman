@@ -29,8 +29,10 @@
  * beside a world's other emitters, with the power its area gives, drawn by
  * face in proportion to area, answering a solid-angle density that integrates
  * to 1, agreeing between sample and lightSolidAnglePdf, emitting on one side
- * only and weighting the light choice finitely. Also proves appearanceOf's own
- * exclusion: an illuminated area light never reaches Appearance::lights.
+ * only and weighting the light choice finitely. gman::emitterIndex names the
+ * emitter a hit primitive belongs to, a mesh's face as the mesh itself. Also
+ * proves appearanceOf's own exclusion: an illuminated area light never
+ * reaches Appearance::lights.
  */
 
 #include <algorithm>
@@ -810,6 +812,50 @@ void testPolygonLightChoiceWeight() {
   check(beside > distant, "polygon light choice: the weight falls with distance");
 }
 
+// gman::emitterIndex names a hit primitive's emitter: a sphere by itself, a
+// polygon mesh by itself and by each of its faces, and nothing for an
+// untagged sphere, a bare polygon with no mesh or a null primitive, which a
+// delta emitter's null shape must not match.
+void testEmitterIndex() {
+  GMANLight const sphereLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  GMANLight const meshLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector());
+
+  GMANLinearWorldManager world;
+  auto* const taggedSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  taggedSphere->setAppearance(areaLightAppearance(sphereLight));
+  world.add(taggedSphere);
+  std::unique_ptr<GMANRayPolygonMesh> mesh =
+      buildTaggedMesh(solidFaces(unevenPanel(0.0f)), areaLightAppearance(meshLight));
+  GMANRayPolygonMesh const* const meshShape = mesh.get();
+  world.add(mesh.release());
+  auto* const untaggedSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  world.add(untaggedSphere);
+  GMANRayPolygon const bare(upRectangle(-1.0f, 1.0f, -1.0f, 1.0f, 3.0f), GMANParameterList());
+
+  std::vector<gman::Emitter> list = gman::emitters(world);
+  check(list.size() == 2 && list[0].shape == taggedSphere && list[1].shape == meshShape,
+        "emitter index: the tagged sphere and the mesh are the world's two emitters");
+  if (list.size() != 2) {
+    return;
+  }
+
+  std::optional<std::size_t> const sphereHit = gman::emitterIndex(list, taggedSphere);
+  check(sphereHit && *sphereHit == 0, "emitter index: the tagged sphere names its own emitter");
+  std::optional<std::size_t> const meshHit = gman::emitterIndex(list, meshShape);
+  check(meshHit && *meshHit == 1, "emitter index: the mesh names its own emitter");
+  for (std::size_t f = 0; f < meshShape->getFaceCount(); ++f) {
+    std::optional<std::size_t> const faceHit = gman::emitterIndex(list, &meshShape->getFace(f));
+    check(faceHit && *faceHit == 1,
+          "emitter index: face " + std::to_string(f) + " of the mesh names the mesh's emitter");
+  }
+  check(!gman::emitterIndex(list, untaggedSphere), "emitter index: an untagged sphere names no emitter");
+  check(!gman::emitterIndex(list, &bare), "emitter index: a bare polygon with no mesh names no emitter");
+
+  list.push_back({&pointLight, nullptr, 0.0f});
+  check(!gman::emitterIndex(list, nullptr), "emitter index: a null primitive names no emitter, a delta one included");
+}
+
 // samplePoint, delta.
 void testSamplePointDelta() {
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector());
@@ -872,6 +918,7 @@ int main() {
   testPolygonPdfConsistency();
   testPolygonOneSided();
   testPolygonLightChoiceWeight();
+  testEmitterIndex();
   testSamplePointDelta();
   testAppearanceExcludesAreaLight();
 
