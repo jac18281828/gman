@@ -349,6 +349,34 @@ constexpr std::size_t kLines = (std::size_t)kGrid + 1;
 
 double gridU(RtInt i) { return i / (double)kGrid; }
 
+bool hitTexCoordNear(GMANRayPolygonMesh const& mesh, Vec3 const& target, Vec3 const& origin, double s, double t) {
+  GMANHit hit;
+  if (!mesh.intersect(rayAt(origin, target), hit)) {
+    return false;
+  }
+  return std::fabs(hit.u - s) < 1e-4 && std::fabs(hit.v - t) < 1e-4;
+}
+
+double bilerp(double u, double v, double c00, double c10, double c01, double c11) {
+  return (1 - u) * (1 - v) * c00 + u * (1 - v) * c10 + (1 - u) * v * c01 + u * v * c11;
+}
+
+SurfaceDef flatMeshDef(RtInt nu, RtInt nv) {
+  SurfaceDef s;
+  s.nu = nu;
+  s.nv = nv;
+  std::vector<double> p;
+  for (RtInt j = 0; j < nv; ++j) {
+    for (RtInt i = 0; i < nu; ++i) {
+      p.insert(p.end(), {-1.0 + 2.0 * i / (nu - 1), -1.0 + 2.0 * j / (nv - 1), 0.0});
+    }
+  }
+  s.p = floatsOf(p);
+  return s;
+}
+
+Vec3 frontOf(Vec3 const& target) { return {target[0], target[1], -5.0}; }
+
 void testBilinearPatch() {
   SurfaceDef s;
   s.nu = 2;
@@ -372,6 +400,13 @@ void testBilinearPatch() {
         "bilinear Patch: the corner vertices are the control points in RISpec order");
   check(hasVertexNear(stats, evaluate(s, gridU(4), gridU(12)), tolerance),
         "bilinear Patch: the vertex at (4/16, 12/16) lies on the bilinear surface");
+  bool cornersTagged = true;
+  for (std::pair<double, double> const& corner :
+       std::array<std::pair<double, double>, 4>{{{0, 0}, {1, 0}, {0, 1}, {1, 1}}}) {
+    Vec3 const target = evaluate(s, corner.first, corner.second);
+    cornersTagged = cornersTagged && hitTexCoordNear(*mesh, target, frontOf(target), corner.first, corner.second);
+  }
+  check(cornersTagged, "bilinear Patch: each control point carries its own parametric corner");
 }
 
 void testBicubicPatchBases() {
@@ -680,34 +715,6 @@ void testNormals() {
   check(shadingNearer, "normals: the shading normal is nearer the analytic normal than the facet normal");
   check(facetOriented, "normals: the facet normal follows dP/du x dP/dv");
 }
-
-bool hitTexCoordNear(GMANRayPolygonMesh const& mesh, Vec3 const& target, Vec3 const& origin, double s, double t) {
-  GMANHit hit;
-  if (!mesh.intersect(rayAt(origin, target), hit)) {
-    return false;
-  }
-  return std::fabs(hit.u - s) < 1e-4 && std::fabs(hit.v - t) < 1e-4;
-}
-
-double bilerp(double u, double v, double c00, double c10, double c01, double c11) {
-  return (1 - u) * (1 - v) * c00 + u * (1 - v) * c10 + (1 - u) * v * c01 + u * v * c11;
-}
-
-SurfaceDef flatMeshDef(RtInt nu, RtInt nv) {
-  SurfaceDef s;
-  s.nu = nu;
-  s.nv = nv;
-  std::vector<double> p;
-  for (RtInt j = 0; j < nv; ++j) {
-    for (RtInt i = 0; i < nu; ++i) {
-      p.insert(p.end(), {-1.0 + 2.0 * i / (nu - 1), -1.0 + 2.0 * j / (nv - 1), 0.0});
-    }
-  }
-  s.p = floatsOf(p);
-  return s;
-}
-
-Vec3 frontOf(Vec3 const& target) { return {target[0], target[1], -5.0}; }
 
 void testPatchTexCoords() {
   SurfaceDef const flat = flatMeshDef(2, 2);
