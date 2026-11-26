@@ -35,6 +35,11 @@
 
 namespace gman {
 
+// Every function answers NaN for a NaN or infinite coordinate, and every
+// periodic function answers NaN for a NaN, infinite or zero period. A finite
+// coordinate of any magnitude answers the lattice's periodic value: the
+// lattice repeats every 256 cells for noise and periodic, every 2048 for
+// cellnoise.
 class Noise {
 private:
   /* Noise and pnoise */

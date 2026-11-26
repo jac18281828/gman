@@ -505,6 +505,16 @@ set_tests_properties(noisedeterminism PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# Every noise, periodic and cellnoise form answers NaN for a non-finite
+# coordinate or an unusable period, and the lattice's periodic value for a
+# finite coordinate beyond RtInt's range. See tests/noisenonfinite_test.cpp.
+add_executable(gman_noisenonfinite noisenonfinite_test.cpp)
+target_link_libraries(gman_noisenonfinite PRIVATE gman_core gman_internal_headers)
+add_test(NAME noisenonfinite COMMAND gman_noisenonfinite)
+set_tests_properties(noisenonfinite PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # A vertex the clipper introduces at a plane crossing carries the colour and
 # alpha interpolated at the crossing, at hand-derived values.
 add_executable(gman_clipcolor clipcolor_test.cpp)

@@ -23,6 +23,7 @@
  */
 
 #include <cmath>
+#include <limits>
 
 #include "gmanmath.h"
 #include "gmannoise.h"
@@ -31,6 +32,31 @@
 #include "ri.h"
 
 namespace gman {
+
+namespace {
+
+constexpr RtFloat kNaN = std::numeric_limits<RtFloat>::quiet_NaN();
+constexpr RtFloat kLatticeLimit = 0x1p30f;
+
+bool wrapLattice(RtFloat& coordinate, RtInt lattice) {
+  if (!std::isfinite(coordinate)) {
+    return false;
+  }
+  if (std::fabs(coordinate) >= kLatticeLimit) {
+    coordinate = std::fmod(coordinate, static_cast<RtFloat>(lattice));
+  }
+  return true;
+}
+
+bool wrapPeriodic(RtFloat& coordinate, RtFloat period, RtInt lattice) {
+  if (!std::isfinite(period)) {
+    return false;
+  }
+  coordinate = GMANMod(coordinate, period);
+  return wrapLattice(coordinate, lattice);
+}
+
+} // namespace
 
 RtFloat Noise::rn() { return 1.0 - 2.0 * (rng() / (rng.max() + 0.0)); }
 
@@ -118,6 +144,9 @@ Noise::Noise() : rng(808) {
 
 /* 1D noise */
 RtFloat Noise::noise(RtFloat v) {
+  if (!wrapLattice(v, kN)) {
+    return kNaN;
+  }
   RtInt i = (RtInt)floor(v);
 
   RtFloat f0, f1, st;
@@ -132,6 +161,9 @@ RtFloat Noise::noise(RtFloat v) {
 
 /* 2D noise */
 RtFloat Noise::noise(RtFloat u, RtFloat v) {
+  if (!(wrapLattice(u, kN) && wrapLattice(v, kN))) {
+    return kNaN;
+  }
   RtInt i = (RtInt)floor(u);
   RtInt j = (RtInt)floor(v);
 
@@ -168,6 +200,9 @@ RtFloat Noise::noise(GMANPoint const& p) {
   RtFloat v = p.getY();
   RtFloat w = p.getZ();
 
+  if (!(wrapLattice(u, kN) && wrapLattice(v, kN) && wrapLattice(w, kN))) {
+    return kNaN;
+  }
   RtInt i = (RtInt)floor(u);
   RtInt j = (RtInt)floor(v);
   RtInt k = (RtInt)floor(w);
@@ -224,6 +259,9 @@ RtFloat Noise::noise(GMANPoint const& p, RtFloat t) {
   RtFloat v = p.getY();
   RtFloat w = p.getZ();
 
+  if (!(wrapLattice(u, kN) && wrapLattice(v, kN) && wrapLattice(w, kN) && wrapLattice(t, kN))) {
+    return kNaN;
+  }
   RtInt i = (RtInt)floor(u);
   RtInt j = (RtInt)floor(v);
   RtInt k = (RtInt)floor(w);
@@ -358,7 +396,9 @@ RtVoid Noise::noise(GMANPoint const& p, RtFloat t, RtFloat& a, RtFloat& b, RtFlo
 /* Periodic noise functions */
 /****************************/
 RtFloat Noise::periodic(RtFloat v, RtFloat pv) {
-  v = GMANMod(v, pv);
+  if (!wrapPeriodic(v, pv, kN)) {
+    return kNaN;
+  }
   RtInt i = (RtInt)floor(v);
 
   RtFloat f0, f1, st;
@@ -375,8 +415,9 @@ RtFloat Noise::periodic(RtFloat v, RtFloat pv) {
   return 0.5 + 0.5 * LERP(st, f0, f1);
 }
 RtFloat Noise::periodic(RtFloat u, RtFloat v, RtFloat pu, RtFloat pv) {
-  u = GMANMod(u, pu);
-  v = GMANMod(v, pv);
+  if (!(wrapPeriodic(u, pu, kN) && wrapPeriodic(v, pv, kN))) {
+    return kNaN;
+  }
   RtInt i = (RtInt)floor(u);
   RtInt j = (RtInt)floor(v);
 
@@ -419,9 +460,12 @@ RtFloat Noise::periodic(GMANPoint const& p, GMANPoint const& pp) {
   RtFloat pu = pp.getX();
   RtFloat pv = pp.getY();
   RtFloat pw = pp.getZ();
-  RtFloat u = GMANMod(p.getX(), pu);
-  RtFloat v = GMANMod(p.getY(), pv);
-  RtFloat w = GMANMod(p.getZ(), pw);
+  RtFloat u = p.getX();
+  RtFloat v = p.getY();
+  RtFloat w = p.getZ();
+  if (!(wrapPeriodic(u, pu, kN) && wrapPeriodic(v, pv, kN) && wrapPeriodic(w, pw, kN))) {
+    return kNaN;
+  }
 
   RtInt i = (RtInt)floor(u);
   RtInt j = (RtInt)floor(v);
@@ -489,10 +533,12 @@ RtFloat Noise::periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, RtFl
   RtFloat pu = pp.getX();
   RtFloat pv = pp.getY();
   RtFloat pw = pp.getZ();
-  RtFloat u = GMANMod(p.getX(), pu);
-  RtFloat v = GMANMod(p.getY(), pv);
-  RtFloat w = GMANMod(p.getZ(), pw);
-  t = GMANMod(t, pt);
+  RtFloat u = p.getX();
+  RtFloat v = p.getY();
+  RtFloat w = p.getZ();
+  if (!(wrapPeriodic(u, pu, kN) && wrapPeriodic(v, pv, kN) && wrapPeriodic(w, pw, kN) && wrapPeriodic(t, pt, kN))) {
+    return kNaN;
+  }
 
   RtInt i = (RtInt)floor(u);
   RtInt j = (RtInt)floor(v);
@@ -647,25 +693,42 @@ RtVoid Noise::periodic(GMANPoint const& p, RtFloat t, GMANPoint const& pp, RtFlo
 #define RND4(x, y, z, w) cprn[(cprn[(cprn[(cprn[(x) & CMASK] + y) & CMASK] + z) & CMASK] + w) & CMASK]
 
 RtFloat Noise::cellnoise(RtFloat v) {
-  // TODO: handle the case where v is greater than an int.
+  if (!wrapLattice(v, CN)) {
+    return kNaN;
+  }
   RtInt a = (RtInt)floor(v);
   return cvect[RND1(a)];
 }
 RtFloat Noise::cellnoise(RtFloat u, RtFloat v) {
+  if (!(wrapLattice(u, CN) && wrapLattice(v, CN))) {
+    return kNaN;
+  }
   RtInt a = (RtInt)floor(u);
   RtInt b = (RtInt)floor(v);
   return cvect[RND2(a, b)];
 }
 RtFloat Noise::cellnoise(GMANPoint const& p) {
-  RtInt a = (RtInt)floor(p.getX());
-  RtInt b = (RtInt)floor(p.getY());
-  RtInt c = (RtInt)floor(p.getZ());
+  RtFloat u = p.getX();
+  RtFloat v = p.getY();
+  RtFloat w = p.getZ();
+  if (!(wrapLattice(u, CN) && wrapLattice(v, CN) && wrapLattice(w, CN))) {
+    return kNaN;
+  }
+  RtInt a = (RtInt)floor(u);
+  RtInt b = (RtInt)floor(v);
+  RtInt c = (RtInt)floor(w);
   return cvect[RND3(a, b, c)];
 }
 RtFloat Noise::cellnoise(GMANPoint const& p, RtFloat t) {
-  RtInt a = (RtInt)floor(p.getX());
-  RtInt b = (RtInt)floor(p.getY());
-  RtInt c = (RtInt)floor(p.getZ());
+  RtFloat u = p.getX();
+  RtFloat v = p.getY();
+  RtFloat w = p.getZ();
+  if (!(wrapLattice(u, CN) && wrapLattice(v, CN) && wrapLattice(w, CN) && wrapLattice(t, CN))) {
+    return kNaN;
+  }
+  RtInt a = (RtInt)floor(u);
+  RtInt b = (RtInt)floor(v);
+  RtInt c = (RtInt)floor(w);
   RtInt d = (RtInt)floor(t);
   return cvect[RND4(a, b, c, d)];
 }
