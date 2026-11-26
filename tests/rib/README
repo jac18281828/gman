@@ -843,6 +843,14 @@ fixture's under each renderer (two faces at index 1.5 pass 0.9216 at normal
 incidence), and the ray tracer's lit block agrees with the path tracer's within 1.5%.
 Registered in `tests/rayarealight_test.cpp`. Not third-party.
 
+## arealight_nearfield.rib
+
+A matte sphere 0.3 above a large upward `Polygon` emitter, the near field of the teapot
+museum shot's lightbox, where a draw's weight varies most across the emitter. The ray
+tracer's render at 16 draws per shading point deviates from its render at 1,024 draws,
+over the sphere's lit underside (columns 26-37, rows 26-35), by a relative root-mean-square
+of at most 0.12. Registered in `tests/arealightnoise_test.cpp`. Not third-party.
+
 ## raycomposite_glass.rib
 
 A matte wall lit by a distant light, a black matte panel of `Opacity` 0.5 in front of

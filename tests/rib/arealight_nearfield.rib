@@ -1,0 +1,18 @@
+## A matte sphere 0.3 above a large upward panel emitter, the near field of the teapot
+## museum shot's lightbox, where a draw's weight varies most across the emitter. Not third-party.
+Display "arealight_nearfield.tif" "file" "rgba"
+Format 64 48 1
+PixelSamples 1 1
+Option "raytracer" "integer arealightsamples" [16]
+Projection "perspective" "fov" [40]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+AttributeBegin
+Surface "matte" "Kd" [0]
+AreaLightSource "arealight" 1 "intensity" [0.6]
+Polygon "P" [-4.2 -1.3 -3.2  -4.2 -1.3 3.2  4.2 -1.3 3.2  4.2 -1.3 -3.2]
+AttributeEnd
+Surface "matte" "Kd" [0.8]
+Sphere 1 -1 1 360
+WorldEnd

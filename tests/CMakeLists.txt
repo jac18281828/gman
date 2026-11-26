@@ -2000,6 +2000,29 @@ if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
     TIMEOUT 300)
 endif()
 
+# The ray tracer's area-light noise near an emitter and far from it: on a
+# matte sphere 0.3 above a large panel the relative rms of a 16-draw render
+# against a 1,024-draw one stays within 0.12, and on the panel fixture without
+# its blocker that of a 4-draw render within 0.02. See
+# tests/arealightnoise_test.cpp.
+if(GMAN_BUILD_RAYTRACER)
+  add_executable(gman_arealightnoise arealightnoise_test.cpp)
+  target_link_libraries(gman_arealightnoise PRIVATE gman TIFF::TIFF)
+  add_dependencies(gman_arealightnoise gman_raytracer gman_matte)
+
+  set(GMAN_AREALIGHTNOISE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/arealightnoise-run")
+  file(MAKE_DIRECTORY "${GMAN_AREALIGHTNOISE_WORKDIR}")
+
+  add_test(NAME arealightnoise
+    COMMAND gman_arealightnoise $<TARGET_FILE:gman_cli>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_AREALIGHTNOISE_WORKDIR}")
+  set_tests_properties(arealightnoise PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 60)
+endif()
+
 # The ray tracer composites what lies behind a partly opaque surface that a
 # glass or mirror ray reaches: on a panel of Opacity 0.5 seen through a glass
 # slab and in a mirror, the ray tracer's block means agree with the path
@@ -4210,6 +4233,19 @@ target_link_libraries(gman_emitter PRIVATE gman gman_ray)
 
 add_test(NAME emitter COMMAND gman_emitter)
 set_tests_properties(emitter PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# gman::sample draws an area emitter uniformly in the solid angle it subtends:
+# from hand-built receiving points, the pdf integrates to the share of draws
+# accepted, every draw's pdf equals lightSolidAnglePdf at the hit its ray
+# meets, and each region of the emitter takes its integral's share of the
+# draws. See tests/emittersolidangle_test.cpp.
+add_executable(gman_emittersolidangle emittersolidangle_test.cpp)
+target_link_libraries(gman_emittersolidangle PRIVATE gman gman_ray)
+
+add_test(NAME emittersolidangle COMMAND gman_emittersolidangle)
+set_tests_properties(emittersolidangle PROPERTIES
   LABELS unit
   TIMEOUT 30)
 

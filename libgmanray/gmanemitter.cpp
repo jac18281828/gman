@@ -182,6 +182,149 @@ bool finitePoint(GMANPoint const& p) {
   return std::isfinite(p.getX()) && std::isfinite(p.getY()) && std::isfinite(p.getZ());
 }
 
+// A point or direction in double, the precision the solid-angle draws keep
+// from a receiving point to the point they place.
+struct DoubleVector {
+  double x;
+  double y;
+  double z;
+};
+
+DoubleVector operator+(DoubleVector const& a, DoubleVector const& b) { return {a.x + b.x, a.y + b.y, a.z + b.z}; }
+
+DoubleVector operator-(DoubleVector const& a, DoubleVector const& b) { return {a.x - b.x, a.y - b.y, a.z - b.z}; }
+
+DoubleVector operator-(DoubleVector const& a) { return {-a.x, -a.y, -a.z}; }
+
+DoubleVector operator*(double s, DoubleVector const& a) { return {s * a.x, s * a.y, s * a.z}; }
+
+double dot(DoubleVector const& a, DoubleVector const& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+
+DoubleVector cross(DoubleVector const& a, DoubleVector const& b) {
+  return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
+}
+
+double length(DoubleVector const& a) { return std::sqrt(dot(a, a)); }
+
+// a over its length: not finite for a zero or non-finite a.
+DoubleVector normalized(DoubleVector const& a) { return (1.0 / length(a)) * a; }
+
+bool finiteVector(DoubleVector const& a) { return std::isfinite(a.x) && std::isfinite(a.y) && std::isfinite(a.z); }
+
+DoubleVector toDouble(GMANPoint const& p) { return {p.getX(), p.getY(), p.getZ()}; }
+
+DoubleVector toDouble(GMANVector const& v) { return {v.getX(), v.getY(), v.getZ()}; }
+
+GMANPoint toPoint(DoubleVector const& a) {
+  return GMANPoint(static_cast<RtFloat>(a.x), static_cast<RtFloat>(a.y), static_cast<RtFloat>(a.z));
+}
+
+GMANVector toVector(DoubleVector const& a) {
+  return GMANVector(static_cast<RtFloat>(a.x), static_cast<RtFloat>(a.y), static_cast<RtFloat>(a.z));
+}
+
+// The angle between unit vectors u and v, accurate near 0 and near pi.
+double angleBetween(DoubleVector const& u, DoubleVector const& v) {
+  if (dot(u, v) < 0.0) {
+    return std::numbers::pi - 2.0 * std::asin(std::min(1.0, length(u + v) / 2.0));
+  }
+  return 2.0 * std::asin(std::min(1.0, length(v - u) / 2.0));
+}
+
+// The spherical triangle a triangle subtends from a point: the unit
+// directions a, b and c to its corners, the interior angle alpha at a and
+// its solid angle, the interior angles' sum less pi (Girard's theorem). Not
+// finite when two directions coincide or a corner lies at the point.
+struct SphericalTriangle {
+  DoubleVector a;
+  DoubleVector b;
+  DoubleVector c;
+  double alpha;
+  double solidAngle;
+};
+
+SphericalTriangle sphericalTriangle(DoubleVector const& p, DoubleVector const& v0, DoubleVector const& v1,
+                                    DoubleVector const& v2) {
+  SphericalTriangle triangle;
+  triangle.a = normalized(v0 - p);
+  triangle.b = normalized(v1 - p);
+  triangle.c = normalized(v2 - p);
+  const auto ab = normalized(cross(triangle.a, triangle.b));
+  const auto bc = normalized(cross(triangle.b, triangle.c));
+  const auto ca = normalized(cross(triangle.c, triangle.a));
+  triangle.alpha = angleBetween(ab, -ca);
+  const auto beta = angleBetween(bc, -ab);
+  const auto gamma = angleBetween(ca, -bc);
+  triangle.solidAngle = triangle.alpha + beta + gamma - std::numbers::pi;
+  return triangle;
+}
+
+// A direction uniform over triangle's solid angle, by Arvo's inversion
+// ("Stratified sampling of spherical triangles", 1995): u1 sets the
+// sub-triangle area u1 * solidAngle, which fixes the point c' on arc ac, and
+// u2 sets the cosine z = 1 - u2 * (1 - c' . b) along arc bc'. Not finite
+// where the inversion fails.
+DoubleVector sphericalTriangleDirection(SphericalTriangle const& triangle, double u1, double u2) {
+  const auto subArea = u1 * triangle.solidAngle;
+  const auto s = std::sin(subArea - triangle.alpha);
+  const auto t = std::cos(subArea - triangle.alpha);
+  const auto cosAlpha = std::cos(triangle.alpha);
+  const auto sinAlpha = std::sin(triangle.alpha);
+  const auto u = t - cosAlpha;
+  const auto v = s + sinAlpha * dot(triangle.a, triangle.b);
+  const auto q = std::clamp(((v * t - u * s) * cosAlpha - v) / ((v * s + u * t) * sinAlpha), -1.0, 1.0);
+  const auto awayFromA = normalized(triangle.c - dot(triangle.c, triangle.a) * triangle.a);
+  const auto cPrime = q * triangle.a + std::sqrt((1.0 - q) * (1.0 + q)) * awayFromA;
+  const auto oneMinusZ = u2 * (1.0 - dot(cPrime, triangle.b));
+  const auto awayFromB = normalized(cPrime - dot(cPrime, triangle.b) * triangle.b);
+  const auto sinZ = std::sqrt(std::max(0.0, oneMinusZ * (2.0 - oneMinusZ)));
+  return (1.0 - oneMinusZ) * triangle.b + sinZ * awayFromB;
+}
+
+// The point where the ray from p along direction meets the plane of triangle
+// (v0, v1, v2); empty unless the ray meets it ahead of p at a finite point.
+std::optional<DoubleVector> rayPlanePoint(DoubleVector const& p, DoubleVector const& direction, DoubleVector const& v0,
+                                          DoubleVector const& v1, DoubleVector const& v2) {
+  const auto normal = cross(v1 - v0, v2 - v0);
+  const auto t = dot(v0 - p, normal) / dot(direction, normal);
+  if (!std::isfinite(t) || !(t > 0.0)) {
+    return std::nullopt;
+  }
+  const auto point = p + t * direction;
+  if (!finiteVector(point)) {
+    return std::nullopt;
+  }
+  return point;
+}
+
+// A point drawn uniformly in the solid angle an emitter subtends from a
+// receiving point, the camera-space normal of its emitting side there, and
+// the density of the draw per unit solid angle.
+struct SolidAngleDraw {
+  DoubleVector point;
+  GMANVector normal;
+  double pdf;
+};
+
+// The point of triangle (v0, v1, v2) seen from p along a direction drawn
+// uniformly in its solid angle, where that ray meets the triangle's plane;
+// empty when the direction or that point is not finite.
+std::optional<DoubleVector> pointInSphericalTriangle(DoubleVector const& p, DoubleVector const& v0,
+                                                     DoubleVector const& v1, DoubleVector const& v2, double u1,
+                                                     double u2) {
+  const auto direction = sphericalTriangleDirection(sphericalTriangle(p, v0, v1, v2), u1, u2);
+  if (!finiteVector(direction)) {
+    return std::nullopt;
+  }
+  return rayPlanePoint(p, direction, v0, v1, v2);
+}
+
+// 1 / solidAngle as a density, 0 unless that is finite and positive.
+RtFloat solidAngleDensity(double solidAngle) {
+  const auto density = static_cast<RtFloat>(1.0 / solidAngle);
+  return (std::isfinite(density) && density > 0.0f) ? density : 0.0f;
+}
+
 // The area of triangle (a, b, c) along normal, negative when it winds against
 // normal.
 double signedTriangleArea(GMANPoint const& a, GMANPoint const& b, GMANPoint const& c, GMANVector const& normal) {
@@ -280,15 +423,43 @@ void meshCentreAndRadius(GMANRayPolygonMesh const& mesh, GMANPoint& centre, RtFl
   radius = diagonal.magnitude() / (RtFloat)2.0;
 }
 
-// The solid-angle density of a point drawn uniformly by area over mesh, seen
-// from distance away under cosTheta to the drawn face's normal; 0 for a mesh
-// with no area.
-RtFloat meshSolidAnglePdf(GMANRayPolygonMesh const& mesh, RtFloat distance, RtFloat cosTheta) {
-  RtFloat const area = static_cast<RtFloat>(meshArea(mesh));
-  if (!std::isfinite(area) || !(area > 0.0f)) {
-    return 0.0f;
+// The solid angle from p of face's fan triangle (v0, v[i], v[i + 1]): 0
+// unless its area is positive, p lies strictly on the face's emitting side
+// and that solid angle is finite and positive.
+double fanTriangleSolidAngle(GMANRayPolygon const& face, std::size_t i, DoubleVector const& p) {
+  if (!(fanTriangleArea(face, i) > 0.0)) {
+    return 0.0;
   }
-  return (distance * distance) / (area * cosTheta);
+  auto const& loop = face.getOuterLoop();
+  const auto v0 = toDouble(loop[0]);
+  if (!(dot(p - v0, toDouble(face.getPlaneNormal())) > 0.0)) {
+    return 0.0;
+  }
+  const auto solidAngle = sphericalTriangle(p, v0, toDouble(loop[i]), toDouble(loop[i + 1])).solidAngle;
+  return (std::isfinite(solidAngle) && solidAngle > 0.0) ? solidAngle : 0.0;
+}
+
+// The sum of face's fan triangles' solid angles from p; 0 for a degenerate
+// face, whose plane normal is unset.
+double faceSolidAngle(GMANRayPolygon const& face, DoubleVector const& p) {
+  if (face.isDegenerate()) {
+    return 0.0;
+  }
+  double solidAngle = 0.0;
+  for (std::size_t i = 1; i + 1 < face.getOuterLoop().size(); ++i) {
+    solidAngle += fanTriangleSolidAngle(face, i, p);
+  }
+  return solidAngle;
+}
+
+// The sum of mesh's faces' solid angles from p: the solid angle its emitting
+// sides subtend there, back-facing faces excluded.
+double meshSolidAngle(GMANRayPolygonMesh const& mesh, DoubleVector const& p) {
+  double solidAngle = 0.0;
+  for (std::size_t f = 0; f < mesh.getFaceCount(); ++f) {
+    solidAngle += faceSolidAngle(mesh.getFace(f), p);
+  }
+  return solidAngle;
 }
 
 struct Pick {
@@ -318,6 +489,40 @@ std::optional<Pick> pickByWeight(std::size_t count, double total, double u, Weig
     lower = upper;
   }
   return pick;
+}
+
+// A point drawn uniformly in the solid angle mesh's emitting sides subtend
+// from p: u1 picks a face, then one of its fan triangles, each in proportion
+// to its solid angle, and the rescaled u1 and u2 draw a direction in that
+// triangle's spherical triangle. The density is 1 / that solid angle at
+// every point. Empty when the mesh subtends none from p or the draw is not
+// finite.
+std::optional<SolidAngleDraw> drawMeshBySolidAngle(GMANRayPolygonMesh const& mesh, DoubleVector const& p, double u1,
+                                                   double u2) {
+  const auto total = meshSolidAngle(mesh, p);
+  if (!std::isfinite(total) || !(total > 0.0)) {
+    return std::nullopt;
+  }
+  const auto faceAt = [&mesh, &p](std::size_t f) { return faceSolidAngle(mesh.getFace(f), p); };
+  std::optional<Pick> const facePick = pickByWeight(mesh.getFaceCount(), total, u1, faceAt);
+  if (!facePick) {
+    return std::nullopt;
+  }
+  auto const& face = mesh.getFace(facePick->index);
+  auto const& loop = face.getOuterLoop();
+  const auto triangleAt = [&face, &p](std::size_t t) { return fanTriangleSolidAngle(face, t + 1, p); };
+  std::optional<Pick> const trianglePick =
+      pickByWeight(loop.size() - 2, faceSolidAngle(face, p), facePick->fraction, triangleAt);
+  if (!trianglePick) {
+    return std::nullopt;
+  }
+  const auto i = trianglePick->index + 1;
+  std::optional<DoubleVector> const point = pointInSphericalTriangle(p, toDouble(loop[0]), toDouble(loop[i]),
+                                                                     toDouble(loop[i + 1]), trianglePick->fraction, u2);
+  if (!point) {
+    return std::nullopt;
+  }
+  return SolidAngleDraw{*point, face.getPlaneNormal(), 1.0 / total};
 }
 
 // shape's own placed centre (camera space) and bounding radius: the
@@ -440,12 +645,9 @@ std::optional<EmitterDraw> drawEmitterPoint(Emitter const& emitter, RtFloat u1, 
   return draw;
 }
 
-// The area branch of sample(): draws a point on emitter's shape, places
-// it, and reports the solid-angle pdf the area-to-solid-angle Jacobian
-// gives, black and 0 on the emitter's own non-emitting side. Every field
-// zero, Cl black and pdf 0, for a singular placement or a polygon mesh with no
-// area.
-EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
+// The draw sample() answers when it places nothing: every field zero, Cl
+// black and pdf 0.
+EmitterSample zeroSample() {
   EmitterSample result;
   result.wi = GMANVector(0.0f, 0.0f, 0.0f);
   result.distance = 0.0f;
@@ -453,6 +655,39 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
   result.Cl = GMANColor(0.0f, 0.0f, 0.0f);
   result.pdf = 0.0f;
   result.isDelta = false;
+  return result;
+}
+
+// The sample a solid-angle draw makes from p: the direction and distance to
+// the drawn point, emitter's radiance, which the draw's emitting side sends
+// toward p, the draw's density, and the shadow walk's end point off the
+// emitter's surface. zeroSample() when any of them is not finite.
+EmitterSample solidAngleSample(Emitter const& emitter, GMANPoint const& p, SolidAngleDraw const& draw) {
+  const auto toEmitter = draw.point - toDouble(p);
+  const auto distance = length(toEmitter);
+  const auto wi = toVector((1.0 / distance) * toEmitter);
+  const auto floatDistance = static_cast<RtFloat>(distance);
+  const auto pdf = static_cast<RtFloat>(draw.pdf);
+  if (!std::isfinite(floatDistance) || !(floatDistance > 0.0f) || !std::isfinite(pdf) || !(pdf > 0.0f) ||
+      !std::isfinite(wi.getX()) || !std::isfinite(wi.getY()) || !std::isfinite(wi.getZ())) {
+    return zeroSample();
+  }
+  EmitterSample result = zeroSample();
+  result.wi = wi;
+  result.distance = floatDistance;
+  result.Cl = emitter.light->getCl();
+  result.pdf = pdf;
+  result.shadowTarget =
+      gman::offsetOrigin(toPoint(draw.point), draw.normal, -wi, gman::primitiveMagnitude(emitter.shape->getBBox()));
+  return result;
+}
+
+// Draws a point on emitter's shape uniformly by area, places it, and reports
+// the solid-angle pdf the area-to-solid-angle Jacobian gives, black and 0 on
+// the emitter's own non-emitting side. zeroSample() for a singular placement
+// or a polygon mesh with no area.
+EmitterSample sampleByArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
+  EmitterSample result = zeroSample();
 
   std::optional<EmitterDraw> const drawn = drawEmitterPoint(emitter, u1, u2);
   if (!drawn) {
@@ -484,6 +719,19 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
   result.shadowTarget =
       gman::offsetOrigin(draw.point, draw.normal, -toEmitter, gman::primitiveMagnitude(emitter.shape->getBBox()));
   return result;
+}
+
+// The area branch of sample(): a polygon mesh draws uniformly in the solid
+// angle its emitting sides subtend from p; a sphere or disk draws by area.
+EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
+  if (GMANRayPolygonMesh const* mesh = classifyEmittingShape(*emitter.shape).mesh) {
+    std::optional<SolidAngleDraw> const drawn = drawMeshBySolidAngle(*mesh, toDouble(p), u1, u2);
+    if (!drawn) {
+      return zeroSample();
+    }
+    return solidAngleSample(emitter, p, *drawn);
+  }
+  return sampleByArea(emitter, p, u1, u2);
 }
 
 // The area branch of samplePoint(): draws a point on emitter's shape and
@@ -629,7 +877,7 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
   }
 
   if (GMANRayPolygonMesh const* mesh = classifyEmittingShape(*emitter.shape).mesh) {
-    return meshSolidAnglePdf(*mesh, distance, cosTheta);
+    return solidAngleDensity(meshSolidAngle(*mesh, toDouble(p)));
   }
 
   std::optional<InvertibleMatrix> const& placement = emittingShapeObjectToCamera(*emitter.shape);
