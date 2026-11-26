@@ -234,17 +234,19 @@ bool isUsableNormal(GMANVector normal) {
   return magnitude > (RtFloat)0.0 && std::isfinite(magnitude);
 }
 
-bool hasControlPoints(std::string_view request, GMANParameterList const& pl, std::size_t floatCount) {
+std::optional<std::vector<RtFloat>> controlPoints(std::string_view request, GMANParameterList const& pl,
+                                                  std::size_t floatCount) {
   std::span<RtFloat const> const p = pl.floats("P");
   if (p.size() < floatCount) {
     warning("{}: \"P\" holds {} floats, {} expected; ignoring.", request, p.size(), floatCount);
-    return false;
+    return std::nullopt;
   }
-  if (!std::ranges::all_of(p.first(floatCount), [](RtFloat value) { return std::isfinite(value); })) {
+  std::span<RtFloat const> const used = p.first(floatCount);
+  if (!std::ranges::all_of(used, [](RtFloat value) { return std::isfinite(value); })) {
     warning("{}: \"P\" holds a non-finite value; ignoring.", request);
-    return false;
+    return std::nullopt;
   }
-  return true;
+  return std::vector<RtFloat>(used.begin(), used.end());
 }
 
 std::unique_ptr<GMANRayPolygon> triangleFace(GridVertex const& a, GridVertex const& b, GridVertex const& c) {
@@ -403,8 +405,7 @@ GMANPrimitive* GMANRayObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mes
 
 GMANPrimitive* GMANRayObjectManager::getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* /*opt*/,
                                                 GMANAttributes* attr, GMANTransform* t) {
-  RtFloat* const p = gman::floatArray(pl, RI_P);
-  if (!p) {
+  if (pl.floats("P").empty()) {
     return create();
   }
 
@@ -412,17 +413,19 @@ GMANPrimitive* GMANRayObjectManager::getRSPatch(RtToken type, GMANParameterList 
   auto const texCoordAt = [&corners](double u, double v) { return cornerTexCoord(corners, u, v); };
   std::unique_ptr<GMANRayPolygonMesh> mesh;
   if (std::string_view(type) == RI_BILINEAR) {
-    if (!hasControlPoints("Patch \"bilinear\"", pl, 12)) {
+    std::optional<std::vector<RtFloat>> points = controlPoints("Patch \"bilinear\"", pl, 12);
+    if (!points) {
       return create();
     }
-    GMANPatch patch(type, p, pl);
+    GMANPatch patch(type, points->data(), pl);
     mesh = tessellate("Patch \"bilinear\"", patch, {false, false}, texCoordAt, *attr, t);
   } else if (std::string_view(type) == RI_BICUBIC) {
-    if (!hasControlPoints("Patch \"bicubic\"", pl, 48)) {
+    std::optional<std::vector<RtFloat>> points = controlPoints("Patch \"bicubic\"", pl, 48);
+    if (!points) {
       return create();
     }
     GMANBasis const basis = attr->getUVBasis();
-    GMANPatch patch(type, p, basis, pl);
+    GMANPatch patch(type, points->data(), basis, pl);
     mesh = tessellate("Patch \"bicubic\"", patch, {false, false}, texCoordAt, *attr, t);
   }
   if (!mesh) {
@@ -434,8 +437,7 @@ GMANPrimitive* GMANRayObjectManager::getRSPatch(RtToken type, GMANParameterList 
 GMANPrimitive* GMANRayObjectManager::getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap,
                                                     GMANParameterList pl, GMANOptions* /*opt*/, GMANAttributes* attr,
                                                     GMANTransform* t) {
-  RtFloat* const p = gman::floatArray(pl, RI_P);
-  if (!p) {
+  if (pl.floats("P").empty()) {
     return create();
   }
 
@@ -449,10 +451,12 @@ GMANPrimitive* GMANRayObjectManager::getRSPatchMesh(RtToken type, RtInt nu, RtTo
               nu, nv);
       return create();
     }
-    if (!hasControlPoints("PatchMesh \"bilinear\"", pl, (std::size_t)nu * (std::size_t)nv * 3)) {
+    std::optional<std::vector<RtFloat>> points =
+        controlPoints("PatchMesh \"bilinear\"", pl, (std::size_t)nu * (std::size_t)nv * 3);
+    if (!points) {
       return create();
     }
-    GMANPatchMesh patchMesh(type, p, nu, uwrap, nv, vwrap, pl);
+    GMANPatchMesh patchMesh(type, points->data(), nu, uwrap, nv, vwrap, pl);
     mesh = tessellatePatchMesh(patchMesh, {bilinearPatchCount(nu, uPeriodic), uPeriodic},
                                {bilinearPatchCount(nv, vPeriodic), vPeriodic}, pl, *attr, t);
   } else if (std::string_view(type) == RI_BICUBIC) {
@@ -464,10 +468,12 @@ GMANPrimitive* GMANRayObjectManager::getRSPatchMesh(RtToken type, RtInt nu, RtTo
               nu, nv);
       return create();
     }
-    if (!hasControlPoints("PatchMesh \"bicubic\"", pl, (std::size_t)nu * (std::size_t)nv * 3)) {
+    std::optional<std::vector<RtFloat>> points =
+        controlPoints("PatchMesh \"bicubic\"", pl, (std::size_t)nu * (std::size_t)nv * 3);
+    if (!points) {
       return create();
     }
-    GMANPatchMesh patchMesh(type, p, nu, uwrap, nv, vwrap, basis, pl);
+    GMANPatchMesh patchMesh(type, points->data(), nu, uwrap, nv, vwrap, basis, pl);
     mesh = tessellatePatchMesh(patchMesh, {bicubicPatchCount(nu, uPeriodic, basis.getUStep()), uPeriodic},
                                {bicubicPatchCount(nv, vPeriodic, basis.getVStep()), vPeriodic}, pl, *attr, t);
   }

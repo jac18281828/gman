@@ -24,6 +24,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 
@@ -31,7 +32,6 @@
 #include "gmanloadableshader.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
-#include "gmanpolygon.h"
 #include "gmanshader.h"
 #include "gmansurfaceshader.h"
 #include "gmantrimcurve.h"
@@ -198,8 +198,8 @@ namespace gman {
 GMANTextureCoordinates resolveParametricCorners(GMANParameterList const& pl, GMANAttributes const& attr) {
   GMANTextureCoordinates corners = attr.getTextureCoordinates();
 
-  RtFloat const* st = floatArray(pl, RI_ST);
-  if (st) {
+  std::span<RtFloat const> const st = pl.floats(RI_ST);
+  if (st.size() >= 8) {
     corners.s1 = st[0];
     corners.t1 = st[1];
     corners.s2 = st[2];
@@ -209,19 +209,19 @@ GMANTextureCoordinates resolveParametricCorners(GMANParameterList const& pl, GMA
     corners.s4 = st[6];
     corners.t4 = st[7];
   }
-  RtFloat const* s = floatArray(pl, RI_S);
-  if (s) {
+  std::span<RtFloat const> const s = pl.floats(RI_S);
+  if (s.size() >= 4) {
     corners.s1 = s[0];
     corners.s2 = s[1];
     corners.s3 = s[2];
     corners.s4 = s[3];
   }
-  RtFloat const* tp = floatArray(pl, RI_T);
-  if (tp) {
-    corners.t1 = tp[0];
-    corners.t2 = tp[1];
-    corners.t3 = tp[2];
-    corners.t4 = tp[3];
+  std::span<RtFloat const> const t = pl.floats(RI_T);
+  if (t.size() >= 4) {
+    corners.t1 = t[0];
+    corners.t2 = t[1];
+    corners.t3 = t[2];
+    corners.t4 = t[3];
   }
   return corners;
 }

@@ -752,6 +752,20 @@ void testPatchTexCoords() {
   }
 }
 
+void testShortCornerValues() {
+  SurfaceDef const flat = flatMeshDef(2, 2);
+  Request request;
+  request.patch("bilinear", {{RI_P, flat.p}, {RI_ST, {0.9f, 0.9f, 0.9f, 0.9f}}}, {4, 2, 1});
+  GMANRayPolygonMesh const* mesh = request.mesh();
+  check(mesh != nullptr, "Patch with a short \"st\": a triangle mesh");
+  if (mesh == nullptr) {
+    return;
+  }
+  Vec3 const target = evaluate(flat, gridU(4), gridU(12));
+  check(hitTexCoordNear(*mesh, target, frontOf(target), gridU(4), gridU(12)),
+        "Patch with a short \"st\": the corners stay (s, t) = (u, v)");
+}
+
 void testPatchMeshTexCoords() {
   SurfaceDef const flat = flatMeshDef(3, 2);
   for (bool uniformS : {false, true}) {
@@ -940,6 +954,16 @@ void testNonFiniteAndDegenerate() {
 void testRequestChecks() {
   SurfaceDef const mesh7 = bezierMeshDef();
   {
+    Request request;
+    request.patchMesh("bicubic", 7, false, 7, false, {{RI_P, std::vector<RtFloat>(30, 0.5f)}}, {10, 9, 4});
+    check(request.mesh() == nullptr, "a PatchMesh whose \"P\" holds fewer points than nu * nv returns no mesh");
+  }
+  {
+    Request request;
+    request.patch("bilinear", {{RI_P, std::vector<RtFloat>(6, 0.5f)}}, {2, 4, 1});
+    check(request.mesh() == nullptr, "a bilinear Patch whose \"P\" holds fewer than four points returns no mesh");
+  }
+  {
     std::vector<RtFloat> p(5 * 7 * 3, 0.5f);
     Request request;
     request.patchMesh("bicubic", 5, false, 7, false, {{RI_P, p}}, {35, 12, 4});
@@ -974,6 +998,7 @@ int main() {
   testWatertight();
   testNormals();
   testPatchTexCoords();
+  testShortCornerValues();
   testPatchMeshTexCoords();
   testVaryingMeshTexCoords();
   testNonFiniteAndDegenerate();
