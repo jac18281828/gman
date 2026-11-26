@@ -849,7 +849,8 @@ A matte sphere 0.3 above a large upward `Polygon` emitter, the near field of the
 museum shot's lightbox, where a draw's weight varies most across the emitter. The ray
 tracer's render at 16 draws per shading point deviates from its render at 1,024 draws,
 over the sphere's lit underside (columns 26-37, rows 26-35), by a relative root-mean-square
-of at most 0.12. Registered in `tests/arealightnoise_test.cpp`. Not third-party.
+of at most 0.12, and so does a copy with a radius-4 `Disk` in the panel's place. Registered
+in `tests/arealightnoise_test.cpp`. Not third-party.
 
 ## raycomposite_glass.rib
 

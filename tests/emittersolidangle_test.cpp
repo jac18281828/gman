@@ -20,30 +20,37 @@
 
 /*
  * gman::sample draws a polygon mesh's points uniformly in the solid angle its
- * emitting faces subtend from the receiving point, and gman::lightSolidAnglePdf
- * answers the density each draw reports. Each case builds an emitter by hand
- * in camera space and draws 2^14 stratified (u1, u2) from one receiving point;
- * a draw is accepted when its pdf is positive and its Cl is not black, and A is
- * the fraction accepted.
+ * emitting faces subtend from the receiving point, and a disk's, near it,
+ * uniformly in the solid angle of its bounding rectangle, keeping the draws
+ * that land on the disk; gman::lightSolidAnglePdf answers the density each
+ * draw reports. Each case builds an emitter by hand in camera space and draws
+ * 2^14 stratified (u1, u2) from one receiving point; a draw is accepted when
+ * its pdf is positive and its Cl is not black, and A is the fraction accepted.
  *
- * a: A is exactly 1, and the integral of lightSolidAnglePdf over the
- *    directions in which the emitting faces are visible equals A within 1e-3
- *    plus five binomial sigma. The quadrature sweeps each region by the angle
- *    about the receiving point's foot on the region's plane and the cosine
- *    off its normal, in which the solid-angle element is exact.
+ * a: A is exactly 1 for a mesh and for a disk beyond its switch, and the
+ *    integral of lightSolidAnglePdf over the directions in which the emitting
+ *    side is visible equals A within 1e-3 plus five binomial sigma. The
+ *    quadrature sweeps each flat region, a disk's an inscribed polygon of 64
+ *    sides a quarter turn, along each edge and by the cosine off its normal,
+ *    in which the solid-angle element is exact.
  * b: every accepted draw's pdf equals lightSolidAnglePdf at the first hit of
  *    the ray from the receiving point along wi, with that hit's normal, within
  *    1e-5 relative, and the hit lies within 1e-4 of the distance from the drawn
  *    point.
  * c: the fraction of accepted draws in each of four regions (a triangle's
- *    midpoint sub-triangles, a quad's quadrants, each face of a two-face mesh)
- *    equals that region's integral of the pdf over A within five binomial
- *    sigma.
+ *    midpoint sub-triangles, a quad's quadrants, a disk sector's four equal
+ *    turns, each face of a two-face mesh) equals that region's integral of the
+ *    pdf over A within five binomial sigma.
  * d: for a single triangle, every draw's pdf times the triangle's solid angle,
  *    by Van Oosterom and Strackee's formula, equals 1 within 1e-5 relative.
  * e: degenerate inputs (a zero-area fan triangle, a receiving point in the
- *    plane) answer finite fields, a pdf of 0 or more and a finite
- *    lightSolidAnglePdf at every accepted draw's hit.
+ *    plane or 1e-6 above it) answer finite fields, a pdf of 0 or more and a
+ *    finite lightSolidAnglePdf at every accepted draw's hit.
+ * f: a disk draws through its rectangle nearer it than 0.75 times the radius
+ *    of a full disk of its sector's area, where every accepted draw reports 1
+ *    / the rectangle's solid angle, and by area beyond, where each reports the
+ *    area density d^2 / (A J cos) at its point; at 0.9 and 1.1 times that
+ *    distance, frontal and 80 degrees off the normal, the two sides differ.
  */
 
 #include <algorithm>
@@ -53,6 +60,7 @@
 #include <cstdio>
 #include <functional>
 #include <initializer_list>
+#include <limits>
 #include <memory>
 #include <numbers>
 #include <optional>
@@ -63,15 +71,21 @@
 #include "check.h"
 #include "gmancolor.h"
 #include "gmanemitter.h"
+#include "gmaninvertiblematrix.h"
 #include "gmanlightsourcemgr.h"
+#include "gmanmath.h"
+#include "gmanmatrix4.h"
 #include "gmannormal.h"
+#include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
+#include "gmanraydisk.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
 #include "gmansampling.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
+#include "maketransform.h"
 #include "ri.h"
 #include "taggedmesh.h"
 
@@ -90,6 +104,8 @@ constexpr int kEdgeNodes = 8;
 constexpr int kCosineNodes = 16;
 constexpr int kNewtonIterations = 100;
 constexpr double kNewtonStep = 1.0e-15;
+constexpr int kArcSegments = 64;
+constexpr double kDiskSwitch = 0.75;
 const GMANColor kRadiance(1.0f, 2.0f, 3.0f);
 
 struct Vec {
@@ -272,8 +288,15 @@ bool isBlack(GMANColor const& c) { return c.getRed() == 0.0f && c.getGreen() == 
 
 bool accepted(gman::EmitterSample const& s) { return s.pdf > 0.0f && !isBlack(s.Cl); }
 
+// The strategy f expects p to select: uniform in a solid angle, every
+// accepted draw reporting one pdf, or by area, each reporting the area
+// density at its point.
+enum class Strategy { unchecked, solidAngle, area };
+
 // One receiving point's view of one emitter: its regions' integrals, which
-// region a hit lies in, and what a and d expect.
+// region a hit lies in, and what a, d and f expect. solidAngle, when known,
+// is the solid angle a strategy by solid angle draws over; areaDensity
+// answers the area density at a draw's point.
 struct Case {
   std::string label;
   gman::Emitter emitter;
@@ -282,6 +305,9 @@ struct Case {
   std::function<std::size_t(GMANHit const&)> regionOf;
   bool acceptsEvery = false;
   std::optional<double> triangleSolidAngle;
+  Strategy strategy = Strategy::unchecked;
+  std::optional<double> solidAngle;
+  std::function<double(gman::EmitterSample const&)> areaDensity;
 };
 
 // Draws from c's receiving point and checks a to d.
@@ -292,6 +318,9 @@ void runCase(Case const& c, std::uint32_t dim) {
   double worstPdf = 0.0;
   double worstHit = 0.0;
   double worstSolidAngle = 0.0;
+  double worstStrategy = 0.0;
+  double lowestPdf = std::numeric_limits<double>::max();
+  double highestPdf = 0.0;
   for (std::uint32_t i = 0; i < kDraws; ++i) {
     gman::Sample2D const uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
     gman::EmitterSample const s = gman::sample(c.emitter, c.p, uv.u1, uv.u2);
@@ -301,6 +330,15 @@ void runCase(Case const& c, std::uint32_t dim) {
     ++acceptedCount;
     if (c.triangleSolidAngle) {
       worstSolidAngle = std::max(worstSolidAngle, std::fabs(s.pdf * *c.triangleSolidAngle - 1.0));
+    }
+    lowestPdf = std::min(lowestPdf, (double)s.pdf);
+    highestPdf = std::max(highestPdf, (double)s.pdf);
+    if (c.strategy == Strategy::solidAngle && c.solidAngle) {
+      worstStrategy = std::max(worstStrategy, std::fabs(s.pdf * *c.solidAngle - 1.0));
+    }
+    if (c.strategy == Strategy::area) {
+      const auto density = c.areaDensity(s);
+      worstStrategy = std::max(worstStrategy, std::fabs((double)s.pdf - density) / density);
     }
     GMANHit hit;
     if (!c.emitter.shape->intersect(GMANRay(c.p, s.wi), hit)) {
@@ -341,6 +379,17 @@ void runCase(Case const& c, std::uint32_t dim) {
   check(worstHit <= kHitTolerance, c.label + " b: each hit lies within 1e-4 of the distance from the drawn point");
   if (c.triangleSolidAngle) {
     check(worstSolidAngle <= kPdfTolerance, c.label + " d: pdf times the triangle's solid angle is 1 within 1e-5");
+  }
+  if (c.strategy == Strategy::solidAngle) {
+    std::printf("  f: by solid angle, pdf spread %.2e, worst against 1 / solid angle %.2e\n",
+                (highestPdf - lowestPdf) / lowestPdf, worstStrategy);
+    check((highestPdf - lowestPdf) / lowestPdf <= kPdfTolerance,
+          c.label + " f: every accepted draw reports one pdf within 1e-5");
+    check(worstStrategy <= kPdfTolerance, c.label + " f: that pdf is 1 / the solid angle drawn over within 1e-5");
+  }
+  if (c.strategy == Strategy::area) {
+    std::printf("  f: by area, worst against the area density %.2e\n", worstStrategy);
+    check(worstStrategy <= kPdfTolerance, c.label + " f: each pdf equals the area density at its point within 1e-5");
   }
   if (acceptedCount == 0) {
     return;
@@ -602,6 +651,184 @@ void testDegenerateMesh() {
   checkDegenerate(emitter.emitter(), GMANPoint(-0.5f, 0.5f, 0.3f), "repeated-vertex quad, p above the face", 24u);
 }
 
+// m.forward() applied to the object-space point q, in double.
+Vec place(gman::InvertibleMatrix const& m, Vec const& q) {
+  GMANMatrix4 const& f = m.forward();
+  return {q.x * f[0][0] + q.y * f[1][0] + q.z * f[2][0] + f[3][0],
+          q.x * f[0][1] + q.y * f[1][1] + q.z * f[2][1] + f[3][1],
+          q.x * f[0][2] + q.y * f[1][2] + q.z * f[2][2] + f[3][2]};
+}
+
+// m.backward() applied to the camera-space point q, in double.
+Vec unplace(gman::InvertibleMatrix const& m, Vec const& q) {
+  GMANMatrix4 const& b = m.backward();
+  return {q.x * b[0][0] + q.y * b[1][0] + q.z * b[2][0] + b[3][0],
+          q.x * b[0][1] + q.y * b[1][1] + q.z * b[2][1] + b[3][1],
+          q.x * b[0][2] + q.y * b[1][2] + q.z * b[2][2] + b[3][2]};
+}
+
+// The object-space normal n carried into camera space by m's inverse
+// transpose, unnormalized: Nanson's formula's normal factor.
+Vec placeNormal(gman::InvertibleMatrix const& m, Vec const& n) {
+  GMANMatrix4 const& b = m.backward();
+  return {b[0][0] * n.x + b[0][1] * n.y + b[0][2] * n.z, b[1][0] * n.x + b[1][1] * n.y + b[1][2] * n.z,
+          b[2][0] * n.x + b[2][1] * n.y + b[2][2] * n.z};
+}
+
+// The determinant of m's linear part.
+double linearDeterminant(gman::InvertibleMatrix const& m) {
+  GMANMatrix4 const& f = m.forward();
+  return f[0][0] * (f[1][1] * f[2][2] - f[1][2] * f[2][1]) - f[0][1] * (f[1][0] * f[2][2] - f[1][2] * f[2][0]) +
+         f[0][2] * (f[1][0] * f[2][1] - f[1][1] * f[2][0]);
+}
+
+double radians(double degrees) { return degrees * std::numbers::pi / 180.0; }
+
+// The angle of the object-space point q about its z axis, in [0, 2 pi).
+double turnAngle(Vec const& q) {
+  const auto angle = std::atan2(q.y, q.x);
+  if (angle < 0.0) {
+    return angle + 2.0 * std::numbers::pi;
+  }
+  return angle;
+}
+
+// A disk emitter of radius and thetamax at height 0, placed by placement;
+// its emitting side faces object-space -z.
+struct DiskEmitter {
+  GMANLight light{GMAN_LIGHT_AREA, kRadiance, GMANPoint(), GMANVector()};
+  GMANRayDisk disk;
+
+  DiskEmitter(RtFloat radius, RtFloat thetamax, GMANMatrix4 const& placement)
+      : disk(0.0f, radius, thetamax, GMANParameterList(), makeTransform(placement)) {}
+
+  gman::Emitter emitter() const { return {&light, &disk, 1.0f}; }
+  gman::InvertibleMatrix const& placement() const { return *disk.getObjectToCamera(); }
+};
+
+// An object-space rectangle in a disk's plane.
+struct Rectangle {
+  double xMin;
+  double xMax;
+  double yMin;
+  double yMax;
+};
+
+// A disk case seen from the object-space point objectP: c's regions are the
+// four equal turns of its sector, each an inscribed polygon placed in
+// camera space. Within the switch every draw reports 1 / the solid angle of
+// bounds, the sector's bounding rectangle, when the placement is rigid;
+// beyond it each reports the area density at its point.
+void runDiskCase(DiskEmitter const& emitter, Vec const& objectP, Rectangle const& bounds, bool rigid, Strategy strategy,
+                 std::string const& label, std::uint32_t dim) {
+  gman::InvertibleMatrix const& m = emitter.placement();
+  const auto radius = static_cast<double>(emitter.disk.getRadius());
+  const auto sweep = radians(static_cast<double>(emitter.disk.getThetaMax()));
+  const auto objectNormal = Vec{0.0, 0.0, -1.0};
+  const auto normal = normalized(placeNormal(m, objectNormal));
+  std::vector<Region> regions;
+  for (int quarter = 0; quarter < 4; ++quarter) {
+    Region region{{place(m, Vec{0.0, 0.0, 0.0})}, normal};
+    for (int j = 0; j <= kArcSegments; ++j) {
+      const auto angle = sweep * (quarter + static_cast<double>(j) / kArcSegments) / 4.0;
+      region.loop.push_back(place(m, Vec{radius * std::cos(angle), radius * std::sin(angle), 0.0}));
+    }
+    regions.push_back(region);
+  }
+
+  Case c;
+  c.label = label;
+  c.emitter = emitter.emitter();
+  c.p = toPoint(place(m, objectP));
+  c.regionIntegrals = integrals(c.emitter, c.p, regions);
+  c.regionOf = [&m, sweep](GMANHit const& hit) {
+    const auto quarter = static_cast<std::size_t>(4.0 * turnAngle(unplace(m, toVec(hit.point))) / sweep);
+    return std::min(quarter, std::size_t{3});
+  };
+  c.strategy = strategy;
+  c.acceptsEvery = strategy == Strategy::area;
+  if (strategy == Strategy::solidAngle && rigid) {
+    const auto p = toVec(c.p);
+    const auto c0 = place(m, Vec{bounds.xMin, bounds.yMin, 0.0});
+    const auto c1 = place(m, Vec{bounds.xMax, bounds.yMin, 0.0});
+    const auto c2 = place(m, Vec{bounds.xMax, bounds.yMax, 0.0});
+    const auto c3 = place(m, Vec{bounds.xMin, bounds.yMax, 0.0});
+    c.solidAngle = vanOosteromStrackee(p, c0, c1, c2) + vanOosteromStrackee(p, c0, c2, c3);
+  }
+  const auto area = radius * radius * sweep / 2.0;
+  const auto jacobian = std::fabs(linearDeterminant(m)) * length(placeNormal(m, objectNormal));
+  c.areaDensity = [area, jacobian, normal](gman::EmitterSample const& s) {
+    const auto cosine = -dot(normal, toVec(s.wi));
+    return (double)s.distance * (double)s.distance / (area * jacobian * cosine);
+  };
+  runCase(c, dim);
+}
+
+// A disk case pair at 0.9 and 1.1 times its switch distance from bounds, the
+// sector's bounding rectangle, once above its centre and once 80 degrees off
+// its normal beside its x = xMax edge: near draws by solid angle, far by area.
+std::uint32_t runSwitchCases(DiskEmitter const& emitter, Rectangle const& bounds, std::string const& name,
+                             std::uint32_t dim) {
+  const auto switchDistance = kDiskSwitch * static_cast<double>(emitter.disk.getRadius()) *
+                              std::sqrt(static_cast<double>(emitter.disk.getThetaMax()) / 360.0);
+  const auto offNormal = radians(80.0);
+  for (double const factor : {0.9, 1.1}) {
+    const auto rho = factor * switchDistance;
+    const auto strategy = (factor < 1.0) ? Strategy::solidAngle : Strategy::area;
+    const auto side = name + " at " + std::to_string(factor).substr(0, 3) + " times its switch distance";
+    const auto middleY = (bounds.yMin + bounds.yMax) / 2.0;
+    runDiskCase(emitter, {(bounds.xMin + bounds.xMax) / 2.0, middleY, -rho}, bounds, true, strategy, side + ", frontal",
+                dim++);
+    runDiskCase(emitter, {bounds.xMax + rho * std::sin(offNormal), middleY, -rho * std::cos(offNormal)}, bounds, true,
+                strategy, side + ", 80 degrees off its normal", dim++);
+  }
+  return dim;
+}
+
+void testDisks() {
+  GMANMatrix4 rigid;
+  rigid.rot(GMANRadians(30.0f), 1.0f, 0.0f, 0.0f);
+  rigid.trans(0.3f, -0.2f, 1.5f);
+  GMANMatrix4 skewed;
+  skewed.rot(GMANRadians(45.0f), 0.0f, 1.0f, 0.0f);
+  skewed.scale(2.0f, 1.0f, 1.0f);
+
+  DiskEmitter const unit(1.0f, 360.0f, rigid);
+  Rectangle const unitBounds{-1.0, 1.0, -1.0, 1.0};
+  runDiskCase(unit, {0.0, 0.0, -0.5}, unitBounds, true, Strategy::solidAngle, "unit disk, on its axis at 0.5", 30u);
+
+  DiskEmitter const quarter(1.0f, 90.0f, rigid);
+  Rectangle const quarterBounds{0.0, 1.0, 0.0, 1.0};
+  const auto quarterCentroid = 4.0 * std::sin(radians(45.0)) / (3.0 * radians(90.0));
+  runDiskCase(quarter, {quarterCentroid * std::cos(radians(45.0)), quarterCentroid * std::sin(radians(45.0)), -0.2},
+              quarterBounds, true, Strategy::solidAngle, "90-degree sector, 0.2 above its centroid", 31u);
+
+  DiskEmitter const threeQuarter(1.0f, 270.0f, rigid);
+  const auto threeQuarterCentroid = 4.0 * std::sin(radians(135.0)) / (3.0 * radians(270.0));
+  runDiskCase(threeQuarter,
+              {threeQuarterCentroid * std::cos(radians(135.0)), threeQuarterCentroid * std::sin(radians(135.0)), -0.2},
+              unitBounds, true, Strategy::solidAngle, "270-degree sector, 0.2 above its centroid", 32u);
+
+  DiskEmitter const scaled(1.0f, 360.0f, skewed);
+  runDiskCase(scaled, {0.2, 0.1, -0.5}, unitBounds, false, Strategy::solidAngle,
+              "rotated, non-uniformly scaled disk, within its switch", 33u);
+
+  GMANMatrix4 turned;
+  turned.rot(GMANRadians(30.0f), 1.0f, 0.0f, 0.0f);
+  DiskEmitter const large(4.0f, 360.0f, turned);
+  runDiskCase(large, {0.0, 0.0, -1.0e-3}, Rectangle{-4.0, 4.0, -4.0, 4.0}, true, Strategy::solidAngle,
+              "radius-4 disk, 1e-3 above its centre", 34u);
+
+  const auto dim = runSwitchCases(unit, unitBounds, "unit disk", 35u);
+  runSwitchCases(quarter, quarterBounds, "90-degree sector", dim);
+}
+
+void testDegenerateDisk() {
+  DiskEmitter const emitter(1.0f, 360.0f, GMANMatrix4());
+  checkDegenerate(emitter.emitter(), GMANPoint(0.3f, 0.2f, 0.0f), "unit disk, p in its plane", 25u);
+  checkDegenerate(emitter.emitter(), GMANPoint(0.0f, 0.0f, -1.0e-6f), "unit disk, p 1e-6 above its centre", 26u);
+}
+
 } // namespace
 
 int main() {
@@ -610,6 +837,8 @@ int main() {
   testUnevenPanel();
   testRoof();
   testDegenerateMesh();
+  testDisks();
+  testDegenerateDisk();
 
   return checkSummary("gman::sample draws an area emitter uniformly in the solid angle lightSolidAnglePdf reports");
 }

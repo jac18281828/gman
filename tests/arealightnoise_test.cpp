@@ -21,9 +21,11 @@
 /*
  * The ray tracer's area-light noise near an emitter and far from it. Near:
  * tests/rib/arealight_nearfield.rib's matte sphere 0.3 above a large panel,
- * read on the sphere's lit underside, where a draw's weight varies most
- * across the emitter. Far: tests/rib/rayarealight_panel.rib without its
- * blocker, read on the wall's lit block. Each case renders at a low draw
+ * and a copy with a radius-4 disk in the panel's place, each read on the
+ * sphere's lit underside, where a draw's weight varies most across the
+ * emitter. Far: tests/rib/rayarealight_panel.rib and rayarealight_disk.rib
+ * without their blocker, read on the wall's lit block. Each case renders at a
+ * low draw
  * count and at 1,024 draws, every reference pixel in its block exceeds 16
  * levels, and the root-mean-square over the block's pixels and channels of
  * (low - reference) / reference stays within its bound: 0.12 at 16 draws near
@@ -72,6 +74,8 @@ constexpr char const* kNearFixture = "arealight_nearfield";
 constexpr char const* kDrawsPrefix = "Option \"raytracer\" \"integer arealightsamples\"";
 constexpr char const* kDisplayPrefix = "Display ";
 constexpr char const* kBlockerLine = "Translate 0 1.4 -2";
+constexpr char const* kPanelLine = "Polygon \"P\" [-4.2 -1.3 -3.2  -4.2 -1.3 3.2  4.2 -1.3 3.2  4.2 -1.3 -3.2]";
+constexpr char const* kDiskLines = "Translate 0 -1.3 0\nRotate 90 1 0 0\nDisk 0 4 360";
 
 // One noise case: the fixture its variant copies, the lines it replaces (a
 // value may hold several lines), whether it drops the blocker's attribute
@@ -218,7 +222,9 @@ int main(int argc, char* argv[]) {
 
   std::vector<NoiseCase> const cases = {
       {"nearfield_panel", kNearFixture, {}, false, kUnderside, kNearDraws, kNearBound},
+      {"nearfield_disk", kNearFixture, {{kPanelLine, kDiskLines}}, false, kUnderside, kNearDraws, kNearBound},
       {"farfield_panel", "rayarealight_panel", {}, true, kWall, kFarDraws, kFarBound},
+      {"farfield_disk", "rayarealight_disk", {}, true, kWall, kFarDraws, kFarBound},
   };
   for (NoiseCase const& c : cases) {
     checkCase(gman, ribDir, c);

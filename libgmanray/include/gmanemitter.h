@@ -143,13 +143,19 @@ GMANRAY_EXPORT std::optional<std::size_t> emitterIndex(std::vector<Emitter> cons
 // strictly in front of, and the rescaled u1 and u2 draw a direction in that
 // triangle's spherical triangle (Arvo 1995); the drawn point is where that
 // ray meets the triangle's plane, and pdf is 1 / the mesh's solid angle. A
-// sphere or disk draws a point on its shape uniformly by area, places it by
-// the shape's own object-to-camera transform, and reports Cl black when
-// that placed point emits away from p. An area emitter whose shape's
-// placement is singular, as under Scale 1 1 0, a polygon mesh with no area
-// or one that subtends no solid angle from p, as from behind or within
-// every face's plane, and a draw that is not finite answer pdf 0 with wi,
-// distance, shadowTarget and Cl all zero and isDelta false.
+// disk whose object-space distance from p to its sector's bounding rectangle
+// is below 0.75 times the radius of a full disk of the sector's area draws
+// that rectangle, placed, as a two-triangle mesh, keeps a point that maps
+// back inside the sector and answers pdf 1 / the rectangle's solid angle;
+// beyond that distance it draws by area as a sphere does. A sphere draws a
+// point on its shape uniformly by area, places it by the shape's own
+// object-to-camera transform, and reports Cl black when that placed point
+// emits away from p. An area emitter whose shape's placement is singular, as
+// under Scale 1 1 0, a polygon mesh with no area or one that subtends no
+// solid angle from p, as from behind or within every face's plane, a disk
+// seen from on or behind its plane, a disk draw outside the sector and a
+// draw that is not finite answer pdf 0 with wi, distance, shadowTarget and
+// Cl all zero and isDelta false.
 GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2);
 
 // The solid-angle density sample() reports in EmitterSample::pdf for a
@@ -158,7 +164,10 @@ GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, 
 // receiving point, hitPoint the known point on emitter and hitNormal its
 // outward normal there (a polygon face's plane normal), all camera space.
 // For a polygon mesh it is 1 / the solid angle its emitting faces subtend
-// from p, whichever face hitPoint lies on. 0 when hitNormal's cosine to the
+// from p, whichever face hitPoint lies on, and for a disk near p 1 / the
+// solid angle of its bounding rectangle: the strategy sample() takes at the
+// same p, so both answer one density. 0 for a disk seen from on or behind
+// its plane, and when hitNormal's cosine to the
 // direction from hitPoint back to p is at or below 0 (emitter's own
 // non-emitting side) or when p and hitPoint coincide -- unlike
 // EmitterSample::pdf, which a back-facing draw still reports nonzero,

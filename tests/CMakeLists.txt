@@ -2001,9 +2001,9 @@ if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
 endif()
 
 # The ray tracer's area-light noise near an emitter and far from it: on a
-# matte sphere 0.3 above a large panel the relative rms of a 16-draw render
-# against a 1,024-draw one stays within 0.12, and on the panel fixture without
-# its blocker that of a 4-draw render within 0.02. See
+# matte sphere 0.3 above a large panel or disk the relative rms of a 16-draw
+# render against a 1,024-draw one stays within 0.12, and on the panel and disk
+# fixtures without their blocker that of a 4-draw render within 0.02. See
 # tests/arealightnoise_test.cpp.
 if(GMAN_BUILD_RAYTRACER)
   add_executable(gman_arealightnoise arealightnoise_test.cpp)
