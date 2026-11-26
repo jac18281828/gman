@@ -532,10 +532,14 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
 // shape an emitter names for that hit.
 GMANRayInterface const* emittingShapeOf(GMANRayInterface const* primitive) {
   GMANRayPolygon const* face = dynamic_cast<GMANRayPolygon const*>(primitive);
-  if (face != nullptr && face->getMesh() != nullptr) {
-    return face->getMesh();
+  if (face == nullptr) {
+    return primitive;
   }
-  return primitive;
+  GMANRayPolygonMesh const* mesh = face->getMesh();
+  if (mesh == nullptr) {
+    return primitive;
+  }
+  return mesh;
 }
 
 // The emitter-hit term at a hit, added once per vertex before anything else
