@@ -27,7 +27,7 @@ set(GMAN_BASELINE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/baseline-run")
 file(MAKE_DIRECTORY "${GMAN_BASELINE_WORKDIR}")
 
 add_test(NAME baseline
-  COMMAND gman_baseline $<TARGET_FILE:gman>
+  COMMAND gman_baseline $<TARGET_FILE:gman_cli>
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere_ambient.rib"
   WORKING_DIRECTORY "${GMAN_BASELINE_WORKDIR}")
 
@@ -352,7 +352,7 @@ set(GMAN_RIBDIALECT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribdialect-run")
 file(MAKE_DIRECTORY "${GMAN_RIBDIALECT_WORKDIR}")
 
 add_test(NAME ribdialect
-  COMMAND gman_ribdialect $<TARGET_FILE:gman>
+  COMMAND gman_ribdialect $<TARGET_FILE:gman_cli>
                           "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_RIBDIALECT_WORKDIR}")
 set_tests_properties(ribdialect PROPERTIES
@@ -367,7 +367,7 @@ set(GMAN_READARCHIVE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/readarchive-run")
 file(MAKE_DIRECTORY "${GMAN_READARCHIVE_WORKDIR}")
 
 add_test(NAME readarchive
-  COMMAND gman_readarchive $<TARGET_FILE:gman>
+  COMMAND gman_readarchive $<TARGET_FILE:gman_cli>
                            "${CMAKE_CURRENT_SOURCE_DIR}/rib/archive"
   WORKING_DIRECTORY "${GMAN_READARCHIVE_WORKDIR}")
 set_tests_properties(readarchive PROPERTIES
@@ -382,7 +382,7 @@ set(GMAN_GZIP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/gzip-run")
 file(MAKE_DIRECTORY "${GMAN_GZIP_WORKDIR}")
 
 add_test(NAME gzip
-  COMMAND gman_gzip $<TARGET_FILE:gman>
+  COMMAND gman_gzip $<TARGET_FILE:gman_cli>
                     "${CMAKE_CURRENT_SOURCE_DIR}/rib/gzip"
                     "${GMAN_GZIP_WORKDIR}/scratch"
   WORKING_DIRECTORY "${GMAN_GZIP_WORKDIR}")
@@ -398,7 +398,7 @@ set(GMAN_LOGFILENAME_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/logfilename-run")
 file(MAKE_DIRECTORY "${GMAN_LOGFILENAME_WORKDIR}")
 
 add_test(NAME logfilename
-  COMMAND gman_logfilename $<TARGET_FILE:gman>
+  COMMAND gman_logfilename $<TARGET_FILE:gman_cli>
                            "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
                            "${GMAN_LOGFILENAME_WORKDIR}/scratch"
   WORKING_DIRECTORY "${GMAN_LOGFILENAME_WORKDIR}")
@@ -414,7 +414,7 @@ set(GMAN_RFLAG_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rflag-run")
 file(MAKE_DIRECTORY "${GMAN_RFLAG_WORKDIR}")
 
 add_test(NAME rflag
-  COMMAND gman_rflag $<TARGET_FILE:gman>
+  COMMAND gman_rflag $<TARGET_FILE:gman_cli>
                      "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
   WORKING_DIRECTORY "${GMAN_RFLAG_WORKDIR}")
 set_tests_properties(rflag PROPERTIES
@@ -429,7 +429,7 @@ set(GMAN_FAILEDBEGINCLI_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/failedbegincli-run"
 file(MAKE_DIRECTORY "${GMAN_FAILEDBEGINCLI_WORKDIR}")
 
 add_test(NAME failedbegincli
-  COMMAND gman_failedbegincli $<TARGET_FILE:gman>
+  COMMAND gman_failedbegincli $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
   WORKING_DIRECTORY "${GMAN_FAILEDBEGINCLI_WORKDIR}")
 set_tests_properties(failedbegincli PROPERTIES
@@ -444,7 +444,7 @@ set(GMAN_UNKNOWNFLAG_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/unknownflag-run")
 file(MAKE_DIRECTORY "${GMAN_UNKNOWNFLAG_WORKDIR}")
 
 add_test(NAME unknownflag
-  COMMAND gman_unknownflag $<TARGET_FILE:gman>
+  COMMAND gman_unknownflag $<TARGET_FILE:gman_cli>
                            "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
   WORKING_DIRECTORY "${GMAN_UNKNOWNFLAG_WORKDIR}")
 set_tests_properties(unknownflag PROPERTIES
@@ -598,7 +598,7 @@ set(GMAN_SILHOUETTE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/silhouette-run")
 file(MAKE_DIRECTORY "${GMAN_SILHOUETTE_WORKDIR}")
 
 add_test(NAME silhouette
-  COMMAND gman_silhouette $<TARGET_FILE:gman>
+  COMMAND gman_silhouette $<TARGET_FILE:gman_cli>
   WORKING_DIRECTORY "${GMAN_SILHOUETTE_WORKDIR}")
 set_tests_properties(silhouette PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -614,7 +614,7 @@ set(GMAN_ROTATE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rotate-run")
 file(MAKE_DIRECTORY "${GMAN_ROTATE_WORKDIR}")
 
 add_test(NAME rotate
-  COMMAND gman_rotate $<TARGET_FILE:gman>
+  COMMAND gman_rotate $<TARGET_FILE:gman_cli>
                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/rotate.rib"
   WORKING_DIRECTORY "${GMAN_ROTATE_WORKDIR}")
 set_tests_properties(rotate PROPERTIES
@@ -631,7 +631,7 @@ set(GMAN_TRANSFORMS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/transforms-run")
 file(MAKE_DIRECTORY "${GMAN_TRANSFORMS_WORKDIR}")
 
 add_test(NAME transforms
-  COMMAND gman_transforms $<TARGET_FILE:gman>
+  COMMAND gman_transforms $<TARGET_FILE:gman_cli>
                           "${CMAKE_CURRENT_SOURCE_DIR}/rib/transforms.rib"
   WORKING_DIRECTORY "${GMAN_TRANSFORMS_WORKDIR}")
 set_tests_properties(transforms PROPERTIES
@@ -648,7 +648,7 @@ set(GMAN_LIGHTING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/lighting-run")
 file(MAKE_DIRECTORY "${GMAN_LIGHTING_WORKDIR}")
 
 add_test(NAME lighting
-  COMMAND gman_lighting $<TARGET_FILE:gman>
+  COMMAND gman_lighting $<TARGET_FILE:gman_cli>
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_LIGHTING_WORKDIR}")
 set_tests_properties(lighting PROPERTIES
@@ -669,7 +669,7 @@ set(GMAN_SPOTLIGHT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/spotlight-run")
 file(MAKE_DIRECTORY "${GMAN_SPOTLIGHT_WORKDIR}")
 
 add_test(NAME spotlight
-  COMMAND gman_spotlight $<TARGET_FILE:gman>
+  COMMAND gman_spotlight $<TARGET_FILE:gman_cli>
                          "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_SPOTLIGHT_WORKDIR}")
 set_tests_properties(spotlight PROPERTIES
@@ -686,7 +686,7 @@ set(GMAN_QUADRICS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quadrics-run")
 file(MAKE_DIRECTORY "${GMAN_QUADRICS_WORKDIR}")
 
 add_test(NAME quadrics
-  COMMAND gman_quadrics $<TARGET_FILE:gman>
+  COMMAND gman_quadrics $<TARGET_FILE:gman_cli>
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_QUADRICS_WORKDIR}")
 set_tests_properties(quadrics PROPERTIES
@@ -703,7 +703,7 @@ set(GMAN_SCREENWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/screenwindow-run")
 file(MAKE_DIRECTORY "${GMAN_SCREENWINDOW_WORKDIR}")
 
 add_test(NAME screenwindow
-  COMMAND gman_screenwindow $<TARGET_FILE:gman>
+  COMMAND gman_screenwindow $<TARGET_FILE:gman_cli>
                             "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_SCREENWINDOW_WORKDIR}")
 set_tests_properties(screenwindow PROPERTIES
@@ -719,7 +719,7 @@ set(GMAN_CLIPPING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/clipping-run")
 file(MAKE_DIRECTORY "${GMAN_CLIPPING_WORKDIR}")
 
 add_test(NAME clipping
-  COMMAND gman_clipping $<TARGET_FILE:gman>
+  COMMAND gman_clipping $<TARGET_FILE:gman_cli>
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_CLIPPING_WORKDIR}")
 set_tests_properties(clipping PROPERTIES
@@ -735,7 +735,7 @@ set(GMAN_SHADERS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shaders-run")
 file(MAKE_DIRECTORY "${GMAN_SHADERS_WORKDIR}")
 
 add_test(NAME shaders
-  COMMAND gman_shaders $<TARGET_FILE:gman>
+  COMMAND gman_shaders $<TARGET_FILE:gman_cli>
                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_SHADERS_WORKDIR}")
 set_tests_properties(shaders PROPERTIES
@@ -754,7 +754,7 @@ set(GMAN_QUANTIZE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quantize-run")
 file(MAKE_DIRECTORY "${GMAN_QUANTIZE_WORKDIR}")
 
 add_test(NAME quantize
-  COMMAND gman_quantize $<TARGET_FILE:gman>
+  COMMAND gman_quantize $<TARGET_FILE:gman_cli>
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_QUANTIZE_WORKDIR}")
 set_tests_properties(quantize PROPERTIES
@@ -778,7 +778,7 @@ add_executable(gman_ribmalformed ribmalformed_test.cpp)
 target_link_libraries(gman_ribmalformed PRIVATE gman_core)
 
 add_test(NAME ribmalformed
-  COMMAND gman_ribmalformed $<TARGET_FILE:gman>
+  COMMAND gman_ribmalformed $<TARGET_FILE:gman_cli>
                             "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
 set_tests_properties(ribmalformed PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -795,7 +795,7 @@ set(GMAN_PARAMCLAMP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramclamp-run")
 file(MAKE_DIRECTORY "${GMAN_PARAMCLAMP_WORKDIR}")
 
 add_test(NAME paramclamp
-  COMMAND gman_paramclamp $<TARGET_FILE:gman>
+  COMMAND gman_paramclamp $<TARGET_FILE:gman_cli>
                           "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
   WORKING_DIRECTORY "${GMAN_PARAMCLAMP_WORKDIR}")
 set_tests_properties(paramclamp PROPERTIES
@@ -810,7 +810,7 @@ add_executable(gman_ribintegerbounds ribintegerbounds_test.cpp)
 target_link_libraries(gman_ribintegerbounds PRIVATE gman_core)
 
 add_test(NAME ribintegerbounds
-  COMMAND gman_ribintegerbounds $<TARGET_FILE:gman>
+  COMMAND gman_ribintegerbounds $<TARGET_FILE:gman_cli>
                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
 set_tests_properties(ribintegerbounds PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -828,7 +828,7 @@ set(GMAN_RIBCOUNTBOUNDS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribcountbounds-run"
 file(MAKE_DIRECTORY "${GMAN_RIBCOUNTBOUNDS_WORKDIR}")
 
 add_test(NAME ribcountbounds
-  COMMAND gman_ribcountbounds $<TARGET_FILE:gman>
+  COMMAND gman_ribcountbounds $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
   WORKING_DIRECTORY "${GMAN_RIBCOUNTBOUNDS_WORKDIR}")
 set_tests_properties(ribcountbounds PROPERTIES
@@ -847,7 +847,7 @@ set(GMAN_GEOMETRYPARAMCLAMP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/geometryparamcl
 file(MAKE_DIRECTORY "${GMAN_GEOMETRYPARAMCLAMP_WORKDIR}")
 
 add_test(NAME geometryparamclamp
-  COMMAND gman_geometryparamclamp $<TARGET_FILE:gman>
+  COMMAND gman_geometryparamclamp $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
   WORKING_DIRECTORY "${GMAN_GEOMETRYPARAMCLAMP_WORKDIR}")
 set_tests_properties(geometryparamclamp PROPERTIES
@@ -864,7 +864,7 @@ set(GMAN_PARAMOVERSUPPLY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramoversupply-ru
 file(MAKE_DIRECTORY "${GMAN_PARAMOVERSUPPLY_WORKDIR}")
 
 add_test(NAME paramoversupply
-  COMMAND gman_paramoversupply $<TARGET_FILE:gman>
+  COMMAND gman_paramoversupply $<TARGET_FILE:gman_cli>
                                "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
   WORKING_DIRECTORY "${GMAN_PARAMOVERSUPPLY_WORKDIR}")
 set_tests_properties(paramoversupply PROPERTIES
@@ -882,7 +882,7 @@ add_executable(gman_paramlistdeclaredtype paramlistdeclaredtype_test.cpp)
 target_link_libraries(gman_paramlistdeclaredtype PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME paramlistdeclaredtype
-  COMMAND gman_paramlistdeclaredtype $<TARGET_FILE:gman>
+  COMMAND gman_paramlistdeclaredtype $<TARGET_FILE:gman_cli>
                                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed")
 set_tests_properties(paramlistdeclaredtype PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -901,7 +901,7 @@ set(GMAN_PARAMLITERALTYPE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramliteraltype-
 file(MAKE_DIRECTORY "${GMAN_PARAMLITERALTYPE_WORKDIR}")
 
 add_test(NAME paramliteraltype
-  COMMAND gman_paramliteraltype $<TARGET_FILE:gman>
+  COMMAND gman_paramliteraltype $<TARGET_FILE:gman_cli>
                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
   WORKING_DIRECTORY "${GMAN_PARAMLITERALTYPE_WORKDIR}")
 set_tests_properties(paramliteraltype PROPERTIES
@@ -930,7 +930,7 @@ set(GMAN_PARAMSHORTCOUNT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramshortcount-ru
 file(MAKE_DIRECTORY "${GMAN_PARAMSHORTCOUNT_WORKDIR}")
 
 add_test(NAME paramshortcount
-  COMMAND gman_paramshortcount $<TARGET_FILE:gman>
+  COMMAND gman_paramshortcount $<TARGET_FILE:gman_cli>
                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
   WORKING_DIRECTORY "${GMAN_PARAMSHORTCOUNT_WORKDIR}")
 set_tests_properties(paramshortcount PROPERTIES
@@ -947,7 +947,7 @@ set(GMAN_PARAMHUGECOUNT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramhugecount-run"
 file(MAKE_DIRECTORY "${GMAN_PARAMHUGECOUNT_WORKDIR}")
 
 add_test(NAME paramhugecount
-  COMMAND gman_paramhugecount $<TARGET_FILE:gman>
+  COMMAND gman_paramhugecount $<TARGET_FILE:gman_cli>
                       "${CMAKE_CURRENT_SOURCE_DIR}/rib/malformed"
   WORKING_DIRECTORY "${GMAN_PARAMHUGECOUNT_WORKDIR}")
 set_tests_properties(paramhugecount PROPERTIES
@@ -963,7 +963,7 @@ add_executable(gman_ribstringescape ribstringescape_test.cpp)
 target_link_libraries(gman_ribstringescape PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME ribstringescape
-  COMMAND gman_ribstringescape $<TARGET_FILE:gman>
+  COMMAND gman_ribstringescape $<TARGET_FILE:gman_cli>
                                "${CMAKE_CURRENT_SOURCE_DIR}/rib")
 set_tests_properties(ribstringescape PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1061,7 +1061,7 @@ set(GMAN_PATCHNORENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchnorender-run")
 file(MAKE_DIRECTORY "${GMAN_PATCHNORENDER_WORKDIR}")
 
 add_test(NAME patchnorender
-  COMMAND gman_patchnorender $<TARGET_FILE:gman>
+  COMMAND gman_patchnorender $<TARGET_FILE:gman_cli>
                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_PATCHNORENDER_WORKDIR}")
 set_tests_properties(patchnorender PROPERTIES
@@ -1080,7 +1080,7 @@ set(GMAN_PATCHMESH_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchmesh-run")
 file(MAKE_DIRECTORY "${GMAN_PATCHMESH_WORKDIR}")
 
 add_test(NAME patchmesh
-  COMMAND gman_patchmesh $<TARGET_FILE:gman>
+  COMMAND gman_patchmesh $<TARGET_FILE:gman_cli>
                          "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_PATCHMESH_WORKDIR}")
 set_tests_properties(patchmesh PROPERTIES
@@ -1100,7 +1100,7 @@ set(GMAN_PARTIALSPHERE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/partialsphere-run")
 file(MAKE_DIRECTORY "${GMAN_PARTIALSPHERE_WORKDIR}")
 
 add_test(NAME partialsphere
-  COMMAND gman_partialsphere $<TARGET_FILE:gman>
+  COMMAND gman_partialsphere $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_PARTIALSPHERE_WORKDIR}")
 set_tests_properties(partialsphere PROPERTIES
@@ -1144,7 +1144,7 @@ set(GMAN_FOVDEFAULT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/fovdefault-run")
 file(MAKE_DIRECTORY "${GMAN_FOVDEFAULT_WORKDIR}")
 
 add_test(NAME fovdefault
-  COMMAND gman_fovdefault $<TARGET_FILE:gman>
+  COMMAND gman_fovdefault $<TARGET_FILE:gman_cli>
   WORKING_DIRECTORY "${GMAN_FOVDEFAULT_WORKDIR}")
 set_tests_properties(fovdefault PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1160,7 +1160,7 @@ set(GMAN_ATTRIBUTESCOPY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/attributescopy-run"
 file(MAKE_DIRECTORY "${GMAN_ATTRIBUTESCOPY_WORKDIR}")
 
 add_test(NAME attributescopy
-  COMMAND gman_attributescopy $<TARGET_FILE:gman>
+  COMMAND gman_attributescopy $<TARGET_FILE:gman_cli>
   WORKING_DIRECTORY "${GMAN_ATTRIBUTESCOPY_WORKDIR}")
 set_tests_properties(attributescopy PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1182,7 +1182,7 @@ if(GMAN_WITH_PNG)
   set(GMAN_PNGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pngdriver-run")
   file(MAKE_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
 
-  set(GMAN_PNGDRIVER_COMMAND gman_pngdriver $<TARGET_FILE:gman>)
+  set(GMAN_PNGDRIVER_COMMAND gman_pngdriver $<TARGET_FILE:gman_cli>)
 else()
   set(GMAN_PNGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}")
   set(GMAN_PNGDRIVER_COMMAND sh -c "exit 77")
@@ -1210,7 +1210,7 @@ if(GMAN_WITH_JPEG)
   set(GMAN_JPEGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/jpegdriver-run")
   file(MAKE_DIRECTORY "${GMAN_JPEGDRIVER_WORKDIR}")
 
-  set(GMAN_JPEGDRIVER_COMMAND gman_jpegdriver $<TARGET_FILE:gman>)
+  set(GMAN_JPEGDRIVER_COMMAND gman_jpegdriver $<TARGET_FILE:gman_cli>)
 else()
   set(GMAN_JPEGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}")
   set(GMAN_JPEGDRIVER_COMMAND sh -c "exit 77")
@@ -1233,7 +1233,7 @@ if(GMAN_WITH_EXR)
   set(GMAN_EXRDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/exrdriver-run")
   file(MAKE_DIRECTORY "${GMAN_EXRDRIVER_WORKDIR}")
 
-  set(GMAN_EXRDRIVER_COMMAND gman_exrdriver $<TARGET_FILE:gman> "${CMAKE_CURRENT_SOURCE_DIR}/rib")
+  set(GMAN_EXRDRIVER_COMMAND gman_exrdriver $<TARGET_FILE:gman_cli> "${CMAKE_CURRENT_SOURCE_DIR}/rib")
 else()
   set(GMAN_EXRDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}")
   set(GMAN_EXRDRIVER_COMMAND sh -c "exit 77")
@@ -1268,7 +1268,7 @@ set(GMAN_FILEDRIVERS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/filedrivers-run")
 file(MAKE_DIRECTORY "${GMAN_FILEDRIVERS_WORKDIR}")
 
 add_test(NAME filedrivers
-  COMMAND gman_filedrivers $<TARGET_FILE:gman> "${GMAN_EXPECTED_DRIVERS}"
+  COMMAND gman_filedrivers $<TARGET_FILE:gman_cli> "${GMAN_EXPECTED_DRIVERS}"
   WORKING_DIRECTORY "${GMAN_FILEDRIVERS_WORKDIR}")
 set_tests_properties(filedrivers PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1283,7 +1283,7 @@ set(GMAN_BANNER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/banner-run")
 file(MAKE_DIRECTORY "${GMAN_BANNER_WORKDIR}")
 
 add_test(NAME banner
-  COMMAND gman_banner $<TARGET_FILE:gman>
+  COMMAND gman_banner $<TARGET_FILE:gman_cli>
                        "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
                        "${PROJECT_VERSION}"
   WORKING_DIRECTORY "${GMAN_BANNER_WORKDIR}")
@@ -1307,7 +1307,7 @@ set(GMAN_COMMANDLINERUN_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/commandlinerun-run"
 file(MAKE_DIRECTORY "${GMAN_COMMANDLINERUN_WORKDIR}")
 
 add_test(NAME commandlinerun
-  COMMAND gman_commandlinerun $<TARGET_FILE:gman>
+  COMMAND gman_commandlinerun $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib/sphere.rib"
   WORKING_DIRECTORY "${GMAN_COMMANDLINERUN_WORKDIR}")
 set_tests_properties(commandlinerun PROPERTIES
@@ -1330,7 +1330,7 @@ set(GMAN_DISPLAYDISABLED_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/displaydisabled-ru
 file(MAKE_DIRECTORY "${GMAN_DISPLAYDISABLED_WORKDIR}")
 
 add_test(NAME displaydisabled
-  COMMAND gman_displaydisabled $<TARGET_FILE:gman>
+  COMMAND gman_displaydisabled $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_DISPLAYDISABLED_WORKDIR}")
 set_tests_properties(displaydisabled PROPERTIES
@@ -1349,7 +1349,7 @@ set(GMAN_CROPWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/cropwindow-run")
 file(MAKE_DIRECTORY "${GMAN_CROPWINDOW_WORKDIR}")
 
 add_test(NAME cropwindow
-  COMMAND gman_cropwindow $<TARGET_FILE:gman>
+  COMMAND gman_cropwindow $<TARGET_FILE:gman_cli>
   WORKING_DIRECTORY "${GMAN_CROPWINDOW_WORKDIR}")
 set_tests_properties(cropwindow PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1367,7 +1367,7 @@ set(GMAN_ORTHOWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/orthowindow-run")
 file(MAKE_DIRECTORY "${GMAN_ORTHOWINDOW_WORKDIR}")
 
 add_test(NAME orthowindow
-  COMMAND gman_orthowindow $<TARGET_FILE:gman>
+  COMMAND gman_orthowindow $<TARGET_FILE:gman_cli>
   WORKING_DIRECTORY "${GMAN_ORTHOWINDOW_WORKDIR}")
 set_tests_properties(orthowindow PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1397,7 +1397,7 @@ set(GMAN_POLYGONFOVWARNING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonfovwarnin
 file(MAKE_DIRECTORY "${GMAN_POLYGONFOVWARNING_WORKDIR}")
 
 add_test(NAME polygonfovwarning
-  COMMAND gman_polygonfovwarning $<TARGET_FILE:gman>
+  COMMAND gman_polygonfovwarning $<TARGET_FILE:gman_cli>
                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_POLYGONFOVWARNING_WORKDIR}")
 set_tests_properties(polygonfovwarning PROPERTIES
@@ -1416,7 +1416,7 @@ set(GMAN_DECLAREDFOV_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/declaredfov-run")
 file(MAKE_DIRECTORY "${GMAN_DECLAREDFOV_WORKDIR}")
 
 add_test(NAME declaredfov
-  COMMAND gman_declaredfov $<TARGET_FILE:gman>
+  COMMAND gman_declaredfov $<TARGET_FILE:gman_cli>
                            "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_DECLAREDFOV_WORKDIR}")
 set_tests_properties(declaredfov PROPERTIES
@@ -1434,7 +1434,7 @@ set(GMAN_POLYGON_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygon-run")
 file(MAKE_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
 
 add_test(NAME polygon
-  COMMAND gman_polygon $<TARGET_FILE:gman>
+  COMMAND gman_polygon $<TARGET_FILE:gman_cli>
                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
 set_tests_properties(polygon PROPERTIES
@@ -1452,7 +1452,7 @@ set(GMAN_SAMPLEBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/samplebuffer-run")
 file(MAKE_DIRECTORY "${GMAN_SAMPLEBUFFER_WORKDIR}")
 
 add_test(NAME samplebuffer
-  COMMAND gman_samplebuffer $<TARGET_FILE:gman>
+  COMMAND gman_samplebuffer $<TARGET_FILE:gman_cli>
   WORKING_DIRECTORY "${GMAN_SAMPLEBUFFER_WORKDIR}")
 set_tests_properties(samplebuffer PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1483,7 +1483,7 @@ set(GMAN_EXPOSURERECOVERY_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/exposurer
 file(MAKE_DIRECTORY "${GMAN_EXPOSURERECOVERY_ZBUFFER_WORKDIR}")
 
 add_test(NAME exposurerecovery_zbuffer
-  COMMAND gman_exposurerecovery $<TARGET_FILE:gman>
+  COMMAND gman_exposurerecovery $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                 gmanzbuffer
   WORKING_DIRECTORY "${GMAN_EXPOSURERECOVERY_ZBUFFER_WORKDIR}")
@@ -1499,7 +1499,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_EXPOSURERECOVERY_RAYTRACER_WORKDIR}")
 
   add_test(NAME exposurerecovery_raytracer
-    COMMAND gman_exposurerecovery $<TARGET_FILE:gman>
+    COMMAND gman_exposurerecovery $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                   gmanraytracer
     WORKING_DIRECTORY "${GMAN_EXPOSURERECOVERY_RAYTRACER_WORKDIR}")
@@ -1530,7 +1530,7 @@ set(GMAN_WIDEFRAME_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/wideframe-run")
 file(MAKE_DIRECTORY "${GMAN_WIDEFRAME_WORKDIR}")
 
 add_test(NAME wideframe
-  COMMAND gman_wideframe $<TARGET_FILE:gman>
+  COMMAND gman_wideframe $<TARGET_FILE:gman_cli>
                          "${CMAKE_CURRENT_SOURCE_DIR}/rib/wideframe.rib"
   WORKING_DIRECTORY "${GMAN_WIDEFRAME_WORKDIR}")
 set_tests_properties(wideframe PROPERTIES
@@ -1548,7 +1548,7 @@ set(GMAN_CLIPFRAMESHADING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/clipframeshading-
 file(MAKE_DIRECTORY "${GMAN_CLIPFRAMESHADING_WORKDIR}")
 
 add_test(NAME clipframeshading
-  COMMAND gman_clipframeshading $<TARGET_FILE:gman>
+  COMMAND gman_clipframeshading $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib/clipframe_narrow.rib"
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib/clipframe_wide.rib"
   WORKING_DIRECTORY "${GMAN_CLIPFRAMESHADING_WORKDIR}")
@@ -1568,7 +1568,7 @@ set(GMAN_TEXTURE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texture-run")
 file(MAKE_DIRECTORY "${GMAN_TEXTURE_WORKDIR}")
 
 add_test(NAME texture
-  COMMAND gman_texture $<TARGET_FILE:gman>
+  COMMAND gman_texture $<TARGET_FILE:gman_cli>
                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_TEXTURE_WORKDIR}")
 set_tests_properties(texture PROPERTIES
@@ -1753,7 +1753,7 @@ set(GMAN_COVERAGENONFINITE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/coverage
 file(MAKE_DIRECTORY "${GMAN_COVERAGENONFINITE_ZBUFFER_WORKDIR}")
 
 add_test(NAME coveragenonfinite_zbuffer
-  COMMAND gman_coveragenonfinite $<TARGET_FILE:gman> gmanzbuffer
+  COMMAND gman_coveragenonfinite $<TARGET_FILE:gman_cli> gmanzbuffer
   WORKING_DIRECTORY "${GMAN_COVERAGENONFINITE_ZBUFFER_WORKDIR}")
 set_tests_properties(coveragenonfinite_zbuffer PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1767,7 +1767,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_COVERAGENONFINITE_RAYTRACER_WORKDIR}")
 
   add_test(NAME coveragenonfinite_raytracer
-    COMMAND gman_coveragenonfinite $<TARGET_FILE:gman> gmanraytracer
+    COMMAND gman_coveragenonfinite $<TARGET_FILE:gman_cli> gmanraytracer
     WORKING_DIRECTORY "${GMAN_COVERAGENONFINITE_RAYTRACER_WORKDIR}")
   set_tests_properties(coveragenonfinite_raytracer PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1782,7 +1782,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_COVERAGENONFINITE_PATHTRACER_WORKDIR}")
 
   add_test(NAME coveragenonfinite_pathtracer
-    COMMAND gman_coveragenonfinite $<TARGET_FILE:gman> gmanpathtracer
+    COMMAND gman_coveragenonfinite $<TARGET_FILE:gman_cli> gmanpathtracer
     WORKING_DIRECTORY "${GMAN_COVERAGENONFINITE_PATHTRACER_WORKDIR}")
   set_tests_properties(coveragenonfinite_pathtracer PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -1799,7 +1799,7 @@ set(GMAN_TEXTUREWARNINGONCE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texture
 file(MAKE_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_ZBUFFER_WORKDIR}")
 
 add_test(NAME texturewarningonce_zbuffer
-  COMMAND gman_texturewarningonce $<TARGET_FILE:gman>
+  COMMAND gman_texturewarningonce $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                   gmanzbuffer
   WORKING_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_ZBUFFER_WORKDIR}")
@@ -1815,7 +1815,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_RAYTRACER_WORKDIR}")
 
   add_test(NAME texturewarningonce_raytracer
-    COMMAND gman_texturewarningonce $<TARGET_FILE:gman>
+    COMMAND gman_texturewarningonce $<TARGET_FILE:gman_cli>
                                     "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                     gmanraytracer
     WORKING_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_RAYTRACER_WORKDIR}")
@@ -1832,7 +1832,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_PATHTRACER_WORKDIR}")
 
   add_test(NAME texturewarningonce_pathtracer
-    COMMAND gman_texturewarningonce $<TARGET_FILE:gman>
+    COMMAND gman_texturewarningonce $<TARGET_FILE:gman_cli>
                                     "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                     gmanpathtracer
     WORKING_DIRECTORY "${GMAN_TEXTUREWARNINGONCE_PATHTRACER_WORKDIR}")
@@ -1856,7 +1856,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_PATCHRAYCOVERAGE_WORKDIR}")
 
   add_test(NAME patchraycoverage
-    COMMAND gman_patchraycoverage $<TARGET_FILE:gman>
+    COMMAND gman_patchraycoverage $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                   gmanraytracer
                                   patch_norender
@@ -1881,7 +1881,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_PATCHPATHCOVERAGE_WORKDIR}")
 
   add_test(NAME patchpathcoverage
-    COMMAND gman_patchraycoverage $<TARGET_FILE:gman>
+    COMMAND gman_patchraycoverage $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                   gmanpathtracer
                                   patch_bicubic
@@ -1925,7 +1925,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_TEXTUREOPACITY_RAYTRACER_WORKDIR}")
 
   add_test(NAME textureopacity_raytracer
-    COMMAND gman_textureopacity $<TARGET_FILE:gman>
+    COMMAND gman_textureopacity $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                 gmanraytracer
     WORKING_DIRECTORY "${GMAN_TEXTUREOPACITY_RAYTRACER_WORKDIR}")
@@ -1942,7 +1942,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_TEXTUREOPACITY_PATHTRACER_WORKDIR}")
 
   add_test(NAME textureopacity_pathtracer
-    COMMAND gman_textureopacity $<TARGET_FILE:gman>
+    COMMAND gman_textureopacity $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                 gmanpathtracer
     WORKING_DIRECTORY "${GMAN_TEXTUREOPACITY_PATHTRACER_WORKDIR}")
@@ -1966,7 +1966,7 @@ if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_RAYSHADOWTRANSMITTANCE_WORKDIR}")
 
   add_test(NAME rayshadowtransmittance
-    COMMAND gman_rayshadowtransmittance $<TARGET_FILE:gman>
+    COMMAND gman_rayshadowtransmittance $<TARGET_FILE:gman_cli>
                                         "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_RAYSHADOWTRANSMITTANCE_WORKDIR}")
   set_tests_properties(rayshadowtransmittance PROPERTIES
@@ -1991,7 +1991,7 @@ if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_RAYAREALIGHT_WORKDIR}")
 
   add_test(NAME rayarealight
-    COMMAND gman_rayarealight $<TARGET_FILE:gman>
+    COMMAND gman_rayarealight $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_RAYAREALIGHT_WORKDIR}")
   set_tests_properties(rayarealight PROPERTIES
@@ -2012,7 +2012,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_CREASESTREAK_RAYTRACER_WORKDIR}")
 
   add_test(NAME creasestreak_raytracer
-    COMMAND gman_creasestreak $<TARGET_FILE:gman>
+    COMMAND gman_creasestreak $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                               gmanraytracer
     WORKING_DIRECTORY "${GMAN_CREASESTREAK_RAYTRACER_WORKDIR}")
@@ -2029,7 +2029,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_CREASESTREAK_PATHTRACER_WORKDIR}")
 
   add_test(NAME creasestreak_pathtracer
-    COMMAND gman_creasestreak $<TARGET_FILE:gman>
+    COMMAND gman_creasestreak $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                               gmanpathtracer
     WORKING_DIRECTORY "${GMAN_CREASESTREAK_PATHTRACER_WORKDIR}")
@@ -2051,7 +2051,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_SHADOWTERMINATOR_RAYTRACER_WORKDIR}")
 
   add_test(NAME shadowterminator_raytracer
-    COMMAND gman_shadowterminator $<TARGET_FILE:gman>
+    COMMAND gman_shadowterminator $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                   gmanraytracer
     WORKING_DIRECTORY "${GMAN_SHADOWTERMINATOR_RAYTRACER_WORKDIR}")
@@ -2068,7 +2068,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_SHADOWTERMINATOR_PATHTRACER_WORKDIR}")
 
   add_test(NAME shadowterminator_pathtracer
-    COMMAND gman_shadowterminator $<TARGET_FILE:gman>
+    COMMAND gman_shadowterminator $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                   gmanpathtracer
     WORKING_DIRECTORY "${GMAN_SHADOWTERMINATOR_PATHTRACER_WORKDIR}")
@@ -2087,7 +2087,7 @@ set(GMAN_ZBUFFERVERTEXNORMALS_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/zbuff
 file(MAKE_DIRECTORY "${GMAN_ZBUFFERVERTEXNORMALS_ZBUFFER_WORKDIR}")
 
 add_test(NAME zbuffervertexnormals_zbuffer
-  COMMAND gman_zbuffervertexnormals $<TARGET_FILE:gman>
+  COMMAND gman_zbuffervertexnormals $<TARGET_FILE:gman_cli>
                                     "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                     gmanzbuffer
   WORKING_DIRECTORY "${GMAN_ZBUFFERVERTEXNORMALS_ZBUFFER_WORKDIR}")
@@ -2103,7 +2103,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_ZBUFFERVERTEXNORMALS_RAYTRACER_WORKDIR}")
 
   add_test(NAME zbuffervertexnormals_raytracer
-    COMMAND gman_zbuffervertexnormals $<TARGET_FILE:gman>
+    COMMAND gman_zbuffervertexnormals $<TARGET_FILE:gman_cli>
                                       "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                       gmanraytracer
     WORKING_DIRECTORY "${GMAN_ZBUFFERVERTEXNORMALS_RAYTRACER_WORKDIR}")
@@ -2125,7 +2125,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_BUMPTERMINATOR_RAYTRACER_WORKDIR}")
 
   add_test(NAME bumpterminator_raytracer
-    COMMAND gman_bumpterminator $<TARGET_FILE:gman>
+    COMMAND gman_bumpterminator $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                 gmanraytracer
     WORKING_DIRECTORY "${GMAN_BUMPTERMINATOR_RAYTRACER_WORKDIR}")
@@ -2142,7 +2142,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_BUMPTERMINATOR_PATHTRACER_WORKDIR}")
 
   add_test(NAME bumpterminator_pathtracer
-    COMMAND gman_bumpterminator $<TARGET_FILE:gman>
+    COMMAND gman_bumpterminator $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                 gmanpathtracer
     WORKING_DIRECTORY "${GMAN_BUMPTERMINATOR_PATHTRACER_WORKDIR}")
@@ -2163,7 +2163,7 @@ set(GMAN_TEXCOORDS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texcoords-run")
 file(MAKE_DIRECTORY "${GMAN_TEXCOORDS_WORKDIR}")
 
 add_test(NAME texcoords
-  COMMAND gman_texcoords $<TARGET_FILE:gman>
+  COMMAND gman_texcoords $<TARGET_FILE:gman_cli>
                          "${CMAKE_CURRENT_SOURCE_DIR}/rib/texcoords"
   WORKING_DIRECTORY "${GMAN_TEXCOORDS_WORKDIR}")
 set_tests_properties(texcoords PROPERTIES
@@ -2182,7 +2182,7 @@ set(GMAN_POLYGONDICING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygondicing-run")
 file(MAKE_DIRECTORY "${GMAN_POLYGONDICING_WORKDIR}")
 
 add_test(NAME polygondicing
-  COMMAND gman_polygondicing $<TARGET_FILE:gman>
+  COMMAND gman_polygondicing $<TARGET_FILE:gman_cli>
   WORKING_DIRECTORY "${GMAN_POLYGONDICING_WORKDIR}")
 set_tests_properties(polygondicing PROPERTIES
   ENVIRONMENT "${GMAN_PHASE2_ENV}"
@@ -2201,7 +2201,7 @@ set(GMAN_POINTSPOLYGONS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pointspolygons-run"
 file(MAKE_DIRECTORY "${GMAN_POINTSPOLYGONS_WORKDIR}")
 
 add_test(NAME pointspolygons
-  COMMAND gman_pointspolygons $<TARGET_FILE:gman>
+  COMMAND gman_pointspolygons $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_POINTSPOLYGONS_WORKDIR}")
 set_tests_properties(pointspolygons PROPERTIES
@@ -2222,7 +2222,7 @@ set(GMAN_NUPATCH_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/nupatch-run")
 file(MAKE_DIRECTORY "${GMAN_NUPATCH_WORKDIR}")
 
 add_test(NAME nupatch
-  COMMAND gman_nupatch $<TARGET_FILE:gman>
+  COMMAND gman_nupatch $<TARGET_FILE:gman_cli>
                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_NUPATCH_WORKDIR}")
 set_tests_properties(nupatch PROPERTIES
@@ -2353,7 +2353,7 @@ set(GMAN_IMAGERBACKGROUND_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/imagerbac
 file(MAKE_DIRECTORY "${GMAN_IMAGERBACKGROUND_ZBUFFER_WORKDIR}")
 
 add_test(NAME imagerbackground_zbuffer
-  COMMAND gman_imagerbackground $<TARGET_FILE:gman>
+  COMMAND gman_imagerbackground $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                 gmanzbuffer
   WORKING_DIRECTORY "${GMAN_IMAGERBACKGROUND_ZBUFFER_WORKDIR}")
@@ -2369,7 +2369,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_IMAGERBACKGROUND_RAYTRACER_WORKDIR}")
 
   add_test(NAME imagerbackground_raytracer
-    COMMAND gman_imagerbackground $<TARGET_FILE:gman>
+    COMMAND gman_imagerbackground $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                   gmanraytracer
     WORKING_DIRECTORY "${GMAN_IMAGERBACKGROUND_RAYTRACER_WORKDIR}")
@@ -2386,7 +2386,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_IMAGERBACKGROUND_PATHTRACER_WORKDIR}")
 
   add_test(NAME imagerbackground_pathtracer
-    COMMAND gman_imagerbackground $<TARGET_FILE:gman>
+    COMMAND gman_imagerbackground $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                   gmanpathtracer
     WORKING_DIRECTORY "${GMAN_IMAGERBACKGROUND_PATHTRACER_WORKDIR}")
@@ -2477,7 +2477,7 @@ set(GMAN_ENVIRONMENT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/environment-run")
 file(MAKE_DIRECTORY "${GMAN_ENVIRONMENT_WORKDIR}")
 
 add_test(NAME environment
-  COMMAND gman_environment $<TARGET_FILE:gman>
+  COMMAND gman_environment $<TARGET_FILE:gman_cli>
                            "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_ENVIRONMENT_WORKDIR}")
 set_tests_properties(environment PROPERTIES
@@ -3211,7 +3211,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_RAYRENDER_WORKDIR}")
 
   add_test(NAME rayrender
-    COMMAND gman_rayrender $<TARGET_FILE:gman>
+    COMMAND gman_rayrender $<TARGET_FILE:gman_cli>
                            "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_RAYRENDER_WORKDIR}")
   set_tests_properties(rayrender PROPERTIES
@@ -3230,7 +3230,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_BACKGROUNDCOLOR_WORKDIR}")
 
   add_test(NAME backgroundcolor
-    COMMAND gman_backgroundcolor $<TARGET_FILE:gman>
+    COMMAND gman_backgroundcolor $<TARGET_FILE:gman_cli>
     WORKING_DIRECTORY "${GMAN_BACKGROUNDCOLOR_WORKDIR}")
   set_tests_properties(backgroundcolor PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -3248,7 +3248,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_DISKRAYRENDER_WORKDIR}")
 
   add_test(NAME diskrayrender
-    COMMAND gman_diskrayrender $<TARGET_FILE:gman>
+    COMMAND gman_diskrayrender $<TARGET_FILE:gman_cli>
                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_DISKRAYRENDER_WORKDIR}")
   set_tests_properties(diskrayrender PROPERTIES
@@ -3267,7 +3267,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_QUADRICSRAYRENDER_WORKDIR}")
 
   add_test(NAME quadricsrayrender
-    COMMAND gman_quadricsrayrender $<TARGET_FILE:gman>
+    COMMAND gman_quadricsrayrender $<TARGET_FILE:gman_cli>
                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_QUADRICSRAYRENDER_WORKDIR}")
   set_tests_properties(quadricsrayrender PROPERTIES
@@ -3288,7 +3288,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_MIRRORRAYRENDER_WORKDIR}")
 
   add_test(NAME mirrorrayrender
-    COMMAND gman_mirrorrayrender $<TARGET_FILE:gman>
+    COMMAND gman_mirrorrayrender $<TARGET_FILE:gman_cli>
                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_MIRRORRAYRENDER_WORKDIR}")
   set_tests_properties(mirrorrayrender PROPERTIES
@@ -3309,7 +3309,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_GLASSRAYRENDER_WORKDIR}")
 
   add_test(NAME glassrayrender
-    COMMAND gman_glassrayrender $<TARGET_FILE:gman>
+    COMMAND gman_glassrayrender $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_GLASSRAYRENDER_WORKDIR}")
   set_tests_properties(glassrayrender PROPERTIES
@@ -3330,7 +3330,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_INDIRECTRENDER_WORKDIR}")
 
   add_test(NAME indirectrender
-    COMMAND gman_indirectrender $<TARGET_FILE:gman>
+    COMMAND gman_indirectrender $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_INDIRECTRENDER_WORKDIR}")
   set_tests_properties(indirectrender PROPERTIES
@@ -3353,7 +3353,7 @@ if(GMAN_BUILD_RAYTRACER)
     file(MAKE_DIRECTORY "${GMAN_RADIOSITYRENDER_WORKDIR}")
 
     add_test(NAME radiosityrender
-      COMMAND gman_radiosityrender $<TARGET_FILE:gman>
+      COMMAND gman_radiosityrender $<TARGET_FILE:gman_cli>
                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
       WORKING_DIRECTORY "${GMAN_RADIOSITYRENDER_WORKDIR}")
     set_tests_properties(radiosityrender PROPERTIES
@@ -3374,7 +3374,7 @@ if(GMAN_BUILD_RAYTRACER)
     file(MAKE_DIRECTORY "${GMAN_CORNELLBOX_WORKDIR}")
 
     add_test(NAME cornellbox
-      COMMAND gman_cornellbox $<TARGET_FILE:gman>
+      COMMAND gman_cornellbox $<TARGET_FILE:gman_cli>
                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
       WORKING_DIRECTORY "${GMAN_CORNELLBOX_WORKDIR}")
     set_tests_properties(cornellbox PROPERTIES
@@ -3396,7 +3396,7 @@ if(GMAN_BUILD_RAYTRACER)
     file(MAKE_DIRECTORY "${GMAN_RADIOSITYWINDOW_WORKDIR}")
 
     add_test(NAME radiositywindow
-      COMMAND gman_radiositywindow $<TARGET_FILE:gman>
+      COMMAND gman_radiositywindow $<TARGET_FILE:gman_cli>
                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
       WORKING_DIRECTORY "${GMAN_RADIOSITYWINDOW_WORKDIR}")
     set_tests_properties(radiositywindow PROPERTIES
@@ -3417,7 +3417,7 @@ if(GMAN_BUILD_RAYTRACER)
     file(MAKE_DIRECTORY "${GMAN_RADIOSITYRIM_WORKDIR}")
 
     add_test(NAME radiosityrim
-      COMMAND gman_radiosityrim $<TARGET_FILE:gman>
+      COMMAND gman_radiosityrim $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
       WORKING_DIRECTORY "${GMAN_RADIOSITYRIM_WORKDIR}")
     set_tests_properties(radiosityrim PROPERTIES
@@ -3437,7 +3437,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_TORUSRAYRENDER_WORKDIR}")
 
   add_test(NAME torusrayrender
-    COMMAND gman_torusrayrender $<TARGET_FILE:gman>
+    COMMAND gman_torusrayrender $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_TORUSRAYRENDER_WORKDIR}")
   set_tests_properties(torusrayrender PROPERTIES
@@ -3456,7 +3456,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_POLYGONRAYRENDER_WORKDIR}")
 
   add_test(NAME polygonrayrender
-    COMMAND gman_polygonrayrender $<TARGET_FILE:gman>
+    COMMAND gman_polygonrayrender $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_POLYGONRAYRENDER_WORKDIR}")
   set_tests_properties(polygonrayrender PROPERTIES
@@ -3476,7 +3476,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_RAYPOLYGONSEAMRENDER_WORKDIR}")
 
   add_test(NAME raypolygonseamrender
-    COMMAND gman_raypolygonseamrender $<TARGET_FILE:gman>
+    COMMAND gman_raypolygonseamrender $<TARGET_FILE:gman_cli>
                                       "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_RAYPOLYGONSEAMRENDER_WORKDIR}")
   set_tests_properties(raypolygonseamrender PROPERTIES
@@ -3496,7 +3496,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_POLYGONZBUFFER_WORKDIR}")
 
   add_test(NAME polygonzbuffer
-    COMMAND gman_polygonzbuffer $<TARGET_FILE:gman>
+    COMMAND gman_polygonzbuffer $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_POLYGONZBUFFER_WORKDIR}")
   set_tests_properties(polygonzbuffer PROPERTIES
@@ -3517,7 +3517,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_POLYGONSTPARITY_WORKDIR}")
 
   add_test(NAME polygonstparity
-    COMMAND gman_polygonstparity $<TARGET_FILE:gman>
+    COMMAND gman_polygonstparity $<TARGET_FILE:gman_cli>
                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_POLYGONSTPARITY_WORKDIR}")
   set_tests_properties(polygonstparity PROPERTIES
@@ -3539,7 +3539,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_POLYGONRAYCOVERAGE_WORKDIR}")
 
   add_test(NAME polygonraycoverage
-    COMMAND gman_polygonraycoverage $<TARGET_FILE:gman>
+    COMMAND gman_polygonraycoverage $<TARGET_FILE:gman_cli>
                                     "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_POLYGONRAYCOVERAGE_WORKDIR}")
   set_tests_properties(polygonraycoverage PROPERTIES
@@ -3560,7 +3560,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_SHADOWRENDER_WORKDIR}")
 
   add_test(NAME shadowrender
-    COMMAND gman_shadowrender $<TARGET_FILE:gman>
+    COMMAND gman_shadowrender $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_SHADOWRENDER_WORKDIR}")
   set_tests_properties(shadowrender PROPERTIES
@@ -3582,7 +3582,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_TRANSPARENCYRENDER_WORKDIR}")
 
   add_test(NAME transparencyrender
-    COMMAND gman_transparencyrender $<TARGET_FILE:gman>
+    COMMAND gman_transparencyrender $<TARGET_FILE:gman_cli>
                                     "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_TRANSPARENCYRENDER_WORKDIR}")
   set_tests_properties(transparencyrender PROPERTIES
@@ -3604,7 +3604,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_TRANSPARENCYSHADOWRENDER_WORKDIR}")
 
   add_test(NAME transparencyshadowrender
-    COMMAND gman_transparencyshadowrender $<TARGET_FILE:gman>
+    COMMAND gman_transparencyshadowrender $<TARGET_FILE:gman_cli>
                                           "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_TRANSPARENCYSHADOWRENDER_WORKDIR}")
   set_tests_properties(transparencyshadowrender PROPERTIES
@@ -3625,7 +3625,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_CONTACTSHADOW_WORKDIR}")
 
   add_test(NAME contactshadow
-    COMMAND gman_contactshadow $<TARGET_FILE:gman>
+    COMMAND gman_contactshadow $<TARGET_FILE:gman_cli>
                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_CONTACTSHADOW_WORKDIR}")
   set_tests_properties(contactshadow PROPERTIES
@@ -3646,7 +3646,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_ACNESPHERE_WORKDIR}")
 
   add_test(NAME acnesphere
-    COMMAND gman_acnesphere $<TARGET_FILE:gman>
+    COMMAND gman_acnesphere $<TARGET_FILE:gman_cli>
                             "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_ACNESPHERE_WORKDIR}")
   set_tests_properties(acnesphere PROPERTIES
@@ -3667,7 +3667,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_SURFACEPARAMETERS_WORKDIR}")
 
   add_test(NAME surfaceparameters
-    COMMAND gman_surfaceparameters $<TARGET_FILE:gman>
+    COMMAND gman_surfaceparameters $<TARGET_FILE:gman_cli>
                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_SURFACEPARAMETERS_WORKDIR}")
   set_tests_properties(surfaceparameters PROPERTIES
@@ -3691,7 +3691,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_COVERAGEALPHA_WORKDIR}")
 
   add_test(NAME coveragealpha
-    COMMAND gman_coveragealpha $<TARGET_FILE:gman>
+    COMMAND gman_coveragealpha $<TARGET_FILE:gman_cli>
                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_COVERAGEALPHA_WORKDIR}")
   set_tests_properties(coveragealpha PROPERTIES
@@ -3715,7 +3715,7 @@ set(GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/unknownsurf
 file(MAKE_DIRECTORY "${GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR}")
 
 add_test(NAME unknownsurface_zbuffer
-  COMMAND gman_unknownsurface $<TARGET_FILE:gman>
+  COMMAND gman_unknownsurface $<TARGET_FILE:gman_cli>
                               "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                               gmanzbuffer
   WORKING_DIRECTORY "${GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR}")
@@ -3731,7 +3731,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_UNKNOWNSURFACE_RAYTRACER_WORKDIR}")
 
   add_test(NAME unknownsurface_raytracer
-    COMMAND gman_unknownsurface $<TARGET_FILE:gman>
+    COMMAND gman_unknownsurface $<TARGET_FILE:gman_cli>
                                 "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                 gmanraytracer
     WORKING_DIRECTORY "${GMAN_UNKNOWNSURFACE_RAYTRACER_WORKDIR}")
@@ -3755,7 +3755,7 @@ set(GMAN_RIBSHADERREQUESTS_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribshade
 file(MAKE_DIRECTORY "${GMAN_RIBSHADERREQUESTS_ZBUFFER_WORKDIR}")
 
 add_test(NAME ribshaderrequests_zbuffer
-  COMMAND gman_ribshaderrequests $<TARGET_FILE:gman>
+  COMMAND gman_ribshaderrequests $<TARGET_FILE:gman_cli>
                                  "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                  gmanzbuffer
   WORKING_DIRECTORY "${GMAN_RIBSHADERREQUESTS_ZBUFFER_WORKDIR}")
@@ -3771,7 +3771,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_RIBSHADERREQUESTS_RAYTRACER_WORKDIR}")
 
   add_test(NAME ribshaderrequests_raytracer
-    COMMAND gman_ribshaderrequests $<TARGET_FILE:gman>
+    COMMAND gman_ribshaderrequests $<TARGET_FILE:gman_cli>
                                    "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                                    gmanraytracer
     WORKING_DIRECTORY "${GMAN_RIBSHADERREQUESTS_RAYTRACER_WORKDIR}")
@@ -3793,7 +3793,7 @@ set(GMAN_REPORTEDERROR_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/reportederror-run")
 file(MAKE_DIRECTORY "${GMAN_REPORTEDERROR_WORKDIR}")
 
 add_test(NAME reportederror
-  COMMAND gman_reportederror $<TARGET_FILE:gman>
+  COMMAND gman_reportederror $<TARGET_FILE:gman_cli>
                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_REPORTEDERROR_WORKDIR}")
 set_tests_properties(reportederror PROPERTIES
@@ -4103,7 +4103,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_PATHTRACERRENDER_WORKDIR}")
 
   add_test(NAME pathtracerrender
-    COMMAND gman_pathtracerrender $<TARGET_FILE:gman>
+    COMMAND gman_pathtracerrender $<TARGET_FILE:gman_cli>
                                   "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_PATHTRACERRENDER_WORKDIR}")
   set_tests_properties(pathtracerrender PROPERTIES
@@ -4122,7 +4122,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_NORMALMAPPATHTRACER_WORKDIR}")
 
   add_test(NAME normalmappathtracer
-    COMMAND gman_normalmappathtracer $<TARGET_FILE:gman>
+    COMMAND gman_normalmappathtracer $<TARGET_FILE:gman_cli>
                                      "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_NORMALMAPPATHTRACER_WORKDIR}")
   set_tests_properties(normalmappathtracer PROPERTIES
@@ -4449,7 +4449,7 @@ set(GMAN_RENDERERAREALIGHTWARNING_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/r
 file(MAKE_DIRECTORY "${GMAN_RENDERERAREALIGHTWARNING_ZBUFFER_WORKDIR}")
 
 add_test(NAME rendererarealightwarning_zbuffer
-  COMMAND gman_rendererarealightwarning $<TARGET_FILE:gman> gmanzbuffer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  COMMAND gman_rendererarealightwarning $<TARGET_FILE:gman_cli> gmanzbuffer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_RENDERERAREALIGHTWARNING_ZBUFFER_WORKDIR}")
 set_tests_properties(rendererarealightwarning_zbuffer PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -4464,7 +4464,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_RENDERERAREALIGHTWARNING_RAYTRACER_WORKDIR}")
 
   add_test(NAME rendererarealightwarning_raytracer
-    COMMAND gman_rendererarealightwarning $<TARGET_FILE:gman> gmanraytracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    COMMAND gman_rendererarealightwarning $<TARGET_FILE:gman_cli> gmanraytracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_RENDERERAREALIGHTWARNING_RAYTRACER_WORKDIR}")
   set_tests_properties(rendererarealightwarning_raytracer PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -4485,7 +4485,7 @@ set(GMAN_AREALIGHTPOLYGON_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/arealightpolygon-
 file(MAKE_DIRECTORY "${GMAN_AREALIGHTPOLYGON_WORKDIR}")
 
 add_test(NAME arealightpolygon
-  COMMAND gman_arealightpolygon $<TARGET_FILE:gman> "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  COMMAND gman_arealightpolygon $<TARGET_FILE:gman_cli> "${CMAKE_CURRENT_SOURCE_DIR}/rib"
   WORKING_DIRECTORY "${GMAN_AREALIGHTPOLYGON_WORKDIR}")
 set_tests_properties(arealightpolygon PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -4510,7 +4510,7 @@ if(GMAN_BUILD_PATHTRACER)
   file(MAKE_DIRECTORY "${GMAN_AREALIGHTPANEL_WORKDIR}")
 
   add_test(NAME arealightpanel
-    COMMAND gman_arealightpanel $<TARGET_FILE:gman> gmanpathtracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    COMMAND gman_arealightpanel $<TARGET_FILE:gman_cli> gmanpathtracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_AREALIGHTPANEL_WORKDIR}")
   set_tests_properties(arealightpanel PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -4525,7 +4525,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_AREALIGHTPANEL_RAYTRACER_WORKDIR}")
 
   add_test(NAME arealightpanel_raytracer
-    COMMAND gman_arealightpanel $<TARGET_FILE:gman> gmanraytracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    COMMAND gman_arealightpanel $<TARGET_FILE:gman_cli> gmanraytracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_AREALIGHTPANEL_RAYTRACER_WORKDIR}")
   set_tests_properties(arealightpanel_raytracer PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
@@ -4746,7 +4746,7 @@ set(GMAN_OUTOFMODE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/outofmode-zbuffe
 file(MAKE_DIRECTORY "${GMAN_OUTOFMODE_ZBUFFER_WORKDIR}")
 
 add_test(NAME outofmode_zbuffer
-  COMMAND gman_outofmode $<TARGET_FILE:gman>
+  COMMAND gman_outofmode $<TARGET_FILE:gman_cli>
                          "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                          gmanzbuffer
   WORKING_DIRECTORY "${GMAN_OUTOFMODE_ZBUFFER_WORKDIR}")
@@ -4762,7 +4762,7 @@ if(GMAN_BUILD_RAYTRACER)
   file(MAKE_DIRECTORY "${GMAN_OUTOFMODE_RAYTRACER_WORKDIR}")
 
   add_test(NAME outofmode_raytracer
-    COMMAND gman_outofmode $<TARGET_FILE:gman>
+    COMMAND gman_outofmode $<TARGET_FILE:gman_cli>
                            "${CMAKE_CURRENT_SOURCE_DIR}/rib"
                            gmanraytracer
     WORKING_DIRECTORY "${GMAN_OUTOFMODE_RAYTRACER_WORKDIR}")

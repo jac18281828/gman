@@ -505,22 +505,23 @@ add_library(gman_commandline_module STATIC gman/gmancommandline.cpp)
 target_include_directories(gman_commandline_module PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/gman")
 target_link_libraries(gman_commandline_module PUBLIC gman_core PRIVATE CLI11::CLI11)
 
-add_executable(gman gman/gman.cpp)
-target_link_libraries(gman PRIVATE gman_core gman_commandline_module)
+add_executable(gman_cli gman/gman.cpp)
+set_target_properties(gman_cli PROPERTIES OUTPUT_NAME gman)
+target_link_libraries(gman_cli PRIVATE gman_core gman_commandline_module)
 
 # gman --version reports gman::fileDrivers(), the driver table's own private
 # contract, and PROJECT_VERSION -- neither is part of gman_core's public API.
-target_include_directories(gman PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
-target_compile_definitions(gman PRIVATE
+target_include_directories(gman_cli PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
+target_compile_definitions(gman_cli PRIVATE
   GMAN_PROJECT_VERSION="${PROJECT_VERSION}")
 
 # RiBegin dlopen's "lib<renderer>.so" by bare name, so the build tree itself
 # has to be on the runtime search path or no renderer ever loads.
-set_target_properties(gman gman_core PROPERTIES
+set_target_properties(gman_cli gman_core PROPERTIES
   BUILD_RPATH "${CMAKE_BINARY_DIR}")
 
-add_dependencies(gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_mirror
-                 gman_glass gman_background gman_rib)
+add_dependencies(gman_cli gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal
+                 gman_mirror gman_glass gman_background gman_rib)
 
 # ---------------------------------------------------------------------------
 # Install
@@ -533,8 +534,8 @@ install(TARGETS gman_core gman_ray gman_raster
   EXPORT gmanTargets
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-install(TARGETS gman gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal gman_mirror
-                gman_glass gman_background gman_rib
+install(TARGETS gman_cli gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal
+                gman_mirror gman_glass gman_background gman_rib
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 if(GMAN_BUILD_RAYTRACER)
