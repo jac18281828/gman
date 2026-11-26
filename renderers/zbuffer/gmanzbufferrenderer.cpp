@@ -522,9 +522,9 @@ void GMANZBufferRenderer::drawEdgeList(void) {
           // shader, and past either bound where the span extrapolates
           // beyond its far end. The output pipeline clamps colour after
           // Exposure.
-          GMANAlpha clampedAlpha(GMANClamp<GMANColorSample>(ia.getRed(), 0.0, 1.0),
-                                 GMANClamp<GMANColorSample>(ia.getGreen(), 0.0, 1.0),
-                                 GMANClamp<GMANColorSample>(ia.getBlue(), 0.0, 1.0));
+          GMANAlpha clampedAlpha(GMANMax<GMANColorSample>(GMANMin<GMANColorSample>(ia.getRed(), 1.0), 0.0),
+                                 GMANMax<GMANColorSample>(GMANMin<GMANColorSample>(ia.getGreen(), 1.0), 0.0),
+                                 GMANMax<GMANColorSample>(GMANMin<GMANColorSample>(ia.getBlue(), 1.0), 0.0));
           // The real per-sample visibility test: closer samples overwrite,
           // farther ones are dropped, exactly as the old per-pixel zbuffer
           // test did -- just at sample, not pixel, resolution.

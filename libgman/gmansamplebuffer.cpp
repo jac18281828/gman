@@ -187,9 +187,9 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
       // pipeline clamps colour after Exposure.
       frameBuffer->setPixel(px, py, sum);
 
-      GMANAlpha clampedAlpha(GMANClamp<GMANColorSample>(alphaSum.getRed(), 0.0, 1.0),
-                             GMANClamp<GMANColorSample>(alphaSum.getGreen(), 0.0, 1.0),
-                             GMANClamp<GMANColorSample>(alphaSum.getBlue(), 0.0, 1.0));
+      GMANAlpha clampedAlpha(GMANMax<GMANColorSample>(GMANMin<GMANColorSample>(alphaSum.getRed(), 1.0), 0.0),
+                             GMANMax<GMANColorSample>(GMANMin<GMANColorSample>(alphaSum.getGreen(), 1.0), 0.0),
+                             GMANMax<GMANColorSample>(GMANMin<GMANColorSample>(alphaSum.getBlue(), 1.0), 0.0));
       frameBuffer->setAlpha(px, py, clampedAlpha);
 
       // The resolved depth stands in for the pixel's z for

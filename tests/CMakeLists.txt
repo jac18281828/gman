@@ -1669,6 +1669,70 @@ set_tests_properties(imagernonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANSampleBuffer resolves a NaN coverage to 1 and passes a finite coverage
+# clamped to [0, 1] as before. See tests/samplebuffernonfinite_test.cpp.
+add_executable(gman_samplebuffernonfinite samplebuffernonfinite_test.cpp)
+target_link_libraries(gman_samplebuffernonfinite PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME samplebuffernonfinite COMMAND gman_samplebuffernonfinite)
+set_tests_properties(samplebuffernonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
+# Test-only surface shader answering a NaN or infinite Ci or Oi on request
+# ("string ci", "string oi"): RIB has no literal for either.
+gman_add_plugin(gman_nonfinitesurface nonfinitesurface_test_plugin.cpp)
+set_target_properties(gman_nonfinitesurface PROPERTIES OUTPUT_NAME "nonfinitesurface")
+
+# One rule for coverage in every renderer: a surface whose Oi is NaN or +inf is
+# opaque, and a NaN or infinite Ci shades black. See
+# tests/coveragenonfinite_test.cpp.
+add_executable(gman_coveragenonfinite coveragenonfinite_test.cpp)
+target_link_libraries(gman_coveragenonfinite PRIVATE TIFF::TIFF)
+add_dependencies(gman_coveragenonfinite gman_nonfinitesurface gman_zbuffer)
+
+set(GMAN_COVERAGENONFINITE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/coveragenonfinite-zbuffer-run")
+file(MAKE_DIRECTORY "${GMAN_COVERAGENONFINITE_ZBUFFER_WORKDIR}")
+
+add_test(NAME coveragenonfinite_zbuffer
+  COMMAND gman_coveragenonfinite $<TARGET_FILE:gman> gmanzbuffer
+  WORKING_DIRECTORY "${GMAN_COVERAGENONFINITE_ZBUFFER_WORKDIR}")
+set_tests_properties(coveragenonfinite_zbuffer PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 60)
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_coveragenonfinite gman_raytracer)
+
+  set(GMAN_COVERAGENONFINITE_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/coveragenonfinite-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_COVERAGENONFINITE_RAYTRACER_WORKDIR}")
+
+  add_test(NAME coveragenonfinite_raytracer
+    COMMAND gman_coveragenonfinite $<TARGET_FILE:gman> gmanraytracer
+    WORKING_DIRECTORY "${GMAN_COVERAGENONFINITE_RAYTRACER_WORKDIR}")
+  set_tests_properties(coveragenonfinite_raytracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 60)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_coveragenonfinite gman_pathtracer)
+
+  set(GMAN_COVERAGENONFINITE_PATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/coveragenonfinite-pathtracer-run")
+  file(MAKE_DIRECTORY "${GMAN_COVERAGENONFINITE_PATHTRACER_WORKDIR}")
+
+  add_test(NAME coveragenonfinite_pathtracer
+    COMMAND gman_coveragenonfinite $<TARGET_FILE:gman> gmanpathtracer
+    WORKING_DIRECTORY "${GMAN_COVERAGENONFINITE_PATHTRACER_WORKDIR}")
+  set_tests_properties(coveragenonfinite_pathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 60)
+endif()
+
 # A missing texture warns once per world block under every renderer; libtiff stays silent.
 add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
 target_link_libraries(gman_texturewarningonce PRIVATE gman_core)

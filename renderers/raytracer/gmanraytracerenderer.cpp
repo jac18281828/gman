@@ -23,6 +23,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <cmath>
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -74,6 +75,13 @@ struct PassIrradiance {
     }
   }
 };
+
+GMANColor coverageOf(GMANColor const& opacity) {
+  auto const channel = [](GMANColor::ColorSampleType v) {
+    return std::isfinite(v) ? v : GMANMax<GMANColor::ColorSampleType>(GMANMin<GMANColor::ColorSampleType>(v, 1.0), 0.0);
+  };
+  return GMANColor(channel(opacity.getRed()), channel(opacity.getGreen()), channel(opacity.getBlue()));
+}
 
 } // namespace
 
@@ -155,7 +163,7 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
     gman::Shading const shading = gman::shade(*hit.appearance, gman::hitSurfacePoint(ray, hit.hit), cameraToWorld,
                                               &occluder, &tracer, textureCache, indirect.ptr);
     accumulated += gman::multiplyChannels(transmission, shading.Ci);
-    transmission = gman::multiplyChannels(transmission, gman::oneMinus(shading.Oi));
+    transmission = gman::multiplyChannels(transmission, gman::oneMinus(coverageOf(shading.Oi)));
     if (gman::transmissionNegligible(transmission)) {
       break;
     }

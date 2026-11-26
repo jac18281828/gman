@@ -83,7 +83,8 @@ public:
   // Filters every pixel's covering samples through filterfunc and writes
   // the result to frameBuffer, alpha filtered by the same weights in the
   // same pass and published through frameBuffer->setAlpha. Colour is
-  // written as filtered, unclamped; alpha is clamped to [0, 1].
+  // written as filtered, unclamped; alpha is clamped to [0, 1], a NaN read
+  // as 1, so a NaN never makes a pixel transparent.
   // xwidth/ywidth are the filter's full support width in pixel units,
   // symmetric about the pixel centre being resolved (the RISpec
   // convention every kernel in gmanfilters.cpp already follows); a width
