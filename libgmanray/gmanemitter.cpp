@@ -252,8 +252,6 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
   // where that Jacobian is singular; Cl goes black separately, on the
   // emitter's far side, per its one-sided emission.
   if (cosTheta == 0.0f || !(distance > 0.0f)) {
-    result.Cl = black;
-    result.pdf = 0.0f;
     return result;
   }
   result.pdf = (distance * distance) / (draw.area * draw.jacobian * std::fabs(cosTheta));
