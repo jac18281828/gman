@@ -94,7 +94,7 @@ void testSingularPlacement() {
   flat.scale(1.0, 1.0, 0.0);
   GMANTransform const transform = makeTransform(flat);
   GMANTransform const identity = makeTransform(GMANMatrix4());
-  GMANRay const sideways(GMANPoint(-10.0, 0.0, 0.5), GMANVector(1.0, 0.0, 0.0));
+  GMANRay const sideways(GMANPoint(-10.0, 0.0, 0.25), GMANVector(1.0, 0.0, 0.0));
   GMANRay const downAxis(GMANPoint(0.5, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
 
   GMANRaySphere const sphere(2.0, -2.0, 2.0, 360.0, GMANParameterList(), transform);
