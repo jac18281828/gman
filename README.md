@@ -356,7 +356,7 @@ This writes `sphere.tif` in the current directory.
 
 ```
 include/       libgman's header files, including ri.h
-libgman/       the core library, libgman: RIB parser, RI state machine, image writers
+libgman/       the core library, gman: RIB parser, RI state machine, image writers
 libgmanray/    gman_ray: ray geometry, BVH, emitters and the indirect-light pass seam
 libgmanraster/ gman_raster: the body, face and vertex model, the polygon clipper
 libgmanrib/    the RIB-writer plugin RiBegin("x.rib") loads, not yet trustworthy

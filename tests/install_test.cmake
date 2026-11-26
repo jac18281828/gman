@@ -110,7 +110,8 @@ file(GLOB GMAN_INSTALLED_CORE_LIBRARIES LIST_DIRECTORIES false
 list(LENGTH GMAN_INSTALLED_CORE_LIBRARIES GMAN_INSTALLED_CORE_LIBRARY_COUNT)
 if(NOT GMAN_INSTALLED_CORE_LIBRARY_COUNT EQUAL 1)
   message(FATAL_ERROR
-    "step 1 (install): ${GMAN_PREFIX}/${GMAN_LIBDIR} holds ${GMAN_INSTALLED_CORE_LIBRARY_COUNT} files matching libgman.*, expected the core library alone: ${GMAN_INSTALLED_CORE_LIBRARIES}")
+    "step 1 (install): ${GMAN_PREFIX}/${GMAN_LIBDIR} holds ${GMAN_INSTALLED_CORE_LIBRARY_COUNT} "
+    "files matching libgman.*, expected the core library alone: ${GMAN_INSTALLED_CORE_LIBRARIES}")
 endif()
 
 # --- Step 2: render from the installed bin/gman: shaders, then renderers ---
