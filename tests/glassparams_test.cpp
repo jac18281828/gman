@@ -157,13 +157,8 @@ std::string cropLine(Block const& block) {
 }
 
 // The fixture's text with the lines between "## begin <name>" and
-// "## end <name>" dropped for each name the variant leaves out, its glass line
-// replaced, its display named display and its frame cropped to the block. A
-// twin, which leaves something out, renders at kTwinSamples: the channel read
-// from it is black or crosses no glass, so the path tracer samples nothing
-// noisy there.
-std::string variantRib(std::string const& fixture, Variant const& variant, Block const& block,
-                       std::string const& display) {
+// "## end <name>" dropped for each name given.
+std::string dropBlocks(std::string const& fixture, std::vector<std::string> const& names) {
   std::istringstream in(fixture);
   std::string out;
   std::string line;
@@ -175,16 +170,27 @@ std::string variantRib(std::string const& fixture, Variant const& variant, Block
       }
       continue;
     }
-    bool dropped = false;
-    for (auto const& name : variant.without) {
-      if (line == "## begin " + name) {
-        skipping = name;
-        dropped = true;
-      }
-    }
-    if (dropped) {
+    const auto begun = std::ranges::find_if(names, [&](auto const& name) { return line == "## begin " + name; });
+    if (begun != names.end()) {
+      skipping = *begun;
       continue;
     }
+    out += line + "\n";
+  }
+  return out;
+}
+
+// The fixture's text with the blocks the variant leaves out dropped, its glass
+// line replaced, its display named display and its frame cropped to the block.
+// A twin, which leaves something out, renders at kTwinSamples: the channel read
+// from it is black or crosses no glass, so the path tracer samples nothing
+// noisy there.
+std::string variantRib(std::string const& fixture, Variant const& variant, Block const& block,
+                       std::string const& display) {
+  std::istringstream in(dropBlocks(fixture, variant.without));
+  std::string out;
+  std::string line;
+  while (std::getline(in, line)) {
     if (line == kGlassLine) {
       line = glassLine(variant.settings);
     } else if (startsWith(line, "Display ")) {

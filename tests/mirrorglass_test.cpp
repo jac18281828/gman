@@ -63,8 +63,17 @@ struct GlassSettings {
   RtFloat kt;
 };
 
+struct ClampCase {
+  RtFloat input;
+  RtFloat expected;
+};
+
 const auto kNaN = std::nanf("");
 const auto kInfinity = std::numeric_limits<RtFloat>::infinity();
+
+const ClampCase kScaleCases[] = {{2.0f, 1.0f}, {-1.0f, 0.0f}, {kNaN, 0.0f}};
+const ClampCase kEtaCases[] = {{0.0f, kGlassIor},      {-2.0f, kGlassIor}, {kNaN, kGlassIor},
+                               {kInfinity, kGlassIor}, {1000.0f, 100.0f},  {0.001f, 0.01f}};
 
 GlassSettings const kDefaultSettings = {kGlassIor, 1.0f, 1.0f};
 
@@ -428,23 +437,19 @@ void checkGlassParameters(std::string const& glassPath) {
   const auto namedCi = named.getSurface()->computeCi(se);
   check(colorExactly(unnamedCi, namedCi), "D.2c: Kr 1, Kt 1 and eta 1.5 named give the unnamed Ci, exactly");
 
-  const RtFloat scaleInputs[] = {2.0f, -1.0f, kNaN};
-  const RtFloat scaleWanted[] = {1.0f, 0.0f, 0.0f};
-  for (std::size_t i = 0; i < 3; ++i) {
-    const auto input = std::to_string(scaleInputs[i]);
-    checkGlassSettings(glassPath, {kGlassIor, scaleInputs[i], 1.0f}, {kGlassIor, scaleWanted[i], 1.0f}, true,
+  for (auto const& scale : kScaleCases) {
+    const auto input = std::to_string(scale.input);
+    checkGlassSettings(glassPath, {kGlassIor, scale.input, 1.0f}, {kGlassIor, scale.expected, 1.0f}, true,
                        "D.2c entering, Kr " + input);
-    checkGlassSettings(glassPath, {kGlassIor, 1.0f, scaleInputs[i]}, {kGlassIor, 1.0f, scaleWanted[i]}, true,
+    checkGlassSettings(glassPath, {kGlassIor, 1.0f, scale.input}, {kGlassIor, 1.0f, scale.expected}, true,
                        "D.2c entering, Kt " + input);
   }
 
-  const RtFloat etaInputs[] = {0.0f, -2.0f, kNaN, kInfinity, 1000.0f, 0.001f};
-  const RtFloat etaWanted[] = {kGlassIor, kGlassIor, kGlassIor, kGlassIor, 100.0f, 0.01f};
-  for (std::size_t i = 0; i < 6; ++i) {
-    const auto input = std::to_string(etaInputs[i]);
-    checkGlassSettings(glassPath, {etaInputs[i], 1.0f, 1.0f}, {etaWanted[i], 1.0f, 1.0f}, true,
+  for (auto const& eta : kEtaCases) {
+    const auto input = std::to_string(eta.input);
+    checkGlassSettings(glassPath, {eta.input, 1.0f, 1.0f}, {eta.expected, 1.0f, 1.0f}, true,
                        "D.2c entering, eta " + input);
-    checkGlassSettings(glassPath, {etaInputs[i], 1.0f, 1.0f}, {etaWanted[i], 1.0f, 1.0f}, false,
+    checkGlassSettings(glassPath, {eta.input, 1.0f, 1.0f}, {eta.expected, 1.0f, 1.0f}, false,
                        "D.2c exiting, eta " + input);
   }
 }
