@@ -372,7 +372,10 @@ void runCase(Case const& c, std::uint32_t dim) {
     }
     GMANHit hit;
     if (!c.emitter.shape->intersect(GMANRay(c.p, s.wi), hit)) {
-      const auto grazing = c.normalAt ? std::fabs(dot(c.normalAt(drawn), toVec(s.wi))) : 1.0;
+      double grazing = 1.0;
+      if (c.normalAt) {
+        grazing = std::fabs(dot(c.normalAt(drawn), toVec(s.wi)));
+      }
       if (grazing * grazing <= 2.0 * c.curvature * rounding) {
         ++tangentMisses;
       } else {
