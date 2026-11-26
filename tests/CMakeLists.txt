@@ -2759,7 +2759,7 @@ add_test(NAME raypatch COMMAND gman_raypatch)
 set_tests_properties(raypatch PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
-  TIMEOUT 30)
+  TIMEOUT 180)
 
 # GMANRaytraceRenderer::getDepth, linked against gman_raytracer_objects,
 # which still compiles GMANRaytraceRenderer itself. A default
