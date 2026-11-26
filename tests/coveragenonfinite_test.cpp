@@ -20,9 +20,9 @@
 
 /*
  * One rule for coverage in every renderer: a surface whose Oi is NaN or +inf
- * is opaque, never the transparent a NaN clamped to 0 reads as, and under the
- * ray and path tracers one whose Oi is -inf is transparent. The z-buffer
- * interpolates an infinite vertex opacity to NaN, which it reads as opaque. The plugin
+ * is opaque, never the transparent a NaN clamped to 0 reads as, and one whose
+ * Oi is -inf is transparent. The z-buffer reads the vertex opacity before it
+ * interpolates, since infinite vertices interpolate to NaN. The plugin
  * tests/nonfinitesurface_test_plugin.cpp answers each, with a finite red Ci, over a sphere at the centre of the frame;
  * the centre pixel's alpha and colour read back from the TIFF. A NaN or infinite Ci shades black rather than reaching
  * the pixel.
@@ -126,9 +126,7 @@ int main(int argc, char* argv[]) {
   testOpacity(gman, renderer, "finite", 255);
   testOpacity(gman, renderer, "nan", 255);
   testOpacity(gman, renderer, "inf", 255);
-  if (renderer != "gmanzbuffer") {
-    testOpacity(gman, renderer, "-inf", 0);
-  }
+  testOpacity(gman, renderer, "-inf", 0);
   if (tracesColour) {
     testRedSurvivesNonFiniteOpacity(gman, renderer, "nan");
     testRedSurvivesNonFiniteOpacity(gman, renderer, "inf");

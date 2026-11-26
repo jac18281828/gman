@@ -40,6 +40,7 @@
 #include "gmancolor.h"
 #include "gmanface.h"
 #include "gmanlog.h"
+#include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
 #include "gmanobject.h"
@@ -220,7 +221,12 @@ gman::SurfacePoint vertexSurfacePoint(GMANPoint const& location, GMANNormal cons
 // A shaded vertex's Oi, read as the GMANAlpha a vertex's alpha channel
 // stores: both share GMANColorBase's own floating-point sample type, so
 // this is a plain repackaging of the same three numbers.
-GMANAlpha vertexAlpha(GMANColor const& oi) { return GMANAlpha(oi.getRed(), oi.getGreen(), oi.getBlue()); }
+GMANAlpha vertexAlpha(GMANColor const& oi) {
+  auto const channel = [](GMANColor::ColorSampleType v) {
+    return std::isfinite(v) ? v : GMANMax<GMANColor::ColorSampleType>(GMANMin<GMANColor::ColorSampleType>(v, 1.0), 0.0);
+  };
+  return GMANAlpha(channel(oi.getRed()), channel(oi.getGreen()), channel(oi.getBlue()));
+}
 
 // The sine of the angle between a and b, judged against normal: a.cross(b)
 // is an area (units of length squared); dividing by |a|*|b| turns it into
