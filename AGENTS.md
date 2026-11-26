@@ -11,6 +11,8 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 ## C++ Style & Design
 - Correctness first; then idiomatic, reviewable C++.
 - Small functions, early returns, shallow nesting.
+- A conditional expression (`?:`) picks between two plain values on one line;
+  anything longer, or a branch that calls or builds something, is an `if`.
 - Small diffs, no cosmetic churn. A behavior change gets its own commit, named
   as such.
 - `const auto x = expr;` when the type is evident; spell the type for a
