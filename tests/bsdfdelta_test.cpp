@@ -23,8 +23,9 @@
  * Fresnel, reflection and Snell refraction; direction, Fresnel, energy and
  * reciprocity for the mirror and the dielectric alone; a three-lobe
  * mixture's selection, histogram and weighted-estimator statistics;
- * clamping, eta bounds, capacity and failed draws; shadowTransmittance;
- * and no heap allocation.
+ * clamping, eta bounds, capacity and failed draws; shadowTransmittance; a
+ * dielectric's reflection and transmission weights apart; and no heap
+ * allocation.
  *
  * Every statistical check draws i.i.d. samples,
  * unitFloat(sampleHash(kSeed, 0, 0, i, dimension)) with a distinct
@@ -34,6 +35,8 @@
  */
 
 #include <algorithm>
+#include <array>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -78,6 +81,10 @@ constexpr std::uint32_t kReciprocityDraws = 1u << 12;
 constexpr std::uint32_t kMixtureDraws = 1u << 16;
 constexpr std::uint32_t kEtaOneDraws = 256u;
 constexpr std::uint32_t kTangentDraws = 256u;
+constexpr std::uint32_t kBranchDraws = 1u << 12;
+constexpr std::uint32_t kMixtureBranchDraws = 1u << 14;
+constexpr std::uint32_t kForwardU1Steps = 16u;
+constexpr std::uint32_t kForwardU2Steps = 4u;
 constexpr int kNoAllocCalls = 1000;
 
 constexpr int kBins = 8;
@@ -137,6 +144,12 @@ GMANColor const kOutOfRangeWeight(1.4f, 0.2f, -0.3f);
 GMANColor const kOutOfRangeClamped(1.0f, 0.2f, 0.0f);
 GMANVector const kAxisNormal(0.0f, 0.0f, 1.0f);
 GMANVector const kTangentWo(1.0f, 0.0f, 0.0f);
+
+const auto kReflectWeight = GMANColor(0.8f, 0.5f, 0.2f);
+const auto kTransmitWeight = GMANColor(0.6f, 0.3f, 0.1f);
+const double kReflectWeightMean = 0.5;
+const double kTransmitWeightMean = 1.0 / 3.0;
+const double kMixtureLambertMean = 0.2;
 
 GMANColor const kMixtureLambert(0.3f, 0.2f, 0.1f);
 GMANColor const kMixtureMirror(0.1f, 0.2f, 0.3f);
@@ -254,6 +267,12 @@ gman::BSDF buildMirror(GMANColor const& weight) {
 gman::BSDF buildDielectric(GMANColor const& weight, RtFloat eta) {
   gman::BSDF bsdf(n0());
   bsdf.addDielectric(weight, eta);
+  return bsdf;
+}
+
+gman::BSDF buildDielectricPair(GMANColor const& reflectWeight, GMANColor const& transmitWeight, RtFloat eta) {
+  gman::BSDF bsdf(n0());
+  bsdf.addDielectric(reflectWeight, transmitWeight, eta);
   return bsdf;
 }
 
@@ -1083,6 +1102,272 @@ void checkShadowTransmittance() {
         "shadow: two dielectric lobes answer 0.8 * (1 - F_air) within 1e-5: the query sums its dielectric lobes");
 }
 
+// ---- A dielectric's reflection and transmission weights. ----
+
+bool sameBits(RtFloat a, RtFloat b) { return std::bit_cast<std::uint32_t>(a) == std::bit_cast<std::uint32_t>(b); }
+
+bool sameBits(GMANColor const& a, GMANColor const& b) {
+  return sameBits(a.getRed(), b.getRed()) && sameBits(a.getGreen(), b.getGreen()) && sameBits(a.getBlue(), b.getBlue());
+}
+
+bool sameBits(GMANVector const& a, GMANVector const& b) {
+  return sameBits(a.getX(), b.getX()) && sameBits(a.getY(), b.getY()) && sameBits(a.getZ(), b.getZ());
+}
+
+bool sameSample(gman::BSDFSample const& a, gman::BSDFSample const& b) {
+  return sameBits(a.wi, b.wi) && sameBits(a.f, b.f) && sameBits(a.pdf, b.pdf) && a.isDelta == b.isDelta &&
+         a.lobeIndex == b.lobeIndex;
+}
+
+RtFloat gridU1(std::uint32_t index, std::uint32_t steps) {
+  return (static_cast<RtFloat>(index) + 0.5f) / static_cast<RtFloat>(steps);
+}
+
+gman::BSDF buildForwardClosure() {
+  gman::BSDF closure(n0());
+  closure.addLambert(kMixtureLambert);
+  closure.addGGX(kR, 0.3f);
+  return closure;
+}
+
+// addDielectric(weight, eta) is addDielectric(weight, weight, eta): the two
+// closures answer eval, pdf, sample and shadowTransmittance bit for bit over
+// a grid of wo, u1 and u2.
+void checkOneWeightForwards() {
+  auto oneWeight = buildForwardClosure();
+  oneWeight.addDielectric(kR, kEta);
+  auto twoWeights = buildForwardClosure();
+  twoWeights.addDielectric(kR, kR, kEta);
+
+  bool samplesOk = true, evalOk = true, pdfOk = true, shadowOk = true;
+  for (const auto angle : kDielectricAnglesDeg) {
+    const auto wo = woAt(angle);
+    shadowOk = shadowOk && sameBits(oneWeight.shadowTransmittance(wo), twoWeights.shadowTransmittance(wo));
+    for (std::uint32_t i = 0; i < kForwardU1Steps; ++i) {
+      for (std::uint32_t j = 0; j < kForwardU2Steps; ++j) {
+        const auto u1 = gridU1(i, kForwardU1Steps);
+        const auto u2 = gridU1(j, kForwardU2Steps);
+        samplesOk = samplesOk && sameSample(oneWeight.sample(wo, u1, u2), twoWeights.sample(wo, u1, u2));
+      }
+    }
+    for (const auto wiAngle : kDielectricAnglesDeg) {
+      const auto wi = woAt(wiAngle);
+      evalOk = evalOk && sameBits(oneWeight.eval(wo, wi), twoWeights.eval(wo, wi));
+      pdfOk = pdfOk && sameBits(oneWeight.pdf(wo, wi), twoWeights.pdf(wo, wi));
+    }
+  }
+  check(samplesOk, "addDielectric(w, eta) and addDielectric(w, w, eta) draw bit-identical samples over 8 wo, 16 u1 "
+                   "and 4 u2");
+  check(evalOk, "addDielectric(w, eta) and addDielectric(w, w, eta) answer bit-identical eval over 8 wo and 8 wi");
+  check(pdfOk, "addDielectric(w, eta) and addDielectric(w, w, eta) answer bit-identical pdf over 8 wo and 8 wi");
+  check(shadowOk, "addDielectric(w, eta) and addDielectric(w, w, eta) answer bit-identical shadowTransmittance");
+}
+
+// The draws of a regular u1 grid, u1 = (i + 0.5) / draws, that land on
+// lobeIndex: how many succeed into each branch and the sum of each branch's
+// f * |cos(theta_i)| / pdf per channel.
+struct BranchTally {
+  std::uint32_t reflected = 0;
+  std::uint32_t transmitted = 0;
+  std::array<double, 3> reflectedSum{};
+  std::array<double, 3> transmittedSum{};
+};
+
+BranchTally tallyBranches(gman::BSDF const& closure, GMANVector const& wo, std::size_t lobeIndex, std::uint32_t draws) {
+  BranchTally tally;
+  const auto cosThetaO = n0().dot(wo);
+  for (std::uint32_t i = 0; i < draws; ++i) {
+    const auto s = closure.sample(wo, gridU1(i, draws), kFixedU2);
+    if (!(s.pdf > 0.0f) || s.lobeIndex != lobeIndex) {
+      continue;
+    }
+    const auto cosThetaI = n0().dot(s.wi);
+    const auto c = drawC(s.f, cosThetaI);
+    const auto isReflected = cosThetaO * cosThetaI > 0.0f;
+    auto& sum = isReflected ? tally.reflectedSum : tally.transmittedSum;
+    for (int ch = 0; ch < 3; ++ch) {
+      sum[ch] += channelD(c, ch) / static_cast<double>(s.pdf);
+    }
+    if (isReflected) {
+      ++tally.reflected;
+    } else {
+      ++tally.transmitted;
+    }
+  }
+  return tally;
+}
+
+struct BranchReference {
+  double reflectance;
+  double scale;
+};
+
+BranchReference branchReferenceAt(double angle) {
+  const auto geo = refGeometry(toVec3(n0()), toVec3(woAt(angle)), static_cast<double>(kEta));
+  const auto fr = refFresnelFromCos(geo.etaO, geo.etaI, geo.cosThetaO);
+  const auto ratio = geo.etaO / geo.etaI;
+  return {fr.f, ratio * ratio};
+}
+
+// Each branch's mean over the grid, failed draws counting 0, equals its
+// coefficient: F times the reflect weight, (1 - F) times the scale times the
+// transmit weight. A lobe picked with probability pick puts weight / pick on
+// each of its draws, and a regular grid puts within one draw of pick * F * N
+// of them in the reflect branch, so a mean errs by at most weight / (pick *
+// N), plus 1e-5 relative for float rounding.
+bool branchMeansMatch(BranchTally const& tally, std::uint32_t draws, BranchReference const& ref, double pick) {
+  const auto n = static_cast<double>(draws);
+  bool ok = true;
+  for (int ch = 0; ch < 3; ++ch) {
+    const auto reflectW = channelD(kReflectWeight, ch);
+    const auto transmitW = channelD(kTransmitWeight, ch) * ref.scale;
+    const auto reflectWant = ref.reflectance * reflectW;
+    const auto transmitWant = (1.0 - ref.reflectance) * transmitW;
+    const auto reflectTol = reflectW / (pick * n) + kWeightRelTol * reflectWant;
+    const auto transmitTol = transmitW / (pick * n) + kWeightRelTol * transmitWant;
+    ok = ok && std::fabs(tally.reflectedSum[ch] / n - reflectWant) <= reflectTol &&
+         std::fabs(tally.transmittedSum[ch] / n - transmitWant) <= transmitTol;
+  }
+  return ok;
+}
+
+// One branch's weight black and the other white: draws succeed, none takes
+// the black branch, the live branch's draws number its probability within
+// one draw of the grid, and the shadow answer follows the transmit weight.
+void checkBlackBranch(gman::BSDF const& closure, bool reflectBlack, std::string const& label) {
+  const auto white = buildDielectric(kWhite, kEta);
+  bool onlyLiveBranchOk = true, countOk = true, anySucceeds = false, shadowOk = true;
+  for (const auto angle : kDielectricAnglesDeg) {
+    const auto wo = woAt(angle);
+    const auto tally = tallyBranches(closure, wo, 0, kBranchDraws);
+    const auto ref = branchReferenceAt(angle);
+    const auto transmitProbability = 1.0 - ref.reflectance;
+    const auto live = reflectBlack ? tally.transmitted : tally.reflected;
+    const auto dead = reflectBlack ? tally.reflected : tally.transmitted;
+    const auto liveProbability = reflectBlack ? transmitProbability : ref.reflectance;
+    anySucceeds = anySucceeds || live > 0;
+    onlyLiveBranchOk = onlyLiveBranchOk && dead == 0;
+    countOk = countOk && std::fabs(static_cast<double>(live) - liveProbability * kBranchDraws) <= 1.0;
+    auto expectedShadow = kBlack;
+    if (reflectBlack) {
+      expectedShadow = white.shadowTransmittance(wo);
+    }
+    shadowOk = shadowOk && colorExactly(closure.shadowTransmittance(wo), expectedShadow);
+  }
+  check(anySucceeds, label + ": draws succeed");
+  check(onlyLiveBranchOk, label + ": no draw takes the black branch");
+  check(countOk, label + ": the live branch's draws number its probability within one draw of the grid");
+  check(shadowOk, label + ": shadowTransmittance is the white closure's for a white transmit weight, black for a "
+                          "black one");
+}
+
+// Unequal nonzero weights stay unbiased: alone, and in a mixture, where the
+// lobe's pick probability is the mean of its two weights' means over the
+// closure's total.
+void checkUnequalWeightsUnbiased() {
+  const auto alone = buildDielectricPair(kReflectWeight, kTransmitWeight, kEta);
+  bool aloneOk = true;
+  for (const auto angle : kDielectricAnglesDeg) {
+    const auto tally = tallyBranches(alone, woAt(angle), 0, kBranchDraws);
+    aloneOk = aloneOk && branchMeansMatch(tally, kBranchDraws, branchReferenceAt(angle), 1.0);
+  }
+  check(aloneOk, "unequal weights alone: each branch's mean of f * |cos(theta_i)| / pdf over a regular u1 grid "
+                 "equals its coefficient at 8 wo");
+
+  gman::BSDF mixture(n0());
+  mixture.addLambert(kMixtureLambert);
+  mixture.addDielectric(kReflectWeight, kTransmitWeight, kEta);
+  const auto dielectricShare = 0.5 * (kReflectWeightMean + kTransmitWeightMean);
+  const auto pick = dielectricShare / (kMixtureLambertMean + dielectricShare);
+  bool mixtureOk = true;
+  for (const auto angle : kMixtureAnglesDeg) {
+    const auto tally = tallyBranches(mixture, woAt(angle), 1, kMixtureBranchDraws);
+    mixtureOk = mixtureOk && branchMeansMatch(tally, kMixtureBranchDraws, branchReferenceAt(angle), pick);
+  }
+  check(mixtureOk, "unequal weights beside a Lambert lobe: each branch's mean over a regular u1 grid equals its "
+                   "coefficient at 60 and 150 degrees");
+
+  const auto shadowWant = scaled(kTransmitWeight, 1.0 - fAir(woAt(60.0)));
+  check(colorNearRel(alone.shadowTransmittance(woAt(60.0)), shadowWant, kWeightRelTol),
+        "unequal weights: shadowTransmittance at 60 degrees is the transmit weight times 1 - F_air");
+}
+
+// Both weights black: the lobe is never picked and its closure draws nothing.
+void checkBothBranchesBlack() {
+  const auto alone = buildDielectricPair(kBlack, kBlack, kEta);
+  bool aloneFails = true, shadowBlack = true;
+  for (const auto angle : kDielectricAnglesDeg) {
+    const auto wo = woAt(angle);
+    for (std::uint32_t i = 0; i < kBranchDraws; ++i) {
+      aloneFails = aloneFails && !(alone.sample(wo, gridU1(i, kBranchDraws), kFixedU2).pdf > 0.0f);
+    }
+    shadowBlack = shadowBlack && colorExactly(alone.shadowTransmittance(wo), kBlack);
+  }
+  check(aloneFails, "both dielectric weights black: every draw of the lone lobe fails at 8 wo");
+  check(shadowBlack, "both dielectric weights black: shadowTransmittance is black exactly");
+
+  gman::BSDF mixture(n0());
+  mixture.addLambert(kMixtureLambert);
+  mixture.addDielectric(kBlack, kBlack, kEta);
+  bool lambertOnly = true;
+  for (std::uint32_t i = 0; i < kBranchDraws; ++i) {
+    const auto s = mixture.sample(woAt(60.0), gridU1(i, kBranchDraws), kFixedU2);
+    lambertOnly = lambertOnly && s.pdf > 0.0f && s.lobeIndex == 0;
+  }
+  check(lambertOnly, "both dielectric weights black beside a Lambert lobe: every draw is the Lambert lobe's");
+}
+
+// transmitWeight is black for every other kind, each weight clamps as
+// addLambert's reflectance does, the one-weight overload copies weight, and
+// the capacity throw is addDielectric's own.
+void checkLobeTransmitWeight() {
+  gman::BSDF lambert(n0());
+  lambert.addLambert(kR);
+  gman::BSDF ggx(n0());
+  ggx.addGGX(kR, 0.3f);
+  gman::BSDF mirror(n0());
+  mirror.addMirror(kR);
+  check(colorExactly(lambert.lobe(0).transmitWeight, kBlack) && colorExactly(ggx.lobe(0).transmitWeight, kBlack) &&
+            colorExactly(mirror.lobe(0).transmitWeight, kBlack),
+        "a lambert, a ggx and a mirror lobe each store transmitWeight black");
+
+  const auto nan = std::nanf("");
+  gman::BSDF pair(n0());
+  pair.addDielectric(kOutOfRangeWeight, GMANColor(0.3f, nan, 2.0f), 1e3f);
+  check(colorExactly(pair.lobe(0).weight, kOutOfRangeClamped) &&
+            colorExactly(pair.lobe(0).transmitWeight, GMANColor(0.3f, 0.0f, 1.0f)) && pair.lobe(0).eta == 100.0f,
+        "addDielectric clamps each weight as addLambert does and eta to 100: (1.4, 0.2, -0.3) stores (1, 0.2, 0) and "
+        "(0.3, NaN, 2) stores (0.3, 0, 1)");
+
+  gman::BSDF single(n0());
+  single.addDielectric(kOutOfRangeWeight, kEta);
+  check(colorExactly(single.lobe(0).weight, single.lobe(0).transmitWeight),
+        "addDielectric(weight, eta) stores transmitWeight equal to weight");
+
+  gman::BSDF full(n0());
+  for (std::size_t i = 0; i < gman::BSDF::kMaxLobes; ++i) {
+    full.addDielectric(kReflectWeight, kTransmitWeight, kEta);
+  }
+  bool threw = false;
+  try {
+    full.addDielectric(kReflectWeight, kTransmitWeight, kEta);
+  } catch (GMANError const& e) {
+    threw = e.getCode() == RIE_LIMIT;
+  }
+  check(threw && full.lobeCount() == gman::BSDF::kMaxLobes,
+        "one more addDielectric(reflectWeight, transmitWeight, eta) throws GMANError RIE_LIMIT, and lobeCount stays "
+        "kMaxLobes");
+}
+
+void checkDielectricWeights() {
+  checkOneWeightForwards();
+  checkBlackBranch(buildDielectricPair(kBlack, kWhite, kEta), true, "reflect weight black, transmit weight white");
+  checkBlackBranch(buildDielectricPair(kWhite, kBlack, kEta), false, "reflect weight white, transmit weight black");
+  checkUnequalWeightsUnbiased();
+  checkBothBranchesBlack();
+  checkLobeTransmitWeight();
+}
+
 // ---- No allocation. ----
 
 void checkAllocationDelta(bool holds, char const* message) {
@@ -1152,8 +1437,10 @@ int main() {
   checkMixture();
   checkClampsEtaCapacityFailedDraws();
   checkShadowTransmittance();
+  checkDielectricWeights();
   checkNoAllocation();
 
   return checkSummary("gman::BSDF's mirror and dielectric delta lobes match exact Fresnel and Snell reflection and "
-                      "refraction, conserve energy, are reciprocal, and combine correctly in a mixture");
+                      "refraction, conserve energy, are reciprocal, combine correctly in a mixture, and weight a "
+                      "dielectric's reflection and transmission apart");
 }

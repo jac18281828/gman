@@ -63,11 +63,15 @@ namespace gman {
 
 enum class LobeKind { lambert, ggx, mirror, dielectric };
 
+// A dielectric lobe's weight scales its reflection branch and
+// transmitWeight its transmission branch; every other kind holds black in
+// transmitWeight.
 struct GMAN_EXPORT Lobe {
   LobeKind kind;
   GMANColor weight;
   RtFloat alpha; // GGX's width; 0 for every other kind
   RtFloat eta;   // the dielectric's relative index; 0 for every other kind
+  GMANColor transmitWeight;
 };
 
 // One draw from BSDF::sample. A failed draw reports pdf 0 and black f; its
@@ -115,15 +119,20 @@ public:
 
   // A smooth dielectric interface: the closure's normal faces the side of
   // index 1, eta the relative index of the side behind it. Reflects with
-  // Fresnel probability F and transmits with 1 - F, both delta branches. A
-  // transmitted draw's coefficient carries the radiance scale
-  // (eta_o / eta_i)^2, eta_o the index on wo's side and eta_i the index on
-  // wi's side, so f * |cos(theta_i)| can exceed weight: leaving a glass
-  // interface of index 1.5 at weight 1, it reaches 2.16. weight clamps as
-  // addLambert's reflectance does; eta clamps to [0.01, 100], a NaN, zero
-  // or negative eta stored as 1, an index-matched interface that transmits
-  // straight through. Past kMaxLobes, throws GMANError(RIE_LIMIT) and
-  // leaves the closure unchanged.
+  // Fresnel probability F and transmits with 1 - F, both delta branches.
+  // reflectWeight scales the reflection branch, a draw's coefficient
+  // reflectWeight * F, and transmitWeight the transmission branch, a draw's
+  // coefficient transmitWeight * (1 - F) * (eta_o / eta_i)^2, eta_o the
+  // index on wo's side and eta_i the index on wi's side, so f * |cos(theta_i)|
+  // can exceed transmitWeight: leaving a glass interface of index 1.5 at
+  // weight 1, it reaches 2.16. Each weight clamps as addLambert's
+  // reflectance does; eta clamps to [0.01, 100], a NaN, zero or negative eta
+  // stored as 1, an index-matched interface that transmits straight through.
+  // Past kMaxLobes, throws GMANError(RIE_LIMIT) and leaves the closure
+  // unchanged.
+  void addDielectric(GMANColor const& reflectWeight, GMANColor const& transmitWeight, RtFloat eta);
+
+  // addDielectric(weight, weight, eta): one weight for both branches.
   void addDielectric(GMANColor const& weight, RtFloat eta);
 
   std::size_t lobeCount() const;
@@ -144,28 +153,33 @@ public:
   RtFloat pdf(GMANVector const& wo, GMANVector const& wi) const;
 
   // Picks lobe i with probability p_i, proportional to the mean of its
-  // weight's channels, by u1; remaps u1 into [0, 1) within lobe i's share
-  // and draws wi from lobe i with (u1, u2). A non-delta lobe reports
-  // f = eval(wo, wi) and pdf = pdf(wo, wi) at that wi. A delta lobe
+  // weight's channels, by u1; a dielectric lobe's share is the mean of its
+  // reflection weight's and its transmission weight's channel means, so it is
+  // pickable while either weight is nonzero. Remaps u1 into [0, 1) within
+  // lobe i's share and draws wi from lobe i with (u1, u2). A non-delta lobe
+  // reports f = eval(wo, wi) and pdf = pdf(wo, wi) at that wi. A delta lobe
   // (mirror or dielectric) reports pdf equal to p_i times its branch's own
   // probability, and its coefficient over |cos(theta_i)| as f, with
   // isDelta true; see this header's own comment for what that asks of an
   // integrator. A draw fails for an empty or all-black closure, a wo in
   // the tangent plane, a reflection landing off wo's side, a transmission
-  // landing off the far side, or a wi whose cos(theta_i) is 0.
+  // landing off the far side, a dielectric draw into a branch whose weight
+  // is black, or a wi whose cos(theta_i) is 0.
   BSDFSample sample(GMANVector const& wo, RtFloat u1, RtFloat u2) const;
 
   // The closure's straight-through thin transmittance along a unit
-  // direction w: the sum over its dielectric lobes of weight * (1 - F), F
-  // evaluated as though w always enters from index 1 into that lobe's
-  // eta, at |w . shadingNormal|, regardless of which side w arrives from.
+  // direction w: the sum over its dielectric lobes of transmitWeight *
+  // (1 - F), F evaluated as though w always enters from index 1 into that
+  // lobe's eta, at |w . shadingNormal|, regardless of which side w arrives
+  // from; a dielectric's reflectWeight carries no light through it.
   // A caller attenuates a shadow ray crossing a surface of coverage Os by
   // (1 - Os) + Os * T, T this query. Unclamped; |w . shadingNormal| == 0
   // answers black.
   GMANColor shadowTransmittance(GMANVector const& w) const;
 
 private:
-  // The mean of lobe index's weight channels: sample()'s unnormalized
+  // The mean of lobe index's weight channels, a dielectric's averaged with
+  // the mean of its transmission weight's: sample()'s unnormalized
   // probability of picking it.
   RtFloat selectionWeight(std::size_t index) const;
   RtFloat totalSelectionWeight() const;
