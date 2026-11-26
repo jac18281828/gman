@@ -743,7 +743,7 @@ void checkIndirectPassReachesChildTracer() {
 }
 
 // Check 9: a layer of Os 0.5 and colour C before an opaque wall of colour W
-// returns C + 0.5 W: the layer no longer hides what lies behind it.
+// returns C + 0.5 W: the layer passes half of what lies behind it.
 void checkPartlyOpaqueLayerShowsWallBehind() {
   const auto layerColor = GMANColor(0.3f, 0.2f, 0.1f);
   const auto wallColor = GMANColor(0.2f, 0.4f, 0.6f);

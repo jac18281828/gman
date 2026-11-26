@@ -2000,12 +2000,12 @@ if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
     TIMEOUT 300)
 endif()
 
-# A partly opaque surface that a glass or mirror ray reaches no longer hides what
-# lies behind it: on a panel of Opacity 0.5 seen through a glass slab and in a
-# mirror, the ray tracer's block means agree with the path tracer's within 1.5%
-# and read half of the bare twins'; an ambient-lit scene, under the ray tracer
-# alone, reads its mirrored block at Kr times its direct block. Needs both
-# renderers. See tests/raycomposite_test.cpp.
+# The ray tracer composites what lies behind a partly opaque surface that a
+# glass or mirror ray reaches: on a panel of Opacity 0.5 seen through a glass
+# slab and in a mirror, the ray tracer's block means agree with the path
+# tracer's within 1.5% and read half of the bare twins'; an ambient-lit scene,
+# under the ray tracer alone, reads its mirrored block at Kr times its direct
+# block. Needs both renderers. See tests/raycomposite_test.cpp.
 if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
   add_executable(gman_raycomposite raycomposite_test.cpp)
   target_link_libraries(gman_raycomposite PRIVATE gman TIFF::TIFF)
@@ -3171,10 +3171,10 @@ set_tests_properties(raytrace PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# R-transparency proof, check 5: the composite's own layer cap and the depth and
-# alpha a composited sample keeps, linked
-# against gman_raytracer_objects, which still compiles GMANRaytraceRenderer
-# itself; carries raydepth's own ENVIRONMENT for the same reason too.
+# R-transparency proof, check 5: the composite's own layer cap and the depth
+# and alpha a composited sample keeps, linked against gman_raytracer_objects,
+# which still compiles GMANRaytraceRenderer itself; carries raydepth's own
+# ENVIRONMENT for the same reason too.
 add_executable(gman_compositelayercap compositelayercap_test.cpp)
 target_link_libraries(gman_compositelayercap PRIVATE gman gman_internal_headers gman_raytracer_objects)
 

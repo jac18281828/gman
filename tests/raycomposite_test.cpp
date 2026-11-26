@@ -19,20 +19,20 @@
  */
 
 /*
- * A partly opaque surface that a glass or mirror ray reaches no longer hides
- * what lies behind it under the ray tracer. Each tests/rib/raycomposite_*.rib
- * fixture puts a black Opacity 0.5 panel before a lit wall: raycomposite_glass
- * shows it directly on the right of the frame and through a clear glass slab
- * on the left, raycomposite_mirror in a 45 degree mirror. The ray tracer's
- * block through the slab or the mirror agrees with the path tracer's within
- * 1.5%, which covers the path tracer's noise and the wall-slab-wall bounce the
- * ray tracer lacks, and reads half of the same block in the panel's bare twin
- * to within 0.01, with no path tracer to add noise. The bare twins also prove
- * the directly seen panel composites at half of its twin's wall and the slab
- * passes the two faces' transmittance. raycomposite_ambient runs under the ray
- * tracer alone, since the path tracer reads no ambientlight: a translucent red
- * sphere before a green wall, seen directly and in a mirror of Kr 0.8, whose
- * mirrored block reads 0.8 times its direct block in every channel.
+ * The ray tracer composites what lies behind a partly opaque surface that a
+ * glass or mirror ray reaches. Each tests/rib/raycomposite_*.rib fixture puts a
+ * black Opacity 0.5 panel before a lit wall: raycomposite_glass shows it
+ * directly on the right of the frame and through a clear glass slab on the
+ * left, raycomposite_mirror in a 45 degree mirror. The ray tracer's block
+ * through the slab or the mirror agrees with the path tracer's within 1.5%,
+ * which covers the path tracer's noise and the wall-slab-wall bounce the ray
+ * tracer lacks, and reads half of the same block in the panel's bare twin to
+ * within 0.01, with no path tracer to add noise. The bare twins also prove the
+ * directly seen panel composites at half of its twin's wall and the slab passes
+ * the two faces' transmittance. raycomposite_ambient runs under the ray tracer
+ * alone, since the path tracer reads no ambientlight: a translucent red sphere
+ * before a green wall, seen directly and in a mirror of Kr 0.8, whose mirrored
+ * block reads 0.8 times its direct block in every channel.
  */
 
 #include <array>
