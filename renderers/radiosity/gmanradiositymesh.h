@@ -162,6 +162,8 @@ public:
   // it: each face of a GMANRayPolygonMesh counts as one primitive here.
   std::size_t getCappedCount() const { return cappedCount; }
 
+  // A hit beyond a primitive's own extent, at any finite distance, resolves
+  // to the nearest cell along each axis.
   bool locate(GMANHit const& hit, GMANRadiosityLocation& location) const;
 
   // The ray primitive element was diced from: for a GMANRayPolygonMesh,

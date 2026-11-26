@@ -28,6 +28,7 @@
 
 #include <cstddef>
 #include <limits>
+#include <string>
 #include <vector>
 
 #include "check.h"
@@ -35,6 +36,7 @@
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanradiositymesh.h"
+#include "gmanray.h"
 #include "gmanraypolygon.h"
 #include "ri.h"
 
@@ -71,11 +73,31 @@ void testOrdinaryDivisionIsUnchanged() {
   check(mesh.getElementCount() == 16, "an 8 by 8 polygon over an edge length of 2 divides into 16 elements");
 }
 
+void testLocateFarBeyondThePolygon() {
+  GMANLinearWorldManager world;
+  auto* polygon = new GMANRayPolygon(square(4.0f), GMANParameterList());
+  world.add(polygon);
+  GMANRadiosityMesh mesh;
+  mesh.build(world, 2.0f);
+
+  for (RtFloat const far : {1e30f, -1e30f, std::numeric_limits<RtFloat>::max()}) {
+    GMANHit hit;
+    hit.primitive = polygon;
+    hit.point = GMANPoint(far, 0.0f, 6.0f);
+    GMANRadiosityLocation location;
+    bool const located = mesh.locate(hit, location);
+    check(located, "a hit at x of " + std::to_string(far) + " resolves to an element");
+    check(!located || location.element < mesh.getElementCount(),
+          "a hit at x of " + std::to_string(far) + " resolves to an element inside the mesh");
+  }
+}
+
 } // namespace
 
 int main() {
   testQuotientBeyondFloatRange();
   testHugeExtentOverTinyEdge();
   testOrdinaryDivisionIsUnchanged();
+  testLocateFarBeyondThePolygon();
   return checkSummary("radiositynonfinite: all checks passed");
 }

@@ -381,6 +381,16 @@ std::size_t resolutionFromExtent(RtFloat extent, RtFloat maxEdgeLength) {
   return (std::size_t)raw;
 }
 
+std::size_t cellOf(double position, std::size_t cells) {
+  if (!(position > 0.0)) {
+    return 0;
+  }
+  if (position >= (double)cells) {
+    return cells - 1;
+  }
+  return (std::size_t)position;
+}
+
 // Even-odd containment of (s, t) in loopST's own ring, in the polygon's
 // in-plane basis -- gmanraypolygon.cpp's insidePolygon, projected through
 // that basis instead of a dominant coordinate plane.
@@ -884,10 +894,8 @@ bool GMANRadiosityMesh::locate(GMANHit const& hit, GMANRadiosityLocation& locati
   double const fu = (s - originU) / stepU;
   double const fv = (t - originV) / stepV;
 
-  std::size_t i = fu < 0.0 ? 0 : (std::size_t)fu;
-  std::size_t j = fv < 0.0 ? 0 : (std::size_t)fv;
-  i = GMANMin(i, mesh.nu - 1);
-  j = GMANMin(j, mesh.nv - 1);
+  std::size_t const i = cellOf(fu, mesh.nu);
+  std::size_t const j = cellOf(fv, mesh.nv);
 
   std::size_t const elementIndex = mesh.cellToElement[j * mesh.nu + i];
   if (elementIndex == kNoElement) {
