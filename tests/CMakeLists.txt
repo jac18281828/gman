@@ -2749,6 +2749,18 @@ set_tests_properties(rayobjectmanager PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRayObjectManager::getRSPatch and getRSPatchMesh tessellate each request
+# into a watertight triangle mesh over the z-buffer's own dice grid. See
+# tests/raypatch_test.cpp.
+add_executable(gman_raypatch raypatch_test.cpp)
+target_link_libraries(gman_raypatch PRIVATE gman_core gman_ray)
+
+add_test(NAME raypatch COMMAND gman_raypatch)
+set_tests_properties(raypatch PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANRaytraceRenderer::getDepth, linked against gman_raytracer_objects,
 # which still compiles GMANRaytraceRenderer itself. A default
 # GMANAttributes loads libmatte.so by bare name, so this carries the
