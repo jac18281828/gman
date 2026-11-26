@@ -135,7 +135,7 @@ inline bool boundingSphereShift(double ox, double oy, double oz, double dx, doub
 
 // A ray moved to its closest approach to the bounding sphere: (ox, oy, oz)
 // is the object-space origin already shifted, (dx, dy, dz) keeps the
-// length cameraToObject gives it, dirSq is their squared length, and
+// length backward() gives it, dirSq is their squared length, and
 // shift is how far along the direction the origin moved. Every quadratic
 // intersector builds its a, b, c from these six fields.
 struct ShiftedRay {

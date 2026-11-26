@@ -269,7 +269,7 @@ void testFlatShearTransform() {
   check(hitFound && near(hit.t, 5.0), "shear: t == 5");
   check(near(hit.point.getX(), 1.5) && near(hit.point.getY(), 0.0) && near(hit.point.getZ(), 0.0),
         "shear: point == (1.5, 0, 0)");
-  // objNormal is purely along z here; the shear's cameraToObject leaves
+  // objNormal is purely along z here; the shear's backward() leaves
   // that axis unchanged, so the correct normal stays (0, 0, -1).
   // transformDirection(objectToCamera, n) -- the naive substitute --
   // would instead give (-2, 0, -1)/sqrt(5) (~= -0.894, 0, -0.447).
