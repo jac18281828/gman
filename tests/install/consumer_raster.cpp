@@ -23,9 +23,9 @@
  * other gman target on the link line: <gman/gmanpatchpolyobjectmanager.h>
  * resolves through gman::gman_raster's include path, and
  * GMANPatchPolyObjectManager::create, defined in libgman_raster, returns a
- * GMANObject through gman_core's GMANPrimitive interface. The include
+ * GMANObject through libgman's GMANPrimitive interface. The include
  * directory, the core link and the C++ standard all reach this program
- * through gman::gman_raster's public dependency on gman::gman_core.
+ * through gman::gman_raster's public dependency on gman::gman.
  */
 
 #include <gman/gmanpatchpolyobjectmanager.h>

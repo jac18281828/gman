@@ -115,7 +115,7 @@ set(GMAN_SOURCE_DIRS
 # driver. It declares GMAN_WITH_<NAME>, defaulting to whether <name>'s
 # library was found; a FATAL_ERROR names that library when the option is
 # forced ON without it; once enabled, it adds the driver's source and links
-# its library PRIVATE on gman_core. OPT_IN instead defaults the option OFF
+# its library PRIVATE on the gman library. OPT_IN instead defaults the option OFF
 # and looks for the library, with the FIND_PACKAGE arguments, only when the
 # option is ON, so a default configure never reads that library's CMake
 # files; LIBRARY names the library in the FATAL_ERROR and TARGET is the
@@ -124,7 +124,7 @@ set(GMAN_SOURCE_DIRS
 # gmanfiledrivers.cpp.in's configure_file below substitutes -- empty and
 # "nullptr" when disabled, so the generated table never has to preprocess a
 # choice CMake already made. MATCHER is the type test the table reads to
-# name a driver from its object. Requires gman_core to already exist.
+# name a driver from its object. Requires the gman target to already exist.
 # ---------------------------------------------------------------------------
 
 function(gman_add_file_driver name)
@@ -173,15 +173,15 @@ function(gman_add_file_driver name)
   set(GMAN_${upper}_FACTORY_REF "&gmanMake${upper}Output" PARENT_SCOPE)
   set(GMAN_${upper}_MATCHER "&isOutputOf<gman::Output${upper}>" PARENT_SCOPE)
 
-  target_sources(gman_core PRIVATE "libgman/gmanoutput${name}.cpp")
-  target_link_libraries(gman_core PRIVATE ${linkTarget})
+  target_sources(gman PRIVATE "libgman/gmanoutput${name}.cpp")
+  target_link_libraries(gman PRIVATE ${linkTarget})
 endfunction()
 
 # ---------------------------------------------------------------------------
-# gman_core — the renderer front end and its support library
+# libgman — the renderer front end and its support library
 # ---------------------------------------------------------------------------
 
-add_library(gman_core SHARED
+add_library(gman SHARED
   libgman/gmanarealightwarning.cpp
   libgman/gmanattributes.cpp
   libgman/gmanbasis.cpp
@@ -254,11 +254,11 @@ add_library(gman_core SHARED
   libgman/gmanwindowoutput.cpp
   libgman/gmanworldmanager.cpp)
 
-# gman_core's export header; GMAN_EXPORT replaces the MSVC-era
+# libgman's export header; GMAN_EXPORT replaces the MSVC-era
 # GMANDLL/NOTGMANDLL macro maze.
 # Under include/ rather than directly in the binary dir: a bare "gman"
 # directory there would collide with the gman executable.
-generate_export_header(gman_core
+generate_export_header(gman
   BASE_NAME GMAN
   EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/include/gman/export.h")
 
@@ -266,7 +266,7 @@ generate_export_header(gman_core
 # install-interface consumer needs only the include root, not the two
 # source/binary directories the build tree carries; a bare "ri.h" on every
 # consumer's path would collide with other RenderMan SDKs' own.
-target_include_directories(gman_core PUBLIC
+target_include_directories(gman PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
@@ -274,20 +274,20 @@ target_include_directories(gman_core PUBLIC
 # CMAKE_CXX_STANDARD is a directory variable and never reaches an exported
 # target; installed headers such as gmanlog.h use <format>, so a consumer on
 # a compiler defaulting to an older standard must inherit this floor.
-target_compile_features(gman_core PUBLIC cxx_std_20)
+target_compile_features(gman PUBLIC cxx_std_20)
 
 # The generated driver table (build tree, not libgman/) quote-includes
 # gmanfiledrivers.h and the driver headers as if it lived beside them.
-target_include_directories(gman_core PRIVATE
+target_include_directories(gman PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
 
 # HAVE_LIBDL is not an optional driver: it guards the whole body of
 # GMANLoadable's constructor and loadSymbol. Undefined, the plugin loader
 # compiles and silently loads nothing.
-target_compile_definitions(gman_core PUBLIC HAVE_LIBDL)
+target_compile_definitions(gman PUBLIC HAVE_LIBDL)
 
-target_link_libraries(gman_core PUBLIC ZLIB::ZLIB Threads::Threads ${CMAKE_DL_LIBS})
-target_link_libraries(gman_core PRIVATE TIFF::TIFF)
+target_link_libraries(gman PUBLIC ZLIB::ZLIB Threads::Threads ${CMAKE_DL_LIBS})
+target_link_libraries(gman PRIVATE TIFF::TIFF)
 
 gman_add_file_driver(png)
 gman_add_file_driver(jpeg)
@@ -299,7 +299,7 @@ configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/libgman/gmanfiledrivers.cpp.in"
   "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp"
   @ONLY)
-target_sources(gman_core PRIVATE
+target_sources(gman PRIVATE
   "${CMAKE_CURRENT_BINARY_DIR}/generated/gmanfiledrivers.cpp")
 
 # ---------------------------------------------------------------------------
@@ -326,7 +326,7 @@ add_library(gman_ray SHARED
   libgmanray/gmanraytorus.cpp)
 
 # GMANRAY_EXPORT tags what the ray headers declare; the plugin entry points
-# keep GMAN_EXPORT. Beside gman/export.h, so gman_core's public include
+# keep GMAN_EXPORT. Beside gman/export.h, so libgman's public include
 # directories reach it.
 generate_export_header(gman_ray
   BASE_NAME GMANRAY
@@ -335,9 +335,9 @@ generate_export_header(gman_ray
 # Ray's public headers sit in libgmanray/include; gmanrayquadratic.h and
 # gmanrayquartic.h are private headers beside the sources. The installed
 # headers land flat beside core's, so the install interface needs no entry of
-# its own: gman_core's install include root, which this link carries, serves
+# its own: libgman's install include root, which this link carries, serves
 # them.
-target_link_libraries(gman_ray PUBLIC gman_core)
+target_link_libraries(gman_ray PUBLIC gman)
 target_include_directories(gman_ray PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libgmanray/include>")
 
@@ -357,7 +357,7 @@ add_library(gman_raster SHARED
   libgmanraster/gmanpolygonclipper.cpp)
 
 # GMANRASTER_EXPORT tags what the raster headers declare; the plugin entry
-# points keep GMAN_EXPORT. Beside gman/export.h, so gman_core's public include
+# points keep GMAN_EXPORT. Beside gman/export.h, so libgman's public include
 # directories reach it.
 generate_export_header(gman_raster
   BASE_NAME GMANRASTER
@@ -365,9 +365,9 @@ generate_export_header(gman_raster
 
 # Raster's public headers sit in libgmanraster/include, and every raster source
 # includes public headers alone. The installed headers land flat beside core's,
-# so the install interface needs no entry of its own: gman_core's install
+# so the install interface needs no entry of its own: libgman's install
 # include root, which this link carries, serves them.
-target_link_libraries(gman_raster PUBLIC gman_core)
+target_link_libraries(gman_raster PUBLIC gman)
 target_include_directories(gman_raster PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/libgmanraster/include>")
 
@@ -377,7 +377,7 @@ target_include_directories(gman_raster PUBLIC
 
 function(gman_add_plugin target)
   add_library(${target} MODULE ${ARGN})
-  target_link_libraries(${target} PRIVATE gman_core)
+  target_link_libraries(${target} PRIVATE gman)
   set_target_properties(${target} PROPERTIES
     PREFIX "lib"
     SUFFIX ".so")
@@ -400,7 +400,7 @@ set_target_properties(gman_zbuffer PROPERTIES OUTPUT_NAME "gmanzbuffer")
 if(GMAN_BUILD_RAYTRACER OR BUILD_TESTING)
   add_library(gman_raytracer_objects OBJECT
     renderers/raytracer/gmanraytracerenderer.cpp)
-  target_link_libraries(gman_raytracer_objects PUBLIC gman_core gman_ray)
+  target_link_libraries(gman_raytracer_objects PUBLIC gman gman_ray)
   target_include_directories(gman_raytracer_objects PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/renderers/raytracer")
   # OBJECT libraries do not get PIC automatically the way SHARED and MODULE
@@ -424,7 +424,7 @@ if(GMAN_BUILD_PATHTRACER OR BUILD_TESTING)
   add_library(gman_pathtracer_objects OBJECT
     renderers/pathtracer/gmandenoise.cpp
     renderers/pathtracer/gmanpathtracerenderer.cpp)
-  target_link_libraries(gman_pathtracer_objects PUBLIC gman_core gman_ray)
+  target_link_libraries(gman_pathtracer_objects PUBLIC gman gman_ray)
   target_include_directories(gman_pathtracer_objects PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/renderers/pathtracer")
   set_target_properties(gman_pathtracer_objects PROPERTIES
@@ -447,7 +447,7 @@ if(GMAN_BUILD_RADIOSITY OR BUILD_TESTING)
     renderers/radiosity/gmanradiositymesh.cpp
     renderers/radiosity/gmanradiositypass.cpp
     renderers/radiosity/gmanradiositysolver.cpp)
-  target_link_libraries(gman_radiosity_objects PUBLIC gman_core gman_ray)
+  target_link_libraries(gman_radiosity_objects PUBLIC gman gman_ray)
   target_include_directories(gman_radiosity_objects PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/renderers/radiosity")
   set_target_properties(gman_radiosity_objects PROPERTIES
@@ -503,21 +503,21 @@ set_target_properties(gman_rib PROPERTIES OUTPUT_NAME "gmanrib")
 
 add_library(gman_commandline_module STATIC gman/gmancommandline.cpp)
 target_include_directories(gman_commandline_module PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/gman")
-target_link_libraries(gman_commandline_module PUBLIC gman_core PRIVATE CLI11::CLI11)
+target_link_libraries(gman_commandline_module PUBLIC gman PRIVATE CLI11::CLI11)
 
 add_executable(gman_cli gman/gman.cpp)
 set_target_properties(gman_cli PROPERTIES OUTPUT_NAME gman)
-target_link_libraries(gman_cli PRIVATE gman_core gman_commandline_module)
+target_link_libraries(gman_cli PRIVATE gman gman_commandline_module)
 
 # gman --version reports gman::fileDrivers(), the driver table's own private
-# contract, and PROJECT_VERSION -- neither is part of gman_core's public API.
+# contract, and PROJECT_VERSION -- neither is part of libgman's public API.
 target_include_directories(gman_cli PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/libgman")
 target_compile_definitions(gman_cli PRIVATE
   GMAN_PROJECT_VERSION="${PROJECT_VERSION}")
 
 # RiBegin dlopen's "lib<renderer>.so" by bare name, so the build tree itself
 # has to be on the runtime search path or no renderer ever loads.
-set_target_properties(gman_cli gman_core PROPERTIES
+set_target_properties(gman_cli gman PROPERTIES
   BUILD_RPATH "${CMAKE_BINARY_DIR}")
 
 add_dependencies(gman_cli gman_zbuffer gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal
@@ -527,10 +527,10 @@ add_dependencies(gman_cli gman_zbuffer gman_matte gman_plastic gman_metal gman_p
 # Install
 # ---------------------------------------------------------------------------
 
-# gman_core, gman_ray and gman_raster join the export set: they are what a
+# gman, gman_ray and gman_raster join the export set: they are what a
 # programmer links. gman_rib is a plugin, dlopen'd like gman_zbuffer, and
 # installs beside the other plugins below.
-install(TARGETS gman_core gman_ray gman_raster
+install(TARGETS gman gman_ray gman_raster
   EXPORT gmanTargets
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}")

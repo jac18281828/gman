@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
 # The gman CMake package. A consumer writes find_package(gman CONFIG
-# REQUIRED) and links gman::gman_core, gman::gman_ray when it uses the ray
+# REQUIRED) and links gman::gman, gman::gman_ray when it uses the ray
 # geometry, the BVH, the emitters or the indirect-light pass, and
 # gman::gman_raster when it uses the body, face and vertex model, the patch
 # and polygon object manager or the polygon clipper.
@@ -10,7 +10,7 @@
 
 include(CMakeFindDependencyMacro)
 
-# gman_core's PUBLIC link dependencies; PRIVATE ones (libtiff, libpng,
+# libgman's PUBLIC link dependencies; PRIVATE ones (libtiff, libpng,
 # libjpeg, OpenEXR) stay internal to the shared library and need no
 # find_dependency.
 find_dependency(ZLIB)

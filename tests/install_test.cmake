@@ -103,6 +103,16 @@ if(GMAN_HEADER_DIFFERENCES)
     "step 1 (install): include/gman differs from ${GMAN_INSTALLED_HEADERS_MANIFEST}:${GMAN_HEADER_DIFFERENCES}")
 endif()
 
+# The core library installs as the one file libgman.*: the "." that follows
+# libgman leaves libgman_ray, libgman_raster and the plugins out.
+file(GLOB GMAN_INSTALLED_CORE_LIBRARIES LIST_DIRECTORIES false
+  "${GMAN_PREFIX}/${GMAN_LIBDIR}/libgman.*")
+list(LENGTH GMAN_INSTALLED_CORE_LIBRARIES GMAN_INSTALLED_CORE_LIBRARY_COUNT)
+if(NOT GMAN_INSTALLED_CORE_LIBRARY_COUNT EQUAL 1)
+  message(FATAL_ERROR
+    "step 1 (install): ${GMAN_PREFIX}/${GMAN_LIBDIR} holds ${GMAN_INSTALLED_CORE_LIBRARY_COUNT} files matching libgman.*, expected the core library alone: ${GMAN_INSTALLED_CORE_LIBRARIES}")
+endif()
+
 # --- Step 2: render from the installed bin/gman: shaders, then renderers ---
 #
 # No LD_LIBRARY_PATH/DYLD_LIBRARY_PATH is set here or on the "install" test

@@ -22,9 +22,9 @@
  * Proves an installed gman_ray links from its own CMake package with no
  * other gman target on the link line: <gman/gmanrayoccluder.h> resolves
  * through gman::gman_ray's include path, and gman::oneMinus, defined in
- * libgman_ray, returns a GMANColor of gman_core's. The include directory,
+ * libgman_ray, returns a GMANColor of libgman's. The include directory,
  * the core link and the C++ standard all reach this program through
- * gman::gman_ray's public dependency on gman::gman_core.
+ * gman::gman_ray's public dependency on gman::gman.
  */
 
 #include <gman/gmancolor.h>

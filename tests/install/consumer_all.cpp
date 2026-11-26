@@ -20,7 +20,7 @@
 
 /*
  * Proves the three installed libraries work together from one program that
- * links gman::gman_core, gman::gman_ray and gman::gman_raster. It renders a
+ * links gman::gman, gman::gman_ray and gman::gman_raster. It renders a
  * lit sphere to consumer_all.tif in its working directory through the C
  * interface, calls gman::oneMinus from libgman_ray and creates an object
  * through GMANPatchPolyObjectManager from libgman_raster. It returns 1 when

@@ -201,7 +201,7 @@ void checkShortfallPartwayLeaksNothing() {
 // entry built before it released.
 void checkFailedAllocationReportsNoMemory() {
 #if GMAN_ADDRESS_SANITIZED
-  // AddressSanitizer instruments gman_core's own allocations directly, so
+  // AddressSanitizer instruments libgman's own allocations directly, so
   // this test's operator new override never runs for them. The plain
   // (non-ASan) build runs this exact check; skip the unreachable one here
   // rather than report a false pass.

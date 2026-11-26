@@ -20,9 +20,9 @@
 
 /*
  * Proves an installed gman compiles and links from its own CMake package:
- * <gman/ri.h> resolves through the installed interface, gman::gman_core
+ * <gman/ri.h> resolves through the installed interface, gman::gman
  * supplies RiBegin/RiEnd, gmanlog.h's <format> use compiles without this
- * project setting its own C++ standard -- gman::gman_core's cxx_std_20
+ * project setting its own C++ standard -- gman::gman's cxx_std_20
  * usage requirement is what supplies it -- RiTransformEnd and
  * RiIlluminate are declared and callable, and <gman/gmantexture.h>
  * resolves and links gman::TextureCache from the installed tree.

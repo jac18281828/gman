@@ -28,7 +28,7 @@
  * leaves them empty when it is OFF, so the driver table below holds no
  * preprocessor conditional of its own: whether a driver's code exists at
  * all is a configure-time decision CMake already made when it chose which
- * .cpp files to compile into gman_core.
+ * .cpp files to compile into libgman.
  */
 
 #include <format>

@@ -19,7 +19,7 @@ list(TRANSFORM GMAN_SOURCE_DIRS PREPEND "${CMAKE_SOURCE_DIR}/"
 # The runtime baseline: exit status, message and image output for a minimal
 # scene. See tests/baseline_test.cpp for the full invariant.
 add_executable(gman_baseline baseline_test.cpp)
-target_link_libraries(gman_baseline PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_baseline PRIVATE gman TIFF::TIFF)
 
 # Run in a scratch directory so the image the RIB names would land there, and
 # so the assertion that none appears means something.
@@ -40,11 +40,11 @@ set_tests_properties(baseline PROPERTIES
 # The RI state machine, through the C API. Replaces the shipped
 # tests/basicstate.c, which could not work as written.
 add_executable(gman_basicstate basicstate.c)
-target_link_libraries(gman_basicstate PRIVATE gman_core)
+target_link_libraries(gman_basicstate PRIVATE gman)
 
 # A C program against a C++ library has to be linked by the C++ driver. With
 # the plain C driver clang omits the C++ runtimes, which is invisible in a
-# normal build (gman_core's DT_NEEDED covers libstdc++) but fatal under the
+# normal build (libgman's DT_NEEDED covers libstdc++) but fatal under the
 # debug preset: -fsanitize=undefined includes the vptr check, whose runtime
 # lives only in the C++ ubsan library, so the link fails on
 # __ubsan_vptr_type_cache and __ubsan_handle_dynamic_type_cache_miss.
@@ -60,7 +60,7 @@ set_tests_properties(basicstate PROPERTIES
 # RiBegin("x.rib") loads libgmanrib.so and writes RIB through GMANASCII;
 # RI_NULL still routes to the renderer. See tests/ribwriter.c.
 add_executable(gman_ribwriter ribwriter.c)
-target_link_libraries(gman_ribwriter PRIVATE gman_core)
+target_link_libraries(gman_ribwriter PRIVATE gman)
 set_target_properties(gman_ribwriter PROPERTIES LINKER_LANGUAGE CXX)
 # gman_ribwriter dlopens libgmanrib.so at runtime rather than linking it, so
 # nothing else forces the plugin to build before the test does.
@@ -83,7 +83,7 @@ set_tests_properties(ribwriter PROPERTIES
 # their ellipsis form (not *V), so each reads its own va_list through the
 # same RIB-writer seam as ribwriter above. See tests/capivalist.c.
 add_executable(gman_capivalist capivalist.c)
-target_link_libraries(gman_capivalist PRIVATE gman_core)
+target_link_libraries(gman_capivalist PRIVATE gman)
 set_target_properties(gman_capivalist PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(gman_capivalist gman_rib)
 
@@ -115,7 +115,7 @@ set_tests_properties(capivalist PROPERTIES
 # fixture; it exists only to give ribwriterfailure a paired
 # FIXTURES_CLEANUP test.
 add_executable(gman_ribwriterfailure ribwriterfailure.c)
-target_link_libraries(gman_ribwriterfailure PRIVATE gman_core)
+target_link_libraries(gman_ribwriterfailure PRIVATE gman)
 set_target_properties(gman_ribwriterfailure PROPERTIES LINKER_LANGUAGE CXX)
 add_dependencies(gman_ribwriterfailure gman_rib)
 
@@ -140,7 +140,7 @@ set_tests_properties(ribwriterfailure_cleanup PROPERTIES
 # exit: the three points where a dlopen'd, never-unloaded plugin module is
 # reached again. See tests/shaderoutlivesrenderer_test.c.
 add_executable(gman_shaderoutlivesrenderer shaderoutlivesrenderer_test.c)
-target_link_libraries(gman_shaderoutlivesrenderer PRIVATE gman_core)
+target_link_libraries(gman_shaderoutlivesrenderer PRIVATE gman)
 # RiBegin(RI_NULL) dlopens the default renderer; RiSurface dlopens plastic.
 add_dependencies(gman_shaderoutlivesrenderer gman_zbuffer gman_plastic)
 
@@ -160,7 +160,7 @@ set_tests_properties(shaderoutlivesrenderer PROPERTIES
 # GMANParameterList's own contract, in-process: default/moved-from/copy
 # lifetime and throw-safety. See tests/paramlist_test.cpp.
 add_executable(gman_paramlist paramlist_test.cpp)
-target_link_libraries(gman_paramlist PRIVATE gman_core)
+target_link_libraries(gman_paramlist PRIVATE gman)
 
 add_test(NAME paramlist COMMAND gman_paramlist)
 set_tests_properties(paramlist PROPERTIES
@@ -171,7 +171,7 @@ set_tests_properties(paramlist PROPERTIES
 # a negative count and one RtInt cannot hold. See
 # tests/parametercountbounds_test.cpp.
 add_executable(gman_parametercountbounds parametercountbounds_test.cpp)
-target_link_libraries(gman_parametercountbounds PRIVATE gman_core)
+target_link_libraries(gman_parametercountbounds PRIVATE gman)
 
 add_test(NAME parametercountbounds COMMAND gman_parametercountbounds)
 set_tests_properties(parametercountbounds PROPERTIES
@@ -182,7 +182,7 @@ set_tests_properties(parametercountbounds PROPERTIES
 # a dictionary of its own, and each accessor answers only its own type and
 # length. See tests/shaderparameters_test.cpp.
 add_executable(gman_shaderparameters shaderparameters_test.cpp)
-target_link_libraries(gman_shaderparameters PRIVATE gman_core)
+target_link_libraries(gman_shaderparameters PRIVATE gman)
 
 add_test(NAME shaderparameters COMMAND gman_shaderparameters)
 set_tests_properties(shaderparameters PROPERTIES
@@ -192,7 +192,7 @@ set_tests_properties(shaderparameters PROPERTIES
 # GMANBBox's two-point constructor and its getMin()/getMax() accessors.
 # See tests/bbox_test.cpp.
 add_executable(gman_bbox bbox_test.cpp)
-target_link_libraries(gman_bbox PRIVATE gman_core)
+target_link_libraries(gman_bbox PRIVATE gman)
 
 add_test(NAME bbox COMMAND gman_bbox)
 set_tests_properties(bbox PROPERTIES
@@ -203,7 +203,7 @@ set_tests_properties(bbox PROPERTIES
 # gman::boundingBoxExtent, gman::floatArray and gman::polygonTexCoords, as
 # gmanpolygon.h declares them. See tests/polygonhelpers_test.cpp.
 add_executable(gman_polygonhelpers polygonhelpers_test.cpp)
-target_link_libraries(gman_polygonhelpers PRIVATE gman_core)
+target_link_libraries(gman_polygonhelpers PRIVATE gman)
 
 add_test(NAME polygonhelpers COMMAND gman_polygonhelpers)
 set_tests_properties(polygonhelpers PROPERTIES
@@ -214,7 +214,7 @@ set_tests_properties(polygonhelpers PROPERTIES
 # GMANDictionary::getTypeSize's default: arm reports an unknown token type
 # truthfully. See tests/dictionaryerror_test.cpp.
 add_executable(gman_dictionaryerror dictionaryerror_test.cpp)
-target_link_libraries(gman_dictionaryerror PRIVATE gman_core)
+target_link_libraries(gman_dictionaryerror PRIVATE gman)
 
 add_test(NAME dictionaryerror COMMAND gman_dictionaryerror)
 set_tests_properties(dictionaryerror PROPERTIES
@@ -224,7 +224,7 @@ set_tests_properties(dictionaryerror PROPERTIES
 # Pins RIE_NOTSTARTED's and RiDeclare's RIE_SYNTAX messages through
 # RiErrorHandler.
 add_executable(gman_diagnostics diagnostics_test.cpp)
-target_link_libraries(gman_diagnostics PRIVATE gman_core)
+target_link_libraries(gman_diagnostics PRIVATE gman)
 
 add_test(NAME diagnostics
   COMMAND gman_diagnostics
@@ -237,7 +237,7 @@ set_tests_properties(diagnostics PROPERTIES
 # "framebuffer" -- reports RIE_ILLSTATE instead of rendering into
 # gman::OutputX11's 0x0 stub. See tests/worldnodisplay_test.cpp.
 add_executable(gman_worldnodisplay worldnodisplay_test.cpp)
-target_link_libraries(gman_worldnodisplay PRIVATE gman_core)
+target_link_libraries(gman_worldnodisplay PRIVATE gman)
 add_dependencies(gman_worldnodisplay gman_zbuffer)
 
 add_test(NAME worldnodisplay_zbuffer
@@ -264,7 +264,7 @@ endif()
 # borrowed objectManager and worldManager point nowhere, from construction;
 # RiEnd leaves them so. See tests/rendermanpointers_test.cpp.
 add_executable(gman_rendermanpointers rendermanpointers_test.cpp)
-target_link_libraries(gman_rendermanpointers PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_rendermanpointers PRIVATE gman gman_internal_headers)
 add_dependencies(gman_rendermanpointers gman_zbuffer)
 
 add_test(NAME rendermanpointers
@@ -281,7 +281,7 @@ set_tests_properties(rendermanpointers PROPERTIES
 # executable. libgmanrib.so loads for the .rib case, so the test holds the
 # plugin lock. See tests/rendermanlifetime_test.cpp.
 add_executable(gman_rendermanlifetime rendermanlifetime_test.cpp)
-target_link_libraries(gman_rendermanlifetime PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_rendermanlifetime PRIVATE gman gman_internal_headers)
 add_dependencies(gman_rendermanlifetime gman_zbuffer gman_plastic gman_rib)
 
 add_test(NAME rendermanlifetime
@@ -296,7 +296,7 @@ set_tests_properties(rendermanlifetime PROPERTIES
 # RiWorldEnd rejects a display mode it does not know and closes the world on
 # the error. See tests/invaliddisplaymode_test.cpp.
 add_executable(gman_invaliddisplaymode invaliddisplaymode_test.cpp)
-target_link_libraries(gman_invaliddisplaymode PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_invaliddisplaymode PRIVATE gman gman_internal_headers)
 add_dependencies(gman_invaliddisplaymode gman_zbuffer)
 
 add_test(NAME invaliddisplaymode
@@ -311,7 +311,7 @@ set_tests_properties(invaliddisplaymode PROPERTIES
 # one raises RIE_NOTSTARTED once and later requests return quietly. See
 # tests/failedbegin_test.cpp.
 add_executable(gman_failedbegin failedbegin_test.cpp)
-target_link_libraries(gman_failedbegin PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_failedbegin PRIVATE gman gman_internal_headers)
 add_dependencies(gman_failedbegin gman_zbuffer)
 
 add_test(NAME failedbegin
@@ -327,7 +327,7 @@ set_tests_properties(failedbegin PROPERTIES
 # context is process-wide, so the test is its own executable. See
 # tests/failedbegincapi_test.cpp.
 add_executable(gman_failedbegincapi failedbegincapi_test.cpp)
-target_link_libraries(gman_failedbegincapi PRIVATE gman_core)
+target_link_libraries(gman_failedbegincapi PRIVATE gman)
 add_dependencies(gman_failedbegincapi gman_zbuffer gman_rib)
 
 add_test(NAME failedbegincapi
@@ -346,7 +346,7 @@ set(GMAN_PHASE2_ENV
   "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}")
 
 add_executable(gman_ribdialect ribdialect_test.cpp)
-target_link_libraries(gman_ribdialect PRIVATE gman_core)
+target_link_libraries(gman_ribdialect PRIVATE gman)
 
 set(GMAN_RIBDIALECT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribdialect-run")
 file(MAKE_DIRECTORY "${GMAN_RIBDIALECT_WORKDIR}")
@@ -361,7 +361,7 @@ set_tests_properties(ribdialect PROPERTIES
   TIMEOUT 240)
 
 add_executable(gman_readarchive readarchive_test.cpp)
-target_link_libraries(gman_readarchive PRIVATE gman_core)
+target_link_libraries(gman_readarchive PRIVATE gman)
 
 set(GMAN_READARCHIVE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/readarchive-run")
 file(MAKE_DIRECTORY "${GMAN_READARCHIVE_WORKDIR}")
@@ -376,7 +376,7 @@ set_tests_properties(readarchive PROPERTIES
   TIMEOUT 60)
 
 add_executable(gman_gzip gzip_test.cpp)
-target_link_libraries(gman_gzip PRIVATE gman_core)
+target_link_libraries(gman_gzip PRIVATE gman)
 
 set(GMAN_GZIP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/gzip-run")
 file(MAKE_DIRECTORY "${GMAN_GZIP_WORKDIR}")
@@ -392,7 +392,7 @@ set_tests_properties(gzip PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_logfilename logfilename_test.cpp)
-target_link_libraries(gman_logfilename PRIVATE gman_core)
+target_link_libraries(gman_logfilename PRIVATE gman)
 
 set(GMAN_LOGFILENAME_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/logfilename-run")
 file(MAKE_DIRECTORY "${GMAN_LOGFILENAME_WORKDIR}")
@@ -408,7 +408,7 @@ set_tests_properties(logfilename PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_rflag rflag_test.cpp)
-target_link_libraries(gman_rflag PRIVATE gman_core)
+target_link_libraries(gman_rflag PRIVATE gman)
 
 set(GMAN_RFLAG_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rflag-run")
 file(MAKE_DIRECTORY "${GMAN_RFLAG_WORKDIR}")
@@ -423,7 +423,7 @@ set_tests_properties(rflag PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_failedbegincli failedbegincli_test.cpp)
-target_link_libraries(gman_failedbegincli PRIVATE gman_core)
+target_link_libraries(gman_failedbegincli PRIVATE gman)
 
 set(GMAN_FAILEDBEGINCLI_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/failedbegincli-run")
 file(MAKE_DIRECTORY "${GMAN_FAILEDBEGINCLI_WORKDIR}")
@@ -438,7 +438,7 @@ set_tests_properties(failedbegincli PROPERTIES
   TIMEOUT 120)
 
 add_executable(gman_unknownflag unknownflag_test.cpp)
-target_link_libraries(gman_unknownflag PRIVATE gman_core)
+target_link_libraries(gman_unknownflag PRIVATE gman)
 
 set(GMAN_UNKNOWNFLAG_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/unknownflag-run")
 file(MAKE_DIRECTORY "${GMAN_UNKNOWNFLAG_WORKDIR}")
@@ -453,7 +453,7 @@ set_tests_properties(unknownflag PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_facevarying facevarying_test.cpp)
-target_link_libraries(gman_facevarying PRIVATE gman_core)
+target_link_libraries(gman_facevarying PRIVATE gman)
 
 add_test(NAME facevarying COMMAND gman_facevarying)
 set_tests_properties(facevarying PROPERTIES
@@ -461,7 +461,7 @@ set_tests_properties(facevarying PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_bitmap bitmap_test.cpp)
-target_link_libraries(gman_bitmap PRIVATE gman_core)
+target_link_libraries(gman_bitmap PRIVATE gman)
 
 add_test(NAME bitmap COMMAND gman_bitmap)
 set_tests_properties(bitmap PROPERTIES
@@ -469,7 +469,7 @@ set_tests_properties(bitmap PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_inlineparsewordbound inlineparsewordbound_test.cpp)
-target_link_libraries(gman_inlineparsewordbound PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_inlineparsewordbound PRIVATE gman gman_internal_headers)
 
 add_test(NAME inlineparsewordbound COMMAND gman_inlineparsewordbound)
 set_tests_properties(inlineparsewordbound PROPERTIES
@@ -478,28 +478,28 @@ set_tests_properties(inlineparsewordbound PROPERTIES
 
 # The object -> world -> camera -> screen -> NDC -> raster chain.
 add_executable(gman_matrix4 gmanmatrix4_test.cpp)
-target_link_libraries(gman_matrix4 PRIVATE gman_core)
+target_link_libraries(gman_matrix4 PRIVATE gman)
 add_test(NAME matrix4 COMMAND gman_matrix4)
 set_tests_properties(matrix4 PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
 add_executable(gman_matrixscalarmultiply matrixscalarmultiply_test.cpp)
-target_link_libraries(gman_matrixscalarmultiply PRIVATE gman_core)
+target_link_libraries(gman_matrixscalarmultiply PRIVATE gman)
 add_test(NAME matrixscalarmultiply COMMAND gman_matrixscalarmultiply)
 set_tests_properties(matrixscalarmultiply PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
 add_executable(gman_subdivisiontag subdivisiontag_test.cpp)
-target_link_libraries(gman_subdivisiontag PRIVATE gman_core)
+target_link_libraries(gman_subdivisiontag PRIVATE gman)
 add_test(NAME subdivisiontag COMMAND gman_subdivisiontag)
 set_tests_properties(subdivisiontag PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
 add_executable(gman_noisedeterminism noisedeterminism_test.cpp)
-target_link_libraries(gman_noisedeterminism PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_noisedeterminism PRIVATE gman gman_internal_headers)
 add_test(NAME noisedeterminism COMMAND gman_noisedeterminism)
 set_tests_properties(noisedeterminism PROPERTIES
   LABELS unit
@@ -509,7 +509,7 @@ set_tests_properties(noisedeterminism PROPERTIES
 # coordinate or an unusable period, and the lattice's periodic value for a
 # finite coordinate beyond RtInt's range. See tests/noisenonfinite_test.cpp.
 add_executable(gman_noisenonfinite noisenonfinite_test.cpp)
-target_link_libraries(gman_noisenonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_noisenonfinite PRIVATE gman gman_internal_headers)
 add_test(NAME noisenonfinite COMMAND gman_noisenonfinite)
 set_tests_properties(noisenonfinite PROPERTIES
   LABELS unit
@@ -518,28 +518,28 @@ set_tests_properties(noisenonfinite PROPERTIES
 # A vertex the clipper introduces at a plane crossing carries the colour and
 # alpha interpolated at the crossing, at hand-derived values.
 add_executable(gman_clipcolor clipcolor_test.cpp)
-target_link_libraries(gman_clipcolor PRIVATE gman_core gman_raster gman_internal_headers)
+target_link_libraries(gman_clipcolor PRIVATE gman gman_raster gman_internal_headers)
 add_test(NAME clipcolor COMMAND gman_clipcolor)
 set_tests_properties(clipcolor PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
 add_executable(gman_spacechain spacechain_test.cpp)
-target_link_libraries(gman_spacechain PRIVATE gman_core gman_raster gman_internal_headers)
+target_link_libraries(gman_spacechain PRIVATE gman gman_raster gman_internal_headers)
 add_test(NAME spacechain COMMAND gman_spacechain)
 set_tests_properties(spacechain PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
 add_executable(gman_facescamera facescamera_test.cpp)
-target_link_libraries(gman_facescamera PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_facescamera PRIVATE gman gman_internal_headers)
 add_test(NAME facescamera COMMAND gman_facescamera)
 set_tests_properties(facescamera PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
 add_executable(gman_viewingsystemfactory viewingsystemfactory_test.cpp)
-target_link_libraries(gman_viewingsystemfactory PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_viewingsystemfactory PRIVATE gman gman_internal_headers)
 add_test(NAME viewingsystemfactory COMMAND gman_viewingsystemfactory)
 set_tests_properties(viewingsystemfactory PROPERTIES
   LABELS unit
@@ -549,7 +549,7 @@ set_tests_properties(viewingsystemfactory PROPERTIES
 # cross-primitive orientation consistency, inverse-transpose under a
 # non-uniform scale.
 add_executable(gman_normals normals_test.cpp)
-target_link_libraries(gman_normals PRIVATE gman_core gman_raster)
+target_link_libraries(gman_normals PRIVATE gman gman_raster)
 add_test(NAME normals COMMAND gman_normals)
 # The inverse-transpose proof (item 3) tessellates a real sphere through
 # GMANPatchPolyObjectManager, which falls back to dlopen'ing "libmatte.so"
@@ -565,7 +565,7 @@ set_tests_properties(normals PROPERTIES
 # classification: nine hand-built rings at six scales in two placements, a
 # randomized star-shaped stress, and degenerate input.
 add_executable(gman_triangulation triangulation_test.cpp)
-target_link_libraries(gman_triangulation PRIVATE gman_core gman_raster gman_internal_headers)
+target_link_libraries(gman_triangulation PRIVATE gman gman_raster gman_internal_headers)
 add_test(NAME triangulation COMMAND gman_triangulation)
 # getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no RiSurface
 # is set, the same bare-name lookup gman itself relies on the build tree
@@ -579,7 +579,7 @@ set_tests_properties(triangulation PROPERTIES
 # outer loop by Eberly's method before handing the ring to the same
 # triangulateEarClipping loop 1 already uses. See tests/generalpolygon_test.cpp.
 add_executable(gman_generalpolygon generalpolygon_test.cpp)
-target_link_libraries(gman_generalpolygon PRIVATE gman_core gman_raster gman_internal_headers)
+target_link_libraries(gman_generalpolygon PRIVATE gman gman_raster gman_internal_headers)
 add_test(NAME generalpolygon COMMAND gman_generalpolygon)
 # getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no
 # RiSurface is set, the same bare-name lookup gman itself relies on the
@@ -592,7 +592,7 @@ set_tests_properties(generalpolygon PROPERTIES
 # The actual gate: a real end-to-end render, read back and measured
 # against the hand-derived silhouette geometry.
 add_executable(gman_silhouette silhouette_test.cpp)
-target_link_libraries(gman_silhouette PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_silhouette PRIVATE gman TIFF::TIFF)
 
 set(GMAN_SILHOUETTE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/silhouette-run")
 file(MAKE_DIRECTORY "${GMAN_SILHOUETTE_WORKDIR}")
@@ -608,7 +608,7 @@ set_tests_properties(silhouette PROPERTIES
 # An in-world Rotate must compose ahead of the transforms declared after it,
 # about the world origin, not the camera (GMANGraphicState::buildTransform).
 add_executable(gman_rotate rotate_test.cpp)
-target_link_libraries(gman_rotate PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_rotate PRIVATE gman TIFF::TIFF)
 
 set(GMAN_ROTATE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rotate-run")
 file(MAKE_DIRECTORY "${GMAN_ROTATE_WORKDIR}")
@@ -625,7 +625,7 @@ set_tests_properties(rotate PROPERTIES
 # Proof item 6 (secondary, visual): the same sphere at several RiTranslate
 # offsets.
 add_executable(gman_transforms transforms_test.cpp)
-target_link_libraries(gman_transforms PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_transforms PRIVATE gman TIFF::TIFF)
 
 set(GMAN_TRANSFORMS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/transforms-run")
 file(MAKE_DIRECTORY "${GMAN_TRANSFORMS_WORKDIR}")
@@ -642,7 +642,7 @@ set_tests_properties(transforms PROPERTIES
 # Proof items 4-6: the N.L=0 terminator, RiSides 1 vs RiSides 2, and the
 # golden image (tests/rib/lights.rib against tests/rib/lights_golden.tif).
 add_executable(gman_lighting lighting_test.cpp)
-target_link_libraries(gman_lighting PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_lighting PRIVATE gman TIFF::TIFF)
 
 set(GMAN_LIGHTING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/lighting-run")
 file(MAKE_DIRECTORY "${GMAN_LIGHTING_WORKDIR}")
@@ -663,7 +663,7 @@ set_tests_properties(lighting PROPERTIES
 # intensity, isolating beamdistribution's own falloff from that taper and
 # from exposure saturation; gman_spotlight renders and checks both.
 add_executable(gman_spotlight spotlight_test.cpp)
-target_link_libraries(gman_spotlight PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_spotlight PRIVATE gman TIFF::TIFF)
 
 set(GMAN_SPOTLIGHT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/spotlight-run")
 file(MAKE_DIRECTORY "${GMAN_SPOTLIGHT_WORKDIR}")
@@ -680,7 +680,7 @@ set_tests_properties(spotlight PROPERTIES
 # Step 3/5: all seven quadric primitives in one scene, golden-image
 # regression via the shared harness (tests/goldenimage.h).
 add_executable(gman_quadrics quadrics_test.cpp)
-target_link_libraries(gman_quadrics PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_quadrics PRIVATE gman TIFF::TIFF)
 
 set(GMAN_QUADRICS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quadrics-run")
 file(MAKE_DIRECTORY "${GMAN_QUADRICS_WORKDIR}")
@@ -697,7 +697,7 @@ set_tests_properties(quadrics PROPERTIES
 # Step 3/5: RiScreenWindow + RiCropWindow together under perspective, plus
 # an unrecognized RiFrameAspectRatio proving the skip path does not desync.
 add_executable(gman_screenwindow screenwindow_test.cpp)
-target_link_libraries(gman_screenwindow PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_screenwindow PRIVATE gman TIFF::TIFF)
 
 set(GMAN_SCREENWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/screenwindow-run")
 file(MAKE_DIRECTORY "${GMAN_SCREENWINDOW_WORKDIR}")
@@ -713,7 +713,7 @@ set_tests_properties(screenwindow PROPERTIES
 
 # Step 3/5: a cylinder straddling both the near and the far clip plane.
 add_executable(gman_clipping clipping_test.cpp)
-target_link_libraries(gman_clipping PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_clipping PRIVATE gman TIFF::TIFF)
 
 set(GMAN_CLIPPING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/clipping-run")
 file(MAKE_DIRECTORY "${GMAN_CLIPPING_WORKDIR}")
@@ -729,7 +729,7 @@ set_tests_properties(clipping PROPERTIES
 
 # Step 3/5: matte, plastic and metal side by side under identical lighting.
 add_executable(gman_shaders shaders_test.cpp)
-target_link_libraries(gman_shaders PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_shaders PRIVATE gman TIFF::TIFF)
 
 set(GMAN_SHADERS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shaders-run")
 file(MAKE_DIRECTORY "${GMAN_SHADERS_WORKDIR}")
@@ -748,7 +748,7 @@ set_tests_properties(shaders PROPERTIES
 # a driver cannot store stopping the file with an error, and a zero "one"
 # writing unclamped 32-bit float to TIFF and stopping the file for PNM.
 add_executable(gman_quantize quantize_test.cpp)
-target_link_libraries(gman_quantize PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_quantize PRIVATE gman TIFF::TIFF)
 
 set(GMAN_QUANTIZE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quantize-run")
 file(MAKE_DIRECTORY "${GMAN_QUANTIZE_WORKDIR}")
@@ -763,7 +763,7 @@ set_tests_properties(quantize PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_colorquantizeset colorquantizeset_test.cpp)
-target_link_libraries(gman_colorquantizeset PRIVATE gman_core)
+target_link_libraries(gman_colorquantizeset PRIVATE gman)
 
 add_test(NAME colorquantizeset COMMAND gman_colorquantizeset)
 set_tests_properties(colorquantizeset PROPERTIES
@@ -775,7 +775,7 @@ set_tests_properties(colorquantizeset PROPERTIES
 # string, an unbalanced bracket, a file truncated mid-keyword -- each
 # under its own hard timeout (see tests/ribmalformed_test.cpp).
 add_executable(gman_ribmalformed ribmalformed_test.cpp)
-target_link_libraries(gman_ribmalformed PRIVATE gman_core)
+target_link_libraries(gman_ribmalformed PRIVATE gman)
 
 add_test(NAME ribmalformed
   COMMAND gman_ribmalformed $<TARGET_FILE:gman_cli>
@@ -789,7 +789,7 @@ set_tests_properties(ribmalformed PROPERTIES
 # class reading past its own allocation instead of stopping the file with
 # RIE_CONSISTENCY. See tests/paramclamp_test.cpp.
 add_executable(gman_paramclamp paramclamp_test.cpp)
-target_link_libraries(gman_paramclamp PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_paramclamp PRIVATE gman TIFF::TIFF)
 
 set(GMAN_PARAMCLAMP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramclamp-run")
 file(MAKE_DIRECTORY "${GMAN_PARAMCLAMP_WORKDIR}")
@@ -807,7 +807,7 @@ set_tests_properties(paramclamp PROPERTIES
 # tokenizer's strtol, then nextInt/toRtIntVector's own implicit
 # conversion. See tests/ribintegerbounds_test.cpp.
 add_executable(gman_ribintegerbounds ribintegerbounds_test.cpp)
-target_link_libraries(gman_ribintegerbounds PRIVATE gman_core)
+target_link_libraries(gman_ribintegerbounds PRIVATE gman)
 
 add_test(NAME ribintegerbounds
   COMMAND gman_ribintegerbounds $<TARGET_FILE:gman_cli>
@@ -822,7 +822,7 @@ set_tests_properties(ribintegerbounds PROPERTIES
 # malformed_out.tif into its working directory. See
 # tests/ribcountbounds_test.cpp.
 add_executable(gman_ribcountbounds ribcountbounds_test.cpp)
-target_link_libraries(gman_ribcountbounds PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_ribcountbounds PRIVATE gman TIFF::TIFF)
 
 set(GMAN_RIBCOUNTBOUNDS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/ribcountbounds-run")
 file(MAKE_DIRECTORY "${GMAN_RIBCOUNTBOUNDS_WORKDIR}")
@@ -841,7 +841,7 @@ set_tests_properties(ribcountbounds PROPERTIES
 # instead of stopping the file with RIE_CONSISTENCY. See
 # tests/geometryparamclamp_test.cpp.
 add_executable(gman_geometryparamclamp geometryparamclamp_test.cpp)
-target_link_libraries(gman_geometryparamclamp PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_geometryparamclamp PRIVATE gman TIFF::TIFF)
 
 set(GMAN_GEOMETRYPARAMCLAMP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/geometryparamclamp-run")
 file(MAKE_DIRECTORY "${GMAN_GEOMETRYPARAMCLAMP_WORKDIR}")
@@ -858,7 +858,7 @@ set_tests_properties(geometryparamclamp PROPERTIES
 # A RIB-supplied parameter array longer than its declared class warns and
 # truncates. See tests/paramoversupply_test.cpp.
 add_executable(gman_paramoversupply paramoversupply_test.cpp)
-target_link_libraries(gman_paramoversupply PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_paramoversupply PRIVATE gman TIFF::TIFF)
 
 set(GMAN_PARAMOVERSUPPLY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramoversupply-run")
 file(MAKE_DIRECTORY "${GMAN_PARAMOVERSUPPLY_WORKDIR}")
@@ -879,7 +879,7 @@ set_tests_properties(paramoversupply PROPERTIES
 # default renderer by bare name, hence the same
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c).
 add_executable(gman_paramlistdeclaredtype paramlistdeclaredtype_test.cpp)
-target_link_libraries(gman_paramlistdeclaredtype PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_paramlistdeclaredtype PRIVATE gman gman_internal_headers)
 
 add_test(NAME paramlistdeclaredtype
   COMMAND gman_paramlistdeclaredtype $<TARGET_FILE:gman_cli>
@@ -895,7 +895,7 @@ set_tests_properties(paramlistdeclaredtype PROPERTIES
 # hence gman_internal_headers and the same LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as
 # tests/basicstate.c.
 add_executable(gman_paramliteraltype paramliteraltype_test.cpp)
-target_link_libraries(gman_paramliteraltype PRIVATE gman_core gman_internal_headers TIFF::TIFF)
+target_link_libraries(gman_paramliteraltype PRIVATE gman gman_internal_headers TIFF::TIFF)
 
 set(GMAN_PARAMLITERALTYPE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramliteraltype-run")
 file(MAKE_DIRECTORY "${GMAN_PARAMLITERALTYPE_WORKDIR}")
@@ -912,7 +912,7 @@ set_tests_properties(paramliteraltype PROPERTIES
 # RIB's PixelVariance reaches GMANOptions, which reads 0 when none is set. See
 # tests/ribpixelvariance_test.cpp.
 add_executable(gman_ribpixelvariance ribpixelvariance_test.cpp)
-target_link_libraries(gman_ribpixelvariance PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_ribpixelvariance PRIVATE gman gman_internal_headers)
 
 add_test(NAME ribpixelvariance
   COMMAND gman_ribpixelvariance "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -924,7 +924,7 @@ set_tests_properties(ribpixelvariance PROPERTIES
 # A RIB parameter supplied with fewer values than one element of its declared
 # type stops the file with RIE_CONSISTENCY. See tests/paramshortcount_test.cpp.
 add_executable(gman_paramshortcount paramshortcount_test.cpp)
-target_link_libraries(gman_paramshortcount PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_paramshortcount PRIVATE gman TIFF::TIFF)
 
 set(GMAN_PARAMSHORTCOUNT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramshortcount-run")
 file(MAKE_DIRECTORY "${GMAN_PARAMSHORTCOUNT_WORKDIR}")
@@ -941,7 +941,7 @@ set_tests_properties(paramshortcount PROPERTIES
 # A RIB parameter declaring more values than an int can count stops the file
 # with RIE_CONSISTENCY. See tests/paramhugecount_test.cpp.
 add_executable(gman_paramhugecount paramhugecount_test.cpp)
-target_link_libraries(gman_paramhugecount PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_paramhugecount PRIVATE gman TIFF::TIFF)
 
 set(GMAN_PARAMHUGECOUNT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/paramhugecount-run")
 file(MAKE_DIRECTORY "${GMAN_PARAMHUGECOUNT_WORKDIR}")
@@ -960,7 +960,7 @@ set_tests_properties(paramhugecount PROPERTIES
 # in-process check drives GMANRIBParse directly, hence the same
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
 add_executable(gman_ribstringescape ribstringescape_test.cpp)
-target_link_libraries(gman_ribstringescape PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_ribstringescape PRIVATE gman gman_internal_headers)
 
 add_test(NAME ribstringescape
   COMMAND gman_ribstringescape $<TARGET_FILE:gman_cli>
@@ -977,7 +977,7 @@ set_tests_properties(ribstringescape PROPERTIES
 # tests/ribstringescape_test.cpp use, hence the same
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c.
 add_executable(gman_pointscount pointscount_test.cpp)
-target_link_libraries(gman_pointscount PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_pointscount PRIVATE gman gman_internal_headers)
 
 add_test(NAME pointscount
   COMMAND gman_pointscount "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -994,7 +994,7 @@ set_tests_properties(pointscount PROPERTIES
 add_executable(gman_ribparsefallback ribparsefallback_test.cpp
   "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
 target_include_directories(gman_ribparsefallback PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
-target_link_libraries(gman_ribparsefallback PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_ribparsefallback PRIVATE gman gman_internal_headers)
 
 add_test(NAME ribparsefallback
   COMMAND gman_ribparsefallback "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -1008,7 +1008,7 @@ set_tests_properties(ribparsefallback PROPERTIES
 add_executable(gman_colorsamples colorsamples_test.cpp
   "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
 target_include_directories(gman_colorsamples PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
-target_link_libraries(gman_colorsamples PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_colorsamples PRIVATE gman gman_internal_headers)
 
 add_test(NAME colorsamples
   COMMAND gman_colorsamples "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -1021,7 +1021,7 @@ set_tests_properties(colorsamples PROPERTIES
 add_executable(gman_ribwritercolorcount ribwritercolorcount_test.cpp
   "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
 target_include_directories(gman_ribwritercolorcount PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
-target_link_libraries(gman_ribwritercolorcount PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_ribwritercolorcount PRIVATE gman gman_internal_headers)
 
 add_test(NAME ribwritercolorcount COMMAND gman_ribwritercolorcount)
 set_tests_properties(ribwritercolorcount PROPERTIES
@@ -1035,7 +1035,7 @@ set_tests_properties(ribwritercolorcount PROPERTIES
 add_executable(gman_ribmatrixlength ribmatrixlength_test.cpp
   "${CMAKE_SOURCE_DIR}/libgmanrib/gmanascii.cpp")
 target_include_directories(gman_ribmatrixlength PRIVATE "${CMAKE_SOURCE_DIR}/libgmanrib")
-target_link_libraries(gman_ribmatrixlength PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_ribmatrixlength PRIVATE gman gman_internal_headers)
 
 add_test(NAME ribmatrixlength
   COMMAND gman_ribmatrixlength "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -1048,14 +1048,14 @@ set_tests_properties(ribmatrixlength PROPERTIES
 # stream byte. See tests/ribctypeunsigned_test.cpp; it drives getNext
 # directly on an istringstream, so it dlopens nothing.
 add_executable(gman_ribctypeunsigned ribctypeunsigned_test.cpp)
-target_link_libraries(gman_ribctypeunsigned PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_ribctypeunsigned PRIVATE gman gman_internal_headers)
 
 add_test(NAME ribctypeunsigned COMMAND gman_ribctypeunsigned)
 set_tests_properties(ribctypeunsigned PROPERTIES LABELS unit TIMEOUT 30)
 
 # Bilinear and bicubic Patch rasterization. See tests/patchnorender_test.cpp.
 add_executable(gman_patchnorender patchnorender_test.cpp)
-target_link_libraries(gman_patchnorender PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_patchnorender PRIVATE gman TIFF::TIFF)
 
 set(GMAN_PATCHNORENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchnorender-run")
 file(MAKE_DIRECTORY "${GMAN_PATCHNORENDER_WORKDIR}")
@@ -1074,7 +1074,7 @@ set_tests_properties(patchnorender PROPERTIES
 # nonperiodic, mixed wrap) checked against GMANPatchMesh directly, plus
 # every tests/rib/patchmesh_*.rib fixture rendered and read back.
 add_executable(gman_patchmesh patchmesh_test.cpp)
-target_link_libraries(gman_patchmesh PRIVATE gman_core gman_raster TIFF::TIFF)
+target_link_libraries(gman_patchmesh PRIVATE gman gman_raster TIFF::TIFF)
 
 set(GMAN_PATCHMESH_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/patchmesh-run")
 file(MAKE_DIRECTORY "${GMAN_PATCHMESH_WORKDIR}")
@@ -1094,7 +1094,7 @@ set_tests_properties(patchmesh PROPERTIES
 # and of the Clipping workaround the near-clip precision defect requires
 # for this shape.
 add_executable(gman_partialsphere partialsphere_test.cpp)
-target_link_libraries(gman_partialsphere PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_partialsphere PRIVATE gman TIFF::TIFF)
 
 set(GMAN_PARTIALSPHERE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/partialsphere-run")
 file(MAKE_DIRECTORY "${GMAN_PARTIALSPHERE_WORKDIR}")
@@ -1112,7 +1112,7 @@ set_tests_properties(partialsphere PROPERTIES
 # catmull-rom, sinc): a pure unit test on gmanfilters.cpp, no gman binary.
 # See tests/filters_test.cpp for which of the five were wrong and why.
 add_executable(gman_filters filters_test.cpp)
-target_link_libraries(gman_filters PRIVATE gman_core)
+target_link_libraries(gman_filters PRIVATE gman)
 add_test(NAME filters COMMAND gman_filters)
 set_tests_properties(filters PROPERTIES
   LABELS unit
@@ -1123,7 +1123,7 @@ set_tests_properties(filters PROPERTIES
 # binary: "rgb" writes 3 samples and no tag, "rgba" keeps 4 and tags the
 # fourth EXTRASAMPLE_ASSOCALPHA.
 add_executable(gman_tiffdisplaymode tiffdisplaymode_test.cpp)
-target_link_libraries(gman_tiffdisplaymode PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_tiffdisplaymode PRIVATE gman TIFF::TIFF gman_internal_headers)
 
 set(GMAN_TIFFDISPLAYMODE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/tiffdisplaymode-run")
 file(MAKE_DIRECTORY "${GMAN_TIFFDISPLAYMODE_WORKDIR}")
@@ -1138,7 +1138,7 @@ set_tests_properties(tiffdisplaymode PROPERTIES
 # A Projection with no explicit "fov" defaults to 90 per RISpec 3.2,
 # rather than throwing.
 add_executable(gman_fovdefault fovdefault_test.cpp)
-target_link_libraries(gman_fovdefault PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_fovdefault PRIVATE gman TIFF::TIFF)
 
 set(GMAN_FOVDEFAULT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/fovdefault-run")
 file(MAKE_DIRECTORY "${GMAN_FOVDEFAULT_WORKDIR}")
@@ -1154,7 +1154,7 @@ set_tests_properties(fovdefault PROPERTIES
 # Guards against Surface before AttributeBegin/FrameBegin double-freeing
 # a dlopen'd shader module on the attributesStack copy both requests make.
 add_executable(gman_attributescopy attributescopy_test.cpp)
-target_link_libraries(gman_attributescopy PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_attributescopy PRIVATE gman TIFF::TIFF)
 
 set(GMAN_ATTRIBUTESCOPY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/attributescopy-run")
 file(MAKE_DIRECTORY "${GMAN_ATTRIBUTESCOPY_WORKDIR}")
@@ -1177,7 +1177,7 @@ set_tests_properties(attributescopy PROPERTIES
 # invisible to ctest.
 if(GMAN_WITH_PNG)
   add_executable(gman_pngdriver pngdriver_test.cpp)
-  target_link_libraries(gman_pngdriver PRIVATE gman_core PNG::PNG TIFF::TIFF)
+  target_link_libraries(gman_pngdriver PRIVATE gman PNG::PNG TIFF::TIFF)
 
   set(GMAN_PNGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pngdriver-run")
   file(MAKE_DIRECTORY "${GMAN_PNGDRIVER_WORKDIR}")
@@ -1205,7 +1205,7 @@ set_tests_properties(pngdriver PROPERTIES
 # to ctest.
 if(GMAN_WITH_JPEG)
   add_executable(gman_jpegdriver jpegdriver_test.cpp)
-  target_link_libraries(gman_jpegdriver PRIVATE gman_core JPEG::JPEG TIFF::TIFF)
+  target_link_libraries(gman_jpegdriver PRIVATE gman JPEG::JPEG TIFF::TIFF)
 
   set(GMAN_JPEGDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/jpegdriver-run")
   file(MAKE_DIRECTORY "${GMAN_JPEGDRIVER_WORKDIR}")
@@ -1227,7 +1227,7 @@ set_tests_properties(jpegdriver PROPERTIES
 
 if(GMAN_WITH_EXR)
   add_executable(gman_exrdriver exrdriver_test.cpp)
-  target_link_libraries(gman_exrdriver PRIVATE gman_core gman_internal_headers OpenEXR::OpenEXR)
+  target_link_libraries(gman_exrdriver PRIVATE gman gman_internal_headers OpenEXR::OpenEXR)
   add_dependencies(gman_exrdriver gman_background gman_matte gman_zbuffer)
 
   set(GMAN_EXRDRIVER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/exrdriver-run")
@@ -1262,7 +1262,7 @@ if(GMAN_WITH_EXR)
 endif()
 
 add_executable(gman_filedrivers filedrivers_test.cpp)
-target_link_libraries(gman_filedrivers PRIVATE gman_core)
+target_link_libraries(gman_filedrivers PRIVATE gman)
 
 set(GMAN_FILEDRIVERS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/filedrivers-run")
 file(MAKE_DIRECTORY "${GMAN_FILEDRIVERS_WORKDIR}")
@@ -1277,7 +1277,7 @@ set_tests_properties(filedrivers PROPERTIES
 
 # Pins gman's one-line startup banner against a version-bump regression.
 add_executable(gman_banner banner_test.cpp)
-target_link_libraries(gman_banner PRIVATE gman_core)
+target_link_libraries(gman_banner PRIVATE gman)
 
 set(GMAN_BANNER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/banner-run")
 file(MAKE_DIRECTORY "${GMAN_BANNER_WORKDIR}")
@@ -1324,7 +1324,7 @@ set_tests_properties(commandlinerun PROPERTIES
 # all three; with every optional driver enabled there is nothing disabled to
 # exercise, so it self-skips (exit 77).
 add_executable(gman_displaydisabled displaydisabled_test.cpp)
-target_link_libraries(gman_displaydisabled PRIVATE gman_core)
+target_link_libraries(gman_displaydisabled PRIVATE gman)
 
 set(GMAN_DISPLAYDISABLED_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/displaydisabled-run")
 file(MAKE_DIRECTORY "${GMAN_DISPLAYDISABLED_WORKDIR}")
@@ -1343,7 +1343,7 @@ set_tests_properties(displaydisabled PROPERTIES
 # cropping -- rasterization must offset by the crop rectangle's own
 # origin.
 add_executable(gman_cropwindow cropwindow_test.cpp)
-target_link_libraries(gman_cropwindow PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_cropwindow PRIVATE gman TIFF::TIFF)
 
 set(GMAN_CROPWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/cropwindow-run")
 file(MAKE_DIRECTORY "${GMAN_CROPWINDOW_WORKDIR}")
@@ -1361,7 +1361,7 @@ set_tests_properties(cropwindow PROPERTIES
 # planes from the screen window for both projections -- see the
 # perspective analogue in gmanpolygonclipper.cpp.
 add_executable(gman_orthowindow orthowindow_test.cpp)
-target_link_libraries(gman_orthowindow PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_orthowindow PRIVATE gman TIFF::TIFF)
 
 set(GMAN_ORTHOWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/orthowindow-run")
 file(MAKE_DIRECTORY "${GMAN_ORTHOWINDOW_WORKDIR}")
@@ -1378,7 +1378,7 @@ set_tests_properties(orthowindow PROPERTIES
 # clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L an ear-clipped triangle's
 # longest raster-space edge. See tests/polygondicecount_test.cpp.
 add_executable(gman_polygondicecount polygondicecount_test.cpp)
-target_link_libraries(gman_polygondicecount PRIVATE gman_core gman_raster gman_internal_headers)
+target_link_libraries(gman_polygondicecount PRIVATE gman gman_raster gman_internal_headers)
 add_test(NAME polygondicecount COMMAND gman_polygondicecount)
 # getRSPolygonMesh falls back to dlopen'ing "libmatte.so" when no RiSurface
 # is set -- triangulation's own comment, same lookup.
@@ -1391,7 +1391,7 @@ set_tests_properties(polygondicecount PROPERTIES
 # two-Polygon perspective scene with no fov prints "FOV not set" exactly
 # once. See tests/polygonfovwarning_test.cpp.
 add_executable(gman_polygonfovwarning polygonfovwarning_test.cpp)
-target_link_libraries(gman_polygonfovwarning PRIVATE gman_core)
+target_link_libraries(gman_polygonfovwarning PRIVATE gman)
 
 set(GMAN_POLYGONFOVWARNING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonfovwarning-run")
 file(MAKE_DIRECTORY "${GMAN_POLYGONFOVWARNING_WORKDIR}")
@@ -1410,7 +1410,7 @@ set_tests_properties(polygonfovwarning PROPERTIES
 # "FOV not set" and renders at the value the RIB set, not 90. See
 # tests/declaredfov_test.cpp.
 add_executable(gman_declaredfov declaredfov_test.cpp)
-target_link_libraries(gman_declaredfov PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_declaredfov PRIVATE gman TIFF::TIFF)
 
 set(GMAN_DECLAREDFOV_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/declaredfov-run")
 file(MAKE_DIRECTORY "${GMAN_DECLAREDFOV_WORKDIR}")
@@ -1428,7 +1428,7 @@ set_tests_properties(declaredfov PROPERTIES
 # raster coverage and shaded colour both match an analytically computed
 # region and value.
 add_executable(gman_polygon polygon_test.cpp)
-target_link_libraries(gman_polygon PRIVATE gman_core gman_raster TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_polygon PRIVATE gman gman_raster TIFF::TIFF gman_internal_headers)
 
 set(GMAN_POLYGON_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygon-run")
 file(MAKE_DIRECTORY "${GMAN_POLYGON_WORKDIR}")
@@ -1446,7 +1446,7 @@ set_tests_properties(polygon PROPERTIES
 # falsification proof (1x1 vs 4x4 PixelSamples on the same hard edge);
 # testPixelFilterDiffers needs RiPixelFilter's RIB wiring to be real.
 add_executable(gman_samplebuffer samplebuffer_test.cpp)
-target_link_libraries(gman_samplebuffer PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_samplebuffer PRIVATE gman TIFF::TIFF)
 
 set(GMAN_SAMPLEBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/samplebuffer-run")
 file(MAKE_DIRECTORY "${GMAN_SAMPLEBUFFER_WORKDIR}")
@@ -1465,7 +1465,7 @@ set_tests_properties(samplebuffer PROPERTIES
 # colour while alpha stays in range. Drives GMANSampleBuffer and
 # GMANFrameBuffer directly, no gman binary.
 add_executable(gman_resolvehdr resolvehdr_test.cpp)
-target_link_libraries(gman_resolvehdr PRIVATE gman_core)
+target_link_libraries(gman_resolvehdr PRIVATE gman)
 
 add_test(NAME resolvehdr COMMAND gman_resolvehdr)
 set_tests_properties(resolvehdr PROPERTIES
@@ -1476,7 +1476,7 @@ set_tests_properties(resolvehdr PROPERTIES
 # below 1 must recover it rather than dim a clipped 1. Both renderers
 # write the same TIFF names, so each gets its own WORKING_DIRECTORY.
 add_executable(gman_exposurerecovery exposurerecovery_test.cpp)
-target_link_libraries(gman_exposurerecovery PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_exposurerecovery PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_exposurerecovery gman_zbuffer gman_matte)
 
 set(GMAN_EXPOSURERECOVERY_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/exposurerecovery-zbuffer-run")
@@ -1513,7 +1513,7 @@ endif()
 # (T, U, V) overload that keeps a non-int argument from truncating
 # silently, pinned at compile time via a requires-expression.
 add_executable(gman_samplecentre samplecentre_test.cpp)
-target_link_libraries(gman_samplecentre PRIVATE gman_core)
+target_link_libraries(gman_samplecentre PRIVATE gman)
 
 add_test(NAME samplecentre COMMAND gman_samplecentre)
 set_tests_properties(samplecentre PROPERTIES
@@ -1524,7 +1524,7 @@ set_tests_properties(samplecentre PROPERTIES
 # cube: tests/rib/wideframe.rib's rectangle spans a wide, non-square
 # frame's default aspect-derived window.
 add_executable(gman_wideframe wideframe_test.cpp)
-target_link_libraries(gman_wideframe PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_wideframe PRIVATE gman TIFF::TIFF)
 
 set(GMAN_WIDEFRAME_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/wideframe-run")
 file(MAKE_DIRECTORY "${GMAN_WIDEFRAME_WORKDIR}")
@@ -1542,7 +1542,7 @@ set_tests_properties(wideframe PROPERTIES
 # tests/rib/clipframe_narrow.rib's left columns against the same pixels of
 # tests/rib/clipframe_wide.rib, a frame whose own clip edge lies beyond them.
 add_executable(gman_clipframeshading clipframeshading_test.cpp)
-target_link_libraries(gman_clipframeshading PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_clipframeshading PRIVATE gman TIFF::TIFF)
 
 set(GMAN_CLIPFRAMESHADING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/clipframeshading-run")
 file(MAKE_DIRECTORY "${GMAN_CLIPFRAMESHADING_WORKDIR}")
@@ -1562,7 +1562,7 @@ set_tests_properties(clipframeshading PROPERTIES
 # (a paintedplastic Patch read back for its four quadrants' colours) and
 # tests/rib/maketexture_wrap.rib (the same, through a MakeTexture request).
 add_executable(gman_texture texture_test.cpp)
-target_link_libraries(gman_texture PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_texture PRIVATE gman TIFF::TIFF gman_internal_headers)
 
 set(GMAN_TEXTURE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texture-run")
 file(MAKE_DIRECTORY "${GMAN_TEXTURE_WORKDIR}")
@@ -1582,7 +1582,7 @@ set_tests_properties(texture PROPERTIES
 # and one cache per gman::parallelFor worker with no cross-worker hit. See
 # tests/texturecache_test.cpp.
 add_executable(gman_texturecache texturecache_test.cpp)
-target_link_libraries(gman_texturecache PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_texturecache PRIVATE gman TIFF::TIFF gman_internal_headers)
 add_dependencies(gman_texturecache gman_paintedplastic)
 
 set(GMAN_TEXTURECACHE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texturecache-run")
@@ -1600,7 +1600,7 @@ set_tests_properties(texturecache PROPERTIES
 # coordinate beyond RtInt's range the texel its wrap mode defines. See
 # tests/texturenonfinite_test.cpp.
 add_executable(gman_texturenonfinite texturenonfinite_test.cpp)
-target_link_libraries(gman_texturenonfinite PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_texturenonfinite PRIVATE gman TIFF::TIFF gman_internal_headers)
 
 set(GMAN_TEXTURENONFINITE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texturenonfinite-run")
 file(MAKE_DIRECTORY "${GMAN_TEXTURENONFINITE_WORKDIR}")
@@ -1615,7 +1615,7 @@ set_tests_properties(texturenonfinite PROPERTIES
 # RiPixelFilter ignores a NaN or infinite width, and GMANSampleBuffer::resolve
 # stays defined at any width. See tests/pixelfilternonfinite_test.cpp.
 add_executable(gman_pixelfilternonfinite pixelfilternonfinite_test.cpp)
-target_link_libraries(gman_pixelfilternonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_pixelfilternonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME pixelfilternonfinite COMMAND gman_pixelfilternonfinite)
 set_tests_properties(pixelfilternonfinite PROPERTIES
@@ -1627,7 +1627,7 @@ set_tests_properties(pixelfilternonfinite PROPERTIES
 # every size and crop bound defined, and the sample buffer refuses a sample
 # extent past int's range. See tests/frameaspectnonfinite_test.cpp.
 add_executable(gman_frameaspectnonfinite frameaspectnonfinite_test.cpp)
-target_link_libraries(gman_frameaspectnonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_frameaspectnonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME frameaspectnonfinite COMMAND gman_frameaspectnonfinite)
 set_tests_properties(frameaspectnonfinite PROPERTIES
@@ -1639,7 +1639,7 @@ set_tests_properties(frameaspectnonfinite PROPERTIES
 # 1, whether the count comes through RiPixelSamples or straight into the
 # setter. See tests/pixelsamplesnonfinite_test.cpp.
 add_executable(gman_pixelsamplesnonfinite pixelsamplesnonfinite_test.cpp)
-target_link_libraries(gman_pixelsamplesnonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_pixelsamplesnonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME pixelsamplesnonfinite COMMAND gman_pixelsamplesnonfinite)
 set_tests_properties(pixelsamplesnonfinite PROPERTIES
@@ -1650,7 +1650,7 @@ set_tests_properties(pixelsamplesnonfinite PROPERTIES
 # gman::shade and gman::albedo read a NaN or infinite channel of a shader's
 # answer as 0. See tests/shadingnonfinite_test.cpp.
 add_executable(gman_shadingnonfinite shadingnonfinite_test.cpp)
-target_link_libraries(gman_shadingnonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_shadingnonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME shadingnonfinite COMMAND gman_shadingnonfinite)
 set_tests_properties(shadingnonfinite PROPERTIES
@@ -1661,7 +1661,7 @@ set_tests_properties(shadingnonfinite PROPERTIES
 # gman::runImager hands the imager a Ci with every channel finite. See
 # tests/imagernonfinite_test.cpp.
 add_executable(gman_imagernonfinite imagernonfinite_test.cpp)
-target_link_libraries(gman_imagernonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_imagernonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME imagernonfinite COMMAND gman_imagernonfinite)
 set_tests_properties(imagernonfinite PROPERTIES
@@ -1672,7 +1672,7 @@ set_tests_properties(imagernonfinite PROPERTIES
 # GMANSampleBuffer resolves a NaN coverage to 1 and passes a finite coverage
 # clamped to [0, 1] as before. See tests/samplebuffernonfinite_test.cpp.
 add_executable(gman_samplebuffernonfinite samplebuffernonfinite_test.cpp)
-target_link_libraries(gman_samplebuffernonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_samplebuffernonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME samplebuffernonfinite COMMAND gman_samplebuffernonfinite)
 set_tests_properties(samplebuffernonfinite PROPERTIES
@@ -1683,7 +1683,7 @@ set_tests_properties(samplebuffernonfinite PROPERTIES
 # RiFormat ignores a NaN or infinite pixel aspect ratio. See
 # tests/formatnonfinite_test.cpp.
 add_executable(gman_formatnonfinite formatnonfinite_test.cpp)
-target_link_libraries(gman_formatnonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_formatnonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME formatnonfinite COMMAND gman_formatnonfinite)
 set_tests_properties(formatnonfinite PROPERTIES
@@ -1694,7 +1694,7 @@ set_tests_properties(formatnonfinite PROPERTIES
 # RiExposure ignores a NaN or infinite gain or gamma. See
 # tests/exposurenonfinite_test.cpp.
 add_executable(gman_exposurenonfinite exposurenonfinite_test.cpp)
-target_link_libraries(gman_exposurenonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_exposurenonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME exposurenonfinite COMMAND gman_exposurenonfinite)
 set_tests_properties(exposurenonfinite PROPERTIES
@@ -1717,7 +1717,7 @@ set_tests_properties(radiositynonfinite PROPERTIES
 # The colour an imager returns replaces the pixel, a NaN or infinite channel
 # read as 0. See tests/imageroutputnonfinite_test.cpp.
 add_executable(gman_imageroutputnonfinite imageroutputnonfinite_test.cpp)
-target_link_libraries(gman_imageroutputnonfinite PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_imageroutputnonfinite PRIVATE gman gman_internal_headers)
 
 add_test(NAME imageroutputnonfinite COMMAND gman_imageroutputnonfinite)
 set_tests_properties(imageroutputnonfinite PROPERTIES
@@ -1729,7 +1729,7 @@ set_tests_properties(imageroutputnonfinite PROPERTIES
 # wanted behavior; WILL_FAIL until RiRotate refuses a zero axis or answers a
 # finite matrix for one. See tests/rotatezeroaxis_pin_test.cpp.
 add_executable(gman_rotatezeroaxis_pin rotatezeroaxis_pin_test.cpp)
-target_link_libraries(gman_rotatezeroaxis_pin PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_rotatezeroaxis_pin PRIVATE gman gman_internal_headers)
 
 add_test(NAME rotatezeroaxis_pin COMMAND gman_rotatezeroaxis_pin)
 set_tests_properties(rotatezeroaxis_pin PROPERTIES
@@ -1792,7 +1792,7 @@ endif()
 
 # A missing texture warns once per world block under every renderer; libtiff stays silent.
 add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
-target_link_libraries(gman_texturewarningonce PRIVATE gman_core)
+target_link_libraries(gman_texturewarningonce PRIVATE gman)
 add_dependencies(gman_texturewarningonce gman_zbuffer gman_paintedplastic)
 
 set(GMAN_TEXTUREWARNINGONCE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texturewarningonce-zbuffer-run")
@@ -1846,7 +1846,7 @@ endif()
 # the ray tracer with its flat colour where ambientlight alone lights the
 # fixture. See tests/patchraycoverage_test.cpp.
 add_executable(gman_patchraycoverage patchraycoverage_test.cpp)
-target_link_libraries(gman_patchraycoverage PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_patchraycoverage PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_patchraycoverage gman_zbuffer gman_matte gman_plastic)
 
 if(GMAN_BUILD_RAYTRACER)
@@ -1900,7 +1900,7 @@ endif()
 # makeLatLongEnvironment writing the picture's own depth. See
 # tests/texture16_test.cpp.
 add_executable(gman_texture16 texture16_test.cpp)
-target_link_libraries(gman_texture16 PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_texture16 PRIVATE gman TIFF::TIFF gman_internal_headers)
 
 set(GMAN_TEXTURE16_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texture16-run")
 file(MAKE_DIRECTORY "${GMAN_TEXTURE16_WORKDIR}")
@@ -1915,7 +1915,7 @@ set_tests_properties(texture16 PROPERTIES
 
 # paintedplastic's opacityname cuts a card out; the shadows of both renderers follow it.
 add_executable(gman_textureopacity textureopacity_test.cpp)
-target_link_libraries(gman_textureopacity PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_textureopacity PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_textureopacity gman_paintedplastic gman_matte)
 
 if(GMAN_BUILD_RAYTRACER)
@@ -1958,7 +1958,7 @@ endif()
 # receiver. Needs both renderers. See tests/rayshadowtransmittance_test.cpp.
 if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
   add_executable(gman_rayshadowtransmittance rayshadowtransmittance_test.cpp)
-  target_link_libraries(gman_rayshadowtransmittance PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_rayshadowtransmittance PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_rayshadowtransmittance gman_raytracer gman_pathtracer gman_glass gman_matte
                    gman_paintedplastic)
 
@@ -1984,7 +1984,7 @@ endif()
 # tests/rayarealight_test.cpp.
 if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
   add_executable(gman_rayarealight rayarealight_test.cpp)
-  target_link_libraries(gman_rayarealight PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_rayarealight PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_rayarealight gman_raytracer gman_pathtracer gman_matte gman_glass)
 
   set(GMAN_RAYAREALIGHT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rayarealight-run")
@@ -2002,7 +2002,7 @@ endif()
 
 # A smooth fold's terminator renders lit under both renderers, while every other blocker still shadows.
 add_executable(gman_creasestreak creasestreak_test.cpp)
-target_link_libraries(gman_creasestreak PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_creasestreak PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_creasestreak gman_matte)
 
 if(GMAN_BUILD_RAYTRACER)
@@ -2041,7 +2041,7 @@ endif()
 
 # A smooth prism's terminator renders lit, its back side stays lit and a wall still shadows it.
 add_executable(gman_shadowterminator shadowterminator_test.cpp)
-target_link_libraries(gman_shadowterminator PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_shadowterminator PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_shadowterminator gman_matte)
 
 if(GMAN_BUILD_RAYTRACER)
@@ -2080,7 +2080,7 @@ endif()
 
 # A polygon's per-vertex "N" shades it smoothly, wound either way, under the z-buffer and the ray tracer, and a hole's vertices take their own under the z-buffer.
 add_executable(gman_zbuffervertexnormals zbuffervertexnormals_test.cpp)
-target_link_libraries(gman_zbuffervertexnormals PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_zbuffervertexnormals PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_zbuffervertexnormals gman_matte gman_zbuffer)
 
 set(GMAN_ZBUFFERVERTEXNORMALS_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/zbuffervertexnormals-zbuffer-run")
@@ -2115,7 +2115,7 @@ endif()
 
 # A normal map's light fades to zero at the smooth terminator under both renderers, and the lit face keeps its light.
 add_executable(gman_bumpterminator bumpterminator_test.cpp)
-target_link_libraries(gman_bumpterminator PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_bumpterminator PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_bumpterminator gman_paintedplastic gman_matte)
 
 if(GMAN_BUILD_RAYTRACER)
@@ -2157,7 +2157,7 @@ endif()
 # tests/rib/texcoords/*.rib -- each fixture copies tests/rib/texture.rib's
 # own frame and checker.
 add_executable(gman_texcoords texcoords_test.cpp)
-target_link_libraries(gman_texcoords PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_texcoords PRIVATE gman TIFF::TIFF)
 
 set(GMAN_TEXCOORDS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texcoords-run")
 file(MAKE_DIRECTORY "${GMAN_TEXCOORDS_WORKDIR}")
@@ -2176,7 +2176,7 @@ set_tests_properties(texcoords PROPERTIES
 # much finer hand-diced equivalent of the identical geometry and texture
 # within checkGoldenImage's own tolerance. See tests/polygondicing_test.cpp.
 add_executable(gman_polygondicing polygondicing_test.cpp)
-target_link_libraries(gman_polygondicing PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_polygondicing PRIVATE gman TIFF::TIFF)
 
 set(GMAN_POLYGONDICING_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygondicing-run")
 file(MAKE_DIRECTORY "${GMAN_POLYGONDICING_WORKDIR}")
@@ -2195,7 +2195,7 @@ set_tests_properties(polygondicing PROPERTIES
 # (tests/goldenimage.h) and malformed request fixtures. See
 # tests/pointspolygons_test.cpp.
 add_executable(gman_pointspolygons pointspolygons_test.cpp)
-target_link_libraries(gman_pointspolygons PRIVATE gman_core gman_raster TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_pointspolygons PRIVATE gman gman_raster TIFF::TIFF gman_internal_headers)
 
 set(GMAN_POINTSPOLYGONS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pointspolygons-run")
 file(MAKE_DIRECTORY "${GMAN_POINTSPOLYGONS_WORKDIR}")
@@ -2216,7 +2216,7 @@ set_tests_properties(pointspolygons PROPERTIES
 # compared pixel by pixel (tests/goldenimage.h), and malformed/exception
 # fixtures. See tests/nupatch_test.cpp.
 add_executable(gman_nupatch nupatch_test.cpp)
-target_link_libraries(gman_nupatch PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_nupatch PRIVATE gman TIFF::TIFF)
 
 set(GMAN_NUPATCH_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/nupatch-run")
 file(MAKE_DIRECTORY "${GMAN_NUPATCH_WORKDIR}")
@@ -2281,7 +2281,7 @@ set_target_properties(gman_nullindirect PROPERTIES OUTPUT_NAME "nullindirect")
 # shading with no cross-talk, correct lifetime and destruction, and a
 # plugin missing GMANDestroyShader refused. See tests/shaderinstance_test.cpp.
 add_executable(gman_shaderinstance shaderinstance_test.cpp)
-target_link_libraries(gman_shaderinstance PRIVATE gman_core)
+target_link_libraries(gman_shaderinstance PRIVATE gman)
 add_dependencies(gman_shaderinstance gman_matte gman_plastic gman_metal gman_paintedplastic gman_shinymetal
   gman_mirror gman_glass gman_countingshader gman_nodestroyshader)
 
@@ -2317,7 +2317,7 @@ set_target_properties(gman_countingvolume PROPERTIES OUTPUT_NAME "countingvolume
 # Every shader kind resolves its token to lib<name>.so and falls back to a
 # clean, unset state on failure. See tests/shadermodulenames_test.cpp.
 add_executable(gman_shadermodulenames shadermodulenames_test.cpp)
-target_link_libraries(gman_shadermodulenames PRIVATE gman_core)
+target_link_libraries(gman_shadermodulenames PRIVATE gman)
 add_dependencies(gman_shadermodulenames gman_zbuffer gman_matte gman_notasurface gman_nodestroyshader
   gman_identitydisplacement gman_plastic gman_countingimager gman_countingvolume)
 
@@ -2332,7 +2332,7 @@ set_tests_properties(shadermodulenames PROPERTIES
 # a shallow copy's aliased pointer never frees an instance a parent frame
 # still holds. See tests/imagerownership_test.cpp.
 add_executable(gman_imagerownership imagerownership_test.cpp)
-target_link_libraries(gman_imagerownership PRIVATE gman_core)
+target_link_libraries(gman_imagerownership PRIVATE gman)
 add_dependencies(gman_imagerownership gman_countingimager gman_zbuffer)
 
 add_test(NAME imagerownership COMMAND gman_imagerownership)
@@ -2346,7 +2346,7 @@ set_tests_properties(imagerownership PROPERTIES
 # See imagerbackground_test.cpp's own comment. Each renderer writes the same
 # TIFF names, so each gets its own WORKING_DIRECTORY.
 add_executable(gman_imagerbackground imagerbackground_test.cpp)
-target_link_libraries(gman_imagerbackground PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_imagerbackground PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_imagerbackground gman_background gman_matte gman_zbuffer)
 
 set(GMAN_IMAGERBACKGROUND_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/imagerbackground-zbuffer-run")
@@ -2400,7 +2400,7 @@ endif()
 # through gman::shade against a matte appearance loaded the same factory
 # way. See tests/indirectambient_test.cpp.
 add_executable(gman_indirectambient indirectambient_test.cpp)
-target_link_libraries(gman_indirectambient PRIVATE gman_core)
+target_link_libraries(gman_indirectambient PRIVATE gman)
 add_dependencies(gman_indirectambient gman_matte)
 
 add_test(NAME indirectambient COMMAND gman_indirectambient)
@@ -2414,7 +2414,7 @@ set_tests_properties(indirectambient PROPERTIES
 # sphere and a polygon carrying "st". A null shader answers Cs clamped to
 # [0, 1]. See tests/albedoenv_test.cpp.
 add_executable(gman_albedoenv albedoenv_test.cpp)
-target_link_libraries(gman_albedoenv PRIVATE gman_core gman_ray)
+target_link_libraries(gman_albedoenv PRIVATE gman gman_ray)
 
 add_test(NAME albedoenv COMMAND gman_albedoenv)
 set_tests_properties(albedoenv PROPERTIES
@@ -2428,7 +2428,7 @@ set_tests_properties(albedoenv PROPERTIES
 # unknown basis name throws, and a NaN value evaluates as value 0. See
 # tests/slspline_test.cpp.
 add_executable(gman_slspline slspline_test.cpp)
-target_link_libraries(gman_slspline PRIVATE gman_core)
+target_link_libraries(gman_slspline PRIVATE gman)
 
 add_test(NAME slspline COMMAND gman_slspline)
 set_tests_properties(slspline PROPERTIES
@@ -2442,7 +2442,7 @@ set_tests_properties(slspline PROPERTIES
 # "render" "string indirect" included -- changes nothing. See
 # tests/radiosityoption_test.cpp.
 add_executable(gman_radiosityoption radiosityoption_test.cpp)
-target_link_libraries(gman_radiosityoption PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_radiosityoption PRIVATE gman gman_internal_headers)
 
 add_test(NAME radiosityoption COMMAND gman_radiosityoption)
 set_tests_properties(radiosityoption PROPERTIES
@@ -2456,7 +2456,7 @@ set_tests_properties(radiosityoption PROPERTIES
 # deleter frees through the module rather than through a plain delete.
 # See tests/indirectpass_test.cpp.
 add_executable(gman_indirectpass indirectpass_test.cpp)
-target_link_libraries(gman_indirectpass PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_indirectpass PRIVATE gman gman_ray gman_internal_headers)
 add_dependencies(gman_indirectpass gman_constantindirect gman_nullindirect gman_matte)
 
 add_test(NAME indirectpass COMMAND gman_indirectpass)
@@ -2470,7 +2470,7 @@ set_tests_properties(indirectpass PROPERTIES
 # path, the writer and lookup, and shinymetal rendered under three camera
 # orientations. See tests/environment_test.cpp.
 add_executable(gman_environment environment_test.cpp)
-target_link_libraries(gman_environment PRIVATE gman_core gman_raster TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_environment PRIVATE gman gman_raster TIFF::TIFF gman_internal_headers)
 add_dependencies(gman_environment gman_camerashader gman_shinymetal)
 
 set(GMAN_ENVIRONMENT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/environment-run")
@@ -2490,7 +2490,7 @@ set_tests_properties(environment PROPERTIES
 # suppressed level never formatting, and eight concurrent writers landing
 # 8000 whole lines.
 add_executable(gman_log log_test.cpp)
-target_link_libraries(gman_log PRIVATE gman_core)
+target_link_libraries(gman_log PRIVATE gman)
 
 set(GMAN_LOG_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/log-run")
 file(MAKE_DIRECTORY "${GMAN_LOG_WORKDIR}")
@@ -2507,7 +2507,7 @@ set_tests_properties(log PROPERTIES
 # an exception from one body stopping every worker before reaching the
 # calling thread.
 add_executable(gman_parallel parallel_test.cpp)
-target_link_libraries(gman_parallel PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_parallel PRIVATE gman gman_internal_headers)
 
 add_test(NAME parallel COMMAND gman_parallel)
 set_tests_properties(parallel PROPERTIES
@@ -2528,7 +2528,7 @@ set_tests_properties(librarylayering PROPERTIES
 # pow(gain * channel, 1/gamma) shape, and the sub-byte precision case the
 # deleted byte lookup table could never produce.
 add_executable(gman_gamma gamma_test.cpp)
-target_link_libraries(gman_gamma PRIVATE gman_core)
+target_link_libraries(gman_gamma PRIVATE gman)
 
 add_test(NAME gamma COMMAND gman_gamma)
 set_tests_properties(gamma PROPERTIES
@@ -2540,7 +2540,7 @@ set_tests_properties(gamma PROPERTIES
 # consults it, and a point/distant light reports the distance and
 # direction the contract promises.
 add_executable(gman_occlusion occlusion_test.cpp)
-target_link_libraries(gman_occlusion PRIVATE gman_core)
+target_link_libraries(gman_occlusion PRIVATE gman)
 
 add_test(NAME occlusion COMMAND gman_occlusion)
 set_tests_properties(occlusion PROPERTIES
@@ -2551,7 +2551,7 @@ set_tests_properties(occlusion PROPERTIES
 # one sees this env's own P/Ng and the caller's R, and gman::shade
 # forwards its own tracer argument to the shader it runs.
 add_executable(gman_trace trace_test.cpp)
-target_link_libraries(gman_trace PRIVATE gman_core)
+target_link_libraries(gman_trace PRIVATE gman)
 
 add_test(NAME trace COMMAND gman_trace)
 set_tests_properties(trace PROPERTIES
@@ -2562,7 +2562,7 @@ set_tests_properties(trace PROPERTIES
 # GMANSurfaceEnv's own wrapper and, for the six-argument overload, the
 # free function directly.
 add_executable(gman_reflectrefract reflectrefract_test.cpp)
-target_link_libraries(gman_reflectrefract PRIVATE gman_core)
+target_link_libraries(gman_reflectrefract PRIVATE gman)
 
 add_test(NAME reflectrefract COMMAND gman_reflectrefract)
 set_tests_properties(reflectrefract PROPERTIES
@@ -2573,7 +2573,7 @@ set_tests_properties(reflectrefract PROPERTIES
 # matte -- libmirror.so/libglass.so built first, found by bare name at
 # runtime through LD_LIBRARY_PATH/DYLD_LIBRARY_PATH.
 add_executable(gman_mirrorglass mirrorglass_test.cpp)
-target_link_libraries(gman_mirrorglass PRIVATE gman_core)
+target_link_libraries(gman_mirrorglass PRIVATE gman)
 add_dependencies(gman_mirrorglass gman_mirror gman_glass)
 
 add_test(NAME mirrorglass COMMAND gman_mirrorglass)
@@ -2587,7 +2587,7 @@ set_tests_properties(mirrorglass PROPERTIES
 # Its own working directory, since the paintedplastic case writes and reads
 # a texture file relative to cwd.
 add_executable(gman_shaderalbedo shaderalbedo_test.cpp)
-target_link_libraries(gman_shaderalbedo PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_shaderalbedo PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_shaderalbedo gman_matte gman_plastic gman_paintedplastic gman_metal gman_shinymetal gman_mirror
   gman_glass)
 
@@ -2603,7 +2603,7 @@ set_tests_properties(shaderalbedo PROPERTIES
 
 # paintedplastic's "normalname" bends its shading normal in computeCi and bsdf.
 add_executable(gman_normalmap normalmap_test.cpp)
-target_link_libraries(gman_normalmap PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_normalmap PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_normalmap gman_paintedplastic)
 
 set(GMAN_NORMALMAP_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/normalmap-run")
@@ -2620,7 +2620,7 @@ set_tests_properties(normalmap PROPERTIES
 # (cameraRay) as well as a world-space one (ray), and pins the [tmin,
 # tmax] interval every GMANRay defaults to.
 add_executable(gman_cameraray cameraray_test.cpp)
-target_link_libraries(gman_cameraray PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_cameraray PRIVATE gman gman_internal_headers)
 
 add_test(NAME cameraray COMMAND gman_cameraray)
 set_tests_properties(cameraray PROPERTIES
@@ -2631,7 +2631,7 @@ set_tests_properties(cameraray PROPERTIES
 # sphere and the four swept quadrics' intersectors share, its linear
 # branch exact and its quadratic branch stable under cancellation.
 add_executable(gman_rayquadratic rayquadratic_test.cpp)
-target_link_libraries(gman_rayquadratic PRIVATE gman_core gman_ray gman_ray_internal_headers)
+target_link_libraries(gman_rayquadratic PRIVATE gman gman_ray gman_ray_internal_headers)
 
 add_test(NAME rayquadratic COMMAND gman_rayquadratic)
 set_tests_properties(rayquadratic PROPERTIES
@@ -2642,7 +2642,7 @@ set_tests_properties(rayquadratic PROPERTIES
 # dyadic roots. The compiled solver lives in gman_ray; gmanrayquartic.h
 # is a libgmanray/ header, reached through gman_ray_internal_headers.
 add_executable(gman_rayquartic rayquartic_test.cpp)
-target_link_libraries(gman_rayquartic PRIVATE gman_core gman_ray gman_ray_internal_headers)
+target_link_libraries(gman_rayquartic PRIVATE gman gman_ray gman_ray_internal_headers)
 
 add_test(NAME rayquartic COMMAND gman_rayquartic)
 set_tests_properties(rayquartic PROPERTIES
@@ -2653,7 +2653,7 @@ set_tests_properties(rayquartic PROPERTIES
 # gman_ray, where ray geometry lives unconditionally, so this still
 # builds and runs with GMAN_BUILD_RAYTRACER off.
 add_executable(gman_raysphere raysphere_test.cpp)
-target_link_libraries(gman_raysphere PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raysphere PRIVATE gman gman_ray)
 
 add_test(NAME raysphere COMMAND gman_raysphere)
 set_tests_properties(raysphere PROPERTIES
@@ -2664,7 +2664,7 @@ set_tests_properties(raysphere PROPERTIES
 # and its own ray at origin distances 5, 1e4 and 1e6, linked against
 # gman_ray for the same reason as gman_raysphere above.
 add_executable(gman_rayhitprecision rayhitprecision_test.cpp)
-target_link_libraries(gman_rayhitprecision PRIVATE gman_core gman_ray)
+target_link_libraries(gman_rayhitprecision PRIVATE gman gman_ray)
 
 add_test(NAME rayhitprecision COMMAND gman_rayhitprecision)
 set_tests_properties(rayhitprecision PROPERTIES
@@ -2674,7 +2674,7 @@ set_tests_properties(rayhitprecision PROPERTIES
 # GMANRayDisk::intersect, linked against gman_ray for the
 # same reason as gman_raysphere above.
 add_executable(gman_raydisk raydisk_test.cpp)
-target_link_libraries(gman_raydisk PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raydisk PRIVATE gman gman_ray)
 
 add_test(NAME raydisk COMMAND gman_raydisk)
 set_tests_properties(raydisk PROPERTIES
@@ -2684,7 +2684,7 @@ set_tests_properties(raydisk PROPERTIES
 # GMANRayPolygon::intersect, linked against gman_ray for
 # the same reason as gman_raysphere above.
 add_executable(gman_raypolygon raypolygon_test.cpp)
-target_link_libraries(gman_raypolygon PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raypolygon PRIVATE gman gman_ray)
 
 add_test(NAME raypolygon COMMAND gman_raypolygon)
 set_tests_properties(raypolygon PROPERTIES
@@ -2694,7 +2694,7 @@ set_tests_properties(raypolygon PROPERTIES
 # GMANRayCylinder::intersect, linked against gman_ray for
 # the same reason as gman_raysphere above.
 add_executable(gman_raycylinder raycylinder_test.cpp)
-target_link_libraries(gman_raycylinder PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raycylinder PRIVATE gman gman_ray)
 
 add_test(NAME raycylinder COMMAND gman_raycylinder)
 set_tests_properties(raycylinder PROPERTIES
@@ -2704,7 +2704,7 @@ set_tests_properties(raycylinder PROPERTIES
 # GMANRayCone::intersect, linked against gman_ray for the
 # same reason as gman_raysphere above.
 add_executable(gman_raycone raycone_test.cpp)
-target_link_libraries(gman_raycone PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raycone PRIVATE gman gman_ray)
 
 add_test(NAME raycone COMMAND gman_raycone)
 set_tests_properties(raycone PROPERTIES
@@ -2714,7 +2714,7 @@ set_tests_properties(raycone PROPERTIES
 # GMANRayParaboloid::intersect, linked against gman_ray
 # for the same reason as gman_raysphere above.
 add_executable(gman_rayparaboloid rayparaboloid_test.cpp)
-target_link_libraries(gman_rayparaboloid PRIVATE gman_core gman_ray)
+target_link_libraries(gman_rayparaboloid PRIVATE gman gman_ray)
 
 add_test(NAME rayparaboloid COMMAND gman_rayparaboloid)
 set_tests_properties(rayparaboloid PROPERTIES
@@ -2724,7 +2724,7 @@ set_tests_properties(rayparaboloid PROPERTIES
 # GMANRayHyperboloid::intersect, linked against gman_ray
 # for the same reason as gman_raysphere above.
 add_executable(gman_rayhyperboloid rayhyperboloid_test.cpp)
-target_link_libraries(gman_rayhyperboloid PRIVATE gman_core gman_ray)
+target_link_libraries(gman_rayhyperboloid PRIVATE gman gman_ray)
 
 add_test(NAME rayhyperboloid COMMAND gman_rayhyperboloid)
 set_tests_properties(rayhyperboloid PROPERTIES
@@ -2735,7 +2735,7 @@ set_tests_properties(rayhyperboloid PROPERTIES
 # information about v on this plane, so v comes from the plane hit's own
 # radius, and the wedge is a spiral sector since phi(v) varies with v.
 add_executable(gman_hyperboloidflatannulus hyperboloidflatannulus_test.cpp)
-target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman_core gman_ray)
+target_link_libraries(gman_hyperboloidflatannulus PRIVATE gman gman_ray)
 
 add_test(NAME hyperboloidflatannulus COMMAND gman_hyperboloidflatannulus)
 set_tests_properties(hyperboloidflatannulus PROPERTIES
@@ -2745,7 +2745,7 @@ set_tests_properties(hyperboloidflatannulus PROPERTIES
 # GMANRayTorus::intersect, linked against
 # gman_ray for the same reason as gman_raysphere above.
 add_executable(gman_raytorus raytorus_test.cpp)
-target_link_libraries(gman_raytorus PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raytorus PRIVATE gman gman_ray)
 
 add_test(NAME raytorus COMMAND gman_raytorus)
 set_tests_properties(raytorus PROPERTIES
@@ -2757,7 +2757,7 @@ set_tests_properties(raytorus PROPERTIES
 # against gman_ray for the same reason as gman_raysphere above. See
 # tests/raybbox_test.cpp.
 add_executable(gman_raybbox raybbox_test.cpp)
-target_link_libraries(gman_raybbox PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raybbox PRIVATE gman gman_ray)
 
 add_test(NAME raybbox COMMAND gman_raybbox)
 set_tests_properties(raybbox PROPERTIES
@@ -2771,7 +2771,7 @@ set_tests_properties(raybbox PROPERTIES
 # header these accessors need is public. See
 # tests/rayplacementaccessors_test.cpp.
 add_executable(gman_rayplacementaccessors rayplacementaccessors_test.cpp)
-target_link_libraries(gman_rayplacementaccessors PRIVATE gman_core gman_ray)
+target_link_libraries(gman_rayplacementaccessors PRIVATE gman gman_ray)
 
 add_test(NAME rayplacementaccessors COMMAND gman_rayplacementaccessors)
 set_tests_properties(rayplacementaccessors PROPERTIES
@@ -2783,7 +2783,7 @@ set_tests_properties(rayplacementaccessors PROPERTIES
 # bounded primitive-test count -- linked against gman_ray for the same
 # reason as gman_raysphere above. See tests/raybvh_test.cpp.
 add_executable(gman_raybvh raybvh_test.cpp)
-target_link_libraries(gman_raybvh PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raybvh PRIVATE gman gman_ray)
 
 add_test(NAME raybvh COMMAND gman_raybvh)
 set_tests_properties(raybvh PROPERTIES
@@ -2795,7 +2795,7 @@ set_tests_properties(raybvh PROPERTIES
 # denormal direction component and a NaN box through GMANRayBVH. See
 # tests/raykernelnan_test.cpp.
 add_executable(gman_raykernelnan raykernelnan_test.cpp)
-target_link_libraries(gman_raykernelnan PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raykernelnan PRIVATE gman gman_ray)
 
 add_test(NAME raykernelnan COMMAND gman_raykernelnan)
 set_tests_properties(raykernelnan PROPERTIES
@@ -2807,7 +2807,7 @@ set_tests_properties(raykernelnan PROPERTIES
 # the intersector's own hits, and through gman::shade to a shader. See
 # tests/raysurfacederivatives_test.cpp.
 add_executable(gman_raysurfacederivatives raysurfacederivatives_test.cpp)
-target_link_libraries(gman_raysurfacederivatives PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raysurfacederivatives PRIVATE gman gman_ray)
 
 add_test(NAME raysurfacederivatives COMMAND gman_raysurfacederivatives)
 set_tests_properties(raysurfacederivatives PROPERTIES
@@ -2822,7 +2822,7 @@ set_tests_properties(raysurfacederivatives PROPERTIES
 # the proof that the geometry, the BVH and the occluder are gman_ray's, not
 # the plugin's.
 add_executable(gman_raybvhreentrant raybvhreentrant_test.cpp)
-target_link_libraries(gman_raybvhreentrant PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raybvhreentrant PRIVATE gman gman_ray)
 
 add_test(NAME raybvhreentrant COMMAND gman_raybvhreentrant)
 set_tests_properties(raybvhreentrant PROPERTIES
@@ -2836,7 +2836,7 @@ set_tests_properties(raybvhreentrant PROPERTIES
 # call site back to malloc/free never sees both halves of a pairing in the
 # same file. See tests/raybvhalloc_test.cpp.
 add_executable(gman_raybvhalloc raybvhalloc_test.cpp raybvhallocator.cpp)
-target_link_libraries(gman_raybvhalloc PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raybvhalloc PRIVATE gman gman_ray)
 
 add_test(NAME raybvhalloc COMMAND gman_raybvhalloc)
 set_tests_properties(raybvhalloc PROPERTIES
@@ -2849,7 +2849,7 @@ set_tests_properties(raybvhalloc PROPERTIES
 # and a Polygon's one-loop case keeps the same hits on the same three rays.
 # See tests/raypolygonhole_test.cpp.
 add_executable(gman_raypolygonhole raypolygonhole_test.cpp)
-target_link_libraries(gman_raypolygonhole PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_raypolygonhole PRIVATE gman gman_ray gman_internal_headers)
 
 add_test(NAME raypolygonhole COMMAND gman_raypolygonhole)
 set_tests_properties(raypolygonhole PROPERTIES
@@ -2862,7 +2862,7 @@ set_tests_properties(raypolygonhole PROPERTIES
 # closure's tolerance sits between 1e-5 and 5e-5 past. See
 # tests/raypolygonseam_test.cpp.
 add_executable(gman_raypolygonseam raypolygonseam_test.cpp)
-target_link_libraries(gman_raypolygonseam PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raypolygonseam PRIVATE gman gman_ray)
 
 add_test(NAME raypolygonseam COMMAND gman_raypolygonseam)
 set_tests_properties(raypolygonseam PROPERTIES
@@ -2873,7 +2873,7 @@ set_tests_properties(raypolygonseam PROPERTIES
 # a GMANRayPolygon nor a GMANRayPolygonMesh. See
 # tests/raypolygondegenerate_test.cpp.
 add_executable(gman_raypolygondegenerate raypolygondegenerate_test.cpp)
-target_link_libraries(gman_raypolygondegenerate PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_raypolygondegenerate PRIVATE gman gman_ray gman_internal_headers)
 
 add_test(NAME raypolygondegenerate COMMAND gman_raypolygondegenerate)
 set_tests_properties(raypolygondegenerate PROPERTIES
@@ -2887,7 +2887,7 @@ set_tests_properties(raypolygondegenerate PROPERTIES
 # between the BVH, the mesh's own linear intersect and the analytic
 # nearest face. See tests/polygonmeshbvh_test.cpp.
 add_executable(gman_polygonmeshbvh polygonmeshbvh_test.cpp)
-target_link_libraries(gman_polygonmeshbvh PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_polygonmeshbvh PRIVATE gman gman_ray gman_internal_headers)
 
 add_test(NAME polygonmeshbvh COMMAND gman_polygonmeshbvh)
 set_tests_properties(polygonmeshbvh PROPERTIES
@@ -2901,7 +2901,7 @@ set_tests_properties(polygonmeshbvh PROPERTIES
 # mirrored (s, t) would still fail even though both faces' centroids alone
 # could not tell it apart. See tests/polygonmeshtexcoord_test.cpp.
 add_executable(gman_polygonmeshtexcoord polygonmeshtexcoord_test.cpp)
-target_link_libraries(gman_polygonmeshtexcoord PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_polygonmeshtexcoord PRIVATE gman gman_ray gman_internal_headers)
 
 add_test(NAME polygonmeshtexcoord COMMAND gman_polygonmeshtexcoord)
 set_tests_properties(polygonmeshtexcoord PROPERTIES
@@ -2914,7 +2914,7 @@ set_tests_properties(polygonmeshtexcoord PROPERTIES
 # warning when its class or length is wrong. See
 # tests/raypolygonvertexnormals_test.cpp.
 add_executable(gman_raypolygonvertexnormals raypolygonvertexnormals_test.cpp)
-target_link_libraries(gman_raypolygonvertexnormals PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_raypolygonvertexnormals PRIVATE gman gman_ray gman_internal_headers)
 
 add_test(NAME raypolygonvertexnormals COMMAND gman_raypolygonvertexnormals)
 set_tests_properties(raypolygonvertexnormals PROPERTIES
@@ -2927,7 +2927,7 @@ set_tests_properties(raypolygonvertexnormals PROPERTIES
 # accepts, that a mesh owns its own copies, and the type's own
 # constructibility. See tests/polygonmesh_test.cpp.
 add_executable(gman_polygonmesh polygonmesh_test.cpp)
-target_link_libraries(gman_polygonmesh PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_polygonmesh PRIVATE gman gman_internal_headers)
 
 add_test(NAME polygonmesh COMMAND gman_polygonmesh)
 set_tests_properties(polygonmesh PROPERTIES
@@ -3021,7 +3021,7 @@ if(GMAN_BUILD_RADIOSITY)
   # the direct scene at one and at eight workers and asserts nothing. See
   # tests/raytracerthreads_test.cpp.
   add_executable(gman_raytracerthreads raytracerthreads_test.cpp)
-  target_link_libraries(gman_raytracerthreads PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+  target_link_libraries(gman_raytracerthreads PRIVATE gman gman_internal_headers gman_raytracer_objects)
   add_dependencies(gman_raytracerthreads gman_radiosity gman_matte gman_mirror gman_paintedplastic)
 
   add_test(NAME raytracerthreads COMMAND gman_raytracerthreads)
@@ -3035,7 +3035,7 @@ endif()
 # second inverse mapping no fixture in this tree needs yet. Pins the wanted
 # behavior; WILL_FAIL until the second inverse mapping is implemented.
 add_executable(gman_torusspindle torusspindle_test.cpp)
-target_link_libraries(gman_torusspindle PRIVATE gman_core gman_ray)
+target_link_libraries(gman_torusspindle PRIVATE gman gman_ray)
 
 add_test(NAME torusspindle COMMAND gman_torusspindle)
 set_tests_properties(torusspindle PROPERTIES
@@ -3048,7 +3048,7 @@ set_tests_properties(torusspindle PROPERTIES
 # against gman_ray, where GMANRayObjectManager and GMANRaySphere
 # both live.
 add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp)
-target_link_libraries(gman_rayobjectmanager PRIVATE gman_core gman_ray)
+target_link_libraries(gman_rayobjectmanager PRIVATE gman gman_ray)
 
 add_test(NAME rayobjectmanager COMMAND gman_rayobjectmanager)
 set_tests_properties(rayobjectmanager PROPERTIES
@@ -3060,7 +3060,7 @@ set_tests_properties(rayobjectmanager PROPERTIES
 # into a watertight triangle mesh over the z-buffer's own dice grid. See
 # tests/raypatch_test.cpp.
 add_executable(gman_raypatch raypatch_test.cpp)
-target_link_libraries(gman_raypatch PRIVATE gman_core gman_ray)
+target_link_libraries(gman_raypatch PRIVATE gman gman_ray)
 
 add_test(NAME raypatch COMMAND gman_raypatch)
 set_tests_properties(raypatch PROPERTIES
@@ -3073,7 +3073,7 @@ set_tests_properties(raypatch PROPERTIES
 # GMANAttributes loads libmatte.so by bare name, so this carries the
 # same ENVIRONMENT as gman_rayobjectmanager.
 add_executable(gman_raydepth raydepth_test.cpp)
-target_link_libraries(gman_raydepth PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_raydepth PRIVATE gman gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME raydepth COMMAND gman_raydepth)
 set_tests_properties(raydepth PROPERTIES
@@ -3085,7 +3085,7 @@ set_tests_properties(raydepth PROPERTIES
 # GMANRayOccluder lives; carries raydepth's own ENVIRONMENT for the
 # same reason too.
 add_executable(gman_rayoccluder rayoccluder_test.cpp)
-target_link_libraries(gman_rayoccluder PRIVATE gman_core gman_ray)
+target_link_libraries(gman_rayoccluder PRIVATE gman gman_ray)
 
 add_test(NAME rayoccluder COMMAND gman_rayoccluder)
 set_tests_properties(rayoccluder PROPERTIES
@@ -3098,7 +3098,7 @@ set_tests_properties(rayoccluder PROPERTIES
 # null-shader appearance gives 1 - Os, gman::clampCoverage reads a NaN as
 # opaque. See tests/blockertransmittance_test.cpp.
 add_executable(gman_blockertransmittance blockertransmittance_test.cpp)
-target_link_libraries(gman_blockertransmittance PRIVATE gman_core gman_ray)
+target_link_libraries(gman_blockertransmittance PRIVATE gman gman_ray)
 
 add_test(NAME blockertransmittance COMMAND gman_blockertransmittance)
 set_tests_properties(blockertransmittance PROPERTIES
@@ -3111,7 +3111,7 @@ set_tests_properties(blockertransmittance PROPERTIES
 # GMANRayOccluder::transmission, linked against gman_ray, where both
 # live. Carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_selfshadowsweep selfshadowsweep_test.cpp)
-target_link_libraries(gman_selfshadowsweep PRIVATE gman_core gman_ray)
+target_link_libraries(gman_selfshadowsweep PRIVATE gman gman_ray)
 
 add_test(NAME selfshadowsweep COMMAND gman_selfshadowsweep)
 set_tests_properties(selfshadowsweep PROPERTIES
@@ -3124,7 +3124,7 @@ set_tests_properties(selfshadowsweep PROPERTIES
 # under the ceiling, linked against gman_ray, where GMANRayOccluder
 # lives. Carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_contactgap contactgap_test.cpp)
-target_link_libraries(gman_contactgap PRIVATE gman_core gman_ray)
+target_link_libraries(gman_contactgap PRIVATE gman gman_ray)
 
 add_test(NAME contactgap COMMAND gman_contactgap)
 set_tests_properties(contactgap PROPERTIES
@@ -3138,7 +3138,7 @@ set_tests_properties(contactgap PROPERTIES
 # counted correctly. Linked and carries the ENVIRONMENT rayoccluder
 # above does, for the same reasons.
 add_executable(gman_raytrace raytrace_test.cpp)
-target_link_libraries(gman_raytrace PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_raytrace PRIVATE gman gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME raytrace COMMAND gman_raytrace)
 set_tests_properties(raytrace PROPERTIES
@@ -3150,7 +3150,7 @@ set_tests_properties(raytrace PROPERTIES
 # against gman_raytracer_objects, which still compiles GMANRaytraceRenderer
 # itself; carries raydepth's own ENVIRONMENT for the same reason too.
 add_executable(gman_compositelayercap compositelayercap_test.cpp)
-target_link_libraries(gman_compositelayercap PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_compositelayercap PRIVATE gman gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME compositelayercap COMMAND gman_compositelayercap)
 set_tests_properties(compositelayercap PROPERTIES
@@ -3163,7 +3163,7 @@ set_tests_properties(compositelayercap PROPERTIES
 # ENVIRONMENT for the same reason too. See
 # coincidenttransmission_test.cpp's own comment.
 add_executable(gman_coincidenttransmission coincidenttransmission_test.cpp)
-target_link_libraries(gman_coincidenttransmission PRIVATE gman_core gman_ray)
+target_link_libraries(gman_coincidenttransmission PRIVATE gman gman_ray)
 
 add_test(NAME coincidenttransmission COMMAND gman_coincidenttransmission)
 set_tests_properties(coincidenttransmission PROPERTIES
@@ -3176,7 +3176,7 @@ set_tests_properties(coincidenttransmission PROPERTIES
 # itself; carries raydepth's own ENVIRONMENT for the same reason too.
 # See closetransparentstack_test.cpp's own comment.
 add_executable(gman_closetransparentstack closetransparentstack_test.cpp)
-target_link_libraries(gman_closetransparentstack PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_closetransparentstack PRIVATE gman gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME closetransparentstack COMMAND gman_closetransparentstack)
 set_tests_properties(closetransparentstack PROPERTIES
@@ -3189,7 +3189,7 @@ set_tests_properties(closetransparentstack PROPERTIES
 # own ENVIRONMENT for the same reason too. See
 # grazingtransparent_test.cpp's own comment.
 add_executable(gman_grazingtransparent grazingtransparent_test.cpp)
-target_link_libraries(gman_grazingtransparent PRIVATE gman_core gman_internal_headers gman_raytracer_objects)
+target_link_libraries(gman_grazingtransparent PRIVATE gman gman_internal_headers gman_raytracer_objects)
 
 add_test(NAME grazingtransparent COMMAND gman_grazingtransparent)
 set_tests_properties(grazingtransparent PROPERTIES
@@ -3204,7 +3204,7 @@ set_tests_properties(grazingtransparent PROPERTIES
 # otherwise.
 if(GMAN_BUILD_RAYTRACER)
   add_executable(gman_rayrender rayrender_test.cpp)
-  target_link_libraries(gman_rayrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_rayrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_rayrender gman_raytracer)
 
   set(GMAN_RAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rayrender-run")
@@ -3223,7 +3223,7 @@ if(GMAN_BUILD_RAYTRACER)
   # small sphere leaves every corner of an 8x8 frame uncovered, reading
   # exactly (0, 0, 0) under both renderers. See tests/backgroundcolor_test.cpp.
   add_executable(gman_backgroundcolor backgroundcolor_test.cpp)
-  target_link_libraries(gman_backgroundcolor PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_backgroundcolor PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_backgroundcolor gman_raytracer)
 
   set(GMAN_BACKGROUNDCOLOR_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/backgroundcolor-run")
@@ -3241,7 +3241,7 @@ if(GMAN_BUILD_RAYTRACER)
   # partial-thetamax disk, matching a checked-in golden image. See
   # tests/diskrayrender_test.cpp.
   add_executable(gman_diskrayrender diskrayrender_test.cpp)
-  target_link_libraries(gman_diskrayrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_diskrayrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_diskrayrender gman_raytracer)
 
   set(GMAN_DISKRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/diskrayrender-run")
@@ -3260,7 +3260,7 @@ if(GMAN_BUILD_RAYTRACER)
   # a cylinder, cone, paraboloid and hyperboloid side by side, matching a
   # checked-in golden image. See tests/quadricsrayrender_test.cpp.
   add_executable(gman_quadricsrayrender quadricsrayrender_test.cpp)
-  target_link_libraries(gman_quadricsrayrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_quadricsrayrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_quadricsrayrender gman_raytracer)
 
   set(GMAN_QUADRICSRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/quadricsrayrender-run")
@@ -3281,7 +3281,7 @@ if(GMAN_BUILD_RAYTRACER)
   # tests/rib/r8_mirror_matte.rib's render, the same scene with the
   # mirror sphere replaced by matte. See tests/mirrorrayrender_test.cpp.
   add_executable(gman_mirrorrayrender mirrorrayrender_test.cpp)
-  target_link_libraries(gman_mirrorrayrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_mirrorrayrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_mirrorrayrender gman_raytracer gman_mirror gman_matte)
 
   set(GMAN_MIRRORRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/mirrorrayrender-run")
@@ -3302,7 +3302,7 @@ if(GMAN_BUILD_RAYTRACER)
   # backdrop's edge displaced from its unrefracted raster x. See
   # tests/glassrayrender_test.cpp.
   add_executable(gman_glassrayrender glassrayrender_test.cpp)
-  target_link_libraries(gman_glassrayrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_glassrayrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_glassrayrender gman_raytracer gman_glass gman_matte)
 
   set(GMAN_GLASSRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/glassrayrender-run")
@@ -3323,7 +3323,7 @@ if(GMAN_BUILD_RAYTRACER)
   # nothing, clearing the name undoes it, and the pass reaches a mirror's
   # reflected hit too. See tests/indirectrender_test.cpp.
   add_executable(gman_indirectrender indirectrender_test.cpp)
-  target_link_libraries(gman_indirectrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_indirectrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_indirectrender gman_raytracer gman_matte gman_mirror gman_constantindirect)
 
   set(GMAN_INDIRECTRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/indirectrender-run")
@@ -3346,7 +3346,7 @@ if(GMAN_BUILD_RAYTRACER)
   # GMAN_BUILD_RADIOSITY alone. See tests/radiosityrender_test.cpp.
   if(GMAN_BUILD_RADIOSITY)
     add_executable(gman_radiosityrender radiosityrender_test.cpp)
-    target_link_libraries(gman_radiosityrender PRIVATE gman_core TIFF::TIFF)
+    target_link_libraries(gman_radiosityrender PRIVATE gman TIFF::TIFF)
     add_dependencies(gman_radiosityrender gman_raytracer gman_radiosity gman_matte)
 
     set(GMAN_RADIOSITYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/radiosityrender-run")
@@ -3367,7 +3367,7 @@ if(GMAN_BUILD_RAYTRACER)
     # leaves the back wall symmetric, and two renders of the pass's own
     # scene are byte-identical. See tests/cornellbox_test.cpp.
     add_executable(gman_cornellbox cornellbox_test.cpp)
-    target_link_libraries(gman_cornellbox PRIVATE gman_core TIFF::TIFF)
+    target_link_libraries(gman_cornellbox PRIVATE gman TIFF::TIFF)
     add_dependencies(gman_cornellbox gman_raytracer gman_radiosity gman_matte)
 
     set(GMAN_CORNELLBOX_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/cornellbox-run")
@@ -3389,7 +3389,7 @@ if(GMAN_BUILD_RAYTRACER)
     # pane, brightens a ceiling a downward-aimed distantlight never
     # reaches directly. See tests/radiositywindow_test.cpp.
     add_executable(gman_radiositywindow radiositywindow_test.cpp)
-    target_link_libraries(gman_radiositywindow PRIVATE gman_core TIFF::TIFF)
+    target_link_libraries(gman_radiositywindow PRIVATE gman TIFF::TIFF)
     add_dependencies(gman_radiositywindow gman_raytracer gman_radiosity gman_matte)
 
     set(GMAN_RADIOSITYWINDOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/radiositywindow-run")
@@ -3410,7 +3410,7 @@ if(GMAN_BUILD_RAYTRACER)
     # arc where the diced facet's chord normal falls across the ray. See
     # tests/radiosityrim_test.cpp.
     add_executable(gman_radiosityrim radiosityrim_test.cpp)
-    target_link_libraries(gman_radiosityrim PRIVATE gman_core TIFF::TIFF)
+    target_link_libraries(gman_radiosityrim PRIVATE gman TIFF::TIFF)
     add_dependencies(gman_radiosityrim gman_raytracer gman_radiosity gman_matte)
 
     set(GMAN_RADIOSITYRIM_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/radiosityrim-run")
@@ -3430,7 +3430,7 @@ if(GMAN_BUILD_RAYTRACER)
   # full torus tilted so its hole shows and a partial torus, matching a
   # checked-in golden image. See tests/torusrayrender_test.cpp.
   add_executable(gman_torusrayrender torusrayrender_test.cpp)
-  target_link_libraries(gman_torusrayrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_torusrayrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_torusrayrender gman_raytracer)
 
   set(GMAN_TORUSRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/torusrayrender-run")
@@ -3449,7 +3449,7 @@ if(GMAN_BUILD_RAYTRACER)
   # camera-facing pentagon, matching a checked-in golden image. See
   # tests/polygonrayrender_test.cpp.
   add_executable(gman_polygonrayrender polygonrayrender_test.cpp)
-  target_link_libraries(gman_polygonrayrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_polygonrayrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_polygonrayrender gman_raytracer)
 
   set(GMAN_POLYGONRAYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonrayrender-run")
@@ -3469,7 +3469,7 @@ if(GMAN_BUILD_RAYTRACER)
   # diagonal, with every pixel opaque. See
   # tests/raypolygonseamrender_test.cpp.
   add_executable(gman_raypolygonseamrender raypolygonseamrender_test.cpp)
-  target_link_libraries(gman_raypolygonseamrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_raypolygonseamrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_raypolygonseamrender gman_raytracer)
 
   set(GMAN_RAYPOLYGONSEAMRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/raypolygonseamrender-run")
@@ -3489,7 +3489,7 @@ if(GMAN_BUILD_RAYTRACER)
   # renderers' differing sample placement is expected to disagree. See
   # tests/polygonzbuffer_test.cpp.
   add_executable(gman_polygonzbuffer polygonzbuffer_test.cpp)
-  target_link_libraries(gman_polygonzbuffer PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_polygonzbuffer PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_polygonzbuffer gman_raytracer)
 
   set(GMAN_POLYGONZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonzbuffer-run")
@@ -3510,7 +3510,7 @@ if(GMAN_BUILD_RAYTRACER)
   # own polygon output on a texture affine in (s, t). See
   # tests/polygonstparity_test.cpp.
   add_executable(gman_polygonstparity polygonstparity_test.cpp)
-  target_link_libraries(gman_polygonstparity PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_polygonstparity PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_polygonstparity gman_raytracer)
 
   set(GMAN_POLYGONSTPARITY_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonstparity-run")
@@ -3532,7 +3532,7 @@ if(GMAN_BUILD_RAYTRACER)
   # compared pixel by pixel on alpha coverage. See
   # tests/polygonraycoverage_test.cpp.
   add_executable(gman_polygonraycoverage polygonraycoverage_test.cpp)
-  target_link_libraries(gman_polygonraycoverage PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_polygonraycoverage PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_polygonraycoverage gman_raytracer)
 
   set(GMAN_POLYGONRAYCOVERAGE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/polygonraycoverage-run")
@@ -3553,7 +3553,7 @@ if(GMAN_BUILD_RAYTRACER)
   # shadow_nolight.rib and shadow_noblocker.rib. See
   # shadowrender_test.cpp's own comment.
   add_executable(gman_shadowrender shadowrender_test.cpp)
-  target_link_libraries(gman_shadowrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_shadowrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_shadowrender gman_raytracer)
 
   set(GMAN_SHADOWRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/shadowrender-run")
@@ -3575,7 +3575,7 @@ if(GMAN_BUILD_RAYTRACER)
   # and transparency_back_alone.rib. See transparencyrender_test.cpp's own
   # comment.
   add_executable(gman_transparencyrender transparencyrender_test.cpp)
-  target_link_libraries(gman_transparencyrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_transparencyrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_transparencyrender gman_raytracer)
 
   set(GMAN_TRANSPARENCYRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/transparencyrender-run")
@@ -3597,7 +3597,7 @@ if(GMAN_BUILD_RAYTRACER)
   # wider than GOLDEN_CHANNEL_TOL. See
   # transparencyshadowrender_test.cpp's own comment.
   add_executable(gman_transparencyshadowrender transparencyshadowrender_test.cpp)
-  target_link_libraries(gman_transparencyshadowrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_transparencyshadowrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_transparencyshadowrender gman_raytracer)
 
   set(GMAN_TRANSPARENCYSHADOWRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/transparencyshadowrender-run")
@@ -3618,7 +3618,7 @@ if(GMAN_BUILD_RAYTRACER)
   # once the shadow ray's origin offset lands. See
   # contactshadow_test.cpp's own comment.
   add_executable(gman_contactshadow contactshadow_test.cpp)
-  target_link_libraries(gman_contactshadow PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_contactshadow PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_contactshadow gman_raytracer)
 
   set(GMAN_CONTACTSHADOW_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/contactshadow-run")
@@ -3639,7 +3639,7 @@ if(GMAN_BUILD_RAYTRACER)
   # the silhouette dips below both its horizontal neighbors. See
   # acnesphere_test.cpp's own comment.
   add_executable(gman_acnesphere acnesphere_test.cpp)
-  target_link_libraries(gman_acnesphere PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_acnesphere PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_acnesphere gman_raytracer)
 
   set(GMAN_ACNESPHERE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/acnesphere-run")
@@ -3660,7 +3660,7 @@ if(GMAN_BUILD_RAYTRACER)
   # fixture per form of the defect. See surfaceparameters_test.cpp's own
   # comment.
   add_executable(gman_surfaceparameters surfaceparameters_test.cpp)
-  target_link_libraries(gman_surfaceparameters PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_surfaceparameters PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_surfaceparameters gman_raytracer)
 
   set(GMAN_SURFACEPARAMETERS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/surfaceparameters-run")
@@ -3684,7 +3684,7 @@ if(GMAN_BUILD_RAYTRACER)
   # pixel's RGB at or below its own alpha. See coveragealpha_test.cpp's own
   # comment.
   add_executable(gman_coveragealpha coveragealpha_test.cpp)
-  target_link_libraries(gman_coveragealpha PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_coveragealpha PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_coveragealpha gman_raytracer)
 
   set(GMAN_COVERAGEALPHA_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/coveragealpha-run")
@@ -3708,7 +3708,7 @@ endif()
 # works. See unknownsurface_test.cpp's own comment. Both renderers write
 # the same TIFF names, so each gets its own WORKING_DIRECTORY.
 add_executable(gman_unknownsurface unknownsurface_test.cpp)
-target_link_libraries(gman_unknownsurface PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_unknownsurface PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_unknownsurface gman_zbuffer gman_matte gman_plastic gman_notasurface gman_nodestroyshader)
 
 set(GMAN_UNKNOWNSURFACE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/unknownsurface-zbuffer-run")
@@ -3747,7 +3747,7 @@ endif()
 # ribshaderrequests_test.cpp's own comment. Both renderers write the same
 # TIFF names, so each gets its own WORKING_DIRECTORY.
 add_executable(gman_ribshaderrequests ribshaderrequests_test.cpp)
-target_link_libraries(gman_ribshaderrequests PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_ribshaderrequests PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_ribshaderrequests gman_zbuffer gman_countingvolume gman_identitydisplacement
   gman_countingimager)
 
@@ -3786,7 +3786,7 @@ endif()
 # next file on the command line still runs. See reportederror_test.cpp's
 # own comment.
 add_executable(gman_reportederror reportederror_test.cpp)
-target_link_libraries(gman_reportederror PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_reportederror PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_reportederror gman_zbuffer gman_matte)
 
 set(GMAN_REPORTEDERROR_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/reportederror-run")
@@ -3808,7 +3808,7 @@ set_tests_properties(reportederror PROPERTIES
 # Direct unit test against those classes, no gman binary. The PNG checks
 # compile and link only under GMAN_WITH_PNG.
 add_executable(gman_outputnarrowing outputnarrowing_test.cpp)
-target_link_libraries(gman_outputnarrowing PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+target_link_libraries(gman_outputnarrowing PRIVATE gman TIFF::TIFF gman_internal_headers)
 if(GMAN_WITH_PNG)
   target_compile_definitions(gman_outputnarrowing PRIVATE GMAN_WITH_PNG)
   target_link_libraries(gman_outputnarrowing PRIVATE PNG::PNG)
@@ -3830,7 +3830,7 @@ set_tests_properties(outputnarrowing PROPERTIES
 # alpha. Direct unit test against gman::OutputPNG, no gman binary.
 # Compiles and links only under GMAN_WITH_PNG.
 add_executable(gman_pngdisplaymode pngdisplaymode_test.cpp)
-target_link_libraries(gman_pngdisplaymode PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_pngdisplaymode PRIVATE gman gman_internal_headers)
 if(GMAN_WITH_PNG)
   target_compile_definitions(gman_pngdisplaymode PRIVATE GMAN_WITH_PNG)
   target_link_libraries(gman_pngdisplaymode PRIVATE PNG::PNG)
@@ -3849,7 +3849,7 @@ set_tests_properties(pngdisplaymode PROPERTIES
 # gman::OutputPNG writes no gAMA chunk at any Exposure gamma, so every
 # viewer displays its bytes as written.
 add_executable(gman_pnggamma pnggamma_test.cpp)
-target_link_libraries(gman_pnggamma PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_pnggamma PRIVATE gman gman_internal_headers)
 if(GMAN_WITH_PNG)
   target_compile_definitions(gman_pnggamma PRIVATE GMAN_WITH_PNG)
   target_link_libraries(gman_pnggamma PRIVATE PNG::PNG)
@@ -3870,7 +3870,7 @@ set_tests_properties(pnggamma PROPERTIES
 # reproduction depends only on the arguments, never on call order. The
 # schedule independence check drives gman::parallelFor directly.
 add_executable(gman_sampler sampler_test.cpp)
-target_link_libraries(gman_sampler PRIVATE gman_core)
+target_link_libraries(gman_sampler PRIVATE gman)
 
 add_test(NAME sampler COMMAND gman_sampler)
 set_tests_properties(sampler PROPERTIES
@@ -3881,7 +3881,7 @@ set_tests_properties(sampler PROPERTIES
 # checks are driven by gman::sample2D; the statistics draw i.i.d.
 # samples so their standard error is the real one.
 add_executable(gman_samplewarp samplewarp_test.cpp)
-target_link_libraries(gman_samplewarp PRIVATE gman_core)
+target_link_libraries(gman_samplewarp PRIVATE gman)
 
 add_test(NAME samplewarp COMMAND gman_samplewarp)
 set_tests_properties(samplewarp PROPERTIES
@@ -3893,7 +3893,7 @@ set_tests_properties(samplewarp PROPERTIES
 # The statistics draw i.i.d. samples, as samplewarp's do. Links
 # raybvhallocator.cpp for its counting operator new.
 add_executable(gman_bsdf bsdf_test.cpp raybvhallocator.cpp)
-target_link_libraries(gman_bsdf PRIVATE gman_core)
+target_link_libraries(gman_bsdf PRIVATE gman)
 
 add_test(NAME bsdf COMMAND gman_bsdf)
 set_tests_properties(bsdf PROPERTIES
@@ -3904,7 +3904,7 @@ set_tests_properties(bsdf PROPERTIES
 # sidedness, the eval underflow guard, clamping, capacity and no heap
 # allocation. Links raybvhallocator.cpp as bsdf's own test does.
 add_executable(gman_bsdfggx bsdfggx_test.cpp raybvhallocator.cpp)
-target_link_libraries(gman_bsdfggx PRIVATE gman_core)
+target_link_libraries(gman_bsdfggx PRIVATE gman)
 
 add_test(NAME bsdfggx COMMAND gman_bsdfggx)
 set_tests_properties(bsdfggx PROPERTIES
@@ -3914,7 +3914,7 @@ set_tests_properties(bsdfggx PROPERTIES
 # gman::BSDF's GGX lobe's statistics: energy by quadrature and by sample(),
 # sample() against pdf() by histogram, and a two-lobe mixture.
 add_executable(gman_bsdfggxstats bsdfggxstats_test.cpp)
-target_link_libraries(gman_bsdfggxstats PRIVATE gman_core)
+target_link_libraries(gman_bsdfggxstats PRIVATE gman)
 
 add_test(NAME bsdfggxstats COMMAND gman_bsdfggxstats)
 set_tests_properties(bsdfggxstats PROPERTIES
@@ -3927,7 +3927,7 @@ set_tests_properties(bsdfggxstats PROPERTIES
 # bounds, capacity and failed draws; shadowTransmittance; and no heap
 # allocation. Links raybvhallocator.cpp as bsdf's own test does.
 add_executable(gman_bsdfdelta bsdfdelta_test.cpp raybvhallocator.cpp)
-target_link_libraries(gman_bsdfdelta PRIVATE gman_core)
+target_link_libraries(gman_bsdfdelta PRIVATE gman)
 
 add_test(NAME bsdfdelta COMMAND gman_bsdfdelta)
 set_tests_properties(bsdfdelta PROPERTIES
@@ -3950,7 +3950,7 @@ endforeach()
 # tracer code; the include path alone lets pathtracerscene.h's shared
 # helpers, unused here, still compile.
 add_executable(gman_hitbsdf hitbsdf_test.cpp)
-target_link_libraries(gman_hitbsdf PRIVATE gman_core gman_ray gman_internal_headers)
+target_link_libraries(gman_hitbsdf PRIVATE gman gman_ray gman_internal_headers)
 target_include_directories(gman_hitbsdf PRIVATE
   $<TARGET_PROPERTY:gman_pathtracer_objects,INTERFACE_INCLUDE_DIRECTORIES>)
 add_dependencies(gman_hitbsdf gman_matte gman_plastic gman_glass)
@@ -3967,7 +3967,7 @@ set_tests_properties(hitbsdf PROPERTIES
 # "render" "string indirect" and "radiosity" "float elementsize" included --
 # changes nothing. See tests/pathtraceroption_test.cpp.
 add_executable(gman_pathtraceroption pathtraceroption_test.cpp)
-target_link_libraries(gman_pathtraceroption PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_pathtraceroption PRIVATE gman gman_internal_headers)
 
 add_test(NAME pathtraceroption COMMAND gman_pathtraceroption)
 set_tests_properties(pathtraceroption PROPERTIES
@@ -3981,7 +3981,7 @@ set_tests_properties(pathtraceroption PROPERTIES
 # handlers read stay out, an unresolvable token drops silently, and a
 # frame's Options end with it. See tests/optionstore_test.cpp.
 add_executable(gman_optionstore optionstore_test.cpp)
-target_link_libraries(gman_optionstore PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_optionstore PRIVATE gman gman_internal_headers)
 
 add_test(NAME optionstore COMMAND gman_optionstore)
 set_tests_properties(optionstore PROPERTIES
@@ -3994,7 +3994,7 @@ set_tests_properties(optionstore PROPERTIES
 # gman_pathtracer_objects, which still compiles GMANPathtraceRenderer
 # itself. See tests/pathtracerfurnace_test.cpp.
 add_executable(gman_pathtracerfurnace pathtracerfurnace_test.cpp)
-target_link_libraries(gman_pathtracerfurnace PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerfurnace PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerfurnace gman_matte)
 
 add_test(NAME pathtracerfurnace COMMAND gman_pathtracerfurnace)
@@ -4008,7 +4008,7 @@ set_tests_properties(pathtracerfurnace PROPERTIES
 # against gman_pathtracer_objects, which still compiles
 # GMANPathtraceRenderer itself. See tests/pathtracerdirect_test.cpp.
 add_executable(gman_pathtracerdirect pathtracerdirect_test.cpp)
-target_link_libraries(gman_pathtracerdirect PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerdirect PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerdirect gman_matte)
 
 add_test(NAME pathtracerdirect COMMAND gman_pathtracerdirect)
@@ -4023,7 +4023,7 @@ set_tests_properties(pathtracerdirect PROPERTIES
 # compiles GMANPathtraceRenderer itself. See
 # tests/pathtracerdirectsum_test.cpp.
 add_executable(gman_pathtracerdirectsum pathtracerdirectsum_test.cpp)
-target_link_libraries(gman_pathtracerdirectsum PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerdirectsum PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerdirectsum gman_matte)
 
 add_test(NAME pathtracerdirectsum COMMAND gman_pathtracerdirectsum)
@@ -4037,7 +4037,7 @@ set_tests_properties(pathtracerdirectsum PROPERTIES
 # passes nothing. Linked against gman_pathtracer_objects, which still
 # compiles GMANPathtraceRenderer itself. See tests/pathtracershadow_test.cpp.
 add_executable(gman_pathtracershadow pathtracershadow_test.cpp)
-target_link_libraries(gman_pathtracershadow PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracershadow PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracershadow gman_matte gman_glass)
 
 add_test(NAME pathtracershadow COMMAND gman_pathtracershadow)
@@ -4053,7 +4053,7 @@ set_tests_properties(pathtracershadow PROPERTIES
 # reads opaque. See tests/pathtracershadowcap_test.cpp.
 add_executable(gman_pathtracershadowcap16 pathtracershadowcap_test.cpp)
 target_compile_definitions(gman_pathtracershadowcap16 PRIVATE PATHTRACER_SHADOW_CAP_COUNT=0)
-target_link_libraries(gman_pathtracershadowcap16 PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracershadowcap16 PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracershadowcap16 gman_matte)
 
 add_test(NAME pathtracershadowcap16 COMMAND gman_pathtracershadowcap16)
@@ -4064,7 +4064,7 @@ set_tests_properties(pathtracershadowcap16 PROPERTIES
 
 add_executable(gman_pathtracershadowcap17 pathtracershadowcap_test.cpp)
 target_compile_definitions(gman_pathtracershadowcap17 PRIVATE PATHTRACER_SHADOW_CAP_COUNT=1)
-target_link_libraries(gman_pathtracershadowcap17 PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracershadowcap17 PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracershadowcap17 gman_matte)
 
 add_test(NAME pathtracershadowcap17 COMMAND gman_pathtracershadowcap17)
@@ -4081,7 +4081,7 @@ set_tests_properties(pathtracershadowcap17 PROPERTIES
 # gman_pathtracer_objects, which still compiles GMANPathtraceRenderer
 # itself. See tests/pathtracerframe_test.cpp.
 add_executable(gman_pathtracerframe pathtracerframe_test.cpp)
-target_link_libraries(gman_pathtracerframe PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerframe PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerframe gman_matte)
 
 add_test(NAME pathtracerframe COMMAND gman_pathtracerframe)
@@ -4096,7 +4096,7 @@ set_tests_properties(pathtracerframe PROPERTIES
 # `-r gmanpathtracer` has nothing to load otherwise.
 if(GMAN_BUILD_PATHTRACER)
   add_executable(gman_pathtracerrender pathtracerrender_test.cpp)
-  target_link_libraries(gman_pathtracerrender PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_pathtracerrender PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_pathtracerrender gman_pathtracer)
 
   set(GMAN_PATHTRACERRENDER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/pathtracerrender-run")
@@ -4115,7 +4115,7 @@ endif()
 # `gman -r gmanpathtracer` weights light and BSDF samples by a mapped card's bent normal.
 if(GMAN_BUILD_PATHTRACER)
   add_executable(gman_normalmappathtracer normalmappathtracer_test.cpp)
-  target_link_libraries(gman_normalmappathtracer PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_normalmappathtracer PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_normalmappathtracer gman_pathtracer gman_paintedplastic)
 
   set(GMAN_NORMALMAPPATHTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/normalmappathtracer-run")
@@ -4139,7 +4139,7 @@ endif()
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/basicstate.c. See
 # tests/arealightsource_test.cpp.
 add_executable(gman_arealightsource arealightsource_test.cpp)
-target_link_libraries(gman_arealightsource PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_arealightsource PRIVATE gman gman_internal_headers)
 
 add_test(NAME arealightsource
   COMMAND gman_arealightsource "${CMAKE_CURRENT_SOURCE_DIR}/rib")
@@ -4155,7 +4155,7 @@ set_tests_properties(arealightsource PROPERTIES
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/arealightsource_test.cpp. See
 # tests/polygonnverts_test.cpp.
 add_executable(gman_polygonnverts polygonnverts_test.cpp)
-target_link_libraries(gman_polygonnverts PRIVATE gman_core gman_internal_headers)
+target_link_libraries(gman_polygonnverts PRIVATE gman gman_internal_headers)
 
 add_test(NAME polygonnverts COMMAND gman_polygonnverts)
 set_tests_properties(polygonnverts PROPERTIES
@@ -4168,7 +4168,7 @@ set_tests_properties(polygonnverts PROPERTIES
 # uniform-by-area histogram, a degenerate primitive and the sampled normal.
 # See tests/emitterprimitive_test.cpp.
 add_executable(gman_emitterprimitive emitterprimitive_test.cpp)
-target_link_libraries(gman_emitterprimitive PRIVATE gman_core gman_ray)
+target_link_libraries(gman_emitterprimitive PRIVATE gman gman_ray)
 
 add_test(NAME emitterprimitive COMMAND gman_emitterprimitive)
 set_tests_properties(emitterprimitive PROPERTIES
@@ -4180,7 +4180,7 @@ set_tests_properties(emitterprimitive PROPERTIES
 # plus appearanceOf's own exclusion of an illuminated area light from
 # Appearance::lights. See tests/emitter_test.cpp.
 add_executable(gman_emitter emitter_test.cpp)
-target_link_libraries(gman_emitter PRIVATE gman_core gman_ray)
+target_link_libraries(gman_emitter PRIVATE gman gman_ray)
 
 add_test(NAME emitter COMMAND gman_emitter)
 set_tests_properties(emitter PROPERTIES
@@ -4198,7 +4198,7 @@ set_tests_properties(emitter PROPERTIES
 # tests/pathtracerarealightfarside_test.cpp and
 # tests/pathtracerarealighthit_test.cpp.
 add_executable(gman_pathtracerarealight pathtracerarealight_test.cpp)
-target_link_libraries(gman_pathtracerarealight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerarealight PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerarealight gman_matte)
 
 add_test(NAME pathtracerarealight COMMAND gman_pathtracerarealight)
@@ -4208,7 +4208,7 @@ set_tests_properties(pathtracerarealight PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_pathtracerarealightfarside pathtracerarealightfarside_test.cpp)
-target_link_libraries(gman_pathtracerarealightfarside PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerarealightfarside PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerarealightfarside gman_matte)
 
 add_test(NAME pathtracerarealightfarside COMMAND gman_pathtracerarealightfarside)
@@ -4218,7 +4218,7 @@ set_tests_properties(pathtracerarealightfarside PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_pathtracerarealighthit pathtracerarealighthit_test.cpp)
-target_link_libraries(gman_pathtracerarealighthit PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerarealighthit PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerarealighthit gman_mirror gman_glass)
 
 add_test(NAME pathtracerarealighthit COMMAND gman_pathtracerarealighthit)
@@ -4235,7 +4235,7 @@ set_tests_properties(pathtracerarealighthit PROPERTIES
 # tests/pathtracerarealightscalelarge_test.cpp and
 # tests/pathtracerarealightpane_test.cpp.
 add_executable(gman_pathtracerarealightscale pathtracerarealightscale_test.cpp)
-target_link_libraries(gman_pathtracerarealightscale PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerarealightscale PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerarealightscale gman_matte)
 
 add_test(NAME pathtracerarealightscale COMMAND gman_pathtracerarealightscale)
@@ -4245,7 +4245,7 @@ set_tests_properties(pathtracerarealightscale PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_pathtracerarealightscalelarge pathtracerarealightscalelarge_test.cpp)
-target_link_libraries(gman_pathtracerarealightscalelarge PRIVATE gman_core gman_internal_headers
+target_link_libraries(gman_pathtracerarealightscalelarge PRIVATE gman gman_internal_headers
   gman_pathtracer_objects)
 add_dependencies(gman_pathtracerarealightscalelarge gman_matte)
 
@@ -4256,7 +4256,7 @@ set_tests_properties(pathtracerarealightscalelarge PROPERTIES
   TIMEOUT 30)
 
 add_executable(gman_pathtracerarealightpane pathtracerarealightpane_test.cpp)
-target_link_libraries(gman_pathtracerarealightpane PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerarealightpane PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerarealightpane gman_matte)
 
 add_test(NAME pathtracerarealightpane COMMAND gman_pathtracerarealightpane)
@@ -4270,7 +4270,7 @@ set_tests_properties(pathtracerarealightpane PROPERTIES
 # of panels wound toward and away from it, one with vertex normals that
 # disagree with its plane normal. See tests/pathtracerpolygonlight_test.cpp.
 add_executable(gman_pathtracerpolygonlight pathtracerpolygonlight_test.cpp)
-target_link_libraries(gman_pathtracerpolygonlight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerpolygonlight PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerpolygonlight gman_matte)
 
 add_test(NAME pathtracerpolygonlight COMMAND gman_pathtracerpolygonlight)
@@ -4284,10 +4284,10 @@ set_tests_properties(pathtracerpolygonlight PROPERTIES
 # weight, an emitter hit's weight, the light-choice probability the two
 # share and the off switch. Linked against gman_pathtracer_objects, which
 # still compiles GMANPathtraceRenderer itself, the same reachability
-# tests/hitbsdf_test.cpp has into gman_core via gman_internal_headers. See
+# tests/hitbsdf_test.cpp has into libgman via gman_internal_headers. See
 # tests/pathtracermisweight_test.cpp.
 add_executable(gman_pathtracermisweight pathtracermisweight_test.cpp)
-target_link_libraries(gman_pathtracermisweight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracermisweight PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 
 add_test(NAME pathtracermisweight COMMAND gman_pathtracermisweight)
 set_tests_properties(pathtracermisweight PROPERTIES
@@ -4300,7 +4300,7 @@ set_tests_properties(pathtracermisweight PROPERTIES
 # light-only's -- the physically meaningful claim multiple importance
 # sampling exists to deliver. See tests/pathtracermisveach_test.cpp.
 add_executable(gman_pathtracermisveach pathtracermisveach_test.cpp)
-target_link_libraries(gman_pathtracermisveach PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracermisveach PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 
 add_test(NAME pathtracermisveach COMMAND gman_pathtracermisveach)
 set_tests_properties(pathtracermisveach PROPERTIES
@@ -4313,7 +4313,7 @@ set_tests_properties(pathtracermisveach PROPERTIES
 # light-choice probability read at the wrong vertex. See
 # tests/pathtracermistwolight_test.cpp.
 add_executable(gman_pathtracermistwolight pathtracermistwolight_test.cpp)
-target_link_libraries(gman_pathtracermistwolight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracermistwolight PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracermistwolight gman_matte)
 
 add_test(NAME pathtracermistwolight COMMAND gman_pathtracermistwolight)
@@ -4331,7 +4331,7 @@ set_tests_properties(pathtracermistwolight PROPERTIES
 # light-choice probability that excludes the disk, so the MIS-on and MIS-off
 # renders agree. See tests/pathtracerselfexclusion_test.cpp.
 add_executable(gman_pathtracerselfexclusion pathtracerselfexclusion_test.cpp)
-target_link_libraries(gman_pathtracerselfexclusion PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerselfexclusion PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerselfexclusion gman_matte)
 
 add_test(NAME pathtracerselfexclusion COMMAND gman_pathtracerselfexclusion)
@@ -4346,7 +4346,7 @@ set_tests_properties(pathtracerselfexclusion PROPERTIES
 # the same light must not add it again. See
 # tests/pathtracerglasscount_test.cpp.
 add_executable(gman_pathtracerglasscount pathtracerglasscount_test.cpp)
-target_link_libraries(gman_pathtracerglasscount PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerglasscount PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerglasscount gman_matte gman_glass)
 
 add_test(NAME pathtracerglasscount COMMAND gman_pathtracerglasscount)
@@ -4363,7 +4363,7 @@ set_tests_properties(pathtracerglasscount PROPERTIES
 # --scaling times the floor scene at one and at eight workers and asserts
 # nothing. See tests/pathtracerthreads_test.cpp.
 add_executable(gman_pathtracerthreads pathtracerthreads_test.cpp)
-target_link_libraries(gman_pathtracerthreads PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerthreads PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerthreads gman_matte gman_paintedplastic)
 
 add_test(NAME pathtracerthreads COMMAND gman_pathtracerthreads)
@@ -4378,7 +4378,7 @@ set_tests_properties(pathtracerthreads PROPERTIES
 # --measure times samples/materials.rib under several path counts and
 # PixelVariance values and asserts nothing.
 add_executable(gman_pathtraceradaptive pathtraceradaptive_test.cpp)
-target_link_libraries(gman_pathtraceradaptive PRIVATE gman_core gman_internal_headers gman_pathtracer_objects
+target_link_libraries(gman_pathtraceradaptive PRIVATE gman gman_internal_headers gman_pathtracer_objects
                       TIFF::TIFF)
 add_dependencies(gman_pathtraceradaptive gman_matte)
 
@@ -4392,7 +4392,7 @@ set_tests_properties(pathtraceradaptive PROPERTIES
 # reduction, edge preservation, kernel footprint, fixed point, non-finite
 # exclusion and argument guards. See tests/denoise_test.cpp.
 add_executable(gman_denoise denoise_test.cpp)
-target_link_libraries(gman_denoise PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_denoise PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 
 add_test(NAME denoise COMMAND gman_denoise)
 set_tests_properties(denoise PROPERTIES
@@ -4405,7 +4405,7 @@ set_tests_properties(denoise PROPERTIES
 # parameter warnings and the worker count's bit-for-bit invariance. See
 # tests/pathtracerdenoise_test.cpp.
 add_executable(gman_pathtracerdenoise pathtracerdenoise_test.cpp)
-target_link_libraries(gman_pathtracerdenoise PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerdenoise PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerdenoise gman_matte)
 
 add_test(NAME pathtracerdenoise COMMAND gman_pathtracerdenoise)
@@ -4419,7 +4419,7 @@ set_tests_properties(pathtracerdenoise PROPERTIES
 # and a slot's depth follows its fresh batch's coverage. See
 # tests/pathtracerunbiased_test.cpp.
 add_executable(gman_pathtracerunbiased pathtracerunbiased_test.cpp)
-target_link_libraries(gman_pathtracerunbiased PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+target_link_libraries(gman_pathtracerunbiased PRIVATE gman gman_internal_headers gman_pathtracer_objects)
 add_dependencies(gman_pathtracerunbiased gman_matte)
 
 add_test(NAME pathtracerunbiased COMMAND gman_pathtracerunbiased)
@@ -4437,12 +4437,12 @@ set_tests_properties(pathtracerunbiased PROPERTIES
 # fixture in its own process: both loadable renderers keep their own object
 # manager in one process-lifetime static instance, so two parses sharing a
 # process would carry the first one's own tally into the second. LABELS
-# render, since it runs gman itself rather than linking against gman_core
+# render, since it runs gman itself rather than linking against libgman
 # directly. Registered twice, one add_test per renderer flag, as
 # tests/worldnodisplay_test.cpp's own gman_worldnodisplay is. See
 # tests/rendererarealightwarning_test.cpp.
 add_executable(gman_rendererarealightwarning rendererarealightwarning_test.cpp)
-target_link_libraries(gman_rendererarealightwarning PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_rendererarealightwarning PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_rendererarealightwarning gman_zbuffer gman_matte)
 
 set(GMAN_RENDERERAREALIGHTWARNING_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rendererarealightwarning-zbuffer-run")
@@ -4478,7 +4478,7 @@ endif()
 # own working directory, as rendererarealightwarning_zbuffer's is. See
 # tests/arealightpolygon_test.cpp.
 add_executable(gman_arealightpolygon arealightpolygon_test.cpp)
-target_link_libraries(gman_arealightpolygon PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_arealightpolygon PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_arealightpolygon gman_zbuffer gman_matte)
 
 set(GMAN_AREALIGHTPOLYGON_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/arealightpolygon-run")
@@ -4499,7 +4499,7 @@ set_tests_properties(arealightpolygon PROPERTIES
 # directory, as arealightpolygon's is. See tests/arealightpanel_test.cpp.
 if(GMAN_BUILD_PATHTRACER OR GMAN_BUILD_RAYTRACER)
   add_executable(gman_arealightpanel arealightpanel_test.cpp)
-  target_link_libraries(gman_arealightpanel PRIVATE gman_core TIFF::TIFF)
+  target_link_libraries(gman_arealightpanel PRIVATE gman TIFF::TIFF)
   add_dependencies(gman_arealightpanel gman_matte)
 endif()
 
@@ -4542,7 +4542,7 @@ endif()
 # overrides bsdf. Its own working directory, since the paintedplastic
 # case writes and reads a texture file relative to cwd.
 add_executable(gman_shaderbsdf shaderbsdf_test.cpp)
-target_link_libraries(gman_shaderbsdf PRIVATE gman_core TIFF::TIFF)
+target_link_libraries(gman_shaderbsdf PRIVATE gman TIFF::TIFF)
 add_dependencies(gman_shaderbsdf gman_matte gman_plastic gman_paintedplastic gman_metal gman_shinymetal gman_mirror
   gman_glass gman_countingshader)
 
@@ -4564,25 +4564,27 @@ target_link_libraries(gman_installimage PRIVATE TIFF::TIFF)
 
 # Proves both halves of an installed gman. The headers the install writes
 # directly under include/gman are exactly the ones tests/installed_headers.txt
-# lists, so a header that appears or disappears fails the test by name.
-# bin/gman renders every shipped shader (matte, plastic, metal, paintedplastic,
-# shinymetal) from a fresh cmake --install prefix, then the ray tracer, the
-# path tracer and the ray tracer's radiosity pass, each from the plugin that
-# loads it by bare name. gman_installimage checks every one of those images
-# at the size its fixture gives. tests/rib/smoke.rib then renders under every
-# installed renderer, each image the size of its Format and carrying a lit
-# pixel, and a guard fails when the prefix installs a renderer no row renders.
-# An unrelated CMake project then finds the prefix with find_package(gman) and
-# builds four programs: one links gman::gman_core alone and compiles
-# <gman/ri.h>, one links gman::gman_ray alone and calls into libgman_ray, one
-# links gman::gman_raster alone and calls into libgman_raster, and one links
-# all three, renders a lit sphere and calls into each library; the include
-# path and core link of the ray and raster programs reach them through the
-# library's public dependency. It also builds, without loading, a shader
-# plugin against gman_core and a renderer plugin against gman_core and
-# gman_ray. The parent's CMAKE_MODULE_LINKER_FLAGS reach that project, so its
-# plugins link as the parent's own do. See tests/install_test.cmake for the
-# steps and tests/install/ for the consumer project it builds.
+# lists, so a header that appears or disappears fails the test by name. The
+# prefix holds exactly one libgman.* file, the core library, so that library
+# cannot install under another name. bin/gman renders every shipped shader
+# (matte, plastic, metal, paintedplastic, shinymetal) from a fresh cmake
+# --install prefix, then the ray tracer, the path tracer and the ray tracer's
+# radiosity pass, each from the plugin that loads it by bare name.
+# gman_installimage checks every one of those images at the size its fixture
+# gives. tests/rib/smoke.rib then renders under every installed renderer, each
+# image the size of its Format and carrying a lit pixel, and a guard fails when
+# the prefix installs a renderer no row renders. An unrelated CMake project
+# then finds the prefix with find_package(gman) and builds four programs: one
+# links gman::gman alone and compiles <gman/ri.h>, one links gman::gman_ray
+# alone and calls into libgman_ray, one links gman::gman_raster alone and calls
+# into libgman_raster, and one links all three, renders a lit sphere and calls
+# into each library; the include path and core link of the ray and raster
+# programs reach them through the library's public dependency. It also builds,
+# without loading, a shader plugin against libgman and a renderer plugin
+# against libgman and libgman_ray. The parent's CMAKE_MODULE_LINKER_FLAGS reach
+# that project, so its plugins link as the parent's own do. See
+# tests/install_test.cmake for the steps and tests/install/ for the consumer
+# project it builds.
 #
 # cmake --install (step 1) reads libgmanrib.so from the build tree, so this
 # carries the same RESOURCE_LOCK as the ribwriter tests above.
@@ -4660,7 +4662,7 @@ set_tests_properties(helperscan PROPERTIES
 # fmin and fmax do, and follow the standard library for every other type. See
 # tests/gmanmathminmax_test.cpp.
 add_executable(gman_gmanmathminmax gmanmathminmax_test.cpp)
-target_link_libraries(gman_gmanmathminmax PRIVATE gman_core)
+target_link_libraries(gman_gmanmathminmax PRIVATE gman)
 
 add_test(NAME gmanmathminmax COMMAND gman_gmanmathminmax)
 set_tests_properties(gmanmathminmax PROPERTIES
@@ -4671,7 +4673,7 @@ set_tests_properties(gmanmathminmax PROPERTIES
 # inversesqrt, log, mod, sign, mix and round -- meet their definitions and
 # IEEE 754 edges. See tests/gmanmath_test.cpp.
 add_executable(gman_gmanmath gmanmath_test.cpp)
-target_link_libraries(gman_gmanmath PRIVATE gman_core)
+target_link_libraries(gman_gmanmath PRIVATE gman)
 
 add_test(NAME gmanmath COMMAND gman_gmanmath)
 set_tests_properties(gmanmath PROPERTIES
@@ -4682,7 +4684,7 @@ set_tests_properties(gmanmath PROPERTIES
 # under RSL mod(a, b) = a - b * floor(a / b). Pins the wanted behavior;
 # WILL_FAIL until GMANMod follows the definition for a negative dividend.
 add_executable(gman_gmanmathmodmultiple gmanmathmodmultiple_test.cpp)
-target_link_libraries(gman_gmanmathmodmultiple PRIVATE gman_core)
+target_link_libraries(gman_gmanmathmodmultiple PRIVATE gman)
 
 add_test(NAME gmanmathmodmultiple COMMAND gman_gmanmathmodmultiple)
 set_tests_properties(gmanmathmodmultiple PROPERTIES
@@ -4695,7 +4697,7 @@ set_tests_properties(gmanmathmodmultiple PROPERTIES
 # positive. Pins the wanted behavior; WILL_FAIL until GMANMod follows the
 # definition for a negative divisor.
 add_executable(gman_gmanmathmodnegativedivisor gmanmathmodnegativedivisor_test.cpp)
-target_link_libraries(gman_gmanmathmodnegativedivisor PRIVATE gman_core)
+target_link_libraries(gman_gmanmathmodnegativedivisor PRIVATE gman)
 
 add_test(NAME gmanmathmodnegativedivisor COMMAND gman_gmanmathmodnegativedivisor)
 set_tests_properties(gmanmathmodnegativedivisor PROPERTIES
@@ -4708,7 +4710,7 @@ set_tests_properties(gmanmathmodnegativedivisor PROPERTIES
 # RI_EPSILON^2 / 4, +infinity at +0, -infinity at -0 and NaN below 0 or for NaN.
 # Pins the wanted behavior; WILL_FAIL until GMANInversesqrt follows IEEE there.
 add_executable(gman_gmanmathinversesqrtclamp gmanmathinversesqrtclamp_test.cpp)
-target_link_libraries(gman_gmanmathinversesqrtclamp PRIVATE gman_core)
+target_link_libraries(gman_gmanmathinversesqrtclamp PRIVATE gman)
 
 add_test(NAME gmanmathinversesqrtclamp COMMAND gman_gmanmathinversesqrtclamp)
 set_tests_properties(gmanmathinversesqrtclamp PROPERTIES
@@ -4719,7 +4721,7 @@ set_tests_properties(gmanmathinversesqrtclamp PROPERTIES
 # GMANSign(NaN) answers 0 where IEEE 754 gives NaN for a NaN operand. Pins
 # the wanted behavior; WILL_FAIL until GMANSign returns NaN for NaN.
 add_executable(gman_gmanmathsignnan gmanmathsignnan_test.cpp)
-target_link_libraries(gman_gmanmathsignnan PRIVATE gman_core)
+target_link_libraries(gman_gmanmathsignnan PRIVATE gman)
 
 add_test(NAME gmanmathsignnan COMMAND gman_gmanmathsignnan)
 set_tests_properties(gmanmathsignnan PROPERTIES
@@ -4730,7 +4732,7 @@ set_tests_properties(gmanmathsignnan PROPERTIES
 # gman::InvertibleMatrix pairs a placement with its inverse; its transformNormal
 # applies the inverse transpose. See tests/invertiblematrix_test.cpp.
 add_executable(gman_invertiblematrix invertiblematrix_test.cpp)
-target_link_libraries(gman_invertiblematrix PRIVATE gman_core)
+target_link_libraries(gman_invertiblematrix PRIVATE gman)
 
 add_test(NAME invertiblematrix COMMAND gman_invertiblematrix)
 set_tests_properties(invertiblematrix PROPERTIES
@@ -4739,7 +4741,7 @@ set_tests_properties(invertiblematrix PROPERTIES
 
 # A request out of mode is reported and ignored; a block request out of place stops the file.
 add_executable(gman_outofmode outofmode_test.cpp)
-target_link_libraries(gman_outofmode PRIVATE gman_core gman_internal_headers TIFF::TIFF)
+target_link_libraries(gman_outofmode PRIVATE gman gman_internal_headers TIFF::TIFF)
 add_dependencies(gman_outofmode gman_zbuffer)
 
 set(GMAN_OUTOFMODE_ZBUFFER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/outofmode-zbuffer-run")
