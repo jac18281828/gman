@@ -29,6 +29,7 @@
 #include <vector>
 
 #include "gman/export.h"
+#include "gmandenoise.h"
 #include "gmanemitter.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanobjectmanager.h"
@@ -85,6 +86,23 @@
  * a slot traces, the pilot included, and the pilot is skipped when 2m
  * reaches it: the slot then draws what a PixelVariance of 0 draws. The
  * image and each slot's path count stay the same at every worker count.
+ *
+ * Option "pathtracer" "string denoise" ["atrous"] filters the resolved image
+ * through gman::atrousDenoise, the edge-avoiding a-trous wavelet filter, as
+ * the frame's last step before exposure, the imager and quantization. It is
+ * off by default: absent or "none" computes no guide and writes the image an
+ * unfiltered render writes, and any other value warns once and renders
+ * without the filter. The filter is guided by the first hit of every camera
+ * ray: its albedo, from gman::albedo, and its normal, camera space and facing
+ * the camera. Both resolve through the pixel filter beside the colour, and a
+ * pilot's paths add nothing to either. Option "pathtracer" "integer
+ * denoiseiterations" is the level count, 5 by default and at least 1; "float
+ * denoisecolor", "float denoisenormal" and "float denoisealbedo" are the
+ * three weights' sigmas, each finite and positive, 0.5 and 0.2 by default for
+ * the normal and the albedo and, for the colour, the lower median of the
+ * positive colour norms in the image. An invalid value warns once and takes
+ * its default. One info line reports the parameters the filter used, the
+ * colour sigma included. Alpha and depth stay as sampling resolved them.
  */
 class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
@@ -136,10 +154,18 @@ private:
   // rows run and each row writes only its own slots.
   std::vector<std::uint32_t> slotPaths;
 
+  // The last render() call's resolved colour, albedo and normal when it ran
+  // the denoise stage; empty otherwise.
+  gman::GuidedImage guided;
+
   // Fills emitters from worldManager and skippedAmbientLights from its own
   // separate count -- gman::emitters excludes ambient lights silently,
   // with no count of its own to report.
   void gatherLights();
+
+  // Filters guided.color through gman::atrousDenoise, writes the result into
+  // frameBuffer's pixels, leaving its alpha, and logs the parameters used.
+  void denoiseFrame(GMANFrameBuffer* frameBuffer, gman::AtrousParameters const& parameters);
 
 public:
   GMANPathtraceRenderer(); // default constructor
@@ -184,6 +210,11 @@ public:
   // slot is stored under. A count includes the slot's pilot. Exported as
   // setWorkers is, and for the same tests.
   std::vector<std::uint32_t> const& slotPathCounts() const { return slotPaths; }
+
+  // The last render() call's resolved colour, as it stood before the filter,
+  // with the albedo and normal guides beside it; empty after a render that
+  // ran no denoise stage. Exported as setWorkers is, and for the same tests.
+  gman::GuidedImage const& guidedImage() const { return guided; }
 
   virtual GMANWorldManager* getWorldManager(void);
 

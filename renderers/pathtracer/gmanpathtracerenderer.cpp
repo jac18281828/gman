@@ -26,8 +26,10 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <numeric>
 #include <optional>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -35,11 +37,13 @@
 #include "gmanbbox.h"
 #include "gmanbsdf.h"
 #include "gmancolor.h"
+#include "gmandenoise.h"
 #include "gmanemitter.h"
 #include "gmanframebuffer.h"
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmannormal.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanparallel.h"
@@ -151,6 +155,9 @@ constexpr std::uint32_t kFreshSeed = 0x7f4a7c15u;
 
 // Russian roulette's own survival cap: every path ends with probability 1.
 constexpr RtFloat kRouletteCap = (RtFloat)0.95;
+
+constexpr char const* kDenoiseAtrous = "atrous";
+constexpr char const* kDenoiseNone = "none";
 
 GMANColor const kWhite(1.0f, 1.0f, 1.0f);
 GMANColor const kBlack(0.0f, 0.0f, 0.0f);
@@ -283,14 +290,31 @@ ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector 
 // A single path's own contribution to a slot: its radiance and coverage
 // estimate, whether its camera ray ever hit anything and, if so, that
 // first hit's own camera-space z, and whether every channel it touched
-// stayed finite.
+// stayed finite. A guided path also carries that first hit's albedo and its
+// camera-facing normal, the normal in the channels of a colour, each black
+// where it was not finite.
 struct PathResult {
   GMANColor L = kBlack;
   GMANColor alphaHat = kBlack;
+  GMANColor albedo = kBlack;
+  GMANColor normal = kBlack;
   bool finite = true;
   bool hasFirstHit = false;
   RtFloat firstHitZ = 0.0f;
 };
+
+GMANColor finiteOrBlack(GMANColor const& c) { return colorFinite(c) ? c : kBlack; }
+
+// The camera ray's first hit's own guides: its albedo, where shade would
+// shade point, and its normal, unit length and turned to face the ray.
+void recordGuides(PathResult& result, gman::Appearance const& appearance, gman::SurfacePoint const& point,
+                  GMANMatrix4 const& cameraToWorld, gman::TextureCache* textureCache) {
+  result.albedo = finiteOrBlack(gman::albedo(appearance, point, cameraToWorld, textureCache));
+  GMANNormal facing = point.N;
+  facing.normalize();
+  RtFloat const side = facing.dot(point.I) > 0.0f ? -1.0f : 1.0f;
+  result.normal = finiteOrBlack(GMANColor(side * facing.getX(), side * facing.getY(), side * facing.getZ()));
+}
 
 // Coverage's pass-through branch: the path continues straight along its own
 // direction, weighted by (1 - Os)/qPass. Answers false once a straight run
@@ -568,7 +592,8 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
 // emitter-hit eligibility, the departing vertex's own shading point,
 // primitive and BSDF-sample density behind a non-delta departure (read
 // only when eligibility is weighted), and the chooseLight scratch buffer,
-// sized once to emitters.size() and reused at every vertex.
+// sized once to emitters.size() and reused at every vertex. guided asks the
+// first vertex for its guides.
 struct PathState {
   PathResult result;
   GMANColor beta = kWhite;
@@ -583,8 +608,10 @@ struct PathState {
   int passThroughRun = 0;
   GMANRay ray;
   std::vector<RtFloat> lightWeight;
+  bool guided;
 
-  PathState(GMANRay const& cameraRay, std::size_t emitterCount) : ray(cameraRay), lightWeight(emitterCount) {}
+  PathState(GMANRay const& cameraRay, std::size_t emitterCount, bool wantsGuides)
+      : ray(cameraRay), lightWeight(emitterCount), guided(wantsGuides) {}
 };
 
 // One vertex's own work, once a hit is known: an eligible emitter hit's own
@@ -598,6 +625,10 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   gman::SurfacePoint const point = gman::hitSurfacePoint(state.ray, hit);
   gman::Appearance const& appearance = hitPrimitive->getAppearance();
   RtFloat const surfaceMagnitude = point.surfaceMagnitude;
+
+  if (k == 0 && state.guided) {
+    recordGuides(state.result, appearance, point, cameraToWorld, textureCache);
+  }
 
   state.result.L += gman::multiplyChannels(
       state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point, state.eligibility, misEnabled,
@@ -646,8 +677,8 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
 PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters,
                      GMANMatrix4 const& cameraToWorld, GMANColor const& background, gman::TextureCache* textureCache,
                      GMANRay cameraRay, std::uint32_t seed, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N,
-                     bool misEnabled) {
-  PathState state(cameraRay, emitters.size());
+                     bool misEnabled, bool guided) {
+  PathState state(cameraRay, emitters.size(), guided);
   bool escaped = false;
   for (std::uint32_t k = 0;; ++k) {
     GMANHit hit;
@@ -677,14 +708,16 @@ PathResult tracePath(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
 }
 
 // One slot's own estimate, summed for render(): the mean radiance and
-// coverage estimate go to the row's call to zTestAndSet once the row knows
-// whether any averaged path's camera ray ever hit anything; a dropped path
-// contributes zero to both sums and is counted. estimatePaths is how many
-// paths the sums average, and paths how many the slot traced in all, a
-// pilot's included.
+// coverage estimate, and the guides' means, go to the row's calls to
+// zTestAndSet once the row knows whether any averaged path's camera ray ever
+// hit anything; a dropped path contributes zero to every sum and is counted.
+// estimatePaths is how many paths the sums average, and paths how many the
+// slot traced in all, a pilot's included.
 struct SlotResult {
   GMANColor sumL = kBlack;
   GMANColor sumAlpha = kBlack;
+  GMANColor sumAlbedo = kBlack;
+  GMANColor sumNormal = kBlack;
   RtFloat minZ = RI_INFINITY;
   bool anyHit = false;
   std::size_t dropped = 0;
@@ -718,6 +751,14 @@ struct SlotTrace {
   int xsamples;
   int ysamples;
   bool misEnabled;
+  bool guided;
+};
+
+// The sample buffers the guides accumulate into, both null when the render
+// runs no denoise stage.
+struct GuideSamples {
+  GMANSampleBuffer* albedo = nullptr;
+  GMANSampleBuffer* normal = nullptr;
 };
 
 PathResult tracePathInSlot(SlotTrace const& slot, std::uint32_t seed, std::uint32_t i, std::uint32_t patternSize) {
@@ -726,7 +767,7 @@ PathResult tracePathInSlot(SlotTrace const& slot, std::uint32_t seed, std::uint3
   RtFloat const rasterY = ((RtFloat)slot.sy + uv0.u2) / (RtFloat)slot.ysamples;
   GMANRay const cameraRay = slot.viewingSys->cameraRay(rasterX, rasterY);
   return tracePath(slot.bvh, slot.emitters, slot.cameraToWorld, slot.background, slot.textureCache, cameraRay, seed,
-                   slot.sx, slot.sy, i, patternSize, slot.misEnabled);
+                   slot.sx, slot.sy, i, patternSize, slot.misEnabled, slot.guided);
 }
 
 void accumulateEstimate(SlotResult& result, PathResult const& path) {
@@ -742,6 +783,8 @@ void accumulateEstimate(SlotResult& result, PathResult const& path) {
   }
   result.sumL += path.L;
   result.sumAlpha += path.alphaHat;
+  result.sumAlbedo += path.albedo;
+  result.sumNormal += path.normal;
 }
 
 void traceEstimate(SlotTrace const& slot, std::uint32_t seed, std::uint32_t count, SlotResult& result) {
@@ -788,6 +831,82 @@ std::uint32_t pilotSize(GMANOptions const& options, std::uint32_t N) {
   return static_cast<std::uint32_t>(integers->front());
 }
 
+bool denoiseRequested(GMANOptions const& options) {
+  GMANOptions::NamedOptionValue const* const named = options.getNamedOption("pathtracer", "denoise");
+  if (named == nullptr) {
+    return false;
+  }
+  auto const* const names = std::get_if<std::vector<std::string>>(named);
+  if (names != nullptr && !names->empty() && names->front() == kDenoiseAtrous) {
+    return true;
+  }
+  if (names == nullptr || names->empty() || names->front() != kDenoiseNone) {
+    warning("gmanpathtracer: Option \"pathtracer\" \"denoise\" must be \"{}\" or \"{}\"; rendering without "
+            "denoising.",
+            kDenoiseAtrous, kDenoiseNone);
+  }
+  return false;
+}
+
+int denoiseIterations(GMANOptions const& options, int fallback) {
+  GMANOptions::NamedOptionValue const* const named = options.getNamedOption("pathtracer", "denoiseiterations");
+  if (named == nullptr) {
+    return fallback;
+  }
+  auto const* const integers = std::get_if<std::vector<RtInt>>(named);
+  if (integers == nullptr || integers->empty() || integers->front() < 1) {
+    warning("gmanpathtracer: Option \"pathtracer\" \"denoiseiterations\" must be an integer of at least 1; using {}.",
+            fallback);
+    return fallback;
+  }
+  return integers->front();
+}
+
+std::optional<RtFloat> denoiseSigma(GMANOptions const& options, char const* parameter, std::string const& fallback) {
+  GMANOptions::NamedOptionValue const* const named = options.getNamedOption("pathtracer", parameter);
+  if (named == nullptr) {
+    return std::nullopt;
+  }
+  auto const* const floats = std::get_if<std::vector<RtFloat>>(named);
+  if (floats == nullptr || floats->empty() || !std::isfinite(floats->front()) || !(floats->front() > 0.0f)) {
+    warning("gmanpathtracer: Option \"pathtracer\" \"{}\" must be a finite positive float; using {}.", parameter,
+            fallback);
+    return std::nullopt;
+  }
+  return floats->front();
+}
+
+gman::AtrousParameters atrousParameters(GMANOptions const& options) {
+  gman::AtrousParameters const defaults;
+  gman::AtrousParameters parameters;
+  parameters.iterations = denoiseIterations(options, defaults.iterations);
+  parameters.sigmaColor = denoiseSigma(options, "denoisecolor", "the median color norm in the image");
+  parameters.sigmaNormal =
+      denoiseSigma(options, "denoisenormal", std::format("{}", defaults.sigmaNormal)).value_or(defaults.sigmaNormal);
+  parameters.sigmaAlbedo =
+      denoiseSigma(options, "denoisealbedo", std::format("{}", defaults.sigmaAlbedo)).value_or(defaults.sigmaAlbedo);
+  return parameters;
+}
+
+std::vector<GMANColor> readPixels(GMANFrameBuffer const& frameBuffer) {
+  RtInt const width = frameBuffer.getWidth();
+  RtInt const height = frameBuffer.getHeight();
+  std::vector<GMANColor> pixels;
+  pixels.reserve(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+  for (RtInt y = 0; y < height; ++y) {
+    for (RtInt x = 0; x < width; ++x) {
+      pixels.push_back(frameBuffer.getPixel(x, y));
+    }
+  }
+  return pixels;
+}
+
+std::vector<GMANColor> resolvePixels(GMANSampleBuffer& samples, GMANFrameBuffer* frameBuffer,
+                                     GMANOptions::PixelFilterStruct const& pf) {
+  samples.resolve(frameBuffer, pf.filterfunc, pf.xwidth, pf.ywidth);
+  return readPixels(*frameBuffer);
+}
+
 SlotResult renderSlot(SlotTrace const& slot, std::uint32_t N, SamplingPlan const& plan) {
   SlotResult result;
   if (!usesPilot(plan, N)) {
@@ -809,7 +928,7 @@ SlotResult renderSlot(SlotTrace const& slot, std::uint32_t N, SamplingPlan const
 void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANViewingSystem const* viewingSys,
                GMANMatrix4 const& cameraToWorld, GMANOptions::RasterInfo const& raster, RtInt width, int xsamples,
                int ysamples, std::uint32_t N, SamplingPlan const& plan, GMANColor const& background,
-               gman::TextureCache& textureCache, int py, GMANSampleBuffer& sampleBuffer,
+               gman::TextureCache& textureCache, int py, GMANSampleBuffer& sampleBuffer, GuideSamples const& guides,
                std::vector<std::uint32_t>& slotPaths, std::size_t& dropped, bool misEnabled) {
   int const subsPerColumn = xsamples * ysamples;
   for (int px = 0; px < width; ++px) {
@@ -822,7 +941,7 @@ void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters
       RtInt const sy = raster.rymin * ysamples + sampleY;
 
       SlotTrace const trace{bvh, emitters, viewingSys, cameraToWorld, background, &textureCache,
-                            sx,  sy,       xsamples,   ysamples,      misEnabled};
+                            sx,  sy,       xsamples,   ysamples,      misEnabled, guides.albedo != nullptr};
       SlotResult const slot = renderSlot(trace, N, plan);
       slotPaths[static_cast<std::size_t>(sampleY) * static_cast<std::size_t>(width * xsamples) +
                 static_cast<std::size_t>(sampleX)] = slot.paths;
@@ -834,6 +953,12 @@ void renderRow(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters
       GMANColor const meanAlpha = divideColor(slot.sumAlpha, (RtFloat)slot.estimatePaths);
       GMANAlpha const alpha(meanAlpha.getRed(), meanAlpha.getGreen(), meanAlpha.getBlue());
       sampleBuffer.zTestAndSet(sampleX, sampleY, slot.minZ, meanL, alpha);
+      if (guides.albedo != nullptr) {
+        guides.albedo->zTestAndSet(sampleX, sampleY, slot.minZ,
+                                   divideColor(slot.sumAlbedo, (RtFloat)slot.estimatePaths), alpha);
+        guides.normal->zTestAndSet(sampleX, sampleY, slot.minZ,
+                                   divideColor(slot.sumNormal, (RtFloat)slot.estimatePaths), alpha);
+      }
     }
   }
 }
@@ -859,6 +984,8 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   bvh.build(worldManager);
   gatherLights();
   droppedPaths = 0;
+  guided = gman::GuidedImage();
+  bool const denoise = denoiseRequested(options);
 
   RtInt const width = frameBuffer->getWidth();
   RtInt const height = frameBuffer->getHeight();
@@ -873,6 +1000,13 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
 
   GMANColor const background = options.getBackground();
   sampleBuffer.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, background));
+  std::unique_ptr<GMANSampleBuffer> albedoSamples;
+  std::unique_ptr<GMANSampleBuffer> normalSamples;
+  if (denoise) {
+    albedoSamples.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, kBlack));
+    normalSamples.reset(new GMANSampleBuffer(width, height, xsamples, ysamples, kBlack));
+  }
+  GuideSamples const guides{albedoSamples.get(), normalSamples.get()};
 
   GMANMatrix4 const& cameraToWorld = options.getCameraToWorld();
   bool const misEnabled = multipleImportanceSamplingEnabled;
@@ -891,7 +1025,7 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
         auto const rowIndex = static_cast<std::size_t>(row);
         rowWorker[rowIndex] = worker;
         renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, plan, background,
-                  textureCaches[static_cast<std::size_t>(worker)], row, *sampleBuffer, slotPaths,
+                  textureCaches[static_cast<std::size_t>(worker)], row, *sampleBuffer, guides, slotPaths,
                   droppedPerRow[rowIndex], misEnabled);
       },
       requestedWorkers);
@@ -917,7 +1051,31 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
   }
 
   GMANOptions::PixelFilterStruct const& pf = options.getPixelFilter();
-  sampleBuffer->resolve(frameBuffer, pf.filterfunc, pf.xwidth, pf.ywidth);
+  if (!denoise) {
+    sampleBuffer->resolve(frameBuffer, pf.filterfunc, pf.xwidth, pf.ywidth);
+    return;
+  }
+
+  guided.width = width;
+  guided.height = height;
+  guided.albedo = resolvePixels(*albedoSamples, frameBuffer, pf);
+  for (GMANColor const& pixel : resolvePixels(*normalSamples, frameBuffer, pf)) {
+    guided.normal.emplace_back(pixel.getRed(), pixel.getGreen(), pixel.getBlue());
+  }
+  guided.color = resolvePixels(*sampleBuffer, frameBuffer, pf);
+  denoiseFrame(frameBuffer, atrousParameters(options));
+}
+
+void GMANPathtraceRenderer::denoiseFrame(GMANFrameBuffer* frameBuffer, gman::AtrousParameters const& parameters) {
+  std::vector<GMANColor> const filtered = gman::atrousDenoise(guided, parameters, requestedWorkers);
+  for (RtInt y = 0; y < guided.height; ++y) {
+    for (RtInt x = 0; x < guided.width; ++x) {
+      frameBuffer->setPixel(x, y, filtered[static_cast<std::size_t>(y) * static_cast<std::size_t>(guided.width) + x]);
+    }
+  }
+  info("gmanpathtracer: denoised with the a-trous filter: {} iterations, sigma color {}, normal {}, albedo {}.",
+       parameters.iterations, gman::atrousColorSigma(guided, parameters), parameters.sigmaNormal,
+       parameters.sigmaAlbedo);
 }
 
 GMANWorldManager* GMANPathtraceRenderer::getWorldManager(void) { return &worldManager; }

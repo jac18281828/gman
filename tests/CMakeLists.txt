@@ -4054,6 +4054,20 @@ set_tests_properties(denoise PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The path tracer's denoise stage: Option "pathtracer" "denoise" off by
+# default, the first-hit albedo and normal guides, the info line, the
+# parameter warnings and the worker count's bit-for-bit invariance. See
+# tests/pathtracerdenoise_test.cpp.
+add_executable(gman_pathtracerdenoise pathtracerdenoise_test.cpp)
+target_link_libraries(gman_pathtracerdenoise PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerdenoise gman_matte)
+
+add_test(NAME pathtracerdenoise COMMAND gman_pathtracerdenoise)
+set_tests_properties(pathtracerdenoise PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A slot the path tracer stops under a positive PixelVariance averages to
 # the fixed-count mean, shown on a hairline torus whose paths rarely hit it,
 # and a slot's depth follows its fresh batch's coverage. See
