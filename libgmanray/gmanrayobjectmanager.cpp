@@ -153,11 +153,19 @@ TexCoord cornerTexCoord(GMANTextureCoordinates const& c, double u, double v) {
 
 RtInt bilinearPatchCount(RtInt n, bool periodic) { return periodic ? n : n - 1; }
 
-RtInt bicubicPatchCount(RtInt n, bool periodic, RtInt step) { return periodic ? n / step : (n - 4) / step + 1; }
+RtInt bicubicPatchCount(RtInt n, bool periodic, RtInt step) {
+  if (periodic) {
+    return n / step;
+  }
+  return (n - 4) / step + 1;
+}
 
 MeshCell locate(MeshAxis const& axis, double parameter) {
   RtInt const start = std::clamp((RtInt)std::floor(parameter * axis.patches), 0, axis.patches - 1);
-  RtInt const next = start + 1 >= axis.corners() ? start + 1 - axis.corners() : start + 1;
+  RtInt next = start + 1;
+  if (next >= axis.corners()) {
+    next -= axis.corners();
+  }
   return {start, next, parameter * axis.patches - start};
 }
 

@@ -120,8 +120,14 @@ Vec3 evaluate(SurfaceDef const& s, double u, double v) {
     }
   };
   if (s.bicubic) {
-    RtInt const uPatches = s.uPeriodic ? s.nu / s.uBasis.step : (s.nu - 4) / s.uBasis.step + 1;
-    RtInt const vPatches = s.vPeriodic ? s.nv / s.vBasis.step : (s.nv - 4) / s.vBasis.step + 1;
+    RtInt uPatches = (s.nu - 4) / s.uBasis.step + 1;
+    if (s.uPeriodic) {
+      uPatches = s.nu / s.uBasis.step;
+    }
+    RtInt vPatches = (s.nv - 4) / s.vBasis.step + 1;
+    if (s.vPeriodic) {
+      vPatches = s.nv / s.vBasis.step;
+    }
     Cell const uCell = cellOf(u, uPatches);
     Cell const vCell = cellOf(v, vPatches);
     for (std::size_t j = 0; j < 4; ++j) {
