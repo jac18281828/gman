@@ -60,9 +60,9 @@ int usage(char const* program) {
   return kUsageStatus;
 }
 
-std::optional<uint32_t> parseDimension(std::string_view text) {
-  uint32_t value = 0;
-  char const* const end = text.data() + text.size();
+std::optional<std::uint32_t> parseDimension(std::string_view text) {
+  std::uint32_t value = 0;
+  auto const* const end = text.data() + text.size();
   const auto parsed = std::from_chars(text.data(), end, value);
   if (parsed.ec != std::errc() || parsed.ptr != end) {
     return std::nullopt;
@@ -79,7 +79,7 @@ bool hasLitPixel(GmanImage const& image) {
   return false;
 }
 
-int reportSize(std::string const& path, uint32_t width, uint32_t height, std::string const& found) {
+int reportSize(std::string const& path, std::uint32_t width, std::uint32_t height, std::string const& found) {
   std::fputs(std::format("{}: expected {}x{}, found {}\n", path, width, height, found).c_str(), stderr);
   return kMismatchStatus;
 }
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
   if (argc != kArgumentsWithoutLit && argc != kArgumentsWithLit) {
     return usage(argv[0]);
   }
-  const bool requireLit = argc == kArgumentsWithLit;
+  const auto requireLit = argc == kArgumentsWithLit;
   if (requireLit && std::string_view(argv[kLitArgument]) != kLitWord) {
     return usage(argv[0]);
   }
@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
     return usage(argv[0]);
   }
 
-  std::string const path = argv[kImageArgument];
+  const auto path = std::string(argv[kImageArgument]);
   const auto image = readGmanTIFF(path);
   if (!image.ok) {
     return reportSize(path, *width, *height, "no readable TIFF");

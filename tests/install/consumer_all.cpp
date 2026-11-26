@@ -66,7 +66,7 @@ bool oneMinusInvertsOpacity() {
 
 bool managerCreatesEmptyObject() {
   GMANPatchPolyObjectManager manager;
-  const std::unique_ptr<GMANPrimitive> primitive(manager.create());
+  const auto primitive = std::unique_ptr<GMANPrimitive>(manager.create());
   if (primitive == nullptr) {
     return false;
   }

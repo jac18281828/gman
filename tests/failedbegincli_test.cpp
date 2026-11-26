@@ -54,7 +54,7 @@ bool hasImage(std::filesystem::path const& directory) {
 }
 
 void checkFailedRenderer(std::string const& gman, std::string const& rib, std::string_view token) {
-  std::string const label = std::format("-r {}: ", token);
+  const auto label = std::format("-r {}: ", token);
   const auto directory = std::filesystem::current_path() / token;
   std::filesystem::remove_all(directory);
   std::filesystem::create_directories(directory);
@@ -62,7 +62,7 @@ void checkFailedRenderer(std::string const& gman, std::string const& rib, std::s
   GMANRunOptions options;
   options.timeoutSeconds = kTimeoutSeconds;
   options.workingDirectory = directory.string();
-  GMANRunResult const result = runGman(gman, {"-r", std::string(token), rib}, options);
+  const auto result = runGman(gman, {"-r", std::string(token), rib}, options);
 
   check(!result.timedOut, label + "gman does not hang");
   check(!result.crashed, label + "gman does not crash");
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
   std::string const gman = argv[1];
   std::string const rib = argv[2];
 
-  for (std::string_view const token : kTokens) {
+  for (const auto token : kTokens) {
     checkFailedRenderer(gman, rib, token);
   }
 
