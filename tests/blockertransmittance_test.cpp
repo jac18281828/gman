@@ -23,7 +23,8 @@
  * primitive hit at normal incidence through a real intersect. A shader's
  * opacity sets the coverage and its dielectric lobe the transmittance, so
  * the factor is (1 - c) + c * w * (1 - F) per channel; a null-shader
- * appearance gives 1 - Os; a NaN opacity reads as opaque.
+ * appearance gives 1 - Os; a NaN opacity reads as opaque and a NaN
+ * transmittance as blocked.
  */
 
 #include <cmath>
@@ -179,6 +180,26 @@ void testClampCoverageMapsInfinities() {
   check(colorExactly(clamped, GMANColor(1.0f, 0.0f, 0.5f)), "d: clampCoverage maps +inf to 1, -inf to 0, 0.5 to 0.5");
 }
 
+void testNonFiniteTransmittanceBlocks() {
+  GMANColor const weight(1.0f, 1.0f, 1.0f);
+  gman::BSDF setup(GMANVector(kNaN, kNaN, kNaN));
+  setup.addDielectric(weight, kIndex);
+  GMANColor const unguarded = setup.shadowTransmittance(GMANVector(1.0f, 0.0f, 0.0f));
+  check(!std::isfinite(unguarded.getRed()) && !std::isfinite(unguarded.getGreen()) &&
+            !std::isfinite(unguarded.getBlue()),
+        "e: setup: a closure built on a NaN normal has a non-finite shadowTransmittance");
+
+  StubShader const shader(GMANColor(1.0f, 1.0f, 1.0f), weight, true);
+  Blocker const blocker(shadedAppearance(shader));
+  check(blocker.struck, "e: the ray hits the blocker");
+  if (!blocker.struck) {
+    return;
+  }
+
+  check(colorExactly(blocker.transmittance().transmittance, GMANColor(0.0f, 0.0f, 0.0f)),
+        "e: a non-finite shadow transmittance gives a factor of 0 in every channel");
+}
+
 } // namespace
 
 int main() {
@@ -186,6 +207,7 @@ int main() {
   testNullShaderFactorIsOneMinusOs();
   testNaNAndOutOfRangeOpacityClamp();
   testClampCoverageMapsInfinities();
+  testNonFiniteTransmittanceBlocks();
 
   return checkSummary("gman::blockerTransmittance: shader coverage and dielectric transmittance per blocker");
 }

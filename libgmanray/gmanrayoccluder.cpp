@@ -87,6 +87,10 @@ GMANColor::ColorSampleType clampCoverageChannel(GMANColor::ColorSampleType v) {
   return GMANMax(GMANMin(v, (GMANColor::ColorSampleType)1.0), (GMANColor::ColorSampleType)0.0);
 }
 
+GMANColor::ColorSampleType blockedIfNotFinite(GMANColor::ColorSampleType v) {
+  return std::isfinite(v) ? v : (GMANColor::ColorSampleType)0.0;
+}
+
 } // namespace
 
 namespace gman {
@@ -124,6 +128,9 @@ BlockerTransmittance blockerTransmittance(GMANRay const& shadowRay, GMANHit cons
   GMANColor const t = closure.shadowTransmittance(shadowRay.getDirection());
   result.transmittance = oneMinus(result.coverage);
   result.transmittance += multiplyChannels(result.coverage, t);
+  result.transmittance =
+      GMANColor(blockedIfNotFinite(result.transmittance.getRed()), blockedIfNotFinite(result.transmittance.getGreen()),
+                blockedIfNotFinite(result.transmittance.getBlue()));
   return result;
 }
 

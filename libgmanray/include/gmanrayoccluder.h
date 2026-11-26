@@ -90,7 +90,8 @@ struct GMANRAY_EXPORT BlockerTransmittance {
 // closure's straight-through thin transmittance along the ray's direction,
 // from gman::bsdf at that hit (BSDF::shadowTransmittance). A null-shader
 // appearance gives c = Os and a Lambert lobe, so T is black and the factor
-// 1 - Os. hit is shadowRay's own hit on the blocker whose appearance is
+// 1 - Os. A non-finite channel of the factor reads as 0, blocked: a NaN
+// transmittance never lights a surface. hit is shadowRay's own hit on the blocker whose appearance is
 // appearance. textureCache is gman::opacity's and gman::bsdf's argument: a
 // caller running threads passes the calling thread's own, and a null one
 // samples through gman::textureCache()'s process cache.
