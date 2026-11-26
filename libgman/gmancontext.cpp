@@ -81,6 +81,16 @@ RtVoid Context::addContext(RtToken name) {
   chl.push_back(std::move(renderer));
 }
 
+RtVoid Context::beginContext(RtToken name) {
+  addContext(name);
+  try {
+    active->RiBegin(name);
+  } catch (...) {
+    removeCurrent();
+    throw;
+  }
+}
+
 RtContextHandle Context::getContext() { return (RtContextHandle)active; }
 
 GMANRenderMan& Context::current() {

@@ -22,21 +22,20 @@
  */
 
 /*
- * After a RiBegin whose renderer fails to load, the first request that needs
- * a renderer raises RIE_NOTSTARTED at RIE_SEVERE, "No renderer loaded.", and
- * every later one returns without a report or a null dereference. Each
- * RiBegin and each RiEnd clears the record of that report, so each failed
- * load earns exactly one. A failed RiBegin leaves no renderer loaded, whatever
+ * After an impl's RiBegin fails to load its renderer, the first request that
+ * needs a renderer raises RIE_NOTSTARTED at RIE_SEVERE, "No renderer loaded.",
+ * and every later one returns without a report or a null dereference. Each
+ * RiBegin and each RiEnd clears the record of that report, so each failed load
+ * earns exactly one. A failed RiBegin leaves no renderer loaded, whatever
  * preceded it.
  *
- * The C API case runs first: the active context is process-wide, and the C
- * API gives every RiBegin a fresh impl. The impl case drives a second RiBegin
- * on one impl directly.
+ * The test drives one impl directly, as gman does. The C API drops a context
+ * whose RiBegin fails and never reaches this contract;
+ * tests/failedbegincapi_test.cpp pins that behaviour.
  */
 
 #include <filesystem>
 #include <string>
-#include <vector>
 
 #include "check.h"
 #include "gmanerror.h"
@@ -61,46 +60,11 @@ template <typename Request> Raised raisedBy(Request request) {
   return {};
 }
 
-std::vector<Raised> recorded;
-
-RtVoid recordingErrorHandler(RtInt code, RtInt severity, char const* message) {
-  recorded.push_back({true, code, severity, message});
-}
-
 void checkNoRendererReport(Raised const& report, std::string const& when) {
   check(report.raised, when + " raises");
   check(report.code == RIE_NOTSTARTED, when + " raises RIE_NOTSTARTED");
   check(report.severity == RIE_SEVERE, when + " raises at RIE_SEVERE");
   check(report.message == "No renderer loaded.", when + " says exactly \"No renderer loaded.\"");
-}
-
-void checkCApiFailedLoad() {
-  RiErrorHandler(recordingErrorHandler);
-
-  recorded.clear();
-  RiBegin("gmannosuchrenderer");
-  check(recorded.size() == 1, "RiBegin(\"gmannosuchrenderer\") reports once");
-  check(!recorded.empty() && recorded[0].code == RIE_SYSTEM, "the failed load reports RIE_SYSTEM");
-
-  recorded.clear();
-  RiWorldBegin();
-  check(recorded.empty(), "RiWorldBegin after a failed RiBegin reports nothing");
-
-  RiSphere(1, -1, 1, 360, RI_NULL);
-  check(recorded.size() == 1, "the first RiSphere reports");
-  if (!recorded.empty()) {
-    checkNoRendererReport(recorded[0], "the first RiSphere");
-  }
-
-  for (int i = 0; i < 999; ++i) {
-    RiSphere(1, -1, 1, 360, RI_NULL);
-  }
-  RtPoint triangle[3] = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}};
-  RiPolygon(3, RI_P, triangle, RI_NULL);
-  RiWorldEnd();
-  RiFormat(8, 8, 1);
-  RiEnd();
-  check(recorded.size() == 1, "1000 spheres, a polygon, RiWorldEnd, RiFormat and RiEnd report exactly once");
 }
 
 void checkImplFailedLoadSecond() {
@@ -123,9 +87,7 @@ void checkImplFailedLoadSecond() {
         "a second sphere returns quietly");
   check(!raisedBy([&impl] { impl.RiWorldEnd(); }).raised, "RiWorldEnd returns quietly");
   check(!std::filesystem::exists(image), "RiWorldEnd writes no image");
-  recorded.clear();
-  impl.RiFormat(8, 8, 1);
-  check(recorded.empty(), "RiFormat after RiWorldEnd reports nothing");
+  check(!raisedBy([&impl] { impl.RiFormat(8, 8, 1); }).raised, "RiFormat after RiWorldEnd reports nothing");
   check(!raisedBy([&impl] { impl.RiEnd(); }).raised, "RiEnd reports nothing");
 
   Raised const third = raisedBy([&impl] { impl.RiBegin("gmannosuchrenderer"); });
@@ -154,7 +116,6 @@ void checkImplFailedLoadSecond() {
 } // namespace
 
 int main() {
-  checkCApiFailedLoad();
   checkImplFailedLoadSecond();
 
   return checkSummary("a failed RiBegin reports RIE_NOTSTARTED once and later requests return quietly");

@@ -275,12 +275,14 @@ set_tests_properties(rendermanpointers PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Two worlds in one cycle, two RiBegins and an impl destroyed before RiEnd each
-# return the live heap to its starting size. The test counts the heap itself,
-# so it is its own executable. See tests/rendermanlifetime_test.cpp.
+# Two worlds in one cycle, two RiBegins, an impl destroyed before RiEnd and the
+# C API's RiBegin/RiEnd cycles, failed RiBegins included, each return the live
+# heap to its starting size. The test counts the heap itself, so it is its own
+# executable. libgmanrib.so loads for the .rib case, so the test holds the
+# plugin lock. See tests/rendermanlifetime_test.cpp.
 add_executable(gman_rendermanlifetime rendermanlifetime_test.cpp)
 target_link_libraries(gman_rendermanlifetime PRIVATE gman_core gman_internal_headers)
-add_dependencies(gman_rendermanlifetime gman_zbuffer gman_plastic)
+add_dependencies(gman_rendermanlifetime gman_zbuffer gman_plastic gman_rib)
 
 add_test(NAME rendermanlifetime
   COMMAND gman_rendermanlifetime
@@ -288,7 +290,8 @@ add_test(NAME rendermanlifetime
 set_tests_properties(rendermanlifetime PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
-  TIMEOUT 30)
+  TIMEOUT 30
+  RESOURCE_LOCK gmanrib_plugin_file)
 
 # RiWorldEnd rejects a display mode it does not know and closes the world on
 # the error. See tests/invaliddisplaymode_test.cpp.
@@ -318,6 +321,23 @@ set_tests_properties(failedbegin PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
+
+# A C API RiBegin whose context fails to start leaves no context current and
+# frees the context, so later requests raise RIE_NOTSTARTED. The current
+# context is process-wide, so the test is its own executable. See
+# tests/failedbegincapi_test.cpp.
+add_executable(gman_failedbegincapi failedbegincapi_test.cpp)
+target_link_libraries(gman_failedbegincapi PRIVATE gman_core)
+add_dependencies(gman_failedbegincapi gman_zbuffer gman_rib)
+
+add_test(NAME failedbegincapi
+  COMMAND gman_failedbegincapi
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}")
+set_tests_properties(failedbegincapi PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30
+  RESOURCE_LOCK gmanrib_plugin_file)
 
 # RIB dialect coverage. Each spawns the real gman binary, which dlopens
 # its renderer by bare name, so each needs the same library path as the

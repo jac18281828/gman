@@ -45,6 +45,10 @@ public:
   Context();
 
   RtVoid addContext(RtToken name);
+  // Adds a context, makes it current and begins it. When the begin raises,
+  // the context is freed, none is current and the error propagates; the
+  // context current before the call stays listed for switchTo.
+  RtVoid beginContext(RtToken name);
   RtContextHandle getContext(RtVoid);
   GMANRenderMan& current(RtVoid);
   RtVoid switchTo(RtContextHandle);
