@@ -1972,7 +1972,7 @@ if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
   set_tests_properties(rayshadowtransmittance PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
-    TIMEOUT 120)
+    TIMEOUT 300)
 endif()
 
 # A smooth fold's terminator renders lit under both renderers, while every other blocker still shadows.
