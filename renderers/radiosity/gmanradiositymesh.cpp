@@ -372,8 +372,13 @@ std::size_t resolutionFromExtent(RtFloat extent, RtFloat maxEdgeLength) {
     return 1;
   }
   double const raw = std::ceil((double)(extent / maxEdgeLength));
-  std::size_t const count = raw < 1.0 ? 1 : (std::size_t)raw;
-  return GMANMin(count, GMANRadiosityMesh::kMaxDivisions);
+  if (!(raw >= 1.0)) {
+    return 1;
+  }
+  if (raw >= (double)GMANRadiosityMesh::kMaxDivisions) {
+    return GMANRadiosityMesh::kMaxDivisions;
+  }
+  return (std::size_t)raw;
 }
 
 // Even-odd containment of (s, t) in loopST's own ring, in the polygon's

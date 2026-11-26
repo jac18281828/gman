@@ -1702,6 +1702,18 @@ set_tests_properties(exposurenonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANRadiosityMesh converts a polygon's extent over the maximum edge length
+# into a cell count, and a hit's position into a cell, defined at any size. See
+# tests/radiositynonfinite_test.cpp.
+add_executable(gman_radiositynonfinite radiositynonfinite_test.cpp)
+target_link_libraries(gman_radiositynonfinite PRIVATE gman_radiosity_objects)
+
+add_test(NAME radiositynonfinite COMMAND gman_radiositynonfinite)
+set_tests_properties(radiositynonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Test-only surface shader answering a NaN or infinite Ci or Oi on request
 # ("string ci", "string oi"): RIB has no literal for either.
 gman_add_plugin(gman_nonfinitesurface nonfinitesurface_test_plugin.cpp)
