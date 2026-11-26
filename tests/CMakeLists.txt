@@ -1612,6 +1612,17 @@ set_tests_properties(texturenonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RiPixelFilter ignores a NaN or infinite width, and GMANSampleBuffer::resolve
+# stays defined at any width. See tests/pixelfilternonfinite_test.cpp.
+add_executable(gman_pixelfilternonfinite pixelfilternonfinite_test.cpp)
+target_link_libraries(gman_pixelfilternonfinite PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME pixelfilternonfinite COMMAND gman_pixelfilternonfinite)
+set_tests_properties(pixelfilternonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A missing texture warns once per world block under every renderer; libtiff stays silent.
 add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
 target_link_libraries(gman_texturewarningonce PRIVATE gman_core)

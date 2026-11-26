@@ -573,6 +573,11 @@ RtVoid GMANRenderManImpl::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth,
   // guaranteed to cover at least one full pixel of sample offsets
   // regardless of sample count, so floor any width below it, not
   // just non-positive ones.
+  if (!std::isfinite(xwidth) || !std::isfinite(ywidth)) {
+    warning("PixelFilter widths {} and {} must be finite; ignored.", xwidth, ywidth);
+    return;
+  }
+
   const RtFloat kMinFilterWidth = 1.0;
   if (xwidth < kMinFilterWidth) {
     warning("PixelFilter xwidth {:.3f} is non-positive or too narrow, "

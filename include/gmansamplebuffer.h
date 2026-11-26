@@ -86,7 +86,8 @@ public:
   // written as filtered, unclamped; alpha is clamped to [0, 1].
   // xwidth/ywidth are the filter's full support width in pixel units,
   // symmetric about the pixel centre being resolved (the RISpec
-  // convention every kernel in gmanfilters.cpp already follows). Also
+  // convention every kernel in gmanfilters.cpp already follows); a width
+  // wider than the frame filters over every sample the frame holds. Also
   // records, per pixel, the minimum depth among that pixel's own
   // samples -- retrieve with getResolvedDepth after this returns.
   RtVoid resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filterfunc, RtFloat xwidth, RtFloat ywidth);

@@ -49,6 +49,10 @@ namespace {
 // already a mistake -- while still catching one.
 constexpr std::size_t kMaxSamples = std::size_t(1) << 28;
 
+constexpr RtFloat kIndexLimit = 0x1p30f;
+
+int indexBound(RtFloat position) { return static_cast<int>(GMANClamp<RtFloat>(position, -kIndexLimit, kIndexLimit)); }
+
 } // namespace
 
 GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys, const GMANColor& background)
@@ -117,10 +121,10 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
       // the frame edge is never written, so the weighted sum below
       // renormalizes over whatever support survives there rather than
       // assuming a full box every filter width implies.
-      int gxMin = (int)floor((cx - xhalf) * xsamples);
-      int gxMax = (int)ceil((cx + xhalf) * xsamples) - 1;
-      int gyMin = (int)floor((cy - yhalf) * ysamples);
-      int gyMax = (int)ceil((cy + yhalf) * ysamples) - 1;
+      int gxMin = indexBound(floor((cx - xhalf) * xsamples));
+      int gxMax = indexBound(ceil((cx + xhalf) * xsamples)) - 1;
+      int gyMin = indexBound(floor((cy - yhalf) * ysamples));
+      int gyMax = indexBound(ceil((cy + yhalf) * ysamples)) - 1;
       gxMin = GMANMax(gxMin, 0);
       gxMax = GMANMin(gxMax, sampleWidth - 1);
       gyMin = GMANMax(gyMin, 0);
