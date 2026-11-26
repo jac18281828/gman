@@ -278,6 +278,40 @@ gman::Shading GMANRayTracer::shadeHit(GMANRayInterface const& hitPrimitive, GMAN
   return shading;
 }
 
+GMANRayTracer::Composited GMANRayTracer::compositeLayers(GMANRay const& ray, GMANHit const& hit,
+                                                         GMANRayInterface const& hitPrimitive) const {
+  GMANColor colour(0.0f, 0.0f, 0.0f);
+  GMANColor transmission(1.0f, 1.0f, 1.0f);
+  GMANRay layerRay = ray;
+  GMANHit layerHit = hit;
+  GMANRayInterface const* layerPrimitive = &hitPrimitive;
+
+  for (int layer = 0; layer < gman::kMaxCompositeLayers && layerPrimitive != nullptr; ++layer) {
+    const auto shading = shadeHit(*layerPrimitive, layerRay, layerHit);
+    colour += gman::multiplyChannels(transmission, shading.Ci);
+    transmission = gman::multiplyChannels(transmission, gman::oneMinus(coverageOf(shading.Oi)));
+    if (gman::transmissionNegligible(transmission)) {
+      break;
+    }
+
+    // Offset along Ng rather than the ray direction: offsetting along the
+    // direction gives a perpendicular clearance of offset * |Ng . D|,
+    // which vanishes at a grazing hit and lets a silhouette-grazing
+    // surface composite itself repeatedly. The hit primitive's own M, not
+    // the previous layer's: each layer composited here can be a different
+    // surface.
+    const auto magnitude = gman::primitiveMagnitude(layerHit.primitive->getBBox());
+    const auto origin = gman::offsetOrigin(layerHit.point, layerHit.normal, layerRay.getDirection(), magnitude);
+    layerRay = GMANRay(origin, layerRay.getDirection(), RI_EPSILON, RI_INFINITY);
+    layerHit = GMANHit();
+    layerPrimitive = nullptr;
+    if (!bvh.nearestHit(layerRay, layerHit, layerPrimitive)) {
+      break;
+    }
+  }
+  return Composited{colour, transmission};
+}
+
 /*
  * RenderMan API GMANRaytraceRenderer
  *
@@ -303,8 +337,8 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
                                        int sampleY, gman::IndirectPass const* indirectPass,
                                        GMANRayOccluder const& shadingOccluder, gman::TextureCache* textureCache,
                                        GMANAreaLightSample& areaSample) const {
-  GMANRay ray = viewingSys->cameraRay(rasterX, rasterY);
-  RayHit hit = nearestHit(ray);
+  GMANRay const ray = viewingSys->cameraRay(rasterX, rasterY);
+  RayHit const hit = nearestHit(ray);
   if (hit.primitive == nullptr) {
     return;
   }
@@ -315,14 +349,6 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
   // getDepth answers "what is nearest", not "what is opaque".
   RtFloat const sampleDepth = hit.hit.point.getZ();
 
-  // Front-to-back composite, the RISpec's own "over": colour accumulates
-  // what each layer contributes through everything already crossed,
-  // transmission shrinks by that layer's own opacity. Every shipped
-  // shader's Ci already carries its own Os factor, so no second Oi
-  // multiplies the running colour here.
-  GMANColor accumulated(0.0f, 0.0f, 0.0f);
-  GMANColor transmission(1.0f, 1.0f, 1.0f);
-
   // Depth 0: a primary ray's own hit. A shader's trace() call recurses
   // into a child GMANRayTracer at depth 1 (see GMANRayTracer::trace()),
   // carrying indirectPass, textureCache and areaSample forward so a
@@ -331,29 +357,11 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
   GMANRayTracer const tracer(bvh, shadingOccluder, cameraToWorld, background, 0, indirectPass, textureCache,
                              &areaSample);
 
-  for (int layer = 0; layer < gman::kMaxCompositeLayers && hit.primitive != nullptr; ++layer) {
-    gman::Shading const shading = tracer.shadeHit(*hit.primitive, ray, hit.hit);
-    accumulated += gman::multiplyChannels(transmission, shading.Ci);
-    transmission = gman::multiplyChannels(transmission, gman::oneMinus(coverageOf(shading.Oi)));
-    if (gman::transmissionNegligible(transmission)) {
-      break;
-    }
-
-    // Offset along Ng rather than the ray direction: offsetting along the
-    // direction gives a perpendicular clearance of offset * |Ng . D|,
-    // which vanishes at a grazing hit and lets a silhouette-grazing
-    // surface composite itself repeatedly. The hit primitive's own M, not
-    // the previous layer's: each layer composited here can be a different
-    // surface.
-    RtFloat const magnitude = gman::primitiveMagnitude(hit.hit.primitive->getBBox());
-    GMANPoint const origin = gman::offsetOrigin(hit.hit.point, hit.hit.normal, ray.getDirection(), magnitude);
-    ray = GMANRay(origin, ray.getDirection(), RI_EPSILON, RI_INFINITY);
-    hit = nearestHit(ray);
-  }
-
-  GMANColor const coverage = gman::oneMinus(transmission);
+  const auto composited = tracer.compositeLayers(ray, hit.hit, *hit.primitive);
+  GMANColor accumulated = composited.colour;
+  const auto coverage = gman::oneMinus(composited.transmission);
   GMANAlpha const alpha(coverage.getRed(), coverage.getGreen(), coverage.getBlue());
-  accumulated += gman::multiplyChannels(transmission, background);
+  accumulated += gman::multiplyChannels(composited.transmission, background);
   sampleBuffer->zTestAndSet(sampleX, sampleY, sampleDepth, accumulated, alpha);
 }
 

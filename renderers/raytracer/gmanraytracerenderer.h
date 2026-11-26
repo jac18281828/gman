@@ -138,6 +138,24 @@ public:
   // origin, and its Oi unchanged.
   gman::Shading shadeHit(GMANRayInterface const& hitPrimitive, GMANRay const& ray, GMANHit const& hit) const;
 
+  // What compositeLayers accumulates: the colour the layers add, each through
+  // the transmission left before it, and the transmission left after the last.
+  struct Composited {
+    GMANColor colour;
+    GMANColor transmission;
+  };
+
+  // The front-to-back composite, the RISpec's own "over", of the layers along
+  // ray, whose nearest hit is hit on hitPrimitive: each layer adds its Ci
+  // through the transmission left and shrinks that transmission by its own
+  // opacity. Every shipped shader's Ci already carries its own Os factor, so no
+  // second Oi multiplies the running colour. Stops once the transmission is
+  // negligible, so an opaque layer casts no further ray, or after
+  // gman::kMaxCompositeLayers layers. Every layer shades through this tracer,
+  // so a layer adds no depth. The background is in neither result: the caller
+  // adds it through the transmission left.
+  Composited compositeLayers(GMANRay const& ray, GMANHit const& hit, GMANRayInterface const& hitPrimitive) const;
+
 private:
   gman::Shading shadeLit(GMANRayInterface const& hitPrimitive, gman::SurfacePoint const& point,
                          GMANColor const* indirect) const;

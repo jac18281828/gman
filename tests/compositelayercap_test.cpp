@@ -41,6 +41,12 @@
  * Driven through the public render(), as raydepth_test.cpp is:
  * shadeSample and nearestHit are private, and no RIB parse is needed to
  * build the GMANOptions/viewing system/frame buffer a renderer takes.
+ *
+ * The same stacks pin what the composite leaves the sample besides its
+ * colour: the depth stays the first disk's, since the first hit owns the
+ * sample's depth however many layers follow, and the alpha is one minus the
+ * transmission the composited layers leave, 0.95^8 for eight layers and
+ * 0.95^16 for twenty, the cap's.
  */
 
 #include <cmath>
@@ -76,9 +82,19 @@ GMANOptions::ScreenWindowStruct squareScreenWindow() {
   return sw;
 }
 
+constexpr RtFloat kLayerOpacity = 0.05f;
+constexpr RtFloat kDepthTolerance = 1e-4f;
+constexpr RtFloat kAlphaTolerance = 1e-5f;
+
+struct StackRender {
+  GMANColor colour;
+  RtFloat depth = RI_INFINITY;
+  GMANAlpha alpha;
+};
+
 // Renders layerCount stacked, camera-facing, Opacity-0.05 disks and
-// returns the centre pixel's colour.
-GMANColor renderStack(int layerCount) {
+// returns the centre pixel's colour, depth and alpha.
+StackRender renderStack(int layerCount) {
   GMANOptions options;
   options.setFormat(kRes, kRes, 1.0);
   options.setPixelSamples(1.0, 1.0);
@@ -92,7 +108,7 @@ GMANColor renderStack(int layerCount) {
 
   GMANRaytraceRenderer renderer;
   GMANAttributes attr;
-  RtColor opacity = {0.05f, 0.05f, 0.05f};
+  RtColor opacity = {kLayerOpacity, kLayerOpacity, kLayerOpacity};
   attr.setOpacity(opacity);
 
   for (int layer = 0; layer < layerCount; ++layer) {
@@ -108,7 +124,16 @@ GMANColor renderStack(int layerCount) {
   GMANColor const background(1.0f, 1.0f, 1.0f);
   GMANFrameBuffer frameBuffer(kRes, kRes, background);
   renderer.render(&frameBuffer, &viewingSys, options, attr);
-  return frameBuffer.getPixel(kRes / 2, kRes / 2);
+  StackRender result;
+  result.colour = frameBuffer.getPixel(kRes / 2, kRes / 2);
+  result.depth = renderer.getDepth(kRes / 2, kRes / 2);
+  result.alpha = frameBuffer.getAlpha(kRes / 2, kRes / 2);
+  return result;
+}
+
+bool alphaNear(GMANAlpha const& alpha, RtFloat expected, RtFloat tolerance) {
+  return std::fabs(alpha.getRed() - expected) <= tolerance && std::fabs(alpha.getGreen() - expected) <= tolerance &&
+         std::fabs(alpha.getBlue() - expected) <= tolerance;
 }
 
 bool colorsEqual(GMANColor const& a, GMANColor const& b, RtFloat tolerance) {
@@ -119,9 +144,12 @@ bool colorsEqual(GMANColor const& a, GMANColor const& b, RtFloat tolerance) {
 } // namespace
 
 int main() {
-  GMANColor const stack8 = renderStack(8);
-  GMANColor const stack16 = renderStack(16);
-  GMANColor const stack20 = renderStack(20);
+  const auto render8 = renderStack(8);
+  const auto render16 = renderStack(16);
+  const auto render20 = renderStack(20);
+  GMANColor const& stack8 = render8.colour;
+  GMANColor const& stack16 = render16.colour;
+  GMANColor const& stack20 = render20.colour;
 
   std::printf("centre pixel: 8 layers (%g,%g,%g), 16 layers (%g,%g,%g), 20 layers (%g,%g,%g)\n", stack8.getRed(),
               stack8.getGreen(), stack8.getBlue(), stack16.getRed(), stack16.getGreen(), stack16.getBlue(),
@@ -141,5 +169,19 @@ int main() {
   check(!colorsEqual(stack8, stack16, 0.02f),
         "cap: an 8-layer stack (below the cap) renders differently from a 16-layer one");
 
-  return checkSummary("R-transparency's layer cap: composite stops at 16 layers, not before and not much beyond");
+  // The first hit owns the sample's depth, however many layers follow it.
+  check(std::fabs(render8.depth - kFirstLayerZ) <= kDepthTolerance &&
+            std::fabs(render20.depth - kFirstLayerZ) <= kDepthTolerance,
+        "depth: the centre sample's depth is the first disk's, for the 8-layer and the 20-layer stack");
+
+  // The alpha is one minus the transmission the composited layers leave: eight
+  // layers for the short stack, the cap's sixteen for the long one.
+  RtFloat const survive = 1.0f - kLayerOpacity;
+  check(alphaNear(render8.alpha, 1.0f - std::pow(survive, 8.0f), kAlphaTolerance),
+        "alpha: the 8-layer stack's centre alpha is one minus 0.95^8");
+  check(alphaNear(render20.alpha, 1.0f - std::pow(survive, 16.0f), kAlphaTolerance),
+        "alpha: the 20-layer stack's centre alpha is one minus 0.95^16, the cap's");
+
+  return checkSummary("R-transparency's layer cap: composite stops at 16 layers, not before and not much beyond; "
+                      "the first hit owns the depth and the remaining transmission the alpha");
 }
