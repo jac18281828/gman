@@ -266,6 +266,17 @@ void meshCentreAndRadius(GMANRayPolygonMesh const& mesh, GMANPoint& centre, RtFl
   radius = diagonal.magnitude() / (RtFloat)2.0;
 }
 
+// The solid-angle density of a point drawn uniformly by area over mesh, seen
+// from distance away under cosTheta to the drawn face's normal; 0 for a mesh
+// with no area.
+RtFloat meshSolidAnglePdf(GMANRayPolygonMesh const& mesh, RtFloat distance, RtFloat cosTheta) {
+  RtFloat const area = static_cast<RtFloat>(meshArea(mesh));
+  if (!std::isfinite(area) || !(area > 0.0f)) {
+    return 0.0f;
+  }
+  return (distance * distance) / (area * cosTheta);
+}
+
 struct Pick {
   std::size_t index;
   double fraction;
@@ -588,11 +599,7 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
   }
 
   if (GMANRayPolygonMesh const* mesh = classifyEmittingShape(*emitter.shape).mesh) {
-    RtFloat const area = static_cast<RtFloat>(meshArea(*mesh));
-    if (!std::isfinite(area) || !(area > 0.0f)) {
-      return 0.0f;
-    }
-    return (distance * distance) / (area * cosTheta);
+    return meshSolidAnglePdf(*mesh, distance, cosTheta);
   }
 
   std::optional<InvertibleMatrix> const& placement = emittingShapeObjectToCamera(*emitter.shape);
