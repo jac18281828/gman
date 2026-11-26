@@ -84,10 +84,6 @@ struct TexelAxis {
   RtFloat fraction;
 };
 
-// A coordinate of finite s past RtInt's range has no integer index to
-// convert. Periodic wrap keeps the index modulo dim, which fmod answers
-// exactly in double, including where s * dim overflows a float; clamp and
-// black see an index far outside [0, dim) at either end.
 RtFloat texelPastIndexRange(RtFloat s, RtFloat x, RtInt dim, TextureWrap wrap) {
   if (wrap != TEXTURE_PERIODIC) {
     return std::copysign(kIndexLimit, x);
