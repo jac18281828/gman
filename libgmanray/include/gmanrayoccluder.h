@@ -126,18 +126,17 @@ struct GMANRAY_EXPORT ShadowWalkResult {
 
 // A shadow walk in GMANRayOccluder::transmission's own shape, for a caller
 // whose light has a position to aim at: advances from origin over
-// [0, maxDistance) along wi, compositing
-// each blocker's own factor per channel with no early exit, and answers
-// black past gman::kMaxCompositeLayers blockers. A delta draw keeps its own
-// fixed wi, shortening remaining by each blocker's own hit.t; an area draw
-// re-aims at shadowTarget after every blocker, since a blocker's own offset
-// scales with its own size and could otherwise push the walk's endpoint past
-// a small emitter's own target -- ending unblocked once shadowTarget lies at
-// or behind the walk's own new origin. A non-null terminatorOrigin names the
-// primitive a shadow ray starts inside the facets of: the walk's first hit
-// then passes without compositing when gman::passesTerminatorExit accepts
-// it. cameraToWorld and textureCache are gman::blockerTransmittance's
-// arguments.
+// [0, maxDistance) along wi, compositing each blocker's own factor per channel
+// with no early exit, and answers black past gman::kMaxCompositeLayers
+// blockers. A delta draw keeps its own fixed wi, shortening remaining by each
+// blocker's own hit.t; an area draw re-aims at shadowTarget after every
+// blocker, since a blocker's own offset scales with its own size and could
+// otherwise push the walk's endpoint past a small emitter's own target --
+// ending unblocked once shadowTarget lies at or behind the walk's own new
+// origin. A non-null terminatorOrigin names the primitive a shadow ray starts
+// inside the facets of: the walk's first hit then passes without compositing
+// when gman::passesTerminatorExit accepts it. cameraToWorld and textureCache
+// are gman::blockerTransmittance's arguments.
 GMANRAY_EXPORT ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector wi, RtFloat maxDistance,
                                            bool isDelta, GMANPoint const& shadowTarget,
                                            GMANMatrix4 const& cameraToWorld, TextureCache* textureCache,
