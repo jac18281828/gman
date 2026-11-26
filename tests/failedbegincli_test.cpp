@@ -19,17 +19,22 @@
  */
 
 /*
- * `gman -r gmannosuchrenderer sphere.rib` stops the file when the renderer
- * fails to load: one report naming RIE_SYSTEM and no RIE_NOTSTARTED from the
- * file's requests, no image and exit status EXIT_FAILURE, without a hang or a
- * crash.
+ * `gman -r <token> sphere.rib` stops the file when the token names no
+ * loadable renderer: one report naming RIE_SYSTEM and no RIE_NOTSTARTED from
+ * the file's requests, no image and exit status EXIT_FAILURE, without a hang
+ * or a crash. Four tokens run the same checks, each in a directory of its own:
+ * gmannosuchrenderer, which names no file; gman, the name of the core library;
+ * matte, a shader module that loads and offers no renderer; and gmanrib, the
+ * RIB-writer plugin.
  */
 
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <format>
 #include <sstream>
 #include <string>
+#include <string_view>
 
 #include "check.h"
 #include "rungman.h"
@@ -37,6 +42,7 @@
 namespace {
 
 constexpr int kTimeoutSeconds = 20;
+constexpr std::string_view kTokens[] = {"gmannosuchrenderer", "gman", "matte", "gmanrib"};
 
 bool hasImage(std::filesystem::path const& directory) {
   for (auto const& entry : std::filesystem::directory_iterator(directory)) {
@@ -47,23 +53,20 @@ bool hasImage(std::filesystem::path const& directory) {
   return false;
 }
 
-} // namespace
-
-int main(int argc, char* argv[]) {
-  if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <sphere.rib>\n", argv[0]);
-    return 2;
-  }
-  std::string const gman = argv[1];
-  std::string const rib = argv[2];
+void checkFailedRenderer(std::string const& gman, std::string const& rib, std::string_view token) {
+  std::string const label = std::format("-r {}: ", token);
+  const auto directory = std::filesystem::current_path() / token;
+  std::filesystem::remove_all(directory);
+  std::filesystem::create_directories(directory);
 
   GMANRunOptions options;
   options.timeoutSeconds = kTimeoutSeconds;
-  GMANRunResult const result = runGman(gman, {"-r", "gmannosuchrenderer", rib}, options);
+  options.workingDirectory = directory.string();
+  GMANRunResult const result = runGman(gman, {"-r", std::string(token), rib}, options);
 
-  check(!result.timedOut, "gman does not hang");
-  check(!result.crashed, "gman does not crash");
-  check(result.exitStatus == EXIT_FAILURE, "gman exits EXIT_FAILURE");
+  check(!result.timedOut, label + "gman does not hang");
+  check(!result.crashed, label + "gman does not crash");
+  check(result.exitStatus == EXIT_FAILURE, label + "gman exits EXIT_FAILURE");
 
   int reportLines = 0;
   bool namesSystem = false;
@@ -76,10 +79,25 @@ int main(int argc, char* argv[]) {
     }
     namesNoRenderer = namesNoRenderer || line.find("No renderer loaded.") != std::string::npos;
   }
-  check(reportLines == 1, "gman prints exactly one line carrying RIE_");
-  check(namesSystem, "the line names RIE_SYSTEM");
-  check(!namesNoRenderer, "gman prints no \"No renderer loaded.\" line");
-  check(!hasImage(std::filesystem::current_path()), "gman writes no image");
+  check(reportLines == 1, label + "gman prints exactly one line carrying RIE_");
+  check(namesSystem, label + "the line names RIE_SYSTEM");
+  check(!namesNoRenderer, label + "gman prints no \"No renderer loaded.\" line");
+  check(!hasImage(directory), label + "gman writes no image");
+}
 
-  return checkSummary("gman stops a file whose renderer fails to load with one report");
+} // namespace
+
+int main(int argc, char* argv[]) {
+  if (argc < 3) {
+    std::fprintf(stderr, "usage: %s <gman-binary> <sphere.rib>\n", argv[0]);
+    return 2;
+  }
+  std::string const gman = argv[1];
+  std::string const rib = argv[2];
+
+  for (std::string_view const token : kTokens) {
+    checkFailedRenderer(gman, rib, token);
+  }
+
+  return checkSummary("gman stops a file whose -r names no loadable renderer with one report");
 }

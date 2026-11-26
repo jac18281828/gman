@@ -435,7 +435,7 @@ add_test(NAME failedbegincli
 set_tests_properties(failedbegincli PROPERTIES
   ENVIRONMENT "${GMAN_PHASE2_ENV}"
   LABELS render
-  TIMEOUT 30)
+  TIMEOUT 120)
 
 add_executable(gman_unknownflag unknownflag_test.cpp)
 target_link_libraries(gman_unknownflag PRIVATE gman_core)
