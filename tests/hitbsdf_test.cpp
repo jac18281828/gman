@@ -29,8 +29,10 @@
  */
 
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <numbers>
+#include <optional>
 
 #include "check.h"
 #include "gmanattributes.h"
@@ -50,6 +52,18 @@ namespace {
 
 constexpr double kTol = 1e-6;
 constexpr RtFloat kGlassIor = 1.5f;
+
+struct ClampCase {
+  RtFloat input;
+  RtFloat expected;
+};
+
+const auto kNaN = std::nanf("");
+const auto kInfinity = std::numeric_limits<RtFloat>::infinity();
+
+const ClampCase kScaleCases[] = {{2.0f, 1.0f}, {-1.0f, 0.0f}, {kNaN, 0.0f}};
+const ClampCase kEtaCases[] = {{0.0f, kGlassIor},      {-2.0f, kGlassIor}, {kNaN, kGlassIor},
+                               {kInfinity, kGlassIor}, {1000.0f, 100.0f},  {0.001f, 0.01f}};
 
 GMANMatrix4 const kIdentity;
 
@@ -81,6 +95,14 @@ GMANParameterList plasticParams() {
   return GMANParameterList(dictionary, 4, tokens, parms);
 }
 
+// Surface "glass" "float eta" [eta] "Kr" [kr] "float Kt" [kt]'s own parameter list.
+GMANParameterList glassParams(RtFloat eta, RtFloat kr, RtFloat kt) {
+  static GMANDictionary dictionary;
+  RtToken tokens[3] = {"float eta", RI_KR, "float Kt"};
+  RtPointer parms[3] = {&eta, &kr, &kt};
+  return GMANParameterList(dictionary, 3, tokens, parms);
+}
+
 GMANVector normalized(GMANVector v) {
   v.normalize();
   return v;
@@ -104,7 +126,7 @@ bool colorNearRel(GMANColor const& a, GMANColor const& b, double rel) {
 }
 
 // A closure "matches" another when lobe count and each lobe's kind,
-// weight, alpha and eta are equal exactly.
+// weight, alpha, eta and transmitWeight are equal exactly.
 bool closuresMatch(gman::BSDF const& a, gman::BSDF const& b) {
   if (a.lobeCount() != b.lobeCount()) {
     return false;
@@ -112,7 +134,8 @@ bool closuresMatch(gman::BSDF const& a, gman::BSDF const& b) {
   for (std::size_t i = 0; i < a.lobeCount(); ++i) {
     gman::Lobe const& la = a.lobe(i);
     gman::Lobe const& lb = b.lobe(i);
-    if (la.kind != lb.kind || !colorExactly(la.weight, lb.weight) || la.alpha != lb.alpha || la.eta != lb.eta) {
+    if (la.kind != lb.kind || !colorExactly(la.weight, lb.weight) || la.alpha != lb.alpha || la.eta != lb.eta ||
+        !colorExactly(la.transmitWeight, lb.transmitWeight)) {
       return false;
     }
   }
@@ -194,21 +217,60 @@ void checkNullShaderAnswersLambertOfCs() {
         "null shader: gman::bsdf at Cs = (1.4, 0.2, -0.3) answers one lambert lobe of weight exactly (1, 0.2, 0)");
 }
 
-// Glass answers one dielectric lobe.
-void checkGlassAnswersDielectric() {
-  auto const glass = loadShader("glass", GMANParameterList());
-  check(glass != nullptr, "glass: loads through setSurface");
+// The one dielectric lobe gman::bsdf answers for glass loaded with params,
+// or nothing when glass fails to load or answers any other closure.
+std::optional<gman::Lobe> glassLobe(GMANParameterList const& params) {
+  const auto glass = loadShader("glass", params);
   if (glass == nullptr) {
-    return;
+    return std::nullopt;
   }
 
-  gman::Appearance const appearance = appearanceFor(glass, kPlasticCs);
-  gman::SurfacePoint const point = pointAt(GMANNormal(0.0f, 0.0f, 1.0f), GMANNormal(0.0f, 0.0f, 1.0f));
-  gman::BSDF const closure = gman::bsdf(appearance, point, kIdentity);
+  const auto appearance = appearanceFor(glass, kPlasticCs);
+  const auto point = pointAt(GMANNormal(0.0f, 0.0f, 1.0f), GMANNormal(0.0f, 0.0f, 1.0f));
+  const auto closure = gman::bsdf(appearance, point, kIdentity);
+  if (closure.lobeCount() != 1 || closure.lobe(0).kind != gman::LobeKind::dielectric) {
+    return std::nullopt;
+  }
+  return closure.lobe(0);
+}
 
-  check(closure.lobeCount() == 1 && closure.lobe(0).kind == gman::LobeKind::dielectric &&
-            colorExactly(closure.lobe(0).weight, GMANColor(1.0f, 1.0f, 1.0f)) && closure.lobe(0).eta == kGlassIor,
-        "glass: gman::bsdf answers one dielectric lobe of weight (1, 1, 1) and eta 1.5, exactly");
+bool lobeIs(std::optional<gman::Lobe> const& lobe, RtFloat reflect, RtFloat transmit, RtFloat eta) {
+  return lobe && colorExactly(lobe->weight, GMANColor(reflect, reflect, reflect)) &&
+         colorExactly(lobe->transmitWeight, GMANColor(transmit, transmit, transmit)) && lobe->eta == eta;
+}
+
+// Glass answers one dielectric lobe.
+void checkGlassAnswersDielectric() {
+  const auto lobe = glassLobe(GMANParameterList());
+  check(lobeIs(lobe, 1.0f, 1.0f, kGlassIor),
+        "glass: gman::bsdf answers one dielectric lobe of weight (1, 1, 1), transmitWeight (1, 1, 1) and eta 1.5, "
+        "exactly");
+}
+
+// Kr, Kt and eta reach the lobe: Kr as its weight and Kt as its
+// transmitWeight, each in all three channels, and eta as its index.
+void checkGlassParametersReachTheLobe() {
+  check(lobeIs(glassLobe(glassParams(1.33f, 0.3f, 0.6f)), 0.3f, 0.6f, 1.33f),
+        "glass with Kr 0.3, Kt 0.6 and eta 1.33: the lobe's weight is (0.3, 0.3, 0.3), its transmitWeight (0.6, 0.6, "
+        "0.6) and its eta 1.33, exactly");
+  check(lobeIs(glassLobe(glassParams(1.5f, 1.0f, 1.0f)), 1.0f, 1.0f, kGlassIor),
+        "glass with Kr 1, Kt 1 and eta 1.5 named: the lobe is the unnamed default's, exactly");
+}
+
+// Out of range values clamp: Kr and Kt to [0, 1], a NaN to 0, and an eta
+// that is not finite or not above 0 to 1.5, any other eta to [0.01, 100].
+void checkGlassClampsOutOfRange() {
+  bool krOk = true, ktOk = true, etaOk = true;
+  for (auto const& c : kScaleCases) {
+    krOk = krOk && lobeIs(glassLobe(glassParams(kGlassIor, c.input, 1.0f)), c.expected, 1.0f, kGlassIor);
+    ktOk = ktOk && lobeIs(glassLobe(glassParams(kGlassIor, 1.0f, c.input)), 1.0f, c.expected, kGlassIor);
+  }
+  for (auto const& c : kEtaCases) {
+    etaOk = etaOk && lobeIs(glassLobe(glassParams(c.input, 1.0f, 1.0f)), 1.0f, 1.0f, c.expected);
+  }
+  check(krOk, "glass: Kr of 2, -1 and NaN reaches the lobe's weight as 1, 0 and 0, exactly");
+  check(ktOk, "glass: Kt of 2, -1 and NaN reaches the lobe's transmitWeight as 1, 0 and 0, exactly");
+  check(etaOk, "glass: eta of 0, -2, NaN and infinity reaches the lobe as 1.5, 1000 as 100 and 0.001 as 0.01, exactly");
 }
 
 } // namespace
@@ -218,7 +280,10 @@ int main() {
   checkMatteBuildsAtShadingNormal();
   checkNullShaderAnswersLambertOfCs();
   checkGlassAnswersDielectric();
+  checkGlassParametersReachTheLobe();
+  checkGlassClampsOutOfRange();
 
   return checkSummary("gman::bsdf: plastic matches a hand-built env, matte builds at the shading normal, a null "
-                      "shader answers Cs as one Lambert lobe, and glass answers its dielectric lobe");
+                      "shader answers Cs as one Lambert lobe, and glass answers its dielectric lobe carrying its "
+                      "Kr, Kt and eta");
 }

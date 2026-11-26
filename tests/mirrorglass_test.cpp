@@ -33,11 +33,13 @@
  */
 
 #include <cmath>
+#include <limits>
 #include <memory>
 #include <numbers>
 #include <string>
 
 #include "check.h"
+#include "gmanbsdf.h"
 #include "gmandictionary.h"
 #include "gmanloadable.h"
 #include "gmanloadableshader.h"
@@ -53,6 +55,18 @@ namespace {
 
 constexpr RtFloat kTol = (RtFloat)1.0e-4;
 constexpr RtFloat kDegToRad = (RtFloat)(std::numbers::pi / 180.0);
+constexpr RtFloat kGlassIor = 1.5f;
+
+struct GlassSettings {
+  RtFloat eta;
+  RtFloat kr;
+  RtFloat kt;
+};
+
+const auto kNaN = std::nanf("");
+const auto kInfinity = std::numeric_limits<RtFloat>::infinity();
+
+GlassSettings const kDefaultSettings = {kGlassIor, 1.0f, 1.0f};
 
 bool near(RtFloat a, RtFloat b, RtFloat tol) { return std::fabs(a - b) <= tol; }
 
@@ -102,6 +116,17 @@ GMANParameterList krParams(RtFloat kr) {
   RtToken tokens[1] = {RI_KR};
   RtPointer parms[1] = {&kr};
   return GMANParameterList(dictionary, 1, tokens, parms);
+}
+
+// Surface "glass" "float eta" [eta] "Kr" [kr] "float Kt" [kt]'s own parameter list.
+GMANParameterList glassParams(GlassSettings const& settings) {
+  static GMANDictionary dictionary;
+  RtFloat eta = settings.eta;
+  RtFloat kr = settings.kr;
+  RtFloat kt = settings.kt;
+  RtToken tokens[3] = {"float eta", RI_KR, "float Kt"};
+  RtPointer parms[3] = {&eta, &kr, &kt};
+  return GMANParameterList(dictionary, 3, tokens, parms);
 }
 
 // Records its own last P/R/Ng and always returns a fixed colour.
@@ -262,7 +287,7 @@ void checkMirrorCi(std::string const& mirrorPath) {
 // Check D.2: glass's Ci, entering and exiting, both with hand-computed
 // expected directions, both scaled by Os alone (no Cs factor).
 void checkGlassCi(std::string const& glassPath) {
-  GMANLoadableShader loader(glassPath.c_str(), GMANParameterList()); // glass reads no parameter
+  GMANLoadableShader loader(glassPath.c_str(), GMANParameterList());
   GMANSurfaceShader const* glassShader = loader.getSurface();
 
   GMANNormal const N(0.0f, 0.0f, 1.0f);
@@ -326,6 +351,121 @@ void checkGlassCi(std::string const& glassPath) {
     check(vectorNear(tracer.recordFirst().R, rr, kTol), "D.2 exiting: glass traces the hand-computed Rr first");
     check(vectorNear(tracer.recordSecond().R, rt, kTol), "D.2 exiting: glass traces the hand-computed Rt second");
   }
+}
+
+// A surface point with N = Ng = +z and a ray degrees off Ng, entering
+// (Ng . I < 0) or exiting, for the parameter checks below.
+GMANSurfaceEnv glassEnv(RtFloat degrees, bool entering) {
+  GMANSurfaceEnv se;
+  se.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  se.P = GMANPoint(0.0f, 0.0f, 0.0f);
+  se.N = GMANNormal(0.0f, 0.0f, 1.0f);
+  se.Ng = GMANNormal(0.0f, 0.0f, 1.0f);
+  if (entering) {
+    se.I = obliqueDirection(degrees);
+    return se;
+  }
+  const auto radians = degrees * kDegToRad;
+  se.I = GMANVector(std::sin(radians), 0.0f, std::cos(radians));
+  return se;
+}
+
+// Check D.2b: glass loaded with given computes Ci as
+// Os * (Kr * kr * trace(Rr) + Kt * kt * trace(Rt)) with the sanitized
+// wanted settings, tracing the hand-computed Rr and Rt at wanted's eta, and
+// its bsdf's lobe carries the same three values: one sanitized eta, Kr and
+// Kt feed both renderers.
+void checkGlassSettings(std::string const& glassPath, GlassSettings const& given, GlassSettings const& wanted,
+                        bool entering, std::string const& name) {
+  GMANLoadableShader loader(glassPath.c_str(), glassParams(given));
+  GMANSurfaceShader const* glassShader = loader.getSurface();
+
+  auto se = glassEnv(20.0f, entering);
+  TwoAnswerTracer tracer(GMANColor(0.3f, 0.4f, 0.5f), GMANColor(0.6f, 0.1f, 0.2f));
+  se.tracer = &tracer;
+
+  const GMANVector n(0.0f, 0.0f, 1.0f);
+  const auto nf = handFaceforward(n, se.I, n);
+  const auto enteringEta = 1.0f / wanted.eta;
+  const auto eta = entering ? enteringEta : wanted.eta;
+  const auto rr = handReflect(se.I, nf);
+  const auto rt = handRefract(se.I, nf, eta);
+  RtFloat kr = 0.0f, kt = 0.0f;
+  se.fresnel(se.I, nf, eta, kr, kt);
+
+  const auto ci = glassShader->computeCi(se);
+  const GMANColor want(wanted.kr * kr * 0.3f + wanted.kt * kt * 0.6f, wanted.kr * kr * 0.4f + wanted.kt * kt * 0.1f,
+                       wanted.kr * kr * 0.5f + wanted.kt * kt * 0.2f);
+  check(colorNear(ci, want, kTol), name + ": Ci equals Os*(Kr*kr*trace(Rr) + Kt*kt*trace(Rt))");
+  check(vectorNear(tracer.recordFirst().R, rr, kTol), name + ": glass traces the hand-computed Rr first");
+  check(vectorNear(tracer.recordSecond().R, rt, kTol), name + ": glass traces the hand-computed Rt second");
+
+  const auto closure = glassShader->bsdf(se);
+  check(closure.lobeCount() == 1 && closure.lobe(0).eta == wanted.eta &&
+            colorExactly(closure.lobe(0).weight, GMANColor(wanted.kr, wanted.kr, wanted.kr)) &&
+            colorExactly(closure.lobe(0).transmitWeight, GMANColor(wanted.kt, wanted.kt, wanted.kt)),
+        name + ": bsdf's lobe carries the eta, Kr and Kt computeCi used");
+}
+
+// Check D.2c: Kr 0.3, Kt 0.6 and eta 1.33 weight and bend both rays, entering
+// and exiting; naming the defaults changes nothing; Kr, Kt and eta out of
+// range reach computeCi and bsdf clamped, each the same value.
+void checkGlassParameters(std::string const& glassPath) {
+  const GlassSettings tinted = {1.33f, 0.3f, 0.6f};
+  checkGlassSettings(glassPath, tinted, tinted, true, "D.2c entering, Kr 0.3 Kt 0.6 eta 1.33");
+  checkGlassSettings(glassPath, tinted, tinted, false, "D.2c exiting, Kr 0.3 Kt 0.6 eta 1.33");
+  checkGlassSettings(glassPath, kDefaultSettings, kDefaultSettings, true, "D.2c entering, defaults named");
+
+  GMANLoadableShader unnamed(glassPath.c_str(), GMANParameterList());
+  GMANLoadableShader named(glassPath.c_str(), glassParams(kDefaultSettings));
+  auto se = glassEnv(20.0f, true);
+  TwoAnswerTracer unnamedTracer(GMANColor(0.3f, 0.4f, 0.5f), GMANColor(0.6f, 0.1f, 0.2f));
+  se.tracer = &unnamedTracer;
+  const auto unnamedCi = unnamed.getSurface()->computeCi(se);
+  TwoAnswerTracer namedTracer(GMANColor(0.3f, 0.4f, 0.5f), GMANColor(0.6f, 0.1f, 0.2f));
+  se.tracer = &namedTracer;
+  const auto namedCi = named.getSurface()->computeCi(se);
+  check(colorExactly(unnamedCi, namedCi), "D.2c: Kr 1, Kt 1 and eta 1.5 named give the unnamed Ci, exactly");
+
+  const RtFloat scaleInputs[] = {2.0f, -1.0f, kNaN};
+  const RtFloat scaleWanted[] = {1.0f, 0.0f, 0.0f};
+  for (std::size_t i = 0; i < 3; ++i) {
+    const auto input = std::to_string(scaleInputs[i]);
+    checkGlassSettings(glassPath, {kGlassIor, scaleInputs[i], 1.0f}, {kGlassIor, scaleWanted[i], 1.0f}, true,
+                       "D.2c entering, Kr " + input);
+    checkGlassSettings(glassPath, {kGlassIor, 1.0f, scaleInputs[i]}, {kGlassIor, 1.0f, scaleWanted[i]}, true,
+                       "D.2c entering, Kt " + input);
+  }
+
+  const RtFloat etaInputs[] = {0.0f, -2.0f, kNaN, kInfinity, 1000.0f, 0.001f};
+  const RtFloat etaWanted[] = {kGlassIor, kGlassIor, kGlassIor, kGlassIor, 100.0f, 0.01f};
+  for (std::size_t i = 0; i < 6; ++i) {
+    const auto input = std::to_string(etaInputs[i]);
+    checkGlassSettings(glassPath, {etaInputs[i], 1.0f, 1.0f}, {etaWanted[i], 1.0f, 1.0f}, true,
+                       "D.2c entering, eta " + input);
+    checkGlassSettings(glassPath, {etaInputs[i], 1.0f, 1.0f}, {etaWanted[i], 1.0f, 1.0f}, false,
+                       "D.2c exiting, eta " + input);
+  }
+}
+
+// Check D.3b: at a TIR angle Kr scales the reflected term and Kt leaves Ci
+// unchanged.
+void checkGlassTIRParameters(std::string const& glassPath) {
+  const GMANColor traced(0.3f, 0.4f, 0.5f);
+  const auto ciAt = [&](GlassSettings const& settings) {
+    GMANLoadableShader loader(glassPath.c_str(), glassParams(settings));
+    auto se = glassEnv(60.0f, false);
+    TwoAnswerTracer tracer(traced, GMANColor(0.6f, 0.1f, 0.2f));
+    se.tracer = &tracer;
+    return loader.getSurface()->computeCi(se);
+  };
+
+  const auto scaled = ciAt({kGlassIor, 0.3f, 0.6f});
+  const GMANColor want(0.3f * traced.getRed(), 0.3f * traced.getGreen(), 0.3f * traced.getBlue());
+  check(colorNear(scaled, want, kTol), "D.3b: at TIR Kr 0.3 scales the reflected term, Kt 0.6 leaves it alone");
+  check(colorNear(ciAt({kGlassIor, 0.3f, 1.0f}), scaled, kTol) &&
+            colorNear(ciAt({kGlassIor, 0.3f, 0.0f}), scaled, kTol),
+        "D.3b: at TIR Kt 0, 0.6 and 1 give the same Ci");
 }
 
 // Check D.3: glass at a TIR angle matches the reflection-only prediction
@@ -416,11 +556,11 @@ void checkMirrorReentrant(std::string const& mirrorPath) {
 
 // Check D.5 (glass): re-entrant shading through one shared instance stays
 // correct, both of the outer call's trace() calls recursing into their
-// own inner SurfacePoint and their own terminating colour. glass reads no
-// parameter, so inner and outer sharing one instance proves nothing about
-// per-instance state the way checkMirrorReentrant's two instances do;
-// grazing incidence at the outer call pins kr = 1, kt = 0 exactly, so the
-// predicted composite is exactly representable.
+// own inner SurfacePoint and their own terminating colour. Inner and outer
+// share one instance, so this proves nothing about per-instance parameters
+// the way checkMirrorReentrant's two instances do; grazing incidence at the
+// outer call pins kr = 1, kt = 0 exactly, so the predicted composite is
+// exactly representable.
 //
 // This pins only the reflected branch's own contribution to the outer
 // Ci: kt == 0 makes branch B's own composite value vanish from it
@@ -488,7 +628,9 @@ int main() {
 
   checkMirrorCi(mirrorPath);
   checkGlassCi(glassPath);
+  checkGlassParameters(glassPath);
   checkGlassTIR(glassPath);
+  checkGlassTIRParameters(glassPath);
   checkComputeOiUnchanged(mirrorPath, glassPath);
   checkMirrorReentrant(mirrorPath);
   checkGlassReentrant(glassPath);
