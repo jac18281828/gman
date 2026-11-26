@@ -1658,6 +1658,17 @@ set_tests_properties(shadingnonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::runImager hands the imager a Ci with every channel finite. See
+# tests/imagernonfinite_test.cpp.
+add_executable(gman_imagernonfinite imagernonfinite_test.cpp)
+target_link_libraries(gman_imagernonfinite PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME imagernonfinite COMMAND gman_imagernonfinite)
+set_tests_properties(imagernonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A missing texture warns once per world block under every renderer; libtiff stays silent.
 add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
 target_link_libraries(gman_texturewarningonce PRIVATE gman_core)

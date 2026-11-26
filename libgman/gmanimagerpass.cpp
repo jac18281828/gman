@@ -20,6 +20,7 @@
 
 #include "gmanbitmap.h"
 #include "gmancolor.h"
+#include "gmanfinitecolor.h"
 #include "gmangamma.h"
 #include "gmanimagerpass.h"
 #include "gmanimagershader.h"
@@ -51,7 +52,7 @@ void runImager(GMANBitmap& image, GMANImagerShader const& imager, GMANOptions co
       GMANImagerEnv env{};
       env.P =
           GMANPoint(static_cast<RtFloat>(raster.rxmin + x) + 0.5f, static_cast<RtFloat>(raster.rymin + y) + 0.5f, 0.0f);
-      env.Ci = gman::gammaCorrected(image.getPixel(x, y), exposure.gain, exposure.gamma);
+      env.Ci = gman::finiteChannels(gman::gammaCorrected(image.getPixel(x, y), exposure.gain, exposure.gamma));
       env.Oi = GMANColor(stored.getRed(), stored.getGreen(), stored.getBlue());
       env.alpha = coverage;
       env.ncomps = 3;
