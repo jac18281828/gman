@@ -54,13 +54,17 @@ constexpr RtFloat kIndexLimit = 0x1p30f;
 
 int indexBound(RtFloat position) { return static_cast<int>(GMANClamp<RtFloat>(position, -kIndexLimit, kIndexLimit)); }
 
+[[noreturn]] void refuseSampleCount() {
+  throw GMANError(RIE_LIMIT, RIE_SEVERE,
+                  "PixelSamples/Format requests more samples than this "
+                  "renderer will allocate; reduce Format's resolution "
+                  "or PixelSamples.");
+}
+
 int sampleExtent(int pixels, int samplesPerPixel) {
   long long const extent = static_cast<long long>(pixels) * samplesPerPixel;
   if (extent < 0 || extent > static_cast<long long>(kMaxSamples)) {
-    throw(GMANError(RIE_LIMIT, RIE_SEVERE,
-                    "PixelSamples/Format requests more samples than this "
-                    "renderer will allocate; reduce Format's resolution "
-                    "or PixelSamples."));
+    refuseSampleCount();
   }
   return static_cast<int>(extent);
 }
@@ -77,10 +81,7 @@ GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys, const GMANColor
   // request into a too-small allocation that render() then wrote past.
   const std::size_t nSamples = (std::size_t)sampleWidth * (std::size_t)sampleHeight;
   if (nSamples > kMaxSamples) {
-    throw(GMANError(RIE_LIMIT, RIE_SEVERE,
-                    "PixelSamples/Format requests more samples than this "
-                    "renderer will allocate; reduce Format's resolution "
-                    "or PixelSamples."));
+    refuseSampleCount();
   }
   sampleColor = new GMANColor[nSamples];
   sampleAlpha = new GMANAlpha[nSamples];
