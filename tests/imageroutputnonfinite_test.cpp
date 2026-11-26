@@ -19,14 +19,11 @@
  */
 
 /*
- * Pins the wanted behaviour: the colour an imager returns replaces the
- * pixel, so a NaN or infinite channel it returns should not reach the image.
- * gman::runImager stores the returned colour as it is, and only the output
- * stage later maps a NaN to 0, so a pixel keeps the NaN here. WILL_FAIL until
- * runImager reads a non-finite channel of the returned colour as 0.
+ * The colour an imager returns replaces the pixel, a NaN or infinite channel
+ * read as 0 and a finite channel kept: gman::runImager stores what the imager
+ * answers through the same guard as the colour it hands the imager.
  */
 
-#include <cmath>
 #include <limits>
 
 #include "check.h"
@@ -59,7 +56,7 @@ int main() {
   GMANOptions options;
   gman::runImager(image, NonFiniteImager(), options);
   GMANColor const pixel = image.getPixel(0, 0);
-  check(std::isfinite(pixel.getRed()) && std::isfinite(pixel.getGreen()) && std::isfinite(pixel.getBlue()),
-        "a pixel an imager returned (NaN, inf, 0.5) for has every channel finite");
+  check(pixel.getRed() == 0.0f && pixel.getGreen() == 0.0f && pixel.getBlue() == 0.5f,
+        "a colour an imager returned (NaN, inf, 0.5) is stored as (0, 0, 0.5)");
   return checkSummary("imageroutputnonfinite: all checks passed");
 }

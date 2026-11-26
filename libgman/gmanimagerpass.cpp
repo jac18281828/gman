@@ -62,7 +62,7 @@ void runImager(GMANBitmap& image, GMANImagerShader const& imager, GMANOptions co
       GMANColor const color = imager.computeCi(env);
       imager.computeOi(env);
 
-      image.setPixel(x, y, color);
+      image.setPixel(x, y, gman::finiteChannels(color));
       if (env.alpha != coverage) {
         image.setAlpha(x, y, GMANAlpha(env.alpha));
       }

@@ -21,13 +21,15 @@
 /*
  * gman::runImager hands the imager a Ci with every channel finite: a channel
  * a sinc filter's negative lobe leaves below 0 becomes NaN under a gamma
- * other than 1, and arrives as 0. The imager here returns the Ci it was
- * given, so the image afterwards is the imager's own input.
+ * other than 1, and arrives as 0. The imager here records the Ci it was given
+ * and returns it, so the record is the imager's own input whatever the pass
+ * does with the colour it gets back.
  */
 
 #include <cmath>
 #include <limits>
 #include <string>
+#include <vector>
 
 #include "check.h"
 #include "gmanbitmap.h"
@@ -45,9 +47,17 @@ constexpr RtFloat kInfinity = std::numeric_limits<RtFloat>::infinity();
 
 class EchoImager : public GMANImagerShader {
 public:
+  explicit EchoImager(std::vector<GMANColor>& received) : received(received) {}
+
   ShaderType getType(RtVoid) const override { return IMAGER; }
-  GMANColor const& computeCi(GMANImagerEnv& ie) const override { return ie.Ci; }
+  GMANColor const& computeCi(GMANImagerEnv& ie) const override {
+    received.push_back(ie.Ci);
+    return ie.Ci;
+  }
   GMANColor const& computeOi(GMANImagerEnv& ie) const override { return ie.Oi; }
+
+private:
+  std::vector<GMANColor>& received;
 };
 
 std::string describe(GMANColor const& c) {
@@ -66,12 +76,17 @@ void testNegativeChannelUnderGammaReachesImagerAsZero() {
   GMANOptions options;
   options.setExposure(1.0f, 2.2f);
 
-  gman::runImager(image, EchoImager(), options);
+  std::vector<GMANColor> received;
+  gman::runImager(image, EchoImager(received), options);
 
-  GMANColor const negative = image.getPixel(0, 0);
+  check(received.size() == 2, "the imager runs once per pixel");
+  if (received.size() != 2) {
+    return;
+  }
+  GMANColor const negative = received[0];
   check(allFinite(negative) && negative.getRed() == 0.0f && negative.getGreen() > 0.0f && negative.getBlue() > 0.0f,
         "a negative channel under gamma 2.2 reaches the imager as 0, got " + describe(negative));
-  GMANColor const nonFinite = image.getPixel(1, 0);
+  GMANColor const nonFinite = received[1];
   check(allFinite(nonFinite),
         "a NaN or infinite pixel reaches the imager with every channel finite, got " + describe(nonFinite));
 }
@@ -81,11 +96,15 @@ void testNegativeChannelWithoutGammaReachesImagerUnchanged() {
   image.setPixel(0, 0, GMANColor(-0.5f, 0.25f, 2.0f));
   GMANOptions options;
 
-  gman::runImager(image, EchoImager(), options);
+  std::vector<GMANColor> received;
+  gman::runImager(image, EchoImager(received), options);
 
   GMANColor const pixel = image.getPixel(0, 0);
+  check(received.size() == 1 && received[0].getRed() == -0.5f && received[0].getGreen() == 0.25f &&
+            received[0].getBlue() == 2.0f,
+        "a finite pixel at gain and gamma 1 reaches the imager unchanged");
   check(pixel.getRed() == -0.5f && pixel.getGreen() == 0.25f && pixel.getBlue() == 2.0f,
-        "a finite pixel at gain and gamma 1 reaches the imager unchanged, got " + describe(pixel));
+        "a finite colour the imager returns is stored unchanged, got " + describe(pixel));
 }
 
 } // namespace

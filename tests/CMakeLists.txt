@@ -1715,15 +1715,12 @@ set_tests_properties(radiositynonfinite PROPERTIES
   TIMEOUT 30)
 
 # The colour an imager returns replaces the pixel, a NaN or infinite channel
-# included: the output stage alone maps a NaN to 0. Pins the wanted behavior;
-# WILL_FAIL until gman::runImager reads a non-finite channel of the returned
-# colour as 0. See tests/imageroutputnonfinite_pin_test.cpp.
-add_executable(gman_imageroutputnonfinite_pin imageroutputnonfinite_pin_test.cpp)
-target_link_libraries(gman_imageroutputnonfinite_pin PRIVATE gman_core gman_internal_headers)
+# read as 0. See tests/imageroutputnonfinite_test.cpp.
+add_executable(gman_imageroutputnonfinite imageroutputnonfinite_test.cpp)
+target_link_libraries(gman_imageroutputnonfinite PRIVATE gman_core gman_internal_headers)
 
-add_test(NAME imageroutputnonfinite_pin COMMAND gman_imageroutputnonfinite_pin)
-set_tests_properties(imageroutputnonfinite_pin PROPERTIES
-  WILL_FAIL TRUE
+add_test(NAME imageroutputnonfinite COMMAND gman_imageroutputnonfinite)
+set_tests_properties(imageroutputnonfinite PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)

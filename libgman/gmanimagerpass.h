@@ -30,12 +30,12 @@ namespace gman {
 // colour passes through the options' gain and gamma, then through computeCi
 // and computeOi with its premultiplied colour, stored opacity, coverage (the
 // mean of its alpha channels), raster position and shutter times. The
-// returned colour replaces the pixel's colour, exposed. A NaN or infinite
-// channel of the exposed colour reaches the imager as 0, which a negative
-// channel under a gamma other than 1 would otherwise make NaN. The returned
-// alpha replaces the pixel's alpha in all three channels where it differs
-// from the coverage the pixel arrived with, and leaves the stored alpha
-// untouched elsewhere.
+// returned colour replaces the pixel's colour, exposed, a NaN or infinite
+// channel of it read as 0. A NaN or infinite channel of the exposed colour
+// reaches the imager as 0, which a negative channel under a gamma other than 1
+// would otherwise make NaN. The returned alpha replaces the pixel's alpha in
+// all three channels where it differs from the coverage the pixel arrived
+// with, and leaves the stored alpha untouched elsewhere.
 void runImager(GMANBitmap& image, GMANImagerShader const& imager, GMANOptions const& options);
 
 } // namespace gman
