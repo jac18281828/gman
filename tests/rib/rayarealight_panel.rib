@@ -1,0 +1,29 @@
+## A matte wall lit by a square polygon emitter above and in front of it, out of frame, wound to emit
+## toward the wall, with a black sphere between them casting a soft shadow. The square has the disk
+## fixture's area. The emitter and the blocker are black and the wall is one plane, so the path tracer
+## renders direct light alone. Not third-party.
+Display "rayarealight_panel.tif" "file" "rgba"
+Format 64 48 1
+PixelSamples 2 2
+Option "pathtracer" "integer samples" [64]
+Option "raytracer" "integer arealightsamples" [64]
+Projection "perspective" "fov" [40]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+AttributeBegin
+AreaLightSource "arealight" 1 "intensity" [60]
+Color [0 0 0]
+Surface "matte"
+Translate 0 2.5 -4
+Polygon "P" [-0.443 -0.443 0  0.443 -0.443 0  0.443 0.443 0  -0.443 0.443 0]
+AttributeEnd
+AttributeBegin
+Color [0 0 0]
+Surface "matte"
+Translate 0 1.4 -2
+Sphere 0.3 -0.3 0.3 360
+AttributeEnd
+Surface "matte" "Kd" [0.8]
+Polygon "P" [-4 -4 0  -4 4 0  4 4 0  4 -4 0]
+WorldEnd

@@ -810,6 +810,39 @@ a polygon emits one-sided along its winding's normal. The block ends on a `Spher
 outside the frame, which follows the desync convention. Registered in
 `tests/arealightpanel_test.cpp`. Not third-party.
 
+## rayarealight_sphere.rib
+
+A matte wall lit by a sphere emitter above and in front of it, out of frame, with a
+black sphere between them casting a soft shadow. The emitter and the blocker are
+black and the wall is one plane, so the path tracer renders direct light alone. At 64
+draws per shading point the ray tracer's mean over the lit block (columns 24-39, rows
+4-11) agrees with the path tracer's at 64 paths within 1.5% and over the penumbra block
+(columns 26-37, rows 16-27) within 4%. Registered in `tests/rayarealight_test.cpp`,
+whose copies of it also prove the draw-count option and the warning for an emitter the
+ray tracer skips. Not third-party.
+
+## rayarealight_disk.rib
+
+The sphere fixture with a `Disk` emitter turned to face the wall by `Rotate 180 0 1 0`.
+The ray tracer's lit and penumbra blocks agree with the path tracer's within the same
+1.5% and 4%. Registered in `tests/rayarealight_test.cpp`. Not third-party.
+
+## rayarealight_panel.rib
+
+The sphere fixture with a square `Polygon` emitter of the disk's area, wound to emit
+toward the wall. The ray tracer's lit and penumbra blocks agree with the path tracer's
+within the same 1.5% and 4%. Registered in `tests/rayarealight_test.cpp`. Not
+third-party.
+
+## rayarealight_glass.rib
+
+The panel fixture with a clear glass slab, two `Polygon` faces 0.1 in front of the
+emitter, out of frame, covering every path from the emitter to the visible wall. Light
+reaches the wall through both faces, so the lit block reads about 0.92 of the panel
+fixture's under each renderer (two faces at index 1.5 pass 0.9216 at normal
+incidence), and the ray tracer's lit block agrees with the path tracer's within 1.5%.
+Registered in `tests/rayarealight_test.cpp`. Not third-party.
+
 ## corpus/
 
 Real RIB from third-party software, fetched once and checked in so tests are

@@ -1975,6 +1975,31 @@ if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
     TIMEOUT 300)
 endif()
 
+# The ray tracer lights a matte wall from an area emitter as the path tracer
+# does: on four direct-only fixtures (a sphere, a disk, a square polygon and
+# the polygon behind a glass slab) its lit and penumbra block means agree with
+# the path tracer's within a tolerance of four standard errors plus a bias
+# budget. Copies of the sphere fixture prove the draw-count option and the
+# warning for an emitter the ray tracer skips. Needs both renderers. See
+# tests/rayarealight_test.cpp.
+if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
+  add_executable(gman_rayarealight rayarealight_test.cpp)
+  target_link_libraries(gman_rayarealight PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_rayarealight gman_raytracer gman_pathtracer gman_matte gman_glass)
+
+  set(GMAN_RAYAREALIGHT_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rayarealight-run")
+  file(MAKE_DIRECTORY "${GMAN_RAYAREALIGHT_WORKDIR}")
+
+  add_test(NAME rayarealight
+    COMMAND gman_rayarealight $<TARGET_FILE:gman>
+                              "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_RAYAREALIGHT_WORKDIR}")
+  set_tests_properties(rayarealight PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 300)
+endif()
+
 # A smooth fold's terminator renders lit under both renderers, while every other blocker still shadows.
 add_executable(gman_creasestreak creasestreak_test.cpp)
 target_link_libraries(gman_creasestreak PRIVATE gman_core TIFF::TIFF)
