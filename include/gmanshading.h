@@ -137,16 +137,18 @@ struct GMAN_EXPORT Shading {
 };
 
 // Fills a GMANSurfaceEnv from appearance and point and returns the
-// shader's Ci and Oi. cameraToWorld is the camera's own world-to-camera
-// inverse (GMANOptions::getCameraToWorld) -- an argument rather than a
-// member of Appearance, since it belongs to the camera, not to what a
-// primitive looks like. occluder answers the illuminance loop's "does
-// light reach P?" (gmanocclude.h); a caller that omits it keeps every
-// light visible. When the point carries a shadowOrigin, the occluder
-// receives it in place of P for every light direction with a positive dot
-// product with N, with the direction and distance measured from P; where the
-// point's facet faces away from that light, the occluder's
-// transmissionFromTerminator answers in place of transmission. tracer
+// shader's Ci, a NaN or infinite channel read as 0, and its Oi, unchanged:
+// each renderer reads Oi as coverage where it composites. cameraToWorld is
+// the camera's own world-to-camera inverse (GMANOptions::getCameraToWorld)
+// -- an argument rather than a member of Appearance, since it belongs to
+// the camera, not to what a primitive looks like. occluder answers the
+// illuminance loop's "does light reach P?" (gmanocclude.h); a caller that
+// omits it keeps every light visible. When the point carries a
+// shadowOrigin, the occluder receives it in place of P for every light
+// direction with a positive dot product with N, with the direction and
+// distance measured from P; where the point's facet faces away from that
+// light, the occluder's transmissionFromTerminator answers in place of
+// transmission. tracer
 // answers a shader's own trace() calls (gmantrace.h); a caller that omits
 // it leaves trace() returning black.
 // textureCache is what texture() and environment() sample through; a
@@ -164,9 +166,10 @@ GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& poin
 // A surface's diffuse reflectance where shade would shade point: fills a
 // GMANSurfaceEnv from appearance and point exactly as shade does, through
 // the same fill so the two can never drift, with no occluder, tracer or
-// indirect bound, and returns appearance.shader->albedo(env). A null
-// shader answers appearance.Cs clamped to [0, 1] per channel, a NaN
-// channel to 0 -- what the default surface, matte with Kd = 1, answers.
+// indirect bound, and returns appearance.shader->albedo(env), a NaN or
+// infinite channel read as 0. A null shader answers appearance.Cs clamped
+// to [0, 1] per channel, a NaN channel to 0 -- what the default surface,
+// matte with Kd = 1, answers.
 // textureCache is shade's argument; a caller running serially, ahead of
 // the first pixel, omits it and samples through gman::textureCache()'s
 // process cache.

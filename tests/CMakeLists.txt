@@ -1647,6 +1647,17 @@ set_tests_properties(pixelsamplesnonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::shade and gman::albedo read a NaN or infinite channel of a shader's
+# answer as 0. See tests/shadingnonfinite_test.cpp.
+add_executable(gman_shadingnonfinite shadingnonfinite_test.cpp)
+target_link_libraries(gman_shadingnonfinite PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME shadingnonfinite COMMAND gman_shadingnonfinite)
+set_tests_properties(shadingnonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A missing texture warns once per world block under every renderer; libtiff stays silent.
 add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
 target_link_libraries(gman_texturewarningonce PRIVATE gman_core)

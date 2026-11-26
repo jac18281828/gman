@@ -30,6 +30,7 @@
 #include "gmanbbox.h"
 #include "gmanbsdf.h"
 #include "gmancolor.h"
+#include "gmanfinitecolor.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanloadableshader.h"
 #include "gmanmath.h"
@@ -194,7 +195,7 @@ Shading shade(Appearance const& appearance, SurfacePoint const& point, GMANMatri
   env.indirect = indirect;
 
   Shading shading;
-  shading.Ci = appearance.shader->computeCi(env);
+  shading.Ci = finiteChannels(appearance.shader->computeCi(env));
   shading.Oi = appearance.shader->computeOi(env);
   return shading;
 }
@@ -207,7 +208,7 @@ GMANColor albedo(Appearance const& appearance, SurfacePoint const& point, GMANMa
                      GMANClamp(appearance.Cs.getBlue(), RtFloat(0.0), RtFloat(1.0)));
   }
   GMANSurfaceEnv const env = fillEnv(appearance, point, cameraToWorld, textureCache);
-  return appearance.shader->albedo(env);
+  return finiteChannels(appearance.shader->albedo(env));
 }
 
 BSDF bsdf(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
