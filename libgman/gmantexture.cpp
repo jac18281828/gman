@@ -88,7 +88,10 @@ RtFloat texelPastIndexRange(RtFloat s, RtFloat x, RtInt dim, TextureWrap wrap) {
   if (wrap != TEXTURE_PERIODIC) {
     return std::copysign(kIndexLimit, x);
   }
-  double const position = std::isfinite(x) ? static_cast<double>(x) : static_cast<double>(s) * dim;
+  double position = static_cast<double>(x);
+  if (!std::isfinite(x)) {
+    position = static_cast<double>(s) * dim;
+  }
   return static_cast<RtFloat>(std::fmod(position, static_cast<double>(dim)));
 }
 

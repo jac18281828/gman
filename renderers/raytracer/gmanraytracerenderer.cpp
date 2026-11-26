@@ -78,7 +78,10 @@ struct PassIrradiance {
 
 GMANColor coverageOf(GMANColor const& opacity) {
   auto const channel = [](GMANColor::ColorSampleType v) {
-    return std::isfinite(v) ? v : GMANMax<GMANColor::ColorSampleType>(GMANMin<GMANColor::ColorSampleType>(v, 1.0), 0.0);
+    if (std::isfinite(v)) {
+      return v;
+    }
+    return GMANMax<GMANColor::ColorSampleType>(GMANMin<GMANColor::ColorSampleType>(v, 1.0), 0.0);
   };
   return GMANColor(channel(opacity.getRed()), channel(opacity.getGreen()), channel(opacity.getBlue()));
 }

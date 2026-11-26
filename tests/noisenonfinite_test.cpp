@@ -178,7 +178,10 @@ void testCoordinateBeyondRange() {
       RtFloat const beyondAnswer = form.scalar(noise, beyond, kOrdinaryPeriods);
       check(std::isfinite(beyondAnswer), form.name + ": a coordinate of " + std::to_string(beyond[0]) + " is finite");
       Coordinates origin;
-      origin.fill(form.name.starts_with("cellnoise") ? sign * kSamePeriodForCells : 0.0f);
+      origin.fill(0.0f);
+      if (form.name.starts_with("cellnoise")) {
+        origin.fill(sign * kSamePeriodForCells);
+      }
       check(beyondAnswer == form.scalar(noise, origin, kOrdinaryPeriods),
             form.name + ": a coordinate of " + std::to_string(beyond[0]) + " answers its lattice period's value");
     }

@@ -223,7 +223,10 @@ gman::SurfacePoint vertexSurfacePoint(GMANPoint const& location, GMANNormal cons
 // this is a plain repackaging of the same three numbers.
 GMANAlpha vertexAlpha(GMANColor const& oi) {
   auto const channel = [](GMANColor::ColorSampleType v) {
-    return std::isfinite(v) ? v : GMANMax<GMANColor::ColorSampleType>(GMANMin<GMANColor::ColorSampleType>(v, 1.0), 0.0);
+    if (std::isfinite(v)) {
+      return v;
+    }
+    return GMANMax<GMANColor::ColorSampleType>(GMANMin<GMANColor::ColorSampleType>(v, 1.0), 0.0);
   };
   return GMANAlpha(channel(oi.getRed()), channel(oi.getGreen()), channel(oi.getBlue()));
 }

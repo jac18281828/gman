@@ -30,7 +30,10 @@ namespace gman {
 // channel unchanged.
 inline GMANColor finiteChannels(GMANColor color) {
   auto const finiteOrZero = [](GMANColor::ColorSampleType channel) {
-    return std::isfinite(channel) ? channel : static_cast<GMANColor::ColorSampleType>(0.0);
+    if (std::isfinite(channel)) {
+      return channel;
+    }
+    return static_cast<GMANColor::ColorSampleType>(0.0);
   };
   return GMANColor(finiteOrZero(color.getRed()), finiteOrZero(color.getGreen()), finiteOrZero(color.getBlue()));
 }
