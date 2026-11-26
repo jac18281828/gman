@@ -529,21 +529,20 @@ std::optional<SolidAngleDraw> drawMeshBySolidAngle(GMANRayPolygonMesh const& mes
     return std::nullopt;
   }
   const auto faceAt = [&mesh, &p](std::size_t f) { return faceSolidAngle(mesh.getFace(f), p); };
-  std::optional<Pick> const facePick = pickByWeight(mesh.getFaceCount(), total, u1, faceAt);
+  const auto facePick = pickByWeight(mesh.getFaceCount(), total, u1, faceAt);
   if (!facePick) {
     return std::nullopt;
   }
   auto const& face = mesh.getFace(facePick->index);
   auto const& loop = face.getOuterLoop();
   const auto triangleAt = [&face, &p](std::size_t t) { return fanTriangleSolidAngle(face, t + 1, p); };
-  std::optional<Pick> const trianglePick =
-      pickByWeight(loop.size() - 2, faceSolidAngle(face, p), facePick->fraction, triangleAt);
+  const auto trianglePick = pickByWeight(loop.size() - 2, faceSolidAngle(face, p), facePick->fraction, triangleAt);
   if (!trianglePick) {
     return std::nullopt;
   }
   const auto i = trianglePick->index + 1;
-  std::optional<DoubleVector> const point = pointInSphericalTriangle(p, toDouble(loop[0]), toDouble(loop[i]),
-                                                                     toDouble(loop[i + 1]), trianglePick->fraction, u2);
+  const auto point = pointInSphericalTriangle(p, toDouble(loop[0]), toDouble(loop[i]), toDouble(loop[i + 1]),
+                                              trianglePick->fraction, u2);
   if (!point) {
     return std::nullopt;
   }
@@ -552,7 +551,7 @@ std::optional<SolidAngleDraw> drawMeshBySolidAngle(GMANRayPolygonMesh const& mes
 
 // p carried into object space by the inverse of objectToCamera, in double.
 DoubleVector objectPoint(InvertibleMatrix const& objectToCamera, GMANPoint const& p) {
-  GMANMatrix4 const& m = objectToCamera.backward();
+  auto const& m = objectToCamera.backward();
   const auto x = static_cast<double>(p.getX());
   const auto y = static_cast<double>(p.getY());
   const auto z = static_cast<double>(p.getZ());
@@ -562,7 +561,7 @@ DoubleVector objectPoint(InvertibleMatrix const& objectToCamera, GMANPoint const
 
 // An object-space point placed in camera space by objectToCamera, in double.
 DoubleVector placedPoint(InvertibleMatrix const& objectToCamera, DoubleVector const& q) {
-  GMANMatrix4 const& m = objectToCamera.forward();
+  auto const& m = objectToCamera.forward();
   return {q.x * m[0][0] + q.y * m[1][0] + q.z * m[2][0] + m[3][0],
           q.x * m[0][1] + q.y * m[1][1] + q.z * m[2][1] + m[3][1],
           q.x * m[0][2] + q.y * m[1][2] + q.z * m[2][2] + m[3][2]};
@@ -587,7 +586,7 @@ SectorBounds sectorBounds(GMANRayDisk const& disk) {
   const auto radius = static_cast<double>(disk.getRadius());
   const auto degrees = clampedDegrees(disk.getThetaMax());
   const auto angle = turnRadians(degrees);
-  SectorBounds bounds{0.0, radius, 0.0, 0.0};
+  auto bounds = SectorBounds{0.0, radius, 0.0, 0.0};
   bounds.xMin = std::min(bounds.xMin, radius * std::cos(angle));
   bounds.yMin = std::min(bounds.yMin, radius * std::sin(angle));
   bounds.yMax = std::max(bounds.yMax, radius * std::sin(angle));
@@ -652,15 +651,20 @@ double rectangleSolidAngle(std::array<DoubleVector, 4> const& corners, DoubleVec
   return rectangleTriangleSolidAngle(corners, p, 0) + rectangleTriangleSolidAngle(corners, p, 1);
 }
 
-// Whether the object-space point (x, y) lies within thetamax of the +x axis
-// about z, its angle measured in [0, 2 pi) as GMANDisk::samplePoint and
-// GMANSphere::samplePoint sweep it.
-bool withinThetaMax(RtFloat thetamax, double x, double y) {
-  double angle = std::atan2(y, x);
+// The angle of the object-space point (x, y) about z from the +x axis, in
+// [0, 2 pi), as GMANDisk::samplePoint and GMANSphere::samplePoint sweep it.
+double turnAngle(double x, double y) {
+  const auto angle = std::atan2(y, x);
   if (angle < 0.0) {
-    angle += 2.0 * std::numbers::pi;
+    return angle + 2.0 * std::numbers::pi;
   }
-  return angle <= turnRadians(clampedDegrees(thetamax));
+  return angle;
+}
+
+// Whether the object-space point (x, y) lies within thetamax of the +x axis
+// about z.
+bool withinThetaMax(RtFloat thetamax, double x, double y) {
+  return turnAngle(x, y) <= turnRadians(clampedDegrees(thetamax));
 }
 
 // Whether the object-space point (x, y) of the disk's plane lies within its
@@ -685,11 +689,11 @@ std::optional<SolidAngleDraw> drawDiskBySolidAngle(GMANRayDisk const& disk, Inve
     return std::nullopt;
   }
   const auto triangleAt = [&corners, &p](std::size_t t) { return rectangleTriangleSolidAngle(corners, p, t); };
-  std::optional<Pick> const pick = pickByWeight(2, total, u1, triangleAt);
+  const auto pick = pickByWeight(2, total, u1, triangleAt);
   if (!pick) {
     return std::nullopt;
   }
-  std::optional<DoubleVector> const point =
+  const auto point =
       pointInSphericalTriangle(p, corners[0], corners[pick->index + 1], corners[pick->index + 2], pick->fraction, u2);
   if (!point) {
     return std::nullopt;
@@ -707,7 +711,7 @@ std::optional<SolidAngleDraw> drawDiskBySolidAngle(GMANRayDisk const& disk, Inve
   if (!inSector(disk, bounds.xMin + s * (bounds.xMax - bounds.xMin), bounds.yMin + t * (bounds.yMax - bounds.yMin))) {
     return std::nullopt;
   }
-  GMANVector normal = gman::transformNormal(objectToCamera, GMANVector(0.0f, 0.0f, -1.0f));
+  auto normal = gman::transformNormal(objectToCamera, GMANVector(0.0f, 0.0f, -1.0f));
   normal.normalize();
   return SolidAngleDraw{*point, normal, 1.0 / total};
 }
@@ -764,7 +768,7 @@ SphereCone sphereCone(DoubleVector const& q, double radius) {
 // object-space unit direction: the reciprocal of the solid-angle Jacobian of
 // w -> L w / |L w|, 1 for a rigid or uniformly scaled placement.
 double directionDensityScale(InvertibleMatrix const& objectToCamera, DoubleVector const& w) {
-  GMANMatrix4 const& m = objectToCamera.forward();
+  auto const& m = objectToCamera.forward();
   const auto placed =
       length({w.x * m[0][0] + w.y * m[1][0] + w.z * m[2][0], w.x * m[0][1] + w.y * m[1][1] + w.z * m[2][1],
               w.x * m[0][2] + w.y * m[1][2] + w.z * m[2][2]});
@@ -827,7 +831,7 @@ std::optional<SolidAngleDraw> drawSphereByCone(GMANRaySphere const& sphere, Inve
   if (!finiteVector(onSphere) || (!fullSphere(sphere) && !inZone(sphere, onSphere))) {
     return std::nullopt;
   }
-  GMANVector normal = gman::transformNormal(objectToCamera, toVector((1.0 / radius) * onSphere));
+  auto normal = gman::transformNormal(objectToCamera, toVector((1.0 / radius) * onSphere));
   normal.normalize();
   return SolidAngleDraw{placedPoint(objectToCamera, onSphere), normal, coneDensity(objectToCamera, cone, q, onSphere)};
 }
@@ -979,7 +983,7 @@ EmitterSample solidAngleSample(Emitter const& emitter, GMANPoint const& p, Solid
       !std::isfinite(wi.getX()) || !std::isfinite(wi.getY()) || !std::isfinite(wi.getZ())) {
     return zeroSample();
   }
-  EmitterSample result = zeroSample();
+  auto result = zeroSample();
   result.wi = wi;
   result.distance = floatDistance;
   result.Cl = emitter.light->getCl();
@@ -994,7 +998,7 @@ EmitterSample solidAngleSample(Emitter const& emitter, GMANPoint const& p, Solid
 // the emitter's own non-emitting side. zeroSample() for a singular placement
 // or a polygon mesh with no area.
 EmitterSample sampleByArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
-  EmitterSample result = zeroSample();
+  auto result = zeroSample();
 
   std::optional<EmitterDraw> const drawn = drawEmitterPoint(emitter, u1, u2);
   if (!drawn) {
@@ -1030,7 +1034,7 @@ EmitterSample sampleByArea(Emitter const& emitter, GMANPoint const& p, RtFloat u
 
 // sample() for a disk, by the strategy diskStrategy picks at p.
 EmitterSample sampleDisk(Emitter const& emitter, GMANRayDisk const& disk, GMANPoint const& p, RtFloat u1, RtFloat u2) {
-  std::optional<InvertibleMatrix> const& placement = disk.getObjectToCamera();
+  auto const& placement = disk.getObjectToCamera();
   if (!placement) {
     return zeroSample();
   }
@@ -1041,7 +1045,7 @@ EmitterSample sampleDisk(Emitter const& emitter, GMANRayDisk const& disk, GMANPo
   if (strategy == DiskStrategy::area) {
     return sampleByArea(emitter, p, u1, u2);
   }
-  std::optional<SolidAngleDraw> const drawn = drawDiskBySolidAngle(disk, *placement, toDouble(p), u1, u2);
+  const auto drawn = drawDiskBySolidAngle(disk, *placement, toDouble(p), u1, u2);
   if (!drawn) {
     return zeroSample();
   }
@@ -1051,7 +1055,7 @@ EmitterSample sampleDisk(Emitter const& emitter, GMANRayDisk const& disk, GMANPo
 // sample() for a sphere, by the strategy sphereStrategy picks at p.
 EmitterSample sampleSphere(Emitter const& emitter, GMANRaySphere const& sphere, GMANPoint const& p, RtFloat u1,
                            RtFloat u2) {
-  std::optional<InvertibleMatrix> const& placement = sphere.getObjectToCamera();
+  auto const& placement = sphere.getObjectToCamera();
   if (!placement) {
     return zeroSample();
   }
@@ -1062,7 +1066,7 @@ EmitterSample sampleSphere(Emitter const& emitter, GMANRaySphere const& sphere, 
   if (strategy == SphereStrategy::area) {
     return sampleByArea(emitter, p, u1, u2);
   }
-  std::optional<SolidAngleDraw> const drawn = drawSphereByCone(sphere, *placement, p, u1, u2);
+  const auto drawn = drawSphereByCone(sphere, *placement, p, u1, u2);
   if (!drawn) {
     return zeroSample();
   }
@@ -1073,9 +1077,9 @@ EmitterSample sampleSphere(Emitter const& emitter, GMANRaySphere const& sphere, 
 // angle its emitting sides subtend from p, a disk by diskStrategy and a
 // sphere by sphereStrategy.
 EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
-  EmittingShapeKind const kind = classifyEmittingShape(*emitter.shape);
+  const auto kind = classifyEmittingShape(*emitter.shape);
   if (kind.mesh != nullptr) {
-    std::optional<SolidAngleDraw> const drawn = drawMeshBySolidAngle(*kind.mesh, toDouble(p), u1, u2);
+    const auto drawn = drawMeshBySolidAngle(*kind.mesh, toDouble(p), u1, u2);
     if (!drawn) {
       return zeroSample();
     }
@@ -1232,7 +1236,7 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
     return 0.0f;
   }
 
-  EmittingShapeKind const kind = classifyEmittingShape(*emitter.shape);
+  const auto kind = classifyEmittingShape(*emitter.shape);
   if (kind.mesh != nullptr) {
     return positiveDensity(1.0 / meshSolidAngle(*kind.mesh, toDouble(p)));
   }

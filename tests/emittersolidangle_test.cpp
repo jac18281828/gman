@@ -179,7 +179,7 @@ struct QuadratureRule {
 // The Legendre polynomial of degree n at x and its derivative there.
 std::pair<double, double> legendre(int n, double x) {
   double previous = 1.0;
-  double value = x;
+  auto value = x;
   for (int k = 2; k <= n; ++k) {
     const auto next = ((2.0 * k - 1.0) * x * value - (k - 1.0) * previous) / k;
     previous = value;
@@ -192,7 +192,7 @@ std::pair<double, double> legendre(int n, double x) {
 QuadratureRule gaussLegendre(int n) {
   QuadratureRule rule;
   for (int i = 0; i < n; ++i) {
-    double x = std::cos(std::numbers::pi * (i + 0.75) / (n + 0.5));
+    auto x = std::cos(std::numbers::pi * (i + 0.75) / (n + 0.5));
     for (int iteration = 0; iteration < kNewtonIterations; ++iteration) {
       const auto [value, slope] = legendre(n, x);
       const auto step = value / slope;
@@ -269,7 +269,7 @@ double regionIntegral(gman::Emitter const& emitter, GMANPoint const& p, Region c
     const auto edgeSquared = dx * dx + dy * dy;
     const auto closest = std::clamp(-(ax * dx + ay * dy) / edgeSquared, 0.0, 1.0);
     const auto scale = std::sqrt((height * height + crossAB * crossAB / edgeSquared) / edgeSquared);
-    std::vector<double> const breaks = gradedBreaks(closest, scale);
+    const auto breaks = gradedBreaks(closest, scale);
     for (std::size_t panel = 0; panel + 1 < breaks.size(); ++panel) {
       const auto width = breaks[panel + 1] - breaks[panel];
       for (std::size_t k = 0; k < edgeRule.nodes.size(); ++k) {
@@ -338,7 +338,7 @@ struct Case {
 
 // Draws from c's receiving point and checks a to d.
 void runCase(Case const& c, std::uint32_t dim) {
-  std::vector<std::uint32_t> counts(c.regionIntegrals.size(), 0);
+  auto counts = std::vector<std::uint32_t>(c.regionIntegrals.size(), 0);
   std::uint32_t acceptedCount = 0;
   std::uint32_t missed = 0;
   std::uint32_t tangentMisses = 0;
@@ -346,11 +346,11 @@ void runCase(Case const& c, std::uint32_t dim) {
   double worstHit = 0.0;
   double worstSolidAngle = 0.0;
   double worstStrategy = 0.0;
-  double lowestPdf = std::numeric_limits<double>::max();
+  auto lowestPdf = std::numeric_limits<double>::max();
   double highestPdf = 0.0;
   for (std::uint32_t i = 0; i < kDraws; ++i) {
-    gman::Sample2D const uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
-    gman::EmitterSample const s = gman::sample(c.emitter, c.p, uv.u1, uv.u2);
+    const auto uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
+    const auto s = gman::sample(c.emitter, c.p, uv.u1, uv.u2);
     if (!accepted(s)) {
       continue;
     }
@@ -459,8 +459,8 @@ void checkDegenerate(gman::Emitter const& emitter, GMANPoint const& p, std::stri
   bool finiteHitPdf = true;
   std::uint32_t acceptedCount = 0;
   for (std::uint32_t i = 0; i < kDraws; ++i) {
-    gman::Sample2D const uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
-    gman::EmitterSample const s = gman::sample(emitter, p, uv.u1, uv.u2);
+    const auto uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
+    const auto s = gman::sample(emitter, p, uv.u1, uv.u2);
     std::initializer_list<RtFloat> const fields = {s.wi.getX(),
                                                    s.wi.getY(),
                                                    s.wi.getZ(),
@@ -492,7 +492,7 @@ void checkDegenerate(gman::Emitter const& emitter, GMANPoint const& p, std::stri
 
 // loop, reversed when its Newell normal points away from side.
 std::vector<GMANPoint> facing(std::vector<GMANPoint> loop, Vec const& side) {
-  Vec newell{0.0, 0.0, 0.0};
+  auto newell = Vec{0.0, 0.0, 0.0};
   for (std::size_t i = 0; i < loop.size(); ++i) {
     newell = newell + cross(toVec(loop[i]), toVec(loop[(i + 1) % loop.size()]));
   }
@@ -516,7 +516,7 @@ Vec midpoint(Vec const& a, Vec const& b) { return 0.5 * (a + b); }
 std::vector<Region> faceRegions(GMANRayPolygonMesh const& mesh) {
   std::vector<Region> regions;
   for (std::size_t f = 0; f < mesh.getFaceCount(); ++f) {
-    GMANRayPolygon const& face = mesh.getFace(f);
+    auto const& face = mesh.getFace(f);
     regions.push_back({toVecs(face.getOuterLoop()), normalized(toVec(face.getPlaneNormal()))});
   }
   return regions;
@@ -557,7 +557,7 @@ std::vector<GMANPoint> equilateralTriangle() {
 // its corners and the one at its centre.
 void runTriangleCase(std::vector<GMANPoint> const& loop, GMANPoint const& p, std::string const& label,
                      std::uint32_t dim) {
-  MeshEmitter const emitter({loop});
+  const auto emitter = MeshEmitter({loop});
   const auto v = toVecs(loop);
   const auto normal = normalized(toVec(emitter.mesh->getFace(0).getPlaneNormal()));
   const auto m01 = midpoint(v[0], v[1]);
@@ -600,11 +600,11 @@ void runTriangleCase(std::vector<GMANPoint> const& loop, GMANPoint const& p, std
 }
 
 void testTriangles() {
-  std::vector<GMANPoint> const equilateral = equilateralTriangle();
+  const auto equilateral = equilateralTriangle();
   runTriangleCase(equilateral, GMANPoint(0.0f, 1.0f, 0.0f), "equilateral, on its axis at 1", 1u);
 
-  std::vector<GMANPoint> const sliver = facing(
-      {GMANPoint(-0.5f, 0.0f, 0.0f), GMANPoint(0.5f, 0.0f, 0.0f), GMANPoint(0.0f, 0.0f, 0.01f)}, Vec{0.0, 1.0, 0.0});
+  const auto sliver = facing({GMANPoint(-0.5f, 0.0f, 0.0f), GMANPoint(0.5f, 0.0f, 0.0f), GMANPoint(0.0f, 0.0f, 0.01f)},
+                             Vec{0.0, 1.0, 0.0});
   runTriangleCase(sliver, GMANPoint(0.3f, 0.4f, 0.0033333f), "100:1 sliver, off its axis at 0.5", 2u);
 
   const auto edgeZ = (double)equilateral[1].getZ();
@@ -623,7 +623,7 @@ void testTriangles() {
 // An 8.4 x 6.4 quad, p 0.3 above an interior point; c's regions are its
 // quadrants.
 void testLargeQuad() {
-  MeshEmitter const emitter({upRectangle(-4.2f, 4.2f, -3.2f, 3.2f, 0.0f)});
+  const auto emitter = MeshEmitter({upRectangle(-4.2f, 4.2f, -3.2f, 3.2f, 0.0f)});
   const auto normal = Vec{0.0, 1.0, 0.0};
   std::vector<Region> regions;
   for (double const x0 : {-4.2, 0.0}) {
@@ -650,9 +650,9 @@ void testLargeQuad() {
 // face's plane and from the box that bounds the face.
 std::size_t nearestFace(GMANRayPolygonMesh const& mesh, Vec const& point) {
   std::size_t nearest = 0;
-  double least = std::numeric_limits<double>::max();
+  auto least = std::numeric_limits<double>::max();
   for (std::size_t f = 0; f < mesh.getFaceCount(); ++f) {
-    GMANRayPolygon const& face = mesh.getFace(f);
+    auto const& face = mesh.getFace(f);
     const auto loop = toVecs(face.getOuterLoop());
     auto low = loop[0];
     auto high = loop[0];
@@ -680,7 +680,7 @@ void runFaceCase(MeshEmitter const& emitter, GMANPoint const& p, std::string con
   c.p = p;
   c.scale = length(toVec(p));
   c.regionIntegrals = integrals(c.emitter, p, faceRegions(*emitter.mesh));
-  GMANRayPolygonMesh const* const mesh = emitter.mesh.get();
+  auto const* const mesh = emitter.mesh.get();
   c.regionOf = [mesh](Vec const& point) { return nearestFace(*mesh, point); };
   c.acceptsEvery = true;
   runCase(c, dim);
@@ -690,7 +690,8 @@ void runFaceCase(MeshEmitter const& emitter, GMANPoint const& p, std::string con
 // smaller face's centre, where its share of the solid angle far exceeds its
 // share of the area.
 void testUnevenPanel() {
-  MeshEmitter const emitter({upRectangle(-2.0f, -1.0f, -1.0f, 0.0f, 0.0f), upRectangle(1.0f, 2.0f, -1.0f, 2.0f, 0.0f)});
+  const auto emitter =
+      MeshEmitter({upRectangle(-2.0f, -1.0f, -1.0f, 0.0f, 0.0f), upRectangle(1.0f, 2.0f, -1.0f, 2.0f, 0.0f)});
   runFaceCase(emitter, GMANPoint(-1.5f, 0.2f, -0.5f), "uneven panel, 0.2 above the smaller face", 7u);
 }
 
@@ -698,20 +699,20 @@ void testUnevenPanel() {
 // each emitting outward; p lies in front of the face at x > 0 and behind the
 // other, which hides none of the first from it.
 void testRoof() {
-  std::vector<GMANPoint> const right = facing({GMANPoint(0.0f, 1.0f, -0.5f), GMANPoint(0.0f, 1.0f, 0.5f),
-                                               GMANPoint(1.0f, 0.0f, 0.5f), GMANPoint(1.0f, 0.0f, -0.5f)},
-                                              Vec{1.0, 1.0, 0.0});
-  std::vector<GMANPoint> const left = facing({GMANPoint(0.0f, 1.0f, -0.5f), GMANPoint(0.0f, 1.0f, 0.5f),
-                                              GMANPoint(-1.0f, 0.0f, 0.5f), GMANPoint(-1.0f, 0.0f, -0.5f)},
-                                             Vec{-1.0, 1.0, 0.0});
-  MeshEmitter const emitter({right, left});
+  const auto right = facing({GMANPoint(0.0f, 1.0f, -0.5f), GMANPoint(0.0f, 1.0f, 0.5f), GMANPoint(1.0f, 0.0f, 0.5f),
+                             GMANPoint(1.0f, 0.0f, -0.5f)},
+                            Vec{1.0, 1.0, 0.0});
+  const auto left = facing({GMANPoint(0.0f, 1.0f, -0.5f), GMANPoint(0.0f, 1.0f, 0.5f), GMANPoint(-1.0f, 0.0f, 0.5f),
+                            GMANPoint(-1.0f, 0.0f, -0.5f)},
+                           Vec{-1.0, 1.0, 0.0});
+  const auto emitter = MeshEmitter({right, left});
   runFaceCase(emitter, GMANPoint(2.0f, 0.5f, 0.1f), "roof, in front of one face and behind the other", 8u);
 }
 
 void testDegenerateMesh() {
-  MeshEmitter const emitter({facing({GMANPoint(-1.0f, 0.0f, -1.0f), GMANPoint(-1.0f, 0.0f, 1.0f),
-                                     GMANPoint(1.0f, 0.0f, 1.0f), GMANPoint(1.0f, 0.0f, 1.0f)},
-                                    Vec{0.0, 1.0, 0.0})});
+  const auto emitter = MeshEmitter({facing({GMANPoint(-1.0f, 0.0f, -1.0f), GMANPoint(-1.0f, 0.0f, 1.0f),
+                                            GMANPoint(1.0f, 0.0f, 1.0f), GMANPoint(1.0f, 0.0f, 1.0f)},
+                                           Vec{0.0, 1.0, 0.0})});
   checkDegenerate(emitter.emitter(), GMANPoint(3.0f, 0.0f, 0.0f), "repeated-vertex quad, p in its plane outside it",
                   20u);
   checkDegenerate(emitter.emitter(), GMANPoint(-1.0f, 0.0f, 0.0f), "repeated-vertex quad, p on an edge", 21u);
@@ -722,7 +723,7 @@ void testDegenerateMesh() {
 
 // m.forward() applied to the object-space point q, in double.
 Vec place(gman::InvertibleMatrix const& m, Vec const& q) {
-  GMANMatrix4 const& f = m.forward();
+  auto const& f = m.forward();
   return {q.x * f[0][0] + q.y * f[1][0] + q.z * f[2][0] + f[3][0],
           q.x * f[0][1] + q.y * f[1][1] + q.z * f[2][1] + f[3][1],
           q.x * f[0][2] + q.y * f[1][2] + q.z * f[2][2] + f[3][2]};
@@ -730,7 +731,7 @@ Vec place(gman::InvertibleMatrix const& m, Vec const& q) {
 
 // m.backward() applied to the camera-space point q, in double.
 Vec unplace(gman::InvertibleMatrix const& m, Vec const& q) {
-  GMANMatrix4 const& b = m.backward();
+  auto const& b = m.backward();
   return {q.x * b[0][0] + q.y * b[1][0] + q.z * b[2][0] + b[3][0],
           q.x * b[0][1] + q.y * b[1][1] + q.z * b[2][1] + b[3][1],
           q.x * b[0][2] + q.y * b[1][2] + q.z * b[2][2] + b[3][2]};
@@ -739,14 +740,14 @@ Vec unplace(gman::InvertibleMatrix const& m, Vec const& q) {
 // The object-space normal n carried into camera space by m's inverse
 // transpose, unnormalized: Nanson's formula's normal factor.
 Vec placeNormal(gman::InvertibleMatrix const& m, Vec const& n) {
-  GMANMatrix4 const& b = m.backward();
+  auto const& b = m.backward();
   return {b[0][0] * n.x + b[0][1] * n.y + b[0][2] * n.z, b[1][0] * n.x + b[1][1] * n.y + b[1][2] * n.z,
           b[2][0] * n.x + b[2][1] * n.y + b[2][2] * n.z};
 }
 
 // The determinant of m's linear part.
 double linearDeterminant(gman::InvertibleMatrix const& m) {
-  GMANMatrix4 const& f = m.forward();
+  auto const& f = m.forward();
   return f[0][0] * (f[1][1] * f[2][2] - f[1][2] * f[2][1]) - f[0][1] * (f[1][0] * f[2][2] - f[1][2] * f[2][0]) +
          f[0][2] * (f[1][0] * f[2][1] - f[1][1] * f[2][0]);
 }
@@ -790,14 +791,14 @@ struct Rectangle {
 // beyond it each reports the area density at its point.
 void runDiskCase(DiskEmitter const& emitter, Vec const& objectP, Rectangle const& bounds, bool rigid, Strategy strategy,
                  std::string const& label, std::uint32_t dim) {
-  gman::InvertibleMatrix const& m = emitter.placement();
+  auto const& m = emitter.placement();
   const auto radius = static_cast<double>(emitter.disk.getRadius());
   const auto sweep = radians(static_cast<double>(emitter.disk.getThetaMax()));
   const auto objectNormal = Vec{0.0, 0.0, -1.0};
   const auto normal = normalized(placeNormal(m, objectNormal));
   std::vector<Region> regions;
   for (int quarter = 0; quarter < 4; ++quarter) {
-    Region region{{place(m, Vec{0.0, 0.0, 0.0})}, normal};
+    auto region = Region{{place(m, Vec{0.0, 0.0, 0.0})}, normal};
     for (int j = 0; j <= kArcSegments; ++j) {
       const auto angle = sweep * (quarter + static_cast<double>(j) / kArcSegments) / 4.0;
       region.loop.push_back(place(m, Vec{radius * std::cos(angle), radius * std::sin(angle), 0.0}));
@@ -863,29 +864,29 @@ void testDisks() {
   skewed.rot(GMANRadians(45.0f), 0.0f, 1.0f, 0.0f);
   skewed.scale(2.0f, 1.0f, 1.0f);
 
-  DiskEmitter const unit(1.0f, 360.0f, rigid);
-  Rectangle const unitBounds{-1.0, 1.0, -1.0, 1.0};
+  const auto unit = DiskEmitter(1.0f, 360.0f, rigid);
+  const auto unitBounds = Rectangle{-1.0, 1.0, -1.0, 1.0};
   runDiskCase(unit, {0.0, 0.0, -0.5}, unitBounds, true, Strategy::solidAngle, "unit disk, on its axis at 0.5", 30u);
 
-  DiskEmitter const quarter(1.0f, 90.0f, rigid);
-  Rectangle const quarterBounds{0.0, 1.0, 0.0, 1.0};
+  const auto quarter = DiskEmitter(1.0f, 90.0f, rigid);
+  const auto quarterBounds = Rectangle{0.0, 1.0, 0.0, 1.0};
   const auto quarterCentroid = 4.0 * std::sin(radians(45.0)) / (3.0 * radians(90.0));
   runDiskCase(quarter, {quarterCentroid * std::cos(radians(45.0)), quarterCentroid * std::sin(radians(45.0)), -0.2},
               quarterBounds, true, Strategy::solidAngle, "90-degree sector, 0.2 above its centroid", 31u);
 
-  DiskEmitter const threeQuarter(1.0f, 270.0f, rigid);
+  const auto threeQuarter = DiskEmitter(1.0f, 270.0f, rigid);
   const auto threeQuarterCentroid = 4.0 * std::sin(radians(135.0)) / (3.0 * radians(270.0));
   runDiskCase(threeQuarter,
               {threeQuarterCentroid * std::cos(radians(135.0)), threeQuarterCentroid * std::sin(radians(135.0)), -0.2},
               unitBounds, true, Strategy::solidAngle, "270-degree sector, 0.2 above its centroid", 32u);
 
-  DiskEmitter const scaled(1.0f, 360.0f, skewed);
+  const auto scaled = DiskEmitter(1.0f, 360.0f, skewed);
   runDiskCase(scaled, {0.2, 0.1, -0.5}, unitBounds, false, Strategy::solidAngle,
               "rotated, non-uniformly scaled disk, within its switch", 33u);
 
   GMANMatrix4 turned;
   turned.rot(GMANRadians(30.0f), 1.0f, 0.0f, 0.0f);
-  DiskEmitter const large(4.0f, 360.0f, turned);
+  const auto large = DiskEmitter(4.0f, 360.0f, turned);
   runDiskCase(large, {0.0, 0.0, -1.0e-3}, Rectangle{-4.0, 4.0, -4.0, 4.0}, true, Strategy::solidAngle,
               "radius-4 disk, 1e-3 above its centre", 34u);
 
@@ -894,7 +895,7 @@ void testDisks() {
 }
 
 void testDegenerateDisk() {
-  DiskEmitter const emitter(1.0f, 360.0f, GMANMatrix4());
+  const auto emitter = DiskEmitter(1.0f, 360.0f, GMANMatrix4());
   checkDegenerate(emitter.emitter(), GMANPoint(0.3f, 0.2f, 0.0f), "unit disk, p in its plane", 25u);
   checkDegenerate(emitter.emitter(), GMANPoint(0.0f, 0.0f, -1.0e-6f), "unit disk, p 1e-6 above its centre", 26u);
 }
@@ -925,7 +926,7 @@ std::pair<double, double> coneOf(double radius, double distance) {
 // swept by 1 - cos theta and phi, a direction's value read at the hit its ray
 // meets.
 double coneIntegral(SphereEmitter const& emitter, GMANPoint const& p) {
-  gman::InvertibleMatrix const& m = emitter.placement();
+  auto const& m = emitter.placement();
   const auto origin = toVec(p);
   const auto toCentre = place(m, Vec{0.0, 0.0, 0.0}) - origin;
   const auto axis = normalized(toCentre);
@@ -960,7 +961,7 @@ double coneIntegral(SphereEmitter const& emitter, GMANPoint const& p) {
 // away from p contributing nothing.
 double zoneIntegral(SphereEmitter const& emitter, GMANPoint const& p, double zLow, double zHigh, double turnLow,
                     double turnHigh) {
-  gman::InvertibleMatrix const& m = emitter.placement();
+  auto const& m = emitter.placement();
   const auto radius = static_cast<double>(emitter.sphere.getRadius());
   const auto origin = toVec(p);
   const auto determinant = std::fabs(linearDeterminant(m));
@@ -1011,7 +1012,7 @@ double zoneIntegral(SphereEmitter const& emitter, GMANPoint const& p, double zLo
 // its point.
 void runSphereCase(SphereEmitter const& emitter, Vec const& objectP, bool rigid, Strategy strategy,
                    std::string const& label, std::uint32_t dim) {
-  gman::InvertibleMatrix const& m = emitter.placement();
+  auto const& m = emitter.placement();
   auto const& sphere = emitter.sphere;
   const auto radius = static_cast<double>(sphere.getRadius());
   const auto full = sphere.getZMin() <= -sphere.getRadius() && sphere.getZMax() >= sphere.getRadius() &&
@@ -1067,18 +1068,18 @@ void testSpheres() {
   GMANMatrix4 stretched;
   stretched.scale(2.0f, 1.0f, 1.0f);
 
-  SphereEmitter const two(2.0f, -2.0f, 2.0f, 360.0f, rigid);
+  const auto two = SphereEmitter(2.0f, -2.0f, 2.0f, 360.0f, rigid);
   runSphereCase(two, {0.0, 6.0, -8.0}, true, Strategy::solidAngle, "radius-2 sphere seen from 10", 50u);
 
-  SphereEmitter const scaled(2.0f, -2.0f, 2.0f, 360.0f, stretched);
+  const auto scaled = SphereEmitter(2.0f, -2.0f, 2.0f, 360.0f, stretched);
   runSphereCase(scaled, {0.0, 0.0, -10.0}, false, Strategy::unchecked, "radius-2 sphere scaled by (2, 1, 1)", 51u);
 
-  SphereEmitter const unit(1.0f, -1.0f, 1.0f, 360.0f, rigid);
+  const auto unit = SphereEmitter(1.0f, -1.0f, 1.0f, 360.0f, rigid);
   runSphereCase(unit, {0.0, 0.6006, -0.8008}, true, Strategy::solidAngle, "unit sphere, p at 1.001 r from its centre",
                 52u);
   runSphereCase(unit, {0.0, 0.0, -1000.0}, true, Strategy::solidAngle, "unit sphere, r / d = 1e-3", 53u);
 
-  SphereEmitter const zone(1.0f, -0.5f, 0.8f, 270.0f, rigid);
+  const auto zone = SphereEmitter(1.0f, -0.5f, 0.8f, 270.0f, rigid);
   const auto toward = normalized(Vec{1.0, 1.0, 0.2});
   runSphereCase(zone, 1.5 * toward, true, Strategy::solidAngle, "zone, within its switch", 54u);
   const auto switchDistance = kZoneSwitch * static_cast<double>(zone.sphere.getRadius());
@@ -1089,7 +1090,7 @@ void testSpheres() {
 }
 
 void testDegenerateSphere() {
-  SphereEmitter const emitter(1.0f, -1.0f, 1.0f, 360.0f, GMANMatrix4());
+  const auto emitter = SphereEmitter(1.0f, -1.0f, 1.0f, 360.0f, GMANMatrix4());
   checkDegenerate(emitter.emitter(), GMANPoint(0.6f, 0.0f, -0.8f), "unit sphere, p on its surface", 27u);
   checkDegenerate(emitter.emitter(), GMANPoint(0.0f, 0.0f, 0.0f), "unit sphere, p at its centre", 28u);
 }

@@ -96,14 +96,14 @@ struct NoiseCase {
 };
 
 std::string readFile(std::string const& path) {
-  std::ifstream in(path);
+  auto in = std::ifstream(path);
   std::ostringstream contents;
   contents << in.rdbuf();
   return contents.str();
 }
 
 void writeFile(std::string const& path, std::string const& text) {
-  std::ofstream out(path, std::ios::binary | std::ios::trunc);
+  auto out = std::ofstream(path, std::ios::binary | std::ios::trunc);
   out << text;
 }
 
@@ -116,7 +116,7 @@ bool startsWith(std::string const& line, std::string const& prefix) { return lin
 // a draw-count line or a blocker the fixture lacks fails a check, so a
 // variant never renders unedited.
 std::string variantText(std::string const& ribDir, NoiseCase const& c, std::uint32_t draws, std::string const& name) {
-  std::istringstream in(readFile(ribDir + "/" + c.fixture + ".rib"));
+  auto in = std::istringstream(readFile(ribDir + "/" + c.fixture + ".rib"));
   std::ostringstream out;
   std::map<std::string, bool> found;
   bool display = false;
@@ -179,9 +179,9 @@ GmanImage render(std::string const& gman, std::string const& ribDir, NoiseCase c
   const auto name = c.name + "_" + std::to_string(draws);
   writeFile(name + ".rib", variantText(ribDir, c, draws, name));
   std::remove((name + ".tif").c_str());
-  GMANRunResult const run = runGman(gman, {"-r", kRayTracer, name + ".rib"});
+  const auto run = runGman(gman, {"-r", kRayTracer, name + ".rib"});
   check(run.exitStatus == 0, name + " renders (exit " + std::to_string(run.exitStatus) + ")");
-  GmanImage image = readGmanTIFF(name + ".tif");
+  auto image = readGmanTIFF(name + ".tif");
   check(image.ok, name + ".tif reads back");
   return image;
 }
@@ -189,13 +189,13 @@ GmanImage render(std::string const& gman, std::string const& ribDir, NoiseCase c
 // Renders c at its draw count and at kReferenceDraws, and checks the block's
 // relative root-mean-square deviation against its bound.
 void checkCase(std::string const& gman, std::string const& ribDir, NoiseCase const& c) {
-  GmanImage const low = render(gman, ribDir, c, c.draws);
-  GmanImage const reference = render(gman, ribDir, c, kReferenceDraws);
+  const auto low = render(gman, ribDir, c, c.draws);
+  const auto reference = render(gman, ribDir, c, kReferenceDraws);
   if (!low.ok || !reference.ok) {
     return;
   }
   double sum = 0.0;
-  double floor = std::numeric_limits<double>::max();
+  auto floor = std::numeric_limits<double>::max();
   for (std::uint32_t y = c.block.y; y < c.block.y + c.block.height; ++y) {
     for (std::uint32_t x = c.block.x; x < c.block.x + c.block.width; ++x) {
       for (std::size_t channel = 0; channel < kChannels; ++channel) {
@@ -222,8 +222,8 @@ int main(int argc, char* argv[]) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib dir>\n", argv[0]);
     return 2;
   }
-  std::string const gman = argv[1];
-  std::string const ribDir = argv[2];
+  const auto gman = std::string(argv[1]);
+  const auto ribDir = std::string(argv[2]);
 
   std::vector<NoiseCase> const cases = {
       {"nearfield_panel", kNearFixture, {}, false, kUnderside, kNearDraws, kNearBound},
