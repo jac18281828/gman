@@ -35,6 +35,22 @@
 #include "gmanvector.h"
 #include "ri.h"
 
+namespace gman {
+
+// Segments along each of u and v of the grid every patch and quadric is
+// diced into.
+inline constexpr RtInt kParametricDiceCount = 16;
+
+// Whether n control points along one axis of a bicubic PatchMesh divide into
+// whole sub-patches for step, wrapped (periodic) or not.
+GMAN_EXPORT bool validBicubicMeshDim(RtInt n, bool periodic, RtInt step);
+
+// Whether n control points along one axis of a bilinear PatchMesh form at
+// least one sub-patch.
+GMAN_EXPORT bool validBilinearMeshDim(RtInt n);
+
+} // namespace gman
+
 class GMAN_EXPORT GMANParametric : public virtual GMANPrimitive {
 public:
   virtual GMANPoint getLocation(double u, double v) = 0;

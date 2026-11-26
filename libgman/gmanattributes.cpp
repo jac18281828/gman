@@ -31,6 +31,7 @@
 #include "gmanloadableshader.h"
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
+#include "gmanpolygon.h"
 #include "gmanshader.h"
 #include "gmansurfaceshader.h"
 #include "gmantrimcurve.h"
@@ -191,3 +192,38 @@ RtVoid GMANAttributes::setObjectBasis(GMANBasis* b) {
   objectFlag = true;
 }
 RtVoid GMANAttributes::clearObjectFlag() { objectFlag = false; }
+
+namespace gman {
+
+GMANTextureCoordinates resolveParametricCorners(GMANParameterList const& pl, GMANAttributes const& attr) {
+  GMANTextureCoordinates corners = attr.getTextureCoordinates();
+
+  RtFloat const* st = floatArray(pl, RI_ST);
+  if (st) {
+    corners.s1 = st[0];
+    corners.t1 = st[1];
+    corners.s2 = st[2];
+    corners.t2 = st[3];
+    corners.s3 = st[4];
+    corners.t3 = st[5];
+    corners.s4 = st[6];
+    corners.t4 = st[7];
+  }
+  RtFloat const* s = floatArray(pl, RI_S);
+  if (s) {
+    corners.s1 = s[0];
+    corners.s2 = s[1];
+    corners.s3 = s[2];
+    corners.s4 = s[3];
+  }
+  RtFloat const* tp = floatArray(pl, RI_T);
+  if (tp) {
+    corners.t1 = tp[0];
+    corners.t2 = tp[1];
+    corners.t3 = tp[2];
+    corners.t4 = tp[3];
+  }
+  return corners;
+}
+
+} // namespace gman

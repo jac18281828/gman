@@ -196,3 +196,13 @@ public:
       return uvBasis;
   };
 };
+
+namespace gman {
+
+// A parametric surface's four corner texture coordinates in the order (0,0),
+// (1,0), (0,1), (1,1): attr's RiTextureCoordinates corners, overridden by pl's
+// "st" (eight floats), then by its "s" and "t" (four floats each, each
+// overriding only its own component).
+GMAN_EXPORT GMANTextureCoordinates resolveParametricCorners(GMANParameterList const& pl, GMANAttributes const& attr);
+
+} // namespace gman

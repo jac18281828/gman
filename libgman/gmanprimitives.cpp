@@ -56,7 +56,57 @@ void requireNonNegative(char const* name, RtInt count) {
   }
 }
 
+// GMANBasis::offset closes a periodic axis's wraparound with a single
+// subtraction (`if (i>=nu) i-=nu`), which only lands the raw index back
+// in [0,n) when that raw index stayed below 2n. A sub-patch's last
+// control point sits at astart+3, and astart tops out at the final
+// sub-patch's start, n-step (nbupatch-1 == n/step-1 sub-patches in), so
+// the worst-case raw index offset() ever computes is n-step+3. Requiring
+// that below 2n gives n > 3-step, i.e. n >= 4-step; n >= step is still
+// needed so the axis has room for at least one sub-patch. Combined, the
+// periodic axis's true lower bound is n >= max(step, 4-step) -- for
+// step>=4 (e.g. RI_POWERSTEP) 4-step<=0, so n>=step alone already covers
+// it; the max only bites at step==1 (b-spline, catmull-rom), where 4-step
+// exceeds step.
+bool validPeriodicBicubicMeshDim(RtInt n, RtInt step) {
+  if (step < 1) {
+    return false;
+  }
+  RtInt minN = step > (4 - step) ? step : (4 - step);
+  return n >= minN && n % step == 0;
+}
+
 } // namespace
+
+namespace gman {
+
+// A bicubic axis's control points divide into nbupatch sub-patches of
+// `step` points each; GMANBasis::bicubicMesh computes that count as
+// nu/uStep (periodic) or 1+(nu-4)/uStep (nonperiodic), both truncating
+// integer division. Reject anything that formula would truncate: n%step
+// (periodic) or (n-4)%step (nonperiodic) must be exactly zero, matching
+// RISpec's own alignment rule for a PatchMesh's nu/nv, or a misaligned n
+// would silently drop trailing control points and render a smaller mesh
+// than the RIB asked for. n>=4 (nonperiodic) rules out the remaining case
+// truncation hides there: a dimension too small for even one sub-patch,
+// which the same integer division can otherwise round up to nbupatch>=1
+// and read past the n points that actually exist. The periodic axis needs
+// a second, tighter bound below -- see validPeriodicBicubicMeshDim.
+bool validBicubicMeshDim(RtInt n, bool periodic, RtInt step) {
+  if (periodic) {
+    return validPeriodicBicubicMeshDim(n, step);
+  }
+  if (step < 1) {
+    return false;
+  }
+  return n >= 4 && (n - 4) % step == 0;
+}
+
+// A bilinear sub-patch is one 2x2 block of corners; either axis needs at
+// least two distinct control points to form one, wrapped or not.
+bool validBilinearMeshDim(RtInt n) { return n >= 2; }
+
+} // namespace gman
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 ////  GMAN_BLOBBY.CPP

@@ -78,14 +78,9 @@ const RtFloat kTriangulationTolerance = (RtFloat)1.0e-6;
 // ear-clipped triangle's barycentric grid. diceCountFor sizes it to the
 // triangle's own raster-space extent and the current ShadingRate; this is
 // both the cap that sizing clamps against and the fallback when no
-// projection can be resolved -- the same fixed count createParametric's
-// own kParametricDiceU/kParametricDiceV use for a quadric.
+// projection can be resolved -- the same fixed count gman::kParametricDiceCount
+// gives createParametric's quadrics.
 const RtInt kPolygonDiceN = 16;
-
-// createParametric's own dicing resolution: divisions along u and v of the
-// vertex and face grid every quadric and patch shares.
-const RtInt kParametricDiceU = 16;
-const RtInt kParametricDiceV = 16;
 
 // getRSPatchMesh's own corners: RiTextureCoordinates spans a single
 // parametric surface's unit square, and a PatchMesh's sub-patches already
@@ -93,52 +88,6 @@ const RtInt kParametricDiceV = 16;
 // mapping rather than resolving RiTextureCoordinates or "s"/"t"/"st" itself
 // -- see its own comment.
 const GMANTextureCoordinates kIdentityCorners = {0, 0, 1, 0, 0, 1, 1, 1};
-
-// GMANBasis::offset closes a periodic axis's wraparound with a single
-// subtraction (`if (i>=nu) i-=nu`), which only lands the raw index back
-// in [0,n) when that raw index stayed below 2n. A sub-patch's last
-// control point sits at astart+3, and astart tops out at the final
-// sub-patch's start, n-step (nbupatch-1 == n/step-1 sub-patches in), so
-// the worst-case raw index offset() ever computes is n-step+3. Requiring
-// that below 2n gives n > 3-step, i.e. n >= 4-step; n >= step is still
-// needed so the axis has room for at least one sub-patch. Combined, the
-// periodic axis's true lower bound is n >= max(step, 4-step) -- for
-// step>=4 (e.g. RI_POWERSTEP) 4-step<=0, so n>=step alone already covers
-// it; the max only bites at step==1 (b-spline, catmull-rom), where 4-step
-// exceeds step.
-bool validPeriodicBicubicMeshDim(RtInt n, RtInt step) {
-  if (step < 1) {
-    return false;
-  }
-  RtInt minN = step > (4 - step) ? step : (4 - step);
-  return n >= minN && n % step == 0;
-}
-
-// A bicubic axis's control points divide into nbupatch sub-patches of
-// `step` points each; GMANBasis::bicubicMesh computes that count as
-// nu/uStep (periodic) or 1+(nu-4)/uStep (nonperiodic), both truncating
-// integer division. Reject anything that formula would truncate: n%step
-// (periodic) or (n-4)%step (nonperiodic) must be exactly zero, matching
-// RISpec's own alignment rule for a PatchMesh's nu/nv, or a misaligned n
-// would silently drop trailing control points and render a smaller mesh
-// than the RIB asked for. n>=4 (nonperiodic) rules out the remaining case
-// truncation hides there: a dimension too small for even one sub-patch,
-// which the same integer division can otherwise round up to nbupatch>=1
-// and read past the n points that actually exist. The periodic axis needs
-// a second, tighter bound below -- see validPeriodicBicubicMeshDim.
-bool validBicubicMeshDim(RtInt n, bool periodic, RtInt step) {
-  if (periodic) {
-    return validPeriodicBicubicMeshDim(n, step);
-  }
-  if (step < 1) {
-    return false;
-  }
-  return n >= 4 && (n - 4) % step == 0;
-}
-
-// A bilinear sub-patch is one 2x2 block of corners; either axis needs at
-// least two distinct control points to form one, wrapped or not.
-bool validBilinearMeshDim(RtInt n) { return n >= 2; }
 
 // opt's camera-to-world, or identity when opt is null (before RiWorldBegin,
 // or a caller with no options at all) -- gman::shade's own cameraToWorld
@@ -232,45 +181,6 @@ RtInt diceCountFor(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2
     n = (double)kPolygonDiceN;
   }
   return (RtInt)n;
-}
-
-// A parametric surface's four corner texture coordinates (RISpec 3.2's
-// RiTextureCoordinates), resolved in precedence order, most specific last so
-// it wins: attr's corners (the RiTextureCoordinates default, s=u/t=v unless
-// the scene called it), then "st" (eight varying values, s/t per corner in
-// RISpec corner order: (0,0), (1,0), (0,1), (1,1)), then "s"/"t" (four
-// varying values each, overriding only their own component). Shared by every
-// quadric and getRSPatch; getRSPatchMesh does not call this (see its own
-// comment).
-GMANTextureCoordinates resolveParametricCorners(GMANParameterList& pl, GMANAttributes* attr) {
-  GMANTextureCoordinates corners = attr->getTextureCoordinates();
-
-  RtFloat* st = gman::floatArray(pl, RI_ST);
-  if (st) {
-    corners.s1 = st[0];
-    corners.t1 = st[1];
-    corners.s2 = st[2];
-    corners.t2 = st[3];
-    corners.s3 = st[4];
-    corners.t3 = st[5];
-    corners.s4 = st[6];
-    corners.t4 = st[7];
-  }
-  RtFloat* s = gman::floatArray(pl, RI_S);
-  if (s) {
-    corners.s1 = s[0];
-    corners.s2 = s[1];
-    corners.s3 = s[2];
-    corners.s4 = s[3];
-  }
-  RtFloat* tp = gman::floatArray(pl, RI_T);
-  if (tp) {
-    corners.t1 = tp[0];
-    corners.t2 = tp[1];
-    corners.t3 = tp[2];
-    corners.t4 = tp[3];
-  }
-  return corners;
 }
 
 // The bilinear interpolation RiTextureCoordinates' own corner rule spells
@@ -1225,7 +1135,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPatch(RtToken type, GMANParamete
     return create();
   }
 
-  GMANTextureCoordinates corners = resolveParametricCorners(pl, attr);
+  GMANTextureCoordinates corners = gman::resolveParametricCorners(pl, *attr);
   if (strcmp(type, RI_BILINEAR) == 0) {
     GMANPatch patch(type, p, pl);
     return createParametric(&patch, t, attr, corners, opt);
@@ -1253,7 +1163,7 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPatchMesh(RtToken type, RtInt nu
   }
 
   if (strcmp(type, RI_BILINEAR) == 0) {
-    if (!validBilinearMeshDim(nu) || !validBilinearMeshDim(nv)) {
+    if (!gman::validBilinearMeshDim(nu) || !gman::validBilinearMeshDim(nv)) {
       warning("PatchMesh \"bilinear\": nu={} nv={} cannot form a patch; "
               "ignoring.",
               nu, nv);
@@ -1266,8 +1176,8 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSPatchMesh(RtToken type, RtInt nu
     GMANBasis basis = attr->getUVBasis();
     bool uPeriodic = strcmp(uwrap, RI_PERIODIC) == 0;
     bool vPeriodic = strcmp(vwrap, RI_PERIODIC) == 0;
-    if (!validBicubicMeshDim(nu, uPeriodic, basis.getUStep()) ||
-        !validBicubicMeshDim(nv, vPeriodic, basis.getVStep())) {
+    if (!gman::validBicubicMeshDim(nu, uPeriodic, basis.getUStep()) ||
+        !gman::validBicubicMeshDim(nv, vPeriodic, basis.getVStep())) {
       warning("PatchMesh \"bicubic\": nu={} nv={} does not align to the "
               "current basis step; ignoring.",
               nu, nv);
@@ -1303,47 +1213,47 @@ GMANPrimitive* GMANPatchPolyObjectManager::getRSSphere(RtFloat radius, RtFloat z
                                                        GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                                        GMANTransform* t) {
   GMANSphere sphere(radius, zmin, zmax, tmax, pl);
-  return createParametric(&sphere, t, attr, resolveParametricCorners(pl, attr), opt);
+  return createParametric(&sphere, t, attr, gman::resolveParametricCorners(pl, *attr), opt);
 };
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
                                                      GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
   GMANCone cone(height, radius, tmax, pl);
-  return createParametric(&cone, t, attr, resolveParametricCorners(pl, attr), opt);
+  return createParametric(&cone, t, attr, gman::resolveParametricCorners(pl, *attr), opt);
 };
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
                                                          GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                                          GMANTransform* t) {
   GMANCylinder cylinder(radius, zmin, zmax, tmax, pl);
-  return createParametric(&cylinder, t, attr, resolveParametricCorners(pl, attr), opt);
+  return createParametric(&cylinder, t, attr, gman::resolveParametricCorners(pl, *attr), opt);
 };
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
                                                             GMANParameterList pl, GMANOptions* opt,
                                                             GMANAttributes* attr, GMANTransform* t) {
   GMANHyperboloid hyperboloid(point1, point2, tmax, pl);
-  return createParametric(&hyperboloid, t, attr, resolveParametricCorners(pl, attr), opt);
+  return createParametric(&hyperboloid, t, attr, gman::resolveParametricCorners(pl, *attr), opt);
 };
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
                                                            GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
                                                            GMANTransform* t) {
   GMANParaboloid paraboloid(rmax, zmin, zmax, tmax, pl);
-  return createParametric(&paraboloid, t, attr, resolveParametricCorners(pl, attr), opt);
+  return createParametric(&paraboloid, t, attr, gman::resolveParametricCorners(pl, *attr), opt);
 };
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
                                                      GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) {
   GMANDisk disk(height, radius, tmax, pl);
-  return createParametric(&disk, t, attr, resolveParametricCorners(pl, attr), opt);
+  return createParametric(&disk, t, attr, gman::resolveParametricCorners(pl, *attr), opt);
 };
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax,
                                                       RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
                                                       GMANAttributes* attr, GMANTransform* t) {
   GMANTorus torus(majrad, minrad, phimin, phimax, tmax, pl);
-  return createParametric(&torus, t, attr, resolveParametricCorners(pl, attr), opt);
+  return createParametric(&torus, t, attr, gman::resolveParametricCorners(pl, *attr), opt);
 };
 
 GMANPrimitive* GMANPatchPolyObjectManager::getRSBlobby(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[],
@@ -1396,22 +1306,22 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   gman::Appearance const appearance = gman::appearanceOf(*attr);
   GMANMatrix4 const cameraToWorld = cameraToWorldOf(opt);
 
-  std::vector<GMANVertex*> vertices((kParametricDiceU + 1) * (kParametricDiceV + 1));
+  std::vector<GMANVertex*> vertices((gman::kParametricDiceCount + 1) * (gman::kParametricDiceCount + 1));
   std::vector<GMANFace*> faces;
-  faces.reserve((std::size_t)kParametricDiceU * (std::size_t)kParametricDiceV);
+  faces.reserve((std::size_t)gman::kParametricDiceCount * (std::size_t)gman::kParametricDiceCount);
   GMANBody* body = new GMANBody(GMANColor(), GMANColor());
   GMANSurface* surface = new GMANSurface(body);
   body->setSurface(surface);
 
-  for (i = 0; i < (kParametricDiceU + 1) * (kParametricDiceV + 1); i++) {
+  for (i = 0; i < (gman::kParametricDiceCount + 1) * (gman::kParametricDiceCount + 1); i++) {
     vertices[i] = new GMANVertex();
   }
 
-  for (i = 0; i <= kParametricDiceU; i++) {
-    for (j = 0; j <= kParametricDiceV; j++) {
+  for (i = 0; i <= gman::kParametricDiceCount; i++) {
+    for (j = 0; j <= gman::kParametricDiceCount; j++) {
       // Create a vertex
-      double u = i / (double)kParametricDiceU;
-      double v = j / (double)kParametricDiceV;
+      double u = i / (double)gman::kParametricDiceCount;
+      double v = j / (double)gman::kParametricDiceCount;
       GMANPoint location = t->apply(p->getLocation(u, v));
       GMANVector objectNormal = p->getNormal(u, v);
       GMANVector normal(
@@ -1419,7 +1329,7 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
           ctmInv[1][0] * objectNormal.getX() + ctmInv[1][1] * objectNormal.getY() + ctmInv[1][2] * objectNormal.getZ(),
           ctmInv[2][0] * objectNormal.getX() + ctmInv[2][1] * objectNormal.getY() + ctmInv[2][2] * objectNormal.getZ());
       normal.normalize();
-      GMANVertex* vertex = vertices[(kParametricDiceU + 1) * i + j];
+      GMANVertex* vertex = vertices[(gman::kParametricDiceCount + 1) * i + j];
       vertex->setLocation(location);
       vertex->setNormal(normal);
 
@@ -1439,13 +1349,13 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
   // long after this function returns, so geometry is unaffected either
   // way -- only RiSides 1 culling would read the resulting near-zero,
   // direction-free normal and cull or keep faces at random.
-  for (i = 0; i < kParametricDiceU; i++) {
-    for (j = 0; j < kParametricDiceV; j++) {
+  for (i = 0; i < gman::kParametricDiceCount; i++) {
+    for (j = 0; j < gman::kParametricDiceCount; j++) {
       GMANVertex* faceVertices[4];
-      faceVertices[0] = vertices[(kParametricDiceU + 1) * i + j];
-      faceVertices[1] = vertices[(kParametricDiceU + 1) * i + (j + 1)];
-      faceVertices[2] = vertices[(kParametricDiceU + 1) * (i + 1) + (j + 1)];
-      faceVertices[3] = vertices[(kParametricDiceU + 1) * (i + 1) + j];
+      faceVertices[0] = vertices[(gman::kParametricDiceCount + 1) * i + j];
+      faceVertices[1] = vertices[(gman::kParametricDiceCount + 1) * i + (j + 1)];
+      faceVertices[2] = vertices[(gman::kParametricDiceCount + 1) * (i + 1) + (j + 1)];
+      faceVertices[3] = vertices[(gman::kParametricDiceCount + 1) * (i + 1) + j];
       // Geometric normal, computed from the already-transformed (camera
       // space) vertices: cross(e1', e2') for e'=e*M is proportional to
       // (e1 x e2) transformed by M's inverse transpose, so this needs no
@@ -1456,10 +1366,10 @@ GMANObject* GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMAN
     }
   }
 
-  for (i = 0; i < (kParametricDiceU + 1) * (kParametricDiceV + 1) - 1; i++) {
+  for (i = 0; i < (gman::kParametricDiceCount + 1) * (gman::kParametricDiceCount + 1) - 1; i++) {
     vertices[i]->setNext(vertices[i + 1]);
   }
-  for (i = 0; i < kParametricDiceU * kParametricDiceV - 1; i++) {
+  for (i = 0; i < gman::kParametricDiceCount * gman::kParametricDiceCount - 1; i++) {
     faces[i]->setNext(faces[i + 1]);
   }
   surface->setFace(faces[0]);
