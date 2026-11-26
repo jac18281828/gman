@@ -552,13 +552,14 @@ RtVoid GMANRenderManImpl::RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
   // value or an enormous allocation. Round to the nearest integer sample
   // count and clamp to [1, kMaxPixelSamples] -- 16 per axis is a
   // reasonable engineering limit for this renderer's scale.
+  const RtFloat maxSamples = GMANOptions::kMaxPixelSamples;
   xsamples = GMANRound(xsamples);
   ysamples = GMANRound(ysamples);
-  if (xsamples < 1.0 || xsamples > GMANOptions::kMaxPixelSamples) {
-    warning("PixelSamples xsamples {:.0f} out of [1,{:.0f}], clamping.", xsamples, GMANOptions::kMaxPixelSamples);
+  if (xsamples < 1.0 || xsamples > maxSamples) {
+    warning("PixelSamples xsamples {:.0f} out of [1,{:.0f}], clamping.", xsamples, maxSamples);
   }
-  if (ysamples < 1.0 || ysamples > GMANOptions::kMaxPixelSamples) {
-    warning("PixelSamples ysamples {:.0f} out of [1,{:.0f}], clamping.", ysamples, GMANOptions::kMaxPixelSamples);
+  if (ysamples < 1.0 || ysamples > maxSamples) {
+    warning("PixelSamples ysamples {:.0f} out of [1,{:.0f}], clamping.", ysamples, maxSamples);
   }
   getOptions().setPixelSamples(xsamples, ysamples);
 }
