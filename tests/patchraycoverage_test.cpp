@@ -174,8 +174,11 @@ void checkFixture(std::string const& gman, std::string const& ribDir, std::strin
   }
 
   check(zCovered > 0, fixture + ": the z-buffer covers at least one pixel");
-  std::printf("%s: z-buffer covered=%zu differing=%zu (%.2f%%)\n", fixture.c_str(), zCovered, differing,
-              zCovered > 0 ? 100.0 * (double)differing / (double)zCovered : 0.0);
+  double percent = 0.0;
+  if (zCovered > 0) {
+    percent = 100.0 * (double)differing / (double)zCovered;
+  }
+  std::printf("%s: z-buffer covered=%zu differing=%zu (%.2f%%)\n", fixture.c_str(), zCovered, differing, percent);
   check(differing <= (std::size_t)(kMaxDifferingFraction * (double)zCovered),
         fixture + ": " + renderer + "'s coverage matches the z-buffer's within " +
             std::to_string(kMaxDifferingFraction * 100.0) + "% of its own covered count");

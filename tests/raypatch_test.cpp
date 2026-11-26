@@ -738,8 +738,10 @@ void testPatchTexCoords() {
       double const u = gridU(g.first);
       double const v = gridU(g.second);
       Vec3 const target = evaluate(flat, u, v);
-      double const s =
-          withS ? bilerp(u, v, sOnly[0], sOnly[1], sOnly[2], sOnly[3]) : bilerp(u, v, st[0], st[2], st[4], st[6]);
+      double s = bilerp(u, v, st[0], st[2], st[4], st[6]);
+      if (withS) {
+        s = bilerp(u, v, sOnly[0], sOnly[1], sOnly[2], sOnly[3]);
+      }
       double const t = bilerp(u, v, st[1], st[3], st[5], st[7]);
       allMatch = allMatch && hitTexCoordNear(*mesh, target, frontOf(target), s, t);
     }
