@@ -39,6 +39,7 @@
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmannormal.h"
 #include "gmanpoint.h"
 #include "gmanprimitive.h"
 #include "gmanraydisk.h"
