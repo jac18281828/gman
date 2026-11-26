@@ -230,8 +230,7 @@ void checkSingularEmitter(gman::Emitter const& emitter, std::string const& label
   GMANPoint const closeBy(0.0f, 0.0f, -3.0f);
   GMANPoint const distant(40.0f, -25.0f, -900.0f);
 
-  check(gman::lightChoiceWeight(emitter, closeBy) == 0.0f,
-        label + ": lightChoiceWeight closeBy the shape is exactly 0");
+  check(gman::lightChoiceWeight(emitter, closeBy) == 0.0f, label + ": lightChoiceWeight near the shape is exactly 0");
   check(gman::lightChoiceWeight(emitter, distant) == 0.0f,
         label + ": lightChoiceWeight distant from the shape is exactly 0");
 
