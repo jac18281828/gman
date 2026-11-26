@@ -361,8 +361,7 @@ libgmanray/    gman_ray: ray geometry, BVH, emitters and the indirect-light pass
 libgmanraster/ gman_raster: the body, face and vertex model, the polygon clipper
 libgmanrib/    the RIB-writer plugin RiBegin("x.rib") loads, not yet trustworthy
 renderers/     loadable rendering modules -- zbuffer, raytracer and pathtracer; radiosity,
-               the radiosity pass the ray tracer loads; and reyes, non-functional and
-               built OFF by default
+               the radiosity pass the ray tracer loads
 shaders/       loadable shading modules
 gmansl/        grammar and driver for a shading language compiler that was never
                finished; kept as a record, built by nothing

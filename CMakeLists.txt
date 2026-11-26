@@ -82,12 +82,8 @@ FetchContent_Declare(CLI11
   FIND_PACKAGE_ARGS 2.4 CONFIG)
 FetchContent_MakeAvailable(CLI11)
 
-# reyes is non-functional and kept for the design intent a later phase may
-# want; it additionally does not link -- it has a declared virtual with no
-# definition -- so its option compiles but does not complete. radiosity
-# builds the ray tracer's indirect-light pass, loaded through Option
+# radiosity builds the ray tracer's indirect-light pass, loaded through Option
 # "render" "string indirect" ["radiosity"]; it defaults on.
-option(GMAN_BUILD_REYES "Build the (non-functional) REYES renderer plugin" OFF)
 option(GMAN_BUILD_RAYTRACER "Build the ray tracer plugin" ON)
 option(GMAN_BUILD_RADIOSITY "Build the radiosity indirect-light pass plugin" ON)
 option(GMAN_BUILD_PATHTRACER "Build the path tracer plugin" ON)
@@ -392,14 +388,6 @@ gman_add_plugin(gman_zbuffer
   renderers/zbuffer/zbufferloader.cpp)
 target_link_libraries(gman_zbuffer PRIVATE gman_raster)
 set_target_properties(gman_zbuffer PROPERTIES OUTPUT_NAME "gmanzbuffer")
-
-if(GMAN_BUILD_REYES)
-  gman_add_plugin(gman_reyes
-    renderers/reyes/gmanreyesrenderer.cpp
-    renderers/reyes/reyesloader.cpp)
-  target_link_libraries(gman_reyes PRIVATE gman_raster)
-  set_target_properties(gman_reyes PROPERTIES OUTPUT_NAME "gmanreyes")
-endif()
 
 # The ray tracer's own render loop -- GMANRayTracer and GMANRaytraceRenderer
 # -- shared by the gman_raytracer plugin below and by the unit tests that

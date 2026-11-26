@@ -69,7 +69,6 @@ const std::vector<LibraryRow> kRows = {
     {"libgmanray", "ray", {"ray", "core"}, "GMANRAY_EXPORT"},
     {"libgmanraster", "raster", {"raster", "core"}, "GMANRASTER_EXPORT"},
     {"renderers/zbuffer", "renderers/zbuffer", {"renderers/zbuffer", "raster", "core"}, "GMAN_EXPORT"},
-    {"renderers/reyes", "renderers/reyes", {"renderers/reyes", "raster", "core"}, "GMAN_EXPORT"},
     {"renderers/raytracer", "renderers/raytracer", {"renderers/raytracer", "ray", "core"}, "GMAN_EXPORT"},
     {"renderers/pathtracer", "renderers/pathtracer", {"renderers/pathtracer", "ray", "core"}, "GMAN_EXPORT"},
     {"renderers/radiosity", "renderers/radiosity", {"renderers/radiosity", "ray", "core"}, "GMAN_EXPORT"},
