@@ -153,9 +153,14 @@ RtFloat areaJacobian(InvertibleMatrix const& objectToCamera, GMANVector const& o
 // shape's own placed centre (camera space) and bounding radius: the
 // sphere's own centre and radius, or the disk's own point at its height
 // and radius, each placed by shape's own object-to-camera transform.
-// Precondition: shape is a GMANRaySphere or GMANRayDisk.
-void emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& centre, RtFloat& radius) {
+// Precondition: shape is a GMANRaySphere or GMANRayDisk. False, centre and
+// radius untouched, for a singular placement.
+bool emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& centre, RtFloat& radius) {
   EmittingShapeKind const kind = classifyEmittingShape(shape);
+  std::optional<InvertibleMatrix> const& objectToCamera = emittingShapeObjectToCamera(shape);
+  if (!objectToCamera) {
+    return false;
+  }
   GMANPoint objectCentre;
   if (kind.sphere != nullptr) {
     radius = kind.sphere->getRadius();
@@ -164,7 +169,8 @@ void emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& cent
     radius = kind.disk->getRadius();
     objectCentre = GMANPoint(0.0f, 0.0f, kind.disk->getHeight());
   }
-  centre = gman::transformPoint(*emittingShapeObjectToCamera(shape), objectCentre);
+  centre = gman::transformPoint(*objectToCamera, objectCentre);
+  return true;
 }
 
 // The camera-space area emitters() needs for power: exact for a disk,
@@ -196,11 +202,16 @@ struct EmitterDraw {
   RtFloat jacobian;
 };
 
-EmitterDraw drawEmitterPoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
+// Empty for an emitter whose shape's placement is singular.
+std::optional<EmitterDraw> drawEmitterPoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
+  std::optional<InvertibleMatrix> const& placement = emittingShapeObjectToCamera(*emitter.shape);
+  if (!placement) {
+    return std::nullopt;
+  }
+  InvertibleMatrix const& objectToCamera = *placement;
+
   GMANVector objectNormal;
   GMANPoint const objectPoint = emittingShapeSamplePoint(*emitter.shape, u1, u2, objectNormal);
-  // Precondition: emitter came from emitters(), so its placement inverts.
-  InvertibleMatrix const& objectToCamera = *emittingShapeObjectToCamera(*emitter.shape);
 
   EmitterDraw draw;
   placeEmitterPoint(objectToCamera, objectPoint, objectNormal, draw.point, draw.normal);
@@ -211,12 +222,22 @@ EmitterDraw drawEmitterPoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
 
 // The area branch of sample(): draws a point on emitter's shape, places
 // it, and reports the solid-angle pdf the area-to-solid-angle Jacobian
-// gives, black and 0 on the emitter's own non-emitting side.
+// gives, black and 0 on the emitter's own non-emitting side. Every field
+// zero, Cl black and pdf 0, for a singular placement.
 EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
   EmitterSample result;
+  result.wi = GMANVector(0.0f, 0.0f, 0.0f);
+  result.distance = 0.0f;
+  result.shadowTarget = GMANPoint(0.0f, 0.0f, 0.0f);
+  result.Cl = GMANColor(0.0f, 0.0f, 0.0f);
+  result.pdf = 0.0f;
   result.isDelta = false;
 
-  EmitterDraw const draw = drawEmitterPoint(emitter, u1, u2);
+  std::optional<EmitterDraw> const drawn = drawEmitterPoint(emitter, u1, u2);
+  if (!drawn) {
+    return result;
+  }
+  EmitterDraw const& draw = *drawn;
 
   GMANVector toEmitter(p, draw.point);
   RtFloat const distance = toEmitter.magnitude();
@@ -248,11 +269,20 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
 
 // The area branch of samplePoint(): draws a point on emitter's shape and
 // places it, reporting Le undoubled (no pi scale) and pdf per unit area.
+// Every field zero, Le black and pdf 0, for a singular placement.
 EmitterPoint samplePointArea(Emitter const& emitter, RtFloat u1, RtFloat u2) {
   EmitterPoint result;
+  result.point = GMANPoint(0.0f, 0.0f, 0.0f);
+  result.normal = GMANNormal(0.0f, 0.0f, 0.0f);
+  result.Le = GMANColor(0.0f, 0.0f, 0.0f);
+  result.pdf = 0.0f;
   result.isDelta = false;
 
-  EmitterDraw const draw = drawEmitterPoint(emitter, u1, u2);
+  std::optional<EmitterDraw> const drawn = drawEmitterPoint(emitter, u1, u2);
+  if (!drawn) {
+    return result;
+  }
+  EmitterDraw const& draw = *drawn;
 
   result.point = draw.point;
   result.normal = GMANNormal(draw.normal.getX(), draw.normal.getY(), draw.normal.getZ());
@@ -351,10 +381,14 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
     return 0.0f;
   }
 
+  std::optional<InvertibleMatrix> const& placement = emittingShapeObjectToCamera(*emitter.shape);
+  if (!placement) {
+    return 0.0f;
+  }
+  InvertibleMatrix const& objectToCamera = *placement;
+
   RtFloat area = 0.0f;
   emittingShapeArea(*emitter.shape, area);
-  // Precondition: emitter came from emitters(), so its placement inverts.
-  InvertibleMatrix const& objectToCamera = *emittingShapeObjectToCamera(*emitter.shape);
 
   // hitPoint's own object-space normal, recovered by the inverse of the
   // object-to-camera map placeEmitterPoint applies to a freshly drawn
@@ -399,7 +433,9 @@ RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p) {
 
   GMANPoint centre;
   RtFloat radius = 0.0f;
-  emittingShapeCentreAndRadius(*emitter.shape, centre, radius);
+  if (!emittingShapeCentreAndRadius(*emitter.shape, centre, radius)) {
+    return 0.0f;
+  }
   GMANVector const toCentre(p, centre);
   RtFloat const dSquared = toCentre.dot(toCentre);
   RtFloat const w = emitter.power / ((RtFloat)4.0 * GMANMax(dSquared, radius * radius));

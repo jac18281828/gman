@@ -23,8 +23,10 @@
  * gman::sample and gman::samplePoint answer both kinds through one
  * interface, a delta forwarding to GMANLight::sample unchanged and an area
  * emitter sampling its own shape and placing it by its object-to-camera
- * transform. Also proves appearanceOf's own exclusion: an illuminated area
- * light never reaches Appearance::lights.
+ * transform. An area emitter on a shape whose placement is singular, built by
+ * hand since gman::emitters skips it, answers weight 0, pdf 0 and zeroed
+ * fields from every query. Also proves appearanceOf's own exclusion: an
+ * illuminated area light never reaches Appearance::lights.
  */
 
 #include <cmath>
@@ -214,6 +216,65 @@ void testSingularEnumeration() {
         "singular enumeration: exactly one emitter, the sphere under the identity placement");
   check(countOccurrences(readFile(logPath), "2 area-light primitive(s)") == 1,
         "singular enumeration: the warning names the singular sphere and disk, 2 area-light primitive(s), once");
+}
+
+bool isZero(GMANVector const& v) { return v.getX() == 0.0f && v.getY() == 0.0f && v.getZ() == 0.0f; }
+
+bool isZero(GMANPoint const& p) { return p.getX() == 0.0f && p.getY() == 0.0f && p.getZ() == 0.0f; }
+
+bool isBlack(GMANColor const& c) { return c.getRed() == 0.0f && c.getGreen() == 0.0f && c.getBlue() == 0.0f; }
+
+// An area emitter whose shape's placement is singular answers weight 0, pdf
+// 0 and zeroed fields, whatever the receiving point.
+void checkSingularEmitter(gman::Emitter const& emitter, std::string const& label, std::uint32_t dim) {
+  GMANPoint const closeBy(0.0f, 0.0f, -3.0f);
+  GMANPoint const distant(40.0f, -25.0f, -900.0f);
+
+  check(gman::lightChoiceWeight(emitter, closeBy) == 0.0f,
+        label + ": lightChoiceWeight closeBy the shape is exactly 0");
+  check(gman::lightChoiceWeight(emitter, distant) == 0.0f,
+        label + ": lightChoiceWeight distant from the shape is exactly 0");
+
+  constexpr std::uint32_t kDraws = 1u << 4;
+  bool sampleZeroed = true;
+  bool pointZeroed = true;
+  for (GMANPoint const& receiver : {closeBy, distant}) {
+    for (std::uint32_t i = 0; i < kDraws; ++i) {
+      gman::Sample2D const uv = gman::sample2D(kSeed, dim, 0, i, kDraws, 0u);
+      gman::EmitterSample const s = gman::sample(emitter, receiver, uv.u1, uv.u2);
+      if (!isZero(s.wi) || s.distance != 0.0f || !isZero(s.shadowTarget) || !isBlack(s.Cl) || s.pdf != 0.0f ||
+          s.isDelta) {
+        sampleZeroed = false;
+      }
+      gman::EmitterPoint const ep = gman::samplePoint(emitter, uv.u1, uv.u2);
+      if (!isZero(ep.point) || !isZero(ep.normal) || !isBlack(ep.Le) || ep.pdf != 0.0f || ep.isDelta) {
+        pointZeroed = false;
+      }
+    }
+  }
+  check(sampleZeroed, label + ": sample returns a zero wi, distance and shadowTarget, black Cl, pdf 0, not delta");
+  check(pointZeroed, label + ": samplePoint returns a zero point and normal, black Le, pdf 0, not delta");
+
+  GMANPoint const hitPoint(0.0f, 0.0f, -2.0f);
+  GMANNormal const facing(0.0f, 0.0f, -1.0f);
+  check(gman::lightSolidAnglePdf(emitter, closeBy, hitPoint, facing) == 0.0f,
+        label + ": lightSolidAnglePdf toward a front-facing hit is exactly 0");
+}
+
+void testSingularEmitters() {
+  GMANMatrix4 flat;
+  flat.scale(1.0f, 1.0f, 0.0f);
+  GMANTransform const singular = makeTransform(flat);
+
+  GMANLight const sphereLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  GMANRaySphere sphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList(), singular);
+  check(!sphere.getObjectToCamera().has_value(), "singular emitters: the sphere's placement is empty");
+  checkSingularEmitter({&sphereLight, &sphere, 1.0f}, "singular sphere", 13u);
+
+  GMANLight const diskLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  GMANRayDisk disk(0.0f, 1.0f, 360.0f, GMANParameterList(), singular);
+  check(!disk.getObjectToCamera().has_value(), "singular emitters: the disk's placement is empty");
+  checkSingularEmitter({&diskLight, &disk, 1.0f}, "singular disk", 14u);
 }
 
 // power().
@@ -615,6 +676,7 @@ void testAppearanceExcludesAreaLight() {
 int main() {
   testEnumeration();
   testSingularEnumeration();
+  testSingularEmitters();
   testPower();
   testSampleDelta();
   testSampleArea();

@@ -113,7 +113,10 @@ GMANRAY_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_
 // ignores u1/u2 and forwards to its own light->sample(); an area emitter
 // draws a point on its shape, places it by the shape's own
 // object-to-camera transform, and reports Cl black when that placed point
-// emits away from p.
+// emits away from p. An area emitter whose shape's placement is singular, as
+// under Scale 1 1 0, answers pdf 0 with wi, distance, shadowTarget and Cl all
+// zero and isDelta false; only a hand-built Emitter reaches that case,
+// since emitters() skips such a shape.
 GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2);
 
 // The solid-angle density sample() reports in EmitterSample::pdf for a
@@ -122,7 +125,8 @@ GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, 
 // receiving point, hitPoint the known point on emitter and hitNormal its
 // outward normal there, all camera space. 0 when hitNormal's cosine to the
 // direction from hitPoint back to p is at or below 0 (emitter's own
-// non-emitting side) or when p and hitPoint coincide -- unlike
+// non-emitting side), when p and hitPoint coincide or when emitter's shape
+// has a singular placement, as under Scale 1 1 0 -- unlike
 // EmitterSample::pdf, which a back-facing draw still reports nonzero,
 // since that draw's own Cl already goes black on that side and no weight
 // computed from either pdf ever multiplies it. Precondition: emitter.shape
@@ -132,7 +136,9 @@ GMANRAY_EXPORT RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint cons
                                           GMANNormal const& hitNormal);
 
 // A shooting-pass draw on emitter itself, ignoring u1/u2 for a delta
-// emitter.
+// emitter. An area emitter whose shape's placement is singular, as under
+// Scale 1 1 0, answers pdf 0 with point, normal and Le all zero and isDelta
+// false.
 GMANRAY_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2);
 
 // emitter's own weight for next-event estimation's light choice at p: a
@@ -140,7 +146,8 @@ GMANRAY_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFl
 // power divided by four times the greater of its placed centre's squared
 // distance from p and its own squared bounding radius -- strictly positive
 // wherever it contributes, unlike a fixed preview draw whose own
-// object-space point may face away from p.
+// object-space point may face away from p. 0 for an area emitter whose
+// shape's placement is singular, as under Scale 1 1 0.
 GMANRAY_EXPORT RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p);
 
 } // namespace gman
