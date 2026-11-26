@@ -125,9 +125,9 @@ class GMANRayTracer : public gman::Tracer {
 public:
   GMANRayTracer(GMANRayBVH const& bvh, GMANRayOccluder const& occluder, GMANMatrix4 const& cameraToWorld,
                 GMANColor const& background, int depth, gman::IndirectPass const* indirectPass = nullptr,
-                gman::TextureCache* textureCache = nullptr, GMANAreaLightSample* areaLights = nullptr)
+                gman::TextureCache* textureCache = nullptr, GMANAreaLightSample* areaSample = nullptr)
       : bvh(bvh), occluder(occluder), cameraToWorld(cameraToWorld), background(background), depth(depth),
-        indirectPass(indirectPass), textureCache(textureCache), areaLights(areaLights) {}
+        indirectPass(indirectPass), textureCache(textureCache), areaSample(areaSample) {}
 
   GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
                   RtFloat surfaceMagnitude) const override;
@@ -167,7 +167,7 @@ private:
   // means none do. Carried into every child GMANRayTracer trace() builds,
   // so a reflected or refracted hit takes its own draws from the same
   // sample. Non-owning; the caller keeps it alive.
-  GMANAreaLightSample* areaLights;
+  GMANAreaLightSample* areaSample;
 };
 
 /*

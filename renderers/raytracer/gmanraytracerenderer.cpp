@@ -227,7 +227,7 @@ GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVect
   }
 
   GMANRayTracer const child(bvh, occluder, cameraToWorld, background, depth + 1, indirectPass, textureCache,
-                            areaLights);
+                            areaSample);
   return child.shadeHit(*hitPrimitive, ray, hit).Ci;
 }
 
@@ -235,8 +235,8 @@ gman::Shading GMANRayTracer::shadeLit(GMANRayInterface const& hitPrimitive, gman
                                       GMANColor const* indirect) const {
   gman::Appearance const& appearance = hitPrimitive.getAppearance();
   std::vector<GMANLight> draws;
-  if (areaLights != nullptr) {
-    draws = areaLights->draw(point.P, hitPrimitive);
+  if (areaSample != nullptr) {
+    draws = areaSample->draw(point.P, hitPrimitive);
   }
   if (draws.empty()) {
     return gman::shade(appearance, point, cameraToWorld, &occluder, this, textureCache, indirect);
@@ -252,10 +252,10 @@ gman::Shading GMANRayTracer::shadeLit(GMANRayInterface const& hitPrimitive, gman
 
 std::optional<GMANColor> GMANRayTracer::emitterRadiance(GMANRayInterface const& hitPrimitive, GMANRay const& ray,
                                                         GMANHit const& hit) const {
-  if (areaLights == nullptr) {
+  if (areaSample == nullptr) {
     return std::nullopt;
   }
-  std::vector<gman::Emitter> const& emitters = areaLights->emitters();
+  std::vector<gman::Emitter> const& emitters = areaSample->emitters();
   std::optional<std::size_t> const emitter = gman::emitterIndex(emitters, &hitPrimitive);
   if (!emitter || !(hit.normal.dot(-ray.getDirection()) > 0.0f)) {
     return std::nullopt;
