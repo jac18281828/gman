@@ -602,6 +602,10 @@ RtVoid GMANRenderManImpl::RiExposure(RtFloat gain, RtFloat gamma) {
   if (!allowed(cmdExposure)) {
     return;
   }
+  if (!std::isfinite(gain) || !std::isfinite(gamma)) {
+    warning("Exposure gain {} and gamma {} must be finite; ignored.", gain, gamma);
+    return;
+  }
   getOptions().setExposure(gain, gamma);
 }
 RtVoid GMANRenderManImpl::RiImagerV(RtToken name, RtInt n, RtToken tokens[], RtPointer parms[]) {

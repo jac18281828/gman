@@ -1691,6 +1691,17 @@ set_tests_properties(formatnonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RiExposure ignores a NaN or infinite gain or gamma. See
+# tests/exposurenonfinite_test.cpp.
+add_executable(gman_exposurenonfinite exposurenonfinite_test.cpp)
+target_link_libraries(gman_exposurenonfinite PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME exposurenonfinite COMMAND gman_exposurenonfinite)
+set_tests_properties(exposurenonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Test-only surface shader answering a NaN or infinite Ci or Oi on request
 # ("string ci", "string oi"): RIB has no literal for either.
 gman_add_plugin(gman_nonfinitesurface nonfinitesurface_test_plugin.cpp)
