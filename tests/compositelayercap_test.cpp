@@ -72,6 +72,9 @@ constexpr RtInt kRes = 21;
 constexpr RtFloat kDiskRadius = 100.0f; // covers the whole frame at every z this stack reaches
 constexpr RtFloat kLayerSpacing = 1.0f; // well past the 0.1 composite-gap floor AGENTS.md's own fixtures rely on
 constexpr RtFloat kFirstLayerZ = 5.0f;
+constexpr RtFloat kLayerOpacity = 0.05f;
+constexpr RtFloat kDepthTolerance = 1e-4f;
+constexpr RtFloat kAlphaTolerance = 1e-5f;
 
 GMANOptions::ScreenWindowStruct squareScreenWindow() {
   GMANOptions::ScreenWindowStruct sw;
@@ -81,10 +84,6 @@ GMANOptions::ScreenWindowStruct squareScreenWindow() {
   sw.top = 1.0;
   return sw;
 }
-
-constexpr RtFloat kLayerOpacity = 0.05f;
-constexpr RtFloat kDepthTolerance = 1e-4f;
-constexpr RtFloat kAlphaTolerance = 1e-5f;
 
 struct StackRender {
   GMANColor colour;
@@ -147,9 +146,9 @@ int main() {
   const auto render8 = renderStack(8);
   const auto render16 = renderStack(16);
   const auto render20 = renderStack(20);
-  GMANColor const& stack8 = render8.colour;
-  GMANColor const& stack16 = render16.colour;
-  GMANColor const& stack20 = render20.colour;
+  auto const& stack8 = render8.colour;
+  auto const& stack16 = render16.colour;
+  auto const& stack20 = render20.colour;
 
   std::printf("centre pixel: 8 layers (%g,%g,%g), 16 layers (%g,%g,%g), 20 layers (%g,%g,%g)\n", stack8.getRed(),
               stack8.getGreen(), stack8.getBlue(), stack16.getRed(), stack16.getGreen(), stack16.getBlue(),
@@ -176,7 +175,7 @@ int main() {
 
   // The alpha is one minus the transmission the composited layers leave: eight
   // layers for the short stack, the cap's sixteen for the long one.
-  RtFloat const survive = 1.0f - kLayerOpacity;
+  const auto survive = 1.0f - kLayerOpacity;
   check(alphaNear(render8.alpha, 1.0f - std::pow(survive, 8.0f), kAlphaTolerance),
         "alpha: the 8-layer stack's centre alpha is one minus 0.95^8");
   check(alphaNear(render20.alpha, 1.0f - std::pow(survive, 16.0f), kAlphaTolerance),

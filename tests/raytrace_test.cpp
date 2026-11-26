@@ -279,9 +279,9 @@ public:
   GMANColor trace(GMANColor const& background) {
     GMANRayBVH bvh;
     bvh.build(worldManager_);
-    GMANRayOccluder const occluder(bvh);
-    GMANMatrix4 const cameraToWorld;
-    GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
+    const auto occluder = GMANRayOccluder(bvh);
+    const GMANMatrix4 cameraToWorld;
+    const auto tracer = GMANRayTracer(bvh, occluder, cameraToWorld, background, 0);
     return tracer.trace(GMANPoint(0.0f, 0.0f, 0.0f), GMANVector(0.0f, 0.0f, 1.0f), GMANVector(), 0.0f);
   }
 
@@ -745,8 +745,8 @@ void checkIndirectPassReachesChildTracer() {
 // Check 9: a layer of Os 0.5 and colour C before an opaque wall of colour W
 // returns C + 0.5 W: the layer no longer hides what lies behind it.
 void checkPartlyOpaqueLayerShowsWallBehind() {
-  GMANColor const layerColor(0.3f, 0.2f, 0.1f);
-  GMANColor const wallColor(0.2f, 0.4f, 0.6f);
+  const auto layerColor = GMANColor(0.3f, 0.2f, 0.1f);
+  const auto wallColor = GMANColor(0.2f, 0.4f, 0.6f);
   FixedColorShader layerShader(layerColor);
   FixedColorShader wallShader(wallColor);
   LayerStack stack;
@@ -762,8 +762,8 @@ void checkPartlyOpaqueLayerShowsWallBehind() {
 // ray that leaves the scene reads the layer over the background a miss
 // returns.
 void checkPartlyOpaqueLayerOverBackground() {
-  GMANColor const layerColor(0.3f, 0.2f, 0.1f);
-  GMANColor const background(0.1f, 0.5f, 0.9f);
+  const auto layerColor = GMANColor(0.3f, 0.2f, 0.1f);
+  const auto background = GMANColor(0.1f, 0.5f, 0.9f);
   FixedColorShader layerShader(layerColor);
   LayerStack stack;
   stack.addLayer(kFirstLayerZ, layerShader, GMANColor(0.5f, 0.5f, 0.5f));
@@ -776,9 +776,9 @@ void checkPartlyOpaqueLayerOverBackground() {
 // Check 11: a layer of per-channel Os (0.5, 0.25, 0.75) before the wall
 // returns C + (0.5, 0.75, 0.25) W channel by channel.
 void checkPerChannelOpacityComposites() {
-  GMANColor const layerColor(0.3f, 0.2f, 0.1f);
-  GMANColor const wallColor(0.2f, 0.4f, 0.6f);
-  GMANColor const passed(0.5f, 0.75f, 0.25f);
+  const auto layerColor = GMANColor(0.3f, 0.2f, 0.1f);
+  const auto wallColor = GMANColor(0.2f, 0.4f, 0.6f);
+  const auto passed = GMANColor(0.5f, 0.75f, 0.25f);
   FixedColorShader layerShader(layerColor);
   FixedColorShader wallShader(wallColor);
   LayerStack stack;
@@ -815,7 +815,7 @@ void checkTraceObeysLayerCap() {
 // Check 13: a counting shader behind an opaque layer is never shaded, and
 // behind a layer of Os 0.5 is shaded once.
 void checkOpaqueLayerStopsTheComposite() {
-  GMANColor const white(1.0f, 1.0f, 1.0f);
+  const auto white = GMANColor(1.0f, 1.0f, 1.0f);
   FixedColorShader frontShader(GMANColor(0.3f, 0.2f, 0.1f));
 
   CountingColorShader behindOpaque(GMANColor(0.2f, 0.4f, 0.6f));

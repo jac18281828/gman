@@ -340,8 +340,8 @@ void GMANRaytraceRenderer::shadeSample(GMANViewingSystem* viewingSys, GMANMatrix
                                        int sampleY, gman::IndirectPass const* indirectPass,
                                        GMANRayOccluder const& shadingOccluder, gman::TextureCache* textureCache,
                                        GMANAreaLightSample& areaSample) const {
-  GMANRay const ray = viewingSys->cameraRay(rasterX, rasterY);
-  RayHit const hit = nearestHit(ray);
+  const auto ray = viewingSys->cameraRay(rasterX, rasterY);
+  const auto hit = nearestHit(ray);
   if (hit.primitive == nullptr) {
     return;
   }

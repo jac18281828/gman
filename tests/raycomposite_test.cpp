@@ -51,10 +51,10 @@
 namespace {
 
 struct Block {
-  uint32_t x;
-  uint32_t y;
-  uint32_t width;
-  uint32_t height;
+  std::uint32_t x;
+  std::uint32_t y;
+  std::uint32_t width;
+  std::uint32_t height;
 };
 
 constexpr Block kGlassThroughSlab = {6, 12, 16, 24};
@@ -83,7 +83,7 @@ char const* const kPathTracer = "gmanpathtracer";
 
 using Mean = std::array<double, kChannels>;
 
-double channelOf(uint32_t pixel, std::size_t channel) {
+double channelOf(std::uint32_t pixel, std::size_t channel) {
   if (channel == kRed) {
     return TIFFGetR(pixel);
   }
@@ -95,14 +95,14 @@ double channelOf(uint32_t pixel, std::size_t channel) {
 
 Mean blockMean(GmanImage const& image, Block const& block) {
   Mean mean{};
-  for (uint32_t y = block.y; y < block.y + block.height; ++y) {
-    for (uint32_t x = block.x; x < block.x + block.width; ++x) {
+  for (std::uint32_t y = block.y; y < block.y + block.height; ++y) {
+    for (std::uint32_t x = block.x; x < block.x + block.width; ++x) {
       for (std::size_t channel = 0; channel < kChannels; ++channel) {
         mean[channel] += channelOf(image.at(x, y), channel);
       }
     }
   }
-  double const count = static_cast<double>(block.width) * static_cast<double>(block.height);
+  const auto count = static_cast<double>(block.width) * static_cast<double>(block.height);
   for (double& value : mean) {
     value /= count;
   }
@@ -111,9 +111,9 @@ Mean blockMean(GmanImage const& image, Block const& block) {
 
 GmanImage render(std::string const& gman, std::string const& ribDir, std::string const& renderer,
                  std::string const& name) {
-  std::string const tif = name + ".tif";
+  const auto tif = name + ".tif";
   std::remove(tif.c_str());
-  GMANRunResult const run = runGman(gman, {"-r", renderer, ribDir + "/" + name + ".rib"});
+  const auto run = runGman(gman, {"-r", renderer, ribDir + "/" + name + ".rib"});
   check(run.exitStatus == 0, renderer + " renders " + name + " (exit " + std::to_string(run.exitStatus) + ")");
   GmanImage image = readGmanTIFF(tif);
   check(image.ok, renderer + ": " + tif + " reads back");
@@ -152,7 +152,7 @@ void checkFloor(std::string const& what, Mean const& mean, double floor) {
 
 void checkAgainstPath(std::string const& what, Mean const& ray, Mean const& path) {
   for (std::size_t channel = 0; channel < kChannels; ++channel) {
-    double const excess = ray[channel] / path[channel] - 1.0;
+    const auto excess = ray[channel] / path[channel] - 1.0;
     std::printf("%s: channel %zu: ray %.4f, path %.4f, ratio - 1 %+.4f, tolerance %.3f\n", what.c_str(), channel,
                 ray[channel], path[channel], excess, kOracleTolerance);
     check(std::fabs(excess) <= kOracleTolerance,
@@ -163,7 +163,7 @@ void checkAgainstPath(std::string const& what, Mean const& ray, Mean const& path
 
 void checkHalfOfBare(std::string const& what, Mean const& panel, Mean const& bare) {
   for (std::size_t channel = 0; channel < kChannels; ++channel) {
-    double const ratio = panel[channel] / bare[channel];
+    const auto ratio = panel[channel] / bare[channel];
     std::printf("%s: channel %zu: panel %.4f, bare %.4f, ratio %.4f\n", what.c_str(), channel, panel[channel],
                 bare[channel], ratio);
     check(std::fabs(ratio - kHalfOfBare) <= kHalfTolerance, channelLabel(what, channel) + "the panel's block is " +
@@ -180,15 +180,15 @@ void checkGlass(std::string const& gman, std::string const& ribDir) {
     return;
   }
 
-  Mean const panelDirect = blockMean(scene.panel.ray, kGlassDirect);
-  Mean const bareDirect = blockMean(scene.bare.ray, kGlassDirect);
-  Mean const bareThroughSlab = blockMean(scene.bare.ray, kGlassThroughSlab);
-  Mean const panelRay = blockMean(scene.panel.ray, kGlassThroughSlab);
-  Mean const panelPath = blockMean(scene.panel.path, kGlassThroughSlab);
+  const auto panelDirect = blockMean(scene.panel.ray, kGlassDirect);
+  const auto bareDirect = blockMean(scene.bare.ray, kGlassDirect);
+  const auto bareThroughSlab = blockMean(scene.bare.ray, kGlassThroughSlab);
+  const auto panelRay = blockMean(scene.panel.ray, kGlassThroughSlab);
+  const auto panelPath = blockMean(scene.panel.path, kGlassThroughSlab);
 
   checkHalfOfBare("glass setup, the panel seen directly", panelDirect, bareDirect);
   for (std::size_t channel = 0; channel < kChannels; ++channel) {
-    double const passed = bareThroughSlab[channel] / bareDirect[channel];
+    const auto passed = bareThroughSlab[channel] / bareDirect[channel];
     check(passed >= kGlassRatioLow && passed <= kGlassRatioHigh, channelLabel("glass setup", channel) +
                                                                      "the bare slab passes " + std::to_string(passed) +
                                                                      " of the direct view, in [0.90, 0.94]");
@@ -207,9 +207,9 @@ void checkMirror(std::string const& gman, std::string const& ribDir) {
     return;
   }
 
-  Mean const bareRay = blockMean(scene.bare.ray, kMirrorBlock);
-  Mean const panelRay = blockMean(scene.panel.ray, kMirrorBlock);
-  Mean const panelPath = blockMean(scene.panel.path, kMirrorBlock);
+  const auto bareRay = blockMean(scene.bare.ray, kMirrorBlock);
+  const auto panelRay = blockMean(scene.panel.ray, kMirrorBlock);
+  const auto panelPath = blockMean(scene.panel.path, kMirrorBlock);
 
   checkFloor("mirror setup, the bare twin under the ray tracer", bareRay, kOracleFloor);
   checkFloor("mirror setup, the path tracer's block", panelPath, kOracleFloor);
@@ -219,20 +219,20 @@ void checkMirror(std::string const& gman, std::string const& ribDir) {
 }
 
 void checkAmbient(std::string const& gman, std::string const& ribDir) {
-  GmanImage const image = render(gman, ribDir, kRayTracer, "raycomposite_ambient");
+  const auto image = render(gman, ribDir, kRayTracer, "raycomposite_ambient");
   if (!image.ok) {
     return;
   }
 
-  Mean const direct = blockMean(image, kAmbientDirect);
-  Mean const mirrored = blockMean(image, kAmbientMirrored);
+  const auto direct = blockMean(image, kAmbientDirect);
+  const auto mirrored = blockMean(image, kAmbientMirrored);
   check(direct[kRed] > kAmbientRedFloor,
         "ambient setup: the direct block's red exceeds 150 (" + std::to_string(direct[kRed]) + ")");
   check(direct[kGreen] > kAmbientGreenFloor,
         "ambient setup: the direct block's green exceeds 60 (" + std::to_string(direct[kGreen]) + ")");
 
   for (std::size_t channel = 0; channel < kChannels; ++channel) {
-    double const expected = kMirrorKr * direct[channel];
+    const auto expected = kMirrorKr * direct[channel];
     std::printf("ambient: channel %zu: direct %.4f, mirrored %.4f, 0.8 x direct %.4f\n", channel, direct[channel],
                 mirrored[channel], expected);
     check(std::fabs(mirrored[channel] - expected) <= kMirroredTolerance,
@@ -248,8 +248,8 @@ int main(int argc, char* argv[]) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib dir>\n", argv[0]);
     return 2;
   }
-  std::string const gman = argv[1];
-  std::string const ribDir = argv[2];
+  const auto gman = std::string(argv[1]);
+  const auto ribDir = std::string(argv[2]);
 
   checkGlass(gman, ribDir);
   checkMirror(gman, ribDir);
