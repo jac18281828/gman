@@ -36,10 +36,12 @@
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
 #include "gmanpolygon.h"
+#include "gmanray.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
+#include "gmanrayinterface.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
@@ -79,30 +81,52 @@ bool placementEquals(std::optional<gman::InvertibleMatrix> const& held, GMANMatr
   return held.has_value() && matricesEqual(held->forward(), placement);
 }
 
+void checkSingularMisses(std::string const& shape, GMANRayInterface const& identityBuild,
+                         GMANRayInterface const& singularBuild, GMANRay const& ray) {
+  GMANHit identityHit;
+  check(identityBuild.intersect(ray, identityHit), shape + ": the ray hits the identity placement");
+  GMANHit singularHit;
+  check(!singularBuild.intersect(ray, singularHit), shape + ": the same ray misses a Scale 1 1 0 placement");
+}
+
 void testSingularPlacement() {
   GMANMatrix4 flat;
   flat.scale(1.0, 1.0, 0.0);
   GMANTransform const transform = makeTransform(flat);
+  GMANTransform const identity = makeTransform(GMANMatrix4());
+  GMANRay const sideways(GMANPoint(-10.0, 0.0, 0.5), GMANVector(1.0, 0.0, 0.0));
+  GMANRay const downAxis(GMANPoint(0.5, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
 
   GMANRaySphere const sphere(2.0, -2.0, 2.0, 360.0, GMANParameterList(), transform);
   check(!sphere.getObjectToCamera().has_value(), "sphere: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  checkSingularMisses("sphere", GMANRaySphere(2.0, -2.0, 2.0, 360.0, GMANParameterList(), identity), sphere, sideways);
   GMANRayCone const cone(3.0, 1.5, 360.0, GMANParameterList(), transform);
   check(!cone.getObjectToCamera().has_value(), "cone: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  checkSingularMisses("cone", GMANRayCone(3.0, 1.5, 360.0, GMANParameterList(), identity), cone, sideways);
   GMANRayCylinder const cylinder(1.2, -1.0, 2.5, 360.0, GMANParameterList(), transform);
   check(!cylinder.getObjectToCamera().has_value(),
         "cylinder: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  checkSingularMisses("cylinder", GMANRayCylinder(1.2, -1.0, 2.5, 360.0, GMANParameterList(), identity), cylinder,
+                      sideways);
   GMANRayDisk const disk(1.0, 1.0, 360.0, GMANParameterList(), transform);
   check(!disk.getObjectToCamera().has_value(), "disk: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  checkSingularMisses("disk", GMANRayDisk(1.0, 1.0, 360.0, GMANParameterList(), identity), disk, downAxis);
   GMANRayParaboloid const paraboloid(1.0, 0.0, 0.5, 360.0, GMANParameterList(), transform);
   check(!paraboloid.getObjectToCamera().has_value(),
         "paraboloid: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  checkSingularMisses("paraboloid", GMANRayParaboloid(1.0, 0.0, 0.5, 360.0, GMANParameterList(), identity), paraboloid,
+                      sideways);
   RtPoint point1 = {0.5, 0.0, -1.0};
   RtPoint point2 = {1.2, 0.0, 2.0};
   GMANRayHyperboloid const hyperboloid(point1, point2, 360.0, GMANParameterList(), transform);
   check(!hyperboloid.getObjectToCamera().has_value(),
         "hyperboloid: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  checkSingularMisses("hyperboloid", GMANRayHyperboloid(point1, point2, 360.0, GMANParameterList(), identity),
+                      hyperboloid, sideways);
   GMANRayTorus const torus(2.0, 0.5, -180.0, 180.0, 360.0, GMANParameterList(), transform);
   check(!torus.getObjectToCamera().has_value(), "torus: a Scale 1 1 0 placement has an empty getObjectToCamera()");
+  checkSingularMisses("torus", GMANRayTorus(2.0, 0.5, -180.0, 180.0, 360.0, GMANParameterList(), identity), torus,
+                      sideways);
 }
 
 void testQuadrics() {

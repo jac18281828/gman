@@ -164,6 +164,58 @@ void testEnumeration() {
   check(occurrences == 1, "enumeration: the warning names the count, 2 area-light primitive(s), exactly once");
 }
 
+std::size_t countOccurrences(std::string const& text, std::string const& needle) {
+  std::size_t occurrences = 0;
+  for (std::size_t pos = text.find(needle); pos != std::string::npos; pos = text.find(needle, pos + 1)) {
+    ++occurrences;
+  }
+  return occurrences;
+}
+
+// gman::emitters skips an area-light sphere or disk whose placement is
+// singular, counting each in its one warning.
+void testSingularEnumeration() {
+  std::string const logPath = "emitter_singular_enumeration.log";
+  std::remove(logPath.c_str());
+  setLogFile(logPath.c_str());
+  setScreenOutput(false);
+
+  GMANMatrix4 flat;
+  flat.scale(1.0f, 1.0f, 0.0f);
+  GMANTransform const singular = makeTransform(flat);
+
+  GMANLight const regularLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  GMANLight const flatSphereLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  GMANLight const flatDiskLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  gman::Appearance regularAppearance;
+  regularAppearance.areaLight = &regularLight;
+  gman::Appearance flatSphereAppearance;
+  flatSphereAppearance.areaLight = &flatSphereLight;
+  gman::Appearance flatDiskAppearance;
+  flatDiskAppearance.areaLight = &flatDiskLight;
+
+  GMANLinearWorldManager world;
+  const auto regular = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  regular->setAppearance(regularAppearance);
+  world.add(regular);
+  const auto flatSphere = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList(), singular);
+  flatSphere->setAppearance(flatSphereAppearance);
+  world.add(flatSphere);
+  const auto flatDisk = new GMANRayDisk(0.0f, 1.0f, 360.0f, GMANParameterList(), singular);
+  flatDisk->setAppearance(flatDiskAppearance);
+  world.add(flatDisk);
+
+  std::vector<gman::Emitter> const list = gman::emitters(world);
+
+  setLogFile("/dev/null");
+  setScreenOutput(true);
+
+  check(list.size() == 1 && list[0].shape == regular && list[0].light == &regularLight,
+        "singular enumeration: exactly one emitter, the sphere under the identity placement");
+  check(countOccurrences(readFile(logPath), "2 area-light primitive(s)") == 1,
+        "singular enumeration: the warning names the singular sphere and disk, 2 area-light primitive(s), once");
+}
+
 // power().
 void testPower() {
   // GMANLinearWorldManager owns and deletes what it is given, so the
@@ -562,6 +614,7 @@ void testAppearanceExcludesAreaLight() {
 
 int main() {
   testEnumeration();
+  testSingularEnumeration();
   testPower();
   testSampleDelta();
   testSampleArea();
