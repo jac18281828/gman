@@ -58,6 +58,7 @@
 #include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
+#include "gmanray.h"
 #include "gmanraydisk.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
@@ -557,27 +558,30 @@ void testLightSolidAnglePdfReference() {
   sphere.setAppearance(appearance);
   gman::Emitter const emitter{&light, &sphere, 0.0f};
 
-  // The near pole: hitNormal (0, 0, -1) faces p exactly, at distance 8 (p
-  // to hitPoint, not p to the sphere's own centre).
+  // The near pole: hitNormal (0, 0, -1) faces p exactly. A sphere draws
+  // uniformly in the cone it subtends from p, sin theta_max = 2 / 10, so the
+  // density is 1 / (2 pi (1 - sqrt(0.96))) at every point it shows p.
   GMANPoint const p(0.0f, 0.0f, -10.0f);
   GMANPoint const hitPoint(0.0f, 0.0f, -2.0f);
   GMANNormal const hitNormal(0.0f, 0.0f, -1.0f);
 
   RtFloat const pdf = gman::lightSolidAnglePdf(emitter, p, hitPoint, hitNormal);
-  double const expected = 4.0 / std::numbers::pi;
+  const auto expected = 1.0 / (2.0 * std::numbers::pi * (1.0 - std::sqrt(0.96)));
   double const relError = std::fabs((double)pdf - expected) / expected;
   std::printf("lightSolidAnglePdf reference: %.10f, expected %.10f (%.2e relative)\n", (double)pdf, expected, relError);
-  check(relError < 1e-5, "lightSolidAnglePdf: the near-pole reference value matches 4/pi within 1e-5 relative");
+  check(relError < 1e-5,
+        "lightSolidAnglePdf: the near-pole reference value matches 1 / (2 pi (1 - sqrt(0.96))) within 1e-5 relative");
 
   GMANNormal const awayNormal(0.0f, 0.0f, 1.0f);
   RtFloat const awayPdf = gman::lightSolidAnglePdf(emitter, p, hitPoint, awayNormal);
   check(awayPdf == 0.0f, "lightSolidAnglePdf: a hitNormal facing away from p reports exactly 0");
 }
 
-// gman::lightSolidAnglePdf against sample()'s own EmitterSample::pdf, on
-// the same (u1, u2) draw's point and normal, filtered to the front-facing,
-// non-delta draws either technique ever counts: of kDraws draws, requires
-// at least kMinFrontFacing so the check cannot pass on an empty set.
+// gman::lightSolidAnglePdf against sample()'s own EmitterSample::pdf, at
+// the first hit of the ray from p along the draw's wi on the emitter's own
+// shape, with that hit's normal, filtered to the front-facing, non-delta
+// draws either technique ever counts: of kDraws draws, requires at least
+// kMinFrontFacing so the check cannot pass on an empty set.
 void checkLightSolidAnglePdfConsistency(gman::Emitter const& emitter, GMANPoint const& p, std::uint32_t dim,
                                         std::string const& label) {
   constexpr std::uint32_t kDraws = 1u << 12;
@@ -593,8 +597,13 @@ void checkLightSolidAnglePdfConsistency(gman::Emitter const& emitter, GMANPoint 
     }
     ++frontFacing;
 
-    gman::EmitterPoint const ep = gman::samplePoint(emitter, uv.u1, uv.u2);
-    RtFloat const pdf = gman::lightSolidAnglePdf(emitter, p, ep.point, ep.normal);
+    GMANHit hit;
+    if (!emitter.shape->intersect(GMANRay(p, s.wi), hit)) {
+      allMatch = false;
+      continue;
+    }
+    const auto pdf = gman::lightSolidAnglePdf(emitter, p, hit.point,
+                                              GMANNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ()));
     double const relError = std::fabs((double)pdf - (double)s.pdf) / (double)s.pdf;
     if (!(relError < 1e-5)) {
       allMatch = false;

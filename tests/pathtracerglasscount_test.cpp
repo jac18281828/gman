@@ -63,11 +63,32 @@ namespace {
 constexpr RtFloat kPaneX = 8.9f;
 constexpr RtFloat kPaneHalfExtent = 50.0f;
 
+// The pairing scene's horizontal pane: above the camera, so no camera ray to
+// the floor crosses it, and below the big sphere, wide enough that every ray
+// from the floor toward that sphere crosses it.
+constexpr RtFloat kHorizontalPaneY = 1.0f;
+
 GMANRayPolygon* buildGlassPane(RtFloat os) {
   std::vector<GMANPoint> const verts = {
       GMANPoint(kPaneX, -kPaneHalfExtent, -kPaneHalfExtent), GMANPoint(kPaneX, -kPaneHalfExtent, kPaneHalfExtent),
       GMANPoint(kPaneX, kPaneHalfExtent, kPaneHalfExtent), GMANPoint(kPaneX, kPaneHalfExtent, -kPaneHalfExtent)};
   GMANRayPolygon* pane = new GMANRayPolygon(verts, GMANParameterList());
+  gman::Appearance appearance;
+  appearance.shader = loadShader("glass", GMANParameterList());
+  appearance.Os = GMANColor(os, os, os);
+  pane->setAppearance(appearance);
+  return pane;
+}
+
+// A glass pane of Os os in the plane y = kHorizontalPaneY, kPaneHalfExtent
+// either side of the floor's centre in x and z.
+GMANRayPolygon* buildHorizontalGlassPane(RtFloat os) {
+  const auto zMid = (kFloorZMin + kFloorZMax) / 2.0f;
+  std::vector<GMANPoint> const verts = {GMANPoint(-kPaneHalfExtent, kHorizontalPaneY, zMid - kPaneHalfExtent),
+                                        GMANPoint(-kPaneHalfExtent, kHorizontalPaneY, zMid + kPaneHalfExtent),
+                                        GMANPoint(kPaneHalfExtent, kHorizontalPaneY, zMid + kPaneHalfExtent),
+                                        GMANPoint(kPaneHalfExtent, kHorizontalPaneY, zMid - kPaneHalfExtent)};
+  auto* const pane = new GMANRayPolygon(verts, GMANParameterList());
   gman::Appearance appearance;
   appearance.shader = loadShader("glass", GMANParameterList());
   appearance.Os = GMANColor(os, os, os);
@@ -211,15 +232,18 @@ void testGlassPaneCountsOnce() {
   checkResiduals(residuals, expectedByChannel, kResidualFloor, "glass pane, Os 1");
 }
 
-// A large emitter close behind a glass pane of Os 0.5, so the shadow
+// A sphere so large and so close overhead that it fills 69 degrees about the
+// floor's normal, behind a horizontal glass pane of Os 0.5, so the shadow
 // walk's transmittance carries both a pass-through share and a dielectric
-// share and the power heuristic's next-event weight sits well below 1.
-// MIS-on and MIS-off are each, independently, unbiased, so their paired
-// per-pixel residual (same seed, same N, differing only in which weight
-// formula applied) must agree with 0.
-constexpr RtFloat kBigSphereRadius = 6.0f;
-constexpr RtFloat kBigSphereCentreX = 16.0f;
-constexpr RtFloat kBigSphereCentreY = 15.0f;
+// share and the power heuristic's next-event weight sits well below 1: the
+// sphere draws uniformly in the solid angle it subtends, and a Lambertian
+// floor's own density over that solid angle rivals it. MIS-on and MIS-off are
+// each, independently, unbiased, so their paired per-pixel residual (same
+// seed, same N, differing only in which weight formula applied) must agree
+// with 0.
+constexpr RtFloat kBigSphereRadius = 100.0f;
+constexpr RtFloat kBigSphereCentreX = 0.0f;
+constexpr RtFloat kBigSphereCentreY = 103.0f;
 constexpr RtFloat kBigSphereCentreZ = 9.0f;
 constexpr RtFloat kBigAreaLe = 10.0f;
 constexpr RtFloat kPairPaneOs = 0.5f;
@@ -242,8 +266,7 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kBigAreaLe, kBigAreaLe, kBigAreaLe), GMANPoint(), GMANVector());
   addEmittingSphere(*renderer, areaLight, kBigSphereRadius, kBigSphereCentreX, kBigSphereCentreY, kBigSphereCentreZ);
 
-  GMANRayPolygon* pane = buildGlassPane(kPairPaneOs);
-  renderer->getWorldManager()->add(pane);
+  renderer->getWorldManager()->add(buildHorizontalGlassPane(kPairPaneOs));
 
   auto frameBuffer = std::make_unique<GMANFrameBuffer>(kPairRes, kPairRes, options.getBackground());
   GMANAttributes const attr;
@@ -253,12 +276,13 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
 }
 
 // Scene-validity guard: at the floor's own centre, next-event
-// estimation's own mean weight toward the big sphere, over many random
-// draws (the real estimator's own (u1, u2), never the fixed 0.5, 0.5
-// preview alone), sits well below 1 -- this scene actually exercises the
-// split-weight arithmetic between a pass-through share and a dielectric
-// share, not a case that trivially reduces to weight 1. A failure means
-// the geometry is wrong, not the estimator.
+// estimation's own mean weight toward the big sphere, over the draws that
+// contribute (positive pdf and non-black Cl) among many random draws (the
+// real estimator's own (u1, u2), never the fixed 0.5, 0.5 preview alone),
+// sits well below 1 -- this scene actually exercises the split-weight
+// arithmetic between a pass-through share and a dielectric share, not a case
+// that trivially reduces to weight 1. A failure means the geometry is wrong,
+// not the estimator.
 void checkNextEventWeightWellBelowOne() {
   constexpr std::uint32_t kDraws = 1024u;
 
@@ -270,6 +294,7 @@ void checkNextEventWeightWellBelowOne() {
 
   GMANPoint const floorCentre(0.0f, kFloorY, 9.0f);
   double weightSum = 0.0;
+  std::uint32_t contributing = 0;
   for (std::uint32_t s = 0; s < kDraws; ++s) {
     gman::Sample2D const uv = gman::sample2D(1u, 0, 0, s, kDraws, 0u);
     gman::EmitterSample const es = gman::sample(emitters[0], floorCentre, uv.u1, uv.u2);
@@ -280,9 +305,12 @@ void checkNextEventWeightWellBelowOne() {
     RtFloat const cosTheta = std::fabs(es.wi.getY()); // the floor's own normal is (0, 1, 0).
     RtFloat const pBsdf = cosTheta / std::numbers::pi_v<RtFloat>;
     weightSum += (double)gman::powerHeuristic(pLight, pBsdf);
+    ++contributing;
   }
-  double const meanWeight = weightSum / (double)kDraws;
-  std::printf("glass pane pair: mean next-event weight over %u draws is %.6f\n", kDraws, meanWeight);
+  check(contributing > 0, "glass pane pair: some next-event draw toward the big sphere contributes");
+  const auto meanWeight = weightSum / (double)contributing;
+  std::printf("glass pane pair: mean next-event weight over the %u of %u draws that contribute is %.6f\n", contributing,
+              kDraws, meanWeight);
   check(meanWeight < 0.7, "glass pane pair: next-event's own mean weight toward the big sphere sits well below 1");
 }
 

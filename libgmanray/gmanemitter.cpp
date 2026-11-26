@@ -69,6 +69,15 @@ constexpr double kLargestBelowOne = 1.0 - std::numeric_limits<double>::epsilon()
 // views 0 to 89 degrees off the normal and 1, 4 and 16 draws.
 constexpr double kDiskNearField = 0.75;
 
+// Scales a partial sphere's radius into the distance from its full sphere's
+// surface below which a receiving point draws in the cone the full sphere
+// subtends, rejecting a point outside the zone, and at or beyond which it
+// draws by area. The cone everywhere loses to the draw by area by up to 4.1
+// times on a small cap seen from afar, and the draw by area everywhere by up
+// to 5.5 times near any zone; at 1.5 the choice keeps the noise within 1.74
+// times the better strategy's over six zones seen from twelve views.
+constexpr double kZoneNearField = 1.5;
+
 RtFloat meanChannel(GMANColor const& c) { return (c.getRed() + c.getGreen() + c.getBlue()) / (RtFloat)3.0; }
 
 // A degenerate sphere zone never emits: a non-positive radius, an empty or
@@ -330,10 +339,10 @@ std::optional<DoubleVector> pointInSphericalTriangle(DoubleVector const& p, Doub
   return rayPlanePoint(p, direction, v0, v1, v2);
 }
 
-// 1 / solidAngle as a density, 0 unless that is finite and positive.
-RtFloat solidAngleDensity(double solidAngle) {
-  const auto density = static_cast<RtFloat>(1.0 / solidAngle);
-  return (std::isfinite(density) && density > 0.0f) ? density : 0.0f;
+// density as a float, 0 unless that is finite and positive.
+RtFloat positiveDensity(double density) {
+  const auto rounded = static_cast<RtFloat>(density);
+  return (std::isfinite(rounded) && rounded > 0.0f) ? rounded : 0.0f;
 }
 
 // The area of triangle (a, b, c) along normal, negative when it winds against
@@ -638,17 +647,24 @@ double rectangleSolidAngle(std::array<DoubleVector, 4> const& corners, DoubleVec
   return rectangleTriangleSolidAngle(corners, p, 0) + rectangleTriangleSolidAngle(corners, p, 1);
 }
 
+// Whether the object-space point (x, y) lies within thetamax of the +x axis
+// about z, its angle measured in [0, 2 pi) as GMANDisk::samplePoint and
+// GMANSphere::samplePoint sweep it.
+bool withinThetaMax(RtFloat thetamax, double x, double y) {
+  double angle = std::atan2(y, x);
+  if (angle < 0.0) {
+    angle += 2.0 * std::numbers::pi;
+  }
+  return angle <= turnRadians(clampedDegrees(thetamax));
+}
+
 // Whether the object-space point (x, y) of the disk's plane lies within its
 // radius and thetamax, measured as GMANDisk::samplePoint measures them.
 bool inSector(GMANRayDisk const& disk, double x, double y) {
   if (!(std::sqrt(x * x + y * y) <= static_cast<double>(disk.getRadius()))) {
     return false;
   }
-  double angle = std::atan2(y, x);
-  if (angle < 0.0) {
-    angle += 2.0 * std::numbers::pi;
-  }
-  return angle <= turnRadians(clampedDegrees(disk.getThetaMax()));
+  return withinThetaMax(disk.getThetaMax(), x, y);
 }
 
 // A point drawn uniformly in the solid angle the disk's bounding rectangle
@@ -689,6 +705,126 @@ std::optional<SolidAngleDraw> drawDiskBySolidAngle(GMANRayDisk const& disk, Inve
   GMANVector normal = gman::transformNormal(objectToCamera, GMANVector(0.0f, 0.0f, -1.0f));
   normal.normalize();
   return SolidAngleDraw{*point, normal, 1.0 / total};
+}
+
+// Whether sphere is its whole surface rather than a zone of it.
+bool fullSphere(GMANRaySphere const& sphere) {
+  const auto radius = sphere.getRadius();
+  return sphere.getZMin() <= -radius && sphere.getZMax() >= radius && sphere.getThetaMax() >= 360.0f;
+}
+
+// How a sphere draws from a receiving point: nothing from on or inside it;
+// in the cone its full sphere subtends, a full sphere at every distance and
+// a zone nearer the full sphere than kZoneNearField times its radius; by area
+// beyond.
+enum class SphereStrategy { none, cone, area };
+
+// The one decision sample() and lightSolidAnglePdf() share, so both answer
+// the same density at the same p.
+SphereStrategy sphereStrategy(GMANRaySphere const& sphere, InvertibleMatrix const& objectToCamera, GMANPoint const& p) {
+  const auto radius = static_cast<double>(sphere.getRadius());
+  const auto distance = length(objectPoint(objectToCamera, p));
+  if (!(distance > radius)) {
+    return SphereStrategy::none;
+  }
+  if (fullSphere(sphere) || distance - radius < kZoneNearField * radius) {
+    return SphereStrategy::cone;
+  }
+  return SphereStrategy::area;
+}
+
+// The cone of directions from an object-space point q outside a sphere of
+// radius about the origin that meet it: the unit direction from the centre
+// toward q, q's distance, 1 - cos theta_max computed as sin^2 / (1 + cos),
+// and the cone's solid angle 2 pi (1 - cos theta_max).
+struct SphereCone {
+  DoubleVector outward;
+  double distance;
+  double oneMinusCos;
+  double solidAngle;
+};
+
+SphereCone sphereCone(DoubleVector const& q, double radius) {
+  SphereCone cone;
+  cone.distance = length(q);
+  cone.outward = (1.0 / cone.distance) * q;
+  const auto sinSquared = (radius / cone.distance) * (radius / cone.distance);
+  const auto cosMax = std::sqrt((cone.distance - radius) * (cone.distance + radius)) / cone.distance;
+  cone.oneMinusCos = sinSquared / (1.0 + cosMax);
+  cone.solidAngle = 2.0 * std::numbers::pi * cone.oneMinusCos;
+  return cone;
+}
+
+// |L w|^3 / |det L|, L the linear part of objectToCamera and w an
+// object-space unit direction: the reciprocal of the solid-angle Jacobian of
+// w -> L w / |L w|, 1 for a rigid or uniformly scaled placement.
+double directionDensityScale(InvertibleMatrix const& objectToCamera, DoubleVector const& w) {
+  GMANMatrix4 const& m = objectToCamera.forward();
+  const auto placed =
+      length({w.x * m[0][0] + w.y * m[1][0] + w.z * m[2][0], w.x * m[0][1] + w.y * m[1][1] + w.z * m[2][1],
+              w.x * m[0][2] + w.y * m[1][2] + w.z * m[2][2]});
+  const auto determinant = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
+                           m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+                           m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+  return placed * placed * placed / std::fabs(static_cast<double>(determinant));
+}
+
+// The camera-space density of a direction from the object-space point q
+// toward the object-space point on the sphere, drawn uniformly in cone.
+double coneDensity(InvertibleMatrix const& objectToCamera, SphereCone const& cone, DoubleVector const& q,
+                   DoubleVector const& onSphere) {
+  return directionDensityScale(objectToCamera, normalized(onSphere - q)) / cone.solidAngle;
+}
+
+// The point where a direction drawn uniformly in cone first meets the sphere:
+// cos theta = 1 - u1 (1 - cos theta_max) off the axis toward the centre and
+// phi = 2 pi u2 about it. The point is placed through its angle alpha at the
+// centre, cos alpha = (d sin^2 theta + cos theta sqrt(r^2 - d^2 sin^2
+// theta)) / r, rather than by intersecting the ray, so a draw at the cone's
+// rim lands on the sphere.
+DoubleVector conePoint(SphereCone const& cone, double radius, double u1, double u2) {
+  const auto oneMinusCosTheta = u1 * cone.oneMinusCos;
+  const auto cosTheta = 1.0 - oneMinusCosTheta;
+  const auto sinSquared = oneMinusCosTheta * (2.0 - oneMinusCosTheta);
+  const auto reach = std::sqrt(std::max(0.0, radius * radius - cone.distance * cone.distance * sinSquared));
+  const auto cosAlpha = std::min(1.0, (cone.distance * sinSquared + cosTheta * reach) / radius);
+  const auto sinAlpha = std::sqrt((1.0 - cosAlpha) * (1.0 + cosAlpha));
+  auto const& e = cone.outward;
+  const auto sign = std::copysign(1.0, e.z);
+  const auto a = -1.0 / (sign + e.z);
+  const auto b = e.x * e.y * a;
+  const auto tangent = DoubleVector{1.0 + sign * e.x * e.x * a, sign * b, -sign * e.x};
+  const auto bitangent = DoubleVector{b, sign + e.y * e.y * a, -e.y};
+  const auto phi = 2.0 * std::numbers::pi * u2;
+  const auto around = std::cos(phi) * tangent + std::sin(phi) * bitangent;
+  return radius * (cosAlpha * e + sinAlpha * around);
+}
+
+// Whether the object-space point lies in the sphere's zone, z within [zmin,
+// zmax] and its angle within thetamax, measured as GMANSphere::samplePoint
+// measures them.
+bool inZone(GMANRaySphere const& sphere, DoubleVector const& point) {
+  if (!(point.z >= static_cast<double>(sphere.getZMin()) && point.z <= static_cast<double>(sphere.getZMax()))) {
+    return false;
+  }
+  return withinThetaMax(sphere.getThetaMax(), point.x, point.y);
+}
+
+// A point drawn uniformly in the cone of directions from p that meet
+// sphere's full sphere, kept when it lies in a zone's bounds. The density is |L w|^3 / (|det L| *
+// the cone's solid angle). Empty for a rejected or non-finite draw.
+std::optional<SolidAngleDraw> drawSphereByCone(GMANRaySphere const& sphere, InvertibleMatrix const& objectToCamera,
+                                               GMANPoint const& p, double u1, double u2) {
+  const auto radius = static_cast<double>(sphere.getRadius());
+  const auto q = objectPoint(objectToCamera, p);
+  const auto cone = sphereCone(q, radius);
+  const auto onSphere = conePoint(cone, radius, u1, u2);
+  if (!finiteVector(onSphere) || (!fullSphere(sphere) && !inZone(sphere, onSphere))) {
+    return std::nullopt;
+  }
+  GMANVector normal = gman::transformNormal(objectToCamera, toVector((1.0 / radius) * onSphere));
+  normal.normalize();
+  return SolidAngleDraw{placedPoint(objectToCamera, onSphere), normal, coneDensity(objectToCamera, cone, q, onSphere)};
 }
 
 // shape's own placed centre (camera space) and bounding radius: the
@@ -907,9 +1043,30 @@ EmitterSample sampleDisk(Emitter const& emitter, GMANRayDisk const& disk, GMANPo
   return solidAngleSample(emitter, p, *drawn);
 }
 
+// sample() for a sphere, by the strategy sphereStrategy picks at p.
+EmitterSample sampleSphere(Emitter const& emitter, GMANRaySphere const& sphere, GMANPoint const& p, RtFloat u1,
+                           RtFloat u2) {
+  std::optional<InvertibleMatrix> const& placement = sphere.getObjectToCamera();
+  if (!placement) {
+    return zeroSample();
+  }
+  const auto strategy = sphereStrategy(sphere, *placement, p);
+  if (strategy == SphereStrategy::none) {
+    return zeroSample();
+  }
+  if (strategy == SphereStrategy::area) {
+    return sampleByArea(emitter, p, u1, u2);
+  }
+  std::optional<SolidAngleDraw> const drawn = drawSphereByCone(sphere, *placement, p, u1, u2);
+  if (!drawn) {
+    return zeroSample();
+  }
+  return solidAngleSample(emitter, p, *drawn);
+}
+
 // The area branch of sample(): a polygon mesh draws uniformly in the solid
 // angle its emitting sides subtend from p, a disk by diskStrategy and a
-// sphere by area.
+// sphere by sphereStrategy.
 EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
   EmittingShapeKind const kind = classifyEmittingShape(*emitter.shape);
   if (kind.mesh != nullptr) {
@@ -921,6 +1078,9 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
   }
   if (kind.disk != nullptr) {
     return sampleDisk(emitter, *kind.disk, p, u1, u2);
+  }
+  if (kind.sphere != nullptr) {
+    return sampleSphere(emitter, *kind.sphere, p, u1, u2);
   }
   return sampleByArea(emitter, p, u1, u2);
 }
@@ -1069,7 +1229,7 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
 
   EmittingShapeKind const kind = classifyEmittingShape(*emitter.shape);
   if (kind.mesh != nullptr) {
-    return solidAngleDensity(meshSolidAngle(*kind.mesh, toDouble(p)));
+    return positiveDensity(1.0 / meshSolidAngle(*kind.mesh, toDouble(p)));
   }
 
   std::optional<InvertibleMatrix> const& placement = emittingShapeObjectToCamera(*emitter.shape);
@@ -1084,7 +1244,19 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
       return 0.0f;
     }
     if (strategy == DiskStrategy::rectangle) {
-      return solidAngleDensity(rectangleSolidAngle(rectangleCorners(*kind.disk, objectToCamera), toDouble(p)));
+      return positiveDensity(1.0 / rectangleSolidAngle(rectangleCorners(*kind.disk, objectToCamera), toDouble(p)));
+    }
+  }
+
+  if (kind.sphere != nullptr) {
+    const auto strategy = sphereStrategy(*kind.sphere, objectToCamera, p);
+    if (strategy == SphereStrategy::none) {
+      return 0.0f;
+    }
+    if (strategy == SphereStrategy::cone) {
+      const auto q = objectPoint(objectToCamera, p);
+      const auto cone = sphereCone(q, static_cast<double>(kind.sphere->getRadius()));
+      return positiveDensity(coneDensity(objectToCamera, cone, q, objectPoint(objectToCamera, hitPoint)));
     }
   }
 

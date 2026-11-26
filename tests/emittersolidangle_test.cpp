@@ -20,37 +20,49 @@
 
 /*
  * gman::sample draws a polygon mesh's points uniformly in the solid angle its
- * emitting faces subtend from the receiving point, and a disk's, near it,
+ * emitting faces subtend from the receiving point; a disk's, near it,
  * uniformly in the solid angle of its bounding rectangle, keeping the draws
- * that land on the disk; gman::lightSolidAnglePdf answers the density each
- * draw reports. Each case builds an emitter by hand in camera space and draws
- * 2^14 stratified (u1, u2) from one receiving point; a draw is accepted when
- * its pdf is positive and its Cl is not black, and A is the fraction accepted.
+ * that land on the disk; and a sphere's uniformly in the cone it subtends, a
+ * zone near it keeping the draws that land on the zone.
+ * gman::lightSolidAnglePdf answers the density each draw reports. Each case
+ * builds an emitter by hand in camera space and draws 2^14 stratified (u1, u2)
+ * from one receiving point; a draw is accepted when its pdf is positive and
+ * its Cl is not black, and A is the fraction accepted.
  *
- * a: A is exactly 1 for a mesh and for a disk beyond its switch, and the
- *    integral of lightSolidAnglePdf over the directions in which the emitting
- *    side is visible equals A within 1e-3 plus five binomial sigma. The
- *    quadrature sweeps each flat region, a disk's an inscribed polygon of 64
- *    sides a quarter turn, along each edge and by the cosine off its normal,
- *    in which the solid-angle element is exact.
- * b: every accepted draw's pdf equals lightSolidAnglePdf at the first hit of
- *    the ray from the receiving point along wi, with that hit's normal, within
- *    1e-5 relative, and the hit lies within 1e-4 of the distance from the drawn
- *    point.
+ * a: A is exactly 1 for a mesh, a full sphere and a disk beyond its switch, and
+ *    the integral of lightSolidAnglePdf over the directions in which the
+ *    emitting side is visible equals A within 1e-3 plus five binomial sigma. A
+ *    flat region, a disk's an inscribed polygon of 64 sides a quarter turn, is
+ *    swept along each edge and by the cosine off its normal, in which the
+ *    solid-angle element is exact; a rigidly placed full sphere over its cone
+ *    of directions; any other sphere over its area, by cos / d^2 and Nanson's
+ *    area factor |det L| |L^-T n|.
+ * b: every accepted draw's ray from the receiving point along wi meets the
+ *    shape (its own intersect), the hit lies within 1e-4 of the distance from
+ *    the drawn point, and lightSolidAnglePdf there, with the hit's normal,
+ *    equals the draw's pdf within 1e-5. wi and the points are RtFloat, so each
+ *    bound adds twice the float rounding a draw carries, epsilon (d + 4 X), X
+ *    the size of the coordinates p has in camera and object space, as that
+ *    rounding moves the hit along a ray meeting the shape at incidence g, by
+ *    1 / g, and moves an area density's distance and cosine, by 2 / d +
+ *    curvature / g. A ray rounded off a tangent may miss.
  * c: the fraction of accepted draws in each of four regions (a triangle's
- *    midpoint sub-triangles, a quad's quadrants, a disk sector's four equal
- *    turns, each face of a two-face mesh) equals that region's integral of the
- *    pdf over A within five binomial sigma.
+ *    midpoint sub-triangles, a quad's quadrants, a disk sector's or a zone's
+ *    four equal turns, each face of a two-face mesh) equals that region's
+ *    integral of the pdf over A within five binomial sigma plus the
+ *    quadrature's 1e-3.
  * d: for a single triangle, every draw's pdf times the triangle's solid angle,
  *    by Van Oosterom and Strackee's formula, equals 1 within 1e-5 relative.
- * e: degenerate inputs (a zero-area fan triangle, a receiving point in the
- *    plane or 1e-6 above it) answer finite fields, a pdf of 0 or more and a
- *    finite lightSolidAnglePdf at every accepted draw's hit.
+ * e: degenerate inputs (a zero-area fan triangle, a receiving point in a
+ *    disk's or a polygon's plane, 1e-6 above a disk, on a sphere or at its
+ *    centre) answer finite fields, a pdf of 0 or more and a finite
+ *    lightSolidAnglePdf at every accepted draw's hit.
  * f: a disk draws through its rectangle nearer it than 0.75 times the radius
- *    of a full disk of its sector's area, where every accepted draw reports 1
- *    / the rectangle's solid angle, and by area beyond, where each reports the
- *    area density d^2 / (A J cos) at its point; at 0.9 and 1.1 times that
- *    distance, frontal and 80 degrees off the normal, the two sides differ.
+ *    of a full disk of its sector's area, and a zone in the cone nearer its
+ *    full sphere than 1.5 times its radius; there every accepted draw reports
+ *    1 / the solid angle drawn over. Beyond, each reports the area density d^2
+ *    / (A J cos) at its point, within 1e-5 plus the float rounding b allows.
+ *    At 0.9 and 1.1 times that distance the two sides differ.
  */
 
 #include <algorithm>
@@ -82,6 +94,7 @@
 #include "gmanraydisk.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanraysphere.h"
 #include "gmansampling.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
@@ -99,6 +112,9 @@ constexpr double kSigmas = 5.0;
 constexpr double kIntegralFloor = 1.0e-3;
 constexpr double kPdfTolerance = 1.0e-5;
 constexpr double kHitTolerance = 1.0e-4;
+constexpr double kWiRounding = std::numeric_limits<RtFloat>::epsilon();
+constexpr double kRoundings = 4.0;
+constexpr double kMargin = 2.0;
 constexpr double kPanelGrowth = 4.0;
 constexpr int kEdgeNodes = 8;
 constexpr int kCosineNodes = 16;
@@ -106,6 +122,9 @@ constexpr int kNewtonIterations = 100;
 constexpr double kNewtonStep = 1.0e-15;
 constexpr int kArcSegments = 64;
 constexpr double kDiskSwitch = 0.75;
+constexpr double kZoneSwitch = 1.5;
+constexpr int kTurnPanels = 16;
+constexpr int kZonePanels = 8;
 const GMANColor kRadiance(1.0f, 2.0f, 3.0f);
 
 struct Vec {
@@ -134,6 +153,10 @@ Vec toVec(GMANVector const& v) { return {v.getX(), v.getY(), v.getZ()}; }
 
 GMANPoint toPoint(Vec const& a) {
   return GMANPoint(static_cast<RtFloat>(a.x), static_cast<RtFloat>(a.y), static_cast<RtFloat>(a.z));
+}
+
+GMANVector toVector(Vec const& a) {
+  return GMANVector(static_cast<RtFloat>(a.x), static_cast<RtFloat>(a.y), static_cast<RtFloat>(a.z));
 }
 
 GMANNormal toNormal(Vec const& a) {
@@ -308,6 +331,9 @@ struct Case {
   Strategy strategy = Strategy::unchecked;
   std::optional<double> solidAngle;
   std::function<double(gman::EmitterSample const&)> areaDensity;
+  double curvature = 0.0;
+  double scale = 0.0;
+  std::function<Vec(Vec const&)> normalAt;
 };
 
 // Draws from c's receiving point and checks a to d.
@@ -315,6 +341,7 @@ void runCase(Case const& c, std::uint32_t dim) {
   std::vector<std::uint32_t> counts(c.regionIntegrals.size(), 0);
   std::uint32_t acceptedCount = 0;
   std::uint32_t missed = 0;
+  std::uint32_t tangentMisses = 0;
   double worstPdf = 0.0;
   double worstHit = 0.0;
   double worstSolidAngle = 0.0;
@@ -336,19 +363,32 @@ void runCase(Case const& c, std::uint32_t dim) {
     if (c.strategy == Strategy::solidAngle && c.solidAngle) {
       worstStrategy = std::max(worstStrategy, std::fabs(s.pdf * *c.solidAngle - 1.0));
     }
-    if (c.strategy == Strategy::area) {
-      const auto density = c.areaDensity(s);
-      worstStrategy = std::max(worstStrategy, std::fabs((double)s.pdf - density) / density);
-    }
+    const auto distance = (double)s.distance;
+    const auto drawn = toVec(c.p) + distance * toVec(s.wi);
+    const auto rounding = kWiRounding * (distance + kRoundings * c.scale);
     GMANHit hit;
     if (!c.emitter.shape->intersect(GMANRay(c.p, s.wi), hit)) {
-      ++missed;
+      const auto grazing = c.normalAt ? std::fabs(dot(c.normalAt(drawn), toVec(s.wi))) : 1.0;
+      if (grazing * grazing <= 2.0 * c.curvature * rounding) {
+        ++tangentMisses;
+      } else {
+        ++missed;
+      }
       continue;
     }
+    const auto incidence = std::fabs(dot(normalized(toVec(hit.normal)), toVec(s.wi)));
+    const auto bend = 2.0 + distance * c.curvature / incidence;
+    if (c.strategy == Strategy::area) {
+      const auto density = c.areaDensity(s);
+      const auto allowed = kPdfTolerance + kMargin * rounding / distance * bend;
+      worstStrategy = std::max(worstStrategy, std::fabs((double)s.pdf - density) / density / allowed);
+    }
+    const auto offset = length(toVec(hit.point) - drawn);
+    const auto offsetAllowed = kHitTolerance * distance + kMargin * rounding * (1.0 + 1.0 / incidence);
+    worstHit = std::max(worstHit, offset / offsetAllowed);
     const auto pdf = gman::lightSolidAnglePdf(c.emitter, c.p, hit.point, toNormal(toVec(hit.normal)));
-    worstPdf = std::max(worstPdf, std::fabs((double)pdf - (double)s.pdf) / (double)s.pdf);
-    const auto drawn = toVec(c.p) + (double)s.distance * toVec(s.wi);
-    worstHit = std::max(worstHit, length(toVec(hit.point) - drawn) / (double)s.distance);
+    const auto pdfAllowed = kPdfTolerance + kMargin * (offset + rounding) / distance * bend;
+    worstPdf = std::max(worstPdf, std::fabs((double)pdf - (double)s.pdf) / (double)s.pdf / pdfAllowed);
     const auto region = c.regionOf(hit);
     if (region < counts.size()) {
       ++counts[region];
@@ -361,8 +401,9 @@ void runCase(Case const& c, std::uint32_t dim) {
     integral += regionValue;
   }
   const auto binomial = std::sqrt(acceptance * (1.0 - acceptance) / kDraws);
-  std::printf("%s: A %.6f, integral %.6f, worst b pdf %.2e hit %.2e, %u missed", c.label.c_str(), acceptance, integral,
-              worstPdf, worstHit, missed);
+  std::printf("%s: A %.6f, integral %.6f, worst b pdf %.2f and hit %.2f of their allowances, %u missed, %u at a "
+              "tangent",
+              c.label.c_str(), acceptance, integral, worstPdf, worstHit, missed, tangentMisses);
   if (c.triangleSolidAngle) {
     std::printf(", worst d %.2e", worstSolidAngle);
   }
@@ -374,9 +415,11 @@ void runCase(Case const& c, std::uint32_t dim) {
   check(acceptedCount > 0, c.label + ": some draw is accepted");
   check(std::fabs(integral - acceptance) <= kIntegralFloor + kSigmas * binomial,
         c.label + " a: the pdf integrates to A within 1e-3 plus five binomial sigma");
-  check(missed == 0, c.label + " b: every accepted draw's ray meets the shape");
-  check(worstPdf <= kPdfTolerance, c.label + " b: lightSolidAnglePdf at each hit equals the draw's pdf within 1e-5");
-  check(worstHit <= kHitTolerance, c.label + " b: each hit lies within 1e-4 of the distance from the drawn point");
+  check(missed == 0, c.label + " b: every accepted draw's ray meets the shape, but one rounding left of a tangent");
+  check(worstPdf <= 1.0, c.label + " b: lightSolidAnglePdf at each hit equals the draw's pdf within 1e-5 plus the "
+                                   "change the hit's offset carries");
+  check(worstHit <= 1.0, c.label + " b: each hit lies within 1e-4 of the distance plus wi's rounding at its incidence "
+                                   "from the drawn point");
   if (c.triangleSolidAngle) {
     check(worstSolidAngle <= kPdfTolerance, c.label + " d: pdf times the triangle's solid angle is 1 within 1e-5");
   }
@@ -388,10 +431,11 @@ void runCase(Case const& c, std::uint32_t dim) {
     check(worstStrategy <= kPdfTolerance, c.label + " f: that pdf is 1 / the solid angle drawn over within 1e-5");
   }
   if (c.strategy == Strategy::area) {
-    std::printf("  f: by area, worst against the area density %.2e\n", worstStrategy);
-    check(worstStrategy <= kPdfTolerance, c.label + " f: each pdf equals the area density at its point within 1e-5");
+    std::printf("  f: by area, worst against the area density %.2f of its allowance\n", worstStrategy);
+    check(worstStrategy <= 1.0, c.label + " f: each pdf equals the area density at its point within 1e-5 plus "
+                                          "wi's rounding at its incidence");
   }
-  if (acceptedCount == 0) {
+  if (acceptedCount == 0 || counts.size() < 2) {
     return;
   }
   for (std::size_t r = 0; r < counts.size(); ++r) {
@@ -399,7 +443,7 @@ void runCase(Case const& c, std::uint32_t dim) {
     const auto expected = c.regionIntegrals[r] / acceptance;
     const auto sigma = std::sqrt(expected * (1.0 - expected) / acceptedCount);
     std::printf("  region %zu: share %.5f, expected %.5f, sigma %.5f\n", r, share, expected, sigma);
-    check(std::fabs(share - expected) <= kSigmas * sigma,
+    check(std::fabs(share - expected) <= kIntegralFloor + kSigmas * sigma,
           c.label + " c: region " + std::to_string(r) + "'s share of the draws matches its integral");
   }
 }
@@ -523,6 +567,7 @@ void runTriangleCase(std::vector<GMANPoint> const& loop, GMANPoint const& p, std
   c.label = label;
   c.emitter = emitter.emitter();
   c.p = p;
+  c.scale = length(toVec(p));
   c.regionIntegrals = integrals(c.emitter, p, regions);
   c.regionOf = [v](GMANHit const& hit) {
     const auto e1 = v[1] - v[0];
@@ -589,6 +634,7 @@ void testLargeQuad() {
   c.label = "8.4 x 6.4 quad, 0.3 above an interior point";
   c.emitter = emitter.emitter();
   c.p = GMANPoint(1.0f, 0.3f, -0.7f);
+  c.scale = length(toVec(c.p));
   c.regionIntegrals = integrals(c.emitter, c.p, regions);
   c.regionOf = [](GMANHit const& hit) {
     return std::size_t{hit.point.getX() < 0.0f ? 0u : 2u} + std::size_t{hit.point.getZ() < 0.0f ? 0u : 1u};
@@ -603,6 +649,7 @@ void runFaceCase(MeshEmitter const& emitter, GMANPoint const& p, std::string con
   c.label = label;
   c.emitter = emitter.emitter();
   c.p = p;
+  c.scale = length(toVec(p));
   c.regionIntegrals = integrals(c.emitter, p, faceRegions(*emitter.mesh));
   GMANRayPolygonMesh const* const mesh = emitter.mesh.get();
   c.regionOf = [mesh](GMANHit const& hit) {
@@ -740,6 +787,7 @@ void runDiskCase(DiskEmitter const& emitter, Vec const& objectP, Rectangle const
   c.label = label;
   c.emitter = emitter.emitter();
   c.p = toPoint(place(m, objectP));
+  c.scale = length(toVec(c.p)) + length(objectP);
   c.regionIntegrals = integrals(c.emitter, c.p, regions);
   c.regionOf = [&m, sweep](GMANHit const& hit) {
     const auto quarter = static_cast<std::size_t>(4.0 * turnAngle(unplace(m, toVec(hit.point))) / sweep);
@@ -829,6 +877,201 @@ void testDegenerateDisk() {
   checkDegenerate(emitter.emitter(), GMANPoint(0.0f, 0.0f, -1.0e-6f), "unit disk, p 1e-6 above its centre", 26u);
 }
 
+// A sphere emitter of radius and z and theta bounds about the origin, placed
+// by placement.
+struct SphereEmitter {
+  GMANLight light{GMAN_LIGHT_AREA, kRadiance, GMANPoint(), GMANVector()};
+  GMANRaySphere sphere;
+
+  SphereEmitter(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANMatrix4 const& placement)
+      : sphere(radius, zmin, zmax, thetamax, GMANParameterList(), makeTransform(placement)) {}
+
+  gman::Emitter emitter() const { return {&light, &sphere, 1.0f}; }
+  gman::InvertibleMatrix const& placement() const { return *sphere.getObjectToCamera(); }
+};
+
+// 1 - cos theta_max and the solid angle of the cone of directions from a
+// point distance from a sphere's centre that meet it.
+std::pair<double, double> coneOf(double radius, double distance) {
+  const auto sinSquared = (radius / distance) * (radius / distance);
+  const auto oneMinusCos = sinSquared / (1.0 + std::sqrt((1.0 - radius / distance) * (1.0 + radius / distance)));
+  return {oneMinusCos, 2.0 * std::numbers::pi * oneMinusCos};
+}
+
+// The integral of lightSolidAnglePdf over the directions from p that meet a
+// rigidly placed full sphere: the cone about the direction to its centre,
+// swept by 1 - cos theta and phi, a direction's value read at the hit its ray
+// meets.
+double coneIntegral(SphereEmitter const& emitter, GMANPoint const& p) {
+  gman::InvertibleMatrix const& m = emitter.placement();
+  const auto origin = toVec(p);
+  const auto toCentre = place(m, Vec{0.0, 0.0, 0.0}) - origin;
+  const auto axis = normalized(toCentre);
+  const auto e1 = perpendicular(axis);
+  const auto e2 = cross(axis, e1);
+  const auto [oneMinusCos, solidAngle] = coneOf(static_cast<double>(emitter.sphere.getRadius()), length(toCentre));
+  const auto rule = gaussLegendre(kCosineNodes);
+  double total = 0.0;
+  for (std::size_t i = 0; i < rule.nodes.size(); ++i) {
+    const auto below = oneMinusCos * rule.nodes[i];
+    const auto sinTheta = std::sqrt(below * (2.0 - below));
+    for (int panel = 0; panel < kTurnPanels; ++panel) {
+      for (std::size_t k = 0; k < rule.nodes.size(); ++k) {
+        const auto phi = 2.0 * std::numbers::pi * (panel + rule.nodes[k]) / kTurnPanels;
+        const auto direction = (1.0 - below) * axis + (sinTheta * std::cos(phi)) * e1 + (sinTheta * std::sin(phi)) * e2;
+        GMANHit hit;
+        if (!emitter.sphere.intersect(GMANRay(p, toVector(direction)), hit)) {
+          continue;
+        }
+        const auto pdf = gman::lightSolidAnglePdf(emitter.emitter(), p, hit.point, toNormal(toVec(hit.normal)));
+        total += rule.weights[i] * rule.weights[k] / kTurnPanels * solidAngle * pdf;
+      }
+    }
+  }
+  return total;
+}
+
+// The integral of lightSolidAnglePdf over the directions from p that meet the
+// sphere's zone between zLow and zHigh and turns turnLow to turnHigh, in
+// object space: over its area r dz dphi, by cos / d^2 and Nanson's area
+// factor |det L| |L^-T n| into the camera-space solid angle, the part facing
+// away from p contributing nothing.
+double zoneIntegral(SphereEmitter const& emitter, GMANPoint const& p, double zLow, double zHigh, double turnLow,
+                    double turnHigh) {
+  gman::InvertibleMatrix const& m = emitter.placement();
+  const auto radius = static_cast<double>(emitter.sphere.getRadius());
+  const auto origin = toVec(p);
+  const auto determinant = std::fabs(linearDeterminant(m));
+  const auto rule = gaussLegendre(kCosineNodes);
+  std::vector<double> zBreaks = {zLow, zHigh};
+  const auto objectP = unplace(m, origin);
+  const auto horizon = radius * radius / objectP.z;
+  if (objectP.x == 0.0 && objectP.y == 0.0 && horizon > zLow && horizon < zHigh) {
+    zBreaks.insert(zBreaks.begin() + 1, horizon);
+  }
+  double total = 0.0;
+  for (std::size_t piece = 0; piece + 1 < zBreaks.size(); ++piece) {
+    for (int zPanel = 0; zPanel < kZonePanels; ++zPanel) {
+      const auto zWidth = (zBreaks[piece + 1] - zBreaks[piece]) / kZonePanels;
+      for (std::size_t i = 0; i < rule.nodes.size(); ++i) {
+        const auto z = zBreaks[piece] + zWidth * (zPanel + rule.nodes[i]);
+        const auto ring = std::sqrt((radius - z) * (radius + z));
+        for (int turnPanel = 0; turnPanel < kTurnPanels; ++turnPanel) {
+          const auto turnWidth = (turnHigh - turnLow) / kTurnPanels;
+          for (std::size_t k = 0; k < rule.nodes.size(); ++k) {
+            const auto phi = turnLow + turnWidth * (turnPanel + rule.nodes[k]);
+            const auto objectPoint = Vec{ring * std::cos(phi), ring * std::sin(phi), z};
+            const auto placedNormal = placeNormal(m, (1.0 / radius) * objectPoint);
+            const auto normal = normalized(placedNormal);
+            const auto point = place(m, objectPoint);
+            const auto toP = origin - point;
+            const auto distance = length(toP);
+            const auto cosine = dot(normal, toP) / distance;
+            if (!(cosine > 0.0)) {
+              continue;
+            }
+            const auto pdf = gman::lightSolidAnglePdf(emitter.emitter(), p, toPoint(point), toNormal(normal));
+            total += rule.weights[i] * zWidth * rule.weights[k] * turnWidth * radius * determinant *
+                     length(placedNormal) * cosine / (distance * distance) * pdf;
+          }
+        }
+      }
+    }
+  }
+  return total;
+}
+
+// A sphere case seen from the object-space point objectP. A full sphere's
+// one region is the whole sphere, integrated over the cone from p when its
+// placement is rigid and over its area otherwise; a zone's regions are its
+// four equal turns. Within the switch every draw reports 1 / the cone's solid
+// angle under a rigid placement; beyond it each reports the area density at
+// its point.
+void runSphereCase(SphereEmitter const& emitter, Vec const& objectP, bool rigid, Strategy strategy,
+                   std::string const& label, std::uint32_t dim) {
+  gman::InvertibleMatrix const& m = emitter.placement();
+  auto const& sphere = emitter.sphere;
+  const auto radius = static_cast<double>(sphere.getRadius());
+  const auto full = sphere.getZMin() <= -sphere.getRadius() && sphere.getZMax() >= sphere.getRadius() &&
+                    sphere.getThetaMax() >= 360.0f;
+  const auto sweep = radians(static_cast<double>(sphere.getThetaMax()));
+  const auto zLow = static_cast<double>(sphere.getZMin());
+  const auto zHigh = static_cast<double>(sphere.getZMax());
+
+  Case c;
+  c.label = label;
+  c.emitter = emitter.emitter();
+  c.p = toPoint(place(m, objectP));
+  c.scale = length(toVec(c.p)) + length(objectP);
+  if (full && rigid) {
+    c.regionIntegrals = {coneIntegral(emitter, c.p)};
+  } else if (full) {
+    c.regionIntegrals = {zoneIntegral(emitter, c.p, zLow, zHigh, 0.0, sweep)};
+  } else {
+    for (int quarter = 0; quarter < 4; ++quarter) {
+      c.regionIntegrals.push_back(
+          zoneIntegral(emitter, c.p, zLow, zHigh, sweep * quarter / 4.0, sweep * (quarter + 1) / 4.0));
+    }
+  }
+  c.regionOf = [&m, sweep, full](GMANHit const& hit) {
+    if (full) {
+      return std::size_t{0};
+    }
+    const auto quarter = static_cast<std::size_t>(4.0 * turnAngle(unplace(m, toVec(hit.point))) / sweep);
+    return std::min(quarter, std::size_t{3});
+  };
+  c.acceptsEvery = full;
+  c.strategy = strategy;
+  c.curvature = 1.0 / radius;
+  c.normalAt = [&m](Vec const& point) { return normalized(placeNormal(m, normalized(unplace(m, point)))); };
+  if (strategy == Strategy::solidAngle && rigid) {
+    c.solidAngle = coneOf(radius, length(objectP)).second;
+  }
+  const auto area = radius * (zHigh - zLow) * sweep;
+  const auto determinant = std::fabs(linearDeterminant(m));
+  c.areaDensity = [&m, area, determinant, origin = toVec(c.p)](gman::EmitterSample const& s) {
+    const auto drawn = origin + (double)s.distance * toVec(s.wi);
+    const auto placedNormal = placeNormal(m, normalized(unplace(m, drawn)));
+    const auto cosine = -dot(normalized(placedNormal), toVec(s.wi));
+    return (double)s.distance * (double)s.distance / (area * determinant * length(placedNormal) * cosine);
+  };
+  runCase(c, dim);
+}
+
+void testSpheres() {
+  GMANMatrix4 rigid;
+  rigid.rot(GMANRadians(30.0f), 1.0f, 0.0f, 0.0f);
+  rigid.trans(0.3f, -0.2f, 1.5f);
+  GMANMatrix4 stretched;
+  stretched.scale(2.0f, 1.0f, 1.0f);
+
+  SphereEmitter const two(2.0f, -2.0f, 2.0f, 360.0f, rigid);
+  runSphereCase(two, {0.0, 6.0, -8.0}, true, Strategy::solidAngle, "radius-2 sphere seen from 10", 50u);
+
+  SphereEmitter const scaled(2.0f, -2.0f, 2.0f, 360.0f, stretched);
+  runSphereCase(scaled, {0.0, 0.0, -10.0}, false, Strategy::unchecked, "radius-2 sphere scaled by (2, 1, 1)", 51u);
+
+  SphereEmitter const unit(1.0f, -1.0f, 1.0f, 360.0f, rigid);
+  runSphereCase(unit, {0.0, 0.6006, -0.8008}, true, Strategy::solidAngle, "unit sphere, p at 1.001 r from its centre",
+                52u);
+  runSphereCase(unit, {0.0, 0.0, -1000.0}, true, Strategy::solidAngle, "unit sphere, r / d = 1e-3", 53u);
+
+  SphereEmitter const zone(1.0f, -0.5f, 0.8f, 270.0f, rigid);
+  const auto toward = normalized(Vec{1.0, 1.0, 0.2});
+  runSphereCase(zone, 1.5 * toward, true, Strategy::solidAngle, "zone, within its switch", 54u);
+  const auto switchDistance = kZoneSwitch * static_cast<double>(zone.sphere.getRadius());
+  runSphereCase(zone, (1.0 + 0.9 * switchDistance) * toward, true, Strategy::solidAngle,
+                "zone at 0.9 times its switch distance", 55u);
+  runSphereCase(zone, (1.0 + 1.1 * switchDistance) * toward, true, Strategy::area,
+                "zone at 1.1 times its switch distance", 56u);
+}
+
+void testDegenerateSphere() {
+  SphereEmitter const emitter(1.0f, -1.0f, 1.0f, 360.0f, GMANMatrix4());
+  checkDegenerate(emitter.emitter(), GMANPoint(0.6f, 0.0f, -0.8f), "unit sphere, p on its surface", 27u);
+  checkDegenerate(emitter.emitter(), GMANPoint(0.0f, 0.0f, 0.0f), "unit sphere, p at its centre", 28u);
+}
+
 } // namespace
 
 int main() {
@@ -839,6 +1082,8 @@ int main() {
   testDegenerateMesh();
   testDisks();
   testDegenerateDisk();
+  testSpheres();
+  testDegenerateSphere();
 
   return checkSummary("gman::sample draws an area emitter uniformly in the solid angle lightSolidAnglePdf reports");
 }

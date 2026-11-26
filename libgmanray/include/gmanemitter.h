@@ -50,15 +50,26 @@
  * -- a sphere, disk or polygon mesh carrying a pending, illuminated
  * RiAreaLightSource -- answers both by sampling its own shape.
  *
+ * sample draws an area emitter uniformly in the solid angle it subtends from
+ * the receiving point wherever that is the quieter draw, so a point near an
+ * emitter never gathers its light from a few heavy draws: a polygon mesh by
+ * spherical triangles at every distance, a full sphere in its cone at every
+ * distance, and a disk or a partial sphere near it through a region that
+ * holds it, keeping the draws that land on it. Beyond a distance scaled by
+ * its size, a disk or a partial sphere draws uniformly by area, which is
+ * quieter there.
+ * lightSolidAnglePdf answers the density of whichever draw the same
+ * receiving point selects. samplePoint draws every area emitter uniformly by
+ * area.
+ *
  * A polygon mesh, which every Polygon, GeneralPolygon, PointsPolygons and
- * PointsGeneralPolygons request builds, is one emitter. sample draws its
- * points uniformly in the solid angle its emitting faces subtend from the
- * receiving point, each face fanned into spherical triangles; samplePoint
- * draws them uniformly by area, so its area Jacobian is 1. Each face emits
- * one-sided along its plane normal, the Newell normal of its outer loop; no
- * RiSides, RiOrientation or vertex normal changes that direction. Under a
- * CTM of positive determinant a face's vertices run clockwise seen from the
- * side it lights: in the camera's left-handed space with y up,
+ * PointsGeneralPolygons request builds, is one emitter. sample fans each face
+ * into spherical triangles; samplePoint draws uniformly by area over its
+ * faces, so its area Jacobian is 1. Each face emits one-sided along its plane
+ * normal, the Newell normal of its outer loop; no RiSides, RiOrientation or
+ * vertex normal changes that direction. Under a CTM of positive determinant a
+ * face's vertices run clockwise seen from the side it lights: in the camera's
+ * left-handed space with y up,
  * (-a, y, -b) (-a, y, b) (a, y, b) (a, y, -b) emits toward +y and the reverse
  * order toward -y. A mirroring CTM flips a polygon's emission and leaves a
  * disk's alone. A mesh with a hole, a concave face or a non-finite vertex is
@@ -91,7 +102,11 @@ struct GMANRAY_EXPORT Emitter {
 // draw), the radiance arriving along wi already scaled for a delta
 // emitter's own pi convention, and the density that direction was drawn
 // with, per unit solid angle at the query point -- 1, by convention, for
-// a delta emitter's own discrete draw.
+// a delta emitter's own discrete draw. An area draw by solid angle reports
+// the same density at every point it can land on; one by area reports d^2 /
+// (A J cos), larger the nearer and the more oblique the point. A draw that
+// places nothing has pdf 0 and every other field zero, and counts as a zero
+// in an estimate that divides by the number of draws.
 struct GMANRAY_EXPORT EmitterSample {
   GMANVector wi;
   RtFloat distance;
@@ -136,26 +151,40 @@ GMANRAY_EXPORT std::optional<std::size_t> emitterIndex(std::vector<Emitter> cons
                                                        GMANRayInterface const* hitPrimitive);
 
 // A next-event-estimation draw toward emitter from p. A delta emitter
-// ignores u1/u2 and forwards to its own light->sample(). A polygon mesh
-// draws uniformly in the solid angle its emitting faces subtend from p: u1
-// picks a face, then one of its fan triangles (v0, v[i], v[i + 1]), each in
-// proportion to its solid angle, counting only triangles whose face p lies
-// strictly in front of, and the rescaled u1 and u2 draw a direction in that
-// triangle's spherical triangle (Arvo 1995); the drawn point is where that
-// ray meets the triangle's plane, and pdf is 1 / the mesh's solid angle. A
-// disk whose object-space distance from p to its sector's bounding rectangle
-// is below 0.75 times the radius of a full disk of the sector's area draws
-// that rectangle, placed, as a two-triangle mesh, keeps a point that maps
-// back inside the sector and answers pdf 1 / the rectangle's solid angle;
-// beyond that distance it draws by area as a sphere does. A sphere draws a
-// point on its shape uniformly by area, places it by the shape's own
-// object-to-camera transform, and reports Cl black when that placed point
-// emits away from p. An area emitter whose shape's placement is singular, as
-// under Scale 1 1 0, a polygon mesh with no area or one that subtends no
-// solid angle from p, as from behind or within every face's plane, a disk
-// seen from on or behind its plane, a disk draw outside the sector and a
-// draw that is not finite answer pdf 0 with wi, distance, shadowTarget and
-// Cl all zero and isDelta false.
+// ignores u1/u2 and forwards to its own light->sample(). An area emitter
+// draws as follows; a draw by solid angle lands only where the emitter faces
+// p and reports Cl as its light's radiance.
+//
+// - A polygon mesh draws uniformly in the solid angle its emitting faces
+//   subtend from p: u1 picks a face, then one of its fan triangles (v0,
+//   v[i], v[i + 1]), each in proportion to its solid angle, counting only
+//   triangles whose face p lies strictly in front of, and the rescaled u1 and
+//   u2 draw a direction in that triangle's spherical triangle (Arvo 1995).
+//   The drawn point is where that ray meets the triangle's plane, and pdf is
+//   1 / the mesh's solid angle.
+// - A disk whose object-space distance from p to its sector's bounding
+//   rectangle is below 0.75 times the radius of a full disk of the sector's
+//   area draws that rectangle, placed, as a two-triangle mesh, keeps a point
+//   that maps back inside the sector and reports pdf 1 / the rectangle's
+//   solid angle. Beyond that distance it draws uniformly by area.
+// - A sphere, full or a zone nearer its full sphere than 1.5 times its
+//   radius, draws uniformly in the cone of directions from p that meet the
+//   full sphere, cos theta = 1 - u1 (1 - cos theta_max) and phi = 2 pi u2,
+//   at the point where that direction first meets it; a zone keeps a point
+//   within its z and theta bounds. pdf is |L w|^3 / (|det L| * the cone's
+//   solid angle), L the linear part of the placement and w the object-space
+//   direction, 1 / the cone's solid angle under a rigid placement. A zone
+//   beyond that distance draws uniformly by area.
+// - A draw by area draws a point on the shape uniformly by area, places it by
+//   the shape's own object-to-camera transform, reports pdf d^2 / (A J cos)
+//   and reports Cl black when that placed point emits away from p.
+//
+// The draw answers pdf 0 with wi, distance, shadowTarget and Cl all zero and
+// isDelta false for a shape whose placement is singular, as under
+// Scale 1 1 0, a polygon mesh with no area or one that subtends no solid
+// angle from p, as from behind or within every face's plane, a disk seen
+// from on or behind its plane, a sphere seen from on or inside it, a draw
+// rejected outside a disk's sector or a zone, and a draw that is not finite.
 GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2);
 
 // The solid-angle density sample() reports in EmitterSample::pdf for a
@@ -163,20 +192,23 @@ GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, 
 // a BSDF-sampled bounce's own hit, which sample() never drew. p is the
 // receiving point, hitPoint the known point on emitter and hitNormal its
 // outward normal there (a polygon face's plane normal), all camera space.
-// For a polygon mesh it is 1 / the solid angle its emitting faces subtend
-// from p, whichever face hitPoint lies on, and for a disk near p 1 / the
-// solid angle of its bounding rectangle: the strategy sample() takes at the
-// same p, so both answer one density. 0 for a disk seen from on or behind
-// its plane, and when hitNormal's cosine to the
+// It answers the density of the draw sample() selects at the same p, from
+// p and the emitter alone, so the two agree at every p: for a polygon mesh 1
+// / the solid angle its emitting faces subtend from p, whichever face
+// hitPoint lies on; for a disk near p 1 / the solid angle of its bounding
+// rectangle; for a sphere drawn in its cone |L w|^3 / (|det L| * the cone's
+// solid angle), w the object-space direction from p to hitPoint; and for a
+// draw by area d^2 / (A J cos) at hitPoint. 0 when hitNormal's cosine to the
 // direction from hitPoint back to p is at or below 0 (emitter's own
 // non-emitting side) or when p and hitPoint coincide -- unlike
-// EmitterSample::pdf, which a back-facing draw still reports nonzero,
-// since that draw's own Cl already goes black on that side and no weight
-// computed from either pdf ever multiplies it. 0 too when emitter's shape
-// has a singular placement, as under Scale 1 1 0, or is a polygon mesh with
-// no area. Precondition: emitter.shape
-// != nullptr (an area emitter, which alone has a surface to place a known
-// point against); checked by assert.
+// EmitterSample::pdf, which a back-facing draw by area still reports
+// nonzero, since that draw's own Cl already goes black on that side and no
+// weight computed from either pdf ever multiplies it. 0 too when emitter's
+// shape has a singular placement, as under Scale 1 1 0, is a polygon mesh
+// with no area or subtending no solid angle from p, a disk seen from on or
+// behind its plane or a sphere seen from on or inside it. Precondition:
+// emitter.shape != nullptr (an area emitter, which alone has a surface to
+// place a known point against); checked by assert.
 GMANRAY_EXPORT RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint const& hitPoint,
                                           GMANNormal const& hitNormal);
 

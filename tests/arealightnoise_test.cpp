@@ -21,9 +21,10 @@
 /*
  * The ray tracer's area-light noise near an emitter and far from it. Near:
  * tests/rib/arealight_nearfield.rib's matte sphere 0.3 above a large panel,
- * and a copy with a radius-4 disk in the panel's place, each read on the
- * sphere's lit underside, where a draw's weight varies most across the
- * emitter. Far: tests/rib/rayarealight_panel.rib and rayarealight_disk.rib
+ * and copies with a radius-4 disk in the panel's place and with an emitting
+ * unit sphere 0.3 below it, each read on the sphere's lit underside, where a
+ * draw's weight varies most across the emitter. Far: tests/rib/
+ * rayarealight_panel.rib, rayarealight_disk.rib and rayarealight_sphere.rib
  * without their blocker, read on the wall's lit block. Each case renders at a
  * low draw
  * count and at 1,024 draws, every reference pixel in its block exceeds 16
@@ -60,6 +61,7 @@ struct Block {
 };
 
 constexpr Block kUnderside = {26, 26, 12, 10};
+constexpr Block kBelowSphere = {28, 33, 8, 4};
 constexpr Block kWall = {24, 4, 16, 8};
 constexpr std::uint32_t kNearDraws = 16;
 constexpr std::uint32_t kFarDraws = 4;
@@ -76,6 +78,9 @@ constexpr char const* kDisplayPrefix = "Display ";
 constexpr char const* kBlockerLine = "Translate 0 1.4 -2";
 constexpr char const* kPanelLine = "Polygon \"P\" [-4.2 -1.3 -3.2  -4.2 -1.3 3.2  4.2 -1.3 3.2  4.2 -1.3 -3.2]";
 constexpr char const* kDiskLines = "Translate 0 -1.3 0\nRotate 90 1 0 0\nDisk 0 4 360";
+constexpr char const* kPanelLight = "AreaLightSource \"arealight\" 1 \"intensity\" [0.6]";
+constexpr char const* kSphereLight = "AreaLightSource \"arealight\" 1 \"intensity\" [2]";
+constexpr char const* kSphereLines = "Translate 0 -2.3 0\nSphere 1 -1 1 360";
 
 // One noise case: the fixture its variant copies, the lines it replaces (a
 // value may hold several lines), whether it drops the blocker's attribute
@@ -223,8 +228,16 @@ int main(int argc, char* argv[]) {
   std::vector<NoiseCase> const cases = {
       {"nearfield_panel", kNearFixture, {}, false, kUnderside, kNearDraws, kNearBound},
       {"nearfield_disk", kNearFixture, {{kPanelLine, kDiskLines}}, false, kUnderside, kNearDraws, kNearBound},
+      {"nearfield_sphere",
+       kNearFixture,
+       {{kPanelLight, kSphereLight}, {kPanelLine, kSphereLines}},
+       false,
+       kBelowSphere,
+       kNearDraws,
+       kNearBound},
       {"farfield_panel", "rayarealight_panel", {}, true, kWall, kFarDraws, kFarBound},
       {"farfield_disk", "rayarealight_disk", {}, true, kWall, kFarDraws, kFarBound},
+      {"farfield_sphere", "rayarealight_sphere", {}, true, kWall, kFarDraws, kFarBound},
   };
   for (NoiseCase const& c : cases) {
     checkCase(gman, ribDir, c);
