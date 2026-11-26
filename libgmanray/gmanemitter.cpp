@@ -243,12 +243,17 @@ GMANVector toVector(DoubleVector const& a) {
   return GMANVector(static_cast<RtFloat>(a.x), static_cast<RtFloat>(a.y), static_cast<RtFloat>(a.z));
 }
 
-// The angle between unit vectors u and v, accurate near 0 and near pi.
+// x, or 0 for a negative x, as a square root's argument rounding may push
+// below 0; not a number when x is not.
+double nonNegative(double x) { return (x < 0.0) ? 0.0 : x; }
+
+// The angle between unit vectors u and v, accurate near 0 and near pi; not a
+// number when either is not.
 double angleBetween(DoubleVector const& u, DoubleVector const& v) {
   if (dot(u, v) < 0.0) {
-    return std::numbers::pi - 2.0 * std::asin(std::min(1.0, length(u + v) / 2.0));
+    return std::numbers::pi - 2.0 * std::asin(std::clamp(length(u + v) / 2.0, 0.0, 1.0));
   }
-  return 2.0 * std::asin(std::min(1.0, length(v - u) / 2.0));
+  return 2.0 * std::asin(std::clamp(length(v - u) / 2.0, 0.0, 1.0));
 }
 
 // The spherical triangle a triangle subtends from a point: the unit
@@ -297,7 +302,7 @@ DoubleVector sphericalTriangleDirection(SphericalTriangle const& triangle, doubl
   const auto cPrime = q * triangle.a + std::sqrt((1.0 - q) * (1.0 + q)) * awayFromA;
   const auto oneMinusZ = u2 * (1.0 - dot(cPrime, triangle.b));
   const auto awayFromB = normalized(cPrime - dot(cPrime, triangle.b) * triangle.b);
-  const auto sinZ = std::sqrt(std::max(0.0, oneMinusZ * (2.0 - oneMinusZ)));
+  const auto sinZ = std::sqrt(nonNegative(oneMinusZ * (2.0 - oneMinusZ)));
   return (1.0 - oneMinusZ) * triangle.b + sinZ * awayFromB;
 }
 
@@ -786,8 +791,8 @@ DoubleVector conePoint(SphereCone const& cone, double radius, double u1, double 
   const auto oneMinusCosTheta = u1 * cone.oneMinusCos;
   const auto cosTheta = 1.0 - oneMinusCosTheta;
   const auto sinSquared = oneMinusCosTheta * (2.0 - oneMinusCosTheta);
-  const auto reach = std::sqrt(std::max(0.0, radius * radius - cone.distance * cone.distance * sinSquared));
-  const auto cosAlpha = std::min(1.0, (cone.distance * sinSquared + cosTheta * reach) / radius);
+  const auto reach = std::sqrt(nonNegative(radius * radius - cone.distance * cone.distance * sinSquared));
+  const auto cosAlpha = std::clamp((cone.distance * sinSquared + cosTheta * reach) / radius, -1.0, 1.0);
   const auto sinAlpha = std::sqrt((1.0 - cosAlpha) * (1.0 + cosAlpha));
   auto const& e = cone.outward;
   const auto sign = std::copysign(1.0, e.z);
