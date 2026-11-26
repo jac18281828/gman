@@ -29,10 +29,10 @@
 
 namespace gman {
 
-// The z-buffer and ray tracer's own shared notice: neither shades or
-// samples an AreaLightSource-tagged primitive, so each renders its
-// geometry unchanged and warns once, naming how many it found, when count
-// is nonzero. rendererName distinguishes which renderer is speaking.
+// The z-buffer's own notice: it neither shades nor samples an
+// AreaLightSource-tagged primitive, so it renders its geometry unchanged and
+// warns once, naming how many it found, when count is nonzero. rendererName
+// names the renderer speaking.
 GMAN_EXPORT void warnAreaLightPrimitivesIgnored(char const* rendererName, std::size_t count);
 
 } // namespace gman

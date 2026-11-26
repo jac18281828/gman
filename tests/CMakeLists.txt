@@ -2989,7 +2989,9 @@ if(GMAN_BUILD_RADIOSITY)
   # workers, direct and through the radiosity pass, the worker each row ran
   # on, one missing-texture warning however many workers ran, and a texture only a
   # second reflection reaches and an opacity map only a shadow ray reaches each
-  # warning in each of two renders. Loads
+  # warning in each of two renders, a wall lit by one disk emitter in an image
+  # byte-identical at the same worker counts, and a disk emitter whose radiance
+  # holds a NaN adding nothing. Loads
   # libradiosity.so, so it sits in this block. The argument --scaling times
   # the direct scene at one and at eight workers and asserts nothing. See
   # tests/raytracerthreads_test.cpp.
@@ -4401,16 +4403,17 @@ set_tests_properties(pathtracerunbiased PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Neither the z-buffer nor the ray tracer calls gman::emitters or special-
-# cases an AreaLightSource-tagged primitive's own shading: each renders
-# tests/rib/arealight_sphere.rib pixel for pixel as it would with every
-# AreaLightSource request stripped out, warning once naming the one
-# area-light primitive it found. `gman -r` runs each fixture in its own
-# process: both loadable renderers keep their own object manager in one
-# process-lifetime static instance, so two parses sharing a process would
-# carry the first one's own tally into the second. LABELS render, since it
-# runs gman itself rather than linking against gman_core directly.
-# Registered twice, one add_test per renderer flag, as
+# The z-buffer never calls gman::emitters or special-cases an AreaLightSource-
+# tagged primitive's own shading: it renders tests/rib/arealight_sphere.rib
+# pixel for pixel as it would with every AreaLightSource request stripped out,
+# warning once naming the one area-light primitive it found. The ray tracer
+# lights from the area light: its render of the same fixture logs no "has no
+# effect here" and differs from the stripped scene's. `gman -r` runs each
+# fixture in its own process: both loadable renderers keep their own object
+# manager in one process-lifetime static instance, so two parses sharing a
+# process would carry the first one's own tally into the second. LABELS
+# render, since it runs gman itself rather than linking against gman_core
+# directly. Registered twice, one add_test per renderer flag, as
 # tests/worldnodisplay_test.cpp's own gman_worldnodisplay is. See
 # tests/rendererarealightwarning_test.cpp.
 add_executable(gman_rendererarealightwarning rendererarealightwarning_test.cpp)
@@ -4465,21 +4468,41 @@ set_tests_properties(arealightpolygon PROPERTIES
   TIMEOUT 30)
 
 # tests/rib/arealight_panel.rib tags a Polygon wound to light the camera and one
-# wound away with one AreaLightSource: under gmanpathtracer the first reads the
-# light's intensity times its colour and the second reads black. Its own working
+# wound away with one AreaLightSource: under gmanpathtracer and under
+# gmanraytracer the first reads the light's intensity times its colour and the
+# second reads black. One add_test per renderer flag, each in its own working
 # directory, as arealightpolygon's is. See tests/arealightpanel_test.cpp.
-if(GMAN_BUILD_PATHTRACER)
+if(GMAN_BUILD_PATHTRACER OR GMAN_BUILD_RAYTRACER)
   add_executable(gman_arealightpanel arealightpanel_test.cpp)
   target_link_libraries(gman_arealightpanel PRIVATE gman_core TIFF::TIFF)
-  add_dependencies(gman_arealightpanel gman_pathtracer gman_matte)
+  add_dependencies(gman_arealightpanel gman_matte)
+endif()
+
+if(GMAN_BUILD_PATHTRACER)
+  add_dependencies(gman_arealightpanel gman_pathtracer)
 
   set(GMAN_AREALIGHTPANEL_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/arealightpanel-run")
   file(MAKE_DIRECTORY "${GMAN_AREALIGHTPANEL_WORKDIR}")
 
   add_test(NAME arealightpanel
-    COMMAND gman_arealightpanel $<TARGET_FILE:gman> "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    COMMAND gman_arealightpanel $<TARGET_FILE:gman> gmanpathtracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
     WORKING_DIRECTORY "${GMAN_AREALIGHTPANEL_WORKDIR}")
   set_tests_properties(arealightpanel PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
+
+if(GMAN_BUILD_RAYTRACER)
+  add_dependencies(gman_arealightpanel gman_raytracer)
+
+  set(GMAN_AREALIGHTPANEL_RAYTRACER_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/arealightpanel-raytracer-run")
+  file(MAKE_DIRECTORY "${GMAN_AREALIGHTPANEL_RAYTRACER_WORKDIR}")
+
+  add_test(NAME arealightpanel_raytracer
+    COMMAND gman_arealightpanel $<TARGET_FILE:gman> gmanraytracer "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_AREALIGHTPANEL_RAYTRACER_WORKDIR}")
+  set_tests_properties(arealightpanel_raytracer PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 30)

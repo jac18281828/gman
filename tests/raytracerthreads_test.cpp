@@ -30,6 +30,11 @@
  * a tracer sampling through the process cache instead warns about in the
  * first render alone; and so does an opacity map only a shadow ray reaches,
  * each worker's shading occluder sampling through that worker's own cache.
+ * A wall lit by one disk emitter and shadowed by a sphere renders
+ * byte-identically from one, three and eight workers, every area-light draw
+ * a function of its camera sample alone; and a disk emitter whose radiance
+ * holds a NaN adds nothing to a scene a point light lights, not even on the
+ * disk's own pixels, and leaves every pixel finite.
  *
  * With the argument --scaling the program does none of that. It times the
  * direct scene at one and at eight workers and prints the two wall times and
@@ -38,10 +43,12 @@
 
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <limits>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -55,11 +62,13 @@
 #include "gmanframebuffer.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlog.h"
+#include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmanparallel.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
+#include "gmanraydisk.h"
 #include "gmanraypolygon.h"
 #include "gmanraysphere.h"
 #include "gmanraytracerenderer.h"
@@ -175,6 +184,20 @@ constexpr RtFloat kCardInnerX = -1.0f;
 constexpr RtFloat kCardOuterX = -3.0f;
 constexpr RtFloat kCardHalfHeight = 1.0f;
 constexpr RtFloat kCardOffPathRise = 20.0f;
+
+constexpr FrameSize kEmitterSize{32, 24};
+constexpr RtInt kEmitterSamples = 4;
+constexpr RtFloat kEmitterRadianceValue = 40.0f;
+constexpr RtFloat kEmitterDark = 0.0f;
+constexpr RtFloat kEmitterFacesWall = 180.0f;
+constexpr RtFloat kEmitterFacesCamera = 0.0f;
+GMANPoint const kWallEmitterCentre(0.0f, 3.0f, 10.0f);
+GMANPoint const kViewedEmitterCentre(0.0f, 2.0f, 9.0f);
+constexpr RtFloat kEmitterRadius = 1.0f;
+GMANPoint const kEmitterBlockerCentre(0.0f, 3.0f, 12.0f);
+constexpr RtFloat kEmitterBlockerRadius = 0.8f;
+GMANColor const kEmitterBlack(0.0f, 0.0f, 0.0f);
+GMANColor const kNaNRadiance(std::numeric_limits<RtFloat>::quiet_NaN(), kEmitterRadianceValue, kEmitterRadianceValue);
 
 GMANOptions::ScreenWindowStruct squareScreenWindow() {
   GMANOptions::ScreenWindowStruct sw;
@@ -346,6 +369,71 @@ std::unique_ptr<TracedScene> boxScene(bool indirect) {
   scene->addPolygon(kBoxRight, scene->appearance(matte, kGreenWall, 1.0f));
   for (std::array<GMANPoint, 4> const& wall : kBoxGrey) {
     scene->addPolygon(wall, scene->appearance(matte, kGreyWall, 1.0f));
+  }
+  return scene;
+}
+
+// A TracedScene with one disk emitter: radiance is its area light's colour, and
+// pointLit says whether the point light also lights the scene's surfaces. The
+// scene asks for kEmitterSamples draws per shading point.
+struct EmitterScene : TracedScene {
+  GMANLight const emitted;
+  bool const pointLit;
+
+  EmitterScene(GMANColor const& radiance, bool pointLit, RtFloat pointIntensity)
+      : TracedScene(kEmitterSize, kDirectPixelSamples, kDirectFov, kDirectNear, kDirectFar, kDirectLight,
+                    pointIntensity),
+        emitted(GMAN_LIGHT_AREA, radiance, GMANPoint(), GMANVector()), pointLit(pointLit) {
+    options.setNamedOption("raytracer", "arealightsamples", std::vector<RtInt>{kEmitterSamples});
+  }
+
+  gman::Appearance surface(std::shared_ptr<GMANSurfaceShader const> shader, GMANColor const& color) const {
+    gman::Appearance look = appearance(std::move(shader), color, 1.0f);
+    if (!pointLit) {
+      look.lights.clear();
+    }
+    return look;
+  }
+
+  void addDisk(GMANPoint const& centre, RtFloat yawDegrees, bool emitting) {
+    GMANMatrix4 place;
+    place.rot(GMANRadians(yawDegrees), 0.0f, 1.0f, 0.0f);
+    place.trans(centre.getX(), centre.getY(), centre.getZ());
+    GMANTransform const transform = makeTransform(place);
+    auto const disk = new GMANRayDisk(0.0f, kEmitterRadius, 360.0f, GMANParameterList(), transform);
+    gman::Appearance look = surface(loadShader("matte", matteParams(1.0f, 1.0f)), kEmitterBlack);
+    if (emitting) {
+      look.areaLight = &emitted;
+    }
+    disk->setAppearance(look);
+    renderer.getWorldManager()->add(disk);
+  }
+};
+
+// A matte wall lit by a disk emitter that faces it, shadowed by a sphere
+// between them; emitting false leaves the disk's area light off and blocker
+// false leaves the sphere out. Nothing else lights the wall.
+std::unique_ptr<EmitterScene> shadowedWallScene(bool emitting, bool blocker) {
+  auto scene = std::make_unique<EmitterScene>(GMANColor(kEmitterRadianceValue), false, kEmitterDark);
+  auto const matte = loadShader("matte", matteParams(1.0f, 1.0f));
+  scene->addPolygon(kWall, scene->surface(matte, kWallColor));
+  scene->addDisk(kWallEmitterCentre, kEmitterFacesWall, emitting);
+  if (blocker) {
+    scene->addSphere(kEmitterBlockerCentre, kEmitterBlockerRadius, scene->surface(matte, kBlockerColor));
+  }
+  return scene;
+}
+
+// The direct scene's floor and wall under its point light, with a disk
+// facing the camera in view whose area light has the given radiance; emitting
+// false leaves the area light off and disk false leaves the disk out.
+std::unique_ptr<EmitterScene> viewedEmitterScene(GMANColor const& radiance, bool emitting, bool disk) {
+  auto scene = std::make_unique<EmitterScene>(radiance, true, kDirectIntensity);
+  auto const matte = loadShader("matte", matteParams(1.0f, 1.0f));
+  scene->addPolygon(kFloor, scene->surface(matte, kFloorColor));
+  scene->addPolygon(kWall, scene->surface(matte, kWallColor));
+  if (disk) {
+    scene->addDisk(kViewedEmitterCentre, kEmitterFacesCamera, emitting);
   }
   return scene;
 }
@@ -619,16 +707,59 @@ void checkShadowOnlyOpacityMapCache() {
                          std::to_string(second) + ")");
 }
 
+void checkAreaLightWorkers() {
+  Snapshot const serial = renderAt(*shadowedWallScene(true, true), kEmitterSize, kSerialWorkers);
+  Snapshot const dark = renderAt(*shadowedWallScene(false, true), kEmitterSize, kSerialWorkers);
+  Snapshot const unshadowed = renderAt(*shadowedWallScene(true, false), kEmitterSize, kSerialWorkers);
+  check(differingPixels(serial, dark) > 0, "F setup: the disk's area light lights the wall");
+  check(relitPixels(serial, unshadowed) > 0, "F setup: the sphere shadows the wall from the disk");
+
+  for (RtInt workers : {kThreeWorkers, kParallelWorkers}) {
+    Snapshot const other = renderAt(*shadowedWallScene(true, true), kEmitterSize, workers);
+    std::size_t const differing = differingPixels(serial, other);
+    check(differing == 0, "F: colour, alpha and depth of the area-lit wall match between 1 and " +
+                              std::to_string(workers) + " workers (" + std::to_string(differing) + " of " +
+                              std::to_string(serial.pixels.size()) + " pixels differ)");
+  }
+}
+
+bool everyChannelFinite(Snapshot const& snapshot) {
+  for (std::array<RtFloat, Snapshot::kChannels> const& pixel : snapshot.pixels) {
+    for (std::size_t channel = 0; channel < kDepthChannel; ++channel) {
+      if (!std::isfinite(pixel[channel])) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+void checkNonFiniteEmitter() {
+  Snapshot const withNaN = renderAt(*viewedEmitterScene(kNaNRadiance, true, true), kEmitterSize, kSerialWorkers);
+  Snapshot const removed = renderAt(*viewedEmitterScene(kNaNRadiance, false, true), kEmitterSize, kSerialWorkers);
+  Snapshot const noDisk = renderAt(*viewedEmitterScene(kNaNRadiance, false, false), kEmitterSize, kSerialWorkers);
+  check(differingPixels(removed, noDisk) > 0, "G setup: the disk is in view");
+
+  std::size_t const differing = differingPixels(withNaN, removed);
+  check(differing == 0, "G: colour, alpha and depth match the scene without the disk's area light (" +
+                            std::to_string(differing) + " of " + std::to_string(withNaN.pixels.size()) +
+                            " pixels differ)");
+  check(everyChannelFinite(withNaN), "G: every channel of every pixel is finite");
+}
+
 int runChecks() {
   checkDirectScene();
   checkIndirectScene();
   checkMissingTextureWarnsOnce();
   checkSecondReflectionCache();
   checkShadowOnlyOpacityMapCache();
+  checkAreaLightWorkers();
+  checkNonFiniteEmitter();
 
   return checkSummary("the ray tracer's rows render through gman::parallelFor: the image, its worker ids and its "
-                      "missing-texture warning hold at every worker count, and a texture reached through a second "
-                      "reflection or a shadow ray samples through the cache of the worker that cast it");
+                      "missing-texture warning hold at every worker count, a texture reached through a second "
+                      "reflection or a shadow ray samples through the cache of the worker that cast it, area-light "
+                      "draws hold at every worker count and a non-finite emitter adds nothing");
 }
 
 double timedRenderSeconds(RtInt workers) {

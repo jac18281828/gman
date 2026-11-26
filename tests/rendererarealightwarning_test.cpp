@@ -19,16 +19,19 @@
  */
 
 /*
- * The z-buffer and the ray tracer never call gman::emitters and never
- * special-case an AreaLightSource-tagged primitive's own shading: each
- * renders tests/rib/arealight_sphere.rib pixel for pixel as it would with
- * every AreaLightSource request stripped out, logging exactly one warning
- * naming the area-light primitive it found; the stripped scene alone logs
- * none. Each fixture and renderer combination runs its own gman process --
- * both loadable renderers keep their own object manager in one
- * process-lifetime static instance (see renderers/zbuffer/zbufferloader.cpp
- * and renderers/raytracer/rayloader.cpp), so two parses sharing one process
- * would carry the first one's own tally into the second.
+ * The z-buffer never calls gman::emitters and never special-cases an
+ * AreaLightSource-tagged primitive's own shading: it renders
+ * tests/rib/arealight_sphere.rib pixel for pixel as it would with every
+ * AreaLightSource request stripped out, logging exactly one warning naming the
+ * area-light primitive it found; the stripped scene alone logs none. The ray
+ * tracer lights from the area light and so warns of nothing: its render of the
+ * same fixture logs no "has no effect here" and differs from the stripped
+ * scene's in at least one pixel. Each fixture and renderer combination runs
+ * its own gman process -- both loadable renderers keep their own object
+ * manager in one process-lifetime static instance (see
+ * renderers/zbuffer/zbufferloader.cpp and renderers/raytracer/rayloader.cpp),
+ * so two parses sharing one process would carry the first one's own tally into
+ * the second.
  */
 
 #include <cstdio>
@@ -96,10 +99,10 @@ RenderResult renderAndRead(std::string const& gman, std::string const& rendererF
   return {readGmanTIFF(tifPath), run.output};
 }
 
-// One renderer's own two checks: the tagged and stripped fixtures render
-// pixel for pixel alike, and only the tagged one logs the warning.
-void testRenderer(std::string const& gman, std::string const& rendererFlag, std::string const& taggedRib,
-                  std::string const& strippedRib) {
+// The z-buffer's own checks: the tagged and stripped fixtures render pixel for
+// pixel alike, and only the tagged one logs the warning.
+void testZBuffer(std::string const& gman, std::string const& rendererFlag, std::string const& taggedRib,
+                 std::string const& strippedRib) {
   // Both fixtures share one Display target, arealight_sphere.rib's own
   // "arealight_sphere.tif": read back immediately after each render, before
   // the next one overwrites it.
@@ -122,6 +125,30 @@ void testRenderer(std::string const& gman, std::string const& rendererFlag, std:
         rendererFlag + ": the stripped fixture, with no AreaLightSource at all, logs none");
 }
 
+// The ray tracer's own checks: the tagged fixture logs no "has no effect here"
+// and renders differently from the stripped one, which logs nothing of area
+// lights either.
+void testRayTracer(std::string const& gman, std::string const& rendererFlag, std::string const& taggedRib,
+                   std::string const& strippedRib) {
+  std::string const tifPath = "arealight_sphere.tif";
+
+  RenderResult const tagged = renderAndRead(gman, rendererFlag, taggedRib, tifPath);
+  check(tagged.image.ok, rendererFlag + ": the tagged fixture's TIFF reads back");
+  RenderResult const stripped = renderAndRead(gman, rendererFlag, strippedRib, tifPath);
+  check(stripped.image.ok, rendererFlag + ": the stripped fixture's TIFF reads back");
+
+  if (tagged.image.ok && stripped.image.ok) {
+    check(!imagesIdentical(tagged.image, stripped.image),
+          rendererFlag + ": the tagged render differs from the stripped one in at least one pixel");
+  }
+
+  check(countOccurrences(tagged.output, "has no effect here") == 0,
+        rendererFlag + ": the tagged fixture logs no warning that an area light has no effect");
+
+  check(countOccurrences(stripped.output, "area-light primitive") == 0,
+        rendererFlag + ": the stripped fixture, with no AreaLightSource at all, logs none");
+}
+
 } // namespace
 
 int main(int argc, char* argv[]) {
@@ -137,8 +164,12 @@ int main(int argc, char* argv[]) {
   std::string const strippedRib = "arealight_sphere_stripped.rib";
   writeStrippedFixture(taggedRib, strippedRib);
 
-  testRenderer(gman, rendererFlag, taggedRib, strippedRib);
+  if (rendererFlag == "gmanraytracer") {
+    testRayTracer(gman, rendererFlag, taggedRib, strippedRib);
+    return checkSummary("the gmanraytracer lights an area-light primitive and warns of nothing");
+  }
 
+  testZBuffer(gman, rendererFlag, taggedRib, strippedRib);
   return checkSummary(
       ("the " + rendererFlag + " renders an area-light primitive unchanged, warning once naming it").c_str());
 }

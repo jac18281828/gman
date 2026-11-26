@@ -25,11 +25,15 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "gman/export.h"
 #include "gmancolor.h"
+#include "gmanemitter.h"
+#include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
 #include "gmanobjectmanager.h"
@@ -37,6 +41,7 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
+#include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanrayoccluder.h"
 #include "gmanrenderer.h"
@@ -53,6 +58,51 @@ class IndirectPass;
 } // namespace gman
 
 /*
+ * The area emitters a render lights every shading point from, and how many
+ * draws each takes there. A render reads the count from
+ * Option "raytracer" "integer arealightsamples"; the default is 4, and a
+ * value below 1 or one that is not an integer logs a warning once and uses
+ * the default. emitters holds area emitters only, never a delta light.
+ */
+struct GMANAreaLights {
+  std::vector<gman::Emitter> emitters;
+  std::uint32_t drawsPerEmitter = 0;
+};
+
+/*
+ * One camera sample's draws on a render's area emitters. Each shading point
+ * the sample reaches, a composite layer or a hit a shader's trace() shades,
+ * takes drawsPerEmitter points on every emitter but the one it lies on,
+ * drawn as a stratified pattern of its own: the pattern is a pure function
+ * of the camera sample's absolute sample-grid coordinate, the emitter and
+ * the shading point's place in the order that sample's shading runs, so no
+ * worker count or row order changes a draw. One thread owns a sample.
+ */
+class GMANAreaLightSample {
+public:
+  GMANAreaLightSample(GMANAreaLights const& lights, RtInt gridX, RtInt gridY)
+      : lights(lights), gridX(gridX), gridY(gridY) {}
+
+  // The point lights of this sample's next shading point, at P on
+  // hitPrimitive: one per draw on each emitter but hitPrimitive itself,
+  // except a draw whose density is not positive and finite, whose radiance is
+  // black or whose colour is not finite. A light sits at its draw's shadow
+  // target, coloured by the emitter's radiance divided by pi, the draw's
+  // solid-angle density and the draw count, times the squared distance from
+  // P, so GMANLight::sample's inverse-square falloff leaves a shader's
+  // diffuse the emitter's irradiance over pi.
+  std::vector<GMANLight> draw(GMANPoint const& P, GMANRayInterface const& hitPrimitive);
+
+  std::vector<gman::Emitter> const& emitters() const { return lights.emitters; }
+
+private:
+  GMANAreaLights const& lights;
+  RtInt gridX;
+  RtInt gridY;
+  std::uint32_t nextSite = 0;
+};
+
+/*
  * The ray tracer's own gman::Tracer: casts R from P (offset off Ng, the
  * same self-shadow discipline shadeSample's composite loop and
  * GMANRayOccluder::transmission already take), shades the nearest hit at
@@ -63,19 +113,37 @@ class IndirectPass;
  * it controls. Not GMAN_EXPORT: only its own tests use it, and they
  * compile the plugin's own sources directly rather than linking the
  * installed library.
+ *
+ * Bound to a GMANAreaLightSample, it lights every hit it shades from that
+ * sample's area emitters through the hit's own shader: each draw is one more
+ * point light in the shader's illuminance loop, shadowed through the path
+ * tracer's own area walk (gman::shadowWalk), and a hit on an emitter adds
+ * that emitter's radiance to the hit's colour when the hit faces the ray.
+ * Bound to none, it shades through its hits' own lights alone.
  */
 class GMANRayTracer : public gman::Tracer {
 public:
   GMANRayTracer(GMANRayBVH const& bvh, GMANRayOccluder const& occluder, GMANMatrix4 const& cameraToWorld,
                 GMANColor const& background, int depth, gman::IndirectPass const* indirectPass = nullptr,
-                gman::TextureCache* textureCache = nullptr)
+                gman::TextureCache* textureCache = nullptr, GMANAreaLightSample* areaLights = nullptr)
       : bvh(bvh), occluder(occluder), cameraToWorld(cameraToWorld), background(background), depth(depth),
-        indirectPass(indirectPass), textureCache(textureCache) {}
+        indirectPass(indirectPass), textureCache(textureCache), areaLights(areaLights) {}
 
   GMANColor trace(GMANPoint const& P, GMANVector const& R, GMANVector const& Ng,
                   RtFloat surfaceMagnitude) const override;
 
+  // Shades hit, ray's nearest hit on hitPrimitive, with this tracer answering
+  // the shader's own trace() calls: the shader's Ci, plus the emitter's
+  // radiance where hitPrimitive is an area emitter whose face looks at ray's
+  // origin, and its Oi unchanged.
+  gman::Shading shadeHit(GMANRayInterface const& hitPrimitive, GMANRay const& ray, GMANHit const& hit) const;
+
 private:
+  gman::Shading shadeLit(GMANRayInterface const& hitPrimitive, gman::SurfacePoint const& point,
+                         GMANColor const* indirect) const;
+  std::optional<GMANColor> emitterRadiance(GMANRayInterface const& hitPrimitive, GMANRay const& ray,
+                                           GMANHit const& hit) const;
+
   GMANRayBVH const& bvh;
   GMANRayOccluder const& occluder;
   GMANMatrix4 const& cameraToWorld;
@@ -94,6 +162,12 @@ private:
   // through the cache of the tracer that cast it, and never through a
   // cache another thread owns. Non-owning; the caller keeps it alive.
   gman::TextureCache* textureCache;
+
+  // The camera sample whose area emitters light this tracer's hits; null
+  // means none do. Carried into every child GMANRayTracer trace() builds,
+  // so a reflected or refracted hit takes its own draws from the same
+  // sample. Non-owning; the caller keeps it alive.
+  GMANAreaLightSample* areaLights;
 };
 
 /*
@@ -127,14 +201,14 @@ private:
   // frameBuffer at the end of render(). getDepth reads its resolved depth.
   std::unique_ptr<GMANSampleBuffer> sampleBuffer;
 
-  // The nearest ray-primitive hit and the appearance it was declared
-  // under; both null (hit.primitive null, appearance null) when nothing
-  // is hit. Carrying the appearance here, rather than re-deriving it from
-  // hit.primitive afterward, keeps the downcast to GMANRayInterface to
-  // GMANRayBVH::build's own loop.
+  // The nearest ray-primitive hit and the ray primitive it lies on; both
+  // null (hit.primitive null, primitive null) when nothing is hit. Carrying
+  // the ray primitive here, rather than re-deriving it from hit.primitive
+  // afterward, keeps the downcast to GMANRayInterface to GMANRayBVH::build's
+  // own loop.
   struct RayHit {
     GMANHit hit;
-    gman::Appearance const* appearance = nullptr;
+    GMANRayInterface const* primitive = nullptr;
   };
 
   // The worker count render() requests from gman::parallelFor; 0 lets it
@@ -157,18 +231,21 @@ private:
   // the calling worker's own cache and shadingOccluder the occluder built on
   // it, which every shadow ray of the sample goes through; the sample writes
   // only its own slot of sampleBuffer, so rows shaded on different workers
-  // never share state.
+  // never share state. areaSample is this sample's own draws on the render's
+  // area emitters, which every shading point the sample reaches takes from.
   void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
                    RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY, gman::IndirectPass const* indirectPass,
-                   GMANRayOccluder const& shadingOccluder, gman::TextureCache* textureCache) const;
+                   GMANRayOccluder const& shadingOccluder, gman::TextureCache* textureCache,
+                   GMANAreaLightSample& areaSample) const;
 
   // Shades every sample of pixel row py, in raster order, through
   // shadingOccluder and textureCache, the calling worker's own -- one
-  // gman::parallelFor body. Writes only the sample rows py owns.
+  // gman::parallelFor body. Writes only the sample rows py owns. Each sample
+  // draws on areaLights, keyed by its absolute sample-grid coordinate.
   void shadeRow(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
                 GMANOptions::RasterInfo const& raster, int width, int xsamples, int ysamples, int py,
                 gman::IndirectPass const* indirectPass, GMANRayOccluder const& shadingOccluder,
-                gman::TextureCache* textureCache) const;
+                gman::TextureCache* textureCache, GMANAreaLights const& areaLights) const;
 
 public:
   GMANRaytraceRenderer(); // default constructor
@@ -186,6 +263,15 @@ public:
    * GMANRayOccluder per worker; every sample's
    * value depends on the scene alone, so the image is byte-identical at
    * any worker count.
+   *
+   * An area light lights every shading point through its shader's own
+   * illuminance loop: each emitter gman::emitters enumerates takes
+   * Option "raytracer" "integer arealightsamples" draws at a point (default
+   * 4), each a point light on the emitter's surface whose shadow passes
+   * glass and cut-outs as the path tracer's does, and a ray that meets an
+   * emitter sees its radiance. A scene with no area emitter shades through
+   * its delta lights alone. An emitter gman::emitters skips as ineligible or
+   * unsupported is warned about once.
    */
   virtual void render(GMANFrameBuffer* frameBuffer, GMANViewingSystem* viewingSys, const GMANOptions& options,
                       const GMANAttributes& attributes);

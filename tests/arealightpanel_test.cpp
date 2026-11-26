@@ -21,8 +21,10 @@
 /*
  * tests/rib/arealight_panel.rib tags two Polygon panels with one
  * AreaLightSource, the left wound to light the camera and the right wound
- * away. Under gmanpathtracer the left panel reads the light's intensity times
- * its colour, the right reads black, and gman::emitters skips neither.
+ * away. Under gmanpathtracer and under gmanraytracer alike the left panel
+ * reads the light's intensity times its colour, the right reads black,
+ * gman::emitters skips neither and no renderer warns that an area light has
+ * no effect.
  */
 
 #include <cmath>
@@ -69,21 +71,24 @@ bool within(int actual, int expected, int tolerance) { return std::abs(actual - 
 } // namespace
 
 int main(int argc, char* argv[]) {
-  if (argc < 3) {
-    std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib dir>\n", argv[0]);
+  if (argc < 4) {
+    std::fprintf(stderr, "usage: %s <gman-binary> <renderer-flag> <tests/rib dir>\n", argv[0]);
     return 2;
   }
   std::string const gman = argv[1];
-  std::string const ribDir = argv[2];
+  std::string const rendererFlag = argv[2];
+  std::string const ribDir = argv[3];
 
   std::string const tifPath = "arealight_panel.tif";
   std::remove(tifPath.c_str());
 
-  GMANRunResult const run = runGman(gman, {"-r", "gmanpathtracer", ribDir + "/arealight_panel.rib"});
+  GMANRunResult const run = runGman(gman, {"-r", rendererFlag, ribDir + "/arealight_panel.rib"});
   check(run.exitStatus == 0,
-        "arealight_panel.rib renders under gmanpathtracer (exit " + std::to_string(run.exitStatus) + ")");
+        "arealight_panel.rib renders under " + rendererFlag + " (exit " + std::to_string(run.exitStatus) + ")");
   check(run.output.find("ineligible or unsupported") == std::string::npos,
-        "no area-light primitive is reported ineligible or unsupported");
+        rendererFlag + ": no area-light primitive is reported ineligible or unsupported");
+  check(run.output.find("has no effect here") == std::string::npos,
+        rendererFlag + ": no warning says an area light has no effect");
 
   GmanImage const image = readGmanTIFF(tifPath);
   check(image.ok && image.width == kResolution && image.height == kResolution,
@@ -123,5 +128,6 @@ int main(int argc, char* argv[]) {
   check(darkExact, "every pixel inside the right panel, wound away from the camera, is 0");
 
   return checkSummary(
-      "a Polygon under an AreaLightSource lights the camera along its winding's normal under gmanpathtracer");
+      ("a Polygon under an AreaLightSource lights the camera along its winding's normal under " + rendererFlag)
+          .c_str());
 }
