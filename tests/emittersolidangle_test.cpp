@@ -46,11 +46,11 @@
  *    rounding moves the hit along a ray meeting the shape at incidence g, by
  *    1 / g, and moves an area density's distance and cosine, by 2 / d +
  *    curvature / g. A ray rounded off a tangent may miss.
- * c: the fraction of accepted draws in each of four regions (a triangle's
- *    midpoint sub-triangles, a quad's quadrants, a disk sector's or a zone's
- *    four equal turns, each face of a two-face mesh) equals that region's
- *    integral of the pdf over A within five binomial sigma plus the
- *    quadrature's 1e-3.
+ * c: the fraction of accepted draws landing, at p + distance wi, in each of
+ *    four regions (a triangle's midpoint sub-triangles, a quad's quadrants, a
+ *    disk sector's or a zone's four equal turns, each face of a two-face mesh)
+ *    equals that region's integral of the pdf over A within five binomial
+ *    sigma plus the quadrature's 1e-3.
  * d: for a single triangle, every draw's pdf times the triangle's solid angle,
  *    by Van Oosterom and Strackee's formula, equals 1 within 1e-5 relative.
  * e: degenerate inputs (a zero-area fan triangle, a receiving point in a
@@ -325,7 +325,7 @@ struct Case {
   gman::Emitter emitter;
   GMANPoint p;
   std::vector<double> regionIntegrals;
-  std::function<std::size_t(GMANHit const&)> regionOf;
+  std::function<std::size_t(Vec const&)> regionOf;
   bool acceptsEvery = false;
   std::optional<double> triangleSolidAngle;
   Strategy strategy = Strategy::unchecked;
@@ -366,6 +366,10 @@ void runCase(Case const& c, std::uint32_t dim) {
     const auto distance = (double)s.distance;
     const auto drawn = toVec(c.p) + distance * toVec(s.wi);
     const auto rounding = kWiRounding * (distance + kRoundings * c.scale);
+    const auto region = c.regionOf(drawn);
+    if (region < counts.size()) {
+      ++counts[region];
+    }
     GMANHit hit;
     if (!c.emitter.shape->intersect(GMANRay(c.p, s.wi), hit)) {
       const auto grazing = c.normalAt ? std::fabs(dot(c.normalAt(drawn), toVec(s.wi))) : 1.0;
@@ -389,10 +393,6 @@ void runCase(Case const& c, std::uint32_t dim) {
     const auto pdf = gman::lightSolidAnglePdf(c.emitter, c.p, hit.point, toNormal(toVec(hit.normal)));
     const auto pdfAllowed = kPdfTolerance + kMargin * (offset + rounding) / distance * bend;
     worstPdf = std::max(worstPdf, std::fabs((double)pdf - (double)s.pdf) / (double)s.pdf / pdfAllowed);
-    const auto region = c.regionOf(hit);
-    if (region < counts.size()) {
-      ++counts[region];
-    }
   }
 
   const auto acceptance = (double)acceptedCount / kDraws;
@@ -569,10 +569,10 @@ void runTriangleCase(std::vector<GMANPoint> const& loop, GMANPoint const& p, std
   c.p = p;
   c.scale = length(toVec(p));
   c.regionIntegrals = integrals(c.emitter, p, regions);
-  c.regionOf = [v](GMANHit const& hit) {
+  c.regionOf = [v](Vec const& point) {
     const auto e1 = v[1] - v[0];
     const auto e2 = v[2] - v[0];
-    const auto w = toVec(hit.point) - v[0];
+    const auto w = point - v[0];
     const auto d11 = dot(e1, e1);
     const auto d12 = dot(e1, e2);
     const auto d22 = dot(e2, e2);
@@ -636,11 +636,37 @@ void testLargeQuad() {
   c.p = GMANPoint(1.0f, 0.3f, -0.7f);
   c.scale = length(toVec(c.p));
   c.regionIntegrals = integrals(c.emitter, c.p, regions);
-  c.regionOf = [](GMANHit const& hit) {
-    return std::size_t{hit.point.getX() < 0.0f ? 0u : 2u} + std::size_t{hit.point.getZ() < 0.0f ? 0u : 1u};
+  c.regionOf = [](Vec const& point) {
+    return std::size_t{point.x < 0.0 ? 0u : 2u} + std::size_t{point.z < 0.0 ? 0u : 1u};
   };
   c.acceptsEvery = true;
   runCase(c, 6u);
+}
+
+// The face of mesh nearest point: the least sum of point's distance from the
+// face's plane and from the box that bounds the face.
+std::size_t nearestFace(GMANRayPolygonMesh const& mesh, Vec const& point) {
+  std::size_t nearest = 0;
+  double least = std::numeric_limits<double>::max();
+  for (std::size_t f = 0; f < mesh.getFaceCount(); ++f) {
+    GMANRayPolygon const& face = mesh.getFace(f);
+    const auto loop = toVecs(face.getOuterLoop());
+    auto low = loop[0];
+    auto high = loop[0];
+    for (Vec const& corner : loop) {
+      low = Vec{std::min(low.x, corner.x), std::min(low.y, corner.y), std::min(low.z, corner.z)};
+      high = Vec{std::max(high.x, corner.x), std::max(high.y, corner.y), std::max(high.z, corner.z)};
+    }
+    const auto outside = Vec{point.x - std::clamp(point.x, low.x, high.x), point.y - std::clamp(point.y, low.y, high.y),
+                             point.z - std::clamp(point.z, low.z, high.z)};
+    const auto planeDistance = std::fabs(dot(point - loop[0], normalized(toVec(face.getPlaneNormal()))));
+    const auto score = planeDistance + length(outside);
+    if (score < least) {
+      least = score;
+      nearest = f;
+    }
+  }
+  return nearest;
 }
 
 // A mesh case whose regions are its faces.
@@ -652,14 +678,7 @@ void runFaceCase(MeshEmitter const& emitter, GMANPoint const& p, std::string con
   c.scale = length(toVec(p));
   c.regionIntegrals = integrals(c.emitter, p, faceRegions(*emitter.mesh));
   GMANRayPolygonMesh const* const mesh = emitter.mesh.get();
-  c.regionOf = [mesh](GMANHit const& hit) {
-    for (std::size_t f = 0; f < mesh->getFaceCount(); ++f) {
-      if (hit.primitive == &mesh->getFace(f)) {
-        return f;
-      }
-    }
-    return mesh->getFaceCount();
-  };
+  c.regionOf = [mesh](Vec const& point) { return nearestFace(*mesh, point); };
   c.acceptsEvery = true;
   runCase(c, dim);
 }
@@ -789,8 +808,8 @@ void runDiskCase(DiskEmitter const& emitter, Vec const& objectP, Rectangle const
   c.p = toPoint(place(m, objectP));
   c.scale = length(toVec(c.p)) + length(objectP);
   c.regionIntegrals = integrals(c.emitter, c.p, regions);
-  c.regionOf = [&m, sweep](GMANHit const& hit) {
-    const auto quarter = static_cast<std::size_t>(4.0 * turnAngle(unplace(m, toVec(hit.point))) / sweep);
+  c.regionOf = [&m, sweep](Vec const& point) {
+    const auto quarter = static_cast<std::size_t>(4.0 * turnAngle(unplace(m, point)) / sweep);
     return std::min(quarter, std::size_t{3});
   };
   c.strategy = strategy;
@@ -1013,11 +1032,11 @@ void runSphereCase(SphereEmitter const& emitter, Vec const& objectP, bool rigid,
           zoneIntegral(emitter, c.p, zLow, zHigh, sweep * quarter / 4.0, sweep * (quarter + 1) / 4.0));
     }
   }
-  c.regionOf = [&m, sweep, full](GMANHit const& hit) {
+  c.regionOf = [&m, sweep, full](Vec const& point) {
     if (full) {
       return std::size_t{0};
     }
-    const auto quarter = static_cast<std::size_t>(4.0 * turnAngle(unplace(m, toVec(hit.point))) / sweep);
+    const auto quarter = static_cast<std::size_t>(4.0 * turnAngle(unplace(m, point)) / sweep);
     return std::min(quarter, std::size_t{3});
   };
   c.acceptsEvery = full;
