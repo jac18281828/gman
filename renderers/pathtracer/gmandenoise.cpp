@@ -125,15 +125,23 @@ RtFloat resolvedColorSigma(gman::GuidedImage const& image, gman::AtrousParameter
   if (parameters.sigmaColor) {
     return *parameters.sigmaColor;
   }
-  double largest = 0.0;
+  std::vector<double> norms;
   for (std::size_t i = 0; i < image.color.size(); ++i) {
     if (!usablePixel(image, i)) {
       continue;
     }
     Triple const c = triple(image.color[i]);
-    largest = std::max(largest, std::sqrt(c[0] * c[0] + c[1] * c[1] + c[2] * c[2]));
+    double const norm = std::sqrt(c[0] * c[0] + c[1] * c[1] + c[2] * c[2]);
+    if (norm > 0.0) {
+      norms.push_back(norm);
+    }
   }
-  return static_cast<RtFloat>(std::min(largest, static_cast<double>(std::numeric_limits<RtFloat>::max())));
+  if (norms.empty()) {
+    return 0.0f;
+  }
+  auto const lowerMedian = norms.begin() + static_cast<std::ptrdiff_t>((norms.size() - 1) / 2);
+  std::nth_element(norms.begin(), lowerMedian, norms.end());
+  return static_cast<RtFloat>(std::min(*lowerMedian, static_cast<double>(std::numeric_limits<RtFloat>::max())));
 }
 
 Guides makeGuides(gman::GuidedImage const& image) {
@@ -201,8 +209,11 @@ void filterLevel(Guides const& guides, Sigmas const& sigmas, double colorSigma, 
         for (int x = 0; x < guides.width; ++x) {
           std::size_t const index =
               static_cast<std::size_t>(row) * static_cast<std::size_t>(guides.width) + static_cast<std::size_t>(x);
-          target[index] =
-              guides.usable[index] ? filteredPixel(guides, sigmas, colorSigma, step, source, x, row) : source[index];
+          if (guides.usable[index]) {
+            target[index] = filteredPixel(guides, sigmas, colorSigma, step, source, x, row);
+          } else {
+            target[index] = source[index];
+          }
         }
       },
       workers);
@@ -241,7 +252,11 @@ std::vector<GMANColor> atrousDenoise(GuidedImage const& image, AtrousParameters 
 
   std::vector<GMANColor> result(image.color.size());
   for (std::size_t i = 0; i < result.size(); ++i) {
-    result[i] = guides.usable[i] ? toColor(current[i]) : image.color[i];
+    if (guides.usable[i]) {
+      result[i] = toColor(current[i]);
+    } else {
+      result[i] = image.color[i];
+    }
   }
   return result;
 }

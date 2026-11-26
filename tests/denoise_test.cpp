@@ -24,10 +24,11 @@
 /*
  * gman::atrousDenoise on synthetic images. A 64 by 48 scene of seeded noise
  * over a flat region, a geometric edge only the normals mark, an albedo edge
- * and a shadow edge only the colour marks: the filter removes the noise and
- * keeps each edge, and removing any one weight, holding the colour sigma at
- * its first level, or reading the paper's shader's normal weight breaks a
- * named check. An impulse maps the kernel: its footprint, its holes and its
+ * and a shadow edge only the colour marks: filtered by the guides alone and
+ * again at the default colour sigma, the filter removes the noise and keeps
+ * each edge, and removing any one weight, holding the colour sigma at its
+ * first level, reading the paper's shader's normal weight or defaulting the
+ * colour sigma to the largest norm breaks a named check. An impulse maps the kernel: its footprint, its holes and its
  * reach after one, two and three levels. A constant image is a fixed point,
  * a non-finite pixel is excluded without disturbing a neighbour, a black
  * image returns unchanged, a level past the image's size changes nothing,
@@ -71,9 +72,13 @@ constexpr std::uint32_t kNoiseSeed = 1;
 constexpr double kNoiseRange = 4294967296.0;
 
 constexpr double kNoiseFallsLimit = 0.10;
-constexpr double kGeometricEdgeLimit = 0.025;
+constexpr double kGeometricEdgeLimit = 0.02;
 constexpr double kAlbedoEdgeLimit = 0.03;
 constexpr double kLitLevelLimit = 0.03;
+constexpr double kShadowEdgeLimit = 0.065;
+constexpr RtFloat kGuidesOnlySigma = 1.0e6f;
+constexpr double kSceneDefaultSigma = 0.631196;
+constexpr double kSceneDefaultSigmaTolerance = 1.0e-6;
 
 constexpr RtInt kFourWorkers = 4;
 constexpr RtInt kOneWorker = 1;
@@ -102,7 +107,10 @@ double channelOf(GMANColor const& c, int i) {
   if (i == 0) {
     return c.getRed();
   }
-  return i == 1 ? c.getGreen() : c.getBlue();
+  if (i == 1) {
+    return c.getGreen();
+  }
+  return c.getBlue();
 }
 
 GMANColor grey(RtFloat v) { return GMANColor(v, v, v); }
@@ -122,7 +130,10 @@ Scene makeScene() {
   for (int y = 0; y < kSceneHeight; ++y) {
     for (int x = 0; x < kSceneWidth; ++x) {
       std::size_t const i = indexOf(kSceneWidth, x, y);
-      image.normal[i] = x < kGeometricEdgeX ? GMANNormal(0.0f, 0.0f, -1.0f) : GMANNormal(1.0f, 0.0f, 0.0f);
+      image.normal[i] = GMANNormal(0.0f, 0.0f, -1.0f);
+      if (x >= kGeometricEdgeX) {
+        image.normal[i] = GMANNormal(1.0f, 0.0f, 0.0f);
+      }
       RtFloat const albedo = x < kAlbedoEdgeX ? kLeftAlbedo : kRightAlbedo;
       image.albedo[i] = grey(albedo);
       RtFloat irradiance = 1.0f;
@@ -262,27 +273,53 @@ bool withinInputRange(std::vector<GMANColor> const& output, std::vector<GMANColo
   return true;
 }
 
-void checkSceneMeasurements() {
-  Scene const scene = makeScene();
-  std::vector<GMANColor> const out = gman::atrousDenoise(scene.image, defaultParameters(), kFourWorkers);
+double noiseRatio(Scene const& scene, std::vector<GMANColor> const& out) {
+  return rms(out, scene.truth, 4, 12, 4, 44) / rms(scene.image.color, scene.truth, 4, 12, 4, 44);
+}
 
-  double const noiseRatio = rms(out, scene.truth, 4, 12, 4, 44) / rms(scene.image.color, scene.truth, 4, 12, 4, 44);
-  double geometricBias = 0.0;
-  for (int x : {kGeometricEdgeX - 1, kGeometricEdgeX}) {
-    geometricBias = std::max(geometricBias, std::fabs(meanError(out, scene.truth, x, x + 1, 4, 20)));
-  }
+void checkGuidesOnly(Scene const& scene) {
+  gman::AtrousParameters parameters;
+  parameters.sigmaColor = kGuidesOnlySigma;
+  std::vector<GMANColor> const out = gman::atrousDenoise(scene.image, parameters, kFourWorkers);
+
+  double const noise = noiseRatio(scene, out);
+  double const geometricBias = std::fabs(meanError(out, scene.truth, kGeometricEdgeX - 1, kGeometricEdgeX, 4, 44));
   double albedoBias = 0.0;
   for (int x : {kAlbedoEdgeX - 1, kAlbedoEdgeX}) {
     albedoBias = std::max(albedoBias, std::fabs(meanError(out, scene.truth, x, x + 1, 4, 44)));
   }
-  double const litBias = std::fabs(meanError(out, scene.truth, 40, 60, 4, 20));
 
-  std::printf("noise ratio %.4f, geometric-edge bias %.4f, albedo-edge bias %.4f, lit-level bias %.4f\n", noiseRatio,
-              geometricBias, albedoBias, litBias);
-  check(noiseRatio <= kNoiseFallsLimit, "the filter cuts the flat region's noise to a tenth");
+  std::printf("guides alone: noise ratio %.4f, geometric-edge bias %.4f, albedo-edge bias %.4f\n", noise, geometricBias,
+              albedoBias);
+  check(noise <= kNoiseFallsLimit, "the guides alone cut the flat region's noise to a tenth");
   check(geometricBias <= kGeometricEdgeLimit, "the geometric edge only the normals mark holds");
   check(albedoBias <= kAlbedoEdgeLimit, "the albedo edge holds");
+}
+
+void checkDefaults(Scene const& scene) {
+  std::vector<GMANColor> const out = gman::atrousDenoise(scene.image, defaultParameters(), kFourWorkers);
+
+  double const noise = noiseRatio(scene, out);
+  double const litBias = std::fabs(meanError(out, scene.truth, 40, 60, 4, 20));
+  double shadowBias = 0.0;
+  for (int y : {kShadowEdgeY - 1, kShadowEdgeY}) {
+    shadowBias = std::max(shadowBias, std::fabs(meanError(out, scene.truth, 40, 60, y, y + 1)));
+  }
+  double const sigma = gman::atrousColorSigma(scene.image, defaultParameters());
+
+  std::printf("defaults: colour sigma %.6f, noise ratio %.4f, lit-level bias %.4f, shadow-edge bias %.4f\n", sigma,
+              noise, litBias, shadowBias);
+  check(std::fabs(sigma - kSceneDefaultSigma) <= kSceneDefaultSigmaTolerance,
+        "the default colour sigma on the scene is the lower median of its positive norms");
+  check(noise <= kNoiseFallsLimit, "the default filter cuts the flat region's noise to a tenth");
   check(litBias <= kLitLevelLimit, "the lit level beside the shadow edge holds");
+  check(shadowBias <= kShadowEdgeLimit, "the shadow edge only the colour marks holds");
+}
+
+void checkSceneMeasurements() {
+  Scene const scene = makeScene();
+  checkGuidesOnly(scene);
+  checkDefaults(scene);
 }
 
 void checkImpulse() {
@@ -359,7 +396,11 @@ void checkNonFinite(Spoil spoil, char const* name) {
   for (int c = 0; c < 3; ++c) {
     double const in = channelOf(image.color[bad], c);
     double const got = channelOf(out[bad], c);
-    badKeepsInput = badKeepsInput && (std::isnan(in) ? std::isnan(got) : got == in);
+    if (std::isnan(in)) {
+      badKeepsInput = badKeepsInput && std::isnan(got);
+    } else {
+      badKeepsInput = badKeepsInput && got == in;
+    }
   }
   check(badKeepsInput, std::string("a non-finite pixel reads its input colour: ") + name);
 }
@@ -372,20 +413,34 @@ void checkBlack() {
   check(gman::atrousColorSigma(image, defaultParameters()) == 0.0f, "a black image resolves a colour sigma of 0");
 }
 
+gman::GuidedImage rowImage(std::vector<GMANColor> colors) {
+  gman::GuidedImage image;
+  image.width = static_cast<int>(colors.size());
+  image.height = 1;
+  image.color = std::move(colors);
+  image.albedo.assign(image.color.size(), grey(kUniformLevel));
+  image.normal.assign(image.color.size(), GMANNormal(0.0f, 0.0f, -1.0f));
+  return image;
+}
+
+GMANColor red(RtFloat v) { return GMANColor(v, 0.0f, 0.0f); }
+
 void checkColorSigma() {
-  Scene const scene = makeScene();
-  double largest = 0.0;
-  for (GMANColor const& pixel : scene.image.color) {
-    double const r = pixel.getRed();
-    double const g = pixel.getGreen();
-    double const b = pixel.getBlue();
-    largest = std::max(largest, std::sqrt(r * r + g * g + b * b));
-  }
-  check(gman::atrousColorSigma(scene.image, defaultParameters()) == static_cast<RtFloat>(largest),
-        "the default colour sigma is the largest colour norm");
+  std::vector<GMANColor> const values = {red(0.0f), red(0.0f), red(0.0f), red(1.0f), red(2.0f), red(3.0f), red(100.0f)};
+  check(gman::atrousColorSigma(rowImage(values), defaultParameters()) == 2.0f,
+        "the default colour sigma is the lower median of the positive norms");
+
+  RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
+  RtFloat const infinity = std::numeric_limits<RtFloat>::infinity();
+  std::vector<GMANColor> widened = values;
+  widened.push_back(red(nan));
+  widened.push_back(red(infinity));
+  check(gman::atrousColorSigma(rowImage(widened), defaultParameters()) == 2.0f,
+        "the default colour sigma ignores a non-finite pixel");
+
   gman::AtrousParameters given;
-  given.sigmaColor = 0.75f;
-  check(gman::atrousColorSigma(scene.image, given) == 0.75f, "a given colour sigma is the one used");
+  given.sigmaColor = 0.25f;
+  check(gman::atrousColorSigma(rowImage(values), given) == 0.25f, "a given colour sigma is the one used");
 }
 
 void checkBeyondTheImage() {

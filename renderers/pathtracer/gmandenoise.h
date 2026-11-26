@@ -66,9 +66,10 @@ struct AtrousParameters {
   // count is safe. At least 1.
   int iterations = 5;
   // sigma_rt, the colour weight's sigma at level 0; level i uses 2^-i times
-  // it. Absent, the largest Euclidean norm among the image's finite pixels,
-  // so the first level stops on the guides alone. Finite and positive when
-  // given.
+  // it. Absent, the lower median of the positive Euclidean colour norms of
+  // the image's finite pixels. The paper's default, the largest norm, lets
+  // one bright pixel set a sigma that no shadow edge falls below; the median
+  // keeps the edges no guide marks. Finite and positive when given.
   std::optional<RtFloat> sigmaColor;
   // sigma_n, the normal weight's sigma. Finite and positive.
   RtFloat sigmaNormal = 0.5f;
@@ -77,7 +78,8 @@ struct AtrousParameters {
 };
 
 // The colour sigma atrousDenoise uses for image under parameters: the given
-// sigmaColor, else the largest Euclidean norm among the finite pixels,
+// sigmaColor, else the lower median of the positive Euclidean colour norms of
+// the finite pixels, the element at index (n - 1) / 2 of the n sorted norms,
 // saturating at the largest finite RtFloat. 0 when every finite pixel is
 // black, which makes atrousDenoise return the colour unchanged. Throws what
 // atrousDenoise throws for the same arguments.
