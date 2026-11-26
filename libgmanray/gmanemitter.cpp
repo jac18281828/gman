@@ -363,6 +363,18 @@ struct EmitterDraw {
   RtFloat jacobian;
 };
 
+// The point of triangle (a, b, c) that the square-root warp of (u1, u2) picks,
+// uniform by area: barycentric weights (1 - sqrt(u1), u2 sqrt(u1), sqrt(u1) (1 - u2)).
+GMANPoint pointInTriangle(GMANPoint const& a, GMANPoint const& b, GMANPoint const& c, double u1, double u2) {
+  double const root = std::sqrt(u1);
+  double const weightA = 1.0 - root;
+  double const weightB = u2 * root;
+  double const weightC = root * (1.0 - u2);
+  return GMANPoint(static_cast<RtFloat>(weightA * a.getX() + weightB * b.getX() + weightC * c.getX()),
+                   static_cast<RtFloat>(weightA * a.getY() + weightB * b.getY() + weightC * c.getY()),
+                   static_cast<RtFloat>(weightA * a.getZ() + weightB * b.getZ() + weightC * c.getZ()));
+}
+
 // A point drawn uniformly by area over mesh, with its face's plane normal, the
 // mesh's total area and area Jacobian 1; empty for a mesh with no area.
 std::optional<EmitterDraw> drawMeshPoint(GMANRayPolygonMesh const& mesh, RtFloat u1, RtFloat u2) {
@@ -383,18 +395,9 @@ std::optional<EmitterDraw> drawMeshPoint(GMANRayPolygonMesh const& mesh, RtFloat
     return std::nullopt;
   }
 
-  GMANPoint const& a = loop[0];
-  GMANPoint const& b = loop[trianglePick->index + 1];
-  GMANPoint const& c = loop[trianglePick->index + 2];
-  double const root = std::sqrt(trianglePick->fraction);
-  double const weightA = 1.0 - root;
-  double const weightB = u2 * root;
-  double const weightC = root * (1.0 - u2);
-
   EmitterDraw draw;
-  draw.point = GMANPoint(static_cast<RtFloat>(weightA * a.getX() + weightB * b.getX() + weightC * c.getX()),
-                         static_cast<RtFloat>(weightA * a.getY() + weightB * b.getY() + weightC * c.getY()),
-                         static_cast<RtFloat>(weightA * a.getZ() + weightB * b.getZ() + weightC * c.getZ()));
+  draw.point = pointInTriangle(loop[0], loop[trianglePick->index + 1], loop[trianglePick->index + 2],
+                               trianglePick->fraction, u2);
   draw.normal = face.getPlaneNormal();
   draw.area = static_cast<RtFloat>(total);
   draw.jacobian = (RtFloat)1.0;
