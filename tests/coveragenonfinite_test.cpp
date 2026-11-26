@@ -22,7 +22,9 @@
  * One rule for coverage in every renderer: a surface whose Oi is NaN or +inf
  * is opaque, never the transparent a NaN clamped to 0 reads as, and one whose
  * Oi is -inf is transparent. The z-buffer reads the vertex opacity before it
- * interpolates, since infinite vertices interpolate to NaN. The plugin
+ * interpolates, since infinite vertices interpolate to NaN, and its per-sample
+ * alpha reads the NaN that interpolating finite vertices of +-3e38 overflows
+ * to, as opaque. The plugin
  * tests/nonfinitesurface_test_plugin.cpp answers each, with a finite red Ci, over a sphere at the centre of the frame;
  * the centre pixel's alpha and colour read back from the TIFF. A NaN or infinite Ci shades black rather than reaching
  * the pixel.
@@ -40,6 +42,9 @@
 #include "rungman.h"
 
 namespace {
+
+constexpr std::uint32_t kBlockHalf = 6;
+constexpr double kExtremeMeanAlphaFloor = 0.6;
 
 struct Pixel {
   bool ok = false;
@@ -72,7 +77,32 @@ Pixel centrePixel(std::string const& path) {
   return pixel;
 }
 
-Pixel render(std::string const& gman, std::string const& renderer, std::string const& ci, std::string const& oi) {
+double centreBlockMeanAlpha(std::string const& path) {
+  TIFF* const tif = TIFFOpen(path.c_str(), "r");
+  if (tif == nullptr) {
+    return -1.0;
+  }
+  std::uint32_t width = 0;
+  std::uint32_t height = 0;
+  TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+  TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+  std::vector<std::uint32_t> raster(static_cast<std::size_t>(width) * height);
+  double sum = 0.0;
+  int count = 0;
+  if (TIFFReadRGBAImageOriented(tif, width, height, raster.data(), ORIENTATION_TOPLEFT, 0)) {
+    for (std::uint32_t y = height / 2 - kBlockHalf; y < height / 2 + kBlockHalf; ++y) {
+      for (std::uint32_t x = width / 2 - kBlockHalf; x < width / 2 + kBlockHalf; ++x) {
+        sum += static_cast<double>(TIFFGetA(raster[static_cast<std::size_t>(y) * width + x])) / 255.0;
+        ++count;
+      }
+    }
+  }
+  TIFFClose(tif);
+  return count == 0 ? -1.0 : sum / count;
+}
+
+std::string renderToFile(std::string const& gman, std::string const& renderer, std::string const& ci,
+                         std::string const& oi) {
   std::string const stem = "coverage_" + renderer + "_" + ci + "_" + oi;
   std::string const tif = stem + ".tif";
   std::string const rib = stem + ".rib";
@@ -88,7 +118,17 @@ Pixel render(std::string const& gman, std::string const& renderer, std::string c
                      << "WorldEnd\n";
   GMANRunResult const result = runGman(gman, {"-r", renderer, rib});
   check(result.exitStatus == 0, renderer + " renders ci " + ci + " oi " + oi);
-  return centrePixel(tif);
+  return tif;
+}
+
+Pixel render(std::string const& gman, std::string const& renderer, std::string const& ci, std::string const& oi) {
+  return centrePixel(renderToFile(gman, renderer, ci, oi));
+}
+
+void testExtremeOpacity(std::string const& gman, std::string const& renderer) {
+  double const mean = centreBlockMeanAlpha(renderToFile(gman, renderer, "finite", "extreme"));
+  check(mean > kExtremeMeanAlphaFloor, renderer + ": opacity of +-3e38 over the sphere's centre averages alpha " +
+                                           std::to_string(mean) + ", above " + std::to_string(kExtremeMeanAlphaFloor));
 }
 
 void testOpacity(std::string const& gman, std::string const& renderer, std::string const& oi, int expectedAlpha) {
@@ -127,6 +167,9 @@ int main(int argc, char* argv[]) {
   testOpacity(gman, renderer, "nan", 255);
   testOpacity(gman, renderer, "inf", 255);
   testOpacity(gman, renderer, "-inf", 0);
+  if (renderer == "gmanzbuffer") {
+    testExtremeOpacity(gman, renderer);
+  }
   if (tracesColour) {
     testRedSurvivesNonFiniteOpacity(gman, renderer, "nan");
     testRedSurvivesNonFiniteOpacity(gman, renderer, "inf");

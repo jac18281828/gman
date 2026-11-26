@@ -1738,7 +1738,7 @@ set_tests_properties(rotatezeroaxis_pin PROPERTIES
   TIMEOUT 30)
 
 # Test-only surface shader answering a NaN or infinite Ci or Oi on request
-# ("string ci", "string oi"): RIB has no literal for either.
+# ("string ci", "string oi"), or an opacity whose interpolation overflows.
 gman_add_plugin(gman_nonfinitesurface nonfinitesurface_test_plugin.cpp)
 set_target_properties(gman_nonfinitesurface PROPERTIES OUTPUT_NAME "nonfinitesurface")
 

@@ -21,11 +21,13 @@
 /*
  * Test-only surface shader whose Ci and Oi are each either finite (Cs and
  * Os) or a chosen non-finite value, named by its "string ci" and "string oi"
- * parameters: "nan", "inf" or "-inf" in every channel. It lets a RIB fixture
- * hand a renderer a NaN or infinite colour or opacity, which RIB has no
- * literal for. Never dlopened outside the test suite.
+ * parameters: "nan", "inf" or "-inf" in every channel. The opacity also takes
+ * "extreme": a finite 3e38 whose sign alternates with u and v, so that a
+ * renderer's interpolation between two vertices overflows to infinity and then
+ * NaN. Never dlopened outside the test suite.
  */
 
+#include <cmath>
 #include <limits>
 #include <string>
 
@@ -42,9 +44,23 @@ public:
       : ciMode(getStringParam(parameters, "ci", "finite")), oiMode(getStringParam(parameters, "oi", "finite")) {}
 
   GMANColor computeCi(GMANSurfaceEnv const& se) const override { return answer(ciMode, se.Cs); }
-  GMANColor computeOi(GMANSurfaceEnv const& se) const override { return answer(oiMode, se.Os); }
+  GMANColor computeOi(GMANSurfaceEnv const& se) const override {
+    if (oiMode == "extreme") {
+      return extremeOpacity(se.u, se.v);
+    }
+    return answer(oiMode, se.Os);
+  }
 
 private:
+  static GMANColor extremeOpacity(RtFloat u, RtFloat v) {
+    constexpr RtFloat kMagnitude = 3e38f;
+    RtFloat value = kMagnitude;
+    if ((std::lround(u * 16) + std::lround(v * 16)) % 2 != 0) {
+      value = -kMagnitude;
+    }
+    return GMANColor(value, value, value);
+  }
+
   static GMANColor answer(std::string const& mode, GMANColor const& finite) {
     RtFloat value;
     if (mode == "nan") {
