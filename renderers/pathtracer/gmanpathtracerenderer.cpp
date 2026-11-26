@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
