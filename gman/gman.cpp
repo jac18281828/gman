@@ -25,11 +25,13 @@
  */
 
 #include <cstdlib>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "gmancommandline.h"
@@ -52,16 +54,12 @@ std::string logFileNameFor(std::string_view ribPath) {
   return std::string(ribPath) + ".log";
 }
 
-// The whole of --version's contract: two lines to stdout, parsing no
-// files.
-int printVersion() {
-  std::cout << "gman " << GMAN_PROJECT_VERSION << "\n";
-  std::cout << "drivers:";
+std::string versionText() {
+  std::string text = std::format("gman {}\ndrivers:", GMAN_PROJECT_VERSION);
   for (std::string const& name : gman::fileDrivers()) {
-    std::cout << ' ' << name;
+    text += std::format(" {}", name);
   }
-  std::cout << "\n";
-  return EXIT_SUCCESS;
+  return text;
 }
 
 std::unique_ptr<GMANRIBParse> makeParser(GMANRenderManImpl& renderMan, std::string const& ribFile,
@@ -93,17 +91,14 @@ RtVoid handleReport(RtInt code, RtInt severity, char const* message) {
 } // namespace
 
 int main(int argc, char* argv[]) {
-  using Outcome = gman::CommandLine::Outcome;
-
-  std::vector<std::string> const arguments(argv + 1, argv + argc);
-  gman::CommandLine const commandLine = gman::parseCommandLine(arguments);
-  if (commandLine.outcome == Outcome::version) {
-    return printVersion();
+  std::vector<std::string> const arguments(argv, argv + argc);
+  auto const parsed = gman::parseCommandLine(arguments, versionText);
+  if (auto const* const leave = std::get_if<gman::CommandLineExit>(&parsed)) {
+    std::cout << leave->out;
+    std::cerr << leave->err;
+    return leave->status;
   }
-  if (commandLine.outcome == Outcome::noArguments) {
-    std::cerr << gman::usageText(argv[0]);
-    return EXIT_SUCCESS;
-  }
+  auto const& commandLine = std::get<gman::CommandLine>(parsed);
 
   int rc = EXIT_SUCCESS;
   try {
@@ -119,23 +114,7 @@ int main(int argc, char* argv[]) {
     // announce the banner
     info("gman {} -- LGPL-2.1-or-later, see COPYING\n", GMAN_PROJECT_VERSION);
 
-    switch (commandLine.outcome) {
-    case Outcome::help:
-      std::cerr << gman::usageText(argv[0]);
-      std::exit(EXIT_SUCCESS);
-    case Outcome::unrecognized:
-    case Outcome::missingRenderer:
-    case Outcome::emptyRenderer:
-      std::cerr << gman::errorText(commandLine, argv[0]);
-      return EXIT_FAILURE;
-    case Outcome::run:
-    case Outcome::version:
-    case Outcome::noArguments:
-      break;
-    }
-    if (commandLine.level) {
-      logObj.setLogLevel(*commandLine.level);
-    }
+    logObj.setLogLevel(commandLine.level);
 
     for (std::string const& ribFile : commandLine.files) {
       try {

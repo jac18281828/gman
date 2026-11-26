@@ -24,9 +24,11 @@
  * text comes from the command-line module the binary is built on.
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "check.h"
@@ -38,6 +40,8 @@ namespace {
 using Arguments = std::vector<std::string>;
 using Capture = GMANRunOptions::Capture;
 
+std::string versionText() { return "gman test\ndrivers: tiff"; }
+
 GMANRunResult run(std::string const& gmanPath, Arguments const& arguments, Capture capture) {
   GMANRunOptions options;
   options.capture = capture;
@@ -46,7 +50,24 @@ GMANRunResult run(std::string const& gmanPath, Arguments const& arguments, Captu
 
 std::string firstLine(std::string const& text) { return text.substr(0, text.find('\n')); }
 
-bool isOneLine(std::string const& text) { return !text.empty() && text.find('\n') == text.size() - 1; }
+gman::CommandLineExit expectedExit(std::string const& gmanPath, Arguments const& arguments) {
+  Arguments argv{gmanPath};
+  argv.insert(argv.end(), arguments.begin(), arguments.end());
+  auto const parsed = gman::parseCommandLine(argv, versionText);
+  if (auto const* const leave = std::get_if<gman::CommandLineExit>(&parsed)) {
+    return *leave;
+  }
+  return gman::CommandLineExit{-1, {}, {}};
+}
+
+void checkMatchesModule(std::string const& gmanPath, Arguments const& arguments, std::string const& name) {
+  gman::CommandLineExit const expected = expectedExit(gmanPath, arguments);
+  GMANRunResult const out = run(gmanPath, arguments, Capture::stdoutOnly);
+  GMANRunResult const err = run(gmanPath, arguments, Capture::stderrOnly);
+  check(out.exitStatus == expected.status && out.exitStatus == err.exitStatus, name + " exits as the module says");
+  check(out.output == expected.out, name + " writes the module's stdout");
+  check(err.output == expected.err, name + " writes the module's stderr");
+}
 
 } // namespace
 
@@ -59,45 +80,36 @@ int main(int argc, char* argv[]) {
   std::string const rib = "sphere.rib";
   std::filesystem::copy_file(argv[2], rib, std::filesystem::copy_options::overwrite_existing);
 
-  GMANRunResult const noArgumentsOut = run(gmanPath, {}, Capture::stdoutOnly);
-  GMANRunResult const noArgumentsErr = run(gmanPath, {}, Capture::stderrOnly);
-  check(noArgumentsOut.exitStatus == 0, "no arguments exits 0");
-  check(noArgumentsOut.output.empty(), "no arguments writes nothing to stdout");
-  check(noArgumentsErr.output == gman::usageText(gmanPath), "no arguments writes the usage text to stderr");
-
-  GMANRunResult const helpOut = run(gmanPath, {"-h"}, Capture::stdoutOnly);
-  GMANRunResult const helpErr = run(gmanPath, {"-h"}, Capture::stderrOnly);
-  check(helpOut.exitStatus == 0, "-h exits 0");
-  check(isOneLine(helpOut.output), "-h writes one line to stdout");
-  check(helpErr.output == gman::usageText(gmanPath), "-h writes the usage text to stderr");
-  std::string const banner = firstLine(helpOut.output);
+  checkMatchesModule(gmanPath, {}, "no arguments");
+  checkMatchesModule(gmanPath, {"-h"}, "-h");
 
   GMANRunResult const versionOut = run(gmanPath, {"--version"}, Capture::stdoutOnly);
   GMANRunResult const versionErr = run(gmanPath, {"--version"}, Capture::stderrOnly);
   check(versionOut.exitStatus == 0, "--version exits 0");
-  check(!versionOut.output.empty(), "--version writes to stdout");
-  check(firstLine(versionOut.output) != banner, "--version prints no banner");
   check(versionErr.output.empty(), "--version writes nothing to stderr");
+  check(std::ranges::count(versionOut.output, '\n') == 2 &&
+            versionOut.output.substr(versionOut.output.find('\n') + 1).starts_with("drivers:"),
+        "--version writes two lines, the second listing the drivers");
 
-  std::string const badFlagMessage = gman::errorText(gman::parseCommandLine({"-x", rib}), gmanPath);
   std::filesystem::remove("sphere.tif");
-  GMANRunResult const badFlagOut = run(gmanPath, {"-x", rib}, Capture::stdoutOnly);
-  GMANRunResult const badFlagErr = run(gmanPath, {"-x", rib}, Capture::stderrOnly);
-  check(badFlagOut.exitStatus == 1 && badFlagErr.exitStatus == 1, "-x exits 1");
-  check(badFlagOut.output == helpOut.output, "-x prints the banner to stdout");
-  check(!badFlagMessage.empty() && badFlagErr.output == badFlagMessage, "-x writes its error text to stderr");
+  checkMatchesModule(gmanPath, {"-x", rib}, "-x");
   check(!std::filesystem::exists("sphere.tif"), "-x renders no image");
 
   std::filesystem::remove("sphere.tif");
   GMANRunResult const render = run(gmanPath, {rib}, Capture::stdoutOnly);
   check(render.exitStatus == 0, "a rib file renders and exits 0");
-  check(firstLine(render.output) == banner, "a rib file prints the banner first");
   check(std::filesystem::exists("sphere.tif"), "a rib file renders sphere.tif");
+  check(std::ranges::count(render.output, '\n') > 1, "a rib file reports its progress after the banner");
 
   std::filesystem::remove("sphere.log");
   GMANRunResult const logged = run(gmanPath, {"-l", rib}, Capture::stdoutOnly);
   check(logged.exitStatus == 0, "-l renders and exits 0");
   check(std::filesystem::exists("sphere.log"), "-l writes sphere.log");
+
+  GMANRunResult const quiet = run(gmanPath, {rib, "-q"}, Capture::stdoutOnly);
+  check(quiet.exitStatus == 0, "a flag after the file renders and exits 0");
+  check(quiet.output == firstLine(render.output) + "\n",
+        "a flag after the file applies: a quiet run prints the banner alone");
 
   return checkSummary("gman's command-line streams, exit status and files are as the module describes");
 }

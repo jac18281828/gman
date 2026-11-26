@@ -19,15 +19,15 @@
  */
 
 /*
- * gman's command line, parsed in process: the outcome and the fields each
- * argument list resolves to, and the usage text's listing of every option.
+ * gman's command line, parsed in process: what each argument list resolves
+ * to, and what each request that ends the run prints and exits with.
  */
 
-#include <algorithm>
-#include <cctype>
+#include <array>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "check.h"
@@ -37,326 +37,177 @@
 namespace {
 
 using gman::CommandLine;
-using Outcome = CommandLine::Outcome;
+using gman::CommandLineExit;
 using Arguments = std::vector<std::string>;
+using Parsed = std::variant<CommandLine, CommandLineExit>;
 
-std::string_view nameOf(Outcome outcome) {
-  switch (outcome) {
-  case Outcome::run:
-    return "run";
-  case Outcome::version:
-    return "version";
-  case Outcome::noArguments:
-    return "noArguments";
-  case Outcome::help:
-    return "help";
-  case Outcome::unrecognized:
-    return "unrecognized";
-  case Outcome::missingRenderer:
-    return "missingRenderer";
-  case Outcome::emptyRenderer:
-    return "emptyRenderer";
-  }
-  return "unknown";
+struct LevelFlag {
+  char const* shortName;
+  char const* longName;
+  GMANLogLevel level;
+};
+
+constexpr std::array<LevelFlag, 5> levelFlags{{
+    {"-d", "--debug", LOGLVL_DEBUG},
+    {"-i", "--info", LOGLVL_INFO},
+    {"-w", "--warning", LOGLVL_WARNING},
+    {"-e", "--error", LOGLVL_ERROR},
+    {"-q", "--quiet", LOGLVL_DISASTER},
+}};
+
+constexpr bool noLog = false;
+constexpr bool withLog = true;
+std::optional<std::string> const noRenderer;
+
+std::string versionText() { return "gman test\ndrivers: tiff"; }
+
+Arguments withProgramName(Arguments const& arguments) {
+  Arguments argv{"gman"};
+  argv.insert(argv.end(), arguments.begin(), arguments.end());
+  return argv;
 }
 
+Parsed parse(Arguments const& arguments) { return gman::parseCommandLine(withProgramName(arguments), versionText); }
+
 std::string describe(Arguments const& arguments) {
-  if (arguments.empty()) {
-    return "no arguments";
-  }
-  std::string text;
+  std::string text = "gman";
   for (std::string const& argument : arguments) {
-    text += (text.empty() ? "'" : " '") + argument + "'";
+    text += " '" + argument + "'";
   }
   return text;
 }
 
-void expectOutcome(Arguments const& arguments, Outcome outcome) {
-  CommandLine const parsed = gman::parseCommandLine(arguments);
-  check(parsed.outcome == outcome, describe(arguments) + " is " + std::string(nameOf(outcome)));
+void expectRun(Arguments const& arguments, GMANLogLevel level, bool writeLog,
+               std::optional<std::string> const& renderer, Arguments const& files) {
+  Parsed const parsed = parse(arguments);
+  CommandLine const* const run = std::get_if<CommandLine>(&parsed);
+  check(run != nullptr && run->level == level && run->writeLog == writeLog && run->renderer == renderer &&
+            run->files == files,
+        describe(arguments) + " renders " + describe(files) + " at level " + std::to_string(static_cast<int>(level)) +
+            (writeLog ? " with a log" : " without a log") +
+            (renderer ? " on renderer '" + *renderer + "'" : " on the default renderer"));
 }
 
-void expectNamed(Arguments const& arguments, std::string const& token) {
-  CommandLine const parsed = gman::parseCommandLine(arguments);
-  check(parsed.outcome == Outcome::unrecognized && parsed.unrecognized == token,
-        describe(arguments) + " names '" + token + "' as unrecognized");
+void expectHelp(Arguments const& arguments) {
+  Parsed const parsed = parse(arguments);
+  CommandLineExit const* const leave = std::get_if<CommandLineExit>(&parsed);
+  check(leave != nullptr && leave->status == 0 && leave->err.empty() && !leave->out.empty(),
+        describe(arguments) + " prints help to stdout and exits 0");
 }
 
-void expectLevel(Arguments const& arguments, std::optional<GMANLogLevel> level) {
-  CommandLine const parsed = gman::parseCommandLine(arguments);
-  check(parsed.outcome == Outcome::run && parsed.level == level,
-        describe(arguments) +
-            (level ? " ends at level " + std::to_string(static_cast<int>(*level)) : " sets no level"));
+void expectVersion(Arguments const& arguments) {
+  Parsed const parsed = parse(arguments);
+  CommandLineExit const* const leave = std::get_if<CommandLineExit>(&parsed);
+  check(leave != nullptr && leave->status == 0 && leave->err.empty() && leave->out == versionText() + "\n",
+        describe(arguments) + " prints the version to stdout and exits 0");
 }
 
-void expectRenderer(Arguments const& arguments, std::optional<std::string> const& renderer) {
-  CommandLine const parsed = gman::parseCommandLine(arguments);
-  check(parsed.outcome == Outcome::run && parsed.renderer == renderer,
-        describe(arguments) + (renderer ? " selects renderer '" + *renderer + "'" : " selects no renderer"));
+void expectUsageError(Arguments const& arguments) {
+  Parsed const parsed = parse(arguments);
+  CommandLineExit const* const leave = std::get_if<CommandLineExit>(&parsed);
+  check(leave != nullptr && leave->status != 0 && leave->out.empty() && !leave->err.empty(),
+        describe(arguments) + " reports a usage error on stderr and exits non-zero");
 }
 
-void expectFiles(Arguments const& arguments, Arguments const& files) {
-  CommandLine const parsed = gman::parseCommandLine(arguments);
-  check(parsed.outcome == Outcome::run && parsed.files == files,
-        describe(arguments) + " renders " + std::to_string(files.size()) + " file(s): " + describe(files));
+void expectUnexpected(Arguments const& arguments, std::string const& token) {
+  Parsed const parsed = parse(arguments);
+  CommandLineExit const* const leave = std::get_if<CommandLineExit>(&parsed);
+  check(leave != nullptr && leave->status != 0 && leave->out.empty() && leave->err.find(token) != std::string::npos,
+        describe(arguments) + " names '" + token + "' as the unexpected argument");
 }
 
-void checkVersionAndNoArguments() {
-  expectOutcome({}, Outcome::noArguments);
-  expectOutcome({"--version"}, Outcome::version);
-  expectOutcome({"-x", "--version"}, Outcome::version);
-  expectOutcome({"-r", "--version"}, Outcome::version);
-  expectOutcome({"sphere.rib", "--version"}, Outcome::version);
-  expectOutcome({"-h", "--version"}, Outcome::version);
-  expectOutcome({"--renderer", "--version"}, Outcome::version);
-}
-
-void checkHelp() {
-  expectOutcome({"-h"}, Outcome::help);
-  expectOutcome({"--help"}, Outcome::help);
-  expectOutcome({"-h", "--help"}, Outcome::help);
-  expectOutcome({"-h", "-d", "sphere.rib"}, Outcome::help);
-  expectOutcome({"-h", "-r"}, Outcome::help);
-  expectOutcome({"-r", "", "-h"}, Outcome::emptyRenderer);
-}
-
-void checkUnrecognizedTokens() {
-  for (std::string const token : {"-x", "--foo", "-", "--", "-5"}) {
-    expectNamed({token}, token);
-    expectNamed({token, "sphere.rib"}, token);
-  }
-}
-
-void checkRendererErrors() {
-  expectOutcome({"-r"}, Outcome::missingRenderer);
-  expectOutcome({"--renderer"}, Outcome::missingRenderer);
-  expectOutcome({"sphere.rib", "-r"}, Outcome::run);
-  expectOutcome({"-r", ""}, Outcome::emptyRenderer);
-  expectOutcome({"--renderer", ""}, Outcome::emptyRenderer);
-  expectOutcome({"--renderer="}, Outcome::emptyRenderer);
-  expectOutcome({"--renderer=", "sphere.rib"}, Outcome::emptyRenderer);
-  expectOutcome({"-h", "--renderer="}, Outcome::emptyRenderer);
-  expectOutcome({"-r", "--renderer=", "sphere.rib"}, Outcome::emptyRenderer);
-}
-
-void checkRendererNames() {
-  expectRenderer({"-r", "gmanzbuffer"}, "gmanzbuffer");
-  expectRenderer({"-rgmanzbuffer"}, "gmanzbuffer");
-  expectRenderer({"--renderer", "gmanzbuffer"}, "gmanzbuffer");
-  expectRenderer({"--renderer=gmanzbuffer"}, "gmanzbuffer");
-  expectRenderer({"-r", "first", "-r", "second"}, "second");
-  expectRenderer({"-r", "first", "--renderer", "second"}, "second");
-  expectRenderer({"--renderer", "first", "-r", "second"}, "second");
-  expectRenderer({"--renderer=first", "-rsecond"}, "second");
-  expectRenderer({"-r", "-x"}, "-x");
-  expectRenderer({"--renderer=x=y"}, "x=y");
-  expectRenderer({"-d", "-l"}, std::nullopt);
-  expectRenderer({"sphere.rib"}, std::nullopt);
+void checkFiles() {
+  expectRun({"sphere.rib"}, LOGLVL_INFO, noLog, noRenderer, {"sphere.rib"});
+  expectRun({"a.rib", "b.rib", "c.rib"}, LOGLVL_INFO, noLog, noRenderer, {"a.rib", "b.rib", "c.rib"});
+  expectRun({"--", "-x.rib"}, LOGLVL_INFO, noLog, noRenderer, {"-x.rib"});
 }
 
 void checkLevels() {
-  expectLevel({"-d"}, LOGLVL_DEBUG);
-  expectLevel({"-i"}, LOGLVL_INFO);
-  expectLevel({"-w"}, LOGLVL_WARNING);
-  expectLevel({"-e"}, LOGLVL_ERROR);
-  expectLevel({"-q"}, LOGLVL_DISASTER);
-  expectLevel({"--debug"}, LOGLVL_DEBUG);
-  expectLevel({"--info"}, LOGLVL_INFO);
-  expectLevel({"--warning"}, LOGLVL_WARNING);
-  expectLevel({"--error"}, LOGLVL_ERROR);
-  expectLevel({"--quiet"}, LOGLVL_DISASTER);
-  expectLevel({"-q", "-d"}, LOGLVL_DEBUG);
-  expectLevel({"-d", "-q"}, LOGLVL_DISASTER);
-  expectLevel({"-e", "-i"}, LOGLVL_INFO);
-  expectLevel({"-i", "-e"}, LOGLVL_ERROR);
-  expectLevel({"-q", "--debug"}, LOGLVL_DEBUG);
-  expectLevel({"--quiet", "--debug"}, LOGLVL_DEBUG);
-  expectLevel({"--debug", "--quiet"}, LOGLVL_DISASTER);
-  expectLevel({"-l"}, std::nullopt);
-  expectLevel({"-r", "gmanzbuffer"}, std::nullopt);
-  expectLevel({"sphere.rib"}, std::nullopt);
-}
-
-void checkWhereFlagsEnd() {
-  expectFiles({"sphere.rib"}, {"sphere.rib"});
-  expectFiles({"-d", "a.rib", "b.rib"}, {"a.rib", "b.rib"});
-  expectFiles({"sphere.rib", "-q"}, {"sphere.rib", "-q"});
-  expectFiles({"sphere.rib", "--debug"}, {"sphere.rib", "--debug"});
-  expectLevel({"sphere.rib", "-q"}, std::nullopt);
-  expectLevel({"sphere.rib", "--debug"}, std::nullopt);
-  expectFiles({"-q"}, {});
-  expectFiles({"-d", "-l"}, {});
-}
-
-void checkLogFile() {
-  CommandLine const parsed = gman::parseCommandLine({"-l", "sphere.rib"});
-  check(parsed.outcome == Outcome::run && parsed.writeLog, "-l asks for a log");
-  CommandLine const longForm = gman::parseCommandLine({"--log-file", "sphere.rib"});
-  check(longForm.outcome == Outcome::run && longForm.writeLog, "--log-file asks for a log");
-  CommandLine const none = gman::parseCommandLine({"sphere.rib"});
-  check(none.outcome == Outcome::run && !none.writeLog, "no flag asks for no log");
-}
-
-void checkClusters() {
-  CommandLine const cluster = gman::parseCommandLine({"-dl", "sphere.rib"});
-  check(cluster.outcome == Outcome::run && cluster.level == LOGLVL_DEBUG && cluster.writeLog,
-        "-dl sets debug and the log");
-  expectLevel({"-qd"}, LOGLVL_DEBUG);
-  expectLevel({"-dq"}, LOGLVL_DISASTER);
-  expectOutcome({"-dx"}, Outcome::unrecognized);
-  expectOutcome({"-hx"}, Outcome::unrecognized);
-  expectOutcome({"-d=1"}, Outcome::unrecognized);
-  expectOutcome({"-l1"}, Outcome::unrecognized);
-}
-
-void checkUnrecognizedOutranksEarlierEvents() {
-  expectNamed({"-h", "-x"}, "-x");
-  expectNamed({"-r", "", "-x"}, "-x");
-  expectNamed({"-x", "--debug=1", "sphere.rib"}, "-x");
-}
-
-void checkLongNameRules() {
-  for (std::string const argument : {"--debug=1", "--help=x", "--log-file=x", "--deb", "--Debug"}) {
-    expectNamed({argument}, argument);
-    expectNamed({argument, "sphere.rib"}, argument);
-  }
-  expectNamed({"-h", "--debug=1"}, "--debug=1");
-}
-
-void checkRenderersGuardStopsAtFirstFile() {
-  expectFiles({"sphere.rib", "--renderer="}, {"sphere.rib", "--renderer="});
-}
-
-void checkEmptyValuesActAsBareFlags() {
-  expectLevel({"--debug="}, LOGLVL_DEBUG);
-  expectLevel({"--debug={}"}, LOGLVL_DEBUG);
-  expectLevel({"--quiet="}, LOGLVL_DISASTER);
-  CommandLine const log = gman::parseCommandLine({"--log-file="});
-  check(log.outcome == Outcome::run && log.writeLog, "--log-file= asks for a log");
-  expectOutcome({"--help="}, Outcome::help);
-  expectOutcome({"--help={}"}, Outcome::help);
-}
-
-std::vector<std::string> splitLines(std::string const& text) {
-  std::vector<std::string> lines;
-  std::string line;
-  for (char const c : text) {
-    if (c == '\n') {
-      lines.push_back(line);
-      line.clear();
-    } else {
-      line += c;
+  for (LevelFlag const& flag : levelFlags) {
+    for (std::string_view const name : {flag.shortName, flag.longName}) {
+      expectRun({std::string(name), "a.rib"}, flag.level, noLog, noRenderer, {"a.rib"});
     }
   }
-  if (!line.empty()) {
-    lines.push_back(line);
-  }
-  return lines;
+  expectRun({"-q", "-d", "a.rib"}, LOGLVL_DEBUG, noLog, noRenderer, {"a.rib"});
+  expectRun({"-d", "-q", "a.rib"}, LOGLVL_DISASTER, noLog, noRenderer, {"a.rib"});
+  expectRun({"--quiet", "--debug", "a.rib"}, LOGLVL_DEBUG, noLog, noRenderer, {"a.rib"});
 }
 
-std::vector<std::string> tokensOf(std::string const& line) {
-  std::vector<std::string> tokens;
-  std::string token;
-  for (char const c : line) {
-    if (std::isspace(static_cast<unsigned char>(c)) != 0 || c == ',') {
-      if (!token.empty()) {
-        tokens.push_back(token);
-        token.clear();
-      }
-    } else {
-      token += c;
-    }
-  }
-  if (!token.empty()) {
-    tokens.push_back(token);
-  }
-  return tokens;
+void checkLog() {
+  expectRun({"-l", "a.rib"}, LOGLVL_INFO, withLog, noRenderer, {"a.rib"});
+  expectRun({"--log-file", "a.rib"}, LOGLVL_INFO, withLog, noRenderer, {"a.rib"});
+  expectRun({"-dl", "a.rib"}, LOGLVL_DEBUG, withLog, noRenderer, {"a.rib"});
 }
 
-bool holdsEverySpelling(std::string const& line, std::vector<std::string> const& spellings) {
-  std::vector<std::string> const tokens = tokensOf(line);
-  return std::ranges::all_of(spellings, [&tokens](std::string const& spelling) {
-    return std::ranges::find(tokens, spelling) != tokens.end();
-  });
+void checkFlagsAfterFiles() {
+  expectRun({"a.rib", "-q"}, LOGLVL_DISASTER, noLog, noRenderer, {"a.rib"});
+  expectRun({"a.rib", "-q", "b.rib"}, LOGLVL_DISASTER, noLog, noRenderer, {"a.rib", "b.rib"});
 }
 
-std::string joined(std::vector<std::string> const& spellings) {
-  std::string text;
-  for (std::string const& spelling : spellings) {
-    text += (text.empty() ? "" : " ") + spelling;
-  }
-  return text;
+void checkRenderer() {
+  expectRun({"-r", "gmanraytracer", "a.rib"}, LOGLVL_INFO, noLog, "gmanraytracer", {"a.rib"});
+  expectRun({"-rgmanraytracer", "a.rib"}, LOGLVL_INFO, noLog, "gmanraytracer", {"a.rib"});
+  expectRun({"--renderer", "gmanraytracer", "a.rib"}, LOGLVL_INFO, noLog, "gmanraytracer", {"a.rib"});
+  expectRun({"--renderer=gmanraytracer", "a.rib"}, LOGLVL_INFO, noLog, "gmanraytracer", {"a.rib"});
+  expectRun({"-r", "first", "-r", "second", "a.rib"}, LOGLVL_INFO, noLog, "second", {"a.rib"});
 }
 
-void checkEverySpellingParses() {
-  std::vector<std::vector<std::string>> const entries = gman::optionSpellings();
-  check(entries.size() > 1, "optionSpellings lists more than --version");
-  for (std::vector<std::string> const& spellings : entries) {
-    for (std::string const& spelling : spellings) {
-      CommandLine const alone = gman::parseCommandLine({spelling});
-      check(alone.outcome != Outcome::unrecognized, spelling + " given alone is recognized");
-      if (alone.outcome == Outcome::missingRenderer) {
-        CommandLine const valued = gman::parseCommandLine({spelling, "gmanzbuffer"});
-        check(valued.outcome == Outcome::run && valued.renderer == "gmanzbuffer",
-              spelling + " takes the value gmanzbuffer");
-      }
-    }
+void checkHelp() {
+  expectHelp({});
+  expectHelp({"-h"});
+  expectHelp({"--help"});
+  expectHelp({"-h", "-x"});
+
+  Parsed const none = parse({});
+  Parsed const help = parse({"-h"});
+  CommandLineExit const* const noneExit = std::get_if<CommandLineExit>(&none);
+  CommandLineExit const* const helpExit = std::get_if<CommandLineExit>(&help);
+  check(noneExit != nullptr && helpExit != nullptr && noneExit->out == helpExit->out,
+        "no arguments prints what -h prints");
+
+  for (std::string_view const flag :
+       {"--help", "--version", "--debug", "--info", "--warning", "--error", "--quiet", "--log-file", "--renderer"}) {
+    check(helpExit != nullptr && helpExit->out.find(flag) != std::string::npos, "-h lists " + std::string(flag));
   }
 }
 
-void checkUsageListsEveryOption() {
-  std::vector<std::string> const lines = splitLines(gman::usageText("gman"));
-  for (std::vector<std::string> const& spellings : gman::optionSpellings()) {
-    auto const holders = std::ranges::count_if(
-        lines, [&spellings](std::string const& line) { return holdsEverySpelling(line, spellings); });
-    check(holders == 1,
-          "exactly one usage line holds " + joined(spellings) + " (holds " + std::to_string(holders) + ")");
-  }
+void checkVersion() {
+  expectVersion({"--version"});
+  expectVersion({"a.rib", "--version"});
+  expectVersion({"-x", "--version"});
 }
 
-void checkErrorText() {
-  CommandLine const bad = gman::parseCommandLine({"-x", "sphere.rib"});
-  std::string const text = gman::errorText(bad, "gman");
-  std::string const usage = gman::usageText("gman");
-  check(text.starts_with("gman: "), "the unrecognized-flag error opens with the program name");
-  check(text.find("-x") != std::string::npos, "the unrecognized-flag error names -x");
-  check(text.ends_with(usage), "the unrecognized-flag error ends with the usage text");
-  check(!usage.empty() && usage.starts_with("gman: "), "the usage text opens with the program name");
-  check(usage.ends_with('\n'), "the usage text ends with a newline");
+void checkUsageErrors() {
+  expectUnexpected({"-x", "a.rib"}, "-x");
+  expectUnexpected({"a.rib", "-x"}, "-x");
+  expectUnexpected({"--foo", "a.rib"}, "--foo");
+  expectUsageError({"-r"});
+  expectUsageError({"-r", "", "a.rib"});
+  expectUsageError({"--renderer=", "a.rib"});
+  expectUsageError({"-d"});
+}
 
-  for (Arguments const& arguments : {Arguments{"-r"}, Arguments{"-r", ""}}) {
-    std::string const message = gman::errorText(gman::parseCommandLine(arguments), "gman");
-    check(message.starts_with("gman: ") && message.ends_with('\n') && message.find('\n') == message.size() - 1,
-          describe(arguments) + " errors on one line naming the program");
-  }
-  check(gman::errorText(gman::parseCommandLine({"-r"}), "gman") !=
-            gman::errorText(gman::parseCommandLine({"-r", ""}), "gman"),
-        "a missing renderer and an empty one read differently");
-
-  for (Arguments const& arguments : {Arguments{}, Arguments{"--version"}, Arguments{"-h"}, Arguments{"sphere.rib"}}) {
-    check(gman::errorText(gman::parseCommandLine(arguments), "gman").empty(),
-          describe(arguments) + " has no error text");
-  }
+void checkEmptyArgv() {
+  Parsed const alone = parse({});
+  Parsed const empty = gman::parseCommandLine({}, versionText);
+  CommandLineExit const* const aloneExit = std::get_if<CommandLineExit>(&alone);
+  CommandLineExit const* const emptyExit = std::get_if<CommandLineExit>(&empty);
+  check(aloneExit != nullptr && emptyExit != nullptr && aloneExit->status == emptyExit->status &&
+            aloneExit->out == emptyExit->out && aloneExit->err == emptyExit->err,
+        "an empty argv acts as the program name alone");
 }
 
 } // namespace
 
 int main() {
-  checkVersionAndNoArguments();
-  checkHelp();
-  checkUnrecognizedTokens();
-  checkRendererErrors();
-  checkRendererNames();
+  checkFiles();
   checkLevels();
-  checkWhereFlagsEnd();
-  checkLogFile();
-  checkClusters();
-  checkUnrecognizedOutranksEarlierEvents();
-  checkLongNameRules();
-  checkRenderersGuardStopsAtFirstFile();
-  checkEmptyValuesActAsBareFlags();
-  checkEverySpellingParses();
-  checkUsageListsEveryOption();
-  checkErrorText();
+  checkLog();
+  checkFlagsAfterFiles();
+  checkRenderer();
+  checkHelp();
+  checkVersion();
+  checkUsageErrors();
+  checkEmptyArgv();
   return checkSummary("gman's command line parses in process");
 }

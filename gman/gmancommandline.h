@@ -20,40 +20,33 @@
 
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <string>
-#include <string_view>
+#include <variant>
 #include <vector>
 
 #include "gmanlog.h"
 
 namespace gman {
 
-// What gman's command line asks for. The parse does no I/O: the caller prints, exits and renders.
+// A command line that renders: the level, the log, the renderer and the RIB files, in order.
 struct CommandLine {
-  enum class Outcome { run, version, noArguments, help, unrecognized, missingRenderer, emptyRenderer };
-  Outcome outcome = Outcome::run;
-  // The argument the unrecognized-flag error names; set when outcome is unrecognized.
-  std::string unrecognized;
-  // The last level flag's level; empty when none was given.
-  std::optional<GMANLogLevel> level;
+  GMANLogLevel level = LOGLVL_INFO;
   bool writeLog = false;
-  // The last renderer name given; empty when none was.
   std::optional<std::string> renderer;
-  // The RIB files, in order; set when outcome is run.
   std::vector<std::string> files;
 };
 
-// Parses argv[1..argc), the program name excluded.
-CommandLine parseCommandLine(std::vector<std::string> const& arguments);
+// A command line that ends the run: help, the version or a usage error. Print out and err, then exit with status.
+struct CommandLineExit {
+  int status = 0;
+  std::string out;
+  std::string err;
+};
 
-// The usage text, for a program invoked as programName.
-std::string usageText(std::string_view programName);
-
-// The whole stderr text of an error outcome; empty for every other outcome.
-std::string errorText(CommandLine const& commandLine, std::string_view programName);
-
-// The spellings of each option the usage text lists, in its order, --version last.
-std::vector<std::vector<std::string>> optionSpellings();
+// Parses argv, the program name first. versionText returns the text of --version without a trailing newline.
+std::variant<CommandLine, CommandLineExit> parseCommandLine(std::vector<std::string> const& argv,
+                                                            std::function<std::string()> const& versionText);
 
 } // namespace gman

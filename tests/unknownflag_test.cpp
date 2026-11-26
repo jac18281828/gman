@@ -19,8 +19,8 @@
  */
 
 /*
- * An unrecognized command-line flag is a usage error: gman names the flag,
- * prints usage(), and exits nonzero without parsing any file.
+ * An unrecognized command-line flag is a usage error: gman names the flag
+ * and exits nonzero without parsing any file.
  */
 
 #include <cstdio>
@@ -46,8 +46,6 @@ int main(int argc, char* argv[]) {
   check(badFlag.exitStatus != 0, "gman -x exits nonzero");
   check(!std::filesystem::exists("sphere.tif"), "gman -x writes no sphere.tif -- no file was parsed");
   check(badFlag.output.find("-x") != std::string::npos, "stderr names the flag as invoked");
-  check(badFlag.output.find("Parse RIB input files.") != std::string::npos,
-        "stderr shows a fragment of usage()'s fixed text");
 
   // Control: the same file with no bad flag still renders.
   std::filesystem::remove("sphere.tif");
