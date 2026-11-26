@@ -125,11 +125,11 @@ GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, 
 // receiving point, hitPoint the known point on emitter and hitNormal its
 // outward normal there, all camera space. 0 when hitNormal's cosine to the
 // direction from hitPoint back to p is at or below 0 (emitter's own
-// non-emitting side), when p and hitPoint coincide or when emitter's shape
-// has a singular placement, as under Scale 1 1 0 -- unlike
+// non-emitting side) or when p and hitPoint coincide -- unlike
 // EmitterSample::pdf, which a back-facing draw still reports nonzero,
 // since that draw's own Cl already goes black on that side and no weight
-// computed from either pdf ever multiplies it. Precondition: emitter.shape
+// computed from either pdf ever multiplies it. 0 too when emitter's shape
+// has a singular placement, as under Scale 1 1 0. Precondition: emitter.shape
 // != nullptr (an area emitter, which alone has a surface to place a known
 // point against); checked by assert.
 GMANRAY_EXPORT RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint const& hitPoint,
