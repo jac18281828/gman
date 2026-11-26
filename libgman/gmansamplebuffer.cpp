@@ -53,10 +53,22 @@ constexpr RtFloat kIndexLimit = 0x1p30f;
 
 int indexBound(RtFloat position) { return static_cast<int>(GMANClamp<RtFloat>(position, -kIndexLimit, kIndexLimit)); }
 
+int sampleExtent(int pixels, int samplesPerPixel) {
+  long long const extent = static_cast<long long>(pixels) * samplesPerPixel;
+  if (extent < 0 || extent > static_cast<long long>(kMaxSamples)) {
+    throw(GMANError(RIE_LIMIT, RIE_SEVERE,
+                    "PixelSamples/Format requests more samples than this "
+                    "renderer will allocate; reduce Format's resolution "
+                    "or PixelSamples."));
+  }
+  return static_cast<int>(extent);
+}
+
 } // namespace
 
 GMANSampleBuffer::GMANSampleBuffer(int w, int h, int xs, int ys, const GMANColor& background)
-    : width(w), height(h), xsamples(xs), ysamples(ys), sampleWidth(w * xs), sampleHeight(h * ys) {
+    : width(w), height(h), xsamples(xs), ysamples(ys), sampleWidth(sampleExtent(w, xs)),
+      sampleHeight(sampleExtent(h, ys)) {
 
   // size_t, not int: sampleWidth*sampleHeight overflows a signed int well
   // within realistic Format/PixelSamples inputs (see kMaxSamples' comment

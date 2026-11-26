@@ -59,6 +59,15 @@ void bindLoadableShader(std::shared_ptr<GMANLoadableShader>& module, Typed*& typ
   typed = (module.get()->*getter)();
 }
 
+RtInt toRtInt(RtFloat value) {
+  constexpr RtFloat kLargest = 0x1.fffffep30f;
+  constexpr RtFloat kSmallest = -0x1p31f;
+  if (std::isnan(value)) {
+    return 0;
+  }
+  return static_cast<RtInt>(GMANClamp<RtFloat>(value, kSmallest, kLargest));
+}
+
 } // namespace
 
 GMANOptions::OutputDefaults GMANOptions::outputDefaults = {GMANDisplayXRES, GMANDisplayYRES, GMANDisplayPAR};
@@ -185,16 +194,16 @@ const GMANOptions::RasterInfo GMANOptions::getRasterInfo(RtVoid) const {
   FormatStruct f = getFormat();
   RtFloat farDist = getFrameAspectRatio();
   if (farDist >= 1) {
-    ri.xres = (RtInt)(f.yres * farDist / f.pixelAspectRatio);
+    ri.xres = toRtInt(f.yres * farDist / f.pixelAspectRatio);
     ri.yres = f.yres;
   } else {
     ri.xres = f.xres;
-    ri.yres = (RtInt)(f.xres * farDist / f.pixelAspectRatio);
+    ri.yres = toRtInt(f.xres * farDist / f.pixelAspectRatio);
   }
-  ri.rxmin = (RtInt)ceil(f.xres * cropWindow.xmin);
-  ri.rxmax = (RtInt)ceil(f.xres * cropWindow.xmax - 1);
-  ri.rymin = (RtInt)ceil(f.yres * cropWindow.ymin);
-  ri.rymax = (RtInt)ceil(f.yres * cropWindow.ymax - 1);
+  ri.rxmin = toRtInt(ceil(f.xres * cropWindow.xmin));
+  ri.rxmax = toRtInt(ceil(f.xres * cropWindow.xmax - 1));
+  ri.rymin = toRtInt(ceil(f.yres * cropWindow.ymin));
+  ri.rymax = toRtInt(ceil(f.yres * cropWindow.ymax - 1));
   return ri;
 }
 

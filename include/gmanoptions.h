@@ -217,6 +217,10 @@ public:
   RtVoid setScreenWindow(RtFloat left, RtFloat right, RtFloat bottom, RtFloat top);
 
   const ScreenWindowStruct getScreenWindow(RtVoid) const;
+
+  // The frame's raster size and crop rectangle. A size or bound the frame
+  // aspect ratio, pixel aspect ratio or crop window takes beyond RtInt's
+  // range saturates at its end, and a NaN reads as 0.
   const RasterInfo getRasterInfo(RtVoid) const;
 
   RtVoid setCropWindow(RtFloat xmin, RtFloat xmax, RtFloat ymin, RtFloat ymax);

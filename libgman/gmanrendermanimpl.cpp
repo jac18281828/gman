@@ -486,6 +486,10 @@ RtVoid GMANRenderManImpl::RiFrameAspectRatio(RtFloat aspect) {
   if (!allowed(cmdFrameAspectRatio)) {
     return;
   }
+  if (!std::isfinite(aspect)) {
+    warning("FrameAspectRatio {} must be finite; ignored.", aspect);
+    return;
+  }
   getOptions().setFrameAspectRatio(aspect);
 }
 RtVoid GMANRenderManImpl::RiScreenWindow(RtFloat left, RtFloat right, RtFloat bottom, RtFloat top) {

@@ -1623,6 +1623,18 @@ set_tests_properties(pixelfilternonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RiFrameAspectRatio ignores a NaN or infinite ratio, getRasterInfo converts
+# every size and crop bound defined, and the sample buffer refuses a sample
+# extent past int's range. See tests/frameaspectnonfinite_test.cpp.
+add_executable(gman_frameaspectnonfinite frameaspectnonfinite_test.cpp)
+target_link_libraries(gman_frameaspectnonfinite PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME frameaspectnonfinite COMMAND gman_frameaspectnonfinite)
+set_tests_properties(frameaspectnonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A missing texture warns once per world block under every renderer; libtiff stays silent.
 add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
 target_link_libraries(gman_texturewarningonce PRIVATE gman_core)
