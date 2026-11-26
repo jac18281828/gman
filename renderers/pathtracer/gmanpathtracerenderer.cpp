@@ -908,6 +908,20 @@ std::vector<GMANColor> resolvePixels(GMANSampleBuffer& samples, GMANFrameBuffer*
   return readPixels(*frameBuffer);
 }
 
+gman::GuidedImage resolveGuided(GMANFrameBuffer* frameBuffer, GMANOptions::PixelFilterStruct const& pf,
+                                GMANSampleBuffer& colorSamples, GMANSampleBuffer& albedoSamples,
+                                GMANSampleBuffer& normalSamples) {
+  gman::GuidedImage image;
+  image.width = frameBuffer->getWidth();
+  image.height = frameBuffer->getHeight();
+  image.albedo = resolvePixels(albedoSamples, frameBuffer, pf);
+  for (GMANColor const& pixel : resolvePixels(normalSamples, frameBuffer, pf)) {
+    image.normal.emplace_back(pixel.getRed(), pixel.getGreen(), pixel.getBlue());
+  }
+  image.color = resolvePixels(colorSamples, frameBuffer, pf);
+  return image;
+}
+
 SlotResult renderSlot(SlotTrace const& slot, std::uint32_t N, SamplingPlan const& plan) {
   SlotResult result;
   if (!usesPilot(plan, N)) {
@@ -1057,13 +1071,7 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
     return;
   }
 
-  guided.width = width;
-  guided.height = height;
-  guided.albedo = resolvePixels(*albedoSamples, frameBuffer, pf);
-  for (GMANColor const& pixel : resolvePixels(*normalSamples, frameBuffer, pf)) {
-    guided.normal.emplace_back(pixel.getRed(), pixel.getGreen(), pixel.getBlue());
-  }
-  guided.color = resolvePixels(*sampleBuffer, frameBuffer, pf);
+  guided = resolveGuided(frameBuffer, pf, *sampleBuffer, *albedoSamples, *normalSamples);
   denoiseFrame(frameBuffer, atrousParameters(options));
 }
 
