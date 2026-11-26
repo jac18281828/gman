@@ -549,22 +549,22 @@ std::optional<SolidAngleDraw> drawMeshBySolidAngle(GMANRayPolygonMesh const& mes
   return SolidAngleDraw{*point, face.getPlaneNormal(), 1.0 / total};
 }
 
+// The row vector (v, w) times the affine matrix m, in double: m applied to
+// the point v when w is 1 and to the direction v when w is 0.
+DoubleVector rowTimesMatrix(GMANMatrix4 const& m, DoubleVector const& v, double w) {
+  return {v.x * m[0][0] + v.y * m[1][0] + v.z * m[2][0] + w * m[3][0],
+          v.x * m[0][1] + v.y * m[1][1] + v.z * m[2][1] + w * m[3][1],
+          v.x * m[0][2] + v.y * m[1][2] + v.z * m[2][2] + w * m[3][2]};
+}
+
 // p carried into object space by the inverse of objectToCamera, in double.
 DoubleVector objectPoint(InvertibleMatrix const& objectToCamera, GMANPoint const& p) {
-  auto const& m = objectToCamera.backward();
-  const auto x = static_cast<double>(p.getX());
-  const auto y = static_cast<double>(p.getY());
-  const auto z = static_cast<double>(p.getZ());
-  return {x * m[0][0] + y * m[1][0] + z * m[2][0] + m[3][0], x * m[0][1] + y * m[1][1] + z * m[2][1] + m[3][1],
-          x * m[0][2] + y * m[1][2] + z * m[2][2] + m[3][2]};
+  return rowTimesMatrix(objectToCamera.backward(), toDouble(p), 1.0);
 }
 
 // An object-space point placed in camera space by objectToCamera, in double.
 DoubleVector placedPoint(InvertibleMatrix const& objectToCamera, DoubleVector const& q) {
-  auto const& m = objectToCamera.forward();
-  return {q.x * m[0][0] + q.y * m[1][0] + q.z * m[2][0] + m[3][0],
-          q.x * m[0][1] + q.y * m[1][1] + q.z * m[2][1] + m[3][1],
-          q.x * m[0][2] + q.y * m[1][2] + q.z * m[2][2] + m[3][2]};
+  return rowTimesMatrix(objectToCamera.forward(), q, 1.0);
 }
 
 // thetamax in degrees clamped to [0, 360], as GMANDisk::area and
@@ -768,14 +768,9 @@ SphereCone sphereCone(DoubleVector const& q, double radius) {
 // object-space unit direction: the reciprocal of the solid-angle Jacobian of
 // w -> L w / |L w|, 1 for a rigid or uniformly scaled placement.
 double directionDensityScale(InvertibleMatrix const& objectToCamera, DoubleVector const& w) {
-  auto const& m = objectToCamera.forward();
-  const auto placed =
-      length({w.x * m[0][0] + w.y * m[1][0] + w.z * m[2][0], w.x * m[0][1] + w.y * m[1][1] + w.z * m[2][1],
-              w.x * m[0][2] + w.y * m[1][2] + w.z * m[2][2]});
-  const auto determinant = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) -
-                           m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
-                           m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-  return placed * placed * placed / std::fabs(static_cast<double>(determinant));
+  const auto placed = length(rowTimesMatrix(objectToCamera.forward(), w, 0.0));
+  auto linear = objectToCamera.forward(); // determinant() is non-const
+  return placed * placed * placed / std::fabs(static_cast<double>(linear.determinant()));
 }
 
 // The camera-space density of a direction from the object-space point q
