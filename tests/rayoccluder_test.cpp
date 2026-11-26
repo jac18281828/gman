@@ -29,22 +29,35 @@
  * genuine blocker once it is small enough, so the self-shadow sweep runs
  * at x1, x1000 and x0.001, and a scaled blocker/receiver pair at x1 and
  * x0.001.
+ *
+ * An occluder built with a camera transform and a texture cache shades each
+ * blocker: a ray through a sphere's centre crosses two surfaces at normal
+ * incidence and answers the product of their factors, and a null-shader
+ * opaque sphere still answers black. An occluder built on a bvh alone keeps
+ * 1 - Os per crossing and never evaluates the shader.
  */
 
 #include <cmath>
+#include <memory>
 #include <numbers>
 #include <string>
 
 #include "check.h"
+#include "gmanbsdf.h"
+#include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
+#include "gmanmatrix4.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybbox.h"
 #include "gmanrayoccluder.h"
 #include "gmanraysphere.h"
+#include "gmanshading.h"
+#include "gmansurfaceshader.h"
+#include "gmantexture.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "maketransform.h"
@@ -64,6 +77,115 @@ GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(opaque);
   return sphere;
+}
+
+constexpr RtFloat kIndex = (RtFloat)1.5;
+constexpr RtFloat kRelativeTolerance = (RtFloat)1e-5;
+GMANColor const kShaderOpacity(1.0f, 0.5f, 0.0f);
+GMANColor const kShaderWeight(1.0f, 0.5f, 0.25f);
+
+class DielectricShader : public GMANSurfaceShader {
+public:
+  GMANColor computeCi(GMANSurfaceEnv const&) const override { return GMANColor(0.0f, 0.0f, 0.0f); }
+  GMANColor computeOi(GMANSurfaceEnv const&) const override { return kShaderOpacity; }
+  gman::BSDF bsdf(GMANSurfaceEnv const& se) const override {
+    gman::BSDF closure(GMANVector(se.N.getX(), se.N.getY(), se.N.getZ()));
+    closure.addDielectric(kShaderWeight, kIndex);
+    return closure;
+  }
+};
+
+GMANRaySphere* sphereWith(gman::Appearance const& appearance) {
+  GMANMatrix4 place;
+  const auto sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), makeTransform(place));
+  sphere->setAppearance(appearance);
+  return sphere;
+}
+
+gman::Appearance shadedAppearance(DielectricShader const& shader) {
+  gman::Appearance appearance;
+  appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
+  appearance.shader = std::shared_ptr<GMANSurfaceShader const>(&shader, [](GMANSurfaceShader const*) {});
+  return appearance;
+}
+
+RtFloat crossingFactor(RtFloat opacity, RtFloat weight) {
+  RtFloat const root = (kIndex - (RtFloat)1.0) / (kIndex + (RtFloat)1.0);
+  return ((RtFloat)1.0 - opacity) + opacity * weight * ((RtFloat)1.0 - root * root);
+}
+
+bool near(RtFloat a, RtFloat b) { return std::fabs(a - b) <= kRelativeTolerance * std::fabs(b); }
+
+// The shadow ray runs along +x from x = -5 through the sphere's centre at the
+// origin to a point light at x = 5, crossing the sphere's two surfaces at
+// normal incidence.
+GMANColor walkThroughCentre(GMANRayOccluder const& occluder) {
+  GMANPoint const P(-5.0f, 0.0f, 0.0f);
+  GMANLight const light(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(5.0f, 0.0f, 0.0f), GMANVector());
+  return occluder.transmission(light, P, GMANVector(1.0f, 0.0f, 0.0f), GMANVector(), 10.0f, 0.0f);
+}
+
+// ---- a shading occluder composites each blocker's shader-evaluated factor ----
+void testShadingOccluderMultipliesTwoCrossings() {
+  DielectricShader const shader;
+  GMANLinearWorldManager worldManager;
+  worldManager.add(sphereWith(shadedAppearance(shader)));
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  gman::TextureCache textureCache;
+  GMANRayOccluder const occluder(bvh, GMANMatrix4(), textureCache);
+
+  GMANColor const result = walkThroughCentre(occluder);
+  RtFloat const red = crossingFactor(kShaderOpacity.getRed(), kShaderWeight.getRed());
+  RtFloat const green = crossingFactor(kShaderOpacity.getGreen(), kShaderWeight.getGreen());
+  RtFloat const blue = crossingFactor(kShaderOpacity.getBlue(), kShaderWeight.getBlue());
+  check(near(result.getRed(), red * red) && near(result.getGreen(), green * green) &&
+            near(result.getBlue(), blue * blue),
+        "f: a shading occluder through a sphere's centre answers the product of its two crossings, per channel");
+}
+
+// ---- a bvh-only occluder keeps 1 - Os per crossing ----
+void testBvhOnlyOccluderIgnoresTheShader() {
+  DielectricShader const shader;
+  {
+    GMANLinearWorldManager worldManager;
+    worldManager.add(sphereWith(shadedAppearance(shader)));
+    GMANRayBVH bvh;
+    bvh.build(worldManager);
+    GMANRayOccluder const occluder(bvh);
+
+    GMANColor const result = walkThroughCentre(occluder);
+    check(result.getRed() == 0.0f && result.getGreen() == 0.0f && result.getBlue() == 0.0f,
+          "g: a bvh-only occluder over an Os-1 sphere answers black however its shader answers");
+  }
+
+  {
+    gman::Appearance partial = shadedAppearance(shader);
+    partial.Os = GMANColor(0.5f, 0.25f, 0.0f);
+    GMANLinearWorldManager worldManager;
+    worldManager.add(sphereWith(partial));
+    GMANRayBVH bvh;
+    bvh.build(worldManager);
+    GMANRayOccluder const occluder(bvh);
+
+    GMANColor const result = walkThroughCentre(occluder);
+    check(near(result.getRed(), 0.25f) && near(result.getGreen(), 0.5625f) && near(result.getBlue(), 1.0f),
+          "g: a bvh-only occluder answers 1 - Os per crossing, squared across a sphere's two surfaces");
+  }
+}
+
+// ---- a shading occluder still blocks an opaque null-shader sphere ----
+void testShadingOccluderBlocksOpaqueNullShader() {
+  GMANLinearWorldManager worldManager;
+  worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 0.0f));
+  GMANRayBVH bvh;
+  bvh.build(worldManager);
+  gman::TextureCache textureCache;
+  GMANRayOccluder const occluder(bvh, GMANMatrix4(), textureCache);
+
+  GMANColor const result = walkThroughCentre(occluder);
+  check(result.getRed() == 0.0f && result.getGreen() == 0.0f && result.getBlue() == 0.0f,
+        "h: a shading occluder over a null-shader opaque sphere answers black");
 }
 
 // ---- a point light's own distance bounds the shadow ray ----
@@ -208,6 +330,10 @@ int main() {
 
   testBlockerRelightsAtScale(1.0f);
   testBlockerRelightsAtScale(0.001f);
+
+  testShadingOccluderMultipliesTwoCrossings();
+  testBvhOnlyOccluderIgnoresTheShader();
+  testShadingOccluderBlocksOpaqueNullShader();
 
   return checkSummary("GMANRayOccluder::transmission: a point light's own distance, no self-shadowing, at every scale");
 }

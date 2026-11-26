@@ -116,17 +116,38 @@ GMANRAY_EXPORT bool passesTerminatorExit(GMANHit const& hit, GMANRayInterface co
  * The ray tracer's own occlusion test: casts a shadow ray from P toward
  * the light and walks bvh's nearestHit repeatedly, each call's hit
  * shrinking the ray's remaining interval and compositing that blocker's
- * own opacity into the running transmission, until the interval is spent
- * or transmission is negligible -- the nearest hit at each step is what
- * lets the walk advance past exactly one blocker per call. A public,
- * standalone class so a unit test can probe transmission() directly
- * against a GMANRayBVH it controls. GMANRAY_EXPORT, along with GMANRayBVH:
- * the path tracer's own API; const and re-entrant, the same contract
- * GMANRayBVH's own class comment states.
+ * factor into the running transmission, until the interval is spent or
+ * transmission is negligible -- the nearest hit at each step is what lets
+ * the walk advance past exactly one blocker per call. A public, standalone
+ * class so a unit test can probe transmission() directly against a
+ * GMANRayBVH it controls. GMANRAY_EXPORT, along with GMANRayBVH: the path
+ * tracer's own API.
+ *
+ * The two constructors differ in the blocker's factor. Built on a bvh
+ * alone, each blocker contributes 1 - Appearance::Os and its shader is
+ * never evaluated, so a clear glass blocker stops the light and an opacity
+ * map goes unread; the occluder is const and re-entrant, the same contract
+ * GMANRayBVH's own class comment states, and the radiosity solver and its
+ * indirect pass shoot through it from threads with no cache of their own.
+ * Built with a camera transform and a gman::TextureCache, each blocker
+ * contributes gman::blockerTransmittance's factor, (1 - c) + c * T per
+ * channel: its shader's opacity and thin transmittance, so light passes
+ * glass by the dielectric's transmittance and a cut-out card shadows by its
+ * opacity map. That occluder samples textures through the cache it was
+ * built on, which follows gman::TextureCache's own rule of one thread per
+ * cache: a caller running threads builds one such occluder per thread, each
+ * on that thread's own cache.
  */
 class GMANRAY_EXPORT GMANRayOccluder : public gman::Occluder {
 public:
+  // Blockers contribute 1 - Appearance::Os; no shader is evaluated.
   explicit GMANRayOccluder(GMANRayBVH const& bvh) : bvh(bvh) {}
+
+  // Blockers contribute gman::blockerTransmittance's factor. cameraToWorld
+  // is copied; textureCache is referenced, never owned, and must outlive
+  // the occluder and be used by no other thread while the occluder is.
+  GMANRayOccluder(GMANRayBVH const& bvh, GMANMatrix4 const& cameraToWorld, gman::TextureCache& textureCache)
+      : bvh(bvh), cameraToWorld(cameraToWorld), textureCache(&textureCache) {}
 
   GMANColor transmission(GMANLight const& light, GMANPoint const& P, GMANVector const& towardLight,
                          GMANVector const& Ng, RtFloat distance, RtFloat surfaceMagnitude) const override;
@@ -142,5 +163,9 @@ private:
   GMANColor walk(GMANPoint const& P, GMANVector const& towardLight, GMANVector const& Ng, RtFloat distance,
                  RtFloat surfaceMagnitude, GMANPrimitive const* terminatorOrigin) const;
 
+  GMANColor blockerFactor(GMANRay const& shadowRay, GMANHit const& hit, GMANRayInterface const& blocker) const;
+
   GMANRayBVH const& bvh;
+  GMANMatrix4 cameraToWorld;
+  gman::TextureCache* textureCache = nullptr;
 };

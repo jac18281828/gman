@@ -1,0 +1,18 @@
+## A green matte receiver lit by a distant light, and a paintedplastic card outside the frame
+## shadowing it. The test writes the card's opacity map, red 128, green 255 and blue 0 in every
+## texel, so the card covers 128/255 of the light. Not third-party.
+Display "rayshadow_cutout_bare.tif" "file" "rgba"
+Format 200 200 1
+PixelSamples 2 2
+Option "pathtracer" "integer samples" [16]
+Projection "perspective" "fov" [90]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [2.0] "lightcolor" [1 1 1]
+	"from" [-2 0 -1] "to" [0 0 0]
+Sides 2
+Color [0 1 0]
+Surface "matte" "Ka" [0] "Kd" [0.8]
+Polygon "P" [-30 -30 3  30 -30 3  30 30 3  -30 30 3]
+WorldEnd

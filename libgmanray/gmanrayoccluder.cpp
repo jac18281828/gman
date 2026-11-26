@@ -163,6 +163,14 @@ GMANColor GMANRayOccluder::transmissionFromTerminator(GMANLight const& /*light*/
   return walk(P, towardLight, Ng, distance, surfaceMagnitude, &origin);
 }
 
+GMANColor GMANRayOccluder::blockerFactor(GMANRay const& shadowRay, GMANHit const& hit,
+                                         GMANRayInterface const& blocker) const {
+  if (textureCache == nullptr) {
+    return gman::oneMinus(blocker.getAppearance().Os);
+  }
+  return gman::blockerTransmittance(shadowRay, hit, blocker.getAppearance(), cameraToWorld, textureCache).transmittance;
+}
+
 GMANColor GMANRayOccluder::walk(GMANPoint const& P, GMANVector const& towardLight, GMANVector const& Ng,
                                 RtFloat distance, RtFloat surfaceMagnitude,
                                 GMANPrimitive const* terminatorOrigin) const {
@@ -173,7 +181,7 @@ GMANColor GMANRayOccluder::walk(GMANPoint const& P, GMANVector const& towardLigh
   // walk crosses a blocker, then that blocker's own M.
   RtFloat currentMagnitude = surfaceMagnitude;
 
-  // A closed solid contributes one (1 - Os) factor per surface the shadow
+  // A closed solid contributes one factor per surface the shadow
   // ray crosses, not per blocker: bvh.nearestHit keeps one hit per call,
   // so this walks the interval itself, moving origin/remaining past each
   // surface found. This matches a render loop's own composite, which
@@ -198,7 +206,7 @@ GMANColor GMANRayOccluder::walk(GMANPoint const& P, GMANVector const& towardLigh
     bool const passesTerminator = layer == 0 && terminatorOrigin != nullptr &&
                                   gman::passesTerminatorExit(hit, *hitPrimitive, towardLight, *terminatorOrigin);
     if (!passesTerminator) {
-      transmission = gman::multiplyChannels(transmission, gman::oneMinus(hitPrimitive->getAppearance().Os));
+      transmission = gman::multiplyChannels(transmission, blockerFactor(shadowRay, hit, *hitPrimitive));
       if (gman::transmissionNegligible(transmission)) {
         return GMANColor(0.0f, 0.0f, 0.0f);
       }

@@ -28,7 +28,8 @@
  * carries warns once however many workers ran; and a texture reached only through
  * a second reflection warns once in each of two consecutive renders, which
  * a tracer sampling through the process cache instead warns about in the
- * first render alone.
+ * first render alone; and so does an opacity map only a shadow ray reaches,
+ * each worker's shading occluder sampling through that worker's own cache.
  *
  * With the argument --scaling the program does none of that. It times the
  * direct scene at one and at eight workers and prints the two wall times and
@@ -165,6 +166,16 @@ std::array<GMANPoint, 4> const kMirrorB = {GMANPoint(-16.0f, -8.0f, -1.0f), GMAN
 std::array<GMANPoint, 4> const kQuadQ = {GMANPoint(-25.0f, -15.0f, -20.0f), GMANPoint(5.0f, -15.0f, -20.0f),
                                          GMANPoint(5.0f, 15.0f, -20.0f), GMANPoint(-25.0f, 15.0f, -20.0f)};
 
+char const* const kMissingOpacityMap = "raytracerthreads_missing_opacity.tif";
+char const* const kCardShadowLogs[] = {"raytracerthreads_cardshadow_off.log", "raytracerthreads_cardshadow_first.log",
+                                       "raytracerthreads_cardshadow_second.log"};
+GMANPoint const kCardLight(-4.0f, 0.0f, 0.0f);
+constexpr RtFloat kCardDepth = 2.5f;
+constexpr RtFloat kCardInnerX = -1.0f;
+constexpr RtFloat kCardOuterX = -3.0f;
+constexpr RtFloat kCardHalfHeight = 1.0f;
+constexpr RtFloat kCardOffPathRise = 20.0f;
+
 GMANOptions::ScreenWindowStruct squareScreenWindow() {
   GMANOptions::ScreenWindowStruct sw;
   sw.left = -1.0f;
@@ -219,6 +230,14 @@ GMANParameterList matteParams(RtFloat ka, RtFloat kd) { return floatParams({RI_K
 GMANParameterList textureNameParam(std::string const& name) {
   static GMANDictionary dictionary;
   RtToken tokens[1] = {RI_TEXTURENAME};
+  char* strs[1] = {const_cast<char*>(name.c_str())};
+  RtPointer parms[1] = {strs};
+  return GMANParameterList(dictionary, 1, tokens, parms);
+}
+
+GMANParameterList opacityNameParam(std::string const& name) {
+  static GMANDictionary dictionary;
+  RtToken tokens[1] = {const_cast<RtToken>("string opacityname")};
   char* strs[1] = {const_cast<char*>(name.c_str())};
   RtPointer parms[1] = {strs};
   return GMANParameterList(dictionary, 1, tokens, parms);
@@ -551,15 +570,65 @@ void checkSecondReflectionCache() {
                          std::to_string(second) + ")");
 }
 
+// A matte quad filling the frame, lit by a point light beside the camera,
+// and a paintedplastic card whose opacity map no file carries. The card
+// stands between the light and the quad, outside the camera's view, so only
+// a shadow ray reaches it; raised clear of the shadow rays, nothing does.
+std::unique_ptr<TracedScene> cardShadowScene(bool cardOnShadowPath) {
+  auto scene = std::make_unique<TracedScene>(kTextureSize, kSinglePixelSample, kTextureFov, kTextureNear, kTextureFar,
+                                             kCardLight, kDirectIntensity);
+  std::array<GMANPoint, 4> const quad = {GMANPoint(-kQuadHalfExtent, -kQuadHalfExtent, kQuadDepth),
+                                         GMANPoint(-kQuadHalfExtent, kQuadHalfExtent, kQuadDepth),
+                                         GMANPoint(kQuadHalfExtent, kQuadHalfExtent, kQuadDepth),
+                                         GMANPoint(kQuadHalfExtent, -kQuadHalfExtent, kQuadDepth)};
+  scene->addPolygon(quad, scene->appearance(loadShader("matte", matteParams(1.0f, 1.0f)), kFloorColor, 1.0f));
+
+  RtFloat const rise = cardOnShadowPath ? 0.0f : kCardOffPathRise;
+  std::array<GMANPoint, 4> const card = {GMANPoint(kCardOuterX, rise - kCardHalfHeight, kCardDepth),
+                                         GMANPoint(kCardOuterX, rise + kCardHalfHeight, kCardDepth),
+                                         GMANPoint(kCardInnerX, rise + kCardHalfHeight, kCardDepth),
+                                         GMANPoint(kCardInnerX, rise - kCardHalfHeight, kCardDepth)};
+  GMANAttributes attributes;
+  attributes.setSurface(RI_PAINTEDPLASTIC, opacityNameParam(kMissingOpacityMap));
+  gman::Appearance look = gman::appearanceOf(attributes);
+  look.lights = {&scene->light};
+  scene->addPolygon(card, look);
+  return scene;
+}
+
+int cardShadowWarnings(bool cardOnShadowPath, char const* logPath) {
+  beginLogCapture(logPath);
+  cardShadowScene(cardOnShadowPath)->render(kSerialWorkers);
+  return countOccurrences(endLogCapture(logPath), kMissingOpacityMap);
+}
+
+void checkShadowOnlyOpacityMapCache() {
+  std::ifstream const existing(kMissingOpacityMap);
+  check(!existing.good(), "E setup: no file carries the card's opacity map's name");
+
+  int const offPath = cardShadowWarnings(false, kCardShadowLogs[0]);
+  check(offPath == 0, "E setup: with the card off the shadow path its opacity map is never sampled (" +
+                          std::to_string(offPath) + ")");
+
+  int const first = cardShadowWarnings(true, kCardShadowLogs[1]);
+  int const second = cardShadowWarnings(true, kCardShadowLogs[2]);
+  check(first == 1, "E: the first render warns once about an opacity map only a shadow ray reaches (" +
+                        std::to_string(first) + ")");
+  check(second == 1, "E: the second render warns once again, each render's shading occluders sampling through its "
+                     "own caches (" +
+                         std::to_string(second) + ")");
+}
+
 int runChecks() {
   checkDirectScene();
   checkIndirectScene();
   checkMissingTextureWarnsOnce();
   checkSecondReflectionCache();
+  checkShadowOnlyOpacityMapCache();
 
   return checkSummary("the ray tracer's rows render through gman::parallelFor: the image, its worker ids and its "
                       "missing-texture warning hold at every worker count, and a texture reached through a second "
-                      "reflection samples through the cache of the tracer that cast it");
+                      "reflection or a shadow ray samples through the cache of the worker that cast it");
 }
 
 double timedRenderSeconds(RtInt workers) {

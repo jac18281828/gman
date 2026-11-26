@@ -173,9 +173,7 @@ int main(int argc, char* argv[]) {
   testSeam();
   testCutout(gman, renderer, ribDir);
   testNoMap(gman, renderer, ribDir);
-  if (renderer == "gmanpathtracer") {
-    testShadow(gman, renderer, ribDir);
-  }
+  testShadow(gman, renderer, ribDir);
 
-  return checkSummary("paintedplastic's opacity map cuts out its surface; the path tracer's shadows follow it");
+  return checkSummary("paintedplastic's opacity map cuts out its surface; both renderers' shadows follow it");
 }

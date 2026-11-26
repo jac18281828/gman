@@ -1913,7 +1913,7 @@ set_tests_properties(texture16 PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# paintedplastic's opacityname cuts a card out; the path tracer's shadows follow it.
+# paintedplastic's opacityname cuts a card out; the shadows of both renderers follow it.
 add_executable(gman_textureopacity textureopacity_test.cpp)
 target_link_libraries(gman_textureopacity PRIVATE gman_core TIFF::TIFF)
 add_dependencies(gman_textureopacity gman_paintedplastic gman_matte)
@@ -1947,6 +1947,29 @@ if(GMAN_BUILD_PATHTRACER)
                                 gmanpathtracer
     WORKING_DIRECTORY "${GMAN_TEXTUREOPACITY_PATHTRACER_WORKDIR}")
   set_tests_properties(textureopacity_pathtracer PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 120)
+endif()
+
+# The ray tracer's shadows pass a clear glass slab by its dielectric's thin
+# transmittance and a cut-out card by its opacity map, reading within a fixed
+# tolerance of the path tracer's and at the predicted ratio of the unshadowed
+# receiver. Needs both renderers. See tests/rayshadowtransmittance_test.cpp.
+if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
+  add_executable(gman_rayshadowtransmittance rayshadowtransmittance_test.cpp)
+  target_link_libraries(gman_rayshadowtransmittance PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_rayshadowtransmittance gman_raytracer gman_pathtracer gman_glass gman_matte
+                   gman_paintedplastic)
+
+  set(GMAN_RAYSHADOWTRANSMITTANCE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/rayshadowtransmittance-run")
+  file(MAKE_DIRECTORY "${GMAN_RAYSHADOWTRANSMITTANCE_WORKDIR}")
+
+  add_test(NAME rayshadowtransmittance
+    COMMAND gman_rayshadowtransmittance $<TARGET_FILE:gman>
+                                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_RAYSHADOWTRANSMITTANCE_WORKDIR}")
+  set_tests_properties(rayshadowtransmittance PROPERTIES
     ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
     LABELS render
     TIMEOUT 120)
@@ -2964,8 +2987,9 @@ if(GMAN_BUILD_RADIOSITY)
   # The ray tracer renders its rows through gman::parallelFor, one texture
   # cache per worker: an image byte-identical at one, three and eight
   # workers, direct and through the radiosity pass, the worker each row ran
-  # on, one missing-texture warning however many workers ran and a texture only a
-  # second reflection reaches warning in each of two renders. Loads
+  # on, one missing-texture warning however many workers ran, and a texture only a
+  # second reflection reaches and an opacity map only a shadow ray reaches each
+  # warning in each of two renders. Loads
   # libradiosity.so, so it sits in this block. The argument --scaling times
   # the direct scene at one and at eight workers and asserts nothing. See
   # tests/raytracerthreads_test.cpp.

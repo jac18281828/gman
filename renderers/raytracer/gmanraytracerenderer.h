@@ -115,7 +115,11 @@ private:
   // object.
   GMANRayBVH bvh;
 
-  // Shadow rays route through bvh above; declared after it so occluder's
+  // The bvh-only occluder: loadAndPrepareIndirectPass hands it to the
+  // indirect pass, which shoots through it from threads with no texture
+  // cache of their own. render() shades every row through one occluder per
+  // worker instead, each built on that worker's cache, so the shadow rays of
+  // a shaded hit evaluate its blockers' shaders. Declared after bvh so its
   // reference binds to an already-constructed object.
   GMANRayOccluder occluder;
 
@@ -150,18 +154,21 @@ private:
   // background is the sample buffer's seed colour (frameBuffer's corner
   // pixel), what remains after every layer's transmission composites
   // over. indirectPass is null when no Option named one. textureCache is
-  // the calling worker's own cache; the sample writes only its own slot of
-  // sampleBuffer, so rows shaded on different workers never share state.
+  // the calling worker's own cache and shadingOccluder the occluder built on
+  // it, which every shadow ray of the sample goes through; the sample writes
+  // only its own slot of sampleBuffer, so rows shaded on different workers
+  // never share state.
   void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
                    RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY, gman::IndirectPass const* indirectPass,
-                   gman::TextureCache* textureCache) const;
+                   GMANRayOccluder const& shadingOccluder, gman::TextureCache* textureCache) const;
 
   // Shades every sample of pixel row py, in raster order, through
-  // textureCache -- one gman::parallelFor body. Writes only the sample rows
-  // py owns.
+  // shadingOccluder and textureCache, the calling worker's own -- one
+  // gman::parallelFor body. Writes only the sample rows py owns.
   void shadeRow(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
                 GMANOptions::RasterInfo const& raster, int width, int xsamples, int ysamples, int py,
-                gman::IndirectPass const* indirectPass, gman::TextureCache* textureCache) const;
+                gman::IndirectPass const* indirectPass, GMANRayOccluder const& shadingOccluder,
+                gman::TextureCache* textureCache) const;
 
 public:
   GMANRaytraceRenderer(); // default constructor
@@ -175,7 +182,8 @@ public:
   /*
    * Apply a ray-tracing environment to the objects in object manager
    * to generate a frameBuffer output. Pixel rows render through
-   * gman::parallelFor, one gman::TextureCache per worker; every sample's
+   * gman::parallelFor, one gman::TextureCache and one shading
+   * GMANRayOccluder per worker; every sample's
    * value depends on the scene alone, so the image is byte-identical at
    * any worker count.
    */
