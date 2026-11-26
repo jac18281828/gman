@@ -15,9 +15,12 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   anything longer, or a branch that calls or builds something, is an `if`.
 - Small diffs, no cosmetic churn. A behavior change gets its own commit, named
   as such.
-- `const auto x = expr;` when the type is evident; spell the type for a
-  narrowing conversion, an `initializer_list` or a literal whose type matters.
-- New code writes `T const&` and `T const*`.
+- New code declares a local `const auto x = expr;`, and `auto const& r` or
+  `auto const* p` for a reference or pointer. Spell the type only for a
+  narrowing conversion, an `initializer_list`, or a numeric literal, where
+  `auto` would deduce `double` or `int` instead of `RtFloat`.
+- A spelled type keeps `const` east of a pointer or reference (`T const&`,
+  `T const*`) and west of a value (`const RtFloat x = 0.5f;`).
 - Build strings with `std::string` and `std::format`: no `sprintf`/`strcpy`/
   `strcat` family, no `new char[`, no `PATH_MAX` outside `tests/`.
 - Prefer RAII. A class owning a raw pointer declares or deletes all five
