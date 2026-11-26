@@ -79,8 +79,10 @@ public:
   GMANColor computeCi(GMANSurfaceEnv const&) const override { return GMANColor(0.0f, 0.0f, 0.0f); }
   GMANColor computeOi(GMANSurfaceEnv const&) const override { return oi; }
   gman::BSDF bsdf(GMANSurfaceEnv const& se) const override {
-    GMANVector const normal =
-        nanNormal ? GMANVector(kNaN, kNaN, kNaN) : GMANVector(se.N.getX(), se.N.getY(), se.N.getZ());
+    GMANVector normal(se.N.getX(), se.N.getY(), se.N.getZ());
+    if (nanNormal) {
+      normal = GMANVector(kNaN, kNaN, kNaN);
+    }
     gman::BSDF closure(normal);
     closure.addDielectric(weight, kIndex);
     return closure;

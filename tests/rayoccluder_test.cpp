@@ -65,6 +65,11 @@
 
 namespace {
 
+constexpr RtFloat kIndex = (RtFloat)1.5;
+constexpr RtFloat kRelativeTolerance = (RtFloat)1e-5;
+GMANColor const kShaderOpacity(1.0f, 0.5f, 0.0f);
+GMANColor const kShaderWeight(1.0f, 0.5f, 0.25f);
+
 // Opaque (Os = white): a bare GMANRayInterface's appearance defaults to
 // black, and the occluder attenuates by Os rather than by the hit
 // alone, so a blocker meant to fully occlude has to say so.
@@ -78,11 +83,6 @@ GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
   sphere->setAppearance(opaque);
   return sphere;
 }
-
-constexpr RtFloat kIndex = (RtFloat)1.5;
-constexpr RtFloat kRelativeTolerance = (RtFloat)1e-5;
-GMANColor const kShaderOpacity(1.0f, 0.5f, 0.0f);
-GMANColor const kShaderWeight(1.0f, 0.5f, 0.25f);
 
 class DielectricShader : public GMANSurfaceShader {
 public:
