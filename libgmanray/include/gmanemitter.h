@@ -46,20 +46,33 @@
  * and its outgoing radiance on the emitter itself, for a shooting pass that
  * starts rays from the light instead. A delta light (point, spot or
  * distant) answers both through GMANLight's own sample(); an area emitter
- * -- a sphere or disk carrying a pending, illuminated RiAreaLightSource --
- * answers both by sampling its own shape.
+ * -- a sphere, disk or polygon mesh carrying a pending, illuminated
+ * RiAreaLightSource -- answers both by sampling its own shape.
+ *
+ * A polygon mesh, which every Polygon, GeneralPolygon, PointsPolygons and
+ * PointsGeneralPolygons request builds, is one emitter whose draws are
+ * uniform by area over its faces, so its area Jacobian is 1. Each face emits
+ * one-sided along its plane normal, the Newell normal of its outer loop; no
+ * RiSides, RiOrientation or vertex normal changes that direction. Under a
+ * CTM of positive determinant a face's vertices run clockwise seen from the
+ * side it lights: in the camera's left-handed space with y up,
+ * (-a, y, -b) (-a, y, b) (a, y, b) (a, y, -b) emits toward +y and the reverse
+ * order toward -y. A mirroring CTM flips a polygon's emission and leaves a
+ * disk's alone. A mesh with a hole, a concave face or a non-finite vertex is
+ * ineligible.
  */
 namespace gman {
 
-// One thing that radiates light: a delta light (shape null) or a sphere or
-// disk primitive carrying an area light (shape non-null). light is never
-// null -- the enumerated GMANLight itself for a delta emitter, the
+// One thing that radiates light: a delta light (shape null) or a sphere, disk
+// or polygon mesh primitive carrying an area light (shape non-null). light is
+// never null -- the enumerated GMANLight itself for a delta emitter, the
 // arealight's own GMANLight for an area one.
 struct GMANRAY_EXPORT Emitter {
   GMANLight const* light;
   GMANRayInterface const* shape;
   // Phi, pi * mean(Le) * A_cam, A_cam the emitter's own placed area: exact
-  // for a disk, whose area Jacobian is constant over its own plane; an
+  // for a disk, whose area Jacobian is constant over its own plane, and for a
+  // polygon mesh, whose area is taken in camera space with Jacobian 1; an
   // estimate for a sphere under a non-uniform placement, whose Jacobian
   // varies pointwise. power feeds only the light-choice weight, where any
   // positive weight keeps the estimator unbiased, so the estimate costs
@@ -102,7 +115,10 @@ struct GMANRAY_EXPORT EmitterPoint {
 // deduplicated by pointer in first-seen order, ambient excluded, each
 // becoming one delta Emitter; plus one area Emitter per primitive whose
 // Appearance::areaLight is non-null and whose shape is an eligible,
-// supported (sphere or disk) primitive. Counts and warns once, naming the
+// supported (sphere, disk or polygon mesh) primitive. A polygon request's
+// mesh is one emitter; a polygon outside a mesh is unsupported, and a mesh
+// holding a face with a hole, a reflex vertex or a non-finite vertex, or
+// with no area, is ineligible. Counts and warns once, naming the
 // count, when an Appearance::areaLight-tagged primitive is ineligible or
 // unsupported. ambientCount, when non-null, receives the same walk's own
 // count of distinct ambient lights -- a caller that also needs that count
@@ -112,9 +128,11 @@ GMANRAY_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_
 // A next-event-estimation draw toward emitter from p. A delta emitter
 // ignores u1/u2 and forwards to its own light->sample(); an area emitter
 // draws a point on its shape, places it by the shape's own
-// object-to-camera transform, and reports Cl black when that placed point
-// emits away from p. An area emitter whose shape's placement is singular, as
-// under Scale 1 1 0, answers pdf 0 with wi, distance, shadowTarget and Cl all
+// object-to-camera transform (a polygon mesh's vertices are already in camera
+// space), and reports Cl black when that placed point emits away from p, a
+// polygon along its face's plane normal. An area emitter whose shape's
+// placement is singular, as under Scale 1 1 0, or whose polygon mesh has no
+// area, answers pdf 0 with wi, distance, shadowTarget and Cl all
 // zero and isDelta false; only a hand-built Emitter reaches that case,
 // since emitters() skips such a shape.
 GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2);
@@ -123,22 +141,25 @@ GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, 
 // freshly drawn point on emitter, generalized to a point already known --
 // a BSDF-sampled bounce's own hit, which sample() never drew. p is the
 // receiving point, hitPoint the known point on emitter and hitNormal its
-// outward normal there, all camera space. 0 when hitNormal's cosine to the
+// outward normal there (a polygon face's plane normal), all camera space.
+// 0 when hitNormal's cosine to the
 // direction from hitPoint back to p is at or below 0 (emitter's own
 // non-emitting side) or when p and hitPoint coincide -- unlike
 // EmitterSample::pdf, which a back-facing draw still reports nonzero,
 // since that draw's own Cl already goes black on that side and no weight
 // computed from either pdf ever multiplies it. 0 too when emitter's shape
-// has a singular placement, as under Scale 1 1 0. Precondition: emitter.shape
+// has a singular placement, as under Scale 1 1 0, or is a polygon mesh with
+// no area. Precondition: emitter.shape
 // != nullptr (an area emitter, which alone has a surface to place a known
 // point against); checked by assert.
 GMANRAY_EXPORT RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint const& hitPoint,
                                           GMANNormal const& hitNormal);
 
 // A shooting-pass draw on emitter itself, ignoring u1/u2 for a delta
-// emitter. An area emitter whose shape's placement is singular, as under
-// Scale 1 1 0, answers pdf 0 with point, normal and Le all zero and isDelta
-// false.
+// emitter; a polygon mesh draws uniformly by area with its face's plane
+// normal and pdf 1 / area. An area emitter whose shape's placement is
+// singular, as under Scale 1 1 0, or whose polygon mesh has no area, answers
+// pdf 0 with point, normal and Le all zero and isDelta false.
 GMANRAY_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2);
 
 // emitter's own weight for next-event estimation's light choice at p: a
@@ -146,8 +167,10 @@ GMANRAY_EXPORT EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFl
 // power divided by four times the greater of its placed centre's squared
 // distance from p and its own squared bounding radius -- strictly positive
 // wherever it contributes, unlike a fixed preview draw whose own
-// object-space point may face away from p. 0 for an area emitter whose
-// shape's placement is singular, as under Scale 1 1 0.
+// object-space point may face away from p; a polygon mesh's centre and
+// radius are those of its camera-space bounding box's centre and half its
+// diagonal. 0 for an area emitter whose shape's placement is singular, as
+// under Scale 1 1 0.
 GMANRAY_EXPORT RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p);
 
 } // namespace gman

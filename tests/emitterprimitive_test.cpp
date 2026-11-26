@@ -23,23 +23,34 @@
  * area matching the analytic formula and an independent finite-difference
  * quadrature of the Jacobian; a uniform-by-area sampler proven by binned
  * histograms; a degenerate primitive documented as ineligible; and the
- * sampled normal.
+ * sampled normal. Also a polygon mesh's emission through gman::emitters and
+ * gman::samplePoint: its area, a uniform draw by area, the choice of a fan
+ * triangle, the draw's normal and the meshes ineligible to emit.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <memory>
 #include <numbers>
+#include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
+#include "gmancolor.h"
 #include "gmanemitter.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanparameterlist.h"
+#include "gmanpoint.h"
 #include "gmanprimitives.h"
 #include "gmanraydisk.h"
+#include "gmanraypolygon.h"
+#include "gmanraypolygonmesh.h"
 #include "gmanraysphere.h"
 #include "gmansampling.h"
 #include "gmanshading.h"
@@ -50,6 +61,8 @@
 namespace {
 
 constexpr std::uint32_t kSeed = 0x51ed270bu;
+constexpr std::uint32_t kMeshDraws = 1u << 16;
+constexpr int kMeshBinsPerSide = 8;
 
 // Builds a one-primitive world tagging shape as an area light and returns
 // gman::emitters' own count for it -- the eligibility gman::emitters itself
@@ -341,6 +354,257 @@ void testSampledNormal() {
   check(diskNormalOk, "normal: a full disk's sampled normal is exactly (0, 0, -1) at every draw");
 }
 
+struct FaceSpec {
+  std::vector<GMANPoint> outer;
+  std::vector<std::vector<GMANPoint>> holes;
+};
+
+// A one-mesh world tagged as one area light, built as getRSPolygonMesh builds
+// one: the appearance sits on the mesh and on each face. The world owns the
+// mesh, which owns its faces.
+struct MeshWorld {
+  GMANLight light{GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector()};
+  GMANLinearWorldManager world;
+  GMANRayPolygonMesh const* mesh = nullptr;
+
+  explicit MeshWorld(std::vector<FaceSpec> const& specs) {
+    gman::Appearance appearance;
+    appearance.areaLight = &light;
+    std::vector<std::unique_ptr<GMANRayPolygon>> faces;
+    for (FaceSpec const& spec : specs) {
+      std::vector<std::pair<RtFloat, RtFloat>> const texCoords(spec.outer.size(),
+                                                               std::pair<RtFloat, RtFloat>(0.0f, 0.0f));
+      auto face = std::make_unique<GMANRayPolygon>(spec.outer, spec.holes, texCoords);
+      face->setAppearance(appearance);
+      faces.push_back(std::move(face));
+    }
+    auto owned = std::make_unique<GMANRayPolygonMesh>(std::move(faces));
+    owned->setAppearance(appearance);
+    mesh = owned.get();
+    world.add(owned.release());
+  }
+};
+
+// The one emitter gman::emitters enumerates for w; empty, and a failed check,
+// when it enumerates any other count.
+std::optional<gman::Emitter> soleEmitter(MeshWorld& w, std::string const& label) {
+  std::vector<gman::Emitter> const list = gman::emitters(w.world);
+  check(list.size() == 1 && list[0].shape == w.mesh && list[0].light == &w.light,
+        label + ": the mesh is one area emitter naming its own light");
+  if (list.size() != 1) {
+    return std::nullopt;
+  }
+  return list[0];
+}
+
+std::size_t meshEmitterCount(std::vector<FaceSpec> const& specs) {
+  MeshWorld w(specs);
+  return gman::emitters(w.world).size();
+}
+
+// The square of half-width half at height y, wound (-half, y, -half) (-half,
+// y, half) (half, y, half) (half, y, -half): its plane normal is +y.
+std::vector<GMANPoint> squareLoop(RtFloat half, RtFloat y) {
+  return {GMANPoint(-half, y, -half), GMANPoint(-half, y, half), GMANPoint(half, y, half), GMANPoint(half, y, -half)};
+}
+
+FaceSpec solidFace(std::vector<GMANPoint> outer) { return FaceSpec{std::move(outer), {}}; }
+
+void testPolygonArea() {
+  MeshWorld w({solidFace({GMANPoint(-1.0f, 0.0f, -1.5f), GMANPoint(-1.0f, 0.0f, 1.5f), GMANPoint(1.0f, 0.0f, 1.5f),
+                          GMANPoint(1.0f, 0.0f, -1.5f)})});
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon area");
+  if (!emitter) {
+    return;
+  }
+
+  constexpr std::uint32_t kDraws = 1u << 8;
+  bool areaMatches = true;
+  for (std::uint32_t i = 0; i < kDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, 6, 0, i, kDraws, 0u);
+    gman::EmitterPoint const ep = gman::samplePoint(*emitter, uv.u1, uv.u2);
+    double const area = 1.0 / (double)ep.pdf;
+    if (!(std::fabs(area - 6.0) / 6.0 < 1e-5)) {
+      areaMatches = false;
+    }
+  }
+  check(areaMatches, "polygon area: 1 / pdf of every draw on a 2 x 3 rectangle is 6 within 1e-5 relative");
+}
+
+// Whether every draw of emitter lies on the square [-1, 1] in x and z and the
+// draws fill an 8 x 8 grid over it, each bin within 5 sigma of N / 64.
+bool drawsFillSquareEvenly(gman::Emitter const& emitter, RtInt dim) {
+  constexpr int kBins = kMeshBinsPerSide * kMeshBinsPerSide;
+  std::vector<std::uint32_t> bins(kBins, 0);
+  bool onSquare = true;
+  for (std::uint32_t i = 0; i < kMeshDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, dim, 0, i, kMeshDraws, 0u);
+    gman::EmitterPoint const ep = gman::samplePoint(emitter, uv.u1, uv.u2);
+    double const x = ep.point.getX();
+    double const z = ep.point.getZ();
+    if (std::fabs(x) > 1.0 + 1e-5 || std::fabs(z) > 1.0 + 1e-5) {
+      onSquare = false;
+    }
+    int const column = std::clamp((int)((x + 1.0) / 2.0 * kMeshBinsPerSide), 0, kMeshBinsPerSide - 1);
+    int const row = std::clamp((int)((z + 1.0) / 2.0 * kMeshBinsPerSide), 0, kMeshBinsPerSide - 1);
+    ++bins[row * kMeshBinsPerSide + column];
+  }
+  double const expectedPerBin = (double)kMeshDraws / (double)kBins;
+  double const sigma = std::sqrt(expectedPerBin * (1.0 - 1.0 / (double)kBins));
+  bool evenly = true;
+  for (std::uint32_t count : bins) {
+    if (std::fabs((double)count - expectedPerBin) > 5.0 * sigma) {
+      evenly = false;
+    }
+  }
+  return onSquare && evenly;
+}
+
+void testPolygonUniformDraw() {
+  MeshWorld w({solidFace(squareLoop(1.0f, 0.5f))});
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon uniform draw");
+  if (!emitter) {
+    return;
+  }
+  check(drawsFillSquareEvenly(*emitter, 7),
+        "polygon uniform draw: 2^16 draws on a square fill its 8 x 8 bins, each within 5 sigma of N/64");
+}
+
+bool insideTriangle(double px, double pz, GMANPoint const& a, GMANPoint const& b, GMANPoint const& c) {
+  auto const side = [&](GMANPoint const& from, GMANPoint const& to) {
+    return ((double)to.getX() - from.getX()) * (pz - from.getZ()) -
+           ((double)to.getZ() - from.getZ()) * (px - from.getX());
+  };
+  double const ab = side(a, b);
+  double const bc = side(b, c);
+  double const ca = side(c, a);
+  return (ab > 0.0 && bc > 0.0 && ca > 0.0) || (ab < 0.0 && bc < 0.0 && ca < 0.0);
+}
+
+void testPolygonTriangleChoice() {
+  GMANPoint const a(0.0f, 0.5f, 0.0f);
+  GMANPoint const b(1.0f, 0.5f, 0.0f);
+  GMANPoint const c(1.0f, 0.5f, 1.0f);
+  GMANPoint const d(-1.0f, 0.5f, 2.0f);
+  MeshWorld w({solidFace({a, b, c, d})});
+  std::optional<gman::Emitter> const emitter = soleEmitter(w, "polygon triangle choice");
+  if (!emitter) {
+    return;
+  }
+
+  std::uint32_t inFirst = 0;
+  for (std::uint32_t i = 0; i < kMeshDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, 8, 0, i, kMeshDraws, 0u);
+    gman::EmitterPoint const ep = gman::samplePoint(*emitter, uv.u1, uv.u2);
+    if (insideTriangle(ep.point.getX(), ep.point.getZ(), a, b, c)) {
+      ++inFirst;
+    }
+  }
+  double const share = (double)inFirst / (double)kMeshDraws;
+  double const sigma = std::sqrt(0.25 * 0.75 / (double)kMeshDraws);
+  std::printf("polygon triangle choice: the first fan triangle holds %.6f of the draws, expected 0.25\n", share);
+  checkNear(share, 0.25, sigma, 0.0,
+            "polygon triangle choice: the first of two fan triangles of areas 1 : 3 takes 1/4 of the draws");
+}
+
+void testPolygonNormal() {
+  GMANPoint const origin(0.5f, -0.25f, 2.0f);
+  GMANVector const u(1.0f, 0.5f, -0.25f);
+  GMANVector const v(-0.25f, 1.0f, 0.5f);
+  auto const corner = [&](RtFloat s, RtFloat t) {
+    return GMANPoint(origin.getX() + s * u.getX() + t * v.getX(), origin.getY() + s * u.getY() + t * v.getY(),
+                     origin.getZ() + s * u.getZ() + t * v.getZ());
+  };
+  std::vector<GMANPoint> const tilted = {corner(-1.0f, -1.5f), corner(-1.0f, 1.5f), corner(1.0f, 1.5f),
+                                         corner(1.0f, -1.5f)};
+  GMANVector expected = GMANVector(tilted[0], tilted[1]).cross(GMANVector(tilted[0], tilted[2]));
+  expected.normalize();
+  double extent = 0.0;
+  for (GMANPoint const& vertex : tilted) {
+    GMANVector offset(tilted[0], vertex);
+    extent = std::max(extent, (double)offset.magnitude());
+  }
+
+  MeshWorld tiltedWorld({solidFace(tilted)});
+  std::optional<gman::Emitter> const tiltedEmitter = soleEmitter(tiltedWorld, "polygon normal");
+  if (!tiltedEmitter) {
+    return;
+  }
+  bool normalMatches = true;
+  bool onPlane = true;
+  constexpr std::uint32_t kDraws = 1u << 8;
+  for (std::uint32_t i = 0; i < kDraws; ++i) {
+    gman::Sample2D const uv = gman::sample2D(kSeed, 9, 0, i, kDraws, 0u);
+    gman::EmitterPoint const ep = gman::samplePoint(*tiltedEmitter, uv.u1, uv.u2);
+    GMANVector const drawn(ep.normal.getX(), ep.normal.getY(), ep.normal.getZ());
+    if (!((drawn - expected).dot(drawn - expected) < 1e-12)) {
+      normalMatches = false;
+    }
+    double const height = expected.dot(GMANVector(tilted[0], ep.point));
+    if (!(std::fabs(height) <= 1e-5 * extent)) {
+      onPlane = false;
+    }
+  }
+  check(normalMatches, "polygon normal: every draw on a tilted quad carries the face's plane normal within 1e-6");
+  check(onPlane, "polygon normal: every draw lies on the face's plane within 1e-5 of its extent");
+
+  std::vector<GMANPoint> const up = squareLoop(1.0f, 1.5f);
+  MeshWorld upWorld({solidFace(up)});
+  std::optional<gman::Emitter> const upEmitter = soleEmitter(upWorld, "polygon normal, up winding");
+  std::vector<GMANPoint> const down(up.rbegin(), up.rend());
+  MeshWorld downWorld({solidFace(down)});
+  std::optional<gman::Emitter> const downEmitter = soleEmitter(downWorld, "polygon normal, down winding");
+  if (!upEmitter || !downEmitter) {
+    return;
+  }
+  GMANNormal const upNormal = gman::samplePoint(*upEmitter, 0.3f, 0.6f).normal;
+  GMANNormal const downNormal = gman::samplePoint(*downEmitter, 0.3f, 0.6f).normal;
+  check(std::fabs(upNormal.getX()) < 1e-6 && std::fabs(upNormal.getY() - 1.0) < 1e-6 &&
+            std::fabs(upNormal.getZ()) < 1e-6,
+        "polygon normal: a square wound (-a, y, -b) (-a, y, b) (a, y, b) (a, y, -b) reports (0, 1, 0)");
+  check(std::fabs(downNormal.getX()) < 1e-6 && std::fabs(downNormal.getY() + 1.0) < 1e-6 &&
+            std::fabs(downNormal.getZ()) < 1e-6,
+        "polygon normal: the reverse winding reports (0, -1, 0)");
+}
+
+void testPolygonEligibility() {
+  RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
+  RtFloat const infinity = std::numeric_limits<RtFloat>::infinity();
+
+  FaceSpec const holed{squareLoop(2.0f, 0.0f), {squareLoop(0.5f, 0.0f)}};
+  check(meshEmitterCount({holed}) == 0, "polygon eligibility: a face with a hole is ineligible");
+
+  FaceSpec const concave = solidFace({GMANPoint(4.0f, 0.0f, 0.0f), GMANPoint(1.0f, 0.0f, 1.0f),
+                                      GMANPoint(0.0f, 0.0f, 4.0f), GMANPoint(0.0f, 0.0f, 0.0f)});
+  check(meshEmitterCount({concave}) == 0,
+        "polygon eligibility: a concave face whose fan leaves the face is ineligible");
+
+  FaceSpec const sound = solidFace(squareLoop(1.0f, 0.0f));
+  std::vector<GMANPoint> withNan = squareLoop(1.0f, 1.0f);
+  withNan[3] = GMANPoint(1.0f, nan, -1.0f);
+  check(meshEmitterCount({sound, solidFace(withNan)}) == 0,
+        "polygon eligibility: a second face holding a NaN vertex makes the mesh ineligible");
+  std::vector<GMANPoint> withInfinity = squareLoop(1.0f, 1.0f);
+  withInfinity[3] = GMANPoint(1.0f, infinity, -1.0f);
+  check(meshEmitterCount({sound, solidFace(withInfinity)}) == 0,
+        "polygon eligibility: a second face holding an infinite vertex makes the mesh ineligible");
+
+  check(meshEmitterCount({sound, solidFace(squareLoop(1.0f, 1.0f))}) == 1,
+        "polygon eligibility: a two-face mesh of sound faces is one emitter");
+
+  std::vector<GMANPoint> repeated = squareLoop(1.0f, 0.0f);
+  GMANPoint const second = repeated[1];
+  repeated.insert(repeated.begin() + 2, second);
+  MeshWorld repeatedWorld({solidFace(repeated)});
+  std::optional<gman::Emitter> const repeatedEmitter =
+      soleEmitter(repeatedWorld, "polygon eligibility, repeated vertex");
+  if (!repeatedEmitter) {
+    return;
+  }
+  check(drawsFillSquareEvenly(*repeatedEmitter, 10),
+        "polygon eligibility: a square with one vertex repeated draws evenly over its 8 x 8 bins");
+}
+
 } // namespace
 
 int main() {
@@ -351,6 +615,12 @@ int main() {
   testThetaMaxSampleClamp();
   testDegeneratePrimitives();
   testSampledNormal();
+  testPolygonArea();
+  testPolygonUniformDraw();
+  testPolygonTriangleChoice();
+  testPolygonNormal();
+  testPolygonEligibility();
 
-  return checkSummary("GMANSphere and GMANDisk sample uniformly by area, matching their own closed-form area");
+  return checkSummary("GMANSphere and GMANDisk sample uniformly by area, matching their own closed-form area, and a "
+                      "polygon mesh emits uniformly by area along its faces' normals");
 }
