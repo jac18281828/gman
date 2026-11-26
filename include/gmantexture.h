@@ -55,7 +55,8 @@ public:
   explicit Texture(std::string const& name);
 
   // Bilinear sample at (s, t); t=0 is the image's top row. wrap resolves
-  // both s and t identically outside [0, 1].
+  // both s and t identically outside [0, 1], at any finite distance. A NaN or
+  // infinite s or t answers NaN in every channel.
   GMANColor sample(RtFloat s, RtFloat t, TextureWrap wrap) const;
 
   // Per-axis form: wrap resolves s and t independently. The single-wrap

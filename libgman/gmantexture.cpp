@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -40,6 +41,8 @@
 namespace gman {
 
 namespace {
+
+constexpr RtFloat kIndexLimit = 0x1p30f;
 
 // A single opaque black texel: what a missing, unreadable or unsupported
 // file decodes to.
@@ -74,6 +77,36 @@ RtInt wrapIndex(RtInt i, RtInt dim, TextureWrap wrap, bool& valid) {
       return dim - 1;
     return i;
   }
+}
+
+struct TexelAxis {
+  RtInt index;
+  RtFloat fraction;
+};
+
+// A coordinate of finite s past RtInt's range has no integer index to
+// convert. Periodic wrap keeps the index modulo dim, which fmod answers
+// exactly in double, including where s * dim overflows a float; clamp and
+// black see an index far outside [0, dim) at either end.
+RtFloat texelPastIndexRange(RtFloat s, RtFloat x, RtInt dim, TextureWrap wrap) {
+  if (wrap != TEXTURE_PERIODIC) {
+    return std::copysign(kIndexLimit, x);
+  }
+  double const position = std::isfinite(x) ? static_cast<double>(x) : static_cast<double>(s) * dim;
+  return static_cast<RtFloat>(std::fmod(position, static_cast<double>(dim)));
+}
+
+// Texel centres sit at (i + 0.5) / dim; solving that for i turns s into a
+// coordinate where an integer means "exactly this texel's centre" and a
+// half-integer means "exactly between two centres" -- what the direct cache
+// assertions in tests/texture_test.cpp pin.
+TexelAxis texelAxis(RtFloat s, RtInt dim, TextureWrap wrap) {
+  RtFloat x = s * (RtFloat)dim - (RtFloat)0.5;
+  if (std::fabs(x) >= kIndexLimit) {
+    x = texelPastIndexRange(s, x, dim, wrap);
+  }
+  RtInt const index = (RtInt)std::floor(x);
+  return {index, x - (RtFloat)index};
 }
 
 // Matches a wrap name case-insensitively, the way gmanribparse.cpp's
@@ -253,16 +286,16 @@ Texture::Texture(std::string const& name) : width(1), height(1) {
 GMANColor Texture::sample(RtFloat s, RtFloat t, TextureWrap wrap) const { return sample(s, t, wrap, wrap); }
 
 GMANColor Texture::sample(RtFloat s, RtFloat t, TextureWrap swrap, TextureWrap twrap) const {
-  // Texel centres sit at (i + 0.5) / dim; solving that for i turns (s, t)
-  // into a coordinate where an integer means "exactly this texel's
-  // centre" and a half-integer means "exactly between two centres" --
-  // what the direct cache assertions in tests/texture_test.cpp pin.
-  RtFloat x = s * (RtFloat)width - (RtFloat)0.5;
-  RtFloat y = t * (RtFloat)height - (RtFloat)0.5;
-  RtInt x0 = (RtInt)std::floor(x);
-  RtInt y0 = (RtInt)std::floor(y);
-  RtFloat fx = x - (RtFloat)x0;
-  RtFloat fy = y - (RtFloat)y0;
+  if (!std::isfinite(s) || !std::isfinite(t)) {
+    constexpr RtFloat kNaN = std::numeric_limits<RtFloat>::quiet_NaN();
+    return GMANColor(kNaN, kNaN, kNaN);
+  }
+  TexelAxis const xAxis = texelAxis(s, width, swrap);
+  TexelAxis const yAxis = texelAxis(t, height, twrap);
+  RtInt const x0 = xAxis.index;
+  RtInt const y0 = yAxis.index;
+  RtFloat const fx = xAxis.fraction;
+  RtFloat const fy = yAxis.fraction;
 
   bool xValid0, xValid1, yValid0, yValid1;
   RtInt ix0 = wrapIndex(x0, width, swrap, xValid0);

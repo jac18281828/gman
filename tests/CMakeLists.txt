@@ -1596,6 +1596,22 @@ set_tests_properties(texturecache PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A texture lookup at a non-finite s or t answers NaN, and at a finite
+# coordinate beyond RtInt's range the texel its wrap mode defines. See
+# tests/texturenonfinite_test.cpp.
+add_executable(gman_texturenonfinite texturenonfinite_test.cpp)
+target_link_libraries(gman_texturenonfinite PRIVATE gman_core TIFF::TIFF gman_internal_headers)
+
+set(GMAN_TEXTURENONFINITE_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/texturenonfinite-run")
+file(MAKE_DIRECTORY "${GMAN_TEXTURENONFINITE_WORKDIR}")
+
+add_test(NAME texturenonfinite COMMAND gman_texturenonfinite
+  WORKING_DIRECTORY "${GMAN_TEXTURENONFINITE_WORKDIR}")
+set_tests_properties(texturenonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A missing texture warns once per world block under every renderer; libtiff stays silent.
 add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
 target_link_libraries(gman_texturewarningonce PRIVATE gman_core)
