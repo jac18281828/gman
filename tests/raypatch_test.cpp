@@ -33,6 +33,7 @@
 #include <initializer_list>
 #include <limits>
 #include <map>
+#include <memory>
 #include <numbers>
 #include <set>
 #include <string>
@@ -222,27 +223,20 @@ struct Request {
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANPrimitive* primitive = nullptr;
+  std::unique_ptr<GMANPrimitive> primitive;
 
-  Request() = default;
-  Request(Request const&) = delete;
-  Request& operator=(Request const&) = delete;
-  ~Request() { delete primitive; }
-
-  GMANRayPolygonMesh const* mesh() const { return dynamic_cast<GMANRayPolygonMesh const*>(primitive); }
+  GMANRayPolygonMesh const* mesh() const { return dynamic_cast<GMANRayPolygonMesh const*>(primitive.get()); }
 
   void patch(char const* type, std::vector<Param> params, Counts counts) {
-    delete primitive;
     GMANParameterList const pl = makeList(params, counts);
-    primitive = manager.getRSPatch((RtToken)type, pl, &options, &attr, &transform);
+    primitive.reset(manager.getRSPatch((RtToken)type, pl, &options, &attr, &transform));
   }
 
   void patchMesh(char const* type, RtInt nu, bool uPeriodic, RtInt nv, bool vPeriodic, std::vector<Param> params,
                  Counts counts) {
-    delete primitive;
     GMANParameterList const pl = makeList(params, counts);
-    primitive = manager.getRSPatchMesh((RtToken)type, nu, uPeriodic ? RI_PERIODIC : RI_NONPERIODIC, nv,
-                                       vPeriodic ? RI_PERIODIC : RI_NONPERIODIC, pl, &options, &attr, &transform);
+    primitive.reset(manager.getRSPatchMesh((RtToken)type, nu, uPeriodic ? RI_PERIODIC : RI_NONPERIODIC, nv,
+                                           vPeriodic ? RI_PERIODIC : RI_NONPERIODIC, pl, &options, &attr, &transform));
   }
 };
 
@@ -408,7 +402,7 @@ void testBilinearPatch() {
   check(stats.vertices.size() == kLines * kLines, "bilinear Patch: 17 x 17 distinct vertices");
   check(hasVertexNear(stats, evaluate(s, 0, 0), tolerance) && hasVertexNear(stats, evaluate(s, 1, 0), tolerance) &&
             hasVertexNear(stats, evaluate(s, 0, 1), tolerance) && hasVertexNear(stats, evaluate(s, 1, 1), tolerance),
-        "bilinear Patch: the corner vertices are the control points in RISpec order");
+        "bilinear Patch: the corner vertices are the four control points");
   check(hasVertexNear(stats, evaluate(s, gridU(4), gridU(12)), tolerance),
         "bilinear Patch: the vertex at (4/16, 12/16) lies on the bilinear surface");
   bool cornersTagged = true;
@@ -765,9 +759,9 @@ void testPatchMeshTexCoords() {
     request.attr.setTextureCoordinates(0, 0, 2, 0, 0, 2, 2, 2);
     std::vector<Param> params = {{RI_P, flat.p}};
     if (uniformS) {
-      params.push_back({(RtToken) "uniform float s", {9.0f, 9.0f}});
+      params.push_back({(RtToken) "uniform float s", {9.0f, 9.0f, 9.0f, 9.0f, 9.0f, 9.0f}});
     }
-    request.patchMesh("bilinear", 3, false, 2, false, params, {6, 6, 2});
+    request.patchMesh("bilinear", 3, false, 2, false, params, {6, 6, 6});
     GMANRayPolygonMesh const* mesh = request.mesh();
     std::string const label = uniformS ? "PatchMesh with a uniform \"s\": " : "PatchMesh: ";
     check(mesh != nullptr, label + "a triangle mesh");
@@ -823,6 +817,70 @@ void testPatchMeshTexCoords() {
       followsU = followsU && hitTexCoordNear(*cornerMesh, target, outsideOf(target), u, 0.5);
     }
     check(followsU, "periodic PatchMesh without \"st\": s = u across the last strip");
+  }
+}
+
+void testVaryingMeshTexCoords() {
+  SurfaceDef const tube = bsplineTubeDef();
+  std::vector<RtFloat> const tubeSt = {0.1f, 0.9f, 0.4f, 0.2f, 0.7f, 0.5f, 0.3f, 0.6f,
+                                       0.8f, 0.1f, 0.2f, 0.7f, 0.6f, 0.3f, 0.5f, 0.4f};
+  Request tubeRequest;
+  setBasis(tubeRequest.attr, kBSpline, kBSpline);
+  tubeRequest.patchMesh("bicubic", 4, true, 4, false, {{RI_P, tube.p}, {RI_ST, tubeSt}}, {16, 8, 4});
+  GMANRayPolygonMesh const* tubeMesh = tubeRequest.mesh();
+  check(tubeMesh != nullptr, "periodic bicubic PatchMesh with varying \"st\": a triangle mesh");
+  if (tubeMesh != nullptr) {
+    bool blended = true;
+    for (std::pair<RtInt, RtInt> const& g : std::array<std::pair<RtInt, RtInt>, 3>{{{5, 6}, {10, 9}, {14, 3}}}) {
+      double const u = gridU(g.first);
+      double const v = gridU(g.second);
+      double const local = u * 4 - std::floor(u * 4);
+      std::size_t const first = (std::size_t)std::floor(u * 4);
+      std::size_t const next = (first + 1) % 4;
+      double const s =
+          bilerp(local, v, tubeSt[2 * first], tubeSt[2 * next], tubeSt[2 * (first + 4)], tubeSt[2 * (next + 4)]);
+      double const t = bilerp(local, v, tubeSt[2 * first + 1], tubeSt[2 * next + 1], tubeSt[2 * (first + 4) + 1],
+                              tubeSt[2 * (next + 4) + 1]);
+      Vec3 const target = evaluate(tube, u, v);
+      blended = blended && hitTexCoordNear(*tubeMesh, target, outsideOf(target), s, t);
+    }
+    check(blended, "periodic bicubic PatchMesh: varying \"st\" blends within a sub-patch");
+  }
+
+  SurfaceDef const flat = flatMeshDef(3, 2);
+  std::vector<RtFloat> const st = {0.1f, 0.2f, 0.9f, 0.3f, 0.4f, 0.8f, 0.7f, 0.6f, 0.2f, 0.5f, 0.3f, 0.9f};
+  std::vector<RtFloat> const sOnly = {0.5f, 0.0f, 0.2f, 1.0f, 0.6f, 0.3f};
+  std::vector<RtFloat> const tOnly = {0.0f, 0.4f, 0.8f, 0.2f, 0.9f, 0.1f};
+  for (bool withT : {false, true}) {
+    Request request;
+    std::vector<Param> params = {{RI_P, flat.p}, {RI_ST, st}, {RI_S, sOnly}};
+    if (withT) {
+      params.push_back({RI_T, tOnly});
+    }
+    request.patchMesh("bilinear", 3, false, 2, false, params, {6, 6, 2});
+    GMANRayPolygonMesh const* mesh = request.mesh();
+    std::string const label =
+        withT ? "PatchMesh with varying \"st\", \"s\" and \"t\": " : "PatchMesh with varying \"st\" and \"s\": ";
+    check(mesh != nullptr, label + "a triangle mesh");
+    if (mesh == nullptr) {
+      continue;
+    }
+    bool overridden = true;
+    for (std::pair<RtInt, RtInt> const& g : std::array<std::pair<RtInt, RtInt>, 3>{{{4, 4}, {12, 12}, {9, 5}}}) {
+      double const u = gridU(g.first);
+      double const v = gridU(g.second);
+      std::size_t const first = u < 0.5 ? 0 : 1;
+      double const local = u * 2 - (double)first;
+      double const s = bilerp(local, v, sOnly[first], sOnly[first + 1], sOnly[first + 3], sOnly[first + 4]);
+      double t = bilerp(local, v, st[2 * first + 1], st[2 * (first + 1) + 1], st[2 * (first + 3) + 1],
+                        st[2 * (first + 4) + 1]);
+      if (withT) {
+        t = bilerp(local, v, tOnly[first], tOnly[first + 1], tOnly[first + 3], tOnly[first + 4]);
+      }
+      Vec3 const target = evaluate(flat, u, v);
+      overridden = overridden && hitTexCoordNear(*mesh, target, frontOf(target), s, t);
+    }
+    check(overridden, label + "\"s\" and \"t\" override \"st\" within a sub-patch");
   }
 }
 
@@ -915,6 +973,7 @@ int main() {
   testNormals();
   testPatchTexCoords();
   testPatchMeshTexCoords();
+  testVaryingMeshTexCoords();
   testNonFiniteAndDegenerate();
   testRequestChecks();
 
