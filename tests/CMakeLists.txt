@@ -1680,6 +1680,17 @@ set_tests_properties(samplebuffernonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RiFormat ignores a NaN or infinite pixel aspect ratio. See
+# tests/formatnonfinite_test.cpp.
+add_executable(gman_formatnonfinite formatnonfinite_test.cpp)
+target_link_libraries(gman_formatnonfinite PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME formatnonfinite COMMAND gman_formatnonfinite)
+set_tests_properties(formatnonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # Test-only surface shader answering a NaN or infinite Ci or Oi on request
 # ("string ci", "string oi"): RIB has no literal for either.
 gman_add_plugin(gman_nonfinitesurface nonfinitesurface_test_plugin.cpp)

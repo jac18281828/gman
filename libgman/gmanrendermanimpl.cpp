@@ -480,6 +480,10 @@ RtVoid GMANRenderManImpl::RiFormat(RtInt xres, RtInt yres, RtFloat aspect) {
   if (!allowed(cmdFormat)) {
     return;
   }
+  if (!std::isfinite(aspect)) {
+    warning("Format pixel aspect ratio {} must be finite; ignored.", aspect);
+    return;
+  }
   getOptions().setFormat(xres, yres, aspect);
 }
 RtVoid GMANRenderManImpl::RiFrameAspectRatio(RtFloat aspect) {
