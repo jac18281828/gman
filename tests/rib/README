@@ -886,6 +886,37 @@ read together in the direct block (columns 16-19, rows 22-25), and the mirrored 
 wrong `Kr` and a wrong `Cs` read apart. Registered in `tests/raycomposite_test.cpp`. Not
 third-party.
 
+## glassparams_pane.rib
+
+A clear glass pane, two parallel faces 0.1 apart, before a red matte backdrop, and a blue
+matte panel beside the camera, outside its frustum, that shows in the pane only as a
+reflection. At the block at column 52, row 24 the red channel reads the light the pane
+transmits and the blue channel the light it reflects. Two distant lights each reach one
+surface from its viewer's side, so no shadow ray crosses the pane, and `Kd` 0.01 keeps
+interreflection, which only the path tracer renders, under the test's tolerance.
+`## begin <name>` and `## end <name>` comment lines bracket the backdrop, the panel and the
+pane, so the test can drop each for a twin. Registered in `tests/glassparams_test.cpp`,
+which rewrites the `Surface "glass"` line to set `eta`, `Kr` and `Kt` and crops the frame to
+the block. Not third-party.
+
+## glassparams_sphere.rib
+
+A clear glass sphere before a two-tone backdrop, red left of x = 1 and blue right of it, the
+edge off the sphere's axis. At the block at column 24, row 24 the sphere at `eta` 1.5 shows
+the blue half and at `eta` 1.2 the red. One distant light reaches the backdrop alone, and
+`Kd` 0.01 keeps interreflection under the test's tolerance. Registered in
+`tests/glassparams_test.cpp`. Not third-party.
+
+## glassparams_shadow.rib
+
+The `rayshadow_glass.rib` scene at 64 by 48: a matte sphere under a clear pane of two faces,
+lit by one distant light from above, so every shadow ray from the sphere crosses both faces
+at normal incidence. The block at column 32, row 24 is the scene point at the centre of
+`rayshadow_glass.rib`. `## begin pane` and `## end pane` bracket the pane, so the test can
+drop it for the unshadowed reference. Registered in `tests/glassparams_test.cpp`, which
+proves the receiver's ratio to its unshadowed reading is (`Kt` * (1 - F))^2 under both
+renderers. Not third-party.
+
 ## corpus/
 
 Real RIB from third-party software, fetched once and checked in so tests are

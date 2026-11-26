@@ -4799,3 +4799,25 @@ if(GMAN_BUILD_RAYTRACER)
     LABELS render
     TIMEOUT 30)
 endif()
+
+# glass's eta, Kr and Kt move the ray tracer and the path tracer alike: a pane,
+# a sphere and a shadowed receiver render under both renderers, cropped to one
+# block, beside twins that drop the reflected panel, the backdrop or the pane.
+# Needs both renderers. See tests/glassparams_test.cpp.
+if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
+  add_executable(gman_glassparams glassparams_test.cpp)
+  target_link_libraries(gman_glassparams PRIVATE gman TIFF::TIFF)
+  add_dependencies(gman_glassparams gman_raytracer gman_pathtracer gman_glass gman_matte)
+
+  set(GMAN_GLASSPARAMS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/glassparams-run")
+  file(MAKE_DIRECTORY "${GMAN_GLASSPARAMS_WORKDIR}")
+
+  add_test(NAME glassparams
+    COMMAND gman_glassparams $<TARGET_FILE:gman_cli>
+                             "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_GLASSPARAMS_WORKDIR}")
+  set_tests_properties(glassparams PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 120)
+endif()

@@ -1,0 +1,38 @@
+## A clear glass pane, two parallel faces 0.1 apart, before a red matte backdrop. A blue matte
+## panel beside the camera lies outside its frustum: it shows in the pane only as a reflection,
+## so the red channel reads what the pane transmits and the blue channel what it reflects. Each
+## light reaches one surface, from the side its viewer is on, and no shadow ray crosses the pane.
+## Kd 0.01 keeps interreflection, which only the path tracer renders, below the tolerance the
+## test measures; the lights make up the radiance. Not third-party.
+Display "glassparams_pane.tif" "file" "rgba"
+Format 64 48 1
+PixelSamples 2 2
+Option "pathtracer" "integer samples" [512]
+Projection "perspective" "fov" [40]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "from" [0.8 0.5 -0.33] "to" [0 0 0] "intensity" [260]
+LightSource "distantlight" 2 "from" [0.8 0.5 0.33] "to" [0 0 0] "intensity" [500]
+## begin backdrop
+AttributeBegin
+Surface "matte" "Kd" [0.01]
+Color [1 0 0]
+Polygon "P" [-12 -9 3  12 -9 3  12 9 3  -12 9 3]
+AttributeEnd
+## end backdrop
+## begin panel
+AttributeBegin
+Surface "matte" "Kd" [0.01]
+Color [0 0 1]
+Polygon "P" [1.5 -3 -3  6 -3 -3  6 3 -3  1.5 3 -3]
+AttributeEnd
+## end panel
+## begin pane
+AttributeBegin
+Surface "glass"
+Polygon "P" [-2.7 2.1 0  2.7 2.1 0  2.7 -2.1 0  -2.7 -2.1 0]
+Polygon "P" [-2.7 -2.1 0.1  2.7 -2.1 0.1  2.7 2.1 0.1  -2.7 2.1 0.1]
+AttributeEnd
+## end pane
+WorldEnd

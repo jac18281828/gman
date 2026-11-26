@@ -1,0 +1,24 @@
+## The rayshadow_glass.rib scene at 64 by 48: a matte sphere under a clear pane of two faces, lit by
+## one distant light from above, so every shadow ray from the sphere crosses both faces at normal
+## incidence. Kd 0.01 keeps interreflection, which only the path tracer renders, below the
+## tolerance the test measures; the light makes up the radiance. Not third-party.
+Display "glassparams_shadow.tif" "file" "rgba"
+Format 64 48 1
+PixelSamples 2 2
+Option "pathtracer" "integer samples" [64]
+Projection "perspective" "fov" [40]
+Clipping 0.5 50
+Translate 0 0 5
+Rotate -20 1 0 0
+WorldBegin
+LightSource "distantlight" 1 "from" [0 10 0] "to" [0 0 0] "intensity" [230]
+Surface "matte" "Kd" [0.01]
+Sphere 1 -1 1 360
+## begin pane
+AttributeBegin
+Surface "glass"
+Polygon "P" [-2 2 -2  2 2 -2  2 2 2  -2 2 2]
+Polygon "P" [-2 2.1 2  2 2.1 2  2 2.1 -2  -2 2.1 -2]
+AttributeEnd
+## end pane
+WorldEnd
