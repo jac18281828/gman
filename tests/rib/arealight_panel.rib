@@ -1,0 +1,21 @@
+## Two Polygon panels side by side under one AreaLightSource over a Kd 0 matte
+## surface: the left wound to light the camera, the right wound away from it.
+## The intensity stays under 1 so 8-bit output never clips. AGENTS.md's desync
+## convention: the block ends on a Sphere, here outside the frame, so a
+## mis-parsed parameter list desyncs it. Not third-party.
+Display "arealight_panel.tif" "file" "rgba"
+Format 64 64 1
+PixelSamples 1 1
+Projection "perspective" "fov" [45]
+Clipping 0.5 50
+Translate 0 0 5
+WorldBegin
+AttributeBegin
+Surface "matte" "Kd" [0]
+AreaLightSource "arealight" 1 "intensity" [0.8] "lightcolor" [1 0.5 0.25]
+Polygon "P" [-1.8 -0.8 0  -1.8 0.8 0  -0.2 0.8 0  -0.2 -0.8 0]
+Polygon "P" [1.8 -0.8 0  1.8 0.8 0  0.2 0.8 0  0.2 -0.8 0]
+AttributeEnd
+Translate 20 0 0
+Sphere 1 -1 1 360
+WorldEnd

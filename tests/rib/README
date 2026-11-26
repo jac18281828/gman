@@ -800,6 +800,16 @@ An `AttributeBegin` inside `ObjectBegin`, which `enterMode(A)` excludes. A block
 request out of place still stops the file: one `WARNING: RIE_ILLSTATE`, exit 1, no
 image. Registered in `tests/outofmode_test.cpp`. Not third-party.
 
+## arealight_panel.rib
+
+Two `Polygon` panels side by side under one `AreaLightSource` over a `Kd` 0 matte
+surface, the left wound to light the camera and the right wound away from it. Under
+`gman -r gmanpathtracer` the left panel reads the light's `intensity` times its
+`lightcolor`, held under 1 so 8-bit output never clips, and the right reads black:
+a polygon emits one-sided along its winding's normal. The block ends on a `Sphere`
+outside the frame, which follows the desync convention. Registered in
+`tests/arealightpanel_test.cpp`. Not third-party.
+
 ## corpus/
 
 Real RIB from third-party software, fetched once and checked in so tests are

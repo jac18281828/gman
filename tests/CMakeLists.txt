@@ -4238,6 +4238,20 @@ set_tests_properties(pathtracerarealightpane PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A polygon panel under the path tracer: the floor under a 2 x 2 panel against
+# Lambert's formula for a polygonal luminaire, and a camera ray's direct view
+# of panels wound toward and away from it, one with vertex normals that
+# disagree with its plane normal. See tests/pathtracerpolygonlight_test.cpp.
+add_executable(gman_pathtracerpolygonlight pathtracerpolygonlight_test.cpp)
+target_link_libraries(gman_pathtracerpolygonlight PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+add_dependencies(gman_pathtracerpolygonlight gman_matte)
+
+add_test(NAME pathtracerpolygonlight COMMAND gman_pathtracerpolygonlight)
+set_tests_properties(pathtracerpolygonlight PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # The renderer's own multiple-importance-sampling weight computation,
 # called directly rather than through a render: next-event estimation's
 # weight, an emitter hit's weight, the light-choice probability the two
@@ -4449,6 +4463,27 @@ set_tests_properties(arealightpolygon PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS render
   TIMEOUT 30)
+
+# tests/rib/arealight_panel.rib tags a Polygon wound to light the camera and one
+# wound away with one AreaLightSource: under gmanpathtracer the first reads the
+# light's intensity times its colour and the second reads black. Its own working
+# directory, as arealightpolygon's is. See tests/arealightpanel_test.cpp.
+if(GMAN_BUILD_PATHTRACER)
+  add_executable(gman_arealightpanel arealightpanel_test.cpp)
+  target_link_libraries(gman_arealightpanel PRIVATE gman_core TIFF::TIFF)
+  add_dependencies(gman_arealightpanel gman_pathtracer gman_matte)
+
+  set(GMAN_AREALIGHTPANEL_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/arealightpanel-run")
+  file(MAKE_DIRECTORY "${GMAN_AREALIGHTPANEL_WORKDIR}")
+
+  add_test(NAME arealightpanel
+    COMMAND gman_arealightpanel $<TARGET_FILE:gman> "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+    WORKING_DIRECTORY "${GMAN_AREALIGHTPANEL_WORKDIR}")
+  set_tests_properties(arealightpanel PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 30)
+endif()
 
 # A surface shader's BSDF: the Lambert-of-Cs default, albedo answered from
 # rhoD, matte's Lambert lobe of Kd * Cs, the GGX closures of plastic,
