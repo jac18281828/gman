@@ -72,6 +72,43 @@ function(gman_check_image label image width height)
     COMMAND "${GMAN_IMAGECHECK}" ${checker_arguments})
 endfunction()
 
+# Appends to the variable named by result_variable one line per item of
+# actual_items missing from expected_items, signed "+" and ending extra_reason,
+# and one per item of expected_items missing from actual_items, signed "-" and
+# ending missing_reason. Both item arguments name list variables.
+function(gman_append_signed_differences result_variable actual_items expected_items extra_reason missing_reason)
+  set(differences "${${result_variable}}")
+  foreach(item IN LISTS ${actual_items})
+    if(NOT item IN_LIST ${expected_items})
+      string(APPEND differences "\n  +${item} ${extra_reason}")
+    endif()
+  endforeach()
+  foreach(item IN LISTS ${expected_items})
+    if(NOT item IN_LIST ${actual_items})
+      string(APPEND differences "\n  -${item} ${missing_reason}")
+    endif()
+  endforeach()
+  set(${result_variable} "${differences}" PARENT_SCOPE)
+endfunction()
+
+# Stops the script unless the consumer executable name was built in the
+# consumer's build directory, then runs it, with an optional WORKING_DIRECTORY.
+function(gman_run_consumer name)
+  set(consumer_exe "${GMAN_CONSUMER_BUILD_DIR}/${name}")
+  if(NOT EXISTS "${consumer_exe}")
+    message(FATAL_ERROR "step 3 (consumer): ${consumer_exe} was not built")
+  endif()
+  cmake_parse_arguments(GMAN_CONSUMER "" "WORKING_DIRECTORY" "" ${ARGN})
+  if(GMAN_CONSUMER_WORKING_DIRECTORY)
+    gman_run_or_fail("step 3 (consumer): running ${name}"
+      COMMAND "${consumer_exe}"
+      WORKING_DIRECTORY "${GMAN_CONSUMER_WORKING_DIRECTORY}")
+  else()
+    gman_run_or_fail("step 3 (consumer): running ${name}"
+      COMMAND "${consumer_exe}")
+  endif()
+endfunction()
+
 # --- Step 1: install into a fresh prefix ------------------------------------
 
 file(REMOVE_RECURSE "${GMAN_PREFIX}")
@@ -88,16 +125,9 @@ file(GLOB GMAN_INSTALLED_HEADERS LIST_DIRECTORIES false
 file(STRINGS "${GMAN_INSTALLED_HEADERS_MANIFEST}" GMAN_LISTED_HEADERS REGEX ".")
 
 set(GMAN_HEADER_DIFFERENCES "")
-foreach(header IN LISTS GMAN_INSTALLED_HEADERS)
-  if(NOT header IN_LIST GMAN_LISTED_HEADERS)
-    string(APPEND GMAN_HEADER_DIFFERENCES "\n  +${header} is installed and not listed")
-  endif()
-endforeach()
-foreach(header IN LISTS GMAN_LISTED_HEADERS)
-  if(NOT header IN_LIST GMAN_INSTALLED_HEADERS)
-    string(APPEND GMAN_HEADER_DIFFERENCES "\n  -${header} is listed and not installed")
-  endif()
-endforeach()
+gman_append_signed_differences(GMAN_HEADER_DIFFERENCES
+  GMAN_INSTALLED_HEADERS GMAN_LISTED_HEADERS
+  "is installed and not listed" "is listed and not installed")
 if(GMAN_HEADER_DIFFERENCES)
   message(FATAL_ERROR
     "step 1 (install): include/gman differs from ${GMAN_INSTALLED_HEADERS_MANIFEST}:${GMAN_HEADER_DIFFERENCES}")
@@ -242,16 +272,9 @@ foreach(renderer IN LISTS GMAN_SMOKE_RENDERERS)
 endforeach()
 
 set(GMAN_RENDERER_DIFFERENCES "")
-foreach(renderer_file IN LISTS GMAN_INSTALLED_RENDERER_FILES)
-  if(NOT renderer_file IN_LIST GMAN_SMOKE_RENDERER_FILES)
-    string(APPEND GMAN_RENDERER_DIFFERENCES "\n  +${renderer_file} is installed and no smoke row renders it")
-  endif()
-endforeach()
-foreach(renderer_file IN LISTS GMAN_SMOKE_RENDERER_FILES)
-  if(NOT renderer_file IN_LIST GMAN_INSTALLED_RENDERER_FILES)
-    string(APPEND GMAN_RENDERER_DIFFERENCES "\n  -${renderer_file} has a smoke row and is not installed")
-  endif()
-endforeach()
+gman_append_signed_differences(GMAN_RENDERER_DIFFERENCES
+  GMAN_INSTALLED_RENDERER_FILES GMAN_SMOKE_RENDERER_FILES
+  "is installed and no smoke row renders it" "has a smoke row and is not installed")
 if(GMAN_RENDERER_DIFFERENCES)
   message(FATAL_ERROR
     "step 2 (smoke): the installed renderers differ from the smoke rows:${GMAN_RENDERER_DIFFERENCES}\n"
@@ -294,40 +317,13 @@ endif()
 gman_run_or_fail("step 3 (consumer): build"
   COMMAND "${CMAKE_COMMAND}" --build "${GMAN_CONSUMER_BUILD_DIR}")
 
-set(GMAN_CONSUMER_EXE "${GMAN_CONSUMER_BUILD_DIR}/consumer")
-if(NOT EXISTS "${GMAN_CONSUMER_EXE}")
-  message(FATAL_ERROR "step 3 (consumer): ${GMAN_CONSUMER_EXE} was not built")
-endif()
-
-gman_run_or_fail("step 3 (consumer): running consumer"
-  COMMAND "${GMAN_CONSUMER_EXE}")
-
-set(GMAN_CONSUMER_RAY_EXE "${GMAN_CONSUMER_BUILD_DIR}/consumer_ray")
-if(NOT EXISTS "${GMAN_CONSUMER_RAY_EXE}")
-  message(FATAL_ERROR "step 3 (consumer): ${GMAN_CONSUMER_RAY_EXE} was not built")
-endif()
-
-gman_run_or_fail("step 3 (consumer): running consumer_ray"
-  COMMAND "${GMAN_CONSUMER_RAY_EXE}")
-
-set(GMAN_CONSUMER_RASTER_EXE "${GMAN_CONSUMER_BUILD_DIR}/consumer_raster")
-if(NOT EXISTS "${GMAN_CONSUMER_RASTER_EXE}")
-  message(FATAL_ERROR "step 3 (consumer): ${GMAN_CONSUMER_RASTER_EXE} was not built")
-endif()
-
-gman_run_or_fail("step 3 (consumer): running consumer_raster"
-  COMMAND "${GMAN_CONSUMER_RASTER_EXE}")
-
-set(GMAN_CONSUMER_ALL_EXE "${GMAN_CONSUMER_BUILD_DIR}/consumer_all")
-if(NOT EXISTS "${GMAN_CONSUMER_ALL_EXE}")
-  message(FATAL_ERROR "step 3 (consumer): ${GMAN_CONSUMER_ALL_EXE} was not built")
-endif()
+gman_run_consumer(consumer)
+gman_run_consumer(consumer_ray)
+gman_run_consumer(consumer_raster)
 
 set(GMAN_CONSUMER_ALL_DIR "${GMAN_RENDER_DIR}/consumer_all")
 file(MAKE_DIRECTORY "${GMAN_CONSUMER_ALL_DIR}")
-gman_run_or_fail("step 3 (consumer): running consumer_all"
-  COMMAND "${GMAN_CONSUMER_ALL_EXE}"
-  WORKING_DIRECTORY "${GMAN_CONSUMER_ALL_DIR}")
+gman_run_consumer(consumer_all WORKING_DIRECTORY "${GMAN_CONSUMER_ALL_DIR}")
 gman_check_image("step 3 (consumer): consumer_all"
   "${GMAN_CONSUMER_ALL_DIR}/consumer_all.tif" ${GMAN_SMOKE_WIDTH} ${GMAN_SMOKE_HEIGHT} LIT)
 
