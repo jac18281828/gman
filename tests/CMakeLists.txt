@@ -4042,6 +4042,18 @@ set_tests_properties(pathtraceradaptive PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The path tracer's a-trous denoise filter on synthetic images: its noise
+# reduction, edge preservation, kernel footprint, fixed point, non-finite
+# exclusion and argument guards. See tests/denoise_test.cpp.
+add_executable(gman_denoise denoise_test.cpp)
+target_link_libraries(gman_denoise PRIVATE gman_core gman_internal_headers gman_pathtracer_objects)
+
+add_test(NAME denoise COMMAND gman_denoise)
+set_tests_properties(denoise PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A slot the path tracer stops under a positive PixelVariance averages to
 # the fixed-count mean, shown on a hairline torus whose paths rarely hit it,
 # and a slot's depth follows its fresh batch's coverage. See

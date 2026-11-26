@@ -434,6 +434,7 @@ endif()
 # and run with the plugin off.
 if(GMAN_BUILD_PATHTRACER OR BUILD_TESTING)
   add_library(gman_pathtracer_objects OBJECT
+    renderers/pathtracer/gmandenoise.cpp
     renderers/pathtracer/gmanpathtracerenderer.cpp)
   target_link_libraries(gman_pathtracer_objects PUBLIC gman_core gman_ray)
   target_include_directories(gman_pathtracer_objects PUBLIC
