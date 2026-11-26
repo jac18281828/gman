@@ -55,6 +55,8 @@
 #include "gmanraybvh.h"
 #include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
+#include "gmanraypolygon.h"
+#include "gmanraypolygonmesh.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
 #include "gmansampling.h"
@@ -526,10 +528,21 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
   return BSDFStepDraw{sample.wi, sample.pdf, sample.isDelta, isTransmission};
 }
 
+// The mesh a face of a polygon mesh belongs to, else primitive itself: the
+// shape an emitter names for that hit.
+GMANRayInterface const* emittingShapeOf(GMANRayInterface const* primitive) {
+  GMANRayPolygon const* face = dynamic_cast<GMANRayPolygon const*>(primitive);
+  if (face != nullptr && face->getMesh() != nullptr) {
+    return face->getMesh();
+  }
+  return primitive;
+}
+
 // The emitter-hit term at a hit, added once per vertex before anything else
-// there: black unless the hit primitive's own area light is eligible and
-// supported (present in emitters, which already filtered both) and its
-// placed normal faces the incoming ray, and eligibility is not suppressed
+// there: black unless the hit's own area light is eligible and supported
+// (present in emitters, which already filtered both; a face of a polygon
+// mesh matches the emitter naming its mesh) and the hit's own geometric
+// normal faces the incoming ray, and eligibility is not suppressed
 // (a straight delta-transmission chain back to a non-delta departure,
 // whose own shadow ray already carried this light through those
 // surfaces). eligible keeps weight 1: the one case with no competing
@@ -544,18 +557,20 @@ std::optional<BSDFStepDraw> bsdfStepAndRoulette(gman::BSDF const& closure, GMANV
 // and free at this point, since next-event estimation at the same vertex
 // runs after it.
 GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterface const* hitPrimitive,
-                       gman::Appearance const& appearance, gman::SurfacePoint const& point,
+                       gman::Appearance const& appearance, GMANHit const& hit, gman::SurfacePoint const& point,
                        gman::EmitterHitEligibility eligibility, bool misEnabled, GMANPoint const& departureP,
                        GMANRayInterface const* departurePrimitive, RtFloat departurePdf,
                        std::vector<RtFloat>& lightWeight) {
   if (appearance.areaLight == nullptr || eligibility == gman::EmitterHitEligibility::suppressed) {
     return kBlack;
   }
+  GMANRayInterface const* const hitShape = emittingShapeOf(hitPrimitive);
+  GMANNormal const geometricNormal(hit.normal.getX(), hit.normal.getY(), hit.normal.getZ());
   for (std::size_t j = 0; j < emitters.size(); ++j) {
-    if (emitters[j].shape != hitPrimitive) {
+    if (emitters[j].shape != hitShape) {
       continue;
     }
-    RtFloat const cosTheta = point.N.dot(-point.I);
+    RtFloat const cosTheta = geometricNormal.dot(-point.I);
     if (!(cosTheta > 0.0f)) {
       return kBlack;
     }
@@ -563,7 +578,7 @@ GMANColor emitterHitLe(std::vector<gman::Emitter> const& emitters, GMANRayInterf
     RtFloat pLight = 0.0f;
     if (misEnabled && !rayEligible) {
       pLight = gman::lightChoiceProbability(emitters, departureP, departurePrimitive, j, lightWeight) *
-               gman::lightSolidAnglePdf(emitters[j], departureP, point.P, point.N);
+               gman::lightSolidAnglePdf(emitters[j], departureP, point.P, geometricNormal);
     }
     RtFloat const weight = gman::emitterHitWeight(rayEligible, misEnabled, departurePdf, pLight);
     return scaleColor(emitters[j].light->getCl(), weight);
@@ -616,7 +631,7 @@ bool tracePathVertex(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& em
   }
 
   state.result.L += gman::multiplyChannels(
-      state.beta, emitterHitLe(emitters, hitPrimitive, appearance, point, state.eligibility, misEnabled,
+      state.beta, emitterHitLe(emitters, hitPrimitive, appearance, hit, point, state.eligibility, misEnabled,
                                state.departureP, state.departurePrimitive, state.departurePdf, state.lightWeight));
 
   GMANColor const os = gman::clampCoverage(gman::opacity(appearance, point, cameraToWorld, textureCache));
