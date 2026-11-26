@@ -859,8 +859,10 @@ void testVaryingMeshTexCoords() {
     }
     request.patchMesh("bilinear", 3, false, 2, false, params, {6, 6, 2});
     GMANRayPolygonMesh const* mesh = request.mesh();
-    std::string const label =
-        withT ? "PatchMesh with varying \"st\", \"s\" and \"t\": " : "PatchMesh with varying \"st\" and \"s\": ";
+    std::string label = "PatchMesh with varying \"st\" and \"s\": ";
+    if (withT) {
+      label = "PatchMesh with varying \"st\", \"s\" and \"t\": ";
+    }
     check(mesh != nullptr, label + "a triangle mesh");
     if (mesh == nullptr) {
       continue;
