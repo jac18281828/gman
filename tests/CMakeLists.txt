@@ -1635,6 +1635,18 @@ set_tests_properties(frameaspectnonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# GMANOptions::setPixelSamples stores a rounded count in [1, 16] and a NaN as
+# 1, whether the count comes through RiPixelSamples or straight into the
+# setter. See tests/pixelsamplesnonfinite_test.cpp.
+add_executable(gman_pixelsamplesnonfinite pixelsamplesnonfinite_test.cpp)
+target_link_libraries(gman_pixelsamplesnonfinite PRIVATE gman_core gman_internal_headers)
+
+add_test(NAME pixelsamplesnonfinite COMMAND gman_pixelsamplesnonfinite)
+set_tests_properties(pixelsamplesnonfinite PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # A missing texture warns once per world block under every renderer; libtiff stays silent.
 add_executable(gman_texturewarningonce texturewarningonce_test.cpp)
 target_link_libraries(gman_texturewarningonce PRIVATE gman_core)
