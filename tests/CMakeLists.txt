@@ -1725,11 +1725,11 @@ set_tests_properties(imageroutputnonfinite PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Rotate about a zero axis builds a matrix of NaN entries. Pins the wanted
-# behavior; WILL_FAIL until GMANMatrix4::rot answers a finite matrix for a zero
-# axis. See tests/rotatezeroaxis_pin_test.cpp.
+# RiRotate about a zero axis leaves a transformation of NaN entries. Pins the
+# wanted behavior; WILL_FAIL until RiRotate refuses a zero axis or answers a
+# finite matrix for one. See tests/rotatezeroaxis_pin_test.cpp.
 add_executable(gman_rotatezeroaxis_pin rotatezeroaxis_pin_test.cpp)
-target_link_libraries(gman_rotatezeroaxis_pin PRIVATE gman_core)
+target_link_libraries(gman_rotatezeroaxis_pin PRIVATE gman_core gman_internal_headers)
 
 add_test(NAME rotatezeroaxis_pin COMMAND gman_rotatezeroaxis_pin)
 set_tests_properties(rotatezeroaxis_pin PROPERTIES

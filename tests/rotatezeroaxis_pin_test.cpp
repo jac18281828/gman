@@ -19,28 +19,50 @@
  */
 
 /*
- * Pins the wanted behaviour: Rotate about a zero axis, finite RIB input,
- * builds a matrix with every entry finite. GMANMatrix4::rot normalizes the
- * axis by its length, 0, and every entry becomes NaN; the renderers then
- * reject every point it transforms. WILL_FAIL until rot answers a finite
- * matrix for a zero axis.
+ * Pins the wanted behaviour: RiRotate about a zero axis, finite RIB input,
+ * leaves the current transformation with every entry finite. The request hands
+ * GMANMatrix4::rot a zero axis, which divides by the axis's zero length, so
+ * every entry becomes NaN and the renderers then reject each point it
+ * transforms. A math primitive follows IEEE and answers NaN; the guard belongs
+ * to the request. RiTransformPoints is a stub that returns null, so the test
+ * reads the current transformation itself. WILL_FAIL until RiRotate refuses a
+ * zero axis or answers a finite matrix for one.
  */
 
 #include <cmath>
 
 #include "check.h"
 #include "gmanmatrix4.h"
+#include "gmanrendermanimpl.h"
 #include "ri.h"
 
-int main() {
-  GMANMatrix4 matrix;
-  matrix.rot(90.0f, 0.0f, 0.0f, 0.0f);
-  bool finite = true;
+namespace {
+
+class TransformReadingRenderMan : public GMANRenderManImpl {
+public:
+  GMANMatrix4 current() { return getTransform().interpolate(0.0); }
+};
+
+bool everyEntryFinite(GMANMatrix4 const& matrix) {
   for (int row = 0; row < 4; ++row) {
     for (int column = 0; column < 4; ++column) {
-      finite = finite && std::isfinite(matrix[row][column]);
+      if (!std::isfinite(matrix[row][column])) {
+        return false;
+      }
     }
   }
-  check(finite, "a rotation about the zero axis builds a matrix with every entry finite");
+  return true;
+}
+
+} // namespace
+
+int main() {
+  TransformReadingRenderMan control;
+  control.RiRotate(90.0f, 0.0f, 0.0f, 1.0f);
+  check(std::fabs(control.current()[0][1]) > 0.5f, "a rotation about a nonzero axis changes the transformation");
+
+  TransformReadingRenderMan impl;
+  impl.RiRotate(90.0f, 0.0f, 0.0f, 0.0f);
+  check(everyEntryFinite(impl.current()), "RiRotate about the zero axis leaves every transformation entry finite");
   return checkSummary("rotatezeroaxis: all checks passed");
 }
