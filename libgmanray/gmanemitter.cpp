@@ -1094,6 +1094,67 @@ EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1,
   return sampleByArea(emitter, p, u1, u2);
 }
 
+// lightSolidAnglePdf() for a hit distance away from p at cosTheta to
+// hitNormal, on emitter's shape drawn uniformly by area: d^2 / (A J cos);
+// 0 for a singular placement.
+RtFloat areaPdf(Emitter const& emitter, GMANNormal const& hitNormal, RtFloat distance, RtFloat cosTheta) {
+  auto const& placement = emittingShapeObjectToCamera(*emitter.shape);
+  if (!placement) {
+    return 0.0f;
+  }
+  auto const& objectToCamera = *placement;
+
+  RtFloat area = 0.0f;
+  emittingShapeArea(*emitter.shape, area);
+
+  // hitPoint's own object-space normal, recovered by the inverse of the
+  // object-to-camera map placeEmitterPoint applies to a freshly drawn
+  // one -- exact for the point a real draw or a real ray hit actually
+  // placed, which hitPoint always is.
+  auto objectNormal = gman::transformNormal(objectToCamera.inverse(), hitNormal);
+  objectNormal.normalize();
+  const auto jacobian = areaJacobian(objectToCamera, objectNormal);
+
+  return (distance * distance) / (area * jacobian * cosTheta);
+}
+
+// lightSolidAnglePdf() for a disk, by the strategy diskStrategy picks at p.
+RtFloat diskPdf(Emitter const& emitter, GMANRayDisk const& disk, GMANPoint const& p, GMANNormal const& hitNormal,
+                RtFloat distance, RtFloat cosTheta) {
+  auto const& placement = disk.getObjectToCamera();
+  if (!placement) {
+    return 0.0f;
+  }
+  const auto strategy = diskStrategy(disk, *placement, p);
+  if (strategy == DiskStrategy::none) {
+    return 0.0f;
+  }
+  if (strategy == DiskStrategy::area) {
+    return areaPdf(emitter, hitNormal, distance, cosTheta);
+  }
+  return positiveDensity(1.0 / rectangleSolidAngle(rectangleCorners(disk, *placement), toDouble(p)));
+}
+
+// lightSolidAnglePdf() for a sphere, by the strategy sphereStrategy picks at
+// p.
+RtFloat spherePdf(Emitter const& emitter, GMANRaySphere const& sphere, GMANPoint const& p, GMANPoint const& hitPoint,
+                  GMANNormal const& hitNormal, RtFloat distance, RtFloat cosTheta) {
+  auto const& placement = sphere.getObjectToCamera();
+  if (!placement) {
+    return 0.0f;
+  }
+  const auto strategy = sphereStrategy(sphere, *placement, p);
+  if (strategy == SphereStrategy::none) {
+    return 0.0f;
+  }
+  if (strategy == SphereStrategy::area) {
+    return areaPdf(emitter, hitNormal, distance, cosTheta);
+  }
+  const auto q = objectPoint(*placement, p);
+  const auto cone = sphereCone(q, static_cast<double>(sphere.getRadius()));
+  return positiveDensity(coneDensity(*placement, cone, q, objectPoint(*placement, hitPoint)));
+}
+
 // The area branch of samplePoint(): draws a point on emitter's shape and
 // places it, reporting Le undoubled (no pi scale) and pdf per unit area.
 // Every field zero, Le black and pdf 0, for a singular placement or a polygon
@@ -1240,47 +1301,13 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
   if (kind.mesh != nullptr) {
     return positiveDensity(1.0 / meshSolidAngle(*kind.mesh, toDouble(p)));
   }
-
-  std::optional<InvertibleMatrix> const& placement = emittingShapeObjectToCamera(*emitter.shape);
-  if (!placement) {
-    return 0.0f;
-  }
-  InvertibleMatrix const& objectToCamera = *placement;
-
   if (kind.disk != nullptr) {
-    const auto strategy = diskStrategy(*kind.disk, objectToCamera, p);
-    if (strategy == DiskStrategy::none) {
-      return 0.0f;
-    }
-    if (strategy == DiskStrategy::rectangle) {
-      return positiveDensity(1.0 / rectangleSolidAngle(rectangleCorners(*kind.disk, objectToCamera), toDouble(p)));
-    }
+    return diskPdf(emitter, *kind.disk, p, hitNormal, distance, cosTheta);
   }
-
   if (kind.sphere != nullptr) {
-    const auto strategy = sphereStrategy(*kind.sphere, objectToCamera, p);
-    if (strategy == SphereStrategy::none) {
-      return 0.0f;
-    }
-    if (strategy == SphereStrategy::cone) {
-      const auto q = objectPoint(objectToCamera, p);
-      const auto cone = sphereCone(q, static_cast<double>(kind.sphere->getRadius()));
-      return positiveDensity(coneDensity(objectToCamera, cone, q, objectPoint(objectToCamera, hitPoint)));
-    }
+    return spherePdf(emitter, *kind.sphere, p, hitPoint, hitNormal, distance, cosTheta);
   }
-
-  RtFloat area = 0.0f;
-  emittingShapeArea(*emitter.shape, area);
-
-  // hitPoint's own object-space normal, recovered by the inverse of the
-  // object-to-camera map placeEmitterPoint applies to a freshly drawn
-  // one -- exact for the point a real draw or a real ray hit actually
-  // placed, which hitPoint always is.
-  GMANVector objectNormal = gman::transformNormal(objectToCamera.inverse(), hitNormal);
-  objectNormal.normalize();
-  RtFloat const jacobian = areaJacobian(objectToCamera, objectNormal);
-
-  return (distance * distance) / (area * jacobian * cosTheta);
+  return areaPdf(emitter, hitNormal, distance, cosTheta);
 }
 
 EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
