@@ -179,13 +179,13 @@ int main(int argc, char* argv[]) {
 
   double const reflectance = (kGlassIndex - 1.0) / (kGlassIndex + 1.0);
   double const facePass = 1.0 - reflectance * reflectance;
-  Scene const glass = {"glass slab", "rayshadow_glass",  "rayshadow_glass_bare", 160,
-                       120,          {true, true, true}, facePass * facePass};
+  Scene const glass = {"glass slab", "rayshadow_glass",  "rayshadow_glass_bare", 80,
+                       60,           {true, true, true}, facePass * facePass};
   Scene const cutout = {"cut-out card",
                         "rayshadow_cutout",
                         "rayshadow_cutout_bare",
-                        87,
-                        100,
+                        43,
+                        50,
                         {false, true, false},
                         1.0 - static_cast<double>(kMapRed) / kMapMaxValue};
   checkScene(gman, ribDir, glass);

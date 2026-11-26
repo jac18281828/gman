@@ -2,7 +2,7 @@
 ## shadowing it. The test writes the card's opacity map, red 128, green 255 and blue 0 in every
 ## texel, so the card covers 128/255 of the light. Not third-party.
 Display "rayshadow_cutout.tif" "file" "rgba"
-Format 200 200 1
+Format 100 100 1
 PixelSamples 2 2
 Option "pathtracer" "integer samples" [16]
 Projection "perspective" "fov" [90]

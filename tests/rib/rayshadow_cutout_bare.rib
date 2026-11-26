@@ -1,7 +1,7 @@
 ## A green matte receiver lit by a distant light, with no card shadowing it: the unshadowed
 ## reference for rayshadow_cutout.rib. Not third-party.
 Display "rayshadow_cutout_bare.tif" "file" "rgba"
-Format 200 200 1
+Format 100 100 1
 PixelSamples 2 2
 Option "pathtracer" "integer samples" [16]
 Projection "perspective" "fov" [90]
