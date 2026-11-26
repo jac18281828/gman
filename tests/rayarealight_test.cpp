@@ -132,7 +132,10 @@ double channelOf(uint32_t pixel, std::size_t channel) {
   if (channel == 0) {
     return TIFFGetR(pixel);
   }
-  return channel == 1 ? TIFFGetG(pixel) : TIFFGetB(pixel);
+  if (channel == 1) {
+    return TIFFGetG(pixel);
+  }
+  return TIFFGetB(pixel);
 }
 
 Mean blockMean(GmanImage const& image, Block const& block) {
