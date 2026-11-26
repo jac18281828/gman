@@ -820,8 +820,9 @@ bool inZone(GMANRaySphere const& sphere, DoubleVector const& point) {
 }
 
 // A point drawn uniformly in the cone of directions from p that meet
-// sphere's full sphere, kept when it lies in a zone's bounds. The density is |L w|^3 / (|det L| *
-// the cone's solid angle). Empty for a rejected or non-finite draw.
+// sphere's full sphere, kept when it lies in a zone's bounds. The density is
+// |L w|^3 / (|det L| * the cone's solid angle). Empty for a rejected or
+// non-finite draw.
 std::optional<SolidAngleDraw> drawSphereByCone(GMANRaySphere const& sphere, InvertibleMatrix const& objectToCamera,
                                                GMANPoint const& p, double u1, double u2) {
   const auto radius = static_cast<double>(sphere.getRadius());

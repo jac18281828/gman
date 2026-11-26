@@ -103,10 +103,11 @@ struct GMANRAY_EXPORT Emitter {
 // emitter's own pi convention, and the density that direction was drawn
 // with, per unit solid angle at the query point -- 1, by convention, for
 // a delta emitter's own discrete draw. An area draw by solid angle reports
-// the same density at every point it can land on; one by area reports d^2 /
-// (A J cos), larger the nearer and the more oblique the point. A draw that
-// places nothing has pdf 0 and every other field zero, and counts as a zero
-// in an estimate that divides by the number of draws.
+// the same density at every point it can land on under a rigid or uniformly
+// scaled placement; one by area reports d^2 / (A J cos), larger the nearer
+// and the more oblique the point. A draw that places nothing has pdf 0 and
+// every other field zero, and counts as a zero in an estimate that divides
+// by the number of draws.
 struct GMANRAY_EXPORT EmitterSample {
   GMANVector wi;
   RtFloat distance;

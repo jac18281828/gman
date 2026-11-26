@@ -26,11 +26,10 @@
  * draw's weight varies most across the emitter. Far: tests/rib/
  * rayarealight_panel.rib, rayarealight_disk.rib and rayarealight_sphere.rib
  * without their blocker, read on the wall's lit block. Each case renders at a
- * low draw
- * count and at 1,024 draws, every reference pixel in its block exceeds 16
- * levels, and the root-mean-square over the block's pixels and channels of
- * (low - reference) / reference stays within its bound: 0.12 at 16 draws near
- * the emitter, 0.02 at 4 draws far from it.
+ * low draw count and at 1,024 draws, every reference pixel in its block
+ * exceeds 16 levels, and the root-mean-square over the block's pixels and
+ * channels of (low - reference) / reference stays within its bound: 0.12 at
+ * 16 draws near the emitter, 0.02 at 4 draws far from it.
  */
 
 #include <algorithm>
