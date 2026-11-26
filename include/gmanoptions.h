@@ -252,11 +252,8 @@ public:
   // 0 until RiPixelVariance sets it, which asks for no early stop.
   RtFloat getPixelVariance(RtVoid) const { return pixelVariance; };
 
-  // The most samples per pixel along an axis.
-  static constexpr RtFloat kMaxPixelSamples = 16.0f;
-
-  // Stores each count rounded to the nearest integer and held in [1,
-  // kMaxPixelSamples]; a NaN stores 1.
+  // Stores each count rounded to the nearest integer and held in [1, 16]; a NaN
+  // stores 1.
   RtVoid setPixelSamples(RtFloat xsamples, RtFloat ysamples);
   const PixelSamplesStruct& getPixelSamples(RtVoid) const { return pixelSamples; };
 

@@ -37,6 +37,7 @@
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
+#include "gmanpixelsamples.h"
 #include "gmanshader.h"
 #include "ri.h"
 
@@ -243,8 +244,8 @@ GMANMatrix4 const& GMANOptions::getCameraToWorld(RtVoid) const { return cameraTo
 RtVoid GMANOptions::setPixelVariance(RtFloat var) { pixelVariance = var; }
 
 RtVoid GMANOptions::setPixelSamples(RtFloat xsamples, RtFloat ysamples) {
-  pixelSamples.xsamples = GMANClamp<RtFloat>(GMANRound(xsamples), 1.0, kMaxPixelSamples);
-  pixelSamples.ysamples = GMANClamp<RtFloat>(GMANRound(ysamples), 1.0, kMaxPixelSamples);
+  pixelSamples.xsamples = GMANClamp<RtFloat>(GMANRound(xsamples), 1.0, gman::kMaxPixelSamples);
+  pixelSamples.ysamples = GMANClamp<RtFloat>(GMANRound(ysamples), 1.0, gman::kMaxPixelSamples);
 }
 
 RtVoid GMANOptions::setPixelFilter(RtFilterFunc ff, RtFloat xw, RtFloat yw) {

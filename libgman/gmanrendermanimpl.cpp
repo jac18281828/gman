@@ -62,6 +62,7 @@
 #include "gmanoutput.h"
 #include "gmanoutputx11.h"
 #include "gmanparameterlist.h"
+#include "gmanpixelsamples.h"
 #include "gmanpoint.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
@@ -552,14 +553,13 @@ RtVoid GMANRenderManImpl::RiPixelSamples(RtFloat xsamples, RtFloat ysamples) {
   // value or an enormous allocation. Round to the nearest integer sample
   // count and clamp to [1, kMaxPixelSamples] -- 16 per axis is a
   // reasonable engineering limit for this renderer's scale.
-  const RtFloat maxSamples = GMANOptions::kMaxPixelSamples;
   xsamples = GMANRound(xsamples);
   ysamples = GMANRound(ysamples);
-  if (xsamples < 1.0 || xsamples > maxSamples) {
-    warning("PixelSamples xsamples {:.0f} out of [1,{:.0f}], clamping.", xsamples, maxSamples);
+  if (xsamples < 1.0 || xsamples > gman::kMaxPixelSamples) {
+    warning("PixelSamples xsamples {:.0f} out of [1,{:.0f}], clamping.", xsamples, gman::kMaxPixelSamples);
   }
-  if (ysamples < 1.0 || ysamples > maxSamples) {
-    warning("PixelSamples ysamples {:.0f} out of [1,{:.0f}], clamping.", ysamples, maxSamples);
+  if (ysamples < 1.0 || ysamples > gman::kMaxPixelSamples) {
+    warning("PixelSamples ysamples {:.0f} out of [1,{:.0f}], clamping.", ysamples, gman::kMaxPixelSamples);
   }
   getOptions().setPixelSamples(xsamples, ysamples);
 }
