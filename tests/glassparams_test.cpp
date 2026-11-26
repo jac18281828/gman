@@ -211,7 +211,7 @@ Mean blockMean(GmanImage const& image) {
     }
   }
   const auto count = static_cast<double>(image.width) * static_cast<double>(image.height);
-  for (double& channel : mean) {
+  for (auto& channel : mean) {
     channel /= count;
   }
   return mean;
@@ -379,7 +379,7 @@ int main(int argc, char* argv[]) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
   }
-  const Paths paths = {argv[1], argv[2]};
+  const auto paths = Paths{argv[1], argv[2]};
 
   checkPane(paths);
   checkSphere(paths);

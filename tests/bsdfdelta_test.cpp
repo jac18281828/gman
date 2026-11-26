@@ -147,9 +147,9 @@ GMANVector const kTangentWo(1.0f, 0.0f, 0.0f);
 
 const auto kReflectWeight = GMANColor(0.8f, 0.5f, 0.2f);
 const auto kTransmitWeight = GMANColor(0.6f, 0.3f, 0.1f);
-const double kReflectWeightMean = 0.5;
-const double kTransmitWeightMean = 1.0 / 3.0;
-const double kMixtureLambertMean = 0.2;
+const auto kReflectWeightMean = 0.5;
+const auto kTransmitWeightMean = 1.0 / 3.0;
+const auto kMixtureLambertMean = 0.2;
 
 GMANColor const kMixtureLambert(0.3f, 0.2f, 0.1f);
 GMANColor const kMixtureMirror(0.1f, 0.2f, 0.3f);

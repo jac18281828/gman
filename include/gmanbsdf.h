@@ -125,7 +125,7 @@ public:
   // coefficient transmitWeight * (1 - F) * (eta_o / eta_i)^2, eta_o the
   // index on wo's side and eta_i the index on wi's side, so f * |cos(theta_i)|
   // can exceed transmitWeight: leaving a glass interface of index 1.5 at
-  // weight 1, it reaches 2.16. Each weight clamps as addLambert's
+  // transmitWeight 1, it reaches 2.16. Each weight clamps as addLambert's
   // reflectance does; eta clamps to [0.01, 100], a NaN, zero or negative eta
   // stored as 1, an index-matched interface that transmits straight through.
   // Past kMaxLobes, throws GMANError(RIE_LIMIT) and leaves the closure

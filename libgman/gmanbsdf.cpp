@@ -502,7 +502,7 @@ std::pair<std::size_t, RtFloat> BSDF::pickLobe(RtFloat u1, RtFloat total) const 
 }
 
 RtFloat BSDF::selectionWeight(std::size_t index) const {
-  Lobe const& lobe = lobes[index];
+  auto const& lobe = lobes[index];
   const auto reflect = channelMean(lobe.weight);
   if (lobe.kind != LobeKind::dielectric) {
     return reflect;
