@@ -194,14 +194,14 @@ RtVoid GMANTransform::concat(GMANTransform& t) {
   }
 }
 
-bool GMANTransform::isMoving() {
+bool GMANTransform::isMoving() const {
   if (storage->getSamplesQuantity() == 1) {
     return false;
   } else
     return true;
 }
 
-GMANPoint GMANTransform::apply(const GMANPoint& p) {
+GMANPoint GMANTransform::apply(const GMANPoint& p) const {
   static bool warned1 = false;
   if (isMoving() && !warned1) {
     debug("GMANTransform::apply is not frame sensitive");
@@ -215,7 +215,7 @@ GMANPoint GMANTransform::apply(const GMANPoint& p) {
   return GMANPoint(dest[0], dest[1], dest[2]);
 }
 
-GMANVector4 GMANTransform::apply(const GMANVector4& p) {
+GMANVector4 GMANTransform::apply(const GMANVector4& p) const {
   GMANMatrix4 matrix = storage->interpolate(0.0);
   RtFloat src[] = {p.getX(), p.getY(), p.getZ(), p.getW()};
   RtFloat dest[4];

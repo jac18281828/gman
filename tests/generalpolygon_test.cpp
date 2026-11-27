@@ -233,7 +233,7 @@ gman::Owned<GMANPrimitive> runGetRSGeneralPolygon(const std::vector<std::vector<
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 int countFaces(GMANObject* object) {
@@ -512,8 +512,8 @@ void runOneLoopParity(const std::string& name, const std::vector<GMANPoint>& can
       if (!builtBoth) {
         continue;
       }
-      auto polyPrim = mgr.getRSPolygonMesh(*polyMesh, &options, &attr, &transform);
-      auto generalPrim = mgr.getRSPolygonMesh(*generalMesh, &options, &attr, &transform);
+      auto polyPrim = mgr.getRSPolygonMesh(*polyMesh, options, attr, transform);
+      auto generalPrim = mgr.getRSPolygonMesh(*generalMesh, options, attr, transform);
       GMANObject* polyObj = dynamic_cast<GMANObject*>(polyPrim.get());
       GMANObject* generalObj = dynamic_cast<GMANObject*>(generalPrim.get());
 

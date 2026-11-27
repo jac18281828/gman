@@ -68,7 +68,7 @@ gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& r
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 void testDegeneratePolygonYieldsEmptyOwner() {

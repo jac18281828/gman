@@ -316,7 +316,7 @@ void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt 
   if (!mesh.has_value()) {
     return;
   }
-  auto prim = mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  auto prim = mgr.getRSPolygonMesh(*mesh, options, attr, transform);
   GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, label + ": getRSPolygonMesh returns an object");
 

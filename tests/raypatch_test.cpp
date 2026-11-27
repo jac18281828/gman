@@ -229,14 +229,14 @@ struct Request {
 
   void patch(char const* type, std::vector<Param> params, Counts counts) {
     GMANParameterList const pl = makeList(params, counts);
-    primitive = manager.getRSPatch((RtToken)type, pl, &options, &attr, &transform);
+    primitive = manager.getRSPatch((RtToken)type, pl, options, attr, transform);
   }
 
   void patchMesh(char const* type, RtInt nu, bool uPeriodic, RtInt nv, bool vPeriodic, std::vector<Param> params,
                  Counts counts) {
     GMANParameterList const pl = makeList(params, counts);
     primitive = manager.getRSPatchMesh((RtToken)type, nu, uPeriodic ? RI_PERIODIC : RI_NONPERIODIC, nv,
-                                       vPeriodic ? RI_PERIODIC : RI_NONPERIODIC, pl, &options, &attr, &transform);
+                                       vPeriodic ? RI_PERIODIC : RI_NONPERIODIC, pl, options, attr, transform);
   }
 };
 

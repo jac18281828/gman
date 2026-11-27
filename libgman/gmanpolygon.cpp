@@ -152,7 +152,7 @@ std::vector<std::pair<RtFloat, RtFloat>> polygonTexCoords(GMANParameterList cons
 }
 
 std::vector<GMANVector> cameraSpacePointNormals(GMANParameterList const& parameters, std::size_t pointCount,
-                                                GMANTransform* t) {
+                                                GMANTransform const& t) {
   std::optional<GMANTokenEntry::TokenClass> const storage = parameters.storageClass(RI_N);
   if (!storage) {
     return {};
@@ -167,7 +167,7 @@ std::vector<GMANVector> cameraSpacePointNormals(GMANParameterList const& paramet
             pointCount);
     return {};
   }
-  std::optional<gman::InvertibleMatrix> const placement = gman::InvertibleMatrix::of(t->interpolate(0.0));
+  std::optional<gman::InvertibleMatrix> const placement = gman::InvertibleMatrix::of(t.interpolate(0.0));
   if (!placement) {
     return {};
   }

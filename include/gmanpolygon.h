@@ -85,6 +85,6 @@ GMAN_EXPORT std::vector<std::pair<RtFloat, RtFloat>> polygonTexCoords(GMANParame
 // floats (each of the last two warns, and the request shades flat), and when
 // t's transform has no inverse.
 GMAN_EXPORT std::vector<GMANVector> cameraSpacePointNormals(GMANParameterList const& parameters, std::size_t pointCount,
-                                                            GMANTransform* t);
+                                                            GMANTransform const& t);
 
 } // namespace gman

@@ -72,7 +72,7 @@ GMANPrimitive* addSphereAt(GMANRaytraceRenderer& renderer, GMANOptions& options,
   place.trans(0.0, 0.0, centreZ);
   GMANTransform transform = makeTransform(place);
   auto sphereOwner =
-      renderer.getObjectManager()->getRSSphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), &options, &attr, &transform);
+      renderer.getObjectManager()->getRSSphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), options, attr, transform);
   auto* const sphere = sphereOwner.get();
   renderer.getWorldManager()->add(std::move(sphereOwner));
   return sphere;
@@ -178,7 +178,7 @@ int main() {
 
   GMANAttributes attr;
   auto sphere =
-      renderer.getObjectManager()->getRSSphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), &options, &attr, &transform);
+      renderer.getObjectManager()->getRSSphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), options, attr, transform);
   renderer.getWorldManager()->add(std::move(sphere));
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());

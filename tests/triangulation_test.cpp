@@ -240,7 +240,7 @@ gman::Owned<GMANPrimitive> runGetRSPolygon(const std::vector<GMANPoint>& ring) {
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 int countFaces(GMANObject* object) {

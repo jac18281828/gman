@@ -96,7 +96,7 @@ gman::Owned<GMANPrimitive> buildPolygon(std::vector<GMANPoint> const& outer) {
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 gman::Owned<GMANPrimitive> buildGeneralPolygon(std::vector<std::vector<GMANPoint>> const& loops) {
@@ -121,7 +121,7 @@ gman::Owned<GMANPrimitive> buildGeneralPolygon(std::vector<std::vector<GMANPoint
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 gman::Owned<GMANPrimitive> buildPointsPolygon(std::vector<GMANPoint> const& points,
@@ -149,7 +149,7 @@ gman::Owned<GMANPrimitive> buildPointsPolygon(std::vector<GMANPoint> const& poin
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 // One PointsGeneralPolygons request: faces holds, per face, its own loops
@@ -184,7 +184,7 @@ gman::Owned<GMANPrimitive> buildPointsGeneralPolygons(std::vector<GMANPoint> con
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 // ---------------------------------------------------------------------

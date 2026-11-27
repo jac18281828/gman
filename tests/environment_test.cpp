@@ -124,7 +124,7 @@ void testMatrixReachesShader() {
   GMANTransform transform; // identity
 
   auto prim =
-      mgr.getRSSphere((RtFloat)1.0, (RtFloat)-1.0, (RtFloat)1.0, (RtFloat)360.0, spherePl, &options, &attr, &transform);
+      mgr.getRSSphere((RtFloat)1.0, (RtFloat)-1.0, (RtFloat)1.0, (RtFloat)360.0, spherePl, options, attr, transform);
   // Kept reachable the same way production does (GMANRenderManImpl::RiEnd
   // leaves worldManager/objectManager deliberately unfreed) -- see
   // tests/normals_test.cpp's own comment at its analogous getRSSphere call.

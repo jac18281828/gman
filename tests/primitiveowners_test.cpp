@@ -117,7 +117,7 @@ template <typename Manager> gman::Owned<GMANPrimitive> collinearMeshRequest(Mana
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  return manager.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return manager.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 void testFactoriesReturnEmptyOwnerForNoFace() {

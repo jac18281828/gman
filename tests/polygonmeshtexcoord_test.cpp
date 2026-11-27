@@ -83,7 +83,7 @@ gman::Owned<GMANPrimitive> buildTexturedMesh() {
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 // A camera-space ray straight through world (x, y, 0).

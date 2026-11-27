@@ -117,7 +117,7 @@ gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& r
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 gman::Owned<GMANPrimitive> runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> const& loops) {
@@ -151,7 +151,7 @@ gman::Owned<GMANPrimitive> runGetRSGeneralPolygonDirect(std::vector<std::vector<
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 // points is the shared "P" -- point i lands at p[3*i..3*i+2] -- and verts
@@ -178,7 +178,7 @@ gman::Owned<GMANPrimitive> runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 gman::Owned<GMANPrimitive> runGetRSPointsGeneralPolygons(RtInt npolys, std::vector<RtInt> nloops,
@@ -204,7 +204,7 @@ gman::Owned<GMANPrimitive> runGetRSPointsGeneralPolygons(RtInt npolys, std::vect
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 // ---- object-chain readers ----

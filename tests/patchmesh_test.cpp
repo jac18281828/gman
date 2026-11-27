@@ -261,8 +261,8 @@ void testNonperiodicBicubicZeroStepRejected() {
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
 
-  auto prim = mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken)RI_NONPERIODIC, 3, (RtToken)RI_PERIODIC, pl, &options,
-                                 &attr, &transform);
+  auto prim = mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken)RI_NONPERIODIC, 3, (RtToken)RI_PERIODIC, pl, options,
+                                 attr, transform);
   check(prim == nullptr, "bicubic PatchMesh, nonperiodic ustep=0: getRSPatchMesh rejects "
                          "the mesh with an empty owner instead of dividing by zero");
 }

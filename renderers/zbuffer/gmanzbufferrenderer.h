@@ -158,7 +158,7 @@ private:
   // no Appearance -- unlike a ray primitive, it has nowhere to hold one
   // past its own declaring RiXxxV call, where attr is always the current
   // GMANAttributes (gmanrendermanimpl.cpp's RiSphereV, RiDiskV and every
-  // other geometry request all pass &getAttributes()).
+  // other geometry request all pass getAttributes()).
   // Counting a pending area light here, before tessellation discards it,
   // is this renderer's only chance to see one, so every geometry request
   // that can carry one is overridden; GMANPatchPolyObjectManager's own
@@ -166,42 +166,45 @@ private:
   // return an empty owner, rendering no geometry to count.
   class AreaLightCountingObjectManager : public GMANPatchPolyObjectManager {
   public:
-    gman::Owned<GMANPrimitive> getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
-                                                GMANTransform* t) override;
-    gman::Owned<GMANPrimitive> getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                          GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions const& opt,
+                                                GMANAttributes const& attr, GMANTransform const& t) override;
+    gman::Owned<GMANPrimitive> getRSPatch(RtToken type, GMANParameterList pl, GMANOptions const& opt,
+                                          GMANAttributes const& attr, GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap,
-                                              GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                              GMANTransform* t) override;
+                                              GMANParameterList pl, GMANOptions const& opt, GMANAttributes const& attr,
+                                              GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax,
                                             RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax,
-                                            GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                            GMANTransform* t) override;
+                                            GMANParameterList pl, GMANOptions const& opt, GMANAttributes const& attr,
+                                            GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-                                           GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                           GMANTransform* t) override;
+                                           GMANParameterList pl, GMANOptions const& opt, GMANAttributes const& attr,
+                                           GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
-                                         GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+                                         GMANOptions const& opt, GMANAttributes const& attr,
+                                         GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-                                             GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                             GMANTransform* t) override;
+                                             GMANParameterList pl, GMANOptions const& opt, GMANAttributes const& attr,
+                                             GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, GMANParameterList pl,
-                                                GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+                                                GMANOptions const& opt, GMANAttributes const& attr,
+                                                GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-                                               GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                               GMANTransform* t) override;
+                                               GMANParameterList pl, GMANOptions const& opt, GMANAttributes const& attr,
+                                               GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
-                                         GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+                                         GMANOptions const& opt, GMANAttributes const& attr,
+                                         GMANTransform const& t) override;
     gman::Owned<GMANPrimitive> getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
-                                          GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                          GMANTransform* t) override;
+                                          GMANParameterList pl, GMANOptions const& opt, GMANAttributes const& attr,
+                                          GMANTransform const& t) override;
 
     std::size_t areaLightCount = 0;
 
   private:
     // Counts once when attr's own appearance carries a pending, illuminated
     // area light -- every override above calls this before tessellating.
-    void countIfAreaLight(GMANAttributes* attr);
+    void countIfAreaLight(GMANAttributes const& attr);
   };
 
   AreaLightCountingObjectManager objectManager;

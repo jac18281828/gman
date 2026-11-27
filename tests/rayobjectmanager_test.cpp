@@ -42,14 +42,15 @@ constexpr RtFloat kTolerance = 1e-4f;
 
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
 
-// getRSSphere ignores opt, so it is null here; attr is a default-constructed
-// GMANAttributes, as polygon_test.cpp passes, since getRSSphere resolves
-// it into the sphere's appearance. Casts to GMANRaySphere rather than
-// GMANRayPrimitive, so a primitive of any other kind returns an empty owner.
+// getRSSphere ignores opt, so a default-constructed GMANOptions serves; attr is
+// a default-constructed GMANAttributes, as polygon_test.cpp passes, since
+// getRSSphere resolves it into the sphere's appearance. Casts to
+// GMANRaySphere rather than GMANRayPrimitive, so a primitive of any other kind
+// returns an empty owner.
 gman::Owned<GMANRaySphere> buildSphere(GMANRayObjectManager& manager, RtFloat radius, RtFloat zmin, RtFloat zmax,
                                        RtFloat tmax, GMANTransform& transform) {
   GMANAttributes attr;
-  auto primitive = manager.getRSSphere(radius, zmin, zmax, tmax, GMANParameterList(), nullptr, &attr, &transform);
+  auto primitive = manager.getRSSphere(radius, zmin, zmax, tmax, GMANParameterList(), GMANOptions(), attr, transform);
   auto* const sphere = dynamic_cast<GMANRaySphere*>(primitive.get());
   if (sphere == nullptr) {
     return nullptr;

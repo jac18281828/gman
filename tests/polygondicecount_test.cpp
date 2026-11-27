@@ -130,7 +130,7 @@ gman::Owned<GMANPrimitive> runTriangle(RtFloat leg, RtFloat z, GMANOptions const
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &optionsCopy, &attrCopy, &transform);
+  return mgr.getRSPolygonMesh(*mesh, optionsCopy, attrCopy, transform);
 }
 
 // nine world-space coordinates (three corners, x, y, z each) as-is: the
@@ -152,7 +152,7 @@ gman::Owned<GMANPrimitive> runTriangleCorners(std::array<RtFloat, 9> const& p, G
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &optionsCopy, &attrCopy, &transform);
+  return mgr.getRSPolygonMesh(*mesh, optionsCopy, attrCopy, transform);
 }
 
 int countFaces(GMANObject* object) {

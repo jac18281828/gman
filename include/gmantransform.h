@@ -79,11 +79,11 @@ public:
 
   GMANMatrix4 interpolate(RtFloat tm) const;
   RtVoid concat(GMANTransform& t);
-  bool isMoving();
+  bool isMoving() const;
 
-  GMANPoint apply(const GMANPoint& p);
+  GMANPoint apply(const GMANPoint& p) const;
   // Homogeneous overload: carries w through unnormalized, for callers
   // (e.g. normal transforms) that need the raw matrix product rather
   // than a perspective-divided point.
-  GMANVector4 apply(const GMANVector4& p);
+  GMANVector4 apply(const GMANVector4& p) const;
 };

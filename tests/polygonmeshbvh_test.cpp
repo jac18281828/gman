@@ -107,7 +107,7 @@ gman::Owned<GMANPrimitive> runGetRSPointsPolygonDirect(std::vector<GMANPoint> co
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 // A face's own analytic ring, independent of GMANRayPolygonMesh's own

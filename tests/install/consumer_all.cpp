@@ -73,7 +73,7 @@ bool rasterManagerAnswers() {
   GMANOptions options;
   GMANAttributes attributes;
   GMANTransform transform;
-  if (manager.getRSPoints(0, GMANParameterList(), &options, &attributes, &transform) != nullptr) {
+  if (manager.getRSPoints(0, GMANParameterList(), options, attributes, transform) != nullptr) {
     return false;
   }
   gman::Owned<GMANPrimitive> const primitive = gman::make<GMANObject>();

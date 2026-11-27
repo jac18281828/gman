@@ -206,7 +206,7 @@ void testInverseTransposeUnderNonUniformScale() {
   scale.scale(3.0, 1.0, 0.5);
   GMANTransform transform = makeTransform(scale);
 
-  auto prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, &options, &attr, &transform);
+  auto prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, options, attr, transform);
   // Nothing in this tree ever frees a tessellated primitive's face/vertex
   // graph -- production code relies on process exit to reclaim it
   // (GMANRenderManImpl::RiEnd leaves worldManager/objectManager

@@ -91,7 +91,7 @@ gman::Owned<GMANPrimitive> runGetRSGeneralPolygonDirect(std::vector<std::vector<
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
@@ -114,7 +114,7 @@ gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& r
   if (!mesh.has_value()) {
     return nullptr;
   }
-  return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  return mgr.getRSPolygonMesh(*mesh, options, attr, transform);
 }
 
 // A camera-space ray through object point (x, y, 0), the plane every
