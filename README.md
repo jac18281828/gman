@@ -8,7 +8,7 @@ Begun in [1999](https://gman-toolkit.sourceforge.net), revived in [2026](https:/
 
 ## Install
 
-GMAN 1.3.0 ships as a tarball for Linux x86_64, Linux arm64 and macOS arm64 on the
+GMAN 1.4.0 ships as a tarball for Linux x86_64, Linux arm64 and macOS arm64 on the
 [releases page](https://github.com/jac18281828/gman/releases). gman links libtiff, libpng, libjpeg
 and zlib at run time. On Linux:
 
@@ -25,8 +25,8 @@ brew install libtiff libpng jpeg
 Download the tarball for your platform, unpack it, `cd` into the folder and run the installer:
 
 ```sh
-tar xzf gman-1.3.0-linux-x86_64.tar.gz
-cd gman-1.3.0-linux-x86_64
+tar xzf gman-1.4.0-linux-x86_64.tar.gz
+cd gman-1.4.0-linux-x86_64
 sudo ./install.sh
 ```
 
@@ -122,6 +122,10 @@ generated cactus and a glass ball that lenses it:
 The picture is `make hq`'s render in that repository, 2,048 paths a pixel at 1920 by 1200, scaled to
 1280 by 800. A shader built there turns the gold ball to gold leaf.
 
+The ray tracer lights the same scene from its area lights in about a second, without the bounce
+light: `gman -r gmanraytracer samples/materials.rib`. `Option "raytracer" "integer arealightsamples"`
+sets its draws per light, 4 by default.
+
 ## Poke it
 
 Change one line of `samples/vase.rib` in the unpacked folder and render it again with
@@ -160,14 +164,17 @@ gman -r gmanraytracer first.rib
 ## What GMAN renders
 
 - **Renderers.** The default `gmanzbuffer`, `gmanraytracer` and `gmanpathtracer`.
-- **Geometry.** Polygons, the seven quadrics and, under the z-buffer, bilinear, bicubic and NURBS
-  patches. Per-vertex `"N"` shades smoothly.
+- **Geometry.** Polygons, the seven quadrics, and bilinear and bicubic patches under every renderer;
+  NURBS patches under the z-buffer. Per-vertex `"N"` shades smoothly.
 - **Surfaces.** `matte`, `plastic`, `metal`, `shinymetal`, `glass`, `mirror` and `paintedplastic`,
   which takes texture, opacity and normal maps.
-- **Lights.** Ambient, distant, point, spot and area lights.
+- **Lights.** Ambient, distant, point, spot and area lights; a sphere, disk or polygon emits under
+  both tracers.
 - **Imager.** `background`, which fills each pixel's uncovered part.
 - **Bounce light.** The path tracer, or a radiosity pass under the ray tracer:
   `Option "render" "string indirect" ["radiosity"]`.
+- **Denoising.** `Option "pathtracer" "string denoise" ["atrous"]` smooths a path-traced image with
+  an edge-avoiding filter.
 - **Antialiasing.** `PixelSamples` through a box, triangle, Gaussian, Catmull-Rom or sinc filter.
 - **Textures.** Maps written by `MakeTexture` and `MakeLatLongEnvironment`.
 - **RIB.** Plain or gzip'd, with `ReadArchive`.
