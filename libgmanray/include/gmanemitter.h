@@ -32,7 +32,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmannormal.h"
 #include "gmanpoint.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmanvector.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
@@ -83,7 +83,7 @@ namespace gman {
 // arealight's own GMANLight for an area one.
 struct GMANRAY_EXPORT Emitter {
   GMANLight const* light;
-  GMANRayInterface const* shape;
+  GMANRayPrimitive const* shape;
   // Phi, pi * mean(Le) * A_cam, A_cam the emitter's own placed area: exact
   // for a disk, whose area Jacobian is constant over its own plane, and for a
   // polygon mesh, whose area is taken in camera space with Jacobian 1; an
@@ -149,7 +149,7 @@ GMANRAY_EXPORT std::vector<Emitter> emitters(GMANWorldManager& world, std::size_
 // polygon of a mesh, that mesh. Empty when none matches, and for a null
 // hitPrimitive, which no area emitter's shape names.
 GMANRAY_EXPORT std::optional<std::size_t> emitterIndex(std::vector<Emitter> const& emitters,
-                                                       GMANRayInterface const* hitPrimitive);
+                                                       GMANRayPrimitive const* hitPrimitive);
 
 // A next-event-estimation draw toward emitter from p. A delta emitter
 // ignores u1/u2 and forwards to its own light->sample(). An area emitter

@@ -80,7 +80,7 @@ GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
   return makeTransform(m);
 }
 
-class SolidBox : public GMANRayInterface {
+class SolidBox : public GMANRayPrimitive {
 public:
   SolidBox(GMANPoint const& lo, GMANPoint const& hi) : lo(lo), hi(hi) { bbox = GMANBBox(lo, hi); }
 
@@ -121,7 +121,7 @@ private:
   GMANPoint hi;
 };
 
-class NaNBoxPrimitive : public GMANRayInterface {
+class NaNBoxPrimitive : public GMANRayPrimitive {
 public:
   NaNBoxPrimitive() {
     RtBound const bound = {kNaN, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f};
@@ -141,7 +141,7 @@ struct Probe {
   std::size_t boxTests = 0;
   std::size_t primitiveTests = 0;
   GMANHit hit;
-  GMANRayInterface const* primitive = nullptr;
+  GMANRayPrimitive const* primitive = nullptr;
 };
 
 Probe probe(GMANRayBVH const& bvh, GMANRay const& ray) {
@@ -208,7 +208,7 @@ void testUntraceableRaysMiss() {
 
     GMANHit hit;
     hit.t = kSentinelT;
-    GMANRayInterface const* primitive = nullptr;
+    GMANRayPrimitive const* primitive = nullptr;
     check(!bvh.nearestHit(c.ray, hit, primitive) && hit.t == kSentinelT && primitive == nullptr,
           "untraceable: " + c.what + " misses through the three-argument overload");
   }
@@ -307,12 +307,12 @@ bool sameHit(Probe const& a, Probe const& b) {
 // ---- a NaN box stays out of the tree ----
 void testNaNBoxStaysOut() {
   GMANLinearWorldManager worldManager;
-  std::vector<GMANRayInterface*> valid;
-  auto addValid = [&](GMANRayInterface* primitive) {
+  std::vector<GMANRayPrimitive*> valid;
+  auto addValid = [&](GMANRayPrimitive* primitive) {
     worldManager.add(primitive);
     valid.push_back(primitive);
   };
-  GMANRayInterface* const nanBox = new NaNBoxPrimitive();
+  GMANRayPrimitive* const nanBox = new NaNBoxPrimitive();
   addValid(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
   worldManager.add(nanBox);
   addValid(new GMANRayCylinder(0.75, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
@@ -329,7 +329,7 @@ void testNaNBoxStaysOut() {
   for (GMANRay const& ray : extremeRays(span, rng)) {
     Probe const viaTree = probe(bvh, ray);
     Probe scan;
-    for (GMANRayInterface* primitive : valid) {
+    for (GMANRayPrimitive* primitive : valid) {
       GMANHit candidate;
       if (primitive->intersect(ray, candidate) && (!scan.found || candidate.t < scan.hit.t)) {
         scan.hit = candidate;
@@ -417,12 +417,12 @@ bool finiteHit(GMANHit const& hit) {
 
 struct Placed {
   std::string name;
-  GMANRayInterface* primitive;
+  GMANRayPrimitive* primitive;
 };
 
 std::vector<Placed> placeEveryIntersector(GMANLinearWorldManager& worldManager) {
   std::vector<Placed> placed;
-  auto add = [&](std::string const& name, GMANRayInterface* primitive) {
+  auto add = [&](std::string const& name, GMANRayPrimitive* primitive) {
     worldManager.add(primitive);
     placed.push_back({name, primitive});
   };

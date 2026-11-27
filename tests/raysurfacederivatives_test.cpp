@@ -46,10 +46,10 @@
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
-#include "gmanrayinterface.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanshaderenvironment.h"
@@ -111,7 +111,7 @@ GMANPoint const kCameraOrigin(0.0f, 0.0f, 0.0f);
 
 GMANRay rayTo(GMANPoint const& target) { return GMANRay(kCameraOrigin, GMANVector(kCameraOrigin, target)); }
 
-void checkStep(std::string const& name, GMANRayInterface const& primitive, GMANHit const& hit,
+void checkStep(std::string const& name, GMANRayPrimitive const& primitive, GMANHit const& hit,
                GMANVector const& tangent, bool alongU) {
   std::string const label = name + (alongU ? ": dPdu" : ": dPdv");
   GMANPoint const target(hit.point.getX() + (RtFloat)(kStep * tangent.getX()),
@@ -158,7 +158,7 @@ void checkTangency(std::string const& name, GMANHit const& hit) {
   check(1.0 - alignment <= kTangentTolerance, name + ": dPdu x dPdv is parallel to the normal");
 }
 
-void checkSurface(std::string const& name, GMANRayInterface const& primitive, GMANPoint const& aim) {
+void checkSurface(std::string const& name, GMANRayPrimitive const& primitive, GMANPoint const& aim) {
   GMANHit hit;
   bool const hitSurface = primitive.intersect(rayTo(aim), hit);
   check(hitSurface, name + ": the ray hits");
@@ -262,7 +262,7 @@ void checkPolygons() {
   checkSurface("polygon mesh face", mesh, upperLeft);
 }
 
-GMANHit axisHit(std::string const& name, GMANRayInterface const& primitive) {
+GMANHit axisHit(std::string const& name, GMANRayPrimitive const& primitive) {
   GMANHit hit;
   bool const hitAxis = primitive.intersect(GMANRay(kCameraOrigin, GMANVector(0.0f, 0.0f, 1.0f)), hit);
   check(hitAxis, name + ": the axis ray hits");

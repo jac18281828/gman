@@ -218,7 +218,7 @@ GMANColor areaMean(GMANRadiositySolution const& solution, std::size_t begin, std
 
 // The first element index at or after begin whose primitive is not
 // primitive: the end of primitive's contiguous run.
-std::size_t runEnd(GMANRadiosityMesh const& mesh, std::size_t begin, GMANRayInterface const* primitive) {
+std::size_t runEnd(GMANRadiosityMesh const& mesh, std::size_t begin, GMANRayPrimitive const* primitive) {
   std::size_t end = begin;
   while (end < mesh.getElementCount() && mesh.getElementPrimitive(end) == primitive) {
     ++end;

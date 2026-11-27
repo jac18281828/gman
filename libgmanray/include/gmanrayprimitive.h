@@ -35,7 +35,7 @@
  * GMANRayOccluder::transmission keep -- so a caller can invoke it from
  * concurrent gman::parallelFor workers.
  */
-class GMANRAY_EXPORT GMANRayInterface : virtual public GMANPrimitive {
+class GMANRAY_EXPORT GMANRayPrimitive : virtual public GMANPrimitive {
 public:
   virtual bool intersect(GMANRay const& ray, GMANHit& hit) const;
 

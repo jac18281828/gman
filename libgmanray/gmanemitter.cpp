@@ -43,10 +43,10 @@
 #include "gmanpoint.h"
 #include "gmanprimitive.h"
 #include "gmanraydisk.h"
-#include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
@@ -113,7 +113,7 @@ struct EmittingShapeKind {
   GMANRayPolygonMesh const* mesh;
 };
 
-EmittingShapeKind classifyEmittingShape(GMANRayInterface const& shape) {
+EmittingShapeKind classifyEmittingShape(GMANRayPrimitive const& shape) {
   if (GMANRaySphere const* sphere = dynamic_cast<GMANRaySphere const*>(&shape)) {
     return {sphere, nullptr, nullptr};
   }
@@ -125,7 +125,7 @@ EmittingShapeKind classifyEmittingShape(GMANRayInterface const& shape) {
 
 // The mesh a face of a polygon mesh belongs to, else primitive itself: the
 // shape an emitter names for that hit.
-GMANRayInterface const* emittingShapeOf(GMANRayInterface const* primitive) {
+GMANRayPrimitive const* emittingShapeOf(GMANRayPrimitive const* primitive) {
   GMANRayPolygon const* face = dynamic_cast<GMANRayPolygon const*>(primitive);
   if (face == nullptr) {
     return primitive;
@@ -140,7 +140,7 @@ GMANRayInterface const* emittingShapeOf(GMANRayInterface const* primitive) {
 // True, and the object-space area filled, for a geometrically eligible sphere
 // or disk. False for any other primitive type, a polygon mesh included, or a
 // degenerate one; area is left untouched.
-bool emittingShapeArea(GMANRayInterface const& shape, RtFloat& area) {
+bool emittingShapeArea(GMANRayPrimitive const& shape, RtFloat& area) {
   EmittingShapeKind const kind = classifyEmittingShape(shape);
   if (kind.sphere != nullptr) {
     if (!sphereEligible(*kind.sphere)) {
@@ -162,14 +162,14 @@ bool emittingShapeArea(GMANRayInterface const& shape, RtFloat& area) {
 // shape's own shutter-open placement, empty for a singular one. Precondition:
 // shape is a GMANRaySphere or GMANRayDisk, the two emitting types a placement
 // describes.
-std::optional<InvertibleMatrix> const& emittingShapeObjectToCamera(GMANRayInterface const& shape) {
+std::optional<InvertibleMatrix> const& emittingShapeObjectToCamera(GMANRayPrimitive const& shape) {
   EmittingShapeKind const kind = classifyEmittingShape(shape);
   return (kind.sphere != nullptr) ? kind.sphere->getObjectToCamera() : kind.disk->getObjectToCamera();
 }
 
 // shape's own uniform-by-area draw, in object space. Precondition: shape is
 // a GMANRaySphere or GMANRayDisk.
-GMANPoint emittingShapeSamplePoint(GMANRayInterface const& shape, double u1, double u2, GMANVector& normal) {
+GMANPoint emittingShapeSamplePoint(GMANRayPrimitive const& shape, double u1, double u2, GMANVector& normal) {
   EmittingShapeKind const kind = classifyEmittingShape(shape);
   return (kind.sphere != nullptr) ? kind.sphere->samplePoint(u1, u2, normal) : kind.disk->samplePoint(u1, u2, normal);
 }
@@ -839,7 +839,7 @@ std::optional<SolidAngleDraw> drawSphereByCone(GMANRaySphere const& sphere, Inve
 // polygon mesh's own bounding box's centre and half its diagonal.
 // Precondition: shape is a GMANRaySphere, GMANRayDisk or GMANRayPolygonMesh.
 // False, centre and radius untouched, for a singular placement.
-bool emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& centre, RtFloat& radius) {
+bool emittingShapeCentreAndRadius(GMANRayPrimitive const& shape, GMANPoint& centre, RtFloat& radius) {
   EmittingShapeKind const kind = classifyEmittingShape(shape);
   if (kind.mesh != nullptr) {
     meshCentreAndRadius(*kind.mesh, centre, radius);
@@ -868,7 +868,7 @@ bool emittingShapeCentreAndRadius(GMANRayInterface const& shape, GMANPoint& cent
 // -- the area factor a uniform scale of that same determinant would give,
 // exact under a rigid or uniformly scaled placement. Precondition: shape
 // is a GMANRaySphere or GMANRayDisk.
-RtFloat emittingShapeCameraArea(GMANRayInterface const& shape, InvertibleMatrix const& objectToCamera,
+RtFloat emittingShapeCameraArea(GMANRayPrimitive const& shape, InvertibleMatrix const& objectToCamera,
                                 RtFloat objectArea) {
   EmittingShapeKind const kind = classifyEmittingShape(shape);
   if (kind.disk != nullptr) {
@@ -1179,7 +1179,7 @@ EmitterPoint samplePointArea(Emitter const& emitter, RtFloat u1, RtFloat u2) {
 
 // pi * mean(Cl) * the shape's camera-space area; empty for an ineligible or
 // unsupported shape.
-std::optional<RtFloat> areaEmitterPower(GMANRayInterface const& shape, GMANLight const& light) {
+std::optional<RtFloat> areaEmitterPower(GMANRayPrimitive const& shape, GMANLight const& light) {
   RtFloat const radiance = meanChannel(light.getCl());
   if (GMANRayPolygonMesh const* mesh = classifyEmittingShape(shape).mesh) {
     if (!meshEligible(*mesh)) {
@@ -1207,7 +1207,7 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
   std::size_t ineligibleCount = 0;
 
   for (GMANPrimitive* primitive = world.getFirst(); primitive != nullptr; primitive = world.getNext()) {
-    GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
+    GMANRayPrimitive const* rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
     if (rayPrimitive == nullptr) {
       continue;
     }
@@ -1246,11 +1246,11 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
   return result;
 }
 
-std::optional<std::size_t> emitterIndex(std::vector<Emitter> const& emitters, GMANRayInterface const* hitPrimitive) {
+std::optional<std::size_t> emitterIndex(std::vector<Emitter> const& emitters, GMANRayPrimitive const* hitPrimitive) {
   if (hitPrimitive == nullptr) {
     return std::nullopt;
   }
-  GMANRayInterface const* const hitShape = emittingShapeOf(hitPrimitive);
+  GMANRayPrimitive const* const hitShape = emittingShapeOf(hitPrimitive);
   for (std::size_t j = 0; j < emitters.size(); ++j) {
     if (emitters[j].shape == hitShape) {
       return j;

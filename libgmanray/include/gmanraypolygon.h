@@ -32,7 +32,7 @@
 #include "gmanpoint.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmanvector.h"
 #include "ri.h"
 
@@ -50,7 +50,7 @@ std::vector<std::pair<RtFloat, RtFloat>> resolvePointTexCoords(GMANParameterList
 
 class GMANRayPolygonMesh;
 
-class GMANRAY_EXPORT GMANRayPolygon : public GMANRayInterface, public GMANPolygon {
+class GMANRAY_EXPORT GMANRayPolygon : public GMANRayPrimitive, public GMANPolygon {
   friend class GMANRayPolygonMesh;
 
 public:

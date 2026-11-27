@@ -31,7 +31,7 @@
 #include "gmancolor.h"
 #include "gmanemitter.h"
 #include "gmanpoint.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "ri.h"
 
 /*
@@ -55,13 +55,13 @@ namespace gman {
 // would have drawn for that emitter, had it drawn from p (excluding the
 // same primitive) that round.
 RtFloat lightChoiceWeights(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
-                           GMANRayInterface const* primitive, std::vector<RtFloat>& lightWeight);
+                           GMANRayPrimitive const* primitive, std::vector<RtFloat>& lightWeight);
 
 // emitters[index]'s own share of lightChoiceWeights' own sum at p,
 // excluding primitive. lightWeight is the caller's own buffer, sized to
 // emitters.size(); its contents are overwritten.
 RtFloat lightChoiceProbability(std::vector<gman::Emitter> const& emitters, GMANPoint const& p,
-                               GMANRayInterface const* primitive, std::size_t index, std::vector<RtFloat>& lightWeight);
+                               GMANRayPrimitive const* primitive, std::size_t index, std::vector<RtFloat>& lightWeight);
 
 // Next-event estimation's own weight toward a chosen light: 1 for a delta
 // light at any vertex, since nothing can ever land on one by chance and no

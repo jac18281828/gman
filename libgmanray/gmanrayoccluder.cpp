@@ -33,9 +33,9 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
+#include "gmanrayprimitive.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -137,7 +137,7 @@ BlockerTransmittance blockerTransmittance(GMANRay const& shadowRay, GMANHit cons
   return result;
 }
 
-bool passesTerminatorExit(GMANHit const& hit, GMANRayInterface const& hitPrimitive, GMANVector const& towardLight,
+bool passesTerminatorExit(GMANHit const& hit, GMANRayPrimitive const& hitPrimitive, GMANVector const& towardLight,
                           GMANPrimitive const& origin) {
   GMANRayPolygon const* const hitPolygon = dynamic_cast<GMANRayPolygon const*>(&hitPrimitive);
   GMANRayPolygon const* const originPolygon = dynamic_cast<GMANRayPolygon const*>(&origin);
@@ -161,7 +161,7 @@ ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector 
   for (int layer = 0; layer < kMaxCompositeLayers; ++layer) {
     GMANRay const shadowRay(origin, wi, RI_EPSILON, remaining);
     GMANHit hit;
-    GMANRayInterface const* hitPrimitive = nullptr;
+    GMANRayPrimitive const* hitPrimitive = nullptr;
     if (!bvh.nearestHit(shadowRay, hit, hitPrimitive)) {
       return result;
     }
@@ -201,7 +201,7 @@ ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector 
   // of light through a wall deeper than the cap.
   GMANRay const capRay(origin, wi, RI_EPSILON, remaining);
   GMANHit capHit;
-  GMANRayInterface const* capPrimitive = nullptr;
+  GMANRayPrimitive const* capPrimitive = nullptr;
   if (bvh.nearestHit(capRay, capHit, capPrimitive)) {
     GMANColor const black(0.0f, 0.0f, 0.0f);
     return {black, black};
@@ -224,7 +224,7 @@ GMANColor GMANRayOccluder::transmissionFromTerminator(GMANLight const& /*light*/
 }
 
 GMANColor GMANRayOccluder::blockerFactor(GMANRay const& shadowRay, GMANHit const& hit,
-                                         GMANRayInterface const& blocker) const {
+                                         GMANRayPrimitive const& blocker) const {
   if (textureCache == nullptr) {
     return gman::oneMinus(blocker.getAppearance().Os);
   }
@@ -259,7 +259,7 @@ GMANColor GMANRayOccluder::walk(GMANPoint const& P, GMANVector const& towardLigh
     }
     GMANRay const shadowRay(origin, towardLight, RI_EPSILON, remaining);
     GMANHit hit;
-    GMANRayInterface const* hitPrimitive = nullptr;
+    GMANRayPrimitive const* hitPrimitive = nullptr;
     if (!bvh.nearestHit(shadowRay, hit, hitPrimitive)) {
       break;
     }

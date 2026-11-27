@@ -30,11 +30,11 @@
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMANRAY_EXPORT GMANRayTorus : public GMANRayInterface, public GMANTorus {
+class GMANRAY_EXPORT GMANRayTorus : public GMANRayPrimitive, public GMANTorus {
 public:
   GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phimin, RtFloat phimax, RtFloat thetamax,
                GMANParameterList pl)

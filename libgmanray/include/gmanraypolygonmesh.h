@@ -29,8 +29,8 @@
 
 #include "gman/rayexport.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
 #include "gmanraypolygon.h"
+#include "gmanrayprimitive.h"
 
 // Every polygon request's own faces, each a GMANRayPolygon in camera
 // space, joined under one GMANPrimitive so the RI layer adds exactly one
@@ -40,7 +40,7 @@
 // getFaceCount()/getFace(), so a house-sized mesh culls per face;
 // intersect below tests every face linearly, for any caller that reaches
 // this primitive directly rather than through the BVH.
-class GMANRAY_EXPORT GMANRayPolygonMesh : public GMANRayInterface {
+class GMANRAY_EXPORT GMANRayPolygonMesh : public GMANRayPrimitive {
 public:
   explicit GMANRayPolygonMesh(std::vector<std::unique_ptr<GMANRayPolygon>> polygons);
 

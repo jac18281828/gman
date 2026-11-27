@@ -41,9 +41,9 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanrayoccluder.h"
+#include "gmanrayprimitive.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
 #include "gmanshading.h"
@@ -91,7 +91,7 @@ public:
   // solid-angle density and the draw count, times the squared distance from
   // P, so GMANLight::sample's inverse-square falloff leaves a shader's
   // diffuse the emitter's irradiance over pi.
-  std::vector<GMANLight> draw(GMANPoint const& P, GMANRayInterface const& hitPrimitive);
+  std::vector<GMANLight> draw(GMANPoint const& P, GMANRayPrimitive const& hitPrimitive);
 
   std::vector<gman::Emitter> const& emitters() const { return lights.emitters; }
 
@@ -139,7 +139,7 @@ public:
   // the shader's own trace() calls: the shader's Ci, plus the emitter's
   // radiance where hitPrimitive is an area emitter whose face looks at ray's
   // origin, and its Oi unchanged.
-  gman::Shading shadeHit(GMANRayInterface const& hitPrimitive, GMANRay const& ray, GMANHit const& hit) const;
+  gman::Shading shadeHit(GMANRayPrimitive const& hitPrimitive, GMANRay const& ray, GMANHit const& hit) const;
 
   // What compositeLayers accumulates: the colour the layers add, each through
   // the transmission left before it, and the transmission left after the last.
@@ -157,12 +157,12 @@ public:
   // gman::kMaxCompositeLayers layers. Every layer shades through this tracer,
   // so a layer adds no depth. The background is in neither result: the caller
   // adds it through the transmission left.
-  Composited compositeLayers(GMANRay const& ray, GMANHit const& hit, GMANRayInterface const& hitPrimitive) const;
+  Composited compositeLayers(GMANRay const& ray, GMANHit const& hit, GMANRayPrimitive const& hitPrimitive) const;
 
 private:
-  gman::Shading shadeLit(GMANRayInterface const& hitPrimitive, gman::SurfacePoint const& point,
+  gman::Shading shadeLit(GMANRayPrimitive const& hitPrimitive, gman::SurfacePoint const& point,
                          GMANColor const* indirect) const;
-  std::optional<GMANColor> emitterRadiance(GMANRayInterface const& hitPrimitive, GMANRay const& ray,
+  std::optional<GMANColor> emitterRadiance(GMANRayPrimitive const& hitPrimitive, GMANRay const& ray,
                                            GMANHit const& hit) const;
 
   GMANRayBVH const& bvh;
@@ -225,11 +225,11 @@ private:
   // The nearest ray-primitive hit and the ray primitive it lies on; both
   // null (hit.primitive null, primitive null) when nothing is hit. Carrying
   // the ray primitive here, rather than re-deriving it from hit.primitive
-  // afterward, keeps the downcast to GMANRayInterface to GMANRayBVH::build's
+  // afterward, keeps the downcast to GMANRayPrimitive to GMANRayBVH::build's
   // own loop.
   struct RayHit {
     GMANHit hit;
-    GMANRayInterface const* primitive = nullptr;
+    GMANRayPrimitive const* primitive = nullptr;
   };
 
   // The worker count render() requests from gman::parallelFor; 0 lets it

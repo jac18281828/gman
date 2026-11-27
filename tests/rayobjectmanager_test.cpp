@@ -21,7 +21,7 @@
 /*
  * GMANRayObjectManager::getRSSphere builds a GMANRaySphere that keeps
  * its parameters and a copied transform, rather than a bare
- * GMANRayInterface. Each check builds a sphere through the factory,
+ * GMANRayPrimitive. Each check builds a sphere through the factory,
  * exactly as RiSphereV does, and intersects it with a camera-space ray.
  */
 
@@ -44,8 +44,8 @@ bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a -
 // getRSSphere ignores opt, so it is null here; attr is a default-constructed
 // GMANAttributes, as polygon_test.cpp passes, since getRSSphere resolves
 // it into the sphere's appearance. Casts to GMANRaySphere rather than
-// GMANRayInterface: the base's own bare create() also satisfies a
-// GMANRayInterface cast, so that cast alone cannot distinguish a real
+// GMANRayPrimitive: the base's own bare create() also satisfies a
+// GMANRayPrimitive cast, so that cast alone cannot distinguish a real
 // GMANRaySphere from one.
 GMANRaySphere* buildSphere(GMANRayObjectManager& manager, RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
                            GMANTransform& transform) {

@@ -111,7 +111,7 @@ GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
 
 // Every sphere's Os below 1 in some channel, so a transmission walk that
 // crosses one keeps going rather than cutting to black.
-void setPartlyTransparent(GMANRayInterface* primitive) {
+void setPartlyTransparent(GMANRayPrimitive* primitive) {
   gman::Appearance appearance;
   appearance.Os = GMANColor(0.5f, 0.5f, 0.5f);
   primitive->setAppearance(appearance);
@@ -170,7 +170,7 @@ void checkAllocationDelta(bool holds, char const* message) {
 void testPeakStack(GMANRayBVH const& bvh) {
   GMANRay const ray = peakStackRay();
   GMANHit hit;
-  GMANRayInterface const* prim = nullptr;
+  GMANRayPrimitive const* prim = nullptr;
   std::size_t primitiveTests = 0;
   std::size_t boxTests = 0;
   bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests, &boxTests);
@@ -197,15 +197,15 @@ void testHitAndMissBatch(GMANRayBVH const& bvh) {
   long const before = raybvhAllocationCount();
   for (int i = 0; i < kBatchCount; ++i) {
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     hitFound[i] = bvh.nearestHit(hitRay, hit, prim);
 
     GMANHit missHit;
-    GMANRayInterface const* missPrim = nullptr;
+    GMANRayPrimitive const* missPrim = nullptr;
     missFound[i] = bvh.nearestHit(missRay, missHit, missPrim);
 
     GMANHit peakHit;
-    GMANRayInterface const* peakPrim = nullptr;
+    GMANRayPrimitive const* peakPrim = nullptr;
     peakFound[i] = bvh.nearestHit(peakRay, peakHit, peakPrim);
   }
   long const after = raybvhAllocationCount();

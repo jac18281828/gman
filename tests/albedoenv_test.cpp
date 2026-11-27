@@ -157,7 +157,7 @@ void testHitSurfacePointFieldMapping() {
 
   GMANRay const ray(GMANPoint(0.2f, 0.3f, -5.0f), GMANVector(0.0f, -0.05f, 1.0f));
   GMANHit hit;
-  GMANRayInterface const* hitPrimitive = nullptr;
+  GMANRayPrimitive const* hitPrimitive = nullptr;
   check(bvh.nearestHit(ray, hit, hitPrimitive), "field mapping: the ray hits the sphere");
   if (hitPrimitive == nullptr) {
     return;
@@ -210,7 +210,7 @@ void testParityOnSphere() {
 
   GMANRay const ray(GMANPoint(0.15f, -0.2f, -5.0f), GMANVector(0.03f, 0.02f, 1.0f));
   GMANHit hit;
-  GMANRayInterface const* hitPrimitive = nullptr;
+  GMANRayPrimitive const* hitPrimitive = nullptr;
   check(bvh.nearestHit(ray, hit, hitPrimitive), "sphere parity: the ray hits the sphere");
   if (hitPrimitive == nullptr) {
     return;
@@ -259,7 +259,7 @@ void testParityOnTexturedPolygon() {
 
   GMANRay const ray(GMANPoint(0.5f, 0.25f, -5.0f), GMANVector(0.0f, 0.0f, 1.0f));
   GMANHit hit;
-  GMANRayInterface const* hitPrimitive = nullptr;
+  GMANRayPrimitive const* hitPrimitive = nullptr;
   check(bvh.nearestHit(ray, hit, hitPrimitive), "polygon parity: the ray hits the textured polygon");
   if (hitPrimitive == nullptr) {
     return;

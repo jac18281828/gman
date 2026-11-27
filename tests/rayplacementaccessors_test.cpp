@@ -41,9 +41,9 @@
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
-#include "gmanrayinterface.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
+#include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmantransform.h"
@@ -81,8 +81,8 @@ bool placementEquals(std::optional<gman::InvertibleMatrix> const& held, GMANMatr
   return held.has_value() && matricesEqual(held->forward(), placement);
 }
 
-void checkSingularMisses(std::string const& shape, GMANRayInterface const& identityBuild,
-                         GMANRayInterface const& singularBuild, GMANRay const& ray) {
+void checkSingularMisses(std::string const& shape, GMANRayPrimitive const& identityBuild,
+                         GMANRayPrimitive const& singularBuild, GMANRay const& ray) {
   GMANHit identityHit;
   check(identityBuild.intersect(ray, identityHit), shape + ": the ray hits the identity placement");
   GMANHit singularHit;

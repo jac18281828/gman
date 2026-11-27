@@ -22,8 +22,8 @@
  */
 
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 
 // A primitive with no intersector of its own answers "no hit" rather than
 // failing to link.
-bool GMANRayInterface::intersect(GMANRay const& /*ray*/, GMANHit& /*hit*/) const { return false; }
+bool GMANRayPrimitive::intersect(GMANRay const& /*ray*/, GMANHit& /*hit*/) const { return false; }

@@ -38,8 +38,8 @@
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 
 namespace {
@@ -122,8 +122,8 @@ GMANRay rayThrough(RtFloat x, RtFloat y) { return GMANRay(GMANPoint(x, y, -5.0),
 
 void testHoleMissesFaceHitsEdgeMisses() {
   GMANPrimitive* prim = runGetRSGeneralPolygonDirect({outerSquare(), holeSquare()});
-  GMANRayInterface* polygon = dynamic_cast<GMANRayInterface*>(prim);
-  check(polygon != nullptr, "hole: getRSPolygonMesh returns a GMANRayInterface");
+  GMANRayPrimitive* polygon = dynamic_cast<GMANRayPrimitive*>(prim);
+  check(polygon != nullptr, "hole: getRSPolygonMesh returns a GMANRayPrimitive");
   if (polygon == nullptr) {
     delete prim;
     return;
@@ -144,8 +144,8 @@ void testHoleMissesFaceHitsEdgeMisses() {
 
 void testOneLoopPolygonUnchanged() {
   GMANPrimitive* prim = runGetRSPolygonDirect(outerSquare());
-  GMANRayInterface* polygon = dynamic_cast<GMANRayInterface*>(prim);
-  check(polygon != nullptr, "one loop: getRSPolygonMesh returns a GMANRayInterface");
+  GMANRayPrimitive* polygon = dynamic_cast<GMANRayPrimitive*>(prim);
+  check(polygon != nullptr, "one loop: getRSPolygonMesh returns a GMANRayPrimitive");
   if (polygon == nullptr) {
     delete prim;
     return;

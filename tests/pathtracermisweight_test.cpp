@@ -41,7 +41,7 @@
 #include "gmanparameterlist.h"
 #include "gmanpathtracerweights.h"
 #include "gmanpoint.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmantransform.h"
 #include "maketransform.h"

@@ -35,7 +35,7 @@
 #include "ri.h"
 
 class GMANParametric;
-class GMANRayInterface;
+class GMANRayPrimitive;
 class GMANRayPolygon;
 class GMANRayPolygonMesh;
 
@@ -87,7 +87,7 @@ struct GMANRadiositySurfacePoint {
  * gmanraytracerenderer.h).
  *
  * build() walks worldManager once (getFirst()/getNext()), dicing each
- * primitive that is one of the seven quadric GMANRayInterface classes, a
+ * primitive that is one of the seven quadric GMANRayPrimitive classes, a
  * GMANRayPolygon, or a GMANRayPolygonMesh. A mesh dices face by face,
  * through its own getFaceCount()/getFace(); each face is keyed for
  * locate() by its own address, the same address a GMANRayBVH hit reports,
@@ -168,7 +168,7 @@ public:
 
   // The ray primitive element was diced from: for a GMANRayPolygonMesh,
   // the face, the pointer a GMANRayBVH hit reports.
-  GMANRayInterface const* getElementPrimitive(std::size_t element) const;
+  GMANRayPrimitive const* getElementPrimitive(std::size_t element) const;
 
   // The true surface at (s, t) in [0, 1]^2 across element's grid cell.
   // A quadric's point and normal are its own getLocation/getNormal at the

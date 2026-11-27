@@ -40,8 +40,8 @@
 #include "gmanpoint.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
+#include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmanshading.h"
 #include "gmansurfaceshader.h"
@@ -103,7 +103,7 @@ struct Blocker {
   GMANRayBVH bvh;
   GMANRay const ray{GMANPoint(-5.0f, 0.0f, 0.0f), GMANVector(1.0f, 0.0f, 0.0f)};
   GMANHit hit;
-  GMANRayInterface const* primitive = nullptr;
+  GMANRayPrimitive const* primitive = nullptr;
   bool struck = false;
 
   explicit Blocker(gman::Appearance const& appearance) {

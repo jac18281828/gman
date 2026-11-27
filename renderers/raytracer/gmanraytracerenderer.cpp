@@ -50,8 +50,8 @@
 #include "gmanprimitive.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
+#include "gmanrayprimitive.h"
 #include "gmanraytracerenderer.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
@@ -189,7 +189,7 @@ private:
 
 } // namespace
 
-std::vector<GMANLight> GMANAreaLightSample::draw(GMANPoint const& P, GMANRayInterface const& hitPrimitive) {
+std::vector<GMANLight> GMANAreaLightSample::draw(GMANPoint const& P, GMANRayPrimitive const& hitPrimitive) {
   std::vector<gman::Emitter> const& emitters = lights.emitters;
   std::uint32_t const emitterCount = static_cast<std::uint32_t>(emitters.size());
   std::uint32_t const site = nextSite++;
@@ -221,7 +221,7 @@ GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVect
   GMANPoint const origin = gman::offsetOrigin(P, Ng, R, surfaceMagnitude);
   GMANRay const ray(origin, R, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
-  GMANRayInterface const* hitPrimitive = nullptr;
+  GMANRayPrimitive const* hitPrimitive = nullptr;
   if (!bvh.nearestHit(ray, hit, hitPrimitive)) {
     return background;
   }
@@ -234,7 +234,7 @@ GMANColor GMANRayTracer::trace(GMANPoint const& P, GMANVector const& R, GMANVect
   return result;
 }
 
-gman::Shading GMANRayTracer::shadeLit(GMANRayInterface const& hitPrimitive, gman::SurfacePoint const& point,
+gman::Shading GMANRayTracer::shadeLit(GMANRayPrimitive const& hitPrimitive, gman::SurfacePoint const& point,
                                       GMANColor const* indirect) const {
   gman::Appearance const& appearance = hitPrimitive.getAppearance();
   std::vector<GMANLight> draws;
@@ -253,7 +253,7 @@ gman::Shading GMANRayTracer::shadeLit(GMANRayInterface const& hitPrimitive, gman
   return gman::shade(lit, point, cameraToWorld, &drawOccluder, this, textureCache, indirect);
 }
 
-std::optional<GMANColor> GMANRayTracer::emitterRadiance(GMANRayInterface const& hitPrimitive, GMANRay const& ray,
+std::optional<GMANColor> GMANRayTracer::emitterRadiance(GMANRayPrimitive const& hitPrimitive, GMANRay const& ray,
                                                         GMANHit const& hit) const {
   if (areaSample == nullptr) {
     return std::nullopt;
@@ -270,7 +270,7 @@ std::optional<GMANColor> GMANRayTracer::emitterRadiance(GMANRayInterface const& 
   return radiance;
 }
 
-gman::Shading GMANRayTracer::shadeHit(GMANRayInterface const& hitPrimitive, GMANRay const& ray,
+gman::Shading GMANRayTracer::shadeHit(GMANRayPrimitive const& hitPrimitive, GMANRay const& ray,
                                       GMANHit const& hit) const {
   PassIrradiance const indirect(indirectPass, hit, ray.getDirection());
   gman::Shading shading = shadeLit(hitPrimitive, gman::hitSurfacePoint(ray, hit), indirect.ptr);
@@ -282,12 +282,12 @@ gman::Shading GMANRayTracer::shadeHit(GMANRayInterface const& hitPrimitive, GMAN
 }
 
 GMANRayTracer::Composited GMANRayTracer::compositeLayers(GMANRay const& ray, GMANHit const& hit,
-                                                         GMANRayInterface const& hitPrimitive) const {
+                                                         GMANRayPrimitive const& hitPrimitive) const {
   GMANColor colour(0.0f, 0.0f, 0.0f);
   GMANColor transmission(1.0f, 1.0f, 1.0f);
   GMANRay layerRay = ray;
   GMANHit layerHit = hit;
-  GMANRayInterface const* layerPrimitive = &hitPrimitive;
+  GMANRayPrimitive const* layerPrimitive = &hitPrimitive;
 
   for (int layer = 0; layer < gman::kMaxCompositeLayers && layerPrimitive != nullptr; ++layer) {
     const auto shading = shadeHit(*layerPrimitive, layerRay, layerHit);
@@ -328,7 +328,7 @@ GMANRaytraceRenderer::~GMANRaytraceRenderer() {};
 
 GMANRaytraceRenderer::RayHit GMANRaytraceRenderer::nearestHit(GMANRay const& ray) const {
   RayHit result;
-  GMANRayInterface const* hitPrimitive = nullptr;
+  GMANRayPrimitive const* hitPrimitive = nullptr;
   if (bvh.nearestHit(ray, result.hit, hitPrimitive)) {
     result.primitive = hitPrimitive;
   }

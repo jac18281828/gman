@@ -40,10 +40,10 @@
 #include "gmanradiositymesh.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
 
@@ -426,7 +426,7 @@ void testMeshLookupThroughBVH() {
         GMANRay const ray = cubeAxisRay(c.axis, c.sign, u, v);
 
         GMANHit hit;
-        GMANRayInterface const* hitPrimitive = nullptr;
+        GMANRayPrimitive const* hitPrimitive = nullptr;
         bool const found = bvh.nearestHit(ray, hit, hitPrimitive);
         if (!found) {
           continue;

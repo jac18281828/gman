@@ -30,11 +30,11 @@
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMANRAY_EXPORT GMANRayCylinder : public GMANRayInterface, public GMANCylinder {
+class GMANRAY_EXPORT GMANRayCylinder : public GMANRayPrimitive, public GMANCylinder {
 public:
   GMANRayCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl)
       : GMANCylinder(radius, zmin, zmax, thetamax, pl) {}

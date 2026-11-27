@@ -40,8 +40,8 @@
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 
 namespace {
@@ -90,8 +90,8 @@ GMANRay rayThrough(RtFloat x, RtFloat y) { return GMANRay(GMANPoint(x, y, -5.0),
 
 void testPerFaceStGatheredThroughVerts() {
   GMANPrimitive* meshPrim = buildTexturedMesh();
-  GMANRayInterface* mesh = dynamic_cast<GMANRayInterface*>(meshPrim);
-  check(mesh != nullptr, "per-face st: getRSPolygonMesh returns a GMANRayInterface");
+  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim);
+  check(mesh != nullptr, "per-face st: getRSPolygonMesh returns a GMANRayPrimitive");
   if (mesh == nullptr) {
     delete meshPrim;
     return;

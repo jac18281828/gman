@@ -39,9 +39,9 @@
 #include "gmanradiositygrouping.h"
 #include "gmanradiositymesh.h"
 #include "gmanradiositysolver.h"
-#include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
+#include "gmanrayprimitive.h"
 #include "gmanshaderenvironment.h"
 #include "ri.h"
 
@@ -78,7 +78,7 @@ double maxChannel(GMANColor const& c) {
   return GMANMax(GMANMax((double)c.getRed(), (double)c.getGreen()), (double)c.getBlue());
 }
 
-bool isPolygon(GMANRayInterface const* primitive) { return dynamic_cast<GMANRayPolygon const*>(primitive) != nullptr; }
+bool isPolygon(GMANRayPrimitive const* primitive) { return dynamic_cast<GMANRayPolygon const*>(primitive) != nullptr; }
 
 // The centre, in [0, 1], of cell index of a subgrid root cells wide.
 double subgridCentre(std::size_t index, std::size_t root) { return ((double)index + 0.5) / (double)root; }
@@ -242,7 +242,7 @@ RadiosityReceiver radiosityReceiver(GMANRadiosityMesh const& mesh, std::size_t e
     receiver.P = mesh.getElement(element).centre;
     receiver.N = mesh.getElement(element).normal;
   }
-  GMANRayInterface const* primitive = mesh.getElementPrimitive(element);
+  GMANRayPrimitive const* primitive = mesh.getElementPrimitive(element);
   receiver.surfaceMagnitude = gman::primitiveMagnitude(primitive->getBBox());
   return receiver;
 }
@@ -390,7 +390,7 @@ void GMANRadiositySolver::initializeReceivers(GMANRadiosityMesh const& mesh, GMA
                                               std::vector<gman::RadiosityReceiver>& receivers,
                                               std::vector<bool>& shootsItself, double& largestMagnitude) {
   for (std::size_t element = 0; element < receivers.size(); ++element) {
-    GMANRayInterface const* primitive = mesh.getElementPrimitive(element);
+    GMANRayPrimitive const* primitive = mesh.getElementPrimitive(element);
     receivers[element] = gman::radiosityReceiver(mesh, element);
     solution.areas[element] = gman::radiosityElementArea(mesh, element, samples);
     shootsItself[element] = !isPolygon(primitive);

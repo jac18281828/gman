@@ -111,10 +111,10 @@ GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
 // GMANRayBVH::nearestHit's own contract, written independently of it: the
 // nearest hit within ray's [tmin, tmax], the earlier-inserted primitive
 // winning an exact t tie.
-bool linearScan(std::vector<GMANRayInterface*> const& prims, GMANRay const& ray, GMANHit& hit,
-                GMANRayInterface const*& hitPrimitive) {
+bool linearScan(std::vector<GMANRayPrimitive*> const& prims, GMANRay const& ray, GMANHit& hit,
+                GMANRayPrimitive const*& hitPrimitive) {
   bool found = false;
-  for (GMANRayInterface* p : prims) {
+  for (GMANRayPrimitive* p : prims) {
     GMANHit candidate;
     if (p->intersect(ray, candidate) && (!found || candidate.t < hit.t)) {
       hit = candidate;
@@ -125,8 +125,8 @@ bool linearScan(std::vector<GMANRayInterface*> const& prims, GMANRay const& ray,
   return found;
 }
 
-bool hitsMatch(bool foundBvh, GMANHit const& bvhHit, GMANRayInterface const* bvhPrim, bool foundLinear,
-               GMANHit const& linearHit, GMANRayInterface const* linearPrim) {
+bool hitsMatch(bool foundBvh, GMANHit const& bvhHit, GMANRayPrimitive const* bvhPrim, bool foundLinear,
+               GMANHit const& linearHit, GMANRayPrimitive const* linearPrim) {
   if (foundBvh != foundLinear) {
     return false;
   }
@@ -145,14 +145,14 @@ bool hitsMatch(bool foundBvh, GMANHit const& bvhHit, GMANRayInterface const* bvh
 
 // Casts ray against both bvh and prims (linearScan), asserting they agree
 // exactly.
-void checkAgreement(GMANRayBVH const& bvh, std::vector<GMANRayInterface*> const& prims, GMANRay const& ray,
+void checkAgreement(GMANRayBVH const& bvh, std::vector<GMANRayPrimitive*> const& prims, GMANRay const& ray,
                     std::string const& what) {
   GMANHit bvhHit;
-  GMANRayInterface const* bvhPrim = nullptr;
+  GMANRayPrimitive const* bvhPrim = nullptr;
   bool const foundBvh = bvh.nearestHit(ray, bvhHit, bvhPrim);
 
   GMANHit linearHit;
-  GMANRayInterface const* linearPrim = nullptr;
+  GMANRayPrimitive const* linearPrim = nullptr;
   bool const foundLinear = linearScan(prims, ray, linearHit, linearPrim);
 
   check(hitsMatch(foundBvh, bvhHit, bvhPrim, foundLinear, linearHit, linearPrim),
@@ -168,17 +168,17 @@ void checkAgreement(GMANRayBVH const& bvh, std::vector<GMANRayInterface*> const&
 // primitive's order fixed, so the fixture is built twice to catch an
 // order dependency.
 struct FixtureHandles {
-  GMANRayInterface* overlapNear = nullptr;
-  GMANRayInterface* overlapFar = nullptr;
-  GMANRayInterface* coincidentEarlier = nullptr;
-  GMANRayInterface* coincidentLater = nullptr;
-  GMANRayInterface* boxDecoyDisk = nullptr;
-  GMANRayInterface* trueTarget = nullptr;
+  GMANRayPrimitive* overlapNear = nullptr;
+  GMANRayPrimitive* overlapFar = nullptr;
+  GMANRayPrimitive* coincidentEarlier = nullptr;
+  GMANRayPrimitive* coincidentLater = nullptr;
+  GMANRayPrimitive* boxDecoyDisk = nullptr;
+  GMANRayPrimitive* trueTarget = nullptr;
 };
 
 FixtureHandles buildCheck1Fixture(bool swapOverlap, GMANLinearWorldManager& worldManager,
-                                  std::vector<GMANRayInterface*>& prims, bool includeSingular = true) {
-  auto add = [&](GMANRayInterface* p) {
+                                  std::vector<GMANRayPrimitive*>& prims, bool includeSingular = true) {
+  auto add = [&](GMANRayPrimitive* p) {
     worldManager.add(p);
     prims.push_back(p);
   };
@@ -258,7 +258,7 @@ FixtureHandles buildCheck1Fixture(bool swapOverlap, GMANLinearWorldManager& worl
 
 void runCheck1(bool swapOverlap) {
   GMANLinearWorldManager worldManager;
-  std::vector<GMANRayInterface*> prims;
+  std::vector<GMANRayPrimitive*> prims;
   FixtureHandles const handles = buildCheck1Fixture(swapOverlap, worldManager, prims);
   check(prims.size() >= 16, "check 1: the fixture holds at least 4x the leaf size");
 
@@ -311,7 +311,7 @@ void runCheck1(bool swapOverlap) {
   GMANRay const tieRay(GMANPoint(200.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   checkAgreement(bvh, prims, tieRay, "coincident tie" + label);
   GMANHit tieHit;
-  GMANRayInterface const* tiePrim = nullptr;
+  GMANRayPrimitive const* tiePrim = nullptr;
   bvh.nearestHit(tieRay, tieHit, tiePrim);
   check(tiePrim == handles.coincidentEarlier,
         "check 1: the coincident tie resolves to the earlier-inserted disk" + label);
@@ -336,8 +336,8 @@ void testCheck1() {
 // than grouping the two large spheres together. ----
 void testExitPruningPair() {
   GMANLinearWorldManager worldManager;
-  std::vector<GMANRayInterface*> prims;
-  auto add = [&](GMANRayInterface* p) {
+  std::vector<GMANRayPrimitive*> prims;
+  auto add = [&](GMANRayPrimitive* p) {
     worldManager.add(p);
     prims.push_back(p);
   };
@@ -363,7 +363,7 @@ void testExitPruningPair() {
   checkAgreement(bvh, prims, ray, "exit-pruning pair");
 
   GMANHit hit;
-  GMANRayInterface const* prim = nullptr;
+  GMANRayPrimitive const* prim = nullptr;
   std::size_t primitiveTests = 0;
   bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
   check(found && prim == primB,
@@ -395,10 +395,10 @@ bool missesBox(GMANRay const& ray, GMANPoint const& boxMin, GMANPoint const& box
   return nearT > farT;
 }
 
-void unionBounds(std::vector<GMANRayInterface*> const& prims, GMANPoint& boxMin, GMANPoint& boxMax) {
+void unionBounds(std::vector<GMANRayPrimitive*> const& prims, GMANPoint& boxMin, GMANPoint& boxMax) {
   boxMin = prims.front()->getBBox().getMin();
   boxMax = prims.front()->getBBox().getMax();
-  for (GMANRayInterface const* p : prims) {
+  for (GMANRayPrimitive const* p : prims) {
     GMANPoint const lo = p->getBBox().getMin();
     GMANPoint const hi = p->getBBox().getMax();
     boxMin = GMANPoint(std::min(boxMin.getX(), lo.getX()), std::min(boxMin.getY(), lo.getY()),
@@ -423,12 +423,12 @@ struct BoxTestBounds {
 bool checkTraversalCounts(GMANRayBVH const& bvh, BoxTestBounds const& bounds, GMANRay const& ray,
                           std::string const& what) {
   GMANHit fourHit;
-  GMANRayInterface const* fourPrim = nullptr;
+  GMANRayPrimitive const* fourPrim = nullptr;
   std::size_t fourPrimitiveTests = 0;
   bool const fourFound = bvh.nearestHit(ray, fourHit, fourPrim, &fourPrimitiveTests);
 
   GMANHit fiveHit;
-  GMANRayInterface const* fivePrim = nullptr;
+  GMANRayPrimitive const* fivePrim = nullptr;
   std::size_t fivePrimitiveTests = 0;
   std::size_t boxTests = 0;
   bool const fiveFound = bvh.nearestHit(ray, fiveHit, fivePrim, &fivePrimitiveTests, &boxTests);
@@ -455,7 +455,7 @@ bool checkTraversalCounts(GMANRayBVH const& bvh, BoxTestBounds const& bounds, GM
 // rays travel, since a positive invD never needs the swap. ----
 void runRandomSweep(bool includeSingular) {
   GMANLinearWorldManager worldManager;
-  std::vector<GMANRayInterface*> prims;
+  std::vector<GMANRayPrimitive*> prims;
   buildCheck1Fixture(false, worldManager, prims, includeSingular);
 
   GMANRayBVH bvh;
@@ -536,9 +536,9 @@ void testCoincidentTieBothOrders() {
     GMANLinearWorldManager worldManager;
     auto* diskA = new GMANRayDisk(40.0, 3.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0));
     auto* diskB = new GMANRayDisk(40.0, 3.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0));
-    GMANRayInterface* first = swapOrder ? static_cast<GMANRayInterface*>(diskB) : static_cast<GMANRayInterface*>(diskA);
-    GMANRayInterface* second =
-        swapOrder ? static_cast<GMANRayInterface*>(diskA) : static_cast<GMANRayInterface*>(diskB);
+    GMANRayPrimitive* first = swapOrder ? static_cast<GMANRayPrimitive*>(diskB) : static_cast<GMANRayPrimitive*>(diskA);
+    GMANRayPrimitive* second =
+        swapOrder ? static_cast<GMANRayPrimitive*>(diskA) : static_cast<GMANRayPrimitive*>(diskB);
     worldManager.add(first);
     worldManager.add(second);
 
@@ -547,7 +547,7 @@ void testCoincidentTieBothOrders() {
 
     GMANRay const ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     bool const found = bvh.nearestHit(ray, hit, prim);
     check(found && prim == first, std::string("tie: resolves to the earlier-inserted disk (") +
                                       (swapOrder ? "B inserted first" : "A inserted first") + ")");
@@ -571,7 +571,7 @@ void testBoxTestsPerNode() {
 
   GMANRay const ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
-  GMANRayInterface const* prim = nullptr;
+  GMANRayPrimitive const* prim = nullptr;
   std::size_t primitiveTests = 0;
   std::size_t boxTests = 0;
   bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests, &boxTests);
@@ -600,8 +600,8 @@ void testTieAtClampedEntry() {
     auto* rightPolygon = new GMANRayPolygon(quadInPlane(-1.0, 12.0), GMANParameterList());
 
     addSpheresInPlane(worldManager, {-9.0, -6.0});
-    GMANRayInterface* first = swapOrder ? static_cast<GMANRayInterface*>(rightPolygon) : leftPolygon;
-    GMANRayInterface* second = swapOrder ? static_cast<GMANRayInterface*>(leftPolygon) : rightPolygon;
+    GMANRayPrimitive* first = swapOrder ? static_cast<GMANRayPrimitive*>(rightPolygon) : leftPolygon;
+    GMANRayPrimitive* second = swapOrder ? static_cast<GMANRayPrimitive*>(leftPolygon) : rightPolygon;
     worldManager.add(first);
     worldManager.add(second);
     addSpheresInPlane(worldManager, {6.0, 9.0});
@@ -617,7 +617,7 @@ void testTieAtClampedEntry() {
           "clamped-entry tie: both polygons hit at exactly tmin");
 
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     std::size_t primitiveTests = 0;
     bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
     std::string const order = swapOrder ? "right polygon inserted first" : "left polygon inserted first";
@@ -636,8 +636,8 @@ void testTieUnderBestHitLimit() {
     GMANLinearWorldManager worldManager;
     auto* leftPolygon = new GMANRayPolygon(quadInPlane(-12.0, 1.0), GMANParameterList());
     auto* rightPolygon = new GMANRayPolygon(quadInPlane(-1.0, 12.0), GMANParameterList());
-    GMANRayInterface* first = swapOrder ? static_cast<GMANRayInterface*>(rightPolygon) : leftPolygon;
-    GMANRayInterface* second = swapOrder ? static_cast<GMANRayInterface*>(leftPolygon) : rightPolygon;
+    GMANRayPrimitive* first = swapOrder ? static_cast<GMANRayPrimitive*>(rightPolygon) : leftPolygon;
+    GMANRayPrimitive* second = swapOrder ? static_cast<GMANRayPrimitive*>(leftPolygon) : rightPolygon;
 
     addSpheresInPlane(worldManager, {-9.0, -6.0});
     worldManager.add(first);
@@ -655,7 +655,7 @@ void testTieUnderBestHitLimit() {
           "push-time tie: both polygons hit at exactly tmin");
 
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     std::size_t primitiveTests = 0;
     bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests);
     std::string const order = swapOrder ? "right polygon inserted first" : "left polygon inserted first";
@@ -674,7 +674,7 @@ std::vector<GMANPoint> unitSquareAt(RtFloat centreX, RtFloat centreY) {
 std::size_t primitiveTestsAlongZ(GMANRayBVH const& bvh, RtFloat x, RtFloat y) {
   GMANRay const ray(GMANPoint(x, y, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit hit;
-  GMANRayInterface const* prim = nullptr;
+  GMANRayPrimitive const* prim = nullptr;
   std::size_t primitiveTests = 0;
   check(bvh.nearestHit(ray, hit, prim, &primitiveTests), "tie rule: the ray hits a quad");
   return primitiveTests;
@@ -705,7 +705,7 @@ void testTieAcrossAxesTakesLowestAxis() {
         "tie across axes: the x sweep, the lower axis, isolates the quad at x = -2 in a leaf of one");
 }
 
-void addWall(GMANLinearWorldManager& worldManager, std::vector<GMANRayInterface*>& prims, int axis, RtFloat side) {
+void addWall(GMANLinearWorldManager& worldManager, std::vector<GMANRayPrimitive*>& prims, int axis, RtFloat side) {
   RtFloat const h = kRoomHalfSize;
   auto corner = [&](RtFloat u, RtFloat v) {
     RtFloat c[3];
@@ -722,7 +722,7 @@ void addWall(GMANLinearWorldManager& worldManager, std::vector<GMANRayInterface*
   prims.push_back(wall);
 }
 
-void addCornerCluster(GMANLinearWorldManager& worldManager, std::vector<GMANRayInterface*>& prims) {
+void addCornerCluster(GMANLinearWorldManager& worldManager, std::vector<GMANRayPrimitive*>& prims) {
   constexpr int kSide = 7;
   constexpr RtFloat kPitch = 1.5f;
   constexpr RtFloat kHalf = 0.4f;
@@ -754,7 +754,7 @@ void addCornerCluster(GMANLinearWorldManager& worldManager, std::vector<GMANRayI
 
 void testSurfaceAreaFewerBoxTests() {
   GMANLinearWorldManager worldManager;
-  std::vector<GMANRayInterface*> prims;
+  std::vector<GMANRayPrimitive*> prims;
   for (int axis = 0; axis < 3; ++axis) {
     addWall(worldManager, prims, axis, -1.0f);
     addWall(worldManager, prims, axis, 1.0f);
@@ -776,11 +776,11 @@ void testSurfaceAreaFewerBoxTests() {
         GMANRay const ray(origin, GMANVector(target.getX() - origin.getX(), target.getY() - origin.getY(),
                                              target.getZ() - origin.getZ()));
         GMANHit hit;
-        GMANRayInterface const* prim = nullptr;
+        GMANRayPrimitive const* prim = nullptr;
         std::size_t primitiveTests = 0;
         bool const found = bvh.nearestHit(ray, hit, prim, &primitiveTests, &boxTests);
         GMANHit linearHit;
-        GMANRayInterface const* linearPrim = nullptr;
+        GMANRayPrimitive const* linearPrim = nullptr;
         bool const foundLinear = linearScan(prims, ray, linearHit, linearPrim);
         clusterHits += found && std::find(prims.begin() + kWallCount, prims.end(), prim) != prims.end();
         check(hitsMatch(found, hit, prim, foundLinear, linearHit, linearPrim),
@@ -795,7 +795,7 @@ void testSurfaceAreaFewerBoxTests() {
 void testDepthFitsTheStack() {
   constexpr int kPlateCount = 120;
   GMANLinearWorldManager worldManager;
-  std::vector<GMANRayInterface*> prims;
+  std::vector<GMANRayPrimitive*> prims;
   for (int j = 0; j < kPlateCount; ++j) {
     RtFloat const x = (j % 2 == 0 ? 1.0f : -1.0f) * std::pow(0.9f, (RtFloat)j);
     RtFloat const half = 100.0f * std::pow(0.999f, (RtFloat)j);
@@ -830,7 +830,7 @@ void testCheck2() {
   int const insertionOrder[kCount] = {7, 2, 13, 0, 9, 4, 11, 15, 1, 8, 5, 14, 3, 10, 6, 12};
 
   GMANLinearWorldManager worldManager;
-  GMANRayInterface* bySpatialIndex[kCount];
+  GMANRayPrimitive* bySpatialIndex[kCount];
   for (int slot = 0; slot < kCount; ++slot) {
     int const spatialIndex = insertionOrder[slot];
     RtFloat const x = (RtFloat)spatialIndex * kSpacing;
@@ -848,7 +848,7 @@ void testCheck2() {
     GMANRay const ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
     std::size_t tests = 0;
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     bool const found = bvh.nearestHit(ray, hit, prim, &tests);
     check(found && prim == bySpatialIndex[0], "check 2: the along-row ray hits the near-end primitive");
     std::printf("check 2: along-row ray primitiveTests=%zu (leaf size 4)\n", tests);
@@ -863,7 +863,7 @@ void testCheck2() {
     GMANRay const ray(GMANPoint(originX, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0), RI_EPSILON, distanceToFirstBox - 0.5f);
     std::size_t tests = 0;
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     bool const found = bvh.nearestHit(ray, hit, prim, &tests);
     check(!found, "check 2: the short-tmax ray misses everything");
     std::printf("check 2: short-tmax ray primitiveTests=%zu (expect 0)\n", tests);
@@ -877,7 +877,7 @@ void testCheck2() {
     GMANRay const ray(GMANPoint(midX, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
     std::size_t tests = 0;
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     bool const found = bvh.nearestHit(ray, hit, prim, &tests);
     check(found && prim == bySpatialIndex[8], "check 2: the perpendicular ray hits the middle primitive");
     std::printf("check 2: perpendicular ray primitiveTests=%zu (leaf size 4)\n", tests);
@@ -922,7 +922,7 @@ void testSignedZeroFacePlane() {
     GMANRay const ray(GMANPoint(c.originX, 0.0, -5.0), GMANVector(c.dirX, 0.0, 1.0));
     std::size_t tests = 0;
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     bvh.nearestHit(ray, hit, prim, &tests);
     check(tests >= 1, std::string("signed zero: ") + c.label + " still tests the leaf's own primitive");
   }
@@ -948,7 +948,7 @@ void testMissLeavesHitUntouched() {
 
   GMANHit hit;
   hit.t = kSentinelT;
-  GMANRayInterface const* prim = &sentinelPrimitive;
+  GMANRayPrimitive const* prim = &sentinelPrimitive;
   bool const found = bvh.nearestHit(missRay, hit, prim);
   check(!found, "miss: nearestHit returns false when no primitive is hit");
   check(hit.t == kSentinelT, "miss: nearestHit leaves the caller's own hit untouched");
@@ -957,7 +957,7 @@ void testMissLeavesHitUntouched() {
   GMANRayBVH emptyBvh;
   GMANHit emptyHit;
   emptyHit.t = kSentinelT;
-  GMANRayInterface const* emptyPrim = &sentinelPrimitive;
+  GMANRayPrimitive const* emptyPrim = &sentinelPrimitive;
   bool const emptyFound = emptyBvh.nearestHit(missRay, emptyHit, emptyPrim);
   check(!emptyFound, "empty tree: nearestHit returns false");
   check(emptyHit.t == kSentinelT, "empty tree: nearestHit leaves the caller's own hit untouched");
@@ -970,7 +970,7 @@ void testCoincidentCentroids() {
   constexpr int kCount = 9;
 
   GMANLinearWorldManager worldManager;
-  std::vector<GMANRayInterface*> prims;
+  std::vector<GMANRayPrimitive*> prims;
   for (int i = 1; i <= kCount; ++i) {
     RtFloat const radius = (RtFloat)i;
     auto* sphere = new GMANRaySphere(radius, -radius, radius, 360.0, GMANParameterList(), translated(0.0, 0.0, 20.0));
@@ -994,8 +994,8 @@ void testCoincidentCentroids() {
 void testBuildIsDeterministic() {
   GMANLinearWorldManager firstWorld;
   GMANLinearWorldManager secondWorld;
-  std::vector<GMANRayInterface*> firstPrims;
-  std::vector<GMANRayInterface*> secondPrims;
+  std::vector<GMANRayPrimitive*> firstPrims;
+  std::vector<GMANRayPrimitive*> secondPrims;
   buildCheck1Fixture(false, firstWorld, firstPrims, false);
   buildCheck1Fixture(false, secondWorld, secondPrims, false);
 
@@ -1015,7 +1015,7 @@ void testBuildIsDeterministic() {
     std::size_t firstCounts[2] = {0, 0};
     std::size_t secondCounts[2] = {0, 0};
     GMANHit hit;
-    GMANRayInterface const* prim = nullptr;
+    GMANRayPrimitive const* prim = nullptr;
     first.nearestHit(ray, hit, prim, &firstCounts[0], &firstCounts[1]);
     second.nearestHit(ray, hit, prim, &secondCounts[0], &secondCounts[1]);
     same = same && firstCounts[0] == secondCounts[0] && firstCounts[1] == secondCounts[1];

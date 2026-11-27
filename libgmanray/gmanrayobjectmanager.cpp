@@ -52,11 +52,11 @@
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
-#include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanshading.h"
@@ -363,7 +363,7 @@ GMANRayObjectManager::GMANRayObjectManager() : GMANObjectManager() {};
 // default destructor
 GMANRayObjectManager::~GMANRayObjectManager() {};
 
-GMANPrimitive* GMANRayObjectManager::create(RtVoid) { return new GMANRayInterface(); }
+GMANPrimitive* GMANRayObjectManager::create(RtVoid) { return new GMANRayPrimitive(); }
 
 // One call for every polygon request, a one-face Polygon included: one
 // GMANRayPolygonMesh when a face survives, the empty stub when none does,

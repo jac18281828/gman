@@ -181,8 +181,8 @@ void testFaceNotMesh() {
   std::vector<std::vector<RtInt>> const faces = cubeFaces();
 
   GMANPrimitive* meshPrim = runGetRSPointsPolygonDirect(points, faces);
-  GMANRayInterface* mesh = dynamic_cast<GMANRayInterface*>(meshPrim);
-  check(mesh != nullptr, "face k: getRSPolygonMesh returns a GMANRayInterface");
+  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim);
+  check(mesh != nullptr, "face k: getRSPolygonMesh returns a GMANRayPrimitive");
 
   GMANLinearWorldManager worldManager;
   worldManager.add(meshPrim);
@@ -195,7 +195,7 @@ void testFaceNotMesh() {
   // as the hit normal is distinguishable here.
   GMANRay const ray = axisRay(2, 1.0f, 0.0f, 0.0f); // straight at the top face's own centre
   GMANHit hit;
-  GMANRayInterface const* hitPrimitive = nullptr;
+  GMANRayPrimitive const* hitPrimitive = nullptr;
   bool const found = bvh.nearestHit(ray, hit, hitPrimitive);
   check(found, "face k: the BVH reports a hit");
   if (!found) {
@@ -231,8 +231,8 @@ void testFanAgreesWithMeshAndAnalytic() {
   std::vector<FaceCase> const cases = faceCases();
 
   GMANPrimitive* meshPrim = runGetRSPointsPolygonDirect(points, faces);
-  GMANRayInterface* mesh = dynamic_cast<GMANRayInterface*>(meshPrim);
-  check(mesh != nullptr, "fan: getRSPolygonMesh returns a GMANRayInterface");
+  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim);
+  check(mesh != nullptr, "fan: getRSPolygonMesh returns a GMANRayPrimitive");
 
   GMANLinearWorldManager worldManager;
   GMANPrimitive* bvhMeshPrim = runGetRSPointsPolygonDirect(points, faces);
@@ -252,7 +252,7 @@ void testFanAgreesWithMeshAndAnalytic() {
         GMANPoint const expectedPoint = axisHitPoint(c.axis, c.sign, u, v);
 
         GMANHit bvhHit;
-        GMANRayInterface const* bvhPrim = nullptr;
+        GMANRayPrimitive const* bvhPrim = nullptr;
         bool const bvhFound = bvh.nearestHit(ray, bvhHit, bvhPrim);
 
         GMANHit meshHit;

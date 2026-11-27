@@ -35,8 +35,8 @@
 #include "gmanray.h"
 #include "gmanraybbox.h"
 #include "gmanraybvh.h"
-#include "gmanrayinterface.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitive.h"
 #include "gmanvector.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
@@ -206,7 +206,7 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
   // tie-break in testLeaf relies on. A lambda local to build() rather than
   // a free function: Entry is private, and a member function's own scope is
   // what gives this the access it needs.
-  auto addEntry = [this, &index, &nanBoxCount](GMANRayInterface const* primitive) {
+  auto addEntry = [this, &index, &nanBoxCount](GMANRayPrimitive const* primitive) {
     Entry entry;
     entry.primitive = primitive;
     entry.bbox = primitive->getBBox();
@@ -231,7 +231,7 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
       continue;
     }
 
-    GMANRayInterface const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
+    GMANRayPrimitive const* rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
     if (!rayPrimitive) {
       continue;
     }
@@ -423,12 +423,12 @@ void GMANRayBVH::pushChildren(Node const& node, PreparedRay const& ray, Search c
   }
 }
 
-bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
+bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayPrimitive const*& hitPrimitive,
                             std::size_t* primitiveTests) const {
   return nearestHit(ray, hit, hitPrimitive, primitiveTests, nullptr);
 }
 
-bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
+bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayPrimitive const*& hitPrimitive,
                             std::size_t* primitiveTests, std::size_t* boxTests) const {
   if (rootIndex < 0 || !traceable(ray)) {
     return false;

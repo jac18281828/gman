@@ -32,10 +32,10 @@
 #include "gmanoptions.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
-#include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 
 namespace {

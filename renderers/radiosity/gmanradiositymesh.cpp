@@ -42,10 +42,10 @@
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
-#include "gmanrayinterface.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanvector.h"
@@ -608,7 +608,7 @@ double crossMagnitude(std::array<double, 3> const& a, std::array<double, 3> cons
 // a cell within it.
 struct GMANRadiosityMesh::PrimitiveMesh {
   GMANPrimitive const* primitive = nullptr;
-  GMANRayInterface const* rayPrimitive = nullptr;
+  GMANRayPrimitive const* rayPrimitive = nullptr;
   bool isPolygon = false;
 
   std::size_t nu = 0;
@@ -732,7 +732,7 @@ void GMANRadiosityMesh::diceParametric(GMANPrimitive* primitive, GMANParametric&
 
   PrimitiveMesh mesh;
   mesh.primitive = primitive;
-  mesh.rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
+  mesh.rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
   mesh.isPolygon = false;
   mesh.nu = nu;
   mesh.nv = nv;
@@ -854,7 +854,7 @@ void GMANRadiosityMesh::build(GMANWorldManager& worldManager, RtFloat maxEdgeLen
   cappedCount = 0;
 
   for (GMANPrimitive* primitive = worldManager.getFirst(); primitive; primitive = worldManager.getNext()) {
-    if (!dynamic_cast<GMANRayInterface*>(primitive)) {
+    if (!dynamic_cast<GMANRayPrimitive*>(primitive)) {
       ++skippedCount;
       continue;
     }
@@ -915,7 +915,7 @@ bool GMANRadiosityMesh::locate(GMANHit const& hit, GMANRadiosityLocation& locati
   return true;
 }
 
-GMANRayInterface const* GMANRadiosityMesh::getElementPrimitive(std::size_t element) const {
+GMANRayPrimitive const* GMANRadiosityMesh::getElementPrimitive(std::size_t element) const {
   return primitiveMeshes[elementCells[element].primitiveMesh].rayPrimitive;
 }
 

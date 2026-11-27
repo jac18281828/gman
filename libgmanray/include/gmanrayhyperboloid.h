@@ -30,11 +30,11 @@
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMANRAY_EXPORT GMANRayHyperboloid : public GMANRayInterface, public GMANHyperboloid {
+class GMANRAY_EXPORT GMANRayHyperboloid : public GMANRayPrimitive, public GMANHyperboloid {
 public:
   GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat thetamax, GMANParameterList pl)
       : GMANHyperboloid(point1, point2, thetamax, pl) {}

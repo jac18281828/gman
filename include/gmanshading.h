@@ -117,7 +117,7 @@ struct GMAN_EXPORT SurfacePoint {
 };
 
 // The SurfacePoint a ray hit implies: P and N/Ng already camera space
-// (GMANRayInterface::intersect's own contract), I the ray's own direction and E its own origin,
+// (GMANRayPrimitive::intersect's own contract), I the ray's own direction and E its own origin,
 // rather than both assumed at the camera-space origin -- an orthographic ray, or a secondary ray,
 // does not look from there. dPdu and dPdv are the hit's own. s and t default to u and v, the
 // RISpec's own default texture-coordinate mapping. Precondition: a hit, hit.primitive non-null. A

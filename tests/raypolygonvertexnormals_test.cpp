@@ -42,9 +42,9 @@
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanraypolygon.h"
+#include "gmanrayprimitive.h"
 #include "gmanshading.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
@@ -215,7 +215,7 @@ struct NormalInput {
 
 struct Built {
   std::unique_ptr<GMANPrimitive> owner;
-  GMANRayInterface* mesh = nullptr;
+  GMANRayPrimitive* mesh = nullptr;
 };
 
 Built buildMesh(Geometry const& geometry, std::optional<NormalInput> const& normals, GMANTransform& transform) {
@@ -236,8 +236,8 @@ Built buildMesh(Geometry const& geometry, std::optional<NormalInput> const& norm
   GMANAttributes attr;
   GMANRayObjectManager manager;
   built.owner.reset(manager.getRSPolygonMesh(*mesh, &options, &attr, &transform));
-  built.mesh = dynamic_cast<GMANRayInterface*>(built.owner.get());
-  check(built.mesh != nullptr, "getRSPolygonMesh returns a GMANRayInterface");
+  built.mesh = dynamic_cast<GMANRayPrimitive*>(built.owner.get());
+  check(built.mesh != nullptr, "getRSPolygonMesh returns a GMANRayPrimitive");
   return built;
 }
 

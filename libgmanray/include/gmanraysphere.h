@@ -31,11 +31,11 @@
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMANRAY_EXPORT GMANRaySphere : public GMANRayInterface, public GMANSphere {
+class GMANRAY_EXPORT GMANRaySphere : public GMANRayPrimitive, public GMANSphere {
 public:
   GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl)
       : GMANSphere(radius, zmin, zmax, tmax, pl) {}

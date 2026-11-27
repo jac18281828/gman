@@ -30,11 +30,11 @@
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMANRAY_EXPORT GMANRayCone : public GMANRayInterface, public GMANCone {
+class GMANRAY_EXPORT GMANRayCone : public GMANRayPrimitive, public GMANCone {
 public:
   GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl)
       : GMANCone(height, radius, thetamax, pl) {}

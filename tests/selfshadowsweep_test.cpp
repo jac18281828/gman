@@ -21,7 +21,7 @@
 /*
  * Every ray primitive, at every scale and placement this tree cares
  * about, never shadows itself. Each cell places one primitive alone in
- * its own BVH, samples it with real GMANRayInterface::intersect hits
+ * its own BVH, samples it with real GMANRayPrimitive::intersect hits
  * (never a hand-placed point), and calls GMANRayOccluder::transmission
  * toward a light on its own outward side. A sample where a shadow ray
  * re-cast from well off the surface still hits the same primitive is
@@ -104,17 +104,17 @@ GMANPoint placementCenter(GMANMatrix4 const& placement) {
 // where the sweep's ray origins circle.
 struct Cell {
   std::string name;
-  GMANRayInterface* primitive; // owned by worldManager below
+  GMANRayPrimitive* primitive; // owned by worldManager below
   GMANLinearWorldManager worldManager;
   GMANRayBVH bvh;
   GMANVector towardLight; // camera space, unit length
   GMANPoint center;
   RtFloat scale;
 
-  Cell(std::string cellName, GMANRayInterface* prim, GMANVector const& objectTowardLight, GMANMatrix4 const& placement,
+  Cell(std::string cellName, GMANRayPrimitive* prim, GMANVector const& objectTowardLight, GMANMatrix4 const& placement,
        RtFloat cellScale)
       : name(std::move(cellName)), primitive(prim), scale(cellScale) {
-    // A bare GMANRayInterface's appearance defaults to black (fully
+    // A bare GMANRayPrimitive's appearance defaults to black (fully
     // transparent, rayoccluder_test.cpp's own sphereAt comment): opaque
     // white here so a real self-hit actually attenuates transmission
     // rather than passing through unnoticed.
@@ -192,7 +192,7 @@ GMANVector const kGenericTowardLight(1.0f, 0.6f, 0.3f);
 
 struct PrimitiveKind {
   char const* name;
-  GMANRayInterface* (*build)(RtFloat, GMANMatrix4 const&);
+  GMANRayPrimitive* (*build)(RtFloat, GMANMatrix4 const&);
   GMANVector towardLight;
 };
 
@@ -200,20 +200,20 @@ struct PrimitiveKind {
 // convention); lighting it from -z is the only placement that ever lights
 // its face. Every other kind uses the generic off-axis direction.
 PrimitiveKind const kPrimitiveKinds[] = {
-    {"sphere", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayInterface* { return buildSphere(s, p); },
+    {"sphere", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildSphere(s, p); },
      kGenericTowardLight},
-    {"cylinder", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayInterface* { return buildCylinder(s, p); },
+    {"cylinder", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildCylinder(s, p); },
      kGenericTowardLight},
-    {"cone", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayInterface* { return buildCone(s, p); }, kGenericTowardLight},
-    {"paraboloid", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayInterface* { return buildParaboloid(s, p); },
+    {"cone", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildCone(s, p); }, kGenericTowardLight},
+    {"paraboloid", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildParaboloid(s, p); },
      kGenericTowardLight},
-    {"hyperboloid", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayInterface* { return buildHyperboloid(s, p); },
+    {"hyperboloid", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildHyperboloid(s, p); },
      kGenericTowardLight},
-    {"disk", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayInterface* { return buildDisk(s, p); },
+    {"disk", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildDisk(s, p); },
      GMANVector(0.0f, 0.0f, -1.0f)},
-    {"torus", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayInterface* { return buildTorus(s, p); },
+    {"torus", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildTorus(s, p); },
      kGenericTowardLight},
-    {"polygon", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayInterface* { return buildPolygon(s, p); },
+    {"polygon", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildPolygon(s, p); },
      GMANVector(0.0f, 0.0f, 1.0f)},
 };
 

@@ -53,9 +53,9 @@
 #include "gmanraybbox.h"
 #include "gmanraybvh.h"
 #include "gmanraycylinder.h"
-#include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
+#include "gmanrayprimitive.h"
 #include "gmanraysphere.h"
 #include "gmanshaderenvironment.h"
 #include "gmanshading.h"
@@ -328,7 +328,7 @@ struct TierCounts {
 };
 
 gman::SurfacePoint referenceElementSurfacePoint(GMANRadiosityMesh const& mesh, std::size_t element, TierCounts& tiers) {
-  GMANRayInterface const* primitive = mesh.getElementPrimitive(element);
+  GMANRayPrimitive const* primitive = mesh.getElementPrimitive(element);
   gman::RadiosityReceiver const receiver = gman::radiosityReceiver(mesh, element);
 
   GMANRay const receiverRay(gman::offsetOrigin(receiver.P, receiver.N, receiver.N, receiver.surfaceMagnitude),
@@ -451,7 +451,7 @@ std::size_t compareOverRays(std::vector<GMANRay> const& rays, MainFixture const&
   std::size_t compared = 0;
   for (GMANRay const& ray : rays) {
     GMANHit hit;
-    GMANRayInterface const* hitPrimitive = nullptr;
+    GMANRayPrimitive const* hitPrimitive = nullptr;
     if (!fixture.bvh.nearestHit(ray, hit, hitPrimitive)) {
       continue;
     }
@@ -587,7 +587,7 @@ void testDefaultSizeMatchesReference(MainFixture& fixture) {
     bool any = false;
     GMANPoint boxMin, boxMax;
     for (GMANPrimitive* p = fixture.world.getFirst(); p != nullptr;) {
-      auto const* rp = dynamic_cast<GMANRayInterface const*>(p);
+      auto const* rp = dynamic_cast<GMANRayPrimitive const*>(p);
       if (rp != nullptr) {
         GMANPoint const lo = rp->getBBox().getMin();
         GMANPoint const hi = rp->getBBox().getMax();
@@ -658,9 +658,9 @@ void testPrepareChangesNothing(MainFixture& fixture) {
     before.push_back(p);
   }
 
-  auto const* floorRay = dynamic_cast<GMANRayInterface const*>(fixture.floor);
-  auto const* wallRay = dynamic_cast<GMANRayInterface const*>(fixture.wall);
-  auto const* sphereRay = dynamic_cast<GMANRayInterface const*>(fixture.sphere);
+  auto const* floorRay = dynamic_cast<GMANRayPrimitive const*>(fixture.floor);
+  auto const* wallRay = dynamic_cast<GMANRayPrimitive const*>(fixture.wall);
+  auto const* sphereRay = dynamic_cast<GMANRayPrimitive const*>(fixture.sphere);
   gman::Appearance const floorBefore = floorRay->getAppearance();
   gman::Appearance const wallBefore = wallRay->getAppearance();
   gman::Appearance const sphereBefore = sphereRay->getAppearance();
@@ -700,7 +700,7 @@ void testOutOfRangeAlbedoAnswersBlack(FloorAlbedoShader const& floorShader, Cons
   long nonBlack = 0;
   for (GMANRay const& ray : rays) {
     GMANHit hit;
-    GMANRayInterface const* hitPrimitive = nullptr;
+    GMANRayPrimitive const* hitPrimitive = nullptr;
     if (!fixture->bvh.nearestHit(ray, hit, hitPrimitive)) {
       continue;
     }
@@ -746,7 +746,7 @@ void testLoneSphereAnswersExactlyBlack() {
       GMANPoint const origin(-dir.getX() * 5.0f, -dir.getY() * 5.0f, -dir.getZ() * 5.0f);
       GMANRay const ray(origin, dir);
       GMANHit hit;
-      GMANRayInterface const* hitPrimitive = nullptr;
+      GMANRayPrimitive const* hitPrimitive = nullptr;
       if (!bvh.nearestHit(ray, hit, hitPrimitive)) {
         continue;
       }
@@ -820,7 +820,7 @@ void testSilhouetteSideFollowsHitNormal() {
                                  centre.getZ() + toOrigin.getZ());
           GMANRay const ray(origin, dir);
           GMANHit hit;
-          GMANRayInterface const* hitPrimitive = nullptr;
+          GMANRayPrimitive const* hitPrimitive = nullptr;
           if (!fixture.bvh.nearestHit(ray, hit, hitPrimitive) || hit.primitive != fixture.sphere) {
             continue;
           }

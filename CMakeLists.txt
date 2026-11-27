@@ -315,12 +315,12 @@ add_library(gman_ray SHARED
   libgmanray/gmanraycylinder.cpp
   libgmanray/gmanraydisk.cpp
   libgmanray/gmanrayhyperboloid.cpp
-  libgmanray/gmanrayinterface.cpp
   libgmanray/gmanrayobjectmanager.cpp
   libgmanray/gmanrayoccluder.cpp
   libgmanray/gmanrayparaboloid.cpp
   libgmanray/gmanraypolygon.cpp
   libgmanray/gmanraypolygonmesh.cpp
+  libgmanray/gmanrayprimitive.cpp
   libgmanray/gmanrayquartic.cpp
   libgmanray/gmanraysphere.cpp
   libgmanray/gmanraytorus.cpp)

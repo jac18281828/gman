@@ -32,12 +32,12 @@
 #include "gmanbbox.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 
 /*
- * A bounding volume hierarchy over every GMANRayInterface worldManager
+ * A bounding volume hierarchy over every GMANRayPrimitive worldManager
  * holds, so nearestHit finds the nearest ray-primitive hit by pruning
  * subtrees a ray's own interval clears, rather than testing every
  * primitive in turn. build() discards any tree a prior call built and
@@ -50,7 +50,7 @@
  * instead, and no tree grows deeper than the traversal stack holds.
  * nearestHit then traverses the tree it built, touching only that tree and
  * a local stack -- const, re-entrant, no shared mutable state of its own,
- * the same contract GMANRayInterface::intersect and
+ * the same contract GMANRayPrimitive::intersect and
  * GMANRayOccluder::transmission keep, which is what lets a caller invoke
  * any of the three from concurrent gman::parallelFor workers.
  * GMANRAY_EXPORT, along with GMANRayOccluder: the path tracer's own API.
@@ -58,13 +58,13 @@
 class GMANRAY_EXPORT GMANRayBVH {
 public:
   // Discards any tree a prior call built, then walks worldManager
-  // (getFirst/getNext) once, keeping each GMANRayInterface primitive by
+  // (getFirst/getNext) once, keeping each GMANRayPrimitive primitive by
   // its own insertion order for nearestHit's tie-break -- except a
   // polygon mesh primitive, which contributes each of its own faces as
   // its own entry instead of the mesh itself, so a mesh culls per face.
   // The dynamic_cast is defensive -- GMANRayObjectManager's factories
   // guarantee every primitive this renderer's world manager holds is
-  // already a GMANRayInterface, the polygon mesh type included. The
+  // already a GMANRayPrimitive, the polygon mesh type included. The
   // build is serial and draws no random number: the same primitives in
   // the same order give the same tree.
   void build(GMANWorldManager& worldManager);
@@ -79,12 +79,12 @@ public:
   // incremented once per primitive-level intersect() call this traversal
   // makes (hit or miss) -- an out-parameter rather than a member, so two
   // calls stay re-entrant.
-  bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive,
+  bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayPrimitive const*& hitPrimitive,
                   std::size_t* primitiveTests = nullptr) const;
 
   // The same search, also incrementing boxTests, when non-null, once per
   // node-box test the traversal makes, the root's included.
-  bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayInterface const*& hitPrimitive, std::size_t* primitiveTests,
+  bool nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayPrimitive const*& hitPrimitive, std::size_t* primitiveTests,
                   std::size_t* boxTests) const;
 
   // The depth of the deepest leaf, the root at 0; an empty tree reports 0.
@@ -95,7 +95,7 @@ private:
   // One primitive, its own camera-space bbox and centroid cached at
   // build() time, and the order it was added in.
   struct Entry {
-    GMANRayInterface const* primitive = nullptr;
+    GMANRayPrimitive const* primitive = nullptr;
     GMANBBox bbox;
     GMANPoint centroid;
     std::size_t insertionIndex = 0;
@@ -150,7 +150,7 @@ private:
   struct Search {
     bool found = false;
     GMANHit hit;
-    GMANRayInterface const* hitPrimitive = nullptr;
+    GMANRayPrimitive const* hitPrimitive = nullptr;
     std::size_t bestInsertionIndex = 0;
     std::size_t* primitiveTests = nullptr;
     std::size_t* boxTests = nullptr;

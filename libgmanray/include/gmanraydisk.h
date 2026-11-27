@@ -30,11 +30,11 @@
 #include "gmanparameterlist.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 #include "ri.h"
 
-class GMANRAY_EXPORT GMANRayDisk : public GMANRayInterface, public GMANDisk {
+class GMANRAY_EXPORT GMANRayDisk : public GMANRayPrimitive, public GMANDisk {
 public:
   GMANRayDisk(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl)
       : GMANDisk(height, radius, thetamax, pl) {}

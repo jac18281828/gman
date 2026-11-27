@@ -342,12 +342,12 @@ void testMeshFaces() {
     GMANPoint const origin = element.centre + element.normal * 0.5f;
     GMANRay const ray(origin, -element.normal);
     GMANHit hit;
-    GMANRayInterface const* hitPrimitive = nullptr;
+    GMANRayPrimitive const* hitPrimitive = nullptr;
     if (!bvh.nearestHit(ray, hit, hitPrimitive)) {
       everyFaceHit = false;
       continue;
     }
-    GMANRayInterface const* primitive = mesh.getElementPrimitive(e);
+    GMANRayPrimitive const* primitive = mesh.getElementPrimitive(e);
     matchesBvh = matchesBvh && primitive == hitPrimitive;
     matchesBvh = matchesBvh && (primitive == &polygonMesh->getFace(0) || primitive == &polygonMesh->getFace(1));
   }
@@ -382,7 +382,7 @@ void testSpherePrimitive() {
   std::size_t onSphere = 0;
   bool consistent = true;
   for (std::size_t e = 0; e < mesh.getElementCount(); ++e) {
-    GMANRayInterface const* primitive = mesh.getElementPrimitive(e);
+    GMANRayPrimitive const* primitive = mesh.getElementPrimitive(e);
     bool const nearSphere = std::fabs(pointDistance(mesh.getElement(e).centre, GMANPoint(0, 0, 0)) - 1.0) < 0.1;
     if (primitive == sphere) {
       ++onSphere;

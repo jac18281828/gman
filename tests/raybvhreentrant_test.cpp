@@ -68,7 +68,7 @@ GMANRaySphere* sphereAt(RtFloat x, RtFloat y, RtFloat z) {
 // special members are accounted for): every other primitive in these
 // fixtures is heap-allocated the same way, held by a
 // GMANLinearWorldManager that deletes what it holds.
-class NestingProbe : public GMANRayInterface {
+class NestingProbe : public GMANRayPrimitive {
 public:
   NestingProbe(GMANRaySphere* delegatePrimitive, GMANRayBVH const& bvhToNest, GMANRay const& fixedInnerRay)
       : delegate(delegatePrimitive), bvh(bvhToNest), innerRay(fixedInnerRay) {
@@ -92,7 +92,7 @@ public:
   mutable int callCount = 0;
   mutable bool nestedFound = false;
   mutable GMANHit nestedHit;
-  mutable GMANRayInterface const* nestedPrimitive = nullptr;
+  mutable GMANRayPrimitive const* nestedPrimitive = nullptr;
 
 private:
   GMANRaySphere* delegate;
@@ -100,8 +100,8 @@ private:
   GMANRay innerRay;
 };
 
-bool nearestHitsAgree(bool foundA, GMANRayInterface const* primA, RtFloat tA, bool foundB,
-                      GMANRayInterface const* primB, RtFloat tB) {
+bool nearestHitsAgree(bool foundA, GMANRayPrimitive const* primA, RtFloat tA, bool foundB,
+                      GMANRayPrimitive const* primB, RtFloat tB) {
   if (foundA != foundB) {
     return false;
   }
@@ -131,8 +131,8 @@ void testNearestHitReentrant() {
   // Far leaf: the outer ray's only real hit (trueTarget, on its exact
   // line), the inner ray's own real target (innerTarget, off the outer
   // ray's line but on the inner ray's), and two more off-line fillers.
-  GMANRayInterface* trueTarget = sphereAt(10.0, 0.0, 0.0);
-  GMANRayInterface* innerTarget = sphereAt(11.0, 0.6, 0.0);
+  GMANRayPrimitive* trueTarget = sphereAt(10.0, 0.0, 0.0);
+  GMANRayPrimitive* innerTarget = sphereAt(11.0, 0.6, 0.0);
   worldManager.add(trueTarget);
   worldManager.add(innerTarget);
   worldManager.add(sphereAt(12.0, -0.6, 0.0));
@@ -144,13 +144,13 @@ void testNearestHitReentrant() {
 
   // Standalone baselines, nesting off, before the nested traversal runs.
   GMANHit innerBaselineHit;
-  GMANRayInterface const* innerBaselinePrim = nullptr;
+  GMANRayPrimitive const* innerBaselinePrim = nullptr;
   bool const innerBaselineFound = bvh.nearestHit(innerRay, innerBaselineHit, innerBaselinePrim);
   check(innerBaselineFound && innerBaselinePrim == innerTarget,
         "check A: the inner ray's own standalone call hits its real target");
 
   GMANHit outerBaselineHit;
-  GMANRayInterface const* outerBaselinePrim = nullptr;
+  GMANRayPrimitive const* outerBaselinePrim = nullptr;
   bool const outerBaselineFound = bvh.nearestHit(outerRay, outerBaselineHit, outerBaselinePrim);
   check(outerBaselineFound && outerBaselinePrim == trueTarget,
         "check A: the outer ray's own standalone call hits the far leaf's real target");
@@ -158,7 +158,7 @@ void testNearestHitReentrant() {
   // The real run: the outer traversal, with the probe's nesting armed.
   realProbe->nestingEnabled = true;
   GMANHit outerHit;
-  GMANRayInterface const* outerPrim = nullptr;
+  GMANRayPrimitive const* outerPrim = nullptr;
   bool const outerFound = bvh.nearestHit(outerRay, outerHit, outerPrim);
 
   check(realProbe->callCount >= 1, "check A: the probe was actually entered by the outer traversal");
@@ -174,7 +174,7 @@ void testNearestHitReentrant() {
 // The same fixture shape, with an occluder probe that casts a second
 // transmission() against the same occluder for a fixed, unrelated shadow
 // instead of a second nearestHit.
-class OccluderNestingProbe : public GMANRayInterface {
+class OccluderNestingProbe : public GMANRayPrimitive {
 public:
   OccluderNestingProbe(GMANRaySphere* delegatePrimitive, GMANRayOccluder const& occluderToNest,
                        GMANLight const& fixedInnerLight, GMANPoint const& fixedInnerP,
@@ -216,7 +216,7 @@ bool colorsAgree(GMANColor const& a, GMANColor const& b) {
   return a.getRed() == b.getRed() && a.getGreen() == b.getGreen() && a.getBlue() == b.getBlue();
 }
 
-void setOpaque(GMANRayInterface* primitive) {
+void setOpaque(GMANRayPrimitive* primitive) {
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   primitive->setAppearance(opaque);
@@ -237,9 +237,9 @@ void testOccluderReentrant() {
   setOpaque(probeDelegate);
   auto* probe = new OccluderNestingProbe(probeDelegate, occluder, innerLight, innerP, innerTowardLight, innerDistance);
 
-  GMANRayInterface* nearA = sphereAt(0.0, 0.6, 0.0);
-  GMANRayInterface* nearB = sphereAt(1.0, -0.6, 0.0);
-  GMANRayInterface* nearC = sphereAt(3.0, -0.6, 0.0);
+  GMANRayPrimitive* nearA = sphereAt(0.0, 0.6, 0.0);
+  GMANRayPrimitive* nearB = sphereAt(1.0, -0.6, 0.0);
+  GMANRayPrimitive* nearC = sphereAt(3.0, -0.6, 0.0);
   setOpaque(nearA);
   setOpaque(nearB);
   setOpaque(nearC);
@@ -248,10 +248,10 @@ void testOccluderReentrant() {
   worldManager.add(probe);
   worldManager.add(nearC);
 
-  GMANRayInterface* trueBlocker = sphereAt(10.0, 0.0, 0.0);
-  GMANRayInterface* innerBlocker = sphereAt(11.0, 0.6, 0.0);
-  GMANRayInterface* farB = sphereAt(12.0, -0.6, 0.0);
-  GMANRayInterface* farC = sphereAt(13.0, 0.6, 0.0);
+  GMANRayPrimitive* trueBlocker = sphereAt(10.0, 0.0, 0.0);
+  GMANRayPrimitive* innerBlocker = sphereAt(11.0, 0.6, 0.0);
+  GMANRayPrimitive* farB = sphereAt(12.0, -0.6, 0.0);
+  GMANRayPrimitive* farC = sphereAt(13.0, 0.6, 0.0);
   setOpaque(trueBlocker);
   setOpaque(innerBlocker);
   setOpaque(farB);

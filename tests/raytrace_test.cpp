@@ -88,7 +88,7 @@ bool colorExactly(GMANColor const& a, GMANColor const& b) {
 }
 
 // Opaque (Os = white), matching rayoccluder_test.cpp's own sphereAt: a
-// bare GMANRayInterface's appearance defaults to black/transparent.
+// bare GMANRayPrimitive's appearance defaults to black/transparent.
 GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
   GMANMatrix4 place;
   place.trans(cx, cy, cz);
@@ -370,7 +370,7 @@ void checkRealHitMatchesDirectShade() {
 
   GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
-  GMANRayInterface const* hitPrimitive = nullptr;
+  GMANRayPrimitive const* hitPrimitive = nullptr;
   bool const gotHit = fixture.bvh.nearestHit(ray, hit, hitPrimitive);
   check(gotHit, "check 3 setup: the hand-built ray hits the sphere");
   if (!gotHit) {
@@ -534,7 +534,7 @@ void checkNestedOccluderShadowsBlocker() {
 
   GMANRay const ray(p0, r0, RI_EPSILON, RI_INFINITY);
   GMANHit hit;
-  GMANRayInterface const* hitPrimitive = nullptr;
+  GMANRayPrimitive const* hitPrimitive = nullptr;
   bool const gotHit = fixture.bvh.nearestHit(ray, hit, hitPrimitive);
   check(gotHit, "check 6 setup: the hand-built ray hits the sphere, not the blocker");
   if (!gotHit) {

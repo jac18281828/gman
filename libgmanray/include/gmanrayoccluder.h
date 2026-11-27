@@ -32,7 +32,7 @@
 #include "gmanprimitive.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayinterface.h"
+#include "gmanrayprimitive.h"
 #include "gmanshading.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -107,7 +107,7 @@ GMANRAY_EXPORT BlockerTransmittance blockerTransmittance(GMANRay const& shadowRa
 // whatever the polygon's winding; and hit.t is at most the diagonal of
 // origin's bounding box, so only the ray leaving the solid near its origin
 // passes.
-GMANRAY_EXPORT bool passesTerminatorExit(GMANHit const& hit, GMANRayInterface const& hitPrimitive,
+GMANRAY_EXPORT bool passesTerminatorExit(GMANHit const& hit, GMANRayPrimitive const& hitPrimitive,
                                          GMANVector const& towardLight, GMANPrimitive const& origin);
 
 // A shadow walk's own transmittance, split into v, the full product of each
@@ -195,7 +195,7 @@ private:
   GMANColor walk(GMANPoint const& P, GMANVector const& towardLight, GMANVector const& Ng, RtFloat distance,
                  RtFloat surfaceMagnitude, GMANPrimitive const* terminatorOrigin) const;
 
-  GMANColor blockerFactor(GMANRay const& shadowRay, GMANHit const& hit, GMANRayInterface const& blocker) const;
+  GMANColor blockerFactor(GMANRay const& shadowRay, GMANHit const& hit, GMANRayPrimitive const& blocker) const;
 
   GMANRayBVH const& bvh;
   GMANMatrix4 cameraToWorld;

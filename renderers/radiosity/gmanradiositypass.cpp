@@ -39,8 +39,8 @@
 #include "gmanradiositysolver.h"
 #include "gmanray.h"
 #include "gmanraybbox.h"
-#include "gmanrayinterface.h"
 #include "gmanrayoccluder.h"
+#include "gmanrayprimitive.h"
 #include "gmanshading.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
@@ -78,7 +78,7 @@ RtFloat defaultElementSize(GMANWorldManager& world) {
   GMANPoint boxMin;
   GMANPoint boxMax;
   for (GMANPrimitive* primitive = world.getFirst(); primitive != nullptr; primitive = world.getNext()) {
-    auto const* rayPrimitive = dynamic_cast<GMANRayInterface const*>(primitive);
+    auto const* rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
     if (rayPrimitive == nullptr || !isFiniteBBox(rayPrimitive->getBBox())) {
       continue;
     }
@@ -118,7 +118,7 @@ RtFloat resolveElementSize(GMANWorldManager& world, GMANOptions const& options) 
 // against the element's primitive alone, through its own intersect, along
 // -N from just off the surface on N's side.
 gman::SurfacePoint elementSurfacePoint(GMANRadiosityMesh const& mesh, std::size_t element) {
-  GMANRayInterface const* primitive = mesh.getElementPrimitive(element);
+  GMANRayPrimitive const* primitive = mesh.getElementPrimitive(element);
   gman::RadiosityReceiver const receiver = gman::radiosityReceiver(mesh, element);
 
   GMANRay const receiverRay(gman::offsetOrigin(receiver.P, receiver.N, receiver.N, receiver.surfaceMagnitude),
