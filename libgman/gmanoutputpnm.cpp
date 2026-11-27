@@ -35,6 +35,23 @@
 
 namespace gman {
 
+namespace {
+
+// Writes `sample` at `dst` as two bytes, most significant first, when `wide`,
+// which is how P6 stores a sample whose maxval exceeds 255, or as one byte
+// otherwise. Returns the bytes written.
+std::size_t putSample(unsigned char* dst, std::uint16_t sample, bool wide) {
+  if (wide) {
+    dst[0] = static_cast<unsigned char>(sample >> 8);
+    dst[1] = static_cast<unsigned char>(sample);
+    return 2;
+  }
+  dst[0] = static_cast<unsigned char>(sample);
+  return 1;
+}
+
+} // namespace
+
 /*
  * RenderMan API gman::OutputPNM
  *
@@ -78,24 +95,16 @@ RtVoid OutputPNM::writeImage(GMANOutput::DisplayMode /*mode*/, std::vector<std::
   }
 
   const auto wide = maxval > 255;
-  const std::size_t bytesPerSample = wide ? 2 : 1;
 
   for (int row = 0; row < yres; row++) {
     for (int col = 0; col < xres; col++) {
       const std::size_t idx = 4 * ((std::size_t)row * (std::size_t)xres + (std::size_t)col);
 
       unsigned char rgb[6];
+      std::size_t pixelBytes = 0;
       for (std::size_t channel = 0; channel < 3; channel++) {
-        const auto sample = samples[idx + channel];
-        unsigned char* const at = rgb + channel * bytesPerSample;
-        if (wide) {
-          at[0] = static_cast<unsigned char>(sample >> 8);
-          at[1] = static_cast<unsigned char>(sample);
-        } else {
-          at[0] = static_cast<unsigned char>(sample);
-        }
+        pixelBytes += putSample(rgb + pixelBytes, samples[idx + channel], wide);
       }
-      const auto pixelBytes = 3 * bytesPerSample;
       if (std::fwrite(rgb, 1, pixelBytes, ppmFile) != pixelBytes) {
         std::fclose(ppmFile);
         throw(writeFailure());
