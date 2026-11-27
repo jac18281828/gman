@@ -2586,6 +2586,16 @@ set_tests_properties(renderprogressformat PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# RowProgress logs one line per whole percent, however many rows finish between two.
+# See tests/renderprogressrows_test.cpp.
+add_executable(gman_renderprogressrows renderprogressrows_test.cpp)
+target_link_libraries(gman_renderprogressrows PRIVATE gman gman_ray)
+
+add_test(NAME renderprogressrows COMMAND gman_renderprogressrows)
+set_tests_properties(renderprogressrows PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # Option "statistics" "integer progress" [1] makes the ray and path tracers log one
 # line per whole percent of rows, ending at 100%, and leaves the image unchanged.
 # See tests/renderprogress_test.cpp.

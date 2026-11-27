@@ -41,6 +41,7 @@
 
 namespace {
 
+constexpr int kRows = 48;
 const std::string kLastLine = "100% (48/48 rows)";
 const std::string kProgressMark = " rows), ";
 
@@ -67,13 +68,12 @@ std::vector<int> percentsIn(std::string const& log) {
   return percents;
 }
 
-bool strictlyRising(std::vector<int> const& values) {
-  for (std::size_t i = 1; i < values.size(); ++i) {
-    if (values[i] <= values[i - 1]) {
-      return false;
-    }
+std::vector<int> wholePercentsOfRows() {
+  std::vector<int> percents;
+  for (int row = 1; row <= kRows; ++row) {
+    percents.push_back(row * 100 / kRows);
   }
-  return true;
+  return percents;
 }
 
 std::string slurp(std::string const& path) {
@@ -99,10 +99,8 @@ void checkRenderer(std::string const& gman, std::string const& ribDir, std::stri
   check(without.exitStatus == 0, renderer + ": renders without the option");
 
   const std::vector<int> percents = percentsIn(withOption.output);
-  check(!percents.empty(), renderer + ": the option logs progress lines");
-  check(strictlyRising(percents), renderer + ": the percents rise strictly");
-  check(!percents.empty() && percents.back() == 100 && withOption.output.find(kLastLine) != std::string::npos,
-        renderer + ": the lines end at " + kLastLine);
+  check(percents == wholePercentsOfRows(), renderer + ": one line per row, at each row's whole percent");
+  check(withOption.output.find(kLastLine) != std::string::npos, renderer + ": the lines end at " + kLastLine);
   check(withOption.output.find(renderer + ": ") != std::string::npos, renderer + ": the lines name the renderer");
   check(percentsIn(without.output).empty(), renderer + ": no option, no progress line");
 
