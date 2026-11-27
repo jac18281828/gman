@@ -43,6 +43,29 @@ reason you can explain, never to turn a red test green.
 `commitlint.config.js` holds the rules and CI runs them, so let it tell you
 rather than reading a list here.
 
+## Changelog
+
+A release's `CHANGELOG.md` entry is its GitHub release notes, and it answers
+what a user asks before upgrading: what breaks, what is new and how risky the
+upgrade is.
+
+- The heading is `X.Y.Z (YYYY-MM-DD)` at the start of a line; `release.yml`
+  cuts the release notes at these headings, so no other line starts with a
+  version and a parenthesis.
+- The first line is the verdict, **Breaking.** or **Incremental.**, and one
+  sentence: what a user must change, or what the release brings when nothing
+  needs changing.
+- A change goes under **Breaking changes** when it makes a user rebuild,
+  relink, or edit a scene or script, or when it changes by design how an
+  existing scene renders something it already rendered. A release with any is
+  **Breaking.** A bug fix that moves pixels goes under **Fixed**.
+- **Breaking changes**, **New** and **Fixed** follow in that order; leave out
+  an empty one.
+- Each bullet states one change as it now stands, in the present tense, and
+  names the request, option, header, symbol or message the user meets.
+- Leave out how a change was found or built, tests, CI, refactors and
+  documentation, unless a user acts on them.
+
 ## Style
 
 The tree is clang-format clean under clang-format 23

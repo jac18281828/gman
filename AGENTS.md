@@ -162,3 +162,8 @@ If a gate stays red after a genuine fix attempt, stop and report the error.
 - Conventional Commits, signed, lower-case `type(scope): subject`, wrapped at
   100 columns: commitlint's limit, not code's 120.
 - All commits land on a branch; `main` only fast-forwards.
+
+## Changelog
+- A `CHANGELOG.md` entry follows `CONTRIBUTING.md`'s Changelog section: a
+  **Breaking.** or **Incremental.** verdict, then **Breaking changes**,
+  **New** and **Fixed**, one present-tense change a user meets per bullet.

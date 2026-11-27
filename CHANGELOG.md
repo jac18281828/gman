@@ -1,216 +1,371 @@
+# Changelog
+
+Each release opens with its cost to upgrade. **Breaking** means you rebuild, relink or edit a scene or script, or that existing scenes render differently by design; **Incremental** means the release drops in. Breaking changes, new features and fixes follow.
+
 1.4.0 (2026-11-26)
 
-* 1.4 breaks the binary interface, rebuild any plugin or dependency. `GMANOptions` gains `isColorQuantizeSet`, `gman::Lobe` gains `transmitWeight`, and `GMANRayOccluder`'s constructor takes a `TextureCache&`
+**Breaking.** Rebuild every plugin and program that links gman, switch to the renamed CMake targets and check scripts against the new command line; ray-traced scenes with area lights, glass or opacity-mapped cutouts render differently.
+
+**Breaking changes**
+
+* The binary interface changes: `GMANOptions` gains `isColorQuantizeSet`, `gman::Lobe` gains `transmitWeight` and `GMANRayOccluder`'s constructor takes a `TextureCache&`
 * The core library is `libgman`, CMake target `gman::gman`, where it was `libgman_core`; the executable's CMake target is `gman_cli`, and the program is still `gman`
-* CLI11 parses the command line, and every flag has a long name. Help prints on stdout and exits 0, a usage error prints CLI11's message on stderr with its exit code, a flag after a file applies, `--` ends the options, and a run needs a file
-* The ray tracer lights from area lights, `Option "raytracer" "integer arealightsamples"` draws per light (default 4), and area-lit scenes render slower
-* Area lights sample by the solid angle they subtend, so a surface near an emitter no longer collects white specks under either tracer
-* `AreaLightSource` on `Polygon`, `GeneralPolygon`, `PointsPolygons` and `PointsGeneralPolygons` emits under both tracers, one-sided along the winding's normal; patch emitters work but are slow
-* Ray-traced shadows pass through glass and opacity-mapped cutouts
-* A partly opaque surface seen through glass or in a mirror composites under the ray tracer, as it does in direct view
-* `glass` reads `eta`, `Kr` and `Kt`, defaulting to BMRT's 1.5, 1 and 1; a scene declares them inline (`"float eta"`), and `gman::BSDF` adds `addDielectric(reflectWeight, transmitWeight, eta)`
-* The ray tracer renders `Patch` and `PatchMesh`, and a texture on a periodic mesh no longer reverses across its seam
-* `Option "pathtracer" "string denoise" ["atrous"]` denoises a path-traced image with an edge-avoiding à-trous filter
-* A build with `GMAN_WITH_EXR` writes linear float OpenEXR. gman still treats sRGB textures and colours as linear, so EXR output looks washed out in a colour-managed viewer until colour management lands (#12)
-* A non-finite request value, such as a `Format` aspect, `FrameAspectRatio`, `PixelFilter` width or `Exposure`, is ignored; a NaN shader colour reads as 0, a NaN coverage as opaque, and `noise` and texture lookups answer NaN for a non-finite coordinate
-* An area emitter with a singular placement contributes nothing instead of reading an empty value
-* The C API owns its render contexts and frees one whose `RiBegin` fails
+* A usage error prints on stderr and exits with CLI11's status, such as 109 for an unknown flag, where 1.3 exited 1
+* A flag after a file applies, so `gman scene.rib -q` renders quietly; `--` ends the options
+* A run needs a file, so `gman -d` alone is a usage error
 * `GMANQuadraticRoots` is gone from `gmanmath.h`
-* The REYES plugin and `GMAN_BUILD_REYES` are gone; the plugin built off by default, never linked and was never installed
-* The release tarball's binaries are stripped, 412 kB for `gman` where it was 519 kB
+* Under the ray tracer, a shadow passes through glass and opacity-mapped cutouts, where glass and a cutout card cast a solid shadow
+* The ray tracer lights from area lights; `Option "raytracer" "integer arealightsamples"` sets the draws per light (default 4), and area-lit scenes render slower
+
+**New**
+
+* Every flag has a long name, and help prints on stdout and exits 0
+* `AreaLightSource` on `Polygon`, `GeneralPolygon`, `PointsPolygons` and `PointsGeneralPolygons` emits under both tracers, one-sided along the winding's normal; patch emitters work but are slow
+* The ray tracer renders `Patch` and `PatchMesh`
+* `glass` reads `eta`, `Kr` and `Kt`, defaulting to BMRT's 1.5, 1 and 1; `eta` and `Kt` need an inline declaration, as in `"float eta" [1.33]`
+* `gman::BSDF` adds `addDielectric(reflectWeight, transmitWeight, eta)`
+* `Option "pathtracer" "string denoise" ["atrous"]` denoises a path-traced image with an edge-avoiding à-trous filter
+* A build with `GMAN_WITH_EXR` writes linear float OpenEXR. gman still reads sRGB textures and colours as linear, so EXR output looks washed out in a colour-managed viewer until colour management lands (#12)
+* The release tarball's binaries are stripped: `gman` is 412 kB, down from 519 kB
+
+**Fixed**
+
+* A surface near an area light collects no white specks under either tracer
+* Under the ray tracer, a partly opaque surface seen through glass or in a mirror composites as it does in direct view
+* A texture on a periodic mesh keeps its direction across the seam
+* A non-finite request value, such as a `Format` aspect, `FrameAspectRatio`, `PixelFilter` width or `Exposure`, is ignored
+* A NaN shader colour reads as 0 and a NaN coverage as opaque
+* `noise` and texture lookups return NaN for a non-finite coordinate
+* An area emitter with a singular placement contributes nothing
+* The C API frees a render context whose `RiBegin` fails
 
 1.3.1 (2026-11-24)
 
-* The macOS arm64 tarball ships; 1.3.0's macOS release build failed a heap-counting test that misread its LTO link, and no library code changes
+**Incremental.** The macOS arm64 tarball 1.3.0 lacked ships, and no library code changes.
 
 1.3.0 (2026-11-24)
 
-* 1.3 breaks the binary interface, so every plugin and every program that links gman rebuilds; `SameMinorVersion` refuses 1.3 to a consumer asking for 1.2
+**Breaking.** Rebuild every plugin and program that links gman. PNG alpha changes meaning, and malformed files that rendered before now stop.
+
+**Breaking changes**
+
+* The binary interface changes; `SameMinorVersion` refuses 1.3 to a consumer asking for 1.2
 * PNG writes straight alpha, so a tool that divides gman PNG colour by alpha must stop; TIFF stays premultiplied
-* The ray tracer and the radiosity pass run on every core, and the BVH builds by binned surface area
-* The vase ray-traces 9× faster than in 1.2.0 and the bike scene 23× faster
-* Imagers run, and gman ships the standard `background` imager
-* A request issued out of mode warns and is ignored, and the file renders on
-* A shader that fails to load reports `<Request> "<name>" failed to load: <reason>` and still stops the file
-* A missing texture warns once per world instead of once per worker
-* A polygon's per-vertex `"N"` shades smoothly under all three renderers, and its shadows lose the dark wedges along triangle edges
+* The RIB parser stops the file on an array that is short, mistyped or at odds with its count
+* A `Quantize` the output driver cannot store stops the file
+* Imagers run, so a scene's `Imager` request, ignored before, changes its image
+* `GMANMAX`, `GMANMIN` and `PI` are gone, and `GMANMin`, `GMANMax` and `GMANClamp` drop a NaN operand
+
+**New**
+
+* The ray tracer and the radiosity pass run on every core, and the BVH builds by binned surface area: the vase ray-traces 9× faster than in 1.2.0 and the bike scene 23× faster
+* gman ships the standard `background` imager
 * `paintedplastic` takes an opacity map and a tangent-space normal map
 * `PixelVariance` stops a path-traced pixel early without biasing it
 * RIB `ColorSamples` sets the colour sample count, and `Color` and `Opacity` read at it
-* The RIB parser stops the file on an array that is short, mistyped or at odds with its count
-* A `Quantize` the output driver cannot store stops the file
-* Shaders read declared parameters by name through `gmanshaderparams.h`, which now installs
+* `gmanshaderparams.h` installs, so a shader reads its declared parameters by name
 * Ray-traced shading points carry `dPdu` and `dPdv`
-* Shading splines evaluate the basis they name
-* The ray kernel never returns a NaN
-* `GMANMAX`, `GMANMIN` and `PI` are gone, and `GMANMin`, `GMANMax` and `GMANClamp` drop a NaN operand
 * The release preset links with LTO
-* Contributors gate on `tidy-check` and clang-format 23
+
+**Fixed**
+
+* A request issued out of mode warns and is ignored, and the file renders on
+* A shader that fails to load reports `<Request> "<name>" failed to load: <reason>` and stops the file
+* A missing texture warns once per world instead of once per worker
+* A polygon's per-vertex `"N"` shades smoothly under all three renderers, and its shadows lose the dark wedges along triangle edges
+* Shading splines evaluate the basis they name
+* The ray kernel returns no NaN
 
 1.2.0 (2026-11-17)
 
-* **1.2 splits gman into three shared libraries; a program or plugin that uses ray or raster code relinks.** `libgman_core` keeps the RenderMan interface, its state and the contracts every renderer shares. The ray geometry, the BVH, the occluder, the emitters and the indirect-light pass seam move to `libgman_ray`, and the z-buffer's raster sources (faces, vertices, clipping and the patch-to-polygon object manager) move to `libgman_raster`. Each links `libgman_core` publicly. A consumer built against 1.1 that uses a moved symbol links `gman::gman_ray` or `gman::gman_raster` from the CMake package, and the package's `SameMinorVersion` compatibility refuses 1.2 to a consumer asking for 1.1. Ray headers tag their exports with `GMANRAY_EXPORT` from `<gman/rayexport.h>` and raster headers with `GMANRASTER_EXPORT`; on POSIX each expands as `GMAN_EXPORT` does. Every installed library and plugin carries the install run path, so a plugin finds the library it names beside `libgman_core`. No image changes
-* **Four headers stop installing.** `gmanribparse.h`, `gmanribtokenize.h`, `gmanrendermanimpl.h` and `gmangraphicstate.h` move into the library's private sources; no shader, renderer, output driver or documented example reaches them. `GMANRIBParse` and `GMANRenderManImpl` stay exported, so a program that links either still links, but one that includes the header directly must change
-* **The path tracer renders on every core.** `GMANPathtraceRenderer` hands each row of the frame to `gman::parallelFor`, with one texture cache per worker. Every random draw is a pure function of the pixel, the path and the vertex, so an image is byte-identical at any worker count. A missing texture warns once per worker rather than once per render. `parallelFor` now claims each index from a shared counter, so a worker that finishes early takes more rows and one descheduled thread no longer sets the wall time
-* **`gmanparallel.h` and `gmanviewingsysteminputs.h` install.** A renderer plugin shards its work through the exported `gman::parallelFor` and `gman::parallelWorkers`, the one place a thread starts. `gman::makeViewingSystem` builds the perspective or orthographic viewing system from `gman::resolveViewingSystemInputs`
-* **1.2 breaks the viewing-system and options ABI.** `GMANViewingSystem::cameraRay`, `ray`, `rasterToScreen` and `screenToRaster` become `const`; an out-of-tree class that overrides `cameraRay` adds `const` or stays abstract. `GMANViewingSystem::visible(GMANFace)` is gone: the pure virtual `facesCamera(GMANPoint const&, GMANVector const&) const` answers in camera-space core types, and `gman::faceVisible` in `gmanface.h` applies `Sides` and `Orientation`. `GMANOptions` gains a trailing member, so a program or plugin that constructs, copies or embeds one by value rebuilds
-* **`Option` keeps every parameter the typed handlers do not read.** `GMANOptions::getNamedOption` returns the value of any other `Option` parameter by option name and parameter name, or null when absent, so a renderer reads its own options without a new handler. A later `Option` for the same parameter replaces the value, and a frame's options end with the frame. `indirect`, `elementsize` and the path tracer's `samples` still go to their typed handlers alone
-* **The RIB parser drops a parameter whose value contradicts its declaration.** `Option "user" "string mode" [1]` crashed the renderer, a short array was over-read, and a declared count large enough overflowed the dictionary's arithmetic. A string literal for a non-string declaration, a number for a string one, or fewer values than one element of the declared type now drops that parameter with one logged error naming the request and the token, and the request and the file continue. A mixed array, or a float literal for a declared integer, still stops the file
-* **The samples are re-rendered.** `samples/vase.rib` renders at 1280 by 800 through a Catmull-Rom filter, its floor tiled with the 16-bit TIFF `samples/floor16.tif` and its vase filled with water from `samples/vasewater.rib`; the release tarball carries both beside the scene. `samples/materials-pathtraced.png` is a 1920 by 1200 render at 2048 paths a pixel, shown at 1280 by 800
+**Breaking.** Relink any program or plugin that uses ray or raster code, and rebuild any that touches `GMANViewingSystem` or `GMANOptions`. Images are unchanged.
+
+**Breaking changes**
+
+* gman splits into three shared libraries. `libgman_core` keeps the RenderMan interface, its state and the shared contracts; the ray geometry, BVH, occluder, emitters and indirect-light pass move to `libgman_ray`, and the z-buffer's raster sources to `libgman_raster`. A consumer that uses a moved symbol links `gman::gman_ray` or `gman::gman_raster`, and `SameMinorVersion` refuses 1.2 to a consumer asking for 1.1
+* `gmanribparse.h`, `gmanribtokenize.h`, `gmanrendermanimpl.h` and `gmangraphicstate.h` stop installing; `GMANRIBParse` and `GMANRenderManImpl` stay exported
+* `GMANViewingSystem::cameraRay`, `ray`, `rasterToScreen` and `screenToRaster` are `const`, so an override of `cameraRay` adds `const`
+* `GMANViewingSystem::visible(GMANFace)` gives way to the pure virtual `facesCamera(GMANPoint const&, GMANVector const&) const`, and `gman::faceVisible` in `gmanface.h` applies `Sides` and `Orientation`
+* `GMANOptions` gains a trailing member, so code that constructs, copies or embeds one rebuilds
+
+**New**
+
+* The path tracer renders on every core, and an image is byte-identical at any worker count
+* Ray headers export through `GMANRAY_EXPORT` from `<gman/rayexport.h>`, and raster headers through `GMANRASTER_EXPORT`
+* `gmanparallel.h` installs `gman::parallelFor` and `gman::parallelWorkers`, which a renderer plugin shards its work through
+* `gmanviewingsysteminputs.h` installs, and `gman::makeViewingSystem` builds the viewing system from `gman::resolveViewingSystemInputs`
+* `GMANOptions::getNamedOption` reads any `Option` parameter the typed handlers do not, by option and parameter name, so a renderer reads its own options without a new handler
+* Every installed library and plugin carries the install run path, so a plugin finds the library it names
+* `samples/vase.rib` renders at 1280 by 800 with a 16-bit tiled floor and water from `samples/vasewater.rib`, and `samples/materials-pathtraced.png` is a 2048-path render
+
+**Fixed**
+
+* A parameter whose value contradicts its declaration is dropped with one error naming the request and the token, and the file renders on; `Option "user" "string mode" [1]` crashed the renderer, a short array was over-read and a large declared count overflowed. A mixed array, or a float literal for a declared integer, still stops the file
 
 1.1.0 (2026-11-16)
 
-* **1.1 breaks the output-driver ABI; an output driver built outside the tree rebuilds.** `GMANOutput` gains two virtuals, `writesFloat()` and `writeFloatImage(DisplayMode, std::vector<float> const&, RtFloat)`, which move its vtable. `gmansegment.h` and the class `GMANSegment` are gone, and `gmantypes.h` stops declaring `GMANFace`, `GMANSurface` and the aliases `GMANFacePtr`, `GMANSurfacePtr`, `GMANFaceList` and `GMANSurfaceList`; nothing in this tree used them. The package's `SameMinorVersion` compatibility keeps a 1.0 consumer from finding 1.1
-* **A TIFF `Display` writes floating-point samples when `Quantize`'s `one` is 0.** `Quantize "rgba" 0 0 0 0` with a TIFF `Display` writes 32-bit IEEE float samples after gain and gamma, unrounded, undithered and unclamped, where 1.0.2 warned and wrote 8 bits, so the path tracer's radiance above 1 reaches the file. Alpha stays associated. Every other driver keeps the warning and the `255 0 255` fallback, and a `one` above 0 quantizes as before
-* **A 16-bit TIFF texture samples at 16-bit precision.** libtiff's RGBA conversion rounded every 16-bit texture to 8 bits without a word. A stripped, top-left 16-bit RGB, RGB with associated alpha, or greyscale TIFF reads at full depth now, and `MakeTexture` and `MakeLatLongEnvironment` write a 16-bit texture from a 16-bit picture. A 16-bit file read only at 8 bits, such as a tiled or bottom-up one, renders and warns, naming the file. 8-bit textures sample as before, and no golden changes
-* **Dead code is gone.** `gmantools`, `gmanisoa`, `gmansolidobject` and `gmansegment`, 716 lines with no caller, are removed. No image changes
+**Breaking.** Rebuild an output driver built outside the tree; a scene renders differently only where it reads a 16-bit texture or asks TIFF for float samples.
+
+**Breaking changes**
+
+* `GMANOutput` gains `writesFloat()` and `writeFloatImage(DisplayMode, std::vector<float> const&, RtFloat)`, moving its vtable; `SameMinorVersion` refuses 1.1 to a consumer asking for 1.0
+* `gmansegment.h` and `GMANSegment` are gone, and `gmantypes.h` stops declaring `GMANFace`, `GMANSurface`, `GMANFacePtr`, `GMANSurfacePtr`, `GMANFaceList` and `GMANSurfaceList`
+* `Quantize "rgba" 0 0 0 0` with a TIFF `Display` writes 32-bit float samples after gain and gamma, unclamped, so radiance above 1 reaches the file, where it wrote 8 bits with a warning; other drivers keep that fallback
+
+**New**
+
+* `MakeTexture` and `MakeLatLongEnvironment` write a 16-bit texture from a 16-bit picture
+
+**Fixed**
+
+* A 16-bit TIFF texture samples at 16-bit precision. A 16-bit layout read only at 8 bits, such as a tiled or bottom-up one, renders and warns, naming the file
 
 1.0.2 (2026-10-18)
 
-* **A shared polygon edge no longer leaves a transparent hairline.** `GMANRayPolygon::intersect` tested a hit point against the outer ring with a half-open even-odd rule, so a ray landing exactly on an edge two polygons share, such as the corner of an open-front box, was rejected by both neighbours and escaped. A hit on the outer ring's boundary, or within 1e-5 of the ring's bounding-box extent of it, counts as a hit now; a hole keeps the strict test. Under `-r gmanraytracer` the issue's box left 116 pixels with alpha below 255 and leaves none. The radiosity pass shares the test, so its room's corner seams close as well, and the radiosity window golden is regenerated for them: 65 of 4096 pixels change in some channel, every one ending at alpha 255
-* **The radiosity pass no longer leaves a black arc on a quadric's rim.** The pass chose an element's front or back side from the diced facet's flat normal, which at a silhouette can fall on the other side of the ray from the surface's own normal, and read the back side, 0 on an opaque closed surface. It chooses from the hit's normal now. The arc's position moved with `Option "radiosity" "float elementsize"`. A planar scene renders the same, but a quadric shades differently over its whole body, not only at its rim: a torus the old pass painted one flat grey now shades like the cylinder and cone beside it
+**Incremental.** Shared polygon edges and quadric rims render without seams under the ray tracer and the radiosity pass.
+
+**Fixed**
+
+* A ray landing on an edge two polygons share hits, so the ray tracer leaves no transparent hairline there and the radiosity pass closes its corner seams
+* The radiosity pass leaves no black arc on a quadric's rim. It now chooses an element's side from the hit's normal, so a quadric shades differently over its whole body: a torus the old pass painted flat grey shades like a cylinder
 
 1.0.1 (2026-10-09)
 
-* **The z-buffer no longer draws spikes at the frame edge.** A polygon crossing a frustum plane took its clipped vertex's colour and alpha from the edge's end vertex instead of blending along the edge, so each diced facet of a wall that left the frame drew a wedge of the wrong colour, a dagger across the picture. `GMANClipEdge::intersect` blends both by the clip parameter. `samples/vase.png` and `samples/poke/zbuffer.png` are re-rendered without the spikes
-* **A materials sample.** `samples/materials.rib` sets a gold ball, a glass ball, a mirror ball and a plastic torus before a clay wall, lit by two area lights; `samples/materials-pathtraced.png` is its path-traced render, and the release tarball carries the `.rib`
+**Incremental.** The z-buffer draws no spikes at the frame edge.
+
+**New**
+
+* `samples/materials.rib` sets gold, glass and mirror balls and a plastic torus before a clay wall under two area lights; `samples/materials-pathtraced.png` is its render, and the release tarball carries the scene
+
+**Fixed**
+
+* A polygon leaving the frame blends its clipped vertex's colour and alpha along the edge, so the z-buffer draws no spikes at the frame edge
 
 1.0.0 (2026-09-29)
 
-* **gman path-traces: `gman -r gmanpathtracer scene.rib`.** A unidirectional path tracer with next-event estimation renders every primitive the ray tracer does, samples each surface's BSDF, and ends a path by Russian roulette from its third vertex. `Option "pathtracer" "integer samples" [n]` sets the paths per pixel. It renders on one thread. An `ambientlight` lights nothing under it and is skipped with one warning; a point, distant or spot light casts a shadow ray from every vertex. A camera path through a surface with `Opacity` below 1 passes through it as the ray tracer does, and a path that reaches the pass-through cap stays opaque
-* **Area lights.** `AreaLightSource "arealight"` turns the `Sphere` or `Disk` that follows it into an emitter of `intensity` × `lightcolor`, one-sided on its outward face. The path tracer samples an emitter uniformly by area, aims each shadow ray at a point offset off the emitter's surface so an opaque lamp shadows correctly at any scene scale, and places the sampling density and power through the emitter's own transform, so `Scale` on a lamp is exact. Next-event estimation picks a light in proportion to its power over distance squared. The z-buffer and the ray tracer render area-light geometry as ordinary surfaces and warn once
-* **Multiple importance sampling.** Next-event estimation and BSDF-sampled bounces that reach the same area light are weighted by the power heuristic at every vertex, so a sharp glossy lobe under a large light converges without fireflies. A point on an emitter's own surface never chooses that emitter for its shadow ray, since a lamp cannot light itself. An area light seen through glass counts once, carried by the shadow ray through the dielectric's thin transmittance; a glass lens focusing a lamp onto a floor waits for caustics
-* **The ray tracer adds bounce light through a radiosity pass: `Option "render" "string indirect" ["radiosity"]`.** Under `-r gmanraytracer`, the pass dices the scene into patches, solves the diffuse light bouncing between them by progressive refinement, through translucent surfaces attenuated by `1 - Os`, and hands each shaded point its indirect irradiance; `ambient()` adds it to the ambient lights, so each surface weights it by its own `Ka`, colour bleeding included. Reflected and refracted hits get it too. `Option "radiosity" "float elementsize"` sets the patch size, defaulting to an eighth of the scene's largest side; a size finer than the mesh's division cap allows warns once, prefixed `Radiosity:`, and dices at the finest resolution available. The plugin builds by default and installs as `libradiosity.so`, so the release downloads carry it. Without the Option, no image changes
-* **Every built-in shader returns a BSDF.** `GMANSurfaceShader::bsdf` returns the `gman::BSDF` closure the path tracer samples: Lambert of `Cs` by default; a GGX microfacet lobe beside the diffuse one for `plastic`, `paintedplastic`, `metal` and `shinymetal`; exact-Fresnel delta lobes for `mirror` and `glass`, whose shadow rays pass through glass by its thin transmittance. `albedo()` reports each shader's diffuse reflectance
-* **1.0 breaks the plugin ABI; every shader and renderer plugin rebuilds.** `GMANLoadShader` takes `GMANParameterList const&` and constructs one shader instance per `Surface` call, and `GMANDestroyShader(GMANShader*)` is a required entry point, both declared `extern "C" GMAN_EXPORT` in `gmanshader.h`; `computeCi`/`computeOi` are `const` and return colour by value; `GMANSurfaceEnv` gains the texture cache it shades through, one per worker. `bsdf` and `albedo` are new virtuals on `GMANSurfaceShader`. An out-of-tree shader drops any mutable state and function-local statics, and may override `bsdf`; one that overrides `bsdf` must not call the base `albedo`, since the two would recurse. `GMANShader::set(GMANParameterList&)`, `set(GMANRenderer&)` and the protected `pl` and `renderer` members are gone; `GMANLoadableShader`'s constructor takes `(char const*, GMANParameterList const&)` and its copy and move are deleted. `GMANAttributes::setSurface`, `setDisplacement`, `setAtmosphere`, `setInterior`, `setExterior` and `GMANOptions::setImager` lose their `GMANRenderer&` parameter; `GMANAttributes::getSurface` returns `std::shared_ptr<GMANSurfaceShader const>` and `getSurfaceParameters` is gone; `GMANOptions::imagerModule` becomes a `std::shared_ptr<GMANLoadableShader>`, moving every `GMANOptions` member after it. `GMANSurfaceEnv` gains a trailing `indirect` member (`GMANColor const*`, null by default), which `ambient()`, inline in the installed header, adds; `gman::shade` gains two trailing parameters, `TextureCache*` then `GMANColor const* indirect`, changing its mangled name. `gmantexture.h` installs as `<gman/gmantexture.h>` with `gman::TextureCache` exported, so an out-of-tree renderer can build its own cache. `GMANObjectManager`'s four polygon virtuals give way to one pure virtual, `getRSPolygonMesh`, over the exported `GMANPolygonMesh`; an object manager outside this tree implements it. `GMANQuantize` becomes a four-field aggregate (`one`, `min`, `max`, `ditheramplitude`). New exports: `gman::IndirectPass` and `gman::loadIndirectPass` (`gmanindirectpass.h`), `gman::hitSurfacePoint` and `gman::albedo` (`gmanshading.h`), `gman::resolveLoadableShader`, and `GMAN_EXPORT` on `GMANParametric`; a pass module exports `GMANGetLoadableInfo`, `GMANCreateIndirectPass` and `GMANDestroyIndirectPass` as `extern "C"`. `GMANPoint::operator*(GMANMatrix4 const&)` and `GMANVector::operator*(GMANMatrix4 const&)`, column-vector products this tree never used, are gone; `gman::transformPoint` and `gman::transformDirection` are the row-vector forms. `gmanslapi.h` stops declaring `distance`, `ptlined` and `rotate`, which were never defined
-* **`gman` stops a file at any error reported at `RIE_ERROR` or above; 0.9.1 rendered on and exited 0.** `gman` installs its own `RtErrorHandler`: it prints each report exactly as `RiErrorPrint` does, then at `RIE_ERROR` or above throws a stop that ends the file, so no image is written, the exit status is 1, and the run moves on to the next file on the command line. A scene that names a token neither declared nor built in, such as `Surface "plastic" "Kdd" [0.2]`, printed `ERROR: RIE_BADTOKEN -- GMANDictionary: TOKEN_NOT_FOUND`, dropped that parameter, rendered and exited 0; it prints the same line now and exits 1 with no image. A stop before `WorldBegin` leaves the next file free to render; a stop inside a `WorldBegin` block leaves every later file failing with `WARNING: RIE_ILLSTATE -- Invalid mode for procedure` and writing nothing. An error the parser throws rather than reports keeps its behaviour, exit 1 at every severity with the same line. The library's own default handler is still `RiErrorPrint`, so an embedder that installs none sees no change, and `RiErrorHandler` installs a different policy
-* **`gman -r gmanradiosity` no longer renders.** The 0.9.1 radiosity renderer, which built `OFF` and rendered nothing, is gone; `libgmanradiosity.so` becomes `libradiosity.so`, loaded as a pass by name. A pass that fails to load logs one warning beginning `Indirect-light pass "radiosity":`, and the frame renders without indirect light
-* **A `Surface` that will not load reports `RIE_NOSHADER` at `RIE_ERROR` and names the request.** 0.9.1 reported a missing module at `RIE_SEVERE`, `SEVERE: RIE_SYSTEM -- Unable to open shared object specified by: libnosuchshader.so: ...`, and a module with no `GMANLoadShader` or a shader of the wrong type the same way. The report reads `ERROR: RIE_NOSHADER -- Surface "nosuchshader" failed to load; the default surface shades instead: ` followed by the loader's own message, and the request binds the default surface with none of the failed request's parameters. Under `gman` the report is a stop like any other `RIE_ERROR`, so the exit is still 1 with no image; the default surface shades for an embedder whose handler returns, `RiErrorPrint` or `RiErrorIgnore`. Through the C API, a `RiSurface` after a missing module used to keep the previously bound surface and binds the default now
-* **`RiDisplacement`, `RiAtmosphere`, `RiInterior`, `RiExterior` and `RiImager` resolve a module name as `Surface` does.** Each passed its token to `dlopen` as given, so `RiDisplacement("matte", ...)` looked for a file named `matte`; a token maps to `lib<name>.so` now. A caller that spelled the exact file, `"libmatte.so"`, looks for `liblibmatte.so.so` now and fails. A failed load or a wrong type reports `RIE_NOSHADER` at `RIE_ERROR` in place of `RIE_SEVERE`, names the request and what renders instead (`the surface renders undisplaced`, `no atmosphere shades the volume`, `the volume shades without an interior`, `the volume shades without an exterior`, `the frame renders without an imager`), and resets the kind's module and typed pointer to null; a wrong-type module used to stay assigned. `GMANOptions` owns its imager module through a `shared_ptr`, so the copy of the options `RiFrameBegin` pushes no longer frees the outer options' imager when the frame loads its own. The RIB parser reads `Atmosphere`, `Displacement` and `Imager` and ignores them, and has no `Interior` or `Exterior` request, so only the C API reaches this
-* **Output honours `Quantize`.** RIB's `Quantize` request reaches the renderer: every driver rounds and dithers each channel by RISpec's rule into the request's `[min, max]`, scaled by `one`, and clamps it there; the dither is a pure function of the pixel, so a render reproduces. A TIFF `Display` writes 16 bits a sample once `max` exceeds 255; PNG, JPEG and PNM stay 8-bit, and a request they cannot honour falls back to the default range with one warning. The nine sample PNGs and ten goldens were regenerated for rounded, dithered output. A plugin output driver's `writeImage` now receives packed samples and their bit depth in place of float colours, and `GMANColorRGB` is gone
-* **The framebuffer holds unclamped colour.** A pixel keeps its float value until a driver narrows it, so a path tracer's bright sample survives to `Exposure`. The z-buffer's samples and four goldens were regenerated for it. Exposure's `gain` can lift a channel past 1, and the output clamps it: `Exposure 2 1` over a surface rendering 0.75 wrapped a channel of 1.5 to 126 on 0.9.1, and writes 255 now; a NaN writes 0
-* **A PNG `Display` honours its `DisplayMode`, and its alpha is real coverage.** 0.9.1 wrote every PNG as RGBA with alpha 255, whatever the mode named. `"rgb"` writes 3 samples and no alpha channel, `"a"` writes one grayscale coverage sample and no colour, and every other mode (`"rgba"`, `"rgbaz"`, `"az"`, `"z"`) writes RGBA with each pixel's coverage as alpha, from the same formula TIFF uses; the colour samples are the premultiplied ones TIFF carries too. `samples/vase.png` and `samples/poke/zbuffer.png` gain alpha below 255 on 2373 of 256000 pixels, and `samples/poke/first.png`, a ray-traced render whose background was opaque, on 206784. The `bKGD` chunk of a grayscale PNG is zero where it held whatever was on the stack
-* **PNG output carries no gAMA chunk.** The PNG writer recorded the `Exposure` gamma as the file gamma, so a gamma-aware viewer remapped every gman PNG: at the default it declared the samples linear and the viewer brightened them, and at any other gamma the value was inverted besides. PNG now records no gamma, as TIFF, JPEG and PNM never did, and every viewer shows the bytes as written; no pixel changes. The nine sample PNGs lose the chunk too
-* **A failed write reaches `GMANError` from the PNM, PNG and JPEG drivers, and JPEG says what it drops.** A PNM write or `fclose` that fails throws `SEVERE: RIE_SYSTEM -- Unable to write output file: <file>`, where 0.9.1 exited 0 with a truncated P6 file; PNG's `fclose` does the same, where 0.9.1 exited 0 with a PNG that ends short of its `IEND` chunk. libjpeg's `error_exit` is replaced by one that throws the same `SEVERE: RIE_SYSTEM` with libjpeg's own text, `Output file write error --- out of disk space?`, in place of an `exit()` from inside the library, and JPEG's `fclose` is checked too. A TIFF scanline that fails to write throws `Unable to write TIFF scanline <n>: <file>` where 0.9.1 broke out of the row loop silently, but the TIFF driver sets rows per strip to the width times the samples per pixel, so a TIFF no taller than that is one strip, which libtiff flushes inside `TIFFClose`: a full disk there still ends in libtiff's own `TIFFAppendToStrip: Write error at scanline <height>.` and exit 0, as in 0.9.1. A JPEG `Display` in any mode but `"rgb"` warns `JPEG cannot carry alpha or depth samples for this display mode; writing RGB only.` where 0.9.1 dropped the channels without a word
-* **A sampling library.** `gmansampling.h` installs a counter-based sampler with stratified 1-D and 2-D patterns and the warps and densities the path tracer draws with: concentric disk, cosine-weighted and uniform hemisphere, uniform sphere and cone, and a tangent frame. `Sphere` and `Disk` gain uniform-area sampling of their own surface
-* **`gman` rejects an unrecognized command-line flag.** `gman -x scene.rib` ignored `-x` and rendered the scene with its default settings. It prints `<argv[0]>: unrecognized flag -x` and the usage text to stderr now, exits 1 and parses no file
-* **The C API's ellipsis entry points walk their `va_list` once.** All 38 of them, `RiSurface`, `RiLightSource`, `RiOption`, `RiPolygon` and `RiSphere` among them, counted their token and value pairs in one pass over the caller's `va_list` and read them in a second; on x86-64 System V, where `va_list` is an array type, the first pass consumed the caller's copy and the second read past the real arguments. On arm64, where `va_list` is copied by value, both passes began at the same place and the defect never showed. One pass fills a `std::vector`-backed `gman::Arguments` now, and each entry point drops its own `new[]` and `delete[]`; `RiMotionBegin` never made two passes and is unchanged. `gman`'s RIB path calls the array forms, so no scene changes
-* **`gman::Noise` seeds a private `std::mt19937`, so `noise()`, `pnoise()` and `cellnoise()` agree across platforms.** Its constructor called `srand(808)` and every draw read the process's `rand()`, whose sequence differs between glibc and macOS for one seed; the first `noise()` call of a process also reseeded the shader author's own `rand()` sequence. Each instance draws from its own engine seeded 808 now, mapped to a range by the same divisions, and `rand()` is left alone. On macOS arm64, `noise(0.3)` moves from 0.471109 to 0.428826, `noise(1.7, 2.9)` from 0.606648 to 0.437387 and `cellnoise(4.2)` from -0.030194 to 0.187611; no shipped shader calls any of the three
-* **`RiPolygon` rejects a negative or overflowing `nverts` instead of aborting.** A C API caller passing `nverts` -4 with a `"P"`, or `INT_MAX / 2`, aborted on an uncaught `std::bad_alloc`; each warns and adds the empty stub now, `Polygon: nverts[0] = -4 is negative; ignoring.` and `Polygon: nverts sums to 1073741823, times 3 overflows RtInt; ignoring.` RIB never reaches either rule, since `Polygon` derives its `nverts` from the float count of `"P"`. `Polygon`, `GeneralPolygon`, `PointsPolygons` and `PointsGeneralPolygons` all normalise into one `GMANPolygonMesh` (`gmanpolygonmesh.h`) whose factory holds each request's rules once; `GMANObjectManager`'s four polygon virtuals give way to `getRSPolygonMesh`, listed with the ABI items
-* **A RIB primitive parameter longer than its declared length warns.** A `Sphere` given `"N"` as six normals, 18 floats against a declared 12, truncated the excess without a word, while a short array already warned. It prints `Parameter "N": declared length 12, supplied length 18; truncating the excess.` now and truncates as before. A shader parameter, `Surface "plastic" "Kd" [0.2 0.3]`, still truncates silently
-* **`GMANMatrix4`'s scalar multiply scales all sixteen entries.** `operator*(RtFloat)` and `operator*=(RtFloat)` incremented the outer index in the inner loop, so they scaled column 0 and left the other twelve entries unchanged. `GMANMovingMatrix::interpolate` blends two samples through them, `result * n + temp * (1 - n)`, so a moving transform sampled between its times is right now
-* **RIB `Points` reports its point count.** The parser passed `npoints` 0 to `RiPointsV` for every `Points` request. It passes the float count of `"P"` divided by 3 now, and 0 for a `"P"` that is absent or whose length is no multiple of 3. `GMANRenderManImpl::RiPointsV` still draws nothing under every renderer, so only a subclass that overrides it sees the value
-* **A RIB byte at or above 0x80 no longer reaches `isspace`, `isalnum` or `isdigit` as a negative `char`, and a throwing primitive request no longer leaks its transform.** `char` is signed on every platform this tree builds for, so the tokenizer's classifier calls took an argument outside the range C allows; each casts through `unsigned char` now. A high byte standing alone still reports `WARNING: RIE_BADFILE -- Unknown character in ribfile` and exits 1, as before. Fourteen primitive requests, `RiPolygonV` through `RiTorusV`, held a `new`ed `GMANTransform` across a call that can throw: `Scale 1 0 1` followed by a quadric or a `NuPatch` throws `RIE_MATH` out of the z-buffer's matrix inversion past the `delete`. Each holds a local now, and nothing on the heap leaks; `gman` exited 1 either way, so only a leak checker showed it
-* **`build.sh` is gone.** It configured without the `dev` preset and skipped `format-check`, so it no longer ran the gates `AGENTS.md` names. The README, `CONTRIBUTING.md`, the Dockerfile's `VERSION` comment and the VS Code `gates` task drop their mentions; the `dev` preset and the devcontainer in `.devcontainer/` carry the same toolchain
-* **A release tarball installs itself: `sudo ./install.sh`.** Each tarball carries `install.sh` and `samples/vase.rib` at its root. `install.sh` installs `bin/`, `lib/` and `include/` into `/usr/local`, or into `--prefix DIR`, and records every file and directory it creates in `share/gman/install_manifest.txt`; `--uninstall` removes exactly those, and installing over an earlier install removes that one first. It proves the install by running the installed `gman --version`, clears the download quarantine on macOS, and leaves `PATH` and the shell profile alone, saying so when the prefix's `bin` is not on `PATH`. The release workflow installs, renders the sample and uninstalls through it before packaging each tarball
-* **The README opens on Install and path-traces.** Install walks the tarball and `install.sh` on Linux and macOS, Try it renders `samples/vase.rib` from the unpacked folder, and a "Path trace it" section renders the same scene through `gmanpathtracer` with one added line, beside the render it writes. "What GMAN renders" lists the three renderers, area lights and the radiosity pass
+**Breaking.** Rebuild every shader, renderer and output-driver plugin. `gman` stops a file at its first error, and output changes in every format.
+
+**Breaking changes**
+
+* The plugin binary interface changes, and every shader, renderer and output-driver plugin rebuilds:
+  * `GMANLoadShader` takes `GMANParameterList const&` and builds one shader instance per `Surface` call, and `GMANDestroyShader(GMANShader*)` is required; both are `extern "C" GMAN_EXPORT` in `gmanshader.h`
+  * `computeCi` and `computeOi` are `const` and return colour by value, so a shader drops mutable state and function-local statics
+  * `GMANSurfaceShader` gains the virtuals `bsdf` and `albedo`; a `bsdf` override must not call the base `albedo`, since the two would recurse
+  * `GMANShader::set` and the protected `pl` and `renderer` members are gone, and `GMANLoadableShader` takes `(char const*, GMANParameterList const&)` and is neither copyable nor movable
+  * The `GMANAttributes` shader setters and `GMANOptions::setImager` lose their `GMANRenderer&` parameter, `getSurface` returns `std::shared_ptr<GMANSurfaceShader const>`, `getSurfaceParameters` is gone and `GMANOptions::imagerModule` is a `std::shared_ptr<GMANLoadableShader>`
+  * `GMANSurfaceEnv` gains its texture cache and a trailing `indirect` colour, which `ambient()` adds, and `gman::shade` takes `TextureCache*` and `GMANColor const* indirect`
+  * `GMANObjectManager`'s four polygon virtuals give way to the pure virtual `getRSPolygonMesh` over `GMANPolygonMesh`
+  * `GMANQuantize` is an aggregate of `one`, `min`, `max` and `ditheramplitude`
+  * An output driver's `writeImage` receives packed samples and their bit depth, and `GMANColorRGB` is gone
+  * The column-vector `GMANPoint::operator*(GMANMatrix4 const&)` and `GMANVector::operator*(GMANMatrix4 const&)` are gone; `gman::transformPoint` and `gman::transformDirection` are the row-vector forms
+  * `gmanslapi.h` drops `distance`, `ptlined` and `rotate`, which had no definition
+* `gman` stops a file at any error reported at `RIE_ERROR` or above: no image, exit status 1 and the run moves to the next file. A scene naming an undeclared token, such as `Surface "plastic" "Kdd" [0.2]`, rendered and exited 0 in 0.9.1. A stop inside `WorldBegin` makes every later file on the command line fail with `RIE_ILLSTATE`. An embedder keeps `RiErrorPrint` as its default handler and sees no change
+* A `Surface` that fails to load reports `RIE_NOSHADER` at `RIE_ERROR`, names the request and binds the default surface
+* Through the C API, `RiDisplacement`, `RiAtmosphere`, `RiInterior`, `RiExterior` and `RiImager` map a token to `lib<name>.so` as `Surface` does, so a caller that passed `"libmatte.so"` now fails; a failed load reports `RIE_NOSHADER` and leaves that shader unset
+* `gman -r gmanradiosity` is gone; radiosity is a pass of the ray tracer, loaded as `libradiosity.so`
+* `gman` rejects an unrecognized flag: `gman -x scene.rib` prints the usage text and exits 1
+* Every output driver rounds and dithers by `Quantize`, so most existing renders change
+* The framebuffer keeps unclamped colour until output, so `Exposure` gain past 1 clamps a channel to 255 where it wrapped, and a NaN writes 0
+* A PNG honours its `DisplayMode`: `"rgb"` writes no alpha, `"a"` writes grey coverage and the other modes write premultiplied colour with real coverage alpha. PNG carries no `gAMA` chunk, so viewers show its bytes as written
+* `noise()`, `pnoise()` and `cellnoise()` draw from their own seeded `std::mt19937`, so their values change and now agree across platforms, and the process's `rand()` sequence is left alone
+* `build.sh` is gone; the `dev` preset and the devcontainer carry the same toolchain
+
+**New**
+
+* Path tracing: `gman -r gmanpathtracer scene.rib` traces unidirectional paths with next-event estimation and Russian roulette, and `Option "pathtracer" "integer samples" [n]` sets the paths per pixel
+* Area lights: `AreaLightSource "arealight"` turns the `Sphere` or `Disk` after it into a one-sided emitter of `intensity` × `lightcolor`, which the path tracer samples with multiple importance sampling
+* Bounce light under the ray tracer: `Option "render" "string indirect" ["radiosity"]` runs a radiosity pass, and `Option "radiosity" "float elementsize"` sets its patch size
+* Every built-in shader returns a BSDF the path tracer samples: GGX beside diffuse for `plastic`, `paintedplastic`, `metal` and `shinymetal`, and exact-Fresnel delta lobes for `mirror` and `glass`
+* A TIFF `Display` writes 16 bits a sample once `Quantize`'s `max` exceeds 255
+* `gmansampling.h` installs a counter-based sampler with stratified patterns and the warps the path tracer draws with, and `Sphere` and `Disk` sample their own surface by area
+* `gmantexture.h` installs `gman::TextureCache`; `gman::IndirectPass`, `gman::loadIndirectPass`, `gman::hitSurfacePoint`, `gman::albedo` and `gman::resolveLoadableShader` are exported
+* A release tarball installs itself: `sudo ./install.sh`, with `--prefix DIR` and `--uninstall`
+
+**Fixed**
+
+* The C API's 38 variadic entry points walk their `va_list` once; on x86-64 they read past the caller's arguments
+* The PNM, PNG and JPEG drivers raise `RIE_SYSTEM` on a failed write instead of exiting 0 with a truncated file, as does a failed TIFF scanline, though a full disk on a single-strip TIFF still exits 0; JPEG warns when its display mode asks for alpha or depth it cannot carry
+* `RiPolygon` warns on a negative or overflowing `nverts` and adds nothing, where it aborted
+* A RIB primitive parameter longer than its declared length warns before truncating
+* `GMANMatrix4`'s scalar multiply scales all sixteen entries, so a moving transform interpolates correctly
+* RIB `Points` passes its point count to `RiPointsV`; `Points` still draws nothing
+* A RIB byte at or above 0x80 classifies correctly, and a primitive request that throws frees its transform
 
 0.9.1 (2026-09-24)
 
-* **The ray tracer draws `GeneralPolygon`, `PointsPolygons` and `PointsGeneralPolygons`, holes included.** All three built nothing under `-r gmanraytracer` in 0.9.0. A `GeneralPolygon`'s first loop is its outline and the rest are holes, each hole tested on its own ring by the even-odd rule, with no triangulation. A points mesh adds one primitive per request and one `GMANRayPolygon` per face; the BVH flattens it face by face, so a large mesh culls per face and a hit reports the face. A face under three vertices or otherwise degenerate is skipped. Every ray-traced polygon resolves `s`/`t` through one rule, `gman::resolvePointTexCoords`: the object-space default, then `"st"`, then `"s"` and `"t"`
-* **The z-buffer dices a polygon by its size on screen.** 0.9.0 diced every ear-clipped triangle of a `Polygon`, `GeneralPolygon`, `PointsPolygons` or `PointsGeneralPolygons` into a fixed 16-per-edge grid. Each triangle now dices into n = clamp(ceil(L / sqrt(ShadingRate)), 1, 16) per edge, L its longest raster-space edge; a non-positive `ShadingRate`, a non-finite edge or a corner behind the eye falls back to 16. No scene dices finer than before. On 10,000 small quads at 1600×900, a render drops from 3.53 s and 904 MB peak to 0.61 s and 288 MB
-* **A redeclared `fov` takes effect.** After `Declare "fov" "float"`, `Projection "perspective" "fov" [30]` rendered at 90° and warned "FOV not set", because `RiWorldBegin` looked the token up in a dictionary other than the one that declared it. It resolves through the renderer's own dictionary now
-* **Ray geometry, the BVH and the shadow walk move into libgman, and a plugin can use them.** `GMANRayInterface`, the eight ray primitives, `GMANRayObjectManager`, `GMANRayBVH` and `GMANRayOccluder` compiled only into the ray tracer plugin; they now live in `gman_core`, built whether or not `GMAN_BUILD_RAYTRACER` is on, and their headers install: `gmanrayinterface.h`, `gmanraybbox.h`, `gmanraybvh.h`, `gmanrayobjectmanager.h`, `gmanrayoccluder.h`, `gmanraypolygon.h`, `gmanraypolygonmesh.h` and one header per quadric. `GMANRayBVH`, `GMANRayPolygonMesh` and the occluder's helpers carry `GMAN_EXPORT`. The quadrics gain `getObjectToCamera()`, `GMANRayPolygon` gains `getOuterLoop()`, `getHoles()`, `getPlaneNormal()` and `isDegenerate()`, and `GMANRayPolygonMesh` gains `getFaceCount()` and `getFace()`. Each class states a const, re-entrant contract for concurrent callers. No rendered image changes
-* **Radiosity groundwork.** `GMANRadiosityMesh` dices every ray primitive into a camera-space element mesh, holes and mesh faces included, and `GMANRadiositySolver` solves diffuse interreflection over it by progressive refinement. Both live in `renderers/radiosity/`, which still builds `OFF` and renders nothing
-* **The README is a front door.** It opens on a ray-traced render of `samples/vase.rib`, gives a four-line download-and-render for Linux, and shows six one-line edits to the scene beside their renders. The sample itself gains a robot on six wheels, water in the tipping vase and a lamp over the table
+**Incremental.** The ray tracer draws every polygon request, and the ray tracing headers install for plugins.
+
+**New**
+
+* The ray tracer draws `GeneralPolygon`, `PointsPolygons` and `PointsGeneralPolygons`, holes included
+* The ray primitives, `GMANRayObjectManager`, `GMANRayBVH` and `GMANRayOccluder` install their headers, so a plugin can trace with them
+
+**Fixed**
+
+* The z-buffer dices a polygon by its size on screen: 10,000 small quads at 1600×900 render in 0.61 s and 288 MB, down from 3.53 s and 904 MB
+* A redeclared `fov` takes effect
 
 0.9.0 (2026-09-23)
 
-* **0.9.0 breaks the plugin ABI again.** `GMANMatrix4::p3m`/`p4m` are now `const`, changing both symbols' mangled names. `gman::shade` takes a trailing `gman::Tracer const*` defaulting to `nullptr` — a source caller that omits it still compiles, but the new mangled name means a plugin built against 0.8.x must rebuild before it links against this libgman. `gman::Occluder::transmission` and the new `gman::Tracer::trace` take a trailing `RtFloat surfaceMagnitude` with no default, since a default argument on a virtual binds by static type rather than the override actually called: a plugin implementing either must add the parameter. A shader author rebuilds too: `GMANSurfaceEnv::diffuse()` and `specular()`, inline in the installed `include/gmanshaderenvironment.h`, reach `occludedContribution`, which now passes `surfaceMagnitude` to `transmission` — a shader built against 0.8.3 calls it with one argument fewer. `GMANSurfaceEnv` gains `tracer` and `surfaceMagnitude` members and the `trace()` call that reaches them, and `gman::SurfacePoint` gains its own `surfaceMagnitude`, which `gman::shade` forwards to the renderer's own `Occluder` and `Tracer`; left at 0 it reports no surface. `gman::Appearance` and `GMANAttributes` gain a stored shader parameter list, and `GMANSampleBuffer` and `GMANOutputPolygon`/`GMANOutVertex` gain a per-sample or per-pixel `GMANAlpha` alongside colour (`GMANSampleBuffer::zTestAndSet` takes a trailing alpha argument too, and `GMANOutVertex`'s is per vertex), so a plugin touching either layout rebuilds. `GMANBitmap` gains `getAlpha` and `setAlpha`, two new virtuals that shift the vtable slot of every virtual declared after them, so a plugin overriding one of those later virtuals rebuilds too. Separately, `GMANAttributes`, `GMANWorldManager`, `GMANTorus` and the light source, volume, displacement and imager shader bases now carry `GMAN_EXPORT`: a release build had hidden each one's constructor, destructor and typeinfo, so a plugin subclassing or copying one failed to link before and links now, with no plugin-side change needed. `GMANPoint` carries it too, for the out-of-line comparison operators it already had at 0.8.3; `GMANBBox`, for its out-of-line constructors and `operator=`; and `GMANColorSamples`, for its copy constructor, destructor and `operator=` — all hidden the same way
-* **An existing scene renders differently under either renderer.** The default background is black now, per the RenderMan spec, not opaque white: an uncovered pixel used to composite into white. A TIFF `Display` naming `"rgba"` writes real per-pixel coverage alpha, premultiplied into RGB, and tags it `EXTRASAMPLE_ASSOCALPHA`; one naming `"rgb"` writes 3 TIFF samples instead of 4 regardless, matching what its own `DisplayMode` asks for; `libgman/gmanoutputpng.cpp` still writes 255. A world block with no `Display`, or one explicitly naming `"framebuffer"`, now raises `RIE_ILLSTATE`, "No display output to render into.", at `RiWorldEnd` instead of silently rendering into a 0x0 framebuffer stub. A surface named more than once in a scene — restored by `AttributeEnd`, or falling back to the default surface on a primitive with no `Surface` call after a parameterized `"matte"` — now shades with its own `RiSurface` parameters instead of the last call's, a bug both renderers carried since `GMANLoadShader` returns one static instance per plugin; under the ray tracer alone, the same bug showed on any two surfaces naming the same shader, since it shades every primitive only after every `Surface` call has run. A `Polygon`, `GeneralPolygon`, `PointsPolygons` or `PointsGeneralPolygons` under the z-buffer now dices into a fine facet grid before shading instead of Gouraud-blending a handful of once-shaded corners, textured or not: a textured one reads its texture correctly across the whole surface, and an untextured one under a point or spot light now resolves its highlight across the face instead of rendering one blend of corner shades. Measured on 10,000 quads under the z-buffer, dicing costs 0.08 s and 36 MB at 0.8.3 against 2.49 s and 741 MB now, about 31× the time and 21× the memory
-* **`gman` no longer crashes running one file after another when the second has no `WorldBegin`, or when `RiEnd` follows a failed `RiBegin`.** `RiEnd` left `viewingSystem` and the renderer's own pointers dangling instead of null, so a file that rendered followed by one with no `WorldBegin` freed the same pointer twice, and `RiEnd` after a failed `RiBegin` deleted an uninitialized renderer; every pointer `RiEnd` releases is null again once it returns
-* **The ray tracer draws `Torus` now, and a same-z `Hyperboloid` it used to skip.** A full or partial torus intersects and shades under `-r gmanraytracer`; a spindle or horn torus (`minorradius >= majorradius`) still draws nothing, pinned `WILL_FAIL` by `torusspindle`. `Patch`, `PatchMesh`, `NuPatch`, `GeneralPolygon`, `PointsPolygons`, `PointsGeneralPolygons`, `Blobby`, `Points`, `Curves` and `SubdivisionMesh` still build nothing. A `Hyperboloid` whose two points share a z, drawing nothing since 0.8.3, now intersects the flat annulus it sweeps. A textured ray-traced `Polygon` also interpolates its own `s`/`t` across each hit now, instead of reading `(0, 0)` everywhere and rendering one flat texel per polygon
-* **The ray tracer scales past a linear scan of every primitive.** Each primitive now carries a padded, camera-space bound (`GMANBBox` gains `getMin()`/`getMax()` and a two-point constructor), and the renderer builds an object-median bounding volume hierarchy over them each frame instead of testing every primitive's `intersect()` in turn; traversal visits the nearer child first and prunes a subtree whose interval clears neither the ray nor the best hit found so far. No rendered image changes
-* **`mirror` and `glass` join the shader plugins, both using a new `trace()` shading call for real reflection and refraction.** `GMANSurfaceEnv::trace(R)` casts a ray from the shading point and shades whatever it hits, recursing up to 4 levels deep before returning the renderer's own background; it shades only under `-r gmanraytracer`, since only the ray tracer binds a `Tracer` — under the default z-buffer it returns black, so both shaders render black there. `mirror` scales `Kr` by what it finds along the reflected direction, and `glass` weights the reflected and refracted directions by the Fresnel reflectance and transmittance at a fixed index of refraction, 1.5. A shader calling `trace()` must read every parameter before its first call and write `Ci` only after its last, since the call recurses back into shading the same loaded plugin instance
-* **`fresnel()` returns physical reflectance and transmittance now.** `GMANSurfaceEnv::fresnel` (the exported `GMANFresnel`) used the wrong tangent identity and the wrong sign for the incidence cosine, so it returned `kr` NaN at normal incidence and `kr` 127.6 with `kt` −126.6 at 45° for eta 1/1.5, dividing by zero at grazing incidence and taking the square root of a negative number at total internal reflection. Both overloads now clamp the incidence cosine and fix the identity and its sign: normal incidence returns 0.04, and 45° at eta 1/1.5 returns 0.050 with 0.950. An out-of-tree shader calling `fresnel()` renders differently
-* **A ray-traced quadric or torus stays on its own surface far from the camera.** The sphere, cone, cylinder, paraboloid and hyperboloid now solve their intersection in double from a shifted, near-the-surface origin instead of losing the discriminant to cancellation at distance; the disk and the flat-annulus `Hyperboloid` have no discriminant to cancel and solve in double from the unshifted origin instead. Every hit now lands within 1e-5 of its implicit surface at any distance tested
+**Breaking.** Rebuild every plugin and shader; existing scenes render differently.
+
+**Breaking changes**
+
+* The plugin binary interface changes, and every plugin and shader rebuilds. `gman::shade` takes a trailing `gman::Tracer const*`; `gman::Occluder::transmission` and `gman::Tracer::trace` take a trailing `RtFloat surfaceMagnitude`, which an implementation adds; `GMANSurfaceEnv`, `gman::SurfacePoint`, `GMANSampleBuffer`, `GMANOutVertex` and `GMANBitmap` change layout
+* The default background is black, per the RISpec, where an uncovered pixel was white
+* A TIFF `"rgba"` `Display` writes premultiplied coverage alpha, and `"rgb"` writes three samples
+* A world block with no `Display`, or with a `"framebuffer"` one, raises `RIE_ILLSTATE` at `RiWorldEnd`
+* The z-buffer dices a polygon before shading, so a texture reads correctly and a highlight resolves across the face, at about 31× the time and 21× the memory of 0.8.3 on 10,000 quads
+
+**New**
+
+* `mirror` and `glass` reflect and refract through the new `trace()` shading call under `-r gmanraytracer`; under the z-buffer `trace()` returns black. A shader that calls `trace()` reads every parameter before its first call and writes `Ci` after its last
+* The ray tracer draws `Torus`, and a `Hyperboloid` whose two points share a z draws its annulus
+* The ray tracer builds a bounding volume hierarchy each frame instead of testing every primitive
+* `GMANAttributes`, `GMANWorldManager`, `GMANTorus`, `GMANPoint`, `GMANBBox`, `GMANColorSamples` and the light, volume, displacement and imager shader bases are exported, so a release-built plugin can subclass or copy them
+
+**Fixed**
+
+* A surface named more than once shades with its own `RiSurface` parameters, not the last call's
+* `fresnel()` returns physical reflectance and transmittance; it returned NaN at normal incidence and values outside [0, 1] elsewhere
+* A ray-traced quadric's hits land within 1e-5 of its surface at any distance
+* A textured ray-traced `Polygon` interpolates its `s` and `t`
+* `gman` survives a file with no `WorldBegin` after one that rendered, and `RiEnd` after a failed `RiBegin`
 
 0.8.3 (2026-09-22)
 
-* **The ray tracer renders, builds by default and installs: `gman -r gmanraytracer scene.rib`.** It traces `Sphere`, `Disk`, `Polygon`, `Cylinder`, `Cone`, `Paraboloid` and `Hyperboloid`; every other primitive, `Torus` and `GeneralPolygon` among them, still builds nothing under it, and a `Hyperboloid` whose two points share a z draws nothing, pinned `WILL_FAIL`. Each non-ambient light casts a shadow ray, an `Opacity` below 1 composites up to 16 layers front to back, and a shadow through a semi-transparent blocker attenuates by `1 - Os` at every surface it crosses. `-r <name>` chooses any renderer plugin, glued `-rNAME` included; without it `gman` renders through the z-buffer as before. `GMANViewingSystem::cameraRay` now scales its ray by the field of view, which it ignored at any `fov` but 90; the z-buffer never called it, so no z-buffer render changes
-* **libgman grows the public API a renderer plugin shades through.** `gmanshading.h` installs `gman::Appearance`, `gman::SurfacePoint`, `gman::Shading` and `gman::shade`, the shading entry point both renderers now call; `gmanocclude.h` installs `gman::Occluder`, which a renderer passes to `gman::shade` to shadow each light. `gmanpolygon.h` installs `gman::newellNormal` and `gman::isDegeneratePolygon`, `gmanmatrix4.h` gains `gman::transformPoint`, `transformDirection` and `transformNormal`, and `gmansamplebuffer.h` gains `gman::sampleCentre`. `GMANNormal`, `GMANDisk`, `GMANCone`, `GMANCylinder`, `GMANParaboloid` and `GMANHyperboloid` gain `GMAN_EXPORT`, so a plugin can link against them in a release build. `GMANSurfaceEnv` gains a trailing `occluder` member; a shader built against 0.8.2's header ignores it until rebuilt
-* **A parameter declared `integer` reaches its request as an `RtInt`, not as a float's bits.** The RIB parser stored every numeric parameter as `RtFloat` and `GMANParameterList` read an integer one back through an `RtInt*` cast, so `[4]` arrived as 1082130432. A float literal in a declared-integer slot is now `RIE_SYNTAX`; an undeclared token reads as a float, as before
-* **A RIB string decodes its escapes, so an escaped quote no longer closes it.** `\n`, `\r`, `\t`, `\b`, `\f`, `\\`, `\"`, an octal escape and a backslash-newline decode; an unknown escape yields the character after the backslash. Before, the first quote after a backslash ended the string, and one inside an array desynced the rest of the file
-* **A RIB integer that does not fit `RtInt` raises `RIE_RANGE` instead of wrapping.** The tokenizer bounds every integer literal where it reads it, so an out-of-range integer is an error even where a float is wanted: `Kd [4294967297]` now fails, and `4294967297.0` means the float. A `Declare` array size past `RtInt`'s range raises `RIE_RANGE` where it used to abort on `std::bad_alloc` once a request used the token. An inline declaration with a bracket after its seventh word raises `RIE_SYNTAX` where it used to write past the parser's word array and return silently
-* **A short array on `Polygon` or a quadric clamps with a warning instead of reading past its allocation.** Those eight requests passed no lengths to their parameter lists, so `Sphere 1 -1 1 360 "N" [0 0 1]` overran a 12-float varying normal. They now take the lengths the RIB supplies, as `GeneralPolygon` and five others already did, zero-fill the shortfall and name the parameter and both lengths
-* **Two installed declarations change.** `gmancolor.h`'s twelve `GMANConvert*` colour-space conversions are gone; none carried `GMAN_EXPORT`, so no release build could link them. `GMANToken` stores its integer as `RtInt` and renames `getLongInt()` to `getInt()`. An unknown token type now reports `SEVERE: RIE_BUG -- Unknown token type` rather than `RIE_NOMEM`, whose code its transposed arguments had borrowed
+**Breaking.** A RIB file with an out-of-range integer, or a float where an integer is declared, now fails, and two installed declarations change.
+
+**Breaking changes**
+
+* A float literal where an integer is declared raises `RIE_SYNTAX`, and an integer outside `RtInt` raises `RIE_RANGE`
+* `gmancolor.h`'s `GMANConvert*` functions are gone, and `GMANToken::getLongInt()` is `getInt()`, returning `RtInt`
+
+**New**
+
+* The ray tracer renders, builds by default and installs: `gman -r gmanraytracer scene.rib` traces convex `Polygon` and every quadric but the torus, casts shadow rays and composites `Opacity` up to 16 layers. `-r <name>` loads any renderer plugin
+* `gmanshading.h` installs `gman::shade`, `gman::Appearance` and `gman::SurfacePoint`, and `gmanocclude.h` installs `gman::Occluder`, the shading interface a renderer plugin calls
+
+**Fixed**
+
+* A parameter declared `integer` reaches its request as an `RtInt`, where `[4]` arrived as 1082130432
+* A RIB string decodes its escapes, so an escaped quote stays in the string
+* A short array on `Polygon` or a quadric zero-fills with a warning instead of reading past its allocation
+* A `Declare` array size past `RtInt`'s range raises `RIE_RANGE` instead of aborting
+* `GMANViewingSystem::cameraRay` honours the field of view
 
 0.8.2 (2026-09-19)
 
-* **0.8.2 breaks the installed ABI, which CMakeLists.txt's own policy reserves for a minor release.** A plugin calling a symbol `GMAN_EXPORT` no longer tags moves to the tagged surface, or gman itself needs a local patch and rebuild to re-export it. A release build now hides everything the tag omits: measured with `nm -gU` on the release preset, `libgman_core` exported 1604 symbols in 0.8.1 and 793 now, 29 classes tagged alongside `ri.h` and the shading-language, error and logging headers a shader calls. Hiding follows `BUILD_TESTING`, so a plain `cmake -B build` configure still exports everything; any configure with `BUILD_TESTING` off is trimmed, the release preset and its tarballs among them
-* **gman installs as a real CMake package for the first time.** 0.8.1's `install(TARGETS)` named no export set and skipped `gman_shinymetal` outright, so an installed `gman` could not load `libshinymetal.so`, and no `gmanConfig.cmake` let a programmer `find_package(gman)`. `gman_core` now installs through an `EXPORT gmanTargets` set with a generated `gmanConfig.cmake` and a `SameMinorVersion` `gmanConfigVersion.cmake`: a consumer writes `find_package(gman CONFIG REQUIRED)` and links `gman::gman_core`. `SameMinorVersion` treats every 0.8.x release as compatible; this one is not, since it trims the exported ABI
-* **16 headers move out of `include/` and stop installing, `gmanparallel.h` among them — the header 0.8.0 named as the one threading seam.** No installed header includes any of the 16, so only a consumer that included one directly must change. The tree's own shaders adopt `namespace gmanshader` too, as `gmanshader::plastic` and its siblings, the convention a new shader plugin now follows. Three diagnostics lose a stale class-name prefix: `RiErrorHandler` reports `No active context` rather than `GMANContext: No active context`, `invalid Context Handle` loses the same `GMANContext:` prefix, and an inline-declared parameter's syntax errors drop their `GMANInlineParse:` prefix
-* **`RiBegin` on a name ending `.rib` now writes RIB, instead of trying and failing to load it as a renderer.** `RiBegin(name)` always built a `GMANRenderManImpl` and tried to `dlopen` `lib<name>.so`, so `RiBegin("scene.rib")` looked for `libscene.rib.so`, and no scene ever reached `GMANASCII`, the class that writes RIB. A name ending `.rib` now loads `libgmanrib.so` instead, a plugin dlopened the way a renderer is; any other name, `RI_NULL` included, builds a renderer as before. A failed `.rib` load raises the load error and leaves no context current, so every later request raises `RIE_NOTSTARTED` until `RiBegin` or `RiContext` selects one. `gman_rib`, a plain shared library in 0.8.1 with no `gman::` target, is gone; `RiBegin("x.rib")` is the only way to reach the writer
-* **`RtBoolean` is a fixed `short`, not `bool` in C++ or `unsigned char` in C, and every C++ signature carrying one changes its mangled name.** A plugin subclassing `GMANRenderMan` or `GMANRenderManImpl`, or calling `GMANRIBParse::addHandler`, must rebuild. `RI_NULL` was the wrong width: a bare `0` passed through a variadic `Ri*` call's `...` supplies an `int`-sized slot where `va_arg` reads a pointer, wrong on any LP64 platform; `RI_NULL` is now `(RtToken)0`, pointer-width. Assigning it to a handle type — `RtLightHandle`, `RtObjectHandle` or `RtContextHandle` — needs an explicit cast in C++, and warns without one in C. `ri.h`'s `#define NCOMPS 3` and `__GMAN_RI_H` include guard are both gone, the guard replaced by `#pragma once`
-* **`RiIlluminate` and `RiTransformEnd` are spelled correctly in `ri.h`.** Both were already defined under their correct names in `gmancapi.cpp`, but `ri.h` declared `RiIllumnate` and `RiTranformEnd`, so no program built against the header could link either call. Both misspellings are gone, not kept alongside the fix
-* **`RiExposure`'s gain and gamma now correct before a pixel narrows to a byte, not after.** Every driver's `save()` called `setExposure` from the same option and narrowed to `GMANColorRGB` first, then looked its byte value up in a table built by `pow`; a channel below 1/255 had already narrowed to 0, and the table's own zero entry meant no gamma could lift it. `gman::gammaCorrected` now runs on the float `GMANColor` before narrowing, in all four drivers. A render at the default gain 1, gamma 1 is bit-for-bit unchanged; gain above 1 can still overflow narrowing to `GMANColorRGB`, as it did in 0.8.1. Code calling `GMANGammaCorrect` or `GMANOutput::setExposure` loses both, deleted; `gman::gammaCorrected(color, gain, gamma)` in the installed `gmangamma.h` is the replacement
-* **A textured full sphere's texture turns half a turn, and a partial sweep starts at the spec's +x instead of -x.** `GMANSphere::getLocation` subtracted half a turn before scaling `theta` by `thetamax`, the only one of the seven quadrics carrying that offset, so `u=0` landed opposite where the RISpec and every other quadric put it. A `Sphere` with `thetamax` below 360 now draws its wedge half a turn from where 0.8.1 drew it; an untextured full sphere changes only where its tessellation crossed the old seam
-* **A C-API program that passes a shader a parameter no longer crashes at exit, or at its next `RiBegin`/`RiEnd` cycle.** `RiEnd` deletes the context's `GMANDictionary`, but a shader plugin stays loaded for the process's life; its static `GMANShader` kept a `GMANParameterList` built against that freed pointer, read again by the next cycle's `GMANShader::set` or by exit. The `gman` CLI never reached this path; any C program that called `RiEnd` after passing a shader a parameter did, at exit after a single render. Each list now owns its arrays behind a `unique_ptr` chosen at construction, so a throw partway through construction frees what it already allocated instead of leaking, and destroying a list never touches the dictionary again. `operator=` returns `GMANParameterList&`, not `const GMANParameterList&`, on this exported class
+**Breaking.** Rebuild every plugin; a release build exports only tagged symbols.
+
+**Breaking changes**
+
+* A release build exports only what `GMAN_EXPORT` tags, 793 symbols where 0.8.1 exported 1604, so a plugin calling an untagged symbol stops linking
+* `RtBoolean` is a fixed `short`, changing the mangled name of every C++ signature that carries one; `RI_NULL` is the pointer-width `(RtToken)0`, which C++ must cast explicitly to a handle type such as `RtLightHandle`; `ri.h` drops `NCOMPS`
+* 16 headers stop installing, `gmanparallel.h` among them
+* `ri.h` spells `RiIlluminate` and `RiTransformEnd` correctly and drops the misspellings
+* `GMANGammaCorrect` and `GMANOutput::setExposure` are gone; `gman::gammaCorrected` in `gmangamma.h` replaces them
+* `gman_rib` is gone; `RiBegin` on a name ending `.rib` writes RIB through `libgmanrib.so`
+* A textured sphere's texture turns half a turn, and a partial sphere starts its sweep at +x, as the RISpec and the other quadrics do
+* Three diagnostics drop a `GMANContext:` or `GMANInlineParse:` prefix
+
+**New**
+
+* gman installs as a CMake package: `find_package(gman CONFIG REQUIRED)` and link `gman::gman_core`
+* The tree's shaders live in `namespace gmanshader`, the convention for a new shader plugin
+
+**Fixed**
+
+* The install carries `libshinymetal.so`
+* `Exposure` gain and gamma apply before a pixel narrows to a byte, so gamma lifts a channel below 1/255
+* A C program that passes a shader a parameter survives its next `RiBegin`/`RiEnd` cycle and its exit
 
 0.8.1 (2026-09-17)
 
-* **0.8.0 shipped one tarball of three; this release ships all three.** On the 0.8.0 tag push `softprops/action-gh-release@v2` failed with "Error creating asset temp dir" on `ubuntu-24.04-arm` and `macos-latest`, twice each — the small `.sha256` uploaded and the tarball beside it did not. The release workflow now creates the release and attaches every asset with `gh`, which ships on the runner image itself rather than arriving as a third-party action holding `contents: write`. The create step edits an existing release in place and the upload passes `--clobber`, so rerunning one partly-failed leg replaces that leg's assets instead of colliding with them
-* **The documentation no longer cites a file that is not there.** 36 references to `SPEC.md` across 31 files pointed at a document deleted before 0.8.0
-* **Groundwork for the ray tracer.** `include/gmanray.h` gives `GMANRay` an origin, a normalized direction and a `[tmin, tmax]` interval, and `GMANHit` the record an intersection fills in; `GMANViewingSystem::ray` transforms a camera-space ray into world space. The ray-tracing plugin remains non-functional and built `OFF`, and no rendered image changes
+**Incremental.** The release tarballs 0.8.0 lacked ship.
+
+**Fixed**
+
+* All three release tarballs ship; 0.8.0 shipped one
 
 0.8.0 (2026-09-17)
 
-* **libtiff is now required.** `GMAN_WITH_TIFF` is gone, and configure fails without libtiff rather than building a renderer that cannot write its own default output. TIFF is the `Display` default and the format every texture is read from, so the option only ever chose between a working build and a crippled one
-* **C++20 is the floor, and the 1999 pthread wrapper is gone.** GCC 13 or Clang 17 with `<format>` builds gman; an older compiler does not. `gmanguard.h`, `gmanmutex.h` and `gmanthread.h` are deleted — nothing called them and two of their methods had empty bodies. `gmanParallelFor` in `include/gmanparallel.h` is the one threading seam, and `tests/threadcontainment_test.cpp` fails any other file that names a thread primitive
-* **The PNG and JPEG drivers are optional, and their headers left `include/`.** Each driver compiles only where its library is present; `GMAN_WITH_PNG` and `GMAN_WITH_JPEG` force the question and fail configure when the library is missing. `gmanoutputpng.h` and `gmanoutputjpeg.h` are no longer installed. `gman --version` now lists the drivers a build carries, and a `Display` naming one it lacks fails with `RIE_BADFILE` instead of writing nothing
-* **A plugin no longer declares a copyright.** `GMANLoadableObjectInfo` lost its `copyright` field, and `GMANLoadable::getCopyright` and `GMANLog::copyright` are gone: an out-of-tree plugin drops that initializer and rebuilds against `name`, `author`, `description`. `gman` opens with one line — `gman 0.8.0 -- LGPL-2.1-or-later, see COPYING` — where it printed four lines of license text through a format string that silently dropped both the Pixar notice and the version
-* **Texturing.** `MakeTexture` turns a rendered image into a texture and `texture(name, s, t)` samples it from a surface shader, honoring the `swrap` and `twrap` modes recorded when it was made. Polygons carry per-vertex `s` and `t`, parametric surfaces shade with their own parameterization, and a cache holds each texture's pixels for the render rather than re-reading the file per shade
-* **Environment maps, and a `shinymetal` shader that uses them.** `MakeLatLongEnvironment` builds a latitude-longitude map and `environment(name, R)` samples it along a reflection direction. The shader now receives the camera-to-world matrix that a world-space reflection needs; `environment()` is indexed in world space, per RISpec A.2.4
-* **`spotlight`.** `LightSource "spotlight"` joins ambient, distant and point lights, with `coneangle`, `conedeltaangle` and `beamdistribution` in radians as the RISpec specifies — a scene asking for `"coneangle" [30]` asks for 30 radians
-* **`GeneralPolygon` and `PointsGeneralPolygons` render, holes and all.** Concave outlines triangulate by ear clipping, and each interior loop is bridged into the outline before triangulation. The classification is dimensionless, so a polygon renders the same at any scale or placement
-* **`PointsPolygons` renders.** One shared vertex array, one vertex count per polygon, with per-vertex parameters indexed through it
-* **`NuPatch` renders.** A NURBS surface evaluates against its knot vectors and rasterizes with the rest; `TrimCurve` is parsed and stored, and trims nothing yet
-* **The tree is clang-format clean and gated.** Every source file is formatted to `.clang-format` — 120 columns, left-bound pointers, includes grouped into standard, system, library and gman blocks — with clang-format 22.1.8, and `format-check` fails on any drift. A patch written against an earlier tree needs reformatting before it applies
-* **`gman -l` wrote one byte past its buffer.** The log file name was sized `strlen(rib) + 4` where appending `.log` needs five, and a RIB path shorter than four characters also read before the buffer. Setting the log file no longer deadlocks on the log's own lock
-* **A malformed RIB no longer leaks memory.** Every duplicated string and every pending parameter key is released when array conversion throws partway through, and a `Declare` whose array size overflows is rejected rather than truncated. A bitmap whose pixel count overflows `int` is rejected at construction, and assigning one now copies both of its dimensions
-* **The JPEG driver reports a file it cannot open.** A failed `fopen` in `GMANOutputJPEG::save` fell into an empty else branch, so the render reported success with nothing on disk; it now throws the `RIE_SYSTEM` error the PNG and PNM drivers already threw
+**Breaking.** libtiff and C++20 are required, plugins drop their copyright field, and patches need reformatting.
 
-**Known gaps.** No shadows: `MakeShadow` is accepted and ignored, `shadow()` does not exist, and every light illuminates through geometry. No `bump()` — `MakeBump` is accepted and ignored too. `Points` and `Curves` parse and draw nothing. Rendering is still single-threaded: `gmanParallelFor` is the seam, and no renderer runs through it yet. The REYES, ray-tracing and radiosity plugins remain non-functional and built `OFF`. Shaders are C++ plugins; the shading-language compiler was never finished.
+**Breaking changes**
+
+* libtiff is required, and `GMAN_WITH_TIFF` is gone
+* C++20 is the floor: GCC 13 or Clang 17. `gmanguard.h`, `gmanmutex.h` and `gmanthread.h` are gone
+* The PNG and JPEG drivers build only where their library is present, and their headers stop installing; a `Display` naming a driver the build lacks fails with `RIE_BADFILE`
+* `GMANLoadableObjectInfo` drops its `copyright` field, and `GMANLoadable::getCopyright` and `GMANLog::copyright` are gone
+* The tree is formatted with clang-format, so a patch against an earlier tree needs reformatting
+
+**New**
+
+* Texturing: `MakeTexture` makes a texture and `texture(name, s, t)` samples it, honouring `swrap` and `twrap`; polygons carry per-vertex `s` and `t`
+* Environment maps: `MakeLatLongEnvironment` makes one, `environment(name, R)` samples it, and the `shinymetal` shader uses it
+* `LightSource "spotlight"`, with `coneangle`, `conedeltaangle` and `beamdistribution` in radians as the RISpec specifies
+* `GeneralPolygon`, `PointsPolygons` and `PointsGeneralPolygons` render, concave outlines and holes included
+* `NuPatch` renders; `TrimCurve` parses and trims nothing yet
+* `gman --version` lists the output drivers a build carries
+
+**Fixed**
+
+* `gman -l` stays inside its buffer and sets the log file without deadlocking
+* A malformed RIB frees everything it allocated, and a `Declare` whose array size overflows is rejected
+* The JPEG driver reports a file it cannot open, where it reported success
 
 0.7.1 (2026-09-08)
 
-* **A malformed RIB could make the renderer read past the end of a heap allocation.** `Patch "bilinear" "P" [-1 -1 0  1 -1 0]` declares four vertices — twelve floats — and supplies six. `GMANParameterList` sized its destination from the declared class and copied that many elements from the supplied array, running off the end of the parser's buffer and rendering whatever happened to be next in memory as vertex coordinates. Short arrays are now clamped and zero-filled, with a warning naming the parameter and both lengths. All three copy paths are covered — float, integer and string — since each carried the identical unbounded loop
-* **This affected 0.6.0 and 0.7.0.** The defect predates `PatchMesh`, where review found it: the trace above is a plain `Patch`. Anyone running an earlier release should upgrade. A renderer's whole job is parsing files it did not write, which makes an out-of-bounds read on malformed input a defect in the primary input path rather than an edge case
-* **The parser already knew the length and threw it away.** `parseParameterList` recorded each array's element count and discarded it. The `Ri*V` entry points cannot carry it — those signatures are fixed by the RenderMan interface — so the count now travels beside the call rather than through it. Supplying no count still means "trust the caller", which keeps the public C API's contract intact: a program calling `RiPatchV` directly owns that memory, while a RIB file is untrusted
-* **A zero basis step no longer divides by zero.** `validBicubicMeshDim`'s nonperiodic branch computed `(n - 4) % step` with no guard on `step`, where its periodic sibling rejected `step < 1` outright. Unreachable through RIB, which rejects a bad step earlier, and reachable through `GMANPatchPolyObjectManager` directly
-* **The memcheck leg tests more than two files.** Valgrind in CI ran `sphere.rib` and `corpus/menger.rib` and nothing else, so no `PatchMesh` fixture and no malformed input ever reached a sanitizer there. That is why the overflow above survived review and a merge. A periodic bicubic `PatchMesh` now runs under memcheck
+**Incremental.** It fixes an out-of-bounds read on malformed RIB; upgrade from 0.6.0 or 0.7.0.
+
+**Fixed**
+
+* A RIB array shorter than its declaration zero-fills with a warning naming the parameter and both lengths, where it read past the parser's buffer: `Patch "bilinear" "P" [-1 -1 0  1 -1 0]` did. A program calling an `Ri*V` entry point directly still owns its array lengths
+* A zero basis step in `GMANPatchPolyObjectManager` is rejected instead of dividing by zero
 
 0.7.0 (2026-09-07)
 
-* **Anti-aliasing.** `PixelSamples` and `PixelFilter` were parsed, stored and discarded; every render was one sample per pixel whatever the scene asked for. A per-sample buffer now sits behind the z-buffer renderer, and the pixel filter convolves over its support rather than the renderer averaging within a pixel. Every image the renderer produces changes. Samples land at `(j+0.5)/n` within a pixel — a truncating placement would have shifted every image a fraction of a pixel, which no surviving test would have caught
-* **`Patch` renders, bilinear and bicubic.** It had parsed and drawn nothing since 1999. Landing it exposed the defect that had kept it dark: `GMANVector4::operator*=(const GMANMatrix4 &)` sliced itself to a 3D temporary, transformed that, and threw it away, so a projective transform of a 4-component point silently did nothing. The header had documented that exact bug shape as already fixed for its sibling overloads. Bicubic also needed its tangents normalized before crossing them, or the surface normal scaled with the parameterization
-* **`PatchMesh` renders, bilinear and bicubic, periodic and non-periodic.** Includes B-spline, Bezier, Catmull-Rom and Hermite bases through `RiBasis`, and mixed `uwrap`/`vwrap`. Two arithmetic defects came out of it: the last sub-patch of a periodic mesh read one row past the grid instead of wrapping to the first, and a zero-step basis divided by zero before any control point was touched
-* **Two of the five pixel filters were wrong, and nothing had ever called them.** `RiTriangleFilter` returned nonzero — sometimes negative — weights outside its support, so a filter that should vanish at its edge instead subtracted light beyond it. `RiGaussianFilter` was missing the RISpec's `2/width` rescale of its argument, leaving the kernel at 61% of peak at the support edge where the reference sits at 13.5%. Both were found by evaluating the functions rather than by reading them. Box, Catmull-Rom and sinc are pinned as-found by tests rather than "fixed"
-* **The golden-image tolerance is measured rather than guessed.** It had accepted 24/255 per channel across up to 1% of pixels — values picked for one scene during the revival and adopted tree-wide. That window absorbed a real regression: reverting the perspective screen-window clip fix moved 732 of 120,000 pixels and the `shaders` golden still passed. Measuring the actual cross-platform spread found macOS matching every pixel exactly and Linux differing by at most six pixels in one scene, so the fraction tightened to 0.1% — about 180x headroom over the worst case observed. That same revert now turns `shaders` red
-* **The test suite carries labels, timeouts and a real skip.** Every test declares `LABELS` and a `TIMEOUT`; the JPEG driver test skips rather than fails where libjpeg is absent. 34 tests, up from 31
-* **Intel Mac binaries are gone from releases.** The `macos-13` leg of `0.6.0` sat queued for five hours without ever being assigned a runner and published six assets where eight were expected. The matrix is now the three legs that actually get runners: linux-x86_64, linux-arm64, macos-arm64. Building on an Intel Mac is still supported; nobody ships you a binary for it
+**Breaking.** Every image changes: renders are anti-aliased.
 
-**Known gaps.** No texturing — `texture()`, `environment()`, `shadow()` and `bump()` do not exist, though `s`/`t` reach the shader. No shadows: a light illuminates through geometry. No `spotlight`. `NuPatch`, curves and points parse but do not rasterize. Single-threaded — the 1999 pthread wrapper is still present, still uncalled, and two of its methods are empty bodies. The REYES, ray-tracing and radiosity plugins remain non-functional and built `OFF`. Shaders are C++ plugins; the shading-language compiler was never finished.
+**Breaking changes**
+
+* `PixelSamples` and `PixelFilter` take effect, so every render changes
+* Release binaries cover linux-x86_64, linux-arm64 and macos-arm64; Intel macOS builds from source
+
+**New**
+
+* The z-buffer anti-aliases through a per-sample buffer convolved by the pixel filter
+* `Patch` renders, bilinear and bicubic
+* `PatchMesh` renders, bilinear and bicubic, periodic or not, through the B-spline, Bezier, Catmull-Rom and Hermite bases
+
+**Fixed**
+
+* `RiTriangleFilter` is zero outside its support, and `RiGaussianFilter` applies the RISpec's `2/width` rescale
+* `GMANVector4::operator*=(GMANMatrix4 const&)` transforms its point, where it discarded the result
 
 0.6.0 (2026-09-06)
 
-* **The first release in 24 years.** GMAN was written between 1999 and 2002, shelved at 0.1.0, and resumed in 2026. Everything below is the revival arc; the entries under it are the original history, kept verbatim from the `ChangeLog` this file replaces
-* **It renders.** All seven RenderMan quadrics — `Sphere`, `Cone`, `Cylinder`, `Hyperboloid`, `Paraboloid`, `Torus`, `Disk` — plus convex `Polygon`, shaded by matte, plastic or metal, lit by `ambientlight`, `distantlight` and `pointlight`, written out as TIFF, PNG, JPEG or PNM. At the start of the revival `gman sphere.rib` exited 1 with `TOKEN_NOT_FOUND` and produced no file
-* **Builds with CMake 3.21 presets and C++17.** Autotools is gone, along with the Windows tree and the `GMANDLL` macro (now `GMAN_EXPORT`, across 95 files). Three presets: `dev` is RelWithDebInfo, `debug` adds ASan and UBSan, `release` is Release
-* **The coordinate chain works end to end.** Object → world → camera → screen → NDC → raster. `GMANMatrix4::prjPersp` was rewritten; `RiWorldBegin` had shadowed the field of view with its default, and the output driver leaked on every frame
-* **Array parameters reached the renderer for the first time.** `fov [45]` parsed, then was silently dropped, so every scene rendered at the default field of view whatever it asked for. This defect is why the revival ran phases 0 → 2 → 1 rather than in order
-* **Transform composition order was backwards.** `buildTransform` accumulated `CTM_old · Local` for a row-vector chain that requires `Local · CTM_old`, so an in-world `Rotate` orbited its primitive around the camera instead of the world origin — a sphere's silhouette centroid moved 99 → 192 px across 0 → 30° of rotation and left the frame entirely by 45°. Invisible to the whole test suite at the time, because every rendering fixture used only `Translate`
-* **Perspective clipping honors the screen window.** `GMANPolygonClipper::clip` tested perspective geometry against fixed ±1 side planes while computing the correct planes for orthographic. At 640×400 the default window is x ∈ [-1.6, 1.6], so only columns 120–520 of 640 ever drew and 37% of every wide frame was background
-* **Convex `Polygon` rasterizes.** `GMANPolygon` had been declared and wired to nothing. Landing it exposed two more defects it made observable: `RiPolygonV` sized its parameters wrongly, and `GMANRIBParse::parsePolygon` hardcoded a vertex count of zero
-* **Primitives carry normals, and shading runs.** `calcNormal` is wired, backface culling is real rather than assumed, lights illuminate, and C++ surface shaders execute against a populated shading environment
-* **Loading two shaders in one scene no longer aborts.** `GMANLoadableShader` let its `dlopen` handle refcount reach zero at `AttributeEnd` and closed the module while a later `AttributeBegin` still referenced the address the loader recycled. Handles are now retained for the life of the process
-* **`GMANQuantize::doColor` stopped logging once per pixel.** A 640×400 render emitted 256,000 identical warnings; it now warns once
-* **The RIB front end covers a working subset of RISpec 3.2.** Camera and transform setup, lights, surface shaders, array and inline-declared parameters, `facevarying` parameters, gzip'd streams and `ReadArchive` with cycle detection. Any request GMAN does not implement warns once, skips and keeps parsing, so an unsupported scene degrades instead of aborting — 23 requests take that path deliberately. Aqsis' `menger.rib` parses end to end
-* **A real test suite and CI.** Golden-image regression over a checked-in RIB corpus, unit tests for the matrix and space chain, and seven CI legs: macOS and Linux against both gcc and clang, an ASan/UBSan build, valgrind memcheck, and a clang-format check. The Linux legs caught what macOS clang cannot see — 26 `delete` on `new[]`, an incompatible function type, ignored-qualifier casts and a 1,332-byte-per-context leak
-* **The license position is settled.** LGPL-2.1-or-later with SPDX identifiers across 220 files; the pre-2005 FSF address is corrected and "GNU GMAN Library" is retired — GMAN was never an accepted GNU package. The name is now "GMAN, a RenderMan-compatible renderer", which drops a trademark use that was the project's only real legal exposure
-* **Documentation describes the renderer that exists.** The README is markdown and leads with what GMAN does; `CONTRIBUTING.md` replaces a coding guide written in 2001; `AGENTS.md` covers the conventions and traps for an AI agent working the tree; the 1999 LaTeX manual no longer cites headers that never existed or a compiler from 1998. `INSTALL`, `disclaimer.txt` and the old `ChangeLog` are deleted
+**Breaking.** The first release since 0.1.0 in 2000; CMake replaces Autotools, and the Windows build is gone.
 
-**Known gaps.** No texturing. No anti-aliasing — one sample per pixel, though `PixelSamples` and `PixelFilter` parse and five filter kernels are implemented. `Patch`, `PatchMesh`, `NuPatch`, curves and points parse but do not rasterize. The REYES, ray-tracing and radiosity renderer plugins are present, non-functional and built `OFF` by default. Shaders are C++ plugins; the shading-language compiler was never finished and is kept only as a record.
+**Breaking changes**
+
+* Autotools and the Windows tree are gone; CMake 3.21 presets build gman with C++17
+* `GMANDLL` is `GMAN_EXPORT`
+
+**New**
+
+* The seven RenderMan quadrics and convex `Polygon` render, shaded by `matte`, `plastic` or `metal`, lit by `ambientlight`, `distantlight` and `pointlight`, and written as TIFF, PNG, JPEG or PNM
+* The RIB front end covers a working subset of RISpec 3.2: camera and transform setup, lights, surface shaders, array and inline-declared parameters, `facevarying` parameters, gzipped streams and `ReadArchive`. An unsupported request warns once and is skipped
+* The CMake presets `dev`, `release` and `debug`, with ASan and UBSan, build it
+* The licence is LGPL-2.1-or-later, and the name is "GMAN, a RenderMan-compatible renderer"
+
+**Fixed**
+
+* Array parameters reach the renderer, so `fov [45]` takes effect
+* Transforms compose in the right order, so an in-world `Rotate` turns about the world origin
+* Perspective clipping honours the screen window, so a wide frame draws edge to edge
+* Loading two shaders in one scene works
 
 0.1.0 (2000-02-13)
 
