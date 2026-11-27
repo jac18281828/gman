@@ -358,8 +358,6 @@ libgmanrib/    the RIB-writer plugin RiBegin("x.rib") loads, not yet trustworthy
 renderers/     loadable rendering modules -- zbuffer, raytracer and pathtracer; radiosity,
                the radiosity pass the ray tracer loads
 shaders/       loadable shading modules
-gmansl/        grammar and driver for a shading language compiler that was never
-               finished; kept as a record, built by nothing
 gman/          the gman command line utility
 samples/       demo scenes and their renders
 tests/         the test suite and its RIB corpus
