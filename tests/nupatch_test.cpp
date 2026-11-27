@@ -51,6 +51,8 @@
 #include <string>
 #include <vector>
 
+#include <sys/stat.h>
+
 #include "check.h"
 #include "checkertexture.h"
 #include "gmanparameterlist.h"
@@ -452,6 +454,30 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
   }
 }
 
+// ---- The ray factory's NuPatch warning ----
+
+// gmanraytracer cannot render a NuPatch: the request is dropped with one
+// warning, not silently. The render runs in a directory of its own, so the
+// ray-traced image never overwrites the golden comparison's nupatch_bilinear.tif.
+void testRayTracerWarnsOnceForNuPatch(std::string const& gman, std::string const& ribDir) {
+  std::string const workingDirectory = "nupatch_raytracer";
+  mkdir(workingDirectory.c_str(), 0755);
+
+  GMANRunOptions options;
+  options.workingDirectory = workingDirectory;
+  options.timeoutSeconds = 10;
+  GMANRunResult const r = ::runGman(gman, {"-r", "gmanraytracer", ribDir + "/nupatch_bilinear.rib"}, options);
+  check(!r.timedOut && !r.crashed && r.exitStatus == 0, "nupatch_bilinear.rib under gmanraytracer exits 0");
+
+  std::string const text = "NuPatch: the ray and path tracers cannot render a NuPatch; ignoring.";
+  std::size_t count = 0;
+  for (std::size_t at = r.output.find(text); at != std::string::npos; at = r.output.find(text, at + text.size())) {
+    ++count;
+  }
+  check(count == 1, "nupatch_bilinear.rib under gmanraytracer: the ray factory's NuPatch warning appears once, not " +
+                        std::to_string(count) + " times");
+}
+
 // ---- Exception safety (commit 1) ----
 
 void testIllegalBlockLeaksNothing(std::string const& gman, std::string const& malformedDir) {
@@ -498,6 +524,7 @@ int main(int argc, char* argv[]) {
 
   testRenderTwin(gman, ribDir);
   testTextureCoordinatesNoOp(gman, ribDir);
+  testRayTracerWarnsOnceForNuPatch(gman, ribDir);
 
   testMalformedFixtures(gman, malformedDir);
   testIllegalBlockLeaksNothing(gman, malformedDir);

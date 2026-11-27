@@ -2283,8 +2283,9 @@ set_tests_properties(pointspolygons PROPERTIES
 # evaluator, RiNuPatchV validates and sizes the request, parseNuPatch
 # checks knot lengths and owns its arrays. Evaluator cases (direct
 # construction), twin-RIB renders and texture-coordinates no-op fixtures
-# compared pixel by pixel (tests/goldenimage.h), and malformed/exception
-# fixtures. See tests/nupatch_test.cpp.
+# compared pixel by pixel (tests/goldenimage.h), the ray tracer's one warning
+# for a NuPatch it cannot render, and malformed/exception fixtures. See
+# tests/nupatch_test.cpp.
 add_executable(gman_nupatch nupatch_test.cpp)
 target_link_libraries(gman_nupatch PRIVATE gman TIFF::TIFF)
 
@@ -2298,7 +2299,7 @@ add_test(NAME nupatch
 set_tests_properties(nupatch PROPERTIES
   ENVIRONMENT "${GMAN_PHASE2_ENV}"
   LABELS render
-  TIMEOUT 30)
+  TIMEOUT 40)
 
 # Test-only surface shader (see its own comment): a dlopen'd module and its
 # caller share nothing but computeCi's own return value, so
@@ -4250,7 +4251,8 @@ set_tests_properties(polygonnverts PROPERTIES
 # each one with itself, and an empty gman::Owned adds nothing. Each factory
 # returns an empty owner for a mesh with no face, and a failed request adds
 # nothing to the world, which an in-process ray-traced render with a radiosity
-# pass shows by skipping no primitive. See tests/primitiveowners_test.cpp.
+# pass shows by skipping no primitive. A NuPatch the ray factory drops warns
+# once per world. See tests/primitiveowners_test.cpp.
 add_executable(gman_primitiveowners primitiveowners_test.cpp)
 target_link_libraries(gman_primitiveowners PRIVATE gman gman_ray gman_raster gman_internal_headers)
 

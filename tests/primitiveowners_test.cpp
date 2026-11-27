@@ -23,7 +23,8 @@
  * each primitive added to it when the world itself goes, and an empty
  * gman::Owned adds nothing. Each factory returns an empty owner for a mesh
  * with no face, and a request that yields no geometry adds nothing to the
- * world: a render's radiosity pass counts no primitive it could not dice.
+ * world: a render's radiosity pass counts no primitive it could not dice. A
+ * NuPatch the ray factory drops warns once per world.
  */
 
 #include <cstddef>
@@ -152,19 +153,21 @@ template <typename Fn> std::string captureLog(std::string const& path, Fn&& fn) 
   return readFile(path);
 }
 
+void beginRayTracerScene(GMANRenderManImpl& renderMan, std::string displayName) {
+  renderMan.RiBegin("gmanraytracer");
+  renderMan.RiFormat(8, 8, 1.0f);
+  renderMan.RiDisplayV(displayName.data(), RI_FILE, RI_RGBA, 0, nullptr, nullptr);
+}
+
 void renderFailedRequestScene() {
   GMANRenderManImpl renderMan;
-  renderMan.RiBegin("gmanraytracer");
+  beginRayTracerScene(renderMan, "primitiveowners_failedrequest.tif");
 
   char radiosity[] = "radiosity";
   char* indirect = radiosity;
   RtToken optionTokens[1] = {"string indirect"};
   RtPointer optionParms[1] = {&indirect};
   renderMan.RiOptionV("render", 1, optionTokens, optionParms);
-
-  renderMan.RiFormat(8, 8, 1.0f);
-  char displayName[] = "primitiveowners_failedrequest.tif";
-  renderMan.RiDisplayV(displayName, RI_FILE, RI_RGBA, 0, nullptr, nullptr);
   renderMan.RiWorldBegin();
 
   RtFloat intensity = 20.0f;
@@ -196,6 +199,35 @@ void testFailedRequestAddsNothing() {
         "a failed request adds nothing: the radiosity pass skips no primitive");
 }
 
+void renderTwoNuPatchesScene() {
+  GMANRenderManImpl renderMan;
+  beginRayTracerScene(renderMan, "primitiveowners_nupatch.tif");
+  renderMan.RiWorldBegin();
+
+  RtInt const order = 2;
+  RtFloat knots[4] = {0, 0, 1, 1};
+  RtFloat controlPoints[12] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.4f, 0.2f, -0.4f, 0.5f, -0.1f, 0.5f, 0.5f, 0.3f};
+  RtToken tokens[1] = {RI_P};
+  RtPointer parms[1] = {controlPoints};
+  for (int request = 0; request < 2; ++request) {
+    renderMan.RiNuPatchV(order, order, knots, 0, 1, order, order, knots, 0, 1, 1, tokens, parms, nullptr);
+  }
+
+  renderMan.RiWorldEnd();
+  renderMan.RiEnd();
+}
+
+void testNuPatchWarnsOncePerWorld() {
+  std::string const log = captureLog("primitiveowners_nupatch.log", renderTwoNuPatchesScene);
+  std::string const text = "NuPatch: the ray and path tracers cannot render a NuPatch; ignoring.";
+  std::size_t count = 0;
+  for (std::size_t at = log.find(text); at != std::string::npos; at = log.find(text, at + text.size())) {
+    ++count;
+  }
+  check(count == 1, "a NuPatch the ray factory drops warns once per world: the text appears " + std::to_string(count) +
+                        " times for two requests");
+}
+
 } // namespace
 
 int main() {
@@ -203,6 +235,8 @@ int main() {
   testEmptyOwnerAddsNothing();
   testFactoriesReturnEmptyOwnerForNoFace();
   testFailedRequestAddsNothing();
+  testNuPatchWarnsOncePerWorld();
 
-  return checkSummary("the world owns what it is given and a failed request adds nothing");
+  return checkSummary(
+      "the world owns what it is given, a failed request adds nothing and a dropped NuPatch warns once");
 }

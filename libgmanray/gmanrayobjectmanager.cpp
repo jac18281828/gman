@@ -488,6 +488,7 @@ gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSNuPatch(RtInt /*nu*/, RtIn
                                                               RtFloat /*vmax*/, GMANParameterList /*pl*/,
                                                               GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
                                                               GMANTransform* /*t*/) {
+  warningOnce("NuPatch: the ray and path tracers cannot render a NuPatch; ignoring.");
   return nullptr;
 };
 
