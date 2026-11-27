@@ -182,16 +182,19 @@ tracer instead, with real reflection, refraction and shadows, and
 `-r gmanpathtracer` through the path tracer, which traces
 `Option "pathtracer" "integer samples" [n]` paths per pixel. Output lands
 wherever the scene's own `Display` request names, relative to the current
-directory. `gman --bit-depth 16 scene.rib` writes 16-bit TIFF, PNG and PNM when the scene sets no `Quantize`;
-`--bit-depth 8`, the default, keeps 8. A scene selects 16 bits itself with `Quantize "rgba" 65535 0 65535 0.5`,
-and an explicit `Quantize` that contradicts the flag stops the file with an error.
+directory. `gman --bit-depth 16 scene.rib` writes 16-bit TIFF, PNG and PNM
+when the scene sets no `Quantize`; `--bit-depth 8`, the default, keeps 8. A
+scene selects 16 bits itself with `Quantize "rgba" 65535 0 65535 0.5`, and
+an explicit `Quantize` that contradicts the flag stops the file with an
+error.
 
 `-d`, `-i`, `-w`, `-e` and `-q` set the log level to debug, info (the
 default), warning, error or disaster-only; `-l` also writes a log file named
 for the RIB; `-h` prints usage; `--version` prints the version and the
 drivers built in. Each flag has a long name: `--help`, `--debug`, `--info`,
-`--warning`, `--error`, `--quiet`, `--log-file`, `--renderer` and `--bit-depth`; the last two also
-take `--renderer=NAME` and `--bit-depth=BITS`.
+`--warning`, `--error`, `--quiet`, `--log-file`, `--renderer` and
+`--bit-depth`; the last two also take `--renderer=NAME` and
+`--bit-depth=BITS`.
 
 At the default `Clipping`, flat or narrow-z-range geometry renders
 corrupted or blank; pair it with an explicit `Clipping <near> <far>`.
