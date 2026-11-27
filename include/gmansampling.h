@@ -68,7 +68,7 @@ GMAN_EXPORT std::uint32_t sampleHash(std::uint32_t seed, RtInt x, RtInt y, std::
 
 // A hash's top 24 bits as a float in [0, 1): (h >> 8) * 2^-24, exactly
 // representable for every h. h * 2^-32 would round to 1.0f for the top
-// 128 hashes; this never does.
+// 128 hashes; this stays below 1.
 GMAN_EXPORT RtFloat unitFloat(std::uint32_t h);
 
 // Sample sampleIndex of pixel (x, y)'s 1-D pattern of sampleCount values

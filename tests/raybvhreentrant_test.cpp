@@ -30,7 +30,7 @@
  * still visited); the far leaf holds the outer ray's only real hit. A
  * traversal that shares mutable state between the outer and nested call
  * loses track of the outer's own pending far leaf once the nested call
- * returns, and so never finds it.
+ * returns, and so misses it.
  */
 
 #include "check.h"
@@ -112,7 +112,7 @@ void testNearestHitReentrant() {
   GMANLinearWorldManager worldManager;
 
   // The inner ray's own target: off the outer ray's line (y == 0.6), so
-  // the outer ray never reaches it directly; the far leaf's own union box
+  // the outer ray cannot hit it directly; the far leaf's own union box
   // still spans it either way.
   GMANRay const innerRay(GMANPoint(11.0, 0.6, -50.0), GMANVector(0.0, 0.0, 1.0));
 

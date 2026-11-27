@@ -72,7 +72,7 @@ GMANRAY_EXPORT GMANColor multiplyChannels(GMANColor const& a, GMANColor const& b
 GMANRAY_EXPORT bool transmissionNegligible(GMANColor const& transmission);
 
 // Each channel of os clamped to [0, 1], a NaN channel read as 1, RISpec's
-// default Opacity, so a NaN never makes a surface clear: GMANMin and GMANMax
+// default Opacity, so a NaN leaves a surface opaque: GMANMin and GMANMax
 // drop a NaN operand, so GMANMin(NaN, 1) is 1 and GMANMax then leaves it at
 // 1, where GMANClamp would map a NaN to 0.
 GMANRAY_EXPORT GMANColor clampCoverage(GMANColor const& os);
@@ -90,8 +90,8 @@ struct GMANRAY_EXPORT BlockerTransmittance {
 // closure's straight-through thin transmittance along the ray's direction,
 // from gman::bsdf at that hit (BSDF::shadowTransmittance). A null-shader
 // appearance gives c = Os and a Lambert lobe, so T is black and the factor
-// 1 - Os. A non-finite channel of the factor reads as 0, blocked: a NaN
-// transmittance never lights a surface. hit is shadowRay's own hit on the
+// 1 - Os. A non-finite channel of the factor reads as 0, so a NaN
+// transmittance blocks the light. hit is shadowRay's own hit on the
 // blocker whose appearance is appearance. textureCache is gman::opacity's and
 // gman::bsdf's argument: a caller running threads passes the calling thread's
 // own, and a null one samples through gman::textureCache()'s process cache.
@@ -116,7 +116,7 @@ GMANRAY_EXPORT bool passesTerminatorExit(GMANHit const& hit, GMANRayPrimitive co
 // BSDF-sampled bounce can also reach through coverage's own passThrough.
 // v - p is every blocker's own dielectric shadowTransmittance share, which a
 // next-event estimate's weight credits at weight 1, since a suppressed
-// emitter hit never adds it. p <= v, since each blocker's own factor is at
+// emitter hit adds none of it. p <= v, since each blocker's own factor is at
 // least its (1 - Os) term, save where gman::blockerTransmittance blocks a
 // non-finite channel: v's factor is then 0 while p's stays (1 - Os).
 struct GMANRAY_EXPORT ShadowWalkResult {
@@ -157,7 +157,7 @@ GMANRAY_EXPORT ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint orig
  *
  * The two constructors differ in the blocker's factor. Built on a bvh
  * alone, each blocker contributes 1 - Appearance::Os and its shader is
- * never evaluated, so a clear glass blocker stops the light and an opacity
+ * skipped, so a clear glass blocker stops the light and an opacity
  * map goes unread; the occluder is const and re-entrant, the same contract
  * GMANRayBVH's own class comment states, and the radiosity solver and its
  * indirect pass shoot through it from threads with no cache of their own.
@@ -176,7 +176,7 @@ public:
   explicit GMANRayOccluder(GMANRayBVH const& bvh) : bvh(bvh) {}
 
   // Blockers contribute gman::blockerTransmittance's factor. cameraToWorld
-  // is copied; textureCache is referenced, never owned, and must outlive
+  // is copied; textureCache is borrowed and must outlive
   // the occluder and be used by no other thread while the occluder is.
   GMANRayOccluder(GMANRayBVH const& bvh, GMANMatrix4 const& cameraToWorld, gman::TextureCache& textureCache)
       : bvh(bvh), cameraToWorld(cameraToWorld), textureCache(&textureCache) {}

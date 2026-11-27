@@ -121,7 +121,7 @@ private:
   // GMANPatchPolyObjectManager's own polygon rule -- computed once here
   // rather than per ray. Every entry is (0, 0) when pl carries no "P"
   // (direct construction bypassing the object manager). Holes carry no
-  // texCoords: a hit never lands inside one.
+  // texCoords: a hit lands outside every hole.
   std::vector<std::pair<RtFloat, RtFloat>> texCoords;
 
   std::vector<GMANVector> vertexNormals;

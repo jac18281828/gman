@@ -20,11 +20,11 @@
 
 /*
  * R-transparency proof, check 5: a stack of Opacity 0.05 disks along the
- * view axis, one hit each, transparent enough that transmission never
- * crosses the composite loop's 1/255 cutoff within 20 layers (0.95^20 is
- * still far above it) -- only the 16-layer cap can end the loop early.
+ * view axis, one hit each, transparent enough that transmission stays above
+ * the composite loop's 1/255 cutoff through 20 layers (0.95^20 is still far
+ * above it) -- only the 16-layer cap can end the loop early.
  * Rendering 20 and 16 such disks therefore produces bit-identical images
- * (the 20-stack's 17th disk onward is never reached), while 8 disks --
+ * (the loop stops before the 20-stack's 17th disk), while 8 disks --
  * fewer than the cap -- leaves more transmission for the white
  * background, reading visibly brighter.
  *
@@ -97,9 +97,9 @@ StackRender renderStack(int layerCount) {
   GMANOptions options;
   options.setFormat(kRes, kRes, 1.0);
   options.setPixelSamples(1.0, 1.0);
-  // A 1x1 box: the resolved pixel is exactly its own single sample, never
-  // a blend with a neighbour whose off-axis ray could clear a farther
-  // disk's edge and see fewer layers.
+  // A 1x1 box: the resolved pixel is exactly its own single sample, with no
+  // blend from a neighbour whose off-axis ray could clear a farther disk's
+  // edge and see fewer layers.
   options.setPixelFilter(RiBoxFilter, 1.0, 1.0);
 
   GMANMatrix4 const identity;
@@ -156,8 +156,8 @@ int main() {
 
   // Pins the cap at no more than 16: an intentionally over-deep 20-layer
   // stack still stops after the same 16 layers, so its render is
-  // bit-identical to the 16-layer one (the 17th disk onward is never
-  // reached).
+  // bit-identical to the 16-layer one (the loop stops before the 17th
+  // disk).
   check(colorsEqual(stack20, stack16, 1e-6f),
         "cap: a 20-layer stack renders identically to a 16-layer one -- only the first 16 are ever composited");
 

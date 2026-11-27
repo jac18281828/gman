@@ -129,7 +129,7 @@ int solveFerrari(double p, double q, double r, double yRoots[4]) {
 
   double const sqrt2m = std::sqrt(2.0 * m);
   // m == 0 forces q == 0 by the resolvent cubic itself (ruled out above),
-  // so this branch never divides by an exact zero.
+  // so the exact m is positive and the guard catches a root clamped to 0.
   double const qTerm = sqrt2m > 0.0 ? q / (2.0 * sqrt2m) : 0.0;
 
   int nY = 0;

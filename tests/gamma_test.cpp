@@ -67,9 +67,8 @@ int main() {
   }
 
   // Sub-byte precision: a channel below 1/255 at gamma 2.2 comes back above
-  // 1/255. The deleted byte table could never do this -- it indexed a value
-  // already narrowed to 0, and GammaTable[0] was 0. This is the case that
-  // pins correcting-before-narrowing over correcting-after.
+  // 1/255. This is the case that pins correcting-before-narrowing over
+  // correcting-after.
   {
     const RtFloat below = 0.003f;
     check(below < 1.0f / 255.0f, "0.003 is below one byte step");

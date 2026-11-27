@@ -22,8 +22,8 @@
  * GMANRayTracer. Depth 4 (kMaxTraceDepth,
  * asserted here as the literal 4 since the constant is file-scope in
  * gmanraytracerenderer.cpp, invisible to this translation unit) is the
- * cheapest possible bound; a miss or the depth limit answers background,
- * never black; a single hit's shading matches gman::shade called
+ * cheapest possible bound; a miss or the depth limit answers background; a
+ * single hit's shading matches gman::shade called
  * directly; the self-shadow offset applies to a traced ray exactly as it
  * does to a shadow ray (tests/rayoccluder_test.cpp's own model); and
  * recursion depth is counted correctly. Checks 9 to 13 pin the composite of
@@ -113,7 +113,7 @@ std::shared_ptr<GMANSurfaceShader const> asAppearanceShader(GMANSurfaceShader co
 }
 
 // Always the same fixed colour, regardless of se -- a sentinel for
-// checks that must never actually reach shading (C.1) or that only care
+// checks that expect no shading (C.1) or that only care
 // whether shading ran at all, not what it computed.
 class FixedColorShader : public GMANSurfaceShader {
 public:
@@ -212,8 +212,8 @@ private:
 // A sphere at (0,0,5) radius 1, Lambertian-shaded, lit by one distant
 // light from lightDirection -- shared by checks 3 and 6. bvh and
 // occluder are built in place: GMANRayOccluder holds bvh by reference,
-// so this fixture is never moved or returned by value, only constructed
-// directly where it is used.
+// so a copy or move of this fixture would leave its occluder on the
+// original's bvh.
 class LambertianHitFixture {
 public:
   explicit LambertianHitFixture(GMANVector const& lightDirection)
@@ -389,7 +389,7 @@ void checkRealHitMatchesDirectShade() {
 
 // Check 4: swept, following rayoccluder_test.cpp's own
 // testSelfShadowAtScale model -- real hits from GMANRaySphere::
-// intersect only, since a hand-placed point never carries the float
+// intersect only, since a hand-placed point lacks the float
 // error a real hit's own arithmetic leaves. At each hit, trace() a
 // near-grazing, outward direction: the case most likely to clip back
 // into the surface without the offset. The sphere is this fixture's only
@@ -507,7 +507,7 @@ void checkDepthCountsCorrectly() {
 void checkNestedOccluderShadowsBlocker() {
   // lightDirection (0.8, 0, 0.6): towardLight = (-0.8, 0, -0.6), off the
   // primary ray's z-axis, so the shadow ray from the hit point (0,0,4)
-  // and the blocker placed on it never coincide with the primary ray
+  // and the blocker placed on it lie off the primary ray
   // from the origin to that hit.
   LambertianHitFixture fixture(GMANVector(0.8f, 0.0f, 0.6f));
 
@@ -567,7 +567,7 @@ void checkNestedOccluderShadowsBlocker() {
 // traced through a real GMANRayOccluder via GMANRayTracer::trace, must
 // return the same colour gman::shade gives the same hit with no occluder
 // at all: the sphere is the scene's only primitive, so a correct offset
-// never lets the occluder find anything to shadow.
+// leaves the occluder nothing to shadow.
 void checkLargeSphereRendererPathAppliesMagnitude() {
   RtFloat const radius = 1000.0f;
   RtFloat const centreZ = radius + 5.0f;
@@ -594,7 +594,7 @@ void checkLargeSphereRendererPathAppliesMagnitude() {
   bvh.build(worldManager);
   GMANRayOccluder const occluder(bvh);
   GMANMatrix4 const cameraToWorld;
-  GMANColor const background(1.0f, 1.0f, 0.0f); // never reached: every sampled ray hits the sphere
+  GMANColor const background(1.0f, 1.0f, 0.0f); // unreached: every sampled ray hits the sphere
   GMANRayTracer const tracer(bvh, occluder, cameraToWorld, background, 0);
 
   GMANPoint const p0(0.0f, 0.0f, 0.0f);
@@ -683,7 +683,7 @@ void checkIndirectPassReachesPrimaryHit() {
 // sphere is placed exactly along it, so the geometry needs no
 // hand-solved placement.
 void checkIndirectPassReachesChildTracer() {
-  // A throwaway probe, never added to a world manager, purely to find
+  // A throwaway probe, outside every world manager, purely to find
   // where the primary ray will hit the mirror sphere before the real
   // fixture below is built around that hit.
   std::unique_ptr<GMANRaySphere> const mirrorProbe(sphereAt(1.0f, 0.3f, 0.0f, 5.0f));
@@ -812,7 +812,7 @@ void checkTraceObeysLayerCap() {
   check(!colorNear(shallow, atCap, kStackSeparation), "check 12: an 8-layer stack differs from a 16-layer one");
 }
 
-// Check 13: a counting shader behind an opaque layer is never shaded, and
+// Check 13: a counting shader behind an opaque layer goes unshaded, and
 // behind a layer of Os 0.5 is shaded once.
 void checkOpaqueLayerStopsTheComposite() {
   const auto white = GMANColor(1.0f, 1.0f, 1.0f);
@@ -823,7 +823,7 @@ void checkOpaqueLayerStopsTheComposite() {
   opaqueStack.addLayer(kFirstLayerZ, frontShader, white);
   opaqueStack.addLayer(kFirstLayerZ + kLayerSpacing, behindOpaque, white);
   opaqueStack.trace(GMANColor(0.1f, 0.1f, 0.1f));
-  check(behindOpaque.computeCiCallCount == 0, "check 13: a shader behind an opaque layer is never shaded, got " +
+  check(behindOpaque.computeCiCallCount == 0, "check 13: a shader behind an opaque layer goes unshaded, got " +
                                                   std::to_string(behindOpaque.computeCiCallCount));
 
   CountingColorShader behindPartlyOpaque(GMANColor(0.2f, 0.4f, 0.6f));

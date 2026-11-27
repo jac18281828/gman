@@ -42,7 +42,7 @@ public:
 
   // Placed by transform's shutter-open matrix, GMANRaySphere's own pattern:
   // a singular matrix cannot invert into an object space to intersect in,
-  // so the torus is built anyway and simply never hits.
+  // so the torus is built anyway and simply misses.
   GMANRayTorus(RtFloat majorradius, RtFloat minorradius, RtFloat phimin, RtFloat phimax, RtFloat thetamax,
                GMANParameterList pl, GMANTransform const& transform);
 

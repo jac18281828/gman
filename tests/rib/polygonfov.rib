@@ -1,7 +1,7 @@
-## The fov warning must print once per RiWorldBegin, never once per
-## polygon: two Polygon requests, one RiWorldBegin, Projection "perspective"
+## The fov warning must print once per RiWorldBegin, whatever the polygon
+## count: two Polygon requests, one RiWorldBegin, Projection "perspective"
 ## with no "fov" -- RiWorldBegin resolves fov once, before either
-## primitive is ever declared.
+## primitive is declared.
 Display "polygonfov.tif" "file" "rgba"
 Format 100 100 1
 Projection "perspective"

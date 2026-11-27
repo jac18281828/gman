@@ -62,7 +62,7 @@ class IndirectPass;
  * draws each takes there. A render reads the count from
  * Option "raytracer" "integer arealightsamples"; the default is 4, and a
  * value below 1 or one that is not an integer logs a warning once and uses
- * the default. emitters holds area emitters only, never a delta light.
+ * the default. emitters holds area emitters only.
  */
 struct GMANAreaLights {
   std::vector<gman::Emitter> emitters;
@@ -180,8 +180,8 @@ private:
   // The cache this tracer's own hit samples textures through; null means
   // gman::textureCache()'s process cache. Carried into every child
   // GMANRayTracer trace() builds, so a reflected or refracted hit samples
-  // through the cache of the tracer that cast it, and never through a
-  // cache another thread owns. Non-owning; the caller keeps it alive.
+  // through the cache of the tracer that cast it, which no other thread
+  // owns. Non-owning; the caller keeps it alive.
   gman::TextureCache* textureCache;
 
   // The camera sample whose area emitters light this tracer's hits; null
@@ -252,7 +252,7 @@ private:
   // the calling worker's own cache and shadingOccluder the occluder built on
   // it, which every shadow ray of the sample goes through; the sample writes
   // only its own slot of sampleBuffer, so rows shaded on different workers
-  // never share state. areaSample is this sample's own draws on the render's
+  // share no state. areaSample is this sample's own draws on the render's
   // area emitters, which every shading point the sample reaches takes from.
   void shadeSample(GMANViewingSystem* viewingSys, GMANMatrix4 const& cameraToWorld, GMANColor const& background,
                    RtFloat rasterX, RtFloat rasterY, int sampleX, int sampleY, gman::IndirectPass const* indirectPass,
@@ -299,7 +299,7 @@ public:
 
   // The worker count render() requests from gman::parallelFor; 0, the
   // default, lets it choose the hardware's concurrency. Takes effect on the
-  // next render() and never changes a pixel.
+  // next render(); the image is the same at any worker count.
   void setWorkers(RtInt workers);
 
   // The worker that rendered each pixel row of the last render(), one entry

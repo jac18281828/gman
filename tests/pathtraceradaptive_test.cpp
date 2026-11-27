@@ -28,8 +28,8 @@
  * negative one and NaN trace every slot to the maximum. Flat and background
  * slots trace the pilot and the floor of the fresh batch, twice minsamples,
  * and the slot's mean divides by the fresh batch's paths. A noisy slot that
- * cannot meet the threshold traces the maximum, pilot included, and never
- * more. With minsamples 3 and a maximum of 16 every count lies in [6, 16].
+ * cannot meet the threshold traces the maximum, pilot included. With
+ * minsamples 3 and a maximum of 16 every count lies in [6, 16].
  * Minsamples is by default the root of the maximum; a bad one warns once and
  * takes the default; a pilot that would reach the maximum is skipped, and
  * the slot renders as at PixelVariance 0. One info line reports the paths
@@ -549,7 +549,7 @@ void checkInfoLine(FloorScene& noisy) {
   check(countOccurrences(frame.log, kInfoPrefix) == 1, "F: the info line prints once");
   check(countOccurrences(frame.log, infoLine(traced, allowed)) == 1,
         "F: its two numbers are the sum of slotPathCounts() and N times the slot count");
-  check(traced <= allowed, "F: the paths traced never exceed the paths allowed");
+  check(traced <= allowed, "F: the paths traced are at most the paths allowed");
 }
 
 struct PathSample {

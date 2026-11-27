@@ -25,7 +25,7 @@
  * 1. Calling png_read_update_info on a png_ptr from
  *    png_create_write_struct. That function's own doc says it "MUST be
  *    called before png_read_update_info or png_start_read_image" -- a
- *    read-side call, on a struct never set up for reading, that would
+ *    read-side call, on a struct set up only for writing, that would
  *    corrupt internal libpng state and crash deep inside
  *    png_write_image's compression path.
  * 2. The pixel buffer sized rowbytes*xres instead of rowbytes*yres --

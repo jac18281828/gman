@@ -15,11 +15,10 @@
 # Translate alone -- camera-space location, I and Nf are bit-identical to
 # shinymetal_view_z.rib's own. D = (0,0,-1) again, in camera space.
 #
-# cameraToWorld is the inverse of the pre-WorldBegin CTM alone (the
-# in-world Rotate never reaches GMANOptions -- RiWorldBegin records it
-# once, before this line runs): (Rotate(-90).Translate)^-1 =
-# Translate(0,0,-5).Rotate(90) (translation drops out of toWorld, a
-# direction). toWorld(0,0,-1) = (0,0,-1)*Rotate(90) =
+# cameraToWorld is the inverse of the pre-WorldBegin CTM alone
+# (RiWorldBegin records it once, before the in-world Rotate runs):
+# (Rotate(-90).Translate)^-1 = Translate(0,0,-5).Rotate(90) (translation
+# drops out of toWorld, a direction). toWorld(0,0,-1) = (0,0,-1)*Rotate(90) =
 # (0*cos(90)+(-1)*sin(90), 0, -0*sin(90)+(-1)*cos(90)) = (-1,0,0):
 # world -x: region -x.
 Display "shinymetal_view_x.tif" "file" "rgba"

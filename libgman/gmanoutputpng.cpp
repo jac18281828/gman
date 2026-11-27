@@ -164,13 +164,6 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint
   // make sure < 8-bit images are packed into pixels as much as possible
   png_set_packing(png_ptr);
 
-  // png_read_update_info is a read-side call (its own doc: "MUST be
-  // called before png_read_update_info or png_start_read_image") --
-  // png_ptr here came from png_create_write_struct and was never set up
-  // for reading, so this corrupted internal state libpng only fills in
-  // for a read stream. png_write_info already populated info_ptr's
-  // rowbytes from the IHDR set above; no update call is needed on the
-  // write side.
   png_uint_32 rowbytes = png_get_rowbytes(png_ptr, info_ptr);
 
   // One row of rowbytes per scanline -- yres of them, not xres. A square

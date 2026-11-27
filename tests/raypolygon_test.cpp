@@ -22,7 +22,7 @@
  * GMANRayPolygon::intersect finds the ray's hit on the
  * polygon's own plane, then tests it against the ring's projection with an
  * even-odd rule that handles a concave shape correctly, honoring the ray's
- * own [tmin, tmax] interval, and never hits a degenerate ring.
+ * own [tmin, tmax] interval, and misses a degenerate ring.
  */
 
 #include <cmath>
@@ -101,7 +101,7 @@ void testParallelRayMisses() {
   GMANRay ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  check(!square.intersect(ray, hit), "parallel: a ray with no z component never reaches the z == 0 plane");
+  check(!square.intersect(ray, hit), "parallel: a ray with no z component misses the z == 0 plane");
 }
 
 // ---- check 4: a polygon behind the ray origin misses ----
@@ -113,24 +113,24 @@ void testPolygonBehindOriginMisses() {
   check(!square.intersect(ray, hit), "behind: a ray moving away from the plane at z == 0 misses");
 }
 
-// ---- check 5: degenerate rings never hit ----
+// ---- check 5: degenerate rings miss ----
 void testDegenerateRingsNeverHit() {
   GMANRay ray(GMANPoint(0.5, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit hit;
 
   std::vector<GMANPoint> twoVerts = {GMANPoint(0.0, 0.0, 0.0), GMANPoint(1.0, 0.0, 0.0)};
   GMANRayPolygon tooFewVertices(twoVerts, GMANParameterList());
-  check(!tooFewVertices.intersect(ray, hit), "degenerate: fewer than three vertices never hits");
+  check(!tooFewVertices.intersect(ray, hit), "degenerate: a ray misses a ring of fewer than three vertices");
 
   std::vector<GMANPoint> collinearVerts = {GMANPoint(0.0, 0.0, 0.0), GMANPoint(1.0, 0.0, 0.0),
                                            GMANPoint(2.0, 0.0, 0.0)};
   GMANRayPolygon collinear(collinearVerts, GMANParameterList());
-  check(!collinear.intersect(ray, hit), "degenerate: three collinear vertices never hits");
+  check(!collinear.intersect(ray, hit), "degenerate: a ray misses a ring of three collinear vertices");
 
   std::vector<GMANPoint> sliverVerts = {GMANPoint(0.0, 0.0, 0.0), GMANPoint(1.0, 0.0, 0.0),
                                         GMANPoint(0.5, 1.0e-8, 0.0)};
   GMANRayPolygon sliver(sliverVerts, GMANParameterList());
-  check(!sliver.intersect(ray, hit), "degenerate: a sliver isDegeneratePolygon rejects never hits");
+  check(!sliver.intersect(ray, hit), "degenerate: a ray misses a sliver ring isDegeneratePolygon rejects");
 }
 
 // ---- check 6: the hit normal is the Newell normal's direction ----
@@ -263,7 +263,7 @@ void testSOverridesSt() {
 void testDegenerateFanTriangleSkipped() {
   // v0, v1, v2 collinear (all on y == 0): interpolateTexCoord's own fan
   // triangulation from vertex 0 makes (v0, v1, v2) its first triangle,
-  // degenerate (zero area) and so never containing (2, 2) -- the point has
+  // degenerate (zero area) and so containing no point -- (2, 2) has
   // to fall through to the real triangle (v0, v2, v3) instead.
   std::vector<GMANPoint> verts = {GMANPoint(0.0, 0.0, 0.0), GMANPoint(2.0, 0.0, 0.0), GMANPoint(4.0, 0.0, 0.0),
                                   GMANPoint(4.0, 4.0, 0.0), GMANPoint(0.0, 4.0, 0.0)};

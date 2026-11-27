@@ -52,7 +52,7 @@ GMAN_EXPORT bool isDegeneratePolygon(std::vector<GMANPoint> const& ring);
 // The dictionary every standard RI_* token (e.g. RI_P) resolves against,
 // shared by both renderers so each parameter list is read with the same
 // token IDs it was built with. Must not be mutated concurrently: callers
-// only look tokens up, never declare new ones through this instance.
+// only look tokens up in this instance.
 GMAN_EXPORT GMANDictionary& standardDictionary();
 
 // The ring's largest bounding-box side, in whichever of x, y or z spans it
@@ -64,8 +64,7 @@ GMAN_EXPORT RtFloat boundingBoxExtent(std::vector<GMANPoint> const& ring);
 
 // pl's token array for token, cast to RtFloat*: NULL when pl carries no
 // such token, non-NULL otherwise. token must be one standardDictionary()
-// pre-registers (RI_P, RI_PW, RI_S, RI_T, RI_ST), so getTokenId never
-// throws.
+// pre-registers (RI_P, RI_PW, RI_S, RI_T, RI_ST), so getTokenId finds it.
 inline RtFloat* floatArray(GMANParameterList const& pl, RtToken token) {
   return (RtFloat*)pl.getPointer(standardDictionary().getTokenId(token));
 }

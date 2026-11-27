@@ -77,7 +77,8 @@ using IndirectPassPtr = std::unique_ptr<IndirectPass, void (*)(IndirectPass*)>;
 // by the module that allocated it. Returns null, after logging one
 // warning naming the library and the reason, when the module fails to
 // open, lacks either entry point, or its GMANCreateIndirectPass itself
-// returns null: a missing pass costs the indirect light, never the frame.
+// returns null: a missing pass costs the indirect light and the frame still
+// renders.
 GMANRAY_EXPORT IndirectPassPtr loadIndirectPass(std::string const& name);
 
 } // namespace gman

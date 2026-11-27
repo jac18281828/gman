@@ -52,7 +52,7 @@
 // A pending area light is tagged only when RiIlluminate leaves it on
 // (gman::appearanceOf's own rule); attr is always the current GMANAttributes
 // (gmanrendermanimpl.cpp's RiSphereV, RiDiskV and every other geometry
-// request all pass &getAttributes(), never null).
+// request all pass &getAttributes()).
 void GMANZBufferRenderer::AreaLightCountingObjectManager::countIfAreaLight(GMANAttributes* attr) {
   if (attr != nullptr && gman::appearanceOf(*attr).areaLight != nullptr) {
     ++areaLightCount;
@@ -295,8 +295,8 @@ bool GMANZBufferRenderer::getVertexInfo(GMANOutputPolygon& out) {
     vert->screen.y = (int)vert->posn.getY();
 
     // update y axis limits for polygon -- clamped to the sample grid, so
-    // scanEdges' edge_list[] walk (sized to `sampleHeight`) never runs off
-    // the end even if a vertex landed just inside the margin above but
+    // scanEdges' edge_list[] walk (sized to `sampleHeight`) stays inside
+    // the array even if a vertex landed just inside the margin above but
     // still outside the visible frame.
     if (vert->screen.y < ymin)
       ymin = vert->screen.y;

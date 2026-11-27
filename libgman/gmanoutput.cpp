@@ -54,7 +54,7 @@
 namespace {
 
 // The dither draw's hash seed: distinct from every seed a renderer's own
-// integrator uses, so a pixel's quantization draw never correlates with
+// integrator uses, so a pixel's quantization draw is uncorrelated with
 // its shading draws.
 constexpr std::uint32_t kDitherSeed = 0x5eed;
 

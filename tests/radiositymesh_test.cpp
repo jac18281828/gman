@@ -230,8 +230,8 @@ void testSphereArea() {
     check(std::fabs(diced - analytic) / analytic < kAreaRelTolerance,
           "build still dices the good sphere beside the two undiceable primitives");
 
-    // Absent primitives: a hit against a primitive never placed in this
-    // world manager returns "none".
+    // Absent primitives: a hit against a primitive outside this world
+    // manager returns "none".
     GMANRaySphere elsewhere(1.0, -1.0, 1.0, 360.0, GMANParameterList());
     GMANHit strayHit;
     strayHit.primitive = &elsewhere;
@@ -715,7 +715,7 @@ void testPolygonLookup() {
 }
 
 // Every vertex, then every edge midpoint, of the same quad: locate() must
-// resolve each to an element, never "none", including where the owning
+// resolve each to an element, including where the owning
 // cell is one clipping left partial -- a coarse maxEdgeLength here puts
 // most boundary cells in that state.
 void testPolygonEdgesAndVertices() {
@@ -772,7 +772,7 @@ void testPolygonEdgesAndVertices() {
     maxPositionError = GMANMax(maxPositionError, pointDistance(blended, point));
   }
 
-  check(allFound, "polygon: every vertex and edge-midpoint hit locates an element, never none");
+  check(allFound, "polygon: every vertex and edge-midpoint hit locates an element");
   check(allSumOk, "polygon: edge/vertex corner weights sum to 1 within tolerance");
   std::printf("round trip: polygon edges/vertices maxPositionError=%.6g\n", maxPositionError);
   check(maxPositionError < kPolygonRoundTripTolerance,
@@ -780,7 +780,7 @@ void testPolygonEdgesAndVertices() {
 }
 
 // A full sphere's own pole (v = 0 and v = 1) and seam (u = 0 wrapping to
-// u = 1) return an element, never "none".
+// u = 1) return an element.
 void testSpherePoleSeam() {
   RtFloat const radius = 1.5f;
   GMANLinearWorldManager worldManager;

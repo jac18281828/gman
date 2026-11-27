@@ -295,7 +295,7 @@ int countFaces(GMANObject* object) {
 // checked here under GMANOptions' own default (orthographic, 640x480) and
 // an identity transform, where every ear's longest edge -- even the
 // shortest one, the duplicate-vertex ring's own zero-length edge aside,
-// which can never be an ear's own longest -- projects past several
+// which is no ear's longest -- projects past several
 // hundred raster pixels, so every ear still hits the cap and this
 // constant still holds.
 const int kSubTrianglesPerEar = 256;

@@ -121,7 +121,7 @@ gman::Appearance floorAppearance() {
 // The pane's own shadowTransmittance along the direction from a known
 // point toward another, found by an actual intersection against pane:
 // the same quantity the shadow walk itself evaluates, read here as ground
-// truth for the render check below, never re-derived by hand.
+// truth for the render check below.
 GMANColor paneTransmittanceToward(GMANRayPolygon* pane, GMANMatrix4 const& cameraToWorld, GMANPoint const& from,
                                   GMANPoint const& toward) {
   GMANVector dir(from, toward);
@@ -278,11 +278,10 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
 // Scene-validity guard: at the floor's own centre, next-event
 // estimation's own mean weight toward the big sphere, over the draws that
 // contribute (positive pdf and non-black Cl) among many random draws (the
-// real estimator's own (u1, u2), never the fixed 0.5, 0.5 preview alone),
-// sits well below 1 -- this scene actually exercises the split-weight
-// arithmetic between a pass-through share and a dielectric share, not a case
-// that trivially reduces to weight 1. A failure means the geometry is wrong,
-// not the estimator.
+// real estimator's own (u1, u2)), sits well below 1 -- this scene actually
+// exercises the split-weight arithmetic between a pass-through share and a
+// dielectric share, not a case that trivially reduces to weight 1. A failure
+// means the geometry is wrong.
 void checkNextEventWeightWellBelowOne() {
   constexpr std::uint32_t kDraws = 1024u;
 

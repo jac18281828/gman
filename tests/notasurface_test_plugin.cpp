@@ -26,7 +26,7 @@
  * Every shipped shader plugin is a surface, so nothing else in the tree
  * reaches GMANAttributes::setSurface's "loaded, but not a surface" branch.
  * Not a shipped shader: dlopened only by unknownsurface_test.cpp and
- * shadermodulenames_test.cpp, never by RiSurface in a real scene.
+ * shadermodulenames_test.cpp.
  */
 
 #include "gmanloadable.h"

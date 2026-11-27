@@ -22,8 +22,8 @@
  */
 
 /*
- * Each library includes headers of its own library and the libraries below
- * it, never one above. Every scanned file belongs to the row of the longest
+ * Each library includes only headers of its own library and the libraries
+ * below it. Every scanned file belongs to the row of the longest
  * directory prefix that matches whole path components in kRows; the row
  * names the libraries the file may include and the export macro it may
  * name. Checking direct includes suffices: when every direct edge points

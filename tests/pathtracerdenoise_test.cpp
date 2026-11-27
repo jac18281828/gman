@@ -29,9 +29,10 @@
  * the first hit of every camera ray writes the guides: the floor's albedo,
  * 0.5, and its normal, camera facing whichever way its vertices wind, and
  * zero where no path hit anything, also under a positive PixelVariance,
- * whose pilot paths never reach them. Under an emitting disk at four paths
- * the frame holds exactly atrousDenoise of the guided image; the test prints
- * the floor's error against a 256-path reference and asserts nothing on it.
+ * whose pilot paths contribute nothing to the guides. Under an emitting
+ * disk at four paths the frame holds exactly atrousDenoise of the guided
+ * image; the test prints the floor's error against a 256-path reference
+ * and asserts nothing on it.
  * One info line reports the filter's parameters, the colour sigma included;
  * a bad parameter warns once and takes its default; a black frame returns
  * unchanged. A shader whose albedo throws shows that the guide is computed

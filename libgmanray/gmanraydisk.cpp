@@ -72,10 +72,10 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
   //
   // Open question, the same one GMANRaySphere's own intersect leaves open:
   // a negative thetamax hits nothing here (thetamaxRad goes negative, and
-  // theta -- always in [0, 2*pi) -- can never be less than it), and a
-  // negative radius likewise hits nothing (r is never negative, so
-  // r > radius is always true), while GMANDisk::getLocation sweeps or
-  // mirrors a real shape for either. Which behavior is right is undecided.
+  // theta -- always in [0, 2*pi) -- exceeds it), and a negative radius
+  // likewise hits nothing (r is non-negative, so r > radius always holds),
+  // while GMANDisk::getLocation sweeps or mirrors a real shape for either.
+  // Which behavior is right is undecided.
   if (thetamax == 0.0 || radius == 0.0)
     return false;
 
@@ -84,7 +84,7 @@ bool GMANRayDisk::intersect(GMANRay const& ray, GMANHit& hit) const {
 
   double const dz = objDirection.getZ();
   // The plane z == height, in object space. A ray exactly parallel to it
-  // never reaches height, whatever its origin.
+  // is a miss, whatever its origin.
   if (dz == 0.0)
     return false;
 

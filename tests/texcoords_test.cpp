@@ -166,10 +166,10 @@ void testPatchSt(std::string const& gman, std::string const& ribDir) {
 // 0.25; t=0.1875+0.5625=0.75 -> (0.25,0.75) = blue.
 //
 // Revert "'st' outranks 's'": both components would come from "st" alone
-// (as if "s" were never supplied), the same transpose
+// (as if "s" were omitted), the same transpose
 // patch_texturecoordinates.rib reads -- red at (90,110), white at
 // (110,90). Revert "'s' is ignored" reads identically, since the
-// resolver would never look up "s" at all.
+// resolver would skip "s" entirely.
 void testPatchSOverSt(std::string const& gman, std::string const& ribDir) {
   Image img = renderFixture(gman, ribDir, "patch_s_over_st");
   if (!img.ok)

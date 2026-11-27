@@ -366,10 +366,10 @@ GMANRayObjectManager::~GMANRayObjectManager() {};
 GMANPrimitive* GMANRayObjectManager::create(RtVoid) { return new GMANRayPrimitive(); }
 
 // One call for every polygon request, a one-face Polygon included: one
-// GMANRayPolygonMesh when a face survives, the empty stub when none does,
-// never a bare GMANRayPolygon. GMANRayBVH::build flattens a mesh into the
-// same entries a bare polygon gives, so a one-face mesh's box and
-// appearance already equal its own face's.
+// GMANRayPolygonMesh when a face survives, the empty stub when none does.
+// GMANRayBVH::build flattens a mesh into the same entries a bare polygon
+// gives, so a one-face mesh's box and appearance already equal its own
+// face's.
 GMANPrimitive* GMANRayObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* /*opt*/,
                                                       GMANAttributes* attr, GMANTransform* t) {
   std::span<RtFloat const> const p = mesh.points();

@@ -22,7 +22,7 @@
  * GMANSurfaceEnv's occlusion hook. diffuse() and
  * specular() scale each non-ambient light's colour by
  * occluder->transmission(), per channel -- not one channel applied to all
- * three; ambient() never consults it, having no direction to occlude. A
+ * three; ambient() ignores it, having no direction to occlude. A
  * point light reports its own distance and a unit towardLight; a distant
  * light reports RI_INFINITY, its sample()'s l having no useful length.
  *

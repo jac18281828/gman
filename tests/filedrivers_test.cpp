@@ -22,9 +22,9 @@
  * gman --version's contract: "gman <version>" then a "drivers:" line
  * listing gman::fileDrivers(), space-separated, in table order. CMake
  * computes the expected list for this build (tests/CMakeLists.txt) and
- * passes it on the command line, so this test never re-derives which
- * options were enabled -- it checks the program's own output against
- * what the build actually compiled.
+ * passes it on the command line, so this test takes the enabled options as
+ * given and checks the program's own output against what the build actually
+ * compiled.
  */
 
 #include <cstdio>

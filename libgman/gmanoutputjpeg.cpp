@@ -69,11 +69,7 @@ void jpegErrorExit(j_common_ptr cinfo) {
 
 // default constructor
 //
-// quality was never initialized here, so save()'s jpeg_set_quality(&cinfo,
-// getQuality(), ...) read garbage -- reachable only once this class was
-// ever actually instantiated via RIB, which happened for the first time
-// once RiWorldBegin gained its jpg/jpeg dispatch branch. 75 matches
-// libjpeg's own conventional default quality.
+// 75 matches libjpeg's own conventional default quality.
 OutputJPEG::OutputJPEG(char const* path, int width, int height)
     : GMANOutput(path, width, height, DefaultBGColor), quality(75) {};
 

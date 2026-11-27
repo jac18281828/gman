@@ -345,7 +345,7 @@ void testPointsPolygonCubeArea() {
   std::printf("area: PointsPolygons cube elements=%zu expected=%.6f diced=%.6f relError=%.6g skipped=%zu\n",
               mesh.getElementCount(), expected, diced, relError, mesh.getSkippedCount());
   check(relError < kAreaRelTolerance, "PointsPolygons cube: elements sum to 6 within 1e-5 relative");
-  check(mesh.getSkippedCount() == 0, "PointsPolygons cube: the mesh primitive is diced, never counted as skipped");
+  check(mesh.getSkippedCount() == 0, "PointsPolygons cube: the mesh primitive is diced, so none is skipped");
 }
 
 // One PointsGeneralPolygons face, outerSquare with holeSquare cut from it,

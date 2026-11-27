@@ -20,9 +20,9 @@
 
 /*
  * Every ray primitive, at every scale and placement this tree cares
- * about, never shadows itself. Each cell places one primitive alone in
+ * about, casts no shadow on itself. Each cell places one primitive alone in
  * its own BVH, samples it with real GMANRayPrimitive::intersect hits
- * (never a hand-placed point), and calls GMANRayOccluder::transmission
+ * (not a hand-placed point), and calls GMANRayOccluder::transmission
  * toward a light on its own outward side. A sample where a shadow ray
  * re-cast from well off the surface still hits the same primitive is
  * excluded as legitimate self-occlusion (the torus's own tube, a saddle
@@ -340,7 +340,7 @@ void sweepLargePrimitiveRow(RtFloat radius) {
   // sits 87 degrees off it, close enough to graze that N.L stays small
   // and positive across the whole sampled cap -- self-hit risk grows
   // toward a grazing shadow ray (gmanraytracerenderer.cpp's own comment),
-  // so a light aimed straight down the normal would never stress it.
+  // so a light aimed straight down the normal would not stress it.
   RtFloat const kGrazeAngle = GMANRadians(89.9f);
   GMANVector const towardLight((RtFloat)std::sin(kGrazeAngle), 0.0f, (RtFloat)-std::cos(kGrazeAngle));
   GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(),
@@ -412,7 +412,7 @@ int main() {
   sweepLargePrimitiveRow(100.0f);
   sweepLargePrimitiveRow(1000.0f);
 
-  return checkSummary("the self-shadow sweep: every ray primitive, at every scale and placement, never shadows "
-                      "itself once legitimate self-occlusion is excluded, and a large primitive near the camera "
+  return checkSummary("the self-shadow sweep: every ray primitive, at every scale and placement, casts no shadow "
+                      "on itself once legitimate self-occlusion is excluded, and a large primitive near the camera "
                       "needs the magnitude rule");
 }

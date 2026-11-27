@@ -20,7 +20,7 @@
 
 /*
  * One rule for coverage in every renderer: a surface whose Oi is NaN or +inf
- * is opaque, never the transparent a NaN clamped to 0 reads as, and one whose
+ * is opaque (a NaN clamped to 0 would read transparent), and one whose
  * Oi is -inf is transparent. The z-buffer reads the vertex opacity before it
  * interpolates, since infinite vertices interpolate to NaN, and its per-sample
  * alpha reads the NaN that interpolating finite vertices of +-3e38 overflows

@@ -205,7 +205,7 @@ bool spanningHit(Sweep const& sweep, GMANPoint const& objOrigin, GMANVector cons
 
   // a vanishes for a ray parallel to a ruling of the hyperboloid.
   // gman::solveRayQuadratic's own comment covers the linear case and why a
-  // near-degenerate a never reaches it.
+  // near-degenerate a needs no case of its own.
   double t0 = 0.0, t1 = 0.0;
   int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)

@@ -323,7 +323,7 @@ public:
   // The value stored for the option and parameter, or null when either is
   // absent. The pointer stays valid until the next setNamedOption for the
   // same option and parameter or the destruction of this GMANOptions. The
-  // parameters the typed accessors above read never appear here.
+  // parameters the typed accessors above read are absent here.
   NamedOptionValue const* getNamedOption(std::string const& option, std::string const& parameter) const;
 
   const OutputDefaults& getOutputDefaults(RtVoid) const;

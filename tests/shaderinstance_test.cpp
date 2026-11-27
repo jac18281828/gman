@@ -59,7 +59,7 @@ GMANParameterList floatParam(RtToken token, RtFloat value) {
 }
 
 // countingshader is a plugin, dlopened at runtime by GMANAttributes::
-// setSurface, never linked into this binary, so its own live-count
+// setSurface and not linked into this binary, so its own live-count
 // function is resolved the same way: dlopen (idempotent -- the plugin may
 // already be loaded) then dlsym, once, memoized here.
 int countingShaderLiveCount() {

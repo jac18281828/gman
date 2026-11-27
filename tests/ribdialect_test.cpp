@@ -152,9 +152,8 @@ int main(int argc, char* argv[]) {
   // parameters, the "fov" form Projection here uses) and this fails.
   //
   // It does NOT exercise step 1: every request menger.rib uses is one GMAN
-  // already recognizes, so unknown-request recovery never fires. Step 1
-  // is covered by the unknownrequest.rib fixture below (confirmed by
-  // reverting step 1 and observing menger.rib still exits 0).
+  // already recognizes, so unknown-request recovery stays idle. Step 1
+  // is covered by the unknownrequest.rib fixture below.
   //
   // It also doubles as defect 3's proof: menger.rib's second line is
   // `Display "+menger.tif" "framebuffer" "rgb"`. GMAN honors RISpec's
@@ -224,15 +223,13 @@ int main(int argc, char* argv[]) {
   // release as the stack unwinds. This fixture throws from Attribute,
   // after WorldBegin has already returned successfully -- nothing unwinds
   // through RiWorldBegin here, and RiWorldEnd (the only place that
-  // deletes the output driver) is never reached either, so the driver
-  // itself is never freed on this path. That does not make the check
-  // below meaningless: gman's static-local renderMan (gman.cpp) keeps the
-  // driver reachable, and LeakSanitizer never reports what is still
-  // reachable from static storage. The check is instead a genuine gate on
-  // toRtTokenArray's own release-on-throw: the strings it duplicates
-  // before the non-string element never reach renderMan at all, so a
-  // reverted fix would leave them unreachable and LeakSanitizer would
-  // report them.
+  // deletes the output driver) goes unreached too, so the driver stays
+  // allocated on this path. gman's static-local renderMan (gman.cpp) keeps
+  // it reachable, and LeakSanitizer ignores memory reachable from static
+  // storage, so the check below gates toRtTokenArray's own
+  // release-on-throw: the strings it duplicates before the non-string
+  // element are unreachable from renderMan, so a reverted fix would leak
+  // them and LeakSanitizer would report them.
   {
     const std::string path = ribDir + "/malformed/stringarray.rib";
     GMANRunResult r = run(gman, path, /*debug=*/false);
@@ -255,7 +252,7 @@ int main(int argc, char* argv[]) {
   }
 
   // Same fault class, a different leak shape, and (unlike stringarray.rib
-  // above) never reaching WorldBegin -- so the "no LeakSanitizer output"
+  // above) stopping before WorldBegin -- so the "no LeakSanitizer output"
   // check here is clean of the other known leak and actually gates the
   // copyStringToken() fix. parseDisplay copies "name", then "type", then
   // "mode" before releasing any of them, and no parseParameterList is
@@ -275,7 +272,7 @@ int main(int argc, char* argv[]) {
 
   // Not malformed -- the point is the opposite. parseHider must not leak
   // its copied "type" string, on every successful Hider request, not
-  // only on an error path. This file is well-formed, never reaches
+  // only on an error path. This file is well-formed, contains no
   // WorldBegin, and gman is expected to exit 0.
   {
     const std::string path = ribDir + "/hider.rib";

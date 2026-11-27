@@ -20,7 +20,7 @@
 
 /*
  * An emitter cannot light a point on its own surface, so a vertex on an
- * emitter never chooses that emitter, as a next-event light or as the
+ * emitter excludes that emitter, both as a next-event light and as the
  * light an emitter hit's weight reads its choice probability for. Two
  * scenes check it.
  *
@@ -315,6 +315,6 @@ int main() {
   testSelfExclusionResiduals();
   testDiskAndSphereMisPairing();
 
-  return checkSummary("a point on an emitter's own surface never chooses that emitter, as a next-event light or "
+  return checkSummary("a point on an emitter's own surface excludes that emitter, both as a next-event light and "
                       "in an emitter hit's weight");
 }

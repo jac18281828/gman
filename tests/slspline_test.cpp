@@ -106,7 +106,7 @@ void testNoReadPastTheArray() {
         sentinel.push_back(std::numeric_limits<RtFloat>::quiet_NaN());
         const RtFloat withSentinel = basis.spline(value, nvals, sentinel.data());
         check(std::isfinite(withSentinel) && near(withSentinel, expected),
-              label + ": the result is the curve's end value and never the sentinel");
+              label + ": the result is the curve's end value, unaffected by the sentinel");
 
         std::vector<RtFloat> exact = values;
         check(near(basis.spline(value, nvals, exact.data()), expected),

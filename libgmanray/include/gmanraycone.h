@@ -41,7 +41,7 @@ public:
 
   // Placed by transform's shutter-open matrix, GMANRaySphere's own pattern:
   // a singular matrix cannot invert into an object space to intersect in,
-  // so the cone is built anyway and simply never hits.
+  // so the cone is built anyway and simply misses.
   GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANParameterList pl, GMANTransform const& transform);
 
   bool intersect(GMANRay const& ray, GMANHit& hit) const;

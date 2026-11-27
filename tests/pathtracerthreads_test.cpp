@@ -21,7 +21,7 @@
 /*
  * The path tracer renders its rows through gman::parallelFor, one
  * gman::TextureCache per worker and one dropped-path count per row, and
- * the worker count never changes a pixel. A floor lit by a point light
+ * the worker count leaves every pixel unchanged. A floor lit by a point light
  * and an emitting sphere renders byte-identically, colour, alpha and
  * depth, from one worker and from eight, with the same dropped-path count;
  * under a PixelVariance the same scene stops some slots early and runs

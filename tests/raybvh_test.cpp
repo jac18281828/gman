@@ -210,7 +210,7 @@ FixtureHandles buildCheck1Fixture(bool swapOverlap, GMANLinearWorldManager& worl
   add(diskA);
   add(diskB);
 
-  // A singular-transform primitive mixed among valid ones: never hits,
+  // A singular-transform primitive mixed among valid ones: misses
   // whatever ray reaches it.
   if (includeSingular) {
     GMANMatrix4 singularMatrix;
@@ -452,7 +452,7 @@ bool checkTraversalCounts(GMANRayBVH const& bvh, BoxTestBounds const& bounds, GM
 // own mixed fixture, catching what a hand-picked ray set might miss:
 // among others, a slab test that skips std::swap(t0, t1) still passes a
 // positive-direction ray on every axis this fixture's own hand-picked
-// rays travel, since a positive invD never needs the swap. ----
+// rays travel, since the swap fires only for a negative invD. ----
 void runRandomSweep(bool includeSingular) {
   GMANLinearWorldManager worldManager;
   std::vector<GMANRayPrimitive*> prims;
@@ -494,7 +494,7 @@ void runRandomSweep(bool includeSingular) {
       break; // the remaining four eighths keep a fully random direction
     }
     if (dx == 0.0f && dy == 0.0f && dz == 0.0f) {
-      dz = 1.0f; // never hand GMANRay a zero-length direction
+      dz = 1.0f; // GMANRay needs a nonzero-length direction
     }
 
     GMANPoint const origin(originDist(rng), originDist(rng), originDist(rng));
@@ -932,9 +932,9 @@ void testSignedZeroFacePlane() {
 // -- nearestHit's own contract -- not overwrite either with an empty,
 // default-constructed hit or a null primitive. Covers both of
 // nearestHit's own miss paths: a built tree the ray clears, and the
-// rootIndex < 0 early return for a tree build() never populated.
+// rootIndex < 0 early return for an unbuilt tree.
 void testMissLeavesHitUntouched() {
-  // A sentinel prim never touched by build() or nearestHit here: its
+  // A sentinel prim kept out of the tree: its
   // address, not its contents, is what a miss must leave alone.
   GMANRaySphere sentinelPrimitive(1.0, -1.0, 1.0, 360.0, GMANParameterList(), GMANTransform());
   constexpr RtFloat kSentinelT = 12345.0f;

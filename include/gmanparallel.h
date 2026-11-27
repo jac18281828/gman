@@ -54,7 +54,7 @@ namespace gman {
 
 // The worker count a parallelFor call with the same arguments uses.
 // workers <= 0 means the hardware's reported concurrency, floored at 1 if
-// that reports 0; the result never exceeds count. count <= 0 returns 0.
+// that reports 0; the result is at most count. count <= 0 returns 0.
 GMAN_EXPORT RtInt parallelWorkers(RtInt count, RtInt workers = 0);
 
 // Runs body(index, worker) exactly once for each index in [0, count), in

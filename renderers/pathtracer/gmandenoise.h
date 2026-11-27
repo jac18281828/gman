@@ -33,8 +33,7 @@
 /*
  * The path tracer's post-sampling stage: a filter reads the resolved image
  * and the guides the path tracer writes beside it, and returns the filtered
- * colour. A filter reads a GuidedImage as const, so it writes neither guide,
- * and never touches alpha or depth.
+ * colour. A filter reads a GuidedImage as const, so it writes neither guide.
  *
  * atrousDenoise is the edge-avoiding a-trous wavelet filter of H. Dammertz,
  * D. Sewtz, J. Hanika and H. P. A. Lensch, "Edge-Avoiding A-Trous Wavelet

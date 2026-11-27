@@ -33,8 +33,9 @@
  * AttributeBegin/AttributeEnd pair that does not change shaders.
  *
  * Not covered here: SolidBegin shares the same attributesStack shape but
- * cannot be reached from RIB (GMANRIBParse::parseSolidBegin never calls
- * RiSolidBeginV) -- a .rib fixture through it would pass on broken code.
+ * cannot be reached from RIB (GMANRIBParse::parseSolidBegin reads its type
+ * token and calls no RiSolidBeginV) -- a .rib fixture through it would pass
+ * on broken code.
  *
  * Revert check: reverting GMANAttributes back to raw GMANLoadableShader*
  * members (no explicit copy protection) reintroduces the double free --

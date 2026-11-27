@@ -21,8 +21,7 @@
 /*
  * The replacement operator new/delete raybvhalloc_test.cpp counts through.
  * Kept in their own translation unit so a compiler that inlines a call site
- * back to malloc/free never sees both halves of one pairing in the same
- * file.
+ * back to malloc/free sees only one half of each pairing in a file.
  */
 
 #include <atomic>

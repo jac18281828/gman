@@ -1,6 +1,6 @@
 # A bracketed array with no closing bracket. GMANRIBParse::parseArray must
 # stop at EOF (or the next keyword) rather than consuming the rest of the
-# file, or every request, looking for a ']' that will never arrive.
+# file, or every request, looking for an absent ']'.
 Display "malformed_out.tif" "file" "rgba"
 Format 16 16 1
 Projection "perspective" "fov" [30

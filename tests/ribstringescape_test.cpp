@@ -23,8 +23,8 @@
  * introducer, not an ordinary character, so an escaped quote inside a
  * string does not close it early. tests/rib/string_escape.rib is the
  * desync a wrong reading would produce: an escaped quote inside a
- * bracketed array would close the string early, the array would never
- * see its ']', and the parse would run on against the wrong quoting
+ * bracketed array would close the string early, the array would miss
+ * its ']', and the parse would run on against the wrong quoting
  * from there.
  *
  * Check 1 drives that fixture two ways: out of process, capturing its
@@ -41,9 +41,8 @@
  * itself is private and stays private; getNext is the tokenizer's public
  * entry point and the test reaches libgman/gmanribtokenize.h through
  * gman_internal_headers, so it needs no test-only access widening.
- * getRtToken() is never used here: it returns a pointer that ends
- * at the first NUL, which would hide exactly the byte-level decoding bugs
- * these checks exist to catch.
+ * A getRtToken() read would return a pointer that ends at the first NUL,
+ * hiding exactly the byte-level decoding bugs these checks exist to catch.
  */
 
 #include <cstdio>

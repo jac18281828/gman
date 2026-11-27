@@ -51,7 +51,7 @@ namespace {
 // shooter, keeping a flat shooter's own plane out of it.
 constexpr double kShooterClearance = 1e-4;
 
-// The clearance never falls below this fraction of the segment's largest
+// The clearance is at least this fraction of the segment's largest
 // coordinate: the occluder's own self-shadow offset ceiling, by which its
 // walk moves the origin off the receiver without shortening the walk.
 constexpr double kClearanceFloor = 3e-5;

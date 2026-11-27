@@ -57,7 +57,7 @@ void resetRecorded() {
 }
 
 // countingimager is a plugin, dlopened at runtime by GMANOptions::
-// setImager, never linked into this binary, so its own live-count function
+// setImager and not linked into this binary, so its own live-count function
 // is resolved the same way: dlopen (idempotent) then dlsym, once, memoized
 // here.
 int countingImagerLiveCount() {
@@ -73,7 +73,7 @@ int countingImagerLiveCount() {
 }
 
 // countingvolume is a plugin, dlopened at runtime by GMANAttributes::
-// setAtmosphere, never linked into this binary, so its own live-count
+// setAtmosphere and not linked into this binary, so its own live-count
 // function is resolved the same way: dlopen (idempotent) then dlsym, once,
 // memoized here.
 int countingVolumeLiveCount() {
@@ -125,7 +125,7 @@ void checkSurfaceUnchanged() {
     check(lastMessage.rfind("Surface \"plastic.so\" failed to load: ", 0) == 0,
           "Surface \"plastic.so\": the message starts with the expected prefix");
     check(lastMessage.find("\"plastic\"") == std::string::npos,
-          "Surface \"plastic.so\": the message never quotes the stripped name");
+          "Surface \"plastic.so\": the message omits the stripped name");
     check(lastMessage.find("did you mean") == std::string::npos,
           "Surface \"plastic.so\": the message suggests nothing");
     check(attr.getSurface(0.0) == nullptr, "Surface \"plastic.so\": getSurface is null");
@@ -195,8 +195,9 @@ KindFixture imagerFixture() {
   return kind;
 }
 
-// A setter never lets a GMANError escape: a pinned check that threw would
-// exit through an uncaught exception rather than main's return.
+// A setter reports failure through the error handler and throws nothing:
+// a pinned check that threw would exit through an uncaught exception
+// rather than main's return.
 void checkFailure(KindFixture const& kind, std::string const& name, std::string const& tag,
                   std::string const& mustContain = "") {
   resetRecorded();
@@ -226,7 +227,7 @@ void checkDotSoNotSniffed(KindFixture const& kind) {
   check(lastMessage.find("did you mean") == std::string::npos,
         kind.requestName + " \"" + doubled + "\": the message suggests nothing");
   check(lastMessage.find("\"" + kind.successName + "\"") == std::string::npos,
-        kind.requestName + " \"" + doubled + "\": the message never quotes the stripped name");
+        kind.requestName + " \"" + doubled + "\": the message omits the stripped name");
 }
 
 void checkSuccessThenReset(KindFixture const& kind) {

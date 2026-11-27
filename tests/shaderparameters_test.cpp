@@ -22,8 +22,7 @@
  * A shader reads a parameter by name from a list built on a dictionary of
  * its own: declared with the dictionary or inline in the token, a float, a
  * color, a string or an integer array, each answering only to its own type
- * and length. Every list here is built on a fresh GMANDictionary, never the
- * standard one.
+ * and length. Every list here is built on a fresh GMANDictionary.
  */
 
 #include <string>

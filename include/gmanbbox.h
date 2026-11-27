@@ -65,8 +65,8 @@ public:
 namespace gman {
 
 // The largest absolute coordinate over box's own six coordinates, 0 for a box
-// still at its default +/-RI_INFINITY (a primitive whose own bbox was
-// never assigned) -- hitSurfacePoint's own M, gman::SurfacePoint's
+// still at its default +/-RI_INFINITY (a primitive with no bbox
+// assigned) -- hitSurfacePoint's own M, gman::SurfacePoint's
 // surfaceMagnitude field.
 inline RtFloat primitiveMagnitude(GMANBBox const& box) {
   GMANPoint const boxMin = box.getMin();

@@ -198,7 +198,7 @@ void checkShadeForwardsItsOwnTracer() {
 // A SurfacePoint with a non-zero surfaceMagnitude reaches both a recording
 // Tracer and a recording Occluder unchanged, through one gman::shade call
 // -- checkShadeForwardsItsOwnTracer's own model, since a check on a
-// hand-built env never passes through gman::shade at all.
+// hand-built env bypasses gman::shade.
 void checkShadeForwardsSurfaceMagnitude() {
   RtFloat const magnitude = 42.5f;
 

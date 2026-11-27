@@ -191,7 +191,7 @@ void testUniformScale() {
         "uniform scale: normal == (-1, 0, 0)");
 }
 
-// ---- check 6: a singular transform never hits. The criterion is the
+// ---- check 6: a singular transform misses. The criterion is the
 // mutation, not the matrix: this ray hits with the singular guard
 // removed, unlike a ray straight down the axis under a scale that zeroes
 // x or y, which the a == 0 guard would reject anyway. ----
@@ -204,7 +204,7 @@ void testSingularTransform() {
   GMANRay ray(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  check(!cylinder.intersect(ray, hit), "singular transform: a cylinder with no invertible object space never hits");
+  check(!cylinder.intersect(ray, hit), "singular transform: a cylinder with no invertible object space misses");
 }
 
 // ---- check 7: the ray's interval rejects a hit before tmin and one past

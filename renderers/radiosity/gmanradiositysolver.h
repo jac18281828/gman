@@ -147,7 +147,7 @@ private:
  * diffuse(+N) or diffuse(-N) at its receiver point, through the element
  * primitive's own lights and the occluder, exactly the direct term the
  * ray tracer computes there. Receiver points and form-factor samples lie
- * on the true surface, never inside a curved primitive's facet.
+ * on the true surface, not on a curved primitive's facet.
  *
  * F(receiver <- shooter) sums, over the shooter's samples, a_k |cos_r|
  * |cos_s| T / (pi r^2 + a_k) (Wallace, Elmquist & Haines 1989, the disc
@@ -182,15 +182,15 @@ private:
  * Shots run in sequence and each shot's receivers run in parallel through
  * gman::parallelFor. A receiver's body writes only its own two sides' H
  * and unshot, once per shot, and sums its samples in a fixed order, so the
- * solution depends only on the mesh's element and node order, never on the
- * worker count. GMANError on a reflectance count other than the
+ * solution depends only on the mesh's element and node order, and is the
+ * same at any worker count. GMANError on a reflectance count other than the
  * mesh's element count, a channel outside [0, 1], or a sample count that
  * is not a perfect square with an even root.
  */
 class GMANRadiositySolver {
 public:
   // An even root keeps every sample off the receiver point at its cell's
-  // centre, so a self ray never has zero length.
+  // centre, so every self ray has positive length.
   static constexpr std::size_t kDefaultSamples = 16;
   static constexpr double kConvergence = 1e-3;
   static constexpr std::size_t kMaxShotsPerSide = 64;

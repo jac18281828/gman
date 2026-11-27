@@ -76,17 +76,17 @@ public:
 
   // The per-sample visibility test: if depth is closer than the sample's
   // current depth, stores color, alpha and depth and returns true. A NaN
-  // depth is never closer; a NaN or infinite channel of color is stored as
-  // 0, a finite channel as it is. sx/sy
-  // address the full sample grid (pixel index * samples-per-pixel + local
-  // sample index), not a single pixel's own samples.
+  // depth fails the test; a NaN or infinite channel of color is stored as 0,
+  // a finite channel as it is. sx/sy address the full sample grid (pixel
+  // index * samples-per-pixel + local sample index), not a single pixel's own
+  // samples.
   bool zTestAndSet(int sx, int sy, RtFloat depth, GMANColor const& color, GMANAlpha const& alpha);
 
   // Filters every pixel's covering samples through filterfunc and writes
   // the result to frameBuffer, alpha filtered by the same weights in the
   // same pass and published through frameBuffer->setAlpha. Colour is
   // written as filtered, unclamped; alpha is clamped to [0, 1], a NaN read
-  // as 1, so a NaN never makes a pixel transparent.
+  // as 1, so a NaN alpha leaves the pixel opaque.
   // xwidth/ywidth are the filter's full support width in pixel units,
   // symmetric about the pixel centre being resolved (the RISpec
   // convention every kernel in gmanfilters.cpp already follows); a width

@@ -47,7 +47,7 @@
  * background regardless of which color `DefaultBGColor` is.
  * `tests/rib/sphere.rib` itself stays untouched for every other reader
  * (tests/banner_test.cpp, tests/logfilename_test.cpp, tests/rflag_test.cpp
- * check only exit status and text output, never pixels).
+ * check only exit status and text output).
  */
 
 #include <cstdio>

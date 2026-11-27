@@ -26,9 +26,9 @@
  * (white-box, mirroring triangulation_test.cpp's own calls), with identity
  * transform and points placed in the test.
  *
- * The oracle (see checkPlacement below) never reimplements the bridging
- * under test: it reads triangle vertex positions back out of the returned
- * GMANFace chain and checks triangle count, summed unsigned area against
+ * The oracle (see checkPlacement below) reads triangle vertex positions back
+ * out of the returned GMANFace chain, without reimplementing the bridging
+ * under test, and checks triangle count, summed unsigned area against
  * the outer loop's own area minus every kept hole's -- both computed via an
  * independent, double-precision Newell's-method area, not the RtFloat
  * arithmetic under test -- per-triangle orientation against the outer
@@ -40,8 +40,8 @@
  *
  * Placements mirror triangulation_test.cpp's own: scales 1e-5, 1 and 1e4,
  * each axis-aligned at z=0 and rotated 37 degrees about the normalized
- * (1,1,1) axis and translated off the origin, proportional to scale so a
- * fixed offset never swamps a small-scale ring's own extent.
+ * (1,1,1) axis and translated off the origin by an offset proportional to
+ * scale, since a fixed offset would swamp a small-scale ring's own extent.
  */
 
 #include <algorithm>
@@ -82,15 +82,14 @@ const double kOrientationAreaExemption = 1e-6;
 
 const double kRotationDegrees = 37.0;
 
-// This suite's own dicing-count oracle for one ear-clipped triangle --
-// never GMANPatchPolyObjectManager's diceCountFor -- clamp(ceil(L /
-// sqrt(ShadingRate)), 1, 16), L the longest of p0, p1, p2's own
-// raster-space edges (see gmanpatchpolyobjectmanager.cpp). Orthographic
-// screen-to-raster (GMANViewingSystem::screenToRaster): this suite never
-// calls RiProjectionV, so GMANOptions' own default projection applies,
-// and raster x, y pass straight through a camera-space point's own x, y,
-// unaffected by z -- the perspective behind-the-eye fallback this file
-// never needs.
+// This suite's own dicing-count oracle for one ear-clipped triangle,
+// independent of diceCountFor (gmanpatchpolyobjectmanager.cpp):
+// clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L the longest of p0, p1, p2's
+// own raster-space edges. Orthographic screen-to-raster
+// (GMANViewingSystem::screenToRaster): this suite calls no RiProjectionV, so
+// GMANOptions' own default projection applies, and raster x, y pass straight
+// through a camera-space point's own x, y, unaffected by z -- the
+// perspective behind-the-eye fallback does not arise.
 int expectedDiceN(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2, GMANOptions const& options,
                   RtFloat shadingRate) {
   const GMANOptions::ScreenWindowStruct sw = options.getScreenWindow();
@@ -265,7 +264,7 @@ std::map<GMANVertex const*, int> indexVertices(GMANObject* object, int chainLeng
 // placed set of loops and returns the emitted triangles as chain-index
 // triples for the caller's own cross-placement identity check. kept[i]
 // (i >= 1) is the test's own expectation of whether hole i survives
-// bridging; kept[0] is unused (the outer loop is never dropped by a case
+// bridging; kept[0] is unused (the outer loop is always kept by a case
 // this function is called on). Returns an empty vector (with assertions
 // already recorded as failures) if getRSPolygonMesh did not return a
 // usable object.

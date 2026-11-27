@@ -536,7 +536,7 @@ GMANVector GMANNuPatch::getNormal(double u, double v) {
   evaluate(u, v, S, Su, Sv);
 
   GMANVector n = Su.cross(Sv);
-  // Divide by the cross product's own magnitude, never through
+  // Divide by the cross product's own magnitude rather than through
   // GMANVector::normalize()'s absolute RI_EPSILON threshold: that
   // threshold does not scale with the cross product's own magnitude, so
   // a tiny but non-degenerate cross product would fall under it and come
@@ -639,8 +639,8 @@ GMANVector GMANPatch::getNormal(double u, double v) {
     // regardless of normalization -- most of what survives this fix is
     // that (a step-size limit, not fixed here), not genuine surface
     // degeneracy. Either way, GMANVector::normalize on a zero-magnitude
-    // vector returns it unchanged rather than dividing by zero, so this
-    // never produces a NaN normal.
+    // vector returns it unchanged rather than dividing by zero, so the
+    // normal stays finite.
     dU.normalize();
     dV.normalize();
     GMANVector n = dU.cross(dV);

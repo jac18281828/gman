@@ -21,16 +21,10 @@
 /*
  * RI state machine, exercised through the published C API.
  *
- * The file this replaces could never have worked: it drew via
- * RiObjectBegin/RiObjectInstance, which are no-op stubs, called
- * RiBegin("libgmanraytracer.so") -- which GMANRenderMan turns into
- * dlopen("liblibgmanraytracer.so.so") -- and issued RiSphere before
- * RiWorldBegin, which GMANGraphicState rejects.
- *
- * What is tested here is the part that does work: GMANGraphicState's table of
- * which RI requests are legal in which begin/end block. Errors are routed to
- * a handler that counts them rather than printing, so both the accept and the
- * reject cases are assertable. Nothing here renders, so this test says
+ * This test covers GMANGraphicState's table of which RI requests are legal
+ * in which begin/end block. Errors are routed to a handler that counts them
+ * rather than printing, so both the accept and the reject cases are
+ * assertable. Nothing here renders, so this test says
  * nothing about output.
  */
 
@@ -77,7 +71,7 @@ int main(void) {
   check(errorCount == 1, "RiSphere before RiWorldBegin is rejected");
   check(lastCode == RIE_ILLSTATE, "the rejection is RIE_ILLSTATE");
 
-  /* Leaving a block that was never entered is not either. */
+  /* Closing a block that is not open is rejected too. */
   errorCount = 0;
   RiAttributeEnd();
   check(errorCount == 1, "unmatched RiAttributeEnd is rejected");

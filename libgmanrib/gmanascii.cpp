@@ -810,8 +810,7 @@ RtVoid GMANASCII::RiMakeTextureV(char* pic, char* tex, RtToken swrap, RtToken tw
   printPL(n, tokens, parms);
 }
 
-// Declared in gmanascii.h since 2001 and never defined, which is why linking
-// libgmanrib was never attempted. Mirrors RiMakeTextureV.
+// Mirrors RiMakeTextureV.
 RtVoid GMANASCII::RiMakeBumpV(char* pic, char* tex, RtToken swrap, RtToken twrap, RtFilterFunc filterfunc,
                               RtFloat swidth, RtFloat twidth, RtInt n, RtToken tokens[], RtPointer parms[]) {
   std::string ff;

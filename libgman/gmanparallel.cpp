@@ -39,8 +39,8 @@ namespace {
 constexpr RtInt kNoIndexLeft = -1;
 
 // Takes the next unclaimed index in [0, count), or kNoIndexLeft once all are
-// claimed. The counter only advances while it is below count, so it never
-// exceeds count and cannot overflow RtInt.
+// claimed. The counter only advances while it is below count, so it is
+// at most count and cannot overflow RtInt.
 RtInt claimIndex(std::atomic<RtInt>& next, RtInt count) {
   RtInt index = next.load(std::memory_order_relaxed);
   while (index < count) {

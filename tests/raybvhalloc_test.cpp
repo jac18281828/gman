@@ -156,8 +156,8 @@ GMANRay overlapHitRay() { return GMANRay(GMANPoint(kOverlapX, 0.0, -10.0), GMANV
 GMANRay clearMissRay() { return GMANRay(GMANPoint(0.0, 1000.0, 0.0), GMANVector(1.0, 0.0, 0.0)); }
 
 // Applies `holds` via check(), or prints a skip line under ASan, where this
-// override never sees the library's own allocations. `holds` is computed
-// by the caller either way, so the counts it depends on are never unused.
+// override misses the library's own allocations. The caller computes
+// `holds` either way, so the counts it depends on are used in both builds.
 void checkAllocationDelta(bool holds, char const* message) {
 #if GMAN_ADDRESS_SANITIZED
   (void)holds;
@@ -227,7 +227,7 @@ void testTransmissionBatch(GMANRayOccluder const& occluder) {
 
   // Crosses all 3 overlapping spheres (6 surfaces), 0.5 opacity each:
   // 0.5^6, comfortably above the negligible-transmission cutoff, so the
-  // walk never cuts short.
+  // walk runs through every surface.
   GMANColor const expected(0.015625f, 0.015625f, 0.015625f);
 
   // The counted region holds only the library call, for the same reason

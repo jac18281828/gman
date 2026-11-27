@@ -81,7 +81,7 @@ private:
   // deep-copying would re-dlopen on every block even when no shader
   // changes inside it. A shared_ptr also makes the block's own semantics
   // free: reassigning a block-local shared_ptr (RiSurface inside
-  // AttributeBegin) never touches the parent's copy, and AttributeEnd
+  // AttributeBegin) leaves the parent's copy untouched, and AttributeEnd
   // discards it along with the rest of the popped GMANAttributes.
   std::shared_ptr<GMANLoadableShader> surfaceModule;
   std::shared_ptr<GMANSurfaceShader const> surface;

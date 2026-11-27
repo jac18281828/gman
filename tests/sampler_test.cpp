@@ -21,7 +21,7 @@
 /*
  * gman::sampleHash, gman::unitFloat, gman::sample1D and gman::sample2D:
  * a counter-based sampler that is a pure function of its arguments, so
- * reproduction depends only on the arguments, never on call order.
+ * reproduction is independent of call order.
  */
 
 #include <algorithm>

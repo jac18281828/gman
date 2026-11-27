@@ -301,7 +301,7 @@ const GMANToken GMANRIBTokenize::parseKeyword(std::istream& ribFile) {
   } else {
     // A request GMAN does not recognize is not a parse error -- production
     // RIB from any real exporter routinely uses requests this front end
-    // has never heard of. The parser warns once and skips it; see
+    // does not know. The parser warns once and skips it; see
     // GMANRIBParse::skipUnknownRequest.
     debug("Unrecognized keyword: '{}'", tokenChars);
     return GMANToken(GMANToken::RI_UNKNOWN_REQUEST, buffer);

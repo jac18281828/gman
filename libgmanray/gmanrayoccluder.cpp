@@ -54,9 +54,8 @@ constexpr RtFloat kUnitRoundoff = std::numeric_limits<RtFloat>::epsilon() / (RtF
 // proportional to itself, not to |P|. kSelfShadowOffsetFloor keeps a hit
 // point at or near the origin, where the scaled term vanishes, a positive
 // offset. kSelfShadowOffsetCeiling caps the result at
-// kSelfShadowOffsetCeiling * max|P|, the same bound the old, unkeyed
-// offset used, so a large receiver near the camera never exceeds it, and
-// its own contact shadows are no worse.
+// kSelfShadowOffsetCeiling * max|P|, so a large receiver near the camera,
+// whose own M would otherwise widen the offset, keeps its contact shadows.
 //
 // c (16) is 4x the self-shadow sweep's own measured minimum self-hit-free
 // c on the power-of-two grid {1, 2, 4, 8, ...}: the nofma build still
@@ -197,8 +196,8 @@ ShadowWalkResult shadowWalk(GMANRayBVH const& bvh, GMANPoint origin, GMANVector 
     wi = toTarget;
   }
 
-  // A (kMaxCompositeLayers + 1)th blocker reads as opaque, never as a leak
-  // of light through a wall deeper than the cap.
+  // A (kMaxCompositeLayers + 1)th blocker reads as opaque rather than as a
+  // leak of light through a wall deeper than the cap.
   GMANRay const capRay(origin, wi, RI_EPSILON, remaining);
   GMANHit capHit;
   GMANRayPrimitive const* capPrimitive = nullptr;
@@ -245,15 +244,14 @@ GMANColor GMANRayOccluder::walk(GMANPoint const& P, GMANVector const& towardLigh
   // ray crosses, not per blocker: bvh.nearestHit keeps one hit per call,
   // so this walks the interval itself, moving origin/remaining past each
   // surface found. This matches a render loop's own composite, which
-  // likewise crosses both shells of a sphere the ray enters. The cap
-  // bounds a stack deeper than it, not an infinite walk: offsetOrigin
-  // always advances toward reference regardless of which surface's own
-  // normal produced it, so a zero-opacity surface stack never decays
-  // transmission enough to break the loop on its own, and a pathological
-  // stack deeper than the cap would otherwise be walked in full.
+  // likewise crosses both shells of a sphere the ray enters. The walk
+  // always ends: offsetOrigin advances toward reference whichever surface's
+  // own normal produced it. The cap bounds its cost, because a zero-opacity
+  // stack leaves transmission undecayed and would otherwise be walked in
+  // full.
   for (int layer = 0; layer < gman::kMaxCompositeLayers; ++layer) {
-    // A light nearer than the offset itself still has to end the walk,
-    // though at this offset's scale that is effectively never.
+    // A light nearer than the offset itself ends the walk, though at this
+    // offset's scale that is vanishingly rare.
     if (selfShadowOffsetMagnitude(origin, currentMagnitude) >= remaining) {
       break;
     }

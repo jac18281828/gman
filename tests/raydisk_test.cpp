@@ -78,7 +78,7 @@ void testParallelRayMisses() {
   GMANRay ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  check(!disk.intersect(ray, hit), "parallel: a ray with no z component never reaches the z == height plane");
+  check(!disk.intersect(ray, hit), "parallel: a ray with no z component misses the z == height plane");
 }
 
 // ---- check 4: a partial thetamax wedge hits inside, misses outside ----
@@ -185,7 +185,7 @@ void testIntervalRejects() {
 }
 
 // ---- a singular transform (e.g. Scale 0 1 1) has no invertible object
-// space to intersect in, and never hits. Scaling z instead of x would
+// space to intersect in, and misses. Scaling z instead of x would
 // leave this axial ray's own direction transformed to (0, 0, 0), which
 // the "parallel to the plane" guard above already rejects on its own --
 // vacuously passing this check whether or not the singular guard ran at
@@ -200,7 +200,7 @@ void testSingularTransform() {
   GMANRay ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit hit;
 
-  check(!disk.intersect(ray, hit), "singular transform: a disk with no invertible object space never hits");
+  check(!disk.intersect(ray, hit), "singular transform: a disk with no invertible object space misses");
 }
 
 // ---- degenerate disks miss instead of filling NaN ----

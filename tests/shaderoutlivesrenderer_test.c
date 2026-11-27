@@ -20,7 +20,7 @@
 
 /*
  * A plugin's module outlives the RenderMan context that built an instance
- * from it: dlopen'd once, it is never unloaded, so a second RiBegin/RiEnd
+ * from it: dlopen'd once, it stays loaded, so a second RiBegin/RiEnd
  * cycle's own RiSurface resolves the same GMANLoadShader/GMANDestroyShader
  * symbols again and builds a fresh instance through them, and process exit
  * reaches the dlopen'd module once more after main returns. Either path is

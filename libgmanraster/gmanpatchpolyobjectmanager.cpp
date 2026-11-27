@@ -99,8 +99,8 @@ GMANMatrix4 cameraToWorldOf(GMANOptions const* opt) { return opt ? opt->getCamer
 // from the same resolved projection RiWorldBegin's own uses (null when opt
 // is null -- a direct caller with no options at all, which diceCountFor
 // reads as "fall back to the cap"), whether that projection is perspective
-// (orthographic's projection is affine, so it never falls back on a
-// corner's position), and the current ShadingRate.
+// (orthographic's projection is affine and defined everywhere, so only
+// perspective checks a corner's position), and the current ShadingRate.
 struct RasterProjection {
   std::unique_ptr<GMANViewingSystem> projector;
   bool perspective;
@@ -120,8 +120,8 @@ RasterProjection rasterProjectionFor(GMANOptions const* opt, GMANAttributes cons
   // standardDictionary(), not the renderer's own dictionary: no getRS*
   // signature carries one in, and none may change to add it. "fov"
   // resolves the same as RiWorldBegin's unless a scene redeclares it,
-  // which changes the dicing granularity, and so the shading
-  // resolution, never coverage.
+  // which changes the dicing granularity, and so the shading resolution,
+  // but not coverage.
   gman::ViewingSystemInputs const vsi = gman::resolveViewingSystemInputs(*opt, gman::standardDictionary());
   bool const perspective = vsi.projectionName != "orthographic";
   GMANMatrix4 const worldToCamera;
@@ -308,7 +308,7 @@ std::size_t findEar(std::vector<GMANPoint> const& ring, std::vector<RtInt> const
       fallbackAt = i;
     }
     if (orient[i] < -kTriangulationTolerance) {
-      continue; // reflex: never an ear
+      continue; // a reflex vertex is no ear
     }
     const RtInt iPrev = remaining[(i + m - 1) % m];
     const RtInt iCur = remaining[i];
@@ -384,7 +384,7 @@ std::vector<std::array<RtInt, 3>> triangulateEarClipping(const std::vector<GMANP
 // t default to that same x, y and take the highest-precedence varying value
 // supplied instead: "st" first, then "s"/"t" each overriding only its own
 // component. RiTextureCoordinates does not apply to a polygon (RISpec 3.2);
-// getRSPolygonMesh never resolves it.
+// getRSPolygonMesh ignores it.
 struct PolygonVertexTexCoord {
   RtFloat u, v, s, t;
 };
@@ -478,9 +478,9 @@ GMANVertex* dicedGridVertex(GMANPoint const& p0, GMANPoint const& p1, GMANPoint 
 // this triangle -- appending every newly shaded interior or edge-interior
 // vertex to vertices and every sub-triangle's face to faceList. Reuses the
 // triangle's three corners' own GMANVertex objects unchanged at the grid's
-// three corners rather than duplicating them; two ear-clipped triangles
-// never share a diced grid vertex, even along a common diagonal -- each
-// dices independently.
+// three corners rather than duplicating them; each ear-clipped triangle
+// dices independently, even along a common diagonal, and owns its
+// edge-interior and interior vertices.
 void dicePolygonTriangle(RtInt i0, RtInt i1, RtInt i2, std::vector<GMANPoint> const& vertexLocations,
                          std::vector<PolygonVertexTexCoord> const& texCoords,
                          std::vector<GMANVector> const& vertexNormals, GMANNormal const& normal,
@@ -707,9 +707,9 @@ PlanarFrame outerFrame(std::vector<GMANPoint> const& outer, GMANVector const& no
 
 // One Hole for each loop after loops[0] that gman::isDegeneratePolygon
 // does not reject, sorted by descending rightmostU (rule 1: a ray cast
-// from a not-yet-bridged hole's rightmost vertex can then only meet the
-// boundary or a hole already bridged -- never one still to come, which it
-// could otherwise cross), ties by ascending loopIndex.
+// from a not-yet-bridged hole's rightmost vertex then meets only the
+// boundary or a hole already bridged, since every hole still to come lies
+// at or left of that vertex), ties by ascending loopIndex.
 std::vector<Hole> collectHoles(std::vector<std::vector<GMANPoint>> const& loops,
                                std::vector<std::vector<RtInt>> const& loopSlots, GMANVector const& normalVec,
                                PlanarFrame const& frame) {
@@ -877,7 +877,7 @@ RtInt chooseBridgeSlot(std::vector<GMANPoint> const& vertexPositions, std::vecto
 // Commits hole into the ring at targetSlot: its vertices get ids (from the
 // old vertexPositions.size() up) and join vertexPositions and vertexSlots
 // only on this call, once bridging is known to succeed -- a dropped hole
-// never reaches spliceHole and so never strands an id. ring becomes
+// skips spliceHole and so strands no id. ring becomes
 // ring[0..targetSlot], the hole from its rightmost vertex (traversed
 // backwards when reversed), that vertex again, ring[targetSlot], then
 // ring[targetSlot + 1..] -- a doubled edge, not a split surface, since

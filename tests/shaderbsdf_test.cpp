@@ -363,7 +363,7 @@ void checkMatte() {
         "matte: the closure is identical at Ka = 0 and Ka = 1");
 }
 
-// matte builds at se.N, normalized, never at se.Ng.
+// matte builds at the normalized se.N, not se.Ng.
 void checkMatteNormal() {
   auto const matte = loadSurface(RI_MATTE, floatParam(RI_KD, kMatteKd));
   check(matte != nullptr, "matte normal: loads through setSurface");
@@ -419,7 +419,7 @@ void checkPlasticDefaults() {
 }
 
 // plastic's headroom: named cases, the Kd = 2 saturation, and a sweep
-// proving lobe 0 stays Kd*Cs and the two lobes never exceed 1 combined.
+// proving lobe 0 stays Kd*Cs and the two lobes sum to at most 1.
 void checkPlasticHeadroom() {
   struct HeadroomCase {
     RtFloat kd;
@@ -687,8 +687,8 @@ void checkGlassOrientsByNg() {
 }
 
 // bsdf and albedo read only se.N, se.Cs (and, for glass, se.Ng) and, for
-// paintedplastic, se.s/se.t through se.texture -- never se.I, se.Os, se.P,
-// se.lights, the occluder or the tracer. glass's own se.Ng, (1, 0, 0), is
+// paintedplastic, se.s/se.t through se.texture; they ignore se.I, se.Os, se.P,
+// se.lights, the occluder and the tracer. glass's own se.Ng, (1, 0, 0), is
 // perpendicular to N in both envs, so the orientation cannot differ
 // between them; checkGlassOrientsByNg pins the orientation itself.
 void checkInputsOnly() {

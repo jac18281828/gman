@@ -76,7 +76,7 @@ inline RtFloat alphaFromRoughness(RtFloat roughness) {
 }
 
 // The scalar plastic's and paintedplastic's GGX lobe shares across
-// channels so the two lobes never exceed 1 combined: the least headroom
+// channels so the two lobes sum to at most 1: the least headroom
 // (1 - diffuse_c) / specular_c over channels with specular_c > 0, or 1
 // when every specular_c is 0. diffuse and specular are each already
 // clamped to [0, 1].

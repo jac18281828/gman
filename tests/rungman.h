@@ -98,7 +98,7 @@ inline void redirectChildStreams(int pipeWriteFd, GMANRunOptions::Capture captur
   close(pipeWriteFd);
 }
 
-// child never returns: it either execs gman or calls _exit(127).
+// The child execs gman, or calls _exit(127) when chdir or exec fails.
 [[noreturn]] inline void execChild(int pipeReadFd, int pipeWriteFd, std::string const& workingDirectory,
                                    GMANRunOptions::Capture capture, char* const* argv) {
   close(pipeReadFd);

@@ -64,7 +64,7 @@ public:
   GMANLoadableShader(char const* path, GMANParameterList const& parameters);
 
   // Owns the one instance GMANLoadShader returned: frees it through the
-  // same plugin's own GMANDestroyShader, never through delete, since the
+  // same plugin's own GMANDestroyShader rather than delete, since the
   // plugin's own allocator built it.
   virtual ~GMANLoadableShader();
 

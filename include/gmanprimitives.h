@@ -235,7 +235,7 @@ protected:
 
   // The surface point and its first partials in knot-space u, v, at the
   // unit-square (u,v) mapped onto [umin,umax] x [vmin,vmax]. Shared by
-  // getLocation and getNormal so the two never disagree.
+  // getLocation and getNormal so the two agree.
   void evaluate(double u, double v, GMANPoint& S, GMANVector& Su, GMANVector& Sv) const;
 
 public:
@@ -313,7 +313,7 @@ protected:
 
   // The bilinear sub-patch containing (u,v): its four corners and the
   // local parameter within it. Shared by getLocation and getNormal so
-  // the two never disagree about which sub-patch a point falls in.
+  // the two agree about which sub-patch a point falls in.
   void bilinearPatch(double u, double v, GMANPoint& p00, GMANPoint& p10, GMANPoint& p01, GMANPoint& p11, RtFloat& newU,
                      RtFloat& newV) const;
 

@@ -41,8 +41,7 @@
  *
  * Regenerating a golden is legitimate only when the change that moved the
  * pixels is itself an intended, reviewed behavior change (a shading,
- * clipping or projection fix) -- never to make a red test green without
- * understanding why it moved. Regenerate by rendering the scene with a
+ * clipping or projection fix). Regenerate by rendering the scene with a
  * known-good gman and copying the output over the checked-in golden, then
  * inspect the diff image (see below) from the old golden one last time
  * before overwriting it, and say so in the commit message.

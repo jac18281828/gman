@@ -171,8 +171,8 @@ void checkSphereFamily(std::string const& gman, std::string const& ribDir) {
         "sphere family: nosuchpass's own run names libnosuchpass.so");
 }
 
-// A token RiOptionV never declares, alongside indirect, must not reach
-// parameter-list construction or change the render.
+// An undeclared token beside indirect must not reach parameter-list
+// construction or change the render.
 void checkExtraTokenIgnored(std::string const& gman, std::string const& ribDir) {
   Rendered const constant = renderFixture(gman, ribDir, "indirectseam_constant.rib", "indirectseam_constant.tif");
   Rendered const extraToken = renderFixture(gman, ribDir, "indirectseam_extratoken.rib", "indirectseam_extratoken.tif");

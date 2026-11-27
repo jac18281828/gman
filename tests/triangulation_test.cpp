@@ -45,7 +45,7 @@
  * exercise getRSPolygonMesh's degeneracy guard; an asymmetric
  * self-intersecting bow-tie exercises ear clipping's clipAt<0 fallback.
  *
- * The oracle (see checkPlacement below) never reimplements the
+ * The oracle (see checkPlacement below) is independent of the
  * classification under test: it reads triangle vertex positions back out
  * of the returned GMANFace chain and checks triangle count, summed
  * unsigned area against the polygon's own Newell-derived area, per-
@@ -111,15 +111,15 @@ const double kOrientationAreaExemption = 1e-6;
 
 const double kRotationDegrees = 37.0;
 
-// This suite's own dicing-count oracle for one ear-clipped triangle --
-// never GMANPatchPolyObjectManager's diceCountFor -- clamp(ceil(L /
+// This suite's own dicing-count oracle for one ear-clipped triangle,
+// independent of GMANPatchPolyObjectManager's diceCountFor -- clamp(ceil(L /
 // sqrt(ShadingRate)), 1, 16), L the longest of p0, p1, p2's own
 // raster-space edges (see gmanpatchpolyobjectmanager.cpp). Orthographic
-// screen-to-raster (GMANViewingSystem::screenToRaster): this suite never
-// calls RiProjectionV, so GMANOptions' own default projection applies,
+// screen-to-raster (GMANViewingSystem::screenToRaster): this suite makes no
+// RiProjectionV call, so GMANOptions' own default projection applies,
 // and raster x, y pass straight through a camera-space point's own x, y,
-// unaffected by z -- the perspective behind-the-eye fallback this file
-// never needs.
+// unaffected by z -- the perspective behind-the-eye fallback does not
+// arise.
 int expectedDiceN(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2, GMANOptions const& options,
                   RtFloat shadingRate) {
   const GMANOptions::ScreenWindowStruct sw = options.getScreenWindow();
@@ -162,8 +162,7 @@ int expectedDiceN(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2,
 
 // Rodrigues' rotation formula in double precision -- an independent
 // computation from the RtFloat arithmetic under test, so the placement
-// itself never hides behind the same rounding the oracle is meant to
-// catch.
+// itself is free of the rounding the oracle is meant to catch.
 std::array<double, 3> rotate(double x, double y, double z, double ax, double ay, double az, double angleRad) {
   const double c = std::cos(angleRad);
   const double s = std::sin(angleRad);

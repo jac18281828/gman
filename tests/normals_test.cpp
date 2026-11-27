@@ -25,11 +25,6 @@
  * stays perpendicular to its (correspondingly scaled) tangent plane --
  * the test a plain forward-transform of the normal passes only for a
  * uniform scale.
- *
- * Revert check (verified by actually reverting, not asserted): restoring
- * any of the seven getNormal bodies to `throw GMANError(...,"Not
- * implemented")` throws instead of returning, and this file's finite
- * -difference assertions never run to a pass/fail -- the process aborts.
  */
 
 #include <cmath>

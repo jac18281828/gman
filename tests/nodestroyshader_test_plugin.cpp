@@ -21,10 +21,10 @@
 /*
  * Test-only surface shader that defines GMANGetLoadableInfo and
  * GMANLoadShader but no GMANDestroyShader: stands in for a plugin lacking
- * the destroy entry point. GMANLoadShader returns a real instance, never
- * null, since the loader already refuses a null return on its own, and a
- * null here would let the missing-GMANDestroyShader refusal go
- * unexercised. Never dlopened outside the test suite.
+ * the destroy entry point. GMANLoadShader returns a non-null instance: the
+ * loader already refuses a null return on its own, and a null here would
+ * leave the missing-GMANDestroyShader refusal unexercised. Dlopened only
+ * by the test suite.
  */
 
 #include "gmanloadable.h"

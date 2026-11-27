@@ -1,5 +1,5 @@
 ## Bicubic PatchMesh, nonperiodic on both axes: nu=7 nv=4 under the
-## default Bezier basis (RiBasis is never called), two sub-patches in u
+## default Bezier basis (no RiBasis call), two sub-patches in u
 ## sharing their middle column of control points, one sub-patch in v.
 ## Control net evenly spaced and coplanar (z=0 throughout), so
 ## GMANBasis::bicubicMesh must trace the same flat rectangle a bilinear

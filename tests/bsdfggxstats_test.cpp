@@ -263,8 +263,7 @@ Vec3 visibleNormalLocal(Vec3 woLocal, double alpha, double u1, double u2) {
 // (v1, u2) grid through the visible-normal construction above. The node
 // density this grid induces is exactly known in closed form -- the GGX
 // lobe's own pdf -- so dividing by it and averaging is a valid, unbiased
-// quadrature for any integrable eval, never just the GGX lobe alone, at
-// any resolution. ----
+// quadrature for any integrable eval at any resolution. ----
 
 struct Channels3 {
   double c[3];

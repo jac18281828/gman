@@ -144,8 +144,8 @@ std::string cropLine(Block const& block) {
 // line, each line that equals a key of its edits replaced by that key's value
 // and, when c drops the blocker, the AttributeBegin block holding kBlockerLine
 // dropped. An edit, a Display line, a Format line, a draw-count line or a
-// blocker the fixture lacks fails a check, so a variant never renders unedited
-// or uncropped.
+// blocker the fixture lacks fails a check, so an unedited or uncropped
+// variant fails the test.
 std::string variantText(std::string const& ribDir, NoiseCase const& c, std::uint32_t draws, std::string const& name) {
   auto in = std::istringstream(readFile(ribDir + "/" + c.fixture + ".rib"));
   std::ostringstream out;

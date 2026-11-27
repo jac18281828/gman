@@ -115,8 +115,8 @@ const double kScales[] = {1e-3, 1.0, 1e3};
 // ---- Evaluator (commit 2) ----
 
 // A non-planar 4x4 control net, u-fastest/v-major (GMANPatch::bicubic's own
-// layout): a shallow saddle, curved enough that dP/du x dP/dv never
-// degenerates across the sample grid below.
+// layout): a shallow saddle, curved enough that dP/du x dP/dv stays
+// nonzero across the sample grid below.
 std::vector<RtFloat> bezierGrid() {
   std::vector<RtFloat> p(48);
   for (int j = 0; j < 4; j++) {
@@ -354,7 +354,7 @@ void testTextureCoordinatesNoOp(std::string const& gman, std::string const& ribD
   GmanImage withCoords = readGmanTIFF("nupatch_texturecoordinates.tif");
   GmanImage defaultCoords = readGmanTIFF("nupatch_texturecoordinates_default.tif");
   check(withCoords.ok && defaultCoords.ok, "both renders read back");
-  check(pixelIdentical(withCoords, defaultCoords), "TextureCoordinates never changes a NuPatch's render: "
+  check(pixelIdentical(withCoords, defaultCoords), "TextureCoordinates leaves a NuPatch's render unchanged: "
                                                    "nupatch_texturecoordinates.rib and "
                                                    "nupatch_texturecoordinates_default.rib are pixel-identical");
 
@@ -435,13 +435,13 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
     if (fixture.stopsFile) {
       GMANRunResult debugRun = runCapturingOutput(gman, rib, 10, /*debug=*/true);
       check(debugRun.output.find("Keyword token: Sphere") == std::string::npos,
-            std::string(fixture.file) + ": the Sphere after it never parses (the file stops)");
+            std::string(fixture.file) + ": the file stops before the Sphere that follows");
     }
   }
 
   // nupatch_rule_order.rib breaks both a uknot and a vorder rule; the row
   // above already pins that the vorder warning fires. This pins the other
-  // half: the uknot check never runs, so its warning never prints.
+  // half: the uknot check is skipped, so its warning stays silent.
   {
     const std::string rib = malformedDir + "/nupatch_rule_order.rib";
     GMANRunResult r = runCapturingOutput(gman, rib, 10);

@@ -36,7 +36,7 @@
  * A default-constructed GMANVertex holds location and normal (0, 0, 0), colour
  * DefaultBGColor, alpha DefaultAlpha and no next vertex. Alpha must default
  * to opaque because GMANClipEdge::intersect blends the two end vertices' alpha
- * by the clip parameter, so a vertex whose alpha was never set must not
+ * by the clip parameter, so a vertex left at the default alpha must not
  * corrupt a clipped vertex's alpha.
  *
  * Revert check: change a GMANVertex member's default initializer, such as

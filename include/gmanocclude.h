@@ -52,10 +52,9 @@ namespace gman {
  *
  * A shader built outside this tree against an older header, before this
  * class existed, still links and runs: its own diffuse()/specular() were
- * inlined into its binary at that header's revision, so they never read
- * GMANSurfaceEnv's occluder at all -- not because the member defaults to
- * null, but because that shader's own compiled code predates the check
- * entirely. Rebuilding against this header picks it up.
+ * inlined into its binary at that header's revision, so its compiled code
+ * predates the check and ignores GMANSurfaceEnv's occluder, whatever the
+ * member holds. Rebuilding against this header picks it up.
  */
 class GMAN_EXPORT Occluder {
 public:

@@ -41,7 +41,7 @@ public:
 
   // Placed by transform's shutter-open matrix, GMANRaySphere's own pattern:
   // a singular matrix cannot invert into an object space to intersect in,
-  // so the hyperboloid is built anyway and simply never hits.
+  // so the hyperboloid is built anyway and simply misses.
   GMANRayHyperboloid(RtPoint point1, RtPoint point2, RtFloat thetamax, GMANParameterList pl,
                      GMANTransform const& transform);
 

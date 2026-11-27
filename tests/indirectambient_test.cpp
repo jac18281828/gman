@@ -80,7 +80,7 @@ void checkBareEnvAddsIndirect() {
 
 // A matte appearance loaded through GMANAttributes::setSurface, the
 // factory path RiSurfaceV takes -- Ka alone gates whether indirect
-// reaches Ci, since diffuse() never reads it.
+// reaches Ci, since only ambient() reads indirect.
 void checkThroughShadeGatedByKa() {
   RtFloat const ka = 0.5f;
   RtFloat const kd = 1.0f;

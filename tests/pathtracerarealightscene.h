@@ -62,7 +62,7 @@ inline GMANRaySphere* addEmittingSphere(GMANPathtraceRenderer& renderer, GMANLig
 // equivalent-point-source formula for a Lambertian sphere light: rho * le *
 // radius^2 * h / d^3, h the sphere centre's height above the floor plane, d
 // the distance from the grid point to the sphere's centre. Every length
-// here is the sphere's own object-space one, never a placed, scaled one:
+// here is the sphere's own object-space one, unplaced and unscaled:
 // the formula is dimensionless in length (radius^2 * h / d^3), so scaling
 // every length in both the rendered scene and this call by the same factor
 // leaves its value unchanged -- the actual proof a scaled scene's render

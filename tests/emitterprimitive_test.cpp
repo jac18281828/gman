@@ -128,7 +128,7 @@ void testAreaClosedForm() {
 }
 
 // The thetamax clamp in area(): a value above 360 degrees reads as a full
-// sweep, never as extra surface.
+// sweep.
 void testThetaMaxAreaClamp() {
   GMANSphere sphere(1.0f, -1.0f, 1.0f, 720.0f, GMANParameterList());
   double const expectedSphere = 4.0 * std::numbers::pi;
@@ -242,8 +242,8 @@ void testUniformByArea() {
   // The half disk's own draws feed two independent histograms: theta,
   // uniform on [0, thetaMax) regardless of radius, and r^2, uniform on
   // [0, radius^2] under an area-uniform draw (the identity
-  // r = radius * sqrt(u1) itself rests on) -- theta alone never exercises
-  // that identity, since a bug confined to the radial draw changes no
+  // r = radius * sqrt(u1) itself rests on) -- theta alone leaves that
+  // identity untested, since a bug confined to the radial draw changes no
   // angle.
   GMANDisk halfDisk(0.0f, 3.0f, 180.0f, GMANParameterList());
   double const diskRadius = 3.0;
@@ -283,7 +283,7 @@ void testUniformByArea() {
   check(rSquaredBinsOk, "uniform by area: the half disk's 16 r^2-bins are each within 5 sigma of N/16");
 }
 
-// Degenerate primitives never reach gman::emitters: a non-positive radius,
+// Degenerate primitives are ineligible for gman::emitters: a non-positive radius,
 // an empty or reversed z range, a z range reaching outside the sphere's own
 // surface, or a non-positive thetamax, for both a sphere and a disk.
 void testDegeneratePrimitives() {

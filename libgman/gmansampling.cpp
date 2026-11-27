@@ -39,8 +39,8 @@ namespace {
 // not hash to 0 (lowbias32(0) == 0).
 constexpr std::uint32_t kChainInit = 0x9e3779b9u;
 
-// Folded into structuralHash's initial state only: sampleHash never
-// mixes this in, so no dimension a renderer draws lets a sampleHash
+// Folded into structuralHash's initial state only: sampleHash omits
+// it, so no dimension a renderer draws lets a sampleHash
 // draw reproduce a permutation seed. Reproducing one needs a dimension
 // equal to one of the salts below, not a value any renderer passes.
 constexpr std::uint32_t kStructuralDomain = 0x85ebca6bu;
@@ -89,8 +89,8 @@ std::uint32_t chain(std::uint32_t state, std::uint32_t value) { return lowbias32
 
 // A hash for values that must stay fixed across every draw at one pixel
 // and dimension -- a CMJ pattern seed -- so it folds in a purpose salt
-// instead of a sample index, from an initial state sampleHash never
-// reaches.
+// instead of a sample index, from an initial state outside
+// sampleHash's reach.
 std::uint32_t structuralHash(std::uint32_t seed, RtInt x, RtInt y, std::uint32_t dimension, std::uint32_t salt) {
   std::uint32_t h = lowbias32(seed ^ kChainInit ^ kStructuralDomain);
   h = chain(h, static_cast<std::uint32_t>(x));

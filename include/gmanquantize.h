@@ -33,8 +33,8 @@
  * The Quantize request RiQuantize's "rgba" type carries: the value one
  * maps to, the integer range every channel clamps into, and the dither
  * amplitude drawn once per pixel. gmanoutput.h depends on this aggregate
- * alone, never on gmanoptions.h, which is what lets gmanoptions.h include
- * gmanoutput.h without a cycle.
+ * rather than on gmanoptions.h, so gmanoptions.h can include gmanoutput.h
+ * without a cycle.
  */
 struct GMANQuantize {
   RtInt one;

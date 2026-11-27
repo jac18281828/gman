@@ -1,5 +1,3 @@
-# parseHider copied its "type" string but never released it on any path --
-# not just the throwing ones. This file is well-formed and gman is expected
-# to exit 0; the leak this exercised was unconditional, present on every
-# successful Hider request, not only on malformed input.
+# parseHider releases its "type" string on every path, not just the throwing
+# ones. This file is well-formed and gman is expected to exit 0.
 Hider "hidden"

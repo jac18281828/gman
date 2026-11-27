@@ -76,15 +76,15 @@ int main() {
   // (renderers/radiosity/gmanradiositymesh.cpp's resolveAxisCount and
   // chooseParametricResolution). maxEdgeLength here is unreachable even at
   // the cap, so every axis resolve takes exactly ceil(log2(kMaxDivisions)) +
-  // 1 = 9 probes (doubling from 1 to the cap; bisection never runs, since
-  // the cap itself never satisfies the bound). Each probe rebuilds a
+  // 1 = 9 probes (doubling from 1 to the cap; bisection is skipped, since
+  // the cap itself fails the bound). Each probe rebuilds a
   // (candidate+1) x (otherAxis+1) grid and re-measures both its own axes'
   // edges, for 3*candidate*otherAxis + 2*candidate + 2*otherAxis + 1 calls;
   // summed over the doubling sequence 1, 2, 4, ..., 256 (9 terms, summing to
   // 511), one axis resolve against a fixed otherAxis costs exactly
   // 1551*otherAxis + 1031 calls.
   //
-  // A cylinder's own two axes never couple (its circumference is the same
+  // A cylinder's own two axes are independent (its circumference is the same
   // at every height, its height edges the same at every angle), so
   // chooseParametricResolution's relaxation settles in exactly 2 rounds: the
   // first resolves nu against nv = 1, then nv against the resolved nu = 256;

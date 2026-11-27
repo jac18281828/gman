@@ -24,10 +24,10 @@
  *
  * Every check below shares one viewing system built over a non-identity
  * world-to-camera transform -- a translation plus a rotation off the
- * view axis. Checks 1 to 3 read cameraRay, which never touches
- * cameraToWorld; building on identity instead would let a cameraRay that
- * mistakenly returns world space pass every one of them. The rotation
- * must be off the view axis: a pure z rotation fixes (0,0,1) in place,
+ * view axis. Checks 1 to 3 read cameraRay, which ignores cameraToWorld;
+ * building on identity instead would let a cameraRay that mistakenly
+ * returns world space pass every one of them. The rotation must be off the
+ * view axis: a pure z rotation fixes (0,0,1) in place,
  * so check 1's centre ray would not catch that mistake either.
  *
  * Check 6: every check above uses fov=90, where tan(45deg)=1 makes

@@ -25,7 +25,7 @@
  * primitive, read here rather than duplicated so the module and every
  * test that checks its output -- indirectpass_test.cpp and
  * indirectrender_test.cpp -- agree on one value. 255 * kConstantIndirect
- * is exactly 13, an integer, so adding it to a narrowed byte never shifts
- * that byte's own fractional part.
+ * is exactly 13, an integer, so adding it to a narrowed byte leaves that
+ * byte's own fractional part unchanged.
  */
 constexpr float kConstantIndirect = 13.0f / 255.0f;

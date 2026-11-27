@@ -63,7 +63,7 @@ Tracer::~Tracer() = default;
 
 namespace {
 
-// The RISpec's own default: a scene that never calls RiSurface still
+// The RISpec's own default: a scene with no RiSurface call still
 // shades, as matte. One instance for the process, built from an empty
 // parameter list and shared by every Appearance that needs it. The
 // function-local statics hold the module and the aliasing shared_ptr for
@@ -85,10 +85,10 @@ Appearance appearanceOf(GMANAttributes const& attributes) {
   std::list<RtLightHandle> const& handles = attributes.getLightList().getHandles();
   for (RtLightHandle const handle : handles) {
     GMANLight const* light = gmanLightSourceMgr().get(handle);
-    // An area light is read through appearance.areaLight, below, never
-    // through this list: a shader's ambient()/diffuse()/specular() loops
-    // have no notion of its shape, and must never sample it as if it were
-    // a positioned light.
+    // An area light is read through appearance.areaLight, below; this list
+    // holds positioned lights only, since a shader's
+    // ambient()/diffuse()/specular() loops have no notion of an area
+    // light's shape.
     if (light && light->getType() != GMAN_LIGHT_AREA) {
       appearance.lights.push_back(light);
     }
@@ -130,9 +130,8 @@ SurfacePoint hitSurfacePoint(GMANRay const& ray, GMANHit const& hit) {
 
 namespace {
 
-// shade's and albedo's shared fill, so the two can never drift apart:
-// every field but occluder, tracer and indirect, which each caller binds
-// for itself.
+// shade's and albedo's shared fill, so the two agree: every field but
+// occluder, tracer and indirect, which each caller binds for itself.
 GMANSurfaceEnv fillEnv(Appearance const& appearance, SurfacePoint const& point, GMANMatrix4 const& cameraToWorld,
                        TextureCache* textureCache) {
   GMANSurfaceEnv env;

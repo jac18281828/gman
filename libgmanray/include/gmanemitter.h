@@ -52,7 +52,7 @@
  *
  * sample draws an area emitter uniformly in the solid angle it subtends from
  * the receiving point wherever that is the quieter draw, so a point near an
- * emitter never gathers its light from a few heavy draws: a polygon mesh by
+ * emitter gathers its light from draws of comparable weight: a polygon mesh by
  * spherical triangles at every distance, a full sphere in its cone at every
  * distance, and a disk or a partial sphere near it through a region that
  * holds it, keeping the draws that land on it. Beyond a distance scaled by
@@ -79,7 +79,7 @@ namespace gman {
 
 // One thing that radiates light: a delta light (shape null) or a sphere, disk
 // or polygon mesh primitive carrying an area light (shape non-null). light is
-// never null -- the enumerated GMANLight itself for a delta emitter, the
+// non-null -- the enumerated GMANLight itself for a delta emitter, the
 // arealight's own GMANLight for an area one.
 struct GMANRAY_EXPORT Emitter {
   GMANLight const* light;
@@ -90,7 +90,7 @@ struct GMANRAY_EXPORT Emitter {
   // estimate for a sphere under a non-uniform placement, whose Jacobian
   // varies pointwise. power feeds only the light-choice weight, where any
   // positive weight keeps the estimator unbiased, so the estimate costs
-  // variance, never correctness. 0 for a delta emitter, which has no
+  // variance alone. 0 for a delta emitter, which has no
   // finite one.
   RtFloat power;
 };
@@ -98,7 +98,7 @@ struct GMANRAY_EXPORT Emitter {
 // One next-event-estimation draw: the direction toward the emitter, its
 // true distance to the sampled point (RI_INFINITY for a distant light),
 // the shadow walk's own end point for an area draw (off the emitter's own
-// surface, toward the query point; unset and never read for a delta
+// surface, toward the query point; unset and unread for a delta
 // draw), the radiance arriving along wi already scaled for a delta
 // emitter's own pi convention, and the density that direction was drawn
 // with, per unit solid angle at the query point -- 1, by convention, for
@@ -190,7 +190,7 @@ GMANRAY_EXPORT EmitterSample sample(Emitter const& emitter, GMANPoint const& p, 
 
 // The solid-angle density sample() reports in EmitterSample::pdf for a
 // freshly drawn point on emitter, generalized to a point already known --
-// a BSDF-sampled bounce's own hit, which sample() never drew. p is the
+// a BSDF-sampled bounce's own hit, which sample() did not draw. p is the
 // receiving point, hitPoint the known point on emitter and hitNormal its
 // outward normal there (a polygon face's plane normal), all camera space.
 // It answers the density of the draw sample() selects at the same p, from

@@ -20,8 +20,8 @@
 
 /*
  * RiFormat ignores a request whose pixel aspect ratio is NaN or infinite
- * and keeps the format it had, so the raster size never converts a NaN to an
- * integer; a finite ratio is stored.
+ * and keeps the format it had, so no NaN reaches the raster size's integer
+ * conversion; a finite ratio is stored.
  */
 
 #include <limits>

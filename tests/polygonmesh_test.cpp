@@ -47,7 +47,7 @@
 namespace {
 
 // nverts (or an nverts sum) just above INT_MAX / 3: every request's own
-// overflow rule fires here, never on the vertex count itself.
+// overflow rule fires here.
 constexpr RtInt kNvertsOverflow = INT_MAX / 3 + 1;
 
 // nverts (or an nverts sum) exactly at INT_MAX / 3, the boundary every
@@ -366,7 +366,7 @@ void checkRejections(std::string const& logPath) {
   {
     // Breaks two rules: nverts[1] is negative and verts[0] is negative
     // too; only the nverts message appears, since the nverts rule runs
-    // first and verts is never read once it fires.
+    // first and verts goes unread once it fires.
     std::vector<RtInt> const nverts = {2, -1, 3};
     std::vector<RtInt> const verts = {-1, 0, 1, 2, 3};
     std::optional<GMANPolygonMesh> result;
@@ -450,8 +450,8 @@ void checkRejections(std::string const& logPath) {
 
 // nverts sums to exactly kNvertsBoundary, the shared overflow rule's own
 // boundary: Polygon and GeneralPolygon must each accept it. Counts only,
-// n 0, so nothing is allocated; each still returns std::nullopt, but
-// never from the overflow rule, so the log holds no overflow warning.
+// n 0, so nothing is allocated; each still returns std::nullopt, with no
+// overflow warning in the log.
 // kNvertsOverflow, one above the boundary, is already each request's own
 // overflow case above.
 //

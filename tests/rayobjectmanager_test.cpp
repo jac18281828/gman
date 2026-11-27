@@ -171,7 +171,7 @@ void testParametersSurvive() {
   }
 }
 
-// ---- check 5: a singular transform never hits, but never throws ----
+// ---- check 5: a singular transform misses without throwing ----
 void testSingularTransform() {
   GMANRayObjectManager manager;
   GMANMatrix4 matrix;
@@ -192,7 +192,7 @@ void testSingularTransform() {
 
   GMANRay ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit hit;
-  check(!sphere->intersect(ray, hit), "singular transform: a sphere with no invertible object space never hits");
+  check(!sphere->intersect(ray, hit), "singular transform: a sphere with no invertible object space misses");
 
   delete sphere;
 }

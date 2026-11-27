@@ -26,7 +26,7 @@
  * GMANPatchPolyObjectManager::getRSPolygonMesh directly (white-box,
  * mirroring polygon_test.cpp's own checkTriangleCount) with a three-vertex
  * "P" -- one ear-clipped triangle, so its face count is exactly n*n -- and
- * a GMANOptions carrying a known perspective projection (fov 60, never 90,
+ * a GMANOptions carrying a known perspective projection (fov 60 rather than 90,
  * so a stray hardcoded 90 fails loudly) and resolution.
  *
  * Every triangle is a right isosceles triangle at a fixed camera-space
@@ -35,7 +35,7 @@
  * depth): raster L = (xres / (right-left)) * (1 / tan(fov/2)) * (leg *
  * sqrt(2)) / z. Each case picks leg so L lands at its own target pixel
  * count, verified against this same formula, independent of
- * diceCountFor -- never the production function that computes n.
+ * diceCountFor.
  */
 
 #include <array>
@@ -60,7 +60,7 @@
 
 namespace {
 
-const RtFloat kFov = 60.0f; // never 90: a stray hardcoded default fails loudly
+const RtFloat kFov = 60.0f;
 const RtInt kXres = 200;
 const RtInt kYres = 200;
 const RtFloat kDepth = 10.0f;

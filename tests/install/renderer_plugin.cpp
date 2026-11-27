@@ -23,7 +23,7 @@
  * linking gman::gman and gman::gman_ray and nothing else. It subclasses
  * GMANRenderer, hands back a core world manager and a ray object manager,
  * calls one exported function of each library and exports the entry points a
- * renderer plugin defines. The module is built and linked, never loaded.
+ * renderer plugin defines. The module is built and linked only.
  */
 
 #include <gman/gmanlinearworldmanager.h>

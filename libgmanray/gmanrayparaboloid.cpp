@@ -113,7 +113,7 @@ bool GMANRayParaboloid::intersect(GMANRay const& ray, GMANHit& hit) const {
 
   // a vanishes for a ray parallel to the axis (dx == dy == 0), the
   // apex-seeking case. gman::solveRayQuadratic's own comment covers the
-  // linear case and why a near-degenerate a never reaches it.
+  // linear case and why a near-degenerate a needs no case of its own.
   double t0 = 0.0, t1 = 0.0;
   int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)

@@ -79,8 +79,8 @@
 namespace {
 
 // Option "render" "string indirect" ["<name>"]'s declaration token, type
-// included: RiOptionV matches it literally, so a scene that never names
-// it triggers no GMANParameterList construction at all.
+// included: RiOptionV matches it literally, so a scene without it
+// triggers no GMANParameterList construction.
 constexpr char const* kIndirectPassToken = "string indirect";
 
 // Option "radiosity" "float elementsize" ["<size>"]'s declaration
@@ -346,8 +346,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
     debug("Displaying to file with extension, {}.", ext.c_str());
 
     // Throws RIE_BADFILE for a known but disabled driver's extension, or
-    // an unrecognized one -- either way newOutput never reaches
-    // RiWorldEnd null.
+    // an unrecognized one, so newOutput is non-null from here on.
     newOutput = gman::makeFileOutput(ext, getOptions().getDisplay().name.c_str(),
                                      ri.rxmax - ri.rxmin + 1, // if the user use RiCropWindow
                                      ri.rymax - ri.rymin + 1);
@@ -578,7 +577,7 @@ RtVoid GMANRenderManImpl::RiPixelFilter(RtFilterFunc filterfunc, RtFloat xwidth,
   // The resolve's support box (GMANSampleBuffer::resolve) tests each
   // sample's offset from the pixel center against half the filter
   // width. A width below 1/xsamples can place every legal sample
-  // offset outside that box, so weightSum never leaves zero and the
+  // offset outside that box, so weightSum stays zero and the
   // pixel silently keeps its default-constructed (black) value: no
   // error, no diagnostic. This only bites at even sample counts --
   // odd counts always have a centre sample at offset 0, which is
@@ -622,9 +621,10 @@ RtVoid GMANRenderManImpl::RiQuantize(RtToken type, RtInt one, RtInt min, RtInt m
   if (!allowed(cmdQuantize)) {
     return;
   }
-  // strcmp, not pointer equality: type is a token parsed out of the RIB and
-  // is never the RI_RGBA/RI_Z globals themselves. RiGeometricApproximation
-  // compares the same kind of token with strcmp.
+  // strcmp, not pointer equality: a token parsed out of the RIB is a
+  // different pointer from the RI_RGBA/RI_Z globals, which only a C API
+  // caller passes. RiGeometricApproximation compares the same kind of token
+  // with strcmp.
   if (strcmp(type, RI_RGBA) == 0) {
     getOptions().setColorQuantize(one, min, max, ampl);
     return;
@@ -738,10 +738,8 @@ namespace {
 
 // GMANParameterList::getPointer returns NULL for a token this parameter
 // list doesn't carry -- every light parameter here is optional, so probing
-// for one is routine. The try/catch is a defensive remnant of when
-// getPointer threw instead (the same defect threw against RI_FOV);
-// harmless to keep, since a token this dictionary never declared at all
-// would still throw out of getTokenId.
+// for one is routine. The try/catch covers a token the dictionary has not
+// declared at all, which makes getTokenId throw.
 RtFloat* tryGetPointer(GMANDictionary& dictionary, GMANParameterList& pl, RtToken token) {
   try {
     return (RtFloat*)pl.getPointer(dictionary.getTokenId(token));
@@ -872,8 +870,8 @@ RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken t
 
   // Per the RISpec: a light is active in the current graphics state the
   // instant it is declared, as if RiIlluminate(handle, RI_TRUE) had just
-  // been called. Without this, GMANAttributes::lightList never carries
-  // the handle and no light this call creates ever reaches a shader --
+  // been called. Without this, GMANAttributes::lightList would lack
+  // the handle and no light this call creates would reach a shader --
   // RiIlluminate only needs to be called explicitly to turn a light back
   // on after RiIlluminate(handle, RI_FALSE) turned it off, or to bring an
   // outer-scope light into a nested attribute block.
@@ -887,9 +885,8 @@ RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken name, RtInt n, RtTok
   }
   GMANParameterList paramList(dictionary, n, tokens, parms);
 
-  // Case-sensitive, unlike the AreaLightSource request keyword itself:
-  // RiLightSourceV's own four built-in names are matched the same way,
-  // never case-insensitively.
+  // Case-sensitive, like RiLightSourceV's four built-in names and unlike
+  // the AreaLightSource request keyword itself.
   std::string lightName(name);
   if (lightName != "arealight") {
     warning("Unknown area light shader '{}'; ignoring RiAreaLightSource.", lightName.c_str());
@@ -994,10 +991,10 @@ RtVoid GMANRenderManImpl::RiGeometricApproximation(RtToken type, RtFloat value) 
   if (!allowed(cmdGeometricApproximation)) {
     return;
   }
-  // strcmp, not pointer equality: type is a token parsed out of the RIB and
-  // is never the RI_FLATNESS global itself, so the pointer test rejected
-  // every value including the only legal one. RiShadingInterpolation and
-  // RiOrientation just below compare the same kind of token with strcmp.
+  // strcmp, not pointer equality: a token parsed out of the RIB is a
+  // different pointer from the RI_FLATNESS global, which only a C API caller
+  // passes. RiShadingInterpolation and RiOrientation compare the same kind
+  // of token with strcmp.
   if (strcmp(type, RI_FLATNESS)) {
     GMANError error(RIE_UNIMPLEMENT, RIE_WARNING, "Unknown geometric approximation type");
     throw error;
@@ -1263,7 +1260,7 @@ RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPo
   // A bicubic patch carries sixteen vertex-class "P" values, not four;
   // sizing this for every type as bilinear's four truncates "P" and reads
   // past it. An unrecognized type gets the conservative floor and is
-  // rejected by getRSPatch's own fallback, never sized for sixteen.
+  // rejected by getRSPatch's own fallback.
   RtInt vertex = (strcmp(type, RI_BICUBIC) == 0) ? 16 : 4;
   GMANParameterList paramList(dictionary, n, tokens, parms, vertex, 4, 1, 1, counts);
 
@@ -1299,8 +1296,7 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
   // check is over nu/nv alone; the parameter list below confirms the
   // RIB-supplied "P" array actually holds nu*nv points, and stops the file
   // with RIE_CONSISTENCY when it holds fewer. Clamping a negative count to
-  // zero here only keeps this sizing arithmetic itself from going negative,
-  // never anyone else's.
+  // zero here only keeps this sizing arithmetic itself from going negative.
   RtInt uStep = 1, vStep = 1;
   if (bicubicType) {
     GMANBasis basis = getAttributes().getUVBasis();
@@ -1318,9 +1314,9 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
     }
   }
 
-  // The counts below run in 64 bits and saturate at INT_MAX when they reach
-  // the parameter list, so a mesh too large to count never wraps: the
-  // list's sizing rejects any parameter that count sizes.
+  // The counts below run in 64 bits and reach the parameter list saturated
+  // at INT_MAX rather than wrapped, so the list's sizing rejects any
+  // parameter a mesh too large to count sizes.
   const std::int64_t u = nu;
   const std::int64_t v = nv;
   std::int64_t nupatches = bicubicType ? (uPeriodic ? u / uStep : 1 + (u - 4) / uStep) : (uPeriodic ? u : u - 1);

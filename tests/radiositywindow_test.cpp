@@ -21,9 +21,9 @@
 /*
  * `gman -r gmanraytracer` renders tests/rib/radiositywindow.rib, a closed
  * room lit only by a distantlight aimed steeply downward through a
- * translucent window pane: the light reaches the floor but, since the
- * ceiling's own inward normal faces away from any light arriving from
- * above, never the ceiling directly. Naming the radiosity pass, the lit
+ * translucent window pane: the light reaches the floor but not the ceiling
+ * directly, since the ceiling's own inward normal faces away from any light
+ * arriving from above. Naming the radiosity pass, the lit
  * floor's own indirect bounce brightens the ceiling; with the pane opaque
  * (radiositywindow_opaque.rib), still naming the pass, no light enters at
  * all, so that brightening disappears; with the pane translucent but the

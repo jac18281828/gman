@@ -202,7 +202,7 @@ void checkShortfallPartwayLeaksNothing() {
 void checkFailedAllocationReportsNoMemory() {
 #if GMAN_ADDRESS_SANITIZED
   // AddressSanitizer instruments libgman's own allocations directly, so
-  // this test's operator new override never runs for them. The plain
+  // this test's operator new override is bypassed for them. The plain
   // (non-ASan) build runs this exact check; skip the unreachable one here
   // rather than report a false pass.
   std::printf("skip: a failed allocation reports RIE_NOMEM (ASan-built)\n");

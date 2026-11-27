@@ -10,7 +10,7 @@ Sides 1
 # A two-tone backdrop, its edge off the sphere's own centre column (world
 # x = 1, not 0) -- an edge centred behind the sphere would not move, by
 # symmetry, regardless of refraction. Lit ambient alone:
-# GMANSurfaceEnv::ambient() is never shadowed, sidestepping glass's own
+# GMANSurfaceEnv::ambient() is unshadowed, sidestepping glass's own
 # shadow rays (which pass it by its dielectric's thin transmittance).
 AttributeBegin
 Identity

@@ -108,7 +108,7 @@ RtVoid GMANLight::sample(const GMANPoint& p, GMANVector& l, GMANColor& lightCl) 
   case GMAN_LIGHT_AREA:
     // An arealight has no position of its own: its Cl and placement live
     // on the primitive it lights (gmanemitter.h's getCl(), read through
-    // the emitter interface), never through this per-light lookup.
+    // the emitter interface), not in this per-light lookup.
     // Reporting black rather than something derived from a position this
     // light does not have keeps a caller that reaches this case by
     // mistake dark, not lit as if the light had no footprint.

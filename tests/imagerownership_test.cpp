@@ -20,13 +20,12 @@
 
 /*
  * GMANOptions::imagerModule is owned through the real C API
- * (RiBegin/RiImagerV/RiFrameBegin/RiFrameEnd/RiEnd), never a hand-copied
+ * (RiBegin/RiImagerV/RiFrameBegin/RiFrameEnd/RiEnd), not a hand-copied
  * GMANOptions: a nested RiFrameBegin copies the options stack's top, so a
  * nested RiImagerV must share ownership of the outer scope's instance
  * rather than freeing it out from under the parent, and every instance
  * this test loads is freed exactly once, when its last owner releases it.
- * Proven through countingimager's own exported live-instance counter,
- * never by forcing an actual double free.
+ * Proven through countingimager's own exported live-instance counter.
  */
 
 #include <string>
@@ -48,10 +47,10 @@ RtVoid recordingErrorHandler(RtInt code, RtInt severity, char const* message) {
   lastMessage = message;
 }
 
-// countingimager is a plugin, dlopened at runtime by GMANOptions::
-// setImager, never linked into this binary, so its own live-count function
-// is resolved the same way: dlopen (idempotent -- the plugin may already
-// be loaded) then dlsym, once, memoized here.
+// countingimager is a plugin that GMANOptions::setImager dlopens at
+// runtime, so its own live-count function is resolved the same way: dlopen
+// (idempotent -- the plugin may already be loaded) then dlsym, once,
+// memoized here.
 int countingImagerLiveCount() {
   using LiveCountFn = int (*)();
   static LiveCountFn const fn = []() -> LiveCountFn {
@@ -68,8 +67,8 @@ int countingImagerLiveCount() {
 // frees the outer's own instance" discriminate a shallow-copied raw pointer
 // from shared_ptr ownership: the former catches a shallow copy freeing the
 // outer scope's instance when the nested RiImagerV replaces it; the latter
-// catches a raw imagerModule with an empty destructor never freeing the
-// outer's own instance at all.
+// catches a raw imagerModule with an empty destructor leaking the outer's
+// own instance.
 void checkNestedOwnership() {
   int const base = countingImagerLiveCount();
 
@@ -145,6 +144,5 @@ int main() {
   checkFailedNestedCallLeavesOuterAlone();
   checkReplacementNoNesting();
 
-  return checkSummary(
-      "GMANOptions::imagerModule frees exactly one instance per owner, never one a parent frame still holds");
+  return checkSummary("GMANOptions::imagerModule frees each instance exactly once, after its last owner releases it");
 }

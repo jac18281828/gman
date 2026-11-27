@@ -93,7 +93,7 @@ void renderFurnace(RtInt samples, std::vector<double> outChannels[3], std::size_
       outChannels[2].push_back(p.getBlue());
       GMANAlpha const a = frameBuffer.getAlpha(x, y);
       check(a.getRed() == 1.0f && a.getGreen() == 1.0f && a.getBlue() == 1.0f,
-            "furnace: every alpha is exactly 1, the camera never escaping the closed shell");
+            "furnace: every alpha is exactly 1, every camera ray staying inside the closed shell");
     }
   }
   droppedOut = renderer.droppedPathCount();

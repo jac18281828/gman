@@ -39,7 +39,7 @@ namespace {
 // sin(phi) or |cos(phi)| below this is close enough to exactly zero that
 // GMANFresnel's general reflectance formula divides by zero or reduces to
 // 0/0; well under any angle step a fixture ray is meant to hit obliquely
-// by, so a genuinely oblique hit never trips it by accident.
+// by, so a genuinely oblique hit stays clear of it.
 constexpr RtFloat kFresnelGuardTol = (RtFloat)1.0e-5;
 } // namespace
 
@@ -121,7 +121,7 @@ enum class FresnelCase { general, guarded, tir };
 // grazing incidence, total internal reflection) and the general trig
 // formula. cost is meaningful only when fresnelCase is general: that
 // path's own r/t formulas need it, while guarded and tir compute r/t
-// through GMANReflect/GMANRefract instead and never read it.
+// through GMANReflect/GMANRefract instead and ignore it.
 struct FresnelReflectance {
   RtFloat kr;
   RtFloat kt;

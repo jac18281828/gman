@@ -58,8 +58,8 @@ constexpr RtFloat kSphereCentreY = -2.0f;
 constexpr RtFloat kSphereCentreZ = 9.0f;
 // The occluder's own radius, just larger than the emitter's: comfortably
 // under the margin (at least 2, at scale 1) every camera ray toward the
-// floor already keeps from the emitter's own centre, so it never crosses a
-// camera ray to a measured pixel.
+// floor already keeps from the emitter's own centre, so it stays clear of
+// every camera ray to a measured pixel.
 constexpr RtFloat kOccluderRadius = kSphereRadius * 1.2f;
 constexpr RtInt kFloorRes = 81;
 constexpr RtInt kFloorSamples = 64;

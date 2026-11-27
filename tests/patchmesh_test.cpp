@@ -239,10 +239,10 @@ void testMixedWrapCornerHandComputed() {
 //
 // validBicubicMeshDim's nonperiodic branch computes (n-4)%step; a zero
 // step divides by zero unless the branch guards it first, exactly as its
-// periodic sibling already does. RiPatchMeshV never reaches
-// getRSPatchMesh with such a step -- it checks uStep/vStep itself first
-// -- so this drives GMANPatchPolyObjectManager directly, the one path
-// this input can still reach.
+// periodic sibling already does. RiPatchMeshV checks uStep/vStep itself
+// first and stops such a step before getRSPatchMesh, so this drives
+// GMANPatchPolyObjectManager directly, the one path this input can still
+// reach.
 void testNonperiodicBicubicZeroStepRejected() {
   RtFloat p[36];
   for (int i = 0; i < 36; ++i) {

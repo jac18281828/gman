@@ -47,10 +47,10 @@
 
 namespace {
 
-// constantindirect is a plugin, dlopened at runtime by
-// gman::loadIndirectPass, never linked into this binary, so its own
-// live-count function is resolved the same way: dlopen (idempotent -- the
-// plugin may already be loaded) then dlsym, once, memoized here.
+// constantindirect is a plugin that gman::loadIndirectPass dlopens at
+// runtime, so its own live-count function is resolved the same way: dlopen
+// (idempotent -- the plugin may already be loaded) then dlsym, once,
+// memoized here.
 int constantIndirectLiveCount() {
   using LiveCountFn = int (*)();
   static LiveCountFn const fn = []() -> LiveCountFn {

@@ -187,9 +187,9 @@ void testPolygon() {
             std::fabs(normal.getZ() - expectedNormal.getZ()) < kEpsilon,
         "polygon: getPlaneNormal() is the built plane's unit normal");
 
-  // Two coincident vertices: isDegeneratePolygon's own "fewer than three
-  // vertices" clause never triggers (the ring still holds three entries),
-  // but its sliver-area clause does.
+  // Two coincident vertices: the ring still holds three entries, so
+  // isDegeneratePolygon's sliver-area clause, not its "fewer than three
+  // vertices" clause, rejects it.
   std::vector<GMANPoint> const sliver = {
       GMANPoint(0.0, 0.0, 0.0),
       GMANPoint(0.0, 0.0, 0.0),

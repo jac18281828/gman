@@ -24,8 +24,8 @@
  * missing GMANDestroyShader -- reports RIE_NOSHADER at RIE_ERROR. gman's
  * error handler prints that report and stops the file: exit 1, no image.
  * Four fixtures each reach one of those four failures and name their own
- * failing Surface in the report; a control scene that never names a bad
- * Surface proves the renderer itself still works.
+ * failing Surface in the report; a control scene with no Surface request
+ * proves the renderer itself still works.
  */
 
 #include <cstdio>

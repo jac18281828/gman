@@ -45,11 +45,11 @@ inline GMANPoint pointMax(GMANPoint const& a, GMANPoint const& b) {
 }
 
 // A box built from RtFloat corner transforms can, by a few ULP, fall just
-// inside a hit a double-precision intersector computes (R5c's torus solves
+// inside a hit a double-precision intersector computes (the torus solves
 // its quartic in double). Padding every assigned box outward by an epsilon
 // scaled to its own largest coordinate magnitude -- with an absolute floor
-// for a box near the origin -- means this rounding gap can never exclude a
-// real hit. gmanraytracerenderer.cpp's kSelfShadowOffsetCeiling/
+// for a box near the origin -- means this rounding gap excludes no real
+// hit. gmanrayoccluder.cpp's kSelfShadowOffsetCeiling/
 // kSelfShadowOffsetFloor are the precedent for this shape.
 constexpr RtFloat kBBoxPadScale = (RtFloat)3.0e-5;
 constexpr RtFloat kBBoxPadFloor = (RtFloat)1.0e-9;

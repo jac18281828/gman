@@ -20,8 +20,8 @@
 
 /*
  * The ray tracer renders its rows through gman::parallelFor with one
- * gman::TextureCache per worker, and the worker count never changes a
- * pixel. A scene with shadows, a partly transparent sphere and a mirror
+ * gman::TextureCache per worker, and the worker count leaves every
+ * pixel unchanged. A scene with shadows, a partly transparent sphere and a mirror
  * renders byte-identically, colour, alpha and depth, from one, three and
  * eight workers, and so does a closed box lit through the radiosity pass;
  * the renderer reports which worker rendered each row; a texture no file
@@ -645,10 +645,8 @@ void checkSecondReflectionCache() {
 
   int const bMatte = reflectedTextureWarnings(Mirrored::bMatte, kReflectedLogs[2]);
   int const aMatte = reflectedTextureWarnings(Mirrored::aMatte, kReflectedLogs[3]);
-  check(bMatte == 0,
-        "D setup: with mirror B matte the quad's texture is never sampled (" + std::to_string(bMatte) + ")");
-  check(aMatte == 0,
-        "D setup: with mirror A matte the quad's texture is never sampled (" + std::to_string(aMatte) + ")");
+  check(bMatte == 0, "D setup: with mirror B matte the quad's texture is unsampled (" + std::to_string(bMatte) + ")");
+  check(aMatte == 0, "D setup: with mirror A matte the quad's texture is unsampled (" + std::to_string(aMatte) + ")");
 
   int const first = reflectedTextureWarnings(Mirrored::both, kReflectedLogs[0]);
   int const second = reflectedTextureWarnings(Mirrored::both, kReflectedLogs[1]);
@@ -695,8 +693,8 @@ void checkShadowOnlyOpacityMapCache() {
   check(!existing.good(), "E setup: no file carries the card's opacity map's name");
 
   int const offPath = cardShadowWarnings(false, kCardShadowLogs[0]);
-  check(offPath == 0, "E setup: with the card off the shadow path its opacity map is never sampled (" +
-                          std::to_string(offPath) + ")");
+  check(offPath == 0,
+        "E setup: with the card off the shadow path its opacity map is unsampled (" + std::to_string(offPath) + ")");
 
   int const first = cardShadowWarnings(true, kCardShadowLogs[1]);
   int const second = cardShadowWarnings(true, kCardShadowLogs[2]);

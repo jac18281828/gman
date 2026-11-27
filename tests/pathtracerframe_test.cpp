@@ -201,7 +201,7 @@ void checkEnvironment() {
       }
       foundClearPixel = true;
       check(colorExactly(frameBuffer.getPixel(px, py), kDefaultBackground),
-            "environment: a pixel whose cell never meets the floor equals B exactly");
+            "environment: a pixel whose cell misses the floor equals B exactly");
       GMANAlpha const a = frameBuffer.getAlpha(px, py);
       check(a.getRed() == 0.0f && a.getGreen() == 0.0f && a.getBlue() == 0.0f, "environment: that pixel's alpha is 0");
     }
@@ -426,7 +426,7 @@ void checkAntialiasing() {
 
 // The two-point-light floor scene several checks below share, at a smaller
 // format so they fit within the debug gate's own time bound; they compare
-// renders with each other, never with an analytic value.
+// renders with each other.
 void buildTwoLightScene(GMANPathtraceRenderer& renderer, std::vector<GMANLight const*>& lightsOut,
                         GMANLight const*& firstLight, GMANLight const*& secondLight) {
   static GMANLight const light1(GMAN_LIGHT_POINT, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(-1.5f, -2.0f, 7.0f),

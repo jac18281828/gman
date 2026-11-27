@@ -21,7 +21,7 @@
 /*
  * RIB's PixelVariance reaches GMANOptions: a fixture carrying one parses
  * in process, the options read its value, the Clipping after it still
- * parses and the log never reports an unrecognized request. A freshly
+ * parses and the log reports no unrecognized request. A freshly
  * constructed GMANOptions reads 0, whatever its storage held before.
  */
 

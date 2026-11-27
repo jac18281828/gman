@@ -22,11 +22,11 @@
  * GMANRayObjectManager::getRSPolygonMesh returns one polygon mesh
  * primitive for a PointsPolygons request; GMANRayBVH::build flattens it
  * into one entry per face rather than one entry for the whole mesh. A ray
- * aimed at a face never reports the mesh as hitPrimitive -- it is a
- * GMANRayPolygon, and it equals the hit's own primitive -- and a fan of
- * rays across tests/rib/pointspolygons_cube.rib's own cube geometry
- * agrees, face by face, between the BVH's nearestHit, the mesh's own
- * linear intersect, and each face's analytic plane.
+ * aimed at a face reports that face's GMANRayPolygon as hitPrimitive, equal
+ * to the hit's own primitive, and a fan of rays across
+ * tests/rib/pointspolygons_cube.rib's own cube geometry agrees, face by
+ * face, between the BVH's nearestHit, the mesh's own linear intersect,
+ * and each face's analytic plane.
  */
 
 #include <cmath>
@@ -128,7 +128,7 @@ bool sameDirection(GMANVector const& a, GMANVector const& b) {
 // the face itself (faceSign), so direction (toward the face) is
 // -faceSign. u/v are the ray's own fixed coordinates on the other two
 // axes, offset from the face's own centre for the "fan" -- always well
-// inside [-1, 1], never near an edge.
+// inside [-1, 1].
 GMANRay axisRay(int axis, RtFloat faceSign, RtFloat u, RtFloat v) {
   RtFloat coord[3];
   int const other0 = (axis + 1) % 3;
@@ -174,8 +174,8 @@ std::vector<FaceCase> faceCases() {
   };
 }
 
-// ---- check: a ray aimed at one face never reports the mesh as
-// hitPrimitive, and its t/normal match that face's own analytic plane ----
+// ---- check: a ray aimed at one face reports that face as hitPrimitive, and
+// its t/normal match that face's own analytic plane ----
 void testFaceNotMesh() {
   std::vector<GMANPoint> const points = cubePoints();
   std::vector<std::vector<RtInt>> const faces = cubeFaces();
@@ -203,7 +203,7 @@ void testFaceNotMesh() {
   }
 
   GMANRayPolygon const* facePolygon = dynamic_cast<GMANRayPolygon const*>(hitPrimitive);
-  check(facePolygon != nullptr, "face k: hitPrimitive is a GMANRayPolygon, never the mesh");
+  check(facePolygon != nullptr, "face k: hitPrimitive is a GMANRayPolygon, not the mesh");
   check(hitPrimitive == hit.primitive, "face k: hitPrimitive equals hit.primitive");
 
   GMANVector expectedNormal = gman::newellNormal(faceRing(points, faces[1]));
@@ -273,7 +273,7 @@ void testFanAgreesWithMeshAndAnalytic() {
     }
   }
 
-  delete meshPrim; // never added to a world manager, so never freed by one
+  delete meshPrim; // owned here: no world manager holds it
 }
 
 } // namespace

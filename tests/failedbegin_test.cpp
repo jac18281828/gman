@@ -30,7 +30,7 @@
  * preceded it.
  *
  * The test drives one impl directly, as gman does. The C API drops a context
- * whose RiBegin fails and never reaches this contract;
+ * whose RiBegin fails before this contract applies;
  * tests/failedbegincapi_test.cpp pins that behaviour.
  */
 

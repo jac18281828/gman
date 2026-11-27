@@ -648,7 +648,7 @@ void testPrimitiveOutsideWorldIsBlack(GMANRadiosityPass const& pass) {
   hit.normal = GMANVector(0.0f, 0.0f, 1.0f);
   hit.primitive = &stray;
   check(isBlack(pass.irradiance(hit, GMANVector(0.0f, 0.0f, -1.0f))),
-        "outside primitive: a hit on a primitive the mesh never saw answers black");
+        "outside primitive: a hit on a primitive outside the mesh answers black");
 }
 
 // ---- check 6: prepare() changes nothing ----

@@ -26,7 +26,7 @@
  *
  * argv[1] is the built libgmanrib.so; this test renames it out of the way
  * for the duration of the run and restores it before exiting, pass or
- * fail, so a normal exit never leaves it renamed. tests/CMakeLists.txt
+ * fail, so a normal exit leaves it in place. tests/CMakeLists.txt
  * pairs this test with an idempotent FIXTURES_CLEANUP test that restores
  * the file too, for the crash-or-timeout case this program's own restore
  * can't reach.

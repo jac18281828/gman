@@ -45,7 +45,7 @@ namespace {
 
 // Binds a resolved module and its already-checked typed accessor together:
 // on success module owns the loaded shader and typed points into it; on any
-// failure both reset to null, so a kind never carries a mismatched pair.
+// failure both reset to null, so a kind carries a matched pair or none.
 template <typename Typed>
 void bindLoadableShader(std::shared_ptr<GMANLoadableShader>& module, Typed*& typed, std::string const& requestName,
                         std::string const& name, GMANParameterList const& pl, GMANShader::ShaderType expected,

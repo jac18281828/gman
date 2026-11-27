@@ -120,7 +120,7 @@ constexpr double kTirAngleDeg = 120.0;
 // 0.74535599; F's slope there, dF/d(cosine) about -498 against -1.2 at 60
 // degrees: one float ulp of cosine (about 6e-8) moves F by about 3e-5
 // there, past the reciprocity check's 1e-5 tolerance. checkDielectric
-// excludes it, as it excludes kTirAngleDeg, which never transmits.
+// excludes it, as it excludes kTirAngleDeg, which transmits nothing.
 constexpr double kNearCriticalAngleDeg = 89.0;
 
 // Dimension bases, one block per statistical draw so no two random numbers
@@ -1292,7 +1292,7 @@ void checkUnequalWeightsUnbiased() {
         "unequal weights: shadowTransmittance at 60 degrees is the transmit weight times 1 - F_air");
 }
 
-// Both weights black: the lobe is never picked and its closure draws nothing.
+// Both weights black: the lobe is picked with probability zero and its closure draws nothing.
 void checkBothBranchesBlack() {
   const auto alone = buildDielectricPair(kBlack, kBlack, kEta);
   bool aloneFails = true, shadowBlack = true;

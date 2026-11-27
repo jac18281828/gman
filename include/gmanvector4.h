@@ -80,8 +80,8 @@ public:
   // mul/assign vector
   //
   // GMANVector(*this) *= GMANVector(v) would build a temporary GMANVector
-  // slice, mutate that, and discard it -- x,y,z of *this would never
-  // actually change, only w would. Assign the components directly
+  // slice, mutate that, and discard it, so x,y,z of *this would stay
+  // unchanged and only w would change. Assign the components directly
   // instead.
   GMANVector4& operator*=(const GMANVector4& v) {
     setX(getX() * v.getX());

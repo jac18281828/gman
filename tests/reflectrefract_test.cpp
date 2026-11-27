@@ -71,11 +71,11 @@ RtFloat closedFormKr(RtFloat cosI, RtFloat eta) {
 // amount depends on the platform's own floating-point contraction (FMA
 // fuses a multiply and an add into one rounding step, changing the last
 // ulp), so no single candidate is guaranteed to round past 1 on every
-// compiler. clang contracts to FMA by default on arm64 but not x86-64;
-// gcc never contracts without -ffast-math. Kept deliberately redundant
-// -- several candidates land past 1 under either contraction mode, so a
-// compiler this list was not tested against still has more than one
-// chance.
+// compiler. clang and gcc both contract to FMA by default where the target
+// has it: arm64 does, baseline x86-64 does not.
+// Kept deliberately redundant -- several candidates land past 1 under either
+// contraction mode, so a compiler this list was not tested against still has
+// more than one chance.
 struct ClampPinCandidate {
   RtFloat x, y, z;
 };
@@ -87,7 +87,7 @@ constexpr ClampPinCandidate kClampPinCandidates[] = {
 
 // The first candidate whose normalized v, with n = -v, has
 // fabs(v.dot(n)) > 1.0f on the running platform -- a bounded,
-// deterministic search, never a randomized one, so a failure reproduces
+// deterministic search, so a failure reproduces
 // identically on every run. Returns false, leaving v/n unset, only if
 // every candidate rounds to exactly 1 on this platform.
 bool findClampPinPastOne(GMANVector& v, GMANVector& n) {

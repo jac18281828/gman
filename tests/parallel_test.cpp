@@ -178,7 +178,7 @@ void testExceptionsStopTheCall() {
   check(threw, "a throwing body's exception reaches the calling thread");
   check(rightType, "the rethrown exception is the GMANError the body threw");
   check(started.load() < count, "fewer than every index started after the throw requested a stop");
-  check(completed.load() < count / 2, "the workers that never threw stopped well short of the full range (" +
+  check(completed.load() < count / 2, "the other workers stopped well short of the full range (" +
                                           std::to_string(completed.load()) + " of " + std::to_string(count) +
                                           " completed)");
 }

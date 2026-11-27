@@ -341,7 +341,7 @@ void checkReceives() {
               "receive 12: message reads \"" + c.message + "\" (got \"" + error.getMessage() + "\")");
       }
       check(threw, "receive 12: \"" + c.message + "\" throws");
-      check(out.writes == 0, "receive 12: \"" + c.message + "\" never reaches writeImage");
+      check(out.writes == 0, "receive 12: \"" + c.message + "\" writes no image");
     }
   }
 

@@ -40,7 +40,7 @@ private:
   GMANColor color = DefaultBGColor;
 
   // Defaults to DefaultAlpha, opaque: GMANClipEdge::intersect blends the two endpoints' alpha by the clip
-  // parameter, so a vertex whose alpha was never set must still hold opaque.
+  // parameter, so a vertex whose alpha is unset must still hold opaque.
   GMANAlpha alpha = DefaultAlpha;
 
   GMANVertex* next = nullptr;

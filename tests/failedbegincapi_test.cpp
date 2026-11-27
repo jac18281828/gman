@@ -67,8 +67,7 @@ void checkNoActiveContext(std::vector<Report> const& reports, std::string const&
   }
   check(reports[0].code == RIE_NOTSTARTED, when + " raises RIE_NOTSTARTED");
   check(reports[0].severity == RIE_SEVERE, when + " raises at RIE_SEVERE");
-  check(reports[0].message == "No active context",
-        when + " says exactly \"No active context\", never \"No renderer loaded.\"");
+  check(reports[0].message == "No active context", when + " says exactly \"No active context\"");
 }
 
 void checkFailedBegin(std::vector<Report> const& reports, RtInt code, std::string const& when) {

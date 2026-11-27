@@ -157,7 +157,7 @@ private:
   // no Appearance -- unlike a ray primitive, it has nowhere to hold one
   // past its own declaring RiXxxV call, where attr is always the current
   // GMANAttributes (gmanrendermanimpl.cpp's RiSphereV, RiDiskV and every
-  // other geometry request all pass &getAttributes(), never null).
+  // other geometry request all pass &getAttributes()).
   // Counting a pending area light here, before tessellation discards it,
   // is this renderer's only chance to see one, so every geometry request
   // that can carry one is overridden; GMANPatchPolyObjectManager's own

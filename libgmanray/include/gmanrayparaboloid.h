@@ -41,7 +41,7 @@ public:
 
   // Placed by transform's shutter-open matrix, GMANRaySphere's own pattern:
   // a singular matrix cannot invert into an object space to intersect in,
-  // so the paraboloid is built anyway and simply never hits.
+  // so the paraboloid is built anyway and simply misses.
   GMANRayParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat thetamax, GMANParameterList pl,
                     GMANTransform const& transform);
 

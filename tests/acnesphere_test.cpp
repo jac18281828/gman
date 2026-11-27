@@ -38,8 +38,8 @@
  * The local-dip scan (worstLocalDip) also reads 0 at every scale tested,
  * including with the offset scale forced to zero: acne on a sphere is a
  * uniformly darkened band, not a speckle darker than both neighbors, so
- * this scan never fires against this fixture's own failure mode. The
- * cross-scale comparison above carries the check's real weight.
+ * this scan misses this fixture's own failure mode. The cross-scale
+ * comparison above is the real check.
  */
 
 #include <cmath>

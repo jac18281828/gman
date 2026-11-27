@@ -373,7 +373,7 @@ void testUniformScale() {
         "uniform scale: normal == (1, 0, 0), unchanged by a uniform scale");
 }
 
-// ---- B7: a singular transform never hits. Deleting the singular guard
+// ---- B7: a singular transform misses. Deleting the singular guard
 // must turn this red: the ray below is the same one testAxisAlignedHits
 // finds a clean hit with, unsheared. ----
 void testSingularTransform() {
@@ -386,7 +386,7 @@ void testSingularTransform() {
   GMANRay ray(origin, GMANVector(origin, GMANPoint(0.0, 0.0, 0.0)));
   GMANHit hit;
 
-  check(!torus.intersect(ray, hit), "singular transform: a torus with no invertible object space never hits");
+  check(!torus.intersect(ray, hit), "singular transform: a torus with no invertible object space misses");
 }
 
 // ---- B8: the ray's interval rejects a hit before tmin and one past
@@ -453,7 +453,7 @@ struct SweepResult {
 };
 
 // GMANTorus::getLocation and getNormal are non-const, so this takes torus
-// by mutable reference even though the sweep itself never modifies it.
+// by mutable reference even though the sweep itself leaves it unmodified.
 // One target: getLocation(u, v) moved 1% of minorradius toward the
 // tube's centre circle, so it lies inside the solid tube, then a ray from
 // viewpoint aimed at it, folded into result.

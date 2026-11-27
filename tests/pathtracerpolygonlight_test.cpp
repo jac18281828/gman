@@ -78,8 +78,8 @@ constexpr double kSelectionMargin = 0.05;
 
 // A panel as getRSPolygonMesh builds one: a one-face mesh with the area light
 // on the mesh and on its face, its own colour black so it reflects nothing.
-// vertexNormals, when given, shade the face and never change the direction it
-// emits.
+// vertexNormals, when given, shade the face and leave the direction it emits
+// unchanged.
 void addPanel(GMANPathtraceRenderer& renderer, GMANLight const& light, std::vector<GMANPoint> const& loop,
               std::vector<GMANVector> const& vertexNormals) {
   gman::Appearance appearance;

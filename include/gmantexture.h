@@ -46,9 +46,8 @@ enum TextureWrap { TEXTURE_CLAMP, TEXTURE_PERIODIC, TEXTURE_BLACK };
  * warningOnce, so the same warning reaches the log once per world block no
  * matter how many caches, or how many lookups in each, build it.
  *
- * Owns its texels in a std::vector, never a raw pointer: AGENTS.md's Rule
- * of Five is then satisfied by owning nothing raw, and the compiler's
- * implicit copy/move members are correct as written.
+ * Owns its texels in a std::vector, so the compiler's implicit copy/move
+ * members are correct as written.
  */
 class Texture {
 public:
@@ -91,7 +90,7 @@ private:
  * threads sharing a cache race on its map. A cache its caller owns holds
  * whatever it decoded, stale entries included, until the caller destroys
  * it -- makeTexture and makeLatLongEnvironment below forget from the
- * process cache alone, never from a caller-owned one.
+ * process cache alone.
  */
 class GMAN_EXPORT TextureCache {
 public:
@@ -128,11 +127,11 @@ TextureCache& textureCache(RtVoid);
 // RiMakeTexture's implementation: decodes picture the way Texture does
 // and writes texture as a single-level RGB TIFF carrying swrap and twrap in
 // libtiff's Pixar wrap-modes tag. The texture keeps the picture's depth, 8
-// or 16 bits. Never throws -- warns once, naming texture and the cause, and
-// leaves no file at texture, on a null or empty name, an unknown wrap name,
-// a picture that cannot be opened or decoded, or an output that cannot be
-// opened or fully written. A successful write forgets texture from
-// textureCache(), so the next lookup reads what was just written.
+// or 16 bits. Returns false without throwing, warns once naming texture and
+// the cause, and leaves no file at texture on a null or empty name, an
+// unknown wrap name, a picture that cannot be opened or decoded, or an output
+// that cannot be opened or fully written. A successful write forgets texture
+// from textureCache(), so the next lookup reads what was just written.
 bool makeTexture(char const* picture, char const* texture, char const* swrap, char const* twrap);
 
 // RiMakeLatLongEnvironment's implementation: decodes picture and writes
@@ -141,10 +140,10 @@ bool makeTexture(char const* picture, char const* texture, char const* swrap, ch
 // without a seam; latitude clamps at the poles) and "LatLong Environment"
 // in the Pixar texture-format tag, RenderMan tools' value for this format.
 // The texture keeps the picture's depth, 8 or 16 bits.
-// Same failure shape as makeTexture: never throws, warns once naming
-// texture and the cause, and leaves no file at texture on a null or empty
-// name, a picture that cannot be opened or decoded, or an output that
-// cannot be opened or fully written. A successful write forgets texture
+// Same failure shape as makeTexture: returns false without throwing, warns
+// once naming texture and the cause, and leaves no file at texture on a null
+// or empty name, a picture that cannot be opened or decoded, or an output
+// that cannot be opened or fully written. A successful write forgets texture
 // from textureCache(), so the next lookup reads what was just written.
 bool makeLatLongEnvironment(char const* picture, char const* texture);
 

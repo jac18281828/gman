@@ -90,12 +90,11 @@ struct GMANRadiositySurfacePoint {
  * primitive that is one of the seven quadric GMANRayPrimitive classes, a
  * GMANRayPolygon, or a GMANRayPolygonMesh. A mesh dices face by face,
  * through its own getFaceCount()/getFace(); each face is keyed for
- * locate() by its own address, the same address a GMANRayBVH hit reports,
- * so the mesh primitive itself is never a lookup key. Anything else -- an
- * unsupported primitive, or a quadric whose object-to-camera placement
- * will not invert -- is skipped and counted (getSkippedCount()), never
- * silently dropped. A degenerate polygon or mesh face is not skipped; it
- * dices to zero elements, since its own intersect() never hits it either.
+ * locate() by its own address, the same address a GMANRayBVH hit reports.
+ * Anything else -- an unsupported primitive, or a quadric whose
+ * object-to-camera placement will not invert -- is skipped and counted
+ * (getSkippedCount()). A degenerate polygon or mesh face is not skipped; it
+ * dices to zero elements, since its own intersect() misses it too.
  *
  * Each diced primitive gets an (nu + 1) x (nv + 1) node grid and nu x nv
  * elements. nu and nv are the smallest counts, capped at kMaxDivisions
@@ -233,7 +232,7 @@ private:
                                 std::size_t elementOffset, PrimitiveMesh& mesh) const;
 
   // Dices each of mesh's own faces as its own GMANRayPolygon, keyed for
-  // locate() by that face's own address, never the mesh's.
+  // locate() by that face's own address.
   void diceMesh(GMANRayPolygonMesh const& mesh, RtFloat maxEdgeLength);
 
   // The polygon branch of surfacePoint: the in-plane point and plane

@@ -23,8 +23,8 @@
  * guarded j < 7, except the '['/']' branch, which can write it twice in one
  * iteration. A seven-word declaration followed directly by a bracket -- "a b
  * c d e f g[h]" -- closes word[6] on the first write, then writes word[7] on
- * the second, past the array's end: RIE_SYNTAX never fires because the
- * corrupted number_of_words (8) matches no case in check_syntax's switch.
+ * the second, past the array's end. The corrupted number_of_words (8)
+ * matches no case in check_syntax's switch, so check_syntax throws no RIE_SYNTAX.
  *
  * Revert check: reverting the bound on the bracket branch's second write
  * (libgman/gmaninlineparse.cpp) makes testTriggerThrowsSyntaxError go red --

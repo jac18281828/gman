@@ -190,7 +190,7 @@ void testUniformScale() {
         "uniform scale: normal == (0, 0, -1)");
 }
 
-// ---- check 6: a singular transform never hits ----
+// ---- check 6: a singular transform misses ----
 void testSingularTransform() {
   GMANMatrix4 matrix;
   matrix.scale(1.0, 1.0, 0.0);
@@ -200,7 +200,7 @@ void testSingularTransform() {
   GMANRay ray(GMANPoint(-5.0, 0.0, 0.5), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  check(!paraboloid.intersect(ray, hit), "singular transform: a paraboloid with no invertible object space never hits");
+  check(!paraboloid.intersect(ray, hit), "singular transform: a paraboloid with no invertible object space misses");
 }
 
 // ---- check 7: the ray's interval rejects a hit before tmin and one past

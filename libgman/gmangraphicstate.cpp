@@ -231,7 +231,7 @@ GMANOptions const& GMANGraphicState::getOptions() const { return optionsStack.to
 GMANAttributes& GMANGraphicState::getAttributes() { return attributesStack.top(); }
 RtVoid GMANGraphicState::enterMode(CurrentState mode) {
   switch (mode) {
-  case B: // the outermost block is never entered or left explicitly
+  case B: // the outermost block has no enter or leave request
     break;
   case F: // ** ENTER FRAME ** //
     allowed(B);
@@ -317,7 +317,7 @@ RtVoid GMANGraphicState::enterMotion(RtInt n, RtFloat* s) {
 RtVoid GMANGraphicState::leaveMode(CurrentState mode) {
   CurrentState i = nest.top();
   switch (mode) {
-  case B: // the outermost block is never entered or left explicitly
+  case B: // the outermost block has no enter or leave request
     break;
   case F: // ** LEAVE FRAME ** //
     if (frame == 0) {

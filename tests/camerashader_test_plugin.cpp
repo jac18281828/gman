@@ -23,9 +23,7 @@
  * the shader" proof. A dlopen'd module and its caller share nothing but
  * computeCi's own return value, so this shader encodes three of
  * GMANSurfaceEnv::cameraToWorld's entries -- [0][0], [0][2], [2][0], which
- * a rotation about y leaves distinguishable from identity -- into Ci. Not a
- * shipped shader: dlopened only by environment_test.cpp, never by
- * RiSurface in a real scene.
+ * a rotation about y leaves distinguishable from identity -- into Ci.
  */
 
 #include "gmanloadable.h"

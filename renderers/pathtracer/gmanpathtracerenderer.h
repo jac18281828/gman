@@ -62,7 +62,7 @@
  * render(); ambientlight contributes nothing, since bounce light is what
  * it faked. A non-finite path -- a NaN or infinite channel anywhere in its
  * throughput, radiance or coverage estimate -- is dropped: it contributes
- * zero to the slot's sums and is counted, never filtered. render() runs its
+ * zero to the slot's sums and is counted rather than filtered. render() runs its
  * rows through gman::parallelFor; each row is its own unit of work, reading
  * the BVH, the emitter set, the viewing system, the options and the
  * background as const and writing only its own slots of the sample buffer,
@@ -189,13 +189,13 @@ public:
 
   // Exported with GMANPathtraceRenderer itself, in every build: a
   // correctness/variance switch, for a test that constructs this renderer
-  // by hand, never a RIB surface. This header is not installed, so no
+  // by hand; RIB cannot set it. This header is not installed, so no
   // out-of-tree consumer reaches it regardless.
   void setMultipleImportanceSampling(bool enabled);
 
   // Exported with GMANPathtraceRenderer itself, in every build: the worker
   // count for the next render() call, 0 for the hardware's concurrency. For
-  // a test that constructs this renderer by hand, never a RIB surface. This
+  // a test that constructs this renderer by hand; RIB cannot set it. This
   // header is not installed, so no out-of-tree consumer reaches it
   // regardless.
   void setWorkers(RtInt workers);

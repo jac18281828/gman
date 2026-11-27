@@ -19,8 +19,8 @@
  */
 
 /*
- * The z-buffer never calls gman::emitters and never special-cases an
- * AreaLightSource-tagged primitive's own shading: it renders
+ * The z-buffer skips gman::emitters and shades an AreaLightSource-tagged
+ * primitive as it shades any other: it renders
  * tests/rib/arealight_sphere.rib pixel for pixel as it would with every
  * AreaLightSource request stripped out, logging exactly one warning naming the
  * area-light primitive it found; the stripped scene alone logs none. The ray

@@ -1,4 +1,4 @@
-# A token never declared by RiDeclare or an inline declaration.
+# A token with no RiDeclare or inline declaration.
 # GMANDictionary::getTokenId throws RIE_BADTOKEN; GMANParameterList reports
 # it, and gman's error handler prints "ERROR: RIE_BADTOKEN --
 # GMANDictionary: TOKEN_NOT_FOUND" and stops the file: exit failure, no

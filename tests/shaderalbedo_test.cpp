@@ -22,10 +22,9 @@
  * The diffuse-albedo query: the base default (Cs, clamped), each built-in
  * shader's own answer, and its exclusions (Os, specular). Every shader
  * loads through GMANLoadableShader, exactly as mirrorglass_test.cpp loads
- * mirror and glass -- a real .so, never a shaders/ source file linked
- * directly into this binary, since two plugins defining
- * GMANGetLoadableInfo/GMANLoadShader at global scope in one binary is a
- * duplicate-symbol error.
+ * mirror and glass -- a real .so, because linking shaders/ sources
+ * directly would put two plugins' GMANGetLoadableInfo/GMANLoadShader at
+ * global scope in one binary, a duplicate-symbol error.
  */
 
 #include <cmath>
@@ -88,8 +87,8 @@ GMANColor kdCs(RtFloat kd, GMANColor const& cs) {
   return GMANColor(kd * cs.getRed(), kd * cs.getGreen(), kd * cs.getBlue());
 }
 
-// A minimal, in-file GMANSurfaceShader that never overrides albedo, so
-// its own answer comes straight from the base default.
+// A minimal, in-file GMANSurfaceShader that inherits the base albedo
+// default.
 class BaseDefaultShader : public GMANSurfaceShader {
 public:
   GMANColor computeCi(GMANSurfaceEnv const&) const override {

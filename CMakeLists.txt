@@ -36,7 +36,7 @@ endif()
 # because the relative path lands in the same libdir either way. A plugin
 # needs it as much as the driver does: the loader resolves a dependency
 # through the run path of the object that names it, and a ray renderer names
-# libgman_ray, which the driver never loaded. Set before the first target, so
+# libgman_ray, which the driver does not load. Set before the first target, so
 # every target created below starts from it.
 if(APPLE)
   set(GMAN_INSTALL_RPATH "@loader_path/../${CMAKE_INSTALL_LIBDIR}")
@@ -117,14 +117,15 @@ set(GMAN_SOURCE_DIRS
 # forced ON without it; once enabled, it adds the driver's source and links
 # its library PRIVATE on the gman library. OPT_IN instead defaults the option OFF
 # and looks for the library, with the FIND_PACKAGE arguments, only when the
-# option is ON, so a default configure never reads that library's CMake
+# option is ON, so a default configure skips that library's CMake
 # files; LIBRARY names the library in the FATAL_ERROR and TARGET is the
 # imported target to link. It also sets the
 # GMAN_<NAME>_INCLUDE/FACTORY_DEFINITION/FACTORY_REF/MATCHER variables
 # gmanfiledrivers.cpp.in's configure_file below substitutes -- empty and
-# "nullptr" when disabled, so the generated table never has to preprocess a
-# choice CMake already made. MATCHER is the type test the table reads to
-# name a driver from its object. Requires the gman target to already exist.
+# "nullptr" when disabled, so the generated table needs no preprocessor
+# conditional for a choice CMake already made. MATCHER is the type test the table
+# reads to name a driver from its object. Requires the gman target to already
+# exist.
 # ---------------------------------------------------------------------------
 
 function(gman_add_file_driver name)
@@ -271,8 +272,8 @@ target_include_directories(gman PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 
-# CMAKE_CXX_STANDARD is a directory variable and never reaches an exported
-# target; installed headers such as gmanlog.h use <format>, so a consumer on
+# CMAKE_CXX_STANDARD is a directory variable that an exported target does not
+# carry; installed headers such as gmanlog.h use <format>, so a consumer on
 # a compiler defaulting to an older standard must inherit this floor.
 target_compile_features(gman PUBLIC cxx_std_20)
 
@@ -394,8 +395,8 @@ set_target_properties(gman_zbuffer PROPERTIES OUTPUT_NAME "gmanzbuffer")
 # exercise them in tests/CMakeLists.txt. Ray geometry, the BVH and the
 # transmission walk compile into gman_ray instead, unconditionally; this
 # object library holds only what stays specific to the ray tracer plugin.
-# Built whenever GMAN_BUILD_RAYTRACER or BUILD_TESTING is ON, never inside
-# the GMAN_BUILD_RAYTRACER guard alone -- those unit tests must still build
+# Built whenever GMAN_BUILD_RAYTRACER or BUILD_TESTING is ON, outside
+# the GMAN_BUILD_RAYTRACER guard, because those unit tests must still build
 # and run with the raytracer off.
 if(GMAN_BUILD_RAYTRACER OR BUILD_TESTING)
   add_library(gman_raytracer_objects OBJECT
@@ -417,8 +418,8 @@ if(GMAN_BUILD_RAYTRACER)
 endif()
 
 # GMANPathtraceRenderer, gman_raytracer_objects' pattern above: built
-# whenever GMAN_BUILD_PATHTRACER or BUILD_TESTING is ON, never inside the
-# GMAN_BUILD_PATHTRACER guard alone -- those unit tests must still build
+# whenever GMAN_BUILD_PATHTRACER or BUILD_TESTING is ON, outside the
+# GMAN_BUILD_PATHTRACER guard, because those unit tests must still build
 # and run with the plugin off.
 if(GMAN_BUILD_PATHTRACER OR BUILD_TESTING)
   add_library(gman_pathtracer_objects OBJECT
@@ -560,7 +561,7 @@ install(DIRECTORY libgmanray/include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/g
 install(DIRECTORY libgmanraster/include/ DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/gman"
   FILES_MATCHING PATTERN "*.h")
 # generate_export_header writes export.h, rayexport.h and rasterexport.h into
-# the build tree; the source tree they sit beside above never carries them.
+# the build tree, so they install apart from the source-tree headers above.
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/gman/export.h"
               "${CMAKE_CURRENT_BINARY_DIR}/include/gman/rayexport.h"
               "${CMAKE_CURRENT_BINARY_DIR}/include/gman/rasterexport.h"
@@ -601,7 +602,7 @@ endif()
 # Every .c, .cpp and .h under GMAN_SOURCE_DIRS and tests, gathered with
 # CONFIGURE_DEPENDS so a new file is checked without anyone widening a list.
 # gmanfiledrivers.cpp.in is a template, not a C++ source: its .cpp.in
-# extension already leaves it out. Check only -- never reformats the tree.
+# extension already leaves it out. format-check only reads the tree.
 set(GMAN_CLANG_FORMAT_MAJOR "23")
 set(GMAN_FORMAT_CHECK_GLOBS "")
 foreach(dir ${GMAN_SOURCE_DIRS} tests)

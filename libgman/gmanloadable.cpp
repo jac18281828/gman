@@ -107,7 +107,7 @@ GMANLoadable::GMANLoadable(const char* path) : object(NULL), objInfo(NULL) {
 };
 
 // default destructor
-// Handles are never closed: the cache above retains them for the process
+// Handles stay open: the cache above retains them for the process
 // lifetime, since dlclose'ing one lets the dynamic linker remap another,
 // still-live module into the freed address range.
 GMANLoadable::~GMANLoadable() {};

@@ -220,8 +220,8 @@ void GMANRayBVH::build(GMANWorldManager& worldManager) {
   };
 
   for (GMANPrimitive* primitive = worldManager.getFirst(); primitive; primitive = worldManager.getNext()) {
-    // A mesh contributes each of its own faces as its own entry, never
-    // itself: a house-sized mesh then culls per face, at no cost to the
+    // A mesh contributes each of its own faces as its own entry in place
+    // of itself: a house-sized mesh then culls per face, at no cost to the
     // exported interface, which still sees one primitive per request.
     GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(primitive);
     if (mesh) {
@@ -445,7 +445,7 @@ bool GMANRayBVH::nearestHit(GMANRay const& ray, GMANHit& hit, GMANRayPrimitive c
   }
 
   // A local, fixed-capacity stack: nearestHit's whole traversal state
-  // lives here, so two calls against the same tree never interfere --
+  // lives here, so two calls against the same tree run independently --
   // re-entrant, with no shared mutable state of its own, and no heap
   // allocation. kMaxStackCapacity's own comment proves no tree build()
   // makes ever needs more room than this holds.

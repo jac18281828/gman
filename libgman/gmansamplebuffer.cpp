@@ -131,8 +131,8 @@ RtVoid GMANSampleBuffer::resolve(GMANFrameBuffer* frameBuffer, RtFilterFunc filt
       const RtFloat cy = py + 0.5;
 
       // The sample-index range that can fall within the support box,
-      // clamped to the sample grid that actually exists -- a sample past
-      // the frame edge is never written, so the weighted sum below
+      // clamped to the sample grid that actually exists -- no sample
+      // exists past the frame edge, so the weighted sum below
       // renormalizes over whatever support survives there rather than
       // assuming a full box every filter width implies.
       int gxMin = indexBound(floor((cx - xhalf) * xsamples));

@@ -91,8 +91,8 @@ void project(GMANPoint const& p, int axis, RtFloat& a, RtFloat& b) {
 // clamped, so a point outside the triangle still returns a well-defined
 // extrapolation rather than a failure. Returns false, leaving wa/wb/wc
 // untouched, when the triangle's own area is too close to zero to divide
-// by -- a's own fan vertex collinear with this pair -- so a caller never
-// mistakes a degenerate triangle's leftover weights for containment.
+// by -- a's own fan vertex collinear with this pair -- so a degenerate
+// triangle's leftover weights cannot pass for containment.
 bool barycentric2D(RtFloat px, RtFloat py, RtFloat ax, RtFloat ay, RtFloat bx, RtFloat by, RtFloat cx, RtFloat cy,
                    RtFloat& wa, RtFloat& wb, RtFloat& wc) {
   RtFloat const d = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy);
@@ -139,8 +139,8 @@ FanTriangle fanTriangleAt(std::vector<GMANPoint> const& ring, int axis, GMANPoin
     project(ring[i + 1], axis, cx, cy);
     RtFloat triWa, triWb, triWc;
     // A degenerate fan triangle (vertex 0 collinear with this pair, e.g. a
-    // pentagon whose first three vertices lie on one edge) never contains
-    // the hit -- skip it rather than let insideTriangle read its own
+    // pentagon whose first three vertices lie on one edge) contains no
+    // hit -- skip it rather than let insideTriangle read its own
     // leftover weights as containment.
     if (!barycentric2D(px, py, ax, ay, bx, by, cx, cy, triWa, triWb, triWc))
       continue;
@@ -318,7 +318,7 @@ void GMANRayPolygon::initGeometry() {
   // returns): the componentwise min and max of vertices needs no corner
   // transform, unlike every other ray primitive here. Computed regardless
   // of degenerate -- plain min/max, unlike the normal below, divides by
-  // nothing and so never needs the guard.
+  // nothing and so needs no guard.
   if (!vertices.empty()) {
     GMANPoint minP = vertices[0];
     GMANPoint maxP = vertices[0];

@@ -180,7 +180,7 @@ void checkPlasticMatchesHandBuilt() {
         "plastic: gman::bsdf matches shader->bsdf(env) on an env filled by hand, lobe for lobe");
 }
 
-// Matte builds at the shading normal, never the geometric one.
+// Matte builds at the shading normal, not the geometric one.
 void checkMatteBuildsAtShadingNormal() {
   auto const matte = loadShader(RI_MATTE, matteParams(kMatteKd));
   check(matte != nullptr, "matte: loads through setSurface");

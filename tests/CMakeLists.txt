@@ -137,7 +137,7 @@ set_tests_properties(ribwriterfailure_cleanup PROPERTIES
   FIXTURES_CLEANUP gmanrib_hidden)
 
 # Two RiBegin/RiEnd cycles with a parameterized surface shader, plus process
-# exit: the three points where a dlopen'd, never-unloaded plugin module is
+# exit: the three points where a dlopen'd plugin module, which stays loaded, is
 # reached again. See tests/shaderoutlivesrenderer_test.c.
 add_executable(gman_shaderoutlivesrenderer shaderoutlivesrenderer_test.c)
 target_link_libraries(gman_shaderoutlivesrenderer PRIVATE gman)
@@ -1410,7 +1410,7 @@ set_tests_properties(polygondicecount PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# The fov warning fires once per RiWorldBegin, never once per polygon: a
+# The fov warning fires once per RiWorldBegin regardless of polygon count: a
 # two-Polygon perspective scene with no fov prints "FOV not set" exactly
 # once. See tests/polygonfovwarning_test.cpp.
 add_executable(gman_polygonfovwarning polygonfovwarning_test.cpp)
@@ -2399,8 +2399,8 @@ set_tests_properties(shadermodulenames PROPERTIES
 
 # GMANOptions::imagerModule frees exactly one instance per owner, driven
 # through the real C API with a nested RiFrameBegin/RiImagerV/RiFrameEnd, so
-# a shallow copy's aliased pointer never frees an instance a parent frame
-# still holds. See tests/imagerownership_test.cpp.
+# an instance lives until its last owning frame releases it. See
+# tests/imagerownership_test.cpp.
 add_executable(gman_imagerownership imagerownership_test.cpp)
 target_link_libraries(gman_imagerownership PRIVATE gman)
 add_dependencies(gman_imagerownership gman_countingimager gman_zbuffer)
@@ -2557,7 +2557,7 @@ set_tests_properties(environment PROPERTIES
 
 # gmanlog's sink: setLogFile releases logMutex before its own call to
 # info(), so it does not deadlock. Also proves one trailing newline, a
-# suppressed level never formatting, and eight concurrent writers landing
+# suppressed level skipping formatting, and eight concurrent writers landing
 # 8000 whole lines.
 add_executable(gman_log log_test.cpp)
 target_link_libraries(gman_log PRIVATE gman)
@@ -2595,8 +2595,7 @@ set_tests_properties(librarylayering PROPERTIES
   TIMEOUT 30)
 
 # gman::gammaCorrected: identity at gain 1/gamma 1 (no golden image moves), the
-# pow(gain * channel, 1/gamma) shape, and the sub-byte precision case the
-# deleted byte lookup table could never produce.
+# pow(gain * channel, 1/gamma) shape, and the sub-byte precision case.
 add_executable(gman_gamma gamma_test.cpp)
 target_link_libraries(gman_gamma PRIVATE gman)
 
@@ -2606,8 +2605,8 @@ set_tests_properties(gamma PROPERTIES
   TIMEOUT 30)
 
 # GMANSurfaceEnv's occlusion hook -- diffuse()/specular() scale each
-# non-ambient light by occluder->transmission(), ambient() never
-# consults it, and a point/distant light reports the distance and
+# non-ambient light by occluder->transmission(), ambient() ignores
+# it, and a point/distant light reports the distance and
 # direction the contract promises.
 add_executable(gman_occlusion occlusion_test.cpp)
 target_link_libraries(gman_occlusion PRIVATE gman)
@@ -2903,8 +2902,8 @@ set_tests_properties(raybvhreentrant PROPERTIES
 # walk across it, make no heap allocation -- a global operator new/delete
 # override counts allocations across a batch of calls. The override lives in
 # raybvhallocator.cpp, its own translation unit, so a compiler inlining a
-# call site back to malloc/free never sees both halves of a pairing in the
-# same file. See tests/raybvhalloc_test.cpp.
+# call site back to malloc/free sees only one half of a pairing in each
+# file. See tests/raybvhalloc_test.cpp.
 add_executable(gman_raybvhalloc raybvhalloc_test.cpp raybvhallocator.cpp)
 target_link_libraries(gman_raybvhalloc PRIVATE gman gman_ray)
 
@@ -2952,10 +2951,10 @@ set_tests_properties(raypolygondegenerate PROPERTIES
 
 # GMANRayObjectManager::getRSPolygonMesh returns one internal mesh
 # primitive for a PointsPolygons request; GMANRayBVH::build flattens it
-# into one entry per face. A ray aimed at a face never reports the mesh as
-# hitPrimitive, and a fan of rays across a cube agrees, face by face,
-# between the BVH, the mesh's own linear intersect and the analytic
-# nearest face. See tests/polygonmeshbvh_test.cpp.
+# into one entry per face. A ray aimed at a face reports the face's own
+# polygon, not the mesh, as hitPrimitive, and a fan of rays across a cube
+# agrees, face by face, between the BVH, the mesh's own linear intersect
+# and the analytic nearest face. See tests/polygonmeshbvh_test.cpp.
 add_executable(gman_polygonmeshbvh polygonmeshbvh_test.cpp)
 target_link_libraries(gman_polygonmeshbvh PRIVATE gman gman_ray gman_internal_headers)
 
@@ -3458,8 +3457,8 @@ if(GMAN_BUILD_RAYTRACER)
     # tests/rib/radiositywindow_opaque.rib and
     # tests/rib/radiositywindow_direct.rib: the radiosity pass, not the
     # ray tracer's own direct-light transmission through the window
-    # pane, brightens a ceiling a downward-aimed distantlight never
-    # reaches directly. See tests/radiositywindow_test.cpp.
+    # pane, brightens a ceiling that a downward-aimed distantlight cannot
+    # reach directly. See tests/radiositywindow_test.cpp.
     add_executable(gman_radiositywindow radiositywindow_test.cpp)
     target_link_libraries(gman_radiositywindow PRIVATE gman TIFF::TIFF)
     add_dependencies(gman_radiositywindow gman_raytracer gman_radiosity gman_matte)
@@ -3960,9 +3959,9 @@ set_tests_properties(pnggamma PROPERTIES
   TIMEOUT 30)
 
 # gman::sampleHash, gman::unitFloat, gman::sample1D and gman::sample2D: a
-# counter-based sampler that is a pure function of its arguments, so
-# reproduction depends only on the arguments, never on call order. The
-# schedule independence check drives gman::parallelFor directly.
+# counter-based sampler that is a pure function of its arguments, so call
+# order leaves every draw unchanged. The schedule independence check
+# drives gman::parallelFor directly.
 add_executable(gman_sampler sampler_test.cpp)
 target_link_libraries(gman_sampler PRIVATE gman)
 
@@ -4429,7 +4428,7 @@ set_tests_properties(pathtracermistwolight PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# An emitter never lights a point on its own surface. A camera-facing
+# Light choice at a point on an emitter excludes that emitter. A camera-facing
 # emitting disk under one distant light: the disk's own light-choice weight
 # peaks on its own surface, so without the exclusion next-event estimation
 # there wastes almost every draw and divides the rare survivor by a tiny
@@ -4535,13 +4534,13 @@ set_tests_properties(pathtracerunbiased PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# The z-buffer never calls gman::emitters or special-cases an AreaLightSource-
-# tagged primitive's own shading: it renders tests/rib/arealight_sphere.rib
-# pixel for pixel as it would with every AreaLightSource request stripped out,
-# warning once naming the one area-light primitive it found. The ray tracer
-# lights from the area light: its render of the same fixture logs no "has no
-# effect here" and differs from the stripped scene's. `gman -r` runs each
-# fixture in its own process: both loadable renderers keep their own object
+# The z-buffer renders tests/rib/arealight_sphere.rib pixel for pixel as it
+# would with every AreaLightSource request stripped out, without calling
+# gman::emitters or special-casing an AreaLightSource-tagged primitive's own
+# shading, and warns once naming the one area-light primitive it found. The
+# ray tracer lights from the area light: its render of the same fixture logs
+# no "has no effect here" and differs from the stripped scene's. `gman -r` runs
+# each fixture in its own process: both loadable renderers keep their own object
 # manager in one process-lifetime static instance, so two parses sharing a
 # process would carry the first one's own tally into the second. LABELS
 # render, since it runs gman itself rather than linking against libgman

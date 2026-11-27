@@ -15,7 +15,7 @@ Surface "paintedplastic" "Ka" [1.0] "Kd" [0.0] "Ks" [0.0]
 # Desync convention: a Surface that mis-counts its own "texturename"
 # parameter desyncs the token stream, and that failure surfaces as this
 # following request failing to parse -- pushed far outside the view
-# frustum so it never reaches the frame the pixel assertions read.
+# frustum so it stays out of the frame the pixel assertions read.
 TransformBegin
 	Translate 100 100 0
 	Sphere 1 -1 1 360

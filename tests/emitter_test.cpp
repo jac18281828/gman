@@ -31,8 +31,8 @@
  * to 1, agreeing between sample and lightSolidAnglePdf, emitting on one side
  * only and weighting the light choice finitely. gman::emitterIndex names the
  * emitter a hit primitive belongs to, a mesh's face as the mesh itself. Also
- * proves appearanceOf's own exclusion: an illuminated area light never
- * reaches Appearance::lights.
+ * proves appearanceOf excludes an illuminated area light from
+ * Appearance::lights.
  */
 
 #include <algorithm>
@@ -91,7 +91,7 @@ std::string readFile(std::string const& path) {
 // shape) polygon and a degenerate (zero-radius) sphere, each tagged as an
 // area light, and two ordinary spheres sharing one hand-built point light
 // -- the second exercises emitters' own deduplication by pointer, since a
-// single primitive could never tell a missing dedup from a correct one.
+// single primitive cannot tell a missing dedup from a correct one.
 // Returns the world and every hand-built object it owns, all outliving it
 // for the caller's own inspection.
 struct EmitterWorld {
@@ -293,8 +293,7 @@ void testSingularEmitters() {
 // power().
 void testPower() {
   // GMANLinearWorldManager owns and deletes what it is given, so the
-  // sphere here -- unlike the others below, read but never added to a
-  // world -- is heap-allocated.
+  // sphere here is heap-allocated.
   const auto fullSphere = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
   gman::Appearance appearance;
@@ -879,7 +878,7 @@ void testSamplePointDelta() {
   check(ep.isDelta, "samplePoint delta: isDelta is true");
 }
 
-// An illuminated area light never reaches appearance.lights, whatever else
+// appearance.lights excludes an illuminated area light, whatever else
 // illuminates the same primitive.
 void testAppearanceExcludesAreaLight() {
   GMANAttributes attributes;
@@ -901,7 +900,7 @@ void testAppearanceExcludesAreaLight() {
       areaInLights = true;
     }
   }
-  check(!areaInLights, "appearance: lights never contains the area light");
+  check(!areaInLights, "appearance: lights omits the area light");
   check(appearance.lights.size() == 1 && appearance.lights[0] == pointLight,
         "appearance: lights contains only the ordinary point light");
 }

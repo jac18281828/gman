@@ -34,7 +34,7 @@
  *
  * A second, unrelated context checks that RI_NULL still routes to the
  * renderer: an RiSphere before RiWorldBegin there raises RIE_ILLSTATE, which
- * GMANASCII never does.
+ * only the renderer raises.
  */
 
 #include <stdio.h>

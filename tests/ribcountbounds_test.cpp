@@ -22,11 +22,10 @@
  * A RIB request sizes each parameter array from the counts it declares. A
  * count that no RtInt holds stops the file with RIE_RANGE, and an array
  * shorter than its declaration stops it with RIE_CONSISTENCY, by one value or
- * by millions: the file pays for every element it declares, and a few bytes
- * of RIB never allocate megabytes. Each fixture runs out of process under a
- * timeout (tests/rungman.h) and must neither hang nor crash, exit with
- * failure, report its code against the parameter "P", and leave no image
- * behind.
+ * by millions: the file pays for every element it declares. Each fixture
+ * runs out of process under a timeout (tests/rungman.h) and must neither
+ * hang nor crash, exit with failure, report its code against the parameter
+ * "P", and leave no image behind.
  */
 
 #include <cstdio>

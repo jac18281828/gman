@@ -177,7 +177,7 @@ RtVoid GMANMatrix4::skew(RtFloat angle, GMANVector& a, GMANVector& b) {
 // both compute out[i] = row_i(M).(x,y,z) + M[i][3] -- the convention already
 // in use for the projection stage (see persp(), above, which the RiPerspective
 // transform command builds the same way). w is placed in row 3 so it carries
-// z directly (RenderMan's camera looks down +z), never identically zero.
+// z directly (RenderMan's camera looks down +z) instead of a constant.
 RtVoid GMANMatrix4::prjPersp(RtFloat fov, RtFloat nearDist, RtFloat farDist) {
   RtFloat invT = 1.0 / tan((fov / 2) * DEGTORAD);
 

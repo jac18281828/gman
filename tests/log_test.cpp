@@ -63,7 +63,7 @@ int countOccurrences(const std::string& haystack, const std::string& needle) {
 void removeIfExists(const std::string& path) { std::remove(path.c_str()); }
 
 // A value whose formatter counts every format() call, to prove a message
-// below the current level is never formatted.
+// below the current level skips formatting.
 int gFormatCalls = 0;
 
 struct CountedValue {
@@ -121,8 +121,7 @@ void testBothOutputsSeeMessage() {
   check(screenContents.find("both outputs see this line") != std::string::npos, "stdout sees the message");
 }
 
-// A message ending in its own newline gets exactly one trailing newline,
-// never two.
+// A message ending in its own newline gets exactly one trailing newline.
 void testOneNewline() {
   setLogLevel(LOGLVL_DEBUG);
   setScreenOutput(false);
@@ -136,7 +135,7 @@ void testOneNewline() {
         "info(\"line\\n\") lands with exactly one trailing newline");
 }
 
-// A message below the current level must never reach std::format.
+// A message below the current level skips std::format.
 void testSuppressedLevelsNeverFormat() {
   removeIfExists("log_suppressed.log");
   setLogFile("log_suppressed.log");
@@ -145,7 +144,7 @@ void testSuppressedLevelsNeverFormat() {
 
   gFormatCalls = 0;
   debug("{}", CountedValue{7});
-  check(gFormatCalls == 0, "debug() below the current level never formats its argument");
+  check(gFormatCalls == 0, "debug() below the current level skips formatting its argument");
 }
 
 // Eight threads each log 1000 numbered lines through the one shared sink;

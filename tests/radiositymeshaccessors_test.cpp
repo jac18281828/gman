@@ -314,7 +314,7 @@ void testSphereSameNode() {
   check(polesJoined, "sphere: every node of each pole row is one node");
   check(interiorApart, "sphere: neighbouring grid nodes, and the two poles, stay apart");
   check(coincidentPairs == perSphere, "two spheres: every node coincides exactly with its twin's position");
-  check(primitivesApart, "two spheres: coincident nodes of two primitives are never the same node");
+  check(primitivesApart, "two spheres: coincident nodes of two primitives are distinct nodes");
 }
 
 std::unique_ptr<GMANRayPolygon> face(std::vector<GMANPoint> outer) {
@@ -367,7 +367,7 @@ void testMeshFaces() {
   }
   std::printf("sameNode: mesh faces nodes=%zu coincidentPairs=%zu\n", mesh.getNodeCount(), sharedPairs);
   check(sharedPairs > 0, "mesh faces: the shared edge's nodes coincide across the two faces");
-  check(facesApart, "mesh faces: nodes of two faces of one mesh are never the same node");
+  check(facesApart, "mesh faces: nodes of two faces of one mesh are distinct nodes");
 }
 
 void testSpherePrimitive() {

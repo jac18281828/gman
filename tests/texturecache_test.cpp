@@ -30,8 +30,8 @@
  * cache asked only once the file exists decodes the checker -- red at its
  * (0.25, 0.25) texel centre, tests/checkertexture.h's own layout. A
  * missing name's warning is counted through setLogFile the way
- * tests/log_test.cpp reads its sink back, one name per check so counts
- * never cross checks.
+ * tests/log_test.cpp reads its sink back, one name per check so each
+ * check counts its own warnings.
  */
 
 #include <atomic>

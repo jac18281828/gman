@@ -531,7 +531,7 @@ double analyticInteriorLitFraction(Image const& img, AnalyticCircle const& circl
   return total == 0 ? 0.0 : (double)lit / (double)total;
 }
 
-// ---- metal shader, finding: never exercised by any test ----
+// ---- metal shader ----
 // A metal surface has no diffuse term (unlike matte/plastic): Ci is
 // Os*Cs*(Ka*ambient() + specularcolor*Ks*specular(Nf,Vf,roughness)).
 // Under an ambient-only light, that collapses to a direction-independent

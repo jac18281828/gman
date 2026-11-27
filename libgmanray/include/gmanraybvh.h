@@ -146,7 +146,7 @@ private:
 
   // nearestHit's own running state, threaded through testLeaf and
   // pushChildren rather than held on the class: a local to each call, so
-  // two calls against the same tree never share it.
+  // two calls against the same tree each have their own.
   struct Search {
     bool found = false;
     GMANHit hit;
@@ -167,16 +167,16 @@ private:
   // No leaf lies deeper than this: buildRange lets a split take a child
   // only when the child holds few enough primitives for a median split to
   // finish within the levels left (see childCapacity), so a depth-d node
-  // never holds more than kLeafSize << (kMaxTreeDepth - d) primitives, and
+  // holds at most kLeafSize << (kMaxTreeDepth - d) primitives, and
   // the root, with at most what a std::size_t holds, fits.
   static constexpr std::size_t kMaxTreeDepth = std::numeric_limits<std::size_t>::digits - 1;
 
-  // nearestHit's own local traversal stack never holds more entries than
-  // this. A node at depth d is popped with at most one pending sibling
+  // nearestHit's own local traversal stack holds at most this many
+  // entries. A node at depth d is popped with at most one pending sibling
   // per level above it, d in all, and pushes two children, so the stack
   // peaks at d + 2 entries. An internal node lies above a leaf, so d is
-  // at most kMaxTreeDepth - 1 = digits - 2, and the stack never needs more
-  // than digits entries; the capacity of digits + 1 leaves one to spare.
+  // at most kMaxTreeDepth - 1 = digits - 2, and the stack needs at most
+  // digits entries; the capacity of digits + 1 leaves one to spare.
   static constexpr std::size_t kMaxStackCapacity = std::numeric_limits<std::size_t>::digits + 1;
 
   std::vector<Entry> primitives;
@@ -243,7 +243,7 @@ private:
   // distances, farther-entry child first so the nearer one -- by actual
   // box-entry distance, not tree structure -- pops, and so is visited,
   // first. Writes past stackSize with no bounds check: kMaxStackCapacity's
-  // own comment proves a write here never reaches the array's end.
+  // own comment proves every write here lands inside the array.
   void pushChildren(Node const& node, PreparedRay const& ray, Search const& search,
                     std::array<StackEntry, kMaxStackCapacity>& stack, std::size_t& stackSize) const;
 };

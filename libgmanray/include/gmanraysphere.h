@@ -42,7 +42,7 @@ public:
 
   // Placed by transform's shutter-open matrix. A singular matrix (e.g.
   // Scale 1 1 0) cannot invert into an object space to intersect in, so
-  // the sphere is built anyway and simply never hits.
+  // the sphere is built anyway and simply misses.
   GMANRaySphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
                 GMANTransform const& transform);
 

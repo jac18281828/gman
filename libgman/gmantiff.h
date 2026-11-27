@@ -83,7 +83,7 @@ public:
   // reads through libtiff's own 8-bit RGBA conversion and reports 8, its
   // samples unscaled: rgb is sized from the image's own width and height,
   // the read runs, and only then are both dimensions checked, so a failed
-  // read is never masked by checking the dimensions first.
+  // read surfaces ahead of any dimension check.
   bool decode(std::uint32_t& width, std::uint32_t& height, std::uint16_t& bitsPerSample,
               std::vector<std::uint16_t>& rgb);
 

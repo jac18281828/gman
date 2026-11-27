@@ -125,8 +125,7 @@ public:
      * so the parser can warn once and skip it instead of aborting. */
     RI_UNKNOWN_REQUEST,
 
-    /* RISpec 3.2 requests GMAN's original 66 never covered. Parsed and
-     * ignored. */
+    /* RISpec 3.2 requests outside GMAN's original 66. Parsed and ignored. */
     RI_CURVES,
     RI_BLOBBY,
     RI_SUBDIVISION_MESH,

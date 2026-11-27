@@ -4,7 +4,7 @@
 # the already-assigned first element must not leak across that throw. This
 # is a genuine token-level syntax error (RIE_SYNTAX), not one of
 # PointsPolygons's own softer structural checks, so it aborts the file:
-# unlike the other malformed fixtures here, the trailing Sphere is never
+# unlike the other malformed fixtures here, the trailing Sphere is not
 # reached.
 Display "malformed_out.tif" "file" "rgba"
 Format 200 200 1

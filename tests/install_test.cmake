@@ -188,8 +188,7 @@ endif()
 # the exit status, then that <image_name> is a TIFF of width by height. With
 # CHECK_PASS_WARNING, a render whose output carries gman::loadIndirectPass's
 # warning prefix fails too: a missing or unloadable pass costs the indirect
-# light, never the frame, so an image proves nothing about whether the pass
-# loaded.
+# light only, so an image proves nothing about whether the pass loaded.
 function(gman_render_ray_scene rib_name image_name width height renderer)
   cmake_parse_arguments(GMAN_SCENE "CHECK_PASS_WARNING" "" "" ${ARGN})
   execute_process(

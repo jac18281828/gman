@@ -415,7 +415,7 @@ struct Refusal {
 
 // 7. quantizerefuse_<name>.rib: each request its driver cannot store stops
 // the file at WorldBegin -- exit 1, one error naming the code and the
-// request, no file, and a trace that reaches Quantize but never Sphere.
+// request, no file, and a trace that reaches Quantize and stops before Sphere.
 void checkRefusal(std::string const& gman, std::string const& ribDir, Refusal const& refusal) {
   std::string const label = "quantizerefuse_" + refusal.name;
   if (!driverCompiled(gman, refusal.driver)) {

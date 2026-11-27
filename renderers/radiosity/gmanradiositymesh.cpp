@@ -165,9 +165,9 @@ void maxGridEdgeLengths(GMANParametric& parametric, GMANMatrix4 const& objectToC
 }
 
 // A primitive's own true edge length only shrinks, or holds, as its axis's
-// division count grows -- a chord tightens toward its arc as it shortens,
-// never loosens. resolveAxisCount leans on that to find the smallest count
-// in [1, cap] whose own measure is at or under threshold: double the guess
+// division count grows -- a chord tightens toward its arc as it shortens.
+// resolveAxisCount leans on that to find the smallest count in [1, cap]
+// whose own measure is at or under threshold: double the guess
 // until measure holds or the cap is hit, then bisect the last doubling
 // step down to the exact smallest count that holds. O(log count) calls to
 // measure, against one per unit step.
@@ -195,12 +195,10 @@ template <class Measure> std::size_t resolveAxisCount(std::size_t cap, RtFloat t
 
 // The smallest (nu, nv), capped at GMANRadiosityMesh::kMaxDivisions each,
 // whose own real grid keeps every edge at or under maxEdgeLength. Growing
-// nv only ever reveals a larger true maxU (finer v-sampling never shrinks
-// an edge already found), and symmetrically for nu against maxV, so
-// resolving nu then nv, each against the other's latest count, is a
-// monotone relaxation that climbs to the same fixed point the old one-step
-// joint growth reached -- in a handful of rounds rather than one step per
-// unit.
+// nv only ever reveals a larger true maxU, and symmetrically for nu against
+// maxV, so resolving nu then nv, each against the other's latest count, is a
+// monotone relaxation that climbs to its fixed point in a handful of rounds
+// rather than one step per unit.
 ParametricGrid chooseParametricResolution(GMANParametric& parametric, GMANMatrix4 const& objectToCamera,
                                           RtFloat maxEdgeLength) {
   std::size_t const cap = GMANRadiosityMesh::kMaxDivisions;
@@ -773,8 +771,8 @@ void GMANRadiosityMesh::fillPolygonPrimitiveMesh(GMANRayPolygon const& polygon, 
 
 void GMANRadiosityMesh::dicePolygon(GMANRayPolygon const& polygon, RtFloat maxEdgeLength) {
   if (polygon.isDegenerate()) {
-    // Its own intersect() never hits it either, so there is nothing for
-    // locate() to ever need here: zero elements, not a skip.
+    // Its own intersect() misses it too, so locate() has no use for it
+    // here: zero elements, not a skip.
     return;
   }
 
@@ -835,7 +833,7 @@ bool GMANRadiosityMesh::diceOne(GMANPrimitive* primitive, RtFloat maxEdgeLength)
   }
 
   if (!objectToCamera) {
-    // Its own intersect() never hits it either (the same object-space
+    // Its own intersect() misses it too (the same object-space
     // round trip fails there), so it has no surface left to dice.
     return false;
   }

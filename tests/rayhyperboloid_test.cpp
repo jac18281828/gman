@@ -23,8 +23,8 @@
  * hit of a segment spanning z, its v-band and thetamax wedge, honors the
  * ray's own [tmin, tmax] interval, and fills a GMANHit that round trips
  * through GMANHyperboloid::getLocation. The segment here (point1 == (1,
- * 0, -1), point2 == (0, 1, 1)) never crosses the axis, so it has no
- * axial hit at all; checks are aimed across the axis instead. Its own
+ * 0, -1), point2 == (0, 1, 1)) stays off the axis, so it has no axial
+ * hit; checks are aimed across the axis instead. Its own
  * azimuth phi(v) varies with v (0 degrees at point1, 90 at point2) --
  * unlike a segment held at a fixed y, which would make measuring theta
  * from phi(v) indistinguishable from measuring it from the x-axis.
@@ -238,7 +238,7 @@ void testUniformScale() {
         "uniform scale: normal == (-1, 0, 0), unchanged by a uniform scale");
 }
 
-// ---- check 6: a singular transform never hits ----
+// ---- check 6: a singular transform misses ----
 void testSingularTransform() {
   GMANMatrix4 matrix;
   matrix.scale(1.0, 1.0, 0.0);
@@ -250,8 +250,7 @@ void testSingularTransform() {
   GMANRay ray(GMANPoint(0.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
   GMANHit hit;
 
-  check(!hyperboloid.intersect(ray, hit),
-        "singular transform: a hyperboloid with no invertible object space never hits");
+  check(!hyperboloid.intersect(ray, hit), "singular transform: a hyperboloid with no invertible object space misses");
 }
 
 // ---- check 7: the ray's interval rejects a hit before tmin and one past

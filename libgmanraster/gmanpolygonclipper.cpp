@@ -64,8 +64,8 @@ GMANPolygonClipper::GMANPolygonClipper() {
   //
   // LEFT/RIGHT/TOP/BOTTOM here are placeholders; clip() below rebuilds
   // them from the screen window on every call, for both projections.
-  // FRONT/BACK (z, near/far) are correct for both and clip() never
-  // touches them.
+  // FRONT/BACK (z, near/far) are correct for both, so clip() leaves them
+  // as set.
   vec = GMANVector4(0.0, 0.0, 1.0, 1.0);
   clipper[GMANFRONT].setNormal(vec.normalize());
 

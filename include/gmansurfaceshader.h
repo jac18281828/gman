@@ -64,8 +64,8 @@ public:
 
   /*
    * Output of a surface shader. const: a shader instance is built fresh
-   * per Surface call and holds its own parameters, so shading never
-   * writes through it.
+   * per Surface call and holds its own parameters, so shading only reads
+   * it.
    */
 
   virtual GMANColor computeCi(GMANSurfaceEnv const& se) const = 0;

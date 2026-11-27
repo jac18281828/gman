@@ -11,7 +11,7 @@ Sides 1
 
 # A wall, not a sphere: at camera-space z = -10, invisible to every
 # primary ray (the camera looks down +z, the near clip stops at 0.5),
-# but its own plane never intrudes on the frustum regardless of extent
+# but its own plane stays out of the frustum regardless of extent
 # in x and y, so it can be sized to fill nearly the whole hemisphere a
 # convex mirror's own demagnification folds into its silhouette.
 AttributeBegin

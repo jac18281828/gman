@@ -23,8 +23,7 @@
  * matte unit sphere lit by one distant light from the eye's side) to a
  * non-black centre pixel and a black corner, and a second render of the
  * same fixture writes the same pixels: a stochastic image's bytes pin the
- * sampler, never the estimator, so this proves reproducibility in place of
- * a golden.
+ * sampler alone, so this proves reproducibility in place of a golden.
  */
 
 #include <cstdio>

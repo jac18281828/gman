@@ -235,12 +235,12 @@ bool passThrough(GMANHit const& hit, gman::SurfacePoint const& point, GMANColor 
 // Picks one emitter at p by its own contribution there, lightChoiceWeights'
 // own weight for each: a delta emitter's fixed preview draw, or an area
 // emitter's power over its own placed distance from p, floored at its own
-// bounding radius so it is never zero where it actually contributes; an
-// emitter whose shape is primitive is never chosen, since p sits on its own
+// bounding radius so it is positive wherever it contributes; an
+// emitter whose shape is primitive is excluded, since p sits on its own
 // surface. j is drawn with probability its weight's share of the total.
 // lightWeight is the caller's own per-path buffer, sized to emitters.size()
-// and overwritten here, never reallocated per vertex. Answers false, chosen
-// and pj untouched, when no emitter has positive weight there.
+// and overwritten in place. Answers false, chosen and pj untouched, when no
+// emitter has positive weight there.
 bool chooseLight(std::vector<gman::Emitter> const& emitters, GMANPoint const& p, GMANRayPrimitive const* primitive,
                  std::uint32_t seed, RtInt sx, RtInt sy, std::uint32_t i, std::uint32_t N, std::uint32_t k,
                  std::vector<RtFloat>& lightWeight, std::size_t& chosen, RtFloat& pj) {
@@ -329,9 +329,9 @@ GMANColor weightedShadowedTerm(GMANColor const& betaF, RtFloat cosTerm, RtFloat 
 // delta light keeps weight 1, since nothing can ever land on it by chance.
 // Answers black where no emitter has positive weight there, the draw's pdf
 // is 0 or the closure is black toward it. lightWeight is the caller's own
-// per-path buffer, sized to emitters.size() and overwritten here, never
-// reallocated per vertex. hitPrimitive is the shading point's own
-// primitive, excluded from the choice: it cannot light a point on itself.
+// per-path buffer, sized to emitters.size() and overwritten in place.
+// hitPrimitive is the shading point's own primitive, excluded from the
+// choice: it cannot light a point on itself.
 GMANColor nextEventEstimation(GMANRayBVH const& bvh, std::vector<gman::Emitter> const& emitters, GMANHit const& hit,
                               GMANRayPrimitive const* hitPrimitive, gman::SurfacePoint const& point,
                               gman::BSDF const& closure, GMANVector const& wo, GMANColor const& beta,

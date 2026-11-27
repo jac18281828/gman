@@ -61,7 +61,7 @@ void writeFile(std::string const& path, std::string const& contents) {
   std::fclose(f);
 }
 
-// Every corner of an 8x8 frame the sphere never reaches: RGB must read
+// The sphere misses every corner of an 8x8 frame, so RGB there must read
 // exactly (0, 0, 0) against the RISpec default, whatever the renderer.
 void checkCornersBlack(std::string const& path, std::string const& label) {
   TIFF* tif = TIFFOpen(path.c_str(), "r");

@@ -60,7 +60,7 @@ GMANRayCone::GMANRayCone(RtFloat height, RtFloat radius, RtFloat thetamax, GMANP
 
   // r(z) == radius*(1 - z/height) (GMANCone::intersect's own radial
   // factor) is linear from radius at z == 0 to 0 at z == height, so its
-  // magnitude over [0, height] never exceeds |radius|; z spans 0..height
+  // magnitude over [0, height] is at most |radius|; z spans 0..height
   // exactly, the parameter that directly clips the shape.
   bbox = gman::revolutionBBox(objectToCamera->forward(), radius, (RtFloat)0.0, height);
 }
@@ -103,7 +103,7 @@ bool GMANRayCone::intersect(GMANRay const& ray, GMANHit& hit) const {
   // a vanishes for a ray parallel to a generatrix: an ordinary ray with no
   // quadratic term left to solve, not a degenerate direction.
   // gman::solveRayQuadratic's own comment covers the linear case and why a
-  // near-degenerate a never reaches it.
+  // near-degenerate a needs no case of its own.
   double t0 = 0.0, t1 = 0.0;
   int const numRoots = gman::solveRayQuadratic(a, b, c, t0, t1);
   if (numRoots == 0)

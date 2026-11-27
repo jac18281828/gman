@@ -34,7 +34,7 @@
  * the path tracer, that Option "raytracer" "integer arealightsamples" changes
  * the draws only through its value and that a value below 1 or one that is not
  * an integer warns once and reads as the default of 4, and that an emitter
- * gman::emitters skips warns once and never says an area light has no effect.
+ * gman::emitters skips warns once, without the "has no effect here" warning.
  */
 
 #include <array>
@@ -251,7 +251,7 @@ std::string fixtureText(std::string const& ribDir, std::string const& name) {
 
 // text with each line that equals a key of edits replaced by that key's value,
 // the whole line dropped when the value is empty. A key that equals no line of
-// text fails a check, so a variant never runs unedited.
+// text fails a check, so a variant cannot silently render the unedited fixture.
 std::string withLines(std::string const& text, std::map<std::string, std::string> const& edits,
                       std::string const& label) {
   std::map<std::string, bool> found;
@@ -353,8 +353,8 @@ void checkDrawCountOption(std::string const& gman, std::string const& ribDir) {
   for (CountVariant const& variant : variants) {
     Render render = renderCountVariant(gman, ribDir, variant, std::string("rayarealight_count_") + variant.label);
     check(countOccurrences(render.output, kDefaultWarning) == (variant.warns ? kExpectedWarningCount : 0),
-          std::string("draw count ") + variant.label + ": the default-count warning is logged " +
-              (variant.warns ? "once" : "never"));
+          std::string("draw count ") + variant.label + ": the default-count warning " +
+              (variant.warns ? "is logged once" : "is absent"));
     renders[variant.label] = std::move(render);
   }
 
@@ -377,7 +377,7 @@ void checkSkippedEmitter(std::string const& gman, std::string const& ribDir) {
   check(countOccurrences(render.output, kSkippedWarning) == kExpectedWarningCount,
         "cone emitter: the ray tracer logs that the emitter is ineligible or unsupported exactly once");
   check(countOccurrences(render.output, kIgnoredWarning) == 0,
-        "cone emitter: the ray tracer never says an area light has no effect");
+        "cone emitter: the ray tracer logs no \"has no effect here\" warning");
 }
 
 } // namespace

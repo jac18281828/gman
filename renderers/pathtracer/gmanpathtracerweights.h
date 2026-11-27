@@ -38,7 +38,7 @@
  * The path tracer's multiple-importance-sampling weight computation and
  * its adaptive sizing of a slot's fresh batch from a pilot, defined in
  * gmanpathtracerenderer.cpp. Private to
- * renderers/pathtracer: never installed and never exported, so tests reach
+ * renderers/pathtracer: not installed and not exported, so tests reach
  * them through the gman_pathtracer_objects include directory and call them
  * without rendering a frame.
  */
@@ -48,7 +48,7 @@ namespace gman {
 // primitive gets weight 0, since a point on an emitter's own surface
 // cannot light itself, and the rest keep gman::lightChoiceWeight's own
 // value. lightWeight is the caller's own per-path buffer, sized to
-// emitters.size() and overwritten here, never reallocated per vertex.
+// emitters.size() and overwritten in place.
 // Returns the weights' own sum. The one function chooseLight's draw and
 // every probability read below share, so a value read at a different
 // vertex through it is provably the probability next-event estimation
@@ -80,7 +80,7 @@ RtFloat nextEventWeight(bool lightIsDelta, bool misEnabled, RtFloat pLight, RtFl
 // draw's own density (pBsdf) and the light-choice/solid-angle density
 // next-event estimation would have used for this same emitter from that
 // same vertex (pLight); 0, not 1, when misEnabled is false, since
-// light-only sampling never credits this case at all.
+// light-only sampling gives this case no credit.
 RtFloat emitterHitWeight(bool rayEligibleForEmitterHit, bool misEnabled, RtFloat pBsdf, RtFloat pLight);
 
 // An emitter hit's own eligibility, tracked across delta draws since the

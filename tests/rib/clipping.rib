@@ -13,7 +13,7 @@
 ## this clear of the near-clip precision defect (AGENTS.md: flat or
 ## z-narrow geometry needs an explicit Clipping) -- that defect needs
 ## vertices clustered at a single z, which a cylinder spanning [-10,10]
-## never has.
+## lacks.
 Display "clipping.tif" "file" "rgba"
 Format 400 400 1
 Projection "perspective" "fov" [45]

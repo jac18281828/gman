@@ -1899,7 +1899,7 @@ GMANRIBParse::ParsedParameterList GMANRIBParse::parseParameterList(std::string c
   // RtFloat, and returns the pointer RI calls read: moving a vector
   // preserves its buffer, so the pointer stays valid once this struct is in
   // the (possibly reallocated) pendingParamValues vector. String values
-  // take their own path below, never this one.
+  // take their own path below.
   auto pushValue = [this](auto values) -> RtPointer {
     using T = typename decltype(values)::value_type;
     const unsigned int count = (unsigned int)values.size();

@@ -26,10 +26,6 @@
  * tests/generalpolygon_test.cpp's own runGetRSGeneralPolygon), twin-RIB
  * renders compared pixel by pixel (tests/goldenimage.h), and malformed
  * request fixtures (tests/paramclamp_test.cpp's own Fixture shape).
- *
- * countFaces here walks every body on the object's own chain --
- * generalpolygon_test.cpp's own countFaces reads only the first, since a
- * GeneralPolygon never produces more than one.
  */
 
 #include <array>
@@ -220,9 +216,9 @@ int countBodies(GMANObject* object) {
 }
 
 // Walks every body on the chain, unlike generalpolygon_test.cpp's own
-// countFaces (which reads only the first): a GeneralPolygon never produces
-// more than one body, but a PointsPolygons/PointsGeneralPolygons mesh's
-// faces each own their own.
+// countFaces (which reads only the first): a GeneralPolygon produces one
+// body, but a PointsPolygons/PointsGeneralPolygons mesh's faces each own
+// their own.
 int countFaces(GMANObject* object) {
   int count = 0;
   for (GMANBody* body = object->getBody(); body != nullptr; body = body->getNext()) {
@@ -509,8 +505,8 @@ void testOneBadFace() {
 
 // Unreferenced points in "P" change nothing. The extra points sit between
 // two referenced indices (1-3, verts {0, 4, 5}) rather than trailing every
-// referenced one: the factory sizes "P" to 1 + max(verts), so a trailing
-// extra past the largest referenced index never reaches the mesh at all.
+// referenced one: the factory sizes "P" to 1 + max(verts), so it ignores a
+// trailing extra past the largest referenced index.
 void testUnreferencedPoints() {
   const std::vector<GMANPoint> withoutExtra = {{0, 0, 0}, {2, 0, 0}, {1, 2, 0}};
   const std::vector<GMANPoint> withExtra = {withoutExtra[0], {99, 99, 99},    {-50, -50, -50},
@@ -609,7 +605,7 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
     if (fixture.expectsSphere) {
       check(sphereParsed, std::string(fixture.file) + ": the Sphere after it still parses (no desync)");
     } else {
-      check(!sphereParsed, std::string(fixture.file) + ": the Sphere after it never parses (the file stops)");
+      check(!sphereParsed, std::string(fixture.file) + ": the file stops before the Sphere that follows");
     }
   }
 }

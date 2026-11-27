@@ -23,7 +23,7 @@
  * alone, linking gman::gman and nothing else. It reads Kd through the
  * installed parameter helpers, overrides computeCi and bsdf, builds a Lambert
  * lobe and exports the three entry points a shader plugin defines. The module
- * is built and linked, never loaded.
+ * is built and linked only.
  */
 
 #include <gman/gmanbsdf.h>

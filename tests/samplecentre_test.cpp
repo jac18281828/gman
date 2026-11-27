@@ -35,10 +35,9 @@ namespace {
 
 constexpr RtFloat kTolerance = 1e-6f;
 
-// A requires-expression never calls the function it names, so an
-// argument list that resolves to the deleted overload still compiles
-// here -- it fails only where the call itself is emitted -- which is
-// what makes this concept safe to instantiate on either overload.
+// A requires-expression is unevaluated, and a call that resolves to the
+// deleted overload makes it false rather than ill-formed, so this concept
+// probes either overload.
 template <class T, class U, class V>
 concept SampleCentreCallable = requires(T origin, U s, V samplesPerPixel) {
   { gman::sampleCentre(origin, s, samplesPerPixel) } -> std::same_as<RtFloat>;

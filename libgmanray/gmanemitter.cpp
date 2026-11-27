@@ -84,7 +84,7 @@ const auto kNoPlacement = std::optional<InvertibleMatrix>();
 
 RtFloat meanChannel(GMANColor const& c) { return (c.getRed() + c.getGreen() + c.getBlue()) / (RtFloat)3.0; }
 
-// A degenerate sphere zone never emits: a non-positive radius, an empty or
+// A degenerate sphere zone emits nothing: a non-positive radius, an empty or
 // reversed z range, a z range reaching outside the sphere's own surface (a
 // zone samplePoint's own r = sqrt(max(0, radius^2 - z^2)) would floor at 0
 // rather than describe a real point), or a non-positive thetamax.
@@ -104,7 +104,7 @@ bool sphereEligible(GMANRaySphere const& sphere) {
   return sphere.getThetaMax() > 0.0f;
 }
 
-// A degenerate disk sector never emits: a non-positive radius or thetamax.
+// A degenerate disk sector emits nothing: a non-positive radius or thetamax.
 bool diskEligible(GMANRayDisk const& disk) { return disk.getRadius() > 0.0f && disk.getThetaMax() > 0.0f; }
 
 // One lambda per alternative of a variant, or a generic lambda for several,

@@ -21,10 +21,9 @@
 /*
  * GMANSampleBuffer resolves one sample per pixel through a box filter, so a
  * pixel is the sample as written. Its alpha reads a NaN as 1, +inf as 1 and
- * -inf as 0, never the transparent a NaN clamped to 0 reads as, and clamps a
- * finite coverage as before. A sample's colour stores a NaN or infinite
- * channel as 0 and a finite channel as it is, and a filter weight that is NaN
- * or infinite counts as 0.
+ * -inf as 0, and clamps a finite coverage to [0, 1]. A sample's colour
+ * stores a NaN or infinite channel as 0 and a finite channel as it is, and a
+ * filter weight that is NaN or infinite counts as 0.
  */
 
 #include <cmath>
@@ -98,7 +97,7 @@ void testNonFiniteColourIsStoredAsZero() {
 
 void testNaNDepthNeverWins() {
   GMANSampleBuffer buffer(1, 1, 1, 1, kBackground);
-  check(!buffer.zTestAndSet(0, 0, kNaN, kGrey, GMANAlpha(1.0f, 1.0f, 1.0f)), "a NaN depth is never closer");
+  check(!buffer.zTestAndSet(0, 0, kNaN, kGrey, GMANAlpha(1.0f, 1.0f, 1.0f)), "a NaN depth loses the depth test");
   check(buffer.zTestAndSet(0, 0, 2.0f, kGrey, GMANAlpha(1.0f, 1.0f, 1.0f)), "a finite depth passes after a NaN one");
 }
 

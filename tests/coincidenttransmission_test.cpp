@@ -26,8 +26,8 @@
  * hop. gman::offsetOrigin orients every hop toward the light regardless
  * of which surface's own normal produced it (see gmanrayoccluder.cpp's
  * own comment), so it always advances and two exactly coincident surfaces
- * clear together in one hop -- never stuck re-finding the same point, and
- * so never a fixture for this check. Twenty separated layers, each
+ * clear together in one hop instead of re-finding the same point, so they
+ * cannot exercise the cap. Twenty separated layers, each
  * attenuating by a fixed factor, forces exactly what the cap is for:
  * bounding a walk's own depth against a pathological stack, not
  * preventing infinite recursion that this offset design does not

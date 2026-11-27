@@ -54,7 +54,7 @@ namespace gman {
 class TextureCache;
 
 // What a primitive looks like, fixed when it is declared: its surface
-// shader (the RISpec's matte default when RiSurface was never called,
+// shader (the RISpec's matte default when the scene sets no surface,
 // already built from its own Surface call's parameters), the lights active
 // in its attribute scope (RiIlluminate) and its Cs/Os. Shared ownership,
 // not a raw pointer: the ray tracer stores an Appearance in every
@@ -68,9 +68,9 @@ struct GMAN_EXPORT Appearance {
 
   // The primitive's own pending RiAreaLightSource, non-owning, when one was
   // both declared and illuminated at declaration time; null otherwise.
-  // Never in lights: gman::emitters reads it directly instead, and a
-  // shader's ambient()/diffuse()/specular() loops (lights alone) must never
-  // sample it as if it were a positioned light.
+  // Absent from lights: gman::emitters reads it directly, and a shader's
+  // ambient()/diffuse()/specular() loops, which see lights alone, must not
+  // sample it as a positioned light.
   GMANLight const* areaLight = nullptr;
 };
 
@@ -165,7 +165,7 @@ GMAN_EXPORT Shading shade(Appearance const& appearance, SurfacePoint const& poin
 
 // A surface's diffuse reflectance where shade would shade point: fills a
 // GMANSurfaceEnv from appearance and point exactly as shade does, through
-// the same fill so the two can never drift, with no occluder, tracer or
+// the same fill so the two agree, with no occluder, tracer or
 // indirect bound, and returns appearance.shader->albedo(env), a NaN or
 // infinite channel read as 0. A null shader answers appearance.Cs clamped
 // to [0, 1] per channel, a NaN channel to 0 -- what the default surface,

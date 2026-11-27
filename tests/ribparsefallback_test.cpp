@@ -59,7 +59,7 @@ struct RecordedCall {
   std::map<std::string, std::string> params;
 };
 
-// Derives from GMANASCII, never from GMANRenderManImpl, so GMANRIBParse's
+// Derives from GMANASCII rather than GMANRenderManImpl, so GMANRIBParse's
 // dynamic_cast fails and every one of the 14 dispatches falls back to the
 // RI-mandated overload on this base. RiBegin/RiEnd are overridden to touch
 // no file; every other override records its own positional arguments
