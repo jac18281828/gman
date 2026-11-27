@@ -1,3 +1,24 @@
+1.4.0 (2026-11-26)
+
+* 1.4 breaks the binary interface, so every plugin and every program that links gman rebuilds; `SameMinorVersion` refuses 1.4 to a consumer asking for 1.3. `GMANOptions` gains `isColorQuantizeSet`, `gman::Lobe` gains `transmitWeight`, and `GMANRayOccluder`'s constructor takes a `TextureCache&`
+* The core library is `libgman`, CMake target `gman::gman`, where it was `libgman_core`; the executable's CMake target is `gman_cli`, and the program is still `gman`
+* CLI11 parses the command line, and every flag has a long name. Help prints on stdout and exits 0, a usage error prints CLI11's message on stderr with its exit code, a flag after a file applies, `--` ends the options, and a run needs a file
+* The ray tracer lights from area lights, `Option "raytracer" "integer arealightsamples"` draws per light (default 4), and area-lit scenes render slower
+* Area lights sample by the solid angle they subtend, so a surface near an emitter no longer collects white specks under either tracer
+* `AreaLightSource` on `Polygon`, `GeneralPolygon`, `PointsPolygons` and `PointsGeneralPolygons` emits under both tracers, one-sided along the winding's normal; patch emitters work but are slow
+* Ray-traced shadows pass through glass and opacity-mapped cutouts
+* A partly opaque surface seen through glass or in a mirror composites under the ray tracer, as it does in direct view
+* `glass` reads `eta`, `Kr` and `Kt`, defaulting to BMRT's 1.5, 1 and 1; a scene declares them inline (`"float eta"`), and `gman::BSDF` adds `addDielectric(reflectWeight, transmitWeight, eta)`
+* The ray tracer renders `Patch` and `PatchMesh`, and a texture on a periodic mesh no longer reverses across its seam
+* `Option "pathtracer" "string denoise" ["atrous"]` denoises a path-traced image with an edge-avoiding à-trous filter
+* A build with `GMAN_WITH_EXR` writes linear float OpenEXR. gman still treats sRGB textures and colours as linear, so EXR output looks washed out in a colour-managed viewer until colour management lands (#12)
+* A non-finite request value, such as a `Format` aspect, `FrameAspectRatio`, `PixelFilter` width or `Exposure`, is ignored; a NaN shader colour reads as 0, a NaN coverage as opaque, and `noise` and texture lookups answer NaN for a non-finite coordinate
+* An area emitter with a singular placement contributes nothing instead of reading an empty value
+* The C API owns its render contexts and frees one whose `RiBegin` fails
+* `GMANQuadraticRoots` is gone from `gmanmath.h`
+* The REYES plugin and `GMAN_BUILD_REYES` are gone; the plugin built off by default, never linked and was never installed
+* The release tarball's binaries are stripped, 412 kB for `gman` where it was 519 kB
+
 1.3.1 (2026-11-24)
 
 * The macOS arm64 tarball ships; 1.3.0's macOS release build failed a heap-counting test that misread its LTO link, and no library code changes
