@@ -163,7 +163,7 @@ private:
   // is this renderer's only chance to see one, so every geometry request
   // that can carry one is overridden; GMANPatchPolyObjectManager's own
   // getRSBlobby/getRSPoints/getRSCurves/getRSSubdivisionMesh already
-  // answer an empty placeholder, rendering no geometry to count.
+  // return an empty owner, rendering no geometry to count.
   class AreaLightCountingObjectManager : public GMANPatchPolyObjectManager {
   public:
     gman::Owned<GMANPrimitive> getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,

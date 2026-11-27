@@ -608,15 +608,12 @@ void runTrivialHoles() {
           /*assertTripleIdentity=*/false);
 }
 
-// All outer vertices collinear: getRSPolygonMesh returns the empty stub,
+// All outer vertices collinear: getRSPolygonMesh returns an empty owner,
 // not a crash, for a GeneralPolygon face exactly as for a Polygon.
 void runDegenerateOuterLoop() {
   std::vector<std::vector<GMANPoint>> loops = {{{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}}};
   auto prim = runGetRSGeneralPolygon(loops);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
-  check(object != nullptr, "degenerate outer loop: getRSPolygonMesh returns an object");
-  check(object != nullptr && object->getBody() == nullptr,
-        "degenerate outer loop: the returned object is the empty stub");
+  check(prim == nullptr, "degenerate outer loop: getRSPolygonMesh returns an empty owner");
 }
 
 } // namespace

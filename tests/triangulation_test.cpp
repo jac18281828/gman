@@ -57,8 +57,8 @@
  * Revert check (verified by actually reverting, not asserted): restoring
  * turnOrientation and getRSPolygonMesh's degeneracy guard to their absolute-
  * RI_EPSILON comparisons turns every one of the nine rings' scale=1e-6
- * placements red (the degeneracy guard fires and getRSPolygonMesh returns the
- * empty stub) and turns the scale=1e-5 placements of four rings red with
+ * placements red (the degeneracy guard fires and getRSPolygonMesh returns an
+ * empty owner) and turns the scale=1e-5 placements of four rings red with
  * a wrong (over-covering) triangulation instead: concave L, reversed
  * winding; concave L starting at the reflex vertex; comb; and comb with
  * inexactly-collinear wall vertices. Separately, restoring
@@ -603,23 +603,17 @@ void runRandomizedStress() {
 }
 
 void runDegenerateInput() {
-  // All vertices collinear: getRSPolygonMesh returns an empty stub, not a
+  // All vertices collinear: getRSPolygonMesh returns an empty owner, not a
   // crash.
   std::vector<GMANPoint> collinear = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}};
   auto prim = runGetRSPolygon(collinear);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
-  check(object != nullptr, "all-collinear input: getRSPolygonMesh returns an object");
-  check(object != nullptr && object->getBody() == nullptr,
-        "all-collinear input: the returned object is the empty stub");
+  check(prim == nullptr, "all-collinear input: getRSPolygonMesh returns an empty owner");
 
   // All vertices identical: the zero-extent case the ratio guard must not
   // divide by zero on.
   std::vector<GMANPoint> identical = {{5, 5, 5}, {5, 5, 5}, {5, 5, 5}, {5, 5, 5}};
   prim = runGetRSPolygon(identical);
-  object = dynamic_cast<GMANObject*>(prim.get());
-  check(object != nullptr, "all-identical input: getRSPolygonMesh returns an object");
-  check(object != nullptr && object->getBody() == nullptr,
-        "all-identical input: the returned object is the empty stub");
+  check(prim == nullptr, "all-identical input: getRSPolygonMesh returns an empty owner");
 
   // A sliver: a simple rectangle, four distinct corners, an aspect ratio
   // of 1e8:1. Its area is genuinely non-zero and its Newell normal
@@ -631,22 +625,19 @@ void runDegenerateInput() {
   // constant would not be caught by any other case in this file.
   std::vector<GMANPoint> sliver = {{0, 0, 0}, {1, 0, 0}, {1, 1e-8f, 0}, {0, 1e-8f, 0}};
   prim = runGetRSPolygon(sliver);
-  object = dynamic_cast<GMANObject*>(prim.get());
-  check(object != nullptr, "sliver input: getRSPolygonMesh returns an object");
-  check(object != nullptr && object->getBody() == nullptr, "sliver input: the area-to-extent ratio guard classifies it "
-                                                           "degenerate");
+  check(prim == nullptr, "sliver input: the area-to-extent ratio guard classifies it degenerate");
 
   // An asymmetric bow-tie: self-intersecting, excluded by the RISpec's
   // simple-polygon contract. The only claim is that the clipAt<0 fallback
   // terminates and emits n-2 triangles -- nothing about which ones. The
   // lobes are unequal so the Newell normal does not cancel to zero, which
-  // would otherwise return the empty stub before the triangulator ever
+  // would otherwise return an empty owner before the triangulator ever
   // runs.
   std::vector<GMANPoint> bowtie = {{0, 0, 0}, {10, 10, 0}, {10, 0, 0}, {0, 3, 0}};
   GMANOptions bowtieOptions; // same default GMANOptions runGetRSPolygon's own uses
   GMANAttributes bowtieAttr; // ShadingRate = 1, runGetRSPolygon's own default
   prim = runGetRSPolygon(bowtie);
-  object = dynamic_cast<GMANObject*>(prim.get());
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, "asymmetric bow-tie: getRSPolygonMesh returns an object");
   if (object != nullptr) {
     int faces = countFaces(object);

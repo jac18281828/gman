@@ -28,7 +28,7 @@
  * transposed control-point reading (a real defect this shape has shipped
  * with) culls to nothing instead of rendering.
  *
- * Reverting getRSPatch to its create()-only stub fails the two Patch
+ * Reverting getRSPatch to `return nullptr;` fails the two Patch
  * assertions below (the bilinear left half, the bicubic Patch's center
  * region) while the five other checks -- both exit-0s, both TIFF
  * readbacks, and the Sphere control -- stay green, isolating the failure

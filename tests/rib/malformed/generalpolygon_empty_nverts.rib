@@ -1,7 +1,7 @@
 # An empty nverts array: nloops is its length, so this is nloops = 0.
 # RiGeneralPolygonV rejects it before sizing the parameter list, warns
-# naming the request and the offending value, and adds the empty stub to
-# the world. "P" holds one point so the request's own rule fires: an empty
+# naming the request and the offending value, and adds nothing to the
+# world. "P" holds one point so the request's own rule fires: an empty
 # "P" is a shorter array than the declaration, which stops the file first.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The

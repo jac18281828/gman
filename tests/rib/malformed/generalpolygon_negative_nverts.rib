@@ -1,7 +1,6 @@
 # A negative nverts entry: RiGeneralPolygonV rejects it before sizing the
 # parameter list, warns naming the request and the offending value, and
-# adds the empty stub to the world instead of indexing "P" by a negative
-# count.
+# adds nothing to the world instead of indexing "P" by a negative count.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

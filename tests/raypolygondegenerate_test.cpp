@@ -19,8 +19,8 @@
  */
 
 /*
- * A degenerate Polygon -- four collinear points -- traces as the empty
- * stub: neither a GMANRayPolygon nor a GMANRayPolygonMesh.
+ * A degenerate Polygon -- four collinear points -- yields no primitive: the
+ * factory returns an empty owner.
  */
 
 #include <optional>
@@ -34,9 +34,6 @@
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanrayobjectmanager.h"
-#include "gmanraypolygon.h"
-#include "gmanraypolygonmesh.h"
-#include "gmanrayprimitive.h"
 #include "gmantransform.h"
 
 namespace {
@@ -74,18 +71,15 @@ gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& r
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
-void testDegeneratePolygonTracesAsEmptyStub() {
+void testDegeneratePolygonYieldsEmptyOwner() {
   auto prim = runGetRSPolygonDirect(collinearFour());
-  GMANRayPolygon const* polygon = dynamic_cast<GMANRayPolygon const*>(prim.get());
-  GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(prim.get());
-  check(polygon == nullptr, "degenerate Polygon: not a GMANRayPolygon");
-  check(mesh == nullptr, "degenerate Polygon: not a GMANRayPolygonMesh");
+  check(prim == nullptr, "degenerate Polygon: the factory returns an empty owner");
 }
 
 } // namespace
 
 int main() {
-  testDegeneratePolygonTracesAsEmptyStub();
+  testDegeneratePolygonYieldsEmptyOwner();
 
-  return checkSummary("a degenerate Polygon traces as the empty stub");
+  return checkSummary("a degenerate Polygon yields an empty owner");
 }

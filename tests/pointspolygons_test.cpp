@@ -445,7 +445,7 @@ void testHoleThroughIndices() {
 }
 
 // Three faces, the middle one collinear: two bodies survive with the
-// other two faces' own area. All three degenerate: create().
+// other two faces' own area. All three degenerate: an empty owner.
 void testOneBadFace() {
   const std::vector<GMANPoint> points = {
       {0, 0, 0}, {2, 0, 0}, {1, 2, 0}, // face 0: a valid triangle
@@ -477,17 +477,13 @@ void testOneBadFace() {
     }
   }
 
-  // Every face degenerate: the whole mesh is the empty stub -- a mesh with
+  // Every face degenerate: the whole mesh is an empty owner -- a mesh with
   // no surviving face, not a partially drawn one.
   const std::vector<GMANPoint> allDegenerate = {
       {0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}, {7, 0, 0}, {8, 0, 0},
   };
   auto degeneratePrim = runGetRSPointsPolygon(3, nverts, verts, allDegenerate);
-  GMANObject* degenerateObject = dynamic_cast<GMANObject*>(degeneratePrim.get());
-  check(degenerateObject != nullptr, "one bad face, all degenerate: returns an object");
-  check(degenerateObject != nullptr && degenerateObject->getBody() == nullptr,
-        "one bad face, all degenerate: the returned object is the empty "
-        "stub");
+  check(degeneratePrim == nullptr, "one bad face, all degenerate: the factory returns an empty owner");
 }
 
 // Unreferenced points in "P" change nothing. The extra points sit between

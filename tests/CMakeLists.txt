@@ -2929,9 +2929,8 @@ set_tests_properties(raypolygonseam PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# A degenerate Polygon (collinear points) traces as the empty stub, neither
-# a GMANRayPolygon nor a GMANRayPolygonMesh. See
-# tests/raypolygondegenerate_test.cpp.
+# A degenerate Polygon (collinear points) yields no primitive: the factory
+# returns an empty owner. See tests/raypolygondegenerate_test.cpp.
 add_executable(gman_raypolygondegenerate raypolygondegenerate_test.cpp)
 target_link_libraries(gman_raypolygondegenerate PRIVATE gman gman_ray gman_internal_headers)
 
@@ -4233,8 +4232,8 @@ set_tests_properties(arealightsource PROPERTIES
   TIMEOUT 30)
 
 # The counts-aware RiPolygonV rejects a negative or overflowing nverts,
-# with or without a "P" parameter, warning once and adding the empty stub
-# rather than throwing or dropping the request silently. Drives
+# with or without a "P" parameter, warning once and adding nothing to the
+# world rather than throwing or dropping the request silently. Drives
 # GMANRenderManImpl directly, in process, the same technique and
 # LD_LIBRARY_PATH/DYLD_LIBRARY_PATH as tests/arealightsource_test.cpp. See
 # tests/polygonnverts_test.cpp.
@@ -4248,10 +4247,12 @@ set_tests_properties(polygonnverts PROPERTIES
   TIMEOUT 30)
 
 # A world owns the primitives it is given: a GMANLinearWorldManager destroys
-# each one with itself, and an empty gman::Owned adds nothing. See
-# tests/primitiveowners_test.cpp.
+# each one with itself, and an empty gman::Owned adds nothing. Each factory
+# returns an empty owner for a mesh with no face, and a failed request adds
+# nothing to the world, which an in-process ray-traced render with a radiosity
+# pass shows by skipping no primitive. See tests/primitiveowners_test.cpp.
 add_executable(gman_primitiveowners primitiveowners_test.cpp)
-target_link_libraries(gman_primitiveowners PRIVATE gman)
+target_link_libraries(gman_primitiveowners PRIVATE gman gman_ray gman_raster gman_internal_headers)
 
 add_test(NAME primitiveowners COMMAND gman_primitiveowners)
 set_tests_properties(primitiveowners PROPERTIES

@@ -47,9 +47,6 @@ public:
 
   virtual ~GMANObjectManager(); // default destructor
 
-  // create a new primitive object
-  virtual gman::Owned<GMANPrimitive> create(RtVoid) = 0;
-
   /*
    * Renderer Specific primitives
    *
@@ -61,8 +58,8 @@ public:
   // PointsPolygons and PointsGeneralPolygons all reach this one virtual,
   // each normalised into mesh's faces and loops by the factory that built
   // it. Every index mesh holds is valid, so an implementation need not
-  // guard against a null "P" or an empty face. Returns one primitive: the
-  // empty stub when no face survives, joined geometry otherwise.
+  // guard against a null "P" or an empty face. Returns one primitive joining
+  // every surviving face's geometry, or an empty owner when no face survives.
   virtual gman::Owned<GMANPrimitive> getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt,
                                                       GMANAttributes* attr, GMANTransform* t) = 0;
 

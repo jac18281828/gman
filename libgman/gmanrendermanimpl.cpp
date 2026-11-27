@@ -1153,7 +1153,6 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
 
   std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(nverts, dictionary, n, tokens, parms, counts);
   if (!mesh) {
-    worldManager->add(objectManager->create());
     return;
   }
 
@@ -1178,7 +1177,6 @@ RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt 
   std::optional<GMANPolygonMesh> const mesh =
       gman::generalPolygonMesh(nloops, nverts, dictionary, n, tokens, parms, counts);
   if (!mesh) {
-    worldManager->add(objectManager->create());
     return;
   }
 
@@ -1203,7 +1201,6 @@ RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt 
   std::optional<GMANPolygonMesh> const mesh =
       gman::pointsPolygonsMesh(npolys, nverts, verts, dictionary, n, tokens, parms, counts);
   if (!mesh) {
-    worldManager->add(objectManager->create());
     return;
   }
 
@@ -1228,7 +1225,6 @@ RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
   std::optional<GMANPolygonMesh> const mesh =
       gman::pointsGeneralPolygonsMesh(npolys, nloops, nverts, verts, dictionary, n, tokens, parms, counts);
   if (!mesh) {
-    worldManager->add(objectManager->create());
     return;
   }
 
@@ -1298,7 +1294,6 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
       warning("PatchMesh \"bicubic\": basis step must be >= 1 (uStep={} "
               "vStep={}); ignoring.",
               uStep, vStep);
-      worldManager->add(objectManager->create());
       return;
     }
   }
@@ -1362,8 +1357,8 @@ bool nuPatchRangeBelowCeiling(RtFloat max, RtFloat const* knot, RtInt n) { retur
 // built: order positive and no greater than its own point count,
 // non-decreasing knots, both range rules, and nu*nv*4 (the "Pw" case's own
 // float count) fitting in RtInt. Warns once naming the rule and its values
-// on the first violation and returns false; the caller adds
-// objectManager->create() and returns, RiPatchMeshV's own "ignoring" shape.
+// on the first violation and returns false; the caller returns without adding
+// anything, RiPatchMeshV's own "ignoring" shape.
 // The first violated rule decides the one warning, so the sequence below
 // -- order, overflow, knots, range -- each axis checked in turn, is part
 // of the contract, not an implementation detail free to reorder.
@@ -1445,7 +1440,6 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
   }
 
   if (!validateNuPatch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax)) {
-    worldManager->add(objectManager->create());
     return;
   }
 
@@ -1473,7 +1467,6 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
         warning("NuPatch: control point {} has non-positive \"Pw\" weight "
                 "{}; ignoring.",
                 i, w);
-        worldManager->add(objectManager->create());
         return;
       }
     }

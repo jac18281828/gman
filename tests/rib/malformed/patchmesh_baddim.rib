@@ -4,7 +4,7 @@
 ## malformation -- gman_ribmalformed.cpp's own header comment scopes that
 ## file to malformed token streams, and this parses cleanly -- so this is
 ## registered in tests/patchmesh_test.cpp instead, which asserts the
-## warn-and-create() fallback directly rather than just "does not crash".
+## warn-and-ignore fallback directly rather than just "does not crash".
 ##
 ## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 ## desync convention."

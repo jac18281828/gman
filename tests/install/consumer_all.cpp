@@ -22,17 +22,21 @@
  * Proves the three installed libraries work together from one program that
  * links gman::gman, gman::gman_ray and gman::gman_raster. It renders a
  * lit sphere to consumer_all.tif in its working directory through the C
- * interface, calls gman::oneMinus from libgman_ray and creates an object
- * through GMANPatchPolyObjectManager from libgman_raster. It returns 1 when
- * the render leaves an error in RiLastError or either call answers wrongly.
+ * interface, calls gman::oneMinus from libgman_ray and calls
+ * GMANPatchPolyObjectManager from libgman_raster. It returns 1 when the
+ * render leaves an error in RiLastError or either call answers wrongly.
  */
 
-#include <memory>
-
+#include <gman/gmanattributes.h>
 #include <gman/gmancolor.h>
+#include <gman/gmanobject.h>
+#include <gman/gmanoptions.h>
+#include <gman/gmanowned.h>
+#include <gman/gmanparameterlist.h>
 #include <gman/gmanpatchpolyobjectmanager.h>
 #include <gman/gmanprimitive.h>
 #include <gman/gmanrayoccluder.h>
+#include <gman/gmantransform.h>
 #include <gman/ri.h>
 
 namespace {
@@ -64,12 +68,15 @@ bool oneMinusInvertsOpacity() {
   return transmission.getRed() == 0.75f && transmission.getGreen() == 0.5f && transmission.getBlue() == 0.0f;
 }
 
-bool managerCreatesEmptyObject() {
+bool rasterManagerAnswers() {
   GMANPatchPolyObjectManager manager;
-  const auto primitive = std::unique_ptr<GMANPrimitive>(manager.create());
-  if (primitive == nullptr) {
+  GMANOptions options;
+  GMANAttributes attributes;
+  GMANTransform transform;
+  if (manager.getRSPoints(0, GMANParameterList(), &options, &attributes, &transform) != nullptr) {
     return false;
   }
+  gman::Owned<GMANPrimitive> const primitive = gman::make<GMANObject>();
   const auto object = dynamic_cast<GMANObject*>(primitive.get());
   return object != nullptr && object->getBody() == nullptr && object->getNext() == nullptr;
 }
@@ -77,7 +84,7 @@ bool managerCreatesEmptyObject() {
 } // namespace
 
 int main() {
-  if (!rendersWithoutError() || !oneMinusInvertsOpacity() || !managerCreatesEmptyObject()) {
+  if (!rendersWithoutError() || !oneMinusInvertsOpacity() || !rasterManagerAnswers()) {
     return 1;
   }
   return 0;

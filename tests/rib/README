@@ -130,7 +130,7 @@ unfixed validator (`n>=step` alone) this read one point past a 4-point
 `"P"` array -- `GMANBasis::offset`'s periodic wraparound is a single
 `i-=nu`, not a true modulo, and only stays in range for nu>=3 at
 step=1. Registered in `tests/patchmesh_test.cpp`, asserting the same
-warn-and-`create()` fallback as `patchmesh_baddim.rib`. A trailing
+warn-and-ignore fallback as `patchmesh_baddim.rib`. A trailing
 `Sphere` follows the desync convention. Not third-party.
 
 ## malformed/generalpolygon_short_p.rib
@@ -153,7 +153,7 @@ desync convention. Not third-party.
 
 A negative `nverts` entry: `RiGeneralPolygonV` rejects it before sizing
 the parameter list, warns naming the request and the offending value, and
-adds the empty stub to the world instead of indexing `"P"` by a negative
+adds nothing to the world instead of indexing `"P"` by a negative
 count. Registered in `tests/paramclamp_test.cpp`. A trailing `Sphere`
 follows the desync convention. Not third-party.
 
@@ -161,7 +161,7 @@ follows the desync convention. Not third-party.
 
 An empty `nverts` array -- `nloops` is its length, so this is `nloops = 0`.
 Registered in `tests/paramclamp_test.cpp`, asserting the same
-warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+warn-and-ignore fallback. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
 ## malformed/patchmesh_zero_step_basis.rib
@@ -170,7 +170,7 @@ convention. Not third-party.
 `RiBasis` takes `ustep`/`vstep` on faith, and `RiPatchMeshV`'s
 `nupatches`/`nvpatches` divide `nu`/`nv` by that step before
 `getRSPatchMesh` ever validates it. Registered in
-`tests/patchmesh_test.cpp`, asserting the same warn-and-`create()`
+`tests/patchmesh_test.cpp`, asserting the same warn-and-ignore
 fallback as `patchmesh_baddim.rib`. A trailing `Sphere` follows the
 desync convention. Not third-party.
 
@@ -292,26 +292,26 @@ follows the desync convention. Not third-party.
 ## malformed/nupatch_decreasing_knots.rib
 
 `uknot` is the declared length but not non-decreasing. Registered in
-`tests/nupatch_test.cpp`, asserting the warn-and-`create()` fallback. A
+`tests/nupatch_test.cpp`, asserting the warn-and-ignore fallback. A
 trailing `Sphere` follows the desync convention. Not third-party.
 
 ## malformed/nupatch_order_exceeds_n.rib
 
 `uorder = nu + 1`: two control points cannot support a cubic span.
 Registered in `tests/nupatch_test.cpp`, asserting the same
-warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+warn-and-ignore fallback. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
 ## malformed/nupatch_empty_range.rib
 
 `umin == umax`. Registered in `tests/nupatch_test.cpp`, asserting the
-same warn-and-`create()` fallback. A trailing `Sphere` follows the
+same warn-and-ignore fallback. A trailing `Sphere` follows the
 desync convention. Not third-party.
 
 ## malformed/nupatch_umin_below_knot.rib
 
 `umin < uknot[uorder-1]`. Registered in `tests/nupatch_test.cpp`,
-asserting the same warn-and-`create()` fallback. A trailing `Sphere`
+asserting the same warn-and-ignore fallback. A trailing `Sphere`
 follows the desync convention. Not third-party.
 
 ## malformed/nupatch_short_pw.rib
@@ -333,14 +333,14 @@ convention. Not third-party.
 
 `vorder = nv + 1`: the v twin of `nupatch_order_exceeds_n.rib`'s own u
 rule. Registered in `tests/nupatch_test.cpp`, asserting the same
-warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+warn-and-ignore fallback. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
 ## malformed/nupatch_v_decreasing_knots.rib
 
 `vknot` is the declared length but not non-decreasing: the v twin of
 `nupatch_decreasing_knots.rib`'s own u rule. Registered in
-`tests/nupatch_test.cpp`, asserting the same warn-and-`create()`
+`tests/nupatch_test.cpp`, asserting the same warn-and-ignore
 fallback. A trailing `Sphere` follows the desync convention. Not
 third-party.
 
@@ -348,27 +348,27 @@ third-party.
 
 `vmin == vmax`: the v twin of `nupatch_empty_range.rib`'s own u rule.
 Registered in `tests/nupatch_test.cpp`, asserting the same
-warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+warn-and-ignore fallback. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
 ## malformed/nupatch_vmin_below_knot.rib
 
 `vmin < vknot[vorder-1]`: the v twin of `nupatch_umin_below_knot.rib`'s
 own u rule. Registered in `tests/nupatch_test.cpp`, asserting the same
-warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+warn-and-ignore fallback. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
 ## malformed/nupatch_vmax_above_knot.rib
 
 `vmax > vknot[nv]`, the v twin of `nupatch_umax_above_knot.rib`'s own u
 rule. Registered in `tests/nupatch_test.cpp`, asserting the same
-warn-and-`create()` fallback. A trailing `Sphere` follows the desync
+warn-and-ignore fallback. A trailing `Sphere` follows the desync
 convention. Not third-party.
 
 ## malformed/nupatch_umax_above_knot.rib
 
 `umax > uknot[nu]`: the third u range rule. Registered in
-`tests/nupatch_test.cpp`, asserting the same warn-and-`create()`
+`tests/nupatch_test.cpp`, asserting the same warn-and-ignore
 fallback. A trailing `Sphere` follows the desync convention. Not
 third-party.
 

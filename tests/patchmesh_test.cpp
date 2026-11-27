@@ -33,7 +33,7 @@
  *    wrong sub-patch index that a plausible-looking render would not.
  *  - Render-level: each tests/rib/patchmesh_*.rib fixture rendered and
  *    read back, region content compared against what its own control net
- *    implies. Reverting getRSPatchMesh to `return create();` fails every
+ *    implies. Reverting getRSPatchMesh to `return nullptr;` fails every
  *    "PatchMesh renders" assertion below while each fixture's control
  *    Sphere stays green, isolating the failure to PatchMesh.
  */
@@ -263,10 +263,8 @@ void testNonperiodicBicubicZeroStepRejected() {
 
   auto prim = mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken)RI_NONPERIODIC, 3, (RtToken)RI_PERIODIC, pl, &options,
                                  &attr, &transform);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
-  check(object != nullptr && object->getVert() == nullptr,
-        "bicubic PatchMesh, nonperiodic ustep=0: getRSPatchMesh rejects "
-        "the mesh instead of dividing by zero");
+  check(prim == nullptr, "bicubic PatchMesh, nonperiodic ustep=0: getRSPatchMesh rejects "
+                         "the mesh with an empty owner instead of dividing by zero");
 }
 
 // ---- render-level: each fixture rasterizes, reverting getRSPatchMesh
@@ -307,8 +305,8 @@ void checkFixtureRenders(const std::string& gman, const std::string& ribDir, con
 }
 
 // The malformed-fixture mirror of checkFixtureRenders: a mesh dimension
-// (or basis step) getRSPatchMesh rejects must warn and fall back to
-// create() rather than crash, leaving the left half blank while the
+// (or basis step) getRSPatchMesh rejects must warn and add nothing to the
+// world rather than crash, leaving the left half blank while the
 // control Sphere still renders on the right -- isolating the fallback to
 // PatchMesh rather than the renderer as a whole. `why` names the specific
 // dimension or step that trips the rejection.
@@ -356,18 +354,18 @@ int main(int argc, char* argv[]) {
   checkFixtureRenders(gman, ribDir, "patchmesh_bspline_periodic");
   checkFixtureFallsBack(gman, ribDir, "patchmesh_baddim",
                         "nu=5 fails the Bezier step's alignment, so "
-                        "getRSPatchMesh warns and falls back to create()");
+                        "getRSPatchMesh warns and ignores the request");
   // A step=1 basis's periodic axis has a tighter safety floor than
   // n>=step alone; nu=1 falls below it.
   checkFixtureFallsBack(gman, ribDir, "patchmesh_bspline_periodic_baddim",
                         "nu=1 is below a step=1 basis's periodic safety "
-                        "floor, so getRSPatchMesh warns and falls back to "
-                        "create()");
+                        "floor, so getRSPatchMesh warns and ignores the "
+                        "request");
   // A zero-step basis reaches RiPatchMeshV's nupatches/nvpatches division
   // before getRSPatchMesh's own validation runs.
   checkFixtureFallsBack(gman, ribDir, "patchmesh_zero_step_basis",
-                        "a zero basis step warns and falls back to "
-                        "create()");
+                        "a zero basis step warns and ignores the "
+                        "request");
 
   return checkSummary("PatchMesh bilinear and bicubic both rasterize");
 }

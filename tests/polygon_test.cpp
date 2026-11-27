@@ -65,7 +65,7 @@
  *     polygon_concave_multi, polygon_collinear all go red) while the
  *     convex pentagon assertions stay green -- the fan is correct for
  *     convex input, wrong only for concave.
- *   - Reverting to a bare create() instead: the pentagon fixture renders
+ *   - Reverting to a bare `return nullptr;` instead: the pentagon fixture renders
  *     pure background, failing every coverage and color assertion.
  *   - Reverting the factory's own parameter-list sizing to the literal
  *     4, 4: a heap over-read in getRSPolygonMesh reading "P" back out of

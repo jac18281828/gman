@@ -48,8 +48,6 @@ public:
 
   ~GMANPatchPolyObjectManager(); // default destructor
 
-  virtual gman::Owned<GMANPrimitive> create(RtVoid);
-
   /*
    * Renderer Specific primitives
    *

@@ -1082,8 +1082,6 @@ GMANPatchPolyObjectManager::GMANPatchPolyObjectManager() : GMANObjectManager() {
 // default destructor
 GMANPatchPolyObjectManager::~GMANPatchPolyObjectManager() {};
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::create(RtVoid) { return gman::make<GMANObject>(); }
-
 // One call for every polygon request: the mesh guarantees a non-null "P"
 // and at least one loop per face, so this reads straight through to
 // buildFace/appendFace over each of the mesh's own faces and loops.
@@ -1130,7 +1128,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPolygonMesh(GMANPoly
   }
 
   if (!bodyHead) {
-    return create();
+    return nullptr;
   }
   auto object = gman::make<GMANObject>();
   object->setBody(bodyHead);
@@ -1142,7 +1140,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatch(RtToken type, 
                                                                   GMANAttributes* attr, GMANTransform* t) {
   RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
-    return create();
+    return nullptr;
   }
 
   GMANTextureCoordinates corners = gman::resolveParametricCorners(pl, *attr);
@@ -1155,7 +1153,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatch(RtToken type, 
     GMANPatch patch(type, p, basis, pl);
     return createParametric(&patch, t, attr, corners, opt);
   }
-  return create();
+  return nullptr;
 };
 
 // Passes kIdentityCorners to createParametric rather than resolving
@@ -1170,7 +1168,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatchMesh(RtToken ty
                                                                       GMANTransform* t) {
   RtFloat* p = gman::floatArray(pl, RI_P);
   if (!p) {
-    return create();
+    return nullptr;
   }
 
   if (strcmp(type, RI_BILINEAR) == 0) {
@@ -1178,7 +1176,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatchMesh(RtToken ty
       warning("PatchMesh \"bilinear\": nu={} nv={} cannot form a patch; "
               "ignoring.",
               nu, nv);
-      return create();
+      return nullptr;
     }
     GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, pl);
     return createParametric(&mesh, t, attr, kIdentityCorners, opt);
@@ -1192,12 +1190,12 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatchMesh(RtToken ty
       warning("PatchMesh \"bicubic\": nu={} nv={} does not align to the "
               "current basis step; ignoring.",
               nu, nv);
-      return create();
+      return nullptr;
     }
     GMANPatchMesh mesh(type, p, nu, uwrap, nv, vwrap, basis, pl);
     return createParametric(&mesh, t, attr, kIdentityCorners, opt);
   }
-  return create();
+  return nullptr;
 };
 
 // kIdentityCorners stands in for resolveParametricCorners here, as it does
@@ -1214,7 +1212,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSNuPatch(RtInt nu, Rt
   bool rational = pw != NULL;
   RtFloat* p = rational ? pw : gman::floatArray(pl, RI_P);
   if (!p) {
-    return create();
+    return nullptr;
   }
 
   GMANNuPatch patch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, p, rational, pl);
@@ -1278,20 +1276,20 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSBlobby(RtInt /*nleaf
                                                                    RtToken /*str*/[], GMANParameterList /*pl*/,
                                                                    GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
                                                                    GMANTransform* /*t*/) {
-  return create();
+  return nullptr;
 };
 
 gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPoints(RtInt /*npoints*/, GMANParameterList /*pl*/,
                                                                    GMANOptions* /*opt*/, GMANAttributes* /*attr*/,
                                                                    GMANTransform* /*t*/) {
-  return create();
+  return nullptr;
 };
 
 gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSCurves(RtToken /*type*/, RtInt /*ncurves*/,
                                                                    RtInt /*nvertices*/[], RtToken /*wrap*/,
                                                                    GMANParameterList /*pl*/, GMANOptions* /*opt*/,
                                                                    GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+  return nullptr;
 };
 
 gman::Owned<GMANPrimitive>
@@ -1299,7 +1297,7 @@ GMANPatchPolyObjectManager::getRSSubdivisionMesh(RtToken /*mask*/, RtInt /*nf*/,
                                                  RtInt /*ntags*/, RtToken /*tags*/[], RtInt /*numargs*/[],
                                                  RtInt /*intargs*/[], RtFloat /*floatargs*/[], GMANParameterList /*pl*/,
                                                  GMANOptions* /*opt*/, GMANAttributes* /*attr*/, GMANTransform* /*t*/) {
-  return create();
+  return nullptr;
 };
 
 gman::Owned<GMANObject> GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMANTransform* t,

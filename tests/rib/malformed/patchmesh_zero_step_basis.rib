@@ -2,7 +2,7 @@
 ## and RiPatchMeshV's nupatches/nvpatches divide nu/nv by that step before
 ## getRSPatchMesh ever validates it -- a zero step reaches that division
 ## directly. Registered in tests/patchmesh_test.cpp, asserting the same
-## warn-and-create() fallback as patchmesh_baddim.rib, run under the debug
+## warn-and-ignore fallback as patchmesh_baddim.rib, run under the debug
 ## preset (UBSan) to confirm the division is guarded rather than reached.
 ##
 ## A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The

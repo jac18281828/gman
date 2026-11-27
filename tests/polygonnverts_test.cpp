@@ -20,8 +20,8 @@
 
 /*
  * The counts-aware RiPolygonV rejects a negative or overflowing nverts,
- * with or without a "P" parameter, warning once and adding the empty stub
- * rather than throwing, corrupting memory or dropping the request
+ * with or without a "P" parameter, warning once and adding nothing to the
+ * world rather than throwing, corrupting memory or dropping the request
  * silently.
  */
 

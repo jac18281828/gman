@@ -1,6 +1,6 @@
 # nloops [0]: RiPointsGeneralPolygonsV rejects an nloops entry below 1
 # before sizing the parameter list, warns naming the request and the
-# offending value, and adds the empty stub to the world. "P" holds one point
+# offending value, and adds nothing to the world. "P" holds one point
 # so the request's own rule fires: an empty "P" is a shorter array than the
 # declaration, which stops the file first.
 #

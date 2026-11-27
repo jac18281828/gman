@@ -1,6 +1,6 @@
 # verts carries a -1: RiPointsPolygonsV rejects a negative verts entry
 # before ever indexing "P" with it, warns naming the request and the
-# offending value, and adds the empty stub to the world.
+# offending value, and adds nothing to the world.
 #
 # A trailing Sphere follows AGENTS.md's "RIB authoring" section, "The
 # desync convention."

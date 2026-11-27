@@ -21,18 +21,36 @@
 /*
  * A world owns the primitives it is given. A GMANLinearWorldManager destroys
  * each primitive added to it when the world itself goes, and an empty
- * gman::Owned adds nothing.
+ * gman::Owned adds nothing. Each factory returns an empty owner for a mesh
+ * with no face, and a request that yields no geometry adds nothing to the
+ * world: a render's radiosity pass counts no primitive it could not dice.
  */
 
 #include <cstddef>
+#include <cstdio>
+#include <fstream>
+#include <optional>
+#include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
 #include "check.h"
+#include "gmanattributes.h"
+#include "gmandictionary.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanlog.h"
+#include "gmanoptions.h"
 #include "gmanowned.h"
+#include "gmanpatchpolyobjectmanager.h"
+#include "gmanpolygonmesh.h"
+#include "gmanpolygonmeshfactory.h"
 #include "gmanprimitive.h"
+#include "gmanrayobjectmanager.h"
+#include "gmanrendermanimpl.h"
+#include "gmantransform.h"
 #include "gmanworldmanager.h"
+#include "ri.h"
 
 namespace {
 
@@ -84,11 +102,107 @@ void testEmptyOwnerAddsNothing() {
   check(walked.size() == 1 && walked[0] == added, "an empty owner adds nothing: the walk yields only the primitive");
 }
 
+// A mesh of four collinear points, which no face survives, handed to manager.
+template <typename Manager> gman::Owned<GMANPrimitive> collinearMeshRequest(Manager& manager) {
+  std::vector<RtFloat> p = {0, 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0};
+  GMANDictionary dictionary;
+  RtToken tokens[1] = {RI_P};
+  RtPointer parms[1] = {p.data()};
+  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(4, dictionary, 1, tokens, parms, nullptr);
+  check(mesh.has_value(), "the factory builds a mesh of four collinear points");
+  if (!mesh.has_value()) {
+    return nullptr;
+  }
+  GMANOptions options;
+  GMANAttributes attr;
+  GMANTransform transform;
+  return manager.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+}
+
+void testFactoriesReturnEmptyOwnerForNoFace() {
+  GMANRayObjectManager rayManager;
+  GMANPatchPolyObjectManager rasterManager;
+  auto rayPrimitive = collinearMeshRequest(rayManager);
+  auto rasterPrimitive = collinearMeshRequest(rasterManager);
+  check(rayPrimitive == nullptr, "the ray factory returns an empty owner for a mesh with no face");
+  check(rasterPrimitive == nullptr, "the raster factory returns an empty owner for a mesh with no face");
+
+  GMANLinearWorldManager world;
+  world.add(std::move(rayPrimitive));
+  world.add(std::move(rasterPrimitive));
+  check(world.getFirst() == nullptr, "a world handed each empty owner holds nothing");
+}
+
+std::string readFile(std::string const& path) {
+  std::ifstream in(path, std::ios::binary);
+  std::ostringstream contents;
+  contents << in.rdbuf();
+  return contents.str();
+}
+
+template <typename Fn> std::string captureLog(std::string const& path, Fn&& fn) {
+  std::remove(path.c_str());
+  setLogFile(path.c_str());
+  setScreenOutput(false);
+
+  fn();
+
+  setLogFile("/dev/null");
+  setScreenOutput(true);
+  return readFile(path);
+}
+
+void renderFailedRequestScene() {
+  GMANRenderManImpl renderMan;
+  renderMan.RiBegin("gmanraytracer");
+
+  char radiosity[] = "radiosity";
+  char* indirect = radiosity;
+  RtToken optionTokens[1] = {"string indirect"};
+  RtPointer optionParms[1] = {&indirect};
+  renderMan.RiOptionV("render", 1, optionTokens, optionParms);
+
+  renderMan.RiFormat(8, 8, 1.0f);
+  char displayName[] = "primitiveowners_failedrequest.tif";
+  renderMan.RiDisplayV(displayName, RI_FILE, RI_RGBA, 0, nullptr, nullptr);
+  renderMan.RiWorldBegin();
+
+  RtFloat intensity = 20.0f;
+  RtFloat from[3] = {2.0f, 2.0f, 2.0f};
+  RtToken lightTokens[2] = {"intensity", "from"};
+  RtPointer lightParms[2] = {&intensity, from};
+  renderMan.RiLightSourceV("pointlight", 2, lightTokens, lightParms);
+
+  RtFloat collinear[9] = {-1, -1, 0, 0, 0, 0, 1, 1, 0};
+  RtToken polygonTokens[1] = {RI_P};
+  RtPointer polygonParms[1] = {collinear};
+  renderMan.RiPolygonV(3, 1, polygonTokens, polygonParms, nullptr);
+
+  RtInt nverts[2] = {4, -1};
+  RtFloat square[12] = {-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0};
+  RtPointer generalParms[1] = {square};
+  renderMan.RiGeneralPolygonV(2, nverts, 1, polygonTokens, generalParms, nullptr);
+
+  renderMan.RiSphereV(1.0f, -1.0f, 1.0f, 360.0f, 0, nullptr, nullptr);
+  renderMan.RiWorldEnd();
+  renderMan.RiEnd();
+}
+
+void testFailedRequestAddsNothing() {
+  std::string const log = captureLog("primitiveowners_failedrequest.log", renderFailedRequestScene);
+  check(log.find("GeneralPolygon: nverts[1] = -1 is negative; ignoring.") != std::string::npos,
+        "a failed request warns: the log holds the negative-nverts message");
+  check(log.find("could not be diced") == std::string::npos,
+        "a failed request adds nothing: the radiosity pass skips no primitive");
+}
+
 } // namespace
 
 int main() {
   testWorldDestroysWhatItOwns();
   testEmptyOwnerAddsNothing();
+  testFactoriesReturnEmptyOwnerForNoFace();
+  testFailedRequestAddsNothing();
 
-  return checkSummary("the world owns what it is given");
+  return checkSummary("the world owns what it is given and a failed request adds nothing");
 }

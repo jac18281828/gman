@@ -22,22 +22,32 @@
  * Proves an installed gman_raster links from its own CMake package with no
  * other gman target on the link line: <gman/gmanpatchpolyobjectmanager.h>
  * resolves through gman::gman_raster's include path, and
- * GMANPatchPolyObjectManager::create, defined in libgman_raster, returns a
- * GMANObject through libgman's GMANPrimitive interface. The include
- * directory, the core link and the C++ standard all reach this program
- * through gman::gman_raster's public dependency on gman::gman.
+ * GMANPatchPolyObjectManager::getRSPoints, defined in libgman_raster, answers
+ * a request that builds nothing with an empty owner, while a GMANObject
+ * answers through libgman's GMANPrimitive interface. The include directory,
+ * the core link and the C++ standard all reach this program through
+ * gman::gman_raster's public dependency on gman::gman.
  */
 
+#include <gman/gmanattributes.h>
+#include <gman/gmanobject.h>
+#include <gman/gmanoptions.h>
+#include <gman/gmanowned.h>
+#include <gman/gmanparameterlist.h>
 #include <gman/gmanpatchpolyobjectmanager.h>
 #include <gman/gmanprimitive.h>
+#include <gman/gmantransform.h>
 
 int main() {
   GMANPatchPolyObjectManager manager;
-  auto const primitive = manager.create();
-  if (primitive == nullptr) {
+  GMANOptions options;
+  GMANAttributes attributes;
+  GMANTransform transform;
+  if (manager.getRSPoints(0, GMANParameterList(), &options, &attributes, &transform) != nullptr) {
     return 1;
   }
 
+  gman::Owned<GMANPrimitive> const primitive = gman::make<GMANObject>();
   GMANObject* const object = dynamic_cast<GMANObject*>(primitive.get());
   const bool isEmptyObject = object != nullptr && object->getBody() == nullptr && object->getNext() == nullptr;
   return isEmptyObject ? 0 : 1;

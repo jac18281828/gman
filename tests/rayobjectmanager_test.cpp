@@ -45,9 +45,7 @@ bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a -
 // getRSSphere ignores opt, so it is null here; attr is a default-constructed
 // GMANAttributes, as polygon_test.cpp passes, since getRSSphere resolves
 // it into the sphere's appearance. Casts to GMANRaySphere rather than
-// GMANRayPrimitive: the base's own bare create() also satisfies a
-// GMANRayPrimitive cast, so that cast alone cannot distinguish a real
-// GMANRaySphere from one.
+// GMANRayPrimitive, so a primitive of any other kind returns an empty owner.
 gman::Owned<GMANRaySphere> buildSphere(GMANRayObjectManager& manager, RtFloat radius, RtFloat zmin, RtFloat zmax,
                                        RtFloat tmax, GMANTransform& transform) {
   GMANAttributes attr;
