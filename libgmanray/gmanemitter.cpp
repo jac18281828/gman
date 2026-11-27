@@ -936,13 +936,13 @@ std::optional<EmitterDraw> drawMeshPoint(GMANRayPolygonMesh const& mesh, RtFloat
   if (!std::isfinite(total) || !(total > 0.0)) {
     return std::nullopt;
   }
-  auto const faceAreaAt = [&mesh](std::size_t f) { return faceArea(mesh.getFace(f)); };
+  const auto faceAreaAt = [&mesh](std::size_t f) { return faceArea(mesh.getFace(f)); };
   const auto facePick = pickByWeight(mesh.getFaceCount(), total, u1, faceAreaAt);
   if (!facePick) {
     return std::nullopt;
   }
   auto const& face = mesh.getFace(facePick->index);
-  auto const fanAreaAt = [&face](std::size_t t) { return fanTriangleArea(face, t + 1); };
+  const auto fanAreaAt = [&face](std::size_t t) { return fanTriangleArea(face, t + 1); };
   auto const& loop = face.getOuterLoop();
   const auto trianglePick = pickByWeight(loop.size() - 2, faceArea(face), facePick->fraction, fanAreaAt);
   if (!trianglePick) {
@@ -1131,7 +1131,7 @@ RtFloat areaPdf(Emitter const& emitter, GMANNormal const& hitNormal, RtFloat dis
   }
   auto const& objectToCamera = *placement;
 
-  auto area = 0.0f;
+  auto area = RtFloat{0.0f};
   emittingShapeArea(*emitter.shape, area);
 
   // hitPoint's own object-space normal, recovered by the inverse of the
@@ -1219,7 +1219,7 @@ std::optional<RtFloat> areaEmitterPower(GMANRayPrimitive const& shape, GMANLight
                                },
                                [](std::monostate) -> std::optional<RtFloat> { return std::nullopt; },
                                [&shape, radiance](auto const*) -> std::optional<RtFloat> {
-                                 auto area = 0.0f;
+                                 auto area = RtFloat{0.0f};
                                  if (!emittingShapeArea(shape, area)) {
                                    return std::nullopt;
                                  }
@@ -1379,7 +1379,7 @@ RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p) {
   }
 
   GMANPoint centre;
-  auto radius = 0.0f;
+  auto radius = RtFloat{0.0f};
   if (!emittingShapeCentreAndRadius(*emitter.shape, centre, radius)) {
     return 0.0f;
   }
