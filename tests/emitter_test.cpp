@@ -893,10 +893,13 @@ void testSamplePointDelta() {
 // illuminates the same primitive.
 void testAppearanceExcludesAreaLight() {
   GMANAttributes attributes;
-  const auto areaLight = new GMANLight(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
-  RtLightHandle const areaHandle = gmanLightSourceMgr().add(areaLight);
-  const auto pointLight = new GMANLight(GMAN_LIGHT_POINT, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
-  RtLightHandle const pointHandle = gmanLightSourceMgr().add(pointLight);
+  auto areaLightOwner = gman::make<GMANLight>(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
+  auto* const areaLight = areaLightOwner.get();
+  RtLightHandle const areaHandle = gmanLightSourceMgr().add(std::move(areaLightOwner));
+  auto pointLightOwner =
+      gman::make<GMANLight>(GMAN_LIGHT_POINT, GMANColor(2.0f, 2.0f, 2.0f), GMANPoint(), GMANVector());
+  auto* const pointLight = pointLightOwner.get();
+  RtLightHandle const pointHandle = gmanLightSourceMgr().add(std::move(pointLightOwner));
 
   attributes.setIlluminate(areaHandle, RI_TRUE);
   attributes.setAreaLight(areaHandle);

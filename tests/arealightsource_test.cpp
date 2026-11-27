@@ -40,11 +40,13 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlog.h"
+#include "gmanowned.h"
 #include "gmanrendermanimpl.h"
 #include "gmanribparse.h"
 #include "gmanshading.h"
@@ -204,8 +206,8 @@ void testUnknownNameLeavesPriorLightCurrent() {
   openWorld(renderMan, displayName);
   renderMan.RiAttributeBegin();
 
-  const auto priorLight = new GMANLight(GMAN_LIGHT_AREA, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(), GMANVector());
-  RtLightHandle const priorHandle = gmanLightSourceMgr().add(priorLight);
+  auto priorLight = gman::make<GMANLight>(GMAN_LIGHT_AREA, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(), GMANVector());
+  RtLightHandle const priorHandle = gmanLightSourceMgr().add(std::move(priorLight));
   renderMan.attributes().setIlluminate(priorHandle, RI_TRUE);
   renderMan.attributes().setAreaLight(priorHandle);
 

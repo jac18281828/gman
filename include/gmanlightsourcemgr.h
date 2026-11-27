@@ -32,6 +32,7 @@
 
 #include "gman/export.h"
 #include "gmancolor.h"
+#include "gmanowned.h"
 #include "gmanpoint.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -93,7 +94,7 @@ public:
 
 class GMANLightSourceMgr {
 private:
-  std::map<RtLightHandle, GMANLight*> lights;
+  std::map<RtLightHandle, gman::Owned<GMANLight>> lights;
   // RtLightHandle is RtPointer (void*); a plain counter, cast to
   // RtLightHandle at handout, is simpler than allocating an object per
   // handle just to have a unique address.
@@ -105,8 +106,9 @@ public:
   ~GMANLightSourceMgr(); // default destructor
 
   // Takes ownership of light; returns the handle RiLightSourceV hands back
-  // to the caller and RiIlluminate later toggles.
-  RtLightHandle add(GMANLight* light);
+  // to the caller and RiIlluminate later toggles. An empty owner stores
+  // nothing and returns the null handle, (RtLightHandle)0.
+  RtLightHandle add(gman::Owned<GMANLight> light);
 
   // NULL if h names no light this manager holds.
   const GMANLight* get(RtLightHandle h) const;

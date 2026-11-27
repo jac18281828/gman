@@ -30,9 +30,11 @@
 #include <cstdint>
 #include <list>
 #include <map>
+#include <utility>
 
 #include "gmancolor.h"
 #include "gmanlightsourcemgr.h"
+#include "gmanowned.h"
 #include "gmanpoint.h"
 #include "gmanslapi.h"
 #include "gmanvector.h"
@@ -127,28 +129,27 @@ RtVoid GMANLight::sample(const GMANPoint& p, GMANVector& l, GMANColor& lightCl) 
 GMANLightSourceMgr::GMANLightSourceMgr() : nextHandle(1) {};
 
 // default destructor
-GMANLightSourceMgr::~GMANLightSourceMgr() {
-  for (std::map<RtLightHandle, GMANLight*>::iterator it = lights.begin(); it != lights.end(); ++it) {
-    delete it->second;
-  }
-};
+GMANLightSourceMgr::~GMANLightSourceMgr() {};
 
-RtLightHandle GMANLightSourceMgr::add(GMANLight* light) {
+RtLightHandle GMANLightSourceMgr::add(gman::Owned<GMANLight> light) {
+  if (!light) {
+    return (RtLightHandle)0;
+  }
   // RtLightHandle is RtPointer; go through uintptr_t rather than casting
   // an int straight to a pointer -- the same integer<->pointer-width
   // mismatch class also affects RiObjectInstance/RiIlluminate.
   RtLightHandle h = (RtLightHandle)(std::uintptr_t)nextHandle;
-  lights[h] = light;
+  lights[h] = std::move(light);
   ++nextHandle;
   return h;
 }
 
 const GMANLight* GMANLightSourceMgr::get(RtLightHandle h) const {
-  std::map<RtLightHandle, GMANLight*>::const_iterator it = lights.find(h);
+  auto const it = lights.find(h);
   if (it == lights.end()) {
     return NULL;
   }
-  return it->second;
+  return it->second.get();
 }
 
 GMANLightSourceMgr& gmanLightSourceMgr(RtVoid) {

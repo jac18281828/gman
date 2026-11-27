@@ -24,7 +24,8 @@
  * gman::Owned adds nothing. Each factory returns an empty owner for a mesh
  * with no face, and a request that yields no geometry adds nothing to the
  * world: a render's radiosity pass counts no primitive it could not dice. A
- * NuPatch the ray factory drops warns once per world.
+ * NuPatch the ray factory drops warns once per world. The light manager owns
+ * its lights the same way, and an empty owner stores no light.
  */
 
 #include <cstddef>
@@ -38,18 +39,22 @@
 
 #include "check.h"
 #include "gmanattributes.h"
+#include "gmancolor.h"
 #include "gmandictionary.h"
+#include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
 #include "gmanpatchpolyobjectmanager.h"
+#include "gmanpoint.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanprimitive.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanrendermanimpl.h"
 #include "gmantransform.h"
+#include "gmanvector.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
 
@@ -228,6 +233,19 @@ void testNuPatchWarnsOncePerWorld() {
                         " times for two requests");
 }
 
+void testLightManagerOwnsItsLights() {
+  GMANLightSourceMgr& lights = gmanLightSourceMgr();
+  RtLightHandle const dropped = lights.add(gman::Owned<GMANLight>());
+  check(dropped == (RtLightHandle)0, "an empty owner added to the light manager returns the null handle");
+  check(lights.get(dropped) == nullptr, "the null handle resolves to no light");
+
+  auto light = gman::make<GMANLight>(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector());
+  GMANLight const* const added = light.get();
+  RtLightHandle const handle = lights.add(std::move(light));
+  check(handle != (RtLightHandle)0 && lights.get(handle) == added,
+        "a light built with gman::make resolves through the handle add returns");
+}
+
 } // namespace
 
 int main() {
@@ -236,7 +254,8 @@ int main() {
   testFactoriesReturnEmptyOwnerForNoFace();
   testFailedRequestAddsNothing();
   testNuPatchWarnsOncePerWorld();
+  testLightManagerOwnsItsLights();
 
-  return checkSummary(
-      "the world owns what it is given, a failed request adds nothing and a dropped NuPatch warns once");
+  return checkSummary("the world and the light manager own what they are given, a failed request adds nothing and a "
+                      "dropped NuPatch warns once");
 }

@@ -61,6 +61,7 @@
 #include "gmanoptions.h"
 #include "gmanoutput.h"
 #include "gmanoutputx11.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpixelsamples.h"
 #include "gmanpoint.h"
@@ -864,8 +865,8 @@ RtLightHandle GMANRenderManImpl::RiLightSourceV(RtToken name, RtInt n, RtToken t
     return (RtLightHandle)0;
   }
 
-  GMANLight* light = new GMANLight(type, cl, position, direction, coneAngle, coneDeltaAngle, beamDistribution);
-  RtLightHandle handle = gmanLightSourceMgr().add(light);
+  auto light = gman::make<GMANLight>(type, cl, position, direction, coneAngle, coneDeltaAngle, beamDistribution);
+  RtLightHandle handle = gmanLightSourceMgr().add(std::move(light));
 
   // Per the RISpec: a light is active in the current graphics state the
   // instant it is declared, as if RiIlluminate(handle, RI_TRUE) had just
@@ -897,8 +898,8 @@ RtLightHandle GMANRenderManImpl::RiAreaLightSourceV(RtToken name, RtInt n, RtTok
   // No position, direction or cone parameters: a sphere or disk emitter's
   // placement comes from its own geometry, so this light's position and
   // direction stay at GMANLight's own defaults, unused.
-  const auto light = new GMANLight(GMAN_LIGHT_AREA, cl, GMANPoint(0.0, 0.0, 0.0), GMANVector(0.0, 0.0, 1.0));
-  RtLightHandle handle = gmanLightSourceMgr().add(light);
+  auto light = gman::make<GMANLight>(GMAN_LIGHT_AREA, cl, GMANPoint(0.0, 0.0, 0.0), GMANVector(0.0, 0.0, 1.0));
+  RtLightHandle handle = gmanLightSourceMgr().add(std::move(light));
 
   // Active the instant it is declared, exactly as RiLightSourceV's own
   // handle is: getAttributes().getLightList() already gives RiIlluminate
