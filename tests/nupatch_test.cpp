@@ -460,16 +460,16 @@ void testMalformedFixtures(std::string const& gman, std::string const& malformed
 // warning, not silently. The render runs in a directory of its own, so the
 // ray-traced image never overwrites the golden comparison's nupatch_bilinear.tif.
 void testRayTracerWarnsOnceForNuPatch(std::string const& gman, std::string const& ribDir) {
-  std::string const workingDirectory = "nupatch_raytracer";
+  const std::string workingDirectory = "nupatch_raytracer";
   mkdir(workingDirectory.c_str(), 0755);
 
   GMANRunOptions options;
   options.workingDirectory = workingDirectory;
   options.timeoutSeconds = 10;
-  GMANRunResult const r = ::runGman(gman, {"-r", "gmanraytracer", ribDir + "/nupatch_bilinear.rib"}, options);
+  const auto r = ::runGman(gman, {"-r", "gmanraytracer", ribDir + "/nupatch_bilinear.rib"}, options);
   check(!r.timedOut && !r.crashed && r.exitStatus == 0, "nupatch_bilinear.rib under gmanraytracer exits 0");
 
-  std::string const text = "NuPatch: the ray and path tracers cannot render a NuPatch; ignoring.";
+  const std::string text = "NuPatch: the ray and path tracers cannot render a NuPatch; ignoring.";
   std::size_t count = 0;
   for (std::size_t at = r.output.find(text); at != std::string::npos; at = r.output.find(text, at + text.size())) {
     ++count;

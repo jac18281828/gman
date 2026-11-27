@@ -101,10 +101,10 @@ void testEmptyOwnerAddsNothing() {
   GMANLinearWorldManager world;
   world.add(gman::Owned<GMANPrimitive>());
   auto primitive = gman::make<CountedPrimitive>();
-  GMANPrimitive const* const added = primitive.get();
+  auto const* const added = static_cast<GMANPrimitive const*>(primitive.get());
   world.add(std::move(primitive));
 
-  std::vector<GMANPrimitive const*> const walked = walk(world);
+  const auto walked = walk(world);
   check(walked.size() == 1 && walked[0] == added, "an empty owner adds nothing: the walk yields only the primitive");
 }
 
@@ -114,7 +114,7 @@ template <typename Manager> gman::Owned<GMANPrimitive> collinearMeshRequest(Mana
   GMANDictionary dictionary;
   RtToken tokens[1] = {RI_P};
   RtPointer parms[1] = {p.data()};
-  std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(4, dictionary, 1, tokens, parms, nullptr);
+  const auto mesh = gman::polygonMesh(4, dictionary, 1, tokens, parms, nullptr);
   check(mesh.has_value(), "the factory builds a mesh of four collinear points");
   if (!mesh.has_value()) {
     return nullptr;
@@ -197,7 +197,7 @@ void renderFailedRequestScene() {
 }
 
 void testFailedRequestAddsNothing() {
-  std::string const log = captureLog("primitiveowners_failedrequest.log", renderFailedRequestScene);
+  const auto log = captureLog("primitiveowners_failedrequest.log", renderFailedRequestScene);
   check(log.find("GeneralPolygon: nverts[1] = -1 is negative; ignoring.") != std::string::npos,
         "a failed request warns: the log holds the negative-nverts message");
   check(log.find("could not be diced") == std::string::npos,
@@ -209,7 +209,7 @@ void renderTwoNuPatchesScene() {
   beginRayTracerScene(renderMan, "primitiveowners_nupatch.tif");
   renderMan.RiWorldBegin();
 
-  RtInt const order = 2;
+  const RtInt order = 2;
   RtFloat knots[4] = {0, 0, 1, 1};
   RtFloat controlPoints[12] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.4f, 0.2f, -0.4f, 0.5f, -0.1f, 0.5f, 0.5f, 0.3f};
   RtToken tokens[1] = {RI_P};
@@ -223,8 +223,8 @@ void renderTwoNuPatchesScene() {
 }
 
 void testNuPatchWarnsOncePerWorld() {
-  std::string const log = captureLog("primitiveowners_nupatch.log", renderTwoNuPatchesScene);
-  std::string const text = "NuPatch: the ray and path tracers cannot render a NuPatch; ignoring.";
+  const auto log = captureLog("primitiveowners_nupatch.log", renderTwoNuPatchesScene);
+  const std::string text = "NuPatch: the ray and path tracers cannot render a NuPatch; ignoring.";
   std::size_t count = 0;
   for (std::size_t at = log.find(text); at != std::string::npos; at = log.find(text, at + text.size())) {
     ++count;
@@ -234,14 +234,14 @@ void testNuPatchWarnsOncePerWorld() {
 }
 
 void testLightManagerOwnsItsLights() {
-  GMANLightSourceMgr& lights = gmanLightSourceMgr();
-  RtLightHandle const dropped = lights.add(gman::Owned<GMANLight>());
+  auto& lights = gmanLightSourceMgr();
+  const auto dropped = lights.add(gman::Owned<GMANLight>());
   check(dropped == (RtLightHandle)0, "an empty owner added to the light manager returns the null handle");
   check(lights.get(dropped) == nullptr, "the null handle resolves to no light");
 
   auto light = gman::make<GMANLight>(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector());
-  GMANLight const* const added = light.get();
-  RtLightHandle const handle = lights.add(std::move(light));
+  auto const* const added = light.get();
+  const auto handle = lights.add(std::move(light));
   check(handle != (RtLightHandle)0 && lights.get(handle) == added,
         "a light built with gman::make resolves through the handle add returns");
 }

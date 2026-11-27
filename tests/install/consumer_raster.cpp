@@ -47,7 +47,7 @@ int main() {
     return 1;
   }
 
-  gman::Owned<GMANPrimitive> const primitive = gman::make<GMANObject>();
+  const gman::Owned<GMANPrimitive> primitive = gman::make<GMANObject>();
   GMANObject* const object = dynamic_cast<GMANObject*>(primitive.get());
   const bool isEmptyObject = object != nullptr && object->getBody() == nullptr && object->getNext() == nullptr;
   return isEmptyObject ? 0 : 1;

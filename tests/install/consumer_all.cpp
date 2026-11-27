@@ -76,7 +76,7 @@ bool rasterManagerAnswers() {
   if (manager.getRSPoints(0, GMANParameterList(), options, attributes, transform) != nullptr) {
     return false;
   }
-  gman::Owned<GMANPrimitive> const primitive = gman::make<GMANObject>();
+  const gman::Owned<GMANPrimitive> primitive = gman::make<GMANObject>();
   const auto object = dynamic_cast<GMANObject*>(primitive.get());
   return object != nullptr && object->getBody() == nullptr && object->getNext() == nullptr;
 }
