@@ -285,33 +285,12 @@ Open the repo in VS Code and choose "Reopen in Container".
 
 ## Write a shader
 
-A surface shader is a `GMANSurfaceShader` subclass, built as a loadable
-module. Each `Surface` call builds its own instance, whose constructor
-resolves its parameters from the plugin's `GMANParameterList`, so
-`computeCi` and `computeOi` are `const`, read the `GMANSurfaceEnv` they are
-given, and return a `GMANColor` by value. A shader may also override
-`bsdf(GMANSurfaceEnv const&) const` to return the `gman::BSDF` the path
-tracer samples, defaulting to a Lambert lobe of `Cs`; a `bsdf` override
-must not call the base `albedo`, since the two would recurse. A shader may
-override `albedo(GMANSurfaceEnv const&) const` to report its diffuse
-reflectance, defaulting to its BSDF's `rhoD()` clamped to [0, 1]. A
-closure combines libgman's own lobes — `addLambert`, `addGGX`, `addMirror`
-and `addDielectric` — and never defines a new one; `rhoD` reports the
-Lambert lobes alone, so a glossy or delta lobe never shows in `albedo`.
-`shaders/gmanmatte.cpp` is the model:
-it exports itself through three `extern "C"` entry points:
+Surface shaders are C++ plugins that gman loads at run time. A shader
+subclasses `GMANSurfaceShader`, whose header documents the contract, and
+`gman::BSDF` in `gmanbsdf.h` describes the closure the path tracer samples.
+Start from `shaders/gmanmatte.cpp`, the RISpec's matte shader.
 
-```cpp
-extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
-
-extern "C" GMAN_EXPORT GMANShader* GMANLoadShader(GMANParameterList const& parameters) {
-  return new gmanshader::matte(parameters);
-}
-
-extern "C" GMAN_EXPORT void GMANDestroyShader(GMANShader* shader) { delete shader; }
-```
-
-Build it in-tree with `gman_add_plugin` in the root `CMakeLists.txt`:
+Build a shader in-tree with `gman_add_plugin` in the root `CMakeLists.txt`:
 
 ```cmake
 gman_add_plugin(gman_myshader shaders/gmanmyshader.cpp)
