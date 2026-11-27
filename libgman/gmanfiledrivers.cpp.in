@@ -148,16 +148,16 @@ void checkDepthAgreement(GMANQuantize const &request, BitDepth depth) {
     return;
   }
   if (request.one == 0) {
-    const std::string errorMsg = std::format(
+    const auto errorMsg = std::format(
         "Quantize one 0 asks for float samples; bit depth {} contradicts it",
         bitsOf(depth));
     throw(GMANError(RIE_CONSISTENCY, RIE_ERROR, errorMsg.c_str()));
   }
-  const BitDepth requested = depthOf(request);
+  const auto requested = depthOf(request);
   if (requested == depth) {
     return;
   }
-  const std::string errorMsg = std::format(
+  const auto errorMsg = std::format(
       "Quantize max {} asks for {}-bit samples; bit depth {} contradicts it",
       request.max, bitsOf(requested), bitsOf(depth));
   throw(GMANError(RIE_CONSISTENCY, RIE_ERROR, errorMsg.c_str()));
@@ -168,7 +168,7 @@ void checkDepthCapable(GMANOutput const &output, FileDriverEntry const &entry,
   if (bitsOf(depth) <= output.maxBitsPerSample()) {
     return;
   }
-  const std::string errorMsg = std::format(
+  const auto errorMsg = std::format(
       "{} writes {}-bit samples; bit depth {} cannot be honoured",
       entry.displayName, output.maxBitsPerSample(), bitsOf(depth));
   throw(GMANError(RIE_INCAPABLE, RIE_ERROR, errorMsg.c_str()));
