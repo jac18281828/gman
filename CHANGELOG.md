@@ -1,6 +1,6 @@
 1.4.0 (2026-11-26)
 
-* 1.4 breaks the binary interface, rebuild any plugin or dependency; `SameMinorVersion` refuses 1.4 to a consumer asking for 1.3. `GMANOptions` gains `isColorQuantizeSet`, `gman::Lobe` gains `transmitWeight`, and `GMANRayOccluder`'s constructor takes a `TextureCache&`
+* 1.4 breaks the binary interface, rebuild any plugin or dependency. `GMANOptions` gains `isColorQuantizeSet`, `gman::Lobe` gains `transmitWeight`, and `GMANRayOccluder`'s constructor takes a `TextureCache&`
 * The core library is `libgman`, CMake target `gman::gman`, where it was `libgman_core`; the executable's CMake target is `gman_cli`, and the program is still `gman`
 * CLI11 parses the command line, and every flag has a long name. Help prints on stdout and exits 0, a usage error prints CLI11's message on stderr with its exit code, a flag after a file applies, `--` ends the options, and a run needs a file
 * The ray tracer lights from area lights, `Option "raytracer" "integer arealightsamples"` draws per light (default 4), and area-lit scenes render slower
