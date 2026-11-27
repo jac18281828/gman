@@ -19,11 +19,11 @@
  */
 
 /*
- * gmanpatchpolyobjectmanager.cpp's diceCountFor: n =
+ * gmanrasterprimitivefactory.cpp's diceCountFor: n =
  * clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L the longest of an
  * ear-clipped triangle's three raster-space edges, dicing into n*n faces.
  * This suite builds its mesh through the factory and calls
- * GMANPatchPolyObjectManager::getRSPolygonMesh directly (white-box,
+ * GMANRasterPrimitiveFactory::getRSPolygonMesh directly (white-box,
  * mirroring polygon_test.cpp's own checkTriangleCount) with a three-vertex
  * "P" -- one ear-clipped triangle, so its face count is exactly n*n -- and
  * a GMANOptions carrying a known perspective projection (fov 60 rather than 90,
@@ -53,10 +53,10 @@
 #include "gmanoptions.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmantransform.h"
 
 namespace {
@@ -123,7 +123,7 @@ gman::Owned<GMANPrimitive> runTriangle(RtFloat leg, RtFloat z, GMANOptions const
   RtPointer parms[1] = {p.data()};
   std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(3, dictionary, 1, tokens, parms, nullptr);
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   GMANOptions optionsCopy = options;
   GMANAttributes attrCopy = attr;
   check(mesh.has_value(), "runTriangle: the factory builds a mesh");
@@ -145,7 +145,7 @@ gman::Owned<GMANPrimitive> runTriangleCorners(std::array<RtFloat, 9> const& p, G
   RtPointer parms[1] = {pv.data()};
   std::optional<GMANPolygonMesh> const mesh = gman::polygonMesh(3, dictionary, 1, tokens, parms, nullptr);
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   GMANOptions optionsCopy = options;
   GMANAttributes attrCopy = attr;
   check(mesh.has_value(), "runTriangleCorners: the factory builds a mesh");

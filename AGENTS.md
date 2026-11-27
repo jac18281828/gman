@@ -88,7 +88,7 @@ scans the tree.
 - An interface names only types from its own library or below. Where a lower
   layer needs an answer from above it, the lower layer declares the interface
   and the upper layer implements it, as `gman::Occluder`, `gman::Tracer` and
-  `GMANObjectManager` do.
+  `GMANPrimitiveFactory` do.
 - A new library needs two linkers, one export macro and one public include
   directory: each library is an ABI to keep and, under the LGPL, a surface an
   outside renderer may link.

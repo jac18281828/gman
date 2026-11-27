@@ -1,4 +1,4 @@
-## The four swept quadrics GMANRayObjectManager builds --
+## The four swept quadrics GMANRayPrimitiveFactory builds --
 ## Cylinder, Cone, Paraboloid, Hyperboloid -- side by side under one
 ## light. Each is rotated broadside (quadrics.rib's own precedent: Cone,
 ## Cylinder, Hyperboloid and Paraboloid all extend along their own local z

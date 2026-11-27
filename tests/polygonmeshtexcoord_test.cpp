@@ -41,8 +41,8 @@
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
-#include "gmanrayobjectmanager.h"
 #include "gmanrayprimitive.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmantransform.h"
 
 namespace {
@@ -78,7 +78,7 @@ gman::Owned<GMANPrimitive> buildTexturedMesh() {
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "buildTexturedMesh: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;

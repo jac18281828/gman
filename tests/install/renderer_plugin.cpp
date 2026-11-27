@@ -29,8 +29,8 @@
 #include <gman/gmanlinearworldmanager.h>
 #include <gman/gmanloadable.h>
 #include <gman/gmanlog.h>
-#include <gman/gmanrayobjectmanager.h>
 #include <gman/gmanrayoccluder.h>
+#include <gman/gmanrayprimitivefactory.h>
 #include <gman/gmanrenderer.h>
 
 namespace {
@@ -50,11 +50,11 @@ public:
   }
 
   GMANWorldManager* getWorldManager(RtVoid) override { return &worldManager; }
-  GMANObjectManager* getObjectManager(RtVoid) override { return &objectManager; }
+  GMANPrimitiveFactory* getPrimitiveFactory(RtVoid) override { return &primitiveFactory; }
 
 private:
   GMANLinearWorldManager worldManager;
-  GMANRayObjectManager objectManager;
+  GMANRayPrimitiveFactory primitiveFactory;
 };
 
 GMANLoadableObjectInfo loadableInfo = {

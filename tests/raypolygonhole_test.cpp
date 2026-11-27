@@ -19,7 +19,7 @@
  */
 
 /*
- * GMANRayObjectManager::getRSPolygonMesh builds a multi-loop GMANRayPolygon
+ * GMANRayPrimitiveFactory::getRSPolygonMesh builds a multi-loop GMANRayPolygon
  * for a GeneralPolygon face: loops[0] is the outer boundary, every later
  * loop a hole. A ray through the hole's centre misses, one through the
  * ring between hole and edge hits at the analytic t, and one outside the
@@ -39,8 +39,8 @@
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
-#include "gmanrayobjectmanager.h"
 #include "gmanrayprimitive.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmantransform.h"
 
 namespace {
@@ -86,7 +86,7 @@ gman::Owned<GMANPrimitive> runGetRSGeneralPolygonDirect(std::vector<std::vector<
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSGeneralPolygonDirect: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;
@@ -109,7 +109,7 @@ gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& r
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSPolygonDirect: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;

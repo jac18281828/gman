@@ -19,7 +19,7 @@
  */
 
 /*
- * GMANRayObjectManager::getRSPolygonMesh returns one polygon mesh
+ * GMANRayPrimitiveFactory::getRSPolygonMesh returns one polygon mesh
  * primitive for a PointsPolygons request; GMANRayBVH::build flattens it
  * into one entry per face rather than one entry for the whole mesh. A ray
  * aimed at a face reports that face's GMANRayPolygon as hitPrimitive, equal
@@ -45,8 +45,8 @@
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayobjectmanager.h"
 #include "gmanraypolygon.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmantransform.h"
 
 namespace {
@@ -102,7 +102,7 @@ gman::Owned<GMANPrimitive> runGetRSPointsPolygonDirect(std::vector<GMANPoint> co
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSPointsPolygonDirect: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;

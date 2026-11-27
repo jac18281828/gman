@@ -33,7 +33,7 @@
 #include "gmanowned.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
-#include "gmanrayobjectmanager.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmantransform.h"
 
 namespace {
@@ -63,7 +63,7 @@ gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& r
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSPolygonDirect: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;

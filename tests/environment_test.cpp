@@ -52,7 +52,7 @@
 #include "gmanobject.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
-#include "gmanpatchpolyobjectmanager.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmanshaderenvironment.h"
 #include "gmantexture.h"
 #include "gmantransform.h"
@@ -119,14 +119,14 @@ void testMatrixReachesShader() {
   GMANParameterList emptyPl;
   attr.setSurface("camerashader", emptyPl);
 
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   GMANParameterList spherePl;
   GMANTransform transform; // identity
 
   auto prim =
       mgr.getRSSphere((RtFloat)1.0, (RtFloat)-1.0, (RtFloat)1.0, (RtFloat)360.0, spherePl, options, attr, transform);
   // Kept reachable the same way production does (GMANRenderManImpl::RiEnd
-  // leaves worldManager/objectManager deliberately unfreed) -- see
+  // leaves worldManager/primitiveFactory deliberately unfreed) -- see
   // tests/normals_test.cpp's own comment at its analogous getRSSphere call.
   static GMANLinearWorldManager worldMgr;
   GMANObject* object = dynamic_cast<GMANObject*>(prim.get());

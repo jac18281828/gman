@@ -32,11 +32,11 @@
 #include "gmandenoise.h"
 #include "gmanemitter.h"
 #include "gmanlinearworldmanager.h"
-#include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
+#include "gmanprimitivefactory.h"
 #include "gmanraybvh.h"
-#include "gmanrayobjectmanager.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
 #include "gmanshading.h"
@@ -106,7 +106,7 @@
  */
 class GMAN_EXPORT GMANPathtraceRenderer : public GMANRenderer {
 private:
-  GMANRayObjectManager objectManager;
+  GMANRayPrimitiveFactory primitiveFactory;
 
   GMANLinearWorldManager worldManager;
 
@@ -218,5 +218,5 @@ public:
 
   virtual GMANWorldManager* getWorldManager(void);
 
-  virtual GMANObjectManager* getObjectManager(void);
+  virtual GMANPrimitiveFactory* getPrimitiveFactory(void);
 };

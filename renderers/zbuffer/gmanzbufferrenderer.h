@@ -32,15 +32,15 @@
 #include "gmanattributes.h"
 #include "gmancolor.h"
 #include "gmanlinearworldmanager.h"
-#include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanoutputpolygon.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpoint.h"
 #include "gmanpolygonclipper.h"
 #include "gmanprimitive.h"
+#include "gmanprimitivefactory.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
 #include "gmantransform.h"
@@ -161,10 +161,10 @@ private:
   // other geometry request all pass getAttributes()).
   // Counting a pending area light here, before tessellation discards it,
   // is this renderer's only chance to see one, so every geometry request
-  // that can carry one is overridden; GMANPatchPolyObjectManager's own
+  // that can carry one is overridden; GMANRasterPrimitiveFactory's own
   // getRSBlobby/getRSPoints/getRSCurves/getRSSubdivisionMesh already
   // return an empty owner, rendering no geometry to count.
-  class AreaLightCountingObjectManager : public GMANPatchPolyObjectManager {
+  class AreaLightCountingPrimitiveFactory : public GMANRasterPrimitiveFactory {
   public:
     gman::Owned<GMANPrimitive> getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions const& opt,
                                                 GMANAttributes const& attr, GMANTransform const& t) override;
@@ -207,7 +207,7 @@ private:
     void countIfAreaLight(GMANAttributes const& attr);
   };
 
-  AreaLightCountingObjectManager objectManager;
+  AreaLightCountingPrimitiveFactory primitiveFactory;
 
   GMANLinearWorldManager worldManager;
 
@@ -270,5 +270,5 @@ public:
   virtual GMANWorldManager* getWorldManager(void);
 
   // return its object manager
-  virtual GMANObjectManager* getObjectManager(void);
+  virtual GMANPrimitiveFactory* getPrimitiveFactory(void);
 };

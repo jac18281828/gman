@@ -118,7 +118,7 @@ public:
 // mirrors. A free function rather than a GMANRenderManImpl member so
 // createParametric (tessellation time, where a primitive's lit vertices
 // are shaded) does not need a light manager threaded through every
-// GMANObjectManager::getRS* signature to reach it.
+// GMANPrimitiveFactory::getRS* signature to reach it.
 GMANLightSourceMgr& gmanLightSourceMgr(RtVoid);
 
 /*

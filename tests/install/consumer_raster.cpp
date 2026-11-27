@@ -20,9 +20,9 @@
 
 /*
  * Proves an installed gman_raster links from its own CMake package with no
- * other gman target on the link line: <gman/gmanpatchpolyobjectmanager.h>
+ * other gman target on the link line: <gman/gmanrasterprimitivefactory.h>
  * resolves through gman::gman_raster's include path, and
- * GMANPatchPolyObjectManager::getRSPoints, defined in libgman_raster, answers
+ * GMANRasterPrimitiveFactory::getRSPoints, defined in libgman_raster, answers
  * a request that builds nothing with an empty owner, while a GMANObject
  * answers through libgman's GMANPrimitive interface. The include directory,
  * the core link and the C++ standard all reach this program through
@@ -34,12 +34,12 @@
 #include <gman/gmanoptions.h>
 #include <gman/gmanowned.h>
 #include <gman/gmanparameterlist.h>
-#include <gman/gmanpatchpolyobjectmanager.h>
 #include <gman/gmanprimitive.h>
+#include <gman/gmanrasterprimitivefactory.h>
 #include <gman/gmantransform.h>
 
 int main() {
-  GMANPatchPolyObjectManager manager;
+  GMANRasterPrimitiveFactory manager;
   GMANOptions options;
   GMANAttributes attributes;
   GMANTransform transform;

@@ -215,7 +215,6 @@ add_library(gman SHARED
   libgman/gmanmatrix4.cpp
   libgman/gmannoise.cpp
   libgman/gmannormal.cpp
-  libgman/gmanobjectmanager.cpp
   libgman/gmanoptions.cpp
   libgman/gmanoutput.cpp
   libgman/gmanoutputpnm.cpp
@@ -227,6 +226,7 @@ add_library(gman SHARED
   libgman/gmanpolygon.cpp
   libgman/gmanpolygonmesh.cpp
   libgman/gmanprimitive.cpp
+  libgman/gmanprimitivefactory.cpp
   libgman/gmanprimitives.cpp
   libgman/gmanrenderer.cpp
   libgman/gmanrenderman.cpp
@@ -316,12 +316,12 @@ add_library(gman_ray SHARED
   libgmanray/gmanraycylinder.cpp
   libgmanray/gmanraydisk.cpp
   libgmanray/gmanrayhyperboloid.cpp
-  libgmanray/gmanrayobjectmanager.cpp
   libgmanray/gmanrayoccluder.cpp
   libgmanray/gmanrayparaboloid.cpp
   libgmanray/gmanraypolygon.cpp
   libgmanray/gmanraypolygonmesh.cpp
   libgmanray/gmanrayprimitive.cpp
+  libgmanray/gmanrayprimitivefactory.cpp
   libgmanray/gmanrayquartic.cpp
   libgmanray/gmanraysphere.cpp
   libgmanray/gmanraytorus.cpp
@@ -355,8 +355,8 @@ add_library(gman_raster SHARED
   libgmanraster/gmanface.cpp
   libgmanraster/gmanobject.cpp
   libgmanraster/gmanoutputpolygon.cpp
-  libgmanraster/gmanpatchpolyobjectmanager.cpp
-  libgmanraster/gmanpolygonclipper.cpp)
+  libgmanraster/gmanpolygonclipper.cpp
+  libgmanraster/gmanrasterprimitivefactory.cpp)
 
 # GMANRASTER_EXPORT tags what the raster headers declare; the plugin entry
 # points keep GMAN_EXPORT. Beside gman/export.h, so libgman's public include

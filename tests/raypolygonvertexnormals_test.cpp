@@ -42,9 +42,9 @@
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
-#include "gmanrayobjectmanager.h"
 #include "gmanraypolygon.h"
 #include "gmanrayprimitive.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmanshading.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
@@ -234,7 +234,7 @@ Built buildMesh(Geometry const& geometry, std::optional<NormalInput> const& norm
   }
   GMANOptions options;
   GMANAttributes attr;
-  GMANRayObjectManager manager;
+  GMANRayPrimitiveFactory manager;
   built.owner = manager.getRSPolygonMesh(*mesh, options, attr, transform);
   built.mesh = dynamic_cast<GMANRayPrimitive*>(built.owner.get());
   check(built.mesh != nullptr, "getRSPolygonMesh returns a GMANRayPrimitive");

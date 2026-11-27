@@ -22,7 +22,7 @@
  * `gman -r gmanraytracer` renders tests/rib/r5c_torus.rib
  * -- a matte full torus tilted so its hole shows, and a partial torus with
  * thetamax below 360 and a negative-phimin band -- matching a checked-in
- * golden image. Reverting GMANRayObjectManager::getRSTorus to
+ * golden image. Reverting GMANRayPrimitiveFactory::getRSTorus to
  * `return nullptr;` drops each Torus request, and both tori from the frame,
  * failing this check.
  */

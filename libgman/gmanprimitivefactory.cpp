@@ -23,15 +23,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
-#include "gmanobjectmanager.h"
+#include "gmanprimitivefactory.h"
 
 /*
- * RenderMan API GMANObjectManager
+ * RenderMan API GMANPrimitiveFactory
  *
  */
 
 // default constructor
-GMANObjectManager::GMANObjectManager() {};
+GMANPrimitiveFactory::GMANPrimitiveFactory() {};
 
 // default destructor
-GMANObjectManager::~GMANObjectManager() {};
+GMANPrimitiveFactory::~GMANPrimitiveFactory() {};

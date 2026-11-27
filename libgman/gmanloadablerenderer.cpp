@@ -29,8 +29,8 @@
 #include "gmanframebuffer.h"
 #include "gmanloadable.h"
 #include "gmanloadablerenderer.h"
-#include "gmanobjectmanager.h"
 #include "gmanoptions.h"
+#include "gmanprimitivefactory.h"
 #include "gmanrenderer.h"
 #include "gmanviewingsystem.h"
 #include "gmanworldmanager.h"
@@ -83,6 +83,6 @@ RtVoid GMANLoadableRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSys
 
 GMANWorldManager* GMANLoadableRenderer::getWorldManager(RtVoid) { return renderer->getWorldManager(); }
 
-GMANObjectManager* GMANLoadableRenderer::getObjectManager(RtVoid) { return renderer->getObjectManager(); }
+GMANPrimitiveFactory* GMANLoadableRenderer::getPrimitiveFactory(RtVoid) { return renderer->getPrimitiveFactory(); }
 
 RtFloat GMANLoadableRenderer::getDepth(RtInt xs, RtInt ys) const { return renderer->getDepth(xs, ys); }

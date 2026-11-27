@@ -1,6 +1,6 @@
 ## A step=1 basis (b-spline) whose periodic axis is below
 ## validPeriodicBicubicMeshDim's safety floor (see
-## gmanpatchpolyobjectmanager.cpp): GMANBasis::offset's periodic
+## gmanrasterprimitivefactory.cpp): GMANBasis::offset's periodic
 ## wraparound (a single `i-=nu`, not a true modulo) only stays in [0,nu)
 ## for nu>=3 at step=1, so nu=1 would read one point past the 4-point "P"
 ## array below without that floor. Every fixture elsewhere in this suite

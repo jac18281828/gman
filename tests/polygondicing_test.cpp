@@ -20,7 +20,7 @@
 
 /*
  * Guards buildPolygonObject's own dicing resolution (kPolygonDiceN,
- * gmanpatchpolyobjectmanager.cpp) against a future, silent coarsening: one
+ * gmanrasterprimitivefactory.cpp) against a future, silent coarsening: one
  * textured square, rendered two ways over the identical geometry and
  * texture -- once as a single Polygon (ordinary dicing), once as a grid of
  * kGroundTruthGrid^2 small Polygon requests tiling the same square (a much
@@ -48,7 +48,7 @@ namespace {
 // (kPolygonDiceN, 16 divisions per edge) -- every triangle in both
 // fixtures projects well past 15 raster pixels on its longest edge (this
 // file's own commonHeader comment), so both still hit that cap
-// (gmanpatchpolyobjectmanager.cpp's diceCountFor), and each of this grid's
+// (gmanrasterprimitivefactory.cpp's diceCountFor), and each of this grid's
 // own small quads is diced again at the same 16 once it reaches the
 // shared tail. The ground truth then samples the texture roughly 8*16
 // times across the square's own width, comfortably past where further

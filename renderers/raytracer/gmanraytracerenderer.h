@@ -36,14 +36,14 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
-#include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
+#include "gmanprimitivefactory.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayobjectmanager.h"
 #include "gmanrayoccluder.h"
 #include "gmanrayprimitive.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmanrenderer.h"
 #include "gmansamplebuffer.h"
 #include "gmanshading.h"
@@ -200,7 +200,7 @@ private:
 
 class GMAN_EXPORT GMANRaytraceRenderer : public GMANRenderer {
 private:
-  GMANRayObjectManager objectManager;
+  GMANRayPrimitiveFactory primitiveFactory;
 
   GMANLinearWorldManager worldManager;
 
@@ -316,5 +316,5 @@ public:
   virtual GMANWorldManager* getWorldManager(void);
 
   // return its object manager
-  virtual GMANObjectManager* getObjectManager(void);
+  virtual GMANPrimitiveFactory* getPrimitiveFactory(void);
 };

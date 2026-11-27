@@ -46,12 +46,12 @@
 #include "gmanlog.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpoint.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanprimitive.h"
-#include "gmanrayobjectmanager.h"
+#include "gmanrasterprimitivefactory.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmanrendermanimpl.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
@@ -126,8 +126,8 @@ template <typename Manager> gman::Owned<GMANPrimitive> collinearMeshRequest(Mana
 }
 
 void testFactoriesReturnEmptyOwnerForNoFace() {
-  GMANRayObjectManager rayManager;
-  GMANPatchPolyObjectManager rasterManager;
+  GMANRayPrimitiveFactory rayManager;
+  GMANRasterPrimitiveFactory rasterManager;
   auto rayPrimitive = collinearMeshRequest(rayManager);
   auto rasterPrimitive = collinearMeshRequest(rasterManager);
   check(rayPrimitive == nullptr, "the ray factory returns an empty owner for a mesh with no face");

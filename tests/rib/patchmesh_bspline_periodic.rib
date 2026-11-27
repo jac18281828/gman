@@ -1,6 +1,6 @@
 ## Bicubic PatchMesh under a step=1 basis (b-spline), periodic on u at
 ## nu=3 -- validPeriodicBicubicMeshDim's true safety floor for step=1
-## (gmanpatchpolyobjectmanager.cpp), one below the old (unsafe) floor of
+## (gmanrasterprimitivefactory.cpp), one below the old (unsafe) floor of
 ## nu=1. Regression guard for the F1 fix: three concentric triangular
 ## control rings (radius 0.45, 0.35, 0.25, 0.15 across the four
 ## nonperiodic v rows) wrapping u's last strip back to control point 0,

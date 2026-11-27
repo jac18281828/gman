@@ -40,7 +40,7 @@ namespace gman {
 
 // Each point's own resolved (s, t): default its own object-space "P" (x,
 // y, the pre-CTM floats a request's factory itself reads), "st" then
-// "s"/"t" overriding, GMANPatchPolyObjectManager's own polygon rule
+// "s"/"t" overriding, GMANRasterPrimitiveFactory's own polygon rule
 // (resolvePolygonTextureCoordinates). Returns count entries of (0, 0) when
 // pl carries no "P". A GMANRayPolygon's own texCoords and a mesh's shared
 // point pool both resolve through this one function.
@@ -118,7 +118,7 @@ private:
 
   // Each outer-loop vertex's own resolved (s, t) -- default its
   // object-space "P", "st" then "s"/"t" overriding,
-  // GMANPatchPolyObjectManager's own polygon rule -- computed once here
+  // GMANRasterPrimitiveFactory's own polygon rule -- computed once here
   // rather than per ray. Every entry is (0, 0) when pl carries no "P"
   // (direct construction bypassing the object manager). Holes carry no
   // texCoords: a hit lands outside every hole.

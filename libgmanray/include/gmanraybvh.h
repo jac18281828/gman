@@ -62,7 +62,7 @@ public:
   // its own insertion order for nearestHit's tie-break -- except a
   // polygon mesh primitive, which contributes each of its own faces as
   // its own entry instead of the mesh itself, so a mesh culls per face.
-  // The dynamic_cast is defensive -- GMANRayObjectManager's factories
+  // The dynamic_cast is defensive -- GMANRayPrimitiveFactory's factories
   // guarantee every primitive this renderer's world manager holds is
   // already a GMANRayPrimitive, the polygon mesh type included. The
   // build is serial and draws no random number: the same primitives in

@@ -28,9 +28,9 @@
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
 #include "gmanloadable.h"
-#include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanpoint.h"
+#include "gmanprimitivefactory.h"
 #include "gmanrenderer.h"
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
@@ -90,5 +90,5 @@ public:
   /*
    * Each renderer provides its own object manager.
    */
-  virtual GMANObjectManager* getObjectManager(RtVoid);
+  virtual GMANPrimitiveFactory* getPrimitiveFactory(RtVoid);
 };

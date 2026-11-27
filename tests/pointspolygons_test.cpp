@@ -44,10 +44,10 @@
 #include "gmanobject.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmantransform.h"
 #include "goldenimage.h"
 #include "rungman.h"
@@ -112,7 +112,7 @@ gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& r
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSPolygonDirect: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;
@@ -146,7 +146,7 @@ gman::Owned<GMANPrimitive> runGetRSGeneralPolygonDirect(std::vector<std::vector<
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSGeneralPolygonDirect: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;
@@ -173,7 +173,7 @@ gman::Owned<GMANPrimitive> runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSPointsPolygon: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;
@@ -199,7 +199,7 @@ gman::Owned<GMANPrimitive> runGetRSPointsGeneralPolygons(RtInt npolys, std::vect
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSPointsGeneralPolygons: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;

@@ -44,16 +44,16 @@
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
 #include "gmanobject.h"
-#include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpoint.h"
 #include "gmanpolygon.h"
 #include "gmanpolygonmesh.h"
 #include "gmanprimitive.h"
+#include "gmanprimitivefactory.h"
 #include "gmanprimitives.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmanshading.h"
 #include "gmansurface.h"
 #include "gmantransform.h"
@@ -1063,20 +1063,20 @@ void appendFace(GMANBody* faceBody, GMANVertex* faceVert, GMANBody*& bodyHead, G
 } // namespace
 
 /*
- * RenderMan API GMANPatchPolyObjectManager
+ * RenderMan API GMANRasterPrimitiveFactory
  *
  */
 
 // default constructor
-GMANPatchPolyObjectManager::GMANPatchPolyObjectManager() : GMANObjectManager() {};
+GMANRasterPrimitiveFactory::GMANRasterPrimitiveFactory() : GMANPrimitiveFactory() {};
 
 // default destructor
-GMANPatchPolyObjectManager::~GMANPatchPolyObjectManager() {};
+GMANRasterPrimitiveFactory::~GMANRasterPrimitiveFactory() {};
 
 // One call for every polygon request: the mesh guarantees a non-null "P"
 // and at least one loop per face, so this reads straight through to
 // buildFace/appendFace over each of the mesh's own faces and loops.
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mesh,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSPolygonMesh(GMANPolygonMesh const& mesh,
                                                                         GMANOptions const& opt,
                                                                         GMANAttributes const& attr,
                                                                         GMANTransform const& t) {
@@ -1129,7 +1129,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPolygonMesh(GMANPoly
   return object;
 }
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatch(RtToken type, GMANParameterList pl,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSPatch(RtToken type, GMANParameterList pl,
                                                                   GMANOptions const& opt, GMANAttributes const& attr,
                                                                   GMANTransform const& t) {
   RtFloat* p = gman::floatArray(pl, RI_P);
@@ -1156,7 +1156,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatch(RtToken type, 
 // coordinates would need a periodic-wrap-aware (nupatches+1) x
 // (nvpatches+1) grid of corners -- today's identity mapping stands until
 // that grid is worth the reading.
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv,
                                                                       RtToken vwrap, GMANParameterList pl,
                                                                       GMANOptions const& opt,
                                                                       GMANAttributes const& attr,
@@ -1197,7 +1197,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPatchMesh(RtToken ty
 // for getRSPatchMesh: a NuPatch's varying values form a (nusegments+1) x
 // (nvsegments+1) grid, which resolveParametricCorners' fixed four-corner
 // shape only fits in the bilinear-equivalent case.
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[],
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[],
                                                                     RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
                                                                     RtFloat vknot[], RtFloat vmin, RtFloat vmax,
                                                                     GMANParameterList pl, GMANOptions const& opt,
@@ -1215,7 +1215,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSNuPatch(RtInt nu, Rt
   return createParametric(&patch, t, attr, kIdentityCorners, opt);
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax,
                                                                    RtFloat tmax, GMANParameterList pl,
                                                                    GMANOptions const& opt, GMANAttributes const& attr,
                                                                    GMANTransform const& t) {
@@ -1223,14 +1223,14 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSSphere(RtFloat radiu
   return createParametric(&sphere, t, attr, gman::resolveParametricCorners(pl, attr), opt);
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSCone(RtFloat height, RtFloat radius, RtFloat tmax,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSCone(RtFloat height, RtFloat radius, RtFloat tmax,
                                                                  GMANParameterList pl, GMANOptions const& opt,
                                                                  GMANAttributes const& attr, GMANTransform const& t) {
   GMANCone cone(height, radius, tmax, pl);
   return createParametric(&cone, t, attr, gman::resolveParametricCorners(pl, attr), opt);
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax,
                                                                      RtFloat tmax, GMANParameterList pl,
                                                                      GMANOptions const& opt, GMANAttributes const& attr,
                                                                      GMANTransform const& t) {
@@ -1238,7 +1238,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSCylinder(RtFloat rad
   return createParametric(&cylinder, t, attr, gman::resolveParametricCorners(pl, attr), opt);
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
                                                                         GMANParameterList pl, GMANOptions const& opt,
                                                                         GMANAttributes const& attr,
                                                                         GMANTransform const& t) {
@@ -1246,7 +1246,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSHyperboloid(RtPoint 
   return createParametric(&hyperboloid, t, attr, gman::resolveParametricCorners(pl, attr), opt);
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax,
                                                                        RtFloat tmax, GMANParameterList pl,
                                                                        GMANOptions const& opt,
                                                                        GMANAttributes const& attr,
@@ -1255,14 +1255,14 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSParaboloid(RtFloat r
   return createParametric(&paraboloid, t, attr, gman::resolveParametricCorners(pl, attr), opt);
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax,
                                                                  GMANParameterList pl, GMANOptions const& opt,
                                                                  GMANAttributes const& attr, GMANTransform const& t) {
   GMANDisk disk(height, radius, tmax, pl);
   return createParametric(&disk, t, attr, gman::resolveParametricCorners(pl, attr), opt);
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin,
                                                                   RtFloat phimax, RtFloat tmax, GMANParameterList pl,
                                                                   GMANOptions const& opt, GMANAttributes const& attr,
                                                                   GMANTransform const& t) {
@@ -1270,7 +1270,7 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSTorus(RtFloat majrad
   return createParametric(&torus, t, attr, gman::resolveParametricCorners(pl, attr), opt);
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSBlobby(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[],
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSBlobby(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[],
                                                                    RtInt /*nflt*/, RtFloat /*flt*/[], RtInt /*nstr*/,
                                                                    RtToken /*str*/[], GMANParameterList /*pl*/,
                                                                    GMANOptions const& /*opt*/,
@@ -1279,14 +1279,14 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSBlobby(RtInt /*nleaf
   return nullptr;
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSPoints(RtInt /*npoints*/, GMANParameterList /*pl*/,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSPoints(RtInt /*npoints*/, GMANParameterList /*pl*/,
                                                                    GMANOptions const& /*opt*/,
                                                                    GMANAttributes const& /*attr*/,
                                                                    GMANTransform const& /*t*/) {
   return nullptr;
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSCurves(RtToken /*type*/, RtInt /*ncurves*/,
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSCurves(RtToken /*type*/, RtInt /*ncurves*/,
                                                                    RtInt /*nvertices*/[], RtToken /*wrap*/,
                                                                    GMANParameterList /*pl*/, GMANOptions const& /*opt*/,
                                                                    GMANAttributes const& /*attr*/,
@@ -1294,14 +1294,14 @@ gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSCurves(RtToken /*typ
   return nullptr;
 };
 
-gman::Owned<GMANPrimitive> GMANPatchPolyObjectManager::getRSSubdivisionMesh(
+gman::Owned<GMANPrimitive> GMANRasterPrimitiveFactory::getRSSubdivisionMesh(
     RtToken /*mask*/, RtInt /*nf*/, RtInt /*nverts*/[], RtInt /*verts*/[], RtInt /*ntags*/, RtToken /*tags*/[],
     RtInt /*numargs*/[], RtInt /*intargs*/[], RtFloat /*floatargs*/[], GMANParameterList /*pl*/,
     GMANOptions const& /*opt*/, GMANAttributes const& /*attr*/, GMANTransform const& /*t*/) {
   return nullptr;
 };
 
-gman::Owned<GMANObject> GMANPatchPolyObjectManager::createParametric(GMANParametric* p, GMANTransform const& t,
+gman::Owned<GMANObject> GMANRasterPrimitiveFactory::createParametric(GMANParametric* p, GMANTransform const& t,
                                                                      GMANAttributes const& attr,
                                                                      GMANTextureCoordinates const& corners,
                                                                      GMANOptions const& opt) {

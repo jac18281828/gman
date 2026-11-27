@@ -25,26 +25,28 @@
 
 #pragma once
 
-#include "gman/rayexport.h"
+#include "gman/rasterexport.h"
 #include "gmanattributes.h"
-#include "gmanobjectmanager.h"
+#include "gmanobject.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitive.h"
+#include "gmanprimitivefactory.h"
+#include "gmanprimitives.h"
 #include "gmantransform.h"
 #include "ri.h"
 
 /*
- * RenderMan API GMANPatchPolyObjectManager
+ * RenderMan API GMANRasterPrimitiveFactory
  *
  */
 
-class GMANRAY_EXPORT GMANRayObjectManager : public GMANObjectManager {
+class GMANRASTER_EXPORT GMANRasterPrimitiveFactory : public GMANPrimitiveFactory {
 public:
-  GMANRayObjectManager(); // default constructor
+  GMANRasterPrimitiveFactory(); // default constructor
 
-  ~GMANRayObjectManager(); // default destructor
+  ~GMANRasterPrimitiveFactory(); // default destructor
 
   /*
    * Renderer Specific primitives
@@ -113,4 +115,8 @@ public:
                                                           RtFloat floatargs[], GMANParameterList pl,
                                                           GMANOptions const& opt, GMANAttributes const& attr,
                                                           GMANTransform const& t);
+
+protected:
+  gman::Owned<GMANObject> createParametric(GMANParametric* p, GMANTransform const& t, GMANAttributes const& attr,
+                                           GMANTextureCoordinates const& corners, GMANOptions const& opt);
 };

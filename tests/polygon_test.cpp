@@ -50,7 +50,7 @@
  * from each fixture's own "P".
  *
  * checkTriangleCount below builds its mesh through the factory and calls
- * GMANPatchPolyObjectManager::getRSPolygonMesh directly (white-box,
+ * GMANRasterPrimitiveFactory::getRSPolygonMesh directly (white-box,
  * mirroring normals_test.cpp and patchmesh_test.cpp) to assert
  * (nverts - 2) * 256 diced sub-triangles come out the other side --
  * concave, reversed winding, collinear or duplicate vertices included --
@@ -59,7 +59,7 @@
  *
  * What each of these reverts breaks, traced by hand rather than asserted
  * below:
- *   - Restoring GMANPatchPolyObjectManager::getRSPolygonMesh's
+ *   - Restoring GMANRasterPrimitiveFactory::getRSPolygonMesh's
  *     triangulation to the fan-from-vertex-0 it replaced fails every
  *     notch-background assertion below (polygon_concave, polygon_concave_cw,
  *     polygon_concave_multi, polygon_collinear all go red) while the
@@ -89,10 +89,10 @@
 #include "gmanobject.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmantransform.h"
 #include "rungman.h"
 
@@ -272,7 +272,7 @@ void checkFillPattern(const std::string& gman, const std::string& ribDir, const 
 // ---- white-box: n - 2 triangles, whatever ear clipping had to do ----
 //
 // Builds its mesh through the factory and calls
-// GMANPatchPolyObjectManager::getRSPolygonMesh directly (mirroring
+// GMANRasterPrimitiveFactory::getRSPolygonMesh directly (mirroring
 // normals_test.cpp and patchmesh_test.cpp's own direct-instantiation
 // tests) so the triangle count is read straight off the returned face
 // chain, not inferred from a render. A stalled ear-clipping loop would
@@ -292,7 +292,7 @@ int countFaces(GMANObject* object) {
 
 // Each ear-clipped triangle dices per its own raster-space size and the
 // current ShadingRate, capped at 16 divisions per edge (256 sub-triangles)
-// -- gmanpatchpolyobjectmanager.cpp's diceCountFor. Every ring below is
+// -- gmanrasterprimitivefactory.cpp's diceCountFor. Every ring below is
 // checked here under GMANOptions' own default (orthographic, 640x480) and
 // an identity transform, where every ear's longest edge -- even the
 // shortest one, the duplicate-vertex ring's own zero-length edge aside,
@@ -309,7 +309,7 @@ void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt 
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
 
   check(mesh.has_value(), label + ": the factory builds a mesh");
 

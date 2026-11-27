@@ -19,7 +19,7 @@
  */
 
 /*
- * GMANRayObjectManager::getRSSphere builds a GMANRaySphere that keeps
+ * GMANRayPrimitiveFactory::getRSSphere builds a GMANRaySphere that keeps
  * its parameters and a copied transform, rather than a bare
  * GMANRayPrimitive. Each check builds a sphere through the factory,
  * exactly as RiSphereV does, and intersects it with a camera-space ray.
@@ -32,7 +32,7 @@
 #include "gmanattributes.h"
 #include "gmanowned.h"
 #include "gmanray.h"
-#include "gmanrayobjectmanager.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmanraysphere.h"
 #include "maketransform.h"
 
@@ -47,7 +47,7 @@ bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a -
 // getRSSphere resolves it into the sphere's appearance. Casts to
 // GMANRaySphere rather than GMANRayPrimitive, so a primitive of any other kind
 // returns an empty owner.
-gman::Owned<GMANRaySphere> buildSphere(GMANRayObjectManager& manager, RtFloat radius, RtFloat zmin, RtFloat zmax,
+gman::Owned<GMANRaySphere> buildSphere(GMANRayPrimitiveFactory& manager, RtFloat radius, RtFloat zmin, RtFloat zmax,
                                        RtFloat tmax, GMANTransform& transform) {
   GMANAttributes attr;
   auto primitive = manager.getRSSphere(radius, zmin, zmax, tmax, GMANParameterList(), GMANOptions(), attr, transform);
@@ -61,7 +61,7 @@ gman::Owned<GMANRaySphere> buildSphere(GMANRayObjectManager& manager, RtFloat ra
 
 // ---- check 1: a translated sphere hits where the transform puts it ----
 void testTranslate() {
-  GMANRayObjectManager manager;
+  GMANRayPrimitiveFactory manager;
   GMANMatrix4 matrix;
   matrix.trans(3.0, 0.0, 0.0);
   GMANTransform transform = makeTransform(matrix);
@@ -87,7 +87,7 @@ void testTranslate() {
 
 // ---- check 2: non-uniform scale, the inverse-transpose normal ----
 void testNonUniformScaleNormal() {
-  GMANRayObjectManager manager;
+  GMANRayPrimitiveFactory manager;
   GMANMatrix4 matrix;
   matrix.scale(2.0, 1.0, 1.0);
   GMANTransform transform = makeTransform(matrix);
@@ -112,7 +112,7 @@ void testNonUniformScaleNormal() {
 
 // ---- check 3: non-uniform scale, the rescaled distance and interval ----
 void testNonUniformScaleDistance() {
-  GMANRayObjectManager manager;
+  GMANRayPrimitiveFactory manager;
   GMANMatrix4 matrix;
   matrix.scale(2.0, 1.0, 1.0);
   GMANTransform transform = makeTransform(matrix);
@@ -142,7 +142,7 @@ void testNonUniformScaleDistance() {
 
 // ---- check 4: the parameters survive under the identity transform ----
 void testParametersSurvive() {
-  GMANRayObjectManager manager;
+  GMANRayPrimitiveFactory manager;
   GMANMatrix4 identity;
   GMANTransform transform = makeTransform(identity);
 
@@ -169,7 +169,7 @@ void testParametersSurvive() {
 
 // ---- check 5: a singular transform misses without throwing ----
 void testSingularTransform() {
-  GMANRayObjectManager manager;
+  GMANRayPrimitiveFactory manager;
   GMANMatrix4 matrix;
   matrix.scale(1.0, 1.0, 0.0);
   GMANTransform transform = makeTransform(matrix);
@@ -196,7 +196,7 @@ void testSingularTransform() {
 // or a diagonal scale can tell from its opposite (both are symmetric, so
 // a transpose bug in either computation would still pass checks 1-5) ----
 void testRotation() {
-  GMANRayObjectManager manager;
+  GMANRayPrimitiveFactory manager;
   GMANMatrix4 matrix;
   matrix.rot(GMANRadians(90.0), 0.0, 0.0, 1.0);
   GMANTransform transform = makeTransform(matrix);
@@ -225,5 +225,5 @@ int main() {
   testSingularTransform();
   testRotation();
 
-  return checkSummary("GMANRayObjectManager::getRSSphere keeps a sphere's parameters and transform");
+  return checkSummary("GMANRayPrimitiveFactory::getRSSphere keeps a sphere's parameters and transform");
 }

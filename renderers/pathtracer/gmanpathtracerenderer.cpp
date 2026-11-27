@@ -45,12 +45,12 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
-#include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanparallel.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpathtracerweights.h"
 #include "gmanpoint.h"
+#include "gmanprimitivefactory.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanrayoccluder.h"
@@ -996,4 +996,4 @@ void GMANPathtraceRenderer::denoiseFrame(GMANFrameBuffer* frameBuffer, gman::Atr
 
 GMANWorldManager* GMANPathtraceRenderer::getWorldManager(void) { return &worldManager; }
 
-GMANObjectManager* GMANPathtraceRenderer::getObjectManager(void) { return &objectManager; }
+GMANPrimitiveFactory* GMANPathtraceRenderer::getPrimitiveFactory(void) { return &primitiveFactory; }

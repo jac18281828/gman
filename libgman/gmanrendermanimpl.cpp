@@ -246,7 +246,7 @@ RtInt saturatedCount(std::int64_t count) { return static_cast<RtInt>(std::clamp<
 
 // default constructor
 GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState() {
-  objectManager = NULL;
+  primitiveFactory = NULL;
   worldManager = NULL;
 };
 
@@ -285,7 +285,7 @@ RtVoid GMANRenderManImpl::RiBegin(RtToken name) {
   renderer = std::make_unique<GMANLoadableRenderer>(objectName.c_str());
   worldManager = renderer->getWorldManager();
 
-  objectManager = renderer->getObjectManager();
+  primitiveFactory = renderer->getPrimitiveFactory();
 }
 
 RtVoid GMANRenderManImpl::RiEnd(RtVoid) {
@@ -295,10 +295,10 @@ RtVoid GMANRenderManImpl::RiEnd(RtVoid) {
 
 RtVoid GMANRenderManImpl::releaseRenderer() {
   renderer.reset();
-  // worldManager and objectManager belong to renderer, not to this object;
+  // worldManager and primitiveFactory belong to renderer, not to this object;
   // deleting it invalidates them too.
   worldManager = NULL;
-  objectManager = NULL;
+  primitiveFactory = NULL;
   viewingSystem.reset();
 }
 
@@ -362,7 +362,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
   }
 
   // The inputs both this renderer and the z-buffer polygon dicer
-  // (GMANPatchPolyObjectManager) build their own viewing system from, so a
+  // (GMANRasterPrimitiveFactory) build their own viewing system from, so a
   // triangle's raster-space size matches what actually renders. dictionary
   // is the same one RiProjectionV resolved the projection's parameter list
   // through, so a redeclared "fov" still resolves here. The warning fires
@@ -1159,7 +1159,7 @@ RtVoid GMANRenderManImpl::RiPolygonV(RtInt nverts, RtInt n, RtToken tokens[], Rt
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(objectManager->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
+  worldManager->add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt n, RtToken tokens[],
                                             RtPointer parms[]) {
@@ -1183,7 +1183,7 @@ RtVoid GMANRenderManImpl::RiGeneralPolygonV(RtInt nloops, RtInt nverts[], RtInt 
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(objectManager->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
+  worldManager->add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt verts[], RtInt n, RtToken tokens[],
                                             RtPointer parms[]) {
@@ -1207,7 +1207,7 @@ RtVoid GMANRenderManImpl::RiPointsPolygonsV(RtInt npolys, RtInt nverts[], RtInt 
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(objectManager->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
+  worldManager->add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[], RtInt nverts[], RtInt verts[], RtInt n,
                                                    RtToken tokens[], RtPointer parms[]) {
@@ -1231,7 +1231,7 @@ RtVoid GMANRenderManImpl::RiPointsGeneralPolygonsV(RtInt npolys, RtInt nloops[],
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(objectManager->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
+  worldManager->add(primitiveFactory->getRSPolygonMesh(*mesh, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPointer parms[]) {
   RiPatchV(type, n, tokens, parms, NULL);
@@ -1254,7 +1254,7 @@ RtVoid GMANRenderManImpl::RiPatchV(RtToken type, RtInt n, RtToken tokens[], RtPo
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(objectManager->getRSPatch(type, paramList, getOptions(), getAttributes(), transform));
+  worldManager->add(primitiveFactory->getRSPatch(type, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, RtInt n,
                                        RtToken tokens[], RtPointer parms[]) {
@@ -1328,8 +1328,8 @@ RtVoid GMANRenderManImpl::RiPatchMeshV(RtToken type, RtInt nu, RtToken uwrap, Rt
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(
-      objectManager->getRSPatchMesh(type, nu, uwrap, nv, vwrap, paramList, getOptions(), getAttributes(), transform));
+  worldManager->add(primitiveFactory->getRSPatchMesh(type, nu, uwrap, nv, vwrap, paramList, getOptions(),
+                                                     getAttributes(), transform));
 }
 namespace {
 
@@ -1475,8 +1475,8 @@ RtVoid GMANRenderManImpl::RiNuPatchV(RtInt nu, RtInt uorder, RtFloat uknot[], Rt
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(objectManager->getRSNuPatch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax, paramList,
-                                                getOptions(), getAttributes(), transform));
+  worldManager->add(primitiveFactory->getRSNuPatch(nu, uorder, uknot, umin, umax, nv, vorder, vknot, vmin, vmax,
+                                                   paramList, getOptions(), getAttributes(), transform));
 }
 
 RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n, RtToken tokens[],
@@ -1497,7 +1497,7 @@ RtVoid GMANRenderManImpl::RiSphereV(RtFloat radius, RtFloat zmin, RtFloat zmax, 
   GMANTransform transform(getTransform());
 
   worldManager->add(
-      objectManager->getRSSphere(radius, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
+      primitiveFactory->getRSSphere(radius, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
                                   RtPointer parms[]) {
@@ -1517,7 +1517,7 @@ RtVoid GMANRenderManImpl::RiConeV(RtFloat height, RtFloat radius, RtFloat tmax, 
   GMANTransform transform(getTransform());
 
   worldManager->add(
-      objectManager->getRSCone(height, radius, tmax, paramList, getOptions(), getAttributes(), transform));
+      primitiveFactory->getRSCone(height, radius, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
                                       RtToken tokens[], RtPointer parms[]) {
@@ -1537,7 +1537,7 @@ RtVoid GMANRenderManImpl::RiCylinderV(RtFloat radius, RtFloat zmin, RtFloat zmax
   GMANTransform transform(getTransform());
 
   worldManager->add(
-      objectManager->getRSCylinder(radius, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
+      primitiveFactory->getRSCylinder(radius, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat tmax, RtInt n, RtToken tokens[],
                                          RtPointer parms[]) {
@@ -1557,7 +1557,7 @@ RtVoid GMANRenderManImpl::RiHyperboloidV(RtPoint point1, RtPoint point2, RtFloat
   GMANTransform transform(getTransform());
 
   worldManager->add(
-      objectManager->getRSHyperboloid(point1, point2, tmax, paramList, getOptions(), getAttributes(), transform));
+      primitiveFactory->getRSHyperboloid(point1, point2, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, RtInt n,
                                         RtToken tokens[], RtPointer parms[]) {
@@ -1577,7 +1577,7 @@ RtVoid GMANRenderManImpl::RiParaboloidV(RtFloat rmax, RtFloat zmin, RtFloat zmax
   GMANTransform transform(getTransform());
 
   worldManager->add(
-      objectManager->getRSParaboloid(rmax, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
+      primitiveFactory->getRSParaboloid(rmax, zmin, zmax, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, RtInt n, RtToken tokens[],
                                   RtPointer parms[]) {
@@ -1597,7 +1597,7 @@ RtVoid GMANRenderManImpl::RiDiskV(RtFloat height, RtFloat radius, RtFloat tmax, 
   GMANTransform transform(getTransform());
 
   worldManager->add(
-      objectManager->getRSDisk(height, radius, tmax, paramList, getOptions(), getAttributes(), transform));
+      primitiveFactory->getRSDisk(height, radius, tmax, paramList, getOptions(), getAttributes(), transform));
 }
 RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
                                    RtInt n, RtToken tokens[], RtPointer parms[]) {
@@ -1616,8 +1616,8 @@ RtVoid GMANRenderManImpl::RiTorusV(RtFloat majrad, RtFloat minrad, RtFloat phimi
 
   GMANTransform transform(getTransform());
 
-  worldManager->add(objectManager->getRSTorus(majrad, minrad, phimin, phimax, tmax, paramList, getOptions(),
-                                              getAttributes(), transform));
+  worldManager->add(primitiveFactory->getRSTorus(majrad, minrad, phimin, phimax, tmax, paramList, getOptions(),
+                                                 getAttributes(), transform));
 }
 
 RtVoid GMANRenderManImpl::RiBlobbyV(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[], RtInt /*nflt*/,

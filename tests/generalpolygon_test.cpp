@@ -19,7 +19,7 @@
  */
 
 /*
- * GMANPatchPolyObjectManager::getRSPolygonMesh bridges every hole of a
+ * GMANRasterPrimitiveFactory::getRSPolygonMesh bridges every hole of a
  * GeneralPolygon face into its outer loop, then hands the merged ring to
  * the same triangulateEarClipping loop 1 already uses. This suite builds
  * its mesh through the factory and calls getRSPolygonMesh directly
@@ -61,10 +61,10 @@
 #include "gmanobject.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmantransform.h"
 
 namespace {
@@ -84,7 +84,7 @@ const double kOrientationAreaExemption = 1e-6;
 const double kRotationDegrees = 37.0;
 
 // This suite's own dicing-count oracle for one ear-clipped triangle,
-// independent of diceCountFor (gmanpatchpolyobjectmanager.cpp):
+// independent of diceCountFor (gmanrasterprimitivefactory.cpp):
 // clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L the longest of p0, p1, p2's
 // own raster-space edges. Orthographic screen-to-raster
 // (GMANViewingSystem::screenToRaster): this suite calls no RiProjectionV, so
@@ -119,7 +119,7 @@ int expectedDiceN(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2,
     return 16;
   }
   // Clamped in double before the RtInt conversion: mirrors
-  // gmanpatchpolyobjectmanager.cpp's own diceCountFor, since L can be
+  // gmanrasterprimitivefactory.cpp's own diceCountFor, since L can be
   // finite and still past what an int can hold.
   double n = std::ceil(L / std::sqrt((double)shadingRate));
   if (n < 1.0) {
@@ -228,7 +228,7 @@ gman::Owned<GMANPrimitive> runGetRSGeneralPolygon(const std::vector<std::vector<
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSGeneralPolygon: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;
@@ -505,7 +505,7 @@ void runOneLoopParity(const std::string& name, const std::vector<GMANPoint>& can
       GMANOptions options;
       GMANAttributes attr;
       GMANTransform transform;
-      GMANPatchPolyObjectManager mgr;
+      GMANRasterPrimitiveFactory mgr;
 
       bool const builtBoth = polyMesh.has_value() && generalMesh.has_value();
       check(builtBoth, std::string(buf) + ": the factory builds both meshes");

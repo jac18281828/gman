@@ -25,7 +25,7 @@
  * authored a million times smaller, or moved a million units from the
  * origin, is the same polygon and must triangulate the same way. This
  * suite builds its mesh through the factory and calls
- * GMANPatchPolyObjectManager::getRSPolygonMesh directly (white-box,
+ * GMANRasterPrimitiveFactory::getRSPolygonMesh directly (white-box,
  * mirroring polygon_test.cpp's checkTriangleCount and normals_test.cpp) and
  * runs each of nine hand-built rings at six scales (1e-6 .. 1e6) in two
  * placements -- axis-aligned at z=0, and rotated 37 degrees about the
@@ -87,10 +87,10 @@
 #include "gmanobject.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanprimitives.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmantransform.h"
 
 namespace {
@@ -113,9 +113,9 @@ const double kOrientationAreaExemption = 1e-6;
 const double kRotationDegrees = 37.0;
 
 // This suite's own dicing-count oracle for one ear-clipped triangle,
-// independent of GMANPatchPolyObjectManager's diceCountFor -- clamp(ceil(L /
+// independent of GMANRasterPrimitiveFactory's diceCountFor -- clamp(ceil(L /
 // sqrt(ShadingRate)), 1, 16), L the longest of p0, p1, p2's own
-// raster-space edges (see gmanpatchpolyobjectmanager.cpp). Orthographic
+// raster-space edges (see gmanrasterprimitivefactory.cpp). Orthographic
 // screen-to-raster (GMANViewingSystem::screenToRaster): this suite makes no
 // RiProjectionV call, so GMANOptions' own default projection applies,
 // and raster x, y pass straight through a camera-space point's own x, y,
@@ -149,7 +149,7 @@ int expectedDiceN(GMANPoint const& p0, GMANPoint const& p1, GMANPoint const& p2,
     return 16;
   }
   // Clamped in double before the RtInt conversion: mirrors
-  // gmanpatchpolyobjectmanager.cpp's own diceCountFor, since L can be
+  // gmanrasterprimitivefactory.cpp's own diceCountFor, since L can be
   // finite and still past what an int can hold.
   double n = std::ceil(L / std::sqrt((double)shadingRate));
   if (n < 1.0) {
@@ -235,7 +235,7 @@ gman::Owned<GMANPrimitive> runGetRSPolygon(const std::vector<GMANPoint>& ring) {
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   check(mesh.has_value(), "runGetRSPolygon: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;

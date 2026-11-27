@@ -261,7 +261,7 @@ if(GMAN_BUILD_RAYTRACER)
 endif()
 
 # GMANRenderManImpl's renderer, viewingSystem and output own nothing, and its
-# borrowed objectManager and worldManager point nowhere, from construction;
+# borrowed primitiveFactory and worldManager point nowhere, from construction;
 # RiEnd leaves them so. See tests/rendermanpointers_test.cpp.
 add_executable(gman_rendermanpointers rendermanpointers_test.cpp)
 target_link_libraries(gman_rendermanpointers PRIVATE gman gman_internal_headers)
@@ -552,7 +552,7 @@ add_executable(gman_normals normals_test.cpp)
 target_link_libraries(gman_normals PRIVATE gman gman_raster)
 add_test(NAME normals COMMAND gman_normals)
 # The inverse-transpose proof (item 3) tessellates a real sphere through
-# GMANPatchPolyObjectManager, which falls back to dlopen'ing "libmatte.so"
+# GMANRasterPrimitiveFactory, which falls back to dlopen'ing "libmatte.so"
 # when no RiSurface is set -- the same bare-name lookup gman itself relies
 # on the build tree being on the runtime search path for.
 set_tests_properties(normals PROPERTIES
@@ -561,7 +561,7 @@ set_tests_properties(normals PROPERTIES
   TIMEOUT 30)
 
 # Scale- and placement-invariance of
-# GMANPatchPolyObjectManager::getRSPolygonMesh's ear-clipping
+# GMANRasterPrimitiveFactory::getRSPolygonMesh's ear-clipping
 # classification: nine hand-built rings at six scales in two placements, a
 # randomized star-shaped stress, and degenerate input.
 add_executable(gman_triangulation triangulation_test.cpp)
@@ -1397,7 +1397,7 @@ set_tests_properties(orthowindow PROPERTIES
   LABELS render
   TIMEOUT 30)
 
-# Pins gmanpatchpolyobjectmanager.cpp's diceCountFor: n =
+# Pins gmanrasterprimitivefactory.cpp's diceCountFor: n =
 # clamp(ceil(L / sqrt(ShadingRate)), 1, 16), L an ear-clipped triangle's
 # longest raster-space edge. See tests/polygondicecount_test.cpp.
 add_executable(gman_polygondicecount polygondicecount_test.cpp)
@@ -2945,7 +2945,7 @@ set_tests_properties(raybvhalloc PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# GMANRayObjectManager::getRSPolygonMesh builds a multi-loop GMANRayPolygon
+# GMANRayPrimitiveFactory::getRSPolygonMesh builds a multi-loop GMANRayPolygon
 # for a GeneralPolygon face -- a hole misses at its centre, the ring
 # between hole and edge hits, and a point outside the outer loop misses --
 # and a Polygon's one-loop case keeps the same hits on the same three rays.
@@ -2981,7 +2981,7 @@ set_tests_properties(raypolygondegenerate PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# GMANRayObjectManager::getRSPolygonMesh returns one internal mesh
+# GMANRayPrimitiveFactory::getRSPolygonMesh returns one internal mesh
 # primitive for a PointsPolygons request; GMANRayBVH::build flattens it
 # into one entry per face. A ray aimed at a face reports the face's own
 # polygon, not the mesh, as hitPrimitive, and a fan of rays across a cube
@@ -3144,20 +3144,20 @@ set_tests_properties(torusspindle PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
-# Ray tracer core, unit 3: GMANRayObjectManager::getRSSphere builds a
+# Ray tracer core, unit 3: GMANRayPrimitiveFactory::getRSSphere builds a
 # GMANRaySphere holding its parameters and a copied transform, linked
-# against gman_ray, where GMANRayObjectManager and GMANRaySphere
+# against gman_ray, where GMANRayPrimitiveFactory and GMANRaySphere
 # both live.
-add_executable(gman_rayobjectmanager rayobjectmanager_test.cpp)
-target_link_libraries(gman_rayobjectmanager PRIVATE gman gman_ray)
+add_executable(gman_rayprimitivefactory rayprimitivefactory_test.cpp)
+target_link_libraries(gman_rayprimitivefactory PRIVATE gman gman_ray)
 
-add_test(NAME rayobjectmanager COMMAND gman_rayobjectmanager)
-set_tests_properties(rayobjectmanager PROPERTIES
+add_test(NAME rayprimitivefactory COMMAND gman_rayprimitivefactory)
+set_tests_properties(rayprimitivefactory PROPERTIES
   ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
   LABELS unit
   TIMEOUT 30)
 
-# GMANRayObjectManager::getRSPatch and getRSPatchMesh tessellate each request
+# GMANRayPrimitiveFactory::getRSPatch and getRSPatchMesh tessellate each request
 # into a watertight triangle mesh over the z-buffer's own dice grid. See
 # tests/raypatch_test.cpp.
 add_executable(gman_raypatch raypatch_test.cpp)
@@ -3172,7 +3172,7 @@ set_tests_properties(raypatch PROPERTIES
 # GMANRaytraceRenderer::getDepth, linked against gman_raytracer_objects,
 # which still compiles GMANRaytraceRenderer itself. A default
 # GMANAttributes loads libmatte.so by bare name, so this carries the
-# same ENVIRONMENT as gman_rayobjectmanager.
+# same ENVIRONMENT as gman_rayprimitivefactory.
 add_executable(gman_raydepth raydepth_test.cpp)
 target_link_libraries(gman_raydepth PRIVATE gman gman_internal_headers gman_raytracer_objects)
 
@@ -3608,7 +3608,7 @@ if(GMAN_BUILD_RAYTRACER)
     TIMEOUT 30)
 
   # GMANRayPolygon::intersect resolves and interpolates "st" the way
-  # GMANPatchPolyObjectManager's own polygon rule does: pinned against the
+  # GMANRasterPrimitiveFactory's own polygon rule does: pinned against the
   # checker texture's own texels, then cross-checked against the z-buffer's
   # own polygon output on a texture affine in (s, t). See
   # tests/polygonstparity_test.cpp.

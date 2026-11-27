@@ -1,5 +1,5 @@
 # Scale 1 0 1 collapses the y axis, making the CTM singular.
-# GMANPatchPolyObjectManager::createParametric inverts the CTM uncaught,
+# GMANRasterPrimitiveFactory::createParametric inverts the CTM uncaught,
 # so a well-formed NuPatch throws RIE_MATH before it can render.
 #
 # Along with nupatch_illegal_block.rib, this is one of the two

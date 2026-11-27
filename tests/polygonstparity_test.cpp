@@ -20,7 +20,7 @@
 
 /*
  * GMANRayPolygon::intersect resolves and interpolates "st" the way
- * GMANPatchPolyObjectManager's own polygon rule (resolvePolygonTextureCoordinates)
+ * GMANRasterPrimitiveFactory's own polygon rule (resolvePolygonTextureCoordinates)
  * does. Check 1 pins the ray tracer's own output against the checker
  * texture's known texels, at points a wrong implementation (hit.u =
  * hit.v = 0) would flatten to one texel's colour. Checks 2-3

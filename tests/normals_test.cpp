@@ -39,8 +39,8 @@
 #include "gmanobject.h"
 #include "gmanoptions.h"
 #include "gmanparameterlist.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
+#include "gmanrasterprimitivefactory.h"
 #include "gmanvector.h"
 #include "gmanvertex.h"
 #include "maketransform.h"
@@ -195,7 +195,7 @@ void testOrientationConsistency() {
 void testInverseTransposeUnderNonUniformScale() {
   GMANOptions options;
   GMANAttributes attr;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
   GMANParameterList pl;
 
   // A deliberately non-uniform scale: a plain forward transform of the
@@ -209,7 +209,7 @@ void testInverseTransposeUnderNonUniformScale() {
   auto prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, options, attr, transform);
   // Nothing in this tree ever frees a tessellated primitive's face/vertex
   // graph -- production code relies on process exit to reclaim it
-  // (GMANRenderManImpl::RiEnd leaves worldManager/objectManager
+  // (GMANRenderManImpl::RiEnd leaves worldManager/primitiveFactory
   // deliberately unfreed) and LeakSanitizer does not flag that, because
   // GMANWorldManager keeps every primitive it holds reachable up to exit.
   // A local variable discarded at the end of this function would make the
@@ -224,7 +224,7 @@ void testInverseTransposeUnderNonUniformScale() {
 
   check(object != nullptr, "inverse-transpose: getRSSphere returns an object");
 
-  // Walk the tessellated grid (URES=VRES=16, gmanpatchpolyobjectmanager.cpp)
+  // Walk the tessellated grid (URES=VRES=16, gmanrasterprimitivefactory.cpp)
   // by construction order: vertex k is (i=k/(VRES+1), j=k%(VRES+1)),
   // u=i/16, v=j/16. Skip the pole rows (j=0, j=16): the sphere's own (u,v)
   // parameterization is coordinate-singular there (dP/du -> 0), which is a

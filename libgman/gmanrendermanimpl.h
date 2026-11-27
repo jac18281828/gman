@@ -31,8 +31,8 @@
 #include "gman/export.h"
 #include "gmanfiledrivers.h"
 #include "gmangraphicstate.h"
-#include "gmanobjectmanager.h"
 #include "gmanoutput.h"
+#include "gmanprimitivefactory.h"
 #include "gmanrenderer.h"
 #include "gmanrenderman.h"
 #include "gmanviewingsystem.h"
@@ -56,9 +56,9 @@ private:
 
   // the object manager that stores the objects in the environment; borrowed
   // from renderer, valid exactly while renderer holds a value
-  GMANObjectManager* objectManager;
+  GMANPrimitiveFactory* primitiveFactory;
 
-  // world manager; borrowed from renderer like objectManager
+  // world manager; borrowed from renderer like primitiveFactory
   GMANWorldManager* worldManager;
 
   // Viewing system

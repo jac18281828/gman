@@ -42,10 +42,10 @@
 #include "gmanradiositymesh.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
-#include "gmanrayobjectmanager.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
 #include "gmanrayprimitive.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
 
@@ -67,7 +67,7 @@ constexpr RtFloat kHoleHalfSide = 0.5f + 1e-5f;
 constexpr RtFloat kRoundTripTolerance = 1e-3f;
 
 // ---------------------------------------------------------------------
-// Fixture construction, through the factory and GMANRayObjectManager's own
+// Fixture construction, through the factory and GMANRayPrimitiveFactory's own
 // getRSPolygonMesh.
 // ---------------------------------------------------------------------
 
@@ -91,7 +91,7 @@ gman::Owned<GMANPrimitive> buildPolygon(std::vector<GMANPoint> const& outer) {
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "buildPolygon: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;
@@ -116,7 +116,7 @@ gman::Owned<GMANPrimitive> buildGeneralPolygon(std::vector<std::vector<GMANPoint
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "buildGeneralPolygon: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;
@@ -144,7 +144,7 @@ gman::Owned<GMANPrimitive> buildPointsPolygon(std::vector<GMANPoint> const& poin
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "buildPointsPolygon: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;
@@ -179,7 +179,7 @@ gman::Owned<GMANPrimitive> buildPointsGeneralPolygons(std::vector<GMANPoint> con
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;
-  GMANRayObjectManager mgr;
+  GMANRayPrimitiveFactory mgr;
   check(mesh.has_value(), "buildPointsGeneralPolygons: the factory builds a mesh");
   if (!mesh.has_value()) {
     return nullptr;

@@ -23,7 +23,7 @@
 
 /*
  * GMANRenderManImpl's renderer, viewingSystem and output own nothing, and its
- * borrowed objectManager and worldManager point nowhere, from construction
+ * borrowed primitiveFactory and worldManager point nowhere, from construction
  * and again once RiEnd releases the renderer: a failed RiBegin leaves nothing
  * for RiEnd to release, a failed RiWorldBegin leaves output empty for
  * RiWorldEnd's own guard, and one RiEnd cannot leave viewingSystem for the

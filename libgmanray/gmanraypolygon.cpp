@@ -45,7 +45,7 @@ namespace {
 // A dimensionless quantity -- ray.getDirection() and the polygon's own
 // normal are both unit length -- so a ray this close to parallel with the
 // polygon's plane reads the same tolerance at any scale, the same idiom
-// gmanpatchpolyobjectmanager.cpp's kTriangulationTolerance uses for the
+// gmanrasterprimitivefactory.cpp's kTriangulationTolerance uses for the
 // same reason.
 constexpr RtFloat kParallelTolerance = (RtFloat)1.0e-6;
 

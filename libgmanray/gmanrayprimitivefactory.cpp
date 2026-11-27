@@ -40,7 +40,6 @@
 #include "gmandictionary.h"
 #include "gmaninvertiblematrix.h"
 #include "gmanlog.h"
-#include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
@@ -48,15 +47,16 @@
 #include "gmanpolygon.h"
 #include "gmanpolygonmesh.h"
 #include "gmanprimitive.h"
+#include "gmanprimitivefactory.h"
 #include "gmanprimitives.h"
 #include "gmanraycone.h"
 #include "gmanraycylinder.h"
 #include "gmanraydisk.h"
 #include "gmanrayhyperboloid.h"
-#include "gmanrayobjectmanager.h"
 #include "gmanrayparaboloid.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmanraysphere.h"
 #include "gmanraytorus.h"
 #include "gmanshading.h"
@@ -353,24 +353,25 @@ std::unique_ptr<GMANRayPolygonMesh> tessellatePatchMesh(GMANParametric& surface,
 } // namespace
 
 /*
- * RenderMan API GMANRayObjectManager
+ * RenderMan API GMANRayPrimitiveFactory
  *
  */
 
 // default constructor
-GMANRayObjectManager::GMANRayObjectManager() : GMANObjectManager() {};
+GMANRayPrimitiveFactory::GMANRayPrimitiveFactory() : GMANPrimitiveFactory() {};
 
 // default destructor
-GMANRayObjectManager::~GMANRayObjectManager() {};
+GMANRayPrimitiveFactory::~GMANRayPrimitiveFactory() {};
 
 // One call for every polygon request, a one-face Polygon included: one
 // GMANRayPolygonMesh when a face survives, an empty owner when none does.
 // GMANRayBVH::build flattens a mesh into the same entries a bare polygon
 // gives, so a one-face mesh's box and appearance already equal its own
 // face's.
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPolygonMesh(GMANPolygonMesh const& mesh,
-                                                                  GMANOptions const& /*opt*/,
-                                                                  GMANAttributes const& attr, GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSPolygonMesh(GMANPolygonMesh const& mesh,
+                                                                     GMANOptions const& /*opt*/,
+                                                                     GMANAttributes const& attr,
+                                                                     GMANTransform const& t) {
   std::span<RtFloat const> const p = mesh.points();
   std::size_t const pointCount = p.size() / 3;
 
@@ -402,9 +403,9 @@ gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPolygonMesh(GMANPolygonMes
   return rayMesh;
 }
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPatch(RtToken type, GMANParameterList pl,
-                                                            GMANOptions const& /*opt*/, GMANAttributes const& attr,
-                                                            GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSPatch(RtToken type, GMANParameterList pl,
+                                                               GMANOptions const& /*opt*/, GMANAttributes const& attr,
+                                                               GMANTransform const& t) {
   if (pl.floats("P").empty()) {
     return nullptr;
   }
@@ -431,10 +432,10 @@ gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPatch(RtToken type, GMANPa
   return mesh;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv,
-                                                                RtToken vwrap, GMANParameterList pl,
-                                                                GMANOptions const& /*opt*/, GMANAttributes const& attr,
-                                                                GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv,
+                                                                   RtToken vwrap, GMANParameterList pl,
+                                                                   GMANOptions const& /*opt*/,
+                                                                   GMANAttributes const& attr, GMANTransform const& t) {
   if (pl.floats("P").empty()) {
     return nullptr;
   }
@@ -478,7 +479,7 @@ gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPatchMesh(RtToken type, Rt
   return mesh;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSNuPatch(
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSNuPatch(
     RtInt /*nu*/, RtInt /*uorder*/, RtFloat /*uknot*/[], RtFloat /*umin*/, RtFloat /*umax*/, RtInt /*nv*/,
     RtInt /*vorder*/, RtFloat /*vknot*/[], RtFloat /*vmin*/, RtFloat /*vmax*/, GMANParameterList /*pl*/,
     GMANOptions const& /*opt*/, GMANAttributes const& /*attr*/, GMANTransform const& /*t*/) {
@@ -486,85 +487,93 @@ gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSNuPatch(
   return nullptr;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-                                                             GMANParameterList pl, GMANOptions const& /*opt*/,
-                                                             GMANAttributes const& attr, GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax,
+                                                                RtFloat tmax, GMANParameterList pl,
+                                                                GMANOptions const& /*opt*/, GMANAttributes const& attr,
+                                                                GMANTransform const& t) {
   auto sphere = gman::make<GMANRaySphere>(radius, zmin, zmax, tmax, pl, t);
   sphere->setAppearance(gman::appearanceOf(attr));
   return sphere;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSCone(RtFloat height, RtFloat radius, RtFloat tmax,
-                                                           GMANParameterList pl, GMANOptions const& /*opt*/,
-                                                           GMANAttributes const& attr, GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSCone(RtFloat height, RtFloat radius, RtFloat tmax,
+                                                              GMANParameterList pl, GMANOptions const& /*opt*/,
+                                                              GMANAttributes const& attr, GMANTransform const& t) {
   auto cone = gman::make<GMANRayCone>(height, radius, tmax, pl, t);
   cone->setAppearance(gman::appearanceOf(attr));
   return cone;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-                                                               GMANParameterList pl, GMANOptions const& /*opt*/,
-                                                               GMANAttributes const& attr, GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax,
+                                                                  RtFloat tmax, GMANParameterList pl,
+                                                                  GMANOptions const& /*opt*/,
+                                                                  GMANAttributes const& attr, GMANTransform const& t) {
   auto cylinder = gman::make<GMANRayCylinder>(radius, zmin, zmax, tmax, pl, t);
   cylinder->setAppearance(gman::appearanceOf(attr));
   return cylinder;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
-                                                                  GMANParameterList pl, GMANOptions const& /*opt*/,
-                                                                  GMANAttributes const& attr, GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
+                                                                     GMANParameterList pl, GMANOptions const& /*opt*/,
+                                                                     GMANAttributes const& attr,
+                                                                     GMANTransform const& t) {
   auto hyperboloid = gman::make<GMANRayHyperboloid>(point1, point2, tmax, pl, t);
   hyperboloid->setAppearance(gman::appearanceOf(attr));
   return hyperboloid;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-                                                                 GMANParameterList pl, GMANOptions const& /*opt*/,
-                                                                 GMANAttributes const& attr, GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax,
+                                                                    RtFloat tmax, GMANParameterList pl,
+                                                                    GMANOptions const& /*opt*/,
+                                                                    GMANAttributes const& attr,
+                                                                    GMANTransform const& t) {
   auto paraboloid = gman::make<GMANRayParaboloid>(rmax, zmin, zmax, tmax, pl, t);
   paraboloid->setAppearance(gman::appearanceOf(attr));
   return paraboloid;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax,
-                                                           GMANParameterList pl, GMANOptions const& /*opt*/,
-                                                           GMANAttributes const& attr, GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax,
+                                                              GMANParameterList pl, GMANOptions const& /*opt*/,
+                                                              GMANAttributes const& attr, GMANTransform const& t) {
   auto disk = gman::make<GMANRayDisk>(height, radius, tmax, pl, t);
   disk->setAppearance(gman::appearanceOf(attr));
   return disk;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin,
-                                                            RtFloat phimax, RtFloat tmax, GMANParameterList pl,
-                                                            GMANOptions const& /*opt*/, GMANAttributes const& attr,
-                                                            GMANTransform const& t) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin,
+                                                               RtFloat phimax, RtFloat tmax, GMANParameterList pl,
+                                                               GMANOptions const& /*opt*/, GMANAttributes const& attr,
+                                                               GMANTransform const& t) {
   auto torus = gman::make<GMANRayTorus>(majrad, minrad, phimin, phimax, tmax, pl, t);
   torus->setAppearance(gman::appearanceOf(attr));
   return torus;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSBlobby(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[],
-                                                             RtInt /*nflt*/, RtFloat /*flt*/[], RtInt /*nstr*/,
-                                                             RtToken /*str*/[], GMANParameterList /*pl*/,
-                                                             GMANOptions const& /*opt*/, GMANAttributes const& /*attr*/,
-                                                             GMANTransform const& /*t*/) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSBlobby(RtInt /*nleaf*/, RtInt /*ncode*/, RtInt /*code*/[],
+                                                                RtInt /*nflt*/, RtFloat /*flt*/[], RtInt /*nstr*/,
+                                                                RtToken /*str*/[], GMANParameterList /*pl*/,
+                                                                GMANOptions const& /*opt*/,
+                                                                GMANAttributes const& /*attr*/,
+                                                                GMANTransform const& /*t*/) {
   return nullptr;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPoints(RtInt /*npoints*/, GMANParameterList /*pl*/,
-                                                             GMANOptions const& /*opt*/, GMANAttributes const& /*attr*/,
-                                                             GMANTransform const& /*t*/) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSPoints(RtInt /*npoints*/, GMANParameterList /*pl*/,
+                                                                GMANOptions const& /*opt*/,
+                                                                GMANAttributes const& /*attr*/,
+                                                                GMANTransform const& /*t*/) {
   return nullptr;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSCurves(RtToken /*type*/, RtInt /*ncurves*/, RtInt /*nvertices*/[],
-                                                             RtToken /*wrap*/, GMANParameterList /*pl*/,
-                                                             GMANOptions const& /*opt*/, GMANAttributes const& /*attr*/,
-                                                             GMANTransform const& /*t*/) {
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSCurves(RtToken /*type*/, RtInt /*ncurves*/,
+                                                                RtInt /*nvertices*/[], RtToken /*wrap*/,
+                                                                GMANParameterList /*pl*/, GMANOptions const& /*opt*/,
+                                                                GMANAttributes const& /*attr*/,
+                                                                GMANTransform const& /*t*/) {
   return nullptr;
 };
 
-gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSSubdivisionMesh(
+gman::Owned<GMANPrimitive> GMANRayPrimitiveFactory::getRSSubdivisionMesh(
     RtToken /*mask*/, RtInt /*nf*/, RtInt /*nverts*/[], RtInt /*verts*/[], RtInt /*ntags*/, RtToken /*tags*/[],
     RtInt /*numargs*/[], RtInt /*intargs*/[], RtFloat /*floatargs*/[], GMANParameterList /*pl*/,
     GMANOptions const& /*opt*/, GMANAttributes const& /*attr*/, GMANTransform const& /*t*/) {

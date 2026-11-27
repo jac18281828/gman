@@ -20,7 +20,7 @@
 
 /*
  * PatchMesh rasterization: GMANPatchMesh implements GMANParametric,
- * RiPatchMeshV builds the request and GMANPatchPolyObjectManager::
+ * RiPatchMeshV builds the request and GMANRasterPrimitiveFactory::
  * getRSPatchMesh dispatches "bilinear" to a hand-written mapping and
  * "bicubic" to GMANBasis::bicubicMesh.
  *
@@ -51,8 +51,8 @@
 #include "gmanobject.h"
 #include "gmanowned.h"
 #include "gmanparameterlist.h"
-#include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
+#include "gmanrasterprimitivefactory.h"
 #include "goldenimage.h"
 #include "rungman.h"
 
@@ -186,7 +186,7 @@ void testBicubicPeriodicClosure() {
 // basis (b-spline here) is the case that bound got wrong -- it accepted
 // n down to 1, but GMANBasis::offset's periodic wraparound (a single
 // `i-=nu`, not a true modulo) only stays in range for n>=3 at step=1 (see
-// gmanpatchpolyobjectmanager.cpp's validPeriodicBicubicMeshDim). nu=3
+// gmanrasterprimitivefactory.cpp's validPeriodicBicubicMeshDim). nu=3
 // periodic is exactly that floor: three sub-patches, each stepping by 1,
 // the last one starting at astart=nu-step=2 and reaching index 2+3=5,
 // which offset's single subtraction must land back at 5-3=2 -- in range
@@ -242,7 +242,7 @@ void testMixedWrapCornerHandComputed() {
 // step divides by zero unless the branch guards it first, exactly as its
 // periodic sibling already does. RiPatchMeshV checks uStep/vStep itself
 // first and stops such a step before getRSPatchMesh, so this drives
-// GMANPatchPolyObjectManager directly, the one path this input can still
+// GMANRasterPrimitiveFactory directly, the one path this input can still
 // reach.
 void testNonperiodicBicubicZeroStepRejected() {
   RtFloat p[36];
@@ -259,7 +259,7 @@ void testNonperiodicBicubicZeroStepRejected() {
   GMANAttributes attr;
   attr.setUVBasis(RiBezierBasis, /*ustep=*/0, RiBezierBasis, /*vstep=*/3);
   GMANTransform transform;
-  GMANPatchPolyObjectManager mgr;
+  GMANRasterPrimitiveFactory mgr;
 
   auto prim = mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken)RI_NONPERIODIC, 3, (RtToken)RI_PERIODIC, pl, options,
                                  attr, transform);

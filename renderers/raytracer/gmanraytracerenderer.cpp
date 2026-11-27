@@ -42,12 +42,12 @@
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
-#include "gmanobjectmanager.h"
 #include "gmanocclude.h"
 #include "gmanoptions.h"
 #include "gmanparallel.h"
 #include "gmanpoint.h"
 #include "gmanprimitive.h"
+#include "gmanprimitivefactory.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanrayoccluder.h"
@@ -526,4 +526,4 @@ void GMANRaytraceRenderer::setWorkers(RtInt workers) { requestedWorkers = worker
 GMANWorldManager* GMANRaytraceRenderer::getWorldManager(void) { return &worldManager; }
 
 // return its object manager
-GMANObjectManager* GMANRaytraceRenderer::getObjectManager(void) { return &objectManager; }
+GMANPrimitiveFactory* GMANRaytraceRenderer::getPrimitiveFactory(void) { return &primitiveFactory; }

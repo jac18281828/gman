@@ -19,7 +19,7 @@
  */
 
 /*
- * GMANRayObjectManager::getRSPatch and getRSPatchMesh tessellate each
+ * GMANRayPrimitiveFactory::getRSPatch and getRSPatchMesh tessellate each
  * request into a watertight triangle mesh over the z-buffer's own
  * kParametricDiceCount grid. Expected points come from the blending
  * functions of RISpec 3.2 section 5.2, written out here.
@@ -48,9 +48,9 @@
 #include "gmanpoint.h"
 #include "gmanprimitives.h"
 #include "gmanray.h"
-#include "gmanrayobjectmanager.h"
 #include "gmanraypolygon.h"
 #include "gmanraypolygonmesh.h"
+#include "gmanrayprimitivefactory.h"
 #include "gmantransform.h"
 #include "gmanvector.h"
 #include "ri.h"
@@ -219,7 +219,7 @@ GMANParameterList makeList(std::vector<Param>& params, Counts counts) {
 }
 
 struct Request {
-  GMANRayObjectManager manager;
+  GMANRayPrimitiveFactory manager;
   GMANOptions options;
   GMANAttributes attr;
   GMANTransform transform;

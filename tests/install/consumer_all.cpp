@@ -23,7 +23,7 @@
  * links gman::gman, gman::gman_ray and gman::gman_raster. It renders a
  * lit sphere to consumer_all.tif in its working directory through the C
  * interface, calls gman::oneMinus from libgman_ray and calls
- * GMANPatchPolyObjectManager from libgman_raster. It returns 1 when the
+ * GMANRasterPrimitiveFactory from libgman_raster. It returns 1 when the
  * render leaves an error in RiLastError or either call answers wrongly.
  */
 
@@ -33,8 +33,8 @@
 #include <gman/gmanoptions.h>
 #include <gman/gmanowned.h>
 #include <gman/gmanparameterlist.h>
-#include <gman/gmanpatchpolyobjectmanager.h>
 #include <gman/gmanprimitive.h>
+#include <gman/gmanrasterprimitivefactory.h>
 #include <gman/gmanrayoccluder.h>
 #include <gman/gmantransform.h>
 #include <gman/ri.h>
@@ -69,7 +69,7 @@ bool oneMinusInvertsOpacity() {
 }
 
 bool rasterManagerAnswers() {
-  GMANPatchPolyObjectManager manager;
+  GMANRasterPrimitiveFactory manager;
   GMANOptions options;
   GMANAttributes attributes;
   GMANTransform transform;
