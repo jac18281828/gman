@@ -29,6 +29,7 @@
 #include <limits>
 #include <numbers>
 #include <optional>
+#include <variant>
 #include <vector>
 
 #include "gmanbbox.h"
@@ -79,6 +80,9 @@ constexpr double kDiskNearField = 0.75;
 // times the better strategy's over six zones seen from twelve views.
 constexpr double kZoneNearField = 1.5;
 
+// The placement a shape without one answers: empty, as a singular placement is.
+const auto kNoPlacement = std::optional<InvertibleMatrix>();
+
 RtFloat meanChannel(GMANColor const& c) { return (c.getRed() + c.getGreen() + c.getBlue()) / (RtFloat)3.0; }
 
 // A degenerate sphere zone never emits: a non-positive radius, an empty or
@@ -86,12 +90,12 @@ RtFloat meanChannel(GMANColor const& c) { return (c.getRed() + c.getGreen() + c.
 // zone samplePoint's own r = sqrt(max(0, radius^2 - z^2)) would floor at 0
 // rather than describe a real point), or a non-positive thetamax.
 bool sphereEligible(GMANRaySphere const& sphere) {
-  RtFloat const radius = sphere.getRadius();
+  const auto radius = sphere.getRadius();
   if (!(radius > 0.0f)) {
     return false;
   }
-  RtFloat const zmin = sphere.getZMin();
-  RtFloat const zmax = sphere.getZMax();
+  const auto zmin = sphere.getZMin();
+  const auto zmax = sphere.getZMax();
   if (!(zmax > zmin)) {
     return false;
   }
@@ -104,33 +108,40 @@ bool sphereEligible(GMANRaySphere const& sphere) {
 // A degenerate disk sector never emits: a non-positive radius or thetamax.
 bool diskEligible(GMANRayDisk const& disk) { return disk.getRadius() > 0.0f && disk.getThetaMax() > 0.0f; }
 
-// shape downcast once to whichever supported type it is: sphere non-null
-// xor disk non-null xor mesh non-null, all null for an unsupported
-// primitive type.
-struct EmittingShapeKind {
-  GMANRaySphere const* sphere;
-  GMANRayDisk const* disk;
-  GMANRayPolygonMesh const* mesh;
+// One lambda per alternative of a variant, or a generic lambda for several,
+// as a std::visit visitor.
+template <class... Arms> struct Overloaded : Arms... {
+  using Arms::operator()...;
 };
 
+template <class... Arms> Overloaded(Arms...) -> Overloaded<Arms...>;
+
+// shape downcast once to whichever supported type it is: a non-null sphere,
+// disk or polygon mesh, std::monostate for an unsupported primitive type.
+using EmittingShapeKind =
+    std::variant<std::monostate, GMANRaySphere const*, GMANRayDisk const*, GMANRayPolygonMesh const*>;
+
 EmittingShapeKind classifyEmittingShape(GMANRayPrimitive const& shape) {
-  if (GMANRaySphere const* sphere = dynamic_cast<GMANRaySphere const*>(&shape)) {
-    return {sphere, nullptr, nullptr};
+  if (auto const* sphere = dynamic_cast<GMANRaySphere const*>(&shape)) {
+    return sphere;
   }
-  if (GMANRayDisk const* disk = dynamic_cast<GMANRayDisk const*>(&shape)) {
-    return {nullptr, disk, nullptr};
+  if (auto const* disk = dynamic_cast<GMANRayDisk const*>(&shape)) {
+    return disk;
   }
-  return {nullptr, nullptr, dynamic_cast<GMANRayPolygonMesh const*>(&shape)};
+  if (auto const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(&shape)) {
+    return mesh;
+  }
+  return std::monostate{};
 }
 
 // The mesh a face of a polygon mesh belongs to, else primitive itself: the
 // shape an emitter names for that hit.
 GMANRayPrimitive const* emittingShapeOf(GMANRayPrimitive const* primitive) {
-  GMANRayPolygon const* face = dynamic_cast<GMANRayPolygon const*>(primitive);
+  auto const* face = dynamic_cast<GMANRayPolygon const*>(primitive);
   if (face == nullptr) {
     return primitive;
   }
-  GMANRayPolygonMesh const* mesh = face->getMesh();
+  auto const* mesh = face->getMesh();
   if (mesh == nullptr) {
     return primitive;
   }
@@ -141,37 +152,46 @@ GMANRayPrimitive const* emittingShapeOf(GMANRayPrimitive const* primitive) {
 // or disk. False for any other primitive type, a polygon mesh included, or a
 // degenerate one; area is left untouched.
 bool emittingShapeArea(GMANRayPrimitive const& shape, RtFloat& area) {
-  EmittingShapeKind const kind = classifyEmittingShape(shape);
-  if (kind.sphere != nullptr) {
-    if (!sphereEligible(*kind.sphere)) {
-      return false;
-    }
-    area = kind.sphere->area();
-    return true;
-  }
-  if (kind.disk != nullptr) {
-    if (!diskEligible(*kind.disk)) {
-      return false;
-    }
-    area = kind.disk->area();
-    return true;
-  }
-  return false;
+  return std::visit(Overloaded{[&area](GMANRaySphere const* sphere) {
+                                 if (!sphereEligible(*sphere)) {
+                                   return false;
+                                 }
+                                 area = sphere->area();
+                                 return true;
+                               },
+                               [&area](GMANRayDisk const* disk) {
+                                 if (!diskEligible(*disk)) {
+                                   return false;
+                                 }
+                                 area = disk->area();
+                                 return true;
+                               },
+                               [](auto) { return false; }},
+                    classifyEmittingShape(shape));
 }
 
-// shape's own shutter-open placement, empty for a singular one. Precondition:
-// shape is a GMANRaySphere or GMANRayDisk, the two emitting types a placement
-// describes.
+// shape's own shutter-open placement: empty for a singular one and for a
+// shape of any type but GMANRaySphere or GMANRayDisk, the two emitting types
+// a placement describes.
 std::optional<InvertibleMatrix> const& emittingShapeObjectToCamera(GMANRayPrimitive const& shape) {
-  EmittingShapeKind const kind = classifyEmittingShape(shape);
-  return (kind.sphere != nullptr) ? kind.sphere->getObjectToCamera() : kind.disk->getObjectToCamera();
+  return std::visit(Overloaded{[](GMANRaySphere const* sphere) -> std::optional<InvertibleMatrix> const& {
+                                 return sphere->getObjectToCamera();
+                               },
+                               [](GMANRayDisk const* disk) -> std::optional<InvertibleMatrix> const& {
+                                 return disk->getObjectToCamera();
+                               },
+                               [](auto) -> std::optional<InvertibleMatrix> const& { return kNoPlacement; }},
+                    classifyEmittingShape(shape));
 }
 
-// shape's own uniform-by-area draw, in object space. Precondition: shape is
-// a GMANRaySphere or GMANRayDisk.
+// shape's own uniform-by-area draw, in object space, for a GMANRaySphere or
+// GMANRayDisk; the origin, normal untouched, for a shape of any other type.
 GMANPoint emittingShapeSamplePoint(GMANRayPrimitive const& shape, double u1, double u2, GMANVector& normal) {
-  EmittingShapeKind const kind = classifyEmittingShape(shape);
-  return (kind.sphere != nullptr) ? kind.sphere->samplePoint(u1, u2, normal) : kind.disk->samplePoint(u1, u2, normal);
+  return std::visit(
+      Overloaded{[u1, u2, &normal](GMANRaySphere const* sphere) { return sphere->samplePoint(u1, u2, normal); },
+                 [u1, u2, &normal](GMANRayDisk const* disk) { return disk->samplePoint(u1, u2, normal); },
+                 [](auto) { return GMANPoint(0.0f, 0.0f, 0.0f); }},
+      classifyEmittingShape(shape));
 }
 
 // Places an object-space point and normal by objectToCamera, the normal
@@ -192,9 +212,9 @@ void placeEmitterPoint(InvertibleMatrix const& objectToCamera, GMANPoint const& 
 // objectToCamera's inverse transpose, before normalizing. Exact for any
 // invertible affine placement; 1 within float rounding for a rigid one.
 RtFloat areaJacobian(InvertibleMatrix const& objectToCamera, GMANVector const& objectNormal) {
-  GMANMatrix4 linear = objectToCamera.forward(); // determinant() is non-const
-  RtFloat const linearDet = linear.determinant();
-  GMANVector nPrime = gman::transformNormal(objectToCamera, objectNormal); // magnitude() is non-const
+  auto linear = objectToCamera.forward(); // determinant() is non-const
+  const auto linearDet = linear.determinant();
+  auto nPrime = gman::transformNormal(objectToCamera, objectNormal); // magnitude() is non-const
   return std::fabs(linearDet) * nPrime.magnitude();
 }
 
@@ -360,8 +380,8 @@ double signedTriangleArea(GMANPoint const& a, GMANPoint const& b, GMANPoint cons
 // The area of face's fan triangle (v0, v[i], v[i + 1]); 0 when it winds
 // against the face or is not finite.
 double fanTriangleArea(GMANRayPolygon const& face, std::size_t i) {
-  std::vector<GMANPoint> const& loop = face.getOuterLoop();
-  double const area = signedTriangleArea(loop[0], loop[i], loop[i + 1], face.getPlaneNormal());
+  auto const& loop = face.getOuterLoop();
+  const auto area = signedTriangleArea(loop[0], loop[i], loop[i + 1], face.getPlaneNormal());
   return (std::isfinite(area) && area > 0.0) ? area : 0.0;
 }
 
@@ -371,8 +391,8 @@ double faceArea(GMANRayPolygon const& face) {
   if (face.isDegenerate()) {
     return 0.0;
   }
-  double area = 0.0;
-  for (std::size_t i = 1; i + 1 < face.getOuterLoop().size(); ++i) {
+  auto area = 0.0;
+  for (auto i = std::size_t{1}; i + 1 < face.getOuterLoop().size(); ++i) {
     area += fanTriangleArea(face, i);
   }
   return area;
@@ -380,8 +400,8 @@ double faceArea(GMANRayPolygon const& face) {
 
 // The sum of mesh's faces' areas.
 double meshArea(GMANRayPolygonMesh const& mesh) {
-  double area = 0.0;
-  for (std::size_t f = 0; f < mesh.getFaceCount(); ++f) {
+  auto area = 0.0;
+  for (auto f = std::size_t{0}; f < mesh.getFaceCount(); ++f) {
     area += faceArea(mesh.getFace(f));
   }
   return area;
@@ -390,10 +410,10 @@ double meshArea(GMANRayPolygonMesh const& mesh) {
 // The index of the nearest vertex from i, forward or backward around loop,
 // that differs from loop[i]; i when none does.
 std::size_t distinctNeighbour(std::vector<GMANPoint> const& loop, std::size_t i, bool forward) {
-  std::size_t const count = loop.size();
-  for (std::size_t step = 1; step < count; ++step) {
-    std::size_t const offset = forward ? step : count - step;
-    std::size_t const j = (i + offset) % count;
+  const auto count = loop.size();
+  for (auto step = std::size_t{1}; step < count; ++step) {
+    const auto offset = forward ? step : count - step;
+    const auto j = (i + offset) % count;
     if (loop[j] != loop[i]) {
       return j;
     }
@@ -405,17 +425,17 @@ std::size_t distinctNeighbour(std::vector<GMANPoint> const& loop, std::size_t i,
 // crossed along normal, falls below -kReflexTurnTolerance times area; a
 // non-finite turn does not.
 bool reflexVertex(std::vector<GMANPoint> const& loop, std::size_t i, GMANVector const& normal, double area) {
-  GMANPoint const& previous = loop[distinctNeighbour(loop, i, false)];
-  GMANPoint const& next = loop[distinctNeighbour(loop, i, true)];
-  double const turn = GMANVector(previous, loop[i]).cross(GMANVector(loop[i], next)).dot(normal);
+  auto const& previous = loop[distinctNeighbour(loop, i, false)];
+  auto const& next = loop[distinctNeighbour(loop, i, true)];
+  const auto turn = static_cast<double>(GMANVector(previous, loop[i]).cross(GMANVector(loop[i], next)).dot(normal));
   return turn < -kReflexTurnTolerance * area;
 }
 
 // Whether any vertex of the non-degenerate face is reflex.
 bool concaveFace(GMANRayPolygon const& face) {
-  std::vector<GMANPoint> const& loop = face.getOuterLoop();
-  double const area = faceArea(face);
-  for (std::size_t i = 0; i < loop.size(); ++i) {
+  auto const& loop = face.getOuterLoop();
+  const auto area = faceArea(face);
+  for (auto i = std::size_t{0}; i < loop.size(); ++i) {
     if (reflexVertex(loop, i, face.getPlaneNormal(), area)) {
       return true;
     }
@@ -426,8 +446,8 @@ bool concaveFace(GMANRayPolygon const& face) {
 // Whether mesh can emit: every vertex finite, no face with a hole or a reflex
 // vertex, and a finite positive area.
 bool meshEligible(GMANRayPolygonMesh const& mesh) {
-  for (std::size_t f = 0; f < mesh.getFaceCount(); ++f) {
-    GMANRayPolygon const& face = mesh.getFace(f);
+  for (auto f = std::size_t{0}; f < mesh.getFaceCount(); ++f) {
+    auto const& face = mesh.getFace(f);
     if (!face.getHoles().empty() || !std::ranges::all_of(face.getOuterLoop(), finitePoint)) {
       return false;
     }
@@ -435,17 +455,17 @@ bool meshEligible(GMANRayPolygonMesh const& mesh) {
       return false;
     }
   }
-  double const area = meshArea(mesh);
+  const auto area = meshArea(mesh);
   return std::isfinite(area) && area > 0.0;
 }
 
 // The centre and half the diagonal of mesh's camera-space bounding box.
 void meshCentreAndRadius(GMANRayPolygonMesh const& mesh, GMANPoint& centre, RtFloat& radius) {
-  GMANPoint const low = mesh.getBBox().getMin();
-  GMANPoint const high = mesh.getBBox().getMax();
+  const auto low = mesh.getBBox().getMin();
+  const auto high = mesh.getBBox().getMax();
   centre = GMANPoint((low.getX() + high.getX()) / (RtFloat)2.0, (low.getY() + high.getY()) / (RtFloat)2.0,
                      (low.getZ() + high.getZ()) / (RtFloat)2.0);
-  GMANVector diagonal(low, high);
+  auto diagonal = GMANVector(low, high);
   radius = diagonal.magnitude() / (RtFloat)2.0;
 }
 
@@ -471,8 +491,8 @@ double faceSolidAngle(GMANRayPolygon const& face, DoubleVector const& p) {
   if (face.isDegenerate()) {
     return 0.0;
   }
-  double solidAngle = 0.0;
-  for (std::size_t i = 1; i + 1 < face.getOuterLoop().size(); ++i) {
+  auto solidAngle = 0.0;
+  for (auto i = std::size_t{1}; i + 1 < face.getOuterLoop().size(); ++i) {
     solidAngle += fanTriangleSolidAngle(face, i, p);
   }
   return solidAngle;
@@ -481,8 +501,8 @@ double faceSolidAngle(GMANRayPolygon const& face, DoubleVector const& p) {
 // The sum of mesh's faces' solid angles from p: the solid angle its emitting
 // sides subtend there, back-facing faces excluded.
 double meshSolidAngle(GMANRayPolygonMesh const& mesh, DoubleVector const& p) {
-  double solidAngle = 0.0;
-  for (std::size_t f = 0; f < mesh.getFaceCount(); ++f) {
+  auto solidAngle = 0.0;
+  for (auto f = std::size_t{0}; f < mesh.getFaceCount(); ++f) {
     solidAngle += faceSolidAngle(mesh.getFace(f), p);
   }
   return solidAngle;
@@ -499,16 +519,16 @@ struct Pick {
 // weight is positive.
 template <class WeightOf>
 std::optional<Pick> pickByWeight(std::size_t count, double total, double u, WeightOf const& weightOf) {
-  double const target = u * total;
-  double lower = 0.0;
+  const auto target = u * total;
+  auto lower = 0.0;
   std::optional<Pick> pick;
-  for (std::size_t i = 0; i < count; ++i) {
-    double const weight = weightOf(i);
+  for (auto i = std::size_t{0}; i < count; ++i) {
+    const auto weight = weightOf(i);
     if (!(weight > 0.0)) {
       continue;
     }
     pick = Pick{i, std::clamp((target - lower) / weight, 0.0, kLargestBelowOne)};
-    double const upper = lower + weight;
+    const auto upper = lower + weight;
     if (target < upper) {
       return pick;
     }
@@ -837,28 +857,34 @@ std::optional<SolidAngleDraw> drawSphereByCone(GMANRaySphere const& sphere, Inve
 // sphere's own centre and radius, or the disk's own point at its height
 // and radius, each placed by shape's own object-to-camera transform; a
 // polygon mesh's own bounding box's centre and half its diagonal.
-// Precondition: shape is a GMANRaySphere, GMANRayDisk or GMANRayPolygonMesh.
-// False, centre and radius untouched, for a singular placement.
+// False, centre and radius untouched, for a singular placement and for a
+// shape of any other type.
 bool emittingShapeCentreAndRadius(GMANRayPrimitive const& shape, GMANPoint& centre, RtFloat& radius) {
-  EmittingShapeKind const kind = classifyEmittingShape(shape);
-  if (kind.mesh != nullptr) {
-    meshCentreAndRadius(*kind.mesh, centre, radius);
-    return true;
-  }
-  std::optional<InvertibleMatrix> const& objectToCamera = emittingShapeObjectToCamera(shape);
-  if (!objectToCamera) {
-    return false;
-  }
-  GMANPoint objectCentre;
-  if (kind.sphere != nullptr) {
-    radius = kind.sphere->getRadius();
-    objectCentre = GMANPoint(0.0f, 0.0f, 0.0f);
-  } else {
-    radius = kind.disk->getRadius();
-    objectCentre = GMANPoint(0.0f, 0.0f, kind.disk->getHeight());
-  }
-  centre = gman::transformPoint(*objectToCamera, objectCentre);
-  return true;
+  return std::visit(Overloaded{[&centre, &radius](GMANRaySphere const* sphere) {
+                                 auto const& objectToCamera = sphere->getObjectToCamera();
+                                 if (!objectToCamera) {
+                                   return false;
+                                 }
+                                 radius = sphere->getRadius();
+                                 centre = gman::transformPoint(*objectToCamera, GMANPoint(0.0f, 0.0f, 0.0f));
+                                 return true;
+                               },
+                               [&centre, &radius](GMANRayDisk const* disk) {
+                                 auto const& objectToCamera = disk->getObjectToCamera();
+                                 if (!objectToCamera) {
+                                   return false;
+                                 }
+                                 radius = disk->getRadius();
+                                 centre =
+                                     gman::transformPoint(*objectToCamera, GMANPoint(0.0f, 0.0f, disk->getHeight()));
+                                 return true;
+                               },
+                               [&centre, &radius](GMANRayPolygonMesh const* mesh) {
+                                 meshCentreAndRadius(*mesh, centre, radius);
+                                 return true;
+                               },
+                               [](std::monostate) { return false; }},
+                    classifyEmittingShape(shape));
 }
 
 // The camera-space area emitters() needs for power: exact for a disk,
@@ -866,18 +892,20 @@ bool emittingShapeCentreAndRadius(GMANRayPrimitive const& shape, GMANPoint& cent
 // sampled point, evaluated from its own fixed (0, 0, -1) normal; an
 // estimate for a sphere, whose Jacobian varies pointwise, via |det L|^(2/3)
 // -- the area factor a uniform scale of that same determinant would give,
-// exact under a rigid or uniformly scaled placement. Precondition: shape
-// is a GMANRaySphere or GMANRayDisk.
+// exact under a rigid or uniformly scaled placement. A shape of any type but
+// GMANRayDisk takes the estimate.
 RtFloat emittingShapeCameraArea(GMANRayPrimitive const& shape, InvertibleMatrix const& objectToCamera,
                                 RtFloat objectArea) {
-  EmittingShapeKind const kind = classifyEmittingShape(shape);
-  if (kind.disk != nullptr) {
-    GMANVector const diskNormal(0.0f, 0.0f, -1.0f);
-    return objectArea * areaJacobian(objectToCamera, diskNormal);
-  }
-  GMANMatrix4 linear = objectToCamera.forward(); // determinant() is non-const
-  RtFloat const linearDet = std::fabs(linear.determinant());
-  return objectArea * std::pow(linearDet, (RtFloat)(2.0 / 3.0));
+  return std::visit(Overloaded{[&objectToCamera, objectArea](GMANRayDisk const*) {
+                                 const auto diskNormal = GMANVector(0.0f, 0.0f, -1.0f);
+                                 return objectArea * areaJacobian(objectToCamera, diskNormal);
+                               },
+                               [&objectToCamera, objectArea](auto) {
+                                 auto linear = objectToCamera.forward(); // determinant() is non-const
+                                 const auto linearDet = std::fabs(linear.determinant());
+                                 return objectArea * std::pow(linearDet, (RtFloat)(2.0 / 3.0));
+                               }},
+                    classifyEmittingShape(shape));
 }
 
 // One draw on an area emitter's shape, placed into camera space: sample(),
@@ -893,10 +921,10 @@ struct EmitterDraw {
 // The point of triangle (a, b, c) that the square-root warp of (u1, u2) picks,
 // uniform by area: barycentric weights (1 - sqrt(u1), u2 sqrt(u1), sqrt(u1) (1 - u2)).
 GMANPoint pointInTriangle(GMANPoint const& a, GMANPoint const& b, GMANPoint const& c, double u1, double u2) {
-  double const root = std::sqrt(u1);
-  double const weightA = 1.0 - root;
-  double const weightB = u2 * root;
-  double const weightC = root * (1.0 - u2);
+  const auto root = std::sqrt(u1);
+  const auto weightA = 1.0 - root;
+  const auto weightB = u2 * root;
+  const auto weightC = root * (1.0 - u2);
   return GMANPoint(static_cast<RtFloat>(weightA * a.getX() + weightB * b.getX() + weightC * c.getX()),
                    static_cast<RtFloat>(weightA * a.getY() + weightB * b.getY() + weightC * c.getY()),
                    static_cast<RtFloat>(weightA * a.getZ() + weightB * b.getZ() + weightC * c.getZ()));
@@ -905,19 +933,19 @@ GMANPoint pointInTriangle(GMANPoint const& a, GMANPoint const& b, GMANPoint cons
 // A point drawn uniformly by area over mesh, with its face's plane normal, the
 // mesh's total area and area Jacobian 1; empty for a mesh with no area.
 std::optional<EmitterDraw> drawMeshPoint(GMANRayPolygonMesh const& mesh, RtFloat u1, RtFloat u2) {
-  double const total = meshArea(mesh);
+  const auto total = meshArea(mesh);
   if (!std::isfinite(total) || !(total > 0.0)) {
     return std::nullopt;
   }
   auto const faceAreaAt = [&mesh](std::size_t f) { return faceArea(mesh.getFace(f)); };
-  std::optional<Pick> const facePick = pickByWeight(mesh.getFaceCount(), total, u1, faceAreaAt);
+  const auto facePick = pickByWeight(mesh.getFaceCount(), total, u1, faceAreaAt);
   if (!facePick) {
     return std::nullopt;
   }
-  GMANRayPolygon const& face = mesh.getFace(facePick->index);
+  auto const& face = mesh.getFace(facePick->index);
   auto const fanAreaAt = [&face](std::size_t t) { return fanTriangleArea(face, t + 1); };
-  std::vector<GMANPoint> const& loop = face.getOuterLoop();
-  std::optional<Pick> const trianglePick = pickByWeight(loop.size() - 2, faceArea(face), facePick->fraction, fanAreaAt);
+  auto const& loop = face.getOuterLoop();
+  const auto trianglePick = pickByWeight(loop.size() - 2, faceArea(face), facePick->fraction, fanAreaAt);
   if (!trianglePick) {
     return std::nullopt;
   }
@@ -934,17 +962,18 @@ std::optional<EmitterDraw> drawMeshPoint(GMANRayPolygonMesh const& mesh, RtFloat
 // Empty for an emitter whose shape's placement is singular, or whose polygon
 // mesh has no area.
 std::optional<EmitterDraw> drawEmitterPoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
-  if (GMANRayPolygonMesh const* mesh = classifyEmittingShape(*emitter.shape).mesh) {
-    return drawMeshPoint(*mesh, u1, u2);
+  const auto kind = classifyEmittingShape(*emitter.shape);
+  if (auto const* mesh = std::get_if<GMANRayPolygonMesh const*>(&kind)) {
+    return drawMeshPoint(**mesh, u1, u2);
   }
-  std::optional<InvertibleMatrix> const& placement = emittingShapeObjectToCamera(*emitter.shape);
+  auto const& placement = emittingShapeObjectToCamera(*emitter.shape);
   if (!placement) {
     return std::nullopt;
   }
-  InvertibleMatrix const& objectToCamera = *placement;
+  auto const& objectToCamera = *placement;
 
   GMANVector objectNormal;
-  GMANPoint const objectPoint = emittingShapeSamplePoint(*emitter.shape, u1, u2, objectNormal);
+  const auto objectPoint = emittingShapeSamplePoint(*emitter.shape, u1, u2, objectNormal);
 
   EmitterDraw draw;
   placeEmitterPoint(objectToCamera, objectPoint, objectNormal, draw.point, draw.normal);
@@ -997,20 +1026,20 @@ EmitterSample solidAngleSample(Emitter const& emitter, GMANPoint const& p, Solid
 EmitterSample sampleByArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
   auto result = zeroSample();
 
-  std::optional<EmitterDraw> const drawn = drawEmitterPoint(emitter, u1, u2);
+  const auto drawn = drawEmitterPoint(emitter, u1, u2);
   if (!drawn) {
     return result;
   }
-  EmitterDraw const& draw = *drawn;
+  auto const& draw = *drawn;
 
-  GMANVector toEmitter(p, draw.point);
-  RtFloat const distance = toEmitter.magnitude();
+  auto toEmitter = GMANVector(p, draw.point);
+  const auto distance = toEmitter.magnitude();
   toEmitter.normalize();
   result.wi = toEmitter;
   result.distance = distance;
 
-  RtFloat const cosTheta = draw.normal.dot(-toEmitter);
-  GMANColor const black((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
+  const auto cosTheta = draw.normal.dot(-toEmitter);
+  const auto black = GMANColor((RtFloat)0.0, (RtFloat)0.0, (RtFloat)0.0);
 
   // pdf uses the area-to-solid-angle Jacobian's own abs(cosTheta), 0 only
   // where that Jacobian is singular; Cl goes black separately, on the
@@ -1019,7 +1048,11 @@ EmitterSample sampleByArea(Emitter const& emitter, GMANPoint const& p, RtFloat u
     return result;
   }
   result.pdf = (distance * distance) / (draw.area * draw.jacobian * std::fabs(cosTheta));
-  result.Cl = (cosTheta > 0.0f) ? emitter.light->getCl() : black;
+  if (cosTheta > 0.0f) {
+    result.Cl = emitter.light->getCl();
+  } else {
+    result.Cl = black;
+  }
 
   // The shadow walk's own end point: the sampled point offset off the
   // emitter's own surface, back toward p, so the walk ends short of that
@@ -1074,21 +1107,19 @@ EmitterSample sampleSphere(Emitter const& emitter, GMANRaySphere const& sphere, 
 // angle its emitting sides subtend from p, a disk by diskStrategy and a
 // sphere by sphereStrategy.
 EmitterSample sampleArea(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtFloat u2) {
-  const auto kind = classifyEmittingShape(*emitter.shape);
-  if (kind.mesh != nullptr) {
-    const auto drawn = drawMeshBySolidAngle(*kind.mesh, toDouble(p), u1, u2);
-    if (!drawn) {
-      return zeroSample();
-    }
-    return solidAngleSample(emitter, p, *drawn);
-  }
-  if (kind.disk != nullptr) {
-    return sampleDisk(emitter, *kind.disk, p, u1, u2);
-  }
-  if (kind.sphere != nullptr) {
-    return sampleSphere(emitter, *kind.sphere, p, u1, u2);
-  }
-  return sampleByArea(emitter, p, u1, u2);
+  return std::visit(
+      Overloaded{
+          [&emitter, &p, u1, u2](GMANRaySphere const* sphere) { return sampleSphere(emitter, *sphere, p, u1, u2); },
+          [&emitter, &p, u1, u2](GMANRayDisk const* disk) { return sampleDisk(emitter, *disk, p, u1, u2); },
+          [&emitter, &p, u1, u2](GMANRayPolygonMesh const* mesh) {
+            const auto drawn = drawMeshBySolidAngle(*mesh, toDouble(p), u1, u2);
+            if (!drawn) {
+              return zeroSample();
+            }
+            return solidAngleSample(emitter, p, *drawn);
+          },
+          [&emitter, &p, u1, u2](std::monostate) { return sampleByArea(emitter, p, u1, u2); }},
+      classifyEmittingShape(*emitter.shape));
 }
 
 // lightSolidAnglePdf() for a hit distance away from p at cosTheta to
@@ -1101,7 +1132,7 @@ RtFloat areaPdf(Emitter const& emitter, GMANNormal const& hitNormal, RtFloat dis
   }
   auto const& objectToCamera = *placement;
 
-  RtFloat area = 0.0f;
+  auto area = 0.0f;
   emittingShapeArea(*emitter.shape, area);
 
   // hitPoint's own object-space normal, recovered by the inverse of the
@@ -1164,11 +1195,11 @@ EmitterPoint samplePointArea(Emitter const& emitter, RtFloat u1, RtFloat u2) {
   result.pdf = 0.0f;
   result.isDelta = false;
 
-  std::optional<EmitterDraw> const drawn = drawEmitterPoint(emitter, u1, u2);
+  const auto drawn = drawEmitterPoint(emitter, u1, u2);
   if (!drawn) {
     return result;
   }
-  EmitterDraw const& draw = *drawn;
+  auto const& draw = *drawn;
 
   result.point = draw.point;
   result.normal = GMANNormal(draw.normal.getX(), draw.normal.getY(), draw.normal.getZ());
@@ -1180,22 +1211,27 @@ EmitterPoint samplePointArea(Emitter const& emitter, RtFloat u1, RtFloat u2) {
 // pi * mean(Cl) * the shape's camera-space area; empty for an ineligible or
 // unsupported shape.
 std::optional<RtFloat> areaEmitterPower(GMANRayPrimitive const& shape, GMANLight const& light) {
-  RtFloat const radiance = meanChannel(light.getCl());
-  if (GMANRayPolygonMesh const* mesh = classifyEmittingShape(shape).mesh) {
-    if (!meshEligible(*mesh)) {
-      return std::nullopt;
-    }
-    return std::numbers::pi_v<RtFloat> * radiance * static_cast<RtFloat>(meshArea(*mesh));
-  }
-  RtFloat area = 0.0f;
-  if (!emittingShapeArea(shape, area)) {
-    return std::nullopt;
-  }
-  std::optional<InvertibleMatrix> const& objectToCamera = emittingShapeObjectToCamera(shape);
-  if (!objectToCamera) {
-    return std::nullopt;
-  }
-  return std::numbers::pi_v<RtFloat> * radiance * emittingShapeCameraArea(shape, *objectToCamera, area);
+  const auto radiance = meanChannel(light.getCl());
+  return std::visit(Overloaded{[radiance](GMANRayPolygonMesh const* mesh) -> std::optional<RtFloat> {
+                                 if (!meshEligible(*mesh)) {
+                                   return std::nullopt;
+                                 }
+                                 return std::numbers::pi_v<RtFloat> * radiance * static_cast<RtFloat>(meshArea(*mesh));
+                               },
+                               [](std::monostate) -> std::optional<RtFloat> { return std::nullopt; },
+                               [&shape, radiance](auto const*) -> std::optional<RtFloat> {
+                                 auto area = 0.0f;
+                                 if (!emittingShapeArea(shape, area)) {
+                                   return std::nullopt;
+                                 }
+                                 auto const& objectToCamera = emittingShapeObjectToCamera(shape);
+                                 if (!objectToCamera) {
+                                   return std::nullopt;
+                                 }
+                                 return std::numbers::pi_v<RtFloat> * radiance *
+                                        emittingShapeCameraArea(shape, *objectToCamera, area);
+                               }},
+                    classifyEmittingShape(shape));
 }
 
 } // namespace
@@ -1204,16 +1240,16 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
   std::vector<Emitter> result;
   std::vector<GMANLight const*> deltaSeen;
   std::vector<GMANLight const*> ambientSeen;
-  std::size_t ineligibleCount = 0;
+  auto ineligibleCount = std::size_t{0};
 
-  for (GMANPrimitive* primitive = world.getFirst(); primitive != nullptr; primitive = world.getNext()) {
-    GMANRayPrimitive const* rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
+  for (auto* primitive = world.getFirst(); primitive != nullptr; primitive = world.getNext()) {
+    auto const* rayPrimitive = dynamic_cast<GMANRayPrimitive const*>(primitive);
     if (rayPrimitive == nullptr) {
       continue;
     }
-    Appearance const& appearance = rayPrimitive->getAppearance();
+    auto const& appearance = rayPrimitive->getAppearance();
 
-    for (GMANLight const* light : appearance.lights) {
+    for (auto const* light : appearance.lights) {
       if (light->getType() == GMAN_LIGHT_AMBIENT) {
         if (ambientCount != nullptr && std::find(ambientSeen.begin(), ambientSeen.end(), light) == ambientSeen.end()) {
           ambientSeen.push_back(light);
@@ -1229,7 +1265,7 @@ std::vector<Emitter> emitters(GMANWorldManager& world, std::size_t* ambientCount
     if (appearance.areaLight == nullptr) {
       continue;
     }
-    std::optional<RtFloat> const power = areaEmitterPower(*rayPrimitive, *appearance.areaLight);
+    const auto power = areaEmitterPower(*rayPrimitive, *appearance.areaLight);
     if (!power) {
       ++ineligibleCount;
       continue;
@@ -1250,8 +1286,8 @@ std::optional<std::size_t> emitterIndex(std::vector<Emitter> const& emitters, GM
   if (hitPrimitive == nullptr) {
     return std::nullopt;
   }
-  GMANRayPrimitive const* const hitShape = emittingShapeOf(hitPrimitive);
-  for (std::size_t j = 0; j < emitters.size(); ++j) {
+  auto const* const hitShape = emittingShapeOf(hitPrimitive);
+  for (auto j = std::size_t{0}; j < emitters.size(); ++j) {
     if (emitters[j].shape == hitShape) {
       return j;
     }
@@ -1268,7 +1304,11 @@ EmitterSample sample(Emitter const& emitter, GMANPoint const& p, RtFloat u1, RtF
   GMANVector l;
   GMANColor cl;
   emitter.light->sample(p, l, cl);
-  result.distance = (emitter.light->getType() == GMAN_LIGHT_DISTANT) ? RI_INFINITY : l.magnitude();
+  if (emitter.light->getType() == GMAN_LIGHT_DISTANT) {
+    result.distance = RI_INFINITY;
+  } else {
+    result.distance = l.magnitude();
+  }
   l.normalize();
   result.wi = l;
   result.Cl = GMANColor(cl.getRed() * std::numbers::pi_v<RtFloat>, cl.getGreen() * std::numbers::pi_v<RtFloat>,
@@ -1282,29 +1322,31 @@ RtFloat lightSolidAnglePdf(Emitter const& emitter, GMANPoint const& p, GMANPoint
                            GMANNormal const& hitNormal) {
   assert(emitter.shape != nullptr);
 
-  GMANVector toHit(p, hitPoint);
-  RtFloat const distance = toHit.magnitude();
+  auto toHit = GMANVector(p, hitPoint);
+  const auto distance = toHit.magnitude();
   if (!(distance > 0.0f)) {
     return 0.0f;
   }
   toHit.normalize();
 
-  RtFloat const cosTheta = hitNormal.dot(-toHit);
+  const auto cosTheta = hitNormal.dot(-toHit);
   if (!(cosTheta > 0.0f)) {
     return 0.0f;
   }
 
-  const auto kind = classifyEmittingShape(*emitter.shape);
-  if (kind.mesh != nullptr) {
-    return positiveDensity(1.0 / meshSolidAngle(*kind.mesh, toDouble(p)));
-  }
-  if (kind.disk != nullptr) {
-    return diskPdf(emitter, *kind.disk, p, hitNormal, distance, cosTheta);
-  }
-  if (kind.sphere != nullptr) {
-    return spherePdf(emitter, *kind.sphere, p, hitPoint, hitNormal, distance, cosTheta);
-  }
-  return areaPdf(emitter, hitNormal, distance, cosTheta);
+  return std::visit(Overloaded{[&emitter, &p, &hitPoint, &hitNormal, distance, cosTheta](GMANRaySphere const* sphere) {
+                                 return spherePdf(emitter, *sphere, p, hitPoint, hitNormal, distance, cosTheta);
+                               },
+                               [&emitter, &p, &hitNormal, distance, cosTheta](GMANRayDisk const* disk) {
+                                 return diskPdf(emitter, *disk, p, hitNormal, distance, cosTheta);
+                               },
+                               [&p](GMANRayPolygonMesh const* mesh) {
+                                 return positiveDensity(1.0 / meshSolidAngle(*mesh, toDouble(p)));
+                               },
+                               [&emitter, &hitNormal, distance, cosTheta](std::monostate) {
+                                 return areaPdf(emitter, hitNormal, distance, cosTheta);
+                               }},
+                    classifyEmittingShape(*emitter.shape));
 }
 
 EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
@@ -1332,19 +1374,19 @@ EmitterPoint samplePoint(Emitter const& emitter, RtFloat u1, RtFloat u2) {
 
 RtFloat lightChoiceWeight(Emitter const& emitter, GMANPoint const& p) {
   if (emitter.shape == nullptr) {
-    EmitterSample const preview = sample(emitter, p, 0.5f, 0.5f);
-    RtFloat const mean = meanChannel(preview.Cl);
+    const auto preview = sample(emitter, p, 0.5f, 0.5f);
+    const auto mean = meanChannel(preview.Cl);
     return (std::isfinite(mean) && mean > 0.0f) ? mean : 0.0f;
   }
 
   GMANPoint centre;
-  RtFloat radius = 0.0f;
+  auto radius = 0.0f;
   if (!emittingShapeCentreAndRadius(*emitter.shape, centre, radius)) {
     return 0.0f;
   }
-  GMANVector const toCentre(p, centre);
-  RtFloat const dSquared = toCentre.dot(toCentre);
-  RtFloat const w = emitter.power / ((RtFloat)4.0 * GMANMax(dSquared, radius * radius));
+  const auto toCentre = GMANVector(p, centre);
+  const auto dSquared = toCentre.dot(toCentre);
+  const auto w = emitter.power / ((RtFloat)4.0 * GMANMax(dSquared, radius * radius));
   return (std::isfinite(w) && w > 0.0f) ? w : 0.0f;
 }
 
