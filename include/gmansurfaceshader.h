@@ -38,12 +38,13 @@
 #include "ri.h"
 
 /*
- * RenderMan API GMANSurfaceShader
- *
- * A surface shader, associated with a polygon,
- * the surface shader provides a run-time, user
- * configurable means of creating object textures.
- *
+ * The base of every surface shader plugin. A subclass reads its parameters
+ * in its constructor and answers computeCi and computeOi, the colour and
+ * opacity at a hit; it overrides bsdf when the path tracer should see more
+ * than a Lambert lobe of Cs. The plugin exports GMANGetLoadableInfo
+ * (gmanloadable.h), GMANLoadShader and GMANDestroyShader (gmanshader.h).
+ * gman's matte shader, shaders/gmanmatte.cpp in the source tree, is a
+ * complete example.
  */
 
 class GMAN_EXPORT GMANSurfaceShader : public GMANShader {
