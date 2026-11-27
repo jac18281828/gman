@@ -47,6 +47,7 @@
 #include "check.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanrayoccluder.h"
@@ -61,14 +62,14 @@ constexpr RtFloat kLayerSpacing = 1.0f; // world units; far past the offset's ow
 constexpr RtFloat kFirstLayerZ = 5.0f;
 constexpr RtFloat kOpacity = 0.1f; // low enough that 20 layers still clear kTransmissionCutoff
 
-GMANRayPolygon* squareAt(RtFloat z) {
+gman::Owned<GMANRayPolygon> squareAt(RtFloat z) {
   std::vector<GMANPoint> const verts = {
       GMANPoint(-10.0f, -10.0f, z),
       GMANPoint(-10.0f, 10.0f, z),
       GMANPoint(10.0f, 10.0f, z),
       GMANPoint(10.0f, -10.0f, z),
   };
-  const auto polygon = new GMANRayPolygon(verts, GMANParameterList());
+  auto polygon = gman::make<GMANRayPolygon>(verts, GMANParameterList());
   gman::Appearance transparent;
   transparent.Os = GMANColor(kOpacity, kOpacity, kOpacity);
   polygon->setAppearance(transparent);

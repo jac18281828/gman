@@ -102,7 +102,7 @@ struct MeshWorld {
       : light(GMAN_LIGHT_AREA, radiance, GMANPoint(), GMANVector()) {
     auto owned = buildTaggedMesh(specs, areaLightAppearance(light));
     mesh = owned.get();
-    world.add(owned.release());
+    world.add(std::move(owned));
   }
 };
 

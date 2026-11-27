@@ -31,6 +31,7 @@
 
 #include <cmath>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -38,6 +39,7 @@
 #include "gmandictionary.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpolygon.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
@@ -74,8 +76,8 @@ std::vector<std::vector<RtInt>> cubeFaces() {
   };
 }
 
-GMANPrimitive* runGetRSPointsPolygonDirect(std::vector<GMANPoint> const& points,
-                                           std::vector<std::vector<RtInt>> const& faces) {
+gman::Owned<GMANPrimitive> runGetRSPointsPolygonDirect(std::vector<GMANPoint> const& points,
+                                                       std::vector<std::vector<RtInt>> const& faces) {
   RtInt const pointCount = (RtInt)points.size();
   std::vector<RtFloat> p(3 * pointCount);
   for (RtInt i = 0; i < pointCount; ++i) {
@@ -180,12 +182,12 @@ void testFaceNotMesh() {
   std::vector<GMANPoint> const points = cubePoints();
   std::vector<std::vector<RtInt>> const faces = cubeFaces();
 
-  GMANPrimitive* meshPrim = runGetRSPointsPolygonDirect(points, faces);
-  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim);
+  auto meshPrim = runGetRSPointsPolygonDirect(points, faces);
+  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim.get());
   check(mesh != nullptr, "face k: getRSPolygonMesh returns a GMANRayPrimitive");
 
   GMANLinearWorldManager worldManager;
-  worldManager.add(meshPrim);
+  worldManager.add(std::move(meshPrim));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -230,13 +232,13 @@ void testFanAgreesWithMeshAndAnalytic() {
   std::vector<std::vector<RtInt>> const faces = cubeFaces();
   std::vector<FaceCase> const cases = faceCases();
 
-  GMANPrimitive* meshPrim = runGetRSPointsPolygonDirect(points, faces);
-  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim);
+  auto meshPrim = runGetRSPointsPolygonDirect(points, faces);
+  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim.get());
   check(mesh != nullptr, "fan: getRSPolygonMesh returns a GMANRayPrimitive");
 
   GMANLinearWorldManager worldManager;
-  GMANPrimitive* bvhMeshPrim = runGetRSPointsPolygonDirect(points, faces);
-  worldManager.add(bvhMeshPrim);
+  auto bvhMeshPrim = runGetRSPointsPolygonDirect(points, faces);
+  worldManager.add(std::move(bvhMeshPrim));
   GMANRayBVH bvh;
   bvh.build(worldManager);
 
@@ -272,8 +274,6 @@ void testFanAgreesWithMeshAndAnalytic() {
       }
     }
   }
-
-  delete meshPrim; // owned here: no world manager holds it
 }
 
 } // namespace

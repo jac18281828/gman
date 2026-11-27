@@ -53,6 +53,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -65,6 +66,7 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparallel.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
@@ -303,19 +305,19 @@ struct TracedScene {
   }
 
   void addPolygon(std::array<GMANPoint, 4> const& corners, gman::Appearance const& look) {
-    auto const polygon =
-        new GMANRayPolygon(std::vector<GMANPoint>(corners.begin(), corners.end()), GMANParameterList());
+    auto polygon =
+        gman::make<GMANRayPolygon>(std::vector<GMANPoint>(corners.begin(), corners.end()), GMANParameterList());
     polygon->setAppearance(look);
-    renderer.getWorldManager()->add(polygon);
+    renderer.getWorldManager()->add(std::move(polygon));
   }
 
   void addSphere(GMANPoint const& centre, RtFloat radius, gman::Appearance const& look) {
     GMANMatrix4 place;
     place.trans(centre.getX(), centre.getY(), centre.getZ());
     GMANTransform const transform = makeTransform(place);
-    auto const sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+    auto sphere = gman::make<GMANRaySphere>(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
     sphere->setAppearance(look);
-    renderer.getWorldManager()->add(sphere);
+    renderer.getWorldManager()->add(std::move(sphere));
   }
 
   void render(RtInt workers) {
@@ -400,13 +402,13 @@ struct EmitterScene : TracedScene {
     place.rot(GMANRadians(yawDegrees), 0.0f, 1.0f, 0.0f);
     place.trans(centre.getX(), centre.getY(), centre.getZ());
     GMANTransform const transform = makeTransform(place);
-    auto const disk = new GMANRayDisk(0.0f, kEmitterRadius, 360.0f, GMANParameterList(), transform);
+    auto disk = gman::make<GMANRayDisk>(0.0f, kEmitterRadius, 360.0f, GMANParameterList(), transform);
     gman::Appearance look = surface(loadShader("matte", matteParams(1.0f, 1.0f)), kEmitterBlack);
     if (emitting) {
       look.areaLight = &emitted;
     }
     disk->setAppearance(look);
-    renderer.getWorldManager()->add(disk);
+    renderer.getWorldManager()->add(std::move(disk));
   }
 };
 

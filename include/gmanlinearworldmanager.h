@@ -28,6 +28,7 @@
 #include <list>
 
 #include "gman/export.h"
+#include "gmanowned.h"
 #include "gmanprimitive.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
@@ -40,9 +41,7 @@
 class GMAN_EXPORT GMANLinearWorldManager : public GMANWorldManager {
 public:
   // public types
-  typedef GMANPrimitive* ObjectPtr;
-
-  typedef std::list<ObjectPtr> ObjectList;
+  typedef std::list<gman::Owned<GMANPrimitive>> ObjectList;
 
 private:
   ObjectList objects;
@@ -54,11 +53,11 @@ public:
 
   virtual ~GMANLinearWorldManager(); // default destructor
   // Add object
-  virtual RtVoid add(ObjectPtr prim);
+  virtual RtVoid add(gman::Owned<GMANPrimitive> primitive);
 
   // find first
-  virtual ObjectPtr getFirst(RtVoid);
+  virtual GMANPrimitive* getFirst(RtVoid);
 
   // find each subsequent object until end and then return NULL
-  virtual ObjectPtr getNext(RtVoid);
+  virtual GMANPrimitive* getNext(RtVoid);
 };

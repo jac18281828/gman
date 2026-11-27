@@ -4247,6 +4247,18 @@ set_tests_properties(polygonnverts PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# A world owns the primitives it is given: a GMANLinearWorldManager destroys
+# each one with itself, and an empty gman::Owned adds nothing. See
+# tests/primitiveowners_test.cpp.
+add_executable(gman_primitiveowners primitiveowners_test.cpp)
+target_link_libraries(gman_primitiveowners PRIVATE gman)
+
+add_test(NAME primitiveowners COMMAND gman_primitiveowners)
+set_tests_properties(primitiveowners PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANSphere's and GMANDisk's own uniform-area sampler: a closed-form area,
 # an independent finite-difference quadrature of the Jacobian, a
 # uniform-by-area histogram, a degenerate primitive and the sampled normal.

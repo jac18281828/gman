@@ -28,9 +28,11 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <utility>
 
 #include "check.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanradiositymesh.h"
 #include "gmanraycylinder.h"
@@ -62,9 +64,10 @@ int main() {
   // for most.
   RtFloat const maxEdgeLength = 0.0005f;
 
-  auto* cylinder = new CountingCylinder(radius, zmin, zmax, 360.0, GMANParameterList());
+  auto cylinderOwner = gman::make<CountingCylinder>(radius, zmin, zmax, 360.0, GMANParameterList());
+  auto* const cylinder = cylinderOwner.get();
   GMANLinearWorldManager worldManager;
-  worldManager.add(cylinder);
+  worldManager.add(std::move(cylinderOwner));
 
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, maxEdgeLength);

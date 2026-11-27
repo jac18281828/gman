@@ -30,12 +30,14 @@
 #include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -118,21 +120,21 @@ inline void renderScene(std::vector<gman::Appearance> const& blockerAppearances,
                         GMANVector(0.0f, -1.0f, 0.0f));
 
   GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floorAppearance.lights = {&light};
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(floor);
+  renderer.getWorldManager()->add(std::move(floor));
 
   for (std::size_t i = 0; i < blockerVerts.size(); ++i) {
-    const auto blocker = new GMANRayPolygon(blockerVerts[i], GMANParameterList());
+    auto blocker = gman::make<GMANRayPolygon>(blockerVerts[i], GMANParameterList());
     gman::Appearance appearance = blockerAppearances[i];
     appearance.lights = {&light};
     blocker->setAppearance(appearance);
-    renderer.getWorldManager()->add(blocker);
+    renderer.getWorldManager()->add(std::move(blocker));
   }
 
   frameBufferOut.reset(new GMANFrameBuffer(kRes, kRes, options.getBackground()));

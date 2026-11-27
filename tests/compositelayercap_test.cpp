@@ -115,9 +115,8 @@ StackRender renderStack(int layerCount) {
     GMANMatrix4 place;
     place.trans(0.0, 0.0, z);
     GMANTransform transform = makeTransform(place);
-    GMANPrimitive* disk = renderer.getObjectManager()->getRSDisk(0.0, kDiskRadius, 360.0, GMANParameterList(), &options,
-                                                                 &attr, &transform);
-    renderer.getWorldManager()->add(disk);
+    renderer.getWorldManager()->add(renderer.getObjectManager()->getRSDisk(0.0, kDiskRadius, 360.0, GMANParameterList(),
+                                                                           &options, &attr, &transform));
   }
 
   GMANColor const background(1.0f, 1.0f, 1.0f);

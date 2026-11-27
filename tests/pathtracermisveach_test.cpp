@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <memory>
 #include <numbers>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -42,6 +43,7 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -166,13 +168,13 @@ VeachScene buildVeachScene(GMANPathtraceRenderer& renderer, GMANLight const& are
   GMANVector const v(0.0f, (RtFloat)std::cos(phi), (RtFloat)std::sin(phi));
   GMANPoint const centre(0.0f, 0.0f, kPlateZ);
 
-  GMANRayPolygon* plate = new GMANRayPolygon(platePoints(u, v, centre), GMANParameterList());
+  auto plate = gman::make<GMANRayPolygon>(platePoints(u, v, centre), GMANParameterList());
   gman::Appearance plateAppearance;
   plateAppearance.shader = std::make_shared<veachPlateShader const>();
   plateAppearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
   plateAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   plate->setAppearance(plateAppearance);
-  renderer.getWorldManager()->add(plate);
+  renderer.getWorldManager()->add(std::move(plate));
 
   // The boresight's own reflection direction: I = (0, 0, 1); the plate's
   // own normal is v cross u (matching buildFloor's own winding

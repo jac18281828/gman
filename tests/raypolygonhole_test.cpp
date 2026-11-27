@@ -35,6 +35,7 @@
 #include "gmanattributes.h"
 #include "gmandictionary.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
@@ -59,7 +60,7 @@ std::vector<GMANPoint> holeSquare() {
   return {GMANPoint(-0.5, -0.5, 0.0), GMANPoint(0.5, -0.5, 0.0), GMANPoint(0.5, 0.5, 0.0), GMANPoint(-0.5, 0.5, 0.0)};
 }
 
-GMANPrimitive* runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> const& loops) {
+gman::Owned<GMANPrimitive> runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> const& loops) {
   RtInt const nloops = (RtInt)loops.size();
   std::vector<RtInt> nverts(nloops);
   RtInt total = 0;
@@ -93,7 +94,7 @@ GMANPrimitive* runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> 
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
-GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
+gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   RtInt const nverts = (RtInt)ring.size();
   std::vector<RtFloat> p(3 * nverts);
   for (RtInt i = 0; i < nverts; ++i) {
@@ -121,11 +122,10 @@ GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
 GMANRay rayThrough(RtFloat x, RtFloat y) { return GMANRay(GMANPoint(x, y, -5.0), GMANVector(0.0, 0.0, 1.0)); }
 
 void testHoleMissesFaceHitsEdgeMisses() {
-  GMANPrimitive* prim = runGetRSGeneralPolygonDirect({outerSquare(), holeSquare()});
-  GMANRayPrimitive* polygon = dynamic_cast<GMANRayPrimitive*>(prim);
+  auto prim = runGetRSGeneralPolygonDirect({outerSquare(), holeSquare()});
+  GMANRayPrimitive* polygon = dynamic_cast<GMANRayPrimitive*>(prim.get());
   check(polygon != nullptr, "hole: getRSPolygonMesh returns a GMANRayPrimitive");
   if (polygon == nullptr) {
-    delete prim;
     return;
   }
 
@@ -138,16 +138,13 @@ void testHoleMissesFaceHitsEdgeMisses() {
 
   GMANHit outsideHit;
   check(!polygon->intersect(rayThrough(1.5, 0.0), outsideHit), "hole: a ray outside the outer loop misses");
-
-  delete prim;
 }
 
 void testOneLoopPolygonUnchanged() {
-  GMANPrimitive* prim = runGetRSPolygonDirect(outerSquare());
-  GMANRayPrimitive* polygon = dynamic_cast<GMANRayPrimitive*>(prim);
+  auto prim = runGetRSPolygonDirect(outerSquare());
+  GMANRayPrimitive* polygon = dynamic_cast<GMANRayPrimitive*>(prim.get());
   check(polygon != nullptr, "one loop: getRSPolygonMesh returns a GMANRayPrimitive");
   if (polygon == nullptr) {
-    delete prim;
     return;
   }
 
@@ -161,8 +158,6 @@ void testOneLoopPolygonUnchanged() {
 
   GMANHit outsideHit;
   check(!polygon->intersect(rayThrough(1.5, 0.0), outsideHit), "one loop: a ray outside the outer loop still misses");
-
-  delete prim;
 }
 
 } // namespace

@@ -86,6 +86,7 @@
 #include "gmandictionary.h"
 #include "gmanobject.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
@@ -218,7 +219,7 @@ std::array<double, 3> newellNormal(const std::vector<GMANPoint>& ring) {
   return {nx, ny, nz};
 }
 
-GMANPrimitive* runGetRSPolygon(const std::vector<GMANPoint>& ring) {
+gman::Owned<GMANPrimitive> runGetRSPolygon(const std::vector<GMANPoint>& ring) {
   const RtInt nverts = (RtInt)ring.size();
   std::vector<RtFloat> p(3 * nverts);
   for (RtInt i = 0; i < nverts; ++i) {
@@ -314,11 +315,10 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
   GMANOptions oracleOptions; // same default GMANOptions runGetRSPolygon's own uses
   GMANAttributes oracleAttr; // ShadingRate = 1, runGetRSPolygon's own default
 
-  GMANPrimitive* prim = runGetRSPolygon(ring);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
+  auto prim = runGetRSPolygon(ring);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, label + ": getRSPolygonMesh returns an object");
   if (object == nullptr) {
-    delete prim;
     return {};
   }
 
@@ -423,7 +423,6 @@ std::vector<std::array<int, 3>> checkPlacement(const std::string& label, const s
                                "orientation");
   check(coverageOk, label + ": every ring index appears in some triangle");
 
-  delete prim;
   return triples;
 }
 
@@ -607,22 +606,20 @@ void runDegenerateInput() {
   // All vertices collinear: getRSPolygonMesh returns an empty stub, not a
   // crash.
   std::vector<GMANPoint> collinear = {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}};
-  GMANPrimitive* prim = runGetRSPolygon(collinear);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
+  auto prim = runGetRSPolygon(collinear);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, "all-collinear input: getRSPolygonMesh returns an object");
   check(object != nullptr && object->getBody() == nullptr,
         "all-collinear input: the returned object is the empty stub");
-  delete prim;
 
   // All vertices identical: the zero-extent case the ratio guard must not
   // divide by zero on.
   std::vector<GMANPoint> identical = {{5, 5, 5}, {5, 5, 5}, {5, 5, 5}, {5, 5, 5}};
   prim = runGetRSPolygon(identical);
-  object = dynamic_cast<GMANObject*>(prim);
+  object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, "all-identical input: getRSPolygonMesh returns an object");
   check(object != nullptr && object->getBody() == nullptr,
         "all-identical input: the returned object is the empty stub");
-  delete prim;
 
   // A sliver: a simple rectangle, four distinct corners, an aspect ratio
   // of 1e8:1. Its area is genuinely non-zero and its Newell normal
@@ -634,11 +631,10 @@ void runDegenerateInput() {
   // constant would not be caught by any other case in this file.
   std::vector<GMANPoint> sliver = {{0, 0, 0}, {1, 0, 0}, {1, 1e-8f, 0}, {0, 1e-8f, 0}};
   prim = runGetRSPolygon(sliver);
-  object = dynamic_cast<GMANObject*>(prim);
+  object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, "sliver input: getRSPolygonMesh returns an object");
   check(object != nullptr && object->getBody() == nullptr, "sliver input: the area-to-extent ratio guard classifies it "
                                                            "degenerate");
-  delete prim;
 
   // An asymmetric bow-tie: self-intersecting, excluded by the RISpec's
   // simple-polygon contract. The only claim is that the clipAt<0 fallback
@@ -650,7 +646,7 @@ void runDegenerateInput() {
   GMANOptions bowtieOptions; // same default GMANOptions runGetRSPolygon's own uses
   GMANAttributes bowtieAttr; // ShadingRate = 1, runGetRSPolygon's own default
   prim = runGetRSPolygon(bowtie);
-  object = dynamic_cast<GMANObject*>(prim);
+  object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, "asymmetric bow-tie: getRSPolygonMesh returns an object");
   if (object != nullptr) {
     int faces = countFaces(object);
@@ -660,7 +656,6 @@ void runDegenerateInput() {
                              "triangles, each diced to its own expected n*n (got " +
                                  std::to_string(faces) + ", expected " + std::to_string(expected) + ")");
   }
-  delete prim;
 }
 
 } // namespace

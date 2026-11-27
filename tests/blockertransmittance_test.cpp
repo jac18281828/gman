@@ -30,12 +30,14 @@
 #include <cmath>
 #include <limits>
 #include <memory>
+#include <utility>
 
 #include "check.h"
 #include "gmanbsdf.h"
 #include "gmancolor.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
@@ -108,9 +110,9 @@ struct Blocker {
 
   explicit Blocker(gman::Appearance const& appearance) {
     GMANMatrix4 identity;
-    auto* const sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), makeTransform(identity));
+    auto sphere = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), makeTransform(identity));
     sphere->setAppearance(appearance);
-    world.add(sphere);
+    world.add(std::move(sphere));
     bvh.build(world);
     struck = bvh.nearestHit(ray, hit, primitive);
   }

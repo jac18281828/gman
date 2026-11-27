@@ -35,6 +35,7 @@
 #include <cstdio>
 #include <numbers>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -42,6 +43,7 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
@@ -111,9 +113,9 @@ struct Cell {
   GMANPoint center;
   RtFloat scale;
 
-  Cell(std::string cellName, GMANRayPrimitive* prim, GMANVector const& objectTowardLight, GMANMatrix4 const& placement,
-       RtFloat cellScale)
-      : name(std::move(cellName)), primitive(prim), scale(cellScale) {
+  Cell(std::string cellName, gman::Owned<GMANRayPrimitive> prim, GMANVector const& objectTowardLight,
+       GMANMatrix4 const& placement, RtFloat cellScale)
+      : name(std::move(cellName)), primitive(prim.get()), scale(cellScale) {
     // A bare GMANRayPrimitive's appearance defaults to black (fully
     // transparent, rayoccluder_test.cpp's own sphereAt comment): opaque
     // white here so a real self-hit actually attenuates transmission
@@ -121,7 +123,7 @@ struct Cell {
     gman::Appearance opaque;
     opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
     primitive->setAppearance(opaque);
-    worldManager.add(primitive);
+    worldManager.add(std::move(prim));
     bvh.build(worldManager);
     towardLight = gman::transformDirection(placement, objectTowardLight);
     towardLight.normalize();
@@ -129,48 +131,49 @@ struct Cell {
   }
 };
 
-GMANRaySphere* buildSphere(RtFloat scale, GMANMatrix4 const& placement) {
-  return new GMANRaySphere(scale, -scale, scale, 360.0f, GMANParameterList(), makeTransform(placement));
+gman::Owned<GMANRaySphere> buildSphere(RtFloat scale, GMANMatrix4 const& placement) {
+  return gman::make<GMANRaySphere>(scale, -scale, scale, 360.0f, GMANParameterList(), makeTransform(placement));
 }
 
-GMANRayCylinder* buildCylinder(RtFloat scale, GMANMatrix4 const& placement) {
-  return new GMANRayCylinder(scale, -scale, scale, 360.0f, GMANParameterList(), makeTransform(placement));
+gman::Owned<GMANRayCylinder> buildCylinder(RtFloat scale, GMANMatrix4 const& placement) {
+  return gman::make<GMANRayCylinder>(scale, -scale, scale, 360.0f, GMANParameterList(), makeTransform(placement));
 }
 
-GMANRayCone* buildCone(RtFloat scale, GMANMatrix4 const& placement) {
-  return new GMANRayCone(2.0f * scale, scale, 360.0f, GMANParameterList(), makeTransform(placement));
+gman::Owned<GMANRayCone> buildCone(RtFloat scale, GMANMatrix4 const& placement) {
+  return gman::make<GMANRayCone>(2.0f * scale, scale, 360.0f, GMANParameterList(), makeTransform(placement));
 }
 
 // GMANParaboloid::getLocation's own radius at v == 1 (z == zmax) is
 // rmax/sqrt(zmax), not rmax itself -- rmax == scale*sqrt(scale) here keeps
 // that radius, and so the whole shape's own extent, linear in scale the
 // way every other primitive's is.
-GMANRayParaboloid* buildParaboloid(RtFloat scale, GMANMatrix4 const& placement) {
+gman::Owned<GMANRayParaboloid> buildParaboloid(RtFloat scale, GMANMatrix4 const& placement) {
   RtFloat const rmax = scale * (RtFloat)std::sqrt((double)scale);
-  return new GMANRayParaboloid(rmax, 0.0f, scale, 360.0f, GMANParameterList(), makeTransform(placement));
+  return gman::make<GMANRayParaboloid>(rmax, 0.0f, scale, 360.0f, GMANParameterList(), makeTransform(placement));
 }
 
 // A spanning (non-flat-annulus) hyperboloid: point1 and point2 differ in
 // both radius and z, so the swept surface spans a genuine one-sheet
 // hyperboloid rather than the flat-annulus special case.
-GMANRayHyperboloid* buildHyperboloid(RtFloat scale, GMANMatrix4 const& placement) {
+gman::Owned<GMANRayHyperboloid> buildHyperboloid(RtFloat scale, GMANMatrix4 const& placement) {
   RtPoint point1 = {0.5f * scale, 0.0f, -1.0f * scale};
   RtPoint point2 = {1.2f * scale, 0.0f, 1.0f * scale};
-  return new GMANRayHyperboloid(point1, point2, 360.0f, GMANParameterList(), makeTransform(placement));
+  return gman::make<GMANRayHyperboloid>(point1, point2, 360.0f, GMANParameterList(), makeTransform(placement));
 }
 
-GMANRayDisk* buildDisk(RtFloat scale, GMANMatrix4 const& placement) {
-  return new GMANRayDisk(0.0f, scale, 360.0f, GMANParameterList(), makeTransform(placement));
+gman::Owned<GMANRayDisk> buildDisk(RtFloat scale, GMANMatrix4 const& placement) {
+  return gman::make<GMANRayDisk>(0.0f, scale, 360.0f, GMANParameterList(), makeTransform(placement));
 }
 
-GMANRayTorus* buildTorus(RtFloat scale, GMANMatrix4 const& placement) {
-  return new GMANRayTorus(scale, 0.3f * scale, -180.0f, 180.0f, 360.0f, GMANParameterList(), makeTransform(placement));
+gman::Owned<GMANRayTorus> buildTorus(RtFloat scale, GMANMatrix4 const& placement) {
+  return gman::make<GMANRayTorus>(scale, 0.3f * scale, -180.0f, 180.0f, 360.0f, GMANParameterList(),
+                                  makeTransform(placement));
 }
 
 // Camera space already: transforms a canonical, CCW-from-+z square through
 // placement by hand, the way every other ray primitive's own transform
 // argument would.
-GMANRayPolygon* buildPolygon(RtFloat scale, GMANMatrix4 const& placement) {
+gman::Owned<GMANRayPolygon> buildPolygon(RtFloat scale, GMANMatrix4 const& placement) {
   std::vector<GMANPoint> const objectVerts = {
       GMANPoint(-scale, -scale, 0.0f),
       GMANPoint(scale, -scale, 0.0f),
@@ -182,7 +185,7 @@ GMANRayPolygon* buildPolygon(RtFloat scale, GMANMatrix4 const& placement) {
   for (GMANPoint const& v : objectVerts) {
     verts.push_back(gman::transformPoint(placement, v));
   }
-  return new GMANRayPolygon(verts, GMANParameterList());
+  return gman::make<GMANRayPolygon>(verts, GMANParameterList());
 }
 
 // Off-axis in every coordinate, so a revolution primitive's radial and
@@ -192,7 +195,7 @@ GMANVector const kGenericTowardLight(1.0f, 0.6f, 0.3f);
 
 struct PrimitiveKind {
   char const* name;
-  GMANRayPrimitive* (*build)(RtFloat, GMANMatrix4 const&);
+  gman::Owned<GMANRayPrimitive> (*build)(RtFloat, GMANMatrix4 const&);
   GMANVector towardLight;
 };
 
@@ -200,20 +203,23 @@ struct PrimitiveKind {
 // convention); lighting it from -z is the only placement that ever lights
 // its face. Every other kind uses the generic off-axis direction.
 PrimitiveKind const kPrimitiveKinds[] = {
-    {"sphere", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildSphere(s, p); },
+    {"sphere", [](RtFloat s, GMANMatrix4 const& p) -> gman::Owned<GMANRayPrimitive> { return buildSphere(s, p); },
      kGenericTowardLight},
-    {"cylinder", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildCylinder(s, p); },
+    {"cylinder", [](RtFloat s, GMANMatrix4 const& p) -> gman::Owned<GMANRayPrimitive> { return buildCylinder(s, p); },
      kGenericTowardLight},
-    {"cone", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildCone(s, p); }, kGenericTowardLight},
-    {"paraboloid", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildParaboloid(s, p); },
+    {"cone", [](RtFloat s, GMANMatrix4 const& p) -> gman::Owned<GMANRayPrimitive> { return buildCone(s, p); },
      kGenericTowardLight},
-    {"hyperboloid", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildHyperboloid(s, p); },
+    {"paraboloid",
+     [](RtFloat s, GMANMatrix4 const& p) -> gman::Owned<GMANRayPrimitive> { return buildParaboloid(s, p); },
      kGenericTowardLight},
-    {"disk", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildDisk(s, p); },
+    {"hyperboloid",
+     [](RtFloat s, GMANMatrix4 const& p) -> gman::Owned<GMANRayPrimitive> { return buildHyperboloid(s, p); },
+     kGenericTowardLight},
+    {"disk", [](RtFloat s, GMANMatrix4 const& p) -> gman::Owned<GMANRayPrimitive> { return buildDisk(s, p); },
      GMANVector(0.0f, 0.0f, -1.0f)},
-    {"torus", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildTorus(s, p); },
+    {"torus", [](RtFloat s, GMANMatrix4 const& p) -> gman::Owned<GMANRayPrimitive> { return buildTorus(s, p); },
      kGenericTowardLight},
-    {"polygon", [](RtFloat s, GMANMatrix4 const& p) -> GMANRayPrimitive* { return buildPolygon(s, p); },
+    {"polygon", [](RtFloat s, GMANMatrix4 const& p) -> gman::Owned<GMANRayPrimitive> { return buildPolygon(s, p); },
      GMANVector(0.0f, 0.0f, 1.0f)},
 };
 
@@ -325,13 +331,15 @@ void sweepAllCells() {
 void sweepLargePrimitiveRow(RtFloat radius) {
   GMANMatrix4 placement;
   placement.trans(0.0, 0.0, (double)radius + 5.0);
-  const auto sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(placement));
+  auto sphereOwner =
+      gman::make<GMANRaySphere>(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(placement));
+  auto* const sphere = sphereOwner.get();
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(opaque);
 
   GMANLinearWorldManager worldManager;
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphereOwner));
   GMANRayBVH bvh;
   bvh.build(worldManager);
   GMANRayOccluder const occluder(bvh);

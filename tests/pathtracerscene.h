@@ -34,6 +34,7 @@
 #include <cstdio>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -43,6 +44,7 @@
 #include "gmanframebuffer.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -75,11 +77,11 @@ inline GMANOptions::ScreenWindowStruct squareScreenWindow() {
   return sw;
 }
 
-inline GMANRayPolygon* buildFloor() {
+inline gman::Owned<GMANRayPolygon> buildFloor() {
   std::vector<GMANPoint> const verts = {
       GMANPoint(kFloorXMin, kFloorY, kFloorZMin), GMANPoint(kFloorXMin, kFloorY, kFloorZMax),
       GMANPoint(kFloorXMax, kFloorY, kFloorZMax), GMANPoint(kFloorXMax, kFloorY, kFloorZMin)};
-  return new GMANRayPolygon(verts, GMANParameterList());
+  return gman::make<GMANRayPolygon>(verts, GMANParameterList());
 }
 
 // The ray-plane intersection with y = kFloorY, in double; false when the
@@ -204,14 +206,14 @@ inline void renderAndCollectResiduals(std::vector<GMANLight const*> const& light
   gman::VSPerspective viewingSys(kRes, kRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
   appearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = lights;
   floor->setAppearance(appearance);
-  renderer.getWorldManager()->add(floor);
+  renderer.getWorldManager()->add(std::move(floor));
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;

@@ -30,6 +30,7 @@
 #include "gmanattributes.h"
 #include "gmandictionary.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanrayobjectmanager.h"
@@ -50,7 +51,7 @@ std::vector<GMANPoint> collinearFour() {
 // Builds its mesh through the factory function Polygon calls, then calls
 // getRSPolygonMesh, as raypolygonhole_test.cpp's own runGetRSPolygonDirect
 // does.
-GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
+gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   RtInt const nverts = (RtInt)ring.size();
   std::vector<RtFloat> p(3 * nverts);
   for (RtInt i = 0; i < nverts; ++i) {
@@ -74,12 +75,11 @@ GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
 }
 
 void testDegeneratePolygonTracesAsEmptyStub() {
-  GMANPrimitive* prim = runGetRSPolygonDirect(collinearFour());
-  GMANRayPolygon const* polygon = dynamic_cast<GMANRayPolygon const*>(prim);
-  GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(prim);
+  auto prim = runGetRSPolygonDirect(collinearFour());
+  GMANRayPolygon const* polygon = dynamic_cast<GMANRayPolygon const*>(prim.get());
+  GMANRayPolygonMesh const* mesh = dynamic_cast<GMANRayPolygonMesh const*>(prim.get());
   check(polygon == nullptr, "degenerate Polygon: not a GMANRayPolygon");
   check(mesh == nullptr, "degenerate Polygon: not a GMANRayPolygonMesh");
-  delete prim;
 }
 
 } // namespace

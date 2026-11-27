@@ -29,6 +29,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -37,6 +38,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanlog.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
 #include "gmanraypolygon.h"
@@ -100,14 +102,14 @@ void testAmbientLightsNothing() {
 
   std::shared_ptr<GMANSurfaceShader const> const shader = loadShader("matte", matteParams(1.0f));
   GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   gman::Appearance appearance;
   appearance.shader = shader;
   appearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = lights;
   floor->setAppearance(appearance);
-  renderer.getWorldManager()->add(floor);
+  renderer.getWorldManager()->add(std::move(floor));
 
   GMANFrameBuffer frameBuffer(16, 16, options.getBackground());
   GMANAttributes const attr;
@@ -144,14 +146,14 @@ void testAmbientLightsNothing() {
   GMANLight const ambient2(GMAN_LIGHT_AMBIENT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector());
   std::vector<GMANLight const*> const twoAmbient = {&ambient, &ambient2};
   GMANPathtraceRenderer renderer2;
-  GMANRayPolygon* floor2 = buildFloor();
+  auto floor2 = buildFloor();
   gman::Appearance appearance2;
   appearance2.shader = shader;
   appearance2.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   appearance2.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance2.lights = twoAmbient;
   floor2->setAppearance(appearance2);
-  renderer2.getWorldManager()->add(floor2);
+  renderer2.getWorldManager()->add(std::move(floor2));
 
   GMANFrameBuffer frameBuffer2(16, 16, options.getBackground());
   renderer2.render(&frameBuffer2, &viewingSys, options, attr);

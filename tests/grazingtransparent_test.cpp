@@ -47,12 +47,14 @@
 
 #include <cmath>
 #include <cstdio>
+#include <utility>
 
 #include "check.h"
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanraysphere.h"
@@ -104,10 +106,10 @@ int main() {
   GMANMatrix4 place;
   place.trans(0.0, 0.0, kSphereZ);
   GMANTransform transform = makeTransform(place);
-  const auto sphere =
-      new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(), transform);
+  auto sphere =
+      gman::make<GMANRaySphere>(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(), transform);
   sphere->setAppearance(gman::appearanceOf(attr));
-  renderer.getWorldManager()->add(sphere);
+  renderer.getWorldManager()->add(std::move(sphere));
 
   GMANColor const background(1.0f, 1.0f, 1.0f);
   GMANFrameBuffer frameBuffer(kResX, kResY, background);

@@ -24,8 +24,10 @@
  */
 
 #include <cstddef>
+#include <utility>
 
 #include "gmanlinearworldmanager.h"
+#include "gmanowned.h"
 #include "gmanprimitive.h"
 #include "gmanworldmanager.h"
 #include "ri.h"
@@ -39,23 +41,19 @@
 GMANLinearWorldManager::GMANLinearWorldManager() : GMANWorldManager() {};
 
 // default destructor
-GMANLinearWorldManager::~GMANLinearWorldManager() {
+GMANLinearWorldManager::~GMANLinearWorldManager() {};
 
-  for (ObjectList::iterator obj = objects.begin(); obj != objects.end(); obj++) {
-    if (*obj) {
-
-      delete (*obj);
-    }
+RtVoid GMANLinearWorldManager::add(gman::Owned<GMANPrimitive> primitive) {
+  if (!primitive) {
+    return;
   }
-  current = objects.begin();
+  objects.push_back(std::move(primitive));
 };
-
-RtVoid GMANLinearWorldManager::add(ObjectPtr object) { objects.push_back(object); };
 
 GMANPrimitive* GMANLinearWorldManager::getFirst(RtVoid) {
   current = objects.begin();
   if (objects.size()) {
-    return *current;
+    return current->get();
   } else {
     return NULL;
   }
@@ -65,7 +63,7 @@ GMANPrimitive* GMANLinearWorldManager::getNext(RtVoid) {
 
   current++;
   if (current != objects.end()) {
-    return *current;
+    return current->get();
   }
   return NULL;
 };

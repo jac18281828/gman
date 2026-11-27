@@ -26,9 +26,11 @@
  */
 
 #include <cmath>
+#include <utility>
 
 #include "gmancolor.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanraysphere.h"
 #include "gmantransform.h"
@@ -49,12 +51,13 @@ inline GMANRaySphere* addEmittingSphere(GMANPathtraceRenderer& renderer, GMANLig
   GMANMatrix4 place;
   place.trans(centreX, centreY, centreZ);
   GMANTransform const transform = makeTransform(place);
-  GMANRaySphere* sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+  auto sphereOwner = gman::make<GMANRaySphere>(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+  auto* const sphere = sphereOwner.get();
   gman::Appearance appearance;
   appearance.areaLight = &areaLight;
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
-  renderer.getWorldManager()->add(sphere);
+  renderer.getWorldManager()->add(std::move(sphereOwner));
   return sphere;
 }
 

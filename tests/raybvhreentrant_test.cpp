@@ -33,10 +33,13 @@
  * returns, and so misses it.
  */
 
+#include <utility>
+
 #include "check.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
@@ -56,29 +59,23 @@ GMANTransform translated(RtFloat dx, RtFloat dy, RtFloat dz) {
   return makeTransform(m);
 }
 
-GMANRaySphere* sphereAt(RtFloat x, RtFloat y, RtFloat z) {
-  return new GMANRaySphere(0.5, -0.5, 0.5, 360.0, GMANParameterList(), translated(x, y, z));
+gman::Owned<GMANRaySphere> sphereAt(RtFloat x, RtFloat y, RtFloat z) {
+  return gman::make<GMANRaySphere>(0.5, -0.5, 0.5, 360.0, GMANParameterList(), translated(x, y, z));
 }
 
 // ---- check A: GMANRayBVH::nearestHit ----
 //
 // A probe primitive that, when armed, casts a second nearestHit against
 // the same bvh for a fixed, unrelated ray before delegating to a real
-// sphere for its own answer. Owns delegate (a raw pointer, so all five
-// special members are accounted for): every other primitive in these
-// fixtures is heap-allocated the same way, held by a
-// GMANLinearWorldManager that deletes what it holds.
+// sphere for its own answer. Owns delegate: every other primitive in these
+// fixtures is built the same way, held by a GMANLinearWorldManager that
+// destroys what it holds.
 class NestingProbe : public GMANRayPrimitive {
 public:
-  NestingProbe(GMANRaySphere* delegatePrimitive, GMANRayBVH const& bvhToNest, GMANRay const& fixedInnerRay)
-      : delegate(delegatePrimitive), bvh(bvhToNest), innerRay(fixedInnerRay) {
+  NestingProbe(gman::Owned<GMANRaySphere> delegatePrimitive, GMANRayBVH const& bvhToNest, GMANRay const& fixedInnerRay)
+      : delegate(std::move(delegatePrimitive)), bvh(bvhToNest), innerRay(fixedInnerRay) {
     bbox = delegate->getBBox();
   }
-  NestingProbe(NestingProbe const&) = delete;
-  NestingProbe& operator=(NestingProbe const&) = delete;
-  NestingProbe(NestingProbe&&) = delete;
-  NestingProbe& operator=(NestingProbe&&) = delete;
-  ~NestingProbe() override { delete delegate; }
 
   bool intersect(GMANRay const& ray, GMANHit& hit) const override {
     ++callCount;
@@ -95,7 +92,7 @@ public:
   mutable GMANRayPrimitive const* nestedPrimitive = nullptr;
 
 private:
-  GMANRaySphere* delegate;
+  gman::Owned<GMANRaySphere> delegate;
   GMANRayBVH const& bvh;
   GMANRay innerRay;
 };
@@ -122,19 +119,22 @@ void testNearestHitReentrant() {
   // their union box (two at y == +0.6, two at y == -0.6) but each
   // individually clear of it, so every one of them, the probe included,
   // genuinely misses the outer ray.
-  auto* realProbe = new NestingProbe(sphereAt(2.0, 0.6, 0.0), bvh, innerRay);
+  auto realProbeOwner = gman::make<NestingProbe>(sphereAt(2.0, 0.6, 0.0), bvh, innerRay);
+  auto* const realProbe = realProbeOwner.get();
   worldManager.add(sphereAt(0.0, 0.6, 0.0));
   worldManager.add(sphereAt(1.0, -0.6, 0.0));
-  worldManager.add(realProbe);
+  worldManager.add(std::move(realProbeOwner));
   worldManager.add(sphereAt(3.0, -0.6, 0.0));
 
   // Far leaf: the outer ray's only real hit (trueTarget, on its exact
   // line), the inner ray's own real target (innerTarget, off the outer
   // ray's line but on the inner ray's), and two more off-line fillers.
-  GMANRayPrimitive* trueTarget = sphereAt(10.0, 0.0, 0.0);
-  GMANRayPrimitive* innerTarget = sphereAt(11.0, 0.6, 0.0);
-  worldManager.add(trueTarget);
-  worldManager.add(innerTarget);
+  auto trueTargetOwner = sphereAt(10.0, 0.0, 0.0);
+  auto* const trueTarget = trueTargetOwner.get();
+  auto innerTargetOwner = sphereAt(11.0, 0.6, 0.0);
+  auto* const innerTarget = innerTargetOwner.get();
+  worldManager.add(std::move(trueTargetOwner));
+  worldManager.add(std::move(innerTargetOwner));
   worldManager.add(sphereAt(12.0, -0.6, 0.0));
   worldManager.add(sphereAt(13.0, 0.6, 0.0));
 
@@ -176,18 +176,13 @@ void testNearestHitReentrant() {
 // instead of a second nearestHit.
 class OccluderNestingProbe : public GMANRayPrimitive {
 public:
-  OccluderNestingProbe(GMANRaySphere* delegatePrimitive, GMANRayOccluder const& occluderToNest,
+  OccluderNestingProbe(gman::Owned<GMANRaySphere> delegatePrimitive, GMANRayOccluder const& occluderToNest,
                        GMANLight const& fixedInnerLight, GMANPoint const& fixedInnerP,
                        GMANVector const& fixedInnerTowardLight, RtFloat fixedInnerDistance)
-      : delegate(delegatePrimitive), occluder(occluderToNest), innerLight(fixedInnerLight), innerP(fixedInnerP),
-        innerTowardLight(fixedInnerTowardLight), innerDistance(fixedInnerDistance) {
+      : delegate(std::move(delegatePrimitive)), occluder(occluderToNest), innerLight(fixedInnerLight),
+        innerP(fixedInnerP), innerTowardLight(fixedInnerTowardLight), innerDistance(fixedInnerDistance) {
     bbox = delegate->getBBox();
   }
-  OccluderNestingProbe(OccluderNestingProbe const&) = delete;
-  OccluderNestingProbe& operator=(OccluderNestingProbe const&) = delete;
-  OccluderNestingProbe(OccluderNestingProbe&&) = delete;
-  OccluderNestingProbe& operator=(OccluderNestingProbe&&) = delete;
-  ~OccluderNestingProbe() override { delete delegate; }
 
   bool intersect(GMANRay const& ray, GMANHit& hit) const override {
     ++callCount;
@@ -204,7 +199,7 @@ public:
   mutable GMANColor nestedResult;
 
 private:
-  GMANRaySphere* delegate;
+  gman::Owned<GMANRaySphere> delegate;
   GMANRayOccluder const& occluder;
   GMANLight const& innerLight;
   GMANPoint innerP;
@@ -233,33 +228,35 @@ void testOccluderReentrant() {
   GMANRayBVH bvh;
   GMANRayOccluder occluder(bvh);
 
-  auto* probeDelegate = sphereAt(2.0, 0.6, 0.0);
-  setOpaque(probeDelegate);
-  auto* probe = new OccluderNestingProbe(probeDelegate, occluder, innerLight, innerP, innerTowardLight, innerDistance);
+  auto probeDelegate = sphereAt(2.0, 0.6, 0.0);
+  setOpaque(probeDelegate.get());
+  auto probeOwner = gman::make<OccluderNestingProbe>(std::move(probeDelegate), occluder, innerLight, innerP,
+                                                     innerTowardLight, innerDistance);
+  auto* const probe = probeOwner.get();
 
-  GMANRayPrimitive* nearA = sphereAt(0.0, 0.6, 0.0);
-  GMANRayPrimitive* nearB = sphereAt(1.0, -0.6, 0.0);
-  GMANRayPrimitive* nearC = sphereAt(3.0, -0.6, 0.0);
-  setOpaque(nearA);
-  setOpaque(nearB);
-  setOpaque(nearC);
-  worldManager.add(nearA);
-  worldManager.add(nearB);
-  worldManager.add(probe);
-  worldManager.add(nearC);
+  auto nearA = sphereAt(0.0, 0.6, 0.0);
+  auto nearB = sphereAt(1.0, -0.6, 0.0);
+  auto nearC = sphereAt(3.0, -0.6, 0.0);
+  setOpaque(nearA.get());
+  setOpaque(nearB.get());
+  setOpaque(nearC.get());
+  worldManager.add(std::move(nearA));
+  worldManager.add(std::move(nearB));
+  worldManager.add(std::move(probeOwner));
+  worldManager.add(std::move(nearC));
 
-  GMANRayPrimitive* trueBlocker = sphereAt(10.0, 0.0, 0.0);
-  GMANRayPrimitive* innerBlocker = sphereAt(11.0, 0.6, 0.0);
-  GMANRayPrimitive* farB = sphereAt(12.0, -0.6, 0.0);
-  GMANRayPrimitive* farC = sphereAt(13.0, 0.6, 0.0);
-  setOpaque(trueBlocker);
-  setOpaque(innerBlocker);
-  setOpaque(farB);
-  setOpaque(farC);
-  worldManager.add(trueBlocker);
-  worldManager.add(innerBlocker);
-  worldManager.add(farB);
-  worldManager.add(farC);
+  auto trueBlocker = sphereAt(10.0, 0.0, 0.0);
+  auto innerBlocker = sphereAt(11.0, 0.6, 0.0);
+  auto farB = sphereAt(12.0, -0.6, 0.0);
+  auto farC = sphereAt(13.0, 0.6, 0.0);
+  setOpaque(trueBlocker.get());
+  setOpaque(innerBlocker.get());
+  setOpaque(farB.get());
+  setOpaque(farC.get());
+  worldManager.add(std::move(trueBlocker));
+  worldManager.add(std::move(innerBlocker));
+  worldManager.add(std::move(farB));
+  worldManager.add(std::move(farC));
 
   bvh.build(worldManager);
 

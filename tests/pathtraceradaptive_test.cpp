@@ -79,6 +79,7 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpathtracerweights.h"
@@ -237,7 +238,7 @@ struct FloorScene {
                      GMANPoint(), GMANVector(kDistantDirectionX, kDistantDirectionY, kDistantDirectionZ)),
         areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector()),
         viewingSys(kWidth, kHeight, squareScreenWindow(), identity, kViewFov, kSceneNear, kSceneFar) {
-    GMANRayPolygon* floor = buildFloor();
+    auto floor = buildFloor();
     gman::Appearance appearance;
     appearance.shader = loadShader("matte", matteParams(1.0f));
     appearance.Cs = GMANColor(kFlatReflectance, kFlatReflectance, kFlatReflectance);
@@ -246,7 +247,7 @@ struct FloorScene {
       appearance.lights = {&distantLight};
     }
     floor->setAppearance(appearance);
-    renderer.getWorldManager()->add(floor);
+    renderer.getWorldManager()->add(std::move(floor));
     if (lighting == Lighting::emittingDisk) {
       addEmittingDisk();
     }
@@ -257,12 +258,12 @@ struct FloorScene {
     place.rot(GMANRadians(kDiskTiltDegrees), 1.0f, 0.0f, 0.0f);
     place.trans(kDiskCentreX, kDiskCentreY, kDiskCentreZ);
     GMANTransform const transform = makeTransform(place);
-    auto const disk = new GMANRayDisk(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
+    auto disk = gman::make<GMANRayDisk>(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
     gman::Appearance appearance;
     appearance.areaLight = &areaLight;
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     disk->setAppearance(appearance);
-    renderer.getWorldManager()->add(disk);
+    renderer.getWorldManager()->add(std::move(disk));
   }
 
   Frame render(RtInt maximum, RtFloat variance, Minsamples const& minsamples = std::nullopt) {

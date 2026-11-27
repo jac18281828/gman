@@ -41,6 +41,7 @@
 #include <memory>
 #include <numbers>
 #include <string>
+#include <utility>
 
 #include "check.h"
 #include "gmanbsdf.h"
@@ -49,6 +50,7 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
@@ -73,11 +75,11 @@ GMANColor const kShaderWeight(1.0f, 0.5f, 0.25f);
 // Opaque (Os = white): a bare GMANRayPrimitive's appearance defaults to
 // black, and the occluder attenuates by Os rather than by the hit
 // alone, so a blocker meant to fully occlude has to say so.
-GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
+gman::Owned<GMANRaySphere> sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
   GMANMatrix4 place;
   place.trans(cx, cy, cz);
   GMANTransform const transform = makeTransform(place);
-  const auto sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+  auto sphere = gman::make<GMANRaySphere>(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(opaque);
@@ -95,9 +97,9 @@ public:
   }
 };
 
-GMANRaySphere* sphereWith(gman::Appearance const& appearance) {
+gman::Owned<GMANRaySphere> sphereWith(gman::Appearance const& appearance) {
   GMANMatrix4 place;
-  const auto sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), makeTransform(place));
+  auto sphere = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), makeTransform(place));
   sphere->setAppearance(appearance);
   return sphere;
 }
@@ -239,8 +241,9 @@ void testSelfShadowAtScale(RtFloat scale) {
   GMANLinearWorldManager worldManager;
   // sphereAt owns what worldManager holds and deletes it on destruction
   // (GMANLinearWorldManager's own contract).
-  GMANRaySphere* sphere = sphereAt(scale, 0.0f, 0.0f, 0.0f);
-  worldManager.add(sphere);
+  auto sphereOwner = sphereAt(scale, 0.0f, 0.0f, 0.0f);
+  auto* const sphere = sphereOwner.get();
+  worldManager.add(std::move(sphereOwner));
   GMANRayBVH bvh;
   bvh.build(worldManager);
   GMANRayOccluder const occluder(bvh);

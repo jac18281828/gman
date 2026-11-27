@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstdio>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -35,6 +36,7 @@
 #include "gmandictionary.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanradiositymesh.h"
@@ -79,7 +81,7 @@ std::vector<RtFloat> flattenPoints(std::vector<GMANPoint> const& points) {
   return p;
 }
 
-GMANPrimitive* buildPolygon(std::vector<GMANPoint> const& outer) {
+gman::Owned<GMANPrimitive> buildPolygon(std::vector<GMANPoint> const& outer) {
   RtInt const nverts = (RtInt)outer.size();
   std::vector<RtFloat> const p = flattenPoints(outer);
   GMANDictionary dictionary;
@@ -97,7 +99,7 @@ GMANPrimitive* buildPolygon(std::vector<GMANPoint> const& outer) {
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
-GMANPrimitive* buildGeneralPolygon(std::vector<std::vector<GMANPoint>> const& loops) {
+gman::Owned<GMANPrimitive> buildGeneralPolygon(std::vector<std::vector<GMANPoint>> const& loops) {
   RtInt const nloops = (RtInt)loops.size();
   std::vector<RtInt> nverts(nloops);
   std::vector<GMANPoint> flat;
@@ -122,7 +124,8 @@ GMANPrimitive* buildGeneralPolygon(std::vector<std::vector<GMANPoint>> const& lo
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
-GMANPrimitive* buildPointsPolygon(std::vector<GMANPoint> const& points, std::vector<std::vector<RtInt>> const& faces) {
+gman::Owned<GMANPrimitive> buildPointsPolygon(std::vector<GMANPoint> const& points,
+                                              std::vector<std::vector<RtInt>> const& faces) {
   std::vector<RtFloat> const p = flattenPoints(points);
 
   RtInt const npolys = (RtInt)faces.size();
@@ -152,8 +155,8 @@ GMANPrimitive* buildPointsPolygon(std::vector<GMANPoint> const& points, std::vec
 // One PointsGeneralPolygons request: faces holds, per face, its own loops
 // (loop 0 the outer boundary, every later loop a hole), each loop a list
 // of indices into points.
-GMANPrimitive* buildPointsGeneralPolygons(std::vector<GMANPoint> const& points,
-                                          std::vector<std::vector<std::vector<RtInt>>> const& faces) {
+gman::Owned<GMANPrimitive> buildPointsGeneralPolygons(std::vector<GMANPoint> const& points,
+                                                      std::vector<std::vector<std::vector<RtInt>>> const& faces) {
   std::vector<RtFloat> const p = flattenPoints(points);
 
   RtInt const npolys = (RtInt)faces.size();
@@ -235,9 +238,9 @@ std::vector<GMANPoint> holeSquare() {
 // cell on each side, splitting every boundary cell across the hole rather
 // than aligning with it.
 void testHoledSquareArea() {
-  GMANPrimitive* prim = buildGeneralPolygon({outerSquare(), holeSquare()});
+  auto prim = buildGeneralPolygon({outerSquare(), holeSquare()});
   GMANLinearWorldManager worldManager;
-  worldManager.add(prim);
+  worldManager.add(std::move(prim));
 
   GMANRadiosityMesh mesh;
   RtFloat const maxEdgeLength = 0.35f;
@@ -291,9 +294,9 @@ void testConcaveLShapeArea() {
       GMANPoint(0.0, 0.0, 0.0), GMANPoint(2.0, 0.0, 0.0), GMANPoint(2.0, 1.0, 0.0),
       GMANPoint(1.0, 1.0, 0.0), GMANPoint(1.0, 2.0, 0.0), GMANPoint(0.0, 2.0, 0.0),
   };
-  GMANPrimitive* prim = buildPolygon(lShape);
+  auto prim = buildPolygon(lShape);
   GMANLinearWorldManager worldManager;
-  worldManager.add(prim);
+  worldManager.add(std::move(prim));
 
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, 0.5f);
@@ -332,9 +335,9 @@ std::vector<std::vector<RtInt>> unitCubeFaces() {
 }
 
 void testPointsPolygonCubeArea() {
-  GMANPrimitive* prim = buildPointsPolygon(unitCubePoints(), unitCubeFaces());
+  auto prim = buildPointsPolygon(unitCubePoints(), unitCubeFaces());
   GMANLinearWorldManager worldManager;
-  worldManager.add(prim);
+  worldManager.add(std::move(prim));
 
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, 0.2f);
@@ -356,9 +359,9 @@ void testPointsGeneralPolygonsHoleArea() {
   points.insert(points.end(), hole.begin(), hole.end());
 
   std::vector<std::vector<std::vector<RtInt>>> const faces = {{{0, 1, 2, 3}, {4, 5, 6, 7}}};
-  GMANPrimitive* prim = buildPointsGeneralPolygons(points, faces);
+  auto prim = buildPointsGeneralPolygons(points, faces);
   GMANLinearWorldManager worldManager;
-  worldManager.add(prim);
+  worldManager.add(std::move(prim));
 
   GMANRadiosityMesh mesh;
   mesh.build(worldManager, 0.4f);
@@ -392,9 +395,9 @@ GMANRay cubeAxisRay(int axis, RtFloat faceSign, RtFloat u, RtFloat v) {
 }
 
 void testMeshLookupThroughBVH() {
-  GMANPrimitive* prim = buildPointsPolygon(unitCubePoints(), unitCubeFaces());
+  auto prim = buildPointsPolygon(unitCubePoints(), unitCubeFaces());
   GMANLinearWorldManager worldManager;
-  worldManager.add(prim);
+  worldManager.add(std::move(prim));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);

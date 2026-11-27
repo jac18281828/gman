@@ -88,6 +88,7 @@
 #include "gmandictionary.h"
 #include "gmanobject.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
@@ -315,8 +316,8 @@ void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt 
   if (!mesh.has_value()) {
     return;
   }
-  GMANPrimitive* prim = mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
+  auto prim = mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, label + ": getRSPolygonMesh returns an object");
 
   int faces = countFaces(object);
@@ -324,7 +325,6 @@ void checkTriangleCount(const std::string& label, std::vector<RtFloat> p, RtInt 
   check(faces == expected, label + ": " + std::to_string(nverts) + " vertices yield " + std::to_string(nverts - 2) +
                                " ear-clipped triangles, diced to " + std::to_string(expected) + " (got " +
                                std::to_string(faces) + ")");
-  delete prim;
 }
 
 } // namespace

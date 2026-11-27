@@ -38,6 +38,7 @@
 #include "gmanindirectpass.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanraybvh.h"
 #include "gmanrayoccluder.h"
@@ -74,7 +75,7 @@ bool isConstant(GMANColor const& c) {
 void buildOneSphereWorld(GMANLinearWorldManager& world) {
   GMANMatrix4 place;
   GMANTransform const transform = makeTransform(place);
-  world.add(new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform));
+  world.add(gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform));
 }
 
 GMANHit centreHit() {

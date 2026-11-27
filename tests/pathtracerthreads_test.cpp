@@ -49,6 +49,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -59,6 +60,7 @@
 #include "gmanlog.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparallel.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
@@ -208,14 +210,14 @@ struct SphereLitFloor {
         frameBuffer(size.width, size.height, kFloorBackground) {
     options.setPixelSamples(kPixelSamples, kPixelSamples);
 
-    GMANRayPolygon* floor = buildFloor();
+    auto floor = buildFloor();
     gman::Appearance appearance;
     appearance.shader = loadShader("matte", matteParams(1.0f));
     appearance.Cs = GMANColor(kFloorReflectance, kFloorReflectance, kFloorReflectance);
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {&pointLight};
     floor->setAppearance(appearance);
-    renderer.getWorldManager()->add(floor);
+    renderer.getWorldManager()->add(std::move(floor));
     addEmittingSphere(renderer, areaLight, kSphereRadius, kSphereCentreX, kSphereCentreY, kSphereCentreZ);
 
     renderer.setWorkers(workers);
@@ -365,15 +367,15 @@ struct DropScene {
         frameBuffer(kDropSize.width, kDropSize.height, nanBackground()) {
     options.setPixelSamples(1.0f, 1.0f);
 
-    auto const sphere =
-        new GMANRaySphere(kDropSphereRadius, kDropSphereZMin, kDropSphereRadius, 360.0f, GMANParameterList());
+    auto sphere =
+        gman::make<GMANRaySphere>(kDropSphereRadius, kDropSphereZMin, kDropSphereRadius, 360.0f, GMANParameterList());
     gman::Appearance appearance;
     appearance.shader = loadShader("matte", matteParams(1.0f));
     appearance.Cs = GMANColor(kDropReflectance, kDropReflectance, kDropReflectance);
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {&light};
     sphere->setAppearance(appearance);
-    renderer.getWorldManager()->add(sphere);
+    renderer.getWorldManager()->add(std::move(sphere));
     renderer.setWorkers(workers);
   }
 
@@ -465,9 +467,9 @@ struct MissingTextureQuad {
                                           GMANPoint(-kQuadHalfExtent, kQuadHalfExtent, kQuadDepth),
                                           GMANPoint(kQuadHalfExtent, kQuadHalfExtent, kQuadDepth),
                                           GMANPoint(kQuadHalfExtent, -kQuadHalfExtent, kQuadDepth)};
-    auto const quad = new GMANRayPolygon(verts, GMANParameterList());
+    auto quad = gman::make<GMANRayPolygon>(verts, GMANParameterList());
     quad->setAppearance(paintedPlasticAppearance(kMissingTexture));
-    renderer.getWorldManager()->add(quad);
+    renderer.getWorldManager()->add(std::move(quad));
     renderer.setWorkers(workers);
   }
 

@@ -31,6 +31,7 @@
 #include <cmath>
 #include <cstddef>
 #include <numbers>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -38,6 +39,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerweights.h"
 #include "gmanpoint.h"
@@ -83,20 +85,22 @@ void testTrueExemptions() {
 std::vector<gman::Emitter> buildTwoLightEmitters(GMANLinearWorldManager& world, GMANLight const& pointLight,
                                                  GMANLight const& areaLight, GMANRaySphere*& host,
                                                  GMANRaySphere*& areaSphere) {
-  host = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  auto hostOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  host = hostOwner.get();
   gman::Appearance hostAppearance;
   hostAppearance.lights = {&pointLight};
   host->setAppearance(hostAppearance);
-  world.add(host);
+  world.add(std::move(hostOwner));
 
   GMANMatrix4 place;
   place.trans(0.0f, 0.0f, -std::numbers::pi_v<RtFloat>);
   GMANTransform const transform = makeTransform(place);
-  areaSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  auto areaSphereOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  areaSphere = areaSphereOwner.get();
   gman::Appearance areaAppearance;
   areaAppearance.areaLight = &areaLight;
   areaSphere->setAppearance(areaAppearance);
-  world.add(areaSphere);
+  world.add(std::move(areaSphereOwner));
 
   return gman::emitters(world);
 }

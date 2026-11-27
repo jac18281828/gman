@@ -30,6 +30,7 @@
 
 #include "check.h"
 #include "gmanattributes.h"
+#include "gmanowned.h"
 #include "gmanray.h"
 #include "gmanrayobjectmanager.h"
 #include "gmanraysphere.h"
@@ -47,12 +48,16 @@ bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a -
 // GMANRayPrimitive: the base's own bare create() also satisfies a
 // GMANRayPrimitive cast, so that cast alone cannot distinguish a real
 // GMANRaySphere from one.
-GMANRaySphere* buildSphere(GMANRayObjectManager& manager, RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
-                           GMANTransform& transform) {
+gman::Owned<GMANRaySphere> buildSphere(GMANRayObjectManager& manager, RtFloat radius, RtFloat zmin, RtFloat zmax,
+                                       RtFloat tmax, GMANTransform& transform) {
   GMANAttributes attr;
-  GMANPrimitive* primitive =
-      manager.getRSSphere(radius, zmin, zmax, tmax, GMANParameterList(), nullptr, &attr, &transform);
-  return dynamic_cast<GMANRaySphere*>(primitive);
+  auto primitive = manager.getRSSphere(radius, zmin, zmax, tmax, GMANParameterList(), nullptr, &attr, &transform);
+  auto* const sphere = dynamic_cast<GMANRaySphere*>(primitive.get());
+  if (sphere == nullptr) {
+    return nullptr;
+  }
+  primitive.release();
+  return gman::Owned<GMANRaySphere>(sphere);
 }
 
 // ---- check 1: a translated sphere hits where the transform puts it ----
@@ -62,7 +67,7 @@ void testTranslate() {
   matrix.trans(3.0, 0.0, 0.0);
   GMANTransform transform = makeTransform(matrix);
 
-  GMANRaySphere* sphere = buildSphere(manager, 1.0, -1.0, 1.0, 360.0, transform);
+  auto sphere = buildSphere(manager, 1.0, -1.0, 1.0, 360.0, transform);
   check(sphere != nullptr, "translate: getRSSphere returns a GMANRaySphere");
   if (sphere == nullptr)
     return;
@@ -79,8 +84,6 @@ void testTranslate() {
   GMANRay missRay(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit missHit;
   check(!sphere->intersect(missRay, missHit), "translate: a ray aimed at the origin misses the translated sphere");
-
-  delete sphere;
 }
 
 // ---- check 2: non-uniform scale, the inverse-transpose normal ----
@@ -90,7 +93,7 @@ void testNonUniformScaleNormal() {
   matrix.scale(2.0, 1.0, 1.0);
   GMANTransform transform = makeTransform(matrix);
 
-  GMANRaySphere* sphere = buildSphere(manager, 1.0, -1.0, 1.0, 360.0, transform);
+  auto sphere = buildSphere(manager, 1.0, -1.0, 1.0, 360.0, transform);
   check(sphere != nullptr, "non-uniform scale: getRSSphere returns a GMANRaySphere");
   if (sphere == nullptr)
     return;
@@ -106,8 +109,6 @@ void testNonUniformScaleNormal() {
   check(near(hit.normal.getX(), 1.0 / sqrt5) && near(hit.normal.getY(), 0.0) && near(hit.normal.getZ(), -2.0 / sqrt5),
         "non-uniform scale: normal == (1/sqrt(5), 0, -2/sqrt(5)), not the forward-transformed "
         "(2/sqrt(5), 0, -1/sqrt(5))");
-
-  delete sphere;
 }
 
 // ---- check 3: non-uniform scale, the rescaled distance and interval ----
@@ -117,7 +118,7 @@ void testNonUniformScaleDistance() {
   matrix.scale(2.0, 1.0, 1.0);
   GMANTransform transform = makeTransform(matrix);
 
-  GMANRaySphere* sphere = buildSphere(manager, 1.0, -1.0, 1.0, 360.0, transform);
+  auto sphere = buildSphere(manager, 1.0, -1.0, 1.0, 360.0, transform);
   check(sphere != nullptr, "non-uniform scale distance: getRSSphere returns a GMANRaySphere");
   if (sphere == nullptr)
     return;
@@ -138,8 +139,6 @@ void testNonUniformScaleDistance() {
   GMANHit shortHit;
   check(!sphere->intersect(shortRay, shortHit),
         "non-uniform scale distance: tmax == 2.5 misses; an unscaled interval would let it hit");
-
-  delete sphere;
 }
 
 // ---- check 4: the parameters survive under the identity transform ----
@@ -148,7 +147,7 @@ void testParametersSurvive() {
   GMANMatrix4 identity;
   GMANTransform transform = makeTransform(identity);
 
-  GMANRaySphere* clippedSphere = buildSphere(manager, 1.0, -1.0, 0.0, 360.0, transform);
+  auto clippedSphere = buildSphere(manager, 1.0, -1.0, 0.0, 360.0, transform);
   check(clippedSphere != nullptr, "parameters survive: zmax == 0 sphere builds");
   if (clippedSphere != nullptr) {
     GMANRay clipRay(GMANPoint(0.0, 0.0, 5.0), GMANVector(0.0, 0.0, -1.0));
@@ -156,10 +155,9 @@ void testParametersSurvive() {
     bool const clipHitFound = clippedSphere->intersect(clipRay, clipHit);
     check(clipHitFound && near(clipHit.t, 6.0),
           "parameters survive: zmax == 0 hides the near cap, hitting the lower half from inside at t == 6");
-    delete clippedSphere;
   }
 
-  GMANRaySphere* wedgeSphere = buildSphere(manager, 1.0, -1.0, 1.0, 90.0, transform);
+  auto wedgeSphere = buildSphere(manager, 1.0, -1.0, 1.0, 90.0, transform);
   check(wedgeSphere != nullptr, "parameters survive: thetamax == 90 sphere builds");
   if (wedgeSphere != nullptr) {
     GMANRay wedgeRay(GMANPoint(-5.0, 0.0, 0.0), GMANVector(1.0, 0.0, 0.0));
@@ -167,7 +165,6 @@ void testParametersSurvive() {
     bool const wedgeHitFound = wedgeSphere->intersect(wedgeRay, wedgeHit);
     check(wedgeHitFound && near(wedgeHit.t, 6.0),
           "parameters survive: thetamax == 90 skips the near root at theta == pi, hitting the far root at t == 6");
-    delete wedgeSphere;
   }
 }
 
@@ -178,7 +175,7 @@ void testSingularTransform() {
   matrix.scale(1.0, 1.0, 0.0);
   GMANTransform transform = makeTransform(matrix);
 
-  GMANRaySphere* sphere = nullptr;
+  gman::Owned<GMANRaySphere> sphere;
   bool threw = false;
   try {
     sphere = buildSphere(manager, 1.0, -1.0, 1.0, 360.0, transform);
@@ -193,8 +190,6 @@ void testSingularTransform() {
   GMANRay ray(GMANPoint(0.0, 0.0, -5.0), GMANVector(0.0, 0.0, 1.0));
   GMANHit hit;
   check(!sphere->intersect(ray, hit), "singular transform: a sphere with no invertible object space misses");
-
-  delete sphere;
 }
 
 // ---- check 6: a rotation exercises the normal's transpose and the
@@ -207,7 +202,7 @@ void testRotation() {
   matrix.rot(GMANRadians(90.0), 0.0, 0.0, 1.0);
   GMANTransform transform = makeTransform(matrix);
 
-  GMANRaySphere* sphere = buildSphere(manager, 1.0, -1.0, 1.0, 90.0, transform);
+  auto sphere = buildSphere(manager, 1.0, -1.0, 1.0, 90.0, transform);
   check(sphere != nullptr, "rotation: getRSSphere returns a GMANRaySphere");
   if (sphere == nullptr)
     return;
@@ -219,8 +214,6 @@ void testRotation() {
   check(hitFound && near(hit.t, 5.0 - sqrt075), "rotation: t == 5 - sqrt(0.75)");
   check(near(hit.normal.getX(), -sqrt075) && near(hit.normal.getY(), 0.5) && near(hit.normal.getZ(), 0.0),
         "rotation: normal == (-sqrt(0.75), 0.5, 0)");
-
-  delete sphere;
 }
 
 } // namespace

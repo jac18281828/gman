@@ -39,6 +39,7 @@
 #include <filesystem>
 #include <numbers>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <tiffio.h>
@@ -122,15 +123,15 @@ void testMatrixReachesShader() {
   GMANParameterList spherePl;
   GMANTransform transform; // identity
 
-  GMANPrimitive* prim =
+  auto prim =
       mgr.getRSSphere((RtFloat)1.0, (RtFloat)-1.0, (RtFloat)1.0, (RtFloat)360.0, spherePl, &options, &attr, &transform);
   // Kept reachable the same way production does (GMANRenderManImpl::RiEnd
   // leaves worldManager/objectManager deliberately unfreed) -- see
   // tests/normals_test.cpp's own comment at its analogous getRSSphere call.
   static GMANLinearWorldManager worldMgr;
-  worldMgr.add(prim);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
+  worldMgr.add(std::move(prim));
 
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, "plumbing: getRSSphere returns an object");
   if (!object) {
     return;

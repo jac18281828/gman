@@ -32,6 +32,7 @@
 #include <numbers>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -43,6 +44,7 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanpolygon.h"
@@ -283,34 +285,37 @@ std::unique_ptr<MainFixture> buildMainFixture(FloorAlbedoShader const& floorShad
   RtToken floorTokens[] = {RI_P, RI_ST};
   RtPointer floorParms[] = {(RtPointer)floorP, (RtPointer)floorSt};
   GMANParameterList const floorPl(gman::standardDictionary(), 2, floorTokens, floorParms, 3, 3, 1, 3);
-  fx->floor = new GMANRayPolygon(floorOuter, {hole}, floorPl);
+  auto floor = gman::make<GMANRayPolygon>(floorOuter, std::vector<std::vector<GMANPoint>>{hole}, floorPl);
+  fx->floor = floor.get();
   gman::Appearance floorAppearance;
   floorAppearance.shader = asAppearanceShader(floorShader);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floorAppearance.lights = {&light};
   fx->floor->setAppearance(floorAppearance);
-  fx->world.add(fx->floor);
+  fx->world.add(std::move(floor));
 
   // Front normal +Y (verified by construction order): shares the floor's
   // (0, 0, 0)-(kLegLength, 0, 0) leg, rising to Z = kLegLength.
   std::vector<GMANPoint> const wallOuter = {GMANPoint(0.0f, 0.0f, 0.0f), GMANPoint(0.0f, 0.0f, kLegLength),
                                             GMANPoint(kLegLength, 0.0f, kLegLength), GMANPoint(kLegLength, 0.0f, 0.0f)};
-  fx->wall = new GMANRayPolygon(wallOuter, GMANParameterList());
+  auto wall = gman::make<GMANRayPolygon>(wallOuter, GMANParameterList());
+  fx->wall = wall.get();
   gman::Appearance wallAppearance;
   wallAppearance.shader = asAppearanceShader(wallShader);
   wallAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   wallAppearance.lights = {&light};
   fx->wall->setAppearance(wallAppearance);
-  fx->world.add(fx->wall);
+  fx->world.add(std::move(wall));
 
-  fx->sphere = new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(),
-                                 translationTransform(kSphereCentreX, kSphereCentreY, kSphereCentreZ));
+  auto sphere = gman::make<GMANRaySphere>(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(),
+                                          translationTransform(kSphereCentreX, kSphereCentreY, kSphereCentreZ));
+  fx->sphere = sphere.get();
   gman::Appearance sphereAppearance;
   sphereAppearance.shader = asAppearanceShader(sphereShader);
   sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphereAppearance.lights = {&light};
   fx->sphere->setAppearance(sphereAppearance);
-  fx->world.add(fx->sphere);
+  fx->world.add(std::move(sphere));
 
   fx->bvh.build(fx->world);
   return fx;
@@ -719,13 +724,13 @@ void testLoneSphereAnswersExactlyBlack() {
   GMANLight const light = makePointLight(GMANPoint(0.0f, 0.0f, -6.0f), 20.0);
 
   GMANLinearWorldManager world;
-  auto* sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform());
+  auto sphere = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform());
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = {&light};
   sphere->setAppearance(appearance);
-  world.add(sphere);
+  world.add(std::move(sphere));
 
   GMANRayBVH bvh;
   bvh.build(world);
@@ -778,23 +783,25 @@ void testSilhouetteSideFollowsHitNormal() {
   RtFloat const h = kRimFloorHalfWidth;
   std::vector<GMANPoint> const floorOuter = {GMANPoint(-h, -h, 0.0f), GMANPoint(h, -h, 0.0f), GMANPoint(h, h, 0.0f),
                                              GMANPoint(-h, h, 0.0f)};
-  fixture.floor = new GMANRayPolygon(floorOuter, GMANParameterList());
+  auto floor = gman::make<GMANRayPolygon>(floorOuter, GMANParameterList());
+  fixture.floor = floor.get();
   gman::Appearance floorAppearance;
   floorAppearance.shader = asAppearanceShader(floorShader);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floorAppearance.lights = {&light};
   fixture.floor->setAppearance(floorAppearance);
-  fixture.world.add(fixture.floor);
+  fixture.world.add(std::move(floor));
 
   GMANPoint const centre(0.0f, 0.0f, kRimSphereRadius);
-  fixture.sphere = new GMANRaySphere(kRimSphereRadius, -kRimSphereRadius, kRimSphereRadius, 360.0f, GMANParameterList(),
-                                     translationTransform(0.0f, 0.0f, kRimSphereRadius));
+  auto sphere = gman::make<GMANRaySphere>(kRimSphereRadius, -kRimSphereRadius, kRimSphereRadius, 360.0f,
+                                          GMANParameterList(), translationTransform(0.0f, 0.0f, kRimSphereRadius));
+  fixture.sphere = sphere.get();
   gman::Appearance sphereAppearance;
   sphereAppearance.shader = asAppearanceShader(sphereShader);
   sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphereAppearance.lights = {&light};
   fixture.sphere->setAppearance(sphereAppearance);
-  fixture.world.add(fixture.sphere);
+  fixture.world.add(std::move(sphere));
   fixture.bvh.build(fixture.world);
 
   GMANRadiosityPass pass;
@@ -892,13 +899,13 @@ void testCapWarnings(MainFixture& fixture) {
       std::vector<GMANPoint> const verts = {
           GMANPoint(0.0f, 0.0f, zOffset), GMANPoint(kThinPolygonLength, 0.0f, zOffset),
           GMANPoint(kThinPolygonLength, kThinPolygonWidth, zOffset), GMANPoint(0.0f, kThinPolygonWidth, zOffset)};
-      auto* polygon = new GMANRayPolygon(verts, GMANParameterList());
+      auto polygon = gman::make<GMANRayPolygon>(verts, GMANParameterList());
       gman::Appearance appearance;
       appearance.shader = asAppearanceShader(shader);
       appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
       appearance.lights = {}; // lit by nothing
       polygon->setAppearance(appearance);
-      world.add(polygon);
+      world.add(std::move(polygon));
     }
     GMANRayBVH bvh;
     bvh.build(world);
@@ -923,14 +930,14 @@ void testCapWarnings(MainFixture& fixture) {
   {
     GMANLinearWorldManager world;
     ConstantAlbedoShader const shader(0.5f);
-    auto* cylinder = new GMANRayCylinder(kWideCylinderRadius, 0.0f, kWideCylinderHeight, 360.0f, GMANParameterList(),
-                                         identityTransform());
+    auto cylinder = gman::make<GMANRayCylinder>(kWideCylinderRadius, 0.0f, kWideCylinderHeight, 360.0f,
+                                                GMANParameterList(), identityTransform());
     gman::Appearance appearance;
     appearance.shader = asAppearanceShader(shader);
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {};
     cylinder->setAppearance(appearance);
-    world.add(cylinder);
+    world.add(std::move(cylinder));
 
     GMANRayBVH bvh;
     bvh.build(world);

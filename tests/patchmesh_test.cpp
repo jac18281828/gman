@@ -49,6 +49,7 @@
 #include "check.h"
 #include "gmandictionary.h"
 #include "gmanobject.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanprimitives.h"
@@ -260,13 +261,12 @@ void testNonperiodicBicubicZeroStepRejected() {
   GMANTransform transform;
   GMANPatchPolyObjectManager mgr;
 
-  GMANPrimitive* prim = mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken)RI_NONPERIODIC, 3, (RtToken)RI_PERIODIC, pl,
-                                           &options, &attr, &transform);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
+  auto prim = mgr.getRSPatchMesh((RtToken) "bicubic", 4, (RtToken)RI_NONPERIODIC, 3, (RtToken)RI_PERIODIC, pl, &options,
+                                 &attr, &transform);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr && object->getVert() == nullptr,
         "bicubic PatchMesh, nonperiodic ustep=0: getRSPatchMesh rejects "
         "the mesh instead of dividing by zero");
-  delete prim;
 }
 
 // ---- render-level: each fixture rasterizes, reverting getRSPatchMesh

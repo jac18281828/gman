@@ -56,6 +56,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -129,7 +130,8 @@ void renderAndCollectResiduals(std::vector<double> residuals[3], std::vector<dou
   GMANMatrix4 place;
   place.trans(0.0f, 0.0f, kDiskZ);
   GMANTransform const transform = makeTransform(place);
-  GMANRayDisk* disk = new GMANRayDisk(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
+  auto diskOwner = gman::make<GMANRayDisk>(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
+  auto* const disk = diskOwner.get();
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kDiskLe, kDiskLe, kDiskLe), GMANPoint(), GMANVector());
   GMANVector const distantDirection(0.0f, 0.6f, 0.8f);
@@ -143,7 +145,7 @@ void renderAndCollectResiduals(std::vector<double> residuals[3], std::vector<dou
   appearance.areaLight = &areaLight;
   appearance.lights = {&distantLight};
   disk->setAppearance(appearance);
-  renderer.getWorldManager()->add(disk);
+  renderer.getWorldManager()->add(std::move(diskOwner));
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   GMANAttributes const attr;
@@ -227,7 +229,8 @@ PairRender renderDiskAndSphere(bool misEnabled) {
   GMANMatrix4 place;
   place.trans(0.0f, 0.0f, kDiskZ);
   GMANTransform const transform = makeTransform(place);
-  GMANRayDisk* disk = new GMANRayDisk(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
+  auto diskOwner = gman::make<GMANRayDisk>(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
+  auto* const disk = diskOwner.get();
 
   GMANLight const diskLight(GMAN_LIGHT_AREA, GMANColor(kPairDiskLe, kPairDiskLe, kPairDiskLe), GMANPoint(),
                             GMANVector());
@@ -237,7 +240,7 @@ PairRender renderDiskAndSphere(bool misEnabled) {
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.areaLight = &diskLight;
   disk->setAppearance(appearance);
-  renderer.getWorldManager()->add(disk);
+  renderer.getWorldManager()->add(std::move(diskOwner));
 
   GMANLight const sphereLight(GMAN_LIGHT_AREA, GMANColor(kPairSphereLe, kPairSphereLe, kPairSphereLe), GMANPoint(),
                               GMANVector());

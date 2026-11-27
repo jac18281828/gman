@@ -45,6 +45,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -56,6 +57,7 @@
 #include "gmanlog.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
@@ -110,35 +112,40 @@ struct EmitterWorld {
 std::unique_ptr<EmitterWorld> buildEmitterWorld() {
   auto w = std::make_unique<EmitterWorld>();
 
-  w->sphere = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  auto sphere = gman::make<GMANRaySphere>(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  w->sphere = sphere.get();
   gman::Appearance sphereAppearance;
   sphereAppearance.areaLight = &w->sphereLight;
   w->sphere->setAppearance(sphereAppearance);
-  w->world.add(w->sphere);
+  w->world.add(std::move(sphere));
 
   std::vector<GMANPoint> const polyVerts = {GMANPoint(-1.0f, -1.0f, 10.0f), GMANPoint(1.0f, -1.0f, 10.0f),
                                             GMANPoint(1.0f, 1.0f, 10.0f), GMANPoint(-1.0f, 1.0f, 10.0f)};
-  w->polygon = new GMANRayPolygon(polyVerts, GMANParameterList());
+  auto polygon = gman::make<GMANRayPolygon>(polyVerts, GMANParameterList());
+  w->polygon = polygon.get();
   gman::Appearance polygonAppearance;
   polygonAppearance.areaLight = &w->polygonLight;
   w->polygon->setAppearance(polygonAppearance);
-  w->world.add(w->polygon);
+  w->world.add(std::move(polygon));
 
-  w->degenerate = new GMANRaySphere(0.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  auto degenerate = gman::make<GMANRaySphere>(0.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  w->degenerate = degenerate.get();
   gman::Appearance degenerateAppearance;
   degenerateAppearance.areaLight = &w->degenerateLight;
   w->degenerate->setAppearance(degenerateAppearance);
-  w->world.add(w->degenerate);
+  w->world.add(std::move(degenerate));
 
-  w->ordinary = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  auto ordinary = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  w->ordinary = ordinary.get();
   gman::Appearance ordinaryAppearance;
   ordinaryAppearance.lights = {&w->pointLight};
   w->ordinary->setAppearance(ordinaryAppearance);
-  w->world.add(w->ordinary);
+  w->world.add(std::move(ordinary));
 
-  w->secondOrdinary = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  auto secondOrdinary = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  w->secondOrdinary = secondOrdinary.get();
   w->secondOrdinary->setAppearance(ordinaryAppearance);
-  w->world.add(w->secondOrdinary);
+  w->world.add(std::move(secondOrdinary));
 
   return w;
 }
@@ -211,15 +218,16 @@ void testSingularEnumeration() {
   flatDiskAppearance.areaLight = &flatDiskLight;
 
   GMANLinearWorldManager world;
-  const auto regular = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  auto regularOwner = gman::make<GMANRaySphere>(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  auto* const regular = regularOwner.get();
   regular->setAppearance(regularAppearance);
-  world.add(regular);
-  const auto flatSphere = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList(), singular);
+  world.add(std::move(regularOwner));
+  auto flatSphere = gman::make<GMANRaySphere>(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList(), singular);
   flatSphere->setAppearance(flatSphereAppearance);
-  world.add(flatSphere);
-  const auto flatDisk = new GMANRayDisk(0.0f, 1.0f, 360.0f, GMANParameterList(), singular);
+  world.add(std::move(flatSphere));
+  auto flatDisk = gman::make<GMANRayDisk>(0.0f, 1.0f, 360.0f, GMANParameterList(), singular);
   flatDisk->setAppearance(flatDiskAppearance);
-  world.add(flatDisk);
+  world.add(std::move(flatDisk));
 
   std::vector<gman::Emitter> const list = gman::emitters(world);
 
@@ -294,14 +302,14 @@ void testSingularEmitters() {
 void testPower() {
   // GMANLinearWorldManager owns and deletes what it is given, so the
   // sphere here is heap-allocated.
-  const auto fullSphere = new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
+  auto fullSphere = gman::make<GMANRaySphere>(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
   gman::Appearance appearance;
   appearance.areaLight = &light;
   fullSphere->setAppearance(appearance);
 
   GMANLinearWorldManager world;
-  world.add(fullSphere);
+  world.add(std::move(fullSphere));
   std::vector<gman::Emitter> const list = gman::emitters(world);
   check(list.size() == 1, "power: one area emitter enumerated");
 
@@ -331,14 +339,14 @@ void testPower() {
   check(relQuad < 1e-3, "power: the quadrature integral agrees with power within 1e-3 relative");
 
   // A delta emitter's power is exactly 0, from gman::emitters itself.
-  const auto deltaSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  auto deltaSphere = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector());
   gman::Appearance deltaAppearance;
   deltaAppearance.lights = {&pointLight};
   deltaSphere->setAppearance(deltaAppearance);
 
   GMANLinearWorldManager deltaWorld;
-  deltaWorld.add(deltaSphere);
+  deltaWorld.add(std::move(deltaSphere));
   std::vector<gman::Emitter> const deltaList = gman::emitters(deltaWorld);
   check(deltaList.size() == 1, "power: one delta emitter enumerated");
   check(deltaList[0].power == 0.0f, "power: a delta emitter's power is exactly 0");
@@ -437,14 +445,14 @@ void testScaledSphere(RtFloat scale, std::uint32_t dim) {
   GMANMatrix4 place;
   place.scale(scale, scale, scale);
   GMANTransform const transform = makeTransform(place);
-  const auto sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  auto sphere = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), transform);
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(kLe, kLe, kLe), GMANPoint(), GMANVector());
   gman::Appearance appearance;
   appearance.areaLight = &light;
   sphere->setAppearance(appearance);
 
   GMANLinearWorldManager world;
-  world.add(sphere);
+  world.add(std::move(sphere));
   std::vector<gman::Emitter> const list = gman::emitters(world);
   check(list.size() == 1, "scaled sphere: one area emitter enumerated");
 
@@ -492,14 +500,15 @@ void testScaledDisk() {
   place.rot(GMANRadians(45.0f), 0.0f, 1.0f, 0.0f);
   place.scale(2.0f, 1.0f, 1.0f);
   GMANTransform const transform = makeTransform(place);
-  const auto disk = new GMANRayDisk(0.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  auto diskOwner = gman::make<GMANRayDisk>(0.0f, 1.0f, 360.0f, GMANParameterList(), transform);
+  auto* const disk = diskOwner.get();
   GMANLight const light(GMAN_LIGHT_AREA, GMANColor(kLe, kLe, kLe), GMANPoint(), GMANVector());
   gman::Appearance appearance;
   appearance.areaLight = &light;
   disk->setAppearance(appearance);
 
   GMANLinearWorldManager world;
-  world.add(disk);
+  world.add(std::move(diskOwner));
   std::vector<gman::Emitter> const list = gman::emitters(world);
   check(list.size() == 1, "scaled disk: one area emitter enumerated");
 
@@ -675,7 +684,7 @@ void testPolygonEnumeration() {
   std::unique_ptr<GMANRayPolygonMesh> mesh =
       buildTaggedMesh(solidFaces(unevenPanel(0.0f)), areaLightAppearance(meshLight));
   GMANRayPolygonMesh const* const meshShape = mesh.get();
-  w->world.add(mesh.release());
+  w->world.add(std::move(mesh));
   std::vector<gman::Emitter> const list = gman::emitters(w->world);
 
   setLogFile("/dev/null");
@@ -830,15 +839,17 @@ void testEmitterIndex() {
   GMANLight const pointLight(GMAN_LIGHT_POINT, GMANColor(5.0f, 5.0f, 5.0f), GMANPoint(0.0f, 0.0f, -5.0f), GMANVector());
 
   GMANLinearWorldManager world;
-  auto* const taggedSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  auto taggedOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  auto* const taggedSphere = taggedOwner.get();
   taggedSphere->setAppearance(areaLightAppearance(sphereLight));
-  world.add(taggedSphere);
+  world.add(std::move(taggedOwner));
   std::unique_ptr<GMANRayPolygonMesh> mesh =
       buildTaggedMesh(solidFaces(unevenPanel(0.0f)), areaLightAppearance(meshLight));
   GMANRayPolygonMesh const* const meshShape = mesh.get();
-  world.add(mesh.release());
-  auto* const untaggedSphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
-  world.add(untaggedSphere);
+  world.add(std::move(mesh));
+  auto untaggedOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList());
+  auto* const untaggedSphere = untaggedOwner.get();
+  world.add(std::move(untaggedOwner));
   GMANRayPolygon const bare(upRectangle(-1.0f, 1.0f, -1.0f, 1.0f, 3.0f), GMANParameterList());
 
   std::vector<gman::Emitter> list = gman::emitters(world);

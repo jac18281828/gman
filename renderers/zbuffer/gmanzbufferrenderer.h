@@ -35,6 +35,7 @@
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
 #include "gmanoutputpolygon.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpoint.h"
@@ -165,29 +166,35 @@ private:
   // answer an empty placeholder, rendering no geometry to count.
   class AreaLightCountingObjectManager : public GMANPatchPolyObjectManager {
   public:
-    GMANPrimitive* getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
-                                    GMANTransform* t) override;
-    GMANPrimitive* getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                              GMANTransform* t) override;
-    GMANPrimitive* getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap, GMANParameterList pl,
-                                  GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv,
-                                RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, GMANParameterList pl,
-                                GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
-                               GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
-                             GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
-                                 GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, GMANParameterList pl,
-                                    GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
-                                   GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
-                             GMANAttributes* attr, GMANTransform* t) override;
-    GMANPrimitive* getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
-                              GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
+                                                GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                          GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap,
+                                              GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                              GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax,
+                                            RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax,
+                                            GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                            GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                           GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                           GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
+                                         GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                             GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                             GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, GMANParameterList pl,
+                                                GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                               GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                               GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
+                                         GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) override;
+    gman::Owned<GMANPrimitive> getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
+                                          GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                          GMANTransform* t) override;
 
     std::size_t areaLightCount = 0;
 

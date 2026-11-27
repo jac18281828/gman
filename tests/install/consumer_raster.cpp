@@ -33,13 +33,12 @@
 
 int main() {
   GMANPatchPolyObjectManager manager;
-  GMANPrimitive* const primitive = manager.create();
+  auto const primitive = manager.create();
   if (primitive == nullptr) {
     return 1;
   }
 
-  GMANObject* const object = dynamic_cast<GMANObject*>(primitive);
+  GMANObject* const object = dynamic_cast<GMANObject*>(primitive.get());
   const bool isEmptyObject = object != nullptr && object->getBody() == nullptr && object->getNext() == nullptr;
-  delete primitive;
   return isEmptyObject ? 0 : 1;
 }

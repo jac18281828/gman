@@ -66,6 +66,7 @@
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -205,7 +206,7 @@ public:
                      GMANPoint(), GMANVector(kDistantDirectionX, kDistantDirectionY, kDistantDirectionZ)),
         areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector()),
         viewingSys(kWidth, kHeight, squareScreenWindow(), identity, kViewFov, kSceneNear, kSceneFar) {
-    GMANRayPolygon* floor = nullptr;
+    gman::Owned<GMANRayPolygon> floor;
     if (winding == Winding::reversed) {
       floor = buildReversedFloor();
     } else {
@@ -222,7 +223,7 @@ public:
       appearance.lights = {&distantLight};
     }
     floor->setAppearance(appearance);
-    renderer.getWorldManager()->add(floor);
+    renderer.getWorldManager()->add(std::move(floor));
     if (lighting == Lighting::emittingDisk) {
       addEmittingDisk();
     }
@@ -260,11 +261,11 @@ public:
   bool measured(int x, int y) { return pixelMeasured(viewingSys, x, y); }
 
 private:
-  static GMANRayPolygon* buildReversedFloor() {
+  static gman::Owned<GMANRayPolygon> buildReversedFloor() {
     std::vector<GMANPoint> const verts = {
         GMANPoint(kFloorXMin, kFloorY, kFloorZMin), GMANPoint(kFloorXMax, kFloorY, kFloorZMin),
         GMANPoint(kFloorXMax, kFloorY, kFloorZMax), GMANPoint(kFloorXMin, kFloorY, kFloorZMax)};
-    return new GMANRayPolygon(verts, GMANParameterList());
+    return gman::make<GMANRayPolygon>(verts, GMANParameterList());
   }
 
   void addEmittingDisk() {
@@ -272,12 +273,12 @@ private:
     place.rot(GMANRadians(kDiskTiltDegrees), 1.0f, 0.0f, 0.0f);
     place.trans(kDiskCentreX, kDiskCentreY, kDiskCentreZ);
     GMANTransform const transform = makeTransform(place);
-    auto const disk = new GMANRayDisk(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
+    auto disk = gman::make<GMANRayDisk>(0.0f, kDiskRadius, 360.0f, GMANParameterList(), transform);
     gman::Appearance appearance;
     appearance.areaLight = &areaLight;
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     disk->setAppearance(appearance);
-    renderer.getWorldManager()->add(disk);
+    renderer.getWorldManager()->add(std::move(disk));
   }
 };
 

@@ -24,6 +24,7 @@
  * carry the shadow walk past the emitter's own small target.
  */
 
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -32,6 +33,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -66,11 +68,11 @@ constexpr RtFloat kPaneOs = 0.5f;
 constexpr RtFloat kPaneX = 8.9f;
 constexpr RtFloat kPaneHalfExtent = 50.0f;
 
-GMANRayPolygon* buildPane() {
+gman::Owned<GMANRayPolygon> buildPane() {
   std::vector<GMANPoint> const verts = {
       GMANPoint(kPaneX, -kPaneHalfExtent, -kPaneHalfExtent), GMANPoint(kPaneX, -kPaneHalfExtent, kPaneHalfExtent),
       GMANPoint(kPaneX, kPaneHalfExtent, kPaneHalfExtent), GMANPoint(kPaneX, kPaneHalfExtent, -kPaneHalfExtent)};
-  return new GMANRayPolygon(verts, GMANParameterList());
+  return gman::make<GMANRayPolygon>(verts, GMANParameterList());
 }
 
 void testPaneBetweenSphereAndFloor() {
@@ -85,32 +87,34 @@ void testPaneBetweenSphereAndFloor() {
   gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(floor);
+  renderer.getWorldManager()->add(std::move(floor));
 
   GMANMatrix4 place;
   place.trans(kSphereCentreX, kSphereCentreY, kSphereCentreZ);
   GMANTransform const transform = makeTransform(place);
-  const auto sphere =
-      new GMANRaySphere(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(), transform);
+  auto sphereOwner =
+      gman::make<GMANRaySphere>(kSphereRadius, -kSphereRadius, kSphereRadius, 360.0f, GMANParameterList(), transform);
+  auto* const sphere = sphereOwner.get();
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   gman::Appearance sphereAppearance;
   sphereAppearance.areaLight = &areaLight;
   sphereAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(sphereAppearance);
-  renderer.getWorldManager()->add(sphere);
+  renderer.getWorldManager()->add(std::move(sphereOwner));
 
-  GMANRayPolygon* pane = buildPane();
+  auto paneOwner = buildPane();
+  auto* const pane = paneOwner.get();
   gman::Appearance paneAppearance;
   paneAppearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
   paneAppearance.Os = GMANColor(kPaneOs, kPaneOs, kPaneOs);
   pane->setAppearance(paneAppearance);
-  renderer.getWorldManager()->add(pane);
+  renderer.getWorldManager()->add(std::move(paneOwner));
 
   check(gman::primitiveMagnitude(pane->getBBox()) >= 4.0f * gman::primitiveMagnitude(sphere->getBBox()),
         "pane: primitiveMagnitude of its own bbox is at least 4x the emitter's");

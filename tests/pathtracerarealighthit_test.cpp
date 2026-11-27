@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstdio>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -37,6 +38,7 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -113,14 +115,15 @@ GMANRaySphere* addEmitterSphere(GMANPathtraceRenderer& renderer, GMANLight const
   GMANMatrix4 place;
   place.trans(0.0, 0.0, kEmitterCentreZ);
   GMANTransform const transform = makeTransform(place);
-  const auto sphere =
-      new GMANRaySphere(kEmitterRadius, -kEmitterRadius, kEmitterRadius, 360.0f, GMANParameterList(), transform);
+  auto sphereOwner = gman::make<GMANRaySphere>(kEmitterRadius, -kEmitterRadius, kEmitterRadius, 360.0f,
+                                               GMANParameterList(), transform);
+  auto* const sphere = sphereOwner.get();
   gman::Appearance appearance;
   appearance.areaLight = &areaLight;
   appearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
-  renderer.getWorldManager()->add(sphere);
+  renderer.getWorldManager()->add(std::move(sphereOwner));
   return sphere;
 }
 
@@ -165,13 +168,14 @@ GMANRayDisk* addBackFacingDisk(GMANPathtraceRenderer& renderer, GMANLight const&
   place.rot(GMANRadians(180.0f), 1.0f, 0.0f, 0.0f);
   place.trans(kBackDiskCentreX, 0.0f, kEmitterCentreZ);
   GMANTransform const transform = makeTransform(place);
-  const auto disk = new GMANRayDisk(0.0f, kBackDiskRadius, 360.0f, GMANParameterList(), transform);
+  auto diskOwner = gman::make<GMANRayDisk>(0.0f, kBackDiskRadius, 360.0f, GMANParameterList(), transform);
+  auto* const disk = diskOwner.get();
   gman::Appearance appearance;
   appearance.areaLight = &areaLight;
   appearance.Cs = GMANColor(0.0f, 0.0f, 0.0f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   disk->setAppearance(appearance);
-  renderer.getWorldManager()->add(disk);
+  renderer.getWorldManager()->add(std::move(diskOwner));
   return disk;
 }
 
@@ -302,14 +306,15 @@ void testMirrorBounce() {
   GMANMatrix4 mirrorPlace;
   mirrorPlace.trans(kMirrorCentreX, 0.0, kMirrorCentreZ);
   GMANTransform const mirrorTransform = makeTransform(mirrorPlace);
-  const auto mirror =
-      new GMANRaySphere(kMirrorRadius, -kMirrorRadius, kMirrorRadius, 360.0f, GMANParameterList(), mirrorTransform);
+  auto mirrorOwner = gman::make<GMANRaySphere>(kMirrorRadius, -kMirrorRadius, kMirrorRadius, 360.0f,
+                                               GMANParameterList(), mirrorTransform);
+  auto* const mirror = mirrorOwner.get();
   gman::Appearance mirrorAppearance;
   mirrorAppearance.shader = loadShader("mirror", GMANParameterList());
   mirrorAppearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
   mirrorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   mirror->setAppearance(mirrorAppearance);
-  renderer.getWorldManager()->add(mirror);
+  renderer.getWorldManager()->add(std::move(mirrorOwner));
 
   GMANFrameBuffer frameBuffer(kMirrorRes, kMirrorRes, options.getBackground());
   GMANAttributes const attr;
@@ -397,12 +402,12 @@ void testGlassTransmission() {
   glassAppearance.shader = loadShader("glass", GMANParameterList());
   glassAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
-  const auto near = new GMANRayPolygon(paneAt(kPaneZNear, false), GMANParameterList());
+  auto near = gman::make<GMANRayPolygon>(paneAt(kPaneZNear, false), GMANParameterList());
   near->setAppearance(glassAppearance);
-  renderer.getWorldManager()->add(near);
-  const auto far = new GMANRayPolygon(paneAt(kPaneZFar, true), GMANParameterList());
+  renderer.getWorldManager()->add(std::move(near));
+  auto far = gman::make<GMANRayPolygon>(paneAt(kPaneZFar, true), GMANParameterList());
   far->setAppearance(glassAppearance);
-  renderer.getWorldManager()->add(far);
+  renderer.getWorldManager()->add(std::move(far));
 
   GMANFrameBuffer frameBuffer(kGlassRes, kGlassRes, options.getBackground());
   GMANAttributes const attr;

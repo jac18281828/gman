@@ -30,6 +30,7 @@
 #include <cmath>
 #include <cstdio>
 #include <string>
+#include <utility>
 
 #include "check.h"
 #include "gmanattributes.h"
@@ -205,7 +206,7 @@ void testInverseTransposeUnderNonUniformScale() {
   scale.scale(3.0, 1.0, 0.5);
   GMANTransform transform = makeTransform(scale);
 
-  GMANPrimitive* prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, &options, &attr, &transform);
+  auto prim = mgr.getRSSphere(1.0, -1.0, 1.0, 360.0, pl, &options, &attr, &transform);
   // Nothing in this tree ever frees a tessellated primitive's face/vertex
   // graph -- production code relies on process exit to reclaim it
   // (GMANRenderManImpl::RiEnd leaves worldManager/objectManager
@@ -218,9 +219,9 @@ void testInverseTransposeUnderNonUniformScale() {
   // "leak is fine, we're about to exit" assumption in a way that
   // contradicts it.
   static GMANLinearWorldManager worldMgr;
-  worldMgr.add(prim);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
+  worldMgr.add(std::move(prim));
 
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
   check(object != nullptr, "inverse-transpose: getRSSphere returns an object");
 
   // Walk the tessellated grid (URES=VRES=16, gmanpatchpolyobjectmanager.cpp)

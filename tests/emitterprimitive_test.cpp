@@ -35,6 +35,7 @@
 #include <limits>
 #include <numbers>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -42,6 +43,7 @@
 #include "gmanemitter.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanprimitives.h"
@@ -65,14 +67,14 @@ constexpr int kMeshBinsPerSide = 8;
 // Builds a one-primitive world tagging shape as an area light and returns
 // gman::emitters' own count for it -- the eligibility gman::emitters itself
 // applies, not a copy of it.
-template <class Shape> std::size_t emittedCount(Shape* shape) {
+template <class Shape> std::size_t emittedCount(gman::Owned<Shape> shape) {
   GMANLight light(GMAN_LIGHT_AREA, GMANColor(4.0f, 4.0f, 4.0f), GMANPoint(), GMANVector());
   gman::Appearance appearance;
   appearance.areaLight = &light;
   shape->setAppearance(appearance);
 
   GMANLinearWorldManager world;
-  world.add(shape);
+  world.add(std::move(shape));
   return gman::emitters(world).size();
 }
 
@@ -287,36 +289,36 @@ void testUniformByArea() {
 // an empty or reversed z range, a z range reaching outside the sphere's own
 // surface, or a non-positive thetamax, for both a sphere and a disk.
 void testDegeneratePrimitives() {
-  check(emittedCount(new GMANRaySphere(0.0f, -1.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRaySphere>(0.0f, -1.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
         "degenerate: sphere radius 0 is ineligible");
-  check(emittedCount(new GMANRaySphere(2.0f, 1.0f, -1.0f, 360.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRaySphere>(2.0f, 1.0f, -1.0f, 360.0f, GMANParameterList())) == 0,
         "degenerate: sphere zmax <= zmin is ineligible");
-  check(emittedCount(new GMANRaySphere(2.0f, -1.0f, 3.0f, 360.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRaySphere>(2.0f, -1.0f, 3.0f, 360.0f, GMANParameterList())) == 0,
         "degenerate: sphere abs(zmax) > radius is ineligible");
-  check(emittedCount(new GMANRaySphere(2.0f, -3.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRaySphere>(2.0f, -3.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
         "degenerate: sphere abs(zmin) > radius is ineligible");
-  check(emittedCount(new GMANRaySphere(2.0f, -1.0f, 1.0f, 0.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRaySphere>(2.0f, -1.0f, 1.0f, 0.0f, GMANParameterList())) == 0,
         "degenerate: sphere thetamax 0 is ineligible");
-  check(emittedCount(new GMANRaySphere(2.0f, -1.0f, 1.0f, -10.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRaySphere>(2.0f, -1.0f, 1.0f, -10.0f, GMANParameterList())) == 0,
         "degenerate: a negative sphere thetamax is ineligible");
-  check(emittedCount(new GMANRaySphere(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList())) == 1,
+  check(emittedCount(gman::make<GMANRaySphere>(2.0f, -2.0f, 2.0f, 360.0f, GMANParameterList())) == 1,
         "degenerate: a full sphere stays eligible, as a control");
 
-  check(emittedCount(new GMANRayDisk(0.0f, 0.0f, 360.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRayDisk>(0.0f, 0.0f, 360.0f, GMANParameterList())) == 0,
         "degenerate: disk radius 0 is ineligible");
-  check(emittedCount(new GMANRayDisk(0.0f, -1.0f, 360.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRayDisk>(0.0f, -1.0f, 360.0f, GMANParameterList())) == 0,
         "degenerate: a negative disk radius is ineligible");
-  check(emittedCount(new GMANRayDisk(0.0f, 3.0f, 0.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRayDisk>(0.0f, 3.0f, 0.0f, GMANParameterList())) == 0,
         "degenerate: disk thetamax 0 is ineligible");
-  check(emittedCount(new GMANRayDisk(0.0f, 3.0f, -10.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRayDisk>(0.0f, 3.0f, -10.0f, GMANParameterList())) == 0,
         "degenerate: a negative disk thetamax is ineligible");
-  check(emittedCount(new GMANRayDisk(0.0f, 3.0f, 360.0f, GMANParameterList())) == 1,
+  check(emittedCount(gman::make<GMANRayDisk>(0.0f, 3.0f, 360.0f, GMANParameterList())) == 1,
         "degenerate: a full disk stays eligible, as a control");
 
   RtFloat const nan = std::numeric_limits<RtFloat>::quiet_NaN();
-  check(emittedCount(new GMANRaySphere(nan, -1.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRaySphere>(nan, -1.0f, 1.0f, 360.0f, GMANParameterList())) == 0,
         "degenerate: a NaN sphere radius is ineligible");
-  check(emittedCount(new GMANRayDisk(0.0f, nan, 360.0f, GMANParameterList())) == 0,
+  check(emittedCount(gman::make<GMANRayDisk>(0.0f, nan, 360.0f, GMANParameterList())) == 0,
         "degenerate: a NaN disk radius is ineligible");
 }
 

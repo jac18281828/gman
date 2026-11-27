@@ -51,6 +51,7 @@
 #include "gmandictionary.h"
 #include "gmanobject.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
@@ -109,8 +110,8 @@ RtFloat legFor(double targetPixels, bool nonDefaultScreenWindow) {
 // at camera-space depth z: corners (0,0,z), (leg,0,z), (0,leg,z), unless
 // behindEyeCorner names one corner (0, 1 or 2) to move to camera-space
 // z=-1 instead -- diceCountFor's own fallback trigger.
-GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, GMANOptions const& options, GMANAttributes const& attr,
-                           int behindEyeCorner = -1) {
+gman::Owned<GMANPrimitive> runTriangle(RtFloat leg, RtFloat z, GMANOptions const& options, GMANAttributes const& attr,
+                                       int behindEyeCorner = -1) {
   RtFloat zs[3] = {z, z, z};
   if (behindEyeCorner >= 0) {
     zs[behindEyeCorner] = -1.0f;
@@ -135,8 +136,8 @@ GMANPrimitive* runTriangle(RtFloat leg, RtFloat z, GMANOptions const& options, G
 // nine world-space coordinates (three corners, x, y, z each) as-is: the
 // NaN-corner fallback case below needs an explicit y and z per corner,
 // which runTriangle's own shared leg/z parameters cannot express.
-GMANPrimitive* runTriangleCorners(std::array<RtFloat, 9> const& p, GMANOptions const& options,
-                                  GMANAttributes const& attr) {
+gman::Owned<GMANPrimitive> runTriangleCorners(std::array<RtFloat, 9> const& p, GMANOptions const& options,
+                                              GMANAttributes const& attr) {
   std::vector<RtFloat> pv(p.begin(), p.end());
 
   GMANDictionary dictionary;
@@ -166,16 +167,14 @@ int countFaces(GMANObject* object) {
   return count;
 }
 
-void checkFaces(std::string const& label, GMANPrimitive* prim, int expected) {
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
+void checkFaces(std::string const& label, gman::Owned<GMANPrimitive> prim, int expected) {
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, label + ": getRSPolygonMesh returns an object");
   if (object == nullptr) {
-    delete prim;
     return;
   }
   const int faces = countFaces(object);
   check(faces == expected, label + ": expected " + std::to_string(expected) + " faces, got " + std::to_string(faces));
-  delete prim;
 }
 
 } // namespace

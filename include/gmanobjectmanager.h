@@ -28,6 +28,7 @@
 #include "gman/export.h"
 #include "gmanattributes.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanprimitive.h"
 #include "gmantransform.h"
@@ -47,7 +48,7 @@ public:
   virtual ~GMANObjectManager(); // default destructor
 
   // create a new primitive object
-  virtual GMANPrimitive* create(RtVoid) = 0;
+  virtual gman::Owned<GMANPrimitive> create(RtVoid) = 0;
 
   /*
    * Renderer Specific primitives
@@ -62,53 +63,60 @@ public:
   // it. Every index mesh holds is valid, so an implementation need not
   // guard against a null "P" or an empty face. Returns one primitive: the
   // empty stub when no face survives, joined geometry otherwise.
-  virtual GMANPrimitive* getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt, GMANAttributes* attr,
-                                          GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSPolygonMesh(GMANPolygonMesh const& mesh, GMANOptions* opt,
+                                                      GMANAttributes* attr, GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                    GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSPatch(RtToken type, GMANParameterList pl, GMANOptions* opt,
+                                                GMANAttributes* attr, GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap,
-                                        GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                        GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSPatchMesh(RtToken type, RtInt nu, RtToken uwrap, RtInt nv, RtToken vwrap,
+                                                    GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                    GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv,
-                                      RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax, GMANParameterList pl,
-                                      GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax,
+                                                  RtInt nv, RtInt vorder, RtFloat vknot[], RtFloat vmin, RtFloat vmax,
+                                                  GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                  GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
-                                     GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSSphere(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                 GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                 GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
-                                   GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSCone(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
+                                               GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
-                                       GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSCylinder(RtFloat radius, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                   GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                   GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax, GMANParameterList pl,
-                                          GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSHyperboloid(RtPoint point1, RtPoint point2, RtFloat tmax,
+                                                      GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                      GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax, GMANParameterList pl,
-                                         GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSParaboloid(RtFloat rmax, RtFloat zmin, RtFloat zmax, RtFloat tmax,
+                                                     GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                     GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
-                                   GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSDisk(RtFloat height, RtFloat radius, RtFloat tmax, GMANParameterList pl,
+                                               GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax, RtFloat tmax,
-                                    GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSTorus(RtFloat majrad, RtFloat minrad, RtFloat phimin, RtFloat phimax,
+                                                RtFloat tmax, GMANParameterList pl, GMANOptions* opt,
+                                                GMANAttributes* attr, GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSBlobby(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[], RtInt nstr,
-                                     RtToken str[], GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                     GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSBlobby(RtInt nleaf, RtInt ncode, RtInt code[], RtInt nflt, RtFloat flt[],
+                                                 RtInt nstr, RtToken str[], GMANParameterList pl, GMANOptions* opt,
+                                                 GMANAttributes* attr, GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSPoints(RtInt npoints, GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                     GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSPoints(RtInt npoints, GMANParameterList pl, GMANOptions* opt,
+                                                 GMANAttributes* attr, GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSCurves(RtToken type, RtInt ncurves, RtInt nvertices[], RtToken wrap, GMANParameterList pl,
-                                     GMANOptions* opt, GMANAttributes* attr, GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSCurves(RtToken type, RtInt ncurves, RtInt nvertices[], RtToken wrap,
+                                                 GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
+                                                 GMANTransform* t) = 0;
 
-  virtual GMANPrimitive* getRSSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[], RtInt ntags,
-                                              RtToken tags[], RtInt numargs[], RtInt intargs[], RtFloat floatargs[],
-                                              GMANParameterList pl, GMANOptions* opt, GMANAttributes* attr,
-                                              GMANTransform* t) = 0;
+  virtual gman::Owned<GMANPrimitive> getRSSubdivisionMesh(RtToken mask, RtInt nf, RtInt nverts[], RtInt verts[],
+                                                          RtInt ntags, RtToken tags[], RtInt numargs[], RtInt intargs[],
+                                                          RtFloat floatargs[], GMANParameterList pl, GMANOptions* opt,
+                                                          GMANAttributes* attr, GMANTransform* t) = 0;
 };

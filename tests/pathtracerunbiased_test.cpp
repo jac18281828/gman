@@ -40,6 +40,7 @@
 #include <format>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -49,6 +50,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -112,15 +114,15 @@ struct HairlineScene {
         viewingSys(kFrameSize, kFrameSize, squareScreenWindow(), identity, kViewFov, kSceneNear, kSceneFar) {
     GMANMatrix4 place;
     place.trans(0.0f, 0.0f, kRingDepth);
-    auto const ring = new GMANRayTorus(kRingMajorRadius, kRingMinorRadius, -kHalfTurn, kHalfTurn, kFullTurn,
-                                       GMANParameterList(), makeTransform(place));
+    auto ring = gman::make<GMANRayTorus>(kRingMajorRadius, kRingMinorRadius, -kHalfTurn, kHalfTurn, kFullTurn,
+                                         GMANParameterList(), makeTransform(place));
     gman::Appearance appearance;
     appearance.shader = loadShader("matte", matteParams(1.0f));
     appearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {&distantLight};
     ring->setAppearance(appearance);
-    renderer.getWorldManager()->add(ring);
+    renderer.getWorldManager()->add(std::move(ring));
   }
 
   Frame render(RtFloat variance, RtInt minsamples = kMinSamples) {

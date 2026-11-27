@@ -37,6 +37,7 @@
 #include "gmanattributes.h"
 #include "gmandictionary.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
 #include "gmanray.h"
@@ -50,7 +51,7 @@ constexpr RtFloat kTolerance = 1e-5f;
 
 bool near(RtFloat a, RtFloat b, RtFloat tol = kTolerance) { return std::fabs(a - b) <= tol; }
 
-GMANPrimitive* buildTexturedMesh() {
+gman::Owned<GMANPrimitive> buildTexturedMesh() {
   // tests/rib/pointspolygons_textured.rib's own "P"/"st"/"verts", read
   // directly here rather than through a RIB parse.
   std::vector<GMANPoint> const points = {
@@ -89,11 +90,10 @@ GMANPrimitive* buildTexturedMesh() {
 GMANRay rayThrough(RtFloat x, RtFloat y) { return GMANRay(GMANPoint(x, y, -5.0), GMANVector(0.0, 0.0, 1.0)); }
 
 void testPerFaceStGatheredThroughVerts() {
-  GMANPrimitive* meshPrim = buildTexturedMesh();
-  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim);
+  auto meshPrim = buildTexturedMesh();
+  GMANRayPrimitive* mesh = dynamic_cast<GMANRayPrimitive*>(meshPrim.get());
   check(mesh != nullptr, "per-face st: getRSPolygonMesh returns a GMANRayPrimitive");
   if (mesh == nullptr) {
-    delete meshPrim;
     return;
   }
 
@@ -116,8 +116,6 @@ void testPerFaceStGatheredThroughVerts() {
     check(near(hit.u, 0.75f), "face 1: s == 2 - x == 0.75");
     check(near(hit.v, 0.3f), "face 1: t == y == 0.3");
   }
-
-  delete meshPrim;
 }
 
 } // namespace

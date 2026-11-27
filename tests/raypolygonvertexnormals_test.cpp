@@ -235,7 +235,7 @@ Built buildMesh(Geometry const& geometry, std::optional<NormalInput> const& norm
   GMANOptions options;
   GMANAttributes attr;
   GMANRayObjectManager manager;
-  built.owner.reset(manager.getRSPolygonMesh(*mesh, &options, &attr, &transform));
+  built.owner = manager.getRSPolygonMesh(*mesh, &options, &attr, &transform);
   built.mesh = dynamic_cast<GMANRayPrimitive*>(built.owner.get());
   check(built.mesh != nullptr, "getRSPolygonMesh returns a GMANRayPrimitive");
   return built;

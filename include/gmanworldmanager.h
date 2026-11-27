@@ -26,6 +26,7 @@
 #pragma once
 
 #include "gman/export.h"
+#include "gmanowned.h"
 #include "gmanprimitive.h"
 #include "ri.h"
 
@@ -40,7 +41,8 @@ public:
 
   virtual ~GMANWorldManager(); // default destructor
 
-  virtual RtVoid add(GMANPrimitive* primitive) = 0;
+  // Takes ownership of primitive; the world destroys it with itself. An empty owner adds nothing.
+  virtual RtVoid add(gman::Owned<GMANPrimitive> primitive) = 0;
 
   virtual GMANPrimitive* getFirst(RtVoid) = 0; // get the first object
 

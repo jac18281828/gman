@@ -34,6 +34,7 @@
 #include <cstring>
 #include <numbers>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -43,6 +44,7 @@
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparallel.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
@@ -182,8 +184,8 @@ std::vector<GMANColor> uniformReflectance(std::size_t count, double rho) {
   return std::vector<GMANColor>(count, GMANColor((RtFloat)rho, (RtFloat)rho, (RtFloat)rho));
 }
 
-GMANRayPolygon* polygon(std::vector<GMANPoint> vertices, gman::Appearance const& appearance) {
-  auto* result = new GMANRayPolygon(std::move(vertices), GMANParameterList());
+gman::Owned<GMANRayPolygon> polygon(std::vector<GMANPoint> vertices, gman::Appearance const& appearance) {
+  auto result = gman::make<GMANRayPolygon>(std::move(vertices), GMANParameterList());
   result->setAppearance(appearance);
   return result;
 }
@@ -303,10 +305,10 @@ void testClosedSphere() {
   GMANLight const light = pointLight(centre, kSphereIntensity);
 
   GMANLinearWorldManager worldManager;
-  auto* sphere = new GMANRaySphere((RtFloat)kSphereRadius, (RtFloat)-kSphereRadius, (RtFloat)kSphereRadius, 360.0f,
-                                   GMANParameterList(), translation(0, 0, kSphereCentreZ));
+  auto sphere = gman::make<GMANRaySphere>((RtFloat)kSphereRadius, (RtFloat)-kSphereRadius, (RtFloat)kSphereRadius,
+                                          360.0f, GMANParameterList(), translation(0, 0, kSphereCentreZ));
   sphere->setAppearance(opaqueAppearance({&light}));
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphere));
   GMANRayBVH bvh;
   bvh.build(worldManager);
   GMANRayOccluder const occluder(bvh);
@@ -403,10 +405,12 @@ void testCubeClosure() {
 GMANColor transmittedIndirect(bool withMiddle, GMANColor const& middleOs) {
   GMANLight const light = pointLight(GMANPoint(0.5f, 0.5f, 5.25f), 1.0);
   GMANLinearWorldManager worldManager;
-  auto* squareA = polygon(squareXY(0, 1, 0, 1, 5), opaqueAppearance({&light}));
-  auto* squareB = polygon(squareXY(0, 1, 0, 1, 6), opaqueAppearance({}));
-  worldManager.add(squareA);
-  worldManager.add(squareB);
+  auto squareAOwner = polygon(squareXY(0, 1, 0, 1, 5), opaqueAppearance({&light}));
+  auto* const squareA = squareAOwner.get();
+  auto squareBOwner = polygon(squareXY(0, 1, 0, 1, 6), opaqueAppearance({}));
+  auto* const squareB = squareBOwner.get();
+  worldManager.add(std::move(squareAOwner));
+  worldManager.add(std::move(squareBOwner));
   if (withMiddle) {
     gman::Appearance middle = opaqueAppearance({});
     middle.Os = middleOs;
@@ -501,13 +505,14 @@ void testLitFromOutside() {
   GMANLight const light = pointLight(lightPosition, kOutsideIntensity);
 
   GMANLinearWorldManager worldManager;
-  auto* sphere = new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), translation(0, 0, 5));
+  auto sphereOwner = gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), translation(0, 0, 5));
+  auto* const sphere = sphereOwner.get();
   sphere->setAppearance(opaqueAppearance({&light}));
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphereOwner));
   std::vector<GMANPoint> const floorCorners = {GMANPoint(-1.4f, -1.3f, 3.6f), GMANPoint(1.4f, -1.3f, 3.6f),
                                                GMANPoint(1.4f, -1.3f, 6.4f), GMANPoint(-1.4f, -1.3f, 6.4f)};
-  auto* floor = polygon(floorCorners, opaqueAppearance({&light}));
-  worldManager.add(floor);
+  auto floor = polygon(floorCorners, opaqueAppearance({&light}));
+  worldManager.add(std::move(floor));
   GMANRayBVH bvh;
   bvh.build(worldManager);
   GMANRayOccluder const occluder(bvh);
@@ -682,11 +687,11 @@ public:
     worldManager.add(polygon({at(-h, -h, -h), at(-h, -h, h), at(h, -h, h), at(h, -h, -h)}, lit));
     worldManager.add(polygon({at(-h, h, -h), at(h, h, -h), at(h, h, h), at(-h, h, h)}, lit));
 
-    auto* sphere = new GMANRaySphere((RtFloat)kEnclosureSphereRadius, (RtFloat)-kEnclosureSphereRadius,
-                                     (RtFloat)kEnclosureSphereRadius, 360.0f, GMANParameterList(),
-                                     translation(-0.8, -1.0, kEnclosureCentreZ));
+    auto sphere = gman::make<GMANRaySphere>((RtFloat)kEnclosureSphereRadius, (RtFloat)-kEnclosureSphereRadius,
+                                            (RtFloat)kEnclosureSphereRadius, 360.0f, GMANParameterList(),
+                                            translation(-0.8, -1.0, kEnclosureCentreZ));
     sphere->setAppearance(lit);
-    worldManager.add(sphere);
+    worldManager.add(std::move(sphere));
 
     gman::Appearance blocker = opaqueAppearance({});
     blocker.Os = GMANColor((RtFloat)kEnclosureBlockerOs, (RtFloat)kEnclosureBlockerOs, (RtFloat)kEnclosureBlockerOs);

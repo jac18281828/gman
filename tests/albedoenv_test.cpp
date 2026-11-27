@@ -36,6 +36,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanpolygon.h"
@@ -151,7 +152,7 @@ public:
 // ---- check 1: hitSurfacePoint's field mapping off a real BVH hit ----
 void testHitSurfacePointFieldMapping() {
   GMANLinearWorldManager world;
-  world.add(new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform()));
+  world.add(gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform()));
   GMANRayBVH bvh;
   bvh.build(world);
 
@@ -204,7 +205,7 @@ void testParityOnSphere() {
   appearance.lights = {&light};
 
   GMANLinearWorldManager world;
-  world.add(new GMANRaySphere(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform()));
+  world.add(gman::make<GMANRaySphere>(1.0f, -1.0f, 1.0f, 360.0f, GMANParameterList(), identityTransform()));
   GMANRayBVH bvh;
   bvh.build(world);
 
@@ -227,7 +228,7 @@ void testParityOnSphere() {
 // CTM) carrying "st", built the way RiPolygonV itself builds one
 // (gmanrendermanimpl.cpp): a real "P" and a real "st", not
 // GMANRayPolygon's default-constructed, "P"-less parameter list.
-GMANRayPolygon* squareWithSt() {
+gman::Owned<GMANRayPolygon> squareWithSt() {
   std::vector<GMANPoint> verts = {GMANPoint(-1.0f, -1.0f, 0.0f), GMANPoint(1.0f, -1.0f, 0.0f),
                                   GMANPoint(1.0f, 1.0f, 0.0f), GMANPoint(-1.0f, 1.0f, 0.0f)};
   RtFloat p[] = {-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0};
@@ -239,7 +240,7 @@ GMANRayPolygon* squareWithSt() {
   RtToken tokens[] = {RI_P, RI_ST};
   RtPointer parms[] = {(RtPointer)p, (RtPointer)st};
   GMANParameterList pl(gman::standardDictionary(), 2, tokens, parms, 4, 4, 1, 1);
-  return new GMANRayPolygon(verts, pl);
+  return gman::make<GMANRayPolygon>(verts, pl);
 }
 
 // ---- check 3: albedo/shade parity on a polygon hit carrying "st" ----

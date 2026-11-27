@@ -43,6 +43,7 @@
 #include "gmandictionary.h"
 #include "gmanobject.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanpatchpolyobjectmanager.h"
 #include "gmanpolygonmesh.h"
 #include "gmanpolygonmeshfactory.h"
@@ -96,7 +97,7 @@ std::vector<GMANPoint> fourPointedStar() {
 
 // ---- object-manager call helpers ----
 
-GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
+gman::Owned<GMANPrimitive> runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   const RtInt nverts = (RtInt)ring.size();
   std::vector<RtFloat> p(3 * nverts);
   for (RtInt i = 0; i < nverts; ++i) {
@@ -119,7 +120,7 @@ GMANPrimitive* runGetRSPolygonDirect(std::vector<GMANPoint> const& ring) {
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
-GMANPrimitive* runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> const& loops) {
+gman::Owned<GMANPrimitive> runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> const& loops) {
   const RtInt nloops = (RtInt)loops.size();
   std::vector<RtInt> nverts(nloops);
   RtInt total = 0;
@@ -155,8 +156,8 @@ GMANPrimitive* runGetRSGeneralPolygonDirect(std::vector<std::vector<GMANPoint>> 
 
 // points is the shared "P" -- point i lands at p[3*i..3*i+2] -- and verts
 // indexes into it exactly as RiPointsPolygonsV's own "verts" does.
-GMANPrimitive* runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt> nverts, std::vector<RtInt> verts,
-                                     std::vector<GMANPoint> const& points) {
+gman::Owned<GMANPrimitive> runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt> nverts, std::vector<RtInt> verts,
+                                                 std::vector<GMANPoint> const& points) {
   const RtInt pointCount = (RtInt)points.size();
   std::vector<RtFloat> p(3 * pointCount);
   for (RtInt i = 0; i < pointCount; ++i) {
@@ -180,8 +181,9 @@ GMANPrimitive* runGetRSPointsPolygon(RtInt npolys, std::vector<RtInt> nverts, st
   return mgr.getRSPolygonMesh(*mesh, &options, &attr, &transform);
 }
 
-GMANPrimitive* runGetRSPointsGeneralPolygons(RtInt npolys, std::vector<RtInt> nloops, std::vector<RtInt> nverts,
-                                             std::vector<RtInt> verts, std::vector<GMANPoint> const& points) {
+gman::Owned<GMANPrimitive> runGetRSPointsGeneralPolygons(RtInt npolys, std::vector<RtInt> nloops,
+                                                         std::vector<RtInt> nverts, std::vector<RtInt> verts,
+                                                         std::vector<GMANPoint> const& points) {
   const RtInt pointCount = (RtInt)points.size();
   std::vector<RtFloat> p(3 * pointCount);
   for (RtInt i = 0; i < pointCount; ++i) {
@@ -324,15 +326,13 @@ void testOneFaceIdentity() {
       verts[i] = i;
     }
 
-    GMANPrimitive* polyPrim = runGetRSPolygonDirect(ring);
-    GMANPrimitive* pointsPrim = runGetRSPointsPolygon(1, {n}, verts, ring);
-    GMANObject* polyObj = dynamic_cast<GMANObject*>(polyPrim);
-    GMANObject* pointsObj = dynamic_cast<GMANObject*>(pointsPrim);
+    auto polyPrim = runGetRSPolygonDirect(ring);
+    auto pointsPrim = runGetRSPointsPolygon(1, {n}, verts, ring);
+    GMANObject* polyObj = dynamic_cast<GMANObject*>(polyPrim.get());
+    GMANObject* pointsObj = dynamic_cast<GMANObject*>(pointsPrim.get());
     check(polyObj != nullptr && pointsObj != nullptr,
           name + ": the Polygon and the PointsPolygons mesh both return an object");
     if (polyObj == nullptr || pointsObj == nullptr) {
-      delete polyPrim;
-      delete pointsPrim;
       continue;
     }
 
@@ -356,9 +356,6 @@ void testOneFaceIdentity() {
                                  pointsVerts[t[2]]->getLocation());
     }
     check(std::fabs(polyArea - pointsArea) <= 1e-9 * std::max(1.0, polyArea), name + ": same area");
-
-    delete polyPrim;
-    delete pointsPrim;
   }
 }
 
@@ -379,11 +376,10 @@ void testIndicesNotOrder() {
   std::vector<RtInt> verts = {newIndexOf[0], newIndexOf[1], newIndexOf[4], newIndexOf[3],
                               newIndexOf[1], newIndexOf[2], newIndexOf[5], newIndexOf[4]};
 
-  GMANPrimitive* prim = runGetRSPointsPolygon(2, {4, 4}, verts, scrambled);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
+  auto prim = runGetRSPointsPolygon(2, {4, 4}, verts, scrambled);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, "indices, not order: returns an object");
   if (object == nullptr) {
-    delete prim;
     return;
   }
 
@@ -416,8 +412,6 @@ void testIndicesNotOrder() {
   if (bodyB != nullptr) {
     checkFaceGeometry("indices, not order: face B", bodyB, ringArea(faceBRing), newellNormal(faceBRing));
   }
-
-  delete prim;
 }
 
 // A PointsGeneralPolygons request with one face of two loops matches the
@@ -429,15 +423,13 @@ void testHoleThroughIndices() {
   std::vector<GMANPoint> points = outer;
   points.insert(points.end(), hole.begin(), hole.end());
 
-  GMANPrimitive* pointsPrim = runGetRSPointsGeneralPolygons(1, {2}, {4, 4}, {0, 1, 2, 3, 4, 5, 6, 7}, points);
-  GMANPrimitive* generalPrim = runGetRSGeneralPolygonDirect({outer, hole});
+  auto pointsPrim = runGetRSPointsGeneralPolygons(1, {2}, {4, 4}, {0, 1, 2, 3, 4, 5, 6, 7}, points);
+  auto generalPrim = runGetRSGeneralPolygonDirect({outer, hole});
 
-  GMANObject* pointsObj = dynamic_cast<GMANObject*>(pointsPrim);
-  GMANObject* generalObj = dynamic_cast<GMANObject*>(generalPrim);
+  GMANObject* pointsObj = dynamic_cast<GMANObject*>(pointsPrim.get());
+  GMANObject* generalObj = dynamic_cast<GMANObject*>(generalPrim.get());
   check(pointsObj != nullptr && generalObj != nullptr, "hole through indices: both return an object");
   if (pointsObj == nullptr || generalObj == nullptr) {
-    delete pointsPrim;
-    delete generalPrim;
     return;
   }
 
@@ -450,9 +442,6 @@ void testHoleThroughIndices() {
   check(triangleTriples(pointsObj, pointsIndex) == triangleTriples(generalObj, generalIndex),
         "hole through indices: same triangle index triples as "
         "the equivalent GeneralPolygon");
-
-  delete pointsPrim;
-  delete generalPrim;
 }
 
 // Three faces, the middle one collinear: two bodies survive with the
@@ -466,8 +455,8 @@ void testOneBadFace() {
   const std::vector<RtInt> nverts = {3, 3, 3};
   const std::vector<RtInt> verts = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
-  GMANPrimitive* prim = runGetRSPointsPolygon(3, nverts, verts, points);
-  GMANObject* object = dynamic_cast<GMANObject*>(prim);
+  auto prim = runGetRSPointsPolygon(3, nverts, verts, points);
+  GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   check(object != nullptr, "one bad face: returns an object");
   if (object != nullptr) {
     check(countBodies(object) == 2, "one bad face: the collinear middle face is skipped, the other "
@@ -487,20 +476,18 @@ void testOneBadFace() {
       checkFaceGeometry("one bad face: face 2", body2, ringArea(face2Ring), newellNormal(face2Ring));
     }
   }
-  delete prim;
 
   // Every face degenerate: the whole mesh is the empty stub -- a mesh with
   // no surviving face, not a partially drawn one.
   const std::vector<GMANPoint> allDegenerate = {
       {0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}, {7, 0, 0}, {8, 0, 0},
   };
-  GMANPrimitive* degeneratePrim = runGetRSPointsPolygon(3, nverts, verts, allDegenerate);
-  GMANObject* degenerateObject = dynamic_cast<GMANObject*>(degeneratePrim);
+  auto degeneratePrim = runGetRSPointsPolygon(3, nverts, verts, allDegenerate);
+  GMANObject* degenerateObject = dynamic_cast<GMANObject*>(degeneratePrim.get());
   check(degenerateObject != nullptr, "one bad face, all degenerate: returns an object");
   check(degenerateObject != nullptr && degenerateObject->getBody() == nullptr,
         "one bad face, all degenerate: the returned object is the empty "
         "stub");
-  delete degeneratePrim;
 }
 
 // Unreferenced points in "P" change nothing. The extra points sit between
@@ -516,18 +503,16 @@ void testUnreferencedPoints() {
   const std::vector<RtInt> vertsWithoutExtra = {0, 1, 2};
   const std::vector<RtInt> vertsWithExtra = {0, 4, 5};
 
-  GMANPrimitive* basePrim = runGetRSPointsPolygon(1, nverts, vertsWithoutExtra, withoutExtra);
-  GMANPrimitive* extraPrim = runGetRSPointsPolygon(1, nverts, vertsWithExtra, withExtra);
+  auto basePrim = runGetRSPointsPolygon(1, nverts, vertsWithoutExtra, withoutExtra);
+  auto extraPrim = runGetRSPointsPolygon(1, nverts, vertsWithExtra, withExtra);
 
-  GMANObject* baseObj = dynamic_cast<GMANObject*>(basePrim);
-  GMANObject* extraObj = dynamic_cast<GMANObject*>(extraPrim);
+  GMANObject* baseObj = dynamic_cast<GMANObject*>(basePrim.get());
+  GMANObject* extraObj = dynamic_cast<GMANObject*>(extraPrim.get());
   check(baseObj != nullptr && extraObj != nullptr, "unreferenced points: both return an object");
   if (baseObj != nullptr && extraObj != nullptr) {
     check(sameLocationOrder(vertexChain(baseObj), vertexChain(extraObj)),
           "unreferenced points: unreferenced \"P\" entries change nothing");
   }
-  delete basePrim;
-  delete extraPrim;
 }
 
 // ---- Rendering (commit 2): twin RIBs compared pixel by pixel ----

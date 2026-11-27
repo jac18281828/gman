@@ -53,6 +53,7 @@
 #include "check.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanlog.h"
+#include "gmanowned.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
 #include "gmanraycone.h"
@@ -173,7 +174,7 @@ void testUntraceableRaysMiss() {
   GMANLinearWorldManager worldManager;
   for (std::size_t i = 0; i < 5; ++i) {
     worldManager.add(
-        new GMANRaySphere(0.4, -0.4, 0.4, 360.0, GMANParameterList(), translated((RtFloat)i * 3.0, 0.0, 0.0)));
+        gman::make<GMANRaySphere>(0.4, -0.4, 0.4, 360.0, GMANParameterList(), translated((RtFloat)i * 3.0, 0.0, 0.0)));
   }
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -221,14 +222,14 @@ void testDenormalComponentIsParallel() {
   GMANPoint rootMax(-kInfinity, -kInfinity, -kInfinity);
   for (std::size_t i = 0; i < 5; ++i) {
     RtFloat const x = (RtFloat)i * 3.0f;
-    auto* box = new SolidBox(GMANPoint(x - 0.5, -0.5, -0.5), GMANPoint(x + 0.5, 0.5, 0.5));
+    auto box = gman::make<SolidBox>(GMANPoint(x - 0.5, -0.5, -0.5), GMANPoint(x + 0.5, 0.5, 0.5));
     GMANPoint const lo = box->getBBox().getMin();
     GMANPoint const hi = box->getBBox().getMax();
     rootMin = GMANPoint(std::fmin(rootMin.getX(), lo.getX()), std::fmin(rootMin.getY(), lo.getY()),
                         std::fmin(rootMin.getZ(), lo.getZ()));
     rootMax = GMANPoint(std::fmax(rootMax.getX(), hi.getX()), std::fmax(rootMax.getY(), hi.getY()),
                         std::fmax(rootMax.getZ(), hi.getZ()));
-    worldManager.add(box);
+    worldManager.add(std::move(box));
   }
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -308,15 +309,16 @@ bool sameHit(Probe const& a, Probe const& b) {
 void testNaNBoxStaysOut() {
   GMANLinearWorldManager worldManager;
   std::vector<GMANRayPrimitive*> valid;
-  auto addValid = [&](GMANRayPrimitive* primitive) {
-    worldManager.add(primitive);
-    valid.push_back(primitive);
+  auto addValid = [&](gman::Owned<GMANRayPrimitive> primitive) {
+    valid.push_back(primitive.get());
+    worldManager.add(std::move(primitive));
   };
-  GMANRayPrimitive* const nanBox = new NaNBoxPrimitive();
-  addValid(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
-  worldManager.add(nanBox);
-  addValid(new GMANRayCylinder(0.75, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
-  addValid(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(6.0, 0.0, 0.0)));
+  auto nanBoxOwner = gman::make<NaNBoxPrimitive>();
+  auto* const nanBox = nanBoxOwner.get();
+  addValid(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
+  worldManager.add(std::move(nanBoxOwner));
+  addValid(gman::make<GMANRayCylinder>(0.75, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
+  addValid(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(6.0, 0.0, 0.0)));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -364,10 +366,10 @@ void testNaNBoxWarning() {
   setScreenOutput(false);
 
   GMANLinearWorldManager withNaN;
-  withNaN.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
-  withNaN.add(new NaNBoxPrimitive());
-  withNaN.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
-  withNaN.add(new NaNBoxPrimitive());
+  withNaN.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
+  withNaN.add(gman::make<NaNBoxPrimitive>());
+  withNaN.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
+  withNaN.add(gman::make<NaNBoxPrimitive>());
 
   GMANRayBVH bvh;
   bvh.build(withNaN);
@@ -378,8 +380,8 @@ void testNaNBoxWarning() {
   std::size_t const afterSecond = countWarnings(logPath, anyCount);
 
   GMANLinearWorldManager valid;
-  valid.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
-  valid.add(new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
+  valid.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(0.0, 0.0, 0.0)));
+  valid.add(gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(3.0, 0.0, 0.0)));
   bvh.build(valid);
   std::size_t const afterValid = countWarnings(logPath, anyCount);
 
@@ -422,9 +424,9 @@ struct Placed {
 
 std::vector<Placed> placeEveryIntersector(GMANLinearWorldManager& worldManager) {
   std::vector<Placed> placed;
-  auto add = [&](std::string const& name, GMANRayPrimitive* primitive) {
-    worldManager.add(primitive);
-    placed.push_back({name, primitive});
+  auto add = [&](std::string const& name, gman::Owned<GMANRayPrimitive> primitive) {
+    placed.push_back({name, primitive.get()});
+    worldManager.add(std::move(primitive));
   };
   RtPoint spanningFrom = {1.0f, 0.0f, -1.0f};
   RtPoint spanningTo = {0.5f, 0.5f, 1.0f};
@@ -433,29 +435,32 @@ std::vector<Placed> placeEveryIntersector(GMANLinearWorldManager& worldManager) 
   std::vector<GMANPoint> const quad = {GMANPoint(79.0, -1.0, 0.0), GMANPoint(81.0, -1.0, 0.0),
                                        GMANPoint(81.0, 1.0, 0.0), GMANPoint(79.0, 1.0, 0.0)};
 
-  add("torus", new GMANRayTorus(1.0, 0.25, 0.0, 360.0, 360.0, GMANParameterList(), GMANTransform()));
+  add("torus", gman::make<GMANRayTorus>(1.0, 0.25, 0.0, 360.0, 360.0, GMANParameterList(), GMANTransform()));
   add("torus band and wedge",
-      new GMANRayTorus(1.0, 0.25, -90.0, 90.0, 270.0, GMANParameterList(), translated(5.0, 0.0, 0.0)));
-  add("sphere", new GMANRaySphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(10.0, 0.0, 0.0)));
+      gman::make<GMANRayTorus>(1.0, 0.25, -90.0, 90.0, 270.0, GMANParameterList(), translated(5.0, 0.0, 0.0)));
+  add("sphere", gman::make<GMANRaySphere>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(10.0, 0.0, 0.0)));
   add("sphere zone and wedge",
-      new GMANRaySphere(1.0, -0.5, 0.8, 270.0, GMANParameterList(), translated(15.0, 0.0, 0.0)));
-  add("cylinder", new GMANRayCylinder(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(20.0, 0.0, 0.0)));
-  add("cylinder wedge", new GMANRayCylinder(1.0, -1.0, 1.0, 180.0, GMANParameterList(), translated(25.0, 0.0, 0.0)));
-  add("cone", new GMANRayCone(2.0, 1.0, 360.0, GMANParameterList(), translated(30.0, 0.0, 0.0)));
-  add("cone wedge", new GMANRayCone(2.0, 1.0, 180.0, GMANParameterList(), translated(35.0, 0.0, 0.0)));
-  add("disk", new GMANRayDisk(0.5, 1.0, 360.0, GMANParameterList(), translated(40.0, 0.0, 0.0)));
-  add("disk wedge", new GMANRayDisk(0.5, 1.0, 180.0, GMANParameterList(), translated(45.0, 0.0, 0.0)));
+      gman::make<GMANRaySphere>(1.0, -0.5, 0.8, 270.0, GMANParameterList(), translated(15.0, 0.0, 0.0)));
+  add("cylinder", gman::make<GMANRayCylinder>(1.0, -1.0, 1.0, 360.0, GMANParameterList(), translated(20.0, 0.0, 0.0)));
+  add("cylinder wedge",
+      gman::make<GMANRayCylinder>(1.0, -1.0, 1.0, 180.0, GMANParameterList(), translated(25.0, 0.0, 0.0)));
+  add("cone", gman::make<GMANRayCone>(2.0, 1.0, 360.0, GMANParameterList(), translated(30.0, 0.0, 0.0)));
+  add("cone wedge", gman::make<GMANRayCone>(2.0, 1.0, 180.0, GMANParameterList(), translated(35.0, 0.0, 0.0)));
+  add("disk", gman::make<GMANRayDisk>(0.5, 1.0, 360.0, GMANParameterList(), translated(40.0, 0.0, 0.0)));
+  add("disk wedge", gman::make<GMANRayDisk>(0.5, 1.0, 180.0, GMANParameterList(), translated(45.0, 0.0, 0.0)));
   add("hyperboloid",
-      new GMANRayHyperboloid(spanningFrom, spanningTo, 360.0, GMANParameterList(), translated(50.0, 0.0, 0.0)));
+      gman::make<GMANRayHyperboloid>(spanningFrom, spanningTo, 360.0, GMANParameterList(), translated(50.0, 0.0, 0.0)));
   add("hyperboloid wedge",
-      new GMANRayHyperboloid(spanningFrom, spanningTo, 180.0, GMANParameterList(), translated(55.0, 0.0, 0.0)));
+      gman::make<GMANRayHyperboloid>(spanningFrom, spanningTo, 180.0, GMANParameterList(), translated(55.0, 0.0, 0.0)));
   add("hyperboloid annulus",
-      new GMANRayHyperboloid(annulusFrom, annulusTo, 360.0, GMANParameterList(), translated(60.0, 0.0, 0.0)));
+      gman::make<GMANRayHyperboloid>(annulusFrom, annulusTo, 360.0, GMANParameterList(), translated(60.0, 0.0, 0.0)));
   add("hyperboloid annulus wedge",
-      new GMANRayHyperboloid(annulusFrom, annulusTo, 180.0, GMANParameterList(), translated(65.0, 0.0, 0.0)));
-  add("paraboloid", new GMANRayParaboloid(1.0, 0.0, 2.0, 360.0, GMANParameterList(), translated(70.0, 0.0, 0.0)));
-  add("paraboloid wedge", new GMANRayParaboloid(1.0, 0.5, 2.0, 180.0, GMANParameterList(), translated(75.0, 0.0, 0.0)));
-  add("polygon", new GMANRayPolygon(quad, GMANParameterList()));
+      gman::make<GMANRayHyperboloid>(annulusFrom, annulusTo, 180.0, GMANParameterList(), translated(65.0, 0.0, 0.0)));
+  add("paraboloid",
+      gman::make<GMANRayParaboloid>(1.0, 0.0, 2.0, 360.0, GMANParameterList(), translated(70.0, 0.0, 0.0)));
+  add("paraboloid wedge",
+      gman::make<GMANRayParaboloid>(1.0, 0.5, 2.0, 180.0, GMANParameterList(), translated(75.0, 0.0, 0.0)));
+  add("polygon", gman::make<GMANRayPolygon>(quad, GMANParameterList()));
   return placed;
 }
 

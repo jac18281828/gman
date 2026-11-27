@@ -34,12 +34,14 @@
  */
 
 #include <cmath>
+#include <utility>
 
 #include "check.h"
 #include "gmanattributes.h"
 #include "gmanframebuffer.h"
 #include "gmanobjectmanager.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
@@ -69,9 +71,10 @@ GMANPrimitive* addSphereAt(GMANRaytraceRenderer& renderer, GMANOptions& options,
   GMANMatrix4 place;
   place.trans(0.0, 0.0, centreZ);
   GMANTransform transform = makeTransform(place);
-  GMANPrimitive* sphere =
+  auto sphereOwner =
       renderer.getObjectManager()->getRSSphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), &options, &attr, &transform);
-  renderer.getWorldManager()->add(sphere);
+  auto* const sphere = sphereOwner.get();
+  renderer.getWorldManager()->add(std::move(sphereOwner));
   return sphere;
 }
 
@@ -174,9 +177,9 @@ int main() {
   GMANTransform transform = makeTransform(place);
 
   GMANAttributes attr;
-  GMANPrimitive* sphere =
+  auto sphere =
       renderer.getObjectManager()->getRSSphere(1.0, -1.0, 1.0, 360.0, GMANParameterList(), &options, &attr, &transform);
-  renderer.getWorldManager()->add(sphere);
+  renderer.getWorldManager()->add(std::move(sphere));
 
   GMANFrameBuffer frameBuffer(kRes, kRes, options.getBackground());
   renderer.render(&frameBuffer, &viewingSys, options, attr);

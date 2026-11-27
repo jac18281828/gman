@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstddef>
 #include <numbers>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -38,6 +39,7 @@
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -88,7 +90,7 @@ void addPanel(GMANPathtraceRenderer& renderer, GMANLight const& light, std::vect
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
 
   auto mesh = taggedmesh::buildTaggedMesh({taggedmesh::FaceSpec{loop, {}, vertexNormals}}, appearance);
-  renderer.getWorldManager()->add(mesh.release());
+  renderer.getWorldManager()->add(std::move(mesh));
 }
 
 // The panel over the floor: 2 wide in x, 2 deep in z, at y = -1, wound
@@ -155,13 +157,13 @@ void testPanelOverFloor() {
   gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(kReflectance, kReflectance, kReflectance);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(floor);
+  renderer.getWorldManager()->add(std::move(floor));
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   std::vector<GMANPoint> const panel = overheadPanel();

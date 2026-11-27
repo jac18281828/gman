@@ -29,10 +29,12 @@
 #include <cstddef>
 #include <limits>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
 #include "gmanlinearworldmanager.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanradiositymesh.h"
@@ -49,7 +51,7 @@ std::vector<GMANPoint> square(RtFloat half) {
 
 void testQuotientBeyondFloatRange() {
   GMANLinearWorldManager world;
-  world.add(new GMANRayPolygon(square(4.0f), GMANParameterList()));
+  world.add(gman::make<GMANRayPolygon>(square(4.0f), GMANParameterList()));
   GMANRadiosityMesh mesh;
   mesh.build(world, std::numeric_limits<RtFloat>::min());
   check(mesh.getElementCount() == GMANRadiosityMesh::kMaxDivisions * GMANRadiosityMesh::kMaxDivisions,
@@ -58,7 +60,7 @@ void testQuotientBeyondFloatRange() {
 
 void testHugeExtentOverTinyEdge() {
   GMANLinearWorldManager world;
-  world.add(new GMANRayPolygon(square(1e5f), GMANParameterList()));
+  world.add(gman::make<GMANRayPolygon>(square(1e5f), GMANParameterList()));
   GMANRadiosityMesh mesh;
   mesh.build(world, 1e-34f);
   check(mesh.getElementCount() == GMANRadiosityMesh::kMaxDivisions * GMANRadiosityMesh::kMaxDivisions,
@@ -67,7 +69,7 @@ void testHugeExtentOverTinyEdge() {
 
 void testOrdinaryDivisionIsUnchanged() {
   GMANLinearWorldManager world;
-  world.add(new GMANRayPolygon(square(4.0f), GMANParameterList()));
+  world.add(gman::make<GMANRayPolygon>(square(4.0f), GMANParameterList()));
   GMANRadiosityMesh mesh;
   mesh.build(world, 2.0f);
   check(mesh.getElementCount() == 16, "an 8 by 8 polygon over an edge length of 2 divides into 16 elements");
@@ -75,8 +77,9 @@ void testOrdinaryDivisionIsUnchanged() {
 
 void testLocateFarBeyondThePolygon() {
   GMANLinearWorldManager world;
-  auto* polygon = new GMANRayPolygon(square(4.0f), GMANParameterList());
-  world.add(polygon);
+  auto polygonOwner = gman::make<GMANRayPolygon>(square(4.0f), GMANParameterList());
+  auto* const polygon = polygonOwner.get();
+  world.add(std::move(polygonOwner));
   GMANRadiosityMesh mesh;
   mesh.build(world, 2.0f);
 

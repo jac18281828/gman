@@ -37,12 +37,14 @@
 #include <memory>
 #include <numbers>
 #include <string>
+#include <utility>
 
 #include "check.h"
 #include "gmanindirectpass.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmath.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanray.h"
@@ -89,11 +91,11 @@ bool colorExactly(GMANColor const& a, GMANColor const& b) {
 
 // Opaque (Os = white), matching rayoccluder_test.cpp's own sphereAt: a
 // bare GMANRayPrimitive's appearance defaults to black/transparent.
-GMANRaySphere* sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
+gman::Owned<GMANRaySphere> sphereAt(RtFloat radius, RtFloat cx, RtFloat cy, RtFloat cz) {
   GMANMatrix4 place;
   place.trans(cx, cy, cz);
   GMANTransform const transform = makeTransform(place);
-  return new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
+  return gman::make<GMANRaySphere>(radius, -radius, radius, 360.0f, GMANParameterList(), transform);
 }
 
 // An arbitrary unit vector perpendicular to n.
@@ -218,19 +220,19 @@ class LambertianHitFixture {
 public:
   explicit LambertianHitFixture(GMANVector const& lightDirection)
       : occluder(bvh), light_(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), lightDirection) {
-    GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
+    auto sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
     gman::Appearance appearance;
     appearance.shader = asAppearanceShader(shader);
     appearance.Cs = GMANColor(0.8f, 0.3f, 0.2f);
     appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
     appearance.lights = {&light_};
     sphere->setAppearance(appearance);
-    worldManager_.add(sphere);
+    worldManager_.add(std::move(sphere));
   }
 
   // Adds an extra primitive before build(); ownership passes to the
   // fixture's own world manager, matching sphereAt's own convention.
-  void addPrimitive(GMANLinearWorldManager::ObjectPtr primitive) { worldManager_.add(primitive); }
+  void addPrimitive(gman::Owned<GMANPrimitive> primitive) { worldManager_.add(std::move(primitive)); }
 
   void build() { bvh.build(worldManager_); }
 
@@ -268,12 +270,12 @@ public:
     GMANMatrix4 place;
     place.trans(0.0f, 0.0f, z);
     const auto transform = makeTransform(place);
-    const auto disk = new GMANRayDisk(0.0f, kLayerRadius, 360.0f, GMANParameterList(), transform);
+    auto disk = gman::make<GMANRayDisk>(0.0f, kLayerRadius, 360.0f, GMANParameterList(), transform);
     gman::Appearance appearance;
     appearance.shader = asAppearanceShader(shader);
     appearance.Os = os;
     disk->setAppearance(appearance);
-    worldManager_.add(disk);
+    worldManager_.add(std::move(disk));
   }
 
   GMANColor trace(GMANColor const& background) {
@@ -303,13 +305,13 @@ GMANColor sum(GMANColor const& a, GMANColor const& b) {
 // would reach it and return the sentinel colour instead.
 void checkDepthLimitTermination() {
   GMANLinearWorldManager worldManager;
-  GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
+  auto sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
   FixedColorShader shader(GMANColor(0.9f, 0.1f, 0.1f));
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphere));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -326,13 +328,13 @@ void checkDepthLimitTermination() {
 // clears every primitive, returns background, not black.
 void checkEscapeReturnsBackground() {
   GMANLinearWorldManager worldManager;
-  GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
+  auto sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
   FixedColorShader shader(GMANColor(0.9f, 0.1f, 0.1f));
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphere));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -398,7 +400,8 @@ void checkRealHitMatchesDirectShade() {
 void checkSelfShadowSweepAppliesOffset() {
   RtFloat const radius = 3.0f;
   GMANLinearWorldManager worldManager;
-  GMANRaySphere* sphere = sphereAt(radius, 0.0f, 0.0f, 0.0f);
+  auto sphereOwner = sphereAt(radius, 0.0f, 0.0f, 0.0f);
+  auto* const sphere = sphereOwner.get();
   AmbientTestShader shader;
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
@@ -407,7 +410,7 @@ void checkSelfShadowSweepAppliesOffset() {
   GMANLight const ambient(GMAN_LIGHT_AMBIENT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector());
   appearance.lights = {&ambient};
   sphere->setAppearance(appearance);
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphereOwner));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -471,13 +474,13 @@ void checkSelfShadowSweepAppliesOffset() {
 void checkDepthCountsCorrectly() {
   RtFloat const radius = 5.0f;
   GMANLinearWorldManager worldManager;
-  GMANRaySphere* sphere = sphereAt(radius, 0.0f, 0.0f, 0.0f);
+  auto sphere = sphereAt(radius, 0.0f, 0.0f, 0.0f);
   RecursionCountingMirror shader;
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphere));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -515,13 +518,13 @@ void checkNestedOccluderShadowsBlocker() {
   // (0,0,4) + 5*(-0.8,0,-0.6) = (-4,0,1). Distance from the primary
   // ray's own line (the z-axis) is 4, well clear of this blocker's own
   // radius 1.
-  GMANRaySphere* blocker = sphereAt(1.0f, -4.0f, 0.0f, 1.0f);
+  auto blocker = sphereAt(1.0f, -4.0f, 0.0f, 1.0f);
   FixedColorShader blockerShader(GMANColor(0.0f, 0.0f, 0.0f));
   gman::Appearance blockerAppearance;
   blockerAppearance.shader = asAppearanceShader(blockerShader);
   blockerAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f); // fully opaque
   blocker->setAppearance(blockerAppearance);
-  fixture.addPrimitive(blocker);
+  fixture.addPrimitive(std::move(blocker));
   fixture.build();
 
   GMANMatrix4 const cameraToWorld;
@@ -572,7 +575,8 @@ void checkLargeSphereRendererPathAppliesMagnitude() {
   RtFloat const radius = 1000.0f;
   RtFloat const centreZ = radius + 5.0f;
   GMANLinearWorldManager worldManager;
-  GMANRaySphere* sphere = sphereAt(radius, 0.0f, 0.0f, centreZ);
+  auto sphereOwner = sphereAt(radius, 0.0f, 0.0f, centreZ);
+  auto* const sphere = sphereOwner.get();
   LambertianTestShader shader;
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
@@ -588,7 +592,7 @@ void checkLargeSphereRendererPathAppliesMagnitude() {
                         GMANVector(-towardLight.getX(), -towardLight.getY(), -towardLight.getZ()));
   appearance.lights = {&light};
   sphere->setAppearance(appearance);
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphereOwner));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -645,14 +649,14 @@ void checkLargeSphereRendererPathAppliesMagnitude() {
 // gman::shade call carries.
 void checkIndirectPassReachesPrimaryHit() {
   GMANLinearWorldManager worldManager;
-  GMANRaySphere* sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
+  auto sphere = sphereAt(1.0f, 0.0f, 0.0f, 5.0f);
   AmbientTestShader shader;
   gman::Appearance appearance;
   appearance.shader = asAppearanceShader(shader);
   appearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(appearance);
-  worldManager.add(sphere);
+  worldManager.add(std::move(sphere));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);
@@ -704,22 +708,22 @@ void checkIndirectPassReachesChildTracer() {
                             mirrorHit.point.getZ() + reflected.getZ() * farDistance);
 
   GMANLinearWorldManager worldManager;
-  GMANRaySphere* mirrorSphere = sphereAt(1.0f, 0.3f, 0.0f, 5.0f);
+  auto mirrorSphere = sphereAt(1.0f, 0.3f, 0.0f, 5.0f);
   PerfectMirrorShader mirrorShader;
   gman::Appearance mirrorAppearance;
   mirrorAppearance.shader = asAppearanceShader(mirrorShader);
   mirrorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   mirrorSphere->setAppearance(mirrorAppearance);
-  worldManager.add(mirrorSphere);
+  worldManager.add(std::move(mirrorSphere));
 
-  GMANRaySphere* farSphere = sphereAt(farRadius, farCentre.getX(), farCentre.getY(), farCentre.getZ());
+  auto farSphere = sphereAt(farRadius, farCentre.getX(), farCentre.getY(), farCentre.getZ());
   AmbientTestShader farShader;
   gman::Appearance farAppearance;
   farAppearance.shader = asAppearanceShader(farShader);
   farAppearance.Cs = GMANColor(1.0f, 1.0f, 1.0f);
   farAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   farSphere->setAppearance(farAppearance);
-  worldManager.add(farSphere);
+  worldManager.add(std::move(farSphere));
 
   GMANRayBVH bvh;
   bvh.build(worldManager);

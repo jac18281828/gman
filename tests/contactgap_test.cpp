@@ -38,12 +38,14 @@
 #include <cmath>
 #include <cstdio>
 #include <limits>
+#include <utility>
 #include <vector>
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpoint.h"
 #include "gmanrayoccluder.h"
@@ -64,10 +66,10 @@ constexpr RtFloat kLargeReceiverRadius =
 
 // A radius-scale sphere centred at (0, 0, centreZ), opaque white --
 // rayoccluder_test.cpp's own sphereAt convention.
-GMANRaySphere* sphereAt(RtFloat radius, RtFloat centreZ) {
+gman::Owned<GMANRaySphere> sphereAt(RtFloat radius, RtFloat centreZ) {
   GMANMatrix4 place;
   place.trans(0.0, 0.0, (double)centreZ);
-  const auto sphere = new GMANRaySphere(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(place));
+  auto sphere = gman::make<GMANRaySphere>(radius, -radius, radius, 360.0f, GMANParameterList(), makeTransform(place));
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   sphere->setAppearance(opaque);
@@ -78,14 +80,14 @@ GMANRaySphere* sphereAt(RtFloat radius, RtFloat centreZ) {
 // sheet contributes exactly one hit per crossing, unlike a closed solid's
 // two, so an offset that carries an origin past its own thin gap finds no
 // second wall to still catch it.
-GMANRayPolygon* squareAt(RtFloat z, RtFloat halfWidth) {
+gman::Owned<GMANRayPolygon> squareAt(RtFloat z, RtFloat halfWidth) {
   std::vector<GMANPoint> const verts = {
       GMANPoint(-halfWidth, -halfWidth, z),
       GMANPoint(-halfWidth, halfWidth, z),
       GMANPoint(halfWidth, halfWidth, z),
       GMANPoint(halfWidth, -halfWidth, z),
   };
-  const auto polygon = new GMANRayPolygon(verts, GMANParameterList());
+  auto polygon = gman::make<GMANRayPolygon>(verts, GMANParameterList());
   gman::Appearance opaque;
   opaque.Os = GMANColor(1.0f, 1.0f, 1.0f);
   polygon->setAppearance(opaque);
@@ -107,7 +109,7 @@ void checkSmallReceiver() {
   GMANVector const towardLight(0.0f, 0.0f, 1.0f);
   GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector(0.0f, 0.0f, -1.0f));
 
-  GMANRaySphere* receiver = sphereAt(maxP, 0.0f);
+  auto receiver = sphereAt(maxP, 0.0f);
   RtFloat const M = receiver->getBBox().getMax().getZ(); // ~5, padded
   RtFloat const magnitude = GMANMax(maxP, M);
 
@@ -126,7 +128,7 @@ void checkSmallReceiver() {
 
   {
     GMANLinearWorldManager worldManager;
-    worldManager.add(receiver);
+    worldManager.add(std::move(receiver));
     worldManager.add(squareAt(maxP + g, 1.0f));
     GMANRayBVH bvh;
     bvh.build(worldManager);
@@ -135,9 +137,9 @@ void checkSmallReceiver() {
     check(isBlack(result), "small receiver: transmission returns black at the contact gap");
   }
   {
-    GMANRaySphere* alone = sphereAt(maxP, 0.0f);
+    auto alone = sphereAt(maxP, 0.0f);
     GMANLinearWorldManager worldManager;
-    worldManager.add(alone);
+    worldManager.add(std::move(alone));
     GMANRayBVH bvh;
     bvh.build(worldManager);
     GMANRayOccluder const occluder(bvh);
@@ -145,9 +147,9 @@ void checkSmallReceiver() {
     check(isWhite(result), "small receiver: with no blocker, the same point returns white");
   }
   {
-    GMANRaySphere* alone = sphereAt(maxP, 0.0f);
+    auto alone = sphereAt(maxP, 0.0f);
     GMANLinearWorldManager worldManager;
-    worldManager.add(alone);
+    worldManager.add(std::move(alone));
     worldManager.add(squareAt(maxP + 4.0f * kCeiling * maxP, 1.0f));
     GMANRayBVH bvh;
     bvh.build(worldManager);
@@ -172,7 +174,7 @@ void checkLargeReceiver() {
   GMANVector const towardLight(0.0f, 0.0f, -1.0f);
   GMANLight const light(GMAN_LIGHT_DISTANT, GMANColor(1.0f, 1.0f, 1.0f), GMANPoint(), GMANVector(0.0f, 0.0f, 1.0f));
 
-  GMANRaySphere* receiver = sphereAt(radius, centreZ);
+  auto receiver = sphereAt(radius, centreZ);
   RtFloat const M = receiver->getBBox().getMax().getZ(); // ~ centreZ + radius, ~2005
   RtFloat const magnitude = GMANMax(maxP, M);
 
@@ -189,7 +191,7 @@ void checkLargeReceiver() {
               (double)Ng.dot(towardLight));
 
   GMANLinearWorldManager worldManager;
-  worldManager.add(receiver);
+  worldManager.add(std::move(receiver));
   worldManager.add(squareAt(maxP - g, 1.0f));
   GMANRayBVH bvh;
   bvh.build(worldManager);

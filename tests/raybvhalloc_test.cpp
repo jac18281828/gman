@@ -53,11 +53,13 @@
  */
 
 #include <cstdio>
+#include <utility>
 
 #include "check.h"
 #include "gmanlightsourcemgr.h"
 #include "gmanlinearworldmanager.h"
 #include "gmanmatrix4.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanray.h"
 #include "gmanraybvh.h"
@@ -125,18 +127,18 @@ void buildFixture(GMANLinearWorldManager& worldManager) {
   for (std::size_t i = 0; i < kStackSphereCount; ++i) {
     RtFloat const x = kStackSpacing * (RtFloat)i;
     RtFloat const y = (i % 2 == 0) ? kStackOffset : -kStackOffset;
-    auto* sphere =
-        new GMANRaySphere(kStackRadius, -kStackRadius, kStackRadius, 360.0, GMANParameterList(), translated(x, y, 0.0));
-    setPartlyTransparent(sphere);
-    worldManager.add(sphere);
+    auto sphere = gman::make<GMANRaySphere>(kStackRadius, -kStackRadius, kStackRadius, 360.0, GMANParameterList(),
+                                            translated(x, y, 0.0));
+    setPartlyTransparent(sphere.get());
+    worldManager.add(std::move(sphere));
   }
 
   for (std::size_t i = 0; i < kOverlapSphereCount; ++i) {
     RtFloat const z = kOverlapZStart + kOverlapSpacing * (RtFloat)i;
-    auto* sphere = new GMANRaySphere(kOverlapRadius, -kOverlapRadius, kOverlapRadius, 360.0, GMANParameterList(),
-                                     translated(kOverlapX, 0.0, z));
-    setPartlyTransparent(sphere);
-    worldManager.add(sphere);
+    auto sphere = gman::make<GMANRaySphere>(kOverlapRadius, -kOverlapRadius, kOverlapRadius, 360.0, GMANParameterList(),
+                                            translated(kOverlapX, 0.0, z));
+    setPartlyTransparent(sphere.get());
+    worldManager.add(std::move(sphere));
   }
 }
 

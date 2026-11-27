@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -37,6 +38,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -153,13 +155,13 @@ void renderTwoLightFloor(std::unique_ptr<GMANFrameBuffer>& frameBufferOut,
       new gman::VSPerspective(kFloorRes, kFloorRes, biasedScreenWindow(), identity, 90.0f, 0.5f, 50.0f));
 
   GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   gman::Appearance floorAppearance;
   floorAppearance.shader = loadShader("matte", matteParams(1.0f));
   floorAppearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   floorAppearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   floor->setAppearance(floorAppearance);
-  renderer.getWorldManager()->add(floor);
+  renderer.getWorldManager()->add(std::move(floor));
 
   GMANLight const areaLight1(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   addEmittingSphere(renderer, areaLight1, kSphere1Radius, kSphere1CentreX, kSphere1CentreY, kSphere1CentreZ);

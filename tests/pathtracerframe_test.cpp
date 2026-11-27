@@ -38,6 +38,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -46,6 +47,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanlog.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -88,14 +90,14 @@ bool pixelClearsAbove(gman::VSPerspective& viewingSys, int px, int py) {
 GMANPathtraceRenderer* buildFloorRenderer(GMANColor const& cs, GMANColor const& os,
                                           std::vector<GMANLight const*> const& lights) {
   const auto renderer = new GMANPathtraceRenderer();
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
   appearance.Cs = cs;
   appearance.Os = os;
   appearance.lights = lights;
   floor->setAppearance(appearance);
-  renderer->getWorldManager()->add(floor);
+  renderer->getWorldManager()->add(std::move(floor));
   return renderer;
 }
 
@@ -292,13 +294,13 @@ void checkCappedCameraPath() {
     RtFloat const z = (RtFloat)(layer + 1);
     std::vector<GMANPoint> const verts = {GMANPoint(-100.0f, -100.0f, z), GMANPoint(-100.0f, 100.0f, z),
                                           GMANPoint(100.0f, 100.0f, z), GMANPoint(100.0f, -100.0f, z)};
-    const auto wall = new GMANRayPolygon(verts, GMANParameterList());
+    auto wall = gman::make<GMANRayPolygon>(verts, GMANParameterList());
     gman::Appearance appearance;
     appearance.shader = loadShader("matte", matteParams(1.0f));
     appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
     appearance.Os = GMANColor(0.0f, 0.0f, 0.0f);
     wall->setAppearance(appearance);
-    renderer.getWorldManager()->add(wall);
+    renderer.getWorldManager()->add(std::move(wall));
   }
 
   GMANOptions options;
@@ -338,7 +340,7 @@ void checkDepth() {
   constexpr RtFloat kZ = 5.0f;
   std::vector<GMANPoint> const verts = {GMANPoint(-10.0f, -10.0f, kZ), GMANPoint(-10.0f, 10.0f, kZ),
                                         GMANPoint(10.0f, 10.0f, kZ), GMANPoint(10.0f, -10.0f, kZ)};
-  const auto wall = new GMANRayPolygon(verts, GMANParameterList());
+  auto wall = gman::make<GMANRayPolygon>(verts, GMANParameterList());
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
   appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
@@ -346,7 +348,7 @@ void checkDepth() {
   wall->setAppearance(appearance);
 
   GMANPathtraceRenderer renderer;
-  renderer.getWorldManager()->add(wall);
+  renderer.getWorldManager()->add(std::move(wall));
 
   GMANOptions options;
   options.setFormat(kRes, kRes, 1.0f);
@@ -390,7 +392,7 @@ void checkAntialiasing() {
   std::vector<GMANPoint> const verts = {GMANPoint(xEdge, -100.0f, kZ0), GMANPoint(xEdge, 100.0f, kZ0),
                                         GMANPoint(xEdge + 100.0f, 100.0f, kZ0),
                                         GMANPoint(xEdge + 100.0f, -100.0f, kZ0)};
-  const auto wall = new GMANRayPolygon(verts, GMANParameterList());
+  auto wall = gman::make<GMANRayPolygon>(verts, GMANParameterList());
   gman::Appearance appearance;
   appearance.shader = loadShader("matte", matteParams(1.0f));
   appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
@@ -398,7 +400,7 @@ void checkAntialiasing() {
   wall->setAppearance(appearance);
 
   GMANPathtraceRenderer renderer;
-  renderer.getWorldManager()->add(wall);
+  renderer.getWorldManager()->add(std::move(wall));
 
   GMANOptions options;
   options.setFormat(kRes, kRes, 1.0f);
@@ -437,14 +439,14 @@ void buildTwoLightScene(GMANPathtraceRenderer& renderer, std::vector<GMANLight c
   firstLight = &light1;
   secondLight = &light2;
   lightsOut = {&light1, &light2};
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   gman::Appearance appearance;
   appearance.shader = shader;
   appearance.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = lightsOut;
   floor->setAppearance(appearance);
-  renderer.getWorldManager()->add(floor);
+  renderer.getWorldManager()->add(std::move(floor));
 }
 
 constexpr RtInt kRepeatRes = 41;
@@ -566,20 +568,20 @@ void checkNoIndirectPass() {
   gman::VSPerspective viewingSysB(kRepeatRes, kRepeatRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer rendererA;
-  GMANRayPolygon* floorA = buildFloor();
+  auto floorA = buildFloor();
   gman::Appearance appearanceA;
   appearanceA.shader = shader;
   appearanceA.Cs = GMANColor(0.5f, 0.5f, 0.5f);
   appearanceA.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearanceA.lights = lights;
   floorA->setAppearance(appearanceA);
-  rendererA.getWorldManager()->add(floorA);
+  rendererA.getWorldManager()->add(std::move(floorA));
 
   GMANPathtraceRenderer rendererB;
-  GMANRayPolygon* floorB = buildFloor();
+  auto floorB = buildFloor();
   gman::Appearance appearanceB = appearanceA;
   floorB->setAppearance(appearanceB);
-  rendererB.getWorldManager()->add(floorB);
+  rendererB.getWorldManager()->add(std::move(floorB));
 
   GMANOptions const withoutPass = twoLightOptions();
   GMANOptions withPass = twoLightOptions();
@@ -627,7 +629,7 @@ void checkDrops() {
   GMANPathtraceRenderer renderer;
   // zmin above -radius: the sphere's own missing cap opens behind the eye,
   // at negative z, where no camera ray ever looks.
-  const auto sphere = new GMANRaySphere(kSphereRadius, -8.0f, kSphereRadius, 360.0f, GMANParameterList());
+  auto sphere = gman::make<GMANRaySphere>(kSphereRadius, -8.0f, kSphereRadius, 360.0f, GMANParameterList());
   GMANLight const light(GMAN_LIGHT_POINT, GMANColor(kIntensity, kIntensity, kIntensity), GMANPoint(0.0f, 0.0f, 0.0f),
                         GMANVector());
   gman::Appearance appearance;
@@ -636,7 +638,7 @@ void checkDrops() {
   appearance.Os = GMANColor(1.0f, 1.0f, 1.0f);
   appearance.lights = {&light};
   sphere->setAppearance(appearance);
-  renderer.getWorldManager()->add(sphere);
+  renderer.getWorldManager()->add(std::move(sphere));
 
   std::string const logPath = "pathtracerframe_drops.log";
   std::remove(logPath.c_str());

@@ -30,6 +30,7 @@
 #include <memory>
 #include <numbers>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "check.h"
@@ -39,6 +40,7 @@
 #include "gmanlightsourcemgr.h"
 #include "gmanmatrix4.h"
 #include "gmanoptions.h"
+#include "gmanowned.h"
 #include "gmanparameterlist.h"
 #include "gmanpathtracerenderer.h"
 #include "gmanpoint.h"
@@ -68,11 +70,11 @@ constexpr RtFloat kPaneHalfExtent = 50.0f;
 // from the floor toward that sphere crosses it.
 constexpr RtFloat kHorizontalPaneY = 1.0f;
 
-GMANRayPolygon* buildGlassPane(RtFloat os) {
+gman::Owned<GMANRayPolygon> buildGlassPane(RtFloat os) {
   std::vector<GMANPoint> const verts = {
       GMANPoint(kPaneX, -kPaneHalfExtent, -kPaneHalfExtent), GMANPoint(kPaneX, -kPaneHalfExtent, kPaneHalfExtent),
       GMANPoint(kPaneX, kPaneHalfExtent, kPaneHalfExtent), GMANPoint(kPaneX, kPaneHalfExtent, -kPaneHalfExtent)};
-  GMANRayPolygon* pane = new GMANRayPolygon(verts, GMANParameterList());
+  auto pane = gman::make<GMANRayPolygon>(verts, GMANParameterList());
   gman::Appearance appearance;
   appearance.shader = loadShader("glass", GMANParameterList());
   appearance.Os = GMANColor(os, os, os);
@@ -82,13 +84,13 @@ GMANRayPolygon* buildGlassPane(RtFloat os) {
 
 // A glass pane of Os os in the plane y = kHorizontalPaneY, kPaneHalfExtent
 // either side of the floor's centre in x and z.
-GMANRayPolygon* buildHorizontalGlassPane(RtFloat os) {
+gman::Owned<GMANRayPolygon> buildHorizontalGlassPane(RtFloat os) {
   const auto zMid = (kFloorZMin + kFloorZMax) / 2.0f;
   const std::vector<GMANPoint> verts = {GMANPoint(-kPaneHalfExtent, kHorizontalPaneY, zMid - kPaneHalfExtent),
                                         GMANPoint(-kPaneHalfExtent, kHorizontalPaneY, zMid + kPaneHalfExtent),
                                         GMANPoint(kPaneHalfExtent, kHorizontalPaneY, zMid + kPaneHalfExtent),
                                         GMANPoint(kPaneHalfExtent, kHorizontalPaneY, zMid - kPaneHalfExtent)};
-  auto* const pane = new GMANRayPolygon(verts, GMANParameterList());
+  auto pane = gman::make<GMANRayPolygon>(verts, GMANParameterList());
   gman::Appearance appearance;
   appearance.shader = loadShader("glass", GMANParameterList());
   appearance.Os = GMANColor(os, os, os);
@@ -195,15 +197,16 @@ void testGlassPaneCountsOnce() {
   gman::VSPerspective viewingSys(kFloorRes, kFloorRes, squareScreenWindow(), identity, 90.0f, 0.5f, 50.0f);
 
   GMANPathtraceRenderer renderer;
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   floor->setAppearance(floorAppearance());
-  renderer.getWorldManager()->add(floor);
+  renderer.getWorldManager()->add(std::move(floor));
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kAreaLe, kAreaLe, kAreaLe), GMANPoint(), GMANVector());
   addEmittingSphere(renderer, areaLight, kSphereRadius, kSphereCentreX, kSphereCentreY, kSphereCentreZ);
 
-  GMANRayPolygon* pane = buildGlassPane(1.0f);
-  renderer.getWorldManager()->add(pane);
+  auto paneOwner = buildGlassPane(1.0f);
+  auto* const pane = paneOwner.get();
+  renderer.getWorldManager()->add(std::move(paneOwner));
 
   GMANFrameBuffer frameBuffer(kFloorRes, kFloorRes, options.getBackground());
   GMANAttributes const attr;
@@ -259,9 +262,9 @@ std::unique_ptr<GMANFrameBuffer> renderGlassPanePair(bool misEnabled) {
   auto renderer = std::make_unique<GMANPathtraceRenderer>();
   renderer->setMultipleImportanceSampling(misEnabled);
 
-  GMANRayPolygon* floor = buildFloor();
+  auto floor = buildFloor();
   floor->setAppearance(floorAppearance());
-  renderer->getWorldManager()->add(floor);
+  renderer->getWorldManager()->add(std::move(floor));
 
   GMANLight const areaLight(GMAN_LIGHT_AREA, GMANColor(kBigAreaLe, kBigAreaLe, kBigAreaLe), GMANPoint(), GMANVector());
   addEmittingSphere(*renderer, areaLight, kBigSphereRadius, kBigSphereCentreX, kBigSphereCentreY, kBigSphereCentreZ);
