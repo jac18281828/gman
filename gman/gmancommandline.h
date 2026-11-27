@@ -30,11 +30,12 @@
 
 namespace gman {
 
-// A command line that renders: the level, the log, the renderer and the RIB files, in order.
+// A command line that renders: the level, the log, the renderer, the sample depth and the RIB files, in order.
 struct CommandLine {
   GMANLogLevel level = LOGLVL_INFO;
   bool writeLog = false;
   std::optional<std::string> renderer;
+  std::optional<int> bitDepth; // 8 or 16 when --bit-depth is given
   std::vector<std::string> files;
 };
 

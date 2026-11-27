@@ -19,6 +19,7 @@
  */
 
 #include <functional>
+#include <set>
 #include <sstream>
 #include <string>
 #include <variant>
@@ -67,6 +68,11 @@ void declareCommandLine(CLI::App& app, CommandLine& into, std::function<std::str
       ->type_name("NAME")
       ->take_last()
       ->check(nonEmpty);
+  app.add_option("--bit-depth", into.bitDepth,
+                 "Sample depth of TIFF, PNG and PNM output when the RIB sets no Quantize: 8 (the default) or 16")
+      ->type_name("BITS")
+      ->take_last()
+      ->check(CLI::IsMember(std::set<int>{8, 16}));
   app.add_option("files", into.files, "The RIB files to render, in order")->required();
 }
 

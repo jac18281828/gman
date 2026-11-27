@@ -88,6 +88,13 @@ void expectRun(Arguments const& arguments, GMANLogLevel level, bool writeLog,
             (renderer ? " on renderer '" + *renderer + "'" : " on the default renderer"));
 }
 
+void expectBitDepth(Arguments const& arguments, std::optional<int> bitDepth) {
+  Parsed const parsed = parse(arguments);
+  CommandLine const* const run = std::get_if<CommandLine>(&parsed);
+  check(run != nullptr && run->bitDepth == bitDepth && run->files == Arguments{"a.rib"},
+        describe(arguments) + " parses to " + (bitDepth ? "bit depth " + std::to_string(*bitDepth) : "no bit depth"));
+}
+
 void expectHelp(Arguments const& arguments) {
   Parsed const parsed = parse(arguments);
   CommandLineExit const* const leave = std::get_if<CommandLineExit>(&parsed);
@@ -152,6 +159,16 @@ void checkRenderer() {
   expectRun({"-r", "first", "-r", "second", "a.rib"}, LOGLVL_INFO, noLog, "second", {"a.rib"});
 }
 
+void checkBitDepth() {
+  expectBitDepth({"a.rib"}, std::nullopt);
+  expectBitDepth({"--bit-depth", "16", "a.rib"}, 16);
+  expectBitDepth({"--bit-depth=8", "a.rib"}, 8);
+  expectBitDepth({"a.rib", "--bit-depth", "16"}, 16);
+  expectBitDepth({"--bit-depth", "8", "--bit-depth", "16", "a.rib"}, 16);
+  expectRun({"-q", "--bit-depth", "16", "-r", "gmanraytracer", "a.rib"}, LOGLVL_DISASTER, noLog, "gmanraytracer",
+            {"a.rib"});
+}
+
 void checkHelp() {
   expectHelp({});
   expectHelp({"-h"});
@@ -165,8 +182,8 @@ void checkHelp() {
   check(noneExit != nullptr && helpExit != nullptr && noneExit->out == helpExit->out,
         "no arguments prints what -h prints");
 
-  for (std::string_view const flag :
-       {"--help", "--version", "--debug", "--info", "--warning", "--error", "--quiet", "--log-file", "--renderer"}) {
+  for (std::string_view const flag : {"--help", "--version", "--debug", "--info", "--warning", "--error", "--quiet",
+                                      "--log-file", "--renderer", "--bit-depth"}) {
     check(helpExit != nullptr && helpExit->out.find(flag) != std::string::npos, "-h lists " + std::string(flag));
   }
 }
@@ -185,6 +202,12 @@ void checkUsageErrors() {
   expectUsageError({"-r", "", "a.rib"});
   expectUsageError({"--renderer=", "a.rib"});
   expectUsageError({"-d"});
+  expectUsageError({"--bit-depth", "12", "a.rib"});
+  expectUsageError({"--bit-depth", "0", "a.rib"});
+  expectUsageError({"--bit-depth", "sixteen", "a.rib"});
+  expectUsageError({"--bit-depth=", "a.rib"});
+  expectUsageError({"--bit-depth="});
+  expectUsageError({"a.rib", "--bit-depth"});
 }
 
 void checkEmptyArgv() {
@@ -205,6 +228,7 @@ int main() {
   checkLog();
   checkFlagsAfterFiles();
   checkRenderer();
+  checkBitDepth();
   checkHelp();
   checkVersion();
   checkUsageErrors();

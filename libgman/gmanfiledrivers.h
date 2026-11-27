@@ -24,6 +24,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -42,6 +43,10 @@
  */
 
 namespace gman {
+
+// The sample depth a command line asks of the drivers that quantize: 8 or 16
+// bits, the only two depths core is handed.
+enum class BitDepth { eight, sixteen };
 
 using FileDriverFactory = std::unique_ptr<GMANOutput> (*)(char const*, int, int);
 using FileDriverMatcher = bool (*)(GMANOutput const&);
@@ -76,9 +81,19 @@ FileDriverEntry const* fileDriverEntry(GMANOutput const& output);
 // request `output` honours.
 void checkQuantize(GMANOutput const& output, GMANQuantize const& quantize);
 
-// The Quantize "rgba" request `output` receives: the one `options` stores,
-// except that an unset request resolves to one 0 for a driver that does not
-// quantize, so a scene that omits Quantize gets float samples from it.
-GMANQuantize quantizeRequest(GMANOutput const& output, GMANOptions const& options);
+// The Quantize "rgba" request `output` receives, resolved in order:
+// - an output no table entry matches receives the request `options` stores;
+// - a driver that does not quantize, which writes float, receives one 0 when
+//   the request is unset and the stored request otherwise, whatever `depth`;
+// - an absent `depth` leaves the stored request;
+// - a set request must agree with `depth`: one above 0 asks for 16 bits when
+//   max exceeds 255 and 8 otherwise, and one 0 asks for float, which agrees
+//   with neither. Disagreement throws GMANError(RIE_CONSISTENCY, RIE_ERROR,
+//   ...) naming the request and the depth; agreement, and a negative one that
+//   checkQuantize reports, return the stored request;
+// - an unset request at 16 bits resolves to 65535 0 65535 0.5, and throws
+//   GMANError(RIE_INCAPABLE, RIE_ERROR, ...) when `output` cannot write 16
+//   bits; at 8 bits it resolves to the stored default.
+GMANQuantize quantizeRequest(GMANOutput const& output, GMANOptions const& options, std::optional<BitDepth> depth);
 
 } // namespace gman

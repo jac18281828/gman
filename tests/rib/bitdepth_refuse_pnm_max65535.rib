@@ -1,0 +1,9 @@
+## A Quantize max of 65535 asks for 16-bit samples, which --bit-depth 8 contradicts.
+Display "bitdepth_refuse_pnm_max65535.pnm" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [45]
+Quantize "rgba" 65535 0 65535 0.5
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

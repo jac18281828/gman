@@ -1,0 +1,8 @@
+## JPEG writes 8-bit samples, so --bit-depth 16 with no Quantize stops the file.
+Display "bitdepth_refuse_jpeg.jpg" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [45]
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

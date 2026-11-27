@@ -62,6 +62,13 @@ std::string versionText() {
   return text;
 }
 
+gman::BitDepth bitDepthOf(int bits) {
+  if (bits == 16) {
+    return gman::BitDepth::sixteen;
+  }
+  return gman::BitDepth::eight;
+}
+
 std::unique_ptr<GMANRIBParse> makeParser(GMANRenderManImpl& renderMan, std::string const& ribFile,
                                          std::optional<std::string> const& renderer) {
   if (renderer) {
@@ -106,6 +113,9 @@ int main(int argc, char* argv[]) {
     static GMANRenderManImpl renderMan;
 
     renderMan.RiErrorHandler(handleReport);
+    if (commandLine.bitDepth) {
+      renderMan.setBitDepth(bitDepthOf(*commandLine.bitDepth));
+    }
 
     GMANLog logObj;
 

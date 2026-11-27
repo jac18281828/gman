@@ -762,6 +762,29 @@ set_tests_properties(quantize PROPERTIES
   LABELS render
   TIMEOUT 30)
 
+# The sample depth of file output, chosen by gman --bit-depth or by Quantize
+# "rgba", end to end: 16-bit PNM, PNG and TIFF, an explicit Quantize that
+# contradicts the flag stopping the file, a JPEG refusing 16 bits and
+# OpenEXR ignoring the flag. The PNG reads compile only under GMAN_WITH_PNG.
+add_executable(gman_bitdepth bitdepth_test.cpp)
+target_link_libraries(gman_bitdepth PRIVATE TIFF::TIFF)
+if(GMAN_WITH_PNG)
+  target_compile_definitions(gman_bitdepth PRIVATE GMAN_WITH_PNG)
+  target_link_libraries(gman_bitdepth PRIVATE PNG::PNG)
+endif()
+
+set(GMAN_BITDEPTH_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/bitdepth-run")
+file(MAKE_DIRECTORY "${GMAN_BITDEPTH_WORKDIR}")
+
+add_test(NAME bitdepth
+  COMMAND gman_bitdepth $<TARGET_FILE:gman_cli>
+                        "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+  WORKING_DIRECTORY "${GMAN_BITDEPTH_WORKDIR}")
+set_tests_properties(bitdepth PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS render
+  TIMEOUT 30)
+
 add_executable(gman_colorquantizeset colorquantizeset_test.cpp)
 target_link_libraries(gman_colorquantizeset PRIVATE gman)
 

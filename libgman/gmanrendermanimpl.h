@@ -26,8 +26,10 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include "gman/export.h"
+#include "gmanfiledrivers.h"
 #include "gmangraphicstate.h"
 #include "gmanobjectmanager.h"
 #include "gmanoutput.h"
@@ -64,6 +66,10 @@ private:
 
   std::unique_ptr<GMANOutput> output;
 
+  // the sample depth the command line asked of file output, kept for every RIB
+  // of the run
+  std::optional<gman::BitDepth> bitDepth;
+
   // true once the missing-renderer report has been raised for the current
   // RiBegin, so a failed load reports once
   bool noRendererReported = false;
@@ -82,6 +88,11 @@ private:
 public:
   GMANRenderManImpl();  // default constructor
   ~GMANRenderManImpl(); // default destructor
+
+  // Sets the sample depth every file Display of this object's RIBs receives
+  // when the RIB sets no Quantize "rgba"; an explicit Quantize that disagrees
+  // stops the file at RiWorldBegin. RiBegin, RiEnd and frames leave it alone.
+  RtVoid setBitDepth(gman::BitDepth depth);
 
   /* Declare Shading Language variable */
   RtToken RiDeclare(const char* name, const char* declaration) override;

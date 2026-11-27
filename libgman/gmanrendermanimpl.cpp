@@ -310,6 +310,8 @@ RtVoid GMANRenderManImpl::reportNoRendererOnce() {
   throw GMANError(RIE_NOTSTARTED, RIE_SEVERE, "No renderer loaded.");
 }
 
+RtVoid GMANRenderManImpl::setBitDepth(gman::BitDepth depth) { bitDepth = depth; }
+
 RtVoid GMANRenderManImpl::RiFrameBegin(RtInt /*frame*/) { enterMode(F); }
 
 RtVoid GMANRenderManImpl::RiFrameEnd(RtVoid) { leaveMode(F); }
@@ -351,7 +353,7 @@ RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
                                      ri.rymax - ri.rymin + 1);
 
     // Stops a request the driver cannot store here, before the frame renders.
-    gman::checkQuantize(*newOutput, gman::quantizeRequest(*newOutput, getOptions()));
+    gman::checkQuantize(*newOutput, gman::quantizeRequest(*newOutput, getOptions(), bitDepth));
 
   } else { // type == framebuffer
     // our frame buffer
@@ -439,9 +441,9 @@ RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
   // depth, so a "z" request stored by RiQuantize has nothing to reach.
   if (GMANImagerShader const* const imager = getOptions().getImager()) {
     gman::runImager(*output, *imager, getOptions());
-    output->save(dMode, 1.0f, 1.0f, gman::quantizeRequest(*output, getOptions()));
+    output->save(dMode, 1.0f, 1.0f, gman::quantizeRequest(*output, getOptions(), bitDepth));
   } else {
-    output->save(dMode, exposure.gain, exposure.gamma, gman::quantizeRequest(*output, getOptions()));
+    output->save(dMode, exposure.gain, exposure.gamma, gman::quantizeRequest(*output, getOptions(), bitDepth));
   }
 
   abandonWorld();
