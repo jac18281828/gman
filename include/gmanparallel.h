@@ -66,4 +66,13 @@ GMAN_EXPORT RtInt parallelWorkers(RtInt count, RtInt workers = 0);
 GMAN_EXPORT void parallelFor(RtInt count, std::function<void(RtInt index, RtInt worker)> const& body,
                              RtInt workers = 0);
 
+// As above, and calls onIndexDone(done) once after each body returns
+// normally, with done the number of indices finished so far: the calls see
+// 1, 2, ... in order. Calls never overlap, and a call may run on any
+// worker's thread. A body that throws produces no call for its index, and
+// an exception from onIndexDone stops the call as a body's does. An empty
+// onIndexDone behaves as the overload above.
+GMAN_EXPORT void parallelFor(RtInt count, std::function<void(RtInt index, RtInt worker)> const& body, RtInt workers,
+                             std::function<void(RtInt done)> const& onIndexDone);
+
 } // namespace gman

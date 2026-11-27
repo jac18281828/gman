@@ -70,6 +70,11 @@ RtInt parallelWorkers(RtInt count, RtInt workers) {
 }
 
 void parallelFor(RtInt count, std::function<void(RtInt, RtInt)> const& body, RtInt workers) {
+  parallelFor(count, body, workers, std::function<void(RtInt)>());
+}
+
+void parallelFor(RtInt count, std::function<void(RtInt, RtInt)> const& body, RtInt workers,
+                 std::function<void(RtInt)> const& onIndexDone) {
   if (count <= 0) {
     return;
   }
@@ -82,6 +87,17 @@ void parallelFor(RtInt count, std::function<void(RtInt, RtInt)> const& body, RtI
   std::atomic<RtInt> nextIndex{0};
   std::mutex exceptionMutex;
   std::exception_ptr firstException;
+  std::mutex doneMutex;
+  RtInt finished = 0;
+
+  auto reportDone = [&] {
+    if (!onIndexDone) {
+      return;
+    }
+    std::lock_guard<std::mutex> guard(doneMutex);
+    ++finished;
+    onIndexDone(finished);
+  };
 
   auto runWorker = [&](RtInt worker) {
     std::stop_token token = stopSource.get_token();
@@ -92,6 +108,7 @@ void parallelFor(RtInt count, std::function<void(RtInt, RtInt)> const& body, RtI
       }
       try {
         body(i, worker);
+        reportDone();
       } catch (...) {
         std::lock_guard<std::mutex> guard(exceptionMutex);
         if (!firstException) {

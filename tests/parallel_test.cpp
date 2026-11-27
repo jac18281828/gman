@@ -25,6 +25,8 @@
 #include <atomic>
 #include <chrono>
 #include <cstddef>
+#include <functional>
+#include <numeric>
 #include <set>
 #include <string>
 #include <thread>
@@ -253,6 +255,80 @@ void testCountZeroOrNegative() {
   check(calls == 0, "count <= 0 calls the body zero times");
 }
 
+// The callback sees 1, 2, ... count in order, never overlaps itself, and
+// runs only after the body of an index it counts has returned. The overlap
+// probe and the log are plain, unguarded state: only the call's own
+// serialization keeps them sound, which a sanitizer build checks.
+void testIndexDoneSequence(RtInt workers) {
+  const RtInt count = 1000;
+  const std::string tag = "workers=" + std::to_string(workers);
+
+  std::atomic<RtInt> bodiesFinished{0};
+  std::vector<RtInt> seen;
+  int active = 0;
+  bool overlapped = false;
+  bool outran = false;
+
+  gman::parallelFor(
+      count,
+      [&](RtInt, RtInt) {
+        std::this_thread::yield();
+        ++bodiesFinished;
+      },
+      workers,
+      [&](RtInt done) {
+        overlapped = overlapped || active != 0;
+        ++active;
+        outran = outran || bodiesFinished.load() < done;
+        seen.push_back(done);
+        std::this_thread::yield();
+        --active;
+      });
+
+  std::vector<RtInt> expected(static_cast<std::size_t>(count));
+  std::iota(expected.begin(), expected.end(), RtInt{1});
+  check(seen == expected, tag + ": the callback sees 1 through 1000 in order");
+  check(!overlapped, tag + ": no two callbacks overlap");
+  check(!outran, tag + ": a callback runs only after the bodies it counts have returned");
+}
+
+// A body that throws produces no call for its index; the exception still
+// reaches the calling thread.
+void testIndexDoneSkipsThrowingBody() {
+  const RtInt count = 1000;
+  const RtInt throwingIndex = 500;
+
+  std::atomic<RtInt> bodiesReturned{0};
+  std::vector<RtInt> seen;
+  bool rethrown = false;
+
+  try {
+    gman::parallelFor(
+        count,
+        [&](RtInt index, RtInt) {
+          if (index == throwingIndex) {
+            throw GMANError(RIE_BUG, RIE_SEVERE, "parallel_test probe");
+          }
+          ++bodiesReturned;
+        },
+        8, [&](RtInt done) { seen.push_back(done); });
+  } catch (GMANError&) {
+    rethrown = true;
+  }
+
+  check(rethrown, "a throwing body still rethrows with a callback installed");
+  check(static_cast<RtInt>(seen.size()) < count, "at most 999 callbacks follow a throwing body");
+  check(static_cast<RtInt>(seen.size()) == bodiesReturned.load(),
+        "every callback follows a body that returned, none follows the one that threw");
+}
+
+// An empty callback leaves parallelFor as the three-argument overload.
+void testEmptyIndexDoneIsPlain() {
+  std::atomic<int> calls{0};
+  gman::parallelFor(100, [&](RtInt, RtInt) { ++calls; }, 4, std::function<void(RtInt)>());
+  check(calls.load() == 100, "an empty callback still runs every body once");
+}
+
 } // namespace
 
 int main() {
@@ -263,6 +339,10 @@ int main() {
   testSlowIndexHoldsNothingBack();
   testEveryWorkerRunsAtOnce();
   testCountZeroOrNegative();
+  testIndexDoneSequence(8);
+  testIndexDoneSequence(1);
+  testIndexDoneSkipsThrowingBody();
+  testEmptyIndexDoneIsPlain();
 
   return checkSummary("gman::parallelFor holds its contract");
 }
