@@ -19,7 +19,8 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   `auto const* p`.
 - A floating-point constant is `constexpr RtFloat`: `constexpr RtFloat k = 0.5f;`.
 - A class template over a real scalar is explicitly instantiated for `float`
-  and `double`, never `RtFloat`, so a build with `RtFloat` as either compiles.
+  and `double`, rather than `RtFloat`, so a build with `RtFloat` as either
+  compiles. 
 - A spelled type keeps `const` east of a pointer or reference, west of a value.
 - Convert spelled locals to `auto` in the files a change touches, in a commit of
   its own; if pixels change, check the renders and regenerate the goldens.
@@ -38,8 +39,8 @@ These rules bind every change. Review and lint enforce them, not a test that
 scans the tree.
 - No commented-out code: delete it; git history keeps it.
 - No manifest constant numerics: write a constant `<numbers>` names by its
-  standard name, never as a literal, a formula such as `std::sqrt(2.0)` or a
-  local alias.
+  standard name, rather than as a literal, a formula such as `std::sqrt(2.0)` or
+  a local alias.
 - A shader holds no state: no function-local or class `static`
   (`custom-gman-shader-state`) and no `mutable` member (review).
 
@@ -78,9 +79,9 @@ scans the tree.
 - A file's directory names its library. A library includes and links only
   libraries below it; `tests/librarylayering_test.cpp` and the linker enforce
   it, so placement is no matter of opinion.
-- Code lives with its only user. On a second user it moves to the lowest
-  library every user already links, and no lower: a second user is no reason
-  to load code into a process that never runs it.
+- Code lives where it is needed.  If there is a second user, move it to the
+  lowest library that every required location already links, it's least
+  ancestor.
 - Core holds contracts and RI state. An algorithm only some renderers run
   belongs above it: every process loads core, and every plugin's ABI depends
   on it.
@@ -118,8 +119,8 @@ scans the tree.
 ## RIB authoring
 - **Handedness and matrix convention.** Camera looks down `+z`, left-handed.
   CTM is row-vector `p * M`, composed `CTM_new = Local . CTM_old`; the
-  projection matrices (`prjPersp`/`prjOrtho`) use a different layout, so never
-  mix them. `RiWorldBegin` does not reset the CTM. Shaders see camera space.
+  projection matrices (`prjPersp`/`prjOrtho`) use a different
+  layout. `RiWorldBegin` does not reset the CTM. Shaders see camera space. 
 - Primitive normals transform by the CTM's inverse transpose; face normals are
   computed already in camera space.
 - Fixtures put the camera at `Translate 0 0 5` before `WorldBegin`.

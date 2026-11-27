@@ -74,7 +74,3 @@ or later. By contributing you agree that your contributions are licensed under
 the same terms. Every source file carries an SPDX tag and the licence notice;
 new files should carry both, plus your own copyright line.
 
----
-
-Adapted from the open-source contribution guidelines for
-[Facebook's Draft](https://github.com/facebook/draft-js).
