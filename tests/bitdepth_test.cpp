@@ -75,7 +75,7 @@ struct Raster {
 };
 
 std::vector<unsigned char> readBytes(std::string const& path) {
-  std::FILE* const file = std::fopen(path.c_str(), "rb");
+  const auto file = std::fopen(path.c_str(), "rb");
   if (file == nullptr) {
     return {};
   }
@@ -90,7 +90,7 @@ std::vector<unsigned char> readBytes(std::string const& path) {
 }
 
 bool fileExists(std::string const& path) {
-  std::FILE* const file = std::fopen(path.c_str(), "rb");
+  const auto file = std::fopen(path.c_str(), "rb");
   if (file == nullptr) {
     return false;
   }
@@ -100,7 +100,7 @@ bool fileExists(std::string const& path) {
 
 Raster readPNM(std::string const& path) {
   Raster raster;
-  std::FILE* const file = std::fopen(path.c_str(), "rb");
+  const auto file = std::fopen(path.c_str(), "rb");
   if (file == nullptr) {
     return raster;
   }
@@ -114,10 +114,10 @@ Raster readPNM(std::string const& path) {
   }
   std::fgetc(file);
 
-  std::size_t const bytesPerSample = maxval > 255 ? 2 : 1;
-  std::size_t const count = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 3;
+  const std::size_t bytesPerSample = maxval > 255 ? 2 : 1;
+  const auto count = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 3;
   std::vector<unsigned char> bytes(count * bytesPerSample);
-  bool const complete = std::fread(bytes.data(), 1, bytes.size(), file) == bytes.size();
+  const auto complete = std::fread(bytes.data(), 1, bytes.size(), file) == bytes.size();
   std::fclose(file);
   if (!complete) {
     return raster;
@@ -141,7 +141,7 @@ Raster readPNM(std::string const& path) {
 
 Raster readTIFF(std::string const& path) {
   Raster raster;
-  TIFF* const tif = TIFFOpen(path.c_str(), "r");
+  const auto tif = TIFFOpen(path.c_str(), "r");
   if (tif == nullptr) {
     return raster;
   }
@@ -154,8 +154,8 @@ Raster readTIFF(std::string const& path) {
   TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &channels);
   TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bits);
 
-  std::size_t const rowSamples = static_cast<std::size_t>(width) * channels;
-  std::size_t const bytesPerSample = bits == 16 ? 2 : 1;
+  const auto rowSamples = static_cast<std::size_t>(width) * channels;
+  const std::size_t bytesPerSample = bits == 16 ? 2 : 1;
   std::vector<unsigned char> row(static_cast<std::size_t>(TIFFScanlineSize(tif)));
   raster.samples.resize(rowSamples * height);
   bool complete = row.size() >= rowSamples * bytesPerSample;
@@ -183,7 +183,7 @@ Raster readTIFF(std::string const& path) {
 #ifdef GMAN_WITH_PNG
 Raster readPNG(std::string const& path) {
   Raster raster;
-  std::FILE* const file = std::fopen(path.c_str(), "rb");
+  const auto file = std::fopen(path.c_str(), "rb");
   if (file == nullptr) {
     return raster;
   }
@@ -201,8 +201,8 @@ Raster readPNG(std::string const& path) {
   int bits = 0;
   int colourType = 0;
   png_get_IHDR(reader, info, &width, &height, &bits, &colourType, nullptr, nullptr, nullptr);
-  int const channels = png_get_channels(reader, info);
-  std::size_t const rowBytes = png_get_rowbytes(reader, info);
+  const auto channels = png_get_channels(reader, info);
+  const auto rowBytes = png_get_rowbytes(reader, info);
   std::vector<unsigned char> bytes(rowBytes * height);
   std::vector<png_bytep> rows(height);
   for (png_uint_32 y = 0; y < height; ++y) {
@@ -212,12 +212,12 @@ Raster readPNG(std::string const& path) {
   png_destroy_read_struct(&reader, &info, nullptr);
   std::fclose(file);
 
-  std::size_t const bytesPerSample = bits == 16 ? 2 : 1;
-  std::size_t const rowSamples = static_cast<std::size_t>(width) * static_cast<std::size_t>(channels);
+  const std::size_t bytesPerSample = bits == 16 ? 2 : 1;
+  const auto rowSamples = static_cast<std::size_t>(width) * static_cast<std::size_t>(channels);
   raster.samples.resize(rowSamples * height);
   for (std::size_t y = 0; y < height; ++y) {
     for (std::size_t i = 0; i < rowSamples; ++i) {
-      unsigned char const* const at = &bytes[y * rowBytes + i * bytesPerSample];
+      auto const* const at = &bytes[y * rowBytes + i * bytesPerSample];
       if (bytesPerSample == 2) {
         raster.samples[y * rowSamples + i] = static_cast<std::uint32_t>(at[0]) << 8 | at[1];
       } else {
@@ -238,7 +238,7 @@ Raster readPNG(std::string const& path) {
 bool driverCompiled(std::string const& gman, std::string const& name) {
   GMANRunOptions options;
   options.capture = GMANRunOptions::Capture::stdoutOnly;
-  GMANRunResult const version = ::runGman(gman, {"--version"}, options);
+  const auto version = ::runGman(gman, {"--version"}, options);
   std::istringstream lines(version.output);
   std::string line;
   while (std::getline(lines, line)) {
@@ -295,12 +295,12 @@ void checkHalfPlane(std::string const& label, Raster const& raster, std::vector<
   for (int y = 0; y < kSide; ++y) {
     for (int x = 0; x < kSide; ++x) {
       for (int channel = 0; channel < 3; ++channel) {
-        std::uint32_t const sample = raster.at(x, y, channel);
+        const auto sample = raster.at(x, y, channel);
         if (x >= kCoveredColumns) {
           uncoveredZero = uncoveredZero && sample == 0;
           continue;
         }
-        auto const found = std::find(allowed.begin(), allowed.end(), sample);
+        const auto found = std::find(allowed.begin(), allowed.end(), sample);
         if (found == allowed.end()) {
           coveredAllowed = false;
           continue;
@@ -330,9 +330,9 @@ void checkExact(std::string const& label, Raster const& raster) {
 }
 
 void checkFlag16(std::string const& gman, std::string const& ribDir) {
-  GMANRunResult const pnmRun = render(gman, ribDir, "bitdepth_pnm", "pnm", {"--bit-depth", "16"});
+  const auto pnmRun = render(gman, ribDir, "bitdepth_pnm", "pnm", {"--bit-depth", "16"});
   check(pnmRun.exitStatus == 0, "flag 16 pnm: renders");
-  Raster const pnm = readPNM("bitdepth_pnm.pnm");
+  const auto pnm = readPNM("bitdepth_pnm.pnm");
   check(pnm.ok, "flag 16 pnm: file reads back");
   if (pnm.ok) {
     check(pnm.maxval == 65535, "flag 16 pnm: maxval reads 65535 (got " + std::to_string(pnm.maxval) + ")");
@@ -341,9 +341,9 @@ void checkFlag16(std::string const& gman, std::string const& ribDir) {
 
 #ifdef GMAN_WITH_PNG
   if (driverCompiled(gman, "png")) {
-    GMANRunResult const pngRun = render(gman, ribDir, "bitdepth_png", "png", {"--bit-depth", "16"});
+    const auto pngRun = render(gman, ribDir, "bitdepth_png", "png", {"--bit-depth", "16"});
     check(pngRun.exitStatus == 0, "flag 16 png: renders");
-    Raster const png = readPNG("bitdepth_png.png");
+    const auto png = readPNG("bitdepth_png.png");
     check(png.ok, "flag 16 png: file reads back");
     if (png.ok) {
       check(png.bits == 16, "flag 16 png: bit depth reads 16 (got " + std::to_string(png.bits) + ")");
@@ -356,9 +356,9 @@ void checkFlag16(std::string const& gman, std::string const& ribDir) {
   std::printf("skipped flag 16 png: the test is built without libpng\n");
 #endif
 
-  GMANRunResult const tifRun = render(gman, ribDir, "bitdepth_tif", "tif", {"--bit-depth", "16"});
+  const auto tifRun = render(gman, ribDir, "bitdepth_tif", "tif", {"--bit-depth", "16"});
   check(tifRun.exitStatus == 0, "flag 16 tif: renders");
-  Raster const tif = readTIFF("bitdepth_tif.tif");
+  const auto tif = readTIFF("bitdepth_tif.tif");
   check(tif.ok, "flag 16 tif: file reads back");
   if (tif.ok) {
     check(tif.bits == 16, "flag 16 tif: 16 bits a sample (got " + std::to_string(tif.bits) + ")");
@@ -367,9 +367,9 @@ void checkFlag16(std::string const& gman, std::string const& ribDir) {
 }
 
 void checkExplicit16(std::string const& gman, std::string const& ribDir, Flags const& flags, std::string const& label) {
-  GMANRunResult const pnmRun = render(gman, ribDir, "bitdepth_exact_pnm", "pnm", flags);
+  const auto pnmRun = render(gman, ribDir, "bitdepth_exact_pnm", "pnm", flags);
   check(pnmRun.exitStatus == 0, label + " pnm: renders");
-  Raster const pnm = readPNM("bitdepth_exact_pnm.pnm");
+  const auto pnm = readPNM("bitdepth_exact_pnm.pnm");
   check(pnm.ok, label + " pnm: file reads back");
   if (pnm.ok) {
     check(pnm.maxval == 65535, label + " pnm: maxval reads 65535 (got " + std::to_string(pnm.maxval) + ")");
@@ -378,9 +378,9 @@ void checkExplicit16(std::string const& gman, std::string const& ribDir, Flags c
 
 #ifdef GMAN_WITH_PNG
   if (driverCompiled(gman, "png")) {
-    GMANRunResult const pngRun = render(gman, ribDir, "bitdepth_exact_png", "png", flags);
+    const auto pngRun = render(gman, ribDir, "bitdepth_exact_png", "png", flags);
     check(pngRun.exitStatus == 0, label + " png: renders");
-    Raster const png = readPNG("bitdepth_exact_png.png");
+    const auto png = readPNG("bitdepth_exact_png.png");
     check(png.ok, label + " png: file reads back");
     if (png.ok) {
       check(png.bits == 16, label + " png: bit depth reads 16 (got " + std::to_string(png.bits) + ")");
@@ -391,20 +391,20 @@ void checkExplicit16(std::string const& gman, std::string const& ribDir, Flags c
 }
 
 void checkFlag8(std::string const& gman, std::string const& ribDir) {
-  GMANRunResult const plain = render(gman, ribDir, "bitdepth_pnm", "pnm", {});
+  const auto plain = render(gman, ribDir, "bitdepth_pnm", "pnm", {});
   check(plain.exitStatus == 0, "no flag pnm: renders");
-  std::vector<unsigned char> const plainBytes = readBytes("bitdepth_pnm.pnm");
-  Raster const plainPNM = readPNM("bitdepth_pnm.pnm");
+  const auto plainBytes = readBytes("bitdepth_pnm.pnm");
+  const auto plainPNM = readPNM("bitdepth_pnm.pnm");
   check(plainPNM.ok && plainPNM.maxval == 255, "no flag pnm: maxval reads 255");
 
-  GMANRunResult const flagged = render(gman, ribDir, "bitdepth_pnm", "pnm", {"--bit-depth", "8"});
+  const auto flagged = render(gman, ribDir, "bitdepth_pnm", "pnm", {"--bit-depth", "8"});
   check(flagged.exitStatus == 0, "flag 8 pnm: renders");
-  std::vector<unsigned char> const flaggedBytes = readBytes("bitdepth_pnm.pnm");
+  const auto flaggedBytes = readBytes("bitdepth_pnm.pnm");
   check(!flaggedBytes.empty() && flaggedBytes == plainBytes, "flag 8 pnm: byte-identical to no flag and no Quantize");
 
-  GMANRunResult const fifteen = render(gman, ribDir, "bitdepth_15_pnm", "pnm", {"--bit-depth", "8"});
+  const auto fifteen = render(gman, ribDir, "bitdepth_15_pnm", "pnm", {"--bit-depth", "8"});
   check(fifteen.exitStatus == 0, "flag 8 with Quantize max 15: renders");
-  Raster const small = readPNM("bitdepth_15_pnm.pnm");
+  const auto small = readPNM("bitdepth_15_pnm.pnm");
   check(small.ok && small.maxval == 15, "flag 8 with Quantize max 15: maxval reads 15");
 }
 
@@ -415,17 +415,17 @@ void checkRefusal(std::string const& gman, std::string const& ribDir, std::strin
     std::printf("skipped %s: gman is built without %s\n", label.c_str(), driver.c_str());
     return;
   }
-  std::string const file = fixture + "." + extension;
+  const auto file = fixture + "." + extension;
   std::remove(file.c_str());
   Flags arguments{"-d"};
   arguments.insert(arguments.end(), flags.begin(), flags.end());
   arguments.push_back(ribDir + "/" + fixture + ".rib");
   GMANRunOptions options;
   options.timeoutSeconds = 20;
-  GMANRunResult const run = ::runGman(gman, arguments, options);
+  const auto run = ::runGman(gman, arguments, options);
   check(!run.crashed && !run.timedOut, label + ": does not crash or hang");
   check(run.exitStatus == EXIT_FAILURE, label + ": exits 1");
-  std::string const report = "ERROR: " + code + " -- " + message;
+  const auto report = "ERROR: " + code + " -- " + message;
   check(countOccurrences(run.output, report) == 1, label + ": prints \"" + report + "\" exactly once");
   check(!fileExists(file), label + ": writes no " + file);
   check(run.output.find("Keyword token: Display") != std::string::npos, label + ": parses Display");
@@ -480,7 +480,7 @@ void checkJPEG(std::string const& gman, std::string const& ribDir) {
   if (!driverCompiled(gman, "jpeg")) {
     return;
   }
-  GMANRunResult const run = render(gman, ribDir, "bitdepth_refuse_jpeg", "jpg", {"--bit-depth", "8"});
+  const auto run = render(gman, ribDir, "bitdepth_refuse_jpeg", "jpg", {"--bit-depth", "8"});
   check(run.exitStatus == 0, "flag 8 jpeg: renders");
   check(fileExists("bitdepth_refuse_jpeg.jpg"), "flag 8 jpeg: writes the file");
 }
@@ -490,15 +490,15 @@ void checkEXR(std::string const& gman, std::string const& ribDir) {
     std::printf("skipped exr: gman is built without OpenEXR\n");
     return;
   }
-  GMANRunResult const plain = render(gman, ribDir, "bitdepth_exr", "exr", {});
+  const auto plain = render(gman, ribDir, "bitdepth_exr", "exr", {});
   check(plain.exitStatus == 0, "no flag exr: renders");
-  std::vector<unsigned char> const plainBytes = readBytes("bitdepth_exr.exr");
-  GMANRunResult const flagged = render(gman, ribDir, "bitdepth_exr", "exr", {"--bit-depth", "16"});
+  const auto plainBytes = readBytes("bitdepth_exr.exr");
+  const auto flagged = render(gman, ribDir, "bitdepth_exr", "exr", {"--bit-depth", "16"});
   check(flagged.exitStatus == 0, "flag 16 exr: renders");
-  std::vector<unsigned char> const flaggedBytes = readBytes("bitdepth_exr.exr");
+  const auto flaggedBytes = readBytes("bitdepth_exr.exr");
   check(!plainBytes.empty() && plainBytes == flaggedBytes, "flag 16 exr: byte-identical to no flag");
 
-  GMANRunResult const floating = render(gman, ribDir, "bitdepth_exr_float", "exr", {"--bit-depth", "16"});
+  const auto floating = render(gman, ribDir, "bitdepth_exr_float", "exr", {"--bit-depth", "16"});
   check(floating.exitStatus == 0, "flag 16 exr with Quantize one 0: exits 0");
 }
 
@@ -509,8 +509,8 @@ int main(int argc, char* argv[]) {
     std::fprintf(stderr, "usage: %s <gman-binary> <tests/rib-dir>\n", argv[0]);
     return 2;
   }
-  std::string const gman = argv[1];
-  std::string const ribDir = argv[2];
+  const std::string gman = argv[1];
+  const std::string ribDir = argv[2];
 
   checkFlag16(gman, ribDir);
   checkExplicit16(gman, ribDir, {}, "Quantize 65535");

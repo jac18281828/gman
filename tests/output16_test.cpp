@@ -70,7 +70,7 @@ struct Pixel {
 // Pixel 0 holds 0.3, pixel 2 holds 1.0 and pixel 3 holds 0. Pixel 4 has
 // coverage (0.2 + 0.5 + 0.8) / 3 = 0.5, a power of two, so its straight
 // colour divides exactly.
-std::array<Pixel, kPixels> const kPixelTable = {{
+const std::array<Pixel, kPixels> kPixelTable = {{
     {GMANColor(0.3f, 1.0f, 0.0f), GMANAlpha(1.0f, 1.0f, 1.0f), 1.0},
     {GMANColor(0.1f, 0.5f, 0.9f), GMANAlpha(1.0f, 1.0f, 1.0f), 1.0},
     {GMANColor(1.0f, 1.0f, 1.0f), GMANAlpha(1.0f, 1.0f, 1.0f), 1.0},
@@ -83,8 +83,8 @@ constexpr int kPartialPixel = 4;
 
 template <typename Output> void fill(Output& output) {
   for (int i = 0; i < kPixels; ++i) {
-    int const x = i % kWidth;
-    int const y = i / kWidth;
+    const auto x = i % kWidth;
+    const auto y = i / kWidth;
     output.setPixel(x, y, kPixelTable[static_cast<std::size_t>(i)].colour);
     output.setAlpha(x, y, kPixelTable[static_cast<std::size_t>(i)].alpha);
   }
@@ -99,7 +99,7 @@ std::array<double, 3> colourOf(Pixel const& pixel) {
 }
 
 std::vector<unsigned char> readFile(std::string const& path) {
-  std::FILE* const file = std::fopen(path.c_str(), "rb");
+  const auto file = std::fopen(path.c_str(), "rb");
   if (file == nullptr) {
     return {};
   }
@@ -123,11 +123,11 @@ struct PNMFile {
 
 PNMFile readPNM(std::string const& path) {
   PNMFile pnm;
-  std::vector<unsigned char> const bytes = readFile(path);
+  const auto bytes = readFile(path);
   std::vector<std::string> lines;
   auto at = bytes.begin();
   while (lines.size() < 3) {
-    auto const eol = std::find(at, bytes.end(), static_cast<unsigned char>('\n'));
+    const auto eol = std::find(at, bytes.end(), static_cast<unsigned char>('\n'));
     if (eol == bytes.end()) {
       return pnm;
     }
@@ -157,11 +157,11 @@ void checkPNMSamples(std::string const& label, PNMFile const& pnm, int max, std:
     return;
   }
   for (int i = 0; i < kPixels; ++i) {
-    std::array<double, 3> const colour = colourOf(kPixelTable[static_cast<std::size_t>(i)]);
+    const auto colour = colourOf(kPixelTable[static_cast<std::size_t>(i)]);
     for (std::size_t channel = 0; channel < 3; ++channel) {
-      std::size_t const index = 3 * static_cast<std::size_t>(i) + channel;
-      std::uint32_t const expected = expectedSample(colour[channel], max);
-      std::uint32_t const actual = sampleAt(pnm.samples, index, bytesPerSample);
+      const auto index = 3 * static_cast<std::size_t>(i) + channel;
+      const auto expected = expectedSample(colour[channel], max);
+      const auto actual = sampleAt(pnm.samples, index, bytesPerSample);
       check(actual == expected, label + ": pixel " + std::to_string(i) + " channel " + std::to_string(channel) +
                                     " reads " + std::to_string(actual) + " (expected " + std::to_string(expected) +
                                     ")");
@@ -176,9 +176,9 @@ void savePNM(std::string const& path, GMANQuantize const& request) {
 }
 
 void checkPNM16() {
-  std::string const path = "output16.pnm";
+  const std::string path = "output16.pnm";
   savePNM(path, GMANQuantize{65535, 0, 65535, 0});
-  PNMFile const pnm = readPNM(path);
+  const auto pnm = readPNM(path);
   check(pnm.ok, "pnm 65535: file reads back");
   if (!pnm.ok) {
     return;
@@ -193,9 +193,9 @@ void checkPNM16() {
 }
 
 void checkPNMOddMax() {
-  std::string const path = "output16_1000.pnm";
+  const std::string path = "output16_1000.pnm";
   savePNM(path, GMANQuantize{1000, 0, 1000, 0});
-  PNMFile const pnm = readPNM(path);
+  const auto pnm = readPNM(path);
   check(pnm.ok, "pnm 1000: file reads back");
   if (!pnm.ok) {
     return;
@@ -222,9 +222,9 @@ void checkPNM256() {
 }
 
 void checkPNM8() {
-  std::string const path = "output8.pnm";
+  const std::string path = "output8.pnm";
   savePNM(path, GMANQuantize{255, 0, 255, 0});
-  PNMFile const pnm = readPNM(path);
+  const auto pnm = readPNM(path);
   check(pnm.ok, "pnm 255: file reads back");
   if (!pnm.ok) {
     return;
@@ -266,7 +266,7 @@ struct PNGFile {
 
 PNGFile readPNG(std::string const& path) {
   PNGFile png;
-  std::FILE* const file = std::fopen(path.c_str(), "rb");
+  const auto file = std::fopen(path.c_str(), "rb");
   if (file == nullptr) {
     return png;
   }
@@ -296,12 +296,12 @@ PNGFile readPNG(std::string const& path) {
 }
 
 std::vector<double> expectedValues(GMANOutput::DisplayMode mode, Pixel const& pixel) {
-  bool const straight = mode != GMANOutput::RGB;
+  const auto straight = mode != GMANOutput::RGB;
   std::vector<double> values;
   if (mode != GMANOutput::A) {
     std::array<double, 3> colour = colourOf(pixel);
     for (double const channel : colour) {
-      bool const divides = straight && pixel.coverage > 0 && pixel.coverage < 1;
+      const auto divides = straight && pixel.coverage > 0 && pixel.coverage < 1;
       values.push_back(divides ? channel / pixel.coverage : channel);
     }
   }
@@ -312,13 +312,13 @@ std::vector<double> expectedValues(GMANOutput::DisplayMode mode, Pixel const& pi
 }
 
 void checkPNGMode(std::string const& name, GMANOutput::DisplayMode mode, int colourType, int channels) {
-  std::string const label = "png 65535 " + name;
-  std::string const path = "output16_" + name + ".png";
+  const auto label = "png 65535 " + name;
+  const auto path = "output16_" + name + ".png";
   gman::OutputPNG output(path.c_str(), kWidth, kHeight);
   fill(output);
   output.save(mode, 1.0f, 1.0f, GMANQuantize{65535, 0, 65535, 0});
 
-  PNGFile const png = readPNG(path);
+  const auto png = readPNG(path);
   check(png.ok, label + ": file reads back");
   if (!png.ok) {
     return;
@@ -334,13 +334,13 @@ void checkPNGMode(std::string const& name, GMANOutput::DisplayMode mode, int col
     return;
   }
   for (int i = 0; i < kPixels; ++i) {
-    std::vector<double> const values = expectedValues(mode, kPixelTable[static_cast<std::size_t>(i)]);
-    std::size_t const row = static_cast<std::size_t>(i / kWidth);
-    std::size_t const column = static_cast<std::size_t>(i % kWidth);
+    const auto values = expectedValues(mode, kPixelTable[static_cast<std::size_t>(i)]);
+    const auto row = static_cast<std::size_t>(i / kWidth);
+    const auto column = static_cast<std::size_t>(i % kWidth);
     for (std::size_t channel = 0; channel < values.size(); ++channel) {
-      std::size_t const offset = row * png.rowBytes + (column * values.size() + channel) * 2;
-      std::uint32_t const actual = static_cast<std::uint32_t>(png.bytes[offset]) << 8 | png.bytes[offset + 1];
-      std::uint32_t const expected = expectedSample(values[channel], 65535);
+      const auto offset = row * png.rowBytes + (column * values.size() + channel) * 2;
+      const auto actual = static_cast<std::uint32_t>(png.bytes[offset]) << 8 | png.bytes[offset + 1];
+      const auto expected = expectedSample(values[channel], 65535);
       check(actual == expected, label + ": pixel " + std::to_string(i) + " sample " + std::to_string(channel) +
                                     " reads " + std::to_string(actual) + " (expected " + std::to_string(expected) +
                                     ")");
@@ -349,27 +349,27 @@ void checkPNGMode(std::string const& name, GMANOutput::DisplayMode mode, int col
 }
 
 void checkPNGPartialCoverage() {
-  std::string const path = "output16_partial.png";
+  const std::string path = "output16_partial.png";
   gman::OutputPNG output(path.c_str(), kWidth, kHeight);
   fill(output);
   output.save(GMANOutput::RGBA, 1.0f, 1.0f, GMANQuantize{65535, 0, 65535, 0});
 
-  PNGFile const png = readPNG(path);
+  const auto png = readPNG(path);
   check(png.ok && png.bitDepth == 16, "png partial: reads back at 16 bits");
   if (!png.ok || png.bitDepth != 16) {
     return;
   }
-  Pixel const& pixel = kPixelTable[kPartialPixel];
-  std::size_t const row = kPartialPixel / kWidth;
-  std::size_t const column = kPartialPixel % kWidth;
-  std::size_t const offset = row * png.rowBytes + column * 4 * 2;
-  auto const word = [&png, offset](std::size_t channel) {
+  auto const& pixel = kPixelTable[kPartialPixel];
+  const std::size_t row = kPartialPixel / kWidth;
+  const std::size_t column = kPartialPixel % kWidth;
+  const auto offset = row * png.rowBytes + column * 4 * 2;
+  const auto word = [&png, offset](std::size_t channel) {
     return static_cast<std::uint32_t>(png.bytes[offset + 2 * channel]) << 8 | png.bytes[offset + 2 * channel + 1];
   };
   check(word(3) == 32768, "png partial: alpha at coverage 0.5 reads 32768 (got " + std::to_string(word(3)) + ")");
-  std::array<double, 3> const colour = colourOf(pixel);
+  const auto colour = colourOf(pixel);
   for (std::size_t channel = 0; channel < 3; ++channel) {
-    std::uint32_t const expected = expectedSample(colour[channel] / pixel.coverage, 65535);
+    const auto expected = expectedSample(colour[channel] / pixel.coverage, 65535);
     check(word(channel) == expected, "png partial: colour " + std::to_string(channel) + " divided by coverage reads " +
                                          std::to_string(word(channel)) + " (expected " + std::to_string(expected) +
                                          ")");
@@ -377,12 +377,12 @@ void checkPNGPartialCoverage() {
 }
 
 void checkPNG8() {
-  std::string const path = "output8.png";
+  const std::string path = "output8.png";
   gman::OutputPNG output(path.c_str(), kWidth, kHeight);
   fill(output);
   output.save(GMANOutput::RGB, 1.0f, 1.0f, GMANQuantize{255, 0, 255, 0});
 
-  PNGFile const png = readPNG(path);
+  const auto png = readPNG(path);
   check(png.ok, "png 255: file reads back");
   if (!png.ok) {
     return;
