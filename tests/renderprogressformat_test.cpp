@@ -36,24 +36,22 @@
 
 namespace {
 
-using std::chrono::seconds;
-
 void testDurations() {
-  check(gman::formatDuration(seconds{42}) == "42s", "42 seconds read 42s");
-  check(gman::formatDuration(seconds{185}) == "3m05s", "185 seconds read 3m05s");
-  check(gman::formatDuration(seconds{4320}) == "1h12m", "4320 seconds read 1h12m");
-  check(gman::formatDuration(seconds{3600 + 300}) == "1h05m", "an hour and five minutes read 1h05m");
-  check(gman::formatDuration(seconds{0}) == "0s", "no time reads 0s");
+  check(gman::formatDuration(std::chrono::seconds{42}) == "42s", "42 seconds read 42s");
+  check(gman::formatDuration(std::chrono::seconds{185}) == "3m05s", "185 seconds read 3m05s");
+  check(gman::formatDuration(std::chrono::seconds{4320}) == "1h12m", "4320 seconds read 1h12m");
+  check(gman::formatDuration(std::chrono::seconds{3600 + 300}) == "1h05m", "an hour and five minutes read 1h05m");
+  check(gman::formatDuration(std::chrono::seconds{0}) == "0s", "no time reads 0s");
 }
 
 void testLines() {
-  check(gman::progressLine("gmanpathtracer", 1432, 3072, seconds{4320}) ==
+  check(gman::progressLine("gmanpathtracer", 1432, 3072, std::chrono::seconds{4320}) ==
             "gmanpathtracer: 46% (1432/3072 rows), 1h12m elapsed, ~1h22m left",
         "a line in progress names its percent, counts, elapsed time and time left");
-  check(gman::progressLine("gmanpathtracer", 3072, 3072, seconds{4320}) ==
+  check(gman::progressLine("gmanpathtracer", 3072, 3072, std::chrono::seconds{4320}) ==
             "gmanpathtracer: 100% (3072/3072 rows), 1h12m elapsed",
         "the 100% line has no time left");
-  check(gman::progressLine("gmanraytracer", 24, 48, seconds{10}) ==
+  check(gman::progressLine("gmanraytracer", 24, 48, std::chrono::seconds{10}) ==
             "gmanraytracer: 50% (24/48 rows), 10s elapsed, ~10s left",
         "the time left scales elapsed by the rows remaining over the rows done");
 }
