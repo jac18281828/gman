@@ -50,7 +50,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "John Cairns <john@2ad.com>",
     "Test-only: encodes GMANSurfaceEnv::cameraToWorld's [0][0], [0][2] and "
     "[2][0] entries into Ci so environment_test.cpp can read camera-to-world "
-    "back out of a real shading call. Never dlopened outside the test suite.",
+    "back out of a real shading call.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

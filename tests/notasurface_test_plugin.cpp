@@ -51,8 +51,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "Not-a-surface probe (test-only)",
     "John Cairns <john@2ad.com>",
     "Test-only: a volume shader loaded through RiSurface, so setSurface's "
-    "\"loaded, but not a surface\" branch has a plugin to reach it with. "
-    "Never dlopened outside the test suite.",
+    "\"loaded, but not a surface\" branch has a plugin to reach it with.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

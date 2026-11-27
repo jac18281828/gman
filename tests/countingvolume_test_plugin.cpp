@@ -23,7 +23,7 @@
  * through GMANCountingVolumeLiveCount, this plugin's own exported function:
  * shadermodulenames_test.cpp uses it to prove that a failed
  * GMANAttributes::setAtmosphere releases the module it replaces, not only
- * the typed pointer bound to it. Never dlopened outside the test suite.
+ * the typed pointer bound to it.
  */
 
 #include "gmanloadable.h"
@@ -52,8 +52,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "Live-instance-counting volume probe (test-only)",
     "John Cairns <john@2ad.com>",
     "Test-only: counts its own live instances so shadermodulenames_test.cpp can "
-    "prove a failed setAtmosphere releases the module it replaces. Never "
-    "dlopened outside the test suite.",
+    "prove a failed setAtmosphere releases the module it replaces.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

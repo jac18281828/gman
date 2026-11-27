@@ -22,8 +22,7 @@
  * Test-only imager shader whose instances keep a live count, read back
  * through GMANCountingImagerLiveCount, this plugin's own exported function:
  * imagerownership_test.cpp and shadermodulenames_test.cpp use it to prove
- * GMANOptions::imagerModule's ownership from outside. Never dlopened outside
- * the test suite.
+ * GMANOptions::imagerModule's ownership from outside.
  */
 
 #include "gmanimagershader.h"
@@ -52,8 +51,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "Live-instance-counting imager probe (test-only)",
     "John Cairns <john@2ad.com>",
     "Test-only: counts its own live instances so imagerownership_test.cpp can "
-    "prove GMANOptions::imagerModule's ownership from outside. Never dlopened "
-    "outside the test suite.",
+    "prove GMANOptions::imagerModule's ownership from outside.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

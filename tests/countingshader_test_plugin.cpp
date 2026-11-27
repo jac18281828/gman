@@ -23,8 +23,7 @@
  * through GMANCountingShaderLiveCount, this plugin's own exported
  * function: shaderinstance_test.cpp uses it to prove GMANLoadableShader's
  * ownership from outside -- one instance per Surface call, freed exactly
- * when the last Appearance sharing it releases it. Never dlopened outside
- * the test suite.
+ * when the last Appearance sharing it releases it.
  */
 
 #include "gmanloadable.h"
@@ -52,7 +51,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "Live-instance-counting probe (test-only)",
     "John Cairns <john@2ad.com>",
     "Test-only: counts its own live instances so shaderinstance_test.cpp can prove "
-    "GMANLoadableShader's ownership from outside. Never dlopened outside the test suite.",
+    "GMANLoadableShader's ownership from outside.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

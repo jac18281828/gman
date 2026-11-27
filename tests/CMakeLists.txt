@@ -2304,15 +2304,13 @@ set_tests_properties(nupatch PROPERTIES
 # caller share nothing but computeCi's own return value, so
 # environment_test.cpp's plumbing proof needs a real, loadable plugin to
 # read GMANSurfaceEnv::cameraToWorld back out of a real shading call.
-# Never dlopened outside this test; not part of the shipped renderer.
 gman_add_plugin(gman_camerashader camerashader_test_plugin.cpp)
 set_target_properties(gman_camerashader PROPERTIES OUTPUT_NAME "camerashader")
 
 # Test-only volume shader (see its own comment): the shader
 # unknownsurface_test.cpp's "loaded, but not a surface" fixture names, and
 # shadermodulenames_test.cpp's Atmosphere/Interior/Exterior success check
-# loads, so each type-check branch has a plugin to reach it with. Never
-# dlopened outside these tests; not part of the shipped renderer.
+# loads, so each type-check branch has a plugin to reach it with.
 gman_add_plugin(gman_notasurface notasurface_test_plugin.cpp)
 set_target_properties(gman_notasurface PROPERTIES OUTPUT_NAME "notasurface")
 
@@ -2320,29 +2318,25 @@ set_target_properties(gman_notasurface PROPERTIES OUTPUT_NAME "notasurface")
 # instances, read back through its own exported GMANCountingShaderLiveCount,
 # so shaderinstance_test.cpp can prove GMANLoadableShader's ownership from
 # outside; shaderbsdf_test.cpp also loads it, as the plugin without a bsdf
-# override its own loaded-default case needs. Not part of the shipped
-# renderer.
+# override its own loaded-default case needs.
 gman_add_plugin(gman_countingshader countingshader_test_plugin.cpp)
 set_target_properties(gman_countingshader PROPERTIES OUTPUT_NAME "countingshader")
 
 # Test-only surface shader (see its own comment): defines GMANLoadShader but
 # not GMANDestroyShader, standing in for a plugin lacking the destroy entry
-# point. Never dlopened outside the test suite; not part of the shipped
-# renderer.
+# point.
 gman_add_plugin(gman_nodestroyshader nodestroyshader_test_plugin.cpp)
 set_target_properties(gman_nodestroyshader PROPERTIES OUTPUT_NAME "nodestroyshader")
 
 # Test-only indirect-light pass (see its comment): answers black until
 # prepare() has seen a primitive, kConstantIndirect after, and counts its
-# live instances through its exported GMANConstantIndirectLiveCount. Never
-# dlopened outside the test suite; not part of the shipped renderer.
+# live instances through its exported GMANConstantIndirectLiveCount.
 gman_add_plugin(gman_constantindirect constantindirect_test_plugin.cpp)
 target_link_libraries(gman_constantindirect PRIVATE gman_ray)
 set_target_properties(gman_constantindirect PROPERTIES OUTPUT_NAME "constantindirect")
 
 # Test-only indirect-light pass whose GMANCreateIndirectPass always
-# returns null, pinning loadIndirectPass's warning on that failure. Never
-# dlopened outside the test suite; not part of the shipped renderer.
+# returns null, pinning loadIndirectPass's warning on that failure.
 gman_add_plugin(gman_nullindirect nullindirect_test_plugin.cpp)
 target_link_libraries(gman_nullindirect PRIVATE gman_ray)
 set_target_properties(gman_nullindirect PROPERTIES OUTPUT_NAME "nullindirect")
@@ -2363,24 +2357,21 @@ set_tests_properties(shaderinstance PROPERTIES
 
 # Test-only displacement shader (see its own comment): a correctly typed,
 # real, loadable displacement plugin, so shadermodulenames_test.cpp's
-# Displacement success check has a plugin to load. Never dlopened outside
-# this test; not part of the shipped renderer.
+# Displacement success check has a plugin to load.
 gman_add_plugin(gman_identitydisplacement identitydisplacement_test_plugin.cpp)
 set_target_properties(gman_identitydisplacement PROPERTIES OUTPUT_NAME "identitydisplacement")
 
 # Test-only imager shader (see its own comment): counts its own live
 # instances, read back through its own exported GMANCountingImagerLiveCount,
 # so imagerownership_test.cpp and shadermodulenames_test.cpp can prove
-# GMANOptions::imagerModule's ownership from outside. Never dlopened
-# outside this test; not part of the shipped renderer.
+# GMANOptions::imagerModule's ownership from outside.
 gman_add_plugin(gman_countingimager countingimager_test_plugin.cpp)
 set_target_properties(gman_countingimager PROPERTIES OUTPUT_NAME "countingimager")
 
 # Test-only volume shader (see its own comment): counts its own live
 # instances, read back through its own exported GMANCountingVolumeLiveCount,
 # so shadermodulenames_test.cpp can prove a failed setAtmosphere releases
-# the module it replaces. Never dlopened outside this test; not part of the
-# shipped renderer.
+# the module it replaces.
 gman_add_plugin(gman_countingvolume countingvolume_test_plugin.cpp)
 set_target_properties(gman_countingvolume PROPERTIES OUTPUT_NAME "countingvolume")
 

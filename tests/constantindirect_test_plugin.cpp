@@ -23,7 +23,7 @@
  * world holding at least one primitive, kConstantIndirect after. Its own
  * live-instance count, read back through GMANConstantIndirectLiveCount,
  * proves loadIndirectPass's deleter frees through this module rather than
- * through a plain delete. Never dlopened outside the test suite.
+ * through a plain delete.
  */
 
 #include "constantindirectconstants.h"
@@ -59,8 +59,7 @@ private:
 static GMANLoadableObjectInfo loadableInfo = {
     "Constant indirect-light probe (test-only)",
     "John Cairns <john@2ad.com>",
-    "Test-only: answers black until prepare() has seen a primitive, kConstantIndirect after. Never dlopened "
-    "outside the test suite.",
+    "Test-only: answers black until prepare() has seen a primitive, kConstantIndirect after.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

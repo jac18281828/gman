@@ -20,8 +20,7 @@
 
 /*
  * Test-only indirect-light pass whose GMANCreateIndirectPass always
- * returns null, pinning loadIndirectPass's warning on that failure. Never
- * dlopened outside the test suite.
+ * returns null, pinning loadIndirectPass's warning on that failure.
  */
 
 #include "gmanindirectpass.h"
@@ -30,7 +29,7 @@
 static GMANLoadableObjectInfo loadableInfo = {
     "Null-creating indirect-light probe (test-only)",
     "John Cairns <john@2ad.com>",
-    "Test-only: GMANCreateIndirectPass always returns null. Never dlopened outside the test suite.",
+    "Test-only: GMANCreateIndirectPass always returns null.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

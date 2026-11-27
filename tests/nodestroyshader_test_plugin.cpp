@@ -44,7 +44,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "No-GMANDestroyShader probe (test-only)",
     "John Cairns <john@2ad.com>",
     "Test-only: defines GMANLoadShader but not GMANDestroyShader, standing in for a "
-    "plugin lacking the destroy entry point. Never dlopened outside the test suite.",
+    "plugin lacking the destroy entry point.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

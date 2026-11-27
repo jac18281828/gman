@@ -24,7 +24,7 @@
  * parameters: "nan", "inf" or "-inf" in every channel. The opacity also takes
  * "extreme": a finite 3e38 whose sign alternates with u and v, so that a
  * renderer's interpolation between two vertices overflows to infinity and then
- * NaN. Never dlopened outside the test suite.
+ * NaN.
  */
 
 #include <cmath>
@@ -84,8 +84,7 @@ private:
 static GMANLoadableObjectInfo loadableInfo = {
     "Non-finite Ci and Oi probe (test-only)",
     "John Cairns <john@2ad.com>",
-    "Test-only: answers a NaN or infinite Ci or Oi on request so a render can prove a renderer's guard. "
-    "Never dlopened outside the test suite.",
+    "Test-only: answers a NaN or infinite Ci or Oi on request so a render can prove a renderer's guard.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }

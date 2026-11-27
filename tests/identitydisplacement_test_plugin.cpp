@@ -25,7 +25,7 @@
  * Test-only loadable shader whose getType() reports GMANShader::DISPLACEMENT
  * and leaves position and normal unchanged: a correctly typed, real,
  * loadable displacement plugin for shadermodulenames_test.cpp's success
- * check. Never dlopened outside the test suite.
+ * check.
  */
 
 #include "gmandisplacementshader.h"
@@ -46,8 +46,7 @@ static GMANLoadableObjectInfo loadableInfo = {
     "Identity displacement probe (test-only)",
     "John Cairns <john@2ad.com>",
     "Test-only: a correctly typed, real, loadable displacement shader, so "
-    "shadermodulenames_test.cpp's success check has a plugin to load. Never "
-    "dlopened outside the test suite.",
+    "shadermodulenames_test.cpp's success check has a plugin to load.",
 };
 
 extern "C" GMAN_EXPORT GMANLoadableObjectInfo* GMANGetLoadableInfo(void) { return &loadableInfo; }
