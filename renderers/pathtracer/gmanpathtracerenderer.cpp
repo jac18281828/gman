@@ -946,7 +946,7 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
               droppedPerRow[rowIndex], misEnabled);
   };
   if (gman::progressRequested(options)) {
-    gman::RowProgress progress("gmanpathtracer", height);
+    auto progress = gman::RowProgress("gmanpathtracer", height);
     gman::parallelFor(height, renderRowAt, requestedWorkers, std::ref(progress));
   } else {
     gman::parallelFor(height, renderRowAt, requestedWorkers);

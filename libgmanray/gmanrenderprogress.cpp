@@ -39,8 +39,6 @@ namespace gman {
 
 namespace {
 
-constexpr std::int64_t kSecondsPerMinute = 60;
-constexpr std::int64_t kSecondsPerHour = 3600;
 constexpr std::int64_t kPercentWhole = 100;
 
 RtInt percentDone(RtInt done, RtInt total) {
@@ -53,7 +51,7 @@ RtInt percentDone(RtInt done, RtInt total) {
 } // namespace
 
 bool progressRequested(GMANOptions const& options) {
-  GMANOptions::NamedOptionValue const* const named = options.getNamedOption("statistics", "progress");
+  auto const* const named = options.getNamedOption("statistics", "progress");
   if (named == nullptr) {
     return false;
   }
@@ -62,14 +60,14 @@ bool progressRequested(GMANOptions const& options) {
 }
 
 std::string formatDuration(std::chrono::seconds duration) {
-  const std::int64_t whole = duration.count();
-  if (whole >= kSecondsPerHour) {
-    return std::format("{}h{:02}m", whole / kSecondsPerHour, whole % kSecondsPerHour / kSecondsPerMinute);
+  const auto split = std::chrono::hh_mm_ss(duration);
+  if (split.hours().count() > 0) {
+    return std::format("{}h{:02}m", split.hours().count(), split.minutes().count());
   }
-  if (whole >= kSecondsPerMinute) {
-    return std::format("{}m{:02}s", whole / kSecondsPerMinute, whole % kSecondsPerMinute);
+  if (split.minutes().count() > 0) {
+    return std::format("{}m{:02}s", split.minutes().count(), split.seconds().count());
   }
-  return std::format("{}s", whole);
+  return std::format("{}s", split.seconds().count());
 }
 
 std::string progressLine(std::string_view name, RtInt done, RtInt total, std::chrono::seconds elapsed) {
@@ -78,7 +76,7 @@ std::string progressLine(std::string_view name, RtInt done, RtInt total, std::ch
   if (done <= 0 || done >= total) {
     return head;
   }
-  const std::chrono::seconds left{elapsed.count() * (total - done) / done};
+  const auto left = std::chrono::seconds{elapsed.count() * (total - done) / done};
   return std::format("{}, ~{} left", head, formatDuration(left));
 }
 

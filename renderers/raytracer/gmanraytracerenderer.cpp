@@ -511,7 +511,7 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
              areaLights);
   };
   if (gman::progressRequested(options)) {
-    gman::RowProgress progress("gmanraytracer", height);
+    auto progress = gman::RowProgress("gmanraytracer", height);
     gman::parallelFor(height, shadeRowAt, requestedWorkers, std::ref(progress));
   } else {
     gman::parallelFor(height, shadeRowAt, requestedWorkers);

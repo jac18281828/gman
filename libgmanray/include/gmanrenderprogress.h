@@ -31,40 +31,18 @@
 #include "gmanoptions.h"
 #include "ri.h"
 
-/*
- * Render progress: one log line per whole percent of rows finished, for a
- * long render that would otherwise say nothing between its first line and
- * its last. A renderer builds a RowProgress with its own name and the row
- * total, then calls it with the number of rows finished so far. The calls
- * must come from one thread at a time, as gman::parallelFor's onIndexDone
- * guarantees.
- *
- * Each line reads "<name>: <p>% (<done>/<total> rows), <elapsed> elapsed,
- * ~<left> left" and goes out through gman::info. The time left is elapsed
- * * (total - done) / done: approximate where later rows cost more or less
- * than earlier ones, while the percent and the row counts are exact. The
- * line for the last row, at 100%, has no time left. Option "statistics"
- * "integer progress" [1] asks for them; absent or 0 is off.
- */
 namespace gman {
 
-// Whether options carry Option "statistics" "integer progress" with a nonzero
-// first value.
 GMANRAY_EXPORT bool progressRequested(GMANOptions const& options);
 
-// "1h12m", "3m05s" or "42s": hours and minutes from an hour up, minutes and
-// seconds from a minute up, whole seconds below.
-GMANRAY_EXPORT std::string formatDuration(std::chrono::seconds duration);
+std::string formatDuration(std::chrono::seconds duration);
 
-// The line for done of total rows finished after elapsed, as the class
-// above logs it.
-GMANRAY_EXPORT std::string progressLine(std::string_view name, RtInt done, RtInt total, std::chrono::seconds elapsed);
+std::string progressLine(std::string_view name, RtInt done, RtInt total, std::chrono::seconds elapsed);
 
 class GMANRAY_EXPORT RowProgress {
 public:
   RowProgress(std::string name, RtInt total);
 
-  // Logs a line when done reaches a whole percent no earlier call has.
   void operator()(RtInt done);
 
 private:

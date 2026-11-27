@@ -90,7 +90,7 @@ void parallelFor(RtInt count, std::function<void(RtInt, RtInt)> const& body, RtI
   std::mutex doneMutex;
   RtInt finished = 0;
 
-  auto reportDone = [&] {
+  const auto reportDone = [&] {
     if (!onIndexDone) {
       return;
     }
