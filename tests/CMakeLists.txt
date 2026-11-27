@@ -3895,6 +3895,28 @@ set_tests_properties(pngdisplaymode PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# gman::OutputPNM and gman::OutputPNG write 16-bit samples, most significant
+# byte first, when Quantize's max exceeds 255 and 8-bit samples otherwise,
+# and a max above 65535 stops the file. Direct unit test against those
+# classes, no gman binary. The PNG checks compile and link only under
+# GMAN_WITH_PNG.
+add_executable(gman_output16 output16_test.cpp)
+target_link_libraries(gman_output16 PRIVATE gman gman_internal_headers)
+if(GMAN_WITH_PNG)
+  target_compile_definitions(gman_output16 PRIVATE GMAN_WITH_PNG)
+  target_link_libraries(gman_output16 PRIVATE PNG::PNG)
+endif()
+
+set(GMAN_OUTPUT16_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/output16-run")
+file(MAKE_DIRECTORY "${GMAN_OUTPUT16_WORKDIR}")
+
+add_test(NAME output16
+  COMMAND gman_output16
+  WORKING_DIRECTORY "${GMAN_OUTPUT16_WORKDIR}")
+set_tests_properties(output16 PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 # gman::OutputPNG writes no gAMA chunk at any Exposure gamma, so every
 # viewer displays its bytes as written.
 add_executable(gman_pnggamma pnggamma_test.cpp)

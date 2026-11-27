@@ -44,6 +44,10 @@ public:
 
   ~OutputPNG(); // default destructor
 
+  // Writes 8-bit or 16-bit samples, 16 bits a sample when the request's max
+  // exceeds 255.
+  int maxBitsPerSample() const override;
+
 protected:
   RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
                     RtFloat gamma) override;

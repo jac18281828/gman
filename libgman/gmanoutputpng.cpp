@@ -42,6 +42,23 @@ extern "C" {
 
 namespace gman {
 
+namespace {
+
+// Writes `sample` at `dst` as one byte at 8 bits, or two, most significant
+// first, at 16 bits, which is how PNG stores a 16-bit sample. Returns the
+// bytes written.
+std::size_t putSample(png_byte* dst, std::uint16_t sample, int bitsPerSample) {
+  if (bitsPerSample == 16) {
+    dst[0] = static_cast<png_byte>(sample >> 8);
+    dst[1] = static_cast<png_byte>(sample);
+    return 2;
+  }
+  dst[0] = static_cast<png_byte>(sample);
+  return 1;
+}
+
+} // namespace
+
 /*
  * RenderMan API gman::OutputPNG
  *
@@ -53,8 +70,10 @@ OutputPNG::OutputPNG(char const* path, int width, int height) : GMANOutput(path,
 // default destructor
 OutputPNG::~OutputPNG() {};
 
-RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples,
-                             int /*bitsPerSample*/, RtFloat /*gamma*/) {
+int OutputPNG::maxBitsPerSample() const { return 16; }
+
+RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
+                             RtFloat /*gamma*/) {
   // write a PNG file to 'fileName'
 
   // open jpeg output file for writing
@@ -113,8 +132,8 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint
                         : (mode == A) ? PNG_COLOR_TYPE_GRAY
                                       : PNG_COLOR_TYPE_RGB_ALPHA;
 
-  png_set_IHDR(png_ptr, info_ptr, xres, yres, 8, colorType, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
-               PNG_FILTER_TYPE_DEFAULT);
+  png_set_IHDR(png_ptr, info_ptr, xres, yres, bitsPerSample, colorType, PNG_INTERLACE_NONE,
+               PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
   // set time
   png_time modtime;
@@ -182,21 +201,21 @@ RtVoid OutputPNG::writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint
         // avoid a multiply
         rowoffset += rowbytes;
 
-        int colOff = 0;
+        std::size_t colOff = 0;
 
         for (int x = 0; x < xres; x++) {
           const std::size_t idx = 4 * ((std::size_t)y * (std::size_t)xres + (std::size_t)x);
 
           if (mode != A) {
-            src[colOff++] = static_cast<png_byte>(samples[idx + 0]);
-            src[colOff++] = static_cast<png_byte>(samples[idx + 1]);
-            src[colOff++] = static_cast<png_byte>(samples[idx + 2]);
+            colOff += putSample(src + colOff, samples[idx + 0], bitsPerSample);
+            colOff += putSample(src + colOff, samples[idx + 1], bitsPerSample);
+            colOff += putSample(src + colOff, samples[idx + 2], bitsPerSample);
           }
 
           if (mode != RGB) {
             // Coverage, already quantized in save alongside colour with no
             // gain or gamma, at index 3.
-            src[colOff++] = static_cast<png_byte>(samples[idx + 3]);
+            colOff += putSample(src + colOff, samples[idx + 3], bitsPerSample);
           }
         }
       }

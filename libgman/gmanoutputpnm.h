@@ -49,6 +49,10 @@ public:
   // 255 until a request sets it.
   void setMaxval(int value);
 
+  // Writes one byte a sample at a maxval up to 255 and two, most significant
+  // first, above it.
+  int maxBitsPerSample() const override;
+
 protected:
   RtVoid writeImage(GMANOutput::DisplayMode mode, std::vector<std::uint16_t> const& samples, int bitsPerSample,
                     RtFloat gamma) override;

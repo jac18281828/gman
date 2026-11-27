@@ -478,7 +478,7 @@ ByteImage readTIFFRaw(std::string const& path) {
 }
 
 #ifdef GMAN_WITH_PNG
-// Reads back the 8-bit gman::OutputPNG always writes, with no
+// Reads back the 8-bit gman::OutputPNG writes at a max of 255 or below, with no
 // normalization: this reads this driver's own output, not an arbitrary
 // PNG, so what it wrote is exactly what this expects.
 ByteImage readPNGRaw(std::string const& path) {
@@ -744,11 +744,11 @@ int main() {
   checkTIFFAlphaNaN();
   checkTIFFAssociatedAlpha();
 
-  checkFileRefusal("pnm", savePNM, GMANQuantize{65535, 0, 65535, 0},
-                   "PNM writes 8-bit samples; Quantize max 65535 cannot be honoured");
+  checkFileRefusal("pnm", savePNM, GMANQuantize{65536, 0, 65536, 0},
+                   "PNM writes 16-bit samples; Quantize max 65536 cannot be honoured");
 #ifdef GMAN_WITH_PNG
-  checkFileRefusal("png", savePNG, GMANQuantize{65535, 0, 65535, 0},
-                   "PNG writes 8-bit samples; Quantize max 65535 cannot be honoured");
+  checkFileRefusal("png", savePNG, GMANQuantize{65536, 0, 65536, 0},
+                   "PNG writes 16-bit samples; Quantize max 65536 cannot be honoured");
 #endif
   checkFileRefusal("tiff", saveTIFF, GMANQuantize{255, 0, 65536, 0},
                    "TIFF writes 16-bit samples; Quantize max 65536 cannot be honoured");

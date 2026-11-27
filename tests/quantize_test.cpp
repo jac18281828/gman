@@ -439,9 +439,9 @@ void checkRefusal(std::string const& gman, std::string const& ribDir, Refusal co
 
 void checkRefusals(std::string const& gman, std::string const& ribDir) {
   std::vector<Refusal> const refusals = {
-      {"pnm_max", "pnm", "pnm", "RIE_INCAPABLE", "PNM writes 8-bit samples; Quantize max 65535 cannot be honoured"},
+      {"pnm_max", "pnm", "pnm", "RIE_INCAPABLE", "PNM writes 16-bit samples; Quantize max 65536 cannot be honoured"},
       {"pnm_float", "pnm", "pnm", "RIE_INCAPABLE", "PNM writes integer samples; Quantize one 0 cannot be honoured"},
-      {"png_max", "png", "png", "RIE_INCAPABLE", "PNG writes 8-bit samples; Quantize max 65535 cannot be honoured"},
+      {"png_max", "png", "png", "RIE_INCAPABLE", "PNG writes 16-bit samples; Quantize max 65536 cannot be honoured"},
       {"png_float", "png", "png", "RIE_INCAPABLE", "PNG writes integer samples; Quantize one 0 cannot be honoured"},
       {"jpeg_max", "jpg", "jpeg", "RIE_INCAPABLE", "JPEG writes 8-bit samples; Quantize max 65535 cannot be honoured"},
       {"jpeg_float", "jpg", "jpeg", "RIE_INCAPABLE", "JPEG writes integer samples; Quantize one 0 cannot be honoured"},
