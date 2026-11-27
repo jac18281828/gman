@@ -64,6 +64,7 @@ gmanrayprimitive.h
 gmanraysphere.h
 gmanraytorus.h
 gmanrenderer.h
+gmanrenderprogress.h
 gmanrenderman.h
 gmansamplebuffer.h
 gmansampling.h

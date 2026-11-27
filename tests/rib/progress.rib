@@ -1,0 +1,13 @@
+## Option "statistics" "integer progress" then a Sphere, a small frame of 48 rows
+## (tests/renderprogress_test.cpp). Not third-party.
+Display "progress.tif" "file" "rgba"
+Format 64 48 1
+Projection "perspective" "fov" [40]
+Option "pathtracer" "integer samples" [4]
+Option "statistics" "integer progress" [1]
+Translate 0 0 5
+WorldBegin
+LightSource "distantlight" 1 "intensity" [2.0] "from" [1 2 -3] "to" [0 0 0]
+Surface "matte"
+Sphere 1 -1 1 360
+WorldEnd

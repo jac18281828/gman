@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <functional>
 #include <memory>
 #include <numeric>
 #include <optional>
@@ -55,6 +56,7 @@
 #include "gmanrayoccluder.h"
 #include "gmanrayprimitive.h"
 #include "gmanrenderer.h"
+#include "gmanrenderprogress.h"
 #include "gmansamplebuffer.h"
 #include "gmansampling.h"
 #include "gmanshading.h"
@@ -936,16 +938,19 @@ void GMANPathtraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyst
       static_cast<std::size_t>(width * xsamples) * static_cast<std::size_t>(height * ysamples);
   slotPaths.assign(slotCount, 0);
 
-  gman::parallelFor(
-      height,
-      [&](RtInt row, RtInt worker) {
-        auto const rowIndex = static_cast<std::size_t>(row);
-        rowWorker[rowIndex] = worker;
-        renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, plan, background,
-                  textureCaches[static_cast<std::size_t>(worker)], row, *sampleBuffer, guides, slotPaths,
-                  droppedPerRow[rowIndex], misEnabled);
-      },
-      requestedWorkers);
+  auto const renderRowAt = [&](RtInt row, RtInt worker) {
+    auto const rowIndex = static_cast<std::size_t>(row);
+    rowWorker[rowIndex] = worker;
+    renderRow(bvh, emitters, viewingSys, cameraToWorld, raster, width, xsamples, ysamples, N, plan, background,
+              textureCaches[static_cast<std::size_t>(worker)], row, *sampleBuffer, guides, slotPaths,
+              droppedPerRow[rowIndex], misEnabled);
+  };
+  if (gman::progressRequested(options)) {
+    gman::RowProgress progress("gmanpathtracer", height);
+    gman::parallelFor(height, renderRowAt, requestedWorkers, std::ref(progress));
+  } else {
+    gman::parallelFor(height, renderRowAt, requestedWorkers);
+  }
 
   for (std::size_t const rowDropped : droppedPerRow) {
     droppedPaths += rowDropped;

@@ -2576,6 +2576,37 @@ set_tests_properties(parallel PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+# The progress line: the formatter, its durations and the option that asks for it.
+# See tests/renderprogressformat_test.cpp.
+add_executable(gman_renderprogressformat renderprogressformat_test.cpp)
+target_link_libraries(gman_renderprogressformat PRIVATE gman gman_ray)
+
+add_test(NAME renderprogressformat COMMAND gman_renderprogressformat)
+set_tests_properties(renderprogressformat PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# Option "statistics" "integer progress" [1] makes the ray and path tracers log one
+# line per whole percent of rows, ending at 100%, and leaves the image unchanged.
+# See tests/renderprogress_test.cpp.
+if(GMAN_BUILD_RAYTRACER AND GMAN_BUILD_PATHTRACER)
+  add_executable(gman_renderprogress renderprogress_test.cpp)
+  add_dependencies(gman_renderprogress gman_raytracer gman_pathtracer gman_matte)
+
+  set(GMAN_RENDERPROGRESS_WORKDIR "${CMAKE_CURRENT_BINARY_DIR}/renderprogress-run")
+  file(MAKE_DIRECTORY "${GMAN_RENDERPROGRESS_WORKDIR}")
+
+  add_test(NAME renderprogress
+    COMMAND gman_renderprogress $<TARGET_FILE:gman_cli>
+                                "${CMAKE_CURRENT_SOURCE_DIR}/rib"
+                                gmanraytracer gmanpathtracer
+    WORKING_DIRECTORY "${GMAN_RENDERPROGRESS_WORKDIR}")
+  set_tests_properties(renderprogress PROPERTIES
+    ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+    LABELS render
+    TIMEOUT 60)
+endif()
+
 # Library layering: every include in the production tree points down a layer,
 # a private header stays in its library, and a file names only its library's
 # export macro. See tests/librarylayering_test.cpp for the table.

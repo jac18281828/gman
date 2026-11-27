@@ -324,7 +324,8 @@ add_library(gman_ray SHARED
   libgmanray/gmanrayprimitive.cpp
   libgmanray/gmanrayquartic.cpp
   libgmanray/gmanraysphere.cpp
-  libgmanray/gmanraytorus.cpp)
+  libgmanray/gmanraytorus.cpp
+  libgmanray/gmanrenderprogress.cpp)
 
 # GMANRAY_EXPORT tags what the ray headers declare; the plugin entry points
 # keep GMAN_EXPORT. Beside gman/export.h, so libgman's public include

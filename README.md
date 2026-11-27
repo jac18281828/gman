@@ -125,6 +125,8 @@ The picture is `make hq`'s render in that repository, 2,048 paths a pixel at 192
 The ray tracer lights the same scene from its area lights in about a second, without the bounce
 light: `gman -r gmanraytracer samples/materials.rib`. `Option "raytracer" "integer arealightsamples"`
 sets its draws per light, 4 by default.
+`Option "statistics" "integer progress" [1]` makes either tracer log one line per whole percent of rows
+finished, with the time elapsed and an estimate of the time left.
 
 ## Poke it
 

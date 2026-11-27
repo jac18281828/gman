@@ -54,6 +54,7 @@
 #include "gmanrayprimitive.h"
 #include "gmanraytracerenderer.h"
 #include "gmanrenderer.h"
+#include "gmanrenderprogress.h"
 #include "gmansamplebuffer.h"
 #include "gmansampling.h"
 #include "gmanshading.h"
@@ -503,15 +504,18 @@ void GMANRaytraceRenderer::render(GMANFrameBuffer* frameBuffer, GMANViewingSyste
   std::vector<GMANRayOccluder> const shadingOccluders = shadingOccludersFor(bvh, cameraToWorld, textureCaches);
   rowWorker.assign(static_cast<std::size_t>(height), 0);
 
-  gman::parallelFor(
-      height,
-      [&](RtInt row, RtInt worker) {
-        rowWorker[static_cast<std::size_t>(row)] = worker;
-        shadeRow(viewingSys, cameraToWorld, background, raster, width, xsamples, ysamples, row, indirectPass,
-                 shadingOccluders[static_cast<std::size_t>(worker)], &textureCaches[static_cast<std::size_t>(worker)],
-                 areaLights);
-      },
-      requestedWorkers);
+  auto const shadeRowAt = [&](RtInt row, RtInt worker) {
+    rowWorker[static_cast<std::size_t>(row)] = worker;
+    shadeRow(viewingSys, cameraToWorld, background, raster, width, xsamples, ysamples, row, indirectPass,
+             shadingOccluders[static_cast<std::size_t>(worker)], &textureCaches[static_cast<std::size_t>(worker)],
+             areaLights);
+  };
+  if (gman::progressRequested(options)) {
+    gman::RowProgress progress("gmanraytracer", height);
+    gman::parallelFor(height, shadeRowAt, requestedWorkers, std::ref(progress));
+  } else {
+    gman::parallelFor(height, shadeRowAt, requestedWorkers);
+  }
 
   GMANOptions::PixelFilterStruct const& pf = options.getPixelFilter();
   sampleBuffer->resolve(frameBuffer, pf.filterfunc, pf.xwidth, pf.ywidth);
