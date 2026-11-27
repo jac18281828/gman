@@ -171,7 +171,7 @@ gman -r gmanraytracer first.rib
 - **Antialiasing.** `PixelSamples` through a box, triangle, Gaussian, Catmull-Rom or sinc filter.
 - **Textures.** Maps written by `MakeTexture` and `MakeLatLongEnvironment`.
 - **RIB.** Plain or gzip'd, with `ReadArchive`.
-- **Output.** TIFF at 8 bits, 16 bits or float, PNG, JPEG and PNM, and OpenEXR as an opt-in build
+- **Output.** TIFF at 8 bits, 16 bits or float, PNG, JPEG and PNM, and OpenEXR as an opt-in beta build
   option.
 
 ## Render
@@ -260,6 +260,10 @@ Such a build writes `Display "x.exr"` as 32-bit float RGBA when `Quantize` is om
 0, so a path-traced image keeps radiance above 1. Any other `one` stops the file at `WorldBegin` with
 `RIE_INCAPABLE`, since EXR does not quantize. The build needs OpenEXR at run time, and release
 tarballs carry no EXR driver.
+
+OpenEXR output is beta. The driver writes linear floats correctly, but gman reads sRGB-encoded textures
+and colours as linear, so an EXR looks washed out in a colour-managed viewer. Colour management
+([#12](https://github.com/jac18281828/gman/issues/12)) will fix it.
 
 ### Development container
 
