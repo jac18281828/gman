@@ -428,9 +428,6 @@ gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPatch(RtToken type, GMANPa
     GMANPatch patch(type, points->data(), basis, pl);
     mesh = tessellate("Patch \"bicubic\"", patch, {false, false}, texCoordAt, attr, t);
   }
-  if (!mesh) {
-    return nullptr;
-  }
   return mesh;
 };
 
@@ -477,9 +474,6 @@ gman::Owned<GMANPrimitive> GMANRayObjectManager::getRSPatchMesh(RtToken type, Rt
     GMANPatchMesh patchMesh(type, points->data(), nu, uwrap, nv, vwrap, basis, pl);
     mesh = tessellatePatchMesh(patchMesh, {bicubicPatchCount(nu, uPeriodic, basis.getUStep()), uPeriodic},
                                {bicubicPatchCount(nv, vPeriodic, basis.getVStep()), vPeriodic}, pl, attr, t);
-  }
-  if (!mesh) {
-    return nullptr;
   }
   return mesh;
 };
