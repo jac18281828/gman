@@ -1,0 +1,9 @@
+## A negative Quantize one has no depth: --bit-depth 16 leaves the range error to say so.
+Display "bitdepth_refuse_pnm_negative.pnm" "file" "rgb"
+Format 16 16 1
+Projection "perspective" "fov" [45]
+Quantize "rgba" -1 0 255 0.5
+Translate 0 0 5
+WorldBegin
+Sphere 1 -1 1 360
+WorldEnd

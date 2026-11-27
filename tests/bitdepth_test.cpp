@@ -443,6 +443,37 @@ void checkConflicts(std::string const& gman, std::string const& ribDir) {
                "RIE_CONSISTENCY", "Quantize one 0 asks for float samples; bit depth 16 contradicts it");
 }
 
+void checkNegativeOne(std::string const& gman, std::string const& ribDir) {
+  checkRefusal(gman, ribDir, "flag 16 against a negative one", "bitdepth_refuse_pnm_negative", "pnm", "pnm",
+               {"--bit-depth", "16"}, "RIE_RANGE", "Quantize one -1 must not be negative");
+}
+
+void checkPNM16(std::string const& label, std::string const& path) {
+  const auto pnm = readPNM(path);
+  check(pnm.ok, label + ": file reads back");
+  if (pnm.ok) {
+    check(pnm.maxval == 65535, label + ": maxval reads 65535 (got " + std::to_string(pnm.maxval) + ")");
+  }
+}
+
+void checkEveryRIB(std::string const& gman, std::string const& ribDir) {
+  std::remove("bitdepth_pnm.pnm");
+  std::remove("bitdepth_second_pnm.pnm");
+  Flags arguments{"-w", "--bit-depth", "16", ribDir + "/bitdepth_pnm.rib", ribDir + "/bitdepth_second_pnm.rib"};
+  GMANRunOptions options;
+  options.timeoutSeconds = 20;
+  const auto run = ::runGman(gman, arguments, options);
+  check(run.exitStatus == 0, "flag 16 over two RIBs: renders");
+  checkPNM16("flag 16 first RIB", "bitdepth_pnm.pnm");
+  checkPNM16("flag 16 second RIB", "bitdepth_second_pnm.pnm");
+}
+
+void checkImager(std::string const& gman, std::string const& ribDir) {
+  const auto run = render(gman, ribDir, "bitdepth_imager_pnm", "pnm", {"--bit-depth", "16"});
+  check(run.exitStatus == 0, "flag 16 under an Imager: renders");
+  checkPNM16("flag 16 under an Imager", "bitdepth_imager_pnm.pnm");
+}
+
 void checkJPEG(std::string const& gman, std::string const& ribDir) {
   checkRefusal(gman, ribDir, "flag 16 jpeg", "bitdepth_refuse_jpeg", "jpg", "jpeg", {"--bit-depth", "16"},
                "RIE_INCAPABLE", "JPEG writes 8-bit samples; bit depth 16 cannot be honoured");
@@ -486,6 +517,9 @@ int main(int argc, char* argv[]) {
   checkExplicit16(gman, ribDir, {"--bit-depth", "16"}, "Quantize 65535 and flag 16");
   checkFlag8(gman, ribDir);
   checkConflicts(gman, ribDir);
+  checkNegativeOne(gman, ribDir);
+  checkEveryRIB(gman, ribDir);
+  checkImager(gman, ribDir);
   checkJPEG(gman, ribDir);
   checkEXR(gman, ribDir);
 

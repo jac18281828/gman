@@ -204,6 +204,23 @@ void checkPNMOddMax() {
   checkPNMSamples("pnm 1000", pnm, 1000, 2);
 }
 
+void checkPNM256() {
+  const std::string path = "output16_256.pnm";
+  savePNM(path, GMANQuantize{256, 0, 256, 0});
+  const auto pnm = readPNM(path);
+  check(pnm.ok, "pnm 256: file reads back");
+  if (!pnm.ok) {
+    return;
+  }
+  check(pnm.maxval == "256", "pnm 256: maxval reads 256 (got " + pnm.maxval + ")");
+  checkPNMSamples("pnm 256", pnm, 256, 2);
+  constexpr std::size_t kWhitePixelOffset = 2 * 3 * 2;
+  if (pnm.samples.size() >= kWhitePixelOffset + 2) {
+    check(pnm.samples[kWhitePixelOffset] == 0x01 && pnm.samples[kWhitePixelOffset + 1] == 0x00,
+          "pnm 256: 1.0 reads bytes 01 00, high byte first");
+  }
+}
+
 void checkPNM8() {
   std::string const path = "output8.pnm";
   savePNM(path, GMANQuantize{255, 0, 255, 0});
@@ -389,6 +406,7 @@ void checkPNGRefusal() {
 int main() {
   checkPNM16();
   checkPNMOddMax();
+  checkPNM256();
   checkPNM8();
   checkPNMRefusal();
 #ifdef GMAN_WITH_PNG
