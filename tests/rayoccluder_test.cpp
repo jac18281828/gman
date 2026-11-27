@@ -200,8 +200,8 @@ void testPointLightDistanceBoundsTheShadowRay() {
   towardLight.normalize();
 
   {
-    // GMANLinearWorldManager owns what it holds and deletes it on
-    // destruction (see its own destructor), so blocker is not deleted here.
+    // GMANLinearWorldManager owns what it holds and destroys it with itself,
+    // so no primitive is deleted here.
     GMANLinearWorldManager worldManager;
     worldManager.add(sphereAt(1.0f, 0.0f, 0.0f, 15.0f)); // beyond the light
     GMANRayBVH bvh;
@@ -239,8 +239,8 @@ void testPointLightDistanceBoundsTheShadowRay() {
 // RIB scene would.
 void testSelfShadowAtScale(RtFloat scale) {
   GMANLinearWorldManager worldManager;
-  // sphereAt owns what worldManager holds and deletes it on destruction
-  // (GMANLinearWorldManager's own contract).
+  // sphereAt returns an owner that worldManager takes over; the world destroys
+  // the sphere with itself.
   auto sphereOwner = sphereAt(scale, 0.0f, 0.0f, 0.0f);
   auto* const sphere = sphereOwner.get();
   worldManager.add(std::move(sphereOwner));
