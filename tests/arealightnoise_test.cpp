@@ -29,7 +29,12 @@
  * low draw count and at 1,024 draws, every reference pixel in its block
  * exceeds 16 levels, and the root-mean-square over the block's pixels and
  * channels of (low - reference) / reference stays within its bound: 0.12 at
- * 16 draws near the emitter, 0.02 at 4 draws far from it.
+ * 16 draws near the emitter, 0.02 at 4 draws far from it. Every render is
+ * cropped to its block grown by one pixel on each side, the reach of the
+ * default Gaussian filter, so each block pixel resolves from the samples it
+ * would in the full frame; a pixel's draws follow its absolute sample
+ * coordinates, so the crop leaves them alone. Each image read back measures the
+ * grown block, and the block is read at its offset inside it.
  */
 
 #include <algorithm>
@@ -37,9 +42,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <format>
 #include <fstream>
 #include <limits>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -69,11 +76,16 @@ constexpr double kNearBound = 0.12;
 constexpr double kFarBound = 0.02;
 constexpr double kSetupFloor = 16.0;
 constexpr std::size_t kChannels = 3;
+constexpr std::uint32_t kFilterReach = 1;
+constexpr double kFrameWidth = 64.0;
+constexpr double kFrameHeight = 48.0;
+constexpr double kCropMargin = 0.25;
 
 constexpr char const* kRayTracer = "gmanraytracer";
 constexpr char const* kNearFixture = "arealight_nearfield";
 constexpr char const* kDrawsPrefix = "Option \"raytracer\" \"integer arealightsamples\"";
 constexpr char const* kDisplayPrefix = "Display ";
+constexpr char const* kFormatPrefix = "Format ";
 constexpr char const* kBlockerLine = "Translate 0 1.4 -2";
 constexpr char const* kPanelLine = "Polygon \"P\" [-4.2 -1.3 -3.2  -4.2 -1.3 3.2  4.2 -1.3 3.2  4.2 -1.3 -3.2]";
 constexpr char const* kDiskLines = "Translate 0 -1.3 0\nRotate 90 1 0 0\nDisk 0 4 360";
@@ -108,18 +120,39 @@ void writeFile(std::string const& path, std::string const& text) {
 
 bool startsWith(std::string const& line, std::string const& prefix) { return line.rfind(prefix, 0) == 0; }
 
+// The block grown by the filter's reach on each side.
+Block grown(Block const& block) {
+  return {block.x - kFilterReach, block.y - kFilterReach, block.width + 2 * kFilterReach,
+          block.height + 2 * kFilterReach};
+}
+
+// The CropWindow line for the block grown by the filter's reach. Each fraction
+// sits a quarter pixel below a pixel boundary, where the crop rule rounds it
+// onto that boundary.
+std::string cropLine(Block const& block) {
+  const auto crop = grown(block);
+  const auto left = crop.x - kCropMargin;
+  const auto right = crop.x + crop.width - kCropMargin;
+  const auto top = crop.y - kCropMargin;
+  const auto bottom = crop.y + crop.height - kCropMargin;
+  return std::format("CropWindow {:.6f} {:.6f} {:.6f} {:.6f}\n", left / kFrameWidth, right / kFrameWidth,
+                     top / kFrameHeight, bottom / kFrameHeight);
+}
+
 // The variant of c at draws draws, writing name.tif: c's fixture with its
-// Display and draw-count lines rewritten, each line that equals a key of its
-// edits replaced by that key's value and, when c drops the blocker, the
-// AttributeBegin block holding kBlockerLine dropped. An edit, a Display line,
-// a draw-count line or a blocker the fixture lacks fails a check, so a
-// variant never renders unedited.
+// Display and draw-count lines rewritten, a CropWindow line after its Format
+// line, each line that equals a key of its edits replaced by that key's value
+// and, when c drops the blocker, the AttributeBegin block holding kBlockerLine
+// dropped. An edit, a Display line, a Format line, a draw-count line or a
+// blocker the fixture lacks fails a check, so a variant never renders unedited
+// or uncropped.
 std::string variantText(std::string const& ribDir, NoiseCase const& c, std::uint32_t draws, std::string const& name) {
   auto in = std::istringstream(readFile(ribDir + "/" + c.fixture + ".rib"));
   std::ostringstream out;
   std::map<std::string, bool> found;
   auto display = false;
   auto count = false;
+  auto format = false;
   auto blockerDropped = false;
   std::vector<std::string> attributeBlock;
   std::string line;
@@ -153,11 +186,16 @@ std::string variantText(std::string const& ribDir, NoiseCase const& c, std::uint
       continue;
     }
     out << line << "\n";
+    if (startsWith(line, kFormatPrefix)) {
+      out << cropLine(c.block);
+      format = true;
+    }
   }
   for (auto const& edit : c.edits) {
     check(found[edit.first], c.name + ": the fixture holds the line " + edit.first);
   }
   check(display && count, c.name + ": the fixture holds a Display line and a draw-count line");
+  check(format, c.name + ": the fixture holds a Format line");
   if (c.dropBlocker) {
     check(blockerDropped, c.name + ": the fixture's blocker is dropped");
   }
@@ -174,7 +212,8 @@ double channelOf(std::uint32_t pixel, std::size_t channel) {
   return TIFFGetB(pixel);
 }
 
-GmanImage render(std::string const& gman, std::string const& ribDir, NoiseCase const& c, std::uint32_t draws) {
+std::optional<GmanImage> render(std::string const& gman, std::string const& ribDir, NoiseCase const& c,
+                                std::uint32_t draws) {
   const auto name = c.name + "_" + std::to_string(draws);
   writeFile(name + ".rib", variantText(ribDir, c, draws, name));
   std::remove((name + ".tif").c_str());
@@ -182,24 +221,36 @@ GmanImage render(std::string const& gman, std::string const& ribDir, NoiseCase c
   check(run.exitStatus == 0, name + " renders (exit " + std::to_string(run.exitStatus) + ")");
   auto image = readGmanTIFF(name + ".tif");
   check(image.ok, name + ".tif reads back");
+  if (!image.ok) {
+    return std::nullopt;
+  }
+  const auto crop = grown(c.block);
+  const auto sized = image.width == crop.width && image.height == crop.height;
+  check(sized, name + ".tif measures the block grown by the filter's reach (" + std::to_string(image.width) + " by " +
+                   std::to_string(image.height) + ", wanted " + std::to_string(crop.width) + " by " +
+                   std::to_string(crop.height) + ")");
+  if (!sized) {
+    return std::nullopt;
+  }
   return image;
 }
 
 // Renders c at its draw count and at kReferenceDraws, and checks the block's
-// relative root-mean-square deviation against its bound.
+// relative root-mean-square deviation against its bound. The block sits
+// kFilterReach pixels inside each cropped image.
 void checkCase(std::string const& gman, std::string const& ribDir, NoiseCase const& c) {
   const auto low = render(gman, ribDir, c, c.draws);
   const auto reference = render(gman, ribDir, c, kReferenceDraws);
-  if (!low.ok || !reference.ok) {
+  if (!low || !reference) {
     return;
   }
   double sum = 0.0;
   auto floor = std::numeric_limits<double>::max();
-  for (std::uint32_t y = c.block.y; y < c.block.y + c.block.height; ++y) {
-    for (std::uint32_t x = c.block.x; x < c.block.x + c.block.width; ++x) {
+  for (std::uint32_t y = kFilterReach; y < kFilterReach + c.block.height; ++y) {
+    for (std::uint32_t x = kFilterReach; x < kFilterReach + c.block.width; ++x) {
       for (std::size_t channel = 0; channel < kChannels; ++channel) {
-        const auto expected = channelOf(reference.at(x, y), channel);
-        const auto deviation = (channelOf(low.at(x, y), channel) - expected) / expected;
+        const auto expected = channelOf(reference->at(x, y), channel);
+        const auto deviation = (channelOf(low->at(x, y), channel) - expected) / expected;
         floor = std::min(floor, expected);
         sum += deviation * deviation;
       }
