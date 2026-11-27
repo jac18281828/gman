@@ -42,7 +42,6 @@
 #include "gmanmatrix4.h"
 #include "gmannormal.h"
 #include "gmanpoint.h"
-#include "gmanprimitive.h"
 #include "gmanraydisk.h"
 #include "gmanrayoccluder.h"
 #include "gmanraypolygon.h"
