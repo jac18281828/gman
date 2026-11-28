@@ -24,7 +24,8 @@
  * blocks the session holds. A primitive requested outside a world block
  * reports RIE_ILLSTATE at RIE_WARNING, throws nothing and joins no world.
  * Driven through a probe renderer plugin that records, per render() call,
- * whether its world was frozen and how many primitives it held.
+ * whether its world was frozen and how many primitives it held. A world block
+ * whose RiWorldBegin fails stays open: a primitive still adds to its world.
  */
 
 #include <string>
@@ -33,6 +34,7 @@
 #include <dlfcn.h>
 
 #include "check.h"
+#include "gmanerror.h"
 #include "gmanrendermanimpl.h"
 #include "ri.h"
 
@@ -163,11 +165,35 @@ void testPrimitivesOutsideAWorldAreIgnored() {
   check(probe.primitiveCount(first + 1) == 1, "L3: the next block's world holds only its own sphere");
 }
 
+void testFailedWorldBeginLeavesTheWorldOpen() {
+  GMANRenderManImpl renderMan;
+  beginSession(renderMan, "worldlifecycle.nosuchext");
+
+  auto worldBeginThrew = false;
+  try {
+    renderMan.RiWorldBegin();
+  } catch (GMANError const&) {
+    worldBeginThrew = true;
+  }
+  check(worldBeginThrew, "L4: RiWorldBegin throws for an unrecognized file extension");
+
+  auto sphereThrew = false;
+  try {
+    sphere(renderMan);
+  } catch (GMANError const&) {
+    sphereThrew = true;
+  }
+  check(!sphereThrew, "L4: a primitive adds to the world a failed RiWorldBegin opened");
+
+  renderMan.RiEnd();
+}
+
 } // namespace
 
 int main() {
   testEachBlockIsItsOwnWorld();
   testPrimitivesOutsideAWorldAreIgnored();
+  testFailedWorldBeginLeavesTheWorldOpen();
 
   return checkSummary("each world block renders its own frozen world and a primitive outside one is ignored with a "
                       "warning");
