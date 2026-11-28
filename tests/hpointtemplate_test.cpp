@@ -204,6 +204,18 @@ template <typename T> void testMultiplyScalarLeavesItsOperand() {
   expectExact(label<T>("operator*(T) leaves its operand"), h, {1, 2, 3, 4});
 }
 
+template <typename T> void testMatrixMultiplyAssignRoundsAtItsOwnPrecision() {
+  auto h = gman::HPoint<T>(reciprocal<T, 3>, reciprocal<T, 7>, reciprocal<T, 11>, 1);
+  h *= rowWitnessMatrix<T>();
+  expectClose(label<T>("operator*=(Matrix4) of non-dyadic entries"), h, {T(14) / 45, T(62) / 637, T(138) / 2057, 1}, 4);
+}
+
+template <typename T> void testMatrixMultiplyRoundsAtItsOwnPrecision() {
+  const auto h = gman::HPoint<T>(reciprocal<T, 3>, reciprocal<T, 7>, reciprocal<T, 11>, 1);
+  expectClose(label<T>("operator*(Matrix4) of non-dyadic entries"), h * rowWitnessMatrix<T>(),
+              {T(14) / 45, T(62) / 637, T(138) / 2057, 1}, 4);
+}
+
 template <typename T> void runAll() {
   testDefaultConstructor<T>();
   testComponentConstructor<T>();
@@ -228,6 +240,8 @@ template <typename T> void runAll() {
   testAddLeavesItsOperands<T>();
   testMultiplyAssignScalarReturnsSelf<T>();
   testMultiplyScalarLeavesItsOperand<T>();
+  testMatrixMultiplyAssignRoundsAtItsOwnPrecision<T>();
+  testMatrixMultiplyRoundsAtItsOwnPrecision<T>();
 }
 
 } // namespace

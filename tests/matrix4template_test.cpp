@@ -517,6 +517,63 @@ void testTransformDirection() {
   expectExact("gman::transformDirection", v, {2, 6, 12});
 }
 
+template <typename T> gman::Matrix4<T> diagonalMatrix(T a, T b, T c, T d) {
+  auto m = gman::Matrix4<T>();
+  m[0][0] = a;
+  m[1][1] = b;
+  m[2][2] = c;
+  m[3][3] = d;
+  return m;
+}
+
+template <typename T> std::vector<T> diagonalEntries(T a, T b, T c, T d) {
+  return {a, 0, 0, 0, 0, b, 0, 0, 0, 0, c, 0, 0, 0, 0, d};
+}
+
+template <typename T> gman::Matrix4<T> firstWitness() {
+  return diagonalMatrix<T>(reciprocal<T, 3>, reciprocal<T, 7>, reciprocal<T, 11>, 1);
+}
+
+template <typename T> gman::Matrix4<T> secondWitness() {
+  return diagonalMatrix<T>(reciprocal<T, 5>, reciprocal<T, 13>, reciprocal<T, 17>, 1);
+}
+
+template <typename T> void testMultiplyMatrixRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator*(Matrix4) of non-dyadic entries"), firstWitness<T>() * secondWitness<T>(),
+              diagonalEntries<T>(T(1) / 15, T(1) / 91, T(1) / 187, 1), 2);
+}
+
+template <typename T> void testMultiplyAssignMatrixRoundsAtItsOwnPrecision() {
+  auto m = firstWitness<T>();
+  m *= secondWitness<T>();
+  expectClose(label<T>("operator*=(Matrix4) of non-dyadic entries"), m,
+              diagonalEntries<T>(T(1) / 15, T(1) / 91, T(1) / 187, 1), 2);
+}
+
+template <typename T> void testAdditionRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator+(Matrix4) of non-dyadic entries"), firstWitness<T>() + secondWitness<T>(),
+              diagonalEntries<T>(T(8) / 15, T(20) / 91, T(28) / 187, 2), 2);
+}
+
+template <typename T> void testAddAssignRoundsAtItsOwnPrecision() {
+  auto m = firstWitness<T>();
+  m += secondWitness<T>();
+  expectClose(label<T>("operator+=(Matrix4) of non-dyadic entries"), m,
+              diagonalEntries<T>(T(8) / 15, T(20) / 91, T(28) / 187, 2), 2);
+}
+
+template <typename T> void testMultiplyScalarRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator*(T) of non-dyadic entries"), firstWitness<T>() * reciprocal<T, 19>,
+              diagonalEntries<T>(T(1) / 57, T(1) / 133, T(1) / 209, T(1) / 19), 2);
+}
+
+template <typename T> void testMultiplyAssignScalarRoundsAtItsOwnPrecision() {
+  auto m = firstWitness<T>();
+  m *= reciprocal<T, 19>;
+  expectClose(label<T>("operator*=(T) of non-dyadic entries"), m,
+              diagonalEntries<T>(T(1) / 57, T(1) / 133, T(1) / 209, T(1) / 19), 2);
+}
+
 template <typename T> void runAll() {
   testDefaultConstructorIsTheIdentity<T>();
   testArrayConstructorFromRtFloat<T>();
@@ -578,6 +635,12 @@ template <typename T> void runAll() {
   testP4m<T>();
   testP4mTransformsEachPoint<T>();
   testP4mKeepsW<T>();
+  testMultiplyMatrixRoundsAtItsOwnPrecision<T>();
+  testMultiplyAssignMatrixRoundsAtItsOwnPrecision<T>();
+  testAdditionRoundsAtItsOwnPrecision<T>();
+  testAddAssignRoundsAtItsOwnPrecision<T>();
+  testMultiplyScalarRoundsAtItsOwnPrecision<T>();
+  testMultiplyAssignScalarRoundsAtItsOwnPrecision<T>();
 }
 
 } // namespace

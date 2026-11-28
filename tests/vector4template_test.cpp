@@ -354,6 +354,62 @@ template <typename T> void testPerspectiveRoundsAtItsOwnPrecision() {
   expectClose(label<T>("perspective(Vector&) by 3"), divided, {T(1) / 3, T(2) / 3, 1}, 1);
 }
 
+template <typename T> gman::Vector4<T> firstWitness() {
+  return gman::Vector4<T>(reciprocal<T, 3>, reciprocal<T, 7>, reciprocal<T, 11>, reciprocal<T, 23>);
+}
+
+template <typename T> gman::Vector4<T> secondWitness() {
+  return gman::Vector4<T>(reciprocal<T, 5>, reciprocal<T, 13>, reciprocal<T, 17>, reciprocal<T, 29>);
+}
+
+template <typename T> void testAdditionRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator+(Vector4) of non-dyadic components"), firstWitness<T>() + secondWitness<T>(),
+              {T(8) / 15, T(20) / 91, T(28) / 187, T(52) / 667}, 2);
+}
+
+template <typename T> void testSubtractionRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator-(Vector4) of non-dyadic components"), firstWitness<T>() - secondWitness<T>(),
+              {T(2) / 15, T(6) / 91, T(6) / 187, T(6) / 667}, 2);
+}
+
+template <typename T> void testSubtractAssignRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v -= secondWitness<T>();
+  expectClose(label<T>("operator-=(Vector4) of non-dyadic components"), v,
+              {T(2) / 15, T(6) / 91, T(6) / 187, T(6) / 667}, 2);
+}
+
+template <typename T> void testMultiplyAssignRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v *= secondWitness<T>();
+  expectClose(label<T>("operator*=(Vector4) of non-dyadic components"), v,
+              {T(1) / 15, T(1) / 91, T(1) / 187, T(1) / 667}, 2);
+}
+
+template <typename T> void testMultiplyScalarRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator*(T) of non-dyadic components"), firstWitness<T>() * reciprocal<T, 19>,
+              {T(1) / 57, T(1) / 133, T(1) / 209, T(1) / 437}, 2);
+}
+
+template <typename T> void testMultiplyAssignScalarRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v *= reciprocal<T, 19>;
+  expectClose(label<T>("operator*=(T) of non-dyadic components"), v, {T(1) / 57, T(1) / 133, T(1) / 209, T(1) / 437},
+              2);
+}
+
+template <typename T> void testDivideAssignScalarRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v /= reciprocal<T, 19>;
+  expectClose(label<T>("operator/=(T) of non-dyadic components"), v, {T(19) / 3, T(19) / 7, T(19) / 11, T(19) / 23}, 4);
+}
+
+template <typename T> void testMatrixMultiplyAssignRoundsAtItsOwnPrecision() {
+  auto v = gman::Vector4<T>(reciprocal<T, 3>, reciprocal<T, 7>, reciprocal<T, 11>, 1);
+  v *= rowWitnessMatrix<T>();
+  expectClose(label<T>("operator*=(Matrix4) of non-dyadic entries"), v, {T(14) / 45, T(62) / 637, T(138) / 2057, 1}, 4);
+}
+
 template <typename T> void runAll() {
   testDefaultConstructorZeroesTheVectorPart<T>();
   testComponentConstructor<T>();
@@ -399,6 +455,14 @@ template <typename T> void runAll() {
   testPerspectivePoint<T>();
   testPerspectiveVector<T>();
   testPerspectiveRoundsAtItsOwnPrecision<T>();
+  testAdditionRoundsAtItsOwnPrecision<T>();
+  testSubtractionRoundsAtItsOwnPrecision<T>();
+  testSubtractAssignRoundsAtItsOwnPrecision<T>();
+  testMultiplyAssignRoundsAtItsOwnPrecision<T>();
+  testMultiplyScalarRoundsAtItsOwnPrecision<T>();
+  testMultiplyAssignScalarRoundsAtItsOwnPrecision<T>();
+  testDivideAssignScalarRoundsAtItsOwnPrecision<T>();
+  testMatrixMultiplyAssignRoundsAtItsOwnPrecision<T>();
 }
 
 } // namespace

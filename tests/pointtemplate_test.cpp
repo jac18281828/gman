@@ -238,6 +238,42 @@ template <typename T> void testMatrixMultiplyAssign() {
   expectBool(label<T>("operator*=(Matrix4) returns *this"), &result == &p, true);
 }
 
+template <typename T> gman::Point<T> firstWitness() {
+  return gman::Point<T>(reciprocal<T, 3>, reciprocal<T, 7>, reciprocal<T, 11>);
+}
+
+template <typename T> gman::Point<T> secondWitness() {
+  return gman::Point<T>(reciprocal<T, 5>, reciprocal<T, 13>, reciprocal<T, 17>);
+}
+
+template <typename T> void testAdditionRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator+(Point) of non-dyadic components"), firstWitness<T>() + secondWitness<T>(),
+              {T(8) / 15, T(20) / 91, T(28) / 187}, 2);
+}
+
+template <typename T> void testAddAssignRoundsAtItsOwnPrecision() {
+  auto p = firstWitness<T>();
+  p += secondWitness<T>();
+  expectClose(label<T>("operator+=(Point) of non-dyadic components"), p, {T(8) / 15, T(20) / 91, T(28) / 187}, 2);
+}
+
+template <typename T> void testMultiplyScalarRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator*(T) of non-dyadic components"), firstWitness<T>() * reciprocal<T, 19>,
+              {T(1) / 57, T(1) / 133, T(1) / 209}, 2);
+}
+
+template <typename T> void testMultiplyAssignScalarRoundsAtItsOwnPrecision() {
+  auto p = firstWitness<T>();
+  p *= reciprocal<T, 19>;
+  expectClose(label<T>("operator*=(T) of non-dyadic components"), p, {T(1) / 57, T(1) / 133, T(1) / 209}, 2);
+}
+
+template <typename T> void testMatrixMultiplyAssignRoundsAtItsOwnPrecision() {
+  auto p = firstWitness<T>();
+  p *= columnWitnessMatrix<T>();
+  expectClose(label<T>("operator*=(Matrix4) of non-dyadic entries"), p, {T(14) / 45, T(62) / 637, T(138) / 2057}, 4);
+}
+
 template <typename T> void runAll() {
   testDefaultConstructor<T>();
   testComponentConstructor<T>();
@@ -270,6 +306,11 @@ template <typename T> void runAll() {
   testMultiplyScalar<T>();
   testMultiplyScalarLeavesItsOperand<T>();
   testMatrixMultiplyAssign<T>();
+  testAdditionRoundsAtItsOwnPrecision<T>();
+  testAddAssignRoundsAtItsOwnPrecision<T>();
+  testMultiplyScalarRoundsAtItsOwnPrecision<T>();
+  testMultiplyAssignScalarRoundsAtItsOwnPrecision<T>();
+  testMatrixMultiplyAssignRoundsAtItsOwnPrecision<T>();
 }
 
 } // namespace

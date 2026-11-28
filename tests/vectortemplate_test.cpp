@@ -360,6 +360,98 @@ template <typename T> void testNormalizeLeavesATinyVector() {
   expectExact(label<T>("normalize below RI_EPSILON"), v, {T(1e-11), 0, 0});
 }
 
+template <typename T> gman::Vector<T> firstWitness() {
+  return gman::Vector<T>(reciprocal<T, 3>, reciprocal<T, 7>, reciprocal<T, 11>);
+}
+
+template <typename T> gman::Vector<T> secondWitness() {
+  return gman::Vector<T>(reciprocal<T, 5>, reciprocal<T, 13>, reciprocal<T, 17>);
+}
+
+template <typename T> void testAdditionRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator+(Vector) of non-dyadic components"), firstWitness<T>() + secondWitness<T>(),
+              {T(8) / 15, T(20) / 91, T(28) / 187}, 2);
+}
+
+template <typename T> void testSubtractionRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator-(Vector) of non-dyadic components"), firstWitness<T>() - secondWitness<T>(),
+              {T(2) / 15, T(6) / 91, T(6) / 187}, 2);
+}
+
+template <typename T> void testAddScalarRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator+(T) of non-dyadic components"), firstWitness<T>() + reciprocal<T, 19>,
+              {T(22) / 57, T(26) / 133, T(30) / 209}, 2);
+}
+
+template <typename T> void testSubtractScalarRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator-(T) of non-dyadic components"), firstWitness<T>() - reciprocal<T, 19>,
+              {T(16) / 57, T(12) / 133, T(8) / 209}, 2);
+}
+
+template <typename T> void testMultiplyScalarRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("operator*(T) of non-dyadic components"), firstWitness<T>() * reciprocal<T, 19>,
+              {T(1) / 57, T(1) / 133, T(1) / 209}, 2);
+}
+
+template <typename T> void testAddAssignRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v += secondWitness<T>();
+  expectClose(label<T>("operator+=(Vector) of non-dyadic components"), v, {T(8) / 15, T(20) / 91, T(28) / 187}, 2);
+}
+
+template <typename T> void testSubtractAssignRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v -= secondWitness<T>();
+  expectClose(label<T>("operator-=(Vector) of non-dyadic components"), v, {T(2) / 15, T(6) / 91, T(6) / 187}, 2);
+}
+
+template <typename T> void testMultiplyAssignRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v *= secondWitness<T>();
+  expectClose(label<T>("operator*=(Vector) of non-dyadic components"), v, {T(1) / 15, T(1) / 91, T(1) / 187}, 2);
+}
+
+template <typename T> void testDivideAssignRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v /= secondWitness<T>();
+  expectClose(label<T>("operator/=(Vector) of non-dyadic components"), v, {T(5) / 3, T(13) / 7, T(17) / 11}, 4);
+}
+
+template <typename T> void testAddAssignScalarRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v += reciprocal<T, 19>;
+  expectClose(label<T>("operator+=(T) of non-dyadic components"), v, {T(22) / 57, T(26) / 133, T(30) / 209}, 2);
+}
+
+template <typename T> void testSubtractAssignScalarRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v -= reciprocal<T, 19>;
+  expectClose(label<T>("operator-=(T) of non-dyadic components"), v, {T(16) / 57, T(12) / 133, T(8) / 209}, 2);
+}
+
+template <typename T> void testMultiplyAssignScalarRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v *= reciprocal<T, 19>;
+  expectClose(label<T>("operator*=(T) of non-dyadic components"), v, {T(1) / 57, T(1) / 133, T(1) / 209}, 2);
+}
+
+template <typename T> void testDivideAssignScalarRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v /= reciprocal<T, 19>;
+  expectClose(label<T>("operator/=(T) of non-dyadic components"), v, {T(19) / 3, T(19) / 7, T(19) / 11}, 4);
+}
+
+template <typename T> void testMatrixMultiplyAssignRoundsAtItsOwnPrecision() {
+  auto v = firstWitness<T>();
+  v *= columnWitnessMatrix<T>();
+  expectClose(label<T>("operator*=(Matrix4) of non-dyadic entries"), v, {T(14) / 45, T(62) / 637, T(138) / 2057}, 4);
+}
+
+template <typename T> void testCrossRoundsAtItsOwnPrecision() {
+  expectClose(label<T>("cross of non-dyadic components"), firstWitness<T>().cross(secondWitness<T>()),
+              {T(24) / 17017, -T(4) / 2805, -T(4) / 1365}, 2);
+}
+
 template <typename T> void runAll() {
   testDefaultConstructor<T>();
   testComponentConstructor<T>();
@@ -411,6 +503,21 @@ template <typename T> void runAll() {
   testNormalizeRoundsAtItsOwnPrecision<T>();
   testNormalizeLeavesTheZeroVector<T>();
   testNormalizeLeavesATinyVector<T>();
+  testAdditionRoundsAtItsOwnPrecision<T>();
+  testSubtractionRoundsAtItsOwnPrecision<T>();
+  testAddScalarRoundsAtItsOwnPrecision<T>();
+  testSubtractScalarRoundsAtItsOwnPrecision<T>();
+  testMultiplyScalarRoundsAtItsOwnPrecision<T>();
+  testAddAssignRoundsAtItsOwnPrecision<T>();
+  testSubtractAssignRoundsAtItsOwnPrecision<T>();
+  testMultiplyAssignRoundsAtItsOwnPrecision<T>();
+  testDivideAssignRoundsAtItsOwnPrecision<T>();
+  testAddAssignScalarRoundsAtItsOwnPrecision<T>();
+  testSubtractAssignScalarRoundsAtItsOwnPrecision<T>();
+  testMultiplyAssignScalarRoundsAtItsOwnPrecision<T>();
+  testDivideAssignScalarRoundsAtItsOwnPrecision<T>();
+  testMatrixMultiplyAssignRoundsAtItsOwnPrecision<T>();
+  testCrossRoundsAtItsOwnPrecision<T>();
 }
 
 } // namespace

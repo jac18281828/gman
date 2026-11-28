@@ -30,7 +30,8 @@
  * representable. expectClose allows a number of ulps of the instance's own
  * epsilon, scaled by the larger of the expected magnitude and 1, so a result
  * that is only as accurate as float must still be as accurate as double in
- * the double instance.
+ * the double instance. reciprocal<T, N> and the witness matrices give the
+ * non-dyadic inputs on which float and double round differently.
  */
 
 #pragma once
@@ -55,6 +56,8 @@
 #include "ri.h"
 
 namespace geometrycheck {
+
+template <typename T, int N> inline constexpr T reciprocal = T(1) / N;
 
 template <typename T> std::string instanceName() {
   if constexpr (std::is_same_v<T, RtFloat>) {
@@ -99,6 +102,28 @@ template <typename T> gman::Matrix4<T> sequentialMatrix() {
       m[i][j] = static_cast<T>(4 * i + j + 1);
     }
   }
+  return m;
+}
+
+template <typename T> gman::Matrix4<T> columnWitnessMatrix() {
+  auto m = gman::Matrix4<T>();
+  m[0][0] = reciprocal<T, 3>;
+  m[1][1] = reciprocal<T, 7>;
+  m[2][2] = reciprocal<T, 11>;
+  m[0][3] = reciprocal<T, 5>;
+  m[1][3] = reciprocal<T, 13>;
+  m[2][3] = reciprocal<T, 17>;
+  return m;
+}
+
+template <typename T> gman::Matrix4<T> rowWitnessMatrix() {
+  auto m = gman::Matrix4<T>();
+  m[0][0] = reciprocal<T, 3>;
+  m[1][1] = reciprocal<T, 7>;
+  m[2][2] = reciprocal<T, 11>;
+  m[3][0] = reciprocal<T, 5>;
+  m[3][1] = reciprocal<T, 13>;
+  m[3][2] = reciprocal<T, 17>;
   return m;
 }
 
