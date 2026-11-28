@@ -114,11 +114,15 @@ GMANRenderManImpl, } the RenderMan implementation class.
 \gman stores every primitive defined between a \text{ RiWorldBegin,
 RiWorldEnd } pair, in the order declared, in a \text{ GMANWorld, }
 defined in \text{ gmanworld.h. }  The world belongs to the RenderMan
-implementation, and the renderer receives it as a \text{ GMANWorld
-const\& } to read.  A renderer walks it with standard C++ iteration, a
-range-based \text{ for } over the world, and \text{ world.ofType<T>() }
-yields only the primitives that are a \text{ T. }  Any number of walks
-may run at once, since an iterator holds no state in the world.
+implementation.  Each \text{ RiWorldBegin } starts an empty world, and
+the world freezes at \text{ RiWorldEnd: } a frozen world refuses further
+primitives.  A primitive requested outside a \text{ RiWorldBegin,
+RiWorldEnd } pair draws a warning and is ignored.  The renderer receives
+the frozen world as a \text{ GMANWorld const\& } to read.  A renderer
+walks it with standard C++ iteration, a range-based \text{ for } over
+the world, and \text{ world.ofType<T>() } yields only the primitives
+that are a \text{ T. }  Any number of walks may run at once, since an
+iterator holds no state in the world.
 
 \subsection{Shaders}
 \gman also provides a generalized interface to shading algorithms.

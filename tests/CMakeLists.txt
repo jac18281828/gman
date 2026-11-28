@@ -4312,6 +4312,20 @@ set_tests_properties(world PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+gman_add_plugin(gman_worldprobe worldprobe_renderer_plugin.cpp)
+target_link_libraries(gman_worldprobe PRIVATE gman gman_ray)
+set_target_properties(gman_worldprobe PROPERTIES OUTPUT_NAME "worldprobe")
+
+add_executable(gman_worldlifecycle worldlifecycle_test.cpp)
+target_link_libraries(gman_worldlifecycle PRIVATE gman gman_internal_headers)
+add_dependencies(gman_worldlifecycle gman_worldprobe)
+
+add_test(NAME worldlifecycle COMMAND gman_worldlifecycle)
+set_tests_properties(worldlifecycle PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANSphere's and GMANDisk's own uniform-area sampler: a closed-form area,
 # an independent finite-difference quadrature of the Jacobian, a
 # uniform-by-area histogram, a degenerate primitive and the sampled normal.

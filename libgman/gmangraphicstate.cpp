@@ -403,7 +403,9 @@ RtVoid GMANGraphicState::leaveMode(CurrentState mode) {
 }
 
 bool GMANGraphicState::allowed(CommandIdentity& cid) {
-  if ((block & cid.allowedBlocks) == 0) {
+  const auto inAllowedBlock = (block & cid.allowedBlocks) != 0;
+  const auto inWorld = world != 0;
+  if (!inAllowedBlock || (cid.isPrimitive && !inWorld)) {
     GMANError r(RIE_ILLSTATE, RIE_WARNING, "Invalid mode for procedure; the request is ignored.");
     GMANHandleError(r);
     return false;

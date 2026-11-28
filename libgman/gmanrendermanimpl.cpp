@@ -237,6 +237,12 @@ void requireRgbColorSamples(GMANOptions const& options, char const* request) {
 // depends on it.
 RtInt saturatedCount(std::int64_t count) { return static_cast<RtInt>(std::clamp<std::int64_t>(count, 0, INT_MAX)); }
 
+GMANWorld emptyFrozenWorld() {
+  GMANWorld world;
+  world.freeze();
+  return world;
+}
+
 } // namespace
 
 /*
@@ -245,7 +251,9 @@ RtInt saturatedCount(std::int64_t count) { return static_cast<RtInt>(std::clamp<
  */
 
 // default constructor
-GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState() { primitiveFactory = NULL; };
+GMANRenderManImpl::GMANRenderManImpl() : GMANGraphicState(), currentWorld(emptyFrozenWorld()) {
+  primitiveFactory = NULL;
+};
 
 // default destructor
 GMANRenderManImpl::~GMANRenderManImpl() {};
@@ -293,6 +301,7 @@ RtVoid GMANRenderManImpl::releaseRenderer() {
   // primitiveFactory belongs to renderer, not to this object; deleting it
   // invalidates it too.
   primitiveFactory = NULL;
+  currentWorld = emptyFrozenWorld();
   viewingSystem.reset();
 }
 
@@ -312,6 +321,7 @@ RtVoid GMANRenderManImpl::RiFrameEnd(RtVoid) { leaveMode(F); }
 
 RtVoid GMANRenderManImpl::RiWorldBegin(RtVoid) {
   enterMode(W);
+  currentWorld = GMANWorld();
   forgetWarningsOnce();
   gman::textureCache().clear();
 
@@ -386,6 +396,7 @@ RtVoid GMANRenderManImpl::abandonWorld() {
 }
 
 RtVoid GMANRenderManImpl::RiWorldEnd(RtVoid) {
+  currentWorld.freeze();
   if (!renderer) {
     abandonWorld();
     reportNoRendererOnce();

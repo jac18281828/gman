@@ -58,8 +58,8 @@ private:
   // from renderer, valid exactly while renderer holds a value
   GMANPrimitiveFactory* primitiveFactory;
 
-  // the world every primitive request adds to; a renderer borrows it through
-  // render()
+  // the world of the current world block, which every primitive request adds
+  // to and a renderer borrows through render(); frozen outside a world block
   GMANWorld currentWorld;
 
   // Viewing system
