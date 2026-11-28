@@ -23,6 +23,8 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
 - A class template over a real scalar is explicitly instantiated for `RtFloat`
   and `gman::PartnerReal` (`double`, or `float` when `RtFloat` is `double`),
   so a build with any `RtFloat` compiles.
+- A gman class template over a real scalar names no RenderMan type; `RtFloat`
+  appears only in its aliases and explicit instantiations.
 - Code that needs more precision than `RtFloat` computes in `gman::WideReal`,
   the wider of `RtFloat` and `double`, never a spelled `double`.
 - A spelled type keeps `const` east of a pointer or reference, west of a value.
@@ -78,7 +80,8 @@ scans the tree.
   macro: `GMAN_EXPORT` for core, `GMANRAY_EXPORT` for ray, `GMANRASTER_EXPORT`
   for raster. A plugin's entry points keep `GMAN_EXPORT`; a test's use needs
   none.
-- An exported class template carries its export macro on every declaration, forward declarations included.
+- An exported class template carries its export macro on every declaration,
+  forward declarations included.
 
 ## Placement
 - A file's directory names its library. A library includes and links only
