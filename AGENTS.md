@@ -78,6 +78,7 @@ scans the tree.
   macro: `GMAN_EXPORT` for core, `GMANRAY_EXPORT` for ray, `GMANRASTER_EXPORT`
   for raster. A plugin's entry points keep `GMAN_EXPORT`; a test's use needs
   none.
+- An exported class template carries its export macro on every declaration, forward declarations included.
 
 ## Placement
 - A file's directory names its library. A library includes and links only
