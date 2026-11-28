@@ -25,8 +25,8 @@
  * the instance, the component, and the expected and actual values. The sum
  * and the scaling, and their compound forms, add to a temporary rather than
  * to the point; the values they should produce are pinned by the
- * hpointadd*_pin and hpointscale*_pin tests. Here they are checked only for
- * what they return and leave alone.
+ * hpointadd*_pin and hpointscale*_pin tests. Here they are checked for what
+ * they return, what they leave alone and the w they produce.
  */
 
 #include <string>
@@ -216,6 +216,28 @@ template <typename T> void testMatrixMultiplyRoundsAtItsOwnPrecision() {
               {T(14) / 45, T(62) / 637, T(138) / 2057, 1}, 4);
 }
 
+template <typename T> void testAddAssignAddsTheWComponents() {
+  auto h = gman::HPoint<T>(1, 2, 3, 1);
+  h += gman::HPoint<T>(10, 20, 40, 5);
+  expectExact(label<T>("operator+=(HPoint) adds the w components"), h.getW(), 6);
+}
+
+template <typename T> void testAddAddsTheWComponents() {
+  const auto sum = gman::HPoint<T>(1, 2, 3, 1) + gman::HPoint<T>(10, 20, 40, 5);
+  expectExact(label<T>("operator+(HPoint) adds the w components"), sum.getW(), 6);
+}
+
+template <typename T> void testMultiplyAssignScalarScalesW() {
+  auto h = gman::HPoint<T>(1, 2, 3, 1);
+  h *= T(4);
+  expectExact(label<T>("operator*=(T) scales w"), h.getW(), 4);
+}
+
+template <typename T> void testMultiplyScalarScalesW() {
+  const auto scaled = gman::HPoint<T>(1, 2, 3, 1) * T(4);
+  expectExact(label<T>("operator*(T) scales w"), scaled.getW(), 4);
+}
+
 template <typename T> void runAll() {
   testDefaultConstructor<T>();
   testComponentConstructor<T>();
@@ -242,6 +264,10 @@ template <typename T> void runAll() {
   testMultiplyScalarLeavesItsOperand<T>();
   testMatrixMultiplyAssignRoundsAtItsOwnPrecision<T>();
   testMatrixMultiplyRoundsAtItsOwnPrecision<T>();
+  testAddAssignAddsTheWComponents<T>();
+  testAddAddsTheWComponents<T>();
+  testMultiplyAssignScalarScalesW<T>();
+  testMultiplyScalarScalesW<T>();
 }
 
 } // namespace
