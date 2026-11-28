@@ -38,8 +38,6 @@ template <typename T> Point<T>::Point(HPoint<T>& p) {
 template <typename T> bool Point<T>::operator==(Point const& v) const { return x == v.x && y == v.y && z == v.z; }
 template <typename T> bool Point<T>::operator!=(Point const& v) const { return !(*this == v); }
 
-template <typename T> bool Point<T>::operator<(Point const& p) const { return ((x < p.x) && (y < p.y) && (z < p.z)); }
-
 //-------------------------------------------------------------
 template <typename T> Point<T>& Point<T>::operator*=(Matrix4<T> const& m) {
 

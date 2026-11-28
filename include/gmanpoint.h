@@ -110,8 +110,6 @@ public:
   bool operator==(Point const& v) const;
   bool operator!=(Point const& v) const;
 
-  bool operator<(Point const& p) const;
-
   // geometric addition of two points
   Point& operator+=(Point const& p) {
     x += p.x;

@@ -20,11 +20,11 @@
 
 /*
  * gman::Point<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and copies through std::move, accessors, the const
- * indexing, comparison, addition, scaling and the matrix transform. A failure
- * names the member, the instance, the component, and the expected and actual
- * values. The constructor from an HPoint is checked for its value here; the
- * argument it mutates is pinned by pointfromhpoint_pin_test.cpp.
+ * member and instance: constructors, copies and copies through std::move,
+ * accessors, the const indexing, equality, addition, scaling and the matrix
+ * transform. A failure names the member, the instance, the component, and the
+ * expected and actual values. The constructor from an HPoint is checked for its
+ * value here; the argument it mutates is pinned by pointfromhpoint_pin_test.cpp.
  */
 
 #include <string>
@@ -182,17 +182,6 @@ template <typename T> void testInequalityHoldsWhenAComponentDiffers() {
   expectBool(label<T>("operator!= differing in z"), p != gman::Point<T>(1, 2, 9), true);
 }
 
-template <typename T> void testLessThanHoldsWhenEveryComponentIsLess() {
-  expectBool(label<T>("operator< with every component less"), gman::Point<T>(1, 2, 3) < gman::Point<T>(2, 3, 4), true);
-}
-
-template <typename T> void testLessThanFailsWhenAComponentIsNotLess() {
-  const auto p = gman::Point<T>(1, 2, 3);
-  expectBool(label<T>("operator< with x not less"), p < gman::Point<T>(1, 3, 4), false);
-  expectBool(label<T>("operator< with y not less"), p < gman::Point<T>(2, 2, 4), false);
-  expectBool(label<T>("operator< with z not less"), p < gman::Point<T>(2, 3, 3), false);
-}
-
 template <typename T> void testAddAssign() {
   auto p = gman::Point<T>(1, 2, 3);
   auto const& result = (p += gman::Point<T>(10, 20, 40));
@@ -297,8 +286,6 @@ template <typename T> void runAll() {
   testEqualityFailsWhenAComponentDiffers<T>();
   testInequalityFailsForEqualPoints<T>();
   testInequalityHoldsWhenAComponentDiffers<T>();
-  testLessThanHoldsWhenEveryComponentIsLess<T>();
-  testLessThanFailsWhenAComponentIsNotLess<T>();
   testAddAssign<T>();
   testAddition<T>();
   testAdditionLeavesItsOperands<T>();
