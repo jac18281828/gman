@@ -24,7 +24,7 @@
  * the transform builders, determinant and invert, p3m and p4m, the scalar
  * and matrix operators, setBasis, assign, indexing and get(). A failure
  * names the member, the instance, the matrix entry, and the expected and
- * actual values. Matrix4::operator=(RtMatrix const&) is declared and never
+ * actual values. Matrix4::operator=(U const (&)[4][4]) is declared and never
  * defined, so no test can call it. gman::transformPoint and
  * gman::transformDirection, which exist for RtFloat alone, are checked at
  * the end.
@@ -33,7 +33,6 @@
 #include <cstddef>
 #include <numbers>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -80,12 +79,18 @@ template <typename T> void testDefaultConstructorIsTheIdentity() {
   expectExact(label<T>("Matrix4() is the identity"), gman::Matrix4<T>(), identityEntries<T>());
 }
 
-template <typename T> void testRtMatrixConstructor() {
-  if constexpr (std::is_same_v<T, RtFloat>) {
-    RtMatrix source = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
-    const auto m = gman::Matrix4<T>(source);
-    expectExact(label<T>("Matrix4(RtMatrix)"), m, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
-  }
+template <typename T> void testArrayConstructorFromRtFloat() {
+  const RtFloat source[4][4] = {{0.5, 1, 1.5, 2}, {2.5, 3, 3.5, 4}, {4.5, 5, 5.5, 6}, {6.5, 7, 7.5, 8}};
+  const auto m = gman::Matrix4<T>(source);
+  expectExact(label<T>("Matrix4(RtFloat const (*)[4])"), m,
+              {0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8});
+}
+
+template <typename T> void testArrayConstructorFromPartnerReal() {
+  const gman::PartnerReal source[4][4] = {{0.5, 1, 1.5, 2}, {2.5, 3, 3.5, 4}, {4.5, 5, 5.5, 6}, {6.5, 7, 7.5, 8}};
+  const auto m = gman::Matrix4<T>(source);
+  expectExact(label<T>("Matrix4(PartnerReal const (*)[4])"), m,
+              {0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8});
 }
 
 template <typename T> void testConvertingConstructor() {
@@ -379,13 +384,19 @@ template <typename T> void testAssign() {
   expectBool(label<T>("assign returns *this"), &result == &target, true);
 }
 
-template <typename T> void testSetBasis() {
-  if constexpr (std::is_same_v<T, RtFloat>) {
-    RtBasis basis = {{-1, 3, -3, 1}, {3, -6, 3, 0}, {-3, 3, 0, 0}, {1, 0, 0, 0}};
-    auto m = gman::Matrix4<T>();
-    m.setBasis(basis);
-    expectExact(label<T>("setBasis"), m, {-1, 3, -3, 1, 3, -6, 3, 0, -3, 3, 0, 0, 1, 0, 0, 0});
-  }
+template <typename T> void testSetBasisFromRtFloat() {
+  const RtFloat basis[4][4] = {{-1, 3, -3, 1}, {3, -6, 3, 0}, {-3, 3, 0, 0}, {1, 0, 0, 0}};
+  auto m = gman::Matrix4<T>();
+  m.setBasis(basis);
+  expectExact(label<T>("setBasis(RtFloat const (&)[4][4])"), m, {-1, 3, -3, 1, 3, -6, 3, 0, -3, 3, 0, 0, 1, 0, 0, 0});
+}
+
+template <typename T> void testSetBasisFromPartnerReal() {
+  const gman::PartnerReal basis[4][4] = {{-1, 3, -3, 1}, {3, -6, 3, 0}, {-3, 3, 0, 0}, {1, 0, 0, 0}};
+  auto m = gman::Matrix4<T>();
+  m.setBasis(basis);
+  expectExact(label<T>("setBasis(PartnerReal const (&)[4][4])"), m,
+              {-1, 3, -3, 1, 3, -6, 3, 0, -3, 3, 0, 0, 1, 0, 0, 0});
 }
 
 template <typename T> void testIndexRead() {
@@ -508,7 +519,8 @@ void testTransformDirection() {
 
 template <typename T> void runAll() {
   testDefaultConstructorIsTheIdentity<T>();
-  testRtMatrixConstructor<T>();
+  testArrayConstructorFromRtFloat<T>();
+  testArrayConstructorFromPartnerReal<T>();
   testConvertingConstructor<T>();
   testCopyConstruct<T>();
   testCopyConstructIsIndependent<T>();
@@ -551,7 +563,8 @@ template <typename T> void runAll() {
   testAddition<T>();
   testAddAssign<T>();
   testAssign<T>();
-  testSetBasis<T>();
+  testSetBasisFromRtFloat<T>();
+  testSetBasisFromPartnerReal<T>();
   testIndexRead<T>();
   testIndexReadConst<T>();
   testIndexWrite<T>();

@@ -22,8 +22,9 @@
  * The six geometry templates, each instantiated for RtFloat and
  * gman::PartnerReal: the two precision aliases, the precision the wider
  * instance buys, the explicit conversions between instances, copies,
- * indexing, the protected components, the RenderMan bridge that only the
- * RtFloat instance carries, and the out-of-line members of both instances.
+ * indexing, the protected components, the pointer and array bridge that
+ * both instances carry for any arithmetic scalar, and the out-of-line
+ * members of both instances.
  *
  * Revert check: deleting a gman::PartnerReal explicit instantiation from a
  * libgman source leaves an out-of-line member of that type undefined, so the
@@ -343,29 +344,40 @@ template <typename T> void checkOutOfLineMembers(std::string const& scalar) {
         scalar + ": Vector4 operator*= Matrix4 transforms the vector");
 }
 
+template <template <typename> class Type, typename T> void assertPointerBridge() {
+  static_assert(std::is_constructible_v<Type<T>, RtFloat const*>);
+  static_assert(std::is_constructible_v<Type<T>, RtFloat*>);
+  static_assert(std::is_constructible_v<Type<T>, gman::PartnerReal const*>);
+  static_assert(std::is_constructible_v<Type<T>, gman::PartnerReal*>);
+  static_assert(!std::is_constructible_v<Type<T>, std::string const*>);
+  static_assert(!std::is_convertible_v<RtFloat const*, Type<T>>);
+  static_assert(!std::is_convertible_v<gman::PartnerReal const*, Type<T>>);
+}
+
+template <typename T> void assertArrayBridge() {
+  static_assert(std::is_constructible_v<gman::Matrix4<T>, RtFloat const(*)[4]>);
+  static_assert(std::is_constructible_v<gman::Matrix4<T>, RtFloat(*)[4]>);
+  static_assert(std::is_constructible_v<gman::Matrix4<T>, RtMatrix>);
+  static_assert(std::is_constructible_v<gman::Matrix4<T>, gman::PartnerReal const(*)[4]>);
+  static_assert(!std::is_constructible_v<gman::Matrix4<T>, std::string const(*)[4]>);
+  static_assert(!std::is_convertible_v<RtFloat const(*)[4], gman::Matrix4<T>>);
+  static_assert(!std::is_convertible_v<gman::PartnerReal const(*)[4], gman::Matrix4<T>>);
+}
+
+template <typename T> void assertBridge() {
+  assertPointerBridge<gman::Vector, T>();
+  assertPointerBridge<gman::Point, T>();
+  assertPointerBridge<gman::HPoint, T>();
+  assertPointerBridge<gman::Vector4, T>();
+  assertArrayBridge<T>();
+}
+
 void checkBridge() {
   static_assert(std::is_same_v<decltype(std::declval<gman::Matrix4<RtFloat> const&>().get()), RtMatrix const&>);
   static_assert(sizeof(gman::Matrix4<RtFloat>) == sizeof(RtMatrix));
 
-  static_assert(std::is_constructible_v<gman::Vector<RtFloat>, RtFloat const*>);
-  static_assert(std::is_constructible_v<gman::Vector<RtFloat>, RtFloat*>);
-  static_assert(std::is_constructible_v<gman::Point<RtFloat>, RtFloat const*>);
-  static_assert(std::is_constructible_v<gman::Point<RtFloat>, RtFloat*>);
-  static_assert(std::is_constructible_v<gman::HPoint<RtFloat>, RtFloat const*>);
-  static_assert(std::is_constructible_v<gman::HPoint<RtFloat>, RtFloat*>);
-  static_assert(std::is_constructible_v<gman::Vector4<RtFloat>, RtFloat const*>);
-  static_assert(std::is_constructible_v<gman::Vector4<RtFloat>, RtFloat*>);
-  static_assert(std::is_constructible_v<gman::Matrix4<RtFloat>, RtMatrix>);
-
-  static_assert(!std::is_constructible_v<gman::Vector<gman::PartnerReal>, RtFloat const*>);
-  static_assert(!std::is_constructible_v<gman::Vector<gman::PartnerReal>, RtFloat*>);
-  static_assert(!std::is_constructible_v<gman::Point<gman::PartnerReal>, RtFloat const*>);
-  static_assert(!std::is_constructible_v<gman::Point<gman::PartnerReal>, RtFloat*>);
-  static_assert(!std::is_constructible_v<gman::HPoint<gman::PartnerReal>, RtFloat const*>);
-  static_assert(!std::is_constructible_v<gman::HPoint<gman::PartnerReal>, RtFloat*>);
-  static_assert(!std::is_constructible_v<gman::Vector4<gman::PartnerReal>, RtFloat const*>);
-  static_assert(!std::is_constructible_v<gman::Vector4<gman::PartnerReal>, RtFloat*>);
-  static_assert(!std::is_constructible_v<gman::Matrix4<gman::PartnerReal>, RtMatrix>);
+  assertBridge<RtFloat>();
+  assertBridge<gman::PartnerReal>();
 
   const RtFloat parts[4] = {1, 2, 3, 4};
   const gman::Vector4<RtFloat> four(parts);

@@ -25,8 +25,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
  */
 
+#include <array>
 #include <cmath>
-#include <concepts>
 
 #include "gmanerror.h"
 #include "gmanmath.h"
@@ -39,15 +39,6 @@
 namespace gman {
 
 template <typename T> Matrix4<T>::Matrix4() { identity(); }
-
-template <typename T>
-Matrix4<T>::Matrix4(RtMatrix m)
-  requires std::same_as<T, RtFloat>
-{
-  for (int i = 0; i < 4; i++)
-    for (int j = 0; j < 4; j++)
-      mtrx[i][j] = m[i][j];
-}
 
 template <typename T> void Matrix4<T>::identity() {
   for (int i = 0; i < 4; i++)
@@ -365,31 +356,22 @@ template <typename T> Matrix4<T>& Matrix4<T>::operator+=(Matrix4 const& m) {
   return *this;
 }
 
-template <typename T>
-void Matrix4<T>::setBasis(RtBasis& b)
-  requires std::same_as<T, RtFloat>
-{
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      mtrx[i][j] = b[i][j];
-    }
-  }
-}
-
 template <typename T> Matrix4<T>& Matrix4<T>::assign(Matrix4 const& m) {
   *this = m;
   return *this;
 }
 
 GMANPoint transformPoint(GMANMatrix4 const& m, GMANPoint const& p) {
-  RtFloat src[3] = {p.getX(), p.getY(), p.getZ()};
-  RtFloat dest[3];
-  m.p3m(1, src, dest);
+  auto src = std::array{p.getX(), p.getY(), p.getZ()};
+  auto dest = src;
+  m.p3m(1, src.data(), dest.data());
   return GMANPoint(dest[0], dest[1], dest[2]);
 }
 
 GMANVector transformDirection(GMANMatrix4 const& m, GMANVector const& v) {
-  RtFloat const x = v.getX(), y = v.getY(), z = v.getZ();
+  const auto x = v.getX();
+  const auto y = v.getY();
+  const auto z = v.getZ();
   return GMANVector(x * m[0][0] + y * m[1][0] + z * m[2][0], x * m[0][1] + y * m[1][1] + z * m[2][1],
                     x * m[0][2] + y * m[1][2] + z * m[2][2]);
 }

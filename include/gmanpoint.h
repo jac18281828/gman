@@ -25,8 +25,8 @@
 
 #pragma once
 
-#include <concepts>
 #include <cstddef>
+#include <type_traits>
 
 #include "gman/export.h"
 #include "gmanmatrix4.h"
@@ -46,9 +46,9 @@ namespace gman {
 /*
  * RenderMan API Point
  *
- * A point in space over the real scalar T. GMANPoint names the RtFloat
- * instance, the only one built from a RenderMan array. Point<U> converts
- * explicitly to Point<T>.
+ * A point in space over the real scalar T. GMANPoint names the instance for
+ * the RenderMan scalar. A pointer to any arithmetic type builds a Point, and
+ * Point<U> converts explicitly to Point<T>.
  *
  */
 
@@ -65,9 +65,9 @@ public:
   //! Constructor
   Point(T xv = 0.0, T yv = 0.0, T zv = 0.0) : x(xv), y(yv), z(zv) {}
 
-  Point(RtFloat const* f)
-    requires std::same_as<T, RtFloat>
-      : x(f[X]), y(f[Y]), z(f[Z]) {}
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  explicit Point(U const* f) : x(static_cast<T>(f[X])), y(static_cast<T>(f[Y])), z(static_cast<T>(f[Z])) {}
 
   template <typename U>
   explicit Point(Point<U> const& p)

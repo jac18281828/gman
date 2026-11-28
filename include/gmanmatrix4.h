@@ -26,8 +26,8 @@
 
 #pragma once
 
-#include <concepts>
 #include <cstddef>
+#include <type_traits>
 
 #include "gman/export.h"
 #include "gmanreal.h"
@@ -45,17 +45,21 @@ using GMANVector = gman::Vector<RtFloat>;
 
 namespace gman {
 
-// A 4x4 matrix over the real scalar T. Only the RtFloat instance converts to
-// and from the RenderMan array types; Matrix4<U> converts explicitly to
-// Matrix4<T>.
+// A 4x4 matrix over the real scalar T. A 4x4 array of any arithmetic type builds
+// a Matrix4 or sets its basis, and Matrix4<U> converts explicitly to Matrix4<T>.
 template <typename T> class GMAN_EXPORT Matrix4 {
 private:
   T mtrx[4][4];
 
 public:
   Matrix4();
-  Matrix4(RtMatrix m)
-    requires std::same_as<T, RtFloat>;
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  explicit Matrix4(U const (*m)[4]) {
+    for (int i = 0; i < 4; i++)
+      for (int j = 0; j < 4; j++)
+        mtrx[i][j] = static_cast<T>(m[i][j]);
+  }
 
   template <typename U> explicit Matrix4(Matrix4<U> const& m) {
     for (int i = 0; i < 4; i++)
@@ -87,16 +91,24 @@ public:
   Matrix4 operator+(Matrix4 const& m) const;
   Matrix4& operator+=(Matrix4 const& m);
 
-  Matrix4& operator=(RtMatrix const& m)
-    requires std::same_as<T, RtFloat>;
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  Matrix4& operator=(U const (&m)[4][4]);
   Matrix4(Matrix4 const& m) = default;
 
   Matrix4& operator=(Matrix4 const& m);
 
   Matrix4& assign(Matrix4 const& m);
 
-  void setBasis(RtBasis& b)
-    requires std::same_as<T, RtFloat>;
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  void setBasis(U const (&b)[4][4]) {
+    for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+        mtrx[i][j] = static_cast<T>(b[i][j]);
+      }
+    }
+  }
 
   T* operator[](std::size_t i) { return mtrx[i]; }
 

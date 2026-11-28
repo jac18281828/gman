@@ -22,15 +22,14 @@
  * gman::Vector4<T> for RtFloat and gman::PartnerReal, one named check per
  * member and instance: constructors, copies and moves, w, the Vector members
  * it inherits, arithmetic over all four components, magnitude, normalize,
- * dot, the matrix product, the perspective division and, on the RtFloat
- * instance alone, the projective transform by an RtMatrix. A failure names
- * the member, the instance, the component, and the expected and actual
- * values. The default constructor's w is pinned by vector4default_pin_test.cpp.
+ * dot, the matrix product, the perspective division and the projective
+ * transform by a 4x4 array of either scalar. A failure names the member,
+ * the instance, the component, and the expected and actual values. The
+ * default constructor's w is pinned by vector4default_pin_test.cpp.
  */
 
 #include <numbers>
 #include <string>
-#include <type_traits>
 #include <utility>
 
 #include "check.h"
@@ -61,12 +60,16 @@ template <typename T> void testComponentConstructor() {
   expectExact(label<T>("Vector4(x, y, z, w)"), v, {1, 2, 3, 4});
 }
 
-template <typename T> void testPointerConstructor() {
-  if constexpr (std::is_same_v<T, RtFloat>) {
-    constexpr RtFloat parts[4] = {4, 5, 6, 7};
-    const auto v = gman::Vector4<T>(parts);
-    expectExact(label<T>("Vector4(RtFloat const*)"), v, {4, 5, 6, 7});
-  }
+template <typename T> void testPointerConstructorFromRtFloat() {
+  constexpr RtFloat parts[4] = {4.5, 5.25, 6.125, 7.0625};
+  const auto v = gman::Vector4<T>(parts);
+  expectExact(label<T>("Vector4(RtFloat const*)"), v, {4.5, 5.25, 6.125, 7.0625});
+}
+
+template <typename T> void testPointerConstructorFromPartnerReal() {
+  constexpr gman::PartnerReal parts[4] = {4.5, 5.25, 6.125, 7.0625};
+  const auto v = gman::Vector4<T>(parts);
+  expectExact(label<T>("Vector4(PartnerReal const*)"), v, {4.5, 5.25, 6.125, 7.0625});
 }
 
 template <typename T> void testHPointConstructor() {
@@ -303,21 +306,31 @@ template <typename T> void testConvertToHPoint() {
 }
 
 template <typename T> void testProjTransformPoint() {
-  if constexpr (std::is_same_v<T, RtFloat>) {
-    const auto matrix = sequentialMatrix<T>();
-    auto v = gman::Vector4<T>();
-    v.projTransform(gman::Point<T>(1, 2, 3), matrix.get());
-    expectExact(label<T>("projTransform(Point, RtMatrix)"), v, {18, 46, 74, 102});
-  }
+  const auto matrix = sequentialMatrix<T>();
+  auto v = gman::Vector4<T>();
+  v.projTransform(gman::Point<T>(1, 2, 3), matrix.get());
+  expectExact(label<T>("projTransform(Point, T[4][4])"), v, {18, 46, 74, 102});
+}
+
+template <typename T> void testProjTransformPointByTheOtherScalar() {
+  const auto matrix = sequentialMatrix<OtherInstance<T>>();
+  auto v = gman::Vector4<T>();
+  v.projTransform(gman::Point<T>(1, 2, 3), matrix.get());
+  expectExact(label<T>("projTransform(Point, U[4][4])"), v, {18, 46, 74, 102});
 }
 
 template <typename T> void testProjTransformVector() {
-  if constexpr (std::is_same_v<T, RtFloat>) {
-    const auto matrix = sequentialMatrix<T>();
-    auto v = gman::Vector4<T>();
-    v.projTransform(gman::Vector<T>(1, 2, 3), matrix.get());
-    expectExact(label<T>("projTransform(Vector, RtMatrix)"), v, {18, 46, 74, 102});
-  }
+  const auto matrix = sequentialMatrix<T>();
+  auto v = gman::Vector4<T>();
+  v.projTransform(gman::Vector<T>(1, 2, 3), matrix.get());
+  expectExact(label<T>("projTransform(Vector, T[4][4])"), v, {18, 46, 74, 102});
+}
+
+template <typename T> void testProjTransformVectorByTheOtherScalar() {
+  const auto matrix = sequentialMatrix<OtherInstance<T>>();
+  auto v = gman::Vector4<T>();
+  v.projTransform(gman::Vector<T>(1, 2, 3), matrix.get());
+  expectExact(label<T>("projTransform(Vector, U[4][4])"), v, {18, 46, 74, 102});
 }
 
 template <typename T> void testPerspectivePoint() {
@@ -344,7 +357,8 @@ template <typename T> void testPerspectiveRoundsAtItsOwnPrecision() {
 template <typename T> void runAll() {
   testDefaultConstructorZeroesTheVectorPart<T>();
   testComponentConstructor<T>();
-  testPointerConstructor<T>();
+  testPointerConstructorFromRtFloat<T>();
+  testPointerConstructorFromPartnerReal<T>();
   testHPointConstructor<T>();
   testConvertingConstructor<T>();
   testCopyConstruct<T>();
@@ -379,7 +393,9 @@ template <typename T> void runAll() {
   testMatrixMultiplyAssignTranslates<T>();
   testConvertToHPoint<T>();
   testProjTransformPoint<T>();
+  testProjTransformPointByTheOtherScalar<T>();
   testProjTransformVector<T>();
+  testProjTransformVectorByTheOtherScalar<T>();
   testPerspectivePoint<T>();
   testPerspectiveVector<T>();
   testPerspectiveRoundsAtItsOwnPrecision<T>();

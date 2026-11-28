@@ -26,8 +26,8 @@
 #pragma once
 
 #include <cmath>
-#include <concepts>
 #include <cstddef>
+#include <type_traits>
 
 #include "gman/export.h"
 #include "gmanmatrix4.h"
@@ -43,9 +43,10 @@ namespace gman {
  * A physical simulation vector, i.e., magnitude
  * and direction, not to be confused with the
  * stl "vector" template. It is a template over
- * the real scalar T; GMANVector names the RtFloat
- * instance, the only one built from a RenderMan
- * array. Vector<U> converts explicitly to Vector<T>.
+ * the real scalar T; GMANVector names the instance
+ * for the RenderMan scalar. A pointer to any
+ * arithmetic type builds a Vector, and Vector<U>
+ * converts explicitly to Vector<T>.
  *
  */
 
@@ -63,9 +64,9 @@ public:
 
   Vector(T xv, T yv, T zv) : x(xv), y(yv), z(zv) {}
 
-  Vector(RtFloat const* pts)
-    requires std::same_as<T, RtFloat>
-      : x(pts[X]), y(pts[Y]), z(pts[Z]) {}
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  explicit Vector(U const* pts) : x(static_cast<T>(pts[X])), y(static_cast<T>(pts[Y])), z(static_cast<T>(pts[Z])) {}
 
   template <typename U>
   explicit Vector(Vector<U> const& v)

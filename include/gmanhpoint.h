@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <concepts>
+#include <type_traits>
 
 #include "gman/export.h"
 #include "gmanmatrix4.h"
@@ -34,7 +34,7 @@
 
 namespace gman {
 
-// A homogeneous point over the real scalar T; GMANHPoint names the RtFloat instance.
+// A homogeneous point over the real scalar T; GMANHPoint names the instance for the RenderMan scalar.
 template <typename T> class GMAN_EXPORT HPoint : public Point<T> {
 protected:
   T w;
@@ -44,9 +44,9 @@ public:
 
   HPoint(T x, T y, T z, T wv) : Point<T>(x, y, z), w(wv) {}
 
-  HPoint(RtFloat const* f)
-    requires std::same_as<T, RtFloat>
-      : Point<T>(f[0], f[1], f[2]), w(f[3]) {}
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  explicit HPoint(U const* f) : Point<T>(f), w(static_cast<T>(f[3])) {}
 
   template <typename U> explicit HPoint(HPoint<U> const& p) : Point<T>(p), w(static_cast<T>(p.getW())) {}
 

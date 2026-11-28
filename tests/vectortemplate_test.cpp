@@ -28,7 +28,6 @@
 
 #include <numbers>
 #include <string>
-#include <type_traits>
 #include <utility>
 
 #include "check.h"
@@ -55,12 +54,16 @@ template <typename T> void testComponentConstructor() {
   expectExact(label<T>("Vector(x, y, z)"), v, {1, 2, 3});
 }
 
-template <typename T> void testPointerConstructor() {
-  if constexpr (std::is_same_v<T, RtFloat>) {
-    constexpr RtFloat parts[3] = {4, 5, 6};
-    const auto v = gman::Vector<T>(parts);
-    expectExact(label<T>("Vector(RtFloat const*)"), v, {4, 5, 6});
-  }
+template <typename T> void testPointerConstructorFromRtFloat() {
+  constexpr RtFloat parts[3] = {4.5, 5.25, 6.125};
+  const auto v = gman::Vector<T>(parts);
+  expectExact(label<T>("Vector(RtFloat const*)"), v, {4.5, 5.25, 6.125});
+}
+
+template <typename T> void testPointerConstructorFromPartnerReal() {
+  constexpr gman::PartnerReal parts[3] = {4.5, 5.25, 6.125};
+  const auto v = gman::Vector<T>(parts);
+  expectExact(label<T>("Vector(PartnerReal const*)"), v, {4.5, 5.25, 6.125});
 }
 
 template <typename T> void testConvertingConstructor() {
@@ -360,7 +363,8 @@ template <typename T> void testNormalizeLeavesATinyVector() {
 template <typename T> void runAll() {
   testDefaultConstructor<T>();
   testComponentConstructor<T>();
-  testPointerConstructor<T>();
+  testPointerConstructorFromRtFloat<T>();
+  testPointerConstructorFromPartnerReal<T>();
   testConvertingConstructor<T>();
   testPointConstructor<T>();
   testPointPairConstructor<T>();

@@ -33,7 +33,7 @@
 
 namespace gman {
 
-// A surface normal over the real scalar T; GMANNormal names the RtFloat instance.
+// A surface normal over the real scalar T; GMANNormal names the instance for the RenderMan scalar.
 template <typename T> class GMAN_EXPORT Normal : public Vector<T> {
 public:
   Normal();

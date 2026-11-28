@@ -30,7 +30,6 @@
  */
 
 #include <string>
-#include <type_traits>
 #include <utility>
 
 #include "check.h"
@@ -56,12 +55,16 @@ template <typename T> void testComponentConstructor() {
   expectExact(label<T>("HPoint(x, y, z, w)"), h, {1, 2, 3, 4});
 }
 
-template <typename T> void testPointerConstructor() {
-  if constexpr (std::is_same_v<T, RtFloat>) {
-    constexpr RtFloat parts[4] = {4, 5, 6, 7};
-    const auto h = gman::HPoint<T>(parts);
-    expectExact(label<T>("HPoint(RtFloat const*)"), h, {4, 5, 6, 7});
-  }
+template <typename T> void testPointerConstructorFromRtFloat() {
+  constexpr RtFloat parts[4] = {4.5, 5.25, 6.125, 7.0625};
+  const auto v = gman::HPoint<T>(parts);
+  expectExact(label<T>("HPoint(RtFloat const*)"), v, {4.5, 5.25, 6.125, 7.0625});
+}
+
+template <typename T> void testPointerConstructorFromPartnerReal() {
+  constexpr gman::PartnerReal parts[4] = {4.5, 5.25, 6.125, 7.0625};
+  const auto v = gman::HPoint<T>(parts);
+  expectExact(label<T>("HPoint(PartnerReal const*)"), v, {4.5, 5.25, 6.125, 7.0625});
 }
 
 template <typename T> void testConvertingConstructor() {
@@ -204,7 +207,8 @@ template <typename T> void testMultiplyScalarLeavesItsOperand() {
 template <typename T> void runAll() {
   testDefaultConstructor<T>();
   testComponentConstructor<T>();
-  testPointerConstructor<T>();
+  testPointerConstructorFromRtFloat<T>();
+  testPointerConstructorFromPartnerReal<T>();
   testConvertingConstructor<T>();
   testCopyConstruct<T>();
   testCopyAssign<T>();

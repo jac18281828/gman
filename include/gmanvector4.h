@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include <concepts>
+#include <type_traits>
 
 #include <math.h>
 
@@ -45,9 +45,9 @@ namespace gman {
 /*
  * RenderMan API Vector4
  *
- * A four-component vector over the real scalar T; GMANVector4 names the RtFloat
- * instance, the only one built from a RenderMan array or projected by a
- * RenderMan matrix.
+ * A four-component vector over the real scalar T; GMANVector4 names the instance
+ * for the RenderMan scalar. A pointer to any arithmetic type builds a Vector4,
+ * and a 4x4 array of any arithmetic type projects a point or a vector into one.
  */
 
 template <typename T> class GMAN_EXPORT Vector4 : public Vector<T> {
@@ -64,12 +64,9 @@ public:
 
   Vector4(T xval, T yval, T zval, T wval) : Vector<T>(xval, yval, zval), w(wval) {};
 
-  Vector4(RtFloat const* pts)
-    requires std::same_as<T, RtFloat>
-      : Vector<T>(pts) {
-    // assume we get 4 pts
-    w = pts[3];
-  }
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  explicit Vector4(U const* pts) : Vector<T>(pts), w(static_cast<T>(pts[3])) {}
 
   Vector4(HPoint<T> const& p) : Vector<T>(p), w(p.getW()) {}
 
@@ -212,25 +209,25 @@ public:
   }
 
   // premultiply point by projective matrix
-  void projTransform(Point<T> const& p, RtMatrix const& ptm)
-    requires std::same_as<T, RtFloat>
-  {
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  void projTransform(Point<T> const& p, U const (&ptm)[4][4]) {
     Vector<T> v(p);
 
     projTransform(v, ptm);
   }
 
   // premultiply vector by projective matrix
-  void projTransform(Vector<T> const& p, RtMatrix const& ptm)
-    requires std::same_as<T, RtFloat>
-  {
-    this->x = (RtFloat)(ptm[0][0] * p.getX() + ptm[0][1] * p.getY() + ptm[0][2] * p.getZ() + ptm[0][3]);
+  template <typename U>
+    requires std::is_arithmetic_v<U>
+  void projTransform(Vector<T> const& p, U const (&ptm)[4][4]) {
+    this->x = static_cast<T>(ptm[0][0] * p.getX() + ptm[0][1] * p.getY() + ptm[0][2] * p.getZ() + ptm[0][3]);
 
-    this->y = (RtFloat)(ptm[1][0] * p.getX() + ptm[1][1] * p.getY() + ptm[1][2] * p.getZ() + ptm[1][3]);
+    this->y = static_cast<T>(ptm[1][0] * p.getX() + ptm[1][1] * p.getY() + ptm[1][2] * p.getZ() + ptm[1][3]);
 
-    this->z = (RtFloat)(ptm[2][0] * p.getX() + ptm[2][1] * p.getY() + ptm[2][2] * p.getZ() + ptm[2][3]);
+    this->z = static_cast<T>(ptm[2][0] * p.getX() + ptm[2][1] * p.getY() + ptm[2][2] * p.getZ() + ptm[2][3]);
 
-    w = (RtFloat)(ptm[3][0] * p.getX() + ptm[3][1] * p.getY() + ptm[3][2] * p.getZ() + ptm[3][3]);
+    w = static_cast<T>(ptm[3][0] * p.getX() + ptm[3][1] * p.getY() + ptm[3][2] * p.getZ() + ptm[3][3]);
   }
 
   // perform perspective division on point
