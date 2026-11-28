@@ -20,7 +20,7 @@
 
 /*
  * gman::Normal<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: its own constructors, copies and moves, and the
+ * member and instance: its own constructors, copies and copies through std::move, and the
  * Vector members it inherits: accessors, indexing, arithmetic, dot, cross,
  * magnitude and normalize. A failure names the member, the instance, the
  * component, and the expected and actual values.
@@ -81,22 +81,22 @@ template <typename T> void testCopyConstruct() {
 template <typename T> void testCopyAssign() {
   const auto source = gman::Normal<T>(1, 2, 3);
   auto target = gman::Normal<T>(9, 9, 9);
-  auto& result = (target = source);
+  auto const& result = (target = source);
   expectExact(label<T>("operator=(Normal const&)"), target, {1, 2, 3});
   expectBool(label<T>("operator=(Normal const&) returns *this"), &result == &target, true);
 }
 
-template <typename T> void testMoveConstruct() {
+template <typename T> void testCopyConstructViaStdMove() {
   auto source = gman::Normal<T>(1, 2, 3);
   const auto moved = std::move(source);
-  expectExact(label<T>("Normal(Normal&&)"), moved, {1, 2, 3});
+  expectExact(label<T>("Normal(Normal const&) via std::move"), moved, {1, 2, 3});
 }
 
-template <typename T> void testMoveAssign() {
+template <typename T> void testCopyAssignViaStdMove() {
   auto source = gman::Normal<T>(1, 2, 3);
   auto target = gman::Normal<T>(9, 9, 9);
   target = std::move(source);
-  expectExact(label<T>("operator=(Normal&&)"), target, {1, 2, 3});
+  expectExact(label<T>("operator=(Normal const&) via std::move"), target, {1, 2, 3});
 }
 
 template <typename T> void testGetters() {
@@ -211,8 +211,8 @@ template <typename T> void runAll() {
   testConvertingConstructor<T>();
   testCopyConstruct<T>();
   testCopyAssign<T>();
-  testMoveConstruct<T>();
-  testMoveAssign<T>();
+  testCopyConstructViaStdMove<T>();
+  testCopyAssignViaStdMove<T>();
   testGetters<T>();
   testSetters<T>();
   testIndexRead<T>();

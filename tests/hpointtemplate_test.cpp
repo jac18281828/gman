@@ -20,7 +20,7 @@
 
 /*
  * gman::HPoint<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and moves, w, the Point members
+ * member and instance: constructors, copies and copies through std::move, w, the Point members
  * it inherits, wToOne and the matrix product. A failure names the member,
  * the instance, the component, and the expected and actual values. The sum
  * and the scaling, and their compound forms, add to a temporary rather than
@@ -85,22 +85,22 @@ template <typename T> void testCopyConstruct() {
 template <typename T> void testCopyAssign() {
   const auto source = gman::HPoint<T>(1, 2, 3, 4);
   auto target = gman::HPoint<T>(9, 9, 9, 9);
-  auto& result = (target = source);
+  auto const& result = (target = source);
   expectExact(label<T>("operator=(HPoint const&)"), target, {1, 2, 3, 4});
   expectBool(label<T>("operator=(HPoint const&) returns *this"), &result == &target, true);
 }
 
-template <typename T> void testMoveConstruct() {
+template <typename T> void testCopyConstructViaStdMove() {
   auto source = gman::HPoint<T>(1, 2, 3, 4);
   const auto moved = std::move(source);
-  expectExact(label<T>("HPoint(HPoint&&)"), moved, {1, 2, 3, 4});
+  expectExact(label<T>("HPoint(HPoint const&) via std::move"), moved, {1, 2, 3, 4});
 }
 
-template <typename T> void testMoveAssign() {
+template <typename T> void testCopyAssignViaStdMove() {
   auto source = gman::HPoint<T>(1, 2, 3, 4);
   auto target = gman::HPoint<T>(9, 9, 9, 9);
   target = std::move(source);
-  expectExact(label<T>("operator=(HPoint&&)"), target, {1, 2, 3, 4});
+  expectExact(label<T>("operator=(HPoint const&) via std::move"), target, {1, 2, 3, 4});
 }
 
 template <typename T> void testGetters() {
@@ -153,7 +153,7 @@ template <typename T> void testWToOneRoundsAtItsOwnPrecision() {
 
 template <typename T> void testMatrixMultiplyAssign() {
   auto h = gman::HPoint<T>(1, 2, 3, 4);
-  auto& result = (h *= sequentialMatrix<T>());
+  auto const& result = (h *= sequentialMatrix<T>());
   expectExact(label<T>("operator*=(Matrix4) applies the matrix to a row"), h, {90, 100, 110, 120});
   expectBool(label<T>("operator*=(Matrix4) returns *this"), &result == &h, true);
 }
@@ -180,7 +180,7 @@ template <typename T> void testMatrixMultiplyLeavesItsOperand() {
 
 template <typename T> void testAddAssignReturnsSelf() {
   auto h = gman::HPoint<T>(1, 2, 3, 1);
-  auto& result = (h += gman::HPoint<T>(10, 20, 40, 1));
+  auto const& result = (h += gman::HPoint<T>(10, 20, 40, 1));
   expectBool(label<T>("operator+=(HPoint) returns *this"), &result == &h, true);
 }
 
@@ -194,7 +194,7 @@ template <typename T> void testAddLeavesItsOperands() {
 
 template <typename T> void testMultiplyAssignScalarReturnsSelf() {
   auto h = gman::HPoint<T>(1, 2, 3, 1);
-  auto& result = (h *= T(4));
+  auto const& result = (h *= T(4));
   expectBool(label<T>("operator*=(T) returns *this"), &result == &h, true);
 }
 
@@ -246,8 +246,8 @@ template <typename T> void runAll() {
   testConvertingConstructor<T>();
   testCopyConstruct<T>();
   testCopyAssign<T>();
-  testMoveConstruct<T>();
-  testMoveAssign<T>();
+  testCopyConstructViaStdMove<T>();
+  testCopyAssignViaStdMove<T>();
   testGetters<T>();
   testSetters<T>();
   testIndexRead<T>();

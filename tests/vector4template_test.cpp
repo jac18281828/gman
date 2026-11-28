@@ -20,7 +20,7 @@
 
 /*
  * gman::Vector4<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and moves, w, the Vector members
+ * member and instance: constructors, copies and copies through std::move, w, the Vector members
  * it inherits, arithmetic over all four components, magnitude, normalize,
  * dot, the matrix product, the perspective division and the projective
  * transform by a 4x4 array of either scalar. A failure names the member,
@@ -95,22 +95,22 @@ template <typename T> void testCopyConstruct() {
 template <typename T> void testCopyAssign() {
   const auto source = gman::Vector4<T>(1, 2, 3, 4);
   auto target = gman::Vector4<T>(9, 9, 9, 9);
-  auto& result = (target = source);
+  auto const& result = (target = source);
   expectExact(label<T>("operator=(Vector4 const&)"), target, {1, 2, 3, 4});
   expectBool(label<T>("operator=(Vector4 const&) returns *this"), &result == &target, true);
 }
 
-template <typename T> void testMoveConstruct() {
+template <typename T> void testCopyConstructViaStdMove() {
   auto source = gman::Vector4<T>(1, 2, 3, 4);
   const auto moved = std::move(source);
-  expectExact(label<T>("Vector4(Vector4&&)"), moved, {1, 2, 3, 4});
+  expectExact(label<T>("Vector4(Vector4 const&) via std::move"), moved, {1, 2, 3, 4});
 }
 
-template <typename T> void testMoveAssign() {
+template <typename T> void testCopyAssignViaStdMove() {
   auto source = gman::Vector4<T>(1, 2, 3, 4);
   auto target = gman::Vector4<T>(9, 9, 9, 9);
   target = std::move(source);
-  expectExact(label<T>("operator=(Vector4&&)"), target, {1, 2, 3, 4});
+  expectExact(label<T>("operator=(Vector4 const&) via std::move"), target, {1, 2, 3, 4});
 }
 
 template <typename T> void testGetters() {
@@ -157,14 +157,14 @@ template <typename T> void testIndexWrite() {
 
 template <typename T> void testAssignScalar() {
   auto v = gman::Vector4<T>(1, 2, 3, 4);
-  auto& result = (v = T(7));
+  auto const& result = (v = T(7));
   expectExact(label<T>("operator=(T) sets all four components"), v, {7, 7, 7, 7});
   expectBool(label<T>("operator=(T) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testAssignVectorSetsWToOne() {
   auto v = gman::Vector4<T>(9, 9, 9, 9);
-  auto& result = (v = gman::Vector<T>(1, 2, 3));
+  auto const& result = (v = gman::Vector<T>(1, 2, 3));
   expectExact(label<T>("operator=(Vector const&) sets w to 1"), v, {1, 2, 3, 1});
   expectBool(label<T>("operator=(Vector const&) returns *this"), &result == &v, true);
 }
@@ -181,28 +181,28 @@ template <typename T> void testSubtraction() {
 
 template <typename T> void testSubtractAssign() {
   auto v = gman::Vector4<T>(10, 20, 40, 80);
-  auto& result = (v -= gman::Vector4<T>(1, 2, 3, 4));
+  auto const& result = (v -= gman::Vector4<T>(1, 2, 3, 4));
   expectExact(label<T>("operator-=(Vector4)"), v, {9, 18, 37, 76});
   expectBool(label<T>("operator-=(Vector4) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testMultiplyAssign() {
   auto v = gman::Vector4<T>(1, 2, 3, 4);
-  auto& result = (v *= gman::Vector4<T>(5, 6, 7, 8));
+  auto const& result = (v *= gman::Vector4<T>(5, 6, 7, 8));
   expectExact(label<T>("operator*=(Vector4) is componentwise"), v, {5, 12, 21, 32});
   expectBool(label<T>("operator*=(Vector4) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testMultiplyAssignScalar() {
   auto v = gman::Vector4<T>(1, 2, 3, 4);
-  auto& result = (v *= T(2));
+  auto const& result = (v *= T(2));
   expectExact(label<T>("operator*=(T)"), v, {2, 4, 6, 8});
   expectBool(label<T>("operator*=(T) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testDivideAssignScalar() {
   auto v = gman::Vector4<T>(2, 4, 6, 8);
-  auto& result = (v /= T(2));
+  auto const& result = (v /= T(2));
   expectExact(label<T>("operator/=(T)"), v, {1, 2, 3, 4});
   expectBool(label<T>("operator/=(T) returns *this"), &result == &v, true);
 }
@@ -248,7 +248,7 @@ template <typename T> void testNormalize() {
 
 template <typename T> void testNormalizeReturnsSelf() {
   auto v = gman::Vector4<T>(1, 2, 2, 4);
-  auto& result = v.normalize();
+  auto const& result = v.normalize();
   expectBool(label<T>("normalize returns *this"), &result == &v, true);
 }
 
@@ -286,7 +286,7 @@ template <typename T> void testDotRoundsAtItsOwnPrecision() {
 
 template <typename T> void testMatrixMultiplyAssign() {
   auto v = gman::Vector4<T>(1, 2, 3, 4);
-  auto& result = (v *= sequentialMatrix<T>());
+  auto const& result = (v *= sequentialMatrix<T>());
   expectExact(label<T>("operator*=(Matrix4) applies the matrix to a row"), v, {90, 100, 110, 120});
   expectBool(label<T>("operator*=(Matrix4) returns *this"), &result == &v, true);
 }
@@ -419,8 +419,8 @@ template <typename T> void runAll() {
   testConvertingConstructor<T>();
   testCopyConstruct<T>();
   testCopyAssign<T>();
-  testMoveConstruct<T>();
-  testMoveAssign<T>();
+  testCopyConstructViaStdMove<T>();
+  testCopyAssignViaStdMove<T>();
   testGetters<T>();
   testSetters<T>();
   testIndexRead<T>();

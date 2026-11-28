@@ -20,7 +20,7 @@
 
 /*
  * gman::Matrix4<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and moves, identity, concat,
+ * member and instance: constructors, copies and copies through std::move, identity, concat,
  * the transform builders, determinant and invert, p3m and p4m, the scalar
  * and matrix operators, setBasis, assign, indexing and get(). A failure
  * names the member, the instance, the matrix entry, and the expected and
@@ -54,7 +54,7 @@ template <typename T> std::string label(std::string const& name) { return member
 template <typename T> std::vector<T> identityEntries() { return {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}; }
 
 template <typename T> gman::Matrix4<T> matrixOf(std::vector<T> const& entries) {
-  gman::Matrix4<T> m;
+  auto m = gman::Matrix4<T>();
   for (std::size_t i = 0; i < 4; ++i) {
     for (std::size_t j = 0; j < 4; ++j) {
       m[i][j] = entries[4 * i + j];
@@ -96,7 +96,7 @@ template <typename T> void testArrayConstructorFromPartnerReal() {
 template <typename T> void testConvertingConstructor() {
   using U = OtherInstance<T>;
   auto source = gman::Matrix4<U>();
-  std::vector<T> expected;
+  auto expected = std::vector<T>();
   for (std::size_t i = 0; i < 4; ++i) {
     for (std::size_t j = 0; j < 4; ++j) {
       source[i][j] = static_cast<U>(4 * i + j + 1) / 3;
@@ -123,22 +123,24 @@ template <typename T> void testCopyConstructIsIndependent() {
 template <typename T> void testCopyAssign() {
   const auto source = sequentialMatrix<T>();
   auto target = gman::Matrix4<T>();
-  auto& result = (target = source);
+  auto const& result = (target = source);
   expectExact(label<T>("operator=(Matrix4 const&)"), target, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
   expectBool(label<T>("operator=(Matrix4 const&) returns *this"), &result == &target, true);
 }
 
-template <typename T> void testMoveConstruct() {
+template <typename T> void testCopyConstructViaStdMove() {
   auto source = sequentialMatrix<T>();
   const auto moved = std::move(source);
-  expectExact(label<T>("Matrix4(Matrix4&&)"), moved, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+  expectExact(label<T>("Matrix4(Matrix4 const&) via std::move"), moved,
+              {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
 }
 
-template <typename T> void testMoveAssign() {
+template <typename T> void testCopyAssignViaStdMove() {
   auto source = sequentialMatrix<T>();
   auto target = gman::Matrix4<T>();
   target = std::move(source);
-  expectExact(label<T>("operator=(Matrix4&&)"), target, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+  expectExact(label<T>("operator=(Matrix4 const&) via std::move"), target,
+              {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
 }
 
 template <typename T> void testIdentity() {
@@ -299,7 +301,7 @@ template <typename T> void testInvertRoundsAtItsOwnPrecision() {
   auto m = oddDeterminantMatrix<T>();
   m.invert();
   constexpr T numerators[16] = {-10, 3, 9, 3, 10, 4, -9, -3, -3, -4, 2, 3, 2, -2, 1, -2};
-  std::vector<T> expected;
+  auto expected = std::vector<T>();
   for (const auto numerator : numerators) {
     expected.push_back(numerator / 7);
   }
@@ -324,7 +326,7 @@ template <typename T> void testMultiplyScalarLeavesItsOperand() {
 
 template <typename T> void testMultiplyAssignScalar() {
   auto m = sequentialMatrix<T>();
-  auto& result = (m *= T(2));
+  auto const& result = (m *= T(2));
   expectExact(label<T>("operator*=(T)"), m, {2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32});
   expectBool(label<T>("operator*=(T) returns *this"), &result == &m, true);
 }
@@ -353,7 +355,7 @@ template <typename T> void testMultiplyMatrixLeavesItsOperands() {
 
 template <typename T> void testMultiplyAssignMatrix() {
   auto m = sequentialMatrix<T>();
-  auto& result = (m *= denseMatrix<T>());
+  auto const& result = (m *= denseMatrix<T>());
   expectExact(label<T>("operator*=(Matrix4)"), m, {8, 9, 21, 28, 24, 25, 49, 60, 40, 41, 77, 92, 56, 57, 105, 124});
   expectBool(label<T>("operator*=(Matrix4) returns *this"), &result == &m, true);
 }
@@ -372,14 +374,14 @@ template <typename T> void testAddition() {
 
 template <typename T> void testAddAssign() {
   auto m = sequentialMatrix<T>();
-  auto& result = (m += denseMatrix<T>());
+  auto const& result = (m += denseMatrix<T>());
   expectExact(label<T>("operator+=(Matrix4)"), m, {3, 2, 4, 4, 6, 9, 7, 9, 9, 11, 15, 14, 14, 14, 17, 21});
   expectBool(label<T>("operator+=(Matrix4) returns *this"), &result == &m, true);
 }
 
 template <typename T> void testAssign() {
   auto target = gman::Matrix4<T>();
-  auto& result = target.assign(sequentialMatrix<T>());
+  auto const& result = target.assign(sequentialMatrix<T>());
   expectExact(label<T>("assign"), target, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
   expectBool(label<T>("assign returns *this"), &result == &target, true);
 }
@@ -582,8 +584,8 @@ template <typename T> void runAll() {
   testCopyConstruct<T>();
   testCopyConstructIsIndependent<T>();
   testCopyAssign<T>();
-  testMoveConstruct<T>();
-  testMoveAssign<T>();
+  testCopyConstructViaStdMove<T>();
+  testCopyAssignViaStdMove<T>();
   testIdentity<T>();
   testConcatAppliesTheArgumentAfterTheReceiver<T>();
   testConcatTheOtherWay<T>();

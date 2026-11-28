@@ -20,7 +20,7 @@
 
 /*
  * gman::Vector<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and moves, accessors, indexing,
+ * member and instance: constructors, copies and copies through std::move, accessors, indexing,
  * every arithmetic operator, dot, cross, magnitude and normalize. A failure
  * names the member, the instance, the component, and the expected and actual
  * values. Vector::operator< is not tested: its contract awaits a ruling.
@@ -100,22 +100,22 @@ template <typename T> void testCopyConstructIsIndependent() {
 template <typename T> void testCopyAssign() {
   const auto source = gman::Vector<T>(1, 2, 3);
   auto target = gman::Vector<T>(9, 9, 9);
-  auto& result = (target = source);
+  auto const& result = (target = source);
   expectExact(label<T>("operator=(Vector const&)"), target, {1, 2, 3});
   expectBool(label<T>("operator=(Vector const&) returns *this"), &result == &target, true);
 }
 
-template <typename T> void testMoveConstruct() {
+template <typename T> void testCopyConstructViaStdMove() {
   auto source = gman::Vector<T>(1, 2, 3);
   const auto moved = std::move(source);
-  expectExact(label<T>("Vector(Vector&&)"), moved, {1, 2, 3});
+  expectExact(label<T>("Vector(Vector const&) via std::move"), moved, {1, 2, 3});
 }
 
-template <typename T> void testMoveAssign() {
+template <typename T> void testCopyAssignViaStdMove() {
   auto source = gman::Vector<T>(1, 2, 3);
   auto target = gman::Vector<T>(9, 9, 9);
   target = std::move(source);
-  expectExact(label<T>("operator=(Vector&&)"), target, {1, 2, 3});
+  expectExact(label<T>("operator=(Vector const&) via std::move"), target, {1, 2, 3});
 }
 
 template <typename T> void testGetters() {
@@ -177,14 +177,14 @@ template <typename T> void testConvertToPoint() {
 
 template <typename T> void testAssignPoint() {
   auto v = gman::Vector<T>(9, 9, 9);
-  auto& result = (v = gman::Point<T>(1, 2, 3));
+  auto const& result = (v = gman::Point<T>(1, 2, 3));
   expectExact(label<T>("operator=(Point const&)"), v, {1, 2, 3});
   expectBool(label<T>("operator=(Point const&) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testAssignScalar() {
   auto v = gman::Vector<T>(1, 2, 3);
-  auto& result = (v = T(7));
+  auto const& result = (v = T(7));
   expectExact(label<T>("operator=(T)"), v, {7, 7, 7});
   expectBool(label<T>("operator=(T) returns *this"), &result == &v, true);
 }
@@ -231,63 +231,63 @@ template <typename T> void testDivideScalarRoundsAtItsOwnPrecision() {
 
 template <typename T> void testAddAssign() {
   auto v = gman::Vector<T>(1, 2, 3);
-  auto& result = (v += gman::Vector<T>(10, 20, 40));
+  auto const& result = (v += gman::Vector<T>(10, 20, 40));
   expectExact(label<T>("operator+=(Vector)"), v, {11, 22, 43});
   expectBool(label<T>("operator+=(Vector) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testSubtractAssign() {
   auto v = gman::Vector<T>(10, 20, 40);
-  auto& result = (v -= gman::Vector<T>(1, 2, 3));
+  auto const& result = (v -= gman::Vector<T>(1, 2, 3));
   expectExact(label<T>("operator-=(Vector)"), v, {9, 18, 37});
   expectBool(label<T>("operator-=(Vector) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testMultiplyAssign() {
   auto v = gman::Vector<T>(2, 4, 8);
-  auto& result = (v *= gman::Vector<T>(3, 5, 7));
+  auto const& result = (v *= gman::Vector<T>(3, 5, 7));
   expectExact(label<T>("operator*=(Vector) is componentwise"), v, {6, 20, 56});
   expectBool(label<T>("operator*=(Vector) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testDivideAssign() {
   auto v = gman::Vector<T>(6, 20, 56);
-  auto& result = (v /= gman::Vector<T>(3, 5, 7));
+  auto const& result = (v /= gman::Vector<T>(3, 5, 7));
   expectExact(label<T>("operator/=(Vector) is componentwise"), v, {2, 4, 8});
   expectBool(label<T>("operator/=(Vector) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testAddAssignScalar() {
   auto v = gman::Vector<T>(1, 2, 3);
-  auto& result = (v += T(10));
+  auto const& result = (v += T(10));
   expectExact(label<T>("operator+=(T)"), v, {11, 12, 13});
   expectBool(label<T>("operator+=(T) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testSubtractAssignScalar() {
   auto v = gman::Vector<T>(11, 12, 13);
-  auto& result = (v -= T(10));
+  auto const& result = (v -= T(10));
   expectExact(label<T>("operator-=(T)"), v, {1, 2, 3});
   expectBool(label<T>("operator-=(T) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testMultiplyAssignScalar() {
   auto v = gman::Vector<T>(1, 2, 3);
-  auto& result = (v *= T(4));
+  auto const& result = (v *= T(4));
   expectExact(label<T>("operator*=(T)"), v, {4, 8, 12});
   expectBool(label<T>("operator*=(T) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testDivideAssignScalar() {
   auto v = gman::Vector<T>(1, 2, 3);
-  auto& result = (v /= T(2));
+  auto const& result = (v /= T(2));
   expectExact(label<T>("operator/=(T)"), v, {T(1) / 2, 1, T(3) / 2});
   expectBool(label<T>("operator/=(T) returns *this"), &result == &v, true);
 }
 
 template <typename T> void testMatrixMultiplyAssign() {
   auto v = gman::Vector<T>(1, 2, 3);
-  auto& result = (v *= sequentialMatrix<T>());
+  auto const& result = (v *= sequentialMatrix<T>());
   expectExact(label<T>("operator*=(Matrix4) applies the matrix to a column"), v, {18, 46, 74});
   expectBool(label<T>("operator*=(Matrix4) returns *this"), &result == &v, true);
 }
@@ -337,7 +337,7 @@ template <typename T> void testNormalize() {
 
 template <typename T> void testNormalizeReturnsSelf() {
   auto v = gman::Vector<T>(0, 3, 4);
-  auto& result = v.normalize();
+  auto const& result = v.normalize();
   expectBool(label<T>("normalize returns *this"), &result == &v, true);
 }
 
@@ -463,8 +463,8 @@ template <typename T> void runAll() {
   testCopyConstruct<T>();
   testCopyConstructIsIndependent<T>();
   testCopyAssign<T>();
-  testMoveConstruct<T>();
-  testMoveAssign<T>();
+  testCopyConstructViaStdMove<T>();
+  testCopyAssignViaStdMove<T>();
   testGetters<T>();
   testSetX<T>();
   testSetY<T>();

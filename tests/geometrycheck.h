@@ -84,7 +84,7 @@ template <typename T> std::vector<T> partsOf(gman::Vector4<T> const& v) {
 }
 
 template <typename T> std::vector<T> partsOf(gman::Matrix4<T> const& m) {
-  std::vector<T> all;
+  auto all = std::vector<T>();
   for (std::size_t i = 0; i < 4; ++i) {
     for (std::size_t j = 0; j < 4; ++j) {
       all.push_back(m[i][j]);
@@ -96,7 +96,7 @@ template <typename T> std::vector<T> partsOf(gman::Matrix4<T> const& m) {
 template <typename T> using OtherInstance = std::conditional_t<std::is_same_v<T, RtFloat>, gman::PartnerReal, RtFloat>;
 
 template <typename T> gman::Matrix4<T> sequentialMatrix() {
-  gman::Matrix4<T> m;
+  auto m = gman::Matrix4<T>();
   for (std::size_t i = 0; i < 4; ++i) {
     for (std::size_t j = 0; j < 4; ++j) {
       m[i][j] = static_cast<T>(4 * i + j + 1);
@@ -130,7 +130,7 @@ template <typename T> gman::Matrix4<T> rowWitnessMatrix() {
 template <typename T> std::vector<T> partsOf(std::vector<T> const& values) { return values; }
 
 template <typename T> std::vector<T> partsOf(T const (&m)[4][4]) {
-  std::vector<T> all;
+  auto all = std::vector<T>();
   for (std::size_t i = 0; i < 4; ++i) {
     for (std::size_t j = 0; j < 4; ++j) {
       all.push_back(m[i][j]);
@@ -183,7 +183,7 @@ inline void expectBool(std::string const& what, bool got, bool want) {
 }
 
 template <typename T> std::string listOf(std::vector<T> const& values) {
-  std::string joined;
+  auto joined = std::string();
   for (std::size_t i = 0; i < values.size(); ++i) {
     joined += std::format("{}{}", i == 0 ? "" : ", ", values[i]);
   }
