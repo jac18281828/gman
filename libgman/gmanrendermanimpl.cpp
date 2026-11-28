@@ -74,6 +74,7 @@
 #include "gmanvector.h"
 #include "gmanviewingsystem.h"
 #include "gmanviewingsysteminputs.h"
+#include "gmanworld.h"
 #include "ri.h"
 
 namespace {

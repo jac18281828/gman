@@ -41,7 +41,7 @@
  *
  * A world is open when constructed and accepts add. freeze() closes it for
  * good: add then throws GMANError RIE_ILLSTATE, and a caller wanting an open
- * world assigns a new GMANWorld. A world moves and does not copy.
+ * world assigns a fresh GMANWorld. A world moves and does not copy.
  *
  * Iteration needs no freeze. begin() and end() are const, and the iterators
  * hold no state in the world, so any number of walks run at once:
