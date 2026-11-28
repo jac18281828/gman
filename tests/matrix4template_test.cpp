@@ -171,7 +171,7 @@ template <typename T> void testPersp() {
 template <typename T> void testPerspRoundsAtItsOwnPrecision() {
   auto m = gman::Matrix4<T>();
   m.persp(60);
-  const auto t = std::numbers::inv_sqrt3_v<T>;
+  constexpr T t = std::numbers::inv_sqrt3_v<T>;
   expectClose(label<T>("persp of 60 degrees"), m, {1, 0, 0, t, 0, 1, 0, -t, 0, 0, 1, t, 0, 0, 0, 0}, 2);
 }
 
@@ -218,7 +218,7 @@ template <typename T> void testSkewRoundsAtItsOwnPrecision() {
   auto b = gman::Vector<T>(1, 0, 0);
   auto m = gman::Matrix4<T>();
   m.skew(30, a, b);
-  const auto t = std::numbers::inv_sqrt3_v<T>;
+  constexpr T t = std::numbers::inv_sqrt3_v<T>;
   expectClose(label<T>("skew of 30 degrees"), m, {1, 0, 0, 0, t, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, 8);
 }
 
@@ -238,7 +238,7 @@ template <typename T> void testPrjPersp() {
 template <typename T> void testPrjPerspRoundsAtItsOwnPrecision() {
   auto m = gman::Matrix4<T>();
   m.prjPersp(60, 1, 4);
-  const auto s = std::numbers::sqrt3_v<T>;
+  constexpr T s = std::numbers::sqrt3_v<T>;
   expectClose(label<T>("prjPersp of 60 degrees from 1 to 4"), m,
               {s, 0, 0, 0, 0, s, 0, 0, 0, 0, T(5) / 3, -T(8) / 3, 0, 0, 1, 0}, 4);
 }
@@ -293,7 +293,7 @@ template <typename T> void testInvertWithAPowerOfTwoDeterminant() {
 template <typename T> void testInvertRoundsAtItsOwnPrecision() {
   auto m = oddDeterminantMatrix<T>();
   m.invert();
-  const T numerators[16] = {-10, 3, 9, 3, 10, 4, -9, -3, -3, -4, 2, 3, 2, -2, 1, -2};
+  constexpr T numerators[16] = {-10, 3, 9, 3, 10, 4, -9, -3, -3, -4, 2, 3, 2, -2, 1, -2};
   std::vector<T> expected;
   for (const auto numerator : numerators) {
     expected.push_back(numerator / 7);

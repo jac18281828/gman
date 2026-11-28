@@ -193,7 +193,7 @@ template <typename T> void testNormalize() {
 template <typename T> void testNormalizeRoundsAtItsOwnPrecision() {
   auto n = gman::Normal<T>(1, 1, 1);
   n.normalize();
-  const auto unit = std::numbers::inv_sqrt3_v<T>;
+  constexpr T unit = std::numbers::inv_sqrt3_v<T>;
   expectClose(label<T>("normalize of (1, 1, 1)"), n, {unit, unit, unit}, 4);
 }
 

@@ -57,7 +57,7 @@ template <typename T> void testComponentConstructor() {
 
 template <typename T> void testPointerConstructor() {
   if constexpr (std::is_same_v<T, RtFloat>) {
-    const RtFloat parts[3] = {4, 5, 6};
+    constexpr RtFloat parts[3] = {4, 5, 6};
     const auto v = gman::Vector<T>(parts);
     expectExact(label<T>("Vector(RtFloat const*)"), v, {4, 5, 6});
   }
@@ -295,13 +295,13 @@ template <typename T> void testDot() {
 }
 
 template <typename T> void testDotRoundsAtItsOwnPrecision() {
-  const auto ax = T(1) / 3;
-  const auto ay = T(1) / 7;
-  const auto az = T(1) / 11;
-  const auto bx = T(1) / 5;
-  const auto by = T(1) / 13;
-  const auto bz = T(1) / 17;
-  const auto expected = ax * bx + ay * by + az * bz;
+  constexpr T ax = T(1) / 3;
+  constexpr T ay = T(1) / 7;
+  constexpr T az = T(1) / 11;
+  constexpr T bx = T(1) / 5;
+  constexpr T by = T(1) / 13;
+  constexpr T bz = T(1) / 17;
+  constexpr T expected = ax * bx + ay * by + az * bz;
   const auto d = gman::Vector<T>(ax, ay, az).dot(gman::Vector<T>(bx, by, bz));
   expectClose(label<T>("dot of non-dyadic components"), d, expected, 2);
 }
@@ -341,7 +341,7 @@ template <typename T> void testNormalizeReturnsSelf() {
 template <typename T> void testNormalizeRoundsAtItsOwnPrecision() {
   auto v = gman::Vector<T>(1, 1, 1);
   v.normalize();
-  const auto unit = std::numbers::inv_sqrt3_v<T>;
+  constexpr T unit = std::numbers::inv_sqrt3_v<T>;
   expectClose(label<T>("normalize of (1, 1, 1)"), v, {unit, unit, unit}, 4);
 }
 

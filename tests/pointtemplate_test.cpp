@@ -64,7 +64,7 @@ template <typename T> void testDefaultedArguments() {
 
 template <typename T> void testPointerConstructor() {
   if constexpr (std::is_same_v<T, RtFloat>) {
-    const RtFloat parts[3] = {4, 5, 6};
+    constexpr RtFloat parts[3] = {4, 5, 6};
     const auto p = gman::Point<T>(parts);
     expectExact(label<T>("Point(RtFloat const*)"), p, {4, 5, 6});
   }

@@ -58,7 +58,7 @@ template <typename T> void testComponentConstructor() {
 
 template <typename T> void testPointerConstructor() {
   if constexpr (std::is_same_v<T, RtFloat>) {
-    const RtFloat parts[4] = {4, 5, 6, 7};
+    constexpr RtFloat parts[4] = {4, 5, 6, 7};
     const auto h = gman::HPoint<T>(parts);
     expectExact(label<T>("HPoint(RtFloat const*)"), h, {4, 5, 6, 7});
   }

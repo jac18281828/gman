@@ -170,13 +170,13 @@ template <typename T> void checkPrecision(std::string const& scalar) {
 }
 
 template <typename T> void checkDotKeepsItsScalarWidth(std::string const& scalar) {
-  const auto ax = T(1) / 3;
-  const auto ay = T(1) / 7;
-  const auto az = T(1) / 11;
-  const auto bx = T(1) / 5;
-  const auto by = T(1) / 13;
-  const auto bz = T(1) / 17;
-  const auto expected = ax * bx + ay * by + az * bz;
+  constexpr T ax = T(1) / 3;
+  constexpr T ay = T(1) / 7;
+  constexpr T az = T(1) / 11;
+  constexpr T bx = T(1) / 5;
+  constexpr T by = T(1) / 13;
+  constexpr T bz = T(1) / 17;
+  constexpr T expected = ax * bx + ay * by + az * bz;
   const auto measured = gman::Vector<T>(ax, ay, az).dot(gman::Vector<T>(bx, by, bz));
   const auto error = std::abs(measured - expected);
   check(error <= 2 * std::numeric_limits<T>::epsilon() * expected,
@@ -187,7 +187,7 @@ template <typename T> void checkDotKeepsItsScalarWidth(std::string const& scalar
 template <typename T> void checkNormalizeKeepsItsScalarWidth(std::string const& scalar) {
   auto diagonal = gman::Vector<T>(1, 1, 1);
   diagonal.normalize();
-  const auto expected = std::numbers::inv_sqrt3_v<T>;
+  constexpr T expected = std::numbers::inv_sqrt3_v<T>;
   const auto measured = diagonal.getX();
   const auto error = std::abs(measured - expected);
   check(error <= 4 * std::numeric_limits<T>::epsilon() * expected,
