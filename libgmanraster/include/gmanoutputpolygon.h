@@ -35,7 +35,6 @@
 #include "gman/rasterexport.h"
 #include "gmancolor.h"
 #include "gmanpoint.h"
-#include "gmanvector.h"
 #include "gmanvector4.h"
 #include "gmanvertex4.h"
 #include "ri.h"
@@ -53,12 +52,6 @@ private:
   GMANPoint posn;
 
 public:
-  bool operator<(const GMANOutVertex& vert) const {
-    GMANVector posVec(posn);
-    GMANVector vertPos(vert.posn);
-    return ((color < vert.color) && (posVec < vertPos));
-  }
-
   const GMANPoint& getPosn(RtVoid) const { return posn; }
   const GMANColor& getColor(RtVoid) const { return color; }
   GMANAlpha const& getAlpha(RtVoid) const { return alpha; }

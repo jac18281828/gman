@@ -235,8 +235,6 @@ public:
   }
 
   Vector& operator*=(Matrix4<T> const& m);
-
-  bool operator<(Vector const& v) const { return x < v.x || y < v.y || z < v.z; }
 };
 
 } // namespace gman
