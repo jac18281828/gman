@@ -33,7 +33,6 @@
  */
 
 #include <cmath>
-#include <concepts>
 #include <cstddef>
 #include <format>
 #include <limits>

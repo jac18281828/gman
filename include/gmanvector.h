@@ -136,7 +136,7 @@ public:
   T magnitude(RtVoid) { return std::sqrt(x * x + y * y + z * z); }
 
   Vector& normalize(RtVoid) {
-    auto mag = magnitude();
+    const auto mag = magnitude();
     if (mag < RI_EPSILON) {
       return *this;
     }

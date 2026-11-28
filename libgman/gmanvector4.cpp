@@ -44,8 +44,8 @@ template <typename T> Vector4<T>::~Vector4() {};
 
 template <typename T> Vector4<T>& Vector4<T>::operator*=(Matrix4<T> const& m) {
   // Row-vector convention (p*M): result[j] = sum_i vec[i]*m[i][j] over
-  // all four components -- the same formula GMANMatrix4::p4m
-  // implements. GMANVector::operator*=
+  // all four components -- the same formula Matrix4::p4m
+  // implements. Vector::operator*=
   // is the opposite convention (column-vector, implicit w=1, no real w
   // out) and would silently leave w stale; a real 4-component multiply
   // belongs here, not delegated.

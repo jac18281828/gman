@@ -77,7 +77,7 @@ public:
 
   ~Vector4(); // default destructor
 
-  /* Same as GMANVector: the destructor above deprecates the implicit copy
+  /* Same as Vector: the destructor above deprecates the implicit copy
    * constructor, which gcc rejects under -Werror=deprecated-copy. Copy
    * assignment is user-provided below. */
   Vector4(Vector4 const&) = default;
@@ -91,7 +91,7 @@ public:
 
   // mul/assign vector
   //
-  // GMANVector(*this) *= GMANVector(v) would build a temporary GMANVector
+  // Vector(*this) *= Vector(v) would build a temporary Vector
   // slice, mutate that, and discard it, so x,y,z of *this would stay
   // unchanged and only w would change. Assign the components directly
   // instead.
@@ -207,7 +207,7 @@ public:
 
   // compute the dot product of this vector with another
   T dot(Vector4 const& vec) {
-    auto sDot = Vector<T>(*this).dot(Vector<T>(vec));
+    const auto sDot = Vector<T>(*this).dot(Vector<T>(vec));
     return sDot + w * vec.w;
   }
 
