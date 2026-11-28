@@ -522,6 +522,13 @@ set_tests_properties(pointfromhpoint_pin PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_normaltemplate normaltemplate_test.cpp)
+target_link_libraries(gman_normaltemplate PRIVATE gman)
+add_test(NAME normaltemplate COMMAND gman_normaltemplate)
+set_tests_properties(normaltemplate PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_subdivisiontag subdivisiontag_test.cpp)
 target_link_libraries(gman_subdivisiontag PRIVATE gman)
 add_test(NAME subdivisiontag COMMAND gman_subdivisiontag)
