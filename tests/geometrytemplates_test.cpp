@@ -36,6 +36,7 @@
 #include <cstddef>
 #include <format>
 #include <limits>
+#include <numbers>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -166,6 +167,32 @@ template <typename T> void checkPrecision(std::string const& scalar) {
     check(error < gman::WideReal(1e-10),
           std::format("{}: the sphere-cone quantity 1 - cos is within 1e-10 of 5e-9, measured {}", scalar, defect));
   }
+}
+
+template <typename T> void checkDotKeepsItsScalarWidth(std::string const& scalar) {
+  const auto ax = T(1) / 3;
+  const auto ay = T(1) / 7;
+  const auto az = T(1) / 11;
+  const auto bx = T(1) / 5;
+  const auto by = T(1) / 13;
+  const auto bz = T(1) / 17;
+  const auto expected = ax * bx + ay * by + az * bz;
+  const auto measured = gman::Vector<T>(ax, ay, az).dot(gman::Vector<T>(bx, by, bz));
+  const auto error = std::abs(measured - expected);
+  check(error <= 2 * std::numeric_limits<T>::epsilon() * expected,
+        std::format("{}: Vector dot accumulates in its own scalar, expected {}, measured {}", scalar, expected,
+                    measured));
+}
+
+template <typename T> void checkNormalizeKeepsItsScalarWidth(std::string const& scalar) {
+  auto diagonal = gman::Vector<T>(1, 1, 1);
+  diagonal.normalize();
+  const auto expected = std::numbers::inv_sqrt3_v<T>;
+  const auto measured = diagonal.getX();
+  const auto error = std::abs(measured - expected);
+  check(error <= 4 * std::numeric_limits<T>::epsilon() * expected,
+        std::format("{}: Vector normalize works in its own scalar, expected {}, measured {}", scalar, expected,
+                    measured));
 }
 
 template <typename Kind> void checkConversions(std::string const& kind) {
@@ -355,6 +382,10 @@ int main() {
 
   checkPrecision<Real>("RtFloat");
   checkPrecision<Partner>("PartnerReal");
+  checkDotKeepsItsScalarWidth<Real>("RtFloat");
+  checkDotKeepsItsScalarWidth<Partner>("PartnerReal");
+  checkNormalizeKeepsItsScalarWidth<Real>("RtFloat");
+  checkNormalizeKeepsItsScalarWidth<Partner>("PartnerReal");
 
   checkKind<VectorKind>("Vector");
   checkKind<PointKind>("Point");
