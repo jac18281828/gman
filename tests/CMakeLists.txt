@@ -529,6 +529,53 @@ set_tests_properties(normaltemplate PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_hpointtemplate hpointtemplate_test.cpp)
+target_link_libraries(gman_hpointtemplate PRIVATE gman)
+add_test(NAME hpointtemplate COMMAND gman_hpointtemplate)
+set_tests_properties(hpointtemplate PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# HPoint::operator+= adds to a temporary. Pins the wanted behavior;
+# WILL_FAIL until it updates the point itself.
+add_executable(gman_hpointaddassign_pin hpointaddassign_pin_test.cpp)
+target_link_libraries(gman_hpointaddassign_pin PRIVATE gman)
+add_test(NAME hpointaddassign_pin COMMAND gman_hpointaddassign_pin)
+set_tests_properties(hpointaddassign_pin PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
+# HPoint::operator*=(T) scales a temporary. Pins the wanted behavior;
+# WILL_FAIL until it updates the point itself.
+add_executable(gman_hpointscaleassign_pin hpointscaleassign_pin_test.cpp)
+target_link_libraries(gman_hpointscaleassign_pin PRIVATE gman)
+add_test(NAME hpointscaleassign_pin COMMAND gman_hpointscaleassign_pin)
+set_tests_properties(hpointscaleassign_pin PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
+# HPoint::operator+ inherits the temporary of operator+=. Pins the
+# wanted behavior; WILL_FAIL until the sum carries every component.
+add_executable(gman_hpointadd_pin hpointadd_pin_test.cpp)
+target_link_libraries(gman_hpointadd_pin PRIVATE gman)
+add_test(NAME hpointadd_pin COMMAND gman_hpointadd_pin)
+set_tests_properties(hpointadd_pin PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
+# HPoint::operator*(T) inherits the temporary of operator*=. Pins the
+# wanted behavior; WILL_FAIL until the product carries every component.
+add_executable(gman_hpointscale_pin hpointscale_pin_test.cpp)
+target_link_libraries(gman_hpointscale_pin PRIVATE gman)
+add_test(NAME hpointscale_pin COMMAND gman_hpointscale_pin)
+set_tests_properties(hpointscale_pin PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_subdivisiontag subdivisiontag_test.cpp)
 target_link_libraries(gman_subdivisiontag PRIVATE gman)
 add_test(NAME subdivisiontag COMMAND gman_subdivisiontag)
