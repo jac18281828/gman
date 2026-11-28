@@ -505,6 +505,23 @@ set_tests_properties(vectortemplate PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_pointtemplate pointtemplate_test.cpp)
+target_link_libraries(gman_pointtemplate PRIVATE gman)
+add_test(NAME pointtemplate COMMAND gman_pointtemplate)
+set_tests_properties(pointtemplate PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# Constructing a Point from an HPoint mutates the HPoint. Pins the wanted
+# behavior; WILL_FAIL until the argument is left unchanged.
+add_executable(gman_pointfromhpoint_pin pointfromhpoint_pin_test.cpp)
+target_link_libraries(gman_pointfromhpoint_pin PRIVATE gman)
+add_test(NAME pointfromhpoint_pin COMMAND gman_pointfromhpoint_pin)
+set_tests_properties(pointfromhpoint_pin PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_subdivisiontag subdivisiontag_test.cpp)
 target_link_libraries(gman_subdivisiontag PRIVATE gman)
 add_test(NAME subdivisiontag COMMAND gman_subdivisiontag)
