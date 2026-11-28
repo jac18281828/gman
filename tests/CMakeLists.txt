@@ -593,6 +593,13 @@ set_tests_properties(vector4default_pin PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_matrix4template matrix4template_test.cpp)
+target_link_libraries(gman_matrix4template PRIVATE gman)
+add_test(NAME matrix4template COMMAND gman_matrix4template)
+set_tests_properties(matrix4template PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_subdivisiontag subdivisiontag_test.cpp)
 target_link_libraries(gman_subdivisiontag PRIVATE gman)
 add_test(NAME subdivisiontag COMMAND gman_subdivisiontag)
