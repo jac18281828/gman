@@ -58,27 +58,27 @@ public:
     requires std::same_as<T, RtFloat>;
 
   template <typename U> explicit Matrix4(Matrix4<U> const& m) {
-    for (RtInt i = 0; i < 4; i++)
-      for (RtInt j = 0; j < 4; j++)
+    for (int i = 0; i < 4; i++)
+      for (int j = 0; j < 4; j++)
         mtrx[i][j] = static_cast<T>(m[i][j]);
   }
 
-  RtVoid identity();
-  RtVoid concat(Matrix4 const& m);
-  RtVoid persp(T fov);
-  RtVoid trans(T dx, T dy, T dz);
-  RtVoid rot(T angle, T dx, T dy, T dz);
-  RtVoid scale(T sx, T sy, T sz);
-  RtVoid skew(T angle, Vector<T>& a, Vector<T>& b);
+  void identity();
+  void concat(Matrix4 const& m);
+  void persp(T fov);
+  void trans(T dx, T dy, T dz);
+  void rot(T angle, T dx, T dy, T dz);
+  void scale(T sx, T sy, T sz);
+  void skew(T angle, Vector<T>& a, Vector<T>& b);
 
-  RtVoid prjPersp(T fov, T nearOne, T farOne);
-  RtVoid prjOrtho(T nearOne, T farOne);
+  void prjPersp(T fov, T nearOne, T farOne);
+  void prjOrtho(T nearOne, T farOne);
 
-  T determinant(RtVoid);
-  RtVoid invert(RtVoid);
+  T determinant();
+  void invert();
 
-  RtVoid p3m(RtInt n, T* src, T* dest) const;
-  RtVoid p4m(RtInt n, T* src, T* dest) const;
+  void p3m(int n, T* src, T* dest) const;
+  void p4m(int n, T* src, T* dest) const;
 
   Matrix4 operator*(T f) const;
   Matrix4& operator*=(T f);
@@ -95,14 +95,14 @@ public:
 
   Matrix4& assign(Matrix4 const& m);
 
-  RtVoid setBasis(RtBasis& b)
+  void setBasis(RtBasis& b)
     requires std::same_as<T, RtFloat>;
 
   T* operator[](std::size_t i) { return mtrx[i]; }
 
   T const* operator[](std::size_t i) const { return mtrx[i]; }
 
-  T const (&get(RtVoid) const)[4][4] { return mtrx; }
+  T const (&get() const)[4][4] { return mtrx; }
 };
 
 } // namespace gman

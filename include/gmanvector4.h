@@ -83,11 +83,11 @@ public:
   Vector4(Vector4 const&) = default;
 
   // get and set w
-  T getW(RtVoid) const { return w; };
-  RtVoid setW(T wval) { w = wval; };
+  T getW() const { return w; };
+  void setW(T wval) { w = wval; };
 
   // get magnitude
-  T magnitude(RtVoid) { return sqrt(this->x * this->x + this->y * this->y + this->z * this->z + w * w); };
+  T magnitude() { return sqrt(this->x * this->x + this->y * this->y + this->z * this->z + w * w); };
 
   // mul/assign vector
   //
@@ -193,7 +193,7 @@ public:
   }
 
   // normalize vector by magnitude
-  Vector4& normalize(RtVoid) {
+  Vector4& normalize() {
 
     auto m = magnitude();
 
@@ -212,7 +212,7 @@ public:
   }
 
   // premultiply point by projective matrix
-  RtVoid projTransform(Point<T> const& p, RtMatrix const& ptm)
+  void projTransform(Point<T> const& p, RtMatrix const& ptm)
     requires std::same_as<T, RtFloat>
   {
     Vector<T> v(p);
@@ -221,7 +221,7 @@ public:
   }
 
   // premultiply vector by projective matrix
-  RtVoid projTransform(Vector<T> const& p, RtMatrix const& ptm)
+  void projTransform(Vector<T> const& p, RtMatrix const& ptm)
     requires std::same_as<T, RtFloat>
   {
     this->x = (RtFloat)(ptm[0][0] * p.getX() + ptm[0][1] * p.getY() + ptm[0][2] * p.getZ() + ptm[0][3]);
@@ -234,14 +234,14 @@ public:
   }
 
   // perform perspective division on point
-  RtVoid perspective(Point<T>& p) {
+  void perspective(Point<T>& p) {
     p.setX(this->x / w);
     p.setY(this->y / w);
     p.setZ(this->z / w);
   }
 
   // perform perspective division on vector
-  RtVoid perspective(Vector<T>& v) const {
+  void perspective(Vector<T>& v) const {
     v.setX(this->x / w);
     v.setY(this->y / w);
     v.setZ(this->z / w);

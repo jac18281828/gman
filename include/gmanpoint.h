@@ -79,16 +79,16 @@ public:
   ~Point() {}
 
   // X
-  RtVoid setX(T xv) { x = xv; };
-  T getX(RtVoid) const { return x; };
+  void setX(T xv) { x = xv; };
+  T getX() const { return x; };
 
   // Y
-  RtVoid setY(T yv) { y = yv; };
-  T getY(RtVoid) const { return y; };
+  void setY(T yv) { y = yv; };
+  T getY() const { return y; };
 
   // Z
-  RtVoid setZ(T zv) { z = zv; };
-  T getZ(RtVoid) const { return z; };
+  void setZ(T zv) { z = zv; };
+  T getZ() const { return z; };
 
   T const& operator[](std::size_t i) const {
     if (i == X) {

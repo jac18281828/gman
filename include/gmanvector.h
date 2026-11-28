@@ -90,14 +90,14 @@ public:
    * assignment is user-provided further down. */
   Vector(Vector const&) = default;
 
-  T getX(RtVoid) const { return x; }
-  RtVoid setX(T xv) { x = xv; }
+  T getX() const { return x; }
+  void setX(T xv) { x = xv; }
 
-  T getY(RtVoid) const { return y; }
-  RtVoid setY(T yv) { y = yv; }
+  T getY() const { return y; }
+  void setY(T yv) { y = yv; }
 
-  T getZ(RtVoid) const { return z; }
-  RtVoid setZ(T zv) { z = zv; }
+  T getZ() const { return z; }
+  void setZ(T zv) { z = zv; }
 
   T& operator[](std::size_t i) {
     if (i == X) {
@@ -133,9 +133,9 @@ public:
     return *this;
   }
 
-  T magnitude(RtVoid) { return std::sqrt(x * x + y * y + z * z); }
+  T magnitude() { return std::sqrt(x * x + y * y + z * z); }
 
-  Vector& normalize(RtVoid) {
+  Vector& normalize() {
     const auto mag = magnitude();
     if (mag < RI_EPSILON) {
       return *this;

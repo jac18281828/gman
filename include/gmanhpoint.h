@@ -51,9 +51,9 @@ public:
   template <typename U> explicit HPoint(HPoint<U> const& p) : Point<T>(p), w(static_cast<T>(p.getW())) {}
 
   T getW() const { return w; };
-  RtVoid setW(T wv) { w = wv; };
+  void setW(T wv) { w = wv; };
 
-  RtVoid wToOne();
+  void wToOne();
 
   HPoint operator+(HPoint const& p) const;
   HPoint operator*(T f) const;

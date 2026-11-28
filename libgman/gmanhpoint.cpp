@@ -31,7 +31,7 @@
 
 namespace gman {
 
-template <typename T> RtVoid HPoint<T>::wToOne() {
+template <typename T> void HPoint<T>::wToOne() {
   w = 1.0 / w;
   this->x *= w;
   this->y *= w;

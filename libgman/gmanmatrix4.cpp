@@ -44,14 +44,14 @@ template <typename T>
 Matrix4<T>::Matrix4(RtMatrix m)
   requires std::same_as<T, RtFloat>
 {
-  for (RtInt i = 0; i < 4; i++)
-    for (RtInt j = 0; j < 4; j++)
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 4; j++)
       mtrx[i][j] = m[i][j];
 }
 
-template <typename T> RtVoid Matrix4<T>::identity(RtVoid) {
-  for (RtInt i = 0; i < 4; i++)
-    for (RtInt j = 0; j < 4; j++)
+template <typename T> void Matrix4<T>::identity() {
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 4; j++)
       if (i == j)
         mtrx[i][j] = 1.0;
       else
@@ -59,8 +59,8 @@ template <typename T> RtVoid Matrix4<T>::identity(RtVoid) {
 }
 
 template <typename T> Matrix4<T>& Matrix4<T>::operator=(Matrix4 const& m) {
-  for (RtInt i = 0; i < 4; i++) {
-    for (RtInt j = 0; j < 4; j++) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
       mtrx[i][j] = m[i][j];
     }
   }
@@ -68,10 +68,10 @@ template <typename T> Matrix4<T>& Matrix4<T>::operator=(Matrix4 const& m) {
   return *this;
 }
 
-template <typename T> RtVoid Matrix4<T>::concat(Matrix4 const& m) { *this *= m; }
+template <typename T> void Matrix4<T>::concat(Matrix4 const& m) { *this *= m; }
 
 // near=1 far=+infinity (The RenderMan Companion)
-template <typename T> RtVoid Matrix4<T>::persp(T fov) {
+template <typename T> void Matrix4<T>::persp(T fov) {
   Matrix4 m;
   T t = tan((fov / 2) * DEGTORAD);
   m.mtrx[0][3] = t;
@@ -81,7 +81,7 @@ template <typename T> RtVoid Matrix4<T>::persp(T fov) {
   concat(m);
 }
 
-template <typename T> RtVoid Matrix4<T>::trans(T dx, T dy, T dz) {
+template <typename T> void Matrix4<T>::trans(T dx, T dy, T dz) {
   Matrix4 m;
   m.mtrx[3][0] = dx;
   m.mtrx[3][1] = dy;
@@ -89,7 +89,7 @@ template <typename T> RtVoid Matrix4<T>::trans(T dx, T dy, T dz) {
   concat(m);
 }
 
-template <typename T> RtVoid Matrix4<T>::rot(T angle, T dx, T dy, T dz) {
+template <typename T> void Matrix4<T>::rot(T angle, T dx, T dy, T dz) {
   Matrix4 m;
   T s, c, omc, xx, xy, xz, yy, yz, zz;
 
@@ -124,7 +124,7 @@ template <typename T> RtVoid Matrix4<T>::rot(T angle, T dx, T dy, T dz) {
   concat(m);
 }
 
-template <typename T> RtVoid Matrix4<T>::scale(T sx, T sy, T sz) {
+template <typename T> void Matrix4<T>::scale(T sx, T sy, T sz) {
   Matrix4 m;
   m.mtrx[0][0] = sx;
   m.mtrx[1][1] = sy;
@@ -132,7 +132,7 @@ template <typename T> RtVoid Matrix4<T>::scale(T sx, T sy, T sz) {
   concat(m);
 }
 
-template <typename T> RtVoid Matrix4<T>::skew(T angle, Vector<T>& a, Vector<T>& b) {
+template <typename T> void Matrix4<T>::skew(T angle, Vector<T>& a, Vector<T>& b) {
   Matrix4 m;
   Vector<T> n1, n2;
   Vector<T> a1, a2;
@@ -185,7 +185,7 @@ template <typename T> RtVoid Matrix4<T>::skew(T angle, Vector<T>& a, Vector<T>& 
 // in use for the projection stage (see persp(), above, which the RiPerspective
 // transform command builds the same way). w is placed in row 3 so it carries
 // z directly (RenderMan's camera looks down +z) instead of a constant.
-template <typename T> RtVoid Matrix4<T>::prjPersp(T fov, T nearDist, T farDist) {
+template <typename T> void Matrix4<T>::prjPersp(T fov, T nearDist, T farDist) {
   T invT = 1.0 / tan((fov / 2) * DEGTORAD);
 
   identity();
@@ -197,7 +197,7 @@ template <typename T> RtVoid Matrix4<T>::prjPersp(T fov, T nearDist, T farDist) 
   mtrx[3][3] = 0.0;
 }
 
-template <typename T> RtVoid Matrix4<T>::prjOrtho(T nearDist, T farDist) {
+template <typename T> void Matrix4<T>::prjOrtho(T nearDist, T farDist) {
   identity();
   mtrx[2][2] = 2.0 / (farDist - nearDist);
   mtrx[2][3] = -(farDist + nearDist) / (farDist - nearDist);
@@ -238,7 +238,7 @@ template <typename T> T Matrix4<T>::determinant() { return cofactorsOf(mtrx).det
 
 // Adjugate / determinant, via the same 2x2-cofactor pairing determinant()
 // uses. Throws on a singular matrix.
-template <typename T> RtVoid Matrix4<T>::invert() {
+template <typename T> void Matrix4<T>::invert() {
   auto const& m = mtrx;
   const auto c = cofactorsOf(m);
 
@@ -274,8 +274,8 @@ template <typename T> RtVoid Matrix4<T>::invert() {
 // sum_i src_i*M[i][j] + M[3][j], matching trans()/rot()/scale()/concat(),
 // which store translation in row 3. Divides by the resulting w so a
 // (rare) projective matrix passed here still produces a valid point.
-template <typename T> RtVoid Matrix4<T>::p3m(RtInt nbpts, T* src, T* dest) const {
-  for (RtInt i = 0; i < nbpts * 3; i += 3) {
+template <typename T> void Matrix4<T>::p3m(int nbpts, T* src, T* dest) const {
+  for (int i = 0; i < nbpts * 3; i += 3) {
     const auto x = src[0 + i];
     const auto y = src[1 + i];
     const auto z = src[2 + i];
@@ -298,8 +298,8 @@ template <typename T> RtVoid Matrix4<T>::p3m(RtInt nbpts, T* src, T* dest) const
 // Homogeneous counterpart of p3m: carries w through unnormalized, for
 // callers (e.g. normal transforms) that need the raw row-vector product
 // rather than a perspective-divided point.
-template <typename T> RtVoid Matrix4<T>::p4m(RtInt nbpts, T* src, T* dest) const {
-  for (RtInt i = 0; i < nbpts * 4; i += 4) {
+template <typename T> void Matrix4<T>::p4m(int nbpts, T* src, T* dest) const {
+  for (int i = 0; i < nbpts * 4; i += 4) {
     const auto x = src[0 + i];
     const auto y = src[1 + i];
     const auto z = src[2 + i];
@@ -320,8 +320,8 @@ template <typename T> Matrix4<T> Matrix4<T>::operator*(T f) const {
 
 // Scales every one of the 16 entries by f.
 template <typename T> Matrix4<T>& Matrix4<T>::operator*=(T f) {
-  for (RtInt i = 0; i < 4; i++)
-    for (RtInt j = 0; j < 4; j++)
+  for (int i = 0; i < 4; i++)
+    for (int j = 0; j < 4; j++)
       mtrx[i][j] *= f;
 
   return *this;
@@ -337,10 +337,10 @@ template <typename T> Matrix4<T> Matrix4<T>::operator*(Matrix4 const& m) const {
 template <typename T> Matrix4<T>& Matrix4<T>::operator*=(Matrix4 const& m) {
   Matrix4 res;
 
-  for (RtInt i = 0; i < 4; i++) {
-    for (RtInt j = 0; j < 4; j++) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
       res[i][j] = 0.0;
-      for (RtInt k = 0; k < 4; k++) {
+      for (int k = 0; k < 4; k++) {
         res[i][j] += mtrx[i][k] * m[k][j];
       }
     }
@@ -357,8 +357,8 @@ template <typename T> Matrix4<T> Matrix4<T>::operator+(Matrix4 const& m) const {
 }
 
 template <typename T> Matrix4<T>& Matrix4<T>::operator+=(Matrix4 const& m) {
-  for (RtInt i = 0; i < 4; i++) {
-    for (RtInt j = 0; j < 4; j++) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
       mtrx[i][j] += m.mtrx[i][j];
     }
   }
@@ -366,11 +366,11 @@ template <typename T> Matrix4<T>& Matrix4<T>::operator+=(Matrix4 const& m) {
 }
 
 template <typename T>
-RtVoid Matrix4<T>::setBasis(RtBasis& b)
+void Matrix4<T>::setBasis(RtBasis& b)
   requires std::same_as<T, RtFloat>
 {
-  for (RtInt i = 0; i < 4; i++) {
-    for (RtInt j = 0; j < 4; j++) {
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
       mtrx[i][j] = b[i][j];
     }
   }
