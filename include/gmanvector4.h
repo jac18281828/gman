@@ -56,7 +56,7 @@ public:
 
   GMANVector4(RtFloat xval, RtFloat yval, RtFloat zval, RtFloat wval) : GMANVector(xval, yval, zval), w(wval) {};
 
-  GMANVector4(RtFloat* pts) : GMANVector(pts) {
+  GMANVector4(RtFloat const* pts) : GMANVector(pts) {
     // assume we get 4 pts
     w = pts[3];
   }

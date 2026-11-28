@@ -56,7 +56,9 @@ public:
 
   RtVoid setSurface(GMANSurface* surf) { surfaceRoot = surf; };
   GMANSurface* getSurface(RtVoid) { return surfaceRoot; }
+  GMANSurface const* getSurface(RtVoid) const { return surfaceRoot; }
 
   RtVoid setNext(GMANBody* n) { next = n; };
   GMANBody* getNext(RtVoid) { return next; };
+  GMANBody const* getNext(RtVoid) const { return next; };
 };

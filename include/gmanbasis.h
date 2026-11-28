@@ -37,7 +37,7 @@ private:
   GMANMatrix4 vBasis;
   RtInt vStep;
 
-  RtInt offset(RtInt astart, RtInt bstart, RtInt a, RtInt b, RtInt nu, RtInt nv, RtInt pntSize);
+  RtInt offset(RtInt astart, RtInt bstart, RtInt a, RtInt b, RtInt nu, RtInt nv, RtInt pntSize) const;
 
 public:
   GMANBasis();
@@ -55,13 +55,13 @@ public:
   GMANBasis(const GMANMatrix4& ubss, RtInt ustp, const GMANMatrix4& vbss, RtInt vstp)
       : uBasis(ubss), uStep(ustp), vBasis(vbss), vStep(vstp) {}
 
-  GMANPoint bicubic(RtFloat u, RtFloat v, RtFloat* pts);
-  GMANPoint bicubicZ(RtFloat u, RtFloat v, RtFloat* pts);
-  GMANPoint bicubicW(RtFloat u, RtFloat v, RtFloat* pts);
+  GMANPoint bicubic(RtFloat u, RtFloat v, RtFloat const* pts) const;
+  GMANPoint bicubicZ(RtFloat u, RtFloat v, RtFloat const* pts) const;
+  GMANPoint bicubicW(RtFloat u, RtFloat v, RtFloat const* pts) const;
 
-  GMANPoint bicubicMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pts);
-  GMANPoint bicubicMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFloat* pts);
-  GMANPoint bicubicMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pts);
+  GMANPoint bicubicMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat const* pts) const;
+  GMANPoint bicubicMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFloat const* pts) const;
+  GMANPoint bicubicMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat const* pts) const;
 
   RtInt getUStep() const { return uStep; }
   RtInt getVStep() const { return vStep; }

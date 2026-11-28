@@ -91,11 +91,13 @@ public:
 
   // return face pointer
   GMANFace* getFace(RtVoid) { return faceRoot; };
+  GMANFace const* getFace(RtVoid) const { return faceRoot; };
   // set face pointer
   RtVoid setFace(GMANFace* face) { faceRoot = face; };
 
   // return next surface
   GMANSurface* getNext(RtVoid) { return next; }
+  GMANSurface const* getNext(RtVoid) const { return next; }
   // set next surface
   RtVoid setNext(GMANSurface* surface) { next = surface; };
 

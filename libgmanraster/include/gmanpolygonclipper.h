@@ -46,5 +46,5 @@ public:
 
   ~GMANPolygonClipper(); // default destructor
 
-  int clip(GMANFace* face, GMANOutputPolygon& out, const GMANViewingSystem* vs);
+  int clip(GMANFace const* face, GMANOutputPolygon& out, const GMANViewingSystem* vs);
 };

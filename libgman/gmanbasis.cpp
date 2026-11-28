@@ -68,7 +68,7 @@ GMANBasis::~GMANBasis() {
 /*----------------------------------------------------------
  * Bicubic Patch tools
  */
-GMANPoint GMANBasis::bicubic(RtFloat u, RtFloat v, RtFloat* pts) {
+GMANPoint GMANBasis::bicubic(RtFloat u, RtFloat v, RtFloat const* pts) const {
   GMANVector4 q[4];
   GMANVector4 pa(u * u * u, u * u, u, 1.0);
   GMANVector4 pb(v * v * v, v * v, v, 1.0);
@@ -83,7 +83,7 @@ GMANPoint GMANBasis::bicubic(RtFloat u, RtFloat v, RtFloat* pts) {
   return (GMANVector)res;
 }
 
-GMANPoint GMANBasis::bicubicZ(RtFloat u, RtFloat v, RtFloat* pts) {
+GMANPoint GMANBasis::bicubicZ(RtFloat u, RtFloat v, RtFloat const* pts) const {
   GMANVector4 q[4];
   GMANVector4 pa(u * u * u, u * u, u, 1.0);
   GMANVector4 pb(v * v * v, v * v, v, 1.0);
@@ -101,7 +101,7 @@ GMANPoint GMANBasis::bicubicZ(RtFloat u, RtFloat v, RtFloat* pts) {
   return res;
 }
 
-GMANPoint GMANBasis::bicubicW(RtFloat u, RtFloat v, RtFloat* pts) {
+GMANPoint GMANBasis::bicubicW(RtFloat u, RtFloat v, RtFloat const* pts) const {
   GMANVector4 q[4];
   GMANVector4 pa(u * u * u, u * u, u, 1.0);
   GMANVector4 pb(v * v * v, v * v, v, 1.0);
@@ -125,7 +125,7 @@ GMANPoint GMANBasis::bicubicW(RtFloat u, RtFloat v, RtFloat* pts) {
 // that closes the loop back onto point 0 -- wrapping only when i is
 // strictly greater than nu leaves that exact index unwrapped and one past
 // the valid range.
-RtInt GMANBasis::offset(RtInt astart, RtInt bstart, RtInt a, RtInt b, RtInt nu, RtInt nv, RtInt pntSize) {
+RtInt GMANBasis::offset(RtInt astart, RtInt bstart, RtInt a, RtInt b, RtInt nu, RtInt nv, RtInt pntSize) const {
   RtInt i, j;
   i = astart + a;
   j = bstart + b;
@@ -136,7 +136,8 @@ RtInt GMANBasis::offset(RtInt astart, RtInt bstart, RtInt a, RtInt b, RtInt nu, 
   return pntSize * (i + nu * j);
 }
 
-GMANPoint GMANBasis::bicubicMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pts) {
+GMANPoint GMANBasis::bicubicMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap,
+                                 RtFloat const* pts) const {
   // number of patchs in u and v direction
   RtInt nbupatch, nbvpatch;
   if (uwrap == true) {
@@ -204,7 +205,7 @@ GMANPoint GMANBasis::bicubicMesh(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtI
   return res;
 }
 
-GMANPoint GMANBasis::bicubicMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFloat* pts) {
+GMANPoint GMANBasis::bicubicMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFloat const* pts) const {
   // number of patchs in u and v direction
   RtInt nbupatch = 1 + (nu - 4) / uStep;
   RtInt nbvpatch = 1 + (nv - 4) / vStep;
@@ -247,7 +248,8 @@ GMANPoint GMANBasis::bicubicMeshZ(RtFloat u, RtFloat v, RtInt nu, RtInt nv, RtFl
   return res;
 }
 
-GMANPoint GMANBasis::bicubicMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap, RtFloat* pts) {
+GMANPoint GMANBasis::bicubicMeshW(RtFloat u, RtFloat v, RtInt nu, bool uwrap, RtInt nv, bool vwrap,
+                                  RtFloat const* pts) const {
   // number of patchs in u and v direction
   RtInt nbupatch, nbvpatch;
   if (uwrap == true) {

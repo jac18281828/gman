@@ -74,6 +74,7 @@ public:
 
   RtVoid setBody(GMANBody* b) { bodyRoot = b; };
   GMANBody* getBody(RtVoid) { return bodyRoot; };
+  GMANBody const* getBody(RtVoid) const { return bodyRoot; };
 
   RtVoid setVert(GMANVertex* v) { vertRoot = v; };
   GMANVertex* getVert(RtVoid) { return vertRoot; };

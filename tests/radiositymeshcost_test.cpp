@@ -45,12 +45,12 @@ class CountingCylinder : public GMANRayCylinder {
 public:
   using GMANRayCylinder::GMANRayCylinder;
 
-  GMANPoint getLocation(double u, double v) override {
+  GMANPoint getLocation(double u, double v) const override {
     ++evaluationCount;
     return GMANRayCylinder::getLocation(u, v);
   }
 
-  std::size_t evaluationCount = 0;
+  mutable std::size_t evaluationCount = 0;
 };
 
 } // namespace

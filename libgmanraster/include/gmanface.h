@@ -78,7 +78,7 @@ public:
 
   RtFloat getArea(RtVoid) { return area; }
 
-  int getNumVerts(RtVoid) { return GMAN_NFACE_VERTS; };
+  int getNumVerts(RtVoid) const { return GMAN_NFACE_VERTS; };
 
   GMANSurface* getParent(RtVoid) { return parentSurf; };
 
@@ -102,6 +102,7 @@ public:
 
   // get next face
   GMANFace* getNext(RtVoid) { return next; };
+  GMANFace const* getNext(RtVoid) const { return next; };
   // set next face
   RtVoid setNext(GMANFace* face) { next = face; };
 };

@@ -88,7 +88,7 @@ GMANPolygonClipper::GMANPolygonClipper() {
 // default destructor
 GMANPolygonClipper::~GMANPolygonClipper() {};
 
-int GMANPolygonClipper::clip(GMANFace* face, GMANOutputPolygon& out, const GMANViewingSystem* vs) {
+int GMANPolygonClipper::clip(GMANFace const* face, GMANOutputPolygon& out, const GMANViewingSystem* vs) {
   const GMANVertex* vert; // 3-D world space vertex
   GMANVertex4 hv;         // 4-D homogeneous coord vertex
 

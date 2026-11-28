@@ -53,8 +53,8 @@ GMAN_EXPORT bool validBilinearMeshDim(RtInt n);
 
 class GMAN_EXPORT GMANParametric : public virtual GMANPrimitive {
 public:
-  virtual GMANPoint getLocation(double u, double v) = 0;
-  virtual GMANVector getNormal(double u, double v) = 0;
+  virtual GMANPoint getLocation(double u, double v) const = 0;
+  virtual GMANVector getNormal(double u, double v) const = 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,8 +106,8 @@ protected:
 public:
   GMANCone(RtFloat h, RtFloat rad, RtFloat theta, GMANParameterList p)
       : GMANPrimDatStorage(p), height(h), radius(rad), thetamax(theta) {}
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,8 +143,8 @@ protected:
 public:
   GMANCylinder(RtFloat rad, RtFloat zmn, RtFloat zmx, RtFloat theta, GMANParameterList p)
       : GMANPrimDatStorage(p), radius(rad), zmin(zmn), zmax(zmx), thetamax(theta) {}
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -159,8 +159,8 @@ protected:
 public:
   GMANDisk(RtFloat h, RtFloat rad, RtFloat theta, GMANParameterList p)
       : GMANPrimDatStorage(p), height(h), radius(rad), thetamax(theta) {}
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 
   RtFloat getHeight() const { return height; }
   RtFloat getRadius() const { return radius; }
@@ -207,8 +207,8 @@ protected:
 public:
   GMANHyperboloid(RtPoint p1, RtPoint p2, RtFloat theta, GMANParameterList p)
       : GMANPrimDatStorage(p), point1(p1), point2(p2), thetamax(theta) {}
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -242,8 +242,8 @@ public:
   GMANNuPatch(RtInt nu, RtInt uorder, RtFloat uknot[], RtFloat umin, RtFloat umax, RtInt nv, RtInt vorder,
               RtFloat vknot[], RtFloat vmin, RtFloat vmax, RtFloat* p, bool rational, GMANParameterList pl);
 
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -259,8 +259,8 @@ protected:
 public:
   GMANParaboloid(RtFloat rmx, RtFloat zmn, RtFloat zmx, RtFloat theta, GMANParameterList p)
       : GMANPrimDatStorage(p), rmax(rmx), zmin(zmn), zmax(zmx), thetamax(theta) {}
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -285,8 +285,8 @@ public:
   // Bicubic: sixteen control points, u-fastest/v-major, blended with b.
   GMANPatch(RtToken pat, RtFloat* p, GMANBasis const& b, GMANParameterList pl);
 
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -324,8 +324,8 @@ public:
   GMANPatchMesh(RtToken pat, RtFloat* p, RtInt u, RtToken uw, RtInt v, RtToken vw, GMANBasis const& b,
                 GMANParameterList pl);
 
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -404,8 +404,8 @@ protected:
 public:
   GMANSphere(RtFloat rad, RtFloat zmn, RtFloat zmx, RtFloat theta, GMANParameterList p)
       : GMANPrimDatStorage(p), radius(rad), zmin(zmn), zmax(zmx), thetamax(theta) {}
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 
   RtFloat getRadius() const { return radius; }
   RtFloat getZMin() const { return zmin; }
@@ -484,6 +484,6 @@ public:
   GMANTorus(RtFloat mjrrad, RtFloat mnrrad, RtFloat phimn, RtFloat phimx, RtFloat theta, GMANParameterList p)
       : GMANPrimDatStorage(p), majorradius(mjrrad), minorradius(mnrrad), phimin(phimn), phimax(phimx), thetamax(theta) {
   }
-  GMANPoint getLocation(double u, double v);
-  GMANVector getNormal(double u, double v);
+  GMANPoint getLocation(double u, double v) const;
+  GMANVector getNormal(double u, double v) const;
 };

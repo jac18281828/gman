@@ -172,7 +172,7 @@ GMANBlobby const& GMANBlobby::operator=(GMANBlobby const& b) {
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_CONE.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANCone::getLocation(double u, double v) {
+GMANPoint GMANCone::getLocation(double u, double v) const {
   RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
   RtFloat r = (1.0 - v) * radius;
@@ -183,7 +183,7 @@ GMANPoint GMANCone::getLocation(double u, double v) {
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANCone::getNormal(double u, double /*v*/) {
+GMANVector GMANCone::getNormal(double u, double /*v*/) const {
   // Closed form from the cone's implicit surface x^2+y^2 = g(z)^2, with
   // g(z) = radius*(1 - z/height): gradient (2x, 2y, 2*g(z)*radius/height)
   // simplifies, after dividing out g(z), to (cos theta, sin theta,
@@ -236,7 +236,7 @@ GMANCurves::~GMANCurves() { delete[] nvertices; }
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_CYLINDER.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANCylinder::getLocation(double u, double v) {
+GMANPoint GMANCylinder::getLocation(double u, double v) const {
   RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
   RtFloat x = radius * cos(theta);
@@ -246,7 +246,7 @@ GMANPoint GMANCylinder::getLocation(double u, double v) {
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANCylinder::getNormal(double u, double /*v*/) {
+GMANVector GMANCylinder::getNormal(double u, double /*v*/) const {
   // A cylinder wall's outward normal is radial from the axis and does not
   // depend on z, so it is the same at every v: (cos theta, sin theta, 0).
   RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
@@ -259,7 +259,7 @@ GMANVector GMANCylinder::getNormal(double u, double /*v*/) {
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_DISK.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANDisk::getLocation(double u, double v) {
+GMANPoint GMANDisk::getLocation(double u, double v) const {
   // A flat plate at z=height: u sweeps the angle, v sweeps the radius out
   // from the center (v=0) to the rim (v=1), matching the theta convention
   // every other quadric here uses.
@@ -271,7 +271,7 @@ GMANPoint GMANDisk::getLocation(double u, double v) {
   return GMANPoint(x, y, height);
 }
 
-GMANVector GMANDisk::getNormal(double /*u*/, double /*v*/) {
+GMANVector GMANDisk::getNormal(double /*u*/, double /*v*/) const {
   // dP/du x dP/dv for this parameterization is (0, 0, -r*radius*dtheta/du);
   // the disk's normal is that direction's sign, constant everywhere since
   // the surface is flat.
@@ -334,7 +334,7 @@ GMANGeneralPolygon::~GMANGeneralPolygon() { delete[] nvert; }
 // the x=0 half-plane, so the sweep adds theta to that point's own azimuth
 // phi(v), not to a fixed 0: P(u,v) = ( r(v)*cos(phi(v)+theta),
 // r(v)*sin(phi(v)+theta), z(v) ), r(v)=dist to axis, phi(v)=atan2(y,x).
-GMANPoint GMANHyperboloid::getLocation(double u, double v) {
+GMANPoint GMANHyperboloid::getLocation(double u, double v) const {
   RtFloat xv = point1.getX() + v * (point2.getX() - point1.getX());
   RtFloat yv = point1.getY() + v * (point2.getY() - point1.getY());
   RtFloat zv = point1.getZ() + v * (point2.getZ() - point1.getZ());
@@ -346,7 +346,7 @@ GMANPoint GMANHyperboloid::getLocation(double u, double v) {
   return GMANPoint(r * cos(phi + theta), r * sin(phi + theta), zv);
 }
 
-GMANVector GMANHyperboloid::getNormal(double u, double v) {
+GMANVector GMANHyperboloid::getNormal(double u, double v) const {
   RtFloat dx = point2.getX() - point1.getX();
   RtFloat dy = point2.getY() - point1.getY();
   RtFloat dz = point2.getZ() - point1.getZ();
@@ -523,14 +523,14 @@ void GMANNuPatch::evaluate(double u, double v, GMANPoint& S, GMANVector& Su, GMA
   }
 }
 
-GMANPoint GMANNuPatch::getLocation(double u, double v) {
+GMANPoint GMANNuPatch::getLocation(double u, double v) const {
   GMANPoint S;
   GMANVector Su, Sv;
   evaluate(u, v, S, Su, Sv);
   return S;
 }
 
-GMANVector GMANNuPatch::getNormal(double u, double v) {
+GMANVector GMANNuPatch::getNormal(double u, double v) const {
   GMANPoint S;
   GMANVector Su, Sv;
   evaluate(u, v, S, Su, Sv);
@@ -553,7 +553,7 @@ GMANVector GMANNuPatch::getNormal(double u, double v) {
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_PARABOLOID.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANParaboloid::getLocation(double u, double v) {
+GMANPoint GMANParaboloid::getLocation(double u, double v) const {
   RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
 
   RtFloat factor = rmax * sqrt(v / zmax);
@@ -564,7 +564,7 @@ GMANPoint GMANParaboloid::getLocation(double u, double v) {
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANParaboloid::getNormal(double u, double v) {
+GMANVector GMANParaboloid::getNormal(double u, double v) const {
   // dP/du x dP/dv reduces to (cos theta, sin theta, -f'(v)/(zmax-zmin)),
   // where f(v)=rmax*sqrt(v/zmax) is getLocation's radial factor. f'(v)
   // diverges as v -> 0 (the apex), but the *normalized* direction still has
@@ -596,7 +596,7 @@ GMANPatch::GMANPatch(RtToken pat, RtFloat* p, GMANBasis const& b, GMANParameterL
   cpts[48] = 0.0;
 }
 
-GMANPoint GMANPatch::getLocation(double u, double v) {
+GMANPoint GMANPatch::getLocation(double u, double v) const {
   if (bicubic) {
     return basis.bicubic((RtFloat)u, (RtFloat)v, cpts);
   }
@@ -613,7 +613,7 @@ GMANPoint GMANPatch::getLocation(double u, double v) {
                    w00 * corner[0].getZ() + w10 * corner[1].getZ() + w01 * corner[2].getZ() + w11 * corner[3].getZ());
 }
 
-GMANVector GMANPatch::getNormal(double u, double v) {
+GMANVector GMANPatch::getNormal(double u, double v) const {
   if (bicubic) {
     // GMANBasis::bicubic has no derivative of its own; central-difference
     // it instead. The evaluator is a cubic polynomial in u and v, defined
@@ -715,7 +715,7 @@ void GMANPatchMesh::bilinearPatch(double u, double v, GMANPoint& p00, GMANPoint&
   p11 = point(u1, v1);
 }
 
-GMANPoint GMANPatchMesh::getLocation(double u, double v) {
+GMANPoint GMANPatchMesh::getLocation(double u, double v) const {
   if (bicubic) {
     return basis.bicubicMesh((RtFloat)u, (RtFloat)v, nu, uPeriodic, nv, vPeriodic, cpts.data());
   }
@@ -734,7 +734,7 @@ GMANPoint GMANPatchMesh::getLocation(double u, double v) {
                    w00 * p00.getZ() + w10 * p10.getZ() + w01 * p01.getZ() + w11 * p11.getZ());
 }
 
-GMANVector GMANPatchMesh::getNormal(double u, double v) {
+GMANVector GMANPatchMesh::getNormal(double u, double v) const {
   if (bicubic) {
     // Mirrors GMANPatch::getNormal's bicubic branch: normalize each
     // central-differenced tangent before crossing, cancelling the (2h)
@@ -742,7 +742,7 @@ GMANVector GMANPatchMesh::getNormal(double u, double v) {
     // underflows at large coordinate magnitudes -- unfixed here for the
     // same reason.
     const RtFloat h = (RtFloat)1.0e-4;
-    RtFloat* pts = cpts.data();
+    RtFloat const* pts = cpts.data();
     GMANPoint pu0 = basis.bicubicMesh((RtFloat)(u - h), (RtFloat)v, nu, uPeriodic, nv, vPeriodic, pts);
     GMANPoint pu1 = basis.bicubicMesh((RtFloat)(u + h), (RtFloat)v, nu, uPeriodic, nv, vPeriodic, pts);
     GMANPoint pv0 = basis.bicubicMesh((RtFloat)u, (RtFloat)(v - h), nu, uPeriodic, nv, vPeriodic, pts);
@@ -910,7 +910,7 @@ GMANPointsPolygons::~GMANPointsPolygons() { destroy(); }
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_SPHERE.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANSphere::getLocation(double u, double v) {
+GMANPoint GMANSphere::getLocation(double u, double v) const {
   // zmin/zmax bound the sphere's latitude range: v=0 is the zmin cap,
   // v=1 the zmax cap. A full sphere (zmin=-radius, zmax=radius) recovers
   // the two poles; RiSphere 1 -0.5 1 360 (a partial sphere) is why this
@@ -930,7 +930,7 @@ GMANPoint GMANSphere::getLocation(double u, double v) {
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANSphere::getNormal(double u, double v) {
+GMANVector GMANSphere::getNormal(double u, double v) const {
   // A sphere is centered at its local origin, so the outward normal is
   // simply the radial direction: normalize(P).
   GMANPoint p = getLocation(u, v);
@@ -1032,7 +1032,7 @@ RtVoid GMANSubdivisionMesh::destroy() {
 ///////////////////////////////////////////////////////////////////////////////
 ////  GMAN_TORUS.CPP
 ///////////////////////////////////////////////////////////////////////////////
-GMANPoint GMANTorus::getLocation(double u, double v) {
+GMANPoint GMANTorus::getLocation(double u, double v) const {
   RtFloat theta = u * (thetamax / 360.0) * 2.0 * std::numbers::pi;
   RtFloat phi = (phimin + (phimax - phimin) * v) / 360.0 * 2.0 * std::numbers::pi;
 
@@ -1044,7 +1044,7 @@ GMANPoint GMANTorus::getLocation(double u, double v) {
   return GMANPoint(x, y, z);
 }
 
-GMANVector GMANTorus::getNormal(double u, double v) {
+GMANVector GMANTorus::getNormal(double u, double v) const {
   // The tube cross-section is itself a circle, so the outward normal only
   // depends on phi (position around the tube) and theta (position around
   // the major radius) -- not on majorradius/minorradius's magnitudes.
