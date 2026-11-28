@@ -24,10 +24,8 @@
  * the transform builders, determinant and invert, p3m and p4m, the scalar
  * and matrix operators, setBasis, assign, indexing and get(). A failure
  * names the member, the instance, the matrix entry, and the expected and
- * actual values. Matrix4::operator=(U const (&)[4][4]) is declared and never
- * defined, so no test can call it. gman::transformPoint and
- * gman::transformDirection, which exist for RtFloat alone, are checked at
- * the end.
+ * actual values. gman::transformPoint and gman::transformDirection, which
+ * exist for RtFloat alone, are checked at the end.
  */
 
 #include <cstddef>

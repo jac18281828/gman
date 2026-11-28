@@ -91,9 +91,6 @@ public:
   Matrix4 operator+(Matrix4 const& m) const;
   Matrix4& operator+=(Matrix4 const& m);
 
-  template <typename U>
-    requires std::is_arithmetic_v<U>
-  Matrix4& operator=(U const (&m)[4][4]);
   Matrix4(Matrix4 const& m) = default;
 
   Matrix4& operator=(Matrix4 const& m);
