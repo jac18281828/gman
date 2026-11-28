@@ -576,6 +576,23 @@ set_tests_properties(hpointscale_pin PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_vector4template vector4template_test.cpp)
+target_link_libraries(gman_vector4template PRIVATE gman)
+add_test(NAME vector4template COMMAND gman_vector4template)
+set_tests_properties(vector4template PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
+# Vector4() leaves w uninitialised. Pins the decision that a default
+# Vector4 has w of 0; WILL_FAIL until the constructor sets w.
+add_executable(gman_vector4default_pin vector4default_pin_test.cpp)
+target_link_libraries(gman_vector4default_pin PRIVATE gman)
+add_test(NAME vector4default_pin COMMAND gman_vector4default_pin)
+set_tests_properties(vector4default_pin PROPERTIES
+  WILL_FAIL TRUE
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_subdivisiontag subdivisiontag_test.cpp)
 target_link_libraries(gman_subdivisiontag PRIVATE gman)
 add_test(NAME subdivisiontag COMMAND gman_subdivisiontag)
