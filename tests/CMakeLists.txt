@@ -498,6 +498,13 @@ set_tests_properties(geometrytemplates PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_vectortemplate vectortemplate_test.cpp)
+target_link_libraries(gman_vectortemplate PRIVATE gman)
+add_test(NAME vectortemplate COMMAND gman_vectortemplate)
+set_tests_properties(vectortemplate PROPERTIES
+  LABELS unit
+  TIMEOUT 30)
+
 add_executable(gman_subdivisiontag subdivisiontag_test.cpp)
 target_link_libraries(gman_subdivisiontag PRIVATE gman)
 add_test(NAME subdivisiontag COMMAND gman_subdivisiontag)
