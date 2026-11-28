@@ -298,11 +298,11 @@ RtVoid GMANRenderManImpl::RiEnd(RtVoid) {
 }
 
 RtVoid GMANRenderManImpl::releaseRenderer() {
+  currentWorld = emptyFrozenWorld();
   renderer.reset();
   // primitiveFactory belongs to renderer, not to this object; deleting it
   // invalidates it too.
   primitiveFactory = NULL;
-  currentWorld = emptyFrozenWorld();
   viewingSystem.reset();
 }
 
