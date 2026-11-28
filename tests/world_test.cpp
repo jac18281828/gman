@@ -199,7 +199,7 @@ void testOfType() {
   }
   check(unrelateds == std::vector<UnrelatedPrimitive const*>{unrelatedAt}, "ofType of the unrelated class yields one");
 
-  const GMANWorld empty;
+  const auto empty = GMANWorld();
   auto none = empty.ofType<CountedPrimitive>();
   check(std::ranges::empty(none), "ofType over an empty world is empty");
 }
