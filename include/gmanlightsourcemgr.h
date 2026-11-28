@@ -114,7 +114,7 @@ public:
   const GMANLight* get(RtLightHandle h) const;
 };
 
-// One light manager per render. A free function rather than a
+// One light manager per process. A free function rather than a
 // GMANRenderManImpl member so createParametric (tessellation time, where a
 // primitive's lit vertices are shaded) does not need a light manager
 // threaded through every GMANPrimitiveFactory::getRS* signature to reach it.

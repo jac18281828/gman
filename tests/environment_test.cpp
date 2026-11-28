@@ -125,9 +125,7 @@ void testMatrixReachesShader() {
 
   auto prim =
       mgr.getRSSphere((RtFloat)1.0, (RtFloat)-1.0, (RtFloat)1.0, (RtFloat)360.0, spherePl, options, attr, transform);
-  // Kept reachable the same way production does (GMANRenderManImpl::RiEnd
-  // leaves primitiveFactory deliberately unfreed) -- see
-  // tests/normals_test.cpp's own comment at its analogous getRSSphere call.
+  // The static world keeps prim alive to exit.
   static GMANWorld world;
   GMANObject* object = dynamic_cast<GMANObject*>(prim.get());
   world.add(std::move(prim));
