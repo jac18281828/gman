@@ -29,7 +29,6 @@
 
 #include "gmanmatrix4.h"
 #include "gmanvector.h"
-#include "ri.h"
 
 /* operators */
 GMANVector& GMANVector::operator*=(const GMANMatrix4& m) {
@@ -37,9 +36,9 @@ GMANVector& GMANVector::operator*=(const GMANMatrix4& m) {
   // transform the point
   GMANVector res;
 
-  for (RtInt i = 0; i < NCOORDS; i++) {
-    res[i] = m[i][0] * vec[X] + m[i][1] * vec[Y] + m[i][2] * vec[Z] + m[i][3];
-  }
+  res.x = m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3];
+  res.y = m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3];
+  res.z = m[2][0] * x + m[2][1] * y + m[2][2] * z + m[2][3];
 
   *this = res;
   return *this;

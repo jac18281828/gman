@@ -30,9 +30,9 @@
 
 RtVoid GMANHPoint::wToOne() {
   w = 1.0 / w;
-  c[X] *= w;
-  c[Y] *= w;
-  c[Z] *= w;
+  x *= w;
+  y *= w;
+  z *= w;
   w = 1.0;
 }
 

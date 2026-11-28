@@ -20,41 +20,33 @@
 #include "gmanhpoint.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
-#include "ri.h"
 
 GMANPoint::GMANPoint(GMANHPoint& p) {
   p.wToOne();
-  c[X] = p.getX();
-  c[Y] = p.getY();
-  c[Z] = p.getZ();
+  x = p.getX();
+  y = p.getY();
+  z = p.getZ();
 }
 
 /* operators */
 //--------------------------------------------------
 // == !=
-bool GMANPoint::operator==(const GMANPoint& v) const {
-  for (RtInt i = 0; i < NCOORDS; i++) {
-    if (c[i] != v.c[i]) {
-      return false;
-    }
-  }
-  return true;
-}
+bool GMANPoint::operator==(const GMANPoint& v) const { return x == v.x && y == v.y && z == v.z; }
 bool GMANPoint::operator!=(const GMANPoint& v) const { return !(*this == v); }
 
-bool GMANPoint::operator<(const GMANPoint& p) const { return ((c[X] < p.c[X]) && (c[Y] < p.c[Y]) && (c[Z] < p.c[Z])); }
+bool GMANPoint::operator<(const GMANPoint& p) const { return ((x < p.x) && (y < p.y) && (z < p.z)); }
 
 //-------------------------------------------------------------
 GMANPoint& GMANPoint::operator*=(const GMANMatrix4& m) {
 
   // transform the point
-  RtPoint res;
+  const auto rx = m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3];
+  const auto ry = m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3];
+  const auto rz = m[2][0] * x + m[2][1] * y + m[2][2] * z + m[2][3];
 
-  for (RtInt i = 0; i < NCOORDS; i++) {
-    res[i] = m[i][0] * c[X] + m[i][1] * c[Y] + m[i][2] * c[Z] + m[i][3];
-  }
-
-  *this = res;
+  x = rx;
+  y = ry;
+  z = rz;
 
   return *this;
 }

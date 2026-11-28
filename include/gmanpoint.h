@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include "gman/export.h"
 #include "gmanmatrix4.h"
 #include "ri.h"
@@ -45,21 +47,13 @@ public:
 
 protected:
   // point spatial coordinates
-  RtPoint c;
+  RtFloat x, y, z;
 
 public:
   //! Constructor
-  GMANPoint(RtFloat xv = 0.0, RtFloat yv = 0.0, RtFloat zv = 0.0) {
-    c[X] = xv;
-    c[Y] = yv;
-    c[Z] = zv;
-  }
+  GMANPoint(RtFloat xv = 0.0, RtFloat yv = 0.0, RtFloat zv = 0.0) : x(xv), y(yv), z(zv) {}
 
-  GMANPoint(RtPoint f) {
-    for (RtInt i = 0; i < NCOORDS; i++) {
-      c[i] = f[i];
-    }
-  }
+  GMANPoint(RtPoint f) : x(f[X]), y(f[Y]), z(f[Z]) {}
 
   GMANPoint(GMANHPoint& p);
 
@@ -67,21 +61,31 @@ public:
   ~GMANPoint() {}
 
   // X
-  RtVoid setX(RtFloat xv) { c[X] = xv; };
-  RtFloat getX(RtVoid) const { return c[X]; };
+  RtVoid setX(RtFloat xv) { x = xv; };
+  RtFloat getX(RtVoid) const { return x; };
 
   // Y
-  RtVoid setY(RtFloat yv) { c[Y] = yv; };
-  RtFloat getY(RtVoid) const { return c[Y]; };
+  RtVoid setY(RtFloat yv) { y = yv; };
+  RtFloat getY(RtVoid) const { return y; };
 
   // Z
-  RtVoid setZ(RtFloat zv) { c[Z] = zv; };
-  RtFloat getZ(RtVoid) const { return c[Z]; };
+  RtVoid setZ(RtFloat zv) { z = zv; };
+  RtFloat getZ(RtVoid) const { return z; };
+
+  const RtFloat& operator[](std::size_t i) const {
+    if (i == X) {
+      return x;
+    }
+    if (i == Y) {
+      return y;
+    }
+    return z;
+  }
 
   GMANPoint& operator=(RtFloat f) {
-    for (RtInt i = 0; i < NCOORDS; i++) {
-      c[i] = f;
-    }
+    x = f;
+    y = f;
+    z = f;
     return *this;
   }
 
@@ -92,18 +96,18 @@ public:
 
   // geometric addition of two points
   GMANPoint& operator+=(const GMANPoint& p) {
-    for (int i = 0; i < NCOORDS; i++) {
-      c[i] += p.c[i];
-    }
+    x += p.x;
+    y += p.y;
+    z += p.z;
 
     return *this;
   }
 
   // scale point by a constant
   GMANPoint& operator*=(RtFloat f) {
-    for (int i = 0; i < NCOORDS; i++) {
-      c[i] *= f;
-    }
+    x *= f;
+    y *= f;
+    z *= f;
 
     return *this;
   }
@@ -126,6 +130,4 @@ public:
 
   // transform THIS point using matrix
   GMANPoint& operator*=(const GMANMatrix4& m);
-
-  const RtPoint& get(RtVoid) const { return c; }
 };

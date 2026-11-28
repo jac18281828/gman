@@ -75,7 +75,7 @@ public:
   RtVoid setW(RtFloat wval) { w = wval; };
 
   // get magnitude
-  RtFloat magnitude(RtVoid) { return sqrt(vec[X] * vec[X] + vec[Y] * vec[Y] + vec[Z] * vec[Z] + w * w); };
+  RtFloat magnitude(RtVoid) { return sqrt(x * x + y * y + z * z + w * w); };
 
   // mul/assign vector
   //
@@ -103,14 +103,14 @@ public:
 
   // add this vector and another
   GMANVector4 operator+(const GMANVector4& v) const {
-    GMANVector4 res(vec[X] + v.vec[X], vec[Y] + v.vec[Y], vec[Z] + v.vec[Z], w + v.w);
+    GMANVector4 res(x + v.x, y + v.y, z + v.z, w + v.w);
 
     return res;
   };
 
   // sub this vector and another
   GMANVector4 operator-(const GMANVector4& v) const {
-    GMANVector4 res(vec[X] - v.vec[X], vec[Y] - v.vec[Y], vec[Z] - v.vec[Z], w - v.w);
+    GMANVector4 res(x - v.x, y - v.y, z - v.z, w - v.w);
 
     return res;
   };
@@ -208,26 +208,26 @@ public:
 
   // premultiply vector by projective matrix
   RtVoid projTransform(const GMANVector& p, const RtMatrix& ptm) {
-    vec[X] = (RtFloat)(ptm[0][0] * p.getX() + ptm[0][1] * p.getY() + ptm[0][2] * p.getZ() + ptm[0][3]);
+    x = (RtFloat)(ptm[0][0] * p.getX() + ptm[0][1] * p.getY() + ptm[0][2] * p.getZ() + ptm[0][3]);
 
-    vec[Y] = (RtFloat)(ptm[1][0] * p.getX() + ptm[1][1] * p.getY() + ptm[1][2] * p.getZ() + ptm[1][3]);
+    y = (RtFloat)(ptm[1][0] * p.getX() + ptm[1][1] * p.getY() + ptm[1][2] * p.getZ() + ptm[1][3]);
 
-    vec[Z] = (RtFloat)(ptm[2][0] * p.getX() + ptm[2][1] * p.getY() + ptm[2][2] * p.getZ() + ptm[2][3]);
+    z = (RtFloat)(ptm[2][0] * p.getX() + ptm[2][1] * p.getY() + ptm[2][2] * p.getZ() + ptm[2][3]);
 
     w = (RtFloat)(ptm[3][0] * p.getX() + ptm[3][1] * p.getY() + ptm[3][2] * p.getZ() + ptm[3][3]);
   }
 
   // perform perspective division on point
   RtVoid perspective(GMANPoint& p) {
-    p.setX(vec[X] / w);
-    p.setY(vec[Y] / w);
-    p.setZ(vec[Z] / w);
+    p.setX(x / w);
+    p.setY(y / w);
+    p.setZ(z / w);
   }
 
   // perform perspective division on vector
   RtVoid perspective(GMANVector& v) const {
-    v.setX(vec[X] / w);
-    v.setY(vec[Y] / w);
-    v.setZ(vec[Z] / w);
+    v.setX(x / w);
+    v.setY(y / w);
+    v.setZ(z / w);
   }
 };
