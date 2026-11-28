@@ -25,54 +25,72 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 
 #include "gman/export.h"
 #include "gmanmatrix4.h"
+#include "gmanreal.h"
 #include "ri.h"
 
-class GMANHPoint;
+namespace gman {
+
+template <typename T> class GMAN_EXPORT HPoint;
+
+} // namespace gman
+
+using GMANHPoint = gman::HPoint<RtFloat>;
+
+namespace gman {
 
 /*
- * RenderMan API GMANPoint
+ * RenderMan API Point
  *
- * A point in space
+ * A point in space over the real scalar T. GMANPoint names the RtFloat
+ * instance, the only one built from a RenderMan array. Point<U> converts
+ * explicitly to Point<T>.
  *
  */
 
-class GMAN_EXPORT GMANPoint {
+template <typename T> class GMAN_EXPORT Point {
 public:
   // public type
   typedef enum { X = 0, Y = 1, Z = 2, NCOORDS } CoordType;
 
 protected:
   // point spatial coordinates
-  RtFloat x, y, z;
+  T x, y, z;
 
 public:
   //! Constructor
-  GMANPoint(RtFloat xv = 0.0, RtFloat yv = 0.0, RtFloat zv = 0.0) : x(xv), y(yv), z(zv) {}
+  Point(T xv = 0.0, T yv = 0.0, T zv = 0.0) : x(xv), y(yv), z(zv) {}
 
-  GMANPoint(RtPoint f) : x(f[X]), y(f[Y]), z(f[Z]) {}
+  Point(RtFloat const* f)
+    requires std::same_as<T, RtFloat>
+      : x(f[X]), y(f[Y]), z(f[Z]) {}
 
-  GMANPoint(GMANHPoint& p);
+  template <typename U>
+  explicit Point(Point<U> const& p)
+      : x(static_cast<T>(p.getX())), y(static_cast<T>(p.getY())), z(static_cast<T>(p.getZ())) {}
+
+  Point(HPoint<T>& p);
 
   //! Destructor
-  ~GMANPoint() {}
+  ~Point() {}
 
   // X
-  RtVoid setX(RtFloat xv) { x = xv; };
-  RtFloat getX(RtVoid) const { return x; };
+  RtVoid setX(T xv) { x = xv; };
+  T getX(RtVoid) const { return x; };
 
   // Y
-  RtVoid setY(RtFloat yv) { y = yv; };
-  RtFloat getY(RtVoid) const { return y; };
+  RtVoid setY(T yv) { y = yv; };
+  T getY(RtVoid) const { return y; };
 
   // Z
-  RtVoid setZ(RtFloat zv) { z = zv; };
-  RtFloat getZ(RtVoid) const { return z; };
+  RtVoid setZ(T zv) { z = zv; };
+  T getZ(RtVoid) const { return z; };
 
-  const RtFloat& operator[](std::size_t i) const {
+  T const& operator[](std::size_t i) const {
     if (i == X) {
       return x;
     }
@@ -82,20 +100,20 @@ public:
     return z;
   }
 
-  GMANPoint& operator=(RtFloat f) {
+  Point& operator=(T f) {
     x = f;
     y = f;
     z = f;
     return *this;
   }
 
-  bool operator==(const GMANPoint& v) const;
-  bool operator!=(const GMANPoint& v) const;
+  bool operator==(Point const& v) const;
+  bool operator!=(Point const& v) const;
 
-  bool operator<(const GMANPoint& p) const;
+  bool operator<(Point const& p) const;
 
   // geometric addition of two points
-  GMANPoint& operator+=(const GMANPoint& p) {
+  Point& operator+=(Point const& p) {
     x += p.x;
     y += p.y;
     z += p.z;
@@ -104,7 +122,7 @@ public:
   }
 
   // scale point by a constant
-  GMANPoint& operator*=(RtFloat f) {
+  Point& operator*=(T f) {
     x *= f;
     y *= f;
     z *= f;
@@ -113,21 +131,28 @@ public:
   }
 
   // geometric addition of two points
-  GMANPoint operator+(const GMANPoint& p) const {
-    GMANPoint res(*this);
+  Point operator+(Point const& p) const {
+    Point res(*this);
 
     res += p;
     return res;
   }
 
   // scale point by a constant
-  GMANPoint operator*(RtFloat f) const {
-    GMANPoint res(*this);
+  Point operator*(T f) const {
+    Point res(*this);
 
     res *= f;
     return res;
   }
 
   // transform THIS point using matrix
-  GMANPoint& operator*=(const GMANMatrix4& m);
+  Point& operator*=(Matrix4<T> const& m);
 };
+
+} // namespace gman
+
+using GMANPoint = gman::Point<RtFloat>;
+
+extern template class gman::Point<RtFloat>;
+extern template class gman::Point<gman::PartnerReal>;

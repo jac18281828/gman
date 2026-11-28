@@ -20,8 +20,12 @@
 #include "gmanhpoint.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "gmanreal.h"
+#include "ri.h"
 
-GMANPoint::GMANPoint(GMANHPoint& p) {
+namespace gman {
+
+template <typename T> Point<T>::Point(HPoint<T>& p) {
   p.wToOne();
   x = p.getX();
   y = p.getY();
@@ -31,13 +35,13 @@ GMANPoint::GMANPoint(GMANHPoint& p) {
 /* operators */
 //--------------------------------------------------
 // == !=
-bool GMANPoint::operator==(const GMANPoint& v) const { return x == v.x && y == v.y && z == v.z; }
-bool GMANPoint::operator!=(const GMANPoint& v) const { return !(*this == v); }
+template <typename T> bool Point<T>::operator==(Point const& v) const { return x == v.x && y == v.y && z == v.z; }
+template <typename T> bool Point<T>::operator!=(Point const& v) const { return !(*this == v); }
 
-bool GMANPoint::operator<(const GMANPoint& p) const { return ((x < p.x) && (y < p.y) && (z < p.z)); }
+template <typename T> bool Point<T>::operator<(Point const& p) const { return ((x < p.x) && (y < p.y) && (z < p.z)); }
 
 //-------------------------------------------------------------
-GMANPoint& GMANPoint::operator*=(const GMANMatrix4& m) {
+template <typename T> Point<T>& Point<T>::operator*=(Matrix4<T> const& m) {
 
   // transform the point
   const auto rx = m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3];
@@ -50,3 +54,8 @@ GMANPoint& GMANPoint::operator*=(const GMANMatrix4& m) {
 
   return *this;
 }
+
+} // namespace gman
+
+template class gman::Point<RtFloat>;
+template class gman::Point<gman::PartnerReal>;

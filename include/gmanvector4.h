@@ -25,57 +25,69 @@
 
 #pragma once
 
+#include <concepts>
+
 #include <math.h>
 
 #include "gman/export.h"
 #include "gmanhpoint.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "gmanreal.h"
 #include "gmanvector.h"
 #include "ri.h"
 
 /* forward declaration of the viewing system */
 class GMANViewingSystem;
 
+namespace gman {
+
 /*
- * RenderMan API GMANVector4
+ * RenderMan API Vector4
  *
+ * A four-component vector over the real scalar T; GMANVector4 names the RtFloat
+ * instance, the only one built from a RenderMan array or projected by a
+ * RenderMan matrix.
  */
 
-class GMAN_EXPORT GMANVector4 : public GMANVector {
+template <typename T> class GMAN_EXPORT Vector4 : public Vector<T> {
 private:
-  RtFloat w; // the w-axis coord
+  T w; // the w-axis coord
 
   // cross product disabled for now
 
   // compute the cross product of this vector with another
-  GMANVector4 cross(const GMANVector& /*vec*/) { return *this; };
+  Vector4 cross(Vector<T> const& /*vec*/) { return *this; };
 
 public:
-  GMANVector4(); // default constructor
+  Vector4(); // default constructor
 
-  GMANVector4(RtFloat xval, RtFloat yval, RtFloat zval, RtFloat wval) : GMANVector(xval, yval, zval), w(wval) {};
+  Vector4(T xval, T yval, T zval, T wval) : Vector<T>(xval, yval, zval), w(wval) {};
 
-  GMANVector4(RtFloat const* pts) : GMANVector(pts) {
+  Vector4(RtFloat const* pts)
+    requires std::same_as<T, RtFloat>
+      : Vector<T>(pts) {
     // assume we get 4 pts
     w = pts[3];
   }
 
-  GMANVector4(const GMANHPoint& p) : GMANVector(p), w(p.getW()) {}
+  Vector4(HPoint<T> const& p) : Vector<T>(p), w(p.getW()) {}
 
-  ~GMANVector4(); // default destructor
+  template <typename U> explicit Vector4(Vector4<U> const& v) : Vector<T>(v), w(static_cast<T>(v.getW())) {}
+
+  ~Vector4(); // default destructor
 
   /* Same as GMANVector: the destructor above deprecates the implicit copy
    * constructor, which gcc rejects under -Werror=deprecated-copy. Copy
    * assignment is user-provided below. */
-  GMANVector4(const GMANVector4&) = default;
+  Vector4(Vector4 const&) = default;
 
   // get and set w
-  RtFloat getW(RtVoid) const { return w; };
-  RtVoid setW(RtFloat wval) { w = wval; };
+  T getW(RtVoid) const { return w; };
+  RtVoid setW(T wval) { w = wval; };
 
   // get magnitude
-  RtFloat magnitude(RtVoid) { return sqrt(x * x + y * y + z * z + w * w); };
+  T magnitude(RtVoid) { return sqrt(this->x * this->x + this->y * this->y + this->z * this->z + w * w); };
 
   // mul/assign vector
   //
@@ -83,107 +95,107 @@ public:
   // slice, mutate that, and discard it, so x,y,z of *this would stay
   // unchanged and only w would change. Assign the components directly
   // instead.
-  GMANVector4& operator*=(const GMANVector4& v) {
-    setX(getX() * v.getX());
-    setY(getY() * v.getY());
-    setZ(getZ() * v.getZ());
+  Vector4& operator*=(Vector4 const& v) {
+    this->setX(this->getX() * v.getX());
+    this->setY(this->getY() * v.getY());
+    this->setZ(this->getZ() * v.getZ());
     w *= v.w;
 
     return *this;
   }
 
   // multiply vector by scaler
-  GMANVector4& operator*=(RtFloat s) {
-    setX(getX() * s);
-    setY(getY() * s);
-    setZ(getZ() * s);
+  Vector4& operator*=(T s) {
+    this->setX(this->getX() * s);
+    this->setY(this->getY() * s);
+    this->setZ(this->getZ() * s);
     w *= s;
     return *this;
   }
 
   // add this vector and another
-  GMANVector4 operator+(const GMANVector4& v) const {
-    GMANVector4 res(x + v.x, y + v.y, z + v.z, w + v.w);
+  Vector4 operator+(Vector4 const& v) const {
+    Vector4 res(this->x + v.x, this->y + v.y, this->z + v.z, w + v.w);
 
     return res;
   };
 
   // sub this vector and another
-  GMANVector4 operator-(const GMANVector4& v) const {
-    GMANVector4 res(x - v.x, y - v.y, z - v.z, w - v.w);
+  Vector4 operator-(Vector4 const& v) const {
+    Vector4 res(this->x - v.x, this->y - v.y, this->z - v.z, w - v.w);
 
     return res;
   };
 
   // turn off some methods
   // assign a scaler to each vector value
-  GMANVector4& operator=(RtFloat s) {
-    setX(s);
-    setY(s);
-    setZ(s);
+  Vector4& operator=(T s) {
+    this->setX(s);
+    this->setY(s);
+    this->setZ(s);
     w = s;
     return *this;
   };
 
-  GMANVector4& operator=(const GMANVector& v) {
-    setX(v.getX());
-    setY(v.getY());
-    setZ(v.getZ());
+  Vector4& operator=(Vector<T> const& v) {
+    this->setX(v.getX());
+    this->setY(v.getY());
+    this->setZ(v.getZ());
     w = 1.0;
     return *this;
   }
 
-  GMANVector4& operator=(const GMANVector4& v) {
-    setX(v.getX());
-    setY(v.getY());
-    setZ(v.getZ());
+  Vector4& operator=(Vector4 const& v) {
+    this->setX(v.getX());
+    this->setY(v.getY());
+    this->setZ(v.getZ());
     w = v.w;
     return *this;
   }
 
   // subtract/assign vector
-  GMANVector4& operator-=(const GMANVector4& v) {
-    setX(getX() - v.getX());
-    setY(getY() - v.getY());
-    setZ(getZ() - v.getZ());
+  Vector4& operator-=(Vector4 const& v) {
+    this->setX(this->getX() - v.getX());
+    this->setY(this->getY() - v.getY());
+    this->setZ(this->getZ() - v.getZ());
     w -= v.w;
     return *this;
   }
 
   // divide vector by scaler
-  GMANVector4& operator/=(RtFloat s) {
-    setX(getX() / s);
-    setY(getY() / s);
-    setZ(getZ() / s);
+  Vector4& operator/=(T s) {
+    this->setX(this->getX() / s);
+    this->setY(this->getY() / s);
+    this->setZ(this->getZ() / s);
     w /= s;
     return *this;
   }
   // multiply by a scaler
-  GMANVector4 operator*(const RtFloat s) {
-    GMANVector4 res(*this);
+  Vector4 operator*(const T s) {
+    Vector4 res(*this);
     res *= s;
     return res;
   };
 
   // divide by a scaler
-  GMANVector4 operator/(const RtFloat s) {
-    GMANVector4 res(*this);
+  Vector4 operator/(const T s) {
+    Vector4 res(*this);
     res /= s;
     return res;
   };
 
-  GMANVector4& operator*=(const GMANMatrix4& m);
+  Vector4& operator*=(Matrix4<T> const& m);
 
-  operator GMANHPoint() {
-    GMANHPoint res(getX(), getY(), getZ(), getW());
+  operator HPoint<T>() {
+    HPoint<T> res(this->getX(), this->getY(), this->getZ(), getW());
 
     return res;
   }
 
   // normalize vector by magnitude
-  GMANVector4& normalize(RtVoid) {
+  Vector4& normalize(RtVoid) {
 
-    RtFloat m = magnitude();
+    auto m = magnitude();
 
     if (m < RI_EPSILON)
       m = 1.0;
@@ -194,40 +206,51 @@ public:
   }
 
   // compute the dot product of this vector with another
-  RtFloat dot(const GMANVector4& vec) {
-    RtFloat sDot = GMANVector(*this).dot(GMANVector(vec));
+  T dot(Vector4 const& vec) {
+    auto sDot = Vector<T>(*this).dot(Vector<T>(vec));
     return sDot + w * vec.w;
   }
 
   // premultiply point by projective matrix
-  RtVoid projTransform(const GMANPoint& p, const RtMatrix& ptm) {
-    GMANVector v(p);
+  RtVoid projTransform(Point<T> const& p, RtMatrix const& ptm)
+    requires std::same_as<T, RtFloat>
+  {
+    Vector<T> v(p);
 
     projTransform(v, ptm);
   }
 
   // premultiply vector by projective matrix
-  RtVoid projTransform(const GMANVector& p, const RtMatrix& ptm) {
-    x = (RtFloat)(ptm[0][0] * p.getX() + ptm[0][1] * p.getY() + ptm[0][2] * p.getZ() + ptm[0][3]);
+  RtVoid projTransform(Vector<T> const& p, RtMatrix const& ptm)
+    requires std::same_as<T, RtFloat>
+  {
+    this->x = (RtFloat)(ptm[0][0] * p.getX() + ptm[0][1] * p.getY() + ptm[0][2] * p.getZ() + ptm[0][3]);
 
-    y = (RtFloat)(ptm[1][0] * p.getX() + ptm[1][1] * p.getY() + ptm[1][2] * p.getZ() + ptm[1][3]);
+    this->y = (RtFloat)(ptm[1][0] * p.getX() + ptm[1][1] * p.getY() + ptm[1][2] * p.getZ() + ptm[1][3]);
 
-    z = (RtFloat)(ptm[2][0] * p.getX() + ptm[2][1] * p.getY() + ptm[2][2] * p.getZ() + ptm[2][3]);
+    this->z = (RtFloat)(ptm[2][0] * p.getX() + ptm[2][1] * p.getY() + ptm[2][2] * p.getZ() + ptm[2][3]);
 
     w = (RtFloat)(ptm[3][0] * p.getX() + ptm[3][1] * p.getY() + ptm[3][2] * p.getZ() + ptm[3][3]);
   }
 
   // perform perspective division on point
-  RtVoid perspective(GMANPoint& p) {
-    p.setX(x / w);
-    p.setY(y / w);
-    p.setZ(z / w);
+  RtVoid perspective(Point<T>& p) {
+    p.setX(this->x / w);
+    p.setY(this->y / w);
+    p.setZ(this->z / w);
   }
 
   // perform perspective division on vector
-  RtVoid perspective(GMANVector& v) const {
-    v.setX(x / w);
-    v.setY(y / w);
-    v.setZ(z / w);
+  RtVoid perspective(Vector<T>& v) const {
+    v.setX(this->x / w);
+    v.setY(this->y / w);
+    v.setZ(this->z / w);
   }
 };
+
+} // namespace gman
+
+using GMANVector4 = gman::Vector4<RtFloat>;
+
+extern template class gman::Vector4<RtFloat>;
+extern template class gman::Vector4<gman::PartnerReal>;

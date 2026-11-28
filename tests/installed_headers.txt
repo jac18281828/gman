@@ -62,6 +62,7 @@ gmanrayprimitive.h
 gmanrayprimitivefactory.h
 gmanraysphere.h
 gmanraytorus.h
+gmanreal.h
 gmanrenderer.h
 gmanrenderman.h
 gmanrenderprogress.h

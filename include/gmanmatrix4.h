@@ -26,61 +26,91 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 
 #include "gman/export.h"
+#include "gmanreal.h"
 #include "ri.h"
 
-class GMANPoint;
-class GMANVector;
+namespace gman {
 
-class GMAN_EXPORT GMANMatrix4 {
+template <typename T> class GMAN_EXPORT Point;
+template <typename T> class GMAN_EXPORT Vector;
+
+} // namespace gman
+
+using GMANPoint = gman::Point<RtFloat>;
+using GMANVector = gman::Vector<RtFloat>;
+
+namespace gman {
+
+// A 4x4 matrix over the real scalar T. Only the RtFloat instance converts to
+// and from the RenderMan array types; Matrix4<U> converts explicitly to
+// Matrix4<T>.
+template <typename T> class GMAN_EXPORT Matrix4 {
 private:
-  RtMatrix mtrx;
+  T mtrx[4][4];
 
 public:
-  GMANMatrix4();
-  GMANMatrix4(RtMatrix m);
+  Matrix4();
+  Matrix4(RtMatrix m)
+    requires std::same_as<T, RtFloat>;
+
+  template <typename U> explicit Matrix4(Matrix4<U> const& m) {
+    for (RtInt i = 0; i < 4; i++)
+      for (RtInt j = 0; j < 4; j++)
+        mtrx[i][j] = static_cast<T>(m[i][j]);
+  }
 
   RtVoid identity();
-  RtVoid concat(const GMANMatrix4& m);
-  RtVoid persp(RtFloat fov);
-  RtVoid trans(RtFloat dx, RtFloat dy, RtFloat dz);
-  RtVoid rot(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz);
-  RtVoid scale(RtFloat sx, RtFloat sy, RtFloat sz);
-  RtVoid skew(RtFloat angle, GMANVector& a, GMANVector& b);
+  RtVoid concat(Matrix4 const& m);
+  RtVoid persp(T fov);
+  RtVoid trans(T dx, T dy, T dz);
+  RtVoid rot(T angle, T dx, T dy, T dz);
+  RtVoid scale(T sx, T sy, T sz);
+  RtVoid skew(T angle, Vector<T>& a, Vector<T>& b);
 
-  RtVoid prjPersp(RtFloat fov, RtFloat nearOne, RtFloat farOne);
-  RtVoid prjOrtho(RtFloat nearOne, RtFloat farOne);
+  RtVoid prjPersp(T fov, T nearOne, T farOne);
+  RtVoid prjOrtho(T nearOne, T farOne);
 
-  RtFloat determinant(RtVoid);
+  T determinant(RtVoid);
   RtVoid invert(RtVoid);
 
-  RtVoid p3m(RtInt n, RtFloat* src, RtFloat* dest) const;
-  RtVoid p4m(RtInt n, RtFloat* src, RtFloat* dest) const;
+  RtVoid p3m(RtInt n, T* src, T* dest) const;
+  RtVoid p4m(RtInt n, T* src, T* dest) const;
 
-  GMANMatrix4 operator*(RtFloat f) const;
-  GMANMatrix4& operator*=(RtFloat f);
-  GMANMatrix4 operator*(const GMANMatrix4& m) const;
-  GMANMatrix4& operator*=(const GMANMatrix4& m);
-  GMANMatrix4 operator+(const GMANMatrix4& m) const;
-  GMANMatrix4& operator+=(const GMANMatrix4& m);
+  Matrix4 operator*(T f) const;
+  Matrix4& operator*=(T f);
+  Matrix4 operator*(Matrix4 const& m) const;
+  Matrix4& operator*=(Matrix4 const& m);
+  Matrix4 operator+(Matrix4 const& m) const;
+  Matrix4& operator+=(Matrix4 const& m);
 
-  GMANMatrix4& operator=(const RtMatrix& m);
-  GMANMatrix4(const GMANMatrix4& m) = default;
+  Matrix4& operator=(RtMatrix const& m)
+    requires std::same_as<T, RtFloat>;
+  Matrix4(Matrix4 const& m) = default;
 
-  GMANMatrix4& operator=(const GMANMatrix4& m);
+  Matrix4& operator=(Matrix4 const& m);
 
-  GMANMatrix4& assign(const GMANMatrix4& m);
+  Matrix4& assign(Matrix4 const& m);
 
-  RtVoid setBasis(RtBasis& b);
+  RtVoid setBasis(RtBasis& b)
+    requires std::same_as<T, RtFloat>;
 
-  RtFloat* operator[](size_t i) { return mtrx[i]; }
+  T* operator[](std::size_t i) { return mtrx[i]; }
 
-  const RtFloat* operator[](size_t i) const { return mtrx[i]; }
+  T const* operator[](std::size_t i) const { return mtrx[i]; }
 
-  const RtMatrix& get(RtVoid) const { return mtrx; }
+  T const (&get(RtVoid) const)[4][4] { return mtrx; }
 };
+
+} // namespace gman
+
+using GMANMatrix4 = gman::Matrix4<RtFloat>;
+
+extern template class gman::Matrix4<RtFloat>;
+extern template class gman::Matrix4<gman::PartnerReal>;
 
 namespace gman {
 

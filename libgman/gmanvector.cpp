@@ -28,13 +28,17 @@
 #include <math.h>
 
 #include "gmanmatrix4.h"
+#include "gmanreal.h"
 #include "gmanvector.h"
+#include "ri.h"
+
+namespace gman {
 
 /* operators */
-GMANVector& GMANVector::operator*=(const GMANMatrix4& m) {
+template <typename T> Vector<T>& Vector<T>::operator*=(Matrix4<T> const& m) {
 
   // transform the point
-  GMANVector res;
+  Vector res;
 
   res.x = m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3];
   res.y = m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3];
@@ -43,3 +47,8 @@ GMANVector& GMANVector::operator*=(const GMANMatrix4& m) {
   *this = res;
   return *this;
 }
+
+} // namespace gman
+
+template class gman::Vector<RtFloat>;
+template class gman::Vector<gman::PartnerReal>;

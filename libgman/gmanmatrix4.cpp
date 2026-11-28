@@ -26,23 +26,30 @@
  */
 
 #include <cmath>
+#include <concepts>
 
 #include "gmanerror.h"
 #include "gmanmath.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "gmanreal.h"
 #include "gmanvector.h"
 #include "ri.h"
 
-GMANMatrix4::GMANMatrix4() { identity(); }
+namespace gman {
 
-GMANMatrix4::GMANMatrix4(RtMatrix m) {
+template <typename T> Matrix4<T>::Matrix4() { identity(); }
+
+template <typename T>
+Matrix4<T>::Matrix4(RtMatrix m)
+  requires std::same_as<T, RtFloat>
+{
   for (RtInt i = 0; i < 4; i++)
     for (RtInt j = 0; j < 4; j++)
       mtrx[i][j] = m[i][j];
 }
 
-RtVoid GMANMatrix4::identity(RtVoid) {
+template <typename T> RtVoid Matrix4<T>::identity(RtVoid) {
   for (RtInt i = 0; i < 4; i++)
     for (RtInt j = 0; j < 4; j++)
       if (i == j)
@@ -51,7 +58,7 @@ RtVoid GMANMatrix4::identity(RtVoid) {
         mtrx[i][j] = 0.0;
 }
 
-GMANMatrix4& GMANMatrix4::operator=(const GMANMatrix4& m) {
+template <typename T> Matrix4<T>& Matrix4<T>::operator=(Matrix4 const& m) {
   for (RtInt i = 0; i < 4; i++) {
     for (RtInt j = 0; j < 4; j++) {
       mtrx[i][j] = m[i][j];
@@ -61,12 +68,12 @@ GMANMatrix4& GMANMatrix4::operator=(const GMANMatrix4& m) {
   return *this;
 }
 
-RtVoid GMANMatrix4::concat(const GMANMatrix4& m) { *this *= m; }
+template <typename T> RtVoid Matrix4<T>::concat(Matrix4 const& m) { *this *= m; }
 
 // near=1 far=+infinity (The RenderMan Companion)
-RtVoid GMANMatrix4::persp(RtFloat fov) {
-  GMANMatrix4 m;
-  RtFloat t = tan((fov / 2) * DEGTORAD);
+template <typename T> RtVoid Matrix4<T>::persp(T fov) {
+  Matrix4 m;
+  T t = tan((fov / 2) * DEGTORAD);
   m.mtrx[0][3] = t;
   m.mtrx[1][3] = -t;
   m.mtrx[2][3] = t;
@@ -74,20 +81,20 @@ RtVoid GMANMatrix4::persp(RtFloat fov) {
   concat(m);
 }
 
-RtVoid GMANMatrix4::trans(RtFloat dx, RtFloat dy, RtFloat dz) {
-  GMANMatrix4 m;
+template <typename T> RtVoid Matrix4<T>::trans(T dx, T dy, T dz) {
+  Matrix4 m;
   m.mtrx[3][0] = dx;
   m.mtrx[3][1] = dy;
   m.mtrx[3][2] = dz;
   concat(m);
 }
 
-RtVoid GMANMatrix4::rot(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
-  GMANMatrix4 m;
-  RtFloat s, c, omc, xx, xy, xz, yy, yz, zz;
+template <typename T> RtVoid Matrix4<T>::rot(T angle, T dx, T dy, T dz) {
+  Matrix4 m;
+  T s, c, omc, xx, xy, xz, yy, yz, zz;
 
   // Normalize the axis
-  RtFloat mag = sqrt(dx * dx + dy * dy + dz * dz);
+  T mag = sqrt(dx * dx + dy * dy + dz * dz);
   dx /= mag;
   dy /= mag;
   dz /= mag;
@@ -117,21 +124,21 @@ RtVoid GMANMatrix4::rot(RtFloat angle, RtFloat dx, RtFloat dy, RtFloat dz) {
   concat(m);
 }
 
-RtVoid GMANMatrix4::scale(RtFloat sx, RtFloat sy, RtFloat sz) {
-  GMANMatrix4 m;
+template <typename T> RtVoid Matrix4<T>::scale(T sx, T sy, T sz) {
+  Matrix4 m;
   m.mtrx[0][0] = sx;
   m.mtrx[1][1] = sy;
   m.mtrx[2][2] = sz;
   concat(m);
 }
 
-RtVoid GMANMatrix4::skew(RtFloat angle, GMANVector& a, GMANVector& b) {
-  GMANMatrix4 m;
-  GMANVector n1, n2;
-  GMANVector a1, a2;
-  RtFloat an1, an2;
-  RtFloat rx, ry;
-  RtFloat alpha;
+template <typename T> RtVoid Matrix4<T>::skew(T angle, Vector<T>& a, Vector<T>& b) {
+  Matrix4 m;
+  Vector<T> n1, n2;
+  Vector<T> a1, a2;
+  T an1, an2;
+  T rx, ry;
+  T alpha;
 
   n2 = b.normalize();
   a1 = n2 * a.dot(n2);
@@ -178,8 +185,8 @@ RtVoid GMANMatrix4::skew(RtFloat angle, GMANVector& a, GMANVector& b) {
 // in use for the projection stage (see persp(), above, which the RiPerspective
 // transform command builds the same way). w is placed in row 3 so it carries
 // z directly (RenderMan's camera looks down +z) instead of a constant.
-RtVoid GMANMatrix4::prjPersp(RtFloat fov, RtFloat nearDist, RtFloat farDist) {
-  RtFloat invT = 1.0 / tan((fov / 2) * DEGTORAD);
+template <typename T> RtVoid Matrix4<T>::prjPersp(T fov, T nearDist, T farDist) {
+  T invT = 1.0 / tan((fov / 2) * DEGTORAD);
 
   identity();
   mtrx[0][0] = invT;
@@ -190,7 +197,7 @@ RtVoid GMANMatrix4::prjPersp(RtFloat fov, RtFloat nearDist, RtFloat farDist) {
   mtrx[3][3] = 0.0;
 }
 
-RtVoid GMANMatrix4::prjOrtho(RtFloat nearDist, RtFloat farDist) {
+template <typename T> RtVoid Matrix4<T>::prjOrtho(T nearDist, T farDist) {
   identity();
   mtrx[2][2] = 2.0 / (farDist - nearDist);
   mtrx[2][3] = -(farDist + nearDist) / (farDist - nearDist);
@@ -201,14 +208,14 @@ namespace {
 // The twelve 2x2 cofactors shared by determinant() and invert(): a0..a5
 // pair rows 0-1, b0..b5 pair rows 2-3. determinant is their standard
 // pairing, a0*b5 - a1*b4 + a2*b3 + a3*b2 - a4*b1 + a5*b0.
-struct Cofactors {
-  RtFloat a0, a1, a2, a3, a4, a5;
-  RtFloat b0, b1, b2, b3, b4, b5;
-  RtFloat determinant;
+template <typename T> struct Cofactors {
+  T a0, a1, a2, a3, a4, a5;
+  T b0, b1, b2, b3, b4, b5;
+  T determinant;
 };
 
-Cofactors cofactorsOf(RtFloat const (&m)[4][4]) {
-  Cofactors c;
+template <typename T> Cofactors<T> cofactorsOf(T const (&m)[4][4]) {
+  Cofactors<T> c;
   c.a0 = m[0][0] * m[1][1] - m[0][1] * m[1][0];
   c.a1 = m[0][0] * m[1][2] - m[0][2] * m[1][0];
   c.a2 = m[0][0] * m[1][3] - m[0][3] * m[1][0];
@@ -227,22 +234,22 @@ Cofactors cofactorsOf(RtFloat const (&m)[4][4]) {
 
 } // namespace
 
-RtFloat GMANMatrix4::determinant() { return cofactorsOf(mtrx).determinant; }
+template <typename T> T Matrix4<T>::determinant() { return cofactorsOf(mtrx).determinant; }
 
 // Adjugate / determinant, via the same 2x2-cofactor pairing determinant()
 // uses. Throws on a singular matrix.
-RtVoid GMANMatrix4::invert() {
-  RtFloat const(&m)[4][4] = mtrx;
-  Cofactors const c = cofactorsOf(m);
+template <typename T> RtVoid Matrix4<T>::invert() {
+  auto const& m = mtrx;
+  const auto c = cofactorsOf(m);
 
-  RtFloat d = c.determinant;
+  const auto d = c.determinant;
   if (d == 0.0) {
     GMANError error(RIE_MATH, RIE_ERROR, "Cannot invert matrix");
     throw error;
   }
-  RtFloat id = 1.0 / d;
+  const T id = 1.0 / d;
 
-  GMANMatrix4 inv;
+  Matrix4 inv;
   inv.mtrx[0][0] = (m[1][1] * c.b5 - m[1][2] * c.b4 + m[1][3] * c.b3) * id;
   inv.mtrx[0][1] = (-m[0][1] * c.b5 + m[0][2] * c.b4 - m[0][3] * c.b3) * id;
   inv.mtrx[0][2] = (m[3][1] * c.a5 - m[3][2] * c.a4 + m[3][3] * c.a3) * id;
@@ -267,15 +274,17 @@ RtVoid GMANMatrix4::invert() {
 // sum_i src_i*M[i][j] + M[3][j], matching trans()/rot()/scale()/concat(),
 // which store translation in row 3. Divides by the resulting w so a
 // (rare) projective matrix passed here still produces a valid point.
-RtVoid GMANMatrix4::p3m(RtInt nbpts, RtFloat* src, RtFloat* dest) const {
+template <typename T> RtVoid Matrix4<T>::p3m(RtInt nbpts, T* src, T* dest) const {
   for (RtInt i = 0; i < nbpts * 3; i += 3) {
-    RtFloat x = src[0 + i], y = src[1 + i], z = src[2 + i];
-    RtFloat rx = x * mtrx[0][0] + y * mtrx[1][0] + z * mtrx[2][0] + mtrx[3][0];
-    RtFloat ry = x * mtrx[0][1] + y * mtrx[1][1] + z * mtrx[2][1] + mtrx[3][1];
-    RtFloat rz = x * mtrx[0][2] + y * mtrx[1][2] + z * mtrx[2][2] + mtrx[3][2];
-    RtFloat rw = x * mtrx[0][3] + y * mtrx[1][3] + z * mtrx[2][3] + mtrx[3][3];
+    const auto x = src[0 + i];
+    const auto y = src[1 + i];
+    const auto z = src[2 + i];
+    auto rx = x * mtrx[0][0] + y * mtrx[1][0] + z * mtrx[2][0] + mtrx[3][0];
+    auto ry = x * mtrx[0][1] + y * mtrx[1][1] + z * mtrx[2][1] + mtrx[3][1];
+    auto rz = x * mtrx[0][2] + y * mtrx[1][2] + z * mtrx[2][2] + mtrx[3][2];
+    const auto rw = x * mtrx[0][3] + y * mtrx[1][3] + z * mtrx[2][3] + mtrx[3][3];
     if (rw != 1.0 && rw != 0.0) {
-      RtFloat invw = 1.0 / rw;
+      const T invw = 1.0 / rw;
       rx *= invw;
       ry *= invw;
       rz *= invw;
@@ -289,17 +298,20 @@ RtVoid GMANMatrix4::p3m(RtInt nbpts, RtFloat* src, RtFloat* dest) const {
 // Homogeneous counterpart of p3m: carries w through unnormalized, for
 // callers (e.g. normal transforms) that need the raw row-vector product
 // rather than a perspective-divided point.
-RtVoid GMANMatrix4::p4m(RtInt nbpts, RtFloat* src, RtFloat* dest) const {
+template <typename T> RtVoid Matrix4<T>::p4m(RtInt nbpts, T* src, T* dest) const {
   for (RtInt i = 0; i < nbpts * 4; i += 4) {
-    RtFloat x = src[0 + i], y = src[1 + i], z = src[2 + i], w = src[3 + i];
+    const auto x = src[0 + i];
+    const auto y = src[1 + i];
+    const auto z = src[2 + i];
+    const auto w = src[3 + i];
     dest[0 + i] = x * mtrx[0][0] + y * mtrx[1][0] + z * mtrx[2][0] + w * mtrx[3][0];
     dest[1 + i] = x * mtrx[0][1] + y * mtrx[1][1] + z * mtrx[2][1] + w * mtrx[3][1];
     dest[2 + i] = x * mtrx[0][2] + y * mtrx[1][2] + z * mtrx[2][2] + w * mtrx[3][2];
     dest[3 + i] = x * mtrx[0][3] + y * mtrx[1][3] + z * mtrx[2][3] + w * mtrx[3][3];
   }
 }
-GMANMatrix4 GMANMatrix4::operator*(RtFloat f) const {
-  GMANMatrix4 res(*this);
+template <typename T> Matrix4<T> Matrix4<T>::operator*(T f) const {
+  Matrix4 res(*this);
 
   res *= f;
 
@@ -307,7 +319,7 @@ GMANMatrix4 GMANMatrix4::operator*(RtFloat f) const {
 }
 
 // Scales every one of the 16 entries by f.
-GMANMatrix4& GMANMatrix4::operator*=(RtFloat f) {
+template <typename T> Matrix4<T>& Matrix4<T>::operator*=(T f) {
   for (RtInt i = 0; i < 4; i++)
     for (RtInt j = 0; j < 4; j++)
       mtrx[i][j] *= f;
@@ -315,15 +327,15 @@ GMANMatrix4& GMANMatrix4::operator*=(RtFloat f) {
   return *this;
 }
 
-GMANMatrix4 GMANMatrix4::operator*(const GMANMatrix4& m) const {
-  GMANMatrix4 res(*this);
+template <typename T> Matrix4<T> Matrix4<T>::operator*(Matrix4 const& m) const {
+  Matrix4 res(*this);
 
   res *= m;
   return res;
 }
 
-GMANMatrix4& GMANMatrix4::operator*=(const GMANMatrix4& m) {
-  GMANMatrix4 res;
+template <typename T> Matrix4<T>& Matrix4<T>::operator*=(Matrix4 const& m) {
+  Matrix4 res;
 
   for (RtInt i = 0; i < 4; i++) {
     for (RtInt j = 0; j < 4; j++) {
@@ -337,14 +349,14 @@ GMANMatrix4& GMANMatrix4::operator*=(const GMANMatrix4& m) {
   return *this;
 }
 
-GMANMatrix4 GMANMatrix4::operator+(const GMANMatrix4& m) const {
-  GMANMatrix4 res(*this);
+template <typename T> Matrix4<T> Matrix4<T>::operator+(Matrix4 const& m) const {
+  Matrix4 res(*this);
 
   res += m;
   return res;
 }
 
-GMANMatrix4& GMANMatrix4::operator+=(const GMANMatrix4& m) {
+template <typename T> Matrix4<T>& Matrix4<T>::operator+=(Matrix4 const& m) {
   for (RtInt i = 0; i < 4; i++) {
     for (RtInt j = 0; j < 4; j++) {
       mtrx[i][j] += m.mtrx[i][j];
@@ -353,7 +365,10 @@ GMANMatrix4& GMANMatrix4::operator+=(const GMANMatrix4& m) {
   return *this;
 }
 
-RtVoid GMANMatrix4::setBasis(RtBasis& b) {
+template <typename T>
+RtVoid Matrix4<T>::setBasis(RtBasis& b)
+  requires std::same_as<T, RtFloat>
+{
   for (RtInt i = 0; i < 4; i++) {
     for (RtInt j = 0; j < 4; j++) {
       mtrx[i][j] = b[i][j];
@@ -361,12 +376,10 @@ RtVoid GMANMatrix4::setBasis(RtBasis& b) {
   }
 }
 
-GMANMatrix4& GMANMatrix4::assign(const GMANMatrix4& m) {
+template <typename T> Matrix4<T>& Matrix4<T>::assign(Matrix4 const& m) {
   *this = m;
   return *this;
 }
-
-namespace gman {
 
 GMANPoint transformPoint(GMANMatrix4 const& m, GMANPoint const& p) {
   RtFloat src[3] = {p.getX(), p.getY(), p.getZ()};
@@ -382,3 +395,6 @@ GMANVector transformDirection(GMANMatrix4 const& m, GMANVector const& v) {
 }
 
 } // namespace gman
+
+template class gman::Matrix4<RtFloat>;
+template class gman::Matrix4<gman::PartnerReal>;

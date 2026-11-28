@@ -25,56 +25,64 @@
 #include "gmanhpoint.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "gmanreal.h"
 #include "gmanvector4.h"
 #include "ri.h"
 
-RtVoid GMANHPoint::wToOne() {
+namespace gman {
+
+template <typename T> RtVoid HPoint<T>::wToOne() {
   w = 1.0 / w;
-  x *= w;
-  y *= w;
-  z *= w;
+  this->x *= w;
+  this->y *= w;
+  this->z *= w;
   w = 1.0;
 }
 
-GMANHPoint& GMANHPoint::operator+=(const GMANHPoint& p) {
-  GMANPoint(*this) += GMANPoint(p);
+template <typename T> HPoint<T>& HPoint<T>::operator+=(HPoint const& p) {
+  Point<T>(*this) += Point<T>(p);
   w += p.getW();
 
   return *this;
 }
 
-GMANHPoint& GMANHPoint::operator*=(RtFloat f) {
-  GMANPoint(*this) *= f;
+template <typename T> HPoint<T>& HPoint<T>::operator*=(T f) {
+  Point<T>(*this) *= f;
   w *= f;
   return *this;
 }
 
-GMANHPoint& GMANHPoint::operator*=(const GMANMatrix4& m) {
+template <typename T> HPoint<T>& HPoint<T>::operator*=(Matrix4<T> const& m) {
 
-  GMANVector4 vec(*this);
+  Vector4<T> vec(*this);
 
   vec *= m;
-  GMANHPoint res(vec.getX(), vec.getY(), vec.getZ(), vec.getW());
+  HPoint res(vec.getX(), vec.getY(), vec.getZ(), vec.getW());
   *this = res;
   return *this;
 }
 
-GMANHPoint GMANHPoint::operator+(const GMANHPoint& p) const {
-  GMANHPoint res(*this);
+template <typename T> HPoint<T> HPoint<T>::operator+(HPoint const& p) const {
+  HPoint res(*this);
   res += p;
   return res;
 }
 
-GMANHPoint GMANHPoint::operator*(RtFloat f) const {
-  GMANHPoint res(*this);
+template <typename T> HPoint<T> HPoint<T>::operator*(T f) const {
+  HPoint res(*this);
   res *= f;
   return res;
 }
 
-GMANHPoint GMANHPoint::operator*(const GMANMatrix4& m) const {
-  GMANHPoint res(*this);
+template <typename T> HPoint<T> HPoint<T>::operator*(Matrix4<T> const& m) const {
+  HPoint res(*this);
 
   res *= m;
 
   return res;
 }
+
+} // namespace gman
+
+template class gman::HPoint<RtFloat>;
+template class gman::HPoint<gman::PartnerReal>;

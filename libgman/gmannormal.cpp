@@ -29,16 +29,24 @@
 
 #include "gmannormal.h"
 #include "gmanpoint.h"
+#include "gmanreal.h"
 #include "gmanvector.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANNormal
+ * RenderMan API Normal
  *
  */
 
-GMANNormal::GMANNormal() : GMANVector(0, 0, 0) {}
+template <typename T> Normal<T>::Normal() : Vector<T>(0, 0, 0) {}
 
-GMANNormal::GMANNormal(RtFloat x, RtFloat y, RtFloat z) : GMANVector(x, y, z) {}
+template <typename T> Normal<T>::Normal(T x, T y, T z) : Vector<T>(x, y, z) {}
 
-GMANNormal::GMANNormal(const GMANPoint& p) : GMANVector(p) {}
+template <typename T> Normal<T>::Normal(Point<T> const& p) : Vector<T>(p) {}
+
+} // namespace gman
+
+template class gman::Normal<RtFloat>;
+template class gman::Normal<gman::PartnerReal>;

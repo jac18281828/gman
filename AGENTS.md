@@ -17,10 +17,14 @@ GMAN — a RenderMan-compatible renderer in C++20. POSIX only: macOS and Linux.
   as such.
 - New code declares locals with `auto`: `const auto x = expr;`, `auto const& r`,
   `auto const* p`.
-- A floating-point constant is `constexpr RtFloat`: `constexpr RtFloat k = 0.5f;`.
-- A class template over a real scalar is explicitly instantiated for `float`
-  and `double`, rather than `RtFloat`, so a build with `RtFloat` as either
-  compiles. 
+- A floating-point constant is `constexpr T k = …;`, `T` being the real scalar
+  in scope: `RtFloat` in ordinary code, the template's parameter inside a
+  template over a real scalar.
+- A class template over a real scalar is explicitly instantiated for `RtFloat`
+  and `gman::PartnerReal` (`double`, or `float` when `RtFloat` is `double`),
+  so a build with any `RtFloat` compiles.
+- Code that needs more precision than `RtFloat` computes in `gman::WideReal`,
+  the wider of `RtFloat` and `double`, never a spelled `double`.
 - A spelled type keeps `const` east of a pointer or reference, west of a value.
 - Convert spelled locals to `auto` in the files a change touches, in a commit of
   its own; if pixels change, check the renders and regenerate the goldens.

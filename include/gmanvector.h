@@ -26,67 +26,80 @@
 #pragma once
 
 #include <cmath>
+#include <concepts>
 #include <cstddef>
 
 #include "gman/export.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "gmanreal.h"
 #include "ri.h"
 
+namespace gman {
+
 /*
- * RenderMan API GMANVector
+ * RenderMan API Vector
  *
  * A physical simulation vector, i.e., magnitude
  * and direction, not to be confused with the
- * stl "vector" template
+ * stl "vector" template. It is a template over
+ * the real scalar T; GMANVector names the RtFloat
+ * instance, the only one built from a RenderMan
+ * array. Vector<U> converts explicitly to Vector<T>.
  *
  */
 
-class GMAN_EXPORT GMANVector {
+template <typename T> class GMAN_EXPORT Vector {
 public:
   // public type
   typedef enum { X = 0, Y = 1, Z = 2, NCOORDS } CoordType;
 
 protected:
   // point spatial coordinates
-  RtFloat x, y, z;
+  T x, y, z;
 
 public:
-  GMANVector() : x(0.0), y(0.0), z(0.0) {}
+  Vector() : x(0.0), y(0.0), z(0.0) {}
 
-  GMANVector(RtFloat xv, RtFloat yv, RtFloat zv) : x(xv), y(yv), z(zv) {}
+  Vector(T xv, T yv, T zv) : x(xv), y(yv), z(zv) {}
 
-  GMANVector(const RtFloat* pts) : x(pts[X]), y(pts[Y]), z(pts[Z]) {}
+  Vector(RtFloat const* pts)
+    requires std::same_as<T, RtFloat>
+      : x(pts[X]), y(pts[Y]), z(pts[Z]) {}
 
-  GMANVector(const GMANPoint& p) { *this = p; }
+  template <typename U>
+  explicit Vector(Vector<U> const& v)
+      : x(static_cast<T>(v.getX())), y(static_cast<T>(v.getY())), z(static_cast<T>(v.getZ())) {}
+
+  Vector(Point<T> const& p) { *this = p; }
 
   /* construct a vector from two points V = b - a */
-  GMANVector(const GMANPoint& a, const GMANPoint& b) {
+  Vector(Point<T> const& a, Point<T> const& b) {
     setX(b.getX() - a.getX());
     setY(b.getY() - a.getY());
     setZ(b.getZ() - a.getZ());
   }
 
   // dtor
-  ~GMANVector() {}
+  ~Vector() {}
 
   /* The user-declared destructor above deprecates the implicit copy
    * constructor (C++11 [depr.impldec]); gcc rejects it under
    * -Werror=deprecated-copy. It is memberwise on the plain coordinates, which is
    * what the implicit one already did, so default it explicitly. Copy
    * assignment is user-provided further down. */
-  GMANVector(const GMANVector&) = default;
+  Vector(Vector const&) = default;
 
-  RtFloat getX(RtVoid) const { return x; }
-  RtVoid setX(RtFloat xv) { x = xv; }
+  T getX(RtVoid) const { return x; }
+  RtVoid setX(T xv) { x = xv; }
 
-  RtFloat getY(RtVoid) const { return y; }
-  RtVoid setY(RtFloat yv) { y = yv; }
+  T getY(RtVoid) const { return y; }
+  RtVoid setY(T yv) { y = yv; }
 
-  RtFloat getZ(RtVoid) const { return z; }
-  RtVoid setZ(RtFloat zv) { z = zv; }
+  T getZ(RtVoid) const { return z; }
+  RtVoid setZ(T zv) { z = zv; }
 
-  RtFloat& operator[](size_t i) {
+  T& operator[](std::size_t i) {
     if (i == X) {
       return x;
     }
@@ -96,7 +109,7 @@ public:
     return z;
   }
 
-  const RtFloat& operator[](size_t i) const {
+  T const& operator[](std::size_t i) const {
     if (i == X) {
       return x;
     }
@@ -106,13 +119,13 @@ public:
     return z;
   }
 
-  operator GMANPoint() {
-    GMANPoint res(getX(), getY(), getZ());
+  operator Point<T>() {
+    Point<T> res(getX(), getY(), getZ());
 
     return res;
   }
 
-  GMANVector& operator=(const GMANPoint& p) {
+  Vector& operator=(Point<T> const& p) {
     setX(p.getX());
     setY(p.getY());
     setZ(p.getZ());
@@ -120,10 +133,10 @@ public:
     return *this;
   }
 
-  RtFloat magnitude(RtVoid) { return std::sqrt(x * x + y * y + z * z); }
+  T magnitude(RtVoid) { return std::sqrt(x * x + y * y + z * z); }
 
-  GMANVector& normalize(RtVoid) {
-    RtFloat mag = magnitude();
+  Vector& normalize(RtVoid) {
+    auto mag = magnitude();
     if (mag < RI_EPSILON) {
       return *this;
     }
@@ -131,38 +144,38 @@ public:
     return *this;
   }
 
-  RtFloat dot(const GMANVector& v) const {
-    RtFloat rc = 0.0;
+  T dot(Vector const& v) const {
+    T rc = 0.0;
     rc += x * v.x;
     rc += y * v.y;
     rc += z * v.z;
     return rc;
   }
 
-  GMANVector cross(const GMANVector& v) const {
-    GMANVector result(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
+  Vector cross(Vector const& v) const {
+    Vector result(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
     return result;
   }
 
   /* operators */
-  GMANVector operator+(GMANVector const& v) const { return GMANVector(x + v.x, y + v.y, z + v.z); }
+  Vector operator+(Vector const& v) const { return Vector(x + v.x, y + v.y, z + v.z); }
 
-  GMANVector operator-(GMANVector const& v) const { return GMANVector(x - v.x, y - v.y, z - v.z); }
+  Vector operator-(Vector const& v) const { return Vector(x - v.x, y - v.y, z - v.z); }
 
-  GMANVector operator-() const { return GMANVector(-x, -y, -z); }
+  Vector operator-() const { return Vector(-x, -y, -z); }
 
-  GMANVector operator+(RtFloat f) const { return GMANVector(x + f, y + f, z + f); }
-  GMANVector operator-(RtFloat f) const { return GMANVector(x - f, y - f, z - f); }
-  GMANVector operator*(RtFloat f) const { return GMANVector(x * f, y * f, z * f); }
-  GMANVector operator/(RtFloat f) const { return GMANVector(x / f, y / f, z / f); }
+  Vector operator+(T f) const { return Vector(x + f, y + f, z + f); }
+  Vector operator-(T f) const { return Vector(x - f, y - f, z - f); }
+  Vector operator*(T f) const { return Vector(x * f, y * f, z * f); }
+  Vector operator/(T f) const { return Vector(x / f, y / f, z / f); }
 
-  GMANVector& operator=(RtFloat f) {
+  Vector& operator=(T f) {
     x = y = z = f;
     return *this;
   }
 
-  // assign a GMANVector
-  GMANVector& operator=(const GMANVector& v) {
+  // assign a Vector
+  Vector& operator=(Vector const& v) {
     setX(v.getX());
     setY(v.getY());
     setZ(v.getZ());
@@ -170,57 +183,64 @@ public:
     return *this;
   }
 
-  GMANVector& operator+=(GMANVector const& v) {
+  Vector& operator+=(Vector const& v) {
     x += v.x;
     y += v.y;
     z += v.z;
     return *this;
   }
-  GMANVector& operator-=(GMANVector const& v) {
+  Vector& operator-=(Vector const& v) {
     x -= v.x;
     y -= v.y;
     z -= v.z;
     return *this;
   }
-  GMANVector& operator*=(GMANVector const& v) {
+  Vector& operator*=(Vector const& v) {
     x *= v.x;
     y *= v.y;
     z *= v.z;
     return *this;
   }
-  GMANVector& operator/=(GMANVector const& v) {
+  Vector& operator/=(Vector const& v) {
     x /= v.x;
     y /= v.y;
     z /= v.z;
     return *this;
   }
 
-  GMANVector& operator+=(RtFloat f) {
+  Vector& operator+=(T f) {
     x += f;
     y += f;
     z += f;
     return *this;
   }
-  GMANVector& operator-=(RtFloat f) {
+  Vector& operator-=(T f) {
     x -= f;
     y -= f;
     z -= f;
     return *this;
   }
-  GMANVector& operator*=(RtFloat f) {
+  Vector& operator*=(T f) {
     x *= f;
     y *= f;
     z *= f;
     return *this;
   }
-  GMANVector& operator/=(RtFloat f) {
+  Vector& operator/=(T f) {
     x /= f;
     y /= f;
     z /= f;
     return *this;
   }
 
-  GMANVector& operator*=(const GMANMatrix4& m);
+  Vector& operator*=(Matrix4<T> const& m);
 
-  bool operator<(const GMANVector& v) const { return x < v.x || y < v.y || z < v.z; }
+  bool operator<(Vector const& v) const { return x < v.x || y < v.y || z < v.z; }
 };
+
+} // namespace gman
+
+using GMANVector = gman::Vector<RtFloat>;
+
+extern template class gman::Vector<RtFloat>;
+extern template class gman::Vector<gman::PartnerReal>;

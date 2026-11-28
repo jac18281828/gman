@@ -24,31 +24,49 @@
 
 #pragma once
 
+#include <concepts>
+
+#include "gman/export.h"
 #include "gmanmatrix4.h"
 #include "gmanpoint.h"
+#include "gmanreal.h"
 #include "ri.h"
 
-class GMANHPoint : public GMANPoint {
+namespace gman {
+
+// A homogeneous point over the real scalar T; GMANHPoint names the RtFloat instance.
+template <typename T> class GMAN_EXPORT HPoint : public Point<T> {
 protected:
-  RtFloat w;
+  T w;
 
 public:
-  GMANHPoint() : GMANPoint(0, 0, 0), w(1.0) {}
+  HPoint() : Point<T>(0, 0, 0), w(1.0) {}
 
-  GMANHPoint(RtFloat x, RtFloat y, RtFloat z, RtFloat wv) : GMANPoint(x, y, z), w(wv) {}
+  HPoint(T x, T y, T z, T wv) : Point<T>(x, y, z), w(wv) {}
 
-  GMANHPoint(RtFloat* f) : GMANPoint(f[0], f[1], f[2]), w(f[3]) {}
+  HPoint(RtFloat const* f)
+    requires std::same_as<T, RtFloat>
+      : Point<T>(f[0], f[1], f[2]), w(f[3]) {}
 
-  RtFloat getW() const { return w; };
-  RtVoid setW(RtFloat wv) { w = wv; };
+  template <typename U> explicit HPoint(HPoint<U> const& p) : Point<T>(p), w(static_cast<T>(p.getW())) {}
+
+  T getW() const { return w; };
+  RtVoid setW(T wv) { w = wv; };
 
   RtVoid wToOne();
 
-  GMANHPoint operator+(const GMANHPoint& p) const;
-  GMANHPoint operator*(RtFloat f) const;
-  GMANHPoint operator*(const GMANMatrix4& m) const;
+  HPoint operator+(HPoint const& p) const;
+  HPoint operator*(T f) const;
+  HPoint operator*(Matrix4<T> const& m) const;
 
-  GMANHPoint& operator+=(const GMANHPoint& p);
-  GMANHPoint& operator*=(RtFloat f);
-  GMANHPoint& operator*=(const GMANMatrix4& m);
+  HPoint& operator+=(HPoint const& p);
+  HPoint& operator*=(T f);
+  HPoint& operator*=(Matrix4<T> const& m);
 };
+
+} // namespace gman
+
+using GMANHPoint = gman::HPoint<RtFloat>;
+
+extern template class gman::HPoint<RtFloat>;
+extern template class gman::HPoint<gman::PartnerReal>;

@@ -27,16 +27,30 @@
 
 #include "gman/export.h"
 #include "gmanpoint.h"
+#include "gmanreal.h"
 #include "gmanvector.h"
 #include "ri.h"
 
-class GMAN_EXPORT GMANNormal : public GMANVector {
+namespace gman {
+
+// A surface normal over the real scalar T; GMANNormal names the RtFloat instance.
+template <typename T> class GMAN_EXPORT Normal : public Vector<T> {
 public:
-  GMANNormal();
-  GMANNormal(RtFloat x, RtFloat y, RtFloat z);
-  GMANNormal(const GMANPoint& p);
+  Normal();
+  Normal(T x, T y, T z);
+  Normal(Point<T> const& p);
 
   /* construct a normal from two points N = b - a */
-  GMANNormal(const GMANPoint& a, const GMANPoint& b) : GMANVector(a, b) {}
-  ~GMANNormal() {}
+  Normal(Point<T> const& a, Point<T> const& b) : Vector<T>(a, b) {}
+
+  template <typename U> explicit Normal(Normal<U> const& n) : Vector<T>(n) {}
+
+  ~Normal() {}
 };
+
+} // namespace gman
+
+using GMANNormal = gman::Normal<RtFloat>;
+
+extern template class gman::Normal<RtFloat>;
+extern template class gman::Normal<gman::PartnerReal>;
