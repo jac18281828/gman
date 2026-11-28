@@ -19,14 +19,14 @@
  */
 
 /*
- * gman::HPoint<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and copies through std::move, w, the Point members
- * it inherits, wToOne and the matrix product. A failure names the member,
- * the instance, the component, and the expected and actual values. The sum
- * and the scaling, and their compound forms, add to a temporary rather than
- * to the point; the values they should produce are pinned by the
- * hpointadd*_pin and hpointscale*_pin tests. Here they are checked for what
- * they return, what they leave alone and the w they produce.
+ * gman::HPoint<T> for RtFloat and gman::PartnerReal, one named check per member
+ * and instance: constructors, copies and copies through std::move, w, the Point
+ * members it inherits, wToOne and the matrix product. A failure names the
+ * member, the instance, the component, and the expected and actual values. The
+ * sum and the scaling, and their compound forms, add to a temporary rather than
+ * to the point; the values they should produce are pinned by the hpointadd*_pin
+ * and hpointscale*_pin tests. Here they are checked for what they return, what
+ * they leave alone and the w they produce.
  */
 
 #include <string>

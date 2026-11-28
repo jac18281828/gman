@@ -20,11 +20,11 @@
 
 /*
  * gman::Matrix4<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and copies through std::move, identity, concat,
- * the transform builders, determinant and invert, p3m and p4m, the scalar
- * and matrix operators, setBasis, assign, indexing and get(). A failure
- * names the member, the instance, the matrix entry, and the expected and
- * actual values. gman::transformPoint and gman::transformDirection, which
+ * member and instance: constructors, copies and copies through std::move,
+ * identity, concat, the transform builders, determinant and invert, p3m and
+ * p4m, the scalar and matrix operators, setBasis, assign, indexing and get(). A
+ * failure names the member, the instance, the matrix entry, and the expected
+ * and actual values. gman::transformPoint and gman::transformDirection, which
  * exist for RtFloat alone, are checked at the end.
  */
 

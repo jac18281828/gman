@@ -19,11 +19,11 @@
  */
 
 /*
- * gman::Vector<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and copies through std::move, accessors, indexing,
- * every arithmetic operator, dot, cross, magnitude and normalize. A failure
- * names the member, the instance, the component, and the expected and actual
- * values.
+ * gman::Vector<T> for RtFloat and gman::PartnerReal, one named check per member
+ * and instance: constructors, copies and copies through std::move, accessors,
+ * indexing, every arithmetic operator, dot, cross, magnitude and normalize. A
+ * failure names the member, the instance, the component, and the expected and
+ * actual values.
  */
 
 #include <numbers>

@@ -19,9 +19,9 @@
  */
 
 /*
- * gman::Normal<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: its own constructors, copies and copies through std::move, and the
- * Vector members it inherits: accessors, indexing, arithmetic, dot, cross,
+ * gman::Normal<T> for RtFloat and gman::PartnerReal, one named check per member
+ * and instance: its own constructors, copies and copies through std::move, and
+ * the Vector members it inherits: accessors, indexing, arithmetic, dot, cross,
  * magnitude and normalize. A failure names the member, the instance, the
  * component, and the expected and actual values.
  */

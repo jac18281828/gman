@@ -20,11 +20,11 @@
 
 /*
  * gman::Vector4<T> for RtFloat and gman::PartnerReal, one named check per
- * member and instance: constructors, copies and copies through std::move, w, the Vector members
- * it inherits, arithmetic over all four components, magnitude, normalize,
- * dot, the matrix product, the perspective division and the projective
- * transform by a 4x4 array of either scalar. A failure names the member,
- * the instance, the component, and the expected and actual values. The
+ * member and instance: constructors, copies and copies through std::move, w,
+ * the Vector members it inherits, arithmetic over all four components,
+ * magnitude, normalize, dot, the matrix product, the perspective division and
+ * the projective transform by a 4x4 array of either scalar. A failure names the
+ * member, the instance, the component, and the expected and actual values. The
  * default constructor's w is pinned by vector4default_pin_test.cpp.
  */
 
