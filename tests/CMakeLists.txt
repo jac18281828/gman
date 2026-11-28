@@ -4303,6 +4303,15 @@ set_tests_properties(primitiveowners PROPERTIES
   LABELS unit
   TIMEOUT 30)
 
+add_executable(gman_world world_test.cpp)
+target_link_libraries(gman_world PRIVATE gman gman_internal_headers)
+
+add_test(NAME world COMMAND gman_world)
+set_tests_properties(world PROPERTIES
+  ENVIRONMENT "LD_LIBRARY_PATH=${CMAKE_BINARY_DIR};DYLD_LIBRARY_PATH=${CMAKE_BINARY_DIR}"
+  LABELS unit
+  TIMEOUT 30)
+
 # GMANSphere's and GMANDisk's own uniform-area sampler: a closed-form area,
 # an independent finite-difference quadrature of the Jacobian, a
 # uniform-by-area histogram, a degenerate primitive and the sampled normal.

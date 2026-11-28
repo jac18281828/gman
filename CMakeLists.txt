@@ -253,6 +253,7 @@ add_library(gman SHARED
   libgman/gmanvsorthographic.cpp
   libgman/gmanvsperspective.cpp
   libgman/gmanwindowoutput.cpp
+  libgman/gmanworld.cpp
   libgman/gmanworldmanager.cpp)
 
 # libgman's export header; GMAN_EXPORT replaces the MSVC-era

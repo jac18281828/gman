@@ -87,6 +87,7 @@ gmanvertex4.h
 gmanviewingsystem.h
 gmanviewingsysteminputs.h
 gmanvolumeshader.h
+gmanworld.h
 gmanworldmanager.h
 rasterexport.h
 rayexport.h
